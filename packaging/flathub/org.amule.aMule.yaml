@@ -232,12 +232,14 @@ modules:
     sources:
       - type: git
         url: https://github.com/amule-org/amule.git
-        # TBD-AFTER-PR-15-MERGE: bump tag + commit to the master tip that
-        # carries the icon-refresh PR so Flathub builds ship with the
-        # higher-res icons. Until then, this pins to the original 3.0.0
-        # tag — Flathub builds would render with the old 128x128 icon.
+        # Pinned to a master tip post-#15 (icon refresh) and post-#17
+        # (metainfo/desktop polish). The Flatpak still self-identifies
+        # as 3.0.0 because the source version macro is unchanged; only
+        # the icon assets, the metainfo screenshot URLs, the release
+        # <description>+<url>, and the .desktop GenericName/Keywords
+        # moved. Bump tag + commit together on the next aMule release.
         tag: '3.0.0'
-        commit: df8e92a32efe6c89dc75d2df865e932f5bb9c730
+        commit: eb75041af2ff760960d44abb13a6ea7c586bcdca
         disable-shallow-clone: true
         x-checker-data:
           type: git
