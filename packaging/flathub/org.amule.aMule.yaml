@@ -229,17 +229,23 @@ modules:
       - -DENABLE_NLS=YES
       - -DENABLE_UPNP=YES
       - -DENABLE_IP2COUNTRY=YES
+      # GNOME 49 SDK ships libbfd at build time, the runtime doesn't —
+      # without this the installed flatpak aborts at startup with
+      # "libbfd-2.46.so: cannot open shared object file" (#13). The
+      # ENABLE_BFD option (added in #19) makes this opt-out clean;
+      # MuleDebug.cpp's !HAVE_BFD path keeps backtraces working via
+      # backtrace_symbols() + addr2line.
+      - -DENABLE_BFD=NO
     sources:
       - type: git
         url: https://github.com/amule-org/amule.git
-        # Pinned to a master tip post-#15 (icon refresh) and post-#17
-        # (metainfo/desktop polish). The Flatpak still self-identifies
-        # as 3.0.0 because the source version macro is unchanged; only
-        # the icon assets, the metainfo screenshot URLs, the release
-        # <description>+<url>, and the .desktop GenericName/Keywords
-        # moved. Bump tag + commit together on the next aMule release.
+        # Pinned to a master tip post-#15 (icon refresh), #17 (metainfo
+        # / desktop polish), and #19 (ENABLE_BFD option + flatpak
+        # build opts -DENABLE_BFD=NO). The Flatpak still self-identifies
+        # as 3.0.0 because the source version macro is unchanged. Bump
+        # tag + commit together on the next aMule release.
         tag: '3.0.0'
-        commit: eb75041af2ff760960d44abb13a6ea7c586bcdca
+        commit: 6985ba0088783423f3541e98a392deee465b2b9b
         disable-shallow-clone: true
         x-checker-data:
           type: git
