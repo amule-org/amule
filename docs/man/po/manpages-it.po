@@ -8,15 +8,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-06-07 14:52+0200\n"
-"PO-Revision-Date: 2017-05-24 09:59+0200\n"
-"Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2026-06-10 11:15+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Italian <https://hosted.weblate.org/projects/amule/"
+"application-man-pages/it/>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 2.0.2\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 # type: TH
 #. type: TH
@@ -108,7 +109,8 @@ msgstr "DESCRIZIONE"
 #: ../../src/utils/cas/docs/cas.1.in:27
 #, no-wrap
 msgid "B<[ -c> I<E<lt>pathE<gt>>, B<--config-dir>=I<E<lt>pathE<gt>> B<]>"
-msgstr "B<[ -c> I<E<lt>percorsoE<gt>>, B<--config-dir>=I<E<lt>percorsoE<gt>> B<]>"
+msgstr ""
+"B<[ -c> I<E<lt>percorsoE<gt>>, B<--config-dir>=I<E<lt>percorsoE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
@@ -135,9 +137,9 @@ msgid ""
 "[{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>yoffsetE<gt>>]"
 msgstr ""
 "Imposta la geometria della applicazione. I<E<lt>geometriaE<gt>> usa lo "
-"stesso formato delle applicazioni X11 standard: \t[B<=>]"
-"[I<E<lt>larghezzaE<gt>>{B<xX>}I<E<lt>altezzaE<gt>>][{B<+->}"
-"I<E<lt>spostamentoxE<gt>>{B<+->}I<E<lt>spostamentoyE<gt>>]"
+"stesso formato delle applicazioni X11 standard: \t[B<=>][I<E<lt>"
+"larghezzaE<gt>>{B<xX>}I<E<lt>altezzaE<gt>>][{B<+->}I<E<lt>spostamentoxE<gt>>"
+"{B<+->}I<E<lt>spostamentoyE<gt>>]"
 
 # type: Plain text
 #. type: Plain text
@@ -168,7 +170,8 @@ msgstr ""
 #: amule.1.in:42 amuled.1.in:50
 #, no-wrap
 msgid "B<[ -w> I<E<lt>pathE<gt>>, B<--use-amuleweb>=I<E<lt>pathE<gt>> B<]>"
-msgstr "B<[ -w> I<E<lt>percorsoE<gt>>, B<--use-amuleweb>=I<E<lt>percorsoE<gt>> B<]>"
+msgstr ""
+"B<[ -w> I<E<lt>percorsoE<gt>>, B<--use-amuleweb>=I<E<lt>percorsoE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
@@ -405,8 +408,8 @@ msgstr "AUTORE"
 msgid ""
 "This manpage was written by Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
 msgstr ""
-"Questa pagina del manuale è stata scritta da Vollstrecker "
-"E<lt>amule@vollstreckernet.deE<gt>"
+"Questa pagina del manuale è stata scritta da Vollstrecker E<lt>"
+"amule@vollstreckernet.deE<gt>"
 
 # type: TH
 #. type: TH
@@ -445,8 +448,8 @@ msgid ""
 "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> "
 "I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
 msgstr ""
-"[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portaE<gt>>] [B<-P> "
-"I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>percorsoE<gt>>]"
+"[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portaE<gt>>] [B<-P> I<E<lt>"
+"passwordE<gt>>] [B<-f> I<E<lt>percorsoE<gt>>]"
 
 # type: Plain text
 #. type: Plain text
@@ -455,8 +458,8 @@ msgid ""
 "[B<-l> I<E<lt>langE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> "
 "I<E<lt>commandE<gt>>]B< >}"
 msgstr ""
-"[B<-l> I<E<lt>linguaggioE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> "
-"I<E<lt>comandoE<gt>>]B< >}"
+"[B<-l> I<E<lt>linguaggioE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>"
+"comandoE<gt>>]B< >}"
 
 # type: Plain text
 #. type: Plain text
@@ -484,8 +487,8 @@ msgid ""
 "Host where aMule is running (default: I<127.0.0.1>).  I<E<lt>hostE<gt>> "
 "might be an IP address or a DNS name"
 msgstr ""
-"Computer dove è in esecuzione aMule (default: I<127.0.0.1>). "
-"I<E<lt>hostE<gt>> può essere un indirizzo IP o un nome DNS"
+"Computer dove è in esecuzione aMule (default: I<127.0.0.1>). I<E<lt>"
+"hostE<gt>> può essere un indirizzo IP o un nome DNS"
 
 # type: TP
 #. type: TP
@@ -522,7 +525,8 @@ msgstr "Password delle connessioni esterne."
 #: amulecmd.1.in:39 amuleweb.1.in:56
 #, no-wrap
 msgid "B<[ -f> I<E<lt>pathE<gt>>, B<--config-file>=I<E<lt>pathE<gt>> B<]>"
-msgstr "B<[ -f> I<E<lt>percorsoE<gt>>, B<--config-file>=I<E<lt>percorsoE<gt>> B<]>"
+msgstr ""
+"B<[ -f> I<E<lt>percorsoE<gt>>, B<--config-file>=I<E<lt>percorsoE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
@@ -551,7 +555,8 @@ msgstr "Mostra anche i messaggi di debug."
 #: amulecmd.1.in:50 amuleweb.1.in:67
 #, no-wrap
 msgid "B<[ -l> I<E<lt>langE<gt>>, B<--locale>=I<E<lt>langE<gt>> B<]>"
-msgstr "B<[ -l> I<E<lt>linguaggioE<gt>>, B<--locale>=I<E<lt>linguaggioE<gt>> B<]>"
+msgstr ""
+"B<[ -l> I<E<lt>linguaggioE<gt>>, B<--locale>=I<E<lt>linguaggioE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
@@ -766,8 +771,8 @@ msgid ""
 "Pauses the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. "
 "To get the value use B<show>."
 msgstr ""
-"Mette in pausa il download specificato da I<E<lt>hashE<gt>> o "
-"I<E<lt>numeroE<gt>>. Per ottenere il valore utilizzare B<show>."
+"Mette in pausa il download specificato da I<E<lt>hashE<gt>> o I<E<lt>"
+"numeroE<gt>>. Per ottenere il valore utilizzare B<show>."
 
 # type: Plain text
 #. type: Plain text
@@ -776,8 +781,8 @@ msgid ""
 "Set priority of a download specified by I<E<lt>hashE<gt>> or "
 "I<E<lt>numberE<gt>>."
 msgstr ""
-"Imposta la priorità di un download specificato da I<E<lt>hashE<gt>> o "
-"I<E<lt>numeroE<gt>>."
+"Imposta la priorità di un download specificato da I<E<lt>hashE<gt>> o I<E<lt>"
+"numeroE<gt>>."
 
 # type: Plain text
 #. type: Plain text
@@ -1076,12 +1081,11 @@ msgid ""
 "instance of localization data within a single category."
 msgstr ""
 "Il parametro I<E<lt>linguaggioE<gt>> per l'opzione B<-l> ha la forma "
-"seguente: I<linguaggio>[B<_>I<LINGUAGGIO>][B<.>I<codifica>]"
-"[B<@>I<modificatore>] dove I<linguaggio> è il linguaggio primario, "
-"I<LINGUAGGIO> è il sottotipo/territorio, I<codifica> è l'insieme di "
-"caratteri usato e I<modificatore> consente all'utente di selezionare una "
-"specifica istanza dei dati di localizzazione all'interno di una singola "
-"categoria."
+"seguente: I<linguaggio>[B<_>I<LINGUAGGIO>][B<.>I<codifica>][B<@>"
+"I<modificatore>] dove I<linguaggio> è il linguaggio primario, I<LINGUAGGIO> "
+"è il sottotipo/territorio, I<codifica> è l'insieme di caratteri usato e "
+"I<modificatore> consente all'utente di selezionare una specifica istanza dei "
+"dati di localizzazione all'interno di una singola categoria."
 
 # type: Plain text
 #. type: Plain text
@@ -1156,8 +1160,7 @@ msgstr "o"
 #. type: Plain text
 #: amulecmd.1.in:276
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr ""
-"B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 # type: Plain text
 #. type: Plain text
@@ -1166,8 +1169,8 @@ msgid ""
 "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only "
 "need to type:"
 msgstr ""
-"In questo modo la configurazione verrà salvata in I<$HOME/.aMule/"
-"remote.conf>, e le volte successive si dovrà solo digitare:"
+"In questo modo la configurazione verrà salvata in I<$HOME/.aMule/remote.conf>"
+", e le volte successive si dovrà solo digitare:"
 
 # type: Plain text
 #. type: Plain text
@@ -1235,8 +1238,8 @@ msgid ""
 "After fork, create a pid-file in the I<E<lt>pathE<gt>>.  I<E<lt>pathE<gt>> "
 "has to contain the filename."
 msgstr ""
-"Dopo il passaggio in background, crea un file di pid in "
-"I<E<lt>percorsoE<gt>>. I<E<lt>percorsoE<gt>> deve includere il nome del file."
+"Dopo il passaggio in background, crea un file di pid in I<E<lt>percorsoE<gt>>"
+". I<E<lt>percorsoE<gt>> deve includere il nome del file."
 
 # type: Plain text
 #. type: Plain text
@@ -1333,8 +1336,8 @@ msgid ""
 "This manpage was written by Julien Delange for Debian E<lt>julien AT gunnm "
 "DOT orgE<gt>"
 msgstr ""
-"Questa pagina di manuale è stata scritta da Julien Delange per Debian "
-"E<lt>julien AT gunnm DOT orgE<gt>"
+"Questa pagina di manuale è stata scritta da Julien Delange per Debian E<lt>"
+"julien AT gunnm DOT orgE<gt>"
 
 # type: Plain text
 #. type: Plain text
@@ -1342,8 +1345,8 @@ msgstr ""
 msgid ""
 "This manpage was rewritten by Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
 msgstr ""
-"Questa pagina di manuale è stata riscritta da Vollstrecker "
-"E<lt>amule@vollstreckernet.deE<gt>"
+"Questa pagina di manuale è stata riscritta da Vollstrecker E<lt>"
+"amule@vollstreckernet.deE<gt>"
 
 # type: TH
 #. type: TH
@@ -1480,7 +1483,8 @@ msgstr "Disabilita la compressione gzip (questo è il default)."
 #: amuleweb.1.in:93
 #, no-wrap
 msgid "B<[ -A> I<E<lt>passwdE<gt>>, B<--admin-pass>=I<E<lt>passwdE<gt>> B<]>"
-msgstr "B<[ -A> I<E<lt>passwordE<gt>>, B<--admin-pass>=I<E<lt>passwordE<gt>> B<]>"
+msgstr ""
+"B<[ -A> I<E<lt>passwordE<gt>>, B<--admin-pass>=I<E<lt>passwordE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
@@ -1493,7 +1497,8 @@ msgstr "Password per l'accesso completo al web server."
 #: amuleweb.1.in:96
 #, no-wrap
 msgid "B<[ -G> I<E<lt>passwdE<gt>>, B<--guest-pass>=I<E<lt>passwdE<gt>> B<]>"
-msgstr "B<[ -G> I<E<lt>passwordE<gt>>, B<--guest-pass>=I<E<lt>passwordE<gt>> B<]>"
+msgstr ""
+"B<[ -G> I<E<lt>passwordE<gt>>, B<--guest-pass>=I<E<lt>passwordE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
@@ -1630,8 +1635,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:189
 msgid "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr ""
-"B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+msgstr "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 # type: Plain text
 #. type: Plain text
@@ -1682,8 +1686,8 @@ msgid ""
 "Sends the given I<E<lt>eD2k-linkE<gt>> to aMule, i.e. writes it to the file "
 "~/.aMule/ED2KLinks, which will be checked by aMule every second for links."
 msgstr ""
-"Invia il I<E<lt>collegamento-eD2kE<gt>> ad aMule, cioè lo scrive nel file "
-"~/.aMule/ED2KLinks, che sarà controllato da aMule ogni secondo per nuovi "
+"Invia il I<E<lt>collegamento-eD2kE<gt>> ad aMule, cioè lo scrive nel file ~/"
+".aMule/ED2KLinks, che sarà controllato da aMule ogni secondo per nuovi "
 "collegamenti."
 
 # type: TP
@@ -1746,8 +1750,8 @@ msgstr ""
 "B<L'ordine con cui fornisci i parametri è importante.> Si può fornire più di "
 "un collegamento, e ogni collegamento può avere propri parametri. Per esempio "
 "B<ed2k E<lt>collegamento1E<gt> -t2 E<lt>collegamento2E<gt>> eseguirà il "
-"download di I<E<lt>collegamento1E<gt>> in categoria standard e "
-"I<E<lt>collegamento2E<gt>> in categoria 2."
+"download di I<E<lt>collegamento1E<gt>> in categoria standard e I<E<lt>"
+"collegamento2E<gt>> in categoria 2."
 
 # type: Plain text
 #. type: Plain text
@@ -1825,8 +1829,8 @@ msgid ""
 "Compute the eD2k links of all the input files given in the "
 "I<E<lt>inputfiles_listE<gt>> (There can be one or more files)."
 msgstr ""
-"Genera i collegamenti eD2k di tutti i file in ingresso forniti in "
-"I<E<lt>elenco_di_fileE<gt>> (Ci possono essere uno o più file)."
+"Genera i collegamenti eD2k di tutti i file in ingresso forniti in I<E<lt>"
+"elenco_di_fileE<gt>> (Ci possono essere uno o più file)."
 
 # type: Plain text
 #. type: Plain text
@@ -1884,8 +1888,8 @@ msgid ""
 msgstr ""
 "Scrive l'immagine della firma online.  La forma estesa B<--picture> accetta "
 "un facoltativo I<=E<lt>PERCORSOE<gt>> per specificare la posizione di "
-"output; le forme corte B<-o> / B<-P> no (B<-P> richiede un argomento "
-"I<E<lt>PERCORSOE<gt>> immediatamente di seguito, e B<-o> è uno switch senza "
+"output; le forme corte B<-o> / B<-P> no (B<-P> richiede un argomento I<E<lt>"
+"PERCORSOE<gt>> immediatamente di seguito, e B<-o> è uno switch senza "
 "argomenti).  Richiede il supporto GD compilato (I<__GD__>); in caso "
 "contrario l'opzione viene ignorata silenziosamente."
 
@@ -1899,8 +1903,8 @@ msgid ""
 msgstr ""
 "Pagina HTML con statistiche e immagine.  La forma estesa B<--html> accetta "
 "un facoltativo I<=E<lt>PERCORSOE<gt>> per specificare la posizione di "
-"output; le forme corte B<-p> / B<-H> no (B<-H> richiede un argomento "
-"I<E<lt>PERCORSOE<gt>> immediatamente di seguito, e B<-p> è uno switch senza "
+"output; le forme corte B<-p> / B<-H> no (B<-H> richiede un argomento I<E<lt>"
+"PERCORSOE<gt>> immediatamente di seguito, e B<-p> è uno switch senza "
 "argomenti)."
 
 # type: Plain text

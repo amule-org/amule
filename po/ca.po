@@ -15,15 +15,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2025-12-27 18:51+0100\n"
-"Last-Translator: minterior <minterior@gmail.com>\n"
-"Language-Team: Català\n"
+"PO-Revision-Date: 2026-06-10 11:19+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Catalan <https://hosted.weblate.org/projects/amule/amule-"
+"application/ca/>\n"
 "Language: ca\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.7\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -604,8 +605,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1201,8 +1201,7 @@ msgstr ""
 #: src/ClientTCPSocket.cpp:799
 #, c-format
 msgid "User %s (%u) requested your sharedfiles-list -> Denied"
-msgstr ""
-"L'usuari %s (%u) ha demanat la llista de fitxers compartits -> Denegada"
+msgstr "L'usuari %s (%u) ha demanat la llista de fitxers compartits -> Denegada"
 
 #: src/ClientTCPSocket.cpp:831
 #, c-format
@@ -2482,8 +2481,7 @@ msgstr[1] "S'han descartat %u línies malformades."
 #: src/IPFilter.cpp:503
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
-msgstr ""
-"Fallada al canviar de nom el nou fitxer %s, actualització interrompuda."
+msgstr "Fallada al canviar de nom el nou fitxer %s, actualització interrompuda."
 
 #: src/IPFilter.cpp:534
 msgid "IP filter is ready"
@@ -3297,7 +3295,8 @@ msgid ""
 "a fake, you can tell that to other users of aMule."
 msgstr ""
 "Per una pel·lícula es pot definir la seva durada, la seva història, "
-"llenguatge...\\n\\ni si és falsa, es pot informar a altres usuaris d'aMule."
+"llenguatge...\\n\\n"
+"i si és falsa, es pot informar a altres usuaris d'aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -4256,8 +4255,8 @@ msgstr "Info. Kad"
 #: src/muuli_wdr.cpp:2235
 msgid "Click on this button to update the nodes list from URL ..."
 msgstr ""
-"Feu clic en aquest botó per a actualitzar la llista de nodes des d'una "
-"URL ..."
+"Feu clic en aquest botó per a actualitzar la llista de nodes des d'una URL "
+"..."
 
 #: src/muuli_wdr.cpp:2239
 msgid "Nodes (0)"
@@ -4390,8 +4389,8 @@ msgstr "Filtra els servidors"
 msgid ""
 "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr ""
-"Habilita el filtratge de les IP de servidors especificades al fitxer "
-"~/.aMule/ipfilter.dat."
+"Habilita el filtratge de les IP de servidors especificades al fitxer ~/"
+".aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp:2407
 msgid "Reload List"
@@ -7382,8 +7381,7 @@ msgstr "S'està processant el fitxer número %u: %s"
 
 #: src/utils/aLinkCreator/src/alcc.cpp:63
 msgid "You have asked for part hashes (Only used for files > 9.5 MB)"
-msgstr ""
-"Heu preguntat per els resums de les parts (Només per a fitxers > 9.5MB)"
+msgstr "Heu preguntat per els resums de les parts (Només per a fitxers > 9.5MB)"
 
 #: src/utils/aLinkCreator/src/alcc.cpp:80
 #, fuzzy, c-format
@@ -7949,8 +7947,7 @@ msgstr ""
 
 #: src/webserver/src/WebInterface.cpp:291
 msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr ""
-"Directori del fitxer de configuració de l'aMule. NO L'USEU DIRECTAMENT!"
+msgstr "Directori del fitxer de configuració de l'aMule. NO L'USEU DIRECTAMENT!"
 
 #: src/webserver/src/WebInterface.cpp:299
 msgid "Disable PHP interpreter (deprecated)"

@@ -5,15 +5,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-06-07 14:45+0200\n"
-"PO-Revision-Date: 2026-06-07 19:35+0300\n"
-"Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
-"Language-Team: \n"
+"PO-Revision-Date: 2026-06-10 11:20+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Turkish <https://hosted.weblate.org/projects/amule/"
+"application-man-pages/tr/>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.9\n"
+"X-Generator: Weblate 2026.6\n"
 
 #. type: TH
 #: amule.1.in:1
@@ -117,8 +118,8 @@ msgid ""
 msgstr ""
 "Uygulamanın geometrisini düzenler. I<E<lt>geomE<gt>> standart X11 "
 "uygulamaları ile aynı biçimi kullanır:\t[B<=>][I<E<lt>genişlikE<gt>>{B<xX>}"
-"I<E<lt>yükseklikE<gt>>][{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}"
-"I<E<lt>yoffsetE<gt>>]"
+"I<E<lt>yükseklikE<gt>>][{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>"
+"yoffsetE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in:35 amuled.1.in:43 amulegui.1.in:36
@@ -224,8 +225,7 @@ msgstr ""
 #: amule.1.in:72 amulecmd.1.in:84 amuled.1.in:80 ed2k.1.in:50
 msgid ""
 "a server link (ed2k://|server|...), it will be added to the server list;"
-msgstr ""
-"bir sunucu bağlantısı (ed2k://|server|...) ki sunucu listesine eklenir;"
+msgstr "bir sunucu bağlantısı (ed2k://|server|...) ki sunucu listesine eklenir;"
 
 #. type: Plain text
 #: amule.1.in:74 amuled.1.in:82 ed2k.1.in:52
@@ -261,8 +261,8 @@ msgid ""
 "considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr ""
 "I<E<lt>yolE<gt>> değeri alan  tüm seçenekler için eğer I<yol> hiçbir dizin "
-"içermiyorsa (yani sadece bir dosya ismiyse) aMule yapılandırma dizini "
-"(I<~/.aMule>) varsayılır."
+"içermiyorsa (yani sadece bir dosya ismiyse) aMule yapılandırma dizini (I<~/"
+".aMule>) varsayılır."
 
 #. type: SH
 #: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:175
@@ -391,8 +391,8 @@ msgid ""
 "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> "
 "I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
 msgstr ""
-"[B<-h> I<E<lt>sunucuE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> "
-"I<E<lt>şifreE<gt>>] [B<-f> I<E<lt>yolE<gt>>]"
+"[B<-h> I<E<lt>sunucuE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> I<E<lt>"
+"şifreE<gt>>] [B<-f> I<E<lt>yolE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in:17
@@ -1376,9 +1376,9 @@ msgid ""
 msgstr ""
 "B<amuleweb> bilgileri çeşitli temalarda görüntüleyebilir. Bu temalara şablon "
 "adı verilir ve amuleweb'in belli bir şablonu yüklemesini B<-t> komut satırı "
-"seçeneği ile sağlayabilirsiniz. Şablonlar iki konumda aranır: önce "
-"I<~/.aMule/webserver/> konumunda, sonra da, kurulum --prefix=/usr ile "
-"yapıldıysa I</usr/share/amule/webserver/> konumunda."
+"seçeneği ile sağlayabilirsiniz. Şablonlar iki konumda aranır: önce I<~/"
+".aMule/webserver/> konumunda, sonra da, kurulum --prefix=/usr ile yapıldıysa "
+"I</usr/share/amule/webserver/> konumunda."
 
 #. type: Plain text
 #: amuleweb.1.in:175
@@ -1461,8 +1461,8 @@ msgid ""
 "Sends the given I<E<lt>eD2k-linkE<gt>> to aMule, i.e. writes it to the file "
 "~/.aMule/ED2KLinks, which will be checked by aMule every second for links."
 msgstr ""
-"Herhangi bir I<E<lt>eD2k-bağlantısınıE<gt>> aMule'e gönderir, yani onu "
-"~/.aMule/ED2KLinks dosyasına yazar ki bu dosya aMule tarafından her saniye "
+"Herhangi bir I<E<lt>eD2k-bağlantısınıE<gt>> aMule'e gönderir, yani onu ~/"
+".aMule/ED2KLinks dosyasına yazar ki bu dosya aMule tarafından her saniye "
 "bağlantılar için sorgulanır."
 
 #. type: TP
@@ -1518,9 +1518,9 @@ msgid ""
 msgstr ""
 "B<Parametrelerin giriş sırası önemlidir.> Birden fazla bağlantı "
 "girebilirsiniz ve her bağlantının kendine özel parametreleri olabilir. "
-"Örneğin B<ed2k E<lt>bağlantı1E<gt> -t2 E<lt>bağlantı2E<gt>> "
-"I<E<lt>bağlantı1E<gt>> dosyasını standart kategoriye ve "
-"I<E<lt>bağlantı2E<gt>> dosyasını ikinci kategoriye indirecektir."
+"Örneğin B<ed2k E<lt>bağlantı1E<gt> -t2 E<lt>bağlantı2E<gt>> I<E<lt>"
+"bağlantı1E<gt>> dosyasını standart kategoriye ve I<E<lt>bağlantı2E<gt>> "
+"dosyasını ikinci kategoriye indirecektir."
 
 #. type: Plain text
 #: ed2k.1.in:63

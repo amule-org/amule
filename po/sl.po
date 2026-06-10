@@ -12,16 +12,17 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2026-05-30 13:21+0300\n"
-"Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
-"Language-Team: Slovenian\n"
+"PO-Revision-Date: 2026-06-10 11:08+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Slovenian <https://hosted.weblate.org/projects/amule/amule-"
+"application/sl/>\n"
 "Language: sl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=4; plural=(n%100==1 ? 1 : n%100==2 ? 2 : n%100==3 || "
 "n%100==4 ? 3 : 0);\n"
-"X-Generator: Poedit 3.9\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -300,8 +301,7 @@ msgstr "To je testna različica, posodobljena dnevno in\n"
 
 #: src/amule.cpp:1253
 msgid "we give no warranty it won't break anything, burn your house,\n"
-msgstr ""
-"ne dajemo zagotovila, da ne bo ničesar poškodovala, zažgala vaše hiše\n"
+msgstr "ne dajemo zagotovila, da ne bo ničesar poškodovala, zažgala vaše hiše\n"
 
 #: src/amule.cpp:1254
 msgid "or kill your dog. But it *should* be safe to use anyway.\n"
@@ -604,13 +604,11 @@ msgstr "Kademlia: usmerjanje med enakovrednimi, ki temelji na metriki XOR.\n"
 
 #: src/amuleDlg.cpp:533
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
-msgstr ""
-" Avtorske pravice 2002–2011 Petar Maymounkov ( petar@maymounkov.org )\n"
+msgstr " Avtorske pravice 2002–2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -979,14 +977,11 @@ msgstr[3] ""
 msgid "Filestats for all sessions: Accepted %d of %d request, %s transferred\n"
 msgid_plural ""
 "Filestats for all sessions: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] ""
-"Statistika datotek vseh sej: sprejetih %d od %d zahtev, %s prenesenih\n"
+msgstr[0] "Statistika datotek vseh sej: sprejetih %d od %d zahtev, %s prenesenih\n"
 msgstr[1] ""
 "Statistika datotek vseh sej: Sprejetih %d od %d zahteve, %s prenesenih\n"
-msgstr[2] ""
-"Statistika datotek vseh sej: Sprejetih %d od %d zahtev, %s prenesenih\n"
-msgstr[3] ""
-"Statistika datotek vseh sej: Sprejetih %d od %d zahtev, %s prenesenih\n"
+msgstr[2] "Statistika datotek vseh sej: Sprejetih %d od %d zahtev, %s prenesenih\n"
+msgstr[3] "Statistika datotek vseh sej: Sprejetih %d od %d zahtev, %s prenesenih\n"
 
 #: src/BaseClient.cpp:2024
 msgid "Requested unknown file"
@@ -3301,8 +3296,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Za film lahko poveste njegovo dolžino, zgodbo, jezik …\\n\\nin če je lažna, "
-"lahko to sporočite drugim uporabnikom."
+"Za film lahko poveste njegovo dolžino, zgodbo, jezik …\\n\\n"
+"in če je lažna, lahko to sporočite drugim uporabnikom."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -5786,14 +5781,10 @@ msgstr "%s (%s:%i) je poln."
 #, c-format
 msgid "Automatic connection to server will retry in %d second"
 msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] ""
-"Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekund"
-msgstr[1] ""
-"Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekundo"
-msgstr[2] ""
-"Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekundi"
-msgstr[3] ""
-"Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekunde"
+msgstr[0] "Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekund"
+msgstr[1] "Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekundo"
+msgstr[2] "Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekundi"
+msgstr[3] "Samodejen poskus povezovanja na strežnik se bo ponovil čez %d sekunde"
 
 #: src/ServerConnect.cpp:412
 msgid "Connection lost"
@@ -7192,8 +7183,7 @@ msgstr "Nastavi prednost prejemanja."
 
 #: src/TextClient.cpp:1094
 msgid "Set priority of a download to Low, Normal, High or Auto.\n"
-msgstr ""
-"Nastavi prednost prejemanja na nizko, običajno, visoko ali samodejno.\n"
+msgstr "Nastavi prednost prejemanja na nizko, običajno, visoko ali samodejno.\n"
 
 #: src/TextClient.cpp:1095
 msgid "Set priority to low."
@@ -7270,8 +7260,7 @@ msgstr "Pretvarjanje starih naborov kod NIRP v »%s« v 64b v »%s«."
 #: src/ThreadTasks.cpp:565
 #, c-format
 msgid "WARNING: The filename '%s' is invalid and has been renamed to '%s'."
-msgstr ""
-"OPOZORILO: ime datoteke »%s« ni veljavno in je bilo spremenjeno v »%s«."
+msgstr "OPOZORILO: ime datoteke »%s« ni veljavno in je bilo spremenjeno v »%s«."
 
 #: src/ThreadTasks.cpp:577
 #, c-format

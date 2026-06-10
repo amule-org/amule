@@ -16,15 +16,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2026-06-07 10:28-0300\n"
-"Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
-"Language-Team: Português (Brasileiro) <pt@li.org>\n"
+"PO-Revision-Date: 2026-06-10 11:12+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
+"amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 3.9\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 2026.6\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AddFriend.cpp:45
@@ -272,8 +273,8 @@ msgid ""
 msgstr ""
 "Você pediu para rodar o servidor web na início, mas o binário do amuleweb "
 "não pode ser rodado. Por favor instale o pacote contendo o servidro web do "
-"aMule, ou compile o aMule a partir do código fonte usando "
-"-DBUILD_WEBSERVER=YES e instale-o."
+"aMule, ou compile o aMule a partir do código fonte usando -"
+"DBUILD_WEBSERVER=YES e instale-o."
 
 #: src/amule.cpp:948
 #, c-format
@@ -427,8 +428,7 @@ msgstr ""
 #: src/amule.cpp:1996
 #, c-format
 msgid "WARNING: Your aMuled version is outdated: %i.%i.%i < %li.%li.%li"
-msgstr ""
-"CUIDADO: Sua versão do aMuled esta ultrapassada: %i.%i.%i < %li.%li.%li"
+msgstr "CUIDADO: Sua versão do aMuled esta ultrapassada: %i.%i.%i < %li.%li.%li"
 
 #: src/amule.cpp:2000
 msgid "Your copy of aMule is up to date."
@@ -628,13 +628,12 @@ msgstr "Kademlia: roteamento peer-to-peer baseado em métrica XOR.\n"
 #: src/amuleDlg.cpp:533
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 msgstr ""
-" Direitos autorais reservados (c) 2002-2011 Petar Maymounkov "
-"( petar@maymounkov.org )\n"
+" Direitos autorais reservados (c) 2002-2011 Petar Maymounkov ( "
+"petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -996,8 +995,7 @@ msgid "Filestats for this session: Accepted %d of %d request, %s transferred\n"
 msgid_plural ""
 "Filestats for this session: Accepted %d of %d requests, %s transferred\n"
 msgstr[0] "Estatísticas dessa sessão: Aceito %d de %d pedido, %s transferido\n"
-msgstr[1] ""
-"Estatísticas dessa sessão: Aceitos %d de %d pedidos, %s transferidos\n"
+msgstr[1] "Estatísticas dessa sessão: Aceitos %d de %d pedidos, %s transferidos\n"
 
 #: src/BaseClient.cpp:2021
 #, c-format
@@ -2233,13 +2231,11 @@ msgstr "%.2f kB/s"
 
 #: src/FriendList.cpp:123
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
-msgstr ""
-"Falha em abrir lista de amigos do arquivo 'emfriends.met' para leitura!"
+msgstr "Falha em abrir lista de amigos do arquivo 'emfriends.met' para leitura!"
 
 #: src/FriendList.cpp:149
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
-msgstr ""
-"Falha em abrir lista de amigos do arquivo 'emfriends.met' para escrita!"
+msgstr "Falha em abrir lista de amigos do arquivo 'emfriends.met' para escrita!"
 
 #: src/FriendList.cpp:266
 msgid "CRITICAL - no client on StartChatSession"
@@ -3294,8 +3290,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Para um filme você pode dizer seu tamanho, sua história, idioma ...\\n\\ne "
-"se ele é falso, você pode dizer isso a outros usuários do aMule."
+"Para um filme você pode dizer seu tamanho, sua história, idioma ...\\n\\n"
+"e se ele é falso, você pode dizer isso a outros usuários do aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -4919,8 +4915,8 @@ msgstr "Erro de IO enquanto salvava partfile: "
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
 msgstr ""
-"Escritos 0/desconhecidos bytes para '%s' -- preservando os "
-"arquivos .part.met. existentes."
+"Escritos 0/desconhecidos bytes para '%s' -- preservando os arquivos "
+".part.met. existentes."
 
 #: src/PartFile.cpp:1110
 #, c-format
@@ -5029,8 +5025,7 @@ msgstr ""
 #: src/PartFile.cpp:3223
 #, c-format
 msgid "WARNING: Not enough free disk-space! Pausing file: %s"
-msgstr ""
-"AVISO: Não há espaço em disco suficiente! Colocando arquivo %s em pausa"
+msgstr "AVISO: Não há espaço em disco suficiente! Colocando arquivo %s em pausa"
 
 #: src/PartFile.cpp:3567
 #, c-format
@@ -8068,8 +8063,8 @@ msgid ""
 "unchecked to keep your settings."
 msgstr ""
 "Apaga permanentemente %APPDATA%\\aMule para o usuário atual (aMule.conf, "
-"lista de servidores eD2k, nós Kad, partfiles, Filtros de IP, lista de "
-"amigos). Deixe não-marcado para manter suas configurações."
+"lista de servidores eD2k, nós Kad, partfiles, Filtros de IP, lista de amigos)"
+". Deixe não-marcado para manter suas configurações."
 
 #: packaging/windows/installer_strings.c:53
 msgid ""

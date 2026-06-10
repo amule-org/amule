@@ -13,17 +13,17 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2020-03-04 14:52+0100\n"
-"Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
-"Language-Team: translationproject.org/team/pl.html <translation-team-"
-"pl@lists.sourceforge.net>\n"
+"PO-Revision-Date: 2026-06-10 11:25+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Polish <https://hosted.weblate.org/projects/amule/amule-"
+"application/pl/>\n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Poedit 2.3\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -313,8 +313,7 @@ msgstr ""
 
 #: src/amule.cpp:1259
 msgid "More information, support and new releases can found at our homepage,\n"
-msgstr ""
-"Więcej informacji, pomoc i nowe wydania znajdziesz na naszej stronie \n"
+msgstr "Więcej informacji, pomoc i nowe wydania znajdziesz na naszej stronie \n"
 
 #: src/amule.cpp:1260
 msgid ""
@@ -608,8 +607,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1863,8 +1861,7 @@ msgstr "Próba nieautoryzowanego dostępu z %s. Połączenie zakończone."
 #: src/ExternalConn.cpp:1171
 #, c-format
 msgid "Remote PartFile command failed: FileHash not found: %s"
-msgstr ""
-"Zdalna komenda pliku części nieudana: Skrót dla pliku nieznaleziony: %s"
+msgstr "Zdalna komenda pliku części nieudana: Skrót dla pliku nieznaleziony: %s"
 
 #: src/ExternalConn.cpp:1173
 #, c-format
@@ -2049,8 +2046,8 @@ msgid ""
 msgstr ""
 "\n"
 "Wszystkie komendy są niewrażliwe na wielkość znaków.\n"
-"Wpisz '%s <komenda>', aby uzyskać szczegółowe informacje na temat "
-"<komenda>.\n"
+"Wpisz '%s <komenda>', aby uzyskać szczegółowe informacje na temat <komenda>"
+".\n"
 
 #: src/ExternalConnector.cpp:291 src/ExternalConnector.cpp:292
 msgid "Exits from the application."
@@ -3289,8 +3286,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Dla filmu można opisać jego długość, historię, język ...\\n\\ni jeśli jest "
-"on fałszywy, można powiedzieć to innym użytkownikom aMule."
+"Dla filmu można opisać jego długość, historię, język ...\\n\\n"
+"i jeśli jest on fałszywy, można powiedzieć to innym użytkownikom aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -3323,8 +3320,8 @@ msgstr "Znakomity"
 #: src/muuli_wdr.cpp:726
 msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr ""
-"Wybierz ocenę pliku lub skonsultuj z użytkownikiem jeżeli jest "
-"nieprawidłowy ..."
+"Wybierz ocenę pliku lub skonsultuj z użytkownikiem jeżeli jest nieprawidłowy "
+"..."
 
 #: src/muuli_wdr.cpp:763
 msgid "Refresh"
@@ -3509,8 +3506,7 @@ msgstr "https://amule-org.github.io - Mule na wielu platformach"
 
 #: src/muuli_wdr.cpp:1202
 msgid "This is the name that other users will see when connecting to you."
-msgstr ""
-"To jest nazwa jaką inni użytkownicy będą widzieli łącząc się do Ciebie."
+msgstr "To jest nazwa jaką inni użytkownicy będą widzieli łącząc się do Ciebie."
 
 #: src/muuli_wdr.cpp:1208
 msgid "Language: "
@@ -3629,8 +3625,7 @@ msgstr "Otwórz w nowej karcie jeśli to możliwe"
 
 #: src/muuli_wdr.cpp:1281
 msgid "Open the web page in a new tab instead of in a new window when possible"
-msgstr ""
-"Otwórz stronę WWW w nowej karcie zamiast w nowym oknie jeśli to możliwe"
+msgstr "Otwórz stronę WWW w nowej karcie zamiast w nowym oknie jeśli to możliwe"
 
 #: src/muuli_wdr.cpp:1285
 msgid "Video Player"
@@ -4896,8 +4891,7 @@ msgstr ""
 
 #: src/PartFile.cpp:697
 msgid "Recovered all available file info :D - Trying to use it..."
-msgstr ""
-"Odzyskano wszystkie możliwe informacje o pliku :D - Próbuję ich użyć..."
+msgstr "Odzyskano wszystkie możliwe informacje o pliku :D - Próbuję ich użyć..."
 
 #: src/PartFile.cpp:699
 msgid "Unable to recover file info :("
@@ -4962,11 +4956,11 @@ msgstr[0] ""
 "Znaleziono uszkodzoną część (%d) w %d pliku części %s - FileResultHash |%s| "
 "FileHash |%s|"
 msgstr[1] ""
-"Znaleziono uszkodzoną część (%d) w %d plikach części %s - FileResultHash |"
-"%s| FileHash |%s|"
+"Znaleziono uszkodzoną część (%d) w %d plikach części %s - FileResultHash "
+"|%s| FileHash |%s|"
 msgstr[2] ""
-"Znaleziono uszkodzoną część (%d) w %d plikach części %s - FileResultHash |"
-"%s| FileHash |%s|"
+"Znaleziono uszkodzoną część (%d) w %d plikach części %s - FileResultHash "
+"|%s| FileHash |%s|"
 
 #: src/PartFile.cpp:1294
 #, c-format
@@ -7253,8 +7247,7 @@ msgstr "Konwertuję stare zestawy skrótów AICH w '%s' do 64b w '%s'."
 #: src/ThreadTasks.cpp:565
 #, c-format
 msgid "WARNING: The filename '%s' is invalid and has been renamed to '%s'."
-msgstr ""
-"UWAGA: Nazwa pliku '%s' jest nieprawidłowa i została zmieniona na '%s'."
+msgstr "UWAGA: Nazwa pliku '%s' jest nieprawidłowa i została zmieniona na '%s'."
 
 #: src/ThreadTasks.cpp:577
 #, c-format
@@ -7627,8 +7620,7 @@ msgstr "Maksymalna szybkość DL od czasu uruchomienia wxCas"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:119
 msgid "Absolute Maximum DL rate during wxCas previous runs"
-msgstr ""
-"Absolutne maksimum szybkości DL podczas poprzedniego uruchomienia wxCas"
+msgstr "Absolutne maksimum szybkości DL podczas poprzedniego uruchomienia wxCas"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:142
 msgid "System"

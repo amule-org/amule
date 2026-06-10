@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2026-06-10 09:37+0000\n"
+"PO-Revision-Date: 2026-06-10 11:18+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-"
 "application/es/>\n"
@@ -195,7 +195,7 @@ msgstr "Matando la instancia de amuleweb con pid '%ld'... "
 
 #: src/amule.cpp:275 src/ClientRef.cpp:194 src/ServerListCtrl.cpp:95
 msgid "Failed"
-msgstr "Errores"
+msgstr "Falló"
 
 #: src/amule.cpp:281
 msgid "aMule OnExit: Terminating core."
@@ -214,8 +214,8 @@ msgid ""
 "Your locale has been changed to System Default due to a configuration "
 "change. Sorry."
 msgstr ""
-"Su configuración regional ha cambiado a la predefinida del sistema debido a "
-"un cambio en la configuración. Perdone."
+"Su configuración regional se ha cambiado a la predefinida del sistema debido "
+"a un cambio en la configuración. Disculpe."
 
 #: src/amule.cpp:574 src/amule.cpp:1264 src/CatDialog.cpp:141
 #: src/CatDialog.cpp:151 src/CatDialog.cpp:163 src/ServerList.cpp:355
@@ -273,8 +273,8 @@ msgid ""
 msgstr ""
 "Ha solicitado ejecutar el servidor web al inicio pero no se puede ejecutar "
 "el binario amuleweb. Por favor, instale el paquete que contiene el servidor "
-"web de aMule, o compile aMule desde el código fuente con -DBUILD_WEBSERVER="
-"YES e instálelo."
+"web de aMule, o compile aMule desde el código fuente con -"
+"DBUILD_WEBSERVER=YES e instálelo."
 
 #: src/amule.cpp:948
 #, c-format
@@ -284,7 +284,7 @@ msgstr "No se pueden asociar los puertos con la dirección especificada: %s"
 #: src/amule.cpp:972
 #, c-format
 msgid "Port %u is not available. You will be LOWID\n"
-msgstr "El puerto %u no está disponible. Tendrá Id Baja\n"
+msgstr "El puerto %u no está disponible. Tendrás Id Baja\n"
 
 #: src/amule.cpp:978
 #, c-format
@@ -297,31 +297,31 @@ msgid ""
 msgstr ""
 "¡El puerto %u no está disponible!\n"
 "\n"
-"Eso significa que tendrá Id Baja.\n"
+"Eso significa que tendrás Id Baja.\n"
 "\n"
-"Compruebe la red y asegúrese de que el puerto está abierto para salida y "
+"Comprueba la red y asegúrese de que el puerto está abierto para salida y "
 "entrada."
 
 #: src/amule.cpp:1061
 msgid "Failed to create OnlineSig File"
-msgstr "Error al crear el archivo de firma Online"
+msgstr "Error al crear el archivo de firma online"
 
 #: src/amule.cpp:1069
 msgid "Failed to create aMule OnlineSig File"
-msgstr "Error al crear el archivo de firma Online aMule"
+msgstr "Error al crear el archivo de firma online de aMule"
 
 #: src/amule.cpp:1241
 msgid ""
 "The selected locale seems not to be installed on your box. (Note: I'll try "
 "to set it anyway)"
 msgstr ""
-"El idioma seleccionado no parece estar instalado (nota: intentaré ponerlo de "
-"todos modos)"
+"El idioma seleccionado no parece estar instalado en tu sistema. (Nota: "
+"intentaré configurarlo de todos modos)"
 
 #: src/amule.cpp:1250
 #, c-format
 msgid "This is the first time you run aMule %s"
-msgstr "Es la primera vez que inicia aMule %s"
+msgstr "Es la primera vez que inicias aMule %s"
 
 #: src/amule.cpp:1252
 msgid "This version is a testing version, updated daily, and\n"
@@ -346,8 +346,8 @@ msgid ""
 "at https://amule-org.github.io, or in our IRC channel #aMule at irc.libera."
 "chat.\n"
 msgstr ""
-"en https://amule-org.github.io, o en nuestro canal de IRC #aMule en irc."
-"libera.chat.\n"
+"en https://amule-org.github.io, o en nuestro canal de IRC #aMule en "
+"irc.libera.chat.\n"
 
 #: src/amule.cpp:1262
 msgid ""
@@ -412,7 +412,7 @@ msgstr "Archivo de comprobación de versión dañado"
 
 #: src/amule.cpp:1991
 msgid "You are using an outdated version of aMule!"
-msgstr "¡Está usando una versión obsoleta de aMule!"
+msgstr "¡Estás usando una versión desactualizada de aMule!"
 
 #: src/amule.cpp:1993
 #, c-format
@@ -430,7 +430,7 @@ msgstr ""
 #: src/amule.cpp:1996
 #, c-format
 msgid "WARNING: Your aMuled version is outdated: %i.%i.%i < %li.%li.%li"
-msgstr "AVISO: su versión de aMuled está obsoleta: %i.%i.%i < %li.%li.%li"
+msgstr "AVISO: su versión de aMuled está desactualizada: %i.%i.%i < %li.%li.%li"
 
 #: src/amule.cpp:2000
 msgid "Your copy of aMule is up to date."
@@ -506,7 +506,7 @@ msgstr ""
 
 #: src/amule.cpp:2295
 msgid "Kad network disabled on preferences, not connecting."
-msgstr "Red Kad deshabilitada en las preferencias, no se hace la conexión."
+msgstr "Red Kad deshabilitada en las preferencias, no se conecta."
 
 #: src/amuled.cpp:142
 msgid ""
@@ -515,10 +515,10 @@ msgid ""
 "the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in "
 "the file ~/.aMule/amule.conf"
 msgstr ""
-"ERROR: el servicio de aMule no se puede usar cuando están desactivadas las "
-"conexiones externas. Para activarlas, use o bien un aMule normal, inicie "
-"amuled con la opción --ec-config, o bien, establezca "
-"\"AcceptExternalConnections\" a 1, en el archivo ~/.aMule/amule.conf"
+"ERROR: el demonio de aMule no se puede usar cuando están desactivadas las "
+"conexiones externas. Para activarlas, use un aMule normal, inicie amuled con "
+"la opción --ec-config, o bien, establezca \"AcceptExternalConnections\" a 1, "
+"en el archivo ~/.aMule/amule.conf"
 
 #: src/amuled.cpp:145
 msgid ""
@@ -528,10 +528,10 @@ msgid ""
 "appropriate value. Execute amuled with the flag --ec-config to set the "
 "password. More information can be found at https://amule-org.github.io/docs"
 msgstr ""
-"ERROR: se requiere una contraseña para usar conexiones externas, y el "
-"servicio aMule no se puede usar sin conexiones externas. Para iniciar el "
-"servicio aMule, debe especificar en el campo \"ECPassword\" del archivo ~/."
-"aMule/amule.conf el valor apropiado. Ejecute amuled con el parámetro --ec-"
+"ERROR: se requiere una contraseña válida para usar conexiones externas, y el "
+"demonio de aMule no se puede usar sin conexiones externas. Para iniciar el "
+"demonio de aMule, debe especificar en el campo \"ECPassword\" del archivo ~/"
+".aMule/amule.conf el valor apropiado. Ejecute amuled con el parámetro --ec-"
 "config para especificar la contraseña. Se puede encontrar más información en "
 "https://amule-org.github.io/docs"
 
@@ -634,8 +634,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov (petar@maymounkov.org)\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1088,8 +1087,8 @@ msgstr "¡Debe especificar una ruta para la categoría!"
 msgid ""
 "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr ""
-"Error al crear el directorio entrante para la categoría. Por favor, "
-"¡especifique una ruta correcta!"
+"Error al crear el directorio entrante para la categoría. Por favor, ¡"
+"especifique una ruta correcta!"
 
 #: src/ChatSelector.cpp:129
 #, c-format
@@ -1795,8 +1794,7 @@ msgstr "Protocolo desconocido del enlace: %s"
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] ""
-"No se pudo añadir %u enlace (consulte el registro para más detalles)"
+msgstr[0] "No se pudo añadir %u enlace (consulte el registro para más detalles)"
 msgstr[1] ""
 "No se pudieron añadir %u enlaces (consulte el registro para más detalles)"
 
@@ -2247,8 +2245,8 @@ msgid ""
 "server is reachable over a VPN tunnel that resolves to a LAN IP)."
 msgstr ""
 "Forzar compresión ZLIB aunque se conecte a una IP local/LAN (útil cuando se "
-"conecta al servidor a través de un túnel VPN que se resuelve a una IP de "
-"LAN)."
+"conecta al servidor a través de un túnel VPN que se resuelve a una IP de LAN)"
+"."
 
 #: src/FileDetailDialog.cpp:76
 msgid "File Details"
@@ -2597,8 +2595,8 @@ msgstr[1] "Leídos %u contactos Kad"
 #: src/kademlia/routing/RoutingZone.cpp:287
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
 msgstr ""
-"Contactos no encontrados; por favor, inicialice o descargue un archivo nodes."
-"dat."
+"Contactos no encontrados; por favor, inicialice o descargue un archivo "
+"nodes.dat."
 
 #: src/kademlia/routing/RoutingZone.cpp:305
 #, c-format
@@ -3338,8 +3336,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Para una película, puede poner su duración, historia, idioma...\\n\\ny si es "
-"una falsificación puede informar a los demás usuarios de aMule."
+"Para una película, puede poner su duración, historia, idioma...\\n\\n"
+"y si es una falsificación puede informar a los demás usuarios de aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -3728,8 +3726,7 @@ msgstr "Puerto UDP adicional (Kad / búsqueda global) "
 
 #: src/muuli_wdr.cpp:1365
 msgid "This UDP port is used for extended eD2k requests and Kad network"
-msgstr ""
-"Este puerto UDP se usa para peticiones adicionales de eD2k y la red Kad"
+msgstr "Este puerto UDP se usa para peticiones adicionales de eD2k y la red Kad"
 
 #: src/muuli_wdr.cpp:1368
 msgid "Enable UPnP for router port forwarding"
@@ -4256,8 +4253,7 @@ msgstr "Pulse este botón para borrar el registro."
 
 #: src/muuli_wdr.cpp:2136
 msgid "Click on this button to update the servers list from URL ..."
-msgstr ""
-"Pulse este botón para actualizar la lista de servidores desde un URL..."
+msgstr "Pulse este botón para actualizar la lista de servidores desde un URL..."
 
 #: src/muuli_wdr.cpp:2140
 msgid "Server list"
@@ -4448,8 +4444,8 @@ msgstr "Filtrar los servidores"
 msgid ""
 "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr ""
-"Habilitar el filtrado de las IP de servidores definidas en el archivo ~/."
-"aMule/ipfilter.dat"
+"Habilitar el filtrado de las IP de servidores definidas en el archivo ~/"
+".aMule/ipfilter.dat"
 
 #: src/muuli_wdr.cpp:2407
 msgid "Reload List"
@@ -5002,8 +4998,7 @@ msgstr "Error al guardar el archivo part.met.seeds para %s"
 #, c-format
 msgid "Saved %i source seed for partfile: %s (%s)"
 msgid_plural "Saved %i source seeds for partfile: %s (%s)"
-msgstr[0] ""
-"Se ha guardado %i semilla de fuentes para el archivo de partes: %s (%s)"
+msgstr[0] "Se ha guardado %i semilla de fuentes para el archivo de partes: %s (%s)"
 msgstr[1] ""
 "Se han guardado %i semillas de fuentes para el archivo de partes: %s (%s)"
 
@@ -5939,8 +5934,8 @@ msgstr "Servidor no añadido: la IP de [%s:%d] está filtrada o no es válida."
 #, c-format
 msgid "Server not added: Server with matching IP:Port [%s:%d] found in list."
 msgstr ""
-"Servidor no añadido: se ha encontrado un servidor con un par IP:Puerto [%s:"
-"%d] que coincide en la lista."
+"Servidor no añadido: se ha encontrado un servidor con un par IP:Puerto "
+"[%s:%d] que coincide en la lista."
 
 #: src/ServerList.cpp:259
 #, c-format
@@ -6261,8 +6256,7 @@ msgstr "Estado de la conexión:"
 #: src/ServerWnd.cpp:231
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
-msgstr ""
-"Tras cortafuegos - abra el puerto TCP %d en su \"router\" o cortafuegos"
+msgstr "Tras cortafuegos - abra el puerto TCP %d en su \"router\" o cortafuegos"
 
 #: src/ServerWnd.cpp:233
 msgid "UDP Connection State:"
@@ -6271,8 +6265,7 @@ msgstr "Estado de la conexión UDP:"
 #: src/ServerWnd.cpp:236
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
-msgstr ""
-"Tras cortafuegos - abra el puerto UDP %d en su \"router\" o cortafuegos"
+msgstr "Tras cortafuegos - abra el puerto UDP %d en su \"router\" o cortafuegos"
 
 #: src/ServerWnd.cpp:240
 msgid "Firewalled state: "
@@ -6737,8 +6730,7 @@ msgstr "Nunca"
 #: src/TerminationProcess.cpp:47
 #, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
-msgstr ""
-"El comando '%s' con pid '%d' ha terminado con el código de salida '%d'."
+msgstr "El comando '%s' con pid '%d' ha terminado con el código de salida '%d'."
 
 #: src/TextClient.cpp:207
 msgid "Execute <str> and exit."
@@ -7943,8 +7935,7 @@ msgstr "Generar un archivo de estadísticas con cada evento de actualización"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp:128
 msgid "Enter here the directory where you want to generate the statistic image"
-msgstr ""
-"Introduzca el directorio donde quiere generar la imagen de estadísticas"
+msgstr "Introduzca el directorio donde quiere generar la imagen de estadísticas"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp:150
 msgid "Upload periodically your stat image to FTP server"
@@ -8200,8 +8191,9 @@ msgid ""
 "aMule daemon (amuled.exe) appears to be running from $INSTDIR.\r\n"
 "Please stop it and try again."
 msgstr ""
-"El demonio de aMule (amuled.exe) parece estar en ejecución desde $INSTDIR."
-"\r\nPor favor, deténgalo e inténtelo de nuevo."
+"El demonio de aMule (amuled.exe) parece estar en ejecución desde "
+"$INSTDIR.\r\n"
+"Por favor, deténgalo e inténtelo de nuevo."
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."

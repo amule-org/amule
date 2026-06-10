@@ -16,15 +16,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2026-06-07 17:15+0300\n"
-"Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
-"Language-Team: Français\n"
+"PO-Revision-Date: 2026-06-10 11:28+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/amule/amule-"
+"application/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 3.9\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -272,8 +273,8 @@ msgid ""
 msgstr ""
 "Vous avez demandé à exécuter le serveur web au démarrage, mais le binaire "
 "amuleweb ne peut être exécuté. Veuillez installer le paquet contenant le "
-"serveur web aMule, ou compilez aMule depuis le code source avec "
-"-DBUILD_WEBSERVER=YES et installez-le."
+"serveur web aMule, ou compilez aMule depuis le code source avec -"
+"DBUILD_WEBSERVER=YES et installez-le."
 
 #: src/amule.cpp:948
 #, c-format
@@ -314,8 +315,8 @@ msgid ""
 "The selected locale seems not to be installed on your box. (Note: I'll try "
 "to set it anyway)"
 msgstr ""
-"La localisation choisie semble ne pas être installée sur votre machine. "
-"(Note : Je tente de la forcer quand même)"
+"La localisation choisie semble ne pas être installée sur votre machine. (Note"
+" : Je tente de la forcer quand même)"
 
 #: src/amule.cpp:1250
 #, c-format
@@ -638,8 +639,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1298,8 +1298,7 @@ msgstr ""
 #: src/ClientTCPSocket.cpp:944
 #, c-format
 msgid "User %s (%u) sent unwanted sharedfiles-list"
-msgstr ""
-"L'utilisateur %s (%u) a envoyé une liste de fichier partagés non voulue"
+msgstr "L'utilisateur %s (%u) a envoyé une liste de fichier partagés non voulue"
 
 #: src/ClientTCPSocket.cpp:956
 #, c-format
@@ -1818,8 +1817,7 @@ msgstr "Connexion externe fermée."
 
 #: src/ExternalConn.cpp:415
 msgid "External connections disabled due to empty password!"
-msgstr ""
-"Les connexions externes sont désactivées car le mot de passe est vide !"
+msgstr "Les connexions externes sont désactivées car le mot de passe est vide !"
 
 #: src/ExternalConn.cpp:436
 msgid "External connections disabled in config file"
@@ -2092,8 +2090,8 @@ msgid ""
 msgstr ""
 "\n"
 "Toutes les commandes sont insensibles à la casse.\n"
-"Tapez '%s <commande>' pour avoir des informations détaillées sur "
-"<commande>.\n"
+"Tapez '%s <commande>' pour avoir des informations détaillées sur <commande>"
+".\n"
 
 #: src/ExternalConnector.cpp:291 src/ExternalConnector.cpp:292
 msgid "Exits from the application."
@@ -2131,8 +2129,8 @@ msgstr "Erreur de syntaxe !"
 #: src/ExternalConnector.cpp:353
 msgid "Error processing command - should never happen! Report bug, please\n"
 msgstr ""
-"Erreur durant le traitement de la commande - Cela ne devrait jamais "
-"arriver ! Rapportez le bogue, s'il vous plaît\n"
+"Erreur durant le traitement de la commande - Cela ne devrait jamais arriver "
+"! Rapportez le bogue, s'il vous plaît\n"
 
 #: src/ExternalConnector.cpp:356
 msgid "This command should not have any parameters."
@@ -2581,8 +2579,8 @@ msgstr "Kademlia : le mot-clé recherché est trop court"
 #: src/kademlia/kademlia/SearchManager.cpp:167
 msgid "Kademlia: Search keyword is already on search list: "
 msgstr ""
-"Kademlia : le mot-clé de la recherche est toujours dans la liste de "
-"recherche : "
+"Kademlia : le mot-clé de la recherche est toujours dans la liste de recherche"
+" : "
 
 #: src/kademlia/routing/RoutingZone.cpp:171
 msgid ""
@@ -3344,8 +3342,9 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Pour un film vous pouvez indiquer sa durée, l'histoire, la langue…\\n\\net "
-"s'il s'agit d'un faux, vous pouvez prévenir les autres utilisateurs d'aMule."
+"Pour un film vous pouvez indiquer sa durée, l'histoire, la langue…\\n\\n"
+"et s'il s'agit d'un faux, vous pouvez prévenir les autres utilisateurs "
+"d'aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -4078,8 +4077,7 @@ msgstr "Thème à utiliser : "
 
 #: src/muuli_wdr.cpp:1778
 msgid "Show \"Fast eD2k Links Handler\" in every window."
-msgstr ""
-"Afficher le \"Gestionnaire rapide de liens eD2k \" dans chaque fenêtre."
+msgstr "Afficher le \"Gestionnaire rapide de liens eD2k \" dans chaque fenêtre."
 
 #: src/muuli_wdr.cpp:1781
 msgid "Show extended info on categories tabs"
@@ -4266,8 +4264,7 @@ msgstr "Cliquer ici pour effacer le journal."
 
 #: src/muuli_wdr.cpp:2136
 msgid "Click on this button to update the servers list from URL ..."
-msgstr ""
-"Cliquer ici pour mettre à jour la liste des serveurs à partir de l'URL…"
+msgstr "Cliquer ici pour mettre à jour la liste des serveurs à partir de l'URL…"
 
 #: src/muuli_wdr.cpp:2140
 msgid "Server list"
@@ -4446,8 +4443,8 @@ msgstr "Filtrage des clients"
 msgid ""
 "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr ""
-"Activer le filtrage des clients selon les IP contenues dans le fichier "
-"~/.aMule/ipfilter.dat."
+"Activer le filtrage des clients selon les IP contenues dans le fichier ~/"
+".aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp:2401
 msgid "Filter servers"
@@ -4457,8 +4454,8 @@ msgstr "Filtrage des serveurs"
 msgid ""
 "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr ""
-"Active le filtrage des serveurs selon les IP contenues dans le fichier "
-"~/.aMule/ipfilter.dat."
+"Active le filtrage des serveurs selon les IP contenues dans le fichier ~/"
+".aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp:2407
 msgid "Reload List"
@@ -5870,10 +5867,8 @@ msgstr "%s (%s : %i) semble être plein."
 #, c-format
 msgid "Automatic connection to server will retry in %d second"
 msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] ""
-"Nouvelle tentative de connexion automatique au serveur dans %d seconde"
-msgstr[1] ""
-"Nouvelle tentative de connexion automatique au serveur dans %d secondes"
+msgstr[0] "Nouvelle tentative de connexion automatique au serveur dans %d seconde"
+msgstr[1] "Nouvelle tentative de connexion automatique au serveur dans %d secondes"
 
 #: src/ServerConnect.cpp:412
 msgid "Connection lost"
@@ -7226,8 +7221,8 @@ msgstr ""
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
-"Exemple : 'search kad fichier' exécutera une recherche kad pour "
-"« fichier ».\n"
+"Exemple : 'search kad fichier' exécutera une recherche kad pour « fichier "
+"».\n"
 "\n"
 "Des filtres optionnels peuvent être ajoutés avant, après, ou parmi les\n"
 "mots-clefs de recherche :\n"
@@ -7238,8 +7233,8 @@ msgstr ""
 "G=M*1024\n"
 "    --max-size <N[KMG]>    taille maximale du fichier ; même suffixes\n"
 "Exemple : 'search global linux iso --type Iso --min-size 100M' retourne\n"
-"des résultats pour le type de fichier Iso d'au moins 100 Mio pour « linux "
-"iso ».\n"
+"des résultats pour le type de fichier Iso d'au moins 100 Mio pour « linux iso"
+" ».\n"
 
 #: src/TextClient.cpp:1066
 msgid "Execute a global search."
@@ -8234,8 +8229,8 @@ msgid ""
 "aMule daemon (amuled.exe) appears to be running from $INSTDIR.\r\n"
 "Please stop it and try again."
 msgstr ""
-"Le démon aMule (amuled.exe) semble être en cours d'exécution depuis $INSTDIR."
-"\r\n"
+"Le démon aMule (amuled.exe) semble être en cours d'exécution depuis "
+"$INSTDIR.\r\n"
 "Veuillez le fermer et réessayer."
 
 #: packaging/windows/installer_strings.c:55

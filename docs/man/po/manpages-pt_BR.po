@@ -3,19 +3,20 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule man pages\n"
 "POT-Creation-Date: 2026-06-07 14:45+0200\n"
-"PO-Revision-Date: 2026-06-07 17:22-0300\n"
-"Last-Translator: \n"
-"Language-Team: Marcelo Roberto Jimenez <mroberto@users.sourceforge.net>\n"
+"PO-Revision-Date: 2026-06-10 11:09+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
+"amule/application-man-pages/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.9\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 #. type: TH
 #: amule.1.in:1
@@ -118,8 +119,8 @@ msgid ""
 "[{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>yoffsetE<gt>>]"
 msgstr ""
 "Ajusta a geometria do aplicativo. I<E<lt>geomE<gt>> usa o mesmo formato que "
-"aplicativos X11 padrão:\t[B<=>][I<E<lt>widthE<gt>>{B<xX>}I<E<lt>heightE<gt>>]"
-"[{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>yoffsetE<gt>>]"
+"aplicativos X11 padrão:\t[B<=>][I<E<lt>widthE<gt>>{B<xX>}I<E<lt>heightE<gt>>"
+"][{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>yoffsetE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in:35 amuled.1.in:43 amulegui.1.in:36
@@ -389,8 +390,8 @@ msgid ""
 "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> "
 "I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
 msgstr ""
-"[B<-h> I<E<lt>anfitriãoE<gt>>] [B<-p> I<E<lt>portaE<gt>>] [B<-P> "
-"I<E<lt>senhaE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
+"[B<-h> I<E<lt>anfitriãoE<gt>>] [B<-p> I<E<lt>portaE<gt>>] [B<-P> I<E<lt>"
+"senhaE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in:17
@@ -398,8 +399,8 @@ msgid ""
 "[B<-l> I<E<lt>langE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> "
 "I<E<lt>commandE<gt>>]B< >}"
 msgstr ""
-"[B<-l> I<E<lt>línguaE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> "
-"I<E<lt>comandoE<gt>>]B< >}"
+"[B<-l> I<E<lt>línguaE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>comandoE<gt>>"
+"]B< >}"
 
 #. type: Plain text
 #: amulecmd.1.in:20 amuleweb.1.in:31
@@ -425,8 +426,8 @@ msgid ""
 "Host where aMule is running (default: I<127.0.0.1>).  I<E<lt>hostE<gt>> "
 "might be an IP address or a DNS name"
 msgstr ""
-"Anfitrião onde o aMule está rodando (padrão: I<127.0.0.1>).  "
-"I<E<lt>anfitriãoE<gt>> pode ser um endereço IP ou um nome de DNS"
+"Anfitrião onde o aMule está rodando (padrão: I<127.0.0.1>).  I<E<lt>"
+"anfitriãoE<gt>> pode ser um endereço IP ou um nome de DNS"
 
 #. type: TP
 #: amulecmd.1.in:33 amuleweb.1.in:50
@@ -466,8 +467,8 @@ msgid ""
 "Use the given configuration file.  Default configuration file is I<~/.aMule/"
 "remote.conf>"
 msgstr ""
-"Use o arquivo de configuração dado. O arquivo de configuração padrão é "
-"I<~/.aMule/remote.conf>"
+"Use o arquivo de configuração dado. O arquivo de configuração padrão é I<~/"
+".aMule/remote.conf>"
 
 #. type: Plain text
 #: amulecmd.1.in:46 amuleweb.1.in:63
@@ -579,8 +580,8 @@ msgid ""
 "Cancels the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. "
 "To get the value use B<show>."
 msgstr ""
-"Cancela o download especificado por I<E<lt>hashE<gt>> ou "
-"I<E<lt>numberE<gt>>. Para pegar o valor, use B<show>."
+"Cancela o download especificado por I<E<lt>hashE<gt>> ou I<E<lt>numberE<gt>>"
+". Para pegar o valor, use B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in:93
@@ -940,12 +941,11 @@ msgid ""
 "character set to use and I<modifier> allows the user to select a specific "
 "instance of localization data within a single category."
 msgstr ""
-"O parâmetro I<E<lt>langE<gt>> da opção B<-l> tem a seguinte forma: "
-"I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] onde I<lang> é a "
-"linguagem principal, I<LANG> é a sub-lingua/território, I<encoding> é o "
-"conjunto de caracteres a ser utilizado e I<modifier> permite ao usuário "
-"selecionar uma instância específica dos dados de localização dentro de uma "
-"única categoria."
+"O parâmetro I<E<lt>langE<gt>> da opção B<-l> tem a seguinte forma: I<lang>"
+"[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] onde I<lang> é a linguagem "
+"principal, I<LANG> é a sub-lingua/território, I<encoding> é o conjunto de "
+"caracteres a ser utilizado e I<modifier> permite ao usuário selecionar uma "
+"instância específica dos dados de localização dentro de uma única categoria."
 
 #. type: Plain text
 #: amulecmd.1.in:246 amuleweb.1.in:149
@@ -1011,8 +1011,7 @@ msgstr "ou"
 #. type: Plain text
 #: amulecmd.1.in:276
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr ""
-"B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 #. type: Plain text
 #: amulecmd.1.in:278 amuleweb.1.in:191
@@ -1078,8 +1077,8 @@ msgid ""
 "After fork, create a pid-file in the I<E<lt>pathE<gt>>.  I<E<lt>pathE<gt>> "
 "has to contain the filename."
 msgstr ""
-"Após bifurcar, cria um arquivo pid no caminho I<E<lt>pathE<gt>>.  "
-"I<E<lt>pathE<gt>> precisa conter o nome do arquivo."
+"Após bifurcar, cria um arquivo pid no caminho I<E<lt>pathE<gt>>.  I<E<lt>"
+"pathE<gt>> precisa conter o nome do arquivo."
 
 #. type: Plain text
 #: amuled.1.in:40
@@ -1174,8 +1173,8 @@ msgstr ""
 msgid ""
 "This manpage was rewritten by Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
 msgstr ""
-"Esta página man foi reescrita por Vollstrecker "
-"E<lt>amule@vollstreckernet.deE<gt>"
+"Esta página man foi reescrita por Vollstrecker E<lt>"
+"amule@vollstreckernet.deE<gt>"
 
 #. type: TH
 #: amuleweb.1.in:1
@@ -1426,8 +1425,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:189
 msgid "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr ""
-"B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+msgstr "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 #. type: Plain text
 #: amuleweb.1.in:195
@@ -1596,8 +1594,8 @@ msgid ""
 "Compute the eD2k links of all the input files given in the "
 "I<E<lt>inputfiles_listE<gt>> (There can be one or more files)."
 msgstr ""
-"Calcula os links eD2k de todos os arquivos de entrada dados na "
-"I<E<lt>inputfiles_listE<gt>> (pode haver mais de um arquivo)."
+"Calcula os links eD2k de todos os arquivos de entrada dados na I<E<lt>"
+"inputfiles_listE<gt>> (pode haver mais de um arquivo)."
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:19
@@ -1675,8 +1673,7 @@ msgstr "Sem opção alguma, ele imprime os dados da assinatura online em stdout.
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:37
 msgid "B<cas> was written by Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
-msgstr ""
-"B<cas> foi escrito por Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
+msgstr "B<cas> foi escrito por Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:39

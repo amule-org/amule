@@ -10,16 +10,17 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2017-02-27 00:12+0200\n"
-"Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
-"Language-Team: English <kde-i18n-doc@kde.org>\n"
+"PO-Revision-Date: 2026-06-10 11:10+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Romanian <https://hosted.weblate.org/projects/amule/amule-"
+"application/ro/>\n"
 "Language: ro\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
 "20)) ? 1 : 2;\n"
-"X-Generator: Lokalize 2.0\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -387,8 +388,8 @@ msgstr "Utilizați o versiune învechită de aMule!"
 #, c-format
 msgid "Your aMule version is %i.%i.%i and the latest version is %li.%li.%li"
 msgstr ""
-"Versiunea dumneavoastră de aMule este %i.%i.%i iar ultima versiune este %li."
-"%li.%li"
+"Versiunea dumneavoastră de aMule este %i.%i.%i iar ultima versiune este "
+"%li.%li.%li"
 
 #: src/amule.cpp:1994
 msgid ""
@@ -402,8 +403,8 @@ msgstr ""
 #, c-format
 msgid "WARNING: Your aMuled version is outdated: %i.%i.%i < %li.%li.%li"
 msgstr ""
-"ATENȚIE: Versiunea dumneavoastră aMuled este învechită: %i.%i.%i < %li.%li."
-"%li"
+"ATENȚIE: Versiunea dumneavoastră aMuled este învechită: %i.%i.%i < "
+"%li.%li.%li"
 
 #: src/amule.cpp:2000
 msgid "Your copy of aMule is up to date."
@@ -608,8 +609,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1216,14 +1216,12 @@ msgstr "Utilizatorul %s (%u) solicită lista fișierelor partajate -> Interzis"
 #: src/ClientTCPSocket.cpp:831
 #, c-format
 msgid "User %s (%u) requested your shareddirectories-list -> Accepted"
-msgstr ""
-"Utilizatorul %s (%u) solicită lista directoarelor partajate -> Acceptat"
+msgstr "Utilizatorul %s (%u) solicită lista directoarelor partajate -> Acceptat"
 
 #: src/ClientTCPSocket.cpp:837
 #, c-format
 msgid "User %s (%u) requested your shareddirectories-list -> Denied"
-msgstr ""
-"Utilizatorul %s (%u) solicită lista directoarelor partajate -> Interzis"
+msgstr "Utilizatorul %s (%u) solicită lista directoarelor partajate -> Interzis"
 
 #: src/ClientTCPSocket.cpp:862
 #, c-format
@@ -1261,8 +1259,7 @@ msgstr ""
 #: src/ClientTCPSocket.cpp:939
 #, c-format
 msgid "User %s (%u) finished sending sharedfiles-list"
-msgstr ""
-"Utilizatorul %s (%u) a finalizat trimiterea listei fișierelor partajate"
+msgstr "Utilizatorul %s (%u) a finalizat trimiterea listei fișierelor partajate"
 
 #: src/ClientTCPSocket.cpp:944
 #, c-format
@@ -1803,8 +1800,7 @@ msgstr "EROARE: nu se poate accepta o nouă conexiune externă"
 
 #: src/ExternalConn.cpp:526
 msgid "External connection refused due to empty password in preferences!"
-msgstr ""
-"Conexiunea externă este refuzată datorită lipsei parolei în preferințe!"
+msgstr "Conexiunea externă este refuzată datorită lipsei parolei în preferințe!"
 
 #: src/ExternalConn.cpp:537
 #, c-format
@@ -3305,8 +3301,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Pentru un film puteți spune lungimea, scenariul, limba ...\\n\\niar dacă "
-"este un fals, puteți spune aceasta altor utilizatori de aMule."
+"Pentru un film puteți spune lungimea, scenariul, limba ...\\n\\n"
+"iar dacă este un fals, puteți spune aceasta altor utilizatori de aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -3548,8 +3544,7 @@ msgstr "Verifică la pornire dacă au apărut versiuni noi"
 
 #: src/muuli_wdr.cpp:1218
 msgid "Enabling this will make aMule check for new version at startup"
-msgstr ""
-"Activând aceasta va face aMule să verifice după noi versiuni la pornire"
+msgstr "Activând aceasta va face aMule să verifice după noi versiuni la pornire"
 
 #: src/muuli_wdr.cpp:1225
 msgid "Start aMule automatically when I log in"
@@ -4409,8 +4404,7 @@ msgstr "Reîncarcă lista"
 
 #: src/muuli_wdr.cpp:2408
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
-msgstr ""
-"Reîncarcă lista IP-urilor de filtrat din fișierul ~/.aMule/ipfilter.dat"
+msgstr "Reîncarcă lista IP-urilor de filtrat din fișierul ~/.aMule/ipfilter.dat"
 
 #: src/muuli_wdr.cpp:2414
 msgid "URL:"
@@ -5922,9 +5916,9 @@ msgid ""
 "No server list address entry in 'addresses.dat' found. Please paste a valid "
 "server list address into this file in order to auto-update your server list"
 msgstr ""
-"Nu s-a găsit nici o adresă de intrare în lista serverelor în "
-"'addresses.dat' . Lipiți o adresă validă listă server în acest fișier pentru "
-"a se actualiza automat lista serverelor"
+"Nu s-a găsit nici o adresă de intrare în lista serverelor în 'addresses.dat' "
+". Lipiți o adresă validă listă server în acest fișier pentru a se actualiza "
+"automat lista serverelor"
 
 #: src/ServerList.cpp:903
 #, c-format
@@ -6885,8 +6879,7 @@ msgstr "Arată o scurtă informație de stare."
 
 #: src/TextClient.cpp:986
 msgid "Show connection status, current up/download speeds, etc.\n"
-msgstr ""
-"Arată starea conexiunii, viteza curentă de încărcare/descărcare, etc.\n"
+msgstr "Arată starea conexiunii, viteza curentă de încărcare/descărcare, etc.\n"
 
 #: src/TextClient.cpp:988
 msgid "Show full statistics tree."
@@ -7291,8 +7284,7 @@ msgstr ""
 #: src/ThreadTasks.cpp:577
 #, c-format
 msgid "WARNING: The file '%s' already exists, new file renamed to '%s'."
-msgstr ""
-"ATENȚIE: Fișierul '%s' deja există, noul fișier este redenumit la '%s'."
+msgstr "ATENȚIE: Fișierul '%s' deja există, noul fișier este redenumit la '%s'."
 
 #: src/TransferWnd.cpp:209
 msgid "Are you sure you wish to cancel and delete all files in this category?"
@@ -7403,8 +7395,8 @@ msgstr "Se procesează numărul fișierului %u: %s"
 #: src/utils/aLinkCreator/src/alcc.cpp:63
 msgid "You have asked for part hashes (Only used for files > 9.5 MB)"
 msgstr ""
-"Ați fost întrebat pentru indexările parțiale (Utilizat numai pentru fișiere "
-"> 9.5 MB)"
+"Ați fost întrebat pentru indexările parțiale (Utilizat numai pentru "
+"fișiere > 9.5 MB)"
 
 #: src/utils/aLinkCreator/src/alcc.cpp:80
 #, fuzzy, c-format
@@ -7662,8 +7654,7 @@ msgstr "Rată maximă de descărcare de când wxCas rulează"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:119
 msgid "Absolute Maximum DL rate during wxCas previous runs"
-msgstr ""
-"Rată maximă absolută de descărcare în timpul rulării anterioare a wxCas"
+msgstr "Rată maximă absolută de descărcare în timpul rulării anterioare a wxCas"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:142
 msgid "System"

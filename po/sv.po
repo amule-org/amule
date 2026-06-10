@@ -10,15 +10,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2020-03-04 15:10+0100\n"
-"Last-Translator: raffe <raffe@localhost.se>\n"
-"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
+"PO-Revision-Date: 2026-06-10 11:16+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Swedish <https://hosted.weblate.org/projects/amule/amule-"
+"application/sv/>\n"
 "Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 2.3\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -302,8 +303,7 @@ msgstr "eller dödar din hund. Men den *bör* vara säker att använda.\n"
 
 #: src/amule.cpp:1259
 msgid "More information, support and new releases can found at our homepage,\n"
-msgstr ""
-"Mer information, support och nya versioner kan hittas på vår hemsida,\n"
+msgstr "Mer information, support och nya versioner kan hittas på vår hemsida,\n"
 
 #: src/amule.cpp:1260
 msgid ""
@@ -598,8 +598,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -965,10 +964,8 @@ msgstr[1] ""
 msgid "Filestats for all sessions: Accepted %d of %d request, %s transferred\n"
 msgid_plural ""
 "Filestats for all sessions: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] ""
-"Filstatistik sedan början: Accepterat %d av %d begäran, %s överfört\n"
-msgstr[1] ""
-"Filstatistik sedan början: Accepterat %d av %d begäran, %s överfört\n"
+msgstr[0] "Filstatistik sedan början: Accepterat %d av %d begäran, %s överfört\n"
+msgstr[1] "Filstatistik sedan början: Accepterat %d av %d begäran, %s överfört\n"
 
 #: src/BaseClient.cpp:2024
 msgid "Requested unknown file"
@@ -1206,8 +1203,7 @@ msgstr ""
 #, c-format
 msgid ""
 "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr ""
-"Användare %s (%u) begärde din sharedfiles-lista för mapp '%s'  -> Nekad"
+msgstr "Användare %s (%u) begärde din sharedfiles-lista för mapp '%s'  -> Nekad"
 
 #: src/ClientTCPSocket.cpp:894
 #, c-format
@@ -3245,8 +3241,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"För en film kan du berätta om dess längd, innehåll, språk ... \\n\\noch om "
-"det är en bluff, kan du berätta det till andra användare av aMule."
+"För en film kan du berätta om dess längd, innehåll, språk ... \\n\\n"
+"och om det är en bluff, kan du berätta det till andra användare av aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -3521,8 +3517,7 @@ msgstr "Aktivera fack-Ikon"
 
 #: src/muuli_wdr.cpp:1239
 msgid "This Enables/Disables the system tray (or taskbar) icon."
-msgstr ""
-"Detta Aktiverar/Inaktiverar systemfält- (eller aktivitetsfält-) ikonen."
+msgstr "Detta Aktiverar/Inaktiverar systemfält- (eller aktivitetsfält-) ikonen."
 
 #: src/muuli_wdr.cpp:1242
 msgid "Hide application window when close button is pressed"
@@ -4816,8 +4811,7 @@ msgstr "FEL: Ogiltig part.met-fil-version: %s ==> %s"
 #: src/PartFile.cpp:664
 #, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr ""
-"Fel: %s ( %s ) är korrupt (dåliga taggar: %s ), kan inte läsa in filen."
+msgstr "Fel: %s ( %s ) är korrupt (dåliga taggar: %s ), kan inte läsa in filen."
 
 #: src/PartFile.cpp:675
 #, c-format
@@ -4898,11 +4892,11 @@ msgid_plural ""
 "Found corrupted part (%d) in %d parts file %s - FileResultHash |%s| FileHash "
 "|%s|"
 msgstr[0] ""
-"Hittade skadade delen (%d) i %d del fil %s - FileResultHash |%s| FileHash |"
-"%s|"
+"Hittade skadade delen (%d) i %d del fil %s - FileResultHash |%s| FileHash "
+"|%s|"
 msgstr[1] ""
-"Hittade skadade delen (%d) i %d dels fil %s - FileResultHash |%s| FileHash |"
-"%s|"
+"Hittade skadade delen (%d) i %d dels fil %s - FileResultHash |%s| FileHash "
+"|%s|"
 
 #: src/PartFile.cpp:1294
 #, c-format
@@ -5848,8 +5842,7 @@ msgstr "Det gick inte att hämta serverlistan från %s"
 msgid ""
 "Local server is filtered by the IPFilters, reconnecting to a different "
 "server!"
-msgstr ""
-"Lokal server filtreras av IPFilters, återansluter till en annan server!"
+msgstr "Lokal server filtreras av IPFilters, återansluter till en annan server!"
 
 #: src/ServerListCtrl.cpp:87
 msgid "Server Name"

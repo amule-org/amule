@@ -25,15 +25,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2026-05-29 00:36+0200\n"
-"Last-Translator: Pablo <parodper@gmail.com>\n"
-"Language-Team: http://forum.amule.org/index.php?topic=13883\n"
+"PO-Revision-Date: 2026-06-10 11:14+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Galician <https://hosted.weblate.org/projects/amule/amule-"
+"application/gl/>\n"
 "Language: gl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.6\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -157,8 +158,8 @@ msgid "Could not add %u link from ED2KLinks file (see log for details)."
 msgid_plural ""
 "Could not add %u links from ED2KLinks file (see log for details)."
 msgstr[0] ""
-"Non se puido engadir a ligazón %u do ficheiro ED2KLinks (consulte o "
-"rexistro)."
+"Non se puido engadir a ligazón %u do ficheiro ED2KLinks (consulte o rexistro)"
+"."
 msgstr[1] ""
 "Non se puideron engadir as ligazóns %u do ficheiro ED2KLinks (consulte o "
 "rexistro)."
@@ -334,8 +335,7 @@ msgstr "Esta versión é unha versión en proba, actualizada diariamente, e\n"
 
 #: src/amule.cpp:1253
 msgid "we give no warranty it won't break anything, burn your house,\n"
-msgstr ""
-"non lle aseguramos que non se rompa algo, lle prenda lume a súa casa,\n"
+msgstr "non lle aseguramos que non se rompa algo, lle prenda lume a súa casa,\n"
 
 #: src/amule.cpp:1254
 msgid "or kill your dog. But it *should* be safe to use anyway.\n"
@@ -521,8 +521,8 @@ msgid ""
 msgstr ""
 "ERRO: o daemon de aMule non se pode usar cando están desactivadas as "
 "conexións externas. Para activar as Conexións Externas, use un aMule normal, "
-"inicie amuled coa opción --ec-config ou poña a clave "
-"«AcceptExternalConnections» a 1 no ficheiro ~/.aMule/amule.conf"
+"inicie amuled coa opción --ec-config ou poña a clave «"
+"AcceptExternalConnections» a 1 no ficheiro ~/.aMule/amule.conf"
 
 #: src/amuled.cpp:145
 msgid ""
@@ -636,8 +636,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1701,8 +1700,7 @@ msgstr "Previsualizar ficheiro"
 #: src/DownloadListCtrl.cpp:1483
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr ""
-"ERRO: Non se puido executar o reprodutor multimedia externo! Orde: «%s»"
+msgstr "ERRO: Non se puido executar o reprodutor multimedia externo! Orde: «%s»"
 
 #: src/DownloadQueue.cpp:99
 #, c-format
@@ -3324,9 +3322,9 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Para unha película vostede pode dicir que é largo, a súa historia, o "
-"idioma ...\\n\\ne se é un ficheiro falso, pode advertir ós outros usuarios "
-"do aMule."
+"Para unha película vostede pode dicir que é largo, a súa historia, o idioma "
+"...\\n\\n"
+"e se é un ficheiro falso, pode advertir ós outros usuarios do aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -3543,8 +3541,7 @@ msgstr "https://amule-org.github.io - A Mula multi-plataforma"
 
 #: src/muuli_wdr.cpp:1202
 msgid "This is the name that other users will see when connecting to you."
-msgstr ""
-"Este é o nome que os outros usuarios verán cando se conecten a vostede."
+msgstr "Este é o nome que os outros usuarios verán cando se conecten a vostede."
 
 #: src/muuli_wdr.cpp:1208
 msgid "Language: "
@@ -7229,8 +7226,7 @@ msgstr "Establecer a prioridade da descarga."
 
 #: src/TextClient.cpp:1094
 msgid "Set priority of a download to Low, Normal, High or Auto.\n"
-msgstr ""
-"Establecer a prioridade dunha descarga a Baixa, Normal, Alta ou Auto.\n"
+msgstr "Establecer a prioridade dunha descarga a Baixa, Normal, Alta ou Auto.\n"
 
 #: src/TextClient.cpp:1095
 msgid "Set priority to low."
@@ -7931,8 +7927,7 @@ msgstr "Introduza aquí o nome de Usuario para conectarse ao servidor FTP"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp:209
 msgid "Enter here the User password to log into your FTP server"
-msgstr ""
-"Introduza aquí o contrasinal de Usuario para conectarse ao servidor FTP"
+msgstr "Introduza aquí o contrasinal de Usuario para conectarse ao servidor FTP"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp:226
 msgid "FTP update rate interval in minutes"

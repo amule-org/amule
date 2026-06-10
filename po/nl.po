@@ -13,15 +13,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2022-10-02 10:41+0200\n"
-"Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
-"Language-Team: Dutch <nl@li.org>\n"
+"PO-Revision-Date: 2026-06-10 11:13+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-"
+"application/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 2.4.2\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -601,8 +602,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1698,8 +1698,7 @@ msgstr[1] "%u deelbestanden gevonden"
 
 #: src/DownloadQueue.cpp:240 src/DownloadQueue.cpp:1501
 msgid "Filesystem for Temp directory cannot handle large files."
-msgstr ""
-"Bestandssysteem voor tijdelijke map kan grote bestanden niet verwerken."
+msgstr "Bestandssysteem voor tijdelijke map kan grote bestanden niet verwerken."
 
 # Translate 'Incoming directory'?
 #: src/DownloadQueue.cpp:243 src/DownloadQueue.cpp:1504
@@ -3266,9 +3265,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Voor een film kunt iets zeggen over de lengte, het verhaal, de taal ..."
-"\\n\\nen als het nep is kunt u dat vertellen aan de andere gebruikers van "
-"aMule."
+"Voor een film kunt iets zeggen over de lengte, het verhaal, de taal ...\\n\\n"
+"en als het nep is kunt u dat vertellen aan de andere gebruikers van aMule."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -5601,8 +5599,7 @@ msgstr "Laad gedeelde-bestandenlijst opnieuw."
 
 #: src/SearchDlg.cpp:282
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
-"Er kan niet gezocht worden wanneer eD2k en Kademlia uitgeschakeld zijn."
+msgstr "Er kan niet gezocht worden wanneer eD2k en Kademlia uitgeschakeld zijn."
 
 #: src/SearchDlg.cpp:283
 msgid "Search error"
@@ -5734,10 +5731,8 @@ msgstr "%s (%s:%i) lijkt vol te zijn."
 #, c-format
 msgid "Automatic connection to server will retry in %d second"
 msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] ""
-"Automatische verbinding naar server zal in %d seconde opnieuw proberen"
-msgstr[1] ""
-"Automatische verbinding naar server zal in %d seconden opnieuw proberen"
+msgstr[0] "Automatische verbinding naar server zal in %d seconde opnieuw proberen"
+msgstr[1] "Automatische verbinding naar server zal in %d seconden opnieuw proberen"
 
 #: src/ServerConnect.cpp:412
 msgid "Connection lost"
@@ -7204,8 +7199,7 @@ msgstr "Oude AICH-hashsets in '%s' worden omgezet in 64b in '%s'."
 #: src/ThreadTasks.cpp:565
 #, c-format
 msgid "WARNING: The filename '%s' is invalid and has been renamed to '%s'."
-msgstr ""
-"WAARSCHUWING: De bestandsnaam '%s' is ongeldig en is gewijzigd in '%s'."
+msgstr "WAARSCHUWING: De bestandsnaam '%s' is ongeldig en is gewijzigd in '%s'."
 
 #: src/ThreadTasks.cpp:577
 #, c-format

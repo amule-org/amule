@@ -10,15 +10,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2026-06-07 18:58+0300\n"
-"Last-Translator: \n"
-"Language-Team: Turkish <li@li.org>\n"
+"PO-Revision-Date: 2026-06-10 11:12+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Turkish <https://hosted.weblate.org/projects/amule/amule-"
+"application/tr/>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.9\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.6\n"
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
@@ -615,8 +616,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1248,8 +1248,7 @@ msgstr "Kullanıcı %s (%u) istenmeyen paylaşılmış dosya listesi gönderdi."
 #: src/ClientTCPSocket.cpp:932
 #, c-format
 msgid "User %s (%u) sent sharedfiles-list for directory '%s'"
-msgstr ""
-"Kullanıcı %s (%u) '%s' dizini için paylaşılmış dosya listesini gönderdi"
+msgstr "Kullanıcı %s (%u) '%s' dizini için paylaşılmış dosya listesini gönderdi"
 
 #: src/ClientTCPSocket.cpp:939
 #, c-format
@@ -1430,7 +1429,7 @@ msgstr "Uzak Sunucu"
 #: src/DataToText.cpp:128 src/muuli_wdr.cpp:204 src/muuli_wdr.cpp:2749
 #: src/SearchDlg.cpp:110 src/TextClient.cpp:813
 msgid "Kad"
-msgstr "Kademlia"
+msgstr "Kad"
 
 #: src/DataToText.cpp:129
 msgid "Source Exchange"
@@ -3272,8 +3271,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Bir film için süresini, öyküsünü, dilini …\\n\\nve sahte bir dosya ise bunu "
-"diğer aMule kullanıcılarına bildirebilirsiniz."
+"Bir film için süresini, öyküsünü, dilini …\\n\\n"
+"ve sahte bir dosya ise bunu diğer aMule kullanıcılarına bildirebilirsiniz."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -5877,8 +5876,7 @@ msgstr "Sunucu listesini %s adresinden indirmeye başla."
 #: src/ServerList.cpp:912
 #, c-format
 msgid "WARNING: invalid URL specified for auto-updating of servers: %s"
-msgstr ""
-"UYARI: sunucuların otomatik güncellenmesi için geçersiz URL girildi: %s"
+msgstr "UYARI: sunucuların otomatik güncellenmesi için geçersiz URL girildi: %s"
 
 #: src/ServerList.cpp:916
 msgid "No valid server.met auto-download url on addresses.dat"
@@ -6039,8 +6037,7 @@ msgstr "UYARI: Düşük ID aldınız!"
 
 #: src/ServerSocket.cpp:365
 msgid "\tMost likely this is because you're behind a firewall or router."
-msgstr ""
-"\tBüyük ihtimalle bir güvenlik duvarı veya yönlendirici arkasındasınız."
+msgstr "\tBüyük ihtimalle bir güvenlik duvarı veya yönlendirici arkasındasınız."
 
 #: src/ServerSocket.cpp:366
 msgid ""

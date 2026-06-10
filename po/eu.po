@@ -11,15 +11,16 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-07 14:34+0200\n"
-"PO-Revision-Date: 2020-03-04 12:26+0100\n"
-"Last-Translator: Piarres Beobide <pi@beobide.net>\n"
-"Language-Team: Euskara <librezale@librezale.org>\n"
+"PO-Revision-Date: 2026-06-10 11:17+0000\n"
+"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"Language-Team: Basque <https://hosted.weblate.org/projects/amule/amule-"
+"application/eu/>\n"
 "Language: eu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 2.3\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.6\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AddFriend.cpp:45
@@ -320,8 +321,7 @@ msgstr ""
 #: src/amule.cpp:1262
 msgid ""
 "Feel free to report any bugs to https://github.com/amule-org/amule/issues"
-msgstr ""
-"Edozein akatsen berri emateko:https://github.com/amule-org/amule/issues"
+msgstr "Edozein akatsen berri emateko:https://github.com/amule-org/amule/issues"
 
 #: src/amule.cpp:1275
 msgid ""
@@ -598,8 +598,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/amuleDlg.cpp:534
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
-msgstr ""
-"https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:537 src/KadDlg.cpp:193 src/PartFile.cpp:1032
 #: src/PrefsUnifiedDlg.cpp:712 src/PrefsUnifiedDlg.cpp:837
@@ -1667,8 +1666,7 @@ msgstr "Fitxategi aurreikuspena"
 #: src/DownloadListCtrl.cpp:1483
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr ""
-"ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: `%s'"
+msgstr "ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: `%s'"
 
 #: src/DownloadQueue.cpp:99
 #, c-format
@@ -2557,8 +2555,7 @@ msgstr ""
 msgid "Only %d Kad contact available, nodes.dat not written"
 msgid_plural "Only %d Kad contacts available, nodes.dat not written"
 msgstr[0] "Bakarrik Kad kontaktu %d dago eskuragarri, nodes.dat ez da idatziko"
-msgstr[1] ""
-"Bakarrik %d Kad kontaktu daude eskuragarri, nodes.dat ez da idatziko"
+msgstr[1] "Bakarrik %d Kad kontaktu daude eskuragarri, nodes.dat ez da idatziko"
 
 #: src/kademlia/routing/RoutingZone.cpp:336
 #, c-format
@@ -2947,8 +2944,7 @@ msgstr "Burutu"
 #: src/muuli_wdr.cpp:103
 msgid ""
 "Click here to add the eD2k link in the text control to your download queue."
-msgstr ""
-"Hemen klikatu eD2k lotura deskarga ilararen testu kontrolean gehitzeko."
+msgstr "Hemen klikatu eD2k lotura deskarga ilararen testu kontrolean gehitzeko."
 
 #: src/muuli_wdr.cpp:109
 msgid ""
@@ -3290,8 +3286,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\\n\\nand if it's "
 "a fake, you can tell that to other users of aMule."
 msgstr ""
-"Filma batentzat iraupena, istorioa, hizkuntza ...\\n\\neta faltsua den esan "
-"dezakezu, aMule beste erabiltzaileei esan diezaiekezu."
+"Filma batentzat iraupena, istorioa, hizkuntza ...\\n\\n"
+"eta faltsua den esan dezakezu, aMule beste erabiltzaileei esan diezaiekezu."
 
 #: src/muuli_wdr.cpp:713
 msgid "File Quality"
@@ -3324,8 +3320,8 @@ msgstr "Hobezina"
 #: src/muuli_wdr.cpp:726
 msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr ""
-"Fitxategi kalifikazioa hartu edo fitxategia baliogabea bada besteak "
-"abisatu ..."
+"Fitxategi kalifikazioa hartu edo fitxategia baliogabea bada besteak abisatu "
+"..."
 
 #: src/muuli_wdr.cpp:763
 msgid "Refresh"
@@ -5752,8 +5748,7 @@ msgid "Automatic connection to server will retry in %d second"
 msgid_plural "Automatic connection to server will retry in %d seconds"
 msgstr[0] ""
 "Zerbitzariarekiko konexio automatikoa berriz saiatuko da segundo %d-etan"
-msgstr[1] ""
-"Zerbitzariarekiko konexio automatikoa berriz saiatuko da %d segundotan"
+msgstr[1] "Zerbitzariarekiko konexio automatikoa berriz saiatuko da %d segundotan"
 
 #: src/ServerConnect.cpp:412
 msgid "Connection lost"
@@ -6672,8 +6667,8 @@ msgstr "Ez da baliozko zenbaki bat\n"
 #: src/TextClient.cpp:501
 msgid "Not a valid hash (length should be exactly 32 chars)\n"
 msgstr ""
-"Ez da baliozko egiaztapen bat (luzera zehazki 32 karakterekoa izan behar "
-"da)\n"
+"Ez da baliozko egiaztapen bat (luzera zehazki 32 karakterekoa izan behar da)"
+"\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -7842,8 +7837,7 @@ msgstr "Sar hemen zure FTP zerbitzariaren helbidea"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp:180
 msgid "Enter here the directory where putting your stat image on FTP server"
-msgstr ""
-"Idatzi hemen estatistika irudiak FTP zerbitzarian gordeko diren karpeta"
+msgstr "Idatzi hemen estatistika irudiak FTP zerbitzarian gordeko diren karpeta"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp:185
 msgid "User"
