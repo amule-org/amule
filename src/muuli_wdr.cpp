@@ -2541,7 +2541,7 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
         _("Custom URL")
     };
     wxChoice *item7 = new wxChoice( parent, IDC_GEOIP_SOURCE, wxDefaultPosition, wxDefaultSize, 3, geoIPChoices, 0 );
-    item7->SetToolTip( _("Choose which provider supplies the GeoIP MMDB database. DB-IP is the default — no account required. MaxMind requires a free account + license key. Custom URL is the escape hatch.") );
+    item7->SetToolTip( _("Choose which provider supplies the GeoIP MMDB database. DB-IP is the default — no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror).") );
     item5->Add( item7, wxSizerFlags().Center().Expand() );
     item2->Add( item5, wxSizerFlags().Expand().Border(wxALL, 4) );
 

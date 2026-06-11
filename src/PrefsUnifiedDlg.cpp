@@ -128,6 +128,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
 #ifdef ENABLE_IP2COUNTRY
 	EVT_CHOICE(IDC_GEOIP_SOURCE,		PrefsUnifiedDlg::OnGeoIPSourceChange)
 	EVT_BUTTON(IDC_GEOIP_UPDATE_NOW,	PrefsUnifiedDlg::OnGeoIPUpdateNow)
+	EVT_CHECKBOX(IDC_SHOW_COUNTRY_FLAGS,	PrefsUnifiedDlg::OnGeoIPMasterToggle)
 #endif
 	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
 	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
@@ -504,7 +505,14 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		geoipSource->SetSelection(static_cast<int>(thePrefs::GetGeoIPSource()));
 		UpdateGeoIPSourcePanel();
 		UpdateGeoIPStatus();
+		UpdateGeoIPControlsEnabled();
 	}
+	// Snapshot the source + credential values that aren't tracked
+	// by the Cfg system, so OnOk can tell whether anything
+	// download-affecting changed during the dialog session.
+	m_GeoIPSourceAtOpen = static_cast<int>(thePrefs::GetGeoIPSource());
+	m_GeoIPMaxMindLicenseAtOpen = thePrefs::GetGeoIPMaxMindLicense();
+	m_GeoIPCustomUrlAtOpen = thePrefs::GetGeoIPCustomUrl();
 #endif
 
 	for ( int i = 0; i < cntStatColors; i++ ) {
@@ -895,6 +903,46 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 	if (CfgChanged(IDC_SHOW_COUNTRY_FLAGS)) {
 		theApp->amuledlg->EnableIP2Country();
 	}
+
+#ifdef ENABLE_IP2COUNTRY
+	// Auto-download on OK when the user changed anything that affects
+	// *which* file should be on disk. Without this, switching source
+	// DB-IP→MaxMind (or pasting a new license) leaves the old file
+	// loaded until the user remembers to click Update now. We skip
+	// the download if:
+	//   * IP2Country is disabled (the file is irrelevant), or
+	//   * the user just toggled the master enable on — EnableIP2Country
+	//     above already handles missing-file → Update() in that case.
+	// Triggered as a manual update so the user sees a popup if their
+	// new credentials are bad, rather than a silent log line.
+	if (thePrefs::IsGeoIPEnabled()
+		&& !CfgChanged(IDC_SHOW_COUNTRY_FLAGS)
+		&& theApp->amuledlg && theApp->amuledlg->m_IP2Country) {
+		const bool sourceChanged =
+			static_cast<int>(thePrefs::GetGeoIPSource()) != m_GeoIPSourceAtOpen;
+		const bool licenseChanged =
+			thePrefs::GetGeoIPMaxMindLicense() != m_GeoIPMaxMindLicenseAtOpen;
+		const bool urlChanged =
+			thePrefs::GetGeoIPCustomUrl() != m_GeoIPCustomUrlAtOpen;
+		// Only re-download if the change matters for the *currently*
+		// selected source. Editing the MaxMind license while DB-IP
+		// is selected shouldn't trigger an unrelated DB-IP fetch.
+		bool credentialChangedForActive = false;
+		switch (thePrefs::GetGeoIPSource()) {
+		case CPreferences::GeoIPSourceMaxMind:
+			credentialChangedForActive = licenseChanged;
+			break;
+		case CPreferences::GeoIPSourceCustom:
+			credentialChangedForActive = urlChanged;
+			break;
+		default:
+			break;
+		}
+		if (sourceChanged || credentialChangedForActive) {
+			theApp->amuledlg->m_IP2Country->Update(true);
+		}
+	}
+#endif
 
 	if (restart_needed) {
 		wxMessageBox(restart_needed_msg + _("\nYou MUST restart aMule now.\nIf you do not restart now, don't complain if anything bad happens.\n"),
@@ -1287,6 +1335,19 @@ void PrefsUnifiedDlg::RefreshIP2CountryStatusIfOpen()
 	}
 }
 
+
+void PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(const wxString& msg)
+{
+	// Manual "Update now" failure popup. Skipped if the prefs dialog
+	// has been closed in the meantime: the user has already moved on,
+	// and an unparented popup with no obvious trigger would be more
+	// confusing than the log line they can find under Network → Log.
+	if (s_activeInstance) {
+		wxMessageBox(msg, _("IP2Country update failed"),
+			wxICON_WARNING | wxOK, s_activeInstance);
+	}
+}
+
 void PrefsUnifiedDlg::OnGeoIPSourceChange(wxCommandEvent& WXUNUSED(event))
 {
 	// Translate the dropdown index back into the canonical persisted
@@ -1313,7 +1374,7 @@ void PrefsUnifiedDlg::OnGeoIPUpdateNow(wxCommandEvent& WXUNUSED(event))
 	// status line refreshes next time the panel is shown (the running
 	// download isn't blocking, so polling would just show "...").
 	if (theApp->amuledlg && theApp->amuledlg->m_IP2Country) {
-		theApp->amuledlg->m_IP2Country->Update();
+		theApp->amuledlg->m_IP2Country->Update(true);
 	}
 }
 
@@ -1352,6 +1413,48 @@ void PrefsUnifiedDlg::UpdateGeoIPSourcePanel()
 	// does not apply here.
 	if (m_CurrentPanel) {
 		m_CurrentPanel->Layout();
+	}
+}
+
+
+void PrefsUnifiedDlg::OnGeoIPMasterToggle(wxCommandEvent& event)
+{
+	// Forward to the generic CfgChanged tracker so the OK button noticed
+	// the dirty state, then grey out everything below the master switch.
+	OnCheckBoxChange(event);
+	UpdateGeoIPControlsEnabled();
+}
+
+
+void PrefsUnifiedDlg::UpdateGeoIPControlsEnabled()
+{
+	// Master "Show country flags for clients" gates every downstream
+	// control: source selector, all three sub-panel fields, the Update
+	// Now button, auto-update checkbox, and the status line. Each
+	// control is looked up by ID so missing widgets (e.g. earlier
+	// init failure) don't crash.
+	wxCheckBox *master = CastChild(IDC_SHOW_COUNTRY_FLAGS, wxCheckBox);
+	if (!master) {
+		return;
+	}
+	const bool on = master->IsChecked();
+
+	const int ids[] = {
+		IDC_GEOIP_SOURCE,
+		IDC_GEOIP_INFO_DBIP,
+		IDC_GEOIP_INFO_MAXMIND,
+		IDC_GEOIP_INFO_CUSTOM,
+		IDC_GEOIP_MAXMIND_LIC,
+		IDC_GEOIP_CUSTOM_URL,
+		IDC_GEOIP_UPDATE_NOW,
+		IDC_GEOIP_AUTOUPDATE,
+		IDC_GEOIP_STATUS,
+	};
+	for (size_t i = 0; i < WXSIZEOF(ids); ++i) {
+		wxWindow *w = FindWindow(ids[i]);
+		if (w) {
+			w->Enable(on);
+		}
 	}
 }
 
