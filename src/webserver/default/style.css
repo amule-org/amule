@@ -9,6 +9,7 @@ th {
 	font-size: 14px;
 	font-weight: bold;
 	color: #003161;
+	padding: 0;
 }
 a:link {
 	color: #003161;
@@ -30,6 +31,7 @@ td {
 	font-family: Helvetica;
 	font-size: 12px;
 	font-weight: normal;
+	padding: 0;
 }
 a.navbutton {
 	display: block;
@@ -206,11 +208,95 @@ td.sep-light {
 .h25 {
 	height: 25px;
 }
+.h30 {
+	height: 30px;
+}
+.h40 {
+	height: 40px;
+}
 .h180 {
 	height: 180px;
 }
 .h200 {
 	height: 200px;
+}
+.h90p {
+	height: 90%;
+}
+.h100p {
+	height: 100%;
+}
+.w10 {
+	width: 10px;
+}
+.w22 {
+	width: 22px;
+}
+.w24 {
+	width: 24px;
+}
+.w63 {
+	width: 63px;
+}
+.w143 {
+	width: 143px;
+}
+.w190 {
+	width: 190px;
+}
+.w350 {
+	width: 350px;
+}
+.w366 {
+	width: 366px;
+}
+.w500 {
+	width: 500px;
+}
+.w3p {
+	width: 3%;
+}
+.w7p {
+	width: 7%;
+}
+.w19p {
+	width: 19%;
+}
+.w22p {
+	width: 22%;
+}
+.w42p {
+	width: 42%;
+}
+.w50p {
+	width: 50%;
+}
+.w65p {
+	width: 65%;
+}
+.w70p {
+	width: 70%;
+}
+.w100p {
+	width: 100%;
+}
+table {
+	border-spacing: 0;
+}
+table.spacing1 {
+	border-spacing: 1px;
+}
+table.spacing6 {
+	border-spacing: 6px;
+}
+table.pad4 > tbody > tr > td {
+	padding: 4px;
+}
+iframe.noborder {
+	border: 0;
+}
+body.frame {
+	overflow: hidden;
 }
 th.login-banner {
 	height: 180px;
