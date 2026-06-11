@@ -234,7 +234,7 @@ function formCommandSubmit(command)
 		// (#869 follow-up; same fix applied to shared and servers pages).
 		$sort_raw = isset($HTTP_GET_VARS["sort"]) ? $HTTP_GET_VARS["sort"] : "";
 		if ($sort_raw == "size" || $sort_raw == "size_done" || $sort_raw == "progress" ||
-		    $sort_raw == "name" || $sort_raw == "speed" || $sort_raw == "scrcount" ||
+		    $sort_raw == "name" || $sort_raw == "speed" || $sort_raw == "srccount" ||
 		    $sort_raw == "status" || $sort_raw == "prio") {
 			$sort_order = $sort_raw;
 		} else {
