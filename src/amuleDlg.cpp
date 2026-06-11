@@ -96,6 +96,16 @@ void CamuleDlg::EnableIP2Country()
 {
 	if (thePrefs::IsGeoIPEnabled()) {
 		m_IP2Country->Enable();
+		// Auto-update on startup: refresh the database from the
+		// selected source so the user sees current data without
+		// having to open Preferences and click "Update now". Only
+		// fires when both the master enable AND the per-source
+		// auto-update toggle are on, and a database is already
+		// loaded (the first-run / missing-file path is handled
+		// inside Enable() above via its own Update() call).
+		if (thePrefs::IsGeoIPAutoUpdate() && m_IP2Country->IsEnabled()) {
+			m_IP2Country->Update();
+		}
 	}
 }
 

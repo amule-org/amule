@@ -284,6 +284,22 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define IDC_FOLLOW_SYMLINKS_SHARED 10343
 wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
 
+// IP2Country (GeoIP) preferences tab. ID range 10350+ is reserved here
+// for the same reason as IDC_FOLLOW_SYMLINKS_SHARED above — keep the
+// new IDs above what wxDesigner might reassign on a regeneration.
+#define IDC_GEOIP_SOURCE         10350
+#define IDC_GEOIP_MAXMIND_ACCT   10351
+#define IDC_GEOIP_MAXMIND_LIC    10352
+#define IDC_GEOIP_CUSTOM_URL     10353
+#define IDC_GEOIP_AUTOUPDATE     10354
+#define IDC_GEOIP_UPDATE_NOW     10355
+#define IDC_GEOIP_STATUS         10356
+#define IDC_GEOIP_SOURCE_PANEL   10357
+#define IDC_GEOIP_INFO_DBIP      10358
+#define IDC_GEOIP_INFO_MAXMIND   10359
+#define IDC_GEOIP_INFO_CUSTOM    10360
+wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+
 #define IDC_SLIDERINFO 10177
 #define IDC_SLIDER 10178
 #define IDC_SLIDERINFO3 10179

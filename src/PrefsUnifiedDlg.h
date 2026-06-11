@@ -114,6 +114,18 @@ protected:
 	void OnButtonColorChange(wxCommandEvent &event);
 	void OnButtonIPFilterReload(wxCommandEvent &event);
 	void OnButtonIPFilterUpdate(wxCommandEvent &event);
+#ifdef ENABLE_IP2COUNTRY
+	void OnGeoIPSourceChange(wxCommandEvent &event);
+	void OnGeoIPUpdateNow(wxCommandEvent &event);
+	// Show/hide the three source-specific sub-panels based on the
+	// dropdown index; called from OnGeoIPSourceChange and from
+	// TransferToWindow on dialog open.
+	void UpdateGeoIPSourcePanel();
+	// Re-render the multi-line status block from the current CIP2Country
+	// state + selected source. Called whenever the dropdown changes or
+	// after a successful Update Now.
+	void UpdateGeoIPStatus();
+#endif
 	void OnColorCategorySelected(wxCommandEvent &event);
 	void OnCheckBoxChange(wxCommandEvent &event);
 	void OnAutostartToggle(wxCommandEvent &event);

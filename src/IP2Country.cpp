@@ -63,10 +63,24 @@
 #include "geoip/MaxMindDBDatabase.h"
 
 CIP2Country::CIP2Country(const wxString& configDir)
-	: m_db(new CMaxMindDBDatabase())
+	: m_db(new CMaxMindDBDatabase()),
+	  m_TriedPreviousMonth(false)
 {
-	m_DataBaseName = "GeoLite2-Country.mmdb";
+	m_DataBaseName = "geoip.mmdb";
 	m_DataBasePath = configDir + m_DataBaseName;
+
+	// One-shot migration: the v2.x file lived at GeoLite2-Country.mmdb.
+	// If that legacy file exists and the new canonical geoip.mmdb does
+	// not, move it across so an upgrading user doesn't lose flag display
+	// silently. If both exist (e.g. they followed the new docs while
+	// keeping the old file around) leave each alone.
+	const wxString legacyPath = configDir + "GeoLite2-Country.mmdb";
+	if (CPath::FileExists(legacyPath) && !CPath::FileExists(m_DataBasePath)) {
+		if (wxRenameFile(legacyPath, m_DataBasePath)) {
+			AddLogLineN(CFormat(_("Migrated existing GeoLite2-Country.mmdb to %s"))
+				% m_DataBasePath);
+		}
+	}
 }
 
 bool CIP2Country::IsEnabled()
@@ -92,11 +106,32 @@ void CIP2Country::Enable()
 
 void CIP2Country::Update()
 {
-	const wxString& url = thePrefs::GetGeoIPUpdateUrl();
+	m_TriedPreviousMonth = false;
+	StartDownload(0);
+}
+
+void CIP2Country::StartDownload(int monthOffset)
+{
+	const wxString url = thePrefs::GetGeoIPResolvedDownloadUrl(monthOffset);
 	if (url.IsEmpty()) {
-		AddLogLineC(CFormat(
-			_("No GeoLite2 update URL configured. Download GeoLite2-Country.mmdb manually (a free MaxMind account is required) and place it at %s, or set the URL in Preferences."))
-			% m_DataBasePath);
+		switch (thePrefs::GetGeoIPSource()) {
+		case CPreferences::GeoIPSourceMaxMind:
+			AddLogLineC(_(
+				"IP2Country: MaxMind selected as the GeoIP source but no Account ID "
+				"/ License Key configured. Open Preferences → IP2Country, paste your "
+				"free MaxMind credentials and click 'Update now'."));
+			break;
+		case CPreferences::GeoIPSourceCustom:
+			AddLogLineC(_(
+				"IP2Country: Custom URL selected as the GeoIP source but no URL "
+				"configured. Open Preferences → IP2Country and supply a URL that "
+				"points to an .mmdb (or .gz / .tar.gz containing one)."));
+			break;
+		default:
+			AddLogLineC(_(
+				"IP2Country: failed to resolve a GeoIP download URL."));
+			break;
+		}
 		thePrefs::SetGeoIPEnabled(false);
 		return;
 	}
@@ -153,7 +188,22 @@ void CIP2Country::DownloadFinished(uint32 result)
 	} else if (result == HTTP_Skipped) {
 		AddLogLineN(CFormat(_("Skipped download of %s, because requested file is not newer.")) % m_DataBaseName);
 	} else {
-		AddLogLineC(CFormat(_("Failed to download %s from %s")) % m_DataBaseName % thePrefs::GetGeoIPUpdateUrl());
+		// DB-IP early-month fallback: the new month's file frequently
+		// 404s for the first few days while DB-IP publishes it. Retry
+		// once with monthOffset=-1 so the previous (definitely-published)
+		// month carries the user through the gap. MaxMind / Custom URLs
+		// aren't month-templated, so the fallback is gated on source.
+		if (thePrefs::GetGeoIPSource() == CPreferences::GeoIPSourceDBIP
+			&& !m_TriedPreviousMonth) {
+			m_TriedPreviousMonth = true;
+			AddLogLineN(_(
+				"DB-IP download failed for the current month — retrying with "
+				"the previous month's URL."));
+			StartDownload(-1);
+			return;
+		}
+		AddLogLineC(CFormat(_("Failed to download %s from %s")) % m_DataBaseName
+			% thePrefs::GetGeoIPResolvedDownloadUrl(m_TriedPreviousMonth ? -1 : 0));
 		// if it failed and there is no database, turn it off
 		if (!wxFileExists(m_DataBasePath)) {
 			thePrefs::SetGeoIPEnabled(false);

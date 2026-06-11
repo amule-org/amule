@@ -1796,8 +1796,10 @@ wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit, bool set_size
 
     wxCheckBox *item11 = new wxCheckBox( parent, IDC_VERTTOOLBAR, _("Vertical toolbar orientation"), wxDefaultPosition, wxDefaultSize, 0 );
     item0->Add( item11, wxSizerFlags().Expand().CenterVertical() );
-    wxCheckBox *item12 = new wxCheckBox( parent, IDC_SHOW_COUNTRY_FLAGS, _("Show country flags for clients"), wxDefaultPosition, wxDefaultSize, 0 );
-    item0->Add( item12, wxSizerFlags().Expand().CenterVertical() );
+    // The "Show country flags for clients" checkbox lives in the dedicated
+    // IP2Country preferences tab (PreferencesIP2CountryTab). The Cfg_Bool
+    // binding stays at IDC_SHOW_COUNTRY_FLAGS so amule.conf
+    // /eMule/GeoIPEnabled stays compatible across versions.
     wxStaticBox *item14 = new wxStaticBox( parent, -1, _("Download Queue Files") );
     wxStaticBoxSizer *item13 = new wxStaticBoxSizer( item14, wxVERTICAL );
 
@@ -2486,6 +2488,144 @@ wxSizer *PreferencesOnlineSigTab( wxWindow *parent, bool call_fit, bool set_size
             item0->SetSizeHints( parent );
     }
     
+    return item0;
+}
+
+wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_sizer )
+{
+    // IP2Country preferences panel — exposed only when amule is built with
+    // ENABLE_IP2COUNTRY. The panel covers the full lifecycle: master enable
+    // checkbox, source selection (DB-IP / MaxMind / Custom URL), per-source
+    // attribution + license text (the license terms require attribution to
+    // be displayed; rendering it inline here satisfies that obligation
+    // without a separate About-dialog entry), an Update Now button, and an
+    // auto-update toggle.
+    //
+    // Most of the source-specific controls live on three sibling sub-panels
+    // (DB-IP / MaxMind / Custom). The PrefsUnifiedDlg shows exactly one at
+    // a time based on the source dropdown's selection. We build all three
+    // up-front so the IDs exist for Cfg_* binding regardless of which is
+    // currently visible.
+    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
+
+    // Master enable checkbox — moved out of the Interface tab so the
+    // whole feature configures from one place. CfgChanged(IDC_SHOW_COUNTRY_FLAGS)
+    // in PrefsUnifiedDlg::TryClose still re-calls EnableIP2Country().
+    wxCheckBox *item1 = new wxCheckBox( parent, IDC_SHOW_COUNTRY_FLAGS, _("Show country flags for clients"), wxDefaultPosition, wxDefaultSize, 0 );
+    item1->SetToolTip( _("Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below).") );
+    item0->Add( item1, wxSizerFlags().CenterVertical().Border(wxALL, 4) );
+
+    // Database group box: status line, source dropdown, source-specific
+    // panel, Update Now button, auto-update toggle.
+    wxStaticBox *item3 = new wxStaticBox( parent, -1, _("Database") );
+    wxStaticBoxSizer *item2 = new wxStaticBoxSizer( item3, wxVERTICAL );
+
+    // Status block — multi-line static text. PrefsUnifiedDlg updates the
+    // label content in TransferToWindow() based on the live mmdb state
+    // and the selected source's attribution string.
+    wxStaticText *item4 = new wxStaticText( parent, IDC_GEOIP_STATUS,
+        _("Status: \xE2\x97\x8F  (queried on open)"),
+        wxDefaultPosition, wxDefaultSize, 0 );
+    item2->Add( item4, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    // Source selector row.
+    wxBoxSizer *item5 = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *item6 = new wxStaticText( parent, -1, _("Source:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item5->Add( item6, wxSizerFlags().Center().Border(wxRIGHT, 6) );
+    wxString geoIPChoices[] = {
+        _("DB-IP (free, no account)"),
+        _("MaxMind GeoLite2 (free, account required)"),
+        _("Custom URL")
+    };
+    wxChoice *item7 = new wxChoice( parent, IDC_GEOIP_SOURCE, wxDefaultPosition, wxDefaultSize, 3, geoIPChoices, 0 );
+    item7->SetToolTip( _("Choose which provider supplies the GeoIP MMDB database. DB-IP is the default — no account required. MaxMind requires a free account + license key. Custom URL is the escape hatch.") );
+    item5->Add( item7, wxSizerFlags().Center().Expand() );
+    item2->Add( item5, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    // Source-specific options panel. Hosts three child sizers stacked
+    // exclusively, switched by PrefsUnifiedDlg::OnGeoIPSourceChanged.
+    wxStaticBox *item9 = new wxStaticBox( parent, IDC_GEOIP_SOURCE_PANEL, wxEmptyString );
+    wxStaticBoxSizer *item8 = new wxStaticBoxSizer( item9, wxVERTICAL );
+
+    // --- DB-IP sub-panel: zero-config + attribution + license text. ---
+    wxStaticText *item10 = new wxStaticText( parent, IDC_GEOIP_INFO_DBIP,
+        _("No configuration required.\n"
+          "\n"
+          "IP-to-Country data by DB-IP.com\n"
+          "https://db-ip.com\n"
+          "\n"
+          "License: Creative Commons BY 4.0\n"
+          "Free for personal and commercial use with attribution shown above.\n"
+          "https://creativecommons.org/licenses/by/4.0/"),
+        wxDefaultPosition, wxDefaultSize, 0 );
+    item8->Add( item10, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    // --- MaxMind sub-panel: account / key fields + attribution + license. ---
+    wxBoxSizer *item11 = new wxBoxSizer( wxVERTICAL );
+    wxFlexGridSizer *item12 = new wxFlexGridSizer( 2, 0, 4 );
+    item12->AddGrowableCol( 1 );
+    wxStaticText *item13 = new wxStaticText( parent, -1, _("Account ID:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item12->Add( item13, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
+    wxTextCtrl *item14 = new wxTextCtrl( parent, IDC_GEOIP_MAXMIND_ACCT, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    item12->Add( item14, wxSizerFlags().Expand() );
+    wxStaticText *item15 = new wxStaticText( parent, -1, _("License key:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item12->Add( item15, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
+    wxTextCtrl *item16 = new wxTextCtrl( parent, IDC_GEOIP_MAXMIND_LIC, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
+    item12->Add( item16, wxSizerFlags().Expand() );
+    item11->Add( item12, wxSizerFlags().Expand().Border(wxBOTTOM, 4) );
+    wxStaticText *item17 = new wxStaticText( parent, IDC_GEOIP_INFO_MAXMIND,
+        _("Get your free license key: https://www.maxmind.com/en/geolite2/signup\n"
+          "\n"
+          "This product includes GeoLite2 data created by MaxMind,\n"
+          "available from https://www.maxmind.com\n"
+          "\n"
+          "License: MaxMind GeoLite2 EULA\n"
+          "Requires attribution (shown above) and account registration;\n"
+          "database must be refreshed at least every 30 days.\n"
+          "https://www.maxmind.com/en/geolite2/eula"),
+        wxDefaultPosition, wxDefaultSize, 0 );
+    item11->Add( item17, wxSizerFlags().Expand().Border(wxTOP, 4) );
+    item8->Add( item11, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    // --- Custom URL sub-panel: URL field + compliance disclaimer. ---
+    wxBoxSizer *item18 = new wxBoxSizer( wxVERTICAL );
+    wxBoxSizer *item19 = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *item20 = new wxStaticText( parent, -1, _("Download URL:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item19->Add( item20, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
+    wxTextCtrl *item21 = new wxTextCtrl( parent, IDC_GEOIP_CUSTOM_URL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    item19->Add( item21, wxSizerFlags().Expand() );
+    item18->Add( item19, wxSizerFlags().Expand().Border(wxBOTTOM, 4) );
+    wxStaticText *item22 = new wxStaticText( parent, IDC_GEOIP_INFO_CUSTOM,
+        _("Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
+          "URL may include credentials in the userinfo portion (https://user:pass@host/...).\n"
+          "\n"
+          "License terms and attribution requirements are determined by the\n"
+          "upstream URL. You are responsible for compliance."),
+        wxDefaultPosition, wxDefaultSize, 0 );
+    item18->Add( item22, wxSizerFlags().Expand().Border(wxTOP, 4) );
+    item8->Add( item18, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    item2->Add( item8, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    // Update Now row + auto-update toggle.
+    wxBoxSizer *item23 = new wxBoxSizer( wxHORIZONTAL );
+    wxButton *item24 = new wxButton( parent, IDC_GEOIP_UPDATE_NOW, _("Update now"), wxDefaultPosition, wxDefaultSize, 0 );
+    item24->SetToolTip( _("Download the GeoIP database from the selected source.") );
+    item23->Add( item24, wxSizerFlags().Border(wxRIGHT, 12) );
+    wxCheckBox *item25 = new wxCheckBox( parent, IDC_GEOIP_AUTOUPDATE, _("Auto-update on startup"), wxDefaultPosition, wxDefaultSize, 0 );
+    item25->SetToolTip( _("Re-download the GeoIP database from the selected source every time aMule starts.") );
+    item23->Add( item25, wxSizerFlags().CenterVertical() );
+    item2->Add( item23, wxSizerFlags().Border(wxALL, 4) );
+
+    item0->Add( item2, wxSizerFlags().Expand().Border(wxALL, 4) );
+
+    if (set_sizer)
+    {
+        parent->SetSizer( item0 );
+        if (call_fit)
+            item0->SetSizeHints( parent );
+    }
+
     return item0;
 }
 
