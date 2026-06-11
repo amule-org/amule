@@ -1487,9 +1487,11 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 
 	if (ip2c->IsEnabled()) {
 		// Loaded — single-line summary keeps the dialog height bounded
-		// across sources; full path is conveyed via tooltip on hover.
-		const wxString& path = ip2c->GetDatabasePath();
-		const wxFileName fn(path);
+		// across sources. We deliberately omit the on-disk path: it's
+		// already in the log line at load time, and wxStaticText
+		// tooltips on wxOSX are unreliable enough that promising it in
+		// the UI would mislead Mac users.
+		const wxFileName fn(ip2c->GetDatabasePath());
 		wxString sizeLabel;
 		if (fn.FileExists()) {
 			const wxULongLong bytes = fn.GetSize();
@@ -1506,14 +1508,11 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 				_("Status: Loaded%s \xE2\x80\x94 %s"),
 				sizeLabel, attribution));
 		}
-		st->SetToolTip(path);
 	} else if (wxFileName::FileExists(ip2c->GetDatabasePath())) {
 		// File exists but database failed to open — corrupt / wrong format.
 		st->SetLabel(_("Status: Failed to load \xE2\x80\x94 click 'Update now' to refresh."));
-		st->SetToolTip(ip2c->GetDatabasePath());
 	} else {
 		st->SetLabel(_("Status: Not found \xE2\x80\x94 click 'Update now' to download."));
-		st->UnsetToolTip();
 	}
 }
 #endif // ENABLE_IP2COUNTRY

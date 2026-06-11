@@ -39,9 +39,6 @@ Open `Preferences → IP2Country`. The tab looks like this:
 ☑ Show country flags for clients
 
 ┌─ Database ──────────────────────────────────────────┐
-│ Status: ●  Loaded                                    │
-│            ~/.aMule/geoip.mmdb (9.0 MB) — <source>   │
-│                                                      │
 │ Source: [DB-IP (free, no account)            ▼]     │
 │                                                      │
 │ ┌── source-specific info, credentials, attribution ──│
@@ -49,12 +46,21 @@ Open `Preferences → IP2Country`. The tab looks like this:
 │ └────────────────────────────────────────────────────│
 │                                                      │
 │ [Update now]    ☑ Auto-update on startup            │
+│                                                      │
+│ Status: Loaded (9.0 MB) — Data by DB-IP.com         │
 └──────────────────────────────────────────────────────┘
 ```
 
+Attribution names the source that actually wrote the file, not
+whatever is selected in the dropdown — so flipping the dropdown
+without re-downloading does not relabel a file you got from somewhere
+else. The on-disk path is logged at load time; see "Where the
+database lives on disk" below for the per-platform location.
+
 The master "Show country flags for clients" toggle is the same one that
 used to live in the `Interface` tab — it has moved here so all GeoIP
-controls are in one place.
+controls are in one place. Unticking it greys out the entire panel
+below (source dropdown, credentials, Update now, Auto-update, status).
 
 ### Three sources
 
@@ -112,8 +118,9 @@ keeps you compliant automatically.
 
 #### Custom URL
 
-Escape hatch for self-hosted mirrors or new providers aMule doesn't yet
-know about. Paste a URL that points to either:
+Point aMule at any other MMDB host — a local mirror, an internal
+distribution server, or a provider aMule doesn't yet know about.
+Paste a URL that points to either:
 
 * an `.mmdb` file directly, or
 * a `.gz` containing the `.mmdb`, or
@@ -151,10 +158,30 @@ source on first launch, so users who hand-configured a download endpoint
 don't lose it.
 
 
-## Auto-update behaviour
+## When a download is triggered
 
-`Auto-update on startup` (default ON for all sources) triggers a fresh
-download from the selected source on every aMule launch when both:
+There are three trigger paths, each with different failure-reporting
+behaviour:
+
+| Trigger                                 | Source of failure feedback                                                                 |
+|-----------------------------------------|--------------------------------------------------------------------------------------------|
+| `Update now` button                     | Log line **and** modal popup explaining what went wrong (missing License Key, HTTP error). |
+| `OK` after changing source / credential | Same as `Update now` — manual, popup on failure. See below.                                |
+| `Auto-update on startup` (default ON)   | Log line only — silent so a transient outage does not pop up on every cold boot.           |
+| First-run / missing-file at any time    | Log line only.                                                                             |
+
+The on-OK auto-download fires when the user changes the source
+dropdown, or edits the credential for the currently selected source
+(License Key for MaxMind, URL for Custom), and then clicks OK. Without
+it, the new pref would be saved but the on-disk file would still be
+from the old source until the user remembered to click `Update now`.
+Toggling the master `Show country flags for clients` from off to on
+does not double-trigger — `EnableIP2Country` already handles
+missing-file → download in that case.
+
+`Auto-update on startup` (single global toggle, default ON) triggers a
+fresh download from the selected source on every aMule launch when
+both:
 
 * the master `Show country flags for clients` is ticked, AND
 * a database is already loaded (the first-run / missing-file path
@@ -163,10 +190,16 @@ download from the selected source on every aMule launch when both:
 For MaxMind this also satisfies their EULA's "refresh at least every
 30 days" requirement.
 
-If a download fails (network outage, expired credentials, URL change),
-aMule logs the failure and continues using whatever database file is
-already on disk — the feature degrades gracefully rather than failing
-loudly.
+On any failure path aMule continues using whatever database file is
+already on disk — the feature degrades gracefully rather than dropping
+all flag display.
+
+### DB-IP early-month fallback
+
+DB-IP publishes the new month's file a few days into each month. If
+the current month's URL 404s, `DownloadFinished` retries once with
+the previous month's URL before giving up. The retry is logged at
+info level so you can see it happened.
 
 
 ## Diagnostics
@@ -177,11 +210,12 @@ If the feature is enabled but flags don't appear:
 * Open `Preferences → IP2Country` — the status block reports the
   current state in plain text:
 
-| Status                     | Meaning                                                   |
-|----------------------------|-----------------------------------------------------------|
-| `Loaded`                   | Database open, country lookups working.                   |
-| `Failed to load — file present but rejected by libmaxminddb` | The file is there but isn't a valid `.mmdb`. Click `Update now` to re-download. |
-| `Not found`                | No `geoip.mmdb` at the expected path. Click `Update now`. |
+| Status                                                       | Meaning                                                              |
+|--------------------------------------------------------------|----------------------------------------------------------------------|
+| `Status: Loaded (X.X MB) — Data by <provider>`               | Database open, country lookups working.                              |
+| `Status: Loaded (X.X MB)` (no attribution)                   | Hand-installed `.mmdb` — aMule has no record of where it came from.  |
+| `Status: Failed to load — click 'Update now' to refresh.`    | The file is there but isn't a valid `.mmdb`. Click `Update now`.     |
+| `Status: Not found — click 'Update now' to download.`        | No `geoip.mmdb` at the expected path. Click `Update now`.            |
 
 * Restart aMule after replacing the database file — it's opened with
   `MMDB_MODE_MMAP` and not re-checked on the fly.
