@@ -89,12 +89,18 @@ Requires a free MaxMind account. Once you have one:
 
 1. Sign in to your MaxMind account, generate a *License Key* under
    `Manage License Keys`.
-2. Paste your `Account ID` and `License Key` into the matching fields.
+2. Paste the License Key into the `License key` field.
 3. Click `Update now`.
 
 aMule downloads `GeoLite2-Country` in `.tar.gz` form, extracts the
 `.mmdb` file out of the date-stamped directory, and installs it at
 `~/.aMule/geoip.mmdb`.
+
+aMule uses MaxMind's License-Key download URL form
+(`https://download.maxmind.com/app/geoip_download?edition_id=...&license_key=...&suffix=tar.gz`),
+so no Account ID is required. Users who specifically need the
+basic-auth URL form (`https://account:key@download.maxmind.com/...`)
+can fall back to **Custom URL** with that URL pasted in.
 
 **Attribution**: This product includes GeoLite2 data created by
 MaxMind, available from
@@ -198,7 +204,6 @@ below are documented for completeness only. They live in `[eMule]`:
 |---------------------------|-----------------------------------------|
 | `GeoIPEnabled`            | `1` / `0` — master enable               |
 | `GeoIPSource`             | `dbip` / `maxmind` / `custom`           |
-| `GeoIPMaxMindAccount`     | Free-form string (MaxMind Account ID)   |
 | `GeoIPMaxMindLicense`     | Free-form string (MaxMind License Key)  |
 | `GeoIPCustomUrl`          | Any URL                                 |
 | `GeoIPAutoUpdate`         | `1` / `0`                               |

@@ -117,9 +117,9 @@ void CIP2Country::StartDownload(int monthOffset)
 		switch (thePrefs::GetGeoIPSource()) {
 		case CPreferences::GeoIPSourceMaxMind:
 			AddLogLineC(_(
-				"IP2Country: MaxMind selected as the GeoIP source but no Account ID "
-				"/ License Key configured. Open Preferences → IP2Country, paste your "
-				"free MaxMind credentials and click 'Update now'."));
+				"IP2Country: MaxMind selected as the GeoIP source but no License Key "
+				"configured. Open Preferences → IP2Country, paste your free MaxMind "
+				"License Key and click 'Update now'."));
 			break;
 		case CPreferences::GeoIPSourceCustom:
 			AddLogLineC(_(
@@ -182,6 +182,11 @@ void CIP2Country::DownloadFinished(uint32 result)
 		Enable();
 		if (IsEnabled()) {
 			AddLogLineN(CFormat(_("Successfully updated %s")) % m_DataBaseName);
+			// Record which source actually wrote the file so the prefs
+			// status line can attribute it correctly even after the
+			// user flips the source dropdown to a different provider
+			// they haven't downloaded from yet.
+			thePrefs::SetGeoIPLoadedSource(thePrefs::GetGeoIPSource());
 		} else {
 			AddLogLineC(CFormat(_("Error updating %s")) % m_DataBaseName);
 		}

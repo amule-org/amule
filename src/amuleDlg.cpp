@@ -90,6 +90,11 @@
 void CamuleDlg::IP2CountryDownloadFinished(uint32 result)
 {
 	m_IP2Country->DownloadFinished(result);
+
+	// Refresh the IP2Country status block in the Preferences dialog if
+	// the user happens to have it open right now (e.g. they clicked
+	// "Update now" and have been watching the panel). No-op otherwise.
+	PrefsUnifiedDlg::RefreshIP2CountryStatusIfOpen();
 }
 
 void CamuleDlg::EnableIP2Country()

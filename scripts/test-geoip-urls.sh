@@ -76,13 +76,12 @@ run_case "dbip" \
 	"GeoIPSource=dbip" \
 	"^https://download\\.db-ip\\.com/free/dbip-country-lite-${this_year}-${this_month}\\.mmdb\\.gz$"
 
-# MaxMind: expect credentials in URL userinfo. The Account ID + License
-# Key below are obviously fake — the test only checks URL composition.
+# MaxMind: expect license key in the query-string download URL. The key
+# below is obviously fake — the test only checks URL composition.
 run_case "maxmind" \
 	"GeoIPSource=maxmind
-GeoIPMaxMindAccount=test-account
 GeoIPMaxMindLicense=test-key" \
-	"^https://test-account:test-key@download\\.maxmind\\.com/geoip/databases/GeoLite2-Country/download\\?suffix=tar\\.gz$"
+	"^https://download\\.maxmind\\.com/app/geoip_download\\?edition_id=GeoLite2-Country&license_key=test-key&suffix=tar\\.gz$"
 
 # Custom: expect URL passed through verbatim.
 run_case "custom" \
@@ -108,7 +107,7 @@ sleep 4
 kill ${mempid} 2>/dev/null || true
 wait ${mempid} 2>/dev/null || true
 
-if grep -q "MaxMind selected as the GeoIP source but no Account ID" "${TMPDIR}/maxmind-empty/out.log"; then
+if grep -q "MaxMind selected as the GeoIP source but no License Key" "${TMPDIR}/maxmind-empty/out.log"; then
 	echo "[maxmind-empty] PASS — surfaces missing-credentials error"
 	pass=$((pass+1))
 else

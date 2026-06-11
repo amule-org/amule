@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-06-11 19:36+0200\n"
+"POT-Creation-Date: 2026-06-11 22:09+0200\n"
 "PO-Revision-Date: 2026-06-11 13:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -187,7 +187,7 @@ msgid "Password set and external connections enabled."
 msgstr "Parola ayarlandı ve dış bağlantılar etkinleştirildi."
 
 #: src/amule.cpp:594 src/KadDlg.cpp:183 src/KadDlg.cpp:189
-#: src/PrefsUnifiedDlg.cpp:880 src/SharedFilesCtrl.cpp:319
+#: src/PrefsUnifiedDlg.cpp:888 src/SharedFilesCtrl.cpp:319
 msgid "WARNING"
 msgstr "UYARI"
 
@@ -320,7 +320,7 @@ msgstr "Günlük kaydı silindi"
 msgid "ServerMessage: %s"
 msgstr "Sunucu İletisi: %s"
 
-#: src/amule.cpp:1884 src/IP2Country.cpp:189 src/IPFilter.cpp:510
+#: src/amule.cpp:1884 src/IP2Country.cpp:194 src/IPFilter.cpp:510
 #: src/ServerList.cpp:870
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
@@ -453,33 +453,33 @@ msgstr "Pid dosyası oluşturulamıyor"
 msgid "ERROR: %s"
 msgstr "HATA: %s"
 
-#: src/amuleDlg.cpp:256
+#: src/amuleDlg.cpp:261
 #, c-format
 msgid "This is aMule %s based on eMule."
 msgstr "Bu, eMule üzerine kurulu olan aMule %s yazılımıdır."
 
-#: src/amuleDlg.cpp:258
+#: src/amuleDlg.cpp:263
 #, c-format
 msgid "Running on %s"
 msgstr "%s üzerinde çalışıyor"
 
-#: src/amuleDlg.cpp:260
+#: src/amuleDlg.cpp:265
 msgid "Visit https://github.com/amule-org/amule/releases/latest to check if a new version is available."
 msgstr "Yeni sürüm denetimi için https://github.com/amule-org/amule/releases/latest adresini ziyaret ediniz."
 
-#: src/amuleDlg.cpp:286
+#: src/amuleDlg.cpp:291
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "ÖNEMLİ HATA: Zamanlayıcı oluşturulamadı"
 
-#: src/amuleDlg.cpp:527
+#: src/amuleDlg.cpp:532
 msgid "aMule remote control "
 msgstr "aMule uzak denetimi "
 
-#: src/amuleDlg.cpp:533
+#: src/amuleDlg.cpp:538
 msgid "Snapshot:"
 msgstr "Bilgileri:"
 
-#: src/amuleDlg.cpp:535
+#: src/amuleDlg.cpp:540
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -487,25 +487,25 @@ msgstr ""
 "eMule üzerine kurulu 'Sistem-Üstü' p2p  yazılımı \n"
 "\n"
 
-#: src/amuleDlg.cpp:536
+#: src/amuleDlg.cpp:541
 msgid "Website: https://amule-org.github.io \n"
 msgstr "Web Sitemiz: https://amule-org.github.io \n"
 
-#: src/amuleDlg.cpp:537
+#: src/amuleDlg.cpp:542
 msgid "Forum: https://github.com/amule-org/amule/discussions \n"
 msgstr "Forumumuz: https://github.com/amule-org/amule/discussions \n"
 
-#: src/amuleDlg.cpp:538
+#: src/amuleDlg.cpp:543
 msgid "Documentation: https://amule-org.github.io/docs \n"
 msgstr "Belgelendirme: https://amule-org.github.io/docs \n"
 
-#: src/amuleDlg.cpp:539
+#: src/amuleDlg.cpp:544
 msgid ""
 "Issues: https://github.com/amule-org/amule/issues \n"
 "\n"
 msgstr "Hata raporları: https://github.com/amule-org/amule/issues \n"
 
-#: src/amuleDlg.cpp:540
+#: src/amuleDlg.cpp:545
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
@@ -513,239 +513,239 @@ msgstr ""
 "Copyright (c) 2003-2026 aMule Ekibi \n"
 "\n"
 
-#: src/amuleDlg.cpp:541
+#: src/amuleDlg.cpp:546
 msgid "Part of aMule is based on \n"
 msgstr "aMule'nin üzerinde kurulduğu parçalar: \n"
 
-#: src/amuleDlg.cpp:542
+#: src/amuleDlg.cpp:547
 msgid "Kademlia: Peer-to-peer routing based on the XOR metric.\n"
 msgstr "Kademlia: XOR matrisi üzerine kurulu eşten eşe iletişim.\n"
 
-#: src/amuleDlg.cpp:543
+#: src/amuleDlg.cpp:548
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
-#: src/amuleDlg.cpp:544
+#: src/amuleDlg.cpp:549
 msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
-#: src/amuleDlg.cpp:547 src/KadDlg.cpp:193 src/PartFile.cpp:1032
-#: src/PrefsUnifiedDlg.cpp:742 src/PrefsUnifiedDlg.cpp:867
-#: src/PrefsUnifiedDlg.cpp:1010
+#: src/amuleDlg.cpp:552 src/KadDlg.cpp:193 src/PartFile.cpp:1032
+#: src/PrefsUnifiedDlg.cpp:750 src/PrefsUnifiedDlg.cpp:875
+#: src/PrefsUnifiedDlg.cpp:1018
 msgid "Message"
 msgstr "İleti"
 
-#: src/amuleDlg.cpp:584
+#: src/amuleDlg.cpp:589
 msgid "aMule dialog destroyed"
 msgstr "aMule diyaloğu imha edildi"
 
-#: src/amuleDlg.cpp:608 src/DataToText.cpp:59 src/IPFilter.cpp:544
+#: src/amuleDlg.cpp:613 src/DataToText.cpp:59 src/IPFilter.cpp:544
 msgid "Connecting"
 msgstr "Bağlanıyor"
 
-#: src/amuleDlg.cpp:737
+#: src/amuleDlg.cpp:742
 msgid "eD2k: Connecting"
 msgstr "eD2k: Bağlanıyor"
 
-#: src/amuleDlg.cpp:741
+#: src/amuleDlg.cpp:746
 msgid "eD2k: Disconnected"
 msgstr "eD2k: Bağlantı kesildi"
 
-#: src/amuleDlg.cpp:747
+#: src/amuleDlg.cpp:752
 msgid "Kad: Firewalled"
 msgstr "Kad: Güvenlik Duvarı"
 
-#: src/amuleDlg.cpp:751
+#: src/amuleDlg.cpp:756
 msgid "Kad: Connected"
 msgstr "Kad: Bağlandı"
 
-#: src/amuleDlg.cpp:756
+#: src/amuleDlg.cpp:761
 msgid "Kad: Connecting"
 msgstr "Kad: Bağlanıyor"
 
-#: src/amuleDlg.cpp:760
+#: src/amuleDlg.cpp:765
 msgid "Kad: Off"
 msgstr "Kad: Kapalı"
 
-#: src/amuleDlg.cpp:807 src/DownloadListCtrl.cpp:415
+#: src/amuleDlg.cpp:812 src/DownloadListCtrl.cpp:415
 #: src/DownloadListCtrl.cpp:652 src/FriendListCtrl.cpp:179
 #: src/muuli_wdr.cpp:681 src/muuli_wdr.cpp:732 src/muuli_wdr.cpp:794
 #: src/muuli_wdr.cpp:846 src/muuli_wdr.cpp:1968 src/muuli_wdr.cpp:2050
-#: src/muuli_wdr.cpp:2772 src/ServerListCtrl.cpp:154 src/ServerListCtrl.cpp:528
+#: src/muuli_wdr.cpp:2773 src/ServerListCtrl.cpp:154 src/ServerListCtrl.cpp:528
 #: src/ServerListCtrl.cpp:547 src/TransferWnd.cpp:375
 #: src/utils/wxCas/src/wxcasprefs.cpp:266
 msgid "Cancel"
 msgstr "İptal"
 
-#: src/amuleDlg.cpp:808
+#: src/amuleDlg.cpp:813
 msgid "Stop the current connection attempts"
 msgstr "Durdur"
 
-#: src/amuleDlg.cpp:813 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:977
+#: src/amuleDlg.cpp:818 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:977
 #: src/muuli_wdr.cpp:2172
 msgid "Disconnect"
 msgstr "Bağlantıyı Kes"
 
-#: src/amuleDlg.cpp:814
+#: src/amuleDlg.cpp:819
 msgid "Disconnect from the currently connected networks"
 msgstr "Bağlanılmış olan ağlar ile bağlantıyı Kes"
 
-#: src/amuleDlg.cpp:819 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:980
-#: src/muuli_wdr.cpp:2321 src/muuli_wdr.cpp:2769 src/muuli_wdr.cpp:3101
+#: src/amuleDlg.cpp:824 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:980
+#: src/muuli_wdr.cpp:2321 src/muuli_wdr.cpp:2770 src/muuli_wdr.cpp:3102
 msgid "Connect"
 msgstr "Bağlan"
 
-#: src/amuleDlg.cpp:820
+#: src/amuleDlg.cpp:825
 msgid "Connect to the currently enabled networks"
 msgstr "Etkinleştirilmiş olan ağlara bağlan"
 
-#: src/amuleDlg.cpp:898
+#: src/amuleDlg.cpp:903
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Gön: %.1f%s (%.1f) | İnd: %.1f%s (%.1f)"
 
-#: src/amuleDlg.cpp:899 src/amuleDlg.cpp:900 src/amuleDlg.cpp:903
-#: src/amuleDlg.cpp:904 src/amuleDlg.cpp:915 src/amuleDlg.cpp:916
+#: src/amuleDlg.cpp:904 src/amuleDlg.cpp:905 src/amuleDlg.cpp:908
+#: src/amuleDlg.cpp:909 src/amuleDlg.cpp:920 src/amuleDlg.cpp:921
 #: src/MuleTrayIcon.cpp:798 src/MuleTrayIcon.cpp:801
 msgid " MB/s"
 msgstr " MB/s"
 
-#: src/amuleDlg.cpp:899 src/amuleDlg.cpp:900 src/amuleDlg.cpp:903
-#: src/amuleDlg.cpp:904 src/amuleDlg.cpp:915 src/amuleDlg.cpp:916
+#: src/amuleDlg.cpp:904 src/amuleDlg.cpp:905 src/amuleDlg.cpp:908
+#: src/amuleDlg.cpp:909 src/amuleDlg.cpp:920 src/amuleDlg.cpp:921
 #: src/MuleTrayIcon.cpp:798 src/MuleTrayIcon.cpp:801
 #: src/utils/wxCas/src/wxcasframe.cpp:1110
 msgid " kB/s"
 msgstr " kB/sn"
 
-#: src/amuleDlg.cpp:902
+#: src/amuleDlg.cpp:907
 #, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
 msgstr "Gön: %.1f%s | İnd: %.1f%s"
 
-#: src/amuleDlg.cpp:932
+#: src/amuleDlg.cpp:937
 #, c-format
 msgid "aMule (%s | Connected)"
 msgstr "aMule (%s | Bağlandı)"
 
-#: src/amuleDlg.cpp:934
+#: src/amuleDlg.cpp:939
 #, c-format
 msgid "aMule (%s | Disconnected)"
 msgstr "aMule (%s | Bağlantı kesildi)"
 
-#: src/amuleDlg.cpp:982
+#: src/amuleDlg.cpp:987
 #, c-format
 msgid "Do you really want to exit %s?"
 msgstr "%s üzerinden çıkmayı gerçekten istiyor musunuz?"
 
-#: src/amuleDlg.cpp:983
+#: src/amuleDlg.cpp:988
 msgid "Exit confirmation"
 msgstr "Çıkışı onaylayınız"
 
-#: src/amuleDlg.cpp:1290
+#: src/amuleDlg.cpp:1295
 msgid "Launch Command: "
 msgstr "Çalıştırma Komutu: "
 
-#: src/amuleDlg.cpp:1310 src/muuli_wdr.cpp:1773 src/Preferences.cpp:855
+#: src/amuleDlg.cpp:1315 src/muuli_wdr.cpp:1773 src/Preferences.cpp:855
 msgid "- default -"
 msgstr "- ön tanımlı -"
 
-#: src/amuleDlg.cpp:1340
+#: src/amuleDlg.cpp:1345
 #, c-format
 msgid "Skin directory '%s' does not exist"
 msgstr "Kaplama dizini '%s' yok"
 
-#: src/amuleDlg.cpp:1345
+#: src/amuleDlg.cpp:1350
 #, c-format
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "UYARI: Kaplama dosyası '%s' okuma için açılamıyor"
 
-#: src/amuleDlg.cpp:1444 src/amuleDlg.cpp:1600 src/muuli_wdr.cpp:1402
-#: src/muuli_wdr.cpp:3103
+#: src/amuleDlg.cpp:1449 src/amuleDlg.cpp:1605 src/muuli_wdr.cpp:1402
+#: src/muuli_wdr.cpp:3104
 msgid "Networks"
 msgstr "Ağlar"
 
-#: src/amuleDlg.cpp:1444 src/muuli_wdr.cpp:3103
+#: src/amuleDlg.cpp:1449 src/muuli_wdr.cpp:3104
 msgid "Networks Window"
 msgstr "Ağ Penceresi"
 
-#: src/amuleDlg.cpp:1445 src/muuli_wdr.cpp:3104
+#: src/amuleDlg.cpp:1450 src/muuli_wdr.cpp:3105
 msgid "Searches"
 msgstr "Aramalar"
 
-#: src/amuleDlg.cpp:1445 src/muuli_wdr.cpp:3104
+#: src/amuleDlg.cpp:1450 src/muuli_wdr.cpp:3105
 msgid "Searches Window"
 msgstr "Arama Penceresi"
 
-#: src/amuleDlg.cpp:1446 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:379
-#: src/muuli_wdr.cpp:1504 src/muuli_wdr.cpp:3105 src/Statistics.cpp:806
+#: src/amuleDlg.cpp:1451 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:379
+#: src/muuli_wdr.cpp:1504 src/muuli_wdr.cpp:3106 src/Statistics.cpp:806
 msgid "Downloads"
 msgstr "İndirmeler"
 
-#: src/amuleDlg.cpp:1446 src/muuli_wdr.cpp:3105
+#: src/amuleDlg.cpp:1451 src/muuli_wdr.cpp:3106
 msgid "Downloads Window"
 msgstr "İndirme Penceresi"
 
-#: src/amuleDlg.cpp:1447 src/muuli_wdr.cpp:2996
+#: src/amuleDlg.cpp:1452 src/muuli_wdr.cpp:2997
 msgid "Shared files"
 msgstr "Paylaşılan dosyalar"
 
-#: src/amuleDlg.cpp:1447 src/muuli_wdr.cpp:3107
+#: src/amuleDlg.cpp:1452 src/muuli_wdr.cpp:3108
 msgid "Shared Files Window"
 msgstr "Paylaşılan Dosya Penceresi"
 
-#: src/amuleDlg.cpp:1448 src/muuli_wdr.cpp:2636 src/muuli_wdr.cpp:3061
-#: src/muuli_wdr.cpp:3108
+#: src/amuleDlg.cpp:1453 src/muuli_wdr.cpp:2637 src/muuli_wdr.cpp:3062
+#: src/muuli_wdr.cpp:3109
 msgid "Messages"
 msgstr "Sohbet"
 
-#: src/amuleDlg.cpp:1448 src/muuli_wdr.cpp:3108
+#: src/amuleDlg.cpp:1453 src/muuli_wdr.cpp:3109
 msgid "Messages Window"
 msgstr "Sohbet Penceresi"
 
-#: src/amuleDlg.cpp:1449 src/muuli_wdr.cpp:3109 src/PrefsUnifiedDlg.cpp:208
+#: src/amuleDlg.cpp:1454 src/muuli_wdr.cpp:3110 src/PrefsUnifiedDlg.cpp:208
 #: src/Statistics.cpp:776 src/Statistics.cpp:1073
 msgid "Statistics"
 msgstr "İstatistikler"
 
-#: src/amuleDlg.cpp:1449 src/muuli_wdr.cpp:3109
+#: src/amuleDlg.cpp:1454 src/muuli_wdr.cpp:3110
 msgid "Statistics Graph Window"
 msgstr "İstatistik Grafik Penceresi"
 
-#: src/amuleDlg.cpp:1451 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:223
+#: src/amuleDlg.cpp:1456 src/muuli_wdr.cpp:3112 src/PrefsUnifiedDlg.cpp:223
 #: src/utils/wxCas/src/wxcasprefs.cpp:41
 msgid "Preferences"
 msgstr "Ayarlar"
 
-#: src/amuleDlg.cpp:1451 src/muuli_wdr.cpp:3111
+#: src/amuleDlg.cpp:1456 src/muuli_wdr.cpp:3112
 msgid "Preferences Settings Window"
 msgstr "Ayar Penceresi"
 
-#: src/amuleDlg.cpp:1453 src/muuli_wdr.cpp:3112
+#: src/amuleDlg.cpp:1458 src/muuli_wdr.cpp:3113
 msgid "Import"
 msgstr "İçe Aktar"
 
-#: src/amuleDlg.cpp:1453 src/muuli_wdr.cpp:3112
+#: src/amuleDlg.cpp:1458 src/muuli_wdr.cpp:3113
 msgid "The partfile importer tool"
 msgstr "Parça dosyası içe aktarım aracı"
 
-#: src/amuleDlg.cpp:1455 src/muuli_wdr.cpp:3113
+#: src/amuleDlg.cpp:1460 src/muuli_wdr.cpp:3114
 #: src/utils/aLinkCreator/src/alcframe.cpp:265
 msgid "About"
 msgstr "Hakkında"
 
-#: src/amuleDlg.cpp:1455 src/muuli_wdr.cpp:3113
+#: src/amuleDlg.cpp:1460 src/muuli_wdr.cpp:3114
 msgid "About/Help"
 msgstr "Hakkında/Yardım"
 
-#: src/amuleDlg.cpp:1604
+#: src/amuleDlg.cpp:1609
 msgid "eD2k network"
 msgstr "eD2k ağı"
 
-#: src/amuleDlg.cpp:1608
+#: src/amuleDlg.cpp:1613
 msgid "Kad network"
 msgstr "Kademlia ağı"
 
-#: src/amuleDlg.cpp:1608
+#: src/amuleDlg.cpp:1613
 msgid "No network"
 msgstr "Ağ yok"
 
@@ -1303,7 +1303,7 @@ msgstr "Sunucu"
 msgid "Remote Server"
 msgstr "Uzak Sunucu"
 
-#: src/DataToText.cpp:128 src/muuli_wdr.cpp:204 src/muuli_wdr.cpp:2889
+#: src/DataToText.cpp:128 src/muuli_wdr.cpp:204 src/muuli_wdr.cpp:2890
 #: src/SearchDlg.cpp:110 src/TextClient.cpp:813
 msgid "Kad"
 msgstr "Kad"
@@ -1374,7 +1374,7 @@ msgstr "Parça"
 msgid "Size"
 msgstr "Boyut"
 
-#: src/DownloadListCtrl.cpp:161 src/muuli_wdr.cpp:2956
+#: src/DownloadListCtrl.cpp:161 src/muuli_wdr.cpp:2957
 msgid "Transferred"
 msgstr "Aktarıldı"
 
@@ -2076,7 +2076,7 @@ msgstr "Arkadaş listesi  'emfriends.met'  dosyasına yazılamıyor!"
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "KRİTİK - SohbetOturumunuBaşlat' ta istemci yok"
 
-#: src/FriendListCtrl.cpp:127 src/muuli_wdr.cpp:2386 src/muuli_wdr.cpp:3037
+#: src/FriendListCtrl.cpp:127 src/muuli_wdr.cpp:2386 src/muuli_wdr.cpp:3038
 msgid "Friends"
 msgstr "Arkadaşlar"
 
@@ -2243,7 +2243,7 @@ msgid "Migrated existing GeoLite2-Country.mmdb to %s"
 msgstr ""
 
 #: src/IP2Country.cpp:120
-msgid "IP2Country: MaxMind selected as the GeoIP source but no Account ID / License Key configured. Open Preferences → IP2Country, paste your free MaxMind credentials and click 'Update now'."
+msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences → IP2Country, paste your free MaxMind License Key and click 'Update now'."
 msgstr ""
 
 #: src/IP2Country.cpp:126
@@ -2279,21 +2279,21 @@ msgstr "%s dosyası yeniden adlandırılamadı. Güncelleme iptal edildi."
 msgid "Successfully updated %s"
 msgstr "%s başarıyla güncellendi."
 
-#: src/IP2Country.cpp:186
+#: src/IP2Country.cpp:191
 #, c-format
 msgid "Error updating %s"
 msgstr "%s unsurunun güncellemesinde hata oluştu"
 
-#: src/IP2Country.cpp:200
+#: src/IP2Country.cpp:205
 msgid "DB-IP download failed for the current month — retrying with the previous month's URL."
 msgstr ""
 
-#: src/IP2Country.cpp:205 src/IPFilter.cpp:512 src/ServerList.cpp:872
+#: src/IP2Country.cpp:210 src/IPFilter.cpp:512 src/ServerList.cpp:872
 #, c-format
 msgid "Failed to download %s from %s"
 msgstr "%s, %s kaynağından indirilemedi."
 
-#: src/IP2Country.cpp:242
+#: src/IP2Country.cpp:247
 #, c-format
 msgid "Failed to load country data for '%s'."
 msgstr "'%s' için ülke verisi yüklenemedi."
@@ -2428,7 +2428,7 @@ msgstr "Paylaşım oranı"
 msgid "Uploaded"
 msgstr "Gönderilen"
 
-#: src/KnownFile.cpp:1697 src/muuli_wdr.cpp:2940
+#: src/KnownFile.cpp:1697 src/muuli_wdr.cpp:2941
 msgid "Requested"
 msgstr "İstenen"
 
@@ -2551,7 +2551,7 @@ msgid "WARNING: "
 msgstr "UYARI: "
 
 #: src/MuleNotebook.cpp:181 src/muuli_wdr.cpp:765 src/muuli_wdr.cpp:1181
-#: src/muuli_wdr.cpp:2844 src/muuli_wdr.cpp:3077
+#: src/muuli_wdr.cpp:2845 src/muuli_wdr.cpp:3078
 msgid "Close"
 msgstr "Kapat"
 
@@ -2990,7 +2990,7 @@ msgstr "Tam Ad :"
 #: src/muuli_wdr.cpp:1119 src/muuli_wdr.cpp:1124 src/muuli_wdr.cpp:1131
 #: src/muuli_wdr.cpp:1136 src/muuli_wdr.cpp:1143 src/muuli_wdr.cpp:1157
 #: src/muuli_wdr.cpp:1164 src/muuli_wdr.cpp:1169 src/muuli_wdr.cpp:1176
-#: src/muuli_wdr.cpp:2942 src/muuli_wdr.cpp:2950 src/muuli_wdr.cpp:2958
+#: src/muuli_wdr.cpp:2943 src/muuli_wdr.cpp:2951 src/muuli_wdr.cpp:2959
 msgid "N/A"
 msgstr "N/A"
 
@@ -3491,7 +3491,7 @@ msgstr "En cazla eş bağlantı sayısı:"
 msgid "Kademlia"
 msgstr "Kademlia"
 
-#: src/muuli_wdr.cpp:1408 src/muuli_wdr.cpp:2884
+#: src/muuli_wdr.cpp:1408 src/muuli_wdr.cpp:2885
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -3863,7 +3863,7 @@ msgstr "TCP portu:"
 msgid "Enable UPnP port forwarding on the EC port"
 msgstr "EC portuna UPnP port yönlendirmesi etkin."
 
-#: src/muuli_wdr.cpp:1870 src/muuli_wdr.cpp:2756
+#: src/muuli_wdr.cpp:1870 src/muuli_wdr.cpp:2757
 #: src/utils/wxCas/src/wxcasprefs.cpp:188
 msgid "Password"
 msgstr "Şifre"
@@ -4131,7 +4131,7 @@ msgstr "~/.aMule/ipfilter.dat dosyasından IP'leri süzgece yeniden yükle."
 msgid "URL:"
 msgstr "Adres:"
 
-#: src/muuli_wdr.cpp:2420 src/muuli_wdr.cpp:2612
+#: src/muuli_wdr.cpp:2420 src/muuli_wdr.cpp:2613
 msgid "Update now"
 msgstr "Şimdi güncelle"
 
@@ -4200,284 +4200,267 @@ msgstr ""
 msgid "Database"
 msgstr "Veri Oranı:"
 
-#: src/muuli_wdr.cpp:2527
-msgid "Status: ●  (queried on open)"
-msgstr ""
-
-#: src/muuli_wdr.cpp:2533
+#: src/muuli_wdr.cpp:2536
 #, fuzzy
 msgid "Source:"
 msgstr "Kaynaklar"
 
-#: src/muuli_wdr.cpp:2536
+#: src/muuli_wdr.cpp:2539
 msgid "DB-IP (free, no account)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2537
+#: src/muuli_wdr.cpp:2540
 msgid "MaxMind GeoLite2 (free, account required)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2538
+#: src/muuli_wdr.cpp:2541
 msgid "Custom URL"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2541
+#: src/muuli_wdr.cpp:2544
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default — no account required. MaxMind requires a free account + license key. Custom URL is the escape hatch."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2552
+#: src/muuli_wdr.cpp:2561
 msgid ""
 "No configuration required.\n"
 "\n"
-"IP-to-Country data by DB-IP.com\n"
-"https://db-ip.com\n"
-"\n"
-"License: Creative Commons BY 4.0\n"
-"Free for personal and commercial use with attribution shown above.\n"
-"https://creativecommons.org/licenses/by/4.0/"
+"IP-to-Country data by DB-IP.com — https://db-ip.com\n"
+"License: Creative Commons BY 4.0 — https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2567
-msgid "Account ID:"
-msgstr ""
-
-#: src/muuli_wdr.cpp:2571
+#: src/muuli_wdr.cpp:2574
 msgid "License key:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2577
+#: src/muuli_wdr.cpp:2580
 msgid ""
-"Get your free license key: https://www.maxmind.com/en/geolite2/signup\n"
+"Sign up for a free MaxMind account, then generate a License Key:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
 "\n"
-"This product includes GeoLite2 data created by MaxMind,\n"
-"available from https://www.maxmind.com\n"
-"\n"
-"License: MaxMind GeoLite2 EULA\n"
-"Requires attribution (shown above) and account registration;\n"
-"database must be refreshed at least every 30 days.\n"
-"https://www.maxmind.com/en/geolite2/eula"
+"This product includes GeoLite2 data created by MaxMind — https://www.maxmind.com\n"
+"License: MaxMind GeoLite2 EULA — https://www.maxmind.com/en/geolite2/eula\n"
+"Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2593
+#: src/muuli_wdr.cpp:2595
 #, fuzzy
 msgid "Download URL:"
 msgstr "Aktarım: "
 
-#: src/muuli_wdr.cpp:2599
+#: src/muuli_wdr.cpp:2601
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
-"URL may include credentials in the userinfo portion (https://user:pass@host/...).\n"
-"\n"
-"License terms and attribution requirements are determined by the\n"
-"upstream URL. You are responsible for compliance."
+"URL may include credentials (https://user:pass@host/...).\n"
+"License and attribution terms are set by the upstream URL — you are responsible."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2613
+#: src/muuli_wdr.cpp:2614
 msgid "Download the GeoIP database from the selected source."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2615
+#: src/muuli_wdr.cpp:2616
 #, fuzzy
 msgid "Auto-update on startup"
 msgstr "Ip süzgecini başlangıçta otomatikman güncelle."
 
-#: src/muuli_wdr.cpp:2616
+#: src/muuli_wdr.cpp:2617
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2639
+#: src/muuli_wdr.cpp:2640
 msgid "Filter incoming messages (except current chat):"
 msgstr "Gelen iletileri süz (o anki sohbet dışında.)"
 
-#: src/muuli_wdr.cpp:2641
+#: src/muuli_wdr.cpp:2642
 msgid "Filter all messages"
 msgstr "Hepsini süz."
 
-#: src/muuli_wdr.cpp:2643
+#: src/muuli_wdr.cpp:2644
 msgid "Filter messages from people not on your friend list"
 msgstr "Arkadaş listesindekiler dışında herkesi süz."
 
-#: src/muuli_wdr.cpp:2645
+#: src/muuli_wdr.cpp:2646
 msgid "Filter messages from unknown clients"
 msgstr "Bilinmeyen yazılımlardan gelenleri süz."
 
-#: src/muuli_wdr.cpp:2647
+#: src/muuli_wdr.cpp:2648
 msgid "Filter messages containing (use ',' as separator):"
 msgstr "Şu içerikteki iletileri süz (ayraç olarak ','  kullanınız.):"
 
-#: src/muuli_wdr.cpp:2650 src/muuli_wdr.cpp:2661
+#: src/muuli_wdr.cpp:2651 src/muuli_wdr.cpp:2662
 msgid "add here the words amule should filter and block messages including it"
 msgstr "buraya ekleyeceğiniz sözcükleri içeren iletiler aMule tarafından engellenir."
 
-#: src/muuli_wdr.cpp:2652
+#: src/muuli_wdr.cpp:2653
 msgid "Show received messages in the log"
 msgstr "Günlükte alınan iletileri göster"
 
-#: src/muuli_wdr.cpp:2655
+#: src/muuli_wdr.cpp:2656
 msgid "Comments"
 msgstr "Yorumlar"
 
-#: src/muuli_wdr.cpp:2658
+#: src/muuli_wdr.cpp:2659
 msgid "Filter comments containing (use ',' as separator):"
 msgstr "Şu içerikteki iletileri süz (ayraç olarak ',' kullanınız.):"
 
-#: src/muuli_wdr.cpp:2681
+#: src/muuli_wdr.cpp:2682
 msgid "Enable authentication"
 msgstr "Yetkilendirmeyi etkinleştir."
 
-#: src/muuli_wdr.cpp:2682
+#: src/muuli_wdr.cpp:2683
 msgid "Enable/disable username/password authentication"
 msgstr "Kullanıcı adı/şifre yetkilendirmeyi etkinleştir/devre dışı bırak."
 
-#: src/muuli_wdr.cpp:2685
+#: src/muuli_wdr.cpp:2686
 msgid "Username: "
 msgstr "Kullanıcı adı: "
 
-#: src/muuli_wdr.cpp:2688
+#: src/muuli_wdr.cpp:2689
 msgid "The username to use to connect to the proxy"
 msgstr "Vekil sunucuya bağlanmak için gerekli kullanıcı adı"
 
-#: src/muuli_wdr.cpp:2690
+#: src/muuli_wdr.cpp:2691
 msgid "Password:"
 msgstr "Şifre:"
 
-#: src/muuli_wdr.cpp:2693
+#: src/muuli_wdr.cpp:2694
 msgid "The password to use to connect to the proxy"
 msgstr "Vekil sunucuya bağlanmak için gerekli şifre"
 
-#: src/muuli_wdr.cpp:2695
+#: src/muuli_wdr.cpp:2696
 msgid "Enable Proxy"
 msgstr "Vekil sunucuyu Etkinleştir."
 
-#: src/muuli_wdr.cpp:2696
+#: src/muuli_wdr.cpp:2697
 msgid "Enable/disable proxy support"
 msgstr "Vekil sunucu desteğini etkinleştir/devre dışı bırak"
 
-#: src/muuli_wdr.cpp:2699
+#: src/muuli_wdr.cpp:2700
 msgid "Proxy type:"
 msgstr "Vekil sunucu Türü:"
 
-#: src/muuli_wdr.cpp:2710
+#: src/muuli_wdr.cpp:2711
 msgid "Proxy host:"
 msgstr "Vekil sunucu makine:"
 
-#: src/muuli_wdr.cpp:2713
+#: src/muuli_wdr.cpp:2714
 msgid "The proxy host name"
 msgstr "Vekil sunucu makine adı"
 
-#: src/muuli_wdr.cpp:2715
+#: src/muuli_wdr.cpp:2716
 msgid "Proxy port:"
 msgstr "Vekil sunucu Portu:"
 
-#: src/muuli_wdr.cpp:2718
+#: src/muuli_wdr.cpp:2719
 msgid "The proxy port"
 msgstr "Vekil sunucu portu"
 
-#: src/muuli_wdr.cpp:2737
+#: src/muuli_wdr.cpp:2738
 msgid "Connect to:"
 msgstr "Bağlan:"
 
-#: src/muuli_wdr.cpp:2746
+#: src/muuli_wdr.cpp:2747
 msgid "Login to remote amule"
 msgstr "Uzaktan aMule'ye giriş yapınız."
 
-#: src/muuli_wdr.cpp:2751
+#: src/muuli_wdr.cpp:2752
 msgid "User name"
 msgstr "Kullanıcı adı"
 
-#: src/muuli_wdr.cpp:2762
+#: src/muuli_wdr.cpp:2763
 msgid "Remember those settings"
 msgstr "Bu ayarları hatırla"
 
-#: src/muuli_wdr.cpp:2765
+#: src/muuli_wdr.cpp:2766
 msgid "Force ZLIB compression"
 msgstr "ZLIB sıkıştırmasını zorla"
 
-#: src/muuli_wdr.cpp:2789
+#: src/muuli_wdr.cpp:2790
 msgid "Enable Verbose Debug-Logging."
 msgstr "Fazladan Hata Çıktısı Kaydını Etkinleştir."
 
-#: src/muuli_wdr.cpp:2791
+#: src/muuli_wdr.cpp:2792
 msgid "Only to Logfile"
 msgstr "Sadece Kütük Dosyasına"
 
-#: src/muuli_wdr.cpp:2793
+#: src/muuli_wdr.cpp:2794
 msgid "Message Categories:"
 msgstr "İleti Sınıfları:"
 
-#: src/muuli_wdr.cpp:2817 src/PartFileConvertDlg.cpp:155
+#: src/muuli_wdr.cpp:2818 src/PartFileConvertDlg.cpp:155
 msgid "Waiting..."
 msgstr "Bekliyor…"
 
-#: src/muuli_wdr.cpp:2837
+#: src/muuli_wdr.cpp:2838
 msgid "Add imports"
 msgstr "İçe aktarımları ekle"
 
-#: src/muuli_wdr.cpp:2840
+#: src/muuli_wdr.cpp:2841
 msgid "Retry selected"
 msgstr "Seçileni tekrar dene"
 
-#: src/muuli_wdr.cpp:2842
+#: src/muuli_wdr.cpp:2843
 msgid "Remove selected"
 msgstr "Seçileni çıkar"
 
-#: src/muuli_wdr.cpp:2905
+#: src/muuli_wdr.cpp:2906
 msgid "Event Types"
 msgstr "Olay Türleri"
 
-#: src/muuli_wdr.cpp:2924
+#: src/muuli_wdr.cpp:2925
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
 msgstr "Seçili dosya(lar) için kuyruktaki istemciler ve istatistikler: Oturum / Bütün zamanlar"
 
-#: src/muuli_wdr.cpp:2948
+#: src/muuli_wdr.cpp:2949
 msgid "Active Uploads"
 msgstr "Etkin Göndermeler"
 
-#: src/muuli_wdr.cpp:2962
+#: src/muuli_wdr.cpp:2963
 msgid "Percent of total files"
 msgstr "Toplam dosyaların yüzdesi"
 
-#: src/muuli_wdr.cpp:3001
+#: src/muuli_wdr.cpp:3002
 msgid "All files"
 msgstr "Tüm dosyalar"
 
-#: src/muuli_wdr.cpp:3002
+#: src/muuli_wdr.cpp:3003
 msgid "Selected files"
 msgstr "Seçilen dosyalar"
 
-#: src/muuli_wdr.cpp:3003
+#: src/muuli_wdr.cpp:3004
 msgid "Active uploads only"
 msgstr "Sadece aktif Göndermeler"
 
-#: src/muuli_wdr.cpp:3005
+#: src/muuli_wdr.cpp:3006
 msgid "Show Clients for"
 msgstr "Kullanıcıları Göster"
 
-#: src/muuli_wdr.cpp:3007
+#: src/muuli_wdr.cpp:3008
 msgid "Reload:"
 msgstr "Yeniden yükle:"
 
-#: src/muuli_wdr.cpp:3011
+#: src/muuli_wdr.cpp:3012
 msgid "Reload your shared files"
 msgstr "Paylaşılan dosyalarınızı yeniden yükleyin"
 
-#: src/muuli_wdr.cpp:3073
+#: src/muuli_wdr.cpp:3074
 msgid "Send"
 msgstr "Gönder"
 
-#: src/muuli_wdr.cpp:3074
+#: src/muuli_wdr.cpp:3075
 msgid "Sends the specified message."
 msgstr "Belirlenen iletiyi gönderir."
 
-#: src/muuli_wdr.cpp:3078
+#: src/muuli_wdr.cpp:3079
 msgid "Close this chat-session."
 msgstr "Bu sohbet oturumunu kapatır."
 
-#: src/muuli_wdr.cpp:3101
+#: src/muuli_wdr.cpp:3102
 msgid "Connect to any server and/or Kad"
 msgstr "Herhangi bir sunucuya ve/veya Kad'a bağlan."
 
-#: src/muuli_wdr.cpp:3107 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:864
+#: src/muuli_wdr.cpp:3108 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:864
 msgid "Shared Files"
 msgstr "Paylaşılan Dosyalar"
 
@@ -5009,15 +4992,15 @@ msgstr "Diller mevcut değil"
 msgid "no options available"
 msgstr "mevcut seçenek yok"
 
-#: src/Preferences.cpp:1773
+#: src/Preferences.cpp:1798
 msgid "Invalid category found, skipping"
 msgstr "Geçersiz sınıf bulundu, atlanıyor"
 
-#: src/Preferences.cpp:1955
+#: src/Preferences.cpp:1980
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "TCP portu numarası, UDP soketi TCP+3 olduğundan 65532' den yüksek olamaz"
 
-#: src/Preferences.cpp:1956
+#: src/Preferences.cpp:1981
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Varsayılan port kullanılacak (%d)"
@@ -5078,7 +5061,7 @@ msgstr "Olaylar"
 msgid "Debugging"
 msgstr "Hata Çıktısı"
 
-#: src/PrefsUnifiedDlg.cpp:274
+#: src/PrefsUnifiedDlg.cpp:277
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5088,15 +5071,15 @@ msgstr ""
 "    %PARTFILE - dosyanın tam yolu\n"
 "    %PARTNAME - dosyanın sadece adı"
 
-#: src/PrefsUnifiedDlg.cpp:294
+#: src/PrefsUnifiedDlg.cpp:297
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr "Sistem tepsisi ikon desteği, derleme esnasında libayatana-appindicator3'e ihtiyaç duyar."
 
-#: src/PrefsUnifiedDlg.cpp:309
+#: src/PrefsUnifiedDlg.cpp:312
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr "Wayland ile kullanılamaz: protokol bir pencere küçültüldüğünde bunu iletmez, yani bu seçenek sistemin küçült düğmesi tıklamasını yakalayamaz. Çözüm: yerine XWayland kullanmak için aMule'ü `GDK_BACKEND=x11` ile başlatın."
 
-#: src/PrefsUnifiedDlg.cpp:349
+#: src/PrefsUnifiedDlg.cpp:352
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5112,26 +5095,26 @@ msgstr ""
 "Bu ayarlarla oynanmasa da\n"
 "aMule gayet iyi işleyecektir."
 
-#: src/PrefsUnifiedDlg.cpp:410
+#: src/PrefsUnifiedDlg.cpp:413
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Cfg %d Kimliği ve %s anahtarı ile parçacığa bağlanamadı"
 
-#: src/PrefsUnifiedDlg.cpp:459
+#: src/PrefsUnifiedDlg.cpp:462
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Cfg' den %d Kimliği ve %s anahtarı ile Parçacığa veri aktarılamadı"
 
-#: src/PrefsUnifiedDlg.cpp:504
+#: src/PrefsUnifiedDlg.cpp:507
 msgid "The type of proxy you are connecting to"
 msgstr "Bağlanacağınız vekil sunucu türü"
 
-#: src/PrefsUnifiedDlg.cpp:630
+#: src/PrefsUnifiedDlg.cpp:638
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Parçacıktan %d Kimliği ve %s anahtarı ile Cfg' ye veri aktarılamadı"
 
-#: src/PrefsUnifiedDlg.cpp:703
+#: src/PrefsUnifiedDlg.cpp:711
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5139,31 +5122,31 @@ msgstr ""
 "Değişikliklerin uygulanması için, aMule yeniden başlatılmalı\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:710
+#: src/PrefsUnifiedDlg.cpp:718
 msgid "- TCP port changed.\n"
 msgstr "- TCP portu değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:715
+#: src/PrefsUnifiedDlg.cpp:723
 msgid "- UDP port changed.\n"
 msgstr "- UDP Portu değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:720
+#: src/PrefsUnifiedDlg.cpp:728
 msgid "- External connect port changed.\n"
 msgstr "- Dışarıdan bağlantı portu değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:724
+#: src/PrefsUnifiedDlg.cpp:732
 msgid "- External connect acceptance changed.\n"
 msgstr "- Dışarıdan bağlantı kabul edilme işlemi değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:728
+#: src/PrefsUnifiedDlg.cpp:736
 msgid "- External connect interface changed.\n"
 msgstr "- Dışarıdan bağlantı arayüzü değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:732
+#: src/PrefsUnifiedDlg.cpp:740
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "- Protokol gizleme desteği değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:741
+#: src/PrefsUnifiedDlg.cpp:749
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5171,7 +5154,7 @@ msgstr ""
 "Otomatik Sunucu güncelleme listeniz boş.\n"
 "'Sunucu listesini başlangıçta otomatikman güncelle' devre dışı bırakılacak."
 
-#: src/PrefsUnifiedDlg.cpp:748
+#: src/PrefsUnifiedDlg.cpp:756
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5179,19 +5162,19 @@ msgstr ""
 "Dışarıdan bağlantıları aktifleştirmiş ama bir şifre belirlememişsiniz.\n"
 "Geçerli bir şifre belirlenmedikçe dışarıdan bağlantılar devre dışı kalacaktır."
 
-#: src/PrefsUnifiedDlg.cpp:760
+#: src/PrefsUnifiedDlg.cpp:768
 msgid "- Language changed.\n"
 msgstr "- Dil ayarları değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:765
+#: src/PrefsUnifiedDlg.cpp:773
 msgid "- Temp folder changed.\n"
 msgstr "- Geçici Dosyalar dizini değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:770
+#: src/PrefsUnifiedDlg.cpp:778
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K ağı etkinleştirildi.\n"
 
-#: src/PrefsUnifiedDlg.cpp:862
+#: src/PrefsUnifiedDlg.cpp:870
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5199,7 +5182,7 @@ msgstr ""
 "Hem eD2k hem de Kad ağları devre dışı bırakılmış.\n"
 "En az birini etkinleştirmeden bağlanamayacaksınız."
 
-#: src/PrefsUnifiedDlg.cpp:866
+#: src/PrefsUnifiedDlg.cpp:874
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5207,7 +5190,7 @@ msgstr ""
 "UDP portu devre dışı bırakılmışsa Kad başlamayacaktır.\n"
 "UDP portu açın veya Kademlia'yı devre dışı bırakın."
 
-#: src/PrefsUnifiedDlg.cpp:879
+#: src/PrefsUnifiedDlg.cpp:887
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5217,19 +5200,19 @@ msgstr ""
 "aMule' yi ŞİMDİ yeniden başlatmalısınız.\n"
 "Şimdi yeniden başlatmazsanız, kötü şeyler olabilir.\n"
 
-#: src/PrefsUnifiedDlg.cpp:942
+#: src/PrefsUnifiedDlg.cpp:950
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr "Oturum açıldığında otomatik başlatma için aMule kaydedilemedi. Otomatik başlatma deposu salt okunur olabilir."
 
-#: src/PrefsUnifiedDlg.cpp:943
+#: src/PrefsUnifiedDlg.cpp:951
 msgid "Could not remove the autostart-at-login entry."
 msgstr "Oturum açılışında otomatik başlatma unsuru kaldırılamadı."
 
-#: src/PrefsUnifiedDlg.cpp:944
+#: src/PrefsUnifiedDlg.cpp:952
 msgid "Autostart"
 msgstr "Otomatik başlatma"
 
-#: src/PrefsUnifiedDlg.cpp:1009
+#: src/PrefsUnifiedDlg.cpp:1017
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5239,41 +5222,41 @@ msgstr ""
 "Lütfen geçerli bir server.met dosyasını gösteren en az bir adres yazınız.\n"
 "Bir adres girmek için bu kutucuğun yanındaki \"Liste\" düğmesine basınız."
 
-#: src/PrefsUnifiedDlg.cpp:1150
+#: src/PrefsUnifiedDlg.cpp:1158
 msgid "Temporary files"
 msgstr "Geçici dosya(lar)"
 
-#: src/PrefsUnifiedDlg.cpp:1155
+#: src/PrefsUnifiedDlg.cpp:1163
 msgid "Incoming files"
 msgstr "Gelen dosya(lar)"
 
-#: src/PrefsUnifiedDlg.cpp:1160
+#: src/PrefsUnifiedDlg.cpp:1168
 msgid "Online Signatures"
 msgstr "Çevrimiçi İmzalar"
 
-#: src/PrefsUnifiedDlg.cpp:1173
+#: src/PrefsUnifiedDlg.cpp:1181
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "%s için bir dizin seçiniz."
 
-#: src/PrefsUnifiedDlg.cpp:1193
+#: src/PrefsUnifiedDlg.cpp:1201
 msgid "Browse for videoplayer"
 msgstr "Ortam Çalıcısı için göz at"
 
-#: src/PrefsUnifiedDlg.cpp:1197
+#: src/PrefsUnifiedDlg.cpp:1205
 msgid "Select browser"
 msgstr "Tarayıcı Seçiniz"
 
-#: src/PrefsUnifiedDlg.cpp:1203
+#: src/PrefsUnifiedDlg.cpp:1211
 #, c-format
 msgid "Executable%s"
 msgstr "Çalıştırılabilir  %s"
 
-#: src/PrefsUnifiedDlg.cpp:1224
+#: src/PrefsUnifiedDlg.cpp:1232
 msgid "Edit server list"
 msgstr "Sunucu listesini düzenle"
 
-#: src/PrefsUnifiedDlg.cpp:1225
+#: src/PrefsUnifiedDlg.cpp:1233
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5281,137 +5264,111 @@ msgstr ""
 "Server.met dosyasını indirmek için buraya bağlantı adresi girin.\n"
 "Her satıra sadece bir adres yazılmalıdır."
 
-#: src/PrefsUnifiedDlg.cpp:1330
-msgid "Data by DB-IP.com"
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp:1331
+#: src/PrefsUnifiedDlg.cpp:1365
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1332
+#: src/PrefsUnifiedDlg.cpp:1367
 #, fuzzy
 msgid "Custom source"
 msgstr "Tamamlandı"
 
-#: src/PrefsUnifiedDlg.cpp:1347
+#: src/PrefsUnifiedDlg.cpp:1369
+msgid "Data by DB-IP.com"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp:1387
+#, fuzzy, c-format
+msgid "Status: Loaded%s"
+msgstr "Durum:"
+
+#: src/PrefsUnifiedDlg.cpp:1390
 #, c-format
-msgid ""
-"Status: ●  %s\n"
-"           %s%s — %s"
+msgid "Status: Loaded%s — %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1348
-#, fuzzy
-msgid "Loaded"
-msgstr "Gönderilen"
-
-#: src/PrefsUnifiedDlg.cpp:1352
-#, c-format
-msgid ""
-"Status: ●  %s\n"
-"           %s\n"
-"           %s"
+#: src/PrefsUnifiedDlg.cpp:1396
+msgid "Status: Failed to load — click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1353
-msgid "Failed to load — file present but rejected by libmaxminddb"
+#: src/PrefsUnifiedDlg.cpp:1399
+msgid "Status: Not found — click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1355
-msgid "Click 'Update now' to fetch a fresh copy from the selected source."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp:1359
-#, c-format
-msgid ""
-"Status: ●  %s\n"
-"           %s"
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp:1360
-#, fuzzy
-msgid "Not found"
-msgstr "Dosya bulunamadı."
-
-#: src/PrefsUnifiedDlg.cpp:1361
-msgid "Click 'Update now' to download the database from the selected source."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp:1406 src/PrefsUnifiedDlg.cpp:1425
+#: src/PrefsUnifiedDlg.cpp:1445 src/PrefsUnifiedDlg.cpp:1464
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "Güncelleme gecikmesi: %d saniye"
 msgstr[1] "Güncelleme gecikmesi: %d saniye"
 
-#: src/PrefsUnifiedDlg.cpp:1413
+#: src/PrefsUnifiedDlg.cpp:1452
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "Ortalama grafiği için süre: %d dakika"
 msgstr[1] "Ortalama grafiği için süre: %d dakika"
 
-#: src/PrefsUnifiedDlg.cpp:1419
+#: src/PrefsUnifiedDlg.cpp:1458
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Bağlantı Grafik Ölçüsü: %d"
 
-#: src/PrefsUnifiedDlg.cpp:1431
+#: src/PrefsUnifiedDlg.cpp:1470
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "Dosya Alım Boyutu: %d bayt"
 msgstr[1] "Dosya Alım Boyutu: %d bayt"
 
-#: src/PrefsUnifiedDlg.cpp:1437
+#: src/PrefsUnifiedDlg.cpp:1476
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "Gönderme Sıra Boyutu: %d kullanıcı"
 msgstr[1] "Gönderme Sıra Boyutu: %d kullanıcı"
 
-#: src/PrefsUnifiedDlg.cpp:1444
+#: src/PrefsUnifiedDlg.cpp:1483
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "Sunucu bağlantısı yenileme sıklığı: %d dakika"
 msgstr[1] "Sunucu bağlantısı yenileme sıklığı: %d dakika"
 
-#: src/PrefsUnifiedDlg.cpp:1446
+#: src/PrefsUnifiedDlg.cpp:1485
 msgid "Server connection refresh interval: Disabled"
 msgstr "Sunucu bağlantısı yenileme döngüsü: Devre dışı"
 
-#: src/PrefsUnifiedDlg.cpp:1491
+#: src/PrefsUnifiedDlg.cpp:1530
 msgid "disabled"
 msgstr "devre dışı"
 
-#: src/PrefsUnifiedDlg.cpp:1514
+#: src/PrefsUnifiedDlg.cpp:1553
 #, c-format
 msgid "Execute command on '%s' event"
 msgstr "'%s' olayında komut çalıştır."
 
-#: src/PrefsUnifiedDlg.cpp:1517
+#: src/PrefsUnifiedDlg.cpp:1556
 msgid "Enable command execution on core"
 msgstr "Çekirdekte komut çalıştırmayı aktifleştir."
 
-#: src/PrefsUnifiedDlg.cpp:1525
+#: src/PrefsUnifiedDlg.cpp:1564
 msgid "Core command:"
 msgstr "Çekirdek komutu:"
 
-#: src/PrefsUnifiedDlg.cpp:1534
+#: src/PrefsUnifiedDlg.cpp:1573
 msgid "Enable command execution on GUI"
 msgstr "Arayüzde komut çalıştırmayı etkinleştir."
 
-#: src/PrefsUnifiedDlg.cpp:1542
+#: src/PrefsUnifiedDlg.cpp:1581
 msgid "GUI command:"
 msgstr "Arayüz komutu:"
 
-#: src/PrefsUnifiedDlg.cpp:1551
+#: src/PrefsUnifiedDlg.cpp:1590
 msgid "The following variables will be replaced:"
 msgstr "Şu girdiler değiştirilecek:"
 
-#: src/PrefsUnifiedDlg.cpp:1713
+#: src/PrefsUnifiedDlg.cpp:1752
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
@@ -5419,32 +5376,32 @@ msgstr ""
 "Şu dizinler sistem dizinleri veya hassas konumlar gibi görünüyor:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:1718
+#: src/PrefsUnifiedDlg.cpp:1757
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr "Bunları yinelemeli olarak paylaşmanız, kapsadıkları her dosyayı eD2k/Kad ağlarında yayınlayacaktır. Bunu hakikaten yapmak istiyor musunuz?"
 
-#: src/PrefsUnifiedDlg.cpp:1720
+#: src/PrefsUnifiedDlg.cpp:1759
 msgid "Confirm shared folders"
 msgstr "Paylaşılan dizinleri teyit et"
 
-#: src/PrefsUnifiedDlg.cpp:1753
+#: src/PrefsUnifiedDlg.cpp:1792
 msgid "Reloading shared files…"
 msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
 
-#: src/PrefsUnifiedDlg.cpp:1754
+#: src/PrefsUnifiedDlg.cpp:1793
 msgid "Scanning for subdirectories…"
 msgstr "Alt dizinler taranıyor…"
 
-#: src/PrefsUnifiedDlg.cpp:1755
+#: src/PrefsUnifiedDlg.cpp:1794
 msgid "Updating shared folders"
 msgstr "Paylaşılan dizinler güncelleniyor"
 
-#: src/PrefsUnifiedDlg.cpp:1784
+#: src/PrefsUnifiedDlg.cpp:1823
 #, c-format
 msgid "Scanned %u directories…"
 msgstr "%u dizin tarandı…"
 
-#: src/PrefsUnifiedDlg.cpp:1834
+#: src/PrefsUnifiedDlg.cpp:1873
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Paylaşılmış dosyalar yeniden yükleniyor: %u dosya tarandı"
@@ -7849,6 +7806,14 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#, fuzzy
+#~ msgid "Loaded"
+#~ msgstr "Gönderilen"
+
+#, fuzzy
+#~ msgid "Not found"
+#~ msgstr "Dosya bulunamadı."
 
 #, c-format
 #~ msgid "No GeoLite2 update URL configured. Download GeoLite2-Country.mmdb manually (a free MaxMind account is required) and place it at %s, or set the URL in Preferences."

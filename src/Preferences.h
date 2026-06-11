@@ -644,8 +644,16 @@ public:
 	static void				SetGeoIPEnabled(bool v)		{s_GeoIPEnabled = v;}
 	static GeoIPSource		GetGeoIPSource();
 	static void				SetGeoIPSource(GeoIPSource v);
-	static const wxString&	GetGeoIPMaxMindAccount()	{return s_GeoIPMaxMindAccount;}
-	static void				SetGeoIPMaxMindAccount(const wxString& v) {s_GeoIPMaxMindAccount = v;}
+	// "Source of the currently-loaded geoip.mmdb" — distinct from
+	// GetGeoIPSource() which is the *next-download* selector. Updated
+	// by CIP2Country::DownloadFinished on success so the status line
+	// can correctly attribute a loaded DB even after the user flips
+	// the dropdown to a different source they haven't yet downloaded
+	// from. Empty string ("") means the file was hand-installed by the
+	// user (or migrated from the legacy GeoLite2-Country.mmdb path), in
+	// which case the status line shows "Loaded" with no attribution.
+	static const wxString&	GetGeoIPLoadedSource()		{return s_GeoIPLoadedSource;}
+	static void				SetGeoIPLoadedSource(GeoIPSource v);
 	static const wxString&	GetGeoIPMaxMindLicense()	{return s_GeoIPMaxMindLicense;}
 	static void				SetGeoIPMaxMindLicense(const wxString& v) {s_GeoIPMaxMindLicense = v;}
 	static const wxString&	GetGeoIPCustomUrl()			{return s_GeoIPCustomUrl;}
@@ -917,8 +925,8 @@ protected:
 
 	// GeoIP / IP2Country
 	static bool		s_GeoIPEnabled;
-	static wxString	s_GeoIPSource;          // serialised enum: "dbip" / "maxmind" / "custom"
-	static wxString	s_GeoIPMaxMindAccount;
+	static wxString	s_GeoIPSource;          // serialised enum: "dbip" / "maxmind" / "custom" — next-download selector
+	static wxString	s_GeoIPLoadedSource;    // same shape — provenance of the currently-loaded geoip.mmdb
 	static wxString	s_GeoIPMaxMindLicense;
 	static wxString	s_GeoIPCustomUrl;
 	static bool		s_GeoIPAutoUpdate;

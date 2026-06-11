@@ -62,6 +62,14 @@ public:
 	 * created at one time.
 	 */
 	PrefsUnifiedDlg(wxWindow* parent);
+#ifdef ENABLE_IP2COUNTRY
+	~PrefsUnifiedDlg();
+
+	// Public module hook: CamuleDlg::IP2CountryDownloadFinished calls
+	// this so an open Preferences dialog refreshes its status block as
+	// soon as the new database is loaded. No-op if no dialog is open.
+	static void RefreshIP2CountryStatusIfOpen();
+#endif
 
 	/**
 	 * Updates the widgets with the values of the preference-variables.
@@ -121,10 +129,16 @@ protected:
 	// dropdown index; called from OnGeoIPSourceChange and from
 	// TransferToWindow on dialog open.
 	void UpdateGeoIPSourcePanel();
-	// Re-render the multi-line status block from the current CIP2Country
-	// state + selected source. Called whenever the dropdown changes or
-	// after a successful Update Now.
+	// Re-render the status line from the current CIP2Country state +
+	// selected source. Called whenever the dropdown changes, after a
+	// successful Update Now, and from RefreshIP2CountryStatusIfOpen.
 	void UpdateGeoIPStatus();
+
+private:
+	// Set in the ctor / cleared in dtor so the IP2Country download
+	// callback can find an open dialog without a global pointer chain.
+	static PrefsUnifiedDlg *s_activeInstance;
+public:
 #endif
 	void OnColorCategorySelected(wxCommandEvent &event);
 	void OnCheckBoxChange(wxCommandEvent &event);

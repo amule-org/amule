@@ -2523,8 +2523,11 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
     // Status block — multi-line static text. PrefsUnifiedDlg updates the
     // label content in TransferToWindow() based on the live mmdb state
     // and the selected source's attribution string.
+    // Placeholder is overwritten by PrefsUnifiedDlg::UpdateGeoIPStatus()
+    // during TransferToWindow before this label ever paints; no
+    // user-visible string here, so nothing to translate.
     wxStaticText *item4 = new wxStaticText( parent, IDC_GEOIP_STATUS,
-        _("Status: \xE2\x97\x8F  (queried on open)"),
+        wxEmptyString,
         wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item4, wxSizerFlags().Expand().Border(wxALL, 4) );
 
@@ -2542,68 +2545,66 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
     item5->Add( item7, wxSizerFlags().Center().Expand() );
     item2->Add( item5, wxSizerFlags().Expand().Border(wxALL, 4) );
 
-    // Source-specific options panel. Hosts three child sizers stacked
-    // exclusively, switched by PrefsUnifiedDlg::OnGeoIPSourceChanged.
+    // Source-specific options panel. Hosts three child wxPanel siblings
+    // (DB-IP / MaxMind / Custom) — one shown at a time, the other two
+    // hidden. Real wxPanel children are required (instead of just
+    // hiding sibling widgets) because Show(false) on individual widgets
+    // doesn't propagate to their sizer slot or to nearby ID-less labels,
+    // which left those labels visible across source changes.
     wxStaticBox *item9 = new wxStaticBox( parent, IDC_GEOIP_SOURCE_PANEL, wxEmptyString );
     wxStaticBoxSizer *item8 = new wxStaticBoxSizer( item9, wxVERTICAL );
 
-    // --- DB-IP sub-panel: zero-config + attribution + license text. ---
-    wxStaticText *item10 = new wxStaticText( parent, IDC_GEOIP_INFO_DBIP,
+    // --- DB-IP sub-panel ---
+    wxPanel *dbipPanel = new wxPanel( parent, IDC_GEOIP_INFO_DBIP );
+    wxBoxSizer *dbipSizer = new wxBoxSizer( wxVERTICAL );
+    wxStaticText *dbipText = new wxStaticText( dbipPanel, wxID_ANY,
         _("No configuration required.\n"
           "\n"
-          "IP-to-Country data by DB-IP.com\n"
-          "https://db-ip.com\n"
-          "\n"
-          "License: Creative Commons BY 4.0\n"
-          "Free for personal and commercial use with attribution shown above.\n"
-          "https://creativecommons.org/licenses/by/4.0/"),
+          "IP-to-Country data by DB-IP.com — https://db-ip.com\n"
+          "License: Creative Commons BY 4.0 — https://creativecommons.org/licenses/by/4.0/"),
         wxDefaultPosition, wxDefaultSize, 0 );
-    item8->Add( item10, wxSizerFlags().Expand().Border(wxALL, 4) );
+    dbipSizer->Add( dbipText, wxSizerFlags().Expand().Border(wxALL, 4) );
+    dbipPanel->SetSizer( dbipSizer );
+    item8->Add( dbipPanel, wxSizerFlags().Expand() );
 
-    // --- MaxMind sub-panel: account / key fields + attribution + license. ---
-    wxBoxSizer *item11 = new wxBoxSizer( wxVERTICAL );
-    wxFlexGridSizer *item12 = new wxFlexGridSizer( 2, 0, 4 );
-    item12->AddGrowableCol( 1 );
-    wxStaticText *item13 = new wxStaticText( parent, -1, _("Account ID:"), wxDefaultPosition, wxDefaultSize, 0 );
-    item12->Add( item13, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
-    wxTextCtrl *item14 = new wxTextCtrl( parent, IDC_GEOIP_MAXMIND_ACCT, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-    item12->Add( item14, wxSizerFlags().Expand() );
-    wxStaticText *item15 = new wxStaticText( parent, -1, _("License key:"), wxDefaultPosition, wxDefaultSize, 0 );
-    item12->Add( item15, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
-    wxTextCtrl *item16 = new wxTextCtrl( parent, IDC_GEOIP_MAXMIND_LIC, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
-    item12->Add( item16, wxSizerFlags().Expand() );
-    item11->Add( item12, wxSizerFlags().Expand().Border(wxBOTTOM, 4) );
-    wxStaticText *item17 = new wxStaticText( parent, IDC_GEOIP_INFO_MAXMIND,
-        _("Get your free license key: https://www.maxmind.com/en/geolite2/signup\n"
+    // --- MaxMind sub-panel ---
+    wxPanel *maxmindPanel = new wxPanel( parent, IDC_GEOIP_INFO_MAXMIND );
+    wxBoxSizer *maxmindSizer = new wxBoxSizer( wxVERTICAL );
+    wxBoxSizer *maxmindRow = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *licLabel = new wxStaticText( maxmindPanel, wxID_ANY, _("License key:"), wxDefaultPosition, wxDefaultSize, 0 );
+    maxmindRow->Add( licLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
+    wxTextCtrl *licField = new wxTextCtrl( maxmindPanel, IDC_GEOIP_MAXMIND_LIC, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
+    maxmindRow->Add( licField, wxSizerFlags(1).Expand() );
+    maxmindSizer->Add( maxmindRow, wxSizerFlags().Expand().Border(wxALL, 4) );
+    wxStaticText *maxmindText = new wxStaticText( maxmindPanel, wxID_ANY,
+        _("Sign up for a free MaxMind account, then generate a License Key:\n"
+          "https://www.maxmind.com/en/geolite2/signup\n"
           "\n"
-          "This product includes GeoLite2 data created by MaxMind,\n"
-          "available from https://www.maxmind.com\n"
-          "\n"
-          "License: MaxMind GeoLite2 EULA\n"
-          "Requires attribution (shown above) and account registration;\n"
-          "database must be refreshed at least every 30 days.\n"
-          "https://www.maxmind.com/en/geolite2/eula"),
+          "This product includes GeoLite2 data created by MaxMind — https://www.maxmind.com\n"
+          "License: MaxMind GeoLite2 EULA — https://www.maxmind.com/en/geolite2/eula\n"
+          "Requires attribution and account registration; refresh at least every 30 days."),
         wxDefaultPosition, wxDefaultSize, 0 );
-    item11->Add( item17, wxSizerFlags().Expand().Border(wxTOP, 4) );
-    item8->Add( item11, wxSizerFlags().Expand().Border(wxALL, 4) );
+    maxmindSizer->Add( maxmindText, wxSizerFlags().Expand().Border(wxALL, 4) );
+    maxmindPanel->SetSizer( maxmindSizer );
+    item8->Add( maxmindPanel, wxSizerFlags().Expand() );
 
-    // --- Custom URL sub-panel: URL field + compliance disclaimer. ---
-    wxBoxSizer *item18 = new wxBoxSizer( wxVERTICAL );
-    wxBoxSizer *item19 = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *item20 = new wxStaticText( parent, -1, _("Download URL:"), wxDefaultPosition, wxDefaultSize, 0 );
-    item19->Add( item20, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
-    wxTextCtrl *item21 = new wxTextCtrl( parent, IDC_GEOIP_CUSTOM_URL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-    item19->Add( item21, wxSizerFlags().Expand() );
-    item18->Add( item19, wxSizerFlags().Expand().Border(wxBOTTOM, 4) );
-    wxStaticText *item22 = new wxStaticText( parent, IDC_GEOIP_INFO_CUSTOM,
+    // --- Custom URL sub-panel ---
+    wxPanel *customPanel = new wxPanel( parent, IDC_GEOIP_INFO_CUSTOM );
+    wxBoxSizer *customSizer = new wxBoxSizer( wxVERTICAL );
+    wxBoxSizer *customRow = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *urlLabel = new wxStaticText( customPanel, wxID_ANY, _("Download URL:"), wxDefaultPosition, wxDefaultSize, 0 );
+    customRow->Add( urlLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
+    wxTextCtrl *urlField = new wxTextCtrl( customPanel, IDC_GEOIP_CUSTOM_URL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    customRow->Add( urlField, wxSizerFlags(1).Expand() );
+    customSizer->Add( customRow, wxSizerFlags().Expand().Border(wxALL, 4) );
+    wxStaticText *customText = new wxStaticText( customPanel, wxID_ANY,
         _("Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
-          "URL may include credentials in the userinfo portion (https://user:pass@host/...).\n"
-          "\n"
-          "License terms and attribution requirements are determined by the\n"
-          "upstream URL. You are responsible for compliance."),
+          "URL may include credentials (https://user:pass@host/...).\n"
+          "License and attribution terms are set by the upstream URL — you are responsible."),
         wxDefaultPosition, wxDefaultSize, 0 );
-    item18->Add( item22, wxSizerFlags().Expand().Border(wxTOP, 4) );
-    item8->Add( item18, wxSizerFlags().Expand().Border(wxALL, 4) );
+    customSizer->Add( customText, wxSizerFlags().Expand().Border(wxALL, 4) );
+    customPanel->SetSizer( customSizer );
+    item8->Add( customPanel, wxSizerFlags().Expand() );
 
     item2->Add( item8, wxSizerFlags().Expand().Border(wxALL, 4) );
 
