@@ -38,6 +38,10 @@
 #include "amule.h"				// Needed for theApp
 #include "amuleDlg.h"
 #include "AutostartManager.h"			// Autostart-on-login toggle backend
+#ifdef ENABLE_IP2COUNTRY
+#include "IP2Country.h"				// CIP2Country::Update / GetDatabasePath
+#include <wx/filename.h>			// wxFileName for status-line size lookup
+#endif
 #include "MuleColour.h"
 #include "EditServerListDlg.h"
 #include "SharedFileList.h"		// Needed for CSharedFileList
