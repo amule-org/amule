@@ -1505,14 +1505,14 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 				_("Status: Loaded%s"), sizeLabel));
 		} else {
 			st->SetLabel(wxString::Format(
-				_("Status: Loaded%s \xE2\x80\x94 %s"),
+				_("Status: Loaded%s - %s"),
 				sizeLabel, attribution));
 		}
 	} else if (wxFileName::FileExists(ip2c->GetDatabasePath())) {
 		// File exists but database failed to open — corrupt / wrong format.
-		st->SetLabel(_("Status: Failed to load \xE2\x80\x94 click 'Update now' to refresh."));
+		st->SetLabel(_("Status: Failed to load - click 'Update now' to refresh."));
 	} else {
-		st->SetLabel(_("Status: Not found \xE2\x80\x94 click 'Update now' to download."));
+		st->SetLabel(_("Status: Not found - click 'Update now' to download."));
 	}
 }
 #endif // ENABLE_IP2COUNTRY

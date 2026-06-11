@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-06-11 22:29+0200\n"
+"POT-Creation-Date: 2026-06-11 23:02+0200\n"
 "PO-Revision-Date: 2026-06-11 06:04+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -2298,7 +2298,7 @@ msgid "Error updating %s"
 msgstr "Błąd aktualizacji GeoIP.dat"
 
 #: src/IP2Country.cpp:249
-msgid "DB-IP download failed for the current month — retrying with the previous month's URL."
+msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
 msgstr ""
 
 #: src/IP2Country.cpp:254 src/IPFilter.cpp:512 src/ServerList.cpp:872
@@ -4247,15 +4247,15 @@ msgid "Custom URL"
 msgstr ""
 
 #: src/muuli_wdr.cpp:2544
-msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default — no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
+msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
 msgstr ""
 
 #: src/muuli_wdr.cpp:2561
 msgid ""
 "No configuration required.\n"
 "\n"
-"IP-to-Country data by DB-IP.com — https://db-ip.com\n"
-"License: Creative Commons BY 4.0 — https://creativecommons.org/licenses/by/4.0/"
+"IP-to-Country data by DB-IP.com - https://db-ip.com\n"
+"License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
 
 #: src/muuli_wdr.cpp:2574
@@ -4267,8 +4267,8 @@ msgid ""
 "Sign up for a free MaxMind account, then generate a License Key:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
 "\n"
-"This product includes GeoLite2 data created by MaxMind — https://www.maxmind.com\n"
-"License: MaxMind GeoLite2 EULA — https://www.maxmind.com/en/geolite2/eula\n"
+"This product includes GeoLite2 data created by MaxMind - https://www.maxmind.com\n"
+"License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
 
@@ -4281,7 +4281,7 @@ msgstr "Pobranych: "
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
 "URL may include credentials (https://user:pass@host/...).\n"
-"License and attribution terms are set by the upstream URL — you are responsible."
+"License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
 
 #: src/muuli_wdr.cpp:2614
@@ -5326,25 +5326,25 @@ msgstr "Pełne źródła"
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1503
+#: src/PrefsUnifiedDlg.cpp:1505
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Status:"
 
-#: src/PrefsUnifiedDlg.cpp:1506
-#, c-format
-msgid "Status: Loaded%s — %s"
-msgstr ""
+#: src/PrefsUnifiedDlg.cpp:1508
+#, fuzzy, c-format
+msgid "Status: Loaded%s - %s"
+msgstr "Status:"
 
-#: src/PrefsUnifiedDlg.cpp:1512
-msgid "Status: Failed to load — click 'Update now' to refresh."
+#: src/PrefsUnifiedDlg.cpp:1513
+msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:1515
-msgid "Status: Not found — click 'Update now' to download."
+msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1561 src/PrefsUnifiedDlg.cpp:1580
+#: src/PrefsUnifiedDlg.cpp:1560 src/PrefsUnifiedDlg.cpp:1579
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
@@ -5352,7 +5352,7 @@ msgstr[0] "Opóźnienie odświeżania: %d sekunda"
 msgstr[1] "Opóźnienie odświeżania: %d sekundy"
 msgstr[2] "Opóźnienie odświeżania: %d sekund"
 
-#: src/PrefsUnifiedDlg.cpp:1568
+#: src/PrefsUnifiedDlg.cpp:1567
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
@@ -5360,12 +5360,12 @@ msgstr[0] "Czas dla przeciętnego wykresu: %d minuta"
 msgstr[1] "Czas dla przeciętnego wykresu: %d minuty"
 msgstr[2] "Czas dla przeciętnego wykresu: %d minut"
 
-#: src/PrefsUnifiedDlg.cpp:1574
+#: src/PrefsUnifiedDlg.cpp:1573
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Skala wykresu połączeń: %d"
 
-#: src/PrefsUnifiedDlg.cpp:1586
+#: src/PrefsUnifiedDlg.cpp:1585
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
@@ -5373,7 +5373,7 @@ msgstr[0] "Rozmiar bufora pliku: %d bajt"
 msgstr[1] "Rozmiar bufora pliku: %d bajty"
 msgstr[2] "Rozmiar bufora pliku: %d bajtów"
 
-#: src/PrefsUnifiedDlg.cpp:1592
+#: src/PrefsUnifiedDlg.cpp:1591
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
@@ -5381,7 +5381,7 @@ msgstr[0] "Rozmiar kolejki wysyłania: %d klient"
 msgstr[1] "Rozmiar kolejki wysyłania: %d klientów"
 msgstr[2] "Rozmiar kolejki wysyłania: %d klientów"
 
-#: src/PrefsUnifiedDlg.cpp:1599
+#: src/PrefsUnifiedDlg.cpp:1598
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
@@ -5389,74 +5389,74 @@ msgstr[0] "Odświeżanie połączeń do serwera co: %d minutę"
 msgstr[1] "Odświeżanie połączeń do serwera co: %d minuty"
 msgstr[2] "Odświeżanie połączeń do serwera co: %d minut"
 
-#: src/PrefsUnifiedDlg.cpp:1601
+#: src/PrefsUnifiedDlg.cpp:1600
 msgid "Server connection refresh interval: Disabled"
 msgstr "Odświeżanie połączeń do serwera co: Wyłączone"
 
-#: src/PrefsUnifiedDlg.cpp:1646
+#: src/PrefsUnifiedDlg.cpp:1645
 msgid "disabled"
 msgstr "wyłączone"
 
-#: src/PrefsUnifiedDlg.cpp:1669
+#: src/PrefsUnifiedDlg.cpp:1668
 #, fuzzy, c-format
 msgid "Execute command on '%s' event"
 msgstr "Wykonaj komendę przy wydarzeniu `%s'"
 
-#: src/PrefsUnifiedDlg.cpp:1672
+#: src/PrefsUnifiedDlg.cpp:1671
 msgid "Enable command execution on core"
 msgstr "Włącz wykonanie komendy w rdzeniu"
 
-#: src/PrefsUnifiedDlg.cpp:1680
+#: src/PrefsUnifiedDlg.cpp:1679
 msgid "Core command:"
 msgstr "Komenda rdzenia:"
 
-#: src/PrefsUnifiedDlg.cpp:1689
+#: src/PrefsUnifiedDlg.cpp:1688
 msgid "Enable command execution on GUI"
 msgstr "Włącz wykonanie komendy w GUI"
 
-#: src/PrefsUnifiedDlg.cpp:1697
+#: src/PrefsUnifiedDlg.cpp:1696
 msgid "GUI command:"
 msgstr "Komenda GUI:"
 
-#: src/PrefsUnifiedDlg.cpp:1706
+#: src/PrefsUnifiedDlg.cpp:1705
 msgid "The following variables will be replaced:"
 msgstr "Następujące zmienne zostaną zastąpione:"
 
-#: src/PrefsUnifiedDlg.cpp:1868
+#: src/PrefsUnifiedDlg.cpp:1867
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1873
+#: src/PrefsUnifiedDlg.cpp:1872
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1875
+#: src/PrefsUnifiedDlg.cpp:1874
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Udostępnione foldery"
 
-#: src/PrefsUnifiedDlg.cpp:1908
+#: src/PrefsUnifiedDlg.cpp:1907
 #, fuzzy
 msgid "Reloading shared files…"
 msgstr "Przeładuj twoje udostępnione pliki"
 
-#: src/PrefsUnifiedDlg.cpp:1909
+#: src/PrefsUnifiedDlg.cpp:1908
 msgid "Scanning for subdirectories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1910
+#: src/PrefsUnifiedDlg.cpp:1909
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Udostępnione foldery"
 
-#: src/PrefsUnifiedDlg.cpp:1939
+#: src/PrefsUnifiedDlg.cpp:1938
 #, c-format
 msgid "Scanned %u directories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1989
+#: src/PrefsUnifiedDlg.cpp:1988
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Przeładowuje listę udostępnionych plików."

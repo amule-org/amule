@@ -2541,7 +2541,7 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
         _("Custom URL")
     };
     wxChoice *item7 = new wxChoice( parent, IDC_GEOIP_SOURCE, wxDefaultPosition, wxDefaultSize, 3, geoIPChoices, 0 );
-    item7->SetToolTip( _("Choose which provider supplies the GeoIP MMDB database. DB-IP is the default — no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror).") );
+    item7->SetToolTip( _("Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror).") );
     item5->Add( item7, wxSizerFlags().Center().Expand() );
     item2->Add( item5, wxSizerFlags().Expand().Border(wxALL, 4) );
 
@@ -2560,8 +2560,8 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
     wxStaticText *dbipText = new wxStaticText( dbipPanel, wxID_ANY,
         _("No configuration required.\n"
           "\n"
-          "IP-to-Country data by DB-IP.com — https://db-ip.com\n"
-          "License: Creative Commons BY 4.0 — https://creativecommons.org/licenses/by/4.0/"),
+          "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
+          "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"),
         wxDefaultPosition, wxDefaultSize, 0 );
     dbipSizer->Add( dbipText, wxSizerFlags().Expand().Border(wxALL, 4) );
     dbipPanel->SetSizer( dbipSizer );
@@ -2580,8 +2580,8 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
         _("Sign up for a free MaxMind account, then generate a License Key:\n"
           "https://www.maxmind.com/en/geolite2/signup\n"
           "\n"
-          "This product includes GeoLite2 data created by MaxMind — https://www.maxmind.com\n"
-          "License: MaxMind GeoLite2 EULA — https://www.maxmind.com/en/geolite2/eula\n"
+          "This product includes GeoLite2 data created by MaxMind - https://www.maxmind.com\n"
+          "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
           "Requires attribution and account registration; refresh at least every 30 days."),
         wxDefaultPosition, wxDefaultSize, 0 );
     maxmindSizer->Add( maxmindText, wxSizerFlags().Expand().Border(wxALL, 4) );
@@ -2600,7 +2600,7 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
     wxStaticText *customText = new wxStaticText( customPanel, wxID_ANY,
         _("Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
           "URL may include credentials (https://user:pass@host/...).\n"
-          "License and attribution terms are set by the upstream URL — you are responsible."),
+          "License and attribution terms are set by the upstream URL - you are responsible."),
         wxDefaultPosition, wxDefaultSize, 0 );
     customSizer->Add( customText, wxSizerFlags().Expand().Border(wxALL, 4) );
     customPanel->SetSizer( customSizer );

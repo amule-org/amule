@@ -246,7 +246,7 @@ void CIP2Country::DownloadFinished(uint32 result)
 			m_TriedPreviousMonth = true;
 			m_ManualUpdate = manual;
 			AddLogLineN(_(
-				"DB-IP download failed for the current month — retrying with "
+				"DB-IP download failed for the current month - retrying with "
 				"the previous month's URL."));
 			StartDownload(-1);
 			return;
