@@ -71,7 +71,7 @@ generally adopted into aMule shortly after.
 
 ## Installation
 
-aMule ships pre-built binaries for every major desktop. Building from
+aMule ships pre-built binaries for every major desktop system. Building from
 source is also supported.
 
 ### Pre-built binaries (recommended)
@@ -79,7 +79,9 @@ source is also supported.
 Download the latest release for your platform from the
 [Releases page]. Quick start:
 
-* **Linux** — AppImage (any distro) or Flatpak: download, `chmod +x`, run.
+* **Linux**
+  * Flatpak: `flatpak install ./appname.flatpak`
+  * AppImage: `chmod +x` and run
 * **macOS** — Universal2 `.dmg`: download, drag to `/Applications`.
 * **Windows** — choose either the **NSIS installer** `.exe` (Start-menu shortcuts, uninstaller, x64 / ARM64) or the **portable `.zip`** (no install, unzip and run).
 
@@ -110,7 +112,7 @@ on Linux, macOS, and Windows.
 ## Setting Up
 
 aMule comes with reasonable default settings and should be usable as-is.
-Two configuration steps are still worth doing on day one.
+Three configuration steps are still worth doing on day one.
 
 ### Open the ports — get a HighID
 
@@ -120,6 +122,12 @@ guide][network] for details.
 
 [HighID]:  https://amule-org.github.io/docs/p2p-networks/ed2k/high-id "What is LowID and HighID?"
 [network]: https://amule-org.github.io/docs/manual/configuration/network-connectivity "Network connectivity"
+
+### Enable Sharing of your files
+
+If you share files from your device, those won't be accessible to other users until you enable sharing in the security settings.
+
+Note that depending on the platform you might need to configure the application sandbox to be able to share from some folders.
 
 ### Set bandwidth limits
 
