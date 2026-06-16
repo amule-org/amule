@@ -112,7 +112,7 @@ on Linux, macOS, and Windows.
 ## Setting Up
 
 aMule comes with reasonable default settings and should be usable as-is.
-Three configuration steps are still worth doing on day one.
+Two configuration steps are still worth doing on day one.
 
 ### Open the ports — get a HighID
 
@@ -122,12 +122,6 @@ guide][network] for details.
 
 [HighID]:  https://amule-org.github.io/docs/p2p-networks/ed2k/high-id "What is LowID and HighID?"
 [network]: https://amule-org.github.io/docs/manual/configuration/network-connectivity "Network connectivity"
-
-### Enable Sharing of your files
-
-If you share files from your device, those won't be accessible to other users until you enable sharing in the security settings.
-
-Note that depending on the platform you might need to configure the application sandbox to be able to share from some folders.
 
 ### Set bandwidth limits
 
@@ -147,6 +141,8 @@ second** (Mbps). To convert, multiply Mbps by **125**.
 > Example: a 100 Mbps / 20 Mbps fibre line → roughly 12 500 kB/s
 > downstream and 2 500 kB/s upstream. Set the limits to about
 > 10 000 down / 2 000 up to stay below the line cap.
+
+You may also want to change the per-slot bandwith limit, to speed up individual up- or downloads.
 
 ## Reporting Bugs
 
