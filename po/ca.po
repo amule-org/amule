@@ -46,7 +46,7 @@ msgid ""
 "aMule can install a desktop launcher and icon into your home directory so it appears in your application menu like a regularly installed app. This is reversible — the files live under ~/.local/share/applications and ~/.local/share/icons and can be removed at any time.\n"
 "\n"
 "Install desktop integration now?"
-msgstr ""
+msgstr "Voleu instal·lar la integració d'escriptori ara?"
 
 #: src/AppImageIntegration.cpp:226
 #, fuzzy
@@ -55,19 +55,19 @@ msgstr "Després del nom de l'aplicació"
 
 #: src/AppImageIntegration.cpp:228
 msgid "Install"
-msgstr ""
+msgstr "Instal·la"
 
 #: src/AppImageIntegration.cpp:228
 msgid "Not now"
-msgstr ""
+msgstr "Ara no"
 
 #: src/AppImageIntegration.cpp:229
 msgid "Don't ask again"
-msgstr ""
+msgstr "No ho tornis a preguntar"
 
 #: src/AppImageIntegration.cpp:248
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "No es pot instal·lar la integració d'escriptori: la variable d'entorn APPDIR no està definida. Això normalment significa que l'AppImage s'ha iniciat de manera no estàndard."
 
 #: src/AppImageIntegration.cpp:250 src/AppImageIntegration.cpp:262
 #: src/AppImageIntegration.cpp:274
@@ -78,16 +78,16 @@ msgstr "La connexió ha fallat "
 #: src/AppImageIntegration.cpp:259
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "No es pot instal·lar la integració d'escriptori: no s'ha pogut crear %s. Comproveu que el directori d'inici sigui escrivible."
 
 #: src/AppImageIntegration.cpp:271
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "No es pot instal·lar la integració d'escriptori: no s'ha pogut escriure %s. Comproveu que el directori d'inici sigui escrivible."
 
 #: src/AppImageIntegration.cpp:281
 msgid "AppImage integration: aMule added to your application menu."
-msgstr ""
+msgstr "Integració d'AppImage: s'ha afegit aMule al menú de l'aplicació."
 
 #: src/AppImageIntegration.cpp:284
 msgid ""
@@ -96,7 +96,7 @@ msgid ""
 "On some desktops, aMule may need to restart for the dock / taskbar icon to bind to the new launcher entry. Modern Wayland compositors (GNOME, KDE) pick this up live, but a restart is the safe fallback if the icon stays generic.\n"
 "\n"
 "Restart aMule now?"
-msgstr ""
+msgstr "Voleu reiniciar l'aMule ara?"
 
 #: src/AppImageIntegration.cpp:287
 msgid "aMule installed"
