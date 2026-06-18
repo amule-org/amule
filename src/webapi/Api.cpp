@@ -329,6 +329,13 @@ void ApplyCorsHeaders(std::map<std::string, std::string> &headers,
 	headers["Access-Control-Expose-Headers"]    = "ETag";
 }
 
+
+// Forward declaration so HandleLogin (which sits above the helper's
+// definition) can share the depth-cap defence. The definition lives
+// near the other mutation-body parsers further down the file.
+bool ParseJsonObjectBody(const std::string &body, picojson::value &out,
+                         std::string &err);
+
 }  // namespace
 
 
@@ -811,9 +818,14 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 	}
 
 	// Parse `{"password": "<plain>"}`. Anything else gets a 400.
+	// Route through ParseJsonObjectBody so the pre-auth login path
+	// shares the same depth-cap defence the rest of the body
+	// parses get; without it a deeply-nested `{"a":{"a":...}}` would
+	// blow the worker thread's stack via picojson's recursive
+	// descent — and login is reachable unauthenticated.
 	picojson::value v;
-	const std::string err = picojson::parse(v, req.body);
-	if (!err.empty() || !v.is<picojson::object>()) {
+	std::string err;
+	if (!ParseJsonObjectBody(req.body, v, err)) {
 		return ErrorResponse(400, "bad_request",
 			"body must be JSON object {\"password\": \"...\"}");
 	}
@@ -1265,9 +1277,28 @@ std::unique_ptr<CHttpServer::Response> RequireAdmin(const AuthOutcome &a)
 // false and populates `err` on failure. Mutations expect a JSON
 // object at the root; non-object roots (array / string / number) are
 // rejected with a clear error.
+//
+// Pre-parse depth cap. picojson uses unbounded recursive descent for
+// `_parse_array` / `_parse_object`, so a hostile body like
+// `{"a":{"a":...}}` nested deep enough blows the worker thread's
+// stack. amuleapi's request bodies are flat lists of scalar fields
+// (links / category / ed2k_link / hashes / network / etc.) — even
+// 32 levels of nesting is well past anything legitimate, and a
+// `count of '{' + '[' > 32` check rejects the DoS attempt with no
+// allocations or recursion. Mirrors the same check in CJwt::Verify.
 bool ParseJsonObjectBody(const std::string &body, picojson::value &out,
                          std::string &err)
 {
+	constexpr std::size_t kMaxJsonOpeners = 32;
+	std::size_t openers = 0;
+	for (char c : body) {
+		if (c == '{' || c == '[') {
+			if (++openers > kMaxJsonOpeners) {
+				err = "JSON nesting too deep";
+				return false;
+			}
+		}
+	}
 	const std::string parse_err = picojson::parse(out, body);
 	if (!parse_err.empty()) {
 		err = "malformed JSON: " + parse_err;

@@ -447,3 +447,61 @@ TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
+
+
+// --- Depth-cap defence against unauthenticated stack-overflow -------
+//
+// picojson::parse recursive-descent walks each `{` / `[` with a real
+// stack frame. On musl pthreads (128 KiB stack) a few hundred levels
+// blow the stack and crash the worker. Both Verify() parse sites (the
+// header at Jwt.cpp:225 and the payload at Jwt.cpp:250) run BEFORE
+// the MAC verdict reaches the caller, so an unauthenticated peer can
+// submit `Authorization: Bearer <crafted>` with a deeply-nested JSON
+// section and crash the daemon. The pre-parse opener-count cap (>32
+// rejects) blocks both sides cheaply, in O(body length) and zero
+// allocations. These tests craft a token whose nesting is well above
+// the cap, sign it with the matching HMAC so the constant-time
+// compare passes, and assert Verify() rejects it.
+
+namespace {
+
+std::string DeeplyNested(const std::string &leaf, std::size_t levels)
+{
+	// {"a":{"a":...{"a":leaf}...}}  → levels openers.
+	std::string out;
+	out.reserve(levels * 6 + leaf.size() + levels);
+	for (std::size_t i = 0; i < levels; ++i) out += "{\"a\":";
+	out += leaf;
+	for (std::size_t i = 0; i < levels; ++i) out += "}";
+	return out;
+}
+
+}  // namespace
+
+
+TEST(Jwt, DeeplyNestedPayloadRejected)
+{
+	const auto secret = MakeSecret(0xA9);
+	CJwt auth(secret);
+	// 200 levels — well over the 32-opener cap but small enough that
+	// the test stays fast and doesn't itself risk a stack overflow.
+	const std::string token = CraftToken(
+		secret,
+		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
+		DeeplyNested("1", 200));
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(auth.Verify(token, r));
+}
+
+
+TEST(Jwt, DeeplyNestedHeaderRejected)
+{
+	const auto secret = MakeSecret(0xAB);
+	CJwt auth(secret);
+	const std::string token = CraftToken(
+		secret,
+		DeeplyNested("\"x\"", 200),
+		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(auth.Verify(token, r));
+}

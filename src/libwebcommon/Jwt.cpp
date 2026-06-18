@@ -126,6 +126,43 @@ const std::time_t TOKEN_LIFETIME_SECONDS = 24 * 60 * 60;
 // comfortably in cookie/header payloads.
 const size_t JTI_BYTES = 16;
 
+// Hard cap on JSON nesting in a JWT header or payload.
+//
+// picojson's _parse_array / _parse_object is unbounded recursive
+// descent (header file says so up front). Both parse call sites
+// in Verify() run BEFORE the MAC compare returns its verdict to
+// the caller, so an unauthenticated attacker can submit a token
+// whose b64-decoded payload is `{"a":{"a":...}}` nested deep
+// enough to blow the worker thread's stack. On musl (128 KiB
+// pthread stack) the limit is ~300-600 frames; on glibc-default
+// 8 MiB stacks the bar is higher but still finite.
+//
+// Real JWT payloads in this codebase are flat — we only read
+// scalar claims (`role`, `exp`, `iat`, `jti`, `typ`, `alg`) so a
+// cap of 8 would be permissive. 32 leaves headroom for any
+// third-party JWT producer that gets accepted later without
+// changing this number.
+//
+// The check counts `{` + `[` in the decoded JSON. A simple total
+// is sufficient because the parser allocates one stack frame per
+// opener regardless of whether the openers are siblings or
+// children. String literals containing `{` / `[` get counted
+// too — false positives — but our payloads don't legitimately
+// contain unbalanced braces inside strings, so the
+// conservative-by-design false-positive direction is fine.
+const std::size_t MAX_JSON_OPENERS = 32;
+
+bool DepthWithinLimit(const std::string &json)
+{
+	std::size_t count = 0;
+	for (char c : json) {
+		if (c == '{' || c == '[') {
+			if (++count > MAX_JSON_OPENERS) return false;
+		}
+	}
+	return true;
+}
+
 } // namespace
 
 
@@ -222,6 +259,7 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 		if (!Base64UrlDecode(header_b64, header_bytes)) return false;
 		const std::string header_json(
 			header_bytes.begin(), header_bytes.end());
+		if (!DepthWithinLimit(header_json)) return false;
 		picojson::value hv;
 		std::string herr;
 		picojson::parse(hv, header_json.begin(), header_json.end(), &herr);
@@ -246,6 +284,7 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 	std::vector<unsigned char> payload_bytes;
 	if (!Base64UrlDecode(payload_b64, payload_bytes)) return false;
 	const std::string payload_json(payload_bytes.begin(), payload_bytes.end());
+	if (!DepthWithinLimit(payload_json)) return false;
 
 	picojson::value v;
 	std::string err;

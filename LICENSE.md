@@ -1,3 +1,10 @@
+# aMule License
+
+aMule is released under the GNU General Public License, version 2 or
+later (the "GPLv2+"). The full text follows. Third-party components
+bundled into aMule's binary distributions retain their own permissive
+licenses, listed in [`docs/THIRDPARTY.md`](docs/THIRDPARTY.md).
+
 # GNU GENERAL PUBLIC LICENSE
 
 Version 2, June 1991
