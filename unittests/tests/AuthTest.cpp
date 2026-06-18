@@ -169,38 +169,51 @@ TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 
 TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 {
-	// Regression check for the tumbling-window bug: 3 failures inside
-	// the live `window_seconds`, even if they cross a notional
-	// window boundary, MUST trip lockout. The old implementation
-	// reset failure_count wholesale when (now - window_start) >
-	// window_seconds, letting threshold-1 failures in the tail of
-	// window N + threshold-1 in the head of window N+1 slip
-	// through.
+	// Regression check for the tumbling-window bug. The bug:
+	// threshold-1 failures in the tail of window N + threshold-1
+	// in the head of window N+1 never tripped lockout because the
+	// old code reset `failure_count` to 0 whenever `now -
+	// window_start > window_seconds` — so a failure right after
+	// the boundary started a fresh count regardless of how many
+	// recent failures fell inside the live sliding window.
 	//
-	// With window_seconds=2 and threshold=3 we register failure[0]
-	// at t=0, sleep 1.2 s, register failures[1] and [2] at t≈1.2.
-	// Old code: at t=1.2 the window-start check `now - 0 > 2` is
-	// still false so the count is 1 + 1 + 1 = 3 → lockout. To
-	// actually exercise the old bug it needs window_seconds=1 and
-	// failure[0] at t=0, failures[1,2] at t=1.2 — the old code
-	// would have reset on the second NoteFailure. The ring-buffer
-	// impl just evicts failure[0] when its timestamp falls out, so
-	// the second + third failures count as 2 (< threshold). Choose
-	// the parameters so the new impl PASSES (the failures land in
-	// a 1-second sliding window of size 2) and the old impl
-	// FAILED.
+	// CRateLimiter reads `now` via std::time(nullptr) (integer
+	// seconds), so this test sleeps at second-scale to make the
+	// step transitions deterministic. The extra ~100 ms per sleep
+	// is buffer against std::time's tick-boundary alignment — too
+	// little headroom and the integer-second reads bunch up,
+	// making both impls behave identically (they then both lock,
+	// and the regression slips past the test).
+	//
+	// Sequence (window_seconds=3, threshold=3):
+	//   t=0   NoteFailure  — failures=[0]        count=1
+	//   t=3   NoteFailure  — failures=[0, 3]     count=2
+	//   t=4   NoteFailure  — OLD: 4-0 > 3 →
+	//                         RESET. window_start=4, count=1
+	//                       NEW: evict <1; failures=[3, 4],
+	//                         count=2
+	//   t=5   NoteFailure  — OLD: 5-4 ≤ 3 → count=2.
+	//                         NO lockout (count<3).
+	//                       NEW: evict <2; failures=[3, 4, 5],
+	//                         count=3 → LOCKOUT.
+	//
+	// 4 attempts across ~5 s; OLD ends at count=2 (no lockout),
+	// NEW trips the threshold on the 4th. The assertion fails
+	// against the OLD impl.
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 5;
+	cfg.window_seconds  = 3;
 	cfg.threshold       = 3;
 	cfg.lockout_seconds = 60;
 	CRateLimiter rl(cfg);
 	const std::string ip = "203.0.113.9";
 
-	rl.NoteFailure(ip);
+	rl.NoteFailure(ip);                                          // t=0
+	std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+	rl.NoteFailure(ip);                                          // t=3
 	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
-	rl.NoteFailure(ip);
-	rl.NoteFailure(ip);
-	// 3 failures inside the live 5-second window — must lock out.
+	rl.NoteFailure(ip);                                          // t=4 (boundary crossing)
+	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+	rl.NoteFailure(ip);                                          // t=5 (sliding count reaches 3)
 	ASSERT_TRUE(rl.Check(ip).locked_out);
 }
 

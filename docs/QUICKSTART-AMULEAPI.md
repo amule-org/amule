@@ -22,7 +22,17 @@ truth today is the handler routing in
 ## First-run setup
 
 amuleapi keeps its config in the same per-platform aMule data directory
-that `amuled` uses:
+that `amuled` uses.
+
+> **Cohabitation with amuled.** This is the same directory amuled
+> keeps `amule.conf` and `*.met` in — intentionally so. amuleapi's
+> three files (`amuleapi.conf`, `amuleapi-jwt-secret`,
+> `amuleapi-passwords`) sit alongside amuled's without colliding,
+> and operators reading both sets of configs together don't have
+> to context-switch directories. amuleapi never touches amuled's
+> files; amuled never touches amuleapi's.
+
+The default location:
 
 | Platform | Default config dir                                  |
 | -------- | --------------------------------------------------- |
@@ -31,14 +41,6 @@ that `amuled` uses:
 | Windows  | `%APPDATA%\aMule\`                                  |
 
 Override with `amuleapi --config-dir=/path/to/dir`.
-
-> **Cohabitation with amuled.** This is the same directory amuled
-> keeps `amule.conf` and `*.met` in. That's intentional — amuleapi's
-> three files (`amuleapi.conf`, `amuleapi-jwt-secret`,
-> `amuleapi-passwords`) sit alongside amuled's without colliding,
-> and operators reading both sets of configs together don't have
-> to context-switch directories. amuleapi never touches amuled's
-> files; amuled never touches amuleapi's.
 
 The directory holds three amuleapi-specific files, all written with mode
 `0600`:

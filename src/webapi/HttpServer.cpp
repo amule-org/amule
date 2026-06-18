@@ -93,17 +93,26 @@ public:
 	~Session()
 	{
 		// The worker captures `shared_from_this()` and sets
-		// `m_worker_exited` true on the way out. By the time this
+		// `m_worker_exited` true on the way out (via the RAII
+		// WorkerExitMarker below, so an early `return` from any
+		// future refactor still trips the flag). By the time this
 		// destructor runs the last ref must have been dropped — so
 		// the worker must have exited. join() from inside the
 		// worker's own call stack would deadlock; detach() is safe
-		// because the thread has finished its work. The assert
-		// catches any future refactor that breaks the "worker
-		// outlives the last shared_ptr ref" invariant before it
-		// turns into a heisenbug.
+		// because the thread has finished its work.
+		//
+		// NOT plain assert(): NDEBUG is set on Release and
+		// RelWithDebInfo builds, compiling the check out of every
+		// shipping binary. Use a hand-rolled if + std::abort so the
+		// invariant is enforced in Release too — preferable to a
+		// silent UB on a future refactor that lands in a stable
+		// release.
 		if (m_stream_worker.joinable()) {
-			assert(m_worker_exited.load(std::memory_order_acquire)
-			       && "Session dtor reached with worker still running");
+			if (!m_worker_exited.load(std::memory_order_acquire)) {
+				std::cerr << "amuleapi: FATAL Session dtor reached "
+				             "with worker still running\n";
+				std::abort();
+			}
 			m_stream_worker.detach();
 		}
 		// Release the session slot. Decrement only fires if we
@@ -289,6 +298,19 @@ private:
 		// (Phase 8a notes flag it as the obvious next step).
 		m_stream_worker = std::thread([self, handler, writer, head,
 		                               r = std::move(r)]() mutable {
+			// RAII guard: tip the worker-exited flag on EVERY exit
+			// path out of this lambda, including a future refactor
+			// that adds an early `return` after the catch block.
+			// The Session destructor's std::abort() guard only
+			// fires if this flag is true, so missing the flip on
+			// some path would tear down a still-running thread.
+			struct WorkerExitMarker {
+				std::shared_ptr<Session> s;
+				~WorkerExitMarker() {
+					s->m_worker_exited.store(true,
+						std::memory_order_release);
+				}
+			} marker{self};
 			try {
 				handler(r, *writer,
 				        head->status, head->content_type,
@@ -302,13 +324,9 @@ private:
 			// the client sees the right status code.
 			writer->EnsureHeadWritten();
 			self->DoClose();
-			// Signal worker completion before the captured `self`
-			// shared_ptr drops on lambda exit. The Session dtor
-			// asserts on this flag (see ~Session) so a future
-			// refactor that drops the shared_from_this() capture
-			// fails loudly instead of mysteriously deadlocking.
-			self->m_worker_exited.store(true,
-				std::memory_order_release);
+			// `marker` runs here, flipping m_worker_exited and
+			// dropping `self` only AFTER the flag is set — so the
+			// dtor's check observes the post-exit state.
 		});
 	}
 

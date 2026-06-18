@@ -134,7 +134,9 @@ for s in "${PHASES[@]}"; do
 	fi
 done
 
-pkill -f amuleapi 2>/dev/null
+# Final teardown — same narrow scope as the per-phase kill at line 53
+# so an editor with `vim path/to/amuleapi.cpp` open survives the run.
+pkill -f "amuleapi --config-dir=/tmp/amuleapi-regtest" 2>/dev/null
 echo
 if [ "$OVERALL" -eq 0 ]; then
 	echo "OVERALL: ALL PHASES PASSED"
