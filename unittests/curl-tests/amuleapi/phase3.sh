@@ -179,29 +179,37 @@ _assert_json_eq '.error.code' bad_request \
 # Defaults from amuleapi.conf: LoginFailureWindowSeconds=60,
 # LoginFailureThreshold=5, LoginLockoutSeconds=300.
 #
-# Attempts 1-4 must still get 401 (under threshold). Attempt 5
-# crosses the threshold and arms the lockout, so attempts 5+ get
-# 429. Verifying the boundary on attempt 5 (not just the trailing
-# 8th) catches a regression where the limiter arms one attempt
-# late (or early).
+# Boundary check: Check() runs BEFORE the password compare, then
+# NoteFailure() runs AFTER a wrong-password reject. So with
+# threshold=5:
+#   attempts 1-5  → status 401 (bucket grows 1..5; NoteFailure on
+#                   the 5th sets lockout_until)
+#   attempts 6+   → status 429 (the Check at the top of attempt 6
+#                   is the first one that observes lockout_until > now)
+# This pins the off-by-one boundary so a regression that arms the
+# lockout one attempt early (or late) trips the assertion.
 for i in 1 2 3 4; do
 	_curl -X POST -H "Content-Type: application/json" \
 		-d '{"password":"wrong"}' \
 		"$HOST/api/v0/auth/login?type=bearer" > /dev/null
 done
+# Attempt 5: NoteFailure() arms the lockout AFTER returning 401.
 _curl -X POST -H "Content-Type: application/json" \
 	-d '{"password":"wrong"}' \
 	"$HOST/api/v0/auth/login?type=bearer"
-_assert_status 429 "POST /auth/login: 5th failure crosses threshold → 429"
+_assert_status 401 "POST /auth/login: 5th failure arms but still returns 401"
+# Attempt 6: Check() sees the armed lockout → 429.
+_curl -X POST -H "Content-Type: application/json" \
+	-d '{"password":"wrong"}' \
+	"$HOST/api/v0/auth/login?type=bearer"
+_assert_status 429 "POST /auth/login: 6th attempt is the first 429"
 _assert_json_eq '.error.code' rate_limited \
-	'5th-failure lockout carries error.code=rate_limited'
+	'6th-attempt lockout carries error.code=rate_limited'
 
-# Attempts 6-7 stay locked.
-for i in 6 7; do
-	_curl -X POST -H "Content-Type: application/json" \
-		-d '{"password":"wrong"}' \
-		"$HOST/api/v0/auth/login?type=bearer" > /dev/null
-done
+# Attempt 7 stays locked.
+_curl -X POST -H "Content-Type: application/json" \
+	-d '{"password":"wrong"}' \
+	"$HOST/api/v0/auth/login?type=bearer" > /dev/null
 # The 8th attempt also remains locked.
 _curl -X POST -H "Content-Type: application/json" \
 	-d '{"password":"wrong"}' \

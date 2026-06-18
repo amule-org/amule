@@ -18,6 +18,10 @@
 # Environment:
 #   HOST=localhost:4713          amuleapi endpoint
 #   ADMIN_PASS=adminpass         plaintext admin password
+#   GUEST_PASS=guestpass         plaintext guest password (run-all.sh
+#                                configures it via --set-guest-pass;
+#                                standalone invocations need this set
+#                                or the guest-read assertion is skipped)
 #
 # Exits 0 on success, 1 on assertion failure, 2 on bring-up error.
 
@@ -26,6 +30,7 @@ set -o pipefail
 
 HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
+GUEST_PASS=${GUEST_PASS:-guestpass}
 
 FAIL_COUNT=0
 TEST_COUNT=0
