@@ -128,6 +128,7 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `BUILD_DAEMON`           | NO      | `amuled` — headless daemon                                               |
 | `BUILD_AMULECMD`         | NO      | `amulecmd` — CLI client for the daemon                                   |
 | `BUILD_WEBSERVER`        | NO      | `amuleweb` — HTTP interface for the daemon                               |
+| `BUILD_AMULEAPI`         | NO      | `amuleapi` — REST API + SSE daemon ([docs/QUICKSTART-AMULEAPI.md](QUICKSTART-AMULEAPI.md)) |
 | `BUILD_ED2K`             | NO      | `ed2k` — handle `ed2k://` links                                          |
 | `BUILD_CAS`              | NO      | `cas` — C statistics tool                                                |
 | `BUILD_WXCAS`            | NO      | `wxCas` — GUI statistics tool                                            |

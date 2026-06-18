@@ -1,0 +1,107 @@
+.TH AMULEAPI 1 @MAN_DATE@ "aMule REST API daemon v@PACKAGE_VERSION@" "aMule REST API daemon"
+.als B_untranslated B
+.als RB_untranslated RB
+.SH NAME
+amuleapi \- the aMule REST API + Server\-Sent Events daemon
+.SH SYNOPSIS
+.B_untranslated amuleapi
+.RB [ \-h " " \fI<host> ]
+.RB [ \-p " " \fI<port> ]
+.RB [ \-P " " \fI<password> ]
+.RB_untranslated [ \-\-bind " " \fI<address> ]
+.RB_untranslated [ \-\-http\-port " " \fI<num> ]
+.RB_untranslated [ \-\-config\-dir " " \fI<path> ]
+.RB_untranslated [ \-\-foreground ]
+
+.B_untranslated amuleapi
+.RB_untranslated [ \-\-set\-admin\-pass " " \fI<plain> ]
+
+.B_untranslated amuleapi
+.RB_untranslated [ \-\-set\-guest\-pass " " \fI<plain> ]
+
+.B_untranslated amuleapi
+.RB_untranslated [ \-V ]
+
+.B_untranslated amuleapi
+.RB_untranslated [ \-\-help ]
+.SH DESCRIPTION
+.B_untranslated amuleapi
+is a standalone HTTP daemon that exposes a versioned JSON REST API and a
+long\-lived Server\-Sent Events stream backed by a single
+\fBamuled\fR(1) instance over the EC protocol. It is intended to run
+alongside \fBamuled\fR (which it connects to as an EC client) and serves
+its HTTP surface on a separate port from \fBamuleweb\fR(1) \- the two
+can run concurrently against the same daemon.
+.PP
+The wire contract for the REST API and the SSE event types is
+documented under the aMule source tree at \fIdocs/api/\fR. See
+\fIdocs/QUICKSTART\-AMULEAPI.md\fR for first\-run setup notes.
+.SH OPTIONS
+.TP
+\fB[ \-h\fR \fI<host>\fR, \fB\-\-host\fR=\fI<host>\fR \fB]\fR
+EC host to connect to (default: 127.0.0.1).
+.TP
+\fB[ \-p\fR \fI<port>\fR, \fB\-\-port\fR=\fI<port>\fR \fB]\fR
+EC port on the amuled instance (default: 4712).
+.TP
+\fB[ \-P\fR \fI<password>\fR, \fB\-\-password\fR=\fI<password>\fR \fB]\fR
+EC plaintext password (matches amuled's [ExternalConnect]/Password).
+.TP
+\fB[ \-\-bind\fR=\fI<address>\fR \fB]\fR
+HTTP bind address (default: 127.0.0.1, overrides amuleapi.conf
+[Server]/BindAddress).
+.TP
+\fB[ \-\-http\-port\fR=\fI<num>\fR \fB]\fR
+HTTP listen port (default: 4713, overrides amuleapi.conf
+[Server]/Port).
+.TP
+\fB[ \-\-config\-dir\fR=\fI<path>\fR \fB]\fR
+Path to the amuleapi config dir. Defaults to the same per\-platform
+aMule data directory that \fBamuled\fR uses (~/.aMule/ on Linux,
+~/Library/Application Support/aMule/ on macOS, %APPDATA%\\aMule\\ on
+Windows). Creates the dir with mode 0700 if absent.
+.TP
+\fB[ \-\-set\-admin\-pass\fR=\fI<plain>\fR \fB]\fR
+Hash \fI<plain>\fR with MD5 and store it as the admin password in
+\fIamuleapi\-passwords\fR (mode 0600), then exit. Does not start the
+HTTP server or connect to amuled.
+.TP
+\fB[ \-\-set\-guest\-pass\fR=\fI<plain>\fR \fB]\fR
+Hash \fI<plain>\fR with MD5 and store it as the guest password in
+\fIamuleapi\-passwords\fR (mode 0600), then exit.
+.TP
+\fB[ \-\-foreground ]\fR
+Stay in the foreground (default). aMule does not ship init\-system
+units; if you need a system service wrapper, write a downstream unit
+that wraps the foreground command.
+.TP
+\fB[ \-V\fR, \fB\-\-version ]\fR
+Print version information and exit.
+.TP
+\fB[ \-\-help ]\fR
+Print a short usage description.
+.SH FILES
+.TP
+\fI~/.aMule/amuleapi.conf\fR
+INI\-style runtime config: bind address, HTTP port, CORS allowlist,
+EC credentials override, auth rate\-limit knobs, logging.
+.TP
+\fI~/.aMule/amuleapi\-jwt\-secret\fR
+32\-byte HMAC signing key for issued tokens. Mode 0600. Auto\-generated
+on first launch if absent. Deleting the file invalidates every
+previously\-issued token.
+.TP
+\fI~/.aMule/amuleapi\-passwords\fR
+INI\-style MD5\-hashed admin + guest passwords. Mode 0600. Written via
+\fB\-\-set\-admin\-pass\fR / \fB\-\-set\-guest\-pass\fR.
+.SH REPORTING BUGS
+Please report bugs either on our forum
+(\fIhttps://github.com/amule-org/amule/discussions\fR), or in our
+bugtracker (\fIhttps://github.com/amule-org/amule/issues\fR).
+.SH COPYRIGHT
+aMule and all of its related utilities are distributed under the GNU
+General Public License.
+.SH SEE ALSO
+.B_untranslated amule\fR(1), \fBamuled\fR(1), \fBamulecmd\fR(1), \fBamuleweb\fR(1)
+.SH AUTHOR
+This manpage was written for the aMule project.

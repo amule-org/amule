@@ -27,6 +27,10 @@ if (BUILD_WEBSERVER)
 	check_manpage ("amuleweb")
 endif()
 
+if (BUILD_AMULEAPI)
+	check_manpage ("amuleapi")
+endif()
+
 # Translated manpages — rendered at build time via po4a from the English
 # masters plus po/manpages-<lang>.po. The rendered files are not tracked in
 # git; po4a writes them straight into the build dir based on absolute paths

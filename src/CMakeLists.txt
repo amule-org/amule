@@ -69,6 +69,16 @@ if (BUILD_WEBSERVER)
 	add_subdirectory (webserver)
 endif()
 
+# Pure-logic primitives (JWT / ETag / route patterns / JSON writer)
+# that the upcoming amuleapi binary and its unit tests link against.
+# Built unconditionally — no transitive cost for builds that don't
+# consume it (static lib, zero runtime overhead).
+add_subdirectory (libwebcommon)
+
+if (BUILD_AMULEAPI)
+	add_subdirectory (webapi)
+endif()
+
 if (INSTALL_SKINS)
 	add_subdirectory (skins)
 endif()

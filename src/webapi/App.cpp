@@ -1,0 +1,412 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program derived from the xMule, lMule or eMule project,
+// or contributed by third-party developers are copyrighted by their
+// respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+//
+
+#include "App.h"
+
+#include "Api.h"
+#include "HttpServer.h"
+#include "Jwt.h"
+#include "Refresher.h"
+
+#include "MD4Hash.h"
+#include "config.h"     // VERSION
+
+#include <common/Format.h>
+#include <common/MD5Sum.h>
+
+#include <wx/cmdline.h>
+
+#include <atomic>
+#include <chrono>
+#include <csignal>
+#include <iostream>
+#include <thread>
+
+
+IMPLEMENT_APP(CamuleapiApp)
+
+
+namespace {
+
+// Signal-safe shutdown gate. SIGINT/SIGTERM flip the flag; the wxApp
+// main loop polls it every 250 ms. A signalfd-driven path would be
+// cleaner, but the polling cost is one atomic-load per tick and the
+// code path stays portable to launchd/Windows (which don't have
+// signalfd).
+std::atomic<bool> g_shutdownRequested{false};
+
+void RequestShutdown(int)
+{
+	g_shutdownRequested.store(true, std::memory_order_release);
+}
+
+}  // namespace
+
+
+CamuleapiApp::CamuleapiApp()  = default;
+CamuleapiApp::~CamuleapiApp() = default;
+
+
+void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
+{
+	// Pulls in --host / --port / --password / --config-dir / --quiet /
+	// --verbose / --locale. The base appname becomes the executable
+	// name in usage text.
+	CaMuleExternalConnector::OnInitCmdLine(parser, "amuleapi");
+
+	parser.AddOption("", "bind",
+		_("HTTP server bind address. (default: 127.0.0.1, override of amuleapi.conf [Server]/BindAddress)"),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddOption("", "http-port",
+		_("HTTP server port. (default: 4713, override of amuleapi.conf [Server]/Port)"),
+		wxCMD_LINE_VAL_NUMBER, wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddOption("", "config-dir",
+		_("Path to amuleapi config dir (default: per-platform aMule data dir)."),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddOption("", "set-admin-pass",
+		_("Hash <plain> with MD5 and write it as the admin password into amuleapi-passwords (mode 0600), then exit."),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddOption("", "set-guest-pass",
+		_("Hash <plain> with MD5 and write it as the guest password into amuleapi-passwords (mode 0600), then exit."),
+		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddSwitch("", "foreground",
+		_("Stay in the foreground; default."),
+		wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddSwitch("", "daemon",
+		_("Reserved; daemon mode lands in a follow-up release."),
+		wxCMD_LINE_PARAM_OPTIONAL);
+}
+
+
+bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
+{
+	// Capture the amuleapi-specific options BEFORE delegating to the
+	// base, because the base call may exit early on --help.
+	if (parser.Found("bind", &m_cliBindAddress)) {
+		m_cliHasBindAddress = true;
+	}
+	if (parser.Found("http-port", &m_cliHttpPort)) {
+		m_cliHasHttpPort = true;
+	}
+	parser.Found("config-dir", &m_cliConfigDirOverride);
+	if (parser.Found("set-admin-pass", &m_cliSetAdminPass)) {
+		m_cliHasSetAdminPass = true;
+	}
+	if (parser.Found("set-guest-pass", &m_cliSetGuestPass)) {
+		m_cliHasSetGuestPass = true;
+	}
+	if (parser.Found("daemon")) {
+		m_cliForeground = false;
+	}
+
+	return CaMuleExternalConnector::OnCmdLineParsed(parser);
+}
+
+
+bool CamuleapiApp::OnInit()
+{
+	if (!CaMuleExternalConnector::OnInit()) {
+		return false;
+	}
+
+	// Resolve the config dir. Order: explicit --config-dir > whatever
+	// the base class picked (m_configDir, populated from --config-file
+	// or the platform default) > wxStandardPaths::GetUserDataDir().
+	wxString config_dir = m_cliConfigDirOverride.IsEmpty()
+		? m_configDir
+		: m_cliConfigDirOverride;
+	if (config_dir.IsEmpty()) {
+		config_dir = DefaultConfigDir();
+	}
+
+	if (!LoadAmuleapiConfig()) {
+		// Error already printed via Show(...).
+		return false;
+	}
+
+	// CLI override hooks. set-*-pass exits immediately after writing.
+	if (m_cliHasSetAdminPass || m_cliHasSetGuestPass) {
+		// Both options run as one-shot CLI flows. The exit code is
+		// propagated through wxApp's normal exit path so init shells
+		// see "0 on success", which matters for systemd unit overrides
+		// and bash pipelines.
+		const int rc = m_cliHasSetAdminPass
+			? RunSetAdminPass()
+			: RunSetGuestPass();
+		(void)rc;
+		// Returning false from OnInit() cancels wxApp::OnRun() — that's
+		// the closest analogue to "did the setup; we're done".
+		return false;
+	}
+
+	return true;
+}
+
+
+bool CamuleapiApp::LoadAmuleapiConfig()
+{
+	wxString config_dir = m_cliConfigDirOverride.IsEmpty()
+		? m_configDir
+		: m_cliConfigDirOverride;
+	if (config_dir.IsEmpty()) {
+		config_dir = DefaultConfigDir();
+		// Persist the resolved dir back into m_configDir so the base
+		// class's later --write-config (and any subclasses) see the
+		// same path.
+		m_configDir = config_dir;
+	}
+
+	if (!m_apiConfig.Load(config_dir)) {
+		Show(CFormat("amuleapi: failed to load config: %s\n")
+			% wxString::FromUTF8(m_apiConfig.LastError().c_str()));
+		return false;
+	}
+
+	// Wire the EC connection params into the base-class fields that
+	// ConnectAndRun reads. CLI --host/--port/--password (already
+	// processed by CaMuleExternalConnector::OnCmdLineParsed) win over
+	// amuleapi.conf, so only fill base-class fields where the CLI
+	// didn't already set them.
+	if (m_host.IsEmpty() || m_host == "127.0.0.1") {
+		// Base class defaults m_host to "127.0.0.1" unconditionally;
+		// only overwrite if the config dir actually carries a value.
+		const auto &h = m_apiConfig.EcCfg().host;
+		if (!h.empty()) m_host = wxString::FromUTF8(h.c_str());
+	}
+	if (m_port == 0 || m_port == 4712) {
+		// Same logic as host — m_port defaults to 4712 in the base
+		// class; only override if amuleapi.conf says otherwise.
+		m_port = static_cast<long>(m_apiConfig.EcCfg().port);
+	}
+	if (m_password.IsEmpty() && !m_apiConfig.EcCfg().password.empty()) {
+		// amuleapi.conf [EC]/Password is plaintext; the base class
+		// expects an MD5-hashed CMD4Hash (because that's what amuled
+		// stores). MD5-hash here so a one-line amuleapi.conf edit
+		// gives the operator a working setup.
+		const wxString plain = wxString::FromUTF8(
+			m_apiConfig.EcCfg().password.c_str());
+		m_password.Decode(MD5Sum(plain).GetHash());
+	}
+
+	return true;
+}
+
+
+int CamuleapiApp::RunSetAdminPass()
+{
+	const wxString hashed = MD5Sum(m_cliSetAdminPass).GetHash();
+	if (!m_apiConfig.WritePasswordsFile(
+			m_apiConfig.ConfigDir(),
+			std::string(hashed.utf8_str()),
+			m_apiConfig.GuestPasswordMd5())) {
+		Show(CFormat("amuleapi: --set-admin-pass failed: %s\n")
+			% wxString::FromUTF8(m_apiConfig.LastError().c_str()));
+		return 1;
+	}
+	Show(_("amuleapi: admin password updated.\n"));
+	return 0;
+}
+
+
+int CamuleapiApp::RunSetGuestPass()
+{
+	const wxString hashed = MD5Sum(m_cliSetGuestPass).GetHash();
+	if (!m_apiConfig.WritePasswordsFile(
+			m_apiConfig.ConfigDir(),
+			m_apiConfig.AdminPasswordMd5(),
+			std::string(hashed.utf8_str()))) {
+		Show(CFormat("amuleapi: --set-guest-pass failed: %s\n")
+			% wxString::FromUTF8(m_apiConfig.LastError().c_str()));
+		return 1;
+	}
+	Show(_("amuleapi: guest password updated.\n"));
+	return 0;
+}
+
+
+int CamuleapiApp::OnRun()
+{
+	// Install signal handlers before the HTTP server starts so a
+	// signal during bring-up doesn't sail through to default
+	// disposition (kill -9 the daemon at the worst possible moment).
+	std::signal(SIGINT,  RequestShutdown);
+	std::signal(SIGTERM, RequestShutdown);
+#ifdef SIGHUP
+	// SIGHUP is the "config reload" signal in long-running daemons.
+	// Phase 4 has no reload story (configs are read at startup only);
+	// treat SIGHUP as a soft shutdown so a systemd reload doesn't
+	// leave the daemon in a half-state.
+	std::signal(SIGHUP, RequestShutdown);
+#endif
+
+	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore)
+	// and then calls TextShell — which we've overridden so the daemon's
+	// main loop runs there. On EC failure ConnectAndRun returns without
+	// ever entering TextShell, which is the correct outcome for a
+	// daemon that has nothing to do without amuled.
+	ConnectAndRun(wxT("amuleapi"), wxString::FromAscii(VERSION));
+	return 0;
+}
+
+
+void CamuleapiApp::TextShell(const wxString &/*prompt*/)
+{
+	// Resolve bind addr + port. CLI takes precedence over amuleapi.conf.
+	std::string bind = m_apiConfig.ServerCfg().bind_address;
+	unsigned    port = m_apiConfig.ServerCfg().port;
+	if (m_cliHasBindAddress && !m_cliBindAddress.IsEmpty()) {
+		bind = std::string(m_cliBindAddress.utf8_str());
+	}
+	if (m_cliHasHttpPort && m_cliHttpPort > 0 && m_cliHttpPort < 65536) {
+		port = static_cast<unsigned>(m_cliHttpPort);
+	}
+
+	// Build the JWT machinery from the loaded secret + a dispatcher
+	// that holds the rate-limiter + revocation set by value. The
+	// dispatcher reaches the State cache through CamuleapiApp; the
+	// lambda below pins the dispatcher's lifetime to App's.
+	m_jwt        = std::unique_ptr<CJwt>(new CJwt(m_apiConfig.JwtSecret()));
+	m_dispatcher = std::unique_ptr<CApiDispatcher>(
+		new CApiDispatcher(m_apiConfig, *m_jwt, m_state, *this));
+	CApiDispatcher *const dispatcher = m_dispatcher.get();
+	auto handler = [dispatcher](const CHttpServer::Request &req) {
+		return dispatcher->Dispatch(req);
+	};
+
+	// Phase 8: streaming resolver + handler for /api/v0/events. The
+	// resolver picks every GET that matches the path (auth is
+	// enforced inside the streaming handler — same role gate as
+	// regular handlers).
+	auto streaming_resolver = [](const CHttpServer::Request &req) {
+		if (req.method != "GET" && req.method != "HEAD") return false;
+		// Tolerate optional ?query / trailing slashes.
+		const std::string &t = req.target;
+		const std::size_t q = t.find('?');
+		std::string path = (q == std::string::npos) ? t : t.substr(0, q);
+		return path == "/api/v0/events";
+	};
+	auto streaming_handler = [dispatcher](
+			const CHttpServer::Request &req,
+			CHttpServer::Writer &writer,
+			unsigned &http_status, std::string &content_type,
+			std::map<std::string, std::string> &response_headers) {
+		dispatcher->DispatchEvents(req, writer, http_status,
+		                           content_type, response_headers);
+	};
+
+	m_http = std::unique_ptr<CHttpServer>(new CHttpServer());
+	if (!m_http->Start(bind, port, handler,
+	                   streaming_resolver, streaming_handler)) {
+		Show(CFormat("amuleapi: HTTP server failed to start: %s\n")
+			% wxString::FromUTF8(m_http->LastError().c_str()));
+		return;
+	}
+
+	Show(CFormat(_("amuleapi: listening on http://%s:%d/\n"))
+		% wxString::FromUTF8(bind.c_str())
+		% static_cast<int>(port));
+	Show(CFormat(_("amuleapi: config dir %s\n"))
+		% m_apiConfig.ConfigDir());
+	Show(CFormat(_("amuleapi: aMule version %s; api v0\n"))
+		% wxString::FromAscii(VERSION));
+
+	// Refresher loop. One tick per second; the HTTP thread reads the
+	// State cache concurrently while we're sleeping between ticks.
+	// EC roundtrips run on this thread (the wxApp thread, which is
+	// also CRemoteConnect's owner) but go through `SendRecvSerialized`
+	// to hold m_ec_mtx — that way Phase 5's HTTP-thread mutations
+	// can call it from any thread without conflicting.
+	//
+	// `was_failed` tracks the success/failure edge so we can wipe the
+	// list caches on the rising edge (failed → succeeded). The
+	// server's CValueMap was reset across the disconnect, so the
+	// next tick gets a full snapshot anyway — clearing our caches
+	// first ensures entries that vanished during the down window
+	// don't linger forever in the INC-delta path.
+	bool was_failed = false;
+	while (!g_shutdownRequested.load(std::memory_order_acquire)) {
+		if (was_failed) {
+			m_state.ResetLists();
+		}
+		const bool ok = webapi::RefresherTick(*this, m_state);
+		if (ok) {
+			m_state.MarkTickSuccess();
+			was_failed = false;
+		} else {
+			m_state.MarkTickFailure();
+			was_failed = true;
+		}
+		// Sleep in small slices so the shutdown latency is bounded
+		// independently of the tick cadence.
+		for (int i = 0; i < 4; ++i) {
+			if (g_shutdownRequested.load(std::memory_order_acquire)) break;
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		}
+	}
+
+	Show(_("amuleapi: shutdown signal received; stopping...\n"));
+}
+
+
+const CECPacket *CamuleapiApp::SendRecvSerialized(const CECPacket *request)
+{
+	std::lock_guard<std::mutex> lock(m_ec_mtx);
+	return SendRecvMsg_v2(request);
+}
+
+
+bool CamuleapiApp::IsServerPartialUpdateActive()
+{
+	// Inherited from CaMuleExternalConnector. No mutex needed —
+	// it's a const bool snapshot taken at login.
+	return CaMuleExternalConnector::IsServerPartialUpdateActive();
+}
+
+
+int CamuleapiApp::OnExit()
+{
+	// Tear down in reverse construction order: HTTP server first so no
+	// in-flight Dispatch can reach a dangling dispatcher, then the
+	// dispatcher itself (which references m_jwt), then m_jwt.
+	if (m_http) {
+		m_http->Stop();
+		m_http.reset();
+	}
+	m_dispatcher.reset();
+	m_jwt.reset();
+	return CaMuleExternalConnector::OnExit();
+}
+
+
+// Stub functions needed by the linker because ExternalConnector.cpp
+// transitively references MuleNotify (via the EC tag handlers); the
+// daemon-side bodies live in the monolithic amule binary, and console
+// builds (amulecmd, amuleapi) supply no-ops since they never raise
+// GUI notifications.
+namespace MuleNotify
+{
+class CMuleNotiferBase;
+void HandleNotification(const CMuleNotiferBase&)       {}
+void HandleNotificationAlways(const CMuleNotiferBase&) {}
+}

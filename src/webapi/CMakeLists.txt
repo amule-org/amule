@@ -1,0 +1,87 @@
+# amuleapi — REST API + SSE daemon. Standalone executable that
+# connects to amuled via the existing EC protocol (same wire as
+# amulecmd / amuleweb) and serves /api/v0/* over HTTP via Boost.Beast.
+
+add_executable (amuleapi
+	${CMAKE_SOURCE_DIR}/src/ExternalConnector.cpp
+	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+	${CMAKE_SOURCE_DIR}/src/RLE.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkFunctions.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	AmuleApiConfig.cpp
+	Api.cpp
+	App.cpp
+	Auth.cpp
+	EventBus.cpp
+	EventDiff.cpp
+	HttpServer.cpp
+	Refresher.cpp
+	RefresherTick.cpp
+	State.cpp
+)
+
+if (WIN32)
+	target_sources (amuleapi
+		PRIVATE ${CMAKE_BINARY_DIR}/version.rc
+	)
+endif()
+
+# Console / daemon — never builds wx GUI bits.
+target_compile_definitions (amuleapi
+	PRIVATE wxUSE_GUI=0
+)
+
+target_include_directories (amuleapi
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+	PRIVATE ${SRC_DIR}
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (amuleapi
+	PRIVATE ec
+	PRIVATE mulecommon
+	PRIVATE mulesocket
+	PRIVATE webcommon
+	PRIVATE wxWidgets::NET
+	PRIVATE ${Boost_LIBRARIES}
+)
+
+# Same gettext shim as amuleweb — _() in the CLI text needs libintl on
+# macOS / MinGW. Glibc bakes the symbols into libc, so the guard is a
+# noop there.
+if (ENABLE_NLS AND Intl_FOUND)
+	target_include_directories (amuleapi PRIVATE ${Intl_INCLUDE_DIRS})
+	target_link_libraries (amuleapi PRIVATE ${Intl_LIBRARIES})
+endif()
+
+if (HAVE_BFD)
+	target_link_libraries (amuleapi
+		PRIVATE ${LIBBFD}
+	)
+endif()
+
+# ExternalConnector.cpp pulls in libreadline when HAVE_LIBREADLINE is
+# defined at configure time (it's part of the readline-augmented TextShell
+# implementation amulecmd uses for tab completion). amuleapi never
+# enters TextShell, but the linker still resolves the references because
+# they live in unconditionally-emitted symbols inside the same TU.
+if (HAVE_LIBREADLINE)
+	target_link_libraries (amuleapi
+		PRIVATE ${READLINE_LIBRARIES}
+	)
+endif()
+
+if (APPLE)
+	# CoreServices / ApplicationServices — same set amuleweb links, used
+	# by wxStandardPaths::GetUserDataDir() on a .app bundle to look up
+	# Application Support/ correctly.
+	target_link_libraries (amuleapi
+		PRIVATE "-framework CoreServices"
+		PRIVATE "-framework ApplicationServices"
+	)
+endif()
+
+install (TARGETS amuleapi
+	RUNTIME DESTINATION bin
+)

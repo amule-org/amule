@@ -2,7 +2,7 @@
 # Custom AppRun for the aMule AppImage.
 #
 # Dispatches to one of the bundled binaries (amule / amuled / amulegui /
-# amulecmd / amuleweb / ed2k) based on the name the AppImage was invoked
+# amulecmd / amuleweb / amuleapi / ed2k) based on the name the AppImage was invoked
 # as. The AppImage runtime sets $ARGV0 to the path used to launch the
 # image; basename of that gives us the symlink name. Standard idiom —
 # same pattern Krita and GIMP use to ship multiple tools in one bundle.
@@ -49,7 +49,7 @@ NAME="${NAME%-aarch64}"
 NAME="${NAME%-Linux}"
 
 case "${NAME}" in
-    amuled|amulegui|amulecmd|amuleweb|ed2k|cas|wxcas|alc|alcc)
+    amuled|amulegui|amulecmd|amuleweb|amuleapi|ed2k|cas|wxcas|alc|alcc)
         BIN="${HERE}/usr/bin/${NAME}"
         ;;
     *)

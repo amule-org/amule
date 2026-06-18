@@ -1,0 +1,182 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program derived from the xMule, lMule or eMule project,
+// or contributed by third-party developers are copyrighted by their
+// respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+//
+
+#ifndef WEBAPI_APP_H
+#define WEBAPI_APP_H
+
+#include <memory>
+
+#include "ExternalConnector.h"
+
+#include "AmuleApiConfig.h"
+#include "EventBus.h"
+#include "EventDiff.h"   // LastSeenState (Phase 8b diff baseline)
+#include "State.h"
+
+#include "Jwt.h"
+#include "RLE.h"   // PartFileEncoderData
+
+#include <cstdint>
+#include <map>
+#include <mutex>
+
+
+class CApiDispatcher;
+class CECPacket;
+class CHttpServer;
+
+
+// amuleapi daemon entry. Inherits CaMuleExternalConnector so we
+// reuse the EC bring-up machinery (CRemoteConnect, --host / --port /
+// --password parsing, ZLIB negotiation, MD5 password handling) that
+// already powers amulecmd / amuleweb. Phase 2 adds:
+//
+//   - amuleapi-specific CLI options (--bind, --http-port, --config-dir,
+//     --set-admin-pass, --set-guest-pass)
+//   - amuleapi.conf / amuleapi-jwt-secret / amuleapi-passwords loading
+//     via CAmuleApiConfig (separate file set; remote.conf is untouched)
+//   - a Boost.Beast HTTP server thread that serves /api/v0/version
+//
+// Phase 4 wires the EC bring-up: TextShell is overridden so that
+// `ConnectAndRun` becomes "connect EC, spawn the HTTP thread, run the
+// refresher loop on this (wxApp) thread, tear down on shutdown
+// signal".
+//
+// Multiple REST clients: the HTTP server accepts concurrent
+// connections; their handlers reach EC only through
+// `SendRecvSerialized`, which serializes every EC roundtrip
+// (refresher tick + handler-driven mutations from Phase 5+) on the
+// same process-wide mutex. This way the EC client stays
+// single-threaded as CRemoteConnect requires, and operator-visible
+// concurrency stays correct under load.
+class CamuleapiApp : public CaMuleExternalConnector {
+public:
+	CamuleapiApp();
+	~CamuleapiApp();
+
+	const wxString GetGreetingTitle() override { return _("aMule REST API"); }
+
+	bool OnInit() override;
+	int  OnRun()  override;
+	int  OnExit() override;
+
+	// Serialized EC roundtrip. Takes the EC lock, calls
+	// SendRecvMsg_v2, releases. Callable from any thread; the
+	// refresher and Phase 5+ mutation handlers funnel every EC call
+	// through here so amule's wx-socket-driven CRemoteConnect stays
+	// single-reader by construction.
+	//
+	// Returns the response packet on success or nullptr if EC has
+	// disconnected. Caller owns the returned packet.
+	const CECPacket *SendRecvSerialized(const CECPacket *request);
+
+	// True when amuled advertised EC_TAG_CAN_PARTIAL_UPDATE during
+	// login. Refresher uses this to decide between "trust the
+	// EC_TAG_FILE_REMOVED markers" and the legacy "bulk-delete
+	// entries we didn't see this tick" path.
+	bool IsServerPartialUpdateActive();
+
+	// Refresher needs the cache. Single CState instance per process.
+	webapi::CState &State() { return m_state; }
+
+	// Per-partfile RLE decoder state, persisted across ticks.
+	// amule's EC server sends GAP_STATUS / PART_STATUS as
+	// differentially-encoded blobs (each frame is XOR-deltaed
+	// against the previous decoded buffer), so the decoder MUST
+	// retain state across calls. Keyed by partfile ECID; entry
+	// erased when the file is removed.
+	//
+	// **Concurrency:** mutated only by RefresherTick, which is
+	// serialized through `m_ec_mtx` (held across every
+	// SendRecvSerialized roundtrip). Phase 5 mutation handlers
+	// that inline-refresh also acquire m_ec_mtx, so there's no
+	// lock-free racing path — the map is safe to expose by raw
+	// reference.
+	std::map<std::uint32_t, PartFileEncoderData> &PartfileRleState() {
+		return m_partfile_rle;
+	}
+
+	// Phase 8b: SSE event bus. The refresher publishes events after
+	// each successful tick; streaming-handler threads drain from
+	// here. Exposed by raw reference — CEventBus is internally
+	// thread-safe.
+	webapi::CEventBus &EventBus() { return m_event_bus; }
+
+	// Phase 8b: prior-tick snapshot used to compute event deltas.
+	// Owned by the App; mutated AFTER each successful refresher
+	// tick by `EmitDiffsAndUpdate`. Exposed so RefresherTick can
+	// reach it without re-routing through CState (which is read-
+	// only from the refresher's perspective post-tick).
+	webapi::LastSeenState &LastSeenForEvents() { return m_last_seen; }
+
+private:
+	void OnInitCmdLine(wxCmdLineParser &parser) override;
+	bool OnCmdLineParsed(wxCmdLineParser &parser) override;
+
+	// Loads amuleapi.conf + amuleapi-jwt-secret + amuleapi-passwords.
+	// Returns false on any unrecoverable error (missing required file,
+	// wrong mode bits on POSIX, malformed INI). The error has already
+	// been printed via Show() at the point of return.
+	bool LoadAmuleapiConfig();
+
+	// CLI-only flows. Both write the requested file under
+	// m_amuleapiConfigDir with mode 0600 and exit immediately —
+	// they never start the HTTP server or connect to EC.
+	int RunSetAdminPass();
+	int RunSetGuestPass();
+
+	// TextShell override drives the refresher loop and the HTTP
+	// server. Called by CaMuleExternalConnector::ConnectAndRun after
+	// the EC connection is established; we override it so the daemon
+	// never enters the interactive readline path that amulecmd uses.
+	void TextShell(const wxString &prompt) override;
+
+	CAmuleApiConfig                 m_apiConfig;
+	webapi::CState                  m_state;
+	std::mutex                      m_ec_mtx;   // serializes m_ECClient
+	std::unique_ptr<CJwt>           m_jwt;
+	std::unique_ptr<CApiDispatcher> m_dispatcher;
+	std::unique_ptr<CHttpServer>    m_http;
+	std::map<std::uint32_t, PartFileEncoderData> m_partfile_rle;
+	webapi::CEventBus                            m_event_bus;
+	webapi::LastSeenState                        m_last_seen;
+
+	// CLI capture: --bind / --http-port override the matching keys in
+	// amuleapi.conf when present. --set-*-pass and --foreground are
+	// runtime-mode toggles.
+	wxString m_cliBindAddress;
+	long     m_cliHttpPort       = 0;
+	wxString m_cliConfigDirOverride;
+	wxString m_cliSetAdminPass;
+	wxString m_cliSetGuestPass;
+	bool     m_cliHasBindAddress = false;
+	bool     m_cliHasHttpPort    = false;
+	bool     m_cliHasSetAdminPass = false;
+	bool     m_cliHasSetGuestPass = false;
+	bool     m_cliForeground     = true;   // --foreground default; --daemon flips
+};
+
+DECLARE_APP(CamuleapiApp)
+
+#endif // WEBAPI_APP_H

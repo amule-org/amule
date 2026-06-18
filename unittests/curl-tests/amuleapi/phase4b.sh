@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+#
+# amuleapi Phase 4b — `/downloads`, `/downloads/{hash}`,
+# `/shared`. Exercises the two-phase INC polling protocol end-to-end
+# (Phase 1 EC_DETAIL_UPDATE for deltas, Phase 2 EC_DETAIL_FULL for new
+# ECIDs), the ECID-keyed state cache, the auth gate, and the bare-
+# object detail shape (Q3 in PLAN.md §12).
+#
+# This smoke is intentionally tolerant of empty caches — it asserts
+# the envelope shape and the per-item field types without requiring
+# a specific download / upload / shared file to exist on the daemon.
+# Field-content correctness is exercised by the unit tests against
+# crafted EC packets, and by the live test the dev runs against
+# their daemon (`./build-macos/src/webapi/amuleapi ...` →
+# `curl /downloads | jq`).
+#
+# Bring-up convention:
+#   rm -rf /tmp/amuleapi-phase4b && mkdir -p /tmp/amuleapi-phase4b
+#   amuleapi --config-dir=/tmp/amuleapi-phase4b --host=127.0.0.1 \
+#            --port=4712 --password=amule --set-admin-pass=adminpass
+#   amuleapi --config-dir=/tmp/amuleapi-phase4b --host=127.0.0.1 \
+#            --port=4712 --password=amule &
+#   ./phase4b.sh
+
+set -u
+set -o pipefail
+
+HOST=${HOST:-localhost:4713}
+ADMIN_PASS=${ADMIN_PASS:-adminpass}
+
+FAIL_COUNT=0
+TEST_COUNT=0
+
+CURL_BODY_FILE=$(mktemp -t amuleapi_phase4b_body.XXXXXX)
+trap 'rm -f "$CURL_BODY_FILE"' EXIT
+
+_die()  { echo "FATAL: $*" >&2; exit 2; }
+_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
+_fail() {
+	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
+	echo "  FAIL  $1"
+	shift
+	for arg in "$@"; do echo "        $arg"; done
+}
+
+_curl() {
+	local resp
+	resp=$(curl -s --max-time 10 \
+		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
+		|| _die "curl invocation failed for $*"
+	CURL_STATUS=$resp
+	CURL_BODY=$(cat "$CURL_BODY_FILE")
+}
+
+_assert_status() {
+	local expected=$1 label=$2
+	if [ "$CURL_STATUS" = "$expected" ]; then
+		_pass "$label (HTTP $CURL_STATUS)"
+	else
+		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
+			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
+_assert_json_eq() {
+	local expr=$1 expected=$2 label=$3
+	local actual
+	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
+		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
+	if [ "$actual" = "$expected" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
+	fi
+}
+
+if ! command -v jq >/dev/null 2>&1; then
+	_die "jq is required. brew install jq."
+fi
+if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
+	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
+fi
+
+echo "amuleapi phase 4b smoke @ $HOST"
+
+# --- 0. Log in. ----------------------------------------------------
+TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" \
+	"$HOST/api/v0/auth/login" | jq -r .token)
+[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
+	|| _die "could not log in for phase 4b tests"
+
+# Allow the first two refresher ticks to populate the cache (cold
+# start: Phase 1 surfaces every existing file as "new", Phase 2 ships
+# their identities; from tick 2 the cache is fully built).
+sleep 3
+
+# --- 1. Each list endpoint pre-auth → 401. -------------------------
+for ep in downloads shared; do
+	_curl "$HOST/api/v0/$ep"
+	_assert_status 401 "GET /api/v0/$ep without creds → 401"
+done
+
+# --- 2. List endpoints with admin bearer → 200 + envelope shape. ---
+for ep in downloads shared; do
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
+	_assert_status 200 "GET /api/v0/$ep (admin bearer) → 200"
+	_assert_json_eq ".$ep | type"                array   "/$ep .$ep is an array"
+done
+
+# --- 3. /downloads element shape (only when there's at least one). -
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads"
+COUNT=$(printf '%s' "$CURL_BODY" | jq '.downloads | length')
+if [ "$COUNT" -gt 0 ]; then
+	echo "  --- /downloads has $COUNT entry/entries; shape checks ---"
+	_assert_json_eq '.downloads[0].hash | length' 32 \
+		'/downloads[0].hash is 32-char hex'
+	_assert_json_eq '.downloads[0].name | type' string \
+		'/downloads[0].name is string'
+	_assert_json_eq '.downloads[0].size | type' number \
+		'/downloads[0].size is numeric'
+	_assert_json_eq '.downloads[0].status | test("^(downloading|paused|completed|hashing|erroneous|completing|allocating|waiting|insufficient_disk|unknown)$")' \
+		true '/downloads[0].status is a known enum value'
+	_assert_json_eq '.downloads[0].priority | test("^(very_low|low|normal|high|release|auto)$")' \
+		true '/downloads[0].priority is a known enum value'
+	_assert_json_eq '.downloads[0].progress.percent | type' number \
+		'/downloads[0].progress.percent is numeric'
+	_assert_json_eq '.downloads[0].sources | type' object \
+		'/downloads[0].sources is object'
+	_assert_json_eq '.downloads[0].sources.total | type' number \
+		'/downloads[0].sources.total is numeric'
+
+	# --- 4. /downloads/{hash} bare-object detail. -----------------
+	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH"
+	_assert_status 200 "GET /api/v0/downloads/{hash} → 200"
+	# Detail response is bare — `hash` at top level, no `snapshot_at`
+	# envelope (Q3 in PLAN.md §12).
+	_assert_json_eq '.hash' "$HASH" '/downloads/{hash} returns bare object keyed by hash'
+	_assert_json_eq '.snapshot_at | type' null \
+		'/downloads/{hash} has no snapshot_at envelope (bare object)'
+	_assert_json_eq '.progress.percent | type' number \
+		'/downloads/{hash} carries progress.percent'
+
+	# Uppercase hash → same hit (case-insensitive route).
+	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH_UPPER"
+	_assert_status 200 "GET /downloads/{HASH-UPPERCASE} → 200 (case-insensitive)"
+else
+	echo "  --- /downloads is empty; skipping per-item shape + detail checks ---"
+fi
+
+# --- 5. Missing-hash 404. -----------------------------------------
+_curl -H "Authorization: Bearer $TOKEN" \
+	"$HOST/api/v0/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
+_assert_status 404 "GET /downloads/{nonexistent-hash} → 404"
+_assert_json_eq '.error.code' not_found \
+	'404 carries error.code=not_found'
+
+# --- 6. /shared element shape (always at least .DS_Store on macOS). -
+_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
+SHCOUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
+if [ "$SHCOUNT" -gt 0 ]; then
+	echo "  --- /shared has $SHCOUNT entry/entries; shape checks ---"
+	_assert_json_eq '.shared[0].hash | length' 32 \
+		'/shared[0].hash is 32-char hex'
+	_assert_json_eq '.shared[0].xfer | type' object \
+		'/shared[0].xfer is object'
+	_assert_json_eq '.shared[0].xfer.total | type' number \
+		'/shared[0].xfer.total is numeric'
+	_assert_json_eq '.shared[0].priority | type' string \
+		'/shared[0].priority is string'
+fi
+
+# --- 7. Method gate (POST/DELETE not allowed on read-only). -------
+for ep in downloads shared; do
+	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
+	_assert_status 405 "DELETE /api/v0/$ep → 405"
+done
+
+# --- Summary. -----------------------------------------------------
+echo
+if [ "$FAIL_COUNT" -eq 0 ]; then
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	exit 0
+fi
+echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
+exit 1

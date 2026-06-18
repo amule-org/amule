@@ -99,6 +99,7 @@ build() {
         -DBUILD_REMOTEGUI=YES \
         -DBUILD_DAEMON=YES \
         -DBUILD_AMULECMD=YES \
+        -DBUILD_AMULEAPI=YES \
         -DBUILD_ED2K=YES \
         -DBUILD_WEBSERVER=YES \
         -DBUILD_CAS=YES \
