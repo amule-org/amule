@@ -47,7 +47,10 @@ fi
 run_phase() {
 	local script=$1
 	echo "==================== $script ===================="
-	pkill -f amuleapi 2>/dev/null
+	# Narrowly target the regtest daemon so a dev who happens to have
+	# `vim path/to/amuleapi.cpp` open doesn't get their editor killed.
+	# The config-dir suffix is uniquely ours.
+	pkill -f "amuleapi --config-dir=/tmp/amuleapi-regtest" 2>/dev/null
 	sleep 1
 	rm -rf /tmp/amuleapi-regtest
 	mkdir -p /tmp/amuleapi-regtest
@@ -60,7 +63,18 @@ run_phase() {
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
 		--host=127.0.0.1 --port=4712 --password=amule \
 		> /tmp/amuleapi.log 2>&1 &
-	sleep 1
+	# Poll /version until the daemon is ready instead of guessing the
+	# cold-start time. The first EC GET_UPDATE roundtrip can take a
+	# couple of seconds on a slow CI runner, and the cap of 12 leaves
+	# headroom while still failing fast on a genuine bring-up bug.
+	local i
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+		if curl -s -o /dev/null --max-time 1 \
+		    http://localhost:4713/api/v0/version 2>/dev/null; then
+			break
+		fi
+		sleep 0.5
+	done
 	# Phase scripts that need to bounce the daemon themselves
 	# (phase9.sh rewrites amuleapi.conf to flip CORS modes) read
 	# these envs to know how to restart cleanly.
@@ -70,6 +84,25 @@ run_phase() {
 	bash "$SCRIPT_DIR/$script"
 	local rc=$?
 	echo "$script exit=$rc"
+	# If a phase failed AND the daemon is currently rate-limiting,
+	# the operator likely hit the phase3 fallout: 7 deliberate
+	# wrong-password attempts armed a 5-minute IP lockout that
+	# subsequent phases inherit when the orchestrator's daemon
+	# restart isn't enough to clear the in-memory bucket. Print
+	# a one-line tip so the operator doesn't lose half an hour
+	# chasing the wrong layer.
+	if [ "$rc" -ne 0 ]; then
+		local probe=$(curl -s -X POST -H "Content-Type: application/json" \
+			-o /dev/null -w "%{http_code}" \
+			-d "{\"password\":\"adminpass\"}" \
+			http://localhost:4713/api/v0/auth/login 2>/dev/null)
+		if [ "$probe" = "429" ]; then
+			echo "TIP: amuleapi is currently rate-limiting login (HTTP 429)." \
+			     "If you ran phase3 right before this, that's the 7-bad-pass" \
+			     "arm carried over. Restart amuleapi (kills the bucket)" \
+			     "before re-running."
+		fi
+	fi
 	return $rc
 }
 

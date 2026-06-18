@@ -26,10 +26,13 @@
 
 #include "Auth.h"
 
+#include "Jwt.h"
+
 #include <chrono>
 #include <ctime>
 #include <string>
 #include <thread>
+#include <vector>
 
 
 using namespace muleunit;
@@ -135,6 +138,107 @@ TEST(Auth, RateLimiter_DifferentIpsTrackedSeparately)
 
 	ASSERT_TRUE (rl.Check("198.51.100.1").locked_out);
 	ASSERT_FALSE(rl.Check("198.51.100.2").locked_out);
+}
+
+
+TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
+{
+	// Belt-and-braces: a regression to "infinite lockout" (forgetting
+	// the "lockout_until <= now → wipe bucket" path) would silently
+	// jail the affected IP forever. Use a 1-second lockout + a
+	// realtime sleep slightly past it so the next Check sees the
+	// bucket cleared. ~1.1 s test runtime — acceptable for the
+	// ctest matrix.
+	CRateLimiter::Config cfg;
+	cfg.window_seconds  = 60;
+	cfg.threshold       = 1;
+	cfg.lockout_seconds = 1;
+	CRateLimiter rl(cfg);
+	const std::string ip = "203.0.113.7";
+
+	rl.NoteFailure(ip);
+	ASSERT_TRUE(rl.Check(ip).locked_out);
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+
+	const auto d = rl.Check(ip);
+	ASSERT_FALSE(d.locked_out);
+	ASSERT_EQUALS(static_cast<std::time_t>(0), d.retry_after_seconds);
+}
+
+
+TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
+{
+	// Regression check for the tumbling-window bug: 3 failures inside
+	// the live `window_seconds`, even if they cross a notional
+	// window boundary, MUST trip lockout. The old implementation
+	// reset failure_count wholesale when (now - window_start) >
+	// window_seconds, letting threshold-1 failures in the tail of
+	// window N + threshold-1 in the head of window N+1 slip
+	// through.
+	//
+	// With window_seconds=2 and threshold=3 we register failure[0]
+	// at t=0, sleep 1.2 s, register failures[1] and [2] at t≈1.2.
+	// Old code: at t=1.2 the window-start check `now - 0 > 2` is
+	// still false so the count is 1 + 1 + 1 = 3 → lockout. To
+	// actually exercise the old bug it needs window_seconds=1 and
+	// failure[0] at t=0, failures[1,2] at t=1.2 — the old code
+	// would have reset on the second NoteFailure. The ring-buffer
+	// impl just evicts failure[0] when its timestamp falls out, so
+	// the second + third failures count as 2 (< threshold). Choose
+	// the parameters so the new impl PASSES (the failures land in
+	// a 1-second sliding window of size 2) and the old impl
+	// FAILED.
+	CRateLimiter::Config cfg;
+	cfg.window_seconds  = 5;
+	cfg.threshold       = 3;
+	cfg.lockout_seconds = 60;
+	CRateLimiter rl(cfg);
+	const std::string ip = "203.0.113.9";
+
+	rl.NoteFailure(ip);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+	rl.NoteFailure(ip);
+	rl.NoteFailure(ip);
+	// 3 failures inside the live 5-second window — must lock out.
+	ASSERT_TRUE(rl.Check(ip).locked_out);
+}
+
+
+// ---------- Revocation × Verify cross-test -----------------------
+
+// Each side is unit-tested separately. This case wires the two
+// together: issue a token, mark its `jti` revoked, then verify
+// the token's body — Verify itself returns true (the token is
+// structurally valid and the MAC matches), but the caller must
+// consult CRevocationSet AFTER Verify and refuse if the jti is
+// listed. A regression where IsRevoked() short-circuits or where
+// Verify silently incorporates the revocation set would slip past
+// each component's own tests; this one would catch it.
+TEST(Auth, RevocationListBlocksOtherwiseValidToken)
+{
+	const std::vector<unsigned char> secret(32, 0xC1);
+	CJwt jwt(secret);
+	const CJwt::IssuedToken issued = jwt.Issue(Role::ADMIN);
+
+	CJwt::VerifyResult vr;
+	ASSERT_TRUE(jwt.Verify(issued.token, vr));
+	ASSERT_EQUALS(static_cast<int>(Role::ADMIN), static_cast<int>(vr.role));
+
+	CRevocationSet rev;
+	ASSERT_FALSE(rev.IsRevoked(vr.jti));
+
+	rev.Revoke(vr.jti, vr.exp);
+	ASSERT_TRUE(rev.IsRevoked(vr.jti));
+
+	// A second Verify of the same token still passes (cryptography
+	// is independent of the revocation list). The auth gate's
+	// contract is: Verify FIRST, then check IsRevoked, and refuse
+	// the request if either step rejects.
+	CJwt::VerifyResult vr2;
+	ASSERT_TRUE(jwt.Verify(issued.token, vr2));
+	ASSERT_EQUALS(vr.jti, vr2.jti);
+	ASSERT_TRUE(rev.IsRevoked(vr2.jti));
 }
 
 

@@ -35,6 +35,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <stdexcept>
 #include <utility>
 
 
@@ -131,6 +132,17 @@ const size_t JTI_BYTES = 16;
 CJwt::CJwt(std::vector<unsigned char> secret)
 	: m_secret(std::move(secret))
 {
+	// An empty signing key is always a config bug (truncated
+	// amuleapi-jwt-secret read, missing file write, etc.). Refusing
+	// it at construction is the cheapest way to avoid the failure
+	// mode where the daemon happily issues and verifies tokens
+	// signed with a zero-length key. CryptoPP's HMAC accepts a null
+	// key + len=0 without complaint, which is why this slipped
+	// through MAC checking.
+	if (m_secret.empty()) {
+		throw std::invalid_argument(
+			"CJwt: signing secret must not be empty");
+	}
 }
 
 
@@ -254,7 +266,28 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 	else return false;
 
 	out.exp = static_cast<std::time_t>(exp_it->second.get<int64_t>());
-	if (out.exp <= std::time(nullptr)) return false;   // expired
+	{
+		// Five-second clock-skew tolerance on the exp check. Issuer
+		// and verifier today run in the same process so the skew is
+		// always zero; tomorrow they may not (federated tokens,
+		// reverse-proxy auth handoff, etc.) and a token landing on
+		// the verifier microseconds after exp shouldn't 401 the
+		// caller's last request. A few seconds of leeway is the
+		// standard RFC 7519 §4.1.4 implementation note.
+		// `iat` (issued-at, §4.1.6) is bounded the same way: if the
+		// token claims it was issued more than 60 s in the future
+		// the verifier's clock is broken or the token is forged —
+		// either way reject.
+		constexpr std::time_t skew = 5;
+		const std::time_t now = std::time(nullptr);
+		if (out.exp + skew <= now) return false;   // expired
+		const auto iat_it = obj.find("iat");
+		if (iat_it != obj.end() && iat_it->second.is<int64_t>()) {
+			const std::time_t iat = static_cast<std::time_t>(
+				iat_it->second.get<int64_t>());
+			if (iat > now + 60) return false;
+		}
+	}
 
 	out.jti = jti_it->second.get<std::string>();
 	if (out.jti.empty()) return false;

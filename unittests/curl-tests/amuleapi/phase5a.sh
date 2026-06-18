@@ -38,7 +38,16 @@ FAIL_COUNT=0
 TEST_COUNT=0
 
 CURL_BODY_FILE=$(mktemp -t amuleapi_phase5a_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
+trap '
+	rm -f "$CURL_BODY_FILE"
+	# Best-effort partfile cleanup so the Ubuntu ISO doesn'\''t survive
+	# a failed run and pin disk on the Windows VM (per
+	# feedback_clean_temp_partfiles_after_test).
+	if [ -n "${ADMIN_TOKEN:-}" ]; then
+		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	fi
+' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }

@@ -107,12 +107,15 @@ public:
 	// retain state across calls. Keyed by partfile ECID; entry
 	// erased when the file is removed.
 	//
-	// **Concurrency:** mutated only by RefresherTick, which is
-	// serialized through `m_ec_mtx` (held across every
-	// SendRecvSerialized roundtrip). Phase 5 mutation handlers
-	// that inline-refresh also acquire m_ec_mtx, so there's no
-	// lock-free racing path — the map is safe to expose by raw
-	// reference.
+	// **Concurrency:** mutated under `CState::m_mu` held EXCLUSIVE
+	// — the `MutateDownloads` writer lambda in Refresher.cpp passes
+	// the map into the apply functor while holding the State write
+	// lock. m_ec_mtx is INCIDENTALLY held across the same call
+	// stack (because SendRecvSerialized takes it), but it's the
+	// State write lock that's the actual serializer. Any future
+	// writer that touches the map outside MutateDownloads must
+	// take the same State write lock — exposing by raw reference
+	// is a shortcut, not a guarantee that the map is unguarded.
 	std::map<std::uint32_t, PartFileEncoderData> &PartfileRleState() {
 		return m_partfile_rle;
 	}

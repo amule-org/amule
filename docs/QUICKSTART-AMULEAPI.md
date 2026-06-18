@@ -7,9 +7,10 @@ exposes its own HTTP surface on a separate port. amuleapi is the first
 shipping REST API for aMule — there is no prior on-the-wire surface to
 migrate from.
 
-The protocol contract for `/api/v0/*` and the SSE event types is
-documented under the source tree at `docs/api/` (per-endpoint OpenAPI-
-style fragments).
+For the endpoint list see the [What ships](#what-ships) section
+below. A per-endpoint OpenAPI document is a follow-up; the source of
+truth today is the handler routing in
+[`src/webapi/Api.cpp`](../src/webapi/Api.cpp).
 
 ## Requirements
 
@@ -31,6 +32,14 @@ that `amuled` uses:
 
 Override with `amuleapi --config-dir=/path/to/dir`.
 
+> **Cohabitation with amuled.** This is the same directory amuled
+> keeps `amule.conf` and `*.met` in. That's intentional — amuleapi's
+> three files (`amuleapi.conf`, `amuleapi-jwt-secret`,
+> `amuleapi-passwords`) sit alongside amuled's without colliding,
+> and operators reading both sets of configs together don't have
+> to context-switch directories. amuleapi never touches amuled's
+> files; amuled never touches amuleapi's.
+
 The directory holds three amuleapi-specific files, all written with mode
 `0600`:
 
@@ -40,8 +49,11 @@ The directory holds three amuleapi-specific files, all written with mode
 | `amuleapi-jwt-secret`     | 32-byte HMAC signing key for issued tokens. Auto-generated on first launch if absent.                    |
 | `amuleapi-passwords`      | MD5-hashed admin and guest passwords. Plaintext is never persisted.                                      |
 
-Set passwords via the dedicated CLI flags (these write the file and exit
-without starting the HTTP server):
+Set passwords via the dedicated CLI flags. Each invocation writes the
+file and exits — the HTTP server is NOT brought up, no EC connection
+is attempted, and the exit code reflects success / failure (so
+`amuleapi --set-admin-pass=... && systemctl restart amuleapi` actually
+short-circuits if the write fails):
 
 ```sh
 amuleapi --set-admin-pass=mySecret123
@@ -100,7 +112,14 @@ CorsOriginAllowlist=https://your-app.example.com,https://staging.example.com
 ```
 
 Leave `CorsOriginAllowlist` empty to echo any caller's `Origin` header
-(wildcard equivalent that stays cookie-compatible).
+(wildcard-equivalent that stays cookie-compatible).
+
+> **CORS note.** The empty-allowlist form is *not* literally
+> `Access-Control-Allow-Origin: *`. amuleapi echoes the caller's
+> exact `Origin` value, which is the only shape browsers accept
+> together with `Access-Control-Allow-Credentials: true` (RFC 6454
+> + Fetch spec). A literal `*` would refuse cookie auth on cross-
+> origin requests — which is what every browser session relies on.
 
 ## What ships
 

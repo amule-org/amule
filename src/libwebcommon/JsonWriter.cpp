@@ -169,6 +169,7 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 		if (cp >= 0xD800 && cp <= 0xDBFF) {
 			wxString::const_iterator j = i;
 			++j;
+			bool paired = false;
 			if (j != s.end()) {
 				const uint32_t lo = wxUniChar(*j).GetValue();
 				if (lo >= 0xDC00 && lo <= 0xDFFF) {
@@ -176,8 +177,19 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 					   + ((cp - 0xD800u) << 10)
 					   + (lo - 0xDC00u);
 					i = j;
+					paired = true;
 				}
 			}
+			if (!paired) {
+				// Unpaired high surrogate. Falling through would
+				// emit invalid UTF-8 (CESU-8) once the buffer is
+				// utf8_str()-flushed. Replace with U+FFFD so the
+				// JSON output stays valid Unicode. Same treatment
+				// for an unpaired low surrogate below.
+				cp = 0xFFFD;
+			}
+		} else if (cp >= 0xDC00 && cp <= 0xDFFF) {
+			cp = 0xFFFD;
 		}
 		switch (cp) {
 		case '"':  *m_buf += wxT("\\\""); continue;

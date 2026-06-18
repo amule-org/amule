@@ -282,17 +282,32 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// Phase 8b: walk the prior-vs-current state diff and publish
-	// typed SSE events for each change (download_added/_updated/
-	// _removed, shared_*, server_*, client_*, status_changed). Runs
-	// here — at the END of a successful tick — so events fire
-	// against a fully-coherent snapshot. The bus is internally
-	// thread-safe; SSE subscribers drain from their own threads.
-	webapi::EmitDiffsAndUpdate(app.EventBus(),
-	                           app.LastSeenForEvents(),
-	                           state);
-
+	// NOTE: Phase 8b's EmitDiffsAndUpdate is intentionally NOT called
+	// here any more. It used to live at the end of every tick, but
+	// every Phase-5 mutation handler also invokes RefresherTick()
+	// inline on the HTTP-server worker thread to make the response
+	// see post-mutation state, and LastSeenState has no internal
+	// lock. Two threads doing std::map insert/erase on the same
+	// LastSeenState (the wxApp refresher loop at ~1 Hz, racing with
+	// any concurrent HTTP-driven mutation) is UB.
+	// The wxApp refresher loop in App.cpp is the single owner of the
+	// LastSeenState mutation path now and calls EmitDiffsForEventBus()
+	// (defined below) explicitly after a successful RefresherTick.
+	// Inline-from-HTTP callers don't touch LastSeenState; SSE
+	// subscribers see the mutation's diff on the next natural
+	// 1-second tick.
 	return true;
+}
+
+
+void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state)
+{
+	// Sole writer of `app.LastSeenForEvents()`. ONLY the wxApp
+	// refresher loop calls this; HTTP-server inline RefresherTick
+	// call sites do NOT.
+	EmitDiffsAndUpdate(app.EventBus(),
+	                   app.LastSeenForEvents(),
+	                   state);
 }
 
 

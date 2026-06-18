@@ -34,6 +34,7 @@
 #include <boost/optional.hpp>
 
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -62,6 +63,21 @@ namespace {
 // chunks indefinitely via the Writer interface. The session keeps
 // the socket open until the handler returns or the peer
 // disconnects.
+// Process-wide cap on concurrent SSE subscribers. Each session spawns
+// one OS thread; without a cap, a bind to a non-loopback interface
+// exposes the thread-per-connection model to anonymous traffic and
+// turns into a DoS amplifier. The cap is sized for the single-
+// operator dashboard pattern amuleapi v0.1 supports — a handful of
+// browsers + the odd shell script. Operators with legitimate higher
+// fan-out (a few tens of tabs) hit a clean 503 instead of taking the
+// daemon down.
+//
+// Refused sessions exit with `503 Service Unavailable` + a
+// `Retry-After` hint inside the streaming dispatch path before the
+// worker thread is created.
+constexpr int kMaxConcurrentStreamingSessions = 32;
+std::atomic<int> g_streaming_session_count{0};
+
 class Session : public std::enable_shared_from_this<Session> {
 public:
 	Session(tcp::socket socket,
@@ -76,15 +92,26 @@ public:
 
 	~Session()
 	{
-		// The worker thread captures `shared_from_this()`, so by the
-		// time this destructor runs the worker has already returned
-		// (last ref dropped). The std::thread handle still needs to
-		// be either joined or detached before destruct or the
-		// standard library aborts. We can't join() from inside the
-		// worker's own call stack (deadlock), and at this point we
-		// know the worker has exited; detach() is safe and cleans
-		// up the thread handle without blocking.
-		if (m_stream_worker.joinable()) m_stream_worker.detach();
+		// The worker captures `shared_from_this()` and sets
+		// `m_worker_exited` true on the way out. By the time this
+		// destructor runs the last ref must have been dropped — so
+		// the worker must have exited. join() from inside the
+		// worker's own call stack would deadlock; detach() is safe
+		// because the thread has finished its work. The assert
+		// catches any future refactor that breaks the "worker
+		// outlives the last shared_ptr ref" invariant before it
+		// turns into a heisenbug.
+		if (m_stream_worker.joinable()) {
+			assert(m_worker_exited.load(std::memory_order_acquire)
+			       && "Session dtor reached with worker still running");
+			m_stream_worker.detach();
+		}
+		// Release the session slot. Decrement only fires if we
+		// actually acquired one (DispatchStreaming sets the flag).
+		if (m_session_slot_held) {
+			g_streaming_session_count.fetch_sub(
+				1, std::memory_order_acq_rel);
+		}
 	}
 
 	void Start() { DoRead(); }
@@ -190,8 +217,38 @@ private:
 	// lambda; when the worker exits, the lambda's destruction
 	// releases the last reference and the Session destructs (which
 	// joins the thread — a no-op because the worker already exited).
+	// Standard short 503 response shape used both for the
+	// concurrent-session cap refusal and other resource-exhaustion
+	// short-circuits. Plain JSON so clients can parse it the same
+	// way every other amuleapi error renders.
+	void WriteCapRefusal()
+	{
+		CHttpServer::Response refused;
+		refused.status       = 503;
+		refused.content_type = "application/json";
+		refused.headers["Retry-After"] = "10";
+		refused.body =
+			"{\"error\":{\"code\":\"sessions_exhausted\","
+			"\"message\":\"too many concurrent streaming sessions; "
+			"retry in a few seconds\"}}";
+		WriteResponse(std::move(refused));
+	}
+
 	void DispatchStreaming(CHttpServer::Request r)
 	{
+		// Acquire a session slot before doing any thread-spawn or
+		// long-lived work. fetch_add returns the OLD value, so we
+		// hold the slot iff that old value was strictly below the
+		// cap. Otherwise we roll back and refuse the connection.
+		const int prior_count = g_streaming_session_count.fetch_add(
+			1, std::memory_order_acq_rel);
+		if (prior_count >= kMaxConcurrentStreamingSessions) {
+			g_streaming_session_count.fetch_sub(
+				1, std::memory_order_acq_rel);
+			WriteCapRefusal();
+			return;
+		}
+		m_session_slot_held = true;
 		// Disable read timeout — SSE connections are long-lived.
 		m_stream.expires_never();
 		m_stream_alive.store(true, std::memory_order_release);
@@ -245,6 +302,13 @@ private:
 			// the client sees the right status code.
 			writer->EnsureHeadWritten();
 			self->DoClose();
+			// Signal worker completion before the captured `self`
+			// shared_ptr drops on lambda exit. The Session dtor
+			// asserts on this flag (see ~Session) so a future
+			// refactor that drops the shared_from_this() capture
+			// fails loudly instead of mysteriously deadlocking.
+			self->m_worker_exited.store(true,
+				std::memory_order_release);
 		});
 	}
 
@@ -413,8 +477,19 @@ private:
 	CHttpServer::StreamingResolver  m_streaming_resolver;
 	CHttpServer::StreamingHandler   m_streaming_handler;
 	std::atomic<bool>               m_stream_alive{false};
+	// Set true by the worker on exit. The Session destructor asserts
+	// on it before detach()ing the thread handle (Session is shared-
+	// ptr-owned by the worker, so dtor only runs after the last ref
+	// drops — and that ref is held by the worker lambda, which only
+	// releases it as a final statement).
+	std::atomic<bool>               m_worker_exited{false};
 	std::mutex                      m_socket_mu;
 	std::thread                     m_stream_worker;
+	// Whether this session is accounted against
+	// g_streaming_session_count. Set in DispatchStreaming after a
+	// successful slot acquisition; the dtor decrements iff this is
+	// true so refused-cap sessions don't double-account.
+	bool                            m_session_slot_held = false;
 };
 
 
@@ -521,6 +596,25 @@ bool CHttpServer::Start(const std::string &bind_address,
 		return false;
 	}
 	tcp::endpoint endpoint(addr, static_cast<unsigned short>(port));
+
+	// Bind hygiene warning. amuleapi's HTTP server uses a thread-
+	// per-streaming-session model bounded by a process-wide cap
+	// (kMaxConcurrentStreamingSessions). On loopback this is fine
+	// — the only callers are the operator's own clients. Off
+	// loopback, the same model is a DoS amplifier: any peer can
+	// open enough preauth connections to consume the cap and lock
+	// out legitimate subscribers. Surface a one-time WARN on
+	// startup so an operator switching the bind catches this in
+	// the daemon log; the SSE session cap still enforces the
+	// upper bound regardless.
+	if (!addr.is_loopback()) {
+		std::cerr << "amuleapi: WARN BindAddress=" << bind_address
+		          << " is not loopback. SSE sessions are capped at "
+		          << kMaxConcurrentStreamingSessions
+		          << " concurrent — beyond that the daemon returns "
+		             "503. Put a reverse proxy in front for remote "
+		             "access.\n";
+	}
 
 	m_impl->listener = std::make_shared<Listener>(
 		m_impl->ioc, endpoint, std::move(handler),

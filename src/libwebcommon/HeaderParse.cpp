@@ -100,6 +100,16 @@ std::pair<const char*, std::size_t> FindCookieValue(
 			const char *value = p + name_len + 1;
 			const char *value_end = value;
 			while (value_end < end && *value_end != ';') ++value_end;
+			// RFC 6265 §5.2 permits OWS (SP / HTAB) on either side
+			// of `=` and between the value and the trailing `;`.
+			// Strip both ends so a header like `Cookie: foo= bar `
+			// matches a token-equal of `bar` rather than ` bar `.
+			while (value < value_end
+			    && (*value == ' ' || *value == '\t')) ++value;
+			while (value_end > value
+			    && (value_end[-1] == ' ' || value_end[-1] == '\t')) {
+				--value_end;
+			}
 			return {value, static_cast<std::size_t>(value_end - value)};
 		}
 		// Skip this cookie pair (up to next ';').

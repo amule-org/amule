@@ -42,6 +42,7 @@
 #include <ec/cpp/ECSpecialTags.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <set>
 #include <sstream>
 #include <cctype>
@@ -205,13 +206,20 @@ std::string MakeSetCookie(const std::string &name,
 	// session — so we emit it deliberately rather than clamping to
 	// some positive minimum.
 	const std::time_t lifetime = expires_at > now ? expires_at - now : 0;
-	char buf[256];
-	std::snprintf(buf, sizeof(buf),
-		"%s=%s; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=%lld",
-		name.c_str(),
-		value.c_str(),
-		static_cast<long long>(lifetime));
-	return buf;
+	// std::string instead of a fixed snprintf buffer. The previous
+	// 256-byte buffer fit today's ~189-byte HS256 JWT plus the
+	// attribute boilerplate with room to spare, but any future
+	// payload extension (extra claim, longer secret, switch to a
+	// longer alg) would silently truncate. std::string sizes
+	// itself.
+	std::string out;
+	out.reserve(name.size() + value.size() + 80);
+	out += name;
+	out += '=';
+	out += value;
+	out += "; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=";
+	out += std::to_string(static_cast<long long>(lifetime));
+	return out;
 }
 
 
@@ -219,11 +227,11 @@ std::string MakeSetCookie(const std::string &name,
 // set on a prior login. Used by /auth/logout.
 std::string MakeClearCookie(const std::string &name)
 {
-	char buf[160];
-	std::snprintf(buf, sizeof(buf),
-		"%s=; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=0",
-		name.c_str());
-	return buf;
+	std::string out;
+	out.reserve(name.size() + 64);
+	out += name;
+	out += "=; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=0";
+	return out;
 }
 
 
@@ -2049,9 +2057,17 @@ bool ParseEcidPath(const std::string &s, std::uint32_t &out)
 {
 	if (s.empty()) return false;
 	char *end = nullptr;
-	const unsigned long v = std::strtoul(s.c_str(), &end, 10);
+	// strtoull (not strtoul) because `unsigned long` is 32-bit on
+	// Windows — there the `v > 0xFFFFFFFFu` overflow guard below
+	// would be a tautology and an out-of-range path-segment like
+	// `99999999999` would saturate to ULONG_MAX = 0xFFFFFFFF, then
+	// silently match an actual ECID 0xFFFFFFFF. strtoull is 64-bit
+	// everywhere so the cap is meaningful regardless of platform.
+	errno = 0;
+	const unsigned long long v = std::strtoull(s.c_str(), &end, 10);
 	if (end == s.c_str() || *end != '\0') return false;
-	if (v > 0xFFFFFFFFu) return false;
+	if (errno == ERANGE) return false;
+	if (v > 0xFFFFFFFFull) return false;
 	out = static_cast<std::uint32_t>(v);
 	return true;
 }

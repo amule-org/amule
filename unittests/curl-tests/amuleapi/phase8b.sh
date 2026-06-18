@@ -37,7 +37,16 @@ FAIL_COUNT=0
 TEST_COUNT=0
 
 SSE_OUT=$(mktemp -t amuleapi_phase8b_sse.XXXXXX)
-trap 'rm -f "$SSE_OUT"' EXIT
+trap '
+	rm -f "$SSE_OUT"
+	# Best-effort partfile cleanup so the 6.6 GB Ubuntu ISO doesn'\''t
+	# survive a failed run and block the next one (Windows VM disk-
+	# pressure mitigation per feedback_clean_temp_partfiles_after_test).
+	if [ -n "${ADMIN_TOKEN:-}" ]; then
+		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	fi
+' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }

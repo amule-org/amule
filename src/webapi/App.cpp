@@ -269,6 +269,16 @@ int CamuleapiApp::OnRun()
 	// leave the daemon in a half-state.
 	std::signal(SIGHUP, RequestShutdown);
 #endif
+#ifdef SIGPIPE
+	// SSE peers that disappear mid-write make Linux raise SIGPIPE on
+	// the next asio::write to the closed fd. We don't pass
+	// MSG_NOSIGNAL on any of the SSE socket writes (HttpServer.cpp),
+	// so without ignoring SIGPIPE here the default disposition kills
+	// the daemon on every dropped EventSource. Ignore it process-
+	// wide; the writes return EPIPE and the streaming-handler loop
+	// bails on the next writer.Alive() poll.
+	std::signal(SIGPIPE, SIG_IGN);
+#endif
 
 	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore)
 	// and then calls TextShell — which we've overridden so the daemon's
@@ -363,6 +373,11 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 		if (ok) {
 			m_state.MarkTickSuccess();
 			was_failed = false;
+			// Sole writer of m_last_seen. SSE-event publication runs
+			// here, NOT inside RefresherTick — so Phase-5 mutation
+			// handlers calling RefresherTick inline from the HTTP
+			// thread don't race with this loop's diff walk.
+			webapi::EmitDiffsForEventBus(*this, m_state);
 		} else {
 			m_state.MarkTickFailure();
 			was_failed = true;

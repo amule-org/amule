@@ -25,6 +25,8 @@
 #ifndef WEBAPI_AUTH_H
 #define WEBAPI_AUTH_H
 
+#include <deque>
+
 #include <ctime>
 #include <map>
 #include <mutex>
@@ -121,9 +123,18 @@ public:
 
 private:
 	struct Bucket {
-		unsigned    failure_count       = 0;
-		std::time_t window_start        = 0;
-		std::time_t lockout_until       = 0;
+		// Sliding window of failure timestamps. The legacy `unsigned
+		// failure_count + std::time_t window_start` shape implemented
+		// a TUMBLING window (the count reset wholesale when the
+		// window expired) — an attacker could burn threshold-1
+		// failures in the last second of window N, threshold-1 more
+		// in the first second of window N+1, and never trip lockout.
+		// We now keep one timestamp per recorded failure (older than
+		// `window_seconds` evicted on each NoteFailure) so the
+		// trip happens whenever the live count crosses threshold,
+		// regardless of how the failures distribute across windows.
+		std::deque<std::time_t> failures;
+		std::time_t             lockout_until = 0;
 	};
 
 	Config                                          m_cfg;

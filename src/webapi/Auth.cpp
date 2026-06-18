@@ -115,13 +115,12 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 		d.retry_after_seconds = b.lockout_until - now;
 		return d;
 	}
-	// Lockout window expired — clear the timestamp so a stale value
+	// Lockout window expired — wipe the bucket so a stale lockout
 	// can't accidentally fire on the next Check after a long quiet
 	// period.
 	if (b.lockout_until != 0 && b.lockout_until <= now) {
 		b.lockout_until = 0;
-		b.failure_count = 0;
-		b.window_start  = 0;
+		b.failures.clear();
 	}
 	return Decision{};
 }
@@ -133,16 +132,20 @@ void CRateLimiter::NoteFailure(const std::string &ip)
 	const std::time_t now = std::time(nullptr);
 	Bucket &b = m_buckets[ip];
 
-	// New bucket, or current sliding window has lapsed — restart the
-	// count. The sliding-window contract (PLAN §12 Q6) is "N failures
-	// inside `window_seconds`", not "ever".
-	if (b.window_start == 0 || (now - b.window_start) > m_cfg.window_seconds) {
-		b.window_start  = now;
-		b.failure_count = 0;
+	// Sliding window: drop any failure stamp older than
+	// `window_seconds`, then append now. Lockout fires when the live
+	// stamp count crosses `threshold`. Previously the bucket reset
+	// wholesale once `now - window_start > window_seconds`, which
+	// implemented a TUMBLING window — an attacker could split
+	// threshold-1 attempts across the two adjacent windows and
+	// never trip lockout. Per-stamp expiry closes the gap.
+	while (!b.failures.empty()
+	    && (now - b.failures.front()) > m_cfg.window_seconds) {
+		b.failures.pop_front();
 	}
-	b.failure_count++;
+	b.failures.push_back(now);
 
-	if (b.failure_count >= m_cfg.threshold) {
+	if (b.failures.size() >= m_cfg.threshold) {
 		b.lockout_until = now + m_cfg.lockout_seconds;
 	}
 }

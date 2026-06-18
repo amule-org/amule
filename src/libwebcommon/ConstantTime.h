@@ -39,6 +39,17 @@
 //
 // Returns false immediately on length mismatch (length is not the
 // secret); for equal-length inputs the timing is data-independent.
+//
+// **PRECONDITION on the `wxString` overload.** wxString is a UTF-16
+// or UTF-32 sequence depending on the build, and ConstantTimeEquals
+// compares the SEQUENCE LENGTHS first — not the byte-sequence
+// lengths. Two inputs that round-trip through different UTF-8
+// encodings and happen to share an underlying string but differ in
+// codepoint count will short-circuit as unequal. Callers in
+// libwebcommon today compare fixed-shape inputs (32-char hex MD5,
+// 43-char base64url HMAC) so the precondition holds trivially.
+// Future callers with length-variable, length-secret inputs MUST
+// pad to a common bound first or accept a length-side-channel leak.
 
 namespace webcommon {
 

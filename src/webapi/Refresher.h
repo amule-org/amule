@@ -61,6 +61,14 @@ class CState;
 // ship the EC fixture harness (Phase 4b candidate).
 bool RefresherTick(CamuleapiApp &app, CState &state);
 
+// Single-threaded SSE diff emission. Called ONLY from the wxApp
+// refresher loop after a successful RefresherTick so that the
+// LastSeenState walk (which mutates app.LastSeenForEvents()) is
+// single-writer. Inline-from-HTTP RefresherTick call sites
+// deliberately skip it — SSE subscribers see the post-mutation
+// diff on the next 1-second tick instead of immediately.
+void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state);
+
 
 // Sub-tick helpers exposed for testing. The Refresher uses these
 // internally; the unit test calls them against hand-crafted

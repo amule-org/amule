@@ -30,7 +30,17 @@ TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C
 FAIL_COUNT=0
 TEST_COUNT=0
 SSE=$(mktemp -t amuleapi_phase11_sse.XXXXXX)
-trap 'rm -f "$SSE"' EXIT
+trap '
+	rm -f "$SSE"
+	# Best-effort: delete any partfile this script may have left in
+	# amuled queue (Windows VM has ~63 GB on C: — a leftover 6.6 GB
+	# Ubuntu ISO partfile blocks the next run). Errors swallowed
+	# because the daemon may already be down on a CI tear-down.
+	if [ -n "${ADMIN_TOKEN:-}" ]; then
+		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+			"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	fi
+' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
