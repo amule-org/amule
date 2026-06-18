@@ -53,7 +53,7 @@ fi
 echo "amuleapi phase 8d smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 # Let the refresher fill the ring with enough events that

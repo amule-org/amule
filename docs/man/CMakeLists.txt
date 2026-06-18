@@ -69,6 +69,16 @@ if (TRANSLATED_MANPAGES)
 		# Per-binary install destination + build-system gate. The util
 		# binaries have their rendered outputs land in their own build
 		# subdirs because po4a.config.in points them there explicitly.
+		#
+		# amuleapi is INTENTIONALLY absent from this list: the English
+		# master ships (gated by BUILD_AMULEAPI in the top-half
+		# check_manpage() block above), but the po4a translation
+		# pipeline has no amuleapi strings in po/manpages-*.po yet, so
+		# adding amuleapi here would break the build by asking po4a to
+		# render a translation it has no source for. English-only
+		# until 3.1; the translator workflow lands amuleapi entries in
+		# po/manpages-*.po, which adds amuleapi to MANPAGE_BINARIES +
+		# MANPAGE_GATE_amuleapi BUILD_AMULEAPI here.
 		set (MANPAGE_BINARIES amule amulecmd amuled amulegui amuleweb ed2k alc alcc cas wxcas)
 		set (MANPAGE_BUILD_DIR_amule     "${CMAKE_CURRENT_BINARY_DIR}")
 		set (MANPAGE_BUILD_DIR_amulecmd  "${CMAKE_CURRENT_BINARY_DIR}")

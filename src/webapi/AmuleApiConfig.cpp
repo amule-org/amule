@@ -244,31 +244,17 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		// base class wants a hashable plaintext), so the file gets
 		// the same owner-only mode the jwt-secret and passwords
 		// files already enforce.
-#ifndef _WIN32
-		const std::string p(path.utf8_str());
-		const int fd = ::open(p.c_str(),
-			O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-		if (fd < 0) {
-			m_lastError = "cannot create amuleapi.conf: " + p;
-			return false;
-		}
-		::fchmod(fd, S_IRUSR | S_IWUSR);   // belt+braces against odd umasks
-		const std::size_t blen = std::strlen(defaults);
-		if (::write(fd, defaults, blen) != static_cast<ssize_t>(blen)) {
-			m_lastError = "short write while seeding amuleapi.conf: " + p;
-			::close(fd);
-			return false;
-		}
-		::close(fd);
-#else
-		wxFFileOutputStream out(path);
-		if (!out.IsOk()) {
+		//
+		// Route through WriteFileAtomic0600 (write-temp, fsync,
+		// rename) so a crash mid-write doesn't leave a truncated
+		// amuleapi.conf the next start would happily load as a
+		// partial config — silently flipping the daemon onto
+		// surprise defaults.
+		if (!WriteFileAtomic0600(path, std::string(defaults))) {
 			m_lastError = "cannot create amuleapi.conf: "
 				+ std::string(path.utf8_str());
 			return false;
 		}
-		out.Write(defaults, std::strlen(defaults));
-#endif
 	}
 
 	// Enforce 0600 on every load so a hand-edit (or a `cp` from a
@@ -338,6 +324,14 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 
 bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 {
+	// Rotation is operator-manual today: delete amuleapi-jwt-secret
+	// and restart amuleapi, which auto-generates a fresh secret and
+	// invalidates every previously-issued token. A `--rotate-jwt-
+	// secret` CLI subcommand that does the file replacement + a
+	// SIGHUP reload without a full restart is roadmapped for 3.1
+	// (would let the daemon keep accepting old-keyed tokens for a
+	// grace window). Until then, the manual flow is documented in
+	// the amuleapi(1) FILES section.
 	if (!wxFileExists(path)) {
 		// Auto-generate 32 random bytes. The new file is 0600 from
 		// the moment it lands on disk (open + chmod before any data).

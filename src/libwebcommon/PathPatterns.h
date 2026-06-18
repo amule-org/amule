@@ -48,6 +48,17 @@ namespace web_api_path {
 std::vector<std::string> SplitPath(const std::string &path);
 
 
+// Returns true if the raw path looks like a traversal/injection
+// attempt: contains a NUL byte, an encoded NUL (%00), a literal
+// ".." segment, or a percent-encoded ".." (`%2e%2e` /
+// `%2E%2E` / mixed-case). Today's routes are all byte-exact and
+// would 404 such requests organically; this is defence-in-depth so
+// any future route that admits path segments (file-share by hash,
+// log-tail by name, etc.) doesn't quietly inherit a traversal
+// surface. Call before routing — reject with 400.
+bool LooksMalicious(const std::string &path);
+
+
 // Parses ?k=v&k2=v2 into a map. Percent-decodes `%hh` pairs and
 // converts `+` to space per application/x-www-form-urlencoded.
 // Malformed `%hh` triplets pass through verbatim so a stray `%` in

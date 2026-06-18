@@ -53,6 +53,57 @@ std::vector<std::string> SplitPath(const std::string &path)
 }
 
 
+bool LooksMalicious(const std::string &path)
+{
+	// NUL byte anywhere. Some downstream tooling (sscanf, fopen) is
+	// NUL-terminated; embedded NULs are a classic injection vector.
+	if (path.find('\0') != std::string::npos) return true;
+
+	// Encoded NUL — explicit reject even though today's routes don't
+	// percent-decode path segments. A future hash-by-name endpoint
+	// that does decode would otherwise admit this.
+	for (size_t i = 0; i + 2 < path.size(); ++i) {
+		if (path[i] != '%') continue;
+		const char h = path[i + 1];
+		const char l = path[i + 2];
+		if (h == '0' && l == '0') return true;
+	}
+
+	// Encoded ".." (percent-encoded dot). Match `%2e` and `%2E` in
+	// both upper/lower hex forms. We don't bother with the more
+	// exotic `%2e%2E`/`%2E%2e` orderings — the simple loop catches
+	// any pair of "is a `%2e`-looking triplet" tokens that are
+	// adjacent.
+	for (size_t i = 0; i + 5 < path.size(); ++i) {
+		const bool dot1 = path[i] == '%'
+		    && path[i + 1] == '2'
+		    && (path[i + 2] == 'e' || path[i + 2] == 'E');
+		if (!dot1) continue;
+		const bool dot2 = path[i + 3] == '%'
+		    && path[i + 4] == '2'
+		    && (path[i + 5] == 'e' || path[i + 5] == 'E');
+		if (dot2) return true;
+	}
+
+	// Literal ".." segment. SplitPath would happily emit a "..":
+	// segment-walk every "/"-delimited chunk and reject if it
+	// equals "..".
+	size_t seg_start = (path[0] == '/') ? 1 : 0;
+	for (size_t i = seg_start; i <= path.size(); ++i) {
+		const bool boundary = (i == path.size()) || (path[i] == '/');
+		if (!boundary) continue;
+		if (i - seg_start == 2
+		    && path[seg_start] == '.'
+		    && path[seg_start + 1] == '.') {
+			return true;
+		}
+		seg_start = i + 1;
+	}
+
+	return false;
+}
+
+
 namespace {
 int HexNibble(char c)
 {

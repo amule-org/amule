@@ -187,6 +187,46 @@ AuthOutcome AuthenticateRequest(const CHttpServer::Request &req,
 }
 
 
+// Wrapper that pipes AuthenticateRequest through a per-IP failure
+// counter. Every 401 (missing token / bad sig / expired / revoked)
+// counts against the calling IP; once the bucket fills the IP gets
+// 429 with Retry-After until the lockout window expires. Pre-checks
+// the bucket BEFORE Verify() so a locked-out IP can't burn CPU on
+// MAC compares either. Used by every auth-protected handler — login
+// keeps its own m_rateLimiter for the dedicated password-failure
+// path.
+AuthOutcome AuthenticateRequestRateLimited(
+	const CHttpServer::Request &req,
+	CJwt                       &jwt,
+	webapi::CRevocationSet     &revocations,
+	webapi::CRateLimiter       &limiter,
+	const std::string          &cookie_name)
+{
+	AuthOutcome out;
+	const std::string &ip = req.remote_addr;
+
+	const auto decision = limiter.Check(ip);
+	if (decision.locked_out) {
+		CHttpServer::Response r = ErrorResponse(429, "rate_limited",
+			"too many failed auth attempts; retry later");
+		char retry_after[32];
+		std::snprintf(retry_after, sizeof(retry_after), "%lld",
+			static_cast<long long>(decision.retry_after_seconds));
+		r.headers["Retry-After"] = retry_after;
+		out.rejection = std::move(r);
+		return out;
+	}
+
+	out = AuthenticateRequest(req, jwt, revocations, cookie_name);
+	if (out.ok) {
+		limiter.NoteSuccess(ip);
+	} else {
+		limiter.NoteFailure(ip);
+	}
+	return out;
+}
+
+
 // `Set-Cookie: <name>=<value>; HttpOnly; SameSite=Strict; Path=/api/v0;
 //              Max-Age=<lifetime>`
 //
@@ -194,6 +234,14 @@ AuthOutcome AuthenticateRequest(const CHttpServer::Request &req,
 // terminates TLS in front. Adding `Secure` would silently break the
 // cookie path on every plain-HTTP deployment. Documented in
 // QUICKSTART (Phase 10 packaging step).
+// Attributes block shared by Set-Cookie (login) and the clear-cookie
+// reply (logout). RFC 6265 §5.3 requires browsers to delete a cookie
+// only when (name, path, domain) match the original; extracting the
+// attribute string into one constant means the two functions can't
+// drift if a future Secure/Domain attribute lands.
+const char *const kSessionCookieAttrs =
+	"; HttpOnly; SameSite=Strict; Path=/api/v0";
+
 std::string MakeSetCookie(const std::string &name,
                           const std::string &value,
                           std::time_t expires_at)
@@ -217,20 +265,25 @@ std::string MakeSetCookie(const std::string &name,
 	out += name;
 	out += '=';
 	out += value;
-	out += "; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=";
+	out += kSessionCookieAttrs;
+	out += "; Max-Age=";
 	out += std::to_string(static_cast<long long>(lifetime));
 	return out;
 }
 
 
 // `Set-Cookie: <name>=; ... Max-Age=0` — invalidates whatever was
-// set on a prior login. Used by /auth/logout.
+// set on a prior login. Used by /auth/logout. MUST use the same
+// (name, path, domain) tuple as MakeSetCookie or the browser
+// won't drop the original.
 std::string MakeClearCookie(const std::string &name)
 {
 	std::string out;
 	out.reserve(name.size() + 64);
 	out += name;
-	out += "=; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=0";
+	out += '=';
+	out += kSessionCookieAttrs;
+	out += "; Max-Age=0";
 	return out;
 }
 
@@ -255,7 +308,15 @@ CApiDispatcher::CApiDispatcher(const CAmuleApiConfig &config,
 	  m_rateLimiter(webapi::CRateLimiter::Config{
 		config.AuthCfg().login_failure_window_seconds,
 		config.AuthCfg().login_failure_threshold,
-		config.AuthCfg().login_lockout_seconds})
+		config.AuthCfg().login_lockout_seconds}),
+	  // Generic-401 limiter: 30 failures within 60 s, 5-minute
+	  // lockout. Hard-coded for now — operators have a separate
+	  // knob for login-specific limits; the generic 401 cap is a
+	  // crash-pad against credential-stuffing across all non-
+	  // login endpoints and can become a config knob in 3.1 if
+	  // anyone asks.
+	  m_authRateLimiter(webapi::CRateLimiter::Config{
+		60u, 30u, 300u})
 {
 }
 
@@ -380,7 +441,34 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 
 	const bool is_safe_method = (req.method == "GET" || req.method == "HEAD");
 	if (is_safe_method && resp.status == 200 && !resp.body.empty()) {
-		const std::string etag = webcommon::Etag(resp.body);
+		// Snapshot-versioned memoization: skip the MD5 over the
+		// (potentially multi-MB) body when the (target,
+		// snapshot_at) tuple matches what we already hashed.
+		const std::time_t snap = m_state.SnapshotAt();
+		std::string etag;
+		{
+			std::lock_guard<std::mutex> g(m_etagCacheMu);
+			auto it = m_etagCache.find(req.target);
+			if (it != m_etagCache.end()
+			    && it->second.snapshot_at == snap
+			    && snap != 0) {
+				etag = it->second.etag;
+			}
+		}
+		if (etag.empty()) {
+			etag = webcommon::Etag(resp.body);
+			std::lock_guard<std::mutex> g(m_etagCacheMu);
+			if (m_etagCache.size() >= kEtagCacheCapacity) {
+				// Crude memory backstop. Real workload is a few
+				// dozen unique targets; the wholesale clear is
+				// cheaper than a real LRU machinery.
+				m_etagCache.clear();
+			}
+			EtagCacheEntry e;
+			e.snapshot_at = snap;
+			e.etag        = etag;
+			m_etagCache[req.target] = std::move(e);
+		}
 		// RFC 7232 §2.3 — the header value MUST be quoted.
 		resp.headers["ETag"] = "\"" + etag + "\"";
 
@@ -413,6 +501,17 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 {
 	std::string path, query;
 	SplitPathAndQuery(req.target, path, query);
+
+	// Defence-in-depth: reject NUL / encoded NUL / encoded `..` /
+	// literal `..` segments before routing. Today's byte-exact
+	// routes 404 these requests organically, but adding a future
+	// endpoint that admits path captures (file-by-name, log-by-
+	// label, …) would silently inherit a traversal surface without
+	// this gate.
+	if (web_api_path::LooksMalicious(path)) {
+		return ErrorResponse(400, "bad_request",
+			"path contains a traversal/injection token");
+	}
 
 	if (path == "/api/v0/version") {
 		if (req.method != "GET" && req.method != "HEAD") {
@@ -871,15 +970,56 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 	r.headers["Set-Cookie"] = MakeSetCookie(
 		kSessionCookieName, issued.token, issued.expires_at);
 
+	// The token surface depends on how the client authenticates.
+	//
+	//   * Browser / cookie-auth caller (default):
+	//     The HttpOnly+SameSite cookie carries the token. Echoing
+	//     it into the JSON body too would defeat HttpOnly — any
+	//     XSS that can `fetch('/auth/login', ...)` reads the body
+	//     and exfiltrates the bearer. So the default response is
+	//     deliberately token-less; the cookie is the only carrier.
+	//
+	//   * SDK / bearer-auth caller (opt-in):
+	//     Clients that don't have a cookie jar (curl scripts,
+	//     server-to-server, the test harness) opt in via
+	//     `Accept: application/jwt` or `?type=bearer`. They get
+	//     the same body shape the prior contract emitted —
+	//     `token`, `expires_at`, `expires_at_unix`, `jti` — so
+	//     existing SDK clients keep working as long as they
+	//     declare their intent. The cookie still goes out; a
+	//     bearer client can ignore it.
+	bool wants_bearer = false;
+	{
+		const std::string accept = FindHeaderCaseInsensitive(
+			req.headers, "Accept");
+		if (accept.find("application/jwt") != std::string::npos) {
+			wants_bearer = true;
+		}
+		if (!wants_bearer) {
+			std::string q;
+			const std::size_t qpos = req.target.find('?');
+			if (qpos != std::string::npos) q = req.target.substr(qpos + 1);
+			const auto qmap = web_api_path::ParseQuery(q);
+			const auto it = qmap.find("type");
+			if (it != qmap.end() && it->second == "bearer") {
+				wants_bearer = true;
+			}
+		}
+	}
+
 	CJsonWriter w;
 	w.BeginObject();
-	  w.Key("token");           w.ValueString(wxString::FromUTF8(issued.token.c_str()));
+	  if (wants_bearer) {
+	    w.Key("token");           w.ValueString(wxString::FromUTF8(issued.token.c_str()));
+	  }
 	  w.Key("role");
 	  w.ValueString(role == Role::ADMIN ? wxT("admin") : wxT("guest"));
 	  w.Key("expires_at");      w.ValueString(wxString::FromUTF8(
 	                              webapi::FormatIso8601Utc(issued.expires_at).c_str()));
 	  w.Key("expires_at_unix"); w.ValueInt(static_cast<int64_t>(issued.expires_at));
-	  w.Key("jti");             w.ValueString(wxString::FromUTF8(issued.jti.c_str()));
+	  if (wants_bearer) {
+	    w.Key("jti");           w.ValueString(wxString::FromUTF8(issued.jti.c_str()));
+	  }
 	w.EndObject();
 	const wxString js = w.GetBuffer();
 	const wxScopedCharBuffer ub = js.utf8_str();
@@ -890,14 +1030,81 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 
 CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
-		kSessionCookieName);
-	if (!a.ok) return a.rejection;
+	// Generic-401 cap applies to logout too — repeat 401s here are a
+	// credential-stuffing signal even on the idempotent path. Locked-
+	// out IPs short-circuit before any MAC compare.
+	const std::string &ip = req.remote_addr;
+	{
+		const auto decision = m_authRateLimiter.Check(ip);
+		if (decision.locked_out) {
+			CHttpServer::Response r = ErrorResponse(429, "rate_limited",
+				"too many failed auth attempts; retry later");
+			char retry_after[32];
+			std::snprintf(retry_after, sizeof(retry_after), "%lld",
+				static_cast<long long>(decision.retry_after_seconds));
+			r.headers["Retry-After"] = retry_after;
+			return r;
+		}
+	}
 
-	// Add the jti to the revocation set with the JWT's own exp as the
-	// TTL — once the token would have expired anyway, the GC drops
-	// the entry.
-	m_revocations.Revoke(a.verified.jti, a.verified.exp);
+	// Logout is idempotent. A revoked-but-not-yet-expired token
+	// should still get a 200 noop — the operation it requested has
+	// already happened. Without this, a browser tab that does
+	// `fetch('/auth/logout', ...)` twice in quick succession (page
+	// reload during the request, double-tap on the menu, etc.) sees
+	// a 401 on the second attempt and renders a confusing "session
+	// expired" toast. Inline a softer flow than AuthenticateRequest:
+	// reject only on bad-sig/expired/missing, treat revoked as a
+	// noop.
+	std::string token;
+	auto auth_it = req.headers.find("Authorization");
+	if (auth_it == req.headers.end()) {
+		for (const auto &h : req.headers) {
+			if (h.first.size() == 13
+			    && strncasecmp(h.first.c_str(), "Authorization", 13) == 0) {
+				auth_it = req.headers.find(h.first);
+				break;
+			}
+		}
+	}
+	if (auth_it != req.headers.end()) {
+		token = webapi::ExtractBearerToken(auth_it->second);
+	}
+	if (token.empty()) {
+		auto ck_it = req.headers.find("Cookie");
+		if (ck_it == req.headers.end()) {
+			for (const auto &h : req.headers) {
+				if (h.first.size() == 6
+				    && strncasecmp(h.first.c_str(), "Cookie", 6) == 0) {
+					ck_it = req.headers.find(h.first);
+					break;
+				}
+			}
+		}
+		if (ck_it != req.headers.end()) {
+			token = webapi::ExtractCookieValue(ck_it->second, kSessionCookieName);
+		}
+	}
+	if (token.empty()) {
+		m_authRateLimiter.NoteFailure(ip);
+		return ErrorResponse(401, "unauthorized",
+			"missing bearer token or session cookie");
+	}
+	CJwt::VerifyResult v;
+	if (!m_jwt.Verify(token, v)) {
+		m_authRateLimiter.NoteFailure(ip);
+		return ErrorResponse(401, "unauthorized",
+			"invalid or expired token");
+	}
+	// Already revoked → 200 noop (don't re-revoke, don't re-emit a
+	// clear-cookie that might race with the browser's own delete).
+	if (!m_revocations.IsRevoked(v.jti)) {
+		// Add the jti to the revocation set with the JWT's own exp as
+		// the TTL — once the token would have expired anyway, the GC
+		// drops the entry.
+		m_revocations.Revoke(v.jti, v.exp);
+	}
+	m_authRateLimiter.NoteSuccess(ip);
 
 	CHttpServer::Response r;
 	r.status       = 200;
@@ -917,7 +1124,7 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 
 CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -945,7 +1152,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 {
 	// Read endpoints: any authenticated role is enough (admin OR
 	// guest). Phase 5+ mutating endpoints will gate on `admin` only.
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -1366,7 +1573,7 @@ bool HashFromHex(const std::string &hex, CMD4Hash &out)
 
 CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -1414,7 +1621,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 
 CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -1464,7 +1671,7 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 
 CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	return ListResponse(m_state, "shared", m_state.Shared(),
@@ -1476,7 +1683,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	const CHttpServer::Request &req,
 	const std::string          &hash)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -1522,7 +1729,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -1712,7 +1919,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	const CHttpServer::Request &req, const std::string &hash)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -1872,7 +2079,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	const CHttpServer::Request &req, const std::string &hash)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -1944,7 +2151,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2069,7 +2276,7 @@ void WriteCategoryObject(CJsonWriter &w, const webapi::CategorySnapshot &c)
 
 CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	return ListResponse(m_state, "servers", m_state.Servers(),
@@ -2122,7 +2329,7 @@ bool FindServerByEcid(const webapi::CState &state, std::uint32_t ecid,
 CHttpServer::Response CApiDispatcher::HandleServerAdd(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2201,7 +2408,7 @@ CHttpServer::Response CApiDispatcher::HandleServerAdd(
 CHttpServer::Response CApiDispatcher::HandleServerConnect(
 	const CHttpServer::Request &req, const std::string &ecid_str)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2260,7 +2467,7 @@ CHttpServer::Response CApiDispatcher::HandleServerConnect(
 CHttpServer::Response CApiDispatcher::HandleServerDelete(
 	const CHttpServer::Request &req, const std::string &ecid_str)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2313,7 +2520,7 @@ CHttpServer::Response CApiDispatcher::HandleServerDelete(
 CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2408,9 +2615,18 @@ static std::uint32_t ResolveServerEcidByAddress(
 			ip_he = (a_) | (b_ << 8) | (c_ << 16) | (d_ << 24);
 		}
 	}
+	// Require an IPv4-shaped address: drop the s.address string
+	// fallback. The fallback was a convenience for hostname-form
+	// URLs (e.g. `/api/v0/servers/donkey.example.com:4242/connect`),
+	// but it admits an UNINTENDED match too — `s.address` is
+	// populated from amuled's wire-form "name" tag, which can be
+	// a hostname OR a synthetic display string ("Eserver No.1");
+	// a DELETE-by-address with a colliding label could remove the
+	// wrong row. IP+port exact match has no such ambiguity.
+	if (ip_he == 0) return 0;
 	for (const auto &s : state.Servers()) {
 		if (s.port == static_cast<std::uint16_t>(port)
-		    && (s.ip == ip_he || s.address == ip_port)) {
+		    && s.ip == ip_he) {
 			return s.ecid;
 		}
 	}
@@ -2421,7 +2637,7 @@ static std::uint32_t ResolveServerEcidByAddress(
 CHttpServer::Response CApiDispatcher::HandleServerConnectByAddress(
 	const CHttpServer::Request &req, const std::string &ip_port)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2445,7 +2661,7 @@ CHttpServer::Response CApiDispatcher::HandleServerConnectByAddress(
 CHttpServer::Response CApiDispatcher::HandleServerDeleteByAddress(
 	const CHttpServer::Request &req, const std::string &ip_port)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2466,7 +2682,7 @@ CHttpServer::Response CApiDispatcher::HandleServerDeleteByAddress(
 
 CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	return ListResponse(m_state, "categories", m_state.Categories(),
@@ -2476,7 +2692,7 @@ CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Reques
 
 CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (!m_state.HasFirstSnapshot()) {
@@ -2639,7 +2855,7 @@ void WriteSearchObject(CJsonWriter &w, const webapi::SearchResult &r)
 
 CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -2696,7 +2912,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request
 CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	const CHttpServer::Request &req, const std::string &graph)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -2791,7 +3007,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 
 CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -2846,7 +3062,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 
 CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -2886,7 +3102,7 @@ CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request 
 CHttpServer::Response CApiDispatcher::HandleLogAmuleReset(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -2921,7 +3137,7 @@ CHttpServer::Response CApiDispatcher::HandleLogAmuleReset(
 
 CHttpServer::Response CApiDispatcher::HandleLogServerinfo(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
@@ -2982,7 +3198,7 @@ CHttpServer::Response CApiDispatcher::HandleLogServerinfo(const CHttpServer::Req
 CHttpServer::Response CApiDispatcher::HandleLogServerinfoReset(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3014,7 +3230,7 @@ CHttpServer::Response CApiDispatcher::HandleLogServerinfoReset(
 
 CHttpServer::Response CApiDispatcher::HandlePreferences(const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (!m_state.HasFirstSnapshot()) {
@@ -3081,7 +3297,7 @@ struct PrefsParseError {
 CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3383,7 +3599,7 @@ CHttpServer::Response SimpleConnControlOp(
 CHttpServer::Response CApiDispatcher::HandleNetworksConnect(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3394,7 +3610,7 @@ CHttpServer::Response CApiDispatcher::HandleNetworksConnect(
 CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3442,7 +3658,7 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(
 CHttpServer::Response CApiDispatcher::HandleKadConnect(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3453,7 +3669,7 @@ CHttpServer::Response CApiDispatcher::HandleKadConnect(
 CHttpServer::Response CApiDispatcher::HandleKadDisconnect(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3464,7 +3680,7 @@ CHttpServer::Response CApiDispatcher::HandleKadDisconnect(
 CHttpServer::Response CApiDispatcher::HandleKadBootstrap(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3588,7 +3804,7 @@ bool SharedPriorityToCode(const std::string &name, std::uint8_t &out)
 CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	const CHttpServer::Request &req, const std::string &hash)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3682,7 +3898,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 CHttpServer::Response CApiDispatcher::HandleSharedReload(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3841,7 +4057,7 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj,
 CHttpServer::Response CApiDispatcher::HandleCategoryCreate(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -3912,7 +4128,7 @@ CHttpServer::Response CApiDispatcher::HandleCategoryCreate(
 CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 	const CHttpServer::Request &req, const std::string &index_str)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -4000,7 +4216,7 @@ CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 CHttpServer::Response CApiDispatcher::HandleCategoryDelete(
 	const CHttpServer::Request &req, const std::string &index_str)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -4084,7 +4300,7 @@ bool SearchTypeFromString(const std::string &s, std::uint8_t &out)
 CHttpServer::Response CApiDispatcher::HandleSearchStart(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -4247,7 +4463,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 CHttpServer::Response CApiDispatcher::HandleSearchStop(
 	const CHttpServer::Request &req)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -4285,7 +4501,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStop(
 CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 	const CHttpServer::Request &req, const std::string &hash)
 {
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
@@ -4386,6 +4602,24 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 // runs the loop. The HTTP server captures the head out-params before
 // writing the head, but reads them only ONCE — so we set them at the
 // top and the loop body just calls writer.Write.
+boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(
+	const CHttpServer::Request &req)
+{
+	// Same bearer/cookie check the live handler used to do, but run
+	// on the I/O thread BEFORE a worker thread is spawned and BEFORE
+	// the 32-slot SSE budget is touched. Unauth/locked-out peers
+	// get a normal request/response 401/429 and never reach the
+	// streaming path; the slot stays free for legitimate
+	// subscribers.
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations,
+		m_authRateLimiter, kSessionCookieName);
+	if (!a.ok) {
+		return a.rejection;
+	}
+	return boost::none;
+}
+
+
 void CApiDispatcher::DispatchEvents(
 	const CHttpServer::Request &req,
 	CHttpServer::Writer &writer,
@@ -4393,19 +4627,18 @@ void CApiDispatcher::DispatchEvents(
 	std::string &content_type,
 	std::map<std::string, std::string> &response_headers)
 {
-	// Authenticate via the same bearer/cookie path as every other
-	// handler. SSE doesn't have a "401 body" shape; if the auth
-	// fails, we return a synthetic SSE event so the client sees a
-	// clear failure rather than a silent close. The HTTP status is
-	// still 401, so well-behaved clients react.
-	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+	// Auth ran inside PreflightEvents on the I/O thread before this
+	// worker spawned, so we can assume an authenticated principal
+	// here. Re-running Verify on the worker thread would just burn
+	// one HMAC compare per connection for no security gain.
+	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) {
+		// Defence in depth — if PreflightEvents was bypassed for any
+		// reason (test harness, future routing change) we still
+		// reject here, just not as cheaply.
 		http_status = a.rejection.status;
 		content_type = "application/json";
-		// Single chunk with the standard error body, then return —
-		// the streaming pipeline will write the head with the
-		// 401/403 status and the chunk as the body, then close.
 		writer.Write(a.rejection.body);
 		return;
 	}
@@ -4454,6 +4687,14 @@ void CApiDispatcher::DispatchEvents(
 	std::set<std::string> channel_filter;
 	bool channels_set = false;
 	{
+		// Cap unique channel tokens. The full set today is six
+		// ({downloads, shared, servers, clients, status, logs});
+		// 32 leaves headroom for a few future event families
+		// without admitting a 1 MB query that builds a 1M-entry
+		// std::set in the SSE worker. Token-count cap (not
+		// query-length cap) lets clients pass the full legitimate
+		// set without bumping into a byte budget.
+		constexpr std::size_t kMaxChannelTokens = 32;
 		std::string query;
 		const std::size_t q = req.target.find('?');
 		if (q != std::string::npos) query = req.target.substr(q + 1);
@@ -4462,15 +4703,24 @@ void CApiDispatcher::DispatchEvents(
 		if (it != qmap.end() && !it->second.empty()) {
 			channels_set = true;
 			std::string cur;
+			bool overflowed = false;
+			auto insert_token = [&](std::string &&s) {
+				if (channel_filter.size() >= kMaxChannelTokens) {
+					overflowed = true;
+					return;
+				}
+				channel_filter.insert(std::move(s));
+			};
 			for (char c : it->second) {
 				if (c == ',') {
-					if (!cur.empty()) channel_filter.insert(cur);
+					if (!cur.empty()) insert_token(std::move(cur));
 					cur.clear();
+					if (overflowed) break;
 				} else {
 					cur.push_back(c);
 				}
 			}
-			if (!cur.empty()) channel_filter.insert(cur);
+			if (!overflowed && !cur.empty()) insert_token(std::move(cur));
 		}
 	}
 	auto event_channel = [](const std::string &name) -> std::string {
@@ -4574,10 +4824,48 @@ void CApiDispatcher::DispatchEvents(
 	auto last_write_at = std::chrono::steady_clock::now();
 	std::vector<webapi::Event> drained;
 	while (writer.Alive()) {
+		// Shutdown poll. The Shutdown() flag is set by the App on
+		// OnExit, and Drain() returns immediately when it's
+		// observed. If the daemon is going down, drop this client
+		// cleanly so the dispatcher reset() doesn't race a worker
+		// still holding `m_app` references.
+		if (m_app.EventBus().IsShutdown()) break;
 		drained.clear();
 		const std::uint64_t new_high = m_app.EventBus().Drain(
 			since_id, heartbeat_interval, drained);
 		if (!writer.Alive()) break;
+		if (m_app.EventBus().IsShutdown()) break;
+
+		// Live-path gap detection. The reconnect handler above only
+		// catches `Last-Event-ID < OldestId` at session start; once
+		// the loop is running, a burst that fills + evicts the
+		// 100-event ring between Drain calls would silently drop
+		// the missed range. Check OldestId after each Drain — if
+		// our cursor fell off the ring, emit a typed resync and
+		// restart at the current newest. Without this, a
+		// cold-start tick on a 5K-download library would publish
+		// ~5K _added events in one tick, evict ~4900 before this
+		// drainer sees them, and the client would silently miss
+		// them.
+		const std::uint64_t oldest_now = m_app.EventBus().OldestId();
+		const std::uint64_t newest_now = m_app.EventBus().NewestId();
+		if (oldest_now > 0 && since_id + 1 < oldest_now) {
+			std::ostringstream gap_frame;
+			gap_frame << "event: resync\n"
+			          << "id: "    << newest_now << "\n"
+			          << "data: {\"reason\":\"gap\",\"since_id\":"
+			          << since_id
+			          << ",\"newest_id\":" << newest_now << "}\n\n";
+			if (!writer.Write(gap_frame.str())) break;
+			last_write_at = std::chrono::steady_clock::now();
+			since_id = newest_now;
+			// Drop the events the Drain returned — the client is
+			// about to re-fetch the REST collections (that's the
+			// `resync` contract) so any partial pre-resync events
+			// would be confusing noise.
+			continue;
+		}
+
 		// Apply ?channels= filter before emission. We still advance
 		// since_id over EVERY drained event (filtered or not) so the
 		// client doesn't re-see them on reconnect; reconnect replay is

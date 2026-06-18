@@ -104,7 +104,7 @@ void CRevocationSet::GcExpired() const
 CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 {
 	std::lock_guard<std::mutex> lock(m_mu);
-	const std::time_t now = std::time(nullptr);
+	const std::time_t now = m_clock();
 	auto it = m_buckets.find(ip);
 	if (it == m_buckets.end()) return Decision{};
 
@@ -122,6 +122,15 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 		b.lockout_until = 0;
 		b.failures.clear();
 	}
+	// Mirror NoteFailure's per-stamp expiry so Check is self-
+	// consistent. Otherwise stale stamps from a long-idle bucket
+	// remain in failures until the next NoteFailure fires, and a
+	// caller inspecting bucket size via a future debug surface would
+	// see counts that include already-out-of-window failures.
+	while (!b.failures.empty()
+	    && (now - b.failures.front()) > m_cfg.window_seconds) {
+		b.failures.pop_front();
+	}
 	return Decision{};
 }
 
@@ -129,7 +138,7 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 void CRateLimiter::NoteFailure(const std::string &ip)
 {
 	std::lock_guard<std::mutex> lock(m_mu);
-	const std::time_t now = std::time(nullptr);
+	const std::time_t now = m_clock();
 	Bucket &b = m_buckets[ip];
 
 	// Sliding window: drop any failure stamp older than

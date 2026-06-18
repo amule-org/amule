@@ -24,6 +24,10 @@
 
 #include "HttpServer.h"
 
+#include "JsonWriter.h"
+
+#include <wx/string.h>
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
@@ -83,11 +87,13 @@ public:
 	Session(tcp::socket socket,
 	        CHttpServer::Handler handler,
 	        CHttpServer::StreamingResolver streaming_resolver,
-	        CHttpServer::StreamingHandler  streaming_handler)
+	        CHttpServer::StreamingHandler  streaming_handler,
+	        CHttpServer::StreamingPreflight streaming_preflight)
 		: m_stream(std::move(socket)),
 		  m_handler(std::move(handler)),
 		  m_streaming_resolver(std::move(streaming_resolver)),
-		  m_streaming_handler(std::move(streaming_handler))
+		  m_streaming_handler(std::move(streaming_handler)),
+		  m_streaming_preflight(std::move(streaming_preflight))
 	{}
 
 	~Session()
@@ -203,11 +209,27 @@ private:
 			// Handler-internal exceptions become 500s. The body shape
 			// matches the rest of the error contract; clients reading
 			// `error.code` continue to parse uniformly.
+			//
+			// e.what() can carry caller-influenced bytes (picojson
+			// includes the offending input character at the failure
+			// offset, std::stoi echoes its argument, etc.). Route the
+			// message through CJsonWriter::ValueString so any " / \ /
+			// control byte is escaped properly — a hand-built JSON
+			// concatenation would emit malformed output and break
+			// every client trying to parse the error.
 			resp.status       = 500;
 			resp.content_type = "application/json";
-			resp.body = std::string(
-				"{\"error\":{\"code\":\"internal\","
-				"\"message\":\"") + e.what() + "\"}}";
+			CJsonWriter w;
+			w.BeginObject();
+			  w.Key("error");
+			  w.BeginObject();
+			    w.Key("code");    w.ValueString(wxT("internal"));
+			    w.Key("message"); w.ValueString(e.what());
+			  w.EndObject();
+			w.EndObject();
+			const wxString js = w.GetBuffer();
+			const wxScopedCharBuffer ub = js.utf8_str();
+			resp.body.assign(ub.data(), ub.length());
 		}
 
 		WriteResponse(std::move(resp));
@@ -245,6 +267,23 @@ private:
 
 	void DispatchStreaming(CHttpServer::Request r)
 	{
+		// Preflight runs synchronously on the I/O thread BEFORE the
+		// slot is claimed and BEFORE a worker thread is spawned. If
+		// it rejects (returns a Response), unauthenticated peers
+		// can't tie up a streaming slot for the read-timeout window:
+		// 32 unauth TCP holds × 10 s read timeout = a 320-session-
+		// second pool stall. With preflight, an unauth request
+		// burns one short HTTP exchange and goes away. Empty
+		// preflight (default) preserves the prior contract.
+		if (m_streaming_preflight) {
+			boost::optional<CHttpServer::Response> rej =
+				m_streaming_preflight(r);
+			if (rej) {
+				WriteResponse(std::move(*rej));
+				return;
+			}
+		}
+
 		// Acquire a session slot before doing any thread-spawn or
 		// long-lived work. fetch_add returns the OLD value, so we
 		// hold the slot iff that old value was strictly below the
@@ -494,6 +533,7 @@ private:
 	// Phase 8 streaming state.
 	CHttpServer::StreamingResolver  m_streaming_resolver;
 	CHttpServer::StreamingHandler   m_streaming_handler;
+	CHttpServer::StreamingPreflight m_streaming_preflight;
 	std::atomic<bool>               m_stream_alive{false};
 	// Set true by the worker on exit. The Session destructor asserts
 	// on it before detach()ing the thread handle (Session is shared-
@@ -518,12 +558,14 @@ public:
 	Listener(asio::io_context &ioc, tcp::endpoint endpoint,
 	         CHttpServer::Handler handler,
 	         CHttpServer::StreamingResolver streaming_resolver,
-	         CHttpServer::StreamingHandler  streaming_handler)
+	         CHttpServer::StreamingHandler  streaming_handler,
+	         CHttpServer::StreamingPreflight streaming_preflight)
 		: m_ioc(ioc),
 		  m_acceptor(asio::make_strand(ioc)),
 		  m_handler(std::move(handler)),
 		  m_streaming_resolver(std::move(streaming_resolver)),
-		  m_streaming_handler(std::move(streaming_handler))
+		  m_streaming_handler(std::move(streaming_handler)),
+		  m_streaming_preflight(std::move(streaming_preflight))
 	{
 		beast::error_code ec;
 		m_acceptor.open(endpoint.protocol(), ec);
@@ -557,7 +599,8 @@ private:
 						std::move(socket),
 						self->m_handler,
 						self->m_streaming_resolver,
-						self->m_streaming_handler)->Start();
+						self->m_streaming_handler,
+						self->m_streaming_preflight)->Start();
 				}
 				// Loop unless the acceptor has been closed. operation_aborted
 				// fires on Stop() and signals "exit cleanly".
@@ -572,6 +615,7 @@ private:
 	CHttpServer::Handler           m_handler;
 	CHttpServer::StreamingResolver m_streaming_resolver;
 	CHttpServer::StreamingHandler  m_streaming_handler;
+	CHttpServer::StreamingPreflight m_streaming_preflight;
 	std::string                    m_error;
 };
 
@@ -598,7 +642,8 @@ bool CHttpServer::Start(const std::string &bind_address,
                         unsigned           port,
                         Handler            handler,
                         StreamingResolver  streaming_resolver,
-                        StreamingHandler   streaming_handler)
+                        StreamingHandler   streaming_handler,
+                        StreamingPreflight streaming_preflight)
 {
 	if (m_impl) {
 		m_lastError = "HttpServer already started";
@@ -636,7 +681,8 @@ bool CHttpServer::Start(const std::string &bind_address,
 
 	m_impl->listener = std::make_shared<Listener>(
 		m_impl->ioc, endpoint, std::move(handler),
-		std::move(streaming_resolver), std::move(streaming_handler));
+		std::move(streaming_resolver), std::move(streaming_handler),
+		std::move(streaming_preflight));
 	if (!m_impl->listener->Ok()) {
 		m_lastError = "bind to " + bind_address + ":" + std::to_string(port)
 			+ " failed: " + m_impl->listener->Error();

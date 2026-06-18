@@ -28,6 +28,7 @@
 #include <deque>
 
 #include <ctime>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <set>
@@ -98,7 +99,16 @@ public:
 		unsigned    lockout_seconds  = 300;
 	};
 
-	explicit CRateLimiter(Config cfg) : m_cfg(cfg) {}
+	// Clock injection. Default is std::time(nullptr); tests pass a
+	// controllable lambda so AuthTest can exercise the sliding-
+	// window logic in microseconds instead of spending five+
+	// real-time seconds sleeping between failures.
+	using Clock = std::function<std::time_t()>;
+
+	explicit CRateLimiter(Config cfg, Clock clock = nullptr)
+		: m_cfg(cfg),
+		  m_clock(clock ? std::move(clock)
+		                : [] { return std::time(nullptr); }) {}
 
 	struct Decision {
 		bool        locked_out          = false;
@@ -138,6 +148,7 @@ private:
 	};
 
 	Config                                          m_cfg;
+	Clock                                           m_clock;
 	mutable std::mutex                              m_mu;
 	std::map<std::string, Bucket>                   m_buckets;
 };

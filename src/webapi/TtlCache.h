@@ -26,6 +26,7 @@
 #define WEBAPI_TTL_CACHE_H
 
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <utility>
 
@@ -41,15 +42,23 @@ namespace webapi {
 // operator preference: long enough to absorb dashboard tile bursts,
 // short enough that data stays alive).
 //
-// **Single-flight semantics.** `GetOrFetch` holds `m_mu` for the
-// entire check-fetch-store sequence. Concurrent HTTP threads racing
-// the same lazy endpoint serialize on this mutex; the second waiter
-// reads the cached value that the first thread just wrote (no
-// duplicate EC roundtrip).
+// **Single-flight semantics.** Only ONE thread runs `fetch()` for a
+// given stale-or-unset cache; concurrent callers park on a condvar
+// while the inflight thread runs the EC roundtrip with the cache
+// mutex DROPPED. Once the inflight thread stores the result and
+// clears the flag, every waiter observes the just-stored value and
+// returns it without re-fetching.
 //
-// **Lock ordering.** Callers acquire endpoint cache `m_mu` first,
-// then take `m_ec_mtx` inside the fetcher lambda. Every other lazy
-// endpoint uses the same ordering, so deadlock is impossible.
+// **Why not hold m_mu across fetch?** A 30 s amuled stall on
+// /stats/tree would park every concurrent reader of that endpoint
+// for the entire stall duration. Dropping the mutex around the EC
+// call lets all concurrent readers cooperate on the single inflight
+// fetch without serialising on the slowest amuled response.
+//
+// **Lock ordering.** The fetcher lambda acquires `m_ec_mtx` inside
+// its body WHILE this cache's m_mu is NOT held (we drop it before
+// calling). That's still single-flight per endpoint because m_inflight
+// gates concurrent fetches.
 //
 // The cached `T` must be copyable (we return by value to avoid
 // holding `m_mu` across the JSON serialization).
@@ -58,25 +67,64 @@ class CTtlCache {
 public:
 	using clock_t = std::chrono::steady_clock;
 
-	// Call `fetch()` and store the result under `m_mu` iff the
-	// cached value is older than `ttl` (or unset). Returns a copy
-	// of the freshest value — either the just-fetched one, or the
-	// still-fresh cached one. `fetch` runs WITH `m_mu` held; it
-	// must NOT call back into the same CTtlCache or it'll deadlock.
+	// Returns a copy of the freshest value. If the cache is fresh,
+	// returns immediately under a brief lock. If stale-or-unset:
+	// one caller becomes the "inflight" worker (drops the lock,
+	// runs fetch, re-takes the lock, stores, broadcasts);
+	// concurrent callers wait on the condvar until inflight clears
+	// and then read the stored value.
 	template <class Fetcher>
 	T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch)
 	{
-		std::lock_guard<std::mutex> g(m_mu);
-		const auto now = clock_t::now();
-		const bool unset = (m_fetched_at == clock_t::time_point{});
-		if (!unset && (now - m_fetched_at) <= ttl) {
+		std::unique_lock<std::mutex> lk(m_mu);
+		while (true) {
+			const auto now = clock_t::now();
+			const bool unset = (m_fetched_at == clock_t::time_point{});
+			if (!unset && (now - m_fetched_at) <= ttl) {
+				return m_value;
+			}
+			if (m_inflight) {
+				// Another caller is doing the EC roundtrip. Wait
+				// for them to finish, then re-check freshness in
+				// case yet another fetch is needed (e.g. the
+				// inflight result raced our TTL clamp because
+				// fetch was slow).
+				m_cv.wait(lk, [this]{ return !m_inflight; });
+				continue;
+			}
+			// We're the inflight worker. Claim the slot, drop the
+			// lock, do the fetch unguarded so peers can park on
+			// the condvar without our long EC call serialising
+			// them on the cache mutex.
+			m_inflight = true;
+			lk.unlock();
+			T fetched;
+			try {
+				fetched = fetch();
+			} catch (...) {
+				// Clear inflight + wake waiters even on exception
+				// so we don't park them forever.
+				{
+					std::lock_guard<std::mutex> g(m_mu);
+					m_inflight = false;
+				}
+				m_cv.notify_all();
+				throw;
+			}
+			{
+				std::lock_guard<std::mutex> g(m_mu);
+				m_value      = std::move(fetched);
+				m_fetched_at = clock_t::now();
+				m_inflight   = false;
+			}
+			m_cv.notify_all();
+			// Re-acquire to read the value under the lock so
+			// the contract (returned T is a stable copy of the
+			// just-stored snapshot) holds in the face of a racing
+			// Invalidate.
+			std::lock_guard<std::mutex> g(m_mu);
 			return m_value;
 		}
-		// Stale or unset — fetch under m_mu so a second waiter sees
-		// the just-stored value.
-		m_value = fetch();
-		m_fetched_at = clock_t::now();
-		return m_value;
 	}
 
 	// Invalidate. Future GetOrFetch will trigger a fresh fetch
@@ -91,8 +139,10 @@ public:
 
 private:
 	mutable std::mutex      m_mu;
+	std::condition_variable m_cv;
 	clock_t::time_point     m_fetched_at{};
 	T                       m_value{};
+	bool                    m_inflight = false;
 };
 
 

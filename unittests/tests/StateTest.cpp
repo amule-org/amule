@@ -544,8 +544,16 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	writer.join();
 	for (auto &t : readers) t.join();
 
-	// Sanity: the loop actually ran (non-zero observed reads).
-	ASSERT_TRUE(observed.load() > 0);
+	// Sanity: the loop actually exercised the contention path. A bar
+	// of `> 0` passes with a single observation, which a debug build
+	// or an over-loaded CI runner could plausibly produce — leaving
+	// the tear-detection harness inactive while the test still
+	// reports green. Require a meaningful number of reads instead;
+	// even a slow runner does ~10K reads per shared_lock-protected
+	// field in 100ms (single uncontended read is sub-microsecond),
+	// and torn-read detection needs many reads to catch the
+	// boundary anyway.
+	ASSERT_TRUE(observed.load() > 1000);
 	// And no read saw a torn snapshot.
 	ASSERT_EQUALS(0, torn.load());
 }

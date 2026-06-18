@@ -31,6 +31,8 @@
 #include <string>
 #include <thread>
 
+#include <boost/optional.hpp>
+
 
 // Boost.Beast-based HTTP/1.1 server. Runs in its own std::thread —
 // boost::asio::io_context::run() is blocking and Beast's async
@@ -106,6 +108,18 @@ public:
 	// /api/v0/events"; other endpoints stay request/response.
 	using StreamingResolver = std::function<bool(const Request &)>;
 
+	// Optional preflight: runs synchronously on the I/O thread BEFORE
+	// the per-session worker thread is spawned and BEFORE the 32-slot
+	// concurrency budget is claimed. Returns boost::none to admit the
+	// connection; returns a populated Response to reject it (the
+	// response is written verbatim and the connection closes). Used
+	// to push the SSE auth check off the worker thread so an
+	// unauthenticated peer can't tie up a slot for the read-timeout
+	// window. Empty preflight (default) preserves the pre-existing
+	// "auth inside the handler" behaviour.
+	using StreamingPreflight = std::function<
+		boost::optional<Response>(const Request &)>;
+
 	// Bind + listen on `bind_address`:`port`. Returns false (and
 	// populates LastError) on bind failure — the most common reason
 	// is the port being in use by another amuleapi instance or a
@@ -114,7 +128,8 @@ public:
 	           unsigned           port,
 	           Handler            handler,
 	           StreamingResolver  streaming_resolver = nullptr,
-	           StreamingHandler   streaming_handler  = nullptr);
+	           StreamingHandler   streaming_handler  = nullptr,
+	           StreamingPreflight streaming_preflight = nullptr);
 
 	// Stops the io_context, joins the thread. Safe to call from any
 	// thread; Start() must have succeeded.

@@ -104,11 +104,24 @@ public:
 	// called from production code.
 	void ResetForTest();
 
+	// Atomically wake every blocked Drain caller and mark the bus as
+	// "shutting down". Subsequent Drain calls return immediately
+	// (with an empty out vector). Used by the shutdown path:
+	// detached SSE worker threads sit inside Drain() blocked on the
+	// 15 s heartbeat; without this they'd hold references to the
+	// dispatcher across its destruction → UAF. Latches once; idempotent.
+	void Shutdown();
+
+	// True if Shutdown() has been called. SSE worker loops poll this
+	// between Drain calls and exit cleanly.
+	bool IsShutdown() const;
+
 private:
 	mutable std::mutex                          m_mu;
 	std::condition_variable                     m_cv;
 	std::deque<Event>                           m_ring;
 	std::atomic<std::uint64_t>                  m_next_id{1};
+	std::atomic<bool>                           m_shutdown{false};
 };
 
 

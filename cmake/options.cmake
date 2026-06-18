@@ -81,6 +81,19 @@ if (BUILD_AMULEAPI)
 	# MD5Sum), socket lib for CRemoteConnect. Boost.Beast is header-only
 	# so we don't add a Boost component requirement; the link-side Boost
 	# is already wired via the project-level `Boost_LIBRARIES` lookup.
+	#
+	# Hard-fail policy. `BUILD_AMULEAPI=YES` + missing dep must fail
+	# at configure time, never soft-disable the target. Today the
+	# guarantees come from upstream wiring:
+	#   * cryptopp — `NEED_LIB_EC` (set below) implies `NEED_LIB_CRYPTO`,
+	#     which includes cmake/cryptopp.cmake; that file FATAL_ERRORs
+	#     on a missing `cryptlib.h`.
+	#   * Boost   — `cmake/boost.cmake` runs unconditionally at the
+	#     project root and uses `find_package(Boost CONFIG REQUIRED)`,
+	#     which FATAL_ERRORs on miss.
+	# If a future refactor breaks either chain (e.g. moves Boost
+	# behind a conditional `if`), add an explicit `find_package(Boost
+	# CONFIG REQUIRED)` here so amuleapi keeps fail-loud.
 	set (NEED_LIB_EC TRUE)
 	set (NEED_LIB_MULECOMMON TRUE)
 	set (NEED_LIB_MULESOCKET TRUE)

@@ -99,13 +99,13 @@ echo "amuleapi phase 5a smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login" | jq -r .token)
+	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] \
 	|| _die "admin login failed (need --set-admin-pass=$ADMIN_PASS on the daemon)"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$HOST/api/v0/auth/login" | jq -r .token)
+	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
 HAVE_GUEST=0
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
 	HAVE_GUEST=1

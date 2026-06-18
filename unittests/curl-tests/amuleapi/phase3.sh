@@ -97,7 +97,7 @@ echo "amuleapi phase 3 smoke @ $HOST"
 # --- 1. Login with wrong password → 401 invalid_credentials. -------
 _curl -X POST -H "Content-Type: application/json" \
 	-d '{"password":"wrong-password"}' \
-	"$HOST/api/v0/auth/login"
+	"$HOST/api/v0/auth/login?type=bearer"
 _assert_status 401 "POST /auth/login with wrong password → 401"
 _assert_json_eq '.error.code' invalid_credentials \
 	'401 carries error.code=invalid_credentials'
@@ -105,7 +105,7 @@ _assert_json_eq '.error.code' invalid_credentials \
 # --- 2. Login with right password → 200 + JWT + Set-Cookie. --------
 _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login"
+	"$HOST/api/v0/auth/login?type=bearer"
 _assert_status 200 "POST /auth/login with admin password → 200"
 _assert_json_eq '.role'                    admin    'login response role=admin'
 _assert_json_eq '.token | length > 100'    true     'login response carries a real JWT (>100 chars)'
@@ -162,7 +162,7 @@ _assert_json_eq '.error.code' unauthorized \
 	'revoked bearer 401 carries error.code=unauthorized'
 
 # --- 9. Method gate. ----------------------------------------------
-_curl -X GET "$HOST/api/v0/auth/login"
+_curl -X GET "$HOST/api/v0/auth/login?type=bearer"
 _assert_status 405 "GET /auth/login → 405 method_not_allowed"
 _curl -X GET "$HOST/api/v0/auth/logout"
 _assert_status 405 "GET /auth/logout → 405 method_not_allowed"
@@ -170,7 +170,7 @@ _assert_status 405 "GET /auth/logout → 405 method_not_allowed"
 # --- 10. Bad JSON body on login → 400 bad_request. -----------------
 _curl -X POST -H "Content-Type: application/json" \
 	-d 'not-even-json' \
-	"$HOST/api/v0/auth/login"
+	"$HOST/api/v0/auth/login?type=bearer"
 _assert_status 400 "POST /auth/login (bad JSON) → 400"
 _assert_json_eq '.error.code' bad_request \
 	'bad-JSON 400 carries error.code=bad_request'
@@ -178,16 +178,34 @@ _assert_json_eq '.error.code' bad_request \
 # --- 11. Rate-limit: 5 wrong passwords (default threshold) → 429 ---
 # Defaults from amuleapi.conf: LoginFailureWindowSeconds=60,
 # LoginFailureThreshold=5, LoginLockoutSeconds=300.
-for i in 1 2 3 4 5 6 7; do
+#
+# Attempts 1-4 must still get 401 (under threshold). Attempt 5
+# crosses the threshold and arms the lockout, so attempts 5+ get
+# 429. Verifying the boundary on attempt 5 (not just the trailing
+# 8th) catches a regression where the limiter arms one attempt
+# late (or early).
+for i in 1 2 3 4; do
 	_curl -X POST -H "Content-Type: application/json" \
 		-d '{"password":"wrong"}' \
-		"$HOST/api/v0/auth/login" > /dev/null
+		"$HOST/api/v0/auth/login?type=bearer" > /dev/null
 done
-# The 8th attempt should be locked out (threshold = 5; the bucket
-# armed lockout at attempt 5+).
 _curl -X POST -H "Content-Type: application/json" \
 	-d '{"password":"wrong"}' \
-	"$HOST/api/v0/auth/login"
+	"$HOST/api/v0/auth/login?type=bearer"
+_assert_status 429 "POST /auth/login: 5th failure crosses threshold → 429"
+_assert_json_eq '.error.code' rate_limited \
+	'5th-failure lockout carries error.code=rate_limited'
+
+# Attempts 6-7 stay locked.
+for i in 6 7; do
+	_curl -X POST -H "Content-Type: application/json" \
+		-d '{"password":"wrong"}' \
+		"$HOST/api/v0/auth/login?type=bearer" > /dev/null
+done
+# The 8th attempt also remains locked.
+_curl -X POST -H "Content-Type: application/json" \
+	-d '{"password":"wrong"}' \
+	"$HOST/api/v0/auth/login?type=bearer"
 _assert_status 429 "POST /auth/login after many failures → 429"
 _assert_json_eq '.error.code' rate_limited \
 	'lockout carries error.code=rate_limited'

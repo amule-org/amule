@@ -116,7 +116,15 @@ public:
 	// writer that touches the map outside MutateDownloads must
 	// take the same State write lock — exposing by raw reference
 	// is a shortcut, not a guarantee that the map is unguarded.
-	std::map<std::uint32_t, PartFileEncoderData> &PartfileRleState() {
+	//
+	// The method name carries the precondition: any caller is
+	// asserting that it currently holds the CState exclusive lock
+	// (typically via being inside a MutateDownloads writer
+	// lambda). A `&rle = app.PartfileRleStateRequireStateWriteLock()`
+	// site catches the eye in code review the way a plain
+	// `PartfileRleState()` doesn't.
+	std::map<std::uint32_t, PartFileEncoderData> &
+		PartfileRleStateRequireStateWriteLock() {
 		return m_partfile_rle;
 	}
 

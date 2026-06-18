@@ -20,7 +20,7 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .RB_untranslated [ \-\-set\-guest\-pass " " \fI<plain> ]
 
 .B_untranslated amuleapi
-.RB_untranslated [ \-V ]
+.RB_untranslated [ \-\-version ]
 
 .B_untranslated amuleapi
 .RB_untranslated [ \-\-help ]
@@ -75,7 +75,7 @@ Stay in the foreground (default). aMule does not ship init\-system
 units; if you need a system service wrapper, write a downstream unit
 that wraps the foreground command.
 .TP
-\fB[ \-V\fR, \fB\-\-version ]\fR
+\fB[ \-\-version ]\fR
 Print version information and exit.
 .TP
 \fB[ \-\-help ]\fR

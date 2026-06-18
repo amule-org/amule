@@ -319,6 +319,14 @@ void CState::MarkTickSuccess()
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_has_first_snapshot = true;
 	m_ec_connected       = true;
+	// `m_snapshot_at` is stamped at tick-END (here), not tick-start.
+	// Clients reading `snapshot_at` therefore see "the wall-clock
+	// moment the daemon finished assembling this snapshot", with the
+	// tick's own duration as the implicit skew (typically 50-200 ms,
+	// up to multi-second under EC-mutex contention). For coarse
+	// freshness checks ("is this stale by more than 5 s?") that's
+	// fine; if a future caller wants sub-second precision, document
+	// the skew or stamp both tick_started_at and tick_ended_at.
 	m_snapshot_at        = std::time(nullptr);
 }
 
@@ -330,6 +338,16 @@ void CState::MarkTickFailure()
 	// during a transient EC blip get the stale `snapshot_at` next to
 	// `ec_connected=false`, so they can tell how stale the cached
 	// data is. Resetting it to `now` would lie about freshness.
+	//
+	// Tick-atomicity invariant: a tick failure leaves CState
+	// holding partial mutations from earlier in the tick (any
+	// Mutate*() that landed before the EC error). This is by design
+	// — the refresher's "tick = transaction" model is "atomic for
+	// events" (EmitDiffsForEventBus skipped on failure → next-tick
+	// diff is computed against the prior-success snapshot, not the
+	// partial one) but NOT atomic for state (no rollback of partial
+	// mutations). LastSeenState is the authoritative event baseline;
+	// CState is best-effort cache for /status freshness only.
 	m_ec_connected = false;
 }
 

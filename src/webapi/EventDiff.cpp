@@ -26,7 +26,11 @@
 
 #include "EventBus.h"
 
+#include <atomic>
+#include <cstdlib>
+#include <iostream>
 #include <sstream>
+#include <thread>
 
 
 namespace webapi {
@@ -289,10 +293,40 @@ std::map<std::uint32_t, Snap> ByEcid(const std::vector<Snap> &v)
 }  // namespace
 
 
+namespace {
+
+// Single-writer invariant: only the wxApp refresher tick mutates
+// LastSeenState + publishes diffs. Anything else (a future inline-
+// refresh-then-publish, a debug recompute, etc.) is a silent
+// concurrency bug — events get duplicated/dropped depending on
+// which order the threads landed. Capture the first caller's
+// thread id and abort hard on any subsequent caller from a
+// different thread. Hard-abort (not assert) so the check survives
+// -DNDEBUG and ships in every Release / RelWithDebInfo binary.
+std::atomic<std::thread::id> g_publisher_thread;
+
+void EnforceSinglePublisher()
+{
+	const std::thread::id self = std::this_thread::get_id();
+	std::thread::id expected;
+	if (g_publisher_thread.compare_exchange_strong(expected, self)) {
+		return;          // first caller — claimed it
+	}
+	if (expected == self) return;
+	std::cerr << "amuleapi: EmitDiffsAndUpdate called from two "
+	             "different threads; this breaks the single-writer "
+	             "invariant on LastSeenState and the EventBus.\n";
+	std::abort();
+}
+
+}  // namespace
+
+
 void EmitDiffsAndUpdate(CEventBus &bus,
                         LastSeenState &prev,
                         const CState &state)
 {
+	EnforceSinglePublisher();
 	// Snapshot the current state under its read locks. Each accessor
 	// takes the shared_timed_mutex shared, copies, and returns.
 	auto new_downloads = ByEcid(state.Downloads());

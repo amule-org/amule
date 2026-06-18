@@ -71,6 +71,13 @@ An empty password row means "this role is disabled" and
 amuleapi --host=127.0.0.1 --port=4712 --password=$EC_PASSWORD
 ```
 
+> **Two ports.** `--port=4712` is the EC port amuleapi USES to talk
+> to amuled (i.e. it's a client of amuled on 4712). amuleapi's OWN
+> HTTP listener is on `amuleapi.conf[Server]/Port` (default 4713)
+> — that's the port REST clients hit. The example above starts a
+> daemon that consumes 4712 (outbound to amuled) and serves 4713
+> (inbound from REST clients).
+
 - `--host` / `--port` / `--password` specify the EC connection to
   `amuled` (default port `4712`).
 - HTTP serves on `amuleapi.conf[Server]/Port` (default `4713`).
@@ -88,7 +95,12 @@ unit that wraps the command above.
 curl -s http://127.0.0.1:4713/api/v0/version
 
 # Login → token.
-TOKEN=$(curl -s -X POST http://127.0.0.1:4713/api/v0/auth/login \
+# `?type=bearer` opts into the SDK-client response shape: the JWT
+# lands in the JSON body so a shell script can extract it. Browser
+# clients call /auth/login WITHOUT ?type=bearer and authenticate via
+# the HttpOnly session cookie set on the response — that's the
+# default to keep the token out of any XSS-readable surface.
+TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?type=bearer" \
     -H 'Content-Type: application/json' \
     -d '{"password":"mySecret123"}' | jq -r .token)
 

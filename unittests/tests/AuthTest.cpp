@@ -143,23 +143,22 @@ TEST(Auth, RateLimiter_DifferentIpsTrackedSeparately)
 
 TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 {
-	// Belt-and-braces: a regression to "infinite lockout" (forgetting
-	// the "lockout_until <= now → wipe bucket" path) would silently
-	// jail the affected IP forever. Use a 1-second lockout + a
-	// realtime sleep slightly past it so the next Check sees the
-	// bucket cleared. ~1.1 s test runtime — acceptable for the
-	// ctest matrix.
+	// Regression: forgetting the "lockout_until <= now → wipe
+	// bucket" path would silently jail the affected IP forever.
+	// Clock injection lets us step `now` past lockout_until without
+	// burning real time on a sleep.
 	CRateLimiter::Config cfg;
 	cfg.window_seconds  = 60;
 	cfg.threshold       = 1;
 	cfg.lockout_seconds = 1;
-	CRateLimiter rl(cfg);
+	std::time_t fake_now = 1000;
+	CRateLimiter rl(cfg, [&] { return fake_now; });
 	const std::string ip = "203.0.113.7";
 
 	rl.NoteFailure(ip);
 	ASSERT_TRUE(rl.Check(ip).locked_out);
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+	fake_now += 2;
 
 	const auto d = rl.Check(ip);
 	ASSERT_FALSE(d.locked_out);
@@ -177,13 +176,9 @@ TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 	// the boundary started a fresh count regardless of how many
 	// recent failures fell inside the live sliding window.
 	//
-	// CRateLimiter reads `now` via std::time(nullptr) (integer
-	// seconds), so this test sleeps at second-scale to make the
-	// step transitions deterministic. The extra ~100 ms per sleep
-	// is buffer against std::time's tick-boundary alignment — too
-	// little headroom and the integer-second reads bunch up,
-	// making both impls behave identically (they then both lock,
-	// and the regression slips past the test).
+	// Clock injection lets us step `now` deterministically without
+	// the std::time(nullptr) tick-boundary alignment headache that
+	// drove the old 5 s test runtime.
 	//
 	// Sequence (window_seconds=3, threshold=3):
 	//   t=0   NoteFailure  — failures=[0]        count=1
@@ -196,23 +191,20 @@ TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 	//                         NO lockout (count<3).
 	//                       NEW: evict <2; failures=[3, 4, 5],
 	//                         count=3 → LOCKOUT.
-	//
-	// 4 attempts across ~5 s; OLD ends at count=2 (no lockout),
-	// NEW trips the threshold on the 4th. The assertion fails
-	// against the OLD impl.
 	CRateLimiter::Config cfg;
 	cfg.window_seconds  = 3;
 	cfg.threshold       = 3;
 	cfg.lockout_seconds = 60;
-	CRateLimiter rl(cfg);
+	std::time_t fake_now = 0;
+	CRateLimiter rl(cfg, [&] { return fake_now; });
 	const std::string ip = "203.0.113.9";
 
 	rl.NoteFailure(ip);                                          // t=0
-	std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+	fake_now = 3;
 	rl.NoteFailure(ip);                                          // t=3
-	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+	fake_now = 4;
 	rl.NoteFailure(ip);                                          // t=4 (boundary crossing)
-	std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+	fake_now = 5;
 	rl.NoteFailure(ip);                                          // t=5 (sliding count reaches 3)
 	ASSERT_TRUE(rl.Check(ip).locked_out);
 }

@@ -75,6 +75,14 @@ public:
 	                    std::string &content_type,
 	                    std::map<std::string, std::string> &response_headers);
 
+	// Synchronous preflight for the SSE path. Runs on the I/O thread
+	// BEFORE the worker thread is spawned and BEFORE the 32-slot
+	// streaming-session budget is touched. Returns boost::none to
+	// admit the connection; returns a 401/403/429 Response to short-
+	// circuit unauth peers without burning a slot.
+	boost::optional<CHttpServer::Response> PreflightEvents(
+		const CHttpServer::Request &req);
+
 private:
 	// Inner routing — picks the right Handle*() based on path/method,
 	// returns a fully-formed response. The public Dispatch wraps this
@@ -177,7 +185,44 @@ private:
 	webapi::CState           &m_state;
 	CamuleapiApp             &m_app;
 	webapi::CRevocationSet    m_revocations;
+
+	// ETag memoization, keyed on (request target, snapshot version).
+	// Today every 200 GET/HEAD response runs MD5 over the whole body
+	// to compute the ETag header; on a 10K-shared-file daemon
+	// /downloads is multi-MB and the per-request hash is the
+	// dominant CPU cost of the safe-method path. Cache the result
+	// against `CState::SnapshotAt()` — the timestamp of the last
+	// successful refresher tick (or inline RefresherTick from a
+	// mutation, which bumps the same field) so cache hits are
+	// guaranteed-coherent: two GETs for the same target between
+	// ticks produce identical bodies and identical ETags. Cap the
+	// map at kEtagCacheCapacity entries; on overflow the cache is
+	// cleared wholesale rather than evicting LRU since the typical
+	// working set is a few dozen unique targets, well below the
+	// cap, and the bound is just a memory-pressure backstop.
+	mutable std::mutex
+		m_etagCacheMu;
+	struct EtagCacheEntry {
+		std::time_t snapshot_at = 0;
+		std::string etag;
+	};
+	std::map<std::string, EtagCacheEntry>
+		m_etagCache;
+	static constexpr std::size_t kEtagCacheCapacity = 512;
+	// Login-specific failure counter. Tight thresholds (driven by
+	// the operator's `[Auth]/Login*` config) — humans typing
+	// passwords rarely fail >5 times in 60 s, so a tight cap is
+	// the right shape for password-guessing defence.
 	webapi::CRateLimiter      m_rateLimiter;
+	// Generic 401 failure counter — covers logout, session, events,
+	// and every mutation endpoint. Looser thresholds than login
+	// because a misconfigured CI runner or a tab whose cookie just
+	// expired shouldn't lock the user out for five minutes after
+	// a handful of requests, but a credential-stuffing attempt that
+	// burns through stolen bearer tokens DOES need a brake. Default
+	// 30 failures in 60 s → 5 min lockout (set in the dispatcher
+	// ctor below).
+	webapi::CRateLimiter      m_authRateLimiter;
 
 	// Lazy-fetch TTL caches (Phase 4g). Each cache stores the
 	// snapshot value PLUS the wall-clock time at fetch so handlers

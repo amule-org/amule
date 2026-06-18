@@ -67,18 +67,25 @@ std::uint64_t CEventBus::Drain(std::uint64_t since_id,
                                std::vector<Event> &out)
 {
 	out.clear();
+	// Fast-fail on shutdown so a freshly-spawned SSE worker that
+	// raced past the IsShutdown poll doesn't block in wait_for.
+	if (m_shutdown.load(std::memory_order_acquire)) return since_id;
 	std::unique_lock<std::mutex> lk(m_mu);
 
 	// Quick path: any events with id > since_id already in ring?
 	auto has_newer = [&]() {
-		return !m_ring.empty() && m_ring.back().id > since_id;
+		return m_shutdown.load(std::memory_order_acquire)
+		    || (!m_ring.empty() && m_ring.back().id > since_id);
 	};
 	if (!has_newer()) {
-		// Wait up to `timeout` for someone to publish. wait_for
-		// returns no_timeout on a notify, timeout otherwise. We
-		// re-check the predicate either way.
+		// Wait up to `timeout` for someone to publish OR for the
+		// shutdown latch to fire. wait_for returns no_timeout on a
+		// notify, timeout otherwise. We re-check the predicate
+		// either way.
 		m_cv.wait_for(lk, timeout, has_newer);
 	}
+
+	if (m_shutdown.load(std::memory_order_acquire)) return since_id;
 
 	std::uint64_t max_seen = since_id;
 	for (const auto &ev : m_ring) {
@@ -111,8 +118,29 @@ void CEventBus::ResetForTest()
 		std::lock_guard<std::mutex> g(m_mu);
 		m_ring.clear();
 		m_next_id.store(1, std::memory_order_release);
+		m_shutdown.store(false, std::memory_order_release);
 	}
 	m_cv.notify_all();
+}
+
+
+void CEventBus::Shutdown()
+{
+	// Latch the shutdown flag and broadcast. Drain callers wake on
+	// the cv either way (even with no events pending) and exit the
+	// predicate. notify_all under the lock so a drainer that's
+	// about to wait_for can't miss the wake.
+	{
+		std::lock_guard<std::mutex> g(m_mu);
+		m_shutdown.store(true, std::memory_order_release);
+	}
+	m_cv.notify_all();
+}
+
+
+bool CEventBus::IsShutdown() const
+{
+	return m_shutdown.load(std::memory_order_acquire);
 }
 
 

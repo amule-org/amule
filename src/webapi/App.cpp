@@ -334,10 +334,20 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 		dispatcher->DispatchEvents(req, writer, http_status,
 		                           content_type, response_headers);
 	};
+	// Preflight runs synchronously before the SSE worker thread is
+	// spawned: short-circuit unauth requests with the standard 401
+	// body so they can't tie up a streaming slot for the read-
+	// timeout window.
+	auto streaming_preflight = [dispatcher](
+			const CHttpServer::Request &req)
+		-> boost::optional<CHttpServer::Response> {
+		return dispatcher->PreflightEvents(req);
+	};
 
 	m_http = std::unique_ptr<CHttpServer>(new CHttpServer());
 	if (!m_http->Start(bind, port, handler,
-	                   streaming_resolver, streaming_handler)) {
+	                   streaming_resolver, streaming_handler,
+	                   streaming_preflight)) {
 		Show(CFormat("amuleapi: HTTP server failed to start: %s\n")
 			% wxString::FromUTF8(m_http->LastError().c_str()));
 		return;
@@ -365,7 +375,18 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 	// first ensures entries that vanished during the down window
 	// don't linger forever in the INC-delta path.
 	bool was_failed = false;
+	// Target 1 s wall-clock between tick starts. The previous shape
+	// was "tick, then sleep a fixed 4 × 250 ms" — under EC-mutex
+	// contention a tick takes seconds and the cadence drifts; status/
+	// downloads pages render stale. Wall-clock-bound the cycle:
+	// measure the tick, sleep the remainder, warn if the tick
+	// overran the 3 s wall-clock budget (typically signals an EC
+	// stall or a runaway SendRecvSerialized).
+	constexpr auto kTargetCycle  = std::chrono::seconds(1);
+	constexpr auto kSliceMs      = std::chrono::milliseconds(250);
+	constexpr auto kOverrunWarn  = std::chrono::seconds(3);
 	while (!g_shutdownRequested.load(std::memory_order_acquire)) {
+		const auto cycle_start = std::chrono::steady_clock::now();
 		if (was_failed) {
 			m_state.ResetLists();
 		}
@@ -382,11 +403,30 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 			m_state.MarkTickFailure();
 			was_failed = true;
 		}
-		// Sleep in small slices so the shutdown latency is bounded
-		// independently of the tick cadence.
-		for (int i = 0; i < 4; ++i) {
+		const auto tick_end       = std::chrono::steady_clock::now();
+		const auto tick_duration  = tick_end - cycle_start;
+		if (tick_duration >= kOverrunWarn) {
+			const auto ms = std::chrono::duration_cast<
+				std::chrono::milliseconds>(tick_duration).count();
+			std::cerr << "amuleapi: WARN refresher tick took "
+			          << ms << " ms (> "
+			          << std::chrono::duration_cast<
+			              std::chrono::milliseconds>(kOverrunWarn).count()
+			          << " ms budget) — likely EC-mutex contention or a "
+			             "stalled SendRecvSerialized.\n";
+		}
+		// Sleep the REMAINDER of the target cycle in small slices so
+		// shutdown latency stays bounded. A tick that already
+		// consumed >= the budget skips the sleep entirely so the
+		// next cycle starts immediately.
+		auto deadline = cycle_start + kTargetCycle;
+		while (true) {
 			if (g_shutdownRequested.load(std::memory_order_acquire)) break;
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			const auto now = std::chrono::steady_clock::now();
+			if (now >= deadline) break;
+			const auto remaining = deadline - now;
+			std::this_thread::sleep_for(
+				remaining < kSliceMs ? remaining : kSliceMs);
 		}
 	}
 
@@ -414,6 +454,16 @@ int CamuleapiApp::OnExit()
 	// Tear down in reverse construction order: HTTP server first so no
 	// in-flight Dispatch can reach a dangling dispatcher, then the
 	// dispatcher itself (which references m_jwt), then m_jwt.
+	//
+	// Wake any SSE drainers BEFORE Stop() returns so detached worker
+	// threads (Drain() blocked on the 15 s heartbeat) bail out and
+	// release the dispatcher references they hold. Without this,
+	// `m_dispatcher.reset()` below can race a drainer mid-write
+	// against a dispatcher that's already destroyed → UAF in the
+	// signal-driven shutdown path. m_http->Stop() then joins the
+	// session destruction; with the drainers already exiting, the
+	// join is bounded.
+	m_event_bus.Shutdown();
 	if (m_http) {
 		m_http->Stop();
 		m_http.reset();

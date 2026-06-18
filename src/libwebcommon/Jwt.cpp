@@ -105,7 +105,7 @@ bool Base64UrlDecode(const std::string &in, std::vector<unsigned char> &out)
 
 // HMAC-SHA-256(secret, signing_input) → 32-byte MAC. CryptoPP's HMAC
 // handles keys of any length per RFC 2104.
-void HmacSha256(const std::vector<unsigned char> &secret,
+void HmacSha256(const CryptoPP::SecByteBlock     &secret,
                 const std::string                &signing_input,
                 unsigned char out_mac[CryptoPP::SHA256::DIGESTSIZE])
 {
@@ -167,7 +167,7 @@ bool DepthWithinLimit(const std::string &json)
 
 
 CJwt::CJwt(std::vector<unsigned char> secret)
-	: m_secret(std::move(secret))
+	: m_secret(secret.empty() ? nullptr : secret.data(), secret.size())
 {
 	// An empty signing key is always a config bug (truncated
 	// amuleapi-jwt-secret read, missing file write, etc.). Refusing
@@ -179,6 +179,14 @@ CJwt::CJwt(std::vector<unsigned char> secret)
 	if (m_secret.empty()) {
 		throw std::invalid_argument(
 			"CJwt: signing secret must not be empty");
+	}
+	// Wipe the caller's copy now that we've taken our own. The
+	// SecByteBlock owns the live copy and will scrub itself on
+	// destruction; the std::vector the caller passed in is
+	// moved-from, leaving any residual bytes outside our control.
+	// Best-effort: explicitly overwrite if any bytes remain.
+	if (!secret.empty()) {
+		std::fill(secret.begin(), secret.end(), 0);
 	}
 }
 
@@ -226,6 +234,14 @@ CJwt::IssuedToken CJwt::Issue(Role role)
 
 bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 {
+	// Reject before any Base64UrlDecode walk on absurd-length tokens.
+	// A legitimate amuleapi token is ~280 bytes (header 36 + payload
+	// ~120 + signature 43, each base64url-encoded); 4 KiB leaves
+	// ~10x headroom. Without this cap an unauthenticated peer can
+	// burn three full-token walks per request before the MAC
+	// compare rejects, which is a cheap CPU-amplification surface
+	// against the listener (1 MiB body cap × N concurrent peers).
+	if (token.size() > 4096) return false;
 	// Two dots split the token into three sections.
 	const size_t first_dot = token.find('.');
 	if (first_dot == std::string::npos) return false;
@@ -313,18 +329,28 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 		// the verifier microseconds after exp shouldn't 401 the
 		// caller's last request. A few seconds of leeway is the
 		// standard RFC 7519 §4.1.4 implementation note.
-		// `iat` (issued-at, §4.1.6) is bounded the same way: if the
-		// token claims it was issued more than 60 s in the future
-		// the verifier's clock is broken or the token is forged —
-		// either way reject.
 		constexpr std::time_t skew = 5;
 		const std::time_t now = std::time(nullptr);
 		if (out.exp + skew <= now) return false;   // expired
+
+		// `iat` (issued-at, §4.1.6) is mandatory. Without an iat
+		// claim a token has unbounded lifetime — an attacker who
+		// somehow gained mint capability (compromised secret,
+		// stolen --jwt-secret file, …) could otherwise issue a
+		// token with exp = year-2100 and bypass the lifetime cap
+		// entirely. With iat mandatory we additionally cap
+		// (exp - iat) ≤ TOKEN_LIFETIME_SECONDS + skew so the
+		// cap survives a future Issue() change too.
 		const auto iat_it = obj.find("iat");
-		if (iat_it != obj.end() && iat_it->second.is<int64_t>()) {
-			const std::time_t iat = static_cast<std::time_t>(
-				iat_it->second.get<int64_t>());
-			if (iat > now + 60) return false;
+		if (iat_it == obj.end() || !iat_it->second.is<int64_t>()) {
+			return false;
+		}
+		const std::time_t iat = static_cast<std::time_t>(
+			iat_it->second.get<int64_t>());
+		if (iat > now + 60) return false;          // iat in the future
+		if (out.exp <= iat) return false;          // exp must follow iat
+		if (out.exp - iat > TOKEN_LIFETIME_SECONDS + skew) {
+			return false;                          // lifetime cap
 		}
 	}
 

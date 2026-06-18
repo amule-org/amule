@@ -193,7 +193,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
 		if (!resp) return false;
-		auto &rle = app.PartfileRleState();
+		auto &rle = app.PartfileRleStateRequireStateWriteLock();
 
 		// Snapshot the cache's pre-tick ECID set so we can evict
 		// rle_state entries for any partfile that gets removed during

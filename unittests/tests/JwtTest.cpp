@@ -186,19 +186,23 @@ TEST(Jwt, MalformedNoDotsRejected)
 
 TEST(Jwt, MalformedBase64Rejected)
 {
+	// Each section has invalid base64url chars (`=` / `+` aren't in
+	// the b64url alphabet). What actually rejects the token is the
+	// MAC compare: the recomputed signature for the malformed
+	// signing input has different length than the supplied (still-
+	// malformed) signature section, and ConstantTimeEquals returns
+	// false on length mismatch. So this test pins the contract
+	// "malformed input gets rejected" without making any claim
+	// about WHICH layer caught it.
+	//
+	// Constant-time semantics of ConstantTimeEquals are not
+	// observable from inside this test (we have no timing
+	// assertion; the muleunit framework doesn't expose one). If you
+	// reorganise the verify pipeline so a different layer rejects
+	// first, that's fine — this test still passes as long as the
+	// overall Verify() refuses these tokens.
 	CJwt auth(MakeSecret(0x88));
 	CJwt::VerifyResult r;
-	// Each section has invalid base64url chars (= and + aren't in the
-	// b64url alphabet).
-	//
-	// Note: the rejection actually happens inside the constant-time
-	// compare (ConstantTimeEquals returns false when the b64-encoded
-	// recomputed signature and the malformed input have different
-	// lengths) rather than inside Base64UrlDecodeChar. The assertions
-	// still document the intended contract; if anyone simplifies the
-	// signature comparison to a memcmp or a strict-length pre-check,
-	// add a positive test that exercises Base64UrlDecode directly
-	// before changing this file.
 	ASSERT_FALSE(auth.Verify("!!!.bbb.ccc", r));
 	ASSERT_FALSE(auth.Verify("aaa.!!!.ccc", r));
 	ASSERT_FALSE(auth.Verify("aaa.bbb.!!!", r));
@@ -381,10 +385,57 @@ TEST(Jwt, EmptyJtiRejected)
 	// empty-jti token, so Verify() must refuse.
 	const auto secret = MakeSecret(0x02);
 	CJwt auth(secret);
+	// iat + 1h exp so the mandatory-iat + lifetime-cap checks both
+	// pass and the empty-jti check is the only available reject
+	// path.
+	const std::time_t now = std::time(nullptr);
 	const std::string token = CraftToken(
 		secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"\"}");
+		std::string("{\"role\":\"admin\",\"iat\":")
+		    + std::to_string(now) + ",\"exp\":"
+		    + std::to_string(now + 3600) + ",\"jti\":\"\"}");
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(auth.Verify(token, r));
+}
+
+
+TEST(Jwt, MissingIatRejected)
+{
+	// Without an iat claim a token has unbounded lifetime — an
+	// attacker who somehow gained mint capability could otherwise
+	// issue a token with exp = year-2100 and bypass the lifetime
+	// cap entirely. Mandatory iat closes the door.
+	const auto secret = MakeSecret(0x03);
+	CJwt auth(secret);
+	const std::time_t now = std::time(nullptr);
+	const std::string token = CraftToken(
+		secret,
+		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
+		std::string("{\"role\":\"admin\",\"exp\":")
+		    + std::to_string(now + 3600) + ",\"jti\":\"t\"}");
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(auth.Verify(token, r));
+}
+
+
+TEST(Jwt, ExpIatLifetimeCapExceeded)
+{
+	// iat present + exp within the same future window, but the
+	// total (exp - iat) is two days — well past the 24-hour
+	// TOKEN_LIFETIME_SECONDS + skew. Verify must refuse: even
+	// with the secret compromised, a hostile mint can't outrun
+	// the lifetime cap.
+	const auto secret = MakeSecret(0x04);
+	CJwt auth(secret);
+	const std::time_t now = std::time(nullptr);
+	const std::time_t two_days = 2 * 24 * 60 * 60;
+	const std::string token = CraftToken(
+		secret,
+		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
+		std::string("{\"role\":\"admin\",\"iat\":")
+		    + std::to_string(now) + ",\"exp\":"
+		    + std::to_string(now + two_days) + ",\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }

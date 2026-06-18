@@ -186,6 +186,17 @@ TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 
 
 #ifndef _WIN32
+// POSIX-only: the production hardening (mode-bit check in
+// AmuleApiConfig::EnforceOwnerOnly) is itself POSIX-only. Windows
+// uses ACLs rather than POSIX mode bits, and the typical Windows
+// daemon footprint (single-operator workstation, %USERPROFILE%-
+// scoped config dir) makes the threat model very different. If
+// amuleapi ever ships a Windows hardening pass (via GetSecurityInfo
+// / GetEffectiveRightsFromAcl on the secret file's DACL), the
+// matching test should land under `#ifdef _WIN32` here. Until then,
+// the #ifndef intentionally skips the assertion on Windows so the
+// test suite stays green there without misrepresenting the
+// platform's posture.
 TEST(AmuleApiConfig, LooserSecretFilePermissionsRejected)
 {
 	const wxString dir = MakeTmpDir("perm");

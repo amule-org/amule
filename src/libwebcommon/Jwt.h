@@ -29,6 +29,8 @@
 #include <string>
 #include <vector>
 
+#include <cryptopp/secblock.h>
+
 #include "Role.h"
 
 
@@ -85,7 +87,14 @@ public:
 	bool Verify(const std::string &token, VerifyResult &out) const;
 
 private:
-	std::vector<unsigned char> m_secret;
+	// CryptoPP::SecBlock zeros its backing buffer at destruction
+	// (and on reallocation via AlignedAllocator), so a coredump or
+	// swap from a long-lived amuleapi process won't leak the HMAC
+	// signing key the same way a plain std::vector<unsigned char>
+	// would. The constructor accepts a vector for caller convenience
+	// (config-load doesn't want to drag SecBlock into its surface)
+	// and copies into the SecBlock once.
+	CryptoPP::SecByteBlock m_secret;
 };
 
 #endif // LIBWEBCOMMON_JWT_H

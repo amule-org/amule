@@ -60,7 +60,7 @@ fi
 echo "amuleapi phase 11 smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 H_AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
 sleep 4

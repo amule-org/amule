@@ -91,14 +91,22 @@ _assert_json_eq '.error.code' unauthorized \
 # --- 2. Log in as admin and capture the bearer. --------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login" | jq -r .token)
+	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
 	|| _die "could not log in for /status tests"
 
-# Give the refresher a beat to populate the cache after first launch
-# (the first tick fires immediately on entering TextShell; even on a
-# cold start the wait is sub-second).
-sleep 2
+# Wait for the refresher to land its first snapshot. On a fast
+# Linux host the first tick is sub-second; on the Windows VM the
+# 503 ec_unavailable window can stretch a few seconds under load.
+# Poll up to 15 s, same shape run-all.sh uses for /version, so
+# the test doesn't drift to "disconnected" under runner pressure.
+for _ in $(seq 1 30); do
+	probe=$(curl -s -o /dev/null -w "%{http_code}" \
+		-H "Authorization: Bearer $TOKEN" \
+		"$HOST/api/v0/status")
+	[ "$probe" = "200" ] && break
+	sleep 0.5
+done
 
 # --- 3. /status with bearer → 200 + envelope shape. ----------------
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
@@ -133,8 +141,18 @@ _assert_json_eq '.queue.total_source_count | type' number \
 	'queue.total_source_count is numeric'
 
 # --- 4. /status with guest bearer also works (any-role read gate). --
-#       (no separate guest pass configured in this fixture; the
-#       admin-only test above is enough to prove the auth gate works.)
+GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$GUEST_PASS\"}" \
+	"$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
+if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
+	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/status"
+	_assert_status 200 "GET /api/v0/status (guest bearer) → 200"
+else
+	# run-all.sh always configures a guest password; if a future
+	# fixture drops it, surface the gap rather than silently
+	# pretending the guest read-gate was exercised.
+	_die "guest login failed in phase4 fixture — phase4 is supposed to verify both roles can read /status; check that GUEST_PASS is wired"
+fi
 
 # --- 5. Method gate. ----------------------------------------------
 _curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
