@@ -381,6 +381,14 @@ add_executable (RefresherTest
 	# Apply{Update,Full} signatures take `std::map<ecid,
 	# PartFileEncoderData>&` so the class is part of the link.
 	${CMAKE_SOURCE_DIR}/src/RLE.cpp
+	# LoggerConsole.cpp provides the no-op DoECLogLine + theLogger
+	# symbols that libec.a's Debug build references unconditionally
+	# (ECPacket / ECSocket / ECTag debug-print paths). Release builds
+	# preprocess these calls to `do {} while(0)` via the ECLog.h
+	# define, so the symbols are unused there; macOS Debug + Ubuntu
+	# Debug builds link them in. Mirror amuleapi's own webapi/
+	# CMakeLists.txt, which already pulls this TU in.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
 )
 add_test (NAME RefresherTest COMMAND RefresherTest)
 target_include_directories (RefresherTest

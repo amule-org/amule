@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <set>
+#include <sstream>
 #include <cctype>
 
 #define PICOJSON_USE_INT64
