@@ -248,6 +248,7 @@ add_test (NAME JwtTest COMMAND JwtTest)
 target_link_libraries (JwtTest
 	muleunit
 	webcommon
+	mulecommon
 )
 
 add_executable (JsonWriterTest
@@ -257,6 +258,7 @@ add_test (NAME JsonWriterTest COMMAND JsonWriterTest)
 target_link_libraries (JsonWriterTest
 	muleunit
 	webcommon
+	mulecommon
 )
 
 add_executable (PathPatternsTest
@@ -266,6 +268,7 @@ add_test (NAME PathPatternsTest COMMAND PathPatternsTest)
 target_link_libraries (PathPatternsTest
 	muleunit
 	webcommon
+	mulecommon
 )
 
 add_executable (EtagTest
@@ -275,6 +278,7 @@ add_test (NAME EtagTest COMMAND EtagTest)
 target_link_libraries (EtagTest
 	muleunit
 	webcommon
+	mulecommon
 )
 
 add_executable (EventBusTest
@@ -287,6 +291,7 @@ target_include_directories (EventBusTest
 add_test (NAME EventBusTest COMMAND EventBusTest)
 target_link_libraries (EventBusTest
 	muleunit
+	mulecommon
 )
 
 # Phase 8d: tests for EmitDiffsAndUpdate's log_appended path and
@@ -305,6 +310,7 @@ target_include_directories (EventDiffTest
 add_test (NAME EventDiffTest COMMAND EventDiffTest)
 target_link_libraries (EventDiffTest
 	muleunit
+	mulecommon
 )
 
 # amuleapi-specific: tests CAmuleApiConfig's file-IO + mode-bit
@@ -323,6 +329,7 @@ target_include_directories (AmuleApiConfigTest
 target_link_libraries (AmuleApiConfigTest
 	muleunit
 	webcommon
+	mulecommon
 	wxWidgets::BASE
 )
 
@@ -341,6 +348,7 @@ target_include_directories (AuthTest
 target_link_libraries (AuthTest
 	muleunit
 	webcommon
+	mulecommon
 )
 
 # amuleapi state cache — snapshot semantics + concurrent-reader
@@ -357,6 +365,7 @@ target_include_directories (StateTest
 )
 target_link_libraries (StateTest
 	muleunit
+	mulecommon
 )
 
 # amuleapi refresher — the pure EC-tag-to-State translation layer

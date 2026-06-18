@@ -67,6 +67,23 @@ KadSnapshot CState::Kad() const
 }
 
 
+CState::DashboardSnapshot CState::Dashboard() const
+{
+	// Single shared_lock acquisition: callers of /api/v0/status get
+	// a coherent (status, kad, snapshot_at, ec_connected) tuple
+	// instead of the four-separate-lock dance, which can interleave
+	// with a refresher tick and make `kad.network` describe a
+	// different tick than `ed2k.*` / `speeds.*`.
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	DashboardSnapshot out;
+	out.status       = m_status;
+	out.kad          = m_kad;
+	out.snapshot_at  = m_snapshot_at;
+	out.ec_connected = m_ec_connected;
+	return out;
+}
+
+
 PreferencesSnapshot CState::Preferences() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);

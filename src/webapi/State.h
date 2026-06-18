@@ -436,6 +436,17 @@ public:
 
 	StatusSnapshot                  Status()      const;
 	KadSnapshot                     Kad()         const;
+	// One-shot snapshot of the four scalars /api/v0/status composes
+	// from. Taken under a single shared_lock so the four pieces
+	// describe the same refresher tick — no risk of `status` and
+	// `kad` straddling a tick boundary.
+	struct DashboardSnapshot {
+		StatusSnapshot status;
+		KadSnapshot    kad;
+		std::time_t    snapshot_at = 0;
+		bool           ec_connected = false;
+	};
+	DashboardSnapshot               Dashboard()   const;
 	PreferencesSnapshot             Preferences() const;
 	// Full snapshot of the amule log lines (oldest-first). API
 	// handlers slice the tail before serialising via the

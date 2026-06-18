@@ -116,3 +116,38 @@ Leave `CorsOriginAllowlist` empty to echo any caller's `Origin` header
 - `/api/v0/events` — long-lived Server-Sent Events stream with
   `Last-Event-ID` replay and typed `resync` events for cache invalidation
 - Optional CORS allowlist via `amuleapi.conf[Server]/CorsOriginAllowlist`
+
+## Notes on a few responses
+
+- **`POST /api/v0/downloads` partial success.** The endpoint accepts
+  a single `ed2k_link` or an array of `links`. When some links land
+  cleanly and others fail (already on queue, malformed magnet,
+  category out of range, or EC disconnect mid-batch) the response is
+  `207 Multi-Status` with `ok: false` and four parallel arrays —
+  `accepted_links`, `failed_links`, `disconnected_links`, plus
+  counters and a `first_error`. `207` is borrowed from WebDAV (RFC
+  4918 §13) for "the request was answered in pieces"; clients should
+  treat it as success-with-details, not as a 4xx. `503` is reserved
+  for "every link blocked by an EC disconnect" — nothing landed and
+  the caller can retry once `GET /status` reports `ec_connected:
+  true`.
+
+## Security notes
+
+- The admin role grants the holder full control of the daemon's
+  network surface — that includes `POST /api/v0/servers/update
+  {"servers_url": "..."}`, which makes amuled fetch the supplied URL
+  to refresh the server list. This is the same behaviour amuled has
+  exposed via the desktop GUI and amuleweb for years, but it widens
+  what an admin token *grants* — anyone who steals one can ask
+  amuled to perform an HTTP GET against arbitrary network-reachable
+  URLs (a classic SSRF surface) and bring the response back into
+  amuled's process. The `http://` / `https://` pre-check in the API
+  is hygienic input validation, not a security boundary; protect
+  the admin password and the JWT signing secret accordingly.
+- The default `BindAddress=127.0.0.1` is load-bearing. The HTTP
+  server spawns one OS thread per Server-Sent Events subscriber, so
+  binding amuleapi to a non-loopback interface exposes the
+  thread-per-connection model to unauthenticated peers. If you need
+  remote access, put a reverse proxy in front and keep the bind on
+  loopback.

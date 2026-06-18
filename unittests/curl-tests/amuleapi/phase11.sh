@@ -295,15 +295,22 @@ else
 	_fail "clients filter sizing" \
 		"total=$TOTAL_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS active=$ACTIVE_CLIENTS"
 fi
-# active should equal up + down (no peer is in both states simultaneously)
-EXP_ACTIVE=$((UP_CLIENTS + DOWN_CLIENTS))
+# `active` = |uploads ∪ downloads|, so it sits in
+# [max(up, down), up+down]. The lower bound holds because every
+# uploads-or-downloads-only peer is in active; the upper bound holds
+# because a peer simultaneously in both states (upload_state=uploading
+# AND download_state=downloading) gets counted once in active but
+# twice in (up + down). Exact equality is intentionally not asserted
+# because the intersection count is unobservable from filter results
+# alone.
+EXP_UPPER=$((UP_CLIENTS + DOWN_CLIENTS))
 if [ "$ACTIVE_CLIENTS" -ge "$UP_CLIENTS" ] 2>/dev/null \
    && [ "$ACTIVE_CLIENTS" -ge "$DOWN_CLIENTS" ] 2>/dev/null \
-   && [ "$ACTIVE_CLIENTS" -le "$EXP_ACTIVE" ] 2>/dev/null; then
-	_pass "/clients?filter=active spans both up + down sets"
+   && [ "$ACTIVE_CLIENTS" -le "$EXP_UPPER" ] 2>/dev/null; then
+	_pass "/clients?filter=active sits in [max(up,down), up+down]"
 else
 	_fail "clients active span" \
-		"active=$ACTIVE_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS"
+		"active=$ACTIVE_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS (expected max..sum)"
 fi
 # Verify every entry in /clients?filter=uploads truly has upload_state=uploading
 BAD=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=uploads" \

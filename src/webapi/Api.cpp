@@ -938,9 +938,18 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	const webapi::StatusSnapshot s   = m_state.Status();
-	const std::time_t            ts  = m_state.SnapshotAt();
-	const bool                   ec  = m_state.EcConnected();
+	// Single shared_lock for the whole composite read. Dashboard()
+	// returns a (status, kad, snapshot_at, ec_connected) tuple in
+	// one m_state lock acquisition, so a refresher tick cannot land
+	// between sub-snapshots and produce an inconsistent rollup
+	// (kad.network from tick N+1 while ed2k.* / speeds.* are from
+	// tick N). Caller-side aliases keep the rest of the function
+	// reading the same way the four-accessor version did.
+	const webapi::CState::DashboardSnapshot d = m_state.Dashboard();
+	const webapi::StatusSnapshot &s   = d.status;
+	const webapi::KadSnapshot    &k   = d.kad;
+	const std::time_t            ts  = d.snapshot_at;
+	const bool                   ec  = d.ec_connected;
 
 	CHttpServer::Response r;
 	r.status       = 200;
@@ -975,16 +984,16 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	    // is a one-call dashboard view (matches the RFC contract
 	    // §4.1 `kad.network: {users, files}`; we ship `nodes` too
 	    // because it costs nothing extra and the desktop GUI shows
-	    // it in the same place).
-	    {
-	      const webapi::KadSnapshot k = m_state.Kad();
-	      w.Key("network");
-	      w.BeginObject();
-	        w.Key("users"); w.ValueInt(static_cast<int64_t>(k.users));
-	        w.Key("files"); w.ValueInt(static_cast<int64_t>(k.files));
-	        w.Key("nodes"); w.ValueInt(static_cast<int64_t>(k.nodes));
-	      w.EndObject();
-	    }
+	    // it in the same place). `k` was snapshotted at the top of
+	    // the handler in the same shared_lock batch as `s`, so
+	    // these counters describe the same refresher tick as
+	    // ed2k.* / speeds.* above.
+	    w.Key("network");
+	    w.BeginObject();
+	      w.Key("users"); w.ValueInt(static_cast<int64_t>(k.users));
+	      w.Key("files"); w.ValueInt(static_cast<int64_t>(k.files));
+	      w.Key("nodes"); w.ValueInt(static_cast<int64_t>(k.nodes));
+	    w.EndObject();
 	  w.EndObject();
 
 	  w.Key("speeds");
@@ -1556,11 +1565,14 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 
 	// Build one EC_OP_ADD_LINK packet per link. amuled's add-link op
 	// is single-link-only on the wire; we batch at the HTTP layer so
-	// clients only pay one round-trip. If any individual link fails
-	// the call stops and reports which one — the caller is expected
-	// to retry with the failures dropped. Partial success is
-	// surfaced via `accepted` / `failed` counts in the response.
+	// clients only pay one round-trip. We accumulate accepted /
+	// failed / disconnected-mid-batch into separate lists and report
+	// the whole picture at the end — never short-circuit on an EC
+	// blip mid-batch (an unconditional 503 would silently throw away
+	// the links amuled already queued from earlier iterations).
+	std::vector<std::string> accepted_links;
 	std::vector<std::string> failed_links;
+	std::vector<std::string> ec_disconnected_links;
 	std::string first_error;
 	for (const auto &link : links) {
 		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_ADD_LINK));
@@ -1569,8 +1581,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 		ec_req->AddTag(link_tag);
 		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 		if (!ec_resp) {
-			return ErrorResponse(503, "ec_unavailable",
-				"EC roundtrip failed for ADD_LINK");
+			ec_disconnected_links.push_back(link);
+			if (first_error.empty()) {
+				first_error = "EC roundtrip failed for ADD_LINK";
+			}
+			continue;
 		}
 		std::string ec_err_msg;
 		const bool failed = IsEcFailedResponse(ec_resp, ec_err_msg);
@@ -1578,6 +1593,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 		if (failed) {
 			failed_links.push_back(link);
 			if (first_error.empty()) first_error = ec_err_msg;
+		} else {
+			accepted_links.push_back(link);
 		}
 	}
 
@@ -1591,14 +1608,34 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	(void) RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status       = failed_links.empty() ? 202 : 207;
+	// 202 (all clean), 207 (any rejection or mid-batch disconnect
+	// with at least one accept), 503 (every link blocked by an EC
+	// disconnect — the operator's amuled is unreachable and nothing
+	// could land at all). 207 is per the partial-success convention
+	// documented in QUICKSTART.
+	const bool all_ok = failed_links.empty()
+	                    && ec_disconnected_links.empty();
+	const bool none_landed = accepted_links.empty();
+	r.status = all_ok ? 202
+	         : (none_landed && !ec_disconnected_links.empty())
+	             ? 503
+	             : 207;
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	  w.Key("ok");       w.ValueBool(failed_links.empty());
-	  w.Key("accepted"); w.ValueInt(static_cast<int64_t>(
-	      links.size() - failed_links.size()));
-	  w.Key("failed");   w.ValueInt(static_cast<int64_t>(failed_links.size()));
+	  w.Key("ok");        w.ValueBool(all_ok);
+	  w.Key("accepted");  w.ValueInt(static_cast<int64_t>(accepted_links.size()));
+	  w.Key("failed");    w.ValueInt(static_cast<int64_t>(failed_links.size()));
+	  w.Key("disconnected"); w.ValueInt(
+	      static_cast<int64_t>(ec_disconnected_links.size()));
+	  if (!accepted_links.empty()) {
+	      w.Key("accepted_links");
+	      w.BeginArray();
+	      for (const auto &l : accepted_links) {
+	          w.ValueString(wxString::FromUTF8(l.c_str()));
+	      }
+	      w.EndArray();
+	  }
 	  if (!failed_links.empty()) {
 	      w.Key("failed_links");
 	      w.BeginArray();
@@ -1606,6 +1643,19 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	          w.ValueString(wxString::FromUTF8(l.c_str()));
 	      }
 	      w.EndArray();
+	  }
+	  if (!ec_disconnected_links.empty()) {
+	      // Distinct from `failed_links` — amuled didn't reject these,
+	      // it just wasn't there to receive them. Clients can retry
+	      // this subset once /api/v0/status reports ec_connected=true.
+	      w.Key("disconnected_links");
+	      w.BeginArray();
+	      for (const auto &l : ec_disconnected_links) {
+	          w.ValueString(wxString::FromUTF8(l.c_str()));
+	      }
+	      w.EndArray();
+	  }
+	  if (!first_error.empty()) {
 	      w.Key("first_error");
 	      w.ValueString(wxString::FromUTF8(first_error.c_str()));
 	  }
@@ -4377,6 +4427,19 @@ void CApiDispatcher::DispatchEvents(
 		}
 	}
 	auto event_channel = [](const std::string &name) -> std::string {
+		// Event naming convention: every bus event name MUST contain
+		// at least one underscore — the prefix before the first `_`
+		// identifies the channel. Names without an underscore would
+		// collapse to "themselves" as their own channel, which a
+		// client filter wouldn't anticipate and could silently drop
+		// them. Today the only no-underscore name on the wire is
+		// `resync`, which is always emitted before this filter
+		// applies (it's a synthetic per-subscriber event published
+		// directly to the SSE writer, never via EventBus::Publish).
+		// If a future bus event ever ships as a bare token, either
+		// give it an explicit channel mapping in the switch below
+		// or have it always bypass the filter the way `resync`
+		// does.
 		const auto us = name.find('_');
 		if (us == std::string::npos) return name;
 		const std::string prefix = name.substr(0, us);
@@ -4449,11 +4512,24 @@ void CApiDispatcher::DispatchEvents(
 			since_id = newest;
 		}
 	}
+	// Heartbeat is wall-clock driven, not Drain-timeout driven. A
+	// busy bus paired with `?channels=` that filters every drained
+	// event would otherwise leave the wire silent for arbitrary
+	// stretches: each Drain returns immediately (events are pending),
+	// the loop swallows them all, advances since_id, and re-enters
+	// Drain — never giving keepalive a chance to fire. NAT / load
+	// balancers / EventSource clients typically drop idle TCP
+	// connections after 30–60 s of silence, so we keep tabs on the
+	// last byte written and emit `: keepalive` whenever it falls
+	// behind the 15 s budget, regardless of which loop branch we
+	// just took.
+	const auto heartbeat_interval = std::chrono::seconds(15);
+	auto last_write_at = std::chrono::steady_clock::now();
 	std::vector<webapi::Event> drained;
 	while (writer.Alive()) {
 		drained.clear();
 		const std::uint64_t new_high = m_app.EventBus().Drain(
-			since_id, std::chrono::seconds(15), drained);
+			since_id, heartbeat_interval, drained);
 		if (!writer.Alive()) break;
 		// Apply ?channels= filter before emission. We still advance
 		// since_id over EVERY drained event (filtered or not) so the
@@ -4485,13 +4561,24 @@ void CApiDispatcher::DispatchEvents(
 		}
 		if (wrote_any) {
 			if (!writer.Write(frame.str())) break;
+			last_write_at = std::chrono::steady_clock::now();
 			since_id = new_high;
-		} else if (drained.empty()) {
-			if (!writer.Write(": keepalive\n\n")) break;
 		} else {
-			// Every drained event got filtered out — advance the
-			// cursor silently so the next Drain doesn't re-read them.
-			since_id = new_high;
+			if (!drained.empty()) {
+				// Every drained event got filtered out — advance the
+				// cursor silently so the next Drain doesn't re-read
+				// them.
+				since_id = new_high;
+			}
+			// drained.empty() (Drain hit its timeout with nothing
+			// new) OR all-events-filtered-out (the channel-filter
+			// drop). In either case, emit a heartbeat IFF we
+			// haven't written anything in the heartbeat window.
+			const auto now = std::chrono::steady_clock::now();
+			if (now - last_write_at >= heartbeat_interval) {
+				if (!writer.Write(": keepalive\n\n")) break;
+				last_write_at = now;
+			}
 		}
 	}
 }
