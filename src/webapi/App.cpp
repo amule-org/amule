@@ -40,6 +40,7 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <cstdlib>
 #include <iostream>
 #include <thread>
 
@@ -93,9 +94,10 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 	parser.AddSwitch("", "foreground",
 		_("Stay in the foreground; default."),
 		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddSwitch("", "daemon",
-		_("Reserved; daemon mode lands in a follow-up release."),
-		wxCMD_LINE_PARAM_OPTIONAL);
+	// --daemon was reserved but never read — landed as a no-op switch.
+	// Dropped to avoid implying detach support that isn't here yet.
+	// Operators wanting fork-into-background today wrap amuleapi in
+	// systemd/launchd/`nohup` like any other long-running CLI.
 }
 
 
@@ -116,9 +118,18 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 	if (parser.Found("set-guest-pass", &m_cliSetGuestPass)) {
 		m_cliHasSetGuestPass = true;
 	}
-	if (parser.Found("daemon")) {
-		m_cliForeground = false;
-	}
+	// The base class reads --host / --port / --password into m_host /
+	// m_port / m_password before we get here, but it offers no "did
+	// the user actually pass this?" predicate of its own — m_host
+	// defaults to "127.0.0.1" unconditionally and m_port to 4712. We
+	// poll the parser directly here so LoadAmuleapiConfig() can tell
+	// "operator explicitly passed --host=127.0.0.1" apart from
+	// "operator passed nothing and the base class filled in the
+	// default", and only apply the amuleapi.conf override in the
+	// second case. Same shape as the bind / http-port branches above.
+	m_cliHasEcHost     = parser.Found("host");
+	m_cliHasEcPort     = parser.Found("port");
+	m_cliHasEcPassword = parser.Found("password");
 
 	return CaMuleExternalConnector::OnCmdLineParsed(parser);
 }
@@ -147,17 +158,17 @@ bool CamuleapiApp::OnInit()
 
 	// CLI override hooks. set-*-pass exits immediately after writing.
 	if (m_cliHasSetAdminPass || m_cliHasSetGuestPass) {
-		// Both options run as one-shot CLI flows. The exit code is
-		// propagated through wxApp's normal exit path so init shells
-		// see "0 on success", which matters for systemd unit overrides
-		// and bash pipelines.
+		// Both options run as one-shot CLI flows. Operators script
+		// these like `amuleapi --set-admin-pass=... && systemctl
+		// restart amuleapi` — they MUST see the non-zero exit code on
+		// disk-full / mode-bit rejection / etc., otherwise the
+		// chain runs against the half-written file. Returning false
+		// from OnInit() would cancel wxApp::OnRun() but still exit 0,
+		// so we std::exit() here with the real return code.
 		const int rc = m_cliHasSetAdminPass
 			? RunSetAdminPass()
 			: RunSetGuestPass();
-		(void)rc;
-		// Returning false from OnInit() cancels wxApp::OnRun() — that's
-		// the closest analogue to "did the setup; we're done".
-		return false;
+		std::exit(rc);
 	}
 
 	return true;
@@ -184,22 +195,21 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 	}
 
 	// Wire the EC connection params into the base-class fields that
-	// ConnectAndRun reads. CLI --host/--port/--password (already
-	// processed by CaMuleExternalConnector::OnCmdLineParsed) win over
-	// amuleapi.conf, so only fill base-class fields where the CLI
-	// didn't already set them.
-	if (m_host.IsEmpty() || m_host == "127.0.0.1") {
-		// Base class defaults m_host to "127.0.0.1" unconditionally;
-		// only overwrite if the config dir actually carries a value.
+	// ConnectAndRun reads. CLI --host/--port/--password (captured via
+	// wxCmdLineParser::Found() in OnCmdLineParsed) win over
+	// amuleapi.conf. The old "is the field still at the default
+	// value?" heuristic conflated "operator didn't pass" with
+	// "operator explicitly passed the default" — so a literal
+	// `amuleapi --host=127.0.0.1` would be silently overwritten by
+	// the config file. The has-flag predicates are unambiguous.
+	if (!m_cliHasEcHost) {
 		const auto &h = m_apiConfig.EcCfg().host;
 		if (!h.empty()) m_host = wxString::FromUTF8(h.c_str());
 	}
-	if (m_port == 0 || m_port == 4712) {
-		// Same logic as host — m_port defaults to 4712 in the base
-		// class; only override if amuleapi.conf says otherwise.
+	if (!m_cliHasEcPort) {
 		m_port = static_cast<long>(m_apiConfig.EcCfg().port);
 	}
-	if (m_password.IsEmpty() && !m_apiConfig.EcCfg().password.empty()) {
+	if (!m_cliHasEcPassword && !m_apiConfig.EcCfg().password.empty()) {
 		// amuleapi.conf [EC]/Password is plaintext; the base class
 		// expects an MD5-hashed CMD4Hash (because that's what amuled
 		// stores). MD5-hash here so a one-line amuleapi.conf edit

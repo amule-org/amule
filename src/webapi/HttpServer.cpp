@@ -213,6 +213,23 @@ private:
 
 		auto writer = std::make_shared<SocketWriter>(self, head);
 
+		// One std::thread per accepted streaming session. Cheap at
+		// amuleapi's expected scale (a single-operator UI plus the
+		// odd shell script — say 1-5 concurrent SSE subscribers),
+		// and it keeps the drain loop synchronous so reasoning about
+		// `since_id` ordering is trivial.
+		//
+		// **The default `BindAddress=127.0.0.1` is load-bearing.**
+		// If a future operator binds amuleapi to a non-loopback
+		// interface, an unauthenticated peer can open many streaming
+		// sessions and spawn one OS thread per connection — the
+		// obvious DoS amplifier. The auth gate inside DispatchEvents
+		// runs before the per-session worker thread does any
+		// non-trivial work, so authenticated cost stays bounded;
+		// the pre-auth cost (open socket, parse head, run the auth
+		// check, send 401) is what an exposed bind would multiply.
+		// A migration to async-on-io_context would close this off
+		// (Phase 8a notes flag it as the obvious next step).
 		m_stream_worker = std::thread([self, handler, writer, head,
 		                               r = std::move(r)]() mutable {
 			try {

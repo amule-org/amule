@@ -46,6 +46,15 @@
 #include <sstream>
 #include <cctype>
 
+// strncasecmp lives in <strings.h> on POSIX (glibc also exposes it
+// via <string.h>, but musl/BSDs don't). Match the shim
+// libwebcommon/HeaderParse.cpp ships.
+#ifdef _WIN32
+#  define strncasecmp _strnicmp
+#else
+#  include <strings.h>
+#endif
+
 #define PICOJSON_USE_INT64
 #include "picojson.h"
 
@@ -189,6 +198,12 @@ std::string MakeSetCookie(const std::string &name,
                           std::time_t expires_at)
 {
 	const std::time_t now      = std::time(nullptr);
+	// Boundary case: an already-expired `expires_at` produces
+	// `Max-Age=0`, which makes the browser delete the cookie on
+	// receipt (RFC 6265 §5.2.2). That's the right behaviour — issuing
+	// an expired token's cookie shouldn't grant the client a working
+	// session — so we emit it deliberately rather than clamping to
+	// some positive minimum.
 	const std::time_t lifetime = expires_at > now ? expires_at - now : 0;
 	char buf[256];
 	std::snprintf(buf, sizeof(buf),
@@ -4454,6 +4469,15 @@ void CApiDispatcher::DispatchEvents(
 			// JSON payloads never contain literal newlines (the
 			// EventDiff serializer escapes them), so one `data:`
 			// line per event is sufficient.
+			//
+			// `ev.name` is NOT escaped here. Every event name on the
+			// bus is a server-controlled compile-time literal
+			// ("download_added", "shared_updated", ...) emitted by
+			// `EventBus::Publish` from EventDiff.cpp. If a future
+			// publisher ever takes a name from external input, that
+			// publisher MUST sanitize CR/LF/`\0` at the call site —
+			// otherwise this frame writer would corrupt the SSE
+			// stream framing.
 			frame << "event: " << ev.name << "\n"
 			      << "id: "    << ev.id   << "\n"
 			      << "data: "  << ev.data << "\n\n";

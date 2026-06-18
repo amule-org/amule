@@ -164,17 +164,23 @@ private:
 
 	// CLI capture: --bind / --http-port override the matching keys in
 	// amuleapi.conf when present. --set-*-pass and --foreground are
-	// runtime-mode toggles.
+	// runtime-mode toggles. The `m_cliHas*` flags discriminate between
+	// "operator passed nothing" and "operator passed the default
+	// value verbatim" — the base class' m_host / m_port / m_password
+	// fields have no such predicate of their own.
 	wxString m_cliBindAddress;
 	long     m_cliHttpPort       = 0;
 	wxString m_cliConfigDirOverride;
 	wxString m_cliSetAdminPass;
 	wxString m_cliSetGuestPass;
-	bool     m_cliHasBindAddress = false;
-	bool     m_cliHasHttpPort    = false;
+	bool     m_cliHasBindAddress  = false;
+	bool     m_cliHasHttpPort     = false;
 	bool     m_cliHasSetAdminPass = false;
 	bool     m_cliHasSetGuestPass = false;
-	bool     m_cliForeground     = true;   // --foreground default; --daemon flips
+	// Did the operator pass --host / --port / --password explicitly?
+	bool     m_cliHasEcHost       = false;
+	bool     m_cliHasEcPort       = false;
+	bool     m_cliHasEcPassword   = false;
 };
 
 DECLARE_APP(CamuleapiApp)

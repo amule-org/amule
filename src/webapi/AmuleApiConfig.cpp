@@ -36,6 +36,7 @@
 #include <cryptopp/osrng.h>
 
 #include <cctype>
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
 
@@ -109,6 +110,68 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 	return fn.GetFullPath();
 }
 
+
+// Crash-safe writer for the 0600 secret files (amuleapi-passwords,
+// amuleapi-jwt-secret). Writes the body to a sibling `<name>.tmp`,
+// fsyncs, then atomically rename(2)s onto the target. A partial write
+// or a crash mid-write leaves the original file intact — important
+// because amuleapi-passwords stores the only admin/guest credentials
+// the daemon has. Falls back to a non-atomic best-effort path on
+// Windows (POSIX rename(2) semantics aren't available there for
+// existing-target replacement).
+bool WriteFileAtomic0600(const wxString &target_path,
+                         const std::string &body)
+{
+#ifndef _WIN32
+	const std::string final_p(target_path.utf8_str());
+	const std::string tmp_p = final_p + ".tmp";
+
+	const int fd = ::open(tmp_p.c_str(),
+		O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	if (fd < 0) return false;
+	::fchmod(fd, S_IRUSR | S_IWUSR);   // belt+braces against odd umasks
+
+	std::size_t written = 0;
+	while (written < body.size()) {
+		const ssize_t n = ::write(fd, body.data() + written,
+			body.size() - written);
+		if (n < 0) {
+			if (errno == EINTR) continue;
+			::close(fd);
+			::unlink(tmp_p.c_str());
+			return false;
+		}
+		written += static_cast<std::size_t>(n);
+	}
+	if (::fsync(fd) != 0) {
+		::close(fd);
+		::unlink(tmp_p.c_str());
+		return false;
+	}
+	if (::close(fd) != 0) {
+		::unlink(tmp_p.c_str());
+		return false;
+	}
+	if (::rename(tmp_p.c_str(), final_p.c_str()) != 0) {
+		::unlink(tmp_p.c_str());
+		return false;
+	}
+	return true;
+#else
+	// Windows: best-effort. wxFile::Write returns the bytes written;
+	// short writes are caught and reported.
+	wxFile f;
+	if (!f.Create(target_path, true)) return false;
+	if (body.empty()) {
+		f.Close();
+		return true;
+	}
+	const ssize_t n = f.Write(body.data(), body.size());
+	f.Close();
+	return n == static_cast<ssize_t>(body.size());
+#endif
+}
+
 }  // namespace
 
 
@@ -153,37 +216,65 @@ bool CAmuleApiConfig::Load(const wxString &config_dir)
 
 bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 {
+	const char *defaults =
+		"[Server]\n"
+		"BindAddress=127.0.0.1\n"
+		"Port=4713\n"
+		"AllowCORS=0\n"
+		"\n"
+		"[EC]\n"
+		"Host=127.0.0.1\n"
+		"Port=4712\n"
+		"Password=\n"
+		"\n"
+		"[Auth]\n"
+		"LoginFailureWindowSeconds=60\n"
+		"LoginFailureThreshold=5\n"
+		"LoginLockoutSeconds=300\n"
+		"\n"
+		"[Logging]\n"
+		"Level=info\n"
+		"File=\n";
+
 	if (!wxFileExists(path)) {
-		// First-run: write a defaults file so the operator has something
-		// to edit. The EC password stays empty; amuleapi will refuse to
-		// connect until it's filled in (matching amuleweb's behaviour).
+		// First-run: write a defaults file with mode 0600 so the
+		// operator has something to edit. The EC password stays
+		// empty; amuleapi refuses to connect until it's filled in.
+		// amuleapi.conf carries `[EC]/Password=` in cleartext (the
+		// base class wants a hashable plaintext), so the file gets
+		// the same owner-only mode the jwt-secret and passwords
+		// files already enforce.
+#ifndef _WIN32
+		const std::string p(path.utf8_str());
+		const int fd = ::open(p.c_str(),
+			O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+		if (fd < 0) {
+			m_lastError = "cannot create amuleapi.conf: " + p;
+			return false;
+		}
+		::fchmod(fd, S_IRUSR | S_IWUSR);   // belt+braces against odd umasks
+		const std::size_t blen = std::strlen(defaults);
+		if (::write(fd, defaults, blen) != static_cast<ssize_t>(blen)) {
+			m_lastError = "short write while seeding amuleapi.conf: " + p;
+			::close(fd);
+			return false;
+		}
+		::close(fd);
+#else
 		wxFFileOutputStream out(path);
 		if (!out.IsOk()) {
 			m_lastError = "cannot create amuleapi.conf: "
 				+ std::string(path.utf8_str());
 			return false;
 		}
-		const char *defaults =
-			"[Server]\n"
-			"BindAddress=127.0.0.1\n"
-			"Port=4713\n"
-			"AllowCORS=0\n"
-			"\n"
-			"[EC]\n"
-			"Host=127.0.0.1\n"
-			"Port=4712\n"
-			"Password=\n"
-			"\n"
-			"[Auth]\n"
-			"LoginFailureWindowSeconds=60\n"
-			"LoginFailureThreshold=5\n"
-			"LoginLockoutSeconds=300\n"
-			"\n"
-			"[Logging]\n"
-			"Level=info\n"
-			"File=\n";
 		out.Write(defaults, std::strlen(defaults));
+#endif
 	}
+
+	// Enforce 0600 on every load so a hand-edit (or a `cp` from a
+	// loose-permission source) doesn't silently widen the EC
+	// password's exposure.
+	if (!EnforceOwnerOnly(path)) return false;
 
 	wxFileConfig cfg("", "", path, "",
 		wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH);
@@ -390,36 +481,10 @@ bool CAmuleApiConfig::WritePasswordsFile(const wxString &config_dir,
                                          const std::string &guest_md5)
 {
 	const wxString path = JoinPath(config_dir, "amuleapi-passwords");
-	// Open/create with 0600 from the start. wxFile uses umask, so use
-	// the POSIX path under #ifndef _WIN32 to guarantee the mode bits.
-#ifndef _WIN32
-	const std::string p(path.utf8_str());
-	const int fd = ::open(p.c_str(),
-		O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-	if (fd < 0) {
-		m_lastError = "cannot open " + p + " for writing";
-		return false;
-	}
-	::fchmod(fd, S_IRUSR | S_IWUSR);   // belt+braces against odd umasks
 	std::string body;
 	if (!admin_md5.empty()) body += "admin=" + admin_md5 + "\n";
 	if (!guest_md5.empty()) body += "guest=" + guest_md5 + "\n";
-	if (!body.empty()) {
-		(void)::write(fd, body.data(), body.size());
-	}
-	::close(fd);
-#else
-	wxFile f;
-	if (!f.Create(path, true)) {
-		m_lastError = "cannot create amuleapi-passwords";
-		return false;
-	}
-	std::string body;
-	if (!admin_md5.empty()) body += "admin=" + admin_md5 + "\n";
-	if (!guest_md5.empty()) body += "guest=" + guest_md5 + "\n";
-	if (!body.empty()) f.Write(body.data(), body.size());
-	f.Close();
-#endif
+	if (!WriteFileAtomic0600(path, body)) return false;
 	if (!admin_md5.empty()) m_adminPasswordMd5 = admin_md5;
 	if (!guest_md5.empty()) m_guestPasswordMd5 = guest_md5;
 	return true;
@@ -434,27 +499,5 @@ bool CAmuleApiConfig::WriteJwtSecretFile(const wxString &config_dir,
 		return false;
 	}
 	const wxString path = JoinPath(config_dir, "amuleapi-jwt-secret");
-	const std::string hex_line = HexEncode(secret_32) + "\n";
-
-#ifndef _WIN32
-	const std::string p(path.utf8_str());
-	const int fd = ::open(p.c_str(),
-		O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-	if (fd < 0) {
-		m_lastError = "cannot open amuleapi-jwt-secret for writing";
-		return false;
-	}
-	::fchmod(fd, S_IRUSR | S_IWUSR);
-	(void)::write(fd, hex_line.data(), hex_line.size());
-	::close(fd);
-#else
-	wxFile f;
-	if (!f.Create(path, true)) {
-		m_lastError = "cannot create amuleapi-jwt-secret";
-		return false;
-	}
-	f.Write(hex_line.data(), hex_line.size());
-	f.Close();
-#endif
-	return true;
+	return WriteFileAtomic0600(path, HexEncode(secret_32) + "\n");
 }

@@ -97,7 +97,7 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 				if (name) {
 					out.server_name = std::string(name->GetStringData().utf8_str());
 				}
-				out.server_ip   = std::string(server->GetIPv4Data().StringIP().utf8_str());
+					out.server_ip   = std::string(server->GetIPv4Data().StringIP().utf8_str());
 				out.server_port = server->GetIPv4Data().m_port;
 			}
 		}
@@ -1163,14 +1163,17 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 					static_cast<unsigned>(s.port));
 				s.address = buf;
 			}
-		} else {
-			EC_IPv4_t ipv4 = st->GetIPv4Data();
-			if (is_new || ipv4.IP() != 0) {
-				s.ip      = ipv4.IP();
-				s.port    = ipv4.m_port;
-				s.address = std::string(ipv4.StringIP(false).utf8_str());
-			}
 		}
+		// The FULL-detail fallback that used to read st->GetIPv4Data()
+		// here was removed: amuleapi's refresher only ever asks for
+		// EC_DETAIL_INC_UPDATE (RefresherTick.cpp), so the child-tag
+		// shape above is the only one we observe in production. The
+		// fallback also triggered a libec Debug-build assertion on
+		// non-IPv4 outer tags (RefresherTest fixtures pack the ECID
+		// as a uint32 in the EC_TAG_SERVER slot), aborting the test
+		// process before any assertion in our own code could run.
+		// Resurrect the fallback alongside a public type predicate on
+		// CECTag if a future detail-level shift makes it relevant.
 	}
 	{
 		std::uint32_t v = 0;

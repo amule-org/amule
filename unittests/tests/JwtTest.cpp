@@ -388,3 +388,62 @@ TEST(Jwt, EmptyJtiRejected)
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
+
+
+// --- Base64UrlDecode structural-invariant boundary tests ------------
+//
+// Each test crafts a token whose signing input is malformed in a way
+// Base64UrlDecode is supposed to catch, then signs THAT signing input
+// with the matching HMAC so the constant-time MAC compare passes and
+// Verify() actually reaches Base64UrlDecode. Without the boundary
+// guards, Verify() would accept the malformed token; the asserts pin
+// the rejection in place.
+//
+// Two invariants the impl guards (Jwt.cpp:94-100):
+//   * len % 4 == 1 — impossible for any valid base64url string
+//   * non-zero residue bits — `len % 4 == 2/3` leaves 4/2 trailing
+//     bits that a valid encoder always emits as 0
+
+TEST(Jwt, Base64UrlDecodeRejectsLenMod4EqualsOne)
+{
+	const auto secret = MakeSecret(0xA7);
+	CJwt auth(secret);
+	// header section has length % 4 == 1 (9 chars). Any 9-char string
+	// drawn from the b64url alphabet works; the decoder rejects on
+	// size alone before inspecting the bytes.
+	const std::string h_b64 = "AAAAAAAAA";    // 9 chars
+	const std::string p_b64 = "AAAA";         // 4 chars (mod 4 == 0)
+	const std::string signing_input = h_b64 + "." + p_b64;
+	unsigned char mac[CryptoPP::SHA256::DIGESTSIZE];
+	CryptoPP::HMAC<CryptoPP::SHA256> hmac(secret.data(), secret.size());
+	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()),
+	            signing_input.size());
+	hmac.Final(mac);
+	const std::string sig = Base64UrlEncodeForTest(mac, sizeof(mac));
+	const std::string token = signing_input + "." + sig;
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(auth.Verify(token, r));
+}
+
+
+TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
+{
+	const auto secret = MakeSecret(0xA8);
+	CJwt auth(secret);
+	// 6-char b64url (len % 4 == 2) decodes to 1 byte and leaves 4
+	// trailing bits that a valid encoder always emits as 0. "AAAAAB"
+	// → 000000 000000 000000 000000 000000 000001 → 1 byte 0x00 +
+	// residue 0001. Decoder must reject the non-zero residue.
+	const std::string h_b64 = "AAAAAB";
+	const std::string p_b64 = "AAAA";
+	const std::string signing_input = h_b64 + "." + p_b64;
+	unsigned char mac[CryptoPP::SHA256::DIGESTSIZE];
+	CryptoPP::HMAC<CryptoPP::SHA256> hmac(secret.data(), secret.size());
+	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()),
+	            signing_input.size());
+	hmac.Final(mac);
+	const std::string sig = Base64UrlEncodeForTest(mac, sizeof(mac));
+	const std::string token = signing_input + "." + sig;
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(auth.Verify(token, r));
+}

@@ -38,17 +38,26 @@ constexpr std::size_t CEventBus::kCapacity;
 void CEventBus::Publish(const std::string &name, const std::string &data)
 {
 	Event ev;
-	ev.id   = m_next_id.fetch_add(1, std::memory_order_acq_rel);
 	ev.name = name;
 	ev.data = data;
 	{
 		std::lock_guard<std::mutex> g(m_mu);
+		// ID assignment INSIDE the lock. With fetch_add outside,
+		// two concurrent publishers can swap their lock-order vs
+		// their id-order: thread A gets id=N, thread B gets id=N+1,
+		// then thread B grabs the lock first and pushes id=N+1
+		// before thread A pushes id=N. The drainer then iterates
+		// the deque (which is publish order, NOT id order) and
+		// reports `id=N+1, id=N` — failing the strict-monotonicity
+		// invariant every subscriber depends on.
+		// Single-lock-section publish keeps fetch+push atomic.
+		ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
 		if (m_ring.size() >= kCapacity) m_ring.pop_front();
 		m_ring.push_back(std::move(ev));
 	}
 	// notify_all so every blocked drainer wakes and races to its
-	// own copy-out. The shared-mutex critical section is short
-	// (just walks the deque) so contention is negligible.
+	// own copy-out. The mutex critical section is short (just walks
+	// the deque) so contention is negligible.
 	m_cv.notify_all();
 }
 

@@ -31,6 +31,16 @@
 #include <cstdio>
 #include <cstring>
 
+// strncasecmp on POSIX is declared in <strings.h>. Glibc also exposes
+// it via <string.h>, but musl and the BSDs do not — be explicit so
+// the build doesn't depend on the implicit include. Mirror the shim
+// libwebcommon/HeaderParse.cpp already uses.
+#ifdef _WIN32
+#  define strncasecmp _strnicmp
+#else
+#  include <strings.h>
+#endif
+
 
 namespace webapi {
 
@@ -70,6 +80,14 @@ std::size_t CRevocationSet::Size() const
 
 void CRevocationSet::GcExpired() const
 {
+	// O(n) sweep over the revoked map, fired from every Revoke() and
+	// every Contains() check. Fine at amuleapi's expected scale (a
+	// single operator, a handful of admin/guest sessions per day);
+	// the map stays in the low hundreds even under aggressive
+	// re-login. If multi-tenant deployments ever raise the revoked
+	// population into the thousands, swap this for a min-heap keyed
+	// by `exp` so the GC pops a constant prefix per call instead of
+	// walking the whole structure.
 	const std::time_t now = std::time(nullptr);
 	for (auto it = m_revoked.begin(); it != m_revoked.end();) {
 		if (it->second <= now) {

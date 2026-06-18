@@ -31,8 +31,11 @@ set -u
 # Resolve our location so the orchestrator runs from any cwd.
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-# Default: the amuleapi worktree this script ships with.
-ROOT="${AMULEAPI_ROOT:-/Users/bitandyou/Sync/Utility/PlexBox/amule/amule-fiber/amule-src-amuleapi}"
+# Locate the repo root by climbing out of unittests/curl-tests/amuleapi/.
+# AMULEAPI_ROOT remains an env override for unusual layouts; the default
+# follows the script's own location so anyone who checks the repo out
+# elsewhere works without editing this file.
+ROOT="${AMULEAPI_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 BIN="${AMULEAPI_BIN:-$ROOT/build-macos/src/webapi/amuleapi}"
 
 if [ ! -x "$BIN" ]; then

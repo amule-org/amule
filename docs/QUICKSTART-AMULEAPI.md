@@ -106,8 +106,10 @@ Leave `CorsOriginAllowlist` empty to echo any caller's `Origin` header
 
 - `/api/v0/auth/login` / `logout` / `session` — JWT and session-cookie auth
 - `/api/v0/version`, `/status`, `/preferences`
-- `/api/v0/downloads`, `/uploads`, `/shared`, `/servers`, `/kad`,
-  `/clients`, `/categories`, `/logs/{amule,serverinfo}`,
+- `/api/v0/downloads`, `/shared`, `/servers`, `/kad`,
+  `/clients` (the per-peer view, with optional
+  `?filter=uploads|downloads|active` for the legacy "Uploads" page
+  subset), `/categories`, `/logs/{amule,serverinfo}`,
   `/stats/{tree,graphs/{graph}}`, `/search`, `/search/results`
 - POST / PATCH / DELETE mutations on each resource (admin role)
 - ETag-on-GET conditional caching (304 Not Modified on `If-None-Match`)
