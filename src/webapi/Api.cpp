@@ -42,6 +42,7 @@
 #include <ec/cpp/ECSpecialTags.h>
 
 #include <algorithm>
+#include <set>
 #include <cctype>
 
 #define PICOJSON_USE_INT64
@@ -462,6 +463,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleSharedList(req);
 	}
 
+	if (path == "/api/v0/shared/reload") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed",
+				"only POST on /shared/reload");
+		}
+		return HandleSharedReload(req);
+	}
+
 	if (path == "/api/v0/servers") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleServers(req);
@@ -474,7 +483,20 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			"only GET / HEAD / POST on /servers");
 	}
 
+	if (path == "/api/v0/servers/update") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed",
+				"only POST on /servers/update");
+		}
+		return HandleServerUpdateFromUrl(req);
+	}
+
 	// Phase 5c — server connect & remove (single server by ECID).
+	// Address-keyed aliases live in the same block — same handlers,
+	// different lookup path. ECID forms are tried first because they
+	// match a single-segment pattern that's cheaper to dispatch; the
+	// address forms have a colon in the capture which the path pattern
+	// captures as a single segment too.
 	{
 		static const auto server_connect =
 			web_api_path::ParsePattern("/api/v0/servers/{ecid}/connect");
@@ -487,12 +509,22 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 				return ErrorResponse(405, "method_not_allowed",
 					"only POST on /servers/{ecid}/connect");
 			}
+			// `{ecid}` capture also matches "<ip>:<port>" because the
+			// path-pattern matcher is opaque-segment. Disambiguate
+			// here: if the capture contains a colon, treat it as an
+			// address-keyed alias.
+			if (caps["ecid"].find(':') != std::string::npos) {
+				return HandleServerConnectByAddress(req, caps["ecid"]);
+			}
 			return HandleServerConnect(req, caps["ecid"]);
 		}
 		if (web_api_path::Match(server_one, path_segs, caps)) {
 			if (req.method != "DELETE") {
 				return ErrorResponse(405, "method_not_allowed",
 					"only DELETE on /servers/{ecid}");
+			}
+			if (caps["ecid"].find(':') != std::string::npos) {
+				return HandleServerDeleteByAddress(req, caps["ecid"]);
 			}
 			return HandleServerDelete(req, caps["ecid"]);
 		}
@@ -599,19 +631,25 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	}
 
 	if (path == "/api/v0/logs/amule") {
-		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed",
-				"only GET on /logs/amule");
+		if (req.method == "GET" || req.method == "HEAD") {
+			return HandleLogAmule(req);
 		}
-		return HandleLogAmule(req);
+		if (req.method == "DELETE") {
+			return HandleLogAmuleReset(req);
+		}
+		return ErrorResponse(405, "method_not_allowed",
+			"only GET / HEAD / DELETE on /logs/amule");
 	}
 
 	if (path == "/api/v0/logs/serverinfo") {
-		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed",
-				"only GET on /logs/serverinfo");
+		if (req.method == "GET" || req.method == "HEAD") {
+			return HandleLogServerinfo(req);
 		}
-		return HandleLogServerinfo(req);
+		if (req.method == "DELETE") {
+			return HandleLogServerinfoReset(req);
+		}
+		return ErrorResponse(405, "method_not_allowed",
+			"only GET / HEAD / DELETE on /logs/serverinfo");
 	}
 
 	if (path == "/api/v0/stats/tree") {
@@ -916,6 +954,21 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	  w.BeginObject();
 	    w.Key("state");      w.ValueString(wxString::FromUTF8(s.kad_state.c_str()));
 	    w.Key("firewalled"); w.ValueBool(s.kad_firewalled);
+	    // Network rollup — same numbers GET /kad serves under
+	    // `network.{users,files,nodes}`. Surfaced here so /status
+	    // is a one-call dashboard view (matches the RFC contract
+	    // §4.1 `kad.network: {users, files}`; we ship `nodes` too
+	    // because it costs nothing extra and the desktop GUI shows
+	    // it in the same place).
+	    {
+	      const webapi::KadSnapshot k = m_state.Kad();
+	      w.Key("network");
+	      w.BeginObject();
+	        w.Key("users"); w.ValueInt(static_cast<int64_t>(k.users));
+	        w.Key("files"); w.ValueInt(static_cast<int64_t>(k.files));
+	        w.Key("nodes"); w.ValueInt(static_cast<int64_t>(k.nodes));
+	      w.EndObject();
+	    }
 	  w.EndObject();
 
 	  w.Key("speeds");
@@ -1300,8 +1353,48 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
-	return ListResponse(m_state, "clients", m_state.Clients(),
-		WriteClientObject);
+
+	// Optional `?filter=uploads | downloads | active` query parameter.
+	// `uploads`   → peers actively transferring TO us (upload_state ==
+	//               "uploading"). Subset that maps to the legacy
+	//               amuleweb "Uploads" page.
+	// `downloads` → peers we're actively pulling FROM (download_state
+	//               == "downloading").
+	// `active`    → union of the two; everything currently moving
+	//               bytes either direction.
+	// No filter → every peer the daemon knows about (default, v0.1
+	// shape).
+	std::string filter;
+	{
+		std::string query;
+		const std::size_t q = req.target.find('?');
+		if (q != std::string::npos) query = req.target.substr(q + 1);
+		const auto qmap = web_api_path::ParseQuery(query);
+		const auto it = qmap.find("filter");
+		if (it != qmap.end()) filter = it->second;
+	}
+	if (!filter.empty() && filter != "uploads" && filter != "downloads"
+	    && filter != "active") {
+		return ErrorResponse(400, "bad_request",
+			"`filter` must be one of \"uploads\", \"downloads\", \"active\"");
+	}
+
+	auto clients = m_state.Clients();
+	if (!filter.empty()) {
+		auto matches = [&](const webapi::ClientSnapshot &c) {
+			const bool up   = (c.upload_state   == "uploading");
+			const bool down = (c.download_state == "downloading");
+			if (filter == "uploads")   return up;
+			if (filter == "downloads") return down;
+			/* active */               return up || down;
+		};
+		clients.erase(
+			std::remove_if(clients.begin(), clients.end(),
+				[&](const webapi::ClientSnapshot &c) { return !matches(c); }),
+			clients.end());
+	}
+
+	return ListResponse(m_state, "clients", clients, WriteClientObject);
 }
 
 
@@ -1370,7 +1463,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
 
-	// Body: {"ed2k_link": "ed2k://|file|...|/", "category": 0}
+	// Body shape (two forms — both accepted, exactly one required):
+	//   {"ed2k_link": "ed2k://|file|...|/", "category": 0}    — singular
+	//   {"links": ["ed2k://|file|...|/", ...], "category": 0} — array
+	// `links` is the RFC §4.2 shape (PR #132); `ed2k_link` ships for
+	// backwards compatibility with the v0.1.0 wire. Mixing both is a
+	// 400.
 	picojson::value root;
 	std::string parse_err;
 	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
@@ -1378,17 +1476,49 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	}
 	const auto &obj = root.get<picojson::object>();
 
-	std::string link;
+	std::vector<std::string> links;
 	{
-		const auto it = obj.find("ed2k_link");
-		if (it == obj.end() || !it->second.is<std::string>()) {
+		const auto it_single = obj.find("ed2k_link");
+		const auto it_array  = obj.find("links");
+		if (it_single != obj.end() && it_array != obj.end()) {
 			return ErrorResponse(400, "bad_request",
-				"required string field `ed2k_link` is missing");
+				"send either `ed2k_link` (single) or `links` (array), "
+				"not both");
 		}
-		link = it->second.get<std::string>();
-		if (link.size() < 7 || link.compare(0, 7, "ed2k://") != 0) {
+		if (it_single != obj.end()) {
+			if (!it_single->second.is<std::string>()) {
+				return ErrorResponse(400, "bad_request",
+					"`ed2k_link` must be a string");
+			}
+			links.push_back(it_single->second.get<std::string>());
+		} else if (it_array != obj.end()) {
+			if (!it_array->second.is<picojson::array>()) {
+				return ErrorResponse(400, "bad_request",
+					"`links` must be an array of ed2k:// strings");
+			}
+			const auto &arr = it_array->second.get<picojson::array>();
+			if (arr.empty()) {
+				return ErrorResponse(400, "bad_request",
+					"`links` must contain at least one entry");
+			}
+			links.reserve(arr.size());
+			for (const auto &v : arr) {
+				if (!v.is<std::string>()) {
+					return ErrorResponse(400, "bad_request",
+						"every entry in `links` must be a string");
+				}
+				links.push_back(v.get<std::string>());
+			}
+		} else {
 			return ErrorResponse(400, "bad_request",
-				"ed2k_link must start with ed2k://");
+				"required field missing: send `ed2k_link` (string) or "
+				"`links` (array of strings)");
+		}
+		for (const auto &link : links) {
+			if (link.size() < 7 || link.compare(0, 7, "ed2k://") != 0) {
+				return ErrorResponse(400, "bad_request",
+					"every link must start with ed2k://");
+			}
 		}
 	}
 	std::uint8_t category = 0;
@@ -1408,26 +1538,32 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 		}
 	}
 
-	// Build the EC_OP_ADD_LINK packet. Shape mirrors amulegui's
-	// CDownQueueRem::AddLink (amule-remote-gui.cpp:1970-1982):
-	// outer packet, child EC_TAG_STRING with the link, nested
-	// EC_TAG_PARTFILE_CAT for the target category.
-	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_ADD_LINK));
-	CECTag link_tag(EC_TAG_STRING, wxString::FromUTF8(link.c_str()));
-	link_tag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, category));
-	ec_req->AddTag(link_tag);
-
-	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
-	if (!ec_resp) {
-		return ErrorResponse(503, "ec_unavailable",
-			"EC roundtrip failed for ADD_LINK");
-	}
-	std::string ec_err_msg;
-	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+	// Build one EC_OP_ADD_LINK packet per link. amuled's add-link op
+	// is single-link-only on the wire; we batch at the HTTP layer so
+	// clients only pay one round-trip. If any individual link fails
+	// the call stops and reports which one — the caller is expected
+	// to retry with the failures dropped. Partial success is
+	// surfaced via `accepted` / `failed` counts in the response.
+	std::vector<std::string> failed_links;
+	std::string first_error;
+	for (const auto &link : links) {
+		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_ADD_LINK));
+		CECTag link_tag(EC_TAG_STRING, wxString::FromUTF8(link.c_str()));
+		link_tag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, category));
+		ec_req->AddTag(link_tag);
+		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+		if (!ec_resp) {
+			return ErrorResponse(503, "ec_unavailable",
+				"EC roundtrip failed for ADD_LINK");
+		}
+		std::string ec_err_msg;
+		const bool failed = IsEcFailedResponse(ec_resp, ec_err_msg);
 		delete ec_resp;
-		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		if (failed) {
+			failed_links.push_back(link);
+			if (first_error.empty()) first_error = ec_err_msg;
+		}
 	}
-	delete ec_resp;
 
 	// Inline-refresh the cache so the response sees post-mutation
 	// state. amuled's ADD_LINK is asynchronous (the partfile gets
@@ -1435,21 +1571,32 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	// new entry may not surface until the *next* tick — we'd still
 	// return 202 Accepted with an empty resource. For now: refresh,
 	// then return {ok: true} and leave the GET /downloads to surface
-	// the new entry. Phase 5+ could parse the link's hash and poll
-	// FindDownload, but the wire contract here matches amulegui's
-	// pattern (fire-and-rely-on-next-poll).
+	// the new entry.
 	(void) RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	r.status       = 202;
+	r.status       = failed_links.empty() ? 202 : 207;
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	  w.Key("ok");      w.ValueBool(true);
+	  w.Key("ok");       w.ValueBool(failed_links.empty());
+	  w.Key("accepted"); w.ValueInt(static_cast<int64_t>(
+	      links.size() - failed_links.size()));
+	  w.Key("failed");   w.ValueInt(static_cast<int64_t>(failed_links.size()));
+	  if (!failed_links.empty()) {
+	      w.Key("failed_links");
+	      w.BeginArray();
+	      for (const auto &l : failed_links) {
+	          w.ValueString(wxString::FromUTF8(l.c_str()));
+	      }
+	      w.EndArray();
+	      w.Key("first_error");
+	      w.ValueString(wxString::FromUTF8(first_error.c_str()));
+	  }
 	  w.Key("message");
 	  w.ValueString(wxString::FromUTF8(
-		"link accepted; new download will appear after amuled has "
-		"allocated and hashed the partfile (typically within one "
+		"link(s) accepted; new downloads will appear after amuled has "
+		"allocated and hashed the partfiles (typically within one "
 		"refresher tick)"));
 	w.EndObject();
 	FinalizeJsonBody(w, r);
@@ -2050,6 +2197,160 @@ CHttpServer::Response CApiDispatcher::HandleServerDelete(
 }
 
 
+CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(
+	const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+		kSessionCookieName);
+	if (!a.ok) return a.rejection;
+	if (auto rej = RequireAdmin(a)) return *rej;
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto it = obj.find("servers_url");
+	if (it == obj.end() || !it->second.is<std::string>()) {
+		return ErrorResponse(400, "bad_request",
+			"required string field `servers_url` is missing");
+	}
+	const std::string &url = it->second.get<std::string>();
+	if (url.empty()) {
+		return ErrorResponse(400, "bad_request",
+			"`servers_url` must not be empty");
+	}
+	// Light hygiene check — amuled will fetch this and bail if it's
+	// nonsense, but rejecting obviously bad inputs at the API layer
+	// gives a clearer error than the EC "amuled rejected" wrapper.
+	if (url.compare(0, 7, "http://") != 0
+	    && url.compare(0, 8, "https://") != 0) {
+		return ErrorResponse(400, "bad_request",
+			"`servers_url` must be an http:// or https:// URL");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(
+		new CECPacket(EC_OP_SERVER_UPDATE_FROM_URL));
+	ec_req->AddTag(CECTag(EC_TAG_SERVERS_UPDATE_URL,
+		wxString::FromUTF8(url.c_str())));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable",
+			"EC roundtrip failed");
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+	}
+	delete ec_resp;
+
+	// amuled streams the new server list into its CServerList
+	// asynchronously over the next few ticks (download + parse + merge
+	// in CServerList::UpdateServerMetFromURL). Run the inline
+	// RefresherTick to grab whatever's already there, but the
+	// `server_added` SSE events will continue to fire on subsequent
+	// natural ticks as more entries land.
+	(void) RefresherTick(m_app, m_state);
+
+	CHttpServer::Response r;
+	r.status       = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	  w.Key("ok");          w.ValueBool(true);
+	  w.Key("servers_url"); w.ValueString(wxString::FromUTF8(url.c_str()));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+
+// Resolve "<ip>:<port>" from the URL into an ECID by walking the
+// servers cache. Returns 0 on miss; the caller 404s.
+static std::uint32_t ResolveServerEcidByAddress(
+	const webapi::CState &state, const std::string &ip_port)
+{
+	const auto colon = ip_port.rfind(':');
+	if (colon == std::string::npos) return 0;
+	const std::string ip_str = ip_port.substr(0, colon);
+	const std::string port_str = ip_port.substr(colon + 1);
+	if (ip_str.empty() || port_str.empty()) return 0;
+	char *end = nullptr;
+	const unsigned long port = std::strtoul(port_str.c_str(), &end, 10);
+	if (end == port_str.c_str() || *end != '\0'
+	    || port == 0 || port > 0xFFFF) {
+		return 0;
+	}
+	// Parse the IP — accept dotted-quad form OR a uint32 host-order
+	// number that matches ServerSnapshot::ip. We compute both so we
+	// can match either against what the cache holds.
+	std::uint32_t ip_he = 0;
+	{
+		unsigned a_, b_, c_, d_;
+		if (std::sscanf(ip_str.c_str(), "%u.%u.%u.%u",
+		                &a_, &b_, &c_, &d_) == 4
+		    && a_ <= 255 && b_ <= 255 && c_ <= 255 && d_ <= 255) {
+			ip_he = (a_) | (b_ << 8) | (c_ << 16) | (d_ << 24);
+		}
+	}
+	for (const auto &s : state.Servers()) {
+		if (s.port == static_cast<std::uint16_t>(port)
+		    && (s.ip == ip_he || s.address == ip_port)) {
+			return s.ecid;
+		}
+	}
+	return 0;
+}
+
+
+CHttpServer::Response CApiDispatcher::HandleServerConnectByAddress(
+	const CHttpServer::Request &req, const std::string &ip_port)
+{
+	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+		kSessionCookieName);
+	if (!a.ok) return a.rejection;
+	if (auto rej = RequireAdmin(a)) return *rej;
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(503, "ec_unavailable",
+			"amuleapi has not received its first EC snapshot yet");
+	}
+	const std::uint32_t ecid =
+		ResolveServerEcidByAddress(m_state, ip_port);
+	if (ecid == 0) {
+		return ErrorResponse(404, "not_found",
+			"no server matches that ip:port");
+	}
+	// Delegate to the ECID-keyed handler; passing the resolved ECID as
+	// a decimal string keeps the contract uniform.
+	std::ostringstream os; os << ecid;
+	return HandleServerConnect(req, os.str());
+}
+
+
+CHttpServer::Response CApiDispatcher::HandleServerDeleteByAddress(
+	const CHttpServer::Request &req, const std::string &ip_port)
+{
+	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+		kSessionCookieName);
+	if (!a.ok) return a.rejection;
+	if (auto rej = RequireAdmin(a)) return *rej;
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(503, "ec_unavailable",
+			"amuleapi has not received its first EC snapshot yet");
+	}
+	const std::uint32_t ecid =
+		ResolveServerEcidByAddress(m_state, ip_port);
+	if (ecid == 0) {
+		return ErrorResponse(404, "not_found",
+			"no server matches that ip:port");
+	}
+	std::ostringstream os; os << ecid;
+	return HandleServerDelete(req, os.str());
+}
+
+
 CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Request &req)
 {
 	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
@@ -2469,6 +2770,42 @@ CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request 
 }
 
 
+CHttpServer::Response CApiDispatcher::HandleLogAmuleReset(
+	const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+		kSessionCookieName);
+	if (!a.ok) return a.rejection;
+	if (auto rej = RequireAdmin(a)) return *rej;
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_RESET_LOG));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable",
+			"EC roundtrip failed");
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+	}
+	delete ec_resp;
+
+	// Drop the in-process mirror. The refresher's append-only path
+	// (AppendAmuleLog) can't shrink the cache, and EmitDiffsAndUpdate
+	// already treats a size decrease as a silent truncation
+	// (EventDiff.cpp's `amule_log.size() < prev.amule_log_count`
+	// branch), so no spurious log_appended event fires on the next
+	// tick.
+	m_state.ClearAmuleLog();
+
+	CHttpServer::Response r;
+	r.status       = 204;
+	r.content_type.clear();
+	return r;
+}
+
+
 CHttpServer::Response CApiDispatcher::HandleLogServerinfo(const CHttpServer::Request &req)
 {
 	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
@@ -2525,6 +2862,39 @@ CHttpServer::Response CApiDispatcher::HandleLogServerinfo(const CHttpServer::Req
 	  w.Key("returned_bytes"); w.ValueInt(static_cast<int64_t>(text.size()));
 	w.EndObject();
 	FinalizeJsonBody(w, r);
+	return r;
+}
+
+
+CHttpServer::Response CApiDispatcher::HandleLogServerinfoReset(
+	const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+		kSessionCookieName);
+	if (!a.ok) return a.rejection;
+	if (auto rej = RequireAdmin(a)) return *rej;
+
+	std::unique_ptr<CECPacket> ec_req(
+		new CECPacket(EC_OP_CLEAR_SERVERINFO));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable",
+			"EC roundtrip failed");
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+	}
+	delete ec_resp;
+
+	// Lazy cache for /logs/serverinfo would otherwise return stale
+	// text until its 1 s TTL expires; force the next GET to re-fetch.
+	m_server_info_cache.Invalidate();
+
+	CHttpServer::Response r;
+	r.status       = 204;
+	r.content_type.clear();
 	return r;
 }
 
@@ -2915,6 +3285,43 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
+
+	// Optional `{"network": "ed2k" | "kad" | "both"}` selector. Default
+	// "both" (preserves the original parameterless contract). Empty
+	// body is fine — that's the most common shape and matches the v0
+	// contract callers built against.
+	std::string network = "both";
+	if (!req.body.empty()) {
+		picojson::value root;
+		std::string parse_err;
+		if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+			return ErrorResponse(400, "bad_request", parse_err.c_str());
+		}
+		const auto &obj = root.get<picojson::object>();
+		const auto it = obj.find("network");
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>()) {
+				return ErrorResponse(400, "bad_request",
+					"`network` must be one of \"ed2k\", \"kad\", \"both\"");
+			}
+			network = it->second.get<std::string>();
+			if (network != "ed2k" && network != "kad" && network != "both") {
+				return ErrorResponse(400, "bad_request",
+					"`network` must be one of \"ed2k\", \"kad\", \"both\"");
+			}
+		}
+	}
+
+	if (network == "ed2k") {
+		return SimpleConnControlOp(m_app, m_state,
+			EC_OP_SERVER_DISCONNECT, 200);
+	}
+	if (network == "kad") {
+		return SimpleConnControlOp(m_app, m_state,
+			EC_OP_KAD_STOP, 200);
+	}
+	// "both": amuled's EC_OP_DISCONNECT short-circuits to both
+	// SERVER_DISCONNECT and KAD_STOP in one EC roundtrip.
 	return SimpleConnControlOp(m_app, m_state, EC_OP_DISCONNECT, 200);
 }
 
@@ -3156,6 +3563,24 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	WriteSharedObject(w, s_after);
 	FinalizeJsonBody(w, r);
 	return r;
+}
+
+
+CHttpServer::Response CApiDispatcher::HandleSharedReload(
+	const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequest(req, m_jwt, m_revocations,
+		kSessionCookieName);
+	if (!a.ok) return a.rejection;
+	if (auto rej = RequireAdmin(a)) return *rej;
+	// EC_OP_SHAREDFILES_RELOAD: amuled re-walks every configured share
+	// root and re-publishes the contents. Synchronous on amuled's side
+	// but bounded by I/O over the share tree — typical small libraries
+	// complete in well under a second. Inline RefresherTick re-pulls
+	// the shared-files cache so SSE subscribers see `shared_added` /
+	// `_removed` events for the delta before the response lands.
+	return SimpleConnControlOp(m_app, m_state,
+		EC_OP_SHAREDFILES_RELOAD, 202);
 }
 
 
@@ -3899,6 +4324,59 @@ void CApiDispatcher::DispatchEvents(
 	// at least one chunk lands.
 	if (!writer.Write(": connected\n\n")) return;
 
+	// Optional `?channels=<csv>` query: limit the event types
+	// delivered to a comma-separated subset. The mapping from
+	// EventBus event name → channel is prefix-based:
+	//   download_*  → "downloads"
+	//   shared_*    → "shared"
+	//   server_*    → "servers"
+	//   client_*    → "clients"
+	//   status_*    → "status"
+	//   log_*       → "logs"
+	// The synthetic per-subscriber `resync` event is ALWAYS
+	// delivered regardless of filter — its purpose is to signal a
+	// cache invalidation the client cannot opt out of.
+	// Unknown channel names in the query are silently ignored (allow
+	// forward-compatibility with future event families).
+	std::set<std::string> channel_filter;
+	bool channels_set = false;
+	{
+		std::string query;
+		const std::size_t q = req.target.find('?');
+		if (q != std::string::npos) query = req.target.substr(q + 1);
+		const auto qmap = web_api_path::ParseQuery(query);
+		const auto it = qmap.find("channels");
+		if (it != qmap.end() && !it->second.empty()) {
+			channels_set = true;
+			std::string cur;
+			for (char c : it->second) {
+				if (c == ',') {
+					if (!cur.empty()) channel_filter.insert(cur);
+					cur.clear();
+				} else {
+					cur.push_back(c);
+				}
+			}
+			if (!cur.empty()) channel_filter.insert(cur);
+		}
+	}
+	auto event_channel = [](const std::string &name) -> std::string {
+		const auto us = name.find('_');
+		if (us == std::string::npos) return name;
+		const std::string prefix = name.substr(0, us);
+		if (prefix == "download") return "downloads";
+		if (prefix == "shared")   return "shared";
+		if (prefix == "server")   return "servers";
+		if (prefix == "client")   return "clients";
+		if (prefix == "status")   return "status";
+		if (prefix == "log")      return "logs";
+		return prefix;
+	};
+	auto event_passes_filter = [&](const std::string &name) {
+		if (!channels_set) return true;
+		return channel_filter.count(event_channel(name)) > 0;
+	};
+
 	// Drain events from the EventBus. The drain blocks up to the
 	// heartbeat interval (15 s) waiting for new events; if nothing
 	// arrives in that window, fall through to a `: keepalive`
@@ -3961,22 +4439,33 @@ void CApiDispatcher::DispatchEvents(
 		const std::uint64_t new_high = m_app.EventBus().Drain(
 			since_id, std::chrono::seconds(15), drained);
 		if (!writer.Alive()) break;
-		if (drained.empty()) {
-			if (!writer.Write(": keepalive\n\n")) break;
-		} else {
+		// Apply ?channels= filter before emission. We still advance
+		// since_id over EVERY drained event (filtered or not) so the
+		// client doesn't re-see them on reconnect; reconnect replay is
+		// id-based, not channel-based.
+		std::ostringstream frame;
+		bool wrote_any = false;
+		for (const auto &ev : drained) {
+			if (!event_passes_filter(ev.name)) continue;
 			// Emit one SSE frame per event:
 			//   event: <name>\nid: <id>\ndata: <data>\n\n
 			// Per RFC 6202 §4: `data:` lines are single-line. Our
 			// JSON payloads never contain literal newlines (the
 			// EventDiff serializer escapes them), so one `data:`
 			// line per event is sufficient.
-			std::ostringstream frame;
-			for (const auto &ev : drained) {
-				frame << "event: " << ev.name << "\n"
-				      << "id: "    << ev.id   << "\n"
-				      << "data: "  << ev.data << "\n\n";
-			}
+			frame << "event: " << ev.name << "\n"
+			      << "id: "    << ev.id   << "\n"
+			      << "data: "  << ev.data << "\n\n";
+			wrote_any = true;
+		}
+		if (wrote_any) {
 			if (!writer.Write(frame.str())) break;
+			since_id = new_high;
+		} else if (drained.empty()) {
+			if (!writer.Write(": keepalive\n\n")) break;
+		} else {
+			// Every drained event got filtered out — advance the
+			// cursor silently so the next Drain doesn't re-read them.
 			since_id = new_high;
 		}
 	}

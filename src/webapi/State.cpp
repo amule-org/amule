@@ -151,6 +151,13 @@ void CState::AppendAmuleLog(std::vector<std::string> new_lines)
 }
 
 
+void CState::ClearAmuleLog()
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	m_amule_log_lines.clear();
+}
+
+
 void CState::WriteServerInfo(ServerInfoLog s)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);

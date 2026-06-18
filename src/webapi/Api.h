@@ -112,6 +112,18 @@ private:
 	                                            const std::string &ecid_str);
 	CHttpServer::Response HandleServerDelete   (const CHttpServer::Request &,
 	                                            const std::string &ecid_str);
+	// Refresh the server list from a `server.met` URL — operator-
+	// curated server-list update, same EC op the desktop GUI's "Update
+	// from URL" button uses.
+	CHttpServer::Response HandleServerUpdateFromUrl(const CHttpServer::Request &);
+	// Address-keyed aliases that resolve {ip}:{port} to the ECID and
+	// delegate to HandleServerConnect / HandleServerDelete. Lets
+	// clients work without first having to GET /servers to learn the
+	// ECID for a known address.
+	CHttpServer::Response HandleServerConnectByAddress(
+		const CHttpServer::Request &, const std::string &ip_port);
+	CHttpServer::Response HandleServerDeleteByAddress(
+		const CHttpServer::Request &, const std::string &ip_port);
 	// Phase 5d — preferences PATCH.
 	CHttpServer::Response HandlePreferencesPatch(const CHttpServer::Request &);
 	// Phase 5e — connection control.
@@ -123,6 +135,10 @@ private:
 	// Phase 5f — shared file priority PATCH.
 	CHttpServer::Response HandleSharedPatch     (const CHttpServer::Request &,
 	                                             const std::string &hash);
+	// Rescan shared directories — amuled re-walks the configured share
+	// roots and re-publishes whatever's there. Parameterless EC op
+	// (EC_OP_SHAREDFILES_RELOAD).
+	CHttpServer::Response HandleSharedReload    (const CHttpServer::Request &);
 	// Phase 5g — categories CRUD.
 	CHttpServer::Response HandleCategoryCreate  (const CHttpServer::Request &);
 	CHttpServer::Response HandleCategoryUpdate  (const CHttpServer::Request &,
@@ -142,6 +158,15 @@ private:
 	CHttpServer::Response HandlePreferences    (const CHttpServer::Request &);
 	CHttpServer::Response HandleLogAmule       (const CHttpServer::Request &);
 	CHttpServer::Response HandleLogServerinfo  (const CHttpServer::Request &);
+	// Log reset mutations. Both clear the corresponding buffer on
+	// amuled's side via the EC_OP_RESET_LOG / EC_OP_CLEAR_SERVERINFO
+	// opcodes and invalidate / clear amuleapi's local mirror so the
+	// next GET reflects the post-reset state immediately (the
+	// refresher's incremental append-only path can't shrink the
+	// amule-log cache, and the server-info lazy cache would otherwise
+	// keep serving stale text until its TTL elapses).
+	CHttpServer::Response HandleLogAmuleReset      (const CHttpServer::Request &);
+	CHttpServer::Response HandleLogServerinfoReset (const CHttpServer::Request &);
 	CHttpServer::Response HandleStatsTree      (const CHttpServer::Request &);
 	CHttpServer::Response HandleStatsGraph     (const CHttpServer::Request &,
 	                                            const std::string &graph);

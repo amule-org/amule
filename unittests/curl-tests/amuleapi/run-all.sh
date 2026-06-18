@@ -79,7 +79,7 @@ PHASES=(
 	phase5a.sh phase5b.sh phase5c.sh phase5d.sh phase5e.sh
 	phase5f.sh phase5g.sh phase6.sh phase7.sh
 	phase8a.sh phase8b.sh phase8c.sh phase8d.sh
-	phase9.sh
+	phase9.sh phase11.sh
 )
 
 # Override list from the command line if given.

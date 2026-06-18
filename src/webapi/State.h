@@ -516,6 +516,13 @@ public:
 	// entries when capacity is exceeded. Called once per refresher
 	// tick with the lines drained from EC_TAG_STATS_LOGGER_MESSAGE.
 	void             AppendAmuleLog(std::vector<std::string> new_lines);
+	// Drop every cached amule-log line. Called by DELETE /logs/amule
+	// after the EC_OP_RESET_LOG roundtrip — the refresher only appends
+	// (it has no equivalent of "shrink to amuled's current count"), so
+	// the in-process cache MUST be cleared explicitly or the next GET
+	// will keep returning the pre-reset lines. The next refresher tick
+	// resumes appending from amuled's now-empty buffer.
+	void             ClearAmuleLog();
 	void             WriteServerInfo(ServerInfoLog s);
 	void             WriteStatsTree(StatsTreeNode t);
 	void             WriteGraphs(StatsGraphs g);
