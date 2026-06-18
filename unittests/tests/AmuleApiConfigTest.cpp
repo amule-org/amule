@@ -28,6 +28,7 @@
 
 #include <wx/file.h>
 #include <wx/filename.h>
+#include <wx/stdpaths.h>
 #include <wx/utils.h>
 
 #include <cstdlib>
@@ -45,14 +46,19 @@ using namespace muleunit;
 
 
 DECLARE(AmuleApiConfig)
-	// Fresh per-test config dir under /tmp. Tearing down inside the
-	// test bodies avoids muleunit's lack of a TearDown hook in the
-	// DECLARE_SIMPLE style — each test owns its own dir.
+	// Fresh per-test config dir under the system temp tree. Tearing
+	// down inside the test bodies avoids muleunit's lack of a
+	// TearDown hook in the DECLARE_SIMPLE style — each test owns its
+	// own dir. wxStandardPaths::GetTempDir() returns `/tmp` on
+	// POSIX and `%TEMP%` on Windows (typically `C:\\Users\\<user>\\
+	// AppData\\Local\\Temp`), so the test is portable across the CI
+	// matrix.
 	wxString MakeTmpDir(const char *tag)
 	{
 		wxString d;
-		d.Printf("/tmp/amuleapi-cfg-test-%s-%ld",
-			tag, static_cast<long>(::getpid()));
+		d.Printf("%s/amuleapi-cfg-test-%s-%ld",
+			wxStandardPaths::Get().GetTempDir(),
+			tag, static_cast<long>(::wxGetProcessId()));
 		// Best-effort cleanup of any stragglers from a prior crashed run.
 		wxString secret = d + "/amuleapi-jwt-secret";
 		wxString pwfile = d + "/amuleapi-passwords";
