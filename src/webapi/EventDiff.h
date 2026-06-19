@@ -46,10 +46,16 @@ struct LastSeenState {
 	std::map<std::uint32_t, SharedSnapshot>   shared;
 	std::map<std::uint32_t, ServerSnapshot>   servers;
 	std::map<std::uint32_t, ClientSnapshot>   clients;
+	// Status event payload mirrors the REST /status envelope, which
+	// pulls from THREE sources (StatusSnapshot + KadSnapshot +
+	// ec_connected flag). All three must be diffed against the prior
+	// tick to decide whether to fire `status_changed`.
 	StatusSnapshot                            status;
+	KadSnapshot                               kad;
+	bool                                      ec_connected = false;
 	bool                                      status_initialised = false;
 
-	// Phase 8d: log-tail tracking for the `log_appended` event.
+	// log-tail tracking for the `log_appended` event.
 	// `amule_log_count` is the size of `state.AmuleLog()` at the
 	// previous tick. When the vector grows, the new tail is
 	// `log[amule_log_count .. new_size)` and we publish it.
@@ -63,23 +69,21 @@ struct LastSeenState {
 
 // Walk every (old vs current) substruct, publish typed events for
 // each delta, then overwrite `prev` with the current snapshot so the
-// next tick's diff is against the freshest baseline.
+// next tick diffs against the freshest baseline.
 //
-// Wire event names emitted (Phase 8b):
-//   download_added / download_updated / download_removed
-//   shared_added   / shared_updated   / shared_removed
-//   server_added   / server_updated   / server_removed
-//   client_added   / client_updated   / client_removed
-//   status_changed
+// Wire event names: download_{added,updated,removed},
+// shared_{added,updated,removed}, server_{added,updated,removed},
+// client_{added,updated,removed}, status_changed.
 //
-// `_added` payload: the full snapshot object (so clients can
-// materialise a cache entry from one event).
-// `_updated` payload: the full snapshot object too — Phase 8b doesn't
-// compute per-field deltas; clients overwrite their cache slot from
-// the new object.
+// `_added` / `_updated` payload: the full snapshot object (matches
+// the REST list-item shape byte-for-byte; clients overwrite their
+// cache slot from the new object).
 // `_removed` payload: `{"ecid": N}` for ECID-keyed types,
 // `{"hash": "..."}` for hash-keyed (downloads + shared).
-// `status_changed` payload: the full StatusSnapshot JSON.
+// `status_changed` payload: the nested REST /status envelope
+// (ed2k.*, kad.* with kad.network rollup, speeds.*, queue.*, plus
+// top-level ec_connected). Pulled from state.Dashboard() so all
+// three pieces stay consistent within a tick.
 void EmitDiffsAndUpdate(CEventBus &bus,
                         LastSeenState &prev,
                         const CState &state);

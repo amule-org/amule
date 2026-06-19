@@ -28,6 +28,9 @@ set -o pipefail
 
 HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
+BIN=${AMULEAPI_BIN:?orchestrator must export AMULEAPI_BIN}
+CONFIG_DIR=${AMULEAPI_CONFIG_DIR:?orchestrator must export AMULEAPI_CONFIG_DIR}
+LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
 
 FAIL_COUNT=0
 TEST_COUNT=0
@@ -52,20 +55,58 @@ fi
 
 echo "amuleapi phase 8d smoke @ $HOST"
 
+# Bounce the daemon with a tiny [Streaming]/EventBusRingCapacity so
+# the gap case (Last-Event-ID < OldestId) is reachable in a smoke
+# window. The production default is 16384, well past anything the
+# refresher emits in a 20 s wait against an idle daemon. Other
+# defaults are preserved from the orchestrator's first-run write.
+pkill -f "amuleapi --config-dir=$CONFIG_DIR" 2>/dev/null
+sleep 1
+cat > "$CONFIG_DIR/amuleapi.conf" <<EOF
+[Server]
+BindAddress=127.0.0.1
+Port=4713
+
+[EC]
+Host=127.0.0.1
+Port=4712
+Password=
+
+[Auth]
+LoginFailureWindowSeconds=60
+LoginFailureThreshold=5
+LoginLockoutSeconds=300
+
+[Streaming]
+EventBusRingCapacity=32
+EOF
+"$BIN" --config-dir="$CONFIG_DIR" \
+	--host=127.0.0.1 --port=4712 --password=amule \
+	> "$LOG" 2>&1 &
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+	if curl -s -o /dev/null --max-time 1 "$HOST/api/v0/version" 2>/dev/null; then
+		break
+	fi
+	sleep 0.5
+done
+# Re-login: the bus restart minted a new daemon process, so the
+# token from before the bounce is unrelated (its rate-limit bucket
+# is empty too).
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed after bounce"
 
 # Let the refresher fill the ring with enough events that
-# OldestId starts climbing — required for the gap case below.
-sleep 18
+# OldestId starts climbing — required for the gap case below. With
+# the bus at 32 slots, a few ticks of server / client / download
+# churn are enough.
+sleep 8
 
 # --- 1. resync(reason=gap) — Last-Event-ID below OldestId. -------
 #
-# After 18 s of refresher ticks against a live download, the bus
-# has emitted hundreds of events. The 100-event ring means
-# OldestId >> 1, so `Last-Event-ID: 1` is comfortably in the gap
-# range. Expect the synthetic `resync` event first.
+# After 8 s of refresher ticks the 32-slot ring has rotated past
+# id 1, so `Last-Event-ID: 1` is in the gap range. Expect the
+# synthetic `resync` event first.
 : > "$SSE"
 (curl -s -m 3 -N \
 	-H "Last-Event-ID: 1" \

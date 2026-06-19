@@ -21,7 +21,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-
 // Refresher orchestration — the per-tick loop body that issues EC
 // requests via `CamuleapiApp::SendRecvSerialized`. Split from
 // Refresher.cpp so the pure parser/applier code (`ApplyDownloads*`,
@@ -32,14 +31,13 @@
 #include "Refresher.h"
 
 #include "App.h"
-#include "EventDiff.h"   // Phase 8b: SSE event emission from cache diffs
+#include "EventDiff.h"
 #include "State.h"
 
 #include <ec/cpp/ECSpecialTags.h>
 #include <ec/cpp/ECPacket.h>
 
 #include <cstdint>
-#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -48,101 +46,24 @@
 namespace webapi {
 
 
-namespace {
-
-// Two-phase polling helper. Issues `op` at EC_DETAIL_UPDATE, applies
-// the deltas to known entries, then if any new ECIDs surfaced fires
-// a second EC_DETAIL_FULL roundtrip restricted to those ECIDs and
-// inserts them.
-//
-// Bandwidth on a steady-state library: O(changed_files) — most ticks
-// the Phase 2 packet is empty (no new files) and the second roundtrip
-// is skipped entirely. On a cold-start tick: Phase 1 surfaces all
-// files as "new" (cache is empty), Phase 2 ships all identities.
-// Steady state from tick 2 onward.
-template <class Snapshot,
-          class UpdateFn,   // (resp, partial_update, cache) → set<ecid>
-          class FullFn>     // (resp, cache) → void
-bool TwoPhaseRefresh(CamuleapiApp &app,
-                     CState &state,
-                     ec_opcode_t op,
-                     ec_tagname_t item_tag,
-                     UpdateFn  apply_update,
-                     FullFn    apply_full,
-                     void (CState::*mutator)(
-                         const std::function<void(std::map<std::uint32_t, Snapshot> &)>&))
-{
-	const bool partial_update_active = app.IsServerPartialUpdateActive();
-	std::set<std::uint32_t> needs_full;
-
-	// Phase 1 — UPDATE.
-	{
-		std::unique_ptr<CECPacket> req(new CECPacket(op, EC_DETAIL_UPDATE));
-		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp) return false;
-		(state.*mutator)([&](std::map<std::uint32_t, Snapshot> &cache) {
-			needs_full = apply_update(resp, partial_update_active, cache);
-		});
-		delete resp;
-	}
-
-	// Phase 2 — FULL (only if Phase 1 surfaced new ECIDs).
-	if (!needs_full.empty()) {
-		// Default constructor uses EC_DETAIL_FULL, which is what the
-		// server's CTagSet<uint32, item_tag> filter expects for the
-		// "fetch full details for these ECIDs" path.
-		std::unique_ptr<CECPacket> req(new CECPacket(op));
-		for (std::uint32_t ecid : needs_full) {
-			req->AddTag(CECTag(item_tag, ecid));
-		}
-		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp) return false;
-		(state.*mutator)([&](std::map<std::uint32_t, Snapshot> &cache) {
-			apply_full(resp, cache);
-		});
-		delete resp;
-	}
-	return true;
-}
-
-}  // namespace
-
-
 bool RefresherTick(CamuleapiApp &app, CState &state)
 {
-	// Four EC ops per tick (one or two roundtrips per op under the
-	// two-phase polling protocol). Each takes m_ec_mtx via
-	// SendRecvSerialized; failures on any one bail the whole tick so
-	// the cache stays internally consistent (we never expose
-	// partially-refreshed snapshots — old data is preferable to a
-	// download list that disagrees with the status `total_src_count`).
-	//
-	// Order: STAT_REQ first because it's the cheapest probe; if EC
-	// went away between ticks, STAT_REQ catches it before we burn
-	// roundtrips on the larger queries.
-	//
-	// Detail level:
-	//   * STAT_REQ uses EC_DETAIL_CMD — UPDATE on STAT_REQ returns
-	//     nothing useful (ExternalConn.cpp:774 just `break`s).
-	//   * Queue/shared use the two-phase EC_DETAIL_UPDATE polling
-	//     protocol: Phase 1 fetches stat deltas + EC_TAG_FILE_REMOVED
-	//     markers, Phase 2 (only when new ECIDs are seen) fetches
-	//     full identity for those. Bandwidth is O(changed_files)
-	//     per tick after cold-start. Documented inline at the
-	//     TwoPhaseRefresh helper.
+	// Per-tick budget: a few EC ops via SendRecvSerialized
+	// (m_ec_mtx-serialised). Any failure bails the whole tick so the
+	// cache stays internally consistent — we never expose
+	// partially-refreshed snapshots. STAT_REQ runs first because
+	// it's the cheapest probe: if EC dropped between ticks, STAT_REQ
+	// catches it before we burn roundtrips on the larger queries.
 
-	// /status + /kad + /logs/amule (new amule log lines) all share one
-	// STAT_REQ packet.
+	// /status + /kad + /logs/amule share one STAT_REQ packet.
 	//
-	// Detail level promoted CMD → FULL because amuled only piggybacks
+	// Detail level CMD → FULL because amuled only piggybacks
 	// `EC_TAG_STATS_LOGGER_MESSAGE` (the incremental-log channel) at
-	// FULL or INC_UPDATE — see ExternalConn.cpp:722-730. Promoting
-	// from CMD to FULL also tacks on a few stat-overhead extras
-	// (STATS_UP_OVERHEAD, STATS_DOWN_OVERHEAD, STATS_BANNED_COUNT,
-	// STATS_TOTAL_SENT_BYTES, STATS_TOTAL_RECEIVED_BYTES,
-	// STATS_SHARED_FILE_COUNT). amuleapi's StatusSnapshot doesn't
-	// surface those yet; harmless overhead until a future
-	// Phase carves them out into /status.
+	// FULL or INC_UPDATE (ExternalConn.cpp:722-730). FULL also adds
+	// a few stat-overhead extras (STATS_UP_OVERHEAD,
+	// STATS_DOWN_OVERHEAD, STATS_BANNED_COUNT, STATS_TOTAL_*_BYTES,
+	// STATS_SHARED_FILE_COUNT) that StatusSnapshot doesn't yet
+	// surface — harmless overhead.
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_STAT_REQ, EC_DETAIL_FULL));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
@@ -161,33 +82,22 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// /downloads + /shared + /servers — single GET_UPDATE roundtrip at
-	// EC_DETAIL_INC_UPDATE. Replaces the previous Phase 4b/4c per-
-	// substruct fetches (GET_DLOAD_QUEUE + GET_SHARED_FILES +
-	// GET_SERVER_LIST, each with a two-phase Phase 1/2 split). The
-	// consolidated op is what amulegui uses; the response packet
-	// interleaves EC_TAG_PARTFILE / EC_TAG_KNOWNFILE / EC_TAG_FILE_REMOVED
-	// at the top level + an EC_TAG_SERVER container at the same level.
+	// /downloads + /shared + /servers in a single GET_UPDATE roundtrip
+	// at EC_DETAIL_INC_UPDATE. Replaces an earlier per-substruct
+	// fetch (GET_DLOAD_QUEUE + GET_SHARED_FILES + GET_SERVER_LIST,
+	// each with its own UPDATE+FULL two-pass split). Response packet
+	// shape and the "why INC_UPDATE works in one tick" rationale
+	// (identity short-circuit at EC_DETAIL_UPDATE only) are documented
+	// next to ApplyGetUpdateToDownloads in Refresher.h.
 	//
-	// Why INC_UPDATE works in one tick where UPDATE needed two:
-	// `CEC_SharedFile_Tag` / `CEC_PartFile_Tag` constructors short-
-	// circuit identity (NAME / HASH / SIZE / ED2K_LINK) only when
-	// `detail_level == EC_DETAIL_UPDATE` (ECSpecialCoreTags.cpp:244-
-	// 246). INC_UPDATE doesn't trip that early-return, so first-
-	// encounter tags carry full identity — no Phase 2 EC roundtrip
-	// needed, no #808 ghost defence, no #713 alive-marker defence.
-	// (Both are wire-level races that only exist at EC_DETAIL_UPDATE.)
+	// The response also carries EC_TAG_CLIENT (filtered server-side
+	// by `TransmitOnlyUploadingClients`) and EC_TAG_FRIEND containers,
+	// both of which we ignore — /uploads stays bound to the upload-
+	// queue semantic via EC_OP_GET_ULOAD_QUEUE below.
 	//
-	// The response also carries an EC_TAG_CLIENT container (peers) and
-	// EC_TAG_FRIEND container which amuleapi ignores — /uploads stays
-	// bound to the upload-queue semantic via EC_OP_GET_ULOAD_QUEUE
-	// below (the GET_UPDATE clients block is filtered server-side by
-	// the global `TransmitOnlyUploadingClients` pref, which would
-	// pollute amuleweb/amulegui's view if we flipped it).
-	//
-	// Three Mutate calls under three separate lock acquisitions — same
-	// cross-substruct consistency model the previous refresher used
-	// (snapshot_at marks tick completion, not per-substruct atomicity).
+	// Three Mutate calls under three separate lock acquisitions —
+	// snapshot_at is set after the whole tick succeeds; per-substruct
+	// atomicity was already best-effort.
 	{
 		std::unique_ptr<CECPacket> req(
 			new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
@@ -225,12 +135,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 
 		// /clients — every alive peer in theApp->clientlist (download
 		// sources, upload slots, queue waiters, etc.). Replaces the
-		// prior `EC_OP_GET_ULOAD_QUEUE` two-phase call (Phase 4g
-		// consolidation). The CLIENT subtree is also gated by the
-		// `TransmitOnlyUploadingClients` server-side pref, which we
-		// rely on being false (the amuled default) for the full peer
-		// surface; if an operator flipped it amuleapi just sees the
-		// US_UPLOADING subset (still correct, narrower).
+		// prior `EC_OP_GET_ULOAD_QUEUE` two-pass call. The CLIENT
+		// subtree is also gated by the `TransmitOnlyUploadingClients`
+		// server-side pref, which we rely on being false (the amuled
+		// default) for the full peer surface; if an operator flipped
+		// it amuleapi just sees the US_UPLOADING subset (still
+		// correct, narrower).
 		state.MutateClients(
 			[&](std::map<std::uint32_t, ClientSnapshot> &cache) {
 				ApplyGetUpdateToClients(resp, cache);
@@ -238,27 +148,13 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph},
-	// /search/results — RETIRED FROM THE PER-TICK LOOP in Phase 4g.
-	// These are now lazy-fetched on first GET, coalesced via a 1 s
-	// TTL cache (CTtlCache in TtlCache.h). The HTTP handlers in
-	// Api.cpp drive their own EC roundtrips under m_ec_mtx.
-	//
-	// Why lazy: server-info / stats-tree / stats-graphs / search-
-	// results are read-on-demand UIs (diagnostic views, dashboard
-	// tiles, search panel). Per-tick refresh was pure waste when
-	// nothing is listening — /search/results in particular sat empty
-	// every tick until POST /search drove a query.
-	//
-	// 1 s TTL is enough to coalesce concurrent dashboard reads (a
-	// page render hitting /stats/graphs/{download,upload,kad,
-	// connections} four times in 100ms triggers one EC roundtrip,
-	// not four) without making the data stale.
-	//
-	// SearchResult / ServerInfoLog / StatsTreeNode / StatsGraphs
-	// types and their related parse helpers (ParseStatsTreeFromPacket,
-	// ParseGraphsFromPacket, ApplySearchFull) stay on CState +
-	// Refresher.cpp for the lazy-fetch handlers to call directly.
+	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph}, and
+	// /search/results are NOT fetched per-tick — they're lazy-
+	// fetched on first GET via CTtlCache (1 s TTL coalesces burst
+	// reads). HTTP handlers in Api.cpp drive their own EC roundtrips
+	// under m_ec_mtx. Per-tick refresh would have been pure waste
+	// when nothing is listening — /search/results in particular sits
+	// empty until a POST /search drives a query.
 
 	// /preferences + /categories — one EC roundtrip populates both.
 	// Selection bitmask: CATEGORIES (0x01) + GENERAL (0x02) +
@@ -282,20 +178,14 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// NOTE: Phase 8b's EmitDiffsAndUpdate is intentionally NOT called
-	// here any more. It used to live at the end of every tick, but
-	// every Phase-5 mutation handler also invokes RefresherTick()
-	// inline on the HTTP-server worker thread to make the response
-	// see post-mutation state, and LastSeenState has no internal
-	// lock. Two threads doing std::map insert/erase on the same
-	// LastSeenState (the wxApp refresher loop at ~1 Hz, racing with
-	// any concurrent HTTP-driven mutation) is UB.
-	// The wxApp refresher loop in App.cpp is the single owner of the
-	// LastSeenState mutation path now and calls EmitDiffsForEventBus()
-	// (defined below) explicitly after a successful RefresherTick.
-	// Inline-from-HTTP callers don't touch LastSeenState; SSE
-	// subscribers see the mutation's diff on the next natural
-	// 1-second tick.
+	// EmitDiffsAndUpdate is intentionally NOT called here. Mutation
+	// handlers invoke RefresherTick() inline on HTTP threads so the
+	// response sees post-mutation state, and LastSeenState has no
+	// internal lock — concurrent std::map mutation from the wxApp
+	// refresher loop and an HTTP thread is UB. Only the wxApp loop
+	// in App.cpp calls EmitDiffsForEventBus() (below) after a
+	// successful tick; HTTP callers skip it and SSE subscribers see
+	// the diff on the next natural 1 s tick.
 	return true;
 }
 

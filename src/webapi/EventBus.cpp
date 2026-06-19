@@ -28,11 +28,18 @@
 namespace webapi {
 
 
-// C++14 requires an out-of-class definition for a static constexpr
-// member used by reference (test asserts that bind kCapacity to a
+// C++14 requires an out-of-class definition for static constexpr
+// members used by reference (test code may bind them through a
 // const auto& parameter). C++17 inlined that, but the project is
-// pinned to C++14 (PLAN.md §14 Phase 2).
-constexpr std::size_t CEventBus::kCapacity;
+// pinned to C++14.
+constexpr std::size_t CEventBus::kDefaultCapacity;
+constexpr std::size_t CEventBus::kMinCapacity;
+
+
+CEventBus::CEventBus(std::size_t capacity)
+	: m_capacity(capacity < kMinCapacity ? kMinCapacity : capacity)
+{
+}
 
 
 void CEventBus::Publish(const std::string &name, const std::string &data)
@@ -52,7 +59,7 @@ void CEventBus::Publish(const std::string &name, const std::string &data)
 		// invariant every subscriber depends on.
 		// Single-lock-section publish keeps fetch+push atomic.
 		ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
-		if (m_ring.size() >= kCapacity) m_ring.pop_front();
+		if (m_ring.size() >= m_capacity) m_ring.pop_front();
 		m_ring.push_back(std::move(ev));
 	}
 	// notify_all so every blocked drainer wakes and races to its
@@ -80,7 +87,7 @@ void CEventBus::PublishBatch(
 			ev.name = kv.first;
 			ev.data = kv.second;
 			ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
-			if (m_ring.size() >= kCapacity) m_ring.pop_front();
+			if (m_ring.size() >= m_capacity) m_ring.pop_front();
 			m_ring.push_back(std::move(ev));
 		}
 	}

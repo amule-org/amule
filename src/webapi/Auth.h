@@ -41,10 +41,10 @@
 //
 // Thread-safety model: today, every caller runs on the Boost.Asio I/O
 // thread (single io_context, single std::thread). The std::mutex in
-// each container is forward-compat insurance — Phase 8's SSE channel
-// adds a heartbeat timer that fires on the same I/O thread, so the
-// mutex never contends in v0.1 — but a future worker-pool model
-// (Phase 9+) gets correctness for free.
+// each container is forward-compat insurance — the SSE channel adds
+// a heartbeat timer that fires on the same I/O thread, so the mutex
+// never contends in v0.1 — but a future worker-pool model gets
+// correctness for free.
 
 
 namespace webapi {
@@ -80,7 +80,7 @@ private:
 };
 
 
-// Per-IP sliding-window login rate limiter (PLAN §12 Q6). Tracks
+// Per-IP sliding-window login rate limiter (). Tracks
 // failed `/auth/login` attempts, locks the offending IP out for
 // `lockout_seconds` once `threshold` failures land inside
 // `window_seconds`. A successful login resets the offender's bucket.

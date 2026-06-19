@@ -38,11 +38,9 @@
 // boost::asio::io_context::run() is blocking and Beast's async
 // chain stays inside that thread until Stop() is called.
 //
-// Phase 2 deliberately doesn't share state with the wxApp thread:
-// the /api/v0/version handler reads a compile-time string. Phase 3
-// introduces the wxQueueEvent-based EC bridge so handlers can fan
-// out EC requests onto the wxApp thread; the bridge lives in a
-// separate file (Api.cpp) and HttpServer stays transport-only.
+// Deliberately doesn't share state with the wxApp thread. Handlers
+// that need EC use the wxQueueEvent-based bridge in Api.cpp to fan
+// out onto the wxApp thread; HttpServer stays transport-only.
 
 namespace boost { namespace asio { class io_context; } }
 
@@ -50,7 +48,7 @@ class CHttpServer {
 public:
 	// The dispatch callback runs on the HTTP server's I/O thread.
 	// Anything stateful it touches must be either thread-safe or
-	// trampolined onto the wxApp thread (Phase 3+).
+	// trampolined onto the wxApp thread.
 	struct Request {
 		std::string method;            // "GET", "POST", ...
 		std::string target;            // raw URI: "/api/v0/version?x=1"
@@ -58,8 +56,7 @@ public:
 		std::string body;
 		// Client IP as observed by the accept socket. amuleapi rate-
 		// limits by this string verbatim; the `X-Forwarded-For` honor
-		// toggle is a deferred Phase 9 follow-up (PLAN §12 Q6
-		// implementation notes).
+		// toggle is a deferred follow-up (		// implementation notes).
 		std::string remote_addr;
 	};
 
@@ -72,7 +69,7 @@ public:
 
 	using Handler = std::function<Response(const Request &)>;
 
-	// Phase 8: long-lived streaming responses (SSE). The streaming
+	// long-lived streaming responses (SSE). The streaming
 	// handler is given a `Writer` it can use to push chunks at will;
 	// the connection stays open until the writer signals close or
 	// the peer disconnects.
@@ -104,7 +101,7 @@ public:
 
 	// Optional resolver: tells the HTTP server whether an incoming
 	// request should be dispatched to the streaming handler (true) or
-	// the normal Handler (false). Phase 8's wiring matches "GET
+	// the normal Handler (false). The current wiring matches "GET
 	// /api/v0/events"; other endpoints stay request/response.
 	using StreamingResolver = std::function<bool(const Request &)>;
 

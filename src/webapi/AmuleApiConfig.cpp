@@ -232,24 +232,19 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		"LoginFailureThreshold=5\n"
 		"LoginLockoutSeconds=300\n"
 		"\n"
-		"[Logging]\n"
-		"Level=info\n"
-		"File=\n";
+		"[Streaming]\n"
+		"EventBusRingCapacity=16384\n";
 
 	if (!wxFileExists(path)) {
-		// First-run: write a defaults file with mode 0600 so the
-		// operator has something to edit. The EC password stays
+		// First-run: write mode-0600 defaults file. EC password stays
 		// empty; amuleapi refuses to connect until it's filled in.
-		// amuleapi.conf carries `[EC]/Password=` in cleartext (the
-		// base class wants a hashable plaintext), so the file gets
-		// the same owner-only mode the jwt-secret and passwords
-		// files already enforce.
+		// amuleapi.conf carries `[EC]/Password=` in cleartext (base
+		// class wants hashable plaintext), so owner-only mode matches
+		// jwt-secret and passwords files.
 		//
-		// Route through WriteFileAtomic0600 (write-temp, fsync,
-		// rename) so a crash mid-write doesn't leave a truncated
-		// amuleapi.conf the next start would happily load as a
-		// partial config — silently flipping the daemon onto
-		// surprise defaults.
+		// WriteFileAtomic0600 (write-temp, fsync, rename) so a crash
+		// mid-write can't leave a truncated config that the next
+		// start would happily load as partial → silent default flip.
 		if (!WriteFileAtomic0600(path, std::string(defaults))) {
 			m_lastError = "cannot create amuleapi.conf: "
 				+ std::string(path.utf8_str());
@@ -311,11 +306,11 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		m_auth.login_lockout_seconds = static_cast<unsigned>(n);
 	}
 
-	if (cfg.Read("/Logging/Level", &s) && !s.IsEmpty()) {
-		m_logging.level = std::string(s.utf8_str());
-	}
-	if (cfg.Read("/Logging/File", &s)) {
-		m_logging.file = std::string(s.utf8_str());
+	// `[Streaming]/EventBusRingCapacity`. Below the CEventBus floor
+	// is silently clamped up by the bus itself; we just accept any
+	// positive value here.
+	if (cfg.Read("/Streaming/EventBusRingCapacity", &n) && n > 0) {
+		m_streaming.event_bus_ring_capacity = static_cast<unsigned>(n);
 	}
 
 	return true;
@@ -386,7 +381,7 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 	if (!wxFileExists(path)) {
 		// Auto-create empty so the operator sees the file exists, with
 		// the right mode bits. CLI flow:
-		//   amuleapi --set-admin-pass=<plain>
+		//  amuleapi --set-admin-pass=<plain>
 		// hashes + writes the admin line; the daemon then accepts logins.
 		return WritePasswordsFile(m_configDir, "", "");
 	}

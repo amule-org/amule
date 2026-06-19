@@ -163,7 +163,7 @@ void CState::AppendAmuleLog(std::vector<std::string> new_lines)
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	// No cap — see State.h comment above the `m_amule_log_lines`
 	// declaration. Operators can truncate via DELETE /logs/amule
-	// (Phase 5 mutation).
+	// .
 	m_amule_log_lines.insert(m_amule_log_lines.end(),
 		std::make_move_iterator(new_lines.begin()),
 		std::make_move_iterator(new_lines.end()));
@@ -334,20 +334,17 @@ void CState::MarkTickSuccess()
 void CState::MarkTickFailure()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	// Deliberately preserve m_snapshot_at — clients hitting /status
-	// during a transient EC blip get the stale `snapshot_at` next to
-	// `ec_connected=false`, so they can tell how stale the cached
-	// data is. Resetting it to `now` would lie about freshness.
+	// Deliberately preserve m_snapshot_at — clients see stale
+	// `snapshot_at` next to `ec_connected=false`, so they can tell
+	// how stale the cache is. Resetting it to `now` would lie.
 	//
-	// Tick-atomicity invariant: a tick failure leaves CState
-	// holding partial mutations from earlier in the tick (any
-	// Mutate*() that landed before the EC error). This is by design
-	// — the refresher's "tick = transaction" model is "atomic for
-	// events" (EmitDiffsForEventBus skipped on failure → next-tick
-	// diff is computed against the prior-success snapshot, not the
-	// partial one) but NOT atomic for state (no rollback of partial
-	// mutations). LastSeenState is the authoritative event baseline;
-	// CState is best-effort cache for /status freshness only.
+	// Tick-atomicity: on failure CState may hold partial mutations
+	// from earlier in the tick. The "tick = transaction" model is
+	// atomic for events (EmitDiffsForEventBus is skipped on failure,
+	// next-tick diff is against the prior-success baseline in
+	// LastSeenState) but NOT atomic for state — no rollback. CState
+	// is a best-effort cache for /status freshness; LastSeenState
+	// is the authoritative event baseline.
 	m_ec_connected = false;
 }
 

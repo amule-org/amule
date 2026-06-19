@@ -57,28 +57,21 @@ using tcp       = boost::asio::ip::tcp;
 namespace {
 
 // Per-connection session. Reads one request, hands it to the user
-// handler, writes the response, closes. No keep-alive — Phase 2's
-// surface is too small to benefit, and a one-shot model keeps the
-// state machine here trivially auditable.
+// handler, writes the response, closes. No keep-alive — the API
+// surface is too small to benefit, and the one-shot model keeps the
+// state machine trivially auditable. If the streaming_resolver
+// matches the parsed request, the session takes a different path:
+// writes the response head and runs the streaming handler on a
+// worker thread, which can push chunks indefinitely via the Writer
+// interface until the handler returns or the peer disconnects.
 //
-// Phase 8: if the streaming_resolver matches the parsed request, the
-// session takes a different path — writes the HTTP response head
-// then runs the streaming handler on a worker thread, which can push
-// chunks indefinitely via the Writer interface. The session keeps
-// the socket open until the handler returns or the peer
-// disconnects.
-// Process-wide cap on concurrent SSE subscribers. Each session spawns
-// one OS thread; without a cap, a bind to a non-loopback interface
-// exposes the thread-per-connection model to anonymous traffic and
-// turns into a DoS amplifier. The cap is sized for the single-
-// operator dashboard pattern amuleapi v0.1 supports — a handful of
-// browsers + the odd shell script. Operators with legitimate higher
-// fan-out (a few tens of tabs) hit a clean 503 instead of taking the
-// daemon down.
-//
-// Refused sessions exit with `503 Service Unavailable` + a
-// `Retry-After` hint inside the streaming dispatch path before the
-// worker thread is created.
+// Process-wide cap on concurrent SSE subscribers. Each session
+// spawns one OS thread, so without a cap a non-loopback bind turns
+// the thread-per-connection model into a DoS amplifier. The cap is
+// sized for the single-operator dashboard pattern: a handful of
+// browser tabs + the odd shell script. Refused sessions get
+// `503 Service Unavailable` + a `Retry-After` hint inside the
+// streaming dispatch path before the worker thread is created.
 constexpr int kMaxConcurrentStreamingSessions = 32;
 std::atomic<int> g_streaming_session_count{0};
 
@@ -108,21 +101,16 @@ public:
 
 	~Session()
 	{
-		// The worker captures `shared_from_this()` and sets
+		// Worker captures `shared_from_this()` and sets
 		// `m_worker_exited` true on the way out (via the RAII
-		// WorkerExitMarker below, so an early `return` from any
-		// future refactor still trips the flag). By the time this
-		// destructor runs the last ref must have been dropped — so
-		// the worker must have exited. join() from inside the
-		// worker's own call stack would deadlock; detach() is safe
-		// because the thread has finished its work.
+		// WorkerExitMarker below). By the time this dtor runs the
+		// last ref must have been dropped, so the worker must have
+		// exited; join() from inside the worker's own call stack
+		// would deadlock, detach() is safe.
 		//
-		// NOT plain assert(): NDEBUG is set on Release and
-		// RelWithDebInfo builds, compiling the check out of every
-		// shipping binary. Use a hand-rolled if + std::abort so the
-		// invariant is enforced in Release too — preferable to a
-		// silent UB on a future refactor that lands in a stable
-		// release.
+		// Hand-rolled if + std::abort instead of assert() so the
+		// invariant is enforced in Release too (NDEBUG strips
+		// assert).
 		if (m_stream_worker.joinable()) {
 			if (!m_worker_exited.load(std::memory_order_acquire)) {
 				std::cerr << "amuleapi: FATAL Session dtor reached "
@@ -166,7 +154,7 @@ private:
 	{
 		// Reset the parser each request — without it, calling DoRead a
 		// second time on the same stream blocks forever with a partial
-		// state. Phase 2 only reads one request, but leaving the reset
+		// state. only reads one request, but leaving the reset
 		// in keeps the read loop forward-compatible if keep-alive is
 		// turned on later.
 		m_parser.emplace();
@@ -234,7 +222,7 @@ private:
 			if (!ec) r.remote_addr = ep.address().to_string();
 		}
 
-		// Phase 8: streaming dispatch. The streaming_resolver is
+		// streaming dispatch. The streaming_resolver is
 		// invoked synchronously and short-circuits the standard
 		// request→response→close path when it returns true.
 		if (m_streaming_resolver && m_streaming_handler
@@ -247,17 +235,14 @@ private:
 		try {
 			resp = m_handler(r);
 		} catch (const std::exception &e) {
-			// Handler-internal exceptions become 500s. The body shape
-			// matches the rest of the error contract; clients reading
-			// `error.code` continue to parse uniformly.
+			// Handler exceptions become 500s; body shape matches the
+			// rest of the error contract.
 			//
-			// Information-disclosure defence: e.what() can carry
-			// caller-supplied bytes — picojson echoes the offending
-			// input character at the failure offset; a future
-			// header-driven throw site could reflect Authorization or
-			// Cookie fragments. Keep the body generic, log detail
-			// server-side via stderr so the operator can correlate
-			// 500s with a stack/journal.
+			// Info-disclosure: e.what() can carry caller-supplied
+			// bytes (picojson echoes the offending input character;
+			// a future header-driven throw could reflect
+			// Authorization or Cookie fragments). Keep the body
+			// generic; log detail to stderr.
 			std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
 			resp.status       = 500;
 			resp.content_type = "application/json";
@@ -270,22 +255,13 @@ private:
 	}
 
 
-	// Phase 8 streaming path. Writes the response head, then spawns a
-	// worker thread that runs the streaming handler. The worker's
-	// Writer pushes chunks via a mutex-guarded synchronous write to
-	// the socket; "alive" status is observable from any thread via
-	// the atomic `m_stream_alive` flag.
+	// Streaming path. Writes the response head, then spawns a worker
+	// thread for the streaming handler. Session stays alive across
+	// the worker via the `shared_from_this()` capture; when the
+	// worker exits, the lambda releases the last ref and Session
+	// destructs (joining a thread that has already exited, a no-op).
 	//
-	// The worker thread is owned by the Session and joined in the
-	// dtor. The Session keeps itself alive across the worker's
-	// lifetime by capturing `shared_from_this()` in the worker
-	// lambda; when the worker exits, the lambda's destruction
-	// releases the last reference and the Session destructs (which
-	// joins the thread — a no-op because the worker already exited).
-	// Standard short 503 response shape used both for the
-	// concurrent-session cap refusal and other resource-exhaustion
-	// short-circuits. Plain JSON so clients can parse it the same
-	// way every other amuleapi error renders.
+	// Short 503 for concurrent-session cap + other exhaustion paths.
 	void WriteCapRefusal()
 	{
 		CHttpServer::Response refused;
@@ -365,23 +341,14 @@ private:
 
 		auto writer = std::make_shared<SocketWriter>(self, head);
 
-		// One std::thread per accepted streaming session. Cheap at
-		// amuleapi's expected scale (a single-operator UI plus the
-		// odd shell script — say 1-5 concurrent SSE subscribers),
-		// and it keeps the drain loop synchronous so reasoning about
-		// `since_id` ordering is trivial.
+		// One std::thread per streaming session — cheap at expected
+		// scale (1–5 concurrent SSE subscribers) and keeps the drain
+		// synchronous so `since_id` ordering is trivial.
 		//
 		// **The default `BindAddress=127.0.0.1` is load-bearing.**
-		// If a future operator binds amuleapi to a non-loopback
-		// interface, an unauthenticated peer can open many streaming
-		// sessions and spawn one OS thread per connection — the
-		// obvious DoS amplifier. The auth gate inside DispatchEvents
-		// runs before the per-session worker thread does any
-		// non-trivial work, so authenticated cost stays bounded;
-		// the pre-auth cost (open socket, parse head, run the auth
-		// check, send 401) is what an exposed bind would multiply.
-		// A migration to async-on-io_context would close this off
-		// (Phase 8a notes flag it as the obvious next step).
+		// Non-loopback bind + unauth peer = thread-per-connection DoS
+		// amplifier. PreflightEvents (auth before slot claim, before
+		// thread spawn) bounds pre-auth cost to one HTTP exchange.
 		m_stream_worker = std::thread([self, handler, writer, head,
 		                               r = std::move(r)]() mutable {
 			// RAII guard: tip the worker-exited flag on EVERY exit
@@ -442,7 +409,7 @@ private:
 
 			// SSE wire shape uses chunked transfer encoding; each
 			// "chunk" written here is a single HTTP/1.1 chunk frame:
-			//   <hex-size-of-chunk>\r\n<chunk-bytes>\r\n
+			//  <hex-size-of-chunk>\r\n<chunk-bytes>\r\n
 			//
 			// Zero-length chunks would terminate the message (per
 			// RFC 7230 §4.1) so we skip them — the heartbeat path
@@ -577,7 +544,7 @@ private:
 	boost::optional<http::response<http::string_body>> m_response;
 	CHttpServer::Handler                             m_handler;
 
-	// Phase 8 streaming state.
+	// streaming state.
 	CHttpServer::StreamingResolver  m_streaming_resolver;
 	CHttpServer::StreamingHandler   m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
@@ -762,7 +729,7 @@ bool CHttpServer::Start(const std::string &bind_address,
 			// io_context exception propagation: the server thread dies
 			// quietly. Catch + log to stderr so an operator running in
 			// foreground sees a one-line cause; daemon mode loses the
-			// message (Phase 3+: route through Logging.File).
+			// message.
 			std::cerr << "amuleapi: HTTP I/O loop exited on exception: "
 			          << e.what() << std::endl;
 		}

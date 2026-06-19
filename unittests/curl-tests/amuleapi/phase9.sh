@@ -87,10 +87,6 @@ Password=
 LoginFailureWindowSeconds=60
 LoginFailureThreshold=5
 LoginLockoutSeconds=300
-
-[Logging]
-Level=info
-File=
 EOF
 	"$BIN" --config-dir="$CONFIG_DIR" \
 		--host=127.0.0.1 --port=4712 --password=amule \

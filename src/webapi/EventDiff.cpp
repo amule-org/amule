@@ -73,6 +73,15 @@ std::string EscJson(const std::string &s)
 }
 
 
+// Each ToJson emits the SAME shape as the corresponding REST list-item
+// writer in Api.cpp (WriteDownloadObject / WriteSharedObject /
+// WriteServerObject / WriteClientObject / HandleStatus). The contract
+// is "an SSE _added/_updated event carries the full resource — clients
+// don't need to re-GET to see the moved counters". The matching Equal
+// functions below compare every field included here so any movement
+// fires `_updated`. If REST or SSE drifts in the future, the doc-
+// alignment check in run-all.sh phase11 should catch it.
+
 std::string ToJson(const DownloadSnapshot &d)
 {
 	std::ostringstream o;
@@ -80,6 +89,7 @@ std::string ToJson(const DownloadSnapshot &d)
 	  << "\"ecid\":" << d.ecid
 	  << ",\"hash\":\"" << EscJson(d.hash) << "\""
 	  << ",\"name\":\"" << EscJson(d.name) << "\""
+	  << ",\"ed2k_link\":\"" << EscJson(d.ed2k_link) << "\""
 	  << ",\"size\":" << d.size
 	  << ",\"size_done\":" << d.size_done
 	  << ",\"size_xfer\":" << d.size_xfer
@@ -107,9 +117,16 @@ std::string ToJson(const SharedSnapshot &s)
 	  << "\"ecid\":" << s.ecid
 	  << ",\"hash\":\"" << EscJson(s.hash) << "\""
 	  << ",\"name\":\"" << EscJson(s.name) << "\""
+	  << ",\"ed2k_link\":\"" << EscJson(s.ed2k_link) << "\""
 	  << ",\"size\":" << s.size
 	  << ",\"priority\":\"" << EscJson(s.priority) << "\""
 	  << ",\"complete_sources\":" << s.complete_sources
+	  << ",\"xfer\":{\"session\":" << s.xfer_session
+	    << ",\"total\":" << s.xfer_total << "}"
+	  << ",\"requests\":{\"session\":" << s.requests_session
+	    << ",\"total\":" << s.requests_total << "}"
+	  << ",\"accepts\":{\"session\":" << s.accepts_session
+	    << ",\"total\":" << s.accepts_total << "}"
 	  << "}";
 	return o.str();
 }
@@ -121,10 +138,16 @@ std::string ToJson(const ServerSnapshot &s)
 	o << "{"
 	  << "\"ecid\":" << s.ecid
 	  << ",\"name\":\"" << EscJson(s.name) << "\""
+	  << ",\"description\":\"" << EscJson(s.description) << "\""
+	  << ",\"version\":\"" << EscJson(s.version) << "\""
 	  << ",\"address\":\"" << EscJson(s.address) << "\""
+	  << ",\"port\":" << s.port
 	  << ",\"users\":" << s.users
+	  << ",\"max_users\":" << s.max_users
 	  << ",\"files\":" << s.files
 	  << ",\"priority\":\"" << EscJson(s.priority) << "\""
+	  << ",\"ping_ms\":" << s.ping_ms
+	  << ",\"failed\":" << s.failed
 	  << ",\"static\":" << (s.is_static ? "true" : "false")
 	  << "}";
 	return o.str();
@@ -141,41 +164,90 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
 	  << ",\"port\":" << c.port
 	  << ",\"software\":\"" << EscJson(c.software) << "\""
+	  << ",\"software_version\":\"" << EscJson(c.software_version) << "\""
+	  << ",\"os_info\":\"" << EscJson(c.os_info) << "\""
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
+	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
+	  << ",\"download_file_name\":\"" << EscJson(c.download_file_name) << "\""
+	  << ",\"upload_file_ecid\":\"" << EscJson(c.upload_file_ecid) << "\""
+	  << ",\"download_file_ecid\":\"" << EscJson(c.download_file_ecid) << "\""
+	  << ",\"xfer\":{"
+	    << "\"up_session\":" << c.xfer_up_session
+	    << ",\"down_session\":" << c.xfer_down_session
+	    << ",\"up_total\":" << c.xfer_up_total
+	    << ",\"down_total\":" << c.xfer_down_total
+	    << "}"
 	  << ",\"upload_speed_bps\":" << c.upload_speed_bps
 	  << ",\"download_speed_bps\":" << c.download_speed_bps
+	  << ",\"queue_waiting_position\":" << c.queue_waiting_position
+	  << ",\"remote_queue_rank\":" << c.remote_queue_rank
+	  << ",\"score\":" << c.score
+	  << ",\"obfuscation_status\":\"" << EscJson(c.obfuscation_status) << "\""
+	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false")
 	  << "}";
 	return o.str();
 }
 
 
-std::string ToJson(const StatusSnapshot &s)
+// Status event payload mirrors the REST /status envelope nesting
+// (ed2k.*, kad.* including the kad.network rollup, speeds.*, queue.*,
+// plus the top-level ec_connected flag). Takes a triple because the
+// REST nesting groups data from StatusSnapshot AND KadSnapshot AND
+// the dashboard's ec_connected bit — all three are read in one
+// shared_lock by state.Dashboard() at the call site.
+std::string ToJsonStatusEvent(const StatusSnapshot &s,
+                              const KadSnapshot    &k,
+                              bool                  ec_connected)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ed2k_state\":\"" << EscJson(s.ed2k_state) << "\""
-	  << ",\"kad_state\":\"" << EscJson(s.kad_state) << "\""
-	  << ",\"ed2k_lowid\":" << (s.ed2k_lowid ? "true" : "false")
-	  << ",\"kad_firewalled\":" << (s.kad_firewalled ? "true" : "false")
-	  << ",\"server_name\":\"" << EscJson(s.server_name) << "\""
-	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
-	  << ",\"server_port\":" << s.server_port
-	  << ",\"download_bps\":" << s.download_bps
-	  << ",\"upload_bps\":" << s.upload_bps
-	  << ",\"ul_queue_len\":" << s.ul_queue_len
-	  << ",\"total_src_count\":" << s.total_src_count
+	  << "\"ec_connected\":" << (ec_connected ? "true" : "false")
+	  << ",\"ed2k\":{"
+	    << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
+	    << ",\"low_id\":" << (s.ed2k_lowid ? "true" : "false")
+	    << ",\"server_name\":\"" << EscJson(s.server_name) << "\""
+	    << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
+	    << ",\"server_port\":" << s.server_port
+	    << "}"
+	  << ",\"kad\":{"
+	    << "\"state\":\"" << EscJson(s.kad_state) << "\""
+	    << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false")
+	    << ",\"network\":{"
+	      << "\"users\":" << k.users
+	      << ",\"files\":" << k.files
+	      << ",\"nodes\":" << k.nodes
+	      << "}"
+	    << "}"
+	  << ",\"speeds\":{"
+	    << "\"download_bps\":" << s.download_bps
+	    << ",\"upload_bps\":" << s.upload_bps
+	    << "}"
+	  << ",\"queue\":{"
+	    << "\"upload_queue_length\":" << s.ul_queue_len
+	    << ",\"total_source_count\":" << s.total_src_count
+	    << "}"
 	  << "}";
 	return o.str();
 }
 
 
-// Coarse equality — every field. For Phase 8b we treat any change as
+// Coarse equality — every field. For we treat any change as
 // "_updated" (emit the full new snapshot). v0.2 could introduce
 // per-field deltas if a real consumer reports wanting them.
+// Equal compares every field that ToJson emits. Any movement fires
+// `_updated`. Field sets here are the same as the matching ToJson
+// above; if one drifts from the other clients will see stale
+// values until the next ROW-level field changes.
 bool Equal(const DownloadSnapshot &a, const DownloadSnapshot &b)
 {
-	return a.hash == b.hash && a.name == b.name && a.size == b.size
+	// ecid is in the JSON shape; if amuled gets restarted while
+	// amuleapi keeps running, the same hash will surface with a
+	// fresh ECID — clients keyed on ecid need an _updated event so
+	// they invalidate their cached id.
+	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
+	    && a.ed2k_link == b.ed2k_link
+	    && a.size == b.size
 	    && a.size_done == b.size_done && a.size_xfer == b.size_xfer
 	    && a.speed_bps == b.speed_bps && a.status == b.status
 	    && a.priority == b.priority && a.priority_auto == b.priority_auto
@@ -188,23 +260,61 @@ bool Equal(const DownloadSnapshot &a, const DownloadSnapshot &b)
 }
 bool Equal(const SharedSnapshot &a, const SharedSnapshot &b)
 {
-	return a.hash == b.hash && a.name == b.name && a.size == b.size
+	// See DownloadSnapshot Equal — ecid included for the same
+	// reason (amuled restart mints fresh ECIDs).
+	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
+	    && a.ed2k_link == b.ed2k_link
+	    && a.size == b.size
 	    && a.priority == b.priority
-	    && a.complete_sources == b.complete_sources;
+	    && a.complete_sources == b.complete_sources
+	    && a.xfer_session == b.xfer_session
+	    && a.xfer_total == b.xfer_total
+	    && a.requests_session == b.requests_session
+	    && a.requests_total == b.requests_total
+	    && a.accepts_session == b.accepts_session
+	    && a.accepts_total == b.accepts_total;
 }
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 {
-	return a.name == b.name && a.address == b.address
-	    && a.users == b.users && a.files == b.files
-	    && a.priority == b.priority && a.is_static == b.is_static;
+	return a.name == b.name
+	    && a.description == b.description
+	    && a.version == b.version
+	    && a.address == b.address
+	    && a.port == b.port
+	    && a.users == b.users
+	    && a.max_users == b.max_users
+	    && a.files == b.files
+	    && a.priority == b.priority
+	    && a.ping_ms == b.ping_ms
+	    && a.failed == b.failed
+	    && a.is_static == b.is_static;
 }
 bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
-	return a.upload_state == b.upload_state
+	return a.client_name == b.client_name
+	    && a.user_hash == b.user_hash
+	    && a.ip == b.ip
+	    && a.port == b.port
+	    && a.software == b.software
+	    && a.software_version == b.software_version
+	    && a.os_info == b.os_info
+	    && a.upload_state == b.upload_state
 	    && a.download_state == b.download_state
+	    && a.ident_state == b.ident_state
+	    && a.download_file_name == b.download_file_name
+	    && a.upload_file_ecid == b.upload_file_ecid
+	    && a.download_file_ecid == b.download_file_ecid
+	    && a.xfer_up_session == b.xfer_up_session
+	    && a.xfer_down_session == b.xfer_down_session
+	    && a.xfer_up_total == b.xfer_up_total
+	    && a.xfer_down_total == b.xfer_down_total
 	    && a.upload_speed_bps == b.upload_speed_bps
 	    && a.download_speed_bps == b.download_speed_bps
-	    && a.client_name == b.client_name;
+	    && a.queue_waiting_position == b.queue_waiting_position
+	    && a.remote_queue_rank == b.remote_queue_rank
+	    && a.score == b.score
+	    && a.obfuscation_status == b.obfuscation_status
+	    && a.friend_slot == b.friend_slot;
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 {
@@ -219,23 +329,24 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 	    && a.ul_queue_len == b.ul_queue_len
 	    && a.total_src_count == b.total_src_count;
 }
+bool Equal(const KadSnapshot &a, const KadSnapshot &b)
+{
+	return a.users == b.users && a.files == b.files && a.nodes == b.nodes;
+}
 
 
 // Generic map-diff helper. Walks both old and new, emitting:
-//   - `<base>_removed` for keys in old missing from new (data: identity-only)
-//   - `<base>_added`   for keys in new missing from old (data: full ToJson)
-//   - `<base>_updated` for shared keys whose values differ (data: full ToJson)
+//  - `<base>_removed` for keys in old missing from new (identity-only)
+//  - `<base>_added`   for keys in new missing from old (full ToJson)
+//  - `<base>_updated` for shared keys whose values differ (full ToJson)
 //
 // `removed_id_payload_fn` formats the identity-only `_removed` payload
-// — usually `{"hash": "..."}` for hash-keyed (downloads, shared) or
+// — `{"hash": "..."}` for hash-keyed (downloads, shared) or
 // `{"ecid": N}` for ECID-keyed (servers, clients).
 //
-// Coalesced: accumulate every (name, data) pair locally, then one
-// PublishBatch — one lock acquisition, one notify_all, vs N each on
-// the per-item Publish loop. The cold-start tick on a 5K-download
-// library used to fire ~5K notify_all cycles inside the refresher
-// loop; the batch keeps that path bounded by EventBus's ring
-// capacity instead of the diff size.
+// Coalesced into one PublishBatch (one lock acquisition, one
+// notify_all) so a cold-start diff on a 5K-download library doesn't
+// fire 5K notify_all cycles inside the refresher loop.
 template <class Map, class IdentityFn>
 void DiffMap(CEventBus &bus, const std::string &base,
              const Map &old_items, const Map &new_items,
@@ -346,7 +457,16 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	auto new_shared    = ByEcid(state.Shared());
 	auto new_servers   = ByEcid(state.Servers());
 	auto new_clients   = ByEcid(state.Clients());
-	auto new_status    = state.Status();
+	// Read the full dashboard for status_changed — the event payload
+	// mirrors the REST /status nested envelope which pulls from
+	// StatusSnapshot + KadSnapshot + ec_connected. Dashboard() takes
+	// the State lock once for all three, so the rollup is coherent
+	// (kad.network can't be from tick N+1 while ed2k.* is from tick
+	// N).
+	auto new_dashboard = state.Dashboard();
+	const StatusSnapshot &new_status = new_dashboard.status;
+	const KadSnapshot    &new_kad    = new_dashboard.kad;
+	const bool            new_ec     = new_dashboard.ec_connected;
 
 	// Diff each substruct.
 	DiffMap(bus, "download", prev.downloads, new_downloads,
@@ -366,26 +486,33 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 			return RemovedEcidPayload(c);
 		});
 
-	// /status: one event when anything changes. Cold-start gates on
-	// `status_initialised` so we don't blast a status_changed on the
-	// very first tick (the SSE subscribers already see the current
-	// state via REST; the *change* events are what they're here
-	// for).
+	// /status: one event when anything in the dashboard envelope
+	// changes (StatusSnapshot fields OR Kad network rollup OR
+	// ec_connected). Cold-start gates on `status_initialised` so we
+	// don't blast a status_changed on the very first tick (SSE
+	// subscribers already see the current state via REST; the
+	// *change* events are what they're here for).
 	if (!prev.status_initialised) {
-		bus.Publish("status_changed", ToJson(new_status));
+		bus.Publish("status_changed",
+			ToJsonStatusEvent(new_status, new_kad, new_ec));
 		prev.status_initialised = true;
-	} else if (!Equal(prev.status, new_status)) {
-		bus.Publish("status_changed", ToJson(new_status));
+	} else if (!Equal(prev.status, new_status)
+	        || !Equal(prev.kad, new_kad)
+	        || prev.ec_connected != new_ec) {
+		bus.Publish("status_changed",
+			ToJsonStatusEvent(new_status, new_kad, new_ec));
 	}
 
 	// Snapshot the new state for next tick's diff baseline.
-	prev.downloads = std::move(new_downloads);
-	prev.shared    = std::move(new_shared);
-	prev.servers   = std::move(new_servers);
-	prev.clients   = std::move(new_clients);
-	prev.status    = std::move(new_status);
+	prev.downloads    = std::move(new_downloads);
+	prev.shared       = std::move(new_shared);
+	prev.servers      = std::move(new_servers);
+	prev.clients      = std::move(new_clients);
+	prev.status       = new_status;
+	prev.kad          = new_kad;
+	prev.ec_connected = new_ec;
 
-	// Phase 8d: log_appended. CState::AmuleLog() is append-only
+	// log_appended. CState::AmuleLog() is append-only
 	// (CState.cpp:142-151) so a strictly-increasing size means the
 	// refresher just appended the tail. First tick records the
 	// size baseline silently — clients GET /api/v0/logs/amule for

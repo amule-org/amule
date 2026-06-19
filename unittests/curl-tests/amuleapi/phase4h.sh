@@ -18,9 +18,12 @@
 #      a consumer asking for a specific file by hash gets it
 #      regardless of its status.
 #
-# Phase 5 / v0.2 deferred work: an explicit clear-completed mutation
-# (`DELETE /downloads/{hash}` for single + `POST /downloads/clear_completed`
-# for all). Wires to EC_OP_CLEAR_COMPLETED. Not in v0.1 scope.
+# Phase 5b exercises the clear-completed mutations:
+#   `POST /downloads/clear_completed`              (bulk-clear, no body)
+#   `POST /downloads/clear_completed {"hash":...}` (single-entry clear)
+# Both wire to EC_OP_CLEAR_COMPLETED. `DELETE /downloads/{hash}` is
+# active-only and 409s on completed entries — see phase5b for the
+# 409 + per-entry clear assertions.
 
 set -u
 set -o pipefail

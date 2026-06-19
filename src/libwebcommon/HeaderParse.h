@@ -30,28 +30,23 @@
 
 
 // Line-anchored HTTP header + Cookie helpers. Pure pointer-arithmetic
-// over a CRLF-terminated header block — no copies, no allocations, no
-// dependencies on the HTTP server implementation. Both binaries
-// (amuleweb and amuleapi) used to need a copy; the helpers live here
-// so the line-boundary anchoring (defeats `X-Foo:`-in-value
-// header-injection) and the OWS trimming rules sit in one place.
+// over a CRLF-terminated header block — no copies, no allocations,
+// no dependency on the HTTP server. Line-boundary anchoring (defeats
+// `X-Foo:`-in-value header-injection) and the OWS trimming rules
+// sit in one place.
 
 namespace webcommon {
 
 
-// Walk an HTTP header block looking for `name:` at the start of a line
-// (case-insensitive). Returns a non-owning view of the value, past the
-// colon and any leading OWS, up to but not including the line's CRLF.
-// Returns {nullptr, 0} on miss.
-//
-// `block` is expected to start at the HTTP-version line (e.g. the
-// "GET / HTTP/1.1\r\n" produced by the request). The function walks
-// past that line on the first iteration — the version line doesn't
-// start with `name:` so the strncasecmp+colon check rejects it.
-//
-// Anchored to line boundaries to defeat header-injection via a value
-// that happens to contain the literal "X-Header:" — a strstr-based
-// scan would have matched arbitrarily inside any other value.
+// Walk an HTTP header block looking for `name:` at the start of a
+// line (case-insensitive). Returns a non-owning view of the value,
+// past the colon and any leading OWS, up to but not including the
+// line's CRLF; returns {nullptr, 0} on miss. `block` is expected to
+// start at the HTTP-version line (e.g. "GET / HTTP/1.1\r\n"); that
+// line is skipped on the first iteration. Line-boundary anchoring
+// defeats header-injection via a value that happens to contain a
+// literal "X-Header:" — a strstr-based scan would have matched
+// anywhere.
 std::pair<const char*, std::size_t> FindHttpHeaderValue(
 	const char *block, const char *name);
 

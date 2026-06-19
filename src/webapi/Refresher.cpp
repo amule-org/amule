@@ -21,7 +21,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-
 // Pure EC-tag-to-State translation layer. No CamuleapiApp dependency
 // — the per-tick orchestration (`RefresherTick` + `TwoPhaseRefresh`)
 // lives in RefresherTick.cpp so the unit tests can link these
@@ -117,8 +116,8 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	}
 	// Nickname intentionally absent: it isn't shipped in the
 	// EC_OP_STAT_REQ response. amuled returns it from
-	// EC_OP_GET_PREFERENCES / EC_OP_GET_STATSTREE@DETAIL_WEB. Phase 4c
-	// wires it via the /preferences endpoint.
+	// EC_OP_GET_PREFERENCES / EC_OP_GET_STATSTREE@DETAIL_WEB; the
+	// /preferences endpoint exposes it instead.
 }
 
 
@@ -162,10 +161,10 @@ const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 // The auto-priority flag is encoded as `prio + 10`, NOT bit-7
 // (`& 0x80`). Pattern lifted from amule-remote-gui.cpp:1424:
 //
-//   if (m_iUpPriorityEC >= 10) {
-//       m_iUpPriority    = m_iUpPriorityEC - 10;
-//       m_bAutoUpPriority = true;
-//   }
+// if (m_iUpPriorityEC >= 10) {
+//      m_iUpPriority    = m_iUpPriorityEC - 10;
+//      m_bAutoUpPriority = true;
+//  }
 //
 // Same encoding for `EC_TAG_KNOWNFILE_PRIO` (shared, up-side) and
 // `EC_TAG_PARTFILE_PRIO` (downloads, down-side). Using bit-7 here
@@ -234,17 +233,14 @@ std::string TagHashLower(const CEC_SharedFile_Tag *sf)
 
 
 // Merge a CEC_PartFile_Tag's PRESENT child tags into an existing
-// DownloadSnapshot. Tags absent from the response leave the
-// corresponding field unchanged — that's the whole point of INC mode.
+// DownloadSnapshot. Absent tags leave the corresponding field
+// unchanged — that's the point of INC mode.
 //
-// `is_new` distinguishes "this is the very first time we see this
-// ECID" (we must populate every required identity field) from "this
-// is an INC update to a known entry" (only changed fields are
-// touched). The two-tier handling matches the amule-remote-gui
-// pattern at #808's defence — for a new ECID, if PARTFILE_HASH
-// itself is absent we skip the insertion entirely (the server has
-// CValueMap-suppressed even the identity tag, so we'd produce a
-// ghost entry with no hash).
+// `is_new` distinguishes first-encounter ECID (populate every
+// identity field) from INC update to a known entry (only changed
+// fields). For a new ECID without PARTFILE_HASH we skip insertion
+// entirely (server CValueMap-suppressed even the identity tag — we'd
+// produce a ghost entry).
 void MergePartFileTag(const CEC_PartFile_Tag *pf, DownloadSnapshot &d,
                       bool is_new)
 {
@@ -496,34 +492,26 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs,
 		}
 	}
 	// REMOTE_FILENAME = the file we are downloading from this peer
-	// (per ECSpecialCoreTags.cpp:325). Live only at INC_UPDATE detail.
+	// (`m_clientFilename` is set from OP_REQFILENAMEANSWER; see
+	// DownloadClient.cpp:350). Live only at INC_UPDATE detail.
 	wxString fn;
 	if (c->RemoteFilename(fn)) {
-		// The wire field maps to "downloading from this peer", which is
-		// the file we'd surface as the "downloading file name". We
-		// store it without committing on the ECID-→-hash resolve here;
-		// the *hash* fields below cover that role when present.
-		cs.requested_file_name = std::string(fn.utf8_str());
+		cs.download_file_name = std::string(fn.utf8_str());
 	}
 	// UPLOAD_FILE / REQUEST_FILE carry ECIDs (the unified
-	// m_FileEncoder map's IDs). We surface them as the ECID alongside
-	// any resolved hash; the actual hash resolution happens client-side
-	// against /downloads + /shared. amule's wire shape doesn't ship a
-	// per-client file-hash, so consumers cross-reference.
+	// m_FileEncoder map's IDs), NOT MD4 file hashes. We surface them
+	// as decimal-string ECIDs; consumers correlate against
+	// /downloads[].ecid or /shared[].ecid client-side.
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_FILE, v) && v != 0) {
-			// Re-key as hex string for consistency with the rest of
-			// the ClientSnapshot string fields. The string is the ECID
-			// formatted as a base-10 integer; consumers map this onto
-			// /shared[].ecid or /downloads[].ecid.
-			cs.requested_file_hash = std::to_string(v);
+			cs.upload_file_ecid = std::to_string(v);
 		}
 	}
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_REQUEST_FILE, v) && v != 0) {
-			cs.downloading_file_hash = std::to_string(v);
+			cs.download_file_ecid = std::to_string(v);
 		}
 	}
 	{
@@ -638,116 +626,6 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, SharedSnapshot &s)
 }  // namespace
 
 
-// Generic delta-apply skeleton. The shape (top-level tag handling,
-// EC_TAG_FILE_REMOVED, alive-marker defence, bulk-deletion fallback)
-// is identical for downloads / uploads / shared; only the per-tag
-// merge differs. Templated so the per-type Merge fn stays trivially
-// inlinable without macro tricks.
-namespace {
-
-// --- Phase 1: walk the UPDATE response. Applies deltas to known
-// entries, collects new ECIDs (caller fetches them via Phase 2).
-template <class Snapshot, class TagSubclass, class MergeFn>
-std::set<std::uint32_t> ApplyUpdatePhase(
-	const CECPacket *resp,
-	bool partial_update_active,
-	std::map<std::uint32_t, Snapshot> &cache,
-	ec_tagname_t item_tagname,
-	MergeFn merge)
-{
-	std::set<std::uint32_t> needs_full;
-	if (!resp) return needs_full;
-
-	std::set<std::uint32_t> seen;
-	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
-		const CECTag *t = &*it;
-		const ec_tagname_t name = t->GetTagName();
-
-		if (name == EC_TAG_FILE_REMOVED) {
-			// Explicit deletion marker — only emitted by partial-update
-			// capable servers. Drop the entry by ECID.
-			cache.erase(static_cast<std::uint32_t>(t->GetInt()));
-			continue;
-		}
-		if (name != item_tagname) continue;   // ignore unrelated siblings
-
-		const TagSubclass *typed = static_cast<const TagSubclass *>(t);
-		const std::uint32_t ecid = typed->ID();
-		seen.insert(ecid);
-
-		auto map_it = cache.find(ecid);
-		if (map_it == cache.end()) {
-			// New ECID — Phase 1 carries no identity (UPDATE-level
-			// suppresses NAME/HASH/SIZE), so flag for Phase 2.
-			// Defence #713 stays inline at Phase 2 (skip-if-no-
-			// children); for Phase 1 we always enqueue the ECID.
-			needs_full.insert(ecid);
-		} else {
-			merge(typed, map_it->second, /*is_new=*/false);
-		}
-	}
-
-	if (!partial_update_active) {
-		// Old server: no EC_TAG_FILE_REMOVED markers, only alive
-		// markers for files that didn't change. Anything we didn't
-		// see in this response was either removed or alive-but-
-		// suppressed; without an alive-marker map we can't tell,
-		// so the safe (matches amule-remote-gui's legacy path) move
-		// is to drop entries we didn't see. The cost is one extra
-		// "this file came back" event after each refresh tick, which
-		// the eventual list view absorbs without visible flicker.
-		for (auto it = cache.begin(); it != cache.end();) {
-			if (seen.find(it->first) == seen.end()) {
-				it = cache.erase(it);
-			} else {
-				++it;
-			}
-		}
-	}
-	return needs_full;
-}
-
-
-// --- Phase 2: walk the FULL response (returned from the second EC
-// roundtrip), insert brand-new entries with identity + initial stats.
-template <class Snapshot, class TagSubclass, class InitFn, class MergeFn>
-void ApplyFullPhase(
-	const CECPacket *resp,
-	std::map<std::uint32_t, Snapshot> &cache,
-	ec_tagname_t item_tagname,
-	InitFn  init_identity,
-	MergeFn merge,
-	bool require_partfile_hash_on_insert)
-{
-	if (!resp) return;
-	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
-		const CECTag *t = &*it;
-		if (t->GetTagName() != item_tagname) continue;
-		const TagSubclass *typed = static_cast<const TagSubclass *>(t);
-		const std::uint32_t ecid = typed->ID();
-
-		// Defence #713 / #808: ghosts from a server-side race during
-		// bulk reload. A tag with no child tags, or one missing the
-		// identity hash that we requested full detail on, gets
-		// silently skipped — next tick re-discovers it once amuled
-		// has the file fully registered.
-		if (!typed->HasChildTags()) continue;
-		if (require_partfile_hash_on_insert
-		    && !typed->GetTagByName(EC_TAG_PARTFILE_HASH)) {
-			continue;
-		}
-
-		Snapshot fresh;
-		fresh.ecid = ecid;
-		init_identity(typed, fresh);
-		merge(typed, fresh, /*is_new=*/true);
-		cache.emplace(ecid, std::move(fresh));
-	}
-}
-
-}  // namespace
-
-
 // --- Downloads (EC_TAG_PARTFILE)
 
 namespace {
@@ -791,17 +669,15 @@ void ApplyGetUpdateToDownloads(
 	if (!resp) return;
 
 	// Walk the response top level. Three tag-name dispatches:
-	//   * EC_TAG_PARTFILE       → merge into downloads cache
-	//   * EC_TAG_FILE_REMOVED   → erase ECID from cache + rle_state
-	//   * everything else        → not ours (handled by sibling walkers
-	//                              ApplyGetUpdateTo{Shared,Servers})
+	//  * EC_TAG_PARTFILE     → merge into downloads cache
+	//  * EC_TAG_FILE_REMOVED → erase ECID from cache + rle_state
+	//  * everything else     → handled by sibling Shared/Servers walkers
 	//
-	// Because INC_UPDATE ships full identity on first encounter for a
-	// new ECID (no Phase 2 needed), the cache-miss branch inserts a
-	// fully-populated snapshot in one pass. The CValueMap suppresses
+	// INC_UPDATE ships full identity on first encounter for a new
+	// ECID (no two-pass needed), so the cache-miss branch inserts a
+	// fully-populated snapshot in one pass. CValueMap suppresses
 	// individual tags on subsequent ticks; AssignIfExist in
-	// MergePartFileTag leaves cached values intact when the
-	// corresponding tag is absent.
+	// MergePartFileTag leaves cached values intact when absent.
 	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
 		const CECTag *t = &*it;
 		const ec_tagname_t name = t->GetTagName();
@@ -847,32 +723,23 @@ void ApplyGetUpdateToShared(
 {
 	if (!resp) return;
 
-	// amuled's "shared files" surface is the union of:
-	//   * completed knownfiles in `theApp->sharedfiles` → ship as
-	//     EC_TAG_KNOWNFILE in the GET_UPDATE response. Always shared.
-	//   * partfiles in the downloadqueue with `IsShared()=true` (≥1
-	//     chunk completed → can serve upload requests) → ship as
-	//     EC_TAG_PARTFILE in the GET_UPDATE response, with the
-	//     `EC_TAG_PARTFILE_SHARED` child tag carrying the bool.
-	//     ExternalConn.cpp:939 emits it via valuemap-aware AddTag.
+	// amuled's "shared files" surface is the union of completed
+	// knownfiles (`theApp->sharedfiles` → EC_TAG_KNOWNFILE, always
+	// shared) and partfiles in the downloadqueue with `IsShared()=
+	// true` (≥1 chunk complete → can serve upload requests →
+	// EC_TAG_PARTFILE with `EC_TAG_PARTFILE_SHARED` child tag).
+	// So this walker consumes BOTH top-level tag types and gates
+	// partfile entries on the SHARED flag. CEC_PartFile_Tag derives
+	// from CEC_SharedFile_Tag — same identity tags + same stat tags
+	// — so we treat a PARTFILE as a CEC_SharedFile_Tag and pass it
+	// through MergeSharedTag unchanged.
 	//
-	// So the shared walker has to consume BOTH top-level tag types
-	// and gate partfile entries on the SHARED flag. CEC_PartFile_Tag
-	// derives from CEC_SharedFile_Tag — same identity tags
-	// (PARTFILE_NAME / PARTFILE_HASH / SIZE_FULL / ED2K_LINK), same
-	// stat tags (KNOWNFILE_XFERRED / REQ_COUNT / PRIO) — so we can
-	// view a PARTFILE as a CEC_SharedFile_Tag and pass it through
-	// MergeSharedTag unchanged.
+	// EC_TAG_PARTFILE_SHARED is CValueMap-suppressed when unchanged:
+	// present-and-true → insert/update; present-and-false → evict
+	// from shared cache (no longer shared); absent → preserve prior.
 	//
-	// EC_TAG_PARTFILE_SHARED is CValueMap-suppressed when the value
-	// hasn't changed since the last frame: present-and-true → insert/
-	// update; present-and-false → evict from shared cache (the
-	// partfile is no longer being shared); absent → preserve prior
-	// state (cached entries stay, unknown entries stay unknown).
-	//
-	// EC_TAG_FILE_REMOVED markers in the response could target either
-	// a partfile or a knownfile ECID (the server-side encoder map is
-	// unified across both); we erase from this cache unconditionally,
+	// EC_TAG_FILE_REMOVED markers can target either a partfile or
+	// knownfile ECID (unified server-side); we erase unconditionally,
 	// missing-key erase is a no-op.
 	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
 		const CECTag *t = &*it;
@@ -924,8 +791,7 @@ void ApplyGetUpdateToShared(
 
 
 // --- Clients (rides on the EC_TAG_CLIENT container inside the
-// consolidated GET_UPDATE response). Replaces the prior two-phase
-// EC_OP_GET_ULOAD_QUEUE polling — see Phase 4g retrospective.
+// consolidated GET_UPDATE response).
 
 void ApplyGetUpdateToClients(
 	const CECPacket *resp,
@@ -940,7 +806,7 @@ void ApplyGetUpdateToClients(
 	// per-client tag is added unconditionally — only the children
 	// are CValueMap-suppressed when unchanged). So we use the
 	// "seen this tick = keep, absent = evict" pattern (same shape
-	// as the servers walker in Phase 4f). There's no FILE_REMOVED
+	// as the servers walker above). There's no FILE_REMOVED
 	// equivalent for clients on the server side.
 	std::set<std::uint32_t> seen;
 	for (CECTag::const_iterator it = container->begin();
@@ -1132,18 +998,16 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 		if (is_new || !v.empty()) s.version = v;
 	}
 	// IP + port shipping shape varies by EC detail level:
-	//   * webserver / amulecmd (FULL/WEB/UPDATE) ship them packed
-	//     into the OUTER tag as IPv4 data (st->GetIPv4Data()).
-	//   * amulegui (INC_UPDATE / GET_UPDATE) — what Phase 4f uses —
-	//     ships them as CHILD tags EC_TAG_SERVER_IP + EC_TAG_SERVER_PORT
-	//     (ECSpecialCoreTags.cpp:112-113). The outer tag carries the
-	//     ECID instead. Reading GetIPv4Data() on that shape returns
-	//     all-zeros — which silently degrades /servers[].address to
-	//     "0.0.0.0:0" until the operator notices.
+	//  * FULL/WEB/UPDATE (webserver, amulecmd) pack them into the
+	//    OUTER tag as IPv4 data (st->GetIPv4Data()).
+	//  * INC_UPDATE / GET_UPDATE (amulegui, amuleapi) ship them as
+	//    CHILD tags EC_TAG_SERVER_IP + EC_TAG_SERVER_PORT
+	//    (ECSpecialCoreTags.cpp:112-113); the outer tag carries the
+	//    ECID instead, so GetIPv4Data() returns all-zeros and
+	//    /servers[].address silently degrades to "0.0.0.0:0".
 	//
-	// Try the child-tag shape first (covers our normal GET_UPDATE
-	// path); fall back to GetIPv4Data() so legacy code paths (any
-	// future use of FULL detail) keep working.
+	// Try the child-tag shape first; fall back to GetIPv4Data() so
+	// any future use of FULL detail still works.
 	{
 		std::uint32_t ip_he = 0;
 		std::uint16_t port  = 0;
@@ -1228,11 +1092,11 @@ void ApplyGetUpdateToServers(const CECPacket *resp,
 	// FILE_REMOVED markers for servers on the server side — see
 	// ExternalConn.cpp:985-994), but individual per-server fields are
 	// CValueMap-suppressed on unchanged values. Two consequences:
-	//   1. Servers absent from the response are gone on amuled's
-	//      side — we evict by "not seen this tick".
-	//   2. For servers we already cache, identity tags may be absent
-	//      this tick; MergeServerTag leaves cached values intact
-	//      (the `if (is_new || !n.empty())` guard).
+	//  1. Servers absent from the response are gone on amuled's
+	//     side — we evict by "not seen this tick".
+	//  2. For servers we already cache, identity tags may be absent
+	//     this tick; MergeServerTag leaves cached values intact
+	//     (the `if (is_new || !n.empty())` guard).
 	std::set<std::uint32_t> seen;
 	for (CECTag::const_iterator it = container->begin();
 	     it != container->end(); ++it) {
@@ -1355,10 +1219,10 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_DATA)) {
 		// 4 interleaved channels per amuled-side layout
 		// (Statistics.cpp:621-624):
-		//   ch0 = kBpsDownCur * 1024  (bytes per second)
-		//   ch1 = kBpsUpCur   * 1024  (bytes per second)
-		//   ch2 = cntConnections      (active client connections)
-		//   ch3 = kadNodesCur         (Kad nodes currently routed)
+		//  ch0 = kBpsDownCur * 1024  (bytes per second)
+		//  ch1 = kBpsUpCur   * 1024  (bytes per second)
+		//  ch2 = cntConnections      (active client connections)
+		//  ch3 = kadNodesCur         (Kad nodes currently routed)
 		std::vector<std::vector<std::uint32_t>> channels;
 		UnpackInterleavedUint32(
 			static_cast<const std::uint8_t *>(t->GetTagData()),

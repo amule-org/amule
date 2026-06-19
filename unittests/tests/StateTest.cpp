@@ -158,7 +158,7 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 {
 	// `decoded_gaps` + `decoded_part_sources` are populated by the
-	// refresher's stateful RLE decoder pass (Phase 4e). CState just
+	// refresher's stateful RLE decoder pass. CState just
 	// stores and surfaces them; this test pins that the per-part
 	// arrays survive the MutateDownloads → Downloads()/FindDownload
 	// roundtrip with element-level fidelity. Regression would manifest
@@ -204,7 +204,7 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 TEST(State, MutateClientsAndSharedRoundtrip)
 {
 	CState s;
-	// Phase 4g: m_clients is the unified peer cache (all upload_state
+	// m_clients is the unified peer cache (all upload_state
 	// values). /clients endpoint surfaces the full set; consumers
 	// filter by role on their side.
 	s.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {

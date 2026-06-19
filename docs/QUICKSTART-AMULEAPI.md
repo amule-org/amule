@@ -44,7 +44,7 @@ The directory holds three amuleapi-specific files, all written with mode
 
 | File                      | Purpose                                                                                                  |
 | ------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `amuleapi.conf`           | INI-style runtime config (bind address, port, CORS allowlist, EC overrides, auth rate-limit knobs).      |
+| `amuleapi.conf`           | INI-style runtime config (HTTP bind/port/CORS, outbound EC connection to amuled, login rate-limit knobs, SSE event-bus ring size). Full reference below. |
 | `amuleapi-jwt-secret`     | 32-byte HMAC signing key for issued tokens. Auto-generated on first launch if absent.                    |
 | `amuleapi-passwords`      | MD5-hashed admin and guest passwords. Plaintext is never persisted.                                      |
 
@@ -111,6 +111,66 @@ curl -s -N -H "Authorization: Bearer $TOKEN" \
     http://127.0.0.1:4713/api/v0/events
 ```
 
+## `amuleapi.conf` reference
+
+INI-style file written with mode `0600`. The defaults file is created on first launch if absent — edits roundtrip through `wxFileConfig`, so quotes and comments are preserved across daemon restarts. The full surface:
+
+```ini
+[Server]
+BindAddress=127.0.0.1
+Port=4713
+AllowCORS=0
+CorsOriginAllowlist=
+
+[EC]
+Host=127.0.0.1
+Port=4712
+Password=
+
+[Auth]
+LoginFailureWindowSeconds=60
+LoginFailureThreshold=5
+LoginLockoutSeconds=300
+
+[Streaming]
+EventBusRingCapacity=16384
+```
+
+### `[Server]` — HTTP listener
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `BindAddress` | `127.0.0.1` | Interface the HTTP listener binds to. Non-loopback binds are rejected at startup unless at least one of admin/guest passwords is set (the "publicly listening with no password" footgun gate in `App.cpp`). Overridable with `--bind=…` on the CLI. |
+| `Port` | `4713` | TCP port for inbound REST traffic. Distinct from amuled's EC port (`[EC]/Port`, default 4712). Overridable with `--http-port=…`. |
+| `AllowCORS` | `0` | `1` enables CORS headers (`Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials: true`, `Vary: Origin`, preflight OPTIONS). Required for browser clients hosted on a different origin. See §CORS below. |
+| `CorsOriginAllowlist` | *(empty)* | Comma-separated list of origins that may set credentialed CORS requests. Empty + `AllowCORS=1` echoes the caller's `Origin` verbatim (wildcard-equivalent that remains cookie-compatible). |
+
+### `[EC]` — outbound connection to amuled
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `Host` | `127.0.0.1` | Hostname or IP of the running amuled daemon. amuleapi is a long-lived EC client; CLI `--host=…` overrides. |
+| `Port` | `4712` | amuled's EC listener port (matches amuled's `[ExternalConn]/ECPort`). CLI `--port=…` overrides. |
+| `Password` | *(empty)* | Plaintext EC password matching amuled's `[ExternalConn]/ECPassword`. Stored cleartext because the base class wants a hashable plaintext — the `0600` file mode matches `amuleapi-jwt-secret` and `amuleapi-passwords`. CLI `--password=…` overrides. |
+
+### `[Auth]` — login rate limiter
+
+Drives the `/auth/login` per-IP throttle (`CRateLimiter` in `Auth.cpp`). Failures inside the sliding window count toward the threshold; tripping it locks the offending IP out for `LoginLockoutSeconds`. Successful logins reset the bucket immediately.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `LoginFailureWindowSeconds` | `60` | Sliding window in seconds. Failures older than this fall off the count. |
+| `LoginFailureThreshold` | `5` | Failures within the window before the IP is locked out. |
+| `LoginLockoutSeconds` | `300` | Duration of the IP lockout once tripped. While locked, `/auth/login` returns `429 rate_limited` with a `Retry-After` header. |
+
+### `[Streaming]` — SSE event bus
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `EventBusRingCapacity` | `16384` | Number of events the in-memory SSE bus retains for `Last-Event-ID` replay. Sized to absorb a cold-start tick on a busy node (5 K downloads + 5 K shared can publish ~10 K `*_added` events in a single tick). Worst-case memory ≈ capacity × ~1 KB JSON payload. Values below the bus's compile-time floor (16) are clamped up. Raise this on operator-heavy nodes where reconnecting clients are hitting `resync` events from natural traffic; lower it (e.g. `32`) only for the smoke-test gap-path scenario. |
+
+CLI `--bind`, `--http-port`, `--host`, `--port`, `--password`, and `--config-dir` override the matching keys at runtime without rewriting the file.
+
 ## CORS
 
 By default amuleapi serves no CORS headers (same-origin only). To allow
@@ -145,7 +205,7 @@ Leave `CorsOriginAllowlist` empty to echo any caller's `Origin` header
 - ETag-on-GET conditional caching (304 Not Modified on `If-None-Match`)
 - `/api/v0/events` — long-lived Server-Sent Events stream with
   `Last-Event-ID` replay and typed `resync` events for cache invalidation
-- Optional CORS allowlist via `amuleapi.conf[Server]/CorsOriginAllowlist`
+- Every runtime tunable lives in `amuleapi.conf`; see the §`amuleapi.conf` reference above for sections, keys, and defaults.
 
 ## Notes on a few responses
 

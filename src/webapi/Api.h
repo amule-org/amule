@@ -31,7 +31,7 @@
 #include "Auth.h"
 #include "HttpServer.h"
 #include "State.h"        // ServerInfoLog / StatsTreeNode / StatsGraphs / SearchResult
-#include "TtlCache.h"     // Phase 4g lazy-fetch coalescer
+#include "TtlCache.h"
 
 #include <ctime>
 #include <map>
@@ -46,10 +46,8 @@ namespace webapi { class CState; }
 
 
 // Request dispatcher for the `/api/v0/*` surface. Lives between the
-// transport (CHttpServer) and the per-endpoint handlers. Phase 2
-// added /api/v0/version (stateless); Phase 3 wires the auth surface,
-// so the dispatcher now owns the CJwt instance, the revocation set,
-// and the rate limiter.
+// transport (CHttpServer) and the per-endpoint handlers. Owns the
+// CJwt instance, the revocation set, and the rate limiter.
 //
 // References (not copies) of the config + jwt machinery: the App
 // constructs them once at startup and outlives every Request.
@@ -65,7 +63,7 @@ public:
 
 	CHttpServer::Response Dispatch(const CHttpServer::Request &req);
 
-	// Phase 8 streaming entry point. Called by HttpServer when the
+	// streaming entry point. Called by HttpServer when the
 	// streaming_resolver matches `/api/v0/events`. The handler runs
 	// the SSE loop until the writer goes dead (peer disconnect) or
 	// returns voluntarily.
@@ -86,7 +84,7 @@ public:
 private:
 	// Inner routing — picks the right Handle*() based on path/method,
 	// returns a fully-formed response. The public Dispatch wraps this
-	// with the Phase 7 ETag stamp + If-None-Match → 304 conversion
+	// with the ETag stamp + If-None-Match → 304 conversion
 	// (GET/HEAD on a 200 only).
 	CHttpServer::Response DispatchToHandler(const CHttpServer::Request &req);
 public:
@@ -106,15 +104,15 @@ private:
 	CHttpServer::Response HandleDownloads      (const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloadDetail (const CHttpServer::Request &,
 	                                            const std::string &hash);
-	// Phase 5a — download lifecycle mutations.
+	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd    (const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloadPatch  (const CHttpServer::Request &,
 	                                            const std::string &hash);
-	// Phase 5b — clear completed downloads.
+	// clear completed downloads.
 	CHttpServer::Response HandleDownloadDelete (const CHttpServer::Request &,
 	                                            const std::string &hash);
 	CHttpServer::Response HandleDownloadsClearCompleted(const CHttpServer::Request &);
-	// Phase 5c — server lifecycle.
+	// server lifecycle.
 	CHttpServer::Response HandleServerAdd      (const CHttpServer::Request &);
 	CHttpServer::Response HandleServerConnect  (const CHttpServer::Request &,
 	                                            const std::string &ecid_str);
@@ -132,28 +130,26 @@ private:
 		const CHttpServer::Request &, const std::string &ip_port);
 	CHttpServer::Response HandleServerDeleteByAddress(
 		const CHttpServer::Request &, const std::string &ip_port);
-	// Phase 5d — preferences PATCH.
+	// preferences PATCH.
 	CHttpServer::Response HandlePreferencesPatch(const CHttpServer::Request &);
-	// Phase 5e — connection control.
+	// connection control.
 	CHttpServer::Response HandleNetworksConnect (const CHttpServer::Request &);
 	CHttpServer::Response HandleNetworksDisconnect(const CHttpServer::Request &);
-	CHttpServer::Response HandleKadConnect      (const CHttpServer::Request &);
-	CHttpServer::Response HandleKadDisconnect   (const CHttpServer::Request &);
 	CHttpServer::Response HandleKadBootstrap    (const CHttpServer::Request &);
-	// Phase 5f — shared file priority PATCH.
+	// shared file priority PATCH.
 	CHttpServer::Response HandleSharedPatch     (const CHttpServer::Request &,
 	                                             const std::string &hash);
 	// Rescan shared directories — amuled re-walks the configured share
 	// roots and re-publishes whatever's there. Parameterless EC op
 	// (EC_OP_SHAREDFILES_RELOAD).
 	CHttpServer::Response HandleSharedReload    (const CHttpServer::Request &);
-	// Phase 5g — categories CRUD.
+	// categories CRUD.
 	CHttpServer::Response HandleCategoryCreate  (const CHttpServer::Request &);
 	CHttpServer::Response HandleCategoryUpdate  (const CHttpServer::Request &,
 	                                             const std::string &index_str);
 	CHttpServer::Response HandleCategoryDelete  (const CHttpServer::Request &,
 	                                             const std::string &index_str);
-	// Phase 6 — search.
+	// search.
 	CHttpServer::Response HandleSearchStart    (const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStop     (const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchDownload (const CHttpServer::Request &,
@@ -186,20 +182,14 @@ private:
 	CamuleapiApp             &m_app;
 	webapi::CRevocationSet    m_revocations;
 
-	// ETag memoization, keyed on (request target, snapshot version).
-	// Today every 200 GET/HEAD response runs MD5 over the whole body
-	// to compute the ETag header; on a 10K-shared-file daemon
-	// /downloads is multi-MB and the per-request hash is the
-	// dominant CPU cost of the safe-method path. Cache the result
-	// against `CState::SnapshotAt()` — the timestamp of the last
-	// successful refresher tick (or inline RefresherTick from a
-	// mutation, which bumps the same field) so cache hits are
-	// guaranteed-coherent: two GETs for the same target between
-	// ticks produce identical bodies and identical ETags. Cap the
-	// map at kEtagCacheCapacity entries; on overflow the cache is
-	// cleared wholesale rather than evicting LRU since the typical
-	// working set is a few dozen unique targets, well below the
-	// cap, and the bound is just a memory-pressure backstop.
+	// ETag memoization keyed on (request target, snapshot version).
+	// Every 200 GET/HEAD runs MD5 over the whole body for ETag — on a
+	// 10K-shared-file daemon /downloads is multi-MB and this is the
+	// dominant CPU cost of the safe-method path. Cache against
+	// `CState::SnapshotAt()` so two GETs for the same target between
+	// ticks return identical bodies + ETags. On overflow the cache
+	// is cleared wholesale (typical working set is well below cap;
+	// the bound is just a memory backstop).
 	mutable std::mutex
 		m_etagCacheMu;
 	struct EtagCacheEntry {
@@ -224,18 +214,28 @@ private:
 	// ctor below).
 	webapi::CRateLimiter      m_authRateLimiter;
 
-	// Lazy-fetch TTL caches (Phase 4g). Each cache stores the
+	// Lazy-fetch TTL caches. Each cache stores the
 	// snapshot value PLUS the wall-clock time at fetch so handlers
 	// can render `snapshot_at` against the actual freshness, not the
 	// refresher's tick boundary. TTL coalesces concurrent burst reads
-	// (1 s default; per Phase 4g design call). Fetcher lambdas
+	// (1 s default; per design call). Fetcher lambdas
 	// acquire `m_app.m_ec_mtx` AFTER the cache's own mutex — single
 	// flight: a second concurrent miss waits on the cache mutex and
 	// reads the just-stored value.
 	using TtlPair_StatsTree  = std::pair<webapi::StatsTreeNode,                     std::time_t>;
 	using TtlPair_StatsGraphs= std::pair<webapi::StatsGraphs,                       std::time_t>;
 	using TtlPair_ServerInfo = std::pair<webapi::ServerInfoLog,                     std::time_t>;
-	using TtlPair_Search     = std::pair<std::map<std::uint32_t, webapi::SearchResult>, std::time_t>;
+	// Search cache: results + the raw EC_TAG_SEARCH_STATUS progress
+	// value pulled in the same single-flight roundtrip. Lets
+	// GET /search/results expose `progress.{percent, complete}` so
+	// an empty results array isn't ambiguous between "no search
+	// running" / "search in flight with no hits yet" / "search
+	// finished with zero hits".
+	struct SearchCacheValue {
+		std::map<std::uint32_t, webapi::SearchResult> results;
+		std::uint32_t                                 progress_raw = 0;
+	};
+	using TtlPair_Search     = std::pair<SearchCacheValue,                          std::time_t>;
 	webapi::CTtlCache<TtlPair_StatsTree>    m_stats_tree_cache;
 	webapi::CTtlCache<TtlPair_StatsGraphs>  m_stats_graphs_cache;
 	webapi::CTtlCache<TtlPair_ServerInfo>   m_server_info_cache;

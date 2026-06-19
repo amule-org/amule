@@ -33,11 +33,6 @@
 // URL-path primitives used by the REST router. Kept dependency-free
 // (no wx, no amule-internal headers) so the unit tests can link this
 // translation unit on its own.
-//
-// The namespace name stays `web_api_path` for source-level continuity
-// with the JwtTest and PathPatternsTest cases carried over from the
-// reference branch; renaming it would churn every test file for no
-// caller-visible benefit.
 
 namespace web_api_path {
 
@@ -49,13 +44,11 @@ std::vector<std::string> SplitPath(const std::string &path);
 
 
 // Returns true if the raw path looks like a traversal/injection
-// attempt: contains a NUL byte, an encoded NUL (%00), a literal
-// ".." segment, or a percent-encoded ".." (`%2e%2e` /
-// `%2E%2E` / mixed-case). Today's routes are all byte-exact and
-// would 404 such requests organically; this is defence-in-depth so
-// any future route that admits path segments (file-share by hash,
-// log-tail by name, etc.) doesn't quietly inherit a traversal
-// surface. Call before routing — reject with 400.
+// attempt: contains a NUL byte, encoded NUL (%00), a literal ".."
+// segment, or percent-encoded ".." (`%2e%2e` in any case).
+// Defence-in-depth — call before routing, reject with 400. Any
+// future endpoint that admits path captures inherits the
+// protection.
 bool LooksMalicious(const std::string &path);
 
 
@@ -68,8 +61,8 @@ std::map<std::string, std::string> ParseQuery(const std::string &q);
 
 // A pattern is a path string with optional `{name}` capture segments.
 // Example: "/downloads/{hash}/pause" parses to
-//   segments      = ["downloads", "{hash}", "pause"]
-//   capture_names = ["", "hash", ""]
+//  segments      = ["downloads", "{hash}", "pause"]
+//  capture_names = ["", "hash", ""]
 struct RoutePattern {
 	std::vector<std::string> segments;
 	// Per-segment capture name. Empty when the segment is a literal.

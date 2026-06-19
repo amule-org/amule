@@ -192,6 +192,17 @@ if [ -n "$RESULT_HASH" ]; then
 	_assert_json_eq '.results[0].hash | length' 32     '/search/results[0].hash is 32-char hex'
 	_assert_json_eq '.results[0].name | type'   string '/search/results[0].name is string'
 	_assert_json_eq '.results[0].size | type'   number '/search/results[0].size is numeric'
+
+	# Phase 7.2 — progress envelope. `progress` exists on every
+	# GET /search/results response (even before any POST /search).
+	# Once we have results we know either:
+	#   * progress.complete == true (search finished, percent == 100), or
+	#   * progress.complete == false with percent in [0, 99]
+	#     (still polling more servers).
+	_assert_json_eq '.progress.percent | type'  number 'search progress.percent is numeric'
+	_assert_json_eq '.progress.complete | type' boolean 'search progress.complete is boolean'
+	_assert_json_eq '.progress.percent >= 0 and .progress.percent <= 100' \
+		true 'search progress.percent stays in [0, 100]'
 else
 	echo "    info: 0 search results after 10 s — daemon may not be connected to ed2k/kad"
 	echo "    info: skipping /search/results/{hash}/download path (no hash to target)"

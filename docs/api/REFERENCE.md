@@ -4,6 +4,79 @@ This document is the contract for every REST endpoint exposed by the `amuleapi` 
 
 The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/v0/` is frozen against any backwards-incompatible change for the lifetime of the v0 surface.
 
+## Index
+
+**Cross-cutting concerns**
+- [Base URL and transport](#base-url-and-transport)
+- [Authentication](#authentication) — [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
+- [Response model](#response-model) — [Success envelope](#success-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
+- [Error code catalog](#error-code-catalog)
+- [Backward compatibility](#backward-compatibility)
+
+**System**
+- [`GET /api/v0/version`](#get-apiv0version) — public version probe
+- [`GET /api/v0/status`](#get-apiv0status) — connection state, network state, headline counters
+
+**Authentication**
+- [`POST /api/v0/auth/login`](#post-apiv0authlogin) — mint a JWT, optionally return it in the body
+- [`POST /api/v0/auth/logout`](#post-apiv0authlogout) — revoke the bearer's `jti`
+- [`GET /api/v0/auth/session`](#get-apiv0authsession) — verified bearer's role and expiry
+
+**Downloads**
+- [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
+- [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view (includes per-part state)
+- [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
+- [`PATCH /api/v0/downloads/{hash}`](#patch-apiv0downloadshash) — pause / resume / priority / category
+- [`DELETE /api/v0/downloads/{hash}`](#delete-apiv0downloadshash) — cancel + remove
+- [`POST /api/v0/downloads/clear_completed`](#post-apiv0downloadsclear_completed) — bulk-clear completed staging buffer
+
+**Clients (peers)**
+- [`GET /api/v0/clients`](#get-apiv0clients) — list peers, optional filter
+
+**Shared files**
+- [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
+- [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
+- [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
+
+**Servers**
+- [`GET /api/v0/servers`](#get-apiv0servers) — list known ed2k servers
+- [`POST /api/v0/servers`](#post-apiv0servers) — add server
+- [`POST /api/v0/servers/{ecid}/connect`](#post-apiv0serversecidconnect--post-apiv0serversipportconnect) — connect to specific server (ECID or `ip:port`)
+- [`DELETE /api/v0/servers/{ecid}`](#delete-apiv0serversecid--delete-apiv0serversipport) — remove server (ECID or `ip:port`)
+- [`POST /api/v0/servers/update`](#post-apiv0serversupdate) — refresh from `server.met` URL
+
+**Categories**
+- [`GET /api/v0/categories`](#get-apiv0categories) — list categories
+- [`POST /api/v0/categories`](#post-apiv0categories) — create
+- [`PATCH /api/v0/categories/{index}`](#patch-apiv0categoriesindex) — modify
+- [`DELETE /api/v0/categories/{index}`](#delete-apiv0categoriesindex) — remove
+
+**Preferences**
+- [`GET /api/v0/preferences`](#get-apiv0preferences) — read connection + general prefs
+- [`PATCH /api/v0/preferences`](#patch-apiv0preferences) — update subset of prefs
+
+**Network control**
+- [`POST /api/v0/networks/connect`](#post-apiv0networksconnect) — connect ed2k / kad / both
+- [`POST /api/v0/networks/disconnect`](#post-apiv0networksdisconnect) — disconnect ed2k / kad / both
+- [`POST /api/v0/kad/bootstrap`](#post-apiv0kadbootstrap) — single-contact Kad bootstrap
+- [`GET /api/v0/kad`](#get-apiv0kad) — Kad-only status subtree
+
+**Logs**
+- [`GET /api/v0/logs/amule`](#get-apiv0logsamule) — amule log buffer
+- [`DELETE /api/v0/logs/amule`](#delete-apiv0logsamule) — clear amule buffer
+- [`GET /api/v0/logs/serverinfo`](#get-apiv0logsserverinfo--delete-apiv0logsserverinfo) — server-info log buffer
+- [`DELETE /api/v0/logs/serverinfo`](#get-apiv0logsserverinfo--delete-apiv0logsserverinfo) — clear server-info buffer
+
+**Statistics**
+- [`GET /api/v0/stats/tree`](#get-apiv0statstree) — full statistics tree
+- [`GET /api/v0/stats/graphs/{graph}`](#get-apiv0statsgraphsgraph) — time-series points (`download`, `upload`, `connections`, `kad`)
+
+**Search**
+- [`POST /api/v0/search`](#post-apiv0search) — start a search (global / local / kad)
+- [`GET /api/v0/search/results`](#get-apiv0searchresults) — current results + progress envelope
+- [`POST /api/v0/search/stop`](#post-apiv0searchstop) — cancel in-flight search
+- [`POST /api/v0/search/results/{hash}/download`](#post-apiv0searchresultshashdownload) — promote a result into the download queue
+
 ## Base URL and transport
 
 `amuleapi` serves HTTP on the address declared in `amuleapi.conf[Server]/Port` (default `4713`). The server is HTTP-only by design — terminate TLS in a reverse proxy (nginx, Caddy, etc.) for any non-loopback deployment. The cookie is deliberately NOT marked `Secure` so the same Set-Cookie works whether the operator runs amuleapi behind TLS or directly. See QUICKSTART for the full bind-vs-listen story.
@@ -287,31 +360,28 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 {
   "downloads": [
     {
-      "ecid": 17,
-      "hash": "8b54a3c2...",
-      "name": "ubuntu-26.04-desktop-amd64.iso",
-      "ed2k_link": "ed2k://|file|ubuntu...|3825..|8b54...|/",
-      "size": 3825205248,
-      "size_done": 1142000000,
-      "size_xfer": 1102450000,
-      "speed_bps": 4500000,
-      "status": "downloading",
-      "priority": "normal",
+      "ecid":          12,
+      "hash":          "8b54a3c2...",
+      "name":          "ubuntu-26.04-desktop-amd64.iso",
+      "ed2k_link":     "ed2k://|file|ubuntu...|3825..|8b54...|/",
+      "size":          3825205248,
+      "size_done":     1142000000,
+      "size_xfer":     1102450000,
+      "speed_bps":     4500000,
+      "status":        "downloading",
+      "priority":      "normal",
       "priority_auto": true,
-      "category": 0,
-      "sources": {
-        "total": 217,
-        "not_current": 23,
-        "transferring": 8,
-        "a4af": 4
-      },
-      "percent": 29.85
+      "category":      0,
+      "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
+      "progress": { "percent": 29.85 }
     }
   ]
 }
 ```
 
 The list shape omits `progress.parts` to keep large libraries compact. Use the detail endpoint for per-part state.
+
+The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
 
 **Errors:** `503 ec_unavailable`.
 
@@ -398,7 +468,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-Cancels and removes the partfile. The on-disk files are deleted by amuled.
+Cancels an **active** partfile and deletes its on-disk data. amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed entries are out of scope; use [`POST /downloads/clear_completed`](#post-apiv0downloadsclear_completed) instead.
 
 ```sh
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
@@ -409,24 +479,37 @@ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
 { "ok": true, "hash": "8b54a3c2..." }
 ```
 
-**Errors:** `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 amuled_rejected`, `404 not_found`, `409 completed_use_clear_completed`, `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads/clear_completed`
 
 **Auth:** `ADMIN`
 
-Drops every completed transfer from amuled's "awaiting clear" list in one call.
+Acks one or more entries in amuled's post-completion notification staging buffer. The on-disk file in the Incoming directory stays in place; this endpoint only clears amuled's "completed transfers awaiting acknowledgement" list. Active partfiles are out of scope; use [`DELETE /api/v0/downloads/{hash}`](#delete-apiv0downloadshash) instead.
+
+Two request shapes share this endpoint:
 
 ```sh
+# Bulk: no body. Clears every completed entry in one EC roundtrip.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads/clear_completed"
+
+# Per-entry: clear a single completed entry by hash.
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"hash": "8b54a3c2..."}' \
+  "http://$HOST/api/v0/downloads/clear_completed"
 ```
+
+The response envelope is identical for both shapes:
 
 ```json
 { "ok": true, "cleared": 3, "cleared_hashes": ["...", "...", "..."] }
 ```
 
-**Errors:** `400 amuled_rejected`, `503 ec_unavailable`.
+Bulk form returns `200 OK` with `cleared: 0` and no `cleared_hashes` field when nothing matches (no-op success, distinguishable from an amuled rejection). Per-entry form returns `404 not_found` if the hash doesn't exist and `409 not_completed` if it exists but isn't on the completed staging list (active partfile — caller probably wants `DELETE /downloads/{hash}` instead).
+
+**Errors:** `400 amuled_rejected`, `400 bad_request` (malformed body or non-string `hash`), `404 not_found`, `409 not_completed`, `503 ec_unavailable`.
 
 ---
 
@@ -462,12 +545,17 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "software": "eMule",
       "upload_state": "uploading",
       "download_state": "idle",
+      "upload_file_ecid": "12",
+      "download_file_ecid": "",
+      "download_file_name": "",
       "upload_speed_bps": 22000,
       "download_speed_bps": 0
     }
   ]
 }
 ```
+
+`upload_file_ecid` / `download_file_ecid` are amule ECIDs (decimal strings), not MD4 file hashes. ECIDs come from a single per-daemon counter shared across files, clients, servers, friends, and search results — a given integer identifies at most one object across all kinds within a daemon's process lifetime, so the lookup is unambiguous. Resolve each field against either [`/api/v0/downloads`](#get-apiv0downloads) `.ecid` (in-progress files, as CPartFile entries) or [`/api/v0/shared`](#get-apiv0shared) `.ecid` (CKnownFile entries — completed plus user-shared); a file completing crosses from one list to the other, which mints a new CKnownFile and therefore a new ECID, so a snapshot mid-transition may show an ECID transiently in neither list. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them.
 
 **Errors:** `400 bad_request` (unknown filter token), `503 ec_unavailable`.
 
@@ -489,17 +577,24 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 {
   "shared": [
     {
-      "ecid": 91,
-      "hash": "1a2b3c4d...",
-      "name": "release-notes.txt",
-      "ed2k_link": "ed2k://|file|release-notes.txt|3217|1a2b...|/",
-      "size": 3217,
-      "priority": "normal",
-      "complete_sources": 12
+      "ecid":             17,
+      "hash":             "1a2b3c4d...",
+      "name":             "release-notes.txt",
+      "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
+      "size":             3217,
+      "priority":         "normal",
+      "complete_sources": 12,
+      "xfer":     { "session": 5242880,  "total": 314572800 },
+      "requests": { "session": 42,       "total": 1837 },
+      "accepts":  { "session": 18,       "total": 921 }
     }
   ]
 }
 ```
+
+`xfer.session` / `xfer.total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
+
+The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters.
 
 **Errors:** `503 ec_unavailable`.
 
@@ -748,9 +843,11 @@ These endpoints drive amuled's connect/disconnect to the ed2k network, the Kad n
 
 **Auth:** `ADMIN`
 
-Connects both ed2k and Kad. No body.
+**Body:** `{ "network": "ed2k" | "kad" | "both" }` (optional; defaults to `"both"`). Same shape as `/networks/disconnect` — `"ed2k"` fires `EC_OP_SERVER_CONNECT`, `"kad"` fires `EC_OP_KAD_START`, omitted/`"both"` fires `EC_OP_CONNECT`.
 
 **Response:** `202 Accepted`.
+
+**Errors:** `400 bad_request` (unknown selector), `503 ec_unavailable`.
 
 #### `POST /api/v0/networks/disconnect`
 
@@ -760,19 +857,28 @@ Connects both ed2k and Kad. No body.
 
 **Response:** `200 OK`.
 
-#### `POST /api/v0/kad/connect` / `POST /api/v0/kad/disconnect`
+**Errors:** `400 bad_request`, `503 ec_unavailable`.
 
-**Auth:** `ADMIN`
-
-Kad-only equivalents of the network endpoints. No body.
+> Dedicated `POST /api/v0/kad/connect` and `POST /api/v0/kad/disconnect` shortcuts existed in an earlier draft of v0 but were dropped in favour of the `/networks/{connect,disconnect}` body selector — `{"network":"kad"}` does exactly what they did. The `/kad/bootstrap` endpoint below is genuinely distinct and stays.
 
 #### `POST /api/v0/kad/bootstrap`
 
 **Auth:** `ADMIN`
 
-Manual Kad bootstrap against a single contact (UDP `nodes.dat`-equivalent without rewriting the file).
+Manual Kad bootstrap against a single known-good Kad node. Fires `EC_OP_KAD_BOOTSTRAP_FROM_IP` against amuled. This is the only Kad bootstrap surface the EC protocol exposes — `nodes.dat` is read by amuled at startup from its own data directory and is NOT manageable via REST.
 
-**Body:** `{ "server_address": "host:port" }`.
+**Body:** `{ "ip": "203.0.113.5" | <uint32 host-order>, "port": <uint16> }`. `ip` accepts either the dotted-quad string form or the uint32 host-order integer form (amuled's wire-level shape). `port` is the contact's UDP port.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"ip":"203.0.113.5","port":4672}' \
+  "http://$HOST/api/v0/kad/bootstrap"
+```
+
+**Response:** `202 Accepted` → `{ "ok": true, "ip": <uint32>, "port": <uint16> }`. The Kad probe itself is fire-and-forget UDP; the `202` confirms amuled accepted the request, not that the contact was reachable.
+
+**Errors:** `400 bad_request` (missing/non-string-or-number `ip`, missing/non-numeric `port`, port outside `[0, 65535]`, malformed dotted-quad), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `GET /api/v0/kad`
 
@@ -888,19 +994,31 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 **Auth:** `GUEST`
 
+Returns the current search-results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "no search running", "search in flight with no hits yet", and "search finished with zero hits".
+
+This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.complete == false`. Single-flight TTL cache: bursts of GETs share one wire fetch (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS` in the same lock); `POST /search` and `POST /search/stop` both invalidate the cache so the next GET sees fresh data without waiting for the TTL to expire.
+
 ```json
 {
   "results": [
     {
-      "hash": "8b54a3c2...",
-      "name": "ubuntu-26.04-desktop-amd64.iso",
-      "size": 3825205248,
+      "hash":          "8b54a3c2...",
+      "name":          "example-distribution-26.04-amd64.iso",
+      "size":          3825205248,
       "sources_count": 217,
-      "file_type": "iso"
+      "file_type":     "iso"
     }
-  ]
+  ],
+  "progress": {
+    "percent":  67,
+    "complete": false
+  }
 }
 ```
+
+`progress.percent` is in the `[0, 100]` range. `progress.complete` is `true` whenever amuled reports the search has finished (matches the raw amuled sentinel values `100`, `0xfffe` Kad-done, and `0xffff` local-done — all surface here as `percent: 100, complete: true`).
+
+`progress.percent: 0, progress.complete: false` can mean either "no search has been started" OR "Kad search just kicked off but hasn't reached any peers yet" — Kad search progress is not measurable mid-flight, only "started" and "finished". Clients that started the search themselves can treat the second tick onwards as "in progress".
 
 **Errors:** `503 ec_unavailable`.
 

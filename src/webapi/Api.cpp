@@ -25,17 +25,17 @@
 #include "Api.h"
 
 #include "AmuleApiConfig.h"
-#include "App.h"          // CamuleapiApp::SendRecvSerialized (Phase 4g lazy-fetch)
+#include "App.h"
 #include "Auth.h"
 #include "ConstantTime.h"
-#include "Etag.h"        // Phase 7 — ETag / If-None-Match
+#include "Etag.h"
 #include "JsonWriter.h"
 #include "Jwt.h"
 #include "PathPatterns.h"
 #include "Refresher.h"    // ParseStatsTreeFromPacket / ParseGraphsFromPacket / ApplySearchFull
 #include "State.h"
 
-#include "Constants.h"   // PR_* download priority codes (Phase 5a)
+#include "Constants.h"
 
 #include <ec/cpp/ECPacket.h>
 #include <ec/cpp/ECCodes.h>
@@ -228,17 +228,14 @@ AuthOutcome AuthenticateRequestRateLimited(
 
 
 // `Set-Cookie: <name>=<value>; HttpOnly; SameSite=Strict; Path=/api/v0;
-//              Max-Age=<lifetime>`
+//             Max-Age=<lifetime>`
 //
-// Not `Secure`: amuleapi serves HTTP by design and the operator
-// terminates TLS in front. Adding `Secure` would silently break the
-// cookie path on every plain-HTTP deployment. Documented in
-// QUICKSTART (Phase 10 packaging step).
-// Attributes block shared by Set-Cookie (login) and the clear-cookie
-// reply (logout). RFC 6265 §5.3 requires browsers to delete a cookie
-// only when (name, path, domain) match the original; extracting the
-// attribute string into one constant means the two functions can't
-// drift if a future Secure/Domain attribute lands.
+// No `Secure`: amuleapi serves HTTP by design (operator terminates
+// TLS in front). Documented in QUICKSTART.
+//
+// Attributes shared by Set-Cookie (login) + clear-cookie (logout):
+// RFC 6265 §5.3 requires (name, path, domain) match to delete, so
+// one shared constant keeps the two paths from drifting.
 const char *const kSessionCookieAttrs =
 	"; HttpOnly; SameSite=Strict; Path=/api/v0";
 
@@ -343,7 +340,7 @@ std::string FindHeaderCaseInsensitive(
 }
 
 
-// Phase 9: resolve the CORS Origin echo for this request. Returns
+// resolve the CORS Origin echo for this request. Returns
 // the verbatim Origin to put in `Access-Control-Allow-Origin`, or
 // an empty string when CORS is disabled, the request had no Origin
 // (same-origin browser navigation; non-browser caller), or the
@@ -368,7 +365,7 @@ std::string ResolveCorsOrigin(const CHttpServer::Request &req,
 }
 
 
-// Phase 9: stamp the resolved CORS headers onto a response. `Vary:
+// stamp the resolved CORS headers onto a response. `Vary:
 // Origin` is ALWAYS added when CORS is enabled (even on rejected
 // origins) so intermediaries don't cache a cross-origin response
 // against a same-origin cache key. The auth + content headers go
@@ -405,7 +402,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	const bool cors_enabled    = m_config.ServerCfg().allow_cors;
 	const std::string cors_org = ResolveCorsOrigin(req, m_config);
 
-	// Phase 9: CORS preflight short-circuit. OPTIONS requests with
+	// CORS preflight short-circuit. OPTIONS requests with
 	// `Access-Control-Request-Method` are browser preflights — they
 	// don't carry credentials and shouldn't run the auth gate or the
 	// route handler. Reply with 204 and the CORS bundle (or 204 +
@@ -422,8 +419,8 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 			pre.headers["Access-Control-Allow-Methods"] =
 				"GET, HEAD, POST, PATCH, DELETE, OPTIONS";
 			// Headers actual requests may send. Authorization for
-			// bearer; If-None-Match for ETag conditional GET (Phase 7);
-			// Last-Event-ID for SSE replay (Phase 8c).
+			// bearer; If-None-Match for ETag conditional GET;
+			// Last-Event-ID for SSE replay.
 			pre.headers["Access-Control-Allow-Headers"] =
 				"Authorization, Content-Type, If-None-Match, Last-Event-ID";
 			pre.headers["Access-Control-Max-Age"] = "86400";
@@ -431,7 +428,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		return pre;
 	}
 
-	// Phase 7: post-process every response with an ETag stamp +
+	// post-process every response with an ETag stamp +
 	// `If-None-Match` → 304 swap, but only on GET/HEAD that come back
 	// 200. Mutations (POST/PATCH/DELETE) and error paths are passed
 	// through unchanged — there's no benefit to ETag-caching a 4xx
@@ -490,7 +487,7 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		}
 	}
 
-	// Phase 9: stamp CORS on every response (success and error paths)
+	// stamp CORS on every response (success and error paths)
 	// so browsers can read the body in the 4xx/5xx case too.
 	ApplyCorsHeaders(resp.headers, cors_org, cors_enabled);
 	return resp;
@@ -558,14 +555,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return HandleDownloads(req);
 		}
 		if (req.method == "POST") {
-			// Phase 5a: add a download by ed2k link.
+			// add a download by ed2k link.
 			return HandleDownloadAdd(req);
 		}
 		return ErrorResponse(405, "method_not_allowed",
 			"only GET / HEAD / POST on /downloads");
 	}
 
-	// Phase 5b: bulk clear-completed.
+	// bulk clear-completed.
 	if (path == "/api/v0/downloads/clear_completed") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed",
@@ -574,7 +571,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleDownloadsClearCompleted(req);
 	}
 
-	// /uploads was retired in Phase 4g — /clients covers the full
+	// /uploads was retired in — /clients covers the full
 	// peer surface (every upload_state, including queue waiters and
 	// download peers); consumers filter client-side by upload_state.
 	if (path == "/api/v0/clients") {
@@ -606,7 +603,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return HandleServers(req);
 		}
 		if (req.method == "POST") {
-			// Phase 5c — add a server by host:port.
+			// add a server by host:port.
 			return HandleServerAdd(req);
 		}
 		return ErrorResponse(405, "method_not_allowed",
@@ -621,7 +618,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleServerUpdateFromUrl(req);
 	}
 
-	// Phase 5c — server connect & remove (single server by ECID).
+	// server connect & remove (single server by ECID).
 	// Address-keyed aliases live in the same block — same handlers,
 	// different lookup path. ECID forms are tried first because they
 	// match a single-segment pattern that's cheaper to dispatch; the
@@ -668,7 +665,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleKad(req);
 	}
 
-	// Phase 5e — connection control.
+	// connection control.
 	if (path == "/api/v0/networks/connect") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed",
@@ -683,20 +680,10 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 		return HandleNetworksDisconnect(req);
 	}
-	if (path == "/api/v0/kad/connect") {
-		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed",
-				"only POST on /kad/connect");
-		}
-		return HandleKadConnect(req);
-	}
-	if (path == "/api/v0/kad/disconnect") {
-		if (req.method != "POST") {
-			return ErrorResponse(405, "method_not_allowed",
-				"only POST on /kad/disconnect");
-		}
-		return HandleKadDisconnect(req);
-	}
+	// /api/v0/kad/connect and /api/v0/kad/disconnect were dropped in
+	// favour of /networks/{connect,disconnect} with `{"network":"kad"}`
+	// — the two were strict aliases and the granular-selector form on
+	// /networks/* makes the dedicated shortcut redundant.
 	if (path == "/api/v0/kad/bootstrap") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed",
@@ -705,7 +692,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleKadBootstrap(req);
 	}
 
-	// Phase 5f — shared file priority PATCH.
+	// shared file priority PATCH.
 	{
 		static const auto shared_detail =
 			web_api_path::ParsePattern("/api/v0/shared/{hash}");
@@ -731,7 +718,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			"only GET / HEAD / POST on /categories");
 	}
 
-	// Phase 5g — single-category PATCH/DELETE.
+	// single-category PATCH/DELETE.
 	{
 		static const auto category_one =
 			web_api_path::ParsePattern("/api/v0/categories/{index}");
@@ -790,7 +777,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleStatsTree(req);
 	}
 
-	// Phase 6 — search.
+	// search.
 	if (path == "/api/v0/search") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed",
@@ -843,8 +830,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	}
 
 	// /downloads/{hash} — single-resource detail (GET / HEAD) and the
-	// Phase 5a mutation surface (PATCH for status/priority/category).
-	// Phase 5b adds DELETE (clear-completed single).
+	// mutation surface (PATCH for status/priority/category).
+	// adds DELETE (clear-completed single).
 	{
 		static const auto download_detail =
 			web_api_path::ParsePattern("/api/v0/downloads/{hash}");
@@ -970,24 +957,16 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 	r.headers["Set-Cookie"] = MakeSetCookie(
 		kSessionCookieName, issued.token, issued.expires_at);
 
-	// The token surface depends on how the client authenticates.
+	// Default (cookie-auth, browser): the HttpOnly+SameSite cookie
+	// carries the token. Echoing it into the JSON body would defeat
+	// HttpOnly — any XSS that `fetch('/auth/login', ...)` could read
+	// the body and exfiltrate the bearer. So the default response is
+	// deliberately token-less.
 	//
-	//   * Browser / cookie-auth caller (default):
-	//     The HttpOnly+SameSite cookie carries the token. Echoing
-	//     it into the JSON body too would defeat HttpOnly — any
-	//     XSS that can `fetch('/auth/login', ...)` reads the body
-	//     and exfiltrates the bearer. So the default response is
-	//     deliberately token-less; the cookie is the only carrier.
-	//
-	//   * SDK / bearer-auth caller (opt-in):
-	//     Clients that don't have a cookie jar (curl scripts,
-	//     server-to-server, the test harness) opt in via
-	//     `Accept: application/jwt` or `?type=bearer`. They get
-	//     the same body shape the prior contract emitted —
-	//     `token`, `expires_at`, `expires_at_unix`, `jti` — so
-	//     existing SDK clients keep working as long as they
-	//     declare their intent. The cookie still goes out; a
-	//     bearer client can ignore it.
+	// Bearer opt-in (SDK / curl / no cookie jar): client passes
+	// `Accept: application/jwt` or `?type=bearer` to get the bearer
+	// shape — `token`, `expires_at`, `expires_at_unix`, `jti`. The
+	// cookie still ships; bearer clients can ignore it.
 	bool wants_bearer = false;
 	{
 		const std::string accept = FindHeaderCaseInsensitive(
@@ -1151,7 +1130,7 @@ CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &
 CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &req)
 {
 	// Read endpoints: any authenticated role is enough (admin OR
-	// guest). Phase 5+ mutating endpoints will gate on `admin` only.
+	// guest). mutating endpoints will gate on `admin` only.
 	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
@@ -1184,9 +1163,9 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 
 	CJsonWriter w;
 	w.BeginObject();
-	  // Phase 7.1: snapshot_at + snapshot_at_unix were retired from
+	  // snapshot_at + snapshot_at_unix were retired from
 	  // every envelope response so the ETag/If-None-Match cache
-	  // (Phase 7) actually gets cache hits on list endpoints.
+	  // actually gets cache hits on list endpoints.
 	  // `ec_connected` is the dedicated staleness signal — it flips
 	  // false when the refresher tick fails. Standard HTTP `Date:`
 	  // header carries wall-clock for any consumer that needs it.
@@ -1234,7 +1213,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	    w.Key("upload_queue_length"); w.ValueInt(static_cast<int64_t>(s.ul_queue_len));
 	    w.Key("total_source_count");  w.ValueInt(static_cast<int64_t>(s.total_src_count));
 	  w.EndObject();
-	  // Nickname is a /preferences field, not a /status one (Phase 4c).
+	  // Nickname is a /preferences field, not a /status one.
 	w.EndObject();
 
 	const wxString js = w.GetBuffer();
@@ -1274,11 +1253,11 @@ constexpr std::uint64_t kPartSize = 9728000ull;
 // Render the per-part state array from the decoded gap list +
 // per-part source counts. Algorithm cribbed from the reference REST
 // branch's `EmitProgressParts` (WebServerApi.cpp:897-952):
-//   - count = ceil(size / PARTSIZE)
-//   - mark a part "has gap" if any byte-range in `gaps` covers it
-//   - state = "complete"   (no gap) /
-//             "incomplete" (gap + sources > 0) /
-//             "missing"    (gap + zero sources)
+//  - count = ceil(size / PARTSIZE)
+//  - mark a part "has gap" if any byte-range in `gaps` covers it
+//  - state = "complete"   (no gap) /
+//            "incomplete" (gap + sources > 0) /
+//            "missing"    (gap + zero sources)
 // `gaps` is flat (start, end) uint64 pairs. Both inclusive on amule's
 // side (CGapList::Encode semantics).
 void WriteProgressParts(CJsonWriter &w, const webapi::DownloadSnapshot &d)
@@ -1320,6 +1299,10 @@ void WriteDownloadObject(CJsonWriter &w, const webapi::DownloadSnapshot &d,
                          bool include_parts = false)
 {
 	w.BeginObject();
+	  // ecid is amule's per-daemon-process identity for this object;
+	  // exposed so clients can correlate ClientSnapshot's
+	  // upload_file_ecid / download_file_ecid against this list.
+	  w.Key("ecid");            w.ValueInt(static_cast<int64_t>(d.ecid));
 	  w.Key("hash");            w.ValueString(wxString::FromUTF8(d.hash.c_str()));
 	  w.Key("name");            w.ValueString(wxString::FromUTF8(d.name.c_str()));
 	  w.Key("ed2k_link");       w.ValueString(wxString::FromUTF8(d.ed2k_link.c_str()));
@@ -1363,9 +1346,9 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	  w.Key("upload_state");          w.ValueString(wxString::FromUTF8(c.upload_state.c_str()));
 	  w.Key("download_state");        w.ValueString(wxString::FromUTF8(c.download_state.c_str()));
 	  w.Key("ident_state");           w.ValueString(wxString::FromUTF8(c.ident_state.c_str()));
-	  w.Key("requested_file_name");   w.ValueString(wxString::FromUTF8(c.requested_file_name.c_str()));
-	  w.Key("requested_file_hash");   w.ValueString(wxString::FromUTF8(c.requested_file_hash.c_str()));
-	  w.Key("downloading_file_hash"); w.ValueString(wxString::FromUTF8(c.downloading_file_hash.c_str()));
+	  w.Key("download_file_name");   w.ValueString(wxString::FromUTF8(c.download_file_name.c_str()));
+	  w.Key("upload_file_ecid");   w.ValueString(wxString::FromUTF8(c.upload_file_ecid.c_str()));
+	  w.Key("download_file_ecid"); w.ValueString(wxString::FromUTF8(c.download_file_ecid.c_str()));
 	  w.Key("xfer");
 	  w.BeginObject();
 	    w.Key("up_session");     w.ValueInt(static_cast<int64_t>(c.xfer_up_session));
@@ -1387,6 +1370,9 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 void WriteSharedObject(CJsonWriter &w, const webapi::SharedSnapshot &s)
 {
 	w.BeginObject();
+	  // See ecid note on WriteDownloadObject — same correlation
+	  // mechanism for the upload side.
+	  w.Key("ecid");              w.ValueInt(static_cast<int64_t>(s.ecid));
 	  w.Key("hash");              w.ValueString(wxString::FromUTF8(s.hash.c_str()));
 	  w.Key("name");              w.ValueString(wxString::FromUTF8(s.name.c_str()));
 	  w.Key("ed2k_link");         w.ValueString(wxString::FromUTF8(s.ed2k_link.c_str()));
@@ -1428,9 +1414,9 @@ CHttpServer::Response ListResponse(const webapi::CState &state,
 	CHttpServer::Response r;
 	r.status       = 200;
 	r.content_type = "application/json";
-	// Phase 7.1: envelope responses dropped snapshot_at_* — they were
-	// defeating the ETag cache (Phase 7) by churning the body bytes
-	// every refresher tick. The ETag (Phase 7) is now the cache
+	// envelope responses dropped snapshot_at_* — they were
+	// defeating the ETag cache by churning the body bytes
+	// every refresher tick. The ETag is now the cache
 	// validator; HTTP `Date:` is the wall-clock.
 	CJsonWriter w;
 	w.BeginObject();
@@ -1447,20 +1433,16 @@ CHttpServer::Response ListResponse(const webapi::CState &state,
 
 
 // ===================================================================
-// Phase 5 mutation helpers — shared by every Handle{Resource}{Patch,Add,
-// Delete} below. The contract is the one PLAN §14 4a established for
-// every mutation handler:
-//   1. AuthenticateRequest (bearer or cookie)
-//   2. RequireAdmin (Phase 5 introduces the role gate; mutations are
-//      admin-only)
-//   3. Parse JSON body (mutations carry their payload in the body)
-//   4. Build + send EC mutation packet via SendRecvSerialized
-//   5. Check the response — EC_OP_NOOP means success, EC_OP_FAILED
-//      carries an amuled-side rejection string we surface
-//   6. Run RefresherTick inline on the same HTTP thread so the
-//      response sees post-mutation state (vs. the next refresher tick
-//      catching up ~1 s later)
-//   7. Return the updated resource (or 201 / 204 per HTTP convention)
+// Mutation helpers — shared by every Handle{Resource}{Patch,Add,
+// Delete} below. Every mutation handler follows:
+//  1. AuthenticateRequest (bearer or cookie)
+//  2. RequireAdmin (mutations are admin-only)
+//  3. Parse JSON body
+//  4. Send EC mutation packet via SendRecvSerialized
+//  5. EC_OP_NOOP = success; EC_OP_FAILED carries amuled's rejection
+//  6. Run RefresherTick inline on the HTTP thread so the response
+//     sees post-mutation state (vs. next refresher tick ~1 s later)
+//  7. Return the updated resource (or 201 / 204 per HTTP convention)
 // ===================================================================
 
 namespace {
@@ -1480,19 +1462,13 @@ std::unique_ptr<CHttpServer::Response> RequireAdmin(const AuthOutcome &a)
 }
 
 
-// JSON body parser. Returns true and populates `out` on success;
-// false and populates `err` on failure. Mutations expect a JSON
-// object at the root; non-object roots (array / string / number) are
-// rejected with a clear error.
+// JSON body parser. Returns true on success; false + `err` on
+// failure. Non-object roots are rejected.
 //
 // Pre-parse depth cap. picojson uses unbounded recursive descent for
-// `_parse_array` / `_parse_object`, so a hostile body like
-// `{"a":{"a":...}}` nested deep enough blows the worker thread's
-// stack. amuleapi's request bodies are flat lists of scalar fields
-// (links / category / ed2k_link / hashes / network / etc.) — even
-// 32 levels of nesting is well past anything legitimate, and a
-// `count of '{' + '[' > 32` check rejects the DoS attempt with no
-// allocations or recursion. Mirrors the same check in CJwt::Verify.
+// `_parse_array` / `_parse_object` — a `{"a":{"a":...}}` body deep
+// enough blows the worker thread stack. 32 openers is past anything
+// legitimate (bodies are flat lists of scalars). Mirrors CJwt::Verify.
 bool ParseJsonObjectBody(const std::string &body, picojson::value &out,
                          std::string &err)
 {
@@ -1561,7 +1537,7 @@ bool DownloadPriorityToCode(const std::string &name, std::uint8_t &out)
 
 // MD4 hex string → CMD4Hash. Returns false if the string isn't 32
 // lowercase-or-uppercase hex chars (we tolerate both cases; the
-// Phase 4b route already lowercases what comes off the URL).
+// route already lowercases what comes off the URL).
 bool HashFromHex(const std::string &hex, CMD4Hash &out)
 {
 	if (hex.size() != 32) return false;
@@ -1577,15 +1553,15 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
-	// /downloads filters status=="completed" out by default (Phase 4h).
+	// /downloads filters status=="completed" out by default.
 	// amuled holds finished downloads in `m_completedDownloads` as a
 	// separate "awaiting clear" list; surfacing them in /downloads
 	// alongside in-progress files confuses consumers reading
 	// "what's currently in the transfer queue." Opt back in with
 	// `?include_completed=1`. The detail endpoint
 	// `GET /downloads/{hash}` is unaffected — consumer asked for that
-	// specific file. Phase 5+ may add an explicit clear-completed
-	// mutation (deferred to v0.2 per Phase 4h decision).
+	// specific file. may add an explicit clear-completed
+	// mutation.
 	bool include_completed = false;
 	{
 		std::string query;
@@ -1627,12 +1603,12 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 
 	// Optional `?filter=uploads | downloads | active` query parameter.
 	// `uploads`   → peers actively transferring TO us (upload_state ==
-	//               "uploading"). Subset that maps to the legacy
-	//               amuleweb "Uploads" page.
+	//              "uploading"). Subset that maps to the legacy
+	//              amuleweb "Uploads" page.
 	// `downloads` → peers we're actively pulling FROM (download_state
-	//               == "downloading").
+	//              == "downloading").
 	// `active`    → union of the two; everything currently moving
-	//               bytes either direction.
+	//              bytes either direction.
 	// No filter → every peer the daemon knows about (default, v0.1
 	// shape).
 	std::string filter;
@@ -1724,7 +1700,6 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 }
 
 
-// --- Phase 5a — download lifecycle mutations ---------------------------
 
 CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	const CHttpServer::Request &req)
@@ -1735,8 +1710,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 	if (auto rej = RequireAdmin(a)) return *rej;
 
 	// Body shape (two forms — both accepted, exactly one required):
-	//   {"ed2k_link": "ed2k://|file|...|/", "category": 0}    — singular
-	//   {"links": ["ed2k://|file|...|/", ...], "category": 0} — array
+	//  {"ed2k_link": "ed2k://|file|...|/", "category": 0}    — singular
+	//  {"links": ["ed2k://|file|...|/", ...], "category": 0} — array
 	// `links` is the RFC §4.2 shape (PR #132); `ed2k_link` ships for
 	// backwards compatibility with the v0.1.0 wire. Mixing both is a
 	// 400.
@@ -1765,7 +1740,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 		} else if (it_array != obj.end()) {
 			if (!it_array->second.is<picojson::array>()) {
 				return ErrorResponse(400, "bad_request",
-					"`links` must be an array of ed2k:// strings");
+					"`links` must be an array of ed2k://strings");
 			}
 			const auto &arr = it_array->second.get<picojson::array>();
 			if (arr.empty()) {
@@ -2074,7 +2049,6 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 }
 
 
-// --- Phase 5b — clear completed / delete partfile ----------------------
 
 CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	const CHttpServer::Request &req, const std::string &hash)
@@ -2098,25 +2072,32 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
-	// Route by status:
-	//   * status == "completed" → EC_OP_CLEAR_COMPLETED (by ECID).
-	//     The partfile already sits in `m_completedDownloads`; only
-	//     the bulk-clear op reaches that list.
-	//   * any other status → EC_OP_PARTFILE_DELETE (by hash). Targets
-	//     active entries in `m_filelist`.
-	std::unique_ptr<CECPacket> ec_req;
+	// DELETE only handles ACTIVE downloads (anything not "completed").
+	// Completed entries live in amuled's m_completedDownloads
+	// staging list, and the only EC op that touches that list is
+	// EC_OP_CLEAR_COMPLETED — which doesn't delete the on-disk file
+	// from Incoming, it just acks the post-completion notification.
+	// Conflating the two under one verb confused operators who
+	// reasonably expected DELETE to remove a file from disk. Route
+	// the completed case through POST /downloads/clear_completed
+	// (which accepts an optional {hash} body for per-entry clears)
+	// so the verb-vs-disk-semantic mapping stays unambiguous.
 	if (d.status == "completed") {
-		ec_req.reset(new CECPacket(EC_OP_CLEAR_COMPLETED));
-		ec_req->AddTag(CECTag(EC_TAG_ECID, d.ecid));
-	} else {
-		CMD4Hash file_hash;
-		if (!HashFromHex(needle, file_hash)) {
-			return ErrorResponse(500, "internal_error",
-				"failed to decode partfile hash");
-		}
-		ec_req.reset(new CECPacket(EC_OP_PARTFILE_DELETE));
-		ec_req->AddTag(CECTag(EC_TAG_PARTFILE, file_hash));
+		return ErrorResponse(409, "completed_use_clear_completed",
+			"DELETE only removes active downloads (deletes .part/.met "
+			"files from disk). Use POST /downloads/clear_completed "
+			"with optional {\"hash\":\"...\"} body to clear a completed "
+			"entry's post-completion notification — the file in the "
+			"Incoming directory is NEVER removed via this API.");
 	}
+
+	CMD4Hash file_hash;
+	if (!HashFromHex(needle, file_hash)) {
+		return ErrorResponse(500, "internal_error",
+			"failed to decode partfile hash");
+	}
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_PARTFILE_DELETE));
+	ec_req->AddTag(CECTag(EC_TAG_PARTFILE, file_hash));
 
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
@@ -2161,17 +2142,69 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// Collect every cached download with status=="completed" — these
-	// are the ECIDs that sit in amuled's m_completedDownloads list
-	// awaiting an explicit clear (the Phase 4h status decode fix is
-	// what makes this enumeration meaningful — completed entries used
-	// to look like "paused" and would have been skipped).
+	// Two shapes share this endpoint:
+	//  * no body (or all-whitespace body) → bulk clear every
+	//    completed entry. Original shape.
+	//  * `{"hash": "<md4hex>"}` → clear that single completed entry.
+	//    Hash must currently match a download with status=="completed";
+	//    active / unknown hashes return 404.
+	// The response envelope is identical in both branches so a client
+	// that wraps the call doesn't need to fork on its own input.
+	std::string target_hash;
+	bool body_has_content = false;
+	for (char c : req.body) {
+		if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+			body_has_content = true;
+			break;
+		}
+	}
+	if (body_has_content) {
+		picojson::value root;
+		std::string parse_err;
+		if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+			return ErrorResponse(400, "bad_request", parse_err.c_str());
+		}
+		const auto &obj = root.get<picojson::object>();
+		const auto it_hash = obj.find("hash");
+		if (it_hash != obj.end()) {
+			if (!it_hash->second.is<std::string>()) {
+				return ErrorResponse(400, "bad_request",
+					"`hash` must be a string");
+			}
+			target_hash = it_hash->second.get<std::string>();
+			std::transform(target_hash.begin(), target_hash.end(),
+				target_hash.begin(),
+				[](unsigned char c) { return std::tolower(c); });
+		}
+		// Future-proof: silently ignore unknown keys rather than 400
+		// so adding a flag later (e.g. {"hash": "...", "force": true})
+		// doesn't break old clients.
+	}
+
+	// Collect target ECID(s). For the by-hash form, only one entry;
+	// for the bulk form, every cached download with status=="completed".
 	std::vector<std::uint32_t> ecids;
 	std::vector<std::string>   hashes_cleared;
-	for (const auto &d : m_state.Downloads()) {
-		if (d.status == "completed") {
-			ecids.push_back(d.ecid);
-			hashes_cleared.push_back(d.hash);
+	if (!target_hash.empty()) {
+		webapi::DownloadSnapshot d;
+		if (!m_state.FindDownload(target_hash, d)) {
+			return ErrorResponse(404, "not_found",
+				"no download with that hash");
+		}
+		if (d.status != "completed") {
+			return ErrorResponse(409, "not_completed",
+				"target download exists but is not in the completed "
+				"staging list (status != \"completed\"). To remove an "
+				"active partfile, use DELETE /downloads/{hash}.");
+		}
+		ecids.push_back(d.ecid);
+		hashes_cleared.push_back(d.hash);
+	} else {
+		for (const auto &d : m_state.Downloads()) {
+			if (d.status == "completed") {
+				ecids.push_back(d.ecid);
+				hashes_cleared.push_back(d.hash);
+			}
 		}
 	}
 
@@ -2240,7 +2273,7 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 {
 	w.BeginObject();
 	  // `ecid` is the URL key for /servers/{ecid}/connect and
-	  // /servers/{ecid} (Phase 5c). Phase 4f intentionally surfaced
+	  // /servers/{ecid}. intentionally surfaced
 	  // it on /clients for the same reason; servers got it later.
 	  w.Key("ecid");        w.ValueInt(static_cast<int64_t>(s.ecid));
 	  w.Key("name");        w.ValueString(wxString::FromUTF8(s.name.c_str()));
@@ -2284,7 +2317,6 @@ CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &
 }
 
 
-// --- Phase 5c — server lifecycle ---------------------------------------
 
 namespace {
 
@@ -2547,7 +2579,7 @@ CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(
 	if (url.compare(0, 7, "http://") != 0
 	    && url.compare(0, 8, "https://") != 0) {
 		return ErrorResponse(400, "bad_request",
-			"`servers_url` must be an http:// or https:// URL");
+			"`servers_url` must be an http://or https://URL");
 	}
 
 	std::unique_ptr<CECPacket> ec_req(
@@ -2859,7 +2891,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
-	// Phase 4g lazy-fetch with 1 s TTL coalescing. The fetcher runs
+	// lazy-fetch with 1 s TTL coalescing. The fetcher runs
 	// the EC roundtrip under m_app's m_ec_mtx (SendRecvSerialized);
 	// concurrent burst reads serialize on m_stats_tree_cache's mutex
 	// and the second waiter reads the just-stored value.
@@ -2892,7 +2924,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsTree(const CHttpServer::Request
 	CHttpServer::Response r;
 	r.status       = 200;
 	r.content_type = "application/json";
-	// Phase 7.1: snapshot_at retired in favour of the ETag (Phase 7)
+	// snapshot_at retired in favour of the ETag
 	// as the cache validator. The TtlPair_StatsTree still tracks the
 	// fetched-at time internally (drives the 1 s TTL coalescer) — it
 	// just isn't surfaced any more.
@@ -2986,7 +3018,7 @@ CHttpServer::Response CApiDispatcher::HandleStatsGraph(
 	  w.Key("graph");            w.ValueString(wxString::FromUTF8(graph.c_str()));
 	  w.Key("unit");             w.ValueString(wxString::FromUTF8(unit));
 	  w.Key("interval_seconds"); w.ValueInt(static_cast<int64_t>(g.interval_seconds));
-	  // Phase 7.1: snapshot_at retired from the response. WritePointArray
+	  // snapshot_at retired from the response. WritePointArray
 	  // still consumes `ts` to compute per-point timestamps (anchoring
 	  // the time-series backwards from the fetch wall-clock).
 	  w.Key("points");
@@ -3011,23 +3043,47 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
-	// Lazy-fetch via TtlCache. Phase 5+ POST /search will call
-	// m_search_cache.Invalidate() so the next GET sees fresh results
-	// without waiting for the TTL to expire.
+	// Lazy-fetch via TtlCache. POST /search calls Invalidate() so
+	// the next GET sees fresh results without waiting for the TTL.
+	//
+	// Two EC roundtrips per miss (EC_OP_SEARCH_RESULTS +
+	// EC_OP_SEARCH_PROGRESS) coalesced into one single-flight lock.
+	// The progress field disambiguates "empty + no search" from
+	// "empty + search in flight".
 	auto pair = m_search_cache.GetOrFetch(
 		std::chrono::milliseconds(1000),
 		[this]() -> TtlPair_Search {
-			std::unique_ptr<CECPacket> req_ec(
-				new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
-			const CECPacket *resp = m_app.SendRecvSerialized(req_ec.get());
-			std::map<std::uint32_t, webapi::SearchResult> results;
+			SearchCacheValue out;
 			std::time_t ts = 0;
-			if (resp) {
-				webapi::ApplySearchFull(resp, results);
+			{
+				std::unique_ptr<CECPacket> req_ec(
+					new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
+				const CECPacket *resp =
+					m_app.SendRecvSerialized(req_ec.get());
+				if (!resp) {
+					return TtlPair_Search(std::move(out), 0);
+				}
+				webapi::ApplySearchFull(resp, out.results);
 				ts = std::time(nullptr);
 				delete resp;
 			}
-			return TtlPair_Search(std::move(results), ts);
+			{
+				std::unique_ptr<CECPacket> req_ec(
+					new CECPacket(EC_OP_SEARCH_PROGRESS));
+				const CECPacket *resp =
+					m_app.SendRecvSerialized(req_ec.get());
+				if (resp) {
+					const CECTag *tag = resp->GetTagByName(
+						EC_TAG_SEARCH_STATUS);
+					if (tag) {
+						out.progress_raw =
+							static_cast<std::uint32_t>(
+								tag->GetInt());
+					}
+					delete resp;
+				}
+			}
+			return TtlPair_Search(std::move(out), ts);
 		});
 
 	if (pair.second == 0) {
@@ -3036,14 +3092,27 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	}
 
 	std::vector<webapi::SearchResult> results_vec;
-	results_vec.reserve(pair.first.size());
-	for (const auto &kv : pair.first) results_vec.push_back(kv.second);
+	results_vec.reserve(pair.first.results.size());
+	for (const auto &kv : pair.first.results) results_vec.push_back(kv.second);
+
+	// Translate the raw amuled progress integer (CSearchList::
+	// GetSearchProgress) into a clean shape. Raw semantics:
+	//  * 0       — no search, or Kad search just kicked off
+	//  * 1-99    — global ed2k search in progress (percent)
+	//  * 100     — global ed2k search finished
+	//  * 0xfffe  — Kad search finished
+	//  * 0xffff  — Local ed2k search finished (always instantaneous)
+	// Anything >= 100 is "complete"; clamp the published percent to
+	// 100 so the JSON value stays in the natural 0-100 range.
+	const std::uint32_t raw = pair.first.progress_raw;
+	const bool complete = (raw >= 100);
+	const std::uint32_t percent = complete ? 100u : raw;
 
 	const std::time_t ts = pair.second;
 	CHttpServer::Response r;
 	r.status       = 200;
 	r.content_type = "application/json";
-	// Phase 7.1: snapshot_at retired. ETag (Phase 7) is the cache
+	// snapshot_at retired. ETag is the cache
 	// validator; POST /search invalidates m_search_cache so the next
 	// GET's body changes when amuled has fresh results — ETag tracks
 	// that change.
@@ -3054,6 +3123,11 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	  w.BeginArray();
 	  for (const auto &item : results_vec) WriteSearchObject(w, item);
 	  w.EndArray();
+	  w.Key("progress");
+	  w.BeginObject();
+	    w.Key("percent");  w.ValueInt(static_cast<int64_t>(percent));
+	    w.Key("complete"); w.ValueBool(complete);
+	  w.EndObject();
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -3274,7 +3348,6 @@ CHttpServer::Response CApiDispatcher::HandlePreferences(const CHttpServer::Reque
 }
 
 
-// --- Phase 5d — PATCH /preferences -------------------------------------
 
 namespace {
 
@@ -3311,7 +3384,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(
 
 	// Body shape: { "general": {...}, "connection": {...} } — both
 	// sub-objects optional, all fields within optional. Mirrors the
-	// /preferences GET shape (Phase 4c) so a typical client read-
+	// /preferences GET shape so a typical client read-
 	// modify-write workflow doesn't have to translate between schemas.
 	const picojson::object *general_obj    = nullptr;
 	const picojson::object *connection_obj = nullptr;
@@ -3538,7 +3611,6 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(
 }
 
 
-// --- Phase 5e — connection control -------------------------------------
 
 namespace {
 
@@ -3603,6 +3675,41 @@ CHttpServer::Response CApiDispatcher::HandleNetworksConnect(
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 	if (auto rej = RequireAdmin(a)) return *rej;
+
+	// Optional `{"network": "ed2k" | "kad" | "both"}` selector — same
+	// shape as /networks/disconnect. Default "both" preserves the
+	// original parameterless contract (every connector-aware client
+	// kept working when this body was added).
+	std::string network = "both";
+	if (!req.body.empty()) {
+		picojson::value root;
+		std::string parse_err;
+		if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+			return ErrorResponse(400, "bad_request", parse_err.c_str());
+		}
+		const auto &obj = root.get<picojson::object>();
+		const auto it = obj.find("network");
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>()) {
+				return ErrorResponse(400, "bad_request",
+					"`network` must be one of \"ed2k\", \"kad\", \"both\"");
+			}
+			network = it->second.get<std::string>();
+			if (network != "ed2k" && network != "kad" && network != "both") {
+				return ErrorResponse(400, "bad_request",
+					"`network` must be one of \"ed2k\", \"kad\", \"both\"");
+			}
+		}
+	}
+
+	if (network == "ed2k") {
+		return SimpleConnControlOp(m_app, m_state,
+			EC_OP_SERVER_CONNECT, 202);
+	}
+	if (network == "kad") {
+		return SimpleConnControlOp(m_app, m_state,
+			EC_OP_KAD_START, 202);
+	}
 	return SimpleConnControlOp(m_app, m_state, EC_OP_CONNECT, 202);
 }
 
@@ -3655,27 +3762,11 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(
 }
 
 
-CHttpServer::Response CApiDispatcher::HandleKadConnect(
-	const CHttpServer::Request &req)
-{
-	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
-		kSessionCookieName);
-	if (!a.ok) return a.rejection;
-	if (auto rej = RequireAdmin(a)) return *rej;
-	return SimpleConnControlOp(m_app, m_state, EC_OP_KAD_START, 202);
-}
-
-
-CHttpServer::Response CApiDispatcher::HandleKadDisconnect(
-	const CHttpServer::Request &req)
-{
-	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
-		kSessionCookieName);
-	if (!a.ok) return a.rejection;
-	if (auto rej = RequireAdmin(a)) return *rej;
-	return SimpleConnControlOp(m_app, m_state, EC_OP_KAD_STOP, 200);
-}
-
+// HandleKadConnect / HandleKadDisconnect were removed — strict
+// aliases of HandleNetworksConnect / HandleNetworksDisconnect with
+// `{"network":"kad"}`. The Kad bootstrap handler below is genuinely
+// distinct (single-contact bootstrap from an explicit IP+port) and
+// stays.
 
 CHttpServer::Response CApiDispatcher::HandleKadBootstrap(
 	const CHttpServer::Request &req)
@@ -3774,7 +3865,6 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(
 }
 
 
-// --- Phase 5f — shared file priority PATCH -----------------------------
 
 namespace {
 
@@ -3913,7 +4003,6 @@ CHttpServer::Response CApiDispatcher::HandleSharedReload(
 }
 
 
-// --- Phase 5g — categories CRUD ---------------------------------------
 
 namespace {
 
@@ -3948,13 +4037,13 @@ bool CategoryPriorityToCode(const std::string &name, std::uint8_t &out)
 
 
 // Build the CEC_Category_Tag-shaped tag amuled expects. The shape is:
-//   parent tag EC_TAG_CATEGORY with the index as the int payload,
-//   nested children:
-//     EC_TAG_CATEGORY_TITLE   (string, "name" in our API)
-//     EC_TAG_CATEGORY_PATH    (string, "path")
-//     EC_TAG_CATEGORY_COMMENT (string, "comment")
-//     EC_TAG_CATEGORY_COLOR   (uint32)
-//     EC_TAG_CATEGORY_PRIO    (uint8)
+//  parent tag EC_TAG_CATEGORY with the index as the int payload,
+//  nested children:
+//    EC_TAG_CATEGORY_TITLE   (string, "name" in our API)
+//    EC_TAG_CATEGORY_PATH    (string, "path")
+//    EC_TAG_CATEGORY_COMMENT (string, "comment")
+//    EC_TAG_CATEGORY_COLOR   (uint32)
+//    EC_TAG_CATEGORY_PRIO    (uint8)
 //
 // For CREATE the index is `0xFFFFFFFF` (sentinel: amuled assigns the
 // next free slot). For UPDATE we pass the actual index. For DELETE
@@ -4279,7 +4368,6 @@ CHttpServer::Response CApiDispatcher::HandleCategoryDelete(
 }
 
 
-// --- Phase 6 — search ---------------------------------------------------
 
 namespace {
 
@@ -4313,13 +4401,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 	const auto &obj = root.get<picojson::object>();
 
 	// Body shape:
-	//   { "query": "...", required string
-	//     "type":  "local" | "global" | "kad" (default "global"),
-	//     "file_type":  string (optional, amule file-type label),
-	//     "extension":  string (optional, e.g. "mkv"),
-	//     "min_size":   uint64 bytes (optional, default 0),
-	//     "max_size":   uint64 bytes (optional, default 0 = no cap),
-	//     "min_avail":  uint32 (optional, default 0) }
+	//  { "query": "...", required string
+	//    "type":  "local" | "global" | "kad" (default "global"),
+	//    "file_type":  string (optional, amule file-type label),
+	//    "extension":  string (optional, e.g. "mkv"),
+	//    "min_size":   uint64 bytes (optional, default 0),
+	//    "max_size":   uint64 bytes (optional, default 0 = no cap),
+	//    "min_avail":  uint32 (optional, default 0) }
 	std::string query;
 	{
 		const auto it = obj.find("query");
@@ -4443,8 +4531,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 	// the fresh query's results (amuled's searchlist gets cleared
 	// server-side on SEARCH_START; if the cached snapshot pre-dates
 	// this mutation, returning it would be misleadingly stale).
-	// This is exactly the use case Phase 4g's CTtlCache::Invalidate
-	// was carved out for.
+	// This is exactly the use case CTtlCache::Invalidate was carved
+	// out for.
 	m_search_cache.Invalidate();
 
 	CHttpServer::Response r;
@@ -4584,24 +4672,14 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 }
 
 
-// --- Phase 8a — Server-Sent Events: streaming /events endpoint ---------
+// SSE runs on a worker thread the HTTP server spawns per connection.
+// Auth is enforced in PreflightEvents (synchronous, before head
+// write and worker spawn); failures use the regular JSON error
+// envelope. The 15 s heartbeat is a `: keepalive\n\n` SSE comment
+// (RFC 6202) — proxies and many browsers drop idle TCP after ~30 s.
 //
-// The SSE channel runs on a worker thread that the HTTP server's
-// streaming pipeline spawns per connection. Authentication is enforced
-// here, before the head is written; auth failures take the same wire
-// shape as regular GET endpoints (401 / 403 JSON body).
-//
-// Phase 8a ships just the connection lifecycle + 15 s heartbeat. The
-// heartbeat is a SSE-comment line (`: keepalive\n\n`) per RFC 6202
-// — clients ignore comment lines, but intermediate proxies (and many
-// browser SSE clients) need periodic traffic to keep the connection
-// alive. Phase 8b layers event generation on top.
-//
-// The "two-call dance" mentioned in HttpServer.cpp's DispatchStreaming
-// is collapsed here: this single function sets the response head AND
-// runs the loop. The HTTP server captures the head out-params before
-// writing the head, but reads them only ONCE — so we set them at the
-// top and the loop body just calls writer.Write.
+// DispatchStreaming reads head out-params ONCE before writing, so
+// one function here sets the head AND runs the drain loop.
 boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(
 	const CHttpServer::Request &req)
 {
@@ -4644,15 +4722,15 @@ void CApiDispatcher::DispatchEvents(
 	}
 	// SSE doesn't need admin role — reads are guest-friendly. The
 	// channel multiplexes every event type clients want to subscribe
-	// to. Phase 5+'s admin-gated mutations don't ship over SSE; SSE
-	// is a read-only push.
+	// to. Admin-gated mutations don't ship over SSE; SSE is a read-
+	// only push.
 
 	http_status   = 200;
 	content_type  = "text/event-stream";
 	response_headers["Cache-Control"]    = "no-cache";
 	response_headers["X-Accel-Buffering"] = "no";  // disable nginx buffering
 
-	// Phase 9: CORS on the SSE response too. EventSource sends
+	// CORS on the SSE response too. EventSource sends
 	// `Origin` and reads only the standard CORS bundle for credentialed
 	// cross-origin streams. No Expose-Headers needed (SSE clients don't
 	// read response headers programmatically).
@@ -4673,12 +4751,12 @@ void CApiDispatcher::DispatchEvents(
 	// Optional `?channels=<csv>` query: limit the event types
 	// delivered to a comma-separated subset. The mapping from
 	// EventBus event name → channel is prefix-based:
-	//   download_*  → "downloads"
-	//   shared_*    → "shared"
-	//   server_*    → "servers"
-	//   client_*    → "clients"
-	//   status_*    → "status"
-	//   log_*       → "logs"
+	//  download_*  → "downloads"
+	//  shared_*    → "shared"
+	//  server_*    → "servers"
+	//  client_*    → "clients"
+	//  status_*    → "status"
+	//  log_*       → "logs"
 	// The synthetic per-subscriber `resync` event is ALWAYS
 	// delivered regardless of filter — its purpose is to signal a
 	// cache invalidation the client cannot opt out of.
@@ -4687,13 +4765,9 @@ void CApiDispatcher::DispatchEvents(
 	std::set<std::string> channel_filter;
 	bool channels_set = false;
 	{
-		// Cap unique channel tokens. The full set today is six
-		// ({downloads, shared, servers, clients, status, logs});
-		// 32 leaves headroom for a few future event families
-		// without admitting a 1 MB query that builds a 1M-entry
-		// std::set in the SSE worker. Token-count cap (not
-		// query-length cap) lets clients pass the full legitimate
-		// set without bumping into a byte budget.
+		// Cap unique channel tokens at 32 (six today + headroom)
+		// so a 1 MB `channels=` query can't build a 1M-entry set in
+		// the SSE worker.
 		constexpr std::size_t kMaxChannelTokens = 32;
 		std::string query;
 		const std::size_t q = req.target.find('?');
@@ -4724,19 +4798,13 @@ void CApiDispatcher::DispatchEvents(
 		}
 	}
 	auto event_channel = [](const std::string &name) -> std::string {
-		// Event naming convention: every bus event name MUST contain
-		// at least one underscore — the prefix before the first `_`
-		// identifies the channel. Names without an underscore would
-		// collapse to "themselves" as their own channel, which a
-		// client filter wouldn't anticipate and could silently drop
-		// them. Today the only no-underscore name on the wire is
-		// `resync`, which is always emitted before this filter
-		// applies (it's a synthetic per-subscriber event published
-		// directly to the SSE writer, never via EventBus::Publish).
-		// If a future bus event ever ships as a bare token, either
-		// give it an explicit channel mapping in the switch below
-		// or have it always bypass the filter the way `resync`
-		// does.
+		// Event naming convention: every bus event MUST contain at
+		// least one underscore — the prefix before the first `_`
+		// identifies the channel. The only no-underscore name on
+		// the wire is `resync`, which bypasses this filter entirely
+		// (synthetic per-subscriber, never via EventBus::Publish).
+		// Future bare-token events need explicit channel mapping or
+		// must always bypass like `resync`.
 		const auto us = name.find('_');
 		if (us == std::string::npos) return name;
 		const std::string prefix = name.substr(0, us);
@@ -4753,24 +4821,21 @@ void CApiDispatcher::DispatchEvents(
 		return channel_filter.count(event_channel(name)) > 0;
 	};
 
-	// Drain events from the EventBus. The drain blocks up to the
-	// heartbeat interval (15 s) waiting for new events; if nothing
-	// arrives in that window, fall through to a `: keepalive`
-	// comment so the connection stays warm.
+	// Drain blocks up to the heartbeat interval (15 s); on timeout we
+	// emit `: keepalive` so the connection stays warm.
 	//
-	// Initial `since_id` resolution honours the `Last-Event-ID`
-	// header per RFC 6202 §4 reconnect contract:
-	//   - absent / unparseable → start from NewestId (only events
-	//     fired AFTER connect)
-	//   - in-range (parsed+1 >= OldestId) → start from parsed; the
-	//     first Drain returns immediately with the missed range
-	//   - gap (parsed+1 < OldestId) → events evicted from the ring
-	//     before this client could read them. Emit a typed `resync`
-	//     event so the client invalidates its cache and re-GETs the
-	//     REST collections, then start fresh from NewestId
-	//   - parsed > NewestId → stale id from a prior daemon process
-	//     (ids are per-process — they reset on restart). Same
-	//     `resync` event with reason=restart, then start fresh.
+	// `since_id` resolution per RFC 6202 §4 reconnect:
+	//  - absent / unparseable → start from NewestId (events fired
+	//    AFTER connect only)
+	//  - in-range (parsed+1 >= OldestId) → resume from `parsed`; the
+	//    first Drain returns the missed range immediately
+	//  - gap (parsed+1 < OldestId) → events evicted before this
+	//    client read them; emit `resync` (reason=gap) so the client
+	//    invalidates + re-GETs REST collections, then start from
+	//    NewestId
+	//  - parsed > NewestId → stale id from a prior daemon process
+	//    (ids reset to 1 on restart); emit `resync` (reason=restart)
+	//    and start from NewestId.
 	std::uint64_t since_id;
 	const std::string lei = FindHeaderCaseInsensitive(req.headers,
 		"Last-Event-ID");
@@ -4809,17 +4874,13 @@ void CApiDispatcher::DispatchEvents(
 			since_id = newest;
 		}
 	}
-	// Heartbeat is wall-clock driven, not Drain-timeout driven. A
-	// busy bus paired with `?channels=` that filters every drained
-	// event would otherwise leave the wire silent for arbitrary
-	// stretches: each Drain returns immediately (events are pending),
-	// the loop swallows them all, advances since_id, and re-enters
-	// Drain — never giving keepalive a chance to fire. NAT / load
-	// balancers / EventSource clients typically drop idle TCP
-	// connections after 30–60 s of silence, so we keep tabs on the
-	// last byte written and emit `: keepalive` whenever it falls
-	// behind the 15 s budget, regardless of which loop branch we
-	// just took.
+	// Heartbeat is wall-clock driven, not Drain-timeout driven —
+	// a busy bus + `?channels=` that filters every drained event
+	// would otherwise leave the wire silent (Drain returns
+	// immediately, loop swallows + re-enters, keepalive never
+	// fires). NAT/proxies/EventSource clients drop idle TCP after
+	// ~30–60 s, so emit `: keepalive` whenever last-write falls
+	// behind the 15 s budget.
 	const auto heartbeat_interval = std::chrono::seconds(15);
 	auto last_write_at = std::chrono::steady_clock::now();
 	std::vector<webapi::Event> drained;
@@ -4836,17 +4897,11 @@ void CApiDispatcher::DispatchEvents(
 		if (!writer.Alive()) break;
 		if (m_app.EventBus().IsShutdown()) break;
 
-		// Live-path gap detection. The reconnect handler above only
-		// catches `Last-Event-ID < OldestId` at session start; once
-		// the loop is running, a burst that fills + evicts the
-		// 100-event ring between Drain calls would silently drop
-		// the missed range. Check OldestId after each Drain — if
-		// our cursor fell off the ring, emit a typed resync and
-		// restart at the current newest. Without this, a
-		// cold-start tick on a 5K-download library would publish
-		// ~5K _added events in one tick, evict ~4900 before this
-		// drainer sees them, and the client would silently miss
-		// them.
+		// Live-path gap detection. Reconnect handler above only
+		// catches gaps at session start; once running, a burst that
+		// fills + evicts the ring between Drains would silently drop
+		// the missed range. Check OldestId after each Drain — on
+		// cursor fall-off emit a typed resync and restart at newest.
 		const std::uint64_t oldest_now = m_app.EventBus().OldestId();
 		const std::uint64_t newest_now = m_app.EventBus().NewestId();
 		if (oldest_now > 0 && since_id + 1 < oldest_now) {
@@ -4874,21 +4929,15 @@ void CApiDispatcher::DispatchEvents(
 		bool wrote_any = false;
 		for (const auto &ev : drained) {
 			if (!event_passes_filter(ev.name)) continue;
-			// Emit one SSE frame per event:
-			//   event: <name>\nid: <id>\ndata: <data>\n\n
-			// Per RFC 6202 §4: `data:` lines are single-line. Our
-			// JSON payloads never contain literal newlines (the
-			// EventDiff serializer escapes them), so one `data:`
-			// line per event is sufficient.
+			// SSE frame:  event: <name>\nid: <id>\ndata: <data>\n\n
+			// Per RFC 6202 §4 `data:` lines are single-line; our JSON
+			// payloads never contain literal newlines (EventDiff
+			// escapes them), so one `data:` line per event suffices.
 			//
-			// `ev.name` is NOT escaped here. Every event name on the
-			// bus is a server-controlled compile-time literal
-			// ("download_added", "shared_updated", ...) emitted by
-			// `EventBus::Publish` from EventDiff.cpp. If a future
-			// publisher ever takes a name from external input, that
-			// publisher MUST sanitize CR/LF/`\0` at the call site —
-			// otherwise this frame writer would corrupt the SSE
-			// stream framing.
+			// `ev.name` is NOT escaped — every event name on the bus
+			// is a server-controlled compile-time literal. A future
+			// publisher taking a name from external input MUST
+			// sanitize CR/LF/`\0` at its call site.
 			frame << "event: " << ev.name << "\n"
 			      << "id: "    << ev.id   << "\n"
 			      << "data: "  << ev.data << "\n\n";

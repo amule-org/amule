@@ -168,29 +168,18 @@ TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 
 TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 {
-	// Regression check for the tumbling-window bug. The bug:
-	// threshold-1 failures in the tail of window N + threshold-1
-	// in the head of window N+1 never tripped lockout because the
-	// old code reset `failure_count` to 0 whenever `now -
-	// window_start > window_seconds` — so a failure right after
-	// the boundary started a fresh count regardless of how many
-	// recent failures fell inside the live sliding window.
+	// Regression check for the original tumbling-window bug:
+	// threshold-1 failures in the tail of window N + threshold-1 in
+	// the head of window N+1 never tripped lockout because the old
+	// code reset failure_count whenever `now - window_start >
+	// window_seconds`. The current per-stamp eviction keeps any
+	// failure within `window_seconds` live in the count.
 	//
-	// Clock injection lets us step `now` deterministically without
-	// the std::time(nullptr) tick-boundary alignment headache that
-	// drove the old 5 s test runtime.
-	//
-	// Sequence (window_seconds=3, threshold=3):
-	//   t=0   NoteFailure  — failures=[0]        count=1
-	//   t=3   NoteFailure  — failures=[0, 3]     count=2
-	//   t=4   NoteFailure  — OLD: 4-0 > 3 →
-	//                         RESET. window_start=4, count=1
-	//                       NEW: evict <1; failures=[3, 4],
-	//                         count=2
-	//   t=5   NoteFailure  — OLD: 5-4 ≤ 3 → count=2.
-	//                         NO lockout (count<3).
-	//                       NEW: evict <2; failures=[3, 4, 5],
-	//                         count=3 → LOCKOUT.
+	// Sequence (window=3, threshold=3) — clock-injected:
+	//   t=0  NoteFailure  → failures=[0],          count=1
+	//   t=3  NoteFailure  → failures=[0, 3],       count=2
+	//   t=4  NoteFailure  → failures=[3, 4],       count=2  (evict<1)
+	//   t=5  NoteFailure  → failures=[3, 4, 5],    count=3 → LOCKOUT
 	CRateLimiter::Config cfg;
 	cfg.window_seconds  = 3;
 	cfg.threshold       = 3;

@@ -34,12 +34,12 @@
 // wxString::utf8_str() at flush time.
 //
 // Usage:
-//   CJsonWriter w;
-//   w.BeginObject();
-//     w.Key("name"); w.ValueString("aMule");
-//     w.Key("version"); w.ValueString("2.3.3");
-//   w.EndObject();
-//   const wxString &out = w.GetBuffer();
+//  CJsonWriter w;
+//  w.BeginObject();
+//    w.Key("name"); w.ValueString("aMule");
+//    w.Key("version"); w.ValueString("2.3.3");
+//  w.EndObject();
+//  const wxString &out = w.GetBuffer();
 //
 // Commas between siblings are inserted automatically. Calling Key()
 // outside an object, or omitting it inside one, is a programmer error

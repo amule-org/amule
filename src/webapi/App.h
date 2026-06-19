@@ -31,7 +31,7 @@
 
 #include "AmuleApiConfig.h"
 #include "EventBus.h"
-#include "EventDiff.h"   // LastSeenState (Phase 8b diff baseline)
+#include "EventDiff.h"
 #include "State.h"
 
 #include "Jwt.h"
@@ -47,29 +47,22 @@ class CECPacket;
 class CHttpServer;
 
 
-// amuleapi daemon entry. Inherits CaMuleExternalConnector so we
-// reuse the EC bring-up machinery (CRemoteConnect, --host / --port /
-// --password parsing, ZLIB negotiation, MD5 password handling) that
-// already powers amulecmd / amuleweb. Phase 2 adds:
+// amuleapi daemon entry. Inherits CaMuleExternalConnector to reuse
+// the EC bring-up machinery (CRemoteConnect, --host / --port /
+// --password, ZLIB negotiation, MD5 password handling). Adds the
+// amuleapi-specific CLI options (--bind, --http-port, --config-dir,
+// --set-{admin,guest}-pass), config-file loading via
+// CAmuleApiConfig, and a Boost.Beast HTTP server thread.
 //
-//   - amuleapi-specific CLI options (--bind, --http-port, --config-dir,
-//     --set-admin-pass, --set-guest-pass)
-//   - amuleapi.conf / amuleapi-jwt-secret / amuleapi-passwords loading
-//     via CAmuleApiConfig (separate file set; remote.conf is untouched)
-//   - a Boost.Beast HTTP server thread that serves /api/v0/version
+// TextShell is overridden so `ConnectAndRun` becomes "connect EC,
+// spawn the HTTP thread, run the refresher loop on this (wxApp)
+// thread, tear down on shutdown signal".
 //
-// Phase 4 wires the EC bring-up: TextShell is overridden so that
-// `ConnectAndRun` becomes "connect EC, spawn the HTTP thread, run the
-// refresher loop on this (wxApp) thread, tear down on shutdown
-// signal".
-//
-// Multiple REST clients: the HTTP server accepts concurrent
-// connections; their handlers reach EC only through
-// `SendRecvSerialized`, which serializes every EC roundtrip
-// (refresher tick + handler-driven mutations from Phase 5+) on the
-// same process-wide mutex. This way the EC client stays
-// single-threaded as CRemoteConnect requires, and operator-visible
-// concurrency stays correct under load.
+// Concurrent REST handlers reach EC only through
+// `SendRecvSerialized`, which holds a process-wide mutex around
+// every EC roundtrip — CRemoteConnect stays single-threaded as
+// required, and concurrent mutations + the refresher tick interleave
+// correctly.
 class CamuleapiApp : public CaMuleExternalConnector {
 public:
 	CamuleapiApp();
@@ -83,7 +76,7 @@ public:
 
 	// Serialized EC roundtrip. Takes the EC lock, calls
 	// SendRecvMsg_v2, releases. Callable from any thread; the
-	// refresher and Phase 5+ mutation handlers funnel every EC call
+	// refresher and mutation handlers funnel every EC call
 	// through here so amule's wx-socket-driven CRemoteConnect stays
 	// single-reader by construction.
 	//
@@ -100,41 +93,31 @@ public:
 	// Refresher needs the cache. Single CState instance per process.
 	webapi::CState &State() { return m_state; }
 
-	// Per-partfile RLE decoder state, persisted across ticks.
-	// amule's EC server sends GAP_STATUS / PART_STATUS as
-	// differentially-encoded blobs (each frame is XOR-deltaed
-	// against the previous decoded buffer), so the decoder MUST
-	// retain state across calls. Keyed by partfile ECID; entry
-	// erased when the file is removed.
+	// Per-partfile RLE decoder state, persisted across ticks. amule's
+	// EC server sends GAP_STATUS / PART_STATUS as differentially-
+	// encoded blobs (each frame is XOR-deltaed against the previous
+	// decoded buffer) so the decoder MUST retain state across calls.
+	// Keyed by partfile ECID; entry erased when the file is removed.
 	//
-	// **Concurrency:** mutated under `CState::m_mu` held EXCLUSIVE
-	// — the `MutateDownloads` writer lambda in Refresher.cpp passes
-	// the map into the apply functor while holding the State write
-	// lock. m_ec_mtx is INCIDENTALLY held across the same call
-	// stack (because SendRecvSerialized takes it), but it's the
-	// State write lock that's the actual serializer. Any future
-	// writer that touches the map outside MutateDownloads must
-	// take the same State write lock — exposing by raw reference
-	// is a shortcut, not a guarantee that the map is unguarded.
-	//
-	// The method name carries the precondition: any caller is
-	// asserting that it currently holds the CState exclusive lock
-	// (typically via being inside a MutateDownloads writer
-	// lambda). A `&rle = app.PartfileRleStateRequireStateWriteLock()`
-	// site catches the eye in code review the way a plain
-	// `PartfileRleState()` doesn't.
+	// **Concurrency:** mutated only under `CState::m_mu` held
+	// EXCLUSIVE — typically inside a `MutateDownloads` writer lambda.
+	// `m_ec_mtx` is incidentally held across the same call stack
+	// (`SendRecvSerialized` takes it) but the State write lock is
+	// the actual serializer. The method name encodes the
+	// precondition so a code-review reader notices it.
 	std::map<std::uint32_t, PartFileEncoderData> &
 		PartfileRleStateRequireStateWriteLock() {
 		return m_partfile_rle;
 	}
 
-	// Phase 8b: SSE event bus. The refresher publishes events after
+	// SSE event bus. The refresher publishes events after
 	// each successful tick; streaming-handler threads drain from
 	// here. Exposed by raw reference — CEventBus is internally
-	// thread-safe.
-	webapi::CEventBus &EventBus() { return m_event_bus; }
+	// thread-safe. Lazy-constructed in OnInit so the operator-
+	// configured ring capacity from amuleapi.conf is honored.
+	webapi::CEventBus &EventBus() { return *m_event_bus; }
 
-	// Phase 8b: prior-tick snapshot used to compute event deltas.
+	// prior-tick snapshot used to compute event deltas.
 	// Owned by the App; mutated AFTER each successful refresher
 	// tick by `EmitDiffsAndUpdate`. Exposed so RefresherTick can
 	// reach it without re-routing through CState (which is read-
@@ -170,7 +153,7 @@ private:
 	std::unique_ptr<CApiDispatcher> m_dispatcher;
 	std::unique_ptr<CHttpServer>    m_http;
 	std::map<std::uint32_t, PartFileEncoderData> m_partfile_rle;
-	webapi::CEventBus                            m_event_bus;
+	std::unique_ptr<webapi::CEventBus>           m_event_bus;
 	webapi::LastSeenState                        m_last_seen;
 
 	// CLI capture: --bind / --http-port override the matching keys in

@@ -84,8 +84,11 @@ Print a short usage description.
 .SH FILES
 .TP
 \fI~/.aMule/amuleapi.conf\fR
-INI\-style runtime config: bind address, HTTP port, CORS allowlist,
-EC credentials override, auth rate\-limit knobs, logging.
+INI\-style runtime config: \fB[Server]\fR (bind address, HTTP port, CORS
+allowlist), \fB[EC]\fR (outbound connection to amuled), \fB[Auth]\fR (login
+rate\-limit knobs), \fB[Streaming]\fR (SSE event\-bus ring capacity). The
+QUICKSTART document distributed with the source has the full
+reference.
 .TP
 \fI~/.aMule/amuleapi\-jwt\-secret\fR
 32\-byte HMAC signing key for issued tokens. Mode 0600. Auto\-generated

@@ -159,13 +159,11 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 	for (wxString::const_iterator i = s.begin(); i != s.end(); ++i) {
 		wxUniChar uc = *i;
 		uint32_t cp = uc.GetValue();
-		// wxString on Windows uses a UTF-16 internal backend, so a
-		// supplementary-plane code point (U+10000 and above) is
-		// stored as two surrogate halves and the iterator yields
-		// them separately. Linux + macOS use UTF-32 internally and
-		// the iterator yields the combined code point in one go.
-		// Combine surrogate halves here so both backends emit the
-		// same `\uXXXX\uXXXX` escape downstream.
+		// wxString on Windows uses UTF-16 internally so supplementary-
+		// plane code points (U+10000+) come through as two surrogate
+		// halves; Linux + macOS use UTF-32 and yield the combined
+		// code point in one step. Combine the halves here so both
+		// backends emit identical `\uXXXX\uXXXX` escapes.
 		if (cp >= 0xD800 && cp <= 0xDBFF) {
 			wxString::const_iterator j = i;
 			++j;

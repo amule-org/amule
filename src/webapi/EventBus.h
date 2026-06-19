@@ -44,11 +44,10 @@ namespace webapi {
 //
 // `id` is monotonic across the bus's lifetime (uint64, never wraps
 // for any realistic uptime — 18 EH). It is NOT stable across
-// amuleapi restarts; the bus resets to 1 on each daemon start.
-// Phase 8d's `resync` event covers the restart case for SSE
-// subscribers: when a client reconnects with Last-Event-ID > the
-// bus's current max, it gets a resync event and re-GETs all
-// affected collections.
+// amuleapi restarts; the bus resets to 1 on each daemon start. The
+// `resync` event covers the restart case for SSE subscribers: when
+// a client reconnects with Last-Event-ID > the bus's current max,
+// it gets a resync event and re-GETs all affected collections.
 struct Event {
 	std::uint64_t id        = 0;
 	std::string   name;     // "download_added", "status_changed", etc.
@@ -66,14 +65,29 @@ struct Event {
 // std::mutex — drain operations only hold it long enough to
 // copy out the events they want, never across a wire write.
 //
-// **Capacity:** a 100-event ring (PLAN §12 Q7). When the buffer
-// fills, the oldest event is dropped. This matches the SSE
-// `Last-Event-ID`-based replay window; clients that miss more
-// than 100 events get a `resync` (Phase 8d) instead of a partial
-// replay.
+// **Capacity:** runtime-configured ring (see `[Streaming]/
+// EventBusRingCapacity` in amuleapi.conf; default 16 384). When the
+// buffer fills, the oldest event is dropped and clients whose
+// Last-Event-ID fell off the ring get a typed `resync` instead of a
+// partial replay. The default is sized for a cold-start tick on a
+// heavy node (5K downloads + 5K shared can publish ~10K `*_added`
+// in a single tick before any subscriber has had a chance to
+// drain); worst-case memory ≈ capacity × ~1 KB JSON payload, so
+// 16 384 ≈ 16 MB.
 class CEventBus {
 public:
-	static constexpr std::size_t kCapacity = 100;
+	// Compile-time floor + default. Capacity is settable at
+	// construction; values below kMinCapacity are clamped up to the
+	// floor. Floor exists so an operator can't accidentally
+	// effectively disable SSE replay by setting capacity=1.
+	static constexpr std::size_t kDefaultCapacity = 16384;
+	static constexpr std::size_t kMinCapacity     = 16;
+
+	CEventBus() : CEventBus(kDefaultCapacity) {}
+	explicit CEventBus(std::size_t capacity);
+
+	// Effective ring capacity actually in use (post-clamp).
+	std::size_t Capacity() const { return m_capacity; }
 
 	// Publish a new event. Assigns the next id and stores it. Wakes
 	// all blocked Drain* callers. Drop the oldest event if the ring
@@ -99,16 +113,16 @@ public:
 	                    std::chrono::milliseconds timeout,
 	                    std::vector<Event> &out);
 
-	// The id of the bus's oldest currently-stored event, or 0 if
-	// the bus is empty. Used by Phase 8c's Last-Event-ID resolution:
-	// if `Last-Event-ID < OldestId()`, the client missed events
-	// that have already been evicted and should be sent `resync`
-	// instead of an empty replay.
+	// The id of the bus's oldest currently-stored event, or 0 if the
+	// bus is empty. Used by the Last-Event-ID reconnect path: if
+	// `Last-Event-ID < OldestId()` the client missed events that
+	// have already been evicted and should be sent `resync` instead
+	// of an empty replay.
 	std::uint64_t OldestId() const;
 
 	// The id of the most recently published event, or 0 if nothing
-	// has been published yet. Phase 8c's reconnect path uses this
-	// to compute "did I miss anything".
+	// has been published yet. The reconnect path uses this to
+	// compute "did I miss anything".
 	std::uint64_t NewestId() const;
 
 	// Reset the bus. Wakes any blocked drainers. Used by tests; not
@@ -128,6 +142,7 @@ public:
 	bool IsShutdown() const;
 
 private:
+	const std::size_t                           m_capacity;
 	mutable std::mutex                          m_mu;
 	std::condition_variable                     m_cv;
 	std::deque<Event>                           m_ring;

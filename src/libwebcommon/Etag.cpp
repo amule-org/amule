@@ -48,13 +48,11 @@ std::string Etag(const std::string &body_utf8)
 }
 
 
-// Strip leading/trailing whitespace + an optional `W/` weak-validator
-// prefix + optional outer double quotes from one If-None-Match entry.
-// RFC 7232 §3.2 + §2.3: the validator can be quoted (`"<hex>"`),
-// weak (`W/"<hex>"`), or — for clients that play loose — bare
-// (`<hex>`). For 304-purposes a weak and strong validator with the
-// same opaque payload compare equal; we don't carry a separate
-// weak/strong dimension on the response side.
+// Strip leading/trailing whitespace + optional `W/` weak-validator
+// prefix + optional outer double quotes from one If-None-Match
+// entry (RFC 7232 §3.2 + §2.3). Weak and strong validators with the
+// same opaque payload compare equal for 304 purposes; we don't
+// carry a separate weak/strong dimension on the response side.
 static std::string NormalizeOneValidator(const std::string &raw)
 {
 	std::size_t start = 0;
@@ -80,11 +78,10 @@ bool IfNoneMatchHits(const std::string &if_none_match,
                      const std::string &etag)
 {
 	if (if_none_match.empty()) return false;
-	// The header value may be a single validator or a comma-separated
-	// list. We walk the list, normalising each entry through
-	// NormalizeOneValidator, and return true on any hit. `*` matches
-	// any existing representation; the caller only invokes this on a
-	// 200 with a body, so `*` is always a hit.
+	// Header value may be a single validator or a comma-separated
+	// list — walk it, normalise each entry, return true on any hit.
+	// `*` matches any existing representation; the caller only
+	// invokes this on a 200-with-body, so `*` is always a hit.
 	std::size_t pos = 0;
 	while (pos <= if_none_match.size()) {
 		const std::size_t comma = if_none_match.find(',', pos);

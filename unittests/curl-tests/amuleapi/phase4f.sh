@@ -112,10 +112,9 @@ DCOUNT=$(printf '%s' "$CURL_BODY" | jq '.downloads | length')
 echo "    info: $DCOUNT downloads in queue (populated via GET_UPDATE)"
 
 if [ "$DCOUNT" -gt 0 ]; then
-	# Identity arrived in one tick (no Phase 2 needed at INC_UPDATE).
-	# A field showing up empty would mean the new walker isn't picking
-	# up the identity tags that the EC_DETAIL_INC_UPDATE constructor
-	# DOES ship (unlike the old EC_DETAIL_UPDATE polling path).
+	# Identity arrives in the same tick at INC_UPDATE — no second
+	# roundtrip needed. A field empty here means the walker isn't
+	# picking up the identity tags that EC_DETAIL_INC_UPDATE ships.
 	_assert_json_eq '.downloads[0].hash | length' 32 \
 		'/downloads[0].hash is 32-char hex (identity from one tick)'
 	_assert_json_eq '.downloads[0].name | type'   string \

@@ -294,10 +294,9 @@ target_link_libraries (EventBusTest
 	mulecommon
 )
 
-# Phase 8d: tests for EmitDiffsAndUpdate's log_appended path and
-# cold-start gating. Pulls EventBus + State along with EventDiff
-# itself — none of them touch wxWidgets or EC, so the test exe is
-# pure standard library + muleunit.
+# Tests for EmitDiffsAndUpdate's log_appended path and cold-start
+# gating. Pulls EventBus + State along with EventDiff itself — none
+# touch wxWidgets or EC, so the exe is pure stdlib + muleunit.
 add_executable (EventDiffTest
 	EventDiffTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/EventBus.cpp
@@ -352,9 +351,7 @@ target_link_libraries (AuthTest
 )
 
 # amuleapi state cache — snapshot semantics + concurrent-reader
-# correctness on the shared_timed_mutex. Used by the /status read
-# path; will gain coverage for downloads/uploads/etc. as Phase 4b/c
-# carve those substructs into State.
+# correctness on the shared_timed_mutex.
 add_executable (StateTest
 	StateTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/State.cpp
@@ -372,9 +369,8 @@ target_link_libraries (StateTest
 # (Refresher.cpp) is linkable without the CamuleapiApp dependency
 # tree because the orchestration body lives in RefresherTick.cpp
 # (kept out of this target). Tests cover the EC_TAG_FILE_REMOVED
-# delete marker, the alive-marker → Phase 2 enqueue path, the
-# unknown-ECID-no-op defence (#713-class race), and the partial-
-# update-active empty-response case.
+# delete marker, the alive-marker enqueue path, the unknown-ECID-
+# no-op defence (#713-class race), and partial-update-active.
 add_executable (RefresherTest
 	RefresherTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/Refresher.cpp

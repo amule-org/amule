@@ -71,7 +71,7 @@ TEST(Etag, DistinctBodiesProduceDistinctEtags)
 
 
 // ----------------------------------------------------------------------
-// `IfNoneMatchHits()` — Phase 7 fix for the bare-vs-quoted asymmetry.
+// `IfNoneMatchHits()` — fix for the bare-vs-quoted asymmetry.
 // ----------------------------------------------------------------------
 
 TEST(Etag, IfNoneMatchEmptyHeaderNoHit)
@@ -83,9 +83,8 @@ TEST(Etag, IfNoneMatchEmptyHeaderNoHit)
 
 TEST(Etag, IfNoneMatchBareHexHits)
 {
-	// Phase 1 carried forward the bare-vs-bare compare. Phase 7
-	// keeps backward compatibility for clients that send unquoted
-	// validators.
+	// Bare-vs-bare compare must hit — backward compatibility for
+	// clients that send unquoted validators.
 	ASSERT_TRUE(IfNoneMatchHits("deadbeefdeadbeef",
 	                            "deadbeefdeadbeef"));
 }

@@ -5,7 +5,8 @@
 # Wire contract for Phase 8c:
 #   * SSE clients reconnecting with a `Last-Event-ID: <N>` request
 #     header are sent every event with id > N that's still in the
-#     bus's 100-event ring before the drain loop starts.
+#     bus's ring (default 16384 slots, operator-tunable via
+#     [Streaming]/EventBusRingCapacity) before the drain loop starts.
 #   * Replay is monotonic and gap-free: the first id seen after
 #     reconnect is N+1 (provided that id is still in the ring).
 #   * If the requested Last-Event-ID is older than the bus's oldest

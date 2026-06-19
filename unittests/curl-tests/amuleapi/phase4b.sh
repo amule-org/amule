@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4b — `/downloads`, `/downloads/{hash}`,
-# `/shared`. Exercises the two-phase INC polling protocol end-to-end
-# (Phase 1 EC_DETAIL_UPDATE for deltas, Phase 2 EC_DETAIL_FULL for new
-# ECIDs), the ECID-keyed state cache, the auth gate, and the bare-
-# object detail shape (Q3 in PLAN.md §12).
+# amuleapi /downloads, /downloads/{hash}, /shared. Exercises the
+# consolidated GET_UPDATE @ EC_DETAIL_INC_UPDATE polling path end-
+# to-end, the ECID-keyed state cache, the auth gate, and the bare-
+# object detail shape.
 #
 # This smoke is intentionally tolerant of empty caches — it asserts
 # the envelope shape and the per-item field types without requiring
@@ -115,6 +114,8 @@ if [ "$COUNT" -gt 0 ]; then
 	echo "  --- /downloads has $COUNT entry/entries; shape checks ---"
 	_assert_json_eq '.downloads[0].hash | length' 32 \
 		'/downloads[0].hash is 32-char hex'
+	_assert_json_eq '.downloads[0].ecid | type' number \
+		'/downloads[0].ecid is numeric (client→file correlation key)'
 	_assert_json_eq '.downloads[0].name | type' string \
 		'/downloads[0].name is string'
 	_assert_json_eq '.downloads[0].size | type' number \
@@ -164,6 +165,8 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	echo "  --- /shared has $SHCOUNT entry/entries; shape checks ---"
 	_assert_json_eq '.shared[0].hash | length' 32 \
 		'/shared[0].hash is 32-char hex'
+	_assert_json_eq '.shared[0].ecid | type' number \
+		'/shared[0].ecid is numeric (client→file correlation key)'
 	_assert_json_eq '.shared[0].xfer | type' object \
 		'/shared[0].xfer is object'
 	_assert_json_eq '.shared[0].xfer.total | type' number \

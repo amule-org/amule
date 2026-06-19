@@ -34,30 +34,17 @@
 #include <vector>
 
 
-// Cached snapshot of amuled state, populated by the refresher (wxApp
-// thread) and read by the HTTP server (Boost.Asio thread).
+// Cached snapshot of amuled state. One instance lives inside
+// CamuleapiApp for the whole process; the refresher (wxApp thread)
+// writes; the HTTP server (Boost.Asio thread) reads.
 //
 // **Concurrency model.** A single `std::shared_timed_mutex` guards
-// every member field. The refresher takes it exclusive once per tick
-// to swap each substruct; HTTP read handlers take it shared, copy
-// the relevant substruct out, release immediately, and serialize the
-// JSON outside the critical section. Multiple REST clients reading
-// `/status` (or any other read endpoint) therefore stack with no
-// per-handler bottleneck — the shared-lock contention is bounded by
-// the µs-scale memcpy of a small POD substruct. The Refresher's
-// exclusive acquisition blocks readers only for the duration of the
-// `std::move`-swap, never across the EC roundtrip itself.
-//
-// Lifetime: one instance lives inside CamuleapiApp for the whole
-// process. Refresher writes a complete snapshot under a single
-// lock acquisition per tick; HTTP handlers copy the relevant
-// substruct out under the same lock and then release it before
-// JSON serialisation.
-//
-// Phase 4a populates only `Status`. Phase 4b+ adds Downloads,
-// Uploads, Shared, Servers, Kad, Categories, Logs, Preferences,
-// Stats, Search — each as a sibling struct here, each pulled
-// during the same tick.
+// every member field. The refresher takes it exclusive once per
+// tick to swap each substruct (the swap is a `std::move`, never
+// the EC roundtrip itself). HTTP read handlers take it shared,
+// copy the relevant substruct, release, then serialise JSON
+// outside the critical section — multiple clients stack with no
+// per-handler bottleneck.
 
 namespace webapi {
 
@@ -68,8 +55,8 @@ namespace webapi {
 // (lowercase hex) MD4 used as the URL key on /downloads/{hash}.
 //
 // Field shapes mirror the reference branch's `/api/v0/downloads`
-// wire contract minus `progress.parts` (deferred to Phase 4e per
-// PLAN §8 — needs amule's stateful `RLE_Data` carried across ticks).
+// wire contract minus `progress.parts` (deferred to per
+// ).
 struct DownloadSnapshot {
 	std::uint32_t ecid             = 0;
 	std::string hash;            // 32-char hex MD4
@@ -109,17 +96,17 @@ struct DownloadSnapshot {
 
 // One per peer (CUpDownClient) in the daemon's active client list.
 // Populated from the EC_TAG_CLIENT subtree inside the GET_UPDATE
-// response (Phase 4g consolidation — see RefresherTick.cpp).
+// response.
 //
 // "Client" here is amule's bidirectional peer: a remote ed2k peer
 // that's connected to us in EITHER role — uploader (we are downloading
 // from them), uploadee (we are uploading to them), queue waiter,
 // banned, etc. The cache holds ALL of them; consumer endpoints filter
 // by role:
-//   * /uploads → filter by upload_state == US_UPLOADING
-//   * /clients → no filter, full set surfaced
-// (Phase 5+ /downloads/{hash}/sources can filter by
-//  requested_file_hash matching the partfile.)
+//  * /uploads → filter by upload_state == US_UPLOADING
+//  * /clients → no filter, full set surfaced
+// (/downloads/{hash}/sources can filter by
+// upload_file_ecid matching the partfile.)
 struct ClientSnapshot {
 	std::uint32_t ecid                  = 0;
 	std::string   client_name;
@@ -140,15 +127,18 @@ struct ClientSnapshot {
 	std::string   download_state;      // "downloading" | "onqueue" | "noneededparts" | ... | "idle"
 	std::string   ident_state;         // "unknown" | "identified" | "bad_guy" | ...
 
-	// File context — different per direction.
-	//   * requested_file_hash: the partfile this peer is downloading
-	//     FROM us (the upload-side identity). Empty when not
-	//     uploading.
-	//   * downloading_file_hash: the file we're downloading FROM this
-	//     peer. Empty when not in download role.
-	std::string   requested_file_hash;     // CLIENT_UPLOAD_FILE (ECID-resolved hash, hex)
-	std::string   requested_file_name;     // PARTFILE_NAME of the requested file
-	std::string   downloading_file_hash;   // CLIENT_REQUEST_FILE (ECID-resolved)
+	// File context — different per direction. All three are amule
+	// ECIDs (decimal-string), NOT MD4 file hashes; consumers
+	// correlate against /downloads[].ecid or /shared[].ecid.
+	//  * upload_file_ecid: partfile this peer is downloading FROM
+	//    us (upload side). Empty when not uploading to them.
+	//  * download_file_ecid + download_file_name: file we are
+	//    downloading FROM this peer + the filename the peer
+	//    advertised for it (OP_REQFILENAMEANSWER). Empty when not
+	//    in download role.
+	std::string   upload_file_ecid;     // EC_TAG_CLIENT_UPLOAD_FILE
+	std::string   download_file_ecid;   // EC_TAG_CLIENT_REQUEST_FILE
+	std::string   download_file_name;   // EC_TAG_CLIENT_REMOTE_FILENAME
 
 	// Per-session transfer stats. CLIENT_UPLOAD_SESSION = bytes
 	// uploaded TO this peer; PARTFILE_SIZE_XFER (when re-keyed on a
@@ -297,12 +287,9 @@ struct StatsGraphs {
 
 
 // One result from a /search/results poll. Identity is the file's
-// MD4 hash (search results carry it directly). amuled accumulates
-// results in its `searchlist` singleton as search packets come in
-// from servers/Kad; client polls EC_OP_SEARCH_RESULTS to drain.
-//
-// Phase 5 will add POST `/search` to start a query; Phase 4d ships
-// the read endpoint so a client can poll an already-running search.
+// MD4 hash. amuled accumulates results in its `searchlist`
+// singleton as packets come in from servers/Kad; the client polls
+// EC_OP_SEARCH_RESULTS to drain.
 struct SearchResult {
 	std::uint32_t ecid                  = 0;
 	std::string   hash;             // 32-char hex MD4
@@ -315,21 +302,16 @@ struct SearchResult {
 };
 
 
-// `m_amule_log_lines` in CState holds the cached log surfaced via
-// /logs/amule. amule's EC server piggybacks new log lines on
-// STAT_REQ responses at `EC_DETAIL_FULL` (see `AddLoggerTag` in
-// ExternalConn.cpp:700-715), using a per-EC-connection cursor
-// (CLoggerAccess) so each call returns ONLY the lines emitted since
-// the previous STAT_REQ from the same connection. The refresher
-// appends those new lines to the vector; clients tail with
-// `?tail=N`.
+// `m_amule_log_lines` in CState caches /logs/amule. amule's EC
+// server piggybacks new lines on STAT_REQ at `EC_DETAIL_FULL` (see
+// `AddLoggerTag` in ExternalConn.cpp:700-715) via a per-EC-connection
+// cursor (CLoggerAccess) — each call returns ONLY lines emitted
+// since the previous STAT_REQ from the same connection. Clients
+// tail with `?tail=N`.
 //
-// **No cap on history.** Per operator preference, every line amuled
-// ships stays in memory until amuleapi restarts. amule's typical
-// log volume is bounded by operator habits (idle: ~tens of KB/day;
-// busy: ~hundreds of KB/day). A future `DELETE /logs/amule`
-// (Phase 5 mutation) will let operators truncate when needed; until
-// then the vector grows monotonically.
+// **No cap on history.** Per operator preference, every line stays
+// in memory until amuleapi restarts; log volume is bounded by
+// operator habits (idle ~tens of KB/day; busy ~hundreds).
 
 
 // /logs/serverinfo. amule has no incremental EC op for this log
@@ -346,7 +328,7 @@ struct ServerInfoLog {
 // amuled preferences subset surfaced via /preferences. The amuled
 // preferences corpus is enormous (every UI panel has its own
 // section); for v0.1 we ship the common-case fields:
-// nick, transfer limits, ports, connection toggles. Phase 4d / later
+// nick, transfer limits, ports, connection toggles. / later
 // can extend this if a real client reports needing more.
 struct PreferencesSnapshot {
 	// [General]
@@ -383,7 +365,7 @@ struct StatusSnapshot {
 
 	// Nickname is intentionally NOT a /status field — it lives in the
 	// preferences EC namespace, not the STAT_REQ response. amuleapi
-	// surfaces it via /api/v0/preferences (Phase 4c) where it belongs
+	// surfaces it via /api/v0/preferences where it belongs
 	// semantically (it's a user-edited value, not a connection-state
 	// observation). Same call /status that PHP's am_status template
 	// makes.
@@ -395,7 +377,7 @@ struct StatusSnapshot {
 	std::uint32_t server_port = 0;
 
 	// True when the daemon is connected to ed2k but in LowID mode
-	// (NAT'd, can't accept incoming). Phase 7+ adds NAT-T affordances
+	// (NAT'd, can't accept incoming). adds NAT-T affordances
 	// that change this calculus; until then the field maps 1:1 to the
 	// EC CONNSTATE bit.
 	bool        ed2k_lowid    = false;
@@ -463,7 +445,7 @@ public:
 	std::vector<DownloadSnapshot> Downloads() const;
 
 	// Full peer list (all upload_state values, including queue
-	// waiters, idle peers, and banned). Backs /clients (Phase 4g).
+	// waiters, idle peers, and banned). Backs /clients.
 	// The legacy /uploads endpoint is retired — consumers query
 	// /clients and filter by role on their side.
 	std::vector<ClientSnapshot>   Clients()   const;

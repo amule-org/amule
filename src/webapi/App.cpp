@@ -157,6 +157,12 @@ bool CamuleapiApp::OnInit()
 		return false;
 	}
 
+	// Construct the SSE bus once the operator-tunable capacity is
+	// known. Below the floor is clamped by CEventBus itself.
+	m_event_bus = std::unique_ptr<webapi::CEventBus>(
+		new webapi::CEventBus(
+			m_apiConfig.StreamingCfg().event_bus_ring_capacity));
+
 	// CLI override hooks. set-*-pass exits immediately after writing.
 	if (m_cliHasSetAdminPass || m_cliHasSetGuestPass) {
 		// Both options run as one-shot CLI flows. Operators script
@@ -259,18 +265,13 @@ int CamuleapiApp::RunSetGuestPass()
 int CamuleapiApp::OnRun()
 {
 	// Install signal handlers before the HTTP server starts so a
-	// signal during bring-up doesn't sail through to default
-	// disposition (kill -9 the daemon at the worst possible moment).
+	// signal during bring-up doesn't default-terminate the daemon.
 	//
-	// Use sigaction (POSIX) instead of std::signal. std::signal has
-	// implementation-defined "resets to SIG_DFL after firing"
-	// semantics on some platforms (musl/Alpine, older BSDs), so a
-	// second SIGINT would default-terminate the daemon mid-
-	// shutdown. sigaction with explicit sa_mask gives portable,
-	// stay-installed semantics across every relevant target.
-	// SA_RESTART so blocking syscalls (read/write on the EC socket)
-	// don't return EINTR mid-shutdown and look like errors in the
-	// log. Windows lacks sigaction; fall back to std::signal there.
+	// sigaction (not std::signal) — std::signal's "reset to SIG_DFL
+	// after firing" is implementation-defined (musl/Alpine, older
+	// BSDs trip it), so a second SIGINT would terminate mid-shutdown.
+	// SA_RESTART so blocking syscalls on the EC socket don't return
+	// EINTR. Windows lacks sigaction; fall back to std::signal there.
 #ifndef _WIN32
 	struct sigaction sa;
 	std::memset(&sa, 0, sizeof(sa));
@@ -286,7 +287,7 @@ int CamuleapiApp::OnRun()
 	::sigaction(SIGTERM, &sa, nullptr);
 #ifdef SIGHUP
 	// SIGHUP is the "config reload" signal in long-running daemons.
-	// Phase 4 has no reload story (configs are read at startup only);
+	// has no reload story (configs are read at startup only);
 	// treat SIGHUP as a soft shutdown so a systemd reload doesn't
 	// leave the daemon in a half-state.
 	::sigaction(SIGHUP,  &sa, nullptr);
@@ -334,18 +335,14 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 	}
 
 	// Bind-time hard gate against the "listening publicly with no
-	// password configured" footgun. Without this, a daemon started
-	// against a routable interface BEFORE the operator runs
-	// `amuleapi --set-admin-pass=...` accepts TCP connects, refuses
-	// every login attempt (HandleLogin returns 503 login_disabled),
-	// but the unauth surface (/api/v0/version) still answers and any
-	// future read-without-auth surface (today there is none, but
-	// the policy needs to be enforced before the next reviewer
-	// finds a leak) gets exposed. Refuse to start instead.
+	// password configured" footgun. A daemon bound to a routable
+	// interface before the operator runs `amuleapi --set-admin-pass`
+	// would still answer the unauth surface (/api/v0/version) — and
+	// any future read-without-auth surface — even though logins
+	// return 503. Refuse to start instead.
 	//
-	// A loopback bind is fine even with empty passwords — only the
-	// local operator can reach it, and the first-run flow IS
-	// "start, then run --set-admin-pass against the running daemon".
+	// Loopback bind + empty passwords is fine; first-run flow IS
+	// "start on loopback, then run --set-admin-pass".
 	const bool non_loopback = (bind != "127.0.0.1"
 	                       && bind != "::1"
 	                       && bind != "localhost");
@@ -374,7 +371,7 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 		return dispatcher->Dispatch(req);
 	};
 
-	// Phase 8: streaming resolver + handler for /api/v0/events. The
+	// streaming resolver + handler for /api/v0/events. The
 	// resolver picks every GET that matches the path (auth is
 	// enforced inside the streaming handler — same role gate as
 	// regular handlers).
@@ -421,27 +418,20 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 	Show(CFormat(_("amuleapi: aMule version %s; api v0\n"))
 		% wxString::FromAscii(VERSION));
 
-	// Refresher loop. One tick per second; the HTTP thread reads the
-	// State cache concurrently while we're sleeping between ticks.
-	// EC roundtrips run on this thread (the wxApp thread, which is
-	// also CRemoteConnect's owner) but go through `SendRecvSerialized`
-	// to hold m_ec_mtx — that way Phase 5's HTTP-thread mutations
-	// can call it from any thread without conflicting.
+	// Refresher loop. One tick per second; HTTP threads read State
+	// concurrently. EC roundtrips run on this thread (CRemoteConnect's
+	// owner) but go through `SendRecvSerialized` so HTTP-thread
+	// mutations can also call it under m_ec_mtx.
 	//
-	// `was_failed` tracks the success/failure edge so we can wipe the
-	// list caches on the rising edge (failed → succeeded). The
-	// server's CValueMap was reset across the disconnect, so the
-	// next tick gets a full snapshot anyway — clearing our caches
-	// first ensures entries that vanished during the down window
-	// don't linger forever in the INC-delta path.
+	// `was_failed` tracks the success/failure edge so we wipe list
+	// caches on the rising edge (failed → succeeded). The server's
+	// CValueMap was reset across the disconnect; clearing first stops
+	// stale entries lingering forever in the INC-delta path.
 	bool was_failed = false;
-	// Target 1 s wall-clock between tick starts. The previous shape
-	// was "tick, then sleep a fixed 4 × 250 ms" — under EC-mutex
-	// contention a tick takes seconds and the cadence drifts; status/
-	// downloads pages render stale. Wall-clock-bound the cycle:
-	// measure the tick, sleep the remainder, warn if the tick
-	// overran the 3 s wall-clock budget (typically signals an EC
-	// stall or a runaway SendRecvSerialized).
+	// Target 1 s wall-clock between tick starts. Measure the tick,
+	// sleep the remainder; warn if a tick overruns the 3 s budget
+	// (typically signals an EC stall or runaway SendRecvSerialized).
+	// Fixed `tick + 4 × 250 ms sleep` drifts under EC-mutex contention.
 	constexpr auto kTargetCycle  = std::chrono::seconds(1);
 	constexpr auto kSliceMs      = std::chrono::milliseconds(250);
 	constexpr auto kOverrunWarn  = std::chrono::seconds(3);
@@ -470,9 +460,9 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 			ec_consecutive_failures = 0;
 			ec_warn_logged          = false;
 			// Sole writer of m_last_seen. SSE-event publication runs
-			// here, NOT inside RefresherTick — so Phase-5 mutation
-			// handlers calling RefresherTick inline from the HTTP
-			// thread don't race with this loop's diff walk.
+			// here, NOT inside RefresherTick — so mutation handlers
+			// calling RefresherTick inline from the HTTP thread
+			// don't race with this loop's diff walk.
 			webapi::EmitDiffsForEventBus(*this, m_state);
 		} else {
 			m_state.MarkTickFailure();
@@ -550,19 +540,16 @@ bool CamuleapiApp::IsServerPartialUpdateActive()
 
 int CamuleapiApp::OnExit()
 {
-	// Tear down in reverse construction order: HTTP server first so no
-	// in-flight Dispatch can reach a dangling dispatcher, then the
-	// dispatcher itself (which references m_jwt), then m_jwt.
+	// Tear down in reverse construction order: HTTP server first
+	// (no in-flight Dispatch can reach a dangling dispatcher), then
+	// dispatcher (references m_jwt), then m_jwt.
 	//
-	// Wake any SSE drainers BEFORE Stop() returns so detached worker
-	// threads (Drain() blocked on the 15 s heartbeat) bail out and
-	// release the dispatcher references they hold. Without this,
-	// `m_dispatcher.reset()` below can race a drainer mid-write
-	// against a dispatcher that's already destroyed → UAF in the
-	// signal-driven shutdown path. m_http->Stop() then joins the
-	// session destruction; with the drainers already exiting, the
-	// join is bounded.
-	m_event_bus.Shutdown();
+	// Wake SSE drainers BEFORE Stop() returns so workers blocked on
+	// the 15 s heartbeat bail out and release their dispatcher refs.
+	// Without this, `m_dispatcher.reset()` below would race a
+	// drainer mid-write against a destroyed dispatcher → UAF in the
+	// signal-driven shutdown. m_http->Stop()'s join is then bounded.
+	if (m_event_bus) m_event_bus->Shutdown();
 	if (m_http) {
 		m_http->Stop();
 		m_http.reset();

@@ -158,9 +158,9 @@ TEST(EventDiff, LogAppendedSilentOnIdleTick)
 
 // JSON escaping: a line containing characters that need JSON-escaping
 // (backslash, double quote, control chars) must produce a valid JSON
-// payload — the EscJson helper backing this is the same one Phase 8b
-// uses for snapshot payloads, but covering it here pins the contract
-// for the log path specifically.
+// payload. The EscJson helper backing this is the same one the
+// snapshot payloads use; covering it here pins the contract for
+// the log path specifically.
 TEST(EventDiff, LogAppendedEscapesJsonHazards)
 {
 	CState state;

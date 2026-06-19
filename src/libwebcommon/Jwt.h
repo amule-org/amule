@@ -34,7 +34,7 @@
 #include "Role.h"
 
 
-// HS256 JWT machinery for the /api/v0 surface. The token shape follows
+// HS256 JWT machinery for the /api/v0 surface. Token shape per
 // RFC 7519: <base64url(header)>.<base64url(payload)>.<base64url(sig)>
 //
 //   header  = {"alg":"HS256","typ":"JWT"}
@@ -42,18 +42,15 @@
 //              "jti":"<random base64url>"}
 //   sig     = HMAC-SHA-256(secret, header_b64 + "." + payload_b64)
 //
-// The HMAC secret is supplied at construction by the binary owning the
-// JWT machinery (amuleapi reads it from ${config_dir}/amuleapi-jwt-secret).
-// This class never touches the filesystem or the config; the only inputs
-// are the secret bytes, and the only outputs are issued + verified
-// tokens.
+// The HMAC secret is supplied at construction by the owning binary
+// (amuleapi loads it from `${config_dir}/amuleapi-jwt-secret`); this
+// class never touches the filesystem.
 //
-// `jti` (JWT ID, RFC 7519 §4.1.7) is a 128-bit random identifier
-// emitted in every Issue() and surfaced through Verify() so the
-// owning binary can maintain a server-side revocation list — invalidate
-// a token by jti at logout and have Verify() reject it on the next
-// request. The library doesn't own the revocation set; that's
-// amuleapi's responsibility.
+// `jti` (RFC 7519 §4.1.7) is a 128-bit random identifier emitted
+// per Issue() and surfaced through Verify() so the owning binary
+// can run a server-side revocation list — `/auth/logout` adds the
+// jti, Verify rejects on the next request. The revocation set lives
+// in the owner, not in this library.
 class CJwt {
 public:
 	// `secret` is the HMAC-SHA-256 key. amuleapi loads 32 random bytes

@@ -3,10 +3,13 @@
 # amuleapi Phase 5e — connection control mutations.
 #
 # Endpoints:
-#   POST /api/v0/networks/connect       — EC_OP_CONNECT (all enabled nets)
+#   POST /api/v0/networks/connect       — EC_OP_CONNECT (all enabled
+#                                         nets) or one of
+#                                         EC_OP_SERVER_CONNECT / EC_OP_KAD_START
+#                                         when a network selector is passed
 #   POST /api/v0/networks/disconnect    — EC_OP_DISCONNECT (all nets)
-#   POST /api/v0/kad/connect            — EC_OP_KAD_START
-#   POST /api/v0/kad/disconnect         — EC_OP_KAD_STOP
+#   (Dedicated /api/v0/kad/{connect,disconnect} were dropped in
+#   favour of the network-selector form on /networks/*.)
 #   POST /api/v0/kad/bootstrap          — EC_OP_KAD_BOOTSTRAP_FROM_IP
 #       body: {ip: "1.2.3.4" | uint32, port: uint16}
 #
@@ -106,16 +109,36 @@ _assert_status 202 "POST /networks/connect → 202"
 _assert_json_eq '.ok' true 'connect response.ok==true'
 _assert_json_eq '.message | type' string 'connect response carries .message'
 
-# --- 4. kad/disconnect + kad/connect (Kad-only). -------------------
+# --- 4. networks/{disconnect,connect} (Kad-only via selector). ----
+# The dedicated /kad/connect + /kad/disconnect endpoints were dropped
+# in favour of /networks/{connect,disconnect} with `{"network":"kad"}`.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/kad/disconnect"
-_assert_status 200 "POST /kad/disconnect → 200"
-_assert_json_eq '.ok' true 'kad/disconnect response.ok==true'
+	-H "Content-Type: application/json" \
+	-d '{"network":"kad"}' \
+	"$HOST/api/v0/networks/disconnect"
+_assert_status 200 "POST /networks/disconnect {network:kad} → 200"
+_assert_json_eq '.ok' true 'networks/disconnect(kad) response.ok==true'
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/kad/connect"
-_assert_status 202 "POST /kad/connect → 202"
-_assert_json_eq '.ok' true 'kad/connect response.ok==true'
+	-H "Content-Type: application/json" \
+	-d '{"network":"kad"}' \
+	"$HOST/api/v0/networks/connect"
+_assert_status 202 "POST /networks/connect {network:kad} → 202"
+_assert_json_eq '.ok' true 'networks/connect(kad) response.ok==true'
+
+# ed2k-only selector should also round-trip via the network field.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"network":"ed2k"}' \
+	"$HOST/api/v0/networks/connect"
+_assert_status 202 "POST /networks/connect {network:ed2k} → 202"
+
+# Bogus selector → 400 on both directions.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"network":"wat"}' \
+	"$HOST/api/v0/networks/connect"
+_assert_status 400 "POST /networks/connect {network:wat} → 400"
 
 # --- 5. kad/bootstrap happy path + error paths. -------------------
 #

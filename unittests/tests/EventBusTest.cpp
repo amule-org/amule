@@ -140,23 +140,40 @@ TEST(EventBus, DrainTimesOutWhenNothingPublished)
 
 TEST(EventBus, RingCapDropsOldestWhenFull)
 {
-	CEventBus bus;
-	// Publish slightly more than the cap; the ring should hold the
-	// last kCapacity entries.
-	const std::size_t over = CEventBus::kCapacity + 5;
+	// Construct with an explicit small capacity rather than the
+	// default — the default is sized for real workloads (16K) and
+	// this test would otherwise publish 16K+ events to exercise it.
+	CEventBus bus(/*capacity=*/64);
+	const std::size_t over = bus.Capacity() + 5;
 	for (std::size_t i = 0; i < over; ++i) {
 		bus.Publish("x", "{}");
 	}
 
 	std::vector<Event> out;
 	bus.Drain(0, std::chrono::milliseconds(0), out);
-	ASSERT_EQUALS(CEventBus::kCapacity, out.size());
+	ASSERT_EQUALS(bus.Capacity(), out.size());
 
 	// OldestId is the first id we STILL have (= ids dropped + 1).
-	// kCapacity entries kept means we dropped (over - kCapacity).
-	const std::uint64_t expected_oldest = (over - CEventBus::kCapacity) + 1;
+	const std::uint64_t expected_oldest = (over - bus.Capacity()) + 1;
 	ASSERT_EQUALS(expected_oldest, bus.OldestId());
 	ASSERT_EQUALS(static_cast<std::uint64_t>(over), bus.NewestId());
+}
+
+
+TEST(EventBus, ExplicitCapacityHonored)
+{
+	CEventBus bus(/*capacity=*/256);
+	ASSERT_EQUALS(static_cast<std::size_t>(256), bus.Capacity());
+}
+
+
+TEST(EventBus, BelowMinCapacityIsClampedUp)
+{
+	// Operator config below the floor (e.g. capacity=1) is clamped
+	// to kMinCapacity. Without the clamp the bus would effectively
+	// disable replay; the floor guarantees a meaningful window.
+	CEventBus bus(/*capacity=*/1);
+	ASSERT_EQUALS(CEventBus::kMinCapacity, bus.Capacity());
 }
 
 

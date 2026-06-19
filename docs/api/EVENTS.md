@@ -125,9 +125,9 @@ EventSource clients (and well-behaved SDK clients) handle the underlying socket 
 | `parsed_id + 1 < OldestId` (gap) | Emit a synthetic `resync` event with `reason: "gap"`, start at current newest | Client invalidates its cache and re-GETs the REST collections |
 | `parsed_id > NewestId` (stale) | Emit a synthetic `resync` event with `reason: "restart"`, start at current newest | Client invalidates: amuleapi was restarted (ids are per-process and reset to 1 on each launch) |
 
-The ring buffer holds 100 events. A burst that adds more than 100 events between reconnects triggers the "gap" path.
+The ring buffer holds 16 384 events by default — sized to absorb a cold-start tick on a busy node (5 K downloads + 5 K shared can publish ~10 K `*_added` events in a single tick before any subscriber has had a chance to drain). Operators with very heavy workloads can raise the cap via `amuleapi.conf[Streaming]/EventBusRingCapacity`; values below the bus's compile-time floor (16) are clamped up so an operator can't accidentally disable replay. Worst-case memory ≈ capacity × ~1 KB JSON payload. A burst that adds more events than capacity between reconnects triggers the "gap" path.
 
-The same gap detection also runs on the live path: if a publisher floods the bus between two `Drain()` calls and evicts events the current subscriber hadn't seen, the daemon emits the same `resync` frame and restarts the subscriber's cursor at the current newest. This catches the cold-start tick on a 5K-download library where ~5K `_added` events fire faster than any drainer can read.
+The same gap detection also runs on the live path: if a publisher floods the bus between two `Drain()` calls and evicts events the current subscriber hadn't seen, the daemon emits the same `resync` frame and restarts the subscriber's cursor at the current newest. This catches the cold-start tick described above when capacity is set lower than the burst size.
 
 ### `resync` frame
 
@@ -148,34 +148,32 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` payload is always identical to the matching REST resource's list-item shape; the `_updated` payload is the FULL new snapshot (not a diff — Phase 8b's "any change publishes the whole object" model). `_removed` carries only the identity field so the client can drop the cache entry without needing the old object.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field (`hash` for hash-keyed resources, `ecid` for ECID-keyed) so the client can drop the cache entry without needing the old object.
 
 ### `downloads` channel
 
-#### `download_added`
+#### `download_added` / `download_updated`
+
+Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, and the source counters — clients see live progress without polling.
 
 ```json
 {
-  "ecid": 17,
-  "hash": "8b54a3c2...",
-  "name": "ubuntu-26.04-desktop-amd64.iso",
-  "ed2k_link": "ed2k://|file|ubuntu...|3825..|8b54...|/",
-  "size": 3825205248,
-  "size_done": 0,
-  "size_xfer": 0,
-  "speed_bps": 0,
-  "status": "downloading",
-  "priority": "normal",
+  "ecid":          12,
+  "hash":          "8b54a3c2...",
+  "name":          "ubuntu-26.04-desktop-amd64.iso",
+  "ed2k_link":     "ed2k://|file|ubuntu...|3825..|8b54...|/",
+  "size":          3825205248,
+  "size_done":     1142000000,
+  "size_xfer":     1102450000,
+  "speed_bps":     4500000,
+  "status":        "downloading",
+  "priority":      "normal",
   "priority_auto": true,
-  "category": 0,
-  "sources": { "total": 0, "not_current": 0, "transferring": 0, "a4af": 0 },
-  "percent": 0.0
+  "category":      0,
+  "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
+  "progress": { "percent": 29.85 }
 }
 ```
-
-#### `download_updated`
-
-Same shape as `download_added`. Fires on any field-level change.
 
 #### `download_removed`
 
@@ -187,22 +185,24 @@ Only the hash; clients look up and drop the cache entry by hash.
 
 ### `shared` channel
 
-#### `shared_added`
+#### `shared_added` / `shared_updated`
+
+Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `xfer.session`, `xfer.total`, `requests.*`, and `accepts.*` — clients see live upload counters without polling.
 
 ```json
 {
-  "ecid": 91,
-  "hash": "1a2b3c4d...",
-  "name": "release-notes.txt",
-  "size": 3217,
-  "priority": "normal",
-  "complete_sources": 12
+  "ecid":             17,
+  "hash":             "1a2b3c4d...",
+  "name":             "release-notes.txt",
+  "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
+  "size":             3217,
+  "priority":         "normal",
+  "complete_sources": 12,
+  "xfer":     { "session": 5242880, "total": 314572800 },
+  "requests": { "session": 42,      "total": 1837 },
+  "accepts":  { "session": 18,      "total": 921 }
 }
 ```
-
-#### `shared_updated`
-
-Same shape as `shared_added`.
 
 #### `shared_removed`
 
@@ -212,23 +212,27 @@ Same shape as `shared_added`.
 
 ### `servers` channel
 
-#### `server_added`
+#### `server_added` / `server_updated`
+
+Identical to the REST [`/api/v0/servers`](REFERENCE.md#get-apiv0servers) list-item shape.
 
 ```json
 {
-  "ecid": 1,
-  "name": "eMule Server",
-  "address": "203.0.113.5:4242",
-  "users": 312000,
-  "files": 75000000,
-  "priority": "normal",
-  "static": false
+  "ecid":        1,
+  "name":        "eMule Server",
+  "description": "Public server",
+  "version":     "17.15",
+  "address":     "203.0.113.5:4242",
+  "port":        4242,
+  "users":       312000,
+  "max_users":   500000,
+  "files":       75000000,
+  "priority":    "normal",
+  "ping_ms":     42,
+  "failed":      0,
+  "static":      false
 }
 ```
-
-#### `server_updated`
-
-Same shape as `server_added`.
 
 #### `server_removed`
 
@@ -240,26 +244,43 @@ Servers are ECID-keyed (not hash-keyed) so the removed payload carries the integ
 
 ### `clients` channel
 
-#### `client_added`
+#### `client_added` / `client_updated`
+
+Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-item shape. Speed fields move on every tick during active transfers, so the `clients` channel can be the loudest one on a busy node.
 
 ```json
 {
-  "ecid": 4382,
-  "client_name": "AnonymousPeer",
-  "user_hash": "1f2e3a...",
-  "ip": "203.0.113.42",
-  "port": 4662,
-  "software": "eMule",
-  "upload_state": "uploading",
-  "download_state": "idle",
-  "upload_speed_bps": 22000,
-  "download_speed_bps": 0
+  "ecid":                   4382,
+  "client_name":            "AnonymousPeer",
+  "user_hash":              "1f2e3a...",
+  "ip":                     "203.0.113.42",
+  "port":                   4662,
+  "software":               "eMule",
+  "software_version":       "0.50a",
+  "os_info":                "Linux",
+  "upload_state":           "uploading",
+  "download_state":         "idle",
+  "ident_state":            "verified",
+  "upload_file_ecid":       "12",
+  "download_file_ecid":     "",
+  "download_file_name":     "",
+  "xfer": {
+    "up_session":   22000000,
+    "down_session": 0,
+    "up_total":     452000000,
+    "down_total":   189000000
+  },
+  "upload_speed_bps":       22000,
+  "download_speed_bps":     0,
+  "queue_waiting_position": 0,
+  "remote_queue_rank":      0,
+  "score":                  150,
+  "obfuscation_status":     "obfuscated",
+  "friend_slot":            false
 }
 ```
 
-#### `client_updated`
-
-Same shape as `client_added`. Speed fields move on every tick during active transfers, so the `clients` channel can be the loudest one on a busy node.
+`upload_file_ecid` (file we're uploading TO this peer) and `download_file_ecid` (file we're downloading FROM this peer) are amule ECIDs as decimal strings — NOT MD4 file hashes. ECIDs come from one per-daemon counter shared across files, clients, servers, friends, and search results, so a given integer identifies at most one object across all kinds. Resolve via [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) `.ecid` (in-progress partfiles) or [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) `.ecid` (known files); completion mints a new CKnownFile with a new ECID, so a mid-transition snapshot may briefly show an ECID in neither list.
 
 #### `client_removed`
 
@@ -271,21 +292,25 @@ Same shape as `client_added`. Speed fields move on every tick during active tran
 
 #### `status_changed`
 
-Fires whenever any field in the `/api/v0/status` envelope changes. The payload is the post-change snapshot, not a diff.
+Identical to the REST [`/api/v0/status`](REFERENCE.md#get-apiv0status) envelope. The payload is the post-change snapshot, not a diff. Fires when any field anywhere in the envelope changes — ed2k state, Kad state, Kad network counters, headline speeds, queue length, or `ec_connected`.
 
 ```json
 {
-  "ed2k_state": "connected",
-  "kad_state": "connected",
-  "ed2k_lowid": false,
-  "kad_firewalled": false,
-  "server_name": "eMule Server",
-  "server_ip": "203.0.113.5",
-  "server_port": 4242,
-  "download_bps": 4500000,
-  "upload_bps": 50000,
-  "ul_queue_len": 12,
-  "total_src_count": 1843
+  "ec_connected": true,
+  "ed2k": {
+    "state":       "connected",
+    "low_id":      false,
+    "server_name": "eMule Server",
+    "server_ip":   "203.0.113.5",
+    "server_port": 4242
+  },
+  "kad": {
+    "state":      "connected",
+    "firewalled": false,
+    "network":    { "users": 5400000, "files": 1400000000, "nodes": 2400 }
+  },
+  "speeds": { "download_bps": 4500000, "upload_bps": 50000 },
+  "queue":  { "upload_queue_length": 12, "total_source_count": 1843 }
 }
 ```
 

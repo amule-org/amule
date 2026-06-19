@@ -34,34 +34,30 @@
 namespace webapi {
 
 
-// Single-flight TTL cache for lazy-fetched endpoints (Phase 4g —
-// /logs/serverinfo, /stats/tree, /stats/graphs/{graph},
-// /search/results). The refresher's per-tick loop dropped these
-// endpoints; the HTTP handlers now drive their own EC fetches on
-// demand, coalescing burst reads via a short TTL (default 1 s — per
-// operator preference: long enough to absorb dashboard tile bursts,
-// short enough that data stays alive).
+// Single-flight TTL cache for lazy-fetched endpoints
+// (/logs/serverinfo, /stats/tree, /stats/graphs/{graph},
+// /search/results). HTTP handlers drive their own EC fetches on
+// demand, coalescing burst reads via a 1 s TTL.
 //
-// **Single-flight semantics.** Only ONE thread runs `fetch()` for a
+// **Single-flight semantics.** Only one thread runs `fetch()` for a
 // given stale-or-unset cache; concurrent callers park on a condvar
 // while the inflight thread runs the EC roundtrip with the cache
-// mutex DROPPED. Once the inflight thread stores the result and
-// clears the flag, every waiter observes the just-stored value and
-// returns it without re-fetching.
+// mutex DROPPED. Once the result is stored and the flag clears,
+// every waiter observes the just-stored value and returns it without
+// re-fetching.
 //
-// **Why not hold m_mu across fetch?** A 30 s amuled stall on
-// /stats/tree would park every concurrent reader of that endpoint
-// for the entire stall duration. Dropping the mutex around the EC
-// call lets all concurrent readers cooperate on the single inflight
-// fetch without serialising on the slowest amuled response.
+// **Why drop the mutex around fetch?** A 30 s amuled stall on
+// /stats/tree would otherwise park every concurrent reader of that
+// endpoint for the stall's duration. Dropping the cache mutex around
+// the EC call lets concurrent readers cooperate on the single
+// inflight fetch without serialising on the slowest amuled response.
 //
-// **Lock ordering.** The fetcher lambda acquires `m_ec_mtx` inside
-// its body WHILE this cache's m_mu is NOT held (we drop it before
-// calling). That's still single-flight per endpoint because m_inflight
-// gates concurrent fetches.
+// **Lock ordering.** The fetcher lambda acquires `m_ec_mtx` while
+// this cache's `m_mu` is NOT held. Still single-flight per endpoint
+// because `m_inflight` gates concurrent fetches.
 //
-// The cached `T` must be copyable (we return by value to avoid
-// holding `m_mu` across the JSON serialization).
+// The cached `T` must be copyable (returned by value so `m_mu` isn't
+// held across JSON serialisation).
 template <class T>
 class CTtlCache {
 public:
@@ -128,7 +124,7 @@ public:
 	}
 
 	// Invalidate. Future GetOrFetch will trigger a fresh fetch
-	// regardless of TTL. Used by Phase 5+ mutations that touch an
+	// regardless of TTL. Used by mutations that touch an
 	// endpoint's data (e.g. POST /search invalidating
 	// /search/results).
 	void Invalidate()

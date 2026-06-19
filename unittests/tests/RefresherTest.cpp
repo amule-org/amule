@@ -174,9 +174,7 @@ TEST(Refresher, EmptyResponseLeavesCachesIntact)
 	ApplyGetUpdateToShared   (&resp, shared);
 
 	// INC protocol: empty response means "no changes since last tick".
-	// Cache stays intact — no bulk-delete fallback (which the old
-	// EC_DETAIL_UPDATE polling protocol's `partial_update_active=false`
-	// path required).
+	// Cache stays intact — no bulk-delete fallback needed.
 	ASSERT_EQUALS(static_cast<size_t>(1), downloads.size());
 	ASSERT_EQUALS(static_cast<size_t>(1), shared.size());
 }
@@ -339,9 +337,8 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 // New ECID arrives in one tick with identity baked in — the whole
 // point of the GET_UPDATE consolidation. INC_UPDATE doesn't hit the
 // EC_DETAIL_UPDATE early-return at ECSpecialCoreTags.cpp:244-246, so
-// HASH / NAME / SIZE are shipped on first encounter. No Phase 2
-// roundtrip needed; the old `UnknownEcidEnqueuedForPhase2` test is
-// removed because that state machine no longer exists.
+// HASH / NAME / SIZE are shipped on first encounter; no second
+// roundtrip needed.
 // ----------------------------------------------------------------------
 
 TEST(Refresher, NewPartfileInsertedInOneTick)
@@ -361,7 +358,7 @@ TEST(Refresher, NewPartfileInsertedInOneTick)
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 
-	// The new ECID landed — no Phase 2 needed.
+	// The new ECID landed — no needed.
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(55) != cache.end());
 	ASSERT_EQUALS(static_cast<std::uint32_t>(55), cache[55].ecid);
@@ -517,7 +514,7 @@ TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 	// with EC_TAG_PARTFILE_STOPPED set true. The decoder used to
 	// short-circuit on `stopped` and report "paused" — masking the
 	// PS_COMPLETE state from /downloads consumers (and breaking the
-	// Phase 4h status=="completed" filter). PS_COMPLETE (and
+	// status=="completed" filter). PS_COMPLETE (and
 	// PS_COMPLETING) must take priority over the stopped flag.
 	//
 	// PS_COMPLETE = 9 (Constants.h). Crafting a partfile tag with
@@ -569,7 +566,7 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 {
 	// Sanity check the other direction: a download that's stopped
 	// but NOT yet completed (user paused mid-transfer) must still
-	// report "paused" — the Phase 4h fix only carves out
+	// report "paused" — the fix only carves out
 	// PS_COMPLETE/PS_COMPLETING.
 	std::map<std::uint32_t, DownloadSnapshot> cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
@@ -593,10 +590,10 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 {
 	// Build:
-	//   root
-	//   ├── Transfer
-	//   │   └── Total bytes ...
-	//   └── Connection
+	//  root
+	//  ├── Transfer
+	//  │   └── Total bytes ...
+	//  └── Connection
 	CECPacket resp(EC_OP_STATSTREE);
 	CECTag root(EC_TAG_STATTREE_NODE, wxString("root-container-label-discarded"));
 	{

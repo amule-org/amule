@@ -187,20 +187,10 @@ TEST(Jwt, MalformedNoDotsRejected)
 TEST(Jwt, MalformedBase64Rejected)
 {
 	// Each section has invalid base64url chars (`=` / `+` aren't in
-	// the b64url alphabet). What actually rejects the token is the
-	// MAC compare: the recomputed signature for the malformed
-	// signing input has different length than the supplied (still-
-	// malformed) signature section, and ConstantTimeEquals returns
-	// false on length mismatch. So this test pins the contract
-	// "malformed input gets rejected" without making any claim
-	// about WHICH layer caught it.
-	//
-	// Constant-time semantics of ConstantTimeEquals are not
-	// observable from inside this test (we have no timing
-	// assertion; the muleunit framework doesn't expose one). If you
-	// reorganise the verify pipeline so a different layer rejects
-	// first, that's fine — this test still passes as long as the
-	// overall Verify() refuses these tokens.
+	// the b64url alphabet). The test pins "malformed input gets
+	// rejected" without claiming WHICH layer caught it — currently
+	// the MAC compare bails on length mismatch, but if you reorder
+	// the verify pipeline the test still holds.
 	CJwt auth(MakeSecret(0x88));
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify("!!!.bbb.ccc", r));
@@ -451,9 +441,9 @@ TEST(Jwt, ExpIatLifetimeCapExceeded)
 // the rejection in place.
 //
 // Two invariants the impl guards (Jwt.cpp:94-100):
-//   * len % 4 == 1 — impossible for any valid base64url string
-//   * non-zero residue bits — `len % 4 == 2/3` leaves 4/2 trailing
-//     bits that a valid encoder always emits as 0
+//  * len % 4 == 1 — impossible for any valid base64url string
+//  * non-zero residue bits — `len % 4 == 2/3` leaves 4/2 trailing
+//    bits that a valid encoder always emits as 0
 
 TEST(Jwt, Base64UrlDecodeRejectsLenMod4EqualsOne)
 {
@@ -502,17 +492,14 @@ TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 
 // --- Depth-cap defence against unauthenticated stack-overflow -------
 //
-// picojson::parse recursive-descent walks each `{` / `[` with a real
-// stack frame. On musl pthreads (128 KiB stack) a few hundred levels
-// blow the stack and crash the worker. Both Verify() parse sites (the
-// header at Jwt.cpp:225 and the payload at Jwt.cpp:250) run BEFORE
-// the MAC verdict reaches the caller, so an unauthenticated peer can
-// submit `Authorization: Bearer <crafted>` with a deeply-nested JSON
-// section and crash the daemon. The pre-parse opener-count cap (>32
-// rejects) blocks both sides cheaply, in O(body length) and zero
-// allocations. These tests craft a token whose nesting is well above
-// the cap, sign it with the matching HMAC so the constant-time
-// compare passes, and assert Verify() rejects it.
+// picojson::parse recurses one stack frame per `{`/`[`. On musl (128
+// KiB stack) a few hundred levels crash the worker — and both Verify()
+// parse sites run BEFORE the MAC verdict, so an unauthenticated peer
+// can submit `Authorization: Bearer <crafted>` with deeply-nested
+// JSON and crash the daemon. The pre-parse opener-count cap (>32
+// rejects) blocks both sides in O(body length) with zero allocations.
+// Tests craft tokens past the cap, sign with the matching HMAC so
+// the MAC compare passes, then assert Verify() rejects.
 
 namespace {
 

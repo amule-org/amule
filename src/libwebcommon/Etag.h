@@ -28,43 +28,39 @@
 #include <string>
 
 
-// ETag computation + If-None-Match comparison for the REST API. Pulled
-// out so the same byte-for-byte algorithm runs in any caller — the wire
-// contract (clients caching by ETag) breaks the moment the digest
-// truncation rule diverges between binaries.
+// ETag computation + If-None-Match comparison for the REST API.
+// Single source of truth for the digest-truncation rule — every
+// binary uses the same algorithm so client caches stay valid
+// across daemons.
 
 namespace webcommon {
 
 
 // SHA-256 over `body_utf8`, truncated to the leading 8 bytes and
-// rendered as 16 lowercase hex chars. The truncation is deliberate:
-// 64 bits of digest gives a 1-in-2^64 collision probability across the
-// life of a single connection — comfortably below the "client sees the
-// wrong cached body" threshold — and a 16-char ETag stays well under
-// the IETF-recommended HTTP header size budget. The caller is expected
-// to wrap the return value in quotes when assembling the
-// `ETag: "<hex>"` response header (RFC 7232 §2.3 requires the
-// quotes; the helper returns the bare hex so the same value can be
-// fed into IfNoneMatchHits without quote-stripping).
+// rendered as 16 lowercase hex chars. 64 bits of digest gives a
+// 1-in-2^64 collision probability across one connection's lifetime
+// and the 16-char ETag stays under the IETF-recommended header
+// budget. RFC 7232 §2.3 requires quotes around the header value;
+// the caller wraps when assembling `ETag: "<hex>"`. Bare hex is
+// returned so the same value feeds straight into IfNoneMatchHits.
 std::string Etag(const std::string &body_utf8);
 
 
 // RFC 7232 §3.2 conditional-GET match. `if_none_match` is the raw
-// header value as sent by the client. `etag` is the bare-hex value
-// returned by Etag(). Returns true when the caller should swap a
-// 200 + body response for a 304 Not Modified.
+// header value; `etag` is the bare-hex value returned by Etag().
+// Returns true when the caller should swap a 200 + body response
+// for a 304 Not Modified.
 //
-// Accepted client shapes (per RFC 7232 §2.3 and §3.2):
-//   * `"<hex>"`         — strong validator, RFC-canonical form
-//   * `W/"<hex>"`       — weak validator (same opaque payload as strong)
-//   * `<hex>`           — bare hex, tolerated for non-canonical clients
-//   * `*`               — wildcard, matches any existing representation
-//   * `"<a>", W/"<b>"`  — comma-separated list, any-match wins
+// Accepted client shapes (per RFC 7232 §2.3 + §3.2):
+//  * `"<hex>"`        — strong validator, RFC-canonical form
+//  * `W/"<hex>"`      — weak validator (same opaque payload)
+//  * `<hex>`          — bare hex, tolerated for non-canonical clients
+//  * `*`              — wildcard, matches any existing representation
+//  * `"<a>", W/"<b>"` — comma-separated list, any-match wins
 //
-// Whitespace around list entries is stripped. The match itself is
-// case-sensitive on the hex payload (RFC §2.3.2 — opaque-string
-// equality). Phase 7 fixed the bare-vs-quoted mismatch noted in the
-// Phase 1 retrospective.
+// Whitespace around list entries is stripped; match is case-
+// sensitive on the hex payload (RFC §2.3.2 — opaque-string
+// equality).
 bool IfNoneMatchHits(const std::string &if_none_match,
                      const std::string &etag);
 

@@ -39,6 +39,7 @@ trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
+_skip() { TEST_COUNT=$((TEST_COUNT+1)); echo "  SKIP  $1"; }
 _fail() {
 	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
 	echo "  FAIL  $1"
@@ -187,6 +188,101 @@ fi
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 404 "DELETE the same hash twice → 404 second time"
+
+# --- 6. POST clear_completed {hash:...} on non-existent → 404. ----
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"hash":"baadbaadbaadbaadbaadbaadbaadbaad"}' \
+	"$HOST/api/v0/downloads/clear_completed"
+_assert_status 404 "POST clear_completed {hash:unknown} → 404"
+_assert_json_eq '.error.code' not_found 'clear_completed {hash:unknown}.error.code'
+
+# --- 7. POST clear_completed malformed body → 400. ----------------
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d 'not json at all' \
+	"$HOST/api/v0/downloads/clear_completed"
+_assert_status 400 "POST clear_completed (malformed body) → 400"
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"hash": 12345}' \
+	"$HOST/api/v0/downloads/clear_completed"
+_assert_status 400 "POST clear_completed {hash: non-string} → 400"
+
+# --- 8. POST clear_completed {hash:active-partfile} → 409. --------
+#
+# Re-add the Ubuntu ISO so we have a known active partfile, then
+# call clear_completed with that hash. The handler must refuse with
+# 409 not_completed because the entry is in m_filelist, not in
+# m_completedDownloads.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+_assert_status 202 "POST /downloads (Ubuntu ISO re-add) → 202 (setup)"
+
+APPEARED=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25; do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/downloads?include_completed=1"
+	if printf '%s' "$CURL_BODY" \
+	   | jq -e --arg h "$TEST_HASH" '.downloads[] | select(.hash == $h)' \
+	   >/dev/null 2>&1; then
+		APPEARED=1
+		break
+	fi
+	sleep 0.2
+done
+[ "$APPEARED" = "1" ] || _die "Ubuntu ISO never re-surfaced after re-POST"
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"hash\":\"$TEST_HASH\"}" \
+	"$HOST/api/v0/downloads/clear_completed"
+_assert_status 409 "POST clear_completed {hash:active-partfile} → 409"
+_assert_json_eq '.error.code' not_completed \
+	'clear_completed active hash .error.code == not_completed'
+
+# Cleanup the active partfile.
+_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 200 "Cleanup: DELETE /downloads/{Ubuntu ISO hash} (2nd) → 200"
+
+# --- 9. DELETE / clear_completed against any naturally-completed
+#         entry — covers the by-hash success path AND the 409 from
+#         DELETE on a completed entry. SKIP if the daemon has none.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/downloads?include_completed=1"
+COMPLETED_HASH=$(printf '%s' "$CURL_BODY" \
+	| jq -r '[.downloads[] | select(.status == "completed") | .hash][0] // empty')
+if [ -n "$COMPLETED_HASH" ]; then
+	# DELETE must refuse with 409 + actionable error code.
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/downloads/$COMPLETED_HASH"
+	_assert_status 409 "DELETE /downloads/{completed} → 409"
+	_assert_json_eq '.error.code' completed_use_clear_completed \
+		'DELETE on completed .error.code == completed_use_clear_completed'
+
+	# clear_completed {hash:completed} → 200, exactly 1 cleared.
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"hash\":\"$COMPLETED_HASH\"}" \
+		"$HOST/api/v0/downloads/clear_completed"
+	_assert_status 200 "POST clear_completed {hash:completed} → 200"
+	_assert_json_eq '.cleared' 1 'per-hash clear_completed cleared exactly 1'
+	_assert_json_eq ".cleared_hashes[0]" "$COMPLETED_HASH" \
+		'cleared_hashes echoes the input hash'
+
+	# Second call → 404 (entry is gone).
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"hash\":\"$COMPLETED_HASH\"}" \
+		"$HOST/api/v0/downloads/clear_completed"
+	_assert_status 404 "POST clear_completed {hash:already-cleared} → 404"
+else
+	_skip "DELETE on completed → 409 (no completed entry in test daemon)"
+	_skip "POST clear_completed {hash:completed} → 200 (no completed entry)"
+fi
 
 # --- Summary. -----------------------------------------------------
 echo

@@ -30,26 +30,19 @@
 #include <wx/string.h>
 
 
-// XOR-accumulator constant-time equality. Two consumers:
-//
-//   - JWT MAC compare in CJwt::Verify (std::string of base64url
-//     signature bytes).
-//   - Login MD5 hex compare in amuleapi's auth handler (wxString
-//     of lowercase hex MD5).
-//
-// Returns false immediately on length mismatch (length is not the
-// secret); for equal-length inputs the timing is data-independent.
+// XOR-accumulator constant-time equality. Returns false immediately
+// on length mismatch (length is not the secret); for equal-length
+// inputs the timing is data-independent.
 //
 // **PRECONDITION on the `wxString` overload.** wxString is a UTF-16
-// or UTF-32 sequence depending on the build, and ConstantTimeEquals
-// compares the SEQUENCE LENGTHS first — not the byte-sequence
-// lengths. Two inputs that round-trip through different UTF-8
-// encodings and happen to share an underlying string but differ in
-// codepoint count will short-circuit as unequal. Callers in
-// libwebcommon today compare fixed-shape inputs (32-char hex MD5,
-// 43-char base64url HMAC) so the precondition holds trivially.
-// Future callers with length-variable, length-secret inputs MUST
-// pad to a common bound first or accept a length-side-channel leak.
+// or UTF-32 sequence depending on the build; the comparator checks
+// sequence length first, not byte length. Inputs that round-trip
+// through different UTF-8 encodings and share an underlying string
+// but differ in codepoint count will short-circuit as unequal.
+// Callers today compare fixed-shape inputs (32-char hex MD5,
+// 43-char base64url HMAC) so the precondition holds. Length-
+// variable callers MUST pad to a common bound first or accept a
+// length-side-channel leak.
 
 namespace webcommon {
 

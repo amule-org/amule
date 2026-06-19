@@ -91,6 +91,16 @@ TEST(AmuleApiConfig, FreshLoadCreatesAllThreeFiles)
 }
 
 
+TEST(AmuleApiConfig, FreshLoadProducesStreamingDefaults)
+{
+	const wxString dir = MakeTmpDir("stream-defaults");
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(dir));
+	ASSERT_EQUALS(static_cast<unsigned>(16384),
+		cfg.StreamingCfg().event_bus_ring_capacity);
+}
+
+
 TEST(AmuleApiConfig, GeneratedJwtSecretIs32Bytes)
 {
 	const wxString dir = MakeTmpDir("jwt32");
@@ -192,7 +202,7 @@ TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 // daemon footprint (single-operator workstation, %USERPROFILE%-
 // scoped config dir) makes the threat model very different. If
 // amuleapi ever ships a Windows hardening pass (via GetSecurityInfo
-// / GetEffectiveRightsFromAcl on the secret file's DACL), the
+/// GetEffectiveRightsFromAcl on the secret file's DACL), the
 // matching test should land under `#ifdef _WIN32` here. Until then,
 // the #ifndef intentionally skips the assertion on Windows so the
 // test suite stays green there without misrepresenting the

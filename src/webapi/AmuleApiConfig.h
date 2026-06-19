@@ -31,26 +31,23 @@
 #include <wx/string.h>
 
 
-// amuleapi's three on-disk config files. Living together under
-// the user's amule config dir but independent of `remote.conf` —
-// no shared section, no shared parser callback.
+// amuleapi's three on-disk config files (in the user's amule config
+// dir; independent of remote.conf):
 //
-//   amuleapi.conf         INI (CECFileConfig format) — HTTP bind +
-//                         port + EC connection params + auth tunables
+//   amuleapi.conf         INI — HTTP bind + port + EC connection
+//                         params + auth tunables
 //   amuleapi-jwt-secret   raw hex (64 chars + \n) — HMAC-SHA-256 key
-//   amuleapi-passwords    two-line text — `admin=<md5>` / `guest=<md5>`
+//   amuleapi-passwords    two-line text — admin=<md5> / guest=<md5>
 //
-// Auto-generation: `amuleapi-jwt-secret` is created with 32 random
-// bytes if missing. `amuleapi-passwords` may legitimately be empty
-// (the daemon refuses /auth/login until at least one role is set,
-// reachable via `amuleapi --set-admin-pass=...`). amuleapi.conf is
-// created from defaults if missing.
+// `amuleapi-jwt-secret` is auto-generated with 32 random bytes on
+// first run. `amuleapi-passwords` may be empty (daemon refuses
+// /auth/login until at least one role is set via
+// `amuleapi --set-admin-pass=...`). `amuleapi.conf` is created
+// from defaults if missing.
 //
-// Mode bit enforcement (POSIX): both `amuleapi-jwt-secret` and
-// `amuleapi-passwords` must be readable/writable by the owner only
-// (mode 0600). Looser bits → start refused with an actionable
-// message. Windows has no equivalent enforcement; the docs flag
-// ACL-based mitigation in QUICKSTART.
+// POSIX: both secret files must be 0600; looser bits → daemon
+// refuses to start with an actionable error. Windows has no
+// equivalent enforcement (QUICKSTART covers ACL mitigation).
 
 class CAmuleApiConfig {
 public:
@@ -73,9 +70,15 @@ public:
 		unsigned login_lockout_seconds        = 300;
 	};
 
-	struct Logging {
-		std::string level = "info";
-		std::string file;   // empty = stderr only
+	struct Streaming {
+		// SSE ring capacity. Sized for a cold-start tick on a busy
+		// node (5K downloads + 5K shared can publish ~10K `*_added`
+		// in one tick before any subscriber drains). Values below
+		// the CEventBus::kMinCapacity floor are clamped up at the
+		// bus level so an operator can't accidentally disable
+		// replay. Operators with very heavy nodes can raise this;
+		// memory ≈ capacity × ~1 KB JSON payload.
+		unsigned event_bus_ring_capacity = 16384;
 	};
 
 	// Bring everything into memory from `config_dir`. Returns true on
@@ -88,7 +91,7 @@ public:
 	const Server      &ServerCfg()    const { return m_server; }
 	const Ec          &EcCfg()        const { return m_ec; }
 	const Auth        &AuthCfg()      const { return m_auth; }
-	const Logging     &LoggingCfg()   const { return m_logging; }
+	const Streaming   &StreamingCfg() const { return m_streaming; }
 
 	// Raw HMAC secret (32 bytes when loaded from a valid 64-char
 	// hex file). May be reloaded from disk via Load(...).
@@ -126,7 +129,7 @@ private:
 	Server      m_server;
 	Ec          m_ec;
 	Auth        m_auth;
-	Logging     m_logging;
+	Streaming   m_streaming;
 	std::vector<unsigned char> m_jwtSecret;
 	std::string m_adminPasswordMd5;
 	std::string m_guestPasswordMd5;
@@ -139,9 +142,9 @@ private:
 // GetUserDataDir() but without the dependency on `amule.h` — amuleapi
 // runs standalone and can't pull in the GUI/daemon-side helpers.
 //
-//   POSIX (XDG):    ${XDG_CONFIG_HOME:-$HOME/.config}/aMule
-//   macOS:          $HOME/Library/Application Support/aMule
-//   Windows:        %APPDATA%/aMule
+// POSIX (XDG):    ${XDG_CONFIG_HOME:-$HOME/.config}/aMule
+//  macOS:          $HOME/Library/Application Support/aMule
+//  Windows:        %APPDATA%/aMule
 wxString DefaultConfigDir();
 
 
