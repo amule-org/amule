@@ -80,6 +80,17 @@ public:
 	// is full.
 	void Publish(const std::string &name, const std::string &data);
 
+	// Batch-publish. One lock acquisition + one notify_all for the
+	// whole batch, vs N of each from per-event Publish loops. Used
+	// by the cold-start tick where a 5K-download library emits one
+	// `_added` per item — the per-item Publish was holding the
+	// refresher loop for tens of milliseconds (every notify_all
+	// goes through cv->mutex wake/sleep cycles on every drainer).
+	// Each (name, data) pair is treated identically to a Publish
+	// call: monotonic id assignment, evict-oldest if the ring fills.
+	void PublishBatch(
+		const std::vector<std::pair<std::string, std::string>> &events);
+
 	// Drain every event with `id > since_id` into `out`. Returns
 	// the highest id we found (== since_id if nothing new). Blocks
 	// up to `timeout` if there are no new events; returns early

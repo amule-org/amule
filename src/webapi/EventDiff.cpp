@@ -229,25 +229,38 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 // `removed_id_payload_fn` formats the identity-only `_removed` payload
 // — usually `{"hash": "..."}` for hash-keyed (downloads, shared) or
 // `{"ecid": N}` for ECID-keyed (servers, clients).
+//
+// Coalesced: accumulate every (name, data) pair locally, then one
+// PublishBatch — one lock acquisition, one notify_all, vs N each on
+// the per-item Publish loop. The cold-start tick on a 5K-download
+// library used to fire ~5K notify_all cycles inside the refresher
+// loop; the batch keeps that path bounded by EventBus's ring
+// capacity instead of the diff size.
 template <class Map, class IdentityFn>
 void DiffMap(CEventBus &bus, const std::string &base,
              const Map &old_items, const Map &new_items,
              IdentityFn removed_id_payload_fn)
 {
+	std::vector<std::pair<std::string, std::string>> batch;
+	batch.reserve(old_items.size() + new_items.size());
+	const std::string removed_name = base + "_removed";
+	const std::string added_name   = base + "_added";
+	const std::string updated_name = base + "_updated";
 	for (const auto &kv : old_items) {
 		if (new_items.find(kv.first) == new_items.end()) {
-			bus.Publish(base + "_removed",
-			            removed_id_payload_fn(kv.second));
+			batch.emplace_back(removed_name,
+			                   removed_id_payload_fn(kv.second));
 		}
 	}
 	for (const auto &kv : new_items) {
 		const auto it = old_items.find(kv.first);
 		if (it == old_items.end()) {
-			bus.Publish(base + "_added", ToJson(kv.second));
+			batch.emplace_back(added_name, ToJson(kv.second));
 		} else if (!Equal(it->second, kv.second)) {
-			bus.Publish(base + "_updated", ToJson(kv.second));
+			batch.emplace_back(updated_name, ToJson(kv.second));
 		}
 	}
+	bus.PublishBatch(batch);
 }
 
 

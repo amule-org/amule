@@ -40,6 +40,7 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <cstring>
 #include <cstdlib>
 #include <iostream>
 #include <thread>
@@ -260,14 +261,35 @@ int CamuleapiApp::OnRun()
 	// Install signal handlers before the HTTP server starts so a
 	// signal during bring-up doesn't sail through to default
 	// disposition (kill -9 the daemon at the worst possible moment).
-	std::signal(SIGINT,  RequestShutdown);
-	std::signal(SIGTERM, RequestShutdown);
+	//
+	// Use sigaction (POSIX) instead of std::signal. std::signal has
+	// implementation-defined "resets to SIG_DFL after firing"
+	// semantics on some platforms (musl/Alpine, older BSDs), so a
+	// second SIGINT would default-terminate the daemon mid-
+	// shutdown. sigaction with explicit sa_mask gives portable,
+	// stay-installed semantics across every relevant target.
+	// SA_RESTART so blocking syscalls (read/write on the EC socket)
+	// don't return EINTR mid-shutdown and look like errors in the
+	// log. Windows lacks sigaction; fall back to std::signal there.
+#ifndef _WIN32
+	struct sigaction sa;
+	std::memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = RequestShutdown;
+	sigemptyset(&sa.sa_mask);
+	sigaddset(&sa.sa_mask, SIGINT);
+	sigaddset(&sa.sa_mask, SIGTERM);
+#ifdef SIGHUP
+	sigaddset(&sa.sa_mask, SIGHUP);
+#endif
+	sa.sa_flags = SA_RESTART;
+	::sigaction(SIGINT,  &sa, nullptr);
+	::sigaction(SIGTERM, &sa, nullptr);
 #ifdef SIGHUP
 	// SIGHUP is the "config reload" signal in long-running daemons.
 	// Phase 4 has no reload story (configs are read at startup only);
 	// treat SIGHUP as a soft shutdown so a systemd reload doesn't
 	// leave the daemon in a half-state.
-	std::signal(SIGHUP, RequestShutdown);
+	::sigaction(SIGHUP,  &sa, nullptr);
 #endif
 #ifdef SIGPIPE
 	// SSE peers that disappear mid-write make Linux raise SIGPIPE on
@@ -277,7 +299,16 @@ int CamuleapiApp::OnRun()
 	// the daemon on every dropped EventSource. Ignore it process-
 	// wide; the writes return EPIPE and the streaming-handler loop
 	// bails on the next writer.Alive() poll.
-	std::signal(SIGPIPE, SIG_IGN);
+	struct sigaction sa_ign;
+	std::memset(&sa_ign, 0, sizeof(sa_ign));
+	sa_ign.sa_handler = SIG_IGN;
+	sigemptyset(&sa_ign.sa_mask);
+	sa_ign.sa_flags = 0;
+	::sigaction(SIGPIPE, &sa_ign, nullptr);
+#endif
+#else  // _WIN32
+	std::signal(SIGINT,  RequestShutdown);
+	std::signal(SIGTERM, RequestShutdown);
 #endif
 
 	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore)
@@ -300,6 +331,35 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 	}
 	if (m_cliHasHttpPort && m_cliHttpPort > 0 && m_cliHttpPort < 65536) {
 		port = static_cast<unsigned>(m_cliHttpPort);
+	}
+
+	// Bind-time hard gate against the "listening publicly with no
+	// password configured" footgun. Without this, a daemon started
+	// against a routable interface BEFORE the operator runs
+	// `amuleapi --set-admin-pass=...` accepts TCP connects, refuses
+	// every login attempt (HandleLogin returns 503 login_disabled),
+	// but the unauth surface (/api/v0/version) still answers and any
+	// future read-without-auth surface (today there is none, but
+	// the policy needs to be enforced before the next reviewer
+	// finds a leak) gets exposed. Refuse to start instead.
+	//
+	// A loopback bind is fine even with empty passwords — only the
+	// local operator can reach it, and the first-run flow IS
+	// "start, then run --set-admin-pass against the running daemon".
+	const bool non_loopback = (bind != "127.0.0.1"
+	                       && bind != "::1"
+	                       && bind != "localhost");
+	const bool no_pass = m_apiConfig.AdminPasswordMd5().empty()
+	                  && m_apiConfig.GuestPasswordMd5().empty();
+	if (non_loopback && no_pass) {
+		Show(CFormat(
+			_("amuleapi: refusing to start with BindAddress=%s and no "
+			  "admin/guest password configured — this would expose the "
+			  "REST surface to anyone reachable on that interface. "
+			  "Either bind to 127.0.0.1, or run "
+			  "`amuleapi --set-admin-pass=<plain>` first.\n"))
+			% wxString::FromUTF8(bind.c_str()));
+		return;
 	}
 
 	// Build the JWT machinery from the loaded secret + a dispatcher
@@ -385,6 +445,19 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 	constexpr auto kTargetCycle  = std::chrono::seconds(1);
 	constexpr auto kSliceMs      = std::chrono::milliseconds(250);
 	constexpr auto kOverrunWarn  = std::chrono::seconds(3);
+	// Fail-loud on a sustained EC blackout. RefresherTick returns
+	// false on any null packet from SendRecvSerialized — typically
+	// amuled crashed, was killed, or the EC socket dropped. Today
+	// the loop just retries forever; the daemon stays up serving
+	// 503 ec_unavailable from every endpoint. After ~30 s of
+	// failed ticks, log a sharp WARN so the operator's journal
+	// shows it; after ~5 min, exit cleanly so a process supervisor
+	// (systemd, launchd, docker restart=always) can bring the
+	// whole pair back up. Reset on the first success.
+	constexpr unsigned kEcFailWarnAfter   = 30;
+	constexpr unsigned kEcFailExitAfter   = 300;
+	unsigned ec_consecutive_failures = 0;
+	bool     ec_warn_logged          = false;
 	while (!g_shutdownRequested.load(std::memory_order_acquire)) {
 		const auto cycle_start = std::chrono::steady_clock::now();
 		if (was_failed) {
@@ -394,6 +467,8 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 		if (ok) {
 			m_state.MarkTickSuccess();
 			was_failed = false;
+			ec_consecutive_failures = 0;
+			ec_warn_logged          = false;
 			// Sole writer of m_last_seen. SSE-event publication runs
 			// here, NOT inside RefresherTick — so Phase-5 mutation
 			// handlers calling RefresherTick inline from the HTTP
@@ -402,6 +477,30 @@ void CamuleapiApp::TextShell(const wxString &/*prompt*/)
 		} else {
 			m_state.MarkTickFailure();
 			was_failed = true;
+			++ec_consecutive_failures;
+			if (!ec_warn_logged
+			    && ec_consecutive_failures >= kEcFailWarnAfter) {
+				std::cerr << "amuleapi: WARN EC has returned null "
+				             "for "
+				          << ec_consecutive_failures
+				          << " consecutive ticks (~"
+				          << ec_consecutive_failures
+				          << " s). amuled may be down or the EC "
+				             "socket may have dropped. Will exit "
+				             "after "
+				          << kEcFailExitAfter
+				          << " failed ticks so a process supervisor "
+				             "can restart the pair.\n";
+				ec_warn_logged = true;
+			}
+			if (ec_consecutive_failures >= kEcFailExitAfter) {
+				std::cerr << "amuleapi: FATAL EC has been silent "
+				             "for "
+				          << ec_consecutive_failures
+				          << " consecutive ticks. Exiting.\n";
+				g_shutdownRequested.store(true,
+					std::memory_order_release);
+			}
 		}
 		const auto tick_end       = std::chrono::steady_clock::now();
 		const auto tick_duration  = tick_end - cycle_start;

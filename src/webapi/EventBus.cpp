@@ -62,6 +62,32 @@ void CEventBus::Publish(const std::string &name, const std::string &data)
 }
 
 
+void CEventBus::PublishBatch(
+	const std::vector<std::pair<std::string, std::string>> &events)
+{
+	if (events.empty()) return;
+	{
+		std::lock_guard<std::mutex> g(m_mu);
+		// Same id-monotonicity invariant as Publish: assign + push
+		// inside the lock. Doing the whole batch under one lock
+		// also collapses N notify_all wake-ups into one — the cold
+		// start tick on a 5K-download library used to fire 5K
+		// individual notify_all cycles inside the refresher loop
+		// (each going through every drainer's cv mutex), which
+		// dominated the tick's wall-clock.
+		for (const auto &kv : events) {
+			Event ev;
+			ev.name = kv.first;
+			ev.data = kv.second;
+			ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
+			if (m_ring.size() >= kCapacity) m_ring.pop_front();
+			m_ring.push_back(std::move(ev));
+		}
+	}
+	m_cv.notify_all();
+}
+
+
 std::uint64_t CEventBus::Drain(std::uint64_t since_id,
                                std::chrono::milliseconds timeout,
                                std::vector<Event> &out)

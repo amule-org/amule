@@ -82,6 +82,16 @@ namespace {
 constexpr int kMaxConcurrentStreamingSessions = 32;
 std::atomic<int> g_streaming_session_count{0};
 
+class Session;
+
+// Live SSE session registry. Listener::Stop walks this on shutdown
+// to cancel each session's socket I/O — without it, a worker
+// blocked in a synchronous Beast write to a slow peer never sees
+// the io_context.stop() and the daemon hangs forever on exit.
+// weak_ptrs so dead sessions self-clean.
+std::mutex g_live_streams_mu;
+std::vector<std::weak_ptr<Session>> g_live_streams;
+
 class Session : public std::enable_shared_from_this<Session> {
 public:
 	Session(tcp::socket socket,
@@ -131,6 +141,26 @@ public:
 
 	void Start() { DoRead(); }
 
+	// Called by Listener::Stop from a foreign thread to cancel any
+	// in-flight Beast write. Posts the close onto the stream's own
+	// executor so we don't race the worker thread's last write —
+	// boost::asio::tcp::socket is NOT thread-safe outside its
+	// strand. The post is fire-and-forget; we don't wait for the
+	// close to complete. The worker's writer.Alive() check picks up
+	// the dead m_stream_alive flag, returns, and the session's last
+	// shared_ptr ref drops, triggering destruction.
+	void RequestCancel()
+	{
+		// Atomic flip first so writer.Alive() observes the cancel
+		// even if the strand-posted close is delayed.
+		m_stream_alive.store(false, std::memory_order_release);
+		auto self = shared_from_this();
+		boost::asio::post(m_stream.get_executor(), [self]{
+			beast::error_code ec;
+			beast::get_lowest_layer(self->m_stream).socket().close(ec);
+		});
+	}
+
 private:
 	void DoRead()
 	{
@@ -144,6 +174,17 @@ private:
 		// (login JSON is ~64 bytes, etc.) but well under "someone is
 		// trying to exhaust memory by upload-pumping us".
 		m_parser->body_limit(1024 * 1024);
+		// 16 KiB header cap. Beast's default header_limit varies
+		// across versions (8 KiB in current upstream, larger on
+		// older releases). A drip-feed attacker who slowly streams
+		// header lines can otherwise grow the flat_buffer until the
+		// 10 s read timeout catches them — but that's 10 s × pool
+		// of concurrent peers. Cap headers explicitly so the
+		// per-peer memory ceiling is fixed regardless of upstream
+		// defaults: 16 KiB is well over any legitimate request
+		// (Authorization + a few Accept headers is < 2 KiB) and
+		// catches the drip-feed within ~1 KiB instead of ~MB.
+		m_parser->header_limit(16 * 1024);
 		// 10 s read timeout. amuleapi runs against localhost/LAN; a
 		// real client never takes 10 s to send a 1 KiB request.
 		m_stream.expires_after(std::chrono::seconds(10));
@@ -210,26 +251,19 @@ private:
 			// matches the rest of the error contract; clients reading
 			// `error.code` continue to parse uniformly.
 			//
-			// e.what() can carry caller-influenced bytes (picojson
-			// includes the offending input character at the failure
-			// offset, std::stoi echoes its argument, etc.). Route the
-			// message through CJsonWriter::ValueString so any " / \ /
-			// control byte is escaped properly — a hand-built JSON
-			// concatenation would emit malformed output and break
-			// every client trying to parse the error.
+			// Information-disclosure defence: e.what() can carry
+			// caller-supplied bytes — picojson echoes the offending
+			// input character at the failure offset; a future
+			// header-driven throw site could reflect Authorization or
+			// Cookie fragments. Keep the body generic, log detail
+			// server-side via stderr so the operator can correlate
+			// 500s with a stack/journal.
+			std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
 			resp.status       = 500;
 			resp.content_type = "application/json";
-			CJsonWriter w;
-			w.BeginObject();
-			  w.Key("error");
-			  w.BeginObject();
-			    w.Key("code");    w.ValueString(wxT("internal"));
-			    w.Key("message"); w.ValueString(e.what());
-			  w.EndObject();
-			w.EndObject();
-			const wxString js = w.GetBuffer();
-			const wxScopedCharBuffer ub = js.utf8_str();
-			resp.body.assign(ub.data(), ub.length());
+			resp.body =
+				"{\"error\":{\"code\":\"internal\","
+				"\"message\":\"internal server error\"}}";
 		}
 
 		WriteResponse(std::move(resp));
@@ -300,6 +334,19 @@ private:
 		// Disable read timeout — SSE connections are long-lived.
 		m_stream.expires_never();
 		m_stream_alive.store(true, std::memory_order_release);
+
+		// Register the session so Listener::Stop can cancel its
+		// socket on shutdown. A worker blocked inside a synchronous
+		// Beast write to a slow peer otherwise pins the daemon at
+		// exit — the io_context.stop() doesn't unblock a write
+		// already in flight. Closing the underlying socket from
+		// outside makes the write fail with EPIPE and the worker
+		// returns to its writer.Alive() check, exits, releases the
+		// last ref.
+		{
+			std::lock_guard<std::mutex> g(g_live_streams_mu);
+			g_live_streams.emplace_back(shared_from_this());
+		}
 
 		// Spawn the worker thread that runs the streaming handler.
 		// The worker captures `self` so the Session stays alive
@@ -586,6 +633,22 @@ public:
 	{
 		beast::error_code ec;
 		m_acceptor.close(ec);
+		// Cancel every live SSE session's socket so workers blocked
+		// inside synchronous Beast writes return promptly. Without
+		// this, a slow peer holds its worker thread inside the
+		// write call until the kernel TCP timeout (~minutes) and
+		// CHttpServer::Stop joins the io_context thread, which
+		// joins indefinitely waiting for the workers.
+		std::vector<std::shared_ptr<Session>> live;
+		{
+			std::lock_guard<std::mutex> g(g_live_streams_mu);
+			live.reserve(g_live_streams.size());
+			for (auto &w : g_live_streams) {
+				if (auto s = w.lock()) live.push_back(std::move(s));
+			}
+			g_live_streams.clear();
+		}
+		for (auto &s : live) s->RequestCancel();
 	}
 
 private:
