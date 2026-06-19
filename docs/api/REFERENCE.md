@@ -155,8 +155,8 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
     "state": "connected",
     "low_id": false,
     "server_name": "eMule Server",
-    "server_ip": "176.123.5.89",
-    "server_port": 4725
+    "server_ip": "203.0.113.5",
+    "server_port": 4242
   },
   "kad": {
     "state": "connected",
@@ -550,8 +550,8 @@ Changes the upload priority of a single shared file.
     {
       "ecid": 1,
       "name": "eMule Server",
-      "address": "176.123.5.89:4725",
-      "port": 4725,
+      "address": "203.0.113.5:4242",
+      "port": 4242,
       "users": 312000,
       "files": 75000000,
       "priority": "normal",
@@ -572,7 +572,7 @@ Add a server to amuled's known-server list.
 **Body:**
 
 ```json
-{ "address": "176.123.5.89:4725", "name": "eMule Server" }
+{ "address": "203.0.113.5:4242", "name": "eMule Server" }
 ```
 
 `name` optional; `address` required and must parse as `host:port`.
@@ -589,7 +589,7 @@ Tells amuled to disconnect from its current server and dial the specified one. T
 
 ```sh
 curl -s -X POST -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/servers/176.123.5.89:4725/connect"
+  "http://$HOST/api/v0/servers/203.0.113.5:4242/connect"
 ```
 
 **Response:** `202 Accepted` → `{ "ok": true, "ecid": 1 }`.
