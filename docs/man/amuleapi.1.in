@@ -34,8 +34,8 @@ its HTTP surface on a separate port from \fBamuleweb\fR(1) \- the two
 can run concurrently against the same daemon.
 .PP
 The wire contract for the REST API is documented at
-\fIdocs/amuleapi/REFERENCE.md\fR; the SSE event catalog lives at
-\fIdocs/amuleapi/EVENTS.md\fR. See \fIdocs/QUICKSTART\-AMULEAPI.md\fR
+\fIdocs/api/REFERENCE.md\fR; the SSE event catalog lives at
+\fIdocs/api/EVENTS.md\fR. See \fIdocs/QUICKSTART\-AMULEAPI.md\fR
 for first\-run setup notes.
 .SH OPTIONS
 .TP

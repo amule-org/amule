@@ -7,7 +7,7 @@ exposes its own HTTP surface on a separate port. amuleapi is the first
 shipping REST API for aMule — there is no prior on-the-wire surface to
 migrate from.
 
-For the endpoint list see the [What ships](#what-ships) section below. Full per-endpoint contracts (methods, query params, request bodies, response shapes, error codes) live in [`docs/amuleapi/REFERENCE.md`](amuleapi/REFERENCE.md); the SSE event catalog and Last-Event-ID reconnect semantics live in [`docs/amuleapi/EVENTS.md`](amuleapi/EVENTS.md). The source of truth for routing is [`src/webapi/Api.cpp`](../src/webapi/Api.cpp).
+For the endpoint list see the [What ships](#what-ships) section below. Full per-endpoint contracts (methods, query params, request bodies, response shapes, error codes) live in [`docs/api/REFERENCE.md`](api/REFERENCE.md); the SSE event catalog and Last-Event-ID reconnect semantics live in [`docs/api/EVENTS.md`](api/EVENTS.md). The source of truth for routing is [`src/webapi/Api.cpp`](../src/webapi/Api.cpp).
 
 ## Requirements
 
