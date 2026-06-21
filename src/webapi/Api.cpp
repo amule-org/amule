@@ -3005,8 +3005,29 @@ CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Reques
 	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
-	return ListResponse(m_state, "categories", m_state.Categories(),
-		WriteCategoryObject);
+	// amuled's EC suppresses the whole `EC_TAG_PREFS_CATEGORIES`
+	// block when no custom categories exist, and starts including
+	// index 0 once the first custom one is added. Faithful at the
+	// wire layer, but a client iterating /categories expecting at
+	// least the default has to special-case the empty case. Inject
+	// a synthetic index-0 entry when missing so clients see the same
+	// shape regardless of category count. The defaults mirror what
+	// amuled emits for category 0 itself: empty title/path/comment,
+	// color 0, priority_code PR_LOW (the amuled default for
+	// `defaultcat->prio` in CPreferences::LoadCats).
+	std::vector<webapi::CategorySnapshot> cats = m_state.Categories();
+	bool has_zero = false;
+	for (const auto &c : cats) {
+		if (c.index == 0) { has_zero = true; break; }
+	}
+	if (!has_zero) {
+		webapi::CategorySnapshot d;
+		d.index = 0;
+		d.priority_code = 0;        // PR_LOW (matches amuled default)
+		d.priority      = "low";
+		cats.insert(cats.begin(), std::move(d));
+	}
+	return ListResponse(m_state, "categories", cats, WriteCategoryObject);
 }
 
 
