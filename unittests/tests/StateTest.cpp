@@ -117,22 +117,24 @@ TEST(State, WriteStatusRoundtrip)
 TEST(State, MutateDownloadsRoundtripAndFind)
 {
 	CState s;
-	s.MutateDownloads([](std::map<std::uint32_t, DownloadSnapshot> &cache) {
-		DownloadSnapshot a;
+	s.MutateDownloads([](std::map<std::uint32_t, FileSnapshot> &cache) {
+		FileSnapshot a;
 		a.ecid = 100;
 		a.hash = "aaaa0000aaaa0000aaaa0000aaaa0000";
 		a.name = "foo.iso";
 		a.size = 1000;
-		a.size_done = 250;
+		a.is_downloading = true;
+		a.download.size_done = 250;
 		a.priority = "high";
-		a.status   = "downloading";
-		a.percent  = 25.0;
+		a.download.status   = "downloading";
+		a.download.percent  = 25.0;
 		cache.emplace(a.ecid, a);
 
-		DownloadSnapshot b;
+		FileSnapshot b;
 		b.ecid = 200;
 		b.hash = "bbbb1111bbbb1111bbbb1111bbbb1111";
 		b.name = "bar.iso";
+		b.is_downloading = true;
 		cache.emplace(b.ecid, b);
 	});
 
@@ -145,12 +147,12 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 
 	// Hash lookup goes through FindDownload's linear scan; both hits
 	// and misses must come back correctly.
-	DownloadSnapshot found;
+	FileSnapshot found;
 	ASSERT_TRUE(s.FindDownload("bbbb1111bbbb1111bbbb1111bbbb1111", found));
 	ASSERT_EQUALS(std::string("bar.iso"), found.name);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(200), found.ecid);
 
-	DownloadSnapshot miss;
+	FileSnapshot miss;
 	ASSERT_FALSE(s.FindDownload("0000000000000000000000000000000c", miss));
 }
 
@@ -164,40 +166,41 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 	// roundtrip with element-level fidelity. Regression would manifest
 	// as `progress.parts` being empty or wrong-sized on the wire.
 	CState s;
-	s.MutateDownloads([](std::map<std::uint32_t, DownloadSnapshot> &cache) {
-		DownloadSnapshot a;
+	s.MutateDownloads([](std::map<std::uint32_t, FileSnapshot> &cache) {
+		FileSnapshot a;
 		a.ecid = 42;
 		a.hash = "dddd3333dddd3333dddd3333dddd3333";
 		a.name = "with-rle.iso";
 		a.size = 9728000ull * 3;   // exactly 3 parts
+		a.is_downloading = true;
 		// One gap covering byte ranges 100..200 and 9728000..9800000:
 		// the first lies entirely in part 0, the second entirely in
 		// part 1.
-		a.decoded_gaps        = {100ull, 200ull, 9728000ull, 9800000ull};
+		a.download.decoded_gaps        = {100ull, 200ull, 9728000ull, 9800000ull};
 		// Three parts with source counts [5, 0, 7].
-		a.decoded_part_sources = {5, 0, 7};
+		a.download.decoded_part_sources = {5, 0, 7};
 		cache.emplace(a.ecid, a);
 	});
 
 	const auto out = s.Downloads();
 	ASSERT_EQUALS(static_cast<size_t>(1), out.size());
-	ASSERT_EQUALS(static_cast<size_t>(4), out[0].decoded_gaps.size());
-	ASSERT_EQUALS(static_cast<std::uint64_t>(100),       out[0].decoded_gaps[0]);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(200),       out[0].decoded_gaps[1]);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000),   out[0].decoded_gaps[2]);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(9800000),   out[0].decoded_gaps[3]);
-	ASSERT_EQUALS(static_cast<size_t>(3), out[0].decoded_part_sources.size());
-	ASSERT_EQUALS(static_cast<std::uint16_t>(5), out[0].decoded_part_sources[0]);
-	ASSERT_EQUALS(static_cast<std::uint16_t>(0), out[0].decoded_part_sources[1]);
-	ASSERT_EQUALS(static_cast<std::uint16_t>(7), out[0].decoded_part_sources[2]);
+	ASSERT_EQUALS(static_cast<size_t>(4), out[0].download.decoded_gaps.size());
+	ASSERT_EQUALS(static_cast<std::uint64_t>(100),       out[0].download.decoded_gaps[0]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(200),       out[0].download.decoded_gaps[1]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000),   out[0].download.decoded_gaps[2]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(9800000),   out[0].download.decoded_gaps[3]);
+	ASSERT_EQUALS(static_cast<size_t>(3), out[0].download.decoded_part_sources.size());
+	ASSERT_EQUALS(static_cast<std::uint16_t>(5), out[0].download.decoded_part_sources[0]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(0), out[0].download.decoded_part_sources[1]);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(7), out[0].download.decoded_part_sources[2]);
 
 	// FindDownload returns the same surface (used by the detail
 	// endpoint, which is the only path that emits progress.parts).
-	DownloadSnapshot via_find;
+	FileSnapshot via_find;
 	ASSERT_TRUE(s.FindDownload("dddd3333dddd3333dddd3333dddd3333", via_find));
-	ASSERT_EQUALS(static_cast<size_t>(4), via_find.decoded_gaps.size());
-	ASSERT_EQUALS(static_cast<size_t>(3), via_find.decoded_part_sources.size());
-	ASSERT_EQUALS(static_cast<std::uint16_t>(7), via_find.decoded_part_sources[2]);
+	ASSERT_EQUALS(static_cast<size_t>(4), via_find.download.decoded_gaps.size());
+	ASSERT_EQUALS(static_cast<size_t>(3), via_find.download.decoded_part_sources.size());
+	ASSERT_EQUALS(static_cast<std::uint16_t>(7), via_find.download.decoded_part_sources[2]);
 }
 
 
@@ -219,12 +222,13 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 	ASSERT_EQUALS(std::string("peer-1"), s.Clients()[0].client_name);
 	ASSERT_EQUALS(std::string("uploading"), s.Clients()[0].upload_state);
 
-	s.MutateShared([](std::map<std::uint32_t, SharedSnapshot> &cache) {
-		SharedSnapshot x;
+	s.MutateShared([](std::map<std::uint32_t, FileSnapshot> &cache) {
+		FileSnapshot x;
 		x.ecid = 20;
 		x.hash = "ffff2222ffff2222ffff2222ffff2222";
 		x.name = "shared.iso";
 		x.size = 4096;
+		x.is_shared = true;
 		x.priority = "normal";
 		cache.emplace(x.ecid, x);
 	});
@@ -473,17 +477,24 @@ TEST(State, ResetListsLeavesLogsAlone)
 TEST(State, ResetListsClearsAll)
 {
 	CState s;
-	s.MutateDownloads([](std::map<std::uint32_t, DownloadSnapshot> &cache) {
-		DownloadSnapshot d; d.ecid = 1; d.name = "a";
+	s.MutateDownloads([](std::map<std::uint32_t, FileSnapshot> &cache) {
+		FileSnapshot d; d.ecid = 1; d.name = "a"; d.is_downloading = true;
 		cache.emplace(1, d);
 	});
 	s.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
 		ClientSnapshot c; c.ecid = 1; c.client_name = "b";
 		cache.emplace(1, c);
 	});
-	s.MutateShared([](std::map<std::uint32_t, SharedSnapshot> &cache) {
-		SharedSnapshot x; x.ecid = 1; x.name = "c";
-		cache.emplace(1, x);
+	s.MutateShared([](std::map<std::uint32_t, FileSnapshot> &cache) {
+		// Same ECID; sets is_shared on the existing entry rather than
+		// creating a new map slot, matching the unified-map model.
+		auto it = cache.find(1);
+		if (it == cache.end()) {
+			FileSnapshot x; x.ecid = 1; x.name = "c"; x.is_shared = true;
+			cache.emplace(1, x);
+		} else {
+			it->second.is_shared = true;
+		}
 	});
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Downloads().size());
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Clients().size());

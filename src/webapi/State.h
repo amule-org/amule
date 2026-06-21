@@ -31,6 +31,7 @@
 #include <map>
 #include <shared_mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 
@@ -49,48 +50,87 @@
 namespace webapi {
 
 
-// One per partfile in the daemon's download queue. Identity is the
-// 32-bit EC `ECID` (`ID()` on the tag), which the refresher uses as
-// the map key for INC-mode delta application. `hash` is the
-// (lowercase hex) MD4 used as the URL key on /downloads/{hash}.
+// One per file in amuled's state — keyed by ECID. Each file may
+// participate in either or both of two roles:
 //
-// Field shapes mirror the reference branch's `/api/v0/downloads`
-// wire contract minus `progress.parts` (deferred to per
-// ).
-struct DownloadSnapshot {
-	std::uint32_t ecid             = 0;
-	std::string hash;            // 32-char hex MD4
-	std::string name;
-	std::string ed2k_link;
-	std::uint64_t size              = 0;
-	std::uint64_t size_done         = 0;   // bytes completed
-	std::uint64_t size_xfer         = 0;   // bytes transferred this session
-	std::uint32_t speed_bps         = 0;
-	std::string   status;        // "downloading" | "paused" | "completed" | "hashing" | "erroneous" | "completing" | "allocating" | "waiting"
-	std::string   priority;      // "low" | "normal" | "high" | "release" | "very_low" | "auto"
-	bool          priority_auto     = false;
-	std::uint32_t category          = 0;
-	double        percent           = 0.0;
-	// Source counts.
-	std::uint32_t sources_total        = 0;
-	std::uint32_t sources_not_current  = 0;
-	std::uint32_t sources_transferring = 0;
-	std::uint32_t sources_a4af         = 0;
+//   * `is_downloading` — the file is a partfile in `downloadqueue`
+//     (still acquiring chunks). Drives `/downloads`. The walker that
+//     populates this side consumes `EC_TAG_PARTFILE_*` children.
+//   * `is_shared`      — the file is uploadable: a fully-completed
+//     knownfile, OR a partfile with ≥1 chunk done (amuled flags via
+//     `EC_TAG_PARTFILE_SHARED=true`). Drives `/shared`. Populated
+//     from `EC_TAG_KNOWNFILE_*` children.
+//
+// Both flags can be true simultaneously for a partfile that's
+// currently downloading AND uploading completed chunks.
+//
+// The unified-keyed-by-ECID design mirrors amulegui's
+// `CKnownFilesRem::m_items_hash` (amule-remote-gui.cpp:1507). It
+// avoids the "shared cache has a ghost row with empty hash" bug
+// (see #201 review): on a partfile-becoming-shared tick the server's
+// CValueMap suppresses `EC_TAG_PARTFILE_HASH` because it was sent on
+// a prior partfile-walker tick, but the unified entry already has
+// hash + name from the downloads walker, so the shared walker just
+// flips `is_shared=true` and merges its own fields. No fallback.
+//
+// Role-specific state lives in sub-blocks. When a role transitions
+// true→false (partfile completes → ECID dies; or shared partfile
+// loses every chunk → `is_shared` flips off; or knownfile is un-
+// shared), the refresher resets that side's sub-block to default so
+// `/downloads` or `/shared` can never serve stale stats from a
+// previous active period.
+struct FileSnapshot {
+	// Identity / shared metadata (always populated).
+	std::uint32_t ecid       = 0;
+	std::string   hash;             // 32-char hex MD4
+	std::string   name;
+	std::string   ed2k_link;
+	std::uint64_t size       = 0;
+	std::string   priority;         // "very_low" | "low" | "normal"
+	                                // | "high"     | "release" | "auto"
 
-	// Decoded per-part state, populated by the refresher's RLE
-	// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +
-	// EC_TAG_PARTFILE_PART_STATUS. Both arrays are sized to
-	// ceil(size / PARTSIZE) once a successful decode has landed;
-	// the list endpoint omits them, the detail endpoint emits
-	// `progress.parts: [{state, sources}, ...]` by walking them
-	// in parallel.
-	//
-	// `gaps` are flat (start_byte, end_byte) uint64 pairs marking
-	// byte-ranges still missing from the partfile (amule's
-	// `CGapList::Encode/Decode` semantics). `part_sources` is one
-	// uint16 per part counting how many sources currently have it.
-	std::vector<std::uint64_t> decoded_gaps;
-	std::vector<std::uint16_t> decoded_part_sources;
+	bool          is_downloading = false;
+	bool          is_shared      = false;
+
+	// Download-side state — meaningful when `is_downloading` is true,
+	// reset to default on the true→false transition (and never read
+	// by `/downloads` when the flag is false).
+	struct DownloadSide {
+		std::uint64_t size_done             = 0;
+		std::uint64_t size_xfer             = 0;
+		std::uint32_t speed_bps             = 0;
+		std::string   status;          // "downloading" | "paused"
+		                                // | "completed" | "hashing" | ...
+		bool          priority_auto         = false;
+		std::uint32_t category              = 0;
+		double        percent               = 0.0;
+		std::uint32_t sources_total         = 0;
+		std::uint32_t sources_not_current   = 0;
+		std::uint32_t sources_transferring  = 0;
+		std::uint32_t sources_a4af          = 0;
+
+		// Decoded per-part state, populated by the refresher's RLE
+		// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +
+		// EC_TAG_PARTFILE_PART_STATUS. Both arrays are sized to
+		// ceil(size / PARTSIZE) once a successful decode has landed;
+		// the list endpoint omits them, the detail endpoint emits
+		// `progress.parts: [{state, sources}, ...]` by walking them
+		// in parallel.
+		std::vector<std::uint64_t> decoded_gaps;
+		std::vector<std::uint16_t> decoded_part_sources;
+	} download;
+
+	// Shared-side state — meaningful when `is_shared` is true,
+	// reset on the true→false transition.
+	struct SharedSide {
+		std::uint64_t xfer_session        = 0;
+		std::uint64_t xfer_total          = 0;
+		std::uint32_t requests_session    = 0;
+		std::uint32_t requests_total      = 0;
+		std::uint32_t accepts_session     = 0;
+		std::uint32_t accepts_total       = 0;
+		std::uint32_t complete_sources    = 0;
+	} shared;
 };
 
 
@@ -161,23 +201,6 @@ struct ClientSnapshot {
 	std::uint32_t score                  = 0;   // EC_TAG_CLIENT_SCORE
 	std::string   obfuscation_status;    // "none" | "supported" | "required"
 	bool          friend_slot            = false;
-};
-
-
-struct SharedSnapshot {
-	std::uint32_t ecid             = 0;
-	std::string   hash;
-	std::string   name;
-	std::string   ed2k_link;
-	std::uint64_t size                = 0;
-	std::uint64_t xfer_session        = 0;   // bytes uploaded this session
-	std::uint64_t xfer_total          = 0;   // bytes uploaded lifetime
-	std::uint32_t requests_session    = 0;
-	std::uint32_t requests_total      = 0;
-	std::uint32_t accepts_session     = 0;
-	std::uint32_t accepts_total       = 0;
-	std::uint32_t complete_sources    = 0;
-	std::string   priority;     // "very_low" | "low" | "normal" | "high" | "release" | "auto"
 };
 
 
@@ -474,7 +497,15 @@ public:
 	// is deterministic per-client-session and matches the EC server's
 	// own iteration order, so the API surface stays consistent across
 	// refresher ticks.
-	std::vector<DownloadSnapshot> Downloads() const;
+	//
+	// `Downloads()` filters `m_files` by `is_downloading`, `Shared()`
+	// filters by `is_shared`. Both views consult the same underlying
+	// unified map — see FileSnapshot above for the role-flag model.
+	std::vector<FileSnapshot>     Downloads() const;
+	std::vector<FileSnapshot>     Shared()    const;
+	// Unfiltered view used by EventDiff to compute role-flag
+	// transitions. Not surfaced on the REST API.
+	std::vector<FileSnapshot>     Files()     const;
 
 	// Full peer list (all upload_state values, including queue
 	// waiters, idle peers, and banned). Backs /clients.
@@ -482,7 +513,6 @@ public:
 	// /clients and filter by role on their side.
 	std::vector<ClientSnapshot>   Clients()   const;
 
-	std::vector<SharedSnapshot>   Shared()    const;
 	std::vector<ServerSnapshot>   Servers()   const;
 	std::vector<SearchResult>     Search()    const;
 	SearchProgressSnapshot        SearchProgress() const;
@@ -497,40 +527,41 @@ public:
 	// /stats/graphs/{graph} reads one series out of the bundle.
 	StatsGraphs                   Graphs()     const;
 
-	// Look up a single download by 32-char hex hash, copied out under
-	// the shared lock. Returns true on hit, false on miss; on miss
-	// `out` is left untouched. Used by /downloads/{key}.
+	// Look up a single file by 32-char hex hash, then check the role.
+	// Returns true on hit + role match, false on miss; on miss `out`
+	// is left untouched. Used by /downloads/{key} (download role) and
+	// /shared/{key} (shared role) — both inspect the same m_files map.
 	bool             FindDownload(const std::string &hash_hex,
-	                              DownloadSnapshot &out) const;
+	                              FileSnapshot &out) const;
 
-	// ECID-keyed counterparts to FindDownload / FindShared. O(1) map
-	// lookup (vs the hash variants' linear scan). Used by /downloads/{key}
-	// and /shared/{key} when the path captures parse as a decimal ECID.
+	// ECID-keyed counterparts. O(1) map lookup (vs the hash variants'
+	// linear scan). Used when the path captures parse as a decimal ECID.
 	bool             FindDownloadByEcid(std::uint32_t ecid,
-	                                    DownloadSnapshot &out) const;
+	                                    FileSnapshot &out) const;
 	bool             FindShared       (const std::string &hash_hex,
-	                                    SharedSnapshot   &out) const;
+	                                    FileSnapshot &out) const;
 	bool             FindSharedByEcid (std::uint32_t ecid,
-	                                    SharedSnapshot   &out) const;
+	                                    FileSnapshot &out) const;
 
 	// INC-mode delta application. The refresher takes the unique_lock
-	// once per substruct's EC roundtrip, then calls a callback with a
-	// mutable reference to the ECID-keyed map; the callback walks the
-	// EC response and upserts/removes individual entries. One unique
-	// acquisition per tick rather than N — reader latency stays
-	// bounded by the parse loop, not by N independent acquisitions.
-	using DownloadMutator = void (*)(std::map<std::uint32_t, DownloadSnapshot> &);
+	// once per EC roundtrip, then calls a callback with a mutable
+	// reference to the unified ECID-keyed map; the callback walks the
+	// EC response and upserts/removes individual entries plus role
+	// flags. One unique acquisition per tick rather than N — reader
+	// latency stays bounded by the parse loop, not by N independent
+	// acquisitions. Both MutateDownloads and MutateShared operate on
+	// the SAME m_files map; the callback decides which role to flip.
+	using FileMutator     = void (*)(std::map<std::uint32_t, FileSnapshot>     &);
 	using ClientMutator   = void (*)(std::map<std::uint32_t, ClientSnapshot>   &);
-	using SharedMutator   = void (*)(std::map<std::uint32_t, SharedSnapshot>   &);
 	using SearchMutator   = void (*)(std::map<std::uint32_t, SearchResult>     &);
 	// Mutator versions taking a non-capturing std::function so callers
 	// can close over the EC packet without templating CState.
 	void             MutateDownloads(const std::function<
-	                  void(std::map<std::uint32_t, DownloadSnapshot> &)> &fn);
+	                  void(std::map<std::uint32_t, FileSnapshot> &)> &fn);
+	void             MutateShared   (const std::function<
+	                  void(std::map<std::uint32_t, FileSnapshot> &)> &fn);
 	void             MutateClients  (const std::function<
 	                  void(std::map<std::uint32_t, ClientSnapshot>   &)> &fn);
-	void             MutateShared   (const std::function<
-	                  void(std::map<std::uint32_t, SharedSnapshot>   &)> &fn);
 	void             MutateServers  (const std::function<
 	                  void(std::map<std::uint32_t, ServerSnapshot>   &)> &fn);
 	void             MutateSearch   (const std::function<
@@ -571,6 +602,11 @@ public:
 	void             MarkTickFailure();
 
 private:
+	// Caller MUST hold m_mu exclusively. Rebuilds m_hash_to_ecid from
+	// the current contents of m_files; chained from MutateDownloads /
+	// MutateShared after the walker callback runs.
+	void             RebuildHashIndex();
+
 	mutable std::shared_timed_mutex m_mu;
 
 	bool             m_has_first_snapshot = false;
@@ -581,9 +617,21 @@ private:
 	KadSnapshot                                     m_kad;
 	PreferencesSnapshot                             m_preferences;
 	std::vector<CategorySnapshot>                   m_categories;
-	std::map<std::uint32_t, DownloadSnapshot>       m_downloads;
+	// Unified ECID-keyed file map. A single entry may participate in
+	// the /downloads view (`is_downloading`), the /shared view
+	// (`is_shared`), or both. See FileSnapshot's header comment for
+	// why the two views share storage.
+	std::map<std::uint32_t, FileSnapshot>           m_files;
+
+	// Hash → ECID index. Lets FindDownload(hash) / FindShared(hash)
+	// short-circuit the linear scan that would otherwise have to walk
+	// `m_files` (the obvious lookup direction is ECID-keyed). Rebuilt
+	// after each Mutate* call so the index stays consistent with
+	// m_files even when the walker churns entries. Hashes never change
+	// within a single ECID (content-derived), so the only invariants
+	// that matter are insertion + removal.
+	std::unordered_map<std::string, std::uint32_t>  m_hash_to_ecid;
 	std::map<std::uint32_t, ClientSnapshot>         m_clients;
-	std::map<std::uint32_t, SharedSnapshot>         m_shared;
 	std::map<std::uint32_t, ServerSnapshot>         m_servers;
 	std::vector<std::string>                        m_amule_log_lines;
 	ServerInfoLog                                   m_server_info;

@@ -112,30 +112,31 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// itself evicts in some future hardening path).
 		std::set<std::uint32_t> ecids_before;
 		state.MutateDownloads(
-			[&](std::map<std::uint32_t, DownloadSnapshot> &cache) {
-				for (const auto &kv : cache) ecids_before.insert(kv.first);
+			[&](std::map<std::uint32_t, FileSnapshot> &cache) {
+				for (const auto &kv : cache) {
+					if (kv.second.is_downloading) ecids_before.insert(kv.first);
+				}
 				ApplyGetUpdateToDownloads(resp, cache, rle);
-				// Evict RLE state for ECIDs no longer in cache after
-				// the apply. The walker handles FILE_REMOVED already;
-				// this is defence in depth.
+				// Evict RLE state for ECIDs that no longer carry the
+				// downloading role after the apply. The walker handles
+				// FILE_REMOVED already; this is defence in depth.
 				for (auto ecid : ecids_before) {
-					if (cache.find(ecid) == cache.end()) rle.erase(ecid);
+					auto it = cache.find(ecid);
+					if (it == cache.end() || !it->second.is_downloading) {
+						rle.erase(ecid);
+					}
 				}
 			});
 
-		// Snapshot post-update download identity (hash, name) per ECID
-		// so ApplyGetUpdateToShared can recover identity on a partfile-
-		// becoming-shared tick where PARTFILE_HASH is suppressed.
-		std::map<std::uint32_t, std::pair<std::string, std::string>>
-			dl_identity_fallback;
-		for (const auto &d : state.Downloads()) {
-			dl_identity_fallback.emplace(d.ecid,
-				std::make_pair(d.hash, d.name));
-		}
-
+		// Shared walker reads + writes the same unified m_files map.
+		// No more dl_identity_fallback compose: when the shared walker
+		// sees a partfile whose hash was CValueMap-suppressed, the
+		// entry in `cache` already carries hash + name from the
+		// downloads walker above. See FileSnapshot in State.h for the
+		// shared-storage rationale.
 		state.MutateShared(
-			[&](std::map<std::uint32_t, SharedSnapshot> &cache) {
-				ApplyGetUpdateToShared(resp, cache, dl_identity_fallback);
+			[&](std::map<std::uint32_t, FileSnapshot> &cache) {
+				ApplyGetUpdateToShared(resp, cache);
 			});
 
 		state.MutateServers(

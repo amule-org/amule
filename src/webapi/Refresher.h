@@ -74,9 +74,8 @@ void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state);
 // standing up a real amuled.
 
 struct StatusSnapshot;
-struct DownloadSnapshot;
+struct FileSnapshot;
 struct ClientSnapshot;
-struct SharedSnapshot;
 struct ServerSnapshot;
 struct KadSnapshot;
 struct CategorySnapshot;
@@ -134,18 +133,29 @@ void ParsePreferencesFromPacket(const CECPacket *resp,
 // mutator acquisitions; snapshot_at is set after the whole tick
 // succeeds, so cross-substruct consistency is best-effort.
 
+// Merges download-walker state (EC_TAG_PARTFILE children) into the
+// unified file map. Sets `is_downloading=true` on touched entries,
+// writes only the download sub-block. FILE_REMOVED clears the
+// download role (and drops the entry entirely if `is_shared` was
+// also false). See FileSnapshot in State.h for the unified-map
+// rationale.
 void ApplyGetUpdateToDownloads(
 	const CECPacket *resp,
-	std::map<std::uint32_t, DownloadSnapshot> &cache,
+	std::map<std::uint32_t, FileSnapshot> &cache,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state);
 
-// `dl_identity_fallback` supplies (hash, name) by ECID when a partfile-
-// becoming-shared transition tick suppresses EC_TAG_PARTFILE_HASH.
+// Merges shared-walker state (EC_TAG_KNOWNFILE / EC_TAG_PARTFILE with
+// SHARED flag) into the same unified map. Sets `is_shared=true`,
+// updates the shared sub-block, and clears the shared role on
+// PARTFILE_SHARED=false / FILE_REMOVED. The dl_identity_fallback
+// parameter is gone: when the shared walker sees a partfile whose
+// hash tag was CValueMap-suppressed, the entry already carries hash
+// + name from the downloads walker on the same tick (same unified
+// map), so the shared walker just flips its flag and merges its own
+// fields. No fallback hop needed.
 void ApplyGetUpdateToShared(
 	const CECPacket *resp,
-	std::map<std::uint32_t, SharedSnapshot>   &cache,
-	const std::map<std::uint32_t, std::pair<std::string, std::string>>
-		&dl_identity_fallback);
+	std::map<std::uint32_t, FileSnapshot>   &cache);
 
 void ApplyGetUpdateToServers(
 	const CECPacket *resp,

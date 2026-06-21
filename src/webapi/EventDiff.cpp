@@ -82,51 +82,55 @@ std::string EscJson(const std::string &s)
 // fires `_updated`. If REST or SSE drifts in the future, the doc-
 // alignment check in run-all.sh phase11 should catch it.
 
-std::string ToJson(const DownloadSnapshot &d)
+// download_* event payload — mirrors WriteDownloadObject (Api.cpp)
+// at the wire level. Reads the download sub-block of FileSnapshot.
+std::string ToJsonDownloadEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << d.ecid
-	  << ",\"hash\":\"" << EscJson(d.hash) << "\""
-	  << ",\"name\":\"" << EscJson(d.name) << "\""
-	  << ",\"ed2k_link\":\"" << EscJson(d.ed2k_link) << "\""
-	  << ",\"size\":" << d.size
-	  << ",\"size_done\":" << d.size_done
-	  << ",\"size_xfer\":" << d.size_xfer
-	  << ",\"speed_bps\":" << d.speed_bps
-	  << ",\"status\":\"" << EscJson(d.status) << "\""
-	  << ",\"priority\":\"" << EscJson(d.priority) << "\""
-	  << ",\"priority_auto\":" << (d.priority_auto ? "true" : "false")
-	  << ",\"category\":" << d.category
+	  << "\"ecid\":" << f.ecid
+	  << ",\"hash\":\"" << EscJson(f.hash) << "\""
+	  << ",\"name\":\"" << EscJson(f.name) << "\""
+	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
+	  << ",\"size\":" << f.size
+	  << ",\"size_done\":" << f.download.size_done
+	  << ",\"size_xfer\":" << f.download.size_xfer
+	  << ",\"speed_bps\":" << f.download.speed_bps
+	  << ",\"status\":\"" << EscJson(f.download.status) << "\""
+	  << ",\"priority\":\"" << EscJson(f.priority) << "\""
+	  << ",\"priority_auto\":" << (f.download.priority_auto ? "true" : "false")
+	  << ",\"category\":" << f.download.category
 	  << ",\"sources\":{"
-	    << "\"total\":" << d.sources_total
-	    << ",\"not_current\":" << d.sources_not_current
-	    << ",\"transferring\":" << d.sources_transferring
-	    << ",\"a4af\":" << d.sources_a4af
+	    << "\"total\":" << f.download.sources_total
+	    << ",\"not_current\":" << f.download.sources_not_current
+	    << ",\"transferring\":" << f.download.sources_transferring
+	    << ",\"a4af\":" << f.download.sources_a4af
 	    << "}"
-	  << ",\"progress\":{\"percent\":" << d.percent << "}"
+	  << ",\"progress\":{\"percent\":" << f.download.percent << "}"
 	  << "}";
 	return o.str();
 }
 
 
-std::string ToJson(const SharedSnapshot &s)
+// shared_* event payload — mirrors WriteSharedObject. Reads the
+// shared sub-block of FileSnapshot.
+std::string ToJsonSharedEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << s.ecid
-	  << ",\"hash\":\"" << EscJson(s.hash) << "\""
-	  << ",\"name\":\"" << EscJson(s.name) << "\""
-	  << ",\"ed2k_link\":\"" << EscJson(s.ed2k_link) << "\""
-	  << ",\"size\":" << s.size
-	  << ",\"priority\":\"" << EscJson(s.priority) << "\""
-	  << ",\"complete_sources\":" << s.complete_sources
-	  << ",\"xfer\":{\"session\":" << s.xfer_session
-	    << ",\"total\":" << s.xfer_total << "}"
-	  << ",\"requests\":{\"session\":" << s.requests_session
-	    << ",\"total\":" << s.requests_total << "}"
-	  << ",\"accepts\":{\"session\":" << s.accepts_session
-	    << ",\"total\":" << s.accepts_total << "}"
+	  << "\"ecid\":" << f.ecid
+	  << ",\"hash\":\"" << EscJson(f.hash) << "\""
+	  << ",\"name\":\"" << EscJson(f.name) << "\""
+	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
+	  << ",\"size\":" << f.size
+	  << ",\"priority\":\"" << EscJson(f.priority) << "\""
+	  << ",\"complete_sources\":" << f.shared.complete_sources
+	  << ",\"xfer\":{\"session\":" << f.shared.xfer_session
+	    << ",\"total\":" << f.shared.xfer_total << "}"
+	  << ",\"requests\":{\"session\":" << f.shared.requests_session
+	    << ",\"total\":" << f.shared.requests_total << "}"
+	  << ",\"accepts\":{\"session\":" << f.shared.accepts_session
+	    << ",\"total\":" << f.shared.accepts_total << "}"
 	  << "}";
 	return o.str();
 }
@@ -239,40 +243,47 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s,
 // `_updated`. Field sets here are the same as the matching ToJson
 // above; if one drifts from the other clients will see stale
 // values until the next ROW-level field changes.
-bool Equal(const DownloadSnapshot &a, const DownloadSnapshot &b)
+// download_* / shared_* event diffs compare the FIELDS THAT THE
+// CORRESPONDING ToJson emits, not the full FileSnapshot. The download
+// side ignores shared.* and is_shared, the shared side ignores
+// download.* and is_downloading — a tick that flips one role doesn't
+// fire the other role's _updated.
+//
+// ecid is in both JSON shapes; if amuled gets restarted while
+// amuleapi keeps running, the same hash will surface with a fresh
+// ECID, and clients keyed on ECID need the _updated to invalidate
+// their cached id.
+bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 {
-	// ecid is in the JSON shape; if amuled gets restarted while
-	// amuleapi keeps running, the same hash will surface with a
-	// fresh ECID — clients keyed on ecid need an _updated event so
-	// they invalidate their cached id.
-	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
-	    && a.ed2k_link == b.ed2k_link
-	    && a.size == b.size
-	    && a.size_done == b.size_done && a.size_xfer == b.size_xfer
-	    && a.speed_bps == b.speed_bps && a.status == b.status
-	    && a.priority == b.priority && a.priority_auto == b.priority_auto
-	    && a.category == b.category
-	    && a.sources_total == b.sources_total
-	    && a.sources_not_current == b.sources_not_current
-	    && a.sources_transferring == b.sources_transferring
-	    && a.sources_a4af == b.sources_a4af
-	    && a.percent == b.percent;
-}
-bool Equal(const SharedSnapshot &a, const SharedSnapshot &b)
-{
-	// See DownloadSnapshot Equal — ecid included for the same
-	// reason (amuled restart mints fresh ECIDs).
 	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
 	    && a.ed2k_link == b.ed2k_link
 	    && a.size == b.size
 	    && a.priority == b.priority
-	    && a.complete_sources == b.complete_sources
-	    && a.xfer_session == b.xfer_session
-	    && a.xfer_total == b.xfer_total
-	    && a.requests_session == b.requests_session
-	    && a.requests_total == b.requests_total
-	    && a.accepts_session == b.accepts_session
-	    && a.accepts_total == b.accepts_total;
+	    && a.download.size_done == b.download.size_done
+	    && a.download.size_xfer == b.download.size_xfer
+	    && a.download.speed_bps == b.download.speed_bps
+	    && a.download.status    == b.download.status
+	    && a.download.priority_auto == b.download.priority_auto
+	    && a.download.category  == b.download.category
+	    && a.download.sources_total        == b.download.sources_total
+	    && a.download.sources_not_current  == b.download.sources_not_current
+	    && a.download.sources_transferring == b.download.sources_transferring
+	    && a.download.sources_a4af         == b.download.sources_a4af
+	    && a.download.percent  == b.download.percent;
+}
+bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
+{
+	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
+	    && a.ed2k_link == b.ed2k_link
+	    && a.size == b.size
+	    && a.priority == b.priority
+	    && a.shared.complete_sources == b.shared.complete_sources
+	    && a.shared.xfer_session     == b.shared.xfer_session
+	    && a.shared.xfer_total       == b.shared.xfer_total
+	    && a.shared.requests_session == b.shared.requests_session
+	    && a.shared.requests_total   == b.shared.requests_total
+	    && a.shared.accepts_session  == b.shared.accepts_session
+	    && a.shared.accepts_total    == b.shared.accepts_total;
 }
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 {
@@ -375,16 +386,12 @@ void DiffMap(CEventBus &bus, const std::string &base,
 }
 
 
-// For hash-keyed types (downloads / shared) emit removed payloads as
+// For hash-keyed file events emit removed payloads as
 // `{"hash":"..."}` so consumers can drop the cache entry without
 // needing the old object.
-std::string RemovedHashPayload(const DownloadSnapshot &d)
+std::string RemovedHashPayload(const FileSnapshot &f)
 {
-	return "{\"hash\":\"" + EscJson(d.hash) + "\"}";
-}
-std::string RemovedHashPayload(const SharedSnapshot &s)
-{
-	return "{\"hash\":\"" + EscJson(s.hash) + "\"}";
+	return "{\"hash\":\"" + EscJson(f.hash) + "\"}";
 }
 // ECID-keyed types (servers / clients): same shape, ECID payload.
 std::string RemovedEcidPayload(const ServerSnapshot &s)
@@ -452,9 +459,13 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 {
 	EnforceSinglePublisher();
 	// Snapshot the current state under its read locks. Each accessor
-	// takes the shared_timed_mutex shared, copies, and returns.
-	auto new_downloads = ByEcid(state.Downloads());
-	auto new_shared    = ByEcid(state.Shared());
+	// takes the shared_timed_mutex shared, copies, and returns. For
+	// files we use the unfiltered view (Files() — not the role-filtered
+	// Downloads/Shared) so the diff below sees role-flag transitions:
+	// a file that flipped is_shared false→true on an existing ECID
+	// must fire `shared_added` even though it's been in the unified
+	// map all along.
+	auto new_files     = ByEcid(state.Files());
 	auto new_servers   = ByEcid(state.Servers());
 	auto new_clients   = ByEcid(state.Clients());
 	// Read the full dashboard for status_changed — the event payload
@@ -468,15 +479,62 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	const KadSnapshot    &new_kad    = new_dashboard.kad;
 	const bool            new_ec     = new_dashboard.ec_connected;
 
-	// Diff each substruct.
-	DiffMap(bus, "download", prev.downloads, new_downloads,
-		[](const DownloadSnapshot &d) {
-			return RemovedHashPayload(d);
-		});
-	DiffMap(bus, "shared", prev.shared, new_shared,
-		[](const SharedSnapshot &s) {
-			return RemovedHashPayload(s);
-		});
+	// Files: role-flag-aware diff. download_* fires on is_downloading
+	// transitions; shared_* on is_shared transitions. A single tick
+	// can fire both for the same file (e.g. partfile becoming shared
+	// + receiving a stat update on the download side).
+	{
+		std::vector<std::pair<std::string, std::string>> batch;
+		batch.reserve(new_files.size());
+		const auto push = [&](const char *name,
+		                      const std::string &payload) {
+			batch.emplace_back(name, payload);
+		};
+		// _removed first — clients can tear down their cache slot
+		// before the _added/_updated for the same ECID lands.
+		for (const auto &kv : prev.files) {
+			const auto it = new_files.find(kv.first);
+			if (it == new_files.end()) {
+				if (kv.second.is_downloading) {
+					push("download_removed", RemovedHashPayload(kv.second));
+				}
+				if (kv.second.is_shared) {
+					push("shared_removed", RemovedHashPayload(kv.second));
+				}
+			} else {
+				if (kv.second.is_downloading && !it->second.is_downloading) {
+					push("download_removed", RemovedHashPayload(kv.second));
+				}
+				if (kv.second.is_shared && !it->second.is_shared) {
+					push("shared_removed", RemovedHashPayload(kv.second));
+				}
+			}
+		}
+		// _added / _updated — gate by role flag transition vs the
+		// previous tick's is_downloading / is_shared value.
+		for (const auto &kv : new_files) {
+			const auto it = prev.files.find(kv.first);
+			const bool was_downloading = (it != prev.files.end()
+			                              && it->second.is_downloading);
+			const bool was_shared      = (it != prev.files.end()
+			                              && it->second.is_shared);
+			if (kv.second.is_downloading) {
+				if (!was_downloading) {
+					push("download_added", ToJsonDownloadEvent(kv.second));
+				} else if (!EqualDownload(it->second, kv.second)) {
+					push("download_updated", ToJsonDownloadEvent(kv.second));
+				}
+			}
+			if (kv.second.is_shared) {
+				if (!was_shared) {
+					push("shared_added", ToJsonSharedEvent(kv.second));
+				} else if (!EqualShared(it->second, kv.second)) {
+					push("shared_updated", ToJsonSharedEvent(kv.second));
+				}
+			}
+		}
+		bus.PublishBatch(batch);
+	}
 	DiffMap(bus, "server", prev.servers, new_servers,
 		[](const ServerSnapshot &s) {
 			return RemovedEcidPayload(s);
@@ -504,8 +562,7 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	}
 
 	// Snapshot the new state for next tick's diff baseline.
-	prev.downloads    = std::move(new_downloads);
-	prev.shared       = std::move(new_shared);
+	prev.files        = std::move(new_files);
 	prev.servers      = std::move(new_servers);
 	prev.clients      = std::move(new_clients);
 	prev.status       = new_status;

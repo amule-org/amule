@@ -42,8 +42,12 @@ class CEventBus;
 // `EmitDiffsAndUpdate`. The first tick fires `_added` for every alive
 // entry (cold start); subsequent ticks fire only the deltas.
 struct LastSeenState {
-	std::map<std::uint32_t, DownloadSnapshot> downloads;
-	std::map<std::uint32_t, SharedSnapshot>   shared;
+	// `files` mirrors CState::m_files (unified ECID-keyed map with
+	// `is_downloading` / `is_shared` flags). Role-flag transitions
+	// false→true emit the corresponding `_added` event, true→false
+	// the `_removed`; a file may participate in both views and emit
+	// both event families.
+	std::map<std::uint32_t, FileSnapshot>     files;
 	std::map<std::uint32_t, ServerSnapshot>   servers;
 	std::map<std::uint32_t, ClientSnapshot>   clients;
 	// Status event payload mirrors the REST /status envelope, which

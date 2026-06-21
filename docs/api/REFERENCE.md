@@ -394,7 +394,7 @@ Detail view for a single partfile. `{key}` accepts either form:
 - the 32-char MD4 hex hash (case-insensitive — the dispatcher lower-cases input), OR
 - the decimal ECID (uint32; 1–10 digits, ≤ 4,294,967,295).
 
-Hashes and ECIDs are disambiguated by shape — a 32-char hex string can never satisfy the ECID grammar, and vice versa. ECID lookup is O(1); hash lookup walks the snapshot map.
+Hashes and ECIDs are disambiguated by shape — a 32-char hex string can never satisfy the ECID grammar, and vice versa. Both lookups are O(1): ECID via the unified file map's `std::map` key, hash via the parallel `m_hash_to_ecid` index that's rebuilt each tick alongside `m_files`.
 
 ```sh
 # by hash

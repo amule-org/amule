@@ -1529,17 +1529,18 @@ constexpr std::uint64_t kPartSize = 9728000ull;
 //            "missing"    (gap + zero sources)
 // `gaps` is flat (start, end) uint64 pairs. Both inclusive on amule's
 // side (CGapList::Encode semantics).
-void WriteProgressParts(CJsonWriter &w, const webapi::DownloadSnapshot &d)
+void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	w.Key("parts");
 	w.BeginArray();
-	if (d.size == 0) { w.EndArray(); return; }
-	const std::uint64_t part_count = (d.size + kPartSize - 1) / kPartSize;
+	if (f.size == 0) { w.EndArray(); return; }
+	const std::uint64_t part_count = (f.size + kPartSize - 1) / kPartSize;
 	std::vector<bool> has_gap(part_count, false);
-	const std::size_t gap_pair_count = d.decoded_gaps.size() / 2;
+	const auto &gaps = f.download.decoded_gaps;
+	const std::size_t gap_pair_count = gaps.size() / 2;
 	for (std::size_t g = 0; g < gap_pair_count; ++g) {
-		const std::uint64_t gap_start = d.decoded_gaps[2 * g];
-		const std::uint64_t gap_end   = d.decoded_gaps[2 * g + 1];
+		const std::uint64_t gap_start = gaps[2 * g];
+		const std::uint64_t gap_end   = gaps[2 * g + 1];
 		const std::uint64_t start_idx = gap_start / kPartSize;
 		const std::uint64_t end_idx   = gap_end   / kPartSize;
 		for (std::uint64_t i = start_idx;
@@ -1547,10 +1548,11 @@ void WriteProgressParts(CJsonWriter &w, const webapi::DownloadSnapshot &d)
 			has_gap[static_cast<std::size_t>(i)] = true;
 		}
 	}
+	const auto &part_sources = f.download.decoded_part_sources;
 	for (std::uint64_t i = 0; i < part_count; ++i) {
 		const std::uint16_t sources =
-			(static_cast<std::size_t>(i) < d.decoded_part_sources.size())
-			? d.decoded_part_sources[static_cast<std::size_t>(i)]
+			(static_cast<std::size_t>(i) < part_sources.size())
+			? part_sources[static_cast<std::size_t>(i)]
 			: static_cast<std::uint16_t>(0);
 		const char *state =
 			!has_gap[static_cast<std::size_t>(i)] ? "complete" :
@@ -1564,37 +1566,37 @@ void WriteProgressParts(CJsonWriter &w, const webapi::DownloadSnapshot &d)
 }
 
 
-void WriteDownloadObject(CJsonWriter &w, const webapi::DownloadSnapshot &d,
+void WriteDownloadObject(CJsonWriter &w, const webapi::FileSnapshot &f,
                          bool include_parts = false)
 {
 	w.BeginObject();
 	  // ecid is amule's per-daemon-process identity for this object;
 	  // exposed so clients can correlate ClientSnapshot's
 	  // upload_file_ecid / download_file_ecid against this list.
-	  w.Key("ecid");            w.ValueInt(static_cast<int64_t>(d.ecid));
-	  w.Key("hash");            w.ValueString(wxString::FromUTF8(d.hash.c_str()));
-	  w.Key("name");            w.ValueString(wxString::FromUTF8(d.name.c_str()));
-	  w.Key("ed2k_link");       w.ValueString(wxString::FromUTF8(d.ed2k_link.c_str()));
-	  w.Key("size");            w.ValueInt(static_cast<int64_t>(d.size));
-	  w.Key("size_done");       w.ValueInt(static_cast<int64_t>(d.size_done));
-	  w.Key("size_xfer");       w.ValueInt(static_cast<int64_t>(d.size_xfer));
-	  w.Key("speed_bps");       w.ValueInt(static_cast<int64_t>(d.speed_bps));
-	  w.Key("status");          w.ValueString(wxString::FromUTF8(d.status.c_str()));
-	  w.Key("priority");        w.ValueString(wxString::FromUTF8(d.priority.c_str()));
-	  w.Key("priority_auto");   w.ValueBool(d.priority_auto);
-	  w.Key("category");        w.ValueInt(static_cast<int64_t>(d.category));
+	  w.Key("ecid");            w.ValueInt(static_cast<int64_t>(f.ecid));
+	  w.Key("hash");            w.ValueString(wxString::FromUTF8(f.hash.c_str()));
+	  w.Key("name");            w.ValueString(wxString::FromUTF8(f.name.c_str()));
+	  w.Key("ed2k_link");       w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
+	  w.Key("size");            w.ValueInt(static_cast<int64_t>(f.size));
+	  w.Key("size_done");       w.ValueInt(static_cast<int64_t>(f.download.size_done));
+	  w.Key("size_xfer");       w.ValueInt(static_cast<int64_t>(f.download.size_xfer));
+	  w.Key("speed_bps");       w.ValueInt(static_cast<int64_t>(f.download.speed_bps));
+	  w.Key("status");          w.ValueString(wxString::FromUTF8(f.download.status.c_str()));
+	  w.Key("priority");        w.ValueString(wxString::FromUTF8(f.priority.c_str()));
+	  w.Key("priority_auto");   w.ValueBool(f.download.priority_auto);
+	  w.Key("category");        w.ValueInt(static_cast<int64_t>(f.download.category));
 	  w.Key("sources");
 	  w.BeginObject();
-	    w.Key("total");        w.ValueInt(static_cast<int64_t>(d.sources_total));
-	    w.Key("not_current");  w.ValueInt(static_cast<int64_t>(d.sources_not_current));
-	    w.Key("transferring"); w.ValueInt(static_cast<int64_t>(d.sources_transferring));
-	    w.Key("a4af");         w.ValueInt(static_cast<int64_t>(d.sources_a4af));
+	    w.Key("total");        w.ValueInt(static_cast<int64_t>(f.download.sources_total));
+	    w.Key("not_current");  w.ValueInt(static_cast<int64_t>(f.download.sources_not_current));
+	    w.Key("transferring"); w.ValueInt(static_cast<int64_t>(f.download.sources_transferring));
+	    w.Key("a4af");         w.ValueInt(static_cast<int64_t>(f.download.sources_a4af));
 	  w.EndObject();
 	  w.Key("progress");
 	  w.BeginObject();
-	    w.Key("percent"); w.ValueDouble(d.percent);
+	    w.Key("percent"); w.ValueDouble(f.download.percent);
 	    if (include_parts) {
-	      WriteProgressParts(w, d);
+	      WriteProgressParts(w, f);
 	    }
 	  w.EndObject();
 	w.EndObject();
@@ -1636,32 +1638,32 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 }
 
 
-void WriteSharedObject(CJsonWriter &w, const webapi::SharedSnapshot &s)
+void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	w.BeginObject();
 	  // See ecid note on WriteDownloadObject — same correlation
 	  // mechanism for the upload side.
-	  w.Key("ecid");              w.ValueInt(static_cast<int64_t>(s.ecid));
-	  w.Key("hash");              w.ValueString(wxString::FromUTF8(s.hash.c_str()));
-	  w.Key("name");              w.ValueString(wxString::FromUTF8(s.name.c_str()));
-	  w.Key("ed2k_link");         w.ValueString(wxString::FromUTF8(s.ed2k_link.c_str()));
-	  w.Key("size");              w.ValueInt(static_cast<int64_t>(s.size));
-	  w.Key("priority");          w.ValueString(wxString::FromUTF8(s.priority.c_str()));
-	  w.Key("complete_sources");  w.ValueInt(static_cast<int64_t>(s.complete_sources));
+	  w.Key("ecid");              w.ValueInt(static_cast<int64_t>(f.ecid));
+	  w.Key("hash");              w.ValueString(wxString::FromUTF8(f.hash.c_str()));
+	  w.Key("name");              w.ValueString(wxString::FromUTF8(f.name.c_str()));
+	  w.Key("ed2k_link");         w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
+	  w.Key("size");              w.ValueInt(static_cast<int64_t>(f.size));
+	  w.Key("priority");          w.ValueString(wxString::FromUTF8(f.priority.c_str()));
+	  w.Key("complete_sources");  w.ValueInt(static_cast<int64_t>(f.shared.complete_sources));
 	  w.Key("xfer");
 	  w.BeginObject();
-	    w.Key("session"); w.ValueInt(static_cast<int64_t>(s.xfer_session));
-	    w.Key("total");   w.ValueInt(static_cast<int64_t>(s.xfer_total));
+	    w.Key("session"); w.ValueInt(static_cast<int64_t>(f.shared.xfer_session));
+	    w.Key("total");   w.ValueInt(static_cast<int64_t>(f.shared.xfer_total));
 	  w.EndObject();
 	  w.Key("requests");
 	  w.BeginObject();
-	    w.Key("session"); w.ValueInt(static_cast<int64_t>(s.requests_session));
-	    w.Key("total");   w.ValueInt(static_cast<int64_t>(s.requests_total));
+	    w.Key("session"); w.ValueInt(static_cast<int64_t>(f.shared.requests_session));
+	    w.Key("total");   w.ValueInt(static_cast<int64_t>(f.shared.requests_total));
 	  w.EndObject();
 	  w.Key("accepts");
 	  w.BeginObject();
-	    w.Key("session"); w.ValueInt(static_cast<int64_t>(s.accepts_session));
-	    w.Key("total");   w.ValueInt(static_cast<int64_t>(s.accepts_total));
+	    w.Key("session"); w.ValueInt(static_cast<int64_t>(f.shared.accepts_session));
+	    w.Key("total");   w.ValueInt(static_cast<int64_t>(f.shared.accepts_total));
 	  w.EndObject();
 	w.EndObject();
 }
@@ -1844,18 +1846,18 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 		}
 	}
 
-	std::vector<webapi::DownloadSnapshot> downloads = m_state.Downloads();
+	std::vector<webapi::FileSnapshot> downloads = m_state.Downloads();
 	if (!include_completed) {
 		downloads.erase(
 			std::remove_if(downloads.begin(), downloads.end(),
-				[](const webapi::DownloadSnapshot &d) {
-					return d.status == "completed";
+				[](const webapi::FileSnapshot &d) {
+					return d.download.status == "completed";
 				}),
 			downloads.end());
 	}
 
 	return ListResponse(m_state, "downloads", downloads,
-		[](CJsonWriter &w, const webapi::DownloadSnapshot &d) {
+		[](CJsonWriter &w, const webapi::FileSnapshot &d) {
 			// List mode — omit `progress.parts` (Q2 + the per-list
 			// shape: omitting parts keeps the list response compact,
 			// detail endpoint is where parts ship).
@@ -1940,7 +1942,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	// {key} accepts hash OR ECID. ECID = O(1) map lookup; hash =
 	// case-folded scan (State writes lowercase, accept any case
 	// from the URL).
-	webapi::DownloadSnapshot d;
+	webapi::FileSnapshot d;
 	std::uint32_t ecid;
 	bool found = false;
 	if (TryParseEcid(key, ecid)) {
@@ -2179,7 +2181,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	}
 
 	// {key} = hash OR ECID; same disjunction as the GET detail handler.
-	webapi::DownloadSnapshot d;
+	webapi::FileSnapshot d;
 	std::uint32_t ecid;
 	bool found = false;
 	if (TryParseEcid(key, ecid)) {
@@ -2317,7 +2319,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	// cache evicted it between mutations and this read (vanishingly
 	// rare; would mean amuled removed it between our SendRecv and
 	// the refresh).
-	webapi::DownloadSnapshot d_after;
+	webapi::FileSnapshot d_after;
 	if (!m_state.FindDownload(d.hash, d_after)) d_after = d;
 
 	CHttpServer::Response r;
@@ -2345,7 +2347,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	}
 
 	// {key} = hash OR ECID; same disjunction as the GET detail handler.
-	webapi::DownloadSnapshot d;
+	webapi::FileSnapshot d;
 	std::uint32_t ecid;
 	bool found = false;
 	if (TryParseEcid(key, ecid)) {
@@ -2370,7 +2372,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	// the completed case through POST /downloads/clear_completed
 	// (which accepts an optional {hash} body for per-entry clears)
 	// so the verb-vs-disk-semantic mapping stays unambiguous.
-	if (d.status == "completed") {
+	if (d.download.status == "completed") {
 		return ErrorResponse(409, "completed_use_clear_completed",
 			"DELETE only removes active downloads (deletes .part/.met "
 			"files from disk). Use POST /downloads/clear_completed "
@@ -2474,12 +2476,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(
 	std::vector<std::uint32_t> ecids;
 	std::vector<std::string>   hashes_cleared;
 	if (!target_hash.empty()) {
-		webapi::DownloadSnapshot d;
+		webapi::FileSnapshot d;
 		if (!m_state.FindDownload(target_hash, d)) {
 			return ErrorResponse(404, "not_found",
 				"no download with that hash");
 		}
-		if (d.status != "completed") {
+		if (d.download.status != "completed") {
 			return ErrorResponse(409, "not_completed",
 				"target download exists but is not in the completed "
 				"staging list (status != \"completed\"). To remove an "
@@ -2489,7 +2491,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(
 		hashes_cleared.push_back(d.hash);
 	} else {
 		for (const auto &d : m_state.Downloads()) {
-			if (d.status == "completed") {
+			if (d.download.status == "completed") {
 				ecids.push_back(d.ecid);
 				hashes_cleared.push_back(d.hash);
 			}
@@ -4153,7 +4155,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	}
 
 	// {key} = hash OR ECID; same disjunction as /downloads/{key}.
-	webapi::SharedSnapshot s;
+	webapi::FileSnapshot s;
 	std::uint32_t ecid;
 	bool found = false;
 	if (TryParseEcid(key, ecid)) {
@@ -4218,7 +4220,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	(void) RefresherTick(m_app, m_state);
 
 	// Re-read post-mutation. Fall back to prior copy if evicted.
-	webapi::SharedSnapshot s_after = s;
+	webapi::FileSnapshot s_after = s;
 	(void) m_state.FindShared(s.hash, s_after);
 
 	CHttpServer::Response r;

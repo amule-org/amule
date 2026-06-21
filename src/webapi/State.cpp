@@ -255,12 +255,36 @@ void CState::MutateServers(const std::function<
 }
 
 
-std::vector<DownloadSnapshot> CState::Downloads() const
+std::vector<FileSnapshot> CState::Downloads() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	std::vector<DownloadSnapshot> out;
-	out.reserve(m_downloads.size());
-	for (const auto &kv : m_downloads) out.push_back(kv.second);
+	std::vector<FileSnapshot> out;
+	out.reserve(m_files.size());
+	for (const auto &kv : m_files) {
+		if (kv.second.is_downloading) out.push_back(kv.second);
+	}
+	return out;
+}
+
+
+std::vector<FileSnapshot> CState::Shared() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<FileSnapshot> out;
+	out.reserve(m_files.size());
+	for (const auto &kv : m_files) {
+		if (kv.second.is_shared) out.push_back(kv.second);
+	}
+	return out;
+}
+
+
+std::vector<FileSnapshot> CState::Files() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<FileSnapshot> out;
+	out.reserve(m_files.size());
+	for (const auto &kv : m_files) out.push_back(kv.second);
 	return out;
 }
 
@@ -275,71 +299,97 @@ std::vector<ClientSnapshot> CState::Clients() const
 }
 
 
-std::vector<SharedSnapshot> CState::Shared() const
-{
-	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	std::vector<SharedSnapshot> out;
-	out.reserve(m_shared.size());
-	for (const auto &kv : m_shared) out.push_back(kv.second);
-	return out;
-}
-
-
 bool CState::FindDownload(const std::string &hash_hex,
-                          DownloadSnapshot &out) const
+                          FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	for (const auto &kv : m_downloads) {
-		if (kv.second.hash == hash_hex) {
-			out = kv.second;
-			return true;
-		}
-	}
-	return false;
+	const auto idx = m_hash_to_ecid.find(hash_hex);
+	if (idx == m_hash_to_ecid.end()) return false;
+	const auto it = m_files.find(idx->second);
+	if (it == m_files.end() || !it->second.is_downloading) return false;
+	out = it->second;
+	return true;
 }
 
 
 bool CState::FindDownloadByEcid(std::uint32_t ecid,
-                                DownloadSnapshot &out) const
+                                FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	auto it = m_downloads.find(ecid);
-	if (it == m_downloads.end()) return false;
+	auto it = m_files.find(ecid);
+	if (it == m_files.end() || !it->second.is_downloading) return false;
 	out = it->second;
 	return true;
 }
 
 
 bool CState::FindShared(const std::string &hash_hex,
-                        SharedSnapshot &out) const
+                        FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	for (const auto &kv : m_shared) {
-		if (kv.second.hash == hash_hex) {
-			out = kv.second;
-			return true;
-		}
-	}
-	return false;
-}
-
-
-bool CState::FindSharedByEcid(std::uint32_t ecid,
-                              SharedSnapshot &out) const
-{
-	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	auto it = m_shared.find(ecid);
-	if (it == m_shared.end()) return false;
+	const auto idx = m_hash_to_ecid.find(hash_hex);
+	if (idx == m_hash_to_ecid.end()) return false;
+	const auto it = m_files.find(idx->second);
+	if (it == m_files.end() || !it->second.is_shared) return false;
 	out = it->second;
 	return true;
 }
 
 
+bool CState::FindSharedByEcid(std::uint32_t ecid,
+                              FileSnapshot &out) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_files.find(ecid);
+	if (it == m_files.end() || !it->second.is_shared) return false;
+	out = it->second;
+	return true;
+}
+
+
+// MutateDownloads + MutateShared both lock + hand out m_files. Both
+// walkers operate on the same unified map (and the same lock acquisition,
+// when chained from a single tick); the callback decides which role
+// flag to set or clear. After the walker, rebuild the hash → ECID
+// index from scratch — it's O(N) where N is the file count (~tens
+// to low hundreds in typical operator use) so the marginal cost
+// per tick is negligible, but it lets FindDownload/FindShared hit
+// the hash index in O(1) per HTTP request.
 void CState::MutateDownloads(const std::function<
-	void(std::map<std::uint32_t, DownloadSnapshot> &)> &fn)
+	void(std::map<std::uint32_t, FileSnapshot> &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	fn(m_downloads);
+	fn(m_files);
+	RebuildHashIndex();
+}
+
+
+void CState::MutateShared(const std::function<
+	void(std::map<std::uint32_t, FileSnapshot> &)> &fn)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	fn(m_files);
+	RebuildHashIndex();
+}
+
+
+// Caller MUST hold the unique lock. Rebuilds m_hash_to_ecid from the
+// current contents of m_files; both walkers chain through this after
+// upserting / evicting entries, so the index is always in sync at
+// MutateDownloads/Shared exit.
+void CState::RebuildHashIndex()
+{
+	m_hash_to_ecid.clear();
+	m_hash_to_ecid.reserve(m_files.size());
+	for (const auto &kv : m_files) {
+		// Skip entries that don't carry hash yet (shouldn't happen
+		// in practice — the walkers populate hash on first insert —
+		// but the empty-hash case would collapse multiple entries
+		// into one index slot).
+		if (!kv.second.hash.empty()) {
+			m_hash_to_ecid[kv.second.hash] = kv.first;
+		}
+	}
 }
 
 
@@ -351,20 +401,12 @@ void CState::MutateClients(const std::function<
 }
 
 
-void CState::MutateShared(const std::function<
-	void(std::map<std::uint32_t, SharedSnapshot> &)> &fn)
-{
-	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	fn(m_shared);
-}
-
-
 void CState::ResetLists()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	m_downloads.clear();
+	m_files.clear();
+	m_hash_to_ecid.clear();
 	m_clients.clear();
-	m_shared.clear();
 	m_servers.clear();
 	m_categories.clear();
 	m_search.clear();

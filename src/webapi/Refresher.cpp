@@ -233,42 +233,45 @@ std::string TagHashLower(const CEC_SharedFile_Tag *sf)
 
 
 // Merge a CEC_PartFile_Tag's PRESENT child tags into an existing
-// DownloadSnapshot. Absent tags leave the corresponding field
-// unchanged — that's the point of INC mode.
+// FileSnapshot. Absent tags leave the corresponding field unchanged
+// — that's the point of INC mode.
 //
-// `is_new` distinguishes first-encounter ECID (populate every
-// identity field) from INC update to a known entry (only changed
-// fields). For a new ECID without PARTFILE_HASH we skip insertion
-// entirely (server CValueMap-suppressed even the identity tag — we'd
-// produce a ghost entry).
-void MergePartFileTag(const CEC_PartFile_Tag *pf, DownloadSnapshot &d,
+// Identity (name, ed2k_link, size, priority) lives at the top level
+// because both walkers populate it; download-specific stats land in
+// `f.download`. The caller is responsible for setting f.ecid + f.hash
+// on first encounter and for flipping f.is_downloading=true.
+//
+// `is_new` distinguishes first-encounter from INC update — used only
+// for the status-string re-derive (idle-on-status-suppressed shouldn't
+// silently lose the prior status).
+void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f,
                       bool is_new)
 {
 	wxString fn;
 	if (pf->FileName(fn)) {
-		d.name = std::string(fn.utf8_str());
+		f.name = std::string(fn.utf8_str());
 	}
 	{
 		const wxString link = pf->FileEd2kLink();
 		if (!link.IsEmpty()) {
-			d.ed2k_link = std::string(link.utf8_str());
+			f.ed2k_link = std::string(link.utf8_str());
 		}
 	}
 	{
-		std::uint64_t v = d.size;
-		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_FULL, v)) d.size = v;
+		std::uint64_t v = f.size;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_FULL, v)) f.size = v;
 	}
 	{
-		std::uint64_t v = d.size_done;
-		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_DONE, v)) d.size_done = v;
+		std::uint64_t v = f.download.size_done;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_DONE, v)) f.download.size_done = v;
 	}
 	{
-		std::uint64_t v = d.size_xfer;
-		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_XFER, v)) d.size_xfer = v;
+		std::uint64_t v = f.download.size_xfer;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_SIZE_XFER, v)) f.download.size_xfer = v;
 	}
 	{
-		std::uint32_t v = d.speed_bps;
-		if (pf->AssignIfExist(EC_TAG_PARTFILE_SPEED, v)) d.speed_bps = v;
+		std::uint32_t v = f.download.speed_bps;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_SPEED, v)) f.download.speed_bps = v;
 	}
 	{
 		// Status + stopped flag interact — re-derive the wire string
@@ -278,11 +281,7 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, DownloadSnapshot &d,
 		const bool fs_present   = pf->AssignIfExist(EC_TAG_PARTFILE_STATUS,  fs);
 		const bool stop_present = pf->AssignIfExist(EC_TAG_PARTFILE_STOPPED, stopped);
 		if (fs_present || stop_present || is_new) {
-			// On a partial update where neither tag was present but the
-			// entry already exists, the status string from the previous
-			// tick is still correct — only re-derive when something
-			// actually changed.
-			d.status = DownloadStatusName(
+			f.download.status = DownloadStatusName(
 				fs_present ? fs : pf->FileStatus(),
 				stop_present ? stopped : pf->Stopped());
 		}
@@ -291,29 +290,29 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, DownloadSnapshot &d,
 		std::uint8_t pr_raw = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_PRIO, pr_raw)) {
 			bool prio_auto = false;
-			d.priority      = DownloadPriorityName(pr_raw, prio_auto);
-			d.priority_auto = prio_auto;
+			f.priority               = DownloadPriorityName(pr_raw, prio_auto);
+			f.download.priority_auto = prio_auto;
 		}
 	}
 	{
 		std::uint8_t cat = 0;
-		if (pf->AssignIfExist(EC_TAG_PARTFILE_CAT, cat)) d.category = cat;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_CAT, cat)) f.download.category = cat;
 	}
 	{
 		std::uint16_t v = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT, v))
-			d.sources_total = v;
+			f.download.sources_total = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_NOT_CURRENT, v))
-			d.sources_not_current = v;
+			f.download.sources_not_current = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, v))
-			d.sources_transferring = v;
+			f.download.sources_transferring = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_A4AF, v))
-			d.sources_a4af = v;
+			f.download.sources_a4af = v;
 	}
 	// Recompute percent unconditionally — both inputs may have moved.
-	d.percent = (d.size > 0)
-		? (static_cast<double>(d.size_done) * 100.0
-		   / static_cast<double>(d.size))
+	f.download.percent = (f.size > 0)
+		? (static_cast<double>(f.download.size_done) * 100.0
+		   / static_cast<double>(f.size))
 		: 0.0;
 }
 
@@ -570,55 +569,55 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs,
 }
 
 
-void MergeSharedTag(const CEC_SharedFile_Tag *sf, SharedSnapshot &s)
+void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 {
 	wxString fn;
 	if (sf->FileName(fn)) {
-		s.name = std::string(fn.utf8_str());
+		f.name = std::string(fn.utf8_str());
 	}
 	{
 		const wxString link = sf->FileEd2kLink();
 		if (!link.IsEmpty()) {
-			s.ed2k_link = std::string(link.utf8_str());
+			f.ed2k_link = std::string(link.utf8_str());
 		}
 	}
 	{
-		std::uint64_t v = s.size;
-		if (sf->AssignIfExist(EC_TAG_PARTFILE_SIZE_FULL, v)) s.size = v;
+		std::uint64_t v = f.size;
+		if (sf->AssignIfExist(EC_TAG_PARTFILE_SIZE_FULL, v)) f.size = v;
 	}
 	{
-		std::uint64_t v = s.xfer_session;
-		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_XFERRED, v)) s.xfer_session = v;
+		std::uint64_t v = f.shared.xfer_session;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_XFERRED, v)) f.shared.xfer_session = v;
 	}
 	{
-		std::uint64_t v = s.xfer_total;
-		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_XFERRED_ALL, v)) s.xfer_total = v;
+		std::uint64_t v = f.shared.xfer_total;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_XFERRED_ALL, v)) f.shared.xfer_total = v;
 	}
 	{
-		std::uint32_t v = s.requests_session;
-		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_REQ_COUNT, v)) s.requests_session = v;
+		std::uint32_t v = f.shared.requests_session;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_REQ_COUNT, v)) f.shared.requests_session = v;
 	}
 	{
-		std::uint32_t v = s.requests_total;
-		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_REQ_COUNT_ALL, v)) s.requests_total = v;
+		std::uint32_t v = f.shared.requests_total;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_REQ_COUNT_ALL, v)) f.shared.requests_total = v;
 	}
 	{
-		std::uint32_t v = s.accepts_session;
-		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_ACCEPT_COUNT, v)) s.accepts_session = v;
+		std::uint32_t v = f.shared.accepts_session;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_ACCEPT_COUNT, v)) f.shared.accepts_session = v;
 	}
 	{
-		std::uint32_t v = s.accepts_total;
-		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_ACCEPT_COUNT_ALL, v)) s.accepts_total = v;
+		std::uint32_t v = f.shared.accepts_total;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_ACCEPT_COUNT_ALL, v)) f.shared.accepts_total = v;
 	}
 	{
 		std::uint16_t v = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_COMPLETE_SOURCES, v))
-			s.complete_sources = v;
+			f.shared.complete_sources = v;
 	}
 	{
 		std::uint8_t pr = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_PRIO, pr)) {
-			s.priority = SharedPriorityName(pr);
+			f.priority = SharedPriorityName(pr);
 		}
 	}
 }
@@ -633,28 +632,26 @@ namespace {
 // Apply the stateful RLE decode for the gap + part-status blobs on
 // one partfile tag. Allocates `rle_state[ecid]` if absent; mutates
 // it on each call (XOR-deltas against the prior decoded buffer).
-// Output lands in `d.decoded_gaps` + `d.decoded_part_sources` —
-// HTTP handlers read those without touching the decoder state.
+// Output lands in `f.download.decoded_gaps` + `f.download
+// .decoded_part_sources`. HTTP handlers read those without touching
+// the decoder state.
 void DecodeRleBlobsForPartFile(
 	const CEC_PartFile_Tag *pf,
-	DownloadSnapshot &d,
+	FileSnapshot &f,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state)
 {
 	const std::uint32_t ecid = pf->ID();
-	// Lazily allocate. Default-constructed PartFileEncoderData has
-	// empty 3 RLE_Data members which the first DecodeGaps/Parts
-	// call will size correctly.
 	PartFileEncoderData &enc = rle_state[ecid];
 
 	if (const CECTag *gap_tag = pf->GetTagByName(EC_TAG_PARTFILE_GAP_STATUS)) {
 		ArrayOfUInts64 gaps;
 		enc.DecodeGaps(gap_tag, gaps);
-		d.decoded_gaps.assign(gaps.begin(), gaps.end());
+		f.download.decoded_gaps.assign(gaps.begin(), gaps.end());
 	}
 	if (const CECTag *part_tag = pf->GetTagByName(EC_TAG_PARTFILE_PART_STATUS)) {
 		ArrayOfUInts16 parts;
 		enc.DecodeParts(part_tag, parts);
-		d.decoded_part_sources.assign(parts.begin(), parts.end());
+		f.download.decoded_part_sources.assign(parts.begin(), parts.end());
 	}
 }
 
@@ -663,28 +660,32 @@ void DecodeRleBlobsForPartFile(
 
 void ApplyGetUpdateToDownloads(
 	const CECPacket *resp,
-	std::map<std::uint32_t, DownloadSnapshot> &cache,
+	std::map<std::uint32_t, FileSnapshot> &cache,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state)
 {
 	if (!resp) return;
 
 	// Walk the response top level. Three tag-name dispatches:
-	//  * EC_TAG_PARTFILE     → merge into downloads cache
-	//  * EC_TAG_FILE_REMOVED → erase ECID from cache + rle_state
+	//  * EC_TAG_PARTFILE     → set is_downloading + merge download side
+	//  * EC_TAG_FILE_REMOVED → clear download role; drop entry if it
+	//                          had no shared role either
 	//  * everything else     → handled by sibling Shared/Servers walkers
-	//
-	// INC_UPDATE ships full identity on first encounter for a new
-	// ECID (no two-pass needed), so the cache-miss branch inserts a
-	// fully-populated snapshot in one pass. CValueMap suppresses
-	// individual tags on subsequent ticks; AssignIfExist in
-	// MergePartFileTag leaves cached values intact when absent.
 	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
 		const CECTag *t = &*it;
 		const ec_tagname_t name = t->GetTagName();
 
 		if (name == EC_TAG_FILE_REMOVED) {
 			const std::uint32_t ecid = static_cast<std::uint32_t>(t->GetInt());
-			cache.erase(ecid);
+			auto fit = cache.find(ecid);
+			if (fit != cache.end()) {
+				fit->second.is_downloading = false;
+				// Reset the download sub-block so a future role-true
+				// transition (or even a stale FindDownload lookup
+				// after the role flag was checked) can't surface
+				// stale stats from this dead downloading period.
+				fit->second.download = FileSnapshot::DownloadSide{};
+				if (!fit->second.is_shared) cache.erase(fit);
+			}
 			rle_state.erase(ecid);
 			continue;
 		}
@@ -695,22 +696,19 @@ void ApplyGetUpdateToDownloads(
 
 		auto map_it = cache.find(ecid);
 		if (map_it == cache.end()) {
-			// Brand-new ECID. INC_UPDATE constructor doesn't short-
-			// circuit identity (the early-return at
-			// ECSpecialCoreTags.cpp:244-246 fires only for
-			// EC_DETAIL_UPDATE), so HASH/NAME/SIZE arrive in this tag.
-			DownloadSnapshot d;
-			d.ecid = ecid;
-			d.hash = TagHashLower(pf);
-			MergePartFileTag(pf, d, /*is_new=*/true);
-			DecodeRleBlobsForPartFile(pf, d, rle_state);
-			cache.emplace(ecid, std::move(d));
+			// Brand-new ECID. INC_UPDATE ships HASH/NAME/SIZE on first
+			// encounter (no two-pass needed) so the insert is fully
+			// populated in one pass.
+			FileSnapshot f;
+			f.ecid           = ecid;
+			f.hash           = TagHashLower(pf);
+			f.is_downloading = true;
+			MergePartFileTag(pf, f, /*is_new=*/true);
+			DecodeRleBlobsForPartFile(pf, f, rle_state);
+			cache.emplace(ecid, std::move(f));
 		} else {
+			map_it->second.is_downloading = true;
 			MergePartFileTag(pf, map_it->second, /*is_new=*/false);
-			// RLE_Data tolerates "no new data" gracefully — on a stat-
-			// only tick where GAP/PART are suppressed, the decoder
-			// leaves the prior decoded vectors intact (and we don't
-			// overwrite map_it->second.decoded_*).
 			DecodeRleBlobsForPartFile(pf, map_it->second, rle_state);
 		}
 	}
@@ -719,36 +717,37 @@ void ApplyGetUpdateToDownloads(
 
 void ApplyGetUpdateToShared(
 	const CECPacket *resp,
-	std::map<std::uint32_t, SharedSnapshot> &cache,
-	const std::map<std::uint32_t, std::pair<std::string, std::string>>
-		&dl_identity_fallback)
+	std::map<std::uint32_t, FileSnapshot> &cache)
 {
 	if (!resp) return;
 
 	// amuled's "shared files" surface is the union of completed
 	// knownfiles (`theApp->sharedfiles` → EC_TAG_KNOWNFILE, always
-	// shared) and partfiles in the downloadqueue with `IsShared()=
-	// true` (≥1 chunk complete → can serve upload requests →
-	// EC_TAG_PARTFILE with `EC_TAG_PARTFILE_SHARED` child tag).
-	// So this walker consumes BOTH top-level tag types and gates
-	// partfile entries on the SHARED flag. CEC_PartFile_Tag derives
-	// from CEC_SharedFile_Tag — same identity tags + same stat tags
-	// — so we treat a PARTFILE as a CEC_SharedFile_Tag and pass it
-	// through MergeSharedTag unchanged.
+	// shared) and partfiles with `IsShared()==true` (≥1 chunk complete
+	// → EC_TAG_PARTFILE with `EC_TAG_PARTFILE_SHARED` child tag).
+	// CEC_PartFile_Tag derives from CEC_SharedFile_Tag (same identity
+	// + stat tag names) so we cast and pass through MergeSharedTag.
 	//
 	// EC_TAG_PARTFILE_SHARED is CValueMap-suppressed when unchanged:
-	// present-and-true → insert/update; present-and-false → evict
-	// from shared cache (no longer shared); absent → preserve prior.
+	// present-and-true → set is_shared + merge; present-and-false →
+	// clear is_shared (file stays in m_files if still downloading);
+	// absent → preserve prior is_shared state.
 	//
 	// EC_TAG_FILE_REMOVED markers can target either a partfile or
-	// knownfile ECID (unified server-side); we erase unconditionally,
-	// missing-key erase is a no-op.
+	// knownfile ECID (unified server-side); we clear the shared role
+	// + drop the entry if it had no downloading role either.
 	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
 		const CECTag *t = &*it;
 		const ec_tagname_t name = t->GetTagName();
 
 		if (name == EC_TAG_FILE_REMOVED) {
-			cache.erase(static_cast<std::uint32_t>(t->GetInt()));
+			const std::uint32_t ecid = static_cast<std::uint32_t>(t->GetInt());
+			auto fit = cache.find(ecid);
+			if (fit != cache.end()) {
+				fit->second.is_shared = false;
+				fit->second.shared    = FileSnapshot::SharedSide{};
+				if (!fit->second.is_downloading) cache.erase(fit);
+			}
 			continue;
 		}
 		if (name != EC_TAG_KNOWNFILE && name != EC_TAG_PARTFILE) continue;
@@ -761,47 +760,49 @@ void ApplyGetUpdateToShared(
 			if (shared_flag) {
 				const bool is_shared = (shared_flag->GetInt() != 0);
 				if (!is_shared) {
-					// Partfile transitioned from shared → unshared (or
-					// arrived for the first time unshared). Evict any
-					// prior cache entry; skip the merge.
-					cache.erase(ecid);
+					// Partfile is_shared transitioned false (or
+					// arrived for the first time unshared).
+					// Reset the shared sub-block; entry stays in
+					// m_files because downloading role may still
+					// hold it. If it doesn't, the downloads-walker
+					// FILE_REMOVED will drop it.
+					auto fit = cache.find(ecid);
+					if (fit != cache.end()) {
+						fit->second.is_shared = false;
+						fit->second.shared    = FileSnapshot::SharedSide{};
+					}
 					continue;
 				}
 				// is_shared == true → fall through to the merge below.
 			} else {
-				// Flag suppressed by the CValueMap → "no change". For a
-				// cached entry, keep it and apply stat deltas. For an
-				// unseen ECID, we have no signal that it's shared, so
-				// skip — the next tick that flips its state will emit
-				// the flag and we'll catch it then.
-				if (cache.find(ecid) == cache.end()) continue;
+				// Flag suppressed (no change). Only meaningful for an
+				// entry we already know was shared.
+				const auto fit = cache.find(ecid);
+				if (fit == cache.end() || !fit->second.is_shared) continue;
 			}
 		}
 
 		auto map_it = cache.find(ecid);
 		if (map_it == cache.end()) {
-			SharedSnapshot s;
-			s.ecid = ecid;
-			// PARTFILE_HASH suppressed on a partfile-becoming-shared
-			// tick → fall back to downloads cache (populated this
-			// same tick from the partfile's non-suppressed first
-			// update). If neither has identity, defer the insert.
-			// KNOWNFILE always ships HASH on first frame (no
-			// CValueMap suppression path for it), so the fallback
-			// guard is partfile-only.
-			if (name == EC_TAG_PARTFILE
-			    && sf->GetTagByName(EC_TAG_PARTFILE_HASH) == NULL) {
-				auto it = dl_identity_fallback.find(ecid);
-				if (it == dl_identity_fallback.end()
-				    || it->second.first.empty()) continue;
-				s.hash = it->second.first;
-				s.name = it->second.second;
-			} else {
-				s.hash = TagHashLower(sf);
-			}
-			MergeSharedTag(sf, s);
-			cache.emplace(ecid, std::move(s));
+			// Brand-new ECID to the unified map (knownfile arriving
+			// without a prior downloads-walker tick — its first
+			// frame ships HASH unconditionally).
+			FileSnapshot f;
+			f.ecid      = ecid;
+			f.hash      = TagHashLower(sf);
+			f.is_shared = true;
+			MergeSharedTag(sf, f);
+			cache.emplace(ecid, std::move(f));
 		} else {
+			// Existing entry — flip is_shared on, merge fields.
+			// If hash arrived (e.g. KNOWNFILE first frame) and we
+			// don't already have one (rare path: prior partfile-
+			// walker had hash suppressed), capture it now.
+			if (map_it->second.hash.empty()) {
+				const std::string h = TagHashLower(sf);
+				if (!h.empty()) map_it->second.hash = h;
+			}
+			map_it->second.is_shared = true;
 			MergeSharedTag(sf, map_it->second);
 		}
 	}
