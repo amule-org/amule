@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4c — /servers, /kad, /categories, /preferences.
+# amuleapi 05-read-servers-kad-categories-prefs — /servers, /kad, /categories, /preferences.
 # Exercises the four endpoints added in this sub-phase. Tolerant of
 # empty caches (e.g. amuled with no configured servers) — asserts
 # envelope shape + per-item field types without requiring specific
 # content.
 #
 # Bring-up:
-#   amuleapi --config-dir=/tmp/amuleapi-phase4c \
+#   amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs \
 #            --host=127.0.0.1 --port=4712 --password=amule \
 #            --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-phase4c ... &
-#   ./phase4c.sh
+#   amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs ... &
+#   ./05-read-servers-kad-categories-prefs.sh
 
 set -u
 set -o pipefail
@@ -22,7 +22,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4c_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_05_read_servers_kad_categories_prefs_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -71,7 +71,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4c smoke @ $HOST"
+echo "amuleapi 05-read-servers-kad-categories-prefs smoke @ $HOST"
 
 # Log in.
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \

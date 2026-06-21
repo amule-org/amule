@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4c-bis — /logs/amule + /logs/serverinfo. amule log
+# amuleapi 06-read-logs — /logs/amule + /logs/serverinfo. amule log
 # rides on STAT_REQ's `EC_TAG_STATS_LOGGER_MESSAGE` channel (per-EC-
 # connection cursor, incremental); server-info log is full-snapshot
 # via `EC_OP_GET_SERVERINFO`.
 #
 # Bring-up:
-#   amuleapi --config-dir=/tmp/amuleapi-phase4cb ... &
-#   ./phase4c-bis.sh
+#   amuleapi --config-dir=/tmp/amuleapi-06-read-logs ... &
+#   ./06-read-logs.sh
 
 set -u
 set -o pipefail
@@ -18,7 +18,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4cb_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_06_read_logs_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -67,7 +67,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4c-bis smoke @ $HOST"
+echo "amuleapi 06-read-logs smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \

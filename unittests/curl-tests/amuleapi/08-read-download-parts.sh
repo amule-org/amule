@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4e — `progress.parts` on `GET /downloads/{hash}` detail.
+# amuleapi 08-read-download-parts — `progress.parts` on `GET /downloads/{hash}` detail.
 #
 # Validates the stateful RLE decoder pass that lands per-part state on
 # the bare-object detail response. The list endpoint (`GET /downloads`)
@@ -31,7 +31,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4e_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_08_read_download_parts_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -80,7 +80,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4e smoke @ $HOST"
+echo "amuleapi 08-read-download-parts smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
@@ -91,7 +91,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 # converge — Phase 1 (UPDATE) surfaces new ECIDs, Phase 2 (FULL) ships
 # identity + GAP/PART blobs. The stateful RLE decoder needs the FULL
 # pass to seed itself before any UPDATE tick can produce a usable
-# decode. Give it 4 s; matches phase4d.sh.
+# decode. Give it 4 s; matches 07-read-stats-and-search-results.sh.
 sleep 4
 
 # --- 1. List endpoint MUST NOT carry `progress.parts`. -------------

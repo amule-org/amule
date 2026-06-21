@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 6 — search.
+# amuleapi 19-search — search.
 #
 # Endpoints:
 #   POST /api/v0/search                                   — EC_OP_SEARCH_START
@@ -39,7 +39,7 @@ TEST_QUERY="ubuntu"
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase6_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_19_search_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -86,7 +86,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 6 smoke @ $HOST"
+echo "amuleapi 19-search smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)

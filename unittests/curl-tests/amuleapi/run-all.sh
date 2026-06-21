@@ -2,12 +2,12 @@
 #
 # Orchestrator for the amuleapi curl-smoke matrix.
 #
-# Brings up a fresh amuleapi daemon for each phase script, runs the
-# script, and aggregates pass/fail. The fresh-daemon-per-phase pattern
-# isolates state across scripts — most importantly, phase3.sh fires
-# the rate-limit lockout (5 failed logins → 300 s IP lockout) which
-# would block every subsequent phase's /auth/login. Restarting wipes
-# the in-memory CRateLimiter buckets.
+# Brings up a fresh amuleapi daemon for each script, runs the
+# script, and aggregates pass/fail. The fresh-daemon-per-script
+# pattern isolates state — most importantly, 02-auth.sh fires the
+# rate-limit lockout (5 failed logins → 300 s IP lockout) which would
+# block every subsequent script's /auth/login. Restarting wipes the
+# in-memory CRateLimiter buckets.
 #
 # Setup per phase:
 #   1. pkill any running amuleapi
@@ -22,9 +22,9 @@
 #   7. run the phase script
 #
 # Usage:
-#   ./run-all.sh                         # run every phase script in
-#                                        # alphanumeric order
-#   ./run-all.sh phase5a.sh phase5b.sh   # run a subset
+#   ./run-all.sh                                                 # run every script in
+#                                                                # the canonical order
+#   ./run-all.sh 12-downloads-add-patch.sh 13-downloads-delete-clear.sh  # run a subset
 
 set -u
 
@@ -60,15 +60,16 @@ run_phase() {
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
 		--host=127.0.0.1 --port=4712 --password=amule \
 		--set-guest-pass=guestpass > /dev/null 2>&1
-	# phase12 exercises the static-frontend serve path. It plants
-	# symlinks + an oversized file into StaticRoot during the run, so
-	# the dir has to be writable. The bundled source tree is read-only
-	# in container CI; copy the placeholder out to a /tmp scratch dir
-	# and point StaticRoot at the copy. Other phases leave it empty so
-	# the install-path discovery chain stays exercised by phase12 only.
-	if [ "$script" = "phase12.sh" ]; then
+	# 27-static-frontend exercises the static-frontend serve path. It
+	# plants symlinks + an oversized file into StaticRoot during the
+	# run, so the dir has to be writable. The bundled source tree is
+	# read-only in container CI; copy the placeholder out to a /tmp
+	# scratch dir and point StaticRoot at the copy. Other scripts
+	# leave it empty so the install-path discovery chain stays
+	# exercised by 27-static-frontend only.
+	if [ "$script" = "27-static-frontend.sh" ]; then
 		STATIC_SRC="$ROOT/src/webapi/static"
-		STATIC_DIR=/tmp/amuleapi-phase12-static
+		STATIC_DIR=/tmp/amuleapi-static-frontend
 		rm -rf "$STATIC_DIR"
 		mkdir -p "$STATIC_DIR"
 		if [ -d "$STATIC_SRC" ]; then
@@ -94,22 +95,21 @@ run_phase() {
 		fi
 		sleep 0.5
 	done
-	# Phase scripts that need to bounce the daemon themselves
-	# (phase9.sh rewrites amuleapi.conf to flip CORS modes) read
-	# these envs to know how to restart cleanly.
+	# Scripts that bounce the daemon themselves (25-cors.sh rewrites
+	# amuleapi.conf to flip CORS modes) read these envs to know how
+	# to restart cleanly.
 	AMULEAPI_BIN="$BIN" \
 	AMULEAPI_CONFIG_DIR=/tmp/amuleapi-regtest \
 	AMULEAPI_LOG=/tmp/amuleapi.log \
 	bash "$SCRIPT_DIR/$script"
 	local rc=$?
 	echo "$script exit=$rc"
-	# If a phase failed AND the daemon is currently rate-limiting,
-	# the operator likely hit the phase3 fallout: 7 deliberate
-	# wrong-password attempts armed a 5-minute IP lockout that
-	# subsequent phases inherit when the orchestrator's daemon
-	# restart isn't enough to clear the in-memory bucket. Print
-	# a one-line tip so the operator doesn't lose half an hour
-	# chasing the wrong layer.
+	# If a script failed AND the daemon is currently rate-limiting,
+	# the operator likely hit the 02-auth fallout: 7 deliberate
+	# wrong-password attempts armed a 5-minute IP lockout that later
+	# scripts inherit when the orchestrator's daemon restart isn't
+	# enough to clear the in-memory bucket. Print a one-line tip so
+	# the operator doesn't lose half an hour chasing the wrong layer.
 	if [ "$rc" -ne 0 ]; then
 		local probe=$(curl -s -X POST -H "Content-Type: application/json" \
 			-o /dev/null -w "%{http_code}" \
@@ -117,7 +117,7 @@ run_phase() {
 			http://localhost:4713/api/v0/auth/login 2>/dev/null)
 		if [ "$probe" = "429" ]; then
 			echo "TIP: amuleapi is currently rate-limiting login (HTTP 429)." \
-			     "If you ran phase3 right before this, that's the 7-bad-pass" \
+			     "If you ran 02-auth.sh right before this, that's the 7-bad-pass" \
 			     "arm carried over. Restart amuleapi (kills the bucket)" \
 			     "before re-running."
 		fi
@@ -125,16 +125,39 @@ run_phase() {
 	return $rc
 }
 
-# Phase list: legacy phases first (in canonical order), then Phase 5
-# sub-phases. Only scripts that exist are run — sub-phases not yet
-# landed are skipped.
+# Canonical execution order. Numeric prefix doubles as dependency
+# ordering: auth before any mutation, refresher-consolidation tests
+# before later read tests that rely on the consolidated tick shape,
+# CORS / static-frontend after the API surface tests so failures in
+# the new transports don't mask earlier regressions.
 PHASES=(
-	phase2.sh phase3.sh phase4.sh phase4b.sh phase4c.sh phase4c-bis.sh
-	phase4d.sh phase4e.sh phase4f.sh phase4g.sh phase4h.sh
-	phase5a.sh phase5b.sh phase5c.sh phase5d.sh phase5e.sh
-	phase5f.sh phase5g.sh phase6.sh phase7.sh
-	phase8a.sh phase8b.sh phase8c.sh phase8d.sh
-	phase9.sh phase11.sh phase12.sh
+	01-version-and-errors.sh
+	02-auth.sh
+	03-read-status.sh
+	04-read-downloads-shared.sh
+	05-read-servers-kad-categories-prefs.sh
+	06-read-logs.sh
+	07-read-stats-and-search-results.sh
+	08-read-download-parts.sh
+	09-refresher-consolidation.sh
+	10-refresher-lazy-ondemand.sh
+	11-downloads-default-filter.sh
+	12-downloads-add-patch.sh
+	13-downloads-delete-clear.sh
+	14-servers-mutations.sh
+	15-preferences-patch.sh
+	16-networks-connect.sh
+	17-shared-priority-patch.sh
+	18-categories-crud.sh
+	19-search.sh
+	20-etag-conditional-get.sh
+	21-sse-heartbeat.sh
+	22-sse-diff-emission.sh
+	23-sse-replay.sh
+	24-sse-resync.sh
+	25-cors.sh
+	26-rfc-followup-endpoints.sh
+	27-static-frontend.sh
 )
 
 # Override list from the command line if given.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 8d — typed `resync` event + log_appended.
+# amuleapi 24-sse-resync — typed `resync` event + log_appended.
 #
 # Wire contract for Phase 8d:
 #   * `resync` event replaces Phase 8c's `: replay-gap` SSE
@@ -35,7 +35,7 @@ LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-SSE=$(mktemp -t amuleapi_phase8d.XXXXXX)
+SSE=$(mktemp -t amuleapi_24-sse-resync.XXXXXX)
 trap 'rm -f "$SSE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -53,7 +53,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 8d smoke @ $HOST"
+echo "amuleapi 24-sse-resync smoke @ $HOST"
 
 # Bounce the daemon with a tiny [Streaming]/EventBusRingCapacity so
 # the gap case (Last-Event-ID < OldestId) is reachable in a smoke

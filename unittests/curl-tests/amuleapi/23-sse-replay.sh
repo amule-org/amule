@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 8c — Last-Event-ID replay.
+# amuleapi 23-sse-replay — Last-Event-ID replay.
 #
 # Wire contract for Phase 8c:
 #   * SSE clients reconnecting with a `Last-Event-ID: <N>` request
@@ -17,7 +17,7 @@
 #     id (e.g. stale id from a prior daemon process), the daemon
 #     clamps to NewestId and proceeds — no infinite wait.
 #   * Absent or unparseable header → behaviour identical to 8b
-#     (start from NewestId, no replay). Covered by phase8b.sh
+#     (start from NewestId, no replay). Covered by 22-sse-diff-emission.sh
 #     already, not retested here.
 
 set -u
@@ -32,8 +32,8 @@ TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 FAIL_COUNT=0
 TEST_COUNT=0
 
-SSE1=$(mktemp -t amuleapi_phase8c_1.XXXXXX)
-SSE2=$(mktemp -t amuleapi_phase8c_2.XXXXXX)
+SSE1=$(mktemp -t amuleapi_23_sse_replay_1.XXXXXX)
+SSE2=$(mktemp -t amuleapi_23_sse_replay_2.XXXXXX)
 trap 'rm -f "$SSE1" "$SSE2"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -50,7 +50,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 8c smoke @ $HOST"
+echo "amuleapi 23-sse-replay smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
@@ -217,7 +217,7 @@ else
 		"saw ids >= $CLAMP_ID: $FUTURE_REPLAY"
 fi
 
-# Below-OldestId gap detection is tested in phase8d.sh with the
+# Below-OldestId gap detection is tested in 24-sse-resync.sh with the
 # typed `resync` event (the wire shape 8c shipped as a `: replay-gap`
 # SSE comment was upgraded to the typed event in 8d).
 

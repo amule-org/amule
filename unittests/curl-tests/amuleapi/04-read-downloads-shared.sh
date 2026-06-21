@@ -14,12 +14,12 @@
 # `curl /downloads | jq`).
 #
 # Bring-up convention:
-#   rm -rf /tmp/amuleapi-phase4b && mkdir -p /tmp/amuleapi-phase4b
-#   amuleapi --config-dir=/tmp/amuleapi-phase4b --host=127.0.0.1 \
+#   rm -rf /tmp/amuleapi-04-read-downloads-shared && mkdir -p /tmp/amuleapi-04-read-downloads-shared
+#   amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --host=127.0.0.1 \
 #            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-phase4b --host=127.0.0.1 \
+#   amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --host=127.0.0.1 \
 #            --port=4712 --password=amule &
-#   ./phase4b.sh
+#   ./04-read-downloads-shared.sh
 
 set -u
 set -o pipefail
@@ -30,7 +30,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4b_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_04_read_downloads_shared_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -80,7 +80,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
-echo "amuleapi phase 4b smoke @ $HOST"
+echo "amuleapi 04-read-downloads-shared smoke @ $HOST"
 
 # --- 0. Log in. ----------------------------------------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \

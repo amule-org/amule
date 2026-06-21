@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4d — /stats/tree, /stats/graphs/{graph}, /search/results.
+# amuleapi 07-read-stats-and-search-results — /stats/tree, /stats/graphs/{graph}, /search/results.
 # /stats/tree is a recursive structure; /stats/graphs is a time-series with
 # per-graph path-param + ?width=N tailing; /search/results is read-only
 # until Phase 5 adds POST /search.
@@ -14,7 +14,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4d_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_07_read_stats_and_search_results_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -63,7 +63,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4d smoke @ $HOST"
+echo "amuleapi 07-read-stats-and-search-results smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \

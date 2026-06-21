@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4g — refresher slim-down: GET_ULOAD_QUEUE folded
+# amuleapi 10-refresher-lazy-ondemand — refresher slim-down: GET_ULOAD_QUEUE folded
 # into GET_UPDATE, four lazy ops moved to on-demand TTL-cached fetch.
 #
 # Per-tick EC ops dropped from 8 to 3:
@@ -31,7 +31,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4g_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_10_refresher_lazy_ondemand_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -80,7 +80,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4g smoke @ $HOST"
+echo "amuleapi 10-refresher-lazy-ondemand smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 2 — daemon skeleton smoke. Asserts the single
+# amuleapi 01-version-and-errors — daemon skeleton smoke. Asserts the single
 # `/api/v0/version` endpoint and the error-shape envelope.
 #
 # Usage:
 #   amuleapi --config-dir=/tmp/amuleapi-test &
-#   ./phase2.sh
+#   ./01-version-and-errors.sh
 #
 # Environment:
 #   HOST=localhost:4713   amuleapi endpoint (default port)
@@ -20,7 +20,7 @@ HOST=${HOST:-localhost:4713}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase2_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_01_version_and_errors_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -70,7 +70,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
-echo "amuleapi phase 2 smoke @ $HOST"
+echo "amuleapi 01-version-and-errors smoke @ $HOST"
 
 # 1. GET /api/v0/version → 200 + JSON with name=amuleapi, api_version=v0.
 _curl "$HOST/api/v0/version"

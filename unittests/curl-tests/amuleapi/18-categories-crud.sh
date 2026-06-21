@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 5g — categories CRUD.
+# amuleapi 18-categories-crud — categories CRUD.
 #
 # Endpoints:
 #   POST   /api/v0/categories             — create
@@ -19,13 +19,13 @@ HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
-TEST_NAME="phase5g-smoke-cat"
-TEST_PATH="/tmp/phase5g-cat-dir"
+TEST_NAME="18-categories-crud-smoke-cat"
+TEST_PATH="/tmp/18-categories-crud-cat-dir"
 
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase5g_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_18_categories_crud_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -74,7 +74,7 @@ fi
 
 mkdir -p "$TEST_PATH"
 
-echo "amuleapi phase 5g smoke @ $HOST"
+echo "amuleapi 18-categories-crud smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
@@ -109,7 +109,7 @@ fi
 # --- 2. POST /categories (create). --------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"name\":\"$TEST_NAME\",\"path\":\"$TEST_PATH\",\"comment\":\"phase5g test\",\"priority\":\"high\"}" \
+	-d "{\"name\":\"$TEST_NAME\",\"path\":\"$TEST_PATH\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
 	"$HOST/api/v0/categories"
 _assert_status 201 "POST /categories (create) → 201"
 _assert_json_eq '.ok'   true        'create response.ok==true'
@@ -148,10 +148,10 @@ _assert_status 400 "POST /categories (bad priority enum) → 400"
 # --- 4. PATCH /categories/{idx}. ----------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"comment":"updated by phase5g","priority":"low"}' \
+	-d '{"comment":"updated by 18-categories-crud","priority":"low"}' \
 	"$HOST/api/v0/categories/$NEW_IDX"
 _assert_status 200 "PATCH /categories/$NEW_IDX → 200"
-_assert_json_eq '.comment'  'updated by phase5g' 'PATCH response shows new comment'
+_assert_json_eq '.comment'  'updated by 18-categories-crud' 'PATCH response shows new comment'
 _assert_json_eq '.priority' low                  'PATCH response shows priority=low'
 
 # Immediate GET (no-stale).
@@ -159,11 +159,11 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
 OBS_COMMENT=$(printf '%s' "$CURL_BODY" \
 	| jq -r --arg n "$TEST_NAME" \
 	  '.categories[] | select(.name == $n) | .comment')
-if [ "$OBS_COMMENT" = "updated by phase5g" ]; then
+if [ "$OBS_COMMENT" = "updated by 18-categories-crud" ]; then
 	_pass "IMMEDIATE GET /categories shows updated comment (no stale)"
 else
 	_fail "GET /categories staleness after PATCH" \
-		"expected 'updated by phase5g', got '$OBS_COMMENT'"
+		"expected 'updated by 18-categories-crud', got '$OBS_COMMENT'"
 fi
 
 # --- 5. PATCH error paths. ----------------------------------------

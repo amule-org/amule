@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 5c — server lifecycle mutations.
+# amuleapi 14-servers-mutations — server lifecycle mutations.
 #
 # Endpoints:
 #   POST   /api/v0/servers                   — add by {address, name?}
@@ -32,12 +32,12 @@ GUEST_PASS=${GUEST_PASS:-guestpass}
 # servers configured; the smoke adds a name we can target by string
 # search and cleans it up at the end.
 TEST_ADDRESS="185.65.45.144:4232"
-TEST_NAME="phase5c-smoke-tag"
+TEST_NAME="14-servers-mutations-smoke-tag"
 
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase5c_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_14_servers_mutations_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -84,7 +84,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 5c smoke @ $HOST"
+echo "amuleapi 14-servers-mutations smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)

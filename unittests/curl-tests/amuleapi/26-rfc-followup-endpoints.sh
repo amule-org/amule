@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi phase 11 — endpoints added to align with the RFC PR #132
+# amuleapi 26-rfc-followup-endpoints — endpoints added to align with the RFC PR #132
 # review:
 #
 #   * GET    /status                       — `kad.network: {users,files,nodes}` rollup
@@ -29,7 +29,7 @@ TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C
 
 FAIL_COUNT=0
 TEST_COUNT=0
-SSE=$(mktemp -t amuleapi_phase11_sse.XXXXXX)
+SSE=$(mktemp -t amuleapi_26_rfc_followup_endpoints_sse.XXXXXX)
 trap '
 	rm -f "$SSE"
 	# Best-effort: delete any partfile this script may have left in
@@ -57,7 +57,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version"; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 11 smoke @ $HOST"
+echo "amuleapi 26-rfc-followup-endpoints smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)

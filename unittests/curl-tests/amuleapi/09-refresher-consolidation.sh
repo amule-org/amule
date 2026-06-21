@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4f — EC_OP_GET_UPDATE @ EC_DETAIL_INC_UPDATE
+# amuleapi 09-refresher-consolidation — EC_OP_GET_UPDATE @ EC_DETAIL_INC_UPDATE
 # refresher consolidation.
 #
 # Drops the per-substruct GET_DLOAD_QUEUE / GET_SHARED_FILES /
@@ -38,7 +38,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4f_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_09_refresher_consolidation_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -87,7 +87,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4f smoke @ $HOST"
+echo "amuleapi 09-refresher-consolidation smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
@@ -194,7 +194,7 @@ fi
 # /clients now covers the full peer surface (every upload_state,
 # including queue waiters and download-side peers). Consumers filter
 # client-side by upload_state == "uploading" when they want the
-# legacy /uploads view. phase4g.sh exercises the new shape.
+# legacy /uploads view. 10-refresher-lazy-ondemand.sh exercises the new shape.
 _curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/uploads"
 _assert_status 404 "GET /uploads → 404 (retired in Phase 4g)"
 

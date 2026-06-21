@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4h — /downloads default-filter completed + status
+# amuleapi 11-downloads-default-filter — /downloads default-filter completed + status
 # decode fix.
 #
 # Two related changes:
@@ -22,7 +22,7 @@
 #   `POST /downloads/clear_completed`              (bulk-clear, no body)
 #   `POST /downloads/clear_completed {"hash":...}` (single-entry clear)
 # Both wire to EC_OP_CLEAR_COMPLETED. `DELETE /downloads/{hash}` is
-# active-only and 409s on completed entries — see phase5b for the
+# active-only and 409s on completed entries — see 13-downloads-delete-clear for the
 # 409 + per-entry clear assertions.
 
 set -u
@@ -34,7 +34,7 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4h_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_11_downloads_default_filter_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -83,7 +83,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 4h smoke @ $HOST"
+echo "amuleapi 11-downloads-default-filter smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \

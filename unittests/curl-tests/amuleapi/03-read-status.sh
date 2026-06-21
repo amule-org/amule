@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 4a — read endpoints, /status only. Validates the
+# amuleapi 03-read-status — read endpoints, /status only. Validates the
 # refresher → state cache → handler chain end-to-end against a live
 # amuled. The remaining 12 endpoints (downloads, uploads, shared,
 # servers, kad, categories, logs/amule, logs/serverinfo, preferences,
@@ -8,12 +8,12 @@
 # sub-phases (4b/4c/4d); their phase scripts share this directory.
 #
 # Bring-up convention:
-#   rm -rf /tmp/amuleapi-phase4 && mkdir -p /tmp/amuleapi-phase4
-#   amuleapi --config-dir=/tmp/amuleapi-phase4 --host=127.0.0.1 \
+#   rm -rf /tmp/amuleapi-03-read-status && mkdir -p /tmp/amuleapi-03-read-status
+#   amuleapi --config-dir=/tmp/amuleapi-03-read-status --host=127.0.0.1 \
 #            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-phase4 --host=127.0.0.1 \
+#   amuleapi --config-dir=/tmp/amuleapi-03-read-status --host=127.0.0.1 \
 #            --port=4712 --password=amule &
-#   ./phase4.sh
+#   ./03-read-status.sh
 #
 # Environment:
 #   HOST=localhost:4713          amuleapi endpoint
@@ -35,7 +35,7 @@ GUEST_PASS=${GUEST_PASS:-guestpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase4_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_03_read_status_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -85,7 +85,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
-echo "amuleapi phase 4a smoke @ $HOST"
+echo "amuleapi 03-read-status smoke @ $HOST"
 
 # --- 1. /status without auth → 401 unauthorized. -------------------
 _curl "$HOST/api/v0/status"
@@ -156,7 +156,7 @@ else
 	# run-all.sh always configures a guest password; if a future
 	# fixture drops it, surface the gap rather than silently
 	# pretending the guest read-gate was exercised.
-	_die "guest login failed in phase4 fixture — phase4 is supposed to verify both roles can read /status; check that GUEST_PASS is wired"
+	_die "guest login failed in 03-read-status fixture — 03-read-status is supposed to verify both roles can read /status; check that GUEST_PASS is wired"
 fi
 
 # --- 5. Method gate. ----------------------------------------------

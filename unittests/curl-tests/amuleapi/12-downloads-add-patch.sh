@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 5a — download lifecycle mutations.
+# amuleapi 12-downloads-add-patch — download lifecycle mutations.
 #
 # Endpoints landed:
 #   POST  /api/v0/downloads             — add a download by ed2k_link
@@ -37,7 +37,7 @@ TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase5a_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_12_downloads_add_patch_body.XXXXXX)
 trap '
 	rm -f "$CURL_BODY_FILE"
 	# Best-effort partfile cleanup so the Ubuntu ISO doesn'\''t survive
@@ -95,7 +95,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 5a smoke @ $HOST"
+echo "amuleapi 12-downloads-add-patch smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \

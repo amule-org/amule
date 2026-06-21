@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 8b — EventBus + Refresher diff emission.
+# amuleapi 22-sse-diff-emission — EventBus + Refresher diff emission.
 #
 # Wire contract for Phase 8b:
 #   * After each successful refresher tick, the daemon walks the
@@ -36,7 +36,7 @@ TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 FAIL_COUNT=0
 TEST_COUNT=0
 
-SSE_OUT=$(mktemp -t amuleapi_phase8b_sse.XXXXXX)
+SSE_OUT=$(mktemp -t amuleapi_22_sse_diff_emission_sse.XXXXXX)
 trap '
 	rm -f "$SSE_OUT"
 	# Best-effort partfile cleanup so the 6.6 GB Ubuntu ISO doesn'\''t
@@ -62,7 +62,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 8b smoke @ $HOST"
+echo "amuleapi 22-sse-diff-emission smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
@@ -215,8 +215,8 @@ fi
 #
 # Open two SSE streams concurrently. Trigger one mutation. Both
 # streams should observe the resulting event.
-SSE_A=$(mktemp -t amuleapi_phase8b_a.XXXXXX)
-SSE_B=$(mktemp -t amuleapi_phase8b_b.XXXXXX)
+SSE_A=$(mktemp -t amuleapi_22_sse_diff_emission_a.XXXXXX)
+SSE_B=$(mktemp -t amuleapi_22_sse_diff_emission_b.XXXXXX)
 (curl -s -m 10 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/events" >> "$SSE_A" 2>&1) &
 PID_A=$!

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 3 — auth surface. Exercises /api/v0/auth/login,
+# amuleapi 02-auth — auth surface. Exercises /api/v0/auth/login,
 # /auth/session, /auth/logout against a freshly-started amuleapi
 # whose admin password is `adminpass` and whose guest password is
 # unset.
 #
 # Bring-up convention (matches the README in the parent dir):
-#   rm -rf /tmp/amuleapi-phase3 && mkdir -p /tmp/amuleapi-phase3
-#   amuleapi --config-dir=/tmp/amuleapi-phase3 --host=127.0.0.1 \
+#   rm -rf /tmp/amuleapi-02-auth && mkdir -p /tmp/amuleapi-02-auth
+#   amuleapi --config-dir=/tmp/amuleapi-02-auth --host=127.0.0.1 \
 #            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-phase3 --host=127.0.0.1 \
+#   amuleapi --config-dir=/tmp/amuleapi-02-auth --host=127.0.0.1 \
 #            --port=4712 --password=amule &
-#   ./phase3.sh
+#   ./02-auth.sh
 #
 # Environment:
 #   HOST=localhost:4713         amuleapi endpoint
@@ -28,9 +28,9 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase3_body.XXXXXX)
-CURL_HDR_FILE=$(mktemp -t amuleapi_phase3_hdr.XXXXXX)
-COOKIE_JAR=$(mktemp -t amuleapi_phase3_cookies.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_02_auth_body.XXXXXX)
+CURL_HDR_FILE=$(mktemp -t amuleapi_02_auth_hdr.XXXXXX)
+COOKIE_JAR=$(mktemp -t amuleapi_02_auth_cookies.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE" "$CURL_HDR_FILE" "$COOKIE_JAR"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -92,7 +92,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
-echo "amuleapi phase 3 smoke @ $HOST"
+echo "amuleapi 02-auth smoke @ $HOST"
 
 # --- 1. Login with wrong password → 401 invalid_credentials. -------
 _curl -X POST -H "Content-Type: application/json" \

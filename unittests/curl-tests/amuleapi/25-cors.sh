@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 9 — CORS opt-in.
+# amuleapi 25-cors — CORS opt-in.
 #
 # Wire contract:
 #   * `AllowCORS=0` (default): no `Access-Control-*` headers on any
@@ -38,9 +38,9 @@ LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-HDR=$(mktemp -t amuleapi_phase9_hdr.XXXXXX)
-BODY=$(mktemp -t amuleapi_phase9_body.XXXXXX)
-SSE=$(mktemp -t amuleapi_phase9_sse.XXXXXX)
+HDR=$(mktemp -t amuleapi_25_cors_hdr.XXXXXX)
+BODY=$(mktemp -t amuleapi_25_cors_body.XXXXXX)
+SSE=$(mktemp -t amuleapi_25_cors_sse.XXXXXX)
 trap 'rm -f "$HDR" "$BODY" "$SSE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -60,7 +60,7 @@ if [ ! -x "$BIN" ]; then
 	_die "amuleapi binary not found at $BIN. Set AMULEAPI_BIN to override."
 fi
 
-echo "amuleapi phase 9 smoke @ $HOST (bin=$BIN config=$CONFIG_DIR)"
+echo "amuleapi 25-cors smoke @ $HOST (bin=$BIN config=$CONFIG_DIR)"
 
 # Helper: rewrite amuleapi.conf with a given AllowCORS value and
 # allowlist, then bounce the daemon. The first three sections are

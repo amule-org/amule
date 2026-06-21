@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 8a — Server-Sent Events: streaming infrastructure +
+# amuleapi 21-sse-heartbeat — Server-Sent Events: streaming infrastructure +
 # heartbeat-only /events endpoint.
 #
 # Wire contract for Phase 8a:
@@ -29,8 +29,8 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase8a_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_phase8a_head.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_21_sse_heartbeat_body.XXXXXX)
+CURL_HEAD_FILE=$(mktemp -t amuleapi_21_sse_heartbeat_head.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -63,7 +63,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 8a smoke @ $HOST"
+echo "amuleapi 21-sse-heartbeat smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)

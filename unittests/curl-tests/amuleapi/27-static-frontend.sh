@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi phase 12 — static-frontend fallthrough.
+# amuleapi 27-static-frontend — static-frontend fallthrough.
 #
 # Asserts that GET / HEAD requests outside `/api/` are served from the
 # directory pointed to by `[Server]/StaticRoot` when set; that the
@@ -11,7 +11,7 @@
 #
 # Requires `[Server]/StaticRoot` set to a writable directory containing
 # an `index.html` (the script plants symlinks + a 17 MiB sentinel there
-# during the run). `run-all.sh` provisions /tmp/amuleapi-phase12-static
+# during the run). `run-all.sh` provisions /tmp/amuleapi-27-static-frontend-static
 # automatically; manual runs need to edit the conf themselves.
 # Note: discovery of the install-path default (`AMULEAPI_STATIC_DIR`,
 # bundle Resources, wxStandardPaths) is covered by StaticFsTest at the
@@ -19,7 +19,7 @@
 #
 # Usage:
 #   amuleapi --config-dir=/tmp/amuleapi-regtest &
-#   ./phase12.sh
+#   ./27-static-frontend.sh
 #
 # Exits 0 on success, 1 on any failed assertion, 2 on bring-up error.
 
@@ -32,8 +32,8 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase12_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_phase12_head.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_27_static_frontend_body.XXXXXX)
+CURL_HEAD_FILE=$(mktemp -t amuleapi_27_static_frontend_head.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -76,7 +76,7 @@ fi
 # Resolve the configured StaticRoot from the daemon's conf so the
 # script can plant a symlink + oversized file in it during the run.
 # run-all.sh provisions a writable /tmp scratch dir before each
-# phase12 run; for manual runs, set StaticRoot in amuleapi.conf to a
+# 27-static-frontend run; for manual runs, set StaticRoot in amuleapi.conf to a
 # writable directory containing an index.html before launching the
 # daemon. (Discovery of the install-path default is unit-tested in
 # StaticFsTest and manually verified per-platform — this phase is
@@ -93,10 +93,10 @@ if [ ! -d "$STATIC_ROOT" ]; then
 	_die "StaticRoot=$STATIC_ROOT in conf does not exist on disk"
 fi
 if [ ! -w "$STATIC_ROOT" ]; then
-	_die "StaticRoot=$STATIC_ROOT is not writable (phase12 plants symlinks + an oversized file there)"
+	_die "StaticRoot=$STATIC_ROOT is not writable (27-static-frontend plants symlinks + an oversized file there)"
 fi
 
-echo "amuleapi phase 12 @ $HOST — StaticRoot=$STATIC_ROOT"
+echo "amuleapi 27-static-frontend @ $HOST — StaticRoot=$STATIC_ROOT"
 
 # Stage transient assets in StaticRoot for the duration of the run.
 # Restore the directory's pre-test state on exit so re-running doesn't

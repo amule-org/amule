@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 7 — ETag conditional GET.
+# amuleapi 20-etag-conditional-get — ETag conditional GET.
 #
 # Wire contract:
 #   * Every GET / HEAD that returns 200 carries an `ETag: "<hex>"`
@@ -32,8 +32,8 @@ ADMIN_PASS=${ADMIN_PASS:-adminpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase7_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_phase7_head.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_20_etag_conditional_get_body.XXXXXX)
+CURL_HEAD_FILE=$(mktemp -t amuleapi_20_etag_conditional_get_head.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -86,7 +86,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 7 smoke @ $HOST"
+echo "amuleapi 20-etag-conditional-get smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)

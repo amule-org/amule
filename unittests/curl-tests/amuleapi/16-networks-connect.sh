@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# amuleapi Phase 5e — connection control mutations.
+# amuleapi 16-networks-connect — connection control mutations.
 #
 # Endpoints:
 #   POST /api/v0/networks/connect       — EC_OP_CONNECT (all enabled
@@ -26,7 +26,7 @@ GUEST_PASS=${GUEST_PASS:-guestpass}
 FAIL_COUNT=0
 TEST_COUNT=0
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_phase5e_body.XXXXXX)
+CURL_BODY_FILE=$(mktemp -t amuleapi_16_networks_connect_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
@@ -73,7 +73,7 @@ if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/version" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
-echo "amuleapi phase 5e smoke @ $HOST"
+echo "amuleapi 16-networks-connect smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
