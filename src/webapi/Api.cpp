@@ -291,6 +291,25 @@ std::string MakeClearCookie(const std::string &name)
 const char *const kSessionCookieName = "amuleapi_token";
 
 
+// Try parsing `key` as a uint32 ECID (1..10 decimal digits, no leading
+// zero except "0" alone). 32-char hex hashes can never satisfy this, so
+// callers use it to disambiguate /downloads/{key} and /shared/{key}
+// captures between hash and ECID without an explicit type-prefix.
+bool TryParseEcid(const std::string &key, std::uint32_t &out)
+{
+	if (key.empty() || key.size() > 10) return false;
+	if (key.size() > 1 && key[0] == '0') return false;
+	std::uint64_t v = 0;
+	for (char c : key) {
+		if (c < '0' || c > '9') return false;
+		v = v * 10 + (c - '0');
+		if (v > 0xFFFFFFFFu) return false;
+	}
+	out = static_cast<std::uint32_t>(v);
+	return true;
+}
+
+
 }  // namespace
 
 
@@ -692,18 +711,19 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleKadBootstrap(req);
 	}
 
-	// shared file priority PATCH.
+	// shared file priority PATCH. `{key}` is the lowercase 32-char hex
+	// hash OR the decimal ECID.
 	{
 		static const auto shared_detail =
-			web_api_path::ParsePattern("/api/v0/shared/{hash}");
+			web_api_path::ParsePattern("/api/v0/shared/{key}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_detail, path_segs, caps)) {
 			if (req.method != "PATCH") {
 				return ErrorResponse(405, "method_not_allowed",
-					"only PATCH on /shared/{hash}");
+					"only PATCH on /shared/{key}");
 			}
-			return HandleSharedPatch(req, caps["hash"]);
+			return HandleSharedPatch(req, caps["key"]);
 		}
 	}
 
@@ -829,26 +849,28 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	// /downloads/{hash} — single-resource detail (GET / HEAD) and the
-	// mutation surface (PATCH for status/priority/category).
-	// adds DELETE (clear-completed single).
+	// /downloads/{key} — single-resource detail (GET / HEAD) and the
+	// mutation surface (PATCH for status/priority/category, DELETE for
+	// clear-completed single). `{key}` is the lowercase 32-char hex
+	// hash OR the decimal ECID; the handler dispatches on shape (see
+	// TryParseEcid).
 	{
 		static const auto download_detail =
-			web_api_path::ParsePattern("/api/v0/downloads/{hash}");
+			web_api_path::ParsePattern("/api/v0/downloads/{key}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(download_detail, path_segs, caps)) {
 			if (req.method == "GET" || req.method == "HEAD") {
-				return HandleDownloadDetail(req, caps["hash"]);
+				return HandleDownloadDetail(req, caps["key"]);
 			}
 			if (req.method == "PATCH") {
-				return HandleDownloadPatch(req, caps["hash"]);
+				return HandleDownloadPatch(req, caps["key"]);
 			}
 			if (req.method == "DELETE") {
-				return HandleDownloadDelete(req, caps["hash"]);
+				return HandleDownloadDelete(req, caps["key"]);
 			}
 			return ErrorResponse(405, "method_not_allowed",
-				"only GET / HEAD / PATCH / DELETE on /downloads/{hash}");
+				"only GET / HEAD / PATCH / DELETE on /downloads/{key}");
 		}
 	}
 
@@ -1657,7 +1679,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 
 CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	const CHttpServer::Request &req,
-	const std::string          &hash)
+	const std::string          &key)
 {
 	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
@@ -1668,18 +1690,23 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// Canonicalise the URL hash to lowercase for the lookup —
-	// `FindDownload` matches against the State-side lowercase hash
-	// we wrote during the refresher tick, so a client typing the
-	// hash uppercase still hits.
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(),
-		[](unsigned char c) { return std::tolower(c); });
-
+	// {key} accepts hash OR ECID. ECID = O(1) map lookup; hash =
+	// case-folded scan (State writes lowercase, accept any case
+	// from the URL).
 	webapi::DownloadSnapshot d;
-	if (!m_state.FindDownload(needle, d)) {
+	std::uint32_t ecid;
+	bool found = false;
+	if (TryParseEcid(key, ecid)) {
+		found = m_state.FindDownloadByEcid(ecid, d);
+	} else {
+		std::string needle = key;
+		std::transform(needle.begin(), needle.end(), needle.begin(),
+			[](unsigned char c) { return std::tolower(c); });
+		found = m_state.FindDownload(needle, d);
+	}
+	if (!found) {
 		return ErrorResponse(404, "not_found",
-			"no download with that hash");
+			"no download with that hash or ECID");
 	}
 
 	// Bare object per Q3: list endpoint envelopes, detail endpoint
@@ -1892,7 +1919,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(
 
 
 CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
-	const CHttpServer::Request &req, const std::string &hash)
+	const CHttpServer::Request &req, const std::string &key)
 {
 	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
@@ -1904,15 +1931,20 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// Canonicalise the URL hash to lowercase before the cache lookup
-	// (same shape as the GET detail handler).
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(),
-		[](unsigned char c) { return std::tolower(c); });
-
+	// {key} = hash OR ECID; same disjunction as the GET detail handler.
 	webapi::DownloadSnapshot d;
-	if (!m_state.FindDownload(needle, d)) {
-		return ErrorResponse(404, "not_found", "no download with that hash");
+	std::uint32_t ecid;
+	bool found = false;
+	if (TryParseEcid(key, ecid)) {
+		found = m_state.FindDownloadByEcid(ecid, d);
+	} else {
+		std::string needle = key;
+		std::transform(needle.begin(), needle.end(), needle.begin(),
+			[](unsigned char c) { return std::tolower(c); });
+		found = m_state.FindDownload(needle, d);
+	}
+	if (!found) {
+		return ErrorResponse(404, "not_found", "no download with that hash or ECID");
 	}
 
 	picojson::value root;
@@ -1922,9 +1954,11 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	}
 	const auto &obj = root.get<picojson::object>();
 
+	// Downstream EC ops still address by MD4 hash — read it back off
+	// the snapshot we just resolved (FindDownloadByEcid populates
+	// d.hash, FindDownload by definition matched on it).
 	CMD4Hash file_hash;
-	if (!HashFromHex(needle, file_hash)) {
-		// Should not happen — we already matched the cache by hash.
+	if (!HashFromHex(d.hash, file_hash)) {
 		return ErrorResponse(500, "internal_error",
 			"failed to decode partfile hash");
 	}
@@ -2037,7 +2071,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	// rare; would mean amuled removed it between our SendRecv and
 	// the refresh).
 	webapi::DownloadSnapshot d_after;
-	if (!m_state.FindDownload(needle, d_after)) d_after = d;
+	if (!m_state.FindDownload(d.hash, d_after)) d_after = d;
 
 	CHttpServer::Response r;
 	r.status       = 200;
@@ -2051,7 +2085,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 
 
 CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
-	const CHttpServer::Request &req, const std::string &hash)
+	const CHttpServer::Request &req, const std::string &key)
 {
 	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
@@ -2063,13 +2097,20 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(),
-		[](unsigned char c) { return std::tolower(c); });
-
+	// {key} = hash OR ECID; same disjunction as the GET detail handler.
 	webapi::DownloadSnapshot d;
-	if (!m_state.FindDownload(needle, d)) {
-		return ErrorResponse(404, "not_found", "no download with that hash");
+	std::uint32_t ecid;
+	bool found = false;
+	if (TryParseEcid(key, ecid)) {
+		found = m_state.FindDownloadByEcid(ecid, d);
+	} else {
+		std::string needle = key;
+		std::transform(needle.begin(), needle.end(), needle.begin(),
+			[](unsigned char c) { return std::tolower(c); });
+		found = m_state.FindDownload(needle, d);
+	}
+	if (!found) {
+		return ErrorResponse(404, "not_found", "no download with that hash or ECID");
 	}
 
 	// DELETE only handles ACTIVE downloads (anything not "completed").
@@ -2092,7 +2133,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	}
 
 	CMD4Hash file_hash;
-	if (!HashFromHex(needle, file_hash)) {
+	if (!HashFromHex(d.hash, file_hash)) {
 		return ErrorResponse(500, "internal_error",
 			"failed to decode partfile hash");
 	}
@@ -2122,7 +2163,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	CJsonWriter w;
 	w.BeginObject();
 	  w.Key("ok"); w.ValueBool(true);
-	  w.Key("hash"); w.ValueString(wxString::FromUTF8(needle.c_str()));
+	  w.Key("hash"); w.ValueString(wxString::FromUTF8(d.hash.c_str()));
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -3892,7 +3933,7 @@ bool SharedPriorityToCode(const std::string &name, std::uint8_t &out)
 
 
 CHttpServer::Response CApiDispatcher::HandleSharedPatch(
-	const CHttpServer::Request &req, const std::string &hash)
+	const CHttpServer::Request &req, const std::string &key)
 {
 	auto a = AuthenticateRequestRateLimited(req, m_jwt, m_revocations, m_authRateLimiter,
 		kSessionCookieName);
@@ -3904,21 +3945,21 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// Canonicalise the URL hash to lowercase.
-	std::string needle = hash;
-	std::transform(needle.begin(), needle.end(), needle.begin(),
-		[](unsigned char c) { return std::tolower(c); });
-
-	// Look up the entry in the /shared cache (the per-tick Refresher
-	// snapshot). 404 if unknown.
+	// {key} = hash OR ECID; same disjunction as /downloads/{key}.
 	webapi::SharedSnapshot s;
+	std::uint32_t ecid;
 	bool found = false;
-	for (const auto &x : m_state.Shared()) {
-		if (x.hash == needle) { s = x; found = true; break; }
+	if (TryParseEcid(key, ecid)) {
+		found = m_state.FindSharedByEcid(ecid, s);
+	} else {
+		std::string needle = key;
+		std::transform(needle.begin(), needle.end(), needle.begin(),
+			[](unsigned char c) { return std::tolower(c); });
+		found = m_state.FindShared(needle, s);
 	}
 	if (!found) {
 		return ErrorResponse(404, "not_found",
-			"no shared file with that hash");
+			"no shared file with that hash or ECID");
 	}
 
 	picojson::value root;
@@ -3946,7 +3987,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	}
 
 	CMD4Hash file_hash;
-	if (!HashFromHex(needle, file_hash)) {
+	if (!HashFromHex(s.hash, file_hash)) {
 		return ErrorResponse(500, "internal_error",
 			"failed to decode file hash");
 	}
@@ -3971,9 +4012,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 
 	// Re-read post-mutation. Fall back to prior copy if evicted.
 	webapi::SharedSnapshot s_after = s;
-	for (const auto &x : m_state.Shared()) {
-		if (x.hash == needle) { s_after = x; break; }
-	}
+	(void) m_state.FindShared(s.hash, s_after);
 
 	CHttpServer::Response r;
 	r.status       = 200;

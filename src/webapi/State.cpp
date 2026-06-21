@@ -274,6 +274,42 @@ bool CState::FindDownload(const std::string &hash_hex,
 }
 
 
+bool CState::FindDownloadByEcid(std::uint32_t ecid,
+                                DownloadSnapshot &out) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_downloads.find(ecid);
+	if (it == m_downloads.end()) return false;
+	out = it->second;
+	return true;
+}
+
+
+bool CState::FindShared(const std::string &hash_hex,
+                        SharedSnapshot &out) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	for (const auto &kv : m_shared) {
+		if (kv.second.hash == hash_hex) {
+			out = kv.second;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+bool CState::FindSharedByEcid(std::uint32_t ecid,
+                              SharedSnapshot &out) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_shared.find(ecid);
+	if (it == m_shared.end()) return false;
+	out = it->second;
+	return true;
+}
+
+
 void CState::MutateDownloads(const std::function<
 	void(std::map<std::uint32_t, DownloadSnapshot> &)> &fn)
 {

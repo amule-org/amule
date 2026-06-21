@@ -466,9 +466,19 @@ public:
 
 	// Look up a single download by 32-char hex hash, copied out under
 	// the shared lock. Returns true on hit, false on miss; on miss
-	// `out` is left untouched. Used by /downloads/{hash}.
+	// `out` is left untouched. Used by /downloads/{key}.
 	bool             FindDownload(const std::string &hash_hex,
 	                              DownloadSnapshot &out) const;
+
+	// ECID-keyed counterparts to FindDownload / FindShared. O(1) map
+	// lookup (vs the hash variants' linear scan). Used by /downloads/{key}
+	// and /shared/{key} when the path captures parse as a decimal ECID.
+	bool             FindDownloadByEcid(std::uint32_t ecid,
+	                                    DownloadSnapshot &out) const;
+	bool             FindShared       (const std::string &hash_hex,
+	                                    SharedSnapshot   &out) const;
+	bool             FindSharedByEcid (std::uint32_t ecid,
+	                                    SharedSnapshot   &out) const;
 
 	// INC-mode delta application. The refresher takes the unique_lock
 	// once per substruct's EC roundtrip, then calls a callback with a

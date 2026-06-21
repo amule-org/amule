@@ -102,15 +102,16 @@ private:
 	CHttpServer::Response HandleSession (const CHttpServer::Request &);
 	CHttpServer::Response HandleStatus  (const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloads      (const CHttpServer::Request &);
+	// `key` accepts the lowercase 32-char hex hash OR the decimal ECID.
 	CHttpServer::Response HandleDownloadDetail (const CHttpServer::Request &,
-	                                            const std::string &hash);
+	                                            const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd    (const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloadPatch  (const CHttpServer::Request &,
-	                                            const std::string &hash);
+	                                            const std::string &key);
 	// clear completed downloads.
 	CHttpServer::Response HandleDownloadDelete (const CHttpServer::Request &,
-	                                            const std::string &hash);
+	                                            const std::string &key);
 	CHttpServer::Response HandleDownloadsClearCompleted(const CHttpServer::Request &);
 	// server lifecycle.
 	CHttpServer::Response HandleServerAdd      (const CHttpServer::Request &);
@@ -136,9 +137,9 @@ private:
 	CHttpServer::Response HandleNetworksConnect (const CHttpServer::Request &);
 	CHttpServer::Response HandleNetworksDisconnect(const CHttpServer::Request &);
 	CHttpServer::Response HandleKadBootstrap    (const CHttpServer::Request &);
-	// shared file priority PATCH.
+	// shared file priority PATCH. `key` = hash OR ECID.
 	CHttpServer::Response HandleSharedPatch     (const CHttpServer::Request &,
-	                                             const std::string &hash);
+	                                             const std::string &key);
 	// Rescan shared directories — amuled re-walks the configured share
 	// roots and re-publishes whatever's there. Parameterless EC op
 	// (EC_OP_SHAREDFILES_RELOAD).
