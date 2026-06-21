@@ -138,9 +138,13 @@ void ApplyGetUpdateToDownloads(
 	std::map<std::uint32_t, DownloadSnapshot> &cache,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state);
 
+// `dl_identity_fallback` supplies (hash, name) by ECID when a partfile-
+// becoming-shared transition tick suppresses EC_TAG_PARTFILE_HASH.
 void ApplyGetUpdateToShared(
 	const CECPacket *resp,
-	std::map<std::uint32_t, SharedSnapshot>   &cache);
+	std::map<std::uint32_t, SharedSnapshot>   &cache,
+	const std::map<std::uint32_t, std::pair<std::string, std::string>>
+		&dl_identity_fallback);
 
 void ApplyGetUpdateToServers(
 	const CECPacket *resp,

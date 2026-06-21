@@ -123,9 +123,19 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 				}
 			});
 
+		// Snapshot post-update download identity (hash, name) per ECID
+		// so ApplyGetUpdateToShared can recover identity on a partfile-
+		// becoming-shared tick where PARTFILE_HASH is suppressed.
+		std::map<std::uint32_t, std::pair<std::string, std::string>>
+			dl_identity_fallback;
+		for (const auto &d : state.Downloads()) {
+			dl_identity_fallback.emplace(d.ecid,
+				std::make_pair(d.hash, d.name));
+		}
+
 		state.MutateShared(
 			[&](std::map<std::uint32_t, SharedSnapshot> &cache) {
-				ApplyGetUpdateToShared(resp, cache);
+				ApplyGetUpdateToShared(resp, cache, dl_identity_fallback);
 			});
 
 		state.MutateServers(

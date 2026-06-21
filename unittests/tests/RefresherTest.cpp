@@ -112,7 +112,7 @@ TEST(Refresher, FileRemovedErasesFromShared)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(33)));
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, {});
 
 	ASSERT_TRUE(cache.find(33) == cache.end());
 	ASSERT_TRUE(cache.empty());
@@ -171,7 +171,7 @@ TEST(Refresher, EmptyResponseLeavesCachesIntact)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	ApplyGetUpdateToDownloads(&resp, downloads, rle_state);
-	ApplyGetUpdateToShared   (&resp, shared);
+	ApplyGetUpdateToShared   (&resp, shared, {});
 
 	// INC protocol: empty response means "no changes since last tick".
 	// Cache stays intact — no bulk-delete fallback needed.
@@ -203,7 +203,7 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(99)));
 
 	ApplyGetUpdateToDownloads(&resp, downloads, rle_state);
-	ApplyGetUpdateToShared   (&resp, shared);
+	ApplyGetUpdateToShared   (&resp, shared, {});
 
 	// Downloads walker captured ECID 10 only — NOT ECID 20 (that
 	// belongs to shared) and NOT ECID 99 (that's the FILE_REMOVED).
@@ -239,7 +239,14 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 		resp.AddTag(pf);
 	}
 
-	ApplyGetUpdateToShared(&resp, cache);
+	// PARTFILE_HASH is CValueMap-suppressed on the partfile-to-shared
+	// transition tick — supply identity via the downloads-cache fallback,
+	// which is how the live code recovers it.
+	std::map<std::uint32_t, std::pair<std::string, std::string>> fallback;
+	fallback[50] = std::make_pair(
+		std::string("aaaa3333aaaa3333aaaa3333aaaa3333"),
+		std::string("shared-test.iso"));
+	ApplyGetUpdateToShared(&resp, cache, fallback);
 
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(50) != cache.end());
@@ -260,7 +267,7 @@ TEST(Refresher, UnsharedPartfileSkippedFromShared)
 		resp.AddTag(pf);
 	}
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, {});
 
 	ASSERT_TRUE(cache.empty());
 }
@@ -286,7 +293,7 @@ TEST(Refresher, SharedPartfileTransitionsOutEvictsFromShared)
 		resp.AddTag(pf);
 	}
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, {});
 
 	ASSERT_TRUE(cache.find(70) == cache.end());
 }
@@ -310,7 +317,7 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 	// PARTFILE with no EC_TAG_PARTFILE_SHARED child — flag suppressed.
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(80)));
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, {});
 
 	ASSERT_TRUE(cache.find(80) != cache.end());
 	ASSERT_EQUALS(std::string("still-sharing.iso"), cache[80].name);
@@ -327,7 +334,7 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(90)));
 
-	ApplyGetUpdateToShared(&resp, cache);
+	ApplyGetUpdateToShared(&resp, cache, {});
 
 	ASSERT_TRUE(cache.empty());
 }

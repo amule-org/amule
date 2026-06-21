@@ -719,7 +719,9 @@ void ApplyGetUpdateToDownloads(
 
 void ApplyGetUpdateToShared(
 	const CECPacket *resp,
-	std::map<std::uint32_t, SharedSnapshot> &cache)
+	std::map<std::uint32_t, SharedSnapshot> &cache,
+	const std::map<std::uint32_t, std::pair<std::string, std::string>>
+		&dl_identity_fallback)
 {
 	if (!resp) return;
 
@@ -780,7 +782,23 @@ void ApplyGetUpdateToShared(
 		if (map_it == cache.end()) {
 			SharedSnapshot s;
 			s.ecid = ecid;
-			s.hash = TagHashLower(sf);
+			// PARTFILE_HASH suppressed on a partfile-becoming-shared
+			// tick → fall back to downloads cache (populated this
+			// same tick from the partfile's non-suppressed first
+			// update). If neither has identity, defer the insert.
+			// KNOWNFILE always ships HASH on first frame (no
+			// CValueMap suppression path for it), so the fallback
+			// guard is partfile-only.
+			if (name == EC_TAG_PARTFILE
+			    && sf->GetTagByName(EC_TAG_PARTFILE_HASH) == NULL) {
+				auto it = dl_identity_fallback.find(ecid);
+				if (it == dl_identity_fallback.end()
+				    || it->second.first.empty()) continue;
+				s.hash = it->second.first;
+				s.name = it->second.second;
+			} else {
+				s.hash = TagHashLower(sf);
+			}
 			MergeSharedTag(sf, s);
 			cache.emplace(ecid, std::move(s));
 		} else {
