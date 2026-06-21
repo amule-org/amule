@@ -245,6 +245,69 @@ else
 fi
 rm -f "$SSE_A" "$SSE_B"
 
+# --- 6. search_result_added + search_finished fire on POST /search. ----
+# Wraps in a local-search smoke: amuled's `local` type is the
+# fastest path (no server round-trips) so we get search_finished
+# within seconds without needing a real ed2k network. Even on a
+# fully-disconnected daemon `local` returns immediately with 0
+# results, which still triggers the search_finished transition.
+SSE_PID=$(_sse_start 15)
+sleep 1
+SEARCH_QUERY=ubuntu
+curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"$SEARCH_QUERY\",\"type\":\"local\"}" \
+	"$HOST/api/v0/search" > /dev/null
+SEARCH_FINISHED=""
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
+         21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
+	if grep -q "^event: search_finished$" "$SSE_OUT"; then
+		SEARCH_FINISHED=$(grep -A2 "^event: search_finished$" "$SSE_OUT" \
+			| grep "^data: " | head -1)
+		if [ -n "$SEARCH_FINISHED" ]; then break; fi
+	fi
+	sleep 0.2
+done
+wait $SSE_PID 2>/dev/null
+
+if [ -n "$SEARCH_FINISHED" ]; then
+	_pass "search_finished event fired within 8 s of POST /search type=local"
+	JSON=$(echo "$SEARCH_FINISHED" | sed 's/^data: //')
+	if echo "$JSON" | jq -e '.kind == "local"' >/dev/null 2>&1; then
+		_pass "search_finished .data.kind == 'local'"
+	else
+		_fail "search_finished .data.kind" "expected 'local' in $JSON"
+	fi
+	if echo "$JSON" | jq -e '.percent | type == "number"' >/dev/null 2>&1; then
+		_pass "search_finished .data.percent is numeric"
+	else
+		_fail "search_finished .data.percent" "missing/non-numeric in $JSON"
+	fi
+	if echo "$JSON" | jq -e '.results | type == "number"' >/dev/null 2>&1; then
+		_pass "search_finished .data.results is numeric"
+	else
+		_fail "search_finished .data.results" "missing/non-numeric in $JSON"
+	fi
+	# search_result_added is content-dependent — only assert it
+	# fired if the local search produced any hits. On a fully-
+	# disconnected daemon it won't fire, and that's correct.
+	N_ADDED=$(grep -c "^event: search_result_added$" "$SSE_OUT" || true)
+	RESULTS_TOTAL=$(echo "$JSON" | jq '.results')
+	if [ "$RESULTS_TOTAL" -gt 0 ] 2>/dev/null; then
+		if [ "$N_ADDED" -ge 1 ]; then
+			_pass "search_result_added fired ($N_ADDED times; finished reports $RESULTS_TOTAL results)"
+		else
+			_fail "search_result_added missing" \
+				"finished reports $RESULTS_TOTAL results but no search_result_added events seen"
+		fi
+	else
+		_pass "search_result_added correctly absent (local search returned 0 results)"
+	fi
+else
+	_fail "search_finished missing" \
+		"no search_finished within 8 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
+fi
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

@@ -11,10 +11,11 @@
 #   POST /api/v0/search/results/{hash}/download           — EC_OP_DOWNLOAD_SEARCH_RESULT
 #       body: {category?: uint8} (optional)
 #
-# POST /search invalidates the /search/results TTL cache so the next
-# GET sees the fresh query's results without waiting for the 1 s TTL
-# to expire. This is the carry-forward use case from Phase 4g's
-# CTtlCache::Invalidate API.
+# /search/results is no longer a per-GET fetch — POST /search marks
+# the search active in state and the refresher polls amuled every
+# tick while it stays active. GET /search/results reads straight
+# from that state, so subsequent polls already see the fresh query's
+# growing results without any cache coordination.
 #
 # amuled's SEARCH_START is async: results trickle in from servers /
 # Kad over the next several seconds. Smoke polls /search/results with
@@ -143,27 +144,15 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d 'not json' "$HOST/api/v0/search"
 _assert_status 400 "POST /search (malformed JSON) → 400"
 
-# --- 3. POST /search happy + cache-invalidate observable. ---------
+# --- 3. POST /search happy + results-reset observable. ---------
 #
-# Phase 7.1 dropped the per-endpoint snapshot_at_unix that used to
-# act as the invalidation fingerprint. The user-visible proof of
-# invalidation is now step 4 below: amuled wipes its searchlist on
-# SEARCH_START (ExternalConn.cpp:1437), so the cached PRE-POST body
-# (which carries whatever stale results were left from a previous
-# query) must NOT be served on subsequent polls — they must reflect
-# amuled's new searchlist as it fills up. If m_search_cache had
-# silently NOT been invalidated, step 4's poll loop would forever
-# return the pre-POST cached snapshot.
-#
-# Seed the cache with a fetch before the POST so the invalidation
-# has something to invalidate.
+# amuled wipes its searchlist on SEARCH_START (ExternalConn.cpp:1437),
+# and amuleapi's MarkSearchStarted wipes m_search alongside it so the
+# pre-POST results don't bleed into the new query. Step 4 below proves
+# the reset is observable: the polling loop must see the new query's
+# results fill up rather than the prior query's tail.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
-_assert_status 200 "GET /search/results (pre-POST cache seed) → 200"
-
-# Sleep just past the TTL window so a hypothetical "no invalidate"
-# bug would visibly fall through to a fresh fetch via TTL expiry
-# instead of our explicit Invalidate. 2 s > 1 s TTL.
-sleep 2
+_assert_status 200 "GET /search/results (baseline before POST) → 200"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
@@ -171,6 +160,18 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 202 "POST /search (query=$TEST_QUERY, type=global) → 202"
 _assert_json_eq '.ok'    true         'POST /search response.ok==true'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
+
+# --- 3.5 Regression: progress shouldn't claim complete right after POST. -
+# amuled briefly reports raw=100 in the "queue-empty-at-start" window
+# before the global-search timer populates m_serverQueue; if amuleapi
+# trusted that raw value naively, GET /search/results right after POST
+# would (incorrectly) say {progress:{percent:100, complete:true}}
+# with results=[]. The refresher's state machine masks that window —
+# this asserts the mask is in force.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+_assert_status 200 "GET /search/results immediately after POST → 200"
+_assert_json_eq '.progress.active'   true  'progress.active is true after POST /search'
+_assert_json_eq '.progress.complete' false 'progress.complete is false in the queue-empty window'
 
 # --- 4. Poll /search/results until we get hits (max ~10 s). -------
 RESULT_HASH=""

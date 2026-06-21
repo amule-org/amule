@@ -64,6 +64,13 @@ struct LastSeenState {
 	// can GET /api/v0/logs/amule for the history.
 	std::size_t                               amule_log_count = 0;
 	bool                                      amule_log_initialised = false;
+
+	// Search-events baseline. Diffed against state.Search() +
+	// state.SearchProgress() each tick. New ECIDs → search_result_added;
+	// the active→inactive+complete transition → search_finished.
+	std::map<std::uint32_t, SearchResult>     search;
+	bool                                      search_complete   = false;
+	bool                                      search_initialised = false;
 };
 
 

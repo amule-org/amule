@@ -3352,80 +3352,18 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 		kSessionCookieName);
 	if (!a.ok) return a.rejection;
 
-	// Lazy-fetch via TtlCache. POST /search calls Invalidate() so
-	// the next GET sees fresh results without waiting for the TTL.
-	//
-	// Two EC roundtrips per miss (EC_OP_SEARCH_RESULTS +
-	// EC_OP_SEARCH_PROGRESS) coalesced into one single-flight lock.
-	// The progress field disambiguates "empty + no search" from
-	// "empty + search in flight".
-	auto pair = m_search_cache.GetOrFetch(
-		std::chrono::milliseconds(1000),
-		[this]() -> TtlPair_Search {
-			SearchCacheValue out;
-			std::time_t ts = 0;
-			{
-				std::unique_ptr<CECPacket> req_ec(
-					new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
-				const CECPacket *resp =
-					m_app.SendRecvSerialized(req_ec.get());
-				if (!resp) {
-					return TtlPair_Search(std::move(out), 0);
-				}
-				webapi::ApplySearchFull(resp, out.results);
-				ts = std::time(nullptr);
-				delete resp;
-			}
-			{
-				std::unique_ptr<CECPacket> req_ec(
-					new CECPacket(EC_OP_SEARCH_PROGRESS));
-				const CECPacket *resp =
-					m_app.SendRecvSerialized(req_ec.get());
-				if (resp) {
-					const CECTag *tag = resp->GetTagByName(
-						EC_TAG_SEARCH_STATUS);
-					if (tag) {
-						out.progress_raw =
-							static_cast<std::uint32_t>(
-								tag->GetInt());
-					}
-					delete resp;
-				}
-			}
-			return TtlPair_Search(std::move(out), ts);
-		});
+	// Read straight from the refresher-maintained state. POST /search
+	// flips the active flag; RefresherTick polls amuled while active
+	// and runs the small state machine that disambiguates amuled's
+	// overloaded EC_TAG_SEARCH_STATUS values (see RefresherTick.cpp +
+	// SearchList.cpp:425-449). The state stores the normalized
+	// (percent, complete) — no further interpretation here.
+	const std::vector<webapi::SearchResult> results_vec = m_state.Search();
+	const webapi::SearchProgressSnapshot    progress    = m_state.SearchProgress();
 
-	if (pair.second == 0) {
-		return ErrorResponse(503, "ec_unavailable",
-			"EC fetch failed for search results; amuled may be disconnected");
-	}
-
-	std::vector<webapi::SearchResult> results_vec;
-	results_vec.reserve(pair.first.results.size());
-	for (const auto &kv : pair.first.results) results_vec.push_back(kv.second);
-
-	// Translate the raw amuled progress integer (CSearchList::
-	// GetSearchProgress) into a clean shape. Raw semantics:
-	//  * 0       — no search, or Kad search just kicked off
-	//  * 1-99    — global ed2k search in progress (percent)
-	//  * 100     — global ed2k search finished
-	//  * 0xfffe  — Kad search finished
-	//  * 0xffff  — Local ed2k search finished (always instantaneous)
-	// Anything >= 100 is "complete"; clamp the published percent to
-	// 100 so the JSON value stays in the natural 0-100 range.
-	const std::uint32_t raw = pair.first.progress_raw;
-	const bool complete = (raw >= 100);
-	const std::uint32_t percent = complete ? 100u : raw;
-
-	const std::time_t ts = pair.second;
 	CHttpServer::Response r;
 	r.status       = 200;
 	r.content_type = "application/json";
-	// snapshot_at retired. ETag is the cache
-	// validator; POST /search invalidates m_search_cache so the next
-	// GET's body changes when amuled has fresh results — ETag tracks
-	// that change.
-	(void) ts;
 	CJsonWriter w;
 	w.BeginObject();
 	  w.Key("results");
@@ -3434,8 +3372,9 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	  w.EndArray();
 	  w.Key("progress");
 	  w.BeginObject();
-	    w.Key("percent");  w.ValueInt(static_cast<int64_t>(percent));
-	    w.Key("complete"); w.ValueBool(complete);
+	    w.Key("percent");  w.ValueInt(static_cast<int64_t>(progress.percent));
+	    w.Key("complete"); w.ValueBool(progress.complete);
+	    w.Key("active");   w.ValueBool(progress.active);
 	  w.EndObject();
 	w.EndObject();
 	FinalizeJsonBody(w, r);
@@ -4730,6 +4669,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 	}
 
 	std::uint8_t search_type = EC_SEARCH_GLOBAL;
+	std::string  search_kind = "global";  // mirrors the input string for state.MarkSearchStarted
 	{
 		const auto it = obj.find("type");
 		if (it != obj.end()) {
@@ -4737,8 +4677,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 				return ErrorResponse(400, "bad_request",
 					"`type` must be one of \"local\", \"global\", \"kad\"");
 			}
-			if (!SearchTypeFromString(it->second.get<std::string>(),
-			                          search_type)) {
+			search_kind = it->second.get<std::string>();
+			if (!SearchTypeFromString(search_kind, search_type)) {
 				return ErrorResponse(400, "bad_request",
 					"`type` must be one of \"local\", \"global\", \"kad\"");
 			}
@@ -4834,13 +4774,14 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 	}
 	delete ec_resp;
 
-	// Invalidate the lazy /search/results cache so the next GET sees
-	// the fresh query's results (amuled's searchlist gets cleared
-	// server-side on SEARCH_START; if the cached snapshot pre-dates
-	// this mutation, returning it would be misleadingly stale).
-	// This is exactly the use case CTtlCache::Invalidate was carved
-	// out for.
-	m_search_cache.Invalidate();
+	// Hand the lifecycle off to the refresher: it wipes the results
+	// cache, marks active=true, captures the kind, and starts polling
+	// EC_OP_SEARCH_RESULTS + _PROGRESS every tick until the state
+	// machine in RefresherTick infers completion. Drops the prior
+	// per-GET TtlCache fetch (the refresher is the single fetcher
+	// now — needed so SSE search_result_added / search_finished fire
+	// on the same delta the polling consumer would observe).
+	m_state.MarkSearchStarted(search_kind);
 
 	CHttpServer::Response r;
 	r.status       = 202;

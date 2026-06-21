@@ -247,21 +247,12 @@ private:
 	using TtlPair_StatsTree  = std::pair<webapi::StatsTreeNode,                     std::time_t>;
 	using TtlPair_StatsGraphs= std::pair<webapi::StatsGraphs,                       std::time_t>;
 	using TtlPair_ServerInfo = std::pair<webapi::ServerInfoLog,                     std::time_t>;
-	// Search cache: results + the raw EC_TAG_SEARCH_STATUS progress
-	// value pulled in the same single-flight roundtrip. Lets
-	// GET /search/results expose `progress.{percent, complete}` so
-	// an empty results array isn't ambiguous between "no search
-	// running" / "search in flight with no hits yet" / "search
-	// finished with zero hits".
-	struct SearchCacheValue {
-		std::map<std::uint32_t, webapi::SearchResult> results;
-		std::uint32_t                                 progress_raw = 0;
-	};
-	using TtlPair_Search     = std::pair<SearchCacheValue,                          std::time_t>;
 	webapi::CTtlCache<TtlPair_StatsTree>    m_stats_tree_cache;
 	webapi::CTtlCache<TtlPair_StatsGraphs>  m_stats_graphs_cache;
 	webapi::CTtlCache<TtlPair_ServerInfo>   m_server_info_cache;
-	webapi::CTtlCache<TtlPair_Search>       m_search_cache;
+	// /search/results is no longer cached here — the refresher owns
+	// the polling while a search is active (see CState::SearchProgress
+	// + RefresherTick). POST /search calls m_state.MarkSearchStarted.
 };
 
 

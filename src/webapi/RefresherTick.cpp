@@ -158,13 +158,58 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph}, and
-	// /search/results are NOT fetched per-tick — they're lazy-
-	// fetched on first GET via CTtlCache (1 s TTL coalesces burst
-	// reads). HTTP handlers in Api.cpp drive their own EC roundtrips
-	// under m_ec_mtx. Per-tick refresh would have been pure waste
-	// when nothing is listening — /search/results in particular sits
-	// empty until a POST /search drives a query.
+	// /logs/serverinfo, /stats/tree, /stats/graphs/{graph} are NOT
+	// fetched per-tick — they're lazy-fetched on first GET via
+	// CTtlCache (1 s TTL coalesces burst reads). HTTP handlers in
+	// Api.cpp drive their own EC roundtrips under m_ec_mtx. Per-tick
+	// refresh would have been pure waste when nothing is listening.
+
+	// /search/results — polled per-tick only WHILE a search is active.
+	// POST /search flips state.SearchProgress().active = true; the
+	// state machine below decides when to flip it back. amuled's
+	// EC_TAG_SEARCH_STATUS overloads `raw=0` ("no search" / "Kad in
+	// progress" / "global queue not yet populated" / "global finished
+	// — m_searchInProgress just flipped off") and `raw=100` ("global
+	// queue temporarily empty at start" / "global all done"), so we
+	// can't trust the raw value in isolation — see SearchList.cpp:
+	// GetSearchProgress for the upstream encoding.
+	if (state.SearchProgress().active) {
+		std::uint32_t raw_now = 0;
+		bool got_progress = false;
+		{
+			std::unique_ptr<CECPacket> req(
+				new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
+			const CECPacket *resp = app.SendRecvSerialized(req.get());
+			if (!resp) return false;
+			state.MutateSearch(
+				[&](std::map<std::uint32_t, SearchResult> &cache) {
+					ApplySearchFull(resp, cache);
+				});
+			delete resp;
+		}
+		{
+			std::unique_ptr<CECPacket> req(
+				new CECPacket(EC_OP_SEARCH_PROGRESS));
+			const CECPacket *resp = app.SendRecvSerialized(req.get());
+			if (resp) {
+				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_STATUS)) {
+					raw_now = static_cast<std::uint32_t>(t->GetInt());
+					got_progress = true;
+				}
+				delete resp;
+			}
+		}
+		// Missing EC_TAG_SEARCH_STATUS treated as raw=0 — the state
+		// machine's defensive timeout branch finalizes the lifecycle
+		// either way.
+		(void) got_progress;
+		const SearchProgressSnapshot next = AdvanceSearchProgress(
+			state.SearchProgress(),
+			raw_now,
+			state.Search().size(),
+			std::time(nullptr));
+		state.WriteSearchProgress(next);
+	}
 
 	// /preferences + /categories — one EC roundtrip populates both.
 	// Selection bitmask: CATEGORIES (0x01) + GENERAL (0x02) +

@@ -144,6 +144,31 @@ void CState::MutateSearch(const std::function<
 }
 
 
+SearchProgressSnapshot CState::SearchProgress() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_search_progress;
+}
+
+
+void CState::MarkSearchStarted(const std::string &kind)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	m_search.clear();
+	m_search_progress = SearchProgressSnapshot{};
+	m_search_progress.active     = true;
+	m_search_progress.kind       = kind;
+	m_search_progress.started_at = std::time(nullptr);
+}
+
+
+void CState::WriteSearchProgress(SearchProgressSnapshot s)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	m_search_progress = std::move(s);
+}
+
+
 void CState::WriteStatsTree(StatsTreeNode t)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
@@ -343,6 +368,7 @@ void CState::ResetLists()
 	m_servers.clear();
 	m_categories.clear();
 	m_search.clear();
+	m_search_progress = SearchProgressSnapshot{};
 	// Logs + stats_tree + graphs survive EC reconnects on purpose —
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not

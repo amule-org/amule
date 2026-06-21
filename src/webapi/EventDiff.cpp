@@ -512,6 +512,54 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	prev.kad          = new_kad;
 	prev.ec_connected = new_ec;
 
+	// Search events. `search_result_added` per new ECID in the
+	// results map; `search_finished` on the active→inactive transition
+	// where complete=true. The refresher's state machine
+	// (AdvanceSearchProgress) drives both — POST /search seeds the
+	// active flag; subsequent ticks either grow the results map or
+	// flip complete. First tick after MarkSearchStarted bootstraps the
+	// baseline so we don't double-emit on the first observation.
+	{
+		const auto search_now = ByEcid(state.Search());
+		const auto progress_now = state.SearchProgress();
+		if (!prev.search_initialised) {
+			prev.search           = search_now;
+			prev.search_complete  = progress_now.complete;
+			prev.search_initialised = true;
+		} else {
+			// New result entries.
+			for (const auto &kv : search_now) {
+				if (prev.search.find(kv.first) == prev.search.end()) {
+					std::ostringstream payload;
+					payload << "{\"ecid\":" << kv.second.ecid
+					        << ",\"hash\":\"" << EscJson(kv.second.hash) << "\""
+					        << ",\"name\":\"" << EscJson(kv.second.name) << "\""
+					        << ",\"size\":" << kv.second.size
+					        << ",\"sources\":" << kv.second.source_count
+					        << ",\"complete_sources\":" << kv.second.complete_source_count
+					        << ",\"already_have\":"
+					        << (kv.second.already_have ? "true" : "false")
+					        << ",\"rating\":" << static_cast<int>(kv.second.rating)
+					        << "}";
+					bus.Publish("search_result_added", payload.str());
+				}
+			}
+			// Finished transition (false → true). MarkSearchStarted
+			// resets complete=false so a new search after a previous
+			// completion gets a fresh edge.
+			if (progress_now.complete && !prev.search_complete) {
+				std::ostringstream payload;
+				payload << "{\"percent\":" << progress_now.percent
+				        << ",\"results\":" << search_now.size()
+				        << ",\"kind\":\"" << EscJson(progress_now.kind) << "\""
+				        << "}";
+				bus.Publish("search_finished", payload.str());
+			}
+			prev.search          = std::move(search_now);
+			prev.search_complete = progress_now.complete;
+		}
+	}
+
 	// log_appended. CState::AmuleLog() is append-only
 	// (CState.cpp:142-151) so a strictly-increasing size means the
 	// refresher just appended the tail. First tick records the

@@ -1311,6 +1311,110 @@ void ApplySearchFull(const CECPacket *resp,
 }
 
 
+// --- Search-progress state machine -------------------------------------
+//
+// amuled's EC_TAG_SEARCH_STATUS encoding (see SearchList.cpp:425-449):
+//   * 0       — no search active, OR Kad search in progress, OR global
+//               search "queue not yet populated" first tick, OR global
+//               search just transitioned m_searchInProgress=false on
+//               completion
+//   * 1..99   — global ed2k search in progress (real percent)
+//   * 100     — global ed2k search "queue empty at start" briefly, OR
+//               "all done" briefly before m_searchInProgress flips off
+//   * 0xfffe  — Kad search finished
+//   * 0xffff  — Local ed2k search finished
+//
+// `raw==0` and `raw==100` are both genuinely ambiguous from a single
+// observation. The machine disambiguates by tracking:
+//   * `saw_in_progress` — did we observe raw in [1..99] earlier in this
+//     run? Implies a global search reaching the climb phase, so raw=0
+//     afterwards means "amuled flipped m_searchInProgress=false" =
+//     completion.
+//   * `kind` — only global searches climb 1..99; local finishes via
+//     0xffff (or quickly drops to 0 with results); Kad reports 0 the
+//     whole time and finalizes via 0xfffe.
+//   * `results_count` — a non-empty result set at raw=0 with
+//     `kind=global` means amuled already finished (queue-populating
+//     raw=0 never has results).
+//   * `started_at` — 30 s defensive timeout catches genuinely
+//     zero-result fast searches and amuled-stuck cases that would
+//     otherwise leave `active=true` forever.
+
+SearchProgressSnapshot AdvanceSearchProgress(
+	const SearchProgressSnapshot &prev,
+	std::uint32_t raw_now,
+	std::size_t   results_count,
+	std::time_t   now)
+{
+	SearchProgressSnapshot next = prev;
+	next.raw = raw_now;
+	if (!prev.active) {
+		// No active search — refresher shouldn't even be calling us
+		// in this state, but stay defensive: zero out the progress
+		// surface and leave inactive.
+		next.percent = 0;
+		next.complete = false;
+		next.last_results_count = results_count;
+		return next;
+	}
+	// Kad searches never reach the [1..99] climb (raw is 0 the whole
+	// time, then 0xfffe on completion). To distinguish "productive
+	// Kad still working" from "stuck Kad that should time out", we
+	// roll the deadline forward every time a new result arrives.
+	// Global / local extend their own deadline via saw_in_progress
+	// or natural raw transitions — bumping doesn't matter for them.
+	if (next.kind == "kad" && results_count > next.last_results_count) {
+		next.started_at = now;
+	}
+	next.last_results_count = results_count;
+	if (raw_now == 0xfffeu || raw_now == 0xffffu) {
+		next.percent = 100; next.complete = true; next.active = false;
+	} else if (raw_now >= 1 && raw_now <= 99) {
+		next.saw_in_progress = true;
+		next.percent  = raw_now;
+		next.complete = false;
+	} else if (raw_now == 100) {
+		if (next.saw_in_progress) {
+			next.percent = 100; next.complete = true; next.active = false;
+		} else {
+			// Queue-empty-at-start window — global-search timer hasn't
+			// populated the server queue yet. Mask as "still starting".
+			next.percent = 0;
+		}
+	} else if (raw_now == 0) {
+		if (next.saw_in_progress) {
+			next.percent = 100; next.complete = true; next.active = false;
+		} else if (next.kind == "global" && results_count > 0) {
+			// Very fast global: results arrived without observing the
+			// 1..99 climb. Results-count is the disambiguator (queue-
+			// populating raw=0 has no results yet).
+			next.percent = 100; next.complete = true; next.active = false;
+		} else if (next.kind == "local") {
+			// Local searches finish very quickly; if we missed the
+			// brief 0xffff signal the next tick sees raw=0 — finalize.
+			next.percent = 100; next.complete = true; next.active = false;
+		} else {
+			// Kad-in-progress (raw stays 0 until 0xfffe) OR
+			// global-queue-populating. Stay active.
+			next.percent = 0;
+		}
+	}
+	// Defensive timeout: only fires when we have no other progress
+	// signal at all. `saw_in_progress=true` means the global search
+	// is genuinely climbing — we trust its own completion path.
+	// For Kad, `started_at` is bumped on every new result above,
+	// so this catches only truly stuck Kad searches with 30 s of
+	// silence. 30 s also covers genuinely zero-result fast global
+	// searches that finished before any observable signal.
+	if (next.active && next.started_at > 0
+	    && !next.saw_in_progress
+	    && now - next.started_at > 30) {
+		next.percent = 100; next.complete = true; next.active = false;
+	}
+	return next;
+}
+
+
 // --- /preferences + /categories (one EC roundtrip) ---------------------
 
 namespace {

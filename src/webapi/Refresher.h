@@ -26,6 +26,7 @@
 #define WEBAPI_REFRESHER_H
 
 #include <cstdint>
+#include <ctime>      // std::time_t — needed for AdvanceSearchProgress
 #include <map>
 #include <string>
 #include <vector>
@@ -175,6 +176,22 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out);
 struct SearchResult;
 void ApplySearchFull(const CECPacket *resp,
                      std::map<std::uint32_t, SearchResult> &cache);
+
+
+// Search-progress state machine. Given the prior snapshot, amuled's
+// fresh raw EC_TAG_SEARCH_STATUS value, the current results-map size,
+// and `now`, returns the next snapshot with normalized (percent,
+// complete, active, saw_in_progress, raw, started_at). Pure function:
+// no I/O, no globals — kept here so RefresherTest can exercise every
+// branch without standing up a daemon. Caller is the refresher tick
+// (RefresherTick.cpp); see the comment block there for the raw-value
+// encoding upstream (SearchList.cpp:GetSearchProgress).
+struct SearchProgressSnapshot;
+SearchProgressSnapshot AdvanceSearchProgress(
+	const SearchProgressSnapshot &prev,
+	std::uint32_t raw_now,
+	std::size_t   results_count,
+	std::time_t   now);
 
 // `ApplyGetUpdateToClients` consumes the EC_TAG_CLIENT container
 // from the consolidated GET_UPDATE response. The walker uses
