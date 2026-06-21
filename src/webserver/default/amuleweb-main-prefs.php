@@ -112,7 +112,7 @@ function init_data()
 <body class="main" onLoad="init_data();">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>
@@ -373,7 +373,7 @@ function init_data()
       <td colspan="2"> 
         <?php
 			if ($_SESSION["guest_login"] == 0) {
-				echo '<input type="submit" name="Submit" value="Apply">';
+				echo '<input type="submit" name="Submit" value="Apply" title="Save preferences">';
 			} else {
 				echo "<b>&nbsp;You can not change options - logged in as guest</b>";
 			}

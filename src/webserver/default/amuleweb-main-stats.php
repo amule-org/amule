@@ -4,8 +4,17 @@
 <title>aMule control panel</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <?php
+	// Auto-refresh: reload on a timer, but skip while any checkbox is
+	// checked so the user's selection isn't wiped.
 	if ( $_SESSION["auto_refresh"] > 0 ) {
-		echo "<meta http-equiv=\"refresh\" content=\"", $_SESSION["auto_refresh"], '">';
+		echo "<script type=\"text/JavaScript\">
+	setInterval(function() {
+		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
+			return;
+		}
+		location.reload();
+	}, 1000 * ", $_SESSION["auto_refresh"], ");
+</script>";
 	}
 
 	amule_load_vars("stats_graph");
@@ -39,7 +48,7 @@ function swapFolder(img){
 <body class="main">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>

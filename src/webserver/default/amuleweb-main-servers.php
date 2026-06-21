@@ -3,13 +3,27 @@
 <head>
 <title>aMule control panel</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<?php
+	// Auto-refresh: reload on a timer, but skip while any checkbox is
+	// checked so the user's selection isn't wiped.
+	if ( $_SESSION["auto_refresh"] > 0 ) {
+		echo "<script type=\"text/JavaScript\">
+	setInterval(function() {
+		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
+			return;
+		}
+		location.reload();
+	}, 1000 * ", $_SESSION["auto_refresh"], ");
+</script>";
+	}
+?>
 
 <link href="style.css" rel="stylesheet" type="text/css">
 </head>
 <body class="main">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>
@@ -52,7 +66,7 @@
                     echo '<tr><td colspan="6" class="al-right" style="padding:4px 8px;">',
                          '<form action="amuleweb-main-servers.php" method="get" style="display:inline;">',
                          '<input type="hidden" name="server_action" value="disconnect">',
-                         '<button type="submit">Disconnect from current ed2k server</button>',
+                         '<button type="submit" title="Disconnect from the current ed2k server">Disconnect from current ed2k server</button>',
                          '</form>',
                          '</td></tr>';
                 }
@@ -142,11 +156,11 @@
 			} else {
 				echo "<td class='texte al-center'>",
 					'<a href="amuleweb-main-servers.php?cmd=connect&ip=', $srv->ip,
-					'&port=', $srv->port, '">',
-					'<img src="images/connect.gif" width="16" height="16">','</a>',
+					'&port=', $srv->port, '" title="Connect to this server">',
+					'<img src="images/connect.gif" width="16" height="16" alt="Connect">','</a>',
 					'<a href="amuleweb-main-servers.php?cmd=remove&ip=', $srv->ip,
-					'&port=', $srv->port, '">',
-					'<img src="images/cancel.gif" width="16" height="16">','</a>',
+					'&port=', $srv->port, '" title="Remove this server">',
+					'<img src="images/cancel.gif" width="16" height="16" alt="Remove">','</a>',
 					"</td>";
 			}
 

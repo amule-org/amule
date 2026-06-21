@@ -4,8 +4,17 @@
 <title>aMule control panel</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <?php
+	// Auto-refresh: reload on a timer, but skip while any checkbox is
+	// checked so the user's selection isn't wiped.
 	if ( $_SESSION["auto_refresh"] > 0 ) {
-		echo "<meta http-equiv=\"refresh\" content=\"", $_SESSION["auto_refresh"], '">';
+		echo "<script type=\"text/JavaScript\">
+	setInterval(function() {
+		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
+			return;
+		}
+		location.reload();
+	}, 1000 * ", $_SESSION["auto_refresh"], ");
+</script>";
 	}
 
 	// Kad network controls. Dispatch before stats are rendered so the
@@ -69,7 +78,7 @@ function formCommandSubmit(command)
 <body class="main">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>
@@ -108,9 +117,9 @@ function formCommandSubmit(command)
                       </tr>
                       <tr>
                         <td colspan="2" class="al-center">
-                          <button type="submit" name="kad_action" value="connect_known">Connect from known peers</button>
+                          <button type="submit" name="kad_action" value="connect_known" title="Bootstrap Kad from known peers">Connect from known peers</button>
                           &nbsp;
-                          <button type="submit" name="kad_action" value="disconnect">Disconnect</button>
+                          <button type="submit" name="kad_action" value="disconnect" title="Disconnect from the Kad network">Disconnect</button>
                         </td>
                       </tr>
                       <tr>
@@ -124,14 +133,14 @@ function formCommandSubmit(command)
                       </tr>
                       <tr>
                         <td class="al-right">Port :</td><td class="al-left"><input name="port" type="text" id="port3" size="4" maxlength="5">
-                          &nbsp; <button type="submit" name="kad_action" value="connect_ip">Connect</button></td>
+                          &nbsp; <button type="submit" name="kad_action" value="connect_ip" title="Bootstrap Kad from this node">Connect</button></td>
                       </tr>
                       <tr>
                         <th colspan="2">Update bootstrap from URL</th>
                       </tr>
                       <tr>
                         <td class="al-right">URL :</td><td class="al-left"><input name="nodes_url" type="text" id="nodes_url" size="32">
-                          &nbsp; <button type="submit" name="kad_action" value="update_url">Update</button></td>
+                          &nbsp; <button type="submit" name="kad_action" value="update_url" title="Update bootstrap nodes from this URL">Update</button></td>
                       </tr>
                     </table></td>
                 </tr>

@@ -3,8 +3,17 @@
 <head>
 <title>aMule control panel</title>
 <?php
+	// Auto-refresh: reload on a timer, but skip while any checkbox is
+	// checked so the user's selection isn't wiped.
 	if ( $_SESSION["auto_refresh"] > 0 ) {
-		echo "<meta http-equiv=\"refresh\" content=\"", $_SESSION["auto_refresh"], '">';
+		echo "<script type=\"text/JavaScript\">
+	setInterval(function() {
+		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
+			return;
+		}
+		location.reload();
+	}, 1000 * ", $_SESSION["auto_refresh"], ");
+</script>";
 	}
 ?><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
@@ -14,7 +23,11 @@
 function formCommandSubmit(command)
 {
 	if ( command == "cancel" ) {
-		var res = confirm("Delete selected files ?")
+		var boxchecked = document.querySelectorAll('input[type="checkbox"]:checked');
+		var selectedFiles = Object.values(boxchecked).filter(selected => selected.name != 'selectAllFiles').length;
+		if (selectedFiles == 0)
+			return;
+		var res = confirm("Delete selected " + (selectedFiles) + " files ?")
 		if ( res == false ) {
 			return;
 		}
@@ -32,12 +45,20 @@ function formCommandSubmit(command)
 	frm.submit()
 }
 
+function selectAll(check)
+{
+	var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+	checkboxes.forEach(function(checkbox) {
+		checkbox.checked = check.checked;
+	});
+}
+
 </script>
 </head>
 <body class="main">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>
@@ -62,11 +83,11 @@ function formCommandSubmit(command)
       <td><table class="center-table">
           <tr> 
             <td><input type="hidden" name="command"></td>
-            <td><a href="javascript:formCommandSubmit('pause');"><img name="pause" src="images/pause.png" alt="pause"></a></td>
-            <td><a href="javascript:formCommandSubmit('resume');"><img name="resume" src="images/play.png" alt="resume"></a></td>
-        		<td><a href="javascript:formCommandSubmit('prioup');"><img name="prioup" src="images/up.png" alt="prioup"></a></td>
-        		<td><a href="javascript:formCommandSubmit('priodown');"><img name="priodown" src="images/down.png" alt="priodown"></a></td>
-        		<td><a href="javascript:formCommandSubmit('cancel');"><img name="cancel" src="images/close.png" alt="cancel"></a></td>
+            <td><a href="javascript:formCommandSubmit('pause');" title="Pause selected downloads"><img name="pause" src="images/pause.png" alt="Pause"></a></td>
+            <td><a href="javascript:formCommandSubmit('resume');" title="Resume selected downloads"><img name="resume" src="images/play.png" alt="Resume"></a></td>
+        		<td><a href="javascript:formCommandSubmit('prioup');" title="Increase priority of selected downloads"><img name="prioup" src="images/up.png" alt="Increase priority"></a></td>
+        		<td><a href="javascript:formCommandSubmit('priodown');" title="Decrease priority of selected downloads"><img name="priodown" src="images/down.png" alt="Decrease priority"></a></td>
+        		<td><a href="javascript:formCommandSubmit('cancel');" title="Cancel/delete selected downloads"><img name="cancel" src="images/close.png" alt="Cancel"></a></td>
       <td><table>
                 <tr> 
                   <td> 
@@ -81,19 +102,23 @@ function formCommandSubmit(command)
 
         	echo '<select name="status"> ';
         	foreach ($all_status as $s) {
-        		echo (($s == $_SESSION["filter_status"]) ? '<option selected>' : '<option>'), $s, '</option>';
+        		$label = ($s == 'all') ? 'All status' : $s;
+        		$sel = ($s == $_SESSION["filter_status"]) ? ' selected' : '';
+        		echo '<option value="', htmlspecialchars($s), '"', $sel, '>', htmlspecialchars($label), '</option>';
         	}
         	echo '</select>';
         	//var_dump($_SESSION["filter_cat"]);
         	echo '<select name="category" id="category">';
 			$cats = amule_get_categories();
 			foreach($cats as $c) {
-				echo (($c == $_SESSION["filter_cat"]) ? '<option selected>' : '<option>'), htmlspecialchars($c), '</option>';
+				$label = ($c == 'all') ? 'All categories' : $c;
+				$sel = ($c == $_SESSION["filter_cat"]) ? ' selected' : '';
+				echo '<option value="', htmlspecialchars($c), '"', $sel, '>', htmlspecialchars($label), '</option>';
 			}
 			echo '</select>';
         ?>
                   </td>
-                  			<td><a href="javascript:formCommandSubmit('filter');"><img src="images/filter.png" alt="Apply" name="resume"></a></td>
+                  			<td><a href="javascript:formCommandSubmit('filter');" title="Apply status and category filter"><img src="images/filter.png" alt="Apply filter" name="resume"></a></td>
                   <td>&nbsp;</td>
                   <td>&nbsp;</td>
                   <td> 
@@ -124,8 +149,8 @@ function formCommandSubmit(command)
     <td>&nbsp;</td>
     <td><table class="w100p">
                      
-          <tr> 
-                  <th>&nbsp;</th>
+          <tr>
+                  <th class="al-left"><input type="checkbox" name="selectAllFiles" onclick="selectAll(this)"></th>
                   <th><a href="amuleweb-main-dload.php?sort=name">File name</a></th>
                   <th><a href="amuleweb-main-dload.php?sort=size">Size</a></th>
                   <th><a href="amuleweb-main-dload.php?sort=size_done">Completed</a></th>
@@ -137,17 +162,10 @@ function formCommandSubmit(command)
           </tr><tr><td colspan="9" class="sep-dark"></td></tr>
           <?php
 		function CastToXBytes($size, &$count) {
+			// Emit the raw byte count; the unit formatting is done
+			// client-side (see the js-size script at the end of the page).
 			$count += $size;
-			if ( $size < 1024 ) {
-				$result = $size . " b";
-			} elseif ( $size < 1048576 ) {
-				$result = ($size / 1024.0) . " kb";
-			} elseif ( $size < 1073741824 ) {
-				$result = ($size / 1048576.0) . " mb";
-			} else {
-				$result = ($size / 1073741824.0) . " gb";
-			}
-			return $result;
+			return '<span class="js-size">' . $size . '</span>';
 		}
 
 		function StatusString($file)
@@ -358,17 +376,10 @@ function formCommandSubmit(command)
         </tr><tr><td colspan="9" class="sep-dark"></td></tr>
         <?php
 			function CastToXBytes($size, &$count) {
+				// Emit the raw byte count; the unit formatting is done
+				// client-side (see the js-size script at the end of the page).
 				$count += $size;
-				if ( $size < 1024 ) {
-					$result = $size . " b";
-				} elseif ( $size < 1048576 ) {
-					$result = ($size / 1024.0) . " kb";
-				} elseif ( $size < 1073741824 ) {
-					$result = ($size / 1048576.0) . " mb";
-				} else {
-					$result = ($size / 1073741824.0) . " gb";
-				}
-				return $result;
+				return '<span class="js-size">' . $size . '</span>';
 			}
 			$countUploadDimension = 0;
 			$countDownloadDimension = 0;
@@ -427,5 +438,24 @@ function formCommandSubmit(command)
       </table></td>
   </tr>
 </table>
+<script type="text/JavaScript">
+// Format the raw byte counts emitted by the backend (spans with class
+// "js-size") into human-readable units. Done here in the browser because
+// the webserver's PHP interpreter lacks sprintf/round.
+function formatBytes(value) {
+	var b = parseFloat(value);
+	if ( isNaN(b) ) return value;
+	if ( b < 1024 ) return b + " Bytes";
+	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KB";
+	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MB";
+	return (b / 1073741824).toFixed(2) + " GB";
+}
+(function() {
+	var els = document.getElementsByClassName("js-size");
+	for ( var i = 0; i < els.length; i++ ) {
+		els[i].textContent = formatBytes(els[i].textContent);
+	}
+})();
+</script>
 </body>
 </html>

@@ -3,6 +3,20 @@
 <head>
 <title>aMule control panel</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<?php
+	// Auto-refresh: reload on a timer, but skip while any checkbox is
+	// checked so the user's selection isn't wiped.
+	if ( $_SESSION["auto_refresh"] > 0 ) {
+		echo "<script type=\"text/JavaScript\">
+	setInterval(function() {
+		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
+			return;
+		}
+		location.reload();
+	}, 1000 * ", $_SESSION["auto_refresh"], ");
+</script>";
+	}
+?>
 
 <link href="style.css" rel="stylesheet" type="text/css">
 <script language="JavaScript" type="text/JavaScript">
@@ -19,12 +33,20 @@ function formCommandSubmit(command)
 	frm.submit()
 }
 
+function selectAll(check)
+{
+	var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+	checkboxes.forEach(function(checkbox) {
+		checkbox.checked = check.checked;
+	});
+}
+
 </script>
 </head>
 <body class="main">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>
@@ -47,18 +69,22 @@ function formCommandSubmit(command)
                 <tr>
                   <td><input type="hidden" name="command"></td>
                   
-            <td><a href="javascript:formCommandSubmit('reload');"><img src="images/refresh.png" alt="Reload shared files" name="reload" onload=""></a></td>
-				  <td><a href="javascript:formCommandSubmit('prioup');"><img name="up" src="images/up.png" alt="Raise priority" onLoad=""></a></td>
-                  
-            <td><a href="javascript:formCommandSubmit('priodown');"><img src="images/down.png" alt="Lower priority" name="down" onload=""></a></td>
+            <td><a href="javascript:formCommandSubmit('reload');" title="Reload shared files"><img src="images/refresh.png" alt="Reload shared files" name="reload" onload=""></a></td>
+				  <td><a href="javascript:formCommandSubmit('prioup');" title="Raise priority of selected files"><img name="up" src="images/up.png" alt="Raise priority" onLoad=""></a></td>
+
+            <td><a href="javascript:formCommandSubmit('priodown');" title="Lower priority of selected files"><img src="images/down.png" alt="Lower priority" name="down" onload=""></a></td>
                   <td><select name="select">
-                      <option selected>Select prio</option>
+                      <option selected>Change priority</option>
+                      <option>Auto</option>
+                      <option>Very low</option>
                       <option>Low</option>
                       <option>Normal</option>
                       <option>High</option>
+                      <option>Very high</option>
+                      <option>Release</option>
                     </select> </td>
                   
-            <td><a href="javascript:formCommandSubmit('setprio');"><img src="images/ok.png" alt="Set priority" name="resume" onload=""></a></td>
+            <td><a href="javascript:formCommandSubmit('setprio');" title="Apply selected priority"><img src="images/ok.png" alt="Set priority" name="resume" onload=""></a></td>
               
                   <td> 
                     <?php
@@ -69,9 +95,10 @@ function formCommandSubmit(command)
                   </td>
                 </tr>
               </table>
+        <table class="w100p"><tr><td class="h10"></td></tr></table>
         <table class="tab">
           <caption>
-        SHARED FILES 
+        SHARED FILES
         </caption>
           <tr> 
             <td><img src="images/tab_top_left.png" width="24" height="24"></td>
@@ -83,8 +110,8 @@ function formCommandSubmit(command)
             
           <td>
               <table class="w100p">
-                <tr> 
-                  <th></th>
+                <tr>
+                  <th class="al-left"><input type="checkbox" name="selectAllFiles" onclick="selectAll(this)"></th>
                   <th><a href="amuleweb-main-shared.php?sort=name">File Name</a></th>
                   <th><a href="amuleweb-main-shared.php?sort=xfer">Transferred</a> 
                     (<a href="amuleweb-main-shared.php?sort=xfer_all">Total</a>)</th>
@@ -98,16 +125,9 @@ function formCommandSubmit(command)
                 <?php
 		function CastToXBytes($size)
 		{
-			if ( $size < 1024 ) {
-				$result = $size . " bytes";
-			} elseif ( $size < 1048576 ) {
-				$result = ($size / 1024.0) . "KB";
-			} elseif ( $size < 1073741824 ) {
-				$result = ($size / 1048576.0) . "MB";
-			} else {
-				$result = ($size / 1073741824.0) . "GB";
-			}
-			return $result;
+			// Emit the raw byte count; the unit formatting is done
+			// client-side (see the js-size script at the end of the page).
+			return '<span class="js-size">' . $size . '</span>';
 		}
 
 		function StatusString($file)
@@ -174,14 +194,25 @@ function formCommandSubmit(command)
 		//var_dump($HTTP_GET_VARS);
 		if (($HTTP_GET_VARS["command"] != "") && ($_SESSION["guest_login"] == 0)) {
 			//amule_do_download_cmd($HTTP_GET_VARS["command"]);
+			$cmd = $HTTP_GET_VARS["command"];
+			// Dropdown label -> priority constant (src/Constants.h)
+			$prio_values = array("Low" => 0, "Normal" => 1, "High" => 2,
+				"Very high" => 3, "Very low" => 4, "Auto" => 5, "Release" => 6);
 			foreach ( $HTTP_GET_VARS as $name => $val) {
 				// this is file checkboxes
 				if ( (strlen($name) == 32) and ($val == "on") ) {
 					//var_dump($name);var_dump($val);
-					amule_do_shared_cmd($name, $HTTP_GET_VARS["command"]);
+					if ( $cmd == "setprio" ) {
+						$sel = $HTTP_GET_VARS["select"];
+						if ( isset($prio_values[$sel]) ) {
+							amule_do_shared_cmd($name, "prio", $prio_values[$sel]);
+						}
+					} else {
+						amule_do_shared_cmd($name, $cmd);
+					}
 				}
 			}
-			if ($HTTP_GET_VARS["command"] == "reload") {
+			if ($cmd == "reload") {
 				amule_do_reload_shared_cmd();
 			}
 		}
@@ -259,5 +290,24 @@ function formCommandSubmit(command)
       </table></td>
   </tr>
 </table>
+<script type="text/JavaScript">
+// Format the raw byte counts emitted by the backend (spans with class
+// "js-size") into human-readable units. Done here in the browser because
+// the webserver's PHP interpreter lacks sprintf/round.
+function formatBytes(value) {
+	var b = parseFloat(value);
+	if ( isNaN(b) ) return value;
+	if ( b < 1024 ) return b + " Bytes";
+	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KB";
+	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MB";
+	return (b / 1073741824).toFixed(2) + " GB";
+}
+(function() {
+	var els = document.getElementsByClassName("js-size");
+	for ( var i = 0; i < els.length; i++ ) {
+		els[i].textContent = formatBytes(els[i].textContent);
+	}
+})();
+</script>
 </body>
 </html>

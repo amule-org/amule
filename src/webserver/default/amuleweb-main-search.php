@@ -3,6 +3,20 @@
 <head>
 <title>aMule control panel</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<?php
+	// Auto-refresh: reload on a timer, but skip while any checkbox is
+	// checked so the user's selection isn't wiped.
+	if ( $_SESSION["auto_refresh"] > 0 ) {
+		echo "<script type=\"text/JavaScript\">
+	setInterval(function() {
+		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
+			return;
+		}
+		location.reload();
+	}, 1000 * ", $_SESSION["auto_refresh"], ");
+</script>";
+	}
+?>
 
 <link href="style.css" rel="stylesheet" type="text/css">
 <script language="JavaScript" type="text/JavaScript">
@@ -14,9 +28,27 @@ function formCommandSubmit(command)
 				echo "return;";
 		}
 	?>
+	if ( command == "download" ) {
+		var boxchecked = document.querySelectorAll('input[type="checkbox"]:checked');
+		var selectedFiles = Object.values(boxchecked).filter(selected => selected.name != 'selectAllFiles').length;
+		if (selectedFiles == 0)
+			return;
+		var res = confirm("Download selected " + (selectedFiles) + " files ?")
+		if ( res == false ) {
+			return;
+		}
+	}
 	var frm=document.forms.mainform
 	frm.command.value=command
 	frm.submit()
+}
+
+function selectAll(check)
+{
+	var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+	checkboxes.forEach(function(checkbox) {
+		checkbox.checked = check.checked;
+	});
 }
 
 </script>
@@ -24,7 +56,7 @@ function formCommandSubmit(command)
 <body class="main">
 <table class="page">
   <tr> 
-    <td class="logo-cell"><img src="images/logo.png" width="143" height="64"></td>
+    <td class="logo-cell"><a href="amuleweb-main-dload.php" title="Home"><img src="images/logo.png" width="143" height="64" alt="aMule"></a></td>
     <td class="navbar-cell"> <table class="navbar-table">
         <tr> 
           <td><a class="navbutton nav-transfer" href="amuleweb-main-dload.php" title="Transfers"></a></td>
@@ -61,7 +93,7 @@ function formCommandSubmit(command)
                   <td class="al-center">
 <input type="hidden" name="command" value=""> 
                     <input name="searchval" type="text" id="searchval4" size="60"> 
-                    <input name="Search" type="submit" id="Search4" value="Search" onClick="javascript:formCommandSubmit('search');"></td>
+                    <input name="Search" type="submit" id="Search4" value="Search" title="Start the search" onClick="javascript:formCommandSubmit('search');"></td>
                   <td class="al-right">Availability :</td>
                   <td class="al-left"> 
                     <input name="avail" type="text" id="avail13" size="6"></td>
@@ -76,21 +108,7 @@ function formCommandSubmit(command)
                     </select></td>
                 </tr>
                 <tr> 
-                  <td class="al-center"><a href="amuleweb-main-search.php?search_sort=<?php
-// Whitelist against the column keys my_cmp() actually understands
-// (line 234-236 of this file). Anything else is dropped to empty,
-// which falls through to the "no sort change" branch below. This
-// avoids reflecting an attacker-controlled string into the rendered
-// HTML (#869). A whitelist is stricter than escaping here: only the
-// three known column keys are ever echoed, so the reflected value is
-// guaranteed safe regardless of context. The plain string-equality
-// chain is the only matching primitive the bundled interpreter offers
-// (no `in_array()`, and `[...]` short array syntax doesn't parse).
-$sort_raw = isset($HTTP_GET_VARS["sort"]) ? $HTTP_GET_VARS["sort"] : "";
-if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
-    echo($sort_raw);
-}
-?>">Click here to update the search results</a> </td>
+                  <td class="al-center"><input name="UpdateResults" type="button" value="Update results" title="Update the search results" onClick="window.location.href='amuleweb-main-search.php'"></td>
                   <td class="al-right">Search type :</td>
                   <td> 
                     <select name="searchtype" id="select">
@@ -110,8 +128,23 @@ if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
                 </tr>
               </table>
               <table class="w100p">
+                <tr class="al-right">
+                  <td colspan="4" scope="col">
+                    <input name="Download" type="submit" id="Download6" value="Download" title="Download selected files" onClick="javascript:formCommandSubmit('download'); return false;" >
+                    <select name="targetcat" id="select32">
+                      <?php
+                	$cats = amule_get_categories();
+                	foreach($cats as $c) {
+                		$label = ($c == 'all') ? 'No category' : $c;
+                		echo '<option value="', htmlspecialchars($c), '">', htmlspecialchars($label), '</option>';
+                	}
+                ?>
+                    </select></td>
+                </tr>
+                <tr><td colspan="9" class="h10"></td></tr>
+                <tr><td colspan="9" class="sep-dark"></td></tr>
                 <tr>
-                  <th>&nbsp;</th>
+                  <th class="al-left"><input type="checkbox" name="selectAllFiles" onclick="selectAll(this)"></th>
                   <th><a href="amuleweb-main-search.php?sort=name">File Name</a></th>
                   <th><a href="amuleweb-main-search.php?sort=size">Size</a></th>
                   <th><a href="amuleweb-main-search.php?sort=sources">Sources</a></th>
@@ -119,16 +152,9 @@ if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
     <?php
 		function CastToXBytes($size)
 		{
-			if ( $size < 1024 ) {
-				$result = $size . " b";
-			} elseif ( $size < 1048576 ) {
-				$result = ($size / 1024.0) . "kb";
-			} elseif ( $size < 1073741824 ) {
-				$result = ($size / 1048576.0) . "mb";
-			} else {
-				$result = ($size / 1073741824.0) . "gb";
-			}
-			return $result;
+			// Emit the raw byte count; the unit formatting is done
+			// client-side (see the js-size script at the end of the page).
+			return '<span class="js-size">' . $size . '</span>';
 		}
 
 		//
@@ -207,27 +233,26 @@ if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
 		}		
 		$search = amule_load_vars("searchresult");
 
-		// Whitelist against the column keys my_cmp() understands, same
-		// pattern as the dload/shared/servers pages. This prevents an
-		// attacker-controlled value from being stored in
-		// $_SESSION["search_sort"] and later reflected into rendered
-		// HTML (#869 follow-up). Anything unknown drops to "", which
-		// falls through to the "keep current sort" branch below.
+		// Column-header links use ?sort=<key> and TOGGLE the sort
+		// direction on each click. Any request without a (valid) sort
+		// key — including the "Update results" refresh, which just
+		// reloads the page — falls through to the order remembered in
+		// the session, so refreshing the streamed results keeps the
+		// current order without flipping it. The key is whitelisted
+		// against the keys my_cmp() understands, same pattern as the
+		// dload/shared/servers pages: this prevents an attacker-
+		// controlled value from being stored in $_SESSION["search_sort"]
+		// and later reflected into rendered HTML (#869 follow-up).
 		$sort_raw = isset($HTTP_GET_VARS["sort"]) ? $HTTP_GET_VARS["sort"] : "";
 		if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
 			$sort_order = $sort_raw;
-		} else {
-			$sort_order = "";
-		}
-
-		if ( $sort_order == "" ) {
-			$sort_order = $_SESSION["search_sort"];
-		} else {
 			if ( $_SESSION["search_sort_reverse"] == "" ) {
 				$_SESSION["search_sort_reverse"] = 0;
 			} else {
 				$_SESSION["search_sort_reverse"] = !$_SESSION["search_sort_reverse"];
 			}
+		} else {
+			$sort_order = $_SESSION["search_sort"];
 		}
 
 		$sort_reverse = $_SESSION["search_sort_reverse"];
@@ -251,17 +276,6 @@ if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
 		}
 
 	  ?>
-    <tr class="al-right"> 
-      <td colspan="4" scope="col">
-        <input name="Download" type="submit" id="Download6" value="Download" onClick="javascript:formCommandSubmit('download');" >
-        <select name="targetcat" id="select32">
-          <?php
-                	$cats = amule_get_categories();
-                	foreach($cats as $c) {
-                		echo "<option>", htmlspecialchars($c), "</option>";
-                	}
-                ?>
-        </select></td>
   </table>
 </form></td>
             <td>&nbsp;</td>
@@ -284,5 +298,24 @@ if ($sort_raw == "size" || $sort_raw == "name" || $sort_raw == "sources") {
       </table></td>
   </tr>
 </table>
+<script type="text/JavaScript">
+// Format the raw byte counts emitted by the backend (spans with class
+// "js-size") into human-readable units. Done here in the browser because
+// the webserver's PHP interpreter lacks sprintf/round.
+function formatBytes(value) {
+	var b = parseFloat(value);
+	if ( isNaN(b) ) return value;
+	if ( b < 1024 ) return b + " Bytes";
+	if ( b < 1048576 ) return (b / 1024).toFixed(2) + " KB";
+	if ( b < 1073741824 ) return (b / 1048576).toFixed(2) + " MB";
+	return (b / 1073741824).toFixed(2) + " GB";
+}
+(function() {
+	var els = document.getElementsByClassName("js-size");
+	for ( var i = 0; i < els.length; i++ ) {
+		els[i].textContent = formatBytes(els[i].textContent);
+	}
+})();
+</script>
 </body>
 </html>
