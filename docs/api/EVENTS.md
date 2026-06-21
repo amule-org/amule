@@ -91,6 +91,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `clients` | `client_*` | Peers we're exchanging with |
 | `status` | `status_*` | Connection state + headline counters |
 | `logs` | `log_*` | amuled / serverinfo log buffers |
+| `search` | `search_*` | Result deltas + completion of an active `POST /search` |
 
 By default every channel is delivered. To subscribe to a subset, pass `?channels=` with a comma-separated list:
 
@@ -327,6 +328,39 @@ Emitted when amuled or the serverinfo buffer appends new lines.
 ```
 
 `buffer` is `"amule"` or `"serverinfo"`. Multiple lines may be batched into a single event when the underlying buffer landed several lines between refresher ticks.
+
+### `search` channel
+
+Driven by the refresher state machine that owns the `POST /search` → completion lifecycle (see [REFERENCE.md](REFERENCE.md#search-results)). Events only fire while a search is active; the channel is silent at idle.
+
+#### `search_result_added`
+
+Emitted per new ECID that appears in the results map between refresher ticks.
+
+```json
+{
+  "ecid": 42,
+  "hash": "0123456789abcdef0123456789abcdef",
+  "name": "ubuntu-24.04-desktop-amd64.iso",
+  "size": 5765873664,
+  "sources": 12,
+  "complete_sources": 7,
+  "already_have": false,
+  "rating": 0
+}
+```
+
+Payload mirrors a single `/search/results` array entry. ECIDs are amuled-allocated and unique per amuled session, but **not** stable across `POST /search` calls — amuled wipes its searchlist on every new query and re-allocates from the same pool, so subscribers must treat each search as a fresh result space.
+
+#### `search_finished`
+
+Emitted exactly once per search when the state machine flips `progress.complete` from `false` → `true`. Triggers: amuled emits `EC_TAG_SEARCH_STATUS = 0xfffe` (Kad) / `0xffff` (local) / `100` (global all-done), or the refresher infers completion via results-count fallback or the 30 s defensive timeout (see [REFERENCE.md](REFERENCE.md#search-results) for the disambiguation rules).
+
+```json
+{ "percent": 100, "results": 153, "kind": "local" }
+```
+
+`kind` is the originally-requested search type ("local" | "global" | "kad"). `results` is the final results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/results`.
 
 ### Filter-bypass: `resync`
 

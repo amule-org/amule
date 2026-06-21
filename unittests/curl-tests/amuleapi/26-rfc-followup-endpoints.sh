@@ -368,11 +368,38 @@ else
 	_fail "events channel-filter positive" \
 		"no download/status events seen; sample: $(head -10 "$SSE")"
 fi
-LEAKED=$(grep -cE "^event: (client_|server_|shared_|log_)" "$SSE" || true)
+LEAKED=$(grep -cE "^event: (client_|server_|shared_|log_|search_)" "$SSE" || true)
 if [ "$LEAKED" -eq 0 ]; then
-	_pass "/events?channels=downloads,status excludes client/server/shared/log events"
+	_pass "/events?channels=downloads,status excludes client/server/shared/log/search events"
 else
 	_fail "events channel-filter leak" \
+		"$LEAKED off-channel events leaked through"
+fi
+
+# Positive: ?channels=search delivers search events and excludes downloads.
+: > "$SSE"
+( curl -s -m 12 -N "${H_AUTH[@]}" \
+	"$HOST/api/v0/events?channels=search" \
+	>> "$SSE" 2>&1 ) &
+PID=$!
+sleep 1
+curl -s -X POST "${H_AUTH[@]}" -H "Content-Type: application/json" \
+	-d '{"query":"ubuntu","type":"local"}' "$HOST/api/v0/search" > /dev/null
+sleep 8
+kill $PID 2>/dev/null
+wait $PID 2>/dev/null
+
+if grep -qE "^event: search_finished$" "$SSE"; then
+	_pass "/events?channels=search delivers search_finished"
+else
+	_fail "events channel=search positive" \
+		"no search_finished in 8 s; sample: $(head -10 "$SSE")"
+fi
+LEAKED=$(grep -cE "^event: (download_|status_|client_|server_|shared_|log_)" "$SSE" || true)
+if [ "$LEAKED" -eq 0 ]; then
+	_pass "/events?channels=search excludes non-search events"
+else
+	_fail "events channel=search leak" \
 		"$LEAKED off-channel events leaked through"
 fi
 

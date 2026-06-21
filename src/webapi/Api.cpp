@@ -5062,6 +5062,7 @@ void CApiDispatcher::DispatchEvents(
 		if (prefix == "client")   return "clients";
 		if (prefix == "status")   return "status";
 		if (prefix == "log")      return "logs";
+		if (prefix == "search")   return "search";
 		return prefix;
 	};
 	auto event_passes_filter = [&](const std::string &name) {
