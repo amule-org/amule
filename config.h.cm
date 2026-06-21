@@ -189,6 +189,10 @@
 /* Where the webserver finds it's themes */
 #cmakedefine WEBSERVERDIR "${WEBSERVERDIR}"
 
+/* Compile-time install path of amuleapi's bundled static frontend.
+   amuleapi falls back to this when [Server]/StaticRoot is empty. */
+#cmakedefine AMULEAPI_STATIC_DIR "${AMULEAPI_STATIC_DIR}"
+
 /* Define if libpng is present is set. */
 #cmakedefine WITH_LIBPNG
 

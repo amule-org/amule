@@ -99,6 +99,14 @@ if (BUILD_AMULEAPI)
 	set (NEED_LIB_MULESOCKET TRUE)
 	set (wx_NEED_NET TRUE)
 	set (NEED_ZLIB TRUE)
+	# Compile-time install path the daemon falls back to when
+	# [Server]/StaticRoot is empty in the conf. Mirrors WEBSERVERDIR but
+	# uses the ABSOLUTE form so a binary running from /usr/local/bin
+	# (or wherever the operator put it) resolves to the matching
+	# /usr/local/share/amule/amuleapi-static without needing to be
+	# cwd'd at the install prefix.
+	set (AMULEAPI_STATIC_DIR
+		"${CMAKE_INSTALL_FULL_DATADIR}/${PACKAGE}/amuleapi-static/")
 endif()
 
 if (BUILD_CAS)

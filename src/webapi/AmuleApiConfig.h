@@ -56,6 +56,12 @@ public:
 		unsigned    port            = 4713;
 		bool        allow_cors      = false;
 		std::vector<std::string> cors_origin_allowlist;
+		// Filesystem root of a bundled web frontend. Empty (default) =
+		// API-only deployment: non-/api/ paths return 404. Non-empty =
+		// the daemon serves GET/HEAD requests for paths outside /api/
+		// from this directory, with an index.html SPA fallback for
+		// extension-less misses. See ServeStaticFile in Api.cpp.
+		std::string static_root;
 	};
 
 	struct Ec {

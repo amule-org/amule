@@ -60,6 +60,25 @@ run_phase() {
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
 		--host=127.0.0.1 --port=4712 --password=amule \
 		--set-guest-pass=guestpass > /dev/null 2>&1
+	# phase12 exercises the static-frontend serve path. It plants
+	# symlinks + an oversized file into StaticRoot during the run, so
+	# the dir has to be writable. The bundled source tree is read-only
+	# in container CI; copy the placeholder out to a /tmp scratch dir
+	# and point StaticRoot at the copy. Other phases leave it empty so
+	# the install-path discovery chain stays exercised by phase12 only.
+	if [ "$script" = "phase12.sh" ]; then
+		STATIC_SRC="$ROOT/src/webapi/static"
+		STATIC_DIR=/tmp/amuleapi-phase12-static
+		rm -rf "$STATIC_DIR"
+		mkdir -p "$STATIC_DIR"
+		if [ -d "$STATIC_SRC" ]; then
+			cp -R "$STATIC_SRC"/. "$STATIC_DIR/"
+		fi
+		sed -i'.bak' \
+			"s|^StaticRoot=.*|StaticRoot=$STATIC_DIR|" \
+			/tmp/amuleapi-regtest/amuleapi.conf
+		rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
+	fi
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
 		--host=127.0.0.1 --port=4712 --password=amule \
 		> /tmp/amuleapi.log 2>&1 &
@@ -115,7 +134,7 @@ PHASES=(
 	phase5a.sh phase5b.sh phase5c.sh phase5d.sh phase5e.sh
 	phase5f.sh phase5g.sh phase6.sh phase7.sh
 	phase8a.sh phase8b.sh phase8c.sh phase8d.sh
-	phase9.sh phase11.sh
+	phase9.sh phase11.sh phase12.sh
 )
 
 # Override list from the command line if given.

@@ -221,6 +221,7 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		"BindAddress=127.0.0.1\n"
 		"Port=4713\n"
 		"AllowCORS=0\n"
+		"StaticRoot=\n"
 		"\n"
 		"[EC]\n"
 		"Host=127.0.0.1\n"
@@ -283,6 +284,12 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			if (!item.IsEmpty()) {
 				m_server.cors_origin_allowlist.emplace_back(item.utf8_str());
 			}
+		}
+	}
+	if (cfg.Read("/Server/StaticRoot", &s)) {
+		const wxString trimmed = s.Trim(true).Trim(false);
+		if (!trimmed.IsEmpty()) {
+			m_server.static_root = std::string(trimmed.utf8_str());
 		}
 	}
 

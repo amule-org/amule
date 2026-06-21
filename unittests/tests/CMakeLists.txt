@@ -281,6 +281,19 @@ target_link_libraries (EtagTest
 	mulecommon
 )
 
+add_executable (StaticFsTest
+	StaticFsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/StaticFs.cpp
+)
+target_include_directories (StaticFsTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+)
+add_test (NAME StaticFsTest COMMAND StaticFsTest)
+target_link_libraries (StaticFsTest
+	muleunit
+	mulecommon
+)
+
 add_executable (EventBusTest
 	EventBusTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/EventBus.cpp

@@ -17,6 +17,7 @@ add_executable (amuleapi
 	HttpServer.cpp
 	Refresher.cpp
 	RefresherTick.cpp
+	StaticFs.cpp
 	State.cpp
 )
 
@@ -84,4 +85,13 @@ endif()
 
 install (TARGETS amuleapi
 	RUNTIME DESTINATION bin
+)
+
+# Bundled static-frontend tree. Empty StaticRoot in amuleapi.conf keeps
+# the daemon API-only; setting it to ${CMAKE_INSTALL_DATADIR}/amule/
+# amuleapi-static makes the daemon serve this tree (placeholder
+# index.html out of the box — replace with a real frontend bundle in
+# place to start serving one).
+install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/static/
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/amule/amuleapi-static
 )

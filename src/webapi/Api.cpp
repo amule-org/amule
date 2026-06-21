@@ -24,6 +24,7 @@
 
 #include "Api.h"
 
+#include "config.h"        // AMULEAPI_STATIC_DIR (compile-time install path)
 #include "AmuleApiConfig.h"
 #include "App.h"
 #include "Auth.h"
@@ -33,6 +34,7 @@
 #include "Jwt.h"
 #include "PathPatterns.h"
 #include "Refresher.h"    // ParseStatsTreeFromPacket / ParseGraphsFromPacket / ApplySearchFull
+#include "StaticFs.h"     // IsDir, ResolveWithinRoot
 #include "State.h"
 
 #include "Constants.h"
@@ -41,11 +43,23 @@
 #include <ec/cpp/ECCodes.h>
 #include <ec/cpp/ECSpecialTags.h>
 
+#include <wx/stdpaths.h>
+#include <wx/filename.h>
+#ifdef __WXMAC__
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreServices/CoreServices.h>
+#include <wx/osx/core/cfstring.h>
+#endif
+
 #include <algorithm>
 #include <cerrno>
+#include <fstream>
 #include <set>
 #include <sstream>
 #include <cctype>
+#include <climits>
+#include <cstdlib>
+#include <sys/stat.h>
 
 // strncasecmp lives in <strings.h> on POSIX (glibc also exposes it
 // via <string.h>, but musl/BSDs don't). Match the shim
@@ -291,6 +305,13 @@ std::string MakeClearCookie(const std::string &name)
 const char *const kSessionCookieName = "amuleapi_token";
 
 
+// Hard ceiling for individual static-asset reads. Frontend bundles are
+// kilobytes to a few MB; 16 MiB is comfortable headroom while keeping a
+// malformed StaticRoot pointing at /dev/zero or a multi-GB log file
+// from exhausting daemon RAM.
+constexpr std::size_t kStaticMaxFileBytes = 16 * 1024 * 1024;
+
+
 // Try parsing `key` as a uint32 ECID (1..10 decimal digits, no leading
 // zero except "0" alone). 32-char hex hashes can never satisfy this, so
 // callers use it to disambiguate /downloads/{key} and /shared/{key}
@@ -307,6 +328,146 @@ bool TryParseEcid(const std::string &key, std::uint32_t &out)
 	}
 	out = static_cast<std::uint32_t>(v);
 	return true;
+}
+
+
+// Map file extension to Content-Type. Unknown → application/octet-stream
+// (no XSS amplification from a wrong-type response on an attacker-named
+// file).
+std::string StaticContentType(const std::string &path)
+{
+	const std::size_t dot = path.find_last_of('.');
+	if (dot == std::string::npos) return "application/octet-stream";
+	std::string ext = path.substr(dot + 1);
+	for (char &c : ext) c = static_cast<char>(std::tolower(
+		static_cast<unsigned char>(c)));
+	if (ext == "html" || ext == "htm") return "text/html; charset=utf-8";
+	if (ext == "js"  || ext == "mjs")  return "text/javascript; charset=utf-8";
+	if (ext == "css")  return "text/css; charset=utf-8";
+	if (ext == "json") return "application/json; charset=utf-8";
+	if (ext == "svg")  return "image/svg+xml";
+	if (ext == "png")  return "image/png";
+	if (ext == "gif")  return "image/gif";
+	if (ext == "jpg" || ext == "jpeg") return "image/jpeg";
+	if (ext == "ico")  return "image/x-icon";
+	if (ext == "webp") return "image/webp";
+	if (ext == "woff2") return "font/woff2";
+	if (ext == "woff")  return "font/woff";
+	if (ext == "ttf")   return "font/ttf";
+	if (ext == "map")  return "application/json";
+	if (ext == "txt")  return "text/plain; charset=utf-8";
+	return "application/octet-stream";
+}
+
+
+// Slurp `fs_path` into `out`. Returns false if the path is not a
+// regular file, exceeds kStaticMaxFileBytes, or any read error. `st`
+// is populated on success so the caller can derive an ETag from
+// mtime + size without re-stat'ing.
+bool ReadStaticFile(const std::string &fs_path, std::string &out,
+                    struct stat &st)
+{
+	if (::stat(fs_path.c_str(), &st) != 0) return false;
+	if (!S_ISREG(st.st_mode)) return false;
+	if (static_cast<std::size_t>(st.st_size) > kStaticMaxFileBytes) return false;
+	std::ifstream f(fs_path.c_str(), std::ios::binary);
+	if (!f.is_open()) return false;
+	std::ostringstream ss;
+	ss << f.rdbuf();
+	if (f.bad()) return false;
+	out = ss.str();
+	return true;
+}
+
+
+// "mtime-size" hex ETag — same shape nginx defaults to. Strong-form
+// quoted per RFC 7232. Sufficient for the local-frontend case where
+// the daemon and the file system are colocated and clock-sane.
+std::string BuildStaticEtag(const struct stat &st)
+{
+	std::ostringstream oss;
+	oss << '"' << std::hex
+	    << static_cast<std::uint64_t>(st.st_mtime) << '-'
+	    << static_cast<std::uint64_t>(st.st_size) << '"';
+	return oss.str();
+}
+
+
+// Resolve the default static directory when amuleapi.conf's
+// [Server]/StaticRoot is empty. Mirrors amuleweb's GetTemplateDir
+// (src/webserver/src/WebInterface.cpp): try the macOS .app bundle's
+// Resources/ first (so an installed aMule.app surfaces the bundled
+// frontend without a conf edit), then the compile-time install path
+// from AMULEAPI_STATIC_DIR, then wxStandardPaths' platform-adjusted
+// resource dir. Returns the first existing directory; empty if none.
+std::string ResolveDefaultStaticDir()
+{
+	const std::string asset = "amuleapi-static";
+
+#ifdef __WXMAC__
+	// LaunchServices lookup for the installed aMule.app. Picks up the
+	// bundled placeholder when the operator launched amuleapi from a
+	// path-registered .app install.
+	CFArrayRef urls = LSCopyApplicationURLsForBundleIdentifier(
+		CFSTR("org.amule.aMule"), NULL);
+	CFURLRef bundle_url = NULL;
+	if (urls) {
+		if (CFArrayGetCount(urls) > 0) {
+			bundle_url = (CFURLRef)CFRetain(
+				CFArrayGetValueAtIndex(urls, 0));
+		}
+		CFRelease(urls);
+	}
+	if (bundle_url) {
+		CFBundleRef bundle = CFBundleCreate(NULL, bundle_url);
+		CFRelease(bundle_url);
+		if (bundle) {
+			CFStringRef name = CFStringCreateWithCString(
+				NULL, asset.c_str(), kCFStringEncodingUTF8);
+			CFURLRef rsrc = CFBundleCopyResourceURL(
+				bundle, name, NULL, NULL);
+			CFRelease(name);
+			CFRelease(bundle);
+			if (rsrc) {
+				CFURLRef abs = CFURLCopyAbsoluteURL(rsrc);
+				CFRelease(rsrc);
+				if (abs) {
+					CFStringRef p = CFURLCopyFileSystemPath(
+						abs, kCFURLPOSIXPathStyle);
+					CFRelease(abs);
+					std::string s =
+						std::string(wxCFStringRef(p).AsString().utf8_str());
+					if (webapi::IsDir(s)) return s;
+				}
+			}
+		}
+	}
+#endif  // __WXMAC__
+
+#ifdef AMULEAPI_STATIC_DIR
+	if (webapi::IsDir(AMULEAPI_STATIC_DIR)) {
+		return std::string(AMULEAPI_STATIC_DIR);
+	}
+#endif
+
+	// wxStandardPaths fallback. Same platform adjustments amuleweb
+	// applies for its `webserver/` lookup (WebInterface.cpp:211-225).
+	wxString dir = wxStandardPaths::Get().GetResourcesDir();
+#if defined(__WINDOWS__)
+	// Installer layout: bin\amuleapi.exe + share\amule\amuleapi-static\.
+	// wxStandardPaths returns the exe directory on Windows, so go up
+	// one level and into the FHS-style share/amule/ tree.
+	dir = wxFileName(dir, "..").GetFullPath();
+	dir = wxFileName(dir, "share").GetFullPath();
+	dir = wxFileName(dir, "amule").GetFullPath();
+#elif !defined(__WXMAC__)
+	dir = dir.BeforeLast(wxFileName::GetPathSeparator());
+	dir = wxFileName(dir, "amule").GetFullPath();
+#endif
+	dir = wxFileName(dir, asset).GetFullPath();
+	const std::string s(dir.utf8_str());
+	if (webapi::IsDir(s)) return s;
+	return std::string();
 }
 
 
@@ -874,7 +1035,93 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// Static-frontend fallthrough. Anything that didn't match an
+	// /api/v0/* route and is a safe-method request for a non-API path
+	// is a candidate. ServeStaticFile is a no-op (404) when StaticRoot
+	// is unset, so API-only deployments keep their historical
+	// behaviour. Auth is intentionally NOT required here — the shell
+	// itself is public; the API calls it makes still go through the
+	// per-handler role gates.
+	if ((req.method == "GET" || req.method == "HEAD")
+	    && path.compare(0, 5, "/api/") != 0) {
+		return ServeStaticFile(req, path);
+	}
+
 	return ErrorResponse(404, "not_found", "no such endpoint");
+}
+
+
+CHttpServer::Response CApiDispatcher::ServeStaticFile(
+	const CHttpServer::Request &req,
+	const std::string          &url_path)
+{
+	// Resolve once per process. Conf override wins; otherwise we walk
+	// the install-path discovery chain. `m_static_root_resolved`
+	// guards against re-walking on every request (the answer is
+	// stable for the daemon's lifetime — operators editing
+	// amuleapi.conf at runtime restart the daemon).
+	if (!m_static_root_resolved) {
+		m_static_root_cache  = m_config.ServerCfg().static_root;
+		if (m_static_root_cache.empty()) {
+			m_static_root_cache = ResolveDefaultStaticDir();
+		}
+		m_static_root_resolved = true;
+	}
+	const std::string &root = m_static_root_cache;
+	if (root.empty()) {
+		// API-only deployment AND nothing on disk to fall back to.
+		return ErrorResponse(404, "not_found", "no such endpoint");
+	}
+
+	// Map "/" → SPA entry. Strip leading slash so the join is relative;
+	// `LooksMalicious` (run at the top of DispatchToHandler) already
+	// rejected NUL / encoded NUL / encoded `..` / literal `..` segments.
+	std::string rel = (url_path == "/" || url_path.empty())
+		? std::string("index.html")
+		: url_path.substr(1);
+
+	std::string fs_path;
+	struct stat st{};
+	std::string body;
+	bool found = webapi::ResolveWithinRoot(root, rel, fs_path)
+	          && ReadStaticFile(fs_path, body, st);
+
+	// SPA fallback: an extension-less path that didn't resolve is
+	// treated as a client-side route and served the entry document so
+	// a deep-linked reload still boots the app. Paths that look like
+	// an asset (carry an extension) 404 honestly so a missing JS/CSS
+	// failure is visible rather than masked by an HTML response.
+	if (!found && rel.find('.') == std::string::npos) {
+		if (webapi::ResolveWithinRoot(root, "index.html", fs_path)
+		 && ReadStaticFile(fs_path, body, st)) {
+			rel = "index.html";
+			found = true;
+		}
+	}
+
+	if (!found) {
+		return ErrorResponse(404, "not_found", "no such file");
+	}
+
+	const std::string etag = BuildStaticEtag(st);
+
+	// Conditional GET: client sent If-None-Match → 304 with no body
+	// when the ETag matches. ETag is mtime+size, so a rebuild of the
+	// frontend invalidates without manual cache-busting.
+	auto inm = req.headers.find("If-None-Match");
+	if (inm != req.headers.end() && inm->second == etag) {
+		CHttpServer::Response r;
+		r.status = 304;
+		r.headers["ETag"] = etag;
+		return r;
+	}
+
+	CHttpServer::Response r;
+	r.status       = 200;
+	r.content_type = StaticContentType(rel);
+	r.body         = (req.method == "HEAD") ? std::string() : std::move(body);
+	r.headers["ETag"] = etag;
+	return r;
 }
 
 

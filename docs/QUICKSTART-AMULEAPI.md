@@ -121,6 +121,7 @@ BindAddress=127.0.0.1
 Port=4713
 AllowCORS=0
 CorsOriginAllowlist=
+StaticRoot=
 
 [EC]
 Host=127.0.0.1
@@ -144,6 +145,7 @@ EventBusRingCapacity=16384
 | `Port` | `4713` | TCP port for inbound REST traffic. Distinct from amuled's EC port (`[EC]/Port`, default 4712). Overridable with `--http-port=…`. |
 | `AllowCORS` | `0` | `1` enables CORS headers (`Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials: true`, `Vary: Origin`, preflight OPTIONS). Required for browser clients hosted on a different origin. See §CORS below. |
 | `CorsOriginAllowlist` | *(empty)* | Comma-separated list of origins that may set credentialed CORS requests. Empty + `AllowCORS=1` echoes the caller's `Origin` verbatim (wildcard-equivalent that remains cookie-compatible). |
+| `StaticRoot` | *(empty)* | Absolute filesystem path of a bundled web frontend. Empty (default) auto-discovers the bundled placeholder via the install-path chain (`make install` target on Linux/Windows, `aMule.app/Contents/Resources/amuleapi-static` on macOS) — same pattern amuleweb uses for templates, see [`WebInterface.cpp:146`](../src/webserver/src/WebInterface.cpp#L146). If no install is found, the daemon stays API-only and non-`/api/` paths return `404`. A non-empty `StaticRoot` overrides discovery and serves `GET`/`HEAD` requests outside `/api/` from that directory, with `index.html` SPA fallback for extension-less misses. Reads are containment-checked (symlinks pointing outside the root are rejected on POSIX; lexical `..`-rejection on Windows where symlinks require elevation), capped at 16 MiB per asset, and emit a mtime-size `ETag` so subsequent loads short-circuit to `304` via `If-None-Match`. |
 
 ### `[EC]` — outbound connection to amuled
 

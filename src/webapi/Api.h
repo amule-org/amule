@@ -140,6 +140,18 @@ private:
 	// shared file priority PATCH. `key` = hash OR ECID.
 	CHttpServer::Response HandleSharedPatch     (const CHttpServer::Request &,
 	                                             const std::string &key);
+
+	// Static-frontend fallthrough. Resolves `url_path` under
+	// ServerCfg().static_root, returns the file with a content-type
+	// derived from its extension. Returns 404 when static serving is
+	// disabled (StaticRoot empty), when the file is absent, or when
+	// the resolved path escapes static_root (realpath containment).
+	// Falls back to index.html for extension-less paths so SPA deep
+	// links work. Supports If-None-Match → 304 via mtime+size ETag.
+	// Never requires auth — the shell is public; the API calls it
+	// makes still hit the per-handler role gates.
+	CHttpServer::Response ServeStaticFile      (const CHttpServer::Request &,
+	                                             const std::string &url_path);
 	// Rescan shared directories — amuled re-walks the configured share
 	// roots and re-publishes whatever's there. Parameterless EC op
 	// (EC_OP_SHAREDFILES_RELOAD).
@@ -182,6 +194,15 @@ private:
 	webapi::CState           &m_state;
 	CamuleapiApp             &m_app;
 	webapi::CRevocationSet    m_revocations;
+
+	// Cached resolution of the static-frontend root. Conf-side
+	// `[Server]/StaticRoot` wins; an empty conf value falls back to
+	// the install-path discovery chain (ResolveDefaultStaticDir).
+	// Resolved on first ServeStaticFile call, then memoized for the
+	// daemon's lifetime — operators editing the conf at runtime are
+	// expected to restart amuleapi.
+	mutable std::string       m_static_root_cache;
+	mutable bool              m_static_root_resolved = false;
 
 	// ETag memoization keyed on (request target, snapshot version).
 	// Every 200 GET/HEAD runs MD5 over the whole body for ETag — on a
