@@ -388,7 +388,7 @@ The SSE `download_added` / `download_updated` event payload matches this object 
 
 **Auth:** `GUEST`
 
-Detail view for a single partfile. `{key}` is the 32-char MD4 hex hash (case-insensitive — the dispatcher lower-cases input). Lookup goes through the parallel `m_hash_to_ecid` index that's maintained alongside `m_files`, so it's an O(log N) std::map probe.
+Detail view for a single partfile. `{hash}` is the 32-char MD4 hex hash (case-insensitive).
 
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" \
@@ -444,7 +444,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-Mutates one or more fields of a single partfile. `{key}` is the 32-char MD4 hex hash (case-insensitive).
+Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex hash (case-insensitive).
 
 **Body:** at least one of:
 
@@ -467,7 +467,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-Cancels an **active** partfile and deletes its on-disk data. `{key}` is the 32-char MD4 hex hash (case-insensitive). amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed entries are out of scope; use [`POST /downloads/clear_completed`](#post-apiv0downloadsclear_completed) instead.
+Cancels an **active** partfile and deletes its on-disk data. `{hash}` is the 32-char MD4 hex hash (case-insensitive). amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed entries are out of scope; use [`POST /downloads/clear_completed`](#post-apiv0downloadsclear_completed) instead.
 
 ```sh
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \

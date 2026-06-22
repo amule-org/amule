@@ -56,7 +56,7 @@ DECLARE_SIMPLE(Refresher)
 TEST(Refresher, FileRemovedErasesFromDownloads)
 {
 	// Pre-seed two downloads in the cache.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	{
 		FileSnapshot d;
 		d.ecid = 42;
@@ -88,7 +88,7 @@ TEST(Refresher, FileRemovedErasesFromDownloads)
 	// Survivor is untouched — INC protocol uses explicit deletion
 	// markers, never "absence implies removed".
 	ASSERT_TRUE(cache.find(99) != cache.end());
-	ASSERT_EQUALS(std::string("survivor.iso"), cache[99].name);
+	ASSERT_EQUALS(std::string("survivor.iso"), cache.find(99)->second.name);
 }
 
 
@@ -100,7 +100,7 @@ TEST(Refresher, FileRemovedErasesFromShared)
 	// ApplyGetUpdateToShared evicts unconditionally; the eventual
 	// cross-walker call in RefresherTick has both walkers fire on
 	// the same response so the right cache loses the entry.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	{
 		FileSnapshot s;
 		s.ecid = 33;
@@ -122,7 +122,7 @@ TEST(Refresher, FileRemovedErasesFromShared)
 TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 {
 	// Cache contains a single known download.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	{
 		FileSnapshot d;
 		d.ecid = 7;
@@ -142,7 +142,7 @@ TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(7) != cache.end());
-	ASSERT_EQUALS(std::string("kept.iso"), cache[7].name);
+	ASSERT_EQUALS(std::string("kept.iso"), cache.find(7)->second.name);
 }
 
 
@@ -153,14 +153,14 @@ TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 
 TEST(Refresher, EmptyResponseLeavesCachesIntact)
 {
-	std::map<std::uint32_t, FileSnapshot> downloads;
+	FileMap downloads;
 	{
 		FileSnapshot d;
 		d.ecid = 1;
 		d.name = "alpha";
 		downloads.emplace(1, d);
 	}
-	std::map<std::uint32_t, FileSnapshot> shared;
+	FileMap shared;
 	{
 		FileSnapshot s;
 		s.ecid = 2;
@@ -189,8 +189,8 @@ TEST(Refresher, EmptyResponseLeavesCachesIntact)
 
 TEST(Refresher, MixedTopLevelDispatchedByTagName)
 {
-	std::map<std::uint32_t, FileSnapshot> downloads;
-	std::map<std::uint32_t, FileSnapshot>   shared;
+	FileMap downloads;
+	FileMap shared;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	CECPacket resp(EC_OP_SHARED_FILES);
@@ -229,7 +229,7 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 
 TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 {
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(50));
@@ -250,7 +250,7 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(50) != cache.end());
-	ASSERT_EQUALS(static_cast<std::uint32_t>(50), cache[50].ecid);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(50), cache.find(50)->second.ecid);
 }
 
 
@@ -259,7 +259,7 @@ TEST(Refresher, UnsharedPartfileSkippedFromShared)
 	// PARTFILE arrives with EC_TAG_PARTFILE_SHARED=false. The
 	// shared walker must NOT insert it — the file is in the download
 	// queue but has zero chunks completed, so no peer can request it.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(60));
@@ -281,7 +281,7 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 	// is_shared role (and reset the shared sub-block so /shared can't
 	// surface stale upload stats). The entry itself stays in the
 	// unified map — entity-level eviction is FILE_REMOVED's job.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	{
 		FileSnapshot s;
 		s.ecid = 70;
@@ -301,11 +301,11 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 	ApplyGetUpdateToShared(&resp, cache);
 
 	ASSERT_TRUE(cache.find(70) != cache.end());
-	ASSERT_TRUE(!cache[70].is_shared);
+	ASSERT_TRUE(!cache.find(70)->second.is_shared);
 	// Stale upload stats from the prior sharing period must be cleared
 	// so /shared can never re-surface them.
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0),
-	              cache[70].shared.xfer_session);
+	              cache.find(70)->second.shared.xfer_session);
 }
 
 
@@ -315,7 +315,7 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 	// value matches the previous frame. For a cached partfile that
 	// was previously shared, the absence of the flag means "still
 	// shared" — the walker must keep it and apply stat deltas.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	{
 		FileSnapshot s;
 		s.ecid = 80;
@@ -330,7 +330,7 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 	ApplyGetUpdateToShared(&resp, cache);
 
 	ASSERT_TRUE(cache.find(80) != cache.end());
-	ASSERT_EQUALS(std::string("still-sharing.iso"), cache[80].name);
+	ASSERT_EQUALS(std::string("still-sharing.iso"), cache.find(80)->second.name);
 }
 
 
@@ -340,7 +340,7 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 	// suppressed AND no prior cache entry means "we have no signal
 	// that this is shared." Don't insert blindly — wait for the next
 	// tick that flips the state to emit the flag.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(90)));
 
@@ -360,7 +360,7 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 
 TEST(Refresher, NewPartfileInsertedInOneTick)
 {
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	// Craft a partfile tag with just the ECID. The walker dispatches
@@ -378,7 +378,7 @@ TEST(Refresher, NewPartfileInsertedInOneTick)
 	// The new ECID landed — no needed.
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(55) != cache.end());
-	ASSERT_EQUALS(static_cast<std::uint32_t>(55), cache[55].ecid);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(55), cache.find(55)->second.ecid);
 }
 
 
@@ -472,7 +472,7 @@ TEST(Refresher, ServersNoContainerLeavesCacheAlone)
 
 TEST(Refresher, RleStateErasedAlongsideFileRemoved)
 {
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	{
 		FileSnapshot d;
@@ -499,7 +499,7 @@ TEST(Refresher, RleStatePreservedForKnownEntryAcrossTick)
 	// A partfile already in cache should KEEP its RLE state across a
 	// tick that brings no new info. The decoder relies on its buffer
 	// surviving from the prior tick.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	{
 		FileSnapshot d;
@@ -537,7 +537,7 @@ TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 	// PS_COMPLETE = 9 (Constants.h). Crafting a partfile tag with
 	// PS_STATUS=9 + STOPPED=true exercises the merge path through
 	// ApplyGetUpdateToDownloads.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	CECPacket resp(EC_OP_SHARED_FILES);
@@ -552,7 +552,7 @@ TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 
 	ASSERT_TRUE(cache.find(101) != cache.end());
-	ASSERT_EQUALS(std::string("completed"), cache[101].download.status);
+	ASSERT_EQUALS(std::string("completed"), cache.find(101)->second.download.status);
 }
 
 
@@ -561,7 +561,7 @@ TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 	// Same shape, PS_COMPLETING (=8) takes priority over stopped too
 	// — covers the in-flight finalization race where the cache is
 	// being moved from m_filelist to m_completedDownloads.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	CECPacket resp(EC_OP_SHARED_FILES);
@@ -575,7 +575,7 @@ TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 	ASSERT_TRUE(cache.find(102) != cache.end());
-	ASSERT_EQUALS(std::string("completing"), cache[102].download.status);
+	ASSERT_EQUALS(std::string("completing"), cache.find(102)->second.download.status);
 }
 
 
@@ -585,7 +585,7 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 	// but NOT yet completed (user paused mid-transfer) must still
 	// report "paused" — the fix only carves out
 	// PS_COMPLETE/PS_COMPLETING.
-	std::map<std::uint32_t, FileSnapshot> cache;
+	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	CECPacket resp(EC_OP_SHARED_FILES);
@@ -600,7 +600,7 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 	ASSERT_TRUE(cache.find(103) != cache.end());
-	ASSERT_EQUALS(std::string("paused"), cache[103].download.status);
+	ASSERT_EQUALS(std::string("paused"), cache.find(103)->second.download.status);
 }
 
 

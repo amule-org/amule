@@ -666,7 +666,7 @@ void DecodeRleBlobsForPartFile(
 
 void ApplyGetUpdateToDownloads(
 	const CECPacket *resp,
-	std::map<std::uint32_t, FileSnapshot> &cache,
+	FileMap &cache,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state)
 {
 	if (!resp) return;
@@ -723,7 +723,7 @@ void ApplyGetUpdateToDownloads(
 
 void ApplyGetUpdateToShared(
 	const CECPacket *resp,
-	std::map<std::uint32_t, FileSnapshot> &cache)
+	FileMap &cache)
 {
 	if (!resp) return;
 

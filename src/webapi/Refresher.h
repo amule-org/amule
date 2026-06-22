@@ -80,6 +80,7 @@ struct ServerSnapshot;
 struct KadSnapshot;
 struct CategorySnapshot;
 struct PreferencesSnapshot;
+class  FileMap;
 
 void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out);
 // Kad detail rides the same STAT_REQ response — saves a roundtrip
@@ -141,7 +142,7 @@ void ParsePreferencesFromPacket(const CECPacket *resp,
 // rationale.
 void ApplyGetUpdateToDownloads(
 	const CECPacket *resp,
-	std::map<std::uint32_t, FileSnapshot> &cache,
+	FileMap &cache,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state);
 
 // Merges shared-walker state (EC_TAG_KNOWNFILE / EC_TAG_PARTFILE with
@@ -155,7 +156,7 @@ void ApplyGetUpdateToDownloads(
 // fields. No fallback hop needed.
 void ApplyGetUpdateToShared(
 	const CECPacket *resp,
-	std::map<std::uint32_t, FileSnapshot>   &cache);
+	FileMap &cache);
 
 void ApplyGetUpdateToServers(
 	const CECPacket *resp,

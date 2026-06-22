@@ -303,9 +303,9 @@ bool CState::FindDownload(const std::string &hash_hex,
                           FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	const auto idx = m_hash_to_ecid.find(hash_hex);
-	if (idx == m_hash_to_ecid.end()) return false;
-	const auto it = m_files.find(idx->second);
+	std::uint32_t ecid = 0;
+	if (!m_files.FindEcidByHash(hash_hex, ecid)) return false;
+	const auto it = m_files.find(ecid);
 	if (it == m_files.end() || !it->second.is_downloading) return false;
 	out = it->second;
 	return true;
@@ -327,9 +327,9 @@ bool CState::FindShared(const std::string &hash_hex,
                         FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	const auto idx = m_hash_to_ecid.find(hash_hex);
-	if (idx == m_hash_to_ecid.end()) return false;
-	const auto it = m_files.find(idx->second);
+	std::uint32_t ecid = 0;
+	if (!m_files.FindEcidByHash(hash_hex, ecid)) return false;
+	const auto it = m_files.find(ecid);
 	if (it == m_files.end() || !it->second.is_shared) return false;
 	out = it->second;
 	return true;
@@ -350,46 +350,20 @@ bool CState::FindSharedByEcid(std::uint32_t ecid,
 // MutateDownloads + MutateShared both lock + hand out m_files. Both
 // walkers operate on the same unified map (and the same lock acquisition,
 // when chained from a single tick); the callback decides which role
-// flag to set or clear. After the walker, rebuild the hash → ECID
-// index from scratch — it's O(N) where N is the file count (~tens
-// to low hundreds in typical operator use) so the marginal cost
-// per tick is negligible, but it lets FindDownload/FindShared hit
-// the hash index in O(1) per HTTP request.
-void CState::MutateDownloads(const std::function<
-	void(std::map<std::uint32_t, FileSnapshot> &)> &fn)
+// flag to set or clear. The FileMap wrapper keeps its hash→ECID index
+// in sync as the walker emplaces / erases, so there's no rebuild pass
+// at the end of the mutate window.
+void CState::MutateDownloads(const std::function<void(FileMap &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
-	RebuildHashIndex();
 }
 
 
-void CState::MutateShared(const std::function<
-	void(std::map<std::uint32_t, FileSnapshot> &)> &fn)
+void CState::MutateShared(const std::function<void(FileMap &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
-	RebuildHashIndex();
-}
-
-
-// Caller MUST hold the unique lock. Rebuilds m_hash_to_ecid from the
-// current contents of m_files; both walkers chain through this after
-// upserting / evicting entries, so the index is always in sync at
-// MutateDownloads/Shared exit.
-void CState::RebuildHashIndex()
-{
-	m_hash_to_ecid.clear();
-	m_hash_to_ecid.reserve(m_files.size());
-	for (const auto &kv : m_files) {
-		// Skip entries that don't carry hash yet (shouldn't happen
-		// in practice — the walkers populate hash on first insert —
-		// but the empty-hash case would collapse multiple entries
-		// into one index slot).
-		if (!kv.second.hash.empty()) {
-			m_hash_to_ecid[kv.second.hash] = kv.first;
-		}
-	}
 }
 
 
@@ -405,7 +379,6 @@ void CState::ResetLists()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_files.clear();
-	m_hash_to_ecid.clear();
 	m_clients.clear();
 	m_servers.clear();
 	m_categories.clear();

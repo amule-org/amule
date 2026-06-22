@@ -117,7 +117,7 @@ TEST(State, WriteStatusRoundtrip)
 TEST(State, MutateDownloadsRoundtripAndFind)
 {
 	CState s;
-	s.MutateDownloads([](std::map<std::uint32_t, FileSnapshot> &cache) {
+	s.MutateDownloads([](FileMap &cache) {
 		FileSnapshot a;
 		a.ecid = 100;
 		a.hash = "aaaa0000aaaa0000aaaa0000aaaa0000";
@@ -138,12 +138,18 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 		cache.emplace(b.ecid, b);
 	});
 
-	// The vector view iterates the map in ECID order (std::map is
-	// ordered). Both entries should be present and in ascending ECID.
+	// Both entries should be present in the vector view. Order is
+	// unordered_map-bucket-defined (FileMap drops std::map's ECID
+	// ordering), so look entries up by ECID instead of position.
 	const auto out = s.Downloads();
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
-	ASSERT_EQUALS(std::string("foo.iso"), out[0].name);   // ecid=100
-	ASSERT_EQUALS(std::string("bar.iso"), out[1].name);   // ecid=200
+	std::string foo_name, bar_name;
+	for (const auto &f : out) {
+		if (f.ecid == 100) foo_name = f.name;
+		if (f.ecid == 200) bar_name = f.name;
+	}
+	ASSERT_EQUALS(std::string("foo.iso"), foo_name);
+	ASSERT_EQUALS(std::string("bar.iso"), bar_name);
 
 	// Hash lookup goes through FindDownload's linear scan; both hits
 	// and misses must come back correctly.
@@ -166,7 +172,7 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 	// roundtrip with element-level fidelity. Regression would manifest
 	// as `progress.parts` being empty or wrong-sized on the wire.
 	CState s;
-	s.MutateDownloads([](std::map<std::uint32_t, FileSnapshot> &cache) {
+	s.MutateDownloads([](FileMap &cache) {
 		FileSnapshot a;
 		a.ecid = 42;
 		a.hash = "dddd3333dddd3333dddd3333dddd3333";
@@ -222,7 +228,7 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 	ASSERT_EQUALS(std::string("peer-1"), s.Clients()[0].client_name);
 	ASSERT_EQUALS(std::string("uploading"), s.Clients()[0].upload_state);
 
-	s.MutateShared([](std::map<std::uint32_t, FileSnapshot> &cache) {
+	s.MutateShared([](FileMap &cache) {
 		FileSnapshot x;
 		x.ecid = 20;
 		x.hash = "ffff2222ffff2222ffff2222ffff2222";
@@ -477,7 +483,7 @@ TEST(State, ResetListsLeavesLogsAlone)
 TEST(State, ResetListsClearsAll)
 {
 	CState s;
-	s.MutateDownloads([](std::map<std::uint32_t, FileSnapshot> &cache) {
+	s.MutateDownloads([](FileMap &cache) {
 		FileSnapshot d; d.ecid = 1; d.name = "a"; d.is_downloading = true;
 		cache.emplace(1, d);
 	});
@@ -485,7 +491,7 @@ TEST(State, ResetListsClearsAll)
 		ClientSnapshot c; c.ecid = 1; c.client_name = "b";
 		cache.emplace(1, c);
 	});
-	s.MutateShared([](std::map<std::uint32_t, FileSnapshot> &cache) {
+	s.MutateShared([](FileMap &cache) {
 		// Same ECID; sets is_shared on the existing entry rather than
 		// creating a new map slot, matching the unified-map model.
 		auto it = cache.find(1);

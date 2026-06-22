@@ -453,6 +453,81 @@ struct StatusSnapshot {
 };
 
 
+// ECID-keyed file map + hash→ECID index in lockstep. The index is
+// maintained inline on every emplace/erase so the obvious lookup
+// directions both stay O(1) avg without a per-tick rebuild pass:
+//  * ECID → entry via std::unordered_map::find (file_map[]).
+//  * 32-char hex MD4 hash → ECID via FindEcidByHash (index[]).
+//
+// Walkers reach in via find()/emplace()/erase()/begin()/end() — the
+// same surface they had when this was a raw std::map<uint32_t,
+// FileSnapshot>&. The wrapper intercepts the two mutations that move
+// hashes around and keeps the index consistent.
+//
+// Invariant: a FileSnapshot's `hash` is content-derived and never
+// changes once set. Walkers MUST NOT reassign `hash` via the iterator
+// (the index would desync). Set hash before emplace, never after.
+class FileMap {
+public:
+	using map_type       = std::unordered_map<std::uint32_t, FileSnapshot>;
+	using iterator       = map_type::iterator;
+	using const_iterator = map_type::const_iterator;
+
+	iterator       find(std::uint32_t ecid)       { return m_files.find(ecid); }
+	const_iterator find(std::uint32_t ecid) const { return m_files.find(ecid); }
+	iterator       begin()       { return m_files.begin(); }
+	const_iterator begin() const { return m_files.begin(); }
+	iterator       end()         { return m_files.end(); }
+	const_iterator end()   const { return m_files.end(); }
+	std::size_t    size()  const { return m_files.size(); }
+	bool           empty() const { return m_files.empty(); }
+
+	// By-value param so callers can pass either an lvalue (copies) or
+	// rvalue (moves) with the same call site — std::unordered_map's
+	// variadic emplace is too liberal for our index-keeping discipline.
+	std::pair<iterator, bool> emplace(std::uint32_t ecid, FileSnapshot f)
+	{
+		auto r = m_files.emplace(ecid, std::move(f));
+		if (r.second && !r.first->second.hash.empty()) {
+			m_hash_to_ecid[r.first->second.hash] = ecid;
+		}
+		return r;
+	}
+
+	iterator erase(iterator it)
+	{
+		if (!it->second.hash.empty()) {
+			auto hit = m_hash_to_ecid.find(it->second.hash);
+			// Defence: only clear the index slot if it still points at
+			// this ECID. A later emplace with the same hash but a
+			// different ECID could have rewired the slot already.
+			if (hit != m_hash_to_ecid.end() && hit->second == it->first) {
+				m_hash_to_ecid.erase(hit);
+			}
+		}
+		return m_files.erase(it);
+	}
+
+	void clear()
+	{
+		m_files.clear();
+		m_hash_to_ecid.clear();
+	}
+
+	bool FindEcidByHash(const std::string &hash, std::uint32_t &out) const
+	{
+		auto it = m_hash_to_ecid.find(hash);
+		if (it == m_hash_to_ecid.end()) return false;
+		out = it->second;
+		return true;
+	}
+
+private:
+	map_type                                       m_files;
+	std::unordered_map<std::string, std::uint32_t> m_hash_to_ecid;
+};
+
+
 // One State instance per amuleapi process. The mutex protects every
 // member field; refresh swaps the whole struct under it, handlers
 // read the substructs they need under it.
@@ -495,11 +570,10 @@ public:
 	ServerInfoLog                   ServerInfo()  const;
 
 	// Flat list views. Reads the ECID-keyed map under shared_lock and
-	// returns a copy of the snapshot values, ordered by ECID.
-	// Insertion order isn't preserved by std::map, but ECID ordering
-	// is deterministic per-client-session and matches the EC server's
-	// own iteration order, so the API surface stays consistent across
-	// refresher ticks.
+	// returns a copy of the snapshot values in unordered_map iteration
+	// order — bucket-dependent, NOT stable across ticks. Consumers
+	// that want a specific order sort on their side (by name / date /
+	// progress / etc.).
 	//
 	// `Downloads()` filters `m_files` by `is_downloading`, `Shared()`
 	// filters by `is_shared`. Both views consult the same underlying
@@ -556,15 +630,10 @@ public:
 	// latency stays bounded by the parse loop, not by N independent
 	// acquisitions. Both MutateDownloads and MutateShared operate on
 	// the SAME m_files map; the callback decides which role to flip.
-	using FileMutator     = void (*)(std::map<std::uint32_t, FileSnapshot>     &);
-	using ClientMutator   = void (*)(std::map<std::uint32_t, ClientSnapshot>   &);
-	using SearchMutator   = void (*)(std::map<std::uint32_t, SearchResult>     &);
-	// Mutator versions taking a non-capturing std::function so callers
-	// can close over the EC packet without templating CState.
-	void             MutateDownloads(const std::function<
-	                  void(std::map<std::uint32_t, FileSnapshot> &)> &fn);
-	void             MutateShared   (const std::function<
-	                  void(std::map<std::uint32_t, FileSnapshot> &)> &fn);
+	// MutateDownloads/Shared hand out the FileMap wrapper, which keeps
+	// its internal hash→ECID index in sync on every emplace/erase.
+	void             MutateDownloads(const std::function<void(FileMap &)> &fn);
+	void             MutateShared   (const std::function<void(FileMap &)> &fn);
 	void             MutateClients  (const std::function<
 	                  void(std::map<std::uint32_t, ClientSnapshot>   &)> &fn);
 	void             MutateServers  (const std::function<
@@ -607,11 +676,6 @@ public:
 	void             MarkTickFailure();
 
 private:
-	// Caller MUST hold m_mu exclusively. Rebuilds m_hash_to_ecid from
-	// the current contents of m_files; chained from MutateDownloads /
-	// MutateShared after the walker callback runs.
-	void             RebuildHashIndex();
-
 	mutable std::shared_timed_mutex m_mu;
 
 	bool             m_has_first_snapshot = false;
@@ -625,17 +689,11 @@ private:
 	// Unified ECID-keyed file map. A single entry may participate in
 	// the /downloads view (`is_downloading`), the /shared view
 	// (`is_shared`), or both. See FileSnapshot's header comment for
-	// why the two views share storage.
-	std::map<std::uint32_t, FileSnapshot>           m_files;
+	// why the two views share storage. FileMap also owns a hash→ECID
+	// index, maintained inline on every emplace/erase so /downloads/{hash}
+	// + /shared/{hash} lookups stay O(1) avg without a per-tick rebuild.
+	FileMap                                         m_files;
 
-	// Hash → ECID index. Lets FindDownload(hash) / FindShared(hash)
-	// short-circuit the linear scan that would otherwise have to walk
-	// `m_files` (the obvious lookup direction is ECID-keyed). Rebuilt
-	// after each Mutate* call so the index stays consistent with
-	// m_files even when the walker churns entries. Hashes never change
-	// within a single ECID (content-derived), so the only invariants
-	// that matter are insertion + removal.
-	std::unordered_map<std::string, std::uint32_t>  m_hash_to_ecid;
 	std::map<std::uint32_t, ClientSnapshot>         m_clients;
 	std::map<std::uint32_t, ServerSnapshot>         m_servers;
 	std::vector<std::string>                        m_amule_log_lines;
