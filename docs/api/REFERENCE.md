@@ -536,7 +536,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 {
   "clients": [
     {
-      "ecid": 4382,
+      "client_ecid": 4382,
       "client_name": "AnonymousPeer",
       "user_hash": "1f2e3a...",
       "ip": "203.0.113.42",
@@ -553,6 +553,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   ]
 }
 ```
+
+`client_ecid` identifies the remote *peer*, not a file — it's the URL key reserved for any future `/clients/{client_ecid}` mutation and the identity carried in `client_removed` SSE payloads. `user_hash` is the peer's stable identity *when published* (peers without SecIdent or in their first session don't have one), so `client_ecid` is the always-populated handle.
 
 `upload_file_hash` / `download_file_hash` are the 32-char MD4 hex hashes of the partfile or shared file the peer is currently transferring with — directly resolvable against [`/api/v0/downloads/{hash}`](#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them.
 

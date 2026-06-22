@@ -160,7 +160,7 @@ std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << c.ecid
+	  << "\"client_ecid\":" << c.ecid
 	  << ",\"client_name\":\"" << EscJson(c.client_name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
@@ -401,7 +401,7 @@ std::string RemovedEcidPayload(const ServerSnapshot &s)
 std::string RemovedEcidPayload(const ClientSnapshot &c)
 {
 	std::ostringstream o;
-	o << "{\"ecid\":" << c.ecid << "}";
+	o << "{\"client_ecid\":" << c.ecid << "}";
 	return o.str();
 }
 

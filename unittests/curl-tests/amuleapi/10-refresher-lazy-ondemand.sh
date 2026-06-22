@@ -115,7 +115,7 @@ echo "    info: $CCOUNT peers cached (populated via GET_UPDATE CLIENT subtree)"
 if [ "$CCOUNT" -gt 0 ]; then
 	# Per-peer shape. The state enums are wire strings (decoded
 	# server-side from US_* / DS_* / IS_* / SO_* / OBST_* codes).
-	_assert_json_eq '.clients[0].ecid | type'           number   '/clients[0].ecid is numeric'
+	_assert_json_eq '.clients[0].client_ecid | type'    number   '/clients[0].client_ecid is numeric'
 	_assert_json_eq '.clients[0].user_hash | length'    32       '/clients[0].user_hash is 32-char hex'
 	_assert_json_eq '.clients[0].upload_state | type'   string   '/clients[0].upload_state is string'
 	_assert_json_eq '.clients[0].download_state | type' string   '/clients[0].download_state is string'

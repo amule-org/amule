@@ -149,7 +149,7 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field (`hash` for hash-keyed resources, `ecid` for ECID-keyed) so the client can drop the cache entry without needing the old object.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object.
 
 ### `downloads` channel
 
@@ -249,7 +249,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 
 ```json
 {
-  "ecid":                   4382,
+  "client_ecid":            4382,
   "client_name":            "AnonymousPeer",
   "user_hash":              "1f2e3a...",
   "ip":                     "203.0.113.42",
@@ -284,7 +284,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 #### `client_removed`
 
 ```json
-{ "ecid": 4382 }
+{ "client_ecid": 4382 }
 ```
 
 ### `status` channel

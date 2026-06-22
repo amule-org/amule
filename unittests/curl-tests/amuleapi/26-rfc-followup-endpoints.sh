@@ -324,13 +324,13 @@ else
 fi
 # Verify every entry in /clients?filter=uploads truly has upload_state=uploading
 BAD=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?filter=uploads" \
-	| jq -r '.clients[] | select(.upload_state != "uploading") | .ecid' \
+	| jq -r '.clients[] | select(.upload_state != "uploading") | .client_ecid' \
 	| head -1)
 if [ -z "$BAD" ]; then
 	_pass "/clients?filter=uploads only returns upload_state=uploading peers"
 else
 	_fail "clients uploads filter content" \
-		"ECID $BAD has wrong upload_state"
+		"client_ecid $BAD has wrong upload_state"
 fi
 # Bogus filter → 400
 RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" \

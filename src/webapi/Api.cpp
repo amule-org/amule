@@ -1582,7 +1582,7 @@ void WriteDownloadObject(CJsonWriter &w, const webapi::FileSnapshot &f,
 void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
 	w.BeginObject();
-	  w.Key("ecid");                  w.ValueInt(static_cast<int64_t>(c.ecid));
+	  w.Key("client_ecid");           w.ValueInt(static_cast<int64_t>(c.ecid));
 	  w.Key("client_name");           w.ValueString(wxString::FromUTF8(c.client_name.c_str()));
 	  w.Key("user_hash");             w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
 	  w.Key("ip");                    w.ValueString(wxString::FromUTF8(c.ip.c_str()));
