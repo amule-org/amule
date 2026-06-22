@@ -169,16 +169,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 
 	// /search/results — polled per-tick only WHILE a search is active.
 	// POST /search flips state.SearchProgress().active = true; the
-	// state machine below decides when to flip it back. amuled's
-	// EC_TAG_SEARCH_STATUS overloads `raw=0` ("no search" / "Kad in
-	// progress" / "global queue not yet populated" / "global finished
-	// — m_searchInProgress just flipped off") and `raw=100` ("global
-	// queue temporarily empty at start" / "global all done"), so we
-	// can't trust the raw value in isolation — see SearchList.cpp:
-	// GetSearchProgress for the upstream encoding.
+	// daemon's EC_TAG_SEARCH_LIFECYCLE_STATE tells us when to flip it
+	// back. amuleapi pins a daemon version carrying the new lifecycle
+	// tags, so we read them directly with no sentinel-decode fallback.
 	if (state.SearchProgress().active) {
-		std::uint32_t raw_now = 0;
-		bool got_progress = false;
+		std::uint32_t raw_pct         = 0;
+		std::uint32_t lifecycle_state = 0;
 		{
 			std::unique_ptr<CECPacket> req(
 				new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
@@ -196,21 +192,16 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
 			if (resp) {
 				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_STATUS)) {
-					raw_now = static_cast<std::uint32_t>(t->GetInt());
-					got_progress = true;
+					raw_pct = static_cast<std::uint32_t>(t->GetInt());
+				}
+				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE)) {
+					lifecycle_state = static_cast<std::uint32_t>(t->GetInt());
 				}
 				delete resp;
 			}
 		}
-		// Missing EC_TAG_SEARCH_STATUS treated as raw=0 — the state
-		// machine's defensive timeout branch finalizes the lifecycle
-		// either way.
-		(void) got_progress;
 		const SearchProgressSnapshot next = AdvanceSearchProgress(
-			state.SearchProgress(),
-			raw_now,
-			state.Search().size(),
-			std::time(nullptr));
+			state.SearchProgress(), lifecycle_state, raw_pct);
 		state.WriteSearchProgress(next);
 	}
 

@@ -329,34 +329,21 @@ struct SearchResult {
 
 
 // Refresher-tracked lifecycle of the currently-active (or last-finished)
-// search. amuled's EC_TAG_SEARCH_STATUS is ambiguous between "idle",
-// "just started, queue not populated" (briefly raw==100 on global),
-// and "finished, amuled flipped m_searchInProgress=false" (raw==0).
-// We disambiguate by tracking POST /search → completion ourselves and
-// running a small state machine in the refresher (see RefresherTick).
+// search. The refresher reads EC_TAG_SEARCH_LIFECYCLE_STATE (added in the
+// EC protocol cleanup landed earlier in this PR) and maps it directly
+// here — no sentinel decode, no state machine, no defensive timeout.
 struct SearchProgressSnapshot {
-	// True between POST /search and the refresher's inferred completion
-	// (raw transition or defensive timeout). Drives whether the
-	// refresher keeps polling EC_OP_SEARCH_RESULTS + _PROGRESS.
-	bool          active           = false;
-	// Observed amuled report `raw ∈ [1..99]` at least once in the
-	// current run. Lets us tell "queue just populating, raw==0 is
-	// 'about to climb'" from "search finished, amuled reset raw to 0".
-	bool          saw_in_progress  = false;
+	// True between POST /search and the daemon-reported finished state.
+	// Drives whether the refresher keeps polling EC_OP_SEARCH_RESULTS +
+	// EC_OP_SEARCH_PROGRESS.
+	bool          active   = false;
 	// "global" | "local" | "kad". Captured from POST /search's `type`
-	// param. Determines which raw-value paths count as completion
-	// (e.g. 0xfffe for Kad, results-count fallback only for global).
+	// param. Surfaced in `search_finished` SSE so consumers can
+	// distinguish which network produced the result set.
 	std::string   kind;
-	std::uint32_t raw              = 0;   // last raw EC_TAG_SEARCH_STATUS
-	std::uint32_t percent          = 0;   // normalized 0..100
-	bool          complete         = false;
-	std::time_t   started_at       = 0;   // wall-clock at POST /search;
-	                                       // Kad bumps this on every new
-	                                       // result so a productive Kad
-	                                       // doesn't time out
-	std::size_t   last_results_count = 0; // results-map size at previous
-	                                       // tick — drives the Kad
-	                                       // deadline-extend logic
+	std::uint32_t percent  = 0;     // 0..100; honest only for global
+	bool          complete = false; // true exactly once on the lifecycle
+	                                // RUNNING → FINISHED edge
 };
 
 
@@ -666,7 +653,9 @@ public:
 	void             ClearAmuleLog();
 	void             WriteServerInfo(ServerInfoLog s);
 	// Called by POST /search. Wipes m_search, sets m_search_progress
-	// to active=true with the requested `kind`, started_at=now.
+	// to active=true with the requested `kind`. The refresher takes
+	// over from there, mapping EC_TAG_SEARCH_LIFECYCLE_STATE into
+	// `complete` / `active` on each tick.
 	void             MarkSearchStarted(const std::string &kind);
 	// Refresher-side write path for the search progress snapshot.
 	void             WriteSearchProgress(SearchProgressSnapshot s);

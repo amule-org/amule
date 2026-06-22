@@ -649,192 +649,84 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 
 
 // ----------------------------------------------------------------------
-// AdvanceSearchProgress — state machine that normalizes amuled's
-// overloaded EC_TAG_SEARCH_STATUS into (percent, complete, active).
-// Pure function; no I/O, no globals — every branch is reachable from
-// a single-frame input here.
+// AdvanceSearchProgress — maps EC_TAG_SEARCH_LIFECYCLE_STATE +
+// EC_TAG_SEARCH_STATUS into (percent, complete, active). Trusts the
+// daemon's flag; no sentinel disambiguation, no defensive timeout.
 // ----------------------------------------------------------------------
 
 namespace {
 
-webapi::SearchProgressSnapshot MakeActive(const std::string &kind,
-                                          std::time_t started_at = 1000)
+webapi::SearchProgressSnapshot MakeActive(const std::string &kind)
 {
 	webapi::SearchProgressSnapshot s;
-	s.active     = true;
-	s.kind       = kind;
-	s.started_at = started_at;
+	s.active = true;
+	s.kind   = kind;
 	return s;
 }
+
+constexpr std::uint32_t LIFECYCLE_IDLE     = 0;
+constexpr std::uint32_t LIFECYCLE_RUNNING  = 1;
+constexpr std::uint32_t LIFECYCLE_FINISHED = 2;
 
 }  // namespace
 
 
-TEST(Refresher, SearchProgressGlobalClimbThenFinishViaRawZero)
+TEST(Refresher, SearchProgressRunningCarriesPercentForGlobal)
 {
 	using webapi::AdvanceSearchProgress;
 	webapi::SearchProgressSnapshot s = MakeActive("global");
-
-	// tick 1: queue populating, raw=0, no results yet
-	s = AdvanceSearchProgress(s, 0, 0, 1001);
+	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/42);
 	ASSERT_TRUE(s.active);
 	ASSERT_TRUE(!s.complete);
-	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
-
-	// tick 2: first responses, raw=20
-	s = AdvanceSearchProgress(s, 20, 3, 1002);
-	ASSERT_TRUE(s.active);
-	ASSERT_TRUE(s.saw_in_progress);
-	ASSERT_EQUALS(static_cast<uint32_t>(20), s.percent);
-
-	// tick 3: amuled flipped m_searchInProgress=false, raw drops to 0
-	// after a brief raw=100 we missed
-	s = AdvanceSearchProgress(s, 0, 12, 1003);
-	ASSERT_TRUE(!s.active);
-	ASSERT_TRUE(s.complete);
-	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
+	ASSERT_EQUALS(static_cast<uint32_t>(42), s.percent);
 }
 
 
-TEST(Refresher, SearchProgressGlobalRawHundredCaughtBeforeReset)
+TEST(Refresher, SearchProgressRunningMasksPercentForKad)
 {
 	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("global");
-	// Climbed and we DID catch raw=100 before amuled reset.
-	s = AdvanceSearchProgress(s, 50, 5, 1001);
-	s = AdvanceSearchProgress(s, 100, 10, 1002);
-	ASSERT_TRUE(!s.active);
-	ASSERT_TRUE(s.complete);
-}
-
-
-TEST(Refresher, SearchProgressGlobalRawHundredAtStartIsMasked)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("global");
-	// Queue-empty-at-start window: amuled briefly emits 100. We
-	// haven't seen any climb yet → mask to 0/incomplete, stay active.
-	s = AdvanceSearchProgress(s, 100, 0, 1001);
+	webapi::SearchProgressSnapshot s = MakeActive("kad");
+	// Daemon may still ship a `raw` percent value for Kad (typically 0).
+	// LIFECYCLE_RUNNING with non-global kind → percent stays 0;
+	// Kad and local have no measurable progress per upstream's
+	// GetSearchProgress() encoding.
+	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/0);
 	ASSERT_TRUE(s.active);
-	ASSERT_TRUE(!s.complete);
 	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
 }
 
 
-TEST(Refresher, SearchProgressGlobalFastCompleteMissedClimb)
+TEST(Refresher, SearchProgressRunningMasksPercentForLocal)
+{
+	using webapi::AdvanceSearchProgress;
+	webapi::SearchProgressSnapshot s = MakeActive("local");
+	// Daemon's GetSearchProgress() returns 0xffff while a local search
+	// is in progress (overloaded sentinel) — the lifecycle path ignores
+	// it because LIFECYCLE_RUNNING + kind="local" means percent stays 0.
+	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/0xffffu);
+	ASSERT_TRUE(s.active);
+	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
+}
+
+
+TEST(Refresher, SearchProgressFinishedSetsComplete)
 {
 	using webapi::AdvanceSearchProgress;
 	webapi::SearchProgressSnapshot s = MakeActive("global");
-	// Very fast global: results arrive without us ever observing
-	// raw 1..99. results>0 + raw=0 + global → finalize.
-	s = AdvanceSearchProgress(s, 0, 15, 1001);
+	s = AdvanceSearchProgress(s, LIFECYCLE_FINISHED, /*pct=*/0);
 	ASSERT_TRUE(!s.active);
 	ASSERT_TRUE(s.complete);
 	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
 }
 
 
-TEST(Refresher, SearchProgressLocalFinishesViaRawFFFF)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("local");
-	s = AdvanceSearchProgress(s, 0xffffu, 3, 1001);
-	ASSERT_TRUE(!s.active);
-	ASSERT_TRUE(s.complete);
-}
-
-
-TEST(Refresher, SearchProgressLocalRawZeroAlsoFinalizes)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("local");
-	// Missed the brief 0xffff window. Next tick: raw=0. Kind=local
-	// implies the search is done — finalize.
-	s = AdvanceSearchProgress(s, 0, 5, 1001);
-	ASSERT_TRUE(!s.active);
-	ASSERT_TRUE(s.complete);
-}
-
-
-TEST(Refresher, SearchProgressKadStaysActiveAtRawZero)
+TEST(Refresher, SearchProgressIdleZeroesOutGracefully)
 {
 	using webapi::AdvanceSearchProgress;
 	webapi::SearchProgressSnapshot s = MakeActive("kad");
-	// Kad reports raw=0 the entire run. Results trickle in. Should
-	// stay active until 0xfffe or the deadline expires.
-	s = AdvanceSearchProgress(s, 0, 0, 1005);
-	ASSERT_TRUE(s.active);
-	s = AdvanceSearchProgress(s, 0, 4, 1010);
-	ASSERT_TRUE(s.active);
-	s = AdvanceSearchProgress(s, 0, 7, 1020);
-	ASSERT_TRUE(s.active);
-}
-
-
-TEST(Refresher, SearchProgressKadFinishesViaRawFFFE)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("kad");
-	s = AdvanceSearchProgress(s, 0, 2, 1005);
-	s = AdvanceSearchProgress(s, 0xfffeu, 2, 1010);
-	ASSERT_TRUE(!s.active);
-	ASSERT_TRUE(s.complete);
-	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
-}
-
-
-TEST(Refresher, SearchProgressKadDeadlineExtendsOnNewResult)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("kad", 1000);
-	// 25 s in, still no result: kept active, deadline unchanged.
-	s = AdvanceSearchProgress(s, 0, 0, 1025);
-	ASSERT_TRUE(s.active);
-	ASSERT_EQUALS(static_cast<std::time_t>(1000), s.started_at);
-	// 28 s in, one result arrives — deadline should bump to "now".
-	s = AdvanceSearchProgress(s, 0, 1, 1028);
-	ASSERT_TRUE(s.active);
-	ASSERT_EQUALS(static_cast<std::time_t>(1028), s.started_at);
-	// 35 s wall-clock (only 7 s past the bumped deadline) — still
-	// well under 30 s of silence, still active.
-	s = AdvanceSearchProgress(s, 0, 1, 1035);
-	ASSERT_TRUE(s.active);
-}
-
-
-TEST(Refresher, SearchProgressTimeoutAfter30sOfSilence)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("kad", 1000);
-	// 31 s in, no results, no 0xfffe — defensive timeout fires.
-	s = AdvanceSearchProgress(s, 0, 0, 1031);
-	ASSERT_TRUE(!s.active);
-	ASSERT_TRUE(s.complete);
-	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
-}
-
-
-TEST(Refresher, SearchProgressTimeoutSkippedForClimbingGlobal)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("global", 1000);
-	// Global climbed past saw_in_progress; now 35 s into the search,
-	// still at 80% mid-climb. Timeout must NOT fire — the search is
-	// genuinely working.
-	s = AdvanceSearchProgress(s, 50, 5, 1010);
-	ASSERT_TRUE(s.saw_in_progress);
-	s = AdvanceSearchProgress(s, 80, 12, 1035);
-	ASSERT_TRUE(s.active);
-	ASSERT_TRUE(!s.complete);
-	ASSERT_EQUALS(static_cast<uint32_t>(80), s.percent);
-}
-
-
-TEST(Refresher, SearchProgressInactiveZeroesOutGracefully)
-{
-	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s;   // active=false, default
-	s = AdvanceSearchProgress(s, 50, 3, 1000);
+	// Refresher shouldn't call us with state=IDLE (it gates on active
+	// being true on entry), but stay defensive: flip both flags off.
+	s = AdvanceSearchProgress(s, LIFECYCLE_IDLE, /*pct=*/0);
 	ASSERT_TRUE(!s.active);
 	ASSERT_TRUE(!s.complete);
 	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);

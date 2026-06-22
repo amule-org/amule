@@ -156,9 +156,8 @@ void CState::MarkSearchStarted(const std::string &kind)
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_search.clear();
 	m_search_progress = SearchProgressSnapshot{};
-	m_search_progress.active     = true;
-	m_search_progress.kind       = kind;
-	m_search_progress.started_at = std::time(nullptr);
+	m_search_progress.active = true;
+	m_search_progress.kind   = kind;
 }
 
 

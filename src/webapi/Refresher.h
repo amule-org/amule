@@ -189,20 +189,18 @@ void ApplySearchFull(const CECPacket *resp,
                      std::map<std::uint32_t, SearchResult> &cache);
 
 
-// Search-progress state machine. Given the prior snapshot, amuled's
-// fresh raw EC_TAG_SEARCH_STATUS value, the current results-map size,
-// and `now`, returns the next snapshot with normalized (percent,
-// complete, active, saw_in_progress, raw, started_at). Pure function:
-// no I/O, no globals — kept here so RefresherTest can exercise every
-// branch without standing up a daemon. Caller is the refresher tick
-// (RefresherTick.cpp); see the comment block there for the raw-value
-// encoding upstream (SearchList.cpp:GetSearchProgress).
+// Search-progress derivation from the EC_TAG_SEARCH_LIFECYCLE_STATE
+// tag landed in this PR. `lifecycle_state` is the uint8 enum value
+// (0=idle, 1=running, 2=finished). `pct_now` is the EC_TAG_SEARCH_STATUS
+// raw uint — used as the percent for global searches; ignored for
+// local + Kad (no measurable progress upstream). Pure function:
+// no I/O, no globals — RefresherTest exercises every branch without
+// standing up a daemon.
 struct SearchProgressSnapshot;
 SearchProgressSnapshot AdvanceSearchProgress(
 	const SearchProgressSnapshot &prev,
-	std::uint32_t raw_now,
-	std::size_t   results_count,
-	std::time_t   now);
+	std::uint32_t lifecycle_state,
+	std::uint32_t pct_now);
 
 // `ApplyGetUpdateToClients` consumes the EC_TAG_CLIENT container
 // from the consolidated GET_UPDATE response. The walker uses
