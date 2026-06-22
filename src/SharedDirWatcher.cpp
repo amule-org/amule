@@ -334,7 +334,19 @@ void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent & event)
 	// it were a file, and AddPathToShares's FileExists() check would
 	// reject it with a misleading "Shared file does not exist (possibly
 	// a broken link)" debug line on every new subdir.
-	if ((changeType & wxFSW_EVENT_CREATE) && path.IsOk() && path.DirExists()) {
+	//
+	// Use wxDirExists(GetFullPath()) — NOT the path.DirExists() instance
+	// method — because wxFileName::DirExists() checks GetPath() (the
+	// parent directory portion) for its truthiness, not the full path.
+	// Calling .DirExists() on a wxFileName built from
+	// /tv/Season 9/Episode.mkv returns true whenever /tv/Season 9 exists,
+	// which it always does inside a watched share. Without the static
+	// overload, every FILE CREATE would route through
+	// RegisterNewSubdirectory (which then no-ops on its own CPath
+	// directory check) and the early return below would suppress slot
+	// accumulation entirely — meaning no file ever reaches NotifyPathAdded.
+	if ((changeType & wxFSW_EVENT_CREATE) && path.IsOk() &&
+		wxFileName::DirExists(path.GetFullPath())) {
 		RegisterNewSubdirectory(path.GetFullPath());
 		return;
 	}
