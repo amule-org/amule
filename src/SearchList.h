@@ -108,6 +108,21 @@ public:
 	/** Returns the completion percentage of the current search. */
 	uint32 GetSearchProgress() const;
 
+	// Unambiguous lifecycle accessors used by the new EC tags
+	// (EC_TAG_SEARCH_LIFECYCLE_STATE / _KIND / _RESULT_COUNT). Old
+	// consumers still read the overloaded GetSearchProgress() return.
+	enum SearchLifecycleState {
+		SEARCH_LIFECYCLE_IDLE     = 0,  // no search started this session
+		SEARCH_LIFECYCLE_RUNNING  = 1,  // active search in flight
+		SEARCH_LIFECYCLE_FINISHED = 2   // last search completed; results retained
+	};
+	SearchLifecycleState GetSearchLifecycleState() const;
+	// Echoes m_searchType for the current/last search; meaningful only
+	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
+	SearchType           GetSearchLifecycleKind()  const { return m_searchType; }
+	// Result count for the current search; 0 if idle.
+	std::size_t          GetCurrentSearchResultCount() const;
+
 	/** This function is called once the local (ed2k) search has ended. */
 	void LocalSearchEnd();
 

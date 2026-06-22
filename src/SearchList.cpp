@@ -445,6 +445,30 @@ uint32 CSearchList::GetSearchProgress() const
 	return 0;
 }
 
+CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleState() const
+{
+	// m_currentSearch defaults to wxUIntPtr(-1); never reassigned until
+	// the first StartNewSearch. Distinguishes "never started" from
+	// "completed and reset".
+	if (m_currentSearch == wxUIntPtr(-1)) {
+		return SEARCH_LIFECYCLE_IDLE;
+	}
+	if (m_searchType == KadSearch) {
+		return m_KadSearchFinished ? SEARCH_LIFECYCLE_FINISHED : SEARCH_LIFECYCLE_RUNNING;
+	}
+	// ED2K (Local / Global): m_searchInProgress is the source of truth.
+	return m_searchInProgress ? SEARCH_LIFECYCLE_RUNNING : SEARCH_LIFECYCLE_FINISHED;
+}
+
+std::size_t CSearchList::GetCurrentSearchResultCount() const
+{
+	if (m_currentSearch == wxUIntPtr(-1)) {
+		return 0;
+	}
+	ResultMap::const_iterator it = m_results.find(m_currentSearch);
+	return (it == m_results.end()) ? 0 : it->second.size();
+}
+
 void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 {
 	// Ensure that the server-queue contains the current servers.

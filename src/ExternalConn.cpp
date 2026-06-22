@@ -2153,7 +2153,17 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 
 	case EC_OP_SEARCH_PROGRESS:
 		response = new CECPacket(EC_OP_SEARCH_PROGRESS);
+		// EC_TAG_SEARCH_STATUS: unchanged overloaded sentinel for pre-3.1
+		// consumers (amulegui / amuleweb / amulecmd).
 		response->AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchProgress()));
+		// New unambiguous lifecycle tags (3.1+). Modern consumers like
+		// amuleapi prefer these and skip the sentinel decode entirely.
+		response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
+			static_cast<uint8>(theApp->searchlist->GetSearchLifecycleState())));
+		response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
+			static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKind())));
+		response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
+			static_cast<uint32>(theApp->searchlist->GetCurrentSearchResultCount())));
 		break;
 
 	case EC_OP_DOWNLOAD_SEARCH_RESULT:
