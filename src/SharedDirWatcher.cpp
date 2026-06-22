@@ -326,8 +326,17 @@ void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent & event)
 	// without having to revisit the prefs dialog. Existing subdirs that
 	// were originally excluded (non-recursive share) are not
 	// retroactively scanned — only newly-created ones get added.
+	//
+	// Early-return after registration: a directory CREATE is fully
+	// handled inside RegisterNewSubdirectory (add to shareddir_list,
+	// install a watch, race-scan the contents). Falling through to the
+	// file-add accumulator below would enqueue the directory path as if
+	// it were a file, and AddPathToShares's FileExists() check would
+	// reject it with a misleading "Shared file does not exist (possibly
+	// a broken link)" debug line on every new subdir.
 	if ((changeType & wxFSW_EVENT_CREATE) && path.IsOk() && path.DirExists()) {
 		RegisterNewSubdirectory(path.GetFullPath());
+		return;
 	}
 
 	// Per-path event accumulation. Coalesces a CREATE → MODIFY × N →
@@ -399,6 +408,62 @@ void CSharedDirWatcher::RegisterNewSubdirectory(const wxString & path)
 
 	// Persist the new entry so the change survives a restart.
 	theApp->glob_prefs->SaveSharedFolders();
+
+	// Close the inotify race window. Between the kernel mkdir() that
+	// fired this CREATE event and our wxFileSystemWatcher::Add() above,
+	// any file or subdir created inside `path` fires on a watch that
+	// doesn't exist yet, so the event is silently dropped. Common with
+	// tools that batch a mkdir + a content-drop within microseconds
+	// (Sonarr "mkdir /tv/$show; symlink $episode" being the canonical
+	// case). Walk the new dir now and feed any pre-existing entries
+	// through the same NotifyPathAdded / RegisterNewSubdirectory
+	// pipeline they would have gone through if events had been
+	// observed. Idempotent: NotifyPathAdded short-circuits on the
+	// shared-file path index if the file is already known (covers
+	// macOS, where FSEvents may still deliver the same events later),
+	// and RegisterNewSubdirectory short-circuits on the shareddir_list
+	// dedup check.
+	ScanNewSubdirRace(p);
+}
+
+
+void CSharedDirWatcher::ScanNewSubdirRace(const CPath & parent)
+{
+	if (!parent.IsOk() || !parent.DirExists()) {
+		return;
+	}
+
+	const int dirFlags = thePrefs::FollowSymlinksInShares() ? 0 : wxDIR_NO_FOLLOW;
+
+	// Files first: each is routed through NotifyPathAdded, which dedups
+	// against the shared-file path index and queues a CHashingTask for
+	// genuinely new entries.
+	{
+		CDirIterator files(parent);
+		for (CPath f = files.GetFirstFile(CDirIterator::File, wxEmptyString, dirFlags);
+			f.IsOk();
+			f = files.GetNextFile())
+		{
+			CPath fullFile = parent.JoinPaths(f);
+			m_parent->NotifyPathAdded(fullFile.GetRaw());
+		}
+	}
+
+	// Subdirs: recurse via RegisterNewSubdirectory so each gets added
+	// to shareddir_list, picks up its own watch on Linux/BSD/Windows,
+	// and runs its own race-scan. Handles arbitrary nesting created
+	// inside the original race window (e.g. mkdir /tv/show; mkdir
+	// /tv/show/season; ln -s /downloads/ep /tv/show/season/ep.mkv).
+	{
+		CDirIterator subdirs(parent);
+		for (CPath sub = subdirs.GetFirstFile(CDirIterator::Dir, wxEmptyString, dirFlags);
+			sub.IsOk();
+			sub = subdirs.GetNextFile())
+		{
+			CPath fullSub = parent.JoinPaths(sub);
+			RegisterNewSubdirectory(fullSub.GetRaw());
+		}
+	}
 }
 
 

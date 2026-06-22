@@ -112,6 +112,16 @@ private:
 	// "auto-share new subdirs of watched parents" behaviour.
 	void RegisterNewSubdirectory(const wxString & path);
 
+	// Closes the inotify/kqueue race window inside RegisterNewSubdirectory:
+	// between the kernel mkdir and our wxFileSystemWatcher::Add(), any
+	// files or subdirs created inside the new directory fire on a watch
+	// that doesn't exist yet and get silently dropped. Walks `parent`
+	// after the watch is in place and feeds existing entries through
+	// NotifyPathAdded (files) and RegisterNewSubdirectory (subdirs,
+	// recursively) so the catch-up is symmetric with what the live
+	// event path would have done. Idempotent on second observation.
+	void ScanNewSubdirRace(const CPath & parent);
+
 	// Recursively walk each path in shareddir_list and add any subdir
 	// not already listed. The "cold" twin of RegisterNewSubdirectory:
 	// without this, subdirs created while aMule was offline are never
