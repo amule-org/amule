@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2026-06-22 11:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: ta\n"
@@ -69,12 +69,12 @@ msgstr ""
 #. type: Plain text
 #: amule.1.in:10 amulegui.1.in:10
 msgid "[B<-c> I<E<lt>pathE<gt>>] [B<-geometry> I<E<lt>geomE<gt>>]"
-msgstr ""
+msgstr "[B<-c> I<E<lt>பாதைE<gt>>] [B<-geometry> I<E<lt>வடிவியல்E<gt>>]"
 
 #. type: Plain text
 #: amule.1.in:14 amuled.1.in:16
 msgid "[B<-w> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-w> I<E<lt>பாதைE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in:18 amuled.1.in:20

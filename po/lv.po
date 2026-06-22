@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-20 02:01+0000\n"
+"PO-Revision-Date: 2026-06-22 11:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -338,11 +338,11 @@ msgstr ""
 
 #: src/amule.cpp:2021
 msgid "Your copy of aMule is up to date."
-msgstr ""
+msgstr "Šī ir jaunākā aMule versija."
 
 #: src/amule.cpp:2028
 msgid "Failed to download the version check file"
-msgstr ""
+msgstr "Neizdevās lejupielādēt versijas pārbaudes datni"
 
 #: src/amule.cpp:2198 src/amule-remote-gui.cpp:822
 #, c-format
@@ -369,7 +369,7 @@ msgstr "ar augstu ID"
 #: src/amule.cpp:2278
 #, c-format
 msgid "Connected to %s %s"
-msgstr ""
+msgstr "Pieslēgts %s %s"
 
 #: src/amule.cpp:2282
 #, c-format
@@ -390,11 +390,11 @@ msgstr ""
 
 #: src/amule.cpp:2302
 msgid "Connected to Kad (ok)"
-msgstr ""
+msgstr "Pieslēgts Kad (veiksmīgi)"
 
 #: src/amule.cpp:2304
 msgid "Connected to Kad (firewalled)"
-msgstr ""
+msgstr "Pieslēgts Kad (aiz ugunsmūra)"
 
 #: src/amule.cpp:2307
 msgid "Disconnected from Kad"
@@ -537,7 +537,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp:796
 msgid "Kad: Connected"
-msgstr ""
+msgstr "Kad: Pieslēgts"
 
 #: src/amuleDlg.cpp:801
 msgid "Kad: Connecting"
@@ -568,12 +568,12 @@ msgstr ""
 
 #: src/amuleDlg.cpp:859
 msgid "Disconnect from the currently connected networks"
-msgstr ""
+msgstr "Atvienoties no tīkliem, kuriem pašlaik esiet pieslēdzies"
 
 #: src/amuleDlg.cpp:864 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:980
 #: src/muuli_wdr.cpp:2321 src/muuli_wdr.cpp:2770 src/muuli_wdr.cpp:3102
 msgid "Connect"
-msgstr ""
+msgstr "Pieslēgties"
 
 #: src/amuleDlg.cpp:865
 msgid "Connect to the currently enabled networks"
@@ -605,7 +605,7 @@ msgstr ""
 #: src/amuleDlg.cpp:977
 #, c-format
 msgid "aMule (%s | Connected)"
-msgstr ""
+msgstr "aMule (%s | Pieslēgts)"
 
 #: src/amuleDlg.cpp:979
 #, c-format
@@ -944,7 +944,7 @@ msgstr ""
 
 #: src/ChatSelector.cpp:208 src/ChatSelector.cpp:288
 msgid "*** Connected to Client ***"
-msgstr ""
+msgstr "*** Pieslēgts klientam ***"
 
 #: src/ChatSelector.cpp:251
 msgid "*** Connecting to Client ***"
@@ -1033,7 +1033,7 @@ msgstr ""
 #: src/ClientDetailDialog.cpp:136 src/MuleTrayIcon.cpp:384
 #: src/ServerWnd.cpp:185 src/ServerWnd.cpp:227 src/TextClient.cpp:816
 msgid "Connected"
-msgstr ""
+msgstr "Pieslēgts"
 
 #: src/ClientDetailDialog.cpp:138 src/MuleTrayIcon.cpp:373
 #: src/MuleTrayIcon.cpp:386 src/ServerWnd.cpp:227
@@ -1355,7 +1355,7 @@ msgstr "Izmērs"
 
 #: src/DownloadListCtrl.cpp:161 src/muuli_wdr.cpp:2957
 msgid "Transferred"
-msgstr ""
+msgstr "Pārsūtīti"
 
 #: src/DownloadListCtrl.cpp:163 src/SourceListCtrl.cpp:30
 msgid "Speed"
@@ -1790,7 +1790,7 @@ msgstr ""
 
 #: src/ExternalConn.cpp:2310
 msgid "Already connected to eD2k."
-msgstr ""
+msgstr "Jau pieslēgts eD2k tīklam."
 
 #: src/ExternalConn.cpp:2313
 msgid "Connecting to eD2k..."
@@ -1798,7 +1798,7 @@ msgstr "Pieslēdzas eD2k…"
 
 #: src/ExternalConn.cpp:2321
 msgid "Already connected to Kad."
-msgstr ""
+msgstr "Jau pieslēgts Kad tīklam."
 
 #: src/ExternalConn.cpp:2324
 msgid "Connecting to Kad..."
@@ -2544,7 +2544,7 @@ msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp:383
 msgid "Connected (firewalled)"
-msgstr ""
+msgstr "Pieslēgts (aiz ugunsmūra)"
 
 #: src/MuleTrayIcon.cpp:393
 msgid "Server: "
@@ -2764,7 +2764,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:143
 msgid "Currently connected server."
-msgstr ""
+msgstr "Serveris, kuram šobrīd esiet pieslēdzies."
 
 #: src/muuli_wdr.cpp:186
 msgid "Search"
@@ -3556,7 +3556,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:1543 src/Statistics.cpp:796
 msgid "Uploads"
-msgstr ""
+msgstr "Augšupielādes"
 
 #: src/muuli_wdr.cpp:1546
 msgid "Add new shared files with auto priority"
@@ -4030,15 +4030,15 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:2385
 msgid "Everybody"
-msgstr ""
+msgstr "Jebkurš"
 
 #: src/muuli_wdr.cpp:2387
 msgid "No one"
-msgstr ""
+msgstr "Neviens"
 
 #: src/muuli_wdr.cpp:2389
 msgid "Who can see my shared files:"
-msgstr ""
+msgstr "Kas var skatīt manas kopīgotās datnes:"
 
 #: src/muuli_wdr.cpp:2390
 msgid "Select who can request to view a list of your shared files."
@@ -5405,7 +5405,7 @@ msgstr "Kopēt eD2k saiti starpliktuvē"
 
 #: src/SearchListCtrl.cpp:811
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr ""
+msgstr "Jūs pašlaik neesiet pieslēgts serverim, kas atbalsta saistīto datņu meklēšanas funkciju"
 
 #: src/SearchListCtrl.cpp:1105
 msgid "Canceled"
@@ -5434,7 +5434,7 @@ msgstr ""
 #: src/ServerConnect.cpp:198
 #, c-format
 msgid "Connected to %s (%s:%i)"
-msgstr ""
+msgstr "Pieslēgts %s (%s:%i)"
 
 #: src/ServerConnect.cpp:274
 #, c-format
@@ -6077,17 +6077,17 @@ msgstr ""
 #: src/Statistics.cpp:797
 #, c-format
 msgid "Uploaded Data (Session (Total)): %s"
-msgstr ""
+msgstr "Augšupielādēti šajā sesijā (Pavisam kopā): %s"
 
 #: src/Statistics.cpp:799 src/Statistics.cpp:820
 #, c-format
 msgid "Total Overhead (Packets): %s"
-msgstr ""
+msgstr "Kopējais pakalpojuma trafiks (Paketes): %s"
 
 #: src/Statistics.cpp:800 src/Statistics.cpp:821
 #, c-format
 msgid "File Request Overhead (Packets): %s"
-msgstr ""
+msgstr "Datņu pieprasījumu trafiks (Paketes): %s"
 
 #: src/Statistics.cpp:802 src/Statistics.cpp:823
 #, c-format
@@ -6187,7 +6187,7 @@ msgstr ""
 #: src/Statistics.cpp:843
 #, c-format
 msgid "Connected To Server Since: %s"
-msgstr ""
+msgstr "Pieslēgts serverim kopš: %s"
 
 #: src/Statistics.cpp:844
 #, c-format
@@ -6433,7 +6433,7 @@ msgstr "eD2k"
 #: src/TextClient.cpp:803
 #, c-format
 msgid "Connected to %s %s %s"
-msgstr ""
+msgstr "Pieslēgts %s %s %s"
 
 #: src/TextClient.cpp:809
 msgid "Now connecting"
@@ -6442,7 +6442,7 @@ msgstr "Pašlaik pieslēdzas"
 #: src/TextClient.cpp:818 src/utils/wxCas/src/wxcasframe.cpp:1051
 #: src/utils/wxCas/src/wxcasframe.cpp:1073
 msgid "firewalled"
-msgstr ""
+msgstr "aiz ugunsmūra"
 
 #: src/TextClient.cpp:820 src/utils/wxCas/src/wxcasframe.cpp:1049
 #: src/utils/wxCas/src/wxcasframe.cpp:1071
@@ -7331,7 +7331,7 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp:1046
 msgid " is connected to "
-msgstr ""
+msgstr " ir pieslēgts "
 
 #: src/utils/wxCas/src/wxcasframe.cpp:1047
 #: src/utils/wxCas/src/wxcasframe.cpp:1069

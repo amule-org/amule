@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-20 02:01+0000\n"
+"PO-Revision-Date: 2026-06-22 11:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: ta\n"
@@ -19,7 +19,7 @@ msgstr ""
 
 #: src/AddFriend.cpp:45
 msgid "Add a Friend"
-msgstr ""
+msgstr "நண்பரைச் சேர்"
 
 #: src/AddFriend.cpp:61
 msgid "You have to enter a valid IP and port!"
@@ -408,7 +408,7 @@ msgstr ""
 
 #: src/amuled.cpp:142
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr ""
+msgstr "பிழை: வெளிப்புற இணைப்புகள் முடக்கப்பட்டிருக்கும் போது aMule deemon ஐப் பயன்படுத்த முடியாது. வெளிப்புற இணைப்புகளை இயக்க, ஒரு சாதாரண aMule ஐப் பயன்படுத்தவும், --ec-config விருப்பத்துடன் அமல் செய்யத் தொடங்கவும் அல்லது ~/.aMule/amule.conf கோப்பில் \"AcceptExternalConnections\" விசையை 1 ஆக அமை"
 
 #: src/amuled.cpp:145
 msgid "ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at https://amule-org.github.io/docs"
@@ -1070,12 +1070,12 @@ msgstr ""
 #: src/ClientTCPSocket.cpp:831
 #, c-format
 msgid "User %s (%u) requested your shareddirectories-list -> Accepted"
-msgstr ""
+msgstr "பயனர் %s (%u) உங்கள் பகிரப்பட்ட கோப்பகங்கள்-பட்டியல் -> ஏற்கப்பட்டது"
 
 #: src/ClientTCPSocket.cpp:837
 #, c-format
 msgid "User %s (%u) requested your shareddirectories-list -> Denied"
-msgstr ""
+msgstr "பயனர் %s (%u) உங்கள் பகிரப்பட்ட கோப்பகங்கள்-பட்டியலைக் கோரினார் -> மறுக்கப்பட்டது"
 
 #: src/ClientTCPSocket.cpp:862
 #, c-format
@@ -1085,12 +1085,12 @@ msgstr ""
 #: src/ClientTCPSocket.cpp:875
 #, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr ""
+msgstr "பயனர் %s (%u) உங்கள் பகிரப்பட்ட கோப்புகளின் பட்டியலை '%s' கோப்பகத்திற்காக கோரினார் -> மறுக்கப்பட்டது"
 
 #: src/ClientTCPSocket.cpp:894
 #, c-format
 msgid "User %s (%u) shares directory '%s'"
-msgstr ""
+msgstr "பயனர் %s (%u) பகிர்ந்த கோப்பகம் '%s'"
 
 #: src/ClientTCPSocket.cpp:917
 #, c-format
@@ -1115,7 +1115,7 @@ msgstr ""
 #: src/ClientTCPSocket.cpp:956
 #, c-format
 msgid "User %s (%u) denied access to shared directories/files list"
-msgstr ""
+msgstr "பயனர் %s (%u பகிரப்பட்ட கோப்பகம்/கோப்புகள் பட்டியலுக்கான அணுகலை மறுத்தனர்"
 
 #: src/CommentDialog.cpp:53 src/CommentDialogLst.cpp:61
 msgid "File Comments"
@@ -1955,7 +1955,7 @@ msgstr ""
 
 #: src/ExternalConnector.cpp:495
 msgid "Host where aMule is running. (default: 127.0.0.1)"
-msgstr ""
+msgstr "அகோவேறுகழுதை இயங்கும் புரவலன். (இயல்புநிலை: 127.0.0.1)"
 
 #: src/ExternalConnector.cpp:498
 msgid "aMule's port for External Connection. (default: 4712)"
@@ -2260,8 +2260,8 @@ msgstr ""
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u ஐபி-வரம்பு ஏற்றப்பட்டது '%s' இலிருந்து."
+msgstr[1] "%u ஐபி-வரம்புகள் ஏற்றப்பட்டது '%s' இலிருந்து."
 
 #: src/IPFilter.cpp:331
 #, c-format
@@ -2593,7 +2593,7 @@ msgstr ""
 
 #: src/MuleTrayIcon.cpp:483 src/MuleTrayIcon.cpp:490 src/MuleTrayIcon.cpp:988
 msgid "Hide aMule"
-msgstr ""
+msgstr "அகோவேறுகழுதையை மறை"
 
 #: src/MuleTrayIcon.cpp:501 src/MuleTrayIcon.cpp:997
 #: src/utils/aLinkCreator/src/alcframe.cpp:229
@@ -4670,7 +4670,7 @@ msgstr[1] ""
 #: src/PartFile.cpp:1294
 #, c-format
 msgid "Found completed part (%i) in %s"
-msgstr ""
+msgstr "முடிக்கப்பட்ட பகுதி (%i) கண்டறியப்பட்டது %s இல்"
 
 #: src/PartFile.cpp:1329
 #, c-format
@@ -4712,12 +4712,12 @@ msgstr ""
 #: src/PartFile.cpp:2489
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "முடிந்ததாக %u பகுதி '%s' இன் குறிக்கப்பட்டது, ஆனால் பார்ட்ஃபைல் எதிர்பார்த்ததை விடக் குறைவாக உள்ளது (%llu பைட்டுகள் உள்ளன, %llu தேவை); மீண்டும் பதிவிறக்குவதற்கான இடைவெளியை மீண்டும் திறக்கிறது."
 
 #: src/PartFile.cpp:2501 src/PartFile.cpp:2506
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
-msgstr ""
+msgstr "%u பகுதி %u (அதிகஅளவு %u) நீளம் கொண்ட கொத்து செய்யும் போது கோப்புமுடிவு ஆனது நீளம் கொண்ட '%s' பகுதி கோப்பு %u: %s"
 
 #: src/PartFile.cpp:3223
 #, c-format
@@ -4732,7 +4732,7 @@ msgstr ""
 #: src/PartFile.cpp:3617
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
-msgstr ""
+msgstr "ICH: சிதைந்த பகுதி %i %s க்காக மீட்கப்பட்டது -> சேமிக்கப்பட்ட பைட்டுகள்: %s"
 
 #: src/PartFile.cpp:4262
 msgid "Allocating"
@@ -5542,7 +5542,7 @@ msgstr ""
 #: src/ServerList.cpp:259
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
-msgstr ""
+msgstr "சேவையகம் சேர்க்கப்பட்டது: [%s:%d] இல் உள்ள சேவையகம் '%s' என்ற பெயரைப் பயன்படுத்தி."
 
 #: src/ServerList.cpp:355
 msgid "You are connected to the server you are trying to delete. please disconnect first."
@@ -5792,7 +5792,7 @@ msgstr ""
 #: src/ServerSocket.cpp:724
 #, c-format
 msgid "Could not solve dns for server %s: Unable to connect!"
-msgstr ""
+msgstr "%s சேவையகங்களுக்கான dns ஐத் தீர்க்க முடியவில்லை: இணைக்க முடியவில்லை!"
 
 #: src/ServerWnd.cpp:124
 msgid "Server not added: No IP or hostname specified."
@@ -6312,7 +6312,7 @@ msgstr ""
 #: src/TerminationProcess.cpp:47
 #, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
-msgstr ""
+msgstr "கட்டளை '%s' pid '%d' உடன் '%d' நிலைக் குறியீட்டுடன் முடிந்தது."
 
 #: src/TextClient.cpp:207
 msgid "Execute <str> and exit."
@@ -6509,7 +6509,7 @@ msgstr ""
 
 #: src/TextClient.cpp:991
 msgid "Shut down aMule."
-msgstr ""
+msgstr "அகோவேறுகழுதை ஐ மூடவும்."
 
 #: src/TextClient.cpp:992
 msgid ""
@@ -7177,7 +7177,7 @@ msgstr ""
 #: src/utils/wxCas/src/onlinesig.cpp:332
 #, c-format
 msgid "%.2f MB"
-msgstr ""
+msgstr "%.2f மெபை"
 
 #: src/utils/wxCas/src/onlinesig.cpp:335
 #, c-format
@@ -7493,7 +7493,7 @@ msgstr ""
 
 #: src/webserver/src/WebInterface.cpp:287
 msgid "Load/save web server settings from/to remote aMule"
-msgstr ""
+msgstr "தொலைநிலை aMule இலிருந்து/வரை வலை சேவையக அமைப்புகளை ஏற்றவும்/சேமிக்கவும்"
 
 #: src/webserver/src/WebInterface.cpp:291
 msgid "aMule config file path. DO NOT USE DIRECTLY!"
