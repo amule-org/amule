@@ -88,8 +88,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << f.ecid
-	  << ",\"hash\":\"" << EscJson(f.hash) << "\""
+	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
 	  << ",\"size\":" << f.size
@@ -118,8 +117,7 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << f.ecid
-	  << ",\"hash\":\"" << EscJson(f.hash) << "\""
+	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
 	  << ",\"size\":" << f.size
@@ -174,8 +172,8 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
 	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
 	  << ",\"download_file_name\":\"" << EscJson(c.download_file_name) << "\""
-	  << ",\"upload_file_ecid\":\"" << EscJson(c.upload_file_ecid) << "\""
-	  << ",\"download_file_ecid\":\"" << EscJson(c.download_file_ecid) << "\""
+	  << ",\"upload_file_hash\":\"" << EscJson(c.upload_file_hash) << "\""
+	  << ",\"download_file_hash\":\"" << EscJson(c.download_file_hash) << "\""
 	  << ",\"xfer\":{"
 	    << "\"up_session\":" << c.xfer_up_session
 	    << ",\"down_session\":" << c.xfer_down_session
@@ -313,8 +311,8 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	    && a.download_state == b.download_state
 	    && a.ident_state == b.ident_state
 	    && a.download_file_name == b.download_file_name
-	    && a.upload_file_ecid == b.upload_file_ecid
-	    && a.download_file_ecid == b.download_file_ecid
+	    && a.upload_file_hash == b.upload_file_hash
+	    && a.download_file_hash == b.download_file_hash
 	    && a.xfer_up_session == b.xfer_up_session
 	    && a.xfer_down_session == b.xfer_down_session
 	    && a.xfer_up_total == b.xfer_up_total
@@ -588,8 +586,7 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 			for (const auto &kv : search_now) {
 				if (prev.search.find(kv.first) == prev.search.end()) {
 					std::ostringstream payload;
-					payload << "{\"ecid\":" << kv.second.ecid
-					        << ",\"hash\":\"" << EscJson(kv.second.hash) << "\""
+					payload << "{\"hash\":\"" << EscJson(kv.second.hash) << "\""
 					        << ",\"name\":\"" << EscJson(kv.second.name) << "\""
 					        << ",\"size\":" << kv.second.size
 					        << ",\"sources\":" << kv.second.source_count

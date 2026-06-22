@@ -24,10 +24,10 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 
 **Downloads**
 - [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
-- [`GET /api/v0/downloads/{key}`](#get-apiv0downloadskey) — detail view; `{key}` is the partfile hash OR its decimal ECID
+- [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view; `{hash}` is the 32-char MD4 hex hash
 - [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
-- [`PATCH /api/v0/downloads/{key}`](#patch-apiv0downloadskey) — pause / resume / priority / category
-- [`DELETE /api/v0/downloads/{key}`](#delete-apiv0downloadskey) — cancel + remove
+- [`PATCH /api/v0/downloads/{hash}`](#patch-apiv0downloadshash) — pause / resume / priority / category
+- [`DELETE /api/v0/downloads/{hash}`](#delete-apiv0downloadshash) — cancel + remove
 - [`POST /api/v0/downloads/clear_completed`](#post-apiv0downloadsclear_completed) — bulk-clear completed staging buffer
 
 **Clients (peers)**
@@ -36,7 +36,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Shared files**
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
-- [`PATCH /api/v0/shared/{key}`](#patch-apiv0sharedkey) — change upload priority (`{key}` = hash OR ECID)
+- [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
 
 **Servers**
 - [`GET /api/v0/servers`](#get-apiv0servers) — list known ed2k servers
@@ -360,7 +360,6 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 {
   "downloads": [
     {
-      "ecid":          12,
       "hash":          "8b54a3c2...",
       "name":          "ubuntu-26.04-desktop-amd64.iso",
       "ed2k_link":     "ed2k://|file|ubuntu...|3825..|8b54...|/",
@@ -385,30 +384,20 @@ The SSE `download_added` / `download_updated` event payload matches this object 
 
 **Errors:** `503 ec_unavailable`.
 
-#### `GET /api/v0/downloads/{key}`
+#### `GET /api/v0/downloads/{hash}`
 
 **Auth:** `GUEST`
 
-Detail view for a single partfile. `{key}` accepts either form:
-
-- the 32-char MD4 hex hash (case-insensitive — the dispatcher lower-cases input), OR
-- the decimal ECID (uint32; 1–10 digits, ≤ 4,294,967,295).
-
-Hashes and ECIDs are disambiguated by shape — a 32-char hex string can never satisfy the ECID grammar, and vice versa. Both lookups are O(1): ECID via the unified file map's `std::map` key, hash via the parallel `m_hash_to_ecid` index that's rebuilt each tick alongside `m_files`.
+Detail view for a single partfile. `{key}` is the 32-char MD4 hex hash (case-insensitive — the dispatcher lower-cases input). Lookup goes through the parallel `m_hash_to_ecid` index that's maintained alongside `m_files`, so it's an O(log N) std::map probe.
 
 ```sh
-# by hash
 curl -s -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads/8b54a3c20fae9e4b9f7e0c2c8c01b6b1"
-
-# by ECID
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://$HOST/api/v0/downloads/477"
 ```
 
 Same envelope as the list item, plus a `progress.parts` array — one entry per ~9.28 MiB chunk with `state` (transferring / complete / empty / corrupt / etc.) and `sources` (count of peers offering that chunk).
 
-**Errors:** `404 not_found` (no partfile with that hash or ECID), `503 ec_unavailable`.
+**Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads`
 
@@ -451,11 +440,11 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Errors:** `400 bad_request` (malformed body, both forms used, non-string link), `503 ec_unavailable`.
 
-#### `PATCH /api/v0/downloads/{key}`
+#### `PATCH /api/v0/downloads/{hash}`
 
 **Auth:** `ADMIN`
 
-Mutates one or more fields of a single partfile. `{key}` accepts hash OR ECID — same disjunction as `GET /downloads/{key}`.
+Mutates one or more fields of a single partfile. `{key}` is the 32-char MD4 hex hash (case-insensitive).
 
 **Body:** at least one of:
 
@@ -474,11 +463,11 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Errors:** `400 bad_request` (no recognised field, invalid enum), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
-#### `DELETE /api/v0/downloads/{key}`
+#### `DELETE /api/v0/downloads/{hash}`
 
 **Auth:** `ADMIN`
 
-Cancels an **active** partfile and deletes its on-disk data. `{key}` accepts hash OR ECID — same disjunction as `GET /downloads/{key}`. amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed entries are out of scope; use [`POST /downloads/clear_completed`](#post-apiv0downloadsclear_completed) instead.
+Cancels an **active** partfile and deletes its on-disk data. `{key}` is the 32-char MD4 hex hash (case-insensitive). amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed entries are out of scope; use [`POST /downloads/clear_completed`](#post-apiv0downloadsclear_completed) instead.
 
 ```sh
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
@@ -555,8 +544,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "software": "eMule",
       "upload_state": "uploading",
       "download_state": "idle",
-      "upload_file_ecid": "12",
-      "download_file_ecid": "",
+      "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
+      "download_file_hash": "",
       "download_file_name": "",
       "upload_speed_bps": 22000,
       "download_speed_bps": 0
@@ -565,7 +554,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-`upload_file_ecid` / `download_file_ecid` are amule ECIDs (decimal strings), not MD4 file hashes. ECIDs come from a single per-daemon counter shared across files, clients, servers, friends, and search results — a given integer identifies at most one object across all kinds within a daemon's process lifetime, so the lookup is unambiguous. Resolve each field against either [`/api/v0/downloads`](#get-apiv0downloads) `.ecid` (in-progress files, as CPartFile entries) or [`/api/v0/shared`](#get-apiv0shared) `.ecid` (CKnownFile entries — completed plus user-shared); a file completing crosses from one list to the other, which mints a new CKnownFile and therefore a new ECID, so a snapshot mid-transition may show an ECID transiently in neither list. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them.
+`upload_file_hash` / `download_file_hash` are the 32-char MD4 hex hashes of the partfile or shared file the peer is currently transferring with — directly resolvable against [`/api/v0/downloads/{hash}`](#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them.
 
 **Errors:** `400 bad_request` (unknown filter token), `503 ec_unavailable`.
 
@@ -587,7 +576,6 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 {
   "shared": [
     {
-      "ecid":             17,
       "hash":             "1a2b3c4d...",
       "name":             "release-notes.txt",
       "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
@@ -627,11 +615,11 @@ Returns `202 Accepted`.
 
 **Errors:** `503 ec_unavailable`.
 
-#### `PATCH /api/v0/shared/{key}`
+#### `PATCH /api/v0/shared/{hash}`
 
 **Auth:** `ADMIN`
 
-Changes the upload priority of a single shared file. `{key}` accepts hash OR ECID — same disjunction as `GET /downloads/{key}`.
+Changes the upload priority of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive).
 
 **Body:**
 

@@ -440,7 +440,8 @@ std::string FormatClientIpv4(std::uint32_t ip_he)
 // the AssignIfExist pattern leaves cached values intact when the
 // tag is CValueMap-suppressed by amuled.
 void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs,
-                    bool is_new)
+                    bool is_new,
+                    const std::map<std::uint32_t, std::string> &file_hash_by_ecid)
 {
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_NAME)) {
 		cs.client_name = std::string(t->GetStringData().utf8_str());
@@ -497,20 +498,25 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs,
 	if (c->RemoteFilename(fn)) {
 		cs.download_file_name = std::string(fn.utf8_str());
 	}
-	// UPLOAD_FILE / REQUEST_FILE carry ECIDs (the unified
-	// m_FileEncoder map's IDs), NOT MD4 file hashes. We surface them
-	// as decimal-string ECIDs; consumers correlate against
-	// /downloads[].ecid or /shared[].ecid client-side.
+	// UPLOAD_FILE / REQUEST_FILE carry amuled-side ECIDs (the unified
+	// m_FileEncoder map's IDs). Resolve to MD4 hashes via the
+	// file_hash_by_ecid snapshot the caller built from m_files this
+	// tick. Empty hash if the ECID isn't in the map — file may have
+	// been removed between the file walkers and this client walker.
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_FILE, v) && v != 0) {
-			cs.upload_file_ecid = std::to_string(v);
+			const auto it = file_hash_by_ecid.find(v);
+			cs.upload_file_hash = (it != file_hash_by_ecid.end())
+				? it->second : std::string();
 		}
 	}
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_REQUEST_FILE, v) && v != 0) {
-			cs.download_file_ecid = std::to_string(v);
+			const auto it = file_hash_by_ecid.find(v);
+			cs.download_file_hash = (it != file_hash_by_ecid.end())
+				? it->second : std::string();
 		}
 	}
 	{
@@ -814,7 +820,8 @@ void ApplyGetUpdateToShared(
 
 void ApplyGetUpdateToClients(
 	const CECPacket *resp,
-	std::map<std::uint32_t, ClientSnapshot> &cache)
+	std::map<std::uint32_t, ClientSnapshot> &cache,
+	const std::map<std::uint32_t, std::string> &file_hash_by_ecid)
 {
 	if (!resp) return;
 	const CECTag *container = resp->GetTagByName(EC_TAG_CLIENT);
@@ -841,10 +848,12 @@ void ApplyGetUpdateToClients(
 		if (map_it == cache.end()) {
 			ClientSnapshot fresh;
 			fresh.ecid = ecid;
-			MergeClientTag(cli, fresh, /*is_new=*/true);
+			MergeClientTag(cli, fresh, /*is_new=*/true,
+			               file_hash_by_ecid);
 			cache.emplace(ecid, std::move(fresh));
 		} else {
-			MergeClientTag(cli, map_it->second, /*is_new=*/false);
+			MergeClientTag(cli, map_it->second, /*is_new=*/false,
+			               file_hash_by_ecid);
 		}
 	}
 

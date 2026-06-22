@@ -159,7 +159,6 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
 
 ```json
 {
-  "ecid":          12,
   "hash":          "8b54a3c2...",
   "name":          "ubuntu-26.04-desktop-amd64.iso",
   "ed2k_link":     "ed2k://|file|ubuntu...|3825..|8b54...|/",
@@ -192,7 +191,6 @@ Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item
 
 ```json
 {
-  "ecid":             17,
   "hash":             "1a2b3c4d...",
   "name":             "release-notes.txt",
   "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
@@ -262,8 +260,8 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "upload_state":           "uploading",
   "download_state":         "idle",
   "ident_state":            "verified",
-  "upload_file_ecid":       "12",
-  "download_file_ecid":     "",
+  "upload_file_hash":       "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
+  "download_file_hash":     "",
   "download_file_name":     "",
   "xfer": {
     "up_session":   22000000,
@@ -281,7 +279,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 }
 ```
 
-`upload_file_ecid` (file we're uploading TO this peer) and `download_file_ecid` (file we're downloading FROM this peer) are amule ECIDs as decimal strings — NOT MD4 file hashes. ECIDs come from one per-daemon counter shared across files, clients, servers, friends, and search results, so a given integer identifies at most one object across all kinds. Resolve via [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) `.ecid` (in-progress partfiles) or [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) `.ecid` (known files); completion mints a new CKnownFile with a new ECID, so a mid-transition snapshot may briefly show an ECID in neither list.
+`upload_file_hash` (file we're uploading TO this peer) and `download_file_hash` (file we're downloading FROM this peer) are 32-char MD4 hex hashes — directly resolvable against [`/api/v0/downloads/{hash}`](REFERENCE.md#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction.
 
 #### `client_removed`
 

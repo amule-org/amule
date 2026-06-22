@@ -146,7 +146,7 @@ struct FileSnapshot {
 //  * /uploads → filter by upload_state == US_UPLOADING
 //  * /clients → no filter, full set surfaced
 // (/downloads/{hash}/sources can filter by
-// upload_file_ecid matching the partfile.)
+// upload_file_hash matching the partfile.)
 struct ClientSnapshot {
 	std::uint32_t ecid                  = 0;
 	std::string   client_name;
@@ -167,17 +167,20 @@ struct ClientSnapshot {
 	std::string   download_state;      // "downloading" | "onqueue" | "noneededparts" | ... | "idle"
 	std::string   ident_state;         // "unknown" | "identified" | "bad_guy" | ...
 
-	// File context — different per direction. All three are amule
-	// ECIDs (decimal-string), NOT MD4 file hashes; consumers
-	// correlate against /downloads[].ecid or /shared[].ecid.
-	//  * upload_file_ecid: partfile this peer is downloading FROM
-	//    us (upload side). Empty when not uploading to them.
-	//  * download_file_ecid + download_file_name: file we are
+	// File context — different per direction. Both correlators are
+	// 32-char lowercase MD4 hashes resolved by the refresher from
+	// EC_TAG_CLIENT_UPLOAD_FILE / EC_TAG_CLIENT_REQUEST_FILE (which
+	// amuled ships as ECIDs) against the unified m_files map. Consumers
+	// correlate against /downloads[].hash or /shared[].hash.
+	//  * upload_file_hash: partfile this peer is downloading FROM
+	//    us. Empty when not uploading to them, or when amuled's ECID
+	//    didn't resolve to a known file this tick.
+	//  * download_file_hash + download_file_name: file we are
 	//    downloading FROM this peer + the filename the peer
-	//    advertised for it (OP_REQFILENAMEANSWER). Empty when not
-	//    in download role.
-	std::string   upload_file_ecid;     // EC_TAG_CLIENT_UPLOAD_FILE
-	std::string   download_file_ecid;   // EC_TAG_CLIENT_REQUEST_FILE
+	//    advertised (OP_REQFILENAMEANSWER). Empty when not in
+	//    download role.
+	std::string   upload_file_hash;     // EC_TAG_CLIENT_UPLOAD_FILE resolved
+	std::string   download_file_hash;   // EC_TAG_CLIENT_REQUEST_FILE resolved
 	std::string   download_file_name;   // EC_TAG_CLIENT_REMOTE_FILENAME
 
 	// Per-session transfer stats. CLIENT_UPLOAD_SESSION = bytes
@@ -529,16 +532,18 @@ public:
 
 	// Look up a single file by 32-char hex hash, then check the role.
 	// Returns true on hit + role match, false on miss; on miss `out`
-	// is left untouched. Used by /downloads/{key} (download role) and
-	// /shared/{key} (shared role) — both inspect the same m_files map.
+	// is left untouched. Used by /downloads/{hash} (download role) and
+	// /shared/{hash} (shared role) — both inspect the same m_files map.
 	bool             FindDownload(const std::string &hash_hex,
 	                              FileSnapshot &out) const;
+	bool             FindShared  (const std::string &hash_hex,
+	                              FileSnapshot &out) const;
 
-	// ECID-keyed counterparts. O(1) map lookup (vs the hash variants'
-	// linear scan). Used when the path captures parse as a decimal ECID.
+	// ECID-keyed counterparts. Used internally — there is no
+	// /downloads/{ecid} or /shared/{ecid} path; the wire surface is
+	// hash-only. CClientList::ApplyGetUpdate also reaches in here when
+	// resolving EC_TAG_CLIENT_UPLOAD_FILE.
 	bool             FindDownloadByEcid(std::uint32_t ecid,
-	                                    FileSnapshot &out) const;
-	bool             FindShared       (const std::string &hash_hex,
 	                                    FileSnapshot &out) const;
 	bool             FindSharedByEcid (std::uint32_t ecid,
 	                                    FileSnapshot &out) const;

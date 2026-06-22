@@ -170,26 +170,10 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/baadbaadbaadbaadbaadbaadbaadbaad"
 _assert_status 404 "PATCH unknown hash → 404"
 
-# --- 4b. ECID path also resolves the same record. -----------------
-# /shared/{key} accepts hash OR decimal ECID. Same target, same outcome.
-# Re-fetch the list here because the most recent CURL_BODY is from a
-# 404/400 path above, which has no .ecid field.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
-TEST_ECID=$(printf '%s' "$CURL_BODY" \
-	| jq -r --arg h "$TEST_HASH" \
-	  '.shared[] | select(.hash == $h) | .ecid')
-if [ -n "$TEST_ECID" ] && [ "$TEST_ECID" != "null" ]; then
-	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d '{"priority":"normal"}' "$HOST/api/v0/shared/$TEST_ECID"
-	_assert_status 200 "PATCH /shared/{ECID} → 200"
-	_assert_json_eq '.ecid' "$TEST_ECID" 'PATCH /shared/{ECID} returns matching ECID'
-fi
-
 # --- 5. Method gate (POST/DELETE not allowed). --------------------
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/$TEST_HASH"
-_assert_status 405 "DELETE /shared/{key} → 405"
+_assert_status 405 "DELETE /shared/{hash} → 405"
 
 # --- 6. Restore saved priority. -----------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \

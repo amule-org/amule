@@ -145,16 +145,18 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			});
 
 		// /clients — every alive peer in theApp->clientlist (download
-		// sources, upload slots, queue waiters, etc.). Replaces the
-		// prior `EC_OP_GET_ULOAD_QUEUE` two-pass call. The CLIENT
-		// subtree is also gated by the `TransmitOnlyUploadingClients`
-		// server-side pref, which we rely on being false (the amuled
-		// default) for the full peer surface; if an operator flipped
-		// it amuleapi just sees the US_UPLOADING subset (still
-		// correct, narrower).
+		// sources, upload slots, queue waiters, etc.). Build an
+		// ecid→hash snapshot from the unified file map first so the
+		// clients walker can resolve EC_TAG_CLIENT_UPLOAD_FILE /
+		// REQUEST_FILE into MD4 hashes at walker time (the wire
+		// contract is hash-only — ECIDs never leak out).
+		std::map<std::uint32_t, std::string> file_hash_by_ecid;
+		for (const auto &f : state.Files()) {
+			if (!f.hash.empty()) file_hash_by_ecid.emplace(f.ecid, f.hash);
+		}
 		state.MutateClients(
 			[&](std::map<std::uint32_t, ClientSnapshot> &cache) {
-				ApplyGetUpdateToClients(resp, cache);
+				ApplyGetUpdateToClients(resp, cache, file_hash_by_ecid);
 			});
 		delete resp;
 	}

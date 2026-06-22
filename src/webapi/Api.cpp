@@ -312,25 +312,6 @@ const char *const kSessionCookieName = "amuleapi_token";
 constexpr std::size_t kStaticMaxFileBytes = 16 * 1024 * 1024;
 
 
-// Try parsing `key` as a uint32 ECID (1..10 decimal digits, no leading
-// zero except "0" alone). 32-char hex hashes can never satisfy this, so
-// callers use it to disambiguate /downloads/{key} and /shared/{key}
-// captures between hash and ECID without an explicit type-prefix.
-bool TryParseEcid(const std::string &key, std::uint32_t &out)
-{
-	if (key.empty() || key.size() > 10) return false;
-	if (key.size() > 1 && key[0] == '0') return false;
-	std::uint64_t v = 0;
-	for (char c : key) {
-		if (c < '0' || c > '9') return false;
-		v = v * 10 + (c - '0');
-		if (v > 0xFFFFFFFFu) return false;
-	}
-	out = static_cast<std::uint32_t>(v);
-	return true;
-}
-
-
 // Map file extension to Content-Type. Unknown → application/octet-stream
 // (no XSS amplification from a wrong-type response on an attacker-named
 // file).
@@ -872,19 +853,19 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleKadBootstrap(req);
 	}
 
-	// shared file priority PATCH. `{key}` is the lowercase 32-char hex
-	// hash OR the decimal ECID.
+	// shared file priority PATCH. `{hash}` is the lowercase 32-char hex
+	// MD4 hash.
 	{
 		static const auto shared_detail =
-			web_api_path::ParsePattern("/api/v0/shared/{key}");
+			web_api_path::ParsePattern("/api/v0/shared/{hash}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_detail, path_segs, caps)) {
 			if (req.method != "PATCH") {
 				return ErrorResponse(405, "method_not_allowed",
-					"only PATCH on /shared/{key}");
+					"only PATCH on /shared/{hash}");
 			}
-			return HandleSharedPatch(req, caps["key"]);
+			return HandleSharedPatch(req, caps["hash"]);
 		}
 	}
 
@@ -1010,28 +991,27 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	// /downloads/{key} — single-resource detail (GET / HEAD) and the
+	// /downloads/{hash} — single-resource detail (GET / HEAD) and the
 	// mutation surface (PATCH for status/priority/category, DELETE for
-	// clear-completed single). `{key}` is the lowercase 32-char hex
-	// hash OR the decimal ECID; the handler dispatches on shape (see
-	// TryParseEcid).
+	// clear-completed single). `{hash}` is the lowercase 32-char hex
+	// MD4 hash (dispatcher lower-cases input on the way in).
 	{
 		static const auto download_detail =
-			web_api_path::ParsePattern("/api/v0/downloads/{key}");
+			web_api_path::ParsePattern("/api/v0/downloads/{hash}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(download_detail, path_segs, caps)) {
 			if (req.method == "GET" || req.method == "HEAD") {
-				return HandleDownloadDetail(req, caps["key"]);
+				return HandleDownloadDetail(req, caps["hash"]);
 			}
 			if (req.method == "PATCH") {
-				return HandleDownloadPatch(req, caps["key"]);
+				return HandleDownloadPatch(req, caps["hash"]);
 			}
 			if (req.method == "DELETE") {
-				return HandleDownloadDelete(req, caps["key"]);
+				return HandleDownloadDelete(req, caps["hash"]);
 			}
 			return ErrorResponse(405, "method_not_allowed",
-				"only GET / HEAD / PATCH / DELETE on /downloads/{key}");
+				"only GET / HEAD / PATCH / DELETE on /downloads/{hash}");
 		}
 	}
 
@@ -1570,10 +1550,6 @@ void WriteDownloadObject(CJsonWriter &w, const webapi::FileSnapshot &f,
                          bool include_parts = false)
 {
 	w.BeginObject();
-	  // ecid is amule's per-daemon-process identity for this object;
-	  // exposed so clients can correlate ClientSnapshot's
-	  // upload_file_ecid / download_file_ecid against this list.
-	  w.Key("ecid");            w.ValueInt(static_cast<int64_t>(f.ecid));
 	  w.Key("hash");            w.ValueString(wxString::FromUTF8(f.hash.c_str()));
 	  w.Key("name");            w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	  w.Key("ed2k_link");       w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
@@ -1618,8 +1594,8 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	  w.Key("download_state");        w.ValueString(wxString::FromUTF8(c.download_state.c_str()));
 	  w.Key("ident_state");           w.ValueString(wxString::FromUTF8(c.ident_state.c_str()));
 	  w.Key("download_file_name");   w.ValueString(wxString::FromUTF8(c.download_file_name.c_str()));
-	  w.Key("upload_file_ecid");   w.ValueString(wxString::FromUTF8(c.upload_file_ecid.c_str()));
-	  w.Key("download_file_ecid"); w.ValueString(wxString::FromUTF8(c.download_file_ecid.c_str()));
+	  w.Key("upload_file_hash");   w.ValueString(wxString::FromUTF8(c.upload_file_hash.c_str()));
+	  w.Key("download_file_hash"); w.ValueString(wxString::FromUTF8(c.download_file_hash.c_str()));
 	  w.Key("xfer");
 	  w.BeginObject();
 	    w.Key("up_session");     w.ValueInt(static_cast<int64_t>(c.xfer_up_session));
@@ -1641,9 +1617,6 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
 	w.BeginObject();
-	  // See ecid note on WriteDownloadObject — same correlation
-	  // mechanism for the upload side.
-	  w.Key("ecid");              w.ValueInt(static_cast<int64_t>(f.ecid));
 	  w.Key("hash");              w.ValueString(wxString::FromUTF8(f.hash.c_str()));
 	  w.Key("name");              w.ValueString(wxString::FromUTF8(f.name.c_str()));
 	  w.Key("ed2k_link");         w.ValueString(wxString::FromUTF8(f.ed2k_link.c_str()));
@@ -1939,23 +1912,16 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// {key} accepts hash OR ECID. ECID = O(1) map lookup; hash =
-	// case-folded scan (State writes lowercase, accept any case
-	// from the URL).
+	// {hash} is the 32-char lowercase-hex MD4. URL is case-tolerant;
+	// State writes lowercase, so we down-case the capture before the
+	// O(1) m_hash_to_ecid lookup.
 	webapi::FileSnapshot d;
-	std::uint32_t ecid;
-	bool found = false;
-	if (TryParseEcid(key, ecid)) {
-		found = m_state.FindDownloadByEcid(ecid, d);
-	} else {
-		std::string needle = key;
-		std::transform(needle.begin(), needle.end(), needle.begin(),
-			[](unsigned char c) { return std::tolower(c); });
-		found = m_state.FindDownload(needle, d);
-	}
-	if (!found) {
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(),
+		[](unsigned char c) { return std::tolower(c); });
+	if (!m_state.FindDownload(needle, d)) {
 		return ErrorResponse(404, "not_found",
-			"no download with that hash or ECID");
+			"no download with that hash");
 	}
 
 	// Bare object per Q3: list endpoint envelopes, detail endpoint
@@ -2180,20 +2146,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// {key} = hash OR ECID; same disjunction as the GET detail handler.
 	webapi::FileSnapshot d;
-	std::uint32_t ecid;
-	bool found = false;
-	if (TryParseEcid(key, ecid)) {
-		found = m_state.FindDownloadByEcid(ecid, d);
-	} else {
-		std::string needle = key;
-		std::transform(needle.begin(), needle.end(), needle.begin(),
-			[](unsigned char c) { return std::tolower(c); });
-		found = m_state.FindDownload(needle, d);
-	}
-	if (!found) {
-		return ErrorResponse(404, "not_found", "no download with that hash or ECID");
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(),
+		[](unsigned char c) { return std::tolower(c); });
+	if (!m_state.FindDownload(needle, d)) {
+		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
 	picojson::value root;
@@ -2204,8 +2162,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	const auto &obj = root.get<picojson::object>();
 
 	// Downstream EC ops still address by MD4 hash — read it back off
-	// the snapshot we just resolved (FindDownloadByEcid populates
-	// d.hash, FindDownload by definition matched on it).
+	// the snapshot we just resolved.
 	CMD4Hash file_hash;
 	if (!HashFromHex(d.hash, file_hash)) {
 		return ErrorResponse(500, "internal_error",
@@ -2346,20 +2303,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// {key} = hash OR ECID; same disjunction as the GET detail handler.
 	webapi::FileSnapshot d;
-	std::uint32_t ecid;
-	bool found = false;
-	if (TryParseEcid(key, ecid)) {
-		found = m_state.FindDownloadByEcid(ecid, d);
-	} else {
-		std::string needle = key;
-		std::transform(needle.begin(), needle.end(), needle.begin(),
-			[](unsigned char c) { return std::tolower(c); });
-		found = m_state.FindDownload(needle, d);
-	}
-	if (!found) {
-		return ErrorResponse(404, "not_found", "no download with that hash or ECID");
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(),
+		[](unsigned char c) { return std::tolower(c); });
+	if (!m_state.FindDownload(needle, d)) {
+		return ErrorResponse(404, "not_found", "no download with that hash");
 	}
 
 	// DELETE only handles ACTIVE downloads (anything not "completed").
@@ -4154,21 +4103,13 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 			"amuleapi has not received its first EC snapshot yet");
 	}
 
-	// {key} = hash OR ECID; same disjunction as /downloads/{key}.
 	webapi::FileSnapshot s;
-	std::uint32_t ecid;
-	bool found = false;
-	if (TryParseEcid(key, ecid)) {
-		found = m_state.FindSharedByEcid(ecid, s);
-	} else {
-		std::string needle = key;
-		std::transform(needle.begin(), needle.end(), needle.begin(),
-			[](unsigned char c) { return std::tolower(c); });
-		found = m_state.FindShared(needle, s);
-	}
-	if (!found) {
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(),
+		[](unsigned char c) { return std::tolower(c); });
+	if (!m_state.FindShared(needle, s)) {
 		return ErrorResponse(404, "not_found",
-			"no shared file with that hash or ECID");
+			"no shared file with that hash");
 	}
 
 	picojson::value root;

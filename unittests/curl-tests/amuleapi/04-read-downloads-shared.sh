@@ -114,8 +114,8 @@ if [ "$COUNT" -gt 0 ]; then
 	echo "  --- /downloads has $COUNT entry/entries; shape checks ---"
 	_assert_json_eq '.downloads[0].hash | length' 32 \
 		'/downloads[0].hash is 32-char hex'
-	_assert_json_eq '.downloads[0].ecid | type' number \
-		'/downloads[0].ecid is numeric (client→file correlation key)'
+	_assert_json_eq '.downloads[0].ecid | type' null \
+		'/downloads[0] does not expose internal ecid'
 	_assert_json_eq '.downloads[0].name | type' string \
 		'/downloads[0].name is string'
 	_assert_json_eq '.downloads[0].size | type' number \
@@ -147,17 +147,6 @@ if [ "$COUNT" -gt 0 ]; then
 	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH_UPPER"
 	_assert_status 200 "GET /downloads/{HASH-UPPERCASE} → 200 (case-insensitive)"
-
-	# --- 4b. /downloads/{key} via ECID — disjunctive route. -------
-	# Same endpoint, but the path capture is the decimal ECID. Should
-	# resolve to the exact same record and ship the matching hash.
-	# $CURL_BODY here is the detail response from the uppercase-hash
-	# call above, so its `.ecid` is the value we want.
-	ECID=$(printf '%s' "$CURL_BODY" | jq -r '.ecid')
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$ECID"
-	_assert_status 200 "GET /downloads/{ECID} → 200"
-	_assert_json_eq '.ecid' "$ECID" '/downloads/{ECID} returns the same ECID'
-	_assert_json_eq '.hash' "$HASH" '/downloads/{ECID} returns matching hash'
 else
 	echo "  --- /downloads is empty; skipping per-item shape + detail checks ---"
 fi
@@ -176,8 +165,8 @@ if [ "$SHCOUNT" -gt 0 ]; then
 	echo "  --- /shared has $SHCOUNT entry/entries; shape checks ---"
 	_assert_json_eq '.shared[0].hash | length' 32 \
 		'/shared[0].hash is 32-char hex'
-	_assert_json_eq '.shared[0].ecid | type' number \
-		'/shared[0].ecid is numeric (client→file correlation key)'
+	_assert_json_eq '.shared[0].ecid | type' null \
+		'/shared[0] does not expose internal ecid'
 	_assert_json_eq '.shared[0].xfer | type' object \
 		'/shared[0].xfer is object'
 	_assert_json_eq '.shared[0].xfer.total | type' number \
