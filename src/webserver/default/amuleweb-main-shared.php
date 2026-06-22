@@ -12,7 +12,7 @@
 		if (document.querySelectorAll('input[type=\"checkbox\"]:checked').length > 0) {
 			return;
 		}
-		location.reload();
+		window.location.href = window.location.href;
 	}, 1000 * ", $_SESSION["auto_refresh"], ");
 </script>";
 	}
