@@ -8,6 +8,65 @@ Polling `/api/v0/downloads` every second for a few thousand transfers is a multi
 
 Clients connect once, leave the connection open, and react to typed events as they arrive. The browser EventSource API and `curl -N` both work out of the box.
 
+## Bootstrap: snapshot + stream
+
+REST snapshots and the `/events` stream need a specific call ordering or events that fire between them are silently lost. The right sequence:
+
+1. **Open `/api/v0/events` first** — buffer arrivals, don't apply yet. No `Last-Event-ID` is fine; the cursor anchors on whatever id was newest at handshake time.
+2. **`GET` the REST collections** in parallel.
+3. **Load, drain, flip** — load each snapshot into the store, drain the buffer in arrival order, then switch to direct-apply, all in one synchronous turn so no event can land between drain and flip.
+
+Buffer-then-replay (rather than merging the snapshot into a live store) is required because of `_removed` events: a snapshot built before the refresher's exclusive lock for a removing tick can still contain the deleted entity, and a merge-style load would `set()` it back over a buffered delete. With buffer-then-replay the snapshot lands first, the buffered `_removed` then clears the stale entry.
+
+```js
+// 1. Open SSE first. One dispatcher per event type, behaviour switched
+//    by a boot flag so we don't have to add-then-remove listeners.
+let booting = true;
+const buffered = [];
+
+function onEvent(ev) {
+  const entry = { type: ev.type, data: JSON.parse(ev.data) };
+  if (booting) buffered.push(entry);
+  else applyEvent(entry);
+}
+
+const EVENT_TYPES = [
+  "download_added", "download_updated", "download_removed",
+  "shared_added",   "shared_updated",   "shared_removed",
+  "client_added",   "client_updated",   "client_removed",
+  "server_added",   "server_updated",   "server_removed",
+  "status_changed", "log_appended",
+  "search_result_added", "search_finished",
+];
+const es = new EventSource("/api/v0/events", { withCredentials: true });
+for (const t of EVENT_TYPES) es.addEventListener(t, onEvent);
+es.addEventListener("resync", () => location.reload()); // simplest recovery
+
+// 2. Pull baseline snapshots in parallel.
+const [downloads, shared, clients, servers, status] = await Promise.all([
+  fetch("/api/v0/downloads").then((r) => r.json()),
+  fetch("/api/v0/shared").then((r) => r.json()),
+  fetch("/api/v0/clients").then((r) => r.json()),
+  fetch("/api/v0/servers").then((r) => r.json()),
+  fetch("/api/v0/status").then((r) => r.json()),
+]);
+
+// 3. Load each snapshot into the store, drain the buffer, flip the flag —
+//    single synchronous block so no event can fire between drain and flip.
+//    `loadSnapshot` is your store-specific "replace this collection" call,
+//    e.g. `store.set(name, payload)` or `collections.set(name, new Map(...))`.
+loadSnapshot("downloads", downloads);
+loadSnapshot("shared",    shared);
+loadSnapshot("clients",   clients);
+loadSnapshot("servers",   servers);
+loadSnapshot("status",    status);
+for (const ev of buffered) applyEvent(ev);
+buffered.length = 0;
+booting = false;
+```
+
+If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a very busy bus, the synthetic `resync` event tells the client to wipe its cache and re-GET. See §Reconnect and Last-Event-ID for the recovery rules — the bootstrap path is the same `GET` sweep, just on a non-fresh cache.
+
 ## Connecting
 
 `GET /api/v0/events` opens the stream. Auth runs synchronously BEFORE the worker thread is spawned and before the 32-slot streaming budget is touched, so an unauthenticated peer can't tie up a slot for the read-timeout window.
