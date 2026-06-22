@@ -65,7 +65,7 @@ buffered.length = 0;
 booting = false;
 ```
 
-If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a very busy bus, the synthetic `resync` event tells the client to wipe its cache and re-GET. See §Reconnect and Last-Event-ID for the recovery rules — the bootstrap path is the same `GET` sweep, just on a non-fresh cache.
+If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a very busy bus, the synthetic `resync` event tells the client to wipe its cache and re-GET. See [Reconnect and Last-Event-ID](#reconnect-and-last-event-id) for the recovery rules — the bootstrap path is the same `GET` sweep, just on a non-fresh cache.
 
 ## Connecting
 
@@ -87,9 +87,13 @@ es.addEventListener("download_added",   (e) => { /* JSON.parse(e.data) */ });
 es.addEventListener("download_updated", (e) => { /* ... */ });
 es.addEventListener("download_removed", (e) => { /* ... */ });
 es.addEventListener("resync",           (e) => { /* re-GET REST collections */ });
+es.addEventListener("error",            ()  => {
+  // EventSource auto-reconnects with backoff; only surface to UI on terminal failure.
+  if (es.readyState === EventSource.CLOSED) { /* show "disconnected" */ }
+});
 ```
 
-The cookie-based auth path is the default for browser EventSource — the HttpOnly cookie set by `/auth/login` is carried automatically. Bearer-auth clients send `Authorization: Bearer <jwt>` like any other endpoint.
+The cookie-based auth path is the default for browser EventSource — the HttpOnly cookie set by `/auth/login` is carried automatically. Bearer-auth works for `curl -N` and any HTTP client that lets you set request headers, but the native browser `EventSource` API doesn't, so browser bearer-on-SSE needs a polyfill (e.g. [`@microsoft/fetch-event-source`](https://github.com/Azure/fetch-event-source)). For browser SPAs the cookie path is the friction-free choice.
 
 ### Auth failure shape
 
@@ -136,7 +140,7 @@ data: <json>
 
 ```
 
-The trailing blank line terminates the frame. `id` is a monotonically increasing `uint64` per amuleapi process — see §Last-Event-ID below. `data` is the JSON payload documented per event in §Event catalog. Payloads never contain literal newlines (the diff serializer escapes them) so one `data:` line is always enough.
+The trailing blank line terminates the frame. `id` is a monotonically increasing `uint64` per amuleapi process — see [Reconnect and Last-Event-ID](#reconnect-and-last-event-id) below. `data` is the JSON payload documented per event in [Event catalog](#event-catalog). Payloads never contain literal newlines (the diff serializer escapes them) so one `data:` line is always enough.
 
 ## Channels and filtering
 
@@ -162,6 +166,8 @@ curl -N -H "Authorization: Bearer $TOKEN" \
 Unknown channel names in the query are silently ignored — forward-compatibility hedge for future event families. The token cap on the filter set is 32 to bound the memory the parser allocates; passing more is silently truncated.
 
 The synthetic `resync` event (see below) is ALWAYS delivered regardless of the filter. Its purpose is to signal a cache invalidation that the client cannot opt out of.
+
+Mirror your filter in the bootstrap: only `GET` the REST collections matching the channels you subscribed to. Pulling a collection whose channel you filtered out leaves that snapshot silently stale — it never receives updates from the stream.
 
 ## Heartbeat
 
@@ -208,7 +214,7 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Two events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge) and `log_appended` is an append operation (`{buffer, lines}` — push the lines onto the named buffer, don't replace). Branch on the event type in your dispatcher accordingly.
 
 ### `downloads` channel
 
@@ -384,11 +390,11 @@ Emitted when amuled or the serverinfo buffer appends new lines.
 { "buffer": "amule", "lines": ["2026-06-19 11:00:00: line one", "2026-06-19 11:00:01: line two"] }
 ```
 
-`buffer` is `"amule"` or `"serverinfo"`. Multiple lines may be batched into a single event when the underlying buffer landed several lines between refresher ticks.
+`buffer` is `"amule"` or `"serverinfo"`. Multiple lines may be batched into a single event when the underlying buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` or `/logs/serverinfo` — fetch them in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
 
 ### `search` channel
 
-Driven by the refresher state machine that owns the `POST /search` → completion lifecycle (see [REFERENCE.md](REFERENCE.md#search-results)). Events only fire while a search is active; the channel is silent at idle.
+Driven by the refresher state machine that owns the `POST /search` → completion lifecycle (see [REFERENCE.md](REFERENCE.md#search-results)). Events only fire while a search is active; the channel is silent at idle. The [Bootstrap example](#bootstrap-snapshot--stream) omits `/search/results` because searches are normally client-initiated post-boot; if your UI persists a "search-in-progress" state across reloads, fetch `/search/results` and `/search/progress` in step 2 too.
 
 #### `search_result_added`
 
@@ -421,7 +427,7 @@ Emitted exactly once per search when the state machine flips `progress.complete`
 
 ### Filter-bypass: `resync`
 
-The synthetic `resync` event has no underscore prefix — it doesn't belong to any of the channel buckets above and is always delivered regardless of `?channels=`. Documented under §Reconnect.
+The synthetic `resync` event has no underscore prefix — it doesn't belong to any of the channel buckets above and is always delivered regardless of `?channels=`. Documented under [Reconnect and Last-Event-ID](#reconnect-and-last-event-id).
 
 ## Single-publisher invariant
 
