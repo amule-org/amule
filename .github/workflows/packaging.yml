@@ -318,6 +318,12 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Need tags so `git describe --tags` in the .dmg name resolves
+          # to the release tag (aMule-3.0.1-macOS-universal2.dmg). Without
+          # this the checkout is shallow with no tags and describe falls
+          # back to --always (the short SHA), producing a SHA-named dmg.
+          fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
           name: macos-app-arm64
