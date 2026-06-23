@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-18 22:09+0000\n"
+"PO-Revision-Date: 2026-06-23 18:44+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1538,7 +1538,7 @@ msgstr "Downloads (%i)"
 
 #: src/DownloadListCtrl.cpp:1447
 msgid "the default Windows shell handler"
-msgstr ""
+msgstr "O manipulador de shell default do Windows"
 
 #: src/DownloadListCtrl.cpp:1454
 #, c-format
@@ -1547,7 +1547,7 @@ msgid ""
 "set your preferred video player in preferences (default is %s)."
 msgstr ""
 "Para impedir que este aviso apareça em toda pré-visualização,\n"
-"indique seu tocador de vídeo preferido em preferências (%s é o padrão)."
+"defina seu tocador de vídeo preferido nas preferências (%s é o padrão)."
 
 #: src/DownloadListCtrl.cpp:1455
 msgid "File preview"
@@ -5515,7 +5515,6 @@ msgid "Copy eD2k link to clipboard"
 msgstr "Copiar ligação eD2k para área de transferência"
 
 #: src/SearchListCtrl.cpp:811
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
 msgstr "Você não está atualmente conectado a um servidor que suporta a função \"Arquivos Relacionados\""
 

@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-18 22:06+0000\n"
+"PO-Revision-Date: 2026-06-23 18:51+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -505,9 +505,7 @@ msgstr "Foro: https://github.com/amule-org/amule/discussions \n"
 
 #: src/amuleDlg.cpp:548
 msgid "Documentation: https://amule-org.github.io/docs \n"
-msgstr ""
-"Documentación: https://amule-org.github.io/docs \n"
-"\n"
+msgstr "Documentación: https://amule-org.github.io/docs \n"
 
 #: src/amuleDlg.cpp:549
 msgid ""
@@ -1540,7 +1538,7 @@ msgstr "Descargas (%i)"
 
 #: src/DownloadListCtrl.cpp:1447
 msgid "the default Windows shell handler"
-msgstr ""
+msgstr "la terminal predeterminada de Windows"
 
 #: src/DownloadListCtrl.cpp:1454
 #, c-format
@@ -1640,8 +1638,8 @@ msgstr "Protocolo desconocido del enlace: %s"
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] "No se pudo añadir %u enlace (consulte el registro para más detalles)"
-msgstr[1] "No se pudieron añadir %u enlaces (consulte el registro para más detalles)"
+msgstr[0] "No se pudo añadir el enlace %u (consulte el registro para más detalles)."
+msgstr[1] "No se pudieron añadir los enlaces %u (consulte el registro para más detalles)."
 
 #: src/DownloadQueue.cpp:1464
 #, c-format
@@ -2257,19 +2255,19 @@ msgstr "HTTP 401 No autorizado para %s"
 #: src/IP2Country.cpp:82
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "GeoLite2-Country.mmdb migrado a %s"
 
 #: src/IP2Country.cpp:134
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences → IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: Se ha seleccionado MaxMind como fuente GeoIP, pero no se ha configurado ninguna clave de licencia. Abra Preferencias → IP2Country, pegue su clave de licencia gratuita de MaxMind y haga clic en «Actualizar ahora»."
 
 #: src/IP2Country.cpp:140
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences → IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: Se ha seleccionado una URL personalizada como fuente GeoIP, pero no se ha configurado ninguna URL. Abra Preferencias → IP2Country e introduzca una URL que apunte a un archivo .mmdb (o .gz / .tar.gz que contenga uno)."
 
 #: src/IP2Country.cpp:146
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: La resolución de la URL de la descarga de GeoIP ha fallado."
 
 #: src/IP2Country.cpp:157
 #, c-format
@@ -2303,7 +2301,7 @@ msgstr "Error actualizando %s"
 
 #: src/IP2Country.cpp:249
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "Se ha producido un error al descargar el DB-IP del mes actual; se reintenta con la URL del mes anterior."
 
 #: src/IP2Country.cpp:254 src/IPFilter.cpp:512 src/ServerList.cpp:872
 #, c-format
@@ -4214,33 +4212,31 @@ msgstr "Mostrar las banderas de los países para los clientes"
 
 #: src/muuli_wdr.cpp:2515
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "Mostrar la columna de la bandera del país en las vistas de transferencias, cola y búsqueda. Requiere una base de datos MMDB GeoIP válida (ver más abajo)."
 
 #: src/muuli_wdr.cpp:2520
-#, fuzzy
 msgid "Database"
-msgstr "Tasa de datos:"
+msgstr "Base de datos"
 
 #: src/muuli_wdr.cpp:2536
-#, fuzzy
 msgid "Source:"
-msgstr "Fuentes"
+msgstr "Fuente:"
 
 #: src/muuli_wdr.cpp:2539
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP (gratis, sin crear una cuenta)"
 
 #: src/muuli_wdr.cpp:2540
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2 (gratuito, requiere crear una cuenta)"
 
 #: src/muuli_wdr.cpp:2541
 msgid "Custom URL"
-msgstr ""
+msgstr "URL personalizada"
 
 #: src/muuli_wdr.cpp:2544
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "Elige qué proveedor ofrece la base de datos GeoIP MMDB. DB-IP es la opción predeterminada; no se necesita cuenta. MaxMind requiere una cuenta gratuita y una clave de licencia. Utiliza la opción 'URL personalizada' para indicar cualquier otro servidor MMDB (por ejemplo, un servidor espejo local)."
 
 #: src/muuli_wdr.cpp:2561
 msgid ""
@@ -4249,10 +4245,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"No requiere configuración.\n"
+"\n"
+"Datos IP-País de DB-IP.com - https://db-ip.com\n"
+"Licencia: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp:2574
 msgid "License key:"
-msgstr ""
+msgstr "Clave de licencia:"
 
 #: src/muuli_wdr.cpp:2580
 msgid ""
@@ -4263,11 +4263,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"Regístrate para obtener una cuenta gratuita de MaxMind y, a continuación, genera una clave de licencia:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"Este producto incluye datos de GeoLite2 creados por MaxMind - https://www.maxmind.com\n"
+"Licencia: EULA de MaxMind GeoLite2 - https://www.maxmind.com/en/geolite2/eula\n"
+"Requiere la atribución de la fuente y el registro de una cuenta; actualizar al menos cada 30 días."
 
 #: src/muuli_wdr.cpp:2595
-#, fuzzy
 msgid "Download URL:"
-msgstr "Descargado: "
+msgstr "URL de descarga:"
 
 #: src/muuli_wdr.cpp:2601
 msgid ""
@@ -4275,19 +4280,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Debe apuntar a un archivo .mmdb o a un archivo .gz / .tar.gz que contenga uno.\n"
+"La URL puede incluir credenciales (https://user:pass@host/...).\n"
+"Las condiciones de licencia y atribución dependen de la URL de descarga; la responsabilidad recae en ti."
 
 #: src/muuli_wdr.cpp:2614
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "Descarga la base de datos GeoIP de la fuente seleccionada."
 
 #: src/muuli_wdr.cpp:2616
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "Autoactualizar el filtro de IP al inicio"
+msgstr "Autoactualizar al inicio"
 
 #: src/muuli_wdr.cpp:2617
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "Vuelve a descargar la base de datos GeoIP desde la fuente seleccionada cada vez que se inicie aMule."
 
 #: src/muuli_wdr.cpp:2640
 msgid "Filter incoming messages (except current chat):"
@@ -5052,7 +5059,7 @@ msgstr "Interfaz"
 
 #: src/PrefsUnifiedDlg.cpp:208
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp:211
 msgid "Proxy"
@@ -5287,38 +5294,37 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:1431
 msgid "IP2Country update failed"
-msgstr ""
+msgstr "Error al actualizar IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp:1566
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "Datos de MaxMind GeoLite2"
 
 #: src/PrefsUnifiedDlg.cpp:1568
-#, fuzzy
 msgid "Custom source"
-msgstr "Fuentes completas"
+msgstr "Fuente personalizada"
 
 #: src/PrefsUnifiedDlg.cpp:1570
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "Datos de DB-IP.com"
 
 #: src/PrefsUnifiedDlg.cpp:1590
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "Estado:"
+msgstr "Estado: Cargado%s"
 
 #: src/PrefsUnifiedDlg.cpp:1593
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "Estado:"
+msgstr "Estado: Cargado%s -%s"
 
 #: src/PrefsUnifiedDlg.cpp:1598
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "Estado: No se ha podido cargar. Haz clic en 'Actualizar ahora' para refrescar."
 
 #: src/PrefsUnifiedDlg.cpp:1600
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "Estado: No encontrado. Haz clic en 'Actualizar ahora' para descargarlo."
 
 #: src/PrefsUnifiedDlg.cpp:1645 src/PrefsUnifiedDlg.cpp:1664
 #, c-format
@@ -5484,13 +5490,12 @@ msgid "Length"
 msgstr "Duración"
 
 #: src/SearchListCtrl.cpp:105
-#, fuzzy
 msgid "Bitrate"
-msgstr "Sin evaluar"
+msgstr "Tasa de bits"
 
 #: src/SearchListCtrl.cpp:106
 msgid "Codec"
-msgstr ""
+msgstr "Códec"
 
 #: src/SearchListCtrl.cpp:709
 msgid "Download in category"
@@ -5514,9 +5519,8 @@ msgid "Copy eD2k link to clipboard"
 msgstr "Copiar el enlace eD2k al portapapeles"
 
 #: src/SearchListCtrl.cpp:811
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Está conectado al servidor que está intentando borrar. Por favor, desconéctese primero."
+msgstr "Actualmente no estás conectado a un servidor que admita la función de búsqueda de 'Archivos relacionados'."
 
 #: src/SearchListCtrl.cpp:1105
 msgid "Canceled"
@@ -5749,11 +5753,11 @@ msgstr "Versión"
 
 #: src/ServerListCtrl.cpp:100
 msgid "TCP Flags"
-msgstr ""
+msgstr "Flags TCP"
 
 #: src/ServerListCtrl.cpp:101
 msgid "UDP Flags"
-msgstr ""
+msgstr "Flags UDP"
 
 #: src/ServerListCtrl.cpp:155
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-06-18 22:22+0000\n"
+"PO-Revision-Date: 2026-06-23 18:44+0000\n"
 "Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
 "Language-Team: Spanish <es_ES@li.org>\n"
 "Language: es\n"
@@ -403,12 +403,12 @@ msgstr "Usar la configuración dada por el archivo. El archivo de configuración
 #. type: Plain text
 #: amulecmd.1.in:46 amuleweb.1.in:63
 msgid "Do not print any output to stdout."
-msgstr "No mostrar nada por la salida estándar."
+msgstr "No mostrar ninguna salida en stdout."
 
 #. type: Plain text
 #: amulecmd.1.in:50 amuleweb.1.in:67
 msgid "Be verbose - show also debug messages."
-msgstr "Modo Extendido - muestra también los mensajes de depuración."
+msgstr "Modo detallado - muestra también los mensajes de depuración."
 
 #. type: TP
 #: amulecmd.1.in:50 amuleweb.1.in:67
