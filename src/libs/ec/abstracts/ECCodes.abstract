@@ -338,6 +338,7 @@ EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_LIFECYCLE_STATE             0x070A
 	EC_TAG_SEARCH_LIFECYCLE_KIND              0x070B
 	EC_TAG_SEARCH_RESULT_COUNT                0x070C
+	EC_TAG_SEARCH_LIFECYCLE_PERCENT           0x070D
 
 EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_NAME                        0x0801

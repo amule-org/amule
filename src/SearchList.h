@@ -122,6 +122,12 @@ public:
 	SearchType           GetSearchLifecycleKind()  const { return m_searchType; }
 	// Result count for the current search; 0 if idle.
 	std::size_t          GetCurrentSearchResultCount() const;
+	// Unified 0..100 completion for the current search, surfaced via
+	// EC_TAG_SEARCH_LIFECYCLE_PERCENT. Global uses the real server-queue
+	// percent; Kad — which has no measurable progress — gets a cosmetic
+	// time-ramp off the fixed keyword-search lifetime that the FINISHED
+	// lifecycle state authoritatively snaps to 100. Idle returns 0.
+	uint8                GetSearchLifecyclePercent() const;
 
 	/** This function is called once the local (ed2k) search has ended. */
 	void LocalSearchEnd();
@@ -244,6 +250,11 @@ private:
 
 	//! If the current search is a KAD search this signals if it is finished.
 	bool m_KadSearchFinished;
+
+	//! Wall-clock start of the current/last search. Stamped in
+	//! StartNewSearch; feeds the Kad cosmetic progress ramp in
+	//! GetSearchLifecyclePercent.
+	time_t		m_searchStart;
 
 	//! Queue of servers to ask when doing global searches.
 	//! TODO: Replace with 'cookie' system.

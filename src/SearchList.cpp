@@ -50,6 +50,7 @@
 
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Search.h"
+#include "kademlia/kademlia/Defines.h" // Needed for SEARCHKEYWORD_LIFETIME (Kad ramp)
 
 #include "SearchExpr.h"
 
@@ -271,6 +272,7 @@ CSearchList::CSearchList()
 , m_searchPacket(NULL)
 , m_64bitSearchPacket(false)
 , m_KadSearchFinished(true)
+, m_searchStart(0)
 {
 }
 
@@ -353,6 +355,7 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	}
 
 	m_searchType = type;
+	m_searchStart = time(NULL);
 
 	// EC clients reuse the sentinel `0xffffffff` for every search regardless
 	// of network type. `Get_EC_Response_Search` -> `RemoveResults(0xffffffff)`
@@ -467,6 +470,42 @@ std::size_t CSearchList::GetCurrentSearchResultCount() const
 	}
 	ResultMap::const_iterator it = m_results.find(m_currentSearch);
 	return (it == m_results.end()) ? 0 : it->second.size();
+}
+
+uint8 CSearchList::GetSearchLifecyclePercent() const
+{
+	switch (GetSearchLifecycleState()) {
+	case SEARCH_LIFECYCLE_IDLE:
+		return 0;
+	case SEARCH_LIFECYCLE_FINISHED:
+		// Authoritative completion edge for every search kind.
+		return 100;
+	case SEARCH_LIFECYCLE_RUNNING:
+		break;
+	}
+
+	// --- RUNNING ---
+	if (m_searchType == KadSearch) {
+		// Kad has no measurable progress, so synthesise a cosmetic ramp
+		// from the fixed keyword-search lifetime. The FINISHED state above
+		// is what snaps it to 100; capped at 99 so the ramp never claims
+		// completion before the daemon actually does.
+		time_t elapsed = time(NULL) - m_searchStart;
+		if (elapsed <= 0) {
+			return 0;
+		}
+		uint32 pct = (uint32) ((elapsed * 100) / SEARCHKEYWORD_LIFETIME);
+		return (pct > 99) ? 99 : (uint8) pct;
+	}
+
+	if (m_searchType == GlobalSearch) {
+		// Real server-queue-driven percent (0..100).
+		uint32 pct = GetSearchProgress();
+		return (pct > 100) ? 100 : (uint8) pct;
+	}
+
+	// LocalSearch is instantaneous and never observed RUNNING here.
+	return 0;
 }
 
 void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))

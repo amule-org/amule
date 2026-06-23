@@ -2164,6 +2164,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKind())));
 		response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 			static_cast<uint32>(theApp->searchlist->GetCurrentSearchResultCount())));
+		// Unified 0..100 completion. Global = real server-queue percent;
+		// Kad = cosmetic time-ramp; FINISHED snaps any kind to 100.
+		response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT,
+			static_cast<uint8>(theApp->searchlist->GetSearchLifecyclePercent())));
 		break;
 
 	case EC_OP_DOWNLOAD_SEARCH_RESULT:

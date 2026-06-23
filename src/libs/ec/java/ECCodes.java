@@ -283,6 +283,7 @@ public final static short 	EC_TAG_SEARCH_PARENT                      = 0x0709;
 public final static short 	EC_TAG_SEARCH_LIFECYCLE_STATE             = 0x070A;
 public final static short 	EC_TAG_SEARCH_LIFECYCLE_KIND              = 0x070B;
 public final static short 	EC_TAG_SEARCH_RESULT_COUNT                = 0x070C;
+public final static short 	EC_TAG_SEARCH_LIFECYCLE_PERCENT           = 0x070D;
 public final static short EC_TAG_FRIEND                             = 0x0800;
 public final static short 	EC_TAG_FRIEND_NAME                        = 0x0801;
 public final static short 	EC_TAG_FRIEND_HASH                        = 0x0802;
