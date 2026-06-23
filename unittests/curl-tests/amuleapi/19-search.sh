@@ -170,8 +170,8 @@ _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
 # this asserts the mask is in force.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
 _assert_status 200 "GET /search/results immediately after POST → 200"
-_assert_json_eq '.progress.active'   true  'progress.active is true after POST /search'
-_assert_json_eq '.progress.complete' false 'progress.complete is false in the queue-empty window'
+_assert_json_eq '.progress.state' running 'progress.state is "running" after POST /search'
+_assert_json_eq '.progress.kind | type' string 'progress.kind is a string'
 
 # --- 4. Poll /search/results until we get hits (max ~10 s). -------
 RESULT_HASH=""
@@ -194,14 +194,15 @@ if [ -n "$RESULT_HASH" ]; then
 	_assert_json_eq '.results[0].name | type'   string '/search/results[0].name is string'
 	_assert_json_eq '.results[0].size | type'   number '/search/results[0].size is numeric'
 
-	# Phase 7.2 — progress envelope. `progress` exists on every
-	# GET /search/results response (even before any POST /search).
-	# Once we have results we know either:
-	#   * progress.complete == true (search finished, percent == 100), or
-	#   * progress.complete == false with percent in [0, 99]
-	#     (still polling more servers).
-	_assert_json_eq '.progress.percent | type'  number 'search progress.percent is numeric'
-	_assert_json_eq '.progress.complete | type' boolean 'search progress.complete is boolean'
+	# progress envelope. `progress` exists on every GET /search/results
+	# response (even before any POST /search). `state` is canonical
+	# (running | finished | idle) and replaces the old complete/active
+	# booleans. Once we have results, state is "running" (still polling)
+	# or "finished" (percent == 100).
+	_assert_json_eq '.progress.percent | type' number 'search progress.percent is numeric'
+	_assert_json_eq '.progress.state | type'   string 'search progress.state is a string'
+	_assert_json_eq '[.progress.state] | inside(["running","finished","idle"])' \
+		true 'search progress.state is one of running/finished/idle'
 	_assert_json_eq '.progress.percent >= 0 and .progress.percent <= 100' \
 		true 'search progress.percent stays in [0, 100]'
 else
@@ -271,6 +272,74 @@ _assert_status 405 "GET /search → 405"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop"
 _assert_status 405 "PATCH /search/stop → 405"
+
+# --- 9. Kad search progress ramp. ---------------------------------
+# Kad has no measurable progress, so amuled synthesises a cosmetic
+# time-ramp from the fixed keyword-search lifetime (SEARCHKEYWORD_LIFETIME,
+# 45 s) and ships it in EC_TAG_SEARCH_LIFECYCLE_PERCENT; amuleapi
+# surfaces it verbatim as progress.percent. Assert the ramp climbs over
+# time and stays capped at 99 while running — only the authoritative
+# finished edge reaches 100, so the bar can never claim completion
+# early. Skips the ramp assertions if amuled isn't connected to Kad
+# (the search never goes "running").
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"kad\"}" "$HOST/api/v0/search"
+_assert_status 202 "POST /search type=kad → 202"
+
+KAD_STATES=""; KAD_PCTS=""; SAW_RUNNING_KAD=0
+for _ in 1 2 3 4 5 6; do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+	ST=$(printf '%s' "$CURL_BODY" | jq -r '.progress.state')
+	KD=$(printf '%s' "$CURL_BODY" | jq -r '.progress.kind')
+	PC=$(printf '%s' "$CURL_BODY" | jq -r '.progress.percent')
+	KAD_STATES="$KAD_STATES $ST"; KAD_PCTS="$KAD_PCTS $PC"
+	if [ "$ST" = "running" ] && [ "$KD" = "kad" ]; then SAW_RUNNING_KAD=1; fi
+	sleep 2
+done
+echo "    kad samples: states=[$KAD_STATES ] percents=[$KAD_PCTS ]"
+
+if [ "$SAW_RUNNING_KAD" -eq 0 ]; then
+	echo "    info: Kad search never went 'running' — amuled likely not"
+	echo "    info: connected to Kad; skipping ramp assertions."
+else
+	CAP_OK=1; MONO=1; PREV=-1; FIRST_RUN=""; LAST_RUN=""; SAW_FINISHED=0
+	set -- $KAD_PCTS; KAD_PC_ARR=("$@")
+	idx=0
+	for st in $KAD_STATES; do
+		pc=${KAD_PC_ARR[$idx]}
+		if [ "$pc" -lt "$PREV" ] 2>/dev/null; then MONO=0; fi
+		PREV=$pc
+		if { [ "$pc" -lt 0 ] || [ "$pc" -gt 100 ]; } 2>/dev/null; then CAP_OK=0; fi
+		if [ "$st" = "running" ]; then
+			if [ "$pc" -gt 99 ] 2>/dev/null; then CAP_OK=0; fi
+			[ -z "$FIRST_RUN" ] && FIRST_RUN=$pc
+			LAST_RUN=$pc
+		fi
+		[ "$st" = "finished" ] && SAW_FINISHED=1
+		idx=$((idx+1))
+	done
+
+	if [ "$CAP_OK" -eq 1 ]; then
+		_pass "Kad running percent capped at 99 and within [0,100]"
+	else
+		_fail "Kad percent cap" "states=[$KAD_STATES ] percents=[$KAD_PCTS ]"
+	fi
+	if [ "$MONO" -eq 1 ]; then
+		_pass "Kad percent monotonic non-decreasing"
+	else
+		_fail "Kad percent monotonic" "percents went backwards: [$KAD_PCTS ]"
+	fi
+	if [ "$SAW_FINISHED" -eq 1 ] || \
+	   { [ -n "$FIRST_RUN" ] && [ -n "$LAST_RUN" ] && [ "$LAST_RUN" -gt "$FIRST_RUN" ] 2>/dev/null; }; then
+		_pass "Kad ramp advanced over time (first=$FIRST_RUN last=$LAST_RUN finished=$SAW_FINISHED)"
+	else
+		_fail "Kad ramp advance" \
+			"percent did not climb and search never finished: first=$FIRST_RUN last=$LAST_RUN states=[$KAD_STATES ]"
+	fi
+fi
+
+curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop" > /dev/null 2>&1
 
 # --- Summary. -----------------------------------------------------
 echo

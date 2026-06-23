@@ -245,12 +245,13 @@ else
 fi
 rm -f "$SSE_A" "$SSE_B"
 
-# --- 6. search_result_added + search_finished fire on POST /search. ----
-# Wraps in a local-search smoke: amuled's `local` type is the
-# fastest path (no server round-trips) so we get search_finished
-# within seconds without needing a real ed2k network. Even on a
-# fully-disconnected daemon `local` returns immediately with 0
-# results, which still triggers the search_finished transition.
+# --- 6. search_result_added + search_progress fire on POST /search. ----
+# Wraps in a local-search smoke: amuled's `local` type is the fastest
+# path (no server round-trips) so we get the terminal search_progress
+# frame (state="finished") within seconds without needing a real ed2k
+# network. Even on a fully-disconnected daemon `local` returns
+# immediately with 0 results, which still triggers the finished frame.
+# (search_progress supersedes the old standalone search_finished event.)
 SSE_PID=$(_sse_start 15)
 sleep 1
 SEARCH_QUERY=ubuntu
@@ -261,9 +262,13 @@ curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 SEARCH_FINISHED=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
          21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
-	if grep -q "^event: search_finished$" "$SSE_OUT"; then
-		SEARCH_FINISHED=$(grep -A2 "^event: search_finished$" "$SSE_OUT" \
-			| grep "^data: " | head -1)
+	# The terminal frame is a search_progress event whose data has
+	# state=="finished". Several running frames may precede it; pick the
+	# finished one.
+	if grep -q "^event: search_progress$" "$SSE_OUT"; then
+		SEARCH_FINISHED=$(grep -A2 "^event: search_progress$" "$SSE_OUT" \
+			| grep "^data: " | sed 's/^data: //' \
+			| jq -c 'select(.state == "finished")' 2>/dev/null | head -1)
 		if [ -n "$SEARCH_FINISHED" ]; then break; fi
 	fi
 	sleep 0.2
@@ -271,22 +276,27 @@ done
 wait $SSE_PID 2>/dev/null
 
 if [ -n "$SEARCH_FINISHED" ]; then
-	_pass "search_finished event fired within 8 s of POST /search type=local"
-	JSON=$(echo "$SEARCH_FINISHED" | sed 's/^data: //')
-	if echo "$JSON" | jq -e '.kind == "local"' >/dev/null 2>&1; then
-		_pass "search_finished .data.kind == 'local'"
+	_pass "search_progress finished frame fired within 8 s of POST /search type=local"
+	JSON="$SEARCH_FINISHED"
+	if echo "$JSON" | jq -e '.state == "finished"' >/dev/null 2>&1; then
+		_pass "search_progress .data.state == 'finished'"
 	else
-		_fail "search_finished .data.kind" "expected 'local' in $JSON"
+		_fail "search_progress .data.state" "expected 'finished' in $JSON"
+	fi
+	if echo "$JSON" | jq -e '.kind == "local"' >/dev/null 2>&1; then
+		_pass "search_progress .data.kind == 'local'"
+	else
+		_fail "search_progress .data.kind" "expected 'local' in $JSON"
 	fi
 	if echo "$JSON" | jq -e '.percent | type == "number"' >/dev/null 2>&1; then
-		_pass "search_finished .data.percent is numeric"
+		_pass "search_progress .data.percent is numeric"
 	else
-		_fail "search_finished .data.percent" "missing/non-numeric in $JSON"
+		_fail "search_progress .data.percent" "missing/non-numeric in $JSON"
 	fi
 	if echo "$JSON" | jq -e '.results | type == "number"' >/dev/null 2>&1; then
-		_pass "search_finished .data.results is numeric"
+		_pass "search_progress .data.results is numeric"
 	else
-		_fail "search_finished .data.results" "missing/non-numeric in $JSON"
+		_fail "search_progress .data.results" "missing/non-numeric in $JSON"
 	fi
 	# search_result_added is content-dependent — only assert it
 	# fired if the local search produced any hits. On a fully-
@@ -304,8 +314,8 @@ if [ -n "$SEARCH_FINISHED" ]; then
 		_pass "search_result_added correctly absent (local search returned 0 results)"
 	fi
 else
-	_fail "search_finished missing" \
-		"no search_finished within 8 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
+	_fail "search_progress finished frame missing" \
+		"no finished search_progress within 8 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
 fi
 
 # --- Summary. -----------------------------------------------------

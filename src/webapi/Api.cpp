@@ -3304,11 +3304,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	if (!a.ok) return a.rejection;
 
 	// Read straight from the refresher-maintained state. POST /search
-	// flips the active flag; RefresherTick polls amuled while active
-	// and runs the small state machine that disambiguates amuled's
-	// overloaded EC_TAG_SEARCH_STATUS values (see RefresherTick.cpp +
-	// SearchList.cpp:425-449). The state stores the normalized
-	// (percent, complete) — no further interpretation here.
+	// flips the active flag; RefresherTick polls amuled while active and
+	// reads the daemon's unambiguous EC_TAG_SEARCH_LIFECYCLE_* tags
+	// (state + unified percent) — see RefresherTick.cpp + SearchList.cpp.
+	// The state stores the normalized (kind, percent, complete, active);
+	// no further interpretation here. The `progress` object mirrors the
+	// `search_progress` SSE event so REST pollers and stream consumers
+	// see the same fields.
 	const std::vector<webapi::SearchResult> results_vec = m_state.Search();
 	const webapi::SearchProgressSnapshot    progress    = m_state.SearchProgress();
 
@@ -3321,11 +3323,18 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	  w.BeginArray();
 	  for (const auto &item : results_vec) WriteSearchObject(w, item);
 	  w.EndArray();
+	  // Mirrors the `search_progress` SSE event field-for-field. `state`
+	  // is canonical and encodes the full lifecycle (running / finished /
+	  // idle), so we don't also emit redundant `active` / `complete`
+	  // booleans — consumers derive them from `state` and read the same
+	  // shape whether they poll here or subscribe to the stream.
 	  w.Key("progress");
 	  w.BeginObject();
+	    w.Key("state");    w.ValueString(wxString::FromAscii(
+	                         progress.complete ? "finished"
+	                       : progress.active   ? "running" : "idle"));
+	    w.Key("kind");     w.ValueString(wxString::FromUTF8(progress.kind.c_str()));
 	    w.Key("percent");  w.ValueInt(static_cast<int64_t>(progress.percent));
-	    w.Key("complete"); w.ValueBool(progress.complete);
-	    w.Key("active");   w.ValueBool(progress.active);
 	  w.EndObject();
 	w.EndObject();
 	FinalizeJsonBody(w, r);
@@ -4722,7 +4731,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(
 	// EC_OP_SEARCH_RESULTS + _PROGRESS every tick until the state
 	// machine in RefresherTick infers completion. Drops the prior
 	// per-GET TtlCache fetch (the refresher is the single fetcher
-	// now — needed so SSE search_result_added / search_finished fire
+	// now — needed so SSE search_result_added / search_progress fire
 	// on the same delta the polling consumer would observe).
 	m_state.MarkSearchStarted(search_kind);
 

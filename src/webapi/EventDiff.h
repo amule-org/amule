@@ -71,9 +71,12 @@ struct LastSeenState {
 
 	// Search-events baseline. Diffed against state.Search() +
 	// state.SearchProgress() each tick. New ECIDs → search_result_added;
-	// the active→inactive+complete transition → search_finished.
+	// a percent change or the running→finished edge → search_progress
+	// (the terminal frame, state="finished", supersedes the old
+	// standalone search_finished event).
 	std::map<std::uint32_t, SearchResult>     search;
 	bool                                      search_complete   = false;
+	std::uint32_t                             search_percent    = 0;
 	bool                                      search_initialised = false;
 };
 

@@ -567,19 +567,22 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	prev.kad          = new_kad;
 	prev.ec_connected = new_ec;
 
-	// Search events. `search_result_added` per new ECID in the
-	// results map; `search_finished` on the active→inactive transition
-	// where complete=true. The refresher's state machine
-	// (AdvanceSearchProgress) drives both — POST /search seeds the
-	// active flag; subsequent ticks either grow the results map or
-	// flip complete. First tick after MarkSearchStarted bootstraps the
-	// baseline so we don't double-emit on the first observation.
+	// Search events. `search_result_added` per new ECID in the results
+	// map; `search_progress` on any percent change while running and on
+	// the running→finished edge. The finished frame (state="finished",
+	// percent=100) is just the terminal search_progress — there is no
+	// separate search_finished event. The refresher's state machine
+	// (AdvanceSearchProgress) drives both — POST /search seeds the active
+	// flag; subsequent ticks either grow the results map, advance the
+	// percent, or flip complete. First tick after MarkSearchStarted
+	// bootstraps the baseline so we don't double-emit on first observation.
 	{
 		const auto search_now = ByEcid(state.Search());
 		const auto progress_now = state.SearchProgress();
 		if (!prev.search_initialised) {
-			prev.search           = search_now;
-			prev.search_complete  = progress_now.complete;
+			prev.search             = search_now;
+			prev.search_complete    = progress_now.complete;
+			prev.search_percent     = progress_now.percent;
 			prev.search_initialised = true;
 		} else {
 			// New result entries.
@@ -598,19 +601,25 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 					bus.Publish("search_result_added", payload.str());
 				}
 			}
-			// Finished transition (false → true). MarkSearchStarted
-			// resets complete=false so a new search after a previous
-			// completion gets a fresh edge.
-			if (progress_now.complete && !prev.search_complete) {
+			// search_progress: a percent change while running, or the
+			// running→finished edge (complete false→true). MarkSearchStarted
+			// resets complete=false + percent=0 so a new search after a
+			// previous completion gets fresh edges.
+			const bool finished_edge = progress_now.complete && !prev.search_complete;
+			const bool percent_moved = progress_now.percent != prev.search_percent;
+			if (finished_edge || percent_moved) {
 				std::ostringstream payload;
-				payload << "{\"percent\":" << progress_now.percent
+				payload << "{\"state\":\""
+				        << (progress_now.complete ? "finished" : "running") << "\""
+				        << ",\"percent\":" << progress_now.percent
 				        << ",\"results\":" << search_now.size()
 				        << ",\"kind\":\"" << EscJson(progress_now.kind) << "\""
 				        << "}";
-				bus.Publish("search_finished", payload.str());
+				bus.Publish("search_progress", payload.str());
 			}
 			prev.search          = std::move(search_now);
 			prev.search_complete = progress_now.complete;
+			prev.search_percent  = progress_now.percent;
 		}
 	}
 

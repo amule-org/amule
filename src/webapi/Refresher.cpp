@@ -1341,9 +1341,10 @@ SearchProgressSnapshot AdvanceSearchProgress(
 	} else if (lifecycle_state == 1 /* SEARCH_LIFECYCLE_RUNNING */) {
 		next.complete = false;
 		next.active   = true;
-		// Honest percent only for global; local + Kad have no
-		// measurable progress per upstream's GetSearchProgress.
-		next.percent  = (next.kind == "global") ? pct_now : 0;
+		// Unified 0..100 the daemon already computed for this search kind
+		// (global = real server-queue percent; Kad = cosmetic time-ramp;
+		// local = instantaneous). No kind special-casing here anymore.
+		next.percent  = (pct_now > 100) ? 100 : pct_now;
 	} else {
 		// SEARCH_LIFECYCLE_IDLE — refresher shouldn't be calling us
 		// in this state (active was true on entry), but stay defensive.

@@ -173,7 +173,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// back. amuleapi pins a daemon version carrying the new lifecycle
 	// tags, so we read them directly with no sentinel-decode fallback.
 	if (state.SearchProgress().active) {
-		std::uint32_t raw_pct         = 0;
+		std::uint32_t percent         = 0;
 		std::uint32_t lifecycle_state = 0;
 		{
 			std::unique_ptr<CECPacket> req(
@@ -191,8 +191,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 				new CECPacket(EC_OP_SEARCH_PROGRESS));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
 			if (resp) {
-				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_STATUS)) {
-					raw_pct = static_cast<std::uint32_t>(t->GetInt());
+				// Unified 0..100 the daemon computes for every search kind
+				// (global = real, Kad = cosmetic ramp, finished = 100).
+				// No longer decoding EC_TAG_SEARCH_STATUS's overloaded sentinels.
+				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT)) {
+					percent = static_cast<std::uint32_t>(t->GetInt());
 				}
 				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE)) {
 					lifecycle_state = static_cast<std::uint32_t>(t->GetInt());
@@ -201,7 +204,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			}
 		}
 		const SearchProgressSnapshot next = AdvanceSearchProgress(
-			state.SearchProgress(), lifecycle_state, raw_pct);
+			state.SearchProgress(), lifecycle_state, percent);
 		state.WriteSearchProgress(next);
 	}
 

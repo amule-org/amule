@@ -338,10 +338,13 @@ struct SearchProgressSnapshot {
 	// EC_OP_SEARCH_PROGRESS.
 	bool          active   = false;
 	// "global" | "local" | "kad". Captured from POST /search's `type`
-	// param. Surfaced in `search_finished` SSE so consumers can
+	// param. Surfaced in `search_progress` SSE so consumers can
 	// distinguish which network produced the result set.
 	std::string   kind;
-	std::uint32_t percent  = 0;     // 0..100; honest only for global
+	std::uint32_t percent  = 0;     // 0..100, daemon-computed for every
+	                                // kind (global = real server-queue
+	                                // percent; Kad = cosmetic time-ramp;
+	                                // 100 on finished)
 	bool          complete = false; // true exactly once on the lifecycle
 	                                // RUNNING → FINISHED edge
 };

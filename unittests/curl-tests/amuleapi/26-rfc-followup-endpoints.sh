@@ -389,11 +389,11 @@ sleep 8
 kill $PID 2>/dev/null
 wait $PID 2>/dev/null
 
-if grep -qE "^event: search_finished$" "$SSE"; then
-	_pass "/events?channels=search delivers search_finished"
+if grep -qE "^event: search_progress$" "$SSE"; then
+	_pass "/events?channels=search delivers search_progress"
 else
 	_fail "events channel=search positive" \
-		"no search_finished in 8 s; sample: $(head -10 "$SSE")"
+		"no search_progress in 8 s; sample: $(head -10 "$SSE")"
 fi
 LEAKED=$(grep -cE "^event: (download_|status_|client_|server_|shared_|log_)" "$SSE" || true)
 if [ "$LEAKED" -eq 0 ]; then

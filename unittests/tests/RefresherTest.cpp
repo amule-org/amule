@@ -650,8 +650,10 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 
 // ----------------------------------------------------------------------
 // AdvanceSearchProgress — maps EC_TAG_SEARCH_LIFECYCLE_STATE +
-// EC_TAG_SEARCH_STATUS into (percent, complete, active). Trusts the
-// daemon's flag; no sentinel disambiguation, no defensive timeout.
+// EC_TAG_SEARCH_LIFECYCLE_PERCENT into (percent, complete, active).
+// Trusts the daemon's flags; the percent is the daemon's unified 0..100
+// for every kind (global = real, Kad = cosmetic ramp), so amuleapi no
+// longer masks it per-kind — it just passes it through and clamps.
 // ----------------------------------------------------------------------
 
 namespace {
@@ -682,30 +684,28 @@ TEST(Refresher, SearchProgressRunningCarriesPercentForGlobal)
 }
 
 
-TEST(Refresher, SearchProgressRunningMasksPercentForKad)
+TEST(Refresher, SearchProgressRunningPassesThroughKadRamp)
 {
 	using webapi::AdvanceSearchProgress;
 	webapi::SearchProgressSnapshot s = MakeActive("kad");
-	// Daemon may still ship a `raw` percent value for Kad (typically 0).
-	// LIFECYCLE_RUNNING with non-global kind → percent stays 0;
-	// Kad and local have no measurable progress per upstream's
-	// GetSearchProgress() encoding.
-	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/0);
+	// The daemon synthesises a cosmetic time-ramp for Kad and ships it in
+	// EC_TAG_SEARCH_LIFECYCLE_PERCENT, so amuleapi no longer masks Kad to
+	// 0 — it passes the daemon value straight through.
+	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/37);
 	ASSERT_TRUE(s.active);
-	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
+	ASSERT_EQUALS(static_cast<uint32_t>(37), s.percent);
 }
 
 
-TEST(Refresher, SearchProgressRunningMasksPercentForLocal)
+TEST(Refresher, SearchProgressRunningClampsPercentAbove100)
 {
 	using webapi::AdvanceSearchProgress;
-	webapi::SearchProgressSnapshot s = MakeActive("local");
-	// Daemon's GetSearchProgress() returns 0xffff while a local search
-	// is in progress (overloaded sentinel) — the lifecycle path ignores
-	// it because LIFECYCLE_RUNNING + kind="local" means percent stays 0.
-	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/0xffffu);
+	webapi::SearchProgressSnapshot s = MakeActive("global");
+	// The daemon's percent tag is 0..100, but stay defensive: any value
+	// above 100 is clamped rather than surfaced raw to consumers.
+	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/250);
 	ASSERT_TRUE(s.active);
-	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
+	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
 }
 
 
