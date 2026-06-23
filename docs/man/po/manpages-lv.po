@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-06-20 02:01+0000\n"
+"PO-Revision-Date: 2026-06-23 12:03+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -529,7 +529,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:117
 msgid "Get bandwidth limits."
-msgstr ""
+msgstr "Iegūt datu pārraides ierobežojumu iestatījumus."
 
 #. type: Plain text
 #: amulecmd.1.in:119
@@ -684,7 +684,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:200
 msgid "Set bandwidth limits."
-msgstr ""
+msgstr "Iestatīt datu pārraides ierobežojumus."
 
 #. type: Plain text
 #: amulecmd.1.in:202
@@ -1024,7 +1024,7 @@ msgstr "UPnP ports."
 #. type: Plain text
 #: amuleweb.1.in:90
 msgid "Enables using gzip compression in HTTP traffic to save bandwidth."
-msgstr ""
+msgstr "Iespējo gzip saspiešanu HTTP trafikam, lai ietaupītu datu pārraides apjomu."
 
 #. type: Plain text
 #: amuleweb.1.in:93

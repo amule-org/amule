@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-22 11:01+0000\n"
+"PO-Revision-Date: 2026-06-23 12:03+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: ta\n"
@@ -23,15 +23,15 @@ msgstr "நண்பரைச் சேர்"
 
 #: src/AddFriend.cpp:61
 msgid "You have to enter a valid IP and port!"
-msgstr ""
+msgstr "நீங்கள் சரியான ஐபி மற்றும் துறைமுகம் உள்ளிட வேண்டும்!"
 
 #: src/AddFriend.cpp:61 src/AddFriend.cpp:67
 msgid "Information"
-msgstr ""
+msgstr "தகவல்"
 
 #: src/AddFriend.cpp:67
 msgid "The specified userhash is not valid!"
-msgstr ""
+msgstr "குறிப்பிட்ட பயனர்கொத்து தவறானது!"
 
 #: src/AppImageIntegration.cpp:221
 msgid ""

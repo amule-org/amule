@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-22 11:01+0000\n"
+"PO-Revision-Date: 2026-06-23 12:03+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -3144,15 +3144,15 @@ msgstr "Savienojumi"
 
 #: src/muuli_wdr.cpp:976 src/muuli_wdr.cpp:1673
 msgid "Active downloads"
-msgstr "Aktīvās lejupielādes"
+msgstr "Aktīvas lejupielādes"
 
 #: src/muuli_wdr.cpp:984
 msgid "Active connections (1:1)"
-msgstr "Aktīvie savienojumi (1:1)"
+msgstr "Aktīvi savienojumi (1:1)"
 
 #: src/muuli_wdr.cpp:992 src/muuli_wdr.cpp:1674
 msgid "Active uploads"
-msgstr "Aktīvās augšupielādes"
+msgstr "Aktīvas augšupielādes"
 
 #: src/muuli_wdr.cpp:997
 msgid "Statistics Tree"
@@ -3372,7 +3372,7 @@ msgstr "Video atskaņotājs"
 
 #: src/muuli_wdr.cpp:1312
 msgid "Bandwidth limits"
-msgstr ""
+msgstr "Datu pārraides ierobežojumi"
 
 #: src/muuli_wdr.cpp:1326
 msgid "Upload"
@@ -3666,7 +3666,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:1672
 msgid "Active connections"
-msgstr ""
+msgstr "Aktīvi savienojumi"
 
 #: src/muuli_wdr.cpp:1675
 msgid "Systray Icon Speed Bar"
@@ -4355,7 +4355,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:2949
 msgid "Active Uploads"
-msgstr ""
+msgstr "Aktīvas augšupielādes"
 
 #: src/muuli_wdr.cpp:2963
 msgid "Percent of total files"
@@ -6092,27 +6092,27 @@ msgstr "Datņu pieprasījumu trafiks (Paketes): %s"
 #: src/Statistics.cpp:802 src/Statistics.cpp:823
 #, c-format
 msgid "Source Exchange Overhead (Packets): %s"
-msgstr ""
+msgstr "Avotu apmaiņas trafiks (Paketes): %s"
 
 #: src/Statistics.cpp:804 src/Statistics.cpp:825
 #, c-format
 msgid "Server Overhead (Packets): %s"
-msgstr ""
+msgstr "Serveru trafiks (Paketes): %s"
 
 #: src/Statistics.cpp:806 src/Statistics.cpp:827
 #, c-format
 msgid "Kad Overhead (Packets): %s"
-msgstr ""
+msgstr "Kad tīkla trafiks (Paketes): %s"
 
 #: src/Statistics.cpp:808 src/Statistics.cpp:829
 #, c-format
 msgid "Crypt overhead (UDP): %s"
-msgstr ""
+msgstr "Šifrēšanas trafiks (UDP): %s"
 
 #: src/Statistics.cpp:810
 #, c-format
 msgid "Active Uploads: %s"
-msgstr ""
+msgstr "Aktīvas augšupielādes: %s"
 
 #: src/Statistics.cpp:811
 #, c-format
@@ -6309,7 +6309,7 @@ msgstr ""
 #: src/StatisticsDlg.cpp:189
 #, c-format
 msgid "Active connections (1:%u)"
-msgstr ""
+msgstr "Aktīvi savienojumi (1:%u)"
 
 #: src/StatTree.cpp:551
 msgid "Not available"
@@ -6405,7 +6405,7 @@ msgstr ""
 
 #: src/TextClient.cpp:767 src/TextClient.cpp:773
 msgid "OFF"
-msgstr ""
+msgstr "IZSLĒGTS"
 
 #: src/TextClient.cpp:767 src/TextClient.cpp:773
 msgid "ON"
@@ -6424,7 +6424,7 @@ msgstr ""
 #: src/TextClient.cpp:784
 #, c-format
 msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
-msgstr ""
+msgstr "Datu pārraides ierobežojumi: ↑Augšup.: %u kB/s, ↓Lejup.: %u kB/s.\n"
 
 #: src/TextClient.cpp:798
 msgid "eD2k"
@@ -6469,6 +6469,8 @@ msgid ""
 "\n"
 "Clients in queue:\t%d\n"
 msgstr ""
+"\n"
+"Klienti rindā:\t%d\n"
 
 #: src/TextClient.cpp:842
 #, c-format
@@ -6566,11 +6568,11 @@ msgstr ""
 
 #: src/TextClient.cpp:1004
 msgid "Connect to eD2k only."
-msgstr ""
+msgstr "Pieslēgties tikai eD2k."
 
 #: src/TextClient.cpp:1005
 msgid "Connect to Kad only."
-msgstr ""
+msgstr "Pieslēgties tikai Kad."
 
 #: src/TextClient.cpp:1007
 msgid "Disconnect from the network."
@@ -6655,7 +6657,7 @@ msgstr ""
 
 #: src/TextClient.cpp:1030
 msgid "Set bandwidth limits."
-msgstr ""
+msgstr "Iestatīt datu pārraides ierobežojumus."
 
 #: src/TextClient.cpp:1031
 msgid "The value given to these commands has to be in kilobytes/sec.\n"
@@ -6663,7 +6665,7 @@ msgstr ""
 
 #: src/TextClient.cpp:1032
 msgid "Set upload bandwidth limit."
-msgstr ""
+msgstr "Iestatīt augšupielādes datu pārraides ātruma ierobežojumu."
 
 #: src/TextClient.cpp:1033 src/TextClient.cpp:1035
 msgid "The given value must be in kilobytes/sec.\n"
@@ -6671,7 +6673,7 @@ msgstr ""
 
 #: src/TextClient.cpp:1034
 msgid "Set download bandwidth limit."
-msgstr ""
+msgstr "Iestatīt lejupielādes datu pārraides ātruma ierobežojumu."
 
 #: src/TextClient.cpp:1037
 msgid "Get and display a preference value."
@@ -6699,7 +6701,7 @@ msgstr ""
 
 #: src/TextClient.cpp:1046
 msgid "Get bandwidth limits."
-msgstr ""
+msgstr "Iegūt datu pārraides ierobežojumu iestatījumus."
 
 #: src/TextClient.cpp:1048
 msgid "Execute a search."
@@ -7336,7 +7338,7 @@ msgstr " ir pieslēgts "
 #: src/utils/wxCas/src/wxcasframe.cpp:1047
 #: src/utils/wxCas/src/wxcasframe.cpp:1069
 msgid " Kad: "
-msgstr ""
+msgstr " Kad: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp:1053
 #: src/utils/wxCas/src/wxcasframe.cpp:1075
