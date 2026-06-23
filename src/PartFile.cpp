@@ -1524,18 +1524,24 @@ uint32 CPartFile::Process(uint8 m_icounter)
 
 	if (m_icounter < 10) {
 		// Update only downloading sources.
-		CClientRefList::iterator it = m_downloadingSourcesList.begin();
-		for (; it != m_downloadingSourcesList.end();) {
-			CUpDownClient *cur_src = it++->GetClient();
-			if (cur_src->GetDownloadState() == DS_DOWNLOADING) {
+		// We copy the list to a temporary vector to prevent iterator invalidation
+		// (e.g. if TickDownloadAndMeasure() triggers DropSlowSources, which synchronously removes clients).
+		std::vector<CClientRef> temp_list(m_downloadingSourcesList.begin(), m_downloadingSourcesList.end());
+		for (size_t i = 0; i < temp_list.size(); ++i) {
+			CUpDownClient *cur_src = temp_list[i].GetClient();
+			if (cur_src && cur_src->GetDownloadState() == DS_DOWNLOADING) {
 				++transferingsrc;
 				kBpsDown += cur_src->TickDownloadAndMeasure();
 			}
 		}
 	} else {
 		// Update all sources (including downloading sources)
-		for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end();) {
-			CUpDownClient *cur_src = it++->GetClient();
+		// We copy the list to a temporary vector to prevent iterator invalidation
+		// (e.g. if TickDownloadAndMeasure() triggers DropSlowSources, which synchronously removes clients).
+		std::vector<CClientRef> temp_list(m_SrcList.begin(), m_SrcList.end());
+		for (size_t i = 0; i < temp_list.size(); ++i) {
+			CUpDownClient* cur_src = temp_list[i].GetClient();
+			if (!cur_src) continue;
 			switch (cur_src->GetDownloadState()) {
 			case DS_DOWNLOADING: {
 				++transferingsrc;
@@ -4639,6 +4645,10 @@ CUpDownClient *CPartFile::GetSlowerDownloadingClient(uint32 speed, CUpDownClient
 	for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end();) {
 		CUpDownClient *cur_src = it++->GetClient();
 		if ((cur_src->GetDownloadState() == DS_DOWNLOADING) && (cur_src != caller)) {
+			// Ensure the slow client has blocks that the caller actually has available to download
+			if (!cur_src->HasUsefulBlocksFor(caller)) {
+				continue;
+			}
 			uint32 factored_bytes_per_second =
 				static_cast<uint32>((cur_src->GetKBpsDown() * 1024) * DROP_FACTOR);
 			if (factored_bytes_per_second < speed) {

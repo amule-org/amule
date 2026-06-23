@@ -374,6 +374,7 @@ public:
 	void SendBlockRequests();
 	void ProcessBlockPacket(const uint8_t *packet, uint32 size, bool packed, bool largeblocks);
 	uint16 GetAvailablePartCount() const;
+	bool HasUsefulBlocksFor(CUpDownClient *other) const;
 
 	bool SwapToAnotherFile(bool bIgnoreNoNeeded,
 		bool ignoreSuspensions,
