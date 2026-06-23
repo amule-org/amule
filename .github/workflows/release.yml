@@ -1,16 +1,28 @@
-# Release — tag-triggered workflow that runs the full packaging matrix
-# and assembles a draft GitHub Release with the artifacts attached.
+# Release — produces a draft GitHub Release with every platform's
+# artifact attached. Two entry points, both ending in the same draft:
 #
-# Pushing a release-like tag fires the packaging matrix as a reusable
-# workflow, then a release job collects every platform's final artifact
-# and creates a draft Release on the repository the tag was pushed to.
+#   1. One-click (workflow_dispatch): a maintainer opens Actions →
+#      Release → Run workflow, picks the branch to release from, and
+#      types a version (e.g. 3.0.1). The prepare-tag job creates and
+#      pushes that tag at the tip of the selected branch if it doesn't
+#      already exist, then the full packaging matrix runs and the draft
+#      is assembled. No local `git tag` / `git push` needed. Re-running
+#      with an existing tag just re-assembles the assets (retry path).
+#
+#   2. Push a release-like tag from a local checkout — same downstream
+#      flow, kept for scripted / habitual taggers.
 #
 # Tag filter: digit-leading tags (aMule's convention — 2.3.3, 2.4.0-rc1,
 # 3.0-beta) plus optional v-prefix (v2.4.0) for compatibility. Excludes
 # branch-backup / topic tags like `backup/*`, `per-peer-cap-fix`, etc.
 #
-# Test on a fork by pushing a tag like `0.0.0-fork-test` — the draft
-# Release lands on the fork's Releases page, not upstream.
+# Test on a fork by dispatching (or pushing) a version like
+# `0.0.0-fork-test` — the tag and the draft Release land on the fork,
+# not upstream.
+#
+# Before the draft is created, the release job asserts that all ten
+# expected platform assets are present, so a half-built matrix can never
+# silently produce a draft that's missing a platform.
 #
 # Output is always a draft so a maintainer can review the asset list
 # and edit the auto-generated notes before publishing.
@@ -24,10 +36,12 @@ on:
       - 'v[0-9]*'
   workflow_dispatch:
     inputs:
-      tag:
+      version:
         description: >-
-          Tag to release. Must already exist as a git tag on the repo.
-          Use this to retry asset assembly without re-tagging.
+          Version to release, e.g. 3.0.1 or 3.1.0-rc1. Created and
+          pushed as a tag at the tip of the branch selected above if it
+          doesn't already exist. Re-run with an existing version to
+          retry asset assembly without re-tagging.
         required: true
         type: string
 
@@ -35,12 +49,46 @@ permissions:
   contents: write
 
 jobs:
+  # One-click entry point: turn the dispatched version into a real tag
+  # so the rest of the pipeline (which keys off git tags for versioning)
+  # behaves identically to the push-a-tag path. On the push trigger this
+  # job is a trivial no-op — the tag already exists — but it still runs
+  # so build/source-bundle can depend on it unconditionally.
+  prepare-tag:
+    name: Create tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Create and push tag if missing
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TAG: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag ${TAG} already exists — re-assembling assets, not re-tagging."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Annotated tag at the dispatched commit (tip of the selected
+          # branch). fetch-depth:0 above means git describe in the build
+          # jobs resolves this to an exact-match tag, so artifacts are
+          # versioned cleanly (aMule-3.0.1-... not aMule-...-gabc123).
+          git tag -a "${TAG}" -m "aMule ${TAG}"
+          git push origin "refs/tags/${TAG}"
+          echo "Created and pushed tag ${TAG} at ${GITHUB_SHA}."
+
   build:
     name: Build artifacts
+    needs: prepare-tag
     uses: ./.github/workflows/packaging.yml
 
   source-bundle:
     name: Build source bundle with pre-rendered manpages
+    needs: prepare-tag
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -51,7 +99,7 @@ jobs:
         id: tag
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
@@ -156,13 +204,47 @@ jobs:
       - name: List artifacts
         run: ls -la dist/
 
+      - name: Verify all platform artifacts are present
+        # Belt-and-suspenders manifest check. The build matrix uses
+        # fail-fast:false and this job `needs: [build, source-bundle]`,
+        # so a failed platform already blocks the draft via `needs` —
+        # but that surfaces as a generic "dependency failed". This step
+        # instead names exactly which asset is missing, and guards
+        # against the subtler case where a platform's upload succeeded
+        # with an unexpected filename (so the glob below finds nothing).
+        run: |
+          set -euo pipefail
+          fail=0
+          check() {
+            local label="$1" expected="$2" glob="$3" n
+            # shellcheck disable=SC2086 -- intentional glob expansion
+            n=$(ls -1 dist/$glob 2>/dev/null | wc -l | tr -d ' ')
+            if [ "$n" -ne "$expected" ]; then
+              echo "::error::${label}: expected ${expected}, found ${n} (dist/${glob})"
+              fail=1
+            else
+              echo "ok: ${label} (${n}/${expected})"
+            fi
+          }
+          check "Linux AppImage (x86_64 + aarch64)" 2 'aMule-*-Linux-*.AppImage'
+          check "Linux Flatpak (x86_64 + aarch64)"  2 'aMule-*-Linux-*.flatpak'
+          check "macOS Universal2 .dmg"             1 'aMule-*-macOS-universal2.dmg'
+          check "Windows portable .zip (x64 + arm64)" 2 'aMule-*-Windows-*.zip'
+          check "Windows installer .exe (x64 + arm64)" 2 'aMule-*-Windows-Setup-*.exe'
+          check "Source bundle"                     1 'aMule-*-src.tar.gz'
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::Artifact manifest incomplete — refusing to assemble the draft Release."
+            exit 1
+          fi
+          echo "All 10 expected release artifacts present."
+
       - name: Create draft Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            TAG="${{ inputs.tag }}"
+            TAG="${{ inputs.version }}"
           else
             TAG="${{ github.ref_name }}"
           fi
