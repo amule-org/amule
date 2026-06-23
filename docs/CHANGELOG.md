@@ -4,6 +4,156 @@ The history of every aMule release. Versions are listed newest first.
 
 ---
 
+## Version 3.0.1 — "bugfixes and polish"
+2026-06-24
+
+First point release after the 3.0.0 rebirth, and the first cut entirely on the new `amule-org/amule` repository. 147 merged PRs of post-launch work: a new IP2Country preferences panel, remote-GUI (amulegui) improvements over EC, smarter search, AICH request rate-limiting, a top-to-bottom WebUI / WebServer modernization and security pass, a Weblate-driven translation pipeline, and a one-click release process. No on-disk format or config changes — a drop-in upgrade from 3.0.0.
+
+### Highlights
+
+- **IP2Country preferences panel.** A new Preferences page to choose the GeoIP source — DB-IP, MaxMind, or a custom URL — instead of editing config by hand (#113). IP2Country is now enabled by default and hard-fails at configure if the dependency is missing (#119).
+- **Remote GUI over EC.** amulegui now populates the Server Info tab from amuled (#120), keeps statistics and Kad graphs alive across tab switches (#135), and stops offering preferences it can't actually push to the daemon (#122).
+- **Smarter search.** Modern file formats and corrected extension categories in the type filter (#189), new Length / Bitrate / Codec columns in results (#139), a working Related Files lookup (#154), and global search that works even with Kad disabled (#38).
+- **AICH anti-abuse + speed.** `OP_AICHREQUEST` is now rate-limited via `CheckForAggressive()`, and `LoadHashSet` gained an O(1) root-hash → offset cache with a self-healing linear-scan fallback, so AICH recovery on large `known2` files no longer rescans the whole file per request (#186, #191, #193).
+- **WebUI / WebServer reborn.** The default web template was dragged out of its 2005 Dreamweaver origins: HTML5 doctype, presentational markup migrated to `style.css`, the `maquette.dwt` template and dead `MM_*` rollover JavaScript removed, favicon refreshed, and the whole thing re-encoded as UTF-8. On top of the cleanup came real features — select-all checkboxes, a working priority selector on the Shared page, download/delete confirmation with file counts, auto-refresh that pauses while rows are selected, button tooltips, and unified styling and size/speed units.
+- **WebUI security hardening.** XSS defences (`htmlspecialchars` + `addslashes`, sort-param whitelisting), CWebSocket request-parser hardening and memory-leak fixes, and a sweep of the embedded PHP interpreter (`php_core_lib`, `php_amule_lib`, `php_syntree`, `php_native_split`) fixing memory frees, base16/base64 handling, and long-standing parser bugs.
+- **Translations via Weblate.** Translation now flows through a hosted Weblate instance feeding the repo, with a `--no-wrap` catalog policy and build-time po4a manpage rendering; sixteen catalog-update rounds landed this cycle.
+- **One-click releases.** Maintainers can cut a release from the GitHub Actions UI — pick a version, and the workflow tags, builds every platform, verifies the artifact set, and assembles a draft Release (#234).
+
+### IP2Country
+
+- New Preferences panel to select the GeoIP source: DB-IP, MaxMind, or a custom URL (#113).
+- Enabled by default; configure hard-fails when the dependency is missing rather than silently disabling (#119).
+
+### Remote GUI & Platform
+
+- amulegui populates the Server Info tab from amuled over EC (#120) and stops offering preferences it can't push to the daemon (#122).
+- Statistics + Kad graphs stay populated across tab switches (#135); the Kad status bar refreshes after `StopKad()` (#133).
+- Theme-aware colours: list-control text (#179) and statistics labels (#128) no longer hardcode `*wxBLACK/BLUE/RED`, fixing legibility on dark themes.
+- Window-state persistence: Messages columns + minimized-window geometry saved (#138); macOS persists list-control settings on Dock → Quit (#141).
+- macOS Preferences left-rail tab icons padded (#130).
+- `wxWebSession`-cleanup `_Exit` workaround applied on all platforms to avoid a shutdown crash (#159).
+
+### Search & Networking
+
+- Global search works with Kad disabled (#38); Windows EC search fixed by using `wxUIntPtr` for `m_currentSearch` (#39).
+- File-type filter: miscategorised extensions corrected and modern formats added (#189).
+- Result columns: Length, Bitrate, Codec added (#139); Directories column moved to the end (#142).
+- Related Files lookup fixed; TCP/UDP server flags shown in Release builds too (#154).
+- EC search lifecycle: the prior Kad search is stopped when the EC client starts a new one (#36); late ed2k server replies dropped after the client switches to Kad (#37).
+- `SO_REUSEADDR` on the UDP socket so it rebinds cleanly after suspend/resume (#121).
+- Server Info log cleared at the transition source on ed2k disconnect / server switch (#163, #164).
+- UPnP ASCII `tolower()` scoped under `LC_CTYPE=C` so non-C locales don't corrupt device matching (#208).
+- Full path logged when an ed2k link collides with an existing file (#172).
+
+### AICH & Hashing
+
+- `OP_AICHREQUEST` rate-limited via `CheckForAggressive()` and `LoadHashSet` made O(1) through a root-hash → offset cache (#186).
+- True linear-scan fallback when the cached offset is stale (#191); the cache self-heals on a successful rewind (#193).
+- UDP file-info handler short-circuits when the requesting client is banned (#192).
+
+### WebUI & WebServer
+
+The biggest theme of the release by volume — driven mainly by ngosang, with the embedded-PHP work by RealGreenDragon.
+
+Template modernization:
+
+- HTML5 doctype adopted; layout glitches from the switch corrected (#110, #204).
+- Presentational HTML attributes migrated to semantic CSS — text/element attrs (#95), table/iframe attrs (#102), inline `<style>` blocks consolidated into `style.css` (#89), JS nav rollovers replaced with CSS `:hover` (#92).
+- Dead Dreamweaver scaffolding removed: the `maquette.dwt` template (#88), `MM_*` JavaScript extracted then deleted once shown to be no-ops (#90, #93), stale `onLoad` tree calls in `stats_tree.php` (#111), and small deprecated CSS/HTML leftovers (#105).
+- `<script>` blocks moved into `<head>` (#84); structural HTML errors corrected (#87); stray `style.css` brace removed and formatting normalized (#78); shared-files page re-encoded as UTF-8 with English alt-text (#80); higher-resolution transparent favicon (#112).
+
+New WebUI features:
+
+- Priority selector wired up on the Shared page (#210).
+- Select-all checkbox on file tables (#212); auto-refresh pauses while checkboxes are selected (#213) and avoids the form-resubmission prompt (#230).
+- Download/delete actions confirm with a file count (#214).
+- Search-page controls improved (#215); button tooltips and clickable images (#216).
+- Unified button styles (#217), form controls (#206), and file size + speed units (#218); footer-bar background (#219); logo links home to Transfers (#209); clearer dropdown option labels (#207); footer "Download link" refreshes the main page (#81).
+
+WebUI bug fixes:
+
+- Sorting downloads by sources never worked — fixed (#75).
+- Wrong MByte/GByte multipliers in the search size filters corrected (#76).
+- Division-by-zero guard on the downloads-page percentages (#83).
+- Login error message now actually shown, and made readable (#82, #96).
+- Static `.css`/`.js` served to unauthenticated clients so the login page styles correctly (#97).
+- amuleweb honours the per-user template dir when spawned by the GUI (#72); copy-pasted preferences code removed from the log page (#74).
+- ed2k links can be added via the footer links form (#145); search results cleared across cycles and on new search (#33).
+
+Embedded PHP interpreter:
+
+- Memory freed correctly when casting array values (#108) and for `for()` header expression lists (#109).
+- `OtherFunctions` base16 decode, base64 footer append, duplicate `.asf` entry, and mp3 comment handling corrected (#30).
+- Interpreter sweep: `php_native_split` (#146), `php_core_lib` (#150), `php_amule_lib_standalone` (#151), `php_amule_lib` (#152), `php_syntree` (#153), with follow-ups (#155, #156).
+
+### WebUI Security
+
+- XSS hardening: `htmlspecialchars` + `addslashes` builtins added and remote-controlled strings escaped (#106); the search `sort` param whitelisted before being stored in the session (#107); broad WebUI/WebServer backend hardening (#91).
+- CWebSocket request parsing hardened for header casing, body bounds, cookie conversion, and MinGW portability (#27, #28); CWebSocket memory leaks fixed and review findings addressed (#29).
+
+### Translations & i18n
+
+- Translation moved to a hosted **Weblate** workflow feeding the repo; the README points contributors there (#71). Catalog rounds: #57, #66, #100, #123, #147, #160, #165, #170, #184, #187, #199, #200, #202, #211, #229, #235; Brazilian Portuguese also refreshed by hand (#7), and the IP2Country strings translated into Italian (#129).
+- `--no-wrap` policy adopted for the app catalogs (#61) and extended to the manpage `.po` files (#67).
+- Non-ASCII output fixes: the logger writes stdout/stderr via `utf8_str` (#42); locale is initialised so non-ASCII strings stop mangling under the default C locale (#205, fixes #203); a real newline is used in a comment-dialog tooltip (#70).
+- Windows `SPANISHINTERNATIONAL` routed to `po/es.po` (#64).
+
+### Build System & CI
+
+- **One-click release workflow** from the Actions UI: tag → full matrix → artifact-manifest gate → draft Release (#234). Repo bootstrap: issue/PR templates (#12). The `manpages-sync` CI check disabled where Weblate PRs broke it (#68).
+- `cryptopp-modern` accepted by the build, with packager-friendly flags (#169); versioned `libatomic.so.1` accepted in `find_library` (#176).
+- `BUILD_TESTING` off by default (#49); options.cmake typo/casing cleanup (#50); a `pofiles` dependency added to every NLS-aware executable (#98).
+- LLP64 portability: unsafe uses of `long` cleaned up (#65).
+- Toolbar ID collision with manually-added IDs resolved (#52); `SearchDlg` `FALSE` macro replaced with `false` (#48); `IDC_SPINSEARCHAVAILABILITY` spelling corrected (#51).
+
+### Shared Files & Preferences
+
+- `SharedDirWatcher`: the inotify race window on newly-created subdirectories closed (#227), with a follow-up so file CREATEs reliably reach `NotifyPathAdded` (#228).
+- First-run no longer wipes `shareddir-*.dat` during userhash init (#79) or promotes stale `shareddir.dat` entries to explicit shares (#86).
+- "Show Clients for" defaults to "All files" (#126).
+- English language-picker IDs corrected, with an explicit U.S. entry (#60).
+
+### Manpages & Docs
+
+- Translated manpages now rendered at build time with po4a (#94), with `--no-update` so the build doesn't dirty the source tree (#101).
+- README: a Translations section (#71), an amule-org column in the Development Statistics table (#62), and NetBSD added (#32).
+
+### Packaging & Flathub
+
+- Icons refreshed from a new 256×256 master (#15), then reverted to the established design upscaled to meet Flathub's 256px minimum (#21).
+- Flathub-strict manifest staged under `packaging/flathub/` (#16), with metainfo + desktop polish for listing readiness (#17) and commit-pin bumps as the manifest tracked master (#23, #24, #26).
+- Flatpak fixes: libbfd disabled in the sandboxed build (#19); the install-prefix locale dir registered for wxLocale lookup (#22); `.mo` catalogs shipped inside the main app rather than a separate `.Locale` extension (#25); all bundled languages surfaced in the Preferences Language picker on Flatpak (#175).
+- macOS: webserver templates bundled into `aMule.app` so the in-app WebUI resolves them (#195).
+
+### Known Limitations
+
+Carried over from 3.0.0:
+
+- macOS `.dmg` is **not yet code-signed or notarized** — Gatekeeper warnings on first launch.
+- **Flathub submission still pending** — install the `.flatpak` directly with `flatpak install <file>` for now.
+- AppImage isn't yet in AppImageLauncher's catalogue.
+
+### Contributors
+
+This release is 147 merged PRs cut entirely on the new `amule-org/amule` repository. Particular thanks to:
+
+- **got3nks** — 59 PRs across search, amulegui / EC, AICH, IP2Country, packaging, locale, and the release tooling.
+- **ngosang** — 46 PRs; the WebUI / WebServer modernization, hardening, and UX features are almost entirely his.
+- **Marcelo Jimenez** (mrjimenez) — 9 PRs across the webserver, build system, and translations.
+- **RealGreenDragon** — 8 PRs fixing the embedded PHP interpreter.
+- **danim7** — 2 PRs (global-search-without-Kad, Related Files + server flags).
+- **peyoker** — WebUI / WebServer security hardening (#91).
+- **cardpuncher** — NetBSD in the README (#32).
+
+### Merged PRs in this release
+
+Complete list of PRs that landed for 3.0.1, in numerical order:
+
+#7, #12, #15, #16, #17, #19, #21, #22, #23, #24, #25, #26, #27, #28, #29, #30, #32, #33, #36, #37, #38, #39, #42, #43, #44, #48, #49, #50, #51, #52, #57, #60, #61, #62, #64, #65, #66, #67, #68, #70, #71, #72, #74, #75, #76, #78, #79, #80, #81, #82, #83, #84, #86, #87, #88, #89, #90, #91, #92, #93, #94, #95, #96, #97, #98, #100, #101, #102, #105, #106, #107, #108, #109, #110, #111, #112, #113, #119, #120, #121, #122, #123, #126, #128, #129, #130, #133, #135, #138, #139, #141, #142, #145, #146, #147, #150, #151, #152, #153, #154, #155, #156, #159, #160, #163, #164, #165, #169, #170, #172, #175, #176, #179, #182, #184, #186, #187, #189, #191, #192, #193, #195, #199, #200, #202, #204, #205, #206, #207, #208, #209, #210, #211, #212, #213, #214, #215, #216, #217, #218, #219, #227, #228, #229, #230, #234, #235.
+
+---
+
 ## Version 3.0.0 — "alive again"
 2026-06-08
 
