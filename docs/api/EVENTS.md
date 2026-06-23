@@ -36,7 +36,7 @@ const EVENT_TYPES = [
   "client_added",   "client_updated",   "client_removed",
   "server_added",   "server_updated",   "server_removed",
   "status_changed", "log_appended",
-  "search_result_added", "search_finished",
+  "search_result_added", "search_progress",
 ];
 const es = new EventSource("/api/v0/events", { withCredentials: true });
 for (const t of EVENT_TYPES) es.addEventListener(t, onEvent);
@@ -153,7 +153,7 @@ Every event belongs to a single channel. The full set, prefix-mapped from the ev
 | `servers` | `server_*` | Known ed2k servers |
 | `clients` | `client_*` | Peers we're exchanging with |
 | `status` | `status_*` | Connection state + headline counters |
-| `logs` | `log_*` | amuled / serverinfo log buffers |
+| `logs` | `log_*` | amuled log buffer (live tail; serverinfo is poll-only) |
 | `search` | `search_*` | Result deltas + completion of an active `POST /search` |
 
 By default every channel is delivered. To subscribe to a subset, pass `?channels=` with a comma-separated list:
@@ -214,7 +214,7 @@ Both `since_id` and `newest_id` are uint64. The client never has to compute them
 
 ## Event catalog
 
-Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Two events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge) and `log_appended` is an append operation (`{buffer, lines}` — push the lines onto the named buffer, don't replace). Branch on the event type in your dispatcher accordingly.
+Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR-BYTE identical to the matching REST resource's list-item shape — clients receiving a `*_updated` event get the full new state and never need to re-GET. `_removed` carries only the identity field — `hash` for files (`download_removed`, `shared_removed`), `client_ecid` for `client_removed`, `ecid` for `server_removed` — so the client can drop the cache entry without needing the old object. Two events don't fit the collection-delta model: `status_changed` ships a full status envelope (replace, not merge) and `log_appended` is an append operation (`{lines}` — push the lines onto the amule log buffer, don't replace). Branch on the event type in your dispatcher accordingly.
 
 ### `downloads` channel
 
@@ -384,13 +384,13 @@ Subscribe to this channel alone for a thin "header bar" client that just wants c
 
 #### `log_appended`
 
-Emitted when amuled or the serverinfo buffer appends new lines.
+Emitted when the amuled log buffer appends new lines.
 
 ```json
-{ "buffer": "amule", "lines": ["2026-06-19 11:00:00: line one", "2026-06-19 11:00:01: line two"] }
+{ "lines": ["2026-06-19 11:00:00: line one", "2026-06-19 11:00:01: line two"] }
 ```
 
-`buffer` is `"amule"` or `"serverinfo"`. Multiple lines may be batched into a single event when the underlying buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` or `/logs/serverinfo` — fetch them in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
+Only the amuled log has a live channel; the serverinfo buffer has no SSE feed and is fetched by polling [`GET /logs/serverinfo`](REFERENCE.md#get-apiv0logsserverinfo). Multiple lines may be batched into a single event when the buffer landed several lines between refresher ticks. The [Bootstrap example](#bootstrap-snapshot--stream) doesn't pull `/logs/amule` — fetch it in step 2 if your UI shows historical log lines, otherwise treat `log_appended` as a live-only feed.
 
 ### `search` channel
 
@@ -398,11 +398,10 @@ Driven by the refresher state machine that owns the `POST /search` → completio
 
 #### `search_result_added`
 
-Emitted per new ECID that appears in the results map between refresher ticks.
+Emitted per new result that appears in the results map between refresher ticks.
 
 ```json
 {
-  "ecid": 42,
   "hash": "0123456789abcdef0123456789abcdef",
   "name": "ubuntu-24.04-desktop-amd64.iso",
   "size": 5765873664,
@@ -413,17 +412,26 @@ Emitted per new ECID that appears in the results map between refresher ticks.
 }
 ```
 
-Payload mirrors a single `/search/results` array entry. ECIDs are amuled-allocated and unique per amuled session, but **not** stable across `POST /search` calls — amuled wipes its searchlist on every new query and re-allocates from the same pool, so subscribers must treat each search as a fresh result space.
+Key results by `hash`. The payload carries the same data as a `/search/results` array entry but in a flatter shape — `sources` (total) and `complete_sources` arrive as sibling integers. amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
 
-#### `search_finished`
+#### `search_progress`
 
-Emitted exactly once per search when the state machine flips `progress.complete` from `false` → `true`. Triggers: amuled emits `EC_TAG_SEARCH_STATUS = 0xfffe` (Kad) / `0xffff` (local) / `100` (global all-done), or the refresher infers completion via results-count fallback or the 30 s defensive timeout (see [REFERENCE.md](REFERENCE.md#search-results) for the disambiguation rules).
+Emitted whenever the current search's completion advances and once more on completion. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#search-results)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping `progress.complete` from `false` → `true`. The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
 
 ```json
-{ "percent": 100, "results": 153, "kind": "local" }
+{ "state": "running", "percent": 47, "results": 88, "kind": "kad" }
 ```
 
-`kind` is the originally-requested search type ("local" | "global" | "kad"). `results` is the final results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/results`.
+```json
+{ "state": "finished", "percent": 100, "results": 153, "kind": "local" }
+```
+
+- `state` — `"running"` while the search is in flight, `"finished"` on the terminal frame.
+- `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#search-results). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
+- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"`).
+- `results` — the current results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/results`.
+
+A Kad search hitting its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — the lifecycle flips to `finished` and `percent` jumps straight to 100 ahead of the ramp.
 
 ### Filter-bypass: `resync`
 

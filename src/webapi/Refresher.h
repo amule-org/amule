@@ -189,13 +189,13 @@ void ApplySearchFull(const CECPacket *resp,
                      std::map<std::uint32_t, SearchResult> &cache);
 
 
-// Search-progress derivation from the EC_TAG_SEARCH_LIFECYCLE_STATE
-// tag landed in this PR. `lifecycle_state` is the uint8 enum value
-// (0=idle, 1=running, 2=finished). `pct_now` is the EC_TAG_SEARCH_STATUS
-// raw uint — used as the percent for global searches; ignored for
-// local + Kad (no measurable progress upstream). Pure function:
-// no I/O, no globals — RefresherTest exercises every branch without
-// standing up a daemon.
+// Search-progress derivation from the EC_TAG_SEARCH_LIFECYCLE_* tags.
+// `lifecycle_state` is the uint8 enum value (0=idle, 1=running,
+// 2=finished). `pct_now` is the EC_TAG_SEARCH_LIFECYCLE_PERCENT value —
+// the daemon's unified 0..100 for every search kind (global = real,
+// Kad = cosmetic ramp, finished = 100), passed straight through (no
+// per-kind masking). Pure function: no I/O, no globals — RefresherTest
+// exercises every branch without standing up a daemon.
 struct SearchProgressSnapshot;
 SearchProgressSnapshot AdvanceSearchProgress(
 	const SearchProgressSnapshot &prev,

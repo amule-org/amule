@@ -233,7 +233,8 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   },
   "kad": {
     "state": "connected",
-    "firewalled": false
+    "firewalled": false,
+    "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 }
   },
   "speeds": { "download_bps": 4500000, "upload_bps": 50000 },
   "queue": { "upload_queue_length": 12, "total_source_count": 1843 }
@@ -542,13 +543,22 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "ip": "203.0.113.42",
       "port": 4662,
       "software": "eMule",
+      "software_version": "0.50a",
+      "os_info": "Linux",
       "upload_state": "uploading",
       "download_state": "idle",
+      "ident_state": "verified",
+      "download_file_name": "",
       "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
       "download_file_hash": "",
-      "download_file_name": "",
+      "xfer": { "up_session": 22000000, "down_session": 0, "up_total": 452000000, "down_total": 189000000 },
       "upload_speed_bps": 22000,
-      "download_speed_bps": 0
+      "download_speed_bps": 0,
+      "queue_waiting_position": 0,
+      "remote_queue_rank": 0,
+      "score": 150,
+      "obfuscation_status": "obfuscated",
+      "friend_slot": false
     }
   ]
 }
@@ -645,11 +655,16 @@ Changes the upload priority of a single shared file. `{hash}` is the 32-char MD4
     {
       "ecid": 1,
       "name": "eMule Server",
+      "description": "Public server",
+      "version": "17.15",
       "address": "203.0.113.5:4242",
       "port": 4242,
       "users": 312000,
+      "max_users": 500000,
       "files": 75000000,
       "priority": "normal",
+      "ping_ms": 42,
+      "failed": 0,
       "static": false
     }
   ]
@@ -884,13 +899,18 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `GUEST`
 
-Standalone view of the Kad subtree from `/status`.
+Standalone view of the Kad subtree from `/status`, plus the detail fields the status rollup omits (`firewalled_udp`, `in_lan_mode`, your external `ip`, the `indexed` Kad-store counters, and `buddy` contact info for low-ID peers).
 
 ```json
 {
   "state": "connected",
   "firewalled": false,
-  "network": { "users": 5400000, "files": 1.4e9, "nodes": 2400 }
+  "firewalled_udp": false,
+  "in_lan_mode": false,
+  "ip": "203.0.113.5",
+  "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 },
+  "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load": 14 },
+  "buddy": { "status": "connected", "ip": "203.0.113.9", "port": 4672 }
 }
 ```
 
@@ -907,8 +927,14 @@ amuled's general log buffer.
 **Query parameters:** `tail=N` — return only the last N lines (default: full buffer).
 
 ```json
-{ "log": ["2026-06-19 11:00:00: line one", "...line two"] }
+{
+  "lines": ["2026-06-19 11:00:00: line one", "...line two"],
+  "total_cached": 1024,
+  "returned": 2
+}
 ```
+
+`lines` is the array of log lines; `total_cached` is how many lines are held in the buffer and `returned` how many this response carried (≤ `tail`).
 
 #### `DELETE /api/v0/logs/amule`
 
@@ -924,7 +950,17 @@ Clears the buffer.
 
 **Auth:** `GUEST` / `ADMIN`
 
-Same shape; the ed2k server-info log buffer instead of the general log.
+The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as a single accumulated text blob, so the GET returns a `text` **string** rather than a `lines` array. `?tail=N` still selects by trailing lines (it walks back N newline boundaries), but the byte counts in the response describe the result.
+
+```json
+{
+  "text": "Connecting to eMule Server (203.0.113.5:4242)\nConnection established\n",
+  "total_bytes": 4096,
+  "returned_bytes": 68
+}
+```
+
+`DELETE /api/v0/logs/serverinfo` clears the buffer and returns `{ "ok": true }`.
 
 ---
 
@@ -934,11 +970,25 @@ Same shape; the ed2k server-info log buffer instead of the general log.
 
 **Auth:** `GUEST`
 
-A nested object mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
+A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
+
+The envelope is `{ "nodes": [...] }`. Each node is `{ "label": "<text>", "children": [...] }`; a leaf is a node whose `children` array is empty, with its value baked into the `label` string (e.g. `"Total uploaded: 12.4 GB"`).
 
 ```json
 {
-  "tree": { "Transfers": { "Uploads": { "Total uploaded": "12.4 GB", "..." : "..." } } }
+  "nodes": [
+    {
+      "label": "Transfers",
+      "children": [
+        {
+          "label": "Uploads",
+          "children": [
+            { "label": "Total uploaded: 12.4 GB", "children": [] }
+          ]
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -952,11 +1002,22 @@ Time-series points behind the desktop Statistics graphs.
 
 `{graph}` is one of `download`, `upload`, `connections`, `kad`.
 
+**Query parameters:** `width=N` — clamp the response to the last `N` samples (default/`0` returns the full ~1800-sample window).
+
 ```json
-{ "points": [[1781430000, 4500000], [1781430010, 4800000]] }
+{
+  "graph": "download",
+  "unit": "bps",
+  "interval_seconds": 1,
+  "points": [
+    { "t": "2026-06-19T11:00:00Z", "t_unix": 1781430000, "value": 4500000 },
+    { "t": "2026-06-19T11:00:10Z", "t_unix": 1781430010, "value": 4800000 }
+  ],
+  "session": { "download_bytes": 12400000000, "upload_bytes": 980000000, "kad_bytes": 5400000 }
+}
 ```
 
-Each entry is `[unix_timestamp, value]`.
+Each point is an object with `t` (ISO-8601 UTC), `t_unix` (unix seconds), and `value`. `unit` is `"bps"` for download/upload and `"count"` for connections/kad. `session` carries this-session byte totals so a client doesn't need a separate roundtrip.
 
 **Errors:** `404 not_found` (unknown graph name), `503 ec_unavailable`.
 
@@ -996,29 +1057,37 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 Returns the current search-results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "no search running", "search in flight with no hits yet", and "search finished with zero hits".
 
-This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.complete == false`. Single-flight TTL cache: bursts of GETs share one wire fetch (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS` in the same lock); `POST /search` and `POST /search/stop` both invalidate the cache so the next GET sees fresh data without waiting for the TTL to expire.
+This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. There is no per-GET TTL cache: `POST /search` marks the search active and the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`) every tick while it stays active, so this GET reads straight from that refresher-maintained snapshot — successive polls see the growing result set with no extra EC roundtrip, and `POST /search/stop` simply clears the active flag.
 
 ```json
 {
   "results": [
     {
-      "hash":          "8b54a3c2...",
-      "name":          "example-distribution-26.04-amd64.iso",
-      "size":          3825205248,
-      "sources_count": 217,
-      "file_type":     "iso"
+      "hash":         "8b54a3c2...",
+      "name":         "example-distribution-26.04-amd64.iso",
+      "size":         3825205248,
+      "sources":      { "total": 217, "complete": 142 },
+      "already_have": false,
+      "rating":       0
     }
   ],
   "progress": {
-    "percent":  67,
-    "complete": false
+    "state":    "running",
+    "kind":     "kad",
+    "percent":  67
   }
 }
 ```
 
-`progress.percent` is in the `[0, 100]` range. `progress.complete` is `true` whenever amuled reports the search has finished (matches the raw amuled sentinel values `100`, `0xfffe` Kad-done, and `0xffff` local-done — all surface here as `percent: 100, complete: true`).
+Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when the hash is already in your downloads/shared. `rating` is amuled's aggregated quality rating (`0` when unrated).
 
-`progress.percent: 0, progress.complete: false` can mean either "no search has been started" OR "Kad search just kicked off but hasn't reached any peers yet" — Kad search progress is not measurable mid-flight, only "started" and "finished". Clients that started the search themselves can treat the second tick onwards as "in progress".
+The `progress` object mirrors the [`search_progress`](EVENTS.md#search_progress) SSE event field-for-field, so REST pollers and stream consumers read the same shape:
+
+- `state` — `"running"` while the search is in flight, `"finished"` once amuled reports completion, `"idle"` when no search has run this session. This single field is canonical and replaces the older `complete` / `active` booleans (derive them as `complete = state == "finished"`, `active = state == "running"`).
+- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"`).
+- `percent` — `[0, 100]`, computed by amuled for every search kind from its `EC_TAG_SEARCH_LIFECYCLE_PERCENT` tag. For **global** it is the real server-queue progress. For **Kad** — which has no measurable mid-flight progress — it is a cosmetic time-ramp off the fixed 45 s keyword-search lifetime, capped at 99 until amuled authoritatively reports completion (`EC_TAG_SEARCH_LIFECYCLE_STATE` = finished), at which point it snaps to 100. Treat the Kad value as a liveliness indicator, not an accurate estimate.
+
+A client that wants to wait for completion polls while `state == "running"`. Because amuled now reports the lifecycle state directly (no sentinel decode), `state == "running"` unambiguously means in-flight even for Kad — there is no longer any "is `percent: 0` a stalled Kad search or no search at all?" ambiguity; check `state` instead. A Kad search that hits its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — `state` flips to `finished` and `percent` jumps to 100 ahead of the ramp.
 
 **Errors:** `503 ec_unavailable`.
 
