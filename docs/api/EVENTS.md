@@ -405,18 +405,17 @@ Emitted per new result that appears in the results map between refresher ticks.
   "hash": "0123456789abcdef0123456789abcdef",
   "name": "ubuntu-24.04-desktop-amd64.iso",
   "size": 5765873664,
-  "sources": 12,
-  "complete_sources": 7,
+  "sources": { "total": 12, "complete": 7 },
   "already_have": false,
   "rating": 0
 }
 ```
 
-Key results by `hash`. The payload carries the same data as a `/search/results` array entry but in a flatter shape — `sources` (total) and `complete_sources` arrive as sibling integers. amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
+Key results by `hash`. The payload is byte-for-byte identical to a `/search/results` array entry (`sources` is the nested `{total, complete}` object, same as the REST endpoint). amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
 
 #### `search_progress`
 
-Emitted whenever the current search's completion advances and once more on completion. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#search-results)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping `progress.complete` from `false` → `true`. The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
+Emitted whenever the current search's completion advances and once more on completion. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#search-results)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping to finished (the `state` `running` → `finished` edge). The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
 
 ```json
 { "state": "running", "percent": 47, "results": 88, "kind": "kad" }

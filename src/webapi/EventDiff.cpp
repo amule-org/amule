@@ -589,11 +589,14 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 			for (const auto &kv : search_now) {
 				if (prev.search.find(kv.first) == prev.search.end()) {
 					std::ostringstream payload;
+					// Byte-for-byte identical to WriteSearchObject (Api.cpp):
+					// sources is a nested {total, complete} object, matching
+					// the /search/results[] entry rather than flattening it.
 					payload << "{\"hash\":\"" << EscJson(kv.second.hash) << "\""
 					        << ",\"name\":\"" << EscJson(kv.second.name) << "\""
 					        << ",\"size\":" << kv.second.size
-					        << ",\"sources\":" << kv.second.source_count
-					        << ",\"complete_sources\":" << kv.second.complete_source_count
+					        << ",\"sources\":{\"total\":" << kv.second.source_count
+					        << ",\"complete\":" << kv.second.complete_source_count << "}"
 					        << ",\"already_have\":"
 					        << (kv.second.already_have ? "true" : "false")
 					        << ",\"rating\":" << static_cast<int>(kv.second.rating)

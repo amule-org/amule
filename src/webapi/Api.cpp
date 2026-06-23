@@ -3308,9 +3308,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	// reads the daemon's unambiguous EC_TAG_SEARCH_LIFECYCLE_* tags
 	// (state + unified percent) — see RefresherTick.cpp + SearchList.cpp.
 	// The state stores the normalized (kind, percent, complete, active);
-	// no further interpretation here. The `progress` object mirrors the
-	// `search_progress` SSE event so REST pollers and stream consumers
-	// see the same fields.
+	// no further interpretation here. The `progress` object carries the
+	// same state/kind/percent as the `search_progress` SSE event (the
+	// event additionally ships a results count, since it has no results
+	// array beside it).
 	const std::vector<webapi::SearchResult> results_vec = m_state.Search();
 	const webapi::SearchProgressSnapshot    progress    = m_state.SearchProgress();
 

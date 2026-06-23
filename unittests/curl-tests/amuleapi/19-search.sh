@@ -161,11 +161,11 @@ _assert_status 202 "POST /search (query=$TEST_QUERY, type=global) → 202"
 _assert_json_eq '.ok'    true         'POST /search response.ok==true'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
 
-# --- 3.5 Regression: progress shouldn't claim complete right after POST. -
+# --- 3.5 Regression: progress shouldn't claim finished right after POST. -
 # amuled briefly reports raw=100 in the "queue-empty-at-start" window
 # before the global-search timer populates m_serverQueue; if amuleapi
 # trusted that raw value naively, GET /search/results right after POST
-# would (incorrectly) say {progress:{percent:100, complete:true}}
+# would (incorrectly) say {progress:{percent:100, state:"finished"}}
 # with results=[]. The refresher's state machine masks that window —
 # this asserts the mask is in force.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"

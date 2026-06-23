@@ -1081,7 +1081,7 @@ This endpoint does NOT busy-wait — it returns whatever amuled has in its resul
 
 Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when the hash is already in your downloads/shared. `rating` is amuled's aggregated quality rating (`0` when unrated).
 
-The `progress` object mirrors the [`search_progress`](EVENTS.md#search_progress) SSE event field-for-field, so REST pollers and stream consumers read the same shape:
+The `progress` object carries the same `state` / `kind` / `percent` fields as the [`search_progress`](EVENTS.md#search_progress) SSE event, so REST pollers and stream consumers interpret progress identically. (The event additionally carries a `results` count, since — unlike this response — it has no `results` array beside it.)
 
 - `state` — `"running"` while the search is in flight, `"finished"` once amuled reports completion, `"idle"` when no search has run this session. This single field is canonical and replaces the older `complete` / `active` booleans (derive them as `complete = state == "finished"`, `active = state == "running"`).
 - `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"`).
