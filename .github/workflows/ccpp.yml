@@ -3,8 +3,24 @@ name: C/C++ CI
 on:
   push:
     branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'unittests/**'
+      - 'po/**'
+      - 'config.h.cm'
+      - '.github/workflows/ccpp.yml'
   pull_request:
     branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'unittests/**'
+      - 'po/**'
+      - 'config.h.cm'
+      - '.github/workflows/ccpp.yml'
 
 permissions:
   contents: read
