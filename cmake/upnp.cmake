@@ -7,11 +7,14 @@ endif()
 # (e.g. /usr/COMPONENT, /mingw64/COMPONENT) in INTERFACE_INCLUDE_DIRECTORIES.
 # Observed on Ubuntu 25.10 libupnp-dev 1.14.x and MSYS2 mingw-w64-pupnp 1.14.x.
 # Detect this before loading the broken config by inspecting the targets file,
-# and fall through to pkg-config if affected.
+# and fall through to pkg-config if affected. The multiarch libdir is matched
+# generically via CMAKE_LIBRARY_ARCHITECTURE (e.g. i386-linux-gnu,
+# arm-linux-gnueabihf, s390x-linux-gnu) so detection works on every Debian /
+# Ubuntu architecture, not just x86_64 / aarch64.
 find_file (_upnp_cmake_targets "UPNP.cmake"
 	PATH_SUFFIXES lib/cmake/UPNP lib64/cmake/UPNP
-	              lib/x86_64-linux-gnu/cmake/UPNP
-	              lib/aarch64-linux-gnu/cmake/UPNP)
+	              lib/${CMAKE_LIBRARY_ARCHITECTURE}/cmake/UPNP
+	              lib64/${CMAKE_LIBRARY_ARCHITECTURE}/cmake/UPNP)
 if (_upnp_cmake_targets)
 	file (READ "${_upnp_cmake_targets}" _upnp_cmake_content)
 	if (_upnp_cmake_content MATCHES "INTERFACE_INCLUDE_DIRECTORIES.*COMPONENT")
