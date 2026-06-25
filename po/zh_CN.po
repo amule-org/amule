@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-20 17:13+0000\n"
+"PO-Revision-Date: 2026-06-25 05:03+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -1534,7 +1534,7 @@ msgstr "下载 (%i)"
 
 #: src/DownloadListCtrl.cpp:1447
 msgid "the default Windows shell handler"
-msgstr ""
+msgstr "默认的 Windows 外壳处理器"
 
 #: src/DownloadListCtrl.cpp:1454
 #, c-format
@@ -6862,6 +6862,21 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
+"必须通过赋予类型明确搜索类型：\n"
+"    GLOBAL\n"
+"    LOCAL\n"
+"    KAD\n"
+"示例：'search kad file' 会执行 kad \"file\" 搜索。\n"
+"\n"
+"可在搜索词前、后、中间添加筛选器\n"
+"（非必需)\n"
+"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"    --extension <ext>      (alias: --ext)\n"
+"    --avail <N>            最少来源数\n"
+"    --min-size <N[KMG]>    最小文件大小； K=1024, M=K*1024, G=M*1024\n"
+"    --max-size <N[KMG]>    最大大小；相同后缀\n"
+"示例：'search global linux iso --type Iso --min-size 100M' 返回\n"
+"至少100 MiB 的 iso 类型文件的 \"linux iso\"。\n"
 
 #: src/TextClient.cpp:1066
 msgid "Execute a global search."
@@ -7722,7 +7737,7 @@ msgstr "正在处理请求 [原始]: "
 
 #: src/webserver/src/WebServer.cpp:1947
 msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
+msgstr "拒绝从 URL 查询字符串读取 `pass`\n"
 
 #: src/webserver/src/WebServer.cpp:1953
 msgid "No password specified, login will not be allowed."
@@ -7774,7 +7789,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:40
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "删除用户数据（配置、ED2K 服务器、Kad 节点、part文件）"
 
 #: packaging/windows/installer_strings.c:43
 msgid "aMule application files (required)."
@@ -7786,45 +7801,51 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:45
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "当前用户登录时自动启动 aMule（每用户设置）。"
 
 #: packaging/windows/installer_strings.c:46
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "删除 aMule 应用程序文件、开始菜单/桌面快捷方式、自启动注册表键、和添加/删除程序条目（必需）。"
 
 #: packaging/windows/installer_strings.c:47
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "永久删除当前用户的 %APPDATA%\\aMule 目录（包含 aMule.conf 文件、ED2K 服务器列表、Kad 节点、part文件、IP 过滤器和好友列表）。取消选中此项可保留您的设置。"
 
 #: packaging/windows/installer_strings.c:53
 msgid ""
 "aMule appears to be running from $INSTDIR.\r\n"
 "Please close aMule (and aMuleD / aMuleGUI) and try again."
 msgstr ""
+"aMule 似乎正从 $INSTDIR 目录运行。\n"
+"请关闭 aMule（以及 aMuleD / aMuleGUI），然后重试。"
 
 #: packaging/windows/installer_strings.c:54
 msgid ""
 "aMule daemon (amuled.exe) appears to be running from $INSTDIR.\r\n"
 "Please stop it and try again."
 msgstr ""
+"aMule守护进程（amuled.exe）似乎正从 $INSTDIR目录运行。\n"
+"请停止它并重试。"
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "正在删除之前 $0 位置的 aMule 安装…"
 
 #: packaging/windows/installer_strings.c:56
 msgid ""
 "Could not remove the previous aMule installation at $0.\r\n"
 "Please close any running aMule processes and try again, or uninstall the previous version manually first."
 msgstr ""
+"无法删除之前在 $0 处安装的 aMule。\n"
+"请关闭所有正在运行的 aMule 进程并重试，或者先手动卸载之前的版本。"
 
 #: packaging/windows/installer_strings.c:57
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。"
 
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
 
 #, fuzzy
 #~ msgid "Loaded"

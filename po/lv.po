@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-23 12:03+0000\n"
+"PO-Revision-Date: 2026-06-25 05:03+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -258,11 +258,11 @@ msgstr ""
 
 #: src/amule.cpp:1280
 msgid "More information, support and new releases can found at our homepage,\n"
-msgstr ""
+msgstr "Plašāka informācija, atbalsts un jaunās versijas ir pieejamas mūsu vietnē\n"
 
 #: src/amule.cpp:1281
 msgid "at https://amule-org.github.io, or in our IRC channel #aMule at irc.libera.chat.\n"
-msgstr ""
+msgstr "https://amule-org.github.io vai mūsu IRC kanālā #aMule vietnē irc.libera.chat.\n"
 
 #: src/amule.cpp:1283
 msgid "Feel free to report any bugs to https://github.com/amule-org/amule/issues"
@@ -320,7 +320,7 @@ msgstr ""
 
 #: src/amule.cpp:2012
 msgid "You are using an outdated version of aMule!"
-msgstr ""
+msgstr "Jūs izmantojiet novecojušu aMule versiju!"
 
 #: src/amule.cpp:2014
 #, c-format
@@ -329,12 +329,12 @@ msgstr ""
 
 #: src/amule.cpp:2015
 msgid "The latest version can always be found at https://github.com/amule-org/amule/releases/latest"
-msgstr ""
+msgstr "Jaunāko aMule versiju vienmēr var iegūt https://github.com/amule-org/amule/releases/latest vietnē"
 
 #: src/amule.cpp:2017
 #, c-format
 msgid "WARNING: Your aMuled version is outdated: %i.%i.%i < %li.%li.%li"
-msgstr ""
+msgstr "BRĪDINĀJUMS: Jūsu aMule versija ir novecojusi: %i.%i.%i < %li.%li.%li"
 
 #: src/amule.cpp:2021
 msgid "Your copy of aMule is up to date."
@@ -445,7 +445,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp:270
 msgid "Visit https://github.com/amule-org/amule/releases/latest to check if a new version is available."
-msgstr ""
+msgstr "Apmeklējiet https://github.com/amule-org/amule/releases/latest vietni, lai pārbaudītu, vai nav pieejama jauna versija."
 
 #: src/amuleDlg.cpp:296
 msgid "FATAL ERROR: Failed to create Timer"
@@ -499,7 +499,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp:552
 msgid "Kademlia: Peer-to-peer routing based on the XOR metric.\n"
-msgstr ""
+msgstr "Kademlia: Vienādranga (P2P) maršrutēšana, pamatojoties uz XOR (izslēdzošā VAI) metriku.\n"
 
 #: src/amuleDlg.cpp:553
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
@@ -533,7 +533,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp:792
 msgid "Kad: Firewalled"
-msgstr ""
+msgstr "Kad: Aiz ugunsmūra"
 
 #: src/amuleDlg.cpp:796
 msgid "Kad: Connected"
@@ -577,12 +577,12 @@ msgstr "Pieslēgties"
 
 #: src/amuleDlg.cpp:865
 msgid "Connect to the currently enabled networks"
-msgstr ""
+msgstr "Pieslēgties pašlaik iespējotajiem tīkliem"
 
 #: src/amuleDlg.cpp:943
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr ""
+msgstr "↑Augšup.: %.1f%s (%.1f) | ↓Lejup.: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp:944 src/amuleDlg.cpp:945 src/amuleDlg.cpp:948
 #: src/amuleDlg.cpp:949 src/amuleDlg.cpp:960 src/amuleDlg.cpp:961
@@ -600,7 +600,7 @@ msgstr " kB/s"
 #: src/amuleDlg.cpp:947
 #, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr ""
+msgstr "↑Augšup.: %.1f%s | ↓Lejup.: %.1f%s"
 
 #: src/amuleDlg.cpp:977
 #, c-format
@@ -1202,7 +1202,7 @@ msgstr ""
 
 #: src/DataToText.cpp:46 src/SharedFilesCtrl.cpp:143
 msgid "Release"
-msgstr ""
+msgstr "Izlaidums"
 
 #: src/DataToText.cpp:60
 msgid "Asking"
@@ -2057,7 +2057,7 @@ msgstr "Skatīt datnes"
 
 #: src/FriendListCtrl.cpp:147 src/GenericClientListCtrl.cpp:633
 msgid "Establish Friend Slot"
-msgstr ""
+msgstr "Izveidot drauga izdalīto spraugu"
 
 #: src/FriendListCtrl.cpp:180
 msgid "Are you sure that you wish to delete the selected friend?"
@@ -2323,7 +2323,7 @@ msgstr "Vai turpināt?"
 
 #: src/kademlia/kademlia/SearchManager.cpp:154
 msgid "Kademlia: search keyword too short"
-msgstr ""
+msgstr "Kademlia: meklēšanas atslēgvārds ir pārāk īss"
 
 #: src/kademlia/kademlia/SearchManager.cpp:167
 msgid "Kademlia: Search keyword is already on search list: "
@@ -2748,7 +2748,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:131
 msgid "Up: 0.0 | Down: 0.0"
-msgstr ""
+msgstr "↑Augšup.: 0.0 | ↓Lejup.: 0.0"
 
 #: src/muuli_wdr.cpp:132
 msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
@@ -2896,7 +2896,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:330
 msgid "Stop"
-msgstr ""
+msgstr "Apturēt"
 
 #: src/muuli_wdr.cpp:335 src/muuli_wdr.cpp:1318 src/SearchListCtrl.cpp:700
 msgid "Download"
@@ -3033,7 +3033,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:677
 msgid "Ok"
-msgstr ""
+msgstr "Labi"
 
 #: src/muuli_wdr.cpp:699
 msgid "Comment/Rate file (Text will be visible to all users)"
@@ -3376,11 +3376,11 @@ msgstr "Datu pārraides ierobežojumi"
 
 #: src/muuli_wdr.cpp:1326
 msgid "Upload"
-msgstr ""
+msgstr "Augšupielādes (Izejošais)"
 
 #: src/muuli_wdr.cpp:1334
 msgid "Slot Allocation"
-msgstr ""
+msgstr "Katram klientam (vienam savienojumam) izdalītais spraugas"
 
 #: src/muuli_wdr.cpp:1343
 msgid "Ports"
@@ -3436,7 +3436,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:1405
 msgid "Kademlia"
-msgstr ""
+msgstr "Kademlia"
 
 #: src/muuli_wdr.cpp:1408 src/muuli_wdr.cpp:2885
 msgid "ED2K"
@@ -3500,7 +3500,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:1497
 msgid "Enable"
-msgstr ""
+msgstr "Iespējot"
 
 #: src/muuli_wdr.cpp:1500
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
@@ -3978,7 +3978,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:2296
 msgid "IP:"
-msgstr ""
+msgstr "IP:"
 
 #: src/muuli_wdr.cpp:2316
 msgid "Port:"
@@ -4307,7 +4307,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:2752
 msgid "User name"
-msgstr ""
+msgstr "Lietotājvārds"
 
 #: src/muuli_wdr.cpp:2763
 msgid "Remember those settings"
@@ -4403,7 +4403,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:3108 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:875
 msgid "Shared Files"
-msgstr ""
+msgstr "Kopīgotās datnes"
 
 #: src/OScopeCtrl.cpp:242
 #, c-format
@@ -5324,7 +5324,7 @@ msgstr ""
 
 #: src/SearchDlg.cpp:282
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "Meklēšana nav iespējama, ja gan eD2k, gan Kademlia ir atspējoti."
 
 #: src/SearchDlg.cpp:283 src/SearchListCtrl.cpp:812
 msgid "Search error"
@@ -5826,7 +5826,7 @@ msgstr ""
 
 #: src/ServerWnd.cpp:218
 msgid "Kademlia Status:"
-msgstr ""
+msgstr "Kademlia statuss:"
 
 #: src/ServerWnd.cpp:221
 msgid "Running in LAN mode"
@@ -5838,7 +5838,7 @@ msgstr ""
 
 #: src/ServerWnd.cpp:224
 msgid "Kademlia client ID:"
-msgstr ""
+msgstr "Kademlia klienta ID:"
 
 #: src/ServerWnd.cpp:226
 msgid "Status:"
@@ -5951,7 +5951,7 @@ msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp:28 src/SourceListCtrl.cpp:28
 msgid "User Name"
-msgstr ""
+msgstr "Lietotājvārds"
 
 #: src/SharedFilePeersListCtrl.cpp:30
 msgid "Download Speed"
@@ -6211,12 +6211,12 @@ msgstr ""
 
 #: src/Statistics.cpp:850
 msgid "Clients"
-msgstr ""
+msgstr "Klienti"
 
 #: src/Statistics.cpp:851
 #, c-format
 msgid "Unknown: %s"
-msgstr ""
+msgstr "Nezināms: %s"
 
 #: src/Statistics.cpp:857
 #, c-format
@@ -6300,7 +6300,7 @@ msgstr ""
 
 #: src/Statistics.cpp:1020
 msgid "Operating System"
-msgstr ""
+msgstr "Operētājsistēma"
 
 #: src/Statistics.cpp:1045
 msgid "Not Received"
@@ -6383,7 +6383,7 @@ msgstr ""
 #: src/TextClient.cpp:650
 #, c-format
 msgid "Download File: %lu %s\n"
-msgstr ""
+msgstr "Lejupielādēt datni: %lu %s\n"
 
 #: src/TextClient.cpp:742 src/webserver/src/WebServer.cpp:364
 msgid "Request failed with an unknown error."
@@ -6766,19 +6766,19 @@ msgstr ""
 
 #: src/TextClient.cpp:1084
 msgid "Pause download."
-msgstr ""
+msgstr "Apturēt lejupielādi."
 
 #: src/TextClient.cpp:1087
 msgid "Resume download."
-msgstr ""
+msgstr "Turpināt lejupielādi."
 
 #: src/TextClient.cpp:1090
 msgid "Cancel download."
-msgstr ""
+msgstr "Atcelt/Dzēst lejupielādi."
 
 #: src/TextClient.cpp:1093
 msgid "Set download priority."
-msgstr ""
+msgstr "Iestatīt lejupielādes prioritāti."
 
 #: src/TextClient.cpp:1094
 msgid "Set priority of a download to Low, Normal, High or Auto.\n"
@@ -6889,15 +6889,15 @@ msgstr ""
 
 #: src/TransferWnd.cpp:366
 msgid "Add category"
-msgstr ""
+msgstr "Pievienot kategoriju"
 
 #: src/TransferWnd.cpp:369
 msgid "Edit category"
-msgstr ""
+msgstr "Rediģēt kategoriju"
 
 #: src/TransferWnd.cpp:370
 msgid "Remove category"
-msgstr ""
+msgstr "Dzēst kategoriju"
 
 #: src/UploadClient.cpp:535
 #, c-format
@@ -7020,11 +7020,11 @@ msgstr ""
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:187
 msgid "MD4 File Hash"
-msgstr ""
+msgstr "MD4 datnes kontrolsumma"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:199
 msgid "eD2k File Hash"
-msgstr ""
+msgstr "eD2k datnes kontrolsumma"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:210
 msgid "eD2k link"
