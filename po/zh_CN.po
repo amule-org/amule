@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-25 05:03+0000\n"
+"PO-Revision-Date: 2026-06-25 11:15+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -6876,11 +6876,11 @@ msgstr ""
 "    --min-size <N[KMG]>    最小文件大小； K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    最大大小；相同后缀\n"
 "示例：'search global linux iso --type Iso --min-size 100M' 返回\n"
-"至少100 MiB 的 iso 类型文件的 \"linux iso\"。\n"
+"至少100 MiB 大小文件类型为 lso 的 \"linux iso\"。\n"
 
 #: src/TextClient.cpp:1066
 msgid "Execute a global search."
-msgstr "执行全面搜索。"
+msgstr "执行全局搜索。"
 
 #: src/TextClient.cpp:1067
 msgid "Execute a local search"
