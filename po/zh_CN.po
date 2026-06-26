@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-25 11:15+0000\n"
+"PO-Revision-Date: 2026-06-26 15:01+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -7777,11 +7777,11 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:37
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "桌面快捷方式"
 
 #: packaging/windows/installer_strings.c:38
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "登录时启动 aMule"
 
 #: packaging/windows/installer_strings.c:39
 msgid "Uninstall"
