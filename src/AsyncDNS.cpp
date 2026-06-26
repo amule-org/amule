@@ -24,44 +24,42 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "AsyncDNS.h"	// Interface declaration
+#include "AsyncDNS.h" // Interface declaration
 
-#include "InternalEvents.h"	// Needed for wxEVT_*
+#include "InternalEvents.h"   // Needed for wxEVT_*
 #include "NetworkFunctions.h" // Needed for StringHosttoUint32
 #include "Logger.h"
 
-
-CAsyncDNS::CAsyncDNS(const wxString& ipName, DnsSolveType type, wxEvtHandler* handler, void* socket)
-	: wxThread(wxTHREAD_DETACHED)
-	, m_ipName(ipName.wc_str())		// make a deep copy to to circument the thread-unsafe wxString reference counting
+CAsyncDNS::CAsyncDNS(const wxString &ipName, DnsSolveType type, wxEvtHandler *handler, void *socket)
+: wxThread(wxTHREAD_DETACHED)
+, m_ipName(ipName.wc_str()) // make a deep copy to to circument the thread-unsafe wxString reference counting
 {
 	m_type = type;
 	m_socket = socket;
 	m_handler = handler;
 }
 
-
 wxThread::ExitCode CAsyncDNS::Entry()
 {
 	uint32 result = StringHosttoUint32(m_ipName);
 	uint32 event_id = 0;
-	void* event_data = NULL;
+	void *event_data = NULL;
 
 	switch (m_type) {
-		case DNS_UDP:
-			event_id = wxEVT_CORE_UDP_DNS_DONE;
-			event_data = m_socket;
-			break;
-		case DNS_SOURCE:
-			event_id = wxEVT_CORE_SOURCE_DNS_DONE;
-			event_data = NULL;
-			break;
-		case DNS_SERVER_CONNECT:
-			event_id = wxEVT_CORE_SERVER_DNS_DONE;
-			event_data = m_socket;
-			break;
-		default:
-			AddLogLineN("WRONG TYPE ID ON ASYNC DNS SOLVING!!!");
+	case DNS_UDP:
+		event_id = wxEVT_CORE_UDP_DNS_DONE;
+		event_data = m_socket;
+		break;
+	case DNS_SOURCE:
+		event_id = wxEVT_CORE_SOURCE_DNS_DONE;
+		event_data = NULL;
+		break;
+	case DNS_SERVER_CONNECT:
+		event_id = wxEVT_CORE_SERVER_DNS_DONE;
+		event_data = m_socket;
+		break;
+	default:
+		AddLogLineN("WRONG TYPE ID ON ASYNC DNS SOLVING!!!");
 	}
 
 	if (event_id) {

@@ -26,22 +26,23 @@
 #ifndef FILEDETAILLISTCTRL_H
 #define FILEDETAILLISTCTRL_H
 
-#include "MuleListCtrl.h"	// Needed for CMuleListCtrl
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl
 
 class CFileDetailListCtrl : public CMuleListCtrl
 {
 
 public:
-	CFileDetailListCtrl(wxWindow * &parent, int id, const wxPoint & pos, wxSize siz, int flags);
+	CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoint &pos, wxSize siz, int flags);
 
 private:
-	struct SourcenameItem {
-		wxString	name;
-		long		count;
+	struct SourcenameItem
+	{
+		wxString name;
+		long count;
 	};
 
 	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-	void OnSelect(wxListEvent& event);
+	void OnSelect(wxListEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
 };

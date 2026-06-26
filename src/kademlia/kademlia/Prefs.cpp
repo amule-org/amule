@@ -48,15 +48,13 @@ there client on the eMule forum..
 #include "../../ServerList.h"
 #include "../../Logger.h"
 #include "../../ArchSpecific.h"
-#include "../../RandomFunctions.h"		// Needed for GetRandomUint128()
-
+#include "../../RandomFunctions.h" // Needed for GetRandomUint128()
 
 ////////////////////////////////////////
 using namespace Kademlia;
 ////////////////////////////////////////
 
-#define EXTERNAL_PORT_ASKIPS	3
-
+#define EXTERNAL_PORT_ASKIPS 3
 
 CPrefs::CPrefs()
 {
@@ -70,7 +68,7 @@ CPrefs::~CPrefs()
 	}
 }
 
-void CPrefs::Init(const wxString& filename)
+void CPrefs::Init(const wxString &filename)
 {
 	m_clientID = GetRandomUint128();
 	m_lastContact = 0;
@@ -87,8 +85,8 @@ void CPrefs::Init(const wxString& filename)
 	m_ip = 0;
 	m_ipLast = 0;
 	m_findBuddy = false;
-	m_kademliaUsers	= 0;
-	m_kademliaFiles	= 0;
+	m_kademliaUsers = 0;
+	m_kademliaFiles = 0;
 	m_filename = filename;
 	m_lastFirewallState = true;
 	m_externKadPort = 0;
@@ -119,7 +117,7 @@ void CPrefs::ReadFile()
 				m_clientID = GetRandomUint128();
 			file.Close();
 		}
-	} catch (const CSafeIOException& e) {
+	} catch (const CSafeIOException &e) {
 		AddDebugLogLineC(logKadPrefs, "IO error while reading prefs: " + e.what());
 	}
 }
@@ -130,53 +128,52 @@ void CPrefs::WriteFile()
 		CFile file;
 		if (file.Open(m_filename, CFile::write)) {
 			file.WriteUInt32(m_ip);
-			file.WriteUInt16(0); //This is no longer used.
+			file.WriteUInt16(0); // This is no longer used.
 			file.WriteUInt128(m_clientID);
-			file.WriteUInt8(0); //This is to tell older clients there are no tags..
+			file.WriteUInt8(0); // This is to tell older clients there are no tags..
 			file.Close();
 		}
-	} catch (const CIOFailureException& e) {
+	} catch (const CIOFailureException &e) {
 		AddDebugLogLineC(logKadPrefs, "IO failure while saving kad-prefs: " + e.what());
 	}
 }
 
 void CPrefs::SetIPAddress(uint32_t val) noexcept
 {
-	//This is our first check on connect, init our IP..
-	if ( !val || !m_ipLast ) {
+	// This is our first check on connect, init our IP..
+	if (!val || !m_ipLast) {
 		m_ip = val;
 		m_ipLast = val;
 	}
-	//If the last check matches this one, reset our current IP.
-	//If the last check does not match, wait for our next incoming IP.
-	//This happens for two reasons.. We just changed our IP, or a client responded with a bad IP.
-	if ( val == m_ipLast ) {
+	// If the last check matches this one, reset our current IP.
+	// If the last check does not match, wait for our next incoming IP.
+	// This happens for two reasons.. We just changed our IP, or a client responded with a bad IP.
+	if (val == m_ipLast) {
 		m_ip = val;
 	} else {
 		m_ipLast = val;
 	}
 }
 
-
 bool CPrefs::GetFirewalled() const noexcept
 {
 	if (m_firewalled < 2) {
-		//Not enough people have told us we are open but we may be doing a recheck
-		//at the moment which will give a false lowID.. Therefore we check to see
-		//if we are still rechecking and will report our last known state..
+		// Not enough people have told us we are open but we may be doing a recheck
+		// at the moment which will give a false lowID.. Therefore we check to see
+		// if we are still rechecking and will report our last known state..
 		if (GetRecheckIP()) {
 			return m_lastFirewallState;
 		}
 		return true;
 	}
-	//We had enough tell us we are not firewalled..
+	// We had enough tell us we are not firewalled..
 	return false;
 }
 
 void CPrefs::SetFirewalled()
 {
-	//Are are checking our firewall state.. Let keep a snapshot of our
-	//current state to prevent false reports during the recheck..
+	// Are are checking our firewall state.. Let keep a snapshot of our
+	// current state to prevent false reports during the recheck..
 	m_lastFirewallState = (m_firewalled < 2);
 	m_firewalled = 0;
 	theApp->ShowConnectionState();
@@ -190,23 +187,23 @@ void CPrefs::IncFirewalled()
 
 void CPrefs::SetKademliaFiles()
 {
-	//There is no real way to know how many files are in the Kad network..
-	//So we first try to see how many files per user are in the ED2K network..
-	//If that fails, we use a set value based on previous tests..
+	// There is no real way to know how many files are in the Kad network..
+	// So we first try to see how many files per user are in the ED2K network..
+	// If that fails, we use a set value based on previous tests..
 	uint32_t nServerAverage = theApp->serverlist->GetAvgFile();
 	uint32_t nKadAverage = Kademlia::CKademlia::GetIndexed()->GetFileKeyCount();
 
-	DEBUG_ONLY( wxString method; )
+	DEBUG_ONLY(wxString method;)
 
 	if (nServerAverage > nKadAverage) {
-		DEBUG_ONLY( method = CFormat("Kad file estimate used Server avg(%u)") % nServerAverage; )
+		DEBUG_ONLY(method = CFormat("Kad file estimate used Server avg(%u)") % nServerAverage;)
 		nKadAverage = nServerAverage;
 	} else {
-		DEBUG_ONLY( method = CFormat("Kad file estimate used Kad avg(%u)") % nKadAverage; )
+		DEBUG_ONLY(method = CFormat("Kad file estimate used Kad avg(%u)") % nKadAverage;)
 	}
 
-	if( nKadAverage < 108 ) {
-		DEBUG_ONLY( method = wxString("Kad file estimate used default avg(108, min value)"); )
+	if (nKadAverage < 108) {
+		DEBUG_ONLY(method = wxString("Kad file estimate used default avg(108, min value)");)
 		nKadAverage = 108;
 	}
 
@@ -216,26 +213,33 @@ void CPrefs::SetKademliaFiles()
 
 uint8_t CPrefs::GetMyConnectOptions(bool encryption, bool callback)
 {
-       // Connect options Tag
-       // 4 Reserved (!)
-       // 1 Direct Callback
-       // 1 CryptLayer Required
-       // 1 CryptLayer Requested
-       // 1 CryptLayer Supported
+	// Connect options Tag
+	// 4 Reserved (!)
+	// 1 Direct Callback
+	// 1 CryptLayer Required
+	// 1 CryptLayer Requested
+	// 1 CryptLayer Supported
 
-       // direct callback is only possible if connected to kad, tcp firewalled and verified UDP open (for example on a full cone NAT)
+	// direct callback is only possible if connected to kad, tcp firewalled and verified UDP open (for
+	// example on a full cone NAT)
 
-       return    ((callback && theApp->IsFirewalled() && CKademlia::IsRunning() && !CUDPFirewallTester::IsFirewalledUDP(true) && CUDPFirewallTester::IsVerified()) ? 0x08 : 0)
-	       | ((thePrefs::IsClientCryptLayerRequired() && encryption) ? 0x04 : 0)
-	       | ((thePrefs::IsClientCryptLayerRequested() && encryption) ? 0x02 : 0)
-	       | ((thePrefs::IsClientCryptLayerSupported() && encryption) ? 0x01 : 0);
+	return ((callback && theApp->IsFirewalled() && CKademlia::IsRunning() &&
+			!CUDPFirewallTester::IsFirewalledUDP(true) && CUDPFirewallTester::IsVerified())
+			       ? 0x08
+			       : 0) |
+	       ((thePrefs::IsClientCryptLayerRequired() && encryption) ? 0x04 : 0) |
+	       ((thePrefs::IsClientCryptLayerRequested() && encryption) ? 0x02 : 0) |
+	       ((thePrefs::IsClientCryptLayerSupported() && encryption) ? 0x01 : 0);
 }
 
 uint32_t CPrefs::GetUDPVerifyKey(uint32_t targetIP)
 {
 	uint64_t buffer = (uint64_t)thePrefs::GetKadUDPKey() << 32 | targetIP;
 	MD5Sum md5((const uint8_t *)&buffer, 8);
-	return (uint32_t)(PeekUInt32(md5.GetRawHash()) ^ PeekUInt32(md5.GetRawHash() + 4) ^ PeekUInt32(md5.GetRawHash() + 8) ^ PeekUInt32(md5.GetRawHash() + 12)) % 0xFFFFFFFE + 1;
+	return (uint32_t)(PeekUInt32(md5.GetRawHash()) ^ PeekUInt32(md5.GetRawHash() + 4) ^
+			  PeekUInt32(md5.GetRawHash() + 8) ^ PeekUInt32(md5.GetRawHash() + 12)) %
+		       0xFFFFFFFE +
+	       1;
 }
 
 float CPrefs::StatsGetFirewalledRatio(bool udp) const noexcept
@@ -244,13 +248,15 @@ float CPrefs::StatsGetFirewalledRatio(bool udp) const noexcept
 	// will only work once enough > 0.49b nodes have spread and only if we are not UDP firewalled ourself
 	if (udp) {
 		if (m_statsUDPFirewalledNodes > 0 && m_statsUDPOpenNodes > 10) {
-			return ((float)m_statsUDPFirewalledNodes / (float)(m_statsUDPFirewalledNodes + m_statsUDPOpenNodes));
+			return ((float)m_statsUDPFirewalledNodes /
+				(float)(m_statsUDPFirewalledNodes + m_statsUDPOpenNodes));
 		} else {
 			return 0;
 		}
 	} else {
 		if (m_statsTCPFirewalledNodes > 0 && m_statsTCPOpenNodes > 10) {
-			return ((float)m_statsTCPFirewalledNodes / (float)(m_statsTCPFirewalledNodes + m_statsTCPOpenNodes));
+			return ((float)m_statsTCPFirewalledNodes /
+				(float)(m_statsTCPFirewalledNodes + m_statsTCPOpenNodes));
 		} else {
 			return 0;
 		}
@@ -259,15 +265,20 @@ float CPrefs::StatsGetFirewalledRatio(bool udp) const noexcept
 
 float CPrefs::StatsGetKadV8Ratio()
 {
-	// this function is basically just a buffer, so we don't recount all nodes everytime we need the result
+	// this function is basically just a buffer, so we don't recount all nodes everytime we need the
+	// result
 	time_t now = time(NULL);
 	if (m_statsKadV8LastChecked + 60 < now) {
 		m_statsKadV8LastChecked = now;
 		uint32_t nV8Contacts = 0;
 		uint32_t nNonV8Contacts = 0;
 		CKademlia::GetRoutingZone()->GetNumContacts(nV8Contacts, nNonV8Contacts, 8);
-		AddDebugLogLineN(logKadRouting, CFormat("Counted Kad V8 Contacts: %u out of %u in routing table. FirewalledRatios: UDP - %.02f%% | TCP - %.02f%%")
-			% nV8Contacts % (nNonV8Contacts + nV8Contacts) % (StatsGetFirewalledRatio(true) * 100) % (StatsGetFirewalledRatio(false) * 100));
+		AddDebugLogLineN(logKadRouting,
+			CFormat("Counted Kad V8 Contacts: %u out of %u in routing table. FirewalledRatios: "
+				"UDP - %.02f%% | TCP - %.02f%%") %
+				nV8Contacts % (nNonV8Contacts + nV8Contacts) %
+				(StatsGetFirewalledRatio(true) * 100) %
+				(StatsGetFirewalledRatio(false) * 100));
 		if (nV8Contacts > 0) {
 			m_statsKadV8Ratio = ((float)nV8Contacts / (float)(nV8Contacts + nNonV8Contacts));
 		} else {
@@ -286,14 +297,18 @@ void CPrefs::SetExternKadPort(uint16_t port, uint32_t fromIP)
 			}
 		}
 		m_externPortIPs.push_back(fromIP);
-		AddDebugLogLineN(logKadPrefs, CFormat("Received possible external Kad port %u from %s") % port % KadIPToString(fromIP));
-		// if 2 out of 3 tries result in the same external port it's fine, otherwise consider it unreliable
+		AddDebugLogLineN(logKadPrefs,
+			CFormat("Received possible external Kad port %u from %s") % port %
+				KadIPToString(fromIP));
+		// if 2 out of 3 tries result in the same external port it's fine, otherwise consider it
+		// unreliable
 		for (unsigned i = 0; i < m_externPorts.size(); i++) {
 			if (m_externPorts[i] == port) {
 				m_externKadPort = port;
 				AddDebugLogLineN(logKadPrefs, CFormat("Set external Kad port to %u") % port);
 				while (m_externPortIPs.size() < EXTERNAL_PORT_ASKIPS) {
-					// add empty entries so we know the check has finished even if we asked less than max IPs
+					// add empty entries so we know the check has finished even if we
+					// asked less than max IPs
 					m_externPortIPs.push_back(0);
 				}
 				return;
@@ -301,7 +316,8 @@ void CPrefs::SetExternKadPort(uint16_t port, uint32_t fromIP)
 		}
 		m_externPorts.push_back(port);
 		if (!FindExternKadPort(false)) {
-			AddDebugLogLineN(logKadPrefs, "Our external port seems unreliable, not using it for firewallchecks");
+			AddDebugLogLineN(logKadPrefs,
+				"Our external port seems unreliable, not using it for firewallchecks");
 			m_externKadPort = 0;
 		}
 	}

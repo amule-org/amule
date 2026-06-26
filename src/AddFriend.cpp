@@ -23,53 +23,60 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-#include "AddFriend.h"		// Interface declarations.
-#include "muuli_wdr.h"		// Needed for addFriendDlg
-#include "amule.h"		// Needed for theApp
-#include "amuleDlg.h"	// Needed for amuleDlg
+#include "AddFriend.h" // Interface declarations.
+#include "muuli_wdr.h" // Needed for addFriendDlg
+#include "amule.h"     // Needed for theApp
+#include "amuleDlg.h"  // Needed for amuleDlg
 #include "FriendList.h"
 #include "NetworkFunctions.h"
 #include "OtherFunctions.h"
 #include "MD4Hash.h"
 #include <common/StringFunctions.h> // Needed for unicode2char
 
-
 wxBEGIN_EVENT_TABLE(CAddFriend, wxDialog)
 	EVT_BUTTON(ID_ADDFRIEND, CAddFriend::OnAddBtn)
 	EVT_BUTTON(ID_CLOSEDLG, CAddFriend::OnCloseBtn)
 wxEND_EVENT_TABLE()
 
-
-CAddFriend::CAddFriend(wxWindow* parent)
-: wxDialog(parent, 9995, _("Add a Friend"), wxDefaultPosition, wxDefaultSize,
-wxDEFAULT_DIALOG_STYLE|wxSYSTEM_MENU)
+CAddFriend::CAddFriend(wxWindow *parent)
+: wxDialog(parent,
+	  9995,
+	  _("Add a Friend"),
+	  wxDefaultPosition,
+	  wxDefaultSize,
+	  wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
 {
-	wxSizer* content=addFriendDlg(this, TRUE);
+	wxSizer *content = addFriendDlg(this, TRUE);
 	content->Show(this, TRUE);
 }
 
-void CAddFriend::OnAddBtn(wxCommandEvent& WXUNUSED(evt))
+void CAddFriend::OnAddBtn(wxCommandEvent &WXUNUSED(evt))
 {
 	wxString name = CastChild(ID_USERNAME, wxTextCtrl)->GetValue().Strip(wxString::both);
 	wxString hash = CastChild(ID_USERHASH, wxTextCtrl)->GetValue().Strip(wxString::both);
 	wxString fullip = CastChild(ID_IPADDRESS, wxTextCtrl)->GetValue().Strip(wxString::both);
-	uint16 port = StrToULong( CastChild(ID_IPORT, wxTextCtrl)->GetValue() );
+	uint16 port = StrToULong(CastChild(ID_IPORT, wxTextCtrl)->GetValue());
 	uint32 ip = StringIPtoUint32(fullip);
 
 	if (!ip || !port) {
-		wxMessageBox(_("You have to enter a valid IP and port!"), _("Information"), wxOK | wxICON_INFORMATION, this);
+		wxMessageBox(_("You have to enter a valid IP and port!"),
+			_("Information"),
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	}
 
 	CMD4Hash userhash;
 	if ((!hash.IsEmpty()) && (!userhash.Decode(hash))) {
-		wxMessageBox(_("The specified userhash is not valid!"), _("Information"), wxOK | wxICON_INFORMATION, this);
+		wxMessageBox(_("The specified userhash is not valid!"),
+			_("Information"),
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	};
 
 	// Better than nothing at all...
-	if ( name.IsEmpty() ) {
+	if (name.IsEmpty()) {
 		name = fullip;
 	}
 
@@ -78,8 +85,7 @@ void CAddFriend::OnAddBtn(wxCommandEvent& WXUNUSED(evt))
 	EndModal(true); // Friend added
 }
 
-
-void CAddFriend::OnCloseBtn(wxCommandEvent& WXUNUSED(evt))
+void CAddFriend::OnCloseBtn(wxCommandEvent &WXUNUSED(evt))
 {
 	EndModal(false); // Friend not added
 }

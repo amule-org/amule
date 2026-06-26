@@ -14,61 +14,82 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(CTag)
 
-void test_taglist_serialization(TagPtrList & taglist, uint8_t* packet, uint64 packet_len);
+void test_taglist_serialization(TagPtrList &taglist, uint8_t *packet, uint64 packet_len);
 
-template <class T1, class T2>
-void AssertEquals(const T1& a, const T2& b)
+template <class T1, class T2> void AssertEquals(const T1 &a, const T2 &b)
 {
 	ASSERT_EQUALS(a, b);
 }
 
 struct BLOBValue : std::vector<uint8_t>
 {
-	BLOBValue(uint32 _length, const uint8_t* _ptr)
-		: std::vector<uint8_t > (_ptr, _ptr + _length)
-	{}
+	BLOBValue(uint32 _length, const uint8_t *_ptr)
+	: std::vector<uint8_t>(_ptr, _ptr + _length)
+	{
+	}
 };
 
 struct BSOBValue : std::vector<uint8_t>
 {
-	BSOBValue(uint8 _length, const uint8_t* _ptr)
-		: std::vector<uint8_t > (_ptr, _ptr + _length)
-	{}
+	BSOBValue(uint8 _length, const uint8_t *_ptr)
+	: std::vector<uint8_t>(_ptr, _ptr + _length)
+	{
+	}
 };
 
-BLOBValue valid_tag_value(const BLOBValue& x)	{ return x; }
-BSOBValue valid_tag_value(const BSOBValue& x)	{ return x; }
-CMD4Hash valid_tag_value(const CMD4Hash& x)	{ return x; }
-float valid_tag_value(float x)			{ return x; }
-wxString valid_tag_value(const wxString& x)	{ return x; }
-uint64 valid_tag_value(int x)			{ return x; }
-uint64 valid_tag_value(long long x)		{ return x; }
-uint64 valid_tag_value(uint64 x)		{ return x; }
+BLOBValue valid_tag_value(const BLOBValue &x)
+{
+	return x;
+}
+BSOBValue valid_tag_value(const BSOBValue &x)
+{
+	return x;
+}
+CMD4Hash valid_tag_value(const CMD4Hash &x)
+{
+	return x;
+}
+float valid_tag_value(float x)
+{
+	return x;
+}
+wxString valid_tag_value(const wxString &x)
+{
+	return x;
+}
+uint64 valid_tag_value(int x)
+{
+	return x;
+}
+uint64 valid_tag_value(long long x)
+{
+	return x;
+}
+uint64 valid_tag_value(uint64 x)
+{
+	return x;
+}
 
-template<class T>
-wxString toString(const T& value)
+template <class T> wxString toString(const T &value)
 {
 	wxString buf;
 
 	return buf << value;
 }
 
-template<class T>
-wxString toString(T& value)
+template <class T> wxString toString(T &value)
 {
 	wxString buf;
 
 	return buf << value;
 }
 
-template<>
-wxString toString(const CMD4Hash& value)
+template <> wxString toString(const CMD4Hash &value)
 {
 	return value.Encode();
 }
 
-template<>
-wxString toString(CMemFile& buf)
+template <> wxString toString(CMemFile &buf)
 {
 	uint64 curpos = buf.GetPosition();
 	wxString result;
@@ -81,8 +102,7 @@ wxString toString(CMemFile& buf)
 	return result;
 }
 
-template<>
-wxString toString(const BSOBValue& buf)
+template <> wxString toString(const BSOBValue &buf)
 {
 	wxString result;
 	for (uint64 i = 0; i < buf.size(); i++) {
@@ -91,8 +111,7 @@ wxString toString(const BSOBValue& buf)
 	return result;
 }
 
-template<>
-wxString toString(const BLOBValue& buf)
+template <> wxString toString(const BLOBValue &buf)
 {
 	wxString result;
 	for (uint64 i = 0; i < buf.size(); i++) {
@@ -101,145 +120,98 @@ wxString toString(const BLOBValue& buf)
 	return result;
 }
 
-template<>
-void AssertEquals(const CMD4Hash& a, const CMD4Hash& b)
+template <> void AssertEquals(const CMD4Hash &a, const CMD4Hash &b)
 {
 	CONTEXT("Compare CMD4Hashes");
 	ASSERT_EQUALS(a.Encode(), b.Encode());
 }
 
-template<>
-void AssertEquals(const BSOBValue& a, const BSOBValue& b)
+template <> void AssertEquals(const BSOBValue &a, const BSOBValue &b)
 {
 	CONTEXT("Compare BSOBValue");
 	ASSERT_EQUALS(toString(a), toString(b));
 }
 
-template<>
-void AssertEquals(const BLOBValue& a, const BLOBValue& b)
+template <> void AssertEquals(const BLOBValue &a, const BLOBValue &b)
 {
 	CONTEXT("Compare BLOBValue");
 	ASSERT_EQUALS(toString(a), toString(b));
 }
 
-void CheckTagName(const wxString& tagName, CTag* tag)
+void CheckTagName(const wxString &tagName, CTag *tag)
 {
 	CONTEXT("Checking string tagname");
 	ASSERT_EQUALS(tagName, tag->GetName());
 }
 
-void CheckTagName(uint8 tagName, CTag* tag)
+void CheckTagName(uint8 tagName, CTag *tag)
 {
 	CONTEXT("Checking int tagname");
 	ASSERT_EQUALS(tagName, tag->GetNameID());
 }
 
-
 typedef bool (CTag::*CTagTypeChecker)() const;
 
-template<class T>
-struct CTagAccess {};
-
-template<>
-struct CTagAccess<wxString>
+template <class T> struct CTagAccess
 {
-	static bool IsRightType(CTag* tag)
-	{
-		return tag->IsStr();
-	}
-
-	static const wxString & GetValue(CTag* tag)
-	{
-		return tag->GetStr();
-	}
 };
 
-template<>
-struct CTagAccess<CMD4Hash>
+template <> struct CTagAccess<wxString>
 {
-	static bool IsRightType(CTag* tag)
-	{
-		return tag->IsHash();
-	}
+	static bool IsRightType(CTag *tag) { return tag->IsStr(); }
 
-	static const CMD4Hash & GetValue(CTag* tag)
-	{
-		return tag->GetHash();
-	}
+	static const wxString &GetValue(CTag *tag) { return tag->GetStr(); }
 };
 
-template<>
-struct CTagAccess<float>
+template <> struct CTagAccess<CMD4Hash>
 {
-	static bool IsRightType(CTag* tag)
-	{
-		return tag->IsFloat();
-	}
+	static bool IsRightType(CTag *tag) { return tag->IsHash(); }
 
-	static float GetValue(CTag* tag)
-	{
-		return tag->GetFloat();
-	}
+	static const CMD4Hash &GetValue(CTag *tag) { return tag->GetHash(); }
 };
 
-template<>
-struct CTagAccess<uint64>
+template <> struct CTagAccess<float>
 {
-	static bool IsRightType(CTag* tag)
-	{
-		return tag->IsInt();
-	}
+	static bool IsRightType(CTag *tag) { return tag->IsFloat(); }
 
-	static uint64 GetValue(CTag* tag)
-	{
-		return tag->GetInt();
-	}
+	static float GetValue(CTag *tag) { return tag->GetFloat(); }
 };
 
-template<>
-struct CTagAccess<BLOBValue>
+template <> struct CTagAccess<uint64>
 {
-	static bool IsRightType(CTag* tag)
-	{
-		return tag->IsBlob();
-	}
+	static bool IsRightType(CTag *tag) { return tag->IsInt(); }
 
-	static BLOBValue GetValue(CTag* tag)
-	{
-		return BLOBValue(tag->GetBlobSize(), tag->GetBlob());
-	}
+	static uint64 GetValue(CTag *tag) { return tag->GetInt(); }
 };
 
-template<>
-struct CTagAccess<BSOBValue>
+template <> struct CTagAccess<BLOBValue>
 {
-	static bool IsRightType(CTag* tag)
-	{
-		return tag->IsBsob();
-	}
+	static bool IsRightType(CTag *tag) { return tag->IsBlob(); }
 
-	static BSOBValue GetValue(CTag* tag) {
-		return BSOBValue(tag->GetBsobSize(), tag->GetBsob());
-	}
+	static BLOBValue GetValue(CTag *tag) { return BLOBValue(tag->GetBlobSize(), tag->GetBlob()); }
 };
 
-template<class V>
-void CheckTagValue(V tagValue, CTag* tag)
+template <> struct CTagAccess<BSOBValue>
+{
+	static bool IsRightType(CTag *tag) { return tag->IsBsob(); }
+
+	static BSOBValue GetValue(CTag *tag) { return BSOBValue(tag->GetBsobSize(), tag->GetBsob()); }
+};
+
+template <class V> void CheckTagValue(V tagValue, CTag *tag)
 {
 	CONTEXT("Check tag value");
 
-	AssertEquals(tagValue, CTagAccess< V >::GetValue(tag));
+	AssertEquals(tagValue, CTagAccess<V>::GetValue(tag));
 }
 
-template<class V>
-void CheckTagType(V, CTag* tag)
+template <class V> void CheckTagType(V, CTag *tag)
 {
 	CONTEXT("Check tag type");
 	ASSERT_EQUALS(true, CTagAccess<V>::IsRightType(tag));
 }
 
-template<class V, class TName>
-void CheckTagData(CTag* tag, TName tagName, const V& tagValue)
+template <class V, class TName> void CheckTagData(CTag *tag, TName tagName, const V &tagValue)
 {
 	CONTEXT("Expected tag value:" + toString(tagValue));
 	CONTEXT("Parsed tag info:" + tag->GetFullInfo());
@@ -249,7 +221,7 @@ void CheckTagData(CTag* tag, TName tagName, const V& tagValue)
 	CheckTagValue(valid_tag_value(tagValue), tag);
 }
 
-void test_taglist_serialization(TagPtrList& taglist, uint8_t* packet, uint64 packet_len)
+void test_taglist_serialization(TagPtrList &taglist, uint8_t *packet, uint64 packet_len)
 {
 	CMemFile fout;
 
@@ -281,7 +253,7 @@ void test_taglist_serialization(TagPtrList& taglist, uint8_t* packet, uint64 pac
 	}
 }
 
-void ReadTagPtrList(TagPtrList& taglist, uint8_t* packet, uint64 packet_len)
+void ReadTagPtrList(TagPtrList &taglist, uint8_t *packet, uint64 packet_len)
 {
 
 	CONTEXT("Reading taglist from buffer");
@@ -296,24 +268,96 @@ void ReadTagPtrList(TagPtrList& taglist, uint8_t* packet, uint64 packet_len)
 
 TEST_M(CTag, ReadTagList1, "Kad: Parse taglist from Kad packet with UTF8 string #1")
 {
-	uint8_t packet[] = {
-		0x07,
-		/*Tag1*/ 0x02, 0x01, 0x00, 0x01, 0x22, 0x00, 0x47, 0x65, 0x6d, 0x20, 0x42, 0x6f, 0x79, 0x20, 0x2d,
-		0x20, 0x53, 0x61, 0x72, 0xc3, 0xa0, 0x20, 0x70, 0x65, 0x72, 0x63, 0x68, 0xc3, 0xa8, 0x20, 0x74,
-		0x69, 0x20, 0x61, 0x6d, 0x6f, 0x2e, 0x6d, 0x70, 0x33,
-		/*Tag2*/ 0x03, 0x01, 0x00, 0x02, 0x1d, 0x6f, 0x1f, 0x00,
-		/*Tag3*/ 0x09, 0x01, 0x00, 0x15, 0x01,
-		/*Tag4*/ 0x02, 0x01, 0x00, 0x03, 0x05, 0x00, 0x41, 0x75, 0x64, 0x69, 0x6f,
-		/*Tag5*/ 0x09, 0x01, 0x00, 0xd3, 0x6b,
-		/*Tag6*/ 0x09, 0x01, 0x00, 0xd4, 0x9a,
-		/*Tag7*/ 0x03, 0x01, 0x00, 0x33, 0x2f, 0x00, 0x01, 0x01
-	};
+	uint8_t packet[] = { 0x07,
+		/*Tag1*/ 0x02,
+		0x01,
+		0x00,
+		0x01,
+		0x22,
+		0x00,
+		0x47,
+		0x65,
+		0x6d,
+		0x20,
+		0x42,
+		0x6f,
+		0x79,
+		0x20,
+		0x2d,
+		0x20,
+		0x53,
+		0x61,
+		0x72,
+		0xc3,
+		0xa0,
+		0x20,
+		0x70,
+		0x65,
+		0x72,
+		0x63,
+		0x68,
+		0xc3,
+		0xa8,
+		0x20,
+		0x74,
+		0x69,
+		0x20,
+		0x61,
+		0x6d,
+		0x6f,
+		0x2e,
+		0x6d,
+		0x70,
+		0x33,
+		/*Tag2*/ 0x03,
+		0x01,
+		0x00,
+		0x02,
+		0x1d,
+		0x6f,
+		0x1f,
+		0x00,
+		/*Tag3*/ 0x09,
+		0x01,
+		0x00,
+		0x15,
+		0x01,
+		/*Tag4*/ 0x02,
+		0x01,
+		0x00,
+		0x03,
+		0x05,
+		0x00,
+		0x41,
+		0x75,
+		0x64,
+		0x69,
+		0x6f,
+		/*Tag5*/ 0x09,
+		0x01,
+		0x00,
+		0xd3,
+		0x6b,
+		/*Tag6*/ 0x09,
+		0x01,
+		0x00,
+		0xd4,
+		0x9a,
+		/*Tag7*/ 0x03,
+		0x01,
+		0x00,
+		0x33,
+		0x2f,
+		0x00,
+		0x01,
+		0x01 };
 
 	TagPtrList taglist;
-	ReadTagPtrList(taglist, packet, sizeof (packet));
+	ReadTagPtrList(taglist, packet, sizeof(packet));
 	TagPtrList::iterator it = taglist.begin();
 
-	CheckTagData(*it++, TAG_FILENAME, valid_tag_value(wxString::FromUTF8("Gem Boy - Sarà perchè ti amo.mp3")));
+	CheckTagData(
+		*it++, TAG_FILENAME, valid_tag_value(wxString::FromUTF8("Gem Boy - Sarà perchè ti amo.mp3")));
 	CheckTagData(*it++, TAG_FILESIZE, valid_tag_value(2060061));
 	CheckTagData(*it++, TAG_SOURCES, valid_tag_value(1));
 	CheckTagData(*it++, TAG_FILETYPE, valid_tag_value(ED2KFTSTR_AUDIO));
@@ -322,57 +366,146 @@ TEST_M(CTag, ReadTagList1, "Kad: Parse taglist from Kad packet with UTF8 string 
 	CheckTagData(*it++, TAG_PUBLISHINFO, valid_tag_value(16842799));
 
 	ASSERT_TRUE(it == taglist.end());
-	test_taglist_serialization(taglist, packet, sizeof (packet));
+	test_taglist_serialization(taglist, packet, sizeof(packet));
 	deleteTagPtrListEntries(&taglist);
 }
 
 TEST_M(CTag, ReadTagList2, "Kad: Parse taglist from Kad packet with UTF8 string #2")
 {
-	uint8_t packet[] = {
-		0x05,
-		/*Tag1*/0x02, 0x01, 0x00, 0x01, 0x33, 0x00, 0x53, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x69, 0x7a, 0x61,
-		0x74, 0x69, 0x6f, 0x6e, 0x20, 0x54, 0x65, 0x73, 0x74, 0x20, 0x46, 0x69, 0x6c, 0x65, 0x20, 0x31,
-		0x38, 0x39, 0x33, 0x2d, 0xe2, 0x82, 0xac, 0xe2, 0x82, 0xac, 0xc3, 0xa8, 0xc3, 0xa9, 0xc3, 0xa7,
-		0xc3, 0xa0, 0xc3, 0xb9, 0xc2, 0xa7, 0x2e, 0x74, 0x78, 0x74,
-		/*Tag2*/0x09, 0x01, 0x00, 0x02, 0x0d,
-		/*Tag3*/0x09, 0x01, 0x00, 0x15, 0x00,
-		/*Tag4*/0x02, 0x01, 0x00, 0x03, 0x03, 0x00, 0x44, 0x6f, 0x63, 0x03, 0x01, 0x00,
-		0x33, 0xe8, 0x03, 0x01, 0x01
-	};
+	uint8_t packet[] = { 0x05,
+		/*Tag1*/ 0x02,
+		0x01,
+		0x00,
+		0x01,
+		0x33,
+		0x00,
+		0x53,
+		0x65,
+		0x72,
+		0x69,
+		0x61,
+		0x6c,
+		0x69,
+		0x7a,
+		0x61,
+		0x74,
+		0x69,
+		0x6f,
+		0x6e,
+		0x20,
+		0x54,
+		0x65,
+		0x73,
+		0x74,
+		0x20,
+		0x46,
+		0x69,
+		0x6c,
+		0x65,
+		0x20,
+		0x31,
+		0x38,
+		0x39,
+		0x33,
+		0x2d,
+		0xe2,
+		0x82,
+		0xac,
+		0xe2,
+		0x82,
+		0xac,
+		0xc3,
+		0xa8,
+		0xc3,
+		0xa9,
+		0xc3,
+		0xa7,
+		0xc3,
+		0xa0,
+		0xc3,
+		0xb9,
+		0xc2,
+		0xa7,
+		0x2e,
+		0x74,
+		0x78,
+		0x74,
+		/*Tag2*/ 0x09,
+		0x01,
+		0x00,
+		0x02,
+		0x0d,
+		/*Tag3*/ 0x09,
+		0x01,
+		0x00,
+		0x15,
+		0x00,
+		/*Tag4*/ 0x02,
+		0x01,
+		0x00,
+		0x03,
+		0x03,
+		0x00,
+		0x44,
+		0x6f,
+		0x63,
+		0x03,
+		0x01,
+		0x00,
+		0x33,
+		0xe8,
+		0x03,
+		0x01,
+		0x01 };
 
 	TagPtrList taglist;
-	ReadTagPtrList(taglist, packet, sizeof (packet));
+	ReadTagPtrList(taglist, packet, sizeof(packet));
 	TagPtrList::iterator it = taglist.begin();
 
-	CheckTagData(*it++, TAG_FILENAME, valid_tag_value(wxString::FromUTF8("Serialization Test File 1893-€€èéçàù§.txt")));
+	CheckTagData(*it++,
+		TAG_FILENAME,
+		valid_tag_value(wxString::FromUTF8("Serialization Test File 1893-€€èéçàù§.txt")));
 	CheckTagData(*it++, TAG_FILESIZE, valid_tag_value(13));
 	CheckTagData(*it++, TAG_SOURCES, valid_tag_value(0));
 	CheckTagData(*it++, TAG_FILETYPE, valid_tag_value(ED2KFTSTR_DOCUMENT));
 	CheckTagData(*it++, TAG_PUBLISHINFO, valid_tag_value(16843752));
 
 	ASSERT_TRUE(it == taglist.end());
-	test_taglist_serialization(taglist, packet, sizeof (packet));
+	test_taglist_serialization(taglist, packet, sizeof(packet));
 	deleteTagPtrListEntries(&taglist);
-
 }
 
 TEST_M(CTag, Float, "Kad: Read/Write floats")
 {
 	uint8_t packet[] = {
 		0x02,
-		/*Tag1*/0x04, 0x01, 0x00, 0xFF, 0x79, 0xe9, 0xf6, 0x42,
-		/*Tag2*/0x04, 0x01, 0x00, 0xFF, 0x79, 0xd9, 0xd6, 0x42,
+		/*Tag1*/ 0x04,
+		0x01,
+		0x00,
+		0xFF,
+		0x79,
+		0xe9,
+		0xf6,
+		0x42,
+		/*Tag2*/ 0x04,
+		0x01,
+		0x00,
+		0xFF,
+		0x79,
+		0xd9,
+		0xd6,
+		0x42,
 	};
 
 	TagPtrList taglist;
-	ReadTagPtrList(taglist, packet, sizeof (packet));
+	ReadTagPtrList(taglist, packet, sizeof(packet));
 	TagPtrList::iterator it = taglist.begin();
 
-	CheckTagData(*it++, TAG_SOURCETYPE, valid_tag_value((float) 123.456));
-	CheckTagData(*it++, TAG_SOURCETYPE, valid_tag_value((float) 107.424751));
+	CheckTagData(*it++, TAG_SOURCETYPE, valid_tag_value((float)123.456));
+	CheckTagData(*it++, TAG_SOURCETYPE, valid_tag_value((float)107.424751));
 
 	ASSERT_TRUE(it == taglist.end());
-	test_taglist_serialization(taglist, packet, sizeof (packet));
+	test_taglist_serialization(taglist, packet, sizeof(packet));
 	deleteTagPtrListEntries(&taglist);
 }
 
@@ -380,14 +513,30 @@ TEST_M(CTag, CMD4Hash, "Kad: Read/Write CMD4Hash")
 {
 	uint8_t packet[] = {
 		0x01,
-		/*Tag1*/0x01,
-		0x01, 0x00, 0xFF,
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-		0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+		/*Tag1*/ 0x01,
+		0x01,
+		0x00,
+		0xFF,
+		0x00,
+		0x01,
+		0x02,
+		0x03,
+		0x04,
+		0x05,
+		0x06,
+		0x07,
+		0x08,
+		0x09,
+		0x0A,
+		0x0B,
+		0x0C,
+		0x0D,
+		0x0E,
+		0x0F,
 	};
 
 	TagPtrList taglist;
-	ReadTagPtrList(taglist, packet, sizeof (packet));
+	ReadTagPtrList(taglist, packet, sizeof(packet));
 	TagPtrList::iterator it = taglist.begin();
 
 	CMD4Hash hash;
@@ -396,16 +545,16 @@ TEST_M(CTag, CMD4Hash, "Kad: Read/Write CMD4Hash")
 	CheckTagData(*it++, TAG_SOURCETYPE, valid_tag_value(hash));
 
 	ASSERT_TRUE(it == taglist.end());
-	test_taglist_serialization(taglist, packet, sizeof (packet));
+	test_taglist_serialization(taglist, packet, sizeof(packet));
 	deleteTagPtrListEntries(&taglist);
 }
 
-template<class T, class V>
-void check_single_kad_tag(uint8_t* packet, size_t packet_len, T tagName, V tagValue)
+template <class T, class V>
+void check_single_kad_tag(uint8_t *packet, size_t packet_len, T tagName, V tagValue)
 {
 	CMemFile buf(packet, packet_len);
 	CONTEXT("Starting buffer: " + toString(buf));
-	CTag* tag = buf.ReadTag(true);
+	CTag *tag = buf.ReadTag(true);
 
 	CheckTagData(tag, tagName, valid_tag_value(tagValue));
 	{
@@ -434,67 +583,156 @@ void check_single_kad_tag(uint8_t* packet, size_t packet_len, T tagName, V tagVa
 TEST_M(CTag, KadBsob, "Kad: Read/Write BSOB")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x0A, 0x01, 0x00, 0x02, 0x04, 0x01, 0x02, 0x03, 0x04,
+		/*Tag1*/ 0x0A,
+		0x01,
+		0x00,
+		0x02,
+		0x04,
+		0x01,
+		0x02,
+		0x03,
+		0x04,
 	};
-	uint8_t raw_data[] = {0x01, 0x02, 0x03, 0x04};
+	uint8_t raw_data[] = { 0x01, 0x02, 0x03, 0x04 };
 	{
 		CONTEXT("Create BSOBValue");
-		BSOBValue bsob(sizeof (raw_data), raw_data);
+		BSOBValue bsob(sizeof(raw_data), raw_data);
 
 		CONTEXT("check_single_kad_tag BSOBValue");
-		check_single_kad_tag(packet, sizeof (packet), TAG_FILESIZE, bsob);
+		check_single_kad_tag(packet, sizeof(packet), TAG_FILESIZE, bsob);
 	}
 }
 
 TEST_M(CTag, KadInt64, "Kad: Read/Write integer 64bit")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x0b, 0x01, 0x00, 0x02, 0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x22, 0x23, // 64 bit int
+		/*Tag1*/ 0x0b,
+		0x01,
+		0x00,
+		0x02,
+		0x10,
+		0x11,
+		0x12,
+		0x13,
+		0x20,
+		0x21,
+		0x22,
+		0x23, // 64 bit int
 	};
-	check_single_kad_tag(packet, sizeof (packet), TAG_FILESIZE, 0x2322212013121110LL);
+	check_single_kad_tag(packet, sizeof(packet), TAG_FILESIZE, 0x2322212013121110LL);
 }
 
 TEST_M(CTag, KadInt32, "Kad: Read/Write integer 32bit")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x03, 0x01, 0x00, 0x02, 0x12, 0x34, 0x56, 0x78, // 32 bit int
+		/*Tag1*/ 0x03,
+		0x01,
+		0x00,
+		0x02,
+		0x12,
+		0x34,
+		0x56,
+		0x78, // 32 bit int
 	};
-	check_single_kad_tag(packet, sizeof (packet), TAG_FILESIZE, 0x78563412);
+	check_single_kad_tag(packet, sizeof(packet), TAG_FILESIZE, 0x78563412);
 }
 
 TEST_M(CTag, KadInt16, "Kad: Read/Write integer 16bit")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x08, 0x01, 0x00, 0x02, 0x12, 0x34, // 16 bit int
+		/*Tag1*/ 0x08,
+		0x01,
+		0x00,
+		0x02,
+		0x12,
+		0x34, // 16 bit int
 	};
-	check_single_kad_tag(packet, sizeof (packet), TAG_FILESIZE, 0x3412);
+	check_single_kad_tag(packet, sizeof(packet), TAG_FILESIZE, 0x3412);
 }
 
 TEST_M(CTag, KadInt8, "Kad: Read/Write integer  8bit")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x09, 0x01, 0x00, 0x02, 0x12, //  8 bit int
+		/*Tag1*/ 0x09,
+		0x01,
+		0x00,
+		0x02,
+		0x12, //  8 bit int
 	};
-	check_single_kad_tag(packet, sizeof (packet), TAG_FILESIZE, 0x12);
+	check_single_kad_tag(packet, sizeof(packet), TAG_FILESIZE, 0x12);
 }
 
 TEST_M(CTag, ReadIntegers, "Kad: Read/Write multiple integers")
 {
 	uint8_t packet[] = {
 		0x08,
-		/*Tag1*/ 0x03, 0x01, 0x00, 0x02, 0x12, 0x34, 0x56, 0x78, // 32 bit int
-		/*Tag2*/ 0x08, 0x01, 0x00, 0x02, 0x12, 0x34, // 16 bit int
-		/*Tag3*/ 0x09, 0x01, 0x00, 0x02, 0x12, //  8 bit int
-		/*Tag4*/ 0x0b, 0x01, 0x00, 0x02, 0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x22, 0x23, // 64 bit int
+		/*Tag1*/ 0x03,
+		0x01,
+		0x00,
+		0x02,
+		0x12,
+		0x34,
+		0x56,
+		0x78, // 32 bit int
+		/*Tag2*/ 0x08,
+		0x01,
+		0x00,
+		0x02,
+		0x12,
+		0x34, // 16 bit int
+		/*Tag3*/ 0x09,
+		0x01,
+		0x00,
+		0x02,
+		0x12, //  8 bit int
+		/*Tag4*/ 0x0b,
+		0x01,
+		0x00,
+		0x02,
+		0x10,
+		0x11,
+		0x12,
+		0x13,
+		0x20,
+		0x21,
+		0x22,
+		0x23, // 64 bit int
 
-		/*Tag5*/ 0x03, 0x01, 0x00, 0x02, 0x12, 0x34, 0x56, 0x78, // 32 bit int
-		/*Tag6*/ 0x08, 0x01, 0x00, 0x02, 0x12, 0x34, // 16 bit int
-		/*Tag7*/ 0x09, 0x01, 0x00, 0x02, 0x12, //  8 bit int
-		/*Tag8*/ 0x0b, 0x01, 0x00, 0x02, 0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x22, 0x23, // 64 bit int
+		/*Tag5*/ 0x03,
+		0x01,
+		0x00,
+		0x02,
+		0x12,
+		0x34,
+		0x56,
+		0x78, // 32 bit int
+		/*Tag6*/ 0x08,
+		0x01,
+		0x00,
+		0x02,
+		0x12,
+		0x34, // 16 bit int
+		/*Tag7*/ 0x09,
+		0x01,
+		0x00,
+		0x02,
+		0x12, //  8 bit int
+		/*Tag8*/ 0x0b,
+		0x01,
+		0x00,
+		0x02,
+		0x10,
+		0x11,
+		0x12,
+		0x13,
+		0x20,
+		0x21,
+		0x22,
+		0x23, // 64 bit int
 	};
 
 	TagPtrList taglist;
-	ReadTagPtrList(taglist, packet, sizeof (packet));
+	ReadTagPtrList(taglist, packet, sizeof(packet));
 	TagPtrList::iterator it = taglist.begin();
 
 	CheckTagData(*it++, TAG_FILESIZE, valid_tag_value(0x78563412));
@@ -508,10 +746,9 @@ TEST_M(CTag, ReadIntegers, "Kad: Read/Write multiple integers")
 	CheckTagData(*it++, TAG_FILESIZE, valid_tag_value(0x2322212013121110LL));
 
 	ASSERT_TRUE(it == taglist.end());
-	test_taglist_serialization(taglist, packet, sizeof (packet));
+	test_taglist_serialization(taglist, packet, sizeof(packet));
 	deleteTagPtrListEntries(&taglist);
 }
-
 
 #include <map>
 
@@ -579,7 +816,7 @@ TEST_M(CTag, KadTagNames, "Kad: Test Kad tags (name=string) - write/read every v
 		wxCharBuffer b = wxConvISO8859_1.cWC2MB(it_name->first.c_str());
 
 		buf.WriteUInt8(((const char *)b)[0]); // Write string first char
-		buf.WriteUInt8(counter++); // write tag value
+		buf.WriteUInt8(counter++);            // write tag value
 	}
 
 	TagPtrList taglist;
@@ -649,7 +886,6 @@ TEST_M(CTag, ED2kTagNames, "Ed2k: Test ed2k tags (name=id) - write/read every va
 	tagNames[FT_MEDIA_CODEC] = "FT_MEDIA_CODEC";
 	tagNames[FT_FILERATING] = "FT_FILERATING";
 
-
 	CMemFile buf;
 
 	uint64 counter = 0;
@@ -667,9 +903,9 @@ TEST_M(CTag, ED2kTagNames, "Ed2k: Test ed2k tags (name=id) - write/read every va
 	counter = 0;
 	for (TagNamesByInt::iterator it_name = tagNames.begin(); it_name != tagNames.end(); ++it_name) {
 		CONTEXT(wxString::Format("Reading tag#%" wxLongLongFmtSpec "u", counter));
-		CTag* newtag = new CTag(buf, true);
+		CTag *newtag = new CTag(buf, true);
 		CheckTagName(it_name->first, newtag);
-		CheckTagValue( valid_tag_value( counter ), newtag);
+		CheckTagValue(valid_tag_value(counter), newtag);
 		delete newtag;
 		counter++;
 	}
@@ -678,39 +914,58 @@ TEST_M(CTag, ED2kTagNames, "Ed2k: Test ed2k tags (name=id) - write/read every va
 TEST_M(CTag, Ed2kBlob1, "Ed2k: Read/Write BLOB - numeric tagname")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x87, 0xFF, 0x04, 0x00, 0x00, 0x00,
-		0x01, 0x02, 0x03, 0x04,
+		/*Tag1*/ 0x87,
+		0xFF,
+		0x04,
+		0x00,
+		0x00,
+		0x00,
+		0x01,
+		0x02,
+		0x03,
+		0x04,
 	};
 
-	CMemFile buf(packet, sizeof (packet));
+	CMemFile buf(packet, sizeof(packet));
 	buf.Seek(0, wxFromStart);
-	uint8_t raw_data[] = {0x01, 0x02, 0x03, 0x04};
+	uint8_t raw_data[] = { 0x01, 0x02, 0x03, 0x04 };
 	{
 		CONTEXT("Create BLOBValue");
-		BLOBValue blob(sizeof (raw_data), raw_data);
+		BLOBValue blob(sizeof(raw_data), raw_data);
 
 		CTag tag(buf, true);
 		CheckTagName(0xFF, &tag);
-		CheckTagValue( valid_tag_value( blob ), &tag);
+		CheckTagValue(valid_tag_value(blob), &tag);
 	}
 }
 
 TEST_M(CTag, Ed2kBlob2, "Ed2k: Read/Write BLOB - string tagname")
 {
 	uint8_t packet[] = {
-		/*Tag1*/ 0x07, 0x02, 0x00, 'A', 'A', 0x04, 0x00, 0x00, 0x00,
-		0x01, 0x02, 0x03, 0x04,
+		/*Tag1*/ 0x07,
+		0x02,
+		0x00,
+		'A',
+		'A',
+		0x04,
+		0x00,
+		0x00,
+		0x00,
+		0x01,
+		0x02,
+		0x03,
+		0x04,
 	};
 
-	CMemFile buf(packet, sizeof (packet));
+	CMemFile buf(packet, sizeof(packet));
 	buf.Seek(0, wxFromStart);
-	uint8_t raw_data[] = {0x01, 0x02, 0x03, 0x04};
+	uint8_t raw_data[] = { 0x01, 0x02, 0x03, 0x04 };
 	{
 		CONTEXT("Create BLOBValue");
-		BLOBValue blob(sizeof (raw_data), raw_data);
+		BLOBValue blob(sizeof(raw_data), raw_data);
 
 		CTag tag(buf, true);
 		CheckTagName("AA", &tag);
-		CheckTagValue( valid_tag_value( blob ), &tag);
+		CheckTagValue(valid_tag_value(blob), &tag);
 	}
 }

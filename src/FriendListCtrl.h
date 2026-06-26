@@ -35,28 +35,28 @@ class CFriend;
 class CFriendListCtrl : public CMuleListCtrl
 {
 public:
-	CFriendListCtrl(wxWindow* parent, int id, const wxPoint& pos, wxSize siz, int flags);
+	CFriendListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags);
 	~CFriendListCtrl();
 
-	void		UpdateFriend(CFriend* toupdate);
-	void		RemoveFriend(CFriend* todel);
+	void UpdateFriend(CFriend *toupdate);
+	void RemoveFriend(CFriend *todel);
 
 protected:
 	wxDECLARE_EVENT_TABLE();
 
-	void	OnRightClick(wxMouseEvent& event);
+	void OnRightClick(wxMouseEvent &event);
 
 private:
-	void	OnItemActivated(wxListEvent& event);
+	void OnItemActivated(wxListEvent &event);
 
 	// Menu Items
-	void	OnShowDetails(wxCommandEvent& event);
-	void	OnSendMessage(wxCommandEvent& event);
-	void	OnRemoveFriend(wxCommandEvent& event);
-	void	OnSetFriendslot(wxCommandEvent& event);
-	void	OnAddFriend(wxCommandEvent& event);
-	void	OnViewFiles(wxCommandEvent& event);
-	void	OnKeyPressed(wxKeyEvent& event);
+	void OnShowDetails(wxCommandEvent &event);
+	void OnSendMessage(wxCommandEvent &event);
+	void OnRemoveFriend(wxCommandEvent &event);
+	void OnSetFriendslot(wxCommandEvent &event);
+	void OnAddFriend(wxCommandEvent &event);
+	void OnViewFiles(wxCommandEvent &event);
+	void OnKeyPressed(wxKeyEvent &event);
 };
 
 #endif

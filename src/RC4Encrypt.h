@@ -26,9 +26,7 @@
 #ifndef __RC4ENCRYPT_H__
 #define __RC4ENCRYPT_H__
 
-
 #include <vector>
-
 
 #include "Types.h"
 #include <common/StringFunctions.h>
@@ -45,7 +43,6 @@ struct RC4_Key_Struct
 	uint8 byY;
 };
 
-
 class CRC4EncryptableBuffer : public CMemFile
 {
 public:
@@ -56,10 +53,10 @@ public:
 	~CRC4EncryptableBuffer();
 
 	// Appends to the end, checking encrypted state.
-	void Append(const uint8* buffer, int n);
+	void Append(const uint8 *buffer, int n);
 
 	// Sets the encryption key
-	void SetKey(const MD5Sum& keyhash, bool bSkipDiscard = false);
+	void SetKey(const MD5Sum &keyhash, bool bSkipDiscard = false);
 
 	// RC4 encrypts the internal buffer. Marks it as encrypted, any other further call
 	// to add data, as Append(), must assert if the inner data is encrypted.
@@ -70,7 +67,7 @@ public:
 	void RC4Crypt(const uint8 *pachIn, uint8 *pachOut, uint32 nLen);
 
 	// Returns a uint8* buffer with a copy of the internal data, and clears the internal one.
-	uint8* Detach();
+	uint8 *Detach();
 
 	// Also clears the encryption flag
 	void ResetData();
@@ -83,7 +80,7 @@ private:
 	bool m_hasKey;
 	RC4_Key_Struct m_key;
 
-	void RC4CreateKey(const uint8* pachKeyData, uint32 nLen, bool bSkipDiscard);
+	void RC4CreateKey(const uint8 *pachKeyData, uint32 nLen, bool bSkipDiscard);
 };
 
 #endif // __RC4ENCRYPT_H__

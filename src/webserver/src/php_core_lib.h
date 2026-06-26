@@ -32,63 +32,66 @@
 
 #include "php_syntree.h"
 
+class CWriteStrBuffer
+{
+	std::list<char *> m_buf_list;
+	int m_total_length;
+	int m_alloc_size;
+	char *m_curr_buf;
+	char *m_buf_ptr;
+	int m_curr_buf_left;
 
-class CWriteStrBuffer {
-		std::list<char *> m_buf_list;
-		int m_total_length;
-		int m_alloc_size;
-		char *m_curr_buf;
-		char *m_buf_ptr;
-		int m_curr_buf_left;
+	void AllocBuf();
 
-		void AllocBuf();
-	public:
-		CWriteStrBuffer();
-		~CWriteStrBuffer();
+public:
+	CWriteStrBuffer();
+	~CWriteStrBuffer();
 
-		void Write(const char *s, int len = -1);
-		void CopyAll(char *dst_buffer);
-		int Length() { return m_total_length; }
+	void Write(const char *s, int len = -1);
+	void CopyAll(char *dst_buffer);
+	int Length() { return m_total_length; }
 };
 
 class CWebServerBase;
 class CSession;
 
-class CPhPLibContext {
-		PHP_SYN_NODE *m_syn_tree_top;
-		PHP_SCOPE_TABLE m_global_scope;
+class CPhPLibContext
+{
+	PHP_SYN_NODE *m_syn_tree_top;
+	PHP_SCOPE_TABLE m_global_scope;
 
-		CWriteStrBuffer *m_curr_str_buffer;
+	CWriteStrBuffer *m_curr_str_buffer;
 
-		CWebServerBase *m_server;
-	public:
-		// parse file and take a "snapshot" of global vars
-		CPhPLibContext(CWebServerBase *server, const char *file);
-		CPhPLibContext(CWebServerBase *server, char *php_buf, int len);
-		~CPhPLibContext();
+	CWebServerBase *m_server;
 
-		// init global vars, so parser/execution can start
-		void SetContext();
-		void Execute(CWriteStrBuffer *);
+public:
+	// parse file and take a "snapshot" of global vars
+	CPhPLibContext(CWebServerBase *server, const char *file);
+	CPhPLibContext(CWebServerBase *server, char *php_buf, int len);
+	~CPhPLibContext();
+
+	// init global vars, so parser/execution can start
+	void SetContext();
+	void Execute(CWriteStrBuffer *);
 
 #ifdef __GNUC__
-		static void Printf(const char *str, ...)  __attribute__ ((__format__ (__printf__, 1, 2)));
+	static void Printf(const char *str, ...) __attribute__((__format__(__printf__, 1, 2)));
 #else
-		static void Printf(const char *str, ...);
+	static void Printf(const char *str, ...);
 #endif
-		static void Print(const char *str);
+	static void Print(const char *str);
 
-		static CPhPLibContext *g_curr_context;
+	static CPhPLibContext *g_curr_context;
 
 #ifndef PHP_STANDALONE_EN
-		CWebServerBase *WebServer() { return m_server; }
+	CWebServerBase *WebServer() { return m_server; }
 #endif
 };
 
-class CPhpFilter {
-	public:
-		CPhpFilter(CWebServerBase *server, CSession *sess,
-			const char *file, CWriteStrBuffer *buff);
+class CPhpFilter
+{
+public:
+	CPhpFilter(CWebServerBase *server, CSession *sess, const char *file, CWriteStrBuffer *buff);
 };
 
 #endif // __cplusplus

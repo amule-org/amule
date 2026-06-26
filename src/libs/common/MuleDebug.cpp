@@ -23,45 +23,43 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <cstdlib>			// Needed for std::abort()
-#include <cstdio>			// Needed for popen/pclose/fgets in the addr2line fallback
-#include <cstring>			// Needed for strlen in the addr2line fallback
-#include <cstdint>			// uintptr_t for pointer subtraction in the bfd
-					// section-bounds check -- `unsigned long` is
-					// 4 bytes on LLP64 and would silently truncate.
+#include <cstdlib> // Needed for std::abort()
+#include <cstdio>  // Needed for popen/pclose/fgets in the addr2line fallback
+#include <cstring> // Needed for strlen in the addr2line fallback
+#include <cstdint> // uintptr_t for pointer subtraction in the bfd
+		   // section-bounds check -- `unsigned long` is
+		   // 4 bytes on LLP64 and would silently truncate.
 
-#include "config.h"			// Needed for HAVE_CXXABI and HAVE_EXECINFO
+#include "config.h" // Needed for HAVE_CXXABI and HAVE_EXECINFO
 
-#include "MuleDebug.h"			// Interface declaration
-#include "StringFunctions.h"		// Needed for unicode2char
-#include "Format.h"			// Needed for CFormat
+#include "MuleDebug.h"       // Interface declaration
+#include "StringFunctions.h" // Needed for unicode2char
+#include "Format.h"          // Needed for CFormat
 
 #ifdef HAVE_EXECINFO
-#	include <execinfo.h>
-#	include <wx/utils.h>		// Needed for wxArrayString
-#	ifndef HAVE_BFD
-#		include <wx/thread.h>	// Needed for wxThread
-#	endif
+#include <execinfo.h>
+#include <wx/utils.h> // Needed for wxArrayString
+#ifndef HAVE_BFD
+#include <wx/thread.h> // Needed for wxThread
+#endif
 #endif
 
 #ifdef HAVE_CXXABI
-#	ifdef HAVE_TYPEINFO
-#		include <typeinfo>	// Needed for some MacOSX versions with broken system headers
-#	endif
-#	include <cxxabi.h>
+#ifdef HAVE_TYPEINFO
+#include <typeinfo> // Needed for some MacOSX versions with broken system headers
+#endif
+#include <cxxabi.h>
 #endif
 
-
 #if wxUSE_STACKWALKER && defined(__WINDOWS__)
-	#include <wx/stackwalk.h> // Do_not_auto_remove
+#include <wx/stackwalk.h> // Do_not_auto_remove
 #elif defined(HAVE_BFD)
-	#include <ansidecl.h> // Do_not_auto_remove
-	#include <bfd.h> // Do_not_auto_remove
+#include <ansidecl.h> // Do_not_auto_remove
+#include <bfd.h>      // Do_not_auto_remove
 #endif
 
 #include <vector>
 #include <exception>
-
 
 /**
  * This functions displays a verbose description of
@@ -77,9 +75,9 @@ void OnUnhandledException()
 
 #ifdef HAVE_CXXABI
 	std::type_info *t = __cxxabiv1::__cxa_current_exception_type();
-	FILE* output = stderr;
+	FILE *output = stderr;
 #else
-	FILE* output = stdout;
+	FILE *output = stdout;
 	bool t = true;
 #endif
 	if (t) {
@@ -91,34 +89,32 @@ void OnUnhandledException()
 
 		dem = __cxxabiv1::__cxa_demangle(name, 0, 0, &status);
 #else
-		const char* name = "Unknown";
+		const char *name = "Unknown";
 #endif
 		fprintf(output, "\nTerminated after throwing an instance of '%s'\n", (status ? name : dem));
 		free(dem);
 
 		try {
 			throw;
-		} catch (const std::exception& e) {
+		} catch (const std::exception &e) {
 			fprintf(output, "\twhat(): %s\n", e.what());
-		} catch (const CMuleException& e) {
-			fprintf(output, "\twhat(): %s\n", (const char*)unicode2char(e.what()));
-		} catch (const wxString& e) {
-			fprintf(output, "\twhat(): %s\n", (const char*)unicode2char(e));
+		} catch (const CMuleException &e) {
+			fprintf(output, "\twhat(): %s\n", (const char *)unicode2char(e.what()));
+		} catch (const wxString &e) {
+			fprintf(output, "\twhat(): %s\n", (const char *)unicode2char(e));
 		} catch (...) {
 			// Unable to retrieve cause of exception
 		}
 
-		fprintf(output, "\tbacktrace:\n%s\n", (const char*)unicode2char(get_backtrace(1)));
+		fprintf(output, "\tbacktrace:\n%s\n", (const char *)unicode2char(get_backtrace(1)));
 	}
 	std::abort();
 }
-
 
 void InstallMuleExceptionHandler()
 {
 	std::set_terminate(OnUnhandledException);
 }
-
 
 // Make it 1 for getting the file path also
 #define TOO_VERBOSE_BACKTRACE 0
@@ -133,7 +129,7 @@ public:
 	MuleStackWalker() {};
 	~MuleStackWalker() {};
 
-	void OnStackFrame(const wxStackFrame& frame)
+	void OnStackFrame(const wxStackFrame &frame)
 	{
 		wxString btLine = CFormat("[%u] ") % frame.GetLevel();
 		wxString filename = frame.GetName();
@@ -141,11 +137,11 @@ public:
 		if (!filename.IsEmpty()) {
 			btLine += filename + " (" +
 #if TOO_VERBOSE_BACKTRACE
-			        frame.GetModule()
+				  frame.GetModule()
 #else
-				frame.GetModule().AfterLast('/')
+				  frame.GetModule().AfterLast('/')
 #endif
-			        + ")";
+				  + ")";
 		} else {
 			btLine += CFormat("%p") % frame.GetAddress();
 		}
@@ -153,11 +149,11 @@ public:
 		if (frame.HasSourceLocation()) {
 			btLine += " at " +
 #if TOO_VERBOSE_BACKTRACE
-			        frame.GetFileName()
+				  frame.GetFileName()
 #else
-				frame.GetFileName().AfterLast('/')
+				  frame.GetFileName().AfterLast('/')
 #endif
-			        + CFormat(":%u") % frame.GetLine();
+				  + CFormat(":%u") % frame.GetLine();
 		} else {
 			btLine += " (Unknown file/line)";
 		}
@@ -169,11 +165,10 @@ public:
 	wxString m_trace;
 };
 
-
 wxString get_backtrace(unsigned n)
 {
 	MuleStackWalker walker; // Texas ranger?
-	walker.Walk(n); // Skip this one and Walk() also!
+	walker.Walk(n);         // Skip this one and Walk() also!
 
 	return walker.m_trace;
 }
@@ -200,7 +195,7 @@ static int find_pie_base_cb(struct dl_phdr_info *info, size_t /*size*/, void *da
 	// is the relocation offset applied at load time: 0 for ET_EXEC
 	// (non-PIE), random for ET_DYN (PIE).  Capture it once.
 	if (info->dlpi_name == NULL || info->dlpi_name[0] == '\0') {
-		*reinterpret_cast<intptr_t*>(data) = static_cast<intptr_t>(info->dlpi_addr);
+		*reinterpret_cast<intptr_t *>(data) = static_cast<intptr_t>(info->dlpi_addr);
 		return 1; // stop iteration
 	}
 	return 0;
@@ -216,76 +211,75 @@ static void init_pie_base()
 
 #ifdef HAVE_BFD
 
-static bfd* s_a_bfd;
-static asymbol** s_symbol_list;
+static bfd *s_a_bfd;
+static asymbol **s_symbol_list;
 static bool s_have_backtrace_symbols = false;
-static const char* s_file_name;
-static const char* s_function_name;
+static const char *s_file_name;
+static const char *s_function_name;
 static unsigned int s_line_number;
 static int s_found;
 
-
 /*
-* read all symbols in the executable into an array
-* and return the pointer to the array in symbol_list.
-* Also return the number of actual symbols read
-* If there's any error, return -1
-*/
+ * read all symbols in the executable into an array
+ * and return the pointer to the array in symbol_list.
+ * Also return the number of actual symbols read
+ * If there's any error, return -1
+ */
 static int get_backtrace_symbols(bfd *a_bfd, asymbol ***symbol_list_ptr)
 {
 	int vectorsize = bfd_get_symtab_upper_bound(a_bfd);
 
 	if (vectorsize < 0) {
-		fprintf (stderr, "Error while getting vector size for backtrace symbols : %s",
+		fprintf(stderr,
+			"Error while getting vector size for backtrace symbols : %s",
 			bfd_errmsg(bfd_get_error()));
 		return -1;
 	}
 
 	if (vectorsize == 0) {
-		fprintf (stderr, "Error while getting backtrace symbols : No symbols (%s)",
+		fprintf(stderr,
+			"Error while getting backtrace symbols : No symbols (%s)",
 			bfd_errmsg(bfd_get_error()));
 		return -1;
 	}
 
-	*symbol_list_ptr = (asymbol**)malloc(vectorsize);
+	*symbol_list_ptr = (asymbol **)malloc(vectorsize);
 
 	if (*symbol_list_ptr == NULL) {
-		fprintf (stderr, "Error while getting backtrace symbols : Cannot allocate memory");
+		fprintf(stderr, "Error while getting backtrace symbols : Cannot allocate memory");
 		return -1;
 	}
 
 	vectorsize = bfd_canonicalize_symtab(a_bfd, *symbol_list_ptr);
 
 	if (vectorsize < 0) {
-		fprintf(stderr, "Error while getting symbol table : %s",
-			bfd_errmsg(bfd_get_error()));
+		fprintf(stderr, "Error while getting symbol table : %s", bfd_errmsg(bfd_get_error()));
 		return -1;
 	}
 
 	return vectorsize;
 }
 
-
 /*
-* print file, line and function information for address
-* The info is actually set into global variables. This
-* function is called from the iterator bfd_map_over_sections
-*
-*/
+ * print file, line and function information for address
+ * The info is actually set into global variables. This
+ * function is called from the iterator bfd_map_over_sections
+ *
+ */
 void init_backtrace_info()
 {
 	bfd_init();
 	s_a_bfd = bfd_openr("/proc/self/exe", NULL);
 
 	if (s_a_bfd == NULL) {
-		fprintf(stderr, "Error while opening file for backtrace symbols : %s",
+		fprintf(stderr,
+			"Error while opening file for backtrace symbols : %s",
 			bfd_errmsg(bfd_get_error()));
 		return;
 	}
 
 	if (!(bfd_check_format_matches(s_a_bfd, bfd_object, NULL))) {
-		fprintf (stderr, "Error while init. backtrace symbols : %s",
-			bfd_errmsg (bfd_get_error ()));
+		fprintf(stderr, "Error while init. backtrace symbols : %s", bfd_errmsg(bfd_get_error()));
 		bfd_close(s_a_bfd);
 		return;
 	}
@@ -301,8 +295,7 @@ void init_backtrace_info()
 	init_pie_base();
 }
 
-
-void get_file_line_info(bfd *a_bfd, asection *section, void* _address)
+void get_file_line_info(bfd *a_bfd, asection *section, void *_address)
 {
 	wxASSERT(s_symbol_list);
 
@@ -334,18 +327,18 @@ void get_file_line_info(bfd *a_bfd, asection *section, void* _address)
 		return;
 	}
 
-	s_found =  bfd_find_nearest_line(a_bfd, section, s_symbol_list,
-		address - vma, &s_file_name, &s_function_name, &s_line_number);
+	s_found = bfd_find_nearest_line(
+		a_bfd, section, s_symbol_list, address - vma, &s_file_name, &s_function_name, &s_line_number);
 }
 
 #endif // HAVE_BFD
 
-static wxString demangle(const wxString& function)
+static wxString demangle(const wxString &function)
 {
 #ifdef HAVE_CXXABI
 	wxString result;
 
-	if (function.Mid(0,2) == "_Z") {
+	if (function.Mid(0, 2) == "_Z") {
 		int status;
 		char *demangled = abi::__cxa_demangle(function.mb_str(), NULL, NULL, &status);
 
@@ -364,13 +357,12 @@ static wxString demangle(const wxString& function)
 #endif
 }
 
-
 // Print a stack backtrace if available
 wxString get_backtrace(unsigned n)
 {
 #ifdef HAVE_EXECINFO
 	// (stkn) create backtrace
-	void *bt_array[100];	// 100 should be enough ?!?
+	void *bt_array[100]; // 100 should be enough ?!?
 	char **bt_strings;
 	int num_entries;
 
@@ -399,7 +391,7 @@ wxString get_backtrace(unsigned n)
 		if (posLPar == -1 || posRPar == -1) {
 			if (posLBra == -1 || posRBra == -1) {
 				/* It is important to have exactly num_entries
-				* addresses in AllAddresses */
+				 * addresses in AllAddresses */
 				AllAddresses += "0x0000000 ";
 				continue;
 			}
@@ -422,7 +414,7 @@ wxString get_backtrace(unsigned n)
 			}
 		}
 		/* Address */
-		if ( posLBra == -1 || posRBra == -1) {
+		if (posLBra == -1 || posRBra == -1) {
 			address[i] = "0x0000000";
 		} else {
 			len = posRBra - posLBra - 1;
@@ -446,12 +438,13 @@ wxString get_backtrace(unsigned n)
 		s_file_name = NULL;
 		s_function_name = NULL;
 		s_line_number = 0;
-		s_found = false ;
+		s_found = false;
 
 		unsigned long addr;
-		address[i].ToULong(&addr,0); // As it's "0x" prepended, wx will read it as base 16. Hopefully.
+		address[i].ToULong(
+			&addr, 0); // As it's "0x" prepended, wx will read it as base 16. Hopefully.
 
-		bfd_map_over_sections(s_a_bfd, get_file_line_info, (void*)addr);
+		bfd_map_over_sections(s_a_bfd, get_file_line_info, (void *)addr);
 
 		if (s_found) {
 			wxString function = wxConvLibc.cMB2WX(s_function_name);
@@ -460,17 +453,19 @@ wxString get_backtrace(unsigned n)
 				function = demangled;
 				funcname[i] = demangled;
 			}
-			out.Insert(wxConvLibc.cMB2WX(s_function_name),i*2);
-			out.Insert(CFormat("%s:%u") % wxString(wxConvLibc.cMB2WX(s_file_name)) % s_line_number, i*2+1);
+			out.Insert(wxConvLibc.cMB2WX(s_function_name), i * 2);
+			out.Insert(
+				CFormat("%s:%u") % wxString(wxConvLibc.cMB2WX(s_file_name)) % s_line_number,
+				i * 2 + 1);
 		} else {
-			out.Insert("??",i*2);
-			out.Insert("??",i*2+1);
+			out.Insert("??", i * 2);
+			out.Insert("??", i * 2 + 1);
 		}
 	}
 
 	hasLineNumberInfo = true;
 
-#else	/* !HAVE_BFD */
+#else /* !HAVE_BFD */
 	if (wxThread::IsMain()) {
 		// Translate runtime PCs to link-time addresses before handing
 		// them to addr2line, otherwise PIE binaries (the default on
@@ -483,13 +478,12 @@ wxString get_backtrace(unsigned n)
 		for (int i = 0; i < num_entries; ++i) {
 			unsigned long addr = 0;
 			address[i].ToULong(&addr, 0);
-			translatedAddresses += CFormat("0x%lx ")
-				% static_cast<unsigned long>(addr - s_pie_base);
+			translatedAddresses +=
+				CFormat("0x%lx ") % static_cast<unsigned long>(addr - s_pie_base);
 		}
 
 		wxString command;
-		command << "addr2line -C -f -s -e /proc/" <<
-		getpid() << "/exe " << translatedAddresses;
+		command << "addr2line -C -f -s -e /proc/" << getpid() << "/exe " << translatedAddresses;
 		// The output of the command is this wxArrayString, in which
 		// the even elements are the function names, and the odd elements
 		// are the line numbers.
@@ -505,13 +499,12 @@ wxString get_backtrace(unsigned n)
 		// so it falls through to wxTrap()'s int3 -> SIGTRAP.  popen()
 		// is a plain fork+waitpid pipeline with no wx involvement, so
 		// the reentrance path doesn't exist.
-		FILE* pipe = popen((const char*)command.mb_str(), "r");
+		FILE *pipe = popen((const char *)command.mb_str(), "r");
 		if (pipe) {
 			char line[1024];
 			while (fgets(line, sizeof(line), pipe)) {
 				size_t len = std::strlen(line);
-				while (len > 0
-					&& (line[len-1] == '\n' || line[len-1] == '\r')) {
+				while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
 					line[--len] = '\0';
 				}
 				out.Add(wxConvLibc.cMB2WX(line));
@@ -522,15 +515,15 @@ wxString get_backtrace(unsigned n)
 		}
 	}
 
-#endif	/* HAVE_BFD / !HAVE_BFD */
+#endif /* HAVE_BFD / !HAVE_BFD */
 
 	wxString trace;
 	// Remove 'n+1' first entries (+1 because of this function)
-	for (int i = n+1; i < num_entries; ++i) {
+	for (int i = n + 1; i < num_entries; ++i) {
 		/* If we have no function name, use the result from addr2line */
 		if (funcname[i].IsEmpty()) {
 			if (hasLineNumberInfo) {
-				funcname[i] = out[2*i];
+				funcname[i] = out[2 * i];
 			} else {
 				funcname[i] = "??";
 			}
@@ -538,13 +531,13 @@ wxString get_backtrace(unsigned n)
 		wxString btLine;
 		btLine << "[" << i << "] " << funcname[i] << " in ";
 		/* If addr2line did not find a line number, use bt_string */
-		if (!hasLineNumberInfo || out[2*i+1].Mid(0,2) == "??") {
+		if (!hasLineNumberInfo || out[2 * i + 1].Mid(0, 2) == "??") {
 			btLine += libname[i] + "[" + address[i] + "]";
 		} else if (hasLineNumberInfo) {
 #if TOO_VERBOSE_BACKTRACE
-			btLine += out[2*i+1];
+			btLine += out[2 * i + 1];
 #else
-			btLine += out[2*i+1].AfterLast('/');
+			btLine += out[2 * i + 1].AfterLast('/');
 #endif
 		} else {
 			btLine += libname[i];
@@ -554,16 +547,17 @@ wxString get_backtrace(unsigned n)
 	}
 
 	return trace;
-#else /* !HAVE_EXECINFO */
+#else  /* !HAVE_EXECINFO */
 	fprintf(stderr, "--== cannot generate backtrace ==--\n\n");
 	return "";
 #endif /* HAVE_EXECINFO */
 }
 
-#elif defined( __APPLE__ )
+#elif defined(__APPLE__)
 
-// According to sources, parts of this code originate at http://www.tlug.org.za/wiki/index.php/Obtaining_a_stack_trace_in_C_upon_SIGSEGV
-// which doesn't exist anymore.
+// According to sources, parts of this code originate at
+// http://www.tlug.org.za/wiki/index.php/Obtaining_a_stack_trace_in_C_upon_SIGSEGV which doesn't exist
+// anymore.
 
 // Other code (stack frame list and demangle related) has been modified from code with license:
 
@@ -580,13 +574,15 @@ wxString get_backtrace(unsigned n)
 class stack_frame
 {
 public:
-	stack_frame(const void * f_instruction, const std::string& f_function) : frame_instruction(f_instruction), frame_function(f_function) {};
+	stack_frame(const void *f_instruction, const std::string &f_function)
+	: frame_instruction(f_instruction)
+	, frame_function(f_function) {};
 
 	const void *instruction() const { return frame_instruction; }
-	const std::string& function() const { return frame_function; }
+	const std::string &function() const { return frame_function; }
 
 private:
-	const void * frame_instruction;
+	const void *frame_instruction;
 	const std::string frame_function;
 };
 
@@ -599,22 +595,22 @@ std::string demangle(const char *name)
 		if ((d = abi::__cxa_demangle(name, 0, 0, &status))) {
 			ret = d;
 		}
-	} catch(...) {  }
+	} catch (...) {
+	}
 
 	std::free(d);
 	return ret;
 }
 
-
 void fill_frames(std::list<stack_frame> &frames)
 {
 	try {
-		void **fp = (void **) __builtin_frame_address (1);
+		void **fp = (void **)__builtin_frame_address(1);
 		void *saved_pc = NULL;
 
 		// First frame is skipped
 		while (fp != NULL) {
-			fp = (void**)(*fp);
+			fp = (void **)(*fp);
 			if (*fp == NULL) {
 				break;
 			}
@@ -631,7 +627,8 @@ void fill_frames(std::list<stack_frame> &frames)
 				Dl_info info;
 
 				if (dladdr(saved_pc, &info)) {
-					frames.push_back(stack_frame(saved_pc, demangle(info.dli_sname) + " in " + info.dli_fname));
+					frames.push_back(stack_frame(saved_pc,
+						demangle(info.dli_sname) + " in " + info.dli_fname));
 				}
 			}
 		}
@@ -674,7 +671,7 @@ void print_backtrace(unsigned n)
 	wxString trace = get_backtrace(n);
 
 	// This is because the string is ansi anyway, and the conv classes are very slow
-	fprintf(stderr, "%s\n", (const char*)unicode2char(trace));
+	fprintf(stderr, "%s\n", (const char *)unicode2char(trace));
 }
 
 // File_checked_for_headers

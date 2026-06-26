@@ -26,9 +26,10 @@
 #ifndef COMMONMENUIDS_H
 #define COMMONMENUIDS_H
 
-#include <wx/defs.h>	// To access wxID_HIGHEST menu item constant
+#include <wx/defs.h> // To access wxID_HIGHEST menu item constant
 
-enum {
+enum
+{
 	MP_MESSAGE = wxID_HIGHEST + 1, // Start ID at next free value (defined by wx)
 	MP_DETAIL,
 	MP_ADDFRIEND,
@@ -49,7 +50,7 @@ enum {
 	MP_GETCOMMENTS,
 	MP_SEARCHRELATED,
 	MP_MARK_AS_KNOWN,
-//For comments
+	// For comments
 	MP_CMT,
 
 	MP_PRIOVERYLOW,
@@ -84,15 +85,15 @@ enum {
 	MP_CLOSE_OTHER_TABS,
 	MP_RENAME,
 
-/* Razor 1a - Modif by MikaelB
-     Opcodes for :
-      - Drop No Needed Sources now
-      - Drop Full Queue Sources now
-      - Drop High Queue Rating Sources now
-      - Clean Up Sources now ( drop NNS, FQS and HQRS )
-      - Swap every A4AF to this file now
-      - Swap every A4AF to this file ( AUTO )
-      - Swap every A4AF to any other file now   */
+	/* Razor 1a - Modif by MikaelB
+	     Opcodes for :
+	      - Drop No Needed Sources now
+	      - Drop Full Queue Sources now
+	      - Drop High Queue Rating Sources now
+	      - Clean Up Sources now ( drop NNS, FQS and HQRS )
+	      - Swap every A4AF to this file now
+	      - Swap every A4AF to this file ( AUTO )
+	      - Swap every A4AF to any other file now   */
 	MP_DROP_NO_NEEDED_SOURCES,
 	MP_DROP_FULL_QUEUE_SOURCES,
 	MP_DROP_HIGH_QUEUE_RATING_SOURCES,
@@ -101,12 +102,12 @@ enum {
 	MP_SWAP_A4AF_TO_THIS_AUTO,
 	MP_SWAP_A4AF_TO_ANY_OTHER,
 
-//menus
+	// menus
 	MP_MENU_PRIO,
 	MP_MENU_EXTD,
 	MP_MENU_CATS,
 
-// CMuleListCtrl tabs.
+	// CMuleListCtrl tabs.
 	MP_LISTCOL_1,
 	MP_LISTCOL_2,
 	MP_LISTCOL_3,
@@ -123,15 +124,15 @@ enum {
 	MP_LISTCOL_14,
 	MP_LISTCOL_15,
 
-	MP_ASSIGNCAT	= MP_LISTCOL_15   + 1,   // reserve some for categories (about 100)
-	MP_CAT_SET0		= MP_ASSIGNCAT    + 100, // reserve some for change all-cats (about 50)
-	MP_SWITCHCTRL_0 = MP_CAT_SET0     + 50,
-	MP_SWITCHCTRL_9	= MP_SWITCHCTRL_0 + 9,
+	MP_ASSIGNCAT = MP_LISTCOL_15 + 1, // reserve some for categories (about 100)
+	MP_CAT_SET0 = MP_ASSIGNCAT + 100, // reserve some for change all-cats (about 50)
+	MP_SWITCHCTRL_0 = MP_CAT_SET0 + 50,
+	MP_SWITCHCTRL_9 = MP_SWITCHCTRL_0 + 9,
 
-// Pop-up menu clickable entries
+	// Pop-up menu clickable entries
 	TRAY_MENU_INFO = 0,
 	TRAY_MENU_CLIENTINFO = 0,
-	TRAY_MENU_CLIENTINFO_ITEM = MP_SWITCHCTRL_9 + 1,  // continue from MP_SWITCHCTRL_9
+	TRAY_MENU_CLIENTINFO_ITEM = MP_SWITCHCTRL_9 + 1, // continue from MP_SWITCHCTRL_9
 	TRAY_MENU_DISCONNECT,
 	TRAY_MENU_CONNECT,
 	TRAY_MENU_HIDE,

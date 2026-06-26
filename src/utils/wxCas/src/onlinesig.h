@@ -30,7 +30,6 @@
 #ifndef _ONLINESIG_H
 #define _ONLINESIG_H
 
-
 #include <wx/filename.h>
 #include <wx/datetime.h>
 
@@ -68,116 +67,116 @@ private:
 
 	wxFileName m_amulesig;
 
-	wxString BytesConvertion ( const wxString& bytes );
-	unsigned int PullCount ( unsigned int *runtime, const unsigned int count );
-
+	wxString BytesConvertion(const wxString &bytes);
+	unsigned int PullCount(unsigned int *runtime, const unsigned int count);
 
 public:
 	/// Constructor
-	OnLineSig ( const wxFileName& file, const double absoluteMaxDL = 0.0,
-	            const wxDateTime absoluteMaxDlDate = wxDateTime::Now() );
+	OnLineSig(const wxFileName &file,
+		const double absoluteMaxDL = 0.0,
+		const wxDateTime absoluteMaxDlDate = wxDateTime::Now());
 
 	/// Destructor
-	~OnLineSig ();
+	~OnLineSig();
 
 	/// Set amulesig.dat file name and path
-	void SetAmuleSig ( const wxFileName& file );
+	void SetAmuleSig(const wxFileName &file);
 
 	/// Refresh stored information
-	void Refresh ();
+	void Refresh();
 
 	/// Return TRUE if aMule is running
-	int GetAmuleState () const;
+	int GetAmuleState() const;
 
 	/// Return kad stat
-	int GetKadState () const;
+	int GetKadState() const;
 
 	/// Get server name
-	wxString GetServerName () const;
+	wxString GetServerName() const;
 
 	/// Get server IP
-	wxString GetServerIP () const;
+	wxString GetServerIP() const;
 
 	/// Get server Port
-	wxString GetServerPort () const;
+	wxString GetServerPort() const;
 
 	/// Get server connexion ID: H or L
-	wxString GetConnexionID () const;
+	wxString GetConnexionID() const;
 
 	/// Get Upload rate
-	wxString GetULRate () const;
+	wxString GetULRate() const;
 
 	/// Get Download rate
-	wxString GetDLRate () const;
+	wxString GetDLRate() const;
 
 	/// Get number of clients in queue
-	wxString GetQueue () const;
+	wxString GetQueue() const;
 
 	/// Get number of shared files
-	wxString GetSharedFiles () const;
+	wxString GetSharedFiles() const;
 
 	/// Get user name
-	wxString GetUser () const;
+	wxString GetUser() const;
 
 	/// Get total Upload
-	wxString GetTotalUL () const;
+	wxString GetTotalUL() const;
 
 	/// Get total Download
-	wxString GetTotalDL () const;
+	wxString GetTotalDL() const;
 
 	/// Get aMule version
-	wxString GetVersion () const;
+	wxString GetVersion() const;
 
 	/// Get session Upload
-	wxString GetSessionUL () const;
+	wxString GetSessionUL() const;
 
 	/// Get session Download
-	wxString GetSessionDL () const;
+	wxString GetSessionDL() const;
 
 	/// Getrunnin Status
-	int GetUpStatus () const;
+	int GetUpStatus() const;
 
 	/// Get aMule runtime
-	wxString GetRunTime ();
+	wxString GetRunTime();
 
 	/// Get total Upload in the best representative unit
-	wxString GetConvertedTotalUL ();
+	wxString GetConvertedTotalUL();
 
 	/// Get total Download in the best representative unit
-	wxString GetConvertedTotalDL ();
+	wxString GetConvertedTotalDL();
 
 	/// Get session Upload in the best representative unit
-	wxString GetConvertedSessionUL ();
+	wxString GetConvertedSessionUL();
 
 	/// Get session Download in the best representative unit
-	wxString GetConvertedSessionDL ();
+	wxString GetConvertedSessionDL();
 
 	/// Get server connexion ID: LowID or HighID
-	wxString GetConnexionIDType () const;
+	wxString GetConnexionIDType() const;
 
 	/// Get max Download rate since wxCas is running
-	double GetSessionMaxDL () const;
+	double GetSessionMaxDL() const;
 
 	/// Get max Download date since wxCas is running
-	wxDateTime GetSessionMaxDlDate () const;
+	wxDateTime GetSessionMaxDlDate() const;
 
 	/// Has the Max session DL rate been beated since last refresh
 	bool IsSessionMaxDlChanged() const;
 
 	/// Reset absolute max Download rate and date
-	void ResetSessionMaxDL ();
+	void ResetSessionMaxDL();
 
 	/// Get absolute max Download rate
-	double GetAbsoluteMaxDL () const;
+	double GetAbsoluteMaxDL() const;
 
 	/// Get absolute max Download date
-	wxDateTime GetAbsoluteMaxDlDate () const;
+	wxDateTime GetAbsoluteMaxDlDate() const;
 
 	/// Has the absolute Max session DL rate been beated since last refresh
 	bool IsAbsoluteMaxDlChanged() const;
 
 	/// Reset absolute max Download rate
-	void ResetAbsoluteMaxDL ();
+	void ResetAbsoluteMaxDL();
 };
 
 #endif /* _ONLINESIG_H */

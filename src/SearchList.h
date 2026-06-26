@@ -26,11 +26,10 @@
 #ifndef SEARCHLIST_H
 #define SEARCHLIST_H
 
-#include "Timer.h"		// Needed for CTimer
-#include "ObservableQueue.h"	// Needed for CQueueObserver
-#include "SearchFile.h"		// Needed for CSearchFile
-#include <common/SmartPtr.h>	// Needed for CSmartPtr
-
+#include "Timer.h"           // Needed for CTimer
+#include "ObservableQueue.h" // Needed for CQueueObserver
+#include "SearchFile.h"      // Needed for CSearchFile
+#include <common/SmartPtr.h> // Needed for CSmartPtr
 
 class CMemFile;
 class CMD4Hash;
@@ -38,20 +37,19 @@ class CPacket;
 class CServer;
 class CSearchFile;
 
-namespace Kademlia {
-	class CUInt128;
+namespace Kademlia
+{
+class CUInt128;
 }
 
-
-enum SearchType {
+enum SearchType
+{
 	LocalSearch,
 	GlobalSearch,
 	KadSearch
 };
 
-
-typedef std::vector<CSearchFile*> CSearchResultList;
-
+typedef std::vector<CSearchFile *> CSearchResultList;
 
 class CSearchList : public wxEvtHandler
 {
@@ -92,7 +90,7 @@ public:
 	 * @param params The search parameters, see CSearchParams.
 	 * @return An empty string on success, otherwise an error-message.
 	 */
-	wxString StartNewSearch(uint32* searchID, SearchType type, CSearchParams& params);
+	wxString StartNewSearch(uint32 *searchID, SearchType type, CSearchParams &params);
 
 	/** Stops the current search (global or Kad), if any is in progress. */
 	void StopSearch(bool globalOnly = false);
@@ -111,23 +109,20 @@ public:
 	uint32 GetSearchProgress() const;
 
 	/** This function is called once the local (ed2k) search has ended. */
-	void	LocalSearchEnd();
-
+	void LocalSearchEnd();
 
 	/**
 	 * Returns the list of results for the specified search.
 	 *
 	 * If the search is not valid, an empty list is returned.
 	 */
-	const	CSearchResultList& GetSearchResults(wxUIntPtr searchID) const;
+	const CSearchResultList &GetSearchResults(wxUIntPtr searchID) const;
 
 	/** Removes all results for the specified search. */
-	void	RemoveResults(wxUIntPtr searchID);
-
+	void RemoveResults(wxUIntPtr searchID);
 
 	/** Finds the search-result (by hash) and downloads it in the given category. */
-	void	AddFileToDownloadByHash(const CMD4Hash& hash, uint8 category = 0);
-
+	void AddFileToDownloadByHash(const CMD4Hash &hash, uint8 category = 0);
 
 	/**
 	 * Processes a list of shared files from a client.
@@ -138,7 +133,11 @@ public:
 	 * @param moreResultsAvailable Set to a value specifying if more results are available.
 	 * @param directory The directory containing the shared files.
 	 */
-	void	ProcessSharedFileList(const uint8_t* packet, uint32 size, CUpDownClient* sender, bool* moreResultsAvailable, const wxString& directory);
+	void ProcessSharedFileList(const uint8_t *packet,
+		uint32 size,
+		CUpDownClient *sender,
+		bool *moreResultsAvailable,
+		const wxString &directory);
 
 	/**
 	 * Processes a search-result sent via TCP from the local server. All results are added.
@@ -149,7 +148,8 @@ public:
 	 * @param serverIP The IP of the server sending the results.
 	 * @param serverPort The Port of the server sending the results.
 	 */
-	void	ProcessSearchAnswer(const uint8_t* packet, uint32_t size, bool optUTF8, uint32_t serverIP, uint16_t serverPort);
+	void ProcessSearchAnswer(
+		const uint8_t *packet, uint32_t size, bool optUTF8, uint32_t serverIP, uint16_t serverPort);
 
 	/**
 	 * Processes a search-result sent via UDP. Only one result is read from the packet.
@@ -159,8 +159,7 @@ public:
 	 * @param serverIP The IP of the server sending the results.
 	 * @param serverPort The Port of the server sending the results.
 	 */
-	void	ProcessUDPSearchAnswer(const CMemFile& packet, bool optUTF8, uint32 serverIP, uint16 serverPort);
-
+	void ProcessUDPSearchAnswer(const CMemFile &packet, bool optUTF8, uint32 serverIP, uint16 serverPort);
 
 	/**
 	 * Adds a result in the form of a kad search-keyword to the specified result-list.
@@ -173,17 +172,23 @@ public:
 	 * @param kadPublishInfo The kademlia publish information of the result.
 	 * @param taglist List of additional tags associated with the search-result.
 	 */
-	void	KademliaSearchKeyword(uint32_t searchID, const Kademlia::CUInt128 *fileID, const wxString& name, uint64_t size, const wxString& type, uint32_t kadPublishInfo, const TagPtrList& taglist);
+	void KademliaSearchKeyword(uint32_t searchID,
+		const Kademlia::CUInt128 *fileID,
+		const wxString &name,
+		uint64_t size,
+		const wxString &type,
+		uint32_t kadPublishInfo,
+		const TagPtrList &taglist);
 
 	/** Update a certain search result in all lists */
-	void UpdateSearchFileByHash(const CMD4Hash& hash);
+	void UpdateSearchFileByHash(const CMD4Hash &hash);
 
 	/** Mark current KAD search as finished */
 	void SetKadSearchFinished() { m_KadSearchFinished = true; }
 
 private:
 	/** Event-handler for global searches. */
-	void OnGlobalSearchTimer(CTimerEvent& evt);
+	void OnGlobalSearchTimer(CTimerEvent &evt);
 
 	/**
 	 * Adds the specified file to the current search's results.
@@ -195,54 +200,52 @@ private:
 	 * Note that this function takes ownership of the CSearchFile object,
 	 * regardless of whenever or not it was actually added to the results list.
 	 */
-	bool AddToList(CSearchFile* toadd, bool clientResponse = false);
+	bool AddToList(CSearchFile *toadd, bool clientResponse = false);
 
 	//! This smart pointer is used to safely prevent leaks.
 	typedef CSmartPtr<CMemFile> CMemFilePtr;
 
 	/** Create a basic search-packet for the given search-type. */
-	CMemFilePtr CreateSearchData(CSearchParams& params, SearchType type, bool supports64bit, bool& packetUsing64bit);
-
+	CMemFilePtr CreateSearchData(
+		CSearchParams &params, SearchType type, bool supports64bit, bool &packetUsing64bit);
 
 	//! Timer used for global search intervals.
-	CTimer	m_searchTimer;
+	CTimer m_searchTimer;
 
 	//! The current search-type, regarding the last/current search.
-	SearchType	m_searchType;
+	SearchType m_searchType;
 
 	//! Specifies if a search is being performed.
-	bool		m_searchInProgress;
+	bool m_searchInProgress;
 
 	//! The ID of the current search.
-	wxUIntPtr	m_currentSearch;
+	wxUIntPtr m_currentSearch;
 
 	//! The current packet used for searches.
-	CPacket*	m_searchPacket;
+	CPacket *m_searchPacket;
 
 	//! Does the current search packet contain 64bit values?
-	bool		m_64bitSearchPacket;
+	bool m_64bitSearchPacket;
 
 	//! If the current search is a KAD search this signals if it is finished.
-	bool		m_KadSearchFinished;
+	bool m_KadSearchFinished;
 
 	//! Queue of servers to ask when doing global searches.
 	//! TODO: Replace with 'cookie' system.
-	CQueueObserver<CServer*> m_serverQueue;
+	CQueueObserver<CServer *> m_serverQueue;
 
 	//! Shorthand for the map of results (key is a SearchID).
 	typedef std::map<wxUIntPtr, CSearchResultList> ResultMap;
 
 	//! Map of all search-results added.
-	ResultMap	m_results;
+	ResultMap m_results;
 
 	//! Contains the results type desired in the current search.
 	//! If not empty, results of different types are filtered.
-	wxString	m_resultType;
-
+	wxString m_resultType;
 
 	wxDECLARE_EVENT_TABLE();
 };
-
 
 #endif // SEARCHLIST_H
 // File_checked_for_headers

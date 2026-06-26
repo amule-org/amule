@@ -38,27 +38,28 @@
 // It seems like Apple has (or had, hopefully) a configuration where a new
 // clang compiler supporting C++11 is accompanied by an old c++ library not
 // supporting std::unique_ptr.
-// See https://stackoverflow.com/questions/31655462/no-type-named-unique-ptr-in-namespace-std-when-compiling-under-llvm-clang
-#	ifdef __clang__
-#		if __has_include(<forward_list>)
-			// either using libc++ or a libstdc++ that's
-			// new enough to have unique_ptr
-#			define HAVE_UNIQUE_PTR 1
-#		endif
-#	else
-		// not clang, assume unique_ptr available
-#		define HAVE_UNIQUE_PTR 1
-#	endif
+// See
+// https://stackoverflow.com/questions/31655462/no-type-named-unique-ptr-in-namespace-std-when-compiling-under-llvm-clang
+#ifdef __clang__
+#if __has_include(<forward_list>)
+// either using libc++ or a libstdc++ that's
+// new enough to have unique_ptr
+#define HAVE_UNIQUE_PTR 1
+#endif
+#else
+// not clang, assume unique_ptr available
+#define HAVE_UNIQUE_PTR 1
+#endif
 
 #endif
 
 #ifdef HAVE_UNIQUE_PTR
-template<typename T> using CSmartPtr = std::unique_ptr<T>;
+template <typename T> using CSmartPtr = std::unique_ptr<T>;
 #else
-#	define CSmartPtr std::auto_ptr
-#	ifndef nullptr
-#		define nullptr	 NULL
-#	endif
+#define CSmartPtr std::auto_ptr
+#ifndef nullptr
+#define nullptr NULL
+#endif
 #endif
 
 #undef HAVE_UNIQUE_PTR

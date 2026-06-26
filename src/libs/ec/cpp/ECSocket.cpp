@@ -31,13 +31,13 @@
 
 using namespace std;
 
-#include "ECPacket.h"		// Needed for CECPacket
+#include "ECPacket.h" // Needed for CECPacket
 #include "../../../Logger.h"
-#include <common/Format.h>	// Needed for CFormat
+#include <common/Format.h> // Needed for CFormat
 #include "ECLog.h"
 
-#define EC_COMPRESSION_LEVEL	Z_DEFAULT_COMPRESSION
-#define EC_MAX_UNCOMPRESSED	1024
+#define EC_COMPRESSION_LEVEL Z_DEFAULT_COMPRESSION
+#define EC_MAX_UNCOMPRESSED 1024
 // Largest packet we'll send uncompressed to a local peer (loopback /
 // RFC1918 LAN / RFC3927 link-local) regardless of ZLIB negotiation.
 // Above this threshold we fall back to ZLIB so the wire size stays
@@ -63,14 +63,16 @@ int utf8_mb_remain(char c) __attribute__((__pure__));
  * Sample implementation from Unicode home page.
  * http://www.stonehand.com/unicode/standard/fss-utf.html
  */
-struct utf8_table {
-	int     cmask;
-	int     cval;
-	int     shift;
-	uint32_t  lmask;
-	uint32_t  lval;
+struct utf8_table
+{
+	int cmask;
+	int cval;
+	int shift;
+	uint32_t lmask;
+	uint32_t lval;
 };
 
+// clang-format off
 static const struct utf8_table utf8_table[] =
 {
     {0x80,  0x00,   0*6,    0x7F,           0,         /* 1 byte sequence */},
@@ -81,6 +83,7 @@ static const struct utf8_table utf8_table[] =
     {0xFE,  0xFC,   5*6,    0x7FFFFFFF,     0x4000000, /* 6 byte sequence */},
     {0,     0,      0,      0,              0,         /* end of table    */}
 };
+// clang-format on
 
 static int utf8_mbtowc(uint32_t *p, const unsigned char *s, int n)
 {
@@ -141,11 +144,11 @@ int utf8_mb_remain(char c)
 {
 	int i;
 	for (i = 0; i < 5; ++i) {
-		if ((c & utf8_table[i].cmask) == utf8_table[i].cval) break;
+		if ((c & utf8_table[i].cmask) == utf8_table[i].cval)
+			break;
 	}
 	return i;
 }
-
 
 void CQueuedData::Write(const void *data, size_t len)
 {
@@ -155,7 +158,6 @@ void CQueuedData::Write(const void *data, size_t len)
 	memcpy(m_wr_ptr, data, canWrite);
 	m_wr_ptr += canWrite;
 }
-
 
 void CQueuedData::WriteAt(const void *data, size_t len, size_t offset)
 {
@@ -169,7 +171,6 @@ void CQueuedData::WriteAt(const void *data, size_t len, size_t offset)
 	memcpy(&m_data[0] + offset, data, len);
 }
 
-
 void CQueuedData::Read(void *data, size_t len)
 {
 	const size_t canRead = std::min(GetUnreadDataLength(), len);
@@ -179,17 +180,14 @@ void CQueuedData::Read(void *data, size_t len)
 	m_rd_ptr += canRead;
 }
 
-
 uint32 CQueuedData::WriteToSocket(CECSocket *sock)
 {
-	wxCHECK_MSG(m_rd_ptr < m_wr_ptr, 0,
-		"Reading past written data in WriteToSocket");
+	wxCHECK_MSG(m_rd_ptr < m_wr_ptr, 0, "Reading past written data in WriteToSocket");
 
 	uint32 write = sock->SocketWrite(m_rd_ptr, GetUnreadDataLength());
 	m_rd_ptr += write;
 	return write;
 }
-
 
 uint32 CQueuedData::ReadFromSocket(CECSocket *sock, size_t len)
 {
@@ -201,7 +199,6 @@ uint32 CQueuedData::ReadFromSocket(CECSocket *sock, size_t len)
 	return read;
 }
 
-
 size_t CQueuedData::ReadFromSocketAll(CECSocket *sock, size_t len)
 {
 	size_t read_rem = std::min(GetRemLength(), len);
@@ -210,7 +207,7 @@ size_t CQueuedData::ReadFromSocketAll(CECSocket *sock, size_t len)
 	//  We get here when socket is truly blocking
 	do {
 		// Give socket a 10 sec chance to recv more data.
-		if ( !sock->WaitSocketRead(10, 0) ) {
+		if (!sock->WaitSocketRead(10, 0)) {
 			AddDebugLogLineN(logEC, "ReadFromSocketAll: socket is blocking");
 			break;
 		}
@@ -229,59 +226,53 @@ size_t CQueuedData::ReadFromSocketAll(CECSocket *sock, size_t len)
 	return len - read_rem;
 }
 
-
 size_t CQueuedData::GetLength() const
 {
 	return m_data.size();
 }
 
-
 size_t CQueuedData::GetDataLength() const
 {
 	const size_t len = m_wr_ptr - &m_data[0];
-	wxCHECK_MSG(len <= m_data.size(), m_data.size(),
-		"Write-pointer past end of buffer");
+	wxCHECK_MSG(len <= m_data.size(), m_data.size(), "Write-pointer past end of buffer");
 
 	return len;
 }
-
 
 size_t CQueuedData::GetRemLength() const
 {
 	return m_data.size() - GetDataLength();
 }
 
-
 size_t CQueuedData::GetUnreadDataLength() const
 {
-	wxCHECK_MSG(m_wr_ptr >= m_rd_ptr, 0,
-		"Read position past write position.");
+	wxCHECK_MSG(m_wr_ptr >= m_rd_ptr, 0, "Read position past write position.");
 
 	return m_wr_ptr - m_rd_ptr;
 }
-
-
 
 //
 // CECSocket API - User interface functions
 //
 
 CECSocket::CECSocket(bool use_events)
-	: m_use_events(use_events),
-	  m_in_ptr(EC_SOCKET_BUFFER_SIZE),
-	  m_out_ptr(EC_SOCKET_BUFFER_SIZE),
-	  m_curr_rx_data(new CQueuedData(EC_SOCKET_BUFFER_SIZE)),
-	  m_curr_tx_data(new CQueuedData(EC_SOCKET_BUFFER_SIZE)),
-	  m_rx_flags(0),
-	  m_tx_flags(0),
-	  // setup initial state: 4 flags + 4 length
-	  m_bytes_needed(EC_HEADER_SIZE),
-	  m_in_header(true),
-	  m_curr_packet_len(0),
-	  m_my_flags(0x20),
-	  m_haveNotificationSupport(false),
-	  m_isLocalPeer(false)
-{}
+: m_use_events(use_events)
+, m_in_ptr(EC_SOCKET_BUFFER_SIZE)
+, m_out_ptr(EC_SOCKET_BUFFER_SIZE)
+, m_curr_rx_data(new CQueuedData(EC_SOCKET_BUFFER_SIZE))
+, m_curr_tx_data(new CQueuedData(EC_SOCKET_BUFFER_SIZE))
+, m_rx_flags(0)
+, m_tx_flags(0)
+,
+// setup initial state: 4 flags + 4 length
+m_bytes_needed(EC_HEADER_SIZE)
+, m_in_header(true)
+, m_curr_packet_len(0)
+, m_my_flags(0x20)
+, m_haveNotificationSupport(false)
+, m_isLocalPeer(false)
+{
+}
 
 CECSocket::~CECSocket()
 {
@@ -309,15 +300,15 @@ const CECPacket *CECSocket::SendRecvPacket(const CECPacket *packet)
 {
 	SendPacket(packet);
 
-	if (m_curr_rx_data->ReadFromSocketAll(this, EC_HEADER_SIZE) != EC_HEADER_SIZE
-		|| SocketError()		// This is a synchronous read, so WouldBlock is an error too.
+	if (m_curr_rx_data->ReadFromSocketAll(this, EC_HEADER_SIZE) != EC_HEADER_SIZE ||
+		SocketError() // This is a synchronous read, so WouldBlock is an error too.
 		|| !ReadHeader()) {
 		OnError();
 		AddDebugLogLineN(logEC, "SendRecvPacket: error");
 		return 0;
 	}
-	if (m_curr_rx_data->ReadFromSocketAll(this, m_curr_packet_len) != m_curr_packet_len
-		|| SocketError()) {
+	if (m_curr_rx_data->ReadFromSocketAll(this, m_curr_packet_len) != m_curr_packet_len ||
+		SocketError()) {
 		OnError();
 		AddDebugLogLineN(logEC, "SendRecvPacket: error");
 		return 0;
@@ -330,30 +321,30 @@ const CECPacket *CECSocket::SendRecvPacket(const CECPacket *packet)
 std::string CECSocket::GetLastErrorMsg()
 {
 	int code = InternalGetLastError();
-	switch(code) {
-		case EC_ERROR_NOERROR:
-			return "No error happened";
-		case EC_ERROR_INVOP:
-			return "Invalid operation";
-		case EC_ERROR_IOERR:
-			return "Input/Output error";
-		case EC_ERROR_INVADDR:
-			return "Invalid address passed to wxSocket";
-		case EC_ERROR_INVSOCK:
-			return "Invalid socket (uninitialized)";
-		case EC_ERROR_NOHOST:
-			return "No corresponding host";
-		case EC_ERROR_INVPORT:
-			return "Invalid port";
-		case EC_ERROR_WOULDBLOCK:
-			return "The socket is non-blocking and the operation would block";
-		case EC_ERROR_TIMEDOUT:
-			return "The timeout for this operation expired";
-		case EC_ERROR_MEMERR:
-			return "Memory exhausted";
+	switch (code) {
+	case EC_ERROR_NOERROR:
+		return "No error happened";
+	case EC_ERROR_INVOP:
+		return "Invalid operation";
+	case EC_ERROR_IOERR:
+		return "Input/Output error";
+	case EC_ERROR_INVADDR:
+		return "Invalid address passed to wxSocket";
+	case EC_ERROR_INVSOCK:
+		return "Invalid socket (uninitialized)";
+	case EC_ERROR_NOHOST:
+		return "No corresponding host";
+	case EC_ERROR_INVPORT:
+		return "Invalid port";
+	case EC_ERROR_WOULDBLOCK:
+		return "The socket is non-blocking and the operation would block";
+	case EC_ERROR_TIMEDOUT:
+		return "The timeout for this operation expired";
+	case EC_ERROR_MEMERR:
+		return "Memory exhausted";
 	}
 	ostringstream error_string;
-	error_string << "Error code " << code <<  " unknown.";
+	error_string << "Error code " << code << " unknown.";
 	return error_string.str();
 }
 
@@ -374,16 +365,12 @@ void CECSocket::OnError()
 #endif
 }
 
-void CECSocket::OnLost()
-{
-}
+void CECSocket::OnLost() {}
 
 //
 // Event handlers
 //
-void CECSocket::OnConnect()
-{
-}
+void CECSocket::OnConnect() {}
 
 void CECSocket::OnInput()
 {
@@ -409,7 +396,8 @@ void CECSocket::OnInput()
 				CSmartPtr<const CECPacket> packet(ReadPacket());
 				m_curr_rx_data->Rewind();
 				if (packet.get()) {
-					CSmartPtr<const CECPacket> reply(OnPacketReceived(packet.get(), m_curr_packet_len));
+					CSmartPtr<const CECPacket> reply(
+						OnPacketReceived(packet.get(), m_curr_packet_len));
 					if (reply.get()) {
 						SendPacket(reply.get());
 					}
@@ -426,7 +414,7 @@ void CECSocket::OnInput()
 void CECSocket::OnOutput()
 {
 	while (!m_output_queue.empty()) {
-		CQueuedData* data = m_output_queue.front();
+		CQueuedData *data = m_output_queue.front();
 		uint32 written = data->WriteToSocket(this);
 		if (!data->GetUnreadDataLength()) {
 			m_output_queue.pop_front();
@@ -440,12 +428,12 @@ void CECSocket::OnOutput()
 				return;
 			}
 			// Now it's just a blocked socket.
-			if ( m_use_events ) {
+			if (m_use_events) {
 				// Event driven logic: return, OnOutput() will be called again later
 				return;
 			}
 			// Synchronous call: wait (for max 10 secs)
-			if ( !WaitSocketWrite(10, 0) ) {
+			if (!WaitSocketWrite(10, 0)) {
 				// Still not through ?
 				if (WouldBlock()) {
 					// WouldBlock() is only EAGAIN or EWOULD_BLOCK,
@@ -479,7 +467,8 @@ void CECSocket::OnOutput()
 			// Synchronous path: same fallback as the SocketError
 			// case below.
 			if (!WaitSocketWrite(10, 0)) {
-				AddDebugLogLineN(logEC, "OnOutput: 10s wait elapsed in zero-write backpressure");
+				AddDebugLogLineN(
+					logEC, "OnOutput: 10s wait elapsed in zero-write backpressure");
 				OnError();
 				break;
 			}
@@ -507,8 +496,9 @@ size_t CECSocket::ReadBufferFromSocket(void *buffer, size_t required_len)
 
 	if (m_curr_rx_data->GetUnreadDataLength() < required_len) {
 		// need more data that we have. Looks like nothing will help here
-		AddDebugLogLineN(logEC, CFormat("ReadBufferFromSocket: not enough data (%d < %d)")
-			% m_curr_rx_data->GetUnreadDataLength() % required_len);
+		AddDebugLogLineN(logEC,
+			CFormat("ReadBufferFromSocket: not enough data (%d < %d)") %
+				m_curr_rx_data->GetUnreadDataLength() % required_len);
 		return 0;
 	}
 	m_curr_rx_data->Read(buffer, required_len);
@@ -518,9 +508,9 @@ size_t CECSocket::ReadBufferFromSocket(void *buffer, size_t required_len)
 void CECSocket::WriteBufferToSocket(const void *buffer, size_t len)
 {
 	unsigned char *wr_ptr = (unsigned char *)buffer;
-	while ( len ) {
+	while (len) {
 		size_t curr_free = m_curr_tx_data->GetRemLength();
-		if ( len > curr_free ) {
+		if (len > curr_free) {
 
 			m_curr_tx_data->Write(wr_ptr, curr_free);
 			len -= curr_free;
@@ -534,7 +524,6 @@ void CECSocket::WriteBufferToSocket(const void *buffer, size_t len)
 	}
 }
 
-
 //
 // ZLib "error handler"
 //
@@ -544,22 +533,44 @@ static void ShowZError(int zerror, z_streamp strm)
 	const char *p = NULL;
 
 	switch (zerror) {
-		case Z_STREAM_END: p = "Z_STREAM_END"; break;
-		case Z_NEED_DICT: p = "Z_NEED_DICT"; break;
-		case Z_ERRNO: p = "Z_ERRNO"; break;
-		case Z_STREAM_ERROR: p = "Z_STREAM_ERROR"; break;
-		case Z_DATA_ERROR: p = "Z_DATA_ERROR"; break;
-		case Z_MEM_ERROR: p = "Z_MEM_ERROR"; break;
-		case Z_BUF_ERROR: p = "Z_BUF_ERROR"; break;
-		case Z_VERSION_ERROR: p = "Z_VERSION_ERROR"; break;
+	case Z_STREAM_END:
+		p = "Z_STREAM_END";
+		break;
+	case Z_NEED_DICT:
+		p = "Z_NEED_DICT";
+		break;
+	case Z_ERRNO:
+		p = "Z_ERRNO";
+		break;
+	case Z_STREAM_ERROR:
+		p = "Z_STREAM_ERROR";
+		break;
+	case Z_DATA_ERROR:
+		p = "Z_DATA_ERROR";
+		break;
+	case Z_MEM_ERROR:
+		p = "Z_MEM_ERROR";
+		break;
+	case Z_BUF_ERROR:
+		p = "Z_BUF_ERROR";
+		break;
+	case Z_VERSION_ERROR:
+		p = "Z_VERSION_ERROR";
+		break;
 	}
 	printf("ZLib operation returned %s\n", p);
 	printf("ZLib error message: %s\n", strm->msg);
-	printf("zstream state:\n\tnext_in=%p\n\tavail_in=%u\n\ttotal_in=%lu\n\tnext_out=%p\n\tavail_out=%u\n\ttotal_out=%lu\n",
-		strm->next_in, strm->avail_in, strm->total_in, strm->next_out, strm->avail_out, strm->total_out);
+	printf("zstream "
+	       "state:\n\tnext_in=%p\n\tavail_in=%u\n\ttotal_in=%lu\n\tnext_out=%p\n\tavail_out=%u\n\ttotal_"
+	       "out=%lu\n",
+		strm->next_in,
+		strm->avail_in,
+		strm->total_in,
+		strm->next_out,
+		strm->avail_out,
+		strm->total_out);
 	AddDebugLogLineN(logEC, "ZLib error");
 }
-
 
 bool CECSocket::ReadHeader()
 {
@@ -574,9 +585,7 @@ bool CECSocket::ReadHeader()
 	// raises to 256 MB so big uncompressed responses (e.g. show shared
 	// on a 90 k-file library against a local-peer client that skipped
 	// ZLIB negotiation, see #713 / #728) don't trip the gate.
-	const size_t max_packet_bytes = IsAuthorized()
-		? (size_t)256 * 1024 * 1024
-		: (size_t) 16 * 1024 * 1024;
+	const size_t max_packet_bytes = IsAuthorized() ? (size_t)256 * 1024 * 1024 : (size_t)16 * 1024 * 1024;
 	if (m_bytes_needed > max_packet_bytes) {
 		AddDebugLogLineN(logEC, CFormat("ReadHeader: packet too big: %d") % m_bytes_needed);
 		CloseAndDispatchLost();
@@ -587,14 +596,16 @@ bool CECSocket::ReadHeader()
 	// resize input buffer if
 	// a) too small or
 	if (currLength < m_bytes_needed
-	// b) way too large (free data again after receiving huge packets)
+		// b) way too large (free data again after receiving huge packets)
 		|| m_bytes_needed + EC_SOCKET_BUFFER_SIZE * 10 < currLength) {
 		// Client socket: IsAuthorized() is always true
 		// Server socket: do not allow growing of internal buffers before successful login.
 		// Otherwise sending a simple header with bogus length of 16MB-1 will crash an embedded
 		// client with memory exhaustion.
 		if (!IsAuthorized()) {
-			AddDebugLogLineN(logEC, CFormat("ReadHeader: resize (%d -> %d) on non autorized socket") % currLength % m_bytes_needed);
+			AddDebugLogLineN(logEC,
+				CFormat("ReadHeader: resize (%d -> %d) on non autorized socket") %
+					currLength % m_bytes_needed);
 			CloseAndDispatchLost();
 			return false;
 		}
@@ -611,32 +622,41 @@ bool CECSocket::ReadHeader()
 	return true;
 }
 
-
 bool CECSocket::ReadNumber(void *buffer, size_t len)
 {
 	if (m_rx_flags & EC_FLAG_UTF8_NUMBERS) {
 		unsigned char mb[16];
 		uint32_t wc;
-		if (!ReadBuffer(mb, 1)) return false;
+		if (!ReadBuffer(mb, 1))
+			return false;
 		int remains = utf8_mb_remain(mb[0]);
-		if (remains) if (!ReadBuffer(&(mb[1]), remains)) return false;
-		if (utf8_mbtowc(&wc, mb, 6) == -1) return false;	// Invalid UTF-8 code sequence
+		if (remains)
+			if (!ReadBuffer(&(mb[1]), remains))
+				return false;
+		if (utf8_mbtowc(&wc, mb, 6) == -1)
+			return false; // Invalid UTF-8 code sequence
 		switch (len) {
-			case 1: PokeUInt8( buffer,  wc ); break;
-			case 2: RawPokeUInt16( buffer, wc ); break;
-			case 4: RawPokeUInt32( buffer, wc ); break;
+		case 1:
+			PokeUInt8(buffer, wc);
+			break;
+		case 2:
+			RawPokeUInt16(buffer, wc);
+			break;
+		case 4:
+			RawPokeUInt32(buffer, wc);
+			break;
 		}
 	} else {
-		if ( !ReadBuffer(buffer, len) ) {
+		if (!ReadBuffer(buffer, len)) {
 			return false;
 		}
 		switch (len) {
-			case 2:
-				RawPokeUInt16( buffer, ENDIAN_NTOHS( RawPeekUInt16( buffer ) ) );
-				break;
-			case 4:
-				RawPokeUInt32( buffer, ENDIAN_NTOHL( RawPeekUInt32( buffer ) ) );
-				break;
+		case 2:
+			RawPokeUInt16(buffer, ENDIAN_NTOHS(RawPeekUInt16(buffer)));
+			break;
+		case 4:
+			RawPokeUInt32(buffer, ENDIAN_NTOHL(RawPeekUInt32(buffer)));
+			break;
 		}
 	}
 	return true;
@@ -649,20 +669,34 @@ bool CECSocket::WriteNumber(const void *buffer, size_t len)
 		uint32_t wc = 0;
 		int mb_len;
 		switch (len) {
-			case 1: wc = PeekUInt8( buffer ); break;
-			case 2: wc = RawPeekUInt16( buffer ); break;
-			case 4: wc = RawPeekUInt32( buffer ); break;
-			default: return false;
+		case 1:
+			wc = PeekUInt8(buffer);
+			break;
+		case 2:
+			wc = RawPeekUInt16(buffer);
+			break;
+		case 4:
+			wc = RawPeekUInt32(buffer);
+			break;
+		default:
+			return false;
 		}
-		if ((mb_len = utf8_wctomb(mb, wc, 6)) == -1) return false;	// Something is terribly wrong...
+		if ((mb_len = utf8_wctomb(mb, wc, 6)) == -1)
+			return false; // Something is terribly wrong...
 		return WriteBuffer(mb, mb_len);
 	} else {
 		char tmp[8];
 
 		switch (len) {
-			case 1: PokeUInt8( tmp, PeekUInt8( buffer ) ); break;
-			case 2: RawPokeUInt16( tmp, ENDIAN_NTOHS( RawPeekUInt16( buffer ) ) ); break;
-			case 4: RawPokeUInt32( tmp, ENDIAN_NTOHL( RawPeekUInt32( buffer ) ) ); break;
+		case 1:
+			PokeUInt8(tmp, PeekUInt8(buffer));
+			break;
+		case 2:
+			RawPokeUInt16(tmp, ENDIAN_NTOHS(RawPeekUInt16(buffer)));
+			break;
+		case 4:
+			RawPokeUInt32(tmp, ENDIAN_NTOHL(RawPeekUInt32(buffer)));
+			break;
 		}
 		return WriteBuffer(tmp, len);
 	}
@@ -671,14 +705,14 @@ bool CECSocket::WriteNumber(const void *buffer, size_t len)
 bool CECSocket::ReadBuffer(void *buffer, size_t len)
 {
 	if (m_rx_flags & EC_FLAG_ZLIB) {
-		if ( !m_z.avail_in ) {
+		if (!m_z.avail_in) {
 			// no reason for this situation: all packet should be
 			// buffered by now
 			AddDebugLogLineN(logEC, "ReadBuffer: ZLib error");
 			return false;
 		}
 		m_z.avail_out = (uInt)len;
-		m_z.next_out = (Bytef*)buffer;
+		m_z.next_out = (Bytef *)buffer;
 		int zerror = inflate(&m_z, Z_SYNC_FLUSH);
 		if ((zerror != Z_OK) && (zerror != Z_STREAM_END)) {
 			ShowZError(zerror, &m_z);
@@ -705,33 +739,33 @@ bool CECSocket::WriteBuffer(const void *buffer, size_t len)
 		unsigned char *rd_ptr = (unsigned char *)buffer;
 		do {
 			unsigned int remain_in = EC_SOCKET_BUFFER_SIZE - m_z.avail_in;
-			if ( remain_in >= len ) {
-				memcpy(m_z.next_in+m_z.avail_in, rd_ptr, len);
+			if (remain_in >= len) {
+				memcpy(m_z.next_in + m_z.avail_in, rd_ptr, len);
 				m_z.avail_in += (uInt)len;
 				len = 0;
 			} else {
-				memcpy(m_z.next_in+m_z.avail_in, rd_ptr, remain_in);
+				memcpy(m_z.next_in + m_z.avail_in, rd_ptr, remain_in);
 				m_z.avail_in += remain_in;
 				len -= remain_in;
 				rd_ptr += remain_in;
 				// buffer is full, calling zlib
 				do {
-				    m_z.next_out = &m_out_ptr[0];
-				    m_z.avail_out = EC_SOCKET_BUFFER_SIZE;
+					m_z.next_out = &m_out_ptr[0];
+					m_z.avail_out = EC_SOCKET_BUFFER_SIZE;
 					int zerror = deflate(&m_z, Z_NO_FLUSH);
-					if ( zerror != Z_OK ) {
+					if (zerror != Z_OK) {
 						AddDebugLogLineN(logEC, "WriteBuffer: ZLib error");
 						ShowZError(zerror, &m_z);
 						return false;
 					}
-					WriteBufferToSocket(&m_out_ptr[0],
-						EC_SOCKET_BUFFER_SIZE - m_z.avail_out);
-				} while ( m_z.avail_out == 0 );
+					WriteBufferToSocket(
+						&m_out_ptr[0], EC_SOCKET_BUFFER_SIZE - m_z.avail_out);
+				} while (m_z.avail_out == 0);
 				// all input should be used by now
 				wxASSERT(m_z.avail_in == 0);
 				m_z.next_in = &m_in_ptr[0];
 			}
-		} while ( len );
+		} while (len);
 		return true;
 	} else {
 		// using uncompressed buffered i/o
@@ -744,19 +778,18 @@ bool CECSocket::FlushBuffers()
 {
 	if (m_tx_flags & EC_FLAG_ZLIB) {
 		do {
-		    m_z.next_out = &m_out_ptr[0];
-		    m_z.avail_out = EC_SOCKET_BUFFER_SIZE;
+			m_z.next_out = &m_out_ptr[0];
+			m_z.avail_out = EC_SOCKET_BUFFER_SIZE;
 			int zerror = deflate(&m_z, Z_FINISH);
-			if ( zerror == Z_STREAM_ERROR ) {
+			if (zerror == Z_STREAM_ERROR) {
 				AddDebugLogLineN(logEC, "FlushBuffers: ZLib error");
 				ShowZError(zerror, &m_z);
 				return false;
 			}
-			WriteBufferToSocket(&m_out_ptr[0],
-				EC_SOCKET_BUFFER_SIZE - m_z.avail_out);
-		} while ( m_z.avail_out == 0 );
+			WriteBufferToSocket(&m_out_ptr[0], EC_SOCKET_BUFFER_SIZE - m_z.avail_out);
+		} while (m_z.avail_out == 0);
 	}
-	if ( m_curr_tx_data->GetDataLength() ) {
+	if (m_curr_tx_data->GetDataLength()) {
 		m_output_queue.push_back(m_curr_tx_data.release());
 		m_curr_tx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
 	}
@@ -774,7 +807,7 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 		return 0;
 	}
 	// Check if output queue is empty. If not, memorize the current end.
-	std::list<CQueuedData*>::iterator outputStart = m_output_queue.begin();
+	std::list<CQueuedData *>::iterator outputStart = m_output_queue.begin();
 	uint32 outputQueueSize = m_output_queue.size();
 	for (uint32 i = 1; i < outputQueueSize; i++) {
 		++outputStart;
@@ -792,11 +825,9 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 	// negotiation (`m_my_flags & EC_FLAG_ZLIB`) and a packet larger
 	// than EC_MAX_UNCOMPRESSED.
 	const uint32 packet_logical_len = packet->GetPacketLength();
-	const bool local_bypass_zlib = m_isLocalPeer
-		&& packet_logical_len <= kLocalPeerZlibBypassMax;
-	if (packet_logical_len > EC_MAX_UNCOMPRESSED
-		&& ((m_my_flags & EC_FLAG_ZLIB) > 0)
-		&& !local_bypass_zlib) {
+	const bool local_bypass_zlib = m_isLocalPeer && packet_logical_len <= kLocalPeerZlibBypassMax;
+	if (packet_logical_len > EC_MAX_UNCOMPRESSED && ((m_my_flags & EC_FLAG_ZLIB) > 0) &&
+		!local_bypass_zlib) {
 		flags |= EC_FLAG_ZLIB;
 	} else {
 		flags |= EC_FLAG_UTF8_NUMBERS;
@@ -845,7 +876,7 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 		outputStart = m_output_queue.begin();
 	}
 	// now calculate actual size of data
-	for(std::list<CQueuedData*>::iterator it = outputStart; it != m_output_queue.end(); ++it) {
+	for (std::list<CQueuedData *>::iterator it = outputStart; it != m_output_queue.end(); ++it) {
 		packet_len += (uint32_t)(*it)->GetDataLength();
 	}
 	// header size is not counted
@@ -856,7 +887,7 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 
 	if (flags & EC_FLAG_ZLIB) {
 		int zerror = deflateEnd(&m_z);
-		if ( zerror != Z_OK ) {
+		if (zerror != Z_OK) {
 			AddDebugLogLineN(logEC, "WritePacket: ZLib error");
 			ShowZError(zerror, &m_z);
 		}
@@ -864,9 +895,8 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 	return packet_len;
 }
 
-
-void CECSocket::SendCachedBodyResponse(uint8_t opcode,
-	const std::vector<std::shared_ptr<const std::vector<unsigned char> > > &blobs)
+void CECSocket::SendCachedBodyResponse(
+	uint8_t opcode, const std::vector<std::shared_ptr<const std::vector<unsigned char>>> &blobs)
 {
 	if (SocketRealError()) {
 		OnError();
@@ -875,7 +905,7 @@ void CECSocket::SendCachedBodyResponse(uint8_t opcode,
 
 	// Remember where in the output queue our bytes start, so the
 	// length-patch at the end touches the right CQueuedData.
-	std::list<CQueuedData*>::iterator outputStart = m_output_queue.begin();
+	std::list<CQueuedData *>::iterator outputStart = m_output_queue.begin();
 	uint32 outputQueueSize = m_output_queue.size();
 	for (uint32 i = 1; i < outputQueueSize; i++) {
 		++outputStart;
@@ -897,11 +927,8 @@ void CECSocket::SendCachedBodyResponse(uint8_t opcode,
 	// and then mask against m_my_flags — callers should only invoke
 	// this method on connections that negotiated both capabilities.
 	uint32_t flags = 0x20;
-	const bool local_bypass_zlib = m_isLocalPeer
-		&& body_bytes <= kLocalPeerZlibBypassMax;
-	if (body_bytes > EC_MAX_UNCOMPRESSED
-		&& ((m_my_flags & EC_FLAG_ZLIB) > 0)
-		&& !local_bypass_zlib) {
+	const bool local_bypass_zlib = m_isLocalPeer && body_bytes <= kLocalPeerZlibBypassMax;
+	if (body_bytes > EC_MAX_UNCOMPRESSED && ((m_my_flags & EC_FLAG_ZLIB) > 0) && !local_bypass_zlib) {
 		flags |= EC_FLAG_ZLIB;
 	}
 	flags |= EC_FLAG_UTF8_NUMBERS;
@@ -939,9 +966,7 @@ void CECSocket::SendCachedBodyResponse(uint8_t opcode,
 	// 0xFFFE cap that the spec uses for backward-compat).
 	const size_t count = blobs.size();
 	const bool useLargeCount = (flags & EC_FLAG_LARGE_TAG_COUNT) != 0;
-	const size_t writeCount = useLargeCount
-		? count
-		: std::min(count, (size_t)0xFFFE);
+	const size_t writeCount = useLargeCount ? count : std::min(count, (size_t)0xFFFE);
 	if (useLargeCount && count >= 0xFFFF) {
 		uint16 marker = 0xFFFF;
 		WriteNumber(&marker, sizeof(marker));
@@ -971,8 +996,7 @@ void CECSocket::SendCachedBodyResponse(uint8_t opcode,
 		outputStart = m_output_queue.begin();
 	}
 	uint32 actual_len = 0;
-	for (std::list<CQueuedData*>::iterator it = outputStart;
-		it != m_output_queue.end(); ++it) {
+	for (std::list<CQueuedData *>::iterator it = outputStart; it != m_output_queue.end(); ++it) {
 		actual_len += (uint32_t)(*it)->GetDataLength();
 	}
 	actual_len -= EC_HEADER_SIZE;
@@ -990,14 +1014,13 @@ void CECSocket::SendCachedBodyResponse(uint8_t opcode,
 	OnOutput();
 }
 
-
 const CECPacket *CECSocket::ReadPacket()
 {
 	CECPacket *packet = 0;
 
 	uint32_t flags = m_rx_flags;
 
-	if ( ((flags & 0x60) != 0x20) || (flags & EC_FLAG_UNKNOWN_MASK) ) {
+	if (((flags & 0x60) != 0x20) || (flags & EC_FLAG_UNKNOWN_MASK)) {
 		// Protocol error - other end might use an older protocol
 		AddDebugLogLineN(logEC, "ReadPacket: protocol error");
 		cout << "ReadPacket: packet have invalid flags " << flags << endl;
@@ -1007,11 +1030,11 @@ const CECPacket *CECSocket::ReadPacket()
 
 	if (flags & EC_FLAG_ZLIB) {
 
-	    m_z.zalloc = Z_NULL;
-	    m_z.zfree = Z_NULL;
-	    m_z.opaque = Z_NULL;
-	    m_z.avail_in = 0;
-	    m_z.next_in = 0;
+		m_z.zalloc = Z_NULL;
+		m_z.zfree = Z_NULL;
+		m_z.opaque = Z_NULL;
+		m_z.avail_in = 0;
+		m_z.next_in = 0;
 
 		int zerror = inflateInit(&m_z);
 		if (zerror != Z_OK) {
@@ -1036,7 +1059,7 @@ const CECPacket *CECSocket::ReadPacket()
 
 	if (flags & EC_FLAG_ZLIB) {
 		int zerror = inflateEnd(&m_z);
-		if ( zerror != Z_OK ) {
+		if (zerror != Z_OK) {
 			AddDebugLogLineN(logEC, "ReadPacket: zlib error");
 			ShowZError(zerror, &m_z);
 			cout << "ReadPacket: failed zlib free" << endl;

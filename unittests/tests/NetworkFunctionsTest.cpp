@@ -1,14 +1,15 @@
 #include <muleunit/test.h>
 #include <NetworkFunctions.h>
 
-#define itemsof(x) (sizeof(x)/sizeof(x[0]))
+#define itemsof(x) (sizeof(x) / sizeof(x[0]))
 
 using namespace muleunit;
 
 // Needed for Boost-enabled build
-namespace MuleNotify {
-	void HandleNotificationAlways(const class CMuleNotiferBase&) {}
-};
+namespace MuleNotify
+{
+void HandleNotificationAlways(const class CMuleNotiferBase &) {}
+}; // namespace MuleNotify
 
 DECLARE_SIMPLE(NetworkFunctions)
 
@@ -30,30 +31,45 @@ TEST(NetworkFunctions, StringIPtoUint32)
 							for (int c = 0; c < items; ++c) {
 								for (int zc = 0; zc < zeros; ++zc) {
 									for (int d = 0; d < items; ++d) {
-										for (int zd = 0; zd < zeros; ++zd) {
+										for (int zd = 0; zd < zeros;
+											++zd) {
 											wxString IP;
 
-											IP << wxString(' ', wl)
-											   << wxString('0', za)
-											   << values[a]
-											   << '.'
-											   << wxString('0', zb)
-											   << values[b]
-											   << '.'
-											   << wxString('0', zc)
-											   << values[c]
-											   << '.'
-											   << wxString('0', zd)
+											IP << wxString(
+												      ' ', wl)
+											   << wxString(
+												      '0', za)
+											   << values[a] << '.'
+											   << wxString(
+												      '0', zb)
+											   << values[b] << '.'
+											   << wxString(
+												      '0', zc)
+											   << values[c] << '.'
+											   << wxString(
+												      '0', zd)
 											   << values[d]
-											   << wxString(' ', wr);
+											   << wxString(' ',
+												      wr);
 
 											uint32 resultIP = 17;
 
-											ASSERT_TRUE(StringIPtoUint32(IP, resultIP));
+											ASSERT_TRUE(StringIPtoUint32(
+												IP,
+												resultIP));
 
-											uint32 expected = (values[d] << 24) | (values[c] << 16) | (values[b] << 8) | values[a];
+											uint32 expected =
+												(values[d]
+													<< 24) |
+												(values[c]
+													<< 16) |
+												(values[b]
+													<< 8) |
+												values[a];
 
-											ASSERT_EQUALS(expected, resultIP);
+											ASSERT_EQUALS(
+												expected,
+												resultIP);
 										}
 									}
 								}
@@ -64,7 +80,6 @@ TEST(NetworkFunctions, StringIPtoUint32)
 			}
 		}
 	}
-
 
 	// Test invalid IPs
 	uint32 dummyIP = 27;
@@ -119,7 +134,6 @@ TEST(NetworkFunctions, StringIPtoUint32)
 		ASSERT_FALSE(StringIPtoUint32(wxString::Format("1.2.3.%c4", c), dummyIP));
 	}
 
-
 	// Faar too large values (triggered overflow and became negative)
 	ASSERT_FALSE(StringIPtoUint32("2147483648.2.3.4", dummyIP));
 	ASSERT_FALSE(StringIPtoUint32("1.2147483648.3.4", dummyIP));
@@ -132,47 +146,44 @@ TEST(NetworkFunctions, StringIPtoUint32)
 	ASSERT_FALSE(StringIPtoUint32("1.2.4294967296.4", dummyIP));
 	ASSERT_FALSE(StringIPtoUint32("1.2.3.4294967296", dummyIP));
 
-
 	// The dummyIP value shouldn't have been changed by any of these calls
 	ASSERT_EQUALS(27u, dummyIP);
 }
 
-
 // Testing the IsGoodIP() and IsLanIP() functions
 TEST(NetworkFunctions, IsGoodIP)
 {
-	struct {
-		wxString	ip;
-		bool		isgood;
-		bool		islan;
-	} ipList[] = {
-		{ "0.0.0.0",	false,	false	},
-		{ "0.0.0.1",	false,	false	},
-		{ "0.0.1.0",	false,	false	},
-		{ "0.1.0.0",	false,	false	},
-		{ "1.0.0.0",	true,	false	},
-		{ "10.0.0.1",	true,	true	},
-		{ "10.0.1.0",	true,	true	},
-		{ "10.1.0.0",	true,	true	},
-		{ "14.156.39.4",	true,	false	},
-		{ "24.93.63.177",	true,	false	},
-		{ "172.15.0.0",	true,	false	},
-		{ "172.16.0.0",	true,	true	},
-		{ "172.17.0.0",	true,	true	},
-		{ "172.31.0.0",	true,	true	},
-		{ "172.32.0.0",	true,	false	},
-		{ "192.88.98.176",	true,	false	},
-		{ "192.88.99.175",	false,	false	},
-		{ "192.88.100.17",	true,	false	},
-		{ "192.167.0.0",	true,	false	},
-		{ "192.168.0.0",	true,	true	},
-		{ "192.168.255.255", true, true	},
-		{ "192.169.0.0",	true,	false	},
-		{ "198.17.0.0",	true,	false	},
-		{ "198.18.0.0",	false,	false	},
-		{ "198.19.0.0",	false,	false	},
-		{ "198.20.0.0",	true,	false	}
-	};
+	struct
+	{
+		wxString ip;
+		bool isgood;
+		bool islan;
+	} ipList[] = { { "0.0.0.0", false, false },
+		{ "0.0.0.1", false, false },
+		{ "0.0.1.0", false, false },
+		{ "0.1.0.0", false, false },
+		{ "1.0.0.0", true, false },
+		{ "10.0.0.1", true, true },
+		{ "10.0.1.0", true, true },
+		{ "10.1.0.0", true, true },
+		{ "14.156.39.4", true, false },
+		{ "24.93.63.177", true, false },
+		{ "172.15.0.0", true, false },
+		{ "172.16.0.0", true, true },
+		{ "172.17.0.0", true, true },
+		{ "172.31.0.0", true, true },
+		{ "172.32.0.0", true, false },
+		{ "192.88.98.176", true, false },
+		{ "192.88.99.175", false, false },
+		{ "192.88.100.17", true, false },
+		{ "192.167.0.0", true, false },
+		{ "192.168.0.0", true, true },
+		{ "192.168.255.255", true, true },
+		{ "192.169.0.0", true, false },
+		{ "198.17.0.0", true, false },
+		{ "198.18.0.0", false, false },
+		{ "198.19.0.0", false, false },
+		{ "198.20.0.0", true, false } };
 
 	unsigned int ip;
 	for (unsigned int i = 0; i < itemsof(ipList); i++) {

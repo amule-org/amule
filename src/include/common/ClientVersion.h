@@ -32,14 +32,14 @@
 // in -I${CMAKE_BINARY_DIR} which isn't on the windres command line for
 // every Windows target (e.g. ed2k).
 #ifndef RC_INVOKED
-#include "config.h"		// Needed for VERSION
+#include "config.h" // Needed for VERSION
 #endif
 
 // eMule version used on old MuleInfo packet (unimportant).
-#define	CURRENT_VERSION_SHORT			0x47
+#define CURRENT_VERSION_SHORT 0x47
 
 // This is only used to server login. It has no real "version" meaning anymore.
-#define	EDONKEYVERSION				0x3c
+#define EDONKEYVERSION 0x3c
 
 // aMule version
 
@@ -57,18 +57,18 @@
 #endif
 
 #ifndef VERSION
-	#define VERSION "3.0.0-dev"
+#define VERSION "3.0.0-dev"
 #endif
 
 #ifdef __GIT__
-	#define	MOD_VERSION_LONG		"aMule GIT"
+#define MOD_VERSION_LONG "aMule GIT"
 #else
-	#define	MOD_VERSION_LONG		("aMule " VERSION)
+#define MOD_VERSION_LONG ("aMule " VERSION)
 #endif
 
-#define	VERSION_MJR		3
-#define	VERSION_MIN		0
-#define	VERSION_UPDATE		1
+#define VERSION_MJR 3
+#define VERSION_MIN 0
+#define VERSION_UPDATE 1
 
 #ifndef PACKAGE
 #define PACKAGE "amule"

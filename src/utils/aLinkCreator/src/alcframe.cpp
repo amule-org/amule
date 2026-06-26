@@ -30,7 +30,6 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 ////////////////////////////////////////////////////////////////////////////////
 
-
 #include <wx/clipbrd.h>
 #include <wx/dataobj.h>
 #include <wx/file.h>
@@ -49,10 +48,10 @@
 #include <wx/url.h>
 
 #ifdef __WINDOWS__
-	#include <winerror.h>
-	#include <shlobj.h>
+#include <winerror.h>
+#include <shlobj.h>
 #elif defined(__WXMAC__)
-	#include <wx/intl.h>
+#include <wx/intl.h>
 #endif
 
 #include "md4.h"
@@ -62,262 +61,255 @@
 #include "alc.h"
 
 /// Constructor
-AlcFrame::AlcFrame (const wxString & title):
-    wxFrame ((wxFrame *) NULL, -1, title)
+AlcFrame::AlcFrame(const wxString &title)
+: wxFrame((wxFrame *)NULL, -1, title)
 {
-  // Give it an icon
+	// Give it an icon
 #ifdef __WINDOWS__
-  wxIcon icon("alc");
+	wxIcon icon("alc");
 #else
-  wxIcon icon;
-  icon.CopyFromBitmap(AlcPix::getPixmap("alc"));
+	wxIcon icon;
+	icon.CopyFromBitmap(AlcPix::getPixmap("alc"));
 #endif
-  SetIcon (icon);
+	SetIcon(icon);
 
-  // Status Bar
-  CreateStatusBar ();
-  SetStatusText (_("Welcome!"));
+	// Status Bar
+	CreateStatusBar();
+	SetStatusText(_("Welcome!"));
 
-  // Unused dialog for now
-  m_progressBar = NULL;
+	// Unused dialog for now
+	m_progressBar = NULL;
 
-  // Frame Vertical sizer
-  m_frameVBox = new wxBoxSizer (wxVERTICAL);
+	// Frame Vertical sizer
+	m_frameVBox = new wxBoxSizer(wxVERTICAL);
 
-  // Add Main panel to frame (needed by win32 for padding sub panels)
-  m_mainPanel = new wxPanel (this, -1);
+	// Add Main panel to frame (needed by win32 for padding sub panels)
+	m_mainPanel = new wxPanel(this, -1);
 
-  // Main Panel Vertical Sizer
-  m_mainPanelVBox = new wxBoxSizer (wxVERTICAL);
+	// Main Panel Vertical Sizer
+	m_mainPanelVBox = new wxBoxSizer(wxVERTICAL);
 
-  // Main Panel static line
-  m_staticLine = new wxStaticLine (m_mainPanel, -1);
-  m_mainPanelVBox->Add (m_staticLine, wxSizerFlags().Expand().Border(wxALL, 0));
+	// Main Panel static line
+	m_staticLine = new wxStaticLine(m_mainPanel, -1);
+	m_mainPanelVBox->Add(m_staticLine, wxSizerFlags().Expand().Border(wxALL, 0));
 
-  // Input Parameters
-  m_inputSBox =
-    new wxStaticBox (m_mainPanel, -1, _("Input parameters"));
-  m_inputSBoxSizer = new wxStaticBoxSizer (m_inputSBox, wxHORIZONTAL);
+	// Input Parameters
+	m_inputSBox = new wxStaticBox(m_mainPanel, -1, _("Input parameters"));
+	m_inputSBoxSizer = new wxStaticBoxSizer(m_inputSBox, wxHORIZONTAL);
 
-  // Input Grid
-  m_inputFlexSizer = new wxFlexGridSizer (6, 2, 5, 10);
+	// Input Grid
+	m_inputFlexSizer = new wxFlexGridSizer(6, 2, 5, 10);
 
-  // Left col is growable
-  m_inputFlexSizer->AddGrowableCol (0);
+	// Left col is growable
+	m_inputFlexSizer->AddGrowableCol(0);
 
-  // Static texts
-  m_inputFileStaticText=new wxStaticText(m_mainPanel, -1,
-                                         _("File to Hash"),
-                                         wxDefaultPosition,wxDefaultSize,wxALIGN_CENTRE);
+	// Static texts
+	m_inputFileStaticText = new wxStaticText(
+		m_mainPanel, -1, _("File to Hash"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE);
 
-  m_inputAddStaticText=new wxStaticText(m_mainPanel, -1,
-                                        _("Add Optional URLs for this file"),
-                                        wxDefaultPosition,wxDefaultSize,wxALIGN_CENTRE);
+	m_inputAddStaticText = new wxStaticText(m_mainPanel,
+		-1,
+		_("Add Optional URLs for this file"),
+		wxDefaultPosition,
+		wxDefaultSize,
+		wxALIGN_CENTRE);
 
-  // Text ctrls
-  m_inputFileTextCtrl = new wxTextCtrl (m_mainPanel,-1,"",
-                                        wxDefaultPosition, wxSize(300,-1));
-  m_inputFileTextCtrl->
-  SetToolTip (_
-              ("Enter here the file you want to compute the eD2k link"));
+	// Text ctrls
+	m_inputFileTextCtrl = new wxTextCtrl(m_mainPanel, -1, "", wxDefaultPosition, wxSize(300, -1));
+	m_inputFileTextCtrl->SetToolTip(_("Enter here the file you want to compute the eD2k link"));
 
-  m_inputAddTextCtrl = new wxTextCtrl (m_mainPanel,-1,"",
-                                       wxDefaultPosition, wxSize(300,-1));
-  m_inputAddTextCtrl->
-  SetToolTip (_
-              ("Enter here the URL you want to add to the eD2k link: Add / at the end to let aLinkCreator append the current file name"));
+	m_inputAddTextCtrl = new wxTextCtrl(m_mainPanel, -1, "", wxDefaultPosition, wxSize(300, -1));
+	m_inputAddTextCtrl->SetToolTip(_("Enter here the URL you want to add to the eD2k link: Add / at the "
+					 "end to let aLinkCreator append the current file name"));
 
-  // List box
-  m_inputUrlListBox = new wxListBox(m_mainPanel, -1, wxDefaultPosition,
-                                    wxDefaultSize, 0, NULL, wxLB_SINGLE | wxLB_NEEDED_SB | wxLB_HSCROLL);
+	// List box
+	m_inputUrlListBox = new wxListBox(m_mainPanel,
+		-1,
+		wxDefaultPosition,
+		wxDefaultSize,
+		0,
+		NULL,
+		wxLB_SINGLE | wxLB_NEEDED_SB | wxLB_HSCROLL);
 
-  // Buttons
-  m_inputFileBrowseButton =
-    new wxButton (m_mainPanel, ID_BROWSE_BUTTON, wxString (_("Browse")));
+	// Buttons
+	m_inputFileBrowseButton = new wxButton(m_mainPanel, ID_BROWSE_BUTTON, wxString(_("Browse")));
 
-  m_inputAddButton =
-    new wxButton (m_mainPanel, ID_ADD_BUTTON, wxString (_("Add")));
+	m_inputAddButton = new wxButton(m_mainPanel, ID_ADD_BUTTON, wxString(_("Add")));
 
-  // Button bar
-  m_buttonUrlVBox = new wxBoxSizer (wxVERTICAL);
-  m_removeButton =
-    new wxButton (m_mainPanel, ID_REMOVE_BUTTON, wxString (_("Remove")));
-  m_clearButton =
-    new wxButton (m_mainPanel, ID_CLEAR_BUTTON, wxString (_("Clear")));
+	// Button bar
+	m_buttonUrlVBox = new wxBoxSizer(wxVERTICAL);
+	m_removeButton = new wxButton(m_mainPanel, ID_REMOVE_BUTTON, wxString(_("Remove")));
+	m_clearButton = new wxButton(m_mainPanel, ID_CLEAR_BUTTON, wxString(_("Clear")));
 
-  m_buttonUrlVBox->Add (m_removeButton, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5));
-  m_buttonUrlVBox->Add (m_clearButton, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5));
+	m_buttonUrlVBox->Add(m_removeButton, wxSizerFlags().Center().Border(wxTOP | wxBOTTOM, 5));
+	m_buttonUrlVBox->Add(m_clearButton, wxSizerFlags().Center().Border(wxTOP | wxBOTTOM, 5));
 
-  // Check button
-  m_parthashesCheck =
-    new wxCheckBox (m_mainPanel, ID_PARTHASHES_CHECK,
-                    _
-                    ("Create link with part-hashes"));
+	// Check button
+	m_parthashesCheck =
+		new wxCheckBox(m_mainPanel, ID_PARTHASHES_CHECK, _("Create link with part-hashes"));
 
-  m_parthashesCheck->SetValue(false);
+	m_parthashesCheck->SetValue(false);
 
-  m_parthashesCheck->
-  SetToolTip (_
-              ("Help to spread new and rare files faster, at the cost of an increased link size"));
+	m_parthashesCheck->SetToolTip(
+		_("Help to spread new and rare files faster, at the cost of an increased link size"));
 
-  // Add to sizers
-  m_inputFlexSizer->Add (m_inputFileStaticText, wxSizerFlags(1).Expand().Bottom().Border(wxTOP, 10));
-  m_inputFlexSizer->Add (1,1);
+	// Add to sizers
+	m_inputFlexSizer->Add(m_inputFileStaticText, wxSizerFlags(1).Expand().Bottom().Border(wxTOP, 10));
+	m_inputFlexSizer->Add(1, 1);
 
-  m_inputFlexSizer->Add (m_inputFileTextCtrl, wxSizerFlags(1).Expand());
-  m_inputFlexSizer->Add (m_inputFileBrowseButton, wxSizerFlags().Expand());
+	m_inputFlexSizer->Add(m_inputFileTextCtrl, wxSizerFlags(1).Expand());
+	m_inputFlexSizer->Add(m_inputFileBrowseButton, wxSizerFlags().Expand());
 
-  m_inputFlexSizer->Add (m_inputAddStaticText, wxSizerFlags(1).Expand().Bottom().Border(wxTOP, 10));
-  m_inputFlexSizer->Add (1,1);
+	m_inputFlexSizer->Add(m_inputAddStaticText, wxSizerFlags(1).Expand().Bottom().Border(wxTOP, 10));
+	m_inputFlexSizer->Add(1, 1);
 
-  m_inputFlexSizer->Add (m_inputAddTextCtrl, wxSizerFlags(1).Expand());
-  m_inputFlexSizer->Add (m_inputAddButton, wxSizerFlags().Expand());
+	m_inputFlexSizer->Add(m_inputAddTextCtrl, wxSizerFlags(1).Expand());
+	m_inputFlexSizer->Add(m_inputAddButton, wxSizerFlags().Expand());
 
-  m_inputFlexSizer->Add (m_inputUrlListBox, wxSizerFlags().Expand().Center());
-  m_inputFlexSizer->Add (m_buttonUrlVBox, wxSizerFlags().Expand().Center());
+	m_inputFlexSizer->Add(m_inputUrlListBox, wxSizerFlags().Expand().Center());
+	m_inputFlexSizer->Add(m_buttonUrlVBox, wxSizerFlags().Expand().Center());
 
-  m_inputFlexSizer->Add (m_parthashesCheck, wxSizerFlags().Expand().Center().Border(wxTOP, 10));
-  m_inputFlexSizer->Add (1,1);
+	m_inputFlexSizer->Add(m_parthashesCheck, wxSizerFlags().Expand().Center().Border(wxTOP, 10));
+	m_inputFlexSizer->Add(1, 1);
 
-  m_inputSBoxSizer->Add (m_inputFlexSizer, wxSizerFlags(1).Expand().Center().Border(wxALL, 10));
-  m_mainPanelVBox->Add (m_inputSBoxSizer, wxSizerFlags().Expand().Center().Border(wxALL, 10));
+	m_inputSBoxSizer->Add(m_inputFlexSizer, wxSizerFlags(1).Expand().Center().Border(wxALL, 10));
+	m_mainPanelVBox->Add(m_inputSBoxSizer, wxSizerFlags().Expand().Center().Border(wxALL, 10));
 
 #ifdef WANT_MD4SUM
-  // MD4 Hash Vertical Box Sizer
-  m_md4HashSBox = new wxStaticBox (m_mainPanel, -1, _("MD4 File Hash"));
-  m_md4HashSBoxSizer = new wxStaticBoxSizer (m_md4HashSBox, wxHORIZONTAL);
+	// MD4 Hash Vertical Box Sizer
+	m_md4HashSBox = new wxStaticBox(m_mainPanel, -1, _("MD4 File Hash"));
+	m_md4HashSBoxSizer = new wxStaticBoxSizer(m_md4HashSBox, wxHORIZONTAL);
 
-  // MD4 Hash results
-  m_md4HashTextCtrl = new wxTextCtrl( m_mainPanel, -1, "", wxDefaultPosition,
-                                      wxDefaultSize, wxTE_READONLY );
+	// MD4 Hash results
+	m_md4HashTextCtrl =
+		new wxTextCtrl(m_mainPanel, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 
-  m_md4HashSBoxSizer->Add (m_md4HashTextCtrl, wxSizerFlags(1).Center().Border(wxALL, 5));
-  m_mainPanelVBox->Add( m_md4HashSBoxSizer, wxSizerFlags().Expand().Border(wxALL, 10) );
+	m_md4HashSBoxSizer->Add(m_md4HashTextCtrl, wxSizerFlags(1).Center().Border(wxALL, 5));
+	m_mainPanelVBox->Add(m_md4HashSBoxSizer, wxSizerFlags().Expand().Border(wxALL, 10));
 #endif
 
-  // Hash Vertical Box Sizer
-  m_e2kHashSBox = new wxStaticBox (m_mainPanel, -1, _("eD2k File Hash"));
-  m_e2kHashSBoxSizer = new wxStaticBoxSizer (m_e2kHashSBox, wxHORIZONTAL);
+	// Hash Vertical Box Sizer
+	m_e2kHashSBox = new wxStaticBox(m_mainPanel, -1, _("eD2k File Hash"));
+	m_e2kHashSBoxSizer = new wxStaticBoxSizer(m_e2kHashSBox, wxHORIZONTAL);
 
-  // Hash results
-  m_e2kHashTextCtrl = new wxTextCtrl( m_mainPanel, -1, "", wxDefaultPosition,
-                                      wxDefaultSize, wxTE_READONLY );
+	// Hash results
+	m_e2kHashTextCtrl =
+		new wxTextCtrl(m_mainPanel, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 
-  m_e2kHashSBoxSizer->Add (m_e2kHashTextCtrl, wxSizerFlags(1).Center().Border(wxALL, 5));
-  m_mainPanelVBox->Add( m_e2kHashSBoxSizer, wxSizerFlags().Expand().Border(wxALL, 10) );
+	m_e2kHashSBoxSizer->Add(m_e2kHashTextCtrl, wxSizerFlags(1).Center().Border(wxALL, 5));
+	m_mainPanelVBox->Add(m_e2kHashSBoxSizer, wxSizerFlags().Expand().Border(wxALL, 10));
 
-  // Ed2k Vertical Box Sizer
-  m_ed2kSBox = new wxStaticBox (m_mainPanel, -1, _("eD2k link"));
-  m_ed2kSBoxSizer = new wxStaticBoxSizer (m_ed2kSBox, wxVERTICAL);
+	// Ed2k Vertical Box Sizer
+	m_ed2kSBox = new wxStaticBox(m_mainPanel, -1, _("eD2k link"));
+	m_ed2kSBoxSizer = new wxStaticBoxSizer(m_ed2kSBox, wxVERTICAL);
 
-  // Ed2k results
-  m_ed2kTextCtrl = new wxTextCtrl( m_mainPanel, -1, "", wxDefaultPosition,
-                                   wxSize(-1,60), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL );
+	// Ed2k results
+	m_ed2kTextCtrl = new wxTextCtrl(m_mainPanel,
+		-1,
+		"",
+		wxDefaultPosition,
+		wxSize(-1, 60),
+		wxTE_MULTILINE | wxTE_READONLY | wxVSCROLL);
 
-  m_ed2kSBoxSizer->Add (m_ed2kTextCtrl, wxSizerFlags(1).Expand().Border(wxALL, 5));
-  m_mainPanelVBox->Add( m_ed2kSBoxSizer, wxSizerFlags(1).Expand().Border(wxALL, 10) );
+	m_ed2kSBoxSizer->Add(m_ed2kTextCtrl, wxSizerFlags(1).Expand().Border(wxALL, 5));
+	m_mainPanelVBox->Add(m_ed2kSBoxSizer, wxSizerFlags(1).Expand().Border(wxALL, 10));
 
-  // Button bar
-  m_buttonHBox = new wxBoxSizer (wxHORIZONTAL);
-  m_startButton =
-    new wxButton (m_mainPanel, ID_START_BUTTON, wxString (_("Start")));
-  m_saveButton =
-    new wxButton (m_mainPanel, ID_SAVEAS_BUTTON, wxString (_("Save")));
-  m_copyButton =
-    new wxButton (m_mainPanel, ID_COPY_BUTTON, wxString (_("Copy to clipboard")));
-  m_closeButton =
-    new wxButton (m_mainPanel, ID_EXIT_BUTTON, wxString (_("Exit")));
+	// Button bar
+	m_buttonHBox = new wxBoxSizer(wxHORIZONTAL);
+	m_startButton = new wxButton(m_mainPanel, ID_START_BUTTON, wxString(_("Start")));
+	m_saveButton = new wxButton(m_mainPanel, ID_SAVEAS_BUTTON, wxString(_("Save")));
+	m_copyButton = new wxButton(m_mainPanel, ID_COPY_BUTTON, wxString(_("Copy to clipboard")));
+	m_closeButton = new wxButton(m_mainPanel, ID_EXIT_BUTTON, wxString(_("Exit")));
 
-  m_buttonHBox->Add (m_copyButton, wxSizerFlags().Border(wxALL, 5));
-  m_buttonHBox->Add(1,1,1);
-  m_buttonHBox->Add (m_startButton, wxSizerFlags().Right().Border(wxALL, 5));
-  m_buttonHBox->Add (m_saveButton, wxSizerFlags().Right().Border(wxALL, 5));
-  m_buttonHBox->Add (m_closeButton, wxSizerFlags().Right().Border(wxALL, 5));
+	m_buttonHBox->Add(m_copyButton, wxSizerFlags().Border(wxALL, 5));
+	m_buttonHBox->Add(1, 1, 1);
+	m_buttonHBox->Add(m_startButton, wxSizerFlags().Right().Border(wxALL, 5));
+	m_buttonHBox->Add(m_saveButton, wxSizerFlags().Right().Border(wxALL, 5));
+	m_buttonHBox->Add(m_closeButton, wxSizerFlags().Right().Border(wxALL, 5));
 
+	m_mainPanelVBox->Add(m_buttonHBox, wxSizerFlags().Expand().Border(wxALL, 5));
 
-  m_mainPanelVBox->Add (m_buttonHBox, wxSizerFlags().Expand().Border(wxALL, 5));
+	// Toolbar Pixmaps
+	m_toolBarBitmaps[0] = AlcPix::getPixmap("open");
+	m_toolBarBitmaps[1] = AlcPix::getPixmap("copy");
+	m_toolBarBitmaps[2] = AlcPix::getPixmap("saveas");
+	m_toolBarBitmaps[3] = AlcPix::getPixmap("about");
 
-  // Toolbar Pixmaps
-  m_toolBarBitmaps[0] = AlcPix::getPixmap("open");
-  m_toolBarBitmaps[1] = AlcPix::getPixmap("copy");
-  m_toolBarBitmaps[2] = AlcPix::getPixmap("saveas");
-  m_toolBarBitmaps[3] = AlcPix::getPixmap("about");
+	// Constructing toolbar
+	m_toolbar = new wxToolBar(this, -1, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL | wxTB_FLAT);
 
-  // Constructing toolbar
-  m_toolbar =
-    new wxToolBar (this, -1, wxDefaultPosition, wxDefaultSize,
-                   wxTB_HORIZONTAL | wxTB_FLAT);
+	m_toolbar->SetToolBitmapSize(wxSize(32, 32));
+	m_toolbar->SetMargins(2, 2);
 
-  m_toolbar->SetToolBitmapSize (wxSize (32, 32));
-  m_toolbar->SetMargins (2, 2);
+	m_toolbar->AddTool(ID_BAR_OPEN,
+		_("Open"),
+		wxBitmapBundle(m_toolBarBitmaps[0]),
+		_("Open a file to compute its eD2k link"));
 
-  m_toolbar->AddTool (ID_BAR_OPEN, _("Open"), wxBitmapBundle(m_toolBarBitmaps[0]),
-                      _("Open a file to compute its eD2k link"));
+	m_toolbar->AddTool(ID_BAR_COPY,
+		_("Copy"),
+		wxBitmapBundle(m_toolBarBitmaps[1]),
+		_("Copy computed eD2k link to clipboard"));
 
-  m_toolbar->AddTool (ID_BAR_COPY, _("Copy"), wxBitmapBundle(m_toolBarBitmaps[1]),
-                      _("Copy computed eD2k link to clipboard"));
+	m_toolbar->AddTool(ID_BAR_SAVEAS,
+		_("Save as"),
+		wxBitmapBundle(m_toolBarBitmaps[2]),
+		_("Save computed eD2k link to file"));
 
-  m_toolbar->AddTool (ID_BAR_SAVEAS, _("Save as"), wxBitmapBundle(m_toolBarBitmaps[2]),
-                      _("Save computed eD2k link to file"));
+	m_toolbar->AddSeparator();
 
-  m_toolbar->AddSeparator ();
+	m_toolbar->AddTool(
+		ID_BAR_ABOUT, _("About"), wxBitmapBundle(m_toolBarBitmaps[3]), _("About aLinkCreator"));
 
-  m_toolbar->AddTool (ID_BAR_ABOUT, _("About"), wxBitmapBundle(m_toolBarBitmaps[3]),
-                      _("About aLinkCreator"));
+	m_toolbar->Realize();
 
-  m_toolbar->Realize ();
+	SetToolBar(m_toolbar);
 
-  SetToolBar (m_toolbar);
+	// Main panel Layout
+	m_mainPanel->SetAutoLayout(true);
+	m_mainPanel->SetSizerAndFit(m_mainPanelVBox);
 
-  // Main panel Layout
-  m_mainPanel->SetAutoLayout(true);
-  m_mainPanel->SetSizerAndFit (m_mainPanelVBox);
+	// Frame Layout
+	m_frameVBox->Add(m_mainPanel, wxSizerFlags(1).Expand().Border(wxALL, 0));
+	SetAutoLayout(true);
+	SetSizerAndFit(m_frameVBox);
 
-  // Frame Layout
-  m_frameVBox->Add (m_mainPanel, wxSizerFlags(1).Expand().Border(wxALL, 0));
-  SetAutoLayout (true);
-  SetSizerAndFit (m_frameVBox);
-
-  m_startButton->SetFocus();
+	m_startButton->SetFocus();
 }
 
 /// Destructor
-AlcFrame::~AlcFrame ()
-{}
+AlcFrame::~AlcFrame() {}
 
 /// Events table
-wxBEGIN_EVENT_TABLE (AlcFrame, wxFrame)
-EVT_TOOL (ID_BAR_OPEN, AlcFrame::OnBarOpen)
-EVT_TOOL (ID_BAR_SAVEAS, AlcFrame::OnBarSaveAs)
-EVT_TOOL (ID_BAR_COPY, AlcFrame::OnBarCopy)
-EVT_TOOL (ID_BAR_ABOUT, AlcFrame::OnBarAbout)
-EVT_BUTTON (ID_START_BUTTON, AlcFrame::OnStartButton)
-EVT_BUTTON (ID_EXIT_BUTTON, AlcFrame::OnCloseButton)
-EVT_BUTTON (ID_SAVEAS_BUTTON, AlcFrame::OnSaveAsButton)
-EVT_BUTTON (ID_COPY_BUTTON, AlcFrame::OnCopyButton)
-EVT_BUTTON (ID_BROWSE_BUTTON, AlcFrame::OnBrowseButton)
-EVT_BUTTON (ID_ADD_BUTTON, AlcFrame::OnAddUrlButton)
-EVT_BUTTON (ID_REMOVE_BUTTON, AlcFrame::OnRemoveUrlButton)
-EVT_BUTTON (ID_CLEAR_BUTTON, AlcFrame::OnClearUrlButton)
-wxEND_EVENT_TABLE ()
+wxBEGIN_EVENT_TABLE(AlcFrame, wxFrame)
+	EVT_TOOL(ID_BAR_OPEN, AlcFrame::OnBarOpen)
+	EVT_TOOL(ID_BAR_SAVEAS, AlcFrame::OnBarSaveAs)
+	EVT_TOOL(ID_BAR_COPY, AlcFrame::OnBarCopy)
+	EVT_TOOL(ID_BAR_ABOUT, AlcFrame::OnBarAbout)
+	EVT_BUTTON(ID_START_BUTTON, AlcFrame::OnStartButton)
+	EVT_BUTTON(ID_EXIT_BUTTON, AlcFrame::OnCloseButton)
+	EVT_BUTTON(ID_SAVEAS_BUTTON, AlcFrame::OnSaveAsButton)
+	EVT_BUTTON(ID_COPY_BUTTON, AlcFrame::OnCopyButton)
+	EVT_BUTTON(ID_BROWSE_BUTTON, AlcFrame::OnBrowseButton)
+	EVT_BUTTON(ID_ADD_BUTTON, AlcFrame::OnAddUrlButton)
+	EVT_BUTTON(ID_REMOVE_BUTTON, AlcFrame::OnRemoveUrlButton)
+	EVT_BUTTON(ID_CLEAR_BUTTON, AlcFrame::OnClearUrlButton)
+wxEND_EVENT_TABLE()
 
 /// Toolbar Open button
-void
-AlcFrame::OnBarOpen (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnBarOpen(wxCommandEvent &WXUNUSED(event))
 {
-  SetFileToHash();
+	SetFileToHash();
 }
 
 /// Browse button to select file to hash
-void
-AlcFrame::OnBrowseButton (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnBrowseButton(wxCommandEvent &WXUNUSED(event))
 {
-  SetFileToHash();
+	SetFileToHash();
 }
 
 /// Set File to hash in wxTextCtrl
-void
-AlcFrame::SetFileToHash()
+void AlcFrame::SetFileToHash()
 {
 #ifdef __WINDOWS__
 	wxString browseroot;
@@ -344,7 +336,7 @@ AlcFrame::SetFileToHash()
 	// FSFindFolder(kUserDomain, kDocumentsFolderType, ...) used to
 	// return via the Carbon FSRef API (removed in 64-bit macOS).
 	wxString browseroot;
-	const char* home = getenv("HOME");
+	const char *home = getenv("HOME");
 	if (home) {
 		browseroot = wxString::FromUTF8(home) + "/Documents";
 	} else {
@@ -354,272 +346,247 @@ AlcFrame::SetFileToHash()
 #else
 	wxString browseroot = wxFileName::GetHomeDir();
 #endif
-  const wxString & filename =
-    wxFileSelector (_("Select the file you want to compute the eD2k link"),
-                    browseroot, "", "", "*.*",
-                    wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
+	const wxString &filename = wxFileSelector(_("Select the file you want to compute the eD2k link"),
+		browseroot,
+		"",
+		"",
+		"*.*",
+		wxFD_OPEN | wxFD_FILE_MUST_EXIST,
+		this);
 
-  if (!filename.empty ())
-    {
-      m_inputFileTextCtrl->SetValue(filename);
-    }
+	if (!filename.empty()) {
+		m_inputFileTextCtrl->SetValue(filename);
+	}
 }
 
 /// Toolbar Save As button
-void
-AlcFrame::OnBarSaveAs (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnBarSaveAs(wxCommandEvent &WXUNUSED(event))
 {
-  SaveEd2kLinkToFile();
+	SaveEd2kLinkToFile();
 }
 
 /// Save As button
-void
-AlcFrame::OnSaveAsButton(wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnSaveAsButton(wxCommandEvent &WXUNUSED(event))
 {
-  SaveEd2kLinkToFile();
+	SaveEd2kLinkToFile();
 }
 
 /// Copy Ed2k link to clip board
-void
-AlcFrame::CopyEd2kLinkToClipBoard()
+void AlcFrame::CopyEd2kLinkToClipBoard()
 {
-  wxString link = m_ed2kTextCtrl->GetValue();
-  if (!link.IsEmpty())
-    {
-      wxClipboardLocker clipLocker;
-      if ( !clipLocker )
-        {
-          wxLogError(_("Can't open the clipboard"));
+	wxString link = m_ed2kTextCtrl->GetValue();
+	if (!link.IsEmpty()) {
+		wxClipboardLocker clipLocker;
+		if (!clipLocker) {
+			wxLogError(_("Can't open the clipboard"));
 
-          return;
-        }
+			return;
+		}
 
-      wxTheClipboard->AddData(new wxTextDataObject(link));
-    }
-  else
-    {
-      SetStatusText (_("Nothing to copy for now !"));
-    }
+		wxTheClipboard->AddData(new wxTextDataObject(link));
+	} else {
+		SetStatusText(_("Nothing to copy for now !"));
+	}
 }
 
 /// Copy button
-void
-AlcFrame::OnCopyButton(wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnCopyButton(wxCommandEvent &WXUNUSED(event))
 {
-  CopyEd2kLinkToClipBoard();
+	CopyEd2kLinkToClipBoard();
 }
 
 /// Toolbar Copy button
-void
-AlcFrame::OnBarCopy(wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnBarCopy(wxCommandEvent &WXUNUSED(event))
 {
-  CopyEd2kLinkToClipBoard();
+	CopyEd2kLinkToClipBoard();
 }
 
 /// Save computed Ed2k link to file
-void
-AlcFrame::SaveEd2kLinkToFile()
+void AlcFrame::SaveEd2kLinkToFile()
 {
-  wxString link(m_ed2kTextCtrl->GetValue());
+	wxString link(m_ed2kTextCtrl->GetValue());
 
-  if (!link.IsEmpty())
-    {
-      const wxString & filename =
-        wxFileSelector (_("Select the file to your computed eD2k link"),
-                        wxFileName::GetHomeDir(),"my_ed2k_link",
-                        "txt", "*.txt", wxFD_SAVE, this);
+	if (!link.IsEmpty()) {
+		const wxString &filename = wxFileSelector(_("Select the file to your computed eD2k link"),
+			wxFileName::GetHomeDir(),
+			"my_ed2k_link",
+			"txt",
+			"*.txt",
+			wxFD_SAVE,
+			this);
 
-      if (!filename.empty ())
-        {
-          // Open file and let wxFile destructor close the file
-          // Closing it explicitly may crash on Win32 ...
-          wxFile file(filename,wxFile::write_append);
-          if (! file.IsOpened())
-            {
-              SetStatusText (_("Unable to open ") + filename);
-              return;
-            }
-          file.Write(link + wxTextFile::GetEOL());
-        }
-      else
-        {
-          SetStatusText (_("Please, enter a non empty file name"));
-        }
-    }
-  else
-    {
-      SetStatusText (_("Nothing to save for now !"));
-    }
+		if (!filename.empty()) {
+			// Open file and let wxFile destructor close the file
+			// Closing it explicitly may crash on Win32 ...
+			wxFile file(filename, wxFile::write_append);
+			if (!file.IsOpened()) {
+				SetStatusText(_("Unable to open ") + filename);
+				return;
+			}
+			file.Write(link + wxTextFile::GetEOL());
+		} else {
+			SetStatusText(_("Please, enter a non empty file name"));
+		}
+	} else {
+		SetStatusText(_("Nothing to save for now !"));
+	}
 }
 
 /// Toolbar About button
-void
-AlcFrame::OnBarAbout (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnBarAbout(wxCommandEvent &WXUNUSED(event))
 {
-  wxMessageBox (_
-                ("aLinkCreator, the aMule eD2k link creator\n\n(c) 2004 ThePolish <thepolish@vipmail.ru>\n\nPixmaps from http://www.everaldo.com and http://www.icomania.com\nand http://jimmac.musichall.cz/ikony.php3\n\nDistributed under GPL"),
-                _("About aLinkCreator"), wxOK | wxCENTRE | wxICON_INFORMATION);
+	wxMessageBox(_("aLinkCreator, the aMule eD2k link creator\n\n(c) 2004 ThePolish "
+		       "<thepolish@vipmail.ru>\n\nPixmaps from http://www.everaldo.com and "
+		       "http://www.icomania.com\nand http://jimmac.musichall.cz/ikony.php3\n\nDistributed "
+		       "under GPL"),
+		_("About aLinkCreator"),
+		wxOK | wxCENTRE | wxICON_INFORMATION);
 }
 
 /// Close Button
-void AlcFrame::OnCloseButton (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnCloseButton(wxCommandEvent &WXUNUSED(event))
 {
-  Close (false);
+	Close(false);
 }
 
 /// Hook into MD4/ED2K routine
 bool AlcFrame::Hook(int percent)
 {
-  // Update progress bar
-  bool goAhead = ::wxGetApp().GetMainFrame()->m_progressBar->Update(percent);
-  if (!goAhead)
-    {
-      // Destroying progressbar: no merci for croissants !
-      ::wxGetApp().GetMainFrame()->m_progressBar->Destroy();
-      // Now, be paranoid
-      delete ::wxGetApp().GetMainFrame()->m_progressBar;
-      ::wxGetApp().GetMainFrame()->m_progressBar = NULL;
-    }
+	// Update progress bar
+	bool goAhead = ::wxGetApp().GetMainFrame()->m_progressBar->Update(percent);
+	if (!goAhead) {
+		// Destroying progressbar: no merci for croissants !
+		::wxGetApp().GetMainFrame()->m_progressBar->Destroy();
+		// Now, be paranoid
+		delete ::wxGetApp().GetMainFrame()->m_progressBar;
+		::wxGetApp().GetMainFrame()->m_progressBar = NULL;
+	}
 
-  return (goAhead);
+	return (goAhead);
 }
 
 /// Compute Hashes on Start Button
-void AlcFrame::OnStartButton (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnStartButton(wxCommandEvent &WXUNUSED(event))
 {
-  wxString filename = m_inputFileTextCtrl->GetValue();
+	wxString filename = m_inputFileTextCtrl->GetValue();
 
-  if (!filename.empty ())
-    {
-      // Chrono
-      wxStopWatch chrono;
+	if (!filename.empty()) {
+		// Chrono
+		wxStopWatch chrono;
 
-      // wxFileName needed for base name
-      wxFileName fileToHash(filename);
+		// wxFileName needed for base name
+		wxFileName fileToHash(filename);
 
-      // Set waiting msg
-      m_e2kHashTextCtrl->SetValue(_("Hashing..."));
-      m_ed2kTextCtrl->SetValue(_("Hashing..."));
+		// Set waiting msg
+		m_e2kHashTextCtrl->SetValue(_("Hashing..."));
+		m_ed2kTextCtrl->SetValue(_("Hashing..."));
 
 #ifdef WANT_MD4SUM
-      // Create MD4 progress bar dialog
-      m_progressBar=new wxProgressDialog  (_("aLinkCreator is working for you"), _("Computing MD4 Hash..."),
-                                           100, this, wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_REMAINING_TIME);
-      m_md4HashTextCtrl->SetValue(_("Hashing..."));
+		// Create MD4 progress bar dialog
+		m_progressBar = new wxProgressDialog(_("aLinkCreator is working for you"),
+			_("Computing MD4 Hash..."),
+			100,
+			this,
+			wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_REMAINING_TIME);
+		m_md4HashTextCtrl->SetValue(_("Hashing..."));
 
-      // Md4 hash
-      MD4 md4;
-      m_md4HashTextCtrl->SetValue(md4.calcMd4FromFile(filename,Hook));
+		// Md4 hash
+		MD4 md4;
+		m_md4HashTextCtrl->SetValue(md4.calcMd4FromFile(filename, Hook));
 
-      // Deleting MD4 progress bar dialog
-      delete m_progressBar;
-      m_progressBar=NULL;
+		// Deleting MD4 progress bar dialog
+		delete m_progressBar;
+		m_progressBar = NULL;
 
 #endif
 
-      // Create ED2K progress bar dialog
-      m_progressBar=new wxProgressDialog  (_("aLinkCreator is working for you"), _("Computing eD2k Hashes..."),
-                                           100, this, wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_REMAINING_TIME);
+		// Create ED2K progress bar dialog
+		m_progressBar = new wxProgressDialog(_("aLinkCreator is working for you"),
+			_("Computing eD2k Hashes..."),
+			100,
+			this,
+			wxPD_AUTO_HIDE | wxPD_CAN_ABORT | wxPD_REMAINING_TIME);
 
-      // Compute ed2k Hash
-      Ed2kHash hash;
+		// Compute ed2k Hash
+		Ed2kHash hash;
 
-      // Test the return value to see if was aborted.
-      if (hash.SetED2KHashFromFile(filename, Hook))
-        {
+		// Test the return value to see if was aborted.
+		if (hash.SetED2KHashFromFile(filename, Hook)) {
 
-          wxArrayString ed2kHash (hash.GetED2KHash());
+			wxArrayString ed2kHash(hash.GetED2KHash());
 
-          // Get URLs
-          wxArrayString arrayOfUrls;
-          wxString url;
-          for (size_t i = 0; i < m_inputUrlListBox->GetCount(); ++i)
-            {
-              url=m_inputUrlListBox->GetString(i);
-              if (url.Right(1) == "/")
-                {
-                  url += fileToHash.GetFullName();
-                }
-		arrayOfUrls.Add(wxURI(url).BuildURI());
-            }
-          arrayOfUrls.Shrink(); // Reduce memory usage
+			// Get URLs
+			wxArrayString arrayOfUrls;
+			wxString url;
+			for (size_t i = 0; i < m_inputUrlListBox->GetCount(); ++i) {
+				url = m_inputUrlListBox->GetString(i);
+				if (url.Right(1) == "/") {
+					url += fileToHash.GetFullName();
+				}
+				arrayOfUrls.Add(wxURI(url).BuildURI());
+			}
+			arrayOfUrls.Shrink(); // Reduce memory usage
 
-          // Ed2k hash
-          m_e2kHashTextCtrl->SetValue(ed2kHash.Last());
+			// Ed2k hash
+			m_e2kHashTextCtrl->SetValue(ed2kHash.Last());
 
-          // Ed2k link
-          m_ed2kTextCtrl->SetValue(hash.GetED2KLink(m_parthashesCheck->IsChecked(), &arrayOfUrls));
-        }
-      else
-        {
-          // Set cancelled msg
-          m_e2kHashTextCtrl->SetValue(_("Cancelled !"));
-          m_ed2kTextCtrl->SetValue(_("Cancelled !"));
-        }
+			// Ed2k link
+			m_ed2kTextCtrl->SetValue(
+				hash.GetED2KLink(m_parthashesCheck->IsChecked(), &arrayOfUrls));
+		} else {
+			// Set cancelled msg
+			m_e2kHashTextCtrl->SetValue(_("Cancelled !"));
+			m_ed2kTextCtrl->SetValue(_("Cancelled !"));
+		}
 
-      // Deleting progress bar dialog
-      delete m_progressBar;
-      m_progressBar=NULL;
+		// Deleting progress bar dialog
+		delete m_progressBar;
+		m_progressBar = NULL;
 
-      // Set status text
-      SetStatusText (wxString::Format(_("Done in %.2f s"),
-                                      chrono.Time()*.001));
-    }
-  else
-    {
-      // Set status text
-      SetStatusText (_("Please, enter a non empty file name"));
-    }
+		// Set status text
+		SetStatusText(wxString::Format(_("Done in %.2f s"), chrono.Time() * .001));
+	} else {
+		// Set status text
+		SetStatusText(_("Please, enter a non empty file name"));
+	}
 }
 
-
 /// Add an URL to the URL list box
-void
-AlcFrame::OnAddUrlButton (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnAddUrlButton(wxCommandEvent &WXUNUSED(event))
 {
-  wxString url(m_inputAddTextCtrl->GetValue());
+	wxString url(m_inputAddTextCtrl->GetValue());
 
-  if (!url.IsEmpty())
-    {
-      // Check if the URL already exist in list
-      bool UrlNotExists = true;
-      for (size_t i = 0; i < m_inputUrlListBox->GetCount(); ++i)
-        {
-          if (url == m_inputUrlListBox->GetString(i))
-            {
-              UrlNotExists =false;
-              break;
-            }
-        }
+	if (!url.IsEmpty()) {
+		// Check if the URL already exist in list
+		bool UrlNotExists = true;
+		for (size_t i = 0; i < m_inputUrlListBox->GetCount(); ++i) {
+			if (url == m_inputUrlListBox->GetString(i)) {
+				UrlNotExists = false;
+				break;
+			}
+		}
 
-      // Add only a not already existent URL
-      if (UrlNotExists)
-        {
-	  m_inputUrlListBox->Append(wxURI(url).BuildURI());
-          m_inputAddTextCtrl->SetValue("");
-        }
-      else
-        {
-          wxLogError(_("You have already added this URL !"));
-        }
-    }
-  else
-    {
-      SetStatusText (_("Please, enter a non empty URL"));
-    }
+		// Add only a not already existent URL
+		if (UrlNotExists) {
+			m_inputUrlListBox->Append(wxURI(url).BuildURI());
+			m_inputAddTextCtrl->SetValue("");
+		} else {
+			wxLogError(_("You have already added this URL !"));
+		}
+	} else {
+		SetStatusText(_("Please, enter a non empty URL"));
+	}
 }
 
 /// Remove the selected URL from the URL list box
-void
-AlcFrame::OnRemoveUrlButton (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnRemoveUrlButton(wxCommandEvent &WXUNUSED(event))
 {
-  m_inputUrlListBox->Delete(m_inputUrlListBox->GetSelection());
+	m_inputUrlListBox->Delete(m_inputUrlListBox->GetSelection());
 }
 
 /// Clear the URL list box
-void
-AlcFrame::OnClearUrlButton (wxCommandEvent & WXUNUSED(event))
+void AlcFrame::OnClearUrlButton(wxCommandEvent &WXUNUSED(event))
 {
-  m_inputUrlListBox->Clear();
+	m_inputUrlListBox->Clear();
 }
 // File_checked_for_headers

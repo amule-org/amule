@@ -28,43 +28,40 @@
 #ifndef _ED2KHASH_H
 #define _ED2KHASH_H
 
-
 #include <wx/filename.h>
 
 #include "md4.h"
 
-class Ed2kHash:public MD4
-  {
-  private:
+class Ed2kHash : public MD4
+{
+private:
+	wxArrayString m_ed2kArrayOfHashes;
+	wxString m_filename;
+	uint64_t m_fileSize;
 
-    wxArrayString m_ed2kArrayOfHashes;
-    wxString m_filename;
-    uint64_t m_fileSize;
+protected:
+	/// Strip all non-alphanumeric characters of a filename string
+	wxString CleanFilename(const wxString &filename);
 
-  protected:
+public:
+	/// Constructor
+	Ed2kHash();
 
-    /// Strip all non-alphanumeric characters of a filename string
-    wxString CleanFilename(const wxString& filename);
+	/// Destructor
+	~Ed2kHash();
 
-  public:
-    /// Constructor
-    Ed2kHash ();
+	/// Set Ed2k hash from a file
+	bool SetED2KHashFromFile(const wxFileName &filename, MD4Hook hook);
 
-    /// Destructor
-    ~Ed2kHash ();
+	/// Set Ed2k hash from a file
+	bool SetED2KHashFromFile(const wxString &filename, MD4Hook hook);
 
-    /// Set Ed2k hash from a file
-    bool SetED2KHashFromFile(const wxFileName& filename, MD4Hook hook);
+	/// Get Ed2k Array of hashes
+	wxArrayString GetED2KHash();
 
-    /// Set Ed2k hash from a file
-    bool SetED2KHashFromFile(const wxString& filename, MD4Hook hook);
-
-    /// Get Ed2k Array of hashes
-    wxArrayString GetED2KHash();
-
-    /// Get Ed2k link
-    wxString GetED2KLink(const bool addPartHashes=false, const wxArrayString* arrayOfUrls = NULL);
-  };
+	/// Get Ed2k link
+	wxString GetED2KLink(const bool addPartHashes = false, const wxArrayString *arrayOfUrls = NULL);
+};
 
 #endif /* _ED2KHASH_H */
 

@@ -25,34 +25,36 @@
 
 #include "MagnetURI.h"
 
-
 #ifdef USE_STD_STRING
-#	ifdef _T
-#		undef	_T
-#	endif
-#	ifdef _C
-#		undef _C
-#	endif
-#	define	_T(str)	str
-#	define	_C(ch)	ch
+#ifdef _T
+#undef _T
+#endif
+#ifdef _C
+#undef _C
+#endif
+#define _T(str) str
+#define _C(ch) ch
 #else
-	// wx/chartype.h defines _T
-#	define	_C(ch)	wxChar(ch)
+// wx/chartype.h defines _T
+#define _C(ch) wxChar(ch)
 #endif
 
-
-CMagnetURI::CMagnetURI(const STRING& uri)
+CMagnetURI::CMagnetURI(const STRING &uri)
 {
 	if (uri.compare(0, 7, _T("magnet:")) == 0) {
 		size_t start = uri.find(_C('?'));
-		if (start == STRING::npos) start = uri.length();
+		if (start == STRING::npos)
+			start = uri.length();
 		while (start < uri.length() - 1) {
 			size_t end = uri.find(_C('&'), start + 1);
-			if (end == STRING::npos) end = uri.length();
+			if (end == STRING::npos)
+				end = uri.length();
 			size_t pos = uri.find(_C('='), start + 1);
-			if (pos == STRING::npos) pos = uri.length();
+			if (pos == STRING::npos)
+				pos = uri.length();
 			if (pos < end) {
-				m_fields.push_back(Field_Type(uri.substr(start + 1, pos - start - 1), uri.substr(pos + 1, end - pos - 1)));
+				m_fields.push_back(Field_Type(uri.substr(start + 1, pos - start - 1),
+					uri.substr(pos + 1, end - pos - 1)));
 			}
 			start = end;
 		}
@@ -76,7 +78,7 @@ STRING CMagnetURI::GetLink() const
 	return retval;
 }
 
-CMagnetURI::Value_List CMagnetURI::GetField(const STRING& name) const
+CMagnetURI::Value_List CMagnetURI::GetField(const STRING &name) const
 {
 	Value_List retval;
 
@@ -87,7 +89,6 @@ CMagnetURI::Value_List CMagnetURI::GetField(const STRING& name) const
 	}
 	return retval;
 }
-
 
 bool CMagnetED2KConverter::CanConvertToED2K() const
 {
@@ -101,13 +102,13 @@ bool CMagnetED2KConverter::CanConvertToED2K() const
 		}
 		if (it->first.compare(_T("xt")) == 0) {
 			if ((it->second.compare(0, 9, _T("urn:ed2k:")) == 0) ||
-			    (it->second.compare(0, 13, _T("urn:ed2khash:")) == 0))
-			{
+				(it->second.compare(0, 13, _T("urn:ed2khash:")) == 0)) {
 				has_urn = true;
 				continue;
 			}
 		}
-		if (has_urn && has_xl) break;
+		if (has_urn && has_xl)
+			break;
 	}
 	return has_urn && has_xl;
 }
@@ -138,7 +139,13 @@ STRING CMagnetED2KConverter::GetED2KLink() const
 				break;
 			}
 		}
-		return STRING(_T("ed2k://|file|")).append(dn).append(1, _C('|')).append(len).append(1, _C('|')).append(hash).append(_T("|/"));
+		return STRING(_T("ed2k://|file|"))
+			.append(dn)
+			.append(1, _C('|'))
+			.append(len)
+			.append(1, _C('|'))
+			.append(hash)
+			.append(_T("|/"));
 	} else {
 		return STRING();
 	}

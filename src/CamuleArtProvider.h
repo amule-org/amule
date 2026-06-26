@@ -27,12 +27,10 @@ public:
 
 	// Build a full art id from a short icon name.  E.g.
 	// CamuleArtProvider::MakeId("sort_dn") -> "amule:sort_dn".
-	static wxString MakeId(const wxString& name) { return PREFIX + name; }
+	static wxString MakeId(const wxString &name) { return PREFIX + name; }
 
 protected:
-	wxBitmap CreateBitmap(const wxArtID& id,
-	                      const wxArtClient& client,
-	                      const wxSize& size) override;
+	wxBitmap CreateBitmap(const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 };
 
 #endif // SRC_CAMULE_ART_PROVIDER_H

@@ -47,9 +47,9 @@ there client on the eMule forum..
 #include "../net/KademliaUDPListener.h"
 #include <common/Macros.h>
 
-
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 class CRoutingZone;
@@ -57,36 +57,89 @@ class CIndexed;
 class CKadUDPKey;
 class CKadClientSearcher;
 
-typedef std::map<CRoutingZone*, CRoutingZone*> EventMap;
+typedef std::map<CRoutingZone *, CRoutingZone *> EventMap;
 
 extern const CUInt128 s_nullUInt128;
 
 class CKademlia
 {
 public:
-	static void Start()		{ Start(new CPrefs); }
+	static void Start() { Start(new CPrefs); }
 	static void Start(CPrefs *prefs);
 	static void Stop();
 
-	static CPrefs *			GetPrefs() noexcept		{ if (instance == NULL || instance->m_prefs == NULL) return NULL; else return instance->m_prefs; }
-	static CRoutingZone *		GetRoutingZone()		{ wxCHECK(instance && instance->m_routingZone, NULL); return instance->m_routingZone; }
-	static CKademliaUDPListener *	GetUDPListener()		{ wxCHECK(instance && instance->m_udpListener, NULL); return instance->m_udpListener; }
-	static CIndexed *		GetIndexed()			{ wxCHECK(instance && instance->m_indexed, NULL); return instance->m_indexed; }
-	static bool			IsRunning() noexcept		{ return m_running; }
-	static bool			IsConnected() noexcept		{ return instance && instance->m_prefs ? instance->m_prefs->HasHadContact() : false; }
-	static bool			IsFirewalled()
-		{ return instance && instance->m_prefs ? instance->m_prefs->GetFirewalled() && !IsRunningInLANMode() : true; }
-	static void			RecheckFirewalled();
-	static uint32_t			GetKademliaUsers(bool newMethod = false)
-		{ return instance && instance->m_prefs ? (newMethod ? CalculateKadUsersNew() : instance->m_prefs->GetKademliaUsers()) : 0; }
-	static uint32_t			GetKademliaFiles() noexcept	{ return instance && instance->m_prefs ? instance->m_prefs->GetKademliaFiles() : 0; }
-	static uint32_t			GetTotalStoreKey() noexcept	{ return instance && instance->m_prefs ? instance->m_prefs->GetTotalStoreKey() : 0; }
-	static uint32_t			GetTotalStoreSrc() noexcept	{ return instance && instance->m_prefs ? instance->m_prefs->GetTotalStoreSrc() : 0; }
-	static uint32_t			GetTotalStoreNotes() noexcept	{ return instance && instance->m_prefs ? instance->m_prefs->GetTotalStoreNotes() : 0; }
-	static uint32_t			GetTotalFile() noexcept		{ return instance && instance->m_prefs ? instance->m_prefs->GetTotalFile() : 0; }
-	static bool			GetPublish() noexcept		{ return instance && instance->m_prefs ? instance->m_prefs->GetPublish() : false; }
-	static uint32_t			GetIPAddress() noexcept		{ return instance && instance->m_prefs ? instance->m_prefs->GetIPAddress() : 0; }
-	static const CUInt128&		GetKadID() noexcept		{ return instance && instance->m_prefs ? instance->m_prefs->GetKadID() : s_nullUInt128; }
+	static CPrefs *GetPrefs() noexcept
+	{
+		if (instance == NULL || instance->m_prefs == NULL)
+			return NULL;
+		else
+			return instance->m_prefs;
+	}
+	static CRoutingZone *GetRoutingZone()
+	{
+		wxCHECK(instance && instance->m_routingZone, NULL);
+		return instance->m_routingZone;
+	}
+	static CKademliaUDPListener *GetUDPListener()
+	{
+		wxCHECK(instance && instance->m_udpListener, NULL);
+		return instance->m_udpListener;
+	}
+	static CIndexed *GetIndexed()
+	{
+		wxCHECK(instance && instance->m_indexed, NULL);
+		return instance->m_indexed;
+	}
+	static bool IsRunning() noexcept { return m_running; }
+	static bool IsConnected() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->HasHadContact() : false;
+	}
+	static bool IsFirewalled()
+	{
+		return instance && instance->m_prefs
+			       ? instance->m_prefs->GetFirewalled() && !IsRunningInLANMode()
+			       : true;
+	}
+	static void RecheckFirewalled();
+	static uint32_t GetKademliaUsers(bool newMethod = false)
+	{
+		return instance && instance->m_prefs
+			       ? (newMethod ? CalculateKadUsersNew() : instance->m_prefs->GetKademliaUsers())
+			       : 0;
+	}
+	static uint32_t GetKademliaFiles() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetKademliaFiles() : 0;
+	}
+	static uint32_t GetTotalStoreKey() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetTotalStoreKey() : 0;
+	}
+	static uint32_t GetTotalStoreSrc() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetTotalStoreSrc() : 0;
+	}
+	static uint32_t GetTotalStoreNotes() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetTotalStoreNotes() : 0;
+	}
+	static uint32_t GetTotalFile() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetTotalFile() : 0;
+	}
+	static bool GetPublish() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetPublish() : false;
+	}
+	static uint32_t GetIPAddress() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetIPAddress() : 0;
+	}
+	static const CUInt128 &GetKadID() noexcept
+	{
+		return instance && instance->m_prefs ? instance->m_prefs->GetKadID() : s_nullUInt128;
+	}
 
 	static void Bootstrap(uint32_t ip, uint16_t port)
 	{
@@ -97,49 +150,55 @@ public:
 		}
 	}
 
-	static void ProcessPacket(const uint8_t* data, uint32_t lenData, uint32_t ip, uint16_t port, bool validReceiverKey, const CKadUDPKey& senderKey);
+	static void ProcessPacket(const uint8_t *data,
+		uint32_t lenData,
+		uint32_t ip,
+		uint16_t port,
+		bool validReceiverKey,
+		const CKadUDPKey &senderKey);
 
-	static void AddEvent(CRoutingZone *zone) noexcept		{ m_events[zone] = zone; }
-	static void RemoveEvent(CRoutingZone *zone)			{ m_events.erase(zone); }
+	static void AddEvent(CRoutingZone *zone) noexcept { m_events[zone] = zone; }
+	static void RemoveEvent(CRoutingZone *zone) { m_events.erase(zone); }
 	static void Process();
-	static void StatsAddClosestDistance(const CUInt128& distance);
-//	static bool FindNodeIDByIP(CKadClientSearcher& requester, uint32_t ip, uint16_t tcpPort, uint16_t udpPort);
-	static bool FindIPByNodeID(CKadClientSearcher& requester, const uint8_t *nodeID);
-	static void CancelClientSearch(CKadClientSearcher& fromRequester);
+	static void StatsAddClosestDistance(const CUInt128 &distance);
+	//	static bool FindNodeIDByIP(CKadClientSearcher& requester, uint32_t ip, uint16_t tcpPort,
+	// uint16_t udpPort);
+	static bool FindIPByNodeID(CKadClientSearcher &requester, const uint8_t *nodeID);
+	static void CancelClientSearch(CKadClientSearcher &fromRequester);
 	static bool IsRunningInLANMode();
 
-	static ContactList	s_bootstrapList;
+	static ContactList s_bootstrapList;
 
 private:
 	CKademlia() {}
 
-	static uint32_t	CalculateKadUsersNew();
+	static uint32_t CalculateKadUsersNew();
 
 	static CKademlia *instance;
-	static EventMap	m_events;
-	static time_t	m_nextSearchJumpStart;
-	static time_t	m_nextSelfLookup;
-	static time_t	m_nextFirewallCheck;
-	static time_t	m_nextFindBuddy;
-	static time_t	m_statusUpdate;
-	static time_t	m_bigTimer;
-	static time_t	m_bootstrap;
-	static time_t	m_consolidate;
-	static time_t	m_externPortLookup;
-	static time_t	m_lanModeCheck;
-	static bool	m_running;
-	static bool	m_lanMode;
-	static std::list<uint32_t>	m_statsEstUsersProbes;
+	static EventMap m_events;
+	static time_t m_nextSearchJumpStart;
+	static time_t m_nextSelfLookup;
+	static time_t m_nextFirewallCheck;
+	static time_t m_nextFindBuddy;
+	static time_t m_statusUpdate;
+	static time_t m_bigTimer;
+	static time_t m_bootstrap;
+	static time_t m_consolidate;
+	static time_t m_externPortLookup;
+	static time_t m_lanModeCheck;
+	static bool m_running;
+	static bool m_lanMode;
+	static std::list<uint32_t> m_statsEstUsersProbes;
 
-	CPrefs *		m_prefs;
-	CRoutingZone *		m_routingZone;
-	CKademliaUDPListener *	m_udpListener;
-	CIndexed *		m_indexed;
+	CPrefs *m_prefs;
+	CRoutingZone *m_routingZone;
+	CKademliaUDPListener *m_udpListener;
+	CIndexed *m_indexed;
 };
 
-} // End namespace
+} // namespace Kademlia
 
-void KadGetKeywordHash(const wxString& rstrKeyword, Kademlia::CUInt128* pKadID);
-wxString KadGetKeywordBytes(const wxString& rstrKeywordW);
+void KadGetKeywordHash(const wxString &rstrKeyword, Kademlia::CUInt128 *pKadID);
+wxString KadGetKeywordBytes(const wxString &rstrKeywordW);
 
 #endif // __KAD_KADEMLIA_H__

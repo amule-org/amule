@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 //
 // Country flags are from FAMFAMFAM (http://www.famfamfam.com)
 //
@@ -43,7 +42,7 @@
 #ifndef IP2COUNTRY_H
 #define IP2COUNTRY_H
 
-#include "Types.h"	// Needed for uint8, uint16 and uint32
+#include "Types.h" // Needed for uint8, uint16 and uint32
 
 #include <map>
 
@@ -52,21 +51,20 @@
 
 class CMaxMindDBDatabase;
 
-
-typedef struct {
+typedef struct
+{
 	wxString Name;
-	wxImage  Flag;
+	wxImage Flag;
 } CountryData;
-
 
 typedef std::map<wxString, CountryData> CountryDataMap;
 
-
-class CIP2Country {
+class CIP2Country
+{
 public:
-	CIP2Country(const wxString& configDir);
+	CIP2Country(const wxString &configDir);
 	~CIP2Country();
-	const CountryData& GetCountryData(const wxString& ip);
+	const CountryData &GetCountryData(const wxString &ip);
 	void Enable();
 	void Disable();
 	// Refresh the on-disk MMDB from the configured source.
@@ -82,10 +80,10 @@ public:
 	// Path of the on-disk MMDB file. Exposed so the IP2Country
 	// preferences panel can show the status line ("Loaded — <path>"),
 	// without re-deriving the config-dir + filename convention.
-	const wxString& GetDatabasePath() const { return m_DataBasePath; }
+	const wxString &GetDatabasePath() const { return m_DataBasePath; }
 
 private:
-	CMaxMindDBDatabase* m_db;
+	CMaxMindDBDatabase *m_db;
 	CountryDataMap m_CountryDataMap;
 	wxString m_DataBaseName;
 	wxString m_DataBasePath;

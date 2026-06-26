@@ -24,12 +24,12 @@
 //
 
 #include "ClientRef.h"
-#include "amule.h"				// Needed for theApp
+#include "amule.h" // Needed for theApp
 
 #ifdef CLIENT_GUI
-#include "UpDownClientEC.h"	// Needed for CUpDownClient
+#include "UpDownClientEC.h" // Needed for CUpDownClient
 #else
-#include "updownclient.h"	// Needed for CUpDownClient
+#include "updownclient.h" // Needed for CUpDownClient
 #endif
 
 #ifdef DEBUG_ZOMBIE_CLIENTS
@@ -40,8 +40,7 @@
 #define ASSIGN_MFROM(a)
 #endif
 
-
-CClientRef::CClientRef(const CClientRef& ref)
+CClientRef::CClientRef(const CClientRef &ref)
 {
 	m_client = ref.m_client;
 	ASSIGN_MFROM("copy ctor of " + ref.m_from);
@@ -50,8 +49,7 @@ CClientRef::CClientRef(const CClientRef& ref)
 	}
 }
 
-
-CClientRef::CClientRef(CUpDownClient * client LINKED_FROM)
+CClientRef::CClientRef(CUpDownClient *client LINKED_FROM)
 {
 	m_client = client;
 	ASSIGN_MFROM(from);
@@ -60,8 +58,7 @@ CClientRef::CClientRef(CUpDownClient * client LINKED_FROM)
 	}
 }
 
-
-void CClientRef::Link(CUpDownClient * client LINKED_FROM)
+void CClientRef::Link(CUpDownClient *client LINKED_FROM)
 {
 	Unlink();
 	m_client = client;
@@ -71,7 +68,6 @@ void CClientRef::Link(CUpDownClient * client LINKED_FROM)
 	}
 }
 
-
 void CClientRef::Unlink()
 {
 	if (m_client) {
@@ -80,11 +76,10 @@ void CClientRef::Unlink()
 	}
 }
 
-
 // in amulegui clients are never deleted except when they are marked as removed through EC
 #ifndef CLIENT_GUI
 
-CUpDownClient * CClientRef::GetClientChecked()
+CUpDownClient *CClientRef::GetClientChecked()
 {
 	if (m_client && m_client->HasBeenDeleted()) {
 		m_client->Unlink(MFROM);
@@ -93,8 +88,7 @@ CUpDownClient * CClientRef::GetClientChecked()
 	return m_client;
 }
 
-
-CClientRef&	CClientRef::GetRef()
+CClientRef &CClientRef::GetRef()
 {
 	if (m_client && m_client->HasBeenDeleted()) {
 		m_client->Unlink(MFROM);
@@ -103,10 +97,9 @@ CClientRef&	CClientRef::GetRef()
 	return *this;
 }
 
-
 void CClientRef::Safe_Delete()
 {
-	CUpDownClient * client = m_client;
+	CUpDownClient *client = m_client;
 	if (client) {
 		Unlink();
 		client->Safe_Delete();
@@ -114,77 +107,70 @@ void CClientRef::Safe_Delete()
 }
 #endif
 
+#define WRAPC(func) \
+	CClientRef::func() const \
+	{ \
+		return m_client->func(); \
+	}
 
-#define WRAPC(func) CClientRef::func() const { return m_client->func(); }
+uint32 WRAPC(ECID) bool WRAPC(ExtProtocolAvailable) uint16
+	WRAPC(GetAvailablePartCount) const wxString &WRAPC(GetClientFilename) const wxString &WRAPC(
+		GetClientModString) const wxString &WRAPC(GetClientOSInfo) uint8
+	WRAPC(GetClientSoft) const wxString &WRAPC(GetClientVerString) uint64 WRAPC(GetDownloadedTotal)
+uint8 WRAPC(GetDownloadState)
+CFriend *WRAPC(GetFriend) bool WRAPC(GetFriendSlot) wxString WRAPC(GetFullIP)
+uint32 WRAPC(GetIP)
+uint16 WRAPC(GetKadPort)
+float WRAPC(GetKBpsDown)
+uint16 WRAPC(GetLastDownloadingPart)
+uint16 WRAPC(GetNextRequestedPart)
+uint8 WRAPC(GetObfuscationStatus)
+uint16 WRAPC(GetOldRemoteQueueRank) const BitVector &WRAPC(GetPartStatus) uint16 WRAPC(GetRemoteQueueRank)
+CPartFile *WRAPC(GetRequestFile)
+uint32 WRAPC(GetScore)
+double WRAPC(GetScoreRatio)
+uint32 WRAPC(GetServerIP) const wxString WRAPC(GetServerName)
+uint16 WRAPC(GetServerPort) const wxString &WRAPC(GetSoftStr) const wxString &WRAPC(GetSoftVerStr) int WRAPC(
+	GetSourceFrom)
+uint64 WRAPC(GetTransferredDown)
+uint64 WRAPC(GetTransferredUp)
+uint32 WRAPC(GetUploadDatarate)
+uint64 WRAPC(GetUploadedTotal) const CKnownFile *WRAPC(GetUploadFile)
+uint16 WRAPC(GetUploadQueueWaitingPosition)
+uint8 WRAPC(GetUploadState)
+size_t WRAPC(GetUpPartCount)
+uint32 WRAPC(GetUserIDHybrid) const wxString &WRAPC(GetUserName) uint16_t
+	WRAPC(GetUserPort) const CMD4Hash &WRAPC(GetUserHash) uint32
+	WRAPC(GetVersion) bool WRAPC(HasDisabledSharedFiles) bool WRAPC(HasLowID) bool WRAPC(IsBadGuy) bool WRAPC(
+		IsFriend) bool WRAPC(IsIdentified) bool WRAPC(IsRemoteQueueFull) void WRAPC(RequestSharedFileList)
 
-uint32				WRAPC(ECID)
-bool				WRAPC(ExtProtocolAvailable)
-uint16				WRAPC(GetAvailablePartCount)
-const wxString&		WRAPC(GetClientFilename)
-const wxString&		WRAPC(GetClientModString)
-const wxString&		WRAPC(GetClientOSInfo)
-uint8				WRAPC(GetClientSoft)
-const wxString&		WRAPC(GetClientVerString)
-uint64				WRAPC(GetDownloadedTotal)
-uint8				WRAPC(GetDownloadState)
-CFriend*			WRAPC(GetFriend)
-bool				WRAPC(GetFriendSlot)
-wxString			WRAPC(GetFullIP)
-uint32				WRAPC(GetIP)
-uint16				WRAPC(GetKadPort)
-float				WRAPC(GetKBpsDown)
-uint16				WRAPC(GetLastDownloadingPart)
-uint16				WRAPC(GetNextRequestedPart)
-uint8				WRAPC(GetObfuscationStatus)
-uint16				WRAPC(GetOldRemoteQueueRank)
-const BitVector&	WRAPC(GetPartStatus)
-uint16				WRAPC(GetRemoteQueueRank)
-CPartFile*			WRAPC(GetRequestFile)
-uint32				WRAPC(GetScore)
-double				WRAPC(GetScoreRatio)
-uint32				WRAPC(GetServerIP)
-const wxString		WRAPC(GetServerName)
-uint16				WRAPC(GetServerPort)
-const wxString&		WRAPC(GetSoftStr)
-const wxString&		WRAPC(GetSoftVerStr)
-int					WRAPC(GetSourceFrom)
-uint64				WRAPC(GetTransferredDown)
-uint64				WRAPC(GetTransferredUp)
-uint32				WRAPC(GetUploadDatarate)
-uint64				WRAPC(GetUploadedTotal)
-const CKnownFile*	WRAPC(GetUploadFile)
-uint16				WRAPC(GetUploadQueueWaitingPosition)
-uint8				WRAPC(GetUploadState)
-size_t				WRAPC(GetUpPartCount)
-uint32				WRAPC(GetUserIDHybrid)
-const wxString&		WRAPC(GetUserName)
-uint16_t			WRAPC(GetUserPort)
-const CMD4Hash&		WRAPC(GetUserHash)
-uint32				WRAPC(GetVersion)
-bool				WRAPC(HasDisabledSharedFiles)
-bool				WRAPC(HasLowID)
-bool				WRAPC(IsBadGuy)
-bool				WRAPC(IsFriend)
-bool				WRAPC(IsIdentified)
-bool				WRAPC(IsRemoteQueueFull)
-void				WRAPC(RequestSharedFileList)
-
-bool		CClientRef::IsUpPartAvailable(uint16 iPart) const { return m_client->IsUpPartAvailable(iPart); }
-void		CClientRef::SetFriend(CFriend* newfriend) const { m_client->SetFriend(newfriend); }
-void		CClientRef::SetFriendSlot(bool bNV) const { m_client->SetFriendSlot(bNV); }
+		bool CClientRef::IsUpPartAvailable(uint16 iPart) const
+{
+	return m_client->IsUpPartAvailable(iPart);
+}
+void CClientRef::SetFriend(CFriend *newfriend) const
+{
+	m_client->SetFriend(newfriend);
+}
+void CClientRef::SetFriendSlot(bool bNV) const
+{
+	m_client->SetFriendSlot(bNV);
+}
 
 #ifndef CLIENT_GUI
-void				WRAPC(ClearUploadFileID)
-uint16				WRAPC(GetUDPPort)
-void		CClientRef::SetCommentDirty(bool bDirty) const { m_client->SetCommentDirty(bDirty); }
+void WRAPC(ClearUploadFileID) uint16 WRAPC(GetUDPPort) void CClientRef::SetCommentDirty(bool bDirty) const
+{
+	m_client->SetCommentDirty(bDirty);
+}
 #endif
 
-bool		CClientRef::SwapToAnotherFile(bool bIgnoreNoNeeded, bool ignoreSuspensions, bool bRemoveCompletely, CPartFile* toFile) const
+bool CClientRef::SwapToAnotherFile(
+	bool bIgnoreNoNeeded, bool ignoreSuspensions, bool bRemoveCompletely, CPartFile *toFile) const
 {
 	return m_client->SwapToAnotherFile(bIgnoreNoNeeded, ignoreSuspensions, bRemoveCompletely, toFile);
 }
 
-wxString	CClientRef::GetSecureIdentTextStatus() const
+wxString CClientRef::GetSecureIdentTextStatus() const
 {
 	wxString ret;
 	if (theApp->CryptoAvailable()) {
@@ -204,4 +190,3 @@ wxString	CClientRef::GetSecureIdentTextStatus() const
 	}
 	return ret;
 }
-

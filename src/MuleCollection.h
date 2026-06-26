@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef __MULECOLLECTION_H__
 #define __MULECOLLECTION_H__
 
@@ -31,7 +30,6 @@
 #include <vector>
 
 #include "Types.h"
-
 
 class CMuleCollection
 {
@@ -44,19 +42,17 @@ public:
 
 	bool Open(const std::string &File);
 
-	size_t			size() const			{ return vCollection.size(); }
-	std::string&		operator[](size_t index)	{ return vCollection[index]; }
-	const std::string&	operator[](size_t index) const	{ return vCollection[index]; }
+	size_t size() const { return vCollection.size(); }
+	std::string &operator[](size_t index) { return vCollection[index]; }
+	const std::string &operator[](size_t index) const { return vCollection[index]; }
 
 private:
 	bool OpenBinary(const std::string &File);
 	bool OpenText(const std::string &File);
 
-	template <typename intType>
-	intType ReadInt(std::ifstream& infile);
+	template <typename intType> intType ReadInt(std::ifstream &infile);
 
-	std::string ReadString(std::ifstream& infile, int TagType);
+	std::string ReadString(std::ifstream &infile, int TagType);
 };
 
 #endif // __MULECOLLECTION_H__
-

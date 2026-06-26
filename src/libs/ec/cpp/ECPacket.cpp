@@ -22,8 +22,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ECPacket.h"	// Needed for ECPacket
-#include "ECSocket.h"	// Needed for CECSocket
+#include "ECPacket.h" // Needed for ECPacket
+#include "ECSocket.h" // Needed for CECSocket
 
 /**********************************************************
  *							  *
@@ -31,22 +31,22 @@
  *							  *
  **********************************************************/
 
-bool CECPacket::ReadFromSocket(CECSocket& socket)
+bool CECPacket::ReadFromSocket(CECSocket &socket)
 {
-	return socket.ReadNumber(&m_opCode, sizeof(ec_opcode_t))
-		&& ReadChildren(socket);
+	return socket.ReadNumber(&m_opCode, sizeof(ec_opcode_t)) && ReadChildren(socket);
 }
 
-
-bool CECPacket::WritePacket(CECSocket& socket) const
+bool CECPacket::WritePacket(CECSocket &socket) const
 {
-	if (!socket.WriteNumber(&m_opCode, sizeof(ec_opcode_t))) return false;
-	if (!WriteChildren(socket)) return false;
+	if (!socket.WriteNumber(&m_opCode, sizeof(ec_opcode_t)))
+		return false;
+	if (!WriteChildren(socket))
+		return false;
 	return true;
 }
 
 #ifdef __DEBUG__
-#include <common/Format.h>  // Needed for CFormat
+#include <common/Format.h> // Needed for CFormat
 #include "ECLog.h"
 
 void CECPacket::DebugPrint(bool incoming, uint32 trueSize) const
@@ -57,15 +57,15 @@ void CECPacket::DebugPrint(bool incoming, uint32 trueSize) const
 		// full length incl. header: opcode + own children-count field
 		// (uint16, plus a uint32 follow-up if the count was extended
 		// past the 0xFFFF ceiling — see CECTag::WriteChildren).
-		uint32 size = GetPacketLength() + sizeof(ec_opcode_t) + sizeof(uint16)
-			+ (GetTagCount() >= 0xFFFF ? sizeof(uint32) : 0);
+		uint32 size = GetPacketLength() + sizeof(ec_opcode_t) + sizeof(uint16) +
+			      (GetTagCount() >= 0xFFFF ? sizeof(uint32) : 0);
 
 		if (trueSize == 0 || size == trueSize) {
-			DoECLogLine(CFormat("%s %s %d") % (incoming ? "<" : ">")
-				% GetDebugNameECOpCodes(m_opCode) % size);
+			DoECLogLine(CFormat("%s %s %d") % (incoming ? "<" : ">") %
+				    GetDebugNameECOpCodes(m_opCode) % size);
 		} else {
-			DoECLogLine(CFormat("%s %s %d (compressed: %d)") % (incoming ? "<" : ">")
-				% GetDebugNameECOpCodes(m_opCode) % size % trueSize);
+			DoECLogLine(CFormat("%s %s %d (compressed: %d)") % (incoming ? "<" : ">") %
+				    GetDebugNameECOpCodes(m_opCode) % size % trueSize);
 		}
 		CECTag::DebugPrint(1, false);
 	}

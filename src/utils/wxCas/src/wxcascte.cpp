@@ -27,93 +27,61 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 #include <wx/filename.h>
 
 #ifdef __WXMAC__
-	#include <wx/intl.h> // Do_not_auto_remove
+#include <wx/intl.h> // Do_not_auto_remove
 #elif defined(__WINDOWS__)
-	#include <winerror.h> // Do_not_auto_remove
-	#include <shlobj.h> // Do_not_auto_remove
-	#include <wx/msw/winundef.h>
+#include <winerror.h> // Do_not_auto_remove
+#include <shlobj.h>   // Do_not_auto_remove
+#include <wx/msw/winundef.h>
 #endif
 
 #include "wxcascte.h"
 
-const wxString
-WxCasCte::AMULESIG_FILENAME ( "amulesig.dat" );
-const wxString
-WxCasCte::AMULESIG_IMG_NAME ( "aMule-online-sign" );
+const wxString WxCasCte::AMULESIG_FILENAME("amulesig.dat");
+const wxString WxCasCte::AMULESIG_IMG_NAME("aMule-online-sign");
 
 // Refresh rate limits
-const wxUint32
-WxCasCte::MIN_REFRESH_RATE = 1;
-const wxUint32
-WxCasCte::MAX_REFRESH_RATE = 3600;
+const wxUint32 WxCasCte::MIN_REFRESH_RATE = 1;
+const wxUint32 WxCasCte::MAX_REFRESH_RATE = 3600;
 
 // FTP update limits
-const wxUint32
-WxCasCte::MIN_FTP_RATE = 1;
-const wxUint32
-WxCasCte::MAX_FTP_RATE = 1440;
-
+const wxUint32 WxCasCte::MIN_FTP_RATE = 1;
+const wxUint32 WxCasCte::MAX_FTP_RATE = 1440;
 
 // Key config names
-const wxString
-WxCasCte::AMULESIG_PATH_KEY ( "OSDirectory" );
-const wxString
-WxCasCte::REFRESH_RATE_KEY ( "RefreshRate" );
+const wxString WxCasCte::AMULESIG_PATH_KEY("OSDirectory");
+const wxString WxCasCte::REFRESH_RATE_KEY("RefreshRate");
 
-const wxString
-WxCasCte::ENABLE_AUTOSTATIMG_KEY ( "EnableAutoStatImg" );
-const wxString
-WxCasCte::AUTOSTATIMG_DIR_KEY ( "StatImgDirectory" );
-const wxString
-WxCasCte::AUTOSTATIMG_TYPE_KEY ( "StatImgType" );
+const wxString WxCasCte::ENABLE_AUTOSTATIMG_KEY("EnableAutoStatImg");
+const wxString WxCasCte::AUTOSTATIMG_DIR_KEY("StatImgDirectory");
+const wxString WxCasCte::AUTOSTATIMG_TYPE_KEY("StatImgType");
 
-const wxString
-WxCasCte::ENABLE_FTP_UPDATE_KEY( "EnableFtpUpdate" );
-const wxString
-WxCasCte::FTP_UPDATE_RATE_KEY ( "FtpUpdateRate" );
-const wxString
-WxCasCte::FTP_URL_KEY ( "FtpUrl" );
-const wxString
-WxCasCte::FTP_PATH_KEY ( "FtpPath" );
-const wxString
-WxCasCte::FTP_USER_KEY ( "FtpUser" );
-const wxString
-WxCasCte::FTP_PASSWD_KEY ( "FtpPasswd" );
+const wxString WxCasCte::ENABLE_FTP_UPDATE_KEY("EnableFtpUpdate");
+const wxString WxCasCte::FTP_UPDATE_RATE_KEY("FtpUpdateRate");
+const wxString WxCasCte::FTP_URL_KEY("FtpUrl");
+const wxString WxCasCte::FTP_PATH_KEY("FtpPath");
+const wxString WxCasCte::FTP_USER_KEY("FtpUser");
+const wxString WxCasCte::FTP_PASSWD_KEY("FtpPasswd");
 
-const wxString
-WxCasCte::ABSOLUTE_MAX_DL_KEY ( "AbsoluteMaxDL" );
-const wxString
-WxCasCte::ABSOLUTE_MAX_DL_DATE_KEY ( "AbsoluteMaxDlDate" );
+const wxString WxCasCte::ABSOLUTE_MAX_DL_KEY("AbsoluteMaxDL");
+const wxString WxCasCte::ABSOLUTE_MAX_DL_DATE_KEY("AbsoluteMaxDlDate");
 
 // Default config parameters
-const wxString
-WxCasCte::DEFAULT_AMULESIG_PATH ( GetDefaultAmulesigPath() );
-const wxUint32
-WxCasCte::DEFAULT_REFRESH_RATE = 5;
+const wxString WxCasCte::DEFAULT_AMULESIG_PATH(GetDefaultAmulesigPath());
+const wxUint32 WxCasCte::DEFAULT_REFRESH_RATE = 5;
 
-const bool
-WxCasCte::DEFAULT_AUTOSTATIMG_ISENABLED = FALSE;
-const wxString
-WxCasCte::DEFAULT_AUTOSTATIMG_PATH ( wxFileName::GetHomeDir () );
-const wxString
-WxCasCte::DEFAULT_AUTOSTATIMG_TYPE ( "PNG" );
+const bool WxCasCte::DEFAULT_AUTOSTATIMG_ISENABLED = FALSE;
+const wxString WxCasCte::DEFAULT_AUTOSTATIMG_PATH(wxFileName::GetHomeDir());
+const wxString WxCasCte::DEFAULT_AUTOSTATIMG_TYPE("PNG");
 
-const bool
-WxCasCte::DEFAULT_FTP_UPDATE_ISENABLED = FALSE;
-const wxUint32
-WxCasCte::DEFAULT_FTP_UPDATE_RATE = 10;
-const wxString
-WxCasCte::DEFAULT_FTP_URL( "ftp.myftp.cx" );
-const wxString
-WxCasCte::DEFAULT_FTP_PATH( "/pub/myamuledir" );
-const wxString
-WxCasCte::DEFAULT_FTP_USER( "anonymous" );
-const wxString
-WxCasCte::DEFAULT_FTP_PASSWD( "whiterabit@here" );
+const bool WxCasCte::DEFAULT_FTP_UPDATE_ISENABLED = FALSE;
+const wxUint32 WxCasCte::DEFAULT_FTP_UPDATE_RATE = 10;
+const wxString WxCasCte::DEFAULT_FTP_URL("ftp.myftp.cx");
+const wxString WxCasCte::DEFAULT_FTP_PATH("/pub/myamuledir");
+const wxString WxCasCte::DEFAULT_FTP_USER("anonymous");
+const wxString WxCasCte::DEFAULT_FTP_PASSWD("whiterabit@here");
 
 wxString GetDefaultAmulesigPath()
 {
@@ -126,11 +94,10 @@ wxString GetDefaultAmulesigPath()
 	// kApplicationSupportFolderType, ...) used to return. Carbon's
 	// FSRef API is gone in 64-bit macOS, so just derive the path from
 	// $HOME.
-	const char* home = getenv("HOME");
+	const char *home = getenv("HOME");
 	if (home) {
-		strDir = wxString::FromUTF8(home)
-			+ "/Library/Application Support"
-			+ wxFileName::GetPathSeparator() + "aMule";
+		strDir = wxString::FromUTF8(home) + "/Library/Application Support" +
+			 wxFileName::GetPathSeparator() + "aMule";
 	}
 
 #elif defined(__WINDOWS__)

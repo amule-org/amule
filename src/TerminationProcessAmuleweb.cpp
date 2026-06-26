@@ -23,19 +23,15 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "TerminationProcessAmuleweb.h"
 
-
 CTerminationProcessAmuleweb::CTerminationProcessAmuleweb(const wxString &cmd, int *webserver_pid)
-:
-CTerminationProcess(cmd),
-m_webserver_pid(webserver_pid)
+: CTerminationProcess(cmd)
+, m_webserver_pid(webserver_pid)
 {
 	// Don't open a command window on Windows
 	Redirect();
 }
-
 
 void CTerminationProcessAmuleweb::OnTerminate(int pid, int status)
 {
@@ -45,4 +41,3 @@ void CTerminationProcessAmuleweb::OnTerminate(int pid, int status)
 	// Normal termination processing here
 	CTerminationProcess::OnTerminate(pid, status);
 }
-

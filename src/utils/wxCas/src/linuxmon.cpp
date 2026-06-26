@@ -27,38 +27,33 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 #include "linuxmon.h"
 
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 
 // Constants
-const wxFileName
-LinuxMon::UPTIME_FILE ( "/proc/uptime" );
+const wxFileName LinuxMon::UPTIME_FILE("/proc/uptime");
 
-const wxFileName
-LinuxMon::LOADAVG_FILE ( "/proc/loadavg" );
+const wxFileName LinuxMon::LOADAVG_FILE("/proc/loadavg");
 
 // Constructors
-LinuxMon::LinuxMon ()
+LinuxMon::LinuxMon()
 {
-	Refresh ();
+	Refresh();
 }
 
 // Destructor
-LinuxMon::~LinuxMon ()
-{}
+LinuxMon::~LinuxMon() {}
 
 // Refresh
-void
-LinuxMon::Refresh ()
+void LinuxMon::Refresh()
 {
-	wxFileInputStream upInput ( UPTIME_FILE.GetFullPath () );
-	wxFileInputStream loadInput ( LOADAVG_FILE.GetFullPath () );
+	wxFileInputStream upInput(UPTIME_FILE.GetFullPath());
+	wxFileInputStream loadInput(LOADAVG_FILE.GetFullPath());
 
-	wxTextInputStream upText ( upInput );
-	wxTextInputStream loadText ( loadInput );
+	wxTextInputStream upText(upInput);
+	wxTextInputStream loadText(loadInput);
 
 	loadText >> m_sysLoad_1;
 	loadText >> m_sysLoad_5;
@@ -68,37 +63,31 @@ LinuxMon::Refresh ()
 	upText >> uptime;
 
 	wxInt32 day, hour, min, sec;
-	day = ( wxInt32 ) ( uptime / 86400 );
-	hour = ( wxInt32 ) ( ( uptime - day * 86400 ) / 3600 );
-	min = ( wxInt32 ) ( ( uptime - day * 86400 - hour * 3600 ) / 60 );
-	sec = ( wxInt32 ) ( uptime - day * 86400 - hour * 3600 - min * 60 );
+	day = (wxInt32)(uptime / 86400);
+	hour = (wxInt32)((uptime - day * 86400) / 3600);
+	min = (wxInt32)((uptime - day * 86400 - hour * 3600) / 60);
+	sec = (wxInt32)(uptime - day * 86400 - hour * 3600 - min * 60);
 
-	m_uptime =
-	    m_uptime.Format ( _( "%i day(s) %i hour(s) %i min %i s" ), day, hour, min,
-	                      sec );
+	m_uptime = m_uptime.Format(_("%i day(s) %i hour(s) %i min %i s"), day, hour, min, sec);
 }
 
 // Accessors
-wxString
-LinuxMon::GetUptime () const
+wxString LinuxMon::GetUptime() const
 {
 	return m_uptime;
 }
 
-wxString
-LinuxMon::GetSysLoad_1 () const
+wxString LinuxMon::GetSysLoad_1() const
 {
 	return m_sysLoad_1;
 }
 
-wxString
-LinuxMon::GetSysLoad_5 () const
+wxString LinuxMon::GetSysLoad_5() const
 {
 	return m_sysLoad_5;
 }
 
-wxString
-LinuxMon::GetSysLoad_15 () const
+wxString LinuxMon::GetSysLoad_15() const
 {
 	return m_sysLoad_15;
 }

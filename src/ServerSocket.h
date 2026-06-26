@@ -30,7 +30,7 @@
 #ifndef SERVERSOCKET_H
 #define SERVERSOCKET_H
 
-#include "EMSocket.h"		// Needed for CEMSocket
+#include "EMSocket.h" // Needed for CEMSocket
 #include "ServerConnect.h"
 
 //------------------------------------------------------------------------------
@@ -42,49 +42,52 @@ class CServer;
 class CServerSocket : public CEMSocket
 {
 	friend class CServerConnect;
-public:
 
-	CServerSocket(CServerConnect* in_serverconnect, const CProxyData *ProxyData = NULL);
+public:
+	CServerSocket(CServerConnect *in_serverconnect, const CProxyData *ProxyData = NULL);
 	virtual ~CServerSocket();
 
-	void	ConnectToServer(CServer* server, bool bNoCrypt = false);
-	sint8	GetConnectionState()	const	{ return connectionstate; }
-	uint64  GetLastTransmission() const	{ return m_dwLastTransmission; }
+	void ConnectToServer(CServer *server, bool bNoCrypt = false);
+	sint8 GetConnectionState() const { return connectionstate; }
+	uint64 GetLastTransmission() const { return m_dwLastTransmission; }
 	wxString info;
 
-	void	OnClose(int nErrorCode) override;
-	void	OnConnect(int nErrorCode) override;
-	void	OnReceive(int nErrorCode) override;
-	void	OnError(int nErrorCode) override;
-	bool	PacketReceived(CPacket* packet) override;
+	void OnClose(int nErrorCode) override;
+	void OnConnect(int nErrorCode) override;
+	void OnReceive(int nErrorCode) override;
+	void OnError(int nErrorCode) override;
+	bool PacketReceived(CPacket *packet) override;
 
 	// Server control traffic is not subject to the global download
 	// bandwidth budget — search/source/MOTD packets are tiny and
 	// latency-sensitive.
-	bool	IsDownloadThrottled() const override { return false; }
-	void	SendPacket(CPacket* packet, bool delpacket = true, bool controlpacket = true, uint32 actualPayloadSize = 0) override;
-	bool	IsSolving() const { return m_IsSolving;};
-	void	OnHostnameResolved(uint32 ip);
+	bool IsDownloadThrottled() const override { return false; }
+	void SendPacket(CPacket *packet,
+		bool delpacket = true,
+		bool controlpacket = true,
+		uint32 actualPayloadSize = 0) override;
+	bool IsSolving() const { return m_IsSolving; };
+	void OnHostnameResolved(uint32 ip);
 	CServer *GetServerConnected() const { return serverconnect->GetCurrentServer(); }
 
 	uint32 GetServerIP() const;
 
 private:
-	bool	ProcessPacket(const uint8_t* packet, uint32 size, int8 opcode);
-	void	SetConnectionState(sint8 newstate);
-	CServerConnect*	serverconnect;
-	sint8	connectionstate;
-	CServer*	cur_server;
+	bool ProcessPacket(const uint8_t *packet, uint32 size, int8 opcode);
+	void SetConnectionState(sint8 newstate);
+	CServerConnect *serverconnect;
+	sint8 connectionstate;
+	CServer *cur_server;
 	bool m_bNoCrypt;
-	bool	headercomplete;
-	int32	sizetoget;
-	int32	sizereceived;
-	char*	rbuffer;
-	bool	m_bIsDeleting;	// true: socket is already in deletion phase, don't destroy it in ::StopConnectionTry
-	uint64	m_dwLastTransmission;
+	bool headercomplete;
+	int32 sizetoget;
+	int32 sizereceived;
+	char *rbuffer;
+	bool m_bIsDeleting; // true: socket is already in deletion phase, don't destroy it in
+			    // ::StopConnectionTry
+	uint64 m_dwLastTransmission;
 
 	bool m_IsSolving;
-
 };
 
 #endif // SERVERSOCKET_H

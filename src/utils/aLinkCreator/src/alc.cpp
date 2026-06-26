@@ -25,35 +25,34 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-#include "config.h"		// Needed for PACKAGE
+#include "config.h" // Needed for PACKAGE
 #include "alc.h"
 
 // Application implementation
-IMPLEMENT_APP (alc)
+IMPLEMENT_APP(alc)
 
-bool alc::OnInit ()
+bool alc::OnInit()
 {
-  // Match amule (CamuleGuiBase, amule-gui.cpp): wxWidgets 3.2 added
-  // strict assertions for redundant sizer-flag combinations
-  // (e.g. Expand() + Center()), which the alc UI uses pervasively
-  // and which become fatal on distros that ship a build asserting on
-  // them (#693, Fedora 43 / wx 3.2.8). Disable the checks here until
-  // the flag uses are cleaned up.
-  wxSizerFlags::DisableConsistencyChecks();
+	// Match amule (CamuleGuiBase, amule-gui.cpp): wxWidgets 3.2 added
+	// strict assertions for redundant sizer-flag combinations
+	// (e.g. Expand() + Center()), which the alc UI uses pervasively
+	// and which become fatal on distros that ship a build asserting on
+	// them (#693, Fedora 43 / wx 3.2.8). Disable the checks here until
+	// the flag uses are cleaned up.
+	wxSizerFlags::DisableConsistencyChecks();
 
-  // Used to tell alc to use aMule catalog
-  m_locale.Init();
-  m_locale.AddCatalog(PACKAGE);
+	// Used to tell alc to use aMule catalog
+	m_locale.Init();
+	m_locale.AddCatalog(PACKAGE);
 
-  m_alcFrame = new AlcFrame (_("aLinkCreator, the aMule eD2k link creator"));
-  m_alcFrame->Show (true);
-  SetTopWindow (m_alcFrame);
-  return true;
+	m_alcFrame = new AlcFrame(_("aLinkCreator, the aMule eD2k link creator"));
+	m_alcFrame->Show(true);
+	SetTopWindow(m_alcFrame);
+	return true;
 }
 
 AlcFrame *alc::GetMainFrame()
 {
-  return (m_alcFrame);
+	return (m_alcFrame);
 }
 // File_checked_for_headers

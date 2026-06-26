@@ -26,42 +26,49 @@
 #ifndef REMOTECONNECT_H
 #define REMOTECONNECT_H
 
-
 #include "ECMuleSocket.h"
-#include "ECPacket.h"		// Needed for CECPacket
+#include "ECPacket.h" // Needed for CECPacket
 
 #include <wx/event.h>
 
-class CECPacketHandlerBase {
-	public:
-		virtual ~CECPacketHandlerBase() { }
-		virtual void HandlePacket(const CECPacket *) = 0;
+class CECPacketHandlerBase
+{
+public:
+	virtual ~CECPacketHandlerBase() {}
+	virtual void HandlePacket(const CECPacket *) = 0;
 };
 
-class CECLoginPacket : public CECPacket {
-	public:
-		CECLoginPacket(const wxString& client, const wxString& version,
-						bool canZLIB = true, bool canUTF8numbers = true, bool canNotify = false,
-						bool preferNoZlib = false);
+class CECLoginPacket : public CECPacket
+{
+public:
+	CECLoginPacket(const wxString &client,
+		const wxString &version,
+		bool canZLIB = true,
+		bool canUTF8numbers = true,
+		bool canNotify = false,
+		bool preferNoZlib = false);
 };
 
-class CECAuthPacket : public CECPacket {
-	public:
-		CECAuthPacket(const wxString& pass);
+class CECAuthPacket : public CECPacket
+{
+public:
+	CECAuthPacket(const wxString &pass);
 };
 
-//#warning Kry TODO - move to abstract layer.
-class CRemoteConnect : public CECMuleSocket {
+// #warning Kry TODO - move to abstract layer.
+class CRemoteConnect : public CECMuleSocket
+{
 private:
 	// State enums for connection SM ( client side ) in case of async processing
-	enum {
-		EC_INIT,         // initial state
-		EC_CONNECT_SENT, // socket connect request sent
-		EC_REQ_SENT,     // sent auth request to core, waiting for reply
-		EC_SALT_RECEIVED,// received salt from core
-		EC_PASSWD_SENT,  // sent password to core, waiting for OK
-		EC_OK,           // core replied "ok"
-		EC_FAIL          // core replied "bad"
+	enum
+	{
+		EC_INIT,          // initial state
+		EC_CONNECT_SENT,  // socket connect request sent
+		EC_REQ_SENT,      // sent auth request to core, waiting for reply
+		EC_SALT_RECEIVED, // received salt from core
+		EC_PASSWD_SENT,   // sent password to core, waiting for OK
+		EC_OK,            // core replied "ok"
+		EC_FAIL           // core replied "bad"
 	} m_ec_state;
 
 	// fifo of handlers for on-the-air requests. all EC concept is working in fcfs
@@ -70,7 +77,7 @@ private:
 	int m_req_count;
 	int m_req_fifo_thr;
 
-	wxEvtHandler* m_notifier;
+	wxEvtHandler *m_notifier;
 
 	wxString m_connectionPassword;
 	wxString m_server_reply;
@@ -106,9 +113,10 @@ private:
 	bool m_serverPartialUpdate;
 
 	void WriteDoneAndQueueEmpty();
+
 public:
 	// The event handler is used for notifying connect/close
-	CRemoteConnect(wxEvtHandler* evt_handler);
+	CRemoteConnect(wxEvtHandler *evt_handler);
 
 	void SetCapabilities(bool canZLIB, bool canUTF8numbers, bool canNotify);
 
@@ -120,26 +128,24 @@ public:
 
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
 
-	bool ConnectToCore(
-		const wxString &host, int port,
-		const wxString& login, const wxString &pass,
-		const wxString& client, const wxString& version);
+	bool ConnectToCore(const wxString &host,
+		int port,
+		const wxString &login,
+		const wxString &pass,
+		const wxString &client,
+		const wxString &version);
 
-	const wxString& GetServerReply() const { return m_server_reply; }
+	const wxString &GetServerReply() const { return m_server_reply; }
 
-	bool RequestFifoFull()
-	{
-		return m_req_count > m_req_fifo_thr;
-	}
+	bool RequestFifoFull() { return m_req_count > m_req_fifo_thr; }
 
 	virtual void OnConnect(); // To override connection events
-	virtual void OnLost(); // To override close events
+	virtual void OnLost();    // To override close events
 
 	void SendRequest(CECPacketHandlerBase *handler, const CECPacket *request);
 	void SendPacket(const CECPacket *request);
 
 	/********************* EC API ********************/
-
 
 	/* Misc */
 
@@ -147,8 +153,7 @@ public:
 	void ShutDown();
 
 	// Handles a ED2K link
-	void Ed2kLink(wxString* link);
-
+	void Ed2kLink(wxString *link);
 
 	/* Kad */
 
@@ -157,7 +162,6 @@ public:
 
 	// Disconnects Kad network
 	void StopKad();
-
 
 	/* ED2K */
 
@@ -168,24 +172,20 @@ public:
 	// Disconnects from ED2K
 	void DisconnectED2K();
 
-
 	/* Servers */
 
 	// Adds a server
-	void AddServer(uint32 ip,
-		       uint16 port);
+	void AddServer(uint32 ip, uint16 port);
 
 	// Remove specific server
 	// Returns: Error message or empty string for no error
-	void RemoveServer(uint32 ip,
-			  uint16 port);
+	void RemoveServer(uint32 ip, uint16 port);
 
 	// Returns ED2K server list
 	void GetServerList();
 
 	// Updates ED2K server from a URL
 	void UpdateServerList(wxString url);
-
 
 	/* Search */
 
@@ -199,8 +199,7 @@ public:
 	void GetSearchProgress();
 
 	// Add 1 or more of found files to download queue
-	void DownloadSearchResult(uint32* file);
-
+	void DownloadSearchResult(uint32 *file);
 
 	/* Statistics */
 
@@ -210,47 +209,43 @@ public:
 	// Returns aMule connection status
 	void GetConnectionState();
 
-
 	/* Queue/File handling */
 
 	// Returns downloads queue
-	void GetDlQueue(CMD4Hash* file);
+	void GetDlQueue(CMD4Hash *file);
 
 	// Returns uploads queue
-	void GetUpQueue(CMD4Hash* file);
+	void GetUpQueue(CMD4Hash *file);
 
 	// Returns waiting queue
-	void GetWtQueue(CMD4Hash* file);
+	void GetWtQueue(CMD4Hash *file);
 
 	// Swaps A4AF to a file
-	void SwapA4AFThis(CMD4Hash* file);
+	void SwapA4AFThis(CMD4Hash *file);
 
 	// Swaps A4AF to a file (auto)
-	void SwapA4AFThisAuto(CMD4Hash* file);
+	void SwapA4AFThisAuto(CMD4Hash *file);
 
 	// Swaps A4AF to any other files
-	void SwapA4AFOthers(CMD4Hash* file);
+	void SwapA4AFOthers(CMD4Hash *file);
 
 	// Pauses download(s)
-	void Pause(CMD4Hash* file);
+	void Pause(CMD4Hash *file);
 
 	// Resumes download(s)
-	void Resume(CMD4Hash* file);
+	void Resume(CMD4Hash *file);
 
 	// Stops download(s)
-	void Stop(CMD4Hash* file);
+	void Stop(CMD4Hash *file);
 
 	// Sets priority for a download
-	void SetPriority(CMD4Hash* file,
-			 uint8 priority);
+	void SetPriority(CMD4Hash *file, uint8 priority);
 
 	// Deletes a download
-	void Delete(CMD4Hash* file);
+	void Delete(CMD4Hash *file);
 
 	// Sets category for a download
-	void SetCategory(CMD4Hash* file,
-			 wxString category);
-
+	void SetCategory(CMD4Hash *file, wxString category);
 
 	/* Shared files */
 
@@ -258,8 +253,7 @@ public:
 	void GetSharedFiles();
 
 	// Sets priority for 1 or more shared files
-	void SetSharedPriority(CMD4Hash* file,
-			       uint8 priority);
+	void SetSharedPriority(CMD4Hash *file, uint8 priority);
 
 	// Reloads shared file list
 	void ReloadSharedFiles();
@@ -268,9 +262,7 @@ public:
 	void AddDirectoryToSharedFiles(wxString dir);
 
 	// Renames a file
-	void RenameFile(CMD4Hash file,
-			wxString name);
-
+	void RenameFile(CMD4Hash file, wxString name);
 
 	/* Logging */
 
@@ -301,7 +293,6 @@ public:
 	// Clears server info log
 	void ClearServerInfo();
 
-
 	/* Preferences */
 
 	// Request for Preferences
@@ -309,94 +300,93 @@ public:
 
 	// Setting the preferences
 	void SetPreferencesCategories();
-	void SetPreferencesGeneral(wxString userNick,
-				   CMD4Hash userHash);
+	void SetPreferencesGeneral(wxString userNick, CMD4Hash userHash);
 	void SetPreferencesConnections(uint32 LineDownloadCapacity,
-				       uint32 LineUploadCapacity,
-				       uint32 MaxDownloadSpeed,
-				       uint32 MaxUploadSpeed,
-				       uint32 UploadSlotAllocation,
-				       uint16 TCPPort,
-				       uint16 UDPPort,
-				       bool DisableUDP,
-				       uint16 MaxSourcesPerFile,
-				       uint16 MaxConnections,
-				       bool EnableAutoConnect,
-				       bool EnableReconnect,
-				       bool EnableNetworkED2K,
-				       bool EnableNetworkKademlia);
+		uint32 LineUploadCapacity,
+		uint32 MaxDownloadSpeed,
+		uint32 MaxUploadSpeed,
+		uint32 UploadSlotAllocation,
+		uint16 TCPPort,
+		uint16 UDPPort,
+		bool DisableUDP,
+		uint16 MaxSourcesPerFile,
+		uint16 MaxConnections,
+		bool EnableAutoConnect,
+		bool EnableReconnect,
+		bool EnableNetworkED2K,
+		bool EnableNetworkKademlia);
 	void SetPreferencesMessageFilter(bool Enabled,
-					 bool FilterAll,
-					 bool AllowFromFriends,
-					 bool FilterFromUnknownClients,
-					 bool FilterByKeyword,
-					 wxString Keywords);
+		bool FilterAll,
+		bool AllowFromFriends,
+		bool FilterFromUnknownClients,
+		bool FilterByKeyword,
+		wxString Keywords);
 	void SetPreferencesRemoteCrtl(bool RunOnStartup,
-				      uint16 Port,
-				      bool Guest,
-				      CMD4Hash GuestPasswdHash,
-				      bool UseGzip,
-				      uint32 RefreshInterval,
-				      wxString Template);
+		uint16 Port,
+		bool Guest,
+		CMD4Hash GuestPasswdHash,
+		bool UseGzip,
+		uint32 RefreshInterval,
+		wxString Template);
 	void SetPreferencesOnlineSig(bool Enabled);
 	void SetPreferencesServers(bool RemoveDeadServers,
-				   uint16 RetriesDeadServers,
-				   bool AutoUpdate,
-				   // bool URLList, TODO: Implement this!
-				   bool AddFromServer,
-				   bool AddFromClient,
-				   bool UsePrioritySystem,
-				   bool SmartLowIDCheck,
-				   bool SafeServerConnection,
-				   bool AutoConnectStaticOnly,
-				   bool ManualHighPriority);
+		uint16 RetriesDeadServers,
+		bool AutoUpdate,
+		// bool URLList, TODO: Implement this!
+		bool AddFromServer,
+		bool AddFromClient,
+		bool UsePrioritySystem,
+		bool SmartLowIDCheck,
+		bool SafeServerConnection,
+		bool AutoConnectStaticOnly,
+		bool ManualHighPriority);
 	void SetPreferencesFiles(bool ICHEnabled,
-				 bool AIHCTrust,
-				 bool NewPaused,
-				 bool NewDownloadAutoPriority,
-				 bool PreviewPriority,
-				 bool NewAutoULPriotiry,
-				 bool UploadFullChunks,
-				 bool StartNextPaused,
-				 bool ResumeSameCategory,
-				 bool SaveSources,
-				 bool ExtractMetadata,
-				 bool AllocateFullChunks,
-				 bool AllocateFullSize,
-				 bool CheckFreeSpace,
-				 uint32 MinFreeSpace);
+		bool AIHCTrust,
+		bool NewPaused,
+		bool NewDownloadAutoPriority,
+		bool PreviewPriority,
+		bool NewAutoULPriotiry,
+		bool UploadFullChunks,
+		bool StartNextPaused,
+		bool ResumeSameCategory,
+		bool SaveSources,
+		bool ExtractMetadata,
+		bool AllocateFullChunks,
+		bool AllocateFullSize,
+		bool CheckFreeSpace,
+		uint32 MinFreeSpace);
 	void SetPreferencesDirectories();
 	void SetPreferencesStatistics();
 	void SetPreferencesSecurity(uint8 CanSeeShares,
-				    uint32 FilePermissions,
-				    uint32 DirPermissions,
-				    bool IPFilterEnabled,
-				    bool IPFilterAutoUpdate,
-				    wxString IPFilterUpdateURL,
-				    uint8 IPFilterLevel,
-				    bool IPFilterFilterLAN,
-				    bool UseSecIdent);
+		uint32 FilePermissions,
+		uint32 DirPermissions,
+		bool IPFilterEnabled,
+		bool IPFilterAutoUpdate,
+		wxString IPFilterUpdateURL,
+		uint8 IPFilterLevel,
+		bool IPFilterFilterLAN,
+		bool UseSecIdent);
 	void SetPreferencesCoreTweaks(uint16 MaxConnectionsPerFive,
-				      bool Verbose,
-				      uint32 FileBuffer,
-				      uint32 ULQueue,
-				      uint32 SRVKeepAliveTimeout);
+		bool Verbose,
+		uint32 FileBuffer,
+		uint32 ULQueue,
+		uint32 SRVKeepAliveTimeout);
 
 	// Creates new category
 	void CreateCategory(uint32 category,
-			    wxString title,
-			    wxString folder,
-			    wxString comment,
-			    uint32 color,
-			    uint8 priority);
+		wxString title,
+		wxString folder,
+		wxString comment,
+		uint32 color,
+		uint8 priority);
 
 	// Updates existing category
 	void UpdateCategory(uint32 category,
-			    wxString title,
-			    wxString folder,
-			    wxString comment,
-			    uint32 color,
-			    uint8 priority);
+		wxString title,
+		wxString folder,
+		wxString comment,
+		uint32 color,
+		uint8 priority);
 
 	// Deletes existing category
 	void DeleteCategory(uint32 category);
@@ -416,16 +406,19 @@ private:
 };
 
 wxDECLARE_EVENT(wxEVT_EC_CONNECTION, wxEvent);
-class wxECSocketEvent : public wxEvent {
+class wxECSocketEvent : public wxEvent
+{
 public:
-	wxECSocketEvent(int id, bool result, const wxString& reply) : wxEvent(-1, id)
+	wxECSocketEvent(int id, bool result, const wxString &reply)
+	: wxEvent(-1, id)
 	{
 		m_value = result;
 		m_server_reply = reply;
 	}
-	wxEvent *Clone(void) const		{ return new wxECSocketEvent(*this); }
-	bool GetResult() const			{ return m_value; }
-	const wxString& GetServerReply() const	{ return m_server_reply; }
+	wxEvent *Clone(void) const { return new wxECSocketEvent(*this); }
+	bool GetResult() const { return m_value; }
+	const wxString &GetServerReply() const { return m_server_reply; }
+
 private:
 	bool m_value;
 	wxString m_server_reply;

@@ -50,9 +50,8 @@ class CSharedDirsApplyTask : public wxThread
 public:
 	typedef std::vector<CPath> PathList;
 
-	CSharedDirsApplyTask(const PathList & explicit_shares,
-		const PathList & recursive_shares,
-		wxEvtHandler * owner);
+	CSharedDirsApplyTask(
+		const PathList &explicit_shares, const PathList &recursive_shares, wxEvtHandler *owner);
 
 	// Request graceful termination from the UI thread. Returns once
 	// the worker has acknowledged the cancel and exited.
@@ -60,31 +59,31 @@ public:
 
 	// Read-after-done accessors. Calling these while the thread is
 	// still running is undefined.
-	const PathList & GetExpandedShares() const { return m_output; }
-	bool             WasCancelled() const      { return m_cancelled.load(); }
-	size_t           GetTotalScanned() const   { return m_scanned.load(); }
+	const PathList &GetExpandedShares() const { return m_output; }
+	bool WasCancelled() const { return m_cancelled.load(); }
+	size_t GetTotalScanned() const { return m_scanned.load(); }
 
 protected:
 	ExitCode Entry() override;
 
 private:
-	void ExpandRecursive(const CPath & root);
+	void ExpandRecursive(const CPath &root);
 	void PostProgress();
 
-	PathList            m_explicit;     // copy of the caller's explicit shares
-	PathList            m_recursive;    // copy of the caller's recursive intents
-	wxEvtHandler *      m_owner;
-	PathList            m_output;       // flat path list, filled during Entry()
+	PathList m_explicit;  // copy of the caller's explicit shares
+	PathList m_recursive; // copy of the caller's recursive intents
+	wxEvtHandler *m_owner;
+	PathList m_output; // flat path list, filled during Entry()
 
-	std::atomic<size_t> m_scanned{0};   // directories visited so far
-	std::atomic<bool>   m_cancelled{false};
-	size_t              m_lastReportedScanned = 0;
+	std::atomic<size_t> m_scanned{ 0 }; // directories visited so far
+	std::atomic<bool> m_cancelled{ false };
+	size_t m_lastReportedScanned = 0;
 };
 
 // Events posted from the worker thread to the owner. The owner is
 // expected to be a wxEvtHandler subclass that binds these via
 // Bind(wxEVT_SHARED_DIRS_APPLY_PROGRESS, ...).
 wxDECLARE_EVENT(wxEVT_SHARED_DIRS_APPLY_PROGRESS, wxThreadEvent);
-wxDECLARE_EVENT(wxEVT_SHARED_DIRS_APPLY_DONE,     wxThreadEvent);
+wxDECLARE_EVENT(wxEVT_SHARED_DIRS_APPLY_DONE, wxThreadEvent);
 
 #endif // SHAREDDIRSAPPLYTASK_H

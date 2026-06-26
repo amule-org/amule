@@ -31,20 +31,21 @@
 //
 // Packed bit vector
 //
-class BitVector {
+class BitVector
+{
 public:
 	BitVector()
 	{
-		m_bits	= 0;
+		m_bits = 0;
 		m_bytes = 0;
 		m_allTrue = 0;
 		m_vector = NULL;
 	}
 
-	~BitVector() { clear();	}
+	~BitVector() { clear(); }
 
 	// number of bits
-	uint32 size() const	{ return m_bits; }
+	uint32 size() const { return m_bits; }
 
 	// is it empty?
 	bool empty() const { return m_bits == 0; }
@@ -82,7 +83,7 @@ public:
 	// set number of bits to zero and free memory
 	void clear()
 	{
-		m_bits	= 0;
+		m_bits = 0;
 		m_bytes = 0;
 		m_allTrue = 0;
 		delete[] m_vector;
@@ -133,25 +134,37 @@ public:
 	}
 
 	// set all bits to true
-	void SetAllTrue() { if (m_bytes) { memset(m_vector, 0xFF, m_bytes); } }
+	void SetAllTrue()
+	{
+		if (m_bytes) {
+			memset(m_vector, 0xFF, m_bytes);
+		}
+	}
 
 	// handling of the internal buffer (for EC)
 	// get size
 	uint32 SizeBuffer() const { return m_bytes; }
 	// get buffer
-	const void* GetBuffer() const { return m_vector; }
+	const void *GetBuffer() const { return m_vector; }
 	// set buffer
 	// Skip the copy when m_bytes == 0 -- after clear() that path leaves
 	// m_vector == NULL, and memcpy(NULL, src, 0) is C-standard UB even
 	// on real libcs that no-op it.  Matches SetAllTrue() above.
-	void SetBuffer(const void* src) { if (m_bytes) { memcpy(m_vector, src, m_bytes); } m_allTrue = 2; }
+	void SetBuffer(const void *src)
+	{
+		if (m_bytes) {
+			memcpy(m_vector, src, m_bytes);
+		}
+		m_allTrue = 2;
+	}
 
 private:
-	uint32	m_bits;			// number of bits
-	uint32	m_bytes;		// number of bytes in the vector
-	uint8 *	m_vector;		// the storage
-	mutable uint8 m_allTrue;// All true ? 0: no  1: yes  2: don't know
-	static const uint8 s_posMask[]; // = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}; implemented in OtherFunctions.cpp
+	uint32 m_bits;                  // number of bits
+	uint32 m_bytes;                 // number of bytes in the vector
+	uint8 *m_vector;                // the storage
+	mutable uint8 m_allTrue;        // All true ? 0: no  1: yes  2: don't know
+	static const uint8 s_posMask[]; // = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}; implemented in
+					// OtherFunctions.cpp
 	static const uint8 s_negMask[]; // = {0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
 };
 

@@ -10,36 +10,35 @@ using namespace muleunit;
 //       capabilities of printf found in printf(3).
 // Note to the above: Except where otherwise stated.
 
-#define ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
+#define ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
 #define MIN(x) std::numeric_limits<x>::min()
 #define MAX(x) std::numeric_limits<x>::max()
 
-
 DECLARE(Format)
-	// Less is valid for the string type, so we need a cut
-	// down test for that.
-	void testFormat(const wxString& str, const char* value) {
-		for (int p = -1; p < 5; ++p) {
-			wxString format;
+// Less is valid for the string type, so we need a cut
+// down test for that.
+void testFormat(const wxString &str, const char *value)
+{
+	for (int p = -1; p < 5; ++p) {
+		wxString format;
 
-			format += "%";
+		format += "%";
 
-			if (p == -1) {
-				format += ".";
-			} else {
-				format += wxString::Format(".%d", p);
-			}
-
-			format += str;
-
-			wxString reference = wxString::Format(format, value);
-			wxString actual = CFormat(format) % value;
-
-			ASSERT_EQUALS_M(reference, actual, format + ": '" + reference + "' != '" + actual + "'");
+		if (p == -1) {
+			format += ".";
+		} else {
+			format += wxString::Format(".%d", p);
 		}
-	}
-END_DECLARE;
 
+		format += str;
+
+		wxString reference = wxString::Format(format, value);
+		wxString actual = CFormat(format) % value;
+
+		ASSERT_EQUALS_M(reference, actual, format + ": '" + reference + "' != '" + actual + "'");
+	}
+}
+END_DECLARE;
 
 TEST(Format, ConstructorAndGetString)
 {
@@ -68,7 +67,6 @@ TEST(Format, ConstructorAndGetString)
 	}
 }
 
-
 TEST(Format, SetStringAndGetString)
 {
 	CFormat format(NULL);
@@ -87,24 +85,22 @@ TEST(Format, SetStringAndGetString)
 	ASSERT_EQUALS("a %i c", format.GetString());
 }
 
-
-
 //! Implementation for the Standard type test
 #define STANDARD_TEST(cformat, wxformat, value) \
 	{ \
-		wxString reference	= wxString::Format(wxString("%") + wxformat, value); \
-		wxString actual		= CFormat(wxString("%") + cformat) % value; \
-		ASSERT_EQUALS_M(reference, actual, wxString("%") << wxformat \
-				<< " vs. %" << cformat << ": '" + reference + "' != '" + actual + "'"); \
+		wxString reference = wxString::Format(wxString("%") + wxformat, value); \
+		wxString actual = CFormat(wxString("%") + cformat) % value; \
+		ASSERT_EQUALS_M(reference, \
+			actual, \
+			wxString("%") << wxformat << " vs. %" << cformat \
+				      << ": '" + reference + "' != '" + actual + "'"); \
 	}
-
-
 
 //! Test the two boundaries and a middle value of the specified format
 #define STANDARD_TYPE_TESTS(cformat, wxformat, type) \
 	STANDARD_TEST(cformat, wxformat, MIN(type)); \
 	STANDARD_TEST(cformat, wxformat, (type)(MAX(type) / 2)); \
-	STANDARD_TEST(cformat, wxformat, MAX(type)); \
+	STANDARD_TEST(cformat, wxformat, MAX(type));
 
 // In wx >= 2.9 wxChar represents a Unicode code point, thus its maximum value
 // is 1114111 (0x10ffff) on platforms with 4-byte wchar_t (Linux, macOS).
@@ -113,58 +109,36 @@ TEST(Format, SetStringAndGetString)
 // happens explicitly rather than as an implicit constant conversion.
 TEST(Format, InjectwxChar)
 {
-	const uint32_t maxCodePoint = std::min<uint32_t>(
-		static_cast<uint32_t>(MAX(wxChar)), 0x10ffffu);
+	const uint32_t maxCodePoint = std::min<uint32_t>(static_cast<uint32_t>(MAX(wxChar)), 0x10ffffu);
 	STANDARD_TEST("c", "c", MIN(wxChar));
 	STANDARD_TEST("c", "c", static_cast<wxChar>(maxCodePoint / 2));
 	STANDARD_TEST("c", "c", static_cast<wxChar>(maxCodePoint));
 }
 
-
 //! All length specifiers are supported and should yield the same result
-const char* int_lengths[] =
-{
-	"h",
-	"",
-	"l",
-	"ll",
-	NULL
-};
+const char *int_lengths[] = { "h", "", "l", "ll", NULL };
 
 //! All signed types are supported, and should yield the same result
-const char* sint_types[] =
-{
-	"d",
-	"i",
-	NULL
-};
-
+const char *sint_types[] = { "d", "i", NULL };
 
 //! All unsigned types are supported, and should yield the same result
-const char* uint_types[] =
-{
-	"u",
-	"o",
-	"x",
-	"X",
-	NULL
-};
-
+const char *uint_types[] = { "u", "o", "x", "X", NULL };
 
 TEST(Format, InjectInteger)
 {
-	const char** sint_entry = sint_types;
+	const char **sint_entry = sint_types;
 
 	while (*sint_entry) {
-		const char** len_entry = int_lengths;
+		const char **len_entry = int_lengths;
 
 		while (*len_entry) {
 			wxString entry = wxString() << *len_entry << *sint_entry;
 
-			STANDARD_TYPE_TESTS(entry, wxString() << "h" << *sint_entry,	signed short);
-			STANDARD_TYPE_TESTS(entry, wxString() << "" << *sint_entry,	signed int);
-			STANDARD_TYPE_TESTS(entry, wxString() << "l" << *sint_entry,	signed long);
-			STANDARD_TYPE_TESTS(entry, wxString() << WXLONGLONGFMTSPEC << *sint_entry,	signed long long);
+			STANDARD_TYPE_TESTS(entry, wxString() << "h" << *sint_entry, signed short);
+			STANDARD_TYPE_TESTS(entry, wxString() << "" << *sint_entry, signed int);
+			STANDARD_TYPE_TESTS(entry, wxString() << "l" << *sint_entry, signed long);
+			STANDARD_TYPE_TESTS(
+				entry, wxString() << WXLONGLONGFMTSPEC << *sint_entry, signed long long);
 
 			++len_entry;
 		}
@@ -172,18 +146,18 @@ TEST(Format, InjectInteger)
 		++sint_entry;
 	}
 
-
-	const char** uint_entry = uint_types;
+	const char **uint_entry = uint_types;
 	while (*uint_entry) {
-		const char** len_entry = int_lengths;
+		const char **len_entry = int_lengths;
 
 		while (*len_entry) {
 			wxString entry = wxString() << *len_entry << *uint_entry;
 
-			STANDARD_TYPE_TESTS(entry, wxString() << "h" << *uint_entry,	unsigned short);
-			STANDARD_TYPE_TESTS(entry, wxString() << "" << *uint_entry,	unsigned int);
-			STANDARD_TYPE_TESTS(entry, wxString() << "l" << *uint_entry,	unsigned long);
-			STANDARD_TYPE_TESTS(entry, wxString() << WXLONGLONGFMTSPEC << *uint_entry,	unsigned long long);
+			STANDARD_TYPE_TESTS(entry, wxString() << "h" << *uint_entry, unsigned short);
+			STANDARD_TYPE_TESTS(entry, wxString() << "" << *uint_entry, unsigned int);
+			STANDARD_TYPE_TESTS(entry, wxString() << "l" << *uint_entry, unsigned long);
+			STANDARD_TYPE_TESTS(
+				entry, wxString() << WXLONGLONGFMTSPEC << *uint_entry, unsigned long long);
 
 			++len_entry;
 		}
@@ -191,7 +165,6 @@ TEST(Format, InjectInteger)
 		++uint_entry;
 	}
 }
-
 
 TEST(Format, InjectFloatAndDouble)
 {
@@ -210,13 +183,11 @@ TEST(Format, InjectFloatAndDouble)
 	STANDARD_TYPE_TESTS("G", "G", double);
 }
 
-
 TEST(Format, InjectString)
 {
 	testFormat("s", "");
 	testFormat("s", "abc");
 }
-
 
 TEST(Format, InjectNULLString)
 {
@@ -232,12 +203,11 @@ TEST(Format, InjectNULLString)
 		format += "s";
 
 		// cppcheck-suppress zerodiv
-		wxString actual = CFormat(format) % (const char*)NULL;
+		wxString actual = CFormat(format) % (const char *)NULL;
 
 		ASSERT_TRUE_M(actual.IsEmpty(), "Expected empty string, got '" + actual + "'");
 	}
 }
-
 
 TEST(Format, MultipleFields)
 {
@@ -250,7 +220,7 @@ TEST(Format, MultipleFields)
 	{
 		CFormat fmt2("%d _ %u _ %i");
 		fmt2 % -1;
-		fmt2 %  2u;
+		fmt2 % 2u;
 		fmt2 % -4;
 		ASSERT_EQUALS("-1 _ 2 _ -4", fmt2.GetString());
 	}
@@ -262,7 +232,6 @@ TEST(Format, MultipleFields)
 		ASSERT_EQUALS("-12-4", fmt3.GetString());
 	}
 }
-
 
 TEST(Format, EscapedPercentageSign)
 {
@@ -287,7 +256,6 @@ TEST(Format, EscapedPercentageSign)
 		ASSERT_EQUALS("% _ % _ %", fmt4.GetString());
 	}
 }
-
 
 ///////////////////////////////////////////////////////////
 // The following checks for invalid operations
@@ -331,7 +299,6 @@ TEST(Format, MalformedFields)
 	}
 }
 
-
 TEST(Format, NotReady)
 {
 	CFormat fmt("-- %s - %d");
@@ -343,7 +310,6 @@ TEST(Format, NotReady)
 	fmt % 42;
 	ASSERT_EQUALS("-- foo - 42", fmt.GetString());
 }
-
 
 TEST(Format, WrongTypes)
 {
@@ -364,7 +330,6 @@ TEST(Format, WrongTypes)
 	}
 }
 
-
 TEST(Format, NotSupported)
 {
 #if wxDEBUG_LEVEL >= 1
@@ -384,7 +349,6 @@ TEST(Format, NotSupported)
 	}
 }
 
-
 TEST(Format, Overfeeding)
 {
 	CFormat fmt("%d - %d");
@@ -401,7 +365,6 @@ TEST(Format, Overfeeding)
 	ASSERT_EQUALS("1 - 2", fmt.GetString());
 }
 
-
 TEST(Format, 64bValues)
 {
 	{
@@ -417,27 +380,23 @@ TEST(Format, 64bValues)
 	}
 }
 
-
 class CTestPrintable
 {
 public:
 	CTestPrintable(int value)
-		: m_value(value)
-	{}
-
-	wxString GetPrintableString() const
+	: m_value(value)
 	{
-		return wxString::Format("%i", m_value);
 	}
+
+	wxString GetPrintableString() const { return wxString::Format("%i", m_value); }
 
 private:
 	int m_value;
 };
 
-template<>
-inline CFormat& CFormat::operator%(CTestPrintable value)
+template <> inline CFormat &CFormat::operator%(CTestPrintable value)
 {
-	return this->operator%<const wxString&>(value.GetPrintableString());
+	return this->operator% <const wxString &>(value.GetPrintableString());
 }
 
 TEST(Format, UserDefined)

@@ -26,17 +26,15 @@
 #ifndef OTHERFUNCTIONS_H
 #define OTHERFUNCTIONS_H
 
-#include <wx/intl.h>		// Needed for wxLANGUAGE_ constants
+#include <wx/intl.h> // Needed for wxLANGUAGE_ constants
 
-#include "Types.h"		// Needed for uint16, uint32 and uint64
-#include "Preferences.h"	// Needed for AllCategoryFilter enumeration
-#include "MD4Hash.h"		// Needed for CMD4Hash
+#include "Types.h"       // Needed for uint16, uint32 and uint64
+#include "Preferences.h" // Needed for AllCategoryFilter enumeration
+#include "MD4Hash.h"     // Needed for CMD4Hash
 
-#include <algorithm>		// Needed for std::for_each	// Do_not_auto_remove (mingw-gcc-3.4.5)
-
+#include <algorithm> // Needed for std::for_each	// Do_not_auto_remove (mingw-gcc-3.4.5)
 
 class CPath;
-
 
 /**
  * Helper function.
@@ -50,20 +48,19 @@ class CPath;
  * is less than ArgB, zero if ArgA is equal to ArgB and a positive value if
  * ArgA is greater than ArgB.
  */
-template <class TYPE>
-int CmpAny(const TYPE& ArgA, const TYPE& ArgB)
+template <class TYPE> int CmpAny(const TYPE &ArgA, const TYPE &ArgB)
 {
-	if ( ArgA < ArgB ) {
+	if (ArgA < ArgB) {
 		return -1;
-	} else if ( ArgB < ArgA ) {
-		return  1;
+	} else if (ArgB < ArgA) {
+		return 1;
 	} else {
-		return  0;
+		return 0;
 	}
 }
 
 //! Overloaded version of CmpAny for use with wxStrings.
-inline int CmpAny(const wxString& ArgA, const wxString& ArgB)
+inline int CmpAny(const wxString &ArgA, const wxString &ArgB)
 {
 	if (ArgA.IsEmpty() && !ArgB.IsEmpty()) {
 		return -1;
@@ -72,16 +69,15 @@ inline int CmpAny(const wxString& ArgA, const wxString& ArgB)
 	} else if (ArgA.IsEmpty() && ArgB.IsEmpty()) {
 		return 0;
 	} else {
-		return ArgA.CmpNoCase( ArgB );
+		return ArgA.CmpNoCase(ArgB);
 	}
 }
 
 //! Overloaded version of CmpAny for use with C-Strings (Unicoded).
-inline int CmpAny(const wxChar* ArgA, const wxChar* ArgB)
+inline int CmpAny(const wxChar *ArgA, const wxChar *ArgB)
 {
-	return CmpAny(wxString( ArgA ), wxString( ArgB ));
+	return CmpAny(wxString(ArgA), wxString(ArgB));
 }
-
 
 /**
  * Removes the first instance of a value from a STL-like list: list, vector or deque.
@@ -90,8 +86,7 @@ inline int CmpAny(const wxChar* ArgA, const wxChar* ArgB)
  * @param item The value to search for and remove.
  * @return The number of instances removed.
  */
-template <typename LIST, typename ITEM>
-unsigned int EraseFirstValue( LIST& list, const ITEM& item )
+template <typename LIST, typename ITEM> unsigned int EraseFirstValue(LIST &list, const ITEM &item)
 {
 	typename LIST::iterator it = list.begin();
 
@@ -106,7 +101,6 @@ unsigned int EraseFirstValue( LIST& list, const ITEM& item )
 	return false;
 }
 
-
 /**
  * Removes all instances of a value from a STL-like list: list, vector or deque.
  *
@@ -114,15 +108,14 @@ unsigned int EraseFirstValue( LIST& list, const ITEM& item )
  * @param item The value to search for and remove.
  * @return The number of instances removed.
  */
-template <typename LIST, typename ITEM>
-unsigned int EraseValue( LIST& list, const ITEM& item )
+template <typename LIST, typename ITEM> unsigned int EraseValue(LIST &list, const ITEM &item)
 {
 	typename LIST::iterator it = list.begin();
 	unsigned int count = 0;
 
-	for ( ; it != list.end(); ) {
-		if ( *it == item ) {
-			it = list.erase( it );
+	for (; it != list.end();) {
+		if (*it == item) {
+			it = list.erase(it);
 			count++;
 		} else {
 			++it;
@@ -132,27 +125,21 @@ unsigned int EraseValue( LIST& list, const ITEM& item )
 	return count;
 }
 
-
 //! Used by DeleteContents
 struct SDoDelete
 {
 	// Used for lists, vectors, deques, etc.
-	template <typename TYPE>
-	void operator()(TYPE* ptr) {
-		delete ptr;
-	}
+	template <typename TYPE> void operator()(TYPE *ptr) { delete ptr; }
 
 	// Used for maps, hashmaps, rangemaps, etc.
-	template <typename FIRST, typename SECOND>
-	void operator()(const std::pair<FIRST, SECOND>& pair) {
+	template <typename FIRST, typename SECOND> void operator()(const std::pair<FIRST, SECOND> &pair)
+	{
 		delete pair.second;
 	}
 };
 
-
 /** Frees the contents of a list or map like stl container, clearing it afterwards. */
-template <typename STL_CONTAINER>
-void DeleteContents(STL_CONTAINER& container)
+template <typename STL_CONTAINER> void DeleteContents(STL_CONTAINER &container)
 {
 	// Ensure that the actual container wont contain dangling pointers during
 	// this operation, to ensure that the destructors can't access them.
@@ -162,7 +149,6 @@ void DeleteContents(STL_CONTAINER& container)
 	std::for_each(copy.begin(), copy.end(), SDoDelete());
 }
 
-
 /**
  * Copies elements from the range [first, first + n) to the range [result, result + n).
  */
@@ -171,7 +157,6 @@ OutputIterator STLCopy_n(InputIterator first, size_t n, OutputIterator result)
 {
 	return std::copy(first, first + n, result);
 }
-
 
 /**
  * Helperfunction for accessing a child of the calling widget.
@@ -188,8 +173,7 @@ OutputIterator STLCopy_n(InputIterator first, size_t n, OutputIterator result)
  * we will be alerted in case of widget changing type, instead of getting just
  * getting bad mojo due to casting a pointer to the wrong type.
  */
-#define CastChild( IdOrName, type )			dynamic_cast<type*>( FindWindow( IdOrName ) )
-
+#define CastChild(IdOrName, type) dynamic_cast<type *>(FindWindow(IdOrName))
 
 /**
  * Helperfunction for accessing the child of a any widget by ID.
@@ -200,8 +184,7 @@ OutputIterator STLCopy_n(InputIterator first, size_t n, OutputIterator result)
  *
  * @see CastChild()
  */
-#define CastByID( ID, parent, type )		dynamic_cast<type*>( wxWindow::FindWindowById( (ID), (parent) ) )
-
+#define CastByID(ID, parent, type) dynamic_cast<type *>(wxWindow::FindWindowById((ID), (parent)))
 
 /**
  * Helperfunction for accessing the child of a any widget by Name.
@@ -212,18 +195,17 @@ OutputIterator STLCopy_n(InputIterator first, size_t n, OutputIterator result)
  *
  * @see CastChild()
  */
-#define CastByName( Name, parent, type )	dynamic_cast<type*>( wxWindow::FindWindowByName( (Name), (parent) ) )
-
+#define CastByName(Name, parent, type) dynamic_cast<type *>(wxWindow::FindWindowByName((Name), (parent)))
 
 // From Gnucleus project [found by Tarod]
 // Base16/Base32/Base64 Encode/Decode functions
-wxString EncodeBase16(const unsigned char* buffer, unsigned int bufLen);
+wxString EncodeBase16(const unsigned char *buffer, unsigned int bufLen);
 unsigned int DecodeBase16(const wxString &base16Buffer, unsigned int base16BufLen, unsigned char *buffer);
-wxString EncodeBase32(const unsigned char* buffer, unsigned int bufLen);
+wxString EncodeBase32(const unsigned char *buffer, unsigned int bufLen);
 unsigned int DecodeBase32(const wxString &base32Buffer, unsigned int base32BufLen, unsigned char *buffer);
-wxString EncodeBase64(const char* buffer, unsigned int bufLen);
+wxString EncodeBase64(const char *buffer, unsigned int bufLen);
 unsigned int DecodeBase64(const wxString &base64Buffer, unsigned int base64BufLen, unsigned char *buffer);
-void SetBase64Header(const wxString& header);
+void SetBase64Header(const wxString &header);
 
 // Converts the number of bytes to human readable form.
 wxString CastItoXBytes(uint64 count);
@@ -237,26 +219,33 @@ wxString CastSecondsToHM(uint32 seconds, uint16 msecs = 0);
 // display name (e.g. "H264" -> "H.264", "XVID" -> "Xvid"). Unknown
 // values pass through unchanged. Used by SearchListCtrl to render the
 // Codec column.
-wxString FormatMediaCodec(const wxString& raw);
+wxString FormatMediaCodec(const wxString &raw);
 // Returns the amount of Bytes the provided size-type represents
 uint32 GetTypeSize(uint8 type);
 // Returns the string associated with a file-rating value.
 wxString GetRateString(uint16 rate);
 
-
 // The following functions are used to identify and/or name the type of a file
-enum FileType { ftAny, ftVideo, ftAudio, ftArchive, ftCDImage, ftPicture, ftText, ftProgram };
+enum FileType
+{
+	ftAny,
+	ftVideo,
+	ftAudio,
+	ftArchive,
+	ftCDImage,
+	ftPicture,
+	ftText,
+	ftProgram
+};
 // Examins a filename and returns the enumerated value associated with it, or ftAny if unknown extension
-FileType GetFiletype(const CPath& filename);
+FileType GetFiletype(const CPath &filename);
 // Returns the description of a filetype: Movies, Audio, Pictures and so on...
 wxString GetFiletypeDesc(FileType type, bool translated = true);
 // Shorthand for GetFiletypeDesc(GetFiletype(filename))
-wxString GetFiletypeByName(const CPath& filename, bool translated = true);
-
+wxString GetFiletypeByName(const CPath &filename, bool translated = true);
 
 // Returns the name associated with a category value.
 wxString GetCatTitle(AllCategoryFilter cat);
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // ED2K File Type
@@ -277,73 +266,58 @@ enum EED2KFileType
 class EED2KFileTypeClass
 {
 public:
-	EED2KFileTypeClass()
-	{
-		s_t = ED2KFT_ANY;
-	}
-	EED2KFileTypeClass(EED2KFileType t)
-	{
-		s_t = t;
-	}
-	EED2KFileType GetType() const
-	{
-		return s_t;
-	}
+	EED2KFileTypeClass() { s_t = ED2KFT_ANY; }
+	EED2KFileTypeClass(EED2KFileType t) { s_t = t; }
+	EED2KFileType GetType() const { return s_t; }
 
 private:
 	EED2KFileType s_t;
 };
 
-EED2KFileType GetED2KFileTypeID(const CPath& fileName);
+EED2KFileType GetED2KFileTypeID(const CPath &fileName);
 wxString GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
-wxString GetFileTypeByName(const CPath& fileName);
+wxString GetFileTypeByName(const CPath &fileName);
 EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
 ///////////////////////////////////////////////////////////////////////////////
 
 // md4cmp -- replacement for memcmp(hash1,hash2,16)
 // Like 'memcmp' this function returns 0, if hash1==hash2, and !0, if hash1!=hash2.
 // NOTE: Do *NOT* use that function for determining if hash1<hash2 or hash1>hash2.
-inline int md4cmp(const void* hash1, const void* hash2)
+inline int md4cmp(const void *hash1, const void *hash2)
 {
 	return memcmp(hash1, hash2, 16);
 }
 
-
 // md4clr -- replacement for memset(hash,0,16)
-inline void md4clr(void* hash)
+inline void md4clr(void *hash)
 {
 	memset(hash, 0, 16);
 }
 
-
 // md4cpy -- replacement for memcpy(dst,src,16)
-inline void md4cpy(void* dst, const void* src)
+inline void md4cpy(void *dst, const void *src)
 {
 	memcpy(dst, src, 16);
 }
 
-
 // DumpMem ... Dumps mem ;)
-wxString DumpMemToStr(const void *buff, int n, const wxString& msg = "", bool ok = true);
-void DumpMem(const void *buff, int n, const wxString& msg = "", bool ok = true);
+wxString DumpMemToStr(const void *buff, int n, const wxString &msg = "", bool ok = true);
+void DumpMem(const void *buff, int n, const wxString &msg = "", bool ok = true);
 void DumpMem_DW(const uint32 *ptr, int count);
 
 // Returns special source ID for GUI.
 // It's actually IP<<16+Port
-#define GUI_ID(x,y) (uint64)((((uint64)x)<<16) + (uint64)y)
+#define GUI_ID(x, y) (uint64)((((uint64)x) << 16) + (uint64)y)
 // And so...
 #define PORT_FROM_GUI_ID(x) (x & 0xFFFF)
 #define IP_FROM_GUI_ID(x) (x >> 16)
 
-
-
-inline long int make_full_ed2k_version(int a, int b, int c) {
+inline long int make_full_ed2k_version(int a, int b, int c)
+{
 	return ((a << 17) | (b << 10) | (c << 7));
 }
 
-
 wxString GetConfigDir(const wxString &configFile);
-
 
 /**
  * Adds aMule's custom languages to db.
@@ -353,12 +327,12 @@ void InitCustomLanguages();
 /**
  * Initializes locale
  */
-void InitLocale(wxLocale& locale, int language);
+void InitLocale(wxLocale &locale, int language);
 
 /**
  * Converts a string locale definition to a wxLANGUAGE id.
  */
-int StrLang2wx(const wxString& language);
+int StrLang2wx(const wxString &language);
 
 /**
  * Converts a wxLANGUAGE id to a string locale name.
@@ -369,7 +343,6 @@ wxString wxLang2Str(const int lang);
  * Generate MD5Hash of prompt input
  */
 CMD4Hash GetPassword(bool allowEmptyPassword = false);
-
 
 #if wxUSE_THREADS
 
@@ -397,29 +370,33 @@ CMD4Hash GetPassword(bool allowEmptyPassword = false);
 class CMutexUnlocker
 {
 public:
-    // unlock the mutex in the ctor
-    CMutexUnlocker(wxMutex& mutex)
-        : m_isOk(false), m_mutex(mutex)
-        { m_isOk = ( m_mutex.Unlock() == wxMUTEX_NO_ERROR ); }
+	// unlock the mutex in the ctor
+	CMutexUnlocker(wxMutex &mutex)
+	: m_isOk(false)
+	, m_mutex(mutex)
+	{
+		m_isOk = (m_mutex.Unlock() == wxMUTEX_NO_ERROR);
+	}
 
-    // returns true if mutex was successfully unlocked in ctor
-    bool IsOk() const
-        { return m_isOk; }
+	// returns true if mutex was successfully unlocked in ctor
+	bool IsOk() const { return m_isOk; }
 
-    // lock the mutex in dtor
-    ~CMutexUnlocker()
-        { if ( IsOk() ) m_mutex.Lock(); }
+	// lock the mutex in dtor
+	~CMutexUnlocker()
+	{
+		if (IsOk())
+			m_mutex.Lock();
+	}
 
 private:
-    // no assignment operator nor copy ctor
-    CMutexUnlocker(const CMutexUnlocker&);
-    CMutexUnlocker& operator=(const CMutexUnlocker&);
+	// no assignment operator nor copy ctor
+	CMutexUnlocker(const CMutexUnlocker &);
+	CMutexUnlocker &operator=(const CMutexUnlocker &);
 
-    bool     m_isOk;
-    wxMutex& m_mutex;
+	bool m_isOk;
+	wxMutex &m_mutex;
 };
 #endif /* wxUSE_THREADS */
-
 
 #endif // OTHERFUNCTIONS_H
 // File_checked_for_headers

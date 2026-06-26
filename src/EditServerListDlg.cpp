@@ -23,64 +23,55 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <wx/dialog.h>		// Needed for wxDialog	// Do_not_auto_remove
-#include <wx/sizer.h>		// Needed for wxBoxSizer
-#include <wx/file.h>		// Needed for wxFile
-#include <wx/log.h>		// Needed for wxLogSysError
+#include <wx/dialog.h> // Needed for wxDialog	// Do_not_auto_remove
+#include <wx/sizer.h>  // Needed for wxBoxSizer
+#include <wx/file.h>   // Needed for wxFile
+#include <wx/log.h>    // Needed for wxLogSysError
 #include <wx/textctrl.h>
 
-#include "EditServerListDlg.h"	// Interface declarations
+#include "EditServerListDlg.h" // Interface declarations
 
 wxBEGIN_EVENT_TABLE(EditServerListDlg, wxDialog)
-    EVT_BUTTON(wxID_OK, EditServerListDlg::OnOK)
+	EVT_BUTTON(wxID_OK, EditServerListDlg::OnOK)
 wxEND_EVENT_TABLE()
 
-
-EditServerListDlg::EditServerListDlg(wxWindow *parent,
-                                     const wxString& caption,
-                                     const wxString& message,
-				     const wxString& filename) : wxDialog(parent, -1, caption,
-								      wxDefaultPosition, wxSize(400,200),
-								      wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
+EditServerListDlg::EditServerListDlg(
+	wxWindow *parent, const wxString &caption, const wxString &message, const wxString &filename)
+: wxDialog(parent, -1, caption, wxDefaultPosition, wxSize(400, 200), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
-  m_file = filename;
+	m_file = filename;
 
-  wxBeginBusyCursor();
+	wxBeginBusyCursor();
 
-  wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
+	wxBoxSizer *topsizer = new wxBoxSizer(wxVERTICAL);
 
-  topsizer->Add( CreateTextSizer( message ), 0, wxALL, 10 );
+	topsizer->Add(CreateTextSizer(message), 0, wxALL, 10);
 
-  m_textctrl = new wxTextCtrl(this, -1, "",
-			      wxDefaultPosition,
-			      wxDefaultSize,
-			      wxTE_MULTILINE);
-  topsizer->Add( m_textctrl, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT, 15) );
+	m_textctrl = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
+	topsizer->Add(m_textctrl, wxSizerFlags(1).Expand().Border(wxLEFT | wxRIGHT, 15));
 
-  topsizer->Add( CreateButtonSizer( wxOK | wxCANCEL ), wxSizerFlags().Center().Border(wxALL, 10) );
+	topsizer->Add(CreateButtonSizer(wxOK | wxCANCEL), wxSizerFlags().Center().Border(wxALL, 10));
 
-  SetAutoLayout( TRUE );
-  SetSizer( topsizer );
+	SetAutoLayout(TRUE);
+	SetSizer(topsizer);
 
-  Centre( wxBOTH );
+	Centre(wxBOTH);
 
-  if (wxFile::Exists(filename))
-	m_textctrl->LoadFile(filename);
+	if (wxFile::Exists(filename))
+		m_textctrl->LoadFile(filename);
 
-  m_textctrl->SetFocus();
+	m_textctrl->SetFocus();
 
-  wxEndBusyCursor();
+	wxEndBusyCursor();
 }
 
-EditServerListDlg::~EditServerListDlg()
-{
-}
+EditServerListDlg::~EditServerListDlg() {}
 
-void EditServerListDlg::OnOK(wxCommandEvent& WXUNUSED(event) )
+void EditServerListDlg::OnOK(wxCommandEvent &WXUNUSED(event))
 {
 	if (m_textctrl->SaveFile(m_file))
 		EndModal(1);
 	else
-		wxLogSysError("Can't write to file '" +  m_file + "'");
+		wxLogSysError("Can't write to file '" + m_file + "'");
 }
 // File_checked_for_headers

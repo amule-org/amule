@@ -22,16 +22,15 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef	ECFILECONFIG_H
-#define	ECFILECONFIG_H
+#ifndef ECFILECONFIG_H
+#define ECFILECONFIG_H
 
 #include <wx/fileconf.h>
 #include <wx/filename.h>
 #include <wx/utils.h>
 
-#include "MD4Hash.h"		// Needed for CMD4Hash
-#include "OtherFunctions.h"	// Needed for GetConfigDir()
-
+#include "MD4Hash.h"        // Needed for CMD4Hash
+#include "OtherFunctions.h" // Needed for GetConfigDir()
 
 /**
  * Prepends ConfigDir to filename, if it has no PathSeparator chars in it
@@ -47,53 +46,56 @@ inline wxString FinalizeFilename(const wxString filename)
 	return filename;
 }
 
-
 /**
  * Extension to wxFileConfig for reading/writing CMD4Hash values.
  *
  * This class converts between the text and binary representation of an MD4 hash,
  * and also maps empty strings to the empty hash and vica versa.
  */
-class CECFileConfig : public wxFileConfig {
-	public:
+class CECFileConfig : public wxFileConfig
+{
+public:
+	CECFileConfig(const wxString &localFilename = "")
+	: wxFileConfig("",
+		  "",
+		  FinalizeFilename(localFilename),
+		  "",
+		  wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH)
+	{
+	}
 
-		CECFileConfig(const wxString& localFilename = "")
-			: wxFileConfig("", "", FinalizeFilename(localFilename),
-				"", wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH)
-			{}
-
-		/**
-		 * Reads a hash from the config file
-		 *
-		 * @param key	the key to be read
-		 * @param hash	the CMD4Hash object to write the hash to
-		 *
-		 * @return true on success, false otherwise.
-		 */
-		bool	ReadHash(const wxString& key, CMD4Hash *hash)
-		{
-			wxString sHash;
-			bool retval = wxFileConfig::Read(key, &sHash, "");
-			if (sHash.IsEmpty()) {
-				hash->Clear();
-			} else {
-				hash->Decode(sHash);
-			}
-			return retval;
+	/**
+	 * Reads a hash from the config file
+	 *
+	 * @param key	the key to be read
+	 * @param hash	the CMD4Hash object to write the hash to
+	 *
+	 * @return true on success, false otherwise.
+	 */
+	bool ReadHash(const wxString &key, CMD4Hash *hash)
+	{
+		wxString sHash;
+		bool retval = wxFileConfig::Read(key, &sHash, "");
+		if (sHash.IsEmpty()) {
+			hash->Clear();
+		} else {
+			hash->Decode(sHash);
 		}
+		return retval;
+	}
 
-		/**
-		 * Writes a CMD4Hash object to the config file
-		 *
-		 * @param key	the key to write to
-		 * @param hash	the hash to be written
-		 *
-		 * @return true on success, false otherwise.
-		 */
-		bool	WriteHash(const wxString& key, const CMD4Hash& hash)
-		{
-			return wxFileConfig::Write(key, hash.IsEmpty() ? wxString("") : hash.Encode());
-		}
+	/**
+	 * Writes a CMD4Hash object to the config file
+	 *
+	 * @param key	the key to write to
+	 * @param hash	the hash to be written
+	 *
+	 * @return true on success, false otherwise.
+	 */
+	bool WriteHash(const wxString &key, const CMD4Hash &hash)
+	{
+		return wxFileConfig::Write(key, hash.IsEmpty() ? wxString("") : hash.Encode());
+	}
 };
 
 #endif /* ECFILECONFIG_H */

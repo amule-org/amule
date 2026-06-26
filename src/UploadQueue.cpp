@@ -23,7 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "UploadQueue.h"	// Interface declarations
+#include "UploadQueue.h" // Interface declarations
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -32,36 +32,35 @@
 
 #include <cmath>
 
-#include "Types.h"		// Do_not_auto_remove (win32)
+#include "Types.h" // Do_not_auto_remove (win32)
 
 #ifdef __WINDOWS__
-	#include <winsock2.h>	// Do_not_auto_remove (htonl/ntohs/inet_addr) — legacy <winsock.h> pulls <windows.h> and trips winsock2.h:15 via later wx includes
+#include <winsock2.h> // Do_not_auto_remove (htonl/ntohs/inet_addr) — legacy <winsock.h> pulls <windows.h> and trips winsock2.h:15 via later wx includes
 #else
-	#include <sys/types.h>	// Do_not_auto_remove
-	#include <netinet/in.h>	// Do_not_auto_remove
-	#include <arpa/inet.h>	// Do_not_auto_remove
+#include <sys/types.h>  // Do_not_auto_remove
+#include <netinet/in.h> // Do_not_auto_remove
+#include <arpa/inet.h>  // Do_not_auto_remove
 #endif
 
-#include "ServerConnect.h"	// Needed for CServerConnect
-#include "KnownFile.h"		// Needed for CKnownFile
-#include "Packet.h"		// Needed for CPacket
-#include "ClientTCPSocket.h"	// Needed for CClientTCPSocket
-#include "SharedFileList.h"	// Needed for CSharedFileList
-#include "updownclient.h"	// Needed for CUpDownClient
-#include "amule.h"		// Needed for theApp
+#include "ServerConnect.h"   // Needed for CServerConnect
+#include "KnownFile.h"       // Needed for CKnownFile
+#include "Packet.h"          // Needed for CPacket
+#include "ClientTCPSocket.h" // Needed for CClientTCPSocket
+#include "SharedFileList.h"  // Needed for CSharedFileList
+#include "updownclient.h"    // Needed for CUpDownClient
+#include "amule.h"           // Needed for theApp
 #include "Preferences.h"
 #include "ClientList.h"
-#include "Statistics.h"		// Needed for theStats
+#include "Statistics.h" // Needed for theStats
 #include "Logger.h"
 #include <common/Format.h>
 #include "UploadBandwidthThrottler.h"
-#include "GuiEvents.h"		// Needed for Notify_*
+#include "GuiEvents.h" // Needed for Notify_*
 #include "ListenSocket.h"
 #include "DownloadQueue.h"
 #include "PartFile.h"
 
-
-//TODO rewrite the whole networkcode, use overlapped sockets
+// TODO rewrite the whole networkcode, use overlapped sockets
 
 CUploadQueue::CUploadQueue()
 {
@@ -72,19 +71,18 @@ CUploadQueue::CUploadQueue()
 	m_allUploadingKnownFile = new CKnownFile;
 }
 
-
-void CUploadQueue::SortGetBestClient(CClientRef * bestClient)
+void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 {
 	uint64 tick = GetTickCount64();
 	m_lastSort = tick;
 	CClientRefList::iterator it = m_waitinglist.begin();
-	for (; it != m_waitinglist.end(); ) {
+	for (; it != m_waitinglist.end();) {
 		CClientRefList::iterator it2 = it++;
-		CUpDownClient* cur_client = it2->GetClient();
+		CUpDownClient *cur_client = it2->GetClient();
 
 		// clear dead clients
-		if (tick - cur_client->GetLastUpRequest() > MAX_PURGEQUEUETIME
-			|| !theApp->sharedfiles->GetFileByID(cur_client->GetUploadFileID())) {
+		if (tick - cur_client->GetLastUpRequest() > MAX_PURGEQUEUETIME ||
+			!theApp->sharedfiles->GetFileByID(cur_client->GetUploadFileID())) {
 			cur_client->ClearWaitStartTime();
 			RemoveFromWaitingQueue(it2);
 			if (!cur_client->GetSocket()) {
@@ -96,7 +94,8 @@ void CUploadQueue::SortGetBestClient(CClientRef * bestClient)
 			continue;
 		}
 
-		if (cur_client->IsBanned() || IsSuspended(cur_client->GetUploadFileID())) { // Banned client or suspended upload ?
+		if (cur_client->IsBanned() ||
+			IsSuspended(cur_client->GetUploadFileID())) { // Banned client or suspended upload ?
 			cur_client->ClearScore();
 			continue;
 		}
@@ -125,9 +124,9 @@ void CUploadQueue::SortGetBestClient(CClientRef * bestClient)
 	// - mark all better low id clients as enabled for upload
 	uint16 rank = 1;
 	bool bestClientFound = false;
-	for (it = m_waitinglist.begin(); it != m_waitinglist.end(); ) {
+	for (it = m_waitinglist.begin(); it != m_waitinglist.end();) {
 		CClientRefList::iterator it2 = it++;
-		CUpDownClient* cur_client = it2->GetClient();
+		CUpDownClient *cur_client = it2->GetClient();
 		cur_client->SetUploadQueueWaitingPosition(rank++);
 		if (bestClientFound) {
 			// There's a better high id client
@@ -141,7 +140,8 @@ void CUploadQueue::SortGetBestClient(CClientRef * bestClient)
 				bestClientFound = true;
 				cur_client->m_bAddNextConnect = false;
 				if (bestClient) {
-					bestClient->Link(cur_client CLIENT_DEBUGSTRING("CUploadQueue::SortGetBestClient"));
+					bestClient->Link(cur_client CLIENT_DEBUGSTRING(
+						"CUploadQueue::SortGetBestClient"));
 					RemoveFromWaitingQueue(it2);
 					rank--;
 					lastupslotHighID = true; // VQB LowID alternate
@@ -153,22 +153,18 @@ void CUploadQueue::SortGetBestClient(CClientRef * bestClient)
 #ifdef __DEBUG__
 	AddDebugLogLineN(logLocalClient, CFormat("Current UL queue (%d):") % (rank - 1));
 	for (it = m_waitinglist.begin(); it != m_waitinglist.end(); ++it) {
-		CUpDownClient* c = it->GetClient();
-		AddDebugLogLineN(logLocalClient, CFormat("%4d %7d  %s %5d  %s")
-			% c->GetUploadQueueWaitingPosition()
-			% c->GetScore()
-			% (c->HasLowID() ? (c->IsConnected() ? "LoCon" : "LowId") : "High ")
-			% c->ECID()
-			% c->GetUserName()
-			);
+		CUpDownClient *c = it->GetClient();
+		AddDebugLogLineN(logLocalClient,
+			CFormat("%4d %7d  %s %5d  %s") % c->GetUploadQueueWaitingPosition() % c->GetScore() %
+				(c->HasLowID() ? (c->IsConnected() ? "LoCon" : "LowId") : "High ") %
+				c->ECID() % c->GetUserName());
 	}
-#endif	// __DEBUG__
+#endif // __DEBUG__
 }
 
-
-void CUploadQueue::AddUpNextClient(CUpDownClient* directadd)
+void CUploadQueue::AddUpNextClient(CUpDownClient *directadd)
 {
-	CUpDownClient* newclient = NULL;
+	CUpDownClient *newclient = NULL;
 	CClientRef newClientRef;
 	// select next client or use given client
 	if (!directadd) {
@@ -178,10 +174,11 @@ void CUploadQueue::AddUpNextClient(CUpDownClient* directadd)
 		if (!newclient) {
 			// Nothing to upload. Try to find something from the sources.
 			if (PopulatePossiblyWaitingList() > 0) {
-				newClientRef = * m_possiblyWaitingList.begin();
+				newClientRef = *m_possiblyWaitingList.begin();
 				m_possiblyWaitingList.pop_front();
 				newclient = newClientRef.GetClient();
-				AddDebugLogLineN( logLocalClient, "Added client from possiblyWaitingList " + newclient->GetFullIP() );
+				AddDebugLogLineN(logLocalClient,
+					"Added client from possiblyWaitingList " + newclient->GetFullIP());
 			}
 		}
 #endif
@@ -191,8 +188,8 @@ void CUploadQueue::AddUpNextClient(CUpDownClient* directadd)
 	} else {
 		// Check if requested file is suspended or not shared (maybe deleted recently)
 
-		if (IsSuspended(directadd->GetUploadFileID())
-			|| !theApp->sharedfiles->GetFileByID(directadd->GetUploadFileID())) {
+		if (IsSuspended(directadd->GetUploadFileID()) ||
+			!theApp->sharedfiles->GetFileByID(directadd->GetUploadFileID())) {
 			return;
 		} else {
 			newclient = directadd;
@@ -209,10 +206,11 @@ void CUploadQueue::AddUpNextClient(CUpDownClient* directadd)
 			return;
 		}
 	} else {
-		CPacket* packet = new CPacket(OP_ACCEPTUPLOADREQ, 0, OP_EDONKEYPROT);
+		CPacket *packet = new CPacket(OP_ACCEPTUPLOADREQ, 0, OP_EDONKEYPROT);
 		theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
-		AddDebugLogLineN( logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + newclient->GetFullIP() );
-		newclient->SendPacket(packet,true);
+		AddDebugLogLineN(
+			logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + newclient->GetFullIP());
+		newclient->SendPacket(packet, true);
 		newclient->SetUploadState(US_UPLOADING);
 	}
 	newclient->SetUpStartTime();
@@ -221,14 +219,15 @@ void CUploadQueue::AddUpNextClient(CUpDownClient* directadd)
 	{
 		// Guard against concurrent iteration by the disk I/O thread.
 		wxMutexLocker lock(m_uploadingListMutex);
-		theApp->uploadBandwidthThrottler->AddToStandardList(m_uploadinglist.size(), newclient->GetSocket());
+		theApp->uploadBandwidthThrottler->AddToStandardList(
+			m_uploadinglist.size(), newclient->GetSocket());
 		m_uploadinglist.push_back(CCLIENTREF(newclient, "CUploadQueue::AddUpNextClient"));
 	}
 	m_allUploadingKnownFile->AddUploadingClient(newclient);
 	theStats::AddUploadingClient();
 
 	// Statistic
-	CKnownFile* reqfile = const_cast<CKnownFile*>(newclient->GetUploadFile());
+	CKnownFile *reqfile = const_cast<CKnownFile *>(newclient->GetUploadFile());
 	if (reqfile) {
 		reqfile->statistic.AddAccepted();
 	}
@@ -255,12 +254,12 @@ void CUploadQueue::Process()
 #endif
 		|| theApp->listensocket->TooManySockets()) {
 		m_allowKicking = false;
-	// Already a slot free, try to fill it
+		// Already a slot free, try to fill it
 	} else if (m_uploadinglist.size() < GetMaxSlots()) {
 		m_allowKicking = false;
 		m_nLastStartUpload = tick;
 		AddUpNextClient();
-	// All slots taken, try to free one
+		// All slots taken, try to free one
 	} else {
 		m_allowKicking = true;
 	}
@@ -269,12 +268,13 @@ void CUploadQueue::Process()
 	CClientRefList::iterator it = m_uploadinglist.begin();
 	while (it != m_uploadinglist.end()) {
 		// Get the client. Note! Also updates pos as a side effect.
-		CUpDownClient* cur_client = it++->GetClient();
+		CUpDownClient *cur_client = it++->GetClient();
 
-		// It seems chatting or friend slots can get stuck at times in upload.. This needs looked into..
+		// It seems chatting or friend slots can get stuck at times in upload.. This needs looked
+		// into..
 		if (!cur_client->GetSocket()) {
 			RemoveFromUploadQueue(cur_client);
-			if(cur_client->Disconnected(_T("CUploadQueue::Process"))){
+			if (cur_client->Disconnected(_T("CUploadQueue::Process"))) {
 				cur_client->Safe_Delete();
 			}
 		} else if (cur_client->m_bIOError) {
@@ -295,11 +295,10 @@ void CUploadQueue::Process()
 	}
 
 	// Periodically resort queue if it doesn't happen anyway
-	if ((sint64) (tick - m_lastSort) > MIN2MS(2)) {
+	if ((sint64)(tick - m_lastSort) > MIN2MS(2)) {
 		SortGetBestClient();
 	}
 }
-
 
 uint32 CUploadQueue::GetMaxSlots() const
 {
@@ -318,9 +317,9 @@ uint32 CUploadQueue::GetMaxSlots() const
 	} else {
 		if (thePrefs::GetMaxUpload() >= 10) {
 			nMaxSlots = (uint32)floor((float)thePrefs::GetMaxUpload() / kBpsUpPerClient + 0.5);
-				// floor(x + 0.5) is a way of doing round(x) that works with gcc < 3 ...
+			// floor(x + 0.5) is a way of doing round(x) that works with gcc < 3 ...
 			if (nMaxSlots < MIN_UP_CLIENTS_ALLOWED) {
-				nMaxSlots=MIN_UP_CLIENTS_ALLOWED;
+				nMaxSlots = MIN_UP_CLIENTS_ALLOWED;
 			}
 		} else {
 			nMaxSlots = MIN_UP_CLIENTS_ALLOWED;
@@ -332,7 +331,6 @@ uint32 CUploadQueue::GetMaxSlots() const
 	return nMaxSlots;
 }
 
-
 CUploadQueue::~CUploadQueue()
 {
 	wxASSERT(m_waitinglist.empty());
@@ -340,8 +338,7 @@ CUploadQueue::~CUploadQueue()
 	delete m_allUploadingKnownFile;
 }
 
-
-bool CUploadQueue::IsOnUploadQueue(const CUpDownClient* client) const
+bool CUploadQueue::IsOnUploadQueue(const CUpDownClient *client) const
 {
 	for (CClientRefList::const_iterator it = m_waitinglist.begin(); it != m_waitinglist.end(); ++it) {
 		if (it->GetClient() == client) {
@@ -351,8 +348,7 @@ bool CUploadQueue::IsOnUploadQueue(const CUpDownClient* client) const
 	return false;
 }
 
-
-bool CUploadQueue::IsDownloading(const CUpDownClient* client) const
+bool CUploadQueue::IsDownloading(const CUpDownClient *client) const
 {
 	for (CClientRefList::const_iterator it = m_uploadinglist.begin(); it != m_uploadinglist.end(); ++it) {
 		if (it->GetClient() == client) {
@@ -362,16 +358,16 @@ bool CUploadQueue::IsDownloading(const CUpDownClient* client) const
 	return false;
 }
 
-
-CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool* pbMultipleIPs)
+CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
+	uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
 {
-	CUpDownClient* pMatchingIPClient = NULL;
+	CUpDownClient *pMatchingIPClient = NULL;
 
 	int cMatches = 0;
 
 	CClientRefList::iterator it = m_waitinglist.begin();
 	for (; it != m_waitinglist.end(); ++it) {
-		CUpDownClient* cur_client = it->GetClient();
+		CUpDownClient *cur_client = it->GetClient();
 
 		if ((dwIP == cur_client->GetIP()) && (nUDPPort == cur_client->GetUDPPort())) {
 			return cur_client;
@@ -392,15 +388,17 @@ CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPo
 	}
 }
 
-
-void CUploadQueue::AddClientToQueue(CUpDownClient* client)
+void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 {
-	if (theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID() && !theApp->serverconnect->IsLocalServer(client->GetServerIP(),client->GetServerPort()) && client->GetDownloadState() == DS_NONE && !client->IsFriend() && theStats::GetWaitingUserCount() > 50) {
+	if (theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID() &&
+		!theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort()) &&
+		client->GetDownloadState() == DS_NONE && !client->IsFriend() &&
+		theStats::GetWaitingUserCount() > 50) {
 		// Well, all that issues finish in the same: don't allow to add to the queue
 		return;
 	}
 
-	if ( client->IsBanned() ) {
+	if (client->IsBanned()) {
 		return;
 	}
 
@@ -408,18 +406,18 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client)
 	client->SetLastUpRequest();
 
 	// Find all clients with the same user-hash
-	CClientList::SourceList found = theApp->clientlist->GetClientsByHash( client->GetUserHash() );
+	CClientList::SourceList found = theApp->clientlist->GetClientsByHash(client->GetUserHash());
 
 	CClientList::SourceList::iterator it = found.begin();
 	while (it != found.end()) {
-		CUpDownClient* cur_client = it++->GetClient();
+		CUpDownClient *cur_client = it++->GetClient();
 
-		if ( IsOnUploadQueue( cur_client ) ) {
-			if ( cur_client == client ) {
+		if (IsOnUploadQueue(cur_client)) {
+			if (cur_client == client) {
 				// This is where LowID clients get their upload slot assigned.
-				// They can't be contacted if they reach top of the queue, so they are just marked for uploading.
-				// When they reconnect next time AddClientToQueue() is called, and they get their slot
-				// through the connection they initiated.
+				// They can't be contacted if they reach top of the queue, so they are just
+				// marked for uploading. When they reconnect next time AddClientToQueue() is
+				// called, and they get their slot through the connection they initiated.
 				// Since at that time no slot is free they get assigned an extra slot,
 				// so then the number of slots exceeds the configured number by one.
 				// To prevent a further increase no more LowID clients get a slot, until
@@ -446,24 +444,26 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client)
 			} else {
 				// Hash-clash, remove unidentified clients (possibly both)
 
-				if ( !cur_client->IsIdentified() ) {
+				if (!cur_client->IsIdentified()) {
 					// Cur_client isn't identifed, remove it
-					theApp->clientlist->AddTrackClient( cur_client );
+					theApp->clientlist->AddTrackClient(cur_client);
 
-					RemoveFromWaitingQueue( cur_client );
-					if ( !cur_client->GetSocket() ) {
-						if (cur_client->Disconnected( "AddClientToQueue - same userhash" ) ) {
+					RemoveFromWaitingQueue(cur_client);
+					if (!cur_client->GetSocket()) {
+						if (cur_client->Disconnected(
+							    "AddClientToQueue - same userhash")) {
 							cur_client->Safe_Delete();
 						}
 					}
 				}
 
-				if ( !client->IsIdentified() ) {
+				if (!client->IsIdentified()) {
 					// New client isn't identified, remove it
-					theApp->clientlist->AddTrackClient( client );
+					theApp->clientlist->AddTrackClient(client);
 
-					if ( !client->GetSocket() ) {
-						if ( client->Disconnected( "AddClientToQueue - same userhash" ) ) {
+					if (!client->GetSocket()) {
+						if (client->Disconnected(
+							    "AddClientToQueue - same userhash")) {
 							client->Safe_Delete();
 						}
 					}
@@ -475,34 +475,35 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client)
 	}
 
 	// Count the number of clients with the same IP-address
-	found = theApp->clientlist->GetClientsByIP( client->GetIP() );
+	found = theApp->clientlist->GetClientsByIP(client->GetIP());
 
 	int ipCount = 0;
-	for ( it = found.begin(); it != found.end(); ++it ) {
-		if ( ( it->GetClient() == client ) || IsOnUploadQueue( it->GetClient() ) ) {
+	for (it = found.begin(); it != found.end(); ++it) {
+		if ((it->GetClient() == client) || IsOnUploadQueue(it->GetClient())) {
 			ipCount++;
 		}
 	}
 
 	// We do not accept more than 3 clients from the same IP
-	if ( ipCount > 3 ) {
+	if (ipCount > 3) {
 		return;
-	} else if ( theApp->clientlist->GetClientsFromIP(client->GetIP()) >= 3 ) {
+	} else if (theApp->clientlist->GetClientsFromIP(client->GetIP()) >= 3) {
 		return;
 	}
 
 	// statistic values
-	CKnownFile* reqfile = const_cast<CKnownFile*>(client->GetUploadFile());
+	CKnownFile *reqfile = const_cast<CKnownFile *>(client->GetUploadFile());
 	if (reqfile) {
 		reqfile->statistic.AddRequest();
 	}
 
 	if (client->IsDownloading()) {
 		// he's already downloading and wants probably only another file
-		CPacket* packet = new CPacket(OP_ACCEPTUPLOADREQ, 0, OP_EDONKEYPROT);
+		CPacket *packet = new CPacket(OP_ACCEPTUPLOADREQ, 0, OP_EDONKEYPROT);
 		theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
-		AddDebugLogLineN( logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + client->GetFullIP() );
-		client->SendPacket(packet,true);
+		AddDebugLogLineN(
+			logLocalClient, "Local Client: OP_ACCEPTUPLOADREQ to " + client->GetFullIP());
+		client->SendPacket(packet, true);
 		return;
 	}
 
@@ -514,26 +515,25 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client)
 	uint64 tick = GetTickCount64();
 	client->ClearWaitStartTime();
 	// if possible start upload right away
-	if (m_waitinglist.empty() && tick - m_nLastStartUpload >= 1000
-		&& m_uploadinglist.size() < GetMaxSlots()
-		 && !theApp->listensocket->TooManySockets()) {
+	if (m_waitinglist.empty() && tick - m_nLastStartUpload >= 1000 &&
+		m_uploadinglist.size() < GetMaxSlots() && !theApp->listensocket->TooManySockets()) {
 		AddUpNextClient(client);
 		m_nLastStartUpload = tick;
 	} else {
 		// add to waiting queue
-		m_waitinglist.push_back(CCLIENTREF(client, "CUploadQueue::AddClientToQueue m_waitinglist.push_back"));
+		m_waitinglist.push_back(
+			CCLIENTREF(client, "CUploadQueue::AddClientToQueue m_waitinglist.push_back"));
 		// and sort it to update queue ranks
 		SortGetBestClient();
 		theStats::AddWaitingClient();
 		client->ClearAskedCount();
 		client->SetUploadState(US_ONUPLOADQUEUE);
 		client->SendRankingInfo();
-		//Notify_QlistAddClient(client);
+		// Notify_QlistAddClient(client);
 	}
 }
 
-
-bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient* client)
+bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client)
 {
 	// Keep track of this client
 	theApp->clientlist->AddTrackClient(client);
@@ -542,8 +542,8 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient* client)
 	bool found = false;
 	{
 		wxMutexLocker lock(m_uploadingListMutex);
-		CClientRefList::iterator it = std::find(m_uploadinglist.begin(),
-			m_uploadinglist.end(), CCLIENTREF(client, ""));
+		CClientRefList::iterator it =
+			std::find(m_uploadinglist.begin(), m_uploadinglist.end(), CCLIENTREF(client, ""));
 		if (it != m_uploadinglist.end()) {
 			m_uploadinglist.erase(it);
 			found = true;
@@ -553,7 +553,7 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient* client)
 	if (found) {
 		m_allUploadingKnownFile->RemoveUploadingClient(client);
 		theStats::RemoveUploadingClient();
-		if( client->GetTransferredUp() ) {
+		if (client->GetTransferredUp()) {
 			theStats::AddSuccessfulUpload();
 			theStats::AddUploadTime(client->GetUpStartTimeDelay() / 1000);
 		} else {
@@ -567,8 +567,7 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient* client)
 	return false;
 }
 
-
-bool CUploadQueue::CheckForTimeOver(CUpDownClient* client)
+bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 {
 	// Don't kick anybody if there's no need to
 	if (!m_allowKicking) {
@@ -576,15 +575,17 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient* client)
 	}
 	// First, check if it is a VIP slot (friend or Release-Prio).
 	if (client->GetFriendSlot()) {
-		return false;	// never drop the friend
+		return false; // never drop the friend
 	}
 	// Release-Prio and nobody on queue for it?
 	if (client->GetUploadFile()->GetUpPriority() == PR_POWERSHARE) {
 		// Keep it unless half of the UL slots are occupied with friends or Release uploads.
 		uint16 vips = 0;
-		for (CClientRefList::iterator it = m_uploadinglist.begin(); it != m_uploadinglist.end(); ++it) {
-			CUpDownClient* cur_client = it->GetClient();
-			if (cur_client->GetFriendSlot() || cur_client->GetUploadFile()->GetUpPriority() == PR_POWERSHARE) {
+		for (CClientRefList::iterator it = m_uploadinglist.begin(); it != m_uploadinglist.end();
+			++it) {
+			CUpDownClient *cur_client = it->GetClient();
+			if (cur_client->GetFriendSlot() ||
+				cur_client->GetUploadFile()->GetUpPriority() == PR_POWERSHARE) {
 				vips++;
 			}
 		}
@@ -599,24 +600,22 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient* client)
 	// "Transfer full chunks": drop client after 10 MB upload, or after an hour.
 	// (so average UL speed should at least be 2.84 kB/s)
 	// We don't track what he is downloading, but if it's all from one chunk he gets it.
-	if (client->GetUpStartTimeDelay() > 3600000	// time: 1h
-		|| client->GetSessionUp() > 10485760) {		// data: 10MB
-		m_allowKicking = false;		// kick max one client per cycle
+	if (client->GetUpStartTimeDelay() > 3600000     // time: 1h
+		|| client->GetSessionUp() > 10485760) { // data: 10MB
+		m_allowKicking = false;                 // kick max one client per cycle
 		return true;
 	}
 
 	return false;
 }
 
-
 /*
  * This function removes a file indicated by filehash from suspended_uploads_list.
  */
-void CUploadQueue::ResumeUpload( const CMD4Hash& filehash )
+void CUploadQueue::ResumeUpload(const CMD4Hash &filehash)
 {
 	suspendedUploadsSet.erase(filehash);
-	AddLogLineN(CFormat( _("Resuming uploads of file: %s" ) )
-				% filehash.Encode() );
+	AddLogLineN(CFormat(_("Resuming uploads of file: %s")) % filehash.Encode());
 }
 
 /*
@@ -630,13 +629,12 @@ void CUploadQueue::ResumeUpload( const CMD4Hash& filehash )
  *    Waiting clients are swept out with next run of AddUpNextClient,
  *    because their file is not shared anymore.
  */
-uint16 CUploadQueue::SuspendUpload(const CMD4Hash& filehash, bool terminate)
+uint16 CUploadQueue::SuspendUpload(const CMD4Hash &filehash, bool terminate)
 {
-	AddLogLineN(CFormat( _("Suspending upload of file: %s" ) )
-				% filehash.Encode() );
+	AddLogLineN(CFormat(_("Suspending upload of file: %s")) % filehash.Encode());
 	uint16 removed = 0;
 
-	//Append the filehash to the list.
+	// Append the filehash to the list.
 	if (!terminate) {
 		suspendedUploadsSet.insert(filehash);
 	}
@@ -644,7 +642,7 @@ uint16 CUploadQueue::SuspendUpload(const CMD4Hash& filehash, bool terminate)
 	CClientRefList::iterator it = m_uploadinglist.begin();
 	while (it != m_uploadinglist.end()) {
 		CUpDownClient *potential = it++->GetClient();
-		//check if the client is uploading the file we need to suspend
+		// check if the client is uploading the file we need to suspend
 		if (potential->GetUploadFileID() == filehash) {
 			// remove the unlucky client from the upload queue
 			RemoveFromUploadQueue(potential);
@@ -664,7 +662,7 @@ uint16 CUploadQueue::SuspendUpload(const CMD4Hash& filehash, bool terminate)
 	return removed;
 }
 
-bool CUploadQueue::RemoveFromWaitingQueue(CUpDownClient* client)
+bool CUploadQueue::RemoveFromWaitingQueue(CUpDownClient *client)
 {
 	CClientRefList::iterator it = m_waitinglist.begin();
 
@@ -685,16 +683,15 @@ bool CUploadQueue::RemoveFromWaitingQueue(CUpDownClient* client)
 	return false;
 }
 
-
 void CUploadQueue::RemoveFromWaitingQueue(CClientRefList::iterator pos)
 {
-	CUpDownClient* todelete = pos->GetClient();
+	CUpDownClient *todelete = pos->GetClient();
 	m_waitinglist.erase(pos);
 	theStats::RemoveWaitingClient();
-	if( todelete->IsBanned() ) {
+	if (todelete->IsBanned()) {
 		todelete->UnBan();
 	}
-	//Notify_QlistRemoveClient(todelete);
+	// Notify_QlistRemoveClient(todelete);
 	todelete->SetUploadState(US_NONE);
 	todelete->ClearScore();
 	todelete->SetUploadQueueWaitingPosition(0);
@@ -719,11 +716,11 @@ int CUploadQueue::PopulatePossiblyWaitingList()
 	// Get our downloads
 	int nrDownloads = theApp->downloadqueue->GetFileCount();
 	for (int idownload = 0; idownload < nrDownloads; idownload++) {
-		CPartFile * download = theApp->downloadqueue->GetFileByIndex(idownload);
+		CPartFile *download = theApp->downloadqueue->GetFileByIndex(idownload);
 		if (!download || download->GetAvailablePartCount() == 0) {
 			continue;
 		}
-		const CKnownFile::SourceSet& sources = download->GetSourceList();
+		const CKnownFile::SourceSet &sources = download->GetSourceList();
 		if (sources.empty()) {
 			continue;
 		}
@@ -737,11 +734,11 @@ int CUploadQueue::PopulatePossiblyWaitingList()
 		}
 		for (CKnownFile::SourceSet::const_iterator it = sources.begin(); it != sources.end(); it++) {
 			// Iterate over our sources, find those where download == upload
-			CUpDownClient * client = it->GetClient();
+			CUpDownClient *client = it->GetClient();
 			if (!client || client->GetUploadFile() != download || client->HasLowID()) {
 				continue;
 			}
-			const BitVector& partStatus = client->GetPartStatus();
+			const BitVector &partStatus = client->GetPartStatus();
 			if (partStatus.size() != parts) {
 				continue;
 			}

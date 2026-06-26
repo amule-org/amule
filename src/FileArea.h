@@ -22,7 +22,7 @@
 #ifndef FILEAREA_H
 #define FILEAREA_H
 
-#include "Types.h"		// Needed for uint8_t
+#include "Types.h" // Needed for uint8_t
 
 class CFileAreaSigHandler;
 class CFileAutoClose;
@@ -33,13 +33,13 @@ class CFileAutoClose;
  */
 class CFileArea
 {
-friend class CFileAreaSigHandler;
+	friend class CFileAreaSigHandler;
+
 public:
 	/**
 	 * Creates a uninitialized file area.
 	 */
 	CFileArea();
-
 
 	/**
 	 * Destructor, closes the file if opened.
@@ -49,7 +49,7 @@ public:
 	/**
 	 * Closes the file.
 	 */
-        bool Close();
+	bool Close();
 
 	/**
 	 * Init area with a given piece of file.
@@ -62,17 +62,17 @@ public:
 	 * position for count length. Buffer will be a memory mapped area
 	 * or a allocated buffer depending on systems.
 	 */
-	void ReadAt(CFileAutoClose& file, uint64 offset, size_t count);
+	void ReadAt(CFileAutoClose &file, uint64 offset, size_t count);
 
 	/**
 	 * Start a new write
 	 */
-	void StartWriteAt(CFileAutoClose& file, uint64 offset, size_t count);
+	void StartWriteAt(CFileAutoClose &file, uint64 offset, size_t count);
 
-        /**
+	/**
 	 * Flushes data not yet written.
 	 */
-	bool FlushAt(CFileAutoClose& file, uint64 offset, size_t count);
+	bool FlushAt(CFileAutoClose &file, uint64 offset, size_t count);
 
 	/**
 	 * Get buffer that contains data read or to write.
@@ -88,8 +88,8 @@ public:
 private:
 	//! A CFileArea is neither copyable nor assignable.
 	//@{
-	CFileArea(const CFileArea&);
-	CFileArea& operator=(const CFileArea&);
+	CFileArea(const CFileArea &);
+	CFileArea &operator=(const CFileArea &);
 	//@}
 
 	/**
@@ -109,11 +109,11 @@ private:
 	/**
 	 * Global chain
 	 */
-	CFileArea* m_next;
+	CFileArea *m_next;
 	/**
 	 * File handle to release
 	 */
-	CFileAutoClose * m_file;
+	CFileAutoClose *m_file;
 	/**
 	 * true if error detected
 	 */

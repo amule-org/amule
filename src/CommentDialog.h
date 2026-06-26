@@ -26,8 +26,8 @@
 #ifndef COMMENTDIALOG_H
 #define COMMENTDIALOG_H
 
-#include <wx/dialog.h>		// Needed for wxDialog
-#include <wx/choice.h>		// Needed for wxChoice
+#include <wx/dialog.h> // Needed for wxDialog
+#include <wx/choice.h> // Needed for wxChoice
 
 class CKnownFile;
 
@@ -36,26 +36,28 @@ class CKnownFile;
 class CCommentDialog : public wxDialog
 {
 public:
-	CCommentDialog(wxWindow* pParent, CKnownFile* file);   // standard constructor
+	CCommentDialog(wxWindow *pParent, CKnownFile *file); // standard constructor
 	virtual ~CCommentDialog();
 	virtual bool OnInitDialog();
+
 protected:
 	wxDECLARE_EVENT_TABLE();
+
 public:
-	void OnBnClickedApply(wxCommandEvent& evt);
-	void OnBnClickedClear(wxCommandEvent& evt);
-	void OnBnClickedCancel(wxCommandEvent& evt);
+	void OnBnClickedApply(wxCommandEvent &evt);
+	void OnBnClickedClear(wxCommandEvent &evt);
+	void OnBnClickedCancel(wxCommandEvent &evt);
 	// Drop every reference to `file` from any open instance of this
 	// dialog before the CKnownFile is destroyed. Pointer-value
 	// comparison only (`file` may already be freed). Open dialogs
 	// whose m_file matches are dismissed because their state no
 	// longer corresponds to anything that exists on disk. Wired into
 	// MuleNotify::KnownFileBeingDestroyed (GuiEvents.cpp).
-	static void DropReferencesTo(const CKnownFile* file);
+	static void DropReferencesTo(const CKnownFile *file);
 
 private:
-	wxChoice* ratebox;
-	CKnownFile* m_file;
+	wxChoice *ratebox;
+	CKnownFile *m_file;
 };
 
 #endif // COMMENTDIALOG_H

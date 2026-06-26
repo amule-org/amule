@@ -1,3 +1,4 @@
+// clang-format off
 #line 2 "php_lexer.c"
 
 #line 4 "php_lexer.c"

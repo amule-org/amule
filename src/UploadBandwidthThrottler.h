@@ -26,7 +26,6 @@
 #ifndef UPLOADBANDWIDTHTHROTTLER_H
 #define UPLOADBANDWIDTHTHROTTLER_H
 
-
 #include <wx/thread.h>
 
 #include <deque>
@@ -39,20 +38,20 @@ class ThrottledFileSocket;
 class UploadBandwidthThrottler : public wxThread
 {
 public:
-    UploadBandwidthThrottler();
-    ~UploadBandwidthThrottler();
+	UploadBandwidthThrottler();
+	~UploadBandwidthThrottler();
 
 	uint64 GetNumberOfSentBytesSinceLastCallAndReset();
-    uint64 GetNumberOfSentBytesOverheadSinceLastCallAndReset();
+	uint64 GetNumberOfSentBytesOverheadSinceLastCallAndReset();
 
-    void AddToStandardList(uint32 index, ThrottledFileSocket* socket);
-    bool RemoveFromStandardList(ThrottledFileSocket* socket);
+	void AddToStandardList(uint32 index, ThrottledFileSocket *socket);
+	bool RemoveFromStandardList(ThrottledFileSocket *socket);
 
-    void QueueForSendingControlPacket(ThrottledControlSocket* socket, bool hasSent = false);
-    void RemoveFromAllQueues(ThrottledControlSocket* socket);
-    void RemoveFromAllQueues(ThrottledFileSocket* socket);
+	void QueueForSendingControlPacket(ThrottledControlSocket *socket, bool hasSent = false);
+	void RemoveFromAllQueues(ThrottledControlSocket *socket);
+	void RemoveFromAllQueues(ThrottledFileSocket *socket);
 
-    void EndThread();
+	void EndThread();
 
 	// Called by disk I/O thread when new packet data is available on a socket queue.
 	// Wakes the throttler early instead of waiting for its next sleep interval.
@@ -60,41 +59,39 @@ public:
 	void NewUploadDataAvailable();
 
 private:
-    void DoRemoveFromAllQueues(ThrottledControlSocket* socket);
-    bool RemoveFromStandardListNoLock(ThrottledFileSocket* socket);
+	void DoRemoveFromAllQueues(ThrottledControlSocket *socket);
+	bool RemoveFromStandardListNoLock(ThrottledFileSocket *socket);
 
-    void* Entry();
+	void *Entry();
 
-    bool m_doRun;
+	bool m_doRun;
 
-    wxMutex    m_sendLocker;
-    wxMutex    m_tempQueueLocker;
+	wxMutex m_sendLocker;
+	wxMutex m_tempQueueLocker;
 
 	// Used by disk I/O thread to wake the throttler when new data is available.
 	// eMule ref: UploadBandwidthThrottler.cpp:795 (NewUploadDataAvailable)
-	wxMutex     m_newDataMutex;
-	wxCondition m_newDataCondition;  // replaces CEvent m_eventNewDataAvailable
+	wxMutex m_newDataMutex;
+	wxCondition m_newDataCondition; // replaces CEvent m_eventNewDataAvailable
 
-	typedef std::deque<ThrottledControlSocket*> SocketQueue;
+	typedef std::deque<ThrottledControlSocket *> SocketQueue;
 
 	// a queue for all the sockets that want to have Send() called on them.
-    SocketQueue m_ControlQueue_list;
+	SocketQueue m_ControlQueue_list;
 	// a queue for all the sockets that want to have Send() called on them.
-    SocketQueue m_ControlQueueFirst_list;
+	SocketQueue m_ControlQueueFirst_list;
 	// sockets that wants to enter m_ControlQueue_list
-    SocketQueue m_TempControlQueue_list;
+	SocketQueue m_TempControlQueue_list;
 	// sockets that wants to enter m_ControlQueue_list and has been able to send before
-    SocketQueue m_TempControlQueueFirst_list;
+	SocketQueue m_TempControlQueueFirst_list;
 
-
-	typedef std::deque<ThrottledFileSocket*> FileSocketQueue;
+	typedef std::deque<ThrottledFileSocket *> FileSocketQueue;
 	// sockets that have upload slots. Ordered so the most prioritized socket is first
-    FileSocketQueue m_StandardOrder_list;
+	FileSocketQueue m_StandardOrder_list;
 
-    uint64 m_SentBytesSinceLastCall;
-    uint64 m_SentBytesSinceLastCallOverhead;
+	uint64 m_SentBytesSinceLastCall;
+	uint64 m_SentBytesSinceLastCallOverhead;
 };
-
 
 #endif
 // File_checked_for_headers

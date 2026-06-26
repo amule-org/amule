@@ -3,7 +3,8 @@
 //
 // Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
 // Copyright (c) 2008-2011 Stu Redman ( sturedman@amule.org )
-// Copyright (C) 2002-2011 Merkur ( strEmail.Format("%s@%s", "devteam", "emule-project.net") / http://www.emule-project.net )
+// Copyright (C) 2002-2011 Merkur ( strEmail.Format("%s@%s", "devteam", "emule-project.net") /
+// http://www.emule-project.net )
 //
 // Any parts of this program derived from the xMule, lMule or eMule project,
 // or contributed by third-party developers are copyrighted by their
@@ -38,7 +39,11 @@ public:
 	void TransferredData(uint64 nStartPos, uint64 nEndPos, uint32 senderIP);
 	void VerifiedData(bool ok, uint16 nPart, uint32 nRelStartPos, uint32 nRelEndPos);
 	void EvaluateData();
-	void SetPartFileInfo(const wxString& name, const wxString& nr) { m_fileName = name; m_partNumber = nr; }
+	void SetPartFileInfo(const wxString &name, const wxString &nr)
+	{
+		m_fileName = name;
+		m_partNumber = nr;
+	}
 	void DumpAll();
 
 private:
@@ -50,10 +55,10 @@ private:
 		bool Merge(uint32 nStartPos, uint32 nEndPos, uint32 dwIP);
 
 		// Startpos / Endpos relative to part
-		uint32	m_nStartPos;
-		uint32	m_nEndPos;
+		uint32 m_nStartPos;
+		uint32 m_nEndPos;
 		// IP of client
-		uint32	m_dwIP;
+		uint32 m_dwIP;
 	};
 	typedef std::list<CCBBRecord> CRecordList;
 	std::map<uint16, CRecordList> m_Records;

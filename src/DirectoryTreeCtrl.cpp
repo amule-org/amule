@@ -24,7 +24,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "DirectoryTreeCtrl.h"	// Interface declarations
+#include "DirectoryTreeCtrl.h" // Interface declarations
 
 #include <wx/app.h>
 #include <wx/filename.h>
@@ -32,35 +32,33 @@
 
 #include <common/StringFunctions.h>
 #include <common/FileFunctions.h>
-#include "amule.h"			// Needed for theApp
-#include "muuli_wdr.h"		// Needed for amuleSpecial
-
+#include "amule.h"     // Needed for theApp
+#include "muuli_wdr.h" // Needed for amuleSpecial
 
 wxBEGIN_EVENT_TABLE(CDirectoryTreeCtrl, wxTreeCtrl)
-	EVT_TREE_ITEM_RIGHT_CLICK(wxID_ANY,	CDirectoryTreeCtrl::OnRButtonDown)
-	EVT_TREE_ITEM_ACTIVATED(wxID_ANY,	CDirectoryTreeCtrl::OnItemActivated)
-	EVT_TREE_ITEM_EXPANDED(wxID_ANY,	CDirectoryTreeCtrl::OnItemExpanding)
+	EVT_TREE_ITEM_RIGHT_CLICK(wxID_ANY, CDirectoryTreeCtrl::OnRButtonDown)
+	EVT_TREE_ITEM_ACTIVATED(wxID_ANY, CDirectoryTreeCtrl::OnItemActivated)
+	EVT_TREE_ITEM_EXPANDED(wxID_ANY, CDirectoryTreeCtrl::OnItemExpanding)
 wxEND_EVENT_TABLE()
-
 
 class CItemData : public wxTreeItemData
 {
-	public:
-		CItemData(const CPath& pathComponent)
-			: m_path(pathComponent)
-		{
-		}
+public:
+	CItemData(const CPath &pathComponent)
+	: m_path(pathComponent)
+	{
+	}
 
-		~CItemData() {}
+	~CItemData() {}
 
-		const CPath& GetPathComponent() const { return m_path; }
-	private:
-		CPath	m_path;
+	const CPath &GetPathComponent() const { return m_path; }
+
+private:
+	CPath m_path;
 };
 
-
-CDirectoryTreeCtrl::CDirectoryTreeCtrl(wxWindow* parent, int id, const wxPoint& pos, wxSize siz, int flags)
-	: wxTreeCtrl(parent,id,pos,siz,flags,wxDefaultValidator,"ShareTree")
+CDirectoryTreeCtrl::CDirectoryTreeCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags)
+: wxTreeCtrl(parent, id, pos, siz, flags, wxDefaultValidator, "ShareTree")
 {
 	m_IsInit = false;
 	HasChanged = false;
@@ -70,7 +68,6 @@ CDirectoryTreeCtrl::CDirectoryTreeCtrl(wxWindow* parent, int id, const wxPoint& 
 	m_IsRemote = false;
 #endif
 }
-
 
 wxFont CDirectoryTreeCtrl::GetRecursiveFont()
 {
@@ -82,7 +79,6 @@ wxFont CDirectoryTreeCtrl::GetRecursiveFont()
 	}
 	return m_fontRecursiveRoot;
 }
-
 
 void CDirectoryTreeCtrl::ApplyRecursiveMark(wxTreeItemId hItem, bool isRecursive)
 {
@@ -104,16 +100,13 @@ void CDirectoryTreeCtrl::ApplyRecursiveMark(wxTreeItemId hItem, bool isRecursive
 	}
 }
 
+CDirectoryTreeCtrl::~CDirectoryTreeCtrl() {}
 
-CDirectoryTreeCtrl::~CDirectoryTreeCtrl()
+enum
 {
-}
-
-enum {
 	IMAGE_FOLDER = 0,
 	IMAGE_FOLDER_SUB_SHARED
 };
-
 
 void CDirectoryTreeCtrl::Init()
 {
@@ -124,22 +117,20 @@ void CDirectoryTreeCtrl::Init()
 	m_IsInit = true;
 
 	// init image(s)
-	wxImageList* images = new wxImageList(16, 16);
+	wxImageList *images = new wxImageList(16, 16);
 	images->Add(wxBitmap(amuleSpecial(1)));
 	images->Add(wxBitmap(amuleSpecial(2)));
 	// Gives wxTreeCtrl ownership of the list
 	AssignImageList(images);
 
-
 	// Create an empty root item, which we can
 	// safely append when creating a full path.
-	m_root = AddRoot("", IMAGE_FOLDER, -1,
-					new CItemData(CPath()));
+	m_root = AddRoot("", IMAGE_FOLDER, -1, new CItemData(CPath()));
 
 	if (!m_IsRemote) {
-	#ifndef __WINDOWS__
+#ifndef __WINDOWS__
 		AddChildItem(m_root, CPath("/"));
-	#else
+#else
 		// this might take awhile, so change the cursor
 		::wxSetCursor(*wxHOURGLASS_CURSOR);
 		// retrieve bitmask of all drives available
@@ -147,20 +138,20 @@ void CDirectoryTreeCtrl::Init()
 		drives >>= 1;
 		for (char drive = 'C'; drive <= 'Z'; drive++) {
 			drives >>= 1;
-			if (! (drives & 1)) { // skip non existent drives
+			if (!(drives & 1)) { // skip non existent drives
 				continue;
 			}
 			wxString driveStr = CFormat("%c:") % drive;
 			uint32 type = GetDriveType((driveStr + "\\").wc_str());
 
 			// skip removable/undefined drives, share only fixed or remote drives
-			if ((type == 3 || type == 4)   // fixed drive / remote drive
+			if ((type == 3 || type == 4) // fixed drive / remote drive
 				&& CPath::DirExists(driveStr)) {
 				AddChildItem(m_root, CPath(driveStr));
 			}
 		}
 		::wxSetCursor(*wxSTANDARD_CURSOR);
-	#endif
+#endif
 	}
 
 	HasChanged = false;
@@ -168,8 +159,7 @@ void CDirectoryTreeCtrl::Init()
 	UpdateSharedDirectories();
 }
 
-
-void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent& evt)
+void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent &evt)
 {
 	wxTreeItemId hItem = evt.GetItem();
 
@@ -180,8 +170,7 @@ void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent& evt)
 	SortChildren(hItem);
 }
 
-
-void CDirectoryTreeCtrl::OnItemActivated(wxTreeEvent& evt)
+void CDirectoryTreeCtrl::OnItemActivated(wxTreeEvent &evt)
 {
 	if (m_IsRemote) {
 		return;
@@ -195,20 +184,19 @@ void CDirectoryTreeCtrl::OnItemActivated(wxTreeEvent& evt)
 	// (drop the recursive marker on the root, or right-click an
 	// ancestor) rather than silently appearing to ignore their click.
 	if (IsInsideRecursiveShare(GetFullPath(hItem))) {
-		wxMessageBox(
-			_("This directory is part of a recursive share. "
-			  "To remove it, un-share or modify the recursive "
-			  "share root above it."),
+		wxMessageBox(_("This directory is part of a recursive share. "
+			       "To remove it, un-share or modify the recursive "
+			       "share root above it."),
 			_("Cannot unshare inside a recursive share"),
-			wxOK | wxICON_INFORMATION, this);
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	}
 	CheckChanged(hItem, !IsBold(hItem), false);
 	HasChanged = true;
 }
 
-
-void CDirectoryTreeCtrl::OnRButtonDown(wxTreeEvent& evt)
+void CDirectoryTreeCtrl::OnRButtonDown(wxTreeEvent &evt)
 {
 	if (m_IsRemote) {
 		SelectItem(evt.GetItem()); // looks weird otherwise
@@ -242,12 +230,12 @@ void CDirectoryTreeCtrl::OnRButtonDown(wxTreeEvent& evt)
 	// or impotent (DelRecursiveShare on a non-root is a no-op).
 	// Block both with the same explanatory message.
 	if (IsInsideRecursiveShare(fullPath)) {
-		wxMessageBox(
-			_("This directory is part of a recursive share. "
-			  "To remove it, un-share or modify the recursive "
-			  "share root above it."),
+		wxMessageBox(_("This directory is part of a recursive share. "
+			       "To remove it, un-share or modify the recursive "
+			       "share root above it."),
 			_("Cannot modify inside a recursive share"),
-			wxOK | wxICON_INFORMATION, this);
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	}
 
@@ -284,7 +272,6 @@ void CDirectoryTreeCtrl::OnRButtonDown(wxTreeEvent& evt)
 	HasChanged = true;
 }
 
-
 void CDirectoryTreeCtrl::MarkChildren(wxTreeItemId hChild, bool mark, bool recursed)
 {
 	// Touch only the children that are *already* loaded into the
@@ -311,18 +298,17 @@ void CDirectoryTreeCtrl::MarkChildren(wxTreeItemId hChild, bool mark, bool recur
 	CheckChanged(hChild, mark, recursed);
 }
 
-
-void CDirectoryTreeCtrl::AddChildItem(wxTreeItemId hBranch, const CPath& item)
+void CDirectoryTreeCtrl::AddChildItem(wxTreeItemId hBranch, const CPath &item)
 {
 	wxCHECK_RET(hBranch.IsOk(), "Attempted to add children to invalid item");
 
 	CPath fullPath = GetFullPath(hBranch).JoinPaths(item);
-	wxTreeItemId treeItem = AppendItem(hBranch, item.GetPrintable(),
-						IMAGE_FOLDER, -1,
-						new CItemData(item));
+	wxTreeItemId treeItem =
+		AppendItem(hBranch, item.GetPrintable(), IMAGE_FOLDER, -1, new CItemData(item));
 
 	// BUG: wxGenericTreeControl won't set text calculated sizes when the item is created in AppendItem.
-	// This causes asserts on Mac and possibly other systems, so we have to repeat setting the string here.
+	// This causes asserts on Mac and possibly other systems, so we have to repeat setting the string
+	// here.
 	SetItemText(treeItem, item.GetPrintable());
 
 	// Bold means "this directory is part of the pending share set",
@@ -333,9 +319,7 @@ void CDirectoryTreeCtrl::AddChildItem(wxTreeItemId hBranch, const CPath& item)
 	// recursive expansion is now deferred to commit time — the
 	// subtree gets bolded lazily as the user opens it.
 	const bool isRecursiveRoot = IsRecursiveShare(fullPath);
-	if (IsShared(fullPath) || isRecursiveRoot
-		|| IsInsideRecursiveShare(fullPath))
-	{
+	if (IsShared(fullPath) || isRecursiveRoot || IsInsideRecursiveShare(fullPath)) {
 		SetItemBold(treeItem, true);
 	}
 	// A recursive root gets bold-italic to distinguish it from
@@ -356,14 +340,15 @@ void CDirectoryTreeCtrl::AddChildItem(wxTreeItemId hBranch, const CPath& item)
 	}
 }
 
-
 CPath CDirectoryTreeCtrl::GetFullPath(wxTreeItemId hItem)
 {
-	{ wxCHECK_MSG(hItem.IsOk(), CPath(), "Invalid item in GetFullPath"); }
+	{
+		wxCHECK_MSG(hItem.IsOk(), CPath(), "Invalid item in GetFullPath");
+	}
 
 	CPath result;
 	for (; hItem.IsOk(); hItem = GetItemParent(hItem)) {
-		CItemData* data = dynamic_cast<CItemData*>(GetItemData(hItem));
+		CItemData *data = dynamic_cast<CItemData *>(GetItemData(hItem));
 		wxCHECK_MSG(data, CPath(), "Missing data-item in GetFullPath");
 
 		result = data->GetPathComponent().JoinPaths(result);
@@ -372,8 +357,7 @@ CPath CDirectoryTreeCtrl::GetFullPath(wxTreeItemId hItem)
 	return result;
 }
 
-
-void CDirectoryTreeCtrl::AddSubdirectories(wxTreeItemId hBranch, const CPath& path)
+void CDirectoryTreeCtrl::AddSubdirectories(wxTreeItemId hBranch, const CPath &path)
 {
 	wxCHECK_RET(path.IsOk(), "Invalid path in AddSubdirectories");
 
@@ -387,8 +371,7 @@ void CDirectoryTreeCtrl::AddSubdirectories(wxTreeItemId hBranch, const CPath& pa
 	}
 }
 
-
-bool CDirectoryTreeCtrl::HasSubdirectories(const CPath& folder)
+bool CDirectoryTreeCtrl::HasSubdirectories(const CPath &folder)
 {
 	// Prevent error-messages if we try to traverse somewhere we have no access.
 	wxLogNull logNo;
@@ -396,8 +379,7 @@ bool CDirectoryTreeCtrl::HasSubdirectories(const CPath& folder)
 	return CDirIterator(folder).HasSubDirs();
 }
 
-
-void CDirectoryTreeCtrl::GetSharedDirectories(PathList* list)
+void CDirectoryTreeCtrl::GetSharedDirectories(PathList *list)
 {
 	wxCHECK_RET(list, "Invalid list in GetSharedDirectories");
 
@@ -406,8 +388,7 @@ void CDirectoryTreeCtrl::GetSharedDirectories(PathList* list)
 	}
 }
 
-
-void CDirectoryTreeCtrl::SetSharedDirectories(PathList* list)
+void CDirectoryTreeCtrl::SetSharedDirectories(PathList *list)
 {
 	wxCHECK_RET(list, "Invalid list in SetSharedDirectories");
 
@@ -421,20 +402,16 @@ void CDirectoryTreeCtrl::SetSharedDirectories(PathList* list)
 	}
 }
 
-
-void CDirectoryTreeCtrl::GetRecursiveSharedDirectories(PathList* list)
+void CDirectoryTreeCtrl::GetRecursiveSharedDirectories(PathList *list)
 {
 	wxCHECK_RET(list, "Invalid list in GetRecursiveSharedDirectories");
 
-	for (SharedMap::iterator it = m_lstSharedRecursive.begin();
-		it != m_lstSharedRecursive.end(); ++it)
-	{
+	for (SharedMap::iterator it = m_lstSharedRecursive.begin(); it != m_lstSharedRecursive.end(); ++it) {
 		list->push_back(it->second);
 	}
 }
 
-
-void CDirectoryTreeCtrl::SetRecursiveSharedDirectories(PathList* list)
+void CDirectoryTreeCtrl::SetRecursiveSharedDirectories(PathList *list)
 {
 	wxCHECK_RET(list, "Invalid list in SetRecursiveSharedDirectories");
 
@@ -454,8 +431,7 @@ void CDirectoryTreeCtrl::SetRecursiveSharedDirectories(PathList* list)
 	}
 }
 
-
-wxString CDirectoryTreeCtrl::GetKey(const CPath& path)
+wxString CDirectoryTreeCtrl::GetKey(const CPath &path)
 {
 	if (m_IsRemote) {
 		return path.GetRaw();
@@ -471,11 +447,11 @@ wxString CDirectoryTreeCtrl::GetKey(const CPath& path)
 		cwd = wxGetCwd();
 	}
 	// wxPATH_NORM_ALL is deprecated in wx3 — use explicit flags instead (excluding wxPATH_NORM_ENV_VARS)
-	const int flags = wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_CASE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT;
+	const int flags = wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_CASE | wxPATH_NORM_ABSOLUTE |
+			  wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT;
 	fn.Normalize(flags, cwd);
 	return fn.GetFullPath();
 }
-
 
 void CDirectoryTreeCtrl::UpdateSharedDirectories()
 {
@@ -483,7 +459,11 @@ void CDirectoryTreeCtrl::UpdateSharedDirectories()
 	if (m_IsRemote) {
 		DeleteChildren(m_root);
 		for (SharedMap::iterator it = m_lstShared.begin(); it != m_lstShared.end(); ++it) {
-			AppendItem(m_root, it->second.GetPrintable(), IMAGE_FOLDER, -1, new CItemData(it->second));
+			AppendItem(m_root,
+				it->second.GetPrintable(),
+				IMAGE_FOLDER,
+				-1,
+				new CItemData(it->second));
 		}
 		return;
 	}
@@ -508,8 +488,7 @@ void CDirectoryTreeCtrl::UpdateSharedDirectories()
 	}
 }
 
-
-bool CDirectoryTreeCtrl::HasSharedSubdirectory(const CPath& path)
+bool CDirectoryTreeCtrl::HasSharedSubdirectory(const CPath &path)
 {
 	// 1. An explicit-share entry lives below `path`. This is the
 	// original logic and covers the "user ticked /Pictures/2024"
@@ -517,8 +496,7 @@ bool CDirectoryTreeCtrl::HasSharedSubdirectory(const CPath& path)
 	// shared subdir.
 	{
 		SharedMap::iterator it =
-			m_lstShared.upper_bound(GetKey(path)
-				+ wxFileName::GetPathSeparator());
+			m_lstShared.upper_bound(GetKey(path) + wxFileName::GetPathSeparator());
 		if (it != m_lstShared.end() && it->second.StartsWith(path)) {
 			return true;
 		}
@@ -541,8 +519,7 @@ bool CDirectoryTreeCtrl::HasSharedSubdirectory(const CPath& path)
 	// shared via that root, so the icon should be on.
 	{
 		SharedMap::iterator it =
-			m_lstSharedRecursive.upper_bound(GetKey(path)
-				+ wxFileName::GetPathSeparator());
+			m_lstSharedRecursive.upper_bound(GetKey(path) + wxFileName::GetPathSeparator());
 		if (it != m_lstSharedRecursive.end() && it->second.StartsWith(path)) {
 			return true;
 		}
@@ -551,12 +528,10 @@ bool CDirectoryTreeCtrl::HasSharedSubdirectory(const CPath& path)
 	return false;
 }
 
-
 void CDirectoryTreeCtrl::SetHasSharedSubdirectory(wxTreeItemId hItem, bool add)
 {
 	SetItemImage(hItem, add ? IMAGE_FOLDER_SUB_SHARED : IMAGE_FOLDER);
 }
-
 
 void CDirectoryTreeCtrl::CheckChanged(wxTreeItemId hItem, bool bChecked, bool recursed)
 {
@@ -606,16 +581,14 @@ void CDirectoryTreeCtrl::CheckChanged(wxTreeItemId hItem, bool bChecked, bool re
 	}
 }
 
-
-bool CDirectoryTreeCtrl::IsShared(const CPath& path)
+bool CDirectoryTreeCtrl::IsShared(const CPath &path)
 {
 	wxCHECK_MSG(path.IsOk(), false, "Invalid path in IsShared");
 
 	return m_lstShared.find(GetKey(path)) != m_lstShared.end();
 }
 
-
-void CDirectoryTreeCtrl::AddShare(const CPath& path)
+void CDirectoryTreeCtrl::AddShare(const CPath &path)
 {
 	wxCHECK_RET(path.IsOk(), "Invalid path in AddShare");
 
@@ -626,22 +599,19 @@ void CDirectoryTreeCtrl::AddShare(const CPath& path)
 	m_lstShared.insert(SharedMapItem(GetKey(path), path));
 }
 
-
-void CDirectoryTreeCtrl::DelShare(const CPath& path)
+void CDirectoryTreeCtrl::DelShare(const CPath &path)
 {
 	wxCHECK_RET(path.IsOk(), "Invalid path in DelShare");
 
 	m_lstShared.erase(GetKey(path));
 }
 
-
-bool CDirectoryTreeCtrl::IsRecursiveShare(const CPath& path)
+bool CDirectoryTreeCtrl::IsRecursiveShare(const CPath &path)
 {
 	return m_lstSharedRecursive.find(GetKey(path)) != m_lstSharedRecursive.end();
 }
 
-
-bool CDirectoryTreeCtrl::IsInsideRecursiveShare(const CPath& path)
+bool CDirectoryTreeCtrl::IsInsideRecursiveShare(const CPath &path)
 {
 	// True iff `path` is a strict descendant of any recursive-share
 	// root. Used by AddChildItem to bold subtree items when the tree
@@ -650,24 +620,19 @@ bool CDirectoryTreeCtrl::IsInsideRecursiveShare(const CPath& path)
 		return false;
 	}
 	const wxString key = GetKey(path);
-	for (SharedMap::const_iterator it = m_lstSharedRecursive.begin();
-		it != m_lstSharedRecursive.end(); ++it)
-	{
+	for (SharedMap::const_iterator it = m_lstSharedRecursive.begin(); it != m_lstSharedRecursive.end();
+		++it) {
 		const wxString rootKey = it->first;
-		if (key.length() > rootKey.length()
-			&& key.StartsWith(rootKey)
-			&& (rootKey.empty()
-				|| rootKey.Last() == wxFileName::GetPathSeparator()
-				|| key[rootKey.length()] == wxFileName::GetPathSeparator()))
-		{
+		if (key.length() > rootKey.length() && key.StartsWith(rootKey) &&
+			(rootKey.empty() || rootKey.Last() == wxFileName::GetPathSeparator() ||
+				key[rootKey.length()] == wxFileName::GetPathSeparator())) {
 			return true;
 		}
 	}
 	return false;
 }
 
-
-void CDirectoryTreeCtrl::AddRecursiveShare(const CPath& path)
+void CDirectoryTreeCtrl::AddRecursiveShare(const CPath &path)
 {
 	wxCHECK_RET(path.IsOk(), "Invalid path in AddRecursiveShare");
 
@@ -675,16 +640,14 @@ void CDirectoryTreeCtrl::AddRecursiveShare(const CPath& path)
 	m_lstSharedRecursive.insert(SharedMapItem(key, path));
 }
 
-
-void CDirectoryTreeCtrl::DelRecursiveShare(const CPath& path)
+void CDirectoryTreeCtrl::DelRecursiveShare(const CPath &path)
 {
 	wxCHECK_RET(path.IsOk(), "Invalid path in DelRecursiveShare");
 
 	m_lstSharedRecursive.erase(GetKey(path));
 }
 
-
-void CDirectoryTreeCtrl::DelSharesUnder(const CPath& root)
+void CDirectoryTreeCtrl::DelSharesUnder(const CPath &root)
 {
 	if (!root.IsOk() || m_lstShared.empty()) {
 		return;
@@ -702,9 +665,7 @@ void CDirectoryTreeCtrl::DelSharesUnder(const CPath& root)
 		prefix += wxFileName::GetPathSeparator();
 	}
 
-	for (SharedMap::iterator it = m_lstShared.begin();
-		it != m_lstShared.end(); )
-	{
+	for (SharedMap::iterator it = m_lstShared.begin(); it != m_lstShared.end();) {
 		if (it->first.StartsWith(prefix)) {
 			it = m_lstShared.erase(it);
 		} else {
@@ -712,7 +673,6 @@ void CDirectoryTreeCtrl::DelSharesUnder(const CPath& root)
 		}
 	}
 }
-
 
 void CDirectoryTreeCtrl::UpdateParentItems(wxTreeItemId hChild, bool add)
 {
@@ -736,7 +696,7 @@ void CDirectoryTreeCtrl::UpdateParentItems(wxTreeItemId hChild, bool add)
 					// no, further parents have to be checked too
 					SetHasSharedSubdirectory(parent, false);
 				}
-			} else {  // should not happen (unmark child of which the parent is already unmarked
+			} else { // should not happen (unmark child of which the parent is already unmarked
 				break;
 			}
 		}

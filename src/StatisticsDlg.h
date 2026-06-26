@@ -26,12 +26,12 @@
 #ifndef STATISTICSDLG_H
 #define STATISTICSDLG_H
 
-#include <wx/panel.h>		// Needed for wxPanel
+#include <wx/panel.h> // Needed for wxPanel
 #include <wx/colour.h>
 
-#include <set>			// Needed for std::set
+#include <set> // Needed for std::set
 
-typedef std::set<uint32_t>	NodeIdSet;
+typedef std::set<uint32_t> NodeIdSet;
 
 class COScopeCtrl;
 class CStatistics;
@@ -39,7 +39,7 @@ class CStatTreeItemBase;
 class CECTag;
 class wxTreeCtrl;
 class wxTreeItemId;
-//struct UpdateInfo;
+// struct UpdateInfo;
 typedef struct UpdateInfo GraphUpdateInfo;
 
 // CStatisticsDlg panel
@@ -50,30 +50,31 @@ class CStatisticsDlg : public wxPanel
 	friend class CPreferences;
 
 public:
-	CStatisticsDlg(wxWindow* pParent, CStatistics* stats);
+	CStatisticsDlg(wxWindow *pParent, CStatistics *stats);
 	~CStatisticsDlg();
 
-	void UpdateStatGraphs(const uint32 peakconnections, const GraphUpdateInfo& update);
+	void UpdateStatGraphs(const uint32 peakconnections, const GraphUpdateInfo &update);
 	void SetUpdatePeriod(int step);
 	void ResetAveragingTime();
 	void ShowStatistics(bool init = false);
 	void SetARange(bool SetDownload, int maxValue);
-	void FillTree(CStatTreeItemBase* statssubtree, wxTreeItemId& StatsGUITree, const NodeIdSet& expandednodes);
-	void GetExpandedNodes(NodeIdSet& nodeset, const wxTreeItemId& root);
+	void FillTree(
+		CStatTreeItemBase *statssubtree, wxTreeItemId &StatsGUITree, const NodeIdSet &expandednodes);
+	void GetExpandedNodes(NodeIdSet &nodeset, const wxTreeItemId &root);
 	void Init();
 	void InitTree();
 	void InitGraphs();
 	void ApplyStatsColor(int index);
 	void RebuildStatTreeRemote(const CECTag *);
-	static const wxColour& getColors(unsigned num);
-	COScopeCtrl* GetDLScope() { return pscopeDL; };
-	COScopeCtrl* GetConnScope() { return pscopeConn; };
+	static const wxColour &getColors(unsigned num);
+	COScopeCtrl *GetDLScope() { return pscopeDL; };
+	COScopeCtrl *GetConnScope() { return pscopeConn; };
 
 protected:
 	static wxColour acrStat[15];
-	COScopeCtrl* pscopeDL,*pscopeUL,*pscopeConn;
-	wxTreeCtrl* stattree;
-	CStatistics* m_stats;
+	COScopeCtrl *pscopeDL, *pscopeUL, *pscopeConn;
+	wxTreeCtrl *stattree;
+	CStatistics *m_stats;
 };
 
 #endif // STATISTICSDLG_H

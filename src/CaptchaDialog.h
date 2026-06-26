@@ -25,7 +25,7 @@
 #ifndef CAPTCHADIALOG_H
 #define CAPTCHADIALOG_H
 
-#include <wx/dialog.h>		// Needed for wxDialog
+#include <wx/dialog.h> // Needed for wxDialog
 #include "Types.h"
 
 /**
@@ -47,7 +47,7 @@ public:
 	 * @param parent The window that created the dialog.
 	 * @param client The client whose details we're showing.
 	 */
-	CCaptchaDialog(wxWindow*parent, const wxImage& captchaImage, uint64 id);
+	CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, uint64 id);
 
 	/**
 	 * Destructor.
@@ -55,7 +55,6 @@ public:
 	virtual ~CCaptchaDialog();
 
 protected:
-
 	/**
 	 * Creates all the data objects in the dialog, filling them accordingly.
 	 *
@@ -68,16 +67,15 @@ protected:
 	 *
 	 * @param evt The close event, unused right now
 	 */
-	void OnBnClose(wxCommandEvent& evt);
+	void OnBnClose(wxCommandEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 
 private:
+	wxSizer *captchaDlg(wxWindow *parent);
 
-	wxSizer * captchaDlg( wxWindow *parent );
-
-	class wxBitmap * m_captchaBitmap;
-	class wxTextCtrl * m_TextCtrl;
+	class wxBitmap *m_captchaBitmap;
+	class wxTextCtrl *m_TextCtrl;
 	uint64 m_id;
 };
 #endif // CAPTCHADIALOG_H

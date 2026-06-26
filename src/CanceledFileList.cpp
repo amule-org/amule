@@ -22,8 +22,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-#include "CanceledFileList.h"	// Interface declarations
+#include "CanceledFileList.h" // Interface declarations
 
 #include <common/DataFileVersion.h>
 #include "Preferences.h"
@@ -31,13 +30,11 @@
 #include "Logger.h"
 #include <common/Format.h>
 
-
 CCanceledFileList::CCanceledFileList()
-	: m_filename("canceled.met")
+: m_filename("canceled.met")
 {
 	Init();
 }
-
 
 bool CCanceledFileList::Init()
 {
@@ -64,8 +61,8 @@ bool CCanceledFileList::Init()
 
 		uint32 RecordsNumber = file.ReadUInt32();
 		AddDebugLogLineN(logKnownFiles,
-			CFormat("Reading %i canceled files from file format 0x%02x.")
-			% RecordsNumber % version);
+			CFormat("Reading %i canceled files from file format 0x%02x.") % RecordsNumber %
+				version);
 		for (uint32 i = 0; i < RecordsNumber; i++) {
 			CMD4Hash hash;
 			file.Read(hash.GetHash(), 16);
@@ -77,13 +74,12 @@ bool CCanceledFileList::Init()
 		AddDebugLogLineN(logKnownFiles, "Finished reading canceled files");
 
 		return true;
-	} catch (const CSafeIOException& e) {
+	} catch (const CSafeIOException &e) {
 		AddLogLineC(CFormat(_("IO error while reading %s file: %s")) % m_filename % e.what());
 	}
 
 	return false;
 }
-
 
 void CCanceledFileList::Save()
 {
@@ -100,28 +96,24 @@ void CCanceledFileList::Save()
 		for (; it != m_canceledFileList.end(); ++it) {
 			file.Write(it->GetHash(), 16);
 		}
-	} catch (const CIOFailureException& e) {
+	} catch (const CIOFailureException &e) {
 		AddLogLineC(CFormat(_("Error while saving %s file: %s")) % m_filename % e.what());
 	}
 }
 
-
-bool CCanceledFileList::IsCanceledFile(const CMD4Hash& hash) const
+bool CCanceledFileList::IsCanceledFile(const CMD4Hash &hash) const
 {
 	return !hash.IsEmpty() && m_canceledFileList.find(hash) != m_canceledFileList.end();
 }
 
-
-bool CCanceledFileList::Add(const CMD4Hash& hash)
+bool CCanceledFileList::Add(const CMD4Hash &hash)
 {
 	return m_canceledFileList.insert(hash).second;
 }
 
-
-bool CCanceledFileList::Remove(const CMD4Hash& hash)
+bool CCanceledFileList::Remove(const CMD4Hash &hash)
 {
 	return m_canceledFileList.erase(hash) > 0;
 }
-
 
 // File_checked_for_headers

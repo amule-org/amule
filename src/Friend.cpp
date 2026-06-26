@@ -23,11 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-#include "Friend.h"			// Interface declarations.
-#include "SafeFile.h"		// Needed for CFileDataIO
-#include "GuiEvents.h"		// Needed for Notify_*
-
+#include "Friend.h"    // Interface declarations.
+#include "SafeFile.h"  // Needed for CFileDataIO
+#include "GuiEvents.h" // Needed for Notify_*
 
 void CFriend::Init()
 {
@@ -38,9 +36,13 @@ void CFriend::Init()
 	m_HasFriendSlot = false;
 }
 
-
-CFriend::CFriend( const CMD4Hash& userhash, uint32 tm_dwLastSeen, uint32 tm_dwLastUsedIP, uint32 tm_nLastUsedPort, uint32 tm_dwLastChatted, const wxString& tm_strName)
-	: m_UserHash(userhash)
+CFriend::CFriend(const CMD4Hash &userhash,
+	uint32 tm_dwLastSeen,
+	uint32 tm_dwLastUsedIP,
+	uint32 tm_nLastUsedPort,
+	uint32 tm_dwLastChatted,
+	const wxString &tm_strName)
+: m_UserHash(userhash)
 {
 	m_dwLastSeen = tm_dwLastSeen;
 	m_dwLastUsedIP = tm_dwLastUsedIP;
@@ -55,7 +57,6 @@ CFriend::CFriend( const CMD4Hash& userhash, uint32 tm_dwLastSeen, uint32 tm_dwLa
 	}
 }
 
-
 CFriend::CFriend(CClientRef client)
 {
 	m_HasFriendSlot = false;
@@ -64,13 +65,12 @@ CFriend::CFriend(CClientRef client)
 	m_dwLastChatted = 0;
 }
 
-
 void CFriend::LinkClient(CClientRef client)
 {
 	wxASSERT(client.IsLinked());
 
 	// Link the friend to that client
-	if (m_LinkedClient != client) {		// do nothing if already linked to this client
+	if (m_LinkedClient != client) {          // do nothing if already linked to this client
 		if (m_LinkedClient.IsLinked()) { // What, is already linked?
 			UnLinkClient(false);
 		}
@@ -85,7 +85,7 @@ void CFriend::LinkClient(CClientRef client)
 	}
 
 	// always update (even if client stays the same)
-	if ( !client.GetUserName().IsEmpty() ) {
+	if (!client.GetUserName().IsEmpty()) {
 		m_strName = client.GetUserName();
 	} else if (m_strName.IsEmpty()) {
 		m_strName = "?";
@@ -97,7 +97,6 @@ void CFriend::LinkClient(CClientRef client)
 	// This will update the Link status also on GUI.
 	Notify_ChatUpdateFriend(this);
 }
-
 
 void CFriend::UnLinkClient(bool notify)
 {
@@ -115,10 +114,9 @@ void CFriend::UnLinkClient(bool notify)
 	}
 }
 
-
-void CFriend::LoadFromFile(CFileDataIO* file)
+void CFriend::LoadFromFile(CFileDataIO *file)
 {
-	wxASSERT( file );
+	wxASSERT(file);
 
 	m_UserHash = file->ReadHash();
 	m_dwLastUsedIP = file->ReadUInt32();
@@ -127,46 +125,45 @@ void CFriend::LoadFromFile(CFileDataIO* file)
 	m_dwLastChatted = file->ReadUInt32();
 
 	uint32 tagcount = file->ReadUInt32();
-	for ( uint32 j = 0; j != tagcount; j++) {
+	for (uint32 j = 0; j != tagcount; j++) {
 		CTag newtag(*file, true);
-		switch ( newtag.GetNameID() ) {
-			case FF_NAME:
-				if (m_strName.IsEmpty()) {
-					m_strName = newtag.GetStr();
-				}
-				break;
-			case FF_FRIENDSLOT:
-				m_HasFriendSlot = newtag.GetInt() != 0;
-				break;
+		switch (newtag.GetNameID()) {
+		case FF_NAME:
+			if (m_strName.IsEmpty()) {
+				m_strName = newtag.GetStr();
+			}
+			break;
+		case FF_FRIENDSLOT:
+			m_HasFriendSlot = newtag.GetInt() != 0;
+			break;
 		}
 	}
 }
 
-
-void CFriend::WriteToFile(CFileDataIO* file)
+void CFriend::WriteToFile(CFileDataIO *file)
 {
-	wxASSERT( file );
+	wxASSERT(file);
 	file->WriteHash(m_UserHash);
 	file->WriteUInt32(m_dwLastUsedIP);
 	file->WriteUInt16(m_nLastUsedPort);
 	file->WriteUInt32(m_dwLastSeen);
 	file->WriteUInt32(m_dwLastChatted);
 
-	uint32 tagcount = ( m_strName.IsEmpty() ? 0 : 2 ) + ( m_HasFriendSlot ? 1 : 0 );
+	uint32 tagcount = (m_strName.IsEmpty() ? 0 : 2) + (m_HasFriendSlot ? 1 : 0);
 	file->WriteUInt32(tagcount);
-	if ( !m_strName.IsEmpty() ) {
+	if (!m_strName.IsEmpty()) {
 		CTagString nametag(FF_NAME, m_strName);
 		nametag.WriteTagToFile(file, utf8strOptBOM);
 		nametag.WriteTagToFile(file);
 	}
-	if ( m_HasFriendSlot ) {
+	if (m_HasFriendSlot) {
 		CTagInt8 slottag(FF_FRIENDSLOT, 1);
 		slottag.WriteTagToFile(file);
 	}
 }
 
-
-bool CFriend::HasFriendSlot() {
+bool CFriend::HasFriendSlot()
+{
 	return m_HasFriendSlot;
 }
 // File_checked_for_headers

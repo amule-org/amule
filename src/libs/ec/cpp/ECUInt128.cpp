@@ -22,7 +22,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 // Implementation of these functions cannot be in ECTag.cpp, because here we
 // use non-inline member functions of CUInt128.  This way these functions are
 // only needed if we actually use the CUInt128 class, and will not cause
@@ -31,22 +30,20 @@
 // The other working possibility would be to make all these functions inline
 // members of CECTag, but that would clutter the header too much.
 
-
 #include "ECTag.h"
 #include "ECSpecialTags.h"
 #include "../../../kademlia/utils/UInt128.h"
 
-
-CECTag::CECTag(ec_tagname_t tagname, const CUInt128& data)
-	: m_tagName(tagname),
-	  m_dataType(EC_TAGTYPE_UINT128),
-	  m_dataLen(16)
+CECTag::CECTag(ec_tagname_t tagname, const CUInt128 &data)
+: m_tagName(tagname)
+, m_dataType(EC_TAGTYPE_UINT128)
+, m_dataLen(16)
 {
 	NewData();
 	data.ToByteArray(reinterpret_cast<uint8_t *>(m_tagData));
 }
 
-void CECTag::AddTag(ec_tagname_t name, const CUInt128& data, CValueMap *valuemap)
+void CECTag::AddTag(ec_tagname_t name, const CUInt128 &data, CValueMap *valuemap)
 {
 	if (valuemap) {
 		valuemap->CreateTag(name, data, this);

@@ -38,12 +38,28 @@ class wxBrush;
 class CMuleColour
 {
 public:
+	enum ColourComponent
+	{
+		COLOUR_R = 1,
+		COLOUR_G = 2,
+		COLOUR_B = 4
+	};
 
-	enum ColourComponent { COLOUR_R = 1, COLOUR_G = 2, COLOUR_B = 4 };
-
-	CMuleColour() { Init(); Set(0,0,0); }
-	CMuleColour(const wxColour& colour) { Init(); Set(colour.Red(), colour.Green(), colour.Blue()); }
-	CMuleColour(uint8_t r, uint8_t g, uint8_t b) { Init(); Set(r,g,b); }
+	CMuleColour()
+	{
+		Init();
+		Set(0, 0, 0);
+	}
+	CMuleColour(const wxColour &colour)
+	{
+		Init();
+		Set(colour.Red(), colour.Green(), colour.Blue());
+	}
+	CMuleColour(uint8_t r, uint8_t g, uint8_t b)
+	{
+		Init();
+		Set(r, g, b);
+	}
 	CMuleColour(unsigned long rgb)
 	{
 		Init();
@@ -53,32 +69,44 @@ public:
 	CMuleColour(wxSystemColour colour)
 	{
 		Init();
-		const wxColour& wxcolour = wxSystemSettings::GetColour(colour);
+		const wxColour &wxcolour = wxSystemSettings::GetColour(colour);
 		Set(wxcolour.Red(), wxcolour.Green(), wxcolour.Blue());
 	}
 
-	void Init() {
+	void Init()
+	{
 		m_cachedpen = NULL;
 		m_cachedbrush = NULL;
 	}
 
-
-	void Set(uint8_t red, uint8_t green, uint8_t blue) { m_red = red; m_green = green; m_blue = blue; }
+	void Set(uint8_t red, uint8_t green, uint8_t blue)
+	{
+		m_red = red;
+		m_green = green;
+		m_blue = blue;
+	}
 
 	inline uint8_t Red() const { return m_red; }
 	inline uint8_t Green() const { return m_green; }
 	inline uint8_t Blue() const { return m_blue; }
 
-	const CMuleColour& Blend(uint8_t percentage, ColourComponent flags = (ColourComponent)(COLOUR_R | COLOUR_G | COLOUR_B) )
+	const CMuleColour &Blend(
+		uint8_t percentage, ColourComponent flags = (ColourComponent)(COLOUR_R | COLOUR_G | COLOUR_B))
 	{
-		unsigned int red = (unsigned int)(Red() * ((flags & COLOUR_R) ? ((float)percentage/(float)100) : (float)1));
-		unsigned int green = (unsigned int)(Green() * ((flags & COLOUR_G) ? ((float)percentage/(float)100) : (float)1));
-		unsigned int blue = (unsigned int)(Blue() * ((flags & COLOUR_B) ? ((float)percentage/(float)100) : (float)1));
+		unsigned int red =
+			(unsigned int)(Red() *
+				       ((flags & COLOUR_R) ? ((float)percentage / (float)100) : (float)1));
+		unsigned int green =
+			(unsigned int)(Green() *
+				       ((flags & COLOUR_G) ? ((float)percentage / (float)100) : (float)1));
+		unsigned int blue =
+			(unsigned int)(Blue() *
+				       ((flags & COLOUR_B) ? ((float)percentage / (float)100) : (float)1));
 		Set((red < 255) ? red : 255, (green < 255) ? green : 255, (blue < 255) ? blue : 255);
 		return *this;
 	}
 
-	const CMuleColour& BlendWith(const CMuleColour& colour, double covered)
+	const CMuleColour &BlendWith(const CMuleColour &colour, double covered)
 	{
 		unsigned int red = (unsigned int)(Red() + (colour.Red() * covered) + 0.5);
 		unsigned int green = (unsigned int)(Green() + (colour.Green() * covered) + 0.5);
@@ -91,14 +119,15 @@ public:
 
 	bool IsBlack() const { return !Red() && !Blue() && !Green(); }
 
-	bool IsSameAs(const CMuleColour& colour) const { return (Red() == colour.Red()) && (Green() == colour.Green()) && (Blue() == colour.Blue()); }
-
-	operator wxColour() const {
-		return wxColor(m_red, m_green, m_blue);
+	bool IsSameAs(const CMuleColour &colour) const
+	{
+		return (Red() == colour.Red()) && (Green() == colour.Green()) && (Blue() == colour.Blue());
 	}
 
-	const wxPen& GetPen(int width = 1, wxPenStyle style = wxPENSTYLE_SOLID) const;
-	const wxBrush& GetBrush(wxBrushStyle style = wxBRUSHSTYLE_SOLID) const;
+	operator wxColour() const { return wxColor(m_red, m_green, m_blue); }
+
+	const wxPen &GetPen(int width = 1, wxPenStyle style = wxPENSTYLE_SOLID) const;
+	const wxBrush &GetBrush(wxBrushStyle style = wxBRUSHSTYLE_SOLID) const;
 
 	// wxSYS_COLOUR_BTNSHADOW happens to equal SYS_COLOUR_LISTBOX on
 	// some Mate/Cinnamon themes (TraditionalOk, Menta) and on KDE
@@ -111,10 +140,9 @@ public:
 	{
 		const wxColour hl = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
 		const wxColour lb = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
-		return wxColour(
-			(hl.Red()   + lb.Red())   / 2,
+		return wxColour((hl.Red() + lb.Red()) / 2,
 			(hl.Green() + lb.Green()) / 2,
-			(hl.Blue()  + lb.Blue())  / 2);
+			(hl.Blue() + lb.Blue()) / 2);
 	}
 
 private:
@@ -122,8 +150,8 @@ private:
 	uint8_t m_green;
 	uint8_t m_blue;
 
-	mutable wxPen* m_cachedpen;
-	mutable wxBrush* m_cachedbrush;
+	mutable wxPen *m_cachedpen;
+	mutable wxBrush *m_cachedbrush;
 };
 
 #endif

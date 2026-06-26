@@ -24,33 +24,33 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "config.h"				// Needed for VERSION
+#include "config.h" // Needed for VERSION
 
-#include <set>					// Needed for std::set (m_lastSentFileIds)
+#include <set> // Needed for std::set (m_lastSentFileIds)
 
-#include <ec/cpp/ECMuleSocket.h>		// Needed for CECSocket
+#include <ec/cpp/ECMuleSocket.h> // Needed for CECSocket
 
-#include <common/Format.h>			// Needed for CFormat
+#include <common/Format.h> // Needed for CFormat
 
 #include <common/ClientVersion.h>
 #include <common/MD5Sum.h>
 
-#include "ExternalConn.h"			// Interface declarations
-#include "ECFullResponseCache.h"		// Needed for s_ec*FullCache
-#include "updownclient.h"			// Needed for CUpDownClient
-#include "Server.h"				// Needed for CServer
-#include "ServerList.h"				// Needed for CServerList
-#include "PartFile.h"				// Needed for CPartFile
-#include "ServerConnect.h"			// Needed for CServerConnect
-#include "UploadQueue.h"			// Needed for CUploadQueue
-#include "amule.h"				// Needed for theApp
-#include "SearchList.h"				// Needed for GetSearchResults
+#include "ExternalConn.h"        // Interface declarations
+#include "ECFullResponseCache.h" // Needed for s_ec*FullCache
+#include "updownclient.h"        // Needed for CUpDownClient
+#include "Server.h"              // Needed for CServer
+#include "ServerList.h"          // Needed for CServerList
+#include "PartFile.h"            // Needed for CPartFile
+#include "ServerConnect.h"       // Needed for CServerConnect
+#include "UploadQueue.h"         // Needed for CUploadQueue
+#include "amule.h"               // Needed for theApp
+#include "SearchList.h"          // Needed for GetSearchResults
 #include "ClientList.h"
-#include "Preferences.h"			// Needed for CPreferences
+#include "Preferences.h" // Needed for CPreferences
 #include "Logger.h"
-#include "GuiEvents.h"				// Needed for Notify_* macros
-#include "Statistics.h"				// Needed for theStats
-#include "KnownFileList.h"			// Needed for CKnownFileList
+#include "GuiEvents.h"     // Needed for Notify_* macros
+#include "Statistics.h"    // Needed for theStats
+#include "KnownFileList.h" // Needed for CKnownFileList
 #include "Friend.h"
 #include "FriendList.h"
 #include "RandomFunctions.h"
@@ -58,18 +58,19 @@
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "Statistics.h"
 
-
 //-------------------- File_Encoder --------------------
-
 
 /*
  * Encode 'obtained parts' info to be sent to remote gui
  */
-class CKnownFile_Encoder {
+class CKnownFile_Encoder
+{
 	// number of sources for each part for progress bar colouring
 	RLE_Data m_enc_data;
+
 protected:
 	const CKnownFile *m_file;
+
 public:
 	CKnownFile_Encoder(const CKnownFile *file = 0) { m_file = file; }
 
@@ -77,15 +78,12 @@ public:
 
 	virtual void Encode(CECTag *parent_tag);
 
-	virtual void ResetEncoder()
-	{
-		m_enc_data.ResetEncoder();
-	}
+	virtual void ResetEncoder() { m_enc_data.ResetEncoder(); }
 
-	virtual void SetShared() { }
+	virtual void SetShared() {}
 	virtual bool IsShared() { return true; }
 	virtual bool IsPartFile_Encoder() { return false; }
-	const CKnownFile * GetFile() { return m_file; }
+	const CKnownFile *GetFile() { return m_file; }
 };
 
 /*!
@@ -97,7 +95,8 @@ public:
  * PartFileEncoderData class is used for decode only,
  * while CPartFile_Encoder is used for encode only.
  */
-class CPartFile_Encoder : public CKnownFile_Encoder {
+class CPartFile_Encoder : public CKnownFile_Encoder
+{
 	// blocks requested for download
 	RLE_Data m_req_status;
 	// gap list
@@ -110,10 +109,16 @@ class CPartFile_Encoder : public CKnownFile_Encoder {
 	bool m_shared;
 
 	// cast inherited member to CPartFile
-	const CPartFile * m_PartFile() { wxCHECK(m_file->IsCPartFile(), NULL); return static_cast<const CPartFile *>(m_file); }
+	const CPartFile *m_PartFile()
+	{
+		wxCHECK(m_file->IsCPartFile(), NULL);
+		return static_cast<const CPartFile *>(m_file);
+	}
+
 public:
 	// encoder side
-	CPartFile_Encoder(const CPartFile *file = 0) : CKnownFile_Encoder(file)
+	CPartFile_Encoder(const CPartFile *file = 0)
+	: CKnownFile_Encoder(file)
 	{
 		m_sourcenameID = 0;
 		m_shared = false;
@@ -132,8 +137,10 @@ public:
 	virtual bool IsPartFile_Encoder() { return true; }
 };
 
-class CFileEncoderMap : public std::map<uint32, CKnownFile_Encoder*> {
+class CFileEncoderMap : public std::map<uint32, CKnownFile_Encoder *>
+{
 	typedef std::set<uint32> IDSet;
+
 public:
 	~CFileEncoderMap();
 	void UpdateEncoders();
@@ -153,7 +160,7 @@ void CFileEncoderMap::UpdateEncoders()
 {
 	IDSet curr_files, dead_files;
 	// Downloads
-	std::vector<CPartFile*> downloads;
+	std::vector<CPartFile *> downloads;
 	theApp->downloadqueue->CopyFileList(downloads, true);
 	for (uint32 i = downloads.size(); i--;) {
 		uint32 id = downloads[i]->ECID();
@@ -163,7 +170,7 @@ void CFileEncoderMap::UpdateEncoders()
 		}
 	}
 	// Shares
-	std::vector<CKnownFile*> shares;
+	std::vector<CKnownFile *> shares;
 	theApp->sharedfiles->CopyFileList(shares);
 	for (uint32 i = shares.size(); i--;) {
 		uint32 id = shares[i]->ECID();
@@ -195,7 +202,6 @@ void CFileEncoderMap::UpdateEncoders()
 	}
 }
 
-
 //-------------------- CECServerSocket --------------------
 
 class CECServerSocket : public CECMuleSocket
@@ -209,13 +215,15 @@ public:
 
 	virtual void WriteDoneAndQueueEmpty();
 
-	void	ResetLog() { m_LoggerAccess.Reset(); }
+	void ResetLog() { m_LoggerAccess.Reset(); }
+
 private:
 	ECNotifier *m_ec_notifier;
 
 	const CECPacket *Authenticate(const CECPacket *);
 
-	enum {
+	enum
+	{
 		CONN_INIT,
 		CONN_SALT_SENT,
 		CONN_ESTABLISHED,
@@ -224,8 +232,8 @@ private:
 
 	uint64_t m_passwd_salt;
 	CLoggerAccess m_LoggerAccess;
-	CFileEncoderMap	m_FileEncoder;
-	CObjTagMap		m_obj_tagmap;
+	CFileEncoderMap m_FileEncoder;
+	CObjTagMap m_obj_tagmap;
 	CECPacket *ProcessRequest2(const CECPacket *request);
 
 	virtual bool IsAuthorized() { return m_conn_state == CONN_ESTABLISHED; }
@@ -233,7 +241,7 @@ private:
 	// Bound on the WriteDoneAndQueueEmpty -> SendPacket -> OnOutput ->
 	// WriteDoneAndQueueEmpty recursion chain that drains the notifier
 	// queue. See WriteDoneAndQueueEmpty for the full reasoning.
-	int		m_notification_dispatch_depth;
+	int m_notification_dispatch_depth;
 
 	// EC INC_UPDATE skip-unchanged state. `m_lastEcGenSeen*` values are
 	// the highest `CKnownFile::s_globalEcGen` already reflected in the
@@ -244,9 +252,9 @@ private:
 	//   * `m_lastEcGenSeen`        — `EC_OP_GET_UPDATE`        (amulegui)
 	//   * `m_lastEcGenSeenShared`  — `EC_OP_GET_SHARED_FILES`  (amuleweb)
 	//   * `m_lastEcGenSeenPart`    — `EC_OP_GET_DLOAD_QUEUE`   (amuleweb)
-	uint64		m_lastEcGenSeen;
-	uint64		m_lastEcGenSeenShared;
-	uint64		m_lastEcGenSeenPart;
+	uint64 m_lastEcGenSeen;
+	uint64 m_lastEcGenSeenShared;
+	uint64 m_lastEcGenSeenPart;
 
 	// Client opted in to partial-update protocol at auth time (advertised
 	// `EC_TAG_CAN_PARTIAL_UPDATE`). When set, `Get_EC_Response_GetUpdate`
@@ -256,7 +264,7 @@ private:
 	// set, the server falls back to emitting empty "alive marker" tags for
 	// unchanged files so old clients (which infer deletion from absence)
 	// keep working unchanged — see `Get_EC_Response_GetUpdate`.
-	bool		m_partialUpdateActive;
+	bool m_partialUpdateActive;
 	// Set of file ECIDs sent in the previous response for each EC
 	// request path. Diffed against the current snapshot to compute the
 	// removal list emitted to partial-update-capable clients. Tracked
@@ -289,30 +297,26 @@ private:
 	std::set<uint32> m_sentWithDetailIdsPart;
 };
 
-
 CECServerSocket::CECServerSocket(ECNotifier *notifier)
-:
-CECMuleSocket(true),
-m_conn_state(CONN_INIT),
-m_passwd_salt(GetRandomUint64()),
-m_notification_dispatch_depth(0),
-m_lastEcGenSeen(0),
-m_lastEcGenSeenShared(0),
-m_lastEcGenSeenPart(0),
-m_partialUpdateActive(false)
+: CECMuleSocket(true)
+, m_conn_state(CONN_INIT)
+, m_passwd_salt(GetRandomUint64())
+, m_notification_dispatch_depth(0)
+, m_lastEcGenSeen(0)
+, m_lastEcGenSeenShared(0)
+, m_lastEcGenSeenPart(0)
+, m_partialUpdateActive(false)
 {
 	wxASSERT(theApp->ECServerHandler);
 	theApp->ECServerHandler->AddSocket(this);
 	m_ec_notifier = notifier;
 }
 
-
 CECServerSocket::~CECServerSocket()
 {
 	wxASSERT(theApp->ECServerHandler);
 	theApp->ECServerHandler->RemoveSocket(this);
 }
-
 
 const CECPacket *CECServerSocket::OnPacketReceived(const CECPacket *packet, uint32 trueSize)
 {
@@ -337,7 +341,6 @@ const CECPacket *CECServerSocket::OnPacketReceived(const CECPacket *packet, uint
 	return reply;
 }
 
-
 void CECServerSocket::OnLost()
 {
 	AddLogLineN(_("External connection closed."));
@@ -348,7 +351,7 @@ void CECServerSocket::OnLost()
 void CECServerSocket::WriteDoneAndQueueEmpty()
 {
 	if (!HaveNotificationSupport() || m_conn_state != CONN_ESTABLISHED) {
-		//printf("[EC] %p: WriteDoneAndQueueEmpty but notification disabled\n", this);
+		// printf("[EC] %p: WriteDoneAndQueueEmpty but notification disabled\n", this);
 		return;
 	}
 
@@ -413,7 +416,7 @@ ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
 	wxString msgLocal;
 	m_ECServer = NULL;
 	// Are we allowed to accept External Connections?
-	if ( thePrefs::AcceptExternalConnections() ) {
+	if (thePrefs::AcceptExternalConnections()) {
 		// We must have a valid password, otherwise we will not allow EC connections
 		if (thePrefs::ECPassword().IsEmpty()) {
 			*msg += "External connections disabled due to empty password!\n";
@@ -443,7 +446,6 @@ ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
 	m_ec_notifier = new ECNotifier();
 }
 
-
 ExternalConn::~ExternalConn()
 {
 	KillAllSockets();
@@ -451,13 +453,11 @@ ExternalConn::~ExternalConn()
 	delete m_ec_notifier;
 }
 
-
 void ExternalConn::AddSocket(CECServerSocket *s)
 {
 	wxASSERT(s);
 	socket_list.insert(s);
 }
-
 
 void ExternalConn::RemoveSocket(CECServerSocket *s)
 {
@@ -465,12 +465,10 @@ void ExternalConn::RemoveSocket(CECServerSocket *s)
 	socket_list.erase(s);
 }
 
-
 void ExternalConn::KillAllSockets()
 {
 	AddDebugLogLineN(logGeneral,
-		CFormat("ExternalConn::KillAllSockets(): %d sockets to destroy.") %
-			socket_list.size());
+		CFormat("ExternalConn::KillAllSockets(): %d sockets to destroy.") % socket_list.size());
 	SocketSet::iterator it = socket_list.begin();
 	while (it != socket_list.end()) {
 		CECServerSocket *s = *(it++);
@@ -480,7 +478,6 @@ void ExternalConn::KillAllSockets()
 	socket_list.clear();
 }
 
-
 void ExternalConn::ResetAllLogs()
 {
 	SocketSet::iterator it = socket_list.begin();
@@ -489,7 +486,6 @@ void ExternalConn::ResetAllLogs()
 		s->ResetLog();
 	}
 }
-
 
 void CExternalConnListener::OnAccept()
 {
@@ -512,7 +508,6 @@ void CExternalConnListener::OnAccept()
 		delete sock;
 		AddLogLineN(_("ERROR: couldn't accept a new external connection"));
 	}
-
 }
 
 //
@@ -527,36 +522,44 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 	}
 
 	// Password must be specified if we are to allow remote connections
-	if ( thePrefs::ECPassword().IsEmpty() ) {
+	if (thePrefs::ECPassword().IsEmpty()) {
 		AddLogLineC(_("External connection refused due to empty password in preferences!"));
 
 		return new CECPacket(EC_OP_AUTH_FAIL);
 	}
 
-	if ((m_conn_state == CONN_INIT) && (request->GetOpCode() == EC_OP_AUTH_REQ) ) {
+	if ((m_conn_state == CONN_INIT) && (request->GetOpCode() == EC_OP_AUTH_REQ)) {
 		// cppcheck-suppress unreadVariable
 		const CECTag *clientName = request->GetTagByName(EC_TAG_CLIENT_NAME);
 		// cppcheck-suppress unreadVariable
 		const CECTag *clientVersion = request->GetTagByName(EC_TAG_CLIENT_VERSION);
 
-		AddLogLineN(CFormat( _("Connecting client: %s %s") )
-			% ( clientName ? clientName->GetStringData() : wxString(_("Unknown")) )
-			% ( clientVersion ? clientVersion->GetStringData() : wxString(_("Unknown version")) ) );
+		AddLogLineN(
+			CFormat(_("Connecting client: %s %s")) %
+			(clientName ? clientName->GetStringData() : wxString(_("Unknown"))) %
+			(clientVersion ? clientVersion->GetStringData() : wxString(_("Unknown version"))));
 		const CECTag *protocol = request->GetTagByName(EC_TAG_PROTOCOL_VERSION);
 #ifdef EC_VERSION_ID
 		// For snapshot builds, both client and server must use GITDATE, and they must be the same
 		CMD4Hash vhash;
 		if (!vhash.Decode(EC_VERSION_ID)) {
 			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING, "Fatal error, version hash is not a valid MD4-hash."));
-		} else if (!request->GetTagByName(EC_TAG_VERSION_ID) || request->GetTagByNameSafe(EC_TAG_VERSION_ID)->GetMD4Data() != vhash) {
+			response->AddTag(
+				CECTag(EC_TAG_STRING, "Fatal error, version hash is not a valid MD4-hash."));
+		} else if (!request->GetTagByName(EC_TAG_VERSION_ID) ||
+			   request->GetTagByNameSafe(EC_TAG_VERSION_ID)->GetMD4Data() != vhash) {
 			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot.")));
+			response->AddTag(CECTag(EC_TAG_STRING,
+				wxTRANSLATE("Incorrect EC version ID, there might be binary incompatibility. "
+					    "Use core and remote from same snapshot.")));
 #else
-		// For release versions, we don't want to allow connections from any arbitrary snapshot client.
+		// For release versions, we don't want to allow connections from any arbitrary snapshot
+		// client.
 		if (request->GetTagByName(EC_TAG_VERSION_ID)) {
 			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented")));
+			response->AddTag(CECTag(EC_TAG_STRING,
+				wxTRANSLATE("You cannot connect to a release version from an arbitrary "
+					    "development snapshot! *sigh* possible crash prevented")));
 #endif
 		} else if (protocol != NULL) {
 			uint16 proto_version = protocol->GetInt();
@@ -585,8 +588,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				if (request->GetTagByName(EC_TAG_PREFER_NO_ZLIB)) {
 					SetLocalPeer(true);
 					AddDebugLogLineN(logEC,
-						CFormat("EC peer %s asked to skip ZLIB (loopback/LAN hint) — bypassing for small/medium packets")
-							% GetPeer());
+						CFormat("EC peer %s asked to skip ZLIB (loopback/LAN hint) — "
+							"bypassing for small/medium packets") %
+							GetPeer());
 				}
 				if (request->GetTagByName(EC_TAG_CAN_UTF8_NUMBERS)) {
 					m_my_flags |= EC_FLAG_UTF8_NUMBERS;
@@ -609,16 +613,20 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					m_partialUpdateActive = true;
 				}
 				m_haveNotificationSupport = request->GetTagByName(EC_TAG_CAN_NOTIFY) != NULL;
-				AddDebugLogLineN(logEC, CFormat("Client capabilities: ZLIB: %s  UTF8 numbers: %s  Push notification: %s  Large tag count: %s  Partial update: %s" )
-					% ((m_my_flags & EC_FLAG_ZLIB) ? "yes" : "no")
-					% ((m_my_flags & EC_FLAG_UTF8_NUMBERS) ? "yes" : "no")
-					% (m_haveNotificationSupport ? "yes" : "no")
-					% ((m_my_flags & EC_FLAG_LARGE_TAG_COUNT) ? "yes" : "no")
-					% (m_partialUpdateActive ? "yes" : "no"));
+				AddDebugLogLineN(logEC,
+					CFormat("Client capabilities: ZLIB: %s  UTF8 numbers: %s  Push "
+						"notification: %s  Large tag count: %s  Partial update: %s") %
+						((m_my_flags & EC_FLAG_ZLIB) ? "yes" : "no") %
+						((m_my_flags & EC_FLAG_UTF8_NUMBERS) ? "yes" : "no") %
+						(m_haveNotificationSupport ? "yes" : "no") %
+						((m_my_flags & EC_FLAG_LARGE_TAG_COUNT) ? "yes" : "no") %
+						(m_partialUpdateActive ? "yes" : "no"));
 			} else {
 				response = new CECPacket(EC_OP_AUTH_FAIL);
-				response->AddTag(CECTag(EC_TAG_STRING, wxString(wxTRANSLATE("Invalid protocol version."))
-					+ wxString(CFormat("( %#.4x != %#.4x )") % proto_version % (uint16_t)EC_CURRENT_PROTOCOL_VERSION)));
+				response->AddTag(CECTag(EC_TAG_STRING,
+					wxString(wxTRANSLATE("Invalid protocol version.")) +
+						wxString(CFormat("( %#.4x != %#.4x )") % proto_version %
+							 (uint16_t)EC_CURRENT_PROTOCOL_VERSION)));
 			}
 		} else {
 			response = new CECPacket(EC_OP_AUTH_FAIL);
@@ -629,9 +637,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 		CMD4Hash passh;
 
 		if (!passh.Decode(thePrefs::ECPassword())) {
-			wxString err = wxTRANSLATE("Authentication failed: invalid hash specified as EC password.");
-			AddLogLineN(wxString(wxGetTranslation(err))
-						+ " " + thePrefs::ECPassword());
+			wxString err =
+				wxTRANSLATE("Authentication failed: invalid hash specified as EC password.");
+			AddLogLineN(wxString(wxGetTranslation(err)) + " " + thePrefs::ECPassword());
 			response = new CECPacket(EC_OP_AUTH_FAIL);
 			response->AddTag(CECTag(EC_TAG_STRING, err));
 		} else {
@@ -673,7 +681,8 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 		}
 	} else {
 		response = new CECPacket(EC_OP_AUTH_FAIL);
-		response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid request, please authenticate first.")));
+		response->AddTag(
+			CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid request, please authenticate first.")));
 	}
 
 	if (response->GetOpCode() == EC_OP_AUTH_OK) {
@@ -686,10 +695,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 	} else if (response->GetOpCode() == EC_OP_AUTH_FAIL) {
 		// Log message sent to client
 		if (response->GetFirstTagSafe()->IsString()) {
-			AddLogLineN(CFormat(_("Sent error message \"%s\" to client.")) % wxGetTranslation(response->GetFirstTagSafe()->GetStringData()));
+			AddLogLineN(CFormat(_("Sent error message \"%s\" to client.")) %
+				    wxGetTranslation(response->GetFirstTagSafe()->GetStringData()));
 		}
 		// Access denied!
-		AddLogLineN(CFormat(_("Unauthorized access attempt from %s. Connection closed.")) % GetPeer() );
+		AddLogLineN(
+			CFormat(_("Unauthorized access attempt from %s. Connection closed.")) % GetPeer());
 		m_conn_state = CONN_FAILED;
 	}
 
@@ -710,7 +721,7 @@ static void AddLoggerTag(CECPacket *response, CLoggerAccess &LoggerAccess)
 			entries++;
 		}
 		response->AddTag(tag);
-		//printf("send Log tag %d %d\n", FirstEntry, entries);
+		// printf("send Log tag %d %d\n", FirstEntry, entries);
 	}
 }
 
@@ -719,68 +730,85 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 	CECPacket *response = new CECPacket(EC_OP_STATS);
 
 	switch (request->GetDetailLevel()) {
-		case EC_DETAIL_FULL:
-		// This is not an actual INC_UPDATE.
-		// amulegui only sets the detail level of the stats package to EC_DETAIL_INC_UPDATE
-		// so that the included conn state tag is created the way it is needed here.
-		case EC_DETAIL_INC_UPDATE:
-			response->AddTag(CECTag(EC_TAG_STATS_UP_OVERHEAD, (uint32)theStats::GetUpOverheadRate()));
-			response->AddTag(CECTag(EC_TAG_STATS_DOWN_OVERHEAD, (uint32)theStats::GetDownOverheadRate()));
-			response->AddTag(CECTag(EC_TAG_STATS_BANNED_COUNT, /*(uint32)*/theStats::GetBannedCount()));
-			AddLoggerTag(response, LoggerAccess);
-			// Needed only for the remote tray icon context menu
-			response->AddTag(CECTag(EC_TAG_STATS_TOTAL_SENT_BYTES, theStats::GetTotalSentBytes()));
-			response->AddTag(CECTag(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, theStats::GetTotalReceivedBytes()));
-			response->AddTag(CECTag(EC_TAG_STATS_SHARED_FILE_COUNT, theStats::GetSharedFileCount()));
-		/* fall through */
-		case EC_DETAIL_WEB:
-		case EC_DETAIL_CMD:
-			response->AddTag(CECTag(EC_TAG_STATS_UL_SPEED, (uint32)theStats::GetUploadRate()));
-			response->AddTag(CECTag(EC_TAG_STATS_DL_SPEED, (uint32)(theStats::GetDownloadRate())));
-			response->AddTag(CECTag(EC_TAG_STATS_UL_SPEED_LIMIT, (uint32)(thePrefs::GetMaxUpload()*1024.0)));
-			response->AddTag(CECTag(EC_TAG_STATS_DL_SPEED_LIMIT, (uint32)(thePrefs::GetMaxDownload()*1024.0)));
-			response->AddTag(CECTag(EC_TAG_STATS_UL_QUEUE_LEN, /*(uint32)*/theStats::GetWaitingUserCount()));
-			response->AddTag(CECTag(EC_TAG_STATS_TOTAL_SRC_COUNT, /*(uint32)*/theStats::GetFoundSources()));
-			// User/Filecounts
-			{
-				uint32 totaluser = 0, totalfile = 0;
-				theApp->serverlist->GetUserFileStatus( totaluser, totalfile );
-				response->AddTag(CECTag(EC_TAG_STATS_ED2K_USERS, totaluser));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_USERS, Kademlia::CKademlia::GetKademliaUsers()));
-				response->AddTag(CECTag(EC_TAG_STATS_ED2K_FILES, totalfile));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_FILES, Kademlia::CKademlia::GetKademliaFiles()));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_NODES, CStatistics::GetKadNodes()));
+	case EC_DETAIL_FULL:
+	// This is not an actual INC_UPDATE.
+	// amulegui only sets the detail level of the stats package to EC_DETAIL_INC_UPDATE
+	// so that the included conn state tag is created the way it is needed here.
+	case EC_DETAIL_INC_UPDATE:
+		response->AddTag(CECTag(EC_TAG_STATS_UP_OVERHEAD, (uint32)theStats::GetUpOverheadRate()));
+		response->AddTag(CECTag(EC_TAG_STATS_DOWN_OVERHEAD, (uint32)theStats::GetDownOverheadRate()));
+		response->AddTag(CECTag(EC_TAG_STATS_BANNED_COUNT, /*(uint32)*/ theStats::GetBannedCount()));
+		AddLoggerTag(response, LoggerAccess);
+		// Needed only for the remote tray icon context menu
+		response->AddTag(CECTag(EC_TAG_STATS_TOTAL_SENT_BYTES, theStats::GetTotalSentBytes()));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, theStats::GetTotalReceivedBytes()));
+		response->AddTag(CECTag(EC_TAG_STATS_SHARED_FILE_COUNT, theStats::GetSharedFileCount()));
+	/* fall through */
+	case EC_DETAIL_WEB:
+	case EC_DETAIL_CMD:
+		response->AddTag(CECTag(EC_TAG_STATS_UL_SPEED, (uint32)theStats::GetUploadRate()));
+		response->AddTag(CECTag(EC_TAG_STATS_DL_SPEED, (uint32)(theStats::GetDownloadRate())));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_UL_SPEED_LIMIT, (uint32)(thePrefs::GetMaxUpload() * 1024.0)));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_DL_SPEED_LIMIT, (uint32)(thePrefs::GetMaxDownload() * 1024.0)));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_UL_QUEUE_LEN, /*(uint32)*/ theStats::GetWaitingUserCount()));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_TOTAL_SRC_COUNT, /*(uint32)*/ theStats::GetFoundSources()));
+		// User/Filecounts
+		{
+			uint32 totaluser = 0, totalfile = 0;
+			theApp->serverlist->GetUserFileStatus(totaluser, totalfile);
+			response->AddTag(CECTag(EC_TAG_STATS_ED2K_USERS, totaluser));
+			response->AddTag(
+				CECTag(EC_TAG_STATS_KAD_USERS, Kademlia::CKademlia::GetKademliaUsers()));
+			response->AddTag(CECTag(EC_TAG_STATS_ED2K_FILES, totalfile));
+			response->AddTag(
+				CECTag(EC_TAG_STATS_KAD_FILES, Kademlia::CKademlia::GetKademliaFiles()));
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_NODES, CStatistics::GetKadNodes()));
+		}
+		// Kad stats
+		if (Kademlia::CKademlia::IsConnected()) {
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_FIREWALLED_UDP,
+				Kademlia::CUDPFirewallTester::IsFirewalledUDP(true)));
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_SOURCES,
+				Kademlia::CKademlia::GetIndexed()->m_totalIndexSource));
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_KEYWORDS,
+				Kademlia::CKademlia::GetIndexed()->m_totalIndexKeyword));
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_NOTES,
+				Kademlia::CKademlia::GetIndexed()->m_totalIndexNotes));
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_LOAD,
+				Kademlia::CKademlia::GetIndexed()->m_totalIndexLoad));
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_IP_ADDRESS,
+				wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetPrefs()->GetIPAddress())));
+			response->AddTag(CECTag(
+				EC_TAG_STATS_KAD_IN_LAN_MODE, Kademlia::CKademlia::IsRunningInLANMode()));
+			response->AddTag(
+				CECTag(EC_TAG_STATS_BUDDY_STATUS, theApp->clientlist->GetBuddyStatus()));
+			uint32 BuddyIP = 0;
+			uint16 BuddyPort = 0;
+			CUpDownClient *Buddy = theApp->clientlist->GetBuddy();
+			if (Buddy) {
+				BuddyIP = Buddy->GetIP();
+				BuddyPort = Buddy->GetUDPPort();
 			}
-			// Kad stats
-			if (Kademlia::CKademlia::IsConnected()) {
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_FIREWALLED_UDP, Kademlia::CUDPFirewallTester::IsFirewalledUDP(true)));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_SOURCES, Kademlia::CKademlia::GetIndexed()->m_totalIndexSource));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_KEYWORDS, Kademlia::CKademlia::GetIndexed()->m_totalIndexKeyword));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_NOTES, Kademlia::CKademlia::GetIndexed()->m_totalIndexNotes));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_LOAD, Kademlia::CKademlia::GetIndexed()->m_totalIndexLoad));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_IP_ADDRESS, wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetPrefs()->GetIPAddress())));
-				response->AddTag(CECTag(EC_TAG_STATS_KAD_IN_LAN_MODE, Kademlia::CKademlia::IsRunningInLANMode()));
-				response->AddTag(CECTag(EC_TAG_STATS_BUDDY_STATUS, theApp->clientlist->GetBuddyStatus()));
-				uint32 BuddyIP = 0;
-				uint16 BuddyPort = 0;
-				CUpDownClient * Buddy = theApp->clientlist->GetBuddy();
-				if (Buddy) {
-					BuddyIP = Buddy->GetIP();
-					BuddyPort = Buddy->GetUDPPort();
-				}
-				response->AddTag(CECTag(EC_TAG_STATS_BUDDY_IP, BuddyIP));
-				response->AddTag(CECTag(EC_TAG_STATS_BUDDY_PORT, BuddyPort));
-			}
-		case EC_DETAIL_UPDATE:
-			break;
+			response->AddTag(CECTag(EC_TAG_STATS_BUDDY_IP, BuddyIP));
+			response->AddTag(CECTag(EC_TAG_STATS_BUDDY_PORT, BuddyPort));
+		}
+	case EC_DETAIL_UPDATE:
+		break;
 	};
 
 	return response;
 }
 
-static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request, CFileEncoderMap &encoders,
+static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
+	CFileEncoderMap &encoders,
 	uint64 &io_lastEcGenSeen,
-	bool partial_update_active, std::set<uint32> &io_lastSentFileIds,
+	bool partial_update_active,
+	std::set<uint32> &io_lastSentFileIds,
 	std::set<uint32> &io_sentWithDetailIds)
 {
 	wxASSERT(request->GetOpCode() == EC_OP_GET_SHARED_FILES);
@@ -800,10 +828,8 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request, CFile
 	// state) and only when the client opted into the partial-update
 	// protocol at auth. `EC_DETAIL_FULL` callers (amulecmd `show shared`,
 	// any one-shot query) still get every alive file as a full tag.
-	const bool skip_unchanged_path =
-		partial_update_active && detail_level == EC_DETAIL_UPDATE;
-	const uint64 ec_snapshot = skip_unchanged_path
-		? CKnownFile::GetGlobalECGen() : 0;
+	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
+	const uint64 ec_snapshot = skip_unchanged_path ? CKnownFile::GetGlobalECGen() : 0;
 	const uint64 ec_threshold = io_lastEcGenSeen;
 
 	// Snapshot the shared-file list once. GetFileByIndex() does an O(N)
@@ -811,24 +837,22 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request, CFile
 	// on every call -- looping it N times is O(N^2) and pegs the main
 	// thread for tens of minutes on users with tens of thousands of
 	// shared files (issue #666).
-	std::vector<CKnownFile*> snapshot;
+	std::vector<CKnownFile *> snapshot;
 	theApp->sharedfiles->CopyFileList(snapshot);
 
 	// Snapshot the alive set for the partial-update removal diff below.
 	std::set<uint32> current_file_ids;
 
-	for (std::vector<CKnownFile*>::const_iterator it = snapshot.begin();
-		it != snapshot.end(); ++it) {
+	for (std::vector<CKnownFile *>::const_iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
 		const CKnownFile *cur_file = *it;
 
-		if ( !cur_file || (!queryitems.empty() && !queryitems.count(cur_file->ECID())) ) {
+		if (!cur_file || (!queryitems.empty() && !queryitems.count(cur_file->ECID()))) {
 			continue;
 		}
 		const uint32 ecid = cur_file->ECID();
 		if (skip_unchanged_path) {
 			current_file_ids.insert(ecid);
-			if (cur_file->GetECGen() <= ec_threshold
-				&& io_sentWithDetailIds.count(ecid)) {
+			if (cur_file->GetECGen() <= ec_threshold && io_sentWithDetailIds.count(ecid)) {
 				// Client already has the latest exported view of
 				// this file; absence here is "no change", not
 				// "deleted" — see `EC_TAG_FILE_REMOVED` emission
@@ -841,7 +865,7 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request, CFile
 
 		CEC_SharedFile_Tag filetag(cur_file, detail_level);
 		CKnownFile_Encoder *enc = encoders[ecid];
-		if ( detail_level != EC_DETAIL_UPDATE ) {
+		if (detail_level != EC_DETAIL_UPDATE) {
 			enc->ResetEncoder();
 		}
 		enc->Encode(&filetag);
@@ -855,7 +879,8 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request, CFile
 		// One EC_TAG_FILE_REMOVED per file that was in the previous
 		// response but is no longer alive on the server.
 		for (std::set<uint32>::const_iterator it = io_lastSentFileIds.begin();
-			it != io_lastSentFileIds.end(); ++it) {
+			it != io_lastSentFileIds.end();
+			++it) {
 			if (!current_file_ids.count(*it)) {
 				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *it));
 			}
@@ -866,9 +891,11 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request, CFile
 	return response;
 }
 
-static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMap &tagmap,
+static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
+	CObjTagMap &tagmap,
 	uint64 &io_lastEcGenSeen,
-	bool partial_update_active, std::set<uint32> &io_lastSentFileIds,
+	bool partial_update_active,
+	std::set<uint32> &io_lastSentFileIds,
 	std::set<uint32> &io_sentWithDetailIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_SHARED_FILES);
@@ -895,8 +922,7 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 		const uint32 ecid = cur_file->ECID();
 		current_file_ids.insert(ecid);
 
-		if (cur_file->GetECGen() <= ec_threshold
-			&& io_sentWithDetailIds.count(ecid)) {
+		if (cur_file->GetECGen() <= ec_threshold && io_sentWithDetailIds.count(ecid)) {
 			// Nothing exported has changed since the client's last
 			// view of this file AND the client has previously
 			// received this ECID with full detail. Two paths
@@ -918,8 +944,8 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 			// `if (tag->HasChildTags()) ProcessItemUpdate(...)`
 			// already treats childless tags as a no-op update but
 			// still records the file as present.
-			const ec_tagname_t tagname = it->second->IsPartFile_Encoder()
-				? EC_TAG_PARTFILE : EC_TAG_KNOWNFILE;
+			const ec_tagname_t tagname =
+				it->second->IsPartFile_Encoder() ? EC_TAG_PARTFILE : EC_TAG_KNOWNFILE;
 			response->AddTag(CECTag(tagname, ecid));
 			continue;
 		}
@@ -934,16 +960,17 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 		// but encoded as KnownFile, so we have to check the encoder type
 		// instead of the file type.
 		if (it->second->IsPartFile_Encoder()) {
-			CEC_PartFile_Tag filetag(static_cast<const CPartFile*>(cur_file), EC_DETAIL_INC_UPDATE, &valuemap);
+			CEC_PartFile_Tag filetag(
+				static_cast<const CPartFile *>(cur_file), EC_DETAIL_INC_UPDATE, &valuemap);
 			// Add information if partfile is shared
 			filetag.AddTag(EC_TAG_PARTFILE_SHARED, it->second->IsShared(), &valuemap);
 
-			CPartFile_Encoder * enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
+			CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
 			enc->Encode(&filetag);
 			response->AddTag(filetag);
 		} else {
 			CEC_SharedFile_Tag filetag(cur_file, EC_DETAIL_INC_UPDATE, &valuemap);
-			CKnownFile_Encoder * enc = encoders[ecid];
+			CKnownFile_Encoder *enc = encoders[ecid];
 			enc->Encode(&filetag);
 			response->AddTag(filetag);
 		}
@@ -956,7 +983,8 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 		// alive on the server. Replaces the legacy client's bulk
 		// "anything missing == deleted" inference.
 		for (std::set<uint32>::const_iterator it = io_lastSentFileIds.begin();
-			it != io_lastSentFileIds.end(); ++it) {
+			it != io_lastSentFileIds.end();
+			++it) {
 			if (!current_file_ids.count(*it)) {
 				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *it));
 			}
@@ -968,10 +996,10 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 
 	// Add clients
 	CECEmptyTag clients(EC_TAG_CLIENT);
-	const CClientList::IDMap& clientList = theApp->clientlist->GetClientList();
+	const CClientList::IDMap &clientList = theApp->clientlist->GetClientList();
 	bool onlyTransmittingClients = thePrefs::IsTransmitOnlyUploadingClients();
 	for (CClientList::IDMap::const_iterator it = clientList.begin(); it != clientList.end(); ++it) {
-		const CUpDownClient* cur_client = it->second.GetClient();
+		const CUpDownClient *cur_client = it->second.GetClient();
 		if (onlyTransmittingClients && !cur_client->IsDownloading()) {
 			// For poor CPU cores only transmit uploading clients. This will save a lot of CPU.
 			// Set ExternalConnect/TransmitOnlyUploadingClients to 1 for it.
@@ -984,10 +1012,10 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 
 	// Add servers
 	CECEmptyTag servers(EC_TAG_SERVER);
-	std::vector<const CServer*> serverlist = theApp->serverlist->CopySnapshot();
+	std::vector<const CServer *> serverlist = theApp->serverlist->CopySnapshot();
 	uint32 nrServers = serverlist.size();
 	for (uint32 i = 0; i < nrServers; i++) {
-		const CServer* cur_server = serverlist[i];
+		const CServer *cur_server = serverlist[i];
 		CValueMap &valuemap = tagmap.GetValueMap(cur_server->ECID());
 		servers.AddTag(CEC_Server_Tag(cur_server, &valuemap));
 	}
@@ -995,8 +1023,9 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders, CObjTagMa
 
 	// Add friends
 	CECEmptyTag friends(EC_TAG_FRIEND);
-	for (CFriendList::const_iterator it = theApp->friendlist->begin(); it != theApp->friendlist->end(); ++it) {
-		const CFriend* cur_friend = *it;
+	for (CFriendList::const_iterator it = theApp->friendlist->begin(); it != theApp->friendlist->end();
+		++it) {
+		const CFriend *cur_friend = *it;
 		CValueMap &valuemap = tagmap.GetValueMap(cur_friend->ECID());
 		friends.AddTag(CEC_Friend_Tag(cur_friend, &valuemap));
 	}
@@ -1016,12 +1045,12 @@ static CECPacket *Get_EC_Response_GetClientQueue(const CECPacket *request, CObjT
 	// (not for incremental update of course)
 	CTagSet<uint32, EC_TAG_CLIENT> queryitems(request);
 
-	const CClientRefList& clients = theApp->uploadqueue->GetUploadingList();
+	const CClientRefList &clients = theApp->uploadqueue->GetUploadingList();
 	CClientRefList::const_iterator it = clients.begin();
 	for (; it != clients.end(); ++it) {
-		CUpDownClient* cur_client = it->GetClient();
+		CUpDownClient *cur_client = it->GetClient();
 
-		if (!cur_client) {	// shouldn't happen
+		if (!cur_client) { // shouldn't happen
 			continue;
 		}
 		if (!queryitems.empty() && !queryitems.count(cur_client->ECID())) {
@@ -1039,10 +1068,11 @@ static CECPacket *Get_EC_Response_GetClientQueue(const CECPacket *request, CObjT
 	return response;
 }
 
-
-static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request, CFileEncoderMap &encoders,
+static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request,
+	CFileEncoderMap &encoders,
 	uint64 &io_lastEcGenSeen,
-	bool partial_update_active, std::set<uint32> &io_lastSentFileIds,
+	bool partial_update_active,
+	std::set<uint32> &io_lastSentFileIds,
 	std::set<uint32> &io_sentWithDetailIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_DLOAD_QUEUE);
@@ -1058,32 +1088,28 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request, CFi
 	// `EC_DETAIL_UPDATE` polling path that amuleweb uses, and only when
 	// the client opted into the partial-update protocol at auth. Other
 	// callers still get every alive file as a full tag.
-	const bool skip_unchanged_path =
-		partial_update_active && detail_level == EC_DETAIL_UPDATE;
-	const uint64 ec_snapshot = skip_unchanged_path
-		? CKnownFile::GetGlobalECGen() : 0;
+	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
+	const uint64 ec_snapshot = skip_unchanged_path ? CKnownFile::GetGlobalECGen() : 0;
 	const uint64 ec_threshold = io_lastEcGenSeen;
 
 	// Snapshot once to avoid re-locking downloadqueue's mutex on every
 	// iteration (see Get_EC_Response_GetSharedFiles for the matching
 	// shared-files fix in issue #666).
-	std::vector<CPartFile*> snapshot;
+	std::vector<CPartFile *> snapshot;
 	theApp->downloadqueue->CopyFileList(snapshot);
 
 	std::set<uint32> current_file_ids;
 
-	for (std::vector<CPartFile*>::const_iterator it = snapshot.begin();
-		it != snapshot.end(); ++it) {
+	for (std::vector<CPartFile *>::const_iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
 		CPartFile *cur_file = *it;
 
-		if ( !queryitems.empty() && !queryitems.count(cur_file->ECID()) ) {
+		if (!queryitems.empty() && !queryitems.count(cur_file->ECID())) {
 			continue;
 		}
 		const uint32 ecid = cur_file->ECID();
 		if (skip_unchanged_path) {
 			current_file_ids.insert(ecid);
-			if (cur_file->GetECGen() <= ec_threshold
-				&& io_sentWithDetailIds.count(ecid)) {
+			if (cur_file->GetECGen() <= ec_threshold && io_sentWithDetailIds.count(ecid)) {
 				// Client already has the latest exported view of
 				// this partfile; absence here is "no change",
 				// not "deleted" — see `EC_TAG_FILE_REMOVED`
@@ -1097,8 +1123,8 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request, CFi
 
 		CEC_PartFile_Tag filetag(cur_file, detail_level);
 
-		CPartFile_Encoder * enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
-		if ( detail_level != EC_DETAIL_UPDATE ) {
+		CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
+		if (detail_level != EC_DETAIL_UPDATE) {
 			enc->ResetEncoder();
 		}
 		enc->Encode(&filetag);
@@ -1111,7 +1137,8 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request, CFi
 
 	if (skip_unchanged_path) {
 		for (std::set<uint32>::const_iterator it = io_lastSentFileIds.begin();
-			it != io_lastSentFileIds.end(); ++it) {
+			it != io_lastSentFileIds.end();
+			++it) {
 			if (!current_file_ids.count(*it)) {
 				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *it));
 			}
@@ -1121,7 +1148,6 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request, CFi
 	}
 	return response;
 }
-
 
 // Build a CEC_SharedFile_Tag for the per-file cache. The output is
 // self-contained — the encoder is reset before each Encode call in
@@ -1137,7 +1163,6 @@ static CECTag *BuildSharedFileCacheTag(const void *file_v)
 	return filetag;
 }
 
-
 // Same shape for partfiles.
 static CECTag *BuildPartFileCacheTag(const void *file_v)
 {
@@ -1149,7 +1174,6 @@ static CECTag *BuildPartFileCacheTag(const void *file_v)
 	return filetag;
 }
 
-
 // Two daemon-wide caches. Each holds one pre-serialized blob per file
 // in its domain, freshness-stamped with the file's m_ecGen at build
 // time. A request rebuilds only entries whose file gen has advanced
@@ -1157,7 +1181,6 @@ static CECTag *BuildPartFileCacheTag(const void *file_v)
 // INC_UPDATE path uses.
 static CECFullResponseCache s_sharedFilesFullCache(BuildSharedFileCacheTag);
 static CECFullResponseCache s_downloadQueueFullCache(BuildPartFileCacheTag);
-
 
 static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 {
@@ -1170,60 +1193,62 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 		wxASSERT(hashtag.GetTagName() == EC_TAG_PARTFILE);
 
 		CMD4Hash hash = hashtag.GetMD4Data();
-		CPartFile *pfile = theApp->downloadqueue->GetFileByID( hash );
+		CPartFile *pfile = theApp->downloadqueue->GetFileByID(hash);
 
-		if ( !pfile ) {
-			AddLogLineN(CFormat(_("Remote PartFile command failed: FileHash not found: %s")) % hash.Encode());
+		if (!pfile) {
+			AddLogLineN(CFormat(_("Remote PartFile command failed: FileHash not found: %s")) %
+				    hash.Encode());
 			response = new CECPacket(EC_OP_FAILED);
-			response->AddTag(CECTag(EC_TAG_STRING, CFormat(wxString(wxTRANSLATE("FileHash not found: %s"))) % hash.Encode()));
-			//return response;
+			response->AddTag(CECTag(EC_TAG_STRING,
+				CFormat(wxString(wxTRANSLATE("FileHash not found: %s"))) % hash.Encode()));
+			// return response;
 			break;
 		}
 		switch (request->GetOpCode()) {
-			case EC_OP_PARTFILE_SWAP_A4AF_THIS:
-				CoreNotify_PartFile_Swap_A4AF(pfile);
-				break;
-			case EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO:
-				CoreNotify_PartFile_Swap_A4AF_Auto(pfile);
-				break;
-			case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
-				CoreNotify_PartFile_Swap_A4AF_Others(pfile);
-				break;
-			case EC_OP_PARTFILE_PAUSE:
-				pfile->PauseFile();
-				break;
-			case EC_OP_PARTFILE_RESUME:
-				pfile->ResumeFile();
-				pfile->SavePartFile();
-				break;
-			case EC_OP_PARTFILE_STOP:
-				pfile->StopFile();
-				break;
-			case EC_OP_PARTFILE_PRIO_SET: {
-					uint8 prio = hashtag.GetFirstTagSafe()->GetInt();
-					if ( prio == PR_AUTO ) {
-						pfile->SetAutoDownPriority(1);
-					} else {
-						pfile->SetAutoDownPriority(0);
-						pfile->SetDownPriority(prio);
-					}
-				}
-				break;
-			case EC_OP_PARTFILE_DELETE:
-				if ( thePrefs::StartNextFile() && (pfile->GetStatus() != PS_PAUSED) ) {
-					theApp->downloadqueue->StartNextFile(pfile);
-				}
-				pfile->Delete();
-				break;
+		case EC_OP_PARTFILE_SWAP_A4AF_THIS:
+			CoreNotify_PartFile_Swap_A4AF(pfile);
+			break;
+		case EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO:
+			CoreNotify_PartFile_Swap_A4AF_Auto(pfile);
+			break;
+		case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
+			CoreNotify_PartFile_Swap_A4AF_Others(pfile);
+			break;
+		case EC_OP_PARTFILE_PAUSE:
+			pfile->PauseFile();
+			break;
+		case EC_OP_PARTFILE_RESUME:
+			pfile->ResumeFile();
+			pfile->SavePartFile();
+			break;
+		case EC_OP_PARTFILE_STOP:
+			pfile->StopFile();
+			break;
+		case EC_OP_PARTFILE_PRIO_SET: {
+			uint8 prio = hashtag.GetFirstTagSafe()->GetInt();
+			if (prio == PR_AUTO) {
+				pfile->SetAutoDownPriority(1);
+			} else {
+				pfile->SetAutoDownPriority(0);
+				pfile->SetDownPriority(prio);
+			}
+		} break;
+		case EC_OP_PARTFILE_DELETE:
+			if (thePrefs::StartNextFile() && (pfile->GetStatus() != PS_PAUSED)) {
+				theApp->downloadqueue->StartNextFile(pfile);
+			}
+			pfile->Delete();
+			break;
 
-			case EC_OP_PARTFILE_SET_CAT:
-				pfile->SetCategory(hashtag.GetFirstTagSafe()->GetInt());
-				break;
+		case EC_OP_PARTFILE_SET_CAT:
+			pfile->SetCategory(hashtag.GetFirstTagSafe()->GetInt());
+			break;
 
-			default:
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("OOPS! OpCode processing error!")));
-				break;
+		default:
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(
+				CECTag(EC_TAG_STRING, wxTRANSLATE("OOPS! OpCode processing error!")));
+			break;
 		}
 	}
 	if (!response) {
@@ -1243,10 +1268,10 @@ static CECPacket *Get_EC_Response_Server_Add(const CECPacket *request)
 	wxString s_port = full_addr.Mid(full_addr.Find(':') + 1);
 
 	long port = StrToULong(s_port);
-	CServer* toadd = new CServer(port, s_ip);
+	CServer *toadd = new CServer(port, s_ip);
 	toadd->SetListName(name.IsEmpty() ? full_addr : name);
 
-	if ( theApp->AddServer(toadd, true) ) {
+	if (theApp->AddServer(toadd, true)) {
 		response = new CECPacket(EC_OP_NOOP);
 	} else {
 		response = new CECPacket(EC_OP_FAILED);
@@ -1262,45 +1287,48 @@ static CECPacket *Get_EC_Response_Server(const CECPacket *request)
 	CECPacket *response = NULL;
 	const CECTag *srv_tag = request->GetTagByName(EC_TAG_SERVER);
 	CServer *srv = 0;
-	if ( srv_tag ) {
-		srv = theApp->serverlist->GetServerByIPTCP(srv_tag->GetIPv4Data().IP(), srv_tag->GetIPv4Data().m_port);
+	if (srv_tag) {
+		srv = theApp->serverlist->GetServerByIPTCP(
+			srv_tag->GetIPv4Data().IP(), srv_tag->GetIPv4Data().m_port);
 		// server tag passed, but server not found
-		if ( !srv ) {
+		if (!srv) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
-						CFormat(wxString(wxTRANSLATE("server not found: %s"))) % srv_tag->GetIPv4Data().StringIP()));
+				CFormat(wxString(wxTRANSLATE("server not found: %s"))) %
+					srv_tag->GetIPv4Data().StringIP()));
 			return response;
 		}
 	}
 	switch (request->GetOpCode()) {
-		case EC_OP_SERVER_DISCONNECT:
-			theApp->serverconnect->Disconnect();
+	case EC_OP_SERVER_DISCONNECT:
+		theApp->serverconnect->Disconnect();
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_SERVER_REMOVE:
+		if (srv) {
+			theApp->serverlist->RemoveServer(srv);
 			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_SERVER_REMOVE:
-			if ( srv ) {
-				theApp->serverlist->RemoveServer(srv);
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(
+				CECTag(EC_TAG_STRING, wxTRANSLATE("need to define server to be removed")));
+		}
+		break;
+	case EC_OP_SERVER_CONNECT:
+		if (thePrefs::GetNetworkED2K()) {
+			if (srv) {
+				theApp->serverconnect->ConnectToServer(srv);
 				response = new CECPacket(EC_OP_NOOP);
 			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING,
-							wxTRANSLATE("need to define server to be removed")));
+				theApp->serverconnect->ConnectToAnyServer();
+				response = new CECPacket(EC_OP_NOOP);
 			}
-			break;
-		case EC_OP_SERVER_CONNECT:
-			if (thePrefs::GetNetworkED2K()) {
-				if ( srv ) {
-					theApp->serverconnect->ConnectToServer(srv);
-					response = new CECPacket(EC_OP_NOOP);
-				} else {
-					theApp->serverconnect->ConnectToAnyServer();
-					response = new CECPacket(EC_OP_NOOP);
-				}
-			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("eD2k is disabled in preferences.")));
-			}
-			break;
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(
+				CECTag(EC_TAG_STRING, wxTRANSLATE("eD2k is disabled in preferences.")));
+		}
+		break;
 	}
 	if (!response) {
 		response = new CECPacket(EC_OP_FAILED);
@@ -1309,7 +1337,6 @@ static CECPacket *Get_EC_Response_Server(const CECPacket *request)
 	return response;
 }
 
-
 static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 {
 	CECPacket *response = NULL;
@@ -1317,25 +1344,29 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 	if (tag) {
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_CLIENT);
 		if (subtag) {
-			CUpDownClient * client = theApp->clientlist->FindClientByECID(subtag->GetInt());
+			CUpDownClient *client = theApp->clientlist->FindClientByECID(subtag->GetInt());
 			if (client) {
-				theApp->friendlist->AddFriend(CCLIENTREF(client, "Get_EC_Response_Friend theApp->friendlist->AddFriend"));
+				theApp->friendlist->AddFriend(CCLIENTREF(
+					client, "Get_EC_Response_Friend theApp->friendlist->AddFriend"));
 				response = new CECPacket(EC_OP_NOOP);
 			}
 		} else {
-			const CECTag *hashtag	= tag->GetTagByName(EC_TAG_FRIEND_HASH);
-			const CECTag *iptag		= tag->GetTagByName(EC_TAG_FRIEND_IP);
-			const CECTag *porttag	= tag->GetTagByName(EC_TAG_FRIEND_PORT);
-			const CECTag *nametag	= tag->GetTagByName(EC_TAG_FRIEND_NAME);
+			const CECTag *hashtag = tag->GetTagByName(EC_TAG_FRIEND_HASH);
+			const CECTag *iptag = tag->GetTagByName(EC_TAG_FRIEND_IP);
+			const CECTag *porttag = tag->GetTagByName(EC_TAG_FRIEND_PORT);
+			const CECTag *nametag = tag->GetTagByName(EC_TAG_FRIEND_NAME);
 			if (hashtag && iptag && porttag && nametag) {
-				theApp->friendlist->AddFriend(hashtag->GetMD4Data(), iptag->GetInt(), porttag->GetInt(), nametag->GetStringData());
+				theApp->friendlist->AddFriend(hashtag->GetMD4Data(),
+					iptag->GetInt(),
+					porttag->GetInt(),
+					nametag->GetStringData());
 				response = new CECPacket(EC_OP_NOOP);
 			}
 		}
 	} else if ((tag = request->GetTagByName(EC_TAG_FRIEND_REMOVE))) {
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_FRIEND);
 		if (subtag) {
-			CFriend * Friend = theApp->friendlist->FindFriend(subtag->GetInt());
+			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
 				theApp->friendlist->RemoveFriend(Friend);
 			}
@@ -1350,7 +1381,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 	} else if ((tag = request->GetTagByName(EC_TAG_FRIEND_FRIENDSLOT))) {
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_FRIEND);
 		if (subtag) {
-			CFriend * Friend = theApp->friendlist->FindFriend(subtag->GetInt());
+			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
 				theApp->friendlist->SetFriendSlot(Friend, tag->GetInt() != 0);
 				response = new CECPacket(EC_OP_NOOP);
@@ -1359,7 +1390,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 	} else if ((tag = request->GetTagByName(EC_TAG_FRIEND_SHARED))) {
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_FRIEND);
 		if (subtag) {
-			CFriend * Friend = theApp->friendlist->FindFriend(subtag->GetInt());
+			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
 				theApp->friendlist->RequestSharedFileList(Friend);
 				response = new CECPacket(EC_OP_NOOP);
@@ -1368,7 +1399,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Friend not found.")));
 			}
 		} else if ((subtag = tag->GetTagByName(EC_TAG_CLIENT))) {
-			CUpDownClient * client = theApp->clientlist->FindClientByECID(subtag->GetInt());
+			CUpDownClient *client = theApp->clientlist->FindClientByECID(subtag->GetInt());
 			if (client) {
 				client->RequestSharedFileList();
 				response = new CECPacket(EC_OP_NOOP);
@@ -1379,7 +1410,8 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 		} else {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
-				wxTRANSLATE("EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT.")));
+				wxTRANSLATE(
+					"EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT.")));
 		}
 	}
 
@@ -1390,9 +1422,8 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 	return response;
 }
 
-
-static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
-	bool partial_update_active, std::set<uint32> &io_lastSentSearchIds)
+static CECPacket *Get_EC_Response_Search_Results(
+	const CECPacket *request, bool partial_update_active, std::set<uint32> &io_lastSentSearchIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
 
@@ -1411,17 +1442,15 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	// per-ID subset queries: tombstoning is meaningful only when the
 	// client is polling the whole set.
 	const bool tombstone_path =
-		partial_update_active
-		&& detail_level == EC_DETAIL_UPDATE
-		&& queryitems.empty();
+		partial_update_active && detail_level == EC_DETAIL_UPDATE && queryitems.empty();
 
 	std::set<uint32> current_ids;
 
-	const CSearchResultList& list = theApp->searchlist->GetSearchResults(0xffffffff);
+	const CSearchResultList &list = theApp->searchlist->GetSearchResults(0xffffffff);
 	CSearchResultList::const_iterator it = list.begin();
 	while (it != list.end()) {
-		CSearchFile* sf = *it++;
-		if ( !queryitems.empty() && !queryitems.count(sf->ECID()) ) {
+		CSearchFile *sf = *it++;
+		if (!queryitems.empty() && !queryitems.count(sf->ECID())) {
 			continue;
 		}
 		if (tombstone_path) {
@@ -1441,7 +1470,8 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 		// signal to drop the old results, so they accumulate across
 		// searches (#31, regression from ee1d92b75).
 		for (std::set<uint32>::const_iterator i = io_lastSentSearchIds.begin();
-			i != io_lastSentSearchIds.end(); ++i) {
+			i != io_lastSentSearchIds.end();
+			++i) {
 			if (!current_ids.count(*i)) {
 				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *i));
 			}
@@ -1455,17 +1485,17 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
 
-	const CSearchResultList& list = theApp->searchlist->GetSearchResults(0xffffffff);
+	const CSearchResultList &list = theApp->searchlist->GetSearchResults(0xffffffff);
 	CSearchResultList::const_iterator it = list.begin();
 	while (it != list.end()) {
-		CSearchFile* sf = *it++;
+		CSearchFile *sf = *it++;
 		CValueMap &valuemap = tagmap.GetValueMap(sf->ECID());
 		response->AddTag(CEC_SearchFile_Tag(sf, EC_DETAIL_INC_UPDATE, &valuemap));
 		// Add the children
 		if (sf->HasChildren()) {
-			const CSearchResultList& children = sf->GetChildren();
+			const CSearchResultList &children = sf->GetChildren();
 			for (size_t i = 0; i < children.size(); ++i) {
-				CSearchFile* sfc = children.at(i);
+				CSearchFile *sfc = children.at(i);
 				CValueMap &valuemap1 = tagmap.GetValueMap(sfc->ECID());
 				response->AddTag(CEC_SearchFile_Tag(sfc, EC_DETAIL_INC_UPDATE, &valuemap1));
 			}
@@ -1497,44 +1527,44 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request)
 {
 	wxString response;
 
-	const CEC_Search_Tag *search_request = static_cast<const CEC_Search_Tag *>(request->GetFirstTagSafe());
+	const CEC_Search_Tag *search_request =
+		static_cast<const CEC_Search_Tag *>(request->GetFirstTagSafe());
 	theApp->searchlist->RemoveResults(0xffffffff);
 
 	CSearchList::CSearchParams params;
-	params.searchString	= search_request->SearchText();
-	params.typeText		= search_request->SearchFileType();
-	params.extension	= search_request->SearchExt();
-	params.minSize		= search_request->MinSize();
-	params.maxSize		= search_request->MaxSize();
-	params.availability	= search_request->Avail();
-
+	params.searchString = search_request->SearchText();
+	params.typeText = search_request->SearchFileType();
+	params.extension = search_request->SearchExt();
+	params.minSize = search_request->MinSize();
+	params.maxSize = search_request->MaxSize();
+	params.availability = search_request->Avail();
 
 	EC_SEARCH_TYPE search_type = search_request->SearchType();
 	SearchType core_search_type = LocalSearch;
 	uint32 op = EC_OP_FAILED;
 	switch (search_type) {
-		case EC_SEARCH_GLOBAL:
-			core_search_type = GlobalSearch;
-		/* fall through */
-		case EC_SEARCH_KAD:
-			if (core_search_type != GlobalSearch) { // Not a global search obviously
-				core_search_type = KadSearch;
-			}
-		/* fall through */
-		case EC_SEARCH_LOCAL: {
-			uint32 search_id = 0xffffffff;
-			wxString error = theApp->searchlist->StartNewSearch(&search_id, core_search_type, params);
-			if (!error.IsEmpty()) {
-				response = error;
-			} else {
-				response = wxTRANSLATE("Search in progress. Refetch results in a moment!");
-				op = EC_OP_STRINGS;
-			}
-			break;
+	case EC_SEARCH_GLOBAL:
+		core_search_type = GlobalSearch;
+	/* fall through */
+	case EC_SEARCH_KAD:
+		if (core_search_type != GlobalSearch) { // Not a global search obviously
+			core_search_type = KadSearch;
 		}
-		case EC_SEARCH_WEB:
-				response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
-			break;
+	/* fall through */
+	case EC_SEARCH_LOCAL: {
+		uint32 search_id = 0xffffffff;
+		wxString error = theApp->searchlist->StartNewSearch(&search_id, core_search_type, params);
+		if (!error.IsEmpty()) {
+			response = error;
+		} else {
+			response = wxTRANSLATE("Search in progress. Refetch results in a moment!");
+			op = EC_OP_STRINGS;
+		}
+		break;
+	}
+	case EC_SEARCH_WEB:
+		response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
+		break;
 	}
 
 	CECPacket *reply = new CECPacket(op);
@@ -1551,8 +1581,8 @@ static CECPacket *Get_EC_Response_Set_SharedFile_Prio(const CECPacket *request)
 		const CECTag &tag = *it;
 		CMD4Hash hash = tag.GetMD4Data();
 		uint8 prio = tag.GetFirstTagSafe()->GetInt();
-		CKnownFile* cur_file = theApp->sharedfiles->GetFileByID(hash);
-		if ( !cur_file ) {
+		CKnownFile *cur_file = theApp->sharedfiles->GetFileByID(hash);
+		if (!cur_file) {
 			continue;
 		}
 		if (prio == PR_AUTO) {
@@ -1578,13 +1608,12 @@ void CPartFile_Encoder::Encode(CECTag *parent)
 	//
 	// Gaps
 	//
-	const CGapList& gaplist = m_PartFile()->GetGapList();
+	const CGapList &gaplist = m_PartFile()->GetGapList();
 	const size_t gap_list_size = gaplist.size();
 	ArrayOfUInts64 gaps;
 	gaps.reserve(gap_list_size * 2);
 
-	for (CGapList::const_iterator curr_pos = gaplist.begin();
-			curr_pos != gaplist.end(); ++curr_pos) {
+	for (CGapList::const_iterator curr_pos = gaplist.begin(); curr_pos != gaplist.end(); ++curr_pos) {
 		gaps.push_back(curr_pos.start());
 		gaps.push_back(curr_pos.end());
 	}
@@ -1601,11 +1630,11 @@ void CPartFile_Encoder::Encode(CECTag *parent)
 	// Requested blocks
 	//
 	ArrayOfUInts64 req_buffer;
-	const CPartFile::CReqBlockPtrList& requestedblocks = m_PartFile()->GetRequestedBlockList();
+	const CPartFile::CReqBlockPtrList &requestedblocks = m_PartFile()->GetRequestedBlockList();
 	CPartFile::CReqBlockPtrList::const_iterator curr_pos2 = requestedblocks.begin();
 
-	for ( ; curr_pos2 != requestedblocks.end(); ++curr_pos2 ) {
-		Requested_Block_Struct* block = *curr_pos2;
+	for (; curr_pos2 != requestedblocks.end(); ++curr_pos2) {
+		Requested_Block_Struct *block = *curr_pos2;
 		req_buffer.push_back(block->StartOffset);
 		req_buffer.push_back(block->EndOffset);
 	}
@@ -1641,7 +1670,8 @@ void CPartFile_Encoder::Encode(CECTag *parent)
 	//
 	// Go through our last list
 	//
-	for (SourcenameItemMap::iterator it1 = m_sourcenameItemMap.begin(); it1 != m_sourcenameItemMap.end();) {
+	for (SourcenameItemMap::iterator it1 = m_sourcenameItemMap.begin();
+		it1 != m_sourcenameItemMap.end();) {
 		SourcenameItemMap::iterator it2 = it1++;
 		strIntMap::iterator itm = nameMap.find(it2->second.name);
 		if (itm == nameMap.end()) {
@@ -1678,7 +1708,6 @@ void CPartFile_Encoder::Encode(CECTag *parent)
 	if (sourceNames.HasChildTags()) {
 		parent->AddTag(sourceNames);
 	}
-
 }
 
 void CPartFile_Encoder::ResetEncoder()
@@ -1694,9 +1723,9 @@ void CKnownFile_Encoder::Encode(CECTag *parent)
 	// Source part frequencies
 	//
 	// Reference to the availability list
-	const ArrayOfUInts16& list = m_file->IsPartFile() ?
-		static_cast<const CPartFile*>(m_file)->m_SrcpartFrequency :
-		m_file->m_AvailPartFrequency;
+	const ArrayOfUInts16 &list = m_file->IsPartFile()
+					     ? static_cast<const CPartFile *>(m_file)->m_SrcpartFrequency
+					     : m_file->m_AvailPartFrequency;
 	// Don't add tag if available parts aren't populated yet.
 	if (!list.empty()) {
 		int part_enc_size;
@@ -1714,50 +1743,59 @@ static CECPacket *GetStatsGraphs(const CECPacket *request)
 	CECPacket *response = NULL;
 
 	switch (request->GetDetailLevel()) {
-		case EC_DETAIL_WEB:
-		case EC_DETAIL_FULL: {
-			double dTimestamp = 0.0;
-			if (request->GetTagByName(EC_TAG_STATSGRAPH_LAST) != NULL) {
-				dTimestamp = request->GetTagByName(EC_TAG_STATSGRAPH_LAST)->GetDoubleData();
-			}
-			uint16 nScale = request->GetTagByNameSafe(EC_TAG_STATSGRAPH_SCALE)->GetInt();
-			uint16 nMaxPoints = request->GetTagByNameSafe(EC_TAG_STATSGRAPH_WIDTH)->GetInt();
-			uint32 *graphData = NULL;
-			uint32 *connData = NULL;
-			uint64 sessionDl = 0, sessionUl = 0, sessionKad = 0;
-			double sessionTimespan = 0.0;
-			unsigned int numPoints = theApp->m_statistics->GetHistoryForGui(
-				nMaxPoints, (double)nScale, &dTimestamp, &graphData, &connData,
-				sessionDl, sessionUl, sessionKad, sessionTimespan);
-			if (numPoints) {
-				response = new CECPacket(EC_OP_STATSGRAPHS);
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_DATA, 4 * numPoints * sizeof(uint32), graphData));
-				// Per-point active uploads / active downloads. Older
-				// amulegui builds simply ignore the unknown tag.
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_DATA_CONN, 2 * numPoints * sizeof(uint32), connData));
-				delete [] graphData;
-				delete [] connData;
-				// Latest session totals — let amulegui compute the same
-				// kBytesReceived / sTimestamp session average monolithic
-				// shows, instead of falling back to a GUI-local integral.
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_DL, sessionDl));
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_UL, sessionUl));
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_KAD, sessionKad));
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_TIMESPAN, sessionTimespan));
-				response->AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, dTimestamp));
-			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No points for graph.")));
-			}
-			break;
+	case EC_DETAIL_WEB:
+	case EC_DETAIL_FULL: {
+		double dTimestamp = 0.0;
+		if (request->GetTagByName(EC_TAG_STATSGRAPH_LAST) != NULL) {
+			dTimestamp = request->GetTagByName(EC_TAG_STATSGRAPH_LAST)->GetDoubleData();
 		}
-		case EC_DETAIL_INC_UPDATE:
-		case EC_DETAIL_UPDATE:
-		case EC_DETAIL_CMD:
-			// No graphs
+		uint16 nScale = request->GetTagByNameSafe(EC_TAG_STATSGRAPH_SCALE)->GetInt();
+		uint16 nMaxPoints = request->GetTagByNameSafe(EC_TAG_STATSGRAPH_WIDTH)->GetInt();
+		uint32 *graphData = NULL;
+		uint32 *connData = NULL;
+		uint64 sessionDl = 0, sessionUl = 0, sessionKad = 0;
+		double sessionTimespan = 0.0;
+		unsigned int numPoints = theApp->m_statistics->GetHistoryForGui(nMaxPoints,
+			(double)nScale,
+			&dTimestamp,
+			&graphData,
+			&connData,
+			sessionDl,
+			sessionUl,
+			sessionKad,
+			sessionTimespan);
+		if (numPoints) {
+			response = new CECPacket(EC_OP_STATSGRAPHS);
+			response->AddTag(
+				CECTag(EC_TAG_STATSGRAPH_DATA, 4 * numPoints * sizeof(uint32), graphData));
+			// Per-point active uploads / active downloads. Older
+			// amulegui builds simply ignore the unknown tag.
+			response->AddTag(CECTag(
+				EC_TAG_STATSGRAPH_DATA_CONN, 2 * numPoints * sizeof(uint32), connData));
+			delete[] graphData;
+			delete[] connData;
+			// Latest session totals — let amulegui compute the same
+			// kBytesReceived / sTimestamp session average monolithic
+			// shows, instead of falling back to a GUI-local integral.
+			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_DL, sessionDl));
+			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_UL, sessionUl));
+			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_KAD, sessionKad));
+			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_TIMESPAN, sessionTimespan));
+			response->AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, dTimestamp));
+		} else {
 			response = new CECPacket(EC_OP_FAILED);
-			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Your client is not configured for this detail level.")));
-			break;
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No points for graph.")));
+		}
+		break;
+	}
+	case EC_DETAIL_INC_UPDATE:
+	case EC_DETAIL_UPDATE:
+	case EC_DETAIL_CMD:
+		// No graphs
+		response = new CECPacket(EC_OP_FAILED);
+		response->AddTag(CECTag(
+			EC_TAG_STRING, wxTRANSLATE("Your client is not configured for this detail level.")));
+		break;
 	}
 	if (!response) {
 		response = new CECPacket(EC_OP_FAILED);
@@ -1770,589 +1808,606 @@ static CECPacket *GetStatsGraphs(const CECPacket *request)
 CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 {
 
-	if ( !request ) {
+	if (!request) {
 		return 0;
 	}
 
 	CECPacket *response = NULL;
 
 	switch (request->GetOpCode()) {
-		//
-		// Misc commands
-		//
-		case EC_OP_SHUTDOWN:
-			if (!theApp->IsOnShutDown()) {
-				response = new CECPacket(EC_OP_NOOP);
-				AddLogLineC(_("External Connection: shutdown requested"));
+	//
+	// Misc commands
+	//
+	case EC_OP_SHUTDOWN:
+		if (!theApp->IsOnShutDown()) {
+			response = new CECPacket(EC_OP_NOOP);
+			AddLogLineC(_("External Connection: shutdown requested"));
 #ifndef AMULE_DAEMON
-				{
-					wxCloseEvent evt;
-					evt.SetCanVeto(false);
-					theApp->ShutDown(evt);
-				}
-#else
-				theApp->ExitMainLoop();
-#endif
-			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Already shutting down.")));
-			}
-			break;
-		case EC_OP_ADD_LINK: {
-			// Aggregate the per-link results into a single response: until
-			// #206 was filed, every iteration overwrote the previous response,
-			// so a batch of N-1 successes followed by one failure looked like
-			// a total failure to the caller (and vice versa).
-			int successCount = 0;
-			int failCount = 0;
-			for (CECPacket::const_iterator it = request->begin(); it != request->end(); ++it) {
-				const CECTag &tag = *it;
-				wxString link = tag.GetStringData();
-				int category = 0;
-				const CECTag *cattag = tag.GetTagByName(EC_TAG_PARTFILE_CAT);
-				if (cattag) {
-					category = cattag->GetInt();
-				}
-				AddLogLineC(CFormat(_("ExternalConn: adding link '%s'.")) % link);
-				if ( theApp->downloadqueue->AddLink(link, category) ) {
-					++successCount;
-				} else {
-					// Per-link error reasons are already printed by AddLink().
-					++failCount;
-				}
-			}
-			if (failCount == 0) {
-				response = new CECPacket(EC_OP_NOOP);
-			} else if (successCount == 0) {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid link or already on list.")));
-			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING,
-					CFormat(wxString(wxTRANSLATE("%d of %d links failed (invalid or already on list).")))
-						% failCount % (failCount + successCount)));
-			}
-			break;
-		}
-		//
-		// Status requests
-		//
-		case EC_OP_STAT_REQ:
-			response = Get_EC_Response_StatRequest(request, m_LoggerAccess);
-			response->AddTag(CEC_ConnState_Tag(request->GetDetailLevel()));
-			break;
-		case EC_OP_GET_CONNSTATE:
-			response = new CECPacket(EC_OP_MISC_DATA);
-			response->AddTag(CEC_ConnState_Tag(request->GetDetailLevel()));
-			break;
-		//
-		//
-		//
-		case EC_OP_GET_SHARED_FILES:
-			if ( request->GetDetailLevel() == EC_DETAIL_FULL
-				&& CTagSet<uint32, EC_TAG_KNOWNFILE>(request).empty()
-				&& (m_my_flags & EC_FLAG_UTF8_NUMBERS)
-				&& (m_my_flags & EC_FLAG_LARGE_TAG_COUNT) ) {
-				// Per-file bytes cache. Daemon-wide map<ECID, bytes>
-				// keyed off CKnownFile::s_globalEcGen; rebuilds only
-				// per-file entries whose gen advanced since last use.
-				// Concatenated and written through the connection's
-				// socket with the same per-connection compression
-				// machinery WritePacket uses.
-				std::vector<CKnownFile*> snapshot;
-				theApp->sharedfiles->CopyFileList(snapshot);
-				std::vector<CECFullResponseCache::FileRef> refs;
-				refs.reserve(snapshot.size());
-				for (size_t i = 0; i < snapshot.size(); ++i) {
-					if (!snapshot[i]) continue;
-					CECFullResponseCache::FileRef r;
-					r.file = snapshot[i];
-					r.ecid = snapshot[i]->ECID();
-					r.gen = snapshot[i]->GetECGen();
-					refs.push_back(r);
-				}
-				std::vector<std::shared_ptr<const std::vector<unsigned char> > > blobs
-					= s_sharedFilesFullCache.GetBlobs(refs);
-				s_sharedFilesFullCache.PruneOutsideOf(refs);
-				SendCachedBodyResponse(EC_OP_SHARED_FILES, blobs);
-				return NULL;
-			}
-			if ( request->GetDetailLevel() != EC_DETAIL_INC_UPDATE ) {
-				response = Get_EC_Response_GetSharedFiles(request, m_FileEncoder,
-					m_lastEcGenSeenShared,
-					m_partialUpdateActive, m_lastSentSharedFileIds,
-					m_sentWithDetailIdsShared);
-			}
-			break;
-		case EC_OP_GET_DLOAD_QUEUE:
-			if ( request->GetDetailLevel() == EC_DETAIL_FULL
-				&& CTagSet<uint32, EC_TAG_PARTFILE>(request).empty()
-				&& (m_my_flags & EC_FLAG_UTF8_NUMBERS)
-				&& (m_my_flags & EC_FLAG_LARGE_TAG_COUNT) ) {
-				std::vector<CPartFile*> snapshot;
-				theApp->downloadqueue->CopyFileList(snapshot);
-				std::vector<CECFullResponseCache::FileRef> refs;
-				refs.reserve(snapshot.size());
-				for (size_t i = 0; i < snapshot.size(); ++i) {
-					if (!snapshot[i]) continue;
-					CECFullResponseCache::FileRef r;
-					r.file = snapshot[i];
-					r.ecid = snapshot[i]->ECID();
-					r.gen = snapshot[i]->GetECGen();
-					refs.push_back(r);
-				}
-				std::vector<std::shared_ptr<const std::vector<unsigned char> > > blobs
-					= s_downloadQueueFullCache.GetBlobs(refs);
-				s_downloadQueueFullCache.PruneOutsideOf(refs);
-				SendCachedBodyResponse(EC_OP_DLOAD_QUEUE, blobs);
-				return NULL;
-			}
-			if ( request->GetDetailLevel() != EC_DETAIL_INC_UPDATE ) {
-				response = Get_EC_Response_GetDownloadQueue(request, m_FileEncoder,
-					m_lastEcGenSeenPart,
-					m_partialUpdateActive, m_lastSentPartFileIds,
-					m_sentWithDetailIdsPart);
-			}
-			break;
-		//
-		// This will evolve into an update-all for inc tags
-		//
-		case EC_OP_GET_UPDATE:
-			if ( request->GetDetailLevel() == EC_DETAIL_INC_UPDATE ) {
-				response = Get_EC_Response_GetUpdate(m_FileEncoder, m_obj_tagmap,
-					m_lastEcGenSeen,
-					m_partialUpdateActive, m_lastSentFileIds,
-					m_sentWithDetailIds);
-			}
-			break;
-		case EC_OP_GET_ULOAD_QUEUE:
-			response = Get_EC_Response_GetClientQueue(request, m_obj_tagmap, EC_OP_ULOAD_QUEUE);
-			break;
-		case EC_OP_PARTFILE_SWAP_A4AF_THIS:
-		case EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO:
-		case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
-		case EC_OP_PARTFILE_PAUSE:
-		case EC_OP_PARTFILE_RESUME:
-		case EC_OP_PARTFILE_STOP:
-		case EC_OP_PARTFILE_PRIO_SET:
-		case EC_OP_PARTFILE_DELETE:
-		case EC_OP_PARTFILE_SET_CAT:
-			response = Get_EC_Response_PartFile_Cmd(request);
-			break;
-		case EC_OP_SHAREDFILES_RELOAD:
-			theApp->sharedfiles->Reload();
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_SHARED_SET_PRIO:
-			response = Get_EC_Response_Set_SharedFile_Prio(request);
-			break;
-		case EC_OP_RENAME_FILE: {
-			CMD4Hash fileHash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
-			wxString newName = request->GetTagByNameSafe(EC_TAG_PARTFILE_NAME)->GetStringData();
-			// search first in downloadqueue - it might be in known files as well
-			CKnownFile* file = theApp->downloadqueue->GetFileByID(fileHash);
-			if (!file) {
-				file = theApp->knownfiles->FindKnownFileByID(fileHash);
-			}
-			if (!file) {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("File not found.")));
-				break;
-			}
-			if (newName.IsEmpty()) {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid file name.")));
-				break;
-			}
-
-			if (theApp->sharedfiles->RenameFile(file, CPath(newName))) {
-				response = new CECPacket(EC_OP_NOOP);
-			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unable to rename file.")));
-			}
-
-			break;
-		}
-		case EC_OP_CLEAR_COMPLETED: {
-			ListOfUInts32 toClear;
-			for (CECTag::const_iterator it = request->begin(); it != request->end(); ++it) {
-				if (it->GetTagName() == EC_TAG_ECID) {
-					toClear.push_back(it->GetInt());
-				}
-			}
-			theApp->downloadqueue->ClearCompleted(toClear);
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		}
-		case EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE: {
-			theApp->sharedfiles->Reload();
-			uint32 idClient = request->GetTagByNameSafe(EC_TAG_CLIENT)->GetInt();
-			CUpDownClient * client = theApp->clientlist->FindClientByECID(idClient);
-			CMD4Hash idFile = request->GetTagByNameSafe(EC_TAG_PARTFILE)->GetMD4Data();
-			CPartFile * file = theApp->downloadqueue->GetFileByID(idFile);
-			if (client && file) {
-				client->SwapToAnotherFile( true, false, false, file);
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		}
-		case EC_OP_SHARED_FILE_SET_COMMENT: {
-			CMD4Hash hash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
-			CKnownFile * file = theApp->sharedfiles->GetFileByID(hash);
-			if (file) {
-				wxString newComment = request->GetTagByNameSafe(EC_TAG_KNOWNFILE_COMMENT)->GetStringData();
-				uint8 newRating = request->GetTagByNameSafe(EC_TAG_KNOWNFILE_RATING)->GetInt();
-				CoreNotify_KnownFile_Comment_Set(file, newComment, newRating);
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		}
-
-		//
-		// Server commands
-		//
-		case EC_OP_SERVER_ADD:
-			response = Get_EC_Response_Server_Add(request);
-			break;
-		case EC_OP_SERVER_DISCONNECT:
-		case EC_OP_SERVER_CONNECT:
-		case EC_OP_SERVER_REMOVE:
-			response = Get_EC_Response_Server(request);
-			break;
-		case EC_OP_GET_SERVER_LIST: {
-				response = new CECPacket(EC_OP_SERVER_LIST);
-				if (!thePrefs::GetNetworkED2K()) {
-					// Kad only: just send an empty list
-					break;
-				}
-				EC_DETAIL_LEVEL detail_level = request->GetDetailLevel();
-				std::vector<const CServer*> servers = theApp->serverlist->CopySnapshot();
-				for (
-					std::vector<const CServer*>::const_iterator it = servers.begin();
-					it != servers.end();
-					++it
-					) {
-					response->AddTag(CEC_Server_Tag(*it, detail_level));
-				}
-			}
-			break;
-		case EC_OP_SERVER_UPDATE_FROM_URL: {
-			wxString url = request->GetFirstTagSafe()->GetStringData();
-
-			// Save the new url, and update the UI (if not amuled).
-			Notify_ServersURLChanged(url);
-			thePrefs::SetEd2kServersUrl(url);
-
-			theApp->serverlist->UpdateServerMetFromURL(url);
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		}
-		case EC_OP_SERVER_SET_STATIC_PRIO: {
-			uint32 ecid = request->GetTagByNameSafe(EC_TAG_SERVER)->GetInt();
-			CServer * server = theApp->serverlist->GetServerByECID(ecid);
-			if (server) {
-				const CECTag * staticTag = request->GetTagByName(EC_TAG_SERVER_STATIC);
-				if (staticTag) {
-					theApp->serverlist->SetStaticServer(server, staticTag->GetInt() > 0);
-				}
-				const CECTag * prioTag = request->GetTagByName(EC_TAG_SERVER_PRIO);
-				if (prioTag) {
-					theApp->serverlist->SetServerPrio(server, prioTag->GetInt());
-				}
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		}
-		//
-		// Friends
-		//
-		case EC_OP_FRIEND:
-			response = Get_EC_Response_Friend(request);
-			break;
-
-		//
-		// IPFilter
-		//
-		case EC_OP_IPFILTER_RELOAD:
-			NotifyAlways_IPFilter_Reload();
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-
-		case EC_OP_IPFILTER_UPDATE: {
-			wxString url = request->GetFirstTagSafe()->GetStringData();
-			if (url.IsEmpty()) {
-				url = thePrefs::IPFilterURL();
-			}
-			NotifyAlways_IPFilter_Update(url);
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		}
-		//
-		// Search
-		//
-		case EC_OP_SEARCH_START:
-			response = Get_EC_Response_Search(request);
-			break;
-
-		case EC_OP_SEARCH_STOP:
-			response = Get_EC_Response_Search_Stop(request);
-			break;
-
-		case EC_OP_SEARCH_RESULTS:
-			if ( request->GetDetailLevel() == EC_DETAIL_INC_UPDATE ) {
-				response = Get_EC_Response_Search_Results(m_obj_tagmap);
-			} else {
-				response = Get_EC_Response_Search_Results(request,
-					m_partialUpdateActive, m_lastSentSearchIds);
-			}
-			break;
-
-		case EC_OP_SEARCH_PROGRESS:
-			response = new CECPacket(EC_OP_SEARCH_PROGRESS);
-			response->AddTag(CECTag(EC_TAG_SEARCH_STATUS,
-				theApp->searchlist->GetSearchProgress()));
-			break;
-
-		case EC_OP_DOWNLOAD_SEARCH_RESULT:
-			response = Get_EC_Response_Search_Results_Download(request);
-			break;
-		//
-		// Preferences
-		//
-		case EC_OP_GET_PREFERENCES:
-			response = new CEC_Prefs_Packet(request->GetTagByNameSafe(EC_TAG_SELECT_PREFS)->GetInt(), request->GetDetailLevel());
-			break;
-		case EC_OP_SET_PREFERENCES:
-			static_cast<const CEC_Prefs_Packet *>(request)->Apply();
-			theApp->glob_prefs->Save();
-			if (thePrefs::IsFilteringClients()) {
-				theApp->clientlist->FilterQueues();
-			}
-			if (thePrefs::IsFilteringServers()) {
-				theApp->serverlist->FilterServers();
-			}
-			if (!thePrefs::GetNetworkED2K() && theApp->IsConnectedED2K()) {
-				theApp->DisconnectED2K();
-			}
-			if (!thePrefs::GetNetworkKademlia() && theApp->IsConnectedKad()) {
-				theApp->StopKad();
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-
-		case EC_OP_CREATE_CATEGORY:
-			if ( request->GetTagCount() == 1 ) {
-				CEC_Category_Tag tag(*static_cast<const CEC_Category_Tag*>(request->GetFirstTagSafe()));
-				if (tag.Create()) {
-					response = new CECPacket(EC_OP_NOOP);
-				} else {
-					response = new CECPacket(EC_OP_FAILED);
-					response->AddTag(CECTag(EC_TAG_CATEGORY, theApp->glob_prefs->GetCatCount() - 1));
-					response->AddTag(CECTag(EC_TAG_CATEGORY_PATH, tag.Path()));
-				}
-				Notify_CategoryAdded();
-			} else {
-				response = new CECPacket(EC_OP_NOOP);
-			}
-			break;
-		case EC_OP_UPDATE_CATEGORY:
-			if ( request->GetTagCount() == 1 ) {
-				CEC_Category_Tag tag(*static_cast<const CEC_Category_Tag*>(request->GetFirstTagSafe()));
-				if (tag.Apply()) {
-					response = new CECPacket(EC_OP_NOOP);
-				} else {
-					response = new CECPacket(EC_OP_FAILED);
-					response->AddTag(CECTag(EC_TAG_CATEGORY, tag.GetInt()));
-					response->AddTag(CECTag(EC_TAG_CATEGORY_PATH, tag.Path()));
-				}
-				Notify_CategoryUpdate(tag.GetInt());
-			} else {
-				response = new CECPacket(EC_OP_NOOP);
-			}
-			break;
-		case EC_OP_DELETE_CATEGORY:
-			if ( request->GetTagCount() == 1 ) {
-				uint32 cat = request->GetFirstTagSafe()->GetInt();
-				// this does not only update the gui, but actually deletes the cat
-				Notify_CategoryDelete(cat);
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-
-		//
-		// Logging
-		//
-		case EC_OP_ADDLOGLINE:
-			// cppcheck-suppress duplicateBranch
-			if (request->GetTagByName(EC_TAG_LOG_TO_STATUS) != NULL) {
-				AddLogLineC(request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
-			} else {
-				AddLogLineN(request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_ADDDEBUGLOGLINE:
-			// cppcheck-suppress duplicateBranch
-			if (request->GetTagByName(EC_TAG_LOG_TO_STATUS) != NULL) {
-				AddDebugLogLineC(logGeneral, request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
-			} else {
-				AddDebugLogLineN(logGeneral, request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
-			}
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_GET_LOG:
-			response = new CECPacket(EC_OP_LOG);
-			response->AddTag(CECTag(EC_TAG_STRING, theApp->GetLog(false)));
-			break;
-		case EC_OP_GET_DEBUGLOG:
-			response = new CECPacket(EC_OP_DEBUGLOG);
-			response->AddTag(CECTag(EC_TAG_STRING, theApp->GetDebugLog(false)));
-			break;
-		case EC_OP_RESET_LOG:
-			theApp->GetLog(true);
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_RESET_DEBUGLOG:
-			theApp->GetDebugLog(true);
-			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_GET_LAST_LOG_ENTRY:
 			{
-				wxString tmp = theApp->GetLog(false);
-				if (tmp.Last() == '\n') {
-					tmp.RemoveLast();
-				}
-				response = new CECPacket(EC_OP_LOG);
-				response->AddTag(CECTag(EC_TAG_STRING, tmp.AfterLast('\n')));
+				wxCloseEvent evt;
+				evt.SetCanVeto(false);
+				theApp->ShutDown(evt);
 			}
-			break;
-		case EC_OP_GET_SERVERINFO:
-			response = new CECPacket(EC_OP_SERVERINFO);
-			response->AddTag(CECTag(EC_TAG_STRING, theApp->GetServerLog(false)));
-			break;
-		case EC_OP_CLEAR_SERVERINFO:
-			theApp->GetServerLog(true);
+#else
+			theApp->ExitMainLoop();
+#endif
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Already shutting down.")));
+		}
+		break;
+	case EC_OP_ADD_LINK: {
+		// Aggregate the per-link results into a single response: until
+		// #206 was filed, every iteration overwrote the previous response,
+		// so a batch of N-1 successes followed by one failure looked like
+		// a total failure to the caller (and vice versa).
+		int successCount = 0;
+		int failCount = 0;
+		for (CECPacket::const_iterator it = request->begin(); it != request->end(); ++it) {
+			const CECTag &tag = *it;
+			wxString link = tag.GetStringData();
+			int category = 0;
+			const CECTag *cattag = tag.GetTagByName(EC_TAG_PARTFILE_CAT);
+			if (cattag) {
+				category = cattag->GetInt();
+			}
+			AddLogLineC(CFormat(_("ExternalConn: adding link '%s'.")) % link);
+			if (theApp->downloadqueue->AddLink(link, category)) {
+				++successCount;
+			} else {
+				// Per-link error reasons are already printed by AddLink().
+				++failCount;
+			}
+		}
+		if (failCount == 0) {
 			response = new CECPacket(EC_OP_NOOP);
-			break;
-		//
-		// Statistics
-		//
-		case EC_OP_GET_STATSGRAPHS:
-			response = GetStatsGraphs(request);
-			break;
-		case EC_OP_GET_STATSTREE: {
-			theApp->m_statistics->UpdateStatsTree();
-			response = new CECPacket(EC_OP_STATSTREE);
-			CECTag* tree = theStats::GetECStatTree(request->GetTagByNameSafe(EC_TAG_STATTREE_CAPPING)->GetInt());
-			if (tree) {
-				response->AddTag(*tree);
-				delete tree;
+		} else if (successCount == 0) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(
+				CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid link or already on list.")));
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING,
+				CFormat(wxString(
+					wxTRANSLATE("%d of %d links failed (invalid or already on list)."))) %
+					failCount % (failCount + successCount)));
+		}
+		break;
+	}
+	//
+	// Status requests
+	//
+	case EC_OP_STAT_REQ:
+		response = Get_EC_Response_StatRequest(request, m_LoggerAccess);
+		response->AddTag(CEC_ConnState_Tag(request->GetDetailLevel()));
+		break;
+	case EC_OP_GET_CONNSTATE:
+		response = new CECPacket(EC_OP_MISC_DATA);
+		response->AddTag(CEC_ConnState_Tag(request->GetDetailLevel()));
+		break;
+	//
+	//
+	//
+	case EC_OP_GET_SHARED_FILES:
+		if (request->GetDetailLevel() == EC_DETAIL_FULL &&
+			CTagSet<uint32, EC_TAG_KNOWNFILE>(request).empty() &&
+			(m_my_flags & EC_FLAG_UTF8_NUMBERS) && (m_my_flags & EC_FLAG_LARGE_TAG_COUNT)) {
+			// Per-file bytes cache. Daemon-wide map<ECID, bytes>
+			// keyed off CKnownFile::s_globalEcGen; rebuilds only
+			// per-file entries whose gen advanced since last use.
+			// Concatenated and written through the connection's
+			// socket with the same per-connection compression
+			// machinery WritePacket uses.
+			std::vector<CKnownFile *> snapshot;
+			theApp->sharedfiles->CopyFileList(snapshot);
+			std::vector<CECFullResponseCache::FileRef> refs;
+			refs.reserve(snapshot.size());
+			for (size_t i = 0; i < snapshot.size(); ++i) {
+				if (!snapshot[i])
+					continue;
+				CECFullResponseCache::FileRef r;
+				r.file = snapshot[i];
+				r.ecid = snapshot[i]->ECID();
+				r.gen = snapshot[i]->GetECGen();
+				refs.push_back(r);
 			}
-			if (request->GetDetailLevel() == EC_DETAIL_WEB) {
-				response->AddTag(CECTag(EC_TAG_SERVER_VERSION, VERSION));
-				response->AddTag(CECTag(EC_TAG_USER_NICK, thePrefs::GetUserNick()));
+			std::vector<std::shared_ptr<const std::vector<unsigned char>>> blobs =
+				s_sharedFilesFullCache.GetBlobs(refs);
+			s_sharedFilesFullCache.PruneOutsideOf(refs);
+			SendCachedBodyResponse(EC_OP_SHARED_FILES, blobs);
+			return NULL;
+		}
+		if (request->GetDetailLevel() != EC_DETAIL_INC_UPDATE) {
+			response = Get_EC_Response_GetSharedFiles(request,
+				m_FileEncoder,
+				m_lastEcGenSeenShared,
+				m_partialUpdateActive,
+				m_lastSentSharedFileIds,
+				m_sentWithDetailIdsShared);
+		}
+		break;
+	case EC_OP_GET_DLOAD_QUEUE:
+		if (request->GetDetailLevel() == EC_DETAIL_FULL &&
+			CTagSet<uint32, EC_TAG_PARTFILE>(request).empty() &&
+			(m_my_flags & EC_FLAG_UTF8_NUMBERS) && (m_my_flags & EC_FLAG_LARGE_TAG_COUNT)) {
+			std::vector<CPartFile *> snapshot;
+			theApp->downloadqueue->CopyFileList(snapshot);
+			std::vector<CECFullResponseCache::FileRef> refs;
+			refs.reserve(snapshot.size());
+			for (size_t i = 0; i < snapshot.size(); ++i) {
+				if (!snapshot[i])
+					continue;
+				CECFullResponseCache::FileRef r;
+				r.file = snapshot[i];
+				r.ecid = snapshot[i]->ECID();
+				r.gen = snapshot[i]->GetECGen();
+				refs.push_back(r);
 			}
+			std::vector<std::shared_ptr<const std::vector<unsigned char>>> blobs =
+				s_downloadQueueFullCache.GetBlobs(refs);
+			s_downloadQueueFullCache.PruneOutsideOf(refs);
+			SendCachedBodyResponse(EC_OP_DLOAD_QUEUE, blobs);
+			return NULL;
+		}
+		if (request->GetDetailLevel() != EC_DETAIL_INC_UPDATE) {
+			response = Get_EC_Response_GetDownloadQueue(request,
+				m_FileEncoder,
+				m_lastEcGenSeenPart,
+				m_partialUpdateActive,
+				m_lastSentPartFileIds,
+				m_sentWithDetailIdsPart);
+		}
+		break;
+	//
+	// This will evolve into an update-all for inc tags
+	//
+	case EC_OP_GET_UPDATE:
+		if (request->GetDetailLevel() == EC_DETAIL_INC_UPDATE) {
+			response = Get_EC_Response_GetUpdate(m_FileEncoder,
+				m_obj_tagmap,
+				m_lastEcGenSeen,
+				m_partialUpdateActive,
+				m_lastSentFileIds,
+				m_sentWithDetailIds);
+		}
+		break;
+	case EC_OP_GET_ULOAD_QUEUE:
+		response = Get_EC_Response_GetClientQueue(request, m_obj_tagmap, EC_OP_ULOAD_QUEUE);
+		break;
+	case EC_OP_PARTFILE_SWAP_A4AF_THIS:
+	case EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO:
+	case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
+	case EC_OP_PARTFILE_PAUSE:
+	case EC_OP_PARTFILE_RESUME:
+	case EC_OP_PARTFILE_STOP:
+	case EC_OP_PARTFILE_PRIO_SET:
+	case EC_OP_PARTFILE_DELETE:
+	case EC_OP_PARTFILE_SET_CAT:
+		response = Get_EC_Response_PartFile_Cmd(request);
+		break;
+	case EC_OP_SHAREDFILES_RELOAD:
+		theApp->sharedfiles->Reload();
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_SHARED_SET_PRIO:
+		response = Get_EC_Response_Set_SharedFile_Prio(request);
+		break;
+	case EC_OP_RENAME_FILE: {
+		CMD4Hash fileHash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
+		wxString newName = request->GetTagByNameSafe(EC_TAG_PARTFILE_NAME)->GetStringData();
+		// search first in downloadqueue - it might be in known files as well
+		CKnownFile *file = theApp->downloadqueue->GetFileByID(fileHash);
+		if (!file) {
+			file = theApp->knownfiles->FindKnownFileByID(fileHash);
+		}
+		if (!file) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("File not found.")));
+			break;
+		}
+		if (newName.IsEmpty()) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid file name.")));
 			break;
 		}
 
-		//
-		// Kad
-		//
-		case EC_OP_KAD_START:
-			if (thePrefs::GetNetworkKademlia()) {
+		if (theApp->sharedfiles->RenameFile(file, CPath(newName))) {
+			response = new CECPacket(EC_OP_NOOP);
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unable to rename file.")));
+		}
+
+		break;
+	}
+	case EC_OP_CLEAR_COMPLETED: {
+		ListOfUInts32 toClear;
+		for (CECTag::const_iterator it = request->begin(); it != request->end(); ++it) {
+			if (it->GetTagName() == EC_TAG_ECID) {
+				toClear.push_back(it->GetInt());
+			}
+		}
+		theApp->downloadqueue->ClearCompleted(toClear);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+	case EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE: {
+		theApp->sharedfiles->Reload();
+		uint32 idClient = request->GetTagByNameSafe(EC_TAG_CLIENT)->GetInt();
+		CUpDownClient *client = theApp->clientlist->FindClientByECID(idClient);
+		CMD4Hash idFile = request->GetTagByNameSafe(EC_TAG_PARTFILE)->GetMD4Data();
+		CPartFile *file = theApp->downloadqueue->GetFileByID(idFile);
+		if (client && file) {
+			client->SwapToAnotherFile(true, false, false, file);
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+	case EC_OP_SHARED_FILE_SET_COMMENT: {
+		CMD4Hash hash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
+		CKnownFile *file = theApp->sharedfiles->GetFileByID(hash);
+		if (file) {
+			wxString newComment =
+				request->GetTagByNameSafe(EC_TAG_KNOWNFILE_COMMENT)->GetStringData();
+			uint8 newRating = request->GetTagByNameSafe(EC_TAG_KNOWNFILE_RATING)->GetInt();
+			CoreNotify_KnownFile_Comment_Set(file, newComment, newRating);
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+
+	//
+	// Server commands
+	//
+	case EC_OP_SERVER_ADD:
+		response = Get_EC_Response_Server_Add(request);
+		break;
+	case EC_OP_SERVER_DISCONNECT:
+	case EC_OP_SERVER_CONNECT:
+	case EC_OP_SERVER_REMOVE:
+		response = Get_EC_Response_Server(request);
+		break;
+	case EC_OP_GET_SERVER_LIST: {
+		response = new CECPacket(EC_OP_SERVER_LIST);
+		if (!thePrefs::GetNetworkED2K()) {
+			// Kad only: just send an empty list
+			break;
+		}
+		EC_DETAIL_LEVEL detail_level = request->GetDetailLevel();
+		std::vector<const CServer *> servers = theApp->serverlist->CopySnapshot();
+		for (std::vector<const CServer *>::const_iterator it = servers.begin(); it != servers.end();
+			++it) {
+			response->AddTag(CEC_Server_Tag(*it, detail_level));
+		}
+	} break;
+	case EC_OP_SERVER_UPDATE_FROM_URL: {
+		wxString url = request->GetFirstTagSafe()->GetStringData();
+
+		// Save the new url, and update the UI (if not amuled).
+		Notify_ServersURLChanged(url);
+		thePrefs::SetEd2kServersUrl(url);
+
+		theApp->serverlist->UpdateServerMetFromURL(url);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+	case EC_OP_SERVER_SET_STATIC_PRIO: {
+		uint32 ecid = request->GetTagByNameSafe(EC_TAG_SERVER)->GetInt();
+		CServer *server = theApp->serverlist->GetServerByECID(ecid);
+		if (server) {
+			const CECTag *staticTag = request->GetTagByName(EC_TAG_SERVER_STATIC);
+			if (staticTag) {
+				theApp->serverlist->SetStaticServer(server, staticTag->GetInt() > 0);
+			}
+			const CECTag *prioTag = request->GetTagByName(EC_TAG_SERVER_PRIO);
+			if (prioTag) {
+				theApp->serverlist->SetServerPrio(server, prioTag->GetInt());
+			}
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+	//
+	// Friends
+	//
+	case EC_OP_FRIEND:
+		response = Get_EC_Response_Friend(request);
+		break;
+
+	//
+	// IPFilter
+	//
+	case EC_OP_IPFILTER_RELOAD:
+		NotifyAlways_IPFilter_Reload();
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+
+	case EC_OP_IPFILTER_UPDATE: {
+		wxString url = request->GetFirstTagSafe()->GetStringData();
+		if (url.IsEmpty()) {
+			url = thePrefs::IPFilterURL();
+		}
+		NotifyAlways_IPFilter_Update(url);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+	//
+	// Search
+	//
+	case EC_OP_SEARCH_START:
+		response = Get_EC_Response_Search(request);
+		break;
+
+	case EC_OP_SEARCH_STOP:
+		response = Get_EC_Response_Search_Stop(request);
+		break;
+
+	case EC_OP_SEARCH_RESULTS:
+		if (request->GetDetailLevel() == EC_DETAIL_INC_UPDATE) {
+			response = Get_EC_Response_Search_Results(m_obj_tagmap);
+		} else {
+			response = Get_EC_Response_Search_Results(
+				request, m_partialUpdateActive, m_lastSentSearchIds);
+		}
+		break;
+
+	case EC_OP_SEARCH_PROGRESS:
+		response = new CECPacket(EC_OP_SEARCH_PROGRESS);
+		response->AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchProgress()));
+		break;
+
+	case EC_OP_DOWNLOAD_SEARCH_RESULT:
+		response = Get_EC_Response_Search_Results_Download(request);
+		break;
+	//
+	// Preferences
+	//
+	case EC_OP_GET_PREFERENCES:
+		response = new CEC_Prefs_Packet(
+			request->GetTagByNameSafe(EC_TAG_SELECT_PREFS)->GetInt(), request->GetDetailLevel());
+		break;
+	case EC_OP_SET_PREFERENCES:
+		static_cast<const CEC_Prefs_Packet *>(request)->Apply();
+		theApp->glob_prefs->Save();
+		if (thePrefs::IsFilteringClients()) {
+			theApp->clientlist->FilterQueues();
+		}
+		if (thePrefs::IsFilteringServers()) {
+			theApp->serverlist->FilterServers();
+		}
+		if (!thePrefs::GetNetworkED2K() && theApp->IsConnectedED2K()) {
+			theApp->DisconnectED2K();
+		}
+		if (!thePrefs::GetNetworkKademlia() && theApp->IsConnectedKad()) {
+			theApp->StopKad();
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+
+	case EC_OP_CREATE_CATEGORY:
+		if (request->GetTagCount() == 1) {
+			CEC_Category_Tag tag(
+				*static_cast<const CEC_Category_Tag *>(request->GetFirstTagSafe()));
+			if (tag.Create()) {
 				response = new CECPacket(EC_OP_NOOP);
-				if ( !Kademlia::CKademlia::IsRunning() ) {
-					Kademlia::CKademlia::Start();
-					theApp->ShowConnectionState();
-				}
 			} else {
 				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Kad is disabled in preferences.")));
+				response->AddTag(
+					CECTag(EC_TAG_CATEGORY, theApp->glob_prefs->GetCatCount() - 1));
+				response->AddTag(CECTag(EC_TAG_CATEGORY_PATH, tag.Path()));
 			}
-			break;
-		case EC_OP_KAD_STOP:
-			theApp->StopKad();
+			Notify_CategoryAdded();
+		} else {
+			response = new CECPacket(EC_OP_NOOP);
+		}
+		break;
+	case EC_OP_UPDATE_CATEGORY:
+		if (request->GetTagCount() == 1) {
+			CEC_Category_Tag tag(
+				*static_cast<const CEC_Category_Tag *>(request->GetFirstTagSafe()));
+			if (tag.Apply()) {
+				response = new CECPacket(EC_OP_NOOP);
+			} else {
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_CATEGORY, tag.GetInt()));
+				response->AddTag(CECTag(EC_TAG_CATEGORY_PATH, tag.Path()));
+			}
+			Notify_CategoryUpdate(tag.GetInt());
+		} else {
+			response = new CECPacket(EC_OP_NOOP);
+		}
+		break;
+	case EC_OP_DELETE_CATEGORY:
+		if (request->GetTagCount() == 1) {
+			uint32 cat = request->GetFirstTagSafe()->GetInt();
+			// this does not only update the gui, but actually deletes the cat
+			Notify_CategoryDelete(cat);
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+
+	//
+	// Logging
+	//
+	case EC_OP_ADDLOGLINE:
+		// cppcheck-suppress duplicateBranch
+		if (request->GetTagByName(EC_TAG_LOG_TO_STATUS) != NULL) {
+			AddLogLineC(request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
+		} else {
+			AddLogLineN(request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_ADDDEBUGLOGLINE:
+		// cppcheck-suppress duplicateBranch
+		if (request->GetTagByName(EC_TAG_LOG_TO_STATUS) != NULL) {
+			AddDebugLogLineC(
+				logGeneral, request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
+		} else {
+			AddDebugLogLineN(
+				logGeneral, request->GetTagByNameSafe(EC_TAG_STRING)->GetStringData());
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_GET_LOG:
+		response = new CECPacket(EC_OP_LOG);
+		response->AddTag(CECTag(EC_TAG_STRING, theApp->GetLog(false)));
+		break;
+	case EC_OP_GET_DEBUGLOG:
+		response = new CECPacket(EC_OP_DEBUGLOG);
+		response->AddTag(CECTag(EC_TAG_STRING, theApp->GetDebugLog(false)));
+		break;
+	case EC_OP_RESET_LOG:
+		theApp->GetLog(true);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_RESET_DEBUGLOG:
+		theApp->GetDebugLog(true);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_GET_LAST_LOG_ENTRY: {
+		wxString tmp = theApp->GetLog(false);
+		if (tmp.Last() == '\n') {
+			tmp.RemoveLast();
+		}
+		response = new CECPacket(EC_OP_LOG);
+		response->AddTag(CECTag(EC_TAG_STRING, tmp.AfterLast('\n')));
+	} break;
+	case EC_OP_GET_SERVERINFO:
+		response = new CECPacket(EC_OP_SERVERINFO);
+		response->AddTag(CECTag(EC_TAG_STRING, theApp->GetServerLog(false)));
+		break;
+	case EC_OP_CLEAR_SERVERINFO:
+		theApp->GetServerLog(true);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	//
+	// Statistics
+	//
+	case EC_OP_GET_STATSGRAPHS:
+		response = GetStatsGraphs(request);
+		break;
+	case EC_OP_GET_STATSTREE: {
+		theApp->m_statistics->UpdateStatsTree();
+		response = new CECPacket(EC_OP_STATSTREE);
+		CECTag *tree =
+			theStats::GetECStatTree(request->GetTagByNameSafe(EC_TAG_STATTREE_CAPPING)->GetInt());
+		if (tree) {
+			response->AddTag(*tree);
+			delete tree;
+		}
+		if (request->GetDetailLevel() == EC_DETAIL_WEB) {
+			response->AddTag(CECTag(EC_TAG_SERVER_VERSION, VERSION));
+			response->AddTag(CECTag(EC_TAG_USER_NICK, thePrefs::GetUserNick()));
+		}
+		break;
+	}
+
+	//
+	// Kad
+	//
+	case EC_OP_KAD_START:
+		if (thePrefs::GetNetworkKademlia()) {
+			response = new CECPacket(EC_OP_NOOP);
+			if (!Kademlia::CKademlia::IsRunning()) {
+				Kademlia::CKademlia::Start();
+				theApp->ShowConnectionState();
+			}
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(
+				CECTag(EC_TAG_STRING, wxTRANSLATE("Kad is disabled in preferences.")));
+		}
+		break;
+	case EC_OP_KAD_STOP:
+		theApp->StopKad();
+		theApp->ShowConnectionState();
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_KAD_UPDATE_FROM_URL: {
+		wxString url = request->GetFirstTagSafe()->GetStringData();
+
+		// Save the new url, and update the UI (if not amuled).
+		Notify_NodesURLChanged(url);
+		thePrefs::SetKadNodesUrl(url);
+
+		theApp->UpdateNotesDat(url);
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
+	case EC_OP_KAD_BOOTSTRAP_FROM_IP:
+		if (thePrefs::GetNetworkKademlia()) {
+			theApp->BootstrapKad(request->GetTagByNameSafe(EC_TAG_BOOTSTRAP_IP)->GetInt(),
+				request->GetTagByNameSafe(EC_TAG_BOOTSTRAP_PORT)->GetInt());
 			theApp->ShowConnectionState();
 			response = new CECPacket(EC_OP_NOOP);
-			break;
-		case EC_OP_KAD_UPDATE_FROM_URL: {
-			wxString url = request->GetFirstTagSafe()->GetStringData();
-
-			// Save the new url, and update the UI (if not amuled).
-			Notify_NodesURLChanged(url);
-			thePrefs::SetKadNodesUrl(url);
-
-			theApp->UpdateNotesDat(url);
-			response = new CECPacket(EC_OP_NOOP);
-			break;
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(
+				CECTag(EC_TAG_STRING, wxTRANSLATE("Kad is disabled in preferences.")));
 		}
-		case EC_OP_KAD_BOOTSTRAP_FROM_IP:
-			if (thePrefs::GetNetworkKademlia()) {
-				theApp->BootstrapKad(request->GetTagByNameSafe(EC_TAG_BOOTSTRAP_IP)->GetInt(),
-									 request->GetTagByNameSafe(EC_TAG_BOOTSTRAP_PORT)->GetInt());
-				theApp->ShowConnectionState();
-				response = new CECPacket(EC_OP_NOOP);
-			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Kad is disabled in preferences.")));
-			}
-			break;
+		break;
 
-		//
-		// Networks
-		// These requests are currently used only in the text client
-		//
-		case EC_OP_CONNECT:
-			if (thePrefs::GetNetworkED2K()) {
-				response = new CECPacket(EC_OP_STRINGS);
-				if (theApp->IsConnectedED2K()) {
-					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Already connected to eD2k.")));
-				} else {
-					theApp->serverconnect->ConnectToAnyServer();
-					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Connecting to eD2k...")));
-				}
-			}
-			if (thePrefs::GetNetworkKademlia()) {
-				if (!response) {
-					response = new CECPacket(EC_OP_STRINGS);
-				}
-				if (theApp->IsConnectedKad()) {
-					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Already connected to Kad.")));
-				} else {
-					theApp->StartKad();
-					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Connecting to Kad...")));
-				}
-			}
-			if (response) {
-				theApp->ShowConnectionState();
+	//
+	// Networks
+	// These requests are currently used only in the text client
+	//
+	case EC_OP_CONNECT:
+		if (thePrefs::GetNetworkED2K()) {
+			response = new CECPacket(EC_OP_STRINGS);
+			if (theApp->IsConnectedED2K()) {
+				response->AddTag(
+					CECTag(EC_TAG_STRING, wxTRANSLATE("Already connected to eD2k.")));
 			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("All networks are disabled.")));
+				theApp->serverconnect->ConnectToAnyServer();
+				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Connecting to eD2k...")));
 			}
-			break;
-		case EC_OP_DISCONNECT:
-			if (theApp->IsConnected()) {
+		}
+		if (thePrefs::GetNetworkKademlia()) {
+			if (!response) {
 				response = new CECPacket(EC_OP_STRINGS);
-				if (theApp->IsConnectedED2K()) {
-					theApp->serverconnect->Disconnect();
-					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Disconnected from eD2k.")));
-				}
-				if (theApp->IsConnectedKad()) {
-					theApp->StopKad();
-					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Disconnected from Kad.")));
-				}
-				theApp->ShowConnectionState();
-			} else {
-				response = new CECPacket(EC_OP_NOOP);
 			}
-			break;
+			if (theApp->IsConnectedKad()) {
+				response->AddTag(
+					CECTag(EC_TAG_STRING, wxTRANSLATE("Already connected to Kad.")));
+			} else {
+				theApp->StartKad();
+				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Connecting to Kad...")));
+			}
+		}
+		if (response) {
+			theApp->ShowConnectionState();
+		} else {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("All networks are disabled.")));
+		}
+		break;
+	case EC_OP_DISCONNECT:
+		if (theApp->IsConnected()) {
+			response = new CECPacket(EC_OP_STRINGS);
+			if (theApp->IsConnectedED2K()) {
+				theApp->serverconnect->Disconnect();
+				response->AddTag(
+					CECTag(EC_TAG_STRING, wxTRANSLATE("Disconnected from eD2k.")));
+			}
+			if (theApp->IsConnectedKad()) {
+				theApp->StopKad();
+				response->AddTag(
+					CECTag(EC_TAG_STRING, wxTRANSLATE("Disconnected from Kad.")));
+			}
+			theApp->ShowConnectionState();
+		} else {
+			response = new CECPacket(EC_OP_NOOP);
+		}
+		break;
 	}
 	if (!response) {
-		AddLogLineN(CFormat(_("External Connection: invalid opcode received: %#x")) % request->GetOpCode());
+		AddLogLineN(CFormat(_("External Connection: invalid opcode received: %#x")) %
+			    request->GetOpCode());
 		wxFAIL;
 		response = new CECPacket(EC_OP_FAILED);
-		response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid opcode (wrong protocol version?)")));
+		response->AddTag(
+			CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid opcode (wrong protocol version?)")));
 	}
 	return response;
 }
@@ -2373,9 +2428,9 @@ ECStatusMsgSource::ECStatusMsgSource()
 
 uint32 ECStatusMsgSource::GetEd2kStatus()
 {
-	if ( theApp->IsConnectedED2K() ) {
+	if (theApp->IsConnectedED2K()) {
 		return theApp->GetED2KID();
-	} else if ( theApp->serverconnect->IsConnecting() ) {
+	} else if (theApp->serverconnect->IsConnecting()) {
 		return 1;
 	} else {
 		return 0;
@@ -2384,11 +2439,11 @@ uint32 ECStatusMsgSource::GetEd2kStatus()
 
 uint32 ECStatusMsgSource::GetKadStatus()
 {
-	if ( theApp->IsConnectedKad() ) {
+	if (theApp->IsConnectedKad()) {
 		return 1;
-	} else if ( Kademlia::CKademlia::IsFirewalled() ) {
+	} else if (Kademlia::CKademlia::IsFirewalled()) {
 		return 2;
-	} else if ( Kademlia::CKademlia::IsRunning() ) {
+	} else if (Kademlia::CKademlia::IsRunning()) {
 		return 3;
 	}
 	return 0;
@@ -2396,9 +2451,8 @@ uint32 ECStatusMsgSource::GetKadStatus()
 
 CECPacket *ECStatusMsgSource::GetNextPacket()
 {
-	if ( (m_last_ed2k_status_sent != GetEd2kStatus()) ||
-		(m_last_kad_status_sent != GetKadStatus()) ||
-		(m_server != theApp->serverconnect->GetCurrentServer()) ) {
+	if ((m_last_ed2k_status_sent != GetEd2kStatus()) || (m_last_kad_status_sent != GetKadStatus()) ||
+		(m_server != theApp->serverconnect->GetCurrentServer())) {
 
 		m_last_ed2k_status_sent = GetEd2kStatus();
 		m_last_kad_status_sent = GetKadStatus();
@@ -2413,13 +2467,12 @@ CECPacket *ECStatusMsgSource::GetNextPacket()
 
 /*
  * Downloading files
-*/
+ */
 ECPartFileMsgSource::ECPartFileMsgSource()
 {
-	std::vector<CPartFile*> snapshot;
+	std::vector<CPartFile *> snapshot;
 	theApp->downloadqueue->CopyFileList(snapshot);
-	for (std::vector<CPartFile*>::const_iterator it = snapshot.begin();
-		it != snapshot.end(); ++it) {
+	for (std::vector<CPartFile *>::const_iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
 		CPartFile *cur_file = *it;
 		PARTFILE_STATUS status = { true, false, false, false, true, cur_file };
 		m_dirty_status[cur_file->GetFileHash()] = status;
@@ -2429,15 +2482,16 @@ ECPartFileMsgSource::ECPartFileMsgSource()
 void ECPartFileMsgSource::SetDirty(const CPartFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	if ( m_dirty_status.find(filehash) != m_dirty_status.end() ) {
-		m_dirty_status[filehash].m_dirty = true;;
+	if (m_dirty_status.find(filehash) != m_dirty_status.end()) {
+		m_dirty_status[filehash].m_dirty = true;
+		;
 	}
 }
 
 void ECPartFileMsgSource::SetNew(const CPartFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	wxASSERT ( m_dirty_status.find(filehash) == m_dirty_status.end() );
+	wxASSERT(m_dirty_status.find(filehash) == m_dirty_status.end());
 	PARTFILE_STATUS status = { true, false, false, false, true, file };
 	m_dirty_status[filehash] = status;
 }
@@ -2445,7 +2499,7 @@ void ECPartFileMsgSource::SetNew(const CPartFile *file)
 void ECPartFileMsgSource::SetCompleted(const CPartFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	wxASSERT ( m_dirty_status.find(filehash) != m_dirty_status.end() );
+	wxASSERT(m_dirty_status.find(filehash) != m_dirty_status.end());
 
 	m_dirty_status[filehash].m_finished = true;
 }
@@ -2453,27 +2507,29 @@ void ECPartFileMsgSource::SetCompleted(const CPartFile *file)
 void ECPartFileMsgSource::SetRemoved(const CPartFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	wxASSERT ( m_dirty_status.find(filehash) != m_dirty_status.end() );
+	wxASSERT(m_dirty_status.find(filehash) != m_dirty_status.end());
 
 	m_dirty_status[filehash].m_removed = true;
 }
 
 CECPacket *ECPartFileMsgSource::GetNextPacket()
 {
-	for(std::map<CMD4Hash, PARTFILE_STATUS>::iterator it = m_dirty_status.begin();
-		it != m_dirty_status.end(); it++) {
-		if ( it->second.m_new || it->second.m_dirty || it->second.m_removed) {
+	for (std::map<CMD4Hash, PARTFILE_STATUS>::iterator it = m_dirty_status.begin();
+		it != m_dirty_status.end();
+		it++) {
+		if (it->second.m_new || it->second.m_dirty || it->second.m_removed) {
 			CMD4Hash filehash = it->first;
 
 			const CPartFile *partfile = it->second.m_file;
 
 			CECPacket *packet = new CECPacket(EC_OP_DLOAD_QUEUE);
-			if ( it->second.m_removed ) {
+			if (it->second.m_removed) {
 				CECTag tag(EC_TAG_PARTFILE, filehash);
 				packet->AddTag(tag);
 				m_dirty_status.erase(it);
 			} else {
-				CEC_PartFile_Tag tag(partfile, it->second.m_new ? EC_DETAIL_FULL : EC_DETAIL_UPDATE);
+				CEC_PartFile_Tag tag(
+					partfile, it->second.m_new ? EC_DETAIL_FULL : EC_DETAIL_UPDATE);
 				packet->AddTag(tag);
 			}
 			m_dirty_status[filehash].m_new = false;
@@ -2490,10 +2546,9 @@ CECPacket *ECPartFileMsgSource::GetNextPacket()
  */
 ECKnownFileMsgSource::ECKnownFileMsgSource()
 {
-	std::vector<CKnownFile*> snapshot;
+	std::vector<CKnownFile *> snapshot;
 	theApp->sharedfiles->CopyFileList(snapshot);
-	for (std::vector<CKnownFile*>::const_iterator it = snapshot.begin();
-		it != snapshot.end(); ++it) {
+	for (std::vector<CKnownFile *>::const_iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
 		const CKnownFile *cur_file = *it;
 		KNOWNFILE_STATUS status = { true, false, false, true, cur_file };
 		m_dirty_status[cur_file->GetFileHash()] = status;
@@ -2503,15 +2558,16 @@ ECKnownFileMsgSource::ECKnownFileMsgSource()
 void ECKnownFileMsgSource::SetDirty(const CKnownFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	if ( m_dirty_status.find(filehash) != m_dirty_status.end() ) {
-		m_dirty_status[filehash].m_dirty = true;;
+	if (m_dirty_status.find(filehash) != m_dirty_status.end()) {
+		m_dirty_status[filehash].m_dirty = true;
+		;
 	}
 }
 
 void ECKnownFileMsgSource::SetNew(const CKnownFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	wxASSERT ( m_dirty_status.find(filehash) == m_dirty_status.end() );
+	wxASSERT(m_dirty_status.find(filehash) == m_dirty_status.end());
 	KNOWNFILE_STATUS status = { true, false, false, true, file };
 	m_dirty_status[filehash] = status;
 }
@@ -2519,27 +2575,29 @@ void ECKnownFileMsgSource::SetNew(const CKnownFile *file)
 void ECKnownFileMsgSource::SetRemoved(const CKnownFile *file)
 {
 	CMD4Hash filehash = file->GetFileHash();
-	wxASSERT ( m_dirty_status.find(filehash) != m_dirty_status.end() );
+	wxASSERT(m_dirty_status.find(filehash) != m_dirty_status.end());
 
 	m_dirty_status[filehash].m_removed = true;
 }
 
 CECPacket *ECKnownFileMsgSource::GetNextPacket()
 {
-	for(std::map<CMD4Hash, KNOWNFILE_STATUS>::iterator it = m_dirty_status.begin();
-		it != m_dirty_status.end(); it++) {
-		if ( it->second.m_new || it->second.m_dirty || it->second.m_removed) {
+	for (std::map<CMD4Hash, KNOWNFILE_STATUS>::iterator it = m_dirty_status.begin();
+		it != m_dirty_status.end();
+		it++) {
+		if (it->second.m_new || it->second.m_dirty || it->second.m_removed) {
 			CMD4Hash filehash = it->first;
 
 			const CKnownFile *partfile = it->second.m_file;
 
 			CECPacket *packet = new CECPacket(EC_OP_SHARED_FILES);
-			if ( it->second.m_removed ) {
+			if (it->second.m_removed) {
 				CECTag tag(EC_TAG_PARTFILE, filehash);
 				packet->AddTag(tag);
 				m_dirty_status.erase(it);
 			} else {
-				CEC_SharedFile_Tag tag(partfile, it->second.m_new ? EC_DETAIL_FULL : EC_DETAIL_UPDATE);
+				CEC_SharedFile_Tag tag(
+					partfile, it->second.m_new ? EC_DETAIL_FULL : EC_DETAIL_UPDATE);
 				packet->AddTag(tag);
 			}
 			m_dirty_status[filehash].m_new = false;
@@ -2553,28 +2611,26 @@ CECPacket *ECKnownFileMsgSource::GetNextPacket()
 
 /*
  * Notification about search status
-*/
-ECSearchMsgSource::ECSearchMsgSource()
-{
-}
+ */
+ECSearchMsgSource::ECSearchMsgSource() {}
 
 CECPacket *ECSearchMsgSource::GetNextPacket()
 {
-	if ( m_dirty_status.empty() ) {
+	if (m_dirty_status.empty()) {
 		return 0;
 	}
 
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
-	for(std::map<CMD4Hash, SEARCHFILE_STATUS>::iterator it = m_dirty_status.begin();
-		it != m_dirty_status.end(); it++) {
+	for (std::map<CMD4Hash, SEARCHFILE_STATUS>::iterator it = m_dirty_status.begin();
+		it != m_dirty_status.end();
+		it++) {
 
-		if ( it->second.m_new ) {
+		if (it->second.m_new) {
 			response->AddTag(CEC_SearchFile_Tag(it->second.m_file, EC_DETAIL_FULL));
 			it->second.m_new = false;
-		} else if ( it->second.m_dirty ) {
+		} else if (it->second.m_dirty) {
 			response->AddTag(CEC_SearchFile_Tag(it->second.m_file, EC_DETAIL_UPDATE));
 		}
-
 	}
 
 	return response;
@@ -2587,7 +2643,7 @@ void ECSearchMsgSource::FlushStatus()
 
 void ECSearchMsgSource::SetDirty(const CSearchFile *file)
 {
-	if ( m_dirty_status.count(file->GetFileHash()) ) {
+	if (m_dirty_status.count(file->GetFileHash())) {
 		m_dirty_status[file->GetFileHash()].m_dirty = true;
 	} else {
 		m_dirty_status[file->GetFileHash()].m_new = true;
@@ -2613,9 +2669,7 @@ CECPacket *ECClientMsgSource::GetNextPacket()
 //
 // Notification iface per-client
 //
-ECNotifier::ECNotifier()
-{
-}
+ECNotifier::ECNotifier() {}
 
 ECNotifier::~ECNotifier()
 {
@@ -2629,8 +2683,8 @@ CECPacket *ECNotifier::GetNextPacket(ECUpdateMsgSource *msg_source_array[])
 	//
 	// priority 0 is highest
 	//
-	for(int i = 0; i < EC_STATUS_LAST_PRIO; i++) {
-		if ( (packet = msg_source_array[i]->GetNextPacket()) != 0 ) {
+	for (int i = 0; i < EC_STATUS_LAST_PRIO; i++) {
+		if ((packet = msg_source_array[i]->GetNextPacket()) != 0) {
 			break;
 		}
 	}
@@ -2643,13 +2697,13 @@ CECPacket *ECNotifier::GetNextPacket(CECServerSocket *sock)
 	// OnOutput is called for a first time before
 	// socket is registered
 	//
-	if ( m_msg_source.count(sock) ) {
+	if (m_msg_source.count(sock)) {
 		ECUpdateMsgSource **notifier_array = m_msg_source[sock];
-		if ( !notifier_array ) {
+		if (!notifier_array) {
 			return 0;
 		}
 		CECPacket *packet = GetNextPacket(notifier_array);
-		//printf("[EC] next update packet; opcode=%x\n",packet ? packet->GetOpCode() : 0xff);
+		// printf("[EC] next update packet; opcode=%x\n",packet ? packet->GetOpCode() : 0xff);
 		return packet;
 	} else {
 		return 0;
@@ -2661,10 +2715,11 @@ CECPacket *ECNotifier::GetNextPacket(CECServerSocket *sock)
 //
 void ECNotifier::DownloadFile_SetDirty(const CPartFile *file)
 {
-	for(std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
-		i != m_msg_source.end(); ++i) {
+	for (std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
+		i != m_msg_source.end();
+		++i) {
 		CECServerSocket *sock = i->first;
-		if ( sock->HaveNotificationSupport() ) {
+		if (sock->HaveNotificationSupport()) {
 			ECUpdateMsgSource **notifier_array = i->second;
 			static_cast<ECPartFileMsgSource *>(notifier_array[EC_PARTFILE])->SetDirty(file);
 		}
@@ -2674,8 +2729,9 @@ void ECNotifier::DownloadFile_SetDirty(const CPartFile *file)
 
 void ECNotifier::DownloadFile_RemoveFile(const CPartFile *file)
 {
-	for(std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
-		i != m_msg_source.end(); ++i) {
+	for (std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
+		i != m_msg_source.end();
+		++i) {
 		ECUpdateMsgSource **notifier_array = i->second;
 		static_cast<ECPartFileMsgSource *>(notifier_array[EC_PARTFILE])->SetRemoved(file);
 	}
@@ -2689,8 +2745,9 @@ void ECNotifier::DownloadFile_RemoveSource(const CPartFile *)
 
 void ECNotifier::DownloadFile_AddFile(const CPartFile *file)
 {
-	for(std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
-		i != m_msg_source.end(); ++i) {
+	for (std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
+		i != m_msg_source.end();
+		++i) {
 		ECUpdateMsgSource **notifier_array = i->second;
 		static_cast<ECPartFileMsgSource *>(notifier_array[EC_PARTFILE])->SetNew(file);
 	}
@@ -2704,8 +2761,9 @@ void ECNotifier::DownloadFile_AddSource(const CPartFile *)
 
 void ECNotifier::SharedFile_AddFile(const CKnownFile *file)
 {
-	for(std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
-		i != m_msg_source.end(); ++i) {
+	for (std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
+		i != m_msg_source.end();
+		++i) {
 		ECUpdateMsgSource **notifier_array = i->second;
 		static_cast<ECKnownFileMsgSource *>(notifier_array[EC_KNOWN])->SetNew(file);
 	}
@@ -2714,8 +2772,9 @@ void ECNotifier::SharedFile_AddFile(const CKnownFile *file)
 
 void ECNotifier::SharedFile_RemoveFile(const CKnownFile *file)
 {
-	for(std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
-		i != m_msg_source.end(); ++i) {
+	for (std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
+		i != m_msg_source.end();
+		++i) {
 		ECUpdateMsgSource **notifier_array = i->second;
 		static_cast<ECKnownFileMsgSource *>(notifier_array[EC_KNOWN])->SetRemoved(file);
 	}
@@ -2746,19 +2805,20 @@ void ECNotifier::Remove_EC_Client(CECServerSocket *sock)
 
 		m_msg_source.erase(sock);
 
-		for(int i = 0; i < EC_STATUS_LAST_PRIO; i++) {
+		for (int i = 0; i < EC_STATUS_LAST_PRIO; i++) {
 			delete notifier_array[i];
 		}
-		delete [] notifier_array;
+		delete[] notifier_array;
 	}
 }
 
 void ECNotifier::NextPacketToSocket()
 {
-	for(std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
-		i != m_msg_source.end(); ++i) {
+	for (std::map<CECServerSocket *, ECUpdateMsgSource **>::iterator i = m_msg_source.begin();
+		i != m_msg_source.end();
+		++i) {
 		CECServerSocket *sock = i->first;
-		if ( sock->HaveNotificationSupport() && !sock->DataPending() ) {
+		if (sock->HaveNotificationSupport() && !sock->DataPending()) {
 			ECUpdateMsgSource **notifier_array = i->second;
 			// Same ownership contract as WriteDoneAndQueueEmpty: the
 			// CECPacket from GetNextPacket is caller-owned and
@@ -2766,7 +2826,7 @@ void ECNotifier::NextPacketToSocket()
 			// scope exit (#765).
 			CSmartPtr<CECPacket> packet(GetNextPacket(notifier_array));
 			if (packet) {
-				//printf("[EC] sending update packet; opcode=%x\n",packet->GetOpCode());
+				// printf("[EC] sending update packet; opcode=%x\n",packet->GetOpCode());
 				sock->SendPacket(packet.get());
 			}
 		}

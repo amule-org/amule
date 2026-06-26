@@ -10,13 +10,10 @@
 #include <wx/image.h>
 #include <wx/mstream.h>
 
-
 const wxString CamuleArtProvider::PREFIX = "amule:";
 
-
-wxBitmap CamuleArtProvider::CreateBitmap(const wxArtID& id,
-                                          const wxArtClient& WXUNUSED(client),
-                                          const wxSize& size)
+wxBitmap CamuleArtProvider::CreateBitmap(
+	const wxArtID &id, const wxArtClient &WXUNUSED(client), const wxSize &size)
 {
 	// Only resolve our own art ids; let other providers handle the rest.
 	if (!id.StartsWith(PREFIX)) {
@@ -24,8 +21,7 @@ wxBitmap CamuleArtProvider::CreateBitmap(const wxArtID& id,
 	}
 
 	const wxString short_name = id.Mid(PREFIX.length());
-	const struct AMuleIconEntry *entry =
-		amule_find_icon(short_name.utf8_str().data());
+	const struct AMuleIconEntry *entry = amule_find_icon(short_name.utf8_str().data());
 	if (entry == NULL) {
 		return wxNullBitmap;
 	}
@@ -43,11 +39,9 @@ wxBitmap CamuleArtProvider::CreateBitmap(const wxArtID& id,
 	// Honour an explicit size request from the caller.  GetBitmap()
 	// passes wxDefaultSize when the caller doesn't care; in that
 	// case the natural size from the PNG header wins.
-	if (size != wxDefaultSize
-	    && (size.GetWidth() != image.GetWidth()
-	        || size.GetHeight() != image.GetHeight())) {
-		image = image.Scale(size.GetWidth(), size.GetHeight(),
-		                    wxIMAGE_QUALITY_HIGH);
+	if (size != wxDefaultSize &&
+		(size.GetWidth() != image.GetWidth() || size.GetHeight() != image.GetHeight())) {
+		image = image.Scale(size.GetWidth(), size.GetHeight(), wxIMAGE_QUALITY_HIGH);
 	}
 
 	return wxBitmap(image);

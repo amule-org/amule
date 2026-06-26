@@ -23,19 +23,19 @@
  *  along with this program; if not, write to the
  *  Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
-*/
-
+ */
 
 #ifndef CAS_CONFIGFILE_H
 #define CAS_CONFIGFILE_H
 
-#define IMG_TEXTLINES		7
-#define MAX_CONF_ARG_LEN	120
+#define IMG_TEXTLINES 7
+#define MAX_CONF_ARG_LEN 120
 
-typedef struct {
-	char font[MAX_CONF_ARG_LEN+1];
-	char source[MAX_CONF_ARG_LEN+1];
-	char template[MAX_CONF_ARG_LEN+1];
+typedef struct
+{
+	char font[MAX_CONF_ARG_LEN + 1];
+	char source[MAX_CONF_ARG_LEN + 1];
+	char template[MAX_CONF_ARG_LEN + 1];
 	int x[IMG_TEXTLINES];
 	int y[IMG_TEXTLINES];
 	int enabled[IMG_TEXTLINES];

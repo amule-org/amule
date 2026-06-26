@@ -28,11 +28,7 @@
 
 #include "Observable.h"
 
-
-
-template <typename ValueType>
-class CQueueObserver;
-
+template <typename ValueType> class CQueueObserver;
 
 /**
  * This class defines the protocol used by the CObservableQueue class.
@@ -46,8 +42,7 @@ class CQueueObserver;
  * elements in a container object over a longer period of time, which
  * would normally result in problems with changes accomulating in the list.
  */
-template <typename ValueType>
-class CQueueEvent
+template <typename ValueType> class CQueueEvent
 {
 public:
 	//! The type of list used by this protocol to store values.
@@ -57,7 +52,8 @@ public:
 	//! Note: If more than one instance of a value has been added, removed or
 	//! updated, then the resulting events should reflect this fact by
 	//! including the same of instances as has been changed.
-	enum Type {
+	enum Type
+	{
 		//! Signals a QueueObserver that it has been added to a queue.
 		STARTING,
 		//! Signals a QueueObserver that it has been removed from a queue.
@@ -74,33 +70,27 @@ public:
 		INITIAL
 	};
 
-
 	/**
 	 * Constructor for misc events.
 	 */
-	CQueueEvent( Type event );
-
+	CQueueEvent(Type event);
 
 	/**
 	 * Constructor for events regarding multiple values.
 	 *
 	 * Note: CQueueEvent does not take ownership of the specified list.
 	 */
-	CQueueEvent( Type event, const ValueList* list );
-
+	CQueueEvent(Type event, const ValueList *list);
 
 	/**
 	 * Constructor for events regarding a single value
 	 */
-	CQueueEvent( Type event, const ValueType& value );
-
+	CQueueEvent(Type event, const ValueType &value);
 
 	/**
 	 * Returns the event-type.
 	 */
-	Type GetEvent() const {
-		return m_type;
-	}
+	Type GetEvent() const { return m_type; }
 
 	/**
 	 * Returns the number of available values passed with the event.
@@ -110,19 +100,16 @@ public:
 	/**
 	 * Returns a copy of the ith value.
 	 */
-	ValueType GetValue( size_t i ) const;
-
+	ValueType GetValue(size_t i) const;
 
 private:
 	//! Pointer to a list of values. May be NULL.
-	const ValueList* m_list;
+	const ValueList *m_list;
 	//! Pointer to a single value. May be NULL.
-	const ValueType* m_value;
+	const ValueType *m_value;
 	//! The actual event-type.
 	Type m_type;
 };
-
-
 
 /**
  * This class forms the superclass for observable queues or lists.
@@ -143,8 +130,7 @@ private:
  * a list or queue, regardless of changes in actual order of the items
  * and regardless of changes to the contents.
  */
-template <typename ValueType>
-class CObservableQueue : public CObservable< CQueueEvent<ValueType> >
+template <typename ValueType> class CObservableQueue : public CObservable<CQueueEvent<ValueType>>
 {
 public:
 	/**
@@ -155,23 +141,20 @@ public:
 	virtual ~CObservableQueue();
 
 protected:
-	typedef CQueueEvent< ValueType > EventType;
-	typedef CObserver< EventType > ObserverType;
+	typedef CQueueEvent<ValueType> EventType;
+	typedef CObserver<EventType> ObserverType;
 	typedef typename EventType::ValueList ValueList;
-
 
 	/**
 	 * Sends a STARTING event to new observers.
 	 */
-	virtual void ObserverAdded( ObserverType* );
+	virtual void ObserverAdded(ObserverType *);
 
 	/**
 	 * Sends a STOPPING event to removed observers.
 	 */
-	virtual void ObserverRemoved( ObserverType* );
+	virtual void ObserverRemoved(ObserverType *);
 };
-
-
 
 /**
  * This class is an automatically synchronized queue connected with an ObservableQueue.
@@ -197,26 +180,22 @@ protected:
  * * With the exception of the same item being removed and then re-added, in
  *   which case the CQueueObserver class will consider it a new item.
  */
-template <typename ValueType>
-class CQueueObserver : public CObserver< CQueueEvent<ValueType> >
+template <typename ValueType> class CQueueObserver : public CObserver<CQueueEvent<ValueType>>
 {
 public:
 	typedef CQueueEvent<ValueType> EventType;
-	typedef typename CObserver< EventType >::ObservableType ObservableType;
+	typedef typename CObserver<EventType>::ObservableType ObservableType;
 	typedef typename EventType::ValueList ValueList;
-
 
 	/**
 	 * Constructor.
 	 */
 	CQueueObserver();
 
-
 	/**
 	 * Overloaded notification function.
 	 */
-	virtual void ReceiveNotification( const ObservableType*, const EventType& e );
-
+	virtual void ReceiveNotification(const ObservableType *, const EventType &e);
 
 	/**
 	 * Returns the next element from the queue.
@@ -254,63 +233,52 @@ private:
 	Queue m_queue;
 
 	//! Used to check that we are only subscribed to one queue at a time
-	const ObservableType* m_owner;
+	const ObservableType *m_owner;
 };
-
-
-
 
 ///////////////////////////////////////////////////
 
-
-
-
 template <typename ValueType>
-CQueueEvent<ValueType>::CQueueEvent( Type event )
-	: m_list( NULL  ),
-	  m_value( NULL ),
-	  m_type( event )
-{
-
-}
-
-
-template <typename ValueType>
-CQueueEvent<ValueType>::CQueueEvent( Type event, const ValueList* list )
-	: m_list( list  ),
-	  m_value( NULL ),
-	  m_type( event )
-{
-	wxASSERT( list );
-}
-
-
-template <typename ValueType>
-CQueueEvent<ValueType>::CQueueEvent( Type event, const ValueType& value )
-	: m_list( NULL  ),
-	  m_value( &value ),
-	  m_type( event )
+CQueueEvent<ValueType>::CQueueEvent(Type event)
+: m_list(NULL)
+, m_value(NULL)
+, m_type(event)
 {
 }
 
+template <typename ValueType>
+CQueueEvent<ValueType>::CQueueEvent(Type event, const ValueList *list)
+: m_list(list)
+, m_value(NULL)
+, m_type(event)
+{
+	wxASSERT(list);
+}
 
 template <typename ValueType>
-size_t CQueueEvent<ValueType>::GetCount() const {
-	if ( m_list ) {
+CQueueEvent<ValueType>::CQueueEvent(Type event, const ValueType &value)
+: m_list(NULL)
+, m_value(&value)
+, m_type(event)
+{
+}
+
+template <typename ValueType> size_t CQueueEvent<ValueType>::GetCount() const
+{
+	if (m_list) {
 		return m_list->size();
-	} else if ( m_value ) {
+	} else if (m_value) {
 		return 1;
 	} else {
 		return 0;
 	}
 }
 
-
-template <typename ValueType>
-ValueType CQueueEvent<ValueType>::GetValue( size_t i ) const {
-	if ( m_list ) {
-		return (*m_list).at( i );
-	} else if ( m_value && i == 0 ) {
+template <typename ValueType> ValueType CQueueEvent<ValueType>::GetValue(size_t i) const
+{
+	if (m_list) {
+		return (*m_list).at(i);
+	} else if (m_value && i == 0) {
 		return *m_value;
 	} else {
 		wxFAIL;
@@ -318,62 +286,49 @@ ValueType CQueueEvent<ValueType>::GetValue( size_t i ) const {
 	}
 }
 
-
-
-
-template <typename ValueType>
-CObservableQueue<ValueType>::~CObservableQueue()
+template <typename ValueType> CObservableQueue<ValueType>::~CObservableQueue()
 {
 	this->RemoveAllObservers();
 }
 
-
-template <typename ValueType>
-void CObservableQueue<ValueType>::ObserverAdded( ObserverType* o )
+template <typename ValueType> void CObservableQueue<ValueType>::ObserverAdded(ObserverType *o)
 {
-	this->NotifyObservers( EventType( EventType::STARTING ), o );
+	this->NotifyObservers(EventType(EventType::STARTING), o);
 }
 
-
-template <typename ValueType>
-void CObservableQueue<ValueType>::ObserverRemoved( ObserverType* o )
+template <typename ValueType> void CObservableQueue<ValueType>::ObserverRemoved(ObserverType *o)
 {
-	this->NotifyObservers( EventType( EventType::STOPPING ), o );
+	this->NotifyObservers(EventType(EventType::STOPPING), o);
 }
 
-
-
-
-template <typename ValueType>
-CQueueObserver<ValueType>::CQueueObserver()
+template <typename ValueType> CQueueObserver<ValueType>::CQueueObserver()
 {
 	m_owner = NULL;
 }
 
-
 template <typename ValueType>
-void CQueueObserver<ValueType>::ReceiveNotification( const ObservableType* o, const EventType& e )
+void CQueueObserver<ValueType>::ReceiveNotification(const ObservableType *o, const EventType &e)
 {
-	wxMutexLocker lock( m_mutex );
+	wxMutexLocker lock(m_mutex);
 
-	if ( e.GetEvent() == EventType::INSERTED || e.GetEvent() == EventType::INITIAL ) {
-		for ( size_t i = 0; i < e.GetCount(); i++ ) {
-			m_queue.insert( e.GetValue( i ) );
+	if (e.GetEvent() == EventType::INSERTED || e.GetEvent() == EventType::INITIAL) {
+		for (size_t i = 0; i < e.GetCount(); i++) {
+			m_queue.insert(e.GetValue(i));
 		}
-	} else if ( e.GetEvent() == EventType::REMOVED ) {
-		for ( size_t i = 0; i < e.GetCount(); i++ ) {
-			QueueIterator it = m_queue.find( e.GetValue( i ) );
+	} else if (e.GetEvent() == EventType::REMOVED) {
+		for (size_t i = 0; i < e.GetCount(); i++) {
+			QueueIterator it = m_queue.find(e.GetValue(i));
 
-			if ( it != m_queue.end() ) {
-				m_queue.erase( it );
+			if (it != m_queue.end()) {
+				m_queue.erase(it);
 			}
 		}
-	} else if ( e.GetEvent() == EventType::CLEARED ) {
+	} else if (e.GetEvent() == EventType::CLEARED) {
 		m_queue.clear();
-	} else if ( e.GetEvent() == EventType::STOPPING ) {
+	} else if (e.GetEvent() == EventType::STOPPING) {
 		m_queue.clear();
 		m_owner = NULL;
-	} else if ( e.GetEvent() == EventType::STARTING ) {
+	} else if (e.GetEvent() == EventType::STARTING) {
 		wxASSERT(m_owner == NULL);
 		m_owner = o;
 	} else {
@@ -381,15 +336,13 @@ void CQueueObserver<ValueType>::ReceiveNotification( const ObservableType* o, co
 	}
 }
 
-
-template <typename ValueType>
-ValueType CQueueObserver<ValueType>::GetNext()
+template <typename ValueType> ValueType CQueueObserver<ValueType>::GetNext()
 {
-	wxMutexLocker lock( m_mutex );
+	wxMutexLocker lock(m_mutex);
 
 	if (!m_queue.empty()) {
 		ValueType v = *m_queue.begin();
-		m_queue.erase( m_queue.begin() );
+		m_queue.erase(m_queue.begin());
 
 		return v;
 	}
@@ -397,39 +350,31 @@ ValueType CQueueObserver<ValueType>::GetNext()
 	return ValueType();
 }
 
-
-template <typename ValueType>
-size_t CQueueObserver<ValueType>::GetRemaining() const
+template <typename ValueType> size_t CQueueObserver<ValueType>::GetRemaining() const
 {
-	wxMutexLocker lock( m_mutex );
+	wxMutexLocker lock(m_mutex);
 
 	return m_queue.size();
 }
 
-
-template <typename ValueType>
-bool CQueueObserver<ValueType>::IsActive() const
+template <typename ValueType> bool CQueueObserver<ValueType>::IsActive() const
 {
 	return (m_owner != NULL);
 }
 
-
-template <typename ValueType>
-void CQueueObserver<ValueType>::Reset()
+template <typename ValueType> void CQueueObserver<ValueType>::Reset()
 {
-	ObservableType* owner;
+	ObservableType *owner;
 
 	{
 		wxMutexLocker lock(m_mutex);
 		m_queue.clear();
-		owner = const_cast<ObservableType*>( m_owner );
+		owner = const_cast<ObservableType *>(m_owner);
 	}
 
-	owner->RemoveObserver( this );
-	owner->AddObserver( this );
+	owner->RemoveObserver(this);
+	owner->AddObserver(this);
 }
-
-
 
 #endif
 // File_checked_for_headers

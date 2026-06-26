@@ -26,14 +26,14 @@
 
 #include "GetTickCount.h" // Interface
 
-//seconds from app start-up, check GetTickCount.h
+// seconds from app start-up, check GetTickCount.h
 uint32 TheTime = 0;
 
 #ifdef __WINDOWS__
 
-void StartTickTimer(){};
+void StartTickTimer() {};
 
-void StopTickTimer(){};
+void StopTickTimer() {};
 
 /**
  * Returns the tickcount in milliseconds in 64bits.
@@ -63,12 +63,13 @@ uint64 GetTickCount_64()
 
 #else
 
-#include <time.h>		// Needed for clock_gettime
+#include <time.h> // Needed for clock_gettime
 
 // in milliseconds, not seconds
 // avoids 32bit rollover error for differences above 50days
 // since 2**32 milliseconds = 50 days aprox
-uint64 GetTickCount64(void) {
+uint64 GetTickCount64(void)
+{
 	struct timespec ts;
 	uint64 msecs;
 
@@ -78,7 +79,7 @@ uint64 GetTickCount64(void) {
 	// timestamp (CClientCredits::SetLastSeen, partfile source-seeds
 	// serialization, wxCas defaults) should use time(NULL) instead.
 	clock_gettime(CLOCK_MONOTONIC, &ts);
-	msecs = (uint64) ts.tv_sec * 1000;
+	msecs = (uint64)ts.tv_sec * 1000;
 	msecs += ts.tv_nsec / 1000000;
 	return msecs;
 }
@@ -91,9 +92,9 @@ uint64 GetTickCount64(void) {
  * increasingly heavy on CPU as the program uptime increases and more things
  * need to be done.
  */
-	void StartTickTimer() {}
+void StartTickTimer() {}
 
-	void StopTickTimer() {}
+void StopTickTimer() {}
 
 #endif
 // File_checked_for_headers

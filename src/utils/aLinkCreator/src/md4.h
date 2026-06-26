@@ -38,70 +38,61 @@
 #ifndef _MD4_H
 #define _MD4_H
 
-
 #include "../../../Types.h" // needed for uint32_t
 
 // Use wxString implementation or not
-//#define WANT_STRING_IMPLEMENTATION 1
+// #define WANT_STRING_IMPLEMENTATION 1
 
 // Hook for external progress bar
 typedef bool (*MD4Hook)(int percent);
 
-
 const unsigned int MD4_HASHLEN_BYTE = 128 / 8;
-const unsigned int BUFSIZE = 64*1024;
-const unsigned int PARTSIZE = 9500*1024;
-
+const unsigned int BUFSIZE = 64 * 1024;
+const unsigned int PARTSIZE = 9500 * 1024;
 
 class MD4
-  {
-  private:
+{
+private:
 
-  protected:
+protected:
+	struct MD4Context
+	{
+		uint32_t buf[4];
+		uint32_t bits[2];
+		unsigned char in[64];
+	};
 
-    struct MD4Context
-      {
-        uint32_t buf[4];
-        uint32_t bits[2];
-        unsigned char in[64];
-      };
+	void MD4Init(struct MD4Context *context);
+	void MD4Update(struct MD4Context *context, unsigned char const *buf, size_t len);
+	void MD4Final(struct MD4Context *context, unsigned char *digest);
+	void MD4Transform(uint32_t buf[4], uint32_t const in[16]);
 
-    void MD4Init(struct MD4Context *context);
-    void MD4Update(struct MD4Context *context,
-                   unsigned char const *buf, size_t len);
-    void MD4Final(struct MD4Context *context,
-                  unsigned char *digest);
-    void MD4Transform(uint32_t buf[4], uint32_t const in[16]);
+	wxString charToHex(const char *buf, size_t len);
 
-    wxString charToHex(const char *buf, size_t len);
+	size_t calcBufSize(size_t filesize);
 
-    size_t calcBufSize(size_t filesize);
-
-    // Needed to reverse byte order on BIG ENDIAN machines
+	// Needed to reverse byte order on BIG ENDIAN machines
 #if wxBYTE_ORDER == wxBIG_ENDIAN
 
-    void byteReverse(unsigned char *buf, unsigned longs);
+	void byteReverse(unsigned char *buf, unsigned longs);
 #endif
 
-  public:
+public:
+	/// Constructor
+	MD4() {}
 
-    /// Constructor
-    MD4()
-    {}
+	/// Destructor
+	virtual ~MD4() {}
 
-    /// Destructor
-    virtual ~MD4()
-    {}
+	/// Algorithm verification
+	static bool selfTest();
 
-    /// Algorithm verification
-    static bool selfTest();
+	/// Get Md4 hash from a string
+	wxString calcMd4FromString(const wxString &buf);
 
-    /// Get Md4 hash from a string
-    wxString calcMd4FromString(const wxString &buf);
-
-    /// Get Md4 hash from a file
-    wxString calcMd4FromFile(const wxString &filename, MD4Hook hook);
-  };
+	/// Get Md4 hash from a file
+	wxString calcMd4FromFile(const wxString &filename, MD4Hook hook);
+};
 
 #endif /* _MD4_H */
 

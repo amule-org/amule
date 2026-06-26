@@ -25,7 +25,7 @@
 #ifndef SOURCELISTCTRL_H
 #define SOURCELISTCTRL_H
 
-#include "GenericClientListCtrl.h"	// Needed for CGenericClientListCtrl
+#include "GenericClientListCtrl.h" // Needed for CGenericClientListCtrl
 
 /**
  * This class is responsible for representing the sources for a file.
@@ -39,24 +39,23 @@ public:
 	 *
 	 * @see CGenericClientListCtrl::CGenericClientListCtrl for documentation of parameters.
 	 */
-	 CSourceListCtrl(
-	            wxWindow *parent,
-                wxWindowID winid = -1,
-                const wxPoint &pos = wxDefaultPosition,
-                const wxSize &size = wxDefaultSize,
-                long style = wxLC_ICON,
-                const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = "sourcelistctrl" );
+	CSourceListCtrl(wxWindow *parent,
+		wxWindowID winid = -1,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = wxLC_ICON,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = "sourcelistctrl");
 
 	/**
 	 * Destructor.
 	 */
-	virtual	~CSourceListCtrl();
+	virtual ~CSourceListCtrl();
 
 private:
 	virtual CamuleDlg::DialogType GetParentDialog() { return CamuleDlg::DT_TRANSFER_WND; }
 
-	virtual void SetShowSources(CKnownFile * f, bool b) const;
+	virtual void SetShowSources(CKnownFile *f, bool b) const;
 
 	static int wxCALLBACK SourceSortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
 

@@ -30,8 +30,6 @@
 
 #include <common/MuleDebug.h>
 
-
-
 /**
  * Default helper structure for normal CRangeMap instantiations.
  *
@@ -42,35 +40,30 @@
  *
  *  The typedefs are used to specify the return values of iterators.
  */
-template <typename VALUE, typename KEYTYPE>
-struct CRangeMapHelper
+template <typename VALUE, typename KEYTYPE> struct CRangeMapHelper
 {
 	//! Typedef specifying the type to use when a non-const pointer is expected.
-	typedef VALUE* ValuePtr;
+	typedef VALUE *ValuePtr;
 	//! Typedef specifying the type to use when a non-const referenecs is expected.
-	typedef VALUE& ValueRef;
+	typedef VALUE &ValueRef;
 	//! Typedef specifying the type to use when a const referenecs is expected.
-	typedef const VALUE& ConstValueRef;
+	typedef const VALUE &ConstValueRef;
 	//! Typedef specifying the type to use when a const pointer is expected.
-	typedef const VALUE* ConstValuePtr;
+	typedef const VALUE *ConstValuePtr;
 
 	//! Used internally by CRangeMap to specify the end of a range.
 	KEYTYPE first;
 	//! Contains the value of a given range.
-	VALUE  second;
+	VALUE second;
 
 	//! Compares the user-values of this range with another.
-	bool operator==(const CRangeMapHelper<VALUE, KEYTYPE>& o) const {
-		return second == o.second;
-	}
+	bool operator==(const CRangeMapHelper<VALUE, KEYTYPE> &o) const { return second == o.second; }
 };
-
 
 /**
  * Helper structure for CRangeSet (CRangeMap with void as value).
  */
-template <typename KEYTYPE>
-struct CRangeMapHelper<void, KEYTYPE>
+template <typename KEYTYPE> struct CRangeMapHelper<void, KEYTYPE>
 {
 	typedef void ValuePtr;
 	typedef void ValueRef;
@@ -79,11 +72,8 @@ struct CRangeMapHelper<void, KEYTYPE>
 
 	KEYTYPE first;
 
-	bool operator==(const CRangeMapHelper<void, KEYTYPE>&) const {
-		return true;
-	}
+	bool operator==(const CRangeMapHelper<void, KEYTYPE> &) const { return true; }
 };
-
 
 /**
  * This class represents a map of non-overlapping ranges.
@@ -111,10 +101,10 @@ struct CRangeMapHelper<void, KEYTYPE>
  *
  * NOTE: KEYTYPE is assumed to be an unsigned integer type!
  */
-template <typename VALUE, typename KEYTYPE = uint64>
-class CRangeMap
+template <typename VALUE, typename KEYTYPE = uint64> class CRangeMap
 {
 	typedef CRangeMapHelper<VALUE, KEYTYPE> HELPER;
+
 private:
 	//! The map uses the start-key as key and the User-value and end-key pair as value
 	typedef std::map<KEYTYPE, HELPER> RangeMap;
@@ -126,7 +116,7 @@ private:
 	typedef typename RangeMap::const_iterator ConstRangeIterator;
 
 	//! The raw map of range values.
-	RangeMap	m_ranges;
+	RangeMap m_ranges;
 
 	/**
 	 * This class provides a wrapper around the raw iterators used by CRangeMap.
@@ -137,72 +127,55 @@ private:
 	 *
 	 * Special member-functions are keyStart() and keyEnd().
 	 */
-	template <typename RealIterator, typename ReturnTypeRef, typename ReturnTypePtr>
-	class iterator_base {
+	template <typename RealIterator, typename ReturnTypeRef, typename ReturnTypePtr> class iterator_base
+	{
 		friend class CRangeMap<VALUE, KEYTYPE>;
+
 	public:
-		iterator_base( const RealIterator& it )
-			: m_it( it )
+		iterator_base(const RealIterator &it)
+		: m_it(it)
 		{
 		}
 
 		//! Equality operator
-		bool operator==( const iterator_base& other ) const {
-			return m_it == other.m_it;
-		}
+		bool operator==(const iterator_base &other) const { return m_it == other.m_it; }
 
 		//! Non-equality operator
-		bool operator!=( const iterator_base& other ) const {
-			return m_it != other.m_it;
-		}
-
+		bool operator!=(const iterator_base &other) const { return m_it != other.m_it; }
 
 		//! Returns the starting point of the range
-		KEYTYPE keyStart() const {
-			return m_it->first;
-		}
+		KEYTYPE keyStart() const { return m_it->first; }
 
 		//! Returns the end-point of the range
-		KEYTYPE keyEnd() const {
-			return m_it->second.first;
-		}
-
+		KEYTYPE keyEnd() const { return m_it->second.first; }
 
 		//! Prefix increment.
-		iterator_base& operator++() {
+		iterator_base &operator++()
+		{
 			++m_it;
 
 			return *this;
 		}
 
 		//! Postfix increment.
-		iterator_base operator++(int) {
-			return iterator_base( m_it++ );
-		}
-
+		iterator_base operator++(int) { return iterator_base(m_it++); }
 
 		//!  Prefix decrement.
-		iterator_base& operator--() {
+		iterator_base &operator--()
+		{
 			--m_it;
 
 			return *this;
 		}
 
 		//! Postfix decrement.
-		iterator_base operator--(int) {
-			return iterator_base( m_it-- );
-		}
-
+		iterator_base operator--(int) { return iterator_base(m_it--); }
 
 		//! Deference operator, returning the user-specified value.
-		ReturnTypeRef operator*() const {
-			return m_it->second.second;
-		}
+		ReturnTypeRef operator*() const { return m_it->second.second; }
 
 		//! Member access operator, returning the user-specified value.
-		ReturnTypePtr operator->() const {
-			return &m_it->second.second;
-		}
+		ReturnTypePtr operator->() const { return &m_it->second.second; }
 
 	protected:
 		//! The raw iterator
@@ -227,21 +200,21 @@ public:
 	/**
 	 * Default constructor.
 	 */
-	CRangeMap() {
-	}
+	CRangeMap() {}
 
 	/**
 	 * Copy-constructor.
 	 */
-	CRangeMap(const CRangeMap<VALUE, KEYTYPE>& other)
-		: m_ranges( other.m_ranges )
+	CRangeMap(const CRangeMap<VALUE, KEYTYPE> &other)
+	: m_ranges(other.m_ranges)
 	{
 	}
 
 	/**
 	 * Assignment operator.
 	 */
-	CRangeMap& operator=(const CRangeMap<VALUE, KEYTYPE>& other) {
+	CRangeMap &operator=(const CRangeMap<VALUE, KEYTYPE> &other)
+	{
 		m_ranges = other.m_ranges;
 
 		return *this;
@@ -250,59 +223,47 @@ public:
 	/**
 	 * Swaps the contents of the two rangemaps.
 	 */
-	void swap(CRangeMap<VALUE, KEYTYPE>& other) {
-		std::swap(m_ranges, other.m_ranges);
-	}
-
+	void swap(CRangeMap<VALUE, KEYTYPE> &other) { std::swap(m_ranges, other.m_ranges); }
 
 	/**
 	 * Equality operator for two ranges.
 	 *
 	 * @returns True if both ranges contain the same ranges and values.
 	 */
-	bool operator==( const CRangeMap<VALUE, KEYTYPE>& other ) const {
+	bool operator==(const CRangeMap<VALUE, KEYTYPE> &other) const
+	{
 		// Check if we are comparing with ourselves
-		if ( this == &other ) {
+		if (this == &other) {
 			return true;
 		}
 
 		// Check size, must be the same
-		if ( size() != other.size() ) {
+		if (size() != other.size()) {
 			return false;
 		}
 
 		return (m_ranges == other.m_ranges);
 	}
 
-
 	/**
 	 * Returns an iterator pointing to the first range.
 	 */
-	iterator begin() {
-		return m_ranges.begin();
-	}
+	iterator begin() { return m_ranges.begin(); }
 
 	/**
 	 * Returns an iterator pointing past the last range.
 	 */
-	iterator end() {
-		return m_ranges.end();
-	}
+	iterator end() { return m_ranges.end(); }
 
 	/**
 	 * Returns a const iterator pointing to the first range.
 	 */
-	const_iterator begin() const {
-		return m_ranges.begin();
-	}
+	const_iterator begin() const { return m_ranges.begin(); }
 
 	/**
 	 * Returns a const iterator pointing past the last range.
 	 */
-	const_iterator end() const {
-		return m_ranges.end();
-	}
-
+	const_iterator end() const { return m_ranges.end(); }
 
 	/**
 	 * Erases the specified range and returns the range next to it.
@@ -312,7 +273,8 @@ public:
 	 *
 	 * Attempting to erase the end() iterator is an invalid operation.
 	 */
-	iterator erase(iterator pos) {
+	iterator erase(iterator pos)
+	{
 		MULE_VALIDATE_PARAMS(pos != end(), "Cannot erase 'end'");
 
 		RangeIterator temp = pos.m_it++;
@@ -322,29 +284,20 @@ public:
 		return pos;
 	}
 
-
 	/**
 	 * Returns the number of ranges in the map.
 	 */
-	size_type size() const {
-		return m_ranges.size();
-	}
+	size_type size() const { return m_ranges.size(); }
 
 	/**
 	 * Returns true if the map is empty.
 	 */
-	bool empty() const {
-		return m_ranges.empty();
-	}
-
+	bool empty() const { return m_ranges.empty(); }
 
 	/**
 	 * Removes all ranges from the map.
 	 */
-	void clear() {
-		m_ranges.clear();
-	}
-
+	void clear() { m_ranges.clear(); }
 
 	/**
 	 * Returns the range covering the specified key-value.
@@ -356,19 +309,20 @@ public:
 	 * equal to the start-key and less than or equal to the end-key.
 	 */
 	// Find the range which contains key (it->first <= key <= it->second->first)
-	iterator find_range( KEYTYPE key ) {
-		if ( !m_ranges.empty() ) {
+	iterator find_range(KEYTYPE key)
+	{
+		if (!m_ranges.empty()) {
 			// Find first range whose start comes after key
 			// Thus: key < it->first, but (--it)->first <= key
-			RangeIterator it = m_ranges.upper_bound( key );
+			RangeIterator it = m_ranges.upper_bound(key);
 
 			// Our target range must come before the one we found; does it exist?
-			if ( it != m_ranges.begin() ) {
+			if (it != m_ranges.begin()) {
 				// Go back to the last range which starts at or before key
 				--it;
 
 				// Check if this range covers the key
-				if ( key <= it->second.first ) {
+				if (key <= it->second.first) {
 					return it;
 				}
 			}
@@ -377,8 +331,8 @@ public:
 		return end();
 	}
 
-
-	void erase_range(KEYTYPE startPos, KEYTYPE endPos) {
+	void erase_range(KEYTYPE startPos, KEYTYPE endPos)
+	{
 		// Create default initialized entry, which ensures that all fields are initialized.
 		HELPER entry = HELPER();
 		// Need to set the 'end' field.
@@ -388,7 +342,6 @@ public:
 		// only covers the specified range, which will crop existing ranges.
 		erase(do_insert(startPos, entry, false));
 	}
-
 
 	/**
 	 * Inserts a new range into the map, potentially erasing/changing old ranges.
@@ -414,13 +367,14 @@ public:
 	 * Note that the start position must be smaller than or equal to the end-position.
 	 */
 	//@{
-	iterator insert(KEYTYPE startPos, KEYTYPE endPos) {
-		HELPER entry = {endPos};
+	iterator insert(KEYTYPE startPos, KEYTYPE endPos)
+	{
+		HELPER entry = { endPos };
 		return do_insert(startPos, entry);
 	}
-	template <typename TYPE>
-	iterator insert(KEYTYPE startPos, KEYTYPE endPos, const TYPE& value) {
-		HELPER entry = {endPos, value};
+	template <typename TYPE> iterator insert(KEYTYPE startPos, KEYTYPE endPos, const TYPE &value)
+	{
+		HELPER entry = { endPos, value };
 		return do_insert(startPos, entry);
 	}
 	//@}
@@ -434,56 +388,58 @@ protected:
 	 * @param merge Specifies if ranges should be merged when possible.
 	 * @return An iterator pointing to the range covering at least the specified range.
 	 */
-	iterator do_insert(KEYTYPE start, HELPER entry, bool merge = true) {
+	iterator do_insert(KEYTYPE start, HELPER entry, bool merge = true)
+	{
 		MULE_VALIDATE_PARAMS(start <= entry.first, "Not a valid range.");
 
 		RangeIterator it = get_insert_it(start);
-		while ( it != m_ranges.end() ) {
+		while (it != m_ranges.end()) {
 			// Begins before the current span
-			if ( start <= it->first ) {
+			if (start <= it->first) {
 				// Never touches the current span, it follows that start < it->first
 				// (it->first) is used to avoid checking against (uintXX)-1 by accident
-				if ( entry.first < it->first - 1 && it->first ) {
+				if (entry.first < it->first - 1 && it->first) {
 					break;
 				}
 
 				// Stops just before the current span, it follows that start < it->first
 				// (it->first) is used to avoid checking against (uintXX)-1 by accident
-				else if ( entry.first == it->first - 1 && it->first ) {
+				else if (entry.first == it->first - 1 && it->first) {
 					// If same type: Merge
 					if (merge && (entry == it->second)) {
 						entry.first = it->second.first;
-						m_ranges.erase( it++ );
+						m_ranges.erase(it++);
 					}
 
 					break;
 				}
 
 				// Covers part of the span
-				else if ( entry.first < it->second.first ) {
+				else if (entry.first < it->second.first) {
 					// Same type, merge
 					if (merge && (entry == it->second)) {
 						entry.first = it->second.first;
-						m_ranges.erase( it++ );
+						m_ranges.erase(it++);
 					} else {
 						// Resize the partially covered span and get the next one
-						it = ++resize( entry.first + 1, it->second.first, it );
+						it = ++resize(entry.first + 1, it->second.first, it);
 					}
 
 					break;
 				} else {
 					// It covers the entire span
-					m_ranges.erase( it++ );
+					m_ranges.erase(it++);
 				}
 			}
 
 			// Starts inside the current span or after the current span
 			else {
 				// Starts inside the current span
-				if ( start <= it->second.first ) {
+				if (start <= it->second.first) {
 					// Ends inside the current span
-					if ( entry.first < it->second.first ) {
-						// Adding a span with same type inside a existing span is fruitless
+					if (entry.first < it->second.first) {
+						// Adding a span with same type inside a existing span is
+						// fruitless
 						if (merge && (entry == it->second)) {
 							return it;
 						}
@@ -499,19 +455,20 @@ protected:
 						// Ends past the current span, resize or merge
 						if (merge && (entry == it->second)) {
 							start = it->first;
-							m_ranges.erase( it++ );
+							m_ranges.erase(it++);
 						} else {
-							// Resize the partially covered span and get the next one
-							it = ++resize( it->first, start - 1, it );
+							// Resize the partially covered span and get the next
+							// one
+							it = ++resize(it->first, start - 1, it);
 						}
 					}
 				} else {
 					// Start past the current span
-					if ( start == it->second.first + 1 ) {
+					if (start == it->second.first + 1) {
 						// Touches the current span
 						if (merge && (entry == it->second)) {
 							start = it->first;
-							m_ranges.erase( it++ );
+							m_ranges.erase(it++);
 						} else {
 							++it;
 						}
@@ -526,7 +483,6 @@ protected:
 		return m_ranges.insert(it, RangePair(start, entry));
 	}
 
-
 	/**
 	 * Finds the optimal location to start looking for insertion points.
 	 *
@@ -535,21 +491,21 @@ protected:
 	 */
 	RangeIterator get_insert_it(KEYTYPE start)
 	{
-		if ( m_ranges.empty() ) {
+		if (m_ranges.empty()) {
 			return m_ranges.end();
 		}
 
 		// The start-key of the last element must be smaller than our start-key
 		// Otherwise there is the possibility that we can merge with the one before that
 		RangeIterator it = --m_ranges.end();
-		if ( start <= it->first ) {
+		if (start <= it->first) {
 			// If the two starts are equal, then we only need to go back another
 			// step to see if the range prior to this one is mergeable
-			if ( start != it->first ) {
-				it = m_ranges.lower_bound( start );
+			if (start != it->first) {
+				it = m_ranges.lower_bound(start);
 			}
 
-			if ( it != m_ranges.begin() ) {
+			if (it != m_ranges.begin()) {
 				// Go back to the last range which starts at or before key
 				--it;
 			}
@@ -558,34 +514,30 @@ protected:
 		return it;
 	}
 
-
 	//! Helper function that resizes an existing range to the specified size.
-	RangeIterator resize( KEYTYPE startPos, KEYTYPE endPos, RangeIterator it ) {
+	RangeIterator resize(KEYTYPE startPos, KEYTYPE endPos, RangeIterator it)
+	{
 		HELPER item = it->second;
 		item.first = endPos;
 
-		m_ranges.erase( it++ );
+		m_ranges.erase(it++);
 
 		return m_ranges.insert(it, RangePair(startPos, item));
 	}
 };
 
-
 //! CRangeSet is simply a partial specialization of CRangeMap
 typedef CRangeMap<void> CRangeSet;
 
-
 namespace std
 {
-	/** @see CRangeMap::swap */
-	template <typename VALUE_TYPE, typename KEY_TYPE>
-	void swap(CRangeMap<VALUE_TYPE, KEY_TYPE>& a, CRangeMap<VALUE_TYPE, KEY_TYPE>& b)
-	{
-		a.swap(b);
-	}
+/** @see CRangeMap::swap */
+template <typename VALUE_TYPE, typename KEY_TYPE>
+void swap(CRangeMap<VALUE_TYPE, KEY_TYPE> &a, CRangeMap<VALUE_TYPE, KEY_TYPE> &b)
+{
+	a.swap(b);
 }
-
-
+} // namespace std
 
 #endif
 // File_checked_for_headers

@@ -20,12 +20,10 @@
 
 #include "ECMemSocket.h"
 
-#include "ECCodes.h"		// Needed for EC_FLAG_*
-
+#include "ECCodes.h" // Needed for EC_FLAG_*
 
 CECMemSocket::CECMemSocket()
-:
-	CECSocket(false)
+: CECSocket(false)
 {
 	// Lock the canonical wire format the cache assumes its consumers can
 	// decode: UTF-8 numbers + sentinel-extended children count, no zlib.
@@ -37,14 +35,12 @@ CECMemSocket::CECMemSocket()
 	SetTxFlags(m_my_flags);
 }
 
-
 uint32 CECMemSocket::InternalWrite(const void *ptr, uint32 len)
 {
 	const unsigned char *p = static_cast<const unsigned char *>(ptr);
 	m_bytes.insert(m_bytes.end(), p, p + len);
 	return len;
 }
-
 
 std::vector<unsigned char> CECMemSocket::SerializeTag(const CECTag &tag)
 {
@@ -59,6 +55,6 @@ std::vector<unsigned char> CECMemSocket::SerializeTag(const CECTag &tag)
 	// trailing deflate state to flush — but it does cycle the in-flight
 	// CQueuedData into m_output_queue, which is what we drain next.
 	mem.FlushBuffers();
-	mem.OnOutput();		// drains m_output_queue → InternalWrite → m_bytes
+	mem.OnOutput(); // drains m_output_queue → InternalWrite → m_bytes
 	return mem.TakeBytes();
 }

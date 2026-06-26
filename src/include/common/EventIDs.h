@@ -28,9 +28,10 @@
 
 // Handlers
 
-enum {
+enum
+{
 	// Socket handlers
-	ID_LISTENSOCKET_EVENT = wxID_HIGHEST+123,  // random safe ID
+	ID_LISTENSOCKET_EVENT = wxID_HIGHEST + 123, // random safe ID
 	ID_CLIENTTCPSOCKET_EVENT,
 	ID_SERVERUDPSOCKET_EVENT,
 	ID_SERVERSOCKET_EVENT,

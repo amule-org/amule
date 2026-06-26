@@ -27,16 +27,15 @@
 
 #include <common/Macros.h>
 
-#include "updownclient.h"		// Needed for CUpDownClient
+#include "updownclient.h" // Needed for CUpDownClient
 
-#define	CLEANUPTIME			MIN2MS(60)
+#define CLEANUPTIME MIN2MS(60)
 
-#define BLOCKTIME		(::GetTickCount64() + (m_bGlobalList ? MIN2MS(30) : MIN2MS(45)))
-#define BLOCKTIMEFW		(::GetTickCount64() + (m_bGlobalList ? MIN2MS(45) : MIN2MS(60)))
+#define BLOCKTIME (::GetTickCount64() + (m_bGlobalList ? MIN2MS(30) : MIN2MS(45)))
+#define BLOCKTIMEFW (::GetTickCount64() + (m_bGlobalList ? MIN2MS(45) : MIN2MS(60)))
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //// CDeadSource
-
 
 CDeadSourceList::CDeadSource::CDeadSource(uint32 ID, uint16 Port, uint32 ServerIP, uint16 KadPort)
 {
@@ -47,24 +46,21 @@ CDeadSourceList::CDeadSource::CDeadSource(uint32 ID, uint16 Port, uint32 ServerI
 	m_TimeStamp = 0;
 }
 
-
-void CDeadSourceList::CDeadSource::SetTimeout( uint64 t )
+void CDeadSourceList::CDeadSource::SetTimeout(uint64 t)
 {
 	m_TimeStamp = t;
 }
-
 
 uint64 CDeadSourceList::CDeadSource::GetTimeout() const
 {
 	return m_TimeStamp;
 }
 
-
-bool CDeadSourceList::CDeadSource::operator==(const CDeadSource& other) const
+bool CDeadSourceList::CDeadSource::operator==(const CDeadSource &other) const
 {
-	if ( m_ID == other.m_ID ) {
-		if ( m_Port == other.m_Port || m_KadPort == other.m_KadPort ) {
-			if ( IsLowID( m_ID ) ) {
+	if (m_ID == other.m_ID) {
+		if (m_Port == other.m_Port || m_KadPort == other.m_KadPort) {
+			if (IsLowID(m_ID)) {
 				return m_ServerIP == other.m_ServerIP;
 			} else {
 				return true;
@@ -75,7 +71,6 @@ bool CDeadSourceList::CDeadSource::operator==(const CDeadSource& other) const
 	return false;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////
 //// CDeadSourceList
 
@@ -85,33 +80,28 @@ CDeadSourceList::CDeadSourceList(bool isGlobal)
 	m_bGlobalList = isGlobal;
 }
 
-
 uint32 CDeadSourceList::GetDeadSourcesCount() const
 {
 	return m_sources.size();
 }
 
-
-bool CDeadSourceList::IsDeadSource(const CUpDownClient* client)
+bool CDeadSourceList::IsDeadSource(const CUpDownClient *client)
 {
-	CDeadSource source(
-		client->GetUserIDHybrid(),
+	CDeadSource source(client->GetUserIDHybrid(),
 		client->GetUserPort(),
 		client->GetServerIP(),
-		client->GetKadPort()
-	);
+		client->GetKadPort());
 
-
-	DeadSourcePair range = m_sources.equal_range( client->GetUserIDHybrid() );
-	for ( ; range.first != range.second; range.first++ ) {
-		if ( range.first->second == source ) {
+	DeadSourcePair range = m_sources.equal_range(client->GetUserIDHybrid());
+	for (; range.first != range.second; range.first++) {
+		if (range.first->second == source) {
 			// Check if the entry is still valid
-			if ( range.first->second.GetTimeout() > GetTickCount64() ) {
+			if (range.first->second.GetTimeout() > GetTickCount64()) {
 				return true;
 			}
 
 			// The source is no longer dead, so remove it to reduce the size of the list
-			m_sources.erase( range.first );
+			m_sources.erase(range.first);
 			break;
 		}
 	}
@@ -119,47 +109,43 @@ bool CDeadSourceList::IsDeadSource(const CUpDownClient* client)
 	return false;
 }
 
-
-void CDeadSourceList::AddDeadSource( const CUpDownClient* client )
+void CDeadSourceList::AddDeadSource(const CUpDownClient *client)
 {
-	CDeadSource source(
-		client->GetUserIDHybrid(),
+	CDeadSource source(client->GetUserIDHybrid(),
 		client->GetUserPort(),
 		client->GetServerIP(),
-		client->GetKadPort()
-	);
+		client->GetKadPort());
 
 	// Set the timeout for the new source
-	source.SetTimeout( client->HasLowID() ? BLOCKTIMEFW : BLOCKTIME );
+	source.SetTimeout(client->HasLowID() ? BLOCKTIMEFW : BLOCKTIME);
 
 	// Check if the source is already listed
-	DeadSourcePair range = m_sources.equal_range( client->GetUserIDHybrid() );
-	for ( ; range.first != range.second; range.first++ ) {
-		if ( range.first->second == source ) {
+	DeadSourcePair range = m_sources.equal_range(client->GetUserIDHybrid());
+	for (; range.first != range.second; range.first++) {
+		if (range.first->second == source) {
 			range.first->second = source;
 			return;
 		}
 	}
 
-	m_sources.insert( DeadSourceMap::value_type( client->GetUserIDHybrid(), source ) );
+	m_sources.insert(DeadSourceMap::value_type(client->GetUserIDHybrid(), source));
 
 	// Check if we should cleanup the list. This is
 	// done to avoid a buildup of stale entries.
-	if ( GetTickCount64() - m_dwLastCleanUp > CLEANUPTIME ) {
+	if (GetTickCount64() - m_dwLastCleanUp > CLEANUPTIME) {
 		CleanUp();
 	}
 }
-
 
 void CDeadSourceList::CleanUp()
 {
 	m_dwLastCleanUp = ::GetTickCount64();
 
 	DeadSourceIterator it = m_sources.begin();
-	for ( ; it != m_sources.end(); ) {
+	for (; it != m_sources.end();) {
 		DeadSourceIterator it1 = it++;
-		if ( it1->second.GetTimeout() < m_dwLastCleanUp ) {
-			m_sources.erase( it1 );
+		if (it1->second.GetTimeout() < m_dwLastCleanUp) {
+			m_sources.erase(it1);
 		}
 	}
 }

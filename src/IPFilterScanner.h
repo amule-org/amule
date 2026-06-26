@@ -30,7 +30,7 @@
 #define IPFS_EXTERN extern
 #endif
 
-#define YY_DECL int yyiplex(uint32 & IPStart, uint32 & IPEnd, uint32 & IPLevel, char * & IPDescription)
+#define YY_DECL int yyiplex(uint32 &IPStart, uint32 &IPEnd, uint32 &IPLevel, char *&IPDescription)
 YY_DECL;
 void yyiprestart(FILE *new_file);
 

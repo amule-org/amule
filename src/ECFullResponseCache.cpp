@@ -22,16 +22,15 @@
 
 #include <set>
 
-
 CECFullResponseCache::CECFullResponseCache(TagBuilder builder)
-	: m_builder(std::move(builder))
-{}
-
-
-std::vector<std::shared_ptr<const std::vector<unsigned char> > >
-CECFullResponseCache::GetBlobs(const std::vector<FileRef> &files)
+: m_builder(std::move(builder))
 {
-	std::vector<std::shared_ptr<const std::vector<unsigned char> > > result;
+}
+
+std::vector<std::shared_ptr<const std::vector<unsigned char>>> CECFullResponseCache::GetBlobs(
+	const std::vector<FileRef> &files)
+{
+	std::vector<std::shared_ptr<const std::vector<unsigned char>>> result;
 	result.reserve(files.size());
 
 	// First pass under the lock: collect cached entries that are still
@@ -45,7 +44,7 @@ CECFullResponseCache::GetBlobs(const std::vector<FileRef> &files)
 				result.push_back(it->second.bytes);
 			} else {
 				// Placeholder; filled in below
-				result.push_back(std::shared_ptr<const std::vector<unsigned char> >());
+				result.push_back(std::shared_ptr<const std::vector<unsigned char>>());
 				to_build.push_back(i);
 			}
 		}
@@ -60,7 +59,7 @@ CECFullResponseCache::GetBlobs(const std::vector<FileRef> &files)
 		const FileRef &ref = files[idx];
 
 		std::unique_ptr<CECTag> tag(m_builder(ref.file));
-		std::shared_ptr<const std::vector<unsigned char> > bytes(
+		std::shared_ptr<const std::vector<unsigned char>> bytes(
 			new std::vector<unsigned char>(CECMemSocket::SerializeTag(*tag)));
 
 		// Re-lock briefly to install. Two concurrent rebuilds for the
@@ -80,7 +79,6 @@ CECFullResponseCache::GetBlobs(const std::vector<FileRef> &files)
 	return result;
 }
 
-
 void CECFullResponseCache::PruneOutsideOf(const std::vector<FileRef> &alive_files)
 {
 	std::set<uint32> alive;
@@ -89,8 +87,7 @@ void CECFullResponseCache::PruneOutsideOf(const std::vector<FileRef> &alive_file
 	}
 
 	std::lock_guard<std::mutex> lk(m_mutex);
-	for (std::map<uint32, Entry>::iterator it = m_entries.begin();
-		it != m_entries.end(); ) {
+	for (std::map<uint32, Entry>::iterator it = m_entries.begin(); it != m_entries.end();) {
 		if (!alive.count(it->first)) {
 			m_entries.erase(it++);
 		} else {

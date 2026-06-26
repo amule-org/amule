@@ -25,7 +25,7 @@
 #ifndef SHAREDFILEPEERSLISTCTRL_H
 #define SHAREDFILEPEERSLISTCTRL_H
 
-#include "GenericClientListCtrl.h"	// Needed for CGenericClientListCtrl
+#include "GenericClientListCtrl.h" // Needed for CGenericClientListCtrl
 
 /**
  * This class is responsible for representing the peers for a shared file.
@@ -38,24 +38,23 @@ public:
 	 *
 	 * @see CGenericClientListCtrl::CGenericClientListCtrl for documentation of parameters.
 	 */
-	 CSharedFilePeersListCtrl(
-	            wxWindow *parent,
-                wxWindowID winid = -1,
-                const wxPoint &pos = wxDefaultPosition,
-                const wxSize &size = wxDefaultSize,
-                long style = wxLC_ICON,
-                const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = "peerslistctrl" );
+	CSharedFilePeersListCtrl(wxWindow *parent,
+		wxWindowID winid = -1,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = wxLC_ICON,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = "peerslistctrl");
 
 	/**
 	 * Destructor.
 	 */
-	virtual	~CSharedFilePeersListCtrl();
+	virtual ~CSharedFilePeersListCtrl();
 
 private:
 	virtual CamuleDlg::DialogType GetParentDialog() { return CamuleDlg::DT_SHARED_WND; }
 
-	virtual void SetShowSources(CKnownFile * f, bool b) const;
+	virtual void SetShowSources(CKnownFile *f, bool b) const;
 
 	static int wxCALLBACK SourceSortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
 

@@ -26,13 +26,11 @@
 #ifndef SHAREDFILESCTRL_H
 #define SHAREDFILESCTRL_H
 
-#include "MuleListCtrl.h"	// Needed for CMuleListCtrl
-
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl
 
 class CSharedFileList;
 class CKnownFile;
 class wxMenu;
-
 
 /**
  * This class represents the widget used to list shared files.
@@ -45,16 +43,15 @@ public:
 	 *
 	 * @see CMuleListCtrl::CMuleListCtrl
 	 */
-	CSharedFilesCtrl(wxWindow* parent, int id, const wxPoint& pos, wxSize size, int flags);
+	CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
 
 	/**
 	 * Destructor.
 	 */
 	~CSharedFilesCtrl();
 
-
 	/** Reloads the list of shared files. */
-	void	ShowFileList();
+	void ShowFileList();
 
 	/**
 	 * Adds the specified file to the list, updating filecount and more.
@@ -63,21 +60,21 @@ public:
 	 *
 	 * Note that the item is inserted in sorted order.
 	 */
-	void	ShowFile(CKnownFile* file);
+	void ShowFile(CKnownFile *file);
 
 	/**
 	 * Removes a file from the list.
 	 *
 	 * @param toremove The file to be removed.
 	 */
-	void	RemoveFile(CKnownFile* toremove);
+	void RemoveFile(CKnownFile *toremove);
 
 	/**
 	 * Updates a file on the list.
 	 *
 	 * @param toupdate The file to be updated.
 	 */
-	void	UpdateItem(CKnownFile* toupdate);
+	void UpdateItem(CKnownFile *toupdate);
 
 	/**
 	 * Begin a bulk update. While in this mode, UpdateItem() is a no-op
@@ -87,13 +84,13 @@ public:
 	 * GUI cascade (per-file SetPublishedED2K() -> notify -> linear-scan
 	 * UpdateItem) into O(N) bookkeeping plus one full repaint.
 	 */
-	void	BeginBulkUpdate();
-	void	EndBulkUpdate();
+	void BeginBulkUpdate();
+	void EndBulkUpdate();
 
 	/**
 	 * Updates the number of shared files displayed above the list.
 	 */
-	void	ShowFilesCount();
+	void ShowFilesCount();
 
 protected:
 	/// Return old column order.
@@ -107,7 +104,7 @@ private:
 	 * and the files-count will not be updated, nor is
 	 * the list checked for dupes.
 	 */
-	void	DoShowFile(CKnownFile* file, bool batch);
+	void DoShowFile(CKnownFile *file, bool batch);
 
 	/**
 	 * Draws the graph of file-part availability.
@@ -121,19 +118,18 @@ private:
 	 * is determined using the currently known sources, while availability for
 	 * Known-files is determined using the sources requesting that file.
 	 */
-	void	DrawAvailabilityBar( CKnownFile* file, wxDC* dc, const wxRect& rect ) const;
+	void DrawAvailabilityBar(CKnownFile *file, wxDC *dc, const wxRect &rect) const;
 
 	/**
 	 * Overloaded function needed to do custom drawing of the items.
 	 */
-	virtual void OnDrawItem(int item, wxDC* dc, const wxRect& rect, const wxRect& rectHL, bool highlighted);
-
+	virtual void OnDrawItem(
+		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
 
 	/**
 	 * @see CMuleListCtrl::GetTTSText
 	 */
 	virtual wxString GetTTSText(unsigned item) const;
-
 
 	/**
 	 * Sorter-function.
@@ -149,59 +145,57 @@ private:
 	 */
 	virtual bool AltSortAllowed(unsigned column) const;
 
+	/**
+	 * Event-handler for right-clicks on the list-items.
+	 */
+	void OnRightClick(wxListEvent &event);
 
 	/**
 	 * Event-handler for right-clicks on the list-items.
 	 */
-	void	OnRightClick(wxListEvent& event);
-
-	/**
-	 * Event-handler for right-clicks on the list-items.
-	 */
-	void	OnGetFeedback(wxCommandEvent& event);
+	void OnGetFeedback(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for the Set Priority menu items.
 	 */
-	void	OnSetPriority( wxCommandEvent& event );
+	void OnSetPriority(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for the Auto-Priority menu item.
 	 */
-	void	OnSetPriorityAuto( wxCommandEvent& event );
+	void OnSetPriorityAuto(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for the Create ED2K/Magnet URI items.
 	 */
-	void	OnCreateURI( wxCommandEvent& event );
+	void OnCreateURI(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for the Edit Comment menu item.
 	 */
-	void	OnEditComment( wxCommandEvent& event );
+	void OnEditComment(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for the Rename menu item.
 	 */
-	void	OnRename( wxCommandEvent& event );
+	void OnRename(wxCommandEvent &event);
 
 	/**
 	 * Checks for renaming via F2.
 	 */
-	void	OnKeyPressed( wxKeyEvent& event );
+	void OnKeyPressed(wxKeyEvent &event);
 
 	/**
 	 * Adds links in a collection to transfers
 	 */
-	void	OnAddCollection( wxCommandEvent& WXUNUSED(evt) );
+	void OnAddCollection(wxCommandEvent &WXUNUSED(evt));
 
 	//! Pointer used to ensure that the menu isn't displayed twice.
-	wxMenu* m_menu;
+	wxMenu *m_menu;
 
 	//! When true, UpdateItem() short-circuits and the bulk caller is
 	//! responsible for issuing a single Refresh() at end-of-bulk.
 	bool m_inBulkUpdate;
-
 
 	wxDECLARE_EVENT_TABLE();
 };

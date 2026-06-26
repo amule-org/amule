@@ -26,9 +26,9 @@
 #ifndef CLIENTDETAILDIALOG_H
 #define CLIENTDETAILDIALOG_H
 
-#include <wx/dialog.h>		// Needed for wxDialog
+#include <wx/dialog.h> // Needed for wxDialog
 
-#include "ClientRef.h"		// Needed for CClientRef
+#include "ClientRef.h" // Needed for CClientRef
 
 /**
  * The ClientDetailDialog class is responsible for showing the info about a client.
@@ -49,7 +49,7 @@ public:
 	 * @param parent The window that created the dialog.
 	 * @param client The client whose details we're showing.
 	 */
-	CClientDetailDialog(wxWindow*parent, const CClientRef& client);
+	CClientDetailDialog(wxWindow *parent, const CClientRef &client);
 
 	/**
 	 * Destructor.
@@ -59,7 +59,6 @@ public:
 	virtual ~CClientDetailDialog();
 
 protected:
-
 	/**
 	 * Creates all the data objects in the dialog, filling them accordingly.
 	 *
@@ -72,12 +71,11 @@ protected:
 	 *
 	 * @param evt The close event, unused right now
 	 */
-	void OnBnClose(wxCommandEvent& evt);
+	void OnBnClose(wxCommandEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 
 private:
-
 	//! The client whose data is drawn
 	CClientRef m_client;
 };

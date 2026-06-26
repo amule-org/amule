@@ -34,17 +34,18 @@
  * \brief Socket handler for External Communications (EC)
  */
 
-class CECMuleSocket : public CECSocket,  public CLibSocket {
+class CECMuleSocket : public CECSocket, public CLibSocket
+{
 public:
 	CECMuleSocket(bool use_events);
 	virtual ~CECMuleSocket();
 
-	bool ConnectSocket(class amuleIPV4Address& address);
+	bool ConnectSocket(class amuleIPV4Address &address);
 
-	virtual void OnConnect()	{}					// This is overwritten in RemoteConnect
-	virtual void OnConnect(int)	{ OnConnect(); }	// This is called from LibSocketAsio
-	virtual void OnSend(int)	{ OnOutput(); }
-	virtual void OnReceive(int)	{ OnInput(); }
+	virtual void OnConnect() {}                  // This is overwritten in RemoteConnect
+	virtual void OnConnect(int) { OnConnect(); } // This is called from LibSocketAsio
+	virtual void OnSend(int) { OnOutput(); }
+	virtual void OnReceive(int) { OnInput(); }
 	// CLibSocket::OnLost(int) fires from the Asio reactor when the
 	// peer FIN reaches our kernel (HandleRead returning bytes=0 or
 	// an EOF error_code). Forward to the EC-layer CECSocket::OnLost()
@@ -57,7 +58,7 @@ public:
 	// vtable, so an instance of CRemoteConnect / CECServerSocket
 	// reaches its override.  A qualified `CECSocket::OnLost()` call
 	// would bypass virtual dispatch and only run the empty base.
-	virtual void OnLost(int)	{ static_cast<CECSocket *>(this)->OnLost(); }
+	virtual void OnLost(int) { static_cast<CECSocket *>(this)->OnLost(); }
 
 	// Apply EC-tuned TCP keepalive (idle=30s / probe=10s / count=3 →
 	// ~60s half-open detection). Called automatically from
@@ -73,15 +74,24 @@ private:
 
 	int InternalGetLastError();
 
-	bool InternalWaitOnConnect(long secs = -1, long msecs = 0) { return CLibSocket::WaitOnConnect(secs,msecs); };
-	bool InternalWaitForWrite(long secs = -1, long msecs = 0) { return CLibSocket::WaitForWrite(secs,msecs); };
-	bool InternalWaitForRead(long secs = -1, long msecs = 0) { return CLibSocket::WaitForRead(secs,msecs); };
+	bool InternalWaitOnConnect(long secs = -1, long msecs = 0)
+	{
+		return CLibSocket::WaitOnConnect(secs, msecs);
+	};
+	bool InternalWaitForWrite(long secs = -1, long msecs = 0)
+	{
+		return CLibSocket::WaitForWrite(secs, msecs);
+	};
+	bool InternalWaitForRead(long secs = -1, long msecs = 0)
+	{
+		return CLibSocket::WaitForRead(secs, msecs);
+	};
 
 	bool InternalError() { return CLibSocket::LastError() != 0; }
 	void InternalClose() { CLibSocket::Close(); }
 
-	uint32 InternalRead(void* ptr, uint32 len)			{ return CLibSocket::Read(ptr, len); };
-	uint32 InternalWrite(const void* ptr, uint32 len)	{ return CLibSocket::Write(ptr, len); };
+	uint32 InternalRead(void *ptr, uint32 len) { return CLibSocket::Read(ptr, len); };
+	uint32 InternalWrite(const void *ptr, uint32 len) { return CLibSocket::Write(ptr, len); };
 
 	bool InternalIsConnected() { return CLibSocket::IsConnected(); }
 	void InternalDestroy() { CLibSocket::Destroy(); }

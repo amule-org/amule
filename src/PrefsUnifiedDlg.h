@@ -26,8 +26,7 @@
 #ifndef __PrefsUnifiedDlg_H__
 #define __PrefsUnifiedDlg_H__
 
-#include <wx/dialog.h>		// Needed for wxDialog
-
+#include <wx/dialog.h> // Needed for wxDialog
 
 class Cfg_Base;
 class CDirectoryTreeCtrl;
@@ -43,7 +42,6 @@ class wxListEvent;
 class wxSpinEvent;
 class wxScrollEvent;
 class wxInitDialogEvent;
-
 
 /**
  * This class represents a dialog used to display preferences.
@@ -61,7 +59,7 @@ public:
 	 * it is private so that we can ensure that only one dialog has been
 	 * created at one time.
 	 */
-	PrefsUnifiedDlg(wxWindow* parent);
+	PrefsUnifiedDlg(wxWindow *parent);
 #ifdef ENABLE_IP2COUNTRY
 	~PrefsUnifiedDlg();
 
@@ -75,7 +73,7 @@ public:
 	// not just a buried log line. No-op if the prefs dialog isn't
 	// open — caller is expected to have already logged the same
 	// message via AddLogLineC so the failure is still recorded.
-	static void NotifyIP2CountryUpdateFailedIfOpen(const wxString& msg);
+	static void NotifyIP2CountryUpdateFailedIfOpen(const wxString &msg);
 #endif
 
 	/**
@@ -87,36 +85,34 @@ public:
 	 */
 	bool TransferToWindow();
 
-
 protected:
 	/**
 	 * Helper functions which checks if a Cfg has has changed.
 	 */
-	bool			CfgChanged(int id);
+	bool CfgChanged(int id);
 
 	/**
 	 * Helper functions which returns the Cfg associated with the specified id.
 	 */
-	Cfg_Base*		GetCfg(int id);
-
+	Cfg_Base *GetCfg(int id);
 
 	//! Pointer to the shared-files list
-	CDirectoryTreeCtrl*	m_ShareSelector;
+	CDirectoryTreeCtrl *m_ShareSelector;
 
 	//! Pointer to the color-selector
-	wxChoice*		m_choiceColor;
+	wxChoice *m_choiceColor;
 
 	//! Pointer to the color-selection button
-	wxButton*		m_buttonColor;
+	wxButton *m_buttonColor;
 
 	//! Pointer to the currently shown preference-page
-	wxPanel*		m_CurrentPanel;
+	wxPanel *m_CurrentPanel;
 
 	//! hide/show server tab
-	int				m_IndexServerTab;
-	bool			m_ServerTabVisible;
-	wxPanel*		m_ServerWidget;
-	wxListCtrl*		m_PrefsIcons;
+	int m_IndexServerTab;
+	bool m_ServerTabVisible;
+	wxPanel *m_ServerWidget;
+	wxListCtrl *m_PrefsIcons;
 	void EnableServerTab(bool enable);
 
 	void OnOk(wxCommandEvent &event);
@@ -124,8 +120,8 @@ protected:
 	void OnClose(wxCloseEvent &event);
 
 	void OnButtonBrowseApplication(wxCommandEvent &event);
-	void OnButtonDir(wxCommandEvent& event);
-	void OnButtonEditAddr(wxCommandEvent& event);
+	void OnButtonDir(wxCommandEvent &event);
+	void OnButtonEditAddr(wxCommandEvent &event);
 	void OnButtonColorChange(wxCommandEvent &event);
 	void OnButtonIPFilterReload(wxCommandEvent &event);
 	void OnButtonIPFilterUpdate(wxCommandEvent &event);
@@ -158,24 +154,25 @@ private:
 	// The Cfg system only tracks credential fields bound through
 	// NewCfgItem; the source dropdown is committed live, so we have
 	// to compare it manually.
-	int		m_GeoIPSourceAtOpen;
-	wxString	m_GeoIPMaxMindLicenseAtOpen;
-	wxString	m_GeoIPCustomUrlAtOpen;
+	int m_GeoIPSourceAtOpen;
+	wxString m_GeoIPMaxMindLicenseAtOpen;
+	wxString m_GeoIPCustomUrlAtOpen;
+
 public:
 #endif
 	void OnColorCategorySelected(wxCommandEvent &event);
 	void OnCheckBoxChange(wxCommandEvent &event);
 	void OnAutostartToggle(wxCommandEvent &event);
-	void OnPrefsPageChange(wxListEvent& event);
-	void OnToolTipDelayChange(wxSpinEvent& event);
-	void OnScrollBarChange( wxScrollEvent& event );
-	void OnRateLimitChanged( wxSpinEvent& event );
-	void OnTCPClientPortChange(wxSpinEvent& event);
-	void OnUserEventSelected(wxListEvent& event);
+	void OnPrefsPageChange(wxListEvent &event);
+	void OnToolTipDelayChange(wxSpinEvent &event);
+	void OnScrollBarChange(wxScrollEvent &event);
+	void OnRateLimitChanged(wxSpinEvent &event);
+	void OnTCPClientPortChange(wxSpinEvent &event);
+	void OnUserEventSelected(wxListEvent &event);
 	void OnLanguageChoice(wxCommandEvent &event);
-	void CreateEventPanels(const int idx, const wxString& vars, wxWindow* parent);
+	void CreateEventPanels(const int idx, const wxString &vars, wxWindow *parent);
 
-	void OnInitDialog( wxInitDialogEvent& evt );
+	void OnInitDialog(wxInitDialogEvent &evt);
 
 	// Tri-state outcome of an attempt to commit the pending share
 	// selection. Used by OnOk to decide between three flows:
@@ -185,7 +182,8 @@ public:
 	//                       dialog open so the user can adjust their
 	//                       selection without losing the rest of
 	//                       their pending pref changes
-	enum class SharedDirsCommitResult {
+	enum class SharedDirsCommitResult
+	{
 		NothingToCommit,
 		Committed,
 		CancelledByUser,
@@ -202,8 +200,8 @@ public:
 	wxDECLARE_EVENT_TABLE();
 
 private:
-	bool	m_verticalToolbar;
-	bool	m_toolbarOrientationChanged;
+	bool m_verticalToolbar;
+	bool m_toolbarOrientationChanged;
 };
 
 #endif

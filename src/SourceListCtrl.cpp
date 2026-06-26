@@ -25,30 +25,33 @@
 #include "KnownFile.h"
 
 static CGenericClientListCtrlColumn s_sources_column_info[] = {
-	{ ColumnUserName,		wxTRANSLATE("User Name"),	260 },
-	{ ColumnUserDownloaded,		wxTRANSLATE("Downloaded"),	65 },
-	{ ColumnUserSpeedDown,		wxTRANSLATE("Speed"),		65 },
-	{ ColumnUserUploaded,		wxTRANSLATE("Uploaded"),	65 },
-	{ ColumnUserProgress,		wxTRANSLATE("Available Parts"),	170 },
-	{ ColumnUserVersion,		wxTRANSLATE("Version"),		50 },
-	{ ColumnUserQueueRankRemote,	wxTRANSLATE("Download Status"),	55 },
-	{ ColumnUserOrigin,		wxTRANSLATE("Origin"),		110 },
-	{ ColumnUserFileNameDownload,	wxTRANSLATE("Local File Name"),	200 },
+	{ ColumnUserName, wxTRANSLATE("User Name"), 260 },
+	{ ColumnUserDownloaded, wxTRANSLATE("Downloaded"), 65 },
+	{ ColumnUserSpeedDown, wxTRANSLATE("Speed"), 65 },
+	{ ColumnUserUploaded, wxTRANSLATE("Uploaded"), 65 },
+	{ ColumnUserProgress, wxTRANSLATE("Available Parts"), 170 },
+	{ ColumnUserVersion, wxTRANSLATE("Version"), 50 },
+	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 55 },
+	{ ColumnUserOrigin, wxTRANSLATE("Origin"), 110 },
+	{ ColumnUserFileNameDownload, wxTRANSLATE("Local File Name"), 200 },
 	{ ColumnUserFileNameDownloadRemote, wxTRANSLATE("Remote File Name"), 200 },
-	{ ColumnUserSharedFiles,	wxTRANSLATE("Shares File List"), 100 }
+	{ ColumnUserSharedFiles, wxTRANSLATE("Shares File List"), 100 }
 };
 
 wxBEGIN_EVENT_TABLE(CSourceListCtrl, CGenericClientListCtrl)
 wxEND_EVENT_TABLE()
 
-CSourceListCtrl::CSourceListCtrl(
-	wxWindow *parent, wxWindowID winid, const wxPoint& pos, const wxSize& size,
-	long style, const wxValidator& validator, const wxString& name )
-:
-CGenericClientListCtrl( "Sources", parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name )
+CSourceListCtrl::CSourceListCtrl(wxWindow *parent,
+	wxWindowID winid,
+	const wxPoint &pos,
+	const wxSize &size,
+	long style,
+	const wxValidator &validator,
+	const wxString &name)
+: CGenericClientListCtrl("Sources", parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name)
 {
 	// Setting the sorter function.
-	SetSortFunc( SourceSortProc );
+	SetSortFunc(SourceSortProc);
 
 	m_columndata.n_columns = sizeof(s_sources_column_info) / sizeof(CGenericClientListCtrlColumn);
 	m_columndata.columns = s_sources_column_info;
@@ -56,16 +59,17 @@ CGenericClientListCtrl( "Sources", parent, winid, pos, size, style | wxLC_OWNERD
 	InitColumnData();
 }
 
-CSourceListCtrl::~CSourceListCtrl()
-{
-}
+CSourceListCtrl::~CSourceListCtrl() {}
 
 int CSourceListCtrl::SourceSortProc(wxUIntPtr param1, wxUIntPtr param2, wxIntPtr sortData)
 {
-	return CGenericClientListCtrl::SortProc(param1, param2, s_sources_column_info[sortData & CMuleListCtrl::COLUMN_MASK].cid | (sortData & CMuleListCtrl::SORT_DES));
+	return CGenericClientListCtrl::SortProc(param1,
+		param2,
+		s_sources_column_info[sortData & CMuleListCtrl::COLUMN_MASK].cid |
+			(sortData & CMuleListCtrl::SORT_DES));
 }
 
-void CSourceListCtrl::SetShowSources(CKnownFile * f, bool b) const
+void CSourceListCtrl::SetShowSources(CKnownFile *f, bool b) const
 {
 	f->SetShowSources(b);
 }

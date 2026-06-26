@@ -23,9 +23,9 @@
  *  along with this program; if not, write to the
  *  Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
-*/
+ */
 
 #ifndef CAS_VERSION
-#define CAS_VERSION	"0.8"
+#define CAS_VERSION "0.8"
 #endif
 /* // File_checked_for_headers */

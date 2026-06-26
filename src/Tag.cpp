@@ -23,21 +23,19 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include "Tag.h" // Interface declarations
 
-#include "Tag.h"			// Interface declarations
+#include <common/Format.h> // Needed for WXLONGLONGFMTSPEC
 
-#include <common/Format.h>		// Needed for WXLONGLONGFMTSPEC
-
-#include "SafeFile.h"			// Needed for CFileDataIO
-#include "MD4Hash.h"			// Needed for CMD4Hash
-#include "CompilerSpecific.h"		// Needed for __FUNCTION__
-
+#include "SafeFile.h"         // Needed for CFileDataIO
+#include "MD4Hash.h"          // Needed for CMD4Hash
+#include "CompilerSpecific.h" // Needed for __FUNCTION__
 
 ///////////////////////////////////////////////////////////////////////////////
 // CTag
 
-CTag::CTag(const wxString& Name)
-	: m_Name(Name)
+CTag::CTag(const wxString &Name)
+: m_Name(Name)
 {
 	m_uType = 0;
 	m_uName = 0;
@@ -53,8 +51,8 @@ CTag::CTag(uint8 uName)
 	m_nSize = 0;
 }
 
-CTag::CTag(const CTag& rTag)
-	: m_Name(rTag.m_Name)
+CTag::CTag(const CTag &rTag)
+: m_Name(rTag.m_Name)
 {
 	m_uType = rTag.m_uType;
 	m_uName = rTag.m_uName;
@@ -81,8 +79,7 @@ CTag::CTag(const CTag& rTag)
 	}
 }
 
-
-CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
+CTag::CTag(const CFileDataIO &data, bool bOptUTF8)
 {
 	// Zero variables to allow for safe deletion
 	m_uType = m_uName = m_nSize = m_uVal = 0;
@@ -99,7 +96,7 @@ CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
 				m_uName = data.ReadUInt8();
 			} else {
 				m_uName = 0;
-				m_Name = data.ReadOnlyString(utf8strNone,length);
+				m_Name = data.ReadOnlyString(utf8strNone, length);
 			}
 		}
 
@@ -108,76 +105,78 @@ CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
 		// when the packets are returned in a list - like the search results
 		// from a server. If we cannot do this, then we throw an exception.
 		switch (m_uType) {
-			case TAGTYPE_STRING:
-				m_pstrVal = new wxString(data.ReadString(bOptUTF8));
-				break;
+		case TAGTYPE_STRING:
+			m_pstrVal = new wxString(data.ReadString(bOptUTF8));
+			break;
 
-			case TAGTYPE_UINT32:
-				m_uVal = data.ReadUInt32();
-				break;
+		case TAGTYPE_UINT32:
+			m_uVal = data.ReadUInt32();
+			break;
 
-			case TAGTYPE_UINT64:
-				m_uVal = data.ReadUInt64();
-				break;
+		case TAGTYPE_UINT64:
+			m_uVal = data.ReadUInt64();
+			break;
 
-			case TAGTYPE_UINT16:
-				m_uVal = data.ReadUInt16();
-				m_uType = TAGTYPE_UINT32;
-				break;
+		case TAGTYPE_UINT16:
+			m_uVal = data.ReadUInt16();
+			m_uType = TAGTYPE_UINT32;
+			break;
 
-			case TAGTYPE_UINT8:
-				m_uVal = data.ReadUInt8();
-				m_uType = TAGTYPE_UINT32;
-				break;
+		case TAGTYPE_UINT8:
+			m_uVal = data.ReadUInt8();
+			m_uType = TAGTYPE_UINT32;
+			break;
 
-			case TAGTYPE_FLOAT32:
-				//#warning Endianness problem?
-				data.Read(&m_fVal, 4);
-				break;
+		case TAGTYPE_FLOAT32:
+			// #warning Endianness problem?
+			data.Read(&m_fVal, 4);
+			break;
 
-			case TAGTYPE_HASH16:
-				m_hashVal = new CMD4Hash(data.ReadHash());
-				break;
+		case TAGTYPE_HASH16:
+			m_hashVal = new CMD4Hash(data.ReadHash());
+			break;
 
-			case TAGTYPE_BOOL:
-				printf("***NOTE: %s; Reading BOOL tag\n", __FUNCTION__);
-				data.ReadUInt8();
-				break;
+		case TAGTYPE_BOOL:
+			printf("***NOTE: %s; Reading BOOL tag\n", __FUNCTION__);
+			data.ReadUInt8();
+			break;
 
-			case TAGTYPE_BOOLARRAY: {
-				printf("***NOTE: %s; Reading BOOL Array tag\n", __FUNCTION__);
-				uint16 len = data.ReadUInt16();
+		case TAGTYPE_BOOLARRAY: {
+			printf("***NOTE: %s; Reading BOOL Array tag\n", __FUNCTION__);
+			uint16 len = data.ReadUInt16();
 
-				// 07-Apr-2004: eMule versions prior to 0.42e.29 used the formula "(len+7)/8"!
-				//#warning This seems to be off by one! 8 / 8 + 1 == 2, etc.
-				data.Seek((len / 8) + 1, wxFromCurrent);
-				break;
+			// 07-Apr-2004: eMule versions prior to 0.42e.29 used the formula "(len+7)/8"!
+			// #warning This seems to be off by one! 8 / 8 + 1 == 2, etc.
+			data.Seek((len / 8) + 1, wxFromCurrent);
+			break;
+		}
+
+		case TAGTYPE_BLOB:
+			// 07-Apr-2004: eMule versions prior to 0.42e.29 handled the "len" as int16!
+			m_nSize = data.ReadUInt32();
+
+			// Since the length is 32b, this check is needed to avoid
+			// huge allocations in case of bad tags.
+			if (m_nSize > data.GetLength() - data.GetPosition()) {
+				throw CInvalidPacket("Malformed tag");
 			}
 
-			case TAGTYPE_BLOB:
-				// 07-Apr-2004: eMule versions prior to 0.42e.29 handled the "len" as int16!
-				m_nSize = data.ReadUInt32();
+			m_pData = new unsigned char[m_nSize];
+			data.Read(m_pData, m_nSize);
+			break;
 
-				// Since the length is 32b, this check is needed to avoid
-				// huge allocations in case of bad tags.
-				if (m_nSize > data.GetLength() - data.GetPosition()) {
-					throw CInvalidPacket("Malformed tag");
-				}
-
-				m_pData = new unsigned char[m_nSize];
-				data.Read(m_pData, m_nSize);
-				break;
-
-			default:
-				if (m_uType >= TAGTYPE_STR1 && m_uType <= TAGTYPE_STR16) {
-					uint8 length = m_uType - TAGTYPE_STR1 + 1;
-					m_pstrVal = new wxString(data.ReadOnlyString(bOptUTF8, length));
-					m_uType = TAGTYPE_STRING;
-				} else {
-					// Since we cannot determine the length of this tag, we
-					// simply have to abort reading the file.
-					throw CInvalidPacket(CFormat("Unknown tag type encountered %x, cannot proceed!") % m_uType);
-				}
+		default:
+			if (m_uType >= TAGTYPE_STR1 && m_uType <= TAGTYPE_STR16) {
+				uint8 length = m_uType - TAGTYPE_STR1 + 1;
+				m_pstrVal = new wxString(data.ReadOnlyString(bOptUTF8, length));
+				m_uType = TAGTYPE_STRING;
+			} else {
+				// Since we cannot determine the length of this tag, we
+				// simply have to abort reading the file.
+				throw CInvalidPacket(
+					CFormat("Unknown tag type encountered %x, cannot proceed!") %
+					m_uType);
+			}
 		}
 	} catch (...) {
 		if (m_uType == TAGTYPE_BLOB) {
@@ -187,7 +186,6 @@ CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
 		throw;
 	}
 }
-
 
 CTag::~CTag()
 {
@@ -199,7 +197,6 @@ CTag::~CTag()
 		delete[] m_pData;
 	}
 }
-
 
 CTag &CTag::operator=(const CTag &rhs)
 {
@@ -223,13 +220,13 @@ CTag &CTag::operator=(const CTag &rhs)
 		} else if (rhs.IsBlob()) {
 			m_nSize = rhs.GetBlobSize();
 			unsigned char *p = new unsigned char[rhs.GetBlobSize()];
-			delete [] m_pData;
+			delete[] m_pData;
 			m_pData = p;
 			memcpy(m_pData, rhs.GetBlob(), rhs.GetBlobSize());
 		} else if (rhs.IsBsob()) {
 			m_nSize = rhs.GetBsobSize();
 			unsigned char *p = new unsigned char[rhs.GetBsobSize()];
-			delete [] m_pData;
+			delete[] m_pData;
 			m_pData = p;
 			memcpy(m_pData, rhs.GetBsob(), rhs.GetBsobSize());
 		} else {
@@ -239,7 +236,6 @@ CTag &CTag::operator=(const CTag &rhs)
 	}
 	return *this;
 }
-
 
 #define CHECK_TAG_TYPE(check, expected) \
 	if (!(check)) { \
@@ -253,14 +249,12 @@ uint64 CTag::GetInt() const
 	return m_uVal;
 }
 
-
-const wxString& CTag::GetStr() const
+const wxString &CTag::GetStr() const
 {
 	CHECK_TAG_TYPE(IsStr(), String);
 
 	return *m_pstrVal;
 }
-
 
 float CTag::GetFloat() const
 {
@@ -269,14 +263,12 @@ float CTag::GetFloat() const
 	return m_fVal;
 }
 
-
-const CMD4Hash& CTag::GetHash() const
+const CMD4Hash &CTag::GetHash() const
 {
 	CHECK_TAG_TYPE(IsHash(), Hash);
 
 	return *m_hashVal;
 }
-
 
 uint32 CTag::GetBlobSize() const
 {
@@ -285,14 +277,12 @@ uint32 CTag::GetBlobSize() const
 	return m_nSize;
 }
 
-
-const uint8_t* CTag::GetBlob() const
+const uint8_t *CTag::GetBlob() const
 {
 	CHECK_TAG_TYPE(IsBlob(), Blob);
 
 	return m_pData;
 }
-
 
 uint32 CTag::GetBsobSize() const
 {
@@ -301,15 +291,14 @@ uint32 CTag::GetBsobSize() const
 	return m_nSize;
 }
 
-
-const uint8_t* CTag::GetBsob() const
+const uint8_t *CTag::GetBsob() const
 {
 	CHECK_TAG_TYPE(IsBsob(), Bsob);
 
 	return m_pData;
 }
 
-bool CTag::WriteNewEd2kTag(CFileDataIO* data, EUtf8Str eStrEncode) const
+bool CTag::WriteNewEd2kTag(CFileDataIO *data, EUtf8Str eStrEncode) const
 {
 
 	// Write tag type
@@ -322,7 +311,7 @@ bool CTag::WriteNewEd2kTag(CFileDataIO* data, EUtf8Str eStrEncode) const
 			uType = TAGTYPE_UINT16;
 		} else if (m_uVal <= 0xFFFFFFFF) {
 			uType = TAGTYPE_UINT32;
-		} else  {
+		} else {
 			uType = TAGTYPE_UINT64;
 		}
 	} else if (IsStr()) {
@@ -339,59 +328,59 @@ bool CTag::WriteNewEd2kTag(CFileDataIO* data, EUtf8Str eStrEncode) const
 	// Write tag name
 	if (!m_Name.IsEmpty()) {
 		data->WriteUInt8(uType);
-		data->WriteString(m_Name,utf8strNone);
+		data->WriteString(m_Name, utf8strNone);
 	} else {
-		wxASSERT( m_uName != 0 );
+		wxASSERT(m_uName != 0);
 		data->WriteUInt8(uType | 0x80);
 		data->WriteUInt8(m_uName);
 	}
 
 	// Write tag data
 	switch (uType) {
-		case TAGTYPE_STRING:
-			data->WriteString(*m_pstrVal,eStrEncode);
-			break;
-		case TAGTYPE_UINT64:
-			data->WriteUInt64(m_uVal);
-			break;
-		case TAGTYPE_UINT32:
-			data->WriteUInt32(m_uVal);
-			break;
-		case TAGTYPE_UINT16:
-			data->WriteUInt16(m_uVal);
-			break;
-		case TAGTYPE_UINT8:
-			data->WriteUInt8(m_uVal);
-			break;
-		case TAGTYPE_FLOAT32:
-			//#warning Endianness problem?
-			data->Write(&m_fVal, 4);
-			break;
-		case TAGTYPE_HASH16:
-			data->WriteHash(*m_hashVal);
-			break;
-		case TAGTYPE_BLOB:
-			data->WriteUInt32(m_nSize);
-			data->Write(m_pData, m_nSize);
-			break;
-		default:
-			// See comment on the default: of CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
-			if (uType >= TAGTYPE_STR1 && uType <= TAGTYPE_STR16) {
-				// Sending '0' as len size makes it not write the len on the IO file.
-				// This is because this tag types send the len as their type.
-				data->WriteString(*m_pstrVal,eStrEncode,0);
-			} else {
-				printf("%s; Unknown tag: type=0x%02X\n", __FUNCTION__, uType);
-				wxFAIL;
-				return false;
-			}
-			break;
+	case TAGTYPE_STRING:
+		data->WriteString(*m_pstrVal, eStrEncode);
+		break;
+	case TAGTYPE_UINT64:
+		data->WriteUInt64(m_uVal);
+		break;
+	case TAGTYPE_UINT32:
+		data->WriteUInt32(m_uVal);
+		break;
+	case TAGTYPE_UINT16:
+		data->WriteUInt16(m_uVal);
+		break;
+	case TAGTYPE_UINT8:
+		data->WriteUInt8(m_uVal);
+		break;
+	case TAGTYPE_FLOAT32:
+		// #warning Endianness problem?
+		data->Write(&m_fVal, 4);
+		break;
+	case TAGTYPE_HASH16:
+		data->WriteHash(*m_hashVal);
+		break;
+	case TAGTYPE_BLOB:
+		data->WriteUInt32(m_nSize);
+		data->Write(m_pData, m_nSize);
+		break;
+	default:
+		// See comment on the default: of CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
+		if (uType >= TAGTYPE_STR1 && uType <= TAGTYPE_STR16) {
+			// Sending '0' as len size makes it not write the len on the IO file.
+			// This is because this tag types send the len as their type.
+			data->WriteString(*m_pstrVal, eStrEncode, 0);
+		} else {
+			printf("%s; Unknown tag: type=0x%02X\n", __FUNCTION__, uType);
+			wxFAIL;
+			return false;
+		}
+		break;
 	}
 
 	return true;
 }
 
-bool CTag::WriteTagToFile(CFileDataIO* file, EUtf8Str WXUNUSED(eStrEncode), bool restrictive) const
+bool CTag::WriteTagToFile(CFileDataIO *file, EUtf8Str WXUNUSED(eStrEncode), bool restrictive) const
 {
 
 	// Don't write tags of unknown types, we wouldn't be able to read them in again
@@ -407,7 +396,6 @@ bool CTag::WriteTagToFile(CFileDataIO* file, EUtf8Str WXUNUSED(eStrEncode), bool
 		return false;
 	}
 }
-
 
 wxString CTag::GetFullInfo() const
 {
@@ -430,8 +418,7 @@ wxString CTag::GetFullInfo() const
 		strTag += *m_pstrVal;
 		strTag += "\"";
 	} else if (m_uType >= TAGTYPE_STR1 && m_uType <= TAGTYPE_STR16) {
-		strTag += CFormat("(Str%u)\"") % (m_uType - TAGTYPE_STR1 + 1)
-					+  *m_pstrVal + "\"";
+		strTag += CFormat("(Str%u)\"") % (m_uType - TAGTYPE_STR1 + 1) + *m_pstrVal + "\"";
 	} else if (m_uType == TAGTYPE_UINT64) {
 		strTag += CFormat("(Int64)%u") % m_uVal;
 	} else if (m_uType == TAGTYPE_UINT32) {
@@ -452,19 +439,21 @@ wxString CTag::GetFullInfo() const
 	return strTag;
 }
 
-CTagHash::CTagHash(const wxString& name, const CMD4Hash& value)
-	: CTag(name) {
-		m_hashVal = new CMD4Hash(value);
-		m_uType = TAGTYPE_HASH16;
-	}
+CTagHash::CTagHash(const wxString &name, const CMD4Hash &value)
+: CTag(name)
+{
+	m_hashVal = new CMD4Hash(value);
+	m_uType = TAGTYPE_HASH16;
+}
 
-CTagHash::CTagHash(uint8 name, const CMD4Hash& value)
-	: CTag(name) {
-		m_hashVal = new CMD4Hash(value);
-		m_uType = TAGTYPE_HASH16;
-	}
+CTagHash::CTagHash(uint8 name, const CMD4Hash &value)
+: CTag(name)
+{
+	m_hashVal = new CMD4Hash(value);
+	m_uType = TAGTYPE_HASH16;
+}
 
-void deleteTagPtrListEntries(TagPtrList* taglist)
+void deleteTagPtrListEntries(TagPtrList *taglist)
 {
 	DeleteContents(*taglist);
 }

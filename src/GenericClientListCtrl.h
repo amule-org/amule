@@ -25,14 +25,14 @@
 #ifndef GENERICCLIENTLISTCTRL_H
 #define GENERICCLIENTLISTCTRL_H
 
-#include <map>				// Needed for std::multimap
-#include <vector>			// Needed for std::vector
+#include <map>    // Needed for std::multimap
+#include <vector> // Needed for std::vector
 #include <wx/brush.h>
 
-#include "Types.h"			// Needed for uint8
-#include "Constants.h"		// Needed for DownloadItemType
-#include "MuleListCtrl.h"	// Needed for CMuleListCtrl
-#include "amuleDlg.h"		// Needed for CamuleDlg::DialogType
+#include "Types.h"        // Needed for uint8
+#include "Constants.h"    // Needed for DownloadItemType
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl
+#include "amuleDlg.h"     // Needed for CamuleDlg::DialogType
 
 class CPartFile;
 class CClientRef;
@@ -42,7 +42,8 @@ class wxDC;
 
 struct ClientCtrlItem_Struct;
 
-enum GenericColumnEnum {
+enum GenericColumnEnum
+{
 	ColumnUserName = 0,
 	ColumnUserDownloaded,
 	ColumnUserUploaded,
@@ -61,19 +62,23 @@ enum GenericColumnEnum {
 	ColumnInvalid
 };
 
-struct CGenericClientListCtrlColumn {
+struct CGenericClientListCtrlColumn
+{
 	GenericColumnEnum cid;
 	wxString title;
 	int width;
 };
 
-struct GenericColumnInfo {
-	GenericColumnInfo(int n, CGenericClientListCtrlColumn* col) : n_columns(n), columns(col) { };
+struct GenericColumnInfo
+{
+	GenericColumnInfo(int n, CGenericClientListCtrlColumn *col)
+	: n_columns(n)
+	, columns(col) {};
 	int n_columns;
-	CGenericClientListCtrlColumn* columns;
+	CGenericClientListCtrlColumn *columns;
 };
 
-typedef std::vector<CKnownFile*> CKnownFileVector;
+typedef std::vector<CKnownFile *> CKnownFileVector;
 
 /**
  * This class is responsible for representing clients in a generic way.
@@ -87,25 +92,25 @@ public:
 	 *
 	 * @see CMuleListCtrl::CMuleListCtrl for documentation of parameters.
 	 */
-	 CGenericClientListCtrl(
-				const wxString& tablename,
-	            wxWindow *parent,
-                wxWindowID winid,
-                const wxPoint &pos,
-                const wxSize &size,
-                long style,
-                const wxValidator& validator,
-                const wxString &name);
+	CGenericClientListCtrl(const wxString &tablename,
+		wxWindow *parent,
+		wxWindowID winid,
+		const wxPoint &pos,
+		const wxSize &size,
+		long style,
+		const wxValidator &validator,
+		const wxString &name);
 
 	/**
 	 * Destructor.
 	 */
-	virtual	~CGenericClientListCtrl();
+	virtual ~CGenericClientListCtrl();
 
 	/**
-	 * Initializes the control. We need a 2-stage initialization so the derived class members can be called.
+	 * Initializes the control. We need a 2-stage initialization so the derived class members can be
+	 * called.
 	 */
-	 void InitColumnData();
+	void InitColumnData();
 
 	/**
 	 * Adds a source belonging to the specified file.
@@ -118,7 +123,7 @@ public:
 	 * owner is shown, otherwise the source will simply be ignored.
 	 * Duplicates wont be added.
 	 */
-	void AddSource( CKnownFile* owner, const CClientRef& source, SourceItemType type );
+	void AddSource(CKnownFile *owner, const CClientRef &source, SourceItemType type);
 
 	/**
 	 * Removes a source from the list.
@@ -126,7 +131,7 @@ public:
 	 * @param source ID of the source to be removed.
 	 * @param owner Either a specific file, or NULL to remove the source from all files.
 	 */
-	void RemoveSource( uint32 source, const CKnownFile* owner );
+	void RemoveSource(uint32 source, const CKnownFile *owner);
 
 	/**
 	 * Shows the clients of specific files.
@@ -136,7 +141,7 @@ public:
 	 * WARNING: The received vector *MUST* be odered with std::sort.
 	 *
 	 */
-	void ShowSources( const CKnownFileVector& files );
+	void ShowSources(const CKnownFileVector &files);
 
 	/**
 	 * Updates the state of the specified item, possibly causing a redrawing.
@@ -147,7 +152,7 @@ public:
 	 */
 	void UpdateItem(uint32 toupdate, SourceItemType type);
 
-	void SetShowing( bool status ) { m_showing = status; }
+	void SetShowing(bool status) { m_showing = status; }
 	bool GetShowing() const { return m_showing; }
 
 	/**
@@ -164,7 +169,7 @@ public:
 	 * into the next ShowSources() call's `SetShowSources(_, false)`
 	 * loop and crash on the freed heap (issue #755).
 	 */
-	void RemoveKnownFile(CKnownFile* file);
+	void RemoveKnownFile(CKnownFile *file);
 
 protected:
 	// The columns with their attributes; MUST be defined by the derived class.
@@ -173,37 +178,44 @@ protected:
 
 private:
 	/**
-     *
-	 * Must be overridden by the derived class and return the dialog where this list is.
-     * @see CamuleDlg::DialogType
 	 *
-     */
+	 * Must be overridden by the derived class and return the dialog where this list is.
+	 * @see CamuleDlg::DialogType
+	 *
+	 */
 	virtual CamuleDlg::DialogType GetParentDialog() = 0;
 
 	/**
 	 * Updates the displayed number representing the amount of clients currently shown.
 	 */
-	void ShowSourcesCount( int diff );
+	void ShowSourcesCount(int diff);
 
 	/**
 	 * Overloaded function needed for custom drawing of items.
 	 */
-	virtual void OnDrawItem( int item, wxDC* dc, const wxRect& rect, const wxRect& rectHL, bool highlighted );
+	virtual void OnDrawItem(
+		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
 
 	/**
 	 * Draws a client item.
 	 */
-	void	DrawClientItem( wxDC* dc, int nColumn, const wxRect& rect, ClientCtrlItem_Struct* item, int iTextOffset, int iBitmapOffset, int iBitmapXSize ) const;
+	void DrawClientItem(wxDC *dc,
+		int nColumn,
+		const wxRect &rect,
+		ClientCtrlItem_Struct *item,
+		int iTextOffset,
+		int iBitmapOffset,
+		int iBitmapXSize) const;
 
 	/**
 	 * Draws the download status (chunk) bar for a client.
 	 */
-	void	DrawSourceStatusBar( const CClientRef& source, wxDC* dc, const wxRect& rect, bool  bFlat) const;
+	void DrawSourceStatusBar(const CClientRef &source, wxDC *dc, const wxRect &rect, bool bFlat) const;
 
 	/**
-	  * Draaws the file parts bar for a client.
-	  */
-	void	DrawStatusBar( const CClientRef& client, wxDC* dc, const wxRect& rect1 ) const;
+	 * Draaws the file parts bar for a client.
+	 */
+	void DrawStatusBar(const CClientRef &client, wxDC *dc, const wxRect &rect1) const;
 
 	/**
 	 * @see CMuleListCtrl::GetTTSText
@@ -222,39 +234,39 @@ private:
 	 */
 	wxString TranslateCIDToName(GenericColumnEnum cid);
 
-	static int Compare( const CClientRef& client1, const CClientRef& client2, long lParamColumnSort);
+	static int Compare(const CClientRef &client1, const CClientRef &client2, long lParamColumnSort);
 
 	// Event-handlers for clients.
-	void	OnSwapSource( wxCommandEvent& event );
-	void	OnViewFiles( wxCommandEvent& event );
-	void	OnAddFriend( wxCommandEvent& event );
-	void	OnSetFriendslot( wxCommandEvent& event );
-	void	OnSendMessage( wxCommandEvent& event );
-	void	OnViewClientInfo( wxCommandEvent& event );
+	void OnSwapSource(wxCommandEvent &event);
+	void OnViewFiles(wxCommandEvent &event);
+	void OnAddFriend(wxCommandEvent &event);
+	void OnSetFriendslot(wxCommandEvent &event);
+	void OnSendMessage(wxCommandEvent &event);
+	void OnViewClientInfo(wxCommandEvent &event);
 
 	// Misc event-handlers
-	void	OnItemActivated( wxListEvent& event );
-	void	OnMouseRightClick( wxListEvent& event );
-	void	OnMouseMiddleClick( wxListEvent& event );
-	void	OnKeyPressed( wxKeyEvent& event );
+	void OnItemActivated(wxListEvent &event);
+	void OnMouseRightClick(wxListEvent &event);
+	void OnMouseMiddleClick(wxListEvent &event);
+	void OnKeyPressed(wxKeyEvent &event);
 
 	//! The type of list used to store items on the listctrl. We use the unique ECID as key.
-	typedef std::multimap<uint32, ClientCtrlItem_Struct*> ListItems;
+	typedef std::multimap<uint32, ClientCtrlItem_Struct *> ListItems;
 	//! Shortcut to the pair-type used on the list.
 	typedef ListItems::value_type ListItemsPair;
 	//! This pair is used when searching for equal-ranges.
-	typedef std::pair< ListItems::iterator, ListItems::iterator > ListIteratorPair;
+	typedef std::pair<ListItems::iterator, ListItems::iterator> ListIteratorPair;
 
 	//! This list contains everything shown on the list. Sources are only to
 	//! be found on this list if they are being displayed
-	ListItems	m_ListItems;
+	ListItems m_ListItems;
 
 	//! Pointer to the current menu object, used to avoid multiple menus.
-	wxMenu*		m_menu;
+	wxMenu *m_menu;
 	//! Cached brush object.
-	wxBrush	m_highlightBrush;
+	wxBrush m_highlightBrush;
 	//! Cached brush object.
-	wxBrush	m_highlightUnfocusBrush;
+	wxBrush m_highlightUnfocusBrush;
 
 	//! The number of displayed sources
 	int m_clientcount;
@@ -266,8 +278,8 @@ private:
 
 	bool m_showing;
 
-	void RawAddSource(CKnownFile* owner, CClientRef source, SourceItemType type);
-	void RawRemoveSource( ListItems::iterator& it );
+	void RawAddSource(CKnownFile *owner, CClientRef source, SourceItemType type);
+	void RawRemoveSource(ListItems::iterator &it);
 
 	virtual bool IsShowingDownloadSources() const = 0;
 };

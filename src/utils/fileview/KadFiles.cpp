@@ -26,17 +26,17 @@
 #include "KadFiles.h"
 #include "Print.h"
 #include "../../SafeFile.h"
-#include "../../kademlia/kademlia/SearchManager.h"	// for CSearchManager::GetInvalidKeywordChars()
+#include "../../kademlia/kademlia/SearchManager.h" // for CSearchManager::GetInvalidKeywordChars()
 #include <wx/tokenzr.h>
 
-void DecodePreferencesKadDat(const CFileDataIO& file)
+void DecodePreferencesKadDat(const CFileDataIO &file)
 {
 	cout << "IP      : " << CKadIP(file.ReadUInt32()) << '\n';
 	cout << "(unused): " << file.ReadUInt16() << '\n';
 	cout << "ClientID: " << file.ReadUInt128() << '\n';
 }
 
-void DecodeLoadIndexDat(const CFileDataIO& file)
+void DecodeLoadIndexDat(const CFileDataIO &file)
 {
 	cout << "Version   : " << file.ReadUInt32();
 	cout << "\n(savetime): " << CTimeT(file.ReadUInt32());
@@ -50,7 +50,7 @@ void DecodeLoadIndexDat(const CFileDataIO& file)
 
 // from Kademlia.cpp
 #include "../../CryptoPP_Inc.h"
-void KadGetKeywordHash(const wxString& rstrKeyword, Kademlia::CUInt128* pKadID)
+void KadGetKeywordHash(const wxString &rstrKeyword, Kademlia::CUInt128 *pKadID)
 {
 	uint8_t Output[16];
 
@@ -59,13 +59,13 @@ void KadGetKeywordHash(const wxString& rstrKeyword, Kademlia::CUInt128* pKadID)
 	// This should be safe - we assume rstrKeyword is ANSI anyway.
 	Unicode2CharBuf ansi_buffer(unicode2UTF8(rstrKeyword));
 
-	md4_hasher.CalculateDigest(Output, (const uint8_t *) (const char *) ansi_buffer, strlen(ansi_buffer));
+	md4_hasher.CalculateDigest(Output, (const uint8_t *)(const char *)ansi_buffer, strlen(ansi_buffer));
 
 	pKadID->SetValueBE(Output);
 }
 
 // code from CSearchManager::GetWords(const wxString& str, WordList *words)
-bool IdentifyKeyword(const Kademlia::CUInt128& keyID, const wxString& str, wxString& keyword)
+bool IdentifyKeyword(const Kademlia::CUInt128 &keyID, const wxString &str, wxString &keyword)
 {
 	wxStringTokenizer tkz(str, Kademlia::CSearchManager::GetInvalidKeywordChars());
 	while (tkz.HasMoreTokens()) {
@@ -84,7 +84,7 @@ bool IdentifyKeyword(const Kademlia::CUInt128& keyID, const wxString& str, wxStr
 	return false;
 }
 
-void DecodeKeyIndexDat(const CFileDataIO& file)
+void DecodeKeyIndexDat(const CFileDataIO &file)
 {
 	uint32_t version;
 	uint32_t numKeys;
@@ -105,7 +105,7 @@ void DecodeKeyIndexDat(const CFileDataIO& file)
 			cout << "\t\tSourceID: " << file.ReadUInt128();
 			cout << "\n\t\tnumName : " << (numName = file.ReadUInt32()) << '\n';
 			for (uint32_t iN = 0; iN < numName; iN++) {
-				cout << "\t\t\tLifeTime : " <<  CTimeT(file.ReadUInt32()) << '\n';
+				cout << "\t\t\tLifeTime : " << CTimeT(file.ReadUInt32()) << '\n';
 				if (version >= 3) {
 					uint32_t count;
 					cout << "\t\t\tnameCount: " << (count = file.ReadUInt32()) << '\n';
@@ -115,7 +115,8 @@ void DecodeKeyIndexDat(const CFileDataIO& file)
 						cout << ", " << file.ReadUInt32() << " }\n";
 						wxString keyword;
 						if (!identified && IdentifyKeyword(keyID, name, keyword)) {
-							cout << "\tKeyword: " << MakePrintableString(keyword) << '\n';
+							cout << "\tKeyword: " << MakePrintableString(keyword)
+							     << '\n';
 							identified = true;
 						}
 					}
@@ -136,7 +137,7 @@ void DecodeKeyIndexDat(const CFileDataIO& file)
 	}
 }
 
-void DecodeSourceIndexDat(const CFileDataIO& file)
+void DecodeSourceIndexDat(const CFileDataIO &file)
 {
 	uint32_t numKeys;
 	uint32_t numSource;
@@ -154,7 +155,8 @@ void DecodeSourceIndexDat(const CFileDataIO& file)
 			cout << "\n\t\tnumName : " << (numName = file.ReadUInt32()) << '\n';
 			for (uint32_t iN = 0; iN < numName; iN++) {
 				cout << "\t\t\tLifeTime: " << CTimeT(file.ReadUInt32());
-				cout << "\n\t\t\ttagCount: " << static_cast<unsigned int>(tagCount = file.ReadUInt8()) << '\n';
+				cout << "\n\t\t\ttagCount: "
+				     << static_cast<unsigned int>(tagCount = file.ReadUInt8()) << '\n';
 				for (uint32_t it = 0; it < tagCount; it++) {
 					CTag *tag = file.ReadTag();
 					cout << "\t\t\t\t" << *tag << '\n';
@@ -165,7 +167,7 @@ void DecodeSourceIndexDat(const CFileDataIO& file)
 	}
 }
 
-void DecodeNodesDat(const CFileDataIO& file)
+void DecodeNodesDat(const CFileDataIO &file)
 {
 	uint32_t numContacts = file.ReadUInt32();
 	uint32_t fileVersion = 0;

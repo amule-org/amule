@@ -41,8 +41,8 @@ TEST(PhpArray, PushBackWithinOldLimit)
 
 	for (int i = 0; i < 200; i++) {
 		PHP_VAR_NODE *slot = array_push_back(&arr);
-		ASSERT_TRUE_M(slot != nullptr,
-			wxString::Format(wxT("array_push_back returned null at i=%d"), i));
+		ASSERT_TRUE_M(
+			slot != nullptr, wxString::Format(wxT("array_push_back returned null at i=%d"), i));
 		slot->value.type = PHP_VAL_OBJECT;
 	}
 
@@ -61,8 +61,8 @@ TEST(PhpArray, PushBackAtOldBoundary)
 	const int N = 65536; // one past the old 0xffff limit
 	for (int i = 0; i < N; i++) {
 		PHP_VAR_NODE *slot = array_push_back(&arr);
-		ASSERT_TRUE_M(slot != nullptr,
-			wxString::Format(wxT("array_push_back returned null at i=%d"), i));
+		ASSERT_TRUE_M(
+			slot != nullptr, wxString::Format(wxT("array_push_back returned null at i=%d"), i));
 		slot->value.type = PHP_VAL_OBJECT;
 	}
 
@@ -79,8 +79,8 @@ TEST(PhpArray, PushBackBeyondOldLimit)
 	const int N = 92000;
 	for (int i = 0; i < N; i++) {
 		PHP_VAR_NODE *slot = array_push_back(&arr);
-		ASSERT_TRUE_M(slot != nullptr,
-			wxString::Format(wxT("array_push_back returned null at i=%d"), i));
+		ASSERT_TRUE_M(
+			slot != nullptr, wxString::Format(wxT("array_push_back returned null at i=%d"), i));
 		slot->value.type = PHP_VAL_OBJECT;
 	}
 

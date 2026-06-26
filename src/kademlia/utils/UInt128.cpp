@@ -25,7 +25,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 // Note To Mods //
 /*
 Please do not change anything here and release it..
@@ -41,8 +40,7 @@ there client on the eMule forum..
 #include "UInt128.h"
 
 #include "../../ArchSpecific.h"
-#include <common/Format.h>	// Needed for CFormat
-
+#include <common/Format.h> // Needed for CFormat
 
 ////////////////////////////////////////
 using namespace Kademlia;
@@ -103,7 +101,7 @@ wxString CUInt128::ToBinaryString(bool trim) const
 	return str;
 }
 
-CUInt128& CUInt128::SetValueBE(const uint8_t *valueBE) noexcept
+CUInt128 &CUInt128::SetValueBE(const uint8_t *valueBE) noexcept
 {
 	m_data.u32_data[3] = wxUINT32_SWAP_ON_LE(RawPeekUInt32(valueBE));
 	m_data.u32_data[2] = wxUINT32_SWAP_ON_LE(RawPeekUInt32(valueBE + 4));
@@ -117,9 +115,9 @@ void CUInt128::ToByteArray(uint8_t *b) const
 {
 	wxCHECK_RET(b != NULL, "Destination buffer missing.");
 
-	RawPokeUInt32(b,      wxUINT32_SWAP_ON_LE(m_data.u32_data[3]));
-	RawPokeUInt32(b + 4,  wxUINT32_SWAP_ON_LE(m_data.u32_data[2]));
-	RawPokeUInt32(b + 8,  wxUINT32_SWAP_ON_LE(m_data.u32_data[1]));
+	RawPokeUInt32(b, wxUINT32_SWAP_ON_LE(m_data.u32_data[3]));
+	RawPokeUInt32(b + 4, wxUINT32_SWAP_ON_LE(m_data.u32_data[2]));
+	RawPokeUInt32(b + 8, wxUINT32_SWAP_ON_LE(m_data.u32_data[1]));
 	RawPokeUInt32(b + 12, wxUINT32_SWAP_ON_LE(m_data.u32_data[0]));
 }
 
@@ -127,18 +125,18 @@ void CUInt128::StoreCryptValue(uint8_t *buf) const
 {
 	wxCHECK_RET(buf != NULL, "Destination buffer missing.");
 
-	RawPokeUInt32(buf,      wxUINT32_SWAP_ON_BE(m_data.u32_data[3]));
-	RawPokeUInt32(buf + 4,  wxUINT32_SWAP_ON_BE(m_data.u32_data[2]));
-	RawPokeUInt32(buf + 8,  wxUINT32_SWAP_ON_BE(m_data.u32_data[1]));
+	RawPokeUInt32(buf, wxUINT32_SWAP_ON_BE(m_data.u32_data[3]));
+	RawPokeUInt32(buf + 4, wxUINT32_SWAP_ON_BE(m_data.u32_data[2]));
+	RawPokeUInt32(buf + 8, wxUINT32_SWAP_ON_BE(m_data.u32_data[1]));
 	RawPokeUInt32(buf + 12, wxUINT32_SWAP_ON_BE(m_data.u32_data[0]));
 }
 
 int CUInt128::CompareTo(const CUInt128 &other) const noexcept
 {
 	for (int i = 3; i >= 0; i--) {
-	    if (m_data.u32_data[i] < other.m_data.u32_data[i])
+		if (m_data.u32_data[i] < other.m_data.u32_data[i])
 			return -1;
-	    if (m_data.u32_data[i] > other.m_data.u32_data[i])
+		if (m_data.u32_data[i] > other.m_data.u32_data[i])
 			return 1;
 	}
 	return 0;
@@ -153,9 +151,10 @@ int CUInt128::CompareTo(uint32_t value) const noexcept
 	return 0;
 }
 
-CUInt128& CUInt128::Add(const CUInt128 &value) noexcept
+CUInt128 &CUInt128::Add(const CUInt128 &value) noexcept
 {
-	if (value.IsZero()) return *this;
+	if (value.IsZero())
+		return *this;
 
 	int64_t sum = 0;
 	for (int i = 0; i < 4; i++) {
@@ -167,9 +166,10 @@ CUInt128& CUInt128::Add(const CUInt128 &value) noexcept
 	return *this;
 }
 
-CUInt128& CUInt128::Subtract(const CUInt128 &value) noexcept
+CUInt128 &CUInt128::Subtract(const CUInt128 &value) noexcept
 {
-	if (value.IsZero()) return *this;
+	if (value.IsZero())
+		return *this;
 
 	int64_t sum = 0;
 	for (int i = 0; i < 4; i++) {
@@ -181,7 +181,7 @@ CUInt128& CUInt128::Subtract(const CUInt128 &value) noexcept
 	return *this;
 }
 
-CUInt128& CUInt128::ShiftLeft(unsigned bits) noexcept
+CUInt128 &CUInt128::ShiftLeft(unsigned bits) noexcept
 {
 	if ((bits == 0) || IsZero())
 		return *this;
@@ -191,14 +191,14 @@ CUInt128& CUInt128::ShiftLeft(unsigned bits) noexcept
 		return *this;
 	}
 
-	union {
+	union
+	{
 		uint32_t u32_data[4];
 		uint64_t u64_data[2];
-	} result = {{ 0, 0, 0, 0 }};
+	} result = { { 0, 0, 0, 0 } };
 	int indexShift = (int)bits / 32;
 	int64_t shifted = 0;
-	for (int i = 3; i >= indexShift; i--)
-	{
+	for (int i = 3; i >= indexShift; i--) {
 		shifted += ((int64_t)m_data.u32_data[3 - i]) << (bits % 32);
 		result.u32_data[3 - i + indexShift] = (uint32_t)shifted;
 		shifted = shifted >> 32;

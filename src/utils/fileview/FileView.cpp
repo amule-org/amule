@@ -32,17 +32,17 @@
 #include "../../CFile.h"
 #include <common/LocaleInit.h>
 
-#define VERSION_MAJOR	0
-#define VERSION_MINOR	10
-#define VERSION_MICRO	1
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 10
+#define VERSION_MICRO 1
 
 class CFileView : public wxApp
 {
-      private:
+private:
 	virtual int OnRun();
 
-	virtual void OnInitCmdLine(wxCmdLineParser& parser);
-	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
+	virtual void OnInitCmdLine(wxCmdLineParser &parser);
+	virtual bool OnCmdLineParsed(wxCmdLineParser &parser);
 
 	std::list<wxString> m_files;
 };
@@ -50,13 +50,21 @@ class CFileView : public wxApp
 DECLARE_APP(CFileView);
 
 // Logging facility from aMule
-enum DebugType {};
+enum DebugType
+{
+};
 
 class CLogger
 {
-      public:
+public:
 	bool IsEnabled(DebugType /*type*/) const;
-	void AddLogLine(const wxString& /*file*/, int /*line*/, bool /*critical*/, DebugType /*type*/, const wxString& str, bool /*toStdout*/, bool /*toGUI*/);
+	void AddLogLine(const wxString & /*file*/,
+		int /*line*/,
+		bool /*critical*/,
+		DebugType /*type*/,
+		const wxString &str,
+		bool /*toStdout*/,
+		bool /*toGUI*/);
 };
 
 // Out-of-line definitions: SafeFile.cpp's Debug-build AddDebugLogLine*
@@ -67,17 +75,22 @@ bool CLogger::IsEnabled(DebugType /*type*/) const
 	return false;
 }
 
-void CLogger::AddLogLine(const wxString& /*file*/, int /*line*/, bool /*critical*/, DebugType /*type*/, const wxString& str, bool /*toStdout*/, bool /*toGUI*/)
+void CLogger::AddLogLine(const wxString & /*file*/,
+	int /*line*/,
+	bool /*critical*/,
+	DebugType /*type*/,
+	const wxString &str,
+	bool /*toStdout*/,
+	bool /*toGUI*/)
 {
 	cout << "DebugLog: " << str << "\n";
 }
 
 CLogger theLogger;
 
-
 IMPLEMENT_APP(CFileView);
 
-void CFileView::OnInitCmdLine(wxCmdLineParser& parser)
+void CFileView::OnInitCmdLine(wxCmdLineParser &parser)
 {
 	// Pull LC_CTYPE etc. from the environment so unicode2char() emits
 	// real UTF-8 instead of mangling non-ASCII filenames under the
@@ -87,14 +100,23 @@ void CFileView::OnInitCmdLine(wxCmdLineParser& parser)
 
 	parser.AddSwitch("h", "help", "Show help", wxCMD_LINE_OPTION_HELP);
 	parser.AddSwitch("v", "version", "Show program version", wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("s", "strings", "String decoding mode: display (default), safe, utf8, none", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddParam("input file", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_PARAM_MULTIPLE);
+	parser.AddOption("s",
+		"strings",
+		"String decoding mode: display (default), safe, utf8, none",
+		wxCMD_LINE_VAL_STRING,
+		wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddParam(
+		"input file", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_PARAM_MULTIPLE);
 }
 
-bool CFileView::OnCmdLineParsed(wxCmdLineParser& parser)
+bool CFileView::OnCmdLineParsed(wxCmdLineParser &parser)
 {
 	if (parser.Found("version")) {
-		cout << wxString::Format("MuleFileView version %u.%u.%u\nCopyright (c) 2008-2011 aMule Team\n", VERSION_MAJOR, VERSION_MINOR, VERSION_MICRO);
+		cout << wxString::Format(
+			"MuleFileView version %u.%u.%u\nCopyright (c) 2008-2011 aMule Team\n",
+			VERSION_MAJOR,
+			VERSION_MINOR,
+			VERSION_MICRO);
 		return false;
 	} else {
 		wxString strDecode;
@@ -108,7 +130,8 @@ bool CFileView::OnCmdLineParsed(wxCmdLineParser& parser)
 			} else if (strDecode == "none") {
 				SetStringsMode(SD_NONE);
 			} else {
-				parser.SetLogo("Error: Invalid argument to --strings option: \"" + strDecode + "\"");
+				parser.SetLogo(
+					"Error: Invalid argument to --strings option: \"" + strDecode + "\"");
 				parser.Usage();
 				return false;
 			}
@@ -168,20 +191,25 @@ int CFileView::OnRun()
 					cerr << "ERROR: Don't know how to decode " << *it << endl;
 				}
 			}
-		} catch (const CEOFException& e) {
-			cerr << "ERROR: A CEOFException has been raised while decoding " << *it << ": " << e.what() << endl;
+		} catch (const CEOFException &e) {
+			cerr << "ERROR: A CEOFException has been raised while decoding " << *it << ": "
+			     << e.what() << endl;
 			return 1;
-		} catch (const CIOFailureException& e) {
-			cerr << "ERROR: A CIOFailureException has been raised while decoding " << *it << ": " << e.what() << endl;
+		} catch (const CIOFailureException &e) {
+			cerr << "ERROR: A CIOFailureException has been raised while decoding " << *it << ": "
+			     << e.what() << endl;
 			return 1;
-		} catch (const CSafeIOException& e) {
-			cerr << "ERROR: A CSafeIOException has been raised while decoding " << *it << ": " << e.what() << endl;
+		} catch (const CSafeIOException &e) {
+			cerr << "ERROR: A CSafeIOException has been raised while decoding " << *it << ": "
+			     << e.what() << endl;
 			return 1;
-		} catch (const CMuleException& e) {
-			cerr << "ERROR: A CMuleException has been raised while decoding " << *it << ": " << e.what() << endl;
+		} catch (const CMuleException &e) {
+			cerr << "ERROR: A CMuleException has been raised while decoding " << *it << ": "
+			     << e.what() << endl;
 			return 1;
-		} catch (const wxString& e) {
-			cerr << "ERROR: An exception of type wxString has been raised while decoding " << *it << ": " << e << endl;
+		} catch (const wxString &e) {
+			cerr << "ERROR: An exception of type wxString has been raised while decoding " << *it
+			     << ": " << e << endl;
 			return 1;
 		}
 	}

@@ -22,15 +22,12 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include <wx/mstream.h>
 #include <wx/gifdecod.h>
 #include <wx/dcbuffer.h>
 
-
 #include "MuleGifCtrl.h"
 #include "Types.h"
-
 
 wxBEGIN_EVENT_TABLE(MuleGifCtrl, wxControl)
 	EVT_TIMER(GIFTIMERID, MuleGifCtrl::OnTimer)
@@ -41,18 +38,15 @@ wxEND_EVENT_TABLE()
 class MuleGIFDecoder : public wxGIFDecoder
 {
 public:
-	MuleGIFDecoder()
-	{
-		m_nframe = 0;
-	}
+	MuleGIFDecoder() { m_nframe = 0; }
 
-	~MuleGIFDecoder() { }
+	~MuleGIFDecoder() {}
 
 	void GoFirstFrame() { m_nframe = 0; }
 	void GoNextFrame() { (m_nframe < GetFrameCount() - 1) ? m_nframe++ : m_nframe = 0; }
 	void GoLastFrame() { m_nframe = GetFrameCount() - 1; }
 
-	void ConvertToImage(wxImage* image) { wxGIFDecoder::ConvertToImage(m_nframe, image); }
+	void ConvertToImage(wxImage *image) { wxGIFDecoder::ConvertToImage(m_nframe, image); }
 
 	long GetDelay() { return wxGIFDecoder::GetDelay(m_nframe); }
 
@@ -60,21 +54,18 @@ private:
 	uint32_t m_nframe;
 };
 
-MuleGifCtrl::MuleGifCtrl(
-	wxWindow *parent,
+MuleGifCtrl::MuleGifCtrl(wxWindow *parent,
 	wxWindowID id,
-	const wxPoint& pos,
-	const wxSize& size,
+	const wxPoint &pos,
+	const wxSize &size,
 	long style,
-	const wxValidator& validator,
-	const wxString& name)
-:
-wxControl(parent, id, pos, size, style, validator, name),
-m_decoder(NULL),
-m_timer(this, GIFTIMERID)
+	const wxValidator &validator,
+	const wxString &name)
+: wxControl(parent, id, pos, size, style, validator, name)
+, m_decoder(NULL)
+, m_timer(this, GIFTIMERID)
 {
 }
-
 
 MuleGifCtrl::~MuleGifCtrl()
 {
@@ -85,8 +76,7 @@ MuleGifCtrl::~MuleGifCtrl()
 	}
 }
 
-
-bool MuleGifCtrl::LoadData(const char* data, int size)
+bool MuleGifCtrl::LoadData(const char *data, int size)
 {
 	if (m_decoder) {
 		m_timer.Stop();
@@ -96,7 +86,7 @@ bool MuleGifCtrl::LoadData(const char* data, int size)
 
 	wxMemoryInputStream stream(data, size);
 	m_decoder = new MuleGIFDecoder();
-	if ( m_decoder->LoadGIF(stream) != wxGIF_OK ) {
+	if (m_decoder->LoadGIF(stream) != wxGIF_OK) {
 		delete m_decoder;
 		m_decoder = NULL;
 		return false;
@@ -104,12 +94,11 @@ bool MuleGifCtrl::LoadData(const char* data, int size)
 
 	m_decoder->GoFirstFrame();
 	wxImage frame;
-	m_decoder->ConvertToImage( &frame );
+	m_decoder->ConvertToImage(&frame);
 	m_frame = wxBitmap(frame);
 
 	return true;
 }
-
 
 void MuleGifCtrl::Start()
 {
@@ -121,20 +110,17 @@ void MuleGifCtrl::Start()
 	}
 }
 
-
 void MuleGifCtrl::Stop()
 {
 	m_timer.Stop();
 }
-
 
 wxSize MuleGifCtrl::GetBestSize()
 {
 	return m_decoder->GetAnimationSize();
 }
 
-
-void MuleGifCtrl::OnTimer(wxTimerEvent& WXUNUSED(event))
+void MuleGifCtrl::OnTimer(wxTimerEvent &WXUNUSED(event))
 {
 	if (m_decoder) {
 		if (m_decoder->IsAnimation()) {
@@ -153,20 +139,18 @@ void MuleGifCtrl::OnTimer(wxTimerEvent& WXUNUSED(event))
 	}
 }
 
-
-void MuleGifCtrl::OnPaint(wxPaintEvent& WXUNUSED(event))
+void MuleGifCtrl::OnPaint(wxPaintEvent &WXUNUSED(event))
 {
 	wxBufferedPaintDC dc(this);
 
 	wxSize clientsize = GetClientSize();
 	wxSize gifsize = m_decoder->GetAnimationSize();
-	int x = (clientsize.GetWidth()-gifsize.GetWidth())/2;
-	int y = (clientsize.GetHeight()-gifsize.GetHeight())/2;
+	int x = (clientsize.GetWidth() - gifsize.GetWidth()) / 2;
+	int y = (clientsize.GetHeight() - gifsize.GetHeight()) / 2;
 
 	dc.SetBackground(*(wxTheBrushList->FindOrCreateBrush(GetBackgroundColour(), wxBRUSHSTYLE_SOLID)));
 	dc.Clear();
 	dc.DrawBitmap(m_frame, x, y, true);
 }
-
 
 // File_checked_for_headers

@@ -19,7 +19,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "testcase.h"
 #include "test.h"
 
@@ -27,20 +26,19 @@
 
 using namespace muleunit;
 
-TestCase::TestCase(const wxString& name)
-		: m_name(name)
-{}
-
-TestCase::~TestCase()
+TestCase::TestCase(const wxString &name)
+: m_name(name)
 {
 }
+
+TestCase::~TestCase() {}
 
 void TestCase::addTest(Test *test)
 {
 	m_tests.push_back(test);
 }
 
-const TestList& TestCase::getTests() const
+const TestList &TestCase::getTests() const
 {
 	return m_tests;
 }
@@ -50,23 +48,21 @@ int TestCase::getTestsCount() const
 	return m_tests.size();
 }
 
-
-const wxString& TestCase::getName() const
+const wxString &TestCase::getName() const
 {
 	return m_name;
 }
 
-
-
 bool TestCase::run()
 {
-	Print("\nRunning test-collection \"" + m_name + wxString::Format("\" with %u test-cases:", static_cast<unsigned int>(m_tests.size())));
+	Print("\nRunning test-collection \"" + m_name +
+		wxString::Format("\" with %u test-cases:", static_cast<unsigned int>(m_tests.size())));
 
 	bool failures = false;
 
 	TestList::iterator it = m_tests.begin();
 	for (; it != m_tests.end(); ++it) {
-		Test* test = *it;
+		Test *test = *it;
 
 		Print("\tTest \"" + test->getTestName() + "\" ");
 
@@ -74,7 +70,7 @@ bool TestCase::run()
 		try {
 			test->setUp();
 			wasSetup = true;
-		} catch (const CTestFailureException& e) {
+		} catch (const CTestFailureException &e) {
 			failures = true;
 			Print("\t\tFailure in setUp:\n");
 			e.PrintBT();
@@ -85,7 +81,7 @@ bool TestCase::run()
 		if (wasSetup) {
 			try {
 				test->run();
-			} catch (const CTestFailureException& e) {
+			} catch (const CTestFailureException &e) {
 				failures = true;
 				Print("\t\tFailure running:");
 				e.PrintBT();
@@ -94,7 +90,7 @@ bool TestCase::run()
 
 		try {
 			test->tearDown();
-		} catch (const CTestFailureException& e) {
+		} catch (const CTestFailureException &e) {
 			failures = true;
 			Print("\t\tFailure in tearDown:");
 			e.PrintBT();
@@ -103,4 +99,3 @@ bool TestCase::run()
 
 	return !failures;
 }
-

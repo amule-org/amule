@@ -30,13 +30,13 @@
 #define __WDR_muuli_H__
 
 #if defined(__GNUG__) && !defined(NO_GCC_PRAGMA)
-    #pragma interface "muuli_wdr.h"
+#pragma interface "muuli_wdr.h"
 #endif
 
 // Include wxWidgets' headers
 
 #ifndef WX_PRECOMP
-    #include <wx/wx.h>
+#include <wx/wx.h>
 #endif
 
 #include <wx/image.h>
@@ -57,10 +57,10 @@ extern wxSizer *s_dlgcnt;
 extern wxSizer *contentSizer;
 extern wxSizer *s_fed2klh;
 #define ID_BUTTON_FAST 10000
-wxSizer *muleDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *muleDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_SRV_SPLITTER 10001
-wxSizer *serverListDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *serverListDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *s_search_sizer;
 #define IDC_SEARCHNAME 10002
@@ -89,21 +89,21 @@ extern wxSizer *s_filter_sizer;
 #define IDC_CLEAR_RESULTS 10023
 #define ID_NOTEBOOK 10024
 #define ID_SEARCHPROGRESS 10025
-wxSizer *searchDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *searchDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_BTNCLRCOMPL 10026
 #define ID_CATEGORIES 10027
 #define ID_DLOADLIST 10028
-wxSizer *transferTopPane( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *transferTopPane(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *s_clientlistHeader;
 #define ID_CLIENTTOGGLE 10029
 #define ID_CLIENTCOUNT 10030
 #define ID_CLIENTLIST 10031
-wxSizer *transferBottomPane( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *transferBottomPane(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_MESSAGESPLATTER 10032
-wxSizer *messagePage( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *messagePage(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_FNAME 10033
 #define IDC_METFILE 10034
@@ -133,25 +133,25 @@ wxSizer *messagePage( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = T
 #define IDC_APPLY 10058
 #define IDC_APPLY_AND_CLOSE 10059
 #define ID_CLOSEWNDFD 5100
-wxSizer *fileDetails( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *fileDetails(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_CMT_TEXT 10060
 #define IDC_FC_CLEAR 10061
 #define IDC_RATELIST 10062
 #define IDCOK 10063
 #define IDCCANCEL 10064
-wxSizer *commentDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *commentDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_LST 10065
 #define IDC_CMSTATUS 10066
 #define IDCREF 10067
-wxSizer *commentLstDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *commentLstDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_ANIMATE 10068
 #define ID_HTTPDOWNLOADPROGRESS 10069
 #define IDC_DOWNLOADSIZE 10070
 #define ID_HTTPCANCEL 5101
-wxSizer *downloadDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *downloadDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_IPADDRESS 10071
 #define ID_IPORT 10072
@@ -159,10 +159,10 @@ wxSizer *downloadDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = T
 #define ID_USERHASH 10074
 #define ID_ADDFRIEND 10075
 #define ID_CLOSEDLG 10076
-wxSizer *addFriendDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *addFriendDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_SHARESSPLATTER 10077
-wxSizer *sharedfilesDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *sharedfilesDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_DLOADSCOPE 10078
 #define IDC_C0 10079
@@ -177,7 +177,7 @@ wxSizer *sharedfilesDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer 
 #define IDC_S0 10088
 #define ID_ACTIVEC 10089
 #define IDC_S1 10090
-wxSizer *statsDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *statsDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_DNAME 10091
 #define ID_DHASH 10092
@@ -201,7 +201,7 @@ wxSizer *statsDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE
 #define ID_QUEUERANK 10110
 #define ID_DSCORE 10111
 #define ID_CLOSEWND 10112
-wxSizer *clientDetails( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *clientDetails(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_NICK 10113
 #define IDC_LANGUAGE 10114
@@ -222,7 +222,7 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit = TRUE, bool set_sizer =
 // Picked above the existing wxDesigner-generated range so a future
 // regeneration of muuli_wdr.* doesn't reuse this ID for something else.
 #define IDC_AUTOSTART_LOGIN 10334
-wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesGeneralTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_MAXDOWN 10129
 #define IDC_MAXUP 10130
@@ -242,7 +242,7 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit = TRUE, bool set
 #define IDC_NETWORKED2K 10144
 #define IDC_AUTOCONNECT 10145
 #define IDC_RECONN 10146
-wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesConnectionTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_REMOVEDEAD 10147
 #define IDC_SERVERRETRIES 10148
@@ -255,7 +255,7 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit = TRUE, bool 
 #define IDC_SAFESERVERCONNECT 10155
 #define IDC_AUTOCONNECTSTATICONLY 10156
 #define IDC_MANUALSERVERHIGHPRIO 10157
-wxSizer *PreferencesServerTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesServerTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_ICH 10158
 #define IDC_AICHTRUST 10159
@@ -270,7 +270,7 @@ wxSizer *PreferencesServerTab( wxWindow *parent, bool call_fit = TRUE, bool set_
 #define IDC_MINDISKSPACE 10168
 #define IDC_SRCSEEDS 10169
 #define IDC_UAP 10170
-wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_INCFILES 10171
 #define IDC_SELINCDIR 10172
@@ -292,23 +292,23 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define IDC_EXT_CONN_PASSWDTEXT 10359
 #define IDC_OSDIRTEXT 10360
 #define IDC_OSUPDATETEXT 10361
-wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesDirectoriesTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 // IP2Country (GeoIP) preferences tab. 10400+ leaves a clear gap above
 // the existing toolbar / button IDs that crowd the 10350-10354 range
 // (ID_BUTTONMESSAGES, ID_BUTTONSTATISTICS, etc. — sharing an ID with a
 // toolbar button gets the wrong event delivered into the prefs panel).
-#define IDC_GEOIP_SOURCE         10400
-#define IDC_GEOIP_MAXMIND_LIC    10401
-#define IDC_GEOIP_CUSTOM_URL     10402
-#define IDC_GEOIP_AUTOUPDATE     10403
-#define IDC_GEOIP_UPDATE_NOW     10404
-#define IDC_GEOIP_STATUS         10405
-#define IDC_GEOIP_SOURCE_PANEL   10406
-#define IDC_GEOIP_INFO_DBIP      10407
-#define IDC_GEOIP_INFO_MAXMIND   10408
-#define IDC_GEOIP_INFO_CUSTOM    10409
-wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+#define IDC_GEOIP_SOURCE 10400
+#define IDC_GEOIP_MAXMIND_LIC 10401
+#define IDC_GEOIP_CUSTOM_URL 10402
+#define IDC_GEOIP_AUTOUPDATE 10403
+#define IDC_GEOIP_UPDATE_NOW 10404
+#define IDC_GEOIP_STATUS 10405
+#define IDC_GEOIP_SOURCE_PANEL 10406
+#define IDC_GEOIP_INFO_DBIP 10407
+#define IDC_GEOIP_INFO_MAXMIND 10408
+#define IDC_GEOIP_INFO_CUSTOM 10409
+wxSizer *PreferencesIP2CountryTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_SLIDERINFO 10177
 #define IDC_SLIDER 10178
@@ -323,7 +323,7 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit = TRUE, bool 
 #define IDC_SLIDERINFO2 10187
 #define IDC_SLIDER2 10188
 #define IDC_CLIENTVERSIONS 10189
-wxSizer *PreferencesStatisticsTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesStatisticsTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_AMULE_TWEAKS_WARNING 10190
 #define IDC_MAXCON5SEC 10191
@@ -334,7 +334,7 @@ wxSizer *PreferencesStatisticsTab( wxWindow *parent, bool call_fit = TRUE, bool 
 #define IDC_SERVERKEEPALIVE_LABEL 10196
 #define IDC_SERVERKEEPALIVE 10197
 #define IDC_PREVENT_SLEEP 10198
-wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesaMuleTweaksTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_SKIN 10199
 #define IDC_FED2KLH 10200
@@ -350,7 +350,7 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit = TRUE, bool
 #define IDC_PROGBAR 10210
 #define IDC_3DDEPTH 10211
 #define IDC_AUTOSORT 10212
-wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesGuiTweaksTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_EXT_CONN_ACCEPT 10213
 #define IDC_EXT_CONN_IP 10214
@@ -368,13 +368,13 @@ wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit = TRUE, bool s
 #define IDC_WEBUPNPTCPPORT 10226
 #define IDC_WEB_REFRESH_TIMEOUT 10227
 #define IDC_WEB_GZIP 10228
-wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesRemoteControlsTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *prefs_sizer;
 #define ID_PREFSLISTCTRL 10229
 #define ID_PREFS_OK_TOP 10230
 #define ID_PREFS_CANCEL_TOP 10231
-wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *preferencesDlgTop(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_TITLE 10232
 #define IDC_COMMENT 10233
@@ -383,18 +383,18 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit = TRUE, bool set_siz
 #define IDC_PRIOCOMBO 10236
 #define ID_BOX_CATCOLOR 10237
 #define IDC_CATCOLOR 10238
-wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *CategoriesEditWindow(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_DOWNLOADSSPLATTER 10239
-wxSizer *transferDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *transferDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_SERVERINFO 10240
 #define ID_BTN_RESET_SERVER 10241
-wxSizer *ServerInfoLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *ServerInfoLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_LOGVIEW 10242
 #define ID_BTN_RESET 10243
-wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_UPDATELIST 10244
 #define IDC_SERVERLISTURL 10245
@@ -404,10 +404,10 @@ wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE
 #define ID_ADDTOLIST 10249
 #define IDC_ED2KDISCONNECT 10250
 #define ID_SERVERLIST 10251
-wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *serverListDlgUp(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_SRVLOG_NOTEBOOK 10252
-wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *serverListDlgDown(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_UPDATEKADLIST 10253
 #define IDC_NODESLISTURL 10254
@@ -420,10 +420,10 @@ wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit = TRUE, bool set_siz
 #define ID_NODECONNECT 10261
 #define ID_KNOWNNODECONNECT 10262
 #define ID_KADDISCONNECT 10263
-wxSizer *KadDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *KadDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_ED2KINFO 10264
-wxSizer *ED2K_Info( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *ED2K_Info(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_SECIDENT 10265
 #define IDC_SUPPORT_PO 10266
@@ -440,13 +440,13 @@ wxSizer *ED2K_Info( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRU
 #define IDC_FILTERLAN 10277
 #define IDC_PARANOID 10278
 #define IDC_IPFILTERSYS 10279
-wxSizer *PreferencesSecurityTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesSecurityTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_ONLINESIG 10280
 #define IDC_OSUPDATE 10281
 #define IDC_OSDIR 10282
 #define IDC_SELOSDIR 10283
-wxSizer *PreferencesOnlineSigTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesOnlineSigTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_MSGFILTER 10284
 #define IDC_MSGFILTER_ALL 10285
@@ -457,7 +457,7 @@ wxSizer *PreferencesOnlineSigTab( wxWindow *parent, bool call_fit = TRUE, bool s
 #define IDC_MSGLOG 10290
 #define IDC_FILTERCOMMENTS 10291
 #define IDC_COMMENTWORD 10292
-wxSizer *PreferencesFilteringTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesFilteringTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_PROXY_ENABLE_PASSWORD 10294
 #define ID_PROXY_USER 10295
@@ -466,7 +466,7 @@ wxSizer *PreferencesFilteringTab( wxWindow *parent, bool call_fit = TRUE, bool s
 #define ID_PROXY_TYPE 10298
 #define ID_PROXY_NAME 10299
 #define ID_PROXY_PORT 10300
-wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesProxyTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_REMOTE_HOST 10301
 #define ID_REMOTE_PORT 10302
@@ -474,12 +474,12 @@ wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define ID_EC_PASSWD 10304
 #define ID_EC_SAVE 10305
 #define ID_EC_FORCE_ZLIB 10344
-wxSizer *CoreConnect( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *CoreConnect(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_VERBOSEDEBUG 10306
 #define ID_VERBOSEDEBUGLOGFILE 10307
 #define ID_DEBUGCATS 10308
-wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesDebug(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *IDC_CURJOB;
 #define IDC_CONV_PB_LABEL 10309
@@ -489,18 +489,18 @@ extern wxSizer *IDC_CURJOB;
 #define IDC_ADDITEM 10313
 #define IDC_RETRY 10314
 #define IDC_CONVREMOVE 10315
-wxSizer *convertDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *convertDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_KADINFO 10316
-wxSizer *Kad_Info( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *Kad_Info(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *m_networknotebooksizer;
 #define ID_NETNOTEBOOK 10317
-wxSizer *NetDialog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *NetDialog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *IDC_PREFS_EVENTS_PAGE;
 #define IDC_EVENTLIST 10318
-wxSizer *PreferencesEventsTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *PreferencesEventsTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *s_sharedfilespeerHeader;
 #define ID_SHAREDCLIENTTOGGLE 10319
@@ -509,21 +509,21 @@ extern wxSizer *s_sharedfilespeerHeader;
 #define IDC_STRANSFERRED 10322
 #define ID_LINE 10323
 #define ID_SHAREDCLIENTLIST 10324
-wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *sharedfilesBottomDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_SHOW_CLIENTS_MODE 10325
 #define ID_BTNRELSHARED 10326
 #define ID_SHFILELIST 10327
-wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *sharedfilesTopDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_FRIENDLIST 10328
-wxSizer *messagePageFriends( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *messagePageFriends(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_CHATSELECTOR 10329
 #define IDC_CMESSAGE 10330
 #define IDC_CSEND 10331
 #define IDC_CCLOSE 10332
-wxSizer *messagePageMessages( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 // Declare menubar functions
 
@@ -539,23 +539,23 @@ wxSizer *messagePageMessages( wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define ID_BUTTONNEWPREFERENCES 10352
 #define ID_BUTTONIMPORT 10353
 #define ID_ABOUT 10354
-void muleToolbar( wxToolBar *parent );
+void muleToolbar(wxToolBar *parent);
 
 // Declare bitmap functions
 
-wxBitmap clientImages( size_t index );
+wxBitmap clientImages(size_t index);
 
-wxBitmap dlStatusImages( size_t index );
+wxBitmap dlStatusImages(size_t index);
 
-wxBitmap connImages( size_t index );
+wxBitmap connImages(size_t index);
 
-wxBitmap moreImages( size_t index );
+wxBitmap moreImages(size_t index);
 
-wxBitmap amuleSpecial( size_t index );
+wxBitmap amuleSpecial(size_t index);
 
-wxBitmap connButImg( size_t index );
+wxBitmap connButImg(size_t index);
 
-wxBitmap amuleDlgImages( size_t index );
+wxBitmap amuleDlgImages(size_t index);
 
 #endif
 

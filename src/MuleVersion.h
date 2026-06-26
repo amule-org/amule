@@ -25,14 +25,14 @@
 #ifndef MULEVERSION_H
 #define MULEVERSION_H
 
-#include "config.h"		// Needed for VERSION
+#include "config.h" // Needed for VERSION
 
 #define MULEVERSION_RETVAL_BEGIN	wxString ver(
 #define MULEVERSION_RETVAL_END		);
-#define MULEVERSION_BOOST_VERSION	ver += " and Boost " + MuleBoostVersion;
-#define MULEVERSION_ADD_BEGIN		ver +=
-#define MULEVERSION_ADD_END		;
-#define MULEVERSION_RETURN_RESULT	return ver;
+#define MULEVERSION_BOOST_VERSION ver += " and Boost " + MuleBoostVersion;
+#define MULEVERSION_ADD_BEGIN ver +=
+#define MULEVERSION_ADD_END ;
+#define MULEVERSION_RETURN_RESULT return ver;
 
 /**
  * Version of Boost aMule is compiled with.
@@ -40,7 +40,6 @@
  * Defined in LibSocketAsio.cpp.
  */
 extern wxString MuleBoostVersion;
-
 
 /**
  * Returns a description of the version of aMule being used.
@@ -54,92 +53,92 @@ extern wxString MuleBoostVersion;
 inline wxString GetMuleVersion()
 {
 	MULEVERSION_RETVAL_BEGIN
-		VERSION
-		" compiled with "
+	VERSION
+	" compiled with "
 
 // Figure out the toolkit used by wxWidgets...
 #if defined(__WXGTK__)
-#	if defined(__WXGTK3__)
-#		define MULEVERSION_WXTOOLKIT	"GTK3"
-#	elif defined(__WXGTK2__)
-#		define MULEVERSION_WXTOOLKIT	"GTK2"
-#	else
-#		define MULEVERSION_WXTOOLKIT	"GTK"
-#	endif
+#if defined(__WXGTK3__)
+#define MULEVERSION_WXTOOLKIT "GTK3"
+#elif defined(__WXGTK2__)
+#define MULEVERSION_WXTOOLKIT "GTK2"
+#else
+#define MULEVERSION_WXTOOLKIT "GTK"
+#endif
 #elif defined(__WXOSX__)
-#	if defined(__WXOSX_CARBON__)
-#		define MULEVERSION_WXTOOLKIT	"OSX Carbon"
-#	elif defined(__WXOSX_COCOA__)
-#		define MULEVERSION_WXTOOLKIT	"OSX Cocoa"
-#	elif defined(__WXOSX_IPHONE__)
-#		define MULEVERSION_WXTOOLKIT	"OSX iPhone"
-#	else
-#		define MULEVERSION_WXTOOLKIT	"OSX"
-#	endif
+#if defined(__WXOSX_CARBON__)
+#define MULEVERSION_WXTOOLKIT "OSX Carbon"
+#elif defined(__WXOSX_COCOA__)
+#define MULEVERSION_WXTOOLKIT "OSX Cocoa"
+#elif defined(__WXOSX_IPHONE__)
+#define MULEVERSION_WXTOOLKIT "OSX iPhone"
+#else
+#define MULEVERSION_WXTOOLKIT "OSX"
+#endif
 #elif defined(__WXCOCOA__)
-#		define MULEVERSION_WXTOOLKIT	"Cocoa"
+#define MULEVERSION_WXTOOLKIT "Cocoa"
 #elif defined(__WXMAC__)
-#		define MULEVERSION_WXTOOLKIT	"Mac"
+#define MULEVERSION_WXTOOLKIT "Mac"
 #elif defined(__WXMSW__) || defined(__WINDOWS__)
-#	if defined(__VISUALC__)
-#		define MULEVERSION_WXTOOLKIT	"MSW VC"
-#	elif defined(__WXMICROWIN__)
-#		define MULEVERSION_WXTOOLKIT	"MicroWin"
-#	else
-#		define MULEVERSION_WXTOOLKIT	"MSW"
-#	endif
+#if defined(__VISUALC__)
+#define MULEVERSION_WXTOOLKIT "MSW VC"
+#elif defined(__WXMICROWIN__)
+#define MULEVERSION_WXTOOLKIT "MicroWin"
+#else
+#define MULEVERSION_WXTOOLKIT "MSW"
+#endif
 #elif defined(__NANOX__)
-#		define MULEVERSION_WXTOOLKIT	"NanoX"
+#define MULEVERSION_WXTOOLKIT "NanoX"
 #elif defined(__WXMOTIF__)
-#		define MULEVERSION_WXTOOLKIT	"Motif"
+#define MULEVERSION_WXTOOLKIT "Motif"
 #elif defined(__WXMGL__)
-#		define MULEVERSION_WXTOOLKIT	"MGL"
+#define MULEVERSION_WXTOOLKIT "MGL"
 #elif defined(__WXPM__)
-#		define MULEVERSION_WXTOOLKIT	"PM"
+#define MULEVERSION_WXTOOLKIT "PM"
 #elif defined(__WXDFB__)
-#		define MULEVERSION_WXTOOLKIT	"DirectFB"
+#define MULEVERSION_WXTOOLKIT "DirectFB"
 #elif defined(__WXX11__)
-#		define MULEVERSION_WXTOOLKIT	"X11"
+#define MULEVERSION_WXTOOLKIT "X11"
 #endif
 
 // ...and describe it.
 #if defined(__WXBASE__)
-		"wxBase"
-#	ifdef MULEVERSION_WXTOOLKIT
-		"(" MULEVERSION_WXTOOLKIT ")"
-#	endif
+	"wxBase"
+#ifdef MULEVERSION_WXTOOLKIT
+	"(" MULEVERSION_WXTOOLKIT ")"
+#endif
 #elif defined(__WXUNIVERSAL__)
-		"wxUniversal"
-#	ifdef MULEVERSION_WXTOOLKIT
-		"(" MULEVERSION_WXTOOLKIT ")"
-#	endif
+	"wxUniversal"
+#ifdef MULEVERSION_WXTOOLKIT
+	"(" MULEVERSION_WXTOOLKIT ")"
+#endif
 #else
-#	ifdef MULEVERSION_WXTOOLKIT
-		"wx" MULEVERSION_WXTOOLKIT
-#	else
-		"wxWidgets"
-#	endif
+#ifdef MULEVERSION_WXTOOLKIT
+	"wx" MULEVERSION_WXTOOLKIT
+#else
+	"wxWidgets"
+#endif
 #endif
 
-		// wxWidgets version
-		" v" wxSTRINGIZE_T(wxMAJOR_VERSION) "." wxSTRINGIZE_T(wxMINOR_VERSION) "." wxSTRINGIZE_T(wxRELEASE_NUMBER)
-	MULEVERSION_RETVAL_END
+	// wxWidgets version
+	" v" wxSTRINGIZE_T(wxMAJOR_VERSION) "." wxSTRINGIZE_T(wxMINOR_VERSION) "." wxSTRINGIZE_T(
+		wxRELEASE_NUMBER) MULEVERSION_RETVAL_END
 
-	// Describe Boost version, if compiled with Boost.Asio
-	MULEVERSION_BOOST_VERSION
+		// Describe Boost version, if compiled with Boost.Asio
+		MULEVERSION_BOOST_VERSION
 
 #if defined(__DEBUG__) || defined(GITDATE)
-	MULEVERSION_ADD_BEGIN
-#	ifdef __DEBUG__
+		MULEVERSION_ADD_BEGIN
+#ifdef __DEBUG__
 		" (Debugging)"
-#	endif
-#	ifdef GITDATE
+#endif
+#ifdef GITDATE
 		" (Snapshot: " GITDATE ")"
-#	endif
-	MULEVERSION_ADD_END
+#endif
+		MULEVERSION_ADD_END
 #endif
 
-	MULEVERSION_RETURN_RESULT
+		MULEVERSION_RETURN_RESULT
 }
 
 #undef MULEVERSION_RETVAL_BEGIN

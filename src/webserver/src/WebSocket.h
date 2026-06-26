@@ -27,54 +27,57 @@
 #ifndef WEBSOCKET_H
 #define WEBSOCKET_H
 
-
 #include "WebServer.h"
 #include <LibSocket.h>
 
-
 class CWebServer;
 
+class CWebSocket : public CLibSocket
+{
+public:
+	CWebSocket(CWebServerBase *parent);
+	~CWebSocket();
 
-class CWebSocket : public CLibSocket {
+	virtual void OnSend(int);
+	virtual void OnReceive(int);
+	virtual void OnLost(int);
+
+	void OnRequestReceived(char *pHeader, char *pData, uint32 dwDataLen);
+
+	void SendContent(const char *szStdResponse, const void *pContent, uint32 dwContentSize);
+	void SendData(const void *pData, uint32 dwDataSize);
+	void SendHttpHeaders(const char *szType, bool use_gzip, uint32 content_len, uint64_t session_id);
+
+	CWebServerBase *m_pParent;
+
+	class CChunk
+	{
 	public:
-		CWebSocket(CWebServerBase *parent);
-		~CWebSocket();
+		CChunk()
+		: m_pData(NULL)
+		, m_pToSend(NULL)
+		, m_dwSize(0)
+		, m_pNext(NULL)
+		{
+		}
+		char *m_pData;
+		char *m_pToSend;
+		uint32 m_dwSize;
 
-		virtual void OnSend(int);
-		virtual void OnReceive(int);
-		virtual void OnLost(int);
+		CChunk *m_pNext;
+		~CChunk() { delete[] m_pData; }
+	};
 
-		void OnRequestReceived(char* pHeader, char* pData, uint32 dwDataLen);
+	CChunk *m_pHead; // head of what has to be sent
+	CChunk *m_pTail;
 
-		void SendContent(const char* szStdResponse, const void* pContent, uint32 dwContentSize);
-		void SendData(const void* pData, uint32 dwDataSize);
-		void SendHttpHeaders(const char * szType, bool use_gzip, uint32 content_len, uint64_t session_id);
-
-		CWebServerBase *m_pParent;
-
-		class CChunk {
-			public:
-				CChunk()
-					: m_pData(NULL), m_pToSend(NULL), m_dwSize(0), m_pNext(NULL)
-				{}
-				char* m_pData;
-				char* m_pToSend;
-				uint32 m_dwSize;
-
-				CChunk* m_pNext;
-				~CChunk() { delete[] m_pData; }
-		};
-
-		CChunk *m_pHead; // head of what has to be sent
-		CChunk *m_pTail;
-
-		bool m_IsGet, m_IsPost;
-		char *m_pBuf;
-		uint32 m_dwBufSize;
-		uint32 m_dwRecv;
-		uint32 m_dwHttpHeaderLen;
-		uint32 m_dwHttpContentLen;
+	bool m_IsGet, m_IsPost;
+	char *m_pBuf;
+	uint32 m_dwBufSize;
+	uint32 m_dwRecv;
+	uint32 m_dwHttpHeaderLen;
+	uint32 m_dwHttpContentLen;
 };
 
-#endif //WEBSOCKET_H
+#endif // WEBSOCKET_H
 // File_checked_for_headers

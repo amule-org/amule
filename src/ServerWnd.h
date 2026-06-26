@@ -26,51 +26,50 @@
 #ifndef SERVERWND_H
 #define SERVERWND_H
 
-#include <wx/splitter.h>	// Needed for wxSplitter
-#include <wx/listctrl.h>	// Needed for wxListCtrl
-
+#include <wx/splitter.h> // Needed for wxSplitter
+#include <wx/listctrl.h> // Needed for wxListCtrl
 
 class CServerListCtrl;
 
 class CServerWnd : public wxPanel
 {
 public:
-	CServerWnd(wxWindow* pParent, int splitter_pos);   // standard constructor
+	CServerWnd(wxWindow *pParent, int splitter_pos); // standard constructor
 	virtual ~CServerWnd();
 
-	void UpdateServerMetFromURL(const wxString& strURL);
+	void UpdateServerMetFromURL(const wxString &strURL);
 	void UpdateED2KInfo();
 	void UpdateKadInfo();
 
-	CServerListCtrl* serverlistctrl;
+	CServerListCtrl *serverlistctrl;
 
 	// Shared column-width helper for the two info notebooks (ED2K
 	// Info, Kad Info). Pins column 0 to autosize and fills column 1
 	// with the remaining client width so the value column doesn't
 	// truncate (#813).
-	static void FitInfoListColumns(wxListCtrl* list);
+	static void FitInfoListColumns(wxListCtrl *list);
 
 	// Copy currently-selected rows of one of the two info notebooks
 	// (or all rows when no selection) to the clipboard as
 	// tab-separated `<label>\t<value>` lines (#814).
-	static void CopyInfoListToClipboard(wxListCtrl* list);
+	static void CopyInfoListToClipboard(wxListCtrl *list);
 
 private:
-	void OnSashPositionChanging(wxSplitterEvent& evt);
-	void OnSashPositionChanged(wxSplitterEvent& evt);
-	void OnBnClickedAddserver(wxCommandEvent& evt);
-	void OnBnClickedED2KDisconnect(wxCommandEvent& evt);
-	void OnBnClickedUpdateservermetfromurl(wxCommandEvent& evt);
-	void OnBnClickedResetLog(wxCommandEvent& evt);
-	void OnBnClickedResetServerLog(wxCommandEvent& evt);
+	void OnSashPositionChanging(wxSplitterEvent &evt);
+	void OnSashPositionChanged(wxSplitterEvent &evt);
+	void OnBnClickedAddserver(wxCommandEvent &evt);
+	void OnBnClickedED2KDisconnect(wxCommandEvent &evt);
+	void OnBnClickedUpdateservermetfromurl(wxCommandEvent &evt);
+	void OnBnClickedResetLog(wxCommandEvent &evt);
+	void OnBnClickedResetServerLog(wxCommandEvent &evt);
 
 	// Copy handlers for ED2K Info / Kad Info notebook tabs (#814).
 	// Routed through wxEvtHandler bindings rather than the static
 	// event table so both list-control IDs can share the same code
 	// without a per-ID stanza.
-	void OnInfoListKeyDown(wxKeyEvent& evt);
-	void OnInfoListContextMenu(wxContextMenuEvent& evt);
-	void OnInfoListCopy(wxCommandEvent& evt);
+	void OnInfoListKeyDown(wxKeyEvent &evt);
+	void OnInfoListContextMenu(wxContextMenuEvent &evt);
+	void OnInfoListCopy(wxCommandEvent &evt);
 
 	// Set in OnSashPositionChanging (only fires while the user is
 	// actually dragging the sash); checked by OnSashPositionChanged

@@ -39,18 +39,15 @@ enum ESearchOperators
 // would fail wxConvLibc and collapse to empty, breaking operator-token
 // comparisons in SearchList. Keep wxT() so the literal is a wide-char at
 // compile time — same reason as FileTags.h TAG_* macros.
-#define	SEARCHOPTOK_AND	wxT("\255AND")
-#define	SEARCHOPTOK_OR	wxT("\255OR")
-#define	SEARCHOPTOK_NOT	wxT("\255NOT")
+#define SEARCHOPTOK_AND wxT("\255AND")
+#define SEARCHOPTOK_OR wxT("\255OR")
+#define SEARCHOPTOK_NOT wxT("\255NOT")
 
 class CSearchExpr
 {
 public:
-	CSearchExpr(){}
-	CSearchExpr(const wxString& pszString)
-	{
-		Add(pszString);
-	}
+	CSearchExpr() {}
+	CSearchExpr(const wxString &pszString) { Add(pszString); }
 
 	void Add(ESearchOperators eOperator)
 	{
@@ -65,22 +62,19 @@ public:
 		}
 	}
 
-	void Add(const wxString& pszString)
-	{
-		m_aExpr.Add(pszString);
-	}
+	void Add(const wxString &pszString) { m_aExpr.Add(pszString); }
 
-	void Add(const CSearchExpr* pexpr)
+	void Add(const CSearchExpr *pexpr)
 	{
-		//m_aExpr.Append(pexpr->m_aExpr);
-		for (unsigned int i=0; i < pexpr->m_aExpr.GetCount(); ++i) {
+		// m_aExpr.Append(pexpr->m_aExpr);
+		for (unsigned int i = 0; i < pexpr->m_aExpr.GetCount(); ++i) {
 			m_aExpr.Add(pexpr->m_aExpr[i]);
 		}
 	}
 
-	void Concatenate(const wxString& pstrString)
+	void Concatenate(const wxString &pstrString)
 	{
-		wxASSERT( m_aExpr.GetCount() == 1 );
+		wxASSERT(m_aExpr.GetCount() == 1);
 		m_aExpr[0] += ' ';
 		m_aExpr[0] += pstrString;
 	}
@@ -88,7 +82,7 @@ public:
 	wxArrayString m_aExpr;
 };
 
-void ParsedSearchExpression(const CSearchExpr* pexpr);
+void ParsedSearchExpression(const CSearchExpr *pexpr);
 
 #ifdef _MSC_VER
 #define YY_NO_UNISTD_H

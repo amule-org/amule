@@ -39,14 +39,12 @@ there client on the eMule forum..
 #ifndef __INDEXED_H__
 #define __INDEXED_H__
 
-
 #include "SearchManager.h"
 #include "Entry.h"
 
 class wxArrayString;
 
-
-typedef std::list<Kademlia::CEntry*> CKadEntryPtrList;
+typedef std::list<Kademlia::CEntry *> CKadEntryPtrList;
 
 struct Source
 {
@@ -54,15 +52,14 @@ struct Source
 	CKadEntryPtrList entryList;
 };
 
-typedef std::list<Source*> CKadSourcePtrList;
-typedef std::map<Kademlia::CUInt128,Source*> CSourceKeyMap;
+typedef std::list<Source *> CKadSourcePtrList;
+typedef std::map<Kademlia::CUInt128, Source *> CSourceKeyMap;
 
 struct KeyHash
 {
 	Kademlia::CUInt128 keyID;
 	CSourceKeyMap m_Source_map;
 };
-
 
 struct SrcHash
 {
@@ -81,7 +78,8 @@ struct SSearchTerm
 	SSearchTerm();
 	~SSearchTerm();
 
-	enum ESearchTermType {
+	enum ESearchTermType
+	{
 		AND,
 		OR,
 		NOT,
@@ -95,19 +93,20 @@ struct SSearchTerm
 		OpNotEqual
 	} type;
 
-	CTag* tag;
-	wxArrayString* astr;
+	CTag *tag;
+	wxArrayString *astr;
 
-	SSearchTerm* left;
-	SSearchTerm* right;
+	SSearchTerm *left;
+	SSearchTerm *right;
 };
 
-typedef std::map<Kademlia::CUInt128,KeyHash*> KeyHashMap;
-typedef std::map<Kademlia::CUInt128,SrcHash*> SrcHashMap;
-typedef std::map<Kademlia::CUInt128,Load*> LoadMap;
+typedef std::map<Kademlia::CUInt128, KeyHash *> KeyHashMap;
+typedef std::map<Kademlia::CUInt128, SrcHash *> SrcHashMap;
+typedef std::map<Kademlia::CUInt128, Load *> LoadMap;
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 class CKadUDPKey;
@@ -119,15 +118,35 @@ public:
 	CIndexed();
 	~CIndexed();
 
-	bool AddKeyword(const CUInt128& keyWordID, const CUInt128& sourceID, Kademlia::CKeyEntry* entry, uint8_t& load);
-	bool AddSources(const CUInt128& keyWordID, const CUInt128& sourceID, Kademlia::CEntry* entry, uint8_t& load);
-	bool AddNotes(const CUInt128& keyID, const CUInt128& sourceID, Kademlia::CEntry* entry, uint8_t& load);
-	bool AddLoad(const CUInt128& keyID, uint32_t time);
+	bool AddKeyword(const CUInt128 &keyWordID,
+		const CUInt128 &sourceID,
+		Kademlia::CKeyEntry *entry,
+		uint8_t &load);
+	bool AddSources(
+		const CUInt128 &keyWordID, const CUInt128 &sourceID, Kademlia::CEntry *entry, uint8_t &load);
+	bool AddNotes(
+		const CUInt128 &keyID, const CUInt128 &sourceID, Kademlia::CEntry *entry, uint8_t &load);
+	bool AddLoad(const CUInt128 &keyID, uint32_t time);
 	size_t GetFileKeyCount() const noexcept { return m_Keyword_map.size(); }
-	void SendValidKeywordResult(const CUInt128& keyID, const SSearchTerm* pSearchTerms, uint32_t ip, uint16_t port, bool oldClient, uint16_t startPosition, const CKadUDPKey& senderKey);
-	void SendValidSourceResult(const CUInt128& keyID, uint32_t ip, uint16_t port, uint16_t startPosition, uint64_t fileSize, const CKadUDPKey& senderKey);
-	void SendValidNoteResult(const CUInt128& keyID, uint32_t ip, uint16_t port, uint64_t fileSize, const CKadUDPKey& senderKey);
-	bool SendStoreRequest(const CUInt128& keyID);
+	void SendValidKeywordResult(const CUInt128 &keyID,
+		const SSearchTerm *pSearchTerms,
+		uint32_t ip,
+		uint16_t port,
+		bool oldClient,
+		uint16_t startPosition,
+		const CKadUDPKey &senderKey);
+	void SendValidSourceResult(const CUInt128 &keyID,
+		uint32_t ip,
+		uint16_t port,
+		uint16_t startPosition,
+		uint64_t fileSize,
+		const CKadUDPKey &senderKey);
+	void SendValidNoteResult(const CUInt128 &keyID,
+		uint32_t ip,
+		uint16_t port,
+		uint64_t fileSize,
+		const CKadUDPKey &senderKey);
+	bool SendStoreRequest(const CUInt128 &keyID);
 	uint32_t m_totalIndexSource;
 	uint32_t m_totalIndexKeyword;
 	uint32_t m_totalIndexNotes;
@@ -146,7 +165,7 @@ private:
 	void Clean();
 };
 
-} // End namespace
+} // namespace Kademlia
 
 #endif //__INDEXED_H__
 // File_checked_for_headers

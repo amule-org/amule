@@ -23,11 +23,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-#include "CFile.h"			// Interface declarations.
-#include "Logger.h"			// Needed for AddDebugLogLineC
-#include <common/Path.h>		// Needed for CPath
-#include "config.h"			// Needed for HAVE_SYS_PARAM_H
+#include "CFile.h"       // Interface declarations.
+#include "Logger.h"      // Needed for AddDebugLogLineC
+#include <common/Path.h> // Needed for CPath
+#include "config.h"      // Needed for HAVE_SYS_PARAM_H
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -35,130 +34,136 @@
 
 // standard
 #if defined(__WINDOWS__) && !defined(__GNUWIN32__) && !defined(__WXWINE__) && !defined(__WXMICROWIN__)
-#	include <io.h>
-#	ifndef __SALFORDC__
-#		define   WIN32_LEAN_AND_MEAN
-#		define   NOSERVICE
-#		define   NOIME
-#		define   NOATOM
-#		define   NOGDI
-#		define   NOGDICAPMASKS
-#		define   NOMETAFILE
+#include <io.h>
+#ifndef __SALFORDC__
+#define WIN32_LEAN_AND_MEAN
+#define NOSERVICE
+#define NOIME
+#define NOATOM
+#define NOGDI
+#define NOGDICAPMASKS
+#define NOMETAFILE
 #ifndef NOMINMAX
-	#define   NOMINMAX
+#define NOMINMAX
 #endif
-#		define   NOMSG
-#		define   NOOPENFILE
-#		define   NORASTEROPS
-#		define   NOSCROLL
-#		define   NOSOUND
-#		define   NOSYSMETRICS
-#		define   NOTEXTMETRIC
-#		define   NOWH
-#		define   NOCOMM
-#		define   NOKANJI
-#		define   NOCRYPT
-#		define   NOMCX
-#	endif
+#define NOMSG
+#define NOOPENFILE
+#define NORASTEROPS
+#define NOSCROLL
+#define NOSOUND
+#define NOSYSMETRICS
+#define NOTEXTMETRIC
+#define NOWH
+#define NOCOMM
+#define NOKANJI
+#define NOCRYPT
+#define NOMCX
+#endif
 #elif (defined(__UNIX__) || defined(__GNUWIN32__))
-#	ifdef __GNUWIN32__
-#		include <windows.h>
-#	endif
+#ifdef __GNUWIN32__
+#include <windows.h>
+#endif
 #elif (defined(__WXPM__))
-#	include <io.h>
+#include <io.h>
 #elif (defined(__WXSTUBS__))
-	// Have to ifdef this for different environments
-#	include <io.h>
+// Have to ifdef this for different environments
+#include <io.h>
 #elif (defined(__WXMAC__))
 #if __MSL__ < 0x6000
-int access( const char *path, int mode ) { return 0 ; }
+int access(const char *path, int mode)
+{
+	return 0;
+}
 #else
-int _access( const char *path, int mode ) { return 0 ; }
+int _access(const char *path, int mode)
+{
+	return 0;
+}
 #endif
-char* mktemp( char * path ) { return path ;}
-#	include <stat.h>
+char *mktemp(char *path)
+{
+	return path;
+}
+#include <stat.h>
 #else
-#	error  "Please specify the header with file functions declarations."
-#endif  //Win/UNIX
+#error "Please specify the header with file functions declarations."
+#endif // Win/UNIX
 
 // there is no distinction between text and binary files under Unix, so define
 // O_BINARY as 0 if the system headers don't do it already
 #if defined(__UNIX__) && !defined(O_BINARY)
-#	define   O_BINARY    (0)
-#endif  //__UNIX__
-
+#define O_BINARY (0)
+#endif //__UNIX__
 
 // The following defines handle different names across platforms,
 // and ensures that we use 64b IO on windows (only 32b by default).
 #ifdef __WINDOWS__
-	#define FLUSH_FD(x)			_commit(x)
-	#define SEEK_FD(x, y, z)		_lseeki64(x, y, z)
-	#define TELL_FD(x)			_telli64(x)
+#define FLUSH_FD(x) _commit(x)
+#define SEEK_FD(x, y, z) _lseeki64(x, y, z)
+#define TELL_FD(x) _telli64(x)
 
-	#if (__MSVCRT_VERSION__ < 0x0601)
-		//#warning MSCVRT-Version smaller than 6.01
-		#define STAT_FD(x, y)		_fstati64(x, y)
-		#define STAT_STRUCT		struct _stati64
-	#else
-		#define STAT_FD(x, y)		_fstat64(x, y)
-		#define STAT_STRUCT		struct __stat64
-	#endif
+#if (__MSVCRT_VERSION__ < 0x0601)
+// #warning MSCVRT-Version smaller than 6.01
+#define STAT_FD(x, y) _fstati64(x, y)
+#define STAT_STRUCT struct _stati64
+#else
+#define STAT_FD(x, y) _fstat64(x, y)
+#define STAT_STRUCT struct __stat64
+#endif
 #else
 
 // We don't need to sync all meta-data, just the contents,
 // so use fdatasync when possible (see man fdatasync).
-	#if defined(_POSIX_SYNCHRONIZED_IO) && (_POSIX_SYNCHRONIZED_IO > 0)
-		#define FLUSH_FD(x)		fdatasync(x)
-	#else
-		#define FLUSH_FD(x)		fsync(x)
-	#endif
-
-	#define SEEK_FD(x, y, z)		lseek(x, y, z)
-	#define TELL_FD(x)			wxTell(x)
-	#define STAT_FD(x, y)			fstat(x, y)
-	#define STAT_STRUCT			struct stat
+#if defined(_POSIX_SYNCHRONIZED_IO) && (_POSIX_SYNCHRONIZED_IO > 0)
+#define FLUSH_FD(x) fdatasync(x)
+#else
+#define FLUSH_FD(x) fsync(x)
 #endif
 
+#define SEEK_FD(x, y, z) lseek(x, y, z)
+#define TELL_FD(x) wxTell(x)
+#define STAT_FD(x, y) fstat(x, y)
+#define STAT_STRUCT struct stat
+#endif
 
 // This function is used to check if a syscall failed, in that case
 // log an appropriate message containing the errno string.
-inline void syscall_check(
-	bool check,
-	const CPath& filePath,
-	const wxString& what)
+inline void syscall_check(bool check, const CPath &filePath, const wxString &what)
 {
 	if (!check) {
-		AddDebugLogLineC(logCFile,
-			CFormat("Error when %s (%s): %s")
-				% what % filePath % wxSysErrorMsg());
+		AddDebugLogLineC(
+			logCFile, CFormat("Error when %s (%s): %s") % what % filePath % wxSysErrorMsg());
 	}
 }
 
-
-CSeekFailureException::CSeekFailureException(const wxString& desc)
-	: CIOFailureException("SeekFailure", desc)
-{}
-
+CSeekFailureException::CSeekFailureException(const wxString &desc)
+: CIOFailureException("SeekFailure", desc)
+{
+}
 
 CFile::CFile()
-	: m_fd(fd_invalid), m_safeWrite(false),
-	  m_writeBufferPending(0), m_canBuffer(false)
-{}
+: m_fd(fd_invalid)
+, m_safeWrite(false)
+, m_writeBufferPending(0)
+, m_canBuffer(false)
+{
+}
 
-
-CFile::CFile(const CPath& fileName, OpenMode mode)
-	: m_fd(fd_invalid), m_writeBufferPending(0), m_canBuffer(false)
+CFile::CFile(const CPath &fileName, OpenMode mode)
+: m_fd(fd_invalid)
+, m_writeBufferPending(0)
+, m_canBuffer(false)
 {
 	Open(fileName, mode);
 }
 
-
-CFile::CFile(const wxString& fileName, OpenMode mode)
-	: m_fd(fd_invalid), m_writeBufferPending(0), m_canBuffer(false)
+CFile::CFile(const wxString &fileName, OpenMode mode)
+: m_fd(fd_invalid)
+, m_writeBufferPending(0)
+, m_canBuffer(false)
 {
 	Open(fileName, mode);
 }
-
 
 CFile::~CFile()
 {
@@ -171,26 +176,22 @@ CFile::~CFile()
 	}
 }
 
-
 int CFile::fd() const
 {
 	return m_fd;
 }
-
 
 bool CFile::IsOpened() const
 {
 	return m_fd != fd_invalid;
 }
 
-
-const CPath& CFile::GetFilePath() const
+const CPath &CFile::GetFilePath() const
 {
 	return m_filePath;
 }
 
-
-bool CFile::Create(const CPath& path, bool overwrite, int accessMode)
+bool CFile::Create(const CPath &path, bool overwrite, int accessMode)
 {
 	if (!overwrite && path.FileExists()) {
 		return false;
@@ -199,21 +200,19 @@ bool CFile::Create(const CPath& path, bool overwrite, int accessMode)
 	return Open(path, write, accessMode);
 }
 
-bool CFile::Create(const wxString& path, bool overwrite, int accessMode)
+bool CFile::Create(const wxString &path, bool overwrite, int accessMode)
 {
 	return Create(CPath(path), overwrite, accessMode);
 }
 
-
-bool CFile::Open(const wxString& fileName, OpenMode mode, int accessMode)
+bool CFile::Open(const wxString &fileName, OpenMode mode, int accessMode)
 {
 	MULE_VALIDATE_PARAMS(fileName.Length(), "CFile: Cannot open, empty path.");
 
 	return Open(CPath(fileName), mode, accessMode);
 }
 
-
-bool CFile::Open(const CPath& fileName, OpenMode mode, int accessMode)
+bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode)
 {
 	MULE_VALIDATE_PARAMS(fileName.IsOk(), "CFile: Cannot open, empty path.");
 
@@ -237,37 +236,36 @@ bool CFile::Open(const CPath& fileName, OpenMode mode, int accessMode)
 #else
 	int flags = O_BINARY;
 #endif
-	switch ( mode ) {
-		case read:
-			flags |= O_RDONLY;
+	switch (mode) {
+	case read:
+		flags |= O_RDONLY;
+		break;
+
+	case write_append:
+		if (fileName.FileExists()) {
+			flags |= O_WRONLY | O_APPEND;
 			break;
+		}
+		// else: fall through as write_append is the same as write if the
+		//       file doesn't exist
 
-		case write_append:
-			if (fileName.FileExists())
-			{
-				flags |= O_WRONLY | O_APPEND;
-				break;
-			}
-			//else: fall through as write_append is the same as write if the
-			//      file doesn't exist
+	/* fall through */
+	case write:
+		flags |= O_WRONLY | O_CREAT | O_TRUNC;
+		break;
 
-		/* fall through */
-		case write:
-			flags |= O_WRONLY | O_CREAT | O_TRUNC;
-			break;
+	case write_safe:
+		flags |= O_WRONLY | O_CREAT | O_TRUNC;
+		m_filePath = m_filePath.AppendExt(".new");
+		m_safeWrite = true;
+		break;
 
-		case write_safe:
-			flags |= O_WRONLY | O_CREAT | O_TRUNC;
-			m_filePath = m_filePath.AppendExt(".new");
-			m_safeWrite = true;
-			break;
+	case write_excl:
+		flags |= O_WRONLY | O_CREAT | O_EXCL;
+		break;
 
-		case write_excl:
-			flags |= O_WRONLY | O_CREAT | O_EXCL;
-			break;
-
-		case read_write:
-			flags |= O_RDWR;
+	case read_write:
+		flags |= O_RDWR;
 		break;
 	}
 
@@ -284,7 +282,6 @@ bool CFile::Open(const CPath& fileName, OpenMode mode, int accessMode)
 	return IsOpened();
 }
 
-
 void CFile::Reopen(OpenMode mode)
 {
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -293,7 +290,6 @@ void CFile::Reopen(OpenMode mode)
 		throw CIOFailureException(wxString("Error reopening file"));
 	}
 }
-
 
 bool CFile::Close()
 {
@@ -312,7 +308,7 @@ bool CFile::Close()
 
 	if (m_safeWrite) {
 		CPath filePathTemp(m_filePath);
-		m_filePath = m_filePath.RemoveExt();	// restore m_filePath for Reopen()
+		m_filePath = m_filePath.RemoveExt(); // restore m_filePath for Reopen()
 		if (closed) {
 			closed = CPath::RenameFile(filePathTemp, m_filePath, true);
 		}
@@ -320,7 +316,6 @@ bool CFile::Close()
 
 	return closed;
 }
-
 
 bool CFile::Flush()
 {
@@ -337,8 +332,7 @@ bool CFile::Flush()
 	return flushed;
 }
 
-
-sint64 CFile::doRead(void* buffer, size_t count) const
+sint64 CFile::doRead(void *buffer, size_t count) const
 {
 	MULE_VALIDATE_PARAMS(buffer, "CFile: Invalid buffer in read operation.");
 	MULE_VALIDATE_STATE(IsOpened(), "CFile: Cannot read from closed file.");
@@ -352,7 +346,7 @@ sint64 CFile::doRead(void* buffer, size_t count) const
 
 	size_t totalRead = 0;
 	while (totalRead < count) {
-		int current = ::read(m_fd, (char*)buffer + totalRead, count - totalRead);
+		int current = ::read(m_fd, (char *)buffer + totalRead, count - totalRead);
 
 		if (current == -1) {
 			// Read error, nothing we can do other than abort.
@@ -370,7 +364,6 @@ sint64 CFile::doRead(void* buffer, size_t count) const
 	return totalRead;
 }
 
-
 void CFile::DrainWriteBuffer() const
 {
 	if (m_writeBufferPending == 0) {
@@ -380,9 +373,7 @@ void CFile::DrainWriteBuffer() const
 	// Loop to handle partial writes (e.g. interrupted by a signal).
 	size_t total = 0;
 	while (total < m_writeBufferPending) {
-		ssize_t written = ::write(m_fd,
-			m_writeBuffer.get() + total,
-			m_writeBufferPending - total);
+		ssize_t written = ::write(m_fd, m_writeBuffer.get() + total, m_writeBufferPending - total);
 		if (written < 0) {
 			throw CIOFailureException(
 				wxString("Error flushing write buffer: ") + wxSysErrorMsg());
@@ -392,8 +383,7 @@ void CFile::DrainWriteBuffer() const
 	m_writeBufferPending = 0;
 }
 
-
-sint64 CFile::doWrite(const void* buffer, size_t nCount)
+sint64 CFile::doWrite(const void *buffer, size_t nCount)
 {
 	MULE_VALIDATE_PARAMS(buffer, "CFile: Invalid buffer in write operation.");
 	MULE_VALIDATE_STATE(IsOpened(), "CFile: Cannot write to closed file.");
@@ -415,8 +405,7 @@ sint64 CFile::doWrite(const void* buffer, size_t nCount)
 		}
 		sint64 result = ::write(m_fd, buffer, nCount);
 		if (result != (sint64)nCount) {
-			throw CIOFailureException(
-				wxString("Error writing to file: ") + wxSysErrorMsg());
+			throw CIOFailureException(wxString("Error writing to file: ") + wxSysErrorMsg());
 		}
 		return result;
 	}
@@ -441,7 +430,6 @@ sint64 CFile::doWrite(const void* buffer, size_t nCount)
 	m_writeBufferPending += nCount;
 	return (sint64)nCount;
 }
-
 
 sint64 CFile::doSeek(sint64 offset) const
 {
@@ -470,7 +458,6 @@ sint64 CFile::doSeek(sint64 offset) const
 	}
 }
 
-
 uint64 CFile::GetPosition() const
 {
 	MULE_VALIDATE_STATE(IsOpened(), "Cannot get position in closed file.");
@@ -483,12 +470,12 @@ uint64 CFile::GetPosition() const
 
 	sint64 pos = TELL_FD(m_fd);
 	if (pos == wxInvalidOffset) {
-		throw CSeekFailureException(wxString("Failed to retrieve position in file: ") + wxSysErrorMsg());
+		throw CSeekFailureException(
+			wxString("Failed to retrieve position in file: ") + wxSysErrorMsg());
 	}
 
 	return pos;
 }
-
 
 uint64 CFile::GetLength() const
 {
@@ -507,7 +494,6 @@ uint64 CFile::GetLength() const
 
 	return buf.st_size;
 }
-
 
 uint64 CFile::GetAvailable() const
 {
@@ -529,7 +515,6 @@ uint64 CFile::GetAvailable() const
 	return 0;
 }
 
-
 bool CFile::SetLength(uint64 new_len)
 {
 	MULE_VALIDATE_STATE(IsOpened(), "CFile: Cannot set length when no file is open.");
@@ -543,10 +528,10 @@ bool CFile::SetLength(uint64 new_len)
 
 #ifdef __WINDOWS__
 #ifdef _MSC_VER
-// MSVC has a 64bit version
+	// MSVC has a 64bit version
 	bool result = _chsize_s(m_fd, new_len) == 0;
 #else
-// MingW has an old runtime without it
+	// MingW has an old runtime without it
 	bool result = chsize(m_fd, new_len) == 0;
 #endif
 #else

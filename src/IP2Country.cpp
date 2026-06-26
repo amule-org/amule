@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 //
 // Country flags are from FAMFAMFAM (http://www.famfamfam.com)
 //
@@ -40,33 +39,33 @@
 // Contact: mjames@gmail.com
 //
 
-#include "config.h"		// Needed for ENABLE_IP2COUNTRY
+#include "config.h" // Needed for ENABLE_IP2COUNTRY
 
 #ifdef ENABLE_IP2COUNTRY
 
-#include "Preferences.h"	// For thePrefs
-#include "CFile.h"			// For CPath
+#include "Preferences.h" // For thePrefs
+#include "CFile.h"       // For CPath
 #include "HTTPDownload.h"
-#include "Logger.h"			// For AddLogLineM()
-#include <common/Format.h>		// For CFormat()
-#include "common/FileFunctions.h"	// For UnpackArchive
-#include <common/StringFunctions.h>	// For unicode2char()
-#include "icons/icon_data.h"		// For amule_get_all_icons()
+#include "Logger.h"                 // For AddLogLineM()
+#include <common/Format.h>          // For CFormat()
+#include "common/FileFunctions.h"   // For UnpackArchive
+#include <common/StringFunctions.h> // For unicode2char()
+#include "icons/icon_data.h"        // For amule_get_all_icons()
 
-#include <wx/artprov.h>			// For wxArtProvider::GetBitmap
+#include <wx/artprov.h> // For wxArtProvider::GetBitmap
 #include <wx/intl.h>
 #include <wx/image.h>
 
-#include <cstring>			// For strncmp
+#include <cstring> // For strncmp
 
 #include "IP2Country.h"
 #include "geoip/MaxMindDBDatabase.h"
-#include "PrefsUnifiedDlg.h"		// For NotifyIP2CountryUpdateFailedIfOpen
+#include "PrefsUnifiedDlg.h" // For NotifyIP2CountryUpdateFailedIfOpen
 
-CIP2Country::CIP2Country(const wxString& configDir)
-	: m_db(new CMaxMindDBDatabase()),
-	  m_TriedPreviousMonth(false),
-	  m_ManualUpdate(false)
+CIP2Country::CIP2Country(const wxString &configDir)
+: m_db(new CMaxMindDBDatabase())
+, m_TriedPreviousMonth(false)
+, m_ManualUpdate(false)
 {
 	m_DataBaseName = "geoip.mmdb";
 	m_DataBasePath = configDir + m_DataBaseName;
@@ -79,8 +78,8 @@ CIP2Country::CIP2Country(const wxString& configDir)
 	const wxString legacyPath = configDir + "GeoLite2-Country.mmdb";
 	if (CPath::FileExists(legacyPath) && !CPath::FileExists(m_DataBasePath)) {
 		if (wxRenameFile(legacyPath, m_DataBasePath)) {
-			AddLogLineN(CFormat(_("Migrated existing GeoLite2-Country.mmdb to %s"))
-				% m_DataBasePath);
+			AddLogLineN(
+				CFormat(_("Migrated existing GeoLite2-Country.mmdb to %s")) % m_DataBasePath);
 		}
 	}
 }
@@ -130,20 +129,17 @@ void CIP2Country::StartDownload(int monthOffset)
 		wxString msg;
 		switch (thePrefs::GetGeoIPSource()) {
 		case CPreferences::GeoIPSourceMaxMind:
-			msg = _(
-				"IP2Country: MaxMind selected as the GeoIP source but no License Key "
+			msg = _("IP2Country: MaxMind selected as the GeoIP source but no License Key "
 				"configured. Open Preferences → IP2Country, paste your free MaxMind "
 				"License Key and click 'Update now'.");
 			break;
 		case CPreferences::GeoIPSourceCustom:
-			msg = _(
-				"IP2Country: Custom URL selected as the GeoIP source but no URL "
+			msg = _("IP2Country: Custom URL selected as the GeoIP source but no URL "
 				"configured. Open Preferences → IP2Country and supply a URL that "
 				"points to an .mmdb (or .gz / .tar.gz containing one).");
 			break;
 		default:
-			msg = _(
-				"IP2Country: failed to resolve a GeoIP download URL.");
+			msg = _("IP2Country: failed to resolve a GeoIP download URL.");
 			break;
 		}
 		AddLogLineC(msg);
@@ -155,7 +151,8 @@ void CIP2Country::StartDownload(int monthOffset)
 		return;
 	}
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
-	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, true, true);
+	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
+		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, true, true);
 	downloader->Create();
 	downloader->Run();
 }
@@ -182,13 +179,11 @@ void CIP2Country::DownloadFinished(uint32 result)
 
 		// Try to unpack the file, might be an archive
 		wxScopedCharBuffer dataBaseName = m_DataBaseName.utf8_str();
-		const char* geoip_files[] = {
-			dataBaseName,
-			NULL
-		};
+		const char *geoip_files[] = { dataBaseName, NULL };
 
 		if (UnpackArchive(CPath(newDat), geoip_files).second == EFT_Error) {
-			const wxString msg = CFormat(_("Download of %s file failed, aborting update.")) % m_DataBaseName;
+			const wxString msg =
+				CFormat(_("Download of %s file failed, aborting update.")) % m_DataBaseName;
 			AddLogLineC(msg);
 			if (manual) {
 				PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
@@ -198,7 +193,9 @@ void CIP2Country::DownloadFinished(uint32 result)
 
 		if (wxFileExists(m_DataBasePath)) {
 			if (!wxRemoveFile(m_DataBasePath)) {
-				const wxString msg = CFormat(_("Failed to remove %s file, aborting update.")) % m_DataBaseName;
+				const wxString msg =
+					CFormat(_("Failed to remove %s file, aborting update.")) %
+					m_DataBaseName;
 				AddLogLineC(msg);
 				if (manual) {
 					PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
@@ -208,7 +205,8 @@ void CIP2Country::DownloadFinished(uint32 result)
 		}
 
 		if (!wxRenameFile(newDat, m_DataBasePath)) {
-			const wxString msg = CFormat(_("Failed to rename %s file, aborting update.")) % m_DataBaseName;
+			const wxString msg =
+				CFormat(_("Failed to rename %s file, aborting update.")) % m_DataBaseName;
 			AddLogLineC(msg);
 			if (manual) {
 				PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
@@ -232,7 +230,8 @@ void CIP2Country::DownloadFinished(uint32 result)
 			}
 		}
 	} else if (result == HTTP_Skipped) {
-		AddLogLineN(CFormat(_("Skipped download of %s, because requested file is not newer.")) % m_DataBaseName);
+		AddLogLineN(CFormat(_("Skipped download of %s, because requested file is not newer.")) %
+			    m_DataBaseName);
 	} else {
 		// DB-IP early-month fallback: the new month's file frequently
 		// 404s for the first few days while DB-IP publishes it. Retry
@@ -241,18 +240,16 @@ void CIP2Country::DownloadFinished(uint32 result)
 		// aren't month-templated, so the fallback is gated on source.
 		// Re-arm the manual flag so the retry's eventual outcome still
 		// surfaces a popup; we only cleared it as a one-shot guard.
-		if (thePrefs::GetGeoIPSource() == CPreferences::GeoIPSourceDBIP
-			&& !m_TriedPreviousMonth) {
+		if (thePrefs::GetGeoIPSource() == CPreferences::GeoIPSourceDBIP && !m_TriedPreviousMonth) {
 			m_TriedPreviousMonth = true;
 			m_ManualUpdate = manual;
-			AddLogLineN(_(
-				"DB-IP download failed for the current month - retrying with "
-				"the previous month's URL."));
+			AddLogLineN(_("DB-IP download failed for the current month - retrying with "
+				      "the previous month's URL."));
 			StartDownload(-1);
 			return;
 		}
-		const wxString msg = CFormat(_("Failed to download %s from %s")) % m_DataBaseName
-			% thePrefs::GetGeoIPResolvedDownloadUrl(m_TriedPreviousMonth ? -1 : 0);
+		const wxString msg = CFormat(_("Failed to download %s from %s")) % m_DataBaseName %
+				     thePrefs::GetGeoIPResolvedDownloadUrl(m_TriedPreviousMonth ? -1 : 0);
 		AddLogLineC(msg);
 		if (manual) {
 			PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
@@ -297,9 +294,10 @@ void CIP2Country::LoadFlags()
 		}
 	}
 
-	AddDebugLogLineN(logGeneral, CFormat("Loaded %d flag bitmaps.") % m_CountryDataMap.size());  // there's never just one - no plural needed
+	AddDebugLogLineN(logGeneral,
+		CFormat("Loaded %d flag bitmaps.") %
+			m_CountryDataMap.size()); // there's never just one - no plural needed
 }
-
 
 CIP2Country::~CIP2Country()
 {
@@ -307,8 +305,7 @@ CIP2Country::~CIP2Country()
 	delete m_db;
 }
 
-
-const CountryData& CIP2Country::GetCountryData(const wxString &ip)
+const CountryData &CIP2Country::GetCountryData(const wxString &ip)
 {
 	// Should prevent the crash if the database does not exist
 	if (!IsEnabled()) {
@@ -341,7 +338,7 @@ const CountryData& CIP2Country::GetCountryData(const wxString &ip)
 
 #include "IP2Country.h"
 
-CIP2Country::CIP2Country(const wxString&)
+CIP2Country::CIP2Country(const wxString &)
 {
 	m_db = NULL;
 }
@@ -349,9 +346,12 @@ CIP2Country::CIP2Country(const wxString&)
 CIP2Country::~CIP2Country() {}
 void CIP2Country::Enable() {}
 void CIP2Country::DownloadFinished(uint32) {}
-bool CIP2Country::IsEnabled() { return false; }
+bool CIP2Country::IsEnabled()
+{
+	return false;
+}
 
-const CountryData& CIP2Country::GetCountryData(const wxString &)
+const CountryData &CIP2Country::GetCountryData(const wxString &)
 {
 	static CountryData dummy;
 	return dummy;

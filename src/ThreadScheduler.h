@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef THREADSCHEDULER_H
 #define THREADSCHEDULER_H
 
@@ -33,9 +32,7 @@
 #include "Types.h"
 #include "MuleThread.h"
 
-
 class CThreadTask;
-
 
 //! The priority values of tasks.
 enum ETaskPriority
@@ -46,7 +43,6 @@ enum ETaskPriority
 	//! For tasks such as finding shared files and ipfilter.dat loading only.
 	ETP_Critical
 };
-
 
 /**
  * This class mananges scheduling of background tasks.
@@ -74,7 +70,6 @@ public:
 	 */
 	static void Terminate();
 
-
 	/**
 	 * Adds a new task to the queue, returning true if the task was queued.
 	 *
@@ -91,7 +86,7 @@ public:
 	 * @see Start
 	 * @see Terminate
 	 */
-	static bool AddTask(CThreadTask* task, bool overwrite = false);
+	static bool AddTask(CThreadTask *task, bool overwrite = false);
 
 private:
 	CThreadScheduler();
@@ -101,37 +96,36 @@ private:
 	size_t GetTaskCount() const;
 
 	/** Tries to add the given task to the queue, returning true on success. */
-	bool DoAddTask(CThreadTask* task, bool overwrite);
+	bool DoAddTask(CThreadTask *task, bool overwrite);
 
 	/** Creates the actual scheduler thread if none exist. */
 	void CreateSchedulerThread();
 
 	/** Entry function called via internal thread-object. */
-	void* Entry();
+	void *Entry();
 
 	//! Contains a task and its age.
-	typedef std::pair<CThreadTask*, uint32> CEntryPair;
+	typedef std::pair<CThreadTask *, uint32> CEntryPair;
 
 	//! List of currently scheduled tasks.
 	std::deque<CEntryPair> m_tasks;
 
 	//! Specifies if tasks should be resorted by priority.
-	bool	m_tasksDirty;
+	bool m_tasksDirty;
 
-	typedef std::map<wxString, CThreadTask*> CDescMap;
+	typedef std::map<wxString, CThreadTask *> CDescMap;
 	typedef std::map<wxString, CDescMap> CTypeMap;
 	//! Map of current task by type -> desc. Used to avoid duplicate tasks.
 	CTypeMap m_taskDescs;
 
 	//! The actual worker thread.
-	CMuleThread* m_thread;
+	CMuleThread *m_thread;
 	//! The currently running task, if any.
-	CThreadTask* m_currentTask;
+	CThreadTask *m_currentTask;
 
 	friend class CTaskThread;
 	friend struct CTaskSorter;
 };
-
 
 /**
  * Base-class of all threaded tasks.
@@ -154,16 +148,16 @@ public:
 	 * @param desc Should be an unique description for this task, for detecting duplicates.
 	 * @param priority Decides how soon the task will be carried out.
 	 */
-	CThreadTask(const wxString& type, const wxString& desc, ETaskPriority priority = ETP_Normal);
+	CThreadTask(const wxString &type, const wxString &desc, ETaskPriority priority = ETP_Normal);
 
 	/** Needed since CThreadScheduler only works with CThreadTask pointers. */
 	virtual ~CThreadTask();
 
 	/** Returns the task type, used for debugging and duplicate detection. */
-	const wxString& GetType() const;
+	const wxString &GetType() const;
 
 	/** Returns the task description, used for debugging and duplicate detection. */
-	const wxString& GetDesc() const;
+	const wxString &GetDesc() const;
 
 	/** Returns the priority of the task. Used when selecting the next task. */
 	ETaskPriority GetPriority() const;
@@ -187,7 +181,7 @@ private:
 	ETaskPriority m_priority;
 
 	//! The owner (scheduler), used when calling TestDestroy.
-	CMuleThread* m_owner;
+	CMuleThread *m_owner;
 	//! Specifies if the specific task should be aborted.
 	bool m_abort;
 

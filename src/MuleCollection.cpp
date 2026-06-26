@@ -31,45 +31,37 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "MuleCollection.h"
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
-
 bool CMuleCollection::Open(const std::string &File)
 {
 	return OpenBinary(File) || OpenText(File);
 }
 
-
-template <typename intType>
-intType CMuleCollection::ReadInt(std::ifstream& infile)
+template <typename intType> intType CMuleCollection::ReadInt(std::ifstream &infile)
 {
 	intType integer = 0;
-	infile.read(reinterpret_cast<char *>(&integer),sizeof(intType));
+	infile.read(reinterpret_cast<char *>(&integer), sizeof(intType));
 	// TODO: byte-sex
 	return integer;
 }
 
-std::string CMuleCollection::ReadString(std::ifstream& infile, int TagType = 0x02)
+std::string CMuleCollection::ReadString(std::ifstream &infile, int TagType = 0x02)
 {
 	if (TagType >= 0x11 && TagType <= 0x20) {
 		std::vector<char> buffer(TagType - 0x10);
 		infile.read(&buffer[0], TagType - 0x10);
-		return buffer.empty() ?
-			std::string() :
-			std::string (buffer.begin(), buffer.end());
+		return buffer.empty() ? std::string() : std::string(buffer.begin(), buffer.end());
 	}
 	if (TagType == 0x02) {
 		uint16_t TagStringSize = ReadInt<uint16_t>(infile);
-		std::vector<char> buffer (TagStringSize);
+		std::vector<char> buffer(TagStringSize);
 		infile.read(&buffer[0], TagStringSize);
-		return buffer.empty() ?
-			std::string() :
-			std::string (buffer.begin(), buffer.end());
+		return buffer.empty() ? std::string() : std::string(buffer.begin(), buffer.end());
 	}
 	return std::string();
 }
@@ -78,28 +70,26 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 {
 	std::ifstream infile;
 
-	infile.open(File.c_str(), std::ifstream::in|std::ifstream::binary);
-	if(!infile.is_open()) {
+	infile.open(File.c_str(), std::ifstream::in | std::ifstream::binary);
+	if (!infile.is_open()) {
 		return false;
 	}
 
 	uint32_t cVersion = ReadInt<uint32_t>(infile);
 
-	if (!infile.good() ||
-	    ( cVersion != 0x01 && cVersion != 0x02)) {
-			infile.close();
-			return false;
-	}
-
-	uint32_t hTagCount = ReadInt<uint32_t>(infile);
-	if (!infile.good() ||
-	    hTagCount > 3) {
+	if (!infile.good() || (cVersion != 0x01 && cVersion != 0x02)) {
 		infile.close();
 		return false;
 	}
 
-	for (size_t hTi = 0; hTi < hTagCount;hTi++) {
-		 int hTagType = infile.get();
+	uint32_t hTagCount = ReadInt<uint32_t>(infile);
+	if (!infile.good() || hTagCount > 3) {
+		infile.close();
+		return false;
+	}
+
+	for (size_t hTi = 0; hTi < hTagCount; hTi++) {
+		int hTagType = infile.get();
 
 		// hTagFormat == 1 -> FT-value is given
 		uint16_t hTagFormat = ReadInt<uint16_t>(infile);
@@ -116,12 +106,12 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 		switch (hTag) {
 		// FT_FILENAME
 		case 0x01: {
-			/*std::string fileName =*/ ReadString(infile, hTagType);
+			/*std::string fileName =*/ReadString(infile, hTagType);
 			break;
 		}
 		// FT_COLLECTIONAUTHOR
 		case 0x31: {
-			/*std::string CollectionAuthor =*/ ReadString(infile, hTagType);
+			/*std::string CollectionAuthor =*/ReadString(infile, hTagType);
 			break;
 		}
 		// FT_COLLECTIONAUTHORKEY
@@ -154,8 +144,7 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 	you know someone who does.
 	*/
 
-	if(!infile.good() ||
-	   cFileCount > 1024) {
+	if (!infile.good() || cFileCount > 1024) {
 		infile.close();
 		return false;
 	}
@@ -165,8 +154,7 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 	for (size_t cFi = 0; cFi < cFileCount; ++cFi) {
 		uint32_t fTagCount = ReadInt<uint32_t>(infile);
 
-		if (!infile.good() ||
-		    fTagCount > 6) {
+		if (!infile.good() || fTagCount > 6) {
 			infile.close();
 			return false;
 		}
@@ -175,7 +163,7 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 		uint64_t fileSize = 0;
 		std::string fileName;
 		std::string rootHash;
-		for(size_t fTi = 0; fTi < fTagCount; ++fTi) {
+		for (size_t fTi = 0; fTi < fTagCount; ++fTi) {
 			int fTagType = infile.get();
 			if (!infile.good()) {
 				infile.close();
@@ -195,8 +183,8 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 				infile.read(&bFileHash[0], 16);
 				std::string hex = "0123456789abcdef";
 				for (int pos = 0; pos < 16; pos++) {
-					fileHash[pos*2] = hex[((bFileHash[pos] >> 4) & 0xF)];
-					fileHash[(pos*2) + 1] = hex[(bFileHash[pos]) & 0x0F];
+					fileHash[pos * 2] = hex[((bFileHash[pos] >> 4) & 0xF)];
+					fileHash[(pos * 2) + 1] = hex[(bFileHash[pos]) & 0x0F];
 				}
 				break;
 			}
@@ -207,7 +195,7 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 			}
 			// FT_FILESIZE
 			case 0x02: {
-				switch(fTagType) {
+				switch (fTagType) {
 				case 0x83: {
 					fileSize = ReadInt<uint32_t>(infile);
 					break;
@@ -233,19 +221,19 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 			}
 			// FT_FILENAME
 			case 0x01: {
-				fileName = ReadString(infile, fTagType^0x80);
+				fileName = ReadString(infile, fTagType ^ 0x80);
 				break;
 			}
 			// FT_FILECOMMENT
 			case 0xF6: {
-				/* std::string FileComment =*/ ReadString(infile, fTagType^0x80);
+				/* std::string FileComment =*/ReadString(infile, fTagType ^ 0x80);
 				break;
 			}
 			// FT_FILERATING
 			case 0xF7: {
 				if (fTagType == 0x89) { // TAGTYPE_UINT8
-					// uint8_t FileRating =
-						infile.get();
+							// uint8_t FileRating =
+					infile.get();
 
 				} else {
 					infile.close();
@@ -259,7 +247,7 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 				return false;
 				break;
 			}
-			if( !infile.good() ) {
+			if (!infile.good()) {
 				infile.close();
 				return false;
 			}
@@ -268,9 +256,7 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 		if (!fileName.empty() && fileSize > 0) {
 			std::stringstream link;
 			// ed2k://|file|fileName|fileSize|fileHash|/
-			link	<< "ed2k://|file|" << fileName
-				<< "|" << fileSize
-				<< "|" << fileHash;
+			link << "ed2k://|file|" << fileName << "|" << fileSize << "|" << fileHash;
 			if (!rootHash.empty()) {
 				link << "|h=" << rootHash;
 			}
@@ -283,25 +269,23 @@ bool CMuleCollection::OpenBinary(const std::string &File)
 	return true;
 }
 
-
 bool CMuleCollection::OpenText(const std::string &File)
 {
 	std::string line;
 	std::ifstream infile;
 
-	infile.open(File.c_str(), std::ifstream::in|std::ifstream::binary);
+	infile.open(File.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (!infile.is_open()) {
 		return false;
 	}
 
 	while (getline(infile, line, (char)10 /* LF */)) {
-		size_t last = line.size()-1;
+		size_t last = line.size() - 1;
 		if ((1 < last) && ((char)13 /* CR */ == line.at(last))) {
 			line.erase(last);
 		}
-		if (line.size() > 50 &&
-		    line.substr(0, 13) == "ed2k://|file|" &&
-		    line.substr(line.size() - 2) == "|/") {
+		if (line.size() > 50 && line.substr(0, 13) == "ed2k://|file|" &&
+			line.substr(line.size() - 2) == "|/") {
 			vCollection.push_back(line);
 		}
 	}

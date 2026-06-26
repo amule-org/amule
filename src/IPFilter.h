@@ -26,9 +26,9 @@
 #ifndef IPFILTER_H
 #define IPFILTER_H
 
-#include <wx/event.h>	// Needed for wxEvent
+#include <wx/event.h> // Needed for wxEvent
 
-#include "Types.h"	// Needed for uint8, uint16 and uint32
+#include "Types.h" // Needed for uint8, uint16 and uint32
 
 class CIPFilterEvent;
 
@@ -55,22 +55,23 @@ public:
 	 * Checks if a IP is filtered with the current list and AccessLevel.
 	 *
 	 * @param IP2test The IP-Address to test for.
-	 * @param isServer Whether this IP belongs to a server or a client. Needed for statistical purposes only.
+	 * @param isServer Whether this IP belongs to a server or a client. Needed for statistical purposes
+	 * only.
 	 * @return True if it is filtered, false otherwise.
 	 *
 	 * Note: IP2Test must be in anti-host order (BE on LE platform, LE on BE platform).
 	 */
-	bool	IsFiltered( uint32 IP2test, bool isServer = false );
+	bool IsFiltered(uint32 IP2test, bool isServer = false);
 
 	/**
 	 * Returns the number of banned ranges.
 	 */
-	uint32	BanCount() const;
+	uint32 BanCount() const;
 
 	/**
 	 * Reloads the ipfilter files, discarding the current list of ranges.
 	 */
-	void	Reload();
+	void Reload();
 
 	/**
 	 * Starts a download of the ipfilter-list at the specified URL.
@@ -80,28 +81,28 @@ public:
 	 * Once the file has been downloaded, the ipfilter.dat file
 	 * will be replaced with the new file and Reload will be called.
 	 */
-	void	Update(const wxString& strURL);
+	void Update(const wxString &strURL);
 
 	/**
 	 * This function is called when a download is completed.
 	 */
-	void	DownloadFinished(uint32 result);
+	void DownloadFinished(uint32 result);
 
 	/**
 	 * True once initial startup has finished (stays true while reloading later).
 	 */
-	bool	IsReady() const { return m_ready; }
+	bool IsReady() const { return m_ready; }
 
 	/**
 	 * These functions are called to tell the filter to start networks once it
 	 * has finished loading.
 	 */
-	void	StartKADWhenReady() { m_startKADWhenReady = true; }
-	void	ConnectToAnyServerWhenReady() { m_connectToAnyServerWhenReady = true; }
+	void StartKADWhenReady() { m_startKADWhenReady = true; }
+	void ConnectToAnyServerWhenReady() { m_connectToAnyServerWhenReady = true; }
 
 private:
 	/** Handles the result of loading the dat-files. */
-	void	OnIPFilterEvent(CIPFilterEvent&);
+	void OnIPFilterEvent(CIPFilterEvent &);
 
 	//! The URL from which the IP filter was downloaded
 	wxString m_URL;
@@ -117,7 +118,7 @@ private:
 	RangeNames m_rangeNames;
 
 	//! Mutex used to ensure thread-safety of this class
-	mutable wxMutex	m_mutex;
+	mutable wxMutex m_mutex;
 
 	// false if loading (on startup only)
 	bool m_ready;

@@ -28,31 +28,30 @@
 
 #include "MuleUDPSocket.h"
 
-
 class CPacket;
 class CServer;
 class CMemFile;
 
-
 class CServerUDPSocket : public CMuleUDPSocket
 {
 public:
-	CServerUDPSocket(amuleIPV4Address& addr, const CProxyData* ProxyData = NULL);
+	CServerUDPSocket(amuleIPV4Address &addr, const CProxyData *ProxyData = NULL);
 
-	void	SendPacket(CPacket* packet, CServer* host, bool delPacket, bool rawpacket, uint16 port_offset);
-	void	OnHostnameResolved(uint32 ip);
+	void SendPacket(CPacket *packet, CServer *host, bool delPacket, bool rawpacket, uint16 port_offset);
+	void OnHostnameResolved(uint32 ip);
 	virtual void OnReceiveError(int errorCode, uint32 ip, uint16 port);
 
 private:
-	void	OnPacketReceived(uint32 ip, uint16 port, uint8_t* buffer, size_t length);
-	void	ProcessPacket(CMemFile& packet, uint8 opcode, uint32 ip, uint16 port);
-	void	SendQueue();
+	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length);
+	void ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, uint16 port);
+	void SendQueue();
 
-	struct ServerUDPPacket {
-		CPacket*	packet;
-		uint32		ip;
-		uint16		port;
-		wxString	addr;
+	struct ServerUDPPacket
+	{
+		CPacket *packet;
+		uint32 ip;
+		uint16 port;
+		wxString addr;
 	};
 
 	typedef std::list<ServerUDPPacket> PacketList;

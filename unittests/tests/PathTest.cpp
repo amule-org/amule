@@ -65,11 +65,10 @@ wxString GetExpectedString(const wxString& src)
 */
 #endif
 
-wxString StringFrom(const CPath& prt)
+wxString StringFrom(const CPath &prt)
 {
 	return prt.GetPrintable();
 }
-
 
 DECLARE_SIMPLE(GenericPathFunctions)
 
@@ -91,7 +90,6 @@ TEST(GenericPathFunctions, JoinPaths)
 	}
 }
 
-
 DECLARE_SIMPLE(CPath)
 
 TEST(CPath, DefaultConstructor)
@@ -109,7 +107,6 @@ TEST(CPath, DefaultConstructor)
 	ASSERT_EQUALS(CPath(), tmp.GetPath());
 	ASSERT_EQUALS(CPath(), tmp.GetFullName());
 }
-
 
 TEST(CPath, PathConstructor)
 {
@@ -146,10 +143,9 @@ TEST(CPath, PathConstructor)
 #endif
 }
 
-
 TEST(CPath, CopyConstructor)
 {
-	const char* tmpPath = "foobar.tgz";
+	const char *tmpPath = "foobar.tgz";
 
 	{
 		CPath a(tmpPath);
@@ -180,11 +176,10 @@ TEST(CPath, CopyConstructor)
 	}
 }
 
-
 TEST(CPath, Operators)
 {
-	const char* tmpPath1 = "foobar.tgz";
-	const char* tmpPath2 = "barfoo.tar";
+	const char *tmpPath1 = "foobar.tgz";
+	const char *tmpPath2 = "barfoo.tar";
 
 	{
 		CPath a, b;
@@ -237,7 +232,6 @@ TEST(CPath, Operators)
 	// TODO: Less than
 }
 
-
 /** Return the path normalized for the current platform. */
 CPath Norm(wxString str)
 {
@@ -245,7 +239,6 @@ CPath Norm(wxString str)
 
 	return CPath(str);
 }
-
 
 TEST(CPath, JoinPaths)
 {
@@ -270,7 +263,6 @@ TEST(CPath, JoinPaths)
 	ASSERT_EQUALS(expected2, CPath().JoinPaths(expected2));
 }
 
-
 TEST(CPath, StartsWith)
 {
 	const CPath test = Norm("/home/amule/");
@@ -292,7 +284,6 @@ TEST(CPath, StartsWith)
 	ASSERT_FALSE(test.StartsWith(Norm("/home/amule/foo")));
 }
 
-
 TEST(CPath, IsSameDir)
 {
 	ASSERT_TRUE(Norm("/root").IsSameDir(Norm("/root")));
@@ -305,7 +296,6 @@ TEST(CPath, IsSameDir)
 
 	ASSERT_FALSE(Norm("/root").IsSameDir(Norm("/home")));
 }
-
 
 TEST(CPath, GetPath_FullName)
 {
@@ -343,7 +333,6 @@ TEST(CPath, GetPath_FullName)
 	}
 }
 
-
 TEST(CPath, Cleanup)
 {
 	const CPath initial = CPath(" /a\"b*c* <d>?e|\\:f ");
@@ -354,7 +343,6 @@ TEST(CPath, Cleanup)
 	ASSERT_EQUALS(Norm(" abc def "), initial.Cleanup(true, true));
 }
 
-
 TEST(CPath, AddPostFix)
 {
 	ASSERT_EQUALS(Norm("/foo_1.bar"), Norm("/foo.bar").AddPostfix("_1"));
@@ -362,7 +350,6 @@ TEST(CPath, AddPostFix)
 	ASSERT_EQUALS(Norm("/.bar_1"), Norm("/.bar").AddPostfix("_1"));
 	ASSERT_EQUALS(Norm("/_1"), Norm("/").AddPostfix("_1"));
 }
-
 
 TEST(CPath, Extensions)
 {

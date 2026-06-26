@@ -50,7 +50,7 @@ class CPath;
 class CSharedDirWatcher : public wxEvtHandler
 {
 public:
-	explicit CSharedDirWatcher(CSharedFileList * parent);
+	explicit CSharedDirWatcher(CSharedFileList *parent);
 	~CSharedDirWatcher();
 
 	// Start watching every path in shareddir_list. Safe to call when
@@ -72,21 +72,22 @@ public:
 	// Event-type flags accumulated for one pending path between
 	// fs-watcher delivery and debounce-flush. Stored as ints so we
 	// don't have to expose wxFSW_EVENT_* in the header to includers.
-	struct PendingPathEvents {
-		int flags;            // bitmask of wxFSW_EVENT_CREATE/DELETE/MODIFY
-		wxString renamedTo;   // populated for RENAME; empty otherwise
+	struct PendingPathEvents
+	{
+		int flags;          // bitmask of wxFSW_EVENT_CREATE/DELETE/MODIFY
+		wxString renamedTo; // populated for RENAME; empty otherwise
 	};
 
 private:
-	void OnFileSystemEvent(wxFileSystemWatcherEvent & event);
-	void OnDebounceTimer(wxTimerEvent & event);
+	void OnFileSystemEvent(wxFileSystemWatcherEvent &event);
+	void OnDebounceTimer(wxTimerEvent &event);
 #ifdef __APPLE__
 	// macOS amuled (wxAppConsole) doesn't spin the main thread's
 	// CFRunLoop, so FSEvents callbacks scheduled by wx never deliver.
 	// A periodic non-blocking drain fixes that without spawning a
 	// dedicated thread. No-op under aMule.app whose Cocoa main loop
 	// already pumps the runloop.
-	void OnMacRunLoopPump(wxTimerEvent & event);
+	void OnMacRunLoopPump(wxTimerEvent &event);
 #endif
 
 	// Walk shareddir_list and Add() every path. Errors per-path are
@@ -110,7 +111,7 @@ private:
 	// Append a newly-created directory to shareddir_list (if not
 	// already there) and start watching it. Used for Option A's
 	// "auto-share new subdirs of watched parents" behaviour.
-	void RegisterNewSubdirectory(const wxString & path);
+	void RegisterNewSubdirectory(const wxString &path);
 
 	// Closes the inotify/kqueue race window inside RegisterNewSubdirectory:
 	// between the kernel mkdir and our wxFileSystemWatcher::Add(), any
@@ -120,7 +121,7 @@ private:
 	// NotifyPathAdded (files) and RegisterNewSubdirectory (subdirs,
 	// recursively) so the catch-up is symmetric with what the live
 	// event path would have done. Idempotent on second observation.
-	void ScanNewSubdirRace(const CPath & parent);
+	void ScanNewSubdirRace(const CPath &parent);
 
 	// Recursively walk each path in shareddir_list and add any subdir
 	// not already listed. The "cold" twin of RegisterNewSubdirectory:
@@ -139,29 +140,26 @@ private:
 	// Always recurses (even through already-known subdirs) so a tree
 	// whose top layer is in shareddir.dat but whose deeper layers
 	// are not still gets fully covered in one pass.
-	void WalkForUnknownSubdirs(
-		const CPath & root,
-		std::set<wxString> & known,
-		std::vector<CPath> & out);
+	void WalkForUnknownSubdirs(const CPath &root, std::set<wxString> &known, std::vector<CPath> &out);
 
-	CSharedFileList *      m_parent;
-	wxFileSystemWatcher *  m_watcher;
-	wxTimer                m_debounceTimer;
+	CSharedFileList *m_parent;
+	wxFileSystemWatcher *m_watcher;
+	wxTimer m_debounceTimer;
 
 	// Per-path accumulator. Keyed on the raw filesystem path. Events
 	// coalesce per-path: a CREATE followed by N MODIFYs followed by
 	// CLOSE_WRITE on the same file becomes a single dispatch on the
 	// debounce flush. RENAME stores the destination in `renamedTo`.
-	std::unordered_map<wxString, PendingPathEvents>  m_pendingEvents;
+	std::unordered_map<wxString, PendingPathEvents> m_pendingEvents;
 
 	// Set when the watcher backend reports overflow / drop (inotify
 	// queue overflow, kqueue race, Windows ReadDirectoryChangesW
 	// buffer exhaust). FlushPendingEvents() responds by calling the
 	// bulk Reload() because incremental state can no longer be
 	// trusted. Cleared after the fallback fires.
-	bool                   m_fallbackPending;
+	bool m_fallbackPending;
 #ifdef __APPLE__
-	wxTimer                m_macPumpTimer;
+	wxTimer m_macPumpTimer;
 #endif
 
 	DECLARE_EVENT_TABLE()

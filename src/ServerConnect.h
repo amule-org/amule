@@ -30,11 +30,10 @@
 #ifndef SERVERCONNECT_H
 #define SERVERCONNECT_H
 
+#include "amuleIPV4Address.h" // Needed for amuleIPV4Address
+#include "Timer.h"            // Needed for CTimer
 
-#include "amuleIPV4Address.h"	// Needed for amuleIPV4Address
-#include "Timer.h"		// Needed for CTimer
-
-#include <map>			// Needed for std::map
+#include <map> // Needed for std::map
 
 class CServerList;
 class CServerSocket;
@@ -42,50 +41,55 @@ class CServer;
 class CPacket;
 class CServerUDPSocket;
 
-#define CS_FATALERROR	-5
-#define CS_DISCONNECTED	-4
-#define CS_SERVERDEAD	-3
-#define	CS_ERROR	-2
-#define CS_SERVERFULL	-1
-#define	CS_NOTCONNECTED	0
-#define	CS_CONNECTING	1
-#define	CS_CONNECTED	2
-#define	CS_WAITFORLOGIN	3
-#define CS_RETRYCONNECTTIME  30 // seconds
+#define CS_FATALERROR -5
+#define CS_DISCONNECTED -4
+#define CS_SERVERDEAD -3
+#define CS_ERROR -2
+#define CS_SERVERFULL -1
+#define CS_NOTCONNECTED 0
+#define CS_CONNECTING 1
+#define CS_CONNECTED 2
+#define CS_WAITFORLOGIN 3
+#define CS_RETRYCONNECTTIME 30 // seconds
 
-typedef std::map<uint64, CServerSocket*> ServerSocketMap;
+typedef std::map<uint64, CServerSocket *> ServerSocketMap;
 
-class CServerConnect {
+class CServerConnect
+{
 public:
-	CServerConnect(CServerList* in_serverlist, amuleIPV4Address &address);
+	CServerConnect(CServerList *in_serverlist, amuleIPV4Address &address);
 	~CServerConnect();
 
-	void	ConnectionFailed(CServerSocket* sender);
-	void	ConnectionEstablished(CServerSocket* sender);
+	void ConnectionFailed(CServerSocket *sender);
+	void ConnectionEstablished(CServerSocket *sender);
 
-	void	ConnectToAnyServer(bool prioSort = true, bool bNoCrypt = false);
-	void	ConnectToServer(CServer* toconnect, bool multiconnect = false, bool bNoCrypt = false);
-	void	StopConnectionTry();
-	void	CheckForTimeout();
+	void ConnectToAnyServer(bool prioSort = true, bool bNoCrypt = false);
+	void ConnectToServer(CServer *toconnect, bool multiconnect = false, bool bNoCrypt = false);
+	void StopConnectionTry();
+	void CheckForTimeout();
 
 	// safe socket closure and destruction
-	void	DestroySocket(CServerSocket* pSck);
-	bool	SendPacket(CPacket* packet,bool delpacket = true, CServerSocket* to = 0);
+	void DestroySocket(CServerSocket *pSck);
+	bool SendPacket(CPacket *packet, bool delpacket = true, CServerSocket *to = 0);
 
 	// Creteil Begin
-	bool	IsUDPSocketAvailable() const { return serverudpsocket != NULL; }
+	bool IsUDPSocketAvailable() const { return serverudpsocket != NULL; }
 	// Creteil End
 
-	bool	SendUDPPacket(CPacket* packet,CServer* host, bool delpacket, bool rawpacket = false, uint16 port_offset = 4);
-	bool	Disconnect();
-	bool	IsConnecting()	{ return connecting; }
-	bool	IsConnected()	{ return connected; }
-	uint32	GetClientID()	{ return clientid; }
-	CServer*GetCurrentServer();
-	uint32	clientid;
-	bool	IsLowID()	{ return ::IsLowID(clientid); }
-	void	SetClientID(uint32 newid);
-	bool	IsLocalServer(uint32 dwIP, uint16 nPort);
+	bool SendUDPPacket(CPacket *packet,
+		CServer *host,
+		bool delpacket,
+		bool rawpacket = false,
+		uint16 port_offset = 4);
+	bool Disconnect();
+	bool IsConnecting() { return connecting; }
+	bool IsConnected() { return connected; }
+	uint32 GetClientID() { return clientid; }
+	CServer *GetCurrentServer();
+	uint32 clientid;
+	bool IsLowID() { return ::IsLowID(clientid); }
+	void SetClientID(uint32 newid);
+	bool IsLocalServer(uint32 dwIP, uint16 nPort);
 
 	/// True if `ip` matches the IP of the currently-connected ed2k server
 	/// or any in-flight CServerSocket whose login attempt is still
@@ -95,10 +99,10 @@ public:
 	/// Without that bypass, a saturated peer-side download budget delays
 	/// the probe past the server's verification timer and we end up with
 	/// a permanent LowID under sustained load.
-	bool	IsServerIP(uint32 ip) const;
-	void	TryAnotherConnectionrequest();
-	bool	IsSingleConnect()	{ return singleconnecting; }
-	void	KeepConnectionAlive();
+	bool IsServerIP(uint32 ip) const;
+	void TryAnotherConnectionrequest();
+	bool IsSingleConnect() { return singleconnecting; }
+	void KeepConnectionAlive();
 
 	bool AwaitingTestFromIP(uint32 ip);
 	bool IsConnectedObfuscated() const;
@@ -112,22 +116,23 @@ public:
 	 * Note that 'socket' may or may not refer to an valid object,
 	 * and should be checked before being used.
 	 */
-	void OnServerHostnameResolved(void* socket, uint32 ip);
+	void OnServerHostnameResolved(void *socket, uint32 ip);
+
 private:
-	bool	connecting;
-	bool	singleconnecting;
-	bool	connected;
-	int8	max_simcons;
-	bool	m_bTryObfuscated;
-	bool	m_recurseTryAnotherConnectionrequest;
-	CServerSocket*	connectedsocket;
-	CServerList*	used_list;
-	CServerUDPSocket*	serverudpsocket;
+	bool connecting;
+	bool singleconnecting;
+	bool connected;
+	int8 max_simcons;
+	bool m_bTryObfuscated;
+	bool m_recurseTryAnotherConnectionrequest;
+	CServerSocket *connectedsocket;
+	CServerList *used_list;
+	CServerUDPSocket *serverudpsocket;
 
 	// list of currently opened sockets
-	typedef	std::list<CServerSocket*>	SocketsList;
-	SocketsList	m_lstOpenSockets;
-	CTimer	m_idRetryTimer;
+	typedef std::list<CServerSocket *> SocketsList;
+	SocketsList m_lstOpenSockets;
+	CTimer m_idRetryTimer;
 
 	ServerSocketMap connectionattemps;
 };

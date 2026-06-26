@@ -26,7 +26,7 @@
 #ifndef CLIENTCREDITSLIST_H
 #define CLIENTCREDITSLIST_H
 
-#include "MD4Hash.h"	// Needed for CMD4Hash
+#include "MD4Hash.h" // Needed for CMD4Hash
 
 #include <map>
 
@@ -39,30 +39,41 @@ public:
 	~CClientCreditsList();
 
 	// return signature size, 0 = Failed | use sigkey param for debug only
-	uint8	CreateSignature(CClientCredits* pTarget, uint8_t* pachOutput, uint8 nMaxSize, uint32 ChallengeIP, uint8 byChaIPKind, void* sigkey = NULL);
-	bool	VerifyIdent(CClientCredits* pTarget, const uint8_t* pachSignature, uint8 nInputSize, uint32 dwForIP, uint8 byChaIPKind);
+	uint8 CreateSignature(CClientCredits *pTarget,
+		uint8_t *pachOutput,
+		uint8 nMaxSize,
+		uint32 ChallengeIP,
+		uint8 byChaIPKind,
+		void *sigkey = NULL);
+	bool VerifyIdent(CClientCredits *pTarget,
+		const uint8_t *pachSignature,
+		uint8 nInputSize,
+		uint32 dwForIP,
+		uint8 byChaIPKind);
 
-	CClientCredits* GetCredit(const CMD4Hash& key);
-	void	Process();
-	uint8	GetPubKeyLen() const			{return m_nMyPublicKeyLen;}
-	const uint8_t*	GetPublicKey() const	{return m_abyMyPublicKey;}
-	bool	CryptoAvailable() const;
-	void	SaveList();
+	CClientCredits *GetCredit(const CMD4Hash &key);
+	void Process();
+	uint8 GetPubKeyLen() const { return m_nMyPublicKeyLen; }
+	const uint8_t *GetPublicKey() const { return m_abyMyPublicKey; }
+	bool CryptoAvailable() const;
+	void SaveList();
+
 protected:
-	void	LoadList();
-	void	InitalizeCrypting();
-	bool	CreateKeyPair();
+	void LoadList();
+	void InitalizeCrypting();
+	bool CreateKeyPair();
 #ifdef _DEBUG
-	bool	Debug_CheckCrypting();
+	bool Debug_CheckCrypting();
 #endif
+
 private:
-	typedef std::map<CMD4Hash, CClientCredits*> ClientMap;
-	ClientMap	m_mapClients;
-	uint64		m_nLastSaved;
+	typedef std::map<CMD4Hash, CClientCredits *> ClientMap;
+	ClientMap m_mapClients;
+	uint64 m_nLastSaved;
 	// A void* to avoid having to include the large CryptoPP.h file
-	void*		m_pSignkey;
-	uint8_t		m_abyMyPublicKey[80];
-	uint8		m_nMyPublicKeyLen;
+	void *m_pSignkey;
+	uint8_t m_abyMyPublicKey[80];
+	uint8 m_nMyPublicKeyLen;
 };
 
 #endif // CLIENTCREDITSLIST_H

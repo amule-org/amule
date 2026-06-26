@@ -38,13 +38,11 @@ void InstallMuleExceptionHandler();
  */
 void OnUnhandledException();
 
-
 //! Print a backtrace, skipping the first n frames.
 void print_backtrace(unsigned n);
 
 //! Returns a backtrace, skipping the first n frames.
 wxString get_backtrace(unsigned n);
-
 
 /**
  * This exception should be used to implement other
@@ -54,17 +52,18 @@ wxString get_backtrace(unsigned n);
 class CMuleException
 {
 public:
-	CMuleException(const wxString& type, const wxString& desc)
-		: m_what(type + ": " + desc) {}
-	CMuleException(const CMuleException&) = default;
-	CMuleException& operator=(const CMuleException&) = default;
+	CMuleException(const wxString &type, const wxString &desc)
+	: m_what(type + ": " + desc)
+	{
+	}
+	CMuleException(const CMuleException &) = default;
+	CMuleException &operator=(const CMuleException &) = default;
 	virtual ~CMuleException() noexcept {}
-	virtual const wxString& what() const noexcept { return m_what; }
+	virtual const wxString &what() const noexcept { return m_what; }
 
 private:
 	wxString m_what;
 };
-
 
 /**
  * This exception type is used to represent exceptions that are
@@ -73,29 +72,32 @@ private:
  */
 struct CRunTimeException : public CMuleException
 {
-	CRunTimeException(const wxString& type, const wxString& desc)
-		: CMuleException("CRunTimeException::" + type, desc) {}
+	CRunTimeException(const wxString &type, const wxString &desc)
+	: CMuleException("CRunTimeException::" + type, desc)
+	{
+	}
 };
-
-
 
 /**
  * This exception is to be thrown if invalid parameters are passed to a function.
  */
 struct CInvalidParamsEx : public CRunTimeException
 {
-	CInvalidParamsEx(const wxString& desc)
-		: CRunTimeException("CInvalidArgsException", desc) {}
+	CInvalidParamsEx(const wxString &desc)
+	: CRunTimeException("CInvalidArgsException", desc)
+	{
+	}
 };
-
 
 /**
  * This exception is to be thrown if an object is used in an invalid state.
  */
 struct CInvalidStateEx : public CRunTimeException
 {
-	CInvalidStateEx(const wxString& desc)
-		: CRunTimeException("CInvalidStateException", desc) {}
+	CInvalidStateEx(const wxString &desc)
+	: CRunTimeException("CInvalidStateException", desc)
+	{
+	}
 };
 
 /**
@@ -103,49 +105,44 @@ struct CInvalidStateEx : public CRunTimeException
  */
 struct CInvalidPacket : public CMuleException
 {
-	CInvalidPacket(const wxString& desc)
-		: CMuleException("CInvalidPacket", desc) {}
+	CInvalidPacket(const wxString &desc)
+	: CMuleException("CInvalidPacket", desc)
+	{
+	}
 };
-
 
 // This ifdef ensures that we wont get assertions while
 // unittesting, which would otherwise impede the tests.
 #ifdef MULEUNIT
-	#define _MULE_THROW(cond, cls, msg) \
-		do { \
-			if (!(cond)) { \
-				throw cls(msg); \
-			} \
-		} while (false)
+#define _MULE_THROW(cond, cls, msg) \
+	do { \
+		if (!(cond)) { \
+			throw cls(msg); \
+		} \
+	} while (false)
 #else
-	#define _MULE_THROW(cond, cls, msg) \
-		do { \
-			if (!(cond)) { \
-				wxFAIL_MSG(#cond); \
-				throw cls(msg); \
-			} \
-		} while (false)
+#define _MULE_THROW(cond, cls, msg) \
+	do { \
+		if (!(cond)) { \
+			wxFAIL_MSG(#cond); \
+			throw cls(msg); \
+		} \
+	} while (false)
 #endif
 
+#define MULE_CHECK_THROW(cond, cls, msg) _MULE_THROW((cond), cls, (msg))
 
+#define MULE_VALIDATE_STATE(cond, msg) MULE_CHECK_THROW((cond), CInvalidStateEx, (msg))
 
-#define MULE_CHECK_THROW(cond, cls, msg) \
-	_MULE_THROW((cond), cls, (msg))
+#define MULE_VALIDATE_PARAMS(cond, msg) MULE_CHECK_THROW((cond), CInvalidParamsEx, (msg))
 
-#define MULE_VALIDATE_STATE(cond, msg) \
-	MULE_CHECK_THROW((cond), CInvalidStateEx, (msg))
-
-#define MULE_VALIDATE_PARAMS(cond, msg) \
-	MULE_CHECK_THROW((cond), CInvalidParamsEx, (msg))
-
-
-#define MULE_ASSERT(cond)               wxASSERT((cond))
-#define MULE_ASSERT_MSG(cond, msg)      wxASSERT_MSG((cond), msg)
-#define MULE_FAIL()                     wxFAIL()
-#define MULE_FAIL_MSG(msg)              wxFAIL_MSG(msg)
-#define MULE_CHECK(cond, retValue)      wxCHECK((cond), (retValue))
-#define MULE_CHECK_MSG(cond, ret, msg)  wxCHECK_MSG((cond), (ret), (msg))
-#define MULE_CHECK_RET(cond, msg)       wxCHECK_RET((cond), (msg))
+#define MULE_ASSERT(cond) wxASSERT((cond))
+#define MULE_ASSERT_MSG(cond, msg) wxASSERT_MSG((cond), msg)
+#define MULE_FAIL() wxFAIL()
+#define MULE_FAIL_MSG(msg) wxFAIL_MSG(msg)
+#define MULE_CHECK(cond, retValue) wxCHECK((cond), (retValue))
+#define MULE_CHECK_MSG(cond, ret, msg) wxCHECK_MSG((cond), (ret), (msg))
+#define MULE_CHECK_RET(cond, msg) wxCHECK_RET((cond), (msg))
 
 #endif
 // File_checked_for_headers

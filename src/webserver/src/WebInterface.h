@@ -29,17 +29,14 @@
 
 #include "ExternalConnector.h"
 
-
-namespace MuleNotify {
-	class CMuleGUIEvent;
+namespace MuleNotify
+{
+class CMuleGUIEvent;
 }
 
 using MuleNotify::CMuleGUIEvent;
 
-
-class CamulewebApp
-:
-public CaMuleExternalConnector
+class CamulewebApp : public CaMuleExternalConnector
 {
 	class CWebServerBase *m_webserver;
 
@@ -48,44 +45,44 @@ public:
 	void Pre_Shell();
 	void LoadConfigFile();
 	void SaveConfigFile();
-	void LoadAmuleConfig(CECFileConfig& cfg);
-	bool GetTemplateDir(const wxString& templateName, wxString& templateDir);
-	bool CheckDirForTemplate(wxString& dir, const wxString& tmpl);
+	void LoadAmuleConfig(CECFileConfig &cfg);
+	bool GetTemplateDir(const wxString &templateName, wxString &templateDir);
+	bool CheckDirForTemplate(wxString &dir, const wxString &tmpl);
 
 	// other command line switches
-	void	OnInitCmdLine(wxCmdLineParser& amuleweb_parser);
-	bool	OnCmdLineParsed(wxCmdLineParser& parser);
+	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser);
+	bool OnCmdLineParsed(wxCmdLineParser &parser);
 
 	// class data
 	wxString m_TemplateName;
 	wxString m_TemplateDir;
-	bool	m_UseGzip;
+	bool m_UseGzip;
 	CMD4Hash m_AdminPass, m_GuestPass;
-	bool	m_AllowGuest;
+	bool m_AllowGuest;
 
-	long		m_WebserverPort;
-	bool		m_UPnPWebServerEnabled;
-	int		m_UPnPTCPPort;
-	unsigned int	m_PageRefresh;
-	bool		m_LoadSettingsFromAmule;
+	long m_WebserverPort;
+	bool m_UPnPWebServerEnabled;
+	int m_UPnPTCPPort;
+	unsigned int m_PageRefresh;
+	bool m_LoadSettingsFromAmule;
 
-	bool		m_TemplateOk;
+	bool m_TemplateOk;
 
 public:
 	virtual void Post_Shell();
 
 	void TextShell(const wxString &prompt);
 
-	virtual wxString SetLocale(const wxString& language);
+	virtual wxString SetLocale(const wxString &language);
 
-	void OnNotifyEvent(CMuleGUIEvent& evt);
+	void OnNotifyEvent(CMuleGUIEvent &evt);
 	wxDECLARE_EVENT_TABLE();
 
 private:
-	virtual bool	OnInit();
-	virtual int	OnRun();
+	virtual bool OnInit();
+	virtual int OnRun();
 
-	bool	m_localTemplate;
+	bool m_localTemplate;
 };
 
 #endif // WEBINTERFACE_H

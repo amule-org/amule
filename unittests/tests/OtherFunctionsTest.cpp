@@ -41,7 +41,6 @@ TEST(Base16, RejectsOddLength)
 	ASSERT_EQUALS(0u, DecodeBase16(wxT("ABC"), 3, buf));
 }
 
-
 DECLARE_SIMPLE(Base64)
 
 // EncodeBase64 with a header must include both the encoded content and the
@@ -50,7 +49,7 @@ TEST(Base64, HeaderAndFooterBothPresent)
 {
 	SetBase64Header(wxT("TEST"));
 	wxString result = EncodeBase64("Man", 3);
-	SetBase64Header(wxEmptyString);  // restore global state
+	SetBase64Header(wxEmptyString); // restore global state
 
 	// "Man" encodes to "TWFu" in standard Base64
 	ASSERT_TRUE(result.Contains(wxT("-----BEGIN TEST-----")));

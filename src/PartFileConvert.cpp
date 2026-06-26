@@ -41,36 +41,46 @@
 
 static unsigned s_nextJobId = 0;
 
-
-struct ConvertJob {
-	unsigned	id;
-	CPath		folder;
-	CPath		filename;
-	wxString	filehash;
-	ConvStatus	state;
-	uint32_t	size;
-	uint32_t	spaceneeded;
-	uint8		partmettype;
-	bool		removeSource;
-	ConvertJob(const CPath& file, bool deleteSource, ConvStatus status)
-		: id(s_nextJobId++), folder(file), state(status), size(0), spaceneeded(0), partmettype(PMT_UNKNOWN), removeSource(deleteSource)
-		{}
+struct ConvertJob
+{
+	unsigned id;
+	CPath folder;
+	CPath filename;
+	wxString filehash;
+	ConvStatus state;
+	uint32_t size;
+	uint32_t spaceneeded;
+	uint8 partmettype;
+	bool removeSource;
+	ConvertJob(const CPath &file, bool deleteSource, ConvStatus status)
+	: id(s_nextJobId++)
+	, folder(file)
+	, state(status)
+	, size(0)
+	, spaceneeded(0)
+	, partmettype(PMT_UNKNOWN)
+	, removeSource(deleteSource)
+	{
+	}
 };
 
 ConvertInfo::ConvertInfo(ConvertJob *job)
-	: id(job->id),
-	  folder(job->folder), filename(job->filename), filehash(job->filehash),
-	  state(job->state), size(job->size), spaceneeded(job->spaceneeded)
-{}
+: id(job->id)
+, folder(job->folder)
+, filename(job->filename)
+, filehash(job->filehash)
+, state(job->state)
+, size(job->size)
+, spaceneeded(job->spaceneeded)
+{
+}
 
+wxThread *CPartFileConvert::s_convertPfThread = NULL;
+std::list<ConvertJob *> CPartFileConvert::s_jobs;
+ConvertJob *CPartFileConvert::s_pfconverting = NULL;
+wxMutex CPartFileConvert::s_mutex;
 
-wxThread*		CPartFileConvert::s_convertPfThread = NULL;
-std::list<ConvertJob*>	CPartFileConvert::s_jobs;
-ConvertJob*		CPartFileConvert::s_pfconverting = NULL;
-wxMutex			CPartFileConvert::s_mutex;
-
-
-int CPartFileConvert::ScanFolderToAdd(const CPath& folder, bool deletesource)
+int CPartFileConvert::ScanFolderToAdd(const CPath &folder, bool deletesource)
 {
 	int count = 0;
 	CDirIterator finder(folder);
@@ -100,13 +110,13 @@ int CPartFileConvert::ScanFolderToAdd(const CPath& folder, bool deletesource)
 	return count;
 }
 
-void CPartFileConvert::ConvertToeMule(const CPath& file, bool deletesource)
+void CPartFileConvert::ConvertToeMule(const CPath &file, bool deletesource)
 {
 	if (!file.FileExists()) {
 		return;
 	}
 
-	ConvertJob* newjob = new ConvertJob(file, deletesource, CONV_QUEUE);
+	ConvertJob *newjob = new ConvertJob(file, deletesource, CONV_QUEUE);
 
 	wxMutexLocker lock(s_mutex);
 
@@ -122,18 +132,19 @@ void CPartFileConvert::StartThread()
 	if (!s_convertPfThread) {
 		s_convertPfThread = new CPartFileConvert();
 
-		switch ( s_convertPfThread->Create() ) {
-			case wxTHREAD_NO_ERROR:
-				AddDebugLogLineN( logPfConvert, "A new thread has been created." );
-				break;
-			case wxTHREAD_RUNNING:
-				AddDebugLogLineC( logPfConvert, "Error, attempt to create an already running thread!" );
-				break;
-			case wxTHREAD_NO_RESOURCE:
-				AddDebugLogLineC( logPfConvert, "Error, attempt to create a thread without resources!" );
-				break;
-			default:
-				AddDebugLogLineC( logPfConvert, "Error, unknown error attempting to create a thread!" );
+		switch (s_convertPfThread->Create()) {
+		case wxTHREAD_NO_ERROR:
+			AddDebugLogLineN(logPfConvert, "A new thread has been created.");
+			break;
+		case wxTHREAD_RUNNING:
+			AddDebugLogLineC(logPfConvert, "Error, attempt to create an already running thread!");
+			break;
+		case wxTHREAD_NO_RESOURCE:
+			AddDebugLogLineC(
+				logPfConvert, "Error, attempt to create a thread without resources!");
+			break;
+		default:
+			AddDebugLogLineC(logPfConvert, "Error, unknown error attempting to create a thread!");
 		}
 
 		// The thread shouldn't hog the CPU, as it will already be hogging the HD
@@ -161,13 +172,13 @@ wxThread::ExitCode CPartFileConvert::Entry()
 {
 	int imported = 0;
 
-	for (;;)
-	{
+	for (;;) {
 		// search next queued job and start it
 		{
 			wxMutexLocker lock(s_mutex);
 			s_pfconverting = NULL;
-			for (std::list<ConvertJob*>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
+			for (std::list<ConvertJob *>::iterator it = s_jobs.begin(); it != s_jobs.end();
+				++it) {
 				if ((*it)->state == CONV_QUEUE) {
 					s_pfconverting = *it;
 					break;
@@ -195,7 +206,8 @@ wxThread::ExitCode CPartFileConvert::Entry()
 
 			Notify_ConvertUpdateJobInfo(s_pfconverting);
 
-			AddLogLineC(CFormat(_("Importing %s: %s")) % s_pfconverting->folder % GetConversionState(s_pfconverting->state));
+			AddLogLineC(CFormat(_("Importing %s: %s")) % s_pfconverting->folder %
+				    GetConversionState(s_pfconverting->state));
 
 			if (TestDestroy()) {
 				wxMutexLocker lock(s_mutex);
@@ -221,12 +233,12 @@ wxThread::ExitCode CPartFileConvert::Entry()
 	return NULL;
 }
 
-ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
+ConvStatus CPartFileConvert::performConvertToeMule(const CPath &fileName)
 {
 	wxString filepartindex;
 
-	CPath folder	= fileName.GetPath();
-	CPath partfile	= fileName.GetFullName();
+	CPath folder = fileName.GetPath();
+	CPath partfile = fileName.GetFullName();
 	CPath newfilename;
 
 	CDirIterator finder(folder);
@@ -237,14 +249,14 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 
 	Notify_ConvertUpdateProgress(4, _("Retrieving basic information from download info file"));
 
-	CPartFile* file = new CPartFile();
+	CPartFile *file = new CPartFile();
 	s_pfconverting->partmettype = file->LoadPartFile(folder, partfile, false, true);
 
 	switch (s_pfconverting->partmettype) {
-		case PMT_UNKNOWN:
-		case PMT_BADFORMAT:
-			delete file;
-			return CONV_BADFORMAT;
+	case PMT_UNKNOWN:
+	case PMT_BADFORMAT:
+		delete file;
+		return CONV_BADFORMAT;
 	}
 
 	CPath oldfile = folder.JoinPaths(partfile.RemoveExt());
@@ -265,7 +277,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 
 	if (s_pfconverting->partmettype == PMT_SPLITTED) {
 		unsigned fileindex;
-		char *ba = new char [PARTSIZE];
+		char *ba = new char[PARTSIZE];
 
 		try {
 			CFile inputfile;
@@ -280,7 +292,8 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 				filePath.GetFullName().RemoveExt().GetExt().ToULong(&l);
 				fileindex = static_cast<uint32>(l);
 				filePath = finder.GetNextFile();
-				if (fileindex > maxindex) maxindex = fileindex;
+				if (fileindex > maxindex)
+					maxindex = fileindex;
 			}
 			float stepperpart;
 			{
@@ -304,7 +317,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 			if (freespace != wxInvalidOffset) {
 				if (static_cast<uint64>(freespace) < maxindex * PARTSIZE) {
 					delete file;
-					delete [] ba;
+					delete[] ba;
 					return CONV_OUTOFDISKSPACE;
 				}
 			}
@@ -315,7 +328,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 
 			Notify_ConvertUpdateProgress(8, _("Creating destination file"));
 
-			file->m_hpartfile.SetLength( s_pfconverting->spaceneeded );
+			file->m_hpartfile.SetLength(s_pfconverting->spaceneeded);
 
 			unsigned curindex = 0;
 			CPath filename = finder.GetFirstFile(CDirIterator::File, filepartindex + ".*.part");
@@ -323,7 +336,9 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 				// stats
 				++curindex;
 
-				Notify_ConvertUpdateProgress(10 + (curindex * stepperpart), CFormat(_("Loading data from old download file (%u of %u)")) % curindex % partfilecount);
+				Notify_ConvertUpdateProgress(10 + (curindex * stepperpart),
+					CFormat(_("Loading data from old download file (%u of %u)")) %
+						curindex % partfilecount);
 
 				unsigned long l = 0;
 				filename.GetFullName().RemoveExt().GetExt().ToULong(&l);
@@ -341,7 +356,10 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 				inputfile.Read(ba, toReadWrite);
 				inputfile.Close();
 
-				Notify_ConvertUpdateProgress(10 + (curindex * stepperpart), CFormat(_("Saving data block into new single download file (%u of %u)")) % curindex % partfilecount);
+				Notify_ConvertUpdateProgress(10 + (curindex * stepperpart),
+					CFormat(_("Saving data block into new single download file (%u of "
+						  "%u)")) %
+						curindex % partfilecount);
 
 				// write the buffered data
 				file->m_hpartfile.WriteAt(ba, chunkstart, toReadWrite);
@@ -349,7 +367,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 				filename = finder.GetNextFile();
 			}
 			delete[] ba;
-		} catch (const CSafeIOException& e) {
+		} catch (const CSafeIOException &e) {
 			AddDebugLogLineC(logPfConvert, "IO error while converting partfiles: " + e.what());
 
 			delete[] ba;
@@ -360,7 +378,8 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 		file->m_hpartfile.Close();
 	}
 	// import an external common format partdownload
-	else //if (pfconverting->partmettype==PMT_DEFAULTOLD || pfconverting->partmettype==PMT_NEWOLD || Shareaza  )
+	else // if (pfconverting->partmettype==PMT_DEFAULTOLD || pfconverting->partmettype==PMT_NEWOLD ||
+	     // Shareaza  )
 	{
 		if (!s_pfconverting->removeSource) {
 			wxMutexLocker lock(s_mutex);
@@ -399,10 +418,9 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 		}
 		if (!ret) {
 			file->Delete();
-			//delete file;
+			// delete file;
 			return CONV_FAILED;
 		}
-
 	}
 
 	Notify_ConvertUpdateProgress(94, _("Retrieving source downloadfile information"));
@@ -417,7 +435,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 	file->m_hashlist.clear();
 
 	if (!file->LoadPartFile(thePrefs::GetTempDir(), file->GetPartMetFileName(), false)) {
-		//delete file;
+		// delete file;
 		file->Delete();
 		return CONV_BADFORMAT;
 	}
@@ -457,7 +475,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath& fileName)
 void CPartFileConvert::RemoveJob(unsigned id)
 {
 	wxMutexLocker lock(s_mutex);
-	for (std::list<ConvertJob*>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
+	for (std::list<ConvertJob *>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
 		if ((*it)->id == id && (*it)->state != CONV_INPROGRESS) {
 			ConvertJob *job = *it;
 			s_jobs.erase(it);
@@ -471,7 +489,7 @@ void CPartFileConvert::RemoveJob(unsigned id)
 void CPartFileConvert::RetryJob(unsigned id)
 {
 	wxMutexLocker lock(s_mutex);
-	for (std::list<ConvertJob*>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
+	for (std::list<ConvertJob *>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
 		if ((*it)->id == id && (*it)->state != CONV_INPROGRESS && (*it)->state != CONV_OK) {
 			(*it)->state = CONV_QUEUE;
 			Notify_ConvertUpdateJobInfo(*it);
@@ -484,7 +502,7 @@ void CPartFileConvert::RetryJob(unsigned id)
 void CPartFileConvert::ReaddAllJobs()
 {
 	wxMutexLocker lock(s_mutex);
-	for (std::list<ConvertJob*>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
+	for (std::list<ConvertJob *>::iterator it = s_jobs.begin(); it != s_jobs.end(); ++it) {
 		Notify_ConvertUpdateJobInfo(*it);
 	}
 }

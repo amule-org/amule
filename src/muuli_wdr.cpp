@@ -1,3 +1,4 @@
+// clang-format off
 //
 // This file is part of the aMule Project.
 //

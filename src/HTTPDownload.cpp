@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include <wx/filename.h>
 #include <wx/webrequest.h>
 
@@ -31,19 +30,18 @@
 #include <curl/curl.h>
 #endif
 
-#include "HTTPDownload.h"				// Interface declarations
-#include <common/StringFunctions.h>		// Needed for unicode2char
-#include "OtherFunctions.h"				// Needed for CastChild
-#include "Logger.h"						// Needed for AddLogLine*
-#include <common/Format.h>				// Needed for CFormat
-#include "InternalEvents.h"				// Needed for CMuleInternalEvent
+#include "HTTPDownload.h"           // Interface declarations
+#include <common/StringFunctions.h> // Needed for unicode2char
+#include "OtherFunctions.h"         // Needed for CastChild
+#include "Logger.h"                 // Needed for AddLogLine*
+#include <common/Format.h>          // Needed for CFormat
+#include "InternalEvents.h"         // Needed for CMuleInternalEvent
 #include "Preferences.h"
 #include "Proxy.h"
 
-
 #ifndef AMULE_DAEMON
-#include "inetdownload.h"	// Needed for inetDownload
-#include "muuli_wdr.h"		// Needed for ID_CANCEL: Let it here or will fail on win32
+#include "inetdownload.h" // Needed for inetDownload
+#include "muuli_wdr.h"    // Needed for ID_CANCEL: Let it here or will fail on win32
 #include "MuleGifCtrl.h"
 
 typedef wxGauge wxGaugeControl;
@@ -54,9 +52,13 @@ wxDECLARE_EVENT(wxEVT_HTTP_SHUTDOWN, wxEvent);
 class CHTTPDownloadDialog : public wxDialog
 {
 public:
-	CHTTPDownloadDialog(CHTTPDownloadThread* owner)
-	  : wxDialog(wxTheApp->GetTopWindow(), -1, _("Downloading..."),
-			wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
+	CHTTPDownloadDialog(CHTTPDownloadThread *owner)
+	: wxDialog(wxTheApp->GetTopWindow(),
+		  -1,
+		  _("Downloading..."),
+		  wxDefaultPosition,
+		  wxDefaultSize,
+		  wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
 	{
 		downloadDlg(this, true)->Show(this, true);
 
@@ -64,21 +66,20 @@ public:
 		m_progressbar->SetRange(100);
 
 		m_ani = CastChild(ID_ANIMATE, MuleGifCtrl);
-		m_ani->LoadData((const char*)inetDownload, sizeof(inetDownload));
+		m_ani->LoadData((const char *)inetDownload, sizeof(inetDownload));
 		m_ani->Start();
 
 		m_owner = owner;
 	}
 
-	~CHTTPDownloadDialog() {
-		StopDownload();
-	}
+	~CHTTPDownloadDialog() { StopDownload(); }
 
-	void UpdateGauge(int total, int current) {
-		CFormat label( "( %s / %s )" );
+	void UpdateGauge(int total, int current)
+	{
+		CFormat label("( %s / %s )");
 
 		const int safeCurrent = (current > 0) ? current : 0;
-		const int safeTotal   = (total   > 0) ? total   : 0;
+		const int safeTotal = (total > 0) ? total : 0;
 
 		label % CastItoXBytes(safeCurrent);
 		if (safeTotal > 0) {
@@ -110,7 +111,8 @@ private:
 	// on the main loop. We must NOT delete the owner here — doing so
 	// while a request is in flight leaves the wxWebRequest backend
 	// calling into a dead sink.
-	void StopDownload() {
+	void StopDownload()
+	{
 		if (m_owner) {
 			m_owner->DetachCompanion();
 			m_owner->Stop();
@@ -118,17 +120,17 @@ private:
 		}
 	}
 
-	void OnBtnCancel(wxCommandEvent& WXUNUSED(evt)) {
+	void OnBtnCancel(wxCommandEvent &WXUNUSED(evt))
+	{
 		AddLogLineN(_("HTTP download cancelled"));
 		Show(false);
 		StopDownload();
 	}
 
-	void OnProgress(CMuleInternalEvent& evt) {
-		UpdateGauge(evt.GetExtraInt64(), evt.GetInt());
-	}
+	void OnProgress(CMuleInternalEvent &evt) { UpdateGauge(evt.GetExtraInt64(), evt.GetInt()); }
 
-	void OnShutdown(CMuleInternalEvent& WXUNUSED(evt)) {
+	void OnShutdown(CMuleInternalEvent &WXUNUSED(evt))
+	{
 		// The thread is about to self-destroy — drop our raw pointer now
 		// so our own dtor (which runs later via wxPendingDelete) does not
 		// touch a freed CHTTPDownloadThread via StopDownload().
@@ -137,13 +139,12 @@ private:
 		Destroy();
 	}
 
-	CHTTPDownloadThread*	m_owner;	// not owned
-	MuleGifCtrl*		m_ani;
-	wxGaugeControl*		m_progressbar;
+	CHTTPDownloadThread *m_owner; // not owned
+	MuleGifCtrl *m_ani;
+	wxGaugeControl *m_progressbar;
 
 	wxDECLARE_EVENT_TABLE();
 };
-
 
 wxBEGIN_EVENT_TABLE(CHTTPDownloadDialog, wxDialog)
 	EVT_BUTTON(ID_HTTPCANCEL, CHTTPDownloadDialog::OnBtnCancel)
@@ -154,7 +155,6 @@ wxEND_EVENT_TABLE()
 wxDEFINE_EVENT(wxEVT_HTTP_PROGRESS, wxEvent);
 wxDEFINE_EVENT(wxEVT_HTTP_SHUTDOWN, wxEvent);
 #endif
-
 
 // Apply the current proxy prefs to the shared wxWebSession.
 //
@@ -172,45 +172,47 @@ wxDEFINE_EVENT(wxEVT_HTTP_SHUTDOWN, wxEvent);
 static void ApplyProxyToDefaultSession()
 {
 #if wxCHECK_VERSION(3, 3, 0)
-	wxWebSession& session = wxWebSession::GetDefault();
-	const CProxyData* pd = thePrefs::GetProxyData();
+	wxWebSession &session = wxWebSession::GetDefault();
+	const CProxyData *pd = thePrefs::GetProxyData();
 	if (!pd || !pd->m_proxyEnable || pd->m_proxyType == PROXY_NONE) {
-		session.SetProxy(wxWebProxy::FromURL(wxString()));   // clear
+		session.SetProxy(wxWebProxy::FromURL(wxString())); // clear
 		return;
 	}
 	if (pd->m_proxyType != PROXY_HTTP) {
-		AddDebugLogLineN(logHTTP, "wxWebRequest: SOCKS proxies are not supported; startup HTTP will be made direct.");
+		AddDebugLogLineN(logHTTP,
+			"wxWebRequest: SOCKS proxies are not supported; startup HTTP will be made direct.");
 		session.SetProxy(wxWebProxy::FromURL(wxString()));
 		return;
 	}
 	wxString url;
 	if (pd->m_enablePassword && !pd->m_userName.IsEmpty()) {
-		url = CFormat("http://%s:%s@%s:%u")
-			% pd->m_userName % pd->m_password
-			% pd->m_proxyHostName % pd->m_proxyPort;
+		url = CFormat("http://%s:%s@%s:%u") % pd->m_userName % pd->m_password % pd->m_proxyHostName %
+		      pd->m_proxyPort;
 	} else {
-		url = CFormat("http://%s:%u")
-			% pd->m_proxyHostName % pd->m_proxyPort;
+		url = CFormat("http://%s:%u") % pd->m_proxyHostName % pd->m_proxyPort;
 	}
 	session.SetProxy(wxWebProxy::FromURL(url));
 #endif
 }
 
-
-CHTTPDownloadThread::CHTTPDownloadThread(const wxString& url, const wxString& filename, const wxString& oldfilename, HTTP_Download_File file_id,
-										bool showDialog, bool checkDownloadNewer)
-	: m_url(url),
-	  m_tempfile(filename),
-	  m_result(-1),
-	  m_response(0),
-	  m_error(0),
-	  m_file_id(file_id),
-	  m_companion(NULL),
-	  m_finishPosted(false)
+CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
+	const wxString &filename,
+	const wxString &oldfilename,
+	HTTP_Download_File file_id,
+	bool showDialog,
+	bool checkDownloadNewer)
+: m_url(url)
+, m_tempfile(filename)
+, m_result(-1)
+, m_response(0)
+, m_error(0)
+, m_file_id(file_id)
+, m_companion(NULL)
+, m_finishPosted(false)
 {
 	if (showDialog) {
 #ifndef AMULE_DAEMON
-		CHTTPDownloadDialog* dialog = new CHTTPDownloadDialog(this);
+		CHTTPDownloadDialog *dialog = new CHTTPDownloadDialog(this);
 		dialog->Show(true);
 		m_companion = dialog;
 #endif
@@ -221,7 +223,9 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString& url, const wxString& fi
 	if (checkDownloadNewer && thePrefs::GetLastHTTPDownloadURL(file_id) == url) {
 		wxFileName origFile(oldfilename);
 		if (origFile.FileExists()) {
-			AddDebugLogLineN(logHTTP, CFormat("URL %s matches and file %s exists, only download if newer") % url % oldfilename);
+			AddDebugLogLineN(logHTTP,
+				CFormat("URL %s matches and file %s exists, only download if newer") % url %
+					oldfilename);
 			m_lastmodified = origFile.GetModificationTime();
 		}
 	}
@@ -257,7 +261,7 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString& url, const wxString& fi
 	// This does NOT close the cleanup-time pthread_join hang on libcurl's
 	// threaded resolver — that's bounded by the OS DNS timeout regardless
 	// — but it bounds the visible delay before the Failed event fires.
-	if (CURL* curl = static_cast<CURL*>(m_request.GetNativeHandle())) {
+	if (CURL *curl = static_cast<CURL *>(m_request.GetNativeHandle())) {
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000L);
 	}
@@ -280,114 +284,116 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString& url, const wxString& fi
 	m_request.Start();
 }
 
-
 // Format the given date to a RFC-2616 compliant HTTP date.
 // Example: Thu, 14 Jan 2010 15:40:23 GMT
-wxString CHTTPDownloadThread::FormatDateHTTP(const wxDateTime& date)
+wxString CHTTPDownloadThread::FormatDateHTTP(const wxDateTime &date)
 {
-	static const wxChar* s_months[] = { L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec" };
-	static const wxChar* s_dow[] = { L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat" };
+	static const wxChar *s_months[] = {
+		L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"
+	};
+	static const wxChar *s_dow[] = { L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat" };
 
-	return CFormat("%s, %02d %s %d %02d:%02d:%02d GMT") % s_dow[date.GetWeekDay(wxDateTime::UTC)] % date.GetDay(wxDateTime::UTC) % s_months[date.GetMonth(wxDateTime::UTC)] % date.GetYear(wxDateTime::UTC) % date.GetHour(wxDateTime::UTC) % date.GetMinute(wxDateTime::UTC) % date.GetSecond(wxDateTime::UTC);
+	return CFormat("%s, %02d %s %d %02d:%02d:%02d GMT") % s_dow[date.GetWeekDay(wxDateTime::UTC)] %
+	       date.GetDay(wxDateTime::UTC) % s_months[date.GetMonth(wxDateTime::UTC)] %
+	       date.GetYear(wxDateTime::UTC) % date.GetHour(wxDateTime::UTC) %
+	       date.GetMinute(wxDateTime::UTC) % date.GetSecond(wxDateTime::UTC);
 }
 
-
-void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent& evt)
+void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 {
 	switch (evt.GetState()) {
-		case wxWebRequest::State_Active: {
-			// Periodic progress notification during the download.
-			if (m_companion) {
+	case wxWebRequest::State_Active: {
+		// Periodic progress notification during the download.
+		if (m_companion) {
 #ifndef AMULE_DAEMON
-				// GetBytesExpectedToReceive() returns wxInvalidOffset (-1)
-				// when the server omits Content-Length. Forwarding -1 into
-				// the dialog ends up in wxGauge::SetRange(-1), which flips
-				// m_rangeMax invalid and trips an assertion on the next
-				// repaint (./src/gtk/gauge.cpp:90). Clamp to 0 here so the
-				// dialog treats it as "unknown" (skips the range + value
-				// update) until a real total shows up.
-				wxFileOffset expected = m_request.GetBytesExpectedToReceive();
-				CMuleInternalEvent prog(wxEVT_HTTP_PROGRESS);
-				prog.SetInt((int)m_request.GetBytesReceived());
-				prog.SetExtraInt64(expected > 0 ? expected : 0);
-				wxQueueEvent(m_companion, (prog).Clone());
+			// GetBytesExpectedToReceive() returns wxInvalidOffset (-1)
+			// when the server omits Content-Length. Forwarding -1 into
+			// the dialog ends up in wxGauge::SetRange(-1), which flips
+			// m_rangeMax invalid and trips an assertion on the next
+			// repaint (./src/gtk/gauge.cpp:90). Clamp to 0 here so the
+			// dialog treats it as "unknown" (skips the range + value
+			// update) until a real total shows up.
+			wxFileOffset expected = m_request.GetBytesExpectedToReceive();
+			CMuleInternalEvent prog(wxEVT_HTTP_PROGRESS);
+			prog.SetInt((int)m_request.GetBytesReceived());
+			prog.SetExtraInt64(expected > 0 ? expected : 0);
+			wxQueueEvent(m_companion, (prog).Clone());
 #endif
-			}
-			break;
 		}
+		break;
+	}
 
-		case wxWebRequest::State_Completed: {
-			wxWebResponse response = evt.GetResponse();
-			m_response = response.IsOk() ? response.GetStatus() : 0;
-			m_error    = 0;
+	case wxWebRequest::State_Completed: {
+		wxWebResponse response = evt.GetResponse();
+		m_response = response.IsOk() ? response.GetStatus() : 0;
+		m_error = 0;
 
-			AddDebugLogLineN(logHTTP, CFormat("HTTP response %d for %s") % m_response % m_url);
+		AddDebugLogLineN(logHTTP, CFormat("HTTP response %d for %s") % m_response % m_url);
 
-			if (m_response == 304) {
-				// Not Modified — nothing to write.
-				AddDebugLogLineN(logHTTP, "Skipped download because requested file is not newer.");
-				FinishAndDestroy(HTTP_Skipped);
-			} else if (m_response >= 200 && m_response < 300) {
-				// Success. wx wrote the body to its own temp file; move it
-				// to the caller-supplied m_tempfile. A plain rename may
-				// fail across filesystems (wx's temp dir vs the aMule
-				// config dir), so fall back to copy + delete.
-				const wxString wxTmp = response.GetDataFile();
-				if (wxTmp.IsEmpty() || !wxFileExists(wxTmp)) {
-					AddLogLineC(CFormat(_("HTTP download: empty response body for %s")) % m_url);
-					FinishAndDestroy(HTTP_Error);
-					break;
-				}
-				if (wxFileExists(m_tempfile)) {
-					wxRemoveFile(m_tempfile);
-				}
-				bool moved = wxRenameFile(wxTmp, m_tempfile);
-				if (!moved) {
-					moved = wxCopyFile(wxTmp, m_tempfile) && wxRemoveFile(wxTmp);
-				}
-				if (!moved) {
-					AddLogLineC(CFormat(_("Could not move downloaded file to %s")) % m_tempfile);
-					FinishAndDestroy(HTTP_Error);
-					break;
-				}
-				AddLogLineN(CFormat(_("Downloaded %s (%llu bytes)"))
-					% m_url % (unsigned long long)m_request.GetBytesReceived());
-				thePrefs::SetLastHTTPDownloadURL(m_file_id, m_url);
-				FinishAndDestroy(HTTP_Success);
-			} else {
-				AddLogLineC(CFormat(_("The URL %s returned: %i")) % m_url % m_response);
+		if (m_response == 304) {
+			// Not Modified — nothing to write.
+			AddDebugLogLineN(logHTTP, "Skipped download because requested file is not newer.");
+			FinishAndDestroy(HTTP_Skipped);
+		} else if (m_response >= 200 && m_response < 300) {
+			// Success. wx wrote the body to its own temp file; move it
+			// to the caller-supplied m_tempfile. A plain rename may
+			// fail across filesystems (wx's temp dir vs the aMule
+			// config dir), so fall back to copy + delete.
+			const wxString wxTmp = response.GetDataFile();
+			if (wxTmp.IsEmpty() || !wxFileExists(wxTmp)) {
+				AddLogLineC(CFormat(_("HTTP download: empty response body for %s")) % m_url);
 				FinishAndDestroy(HTTP_Error);
+				break;
 			}
-			break;
-		}
-
-		case wxWebRequest::State_Failed: {
-			AddLogLineC(CFormat(_("HTTP download failed for %s: %s"))
-				% m_url % evt.GetErrorDescription());
+			if (wxFileExists(m_tempfile)) {
+				wxRemoveFile(m_tempfile);
+			}
+			bool moved = wxRenameFile(wxTmp, m_tempfile);
+			if (!moved) {
+				moved = wxCopyFile(wxTmp, m_tempfile) && wxRemoveFile(wxTmp);
+			}
+			if (!moved) {
+				AddLogLineC(CFormat(_("Could not move downloaded file to %s")) % m_tempfile);
+				FinishAndDestroy(HTTP_Error);
+				break;
+			}
+			AddLogLineN(CFormat(_("Downloaded %s (%llu bytes)")) % m_url %
+				    (unsigned long long)m_request.GetBytesReceived());
+			thePrefs::SetLastHTTPDownloadURL(m_file_id, m_url);
+			FinishAndDestroy(HTTP_Success);
+		} else {
+			AddLogLineC(CFormat(_("The URL %s returned: %i")) % m_url % m_response);
 			FinishAndDestroy(HTTP_Error);
-			break;
 		}
+		break;
+	}
 
-		case wxWebRequest::State_Cancelled: {
-			AddDebugLogLineN(logHTTP, CFormat("HTTP download cancelled: %s") % m_url);
-			FinishAndDestroy(HTTP_Error);
-			break;
-		}
+	case wxWebRequest::State_Failed: {
+		AddLogLineC(
+			CFormat(_("HTTP download failed for %s: %s")) % m_url % evt.GetErrorDescription());
+		FinishAndDestroy(HTTP_Error);
+		break;
+	}
 
-		case wxWebRequest::State_Unauthorized:
-			// We have no credentials to provide interactively; treat as
-			// a failure so the dispatcher reports an error to the user.
-			AddLogLineC(CFormat(_("HTTP 401 Unauthorized for %s")) % m_url);
-			m_request.Cancel();
-			FinishAndDestroy(HTTP_Error);
-			break;
+	case wxWebRequest::State_Cancelled: {
+		AddDebugLogLineN(logHTTP, CFormat("HTTP download cancelled: %s") % m_url);
+		FinishAndDestroy(HTTP_Error);
+		break;
+	}
 
-		case wxWebRequest::State_Idle:
-			// Initial state before Start(); nothing to do.
-			break;
+	case wxWebRequest::State_Unauthorized:
+		// We have no credentials to provide interactively; treat as
+		// a failure so the dispatcher reports an error to the user.
+		AddLogLineC(CFormat(_("HTTP 401 Unauthorized for %s")) % m_url);
+		m_request.Cancel();
+		FinishAndDestroy(HTTP_Error);
+		break;
+
+	case wxWebRequest::State_Idle:
+		// Initial state before Start(); nothing to do.
+		break;
 	}
 }
-
 
 void CHTTPDownloadThread::FinishAndDestroy(int result)
 {
@@ -427,15 +433,13 @@ void CHTTPDownloadThread::FinishAndDestroy(int result)
 	// Schedule our own destruction after the current event returns to
 	// the main loop. Must not be `delete this` — wxWebRequest may still
 	// be unwinding state after handing us the terminal event.
-	CallAfter([this]{ delete this; });
+	CallAfter([this] { delete this; });
 }
-
 
 void CHTTPDownloadThread::DetachCompanion()
 {
 	m_companion = NULL;
 }
-
 
 void CHTTPDownloadThread::Stop()
 {
@@ -451,7 +455,6 @@ void CHTTPDownloadThread::Stop()
 	}
 }
 
-
 void CHTTPDownloadThread::StopAll()
 {
 	ThreadSet snapshot;
@@ -463,7 +466,6 @@ void CHTTPDownloadThread::StopAll()
 		(*it)->Stop();
 	}
 }
-
 
 CHTTPDownloadThread::ThreadSet CHTTPDownloadThread::s_allThreads;
 wxMutex CHTTPDownloadThread::s_allThreadsMutex;

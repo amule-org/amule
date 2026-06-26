@@ -26,8 +26,8 @@
 #ifndef __PROXY_H__
 #define __PROXY_H__
 
-#include "amuleIPV4Address.h"	// For amuleIPV4address
-#include "StateMachine.h"	// For CStateMachine
+#include "amuleIPV4Address.h" // For amuleIPV4address
+#include "StateMachine.h"     // For CStateMachine
 #include "LibSocket.h"
 
 #include <wx/wx.h>
@@ -42,14 +42,14 @@
  */
 const unsigned char SOCKS4_VERSION = 0x04;
 
-const unsigned char SOCKS4_CMD_CONNECT	= 0x01;
-const unsigned char SOCKS4_CMD_BIND	= 0x02;
+const unsigned char SOCKS4_CMD_CONNECT = 0x01;
+const unsigned char SOCKS4_CMD_BIND = 0x02;
 
-const unsigned char SOCKS4_REPLY_CODE				= 0;
-const unsigned char SOCKS4_REPLY_GRANTED			= 90;
-const unsigned char SOCKS4_REPLY_FAILED				= 91;
-const unsigned char SOCKS4_REPLY_FAILED_NO_IDENTD		= 92;
-const unsigned char SOCKS4_REPLY_FAILED_DIFFERENT_USERIDS	= 93;
+const unsigned char SOCKS4_REPLY_CODE = 0;
+const unsigned char SOCKS4_REPLY_GRANTED = 90;
+const unsigned char SOCKS4_REPLY_FAILED = 91;
+const unsigned char SOCKS4_REPLY_FAILED_NO_IDENTD = 92;
+const unsigned char SOCKS4_REPLY_FAILED_DIFFERENT_USERIDS = 93;
 
 /*
  * SOCKS5 protocol implementation according to:
@@ -65,32 +65,32 @@ const unsigned char SOCKS4_REPLY_FAILED_DIFFERENT_USERIDS	= 93;
 
 const unsigned char SOCKS5_VERSION = 0x05;
 
-const unsigned char SOCKS5_AUTH_METHOD_NO_AUTH_REQUIRED		= 0x00;
-const unsigned char SOCKS5_AUTH_METHOD_GSSAPI			= 0x01;
-const unsigned char SOCKS5_AUTH_METHOD_USERNAME_PASSWORD	= 0x02;
-const unsigned char SOCKS5_AUTH_METHOD_NO_ACCEPTABLE_METHODS	= 0xFF;
+const unsigned char SOCKS5_AUTH_METHOD_NO_AUTH_REQUIRED = 0x00;
+const unsigned char SOCKS5_AUTH_METHOD_GSSAPI = 0x01;
+const unsigned char SOCKS5_AUTH_METHOD_USERNAME_PASSWORD = 0x02;
+const unsigned char SOCKS5_AUTH_METHOD_NO_ACCEPTABLE_METHODS = 0xFF;
 
-const unsigned char SOCKS5_AUTH_VERSION_USERNAME_PASSWORD	= 0x01;
+const unsigned char SOCKS5_AUTH_VERSION_USERNAME_PASSWORD = 0x01;
 
-const unsigned char SOCKS5_CMD_CONNECT		= 0x01;
-const unsigned char SOCKS5_CMD_BIND		= 0x02;
-const unsigned char SOCKS5_CMD_UDP_ASSOCIATE	= 0x03;
+const unsigned char SOCKS5_CMD_CONNECT = 0x01;
+const unsigned char SOCKS5_CMD_BIND = 0x02;
+const unsigned char SOCKS5_CMD_UDP_ASSOCIATE = 0x03;
 
 const unsigned char SOCKS5_RSV = 0x00;
 
-const unsigned char SOCKS5_ATYP_IPV4_ADDRESS	= 0x01;
-const unsigned char SOCKS5_ATYP_DOMAINNAME	= 0x03;
-const unsigned char SOCKS5_ATYP_IPV6_ADDRESS	= 0x04;
+const unsigned char SOCKS5_ATYP_IPV4_ADDRESS = 0x01;
+const unsigned char SOCKS5_ATYP_DOMAINNAME = 0x03;
+const unsigned char SOCKS5_ATYP_IPV6_ADDRESS = 0x04;
 
-const unsigned char SOCKS5_REPLY_SUCCEED		= 0x00;
-const unsigned char SOCKS5_REPLY_GENERAL_SERVER_FAILURE	= 0x01;
-const unsigned char SOCKS5_REPLY_CONNECTION_NOT_ALLOWED	= 0x02;
-const unsigned char SOCKS5_REPLY_NETWORK_UNREACHABLE	= 0x03;
-const unsigned char SOCKS5_REPLY_HOST_UNREACHABLE	= 0x04;
-const unsigned char SOCKS5_REPLY_CONNECTION_REFUSED	= 0x05;
-const unsigned char SOCKS5_REPLY_TTL_EXPIRED		= 0x06;
-const unsigned char SOCKS5_REPLY_COMMAND_NOT_SUPPORTED	= 0x07;
-const unsigned char SOCKS5_REPLY_ATYP_NOT_SUPPORTED	= 0x08;
+const unsigned char SOCKS5_REPLY_SUCCEED = 0x00;
+const unsigned char SOCKS5_REPLY_GENERAL_SERVER_FAILURE = 0x01;
+const unsigned char SOCKS5_REPLY_CONNECTION_NOT_ALLOWED = 0x02;
+const unsigned char SOCKS5_REPLY_NETWORK_UNREACHABLE = 0x03;
+const unsigned char SOCKS5_REPLY_HOST_UNREACHABLE = 0x04;
+const unsigned char SOCKS5_REPLY_CONNECTION_REFUSED = 0x05;
+const unsigned char SOCKS5_REPLY_TTL_EXPIRED = 0x06;
+const unsigned char SOCKS5_REPLY_COMMAND_NOT_SUPPORTED = 0x07;
+const unsigned char SOCKS5_REPLY_ATYP_NOT_SUPPORTED = 0x08;
 
 //------------------------------------------------------------------------------
 // CProxyType
@@ -100,14 +100,14 @@ const unsigned char SOCKS5_REPLY_ATYP_NOT_SUPPORTED	= 0x08;
  * These constants must match the integer values saved in the configuration file,
  * DO NOT CHANGE THIS ORDER!!!
  */
-enum CProxyType {
+enum CProxyType
+{
 	PROXY_NONE = -1,
 	PROXY_SOCKS5,
 	PROXY_SOCKS4,
 	PROXY_HTTP,
 	PROXY_SOCKS4a
 };
-
 
 //------------------------------------------------------------------------------
 // CProxyData
@@ -133,15 +133,13 @@ public:
 	 * @param userName	The user name to authenticate to the server.
 	 * @param password	The password to authenticate to the server.
 	 */
-	CProxyData(
-		bool		proxyEnable,
-		CProxyType	proxyType,
-		const wxString	&proxyHostName,
-		unsigned short	proxyPort,
-		bool		enablePassword,
-		const wxString	&userName,
-		const wxString	&password
-	);
+	CProxyData(bool proxyEnable,
+		CProxyType proxyType,
+		const wxString &proxyHostName,
+		unsigned short proxyPort,
+		bool enablePassword,
+		const wxString &userName,
+		const wxString &password);
 	/**
 	 * Clears the object contents.
 	 */
@@ -149,19 +147,19 @@ public:
 
 public:
 	//! Whether proxy is enabled or not.
-	bool		m_proxyEnable;
+	bool m_proxyEnable;
 	//! The type of the proxy server.
-	CProxyType	m_proxyType;
+	CProxyType m_proxyType;
 	//! The proxy host name or IP address.
-	wxString	m_proxyHostName;
+	wxString m_proxyHostName;
 	//! The proxy port number.
-	unsigned short	m_proxyPort;
+	unsigned short m_proxyPort;
 	//! Whether authentication should be performed.
-	bool		m_enablePassword;
+	bool m_enablePassword;
 	//! The user name to authenticate to the server.
-	wxString	m_userName;
+	wxString m_userName;
 	//! The password to authenticate to the server.
-	wxString	m_password;
+	wxString m_password;
 };
 
 //------------------------------------------------------------------------------
@@ -174,16 +172,18 @@ public:
  * It would be really more efficient if the final object was less than
  * a page (4096 bytes) in size.
  */
-//const unsigned int PROXY_BUFFER_SIZE = 1024;
-const unsigned int PROXY_BUFFER_SIZE = 5*1024;
+// const unsigned int PROXY_BUFFER_SIZE = 1024;
+const unsigned int PROXY_BUFFER_SIZE = 5 * 1024;
 
-enum CProxyCommand {
+enum CProxyCommand
+{
 	PROXY_CMD_CONNECT,
 	PROXY_CMD_BIND,
 	PROXY_CMD_UDP_ASSOCIATE
 };
 
-enum CProxyState {
+enum CProxyState
+{
 	PROXY_STATE_START = 0,
 	PROXY_STATE_END = 1
 };
@@ -206,10 +206,7 @@ public:
 	 * @param cmd		The type of proxy command to run.
 	 */
 	CProxyStateMachine(
-		wxString name,
-		const unsigned int max_states,
-		const CProxyData &proxyData,
-		CProxyCommand cmd);
+		wxString name, const unsigned int max_states, const CProxyData &proxyData, CProxyCommand cmd);
 	/**
 	 * Destructor.
 	 */
@@ -220,52 +217,52 @@ public:
 	 * @param s	The original state machine name.
 	 * @param cmd	The proxy command.
 	 */
-	static wxString	&NewName(wxString &s, CProxyCommand cmd);
+	static wxString &NewName(wxString &s, CProxyCommand cmd);
 
 	/* Interface */
-	bool		Start(const amuleIPV4Address &peerAddress, CLibSocket *proxyClientSocket);
-	t_sm_state	HandleEvent(t_sm_event event);
-	void		AddDummyEvent();
-	void		ReactivateSocket();
-	char		*GetBuffer()				{ return m_buffer; }
-	amuleIPV4Address	&GetProxyBoundAddress(void) const	{ return *m_proxyBoundAddress; }
-	unsigned char	GetLastReply(void) const		{ return m_lastReply; }
-	bool		IsEndState() const			{ return GetState() == PROXY_STATE_END; }
+	bool Start(const amuleIPV4Address &peerAddress, CLibSocket *proxyClientSocket);
+	t_sm_state HandleEvent(t_sm_event event);
+	void AddDummyEvent();
+	void ReactivateSocket();
+	char *GetBuffer() { return m_buffer; }
+	amuleIPV4Address &GetProxyBoundAddress(void) const { return *m_proxyBoundAddress; }
+	unsigned char GetLastReply(void) const { return m_lastReply; }
+	bool IsEndState() const { return GetState() == PROXY_STATE_END; }
 
 protected:
-	uint32		ProxyWrite(CLibSocket &socket, const void *buffer, wxUint32 nbytes);
-	uint32		ProxyRead(CLibSocket &socket, void *buffer);
-	bool		CanReceive() const;
-	bool		CanSend() const;
+	uint32 ProxyWrite(CLibSocket &socket, const void *buffer, wxUint32 nbytes);
+	uint32 ProxyRead(CLibSocket &socket, void *buffer);
+	bool CanReceive() const;
+	bool CanSend() const;
 	//
 	// Initialized at constructor
 	//
-	const CProxyData	&m_proxyData;
-	CProxyCommand		m_proxyCommand;
+	const CProxyData &m_proxyData;
+	CProxyCommand m_proxyCommand;
 	//
 	// Member variables
 	//
-	char			m_buffer[PROXY_BUFFER_SIZE];
-	bool			m_isLost;
-	bool			m_isConnected;
-	bool			m_canReceive;
-	bool			m_canSend;
-	bool			m_ok;
-	unsigned int	m_lastRead;
-	int				m_lastError;
+	char m_buffer[PROXY_BUFFER_SIZE];
+	bool m_isLost;
+	bool m_isConnected;
+	bool m_canReceive;
+	bool m_canSend;
+	bool m_ok;
+	unsigned int m_lastRead;
+	int m_lastError;
 	//
 	// Will be initialized at Start()
 	//
-	amuleIPV4Address	*m_peerAddress;
-	CLibSocket			*m_proxyClientSocket;
-	amuleIPV4Address	*m_proxyBoundAddress;
-	amuleIPV4Address	m_proxyBoundAddressIPV4;
-	//wxIPV6address		m_proxyBoundAddressIPV6;
+	amuleIPV4Address *m_peerAddress;
+	CLibSocket *m_proxyClientSocket;
+	amuleIPV4Address *m_proxyBoundAddress;
+	amuleIPV4Address m_proxyBoundAddressIPV4;
+	// wxIPV6address		m_proxyBoundAddressIPV6;
 	//
-	// Temporary variables
+	//  Temporary variables
 	//
-	unsigned char		m_lastReply;
-	unsigned int		m_packetLength;
+	unsigned char m_lastReply;
+	unsigned int m_packetLength;
 };
 
 //------------------------------------------------------------------------------
@@ -278,7 +275,8 @@ class CSocks5StateMachine : public CProxyStateMachine
 private:
 	static const unsigned int SOCKS5_MAX_STATES = 14;
 
-	enum Socks5State {
+	enum Socks5State
+	{
 		SOCKS5_STATE_START = PROXY_STATE_START,
 		SOCKS5_STATE_END = PROXY_STATE_END,
 		SOCKS5_STATE_SEND_QUERY_AUTHENTICATION_METHOD,
@@ -297,9 +295,7 @@ private:
 
 public:
 	/* Constructor */
-	CSocks5StateMachine(
-		const CProxyData &proxyData,
-		CProxyCommand proxyCommand);
+	CSocks5StateMachine(const CProxyData &proxyData, CProxyCommand proxyCommand);
 	void process_state(t_sm_state state, bool entry);
 	t_sm_state next_state(t_sm_event event);
 
@@ -334,7 +330,8 @@ class CSocks4StateMachine : public CProxyStateMachine
 private:
 	static const unsigned int SOCKS4_MAX_STATES = 5;
 
-	enum Socks4State {
+	enum Socks4State
+	{
 		SOCKS4_STATE_START = PROXY_STATE_START,
 		SOCKS4_STATE_END = PROXY_STATE_END,
 		SOCKS4_STATE_SEND_COMMAND_REQUEST,
@@ -344,9 +341,7 @@ private:
 
 public:
 	/* Constructor */
-	CSocks4StateMachine(
-		const CProxyData &proxyData,
-		CProxyCommand proxyCommand);
+	CSocks4StateMachine(const CProxyData &proxyData, CProxyCommand proxyCommand);
 	void process_state(t_sm_state state, bool entry);
 	t_sm_state next_state(t_sm_event event);
 
@@ -372,7 +367,8 @@ class CHttpStateMachine : public CProxyStateMachine
 private:
 	static const unsigned int HTTP_MAX_STATES = 5;
 
-	enum HttpState {
+	enum HttpState
+	{
 		HTTP_STATE_START = PROXY_STATE_START,
 		HTTP_STATE_END = PROXY_STATE_END,
 		HTTP_STATE_SEND_COMMAND_REQUEST,
@@ -382,9 +378,7 @@ private:
 
 public:
 	/* Constructor */
-	CHttpStateMachine(
-		const CProxyData &proxyData,
-		CProxyCommand proxyCommand);
+	CHttpStateMachine(const CProxyData &proxyData, CProxyCommand proxyCommand);
 	void process_state(t_sm_state state, bool entry);
 	t_sm_state next_state(t_sm_event event);
 
@@ -408,11 +402,11 @@ class CDatagramSocketProxy;
 
 class CProxySocket : public CLibSocket
 {
-friend class CProxyEventHandler;
+	friend class CProxyEventHandler;
+
 public:
 	/* Constructor */
-	CProxySocket(
-		muleSocketFlags flags = MULE_SOCKET_NONE,
+	CProxySocket(muleSocketFlags flags = MULE_SOCKET_NONE,
 		const CProxyData *proxyData = NULL,
 		CProxyCommand proxyCommand = PROXY_CMD_CONNECT,
 		CDatagramSocketProxy *udpSocket = NULL);
@@ -421,25 +415,27 @@ public:
 	~CProxySocket();
 
 	// Asio mode
-	virtual void	OnProxyEvent(int evt);
+	virtual void OnProxyEvent(int evt);
 
 	/* Interface */
-	void		SetProxyData(const CProxyData *proxyData);
-	bool		GetUseProxy() const	{ return m_useProxy; }
-	char		*GetBuffer()		{ return m_proxyStateMachine->GetBuffer(); }
-	amuleIPV4Address	&GetProxyBoundAddress(void) const
-						{ return m_proxyStateMachine->GetProxyBoundAddress(); }
+	void SetProxyData(const CProxyData *proxyData);
+	bool GetUseProxy() const { return m_useProxy; }
+	char *GetBuffer() { return m_proxyStateMachine->GetBuffer(); }
+	amuleIPV4Address &GetProxyBoundAddress(void) const
+	{
+		return m_proxyStateMachine->GetProxyBoundAddress();
+	}
 	bool Start(const amuleIPV4Address &peerAddress);
 	bool ProxyIsCapableOf(CProxyCommand proxyCommand) const;
-	bool ProxyNegotiationIsOver() const	{ return m_proxyStateMachine->IsEndState(); }
+	bool ProxyNegotiationIsOver() const { return m_proxyStateMachine->IsEndState(); }
 	CDatagramSocketProxy *GetUDPSocket() const { return m_udpSocket; }
 
 private:
-	bool			m_useProxy;
-	CProxyData		m_proxyData;
-	amuleIPV4Address	m_proxyAddress;
-	CProxyStateMachine	*m_proxyStateMachine;
-	CDatagramSocketProxy	*m_udpSocket;
+	bool m_useProxy;
+	CProxyData m_proxyData;
+	amuleIPV4Address m_proxyAddress;
+	CProxyStateMachine *m_proxyStateMachine;
+	CDatagramSocketProxy *m_udpSocket;
 };
 
 //------------------------------------------------------------------------------
@@ -453,9 +449,7 @@ private:
 
 public:
 	/* Constructor */
-	CSocketClientProxy(
-		muleSocketFlags flags = MULE_SOCKET_NONE,
-		const CProxyData *proxyData = NULL);
+	CSocketClientProxy(muleSocketFlags flags = MULE_SOCKET_NONE, const CProxyData *proxyData = NULL);
 
 	/* Interface */
 	bool Connect(amuleIPV4Address &address, bool wait);
@@ -463,7 +457,7 @@ public:
 	uint32 Write(const void *buffer, wxUint32 nbytes);
 
 private:
-	wxMutex			m_socketLocker;
+	wxMutex m_socketLocker;
 };
 
 //------------------------------------------------------------------------------
@@ -474,36 +468,35 @@ class CSocketServerProxy : public CLibSocketServer
 {
 public:
 	/* Constructor */
-	CSocketServerProxy(
-		amuleIPV4Address &address,
+	CSocketServerProxy(amuleIPV4Address &address,
 		muleSocketFlags flags = MULE_SOCKET_NONE,
 		const CProxyData *proxyData = NULL);
 
 private:
-	wxMutex			m_socketLocker;
+	wxMutex m_socketLocker;
 };
 
 //------------------------------------------------------------------------------
 // CDatagramSocketProxy
 //------------------------------------------------------------------------------
 
-enum UDPOperation {
+enum UDPOperation
+{
 	UDP_OPERATION_NONE,
 	UDP_OPERATION_RECV_FROM,
 	UDP_OPERATION_SEND_TO
 };
 
-const unsigned int PROXY_UDP_OVERHEAD_IPV4		= 10;
-const unsigned int PROXY_UDP_OVERHEAD_DOMAIN_NAME	= 262;
-const unsigned int PROXY_UDP_OVERHEAD_IPV6		= 20;
-const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD		= PROXY_UDP_OVERHEAD_DOMAIN_NAME;
+const unsigned int PROXY_UDP_OVERHEAD_IPV4 = 10;
+const unsigned int PROXY_UDP_OVERHEAD_DOMAIN_NAME = 262;
+const unsigned int PROXY_UDP_OVERHEAD_IPV6 = 20;
+const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_DOMAIN_NAME;
 
 class CDatagramSocketProxy : public CLibUDPSocket
 {
 public:
 	/* Constructor */
-	CDatagramSocketProxy(
-		amuleIPV4Address &address,
+	CDatagramSocketProxy(amuleIPV4Address &address,
 		muleSocketFlags flags = MULE_SOCKET_NONE,
 		const CProxyData *proxyData = NULL);
 
@@ -514,15 +507,15 @@ public:
 	void SetUDPSocketOk() { m_udpSocketOk = true; }
 
 	/* wxDatagramSocket Interface */
-	virtual uint32 RecvFrom(amuleIPV4Address& addr, void* buf, uint32 nBytes);
-	virtual uint32 SendTo(const amuleIPV4Address& addr, const void* buf, uint32 nBytes);
+	virtual uint32 RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes);
+	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 
 private:
-	bool			m_udpSocketOk;
-	CProxySocket		m_proxyTCPSocket;
-	enum UDPOperation	m_lastUDPOperation;
-	unsigned int		m_lastUDPOverhead;
-	wxMutex			m_socketLocker;
+	bool m_udpSocketOk;
+	CProxySocket m_proxyTCPSocket;
+	enum UDPOperation m_lastUDPOperation;
+	unsigned int m_lastUDPOverhead;
+	wxMutex m_socketLocker;
 };
 
 /******************************************************************************/

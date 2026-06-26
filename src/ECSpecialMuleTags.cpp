@@ -23,35 +23,35 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-
-#include <ec/cpp/ECTag.h>		// Needed for CECTag
-#include <ec/cpp/ECSpecialTags.h>	// Needed for special EC tag creator classes
+#include <ec/cpp/ECTag.h>         // Needed for CECTag
+#include <ec/cpp/ECSpecialTags.h> // Needed for special EC tag creator classes
 
 #include "Preferences.h"
 #include "amule.h"
-#include "SharedFileList.h"		// for EnableDirectoryWatcher on the apply path
+#include "SharedFileList.h" // for EnableDirectoryWatcher on the apply path
 
-CEC_Category_Tag::CEC_Category_Tag(uint32 cat_index, EC_DETAIL_LEVEL detail_level) : CECTag(EC_TAG_CATEGORY, cat_index)
+CEC_Category_Tag::CEC_Category_Tag(uint32 cat_index, EC_DETAIL_LEVEL detail_level)
+: CECTag(EC_TAG_CATEGORY, cat_index)
 {
 	Category_Struct *cat = theApp->glob_prefs->GetCategory(cat_index);
 	switch (detail_level) {
-		case EC_DETAIL_UPDATE:
-		case EC_DETAIL_INC_UPDATE:
-		case EC_DETAIL_WEB:
-		case EC_DETAIL_FULL:
-			AddTag(CECTag(EC_TAG_CATEGORY_PATH, cat->path.GetRaw()));
-			AddTag(CECTag(EC_TAG_CATEGORY_COMMENT, cat->comment));
-			AddTag(CECTag(EC_TAG_CATEGORY_COLOR, (uint32)cat->color));
-			AddTag(CECTag(EC_TAG_CATEGORY_PRIO, cat->prio));
-		/* fall through */
-		case EC_DETAIL_CMD:
-			AddTag(CECTag(EC_TAG_CATEGORY_TITLE, cat->title));
-		}
+	case EC_DETAIL_UPDATE:
+	case EC_DETAIL_INC_UPDATE:
+	case EC_DETAIL_WEB:
+	case EC_DETAIL_FULL:
+		AddTag(CECTag(EC_TAG_CATEGORY_PATH, cat->path.GetRaw()));
+		AddTag(CECTag(EC_TAG_CATEGORY_COMMENT, cat->comment));
+		AddTag(CECTag(EC_TAG_CATEGORY_COLOR, (uint32)cat->color));
+		AddTag(CECTag(EC_TAG_CATEGORY_PRIO, cat->prio));
+	/* fall through */
+	case EC_DETAIL_CMD:
+		AddTag(CECTag(EC_TAG_CATEGORY_TITLE, cat->title));
+	}
 }
 
-CEC_Category_Tag::CEC_Category_Tag(uint32 cat_index, wxString name, wxString path,
-			wxString comment, uint32 color, uint8 prio) : CECTag(EC_TAG_CATEGORY, cat_index)
+CEC_Category_Tag::CEC_Category_Tag(
+	uint32 cat_index, wxString name, wxString path, wxString comment, uint32 color, uint8 prio)
+: CECTag(EC_TAG_CATEGORY, cat_index)
 {
 	AddTag(CECTag(EC_TAG_CATEGORY_PATH, path));
 	AddTag(CECTag(EC_TAG_CATEGORY_COMMENT, comment));
@@ -62,25 +62,31 @@ CEC_Category_Tag::CEC_Category_Tag(uint32 cat_index, wxString name, wxString pat
 
 bool CEC_Category_Tag::Apply()
 {
-	bool ret = theApp->glob_prefs->UpdateCategory(GetInt(), Name(), CPath(Path()), Comment(), Color(), Prio());
+	bool ret = theApp->glob_prefs->UpdateCategory(
+		GetInt(), Name(), CPath(Path()), Comment(), Color(), Prio());
 	if (!ret) {
-		GetTagByName(EC_TAG_CATEGORY_PATH)->SetStringData(theApp->glob_prefs->GetCatPath(GetInt()).GetRaw());
+		GetTagByName(EC_TAG_CATEGORY_PATH)
+			->SetStringData(theApp->glob_prefs->GetCatPath(GetInt()).GetRaw());
 	}
 	return ret;
 }
 
 bool CEC_Category_Tag::Create()
 {
-	Category_Struct * category = NULL;
-	bool ret = theApp->glob_prefs->CreateCategory(category, Name(), CPath(Path()), Comment(), Color(), Prio());
+	Category_Struct *category = NULL;
+	bool ret = theApp->glob_prefs->CreateCategory(
+		category, Name(), CPath(Path()), Comment(), Color(), Prio());
 	if (!ret) {
-		GetTagByName(EC_TAG_CATEGORY_PATH)->SetStringData(theApp->glob_prefs->GetCatPath(
-			theApp->glob_prefs->GetCatCount() - 1).GetRaw());
+		GetTagByName(EC_TAG_CATEGORY_PATH)
+			->SetStringData(theApp->glob_prefs->GetCatPath(theApp->glob_prefs->GetCatCount() - 1)
+						.GetRaw());
 	}
 	return ret;
 }
 
-CEC_Prefs_Packet::CEC_Prefs_Packet(uint32 selection, EC_DETAIL_LEVEL pref_details, EC_DETAIL_LEVEL cat_details) : CECPacket(EC_OP_SET_PREFERENCES, pref_details)
+CEC_Prefs_Packet::CEC_Prefs_Packet(
+	uint32 selection, EC_DETAIL_LEVEL pref_details, EC_DETAIL_LEVEL cat_details)
+: CECPacket(EC_OP_SET_PREFERENCES, pref_details)
 {
 	if (selection & EC_PREFS_CATEGORIES) {
 		if (theApp->glob_prefs->GetCatCount() > 1) {
@@ -193,7 +199,8 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(uint32 selection, EC_DETAIL_LEVEL pref_detail
 		if (thePrefs::DeadServer()) {
 			srv_prefs.AddTag(CECEmptyTag(EC_TAG_SERVERS_REMOVE_DEAD));
 		}
-		srv_prefs.AddTag(CECTag(EC_TAG_SERVERS_DEAD_SERVER_RETRIES, (uint16)thePrefs::GetDeadserverRetries()));
+		srv_prefs.AddTag(
+			CECTag(EC_TAG_SERVERS_DEAD_SERVER_RETRIES, (uint16)thePrefs::GetDeadserverRetries()));
 		if (thePrefs::AutoServerlist()) {
 			srv_prefs.AddTag(CECEmptyTag(EC_TAG_SERVERS_AUTO_UPDATE));
 		}
@@ -280,12 +287,13 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(uint32 selection, EC_DETAIL_LEVEL pref_detail
 		dirPrefs.AddTag(dirtag);
 		dirPrefs.AddTag(CECTag(EC_TAG_DIRECTORIES_SHARE_HIDDEN, thePrefs::ShareHiddenFiles()));
 		dirPrefs.AddTag(CECTag(EC_TAG_DIRECTORIES_AUTO_RESCAN, thePrefs::AutoRescanSharedDirs()));
-		dirPrefs.AddTag(CECTag(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, thePrefs::FollowSymlinksInShares()));
+		dirPrefs.AddTag(
+			CECTag(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, thePrefs::FollowSymlinksInShares()));
 		AddTag(dirPrefs);
 	}
 
 	if (selection & EC_PREFS_STATISTICS) {
-		//#warning TODO
+		// #warning TODO
 	}
 
 	if (selection & EC_PREFS_SECURITY) {
@@ -330,7 +338,8 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(uint32 selection, EC_DETAIL_LEVEL pref_detail
 		}
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_FILEBUFFER, thePrefs::GetFileBufferSize()));
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_UL_QUEUE, thePrefs::GetQueueSize()));
-		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, thePrefs::GetServerKeepAliveTimeout()));
+		cwPrefs.AddTag(
+			CECTag(EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, thePrefs::GetServerKeepAliveTimeout()));
 		AddTag(cwPrefs);
 	}
 
@@ -344,12 +353,13 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(uint32 selection, EC_DETAIL_LEVEL pref_detail
 /**
  * Applies a boolean value from the set_preferences request
  *
- * @param use_tag	If true, an unset variable means "leave unchanged". If false, an unset variable means false.
+ * @param use_tag	If true, an unset variable means "leave unchanged". If false, an unset variable means
+ * false.
  * @param thisTab	The TAG that contains the TAG with a boolean value
  * @param applyFunc	The function to use for applying the value
  * @param tagName	The name of the TAG that holds the boolean value
  */
-static void ApplyBoolean(bool use_tag, const CECTag *thisTab, void (applyFunc)(bool), int tagName)
+static void ApplyBoolean(bool use_tag, const CECTag *thisTab, void(applyFunc)(bool), int tagName)
 {
 	const CECTag *boolTag = thisTab->GetTagByName(tagName);
 	if (use_tag) {
@@ -448,7 +458,8 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetWSIsLowUserEnabled, EC_TAG_WEBSERVER_GUEST);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_WEBSERVER_GUEST)) != NULL) {
 			if ((oneTag->GetTagByName(EC_TAG_PASSWD_HASH)) != NULL) {
-				thePrefs::SetWSLowPass(oneTag->GetTagByName(EC_TAG_PASSWD_HASH)->GetMD4Data().Encode());
+				thePrefs::SetWSLowPass(
+					oneTag->GetTagByName(EC_TAG_PASSWD_HASH)->GetMD4Data().Encode());
 			}
 		}
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetWebUseGzip, EC_TAG_WEBSERVER_USEGZIP);
@@ -471,12 +482,20 @@ void CEC_Prefs_Packet::Apply() const
 		}
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetAutoServerlist, EC_TAG_SERVERS_AUTO_UPDATE);
 		// Here should come the URL list...
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetAddServersFromServer, EC_TAG_SERVERS_ADD_FROM_SERVER);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetAddServersFromClient, EC_TAG_SERVERS_ADD_FROM_CLIENT);
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetAddServersFromServer, EC_TAG_SERVERS_ADD_FROM_SERVER);
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetAddServersFromClient, EC_TAG_SERVERS_ADD_FROM_CLIENT);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetScoreSystem, EC_TAG_SERVERS_USE_SCORE_SYSTEM);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetSmartIdCheck, EC_TAG_SERVERS_SMART_ID_CHECK);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetSafeServerConnectEnabled, EC_TAG_SERVERS_SAFE_SERVER_CONNECT);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetAutoConnectStaticOnly, EC_TAG_SERVERS_AUTOCONN_STATIC_ONLY);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetSafeServerConnectEnabled,
+			EC_TAG_SERVERS_SAFE_SERVER_CONNECT);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetAutoConnectStaticOnly,
+			EC_TAG_SERVERS_AUTOCONN_STATIC_ONLY);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetManualHighPrio, EC_TAG_SERVERS_MANUAL_HIGH_PRIO);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_SERVERS_UPDATE_URL)) != NULL) {
 			thePrefs::SetEd2kServersUrl(oneTag->GetStringData());
@@ -495,7 +514,8 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetSrcSeedsOn, EC_TAG_FILES_SAVE_SOURCES);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetExtractMetaData, EC_TAG_FILES_EXTRACT_METADATA);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetAllocFullFile, EC_TAG_FILES_ALLOC_FULL_SIZE);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetCheckDiskspaceEnabled, EC_TAG_FILES_CHECK_FREE_SPACE);
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetCheckDiskspaceEnabled, EC_TAG_FILES_CHECK_FREE_SPACE);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_FILES_MIN_FREE_SPACE)) != NULL) {
 			thePrefs::SetMinFreeDiskSpaceMB(oneTag->GetInt());
 		}
@@ -515,9 +535,14 @@ void CEC_Prefs_Packet::Apply() const
 				theApp->glob_prefs->shareddir_list.push_back(CPath(it->GetStringData()));
 			}
 		}
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetShareHiddenFiles, EC_TAG_DIRECTORIES_SHARE_HIDDEN);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetAutoRescanSharedDirs, EC_TAG_DIRECTORIES_AUTO_RESCAN);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetFollowSymlinksInShares, EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS);
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetShareHiddenFiles, EC_TAG_DIRECTORIES_SHARE_HIDDEN);
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetAutoRescanSharedDirs, EC_TAG_DIRECTORIES_AUTO_RESCAN);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetFollowSymlinksInShares,
+			EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS);
 		// Apply the new auto-rescan state immediately on amuled so a
 		// remote toggle from amulegui doesn't need a daemon restart to
 		// take effect.
@@ -532,7 +557,7 @@ void CEC_Prefs_Packet::Apply() const
 	// by the next if block. Keep the existence-check shape so future
 	// work has an obvious home.
 	if (GetTagByName(EC_TAG_PREFS_STATISTICS) != NULL) {
-		//#warning TODO
+		// #warning TODO
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_SECURITY)) != NULL) {
@@ -551,9 +576,18 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetFilterLanIPs, EC_TAG_IPFILTER_FILTER_LAN);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetSecureIdentEnabled, EC_TAG_SECURITY_USE_SECIDENT);
 
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetClientCryptLayerSupported, EC_TAG_SECURITY_OBFUSCATION_SUPPORTED);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetClientCryptLayerRequested, EC_TAG_SECURITY_OBFUSCATION_REQUESTED);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetClientCryptLayerRequired,  EC_TAG_SECURITY_OBFUSCATION_REQUIRED);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetClientCryptLayerSupported,
+			EC_TAG_SECURITY_OBFUSCATION_SUPPORTED);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetClientCryptLayerRequested,
+			EC_TAG_SECURITY_OBFUSCATION_REQUESTED);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetClientCryptLayerRequired,
+			EC_TAG_SECURITY_OBFUSCATION_REQUIRED);
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_CORETWEAKS)) != NULL) {

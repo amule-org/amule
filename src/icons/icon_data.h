@@ -27,8 +27,9 @@
 extern "C" {
 #endif
 
-struct AMuleIconEntry {
-	const char *name;            /* art id, e.g. "amule" or "flag_us" */
+struct AMuleIconEntry
+{
+	const char *name; /* art id, e.g. "amule" or "flag_us" */
 	const unsigned char *png_data;
 	unsigned int png_len;
 };

@@ -25,10 +25,9 @@
 #ifndef CMD4HASH_H
 #define CMD4HASH_H
 
+#include "ArchSpecific.h" // Needed for Raw{Peek,Poke}UInt64()
 
-#include "ArchSpecific.h"	// Needed for Raw{Peek,Poke}UInt64()
-
-#include <common/MuleDebug.h>		// Needed for MULE_VALIDATE_PARAMS
+#include <common/MuleDebug.h> // Needed for MULE_VALIDATE_PARAMS
 
 #ifdef USE_WX_EXTENSIONS
 #include <common/StringFunctions.h>
@@ -36,9 +35,7 @@
 
 #include <string>
 
-
 const size_t MD4HASH_LENGTH = 16;
-
 
 /**
  * Container-class for the MD4 hashes used in aMule.
@@ -58,9 +55,7 @@ public:
 	 * The default constructor creates an empty hash of length 16.
 	 * Each field of the char array has an initial value of zero.
 	 */
-	CMD4Hash() {
-		Clear();
-	}
+	CMD4Hash() { Clear(); }
 
 	/**
 	 * Cast a unsigned char array to a CMD4Hash.
@@ -70,20 +65,17 @@ public:
 	 * Please note that the array must either be a NULL pointer or be at least
 	 * 16 chars long, not including any possible zero-terminator!
 	 */
-	explicit CMD4Hash(const unsigned char hash[]) {
-		SetHash(hash);
-	}
+	explicit CMD4Hash(const unsigned char hash[]) { SetHash(hash); }
 
 	/**
 	 * Equality operator.
 	 *
 	 * Returns true if all fields of both hashes are the same.
 	 */
-	bool operator == (const CMD4Hash& other_hash) const {
-		return (
-			( RawPeekUInt64( m_hash      ) == RawPeekUInt64( other_hash.m_hash      ) ) &&
-			( RawPeekUInt64( m_hash + 8  ) == RawPeekUInt64( other_hash.m_hash + 8  ) )
-		);
+	bool operator==(const CMD4Hash &other_hash) const
+	{
+		return ((RawPeekUInt64(m_hash) == RawPeekUInt64(other_hash.m_hash)) &&
+			(RawPeekUInt64(m_hash + 8) == RawPeekUInt64(other_hash.m_hash + 8)));
 	}
 
 	/**
@@ -91,9 +83,7 @@ public:
 	 *
 	 * Returns true if there is any difference between the two hashes.
 	 */
-	bool operator != (const CMD4Hash& other_hash) const {
-		return !(*this == other_hash);
-	}
+	bool operator!=(const CMD4Hash &other_hash) const { return !(*this == other_hash); }
 
 	/**
 	 * Less than operator.
@@ -103,18 +93,18 @@ public:
 	 * The purpose of this function is to enable the usage of CMD4Hashes in
 	 * sorted STL containers like std::map.
 	 */
-	bool operator  < (const CMD4Hash& other_hash) const {
-		for ( size_t i = 0; i < MD4HASH_LENGTH; ++i ) {
-			if ( m_hash[i] < other_hash.m_hash[i] ) {
+	bool operator<(const CMD4Hash &other_hash) const
+	{
+		for (size_t i = 0; i < MD4HASH_LENGTH; ++i) {
+			if (m_hash[i] < other_hash.m_hash[i]) {
 				return true;
-			} else if ( other_hash.m_hash[i] < m_hash[i] ) {
+			} else if (other_hash.m_hash[i] < m_hash[i]) {
 				return false;
 			}
 		}
 
 		return false;
 	}
-
 
 	/**
 	 * Returns true if the hash is empty.
@@ -125,12 +115,7 @@ public:
 	 * only if each field of the array contains the value zero.
 	 * To achieve an empty hash, the function Clear() can be used.
 	 */
-	bool IsEmpty() const {
-		return (
-			!RawPeekUInt64( m_hash      ) &&
-			!RawPeekUInt64( m_hash + 8  )
-		);
-	}
+	bool IsEmpty() const { return (!RawPeekUInt64(m_hash) && !RawPeekUInt64(m_hash + 8)); }
 
 	/**
 	 * Resets the contents of the hash.
@@ -138,11 +123,11 @@ public:
 	 * This functions sets the value of each field of the hash to zero.
 	 * IsEmpty() will return true after a call to this function.
 	 */
-	void Clear() {
-		RawPokeUInt64( m_hash,			0 );
-		RawPokeUInt64( m_hash + 8,		0 );
+	void Clear()
+	{
+		RawPokeUInt64(m_hash, 0);
+		RawPokeUInt64(m_hash + 8, 0);
 	}
-
 
 	/**
 	 * Decodes a 32 char long hexadecimal representation of a MD4 hash.
@@ -154,12 +139,13 @@ public:
 	 * hash and stores it in the m_hash data-member.
 	 */
 
-	bool Decode(const std::string& hash) {
+	bool Decode(const std::string &hash)
+	{
 		if (hash.length() != MD4HASH_LENGTH * 2) {
 			return false;
 		}
 
-		for ( size_t i = 0; i < MD4HASH_LENGTH * 2; i++ ) {
+		for (size_t i = 0; i < MD4HASH_LENGTH * 2; i++) {
 			unsigned char word = toupper(hash[i]);
 
 			if ((word >= '0') && (word <= '9')) {
@@ -172,20 +158,18 @@ public:
 			}
 
 			if (i % 2 == 0) {
-				m_hash[i/2] = word << 4;
+				m_hash[i / 2] = word << 4;
 			} else {
-				m_hash[i/2] += word;
+				m_hash[i / 2] += word;
 			}
 		}
 
 		return true;
 	}
 
-	#ifdef USE_WX_EXTENSIONS
-	bool Decode(const wxString& hash) {
-		return Decode(std::string(unicode2char(hash)));
-	}
-	#endif
+#ifdef USE_WX_EXTENSIONS
+	bool Decode(const wxString &hash) { return Decode(std::string(unicode2char(hash))); }
+#endif
 
 	/**
 	 * Creates a 32 char long hexadecimal representation of a MD4 hash.
@@ -195,27 +179,26 @@ public:
 	 * This function creates a hexadecimal representation of the MD4
 	 * hash stored in the m_hash data-member and returns it.
 	 */
-	std::string EncodeSTL() const {
+	std::string EncodeSTL() const
+	{
 		std::string Base16Buff;
 
-		for ( size_t i = 0; i < MD4HASH_LENGTH*2; i++ ) {
-			size_t x = ( i % 2 == 0 ) ? ( m_hash[i/2] >> 4 ) : ( m_hash[i/2] & 0xf );
+		for (size_t i = 0; i < MD4HASH_LENGTH * 2; i++) {
+			size_t x = (i % 2 == 0) ? (m_hash[i / 2] >> 4) : (m_hash[i / 2] & 0xf);
 
-			if ( x <  10 ) {
-				Base16Buff += (char)( x + '0' );
+			if (x < 10) {
+				Base16Buff += (char)(x + '0');
 			} else {
-				Base16Buff += (char)(  x + ( 'A' - 10 ));
+				Base16Buff += (char)(x + ('A' - 10));
 			}
 		}
 
 		return Base16Buff;
 	}
 
-	#ifdef USE_WX_EXTENSIONS
-	wxString Encode() const {
-		return char2unicode(EncodeSTL().c_str());
-	}
-	#endif
+#ifdef USE_WX_EXTENSIONS
+	wxString Encode() const { return char2unicode(EncodeSTL().c_str()); }
+#endif
 
 	/**
 	 * Explicitly set the hash-array to the contents of a unsigned char array.
@@ -224,10 +207,11 @@ public:
 	 *
 	 * The hash must either be a NULL pointer or be of length 16.
 	 */
-	void SetHash(const unsigned char hash[]) {
-		if ( hash ) {
-			RawPokeUInt64( m_hash,		RawPeekUInt64( hash ) );
-			RawPokeUInt64( m_hash + 8,	RawPeekUInt64( hash + 8 ) );
+	void SetHash(const unsigned char hash[])
+	{
+		if (hash) {
+			RawPokeUInt64(m_hash, RawPeekUInt64(hash));
+			RawPokeUInt64(m_hash + 8, RawPeekUInt64(hash + 8));
 		} else {
 			Clear();
 		}
@@ -238,12 +222,8 @@ public:
 	 *
 	 * @return Pointer to the hash array.
 	 */
-	unsigned char* GetHash() {
-		return m_hash;
-	}
-	const unsigned char* GetHash() const {
-		return m_hash;
-	}
+	unsigned char *GetHash() { return m_hash; }
+	const unsigned char *GetHash() const { return m_hash; }
 
 	/**
 	 * Explic access to values in the hash-array.
@@ -251,12 +231,14 @@ public:
 	 * @param i An index less than the length of an MD4 hash.
 	 * @return The value (or its reference) at the given index.
 	 */
-	unsigned char operator[](size_t i) const {
+	unsigned char operator[](size_t i) const
+	{
 		MULE_VALIDATE_PARAMS(i < MD4HASH_LENGTH, "Invalid index in CMD4Hash::operator[]");
 		return m_hash[i];
 	}
 
-	unsigned char& operator[](size_t i) {
+	unsigned char &operator[](size_t i)
+	{
 		MULE_VALIDATE_PARAMS(i < MD4HASH_LENGTH, "Invalid index in CMD4Hash::operator[]");
 		return m_hash[i];
 	}
@@ -268,7 +250,6 @@ private:
 	//! try to avoid direct access and instead use the member functions.
 	unsigned char m_hash[MD4HASH_LENGTH];
 };
-
 
 #endif
 // File_checked_for_headers

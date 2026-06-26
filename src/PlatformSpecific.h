@@ -28,9 +28,8 @@
 #include <common/Path.h>
 #include "Types.h"
 
-
-namespace PlatformSpecific {
-
+namespace PlatformSpecific
+{
 
 /**
  * Create sparse file.
@@ -41,8 +40,7 @@ namespace PlatformSpecific {
  * @param size The desired size of the file.
  * @return true, if creating the file succeeded, false otherwise.
  */
-bool CreateSparseFile(const CPath& name, uint64_t size);
-
+bool CreateSparseFile(const CPath &name, uint64_t size);
 
 /**
  * Returns the max number of connections the current OS can handle.
@@ -52,20 +50,23 @@ bool CreateSparseFile(const CPath& name, uint64_t size);
 #ifdef __WINDOWS__
 int GetMaxConnections();
 #else
-inline int GetMaxConnections() { return -1; }
+inline int GetMaxConnections()
+{
+	return -1;
+}
 #endif
-
 
 /**
  * File system types returned by GetFilesystemType
  */
-enum EFSType {
-	fsFAT,		//! File Allocation Table
-	fsNTFS,		//! New Technology File System
-	fsHFS,		//! Hierarchical File System
-	fsHPFS,		//! High Performance File System
-	fsMINIX,	//! Minix file system
-	fsOther		//! Unknown, other
+enum EFSType
+{
+	fsFAT,   //! File Allocation Table
+	fsNTFS,  //! New Technology File System
+	fsHFS,   //! Hierarchical File System
+	fsHPFS,  //! High Performance File System
+	fsMINIX, //! Minix file system
+	fsOther  //! Unknown, other
 };
 
 /**
@@ -77,8 +78,7 @@ enum EFSType {
  * This function returns fsOther on unknown or network file systems (because the
  * real filesystem type cannot be determined).
  */
-EFSType GetFilesystemType(const CPath& path);
-
+EFSType GetFilesystemType(const CPath &path);
 
 /**
  * Checks if the filesystem can handle special chars.
@@ -93,22 +93,24 @@ EFSType GetFilesystemType(const CPath& path);
  * Based on http://en.wikipedia.org/wiki/Comparison_of_file_systems
  */
 #ifdef __WINDOWS__
-inline bool CanFSHandleSpecialChars(const CPath& WXUNUSED(path)) { return false; }
+inline bool CanFSHandleSpecialChars(const CPath &WXUNUSED(path))
+{
+	return false;
+}
 #else
 // Other filesystem types may be added
-inline bool CanFSHandleSpecialChars(const CPath& path)
+inline bool CanFSHandleSpecialChars(const CPath &path)
 {
 	switch (GetFilesystemType(path)) {
-		case fsFAT:
-		case fsNTFS:
-		case fsHFS:
-			return false;
-		default:
-			return true;
+	case fsFAT:
+	case fsNTFS:
+	case fsHFS:
+		return false;
+	default:
+		return true;
 	}
 }
 #endif
-
 
 /**
  * Check if the filesystem can handle large files.
@@ -121,16 +123,16 @@ inline bool CanFSHandleSpecialChars(const CPath& path)
  *
  * Based on http://en.wikipedia.org/wiki/Comparison_of_file_systems
  */
-inline bool CanFSHandleLargeFiles(const CPath& path)
+inline bool CanFSHandleLargeFiles(const CPath &path)
 {
 	switch (GetFilesystemType(path)) {
-		case fsFAT:
-		case fsHFS:
-		case fsHPFS:
-		case fsMINIX:
-			return false;
-		default:
-			return true;
+	case fsFAT:
+	case fsHFS:
+	case fsHPFS:
+	case fsMINIX:
+		return false;
+	default:
+		return true;
 	}
 }
 
@@ -139,9 +141,9 @@ inline bool CanFSHandleLargeFiles(const CPath& path)
  *
  */
 #if defined __WINDOWS__ || defined __WXMAC__
-	#define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 1
+#define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 1
 #else
-	#define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 0
+#define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 0
 #endif
 
 void PreventSleepMode();

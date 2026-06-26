@@ -26,7 +26,6 @@
 
 #include <vector>
 
-
 /**
  * In-memory CECSocket sink. All Internal* I/O is stubbed; bytes that
  * the upper layers would have written to a real socket are captured
@@ -44,7 +43,8 @@
  * capability flags, so cached blobs are reusable across any client
  * the daemon talks to today.
  */
-class CECMemSocket : public CECSocket {
+class CECMemSocket : public CECSocket
+{
 public:
 	CECMemSocket();
 
@@ -70,7 +70,7 @@ private:
 	bool InternalWaitOnConnect(long, long) override { return true; }
 	bool InternalWaitForWrite(long, long) override { return true; }
 	bool InternalWaitForRead(long, long) override { return true; }
-	int  InternalGetLastError() override { return 0; }
+	int InternalGetLastError() override { return 0; }
 	void InternalClose() override {}
 	bool InternalError() override { return false; }
 	uint32 InternalRead(void *, uint32) override { return 0; }
@@ -78,6 +78,5 @@ private:
 	bool InternalIsConnected() override { return true; }
 	void InternalDestroy() override {}
 };
-
 
 #endif // EC_MEM_SOCKET_H

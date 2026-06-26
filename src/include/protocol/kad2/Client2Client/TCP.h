@@ -26,9 +26,12 @@
 #ifndef KAD2_C2C_TCP_H
 #define KAD2_C2C_TCP_H
 
-enum Ed2kTCPOpcodesForKademliaV2 {
-	OP_FWCHECKUDPREQ	= 0xA7,	// <Inter_Port 2><Extern_Port 2><KadUDPKey 4> *Support required for Kadversion >= 6
-	OP_KAD_FWTCPCHECK_ACK	= 0xA8	// (null/reserved), replaces KADEMLIA_FIREWALLED_ACK_RES, *Support required for Kadversion >= 7
+enum Ed2kTCPOpcodesForKademliaV2
+{
+	OP_FWCHECKUDPREQ =
+		0xA7, // <Inter_Port 2><Extern_Port 2><KadUDPKey 4> *Support required for Kadversion >= 6
+	OP_KAD_FWTCPCHECK_ACK = 0xA8 // (null/reserved), replaces KADEMLIA_FIREWALLED_ACK_RES, *Support
+				     // required for Kadversion >= 7
 };
 
 #endif // KAD2_C2C_TCP_H

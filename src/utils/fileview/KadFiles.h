@@ -28,10 +28,10 @@
 
 class CFileDataIO;
 
-void DecodePreferencesKadDat(const CFileDataIO& file);
-void DecodeLoadIndexDat(const CFileDataIO& file);
-void DecodeKeyIndexDat(const CFileDataIO& file);
-void DecodeSourceIndexDat(const CFileDataIO& file);
-void DecodeNodesDat(const CFileDataIO& file);
+void DecodePreferencesKadDat(const CFileDataIO &file);
+void DecodeLoadIndexDat(const CFileDataIO &file);
+void DecodeKeyIndexDat(const CFileDataIO &file);
+void DecodeSourceIndexDat(const CFileDataIO &file);
+void DecodeNodesDat(const CFileDataIO &file);
 
 #endif /* FILEVIEW_KADFILES_H */

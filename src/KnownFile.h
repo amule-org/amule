@@ -23,10 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef KNOWNFILE_H
 #define KNOWNFILE_H
-
 
 #include "MD4Hash.h"
 #include "SHAHashSet.h"
@@ -35,55 +33,51 @@
 #include <common/Path.h>
 
 #include "kademlia/kademlia/Indexed.h"
-#include <ec/cpp/ECID.h>	// Needed for CECID
-#include <atomic>		// Needed for std::atomic (m_ecGen)
-
+#include <ec/cpp/ECID.h> // Needed for CECID
+#include <atomic>        // Needed for std::atomic (m_ecGen)
 
 #ifdef CLIENT_GUI
 #include <ec/cpp/ECSpecialTags.h>
-#include "RLE.h"			// Needed for RLE_Data, PartFileEncoderData
+#include "RLE.h" // Needed for RLE_Data, PartFileEncoderData
 #endif
 
-#include "Constants.h"		// Needed for PS_*, PR_*
-#include "ClientRef.h"		// Needed for CClientRef
+#include "Constants.h" // Needed for PS_*, PR_*
+#include "ClientRef.h" // Needed for CClientRef
 
 class CFileDataIO;
 class CPacket;
 class CTag;
 
-
 namespace Kademlia
 {
-	class CEntry;
+class CEntry;
 }
-
 
 typedef vector<CMD4Hash> ArrayOfCMD4Hash;
 
-
 typedef vector<CTag> ArrayOfCTag;
-
 
 class CFileStatistic
 {
 	friend class CKnownFilesRem;
+
 public:
 	CFileStatistic(CKnownFile *parent);
-	void	AddRequest();
-	void	AddAccepted();
-	void    AddTransferred(uint64 bytes);
-	uint16	GetRequests() const			{return requested;}
-	uint16	GetAccepts() const			{return accepted;}
-	uint64  GetTransferred() const			{return transferred;}
-	uint32	GetAllTimeRequests() const		{return alltimerequested;}
-	void	SetAllTimeRequests(uint32 new_value)	{ alltimerequested = new_value; };
-	uint32	GetAllTimeAccepts() const		{return alltimeaccepted;}
-	void	SetAllTimeAccepts(uint32 new_value)	{ alltimeaccepted = new_value; };
-	uint64	GetAllTimeTransferred() const		{return alltimetransferred;}
-	void	SetAllTimeTransferred(uint64 new_value)	{ alltimetransferred = new_value; };
+	void AddRequest();
+	void AddAccepted();
+	void AddTransferred(uint64 bytes);
+	uint16 GetRequests() const { return requested; }
+	uint16 GetAccepts() const { return accepted; }
+	uint64 GetTransferred() const { return transferred; }
+	uint32 GetAllTimeRequests() const { return alltimerequested; }
+	void SetAllTimeRequests(uint32 new_value) { alltimerequested = new_value; };
+	uint32 GetAllTimeAccepts() const { return alltimeaccepted; }
+	void SetAllTimeAccepts(uint32 new_value) { alltimeaccepted = new_value; };
+	uint64 GetAllTimeTransferred() const { return alltimetransferred; }
+	void SetAllTimeTransferred(uint64 new_value) { alltimetransferred = new_value; };
 
 private:
-	CKnownFile* fileParent;
+	CKnownFile *fileParent;
 	uint16 requested;
 	uint64 transferred;
 	uint16 accepted;
@@ -93,80 +87,79 @@ private:
 };
 
 /*
-                             CPartFile
-                           /
-                CKnownFile
-              /
+			     CPartFile
+			   /
+		CKnownFile
+	      /
 CAbstractFile
-              \
-                CSearchFile
+	      \
+		CSearchFile
 */
 class CAbstractFile
 {
 public:
 	CAbstractFile();
-	explicit CAbstractFile(const CAbstractFile& other);
+	explicit CAbstractFile(const CAbstractFile &other);
 	virtual ~CAbstractFile() {}
 
-	const CPath&	GetFileName() const	{ return m_fileName; }
-	const CMD4Hash&	GetFileHash() const	{ return m_abyFileHash; }
+	const CPath &GetFileName() const { return m_fileName; }
+	const CMD4Hash &GetFileHash() const { return m_abyFileHash; }
 
-	uint64	GetFileSize() const	{ return m_nFileSize;}
-	bool	IsLargeFile() const	{ return m_nFileSize > (uint64)OLD_MAX_FILE_SIZE; }
+	uint64 GetFileSize() const { return m_nFileSize; }
+	bool IsLargeFile() const { return m_nFileSize > (uint64)OLD_MAX_FILE_SIZE; }
 
-	virtual void SetFileSize(uint64 nFileSize)	{ m_nFileSize = nFileSize; }
-	virtual void SetFileName(const CPath& filename);
+	virtual void SetFileSize(uint64 nFileSize) { m_nFileSize = nFileSize; }
+	virtual void SetFileName(const CPath &filename);
 
 	/* Tags and Notes handling */
 	uint32 GetIntTagValue(uint8 tagname) const;
-	uint32 GetIntTagValue(const wxString& tagname) const;
-	bool GetIntTagValue(uint8 tagname, uint32& ruValue) const;
-	const wxString& GetStrTagValue(uint8 tagname) const;
-	const wxString& GetStrTagValue(const wxString& tagname) const;
-	const CTag *GetTag(const wxString& tagname) const;
-	const CTag *GetTag(const wxString& tagname, uint8 tagtype) const;
+	uint32 GetIntTagValue(const wxString &tagname) const;
+	bool GetIntTagValue(uint8 tagname, uint32 &ruValue) const;
+	const wxString &GetStrTagValue(uint8 tagname) const;
+	const wxString &GetStrTagValue(const wxString &tagname) const;
+	const CTag *GetTag(const wxString &tagname) const;
+	const CTag *GetTag(const wxString &tagname, uint8 tagtype) const;
 	const CTag *GetTag(uint8 tagname) const;
 	const CTag *GetTag(uint8 tagname, uint8 tagtype) const;
 	void AddTagUnique(const CTag &pTag);
-	const ArrayOfCTag& GetTags() const { return m_taglist; }
-	void AddNote(Kademlia::CEntry* pEntry);
-	const CKadEntryPtrList& getNotes() const { return m_kadNotes; }
+	const ArrayOfCTag &GetTags() const { return m_taglist; }
+	void AddNote(Kademlia::CEntry *pEntry);
+	const CKadEntryPtrList &getNotes() const { return m_kadNotes; }
 
 	/* Comment and rating */
-	virtual const wxString&	GetFileComment() const { return m_strComment; }
-	virtual int8	GetFileRating()		const { return m_iRating; }
+	virtual const wxString &GetFileComment() const { return m_strComment; }
+	virtual int8 GetFileRating() const { return m_iRating; }
 
-	bool	HasComment() const		{ return m_hasComment; }
-	bool	HasRating() const		{ return (m_iUserRating != 0); }
-	int8	UserRating() const		{ return m_iUserRating; }
+	bool HasComment() const { return m_hasComment; }
+	bool HasRating() const { return (m_iUserRating != 0); }
+	int8 UserRating() const { return m_iUserRating; }
 
 protected:
 	//! CAbstractFile is not assignable.
-	CAbstractFile& operator=(const CAbstractFile);
+	CAbstractFile &operator=(const CAbstractFile);
 
-	CMD4Hash	m_abyFileHash;
+	CMD4Hash m_abyFileHash;
 	// comment/rating are read from the config and cached in these variables,
 	// so make them mutable to allow GetFileComment() to be a const method
-	mutable	wxString	m_strComment;
-	mutable	int8		m_iRating;
-	bool		m_hasComment;
-	int8		m_iUserRating;
-	ArrayOfCTag	m_taglist;
+	mutable wxString m_strComment;
+	mutable int8 m_iRating;
+	bool m_hasComment;
+	int8 m_iUserRating;
+	ArrayOfCTag m_taglist;
 	CKadEntryPtrList m_kadNotes;
 
 private:
-	uint64		m_nFileSize;
-	CPath		m_fileName;
+	uint64 m_nFileSize;
+	CPath m_fileName;
 };
-
 
 class CSearchFile;
 class CFile;
 
-
 class CKnownFile : public CAbstractFile, public CECID
 {
-friend class CHashingTask;
+	friend class CHashingTask;
+
 public:
 	CKnownFile();
 	CKnownFile(uint32 ecid);
@@ -192,32 +185,32 @@ public:
 	 * See ExternalConn / `Get_EC_Response_GetUpdate` for the consumer
 	 * side of this contract and #713 for context.
 	 */
-	void		MarkECChanged();
-	uint64		GetECGen() const		{ return m_ecGen.load(std::memory_order_relaxed); }
-	static uint64	GetGlobalECGen()		{ return s_globalEcGen.load(std::memory_order_relaxed); }
+	void MarkECChanged();
+	uint64 GetECGen() const { return m_ecGen.load(std::memory_order_relaxed); }
+	static uint64 GetGlobalECGen() { return s_globalEcGen.load(std::memory_order_relaxed); }
 
-	void SetFilePath(const CPath& filePath);
-	const CPath& GetFilePath() const { return m_filePath; }
+	void SetFilePath(const CPath &filePath);
+	const CPath &GetFilePath() const { return m_filePath; }
 
 	// virtual functions for CKnownFile and CPartFile:
-	virtual	bool	IsPartFile() const	{return false;}		// true if not completed
-	virtual bool	IsCompleted() const	{ return true; }	// true if completed
-	virtual bool	IsCPartFile() const	{ return false; }	// true if it's a CPartFile
+	virtual bool IsPartFile() const { return false; }  // true if not completed
+	virtual bool IsCompleted() const { return true; }  // true if completed
+	virtual bool IsCPartFile() const { return false; } // true if it's a CPartFile
 
-	virtual bool	LoadFromFile(const CFileDataIO* file);	//load date, hashset and tags from a .met file
-	virtual uint8	GetStatus(bool WXUNUSED(ignorepause) = false) const { return PS_COMPLETE; }
-	bool	WriteToFile(CFileDataIO* file);
+	virtual bool LoadFromFile(const CFileDataIO *file); // load date, hashset and tags from a .met file
+	virtual uint8 GetStatus(bool WXUNUSED(ignorepause) = false) const { return PS_COMPLETE; }
+	bool WriteToFile(CFileDataIO *file);
 	time_t GetLastChangeDatetime() const { return m_lastDateChanged; }
 	void SetLastChangeDatetime(time_t t) { m_lastDateChanged = t; }
 
 	virtual void SetFileSize(uint64 nFileSize);
 
 	// local available part hashs
-	size_t	GetHashCount() const	{return m_hashlist.size();}
-	const CMD4Hash&	GetPartHash(uint16 part) const;
+	size_t GetHashCount() const { return m_hashlist.size(); }
+	const CMD4Hash &GetPartHash(uint16 part) const;
 
 	// nr. of part hashs according the file size wrt ED2K protocol
-	uint32	GetED2KPartHashCount() const { return m_iED2KPartHashCount; }
+	uint32 GetED2KPartHashCount() const { return m_iED2KPartHashCount; }
 
 	// nr. of 9MB parts (file data)
 	inline uint16 GetPartCount() const { return m_iPartCount; }
@@ -229,54 +222,71 @@ public:
 	uint32 GetPartSize(uint16 part) const { return part == m_iPartCount - 1 ? m_sizeLastPart : PARTSIZE; }
 
 	// file upload priority
-	uint8	GetUpPriority()	 const		{return m_iUpPriority;}
-	void	SetUpPriority(uint8 newUpPriority, bool bSave=true);
-	bool	IsAutoUpPriority() const		{return m_bAutoUpPriority;}
-	void	SetAutoUpPriority(bool flag);
-	void	UpdateAutoUpPriority();
+	uint8 GetUpPriority() const { return m_iUpPriority; }
+	void SetUpPriority(uint8 newUpPriority, bool bSave = true);
+	bool IsAutoUpPriority() const { return m_bAutoUpPriority; }
+	void SetAutoUpPriority(bool flag);
+	void UpdateAutoUpPriority();
 #ifdef CLIENT_GUI
-	uint16	GetQueuedCount() const { return m_queuedCount; }
+	uint16 GetQueuedCount() const { return m_queuedCount; }
 #else
-	uint16	GetQueuedCount() const { return (uint16) m_ClientUploadList.size(); }
+	uint16 GetQueuedCount() const { return (uint16)m_ClientUploadList.size(); }
 #endif
 
-	bool	LoadHashsetFromFile(const CFileDataIO* file, bool checkhash);
-	void	AddUploadingClient(CUpDownClient* client);
-	void	RemoveUploadingClient(CUpDownClient* client);
+	bool LoadHashsetFromFile(const CFileDataIO *file, bool checkhash);
+	void AddUploadingClient(CUpDownClient *client);
+	void RemoveUploadingClient(CUpDownClient *client);
 
 	// comment
-	const wxString&	GetFileComment()	const	{ if (!m_bCommentLoaded) LoadComment(); return m_strComment; }
-	int8	GetFileRating()			const	{ if (!m_bCommentLoaded) LoadComment(); return m_iRating; }
+	const wxString &GetFileComment() const
+	{
+		if (!m_bCommentLoaded)
+			LoadComment();
+		return m_strComment;
+	}
+	int8 GetFileRating() const
+	{
+		if (!m_bCommentLoaded)
+			LoadComment();
+		return m_iRating;
+	}
 
-	void	SetFileCommentRating(const wxString& strNewComment, int8 iNewRating);
-	void	SetPublishedED2K( bool val );
-	bool	GetPublishedED2K() const	{return m_PublishedED2K;}
+	void SetFileCommentRating(const wxString &strNewComment, int8 iNewRating);
+	void SetPublishedED2K(bool val);
+	bool GetPublishedED2K() const { return m_PublishedED2K; }
 
 	/* Kad stuff */
-	uint32	GetKadFileSearchID() const { return kadFileSearchID; }
+	uint32 GetKadFileSearchID() const { return kadFileSearchID; }
 	// KAD TODO: This must be used on KadSearchListCtrl too once imported
-	void	SetKadFileSearchID(uint32 id) { kadFileSearchID = id; } // John - Don't use this unless you know what your are DOING!! (Hopefully I do.. :)
-	const Kademlia::WordList& GetKadKeywords() const { return wordlist; }
+	void SetKadFileSearchID(uint32 id)
+	{
+		kadFileSearchID = id;
+	} // John - Don't use this unless you know what your are DOING!! (Hopefully I do.. :)
+	const Kademlia::WordList &GetKadKeywords() const { return wordlist; }
 	// KAD TODO: If we add the proper column to SharedFilesCtrl, this is the function.
-	uint32	GetLastPublishTimeKadSrc() const { return m_lastPublishTimeKadSrc; }
-	void	SetLastPublishTimeKadSrc(uint32 time, uint32 buddyip) { m_lastPublishTimeKadSrc = time; m_lastBuddyIP = buddyip;}
+	uint32 GetLastPublishTimeKadSrc() const { return m_lastPublishTimeKadSrc; }
+	void SetLastPublishTimeKadSrc(uint32 time, uint32 buddyip)
+	{
+		m_lastPublishTimeKadSrc = time;
+		m_lastBuddyIP = buddyip;
+	}
 	// Another unused function, useful for the shared files control column
-	uint32	GetLastPublishBuddy() const { return m_lastBuddyIP; }
-	void	SetLastPublishTimeKadNotes(uint32 time) {m_lastPublishTimeKadNotes = time;}
-	uint32	GetLastPublishTimeKadNotes() const { return m_lastPublishTimeKadNotes; }
+	uint32 GetLastPublishBuddy() const { return m_lastBuddyIP; }
+	void SetLastPublishTimeKadNotes(uint32 time) { m_lastPublishTimeKadNotes = time; }
+	uint32 GetLastPublishTimeKadNotes() const { return m_lastPublishTimeKadNotes; }
 
-	bool	PublishSrc();
-	bool	PublishNotes();
+	bool PublishSrc();
+	bool PublishNotes();
 
 	// TODO: This must be implemented if we ever want to have metadata.
-	uint32	GetMetaDataVer() const { return /*m_uMetaDataVer*/ 0; }
+	uint32 GetMetaDataVer() const { return /*m_uMetaDataVer*/ 0; }
 
 	// file sharing
-	virtual	CPacket*	CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byRequestedVersion, uint16 nRequestedOptions);
-	void	CreateOfferedFilePacket(CMemFile* files, class CServer* pServer, CUpDownClient* pClient);
+	virtual CPacket *CreateSrcInfoPacket(
+		const CUpDownClient *forClient, uint8 byRequestedVersion, uint16 nRequestedOptions);
+	void CreateOfferedFilePacket(CMemFile *files, class CServer *pServer, CUpDownClient *pClient);
 
-	virtual void	UpdatePartsInfo();
-
+	virtual void UpdatePartsInfo();
 
 	CFileStatistic statistic;
 
@@ -308,13 +318,13 @@ public:
 	 * upparts-status. This function should be called by clients every time they update their
 	 * upparts-status, or when they are added or removed from the file.
 	 */
-	void UpdateUpPartsFrequency( CUpDownClient* client, bool increment );
+	void UpdateUpPartsFrequency(CUpDownClient *client, bool increment);
 
-	static void CreateHashFromHashlist(const ArrayOfCMD4Hash& hashes, CMD4Hash* Output);
+	static void CreateHashFromHashlist(const ArrayOfCMD4Hash &hashes, CMD4Hash *Output);
 
-	void	ClearPriority();
+	void ClearPriority();
 
-	time_t	m_lastDateChanged;
+	time_t m_lastDateChanged;
 
 	// "Last time aMule saw this exact (name, date, size) match a real
 	// file." Refreshed by CKnownFileList::FindKnownFile and the
@@ -324,18 +334,18 @@ public:
 	// (both live and duplicate-list entries), capping known.met
 	// growth at a function of *recently active* unique hashes
 	// rather than lifetime-of-the-profile uniques.
-	uint32	GetLastSeen() const { return m_lastSeen; }
-	void	SetLastSeen(uint32 t) { m_lastSeen = t; }
+	uint32 GetLastSeen() const { return m_lastSeen; }
+	void SetLastSeen(uint32 t) { m_lastSeen = t; }
 
 	virtual wxString GetFeedback() const;
 
-	void	SetShowSources( bool val )	{ m_showSources = val; }
-	bool	ShowSources() const			{ return m_showSources; }
-	void	SetShowPeers( bool val )	{ m_showPeers = val; }
-	bool	ShowPeers()	const			{ return m_showPeers; }
+	void SetShowSources(bool val) { m_showSources = val; }
+	bool ShowSources() const { return m_showSources; }
+	void SetShowPeers(bool val) { m_showPeers = val; }
+	bool ShowPeers() const { return m_showPeers; }
 
-	virtual	void SetHashingProgress(uint16) const {}	// does something for CPartFile only
-	uint16	GetHashingProgress() const	{ return m_hashingProgress; }
+	virtual void SetHashingProgress(uint16) const {} // does something for CPartFile only
+	uint16 GetHashingProgress() const { return m_hashingProgress; }
 
 #ifdef CLIENT_GUI
 	CKnownFile(const CEC_SharedFile_Tag *);
@@ -343,56 +353,61 @@ public:
 	RLE_Data m_partStatus;
 
 private:
-	uint8	m_iUpPriorityEC;
-	uint16	m_queuedCount;
+	uint8 m_iUpPriorityEC;
+	uint16 m_queuedCount;
 
 protected:
 	//! The AICH master-hash, if it is known.
-	wxString	m_AICHMasterHash;
+	wxString m_AICHMasterHash;
 #else
-	virtual void SetFileName(const CPath& filename);
+	virtual void SetFileName(const CPath &filename);
 
 	// AICH
-	CAICHHashSet* GetAICHHashset() const		{ return m_pAICHHashSet; }
-	void SetAICHHashset(CAICHHashSet* val)		{ m_pAICHHashSet = val; }
+	CAICHHashSet *GetAICHHashset() const { return m_pAICHHashSet; }
+	void SetAICHHashset(CAICHHashSet *val) { m_pAICHHashSet = val; }
 
 protected:
-	CAICHHashSet*	m_pAICHHashSet;
+	CAICHHashSet *m_pAICHHashSet;
 #endif
 
-	bool	LoadTagsFromFile(const CFileDataIO* file);
-	bool	LoadDateFromFile(const CFileDataIO* file);
-	void	LoadComment() const;
+	bool LoadTagsFromFile(const CFileDataIO *file);
+	bool LoadDateFromFile(const CFileDataIO *file);
+	void LoadComment() const;
 	ArrayOfCMD4Hash m_hashlist;
-	CPath	m_filePath;
+	CPath m_filePath;
 
-	static void CreateHashFromFile(class CFileAutoClose& file, uint64 offset, uint32 Length, CMD4Hash* Output, CAICHHashTree* pShaHashOut);
-	static void CreateHashFromInput(const uint8_t* input, uint32 Length, CMD4Hash* Output, CAICHHashTree* pShaHashOut);
+	static void CreateHashFromFile(class CFileAutoClose &file,
+		uint64 offset,
+		uint32 Length,
+		CMD4Hash *Output,
+		CAICHHashTree *pShaHashOut);
+	static void CreateHashFromInput(
+		const uint8_t *input, uint32 Length, CMD4Hash *Output, CAICHHashTree *pShaHashOut);
 
-	mutable bool	m_bCommentLoaded;
-	uint16	m_iPartCount;
-	uint16  m_iED2KPartCount;
-	uint16	m_iED2KPartHashCount;
-	uint32	m_sizeLastPart;			// size of the last part
-	uint8	m_iUpPriority;
-	bool	m_bAutoUpPriority;
-	bool	m_PublishedED2K;
+	mutable bool m_bCommentLoaded;
+	uint16 m_iPartCount;
+	uint16 m_iED2KPartCount;
+	uint16 m_iED2KPartHashCount;
+	uint32 m_sizeLastPart; // size of the last part
+	uint8 m_iUpPriority;
+	bool m_bAutoUpPriority;
+	bool m_PublishedED2K;
 	// Index of part being hashed, 0: no hashing in progress.
-	// The known file is const in the hashing thread, so rather drill this little hole by making it mutable
-	// than opening it all up.
-	mutable	uint16 m_hashingProgress;
+	// The known file is const in the hashing thread, so rather drill this little hole by making it
+	// mutable than opening it all up.
+	mutable uint16 m_hashingProgress;
 
 	/* Kad stuff */
 	Kademlia::WordList wordlist;
-	uint32	kadFileSearchID;
-	uint32	m_lastPublishTimeKadSrc;
-	uint32	m_lastPublishTimeKadNotes;
-	uint32	m_lastBuddyIP;
+	uint32 kadFileSearchID;
+	uint32 m_lastPublishTimeKadSrc;
+	uint32 m_lastPublishTimeKadNotes;
+	uint32 m_lastBuddyIP;
 
-	uint32	m_lastSeen;
+	uint32 m_lastSeen;
 
-	bool	m_showSources;
-	bool	m_showPeers;
+	bool m_showSources;
+	bool m_showPeers;
 
 public:
 	/**
@@ -412,7 +427,7 @@ public:
 	 * affects the link body — filename, size and hash are otherwise stable
 	 * across the lifetime of a CKnownFile / CPartFile).
 	 */
-	const wxString& GetCachedED2kLinkBase() const;
+	const wxString &GetCachedED2kLinkBase() const;
 
 	/**
 	 * Full ed2k:// link as needed by EC responses — cached base + the
@@ -429,7 +444,7 @@ private:
 	void Init();
 
 	// EC change-generation tracking — see public MarkECChanged() doc above.
-	std::atomic<uint64> m_ecGen{0};
+	std::atomic<uint64> m_ecGen{ 0 };
 	static std::atomic<uint64> s_globalEcGen;
 };
 

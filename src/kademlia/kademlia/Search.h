@@ -47,7 +47,8 @@ class CKnownFile;
 class CTag;
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 class CKadClientSearcher;
@@ -57,32 +58,48 @@ class CSearch
 	friend class CSearchManager;
 
 public:
-	uint32_t GetSearchID() const noexcept		{ return m_searchID; }
-	void	 SetSearchID(uint32_t id) noexcept	{ m_searchID = id; }
-	uint32_t GetSearchTypes() const noexcept		{ return m_type; }
-	void	 SetSearchTypes(uint32_t val) noexcept	{ m_type = val; }
-	void	 SetTargetID(const CUInt128& val) noexcept { m_target = val; }
-	CUInt128 GetTarget() const noexcept		{ return m_target; }
+	uint32_t GetSearchID() const noexcept { return m_searchID; }
+	void SetSearchID(uint32_t id) noexcept { m_searchID = id; }
+	uint32_t GetSearchTypes() const noexcept { return m_type; }
+	void SetSearchTypes(uint32_t val) noexcept { m_type = val; }
+	void SetTargetID(const CUInt128 &val) noexcept { m_target = val; }
+	CUInt128 GetTarget() const noexcept { return m_target; }
 
-	uint32_t GetAnswers() const noexcept		{ return m_fileIDs.size() ? m_answers / ((m_fileIDs.size() + 49) / 50) : m_answers; }
-	uint32_t GetRequestAnswer() const noexcept	{ return m_totalRequestAnswers; }
+	uint32_t GetAnswers() const noexcept
+	{
+		return m_fileIDs.size() ? m_answers / ((m_fileIDs.size() + 49) / 50) : m_answers;
+	}
+	uint32_t GetRequestAnswer() const noexcept { return m_totalRequestAnswers; }
 
-	const wxString&	GetFileName(void) const noexcept			{ return m_fileName; }
-	void		SetFileName(const wxString& fileName) noexcept	{ m_fileName = fileName; }
+	const wxString &GetFileName(void) const noexcept { return m_fileName; }
+	void SetFileName(const wxString &fileName) noexcept { m_fileName = fileName; }
 
-	void	 AddFileID(const CUInt128& id)		{ m_fileIDs.push_back(id); }
-	void	 PreparePacketForTags(CMemFile* packet, CKnownFile* file);
-	bool	 Stopping() const noexcept		{ return m_stopping; }
+	void AddFileID(const CUInt128 &id) { m_fileIDs.push_back(id); }
+	void PreparePacketForTags(CMemFile *packet, CKnownFile *file);
+	bool Stopping() const noexcept { return m_stopping; }
 
-	uint32_t GetNodeLoad() const noexcept		{ return m_totalLoadResponses == 0 ? 0 : m_totalLoad / m_totalLoadResponses; }
-	uint32_t GetNodeLoadResponse() const noexcept	{ return m_totalLoadResponses; }
-	uint32_t GetNodeLoadTotal() const noexcept	{ return m_totalLoad; }
-	void	 UpdateNodeLoad(uint8_t load) noexcept	{ m_totalLoad += load; m_totalLoadResponses++; }
+	uint32_t GetNodeLoad() const noexcept
+	{
+		return m_totalLoadResponses == 0 ? 0 : m_totalLoad / m_totalLoadResponses;
+	}
+	uint32_t GetNodeLoadResponse() const noexcept { return m_totalLoadResponses; }
+	uint32_t GetNodeLoadTotal() const noexcept { return m_totalLoad; }
+	void UpdateNodeLoad(uint8_t load) noexcept
+	{
+		m_totalLoad += load;
+		m_totalLoadResponses++;
+	}
 
-	void	 SetSearchTermData(uint32_t searchTermsDataSize, const uint8_t *searchTermsData);
+	void SetSearchTermData(uint32_t searchTermsDataSize, const uint8_t *searchTermsData);
 
-	CKadClientSearcher *	GetNodeSpecialSearchRequester() const noexcept				{ return m_nodeSpecialSearchRequester; }
-	void			SetNodeSpecialSearchRequester(CKadClientSearcher *requester) noexcept	{ m_nodeSpecialSearchRequester = requester; }
+	CKadClientSearcher *GetNodeSpecialSearchRequester() const noexcept
+	{
+		return m_nodeSpecialSearchRequester;
+	}
+	void SetNodeSpecialSearchRequester(CKadClientSearcher *requester) noexcept
+	{
+		m_nodeSpecialSearchRequester = requester;
+	}
 
 	// User-triggered widening of the Kad result set.  Walks m_responded for
 	// the closest contact we have not already reasked, and sends it
@@ -94,9 +111,10 @@ public:
 	// m_requestedMoreNodes.size() < KADEMLIA_FIND_VALUE_MORE_REASKS to
 	// limit per-search network impact.  Returns true if a reask was
 	// dispatched, false if no eligible candidate remains.
-	bool		RequestMoreResults();
+	bool RequestMoreResults();
 
-	enum {
+	enum
+	{
 		NODE,
 		NODECOMPLETE,
 		FILE,
@@ -107,8 +125,11 @@ public:
 		STORENOTES,
 		FINDBUDDY,
 		FINDSOURCE,
-		NODESPECIAL,	// nodesearch request from requester "outside" of kad to find the IP of a given NodeID
-		NODEFWCHECKUDP	// find new unknown IPs for a UDP firewallcheck
+		// nodesearch request from requester "outside" of kad to find
+		// the IP of a given NodeID
+		NODESPECIAL,
+		// find new unknown IPs for a UDP firewallcheck
+		NODEFWCHECKUDP
 	};
 
 	CSearch();
@@ -126,35 +147,36 @@ private:
 	void PrepareToStop() noexcept;
 	void StorePacket();
 
-	uint8_t	GetRequestContactCount() const;
+	uint8_t GetRequestContactCount() const;
 
-	bool		m_stopping;
-	time_t		m_created;
-	uint32_t	m_type;
-	uint32_t	m_answers;
-	uint32_t	m_totalRequestAnswers;
-	uint32_t	m_totalLoad;
-	uint32_t	m_totalLoadResponses;
-	uint32_t	m_lastResponse;
+	bool m_stopping;
+	time_t m_created;
+	uint32_t m_type;
+	uint32_t m_answers;
+	uint32_t m_totalRequestAnswers;
+	uint32_t m_totalLoad;
+	uint32_t m_totalLoadResponses;
+	uint32_t m_lastResponse;
 
-	uint32_t	m_searchID;
-	CUInt128	m_target;
-	uint32_t	m_searchTermsDataSize;
-	uint8_t *	m_searchTermsData;
-	WordList	m_words;  // list of words in the search string (populated in CSearchManager::PrepareFindKeywords)
-	wxString	m_fileName;
-	UIntList	m_fileIDs;
+	uint32_t m_searchID;
+	CUInt128 m_target;
+	uint32_t m_searchTermsDataSize;
+	uint8_t *m_searchTermsData;
+	WordList m_words; // list of words in the search string (populated in
+			  // CSearchManager::PrepareFindKeywords)
+	wxString m_fileName;
+	UIntList m_fileIDs;
 	CKadClientSearcher *m_nodeSpecialSearchRequester; // used to callback result for NODESPECIAL searches
 
-	typedef std::map<CUInt128, bool>	RespondedMap;
+	typedef std::map<CUInt128, bool> RespondedMap;
 
-	ContactMap	m_possible;
-	ContactMap	m_tried;
-	RespondedMap	m_responded;
-	ContactMap	m_best;
-	ContactList	m_delete;
-	ContactMap	m_inUse;
-	CUInt128	m_closestDistantFound; // not used for the search itself, but for statistical data collecting
+	ContactMap m_possible;
+	ContactMap m_tried;
+	RespondedMap m_responded;
+	ContactMap m_best;
+	ContactList m_delete;
+	ContactMap m_inUse;
+	CUInt128 m_closestDistantFound; // not used for the search itself, but for statistical data collecting
 
 	// Set of contact ClientIDs we have asked KADEMLIA_FIND_VALUE_MORE
 	// from (the wider 11-contact response variant).  Tracked as a set
@@ -165,10 +187,10 @@ private:
 	//   - RequestMoreResults() can be called multiple times to widen
 	//     further on subsequent responded nodes, capped by
 	//     KADEMLIA_FIND_VALUE_MORE_REASKS.
-	std::set<CUInt128>	m_requestedMoreNodes;
+	std::set<CUInt128> m_requestedMoreNodes;
 };
 
-} // End namespace
+} // namespace Kademlia
 
 #endif //__SEARCH_H__
 // File_checked_for_headers

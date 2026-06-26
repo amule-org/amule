@@ -24,26 +24,26 @@
 //
 
 #include "FileAutoClose.h"
-#include "GetTickCount.h"	// for TheTime
-#include "Logger.h"			// Needed for AddDebugLogLineN
+#include "GetTickCount.h" // for TheTime
+#include "Logger.h"       // Needed for AddDebugLogLineN
 
-
-static const uint32 ReleaseTime = 600;	// close file after 10 minutes of not being used
+static const uint32 ReleaseTime = 600; // close file after 10 minutes of not being used
 
 CFileAutoClose::CFileAutoClose()
-	: m_mode(CFile::read),
-	  m_autoClosed(false),
-	  m_locked(0),
-	  m_size(0),
-	  m_lastAccess(TheTime)
-{}
+: m_mode(CFile::read)
+, m_autoClosed(false)
+, m_locked(0)
+, m_size(0)
+, m_lastAccess(TheTime)
+{
+}
 
-CFileAutoClose::CFileAutoClose(const CPath& path, CFile::OpenMode mode)
+CFileAutoClose::CFileAutoClose(const CPath &path, CFile::OpenMode mode)
 {
 	Open(path, mode);
 }
 
-bool CFileAutoClose::Open(const CPath& path, CFile::OpenMode mode)
+bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode)
 {
 	m_mode = mode;
 	m_autoClosed = false;
@@ -53,7 +53,7 @@ bool CFileAutoClose::Open(const CPath& path, CFile::OpenMode mode)
 	return m_file.Open(path, mode);
 }
 
-bool CFileAutoClose::Create(const CPath& path, bool overwrite)
+bool CFileAutoClose::Create(const CPath &path, bool overwrite)
 {
 	m_mode = CFile::write;
 	m_autoClosed = false;
@@ -79,7 +79,7 @@ bool CFileAutoClose::SetLength(uint64 newLength)
 	return m_file.SetLength(newLength);
 }
 
-const CPath& CFileAutoClose::GetFilePath() const
+const CPath &CFileAutoClose::GetFilePath() const
 {
 	return m_file.GetFilePath();
 }
@@ -89,14 +89,14 @@ bool CFileAutoClose::IsOpened() const
 	return m_autoClosed || m_file.IsOpened();
 }
 
-void CFileAutoClose::ReadAt(void* buffer, uint64 offset, size_t count)
+void CFileAutoClose::ReadAt(void *buffer, uint64 offset, size_t count)
 {
 	Reopen();
 	m_file.Seek(offset);
 	m_file.Read(buffer, count);
 }
 
-void CFileAutoClose::WriteAt(const void* buffer, uint64 offset, size_t count)
+void CFileAutoClose::WriteAt(const void *buffer, uint64 offset, size_t count)
 {
 	Reopen();
 	m_file.Seek(offset);
@@ -138,15 +138,14 @@ void CFileAutoClose::Reopen()
 
 bool CFileAutoClose::Release(bool now)
 {
-	if (!m_autoClosed
-			&& (now || TheTime - m_lastAccess >= ReleaseTime)
-			&& !m_locked
-			&& m_file.IsOpened()) {
+	if (!m_autoClosed && (now || TheTime - m_lastAccess >= ReleaseTime) && !m_locked &&
+		m_file.IsOpened()) {
 		m_autoClosed = true;
 		m_size = m_file.GetLength();
 		m_file.Close();
-		AddDebugLogLineN(logCFile, "AutoClosed file " + GetFilePath().GetPrintable()
-			+ (now ? "(immediately)" : "(timed)"));
+		AddDebugLogLineN(logCFile,
+			"AutoClosed file " + GetFilePath().GetPrintable() +
+				(now ? "(immediately)" : "(timed)"));
 	}
 	return m_autoClosed;
 }

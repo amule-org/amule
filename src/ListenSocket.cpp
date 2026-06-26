@@ -23,16 +23,16 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ListenSocket.h"	// Interface declarations
+#include "ListenSocket.h" // Interface declarations
 
 #include <common/EventIDs.h>
 
-#include "ClientTCPSocket.h"	// Needed for CClientRequestSocket
-#include "Logger.h"			// Needed for AddLogLineM
-#include "Statistics.h"		// Needed for theStats
-#include "Preferences.h"	// Needed for CPreferences
-#include "amule.h"		// Needed for theApp
-#include "ServerConnect.h"	// Needed for CServerConnect
+#include "ClientTCPSocket.h" // Needed for CClientRequestSocket
+#include "Logger.h"          // Needed for AddLogLineM
+#include "Statistics.h"      // Needed for theStats
+#include "Preferences.h"     // Needed for CPreferences
+#include "amule.h"           // Needed for theApp
+#include "ServerConnect.h"   // Needed for CServerConnect
 
 //-----------------------------------------------------------------------------
 // CListenSocket
@@ -44,10 +44,9 @@
 //
 
 CListenSocket::CListenSocket(amuleIPV4Address &addr, const CProxyData *ProxyData)
-:
-// wxSOCKET_NOWAIT    - means non-blocking i/o
-// wxSOCKET_REUSEADDR - means we can reuse the socket immediately (wx-2.5.3)
-CSocketServerProxy(addr, MULE_SOCKET_NOWAIT|MULE_SOCKET_REUSEADDR, ProxyData)
+: // wxSOCKET_NOWAIT    - means non-blocking i/o
+  // wxSOCKET_REUSEADDR - means we can reuse the socket immediately (wx-2.5.3)
+	CSocketServerProxy(addr, MULE_SOCKET_NOWAIT | MULE_SOCKET_REUSEADDR, ProxyData)
 {
 	// 0.42e - vars not used by us
 	m_pending = false;
@@ -62,10 +61,9 @@ CSocketServerProxy(addr, MULE_SOCKET_NOWAIT|MULE_SOCKET_REUSEADDR, ProxyData)
 
 		AddLogLineNS(_("ListenSocket: Ok."));
 	} else {
-		AddLogLineCS(_("ERROR: Could not listen to TCP port.") );
+		AddLogLineCS(_("ERROR: Could not listen to TCP port."));
 	}
 }
-
 
 CListenSocket::~CListenSocket()
 {
@@ -83,10 +81,9 @@ CListenSocket::~CListenSocket()
 	KillAllSockets();
 }
 
-
 void CListenSocket::OnAccept()
 {
-	m_pending = theApp->IsRunning();	// just do nothing if we are shutting down
+	m_pending = theApp->IsRunning(); // just do nothing if we are shutting down
 	// If the client is still at maxconnections,
 	// this will allow it to go above it ...
 	// But if you don't, you will get a lowID on all servers.
@@ -95,7 +92,7 @@ void CListenSocket::OnAccept()
 			m_pending = false;
 		} else {
 			// Create a new socket to deal with the connection
-			CClientTCPSocket* newclient = new CClientTCPSocket();
+			CClientTCPSocket *newclient = new CClientTCPSocket();
 			// Accept the connection and give it to the newly created socket
 			if (!AcceptWith(*newclient, false)) {
 				newclient->Safe_Delete();
@@ -124,8 +121,8 @@ void CListenSocket::Process()
 	// 042e + Kry changes for Destroy
 	m_OpenSocketsInterval = 0;
 	SocketSet::iterator it = socket_list.begin();
-	while ( it != socket_list.end() ) {
-		CClientTCPSocket* cur_socket = *it++;
+	while (it != socket_list.end()) {
+		CClientTCPSocket *cur_socket = *it++;
 		if (!cur_socket->IsDestroying()) {
 			cur_socket->CheckTimeOut();
 		}
@@ -140,30 +137,30 @@ void CListenSocket::RecalculateStats()
 {
 	// 0.42e
 	memset(m_ConnectionStates, 0, 3 * sizeof(m_ConnectionStates[0]));
-	for (SocketSet::iterator it = socket_list.begin(); it != socket_list.end(); ) {
-		CClientTCPSocket* cur_socket = *it++;
+	for (SocketSet::iterator it = socket_list.begin(); it != socket_list.end();) {
+		CClientTCPSocket *cur_socket = *it++;
 		switch (cur_socket->GetConState()) {
-			case ES_DISCONNECTED:
-				m_ConnectionStates[0]++;
-				break;
-			case ES_NOTCONNECTED:
-				m_ConnectionStates[1]++;
-				break;
-			case ES_CONNECTED:
-				m_ConnectionStates[2]++;
-				break;
+		case ES_DISCONNECTED:
+			m_ConnectionStates[0]++;
+			break;
+		case ES_NOTCONNECTED:
+			m_ConnectionStates[1]++;
+			break;
+		case ES_CONNECTED:
+			m_ConnectionStates[2]++;
+			break;
 		}
 	}
 }
 
-void CListenSocket::AddSocket(CClientTCPSocket* toadd)
+void CListenSocket::AddSocket(CClientTCPSocket *toadd)
 {
 	wxASSERT(toadd);
 	socket_list.insert(toadd);
 	theStats::AddActiveConnection();
 }
 
-void CListenSocket::RemoveSocket(CClientTCPSocket* todel)
+void CListenSocket::RemoveSocket(CClientTCPSocket *todel)
 {
 	wxASSERT(todel);
 	socket_list.erase(todel);
@@ -175,8 +172,8 @@ void CListenSocket::KillAllSockets()
 	// 0.42e reviewed - they use delete, but our safer is Destroy...
 	// But I bet it would be better to call Safe_Delete on the socket.
 	// Update: no... Safe_Delete MARKS for deletion. We need to delete it.
-	for (SocketSet::iterator it = socket_list.begin(); it != socket_list.end(); ) {
-		CClientTCPSocket* cur_socket = *it++;
+	for (SocketSet::iterator it = socket_list.begin(); it != socket_list.end();) {
+		CClientTCPSocket *cur_socket = *it++;
 		if (cur_socket->GetClient()) {
 			cur_socket->Safe_Delete_Client();
 		} else {
@@ -188,48 +185,48 @@ void CListenSocket::KillAllSockets()
 
 bool CListenSocket::TooManySockets(bool bIgnoreInterval)
 {
-	if (GetOpenSockets() > thePrefs::GetMaxConnections()
-		|| (!bIgnoreInterval && m_OpenSocketsInterval > (thePrefs::GetMaxConperFive() * GetMaxConperFiveModifier()))) {
+	if (GetOpenSockets() > thePrefs::GetMaxConnections() ||
+		(!bIgnoreInterval && m_OpenSocketsInterval >
+					     (thePrefs::GetMaxConperFive() * GetMaxConperFiveModifier()))) {
 		return true;
 	} else {
 		return false;
 	}
 }
 
-bool CListenSocket::IsValidSocket(CClientTCPSocket* totest)
+bool CListenSocket::IsValidSocket(CClientTCPSocket *totest)
 {
 	// 0.42e
 	return socket_list.find(totest) != socket_list.end();
 }
 
-
 void CListenSocket::UpdateConnectionsStatus()
 {
 	// 0.42e xcept for the khaos stats
-	if( theApp->IsConnected() ) {
+	if (theApp->IsConnected()) {
 		totalconnectionchecks++;
 		float percent;
-		percent = (float)(totalconnectionchecks-1)/(float)totalconnectionchecks;
-		if( percent > .99f ) {
+		percent = (float)(totalconnectionchecks - 1) / (float)totalconnectionchecks;
+		if (percent > .99f) {
 			percent = .99f;
 		}
-		averageconnections = (averageconnections*percent) + (float)GetOpenSockets()*(1.0f-percent);
+		averageconnections =
+			(averageconnections * percent) + (float)GetOpenSockets() * (1.0f - percent);
 	}
 }
-
 
 float CListenSocket::GetMaxConperFiveModifier()
 {
 	float SpikeSize = GetOpenSockets() - averageconnections;
-	if ( SpikeSize < 1 ) {
+	if (SpikeSize < 1) {
 		return 1;
 	}
 
 	float SpikeTolerance = 2.5f * thePrefs::GetMaxConperFive();
-	if ( SpikeSize > SpikeTolerance ) {
+	if (SpikeSize > SpikeTolerance) {
 		return 0;
 	}
 
-	return 1.0f - (SpikeSize/SpikeTolerance);
+	return 1.0f - (SpikeSize / SpikeTolerance);
 }
 // File_checked_for_headers

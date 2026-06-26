@@ -36,15 +36,15 @@ class PartFileBufferedData;
 
 // eMule ref: PartFile.h:104-108
 // Part file buffer write status
-#define PB_READY   0
+#define PB_READY 0
 #define PB_PENDING 1
-#define PB_ERROR   2
+#define PB_ERROR 2
 #define PB_WRITTEN 3
 
 // eMule ref: PartFileWriteThread.h:21-25
 struct ToWrite
 {
-	CPartFile           *pFile;
+	CPartFile *pFile;
 	PartFileBufferedData *pBuffer;
 };
 
@@ -61,8 +61,8 @@ public:
 	CPartFileWriteThread();
 	~CPartFileWriteThread();
 
-	void EndThread();                  // eMule ref: PartFileWriteThread.cpp:62
-	void QueueWrite(CPartFile* pFile, PartFileBufferedData* pBuffer);
+	void EndThread(); // eMule ref: PartFileWriteThread.cpp:62
+	void QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer);
 	bool IsRunning() const { return m_bRun; }
 
 	// Pointer-value strip of any pending writes whose pFile == `file`.
@@ -71,18 +71,18 @@ public:
 	// with the strip. Pending PartFileBufferedData entries are
 	// deleted here because the partfile they were meant for is
 	// gone — the bytes are dropped, matching the cancel semantics.
-	void DropReferencesTo(const CKnownFile* file);
+	void DropReferencesTo(const CKnownFile *file);
 
 private:
-	void* Entry() override;
+	void *Entry() override;
 
-	volatile bool   m_bRun;
-	bool            m_bWorkPending;    // sticky wake flag
+	volatile bool m_bRun;
+	bool m_bWorkPending; // sticky wake flag
 
-	wxMutex         m_mutex;
-	wxCondition     m_condition;
+	wxMutex m_mutex;
+	wxCondition m_condition;
 
-	std::list<ToWrite> m_flushList;    // protected by m_mutex
+	std::list<ToWrite> m_flushList; // protected by m_mutex
 };
 
 #endif // PARTFILEWRITETHREAD_H

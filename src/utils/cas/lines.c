@@ -46,10 +46,10 @@ void CreateLine(char *lines[], int line, const char *format, ...)
 			break;
 		}
 		/* Else try again with more space. */
-		if (n > -1)	/* glibc 2.1 */
-			size = n+1;	/* precisely what is needed */
-		else		/* glibc 2.0 */
-			size *= 2;	/* twice the old size */
+		if (n > -1)           /* glibc 2.1 */
+			size = n + 1; /* precisely what is needed */
+		else                  /* glibc 2.0 */
+			size *= 2;    /* twice the old size */
 		if ((tmp = realloc(p, size)) == NULL) {
 			free(p);
 			p = NULL;

@@ -19,18 +19,13 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "testregistry.h"
 #include "testcase.h"
 #include "test.h"
 
 using namespace muleunit;
 
-
-TestRegistry::TestRegistry()
-{
-}
-
+TestRegistry::TestRegistry() {}
 
 TestRegistry::~TestRegistry()
 {
@@ -40,25 +35,21 @@ TestRegistry::~TestRegistry()
 	}
 }
 
-
 void TestRegistry::addTest(Test *test)
 {
 	instance().add(test);
 }
-
 
 bool TestRegistry::runAndPrint()
 {
 	return instance().runTests();
 }
 
-
-TestRegistry& TestRegistry::instance()
+TestRegistry &TestRegistry::instance()
 {
 	static TestRegistry registry;
 	return registry;
 }
-
 
 void TestRegistry::add(Test *test)
 {
@@ -71,7 +62,6 @@ void TestRegistry::add(Test *test)
 	m_testCases.back()->addTest(test);
 }
 
-
 bool TestRegistry::runTests()
 {
 	bool success = true;
@@ -83,4 +73,3 @@ bool TestRegistry::runTests()
 
 	return success;
 }
-

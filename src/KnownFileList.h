@@ -26,11 +26,9 @@
 #ifndef KNOWNFILELIST_H
 #define KNOWNFILELIST_H
 
-
 #include <unordered_set>
 
 #include "SharedFileList.h" // CKnownFileMap
-
 
 class CKnownFile;
 class CPath;
@@ -41,15 +39,12 @@ class CKnownFileList
 public:
 	CKnownFileList();
 	~CKnownFileList();
-	bool	SafeAddKFile(CKnownFile* toadd, bool afterHashing = false);
-	bool	Init();
-	void	Save();
-	void	Clear();
-	CKnownFile* FindKnownFile(
-		const CPath& filename,
-		time_t in_date,
-		uint64 in_size);
-	CKnownFile* FindKnownFileByID(const CMD4Hash& hash);
+	bool SafeAddKFile(CKnownFile *toadd, bool afterHashing = false);
+	bool Init();
+	void Save();
+	void Clear();
+	CKnownFile *FindKnownFile(const CPath &filename, time_t in_date, uint64 in_size);
+	CKnownFile *FindKnownFileByID(const CMD4Hash &hash);
 
 	// Returns true iff `file` is currently a member of the canonical
 	// known-file map. Pointer-value comparison only — `file` may
@@ -58,16 +53,16 @@ public:
 	// Used by the async-task completion handlers (OnFinishedHashing,
 	// OnFinishedAICHHashing) to validate that an event's `owner`
 	// pointer is still live before dereffing it.
-	bool IsKnownFile(const CKnownFile* file) const;
+	bool IsKnownFile(const CKnownFile *file) const;
 
-	void	PrepareIndex();
-	void	ReleaseIndex();
+	void PrepareIndex();
+	void ReleaseIndex();
 
 	// Latch set by CSharedFileList::Reload once a full share-scan has
 	// finished in this session. PruneDuplicates only runs once this is
 	// true, so the cap-prune never fires before the pin set is
 	// populated by FindKnownFile-during-scan.
-	void	MarkInitialShareScanComplete();
+	void MarkInitialShareScanComplete();
 
 	// Snapshot the set of AICH master hashes that are still referenced
 	// by live and duplicate-list records. Used by CAICHSyncTask to
@@ -76,27 +71,21 @@ public:
 	// and no longer appears in either map). The set is populated under
 	// list_mut to get a consistent view; CAICHHash is hashable so
 	// callers can fast-test membership during the file walk.
-	void	CollectLiveAICHRoots(std::unordered_set<CAICHHash> & out);
+	void CollectLiveAICHRoots(std::unordered_set<CAICHHash> &out);
 
 	uint16 requested;
 	uint32 transferred;
 	uint16 accepted;
 
 private:
-	mutable wxMutex	list_mut;
+	mutable wxMutex list_mut;
 
-	bool	Append(CKnownFile*, bool afterHashing = false);
+	bool Append(CKnownFile *, bool afterHashing = false);
 
-	CKnownFile *IsOnDuplicates(
-		const CPath& filename,
-		uint32 in_date,
-		uint64 in_size) const;
+	CKnownFile *IsOnDuplicates(const CPath &filename, uint32 in_date, uint64 in_size) const;
 
 	bool KnownFileMatches(
-		CKnownFile *knownFile,
-		const CPath& filename,
-		uint32 in_date,
-		uint64 in_size) const;
+		CKnownFile *knownFile, const CPath &filename, uint32 in_date, uint64 in_size) const;
 
 	// Drop duplicate-list records whose hash has more than
 	// KNOWN_DUPLICATE_HASH_CAP variants, keeping the newest by mtime.
@@ -106,13 +95,13 @@ private:
 	// records that FindKnownFile matched against a real on-disk file
 	// during this session even when AddFile rejected them as
 	// content-duplicates of an already-shared file.
-	void	PruneDuplicates(const std::unordered_set<CKnownFile*> & inUse);
+	void PruneDuplicates(const std::unordered_set<CKnownFile *> &inUse);
 
-	typedef std::list<CKnownFile*> KnownFileList;
-	KnownFileList	m_duplicateFileList;
-	CKnownFileMap	m_knownFileMap;
+	typedef std::list<CKnownFile *> KnownFileList;
+	KnownFileList m_duplicateFileList;
+	CKnownFileMap m_knownFileMap;
 	// The filename "known.met"
-	wxString	m_filename;
+	wxString m_filename;
 	// Speed up shared files reload. The key is (size, mtime) rather than
 	// size alone: libraries that contain many files of the same size
 	// (small text files, fixed-quality JPEGs, fixed-bitrate audio/video)
@@ -123,9 +112,9 @@ private:
 	// in any realistic library — files added at different times have
 	// different mtimes — while keeping the per-entry cost identical
 	// (8 bytes of key vs the previous 4).
-	typedef std::multimap<std::pair<uint32, uint32>, CKnownFile*> KnownFileSizeMap;
-	KnownFileSizeMap * m_knownSizeMap;
-	KnownFileSizeMap * m_duplicateSizeMap;
+	typedef std::multimap<std::pair<uint32, uint32>, CKnownFile *> KnownFileSizeMap;
+	KnownFileSizeMap *m_knownSizeMap;
+	KnownFileSizeMap *m_duplicateSizeMap;
 
 	// Duplicate-list records that FindKnownFile / IsOnDuplicates
 	// returned during this session — i.e. their (name, date, size)
@@ -134,11 +123,11 @@ private:
 	// still represents a live file (avoids re-hashing on next
 	// restart). Cleared on Clear() / Init() so each session starts
 	// fresh.
-	std::unordered_set<CKnownFile*> m_pinnedDuplicates;
+	std::unordered_set<CKnownFile *> m_pinnedDuplicates;
 
 	// Set to true by MarkInitialShareScanComplete() at the end of the
 	// first non-aborted CSharedFileList::Reload of the session.
-	bool	m_initialShareScanComplete;
+	bool m_initialShareScanComplete;
 };
 
 #endif // KNOWNFILELIST_H

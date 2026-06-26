@@ -26,11 +26,10 @@
 #ifndef SEARCHDLG_H
 #define SEARCHDLG_H
 
-#include <wx/panel.h>		// Needed for wxPanel
-#include <wx/notebook.h>	// needed for wxBookCtrlEvent in wx 2.8
+#include <wx/panel.h>    // Needed for wxPanel
+#include <wx/notebook.h> // needed for wxBookCtrlEvent in wx 2.8
 
-#include "Types.h"		// Needed for uint16 and uint32
-
+#include "Types.h" // Needed for uint16 and uint32
 
 class CMuleNotebook;
 class CSearchListCtrl;
@@ -39,7 +38,6 @@ class wxListEvent;
 class wxSpinEvent;
 class wxGauge;
 class CSearchFile;
-
 
 /**
  * This class represents the Search Dialog, which takes care of
@@ -54,13 +52,12 @@ public:
 	 *
 	 * @param pParent The parent widget passed to the wxPanel constructor.
 	 */
-	CSearchDlg(wxWindow* pParent);
+	CSearchDlg(wxWindow *pParent);
 
 	/**
 	 * Destructor.
 	 */
 	~CSearchDlg();
-
 
 	/**
 	 * Adds the provided result to the right result-list.
@@ -68,7 +65,7 @@ public:
 	 * Please note that there is no duplicates checking, so the files should
 	 * indeed be a new result.
 	 */
-	void AddResult(CSearchFile* toadd);
+	void AddResult(CSearchFile *toadd);
 
 	/**
 	 * Updates a changed result.
@@ -79,14 +76,14 @@ public:
 	 * if needed, it will also move the result so that the current sorting
 	 * is maintained.
 	 */
-	void UpdateResult(CSearchFile* toupdate);
+	void UpdateResult(CSearchFile *toupdate);
 
 	/**
 	 * Checks if a result-page with the specified heading exists.
 	 *
 	 * @param searchString The heading to look for.
 	 */
-	bool		CheckTabNameExists(const wxString& searchString);
+	bool CheckTabNameExists(const wxString &searchString);
 
 	/**
 	 * Creates a new tab and displays the specified results.
@@ -94,78 +91,73 @@ public:
 	 * @param searchString This will be the heading of the new page.
 	 * @param nSearchID The results with this searchId will be displayed.
 	 */
-	void		CreateNewTab(const wxString& searchString, wxUIntPtr nSearchID);
-
+	void CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID);
 
 	/**
 	 * Call this function to signify that the local search is over.
 	 */
-	void		LocalSearchEnd();
-
+	void LocalSearchEnd();
 
 	/**
 	 * Call this function to signify that the kad search is over.
 	 */
-	void		KadSearchEnd(uint32 id);
-
+	void KadSearchEnd(uint32 id);
 
 	/**
 	 * This function updates the category list according to existing categories.
 	 */
-	void		UpdateCatChoice();
-
+	void UpdateCatChoice();
 
 	/**
 	 * This function displays the the hit-count in the heading for the specified page.
 	 *
 	 * @param page The page to have its heading updated.
 	 */
-	void		UpdateHitCount(CSearchListCtrl* page);
+	void UpdateHitCount(CSearchListCtrl *page);
 
 	/**
 	 * Helper function which resets the controls.
 	 */
-	void		ResetControls();
+	void ResetControls();
 
 	// Event handler and helper function
-	void		OnBnClickedDownload(wxCommandEvent& ev);
+	void OnBnClickedDownload(wxCommandEvent &ev);
 
-	CSearchListCtrl* GetSearchList( wxUIntPtr id );
+	CSearchListCtrl *GetSearchList(wxUIntPtr id);
 
-	void	UpdateProgress(uint32 new_value);
+	void UpdateProgress(uint32 new_value);
 
-	void	StartNewSearch();
+	void StartNewSearch();
 
 	void FixSearchTypes();
 
 private:
 	// Event handlers
-	void		OnFieldChanged(wxEvent& evt);
+	void OnFieldChanged(wxEvent &evt);
 
-	void		OnListItemSelected(wxListEvent& ev);
-	void		OnBnClickedReset(wxCommandEvent& ev);
-	void		OnBnClickedClear(wxCommandEvent& ev);
-	void		OnExtendedSearchChange(wxCommandEvent& ev);
-	void		OnFilterCheckChange(wxCommandEvent& ev);
-	void		OnFilteringChange(wxCommandEvent& ev);
+	void OnListItemSelected(wxListEvent &ev);
+	void OnBnClickedReset(wxCommandEvent &ev);
+	void OnBnClickedClear(wxCommandEvent &ev);
+	void OnExtendedSearchChange(wxCommandEvent &ev);
+	void OnFilterCheckChange(wxCommandEvent &ev);
+	void OnFilteringChange(wxCommandEvent &ev);
 
-	void		OnSearchClosing(wxBookCtrlEvent& evt);
+	void OnSearchClosing(wxBookCtrlEvent &evt);
 
-	void		OnBnClickedStart(wxCommandEvent& evt);
-	void		OnBnClickedStop(wxCommandEvent& evt);
-	void		OnBnClickedSearchMore(wxCommandEvent& evt);
-
+	void OnBnClickedStart(wxCommandEvent &evt);
+	void OnBnClickedStop(wxCommandEvent &evt);
+	void OnBnClickedSearchMore(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler for page-chages which takes care of enabling/disabling the download button.
 	 */
-	void		OnSearchPageChanged(wxBookCtrlEvent& evt);
+	void OnSearchPageChanged(wxBookCtrlEvent &evt);
 
-	uint64		m_last_search_time;
+	uint64 m_last_search_time;
 
-	wxGauge*	m_progressbar;
+	wxGauge *m_progressbar;
 
-	CMuleNotebook*	m_notebook;
+	CMuleNotebook *m_notebook;
 
 	wxArrayString m_searchchoices;
 

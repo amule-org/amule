@@ -23,27 +23,26 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-#include "KnownFileList.h"	// Interface declarations
-#include "GuiEvents.h"		// Notify_KnownFileBeingDestroyed
+#include "KnownFileList.h" // Interface declarations
+#include "GuiEvents.h"     // Notify_KnownFileBeingDestroyed
 
 #include <common/DataFileVersion.h>
 
 #include <algorithm>
 #include <map>
-#include <memory>		// Do_not_auto_remove (lionel's Mac, 10.3)
+#include <memory> // Do_not_auto_remove (lionel's Mac, 10.3)
 #include <set>
 #include <vector>
-#include "DownloadQueue.h"	// Needed for theApp->downloadqueue access
-#include "PartFile.h"		// Needed for CPartFile
+#include "DownloadQueue.h" // Needed for theApp->downloadqueue access
+#include "PartFile.h"      // Needed for CPartFile
 #include "amule.h"
 #include "Logger.h"
 #include "MemFile.h"
 #include "ScopedPtr.h"
-#include "SearchList.h"		// Needed for UpdateSearchFileByHash
+#include "SearchList.h" // Needed for UpdateSearchFileByHash
 #include "SharedFileList.h"
 #include <common/Format.h>
-#include "Preferences.h"	// Needed for thePrefs
+#include "Preferences.h" // Needed for thePrefs
 
 // Max duplicate-list records retained per hash. Unique hashes always
 // keep their live m_knownFileMap entry; this caps only the historical
@@ -61,22 +60,15 @@
 // mtime will not match again). 30 days catches most pathological
 // touch loops on the next save without losing legitimate intermittent
 // matches.
-#define KNOWN_DUPLICATE_TTL_SECS	(30 * 24 * 60 * 60)
-
+#define KNOWN_DUPLICATE_TTL_SECS (30 * 24 * 60 * 60)
 
 // This function is inlined for performance
 inline bool CKnownFileList::KnownFileMatches(
-	CKnownFile *knownFile,
-	const CPath& filename,
-	uint32 in_date,
-	uint64 in_size) const
+	CKnownFile *knownFile, const CPath &filename, uint32 in_date, uint64 in_size) const
 {
-	return
-		(knownFile->GetLastChangeDatetime() == (time_t)in_date) &&
-		(knownFile->GetFileSize() == in_size) &&
-		(knownFile->GetFileName() == filename);
+	return (knownFile->GetLastChangeDatetime() == (time_t)in_date) &&
+	       (knownFile->GetFileSize() == in_size) && (knownFile->GetFileName() == filename);
 }
-
 
 CKnownFileList::CKnownFileList()
 {
@@ -90,12 +82,10 @@ CKnownFileList::CKnownFileList()
 	Init();
 }
 
-
 CKnownFileList::~CKnownFileList()
 {
 	Clear();
 }
-
 
 bool CKnownFileList::Init()
 {
@@ -122,8 +112,9 @@ bool CKnownFileList::Init()
 
 		wxMutexLocker sLock(list_mut);
 		uint32 RecordsNumber = file.ReadUInt32();
-		AddDebugLogLineN(logKnownFiles, CFormat("Reading %i known files from file format 0x%2.2x.")
-			% RecordsNumber % version);
+		AddDebugLogLineN(logKnownFiles,
+			CFormat("Reading %i known files from file format 0x%2.2x.") % RecordsNumber %
+				version);
 
 		// Keep the size-map index live during the load. Append() is O(log N)
 		// on every record, but on each MD4 hash collision (real-world
@@ -143,24 +134,24 @@ bool CKnownFileList::Init()
 					CFormat("Known file read: %s") % record->GetFileName());
 				Append(record.release());
 			} else {
-				AddLogLineC(_("Failed to load entry in known file list, file may be corrupt"));
+				AddLogLineC(
+					_("Failed to load entry in known file list, file may be corrupt"));
 			}
 		}
 		ReleaseIndex();
 		AddDebugLogLineN(logKnownFiles, "Finished reading known files");
 
 		return true;
-	} catch (const CInvalidPacket& e) {
+	} catch (const CInvalidPacket &e) {
 		ReleaseIndex();
 		AddLogLineC(_("Invalid entry in known file list, file may be corrupt: ") + e.what());
-	} catch (const CSafeIOException& e) {
+	} catch (const CSafeIOException &e) {
 		ReleaseIndex();
 		AddLogLineC(CFormat(_("IO error while reading %s file: %s")) % m_filename % e.what());
 	}
 
 	return false;
 }
-
 
 void CKnownFileList::Save()
 {
@@ -189,14 +180,14 @@ void CKnownFileList::Save()
 	// holding the first. sharedfiles never calls into knownfiles under
 	// its own lock, and downloadqueue never calls into knownfiles at
 	// all.
-	std::unordered_set<CKnownFile*> inUse;
+	std::unordered_set<CKnownFile *> inUse;
 	if (theApp && theApp->sharedfiles) {
-		std::vector<CKnownFile*> sharedSnapshot;
+		std::vector<CKnownFile *> sharedSnapshot;
 		theApp->sharedfiles->CopyFileList(sharedSnapshot);
 		inUse.insert(sharedSnapshot.begin(), sharedSnapshot.end());
 	}
 	if (theApp && theApp->downloadqueue) {
-		std::vector<CPartFile*> dqSnapshot;
+		std::vector<CPartFile *> dqSnapshot;
 		theApp->downloadqueue->CopyFileList(dqSnapshot, true);
 		inUse.insert(dqSnapshot.begin(), dqSnapshot.end());
 	}
@@ -222,7 +213,7 @@ void CKnownFileList::Save()
 		// Duplicates handling. Duplicates needs to be saved first,
 		// since it is the last entry that gets used.
 		KnownFileList::iterator itDup = m_duplicateFileList.begin();
-		for ( ; itDup != m_duplicateFileList.end(); ++itDup ) {
+		for (; itDup != m_duplicateFileList.end(); ++itDup) {
 			(*itDup)->WriteToFile(&file);
 			if ((*itDup)->IsLargeFile()) {
 				bContainsAnyLargeFiles = true;
@@ -240,14 +231,13 @@ void CKnownFileList::Save()
 		file.Seek(0);
 		file.WriteUInt8(bContainsAnyLargeFiles ? MET_HEADER_WITH_LARGEFILES : MET_HEADER);
 		file.Close();
-	} catch (const CIOFailureException& e) {
+	} catch (const CIOFailureException &e) {
 		AddLogLineC(CFormat(_("Error while saving %s file: %s")) % m_filename % e.what());
 	}
 	AddDebugLogLineN(logKnownFiles, CFormat("finished saving %s") % m_filename);
 }
 
-
-bool CKnownFileList::IsKnownFile(const CKnownFile* file) const
+bool CKnownFileList::IsKnownFile(const CKnownFile *file) const
 {
 	// Pointer-value scan over the canonical map; safe to call with a
 	// possibly-freed `file` pointer (no deref). Used by
@@ -258,15 +248,13 @@ bool CKnownFileList::IsKnownFile(const CKnownFile* file) const
 	// sharesets this is the cost; a per-pointer index would speed
 	// it up but isn't justified for the call rate.
 	wxMutexLocker sLock(list_mut);
-	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin();
-		it != m_knownFileMap.end(); ++it) {
+	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
 		if (it->second == file) {
 			return true;
 		}
 	}
 	return false;
 }
-
 
 void CKnownFileList::Clear()
 {
@@ -281,12 +269,11 @@ void CKnownFileList::Clear()
 	// deref them on the main-thread dispatch (which may run after
 	// DeleteContents has freed them). See MuleNotify::
 	// KnownFileBeingDestroyed (GuiEvents.cpp).
-	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin();
-		it != m_knownFileMap.end(); ++it) {
+	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
 		Notify_KnownFileBeingDestroyed(it->second);
 	}
-	for (KnownFileList::const_iterator it = m_duplicateFileList.begin();
-		it != m_duplicateFileList.end(); ++it) {
+	for (KnownFileList::const_iterator it = m_duplicateFileList.begin(); it != m_duplicateFileList.end();
+		++it) {
 		Notify_KnownFileBeingDestroyed(*it);
 	}
 
@@ -297,22 +284,18 @@ void CKnownFileList::Clear()
 	m_initialShareScanComplete = false;
 }
 
-
 void CKnownFileList::MarkInitialShareScanComplete()
 {
 	wxMutexLocker sLock(list_mut);
 	m_initialShareScanComplete = true;
 }
 
-
-void CKnownFileList::CollectLiveAICHRoots(
-	std::unordered_set<CAICHHash> & out)
+void CKnownFileList::CollectLiveAICHRoots(std::unordered_set<CAICHHash> &out)
 {
 	wxMutexLocker sLock(list_mut);
 	out.reserve(out.size() + m_knownFileMap.size() + m_duplicateFileList.size());
-	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin();
-		it != m_knownFileMap.end(); ++it) {
-		const CKnownFile * f = it->second;
+	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
+		const CKnownFile *f = it->second;
 		if (f && f->HasProperAICHHashSet()) {
 			out.insert(f->GetAICHHashset()->GetMasterHash());
 		}
@@ -324,26 +307,22 @@ void CKnownFileList::CollectLiveAICHRoots(
 	// drop the duplicate's AICH from known2_64.met and then the
 	// duplicate later gets re-promoted (mtime restore) we'd
 	// silently lose its hashset; cheap to keep both sets here.
-	for (KnownFileList::const_iterator it = m_duplicateFileList.begin();
-		it != m_duplicateFileList.end(); ++it) {
-		const CKnownFile * f = *it;
+	for (KnownFileList::const_iterator it = m_duplicateFileList.begin(); it != m_duplicateFileList.end();
+		++it) {
+		const CKnownFile *f = *it;
 		if (f && f->HasProperAICHHashSet()) {
 			out.insert(f->GetAICHHashset()->GetMasterHash());
 		}
 	}
 }
 
-
-CKnownFile* CKnownFileList::FindKnownFile(
-	const CPath& filename,
-	time_t in_date,
-	uint64 in_size)
+CKnownFile *CKnownFileList::FindKnownFile(const CPath &filename, time_t in_date, uint64 in_size)
 {
 	wxMutexLocker sLock(list_mut);
-	const uint32 now = (uint32) time(NULL);
+	const uint32 now = (uint32)time(NULL);
 
 	if (m_knownSizeMap) {
-		const auto key = std::make_pair((uint32) in_size, (uint32) in_date);
+		const auto key = std::make_pair((uint32)in_size, (uint32)in_date);
 		std::pair<KnownFileSizeMap::const_iterator, KnownFileSizeMap::const_iterator> p;
 		p = m_knownSizeMap->equal_range(key);
 		for (KnownFileSizeMap::const_iterator it = p.first; it != p.second; ++it) {
@@ -354,8 +333,8 @@ CKnownFile* CKnownFileList::FindKnownFile(
 			}
 		}
 	} else {
-		for (CKnownFileMap::const_iterator it = m_knownFileMap.begin();
-			 it != m_knownFileMap.end(); ++it) {
+		for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end();
+			++it) {
 			CKnownFile *cur_file = it->second;
 			if (KnownFileMatches(cur_file, filename, in_date, in_size)) {
 				cur_file->SetLastSeen(now);
@@ -369,7 +348,7 @@ CKnownFile* CKnownFileList::FindKnownFile(
 	// is also held by a more-recent live entry (the dual-content-copy
 	// case: same hash in two shared paths -- one becomes m_Files_map,
 	// the other only ever appears here).
-	CKnownFile * dup = IsOnDuplicates(filename, in_date, in_size);
+	CKnownFile *dup = IsOnDuplicates(filename, in_date, in_size);
 	if (dup) {
 		dup->SetLastSeen(now);
 		m_pinnedDuplicates.insert(dup);
@@ -377,14 +356,10 @@ CKnownFile* CKnownFileList::FindKnownFile(
 	return dup;
 }
 
-
-CKnownFile *CKnownFileList::IsOnDuplicates(
-	const CPath& filename,
-	uint32 in_date,
-	uint64 in_size) const
+CKnownFile *CKnownFileList::IsOnDuplicates(const CPath &filename, uint32 in_date, uint64 in_size) const
 {
 	if (m_duplicateSizeMap) {
-		const auto key = std::make_pair((uint32) in_size, (uint32) in_date);
+		const auto key = std::make_pair((uint32)in_size, (uint32)in_date);
 		std::pair<KnownFileSizeMap::const_iterator, KnownFileSizeMap::const_iterator> p;
 		p = m_duplicateSizeMap->equal_range(key);
 		for (KnownFileSizeMap::const_iterator it = p.first; it != p.second; ++it) {
@@ -395,7 +370,8 @@ CKnownFile *CKnownFileList::IsOnDuplicates(
 		}
 	} else {
 		for (KnownFileList::const_iterator it = m_duplicateFileList.begin();
-			 it != m_duplicateFileList.end(); ++it) {
+			it != m_duplicateFileList.end();
+			++it) {
 			CKnownFile *cur_file = *it;
 			if (KnownFileMatches(cur_file, filename, in_date, in_size)) {
 				return cur_file;
@@ -405,8 +381,7 @@ CKnownFile *CKnownFileList::IsOnDuplicates(
 	return NULL;
 }
 
-
-CKnownFile* CKnownFileList::FindKnownFileByID(const CMD4Hash& hash)
+CKnownFile *CKnownFileList::FindKnownFileByID(const CMD4Hash &hash)
 {
 	wxMutexLocker sLock(list_mut);
 
@@ -418,11 +393,9 @@ CKnownFile* CKnownFileList::FindKnownFileByID(const CMD4Hash& hash)
 		}
 	}
 	return NULL;
-
 }
 
-
-bool CKnownFileList::SafeAddKFile(CKnownFile* toadd, bool afterHashing)
+bool CKnownFileList::SafeAddKFile(CKnownFile *toadd, bool afterHashing)
 {
 	bool ret;
 	{
@@ -435,18 +408,20 @@ bool CKnownFileList::SafeAddKFile(CKnownFile* toadd, bool afterHashing)
 	return ret;
 }
 
-
 bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 {
 	if (Record->GetFileSize() > 0) {
 		// sanity check if the number of part hashes is correct here
 		if (Record->GetHashCount() != Record->GetED2KPartHashCount()) {
-			AddDebugLogLineC(logKnownFiles, CFormat("%s with size %d should have %d part hashes, but only %d are available")
-				% Record->GetFileName().GetPrintable() % Record->GetFileSize() % Record->GetED2KPartHashCount() % Record->GetHashCount());
+			AddDebugLogLineC(logKnownFiles,
+				CFormat("%s with size %d should have %d part hashes, but only %d are "
+					"available") %
+					Record->GetFileName().GetPrintable() % Record->GetFileSize() %
+					Record->GetED2KPartHashCount() % Record->GetHashCount());
 			return false;
 		}
-		const uint32 now = (uint32) time(NULL);
-		const CMD4Hash& tkey = Record->GetFileHash();
+		const uint32 now = (uint32)time(NULL);
+		const CMD4Hash &tkey = Record->GetFileHash();
 		CKnownFileMap::iterator it = m_knownFileMap.find(tkey);
 		if (it == m_knownFileMap.end()) {
 			// Only stamp lastSeen=now when this is a confirmed
@@ -468,27 +443,34 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 			m_knownFileMap[tkey] = Record;
 			if (m_knownSizeMap) {
 				m_knownSizeMap->insert(
-					std::make_pair(
-						std::make_pair((uint32) Record->GetFileSize(),
-							(uint32) Record->GetLastChangeDatetime()),
+					std::make_pair(std::make_pair((uint32)Record->GetFileSize(),
+							       (uint32)Record->GetLastChangeDatetime()),
 						Record));
 			}
 			return true;
 		} else {
 			CKnownFile *existing = it->second;
-			if (KnownFileMatches(Record, existing->GetFileName(), existing->GetLastChangeDatetime(), existing->GetFileSize())) {
+			if (KnownFileMatches(Record,
+				    existing->GetFileName(),
+				    existing->GetLastChangeDatetime(),
+				    existing->GetFileSize())) {
 				// The file is already on the list, ignore it.
-				AddDebugLogLineN(logKnownFiles, CFormat("%s is already on the list") % Record->GetFileName().GetPrintable());
+				AddDebugLogLineN(logKnownFiles,
+					CFormat("%s is already on the list") %
+						Record->GetFileName().GetPrintable());
 				if (afterHashing) {
 					existing->SetLastSeen(now);
 				}
 				return false;
-			} else if (CKnownFile * dup = IsOnDuplicates(
-					Record->GetFileName(), Record->GetLastChangeDatetime(),
-					Record->GetFileSize())) {
+			} else if (CKnownFile *dup = IsOnDuplicates(Record->GetFileName(),
+					   Record->GetLastChangeDatetime(),
+					   Record->GetFileSize())) {
 				// The file is on the duplicates list, ignore it.
-				// Should not happen, at least not after hashing. Or why did it get hashed in the first place then?
-				AddDebugLogLineN(logKnownFiles, CFormat("%s is on the duplicates list") % Record->GetFileName().GetPrintable());
+				// Should not happen, at least not after hashing. Or why did it get hashed in
+				// the first place then?
+				AddDebugLogLineN(logKnownFiles,
+					CFormat("%s is on the duplicates list") %
+						Record->GetFileName().GetPrintable());
 				// Pin the duplicate only when this branch was hit
 				// because we just hashed a real on-disk file (the
 				// only case the comment above describes anyway).
@@ -502,9 +484,10 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 				return false;
 			} else {
 				if (afterHashing && existing->GetFileSize() == Record->GetFileSize()) {
-					// We just hashed a "new" shared file and find it's already known under a different name or date.
-					// Guess what - it was probably renamed or touched.
-					// So copy over all properties from the existing known file and just keep name/date.
+					// We just hashed a "new" shared file and find it's already known
+					// under a different name or date. Guess what - it was probably
+					// renamed or touched. So copy over all properties from the existing
+					// known file and just keep name/date.
 					time_t newDate = Record->GetLastChangeDatetime();
 					CPath newName = Record->GetFileName();
 					CMemFile f;
@@ -512,23 +495,31 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 					f.Reset();
 					if (!Record->LoadFromFile(&f)) {
 						// this also shouldn't happen
-						AddDebugLogLineC(logKnownFiles, CFormat("error copying known file: existing: %s %d %d %d  Record: %s %d %d %d")
-							% existing->GetFileName().GetPrintable() % existing->GetFileSize() % existing->GetED2KPartHashCount() % existing->GetHashCount()
-							% Record->GetFileName().GetPrintable() % Record->GetFileSize() % Record->GetED2KPartHashCount() % Record->GetHashCount());
+						AddDebugLogLineC(logKnownFiles,
+							CFormat("error copying known file: existing: %s %d "
+								"%d %d  Record: %s %d %d %d") %
+								existing->GetFileName().GetPrintable() %
+								existing->GetFileSize() %
+								existing->GetED2KPartHashCount() %
+								existing->GetHashCount() %
+								Record->GetFileName().GetPrintable() %
+								Record->GetFileSize() %
+								Record->GetED2KPartHashCount() %
+								Record->GetHashCount());
 						return false;
 					}
 					Record->SetLastChangeDatetime(newDate);
 					Record->SetFileName(newName);
 				}
 				// The file is a duplicated hash. Add THE OLD ONE to the duplicates list.
-				// (This is used when reading the known file list where the duplicates are stored in front.)
+				// (This is used when reading the known file list where the duplicates are
+				// stored in front.)
 				m_duplicateFileList.push_back(existing);
 				if (m_duplicateSizeMap) {
-					m_duplicateSizeMap->insert(
-						std::make_pair(
-							std::make_pair((uint32) existing->GetFileSize(),
-								(uint32) existing->GetLastChangeDatetime()),
-							existing));
+					m_duplicateSizeMap->insert(std::make_pair(
+						std::make_pair((uint32)existing->GetFileSize(),
+							(uint32)existing->GetLastChangeDatetime()),
+						existing));
 				}
 				if (theApp->sharedfiles) {
 					// Removing the old kad keywords created with the old filename
@@ -538,24 +529,22 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 					// existing is leaving m_knownFileMap for m_duplicateFileList;
 					// drop its size-map entry so FindKnownFile doesn't return a
 					// pointer that no longer belongs to the live map.
-					const auto existingKey = std::make_pair(
-						(uint32) existing->GetFileSize(),
-						(uint32) existing->GetLastChangeDatetime());
-					std::pair<KnownFileSizeMap::iterator,
-						KnownFileSizeMap::iterator> p =
+					const auto existingKey =
+						std::make_pair((uint32)existing->GetFileSize(),
+							(uint32)existing->GetLastChangeDatetime());
+					std::pair<KnownFileSizeMap::iterator, KnownFileSizeMap::iterator> p =
 						m_knownSizeMap->equal_range(existingKey);
-					for (KnownFileSizeMap::iterator hit = p.first;
-						hit != p.second; ++hit) {
+					for (KnownFileSizeMap::iterator hit = p.first; hit != p.second;
+						++hit) {
 						if (hit->second == existing) {
 							m_knownSizeMap->erase(hit);
 							break;
 						}
 					}
-					m_knownSizeMap->insert(
-						std::make_pair(
-							std::make_pair((uint32) Record->GetFileSize(),
-								(uint32) Record->GetLastChangeDatetime()),
-							Record));
+					m_knownSizeMap->insert(std::make_pair(
+						std::make_pair((uint32)Record->GetFileSize(),
+							(uint32)Record->GetLastChangeDatetime()),
+						Record));
 				}
 				// On the afterHashing path the copy-existing-tags
 				// block above pulled the prior FT_LASTSEEN into
@@ -575,9 +564,7 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 			}
 		}
 	} else {
-		AddDebugLogLineN(logGeneral,
-			CFormat("%s is 0-size, not added") %
-			Record->GetFileName());
+		AddDebugLogLineN(logGeneral, CFormat("%s is 0-size, not added") % Record->GetFileName());
 
 		return false;
 	}
@@ -591,20 +578,18 @@ void CKnownFileList::PrepareIndex()
 	ReleaseIndex();
 	m_knownSizeMap = new KnownFileSizeMap;
 	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
-		m_knownSizeMap->insert(std::make_pair(
-			std::make_pair((uint32) it->second->GetFileSize(),
-				(uint32) it->second->GetLastChangeDatetime()),
+		m_knownSizeMap->insert(std::make_pair(std::make_pair((uint32)it->second->GetFileSize(),
+							      (uint32)it->second->GetLastChangeDatetime()),
 			it->second));
 	}
 	m_duplicateSizeMap = new KnownFileSizeMap;
-	for (KnownFileList::const_iterator it = m_duplicateFileList.begin(); it != m_duplicateFileList.end(); ++it) {
+	for (KnownFileList::const_iterator it = m_duplicateFileList.begin(); it != m_duplicateFileList.end();
+		++it) {
 		m_duplicateSizeMap->insert(std::make_pair(
-			std::make_pair((uint32) (*it)->GetFileSize(),
-				(uint32) (*it)->GetLastChangeDatetime()),
+			std::make_pair((uint32)(*it)->GetFileSize(), (uint32)(*it)->GetLastChangeDatetime()),
 			*it));
 	}
 }
-
 
 void CKnownFileList::ReleaseIndex()
 {
@@ -614,9 +599,7 @@ void CKnownFileList::ReleaseIndex()
 	m_duplicateSizeMap = NULL;
 }
 
-
-void CKnownFileList::PruneDuplicates(
-	const std::unordered_set<CKnownFile*> & inUse)
+void CKnownFileList::PruneDuplicates(const std::unordered_set<CKnownFile *> &inUse)
 {
 	// Caller must hold list_mut.
 
@@ -629,28 +612,22 @@ void CKnownFileList::PruneDuplicates(
 		return;
 	}
 
-	const uint32 now = (uint32) time(NULL);
-	const uint32 ttlCutoff =
-		(now > KNOWN_DUPLICATE_TTL_SECS)
-			? (now - KNOWN_DUPLICATE_TTL_SECS) : 0;
+	const uint32 now = (uint32)time(NULL);
+	const uint32 ttlCutoff = (now > KNOWN_DUPLICATE_TTL_SECS) ? (now - KNOWN_DUPLICATE_TTL_SECS) : 0;
 
-	auto isProtected = [&](CKnownFile * r) {
+	auto isProtected = [&](CKnownFile *r) {
 		return inUse.count(r) > 0 || m_pinnedDuplicates.count(r) > 0;
 	};
 
-	auto eraseFromSizeMap = [&](KnownFileSizeMap * sizeMap,
-			CKnownFile * dead) {
+	auto eraseFromSizeMap = [&](KnownFileSizeMap *sizeMap, CKnownFile *dead) {
 		if (!sizeMap) {
 			return;
 		}
-		const auto key = std::make_pair(
-			(uint32) dead->GetFileSize(),
-			(uint32) dead->GetLastChangeDatetime());
-		std::pair<KnownFileSizeMap::iterator,
-			KnownFileSizeMap::iterator> p =
+		const auto key =
+			std::make_pair((uint32)dead->GetFileSize(), (uint32)dead->GetLastChangeDatetime());
+		std::pair<KnownFileSizeMap::iterator, KnownFileSizeMap::iterator> p =
 			sizeMap->equal_range(key);
-		for (KnownFileSizeMap::iterator hit = p.first;
-			hit != p.second; ++hit) {
+		for (KnownFileSizeMap::iterator hit = p.first; hit != p.second; ++hit) {
 			if (hit->second == dead) {
 				sizeMap->erase(hit);
 				return;
@@ -665,9 +642,8 @@ void CKnownFileList::PruneDuplicates(
 	// std::set (not unordered_set) because CMD4Hash provides operator<
 	// but no std::hash specialization.
 	std::set<CMD4Hash> deadHashes;
-	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin();
-		it != m_knownFileMap.end(); ++it) {
-		CKnownFile * live = it->second;
+	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
+		CKnownFile *live = it->second;
 		if (isProtected(live)) {
 			continue;
 		}
@@ -678,20 +654,17 @@ void CKnownFileList::PruneDuplicates(
 
 	// Pass 2: duplicates -- drop if their hash is dead, or their own
 	// lastSeen is past TTL. Bucket survivors by hash for the cap pass.
-	std::map<CMD4Hash, std::vector<KnownFileList::iterator> > survivors;
+	std::map<CMD4Hash, std::vector<KnownFileList::iterator>> survivors;
 	size_t droppedDupTTL = 0;
-	for (KnownFileList::iterator it = m_duplicateFileList.begin();
-		it != m_duplicateFileList.end(); ) {
-		CKnownFile * record = *it;
+	for (KnownFileList::iterator it = m_duplicateFileList.begin(); it != m_duplicateFileList.end();) {
+		CKnownFile *record = *it;
 		if (isProtected(record)) {
 			survivors[record->GetFileHash()].push_back(it);
 			++it;
 			continue;
 		}
-		const bool hashDead =
-			deadHashes.count(record->GetFileHash()) > 0;
-		const bool ownStale =
-			record->GetLastSeen() < ttlCutoff;
+		const bool hashDead = deadHashes.count(record->GetFileHash()) > 0;
+		const bool ownStale = record->GetLastSeen() < ttlCutoff;
 		if (hashDead || ownStale) {
 			eraseFromSizeMap(m_duplicateSizeMap, record);
 			KnownFileList::iterator victim = it++;
@@ -707,13 +680,12 @@ void CKnownFileList::PruneDuplicates(
 
 	// Pass 3: drop the dead live entries (and their size-map index).
 	size_t droppedLive = 0;
-	for (std::set<CMD4Hash>::const_iterator it = deadHashes.begin();
-		it != deadHashes.end(); ++it) {
+	for (std::set<CMD4Hash>::const_iterator it = deadHashes.begin(); it != deadHashes.end(); ++it) {
 		CKnownFileMap::iterator kit = m_knownFileMap.find(*it);
 		if (kit == m_knownFileMap.end()) {
 			continue;
 		}
-		CKnownFile * dead = kit->second;
+		CKnownFile *dead = kit->second;
 
 		// Final paranoid re-check: even though Save() now snapshots
 		// inUse under our own lock, the snapshot's sharedfiles /
@@ -722,12 +694,10 @@ void CKnownFileList::PruneDuplicates(
 		// (UploadDiskIOThread) could have changed membership in
 		// between. Re-query under the owner's lock, immediately
 		// before delete, to make this point-in-time correct (#685).
-		if (theApp && theApp->sharedfiles &&
-			theApp->sharedfiles->GetFileByID(*it) != NULL) {
+		if (theApp && theApp->sharedfiles && theApp->sharedfiles->GetFileByID(*it) != NULL) {
 			continue;
 		}
-		if (theApp && theApp->downloadqueue &&
-			theApp->downloadqueue->GetFileByID(*it) != NULL) {
+		if (theApp && theApp->downloadqueue && theApp->downloadqueue->GetFileByID(*it) != NULL) {
 			continue;
 		}
 
@@ -740,11 +710,10 @@ void CKnownFileList::PruneDuplicates(
 
 	// Pass 4: per-hash cap on whatever duplicate survivors remain.
 	size_t droppedDupCap = 0;
-	for (std::map<CMD4Hash,
-			std::vector<KnownFileList::iterator> >::iterator
-		bucket = survivors.begin();
-		bucket != survivors.end(); ++bucket) {
-		std::vector<KnownFileList::iterator> & iters = bucket->second;
+	for (std::map<CMD4Hash, std::vector<KnownFileList::iterator>>::iterator bucket = survivors.begin();
+		bucket != survivors.end();
+		++bucket) {
+		std::vector<KnownFileList::iterator> &iters = bucket->second;
 		if (iters.size() <= KNOWN_DUPLICATE_HASH_CAP) {
 			continue;
 		}
@@ -766,15 +735,13 @@ void CKnownFileList::PruneDuplicates(
 		// Newest mtime survives the cap. Older mtimes for the same
 		// hash are unlikely to match again in practice (mtime is
 		// monotone-forward outside explicit-restore tooling).
-		std::sort(prunable.begin(), prunable.end(),
-			[](const KnownFileList::iterator & a,
-				const KnownFileList::iterator & b) {
-				return (*a)->GetLastChangeDatetime()
-					> (*b)->GetLastChangeDatetime();
+		std::sort(prunable.begin(),
+			prunable.end(),
+			[](const KnownFileList::iterator &a, const KnownFileList::iterator &b) {
+				return (*a)->GetLastChangeDatetime() > (*b)->GetLastChangeDatetime();
 			});
-		for (size_t i = KNOWN_DUPLICATE_HASH_CAP;
-			i < prunable.size(); ++i) {
-			CKnownFile * dead = *prunable[i];
+		for (size_t i = KNOWN_DUPLICATE_HASH_CAP; i < prunable.size(); ++i) {
+			CKnownFile *dead = *prunable[i];
 			eraseFromSizeMap(m_duplicateSizeMap, dead);
 			m_duplicateFileList.erase(prunable[i]);
 			Notify_KnownFileBeingDestroyed(dead);
@@ -785,12 +752,10 @@ void CKnownFileList::PruneDuplicates(
 
 	if (droppedLive || droppedDupTTL || droppedDupCap) {
 		AddDebugLogLineN(logKnownFiles,
-			CFormat("known.met prune: dropped %u live + %u dup (TTL %u days) + %u dup (cap %u)")
-				% (unsigned)droppedLive
-				% (unsigned)droppedDupTTL
-				% (unsigned)(KNOWN_DUPLICATE_TTL_SECS / (24 * 60 * 60))
-				% (unsigned)droppedDupCap
-				% KNOWN_DUPLICATE_HASH_CAP);
+			CFormat("known.met prune: dropped %u live + %u dup (TTL %u days) + %u dup (cap %u)") %
+				(unsigned)droppedLive % (unsigned)droppedDupTTL %
+				(unsigned)(KNOWN_DUPLICATE_TTL_SECS / (24 * 60 * 60)) %
+				(unsigned)droppedDupCap % KNOWN_DUPLICATE_HASH_CAP);
 	}
 }
 

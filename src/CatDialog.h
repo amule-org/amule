@@ -26,8 +26,8 @@
 #ifndef CATDIALOG_H
 #define CATDIALOG_H
 
-#include <wx/dialog.h>		// Needed for wxDialog
-#include "Types.h"		// Needed for uint32
+#include <wx/dialog.h> // Needed for wxDialog
+#include "Types.h"     // Needed for uint32
 #include "OtherStructs.h"
 #include "MuleColour.h"
 
@@ -59,7 +59,7 @@ public:
 	 * will be selected, or it can be less than zero, in which case a new
 	 * category will be created.
 	 */
-	CCatDialog(wxWindow* parent, bool allowbrowse, int catindex = -1 );
+	CCatDialog(wxWindow *parent, bool allowbrowse, int catindex = -1);
 
 	/**
 	 * Destructor.
@@ -76,26 +76,25 @@ private:
 	wxBitmap MakeBitmap();
 
 	//! Variable used to store the user-selected color.
-	CMuleColour			m_colour;
+	CMuleColour m_colour;
 
 	//! Pointer to category to be edited or NULL if we are adding a new category.
-	Category_Struct*	m_category;
-
+	Category_Struct *m_category;
 
 	/**
 	 * Event-handler for selecting incoming dir.
 	 */
-	void OnBnClickedBrowse(wxCommandEvent& evt);
+	void OnBnClickedBrowse(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler for saving the changes.
 	 */
-	void OnBnClickedOk(wxCommandEvent& evt);
+	void OnBnClickedOk(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler for selecting category color.
 	 */
-	void OnBnClickColor(wxCommandEvent& evt);
+	void OnBnClickColor(wxCommandEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 };

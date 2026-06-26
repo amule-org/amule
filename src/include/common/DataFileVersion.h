@@ -26,27 +26,32 @@
 #ifndef DATAFILEVERSION_H
 #define DATAFILEVERSION_H
 
-enum PreferencesDatFileVersions {
-	PREFFILE_VERSION		= 0x14 //<<-- last change: reduced .dat, by using .ini
+enum PreferencesDatFileVersions
+{
+	PREFFILE_VERSION = 0x14 //<<-- last change: reduced .dat, by using .ini
 };
 
-enum PartMetFileVersions {
-	PARTFILE_VERSION			= 0xe0,
-	PARTFILE_SPLITTEDVERSION	= 0xe1, // For edonkey part files importing.
-	PARTFILE_VERSION_LARGEFILE	= 0xe2
+enum PartMetFileVersions
+{
+	PARTFILE_VERSION = 0xe0,
+	PARTFILE_SPLITTEDVERSION = 0xe1, // For edonkey part files importing.
+	PARTFILE_VERSION_LARGEFILE = 0xe2
 };
 
-enum CreditFileVersions {
-	CREDITFILE_VERSION		= 0x12
+enum CreditFileVersions
+{
+	CREDITFILE_VERSION = 0x12
 };
 
-enum KnownFileListVersions {
-	MET_HEADER					= 0x0E,
-	MET_HEADER_WITH_LARGEFILES	= 0x0F
+enum KnownFileListVersions
+{
+	MET_HEADER = 0x0E,
+	MET_HEADER_WITH_LARGEFILES = 0x0F
 };
 
-enum CanceledFileListVersions {
-	CANCELEDFILE_VERSION	= 0x21
+enum CanceledFileListVersions
+{
+	CANCELEDFILE_VERSION = 0x21
 };
 
 #endif // DATAFILEVERSION_H

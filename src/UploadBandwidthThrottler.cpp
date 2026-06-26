@@ -38,16 +38,14 @@
 #include "amule.h"
 #include "UploadDiskIOThread.h"
 
-
 /////////////////////////////////////
-
 
 /**
  * The constructor starts the thread.
  */
 UploadBandwidthThrottler::UploadBandwidthThrottler()
-		: wxThread( wxTHREAD_JOINABLE )
-		, m_newDataCondition( m_newDataMutex )
+: wxThread(wxTHREAD_JOINABLE)
+, m_newDataCondition(m_newDataMutex)
 {
 	m_SentBytesSinceLastCall = 0;
 	m_SentBytesSinceLastCallOverhead = 0;
@@ -58,7 +56,6 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 	Run();
 }
 
-
 /**
  * The destructor stops the thread. If the thread has already stopped, destructor does nothing.
  */
@@ -67,7 +64,6 @@ UploadBandwidthThrottler::~UploadBandwidthThrottler()
 	EndThread();
 }
 
-
 /**
  * Called by the disk I/O thread when it has put new data on a socket queue.
  * Wakes the throttler immediately instead of waiting for its next sleep interval.
@@ -75,10 +71,9 @@ UploadBandwidthThrottler::~UploadBandwidthThrottler()
  */
 void UploadBandwidthThrottler::NewUploadDataAvailable()
 {
-	wxMutexLocker lock( m_newDataMutex );
+	wxMutexLocker lock(m_newDataMutex);
 	m_newDataCondition.Signal();
 }
-
 
 /**
  * Find out how many bytes that has been put on the sockets since the last call to this
@@ -88,7 +83,7 @@ void UploadBandwidthThrottler::NewUploadDataAvailable()
  */
 uint64 UploadBandwidthThrottler::GetNumberOfSentBytesSinceLastCallAndReset()
 {
-	wxMutexLocker lock( m_sendLocker );
+	wxMutexLocker lock(m_sendLocker);
 
 	uint64 numberOfSentBytesSinceLastCall = m_SentBytesSinceLastCall;
 	m_SentBytesSinceLastCall = 0;
@@ -104,14 +99,13 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesSinceLastCallAndReset()
  */
 uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndReset()
 {
-	wxMutexLocker lock( m_sendLocker );
+	wxMutexLocker lock(m_sendLocker);
 
 	uint64 numberOfSentBytesSinceLastCall = m_SentBytesSinceLastCallOverhead;
 	m_SentBytesSinceLastCallOverhead = 0;
 
 	return numberOfSentBytesSinceLastCall;
 }
-
 
 /**
  * Add a socket to the list of sockets that have upload slots. The main thread will
@@ -129,10 +123,10 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndRes
  * @param socket the address to the socket that should be added to the list. If the address is NULL,
  *               this method will do nothing.
  */
-void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSocket* socket)
+void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSocket *socket)
 {
-	if ( socket ) {
-		wxMutexLocker lock( m_sendLocker );
+	if (socket) {
+		wxMutexLocker lock(m_sendLocker);
 
 		RemoveFromStandardListNoLock(socket);
 		if (index > (uint32)m_StandardOrder_list.size()) {
@@ -143,7 +137,6 @@ void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSock
 	}
 }
 
-
 /**
  * Remove a socket from the list of sockets that have upload slots.
  *
@@ -153,13 +146,12 @@ void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSock
  * @param socket the address of the socket that should be removed from the list. If this socket
  *               does not exist in the list, this method will do nothing.
  */
-bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket* socket)
+bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket *socket)
 {
-	wxMutexLocker lock( m_sendLocker );
+	wxMutexLocker lock(m_sendLocker);
 
 	return RemoveFromStandardListNoLock(socket);
 }
-
 
 /**
  * Remove a socket from the list of sockets that have upload slots. NOT THREADSAFE!
@@ -170,34 +162,33 @@ bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket* socke
  * @param socket address of the socket that should be removed from the list. If this socket
  *               does not exist in the list, this method will do nothing.
  */
-bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket* socket)
+bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket *socket)
 {
-	return (EraseFirstValue( m_StandardOrder_list, socket ) > 0);
+	return (EraseFirstValue(m_StandardOrder_list, socket) > 0);
 }
 
-
 /**
-* Notifies the send thread that it should try to call controlpacket send
-* for the supplied socket. It is allowed to call this method several times
-* for the same socket, without having controlpacket send called for the socket
-* first. The doublette entries are never filtered, since it is incurs less cpu
-* overhead to simply call Send() in the socket for each double. Send() will
-* already have done its work when the second Send() is called, and will just
-* return with little cpu overhead.
-*
-* @param socket address to the socket that requests to have controlpacket send
-*               to be called on it
-*/
-void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSocket* socket, bool hasSent)
+ * Notifies the send thread that it should try to call controlpacket send
+ * for the supplied socket. It is allowed to call this method several times
+ * for the same socket, without having controlpacket send called for the socket
+ * first. The doublette entries are never filtered, since it is incurs less cpu
+ * overhead to simply call Send() in the socket for each double. Send() will
+ * already have done its work when the second Send() is called, and will just
+ * return with little cpu overhead.
+ *
+ * @param socket address to the socket that requests to have controlpacket send
+ *               to be called on it
+ */
+void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSocket *socket, bool hasSent)
 {
 	bool wasEmpty = false;
 	{
 		// Get critical section
-		wxMutexLocker lock( m_tempQueueLocker );
+		wxMutexLocker lock(m_tempQueueLocker);
 
-		if ( m_doRun ) {
+		if (m_doRun) {
 			wasEmpty = m_TempControlQueue_list.empty() && m_TempControlQueueFirst_list.empty();
-			if( hasSent ) {
+			if (hasSent) {
 				m_TempControlQueueFirst_list.push_back(socket);
 			} else {
 				m_TempControlQueue_list.push_back(socket);
@@ -224,12 +215,10 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 	// socket; this closes the equivalent gap for the control-packet
 	// path.
 	if (wasEmpty) {
-		wxMutexLocker lock( m_newDataMutex );
+		wxMutexLocker lock(m_newDataMutex);
 		m_newDataCondition.Signal();
 	}
 }
-
-
 
 /**
  * Remove the socket from all lists and queues. This will make it safe to
@@ -238,31 +227,29 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
  *
  * @param socket address to the socket that should be removed
  */
-void UploadBandwidthThrottler::DoRemoveFromAllQueues(ThrottledControlSocket* socket)
+void UploadBandwidthThrottler::DoRemoveFromAllQueues(ThrottledControlSocket *socket)
 {
-	if ( m_doRun ) {
+	if (m_doRun) {
 		// Remove this socket from control packet queue
-		EraseValue( m_ControlQueue_list, socket );
-		EraseValue( m_ControlQueueFirst_list, socket );
+		EraseValue(m_ControlQueue_list, socket);
+		EraseValue(m_ControlQueueFirst_list, socket);
 
-		wxMutexLocker lock( m_tempQueueLocker );
-		EraseValue( m_TempControlQueue_list, socket );
-		EraseValue( m_TempControlQueueFirst_list, socket );
+		wxMutexLocker lock(m_tempQueueLocker);
+		EraseValue(m_TempControlQueue_list, socket);
+		EraseValue(m_TempControlQueueFirst_list, socket);
 	}
 }
 
-
-void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledControlSocket* socket)
+void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledControlSocket *socket)
 {
-	wxMutexLocker lock( m_sendLocker );
+	wxMutexLocker lock(m_sendLocker);
 
-	DoRemoveFromAllQueues( socket );
+	DoRemoveFromAllQueues(socket);
 }
 
-
-void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket* socket)
+void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
 {
-	wxMutexLocker lock( m_sendLocker );
+	wxMutexLocker lock(m_sendLocker);
 
 	if (m_doRun) {
 		DoRemoveFromAllQueues(socket);
@@ -272,7 +259,6 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket* socket)
 	}
 }
 
-
 /**
  * Make the thread exit. This method will not return until the thread has stopped
  * looping. This guarantees that the thread will not access the CEMSockets after this
@@ -280,7 +266,7 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket* socket)
  */
 void UploadBandwidthThrottler::EndThread()
 {
-	if (m_doRun) {	// do it only once
+	if (m_doRun) { // do it only once
 		{
 			wxMutexLocker lock(m_sendLocker);
 
@@ -292,7 +278,6 @@ void UploadBandwidthThrottler::EndThread()
 	}
 }
 
-
 /**
  * The thread method that handles calling send for the individual sockets.
  *
@@ -303,12 +288,13 @@ void UploadBandwidthThrottler::EndThread()
  *
  * @return always returns 0.
  */
-void* UploadBandwidthThrottler::Entry()
+void *UploadBandwidthThrottler::Entry()
 {
 	const uint32 TIME_BETWEEN_UPLOAD_LOOPS = 1;
 
 	uint64 lastLoopTick = GetTickCount64();
-	// Bytes to spend in current cycle. If we spend more this becomes negative and causes a wait next time.
+	// Bytes to spend in current cycle. If we spend more this becomes negative and causes a wait next
+	// time.
 	sint32 bytesToSpend = 0;
 	uint32 allowedDataRate;
 	uint32 rememberedSlotCounter = 0;
@@ -327,28 +313,31 @@ void* UploadBandwidthThrottler::Entry()
 		}
 
 		uint32 minFragSize = 1300;
-		uint32 doubleSendSize = minFragSize*2; // send two packages at a time so they can share an ACK
-		if (allowedDataRate < 6*1024) {
+		uint32 doubleSendSize =
+			minFragSize * 2; // send two packages at a time so they can share an ACK
+		if (allowedDataRate < 6 * 1024) {
 			minFragSize = 536;
-			doubleSendSize = minFragSize; // don't send two packages at a time at very low speeds to give them a smoother load
+			doubleSendSize = minFragSize; // don't send two packages at a time at very low speeds
+						      // to give them a smoother load
 		}
-
 
 		uint64 sleepTime;
 		if (bytesToSpend < 1) {
 			// We have sent more than allowed in last cycle so we have to wait now
 			// until we can send at least 1 byte.
-			sleepTime = std::max((-bytesToSpend + 1) * 1000 / allowedDataRate + 2, // add 2 ms to allow for rounding inaccuracies
-									extraSleepTime);
+			sleepTime = std::max((-bytesToSpend + 1) * 1000 / allowedDataRate +
+						     2, // add 2 ms to allow for rounding inaccuracies
+				extraSleepTime);
 		} else {
 			// We could send at once, but sleep a while to not suck up all cpu
 			sleepTime = extraSleepTime;
 		}
 
 		if (timeSinceLastLoop < sleepTime) {
-			// eMule ref: UploadBandwidthThrottler.cpp:580 — WaitForSingleObject replaced with wxCondition::WaitTimeout
-			// Wakes early if disk I/O thread signals NewUploadDataAvailable()
-			wxMutexLocker lock( m_newDataMutex );
+			// eMule ref: UploadBandwidthThrottler.cpp:580 — WaitForSingleObject replaced with
+			// wxCondition::WaitTimeout Wakes early if disk I/O thread signals
+			// NewUploadDataAvailable()
+			wxMutexLocker lock(m_newDataMutex);
 			m_newDataCondition.WaitTimeout(sleepTime - timeSinceLastLoop);
 		}
 
@@ -362,8 +351,10 @@ void* UploadBandwidthThrottler::Entry()
 		lastLoopTick = thisLoopTick;
 
 		if (timeSinceLastLoop > sleepTime + 2000) {
-			AddDebugLogLineN(logGeneral, CFormat("UploadBandwidthThrottler: Time since last loop too long. time: %ims wanted: %ims Max: %ims")
-				% timeSinceLastLoop % sleepTime % (sleepTime + 2000));
+			AddDebugLogLineN(logGeneral,
+				CFormat("UploadBandwidthThrottler: Time since last loop too long. time: %ims "
+					"wanted: %ims Max: %ims") %
+					timeSinceLastLoop % sleepTime % (sleepTime + 2000));
 
 			timeSinceLastLoop = sleepTime + 2000;
 		}
@@ -373,10 +364,9 @@ void* UploadBandwidthThrottler::Entry()
 		// sint32 bytesToSpend accumulator when multiplied by timeSinceLastLoop.
 		// Cap the budget rate at 1 GB/s — still far above any real uplink, and every
 		// real socket send() will short-circuit far below this ceiling.
-		const uint32 bytesToSpendRate = (allowedDataRate == UNLIMITED_RATE)
-			? (1024u * 1024u * 1024u)
-			: allowedDataRate;
-		bytesToSpend += (sint32) (bytesToSpendRate / 1000.0 * timeSinceLastLoop);
+		const uint32 bytesToSpendRate =
+			(allowedDataRate == UNLIMITED_RATE) ? (1024u * 1024u * 1024u) : allowedDataRate;
+		bytesToSpend += (sint32)(bytesToSpendRate / 1000.0 * timeSinceLastLoop);
 
 		if (bytesToSpend >= 1) {
 			sint32 spentBytes = 0;
@@ -387,22 +377,24 @@ void* UploadBandwidthThrottler::Entry()
 			{
 				wxMutexLocker queueLock(m_tempQueueLocker);
 
-				// are there any sockets in m_TempControlQueue_list? Move them to normal m_ControlQueue_list;
-				m_ControlQueueFirst_list.insert(	m_ControlQueueFirst_list.end(),
-													m_TempControlQueueFirst_list.begin(),
-													m_TempControlQueueFirst_list.end() );
+				// are there any sockets in m_TempControlQueue_list? Move them to normal
+				// m_ControlQueue_list;
+				m_ControlQueueFirst_list.insert(m_ControlQueueFirst_list.end(),
+					m_TempControlQueueFirst_list.begin(),
+					m_TempControlQueueFirst_list.end());
 
-				m_ControlQueue_list.insert( m_ControlQueue_list.end(),
-											m_TempControlQueue_list.begin(),
-											m_TempControlQueue_list.end() );
+				m_ControlQueue_list.insert(m_ControlQueue_list.end(),
+					m_TempControlQueue_list.begin(),
+					m_TempControlQueue_list.end());
 
 				m_TempControlQueue_list.clear();
 				m_TempControlQueueFirst_list.clear();
 			}
 
 			// Send any queued up control packets first
-			while (spentBytes < bytesToSpend && (!m_ControlQueueFirst_list.empty() || !m_ControlQueue_list.empty())) {
-				ThrottledControlSocket* socket = NULL;
+			while (spentBytes < bytesToSpend &&
+				(!m_ControlQueueFirst_list.empty() || !m_ControlQueue_list.empty())) {
+				ThrottledControlSocket *socket = NULL;
 
 				if (!m_ControlQueueFirst_list.empty()) {
 					socket = m_ControlQueueFirst_list.front();
@@ -413,31 +405,42 @@ void* UploadBandwidthThrottler::Entry()
 				}
 
 				if (socket != NULL) {
-					SocketSentBytes socketSentBytes = socket->SendControlData(bytesToSpend-spentBytes, minFragSize);
-					spentBytes += socketSentBytes.sentBytesControlPackets + socketSentBytes.sentBytesStandardPackets;
+					SocketSentBytes socketSentBytes = socket->SendControlData(
+						bytesToSpend - spentBytes, minFragSize);
+					spentBytes += socketSentBytes.sentBytesControlPackets +
+						      socketSentBytes.sentBytesStandardPackets;
 					spentOverhead += socketSentBytes.sentBytesControlPackets;
 				}
 			}
 
-			// Check if any sockets haven't gotten data for a long time. Then trickle them a package.
+			// Check if any sockets haven't gotten data for a long time. Then trickle them a
+			// package.
 			uint32 slots = m_StandardOrder_list.size();
 			for (uint32 slotCounter = 0; slotCounter < slots; slotCounter++) {
-				ThrottledFileSocket* socket = m_StandardOrder_list[ slotCounter ];
+				ThrottledFileSocket *socket = m_StandardOrder_list[slotCounter];
 
 				if (socket != NULL) {
-					if (thisLoopTick-socket->GetLastCalledSend() > SEC2MS(1)) {
+					if (thisLoopTick - socket->GetLastCalledSend() > SEC2MS(1)) {
 						// trickle
 						uint32 neededBytes = socket->GetNeededBytes();
 
 						if (neededBytes > 0) {
-							SocketSentBytes socketSentBytes = socket->SendFileAndControlData(neededBytes, minFragSize);
-							spentBytes += socketSentBytes.sentBytesControlPackets + socketSentBytes.sentBytesStandardPackets;
-							spentOverhead += socketSentBytes.sentBytesControlPackets;
+							SocketSentBytes socketSentBytes =
+								socket->SendFileAndControlData(
+									neededBytes, minFragSize);
+							spentBytes +=
+								socketSentBytes.sentBytesControlPackets +
+								socketSentBytes.sentBytesStandardPackets;
+							spentOverhead +=
+								socketSentBytes.sentBytesControlPackets;
 						}
 					}
 				} else {
-					AddDebugLogLineN(logGeneral, CFormat( "There was a NULL socket in the UploadBandwidthThrottler Standard list (trickle)! Prevented usage. Index: %i Size: %i")
-						% slotCounter % m_StandardOrder_list.size());
+					AddDebugLogLineN(logGeneral,
+						CFormat("There was a NULL socket in the "
+							"UploadBandwidthThrottler Standard list (trickle)! "
+							"Prevented usage. Index: %i Size: %i") %
+							slotCounter % m_StandardOrder_list.size());
 				}
 			}
 
@@ -445,23 +448,31 @@ void* UploadBandwidthThrottler::Entry()
 			// There are two passes. First pass gives packets of doubleSendSize, second pass
 			// gives as much as possible.
 			// Second pass starts with the last slot of the first pass actually.
-			for (uint32 slotCounter = 0; (slotCounter < slots * 2) && spentBytes < bytesToSpend; slotCounter++) {
-				if (rememberedSlotCounter >= slots) {	// wrap around pointer
+			for (uint32 slotCounter = 0; (slotCounter < slots * 2) && spentBytes < bytesToSpend;
+				slotCounter++) {
+				if (rememberedSlotCounter >= slots) { // wrap around pointer
 					rememberedSlotCounter = 0;
 				}
 
-				uint32 data = (slotCounter < slots - 1)	? doubleSendSize				// pass 1
-															: (bytesToSpend - spentBytes);	// pass 2
+				uint32 data = (slotCounter < slots - 1)
+						      ? doubleSendSize               // pass 1
+						      : (bytesToSpend - spentBytes); // pass 2
 
-				ThrottledFileSocket* socket = m_StandardOrder_list[ rememberedSlotCounter ];
+				ThrottledFileSocket *socket = m_StandardOrder_list[rememberedSlotCounter];
 
 				if (socket != NULL) {
-					SocketSentBytes socketSentBytes = socket->SendFileAndControlData(data, doubleSendSize);
-					spentBytes += socketSentBytes.sentBytesControlPackets + socketSentBytes.sentBytesStandardPackets;
+					SocketSentBytes socketSentBytes =
+						socket->SendFileAndControlData(data, doubleSendSize);
+					spentBytes += socketSentBytes.sentBytesControlPackets +
+						      socketSentBytes.sentBytesStandardPackets;
 					spentOverhead += socketSentBytes.sentBytesControlPackets;
 				} else {
-					AddDebugLogLineN(logGeneral, CFormat("There was a NULL socket in the UploadBandwidthThrottler Standard list (equal-for-all)! Prevented usage. Index: %i Size: %i")
-						% rememberedSlotCounter % m_StandardOrder_list.size());
+					AddDebugLogLineN(logGeneral,
+						CFormat("There was a NULL socket in the "
+							"UploadBandwidthThrottler Standard list "
+							"(equal-for-all)! Prevented usage. Index: %i Size: "
+							"%i") %
+							rememberedSlotCounter % m_StandardOrder_list.size());
 				}
 
 				rememberedSlotCounter++;
@@ -471,8 +482,8 @@ void* UploadBandwidthThrottler::Entry()
 			bytesToSpend -= spentBytes;
 			sint32 minBytesToSpend = (slots + 1) * minFragSize;
 
-			if (bytesToSpend < - minBytesToSpend) {
-				bytesToSpend = - minBytesToSpend;
+			if (bytesToSpend < -minBytesToSpend) {
+				bytesToSpend = -minBytesToSpend;
 			} else {
 				sint32 bandwidthSavedTolerance = slots * 512 + 1;
 				if (bytesToSpend > bandwidthSavedTolerance) {
@@ -483,7 +494,7 @@ void* UploadBandwidthThrottler::Entry()
 			m_SentBytesSinceLastCall += spentBytes;
 			m_SentBytesSinceLastCallOverhead += spentOverhead;
 
-			if (spentBytes == 0) {	// spentBytes includes the overhead
+			if (spentBytes == 0) { // spentBytes includes the overhead
 				extraSleepTime = std::min<uint32>(extraSleepTime * 5, 1000); // 1s at most
 			} else {
 				extraSleepTime = TIME_BETWEEN_UPLOAD_LOOPS;

@@ -34,11 +34,11 @@ public:
 	CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData = NULL);
 
 protected:
-	void	OnReceive(int errorCode);
+	void OnReceive(int errorCode);
 
 private:
-	void	OnPacketReceived(uint32 ip, uint16 port, uint8_t* buffer, size_t length);
-	void	ProcessPacket(uint8_t* packet, int16 size, int8 opcode, uint32 host, uint16 port);
+	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length);
+	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);
 };
 
 #endif // CLIENTUDPSOCKET_H

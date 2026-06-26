@@ -26,16 +26,13 @@
 #ifndef SEARCHLISTCTRL_H
 #define SEARCHLISTCTRL_H
 
+#include <wx/colour.h> // Needed for wxColour
+#include <wx/regex.h>  // Needed for wxRegExp
 
-#include <wx/colour.h>		// Needed for wxColour
-#include <wx/regex.h>		// Needed for wxRegExp
-
-#include "MuleListCtrl.h"	// Needed for CMuleListCtrl
-
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl
 
 class CSearchList;
 class CSearchFile;
-
 
 /**
  * This class is used to display search results.
@@ -57,14 +54,13 @@ public:
 	 *
 	 * @see CMuleListCtrl::CMuleListCtrl for documentation of parameters.
 	 */
-	 CSearchListCtrl(
-	            wxWindow *parent,
-                wxWindowID winid = -1,
-                const wxPoint &pos = wxDefaultPosition,
-                const wxSize &size = wxDefaultSize,
-                long style = wxLC_ICON,
-                const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = "mulelistctrl" );
+	CSearchListCtrl(wxWindow *parent,
+		wxWindowID winid = -1,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = wxLC_ICON,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = "mulelistctrl");
 
 	/**
 	 * Destructor.
@@ -81,26 +77,26 @@ public:
 	 * will be inserted sorted according to current sort-type, so there is no
 	 * need to resort the list after adding new items.
 	 */
-	void	AddResult(CSearchFile* toshow);
+	void AddResult(CSearchFile *toshow);
 
 	/**
 	 * Removes the specified file from the list.
 	 */
-	void	RemoveResult(CSearchFile* toshow);
+	void RemoveResult(CSearchFile *toshow);
 
 	/**
 	 * Updates the specified source.
 	 *
 	 * @param The search result to be updated.
 	 */
-	void	UpdateResult(CSearchFile* toupdate);
+	void UpdateResult(CSearchFile *toupdate);
 
 	/**
 	 * Clears the list and inserts all results with the specified Id instead.
 	 *
 	 * @param nResult The ID of the results or Zero to simply reset the list.
 	 */
-	void	ShowResults( wxUIntPtr ResultsId );
+	void ShowResults(wxUIntPtr ResultsId);
 
 	/**
 	 * Updates the colors of item at the specified index.
@@ -120,7 +116,7 @@ public:
 	 *
 	 * @return The Search Id of the displayed results (set through ShowResults()).
 	 */
-	wxUIntPtr	GetSearchId();
+	wxUIntPtr GetSearchId();
 
 	/**
 	 * Sets the filter which decides which results should be shown.
@@ -131,24 +127,24 @@ public:
 	 *
 	 * An invalid regExp will result in all results being displayed.
 	 */
-	void	SetFilter(const wxString& regExp, bool invert, bool filterKnown);
+	void SetFilter(const wxString &regExp, bool invert, bool filterKnown);
 
 	/**
 	 * Toggles the use of filtering on and off.
 	 */
-	void	EnableFiltering(bool enabled);
+	void EnableFiltering(bool enabled);
 
 	/**
 	 * Returns the number of items hidden due to filtering.
 	 */
-	size_t	GetHiddenItemCount() const;
+	size_t GetHiddenItemCount() const;
 
 	/**
 	 * Attempts to download all selected items, updating color-scheme as needed.
 	 *
 	 * @param category The target category, or -1 to use the drop-down selection.
 	 */
-	void	DownloadSelected(int category = -1);
+	void DownloadSelected(int category = -1);
 
 	static wxString DetermineStatusPrintable(CSearchFile *toshow);
 
@@ -168,30 +164,30 @@ protected:
 	void SetSorting(unsigned column, unsigned order);
 
 protected:
-	typedef std::list<CSearchFile*> ResultList;
+	typedef std::list<CSearchFile *> ResultList;
 
 	//! List used to store results that are hidden due to matching the filter.
-	ResultList	m_filteredOut;
+	ResultList m_filteredOut;
 
 	//! The current filter reg-exp.
-	wxRegEx		m_filter;
+	wxRegEx m_filter;
 
 	//! The text from which the filter is compiled.
-	wxString	m_filterText;
+	wxString m_filterText;
 
 	//! Controls if shared/queued results should be shown.
-	bool		m_filterKnown;
+	bool m_filterKnown;
 
 	//! Controls if the result of filter-hits should be inverted
-	bool		m_invert;
+	bool m_invert;
 
 	//! Specifies if filtering should be used
-	bool		m_filterEnabled;
+	bool m_filterEnabled;
 
 	/**
 	 * Returns true if the filename is filtered.
 	 */
-	bool	IsFiltered(const CSearchFile* file);
+	bool IsFiltered(const CSearchFile *file);
 
 	/**
 	 * Sorter function used by wxListCtrl::SortItems function.
@@ -222,7 +218,7 @@ protected:
 	 * be resorted. This function is used to ensure that all results list act
 	 * as one, while still allowing individual selection.
 	 */
-	static void SyncLists( CSearchListCtrl* src, CSearchListCtrl* dst );
+	static void SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst);
 
 	/**
 	 * Helper function which syncs all other lists against the specified one.
@@ -232,70 +228,70 @@ protected:
 	 * This function just calls SyncLists() on all lists in s_lists, using
 	 * the src argument as the src argument of the SyncLists function.
 	 */
-	static void SyncOtherLists( CSearchListCtrl* src );
+	static void SyncOtherLists(CSearchListCtrl *src);
 
 	//! This list contains pointers to all current instances of CSearchListCtrl.
-	static std::list<CSearchListCtrl*> s_lists;
+	static std::list<CSearchListCtrl *> s_lists;
 
 	//! The ID of the search-results which the list is displaying or zero if unset.
 	wxUIntPtr m_nResultsID;
 
 	//! Custom drawing, needed to display children of search-results.
-	void OnDrawItem(int item, wxDC* dc, const wxRect& rect, const wxRect& rectHL, bool highlighted);
+	void OnDrawItem(int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
 
 	/**
 	 * Removes or adds child-entries for the given file.
 	 */
-	void ShowChildren(CSearchFile* file, bool show);
+	void ShowChildren(CSearchFile *file, bool show);
 
 	/**
 	 * Event handler for right mouse clicks.
 	 */
-	void OnRightClick( wxListEvent& event );
+	void OnRightClick(wxListEvent &event);
 
 	/**
 	 * Event handler for double-clicks or enter.
 	 */
-	void OnItemActivated( wxListEvent& event );
+	void OnItemActivated(wxListEvent &event);
 
 	/**
 	 * Event handler for left-clicks on the column headers.
 	 *
 	 * This eventhandler takes care of sync'ing all the other lists with this one.
 	 */
-	void OnColumnLClick( wxListEvent& event );
+	void OnColumnLClick(wxListEvent &event);
 
 	/**
 	 * Event handler for resizing of the columns.
 	 *
 	 * This eventhandler takes care of sync'ing all the other lists with this one.
 	 */
-	void OnColumnResize( wxListEvent& event );
+	void OnColumnResize(wxListEvent &event);
 
 	/**
 	 * Event handler for get-url menu items.
 	 */
-	void OnPopupGetUrl( wxCommandEvent& event );
+	void OnPopupGetUrl(wxCommandEvent &event);
 
 	/**
 	 * Event handler for Razorback 2 stats menu items.
 	 */
-	void OnRazorStatsCheck( wxCommandEvent& event );
+	void OnRazorStatsCheck(wxCommandEvent &event);
 
 	/**
 	 * Event handler for related search.
 	 */
-	void OnRelatedSearch( wxCommandEvent& event );
+	void OnRelatedSearch(wxCommandEvent &event);
 
 	/**
 	 * Event handler for "mark as known".
 	 */
-	void OnMarkAsKnown( wxCommandEvent& event );
+	void OnMarkAsKnown(wxCommandEvent &event);
 
 	/**
 	 * Event handler for download-file(s) menu item.
 	 */
-	void OnPopupDownload( wxCommandEvent& event );
+	void OnPopupDownload(wxCommandEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
 };

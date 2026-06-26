@@ -23,13 +23,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef TERMINATIONPROCESSAMULEWEB_H
 #define TERMINATIONPROCESSAMULEWEB_H
 
-
-#include "TerminationProcess.h"	// for CTerminationProcess
-
+#include "TerminationProcess.h" // for CTerminationProcess
 
 // This is the handler for process termination events.
 // Used on some calls to wxExecute().
@@ -43,6 +40,4 @@ public:
 	virtual void OnTerminate(int pid, int status);
 };
 
-
 #endif // TERMINATIONPROCESSAMULEWEB_H
-

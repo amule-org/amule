@@ -45,8 +45,10 @@ void DoECLogLine(const wxString &line);
 
 #else
 
-#define ECLogIsEnabled()	false
-#define DoECLogLine(x)		do {} while(0)
+#define ECLogIsEnabled() false
+#define DoECLogLine(x) \
+	do { \
+	} while (0)
 
 #endif /* __DEBUG__ */
 

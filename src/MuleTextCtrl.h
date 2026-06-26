@@ -27,10 +27,8 @@
 
 #include <wx/textctrl.h>
 
-
 class wxCommandEvent;
 class wxMouseEvent;
-
 
 /**
  * This class is a slightly improved wxTextCtrl that supports the traditional
@@ -49,7 +47,14 @@ public:
 	/**
 	 * Constructor is identical to the wxTextCtrl one.
 	 */
-	CMuleTextCtrl(wxWindow* parent, wxWindowID id, const wxString& value = "", const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxTextCtrlNameStr);
+	CMuleTextCtrl(wxWindow *parent,
+		wxWindowID id,
+		const wxString &value = "",
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = 0,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = wxTextCtrlNameStr);
 
 	/**
 	 * Destructor, which currently does nothing.
@@ -72,7 +77,7 @@ protected:
 	 * noticed that second selection type while implementing this, so I doubt
 	 * that anyone will be missing it ...
 	 */
-	void OnRightDown( wxMouseEvent& evt );
+	void OnRightDown(wxMouseEvent &evt);
 
 	/**
 	 * This function takes care of pasting text.
@@ -82,18 +87,17 @@ protected:
 	 * only one of the already provided commands we need to override, since the
 	 * others already work just fine.
 	 */
-	void OnPaste( wxCommandEvent& evt );
+	void OnPaste(wxCommandEvent &evt);
 
 	/**
 	 * This functions takes care of selecting all text.
 	 */
-	void OnSelAll( wxCommandEvent& evt );
+	void OnSelAll(wxCommandEvent &evt);
 
 	/**
 	 * This functions takes care of clearing the text.
 	 */
-	void OnClear( wxCommandEvent& evt );
-
+	void OnClear(wxCommandEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 };

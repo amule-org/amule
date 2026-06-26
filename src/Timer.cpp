@@ -22,10 +22,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "Timer.h"		// Interface declaration
-#include "GetTickCount.h"	// Needed for GetTickCount
-#include "MuleThread.h"		// Needed for CMuleThread
-
+#include "Timer.h"        // Interface declaration
+#include "GetTickCount.h" // Needed for GetTickCount
+#include "MuleThread.h"   // Needed for CMuleThread
 
 //////////////////////// Timer Thread ////////////////////
 
@@ -33,11 +32,12 @@ class CTimerThread : public CMuleThread
 {
 public:
 	CTimerThread()
-		: CMuleThread(wxTHREAD_JOINABLE)
+	: CMuleThread(wxTHREAD_JOINABLE)
 	{
 	}
 
-	void* Entry() {
+	void *Entry()
+	{
 		CTimerEvent evt(m_id);
 
 		uint64 lastEvent = GetTickCount64();
@@ -76,13 +76,12 @@ public:
 		return NULL;
 	}
 
-	sint64			m_period;
-	bool			m_oneShot;
-	wxEvtHandler*	m_owner;
-	int				m_id;
-	wxSemaphore		m_sleepSemaphore;
+	sint64 m_period;
+	bool m_oneShot;
+	wxEvtHandler *m_owner;
+	int m_id;
+	wxSemaphore m_sleepSemaphore;
 };
-
 
 ////////////////////// CTimer ////////////////////////
 
@@ -91,8 +90,7 @@ CTimer::~CTimer()
 	Stop();
 }
 
-
-CTimer::CTimer(wxEvtHandler* owner, int id)
+CTimer::CTimer(wxEvtHandler *owner, int id)
 {
 	wxASSERT(owner);
 	m_owner = owner;
@@ -100,12 +98,10 @@ CTimer::CTimer(wxEvtHandler* owner, int id)
 	m_thread = NULL;
 }
 
-
 bool CTimer::IsRunning() const
 {
 	return (m_thread && m_thread->IsRunning());
 }
-
 
 bool CTimer::Start(int millisecs, bool oneShot)
 {
@@ -116,10 +112,10 @@ bool CTimer::Start(int millisecs, bool oneShot)
 	Stop();
 
 	m_thread = new CTimerThread();
-	m_thread->m_period	= millisecs;
-	m_thread->m_oneShot	= oneShot;
-	m_thread->m_owner	= m_owner;
-	m_thread->m_id		= m_id;
+	m_thread->m_period = millisecs;
+	m_thread->m_oneShot = oneShot;
+	m_thread->m_owner = m_owner;
+	m_thread->m_id = m_id;
 
 	if (m_thread->Create() == wxTHREAD_NO_ERROR) {
 		if (m_thread->Run() == wxTHREAD_NO_ERROR) {
@@ -135,7 +131,6 @@ bool CTimer::Start(int millisecs, bool oneShot)
 	return false;
 }
 
-
 void CTimer::Stop()
 {
 	if (m_thread) {
@@ -146,15 +141,13 @@ void CTimer::Stop()
 	}
 }
 
-
 wxDEFINE_EVENT(MULE_EVT_TIMER, wxEvent);
 CTimerEvent::CTimerEvent(int id)
-	: wxEvent(id, MULE_EVT_TIMER)
+: wxEvent(id, MULE_EVT_TIMER)
 {
 }
 
-
-wxEvent* CTimerEvent::Clone() const
+wxEvent *CTimerEvent::Clone() const
 {
 	return new CTimerEvent(GetId());
 }

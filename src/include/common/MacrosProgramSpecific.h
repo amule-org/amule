@@ -29,22 +29,22 @@
 // Built program specific macros
 
 #ifdef AMULE_DAEMON
-#	define ONLY_ON_DAEMON(x)	x
-#	define NOT_ON_DAEMON(x)
+#define ONLY_ON_DAEMON(x) x
+#define NOT_ON_DAEMON(x)
 #else
-#	define ONLY_ON_DAEMON(x)
-#	define NOT_ON_DAEMON(x)		x
+#define ONLY_ON_DAEMON(x)
+#define NOT_ON_DAEMON(x) x
 #endif
 
 #ifdef CLIENT_GUI
-#	define ONLY_ON_REMOTEGUI(x)	x
-#	define NOT_ON_REMOTEGUI(x)
+#define ONLY_ON_REMOTEGUI(x) x
+#define NOT_ON_REMOTEGUI(x)
 #else
-#	define ONLY_ON_REMOTEGUI(x)
-#	define NOT_ON_REMOTEGUI(x)	x
+#define ONLY_ON_REMOTEGUI(x)
+#define NOT_ON_REMOTEGUI(x) x
 #endif
 
-#define GUI_ONLY(x)	NOT_ON_DAEMON(x)
-#define CORE_ONLY(x)	NOT_ON_REMOTEGUI(x)
+#define GUI_ONLY(x) NOT_ON_DAEMON(x)
+#define CORE_ONLY(x) NOT_ON_REMOTEGUI(x)
 
 #endif // MACROSPROGRAMSPECIFIC_H

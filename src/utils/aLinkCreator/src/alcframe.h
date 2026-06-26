@@ -30,7 +30,6 @@
 #ifndef _ALCFRAME_H
 #define _ALCFRAME_H
 
-
 #include <wx/bitmap.h>
 #include <wx/checkbox.h>
 #include <wx/frame.h>
@@ -41,139 +40,136 @@
 #include <wx/statline.h>
 #include <wx/textctrl.h>
 
-
 // Compute and display md4sum or not
-//#define WANT_MD4SUM 1
-
+// #define WANT_MD4SUM 1
 
 /// Main Alc Frame
-class AlcFrame:public wxFrame
-  {
-  private:
-    wxToolBar *m_toolbar;
-    wxBitmap m_toolBarBitmaps[4];
+class AlcFrame : public wxFrame
+{
+private:
+	wxToolBar *m_toolbar;
+	wxBitmap m_toolBarBitmaps[4];
 
-    wxBoxSizer *m_frameVBox;
+	wxBoxSizer *m_frameVBox;
 
-    wxPanel *m_mainPanel;
-    wxBoxSizer *m_mainPanelVBox;
+	wxPanel *m_mainPanel;
+	wxBoxSizer *m_mainPanelVBox;
 
-    wxStaticLine *m_staticLine;
+	wxStaticLine *m_staticLine;
 
-    wxStaticBox *m_inputSBox;
-    wxStaticBoxSizer* m_inputSBoxSizer;
-    wxFlexGridSizer *m_inputFlexSizer;
-    wxStaticText *m_inputFileStaticText;
-    wxTextCtrl *m_inputFileTextCtrl;
-    wxButton *m_inputFileBrowseButton ;
-    wxStaticText *m_inputAddStaticText;
-    wxTextCtrl *m_inputAddTextCtrl;
-    wxButton *m_inputAddButton ;
-    wxListBox *m_inputUrlListBox;
-    wxBoxSizer *m_buttonUrlVBox;
-    wxButton *m_removeButton;
-    wxButton *m_clearButton;
-    wxCheckBox *m_parthashesCheck;
+	wxStaticBox *m_inputSBox;
+	wxStaticBoxSizer *m_inputSBoxSizer;
+	wxFlexGridSizer *m_inputFlexSizer;
+	wxStaticText *m_inputFileStaticText;
+	wxTextCtrl *m_inputFileTextCtrl;
+	wxButton *m_inputFileBrowseButton;
+	wxStaticText *m_inputAddStaticText;
+	wxTextCtrl *m_inputAddTextCtrl;
+	wxButton *m_inputAddButton;
+	wxListBox *m_inputUrlListBox;
+	wxBoxSizer *m_buttonUrlVBox;
+	wxButton *m_removeButton;
+	wxButton *m_clearButton;
+	wxCheckBox *m_parthashesCheck;
 
-    wxProgressDialog *m_progressBar;
-
+	wxProgressDialog *m_progressBar;
 
 #ifdef WANT_MD4SUM
 
-    wxStaticBox *m_md4HashSBox;
-    wxStaticBoxSizer* m_md4HashSBoxSizer;
-    wxTextCtrl *m_md4HashTextCtrl;
+	wxStaticBox *m_md4HashSBox;
+	wxStaticBoxSizer *m_md4HashSBoxSizer;
+	wxTextCtrl *m_md4HashTextCtrl;
 #endif
 
-    wxStaticBox *m_e2kHashSBox;
-    wxStaticBoxSizer* m_e2kHashSBoxSizer;
-    wxTextCtrl *m_e2kHashTextCtrl;
+	wxStaticBox *m_e2kHashSBox;
+	wxStaticBoxSizer *m_e2kHashSBoxSizer;
+	wxTextCtrl *m_e2kHashTextCtrl;
 
-    wxStaticBox *m_ed2kSBox;
-    wxStaticBoxSizer* m_ed2kSBoxSizer;
-    wxTextCtrl *m_ed2kTextCtrl;
+	wxStaticBox *m_ed2kSBox;
+	wxStaticBoxSizer *m_ed2kSBoxSizer;
+	wxTextCtrl *m_ed2kTextCtrl;
 
-    wxBoxSizer* m_buttonHBox;
-    wxButton *m_copyButton;
-    wxButton *m_startButton;
-    wxButton *m_saveButton;
-    wxButton *m_closeButton;
+	wxBoxSizer *m_buttonHBox;
+	wxButton *m_copyButton;
+	wxButton *m_startButton;
+	wxButton *m_saveButton;
+	wxButton *m_closeButton;
 
-    enum
-    {
-      ID_BAR_OPEN = 1000,
-      ID_BAR_SAVEAS,
-      ID_BAR_COPY,
-      ID_BAR_ABOUT,
-      ID_START_BUTTON,
-      ID_SAVEAS_BUTTON,
-      ID_COPY_BUTTON,
-      ID_EXIT_BUTTON,
-      ID_BROWSE_BUTTON,
-      ID_ADD_BUTTON,
-      ID_REMOVE_BUTTON,
-      ID_CLEAR_BUTTON,
-      ID_PARTHASHES_CHECK
-    };
+	enum
+	{
+		ID_BAR_OPEN = 1000,
+		ID_BAR_SAVEAS,
+		ID_BAR_COPY,
+		ID_BAR_ABOUT,
+		ID_START_BUTTON,
+		ID_SAVEAS_BUTTON,
+		ID_COPY_BUTTON,
+		ID_EXIT_BUTTON,
+		ID_BROWSE_BUTTON,
+		ID_ADD_BUTTON,
+		ID_REMOVE_BUTTON,
+		ID_CLEAR_BUTTON,
+		ID_PARTHASHES_CHECK
+	};
 
-    /// Set File to hash in wxTextCtrl
-    void SetFileToHash();
+	/// Set File to hash in wxTextCtrl
+	void SetFileToHash();
 
-    /// Save computed Ed2k link to file
-    void SaveEd2kLinkToFile();
+	/// Save computed Ed2k link to file
+	void SaveEd2kLinkToFile();
 
-    /// Copy Ed2k link to clip board
-    void CopyEd2kLinkToClipBoard();
+	/// Copy Ed2k link to clip board
+	void CopyEd2kLinkToClipBoard();
 
-  protected:
+protected:
+	/// Toolbar Open button
+	void OnBarOpen(wxCommandEvent &event);
 
-    /// Toolbar Open button
-    void OnBarOpen (wxCommandEvent & event);
+	/// Toolbar Save As button
+	void OnBarSaveAs(wxCommandEvent &event);
 
-    /// Toolbar Save As button
-    void OnBarSaveAs (wxCommandEvent & event);
+	/// Toolbar Copy button
+	void OnBarCopy(wxCommandEvent &event);
 
-    /// Toolbar Copy button
-    void OnBarCopy(wxCommandEvent & event);
+	/// Toolbar About button
+	void OnBarAbout(wxCommandEvent &event);
 
-    /// Toolbar About button
-    void OnBarAbout (wxCommandEvent & event);
+	/// Close Button
+	void OnCloseButton(wxCommandEvent &event);
 
-    /// Close Button
-    void OnCloseButton (wxCommandEvent & event);
+	/// Save As button
+	void OnSaveAsButton(wxCommandEvent &event);
 
-    /// Save As button
-    void OnSaveAsButton(wxCommandEvent & event);
+	/// Copy button
+	void OnCopyButton(wxCommandEvent &event);
 
-    /// Copy button
-    void OnCopyButton(wxCommandEvent & event);
+	/// Compute Hashes on Start Button
+	void OnStartButton(wxCommandEvent &event);
 
-    /// Compute Hashes on Start Button
-    void OnStartButton (wxCommandEvent & event);
+	/// Browse button to select file to hash
+	void OnBrowseButton(wxCommandEvent &event);
 
-    /// Browse button to select file to hash
-    void OnBrowseButton (wxCommandEvent & event);
+	/// Add an URL to the URL list box
+	void OnAddUrlButton(wxCommandEvent &event);
 
-    /// Add an URL to the URL list box
-    void OnAddUrlButton (wxCommandEvent & event);
+	/// Remove the selected URL from the URL list box
+	void OnRemoveUrlButton(wxCommandEvent &event);
 
-    /// Remove the selected URL from the URL list box
-    void OnRemoveUrlButton (wxCommandEvent & event);
+	/// Clear the URL list box
+	void OnClearUrlButton(wxCommandEvent &event);
 
-    /// Clear the URL list box
-    void OnClearUrlButton (wxCommandEvent & event);
+	wxDECLARE_EVENT_TABLE();
 
-    wxDECLARE_EVENT_TABLE();
-  public:
-    /// Constructor
-    AlcFrame (const wxString& title);
+public:
+	/// Constructor
+	AlcFrame(const wxString &title);
 
-    /// Destructor
-    ~AlcFrame ();
+	/// Destructor
+	~AlcFrame();
 
-    // Hook function for external update of the progress bar
-    static bool Hook(int percent);
-  };
+	// Hook function for external update of the progress bar
+	static bool Hook(int percent);
+};
 
 #endif /* _ALCFRAME_H */
 // File_checked_for_headers

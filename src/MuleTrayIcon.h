@@ -40,11 +40,12 @@ enum TaskbarNotifier
 	TBN_NEWVERSION
 };
 
-#include "Types.h"	// Needed for uint32
+#include "Types.h" // Needed for uint32
 
 class wxString;
 
-enum {
+enum
+{
 	TRAY_ICON_DISCONNECTED,
 	TRAY_ICON_LOWID,
 	TRAY_ICON_HIGHID
@@ -74,14 +75,13 @@ typedef struct _GtkWidget GtkWidget;
 class wxMenu;
 #endif
 
-
 /**
  * The mule tray icon class is responsible for drawing the mule systray icon
  * and reacting to the user input on it.
  */
 class CMuleTrayIcon
 #ifndef WITH_LIBAYATANA_APPINDICATOR
-	: public wxTaskBarIcon
+: public wxTaskBarIcon
 #endif
 {
 public:
@@ -100,7 +100,7 @@ public:
 	/**
 	 * Set the Tray tooltip.
 	 */
-	void SetTrayToolTip(const wxString& Tip);
+	void SetTrayToolTip(const wxString &Tip);
 
 	// Action handlers — invoked by the GTK menu (Ayatana backend) or by
 	// the wxMenu event table (wxTaskBarIcon backend).
@@ -113,7 +113,7 @@ public:
 	void DoShow();
 	void DoHide();
 	void DoExit();
-	void DoSetUploadLimit(long kBytesPerSec);   // UNLIMITED for no cap
+	void DoSetUploadLimit(long kBytesPerSec); // UNLIMITED for no cap
 	void DoSetDownloadLimit(long kBytesPerSec);
 
 #ifdef WITH_LIBAYATANA_APPINDICATOR
@@ -125,21 +125,20 @@ public:
 #endif
 
 private:
-
 #ifdef WITH_LIBAYATANA_APPINDICATOR
-	AppIndicator* m_indicator;
-	GtkWidget*    m_menu;
-	int           m_lastIconState;
+	AppIndicator *m_indicator;
+	GtkWidget *m_menu;
+	int m_lastIconState;
 #else
-	virtual wxMenu* CreatePopupMenu();
+	virtual wxMenu *CreatePopupMenu();
 	void UpdateTray();
 
-	void SwitchShow(wxTaskBarIconEvent&);
-	void SetUploadSpeed(wxCommandEvent&);
-	void SetDownloadSpeed(wxCommandEvent&);
-	void ServerConnection(wxCommandEvent&);
-	void ShowHide(wxCommandEvent&);
-	void Close(wxCommandEvent&);
+	void SwitchShow(wxTaskBarIconEvent &);
+	void SetUploadSpeed(wxCommandEvent &);
+	void SetDownloadSpeed(wxCommandEvent &);
+	void ServerConnection(wxCommandEvent &);
+	void ShowHide(wxCommandEvent &);
+	void Close(wxCommandEvent &);
 
 	int Old_Icon;
 	int Old_SpeedSize;
@@ -158,5 +157,5 @@ private:
 
 #endif // DAEMON
 
-#endif //MULETRAYICON_H
+#endif // MULETRAYICON_H
 // File_checked_for_headers

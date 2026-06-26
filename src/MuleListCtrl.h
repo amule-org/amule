@@ -61,11 +61,11 @@ public:
 	enum MLOrder
 	{
 		//! If set, sorting is to be in descending order.
-		SORT_DES	= 0x1000,
+		SORT_DES = 0x1000,
 
 		//! If sorting should use alternate method.
 		//! Is specified in with or without DEC.
-		SORT_ALT	= 0x2000
+		SORT_ALT = 0x2000
 	};
 
 	//! Mask which covers the column part of the sort-data.
@@ -79,14 +79,13 @@ public:
 	 *
 	 * @see wxGenericListCtrl::wxGenericListCtrl for documentation of parameters.
 	 */
-	 CMuleListCtrl(
-		       wxWindow *parent,
-		       wxWindowID winid = -1,
-		       const wxPoint &pos = wxDefaultPosition,
-		       const wxSize &size = wxDefaultSize,
-		       long style = wxLC_ICON,
-		       const wxValidator& validator = wxDefaultValidator,
-		       const wxString &name = "mulelistctrl" );
+	CMuleListCtrl(wxWindow *parent,
+		wxWindowID winid = -1,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = wxLC_ICON,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = "mulelistctrl");
 
 	/**
 	 * Destructor.
@@ -124,7 +123,7 @@ public:
 	 * through the SetSortFunc function, otherwise it will just return the
 	 * position after the last item.
 	 */
-	long GetInsertPos( wxUIntPtr data );
+	long GetInsertPos(wxUIntPtr data);
 
 	/**
 	 * Sorts the list.
@@ -157,7 +156,7 @@ public:
 	 * See the documentation on wxListCtrl::SortItems for more information
 	 * about the expected function type.
 	 */
-	void SetSortFunc(MuleListCtrlCompare func)	{ m_sort_func = func; }
+	void SetSortFunc(MuleListCtrlCompare func) { m_sort_func = func; }
 
 	/**
 	 * Deselects all selected items, but does not change focus.
@@ -193,13 +192,11 @@ public:
 	 * For more information refer to the wxWidgets documentation of
 	 * wxListCtrl::InsertColumn()
 	 */
-	long InsertColumn(
-			  long col,
-			  const wxString& heading,
-			  int format = wxLIST_FORMAT_LEFT,
-			  int width = -1,
-			  const wxString& name = ""
-			  );
+	long InsertColumn(long col,
+		const wxString &heading,
+		int format = wxLIST_FORMAT_LEFT,
+		int width = -1,
+		const wxString &name = "");
 
 	/**
 	 * Clears all items and all columns.
@@ -220,7 +217,11 @@ public:
 	 *
 	 * Not implemented yet, intercepted here just as a sanity check.
 	 */
-	bool DeleteColumn(int WXUNUSED(col))	{ wxFAIL; return false; }
+	bool DeleteColumn(int WXUNUSED(col))
+	{
+		wxFAIL;
+		return false;
+	}
 
 	/**
 	 * Indicates if we're in the process of sorting.
@@ -228,7 +229,6 @@ public:
 	bool IsSorting() const { return m_isSorting; }
 
 protected:
-
 	/**
 	 * Must be overwritten to enable alternate sorting.
 	 *
@@ -261,7 +261,7 @@ protected:
 	 * make use of the LoadSettings/SaveSettings functions. CMuleListCtrl
 	 * uses the name specified in this command to create unique keynames.
 	 */
-	void SetTableName(const wxString& name)		{ m_name = name; }
+	void SetTableName(const wxString &name) { m_name = name; }
 
 	/**
 	 * Return old column order.
@@ -283,12 +283,12 @@ protected:
 	/**
 	 * Returns the column which is currently used to sort the list.
 	 */
-	unsigned GetSortColumn() const	{ return m_sort_orders.front().first; }
+	unsigned GetSortColumn() const { return m_sort_orders.front().first; }
 
 	/**
 	 * Returns the current sorting order, a combination of the DES and ALT flags.
 	 */
-	unsigned GetSortOrder() const	{ return m_sort_orders.front().second; }
+	unsigned GetSortOrder() const { return m_sort_orders.front().second; }
 
 	/**
 	 * Set the sort column
@@ -317,24 +317,24 @@ protected:
 	 * are deselected.
 	 */
 	//@{
-	long CheckSelection(wxListEvent& event);
-	long CheckSelection(wxMouseEvent& event);
+	long CheckSelection(wxListEvent &event);
+	long CheckSelection(wxMouseEvent &event);
 	//@}
 
 	/**
 	 * Event handler for right-clicks on the column headers.
 	 */
-	void OnColumnRClick(wxListEvent& evt);
+	void OnColumnRClick(wxListEvent &evt);
 
 	/**
 	 * Event handler for left-clicks on the column headers.
 	 */
-	void OnColumnLClick(wxListEvent& evt);
+	void OnColumnLClick(wxListEvent &evt);
 
 	/**
 	 * Event handler for the hide/show menu items.
 	 */
-	void OnMenuSelected(wxCommandEvent& evt);
+	void OnMenuSelected(wxCommandEvent &evt);
 
 	/**
 	 * Event handler for the mouse wheel.
@@ -344,14 +344,14 @@ protected:
 	/**
 	 * Event handler for key-presses, needed by TTS.
 	 */
-	void OnChar(wxKeyEvent& evt);
+	void OnChar(wxKeyEvent &evt);
 
 	/**
 	 * Event handler for item selection/deletion, needed by TTS.
 	 */
-	void OnItemSelected(wxListEvent& evt);
-	void OnItemDeleted(wxListEvent& evt);
-	void OnAllItemsDeleted(wxListEvent& evt);
+	void OnItemSelected(wxListEvent &evt);
+	void OnItemDeleted(wxListEvent &evt);
+	void OnAllItemsDeleted(wxListEvent &evt);
 
 	/**
 	 * Get column index by name.
@@ -360,7 +360,7 @@ protected:
 	 *
 	 * @return The column index, or -1 in case the name was invalid.
 	 */
-	int GetColumnIndex(const wxString& name) const;
+	int GetColumnIndex(const wxString &name) const;
 
 private:
 	/**
@@ -377,19 +377,19 @@ private:
 	void SetColumnImage(unsigned col, int image);
 
 	//! The name of the table. Used to load/save settings.
-	wxString		m_name;
+	wxString m_name;
 
 	//! The sorter function needed by wxListCtrl.
-	MuleListCtrlCompare	m_sort_func;
+	MuleListCtrlCompare m_sort_func;
 
 	//! Contains the current search string.
-	wxString		m_tts_text;
+	wxString m_tts_text;
 
 	//! Timestamp for the last TTS event.
-	uint64			m_tts_time;
+	uint64 m_tts_time;
 
 	//! The index of the last item selected via TTS.
-	int			m_tts_item;
+	int m_tts_item;
 
 	/**
 	 * Wrapper around the user-provided sorter function.
@@ -410,9 +410,12 @@ private:
 	typedef std::pair<unsigned, unsigned> CColPair;
 	typedef std::list<CColPair> CSortingList;
 
-	class MuleSortData {
+	class MuleSortData
+	{
 	public:
-		MuleSortData(CSortingList sort_orders, MuleListCtrlCompare sort_func) : m_sort_orders(sort_orders), m_sort_func(sort_func) { };
+		MuleSortData(CSortingList sort_orders, MuleListCtrlCompare sort_func)
+		: m_sort_orders(sort_orders)
+		, m_sort_func(sort_func) {};
 
 		CSortingList m_sort_orders;
 		MuleListCtrlCompare m_sort_func;
@@ -429,7 +432,7 @@ private:
 	 * @return The column name or an empty string if index is invalid
 	 * (out of range), or the column name hasn't been set.
 	 */
-	const wxString& GetColumnName(int column) const;
+	const wxString &GetColumnName(int column) const;
 
 	/**
 	 * Get the column default width by index.
@@ -457,29 +460,34 @@ private:
 	 * @param[in] sortOrders	Old sort orders line.
 	 * @param[in] columnWidths	Old column widths line.
 	 */
-	void ParseOldConfigEntries(const wxString& sortOrders, const wxString& columnWidths);
+	void ParseOldConfigEntries(const wxString &sortOrders, const wxString &columnWidths);
 
 	/// This class contains a column index, its default width and its name.
-	class ColNameEntry {
+	class ColNameEntry
+	{
 	public:
 		int index;
-		int	defaultWidth;
+		int defaultWidth;
 		wxString name;
-		ColNameEntry(int _index, int _defaultWidth, const wxString& _name)
-			:	index(_index), defaultWidth(_defaultWidth), name(_name) {}
+		ColNameEntry(int _index, int _defaultWidth, const wxString &_name)
+		: index(_index)
+		, defaultWidth(_defaultWidth)
+		, name(_name)
+		{
+		}
 	};
 
 	/// This list contains the columns' names.
-	typedef std::list<ColNameEntry>		ColNameList;
+	typedef std::list<ColNameEntry> ColNameList;
 
 	/// Container for column names, sorted by column index.
-	ColNameList	m_column_names;
+	ColNameList m_column_names;
 
 	/// This vector contains a cache of the columns' sizes.
-	typedef std::vector<int>		ColSizeVector;
+	typedef std::vector<int> ColSizeVector;
 
 	/// Container for column sizes cache.
-	ColSizeVector	m_column_sizes;
+	ColSizeVector m_column_sizes;
 
 	// True while sorting.
 	bool m_isSorting;

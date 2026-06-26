@@ -25,12 +25,15 @@
 // The backtrace functions contain modified code from libYaMa, (c) Venkatesha Murthy G.
 // You can check libYaMa at http://personal.pavanashree.org/libyama/
 
-#include "RandomFunctions.h"	// Interface declarations
-#include "CryptoPP_Inc.h"	// Needed for Crypto functions
+#include "RandomFunctions.h" // Interface declarations
+#include "CryptoPP_Inc.h"    // Needed for Crypto functions
 
 static CryptoPP::AutoSeededRandomPool cryptRandomGen;
 
-const CryptoPP::AutoSeededRandomPool& GetRandomPool() { return cryptRandomGen; }
+const CryptoPP::AutoSeededRandomPool &GetRandomPool()
+{
+	return cryptRandomGen;
+}
 
 uint8_t GetRandomUint8()
 {
@@ -52,13 +55,14 @@ uint64_t GetRandomUint64()
 	return ((uint64_t)GetRandomUint32() << 32) + GetRandomUint32();
 }
 
-namespace Kademlia {
-	CUInt128 GetRandomUint128()
-	{
-		uint8_t randomBytes[16];
-		cryptRandomGen.GenerateBlock(randomBytes, 16);
-		return CUInt128(randomBytes);
-	}
+namespace Kademlia
+{
+CUInt128 GetRandomUint128()
+{
+	uint8_t randomBytes[16];
+	cryptRandomGen.GenerateBlock(randomBytes, 16);
+	return CUInt128(randomBytes);
 }
+} // namespace Kademlia
 
 // File_checked_for_headers

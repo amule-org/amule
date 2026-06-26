@@ -26,7 +26,6 @@
 #ifndef _ALCC_H
 #define _ALCC_H
 
-
 #include <wx/app.h>
 #include <wx/cmdline.h>
 
@@ -35,37 +34,37 @@
 #include <wx/strconv.h>
 static wxCSConv aMuleConv("iso8859-1");
 #ifdef wxUSE_UNICODE
-        #define unicode2char(x) (const char*) aMuleConv.cWX2MB(x)
-        #define char2unicode(x) aMuleConv.cMB2WX(x)
+#define unicode2char(x) (const char *)aMuleConv.cWX2MB(x)
+#define char2unicode(x) aMuleConv.cMB2WX(x)
 #else
-        #define unicode2char(x) x.c_str()
-        #define char2unicode(x) x
+#define unicode2char(x) x.c_str()
+#define char2unicode(x) x
 #endif
 //-----------------------------------------------------------------------------
 
 // Application
 class alcc : public wxAppConsole
 {
-  private:
-    bool m_flagVerbose ;
-    bool m_flagPartHashes;
-    wxArrayString m_filesToHash;
+private:
+	bool m_flagVerbose;
+	bool m_flagPartHashes;
+	wxArrayString m_filesToHash;
 
-    /// Parse command line
-    virtual void OnInitCmdLine(wxCmdLineParser& cmdline);
+	/// Parse command line
+	virtual void OnInitCmdLine(wxCmdLineParser &cmdline);
 
-    /// Command line preocessing
-    virtual bool OnCmdLineParsed(wxCmdLineParser& cmdline);
+	/// Command line preocessing
+	virtual bool OnCmdLineParsed(wxCmdLineParser &cmdline);
 
-  protected:
-    wxLocale m_locale; // Used to tell wxCas to use aMule catalog
+protected:
+	wxLocale m_locale; // Used to tell wxCas to use aMule catalog
 
-  public:
-    /// Application
-    virtual int OnRun ();
+public:
+	/// Application
+	virtual int OnRun();
 
-    /// Cleaning on exit
-    virtual int OnExit();
+	/// Cleaning on exit
+	virtual int OnExit();
 };
 
 DECLARE_APP(alcc)

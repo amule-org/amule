@@ -29,8 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <limits.h>		/* PATH_MAX */
-
+#include <limits.h> /* PATH_MAX */
 
 /* XXX This needs to be replaced so that we use
  * autoconf to detect the target OS -- As of now
@@ -44,21 +43,21 @@
  */
 
 #ifdef __APPLE__
-	#define CAS_DIR_SEPARATOR	"/"
+#define CAS_DIR_SEPARATOR "/"
 #elif defined(__WIN32__)
-	#define COBJMACROS
-	#include <winerror.h>
-	#include <shlobj.h>
-	#include <objidl.h>
-	#define CAS_DIR_SEPARATOR	"\\"
+#define COBJMACROS
+#include <winerror.h>
+#include <shlobj.h>
+#include <objidl.h>
+#define CAS_DIR_SEPARATOR "\\"
 #else
-	#define CAS_DIR_SEPARATOR	"/"
-	#if defined(unix) || defined(__unix__) || defined(__unix)
-		#include <unistd.h>
-		#include <pwd.h>
-		#include <fcntl.h>
-		#define CAS_UNIX
-	#endif
+#define CAS_DIR_SEPARATOR "/"
+#if defined(unix) || defined(__unix__) || defined(__unix)
+#include <unistd.h>
+#include <pwd.h>
+#include <fcntl.h>
+#define CAS_UNIX
+#endif
 #endif
 
 /* try (hard) to get correct path for aMule signature
@@ -67,7 +66,7 @@
 
 char *get_path(const char *file)
 {
-	char *ret;	/* caller should free return value */
+	char *ret; /* caller should free return value */
 	static char *saved_home = NULL;
 	static size_t home_len = 0;
 
@@ -82,9 +81,10 @@ char *get_path(const char *file)
 		char home[PATH_MAX];
 		home[0] = '\0';
 
-		const char* home_env = getenv("HOME");
+		const char *home_env = getenv("HOME");
 		if (home_env) {
-			snprintf(home, sizeof(home),
+			snprintf(home,
+				sizeof(home),
 				"%s/Library/Application Support" CAS_DIR_SEPARATOR "aMule",
 				home_env);
 		}
@@ -112,12 +112,11 @@ char *get_path(const char *file)
 			}
 		}
 
-
 #else
 		char *home;
 
 		/* get home directory */
-		if ( (home = getenv("HOME")) == NULL) {
+		if ((home = getenv("HOME")) == NULL) {
 #ifndef CAS_UNIX
 			return NULL;
 #else
@@ -155,7 +154,7 @@ char *get_path(const char *file)
 
 		/* save the result for future calls */
 		home_len = strlen(home);
-		if ( (saved_home = strdup(home)) == NULL)
+		if ((saved_home = strdup(home)) == NULL)
 			return NULL;
 	}
 
@@ -170,7 +169,7 @@ char *get_path(const char *file)
 
 	strcpy(ret, saved_home);
 	ret[home_len] = CAS_DIR_SEPARATOR[0];
-	ret[home_len+1] = '\0';
+	ret[home_len + 1] = '\0';
 	strcat(ret, file);
 	/* the string is guaranteed to be null-terminated
 	 * so no need to do this...
@@ -223,7 +222,7 @@ char *convbytes(char *input)
 
 	/* do proper conversion and check for errors */
 	errno = 0;
-	bytes = (float) strtod(input, &endptr);
+	bytes = (float)strtod(input, &endptr);
 
 	/* check bad string conversion or value out of range */
 	if (*endptr != '\0' || errno == ERANGE)
@@ -247,45 +246,46 @@ char *convbytes(char *input)
 
 void replace(char *tmpl, const char *search, const char *to_replace)
 {
-	char *dest   = NULL;
+	char *dest = NULL;
 	char *retStr = NULL;
 
 	/* returning the 'tmpl' if 'search' is NULL */
-  if (NULL == tmpl || NULL == search) /* || NULL == to_replace) */
-  {
+	if (NULL == tmpl || NULL == search) /* || NULL == to_replace) */
+	{
 		return;
 	}
 
-	while (1)
-	{
-		int befLen,srchLen,repLen,totLen;
+	while (1) {
+		int befLen, srchLen, repLen, totLen;
 		/* if 'search' is found in 'tmpl' */
 		retStr = strstr(tmpl, search);
-		if (NULL == retStr)
-		{
+		if (NULL == retStr) {
 			return;
 		}
 
-		totLen	= strlen(tmpl);
-		befLen	= (int)(retStr - tmpl);
+		totLen = strlen(tmpl);
+		befLen = (int)(retStr - tmpl);
 		srchLen = strlen(search);
-		repLen	= strlen(to_replace);
+		repLen = strlen(to_replace);
 
 		/* dynamic buffer creation... */
-		dest = (char*)malloc(totLen + 1 + repLen - srchLen);
+		dest = (char *)malloc(totLen + 1 + repLen - srchLen);
 		if (NULL == dest)
 			return;
 
 		/* copy the before buffer */
 		strncpy(dest, tmpl, befLen);
 		/* copy the replace string */
-		memcpy((dest+befLen), to_replace, repLen); /* strcat(dest, to_replace); */
+		memcpy((dest + befLen), to_replace, repLen); /* strcat(dest, to_replace); */
 		/* copy the after buffer */
-		memcpy((dest+befLen+repLen), &tmpl[befLen + srchLen], strlen(&tmpl[befLen + srchLen])); /*strcat(dest, &tmpl[befLen + repLen]); */
+		memcpy((dest + befLen + repLen),
+			&tmpl[befLen + srchLen],
+			strlen(&tmpl[befLen + srchLen])); /*strcat(dest, &tmpl[befLen + repLen]); */
 
 		/* now replace the template string with the resulting and search it again */
 		strcpy(tmpl, dest);
-		/* we need this, because we're modifying the 'tmpl' instead of creating a new one (so we need to update the position of the null char) */
+		/* we need this, because we're modifying the 'tmpl' instead of creating a new one (so we need
+		 * to update the position of the null char) */
 		tmpl[totLen - srchLen + repLen] = '\0';
 		/* clean up... */
 		free(dest);
@@ -298,15 +298,15 @@ char *timeconv(char *input)
 	static char ret[50];
 
 	if (count < 0)
-		snprintf (ret,50,"?");
+		snprintf(ret, 50, "?");
 	else if (count < 60)
-		snprintf (ret,50,"%02i %s", count, "secs" );
+		snprintf(ret, 50, "%02i %s", count, "secs");
 	else if (count < 3600)
-		snprintf (ret,50,"%i:%02i %s", count/60, (count % 60), "mins" );
+		snprintf(ret, 50, "%i:%02i %s", count / 60, (count % 60), "mins");
 	else if (count < 86400)
-		snprintf (ret,50,"%i:%02i %s", count/3600, (count % 3600)/60, "h" );
+		snprintf(ret, 50, "%i:%02i %s", count / 3600, (count % 3600) / 60, "h");
 	else
-		snprintf (ret,50,"%i %s %02i %s", count/86400, "D" , (count % 86400) / 3600, "h" );
+		snprintf(ret, 50, "%i %s %02i %s", count / 86400, "D", (count % 86400) / 3600, "h");
 
 	return (ret);
 }

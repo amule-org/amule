@@ -23,67 +23,65 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <algorithm> // Needed for std::max
+#include <vector>    // Needed for std::vector
 
-#include <algorithm>		// Needed for std::max
-#include <vector>		// Needed for std::vector
+#include <wx/clipbrd.h> // Needed for wxTheClipboard
+#include <wx/dataobj.h> // Needed for wxTextDataObject
+#include <wx/menu.h>    // Needed for wxMenu (context-menu)
 
-#include <wx/clipbrd.h>		// Needed for wxTheClipboard
-#include <wx/dataobj.h>		// Needed for wxTextDataObject
-#include <wx/menu.h>		// Needed for wxMenu (context-menu)
-
-#include "muuli_wdr.h"		// Needed for ID_ADDTOLIST
-#include "ServerWnd.h"		// Interface declarations.
-#include "Server.h"		// Needed for CServer
-#include "ServerList.h"		// Needed for CServerList
-#include "ServerListCtrl.h"	// Needed for CServerListCtrl
-#include "Preferences.h"	// Needed for CPreferences
+#include "muuli_wdr.h"      // Needed for ID_ADDTOLIST
+#include "ServerWnd.h"      // Interface declarations.
+#include "Server.h"         // Needed for CServer
+#include "ServerList.h"     // Needed for CServerList
+#include "ServerListCtrl.h" // Needed for CServerListCtrl
+#include "Preferences.h"    // Needed for CPreferences
 #include "ServerConnect.h"
-#include "amuleDlg.h"		// Needed for CamuleDlg
-#include "amule.h"			// Needed for theApp
+#include "amuleDlg.h" // Needed for CamuleDlg
+#include "amule.h"    // Needed for theApp
 #include "Logger.h"
 #include "kademlia/utils/UInt128.h"
 
 #include "ClientList.h"
 
-wxBEGIN_EVENT_TABLE(CServerWnd,wxPanel)
-	EVT_BUTTON(ID_ADDTOLIST,CServerWnd::OnBnClickedAddserver)
-	EVT_BUTTON(IDC_ED2KDISCONNECT,CServerWnd::OnBnClickedED2KDisconnect)
-	EVT_BUTTON(ID_UPDATELIST,CServerWnd::OnBnClickedUpdateservermetfromurl)
-	EVT_TEXT_ENTER(IDC_SERVERLISTURL,CServerWnd::OnBnClickedUpdateservermetfromurl)
+wxBEGIN_EVENT_TABLE(CServerWnd, wxPanel)
+	EVT_BUTTON(ID_ADDTOLIST, CServerWnd::OnBnClickedAddserver)
+	EVT_BUTTON(IDC_ED2KDISCONNECT, CServerWnd::OnBnClickedED2KDisconnect)
+	EVT_BUTTON(ID_UPDATELIST, CServerWnd::OnBnClickedUpdateservermetfromurl)
+	EVT_TEXT_ENTER(IDC_SERVERLISTURL, CServerWnd::OnBnClickedUpdateservermetfromurl)
 	EVT_BUTTON(ID_BTN_RESET, CServerWnd::OnBnClickedResetLog)
 	EVT_BUTTON(ID_BTN_RESET_SERVER, CServerWnd::OnBnClickedResetServerLog)
-	EVT_SPLITTER_SASH_POS_CHANGING(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanging)
-	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanged)
+	EVT_SPLITTER_SASH_POS_CHANGING(ID_SRV_SPLITTER, CServerWnd::OnSashPositionChanging)
+	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER, CServerWnd::OnSashPositionChanged)
 wxEND_EVENT_TABLE()
 
-
-CServerWnd::CServerWnd(wxWindow* pParent /*=NULL*/, int splitter_pos)
+CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 : wxPanel(pParent, -1)
 {
-	wxSizer* sizer = serverListDlg(this,TRUE);
+	wxSizer *sizer = serverListDlg(this, TRUE);
 
 	// init serverlist
 	// no use now. too early.
 
-	serverlistctrl = CastChild( ID_SERVERLIST, CServerListCtrl );
+	serverlistctrl = CastChild(ID_SERVERLIST, CServerListCtrl);
 
-	CastChild( ID_SRV_SPLITTER, wxSplitterWindow )->SetSashPosition(splitter_pos, true);
+	CastChild(ID_SRV_SPLITTER, wxSplitterWindow)->SetSashPosition(splitter_pos, true);
 	// Default gravity (0.0) anchors the sash to the top: when the
 	// main window resizes, the server list keeps its height and the
 	// log pane absorbs the extra space. The other amule splitters
 	// (Shared/Transfer/Messages) use the same default and don't
 	// suffer the layout-recalc storm during minimize/restore that
 	// gravity 0.5 produced on Mac and Windows (#334 reproductions).
-	CastChild( IDC_NODESLISTURL, wxTextCtrl )->SetValue(thePrefs::GetKadNodesUrl());
-	CastChild( IDC_SERVERLISTURL, wxTextCtrl )->SetValue(thePrefs::GetEd2kServersUrl());
+	CastChild(IDC_NODESLISTURL, wxTextCtrl)->SetValue(thePrefs::GetKadNodesUrl());
+	CastChild(IDC_SERVERLISTURL, wxTextCtrl)->SetValue(thePrefs::GetEd2kServersUrl());
 
 	// Insert two columns, currently without a header
-	wxListCtrl* ED2KInfoList = CastChild( ID_ED2KINFO, wxListCtrl );
+	wxListCtrl *ED2KInfoList = CastChild(ID_ED2KINFO, wxListCtrl);
 	wxASSERT(ED2KInfoList);
 	ED2KInfoList->InsertColumn(0, "");
 	ED2KInfoList->InsertColumn(1, "");
 
-	wxListCtrl* KadInfoList = CastChild( ID_KADINFO, wxListCtrl );
+	wxListCtrl *KadInfoList = CastChild(ID_KADINFO, wxListCtrl);
 	wxASSERT(KadInfoList);
 	KadInfoList->InsertColumn(0, "");
 	KadInfoList->InsertColumn(1, "");
@@ -91,60 +89,58 @@ CServerWnd::CServerWnd(wxWindow* pParent /*=NULL*/, int splitter_pos)
 	// Wire Ctrl+C and right-click-to-copy on both info notebook
 	// list controls (#814). Bound dynamically so the same handler
 	// instance covers both ED2K Info and Kad Info.
-	for (wxListCtrl* list : {ED2KInfoList, KadInfoList}) {
+	for (wxListCtrl *list : { ED2KInfoList, KadInfoList }) {
 		list->Bind(wxEVT_KEY_DOWN, &CServerWnd::OnInfoListKeyDown, this);
 		list->Bind(wxEVT_CONTEXT_MENU, &CServerWnd::OnInfoListContextMenu, this);
 	}
 
-	sizer->Show(this,TRUE);
+	sizer->Show(this, TRUE);
 }
-
 
 CServerWnd::~CServerWnd()
 {
-	thePrefs::SetEd2kServersUrl(CastChild( IDC_SERVERLISTURL, wxTextCtrl )->GetValue());
-	thePrefs::SetKadNodesUrl(CastChild( IDC_NODESLISTURL, wxTextCtrl )->GetValue());
+	thePrefs::SetEd2kServersUrl(CastChild(IDC_SERVERLISTURL, wxTextCtrl)->GetValue());
+	thePrefs::SetKadNodesUrl(CastChild(IDC_NODESLISTURL, wxTextCtrl)->GetValue());
 }
 
-
-void CServerWnd::UpdateServerMetFromURL(const wxString& strURL)
+void CServerWnd::UpdateServerMetFromURL(const wxString &strURL)
 {
 	thePrefs::SetEd2kServersUrl(strURL);
 	theApp->serverlist->UpdateServerMetFromURL(strURL);
 }
 
-
-void CServerWnd::OnBnClickedAddserver(wxCommandEvent& WXUNUSED(evt))
+void CServerWnd::OnBnClickedAddserver(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString servername = CastChild( IDC_SERVERNAME, wxTextCtrl )->GetValue();
-	wxString serveraddr = CastChild( IDC_IPADDRESS, wxTextCtrl )->GetValue();
-	long port = StrToULong( CastChild( IDC_SPORT, wxTextCtrl )->GetValue() );
+	wxString servername = CastChild(IDC_SERVERNAME, wxTextCtrl)->GetValue();
+	wxString serveraddr = CastChild(IDC_IPADDRESS, wxTextCtrl)->GetValue();
+	long port = StrToULong(CastChild(IDC_SPORT, wxTextCtrl)->GetValue());
 
-	if ( serveraddr.IsEmpty() ) {
+	if (serveraddr.IsEmpty()) {
 		AddLogLineC(_("Server not added: No IP or hostname specified."));
 		return;
 	}
 
-	if ( port <= 0 || port > 65535 ) {
+	if (port <= 0 || port > 65535) {
 		AddLogLineC(_("Server not added: Invalid server-port specified."));
 		return;
 	}
 
-	CServer* toadd = new CServer( port, serveraddr );
-	toadd->SetListName( servername.IsEmpty() ? serveraddr : servername );
+	CServer *toadd = new CServer(port, serveraddr);
+	toadd->SetListName(servername.IsEmpty() ? serveraddr : servername);
 
-	if ( theApp->AddServer( toadd, true ) ) {
-		CastChild( IDC_SERVERNAME, wxTextCtrl )->Clear();
-		CastChild( IDC_IPADDRESS, wxTextCtrl )->Clear();
-		CastChild( IDC_SPORT, wxTextCtrl )->Clear();
+	if (theApp->AddServer(toadd, true)) {
+		CastChild(IDC_SERVERNAME, wxTextCtrl)->Clear();
+		CastChild(IDC_IPADDRESS, wxTextCtrl)->Clear();
+		CastChild(IDC_SPORT, wxTextCtrl)->Clear();
 	} else {
-		CServer* update = theApp->serverlist->GetServerByAddress(toadd->GetAddress(), toadd->GetPort());
+		CServer *update =
+			theApp->serverlist->GetServerByAddress(toadd->GetAddress(), toadd->GetPort());
 		// See note on CServerList::AddServer
 		if (update == NULL && toadd->GetIP() != 0) {
 			update = theApp->serverlist->GetServerByIPTCP(toadd->GetIP(), toadd->GetPort());
 		}
 
-		if ( update ) {
+		if (update) {
 			update->SetListName(toadd->GetListName());
 			serverlistctrl->RefreshServer(update);
 		}
@@ -154,29 +150,25 @@ void CServerWnd::OnBnClickedAddserver(wxCommandEvent& WXUNUSED(evt))
 	theApp->serverlist->SaveServerMet();
 }
 
-
-void CServerWnd::OnBnClickedUpdateservermetfromurl(wxCommandEvent& WXUNUSED(evt))
+void CServerWnd::OnBnClickedUpdateservermetfromurl(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString strURL = CastChild( IDC_SERVERLISTURL, wxTextCtrl )->GetValue();
+	wxString strURL = CastChild(IDC_SERVERLISTURL, wxTextCtrl)->GetValue();
 	UpdateServerMetFromURL(strURL);
 }
 
-
-void CServerWnd::OnBnClickedResetLog(wxCommandEvent& WXUNUSED(evt))
+void CServerWnd::OnBnClickedResetLog(wxCommandEvent &WXUNUSED(evt))
 {
 	theApp->GetLog(true); // Reset it.
 }
 
-
-void CServerWnd::OnBnClickedResetServerLog(wxCommandEvent& WXUNUSED(evt))
+void CServerWnd::OnBnClickedResetServerLog(wxCommandEvent &WXUNUSED(evt))
 {
 	theApp->GetServerLog(true); // Reset it
 }
 
-
 void CServerWnd::UpdateED2KInfo()
 {
-	wxListCtrl* ED2KInfoList = CastChild( ID_ED2KINFO, wxListCtrl );
+	wxListCtrl *ED2KInfoList = CastChild(ID_ED2KINFO, wxListCtrl);
 
 	ED2KInfoList->DeleteAllItems();
 	ED2KInfoList->InsertItem(0, _("eD2k Status:"));
@@ -186,9 +178,11 @@ void CServerWnd::UpdateED2KInfo()
 
 		// Connection data
 		ED2KInfoList->InsertItem(1, _("IP:Port"));
-		ED2KInfoList->SetItem(1, 1, theApp->serverconnect->IsLowID()
-			? wxString(_("Server"))
-			: Uint32_16toStringIP_Port(theApp->GetED2KID(), thePrefs::GetPort()));
+		ED2KInfoList->SetItem(1,
+			1,
+			theApp->serverconnect->IsLowID()
+				? wxString(_("Server"))
+				: Uint32_16toStringIP_Port(theApp->GetED2KID(), thePrefs::GetPort()));
 
 		ED2KInfoList->InsertItem(2, _("ID"));
 		// No need to test the server connect, it's already true
@@ -209,7 +203,7 @@ void CServerWnd::UpdateED2KInfo()
 
 void CServerWnd::UpdateKadInfo()
 {
-	wxListCtrl* KadInfoList = CastChild( ID_KADINFO, wxListCtrl );
+	wxListCtrl *KadInfoList = CastChild(ID_KADINFO, wxListCtrl);
 
 	int next_row = 0;
 
@@ -218,44 +212,55 @@ void CServerWnd::UpdateKadInfo()
 	KadInfoList->InsertItem(next_row, _("Kademlia Status:"));
 
 	if (theApp->IsKadRunning()) {
-		KadInfoList->SetItem(next_row++, 1, (theApp->IsKadRunningInLanMode() ? _("Running in LAN mode") : _("Running")));
+		KadInfoList->SetItem(next_row++,
+			1,
+			(theApp->IsKadRunningInLanMode() ? _("Running in LAN mode") : _("Running")));
 
 		// Connection data
 		KadInfoList->InsertItem(next_row, _("Kademlia client ID:"));
 		KadInfoList->SetItem(next_row++, 1, theApp->GetKadID().ToHexString());
 		KadInfoList->InsertItem(next_row, _("Status:"));
-		KadInfoList->SetItem(next_row++, 1, theApp->IsConnectedKad() ? _("Connected"): _("Disconnected"));
+		KadInfoList->SetItem(
+			next_row++, 1, theApp->IsConnectedKad() ? _("Connected") : _("Disconnected"));
 		if (theApp->IsConnectedKad()) {
 			KadInfoList->InsertItem(next_row, _("Connection State:"));
-			KadInfoList->SetItem(next_row++, 1, theApp->IsFirewalledKad() ?
-				wxString(CFormat(_("Firewalled - open TCP port %d in your router or firewall")) % thePrefs::GetPort())
-				: wxString(_("OK")));
+			KadInfoList->SetItem(next_row++,
+				1,
+				theApp->IsFirewalledKad()
+					? wxString(CFormat(_("Firewalled - open TCP port %d in your router "
+							     "or firewall")) %
+						   thePrefs::GetPort())
+					: wxString(_("OK")));
 			KadInfoList->InsertItem(next_row, _("UDP Connection State:"));
 			bool UDPFirewalled = theApp->IsFirewalledKadUDP();
-			KadInfoList->SetItem(next_row++, 1, UDPFirewalled ?
-				wxString(CFormat(_("Firewalled - open UDP port %d in your router or firewall")) % thePrefs::GetUDPPort())
-				: wxString(_("OK")));
+			KadInfoList->SetItem(next_row++,
+				1,
+				UDPFirewalled ? wxString(CFormat(_("Firewalled - open UDP port %d in your "
+								   "router or firewall")) %
+							 thePrefs::GetUDPPort())
+					      : wxString(_("OK")));
 
 			if (theApp->IsFirewalledKad() || UDPFirewalled) {
 				KadInfoList->InsertItem(next_row, _("Firewalled state: "));
 				wxString BuddyState;
-				switch ( theApp->GetBuddyStatus() )
-				{
-					case Disconnected:
-						if (!theApp->IsFirewalledKad()) {
-							BuddyState = _("No buddy required - TCP port open");
-						} else if (!UDPFirewalled) {
-							BuddyState = _("No buddy required - UDP port open");
-						} else {
-							BuddyState = _("No buddy");
-						}
-						break;
-					case Connecting:
-						BuddyState = _("Connecting to buddy");
-						break;
-					case Connected:
-						BuddyState = CFormat(_("Connected to buddy at %s")) % Uint32_16toStringIP_Port(theApp->GetBuddyIP(), theApp->GetBuddyPort());
-						break;
+				switch (theApp->GetBuddyStatus()) {
+				case Disconnected:
+					if (!theApp->IsFirewalledKad()) {
+						BuddyState = _("No buddy required - TCP port open");
+					} else if (!UDPFirewalled) {
+						BuddyState = _("No buddy required - UDP port open");
+					} else {
+						BuddyState = _("No buddy");
+					}
+					break;
+				case Connecting:
+					BuddyState = _("Connecting to buddy");
+					break;
+				case Connected:
+					BuddyState = CFormat(_("Connected to buddy at %s")) %
+						     Uint32_16toStringIP_Port(
+							     theApp->GetBuddyIP(), theApp->GetBuddyPort());
+					break;
 				}
 				KadInfoList->SetItem(next_row++, 1, BuddyState);
 			}
@@ -287,7 +292,6 @@ void CServerWnd::UpdateKadInfo()
 	FitInfoListColumns(KadInfoList);
 }
 
-
 // Both info notebooks (ED2K Info, Kad Info) are two-column wxListCtrls
 // where column 0 holds short labels ("eD2k Status:", "Status:", ...) and
 // column 1 holds values that can grow wide (IP:port strings, hex client
@@ -303,7 +307,7 @@ void CServerWnd::UpdateKadInfo()
 // reasonable minimum so the column stays usable while the panel is
 // being resized or before the first layout pass.
 /* static */
-void CServerWnd::FitInfoListColumns(wxListCtrl* list)
+void CServerWnd::FitInfoListColumns(wxListCtrl *list)
 {
 	if (!list) {
 		return;
@@ -319,16 +323,19 @@ void CServerWnd::FitInfoListColumns(wxListCtrl* list)
 	list->SetColumnWidth(1, std::max(clientWidth - col0 - kPad, kCol1Min));
 }
 
-
 // Anonymous enum so the "Copy" context-menu item has a stable ID
 // scoped to this translation unit (it never escapes to the rest of
 // the main dialog's ID space).
-namespace {
-	enum { kInfoListMenuCopy = wxID_HIGHEST + 1 };
+namespace
+{
+enum
+{
+	kInfoListMenuCopy = wxID_HIGHEST + 1
+};
 }
 
 /* static */
-void CServerWnd::CopyInfoListToClipboard(wxListCtrl* list)
+void CServerWnd::CopyInfoListToClipboard(wxListCtrl *list)
 {
 	if (!list || list->GetItemCount() == 0) {
 		return;
@@ -364,26 +371,22 @@ void CServerWnd::CopyInfoListToClipboard(wxListCtrl* list)
 	}
 }
 
-
-void CServerWnd::OnInfoListKeyDown(wxKeyEvent& evt)
+void CServerWnd::OnInfoListKeyDown(wxKeyEvent &evt)
 {
 	// Ctrl+C (or Cmd+C on macOS, which wx maps to ControlDown for
 	// wxKeyEvent on standard menus). Anything else falls through to
 	// the default key handler so arrow navigation etc. still works.
-	if ((evt.GetKeyCode() == 'C' || evt.GetKeyCode() == 'c')
-		&& evt.ControlDown())
-	{
-		wxListCtrl* list = wxDynamicCast(evt.GetEventObject(), wxListCtrl);
+	if ((evt.GetKeyCode() == 'C' || evt.GetKeyCode() == 'c') && evt.ControlDown()) {
+		wxListCtrl *list = wxDynamicCast(evt.GetEventObject(), wxListCtrl);
 		CopyInfoListToClipboard(list);
 		return;
 	}
 	evt.Skip();
 }
 
-
-void CServerWnd::OnInfoListContextMenu(wxContextMenuEvent& evt)
+void CServerWnd::OnInfoListContextMenu(wxContextMenuEvent &evt)
 {
-	wxListCtrl* list = wxDynamicCast(evt.GetEventObject(), wxListCtrl);
+	wxListCtrl *list = wxDynamicCast(evt.GetEventObject(), wxListCtrl);
 	if (!list) {
 		evt.Skip();
 		return;
@@ -402,24 +405,23 @@ void CServerWnd::OnInfoListContextMenu(wxContextMenuEvent& evt)
 	// wxContextMenuEvent); fall back to the list's centre if the
 	// event came from a keyboard menu key with no position.
 	const wxPoint pos = evt.GetPosition() != wxDefaultPosition
-		? list->ScreenToClient(evt.GetPosition())
-		: wxPoint(list->GetClientSize().GetWidth() / 2,
-				  list->GetClientSize().GetHeight() / 2);
+				    ? list->ScreenToClient(evt.GetPosition())
+				    : wxPoint(list->GetClientSize().GetWidth() / 2,
+					      list->GetClientSize().GetHeight() / 2);
 	list->PopupMenu(&menu, pos);
 }
 
-
-void CServerWnd::OnInfoListCopy(wxCommandEvent& evt)
+void CServerWnd::OnInfoListCopy(wxCommandEvent &evt)
 {
-	wxMenu* menu = wxDynamicCast(evt.GetEventObject(), wxMenu);
+	wxMenu *menu = wxDynamicCast(evt.GetEventObject(), wxMenu);
 	if (!menu) {
 		return;
 	}
-	wxListCtrl* list = static_cast<wxListCtrl*>(menu->GetClientData());
+	wxListCtrl *list = static_cast<wxListCtrl *>(menu->GetClientData());
 	CopyInfoListToClipboard(list);
 }
 
-void CServerWnd::OnSashPositionChanging(wxSplitterEvent& evt)
+void CServerWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 {
 	// CHANGING fires only while the user is actively dragging the
 	// sash; mark the drag in flight so OnSashPositionChanged knows
@@ -429,9 +431,9 @@ void CServerWnd::OnSashPositionChanging(wxSplitterEvent& evt)
 	evt.Skip();
 }
 
-void CServerWnd::OnSashPositionChanged(wxSplitterEvent& WXUNUSED(evt))
+void CServerWnd::OnSashPositionChanged(wxSplitterEvent &WXUNUSED(evt))
 {
-	wxSplitterWindow* split = CastChild("SrvSplitterWnd", wxSplitterWindow);
+	wxSplitterWindow *split = CastChild("SrvSplitterWnd", wxSplitterWindow);
 	if (!m_userDraggingSash) {
 		// Layout-induced sash move — don't persist. With the default
 		// sash gravity, these should be rare; previously gravity 0.5
@@ -445,7 +447,7 @@ void CServerWnd::OnSashPositionChanged(wxSplitterEvent& WXUNUSED(evt))
 	}
 }
 
-void CServerWnd::OnBnClickedED2KDisconnect(wxCommandEvent& WXUNUSED(evt))
+void CServerWnd::OnBnClickedED2KDisconnect(wxCommandEvent &WXUNUSED(evt))
 {
 	if (theApp->serverconnect->IsConnecting()) {
 		theApp->serverconnect->StopConnectionTry();

@@ -28,27 +28,25 @@
 #ifndef _ALC_H
 #define _ALC_H
 
-
 #include <wx/app.h>
 
 #include "alcframe.h"
 
 /// Application
-class alc:public wxApp
-  {
-  private:
-    AlcFrame *m_alcFrame;
+class alc : public wxApp
+{
+private:
+	AlcFrame *m_alcFrame;
 
-  protected:
-    wxLocale m_locale; // Used to tell wxCas to use aMule catalog
+protected:
+	wxLocale m_locale; // Used to tell wxCas to use aMule catalog
 
-  public:
-    virtual bool OnInit ();
-    AlcFrame *GetMainFrame();
-  };
+public:
+	virtual bool OnInit();
+	AlcFrame *GetMainFrame();
+};
 
-DECLARE_APP (alc)
-
+DECLARE_APP(alc)
 
 #endif /* _ALC_H */
 // File_checked_for_headers

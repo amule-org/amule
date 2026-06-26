@@ -30,7 +30,6 @@
 #ifndef _WXCASPREFS_H
 #define _WXCASPREFS_H
 
-
 #include <wx/checkbox.h>
 #include <wx/combobox.h>
 #include <wx/dialog.h>
@@ -42,10 +41,10 @@
 #include <wx/textctrl.h>
 
 /// Preference Dialog
-class WxCasPrefs: public wxDialog
+class WxCasPrefs : public wxDialog
 {
 private:
-	wxBoxSizer * m_mainVBox;
+	wxBoxSizer *m_mainVBox;
 	wxStaticBox *m_osPathSBox;
 	wxStaticBoxSizer *m_osPathSBoxSizer;
 	wxTextCtrl *m_osPathTextCtrl;
@@ -86,34 +85,34 @@ private:
 	wxButton *m_validateButton;
 	wxButton *m_cancelButton;
 
-	void EnableAutoStatImgCtrls( bool state );
-	void EnableFtpUpdateCtrls( bool state );
+	void EnableAutoStatImgCtrls(bool state);
+	void EnableFtpUpdateCtrls(bool state);
 
 	enum
 	{
-	    ID_OSPATH_BROWSE_BUTTON = 100,
-	    ID_AUTOSTATIMG_CHECK,
-	    ID_AUTOSTATIMG_COMBO,
-	    ID_AUTOSTATIMG_BROWSE_BUTTON,
-	    ID_FTP_UPDATE_CHECK,
-	    ID_VALIDATE_BUTTON
+		ID_OSPATH_BROWSE_BUTTON = 100,
+		ID_AUTOSTATIMG_CHECK,
+		ID_AUTOSTATIMG_COMBO,
+		ID_AUTOSTATIMG_BROWSE_BUTTON,
+		ID_FTP_UPDATE_CHECK,
+		ID_VALIDATE_BUTTON
 	};
 
 protected:
-	void OnOSPathBrowseButton ( wxCommandEvent & event );
-	void OnValidateButton ( wxCommandEvent & event );
-	void OnAutoStatImgBrowseButton ( wxCommandEvent & event );
-	void OnAutoStatImgCheck ( wxCommandEvent & event );
-	void OnFtpUpdateCheck ( wxCommandEvent & event );
+	void OnOSPathBrowseButton(wxCommandEvent &event);
+	void OnValidateButton(wxCommandEvent &event);
+	void OnAutoStatImgBrowseButton(wxCommandEvent &event);
+	void OnAutoStatImgCheck(wxCommandEvent &event);
+	void OnFtpUpdateCheck(wxCommandEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
-public:
 
+public:
 	/// Constructor
-	WxCasPrefs ( wxWindow * parent );
+	WxCasPrefs(wxWindow *parent);
 
 	/// Destructor
-	~WxCasPrefs ();
+	~WxCasPrefs();
 };
 
 #endif /* _WXCASPREFS_H */

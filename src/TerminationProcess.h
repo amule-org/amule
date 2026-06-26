@@ -23,13 +23,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef TERMINATIONPROCESS_H
 #define TERMINATIONPROCESS_H
 
-
 #include <wx/process.h>
-
 
 // This is the handler for process termination events.
 // Used on some calls to wxExecute().
@@ -43,6 +40,4 @@ private:
 	wxString m_cmd;
 };
 
-
 #endif // TERMINATIONPROCESS_H
-

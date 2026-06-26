@@ -30,7 +30,7 @@
 #include <wx/event.h>
 #include <wx/thread.h>
 
-#include "MD4Hash.h"		// Needed for CMD4Hash
+#include "MD4Hash.h" // Needed for CMD4Hash
 
 class CPartFile;
 
@@ -52,13 +52,12 @@ class CPartFile;
 struct HashJob
 {
 	CPartFile *pFile;
-	uint16     partNumber;
-	CMD4Hash   fileHash;	// captured at enqueue, used for result-event
-				// dispatch lookup so a deleted file's events
-				// can be dropped safely.
-	bool       fromAICHRecoveryDataAvailable;
+	uint16 partNumber;
+	CMD4Hash fileHash; // captured at enqueue, used for result-event
+			   // dispatch lookup so a deleted file's events
+			   // can be dropped safely.
+	bool fromAICHRecoveryDataAvailable;
 };
-
 
 class CPartFileHashThread : public wxThread
 {
@@ -67,22 +66,20 @@ public:
 	~CPartFileHashThread();
 
 	void EndThread();
-	void QueueHashCheck(CPartFile* pFile, uint16 partNumber,
-		bool fromAICHRecoveryDataAvailable = false);
+	void QueueHashCheck(CPartFile *pFile, uint16 partNumber, bool fromAICHRecoveryDataAvailable = false);
 	bool IsRunning() const { return m_bRun; }
 
 private:
-	void* Entry() override;
+	void *Entry() override;
 
-	volatile bool   m_bRun;
-	bool            m_bWorkPending;	// sticky wake flag
+	volatile bool m_bRun;
+	bool m_bWorkPending; // sticky wake flag
 
-	wxMutex         m_mutex;
-	wxCondition     m_condition;
+	wxMutex m_mutex;
+	wxCondition m_condition;
 
-	std::list<HashJob> m_jobList;	// protected by m_mutex
+	std::list<HashJob> m_jobList; // protected by m_mutex
 };
-
 
 // Custom event posted from worker to main thread when a single
 // HashSinglePart finishes.  Carries the file's CMD4Hash (used for
@@ -93,36 +90,35 @@ extern const wxEventType wxEVT_PARTFILE_HASH_RESULT;
 class CPartFileHashResultEvent : public wxEvent
 {
 public:
-	CPartFileHashResultEvent(const CMD4Hash& fileHash, uint16 partNumber,
-		bool ok, bool fromAICHRecoveryDataAvailable)
-		: wxEvent(0, wxEVT_PARTFILE_HASH_RESULT)
-		, m_fileHash(fileHash)
-		, m_partNumber(partNumber)
-		, m_ok(ok)
-		, m_fromAICHRecoveryDataAvailable(fromAICHRecoveryDataAvailable)
-	{}
+	CPartFileHashResultEvent(
+		const CMD4Hash &fileHash, uint16 partNumber, bool ok, bool fromAICHRecoveryDataAvailable)
+	: wxEvent(0, wxEVT_PARTFILE_HASH_RESULT)
+	, m_fileHash(fileHash)
+	, m_partNumber(partNumber)
+	, m_ok(ok)
+	, m_fromAICHRecoveryDataAvailable(fromAICHRecoveryDataAvailable)
+	{
+	}
 
-	wxEvent* Clone() const override { return new CPartFileHashResultEvent(*this); }
+	wxEvent *Clone() const override { return new CPartFileHashResultEvent(*this); }
 
-	const CMD4Hash& FileHash() const { return m_fileHash; }
+	const CMD4Hash &FileHash() const { return m_fileHash; }
 	uint16 PartNumber() const { return m_partNumber; }
 	bool Ok() const { return m_ok; }
 	bool FromAICHRecoveryDataAvailable() const { return m_fromAICHRecoveryDataAvailable; }
 
 private:
 	CMD4Hash m_fileHash;
-	uint16   m_partNumber;
-	bool     m_ok;
-	bool     m_fromAICHRecoveryDataAvailable;
+	uint16 m_partNumber;
+	bool m_ok;
+	bool m_fromAICHRecoveryDataAvailable;
 };
 
-
-typedef void (wxEvtHandler::*CPartFileHashResultEventFunction)(CPartFileHashResultEvent&);
+typedef void (wxEvtHandler::*CPartFileHashResultEventFunction)(CPartFileHashResultEvent &);
 
 #define EVT_PARTFILE_HASH_RESULT(func) \
 	wx__DECLARE_EVT0(wxEVT_PARTFILE_HASH_RESULT, \
-		(wxObjectEventFunction)(CPartFileHashResultEventFunction)& func)
-
+		(wxObjectEventFunction)(CPartFileHashResultEventFunction) & func)
 
 #endif // PARTFILEHASHTHREAD_H
 // File_checked_for_headers

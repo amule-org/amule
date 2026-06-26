@@ -25,15 +25,15 @@
 
 #include "PartFileWriteThread.h"
 
-#include "PartFile.h"		// Needed for CPartFile, PartFileBufferedData
-#include "CFile.h"			// Needed for CIOFailureException
+#include "PartFile.h" // Needed for CPartFile, PartFileBufferedData
+#include "CFile.h"    // Needed for CIOFailureException
 #include "Logger.h"
-#include <common/Format.h>	// Needed for CFormat
+#include <common/Format.h> // Needed for CFormat
 
 // eMule ref: CPartFileWriteThread::CPartFileWriteThread() — line 41
 CPartFileWriteThread::CPartFileWriteThread()
-	: wxThread(wxTHREAD_JOINABLE)
-	, m_condition(m_mutex)
+: wxThread(wxTHREAD_JOINABLE)
+, m_condition(m_mutex)
 {
 	m_bRun = false;
 	m_bWorkPending = false;
@@ -44,12 +44,10 @@ CPartFileWriteThread::CPartFileWriteThread()
 	}
 }
 
-
 CPartFileWriteThread::~CPartFileWriteThread()
 {
 	// EndThread() must have been called before destruction.
 }
-
 
 // eMule ref: CPartFileWriteThread::EndThread() — line 62
 void CPartFileWriteThread::EndThread()
@@ -63,10 +61,9 @@ void CPartFileWriteThread::EndThread()
 	Wait();
 }
 
-
 // eMule ref: CPartFileWriteThread::WakeUpCall() — line 230
 // Called by the main thread to queue a write item.
-void CPartFileWriteThread::QueueWrite(CPartFile* pFile, PartFileBufferedData* pBuffer)
+void CPartFileWriteThread::QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer)
 {
 	wxMutexLocker lock(m_mutex);
 	m_flushList.push_back(ToWrite{ pFile, pBuffer });
@@ -74,8 +71,7 @@ void CPartFileWriteThread::QueueWrite(CPartFile* pFile, PartFileBufferedData* pB
 	m_condition.Signal();
 }
 
-
-void CPartFileWriteThread::DropReferencesTo(const CKnownFile* file)
+void CPartFileWriteThread::DropReferencesTo(const CKnownFile *file)
 {
 	// Pointer-value strip of any pending write item whose pFile
 	// matches `file`. Called from MuleNotify::KnownFileBeingDestroyed
@@ -91,9 +87,9 @@ void CPartFileWriteThread::DropReferencesTo(const CKnownFile* file)
 	// m_BufferedData_list, PartFile.cpp:334) frees the buffer; if
 	// we also deleted it, that would double-free.
 	wxMutexLocker lock(m_mutex);
-	for (std::list<ToWrite>::iterator it = m_flushList.begin();
-		it != m_flushList.end(); /* manual ++ */) {
-		if (static_cast<const CKnownFile*>(it->pFile) == file) {
+	for (std::list<ToWrite>::iterator it = m_flushList.begin(); it != m_flushList.end();
+		/* manual ++ */) {
+		if (static_cast<const CKnownFile *>(it->pFile) == file) {
 			it = m_flushList.erase(it);
 		} else {
 			++it;
@@ -101,18 +97,15 @@ void CPartFileWriteThread::DropReferencesTo(const CKnownFile* file)
 	}
 }
 
-
-
 // eMule ref: CPartFileWriteThread::RunInternal() — line 69
 // Replaces IOCP + overlapped WriteFile with synchronous CFileArea::FlushAt().
 // The thread is dedicated to writes, so blocking on disk I/O is acceptable —
 // the key win is that the main thread no longer stalls.
-void* CPartFileWriteThread::Entry()
+void *CPartFileWriteThread::Entry()
 {
 	m_bRun = true;
 
-	while (m_bRun)
-	{
+	while (m_bRun) {
 		// Move queued items to a local work list under the lock.
 		// This minimises lock hold time — main thread can keep queueing
 		// while we process the local list.
@@ -128,10 +121,9 @@ void* CPartFileWriteThread::Entry()
 
 		// Process all queued writes synchronously.
 		// eMule ref: WriteBuffers() — line 122
-		for (std::list<ToWrite>::iterator it = workList.begin();
-			 it != workList.end() && m_bRun; ++it)
-		{
-			PartFileBufferedData* pBuffer = it->pBuffer;
+		for (std::list<ToWrite>::iterator it = workList.begin(); it != workList.end() && m_bRun;
+			++it) {
+			PartFileBufferedData *pBuffer = it->pBuffer;
 			uint32 lenData = (uint32)(pBuffer->end - pBuffer->start + 1);
 
 			// Synchronous write via CFileArea (replaces eMule's overlapped WriteFile).
@@ -157,10 +149,12 @@ void* CPartFileWriteThread::Entry()
 			try {
 				std::lock_guard<std::mutex> lock(it->pFile->m_hpartfileMutex);
 				pBuffer->area.FlushAt(it->pFile->m_hpartfile, pBuffer->start, lenData);
-			} catch (const CIOFailureException& e) {
-				AddDebugLogLineC(logPartFile, CFormat(
-					"Write thread: I/O failure on '%s' at offset %llu (%u bytes): %s")
-					% it->pFile->GetFileName() % pBuffer->start % lenData % e.what());
+			} catch (const CIOFailureException &e) {
+				AddDebugLogLineC(logPartFile,
+					CFormat("Write thread: I/O failure on '%s' at offset %llu (%u "
+						"bytes): %s") %
+						it->pFile->GetFileName() % pBuffer->start % lenData %
+						e.what());
 				writeOk = false;
 			}
 

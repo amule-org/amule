@@ -27,37 +27,33 @@
 #include "CCtypeAsciiScope.h"
 #include "Logger.h"
 #include <common/Format.h>
-#include <common/StringFunctions.h>		// unicode2char
-#include <wx/intl.h>				// _() gettext macro
-
+#include <common/StringFunctions.h> // unicode2char
+#include <wx/intl.h>                // _() gettext macro
 
 CMaxMindDBDatabase::CMaxMindDBDatabase()
-	: m_isOpen(false)
+: m_isOpen(false)
 {
 }
-
 
 CMaxMindDBDatabase::~CMaxMindDBDatabase()
 {
 	Close();
 }
 
-
-bool CMaxMindDBDatabase::Open(const wxString& path)
+bool CMaxMindDBDatabase::Open(const wxString &path)
 {
 	Close();
 
 	int status = MMDB_open(unicode2char(path), MMDB_MODE_MMAP, &m_mmdb);
 	if (status != MMDB_SUCCESS) {
-		AddLogLineC(CFormat(_("Failed to open MaxMindDB database '%s': %s"))
-			% path % wxString::FromUTF8(MMDB_strerror(status)));
+		AddLogLineC(CFormat(_("Failed to open MaxMindDB database '%s': %s")) % path %
+			    wxString::FromUTF8(MMDB_strerror(status)));
 		return false;
 	}
 
 	m_isOpen = true;
 	return true;
 }
-
 
 void CMaxMindDBDatabase::Close()
 {
@@ -67,8 +63,7 @@ void CMaxMindDBDatabase::Close()
 	}
 }
 
-
-wxString CMaxMindDBDatabase::GetCountryCode(const wxString& ip) const
+wxString CMaxMindDBDatabase::GetCountryCode(const wxString &ip) const
 {
 	if (!m_isOpen) {
 		return wxEmptyString;
@@ -76,9 +71,8 @@ wxString CMaxMindDBDatabase::GetCountryCode(const wxString& ip) const
 
 	int gai_error = 0;
 	int mmdb_error = 0;
-	MMDB_lookup_result_s result = MMDB_lookup_string(
-		const_cast<MMDB_s*>(&m_mmdb), unicode2char(ip),
-		&gai_error, &mmdb_error);
+	MMDB_lookup_result_s result =
+		MMDB_lookup_string(const_cast<MMDB_s *>(&m_mmdb), unicode2char(ip), &gai_error, &mmdb_error);
 
 	if (gai_error || mmdb_error != MMDB_SUCCESS || !result.found_entry) {
 		return wxEmptyString;
@@ -87,11 +81,9 @@ wxString CMaxMindDBDatabase::GetCountryCode(const wxString& ip) const
 	// GeoLite2-Country and equivalents nest the ISO code under
 	// country -> iso_code (UTF-8 string).
 	MMDB_entry_data_s entry_data;
-	int status = MMDB_get_value(&result.entry, &entry_data,
-		"country", "iso_code", NULL);
-	if (status != MMDB_SUCCESS || !entry_data.has_data
-		|| entry_data.type != MMDB_DATA_TYPE_UTF8_STRING
-		|| entry_data.data_size == 0) {
+	int status = MMDB_get_value(&result.entry, &entry_data, "country", "iso_code", NULL);
+	if (status != MMDB_SUCCESS || !entry_data.has_data || entry_data.type != MMDB_DATA_TYPE_UTF8_STRING ||
+		entry_data.data_size == 0) {
 		return wxEmptyString;
 	}
 

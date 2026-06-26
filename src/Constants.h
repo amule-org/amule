@@ -41,7 +41,6 @@ enum ViewType
 	vtClients = 3
 };
 
-
 // lfroen : custom events for core internal messages
 // 'cause - there's no wxCommand etc in wxBase
 enum Core_Event_ID
@@ -52,7 +51,6 @@ enum Core_Event_ID
 	UDP_DNS_DONE,
 	SERVER_DNS_DONE
 };
-
 
 //! These IDs are used when a download is initiated via the HTTPThread.
 enum HTTP_Download_File
@@ -83,7 +81,8 @@ enum SourceItemType
 };
 
 //! Types of stat graphs
-enum StatsGraphType {
+enum StatsGraphType
+{
 	GRAPH_INVALID = 0,
 	GRAPH_DOWN,
 	GRAPH_UP,
@@ -93,35 +92,36 @@ enum StatsGraphType {
 
 // KnownFile constants
 
-#define	PS_READY			0
-#define	PS_EMPTY			1
-#define PS_WAITING_FOR_HASH		2
-#define PS_HASHING			3
-#define PS_ERROR			4
-#define	PS_INSUFFICIENT			5
-#define	PS_UNKNOWN			6
-#define PS_PAUSED			7
-#define PS_COMPLETING			8
-#define PS_COMPLETE			9
-#define PS_ALLOCATING			10
+#define PS_READY 0
+#define PS_EMPTY 1
+#define PS_WAITING_FOR_HASH 2
+#define PS_HASHING 3
+#define PS_ERROR 4
+#define PS_INSUFFICIENT 5
+#define PS_UNKNOWN 6
+#define PS_PAUSED 7
+#define PS_COMPLETING 8
+#define PS_COMPLETE 9
+#define PS_ALLOCATING 10
 
-
-#define PR_VERY_LOW			4 // I Had to change this because
-					  // it didn't save negative number
-					  // correctly.. Had to modify the
-					  // sort function for this change..
-#define PR_LOW				0 //*
-#define PR_NORMAL			1 // Don't change this - needed for
-					  // edonkey clients and server!
-#define PR_HIGH				2 //*
-#define PR_VERYHIGH			3
-#define PR_AUTO				5
-#define PR_POWERSHARE			6 //added for powershare (deltaHF)
-
+#define PR_VERY_LOW \
+	4        // I Had to change this because
+		 // it didn't save negative number
+		 // correctly.. Had to modify the
+		 // sort function for this change..
+#define PR_LOW 0 //*
+#define PR_NORMAL \
+	1         // Don't change this - needed for
+		  // edonkey clients and server!
+#define PR_HIGH 2 //*
+#define PR_VERYHIGH 3
+#define PR_AUTO 5
+#define PR_POWERSHARE 6 // added for powershare (deltaHF)
 
 // CUpDownClient constants
 
-enum ESourceFrom {
+enum ESourceFrom
+{
 	SF_NONE,
 	SF_LOCAL_SERVER,
 	SF_REMOTE_SERVER,
@@ -134,7 +134,8 @@ enum ESourceFrom {
 };
 
 // downloadstate
-enum EDownloadState {
+enum EDownloadState
+{
 	DS_DOWNLOADING = 0,
 	DS_ONQUEUE,
 	DS_CONNECTED,
@@ -149,11 +150,12 @@ enum EDownloadState {
 	DS_BANNED,
 	DS_ERROR,
 	DS_NONE,
-	DS_REMOTEQUEUEFULL  // not used yet, except in statistics
+	DS_REMOTEQUEUEFULL // not used yet, except in statistics
 };
 
 // uploadstate
-enum EUploadState {
+enum EUploadState
+{
 	US_UPLOADING = 0,
 	US_ONUPLOADQUEUE,
 	US_WAITCALLBACK,
@@ -166,7 +168,8 @@ enum EUploadState {
 };
 
 // Obfuscation status
-enum EObfuscationState {
+enum EObfuscationState
+{
 	OBST_UNDEFINED = 0,
 	OBST_ENABLED,
 	OBST_SUPPORTED,
@@ -175,7 +178,8 @@ enum EObfuscationState {
 };
 
 // m_byChatstate
-enum {
+enum
+{
 	MS_NONE = 0,
 	MS_CHATTING,
 	MS_CONNECTING,
@@ -183,8 +187,9 @@ enum {
 };
 
 // partfile converter status codes
-enum ConvStatus {
-	CONV_OK			= 0,
+enum ConvStatus
+{
+	CONV_OK = 0,
 	CONV_QUEUE,
 	CONV_INPROGRESS,
 	CONV_OUTOFDISKSPACE,
@@ -194,7 +199,6 @@ enum ConvStatus {
 	CONV_BADFORMAT,
 	CONV_ALREADYEXISTS
 };
-
 
 #endif
 // File_checked_for_headers

@@ -1,3 +1,4 @@
+// clang-format off
 #line 2 "IPFilterScanner.cpp"
 
 #line 4 "IPFilterScanner.cpp"

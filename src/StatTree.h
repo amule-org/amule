@@ -35,49 +35,47 @@
  * statistics tree nodes.
  */
 
-
 #ifndef CLIENT_GUI
-#	define VIRTUAL virtual
+#define VIRTUAL virtual
 #else
-#	define VIRTUAL
+#define VIRTUAL
 #endif
 
-
-#include <list>			// Needed for std::list
-#include <wx/string.h>		// Needed for wxString
-#include <wx/thread.h>		// Needed for wxMutex
+#include <list>        // Needed for std::list
+#include <wx/string.h> // Needed for wxString
+#include <wx/thread.h> // Needed for wxMutex
 #include "Types.h"
 
 #ifndef CLIENT_GUI
 
-#include <wx/datetime.h>	// Needed for wxDateTime
-#include "GetTickCount.h"	// Needed for GetTickCount64()
-
+#include <wx/datetime.h>  // Needed for wxDateTime
+#include "GetTickCount.h" // Needed for GetTickCount64()
 
 /**
  * Stat tree flags
  */
 enum EStatTreeFlags
 {
-	stNone		= 0,		///< Nothing. Really.
-	stSortChildren	= 1,		///< Childrens are sorted descending by their ID.
-	stShowPercent	= 2,		/*!< Shows percentage compared to parent.
-					 *   Counters only, whose parent is also counter! (khmm...)
-					 */
-	stHideIfZero	= 4,		///< Hides item (and children) if value is zero.
-	stSortByValue	= 8,		/*!< Together with stSortChildren, sorts children by their value.
-					 *   WARNING! This assumes that value-sorted children are
-					 *   counters!
-					 *   Sort-by-value works only on children with ID between 0x00000100-0x7fffffff.
-					 *   @note CStatTreeItemBase::ReSortChildren() must be called to get sort order right.
-					 */
-	stCapChildren	= 16		///< Caps children list.
-					/*!< Shows only top n children, where n is set by CStatisticsDlg::FillTree() to thePrefs::GetMaxClientVersions().
-					 *   The list itself is not changed, only visibility is ignored on items
-					 *   outside the top n visible.
-					 *
-					 *   On an EC request, visibility range can be set with the EC_TAG_STATTREE_CAPPING tag.
-					 */
+	stNone = 0,         ///< Nothing. Really.
+	stSortChildren = 1, ///< Childrens are sorted descending by their ID.
+	stShowPercent = 2,  /*!< Shows percentage compared to parent.
+			     *   Counters only, whose parent is also counter! (khmm...)
+			     */
+	stHideIfZero = 4,   ///< Hides item (and children) if value is zero.
+	stSortByValue =
+		8,         /*!< Together with stSortChildren, sorts children by their value.
+			    *   WARNING! This assumes that value-sorted children are
+			    *   counters!
+			    *   Sort-by-value works only on children with ID between 0x00000100-0x7fffffff.
+			    *   @note CStatTreeItemBase::ReSortChildren() must be called to get sort order right.
+			    */
+	stCapChildren = 16 ///< Caps children list.
+			   /*!< Shows only top n children, where n is set by CStatisticsDlg::FillTree() to
+			    * thePrefs::GetMaxClientVersions().		    The list itself is not changed, only visibility is
+			    * ignored on		    items		    outside the top n visible.
+			    *
+			    *   On an EC request, visibility range can be set with the EC_TAG_STATTREE_CAPPING tag.
+			    */
 };
 
 enum EValueType
@@ -93,22 +91,19 @@ enum EValueType
  */
 enum EDisplayMode
 {
-	dmDefault,		///< Default display mode.
-	dmTime,			///< Treat integer value as time in seconds.
-	dmBytes			///< Treat integer value as bytes count.
+	dmDefault, ///< Default display mode.
+	dmTime,    ///< Treat integer value as time in seconds.
+	dmBytes    ///< Treat integer value as bytes count.
 };
 
 #endif /* !CLIENT_GUI */
 
-
 class CStatTreeItemBase;
-typedef std::list<CStatTreeItemBase*>::iterator	StatTreeItemIterator;
-
+typedef std::list<CStatTreeItemBase *>::iterator StatTreeItemIterator;
 
 class CECTag;
 
 uint32_t NewStatTreeItemId();
-
 
 /**
  * Base tree item class
@@ -116,7 +111,6 @@ uint32_t NewStatTreeItemId();
 class CStatTreeItemBase
 {
 public:
-
 #ifndef CLIENT_GUI
 	/**
 	 * Creates an item with a constant label.
@@ -125,9 +119,14 @@ public:
 	 * @param flags Flags to use.
 	 */
 	CStatTreeItemBase(const wxString &label, unsigned flags = stNone)
-		: m_label(label), m_parent(NULL), m_flags(flags), m_id(0),
-		m_visible_counter(0), m_uniqueid(NewStatTreeItemId())
-		{}
+	: m_label(label)
+	, m_parent(NULL)
+	, m_flags(flags)
+	, m_id(0)
+	, m_visible_counter(0)
+	, m_uniqueid(NewStatTreeItemId())
+	{
+	}
 #else
 	/**
 	 * Creates an item with a constant label.
@@ -135,8 +134,10 @@ public:
 	 * @param label	Visible text for the item.
 	 */
 	CStatTreeItemBase(const wxString &label, uint32_t uniqueid)
-		: m_label(label), m_uniqueid(uniqueid)
-		{}
+	: m_label(label)
+	, m_uniqueid(uniqueid)
+	{
+	}
 
 	/**
 	 * Creates an item (and the whole subtree) from an EC tag.
@@ -149,7 +150,7 @@ public:
 	/**
 	 * Deletes all children.
 	 */
-	VIRTUAL	~CStatTreeItemBase();
+	VIRTUAL ~CStatTreeItemBase();
 
 #ifndef CLIENT_GUI
 	/**
@@ -161,10 +162,7 @@ public:
 	 *
 	 * @return the newly added item.
 	 */
-	CStatTreeItemBase *AddChild(
-		CStatTreeItemBase* child,
-		uint32_t id = 0,
-		bool skipOneLevel = false);
+	CStatTreeItemBase *AddChild(CStatTreeItemBase *child, uint32_t id = 0, bool skipOneLevel = false);
 #endif
 
 	/**
@@ -172,7 +170,11 @@ public:
 	 *
 	 * @return true if this node has children, false otherwise.
 	 */
-	bool HasChildren() { wxMutexLocker lock(m_lock); return !m_children.empty(); }
+	bool HasChildren()
+	{
+		wxMutexLocker lock(m_lock);
+		return !m_children.empty();
+	}
 
 	/**
 	 * Check for visible children.
@@ -200,7 +202,8 @@ public:
 	/**
 	 * Get the first visible child.
 	 *
-	 * @param max_children The maximum number of children to show, when the stCapChildren flag is set. Otherwise it has no effect. (0 = unlimited)
+	 * @param max_children The maximum number of children to show, when the stCapChildren flag is set.
+	 * Otherwise it has no effect. (0 = unlimited)
 	 *
 	 * @return An iterator, that should be passed to GetNextVisibleChild() and IsAtEndOfList().
 	 */
@@ -209,7 +212,7 @@ public:
 	/**
 	 * Get the next visible child.
 	 */
-	void GetNextVisibleChild(StatTreeItemIterator& it);
+	void GetNextVisibleChild(StatTreeItemIterator &it);
 
 #else /* CLIENT_GUI */
 
@@ -227,20 +230,24 @@ public:
 	 *
 	 * @note On a remote list every item is visible.
 	 */
-	void GetNextVisibleChild(StatTreeItemIterator& it) { ++it; }
+	void GetNextVisibleChild(StatTreeItemIterator &it) { ++it; }
 
 #endif /* !CLIENT_GUI / CLIENT_GUI */
 
 	/**
 	 * Check if we are past the end of child list.
 	 */
-	bool IsAtEndOfList(StatTreeItemIterator& it) { return it == m_children.end(); }
+	bool IsAtEndOfList(StatTreeItemIterator &it) { return it == m_children.end(); }
 
 #ifndef CLIENT_GUI
 	/**
 	 * Resorts children for the stSortByValue flag.
 	 */
-	void ReSortChildren() { wxMutexLocker lock(m_lock); m_children.sort(ValueSort); }
+	void ReSortChildren()
+	{
+		wxMutexLocker lock(m_lock);
+		m_children.sort(ValueSort);
+	}
 #endif
 
 #ifndef AMULE_DAEMON
@@ -248,12 +255,12 @@ public:
 	/**
 	 * Returns a string that will be displayed on the GUI tree.
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #else
 	/**
 	 * Returns the associated text (GUI item label).
 	 */
-	const wxString& GetDisplayString() const { return m_label; }
+	const wxString &GetDisplayString() const { return m_label; }
 #endif /* !CLIENT_GUI / CLIENT_GUI */
 
 	/**
@@ -262,7 +269,7 @@ public:
 	 * This function is used by CStatisticsDlg to be able to lock the
 	 * core tree while updating the GUI tree.
 	 */
-	wxMutex& GetLock() { return m_lock; }
+	wxMutex &GetLock() { return m_lock; }
 
 	/**
 	 * Returns the unique ID of this node.
@@ -273,21 +280,21 @@ public:
 	/**
 	 * Check whether this node is visible.
 	 */
-	VIRTUAL	bool IsVisible() const { return true; }
+	VIRTUAL bool IsVisible() const { return true; }
 
 #ifndef CLIENT_GUI
 	/**
 	 * Create an EC tag from this node (and children).
 	 *
-	 * @param max_children The maximum number of children to show, when the stCapChildren flag is set. Otherwise it has no effect. (0 = unlimited)
+	 * @param max_children The maximum number of children to show, when the stCapChildren flag is set.
+	 * Otherwise it has no effect. (0 = unlimited)
 	 *
 	 * @return A EC tag containing this node and all its children.
 	 */
-	virtual	CECTag *CreateECTag(uint32_t max_children);
+	virtual CECTag *CreateECTag(uint32_t max_children);
 #endif
 
 protected:
-
 #ifndef CLIENT_GUI
 	/**
 	 * Add values to the EC tag being generated.
@@ -295,10 +302,11 @@ protected:
 	 * Should have a real implementation in children which have some value.
 	 * The given parameter is the tag to which values should be added.
 	 */
-	virtual	void AddECValues(CECTag*) const {}
+	virtual void AddECValues(CECTag *) const {}
 #endif
 
-	//! Unformatted and untranslated label of the node. Note: On remote gui it is already formatted and translated.
+	//! Unformatted and untranslated label of the node. Note: On remote gui it is already formatted and
+	//! translated.
 	const wxString m_label;
 #ifndef CLIENT_GUI
 
@@ -310,10 +318,9 @@ protected:
 #endif
 
 private:
-
 #ifndef CLIENT_GUI
 	//! Function used when sorting children by value.
-	static bool ValueSort(const CStatTreeItemBase* a, const CStatTreeItemBase* b);
+	static bool ValueSort(const CStatTreeItemBase *a, const CStatTreeItemBase *b);
 
 	//! ID of this node.
 	uint32_t m_id;
@@ -327,12 +334,11 @@ private:
 	uint32_t m_uniqueid;
 
 	//! Children of this node.
-	std::list<CStatTreeItemBase*>	m_children;
+	std::list<CStatTreeItemBase *> m_children;
 
 	//! Lock to protect list from simultaneous access.
 	wxMutex m_lock;
 };
-
 
 //
 // Anything below is only for core.
@@ -359,20 +365,16 @@ private:
 class CStatTreeItemSimple : public CStatTreeItemBase
 {
 public:
-
 	/**
 	 * Constructor.
 	 *
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
 	CStatTreeItemSimple(
-		const wxString &label,
-		unsigned flags = stNone,
-		enum EDisplayMode displaymode = dmDefault)
-	:
-	CStatTreeItemBase(label, flags),
-	m_valuetype(vtUnknown),
-	m_displaymode(displaymode)
+		const wxString &label, unsigned flags = stNone, enum EDisplayMode displaymode = dmDefault)
+	: CStatTreeItemBase(label, flags)
+	, m_valuetype(vtUnknown)
+	, m_displaymode(displaymode)
 	{
 		SetValue((uint64_t)0);
 	}
@@ -380,10 +382,7 @@ public:
 	/**
 	 * Sets the desired display mode of value.
 	 */
-	void SetDisplayMode(enum EDisplayMode mode)
-	{
-		m_displaymode = mode;
-	}
+	void SetDisplayMode(enum EDisplayMode mode) { m_displaymode = mode; }
 
 	/**
 	 * Sets an integer type value.
@@ -412,7 +411,7 @@ public:
 	 *
 	 * @param value the value to be set.
 	 */
-	void SetValue(const wxString& value)
+	void SetValue(const wxString &value)
 	{
 		m_valuetype = vtString;
 		m_stringvalue = value;
@@ -422,13 +421,13 @@ public:
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 	/**
 	 * @see CStatTreeItemBase::IsVisible()
 	 */
-	virtual	bool IsVisible() const;
+	virtual bool IsVisible() const;
 
 protected:
 	/**
@@ -438,7 +437,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Type of the value.
 	enum EValueType m_valuetype;
@@ -447,12 +446,11 @@ protected:
 	//! Union to save space.
 	union
 	{
-		uint64_t m_intvalue;	///< Integer value.
-		double   m_floatvalue;	///< Floating point value.
+		uint64_t m_intvalue; ///< Integer value.
+		double m_floatvalue; ///< Floating point value.
 	};
-	wxString m_stringvalue;	///< String value.
+	wxString m_stringvalue; ///< String value.
 };
-
 
 /**
  * Counter-type tree item template.
@@ -462,8 +460,7 @@ protected:
  * stShowPercent and stHideIfZero flags take effect only on
  * this node.
  */
-template<typename _Tp>
-class CStatTreeItemCounterTmpl : public CStatTreeItemBase
+template <typename _Tp> class CStatTreeItemCounterTmpl : public CStatTreeItemBase
 {
 public:
 	/**
@@ -471,13 +468,12 @@ public:
 	 *
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
-	CStatTreeItemCounterTmpl(
-		const wxString &label,
-		unsigned flags = stNone)
-	:
-	CStatTreeItemBase(label, flags),
-	m_value(0),
-	m_displaymode(dmDefault) {}
+	CStatTreeItemCounterTmpl(const wxString &label, unsigned flags = stNone)
+	: CStatTreeItemBase(label, flags)
+	, m_value(0)
+	, m_displaymode(dmDefault)
+	{
+	}
 
 	/**
 	 * Retrieve counter value.
@@ -528,16 +524,13 @@ public:
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 	/**
 	 * @see CStatTreeItemBase::IsVisible()
 	 */
-	virtual	bool IsVisible() const
-	{
-		return (m_flags & stHideIfZero) ? (m_value != 0) : true;
-	}
+	virtual bool IsVisible() const { return (m_flags & stHideIfZero) ? (m_value != 0) : true; }
 
 protected:
 	/**
@@ -547,7 +540,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Actual value of the counter.
 	_Tp m_value;
@@ -556,9 +549,8 @@ protected:
 	enum EDisplayMode m_displaymode;
 };
 
-typedef CStatTreeItemCounterTmpl<uint64_t>	CStatTreeItemCounter;
-typedef CStatTreeItemCounterTmpl<uint32_t>	CStatTreeItemNativeCounter;
-
+typedef CStatTreeItemCounterTmpl<uint64_t> CStatTreeItemCounter;
+typedef CStatTreeItemCounterTmpl<uint32_t> CStatTreeItemNativeCounter;
 
 /**
  * A counter, which does not display its value :P
@@ -571,20 +563,16 @@ public:
 	 *
 	 * @see CStatTreeItemCounter::CStatTreeItemCounter
 	 */
-	CStatTreeItemHiddenCounter(
-		const wxString &label,
-		unsigned flags = stNone)
-	:
-	CStatTreeItemCounter(label, flags) {}
+	CStatTreeItemHiddenCounter(const wxString &label, unsigned flags = stNone)
+	: CStatTreeItemCounter(label, flags)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const
-	{
-		return CStatTreeItemBase::GetDisplayString();
-	}
+	virtual wxString GetDisplayString() const { return CStatTreeItemBase::GetDisplayString(); }
 #endif
 
 	/**
@@ -594,9 +582,8 @@ public:
 
 protected:
 	//! Do nothing here.
-	virtual	void AddECValues(CECTag*) const {}
+	virtual void AddECValues(CECTag *) const {}
 };
-
 
 /**
  * Item for the session/total upload/download counter
@@ -608,19 +595,17 @@ public:
 	 * @param label     format text for item.
 	 * @param totalfunc function that will return the totals.
 	 */
-	CStatTreeItemUlDlCounter(
-		const wxString &label,
-		uint64_t (*totalfunc)(),
-		unsigned flags = stNone)
-	:
-	CStatTreeItemCounter(label, flags),
-	m_totalfunc(totalfunc) {}
+	CStatTreeItemUlDlCounter(const wxString &label, uint64_t (*totalfunc)(), unsigned flags = stNone)
+	: CStatTreeItemCounter(label, flags)
+	, m_totalfunc(totalfunc)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -631,12 +616,11 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! A function whose return value is the total (without current) value.
 	uint64_t (*m_totalfunc)();
 };
-
 
 /**
  * Counter-like tree item which remembers its max value.
@@ -650,11 +634,11 @@ public:
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
 	CStatTreeItemCounterMax(const wxString &label)
-	:
-	CStatTreeItemBase(label),
-	m_value(0),
-	m_max_value(0)
-	{}
+	: CStatTreeItemBase(label)
+	, m_value(0)
+	, m_max_value(0)
+	{
+	}
 
 	/**
 	 * Increase value
@@ -685,7 +669,7 @@ public:
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -696,7 +680,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Actual value of the counter.
 	uint32_t m_value;
@@ -704,7 +688,6 @@ protected:
 	//! Maximal value the counter has ever reached.
 	uint32_t m_max_value;
 };
-
 
 /**
  * Tree item for counting packets
@@ -718,10 +701,11 @@ public:
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
 	CStatTreeItemPackets(const wxString &label)
-	:
-	CStatTreeItemBase(label, stNone),
-	m_packets(0),
-	m_bytes(0) {}
+	: CStatTreeItemBase(label, stNone)
+	, m_packets(0)
+	, m_bytes(0)
+	{
+	}
 
 	/**
 	 * Add a packet of size 'size'.
@@ -736,7 +720,7 @@ public:
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -747,7 +731,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Total number of packets.
 	uint32_t m_packets;
@@ -755,7 +739,6 @@ protected:
 	//! Total bytes in the packets.
 	uint64_t m_bytes;
 };
-
 
 /**
  * Tree item for counting totals on packet counters.
@@ -769,22 +752,20 @@ public:
 	 * @see CStatTreeItemPackets::CStatTreeItemPackets
 	 */
 	CStatTreeItemPacketTotals(const wxString &label)
-	:
-	CStatTreeItemPackets(label) {}
+	: CStatTreeItemPackets(label)
+	{
+	}
 
 	/**
 	 * Adds a packet counter, whose values should be counted in the totals.
 	 */
-	void AddPacketCounter(CStatTreeItemPackets* counter)
-	{
-		m_counters.push_back(counter);
-	}
+	void AddPacketCounter(CStatTreeItemPackets *counter) { m_counters.push_back(counter); }
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemPackets::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -795,12 +776,11 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! List of packet counters to sum.
-	std::vector<CStatTreeItemPackets*> m_counters;
+	std::vector<CStatTreeItemPackets *> m_counters;
 };
-
 
 /**
  * Tree item for timer type nodes.
@@ -808,16 +788,14 @@ protected:
 class CStatTreeItemTimer : public CStatTreeItemBase
 {
 public:
-
 	/**
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
-	CStatTreeItemTimer(
-		const wxString &label,
-		unsigned flags = stNone)
-	:
-	CStatTreeItemBase(label, flags),
-	m_value(0) {}
+	CStatTreeItemTimer(const wxString &label, unsigned flags = stNone)
+	: CStatTreeItemBase(label, flags)
+	, m_value(0)
+	{
+	}
 
 	/**
 	 * Sets timer start time (and thus starts timer).
@@ -827,7 +805,11 @@ public:
 	/**
 	 * Starts the timer if it's not running.
 	 */
-	void StartTimer() { if (!m_value) m_value = GetTickCount64(); }
+	void StartTimer()
+	{
+		if (!m_value)
+			m_value = GetTickCount64();
+	}
 
 	/**
 	 * Stops the timer.
@@ -847,26 +829,17 @@ public:
 	/**
 	 * Get timer value.
 	 */
-	uint64_t GetTimerValue() const
-	{
-		return m_value ? GetTickCount64() - m_value : 0;
-	}
+	uint64_t GetTimerValue() const { return m_value ? GetTickCount64() - m_value : 0; }
 
 	/**
 	 * Get timer value (in ticks).
 	 */
-	operator uint64_t() const
-	{
-		return m_value ? GetTickCount64() - m_value : 0;
-	}
+	operator uint64_t() const { return m_value ? GetTickCount64() - m_value : 0; }
 
 	/**
 	 * Get elapsed time in seconds.
 	 */
-	uint64_t GetTimerSeconds() const
-	{
-		return m_value ? (GetTickCount64() - m_value) / 1000 : 0;
-	}
+	uint64_t GetTimerSeconds() const { return m_value ? (GetTickCount64() - m_value) / 1000 : 0; }
 
 	/**
 	 * Get start time of the timer.
@@ -877,16 +850,13 @@ public:
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 	/**
 	 * @see CStatTreeItemBase::IsVisible()
 	 */
-	virtual	bool IsVisible() const
-	{
-		return (m_flags & stHideIfZero) ? m_value != 0 : true;
-	}
+	virtual bool IsVisible() const { return (m_flags & stHideIfZero) ? m_value != 0 : true; }
 
 protected:
 	/**
@@ -896,12 +866,11 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Tick count value when timer was started.
 	uint64_t m_value;
 };
-
 
 /**
  * Tree item for shared files average size.
@@ -917,28 +886,28 @@ public:
 	 * @param dividend What to divide.
 	 * @param divisor Divide by what.
 	 */
-	CStatTreeItemAverage(
-		const wxString &label,
+	CStatTreeItemAverage(const wxString &label,
 		const CStatTreeItemCounter *dividend,
 		const CStatTreeItemCounter *divisor,
 		enum EDisplayMode displaymode)
-	:
-	CStatTreeItemBase(label, stNone),
-	m_dividend(dividend),
-	m_divisor(divisor),
-	m_displaymode(displaymode) {}
+	: CStatTreeItemBase(label, stNone)
+	, m_dividend(dividend)
+	, m_divisor(divisor)
+	, m_displaymode(displaymode)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 	/**
 	 * @see CStatTreeItemBase::IsVisible()
 	 */
-	virtual	bool IsVisible() const	{ return (*m_divisor) != 0; }
+	virtual bool IsVisible() const { return (*m_divisor) != 0; }
 
 protected:
 	/**
@@ -948,7 +917,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! What to divide.
 	const CStatTreeItemCounter *m_dividend;
@@ -960,34 +929,32 @@ protected:
 	enum EDisplayMode m_displaymode;
 };
 
-
 /**
  * Tree item for average up/down speed.
  */
 class CStatTreeItemAverageSpeed : public CStatTreeItemBase
 {
 public:
-
 	/**
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 *
 	 * @param counter Session up/down counter.
 	 * @param timer Session uptime timer.
 	 */
-	CStatTreeItemAverageSpeed(
-		const wxString &label,
+	CStatTreeItemAverageSpeed(const wxString &label,
 		const CStatTreeItemUlDlCounter *counter,
 		const CStatTreeItemTimer *timer)
-	:
-	CStatTreeItemBase(label, stNone),
-	m_counter(counter),
-	m_timer(timer) {}
+	: CStatTreeItemBase(label, stNone)
+	, m_counter(counter)
+	, m_timer(timer)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -998,7 +965,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Session sent/received bytes counter.
 	const CStatTreeItemUlDlCounter *m_counter;
@@ -1006,7 +973,6 @@ protected:
 	//! Session uptime.
 	const CStatTreeItemTimer *m_timer;
 };
-
 
 /**
  * Tree item for displaying ratio between two counters.
@@ -1022,24 +988,24 @@ public:
 	 * @param cnt1 First counter to use.
 	 * @param cnt2 Second counter to use.
 	 */
-	CStatTreeItemRatio(
-		const wxString &label,
+	CStatTreeItemRatio(const wxString &label,
 		const CStatTreeItemCounter *cnt1,
-		const CStatTreeItemCounter* cnt2,
+		const CStatTreeItemCounter *cnt2,
 		uint64_t (*totalfunc1)() = NULL,
 		uint64_t (*totalfunc2)() = NULL)
-	:
-	CStatTreeItemBase(label, stNone),
-	m_counter1(cnt1),
-	m_counter2(cnt2),
-	m_totalfunc1(totalfunc1),
-	m_totalfunc2(totalfunc2){}
+	: CStatTreeItemBase(label, stNone)
+	, m_counter1(cnt1)
+	, m_counter2(cnt2)
+	, m_totalfunc1(totalfunc1)
+	, m_totalfunc2(totalfunc2)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -1050,7 +1016,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! First counter.
 	const CStatTreeItemCounter *m_counter1;
@@ -1067,24 +1033,25 @@ private:
 	wxString GetString() const;
 };
 
-
 /**
  * Special counter for reconnects.
  */
-class CStatTreeItemReconnects : public CStatTreeItemNativeCounter {
+class CStatTreeItemReconnects : public CStatTreeItemNativeCounter
+{
 public:
 	/**
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
 	CStatTreeItemReconnects(const wxString &label)
-	:
-	CStatTreeItemNativeCounter(label, stNone) {}
+	: CStatTreeItemNativeCounter(label, stNone)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -1095,7 +1062,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 };
 
 /**
@@ -1108,9 +1075,10 @@ public:
 	 * @see CStatTreeItemBase::CStatTreeItemBase
 	 */
 	CStatTreeItemMaxConnLimitReached(const wxString &label)
-	:
-	CStatTreeItemBase(label),
-	m_count(0) {}
+	: CStatTreeItemBase(label)
+	, m_count(0)
+	{
+	}
 
 	/**
 	 * Increase counter and save time.
@@ -1129,7 +1097,7 @@ public:
 	 * for other values it will display the counter value and the
 	 * date & time of the event.
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -1140,7 +1108,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Number of times max conn limit reached.
 	uint32_t m_count;
@@ -1162,19 +1130,18 @@ public:
 	 * @param unknown Counter that counts unknown clients.
 	 */
 	CStatTreeItemTotalClients(
-		const wxString &label,
-		const CStatTreeItemCounter *known,
-		const CStatTreeItemCounter *unknown)
-	:
-	CStatTreeItemBase(label),
-	m_known(known),
-	m_unknown(unknown) {}
+		const wxString &label, const CStatTreeItemCounter *known, const CStatTreeItemCounter *unknown)
+	: CStatTreeItemBase(label)
+	, m_known(known)
+	, m_unknown(unknown)
+	{
+	}
 
 #ifndef AMULE_DAEMON
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
-	virtual	wxString GetDisplayString() const;
+	virtual wxString GetDisplayString() const;
 #endif
 
 protected:
@@ -1185,7 +1152,7 @@ protected:
 	 *
 	 * @see CStatTreeItemBase::AddECValues
 	 */
-	virtual	void AddECValues(CECTag *tag) const;
+	virtual void AddECValues(CECTag *tag) const;
 
 	//! Counter counting known clients.
 	const CStatTreeItemCounter *m_known;

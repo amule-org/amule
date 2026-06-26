@@ -30,7 +30,6 @@
 #ifndef _WXCASCTE_H
 #define _WXCASCTE_H
 
-
 /// Constants used in wxCas
 struct WxCasCte
 {

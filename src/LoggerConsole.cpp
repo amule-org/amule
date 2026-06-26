@@ -23,11 +23,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include <sstream>
-#include <common/StringFunctions.h>	// for char2unicode()
+#include <common/StringFunctions.h> // for char2unicode()
 
-#include "Logger.h"				// for Add(Debug)LogLineM()
+#include "Logger.h" // for Add(Debug)LogLineM()
 
 wxDEFINE_EVENT(MULE_EVT_LOGLINE, wxEvent);
 
@@ -47,11 +46,13 @@ bool CLogger::IsEnabled(DebugType /*type*/) const
 // Dummy functions for EC logging
 #include "ec/cpp/ECLog.h"
 
-bool ECLogIsEnabled() { return false; }
+bool ECLogIsEnabled()
+{
+	return false;
+}
 void DoECLogLine(const wxString &) {}
 
 #endif /* __DEBUG__ */
-
 
 void CLogger::SetVerbose(bool verbose)
 {
@@ -62,19 +63,12 @@ void CLogger::SetVerbose(bool verbose)
 #endif
 }
 
-
-void CLogger::AddLogLine(
-	const wxString &file,
-	int line,
-	bool critical,
-	const std::ostringstream &msg)
+void CLogger::AddLogLine(const wxString &file, int line, bool critical, const std::ostringstream &msg)
 {
 	AddLogLine(file, line, critical, static_cast<DebugType>(0), msg);
 }
 
-
-void CLogger::AddLogLine(
-	const wxString &file,
+void CLogger::AddLogLine(const wxString &file,
 	int line,
 	bool critical,
 	DebugType /* type */,
@@ -88,24 +82,19 @@ void CLogger::AddLogLine(
 	}
 	printf("%s(%d): %s%s\n",
 		(const char *)unicode2char(file),
-		line, s.c_str(), (const char *)unicode2char(str));
+		line,
+		s.c_str(),
+		(const char *)unicode2char(str));
 }
 
-
 void CLogger::AddLogLine(
-	const wxString &file,
-	int line,
-	bool critical,
-	DebugType /*type*/,
-	const std::ostringstream &msg)
+	const wxString &file, int line, bool critical, DebugType /*type*/, const std::ostringstream &msg)
 {
 	std::string s;
 	if (critical) {
 		s = "Critical message: ";
 	}
-	printf("%s(%d): %s%s\n",
-		(const char *)unicode2char(file),
-		line, s.c_str(), msg.str().c_str());
+	printf("%s(%d): %s%s\n", (const char *)unicode2char(file), line, s.c_str(), msg.str().c_str());
 }
 
 CLogger theLogger;

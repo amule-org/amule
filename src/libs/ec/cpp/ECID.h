@@ -25,22 +25,24 @@
 #ifndef ECID_H
 #define ECID_H
 
-#include "../../../Types.h"	// Needed for uint32
+#include "../../../Types.h" // Needed for uint32
 
 /*
  * Class to create unique IDs for Objects transmitted through EC
  * (Partfiles, Knownfiles, clients...)
  */
-class CECID {
+class CECID
+{
 	// the id
 	uint32 m_ID;
 	// counter to calculate unique ids (defined in ECTag.cpp)
 	static uint32 s_IDCounter;
+
 public:
-	CECID()				{ m_ID = ++s_IDCounter; }
-	CECID(uint32 id)	{ m_ID = id; }
-	uint32 ECID() const	{ return m_ID; }
-	void RenewECID()	{ m_ID = ++s_IDCounter; }
+	CECID() { m_ID = ++s_IDCounter; }
+	CECID(uint32 id) { m_ID = id; }
+	uint32 ECID() const { return m_ID; }
+	void RenewECID() { m_ID = ++s_IDCounter; }
 };
 
 #endif

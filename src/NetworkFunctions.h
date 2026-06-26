@@ -27,31 +27,34 @@
 #ifndef NETWORK_FUNCTIONS_H
 #define NETWORK_FUNCTIONS_H
 
-#include "Types.h"		// Needed for uint16 and uint32
-#include <common/Format.h>	// Needed for CFormat
+#include "Types.h"         // Needed for uint16 and uint32
+#include <common/Format.h> // Needed for CFormat
 
 // Network ip/host handling functions
 // These functions take IPs in anti-host order
 
 inline wxString Uint32toStringIP(uint32 ip)
 {
-	return CFormat("%u.%u.%u.%u") % (uint8)ip % (uint8)(ip>>8) % (uint8)(ip>>16) % (uint8)(ip>>24);
+	return CFormat("%u.%u.%u.%u") % (uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) % (uint8)(ip >> 24);
 }
 
 inline wxString Uint32_16toStringIP_Port(uint32 ip, uint16 port)
 {
-	return CFormat("%u.%u.%u.%u:%u") % (uint8)ip % (uint8)(ip>>8) % (uint8)(ip>>16) % (uint8)(ip>>24) % port;
+	return CFormat("%u.%u.%u.%u:%u") % (uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) %
+	       (uint8)(ip >> 24) % port;
 }
 
 // These functions take IPs in host-order
 inline wxString KadIPToString(uint32_t ip)
 {
-	return CFormat("%u.%u.%u.%u") % (uint8_t)(ip >> 24) % (uint8_t)(ip >> 16) % (uint8_t)(ip >> 8) % (uint8_t)ip;
+	return CFormat("%u.%u.%u.%u") % (uint8_t)(ip >> 24) % (uint8_t)(ip >> 16) % (uint8_t)(ip >> 8) %
+	       (uint8_t)ip;
 }
 
 inline wxString KadIPPortToString(uint32_t ip, uint16_t port)
 {
-	return CFormat("%u.%u.%u.%u:%u") % (uint8_t)(ip >> 24) % (uint8_t)(ip >> 16) % (uint8_t)(ip >> 8) % (uint8_t)ip % port;
+	return CFormat("%u.%u.%u.%u:%u") % (uint8_t)(ip >> 24) % (uint8_t)(ip >> 16) % (uint8_t)(ip >> 8) %
+	       (uint8_t)ip % port;
 }
 
 /**
@@ -72,8 +75,7 @@ inline wxString KadIPPortToString(uint32_t ip, uint16_t port)
  * Note: The reference value will not be changed unless the string
  *       contains a valid IP address.
  */
-bool	StringIPtoUint32(const wxString &strIP, uint32& Ip);
-
+bool StringIPtoUint32(const wxString &strIP, uint32 &Ip);
 
 /**
  * Parses a String-IP and returns the IP or 0 if it was invalid.
@@ -86,11 +88,10 @@ bool	StringIPtoUint32(const wxString &strIP, uint32& Ip);
 inline uint32 StringIPtoUint32(const wxString &strIP)
 {
 	uint32 ip = 0;
-	StringIPtoUint32( strIP, ip );
+	StringIPtoUint32(strIP, ip);
 
 	return ip;
 }
-
 
 /**
  * Parses a String-IHost and returns the IP or 0 if it was invalid.
@@ -102,7 +103,6 @@ inline uint32 StringIPtoUint32(const wxString &strIP)
  */
 uint32 StringHosttoUint32(const wxString &Host);
 
-
 /**
  * Checks for invalid IP-values.
  *
@@ -112,22 +112,19 @@ uint32 StringHosttoUint32(const wxString &Host);
  *
  * Note: IP must be in anti-host order (BE on LE platform, LE on BE platform).
  */
-bool IsGoodIP( uint32 IP, bool filterLAN ) noexcept;
-
+bool IsGoodIP(uint32 IP, bool filterLAN) noexcept;
 
 inline bool IsGoodIPPort(uint32 nIP, uint16 nPort) noexcept
 {
-	return IsGoodIP(nIP, true) && nPort!=0;
+	return IsGoodIP(nIP, true) && nPort != 0;
 }
 
-#define HIGHEST_LOWID_ED2K_KAD		16777216
-
+#define HIGHEST_LOWID_ED2K_KAD 16777216
 
 inline bool IsLowID(uint32 id)
 {
 	return (id < HIGHEST_LOWID_ED2K_KAD);
 }
-
 
 /**
  * Checks for LAN IPs.
@@ -139,7 +136,6 @@ inline bool IsLowID(uint32 id)
  */
 bool IsLanIP(uint32_t ip) noexcept;
 
-
 /**
  * Checks for the IPv4 loopback range 127.0.0.0/8.
  *
@@ -148,7 +144,6 @@ bool IsLanIP(uint32_t ip) noexcept;
  * @return True if it is a loopback address.
  */
 bool IsLoopbackIP(uint32_t ip) noexcept;
-
 
 /**
  * Checks for the IPv4 link-local range 169.254.0.0/16 (RFC3927 / zeroconf).

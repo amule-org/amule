@@ -27,15 +27,14 @@
 #ifndef GETTICKCOUNT_H
 #define GETTICKCOUNT_H
 
-#include "Types.h"		// Needed for uint32, uint64
+#include "Types.h" // Needed for uint32, uint64
 
 #ifdef _WIN32
-	// GetTickCount64 is a system function in Vista so rename it
-	#define GetTickCount64 GetTickCount_64
+// GetTickCount64 is a system function in Vista so rename it
+#define GetTickCount64 GetTickCount_64
 #endif
 
-
-//return units are milliseconds, not seconds!!!
+// return units are milliseconds, not seconds!!!
 uint64 GetTickCount64();
 
 // Functions used to init the timer on GUI

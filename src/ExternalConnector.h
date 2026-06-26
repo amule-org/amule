@@ -33,24 +33,25 @@
 #ifndef __EXTERNALCONNECTOR_H__
 #define __EXTERNALCONNECTOR_H__
 
-#include <wx/app.h>			// For wxApp
-#include <wx/cmdline.h>		// For wxCmdLineEntryDesc
+#include <wx/app.h>     // For wxApp
+#include <wx/cmdline.h> // For wxCmdLineEntryDesc
 #include <ec/cpp/RemoteConnect.h>
 
 #include <wx/intl.h>
 
-#define CMD_DEPRECATED		0x1000
-#define CMD_OK			 0
-#define CMD_ID_QUIT		-1
-#define CMD_ID_HELP		-2
-#define CMD_ERR_SYNTAX		-3
-#define CMD_ERR_PROCESS_CMD	-4
-#define CMD_ERR_NO_PARAM	-5
-#define CMD_ERR_MUST_HAVE_PARAM	-6
-#define CMD_ERR_INVALID_ARG	-7
-#define CMD_ERR_INCOMPLETE	-8
+#define CMD_DEPRECATED 0x1000
+#define CMD_OK 0
+#define CMD_ID_QUIT -1
+#define CMD_ID_HELP -2
+#define CMD_ERR_SYNTAX -3
+#define CMD_ERR_PROCESS_CMD -4
+#define CMD_ERR_NO_PARAM -5
+#define CMD_ERR_MUST_HAVE_PARAM -6
+#define CMD_ERR_INVALID_ARG -7
+#define CMD_ERR_INCOMPLETE -8
 
-enum Params {
+enum Params
+{
 	CMD_PARAM_NEVER,
 	CMD_PARAM_OPTIONAL,
 	CMD_PARAM_ALWAYS
@@ -58,54 +59,73 @@ enum Params {
 
 class CCommandTree;
 
-typedef	std::list<const CCommandTree*>	CmdList_t;
-typedef	std::list<const CCommandTree*>::iterator	CmdPos_t;
-typedef	std::list<const CCommandTree*>::const_iterator	CmdPosConst_t;
+typedef std::list<const CCommandTree *> CmdList_t;
+typedef std::list<const CCommandTree *>::iterator CmdPos_t;
+typedef std::list<const CCommandTree *>::const_iterator CmdPosConst_t;
 
 class CaMuleExternalConnector;
 
-class CCommandTree {
- public:
-	CCommandTree(CaMuleExternalConnector& app)
-		: m_command(""), m_cmd_id(CMD_ERR_SYNTAX), m_short(""), m_verbose(""), m_params(CMD_PARAM_OPTIONAL), m_parent(NULL)
-		{
-			m_app = &app;
-		}
+class CCommandTree
+{
+public:
+	CCommandTree(CaMuleExternalConnector &app)
+	: m_command("")
+	, m_cmd_id(CMD_ERR_SYNTAX)
+	, m_short("")
+	, m_verbose("")
+	, m_params(CMD_PARAM_OPTIONAL)
+	, m_parent(NULL)
+	{
+		m_app = &app;
+	}
 
 	~CCommandTree();
 
-	CCommandTree*	AddCommand(const wxString& command, int cmd_id, const wxString& shortDesc, const wxString& longDesc, enum Params params = CMD_PARAM_OPTIONAL)
-		{
-			return AddCommand(new CCommandTree(command, cmd_id, shortDesc, longDesc, params));
-		}
+	CCommandTree *AddCommand(const wxString &command,
+		int cmd_id,
+		const wxString &shortDesc,
+		const wxString &longDesc,
+		enum Params params = CMD_PARAM_OPTIONAL)
+	{
+		return AddCommand(new CCommandTree(command, cmd_id, shortDesc, longDesc, params));
+	}
 
-	int	FindCommandId(const wxString& command, wxString& args, wxString& cmdstr) const;
+	int FindCommandId(const wxString &command, wxString &args, wxString &cmdstr) const;
 	wxString GetFullCommand() const;
-	void	PrintHelpFor(const wxString& command) const;
+	void PrintHelpFor(const wxString &command) const;
 
 #ifdef HAVE_LIBREADLINE
-	const CmdList_t*	GetSubCommandsFor(const wxString& command, bool mayRestart = true) const;
-	const wxString&		GetCommand() const { return m_command; }
+	const CmdList_t *GetSubCommandsFor(const wxString &command, bool mayRestart = true) const;
+	const wxString &GetCommand() const { return m_command; }
 #endif
 
- private:
-	CCommandTree(const wxString& command, int cmd_id, const wxString& shortDesc, const wxString& longDesc, enum Params params)
-		: m_command(command), m_cmd_id(cmd_id), m_short(shortDesc), m_verbose(longDesc), m_params(params), m_parent(NULL)
-		{}
+private:
+	CCommandTree(const wxString &command,
+		int cmd_id,
+		const wxString &shortDesc,
+		const wxString &longDesc,
+		enum Params params)
+	: m_command(command)
+	, m_cmd_id(cmd_id)
+	, m_short(shortDesc)
+	, m_verbose(longDesc)
+	, m_params(params)
+	, m_parent(NULL)
+	{
+	}
 
-	CCommandTree*	AddCommand(CCommandTree* cmdTree);
+	CCommandTree *AddCommand(CCommandTree *cmdTree);
 
-	wxString	m_command;
-	int		m_cmd_id;
-	wxString	m_short;
-	wxString	m_verbose;
-	enum Params	m_params;
-	const CCommandTree*	m_parent;
-	CmdList_t	m_subcommands;
+	wxString m_command;
+	int m_cmd_id;
+	wxString m_short;
+	wxString m_verbose;
+	enum Params m_params;
+	const CCommandTree *m_parent;
+	CmdList_t m_subcommands;
 
-	static CaMuleExternalConnector*	m_app;
+	static CaMuleExternalConnector *m_app;
 };
-
 
 class CECFileConfig;
 
@@ -127,7 +147,7 @@ public:
 	virtual void TextShell(const wxString &prompt);
 	virtual void LoadConfigFile();
 	virtual void SaveConfigFile();
-	virtual void LoadAmuleConfig(CECFileConfig& cfg);
+	virtual void LoadAmuleConfig(CECFileConfig &cfg);
 	virtual void OnInitCommandSet();
 	virtual bool OnInit();
 	virtual const wxString GetGreetingTitle() = 0;
@@ -136,69 +156,79 @@ public:
 	// Other functions
 	//
 	void Show(const wxString &s);
-	void DebugShow(const wxString &s) { if (m_Verbose) Show(s); }
-	const wxString& GetCmdArgs() const { return m_cmdargs; }
-	const wxString& GetLastCmdStr() const { return m_lastcmdstr; }
-	int GetIDFromString(const wxString& buffer) { return m_commands.FindCommandId(buffer, m_cmdargs, m_lastcmdstr); }
-	void Process_Answer(const wxString& answer);
-	bool Parse_Command(const wxString& buffer);
-	void GetCommand(const wxString &prompt, char* buffer, size_t buffer_size);
-	const CECPacket *SendRecvMsg_v2(const CECPacket *request) { return m_ECClient->SendRecvPacket(request); }
+	void DebugShow(const wxString &s)
+	{
+		if (m_Verbose)
+			Show(s);
+	}
+	const wxString &GetCmdArgs() const { return m_cmdargs; }
+	const wxString &GetLastCmdStr() const { return m_lastcmdstr; }
+	int GetIDFromString(const wxString &buffer)
+	{
+		return m_commands.FindCommandId(buffer, m_cmdargs, m_lastcmdstr);
+	}
+	void Process_Answer(const wxString &answer);
+	bool Parse_Command(const wxString &buffer);
+	void GetCommand(const wxString &prompt, char *buffer, size_t buffer_size);
+	const CECPacket *SendRecvMsg_v2(const CECPacket *request)
+	{
+		return m_ECClient->SendRecvPacket(request);
+	}
 	void SendPacket(const CECPacket *request) { m_ECClient->SendPacket(request); }
 	bool IsServerPartialUpdateActive() const { return m_ECClient->ServerSupportsPartialUpdate(); }
-	void ConnectAndRun(const wxString &ProgName, const wxString& ProgVersion);
+	void ConnectAndRun(const wxString &ProgName, const wxString &ProgVersion);
 	void ShowGreet();
 
 	//
 	// Command line processing
 	//
-	void OnInitCmdLine(wxCmdLineParser& amuleweb_parser, const char* appname);
-	bool OnCmdLineParsed(wxCmdLineParser& parser);
+	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser, const char *appname);
+	bool OnCmdLineParsed(wxCmdLineParser &parser);
 
 #if wxUSE_ON_FATAL_EXCEPTION
 	// Exception and assert handling
 	void OnFatalException();
 #endif
 #ifdef __WXDEBUG__
-	void OnAssertFailure(const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg);
+	void OnAssertFailure(
+		const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg);
 #endif
 
 protected:
 	// Set current locale, if language is not empty.
 	// returns canonical name of set (current) locale
-	virtual wxString SetLocale(const wxString& language);
+	virtual wxString SetLocale(const wxString &language);
 
-	CECFileConfig*	m_configFile;
-	wxString	m_configDir;
-	long		m_port;
-	wxString	m_host;
-	CMD4Hash	m_password;
-	bool		m_ZLIB;
+	CECFileConfig *m_configFile;
+	wxString m_configDir;
+	long m_port;
+	wxString m_host;
+	CMD4Hash m_password;
+	bool m_ZLIB;
 	// Force ZLIB regardless of dialed-IP locality (#728 follow-up).
 	// Set by `/EC/ForceZLIB=1` in the config or `--force-zlib` on the
 	// CLI. Use case: a WireGuard tunnel endpoint that resolves to an
 	// RFC1918 IP but whose transit is slow Internet — the locality
 	// check would otherwise strip ZLIB and the user loses the perf
 	// they actually want.
-	bool		m_forceZLIB;
-	bool		m_KeepQuiet;
-	bool		m_Verbose;
-	bool		m_interactive;
-	CCommandTree	m_commands;
-	const char *	m_appname;
-
+	bool m_forceZLIB;
+	bool m_KeepQuiet;
+	bool m_Verbose;
+	bool m_interactive;
+	CCommandTree m_commands;
+	const char *m_appname;
 
 private:
-	wxString	m_configFileName;
-	wxString	m_cmdargs;
-	wxString	m_lastcmdstr;
-	CRemoteConnect*	m_ECClient;
-	char *		m_InputLine;
-	bool		m_NeedsConfigSave;
-	wxString	m_language;
-	wxLocale *	m_locale;
-	char *		m_strFullVersion;
-	char *		m_strOSDescription;
+	wxString m_configFileName;
+	wxString m_cmdargs;
+	wxString m_lastcmdstr;
+	CRemoteConnect *m_ECClient;
+	char *m_InputLine;
+	bool m_NeedsConfigSave;
+	wxString m_language;
+	wxLocale *m_locale;
+	char *m_strFullVersion;
+	char *m_strOSDescription;
 };
 
 #endif // __EXTERNALCONNECTOR_H__

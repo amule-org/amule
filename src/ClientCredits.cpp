@@ -23,25 +23,24 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientCredits.h"	// Interface declarations
+#include "ClientCredits.h" // Interface declarations
 
 #include <cmath>
 
-#include "GetTickCount.h"	// Needed for GetTickCount64
-#include "Logger.h"			// Needed for Add(Debug)LogLine
+#include "GetTickCount.h" // Needed for GetTickCount64
+#include "Logger.h"       // Needed for Add(Debug)LogLine
 
 CreditStruct::CreditStruct()
-	: uploaded(0),
-	  downloaded(0),
-	  nLastSeen(0),
-	  nReserved3(0),
-	  nKeySize(0)
+: uploaded(0)
+, downloaded(0)
+, nLastSeen(0)
+, nReserved3(0)
+, nKeySize(0)
 {
 	memset(abySecureIdent, 0, MAXPUBKEYSIZE);
 }
 
-
-CClientCredits::CClientCredits(CreditStruct* in_credits)
+CClientCredits::CClientCredits(CreditStruct *in_credits)
 {
 	m_pCredits = in_credits;
 	InitalizeIdent();
@@ -50,8 +49,7 @@ CClientCredits::CClientCredits(CreditStruct* in_credits)
 	m_dwWaitTimeIP = 0;
 }
 
-
-CClientCredits::CClientCredits(const CMD4Hash& key)
+CClientCredits::CClientCredits(const CMD4Hash &key)
 {
 	m_pCredits = new CreditStruct();
 	m_pCredits->key = key;
@@ -61,78 +59,72 @@ CClientCredits::CClientCredits(const CMD4Hash& key)
 	m_dwWaitTimeIP = 0;
 }
 
-
 CClientCredits::~CClientCredits()
 {
 	delete m_pCredits;
 }
 
-
 void CClientCredits::AddDownloaded(uint32 bytes, uint32 dwForIP, bool cryptoavail)
 {
 	switch (GetCurrentIdentState(dwForIP)) {
-		case IS_IDFAILED:
-		case IS_IDBADGUY:
-		case IS_IDNEEDED:
-			if (cryptoavail) {
-				return;
-			}
-			break;
-		case IS_NOTAVAILABLE:
-		case IS_IDENTIFIED:
-			break;
+	case IS_IDFAILED:
+	case IS_IDBADGUY:
+	case IS_IDNEEDED:
+		if (cryptoavail) {
+			return;
+		}
+		break;
+	case IS_NOTAVAILABLE:
+	case IS_IDENTIFIED:
+		break;
 	}
 
 	m_pCredits->downloaded += bytes;
 }
 
-
 void CClientCredits::AddUploaded(uint32 bytes, uint32 dwForIP, bool cryptoavail)
 {
 	switch (GetCurrentIdentState(dwForIP)) {
-		case IS_IDFAILED:
-		case IS_IDBADGUY:
-		case IS_IDNEEDED:
-			if (cryptoavail) {
-				return;
-			}
-			break;
-		case IS_NOTAVAILABLE:
-		case IS_IDENTIFIED:
-			break;
+	case IS_IDFAILED:
+	case IS_IDBADGUY:
+	case IS_IDNEEDED:
+		if (cryptoavail) {
+			return;
+		}
+		break;
+	case IS_NOTAVAILABLE:
+	case IS_IDENTIFIED:
+		break;
 	}
 
 	m_pCredits->uploaded += bytes;
 }
-
 
 uint64 CClientCredits::GetUploadedTotal() const
 {
 	return m_pCredits->uploaded;
 }
 
-
-uint64	CClientCredits::GetDownloadedTotal() const
+uint64 CClientCredits::GetDownloadedTotal() const
 {
 	return m_pCredits->downloaded;
 }
-
 
 float CClientCredits::GetScoreRatio(uint32 dwForIP, bool cryptoavail)
 {
 	// check the client ident status
 	switch (GetCurrentIdentState(dwForIP)) {
-		case IS_IDFAILED:
-		case IS_IDBADGUY:
-		case IS_IDNEEDED:
-			if (cryptoavail) {
-				// bad guy - no credits for you
-				return 1.0f;
-			}
-			break;
-		case IS_NOTAVAILABLE:
-		case IS_IDENTIFIED:
-			break;
+	case IS_IDFAILED:
+	case IS_IDBADGUY:
+	case IS_IDNEEDED:
+		if (cryptoavail) {
+			// bad guy - no credits for you
+			return 1.0f;
+		}
+		break;
+	case IS_NOTAVAILABLE:
+	case IS_IDENTIFIED:
+		break;
 	}
 
 	if (GetDownloadedTotal() < 1000000) {
@@ -160,21 +152,18 @@ float CClientCredits::GetScoreRatio(uint32 dwForIP, bool cryptoavail)
 	return result;
 }
 
-
 void CClientCredits::SetLastSeen()
 {
 	m_pCredits->nLastSeen = time(NULL);
 }
 
-
 void CClientCredits::InitalizeIdent()
 {
-	if (m_pCredits->nKeySize == 0 ){
-		memset(m_abyPublicKey,0,80); // for debugging
+	if (m_pCredits->nKeySize == 0) {
+		memset(m_abyPublicKey, 0, 80); // for debugging
 		m_nPublicKeyLen = 0;
 		m_identState = IS_NOTAVAILABLE;
-	}
-	else{
+	} else {
 		m_nPublicKeyLen = m_pCredits->nKeySize;
 		memcpy(m_abyPublicKey, m_pCredits->abySecureIdent, m_nPublicKeyLen);
 		m_identState = IS_IDNEEDED;
@@ -184,87 +173,81 @@ void CClientCredits::InitalizeIdent()
 	m_dwIdentIP = 0;
 }
 
-
 void CClientCredits::Verified(uint32 dwForIP)
 {
 	m_dwIdentIP = dwForIP;
 	// client was verified, copy the keyto store him if not done already
-	if (m_pCredits->nKeySize == 0){
+	if (m_pCredits->nKeySize == 0) {
 		m_pCredits->nKeySize = m_nPublicKeyLen;
 		memcpy(m_pCredits->abySecureIdent, m_abyPublicKey, m_nPublicKeyLen);
-		if (GetDownloadedTotal() > 0){
+		if (GetDownloadedTotal() > 0) {
 			// for security reason, we have to delete all prior credits here
 			// in order to save this client, set 1 byte
 			m_pCredits->downloaded = 1;
 			m_pCredits->uploaded = 1;
-			AddDebugLogLineN( logCredits, "Credits deleted due to new SecureIdent" );
+			AddDebugLogLineN(logCredits, "Credits deleted due to new SecureIdent");
 		}
 	}
 	m_identState = IS_IDENTIFIED;
 }
 
-
-bool CClientCredits::SetSecureIdent(const uint8_t* pachIdent, uint8 nIdentLen)
+bool CClientCredits::SetSecureIdent(const uint8_t *pachIdent, uint8 nIdentLen)
 { // verified Public key cannot change, use only if there is not public key yet
-	if (MAXPUBKEYSIZE < nIdentLen || m_pCredits->nKeySize != 0 ) {
+	if (MAXPUBKEYSIZE < nIdentLen || m_pCredits->nKeySize != 0) {
 		return false;
 	}
-	memcpy(m_abyPublicKey,pachIdent, nIdentLen);
+	memcpy(m_abyPublicKey, pachIdent, nIdentLen);
 	m_nPublicKeyLen = nIdentLen;
 	m_identState = IS_IDNEEDED;
 	return true;
 }
 
-
-EIdentState	CClientCredits::GetCurrentIdentState(uint32 dwForIP) const
+EIdentState CClientCredits::GetCurrentIdentState(uint32 dwForIP) const
 {
 	if (m_identState != IS_IDENTIFIED)
 		return m_identState;
-	else{
+	else {
 		if (dwForIP == m_dwIdentIP)
 			return IS_IDENTIFIED;
 		else
 			return IS_IDBADGUY;
-			// mod note: clients which just reconnected after an IP change and have to ident yet will also have this state for 1-2 seconds
-			//		 so don't try to spam such clients with "bad guy" messages (besides: spam messages are always bad)
+		// mod note: clients which just reconnected after an IP change and have to ident yet will also
+		// have this state for 1-2 seconds
+		//		 so don't try to spam such clients with "bad guy" messages (besides: spam
+		// messages are always bad)
 	}
 }
-
 
 uint64 CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
 {
 	if (m_dwUnSecureWaitTime == 0 || m_dwSecureWaitTime == 0)
 		SetSecWaitStartTime(dwForIP);
 
-	if (m_pCredits->nKeySize != 0){	// this client is a SecureHash Client
-		if (GetCurrentIdentState(dwForIP) == IS_IDENTIFIED){ // good boy
+	if (m_pCredits->nKeySize != 0) {                              // this client is a SecureHash Client
+		if (GetCurrentIdentState(dwForIP) == IS_IDENTIFIED) { // good boy
 			return m_dwSecureWaitTime;
-		}
-		else{	// not so good boy
-			if (dwForIP == m_dwWaitTimeIP){
+		} else { // not so good boy
+			if (dwForIP == m_dwWaitTimeIP) {
 				return m_dwUnSecureWaitTime;
-			}
-			else{	// bad boy
-				// this can also happen if the client has not identified himself yet, but will do later - so maybe he is not a bad boy :) .
+			} else { // bad boy
+				// this can also happen if the client has not identified himself yet, but will
+				// do later - so maybe he is not a bad boy :) .
 
 				m_dwUnSecureWaitTime = ::GetTickCount64();
 				m_dwWaitTimeIP = dwForIP;
 				return m_dwUnSecureWaitTime;
 			}
 		}
-	}
-	else{	// not a SecureHash Client - handle it like before for now (no security checks)
+	} else { // not a SecureHash Client - handle it like before for now (no security checks)
 		return m_dwUnSecureWaitTime;
 	}
 }
 
-
 void CClientCredits::SetSecWaitStartTime(uint32 dwForIP)
 {
-	m_dwUnSecureWaitTime = m_dwSecureWaitTime = ::GetTickCount64()-1;
+	m_dwUnSecureWaitTime = m_dwSecureWaitTime = ::GetTickCount64() - 1;
 	m_dwWaitTimeIP = dwForIP;
 }
-
 
 void CClientCredits::ClearWaitStartTime()
 {

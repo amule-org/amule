@@ -18,28 +18,25 @@
 
 #include <set>
 
-#include <common/FileFunctions.h>		// CDirIterator
-#include "Preferences.h"		// thePrefs::FollowSymlinksInShares()
+#include <common/FileFunctions.h> // CDirIterator
+#include "Preferences.h"          // thePrefs::FollowSymlinksInShares()
 
 wxDEFINE_EVENT(wxEVT_SHARED_DIRS_APPLY_PROGRESS, wxThreadEvent);
-wxDEFINE_EVENT(wxEVT_SHARED_DIRS_APPLY_DONE,     wxThreadEvent);
+wxDEFINE_EVENT(wxEVT_SHARED_DIRS_APPLY_DONE, wxThreadEvent);
 
 // Coalesce progress events so the UI thread isn't flooded — every
 // 256 directories is enough for a responsive bar without dominating
 // the wxQueueEvent path.
 static constexpr size_t kProgressBatch = 256;
 
-
-CSharedDirsApplyTask::CSharedDirsApplyTask(const PathList & explicit_shares,
-		const PathList & recursive_shares,
-		wxEvtHandler * owner) :
-	wxThread(wxTHREAD_JOINABLE),
-	m_explicit(explicit_shares),
-	m_recursive(recursive_shares),
-	m_owner(owner)
+CSharedDirsApplyTask::CSharedDirsApplyTask(
+	const PathList &explicit_shares, const PathList &recursive_shares, wxEvtHandler *owner)
+: wxThread(wxTHREAD_JOINABLE)
+, m_explicit(explicit_shares)
+, m_recursive(recursive_shares)
+, m_owner(owner)
 {
 }
-
 
 void CSharedDirsApplyTask::Cancel()
 {
@@ -51,14 +48,13 @@ void CSharedDirsApplyTask::Cancel()
 	}
 }
 
-
 wxThread::ExitCode CSharedDirsApplyTask::Entry()
 {
 	// Start from the explicit set so subdir-overlap dedup happens in
 	// one place. Use a set keyed on the raw path for O(log N) dedup
 	// against later inserts from the recursive walk.
 	std::set<wxString> seen;
-	for (const CPath & p : m_explicit) {
+	for (const CPath &p : m_explicit) {
 		if (p.IsOk() && p.DirExists()) {
 			if (seen.insert(p.GetRaw()).second) {
 				m_output.push_back(p);
@@ -66,7 +62,7 @@ wxThread::ExitCode CSharedDirsApplyTask::Entry()
 		}
 	}
 
-	for (const CPath & root : m_recursive) {
+	for (const CPath &root : m_recursive) {
 		if (TestDestroy()) {
 			m_cancelled.store(true);
 			break;
@@ -87,15 +83,14 @@ wxThread::ExitCode CSharedDirsApplyTask::Entry()
 	}
 
 	if (m_owner) {
-		auto * done = new wxThreadEvent(wxEVT_SHARED_DIRS_APPLY_DONE);
+		auto *done = new wxThreadEvent(wxEVT_SHARED_DIRS_APPLY_DONE);
 		done->SetInt(m_cancelled.load() ? 1 : 0);
 		wxQueueEvent(m_owner, done);
 	}
 	return (ExitCode)0;
 }
 
-
-void CSharedDirsApplyTask::ExpandRecursive(const CPath & root)
+void CSharedDirsApplyTask::ExpandRecursive(const CPath &root)
 {
 	// Iterative walk so a deep tree doesn't blow the worker's stack
 	// and so the cancel check can happen between *every* directory
@@ -121,12 +116,9 @@ void CSharedDirsApplyTask::ExpandRecursive(const CPath & root)
 		CDirIterator finder(dir);
 		for (CPath sub = finder.GetFirstFile(CDirIterator::DirNoHidden, wxEmptyString, extraFlags);
 			sub.IsOk();
-			sub = finder.GetNextFile())
-		{
+			sub = finder.GetNextFile()) {
 			CPath fullSub = dir.JoinPaths(sub);
-			if (m_output.empty()
-				|| m_output.back().GetRaw() != fullSub.GetRaw())
-			{
+			if (m_output.empty() || m_output.back().GetRaw() != fullSub.GetRaw()) {
 				// Cheap last-write dedup; full dedup happens via
 				// CPreferences::ReloadSharedFolders later.
 				m_output.push_back(fullSub);
@@ -141,7 +133,6 @@ void CSharedDirsApplyTask::ExpandRecursive(const CPath & root)
 	}
 }
 
-
 void CSharedDirsApplyTask::PostProgress()
 {
 	const size_t now = m_scanned.load();
@@ -149,7 +140,7 @@ void CSharedDirsApplyTask::PostProgress()
 	if (!m_owner) {
 		return;
 	}
-	auto * ev = new wxThreadEvent(wxEVT_SHARED_DIRS_APPLY_PROGRESS);
+	auto *ev = new wxThreadEvent(wxEVT_SHARED_DIRS_APPLY_PROGRESS);
 	ev->SetInt(static_cast<int>(now));
 	wxQueueEvent(m_owner, ev);
 }

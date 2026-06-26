@@ -26,21 +26,21 @@
 #ifndef ECSOCKET_H
 #define ECSOCKET_H
 
-
-#include <deque>	// Needed for std::deque
-#include <memory>	// Needed for std::shared_ptr
+#include <deque>  // Needed for std::deque
+#include <memory> // Needed for std::shared_ptr
 #include <string>
 #include <vector>
 
-#include <zlib.h>	// Needed for packet (de)compression
-#include "../../../Types.h"	// Needed for uint32_t
+#include <zlib.h>           // Needed for packet (de)compression
+#include "../../../Types.h" // Needed for uint32_t
 
-#include <wx/defs.h>	// Needed for wx/debug.h
-#include <wx/debug.h>	// Needed for wxASSERT
+#include <wx/defs.h>  // Needed for wx/debug.h
+#include <wx/debug.h> // Needed for wxASSERT
 
-#include <common/SmartPtr.h>	// Needed for CSmartPtr
+#include <common/SmartPtr.h> // Needed for CSmartPtr
 
-enum ECSocketErrors {
+enum ECSocketErrors
+{
 	EC_ERROR_NOERROR,
 	EC_ERROR_INVOP,
 	EC_ERROR_IOERR,
@@ -64,7 +64,8 @@ class CQueuedData;
  * CECSocket takes care of the transmission of EC packets
  */
 
-class CECSocket{
+class CECSocket
+{
 	friend class CECPacket;
 	friend class CECTag;
 	// CECMemSocket is a CECSocket subclass that captures all I/O into
@@ -95,7 +96,6 @@ private:
 	size_t m_bytes_needed;
 	bool m_in_header;
 
-
 	uint32_t m_curr_packet_len;
 	z_stream m_z;
 
@@ -117,6 +117,7 @@ protected:
 	// compress so we never blow the receiver's 256 MB packet
 	// budget (ReadHeader gate). Default false (treat as remote).
 	bool m_isLocalPeer;
+
 public:
 	CECSocket(bool use_events);
 	virtual ~CECSocket();
@@ -137,7 +138,11 @@ public:
 	// self-close leg. Sites that already have their own UI-facing
 	// notification (CRemoteConnect::ProcessAuthPacket fires
 	// wxEVT_EC_CONNECTION directly) keep using plain CloseSocket.
-	void CloseAndDispatchLost() { InternalClose(); OnLost(); }
+	void CloseAndDispatchLost()
+	{
+		InternalClose();
+		OnLost();
+	}
 
 	bool HaveNotificationSupport() const { return m_haveNotificationSupport; }
 
@@ -179,8 +184,8 @@ public:
 	 * @param opcode The packet opcode the receiver should see.
 	 * @param blobs One pre-serialized child tag per element.
 	 */
-	void SendCachedBodyResponse(uint8_t opcode,
-		const std::vector<std::shared_ptr<const std::vector<unsigned char> > > &blobs);
+	void SendCachedBodyResponse(
+		uint8_t opcode, const std::vector<std::shared_ptr<const std::vector<unsigned char>>> &blobs);
 
 	/**
 	 * Sends an EC packet and waits for a reply.
@@ -227,7 +232,7 @@ public:
 	 * @param error The code of the error for which a message should be returned.
 	 * @return The text describing the error.
 	 */
-	virtual std::string	GetLastErrorMsg();
+	virtual std::string GetLastErrorMsg();
 
 	/**
 	 * Error handler.
@@ -239,7 +244,6 @@ public:
 	 * and destroys the socket.
 	 */
 	virtual void OnError();
-
 
 	/**
 	 * Socket lost event handler.
@@ -264,37 +268,38 @@ public:
 	bool WouldBlock() { return InternalGetLastError() == EC_ERROR_WOULDBLOCK; }
 	bool GotError() { return InternalGetLastError() != EC_ERROR_NOERROR; }
 
-	uint32 SocketRead(void* ptr, size_t len) { return InternalRead(ptr,len); }
-	uint32 SocketWrite(const void* ptr, size_t len) { return InternalWrite(ptr,len); }
+	uint32 SocketRead(void *ptr, size_t len) { return InternalRead(ptr, len); }
+	uint32 SocketWrite(const void *ptr, size_t len) { return InternalWrite(ptr, len); }
 	bool SocketError() { return InternalError() && GotError(); }
 	bool SocketRealError();
 
-	bool WaitSocketConnect(long secs = -1, long msecs = 0) { return InternalWaitOnConnect(secs,msecs); }
-	bool WaitSocketWrite(long secs = -1, long msecs = 0) { return InternalWaitForWrite(secs,msecs); }
-	bool WaitSocketRead(long secs = -1, long msecs = 0) { return InternalWaitForRead(secs,msecs); }
+	bool WaitSocketConnect(long secs = -1, long msecs = 0) { return InternalWaitOnConnect(secs, msecs); }
+	bool WaitSocketWrite(long secs = -1, long msecs = 0) { return InternalWaitForWrite(secs, msecs); }
+	bool WaitSocketRead(long secs = -1, long msecs = 0) { return InternalWaitForRead(secs, msecs); }
 
 	bool IsSocketConnected() { return InternalIsConnected(); }
 
 	void DestroySocket() { return InternalDestroy(); }
 
 	bool DataPending();
- private:
+
+private:
 	const CECPacket *ReadPacket();
 	uint32 WritePacket(const CECPacket *packet);
 
 	// These 4 methods are to be used by CECPacket & CECTag
-	bool	ReadNumber(void *buffer, size_t len);
-	bool	ReadBuffer(void *buffer, size_t len);
-	bool	ReadHeader();
+	bool ReadNumber(void *buffer, size_t len);
+	bool ReadBuffer(void *buffer, size_t len);
+	bool ReadHeader();
 
-	bool	WriteNumber(const void *buffer, size_t len);
-	bool	WriteBuffer(const void *buffer, size_t len);
+	bool WriteNumber(const void *buffer, size_t len);
+	bool WriteBuffer(const void *buffer, size_t len);
 
 	// Internal stuff
-	bool	FlushBuffers();
+	bool FlushBuffers();
 
-	size_t	ReadBufferFromSocket(void *buffer, size_t len);
-	void	WriteBufferToSocket(const void *buffer, size_t len);
+	size_t ReadBufferFromSocket(void *buffer, size_t len);
+	void WriteBufferToSocket(const void *buffer, size_t len);
 
 	/* virtuals */
 	virtual void WriteDoneAndQueueEmpty() = 0;
@@ -309,8 +314,8 @@ public:
 
 	virtual void InternalClose() = 0;
 	virtual bool InternalError() = 0;
-	virtual uint32 InternalRead(void* ptr, uint32 len) = 0;
-	virtual uint32 InternalWrite(const void* ptr, uint32 len) = 0;
+	virtual uint32 InternalRead(void *ptr, uint32 len) = 0;
+	virtual uint32 InternalWrite(const void *ptr, uint32 len) = 0;
 
 	virtual bool InternalIsConnected() = 0;
 	virtual void InternalDestroy() = 0;
@@ -319,25 +324,21 @@ public:
 	virtual bool IsAuthorized() { return true; }
 };
 
-
 class CQueuedData
 {
 	std::vector<unsigned char> m_data;
 	unsigned char *m_rd_ptr, *m_wr_ptr;
+
 public:
 	CQueuedData(size_t len)
-	:
-	m_data(len)
+	: m_data(len)
 	{
 		m_rd_ptr = m_wr_ptr = &m_data[0];
 	}
 
 	~CQueuedData() {}
 
-	void Rewind()
-	{
-		m_rd_ptr = m_wr_ptr = &m_data[0];
-	}
+	void Rewind() { m_rd_ptr = m_wr_ptr = &m_data[0]; }
 
 	void Write(const void *data, size_t len);
 	void WriteAt(const void *data, size_t len, size_t off);

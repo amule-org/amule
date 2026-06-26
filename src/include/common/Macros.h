@@ -26,28 +26,27 @@
 #ifndef COMMONMACROS_H
 #define COMMONMACROS_H
 
-#define	SEC2MS(sec)		((sec)*1000)
-#define	MIN2MS(min)		SEC2MS((min)*60)
-#define	HR2MS(hr)		MIN2MS((hr)*60)
-#define	DAY2MS(day)		HR2MS((day)*24)
-#define	SEC(sec)		(sec)
-#define	MIN2S(min)		((min)*60)
-#define	HR2S(hr)		MIN2S((hr)*60)
-#define	DAY2S(day)		HR2S((day)*24)
+#define SEC2MS(sec) ((sec) * 1000)
+#define MIN2MS(min) SEC2MS((min) * 60)
+#define HR2MS(hr) MIN2MS((hr) * 60)
+#define DAY2MS(day) HR2MS((day) * 24)
+#define SEC(sec) (sec)
+#define MIN2S(min) ((min) * 60)
+#define HR2S(hr) MIN2S((hr) * 60)
+#define DAY2S(day) HR2S((day) * 24)
 
-#define COMPILE_DATE				__DATE__
-#define COMPILE_TIME				__TIME__
-
+#define COMPILE_DATE __DATE__
+#define COMPILE_TIME __TIME__
 
 //! Returns the number of items in an array.
-#define itemsof(x)	(sizeof(x) / sizeof(x[0]))
+#define itemsof(x) (sizeof(x) / sizeof(x[0]))
 
 // Build type specific macro
 
 #ifdef __DEBUG__
-#	define DEBUG_ONLY(x)	x
+#define DEBUG_ONLY(x) x
 #else
-#	define DEBUG_ONLY(x)	/* nothing */
+#define DEBUG_ONLY(x) /* nothing */
 #endif
 
 #endif // COMMONMACROS_H

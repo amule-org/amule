@@ -26,13 +26,12 @@
 #ifndef DOWNLOADLISTCTRL_H
 #define DOWNLOADLISTCTRL_H
 
-#include <map>				// Needed for std::multimap
+#include <map> // Needed for std::multimap
 #include <wx/brush.h>
 
-#include "Types.h"			// Needed for uint8
-#include "Constants.h"		// Needed for DownloadItemType
-#include "MuleListCtrl.h"	// Needed for CMuleListCtrl
-
+#include "Types.h"        // Needed for uint8
+#include "Constants.h"    // Needed for DownloadItemType
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl
 
 class CPartFile;
 class wxBitmap;
@@ -57,20 +56,18 @@ public:
 	 *
 	 * @see CMuleListCtrl::CMuleListCtrl for documentation of parameters.
 	 */
-	 CDownloadListCtrl(
-	            wxWindow *parent,
-                wxWindowID winid = -1,
-                const wxPoint &pos = wxDefaultPosition,
-                const wxSize &size = wxDefaultSize,
-                long style = wxLC_ICON,
-                const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = "downloadlistctrl" );
+	CDownloadListCtrl(wxWindow *parent,
+		wxWindowID winid = -1,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = wxLC_ICON,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = "downloadlistctrl");
 
 	/**
 	 * Destructor.
 	 */
-	virtual	~CDownloadListCtrl();
-
+	virtual ~CDownloadListCtrl();
 
 	/**
 	 * Adds a file to the list, but it wont show unless it matches the current category.
@@ -79,7 +76,7 @@ public:
 	 *
 	 * Please note that duplicates wont be added.
 	 */
-	void AddFile( CPartFile* file );
+	void AddFile(CPartFile *file);
 
 	/**
 	 * Removes the specified file from the list.
@@ -88,7 +85,7 @@ public:
 	 *
 	 * This function also removes any sources associated with the file.
 	 */
-	void RemoveFile( CPartFile* file );
+	void RemoveFile(CPartFile *file);
 
 	/**
 	 * Shows or hides the sources of a specific file.
@@ -98,8 +95,7 @@ public:
 	 *
 	 * If the file is hidden, then its sources will also be hidden.
 	 */
-	void ShowFile( CPartFile* file, bool show );
-
+	void ShowFile(CPartFile *file, bool show);
 
 	/**
 	 * Updates the state of the specified item, possibly causing a redrawing.
@@ -110,7 +106,7 @@ public:
 	 * file is hidden/shown depending on its state and the currently selected
 	 * category.
 	 */
-	void UpdateItem(const void* toupdate);
+	void UpdateItem(const void *toupdate);
 
 	/**
 	 * Returns the current category.
@@ -122,8 +118,7 @@ public:
 	 *
 	 * @param newCategory The new category to display.
 	 */
-	void ChangeCategory( int newCategory );
-
+	void ChangeCategory(int newCategory);
 
 	/**
 	 * Clears all completed files from the list.
@@ -133,7 +128,7 @@ public:
 	/**
 	 * Perform client update when item selection has changed.
 	 */
-	void	DoItemSelectionChanged();
+	void DoItemSelectionChanged();
 
 protected:
 	/// Return old column order.
@@ -143,85 +138,82 @@ private:
 	/**
 	 * Updates the displayed number representing the amount of files currently shown.
 	 */
-	void ShowFilesCount( int diff );
-
+	void ShowFilesCount(int diff);
 
 	/**
 	 * @see CMuleListCtrl::GetTTSText
 	 */
 	virtual wxString GetTTSText(unsigned item) const;
 
-
 	/**
 	 * Overloaded function needed for custom drawing of items.
 	 */
-	virtual void OnDrawItem( int item, wxDC* dc, const wxRect& rect, const wxRect& rectHL, bool highlighted );
+	virtual void OnDrawItem(
+		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
 
 	/**
 	 * Draws a file item.
 	 */
-	void	DrawFileItem( wxDC* dc, int nColumn, const wxRect& rect, FileCtrlItem_Struct* item ) const;
+	void DrawFileItem(wxDC *dc, int nColumn, const wxRect &rect, FileCtrlItem_Struct *item) const;
 
 	/**
 	 * Draws the status (chunk) bar for a file.
 	 */
-	void	DrawFileStatusBar( const CPartFile* file, wxDC* dc, const wxRect& rect, bool bFlat ) const;
+	void DrawFileStatusBar(const CPartFile *file, wxDC *dc, const wxRect &rect, bool bFlat) const;
 
 	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-	static int Compare( const CPartFile* file1, const CPartFile* file2, long lParamSort );
+	static int Compare(const CPartFile *file1, const CPartFile *file2, long lParamSort);
 
 	// Event-handlers for files
-	void	OnCancelFile( wxCommandEvent& event );
-	void	OnSetPriority( wxCommandEvent& event );
-	void	OnSwapSources( wxCommandEvent& event );
-	void	OnSetCategory( wxCommandEvent& event );
-	void	OnSetStatus( wxCommandEvent& event );
-	void	OnClearCompleted( wxCommandEvent& event );
-	void	OnGetLink( wxCommandEvent& event );
-	void	OnGetFeedback( wxCommandEvent& event );
-	void	OnViewFileInfo( wxCommandEvent& event );
-	void	OnViewFileComments( wxCommandEvent& event );
-	void	OnPreviewFile( wxCommandEvent& event );
+	void OnCancelFile(wxCommandEvent &event);
+	void OnSetPriority(wxCommandEvent &event);
+	void OnSwapSources(wxCommandEvent &event);
+	void OnSetCategory(wxCommandEvent &event);
+	void OnSetStatus(wxCommandEvent &event);
+	void OnClearCompleted(wxCommandEvent &event);
+	void OnGetLink(wxCommandEvent &event);
+	void OnGetFeedback(wxCommandEvent &event);
+	void OnViewFileInfo(wxCommandEvent &event);
+	void OnViewFileComments(wxCommandEvent &event);
+	void OnPreviewFile(wxCommandEvent &event);
 
 	// Misc event-handlers
-	void	OnItemActivated( wxListEvent& event );
-	void	OnMouseRightClick( wxListEvent& event );
-	void	OnMouseMiddleClick( wxListEvent& event );
-	void	OnKeyPressed( wxKeyEvent& event );
-	void	OnItemSelectionChanged( wxListEvent& event );
+	void OnItemActivated(wxListEvent &event);
+	void OnMouseRightClick(wxListEvent &event);
+	void OnMouseMiddleClick(wxListEvent &event);
+	void OnKeyPressed(wxKeyEvent &event);
+	void OnItemSelectionChanged(wxListEvent &event);
 
 	/**
 	 * Executes the user-selected preview command on the specified file.
 	 *
 	 * @file The file to be previewed.
 	 */
-	void PreviewFile(CPartFile* file);
+	void PreviewFile(CPartFile *file);
 
 	/**
 	 * Show file detail dialog for item at index
 	 */
 	void ShowFileDetailDialog(long index);
 
-
 	//! The type of list used to store items on the listctrl.
-	typedef std::multimap<const void*,FileCtrlItem_Struct*> ListItems;
+	typedef std::multimap<const void *, FileCtrlItem_Struct *> ListItems;
 	//! Shortcut to the pair-type used on the list.
 	typedef ListItems::value_type ListItemsPair;
 	//! This pair is used when searching for equal-ranges.
-	typedef std::pair< ListItems::iterator, ListItems::iterator > ListIteratorPair;
+	typedef std::pair<ListItems::iterator, ListItems::iterator> ListIteratorPair;
 
 	//! This list contains everything shown on the list. Sources are only to
 	//! be found on this list if they are being displayed, whereas files can
 	//! always be found on this list, even if they are currently hidden.
-	ListItems	m_ListItems;
-
+	ListItems m_ListItems;
 
 	//! Pointer to the current menu object, used to avoid multiple menus.
-	wxMenu*		m_menu;
+	wxMenu *m_menu;
 	//! Cached brush object.
-	wxBrush	m_hilightBrush;
+	wxBrush m_hilightBrush;
 	//! Cached brush object.
-	wxBrush	m_hilightUnfocusBrush;
+	wxBrush m_hilightUnfocusBrush;
 
 	//! The currently displayed category
 	uint8 m_category;
@@ -233,7 +225,6 @@ private:
 	int m_filecount;
 
 	wxDECLARE_EVENT_TABLE();
-
 };
 
 #endif

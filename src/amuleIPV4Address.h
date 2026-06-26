@@ -26,7 +26,7 @@
 #ifndef AMULEIPV4ADDRESS_H
 #define AMULEIPV4ADDRESS_H
 
-#include "NetworkFunctions.h"	// Needed for Uint32toStringIP
+#include "NetworkFunctions.h" // Needed for Uint32toStringIP
 
 class amuleIPV4Address
 {
@@ -35,10 +35,10 @@ public:
 	amuleIPV4Address(const amuleIPV4Address &a);
 	amuleIPV4Address(const class CamuleIPV4Endpoint &ep);
 	virtual ~amuleIPV4Address();
-	amuleIPV4Address& operator=(const amuleIPV4Address &a);
-	amuleIPV4Address& operator=(const class CamuleIPV4Endpoint &a);
+	amuleIPV4Address &operator=(const amuleIPV4Address &a);
+	amuleIPV4Address &operator=(const class CamuleIPV4Endpoint &a);
 
-	virtual bool Hostname(const wxString& name);
+	virtual bool Hostname(const wxString &name);
 
 	virtual bool Hostname(uint32 ip)
 	{
@@ -49,7 +49,6 @@ public:
 
 		return Hostname(Uint32toStringIP(ip));
 	}
-
 
 	// Set the port to that corresponding to the specified service.
 	// Returns true on success, false if something goes wrong (invalid service).
@@ -67,11 +66,11 @@ public:
 	// Set address to any of the addresses of the current machine.
 	virtual bool AnyAddress();
 
-	const class CamuleIPV4Endpoint & GetEndpoint() const;
-	class CamuleIPV4Endpoint & GetEndpoint();
+	const class CamuleIPV4Endpoint &GetEndpoint() const;
+	class CamuleIPV4Endpoint &GetEndpoint();
 
 private:
-	class CamuleIPV4Endpoint * m_endpoint;
+	class CamuleIPV4Endpoint *m_endpoint;
 };
 
 #endif // AMULEIPV4ADDRESS_H

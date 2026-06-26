@@ -28,7 +28,6 @@
 #include <maxminddb.h>
 #include <wx/string.h>
 
-
 // Thin RAII wrapper around libmaxminddb for IP-to-country lookups against a
 // MaxMind .mmdb database (GeoLite2-Country or equivalent). Replaces the legacy
 // libGeoIP v1 / .dat backend that MaxMind discontinued in 2019.
@@ -40,22 +39,22 @@ public:
 
 	// Open the .mmdb at `path` in MMAP mode. Returns false (and logs) on failure.
 	// Calling Open() on an already-open instance closes the previous handle first.
-	bool	Open(const wxString& path);
+	bool Open(const wxString &path);
 
-	void	Close();
+	void Close();
 
-	bool	IsOpen() const { return m_isOpen; }
+	bool IsOpen() const { return m_isOpen; }
 
 	// Look up `ip` (IPv4 or IPv6 textual) and return the lowercased ISO 3166-1
 	// alpha-2 country code (e.g. "us"). Empty string on miss / invalid input.
-	wxString	GetCountryCode(const wxString& ip) const;
+	wxString GetCountryCode(const wxString &ip) const;
 
 private:
-	MMDB_s	m_mmdb;
-	bool	m_isOpen;
+	MMDB_s m_mmdb;
+	bool m_isOpen;
 
-	CMaxMindDBDatabase(const CMaxMindDBDatabase&) = delete;
-	CMaxMindDBDatabase& operator=(const CMaxMindDBDatabase&) = delete;
+	CMaxMindDBDatabase(const CMaxMindDBDatabase &) = delete;
+	CMaxMindDBDatabase &operator=(const CMaxMindDBDatabase &) = delete;
 };
 
 #endif // MAXMINDDBDATABASE_H

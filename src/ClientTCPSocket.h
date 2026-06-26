@@ -30,7 +30,7 @@
 #ifndef CLIENTTCPSOCKET_H
 #define CLIENTTCPSOCKET_H
 
-#include "EMSocket.h"		// Needed for CEMSocket
+#include "EMSocket.h" // Needed for CEMSocket
 
 class CProxyData;
 
@@ -45,32 +45,37 @@ class CTimerWnd;
 class CClientTCPSocket : public CEMSocket
 {
 public:
-	CClientTCPSocket(CUpDownClient* in_client = NULL, const CProxyData *ProxyData = NULL);
+	CClientTCPSocket(CUpDownClient *in_client = NULL, const CProxyData *ProxyData = NULL);
 	virtual ~CClientTCPSocket();
 
-	void		Disconnect(const wxString& strReason);
+	void Disconnect(const wxString &strReason);
 
-	bool		InitNetworkData();
+	bool InitNetworkData();
 
-	bool		CheckTimeOut();
+	bool CheckTimeOut();
 
-	void		Safe_Delete();
-	void		Safe_Delete_Client();
+	void Safe_Delete();
+	void Safe_Delete_Client();
 
-	void		OnConnect(int nErrorCode) override;
-	void		OnSend(int nErrorCode) override;
-	void		OnReceive(int nErrorCode) override;
+	void OnConnect(int nErrorCode) override;
+	void OnSend(int nErrorCode) override;
+	void OnReceive(int nErrorCode) override;
 
-	void		OnClose(int nErrorCode) override;
-	void		OnError(int nErrorCode) override;
+	void OnClose(int nErrorCode) override;
+	void OnError(int nErrorCode) override;
 
-	uint32		GetRemoteIP() const { return m_remoteip; }
+	uint32 GetRemoteIP() const { return m_remoteip; }
 
-	CUpDownClient* GetClient() { return m_client; }
+	CUpDownClient *GetClient() { return m_client; }
 
-	void		SendPacket(CPacket* packet, bool delpacket = true, bool controlpacket = true, uint32 actualPayloadSize = 0) override;
-	SocketSentBytes SendControlData(uint32 maxNumberOfBytesToSend, uint32 overchargeMaxBytesToSend) override;
-	SocketSentBytes SendFileAndControlData(uint32 maxNumberOfBytesToSend, uint32 overchargeMaxBytesToSend) override;
+	void SendPacket(CPacket *packet,
+		bool delpacket = true,
+		bool controlpacket = true,
+		uint32 actualPayloadSize = 0) override;
+	SocketSentBytes SendControlData(
+		uint32 maxNumberOfBytesToSend, uint32 overchargeMaxBytesToSend) override;
+	SocketSentBytes SendFileAndControlData(
+		uint32 maxNumberOfBytesToSend, uint32 overchargeMaxBytesToSend) override;
 
 	// Bypass the global download bandwidth throttler when the inbound
 	// peer is actually the ed2k server's HighID-callback probe (#778).
@@ -81,22 +86,22 @@ public:
 	// server's verification timer and leave us in permanent LowID.
 	// Implemented out-of-line in the .cpp because we need theApp /
 	// CServerConnect, which the header can't see.
-	bool		IsDownloadThrottled() const override;
+	bool IsDownloadThrottled() const override;
 
 protected:
-	bool		PacketReceived(CPacket* packet) override;
+	bool PacketReceived(CPacket *packet) override;
 
 private:
-	CUpDownClient*	m_client;
+	CUpDownClient *m_client;
 
-	bool	ProcessPacket(const uint8_t* packet, uint32 size, uint8 opcode);
-	bool	ProcessExtPacket(const uint8_t* packet, uint32 size, uint8 opcode);
-	bool	ProcessED2Kv2Packet(const uint8_t* packet, uint32 size, uint8 opcode);
-	void	ResetTimeOutTimer();
-	void	SetClient(CUpDownClient* client);
+	bool ProcessPacket(const uint8_t *packet, uint32 size, uint8 opcode);
+	bool ProcessExtPacket(const uint8_t *packet, uint32 size, uint8 opcode);
+	bool ProcessED2Kv2Packet(const uint8_t *packet, uint32 size, uint8 opcode);
+	void ResetTimeOutTimer();
+	void SetClient(CUpDownClient *client);
 
-	uint64	timeout_timer;
-	uint32	m_remoteip;
+	uint64 timeout_timer;
+	uint32 m_remoteip;
 };
 
 #endif // CLIENTTCPSOCKET_H

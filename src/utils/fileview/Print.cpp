@@ -30,9 +30,9 @@
 #include <tags/TagTypes.h>
 #include <protocol/ed2k/Client2Server/UDP.h>
 #include "../../OtherFunctions.h"
-#include "../../Friend.h"			// Needed for FF_NAME
-#include "../../Constants.h"		// Needed for PR_*
-#include "../../NetworkFunctions.h"	// Needed for Uint32toStringIP
+#include "../../Friend.h"           // Needed for FF_NAME
+#include "../../Constants.h"        // Needed for PR_*
+#include "../../NetworkFunctions.h" // Needed for Uint32toStringIP
 
 #include <cctype>
 #include <map>
@@ -40,12 +40,12 @@
 
 SDMODE g_stringDecodeMode;
 
-wxString MakePrintableString(const wxString& s)
+wxString MakePrintableString(const wxString &s)
 {
 	wxString str = s;
 	unsigned c = 0;
 	for (unsigned i = 0; i < str.length(); i++) {
-		c |= (wxChar) str[i];
+		c |= (wxChar)str[i];
 	}
 
 	if (c <= 0xff && GetStringsMode() != SD_NONE) {
@@ -55,7 +55,7 @@ wxString MakePrintableString(const wxString& s)
 			str = test;
 			c = 0;
 			for (unsigned i = 0; i < str.length(); i++) {
-				c |= (wxChar) str[i];
+				c |= (wxChar)str[i];
 			}
 		}
 	}
@@ -71,7 +71,9 @@ wxString MakePrintableString(const wxString& s)
 
 	if (GetStringsMode() != SD_DISPLAY) {
 		for (unsigned i = 0; i < str.length(); i++) {
-			if (GetStringsMode() == SD_NONE ? ((unsigned)str[i] >= ' ' && (unsigned)str[i] <= 0x7f) : std::isprint(str[i])) {
+			if (GetStringsMode() == SD_NONE
+					? ((unsigned)str[i] >= ' ' && (unsigned)str[i] <= 0x7f)
+					: std::isprint(str[i])) {
 				retval += str[i];
 			} else if (c <= 0xff) {
 				retval += wxString::Format("\\x%02x", str[i]);
@@ -85,27 +87,28 @@ wxString MakePrintableString(const wxString& s)
 	return retval;
 }
 
-std::ostream& operator<<(std::ostream& x, const CTimeT& y)
+std::ostream &operator<<(std::ostream &x, const CTimeT &y)
 {
 	if ((time_t)y != 0) {
 		wxDateTime dt((time_t)y);
-		return x << (time_t)y << " (" << dt.Format(wxDefaultDateTimeFormat, wxDateTime::UTC) << " UTC)";
+		return x << (time_t)y << " (" << dt.Format(wxDefaultDateTimeFormat, wxDateTime::UTC)
+			 << " UTC)";
 	} else {
 		return x << "0 (Never)";
 	}
 }
 
-std::ostream& operator<<(std::ostream& x, const CKadIP& ip)
+std::ostream &operator<<(std::ostream &x, const CKadIP &ip)
 {
 	return x << hex(ip) << " (" << Uint32toStringIP(wxUINT32_SWAP_ALWAYS(ip)) << ')';
 }
 
-std::ostream& operator<<(std::ostream& x, const CeD2kIP& ip)
+std::ostream &operator<<(std::ostream &x, const CeD2kIP &ip)
 {
 	return x << hex(ip) << " (" << Uint32toStringIP(ip) << ')';
 }
 
-static inline wxString TagNameString(const wxString& name)
+static inline wxString TagNameString(const wxString &name)
 {
 	if (name.length() == 1) {
 		return wxString::Format("\"\\x%02x\"", name[0]);
@@ -117,9 +120,12 @@ static inline wxString TagNameString(const wxString& name)
 	return "\"" + name + "\"";
 }
 
-#define TEST_VALUE(VALUE)	if (value == VALUE) return #VALUE; else
+#define TEST_VALUE(VALUE) \
+	if (value == VALUE) \
+		return #VALUE; \
+	else
 
-const char* DecodeTagNameID(uint8_t value)
+const char *DecodeTagNameID(uint8_t value)
 {
 	TEST_VALUE(FT_FILENAME)
 	TEST_VALUE(FT_FILESIZE)
@@ -163,7 +169,7 @@ const char* DecodeTagNameID(uint8_t value)
 	return "??";
 }
 
-const char* DecodeTagName(const wxString& value)
+const char *DecodeTagName(const wxString &value)
 {
 	TEST_VALUE(TAG_FILENAME)
 	TEST_VALUE(TAG_FILESIZE)
@@ -211,7 +217,7 @@ const char* DecodeTagName(const wxString& value)
 	return "??";
 }
 
-const char* DecodeTagType(uint8_t value)
+const char *DecodeTagType(uint8_t value)
 {
 	TEST_VALUE(TAGTYPE_HASH16)
 	TEST_VALUE(TAGTYPE_STRING)
@@ -249,7 +255,7 @@ const char* DecodeTagType(uint8_t value)
 	return "??";
 }
 
-const char* DecodeServerTagNameID(uint8_t value)
+const char *DecodeServerTagNameID(uint8_t value)
 {
 	TEST_VALUE(ST_SERVERNAME)
 	TEST_VALUE(ST_DESCRIPTION)
@@ -273,21 +279,18 @@ const char* DecodeServerTagNameID(uint8_t value)
 	return "??";
 }
 
-const char* DecodeFriendTagNameID(uint8_t value)
+const char *DecodeFriendTagNameID(uint8_t value)
 {
 	TEST_VALUE(FF_NAME)
 	return "??";
 }
 
-typedef std::map<uint32_t, const char*> FlagMap;
+typedef std::map<uint32_t, const char *> FlagMap;
 
 class CFlagDecoder
 {
-      public:
-	void AddFlag(uint32_t bit, const char* name)
-	{
-		m_flags[bit] = name;
-	}
+public:
+	void AddFlag(uint32_t bit, const char *name) { m_flags[bit] = name; }
 
 	wxString DecodeFlags(uint32_t flags)
 	{
@@ -311,13 +314,13 @@ class CFlagDecoder
 		return result;
 	}
 
-      private:
-	FlagMap	m_flags;
+private:
+	FlagMap m_flags;
 };
 
-#define ADD_DECODER_FLAG(decoder, FLAG)	decoder.AddFlag(FLAG, #FLAG)
+#define ADD_DECODER_FLAG(decoder, FLAG) decoder.AddFlag(FLAG, #FLAG)
 
-std::ostream& operator<<(std::ostream& out, const CTag& tag)
+std::ostream &operator<<(std::ostream &out, const CTag &tag)
 {
 	out << "{ ";
 	if (tag.GetName().empty()) {
@@ -357,32 +360,39 @@ std::ostream& operator<<(std::ostream& out, const CTag& tag)
 				decoder.AddFlag(0x08, "SupportsDirectCallback");
 				out << " (" << decoder.DecodeFlags(enc) << ')';
 			}
-		} else if (tag.GetNameID() == FT_LASTSEENCOMPLETE
-			   || tag.GetNameID() == FT_KADLASTPUBLISHSRC
-			   || tag.GetNameID() == FT_KADLASTPUBLISHNOTES
-			   || tag.GetNameID() == FT_KADLASTPUBLISHKEY
-			   ) {
+		} else if (tag.GetNameID() == FT_LASTSEENCOMPLETE ||
+			   tag.GetNameID() == FT_KADLASTPUBLISHSRC ||
+			   tag.GetNameID() == FT_KADLASTPUBLISHNOTES ||
+			   tag.GetNameID() == FT_KADLASTPUBLISHKEY) {
 			out << CTimeT(tag.GetInt());
-		} else if (tag.GetName() == TAG_FILESIZE
-			   || tag.GetNameID() == FT_FILESIZE
-			   || tag.GetNameID() == FT_TRANSFERRED
-			   || tag.GetNameID() == FT_ATTRANSFERRED
-			   ) {
+		} else if (tag.GetName() == TAG_FILESIZE || tag.GetNameID() == FT_FILESIZE ||
+			   tag.GetNameID() == FT_TRANSFERRED || tag.GetNameID() == FT_ATTRANSFERRED) {
 			out << tag.GetInt() << " (" << CastItoXBytes(tag.GetInt()) << ')';
-		} else if (tag.GetNameID() == FT_ULPRIORITY
-			   || tag.GetNameID() == FT_DLPRIORITY
-			   || tag.GetNameID() == FT_OLDULPRIORITY
-			   || tag.GetNameID() == FT_OLDDLPRIORITY
-			   ) {
+		} else if (tag.GetNameID() == FT_ULPRIORITY || tag.GetNameID() == FT_DLPRIORITY ||
+			   tag.GetNameID() == FT_OLDULPRIORITY || tag.GetNameID() == FT_OLDDLPRIORITY) {
 			out << tag.GetInt() << ' ';
 			switch (tag.GetInt()) {
-				case PR_VERY_LOW:	out << "PR_VERY_LOW"; break;
-				case PR_LOW:		out << "PR_LOW"; break;
-				case PR_NORMAL:		out << "PR_NORMAL"; break;
-				case PR_HIGH:		out << "PR_HIGH"; break;
-				case PR_VERYHIGH:	out << "PR_VERYHIGH"; break;
-				case PR_AUTO:		out << "PR_AUTO"; break;
-				case PR_POWERSHARE:	out << "PR_POWERSHARE"; break;
+			case PR_VERY_LOW:
+				out << "PR_VERY_LOW";
+				break;
+			case PR_LOW:
+				out << "PR_LOW";
+				break;
+			case PR_NORMAL:
+				out << "PR_NORMAL";
+				break;
+			case PR_HIGH:
+				out << "PR_HIGH";
+				break;
+			case PR_VERYHIGH:
+				out << "PR_VERYHIGH";
+				break;
+			case PR_AUTO:
+				out << "PR_AUTO";
+				break;
+			case PR_POWERSHARE:
+				out << "PR_POWERSHARE";
+				break;
 			}
 		} else {
 			out << tag.GetInt();
@@ -404,7 +414,7 @@ std::ostream& operator<<(std::ostream& out, const CTag& tag)
 	return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const CServerTag& tag)
+std::ostream &operator<<(std::ostream &out, const CServerTag &tag)
 {
 	out << "{ ";
 	if (tag.GetName().empty()) {
@@ -436,10 +446,17 @@ std::ostream& operator<<(std::ostream& out, const CServerTag& tag)
 		} else if (tag.GetNameID() == ST_PREFERENCE) {
 			out << tag.GetInt() << ' ';
 			switch (tag.GetInt()) {
-				case 0: out << "SRV_PR_NORMAL"; break;
-				case 1: out << "SRV_PR_HIGH"; break;
-				case 2: out << "SRV_PR_LOW"; break;
-				default: out << "??";
+			case 0:
+				out << "SRV_PR_NORMAL";
+				break;
+			case 1:
+				out << "SRV_PR_HIGH";
+				break;
+			case 2:
+				out << "SRV_PR_LOW";
+				break;
+			default:
+				out << "??";
 			}
 		} else {
 			out << tag.GetInt();
@@ -461,7 +478,7 @@ std::ostream& operator<<(std::ostream& out, const CServerTag& tag)
 	return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const CFriendTag& tag)
+std::ostream &operator<<(std::ostream &out, const CFriendTag &tag)
 {
 	out << "{ ";
 	if (tag.GetName().empty()) {

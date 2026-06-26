@@ -25,7 +25,6 @@
 
 #include "CCtypeAsciiScope.h"
 
-
 // wxFileConfig subclass that wraps every read / write / flush /
 // path-navigating call with CCtypeAsciiScope. amule.conf is parsed
 // and written through this subclass exclusively (see
@@ -49,83 +48,83 @@ public:
 		return wxFileConfig::Flush(bCurrentOnly);
 	}
 
-	bool HasGroup(const wxString& strName) const override
+	bool HasGroup(const wxString &strName) const override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::HasGroup(strName);
 	}
 
-	bool HasEntry(const wxString& strName) const override
+	bool HasEntry(const wxString &strName) const override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::HasEntry(strName);
 	}
 
-	bool DeleteEntry(const wxString& key, bool bGroupIfEmptyAlso = true) override
+	bool DeleteEntry(const wxString &key, bool bGroupIfEmptyAlso = true) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DeleteEntry(key, bGroupIfEmptyAlso);
 	}
 
-	bool DeleteGroup(const wxString& szKey) override
+	bool DeleteGroup(const wxString &szKey) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DeleteGroup(szKey);
 	}
 
-	bool RenameEntry(const wxString& oldName, const wxString& newName) override
+	bool RenameEntry(const wxString &oldName, const wxString &newName) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::RenameEntry(oldName, newName);
 	}
 
-	bool RenameGroup(const wxString& oldName, const wxString& newName) override
+	bool RenameGroup(const wxString &oldName, const wxString &newName) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::RenameGroup(oldName, newName);
 	}
 
-	void SetPath(const wxString& strPath) override
+	void SetPath(const wxString &strPath) override
 	{
 		CCtypeAsciiScope scope;
 		wxFileConfig::SetPath(strPath);
 	}
 
 protected:
-	bool DoReadString(const wxString& key, wxString* pStr) const override
+	bool DoReadString(const wxString &key, wxString *pStr) const override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DoReadString(key, pStr);
 	}
 
-	bool DoReadLong(const wxString& key, long* pl) const override
+	bool DoReadLong(const wxString &key, long *pl) const override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DoReadLong(key, pl);
 	}
 
 #if wxUSE_BASE64
-	bool DoReadBinary(const wxString& key, wxMemoryBuffer* buf) const override
+	bool DoReadBinary(const wxString &key, wxMemoryBuffer *buf) const override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DoReadBinary(key, buf);
 	}
 #endif
 
-	bool DoWriteString(const wxString& key, const wxString& szValue) override
+	bool DoWriteString(const wxString &key, const wxString &szValue) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DoWriteString(key, szValue);
 	}
 
-	bool DoWriteLong(const wxString& key, long lValue) override
+	bool DoWriteLong(const wxString &key, long lValue) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DoWriteLong(key, lValue);
 	}
 
 #if wxUSE_BASE64
-	bool DoWriteBinary(const wxString& key, const wxMemoryBuffer& buf) override
+	bool DoWriteBinary(const wxString &key, const wxMemoryBuffer &buf) override
 	{
 		CCtypeAsciiScope scope;
 		return wxFileConfig::DoWriteBinary(key, buf);

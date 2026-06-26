@@ -30,7 +30,6 @@
 #ifndef _LINUXMON_H
 #define _LINUXMON_H
 
-
 #include <wx/filename.h>
 
 /// Linux Monitoring
@@ -48,25 +47,25 @@ private:
 
 public:
 	/// Constructor
-	LinuxMon ();
+	LinuxMon();
 
 	/// Destructor
-	~LinuxMon ();
+	~LinuxMon();
 
 	/// Refresh stored information
-	void Refresh ();
+	void Refresh();
 
 	/// Get system uptime
-	wxString GetUptime () const;
+	wxString GetUptime() const;
 
 	/// Get 1min average CPU load
-	wxString GetSysLoad_1 () const;
+	wxString GetSysLoad_1() const;
 
 	/// Get 5min averag CPU load
-	wxString GetSysLoad_5 () const;
+	wxString GetSysLoad_5() const;
 
 	/// Get 15min averag CPU load
-	wxString GetSysLoad_15 () const;
+	wxString GetSysLoad_15() const;
 };
 
 #endif /* _LINUXMON_H */

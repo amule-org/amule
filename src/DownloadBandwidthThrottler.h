@@ -16,7 +16,6 @@
 #include <atomic>
 #include <cstdint>
 
-
 // Global token bucket that enforces thePrefs::GetMaxDownload() as a literal
 // byte/sec cap across all downloading sockets.
 //
@@ -36,7 +35,7 @@
 class CDownloadBandwidthThrottler
 {
 public:
-	static CDownloadBandwidthThrottler& Get();
+	static CDownloadBandwidthThrottler &Get();
 
 	// Refill the bucket at the start of each DownloadQueue tick.
 	//   maxDownloadKBps == 0  -> unlimited mode (Reserve returns the full
@@ -63,7 +62,7 @@ private:
 	CDownloadBandwidthThrottler() = default;
 
 	std::atomic<int64_t> m_bytesAvailable{ 0 };
-	std::atomic<bool>    m_unlimited{ true };
+	std::atomic<bool> m_unlimited{ true };
 };
 
 #endif // DOWNLOADBANDWIDTHTHROTTLER_H

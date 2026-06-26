@@ -23,46 +23,47 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "CommentDialogLst.h"           // Interface declarations
-#include "muuli_wdr.h"                  // Needed for commentLstDlg
-#include "PartFile.h"                   // Needed for CPartFile
-#include <common/Format.h>              // Needed for CFormat
-#include "MuleListCtrl.h"		// Needed for CMuleListCtrl
+#include "CommentDialogLst.h" // Interface declarations
+#include "muuli_wdr.h"        // Needed for commentLstDlg
+#include "PartFile.h"         // Needed for CPartFile
+#include <common/Format.h>    // Needed for CFormat
+#include "MuleListCtrl.h"     // Needed for CMuleListCtrl
 #include "Preferences.h"
-#include "amule.h"                      // Needed for theApp
+#include "amule.h" // Needed for theApp
 
 #include <set>
 
-
-
-wxBEGIN_EVENT_TABLE(CCommentDialogLst,wxDialog)
-	EVT_BUTTON(IDCOK,CCommentDialogLst::OnBnClickedApply)
-	EVT_BUTTON(IDCREF,CCommentDialogLst::OnBnClickedRefresh)
+wxBEGIN_EVENT_TABLE(CCommentDialogLst, wxDialog)
+	EVT_BUTTON(IDCOK, CCommentDialogLst::OnBnClickedApply)
+	EVT_BUTTON(IDCREF, CCommentDialogLst::OnBnClickedRefresh)
 wxEND_EVENT_TABLE()
 
-namespace {
+namespace
+{
 // Registry of open CCommentDialogLst instances. See CCommentDialog.cpp
 // for the rationale — the broadcast handler in GuiEvents.cpp iterates
 // this on every CKnownFile destruction and dismisses any dialog whose
 // m_file has just been freed (UAF prevention; #755 / #748 family).
-std::set<CCommentDialogLst*>& OpenInstances()
+std::set<CCommentDialogLst *> &OpenInstances()
 {
-	static std::set<CCommentDialogLst*> instances;
+	static std::set<CCommentDialogLst *> instances;
 	return instances;
 }
 } // namespace
 
-
 /*
  * Constructor
  */
-CCommentDialogLst::CCommentDialogLst(wxWindow*parent, CPartFile* file)
-:
-wxDialog(parent, -1, wxString(_("File Comments")),
-	wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
-m_file(file)
+CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CPartFile *file)
+: wxDialog(parent,
+	  -1,
+	  wxString(_("File Comments")),
+	  wxDefaultPosition,
+	  wxDefaultSize,
+	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
+, m_file(file)
 {
-	wxSizer* content = commentLstDlg(this, true);
+	wxSizer *content = commentLstDlg(this, true);
 	content->Show(this, true);
 
 	m_list = CastChild(IDC_LST, CMuleListCtrl);
@@ -76,37 +77,32 @@ m_file(file)
 	OpenInstances().insert(this);
 }
 
-
 CCommentDialogLst::~CCommentDialogLst()
 {
 	OpenInstances().erase(this);
 	ClearList();
 }
 
-
-void CCommentDialogLst::DropReferencesTo(const CKnownFile* file)
+void CCommentDialogLst::DropReferencesTo(const CKnownFile *file)
 {
-	for (CCommentDialogLst* d : OpenInstances()) {
+	for (CCommentDialogLst *d : OpenInstances()) {
 		// m_file is a CPartFile* — compare against the up-cast.
-		if (static_cast<const CKnownFile*>(d->m_file) == file) {
+		if (static_cast<const CKnownFile *>(d->m_file) == file) {
 			d->m_file = NULL;
 			d->EndModal(0);
 		}
 	}
 }
 
-
-void CCommentDialogLst::OnBnClickedApply(wxCommandEvent& WXUNUSED(evt))
+void CCommentDialogLst::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 {
 	EndModal(0);
 }
 
-
-void CCommentDialogLst::OnBnClickedRefresh(wxCommandEvent& WXUNUSED(evt))
+void CCommentDialogLst::OnBnClickedRefresh(wxCommandEvent &WXUNUSED(evt))
 {
 	UpdateList();
 }
-
 
 void CCommentDialogLst::UpdateList()
 {
@@ -119,7 +115,8 @@ void CCommentDialogLst::UpdateList()
 		if (!thePrefs::IsCommentFiltered(it->Comment)) {
 			m_list->InsertItem(count, it->UserName);
 			m_list->SetItem(count, 1, it->FileName);
-			m_list->SetItem(count, 2, (it->Rating != -1) ? GetRateString(it->Rating) : wxString("on"));
+			m_list->SetItem(
+				count, 2, (it->Rating != -1) ? GetRateString(it->Rating) : wxString("on"));
 			m_list->SetItem(count, 3, it->Comment);
 			m_list->SetItemPtrData(count, reinterpret_cast<wxUIntPtr>(new SFileRating(*it)));
 			++count;
@@ -139,32 +136,34 @@ void CCommentDialogLst::UpdateList()
 	m_file->UpdateFileRatingCommentAvail();
 }
 
-
 void CCommentDialogLst::ClearList()
 {
 	size_t count = m_list->GetItemCount();
 	for (size_t i = 0; i < count; ++i) {
-		delete reinterpret_cast<SFileRating*>(m_list->GetItemData(i));
+		delete reinterpret_cast<SFileRating *>(m_list->GetItemData(i));
 	}
 
 	m_list->DeleteAllItems();
 }
 
-
 int CCommentDialogLst::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData)
 {
-	SFileRating* file1 = reinterpret_cast<SFileRating*>(item1);
-	SFileRating* file2 = reinterpret_cast<SFileRating*>(item2);
+	SFileRating *file1 = reinterpret_cast<SFileRating *>(item1);
+	SFileRating *file2 = reinterpret_cast<SFileRating *>(item2);
 
 	int mod = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
 
 	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
-		case 0:		return mod * file1->UserName.Cmp(file2->UserName);
-		case 1:		return mod * file1->FileName.Cmp(file2->FileName);
-		case 2:		return mod * (file1->Rating - file2->Rating);
-		case 3:		return mod * file1->Comment.Cmp(file2->Comment);
-		default:
-			return 0;
+	case 0:
+		return mod * file1->UserName.Cmp(file2->UserName);
+	case 1:
+		return mod * file1->FileName.Cmp(file2->FileName);
+	case 2:
+		return mod * (file1->Rating - file2->Rating);
+	case 3:
+		return mod * file1->Comment.Cmp(file2->Comment);
+	default:
+		return 0;
 	}
 }
 // File_checked_for_headers

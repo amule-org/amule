@@ -48,8 +48,7 @@ there client on the eMule forum..
 
 using namespace Kademlia;
 
-CKeyEntry::GlobalPublishIPMap	CKeyEntry::s_globalPublishIPs;
-
+CKeyEntry::GlobalPublishIPMap CKeyEntry::s_globalPublishIPs;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////// CEntry
@@ -58,9 +57,9 @@ CEntry::~CEntry()
 	deleteTagPtrListEntries(&m_taglist);
 }
 
-CEntry* CEntry::Copy() const
+CEntry *CEntry::Copy() const
 {
-	CEntry* entry = new CEntry();
+	CEntry *entry = new CEntry();
 	for (FileNameList::const_iterator it = m_filenames.begin(); it != m_filenames.end(); ++it) {
 		entry->m_filenames.push_back(*it);
 	}
@@ -78,7 +77,7 @@ CEntry* CEntry::Copy() const
 	return entry;
 }
 
-bool CEntry::GetIntTagValue(const wxString& tagname, uint64_t& value, bool includeVirtualTags) const
+bool CEntry::GetIntTagValue(const wxString &tagname, uint64_t &value, bool includeVirtualTags) const
 {
 	for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 		if ((*it)->IsInt() && ((*it)->GetName() == tagname)) {
@@ -98,7 +97,7 @@ bool CEntry::GetIntTagValue(const wxString& tagname, uint64_t& value, bool inclu
 	return false;
 }
 
-wxString CEntry::GetStrTagValue(const wxString& tagname) const
+wxString CEntry::GetStrTagValue(const wxString &tagname) const
 {
 	for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 		if (((*it)->GetName() == tagname) && (*it)->IsStr()) {
@@ -108,7 +107,7 @@ wxString CEntry::GetStrTagValue(const wxString& tagname) const
 	return "";
 }
 
-void CEntry::SetFileName(const wxString& name)
+void CEntry::SetFileName(const wxString &name)
 {
 	// Empty filenames are protocol garbage -- a peer publishing a Kad note
 	// or keyword with an empty FT_FILENAME tag should never end up in
@@ -156,8 +155,7 @@ wxString CEntry::GetCommonFileName() const
 	}
 	FileNameList::const_iterator result = m_filenames.begin();
 	uint32_t highestPopularityIndex = result->m_popularityIndex;
-	for (FileNameList::const_iterator it = std::next(result);
-		it != m_filenames.end(); ++it) {
+	for (FileNameList::const_iterator it = std::next(result); it != m_filenames.end(); ++it) {
 		if (it->m_popularityIndex > highestPopularityIndex) {
 			highestPopularityIndex = it->m_popularityIndex;
 			result = it;
@@ -167,20 +165,21 @@ wxString CEntry::GetCommonFileName() const
 	return result->m_filename;
 }
 
-void CEntry::WriteTagListInc(CFileDataIO* data, uint32_t increaseTagNumber)
+void CEntry::WriteTagListInc(CFileDataIO *data, uint32_t increaseTagNumber)
 {
 	// write taglist and add name + size tag
 	wxCHECK_RET(data != NULL, "data must not be NULL");
 
-	uint32_t count = GetTagCount() + increaseTagNumber;	// will include name and size tag in the count if needed
+	uint32_t count =
+		GetTagCount() + increaseTagNumber; // will include name and size tag in the count if needed
 	wxASSERT(count <= 0xFF);
 	data->WriteUInt8((uint8_t)count);
 
-	if (!GetCommonFileName().IsEmpty()){
+	if (!GetCommonFileName().IsEmpty()) {
 		wxASSERT(count > m_taglist.size());
 		data->WriteTag(CTagString(TAG_FILENAME, GetCommonFileName()));
 	}
-	if (m_uSize != 0){
+	if (m_uSize != 0) {
 		wxASSERT(count > m_taglist.size());
 		data->WriteTag(CTagVarInt(TAG_FILESIZE, m_uSize));
 	}
@@ -189,7 +188,6 @@ void CEntry::WriteTagListInc(CFileDataIO* data, uint32_t increaseTagNumber)
 		data->WriteTag(**it);
 	}
 }
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////// CKeyEntry
@@ -203,7 +201,9 @@ CKeyEntry::CKeyEntry()
 CKeyEntry::~CKeyEntry()
 {
 	if (m_publishingIPs != NULL) {
-		for (PublishingIPList::const_iterator it = m_publishingIPs->begin(); it != m_publishingIPs->end(); ++it) {
+		for (PublishingIPList::const_iterator it = m_publishingIPs->begin();
+			it != m_publishingIPs->end();
+			++it) {
 			AdjustGlobalPublishTracking(it->m_ip, false, "instance delete");
 		}
 		delete m_publishingIPs;
@@ -211,7 +211,7 @@ CKeyEntry::~CKeyEntry()
 	}
 }
 
-bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
+bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm) const
 {
 	// boolean operators
 	if (searchTerm->type == SSearchTerm::AND) {
@@ -226,18 +226,21 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 		return SearchTermsMatch(searchTerm->left) && !SearchTermsMatch(searchTerm->right);
 	}
 
-	// word which is to be searched in the file name (and in additional meta data as done by some ed2k servers???)
+	// word which is to be searched in the file name (and in additional meta data as done by some ed2k
+	// servers???)
 	if (searchTerm->type == SSearchTerm::String) {
 		int strSearchTerms = searchTerm->astr->GetCount();
 		if (strSearchTerms == 0) {
 			return false;
 		}
-		// if there are more than one search strings specified (e.g. "aaa bbb ccc") the entire string is handled
-		// like "aaa AND bbb AND ccc". search all strings from the string search term in the tokenized list of
-		// the file name. all strings of string search term have to be found (AND)
+		// if there are more than one search strings specified (e.g. "aaa bbb ccc") the entire string
+		// is handled like "aaa AND bbb AND ccc". search all strings from the string search term in
+		// the tokenized list of the file name. all strings of string search term have to be found
+		// (AND)
 		wxString commonFileNameLower(GetCommonFileNameLowerCase());
 		for (int i = 0; i < strSearchTerms; i++) {
-			// this will not give the same results as when tokenizing the filename string, but it is 20 times faster.
+			// this will not give the same results as when tokenizing the filename string, but it
+			// is 20 times faster.
 			if (commonFileNameLower.Find((*(searchTerm->astr))[i]) == -1) {
 				return false;
 			}
@@ -246,30 +249,35 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 	}
 
 	if (searchTerm->type == SSearchTerm::MetaTag) {
-		if (searchTerm->tag->GetType() == 2) {	// meta tags with string values
+		if (searchTerm->tag->GetType() == 2) { // meta tags with string values
 			if (searchTerm->tag->GetName() == TAG_FILEFORMAT) {
 				// 21-Sep-2006 []: Special handling for TAG_FILEFORMAT which is already part
-				// of the filename and thus does not need to get published nor stored explicitly,
+				// of the filename and thus does not need to get published nor stored
+				// explicitly,
 				wxString commonFileName(GetCommonFileName());
 				int ext = commonFileName.Find('.', true);
 				if (ext != wxNOT_FOUND) {
-					return commonFileName.Mid(ext + 1).CmpNoCase(searchTerm->tag->GetStr()) == 0;
+					return commonFileName.Mid(ext + 1).CmpNoCase(
+						       searchTerm->tag->GetStr()) == 0;
 				}
 			} else {
-				for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
-					if ((*it)->IsStr() && searchTerm->tag->GetName() == (*it)->GetName()) {
-						return (*it)->GetStr().CmpNoCase(searchTerm->tag->GetStr()) == 0;
+				for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end();
+					++it) {
+					if ((*it)->IsStr() &&
+						searchTerm->tag->GetName() == (*it)->GetName()) {
+						return (*it)->GetStr().CmpNoCase(searchTerm->tag->GetStr()) ==
+						       0;
 					}
 				}
 			}
 		}
 	} else if (searchTerm->type == SSearchTerm::OpGreaterEqual) {
-		if (searchTerm->tag->IsInt()) {	// meta tags with integer values
+		if (searchTerm->tag->IsInt()) { // meta tags with integer values
 			uint64_t value;
 			if (GetIntTagValue(searchTerm->tag->GetName(), value, true)) {
 				return value >= searchTerm->tag->GetInt();
 			}
-		} else if (searchTerm->tag->IsFloat()) {	// meta tags with float values
+		} else if (searchTerm->tag->IsFloat()) { // meta tags with float values
 			for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 				if ((*it)->IsFloat() && searchTerm->tag->GetName() == (*it)->GetName()) {
 					return (*it)->GetFloat() >= searchTerm->tag->GetFloat();
@@ -277,12 +285,12 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 			}
 		}
 	} else if (searchTerm->type == SSearchTerm::OpLessEqual) {
-		if (searchTerm->tag->IsInt()) {	// meta tags with integer values
+		if (searchTerm->tag->IsInt()) { // meta tags with integer values
 			uint64_t value;
 			if (GetIntTagValue(searchTerm->tag->GetName(), value, true)) {
 				return value <= searchTerm->tag->GetInt();
 			}
-		} else if (searchTerm->tag->IsFloat()) {	// meta tags with float values
+		} else if (searchTerm->tag->IsFloat()) { // meta tags with float values
 			for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 				if ((*it)->IsFloat() && searchTerm->tag->GetName() == (*it)->GetName()) {
 					return (*it)->GetFloat() <= searchTerm->tag->GetFloat();
@@ -290,12 +298,12 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 			}
 		}
 	} else if (searchTerm->type == SSearchTerm::OpGreater) {
-		if (searchTerm->tag->IsInt()) {	// meta tags with integer values
+		if (searchTerm->tag->IsInt()) { // meta tags with integer values
 			uint64_t value;
 			if (GetIntTagValue(searchTerm->tag->GetName(), value, true)) {
 				return value > searchTerm->tag->GetInt();
 			}
-		} else if (searchTerm->tag->IsFloat()) {	// meta tags with float values
+		} else if (searchTerm->tag->IsFloat()) { // meta tags with float values
 			for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 				if ((*it)->IsFloat() && searchTerm->tag->GetName() == (*it)->GetName()) {
 					return (*it)->GetFloat() > searchTerm->tag->GetFloat();
@@ -303,12 +311,12 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 			}
 		}
 	} else if (searchTerm->type == SSearchTerm::OpLess) {
-		if (searchTerm->tag->IsInt()) {	// meta tags with integer values
+		if (searchTerm->tag->IsInt()) { // meta tags with integer values
 			uint64_t value;
 			if (GetIntTagValue(searchTerm->tag->GetName(), value, true)) {
 				return value < searchTerm->tag->GetInt();
 			}
-		} else if (searchTerm->tag->IsFloat()) {	// meta tags with float values
+		} else if (searchTerm->tag->IsFloat()) { // meta tags with float values
 			for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 				if ((*it)->IsFloat() && searchTerm->tag->GetName() == (*it)->GetName()) {
 					return (*it)->GetFloat() < searchTerm->tag->GetFloat();
@@ -316,12 +324,12 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 			}
 		}
 	} else if (searchTerm->type == SSearchTerm::OpEqual) {
-		if (searchTerm->tag->IsInt()) {	// meta tags with integer values
+		if (searchTerm->tag->IsInt()) { // meta tags with integer values
 			uint64_t value;
 			if (GetIntTagValue(searchTerm->tag->GetName(), value, true)) {
 				return value == searchTerm->tag->GetInt();
 			}
-		} else if (searchTerm->tag->IsFloat()) {	// meta tags with float values
+		} else if (searchTerm->tag->IsFloat()) { // meta tags with float values
 			for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 				if ((*it)->IsFloat() && searchTerm->tag->GetName() == (*it)->GetName()) {
 					return (*it)->GetFloat() == searchTerm->tag->GetFloat();
@@ -329,12 +337,12 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 			}
 		}
 	} else if (searchTerm->type == SSearchTerm::OpNotEqual) {
-		if (searchTerm->tag->IsInt()) {	// meta tags with integer values
+		if (searchTerm->tag->IsInt()) { // meta tags with integer values
 			uint64_t value;
 			if (GetIntTagValue(searchTerm->tag->GetName(), value, true)) {
 				return value != searchTerm->tag->GetInt();
 			}
-		} else if (searchTerm->tag->IsFloat()) {	// meta tags with float values
+		} else if (searchTerm->tag->IsFloat()) { // meta tags with float values
 			for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
 				if ((*it)->IsFloat() && searchTerm->tag->GetName() == (*it)->GetName()) {
 					return (*it)->GetFloat() != searchTerm->tag->GetFloat();
@@ -346,11 +354,12 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm* searchTerm) const
 	return false;
 }
 
-void CKeyEntry::AdjustGlobalPublishTracking(uint32_t ip, bool increase, const wxString& DEBUG_ONLY(dbgReason))
+void CKeyEntry::AdjustGlobalPublishTracking(uint32_t ip, bool increase, const wxString &DEBUG_ONLY(dbgReason))
 {
 	uint32_t count = 0;
 	bool found = false;
-	GlobalPublishIPMap::const_iterator it = s_globalPublishIPs.find(ip & 0xFFFFFF00 /* /24 netmask, take care of endian if needed */ );
+	GlobalPublishIPMap::const_iterator it =
+		s_globalPublishIPs.find(ip & 0xFFFFFF00 /* /24 netmask, take care of endian if needed */);
 	if (it != s_globalPublishIPs.end()) {
 		count = it->second;
 		found = true;
@@ -371,19 +380,22 @@ void CKeyEntry::AdjustGlobalPublishTracking(uint32_t ip, bool increase, const wx
 	}
 #ifdef __DEBUG__
 	if (!dbgReason.IsEmpty()) {
-		AddDebugLogLineN(logKadEntryTracking, CFormat("%s %s (%s) - (%s), new count %u")
-			% (increase ? "Adding" : "Removing") % KadIPToString(ip & 0xFFFFFF00) % KadIPToString(ip) % dbgReason % count);
+		AddDebugLogLineN(logKadEntryTracking,
+			CFormat("%s %s (%s) - (%s), new count %u") % (increase ? "Adding" : "Removing") %
+				KadIPToString(ip & 0xFFFFFF00) % KadIPToString(ip) % dbgReason % count);
 	}
 #endif
 }
 
-void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
+void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 {
 	// this is called when replacing a stored entry with a refreshed one.
-	// we want to take over the tracked IPs and the different filenames from the old entry, the rest is still
-	// "overwritten" with the refreshed values. This might be not perfect for the taglist in some cases, but we can't afford
-	// to store hundreds of taglists to figure out the best one like we do for the filenames now
-	if (m_publishingIPs != NULL) { // This instance needs to be a new entry, otherwise we don't want/need to merge
+	// we want to take over the tracked IPs and the different filenames from the old entry, the rest is
+	// still "overwritten" with the refreshed values. This might be not perfect for the taglist in some
+	// cases, but we can't afford to store hundreds of taglists to figure out the best one like we do for
+	// the filenames now
+	if (m_publishingIPs !=
+		NULL) { // This instance needs to be a new entry, otherwise we don't want/need to merge
 		wxASSERT(fromEntry == NULL);
 		wxASSERT(!m_publishingIPs->empty());
 		wxASSERT(!m_filenames.empty());
@@ -403,12 +415,15 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 		m_publishingIPs = fromEntry->m_publishingIPs;
 		fromEntry->m_publishingIPs = NULL;
 		bool fastRefresh = false;
-		for (PublishingIPList::iterator it = m_publishingIPs->begin(); it != m_publishingIPs->end(); ++it) {
+		for (PublishingIPList::iterator it = m_publishingIPs->begin(); it != m_publishingIPs->end();
+			++it) {
 			if (it->m_ip == m_uIP) {
 				refresh = true;
 				if ((time(NULL) - it->m_lastPublish) < (KADEMLIAREPUBLISHTIMES - HR2S(1))) {
-					AddDebugLogLineN(logKadEntryTracking, "FastRefresh publish, ip: " + KadIPToString(m_uIP));
-					fastRefresh = true; // refreshed faster than expected, will not count into filenamepopularity index
+					AddDebugLogLineN(logKadEntryTracking,
+						"FastRefresh publish, ip: " + KadIPToString(m_uIP));
+					fastRefresh = true; // refreshed faster than expected, will not count
+							    // into filenamepopularity index
 				}
 				it->m_lastPublish = time(NULL);
 				m_publishingIPs->push_back(*it);
@@ -422,7 +437,8 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 		m_lastTrustValueCalc = fromEntry->m_lastTrustValueCalc;
 
 		// copy over the different names, if they are different the one we have right now
-		wxASSERT(m_filenames.size() == 1); // we should have only one name here, since it's the entry from one single source
+		wxASSERT(m_filenames.size() ==
+			 1); // we should have only one name here, since it's the entry from one single source
 		sFileNameEntry currentName = { "", 0 };
 		if (m_filenames.size() != 0) {
 			currentName = m_filenames.front();
@@ -448,14 +464,14 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 		// popularity beats the weakest survivor — otherwise drop it on
 		// the floor instead of pushing then immediately re-evicting.
 		// O(N) per insert via std::min_element; no global sort needed.
-		auto pushBounded = [&](const sFileNameEntry & candidate) {
+		auto pushBounded = [&](const sFileNameEntry &candidate) {
 			if (m_filenames.size() < MAX_FILENAMES) {
 				m_filenames.push_back(candidate);
 				return;
 			}
-			FileNameList::iterator weakest = std::min_element(
-				m_filenames.begin(), m_filenames.end(),
-				[](const sFileNameEntry & a, const sFileNameEntry & b) {
+			FileNameList::iterator weakest = std::min_element(m_filenames.begin(),
+				m_filenames.end(),
+				[](const sFileNameEntry &a, const sFileNameEntry &b) {
 					return a.m_popularityIndex < b.m_popularityIndex;
 				});
 			if (candidate.m_popularityIndex > weakest->m_popularityIndex) {
@@ -466,7 +482,9 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 		};
 
 		bool duplicate = false;
-		for (FileNameList::iterator it = fromEntry->m_filenames.begin(); it != fromEntry->m_filenames.end(); ++it) {
+		for (FileNameList::iterator it = fromEntry->m_filenames.begin();
+			it != fromEntry->m_filenames.end();
+			++it) {
 			sFileNameEntry nameToCopy = *it;
 			// Defence-in-depth: even though SetFileName now rejects empty
 			// names, an older on-disk Kad index could still hold one from
@@ -476,7 +494,8 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 				continue;
 			}
 			if (currentName.m_filename.CmpNoCase(nameToCopy.m_filename) == 0) {
-				// the filename of our new entry matches with our old, increase the popularity index for the old one
+				// the filename of our new entry matches with our old, increase the popularity
+				// index for the old one
 				duplicate = true;
 				if (!fastRefresh) {
 					nameToCopy.m_popularityIndex++;
@@ -501,7 +520,8 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 		// add the publisher to the tacking list
 		AdjustGlobalPublishTracking(m_uIP, true, "new publisher");
 
-		// we keep track of max 100 IPs, in order to avoid too much time for calculation/storing/loading.
+		// we keep track of max 100 IPs, in order to avoid too much time for
+		// calculation/storing/loading.
 		if (m_publishingIPs->size() > 100) {
 			sPublishingIP curEntry = m_publishingIPs->front();
 			m_publishingIPs->pop_front();
@@ -511,27 +531,34 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry* fromEntry)
 		// since we added a new publisher, we want to (re)calculate the trust value for this entry
 		ReCalculateTrustValue();
 	}
-	AddDebugLogLineN(logKadEntryTracking, CFormat("Indexed Keyword, Refresh: %s, Current Publisher: %s, Total Publishers: %u, Total different Names: %u, TrustValue: %.2f, file: %s")
-		% (refresh ? "Yes" : "No") % KadIPToString(m_uIP) % m_publishingIPs->size() % m_filenames.size() % m_trustValue % m_uSourceID.ToHexString());
+	AddDebugLogLineN(logKadEntryTracking,
+		CFormat("Indexed Keyword, Refresh: %s, Current Publisher: %s, Total Publishers: %u, Total "
+			"different Names: %u, TrustValue: %.2f, file: %s") %
+			(refresh ? "Yes" : "No") % KadIPToString(m_uIP) % m_publishingIPs->size() %
+			m_filenames.size() % m_trustValue % m_uSourceID.ToHexString());
 }
 
 void CKeyEntry::ReCalculateTrustValue()
 {
-#define PUBLISHPOINTSSPERSUBNET	10.0
-	// The trustvalue is supposed to be an indicator how trustworthy/important (or spammy) this entry is and lies between 0 and ~10000,
-	// but mostly we say everything below 1 is bad, everything above 1 is good. It is calculated by looking at how many different
-	// IPs/24 have published this entry and how many entries each of those IPs have.
-	// Each IP/24 has x (say 3) points. This means if one IP publishes 3 different entries without any other IP publishing those entries,
-	// each of those entries will have 3 / 3 = 1 Trustvalue. That's fine. If it publishes 6 alone, each entry has 3 / 6 = 0.5 trustvalue - not so good
-	// However if there is another publisher for entry 5, which only publishes this entry then we have 3/6 + 3/1 = 3.5 trustvalue for this entry
+#define PUBLISHPOINTSSPERSUBNET 10.0
+	// The trustvalue is supposed to be an indicator how trustworthy/important (or spammy) this entry is
+	// and lies between 0 and ~10000, but mostly we say everything below 1 is bad, everything above 1 is
+	// good. It is calculated by looking at how many different IPs/24 have published this entry and how
+	// many entries each of those IPs have. Each IP/24 has x (say 3) points. This means if one IP
+	// publishes 3 different entries without any other IP publishing those entries, each of those entries
+	// will have 3 / 3 = 1 Trustvalue. That's fine. If it publishes 6 alone, each entry has 3 / 6 = 0.5
+	// trustvalue - not so good However if there is another publisher for entry 5, which only publishes
+	// this entry then we have 3/6 + 3/1 = 3.5 trustvalue for this entry
 	//
-	// What's the point? With this rating we try to avoid getting spammed with entries for a given keyword by a small IP range, which blends out
-	// all other entries for this keyword do to its amount as well as giving an indicator for the searcher. So if we are the node to index "Knoppix", and someone
-	// from 1 IP publishes 500 times "knoppix casino 500% bonus.txt", all those entries will have a trustvalue of 0.006 and we make sure that
-	// on search requests for knoppix, those entries are only returned after all entries with a trustvalue > 1 were sent (if there is still space).
+	// What's the point? With this rating we try to avoid getting spammed with entries for a given keyword
+	// by a small IP range, which blends out all other entries for this keyword do to its amount as well
+	// as giving an indicator for the searcher. So if we are the node to index "Knoppix", and someone from
+	// 1 IP publishes 500 times "knoppix casino 500% bonus.txt", all those entries will have a trustvalue
+	// of 0.006 and we make sure that on search requests for knoppix, those entries are only returned
+	// after all entries with a trustvalue > 1 were sent (if there is still space).
 	//
-	// Its important to note that entry with < 1 do NOT get ignored or singled out, this only comes into play if we have 300 more results for
-	// a search request rating > 1
+	// Its important to note that entry with < 1 do NOT get ignored or singled out, this only comes into
+	// play if we have 300 more results for a search request rating > 1
 	wxCHECK_RET(m_publishingIPs != NULL, "No publishing IPs?");
 
 	m_lastTrustValueCalc = ::GetTickCount64();
@@ -540,7 +567,8 @@ void CKeyEntry::ReCalculateTrustValue()
 	for (PublishingIPList::iterator it = m_publishingIPs->begin(); it != m_publishingIPs->end(); ++it) {
 		sPublishingIP curEntry = *it;
 		uint32_t count = 0;
-		GlobalPublishIPMap::const_iterator itMap = s_globalPublishIPs.find(curEntry.m_ip & 0xFFFFFF00 /* /24 netmask, take care of endian if needed*/);
+		GlobalPublishIPMap::const_iterator itMap = s_globalPublishIPs.find(
+			curEntry.m_ip & 0xFFFFFF00 /* /24 netmask, take care of endian if needed*/);
 		if (itMap != s_globalPublishIPs.end()) {
 			count = itMap->second;
 		}
@@ -555,7 +583,8 @@ void CKeyEntry::ReCalculateTrustValue()
 
 double CKeyEntry::GetTrustValue()
 {
-	// update if last calculation is too old, will assert if this entry is not supposed to have a trustvalue
+	// update if last calculation is too old, will assert if this entry is not supposed to have a
+	// trustvalue
 	if (::GetTickCount64() - m_lastTrustValueCalc > MIN2MS(10)) {
 		ReCalculateTrustValue();
 	}
@@ -581,9 +610,10 @@ void CKeyEntry::CleanUpTrackedPublishers()
 	}
 }
 
-void CKeyEntry::WritePublishTrackingDataToFile(CFileDataIO* data)
+void CKeyEntry::WritePublishTrackingDataToFile(CFileDataIO *data)
 {
-	// format: <Names_Count 4><{<Name string><PopularityIndex 4>} Names_Count><PublisherCount 4><{<IP 4><Time 4>} PublisherCount>
+	// format: <Names_Count 4><{<Name string><PopularityIndex 4>} Names_Count><PublisherCount 4><{<IP
+	// 4><Time 4>} PublisherCount>
 	data->WriteUInt32((uint32_t)m_filenames.size());
 	for (FileNameList::const_iterator it = m_filenames.begin(); it != m_filenames.end(); ++it) {
 		data->WriteString(it->m_filename, utf8strRaw, 2);
@@ -592,7 +622,9 @@ void CKeyEntry::WritePublishTrackingDataToFile(CFileDataIO* data)
 
 	if (m_publishingIPs != NULL) {
 		data->WriteUInt32((uint32_t)m_publishingIPs->size());
-		for (PublishingIPList::const_iterator it = m_publishingIPs->begin(); it != m_publishingIPs->end(); ++it) {
+		for (PublishingIPList::const_iterator it = m_publishingIPs->begin();
+			it != m_publishingIPs->end();
+			++it) {
 			wxASSERT(it->m_ip != 0);
 			data->WriteUInt32(it->m_ip);
 			data->WriteUInt32((uint32_t)it->m_lastPublish);
@@ -603,9 +635,10 @@ void CKeyEntry::WritePublishTrackingDataToFile(CFileDataIO* data)
 	}
 }
 
-void CKeyEntry::ReadPublishTrackingDataFromFile(CFileDataIO* data)
+void CKeyEntry::ReadPublishTrackingDataFromFile(CFileDataIO *data)
 {
-	// format: <Names_Count 4><{<Name string><PopularityIndex 4>} Names_Count><PublisherCount 4><{<IP 4><Time 4>} PublisherCount>
+	// format: <Names_Count 4><{<Name string><PopularityIndex 4>} Names_Count><PublisherCount 4><{<IP
+	// 4><Time 4>} PublisherCount>
 	wxASSERT(m_filenames.empty());
 	uint32_t nameCount = data->ReadUInt32();
 	for (uint32_t i = 0; i < nameCount; i++) {
@@ -627,7 +660,8 @@ void CKeyEntry::ReadPublishTrackingDataFromFile(CFileDataIO* data)
 		wxASSERT(toAdd.m_ip != 0);
 		toAdd.m_lastPublish = data->ReadUInt32();
 #ifdef __WXDEBUG__
-		wxASSERT(dbgLastTime <= (uint32_t)toAdd.m_lastPublish); // should always be sorted oldest first
+		wxASSERT(
+			dbgLastTime <= (uint32_t)toAdd.m_lastPublish); // should always be sorted oldest first
 		dbgLastTime = toAdd.m_lastPublish;
 #endif
 
@@ -636,24 +670,25 @@ void CKeyEntry::ReadPublishTrackingDataFromFile(CFileDataIO* data)
 		m_publishingIPs->push_back(toAdd);
 	}
 	ReCalculateTrustValue();
-// #ifdef __DEBUG__
-//	if (GetTrustValue() < 1.0) {
-//		AddDebugLogLineN(logKadEntryTracking,CFormat("Loaded %u different names, %u different publishIPs (trustvalue = %.2f) for file %s")
-//			% nameCount % ipCount % GetTrustValue() % m_uSourceID.ToHexString());
-//	}
-// #endif
+	// #ifdef __DEBUG__
+	//	if (GetTrustValue() < 1.0) {
+	//		AddDebugLogLineN(logKadEntryTracking,CFormat("Loaded %u different names, %u different
+	// publishIPs (trustvalue = %.2f) for file %s") 			% nameCount % ipCount %
+	// GetTrustValue() % m_uSourceID.ToHexString());
+	//	}
+	// #endif
 }
 
 void CKeyEntry::DirtyDeletePublishData()
 {
-	// instead of deleting our publishers properly in the destructor with decreasing the count in the global map
-	// we just remove them, and trust that the caller in the end also resets the global map, so the
-	// kad shutdown is speed up a bit
+	// instead of deleting our publishers properly in the destructor with decreasing the count in the
+	// global map we just remove them, and trust that the caller in the end also resets the global map, so
+	// the kad shutdown is speed up a bit
 	delete m_publishingIPs;
 	m_publishingIPs = NULL;
 }
 
-void CKeyEntry::WriteTagListWithPublishInfo(CFileDataIO* data)
+void CKeyEntry::WriteTagListWithPublishInfo(CFileDataIO *data)
 {
 	if (m_publishingIPs == NULL || m_publishingIPs->empty()) {
 		wxFAIL;
@@ -661,9 +696,10 @@ void CKeyEntry::WriteTagListWithPublishInfo(CFileDataIO* data)
 		return;
 	}
 
-	// here we add a tag including how many publishers this entry has, the trustvalue and how many different names are known
-	// this is supposed to get used in later versions as an indicator for the user how valid this result is (of course this tag
-	// alone cannot be trusted 100%, because we could be a bad node, but it's a part of the puzzle)
+	// here we add a tag including how many publishers this entry has, the trustvalue and how many
+	// different names are known this is supposed to get used in later versions as an indicator for the
+	// user how valid this result is (of course this tag alone cannot be trusted 100%, because we could be
+	// a bad node, but it's a part of the puzzle)
 
 	WriteTagListInc(data, 1); // write the standard taglist but increase the tagcount by one
 

@@ -23,45 +23,43 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "MemFile.h"	// Interface declarations
-
+#include "MemFile.h" // Interface declarations
 
 CMemFile::CMemFile(unsigned int growthRate)
 {
-	m_buffer		= NULL;
-	m_BufferSize	= 0;
-	m_fileSize		= 0;
-	m_growthRate	= growthRate;
-	m_position		= 0;
-	m_delete		= true;
-	m_readonly		= false;
+	m_buffer = NULL;
+	m_BufferSize = 0;
+	m_fileSize = 0;
+	m_growthRate = growthRate;
+	m_position = 0;
+	m_delete = true;
+	m_readonly = false;
 }
 
-
-CMemFile::CMemFile(uint8* buffer, size_t bufferSize)
+CMemFile::CMemFile(uint8 *buffer, size_t bufferSize)
 {
 	MULE_VALIDATE_PARAMS(buffer, "CMemFile: Attempted to attach invalid buffer.");
 
-	m_buffer		= buffer;
-	m_BufferSize	= bufferSize;
-	m_fileSize		= bufferSize;
-	m_growthRate	= 0;
-	m_position		= 0;
-	m_delete		= false;
-	m_readonly		= false;
+	m_buffer = buffer;
+	m_BufferSize = bufferSize;
+	m_fileSize = bufferSize;
+	m_growthRate = 0;
+	m_position = 0;
+	m_delete = false;
+	m_readonly = false;
 }
 
-CMemFile::CMemFile(const uint8* buffer, size_t bufferSize)
+CMemFile::CMemFile(const uint8 *buffer, size_t bufferSize)
 {
 	MULE_VALIDATE_PARAMS(buffer, "CMemFile: Attempted to attach invalid buffer.");
 
-	m_buffer		= const_cast<uint8*>(buffer);
-	m_BufferSize	= bufferSize;
-	m_fileSize		= bufferSize;
-	m_growthRate	= 0;
-	m_position		= 0;
-	m_delete		= false;
-	m_readonly		= true;
+	m_buffer = const_cast<uint8 *>(buffer);
+	m_BufferSize = bufferSize;
+	m_fileSize = bufferSize;
+	m_growthRate = 0;
+	m_position = 0;
+	m_delete = false;
+	m_readonly = true;
 }
 
 CMemFile::~CMemFile()
@@ -71,12 +69,10 @@ CMemFile::~CMemFile()
 	}
 }
 
-
 uint64 CMemFile::GetPosition() const
 {
 	return m_position;
 }
-
 
 void CMemFile::SetLength(size_t newLen)
 {
@@ -93,12 +89,10 @@ void CMemFile::SetLength(size_t newLen)
 	m_fileSize = newLen;
 }
 
-
 uint64 CMemFile::GetLength() const
 {
 	return m_fileSize;
 }
-
 
 void CMemFile::enlargeBuffer(size_t size)
 {
@@ -115,7 +109,7 @@ void CMemFile::enlargeBuffer(size_t size)
 		newsize = size;
 	}
 
-	uint8 *tmp = (uint8*)realloc(m_buffer, newsize);
+	uint8 *tmp = (uint8 *)realloc(m_buffer, newsize);
 	if (tmp) {
 		m_buffer = tmp;
 		m_BufferSize = newsize;
@@ -124,8 +118,7 @@ void CMemFile::enlargeBuffer(size_t size)
 	MULE_VALIDATE_STATE(tmp, "CMemFile: Failed to (re)allocate buffer");
 }
 
-
-sint64 CMemFile::doRead(void* buffer, size_t count) const
+sint64 CMemFile::doRead(void *buffer, size_t count) const
 {
 	MULE_VALIDATE_PARAMS(buffer, "CMemFile: Attempting to read to invalid buffer");
 
@@ -144,8 +137,7 @@ sint64 CMemFile::doRead(void* buffer, size_t count) const
 	return count;
 }
 
-
-sint64 CMemFile::doWrite(const void* buffer, size_t count)
+sint64 CMemFile::doWrite(const void *buffer, size_t count)
 {
 	MULE_VALIDATE_PARAMS(buffer, "CMemFile: Attempting to write to invalid buffer");
 	MULE_VALIDATE_STATE(!m_readonly, "CMemFile: Attempted to write to a read-only buffer.");
@@ -155,7 +147,8 @@ sint64 CMemFile::doWrite(const void* buffer, size_t count)
 		enlargeBuffer(m_position + count);
 	}
 
-	MULE_VALIDATE_STATE(m_position + count <= m_BufferSize, "CMemFile: Buffer not resized to needed size.");
+	MULE_VALIDATE_STATE(
+		m_position + count <= m_BufferSize, "CMemFile: Buffer not resized to needed size.");
 
 	memcpy(m_buffer + m_position, buffer, count);
 	m_position += count;
@@ -167,7 +160,6 @@ sint64 CMemFile::doWrite(const void* buffer, size_t count)
 	return count;
 }
 
-
 sint64 CMemFile::doSeek(sint64 offset) const
 {
 	MULE_VALIDATE_PARAMS(offset >= 0, "CMemFile: Invalid seek, position, must be positive.");
@@ -175,14 +167,13 @@ sint64 CMemFile::doSeek(sint64 offset) const
 	return m_position = offset;
 }
 
-
 void CMemFile::ResetData()
 {
 	wxCHECK_RET(!m_readonly, "Trying to reset read-only buffer");
 
 	memset(m_buffer, 0, m_BufferSize);
-	m_fileSize	= 0;
-	m_position	= 0;
+	m_fileSize = 0;
+	m_position = 0;
 }
 
 // File_checked_for_headers

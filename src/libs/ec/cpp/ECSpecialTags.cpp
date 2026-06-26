@@ -23,65 +23,70 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include "ECTag.h"         // Needed for CECTag
+#include "ECSpecialTags.h" // Needed for special EC tag creator classes
 
-#include "ECTag.h"		// Needed for CECTag
-#include "ECSpecialTags.h"	// Needed for special EC tag creator classes
+#include <common/Format.h> // Needed for CFormat
 
-#include <common/Format.h>		// Needed for CFormat
-
-#include "../../../OtherFunctions.h"	// Needed for CastXtoY
-#include "../../../Constants.h"			// Needed for PS_*
+#include "../../../OtherFunctions.h" // Needed for CastXtoY
+#include "../../../Constants.h"      // Needed for PS_*
 
 wxString CEC_PartFile_Tag::GetFileStatusString() const
 {
 	uint8 nFileStatus = FileStatus();
 
-        if ((nFileStatus == PS_HASHING) || (nFileStatus == PS_WAITING_FOR_HASH)) {
-                return _("Hashing");
-        } else {
-                switch (nFileStatus) {
-                        case PS_COMPLETING:
-                                return _("Completing");
-                        case PS_COMPLETE:
-                                return _("Complete");
-                        case PS_PAUSED:
-                                return _("Paused");
-                        case PS_ERROR:
-                                return _("Erroneous");
-                        default:
-                                if (SourceXferCount() > 0) {
-                                        return _("Downloading");
-                                } else {
-                                        return _("Waiting");
-                                }
-                }
-                // if stopped
-        }
+	if ((nFileStatus == PS_HASHING) || (nFileStatus == PS_WAITING_FOR_HASH)) {
+		return _("Hashing");
+	} else {
+		switch (nFileStatus) {
+		case PS_COMPLETING:
+			return _("Completing");
+		case PS_COMPLETE:
+			return _("Complete");
+		case PS_PAUSED:
+			return _("Paused");
+		case PS_ERROR:
+			return _("Erroneous");
+		default:
+			if (SourceXferCount() > 0) {
+				return _("Downloading");
+			} else {
+				return _("Waiting");
+			}
+		}
+		// if stopped
+	}
 }
 
 //
 // Search request
 //
-CEC_Search_Tag::CEC_Search_Tag(const wxString &name, EC_SEARCH_TYPE search_type, const wxString &file_type,
-			const wxString &extension, uint32 avail, uint64 min_size, uint64 max_size) : CECTag(EC_TAG_SEARCH_TYPE, (uint32)search_type)
+CEC_Search_Tag::CEC_Search_Tag(const wxString &name,
+	EC_SEARCH_TYPE search_type,
+	const wxString &file_type,
+	const wxString &extension,
+	uint32 avail,
+	uint64 min_size,
+	uint64 max_size)
+: CECTag(EC_TAG_SEARCH_TYPE, (uint32)search_type)
 {
 	AddTag(CECTag(EC_TAG_SEARCH_NAME, name));
 	AddTag(CECTag(EC_TAG_SEARCH_FILE_TYPE, file_type));
-	if ( !extension.IsEmpty() ) {
+	if (!extension.IsEmpty()) {
 		AddTag(CECTag(EC_TAG_SEARCH_EXTENSION, extension));
 	}
-	if ( avail ) {
+	if (avail) {
 		AddTag(CECTag(EC_TAG_SEARCH_AVAILABILITY, avail));
 	}
-	if ( min_size != 0 ) {
+	if (min_size != 0) {
 		AddTag(CECTag(EC_TAG_SEARCH_MIN_SIZE, min_size));
 	}
-	if ( max_size != 0 ) {
+	if (max_size != 0) {
 		AddTag(CECTag(EC_TAG_SEARCH_MAX_SIZE, max_size));
 	}
 }
 
-static void FormatValue(CFormat& format, const CECTag* tag)
+static void FormatValue(CFormat &format, const CECTag *tag)
 {
 	wxASSERT(tag->GetTagName() == EC_TAG_STAT_NODE_VALUE);
 
@@ -89,52 +94,54 @@ static void FormatValue(CFormat& format, const CECTag* tag)
 	const CECTag *tmp_tag = tag->GetTagByName(EC_TAG_STAT_NODE_VALUE);
 	if (tmp_tag) {
 		wxString tmp_fmt;
-		const CECTag* tmp_vt = tmp_tag->GetTagByName(EC_TAG_STAT_VALUE_TYPE);
-		EC_STATTREE_NODE_VALUE_TYPE tmp_valueType = tmp_vt != NULL ? (EC_STATTREE_NODE_VALUE_TYPE)tmp_vt->GetInt() : EC_VALUE_INTEGER;
+		const CECTag *tmp_vt = tmp_tag->GetTagByName(EC_TAG_STAT_VALUE_TYPE);
+		EC_STATTREE_NODE_VALUE_TYPE tmp_valueType =
+			tmp_vt != NULL ? (EC_STATTREE_NODE_VALUE_TYPE)tmp_vt->GetInt() : EC_VALUE_INTEGER;
 		switch (tmp_valueType) {
-			case EC_VALUE_INTEGER:
-				tmp_fmt = "%llu";
-				break;
-			case EC_VALUE_DOUBLE:
-				tmp_fmt = "%.2f%%";	// it's used for percentages
-				break;
-			default:
-				tmp_fmt = "%s";
+		case EC_VALUE_INTEGER:
+			tmp_fmt = "%llu";
+			break;
+		case EC_VALUE_DOUBLE:
+			tmp_fmt = "%.2f%%"; // it's used for percentages
+			break;
+		default:
+			tmp_fmt = "%s";
 		}
 		CFormat tmp_format(wxString(" (") + tmp_fmt + ")");
 		FormatValue(tmp_format, tmp_tag);
 		extra = tmp_format.GetString();
 	}
 
-	const CECTag* vt = tag->GetTagByName(EC_TAG_STAT_VALUE_TYPE);
-	EC_STATTREE_NODE_VALUE_TYPE valueType = vt != NULL ? (EC_STATTREE_NODE_VALUE_TYPE)vt->GetInt() : EC_VALUE_INTEGER;
+	const CECTag *vt = tag->GetTagByName(EC_TAG_STAT_VALUE_TYPE);
+	EC_STATTREE_NODE_VALUE_TYPE valueType =
+		vt != NULL ? (EC_STATTREE_NODE_VALUE_TYPE)vt->GetInt() : EC_VALUE_INTEGER;
 	switch (valueType) {
-		case EC_VALUE_INTEGER:
-			format = format % tag->GetInt();
-			break;
-		case EC_VALUE_ISTRING:
-			format = format % (CFormat("%u") % tag->GetInt() + extra);
-			break;
-		case EC_VALUE_BYTES:
-			format = format % (CastItoXBytes(tag->GetInt()) + extra);
-			break;
-		case EC_VALUE_ISHORT:
-			format = format % (CastItoIShort(tag->GetInt()) + extra);
-			break;
-		case EC_VALUE_TIME:
-			format = format % (CastSecondsToHM(tag->GetInt()) + extra);
-			break;
-		case EC_VALUE_SPEED:
-			format = format % (CastItoSpeed(tag->GetInt()) + extra);
-			break;
-		case EC_VALUE_STRING:
-			format = format % (wxGetTranslation(tag->GetStringData()) + extra);
-			break;
-		case EC_VALUE_DOUBLE:
-			format = format % tag->GetDoubleData();
-			break;
-		default:
-			wxFAIL;
+	case EC_VALUE_INTEGER:
+		format = format % tag->GetInt();
+		break;
+	case EC_VALUE_ISTRING:
+		format = format % (CFormat("%u") % tag->GetInt() + extra);
+		break;
+	case EC_VALUE_BYTES:
+		format = format % (CastItoXBytes(tag->GetInt()) + extra);
+		break;
+	case EC_VALUE_ISHORT:
+		format = format % (CastItoIShort(tag->GetInt()) + extra);
+		break;
+	case EC_VALUE_TIME:
+		format = format % (CastSecondsToHM(tag->GetInt()) + extra);
+		break;
+	case EC_VALUE_SPEED:
+		format = format % (CastItoSpeed(tag->GetInt()) + extra);
+		break;
+	case EC_VALUE_STRING:
+		format = format % (wxGetTranslation(tag->GetStringData()) + extra);
+		break;
+	case EC_VALUE_DOUBLE:
+		format = format % tag->GetDoubleData();
+		break;
+	default:
+		wxFAIL;
 	}
 }
 
@@ -145,7 +152,8 @@ wxString CEC_StatTree_Node_Tag::GetDisplayString() const
 	// This is needed for client names, for example
 	if (my_label == en_label) {
 		if (en_label.Right(4) == ": %s") {
-			my_label = wxGetTranslation(en_label.Mid(0, en_label.Length() - 4)) + wxString(": %s");
+			my_label =
+				wxGetTranslation(en_label.Mid(0, en_label.Length() - 4)) + wxString(": %s");
 		}
 	}
 	CFormat label(my_label);

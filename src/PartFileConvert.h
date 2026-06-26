@@ -25,7 +25,7 @@
 
 #ifndef PARTFILECONVERT_H
 #if !defined __need_convertinfo
-#	define PARTFILECONVERT_H
+#define PARTFILECONVERT_H
 #endif
 
 #if !defined __have_convertinfo && (defined __need_convertinfo || defined PARTFILECONVERT_H)
@@ -37,14 +37,15 @@
 
 struct ConvertJob;
 
-struct ConvertInfo {
-	unsigned	id;
-	CPath		folder;
-	CPath		filename;
-	wxString	filehash;
-	ConvStatus	state;
-	uint32_t	size;
-	uint32_t	spaceneeded;
+struct ConvertInfo
+{
+	unsigned id;
+	CPath folder;
+	CPath filename;
+	wxString filehash;
+	ConvStatus state;
+	uint32_t size;
+	uint32_t spaceneeded;
 	ConvertInfo(ConvertJob *);
 };
 
@@ -58,25 +59,28 @@ struct ConvertInfo {
 class CPartFileConvert : private wxThread
 {
 public:
-	static int	ScanFolderToAdd(const CPath& folder, bool deletesource = false);
-	static void	ConvertToeMule(const CPath& file, bool deletesource = false);
-	static void	StartThread();
-	static void	StopThread();
+	static int ScanFolderToAdd(const CPath &folder, bool deletesource = false);
+	static void ConvertToeMule(const CPath &file, bool deletesource = false);
+	static void StartThread();
+	static void StopThread();
 
-	static void	RemoveJob(unsigned id);
-	static void	RetryJob(unsigned id);
-	static void	ReaddAllJobs();
+	static void RemoveJob(unsigned id);
+	static void RetryJob(unsigned id);
+	static void ReaddAllJobs();
 
 private:
-	CPartFileConvert() : wxThread(wxTHREAD_DETACHED) {}
+	CPartFileConvert()
+	: wxThread(wxTHREAD_DETACHED)
+	{
+	}
 
-	static ConvStatus	performConvertToeMule(const CPath& file);
-	virtual ExitCode	Entry();
+	static ConvStatus performConvertToeMule(const CPath &file);
+	virtual ExitCode Entry();
 
-	static wxMutex			s_mutex;
-	static wxThread*		s_convertPfThread;
-	static std::list<ConvertJob*>	s_jobs;
-	static ConvertJob*		s_pfconverting;
+	static wxMutex s_mutex;
+	static wxThread *s_convertPfThread;
+	static std::list<ConvertJob *> s_jobs;
+	static ConvertJob *s_pfconverting;
 };
 
 #endif

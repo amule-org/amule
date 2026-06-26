@@ -28,20 +28,19 @@
 
 #include <wx/notebook.h>
 
-
 wxDECLARE_EVENT(wxEVT_COMMAND_MULENOTEBOOK_PAGE_CLOSING, wxEvent);
 wxDECLARE_EVENT(wxEVT_COMMAND_MULENOTEBOOK_ALL_PAGES_CLOSED, wxEvent);
 
 #define EVT_MULENOTEBOOK_PAGE_CLOSING(id, fn) \
-	wx__DECLARE_EVT1(wxEVT_COMMAND_MULENOTEBOOK_PAGE_CLOSING, id, \
+	wx__DECLARE_EVT1(wxEVT_COMMAND_MULENOTEBOOK_PAGE_CLOSING, \
+		id, \
 		wxEVENT_HANDLER_CAST(wxNotebookEventFunction, fn))
 #define EVT_MULENOTEBOOK_ALL_PAGES_CLOSED(id, fn) \
-	wx__DECLARE_EVT1(wxEVT_COMMAND_MULENOTEBOOK_ALL_PAGES_CLOSED, id, \
+	wx__DECLARE_EVT1(wxEVT_COMMAND_MULENOTEBOOK_ALL_PAGES_CLOSED, \
+		id, \
 		wxEVENT_HANDLER_CAST(wxNotebookEventFunction, fn))
 
-
 class wxWindow;
-
 
 /**
  * This is an NoteBook control which adds additional features above what is
@@ -58,7 +57,12 @@ public:
 	 *
 	 * @see wxNotebook::wxNotebook
 	 */
-	CMuleNotebook( wxWindow *parent, wxWindowID id, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0, const wxString& name = "notebook" );
+	CMuleNotebook(wxWindow *parent,
+		wxWindowID id,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = 0,
+		const wxString &name = "notebook");
 
 	/**
 	 * Destructor.
@@ -77,13 +81,12 @@ public:
 	 */
 	virtual bool DeleteAllPages();
 
-
 	/**
 	 * Enables or disables the displaying of a popup-menu.
 	 *
 	 * @param enabled The new setting.
 	 */
-	void EnablePopup( bool enable );
+	void EnablePopup(bool enable);
 
 	/**
 	 * Sets an external widget to handle the popup-event.
@@ -95,7 +98,7 @@ public:
 	 * popup-menu. The coordinates will be fixed to fit onto the specified widget,
 	 * so no mapping is needed.
 	 */
-	void SetPopupHandler( wxWindow* widget );
+	void SetPopupHandler(wxWindow *widget);
 
 protected:
 	/**
@@ -111,36 +114,36 @@ protected:
 	/**
 	 * Event-handler for right-clicks that takes care of displaying the popup-menu.
 	 */
-	void OnRMButton(wxMouseEvent& event);
+	void OnRMButton(wxMouseEvent &event);
 
 	/**
 	 * Event-handler of the Close item on the popup-menu.
 	 */
-	void OnPopupClose(wxCommandEvent& evt);
+	void OnPopupClose(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler of the CloseAll item on the popup-menu.
 	 */
-	void OnPopupCloseAll(wxCommandEvent& evt);
+	void OnPopupCloseAll(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler of the CloseOthers item on the popup-menu.
 	 */
-	void OnPopupCloseOthers(wxCommandEvent& evt);
+	void OnPopupCloseOthers(wxCommandEvent &evt);
 
 	//! Keeps track of the popup-menu being enabled or not.
-	bool		m_popup_enable;
+	bool m_popup_enable;
 
 	//! The pointer to the widget which would receive right-click events or NULL.
-	wxWindow*	m_popup_widget;
+	wxWindow *m_popup_widget;
 
 	wxDECLARE_EVENT_TABLE();
 };
 
 #ifdef __WINDOWS__
-	#define MULE_NOTEBOOK_TAB_HEIGHT 26
+#define MULE_NOTEBOOK_TAB_HEIGHT 26
 #else
-	#define MULE_NOTEBOOK_TAB_HEIGHT 40
+#define MULE_NOTEBOOK_TAB_HEIGHT 40
 #endif
 
 #endif

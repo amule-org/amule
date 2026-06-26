@@ -27,48 +27,42 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 #include "onlinesig.h"
 
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
 
 // Constructor
-OnLineSig::OnLineSig ( const wxFileName& file,
-                       const double absoluteMaxDL,
-                       const wxDateTime absoluteMaxDlDate )
-	: m_sessionMaxDL(0.0)
-	, m_sessionMaxDLDate(wxDateTime::Now())
-	, m_isSessionMaxDlReseted(false)
-	, m_absoluteMaxDL(absoluteMaxDL)
-	, m_absoluteMaxDlDate(absoluteMaxDlDate)
-	, m_isAbsoluteMaxDlReseted(false)
-	, m_amulesig(file)
+OnLineSig::OnLineSig(const wxFileName &file, const double absoluteMaxDL, const wxDateTime absoluteMaxDlDate)
+: m_sessionMaxDL(0.0)
+, m_sessionMaxDLDate(wxDateTime::Now())
+, m_isSessionMaxDlReseted(false)
+, m_absoluteMaxDL(absoluteMaxDL)
+, m_absoluteMaxDlDate(absoluteMaxDlDate)
+, m_isAbsoluteMaxDlReseted(false)
+, m_amulesig(file)
 {
-	Refresh ();
+	Refresh();
 }
 
 // Destructor
-OnLineSig::~OnLineSig ()
-{}
+OnLineSig::~OnLineSig() {}
 
 // Accessors
-void
-OnLineSig::SetAmuleSig ( const wxFileName& file )
+void OnLineSig::SetAmuleSig(const wxFileName &file)
 {
 	m_amulesig = file;
-	Refresh ();
+	Refresh();
 }
 
-void
-OnLineSig::Refresh ()
+void OnLineSig::Refresh()
 {
 	wxFile file;
-	if ( file.Open(m_amulesig.GetFullPath ()) ) {
-		wxFileInputStream input ( file );
+	if (file.Open(m_amulesig.GetFullPath())) {
+		wxFileInputStream input(file);
 
-		wxTextInputStream text ( input );
-		text.SetStringSeparators ( "\n" );
+		wxTextInputStream text(input);
+		text.SetStringSeparators("\n");
 
 		text >> m_amuleState;
 		text >> m_serverName;
@@ -89,188 +83,183 @@ OnLineSig::Refresh ()
 		text >> m_runTimeS;
 
 		double dl;
-		m_DLRate.ToDouble ( &dl );
+		m_DLRate.ToDouble(&dl);
 
-		if ( dl > m_sessionMaxDL || m_isSessionMaxDlReseted ) {
+		if (dl > m_sessionMaxDL || m_isSessionMaxDlReseted) {
 			m_sessionMaxDL = dl;
 			m_sessionMaxDLDate = wxDateTime::Now();
 			m_isSessionMaxDlChanged = true;
 			m_isSessionMaxDlReseted = false;
-		}
-		else {
+		} else {
 			m_isSessionMaxDlChanged = false;
 		}
 
-		if ( dl > m_absoluteMaxDL || m_isAbsoluteMaxDlReseted ) {
+		if (dl > m_absoluteMaxDL || m_isAbsoluteMaxDlReseted) {
 			m_absoluteMaxDL = dl;
 			m_absoluteMaxDlDate = wxDateTime::Now();
 			m_isAbsoluteMaxDlChanged = true;
 			m_isAbsoluteMaxDlReseted = false;
-		}
-		else {
+		} else {
 			m_isAbsoluteMaxDlChanged = false;
 		}
 	}
 	file.Close();
-
 }
 
 int OnLineSig::GetAmuleState() const
 {
-	if ( m_amuleState >= 0 && m_amuleState <= 2 ) {
-		return ( m_amuleState );
+	if (m_amuleState >= 0 && m_amuleState <= 2) {
+		return (m_amuleState);
 	} else {
-		return ( -1 );
+		return (-1);
 	}
 }
 
 int OnLineSig::GetKadState() const
 {
-	if ( m_kadInfo >= 0 && m_kadInfo <= 2 ) {
-		return ( m_kadInfo );
+	if (m_kadInfo >= 0 && m_kadInfo <= 2) {
+		return (m_kadInfo);
 	} else {
-		return ( -1 );
+		return (-1);
 	}
 }
 
-wxString OnLineSig::GetServerName () const
+wxString OnLineSig::GetServerName() const
 {
 	return m_serverName;
 }
 
-wxString OnLineSig::GetServerIP () const
+wxString OnLineSig::GetServerIP() const
 {
 	return m_serverIP;
 }
 
-wxString OnLineSig::GetServerPort () const
+wxString OnLineSig::GetServerPort() const
 {
 	return m_serverPort;
 }
 
-wxString OnLineSig::GetConnexionID () const
+wxString OnLineSig::GetConnexionID() const
 {
 	return m_connexionID;
 }
 
-wxString OnLineSig::GetULRate () const
+wxString OnLineSig::GetULRate() const
 {
 	return m_ULRate;
 }
 
-wxString OnLineSig::GetDLRate () const
+wxString OnLineSig::GetDLRate() const
 {
 	return m_DLRate;
 }
 
-wxString OnLineSig::GetQueue () const
+wxString OnLineSig::GetQueue() const
 {
 	return m_queue;
 }
 
-wxString OnLineSig::GetSharedFiles () const
+wxString OnLineSig::GetSharedFiles() const
 {
 	return m_sharedFiles;
 }
 
-wxString OnLineSig::GetUser () const
+wxString OnLineSig::GetUser() const
 {
 	return m_user;
 }
 
-wxString OnLineSig::GetTotalUL () const
+wxString OnLineSig::GetTotalUL() const
 {
 	return m_totalUL;
 }
 
-
-wxString OnLineSig::GetTotalDL () const
+wxString OnLineSig::GetTotalDL() const
 {
 	return m_totalDL;
 }
 
-wxString OnLineSig::GetVersion () const
+wxString OnLineSig::GetVersion() const
 {
 	return m_version;
 }
 
-wxString OnLineSig::GetSessionUL () const
+wxString OnLineSig::GetSessionUL() const
 {
 	return m_sessionUL;
 }
 
-wxString OnLineSig::GetSessionDL () const
+wxString OnLineSig::GetSessionDL() const
 {
 	return m_sessionDL;
 }
 
-//only used to check if aMule is running or not
-int OnLineSig::GetUpStatus () const
+// only used to check if aMule is running or not
+int OnLineSig::GetUpStatus() const
 {
 	return m_runTimeS;
 }
 
-wxString OnLineSig::GetRunTime ()
+wxString OnLineSig::GetRunTime()
 {
 	unsigned int seconds = m_runTimeS;
-	unsigned int days = PullCount( &seconds, 86400 );
-	unsigned int hours = PullCount( &seconds, 3600 );
-	unsigned int minutes = PullCount( &seconds, 60 );
+	unsigned int days = PullCount(&seconds, 86400);
+	unsigned int hours = PullCount(&seconds, 3600);
+	unsigned int minutes = PullCount(&seconds, 60);
 
-	if ( days > 0 ) {
-		return ( wxString::Format ( _( "%02uD %02uh %02umin %02us" ), days, hours, minutes, seconds ) );
-	} else if ( hours > 0 ) {
-		return ( wxString::Format ( _( "%02uh %02umin %02us" ), hours, minutes, seconds ) );
-	} else if ( minutes > 0 ) {
-		return ( wxString::Format ( _( "%02umin %02us" ), minutes, seconds ) );
+	if (days > 0) {
+		return (wxString::Format(_("%02uD %02uh %02umin %02us"), days, hours, minutes, seconds));
+	} else if (hours > 0) {
+		return (wxString::Format(_("%02uh %02umin %02us"), hours, minutes, seconds));
+	} else if (minutes > 0) {
+		return (wxString::Format(_("%02umin %02us"), minutes, seconds));
 	} else {
-		return ( wxString::Format ( _( "%02us" ), seconds ) );
+		return (wxString::Format(_("%02us"), seconds));
 	}
 }
 
-wxString OnLineSig::GetConvertedTotalUL ()
+wxString OnLineSig::GetConvertedTotalUL()
 {
-	return ( BytesConvertion ( m_totalUL ) );
+	return (BytesConvertion(m_totalUL));
 }
 
-wxString OnLineSig::GetConvertedTotalDL ()
+wxString OnLineSig::GetConvertedTotalDL()
 {
-	return ( BytesConvertion ( m_totalDL ) );
+	return (BytesConvertion(m_totalDL));
 }
 
-wxString OnLineSig::GetConvertedSessionUL ()
+wxString OnLineSig::GetConvertedSessionUL()
 {
-	return ( BytesConvertion ( m_sessionUL ) );
+	return (BytesConvertion(m_sessionUL));
 }
 
-wxString OnLineSig::GetConvertedSessionDL ()
+wxString OnLineSig::GetConvertedSessionDL()
 {
-	return ( BytesConvertion ( m_sessionDL ) );
+	return (BytesConvertion(m_sessionDL));
 }
 
-wxString OnLineSig::GetConnexionIDType () const
+wxString OnLineSig::GetConnexionIDType() const
 {
-	if ( m_connexionID == "H" ) {
-		return ( wxString ( _( "HighID" ) ) );
-	} else if ( m_connexionID == "L" ) {
-                return ( wxString ( _( "LowID" ) ) );
+	if (m_connexionID == "H") {
+		return (wxString(_("HighID")));
+	} else if (m_connexionID == "L") {
+		return (wxString(_("LowID")));
+	} else {
+		return (wxString(_("Not Connected")));
 	}
-	else {
-		return ( wxString ( _( "Not Connected" ) ) );
-	}
 }
 
-double OnLineSig::GetSessionMaxDL () const
+double OnLineSig::GetSessionMaxDL() const
 {
-	return ( m_sessionMaxDL );
+	return (m_sessionMaxDL);
 }
 
-wxDateTime OnLineSig::GetSessionMaxDlDate () const
+wxDateTime OnLineSig::GetSessionMaxDlDate() const
 {
-	return ( m_sessionMaxDLDate );
+	return (m_sessionMaxDLDate);
 }
 
-void OnLineSig::ResetSessionMaxDL ()
+void OnLineSig::ResetSessionMaxDL()
 {
 	m_sessionMaxDL = 0.0;
 	m_sessionMaxDLDate = wxDateTime::Now();
@@ -279,20 +268,20 @@ void OnLineSig::ResetSessionMaxDL ()
 
 bool OnLineSig::IsSessionMaxDlChanged() const
 {
-	return ( m_isSessionMaxDlChanged );
+	return (m_isSessionMaxDlChanged);
 }
 
-double OnLineSig::GetAbsoluteMaxDL () const
+double OnLineSig::GetAbsoluteMaxDL() const
 {
-	return ( m_absoluteMaxDL );
+	return (m_absoluteMaxDL);
 }
 
-wxDateTime OnLineSig::GetAbsoluteMaxDlDate () const
+wxDateTime OnLineSig::GetAbsoluteMaxDlDate() const
 {
-	return ( m_absoluteMaxDlDate );
+	return (m_absoluteMaxDlDate);
 }
 
-void OnLineSig::ResetAbsoluteMaxDL ()
+void OnLineSig::ResetAbsoluteMaxDL()
 {
 	m_absoluteMaxDL = 0.0;
 	m_absoluteMaxDlDate = wxDateTime::Now();
@@ -301,47 +290,44 @@ void OnLineSig::ResetAbsoluteMaxDL ()
 
 bool OnLineSig::IsAbsoluteMaxDlChanged() const
 {
-	return ( m_isAbsoluteMaxDlChanged );
+	return (m_isAbsoluteMaxDlChanged);
 }
 
 // Private use
-wxString OnLineSig::BytesConvertion ( const wxString & bytes )
+wxString OnLineSig::BytesConvertion(const wxString &bytes)
 {
-	double
-	d_bytes;
-	wxString
-	c_bytes;
+	double d_bytes;
+	wxString c_bytes;
 
-	bytes.ToDouble ( &d_bytes );
+	bytes.ToDouble(&d_bytes);
 
-	int
-	i = 0;
-	while ( d_bytes > 1024 ) {
+	int i = 0;
+	while (d_bytes > 1024) {
 		d_bytes /= 1024;
 		i++;
 	}
 
-	switch ( i ) {
+	switch (i) {
 	case 0:
-		c_bytes = wxString::Format ( _( "%.0f B" ), d_bytes );
+		c_bytes = wxString::Format(_("%.0f B"), d_bytes);
 		break;
 	case 1:
-		c_bytes = wxString::Format ( _( "%.2f KB" ), d_bytes );
+		c_bytes = wxString::Format(_("%.2f KB"), d_bytes);
 		break;
 	case 2:
-		c_bytes = wxString::Format ( _( "%.2f MB" ), d_bytes );
+		c_bytes = wxString::Format(_("%.2f MB"), d_bytes);
 		break;
 	case 3:
-		c_bytes = wxString::Format ( _( "%.2f GB" ), d_bytes );
+		c_bytes = wxString::Format(_("%.2f GB"), d_bytes);
 		break;
 	default:
-		c_bytes = wxString::Format ( _( "%.2f TB" ), d_bytes );
+		c_bytes = wxString::Format(_("%.2f TB"), d_bytes);
 		break;
 	}
 	return c_bytes;
 }
 
-unsigned int OnLineSig::PullCount ( unsigned int *runtime, const unsigned int count )
+unsigned int OnLineSig::PullCount(unsigned int *runtime, const unsigned int count)
 {
 	unsigned int answer = *runtime / count;
 	*runtime -= answer * count;

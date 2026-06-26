@@ -23,17 +23,16 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef __LIBSOCKET_H__
 #define __LIBSOCKET_H__
 
 #include "Types.h"
-#include <memory>		// shared_ptr for CAsioUDPSocketImpl ownership
+#include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
 class amuleIPV4Address;
 
-
 // Socket flags (unused in ASIO implementation, just provide the names)
-enum {
+enum
+{
 	MULE_SOCKET_NONE,
 	MULE_SOCKET_NOWAIT_READ,
 	MULE_SOCKET_NOWAIT_WRITE,
@@ -49,7 +48,8 @@ enum {
 typedef int muleSocketFlags;
 
 // Socket events (used for proxy notification)
-enum {
+enum
+{
 	MULE_SOCKET_CONNECTION,
 	MULE_SOCKET_INPUT,
 	MULE_SOCKET_OUTPUT,
@@ -68,53 +68,54 @@ class CLibSocket
 {
 	friend class CAsioSocketImpl;
 	friend class CAsioSocketServerImpl;
+
 public:
 	CLibSocket(int flags = 0);
 	virtual ~CLibSocket();
 
 	// wx Stuff
-	void	Notify(bool);
-	bool	Connect(const amuleIPV4Address& adr, bool wait);
-	bool	IsConnected() const;
-	bool	IsOk() const;
-	void	SetLocal(const amuleIPV4Address& local);
-	uint32	Read(void * buffer, uint32 nbytes);
-	uint32	Write(const void * buffer, uint32 nbytes);
-	void	Close();
-	void	Destroy();
+	void Notify(bool);
+	bool Connect(const amuleIPV4Address &adr, bool wait);
+	bool IsConnected() const;
+	bool IsOk() const;
+	void SetLocal(const amuleIPV4Address &local);
+	uint32 Read(void *buffer, uint32 nbytes);
+	uint32 Write(const void *buffer, uint32 nbytes);
+	void Close();
+	void Destroy();
 
 	// Get last error, 0 == no error
-	int		LastError() const;
+	int LastError() const;
 
 	// not supported
 	void SetFlags(int) {}
 	void Discard() {}
-	bool WaitOnConnect(long, long)	{ return true; }
-	bool WaitForWrite(long, long)	{ return true; }
-	bool WaitForRead(long, long)	{ return true; }
+	bool WaitOnConnect(long, long) { return true; }
+	bool WaitForWrite(long, long) { return true; }
+	bool WaitForRead(long, long) { return true; }
 
 	// new Stuff
 
 	// Check if socket is currently blocking for read or write
-	bool	BlocksRead() const;
-	bool	BlocksWrite() const;
+	bool BlocksRead() const;
+	bool BlocksWrite() const;
 
 	// Show we're ready for another event
-	void	EventProcessed();
+	void EventProcessed();
 
 	// Get IP of client
-	const wxChar * GetIP() const;
+	const wxChar *GetIP() const;
 
 	// True if Destroy() has been called for socket
-	bool	IsDestroying() const;
+	bool IsDestroying() const;
 
 	// Get/set proxy state
 	bool GetProxyState() const;
-	void SetProxyState(bool state, const amuleIPV4Address * adr = 0);
+	void SetProxyState(bool state, const amuleIPV4Address *adr = 0);
 
 	// Get peer address (better API than wx)
-	wxString	GetPeer();
-	uint32		GetPeerInt();
+	wxString GetPeer();
+	uint32 GetPeerInt();
 
 	// Turn on TCP keepalive with per-socket timings so a half-open
 	// connection (peer gone, FIN/RST lost or never sent) gets torn
@@ -144,16 +145,15 @@ public:
 
 private:
 	// Replace the internal socket. Takes ownership of the passed shared_ptr.
-	void	LinkSocketImpl(std::shared_ptr<class CAsioSocketImpl>);
+	void LinkSocketImpl(std::shared_ptr<class CAsioSocketImpl>);
 
 	// shared_ptr so the asio impl can outlive this wrapper for as long as
 	// any in-flight async callback still holds a shared_from_this() ref.
 	// Required to fix the wake-from-sleep use-after-free crash (issue #384).
 	std::shared_ptr<class CAsioSocketImpl> m_aSocket;
-	void LastCount();	// No. We don't have this. We return it directly with Read() and Write()
-	bool Error() const;	// Only use LastError
+	void LastCount();   // No. We don't have this. We return it directly with Read() and Write()
+	bool Error() const; // Only use LastError
 };
-
 
 //
 // TCP socket server
@@ -161,33 +161,34 @@ private:
 class CLibSocketServer
 {
 public:
-	CLibSocketServer(const amuleIPV4Address& adr, int flags);
+	CLibSocketServer(const amuleIPV4Address &adr, int flags);
 	virtual ~CLibSocketServer();
-	// Accepts an incoming connection request, and creates a new CLibSocket object which represents the server-side of the connection.
-	CLibSocket * Accept(bool wait = true);
+	// Accepts an incoming connection request, and creates a new CLibSocket object which represents the
+	// server-side of the connection.
+	CLibSocket *Accept(bool wait = true);
 	// Accept an incoming connection using the specified socket object.
-	bool	AcceptWith(CLibSocket & socket, bool wait);
+	bool AcceptWith(CLibSocket &socket, bool wait);
 
-	virtual	void OnAccept() {}
+	virtual void OnAccept() {}
 
-	bool	IsOk() const;
+	bool IsOk() const;
 
-	void	Close();
+	void Close();
 
 	// Not needed here
-	void	Discard() {}
-	bool	Notify(bool) { return true; }
+	void Discard() {}
+	bool Notify(bool) { return true; }
 
 	// new Stuff
 
 	// Do we have a socket available if AcceptWith() is called ?
-	bool	SocketAvailable();
+	bool SocketAvailable();
+
 private:
 	// shared_ptr for the same reason as CLibSocket::m_aSocket — pending
 	// async_accept completions must keep the impl alive past wrapper death.
 	std::shared_ptr<class CAsioSocketServerImpl> m_aServer;
 };
-
 
 //
 // UDP socket
@@ -195,37 +196,37 @@ private:
 class CLibUDPSocket
 {
 	friend class CAsioUDPSocketImpl;
+
 public:
 	CLibUDPSocket(amuleIPV4Address &address, int flags);
 	virtual ~CLibUDPSocket();
 
 	// wx Stuff
-	bool	IsOk() const;
-	virtual uint32 RecvFrom(amuleIPV4Address& addr, void* buf, uint32 nBytes);
-	virtual uint32 SendTo(const amuleIPV4Address& addr, const void* buf, uint32 nBytes);
-	int		LastError() const;
-	void	Close();
-	void	Destroy();
-	void	SetClientData(class CMuleUDPSocket *);
+	bool IsOk() const;
+	virtual uint32 RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes);
+	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
+	int LastError() const;
+	void Close();
+	void Destroy();
+	void SetClientData(class CMuleUDPSocket *);
 
 	// Not needed here
-	bool	Notify(bool) { return true; }
+	bool Notify(bool) { return true; }
 
 	// Check if socket is currently blocking for write
 	// Well - we apparently have block in wx. At least we handle it in MuleUDPSocket.
 	// But this makes no sense. We send a packet to an IP in background.
 	// Either this works after some time, or not. But there is no block.
-	bool	BlocksWrite() const { return false; }
+	bool BlocksWrite() const { return false; }
 
 private:
 	// shared_ptr so the asio impl can outlive this wrapper for as long as
 	// any in-flight async callback still holds a shared_from_this() ref.
 	// Required to fix the wake-from-sleep use-after-free crash (issue #384).
 	std::shared_ptr<class CAsioUDPSocketImpl> m_aSocket;
-	void	LastCount();	// block this
-	bool	Error() const;	// Only use LastError
+	void LastCount();   // block this
+	bool Error() const; // Only use LastError
 };
-
 
 //
 // ASIO event loop
@@ -233,14 +234,13 @@ private:
 class CAsioService
 {
 public:
-    CAsioService();
-    ~CAsioService();
+	CAsioService();
+	~CAsioService();
 	void Stop();
+
 private:
 	static const int m_numberOfThreads;
-	class CAsioServiceThread * m_threads;
+	class CAsioServiceThread *m_threads;
 };
-
-
 
 #endif /* __LIBSOCKET_H__ */

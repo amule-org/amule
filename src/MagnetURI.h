@@ -27,48 +27,52 @@
 #define MAGNETURI_H
 
 #ifdef USE_STD_STRING
-#	include <string>
-#	define STRING	std::string
+#include <string>
+#define STRING std::string
 #else
-#	include <wx/string.h>
-#	define STRING	wxString
+#include <wx/string.h>
+#define STRING wxString
 #endif
 
-#include <list>		// Needed for std::list
-#include <utility>	// Needed for std::pair
+#include <list>    // Needed for std::list
+#include <utility> // Needed for std::pair
 
 class CMagnetURI
 {
-      public:
-	typedef	std::list<STRING>	Value_List;
+public:
+	typedef std::list<STRING> Value_List;
 
 	CMagnetURI() {}
-	CMagnetURI(const STRING& uri);
+	CMagnetURI(const STRING &uri);
 
-	void		AddField(const STRING& name, const STRING& value)	{ m_fields.push_back(Field_Type(name, value)); }
-	Value_List	GetField(const STRING& name) const;
-	void		Clear()							{ m_fields.clear(); }
-	STRING		GetLink() const;
-	operator STRING() const							{ return GetLink(); }
+	void AddField(const STRING &name, const STRING &value)
+	{
+		m_fields.push_back(Field_Type(name, value));
+	}
+	Value_List GetField(const STRING &name) const;
+	void Clear() { m_fields.clear(); }
+	STRING GetLink() const;
+	operator STRING() const { return GetLink(); }
 
-      protected:
-	typedef std::pair<STRING, STRING>	Field_Type;
-	typedef std::list<Field_Type>		List_Type;
+protected:
+	typedef std::pair<STRING, STRING> Field_Type;
+	typedef std::list<Field_Type> List_Type;
 
-	List_Type	m_fields;
+	List_Type m_fields;
 };
 
 class CMagnetED2KConverter : private CMagnetURI
 {
-      public:
-	CMagnetED2KConverter(const STRING& uri)
-		: CMagnetURI(uri)
-		{}
+public:
+	CMagnetED2KConverter(const STRING &uri)
+	: CMagnetURI(uri)
+	{
+	}
 
-	bool	CanConvertToED2K() const;
-	STRING	GetED2KLink() const;
+	bool CanConvertToED2K() const;
+	STRING GetED2KLink() const;
 
-	operator STRING() const		{ return GetED2KLink(); }
+	operator STRING() const { return GetED2KLink(); }
 };
 
 #endif /* MAGNETURI_H */

@@ -28,15 +28,15 @@
 class wxString;
 
 // Returns the textual representation of a priority value
-wxString PriorityToStr( int priority, bool isAuto );
+wxString PriorityToStr(int priority, bool isAuto);
 
 // Returns the textual representation of download states
-wxString DownloadStateToStr( int state, bool queueFull );
+wxString DownloadStateToStr(int state, bool queueFull);
 
 /**
  * @return Human-readable client software name.
  */
-const wxString GetSoftName( unsigned int software_ident );
+const wxString GetSoftName(unsigned int software_ident);
 
 /**
  * Get "Source From" text, i.e. where we got the source from.

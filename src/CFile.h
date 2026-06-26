@@ -26,16 +26,16 @@
 #ifndef CFILE_H
 #define CFILE_H
 
-#include <common/Path.h>	// Needed for CPath
-#include "SafeFile.h"		// Needed for CFileDataIO
+#include <common/Path.h> // Needed for CPath
+#include "SafeFile.h"    // Needed for CFileDataIO
 
-#include <wx/file.h>		// Needed for constants
+#include <wx/file.h> // Needed for constants
 
-#include <memory>		// Needed for std::unique_ptr
-#include <mutex>		// Needed for std::recursive_mutex
+#include <memory> // Needed for std::unique_ptr
+#include <mutex>  // Needed for std::recursive_mutex
 
-#ifdef _MSC_VER  // silly warnings about deprecated functions
-#pragma warning(disable:4996)
+#ifdef _MSC_VER // silly warnings about deprecated functions
+#pragma warning(disable : 4996)
 #endif
 
 /**
@@ -51,11 +51,24 @@ class CFile : public CFileDataIO
 {
 public:
 	//! Standard values for file descriptor
-	enum { fd_invalid = -1, fd_stdin, fd_stdout, fd_stderr };
+	enum
+	{
+		fd_invalid = -1,
+		fd_stdin,
+		fd_stdout,
+		fd_stderr
+	};
 
 	/** @see wxFile::OpenMode */
-	enum OpenMode { read, write, read_write, write_append, write_excl, write_safe };
-
+	enum OpenMode
+	{
+		read,
+		write,
+		read_write,
+		write_append,
+		write_excl,
+		write_safe
+	};
 
 	/**
 	 * Creates a closed file.
@@ -68,14 +81,13 @@ public:
 	 * To check if the file was successfully opened, a
 	 * call to IsOpened() is required.
 	 */
-	CFile(const CPath& path, OpenMode mode = read);
-	CFile(const wxString& path, OpenMode mode = read);
+	CFile(const CPath &path, OpenMode mode = read);
+	CFile(const wxString &path, OpenMode mode = read);
 
 	/**
 	 * Destructor, closes the file if opened.
 	 */
 	virtual ~CFile();
-
 
 	/**
 	 * Opens a file.
@@ -96,8 +108,8 @@ public:
 	 * If an accessMode is not explicitly specified, the accessmode
 	 * specified via CPreferences::GetFilePermissions will be used.
 	 */
-	bool Open(const CPath& path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
-	bool Open(const wxString& path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
+	bool Open(const CPath &path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
+	bool Open(const wxString &path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
 
 	/**
 	 * Reopens a file which was opened and closed before.
@@ -117,8 +129,8 @@ public:
 	 *
 	 * @see CFile::Open
 	 */
-	bool Create(const CPath& path, bool overwrite = false, int accessMode = wxS_DEFAULT);
-	bool Create(const wxString& path, bool overwrite = false, int accessMode = wxS_DEFAULT);
+	bool Create(const CPath &path, bool overwrite = false, int accessMode = wxS_DEFAULT);
+	bool Create(const wxString &path, bool overwrite = false, int accessMode = wxS_DEFAULT);
 
 	/**
 	 * Closes the file.
@@ -128,14 +140,13 @@ public:
 	 */
 	bool Close();
 
-
 	/**
 	 * Returns the file descriptor associated with the file.
 	 *
 	 * Note that direct manipulation of the descriptor should
 	 * be avoided! That's what this class is for.
 	 */
-	int  fd() const;
+	int fd() const;
 
 	/**
 	 * Flushes data not yet written.
@@ -144,7 +155,6 @@ public:
 	 * is an illegal operation.
 	 */
 	bool Flush();
-
 
 	/**
 	 * @see CSafeFileIO::GetLength
@@ -177,8 +187,7 @@ public:
 	 * Returns the path of the currently opened file.
 	 *
 	 */
-	const CPath& GetFilePath() const;
-
+	const CPath &GetFilePath() const;
 
 	/**
 	 * Returns true if the file is opened, false otherwise.
@@ -187,17 +196,17 @@ public:
 
 protected:
 	/** @see CFileDataIO::doRead **/
-	virtual sint64 doRead(void* buffer, size_t count) const;
+	virtual sint64 doRead(void *buffer, size_t count) const;
 	/** @see CFileDataIO::doWrite **/
-	virtual sint64 doWrite(const void* buffer, size_t count);
+	virtual sint64 doWrite(const void *buffer, size_t count);
 	/** @see CFileDataIO::doSeek **/
 	virtual sint64 doSeek(sint64 offset) const;
 
 private:
 	//! A CFile is neither copyable nor assignable.
 	//@{
-	CFile(const CFile&);
-	CFile& operator=(const CFile&);
+	CFile(const CFile &);
+	CFile &operator=(const CFile &);
 	//@}
 
 	//! Flush any data in the userspace write buffer to the kernel.
@@ -237,7 +246,10 @@ private:
 	//! guard page and SIGSEGVs. The unique_ptr brings sizeof(CFile)
 	//! back to ~32 bytes and pays the 64 KiB only on first write,
 	//! which means read-only opens stay free.
-	enum { kWriteBufferSize = 64 * 1024 };
+	enum
+	{
+		kWriteBufferSize = 64 * 1024
+	};
 	mutable std::unique_ptr<char[]> m_writeBuffer;
 	mutable size_t m_writeBufferPending;
 
@@ -278,14 +290,13 @@ private:
 	mutable std::recursive_mutex m_mutex;
 };
 
-
 /**
  * This exception is thrown by CFile if a seek or tell fails.
  */
-struct CSeekFailureException : public CIOFailureException {
-	CSeekFailureException(const wxString& desc);
+struct CSeekFailureException : public CIOFailureException
+{
+	CSeekFailureException(const wxString &desc);
 };
-
 
 #endif // CFILE_H
 // File_checked_for_headers

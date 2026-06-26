@@ -30,11 +30,11 @@
 #include <wx/dcmemory.h>
 #include <wx/font.h>
 
-
-#define LETTERSIZE  32
+#define LETTERSIZE 32
 #define CROWDEDSIZE 20
 
-// fairly simply captcha generator, might be improved is spammers think its really worth it solving captchas on aMule
+// fairly simply captcha generator, might be improved is spammers think its really worth it solving captchas
+// on aMule
 
 CCaptchaGenerator::CCaptchaGenerator(uint32 nLetterCount)
 {
@@ -46,7 +46,7 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 	static wxString schCaptchaContent = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
 	m_strCaptchaText.Clear();
 	// Bitmap must be created with full depth, or it will fail on GTK
-	wxBitmap pimgResult(LETTERSIZE + (nLetterCount-1)*CROWDEDSIZE, 36);
+	wxBitmap pimgResult(LETTERSIZE + (nLetterCount - 1) * CROWDEDSIZE, 36);
 	wxMemoryDC dc(pimgResult);
 	dc.SetBackground(*wxWHITE_BRUSH);
 	dc.Clear();
@@ -63,7 +63,7 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 		dc.SetFont(font);
 		uint16 nRandomOffset = 3 + GetRandomUint16() % 8;
 		uint16 maxRotate = 50 - nRandomSize; // rotate small letters more than large letters
-		double fRotate = (double)(maxRotate - (GetRandomUint16() % (maxRotate*2)));
+		double fRotate = (double)(maxRotate - (GetRandomUint16() % (maxRotate * 2)));
 		// limit angle diff - it causes too much overlap since wx rotates at the corner
 		// (maybe I'll redo that with some coordinate transformation one day)
 		if (fRotate - lastrotate > 20) {
@@ -79,7 +79,7 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 	// m_pimgCaptcha.SaveFile("captcha.bmp", wxBITMAP_TYPE_BMP);
 }
 
-bool CCaptchaGenerator::WriteCaptchaImage(wxMemoryOutputStream& file)
+bool CCaptchaGenerator::WriteCaptchaImage(wxMemoryOutputStream &file)
 {
 	return m_pimgCaptcha.SaveFile(file, wxBITMAP_TYPE_BMP);
 }

@@ -32,7 +32,6 @@
 
 #include "Types.h"
 
-
 /**
  * Per-file bytes cache for the FULL EC response paths.
  *
@@ -62,12 +61,13 @@
  * the cached form is reusable regardless of which connection ends up
  * emitting it.
  */
-class CECFullResponseCache {
+class CECFullResponseCache
+{
 public:
 	/// Build a self-contained CECTag for the given file. Caller owns
 	/// the returned tag and is expected to throw it away after the
 	/// cache serializes it.
-	using TagBuilder = std::function<CECTag*(const void *file)>;
+	using TagBuilder = std::function<CECTag *(const void *file)>;
 
 	explicit CECFullResponseCache(TagBuilder builder);
 
@@ -81,14 +81,15 @@ public:
 	 * race-but-don't-corrupt (last write wins, both readers see a
 	 * valid blob).
 	 */
-	struct FileRef {
-		const void *file;	// passed to the builder
+	struct FileRef
+	{
+		const void *file; // passed to the builder
 		uint32 ecid;
 		uint64 gen;
 	};
 
-	std::vector<std::shared_ptr<const std::vector<unsigned char> > >
-	GetBlobs(const std::vector<FileRef> &files);
+	std::vector<std::shared_ptr<const std::vector<unsigned char>>> GetBlobs(
+		const std::vector<FileRef> &files);
 
 	/// Drop cached entries for ECIDs not in the given set (called once
 	/// per request after GetBlobs to prune files that left the
@@ -96,15 +97,15 @@ public:
 	void PruneOutsideOf(const std::vector<FileRef> &alive_files);
 
 private:
-	struct Entry {
+	struct Entry
+	{
 		uint64 gen;
-		std::shared_ptr<const std::vector<unsigned char> > bytes;
+		std::shared_ptr<const std::vector<unsigned char>> bytes;
 	};
 
 	std::mutex m_mutex;
 	std::map<uint32, Entry> m_entries;
 	TagBuilder m_builder;
 };
-
 
 #endif // EC_FULL_RESPONSE_CACHE_H

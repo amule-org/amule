@@ -30,28 +30,25 @@
 #ifndef _WXCASPRINT_H
 #define _WXCASPRINT_H
 
-
 #include <wx/dc.h>
 #include <wx/print.h>
 
 /// Statistic image printing
-class WxCasPrint: public wxPrintout
+class WxCasPrint : public wxPrintout
 {
 public:
-
 	/// Constructor
-	WxCasPrint ( const wxString& title );
+	WxCasPrint(const wxString &title);
 
-	///Destructor
-	~WxCasPrint ();
+	/// Destructor
+	~WxCasPrint();
 
-	bool OnPrintPage ( int page );
-	bool HasPage ( int page );
-	bool OnBeginDocument ( int startPage, int endPage );
-	void GetPageInfo ( int *minPage, int *maxPage, int *selPageFrom,
-	                   int *selPageTo );
+	bool OnPrintPage(int page);
+	bool HasPage(int page);
+	bool OnBeginDocument(int startPage, int endPage);
+	void GetPageInfo(int *minPage, int *maxPage, int *selPageFrom, int *selPageTo);
 
-	void DrawPageOne ( wxDC * dc );
+	void DrawPageOne(wxDC *dc);
 };
 
 #endif /* _WXCASPRINT_H */

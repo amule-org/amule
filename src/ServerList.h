@@ -31,39 +31,39 @@
 class CServer;
 class CPacket;
 
-class CServerList : public CObservableQueue<CServer*>
+class CServerList : public CObservableQueue<CServer *>
 {
 	friend class CServerListCtrl;
 
 public:
 	CServerList();
 	~CServerList();
-	bool		Init();
-	bool		AddServer(CServer* in_server, bool fromUser = false);
-	void		RemoveServer(CServer* in_server);
-	void		RemoveAllServers();
-	void		RemoveDeadServers();
-	bool		LoadServerMet(const CPath& path);
-	bool		SaveServerMet();
-	void		ServerStats();
-	void		ResetServerPos()	{m_serverpos = m_servers.begin();}
-	CServer*	GetNextServer(bool bOnlyObfuscated = false);
-	size_t		GetServerCount()	{return m_servers.size();}
-	CServer*	GetServerByAddress(const wxString& address, uint16 port) const;
-	CServer*	GetServerByIP(uint32 nIP) const;
-	CServer*	GetServerByIPTCP(uint32 nIP, uint16 nPort) const;
-	CServer*	GetServerByIPUDP(uint32 nIP, uint16 nUDPPort, bool bObfuscationPorts = true) const;
-	CServer*	GetServerByECID(uint32 ecid) const;
-	void		GetStatus(uint32 &failed, uint32 &user, uint32 &file, uint32 &tuser, uint32 &tfile, float &occ);
-	void		GetUserFileStatus( uint32 &user, uint32 &file);
-	bool		IsInitialized() const { return m_initialized; }
-	void		Sort();
-	void		UpdateServerMetFromURL(const wxString& strURL);
-	bool		DownloadFinished(uint32 result);
-	void		AutoDownloadFinished(uint32 result);
-	uint32		GetAvgFile() const;
+	bool Init();
+	bool AddServer(CServer *in_server, bool fromUser = false);
+	void RemoveServer(CServer *in_server);
+	void RemoveAllServers();
+	void RemoveDeadServers();
+	bool LoadServerMet(const CPath &path);
+	bool SaveServerMet();
+	void ServerStats();
+	void ResetServerPos() { m_serverpos = m_servers.begin(); }
+	CServer *GetNextServer(bool bOnlyObfuscated = false);
+	size_t GetServerCount() { return m_servers.size(); }
+	CServer *GetServerByAddress(const wxString &address, uint16 port) const;
+	CServer *GetServerByIP(uint32 nIP) const;
+	CServer *GetServerByIPTCP(uint32 nIP, uint16 nPort) const;
+	CServer *GetServerByIPUDP(uint32 nIP, uint16 nUDPPort, bool bObfuscationPorts = true) const;
+	CServer *GetServerByECID(uint32 ecid) const;
+	void GetStatus(uint32 &failed, uint32 &user, uint32 &file, uint32 &tuser, uint32 &tfile, float &occ);
+	void GetUserFileStatus(uint32 &user, uint32 &file);
+	bool IsInitialized() const { return m_initialized; }
+	void Sort();
+	void UpdateServerMetFromURL(const wxString &strURL);
+	bool DownloadFinished(uint32 result);
+	void AutoDownloadFinished(uint32 result);
+	uint32 GetAvgFile() const;
 
-	std::vector<const CServer*> CopySnapshot() const;
+	std::vector<const CServer *> CopySnapshot() const;
 
 	/** Refilters all servers though the IPFilter. */
 	void FilterServers();
@@ -79,8 +79,8 @@ public:
 	 * Other than setting the static setting of the specified server, it
 	 * also adds or removes the server from the static-list file.
 	 */
-	void		SetStaticServer(CServer* server, bool isStatic);
-	void		SetServerPrio(CServer* server, uint32 prio);
+	void SetStaticServer(CServer *server, bool isStatic);
+	void SetServerPrio(CServer *server, uint32 prio);
 
 	/**
 	 * Kick off the auto-update HTTP download of server.met.
@@ -91,25 +91,25 @@ public:
 	 * (see #714). Caller is expected to gate this on the
 	 * AutoServerlist pref.
 	 */
-	void		StartAutoUpdate();
+	void StartAutoUpdate();
 
 private:
-	virtual void	ObserverAdded( ObserverType* );
-	void		AutoUpdate();
-	CServer*	GetNextStatServer();
+	virtual void ObserverAdded(ObserverType *);
+	void AutoUpdate();
+	CServer *GetNextStatServer();
 
-	wxString	m_staticServersConfig;
-	void		LoadStaticServers();
-	void		SaveStaticServers();
-	uint8		current_url_index;
+	wxString m_staticServersConfig;
+	void LoadStaticServers();
+	void SaveStaticServers();
+	uint8 current_url_index;
 
-	typedef std::list<CServer*>	CInternalList;
-	CInternalList			m_servers;
-	CInternalList::const_iterator	m_serverpos;
-	CInternalList::const_iterator	m_statserverpos;
+	typedef std::list<CServer *> CInternalList;
+	CInternalList m_servers;
+	CInternalList::const_iterator m_serverpos;
+	CInternalList::const_iterator m_statserverpos;
 
-	wxString	m_URLUpdate;
-	bool		m_initialized;
+	wxString m_URLUpdate;
+	bool m_initialized;
 };
 
 #endif // SERVERLIST_H

@@ -27,12 +27,13 @@
 
 #include <map>
 
-class CGapList {
+class CGapList
+{
 private:
 	// The internal gap list:
 	// Each gap is stored as a map entry.
 	// The first (key) is the end, the second (value) the start.
-	typedef std::map<uint64,uint64> ListType;
+	typedef std::map<uint64, uint64> ListType;
 	typedef ListType::iterator iterator;
 	ListType m_gaplist;
 	// size of the part file the list belongs to
@@ -47,7 +48,8 @@ private:
 	bool m_totalGapSizeValid;
 
 	// cache completeness of parts
-	enum ePartComplete {
+	enum ePartComplete
+	{
 		complete,
 		incomplete,
 		unknown
@@ -58,6 +60,7 @@ private:
 	uint32 GetPartSize(uint16 part) const { return part == m_iPartCount - 1 ? m_sizeLastPart : PARTSIZE; }
 	// check arguments, clip end, false: error
 	inline bool ArgCheck(uint64 gapstart, uint64 &gapend) const;
+
 public:
 	// construct
 	CGapList() { Init(0, false); } // NO MORE uninitialized variables >:(
@@ -88,25 +91,31 @@ public:
 
 	// Iterator class to loop through the gaps read-only
 	// Gaps are returned just as start/end value
-	class const_iterator {
+	class const_iterator
+	{
 		// iterator for internal list
 		ListType::const_iterator m_it;
+
 	public:
 		// constructs
 		const_iterator() {};
-		const_iterator(const ListType::const_iterator& it) : m_it(it) { };
+		const_iterator(const ListType::const_iterator &it)
+		: m_it(it) {};
 		// operators
-		bool operator != (const const_iterator& it) const { return m_it != it.m_it; }
-		const_iterator& operator ++ () { ++ m_it; return *this; }
+		bool operator!=(const const_iterator &it) const { return m_it != it.m_it; }
+		const_iterator &operator++()
+		{
+			++m_it;
+			return *this;
+		}
 		// get start of gap pointed to
-		uint64 start() const { return (* m_it).second; }
+		uint64 start() const { return (*m_it).second; }
 		// get end of gap pointed to
-		uint64 end() const { return (* m_it).first; }
+		uint64 end() const { return (*m_it).first; }
 	};
 	// begin/end iterators for looping
 	const_iterator begin() const { return const_iterator(m_gaplist.begin()); }
 	const_iterator end() const { return const_iterator(m_gaplist.end()); }
-
 };
 
 #endif // GAPLIST_H

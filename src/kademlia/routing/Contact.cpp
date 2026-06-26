@@ -51,27 +51,34 @@ CContact::~CContact()
 	theStats::RemoveKadNode();
 }
 
-CContact::CContact(const CUInt128 &clientID, uint32_t ip, uint16_t udpPort, uint16_t tcpPort, uint8_t version, const CKadUDPKey& key, bool ipVerified, const CUInt128 &target)
-	: m_clientID(clientID),
-	  m_distance(target ^ clientID),
-	  m_ip(ip),
-	  m_tcpPort(tcpPort),
-	  m_udpPort(udpPort),
-	  m_type(3),
-	  m_lastTypeSet(time(NULL)),
-	  m_expires(0),
-	  m_created(m_lastTypeSet),
-	  m_inUse(0),
-	  m_version(version),
-	  m_ipVerified(ipVerified),
-	  m_receivedHelloPacket(false),
-	  m_udpKey(key)
+CContact::CContact(const CUInt128 &clientID,
+	uint32_t ip,
+	uint16_t udpPort,
+	uint16_t tcpPort,
+	uint8_t version,
+	const CKadUDPKey &key,
+	bool ipVerified,
+	const CUInt128 &target)
+: m_clientID(clientID)
+, m_distance(target ^ clientID)
+, m_ip(ip)
+, m_tcpPort(tcpPort)
+, m_udpPort(udpPort)
+, m_type(3)
+, m_lastTypeSet(time(NULL))
+, m_expires(0)
+, m_created(m_lastTypeSet)
+, m_inUse(0)
+, m_version(version)
+, m_ipVerified(ipVerified)
+, m_receivedHelloPacket(false)
+, m_udpKey(key)
 {
 	wxASSERT(udpPort);
 	theStats::AddKadNode();
 }
 
-CContact::CContact(const CContact& k1)
+CContact::CContact(const CContact &k1)
 {
 	*this = k1;
 	theStats::AddKadNode();
@@ -81,7 +88,7 @@ void CContact::CheckingType() noexcept
 {
 	time_t now = time(NULL);
 
-	if(now - m_lastTypeSet < 10 || m_type == 4) {
+	if (now - m_lastTypeSet < 10 || m_type == 4) {
 		return;
 	}
 
@@ -96,29 +103,33 @@ void CContact::UpdateType() noexcept
 	time_t now = time(NULL);
 	uint32_t hours = (now - m_created) / HR2S(1);
 	switch (hours) {
-		case 0:
-			m_type = 2;
-			m_expires = now + HR2S(1);
-			break;
-		case 1:
-			m_type = 1;
-			m_expires = now + MIN2S(90); //HR2S(1.5)
-			break;
-		default:
-			m_type = 0;
-			m_expires = now + HR2S(2);
+	case 0:
+		m_type = 2;
+		m_expires = now + HR2S(1);
+		break;
+	case 1:
+		m_type = 1;
+		m_expires = now + MIN2S(90); // HR2S(1.5)
+		break;
+	default:
+		m_type = 0;
+		m_expires = now + HR2S(2);
 	}
 }
 
 time_t CContact::GetLastSeen() const noexcept
 {
 	// calculating back from expire time, so we don't need an additional field.
-	// might result in wrong values if doing CheckingType() for example, so don't use for important timing stuff
+	// might result in wrong values if doing CheckingType() for example, so don't use for important timing
+	// stuff
 	if (m_expires != 0) {
 		switch (m_type) {
-			case 2: return m_expires - HR2S(1);
-			case 1: return m_expires - MIN2S(90) /*(unsigned)HR2S(1.5)*/;
-			case 0: return m_expires - HR2S(2);
+		case 2:
+			return m_expires - HR2S(1);
+		case 1:
+			return m_expires - MIN2S(90) /*(unsigned)HR2S(1.5)*/;
+		case 0:
+			return m_expires - HR2S(2);
 		}
 	}
 	return 0;

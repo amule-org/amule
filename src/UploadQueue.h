@@ -26,9 +26,9 @@
 #ifndef UPLOADQUEUE_H
 #define UPLOADQUEUE_H
 
-#include "ClientRef.h"		// Needed for CClientRefList
-#include "MD4Hash.h"		// Needed for CMD4Hash
-#include <wx/thread.h>		// Needed for wxMutex
+#include "ClientRef.h" // Needed for CClientRefList
+#include "MD4Hash.h"   // Needed for CMD4Hash
+#include <wx/thread.h> // Needed for wxMutex
 
 // Experimental extended upload queue population
 //
@@ -50,50 +50,55 @@ class CUploadQueue
 public:
 	CUploadQueue();
 	~CUploadQueue();
-	void	Process();
-	void	AddClientToQueue(CUpDownClient* client);
-	bool	RemoveFromUploadQueue(CUpDownClient* client);
-	bool	RemoveFromWaitingQueue(CUpDownClient* client);
-	bool	IsOnUploadQueue(const CUpDownClient* client) const;
-	bool	IsDownloading(const CUpDownClient* client) const;
-	bool	CheckForTimeOver(CUpDownClient* client);
-	void	ResortQueue() { SortGetBestClient(); }
+	void Process();
+	void AddClientToQueue(CUpDownClient *client);
+	bool RemoveFromUploadQueue(CUpDownClient *client);
+	bool RemoveFromWaitingQueue(CUpDownClient *client);
+	bool IsOnUploadQueue(const CUpDownClient *client) const;
+	bool IsDownloading(const CUpDownClient *client) const;
+	bool CheckForTimeOver(CUpDownClient *client);
+	void ResortQueue() { SortGetBestClient(); }
 
-	const CClientRefList& GetWaitingList() const { return m_waitinglist; }
-	const CClientRefList& GetUploadingList() const { return m_uploadinglist; }
+	const CClientRefList &GetWaitingList() const { return m_waitinglist; }
+	const CClientRefList &GetUploadingList() const { return m_uploadinglist; }
 
-	// Thread-safe access for disk I/O thread — caller must hold the returned lock for the duration of iteration
-	wxMutex& GetUploadingListLock() { return m_uploadingListMutex; }
+	// Thread-safe access for disk I/O thread — caller must hold the returned lock for the duration of
+	// iteration
+	wxMutex &GetUploadingListLock() { return m_uploadingListMutex; }
 
-	CUpDownClient* GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool* pbMultipleIPs = NULL);
+	CUpDownClient *GetWaitingClientByIP_UDP(
+		uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs = NULL);
 
-	uint16	SuspendUpload(const CMD4Hash &, bool terminate);
-	void	ResumeUpload(const CMD4Hash &);
-	CKnownFile* GetAllUploadingKnownFile() { return m_allUploadingKnownFile; }
+	uint16 SuspendUpload(const CMD4Hash &, bool terminate);
+	void ResumeUpload(const CMD4Hash &);
+	CKnownFile *GetAllUploadingKnownFile() { return m_allUploadingKnownFile; }
 
 private:
-	void	RemoveFromWaitingQueue(CClientRefList::iterator pos);
-	uint32	GetMaxSlots() const;
-	void	AddUpNextClient(CUpDownClient* directadd = 0);
-	bool	IsSuspended(const CMD4Hash& hash) { return suspendedUploadsSet.find(hash) != suspendedUploadsSet.end(); }
-	void	SortGetBestClient(CClientRef * bestClient = NULL);
+	void RemoveFromWaitingQueue(CClientRefList::iterator pos);
+	uint32 GetMaxSlots() const;
+	void AddUpNextClient(CUpDownClient *directadd = 0);
+	bool IsSuspended(const CMD4Hash &hash)
+	{
+		return suspendedUploadsSet.find(hash) != suspendedUploadsSet.end();
+	}
+	void SortGetBestClient(CClientRef *bestClient = NULL);
 
 	CClientRefList m_waitinglist;
 	CClientRefList m_uploadinglist;
-	wxMutex        m_uploadingListMutex;	// guards m_uploadinglist for disk I/O thread access
+	wxMutex m_uploadingListMutex; // guards m_uploadinglist for disk I/O thread access
 
 #if EXTENDED_UPLOADQUEUE
 	CClientRefList m_possiblyWaitingList;
-	int		PopulatePossiblyWaitingList();
+	int PopulatePossiblyWaitingList();
 #endif
 
-	std::set<CMD4Hash> suspendedUploadsSet;  // set for suspended uploads
-	uint64	m_nLastStartUpload;
-	uint64	m_lastSort;
-	bool	lastupslotHighID; // VQB lowID alternation
-	bool	m_allowKicking;
+	std::set<CMD4Hash> suspendedUploadsSet; // set for suspended uploads
+	uint64 m_nLastStartUpload;
+	uint64 m_lastSort;
+	bool lastupslotHighID; // VQB lowID alternation
+	bool m_allowKicking;
 	// This KnownFile collects all currently uploading clients for display in the upload list control
-	CKnownFile * m_allUploadingKnownFile;
+	CKnownFile *m_allUploadingKnownFile;
 };
 
 #endif // UPLOADQUEUE_H

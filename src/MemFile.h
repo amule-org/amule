@@ -26,8 +26,7 @@
 #ifndef MEMFILE_H
 #define MEMFILE_H
 
-#include "SafeFile.h"	// Needed for CFileDataIO
-
+#include "SafeFile.h" // Needed for CFileDataIO
 
 /**
  * CMemFile handles virtual files stored in memory.
@@ -88,19 +87,17 @@ public:
 	 *
 	 * If the buffer is a const uint8*, the memfile is read-only.
 	 */
-	CMemFile(uint8* buffer, size_t bufferSize);
-	CMemFile(const uint8* buffer, size_t bufferSize);
+	CMemFile(uint8 *buffer, size_t bufferSize);
+	CMemFile(const uint8 *buffer, size_t bufferSize);
 
 	/** Destructor. */
 	virtual ~CMemFile();
-
 
 	/** @see CFileDataIO::GetPosition */
 	virtual uint64 GetPosition() const;
 
 	/** @see CFileDataIO::GetLength */
 	virtual uint64 GetLength() const;
-
 
 	/**
 	 * Changes the length of the file, possibly resizing the buffer.
@@ -132,14 +129,14 @@ public:
 	virtual void ResetData();
 
 	// Sometimes it's useful to get the buffer and do stuff with it.
-	uint8* GetRawBuffer() const { return m_buffer; }
+	uint8 *GetRawBuffer() const { return m_buffer; }
 
 protected:
 	/** @see CFileDataIO::doRead */
-	virtual sint64 doRead(void* buffer, size_t count) const;
+	virtual sint64 doRead(void *buffer, size_t count) const;
 
 	/** @see CFileDataIO::doWrite */
-	virtual sint64 doWrite(const void* buffer, size_t count);
+	virtual sint64 doWrite(const void *buffer, size_t count);
 
 	/** @see CFileDataIO::doSeek */
 	virtual sint64 doSeek(sint64 offset) const;
@@ -147,8 +144,8 @@ protected:
 private:
 	//! A CMemFile is neither copyable nor assignable.
 	//@{
-	CMemFile(const CMemFile&);
-	CMemFile& operator=(const CMemFile&);
+	CMemFile(const CMemFile &);
+	CMemFile &operator=(const CMemFile &);
 	//@}
 
 	/** Enlarges the buffer to at least 'size' length. */
@@ -159,15 +156,15 @@ private:
 	//! The current position in the file.
 	mutable size_t m_position;
 	//! The actual size of the buffer.
-	size_t	m_BufferSize;
+	size_t m_BufferSize;
 	//! The size of the virtual file, may be less than the buffer-size.
-	size_t	m_fileSize;
+	size_t m_fileSize;
 	//! If true, the buffer will be freed upon termination.
-	bool	m_delete;
+	bool m_delete;
 	//! read-only mark.
-	bool	m_readonly;
+	bool m_readonly;
 	//! The actual buffer.
-	uint8*	m_buffer;
+	uint8 *m_buffer;
 };
 
 #endif // MEMFILE_H

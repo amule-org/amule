@@ -30,30 +30,29 @@
 
 #include <map>
 
-
-
 class CEC_SearchFile_Tag;
 
-class SearchFile {
-	public:
-		wxString sFileName;
-		// lFileSize must be 64-bit -- `unsigned long` is 32 bits on
-		// LLP64 (Windows 64-bit), so amulecmd would mis-display the
-		// size of any shared file > 4 GiB. The search EC tag carries
-		// the size as uint64, so widen this carrier to match.
-		uint64 lFileSize;
-		CMD4Hash  nHash;
-		wxString  sHash;
-		long lSourceCount;
-		bool bPresent;
+class SearchFile
+{
+public:
+	wxString sFileName;
+	// lFileSize must be 64-bit -- `unsigned long` is 32 bits on
+	// LLP64 (Windows 64-bit), so amulecmd would mis-display the
+	// size of any shared file > 4 GiB. The search EC tag carries
+	// the size as uint64, so widen this carrier to match.
+	uint64 lFileSize;
+	CMD4Hash nHash;
+	wxString sHash;
+	long lSourceCount;
+	bool bPresent;
 
-		SearchFile(const CEC_SearchFile_Tag *);
+	SearchFile(const CEC_SearchFile_Tag *);
 
-		static class SearchInfo *GetContainerInstance();
-		CMD4Hash ID() { return nHash; }
+	static class SearchInfo *GetContainerInstance();
+	CMD4Hash ID() { return nHash; }
 };
 
-typedef std::map<unsigned long int,SearchFile*> CResultMap;
+typedef std::map<unsigned long int, SearchFile *> CResultMap;
 
 wxString ECv2_Response2String(CECPacket *response);
 
@@ -67,16 +66,16 @@ public:
 
 private:
 	// other command line switches
-	void OnInitCmdLine(wxCmdLineParser& amuleweb_parser);
-	bool OnCmdLineParsed(wxCmdLineParser& parser);
-	void TextShell(const wxString& prompt);
+	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser);
+	bool OnCmdLineParsed(wxCmdLineParser &parser);
+	void TextShell(const wxString &prompt);
 	void ShowResults(CResultMap results_map);
 	bool m_HasCmdOnCmdLine;
 	wxString m_CmdString;
 	virtual int OnRun();
 
-	int	m_last_cmd_id;
-	CResultMap	m_Results_map;
+	int m_last_cmd_id;
+	CResultMap m_Results_map;
 };
 
 #endif // TEXTCLIENT_H

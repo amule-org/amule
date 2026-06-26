@@ -25,16 +25,16 @@
 #include <wx/wx.h>
 #include <algorithm>
 
-#include "MuleUDPSocket.h"              // Interface declarations
+#include "MuleUDPSocket.h" // Interface declarations
 
 #include <protocol/ed2k/Constants.h>
 
-#include "amule.h"                      // Needed for theApp
-#include "GetTickCount.h"               // Needed for GetTickCount64()
-#include "Packet.h"                     // Needed for CPacket
-#include <common/StringFunctions.h>     // Needed for unicode2char
-#include "Proxy.h"                      // Needed for CDatagramSocketProxy
-#include "Logger.h"                     // Needed for AddDebugLogLine{C,N}
+#include "amule.h"                  // Needed for theApp
+#include "GetTickCount.h"           // Needed for GetTickCount64()
+#include "Packet.h"                 // Needed for CPacket
+#include <common/StringFunctions.h> // Needed for unicode2char
+#include "Proxy.h"                  // Needed for CDatagramSocketProxy
+#include "Logger.h"                 // Needed for AddDebugLogLine{C,N}
 #include "UploadBandwidthThrottler.h"
 #include "EncryptedDatagramSocket.h"
 #include "OtherFunctions.h"
@@ -42,18 +42,16 @@
 #include "ClientList.h"
 #include "Preferences.h"
 
-
-CMuleUDPSocket::CMuleUDPSocket(const wxString& name, int id, const amuleIPV4Address& address, const CProxyData* ProxyData)
-:
-m_busy(false),
-m_name(name),
-m_id(id),
-m_addr(address),
-m_proxy(ProxyData),
-m_socket(NULL)
+CMuleUDPSocket::CMuleUDPSocket(
+	const wxString &name, int id, const amuleIPV4Address &address, const CProxyData *ProxyData)
+: m_busy(false)
+, m_name(name)
+, m_id(id)
+, m_addr(address)
+, m_proxy(ProxyData)
+, m_socket(NULL)
 {
 }
-
 
 CMuleUDPSocket::~CMuleUDPSocket()
 {
@@ -62,7 +60,6 @@ CMuleUDPSocket::~CMuleUDPSocket()
 	wxMutexLocker lock(m_mutex);
 	DestroySocket();
 }
-
 
 void CMuleUDPSocket::CreateSocket()
 {
@@ -80,7 +77,6 @@ void CMuleUDPSocket::CreateSocket()
 	}
 }
 
-
 void CMuleUDPSocket::DestroySocket()
 {
 	if (m_socket) {
@@ -91,7 +87,6 @@ void CMuleUDPSocket::DestroySocket()
 	}
 }
 
-
 void CMuleUDPSocket::Open()
 {
 	wxMutexLocker lock(m_mutex);
@@ -99,14 +94,12 @@ void CMuleUDPSocket::Open()
 	CreateSocket();
 }
 
-
 void CMuleUDPSocket::Close()
 {
 	wxMutexLocker lock(m_mutex);
 
 	DestroySocket();
 }
-
 
 void CMuleUDPSocket::OnSend(int errorCode)
 {
@@ -125,11 +118,10 @@ void CMuleUDPSocket::OnSend(int errorCode)
 	theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 }
 
-
 void CMuleUDPSocket::OnReceive(int errorCode)
 {
-	AddDebugLogLineN(logMuleUDP, CFormat("Got UDP callback for read: Error %i Socket state %i")
-		% errorCode % Ok());
+	AddDebugLogLineN(logMuleUDP,
+		CFormat("Got UDP callback for read: Error %i Socket state %i") % errorCode % Ok());
 
 	char buffer[UDP_BUFFER_SIZE];
 	amuleIPV4Address addr;
@@ -146,7 +138,6 @@ void CMuleUDPSocket::OnReceive(int errorCode)
 
 			return;
 		}
-
 
 		length = m_socket->RecvFrom(addr, buffer, UDP_BUFFER_SIZE);
 		lastError = m_socket->LastError();
@@ -169,19 +160,17 @@ void CMuleUDPSocket::OnReceive(int errorCode)
 	} else if (theApp->clientlist->IsBannedClient(ip)) {
 		AddDebugLogLineN(logMuleUDP, m_name + ": Dropped packet from banned IP " + addr.IPAddress());
 	} else {
-		AddDebugLogLineN(logMuleUDP, (m_name + ": Packet received (")
-			<< addr.IPAddress() << ":" << port << "): "
-			<< length << "b");
-		OnPacketReceived(ip, port, (uint8_t*)buffer, length);
+		AddDebugLogLineN(logMuleUDP,
+			(m_name + ": Packet received (")
+				<< addr.IPAddress() << ":" << port << "): " << length << "b");
+		OnPacketReceived(ip, port, (uint8_t *)buffer, length);
 	}
 }
-
 
 void CMuleUDPSocket::OnReceiveError(int DEBUG_ONLY(errorCode), uint32 WXUNUSED(ip), uint16 WXUNUSED(port))
 {
 	AddDebugLogLineN(logMuleUDP, (m_name + ": Error while reading: ") << errorCode);
 }
-
 
 void CMuleUDPSocket::OnDisconnected(int WXUNUSED(errorCode))
 {
@@ -198,8 +187,13 @@ void CMuleUDPSocket::OnDisconnected(int WXUNUSED(errorCode))
 	CreateSocket();
 }
 
-
-void CMuleUDPSocket::SendPacket(CPacket* packet, uint32 IP, uint16 port, bool bEncrypt, const uint8* pachTargetClientHashORKadID, bool bKad, uint32 nReceiverVerifyKey)
+void CMuleUDPSocket::SendPacket(CPacket *packet,
+	uint32 IP,
+	uint16 port,
+	bool bEncrypt,
+	const uint8 *pachTargetClientHashORKadID,
+	bool bKad,
+	uint32 nReceiverVerifyKey)
 {
 	wxCHECK_RET(packet, "Invalid packet.");
 	/*wxCHECK_RET(port, "Invalid port.");
@@ -211,23 +205,27 @@ void CMuleUDPSocket::SendPacket(CPacket* packet, uint32 IP, uint16 port, bool bE
 	}
 
 	if (!Ok()) {
-		AddDebugLogLineN(logMuleUDP, (m_name + ": Packet discarded, socket not Ok (")
-			<< Uint32_16toStringIP_Port(IP, port) << "): " << packet->GetPacketSize() << "b");
+		AddDebugLogLineN(logMuleUDP,
+			(m_name + ": Packet discarded, socket not Ok (")
+				<< Uint32_16toStringIP_Port(IP, port) << "): " << packet->GetPacketSize()
+				<< "b");
 		delete packet;
 
 		return;
 	}
 
-	AddDebugLogLineN(logMuleUDP, (m_name + ": Packet queued (")
-		<< Uint32_16toStringIP_Port(IP, port) << "): " << packet->GetPacketSize() << "b");
+	AddDebugLogLineN(logMuleUDP,
+		(m_name + ": Packet queued (")
+			<< Uint32_16toStringIP_Port(IP, port) << "): " << packet->GetPacketSize() << "b");
 
 	UDPPack newpending;
 	newpending.IP = IP;
 	newpending.port = port;
 	newpending.packet = packet;
 	newpending.time = GetTickCount64();
-	newpending.bEncrypt = bEncrypt && (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0))
-							&& thePrefs::IsClientCryptLayerSupported();
+	newpending.bEncrypt = bEncrypt &&
+			      (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0)) &&
+			      thePrefs::IsClientCryptLayerSupported();
 	newpending.bKad = bKad;
 	newpending.nReceiverVerifyKey = nReceiverVerifyKey;
 	if (newpending.bEncrypt && pachTargetClientHashORKadID != NULL) {
@@ -244,7 +242,6 @@ void CMuleUDPSocket::SendPacket(CPacket* packet, uint32 IP, uint16 port, bool bE
 	theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 }
 
-
 bool CMuleUDPSocket::Ok()
 {
 	wxMutexLocker lock(m_mutex);
@@ -252,32 +249,36 @@ bool CMuleUDPSocket::Ok()
 	return m_socket && m_socket->IsOk();
 }
 
-
 SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, uint32 WXUNUSED(minFragSize))
 {
 	wxMutexLocker lock(m_mutex);
 	uint32 sentBytes = 0;
 	while (!m_queue.empty() && !m_busy && (sentBytes < maxNumberOfBytesToSend)) {
 		UDPPack item = m_queue.front();
-		CPacket* packet = item.packet;
+		CPacket *packet = item.packet;
 		if (GetTickCount64() - item.time < UDPMAXQUEUETIME) {
 			uint32_t len = packet->GetPacketSize() + 2;
-			uint8_t *sendbuffer = new uint8_t [len];
+			uint8_t *sendbuffer = new uint8_t[len];
 			memcpy(sendbuffer, packet->GetUDPHeader(), 2);
 			memcpy(sendbuffer + 2, packet->GetDataBuffer(), packet->GetPacketSize());
 
 			if (item.bEncrypt && (theApp->GetPublicIP() > 0 || item.bKad)) {
-				len = CEncryptedDatagramSocket::EncryptSendClient(&sendbuffer, len, item.pachTargetClientHashORKadID, item.bKad, item.nReceiverVerifyKey, (item.bKad ? Kademlia::CPrefs::GetUDPVerifyKey(item.IP) : 0));
+				len = CEncryptedDatagramSocket::EncryptSendClient(&sendbuffer,
+					len,
+					item.pachTargetClientHashORKadID,
+					item.bKad,
+					item.nReceiverVerifyKey,
+					(item.bKad ? Kademlia::CPrefs::GetUDPVerifyKey(item.IP) : 0));
 			}
 
 			if (SendTo(sendbuffer, len, item.IP, item.port)) {
 				sentBytes += len;
 				m_queue.pop_front();
 				delete packet;
-				delete [] sendbuffer;
+				delete[] sendbuffer;
 			} else {
 				// TODO: Needs better error handling, see SentTo
-				delete [] sendbuffer;
+				delete[] sendbuffer;
 				break;
 			}
 		} else {
@@ -292,7 +293,6 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 
 	return returnVal;
 }
-
 
 bool CMuleUDPSocket::SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port)
 {
@@ -319,13 +319,13 @@ bool CMuleUDPSocket::SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint1
 		// An error which we can't handle happened, so we drop
 		// the packet rather than risk entering an infinite loop.
 		AddLogLineN(("WARNING! " + m_name + ": Packet to ")
-			<< Uint32_16toStringIP_Port(ip, port)
-			<< " discarded due to error (" << error << ") while sending.");
+			    << Uint32_16toStringIP_Port(ip, port) << " discarded due to error (" << error
+			    << ") while sending.");
 		sent = true;
 	} else {
-		AddDebugLogLineN(logMuleUDP, (m_name + ": Packet sent (")
-			<< Uint32_16toStringIP_Port(ip, port) << "): "
-			<< length << "b");
+		AddDebugLogLineN(logMuleUDP,
+			(m_name + ": Packet sent (")
+				<< Uint32_16toStringIP_Port(ip, port) << "): " << length << "b");
 		sent = true;
 	}
 

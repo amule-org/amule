@@ -30,7 +30,6 @@
 #include <string>
 #include <wx/wxcrt.h>
 
-
 /**
  * MuleUnit namespace.
  * This is the namespace containing all muleunit classes.
@@ -41,32 +40,29 @@ namespace muleunit
 class TestCase;
 class BTList;
 
-
 /** Returns the size of a static array. */
-template <typename T, size_t N>
-inline size_t ArraySize(T(&)[N])
+template <typename T, size_t N> inline size_t ArraySize(T (&)[N])
 {
 	return N;
 }
 
-
 /** Print wide-char strings. */
-inline void Print(const wxString& str)
+inline void Print(const wxString &str)
 {
 	wxPuts(str.c_str());
 }
-
 
 /** This exception is raised if an ASSERT fails. */
 struct CTestFailureException : public std::exception
 {
 	/** Constructor, takes a snapshot of the current context, and adds the given information. */
-	CTestFailureException(const wxString& msg, const wxString& file, long lineNumber);
+	CTestFailureException(const wxString &msg, const wxString &file, long lineNumber);
 
 	/** Prints the context backtrace for the location where the exception was thrown. */
 	void PrintBT() const;
 
-	virtual const char* what () const noexcept;
+	virtual const char *what() const noexcept;
+
 private:
 	//! Pointer to struct containing a snapshot of the contexts
 	//! taken at the time the exception was created.
@@ -80,12 +76,11 @@ private:
 struct CAssertFailureException : public CTestFailureException
 {
 public:
-	CAssertFailureException(const wxString& msg, const wxString& file, long lineNumber)
-		: CTestFailureException(msg, file, lineNumber)
+	CAssertFailureException(const wxString &msg, const wxString &file, long lineNumber)
+	: CTestFailureException(msg, file, lineNumber)
 	{
 	}
 };
-
 
 /**
  * This class is used to produce informative backtraces
@@ -102,20 +97,18 @@ class CContext
 {
 public:
 	/** Adds a context with the specified information and description. */
-	CContext(const wxString& file, int line, const wxString& desc);
+	CContext(const wxString &file, int line, const wxString &desc);
 
 	/** Removes the context added by the constructor. */
 	~CContext();
 };
-
 
 //! Used to join the CContext instance name with the line-number.
 //! This is done to prevent shadowing.
 #define DO_CONTEXT(x, y, z) x y##z
 
 //! Specifies the context of the current scope.
-#define CONTEXT(x) CContext wxCONCAT(context,__LINE__)(__FILE__, __LINE__, x)
-
+#define CONTEXT(x) CContext wxCONCAT(context, __LINE__)(__FILE__, __LINE__, x)
 
 /**
  * This class disables assertions while it is in scope.
@@ -127,12 +120,10 @@ public:
 	~CAssertOff();
 };
 
-
 /**
  * Helperfunction that converts basic types to strings.
  */
-template <typename TYPE>
-wxString StringFrom(const TYPE& value)
+template <typename TYPE> wxString StringFrom(const TYPE &value)
 {
 	return wxString() << value;
 }
@@ -146,7 +137,6 @@ inline wxString StringFrom(signed long long value)
 {
 	return wxString::Format("%" wxLongLongFmtSpec "i", value);
 }
-
 
 /**
  * Test class containing all macros to do unit testing.
@@ -164,7 +154,7 @@ public:
 	 * @param testCaseName Name of the test case this test belongs to
 	 * @param testName Name of this test
 	 */
-	Test(const wxString& testCaseName, const wxString& testName);
+	Test(const wxString &testCaseName, const wxString &testName);
 
 	/**
 	 * Main Test destructor
@@ -198,7 +188,7 @@ public:
 	 *
 	 * @return The TestCase name of this test
 	 */
-	const wxString& getTestCaseName() const;
+	const wxString &getTestCaseName() const;
 
 	/**
 	 * Get the name of this test. The name of the test is the second
@@ -208,14 +198,13 @@ public:
 	 *
 	 * @return The name of this test.
 	 */
-	const wxString& getTestName() const;
+	const wxString &getTestName() const;
 
 	template <typename A, typename B>
-	static void DoAssertEquals(const wxString& file, unsigned line, const A& a, const B& b)
+	static void DoAssertEquals(const wxString &file, unsigned line, const A &a, const B &b)
 	{
 		if (!(a == b)) {
-			wxString message = "Expected '" + StringFrom(a) +
-								"' but got '" + StringFrom(b) + "'";
+			wxString message = "Expected '" + StringFrom(a) + "' but got '" + StringFrom(b) + "'";
 
 			throw CTestFailureException(message, file.c_str(), line);
 		}
@@ -224,13 +213,10 @@ public:
 protected:
 	wxString m_testCaseName;
 	wxString m_testName;
-	TestCase* m_testCase;
+	TestCase *m_testCase;
 };
 
-
-#define THROW_TEST_FAILURE(message) \
-	throw CTestFailureException(message, __FILE__, __LINE__)
-
+#define THROW_TEST_FAILURE(message) throw CTestFailureException(message, __FILE__, __LINE__)
 
 /**
  * Asserts that a condition is true.
@@ -239,26 +225,21 @@ protected:
  * @param message Message that will be displayed if this assertion fails
  */
 #define ASSERT_TRUE_M(condition, message) \
-{ \
-	if (!(condition)) { \
-		THROW_TEST_FAILURE(message); \
-	} \
-}
-
+	{ \
+		if (!(condition)) { \
+			THROW_TEST_FAILURE(message); \
+		} \
+	}
 
 /**
  * Same as ASSERT_TRUE, but without an explicit message.
  */
-#define ASSERT_TRUE(condition) \
-	ASSERT_TRUE_M(condition, wxString("Not true: ") + #condition);
-
+#define ASSERT_TRUE(condition) ASSERT_TRUE_M(condition, wxString("Not true: ") + #condition);
 
 /**
  * Same as ASSERT_TRUE, but without an explicit message and condition must be false.
  */
-#define ASSERT_FALSE(condition) \
-	ASSERT_TRUE_M(!(condition), wxString("Not false: ") + #condition);
-
+#define ASSERT_FALSE(condition) ASSERT_TRUE_M(!(condition), wxString("Not false: ") + #condition);
 
 /**
  * Asserts that the two parameters are equals. Operator == must be defined.
@@ -267,55 +248,47 @@ protected:
  * @param actual Actual value to be compared
  * @param message Message that will be displayed if this assertion fails
  */
-#define ASSERT_EQUALS_M(expected,actual,message)\
-{ \
-	if (!(expected == actual)) { \
-		THROW_TEST_FAILURE(message); \
-	} \
-}
-
+#define ASSERT_EQUALS_M(expected, actual, message) \
+	{ \
+		if (!(expected == actual)) { \
+			THROW_TEST_FAILURE(message); \
+		} \
+	}
 
 /**
  * Same as ASSERT_EQUALS_M, but without an explicit message.
  */
-#define ASSERT_EQUALS(expected, actual) \
-	Test::DoAssertEquals(__FILE__, __LINE__, expected, actual)
-
+#define ASSERT_EQUALS(expected, actual) Test::DoAssertEquals(__FILE__, __LINE__, expected, actual)
 
 /**
  * Make a test fails with the given message.
  * @param text Failure message
  */
-#define FAIL_M(text) \
-	THROW_TEST_FAILURE(text)
+#define FAIL_M(text) THROW_TEST_FAILURE(text)
 
 /**
  * Same as FAIL_M, but without an explicit message.
  */
 #define FAIL() FAIL_M("Test failed.")
 
-
 /**
  * Requires that an exception of a certain type is raised.
  */
 #define ASSERT_RAISES_M(type, call, message) \
 	try { \
-		{ call; }\
+		{ \
+			call; \
+		} \
 		THROW_TEST_FAILURE(message); \
-	} catch (const type&) { \
-	} catch (const std::exception& e) { \
+	} catch (const type &) { \
+	} catch (const std::exception &e) { \
 		THROW_TEST_FAILURE(wxString::FromAscii(e.what())); \
 	}
-
-
 
 /**
  * Same as ASSERT_RAISES, but without an explicit message.
  */
-#define ASSERT_RAISES(type, call) \
-	ASSERT_RAISES_M(type, (call), "Exception of type " #type " not raised.")
-
-
+#define ASSERT_RAISES(type, call) ASSERT_RAISES_M(type, (call), "Exception of type " #type " not raised.")
 
 /**
  * Define a test in a TestCase using test fixtures.
@@ -328,19 +301,19 @@ protected:
  * @param testName Unique test name.
  * @param testDisplayName This will be displayed when running the test.
  */
-#define TEST_M(testCaseName, testName, testDisplayName)                        \
-    class testCaseName##testName##Test : public testCaseName##Declare##Test    \
-    {                                                                          \
-    public:                                                                    \
-        testCaseName##testName##Test()                                         \
-            : testCaseName##Declare##Test(#testCaseName, testDisplayName) \
-        {                                                                      \
-        }                                                                      \
-                                                                               \
-        void run();                                                            \
-    } testCaseName##testName##Instance;                                        \
-                                                                               \
-    void testCaseName##testName##Test::run()
+#define TEST_M(testCaseName, testName, testDisplayName) \
+	class testCaseName##testName##Test : public testCaseName##Declare##Test \
+	{ \
+	public: \
+		testCaseName##testName##Test() \
+		: testCaseName##Declare##Test(#testCaseName, testDisplayName) \
+		{ \
+		} \
+\
+		void run(); \
+	} testCaseName##testName##Instance; \
+\
+	void testCaseName##testName##Test::run()
 
 /**
  * Define a test in a TestCase using test fixtures.
@@ -352,7 +325,7 @@ protected:
  * the same name of DECLARE, SETUP and TEARDOWN.
  * @param testName Unique test name.
  */
-#define TEST(testCaseName, testName)	TEST_M(testCaseName, testName, #testName)
+#define TEST(testCaseName, testName) TEST_M(testCaseName, testName, #testName)
 
 /**
  * Location to declare variables and objects.
@@ -365,13 +338,15 @@ protected:
  * @param testCaseName TestCase name of the fixtures
  * @see END_DECLARE for more information.
  */
-#define DECLARE(testCaseName)\
+#define DECLARE(testCaseName) \
 	class testCaseName##Declare##Test : public Test \
 	{ \
 	public: \
-		testCaseName##Declare##Test(const wxString& testCaseName, const wxString& testName) \
-			: Test (testCaseName, testName) {} \
-		virtual void run() = 0; \
+		testCaseName##Declare##Test(const wxString &testCaseName, const wxString &testName) \
+		: Test(testCaseName, testName) \
+		{ \
+		} \
+		virtual void run() = 0;
 
 /**
  * Ending macro used after DECLARE.
@@ -379,8 +354,9 @@ protected:
  * User should use this macro after declaring members with
  * DECLARE macro.
  */
-#define END_DECLARE };
-
+#define END_DECLARE \
+	} \
+	;
 
 /**
  * Macro for creating a fixture with no setup/teardown or member variables.
@@ -389,6 +365,5 @@ protected:
 	DECLARE(testCaseName) \
 	END_DECLARE;
 
-} // MuleUnit ns
+} // namespace muleunit
 #endif // TEST_H
-

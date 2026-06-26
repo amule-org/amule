@@ -31,19 +31,19 @@
 #include <common/ClientVersion.h>
 #include <common/Constants.h>
 
-#include "amule.h"			// Needed for theApp
-#include "amuleDlg.h"		// Needed for IsShown
-#include "Preferences.h"	// Needed for thePrefs
-#include "ServerConnect.h"	// Needed for CServerConnect
-#include "Server.h"			// Needed for CServer
-#include "Statistics.h"		// Needed for theStats
-#include "NetworkFunctions.h"	// Needed for Uint32toStringIP
-#include "OtherFunctions.h"	// Needed for CastItoXBytes / CastSecondsToHM
-#include <common/Format.h>	// Needed for CFormat
-#include <common/MenuIDs.h>	// Needed to access menu item constants
+#include "amule.h"            // Needed for theApp
+#include "amuleDlg.h"         // Needed for IsShown
+#include "Preferences.h"      // Needed for thePrefs
+#include "ServerConnect.h"    // Needed for CServerConnect
+#include "Server.h"           // Needed for CServer
+#include "Statistics.h"       // Needed for theStats
+#include "NetworkFunctions.h" // Needed for Uint32toStringIP
+#include "OtherFunctions.h"   // Needed for CastItoXBytes / CastSecondsToHM
+#include <common/Format.h>    // Needed for CFormat
+#include <common/MenuIDs.h>   // Needed to access menu item constants
 
 #ifdef __WXMAC__
-#include "MacAppHelper.h"	// mac_set_accessory_mode
+#include "MacAppHelper.h" // mac_set_accessory_mode
 #endif
 
 #ifdef WITH_LIBAYATANA_APPINDICATOR
@@ -53,7 +53,6 @@
 // below can call it.
 #include <gtk/gtk.h>
 #endif
-
 
 // =====================================================================
 // Common action handlers — invoked from either backend.
@@ -129,9 +128,8 @@ void CMuleTrayIcon::DoShow()
 	// no event is currently being processed (returns
 	// GDK_CURRENT_TIME) we still pass it through — the worst case
 	// is the focus-denial notification, which is itself clickable.
-	if (GtkWidget* gtkw = static_cast<GtkWidget*>(theApp->amuledlg->GetHandle())) {
-		gtk_window_present_with_time(GTK_WINDOW(gtkw),
-			gtk_get_current_event_time());
+	if (GtkWidget *gtkw = static_cast<GtkWidget *>(theApp->amuledlg->GetHandle())) {
+		gtk_window_present_with_time(GTK_WINDOW(gtkw), gtk_get_current_event_time());
 	}
 	RebuildMenu();
 #endif
@@ -176,7 +174,6 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 #endif
 }
 
-
 // =====================================================================
 // Backend selection — see MuleTrayIcon.h for rationale.
 // =====================================================================
@@ -197,12 +194,14 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 #include <libayatana-appindicator/app-indicator.h>
 #include <gtk/gtk.h>
 
-namespace {
+namespace
+{
 
 // All menu items reach the C++ side through this single callback. The
 // item carries two int "action" + "arg" fields via g_object_set_data,
 // so we don't need a separate static function per menu entry.
-enum TrayAction {
+enum TrayAction
+{
 	TRAY_ACTION_CONNECT_DISCONNECT = 1,
 	TRAY_ACTION_SHOW_HIDE,
 	TRAY_ACTION_SHOW,
@@ -212,50 +211,57 @@ enum TrayAction {
 	TRAY_ACTION_SET_DOWNLOAD_LIMIT,
 };
 
-void on_menu_item_activated(GtkMenuItem* item, gpointer user_data)
+void on_menu_item_activated(GtkMenuItem *item, gpointer user_data)
 {
-	CMuleTrayIcon* tray = static_cast<CMuleTrayIcon*>(user_data);
-	intptr_t action = reinterpret_cast<intptr_t>(
-		g_object_get_data(G_OBJECT(item), "action"));
-	intptr_t arg = reinterpret_cast<intptr_t>(
-		g_object_get_data(G_OBJECT(item), "arg"));
+	CMuleTrayIcon *tray = static_cast<CMuleTrayIcon *>(user_data);
+	intptr_t action = reinterpret_cast<intptr_t>(g_object_get_data(G_OBJECT(item), "action"));
+	intptr_t arg = reinterpret_cast<intptr_t>(g_object_get_data(G_OBJECT(item), "arg"));
 
 	switch (action) {
-		case TRAY_ACTION_CONNECT_DISCONNECT: tray->DoConnectDisconnect(); break;
-		case TRAY_ACTION_SHOW_HIDE:          tray->DoShowHide(); break;
-		case TRAY_ACTION_SHOW:               tray->DoShow(); break;
-		case TRAY_ACTION_HIDE:               tray->DoHide(); break;
-		case TRAY_ACTION_EXIT:               tray->DoExit(); break;
-		case TRAY_ACTION_SET_UPLOAD_LIMIT:   tray->DoSetUploadLimit((long)arg); break;
-		case TRAY_ACTION_SET_DOWNLOAD_LIMIT: tray->DoSetDownloadLimit((long)arg); break;
+	case TRAY_ACTION_CONNECT_DISCONNECT:
+		tray->DoConnectDisconnect();
+		break;
+	case TRAY_ACTION_SHOW_HIDE:
+		tray->DoShowHide();
+		break;
+	case TRAY_ACTION_SHOW:
+		tray->DoShow();
+		break;
+	case TRAY_ACTION_HIDE:
+		tray->DoHide();
+		break;
+	case TRAY_ACTION_EXIT:
+		tray->DoExit();
+		break;
+	case TRAY_ACTION_SET_UPLOAD_LIMIT:
+		tray->DoSetUploadLimit((long)arg);
+		break;
+	case TRAY_ACTION_SET_DOWNLOAD_LIMIT:
+		tray->DoSetDownloadLimit((long)arg);
+		break;
 	}
 }
 
-GtkWidget* make_action_item(const char* label, TrayAction action,
-                            long arg, gpointer user_data)
+GtkWidget *make_action_item(const char *label, TrayAction action, long arg, gpointer user_data)
 {
-	GtkWidget* item = gtk_menu_item_new_with_label(label);
-	g_object_set_data(G_OBJECT(item), "action",
-		reinterpret_cast<gpointer>(static_cast<intptr_t>(action)));
-	g_object_set_data(G_OBJECT(item), "arg",
-		reinterpret_cast<gpointer>(static_cast<intptr_t>(arg)));
-	g_signal_connect(item, "activate",
-		G_CALLBACK(on_menu_item_activated), user_data);
+	GtkWidget *item = gtk_menu_item_new_with_label(label);
+	g_object_set_data(
+		G_OBJECT(item), "action", reinterpret_cast<gpointer>(static_cast<intptr_t>(action)));
+	g_object_set_data(G_OBJECT(item), "arg", reinterpret_cast<gpointer>(static_cast<intptr_t>(arg)));
+	g_signal_connect(item, "activate", G_CALLBACK(on_menu_item_activated), user_data);
 	return item;
 }
 
-GtkWidget* make_speed_submenu(uint32 max_speed, TrayAction action,
-                              gpointer user_data)
+GtkWidget *make_speed_submenu(uint32 max_speed, TrayAction action, gpointer user_data)
 {
-	GtkWidget* submenu = gtk_menu_new();
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
-		make_action_item("Unlimited", action, -1, user_data));
+	GtkWidget *submenu = gtk_menu_new();
+	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), make_action_item("Unlimited", action, -1, user_data));
 	for (int i = 0; i < 5; i++) {
 		unsigned int spd = (unsigned int)((double)max_speed / 5) * (5 - i);
 		char label[64];
 		g_snprintf(label, sizeof(label), "%u kB/s", spd);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
-			make_action_item(label, action, (long)spd, user_data));
+		gtk_menu_shell_append(
+			GTK_MENU_SHELL(submenu), make_action_item(label, action, (long)spd, user_data));
 	}
 	gtk_widget_show_all(submenu);
 	return submenu;
@@ -265,29 +271,25 @@ GtkWidget* make_speed_submenu(uint32 max_speed, TrayAction action,
 // disabled items, but rendering varies between desktops — KDE shows
 // them grey, GNOME-with-AppIndicators shows them in the menu's normal
 // style. Either way they're not interactive.
-void append_info(GtkWidget* menu, const wxString& text)
+void append_info(GtkWidget *menu, const wxString &text)
 {
-	GtkWidget* item = gtk_menu_item_new_with_label(
-		(const char*)text.utf8_str());
+	GtkWidget *item = gtk_menu_item_new_with_label((const char *)text.utf8_str());
 	gtk_widget_set_sensitive(item, FALSE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 }
 
 } // anonymous namespace
 
-
 CMuleTrayIcon::CMuleTrayIcon()
-	: m_indicator(nullptr)
-	, m_menu(nullptr)
-	, m_lastIconState(-1)
+: m_indicator(nullptr)
+, m_menu(nullptr)
+, m_lastIconState(-1)
 {
 	// `org.amule.aMule` is both the AppStream/.desktop id and the icon
 	// name installed under share/icons/hicolor/*/apps/. AppIndicator3
 	// looks the icon up via the standard XDG icon-theme path.
 	m_indicator = app_indicator_new(
-		"org.amule.aMule",
-		"org.amule.aMule",
-		APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+		"org.amule.aMule", "org.amule.aMule", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 
 	// ACTIVE = visible. The user already opted in by enabling the tray
 	// icon in Preferences, so showing it immediately is the expected
@@ -328,12 +330,12 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 /*percent*/)
 	}
 }
 
-void CMuleTrayIcon::SetTrayToolTip(const wxString& Tip)
+void CMuleTrayIcon::SetTrayToolTip(const wxString &Tip)
 {
 	// SNI doesn't surface tooltips on hover (compositors disagree on
 	// whether to render them). Use it as the accessible title — screen
 	// readers and KDE's hover popup pick it up.
-	app_indicator_set_title(m_indicator, (const char*)Tip.utf8_str());
+	app_indicator_set_title(m_indicator, (const char *)Tip.utf8_str());
 }
 
 void CMuleTrayIcon::RebuildMenu()
@@ -346,13 +348,12 @@ void CMuleTrayIcon::RebuildMenu()
 	// only, no live stats) means we rebuild only when state actually
 	// changes, eliminating the flicker. Live values like download /
 	// upload speed are visible in the main aMule window.
-	GtkWidget* menu = gtk_menu_new();
+	GtkWidget *menu = gtk_menu_new();
 
 	// ---- Version banner ------------------------------------------
 	append_info(menu, MOD_VERSION_LONG);
 
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-		gtk_separator_menu_item_new());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	// ---- Client information submenu ------------------------------
 	// Snapshot at the moment of the last connection-state change.
@@ -360,15 +361,14 @@ void CMuleTrayIcon::RebuildMenu()
 	// menu can stay static between state changes — putting those in
 	// would force a periodic rebuild and bring back the flicker.
 	{
-		GtkWidget* sub = gtk_menu_new();
+		GtkWidget *sub = gtk_menu_new();
 
 		// ED2k status
 		{
 			wxString s = _("eD2k: ");
 			if (theApp->IsConnectedED2K()) {
-				s += theApp->IsFirewalled()
-					? wxString(_("Connected (LowID)"))
-					: wxString(_("Connected (HighID)"));
+				s += theApp->IsFirewalled() ? wxString(_("Connected (LowID)"))
+							    : wxString(_("Connected (HighID)"));
 			} else {
 				s += _("Disconnected");
 			}
@@ -379,9 +379,8 @@ void CMuleTrayIcon::RebuildMenu()
 		{
 			wxString s = _("Kad: ");
 			if (theApp->IsConnectedKad()) {
-				s += theApp->IsFirewalledKad()
-					? wxString(_("Connected (firewalled)"))
-					: wxString(_("Connected"));
+				s += theApp->IsFirewalledKad() ? wxString(_("Connected (firewalled)"))
+							       : wxString(_("Connected"));
 			} else {
 				s += _("Disconnected");
 			}
@@ -391,54 +390,55 @@ void CMuleTrayIcon::RebuildMenu()
 		// Server identity (only meaningful while connected)
 		{
 			wxString name = _("Server: ");
-			wxString ip   = _("Server IP: ");
+			wxString ip = _("Server IP: ");
 			if (theApp->serverconnect->GetCurrentServer()) {
 				name += theApp->serverconnect->GetCurrentServer()->GetListName();
-				ip   += theApp->serverconnect->GetCurrentServer()->GetFullIP();
+				ip += theApp->serverconnect->GetCurrentServer()->GetFullIP();
 			} else {
 				name += _("Not connected");
-				ip   += _("Not connected");
+				ip += _("Not connected");
 			}
 			append_info(sub, name);
 			append_info(sub, ip);
 		}
 
 		// Public IP — populated post-connect
-		append_info(sub, CFormat(_("IP: %s"))
-			% (theApp->GetPublicIP()
-				? Uint32toStringIP(theApp->GetPublicIP())
-				: wxString(_("Unknown"))));
+		append_info(sub,
+			CFormat(_("IP: %s")) % (theApp->GetPublicIP()
+							       ? Uint32toStringIP(theApp->GetPublicIP())
+							       : wxString(_("Unknown"))));
 
 		// Listen ports — change only on prefs save
-		append_info(sub, thePrefs::GetPort()
-			? wxString(CFormat(_("TCP port: %d")) % thePrefs::GetPort())
-			: wxString(_("TCP port: Not ready")));
+		append_info(sub,
+			thePrefs::GetPort() ? wxString(CFormat(_("TCP port: %d")) % thePrefs::GetPort())
+					    : wxString(_("TCP port: Not ready")));
 
-		append_info(sub, thePrefs::GetEffectiveUDPPort()
-			? wxString(CFormat(_("UDP port: %d")) % thePrefs::GetEffectiveUDPPort())
-			: wxString(_("UDP port: Not ready")));
+		append_info(sub,
+			thePrefs::GetEffectiveUDPPort()
+				? wxString(CFormat(_("UDP port: %d")) % thePrefs::GetEffectiveUDPPort())
+				: wxString(_("UDP port: Not ready")));
 
 		gtk_widget_show_all(sub);
-		GtkWidget* item = gtk_menu_item_new_with_label(
-			(const char*)wxString(_("Client Information")).utf8_str());
+		GtkWidget *item = gtk_menu_item_new_with_label(
+			(const char *)wxString(_("Client Information")).utf8_str());
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	}
 
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-		gtk_separator_menu_item_new());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	// ---- Action items --------------------------------------------
 
 	// Upload limit submenu
 	{
 		uint32 max_ul = thePrefs::GetMaxGraphUploadRate();
-		if (max_ul == UNLIMITED) max_ul = 100;
-		else if (max_ul < 10)    max_ul = 10;
+		if (max_ul == UNLIMITED)
+			max_ul = 100;
+		else if (max_ul < 10)
+			max_ul = 10;
 
-		GtkWidget* sub = make_speed_submenu(max_ul,
-			TRAY_ACTION_SET_UPLOAD_LIMIT, this);
-		GtkWidget* item = gtk_menu_item_new_with_label(_("Upload limit").utf8_str());
+		GtkWidget *sub = make_speed_submenu(max_ul, TRAY_ACTION_SET_UPLOAD_LIMIT, this);
+		GtkWidget *item = gtk_menu_item_new_with_label(_("Upload limit").utf8_str());
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	}
@@ -446,26 +446,26 @@ void CMuleTrayIcon::RebuildMenu()
 	// Download limit submenu
 	{
 		uint32 max_dl = thePrefs::GetMaxGraphDownloadRate();
-		if (max_dl == UNLIMITED) max_dl = 100;
-		else if (max_dl < 10)    max_dl = 10;
+		if (max_dl == UNLIMITED)
+			max_dl = 100;
+		else if (max_dl < 10)
+			max_dl = 10;
 
-		GtkWidget* sub = make_speed_submenu(max_dl,
-			TRAY_ACTION_SET_DOWNLOAD_LIMIT, this);
-		GtkWidget* item = gtk_menu_item_new_with_label(_("Download limit").utf8_str());
+		GtkWidget *sub = make_speed_submenu(max_dl, TRAY_ACTION_SET_DOWNLOAD_LIMIT, this);
+		GtkWidget *item = gtk_menu_item_new_with_label(_("Download limit").utf8_str());
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	}
 
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-		gtk_separator_menu_item_new());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	// Connect / Disconnect — label depends on current connection state.
 	{
-		const wxString label = theApp->IsConnected()
-			? wxString(_("Disconnect")) : wxString(_("Connect"));
+		const wxString label =
+			theApp->IsConnected() ? wxString(_("Disconnect")) : wxString(_("Connect"));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char*)label.utf8_str(),
-				TRAY_ACTION_CONNECT_DISCONNECT, 0, this));
+			make_action_item(
+				(const char *)label.utf8_str(), TRAY_ACTION_CONNECT_DISCONNECT, 0, this));
 	}
 
 	// Show / Hide. On a Wayland session we can't reliably detect that
@@ -477,29 +477,28 @@ void CMuleTrayIcon::RebuildMenu()
 	// the single label-aware entry stays.
 	if (CamuleAppCommon::IsWaylandSession()) {
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char*)wxString(_("Show aMule")).utf8_str(),
-				TRAY_ACTION_SHOW, 0, this));
+			make_action_item((const char *)wxString(_("Show aMule")).utf8_str(),
+				TRAY_ACTION_SHOW,
+				0,
+				this));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char*)wxString(_("Hide aMule")).utf8_str(),
-				TRAY_ACTION_HIDE, 0, this));
+			make_action_item((const char *)wxString(_("Hide aMule")).utf8_str(),
+				TRAY_ACTION_HIDE,
+				0,
+				this));
 	} else {
 		// Treat iconized as not visible — see DoShowHide for rationale.
-		const bool visible = theApp->amuledlg
-			&& theApp->amuledlg->IsShown()
-			&& !theApp->amuledlg->IsTrayLogicallyIconized();
-		const wxString label = visible ? wxString(_("Hide aMule"))
-		                               : wxString(_("Show aMule"));
+		const bool visible = theApp->amuledlg && theApp->amuledlg->IsShown() &&
+				     !theApp->amuledlg->IsTrayLogicallyIconized();
+		const wxString label = visible ? wxString(_("Hide aMule")) : wxString(_("Show aMule"));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char*)label.utf8_str(),
-				TRAY_ACTION_SHOW_HIDE, 0, this));
+			make_action_item((const char *)label.utf8_str(), TRAY_ACTION_SHOW_HIDE, 0, this));
 	}
 
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-		gtk_separator_menu_item_new());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-		make_action_item((const char*)wxString(_("Exit")).utf8_str(),
-			TRAY_ACTION_EXIT, 0, this));
+		make_action_item((const char *)wxString(_("Exit")).utf8_str(), TRAY_ACTION_EXIT, 0, this));
 
 	gtk_widget_show_all(menu);
 
@@ -510,8 +509,7 @@ void CMuleTrayIcon::RebuildMenu()
 	m_menu = menu;
 }
 
-
-#else  // !WITH_LIBAYATANA_APPINDICATOR
+#else // !WITH_LIBAYATANA_APPINDICATOR
 
 // ---------------------------------------------------------------------
 //  Legacy wxTaskBarIcon backend. Works correctly on Windows
@@ -520,12 +518,11 @@ void CMuleTrayIcon::RebuildMenu()
 //  goes nowhere — build with libayatana-appindicator3 to fix that.
 // ---------------------------------------------------------------------
 
-#include <wx/artprov.h>           // Needed for wxArtProvider::GetIcon
+#include <wx/artprov.h> // Needed for wxArtProvider::GetIcon
 
 #include <wx/menu.h>
 
-#include "StatisticsDlg.h"	// Needed for CStatisticsDlg::getColors()
-
+#include "StatisticsDlg.h" // Needed for CStatisticsDlg::getColors()
 
 /****************************************************/
 /******************* Event Table ********************/
@@ -540,51 +537,51 @@ wxBEGIN_EVENT_TABLE(CMuleTrayIcon, wxTaskBarIcon)
 	EVT_TASKBAR_LEFT_UP(CMuleTrayIcon::SwitchShow)
 #endif
 	EVT_TASKBAR_LEFT_DCLICK(CMuleTrayIcon::SwitchShow)
-	EVT_MENU( TRAY_MENU_EXIT, CMuleTrayIcon::Close)
-	EVT_MENU( TRAY_MENU_CONNECT, CMuleTrayIcon::ServerConnection)
-	EVT_MENU( TRAY_MENU_DISCONNECT, CMuleTrayIcon::ServerConnection)
-	EVT_MENU( TRAY_MENU_HIDE, CMuleTrayIcon::ShowHide)
-	EVT_MENU( TRAY_MENU_SHOW, CMuleTrayIcon::ShowHide)
-	EVT_MENU( UPLOAD_ITEM1, CMuleTrayIcon::SetUploadSpeed)
-	EVT_MENU( UPLOAD_ITEM2, CMuleTrayIcon::SetUploadSpeed)
-	EVT_MENU( UPLOAD_ITEM3, CMuleTrayIcon::SetUploadSpeed)
-	EVT_MENU( UPLOAD_ITEM4, CMuleTrayIcon::SetUploadSpeed)
-	EVT_MENU( UPLOAD_ITEM5, CMuleTrayIcon::SetUploadSpeed)
-	EVT_MENU( UPLOAD_ITEM6, CMuleTrayIcon::SetUploadSpeed)
-	EVT_MENU( DOWNLOAD_ITEM1, CMuleTrayIcon::SetDownloadSpeed)
-	EVT_MENU( DOWNLOAD_ITEM2, CMuleTrayIcon::SetDownloadSpeed)
-	EVT_MENU( DOWNLOAD_ITEM3, CMuleTrayIcon::SetDownloadSpeed)
-	EVT_MENU( DOWNLOAD_ITEM4, CMuleTrayIcon::SetDownloadSpeed)
-	EVT_MENU( DOWNLOAD_ITEM5, CMuleTrayIcon::SetDownloadSpeed)
-	EVT_MENU( DOWNLOAD_ITEM6, CMuleTrayIcon::SetDownloadSpeed)
+	EVT_MENU(TRAY_MENU_EXIT, CMuleTrayIcon::Close)
+	EVT_MENU(TRAY_MENU_CONNECT, CMuleTrayIcon::ServerConnection)
+	EVT_MENU(TRAY_MENU_DISCONNECT, CMuleTrayIcon::ServerConnection)
+	EVT_MENU(TRAY_MENU_HIDE, CMuleTrayIcon::ShowHide)
+	EVT_MENU(TRAY_MENU_SHOW, CMuleTrayIcon::ShowHide)
+	EVT_MENU(UPLOAD_ITEM1, CMuleTrayIcon::SetUploadSpeed)
+	EVT_MENU(UPLOAD_ITEM2, CMuleTrayIcon::SetUploadSpeed)
+	EVT_MENU(UPLOAD_ITEM3, CMuleTrayIcon::SetUploadSpeed)
+	EVT_MENU(UPLOAD_ITEM4, CMuleTrayIcon::SetUploadSpeed)
+	EVT_MENU(UPLOAD_ITEM5, CMuleTrayIcon::SetUploadSpeed)
+	EVT_MENU(UPLOAD_ITEM6, CMuleTrayIcon::SetUploadSpeed)
+	EVT_MENU(DOWNLOAD_ITEM1, CMuleTrayIcon::SetDownloadSpeed)
+	EVT_MENU(DOWNLOAD_ITEM2, CMuleTrayIcon::SetDownloadSpeed)
+	EVT_MENU(DOWNLOAD_ITEM3, CMuleTrayIcon::SetDownloadSpeed)
+	EVT_MENU(DOWNLOAD_ITEM4, CMuleTrayIcon::SetDownloadSpeed)
+	EVT_MENU(DOWNLOAD_ITEM5, CMuleTrayIcon::SetDownloadSpeed)
+	EVT_MENU(DOWNLOAD_ITEM6, CMuleTrayIcon::SetDownloadSpeed)
 wxEND_EVENT_TABLE()
-
 
 /****************************************************/
 /************ Constructor / Destructor **************/
 /****************************************************/
 
-static long GetSpeedFromString(wxString label){
+static long GetSpeedFromString(wxString label)
+{
 	long temp;
-	label.Replace(_("kB/s"),"",TRUE);
+	label.Replace(_("kB/s"), "", TRUE);
 	label.Trim(FALSE);
 	label.Trim(TRUE);
 	label.ToLong(&temp);
 	return temp;
 }
 
-void CMuleTrayIcon::SetUploadSpeed(wxCommandEvent& event){
+void CMuleTrayIcon::SetUploadSpeed(wxCommandEvent &event)
+{
 
-	wxObject* obj=event.GetEventObject();
-	if (obj!=NULL) {
+	wxObject *obj = event.GetEventObject();
+	if (obj != NULL) {
 		wxMenu *menu = dynamic_cast<wxMenu *>(obj);
 		if (menu) {
-			wxMenuItem* item=menu->FindItem(event.GetId());
-			if (item!=NULL) {
-				if (item->GetItemLabelText()==(_("Unlimited"))) {
+			wxMenuItem *item = menu->FindItem(event.GetId());
+			if (item != NULL) {
+				if (item->GetItemLabelText() == (_("Unlimited"))) {
 					DoSetUploadLimit(-1);
-				}
-				else {
+				} else {
 					DoSetUploadLimit(GetSpeedFromString(item->GetItemLabelText()));
 				}
 			}
@@ -592,18 +589,18 @@ void CMuleTrayIcon::SetUploadSpeed(wxCommandEvent& event){
 	}
 }
 
-void CMuleTrayIcon::SetDownloadSpeed(wxCommandEvent& event){
+void CMuleTrayIcon::SetDownloadSpeed(wxCommandEvent &event)
+{
 
-	wxObject* obj=event.GetEventObject();
-	if (obj!=NULL) {
+	wxObject *obj = event.GetEventObject();
+	if (obj != NULL) {
 		wxMenu *menu = dynamic_cast<wxMenu *>(obj);
 		if (menu) {
-			wxMenuItem* item=menu->FindItem(event.GetId());
-			if (item!=NULL) {
-				if (item->GetItemLabelText()==(_("Unlimited"))) {
+			wxMenuItem *item = menu->FindItem(event.GetId());
+			if (item != NULL) {
+				if (item->GetItemLabelText() == (_("Unlimited"))) {
 					DoSetDownloadLimit(-1);
-				}
-				else {
+				} else {
 					DoSetDownloadLimit(GetSpeedFromString(item->GetItemLabelText()));
 				}
 			}
@@ -611,24 +608,20 @@ void CMuleTrayIcon::SetDownloadSpeed(wxCommandEvent& event){
 	}
 }
 
-
-void CMuleTrayIcon::ServerConnection(wxCommandEvent& WXUNUSED(event))
+void CMuleTrayIcon::ServerConnection(wxCommandEvent &WXUNUSED(event))
 {
 	DoConnectDisconnect();
 }
 
-
-void CMuleTrayIcon::ShowHide(wxCommandEvent& WXUNUSED(event))
+void CMuleTrayIcon::ShowHide(wxCommandEvent &WXUNUSED(event))
 {
 	DoShowHide();
 }
 
-
-void CMuleTrayIcon::Close(wxCommandEvent& WXUNUSED(event))
+void CMuleTrayIcon::Close(wxCommandEvent &WXUNUSED(event))
 {
 	DoExit();
 }
-
 
 CMuleTrayIcon::CMuleTrayIcon()
 {
@@ -641,10 +634,7 @@ CMuleTrayIcon::CMuleTrayIcon()
 	Disconnected_Icon_size = wxArtProvider::GetIcon("amule:tray_disconnected").GetHeight();
 }
 
-CMuleTrayIcon::~CMuleTrayIcon()
-{
-}
-
+CMuleTrayIcon::~CMuleTrayIcon() {}
 
 /****************************************************/
 /***************** Public Functions *****************/
@@ -655,18 +645,18 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 	int Bar_ySize = 0;
 
 	switch (Icon) {
-		case TRAY_ICON_HIGHID:
-			// Most likely case, test first
-			Bar_ySize = HighId_Icon_size;
-			break;
-		case TRAY_ICON_LOWID:
-			Bar_ySize = LowId_Icon_size;
-			break;
-		case TRAY_ICON_DISCONNECTED:
-			Bar_ySize = Disconnected_Icon_size;
-			break;
-		default:
-			wxFAIL;
+	case TRAY_ICON_HIGHID:
+		// Most likely case, test first
+		Bar_ySize = HighId_Icon_size;
+		break;
+	case TRAY_ICON_LOWID:
+		Bar_ySize = LowId_Icon_size;
+		break;
+	case TRAY_ICON_DISCONNECTED:
+		Bar_ySize = Disconnected_Icon_size;
+		break;
+	default:
+		wxFAIL;
 	}
 
 	// Lookup this values for speed improvement: don't draw if not needed
@@ -677,18 +667,18 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 		if ((Old_SpeedSize > NewSize) || (Old_Icon != Icon)) {
 			// We have to rebuild the icon, because bar is lower now.
 			switch (Icon) {
-				case TRAY_ICON_HIGHID:
-					// Most likely case, test first
-					CurrentIcon = wxArtProvider::GetIcon("amule:tray_high");
-					break;
-				case TRAY_ICON_LOWID:
-					CurrentIcon = wxArtProvider::GetIcon("amule:tray_low");
-					break;
-				case TRAY_ICON_DISCONNECTED:
-					CurrentIcon = wxArtProvider::GetIcon("amule:tray_disconnected");
-					break;
-				default:
-					wxFAIL;
+			case TRAY_ICON_HIGHID:
+				// Most likely case, test first
+				CurrentIcon = wxArtProvider::GetIcon("amule:tray_high");
+				break;
+			case TRAY_ICON_LOWID:
+				CurrentIcon = wxArtProvider::GetIcon("amule:tray_low");
+				break;
+			case TRAY_ICON_DISCONNECTED:
+				CurrentIcon = wxArtProvider::GetIcon("amule:tray_disconnected");
+				break;
+			default:
+				wxFAIL;
 			}
 		}
 
@@ -704,7 +694,6 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 
 		IconWithSpeed.SelectObject(TempBMP);
 
-
 		// Speed bar is: centered, taking 80% of the icon height, and
 		// right-justified taking a 10% of the icon width.
 
@@ -715,7 +704,7 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 		IconWithSpeed.SetBrush(*(wxTheBrushList->FindOrCreateBrush(CStatisticsDlg::getColors(11))));
 		IconWithSpeed.SetPen(*wxTRANSPARENT_PEN);
 
-		IconWithSpeed.DrawRectangle(Bar_xPos + 1, Bar_ySize - NewSize, Bar_xSize -2 , NewSize);
+		IconWithSpeed.DrawRectangle(Bar_xPos + 1, Bar_ySize - NewSize, Bar_xSize - 2, NewSize);
 
 		// Unselect the icon.
 		IconWithSpeed.SelectObject(wxNullBitmap);
@@ -723,7 +712,7 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 		// Do transparency
 
 		// Set a new mask with transparency set to red.
-		wxMask* new_mask = new wxMask(TempBMP, wxColour(0xFF, 0x00, 0x00));
+		wxMask *new_mask = new wxMask(TempBMP, wxColour(0xFF, 0x00, 0x00));
 
 		TempBMP.SetMask(new_mask);
 		CurrentIcon.CopyFromBitmap(TempBMP);
@@ -732,12 +721,11 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 	}
 }
 
-void CMuleTrayIcon::SetTrayToolTip(const wxString& Tip)
+void CMuleTrayIcon::SetTrayToolTip(const wxString &Tip)
 {
 	CurrentTip = Tip;
 	UpdateTray();
 }
-
 
 /****************************************************/
 /**************** Private Functions *****************/
@@ -754,8 +742,7 @@ void CMuleTrayIcon::UpdateTray()
 	}
 }
 
-
-wxMenu* CMuleTrayIcon::CreatePopupMenu()
+wxMenu *CMuleTrayIcon::CreatePopupMenu()
 {
 	float kBpsUp = theStats::GetUploadRate() / 1024.0;
 	float kBpsDown = theStats::GetDownloadRate() / 1024.0;
@@ -776,41 +763,41 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 
 	// Check for upload limits
 	unsigned int max_upload = thePrefs::GetMaxUpload();
-	if ( max_upload == UNLIMITED ) {
+	if (max_upload == UNLIMITED) {
 		label += _("UL: None");
-	}
-	else {
+	} else {
 		label += CFormat(_("UL: %u")) % max_upload;
 	}
 	label += ", ";
 
 	// Check for download limits
 	unsigned int max_download = thePrefs::GetMaxDownload();
-	if ( max_download == UNLIMITED ) {
+	if (max_download == UNLIMITED) {
 		label += _("DL: None");
-	}
-	else {
+	} else {
 		label += CFormat(_("DL: %u")) % max_download;
 	}
 
 	traymenu->Append(TRAY_MENU_INFO, label);
-	label = CFormat(_("Download speed: %.1f%s"))
-			% (showMBpsDown ? MBpsDown : kBpsDown) % (showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : ""));
+	label = CFormat(_("Download speed: %.1f%s")) % (showMBpsDown ? MBpsDown : kBpsDown) %
+		(showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : ""));
 	traymenu->Append(TRAY_MENU_INFO, label);
-	label = CFormat(_("Upload speed: %.1f%s"))
-			% (showMBpsUp ? MBpsUp : kBpsUp) % (showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : ""));
+	label = CFormat(_("Upload speed: %.1f%s")) % (showMBpsUp ? MBpsUp : kBpsUp) %
+		(showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : ""));
 	traymenu->Append(TRAY_MENU_INFO, label);
 	traymenu->AppendSeparator();
 
 	// Client Info
-	wxMenu* ClientInfoMenu = new wxMenu();
+	wxMenu *ClientInfoMenu = new wxMenu();
 	ClientInfoMenu->SetTitle(_("Client Information"));
 
 	// User nick-name
 	{
-		wxString temp = CFormat(_("Nickname: %s")) % ( thePrefs::GetUserNick().IsEmpty() ? wxString(_("No Nickname Selected!")) : thePrefs::GetUserNick() );
+		wxString temp = CFormat(_("Nickname: %s")) %
+				(thePrefs::GetUserNick().IsEmpty() ? wxString(_("No Nickname Selected!"))
+								   : thePrefs::GetUserNick());
 
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Client ID
@@ -822,30 +809,32 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 		} else {
 			temp += _("Not connected");
 		}
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Current Server and Server IP
 	{
 		wxString temp_name = _("ServerName: ");
-		wxString temp_ip   = _("ServerIP: ");
+		wxString temp_ip = _("ServerIP: ");
 
-		if ( theApp->serverconnect->GetCurrentServer() ) {
+		if (theApp->serverconnect->GetCurrentServer()) {
 			temp_name += theApp->serverconnect->GetCurrentServer()->GetListName();
-			temp_ip   += theApp->serverconnect->GetCurrentServer()->GetFullIP();
+			temp_ip += theApp->serverconnect->GetCurrentServer()->GetFullIP();
 		} else {
 			temp_name += _("Not connected");
-			temp_ip   += _("Not Connected");
+			temp_ip += _("Not Connected");
 		}
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp_name);
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp_ip);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp_name);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp_ip);
 	}
 
 	// IP Address
 	{
-		wxString temp = CFormat(_("IP: %s")) % ( (theApp->GetPublicIP()) ? Uint32toStringIP(theApp->GetPublicIP()) : wxString(_("Unknown")) );
+		wxString temp = CFormat(_("IP: %s")) %
+				((theApp->GetPublicIP()) ? Uint32toStringIP(theApp->GetPublicIP())
+							 : wxString(_("Unknown")));
 
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// TCP PORT
@@ -854,9 +843,9 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 		if (thePrefs::GetPort()) {
 			temp = CFormat(_("TCP port: %d")) % thePrefs::GetPort();
 		} else {
-			temp=_("TCP port: Not ready");
+			temp = _("TCP port: Not ready");
 		}
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// UDP PORT
@@ -865,66 +854,65 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 		if (thePrefs::GetEffectiveUDPPort()) {
 			temp = CFormat(_("UDP port: %d")) % thePrefs::GetEffectiveUDPPort();
 		} else {
-			temp=_("UDP port: Not ready");
+			temp = _("UDP port: Not ready");
 		}
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Online Signature
 	{
 		wxString temp;
 		if (thePrefs::IsOnlineSignatureEnabled()) {
-			temp=_("Online Signature: Enabled");
+			temp = _("Online Signature: Enabled");
+		} else {
+			temp = _("Online Signature: Disabled");
 		}
-		else {
-			temp=_("Online Signature: Disabled");
-		}
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Uptime
 	{
 		wxString temp = CFormat(_("Uptime: %s")) % CastSecondsToHM(theStats::GetUptimeSeconds());
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Number of shared files
 	{
 		wxString temp = CFormat(_("Shared files: %d")) % theStats::GetSharedFileCount();
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Number of queued clients
 	{
 		wxString temp = CFormat(_("Queued clients: %d")) % theStats::GetWaitingUserCount();
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Total Downloaded
 	{
 		wxString temp = CastItoXBytes(theStats::GetTotalReceivedBytes());
 		temp = CFormat(_("Total DL: %s")) % temp;
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
 	// Total Uploaded
 	{
 		wxString temp = CastItoXBytes(theStats::GetTotalSentBytes());
 		temp = CFormat(_("Total UL: %s")) % temp;
-		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM,temp);
+		ClientInfoMenu->Append(TRAY_MENU_CLIENTINFO_ITEM, temp);
 	}
 
-	traymenu->Append(TRAY_MENU_CLIENTINFO,ClientInfoMenu->GetTitle(),ClientInfoMenu);
+	traymenu->Append(TRAY_MENU_CLIENTINFO, ClientInfoMenu->GetTitle(), ClientInfoMenu);
 
 	// Separator
 	traymenu->AppendSeparator();
 
 	// Upload Speed sub-menu
-	wxMenu* UploadSpeedMenu = new wxMenu();
+	wxMenu *UploadSpeedMenu = new wxMenu();
 	UploadSpeedMenu->SetTitle(_("Upload limit"));
 
 	// Download Speed sub-menu
-	wxMenu* DownloadSpeedMenu = new wxMenu();
+	wxMenu *DownloadSpeedMenu = new wxMenu();
 	DownloadSpeedMenu->SetTitle(_("Download limit"));
 
 	// Upload Speed sub-menu
@@ -933,20 +921,19 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 
 		uint32 max_ul_speed = thePrefs::GetMaxGraphUploadRate();
 
-		if ( max_ul_speed == UNLIMITED ) {
+		if (max_ul_speed == UNLIMITED) {
 			max_ul_speed = 100;
-		}
-		else if ( max_ul_speed < 10 ) {
+		} else if (max_ul_speed < 10) {
 			max_ul_speed = 10;
 		}
 
-		for ( int i = 0; i < 5; i++ ) {
+		for (int i = 0; i < 5; i++) {
 			unsigned int tempspeed = (unsigned int)((double)max_ul_speed / 5) * (5 - i);
 			wxString temp = CFormat("%u %s") % tempspeed % _("kB/s");
-			UploadSpeedMenu->Append((int)UPLOAD_ITEM1+i+1,temp);
+			UploadSpeedMenu->Append((int)UPLOAD_ITEM1 + i + 1, temp);
 		}
 	}
-	traymenu->Append(0,UploadSpeedMenu->GetTitle(),UploadSpeedMenu);
+	traymenu->Append(0, UploadSpeedMenu->GetTitle(), UploadSpeedMenu);
 
 	// Download Speed sub-menu
 	{
@@ -954,29 +941,28 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 
 		uint32 max_dl_speed = thePrefs::GetMaxGraphDownloadRate();
 
-		if ( max_dl_speed == UNLIMITED ) {
+		if (max_dl_speed == UNLIMITED) {
 			max_dl_speed = 100;
-		}
-		else if ( max_dl_speed < 10 ) {
+		} else if (max_dl_speed < 10) {
 			max_dl_speed = 10;
 		}
 
-		for ( int i = 0; i < 5; i++ ) {
+		for (int i = 0; i < 5; i++) {
 			unsigned int tempspeed = (unsigned int)((double)max_dl_speed / 5) * (5 - i);
 			wxString temp = CFormat("%d %s") % tempspeed % _("kB/s");
-			DownloadSpeedMenu->Append((int)DOWNLOAD_ITEM1+i+1,temp);
+			DownloadSpeedMenu->Append((int)DOWNLOAD_ITEM1 + i + 1, temp);
 		}
 	}
 
-	traymenu->Append(0,DownloadSpeedMenu->GetTitle(),DownloadSpeedMenu);
+	traymenu->Append(0, DownloadSpeedMenu->GetTitle(), DownloadSpeedMenu);
 	// Separator
 	traymenu->AppendSeparator();
 
 	if (theApp->IsConnected()) {
-		//Disconnection Speed item
+		// Disconnection Speed item
 		traymenu->Append(TRAY_MENU_DISCONNECT, _("Disconnect"));
 	} else {
-		//Connect item
+		// Connect item
 		traymenu->Append(TRAY_MENU_CONNECT, _("Connect"));
 	}
 
@@ -999,11 +985,11 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
 	return traymenu;
 }
 
-void CMuleTrayIcon::SwitchShow(wxTaskBarIconEvent&)
+void CMuleTrayIcon::SwitchShow(wxTaskBarIconEvent &)
 {
 	DoShowHide();
 }
 
-#endif  // !WITH_LIBAYATANA_APPINDICATOR
+#endif // !WITH_LIBAYATANA_APPINDICATOR
 
 // File_checked_for_headers

@@ -25,7 +25,6 @@
 #ifndef RLE_H
 #define RLE_H
 
-
 #include "Types.h"
 
 /*!
@@ -35,10 +34,10 @@
 class RLE_Data
 {
 public:
-	RLE_Data(int len = 0, bool use_diff = true)	{ setup(len, use_diff); }
+	RLE_Data(int len = 0, bool use_diff = true) { setup(len, use_diff); }
 
 	// those constructors are for stl containers
-	RLE_Data(const RLE_Data & obj)	{ setup(obj.m_len, obj.m_use_diff, obj.m_buff); }
+	RLE_Data(const RLE_Data &obj) { setup(obj.m_len, obj.m_use_diff, obj.m_buff); }
 	RLE_Data &operator=(const RLE_Data &);
 
 	~RLE_Data();
@@ -52,11 +51,11 @@ public:
 	void ResetEncoder();
 
 	// decoder will need access to data
-	const uint8 *Buffer() const	{ return m_buff; }
-	int Size() const	{ return m_len; }
+	const uint8 *Buffer() const { return m_buff; }
+	int Size() const { return m_len; }
 
 private:
-	void setup(int len, bool use_diff, uint8 * content = 0);
+	void setup(int len, bool use_diff, uint8 *content = 0);
 
 	// change size of internal buffers
 	// returns true if size was changed
@@ -84,11 +83,11 @@ private:
 	bool m_use_diff;
 };
 
-
 /*!
  * Data difference is different for each EC client
  */
-class PartFileEncoderData {
+class PartFileEncoderData
+{
 protected:
 	// number of sources for each part for progress bar colouring
 	RLE_Data m_part_status;
@@ -100,9 +99,9 @@ protected:
 public:
 	//
 	// decoder side - can be used everywhere
-	void DecodeParts(const class CECTag * tag, ArrayOfUInts16 &outdata);
-	void DecodeGaps(const class CECTag * tag, ArrayOfUInts64 &outdata);
-	void DecodeReqs(const class CECTag * tag, ArrayOfUInts64 &outdata);
+	void DecodeParts(const class CECTag *tag, ArrayOfUInts16 &outdata);
+	void DecodeGaps(const class CECTag *tag, ArrayOfUInts64 &outdata);
+	void DecodeReqs(const class CECTag *tag, ArrayOfUInts64 &outdata);
 };
 
 #endif

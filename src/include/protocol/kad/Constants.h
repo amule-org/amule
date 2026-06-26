@@ -30,28 +30,28 @@
 
 // MOD Note: Do not change this part - Merkur
 
-#define	KADEMLIAASKTIME			SEC2MS(1)	//1 second
-#define	KADEMLIATOTALFILE		5		//Total files to search sources for.
-#define	KADEMLIAREASKTIME		HR2MS(1)	//1 hour
-#define	KADEMLIAPUBLISHTIME		SEC(2)		//2 second
-#define	KADEMLIATOTALSTORENOTES		1		//Total hashes to store.
-#define	KADEMLIATOTALSTORESRC		3		//Total hashes to store.
-#define	KADEMLIATOTALSTOREKEY		2		//Total hashes to store.
-#define	KADEMLIAREPUBLISHTIMES		HR2S(5)		//5 hours
-#define	KADEMLIAREPUBLISHTIMEN		HR2S(24)	//24 hours
-#define	KADEMLIAREPUBLISHTIMEK		HR2S(24)	//24 hours
-#define	KADEMLIADISCONNECTDELAY		MIN2S(20)	//20 mins
-#define	KADEMLIAMAXINDEX		50000		//Total keyword indexes.
-#define	KADEMLIAMAXENTRIES		60000		//Total keyword entries.
-#define	KADEMLIAMAXSOURCEPERFILE	1000		//Max number of sources per file in index.
-#define	KADEMLIAMAXNOTESPERFILE		150		//Max number of notes per entry in index.
-#define	KADEMLIAFIREWALLCHECKS		4		//Firewallcheck Request at a time
+#define KADEMLIAASKTIME SEC2MS(1)         // 1 second
+#define KADEMLIATOTALFILE 5               // Total files to search sources for.
+#define KADEMLIAREASKTIME HR2MS(1)        // 1 hour
+#define KADEMLIAPUBLISHTIME SEC(2)        // 2 second
+#define KADEMLIATOTALSTORENOTES 1         // Total hashes to store.
+#define KADEMLIATOTALSTORESRC 3           // Total hashes to store.
+#define KADEMLIATOTALSTOREKEY 2           // Total hashes to store.
+#define KADEMLIAREPUBLISHTIMES HR2S(5)    // 5 hours
+#define KADEMLIAREPUBLISHTIMEN HR2S(24)   // 24 hours
+#define KADEMLIAREPUBLISHTIMEK HR2S(24)   // 24 hours
+#define KADEMLIADISCONNECTDELAY MIN2S(20) // 20 mins
+#define KADEMLIAMAXINDEX 50000            // Total keyword indexes.
+#define KADEMLIAMAXENTRIES 60000          // Total keyword entries.
+#define KADEMLIAMAXSOURCEPERFILE 1000     // Max number of sources per file in index.
+#define KADEMLIAMAXNOTESPERFILE 150       // Max number of notes per entry in index.
+#define KADEMLIAFIREWALLCHECKS 4          // Firewallcheck Request at a time
 // MOD Note: end
 
 // Kad parameters
-#define	KADEMLIA_FIND_VALUE		0x02
-#define	KADEMLIA_STORE			0x04
-#define	KADEMLIA_FIND_NODE		0x0B
-#define	KADEMLIA_FIND_VALUE_MORE	KADEMLIA_FIND_NODE
+#define KADEMLIA_FIND_VALUE 0x02
+#define KADEMLIA_STORE 0x04
+#define KADEMLIA_FIND_NODE 0x0B
+#define KADEMLIA_FIND_VALUE_MORE KADEMLIA_FIND_NODE
 
 #endif // KADCONSTANTS_H

@@ -40,13 +40,14 @@ there client on the eMule forum..
 #define __KAD_DEFINES_H__
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
-#define SEARCHTOLERANCE			16777216
-const unsigned int K	=		10;
-#define KBASE				4
-#define KK				5
+#define SEARCHTOLERANCE 16777216
+const unsigned int K = 10;
+#define KBASE 4
+#define KK 5
 // Maxmimum number of in-flight queries during a Kad search.  At each step the
 // initiator sends FIND_VALUE to up to ALPHA_QUERY closest unqueried nodes and
 // uses the responses to expand the search frontier.  The Kademlia paper (MIT
@@ -54,7 +55,7 @@ const unsigned int K	=		10;
 // the low end and slow-converges searches for unpopular keywords.  5 keeps
 // network load modest while letting CSearch::ProcessResponse's existing
 // "in top ALPHA_QUERY closer than current" cascade maintain more parallelism.
-#define ALPHA_QUERY			5
+#define ALPHA_QUERY 5
 
 // Cap on user-triggered widening reasks (CSearch::RequestMoreResults).
 // Each reask asks an already-responded peer for KADEMLIA_FIND_VALUE_MORE
@@ -62,32 +63,32 @@ const unsigned int K	=		10;
 // of the routing-table neighbourhood.  Past 4 reasks the local
 // neighbourhood for a given keyword is typically exhausted (responses
 // dedupe against m_results) and additional reasks are wasted UDP traffic.
-#define KADEMLIA_FIND_VALUE_MORE_REASKS	4
-#define LOG_BASE_EXPONENT		5
-#define HELLO_TIMEOUT			20
-#define SEARCH_JUMPSTART		1
-#define SEARCH_LIFETIME			45
-#define SEARCHFILE_LIFETIME		45
-#define SEARCHKEYWORD_LIFETIME		45
-#define SEARCHNOTES_LIFETIME		45
-#define SEARCHNODE_LIFETIME		45
-#define SEARCHNODECOMP_LIFETIME		10
-#define SEARCHSTOREFILE_LIFETIME	140
-#define SEARCHSTOREKEYWORD_LIFETIME	140
-#define SEARCHSTORENOTES_LIFETIME	100
-#define SEARCHFINDBUDDY_LIFETIME	100
-#define SEARCHFINDSOURCE_LIFETIME	45
-#define SEARCHFILE_TOTAL		300
-#define SEARCHKEYWORD_TOTAL		300
-#define SEARCHNOTES_TOTAL		50
-#define SEARCHSTOREFILE_TOTAL		10
-#define SEARCHSTOREKEYWORD_TOTAL	10
-#define SEARCHSTORENOTES_TOTAL		10
-#define SEARCHNODECOMP_TOTAL		10
-#define SEARCHFINDBUDDY_TOTAL		10
-#define SEARCHFINDSOURCE_TOTAL		20
+#define KADEMLIA_FIND_VALUE_MORE_REASKS 4
+#define LOG_BASE_EXPONENT 5
+#define HELLO_TIMEOUT 20
+#define SEARCH_JUMPSTART 1
+#define SEARCH_LIFETIME 45
+#define SEARCHFILE_LIFETIME 45
+#define SEARCHKEYWORD_LIFETIME 45
+#define SEARCHNOTES_LIFETIME 45
+#define SEARCHNODE_LIFETIME 45
+#define SEARCHNODECOMP_LIFETIME 10
+#define SEARCHSTOREFILE_LIFETIME 140
+#define SEARCHSTOREKEYWORD_LIFETIME 140
+#define SEARCHSTORENOTES_LIFETIME 100
+#define SEARCHFINDBUDDY_LIFETIME 100
+#define SEARCHFINDSOURCE_LIFETIME 45
+#define SEARCHFILE_TOTAL 300
+#define SEARCHKEYWORD_TOTAL 300
+#define SEARCHNOTES_TOTAL 50
+#define SEARCHSTOREFILE_TOTAL 10
+#define SEARCHSTOREKEYWORD_TOTAL 10
+#define SEARCHSTORENOTES_TOTAL 10
+#define SEARCHNODECOMP_TOTAL 10
+#define SEARCHFINDBUDDY_TOTAL 10
+#define SEARCHFINDSOURCE_TOTAL 20
 
-} // End namespace
+} // namespace Kademlia
 
 #endif // __KAD_DEFINES_H__
 // File_checked_for_headers

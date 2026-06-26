@@ -10,33 +10,31 @@ using namespace muleunit;
 
 namespace muleunit
 {
-	template <>
-	wxString StringFrom<CPath>(const CPath& path)
-	{
-		return path.GetPrintable();
-	}
+template <> wxString StringFrom<CPath>(const CPath &path)
+{
+	return path.GetPrintable();
 }
-
+} // namespace muleunit
 
 //! The max file-size of auto-generated files to test.
 const size_t TEST_LENGTH = 512;
 
-namespace muleunit {
-	//! Needed for ASSERT_EQUALS with CMD4Hash values
-	template <>
-	wxString StringFrom<CMD4Hash>(const CMD4Hash& hash) {
-		return hash.Encode();
-	}
-
-	//! Needed for ASSERT_EQUALS with CUInt128 values
-	template <>
-	wxString StringFrom<CUInt128>(const CUInt128& value) {
-		return value.ToHexString();
-	}
+namespace muleunit
+{
+//! Needed for ASSERT_EQUALS with CMD4Hash values
+template <> wxString StringFrom<CMD4Hash>(const CMD4Hash &hash)
+{
+	return hash.Encode();
 }
 
+//! Needed for ASSERT_EQUALS with CUInt128 values
+template <> wxString StringFrom<CUInt128>(const CUInt128 &value)
+{
+	return value.ToHexString();
+}
+} // namespace muleunit
 
-void writePredefData(CFileDataIO* file)
+void writePredefData(CFileDataIO *file)
 {
 	char data[TEST_LENGTH];
 
@@ -47,8 +45,6 @@ void writePredefData(CFileDataIO* file)
 	file->Write(data, TEST_LENGTH);
 	file->Seek(0, wxFromStart);
 }
-
-
 
 /////////////////////////////////////////////////////////////////////
 // Specialize this template for each implementation
@@ -66,25 +62,24 @@ void writePredefData(CFileDataIO* file)
 //  - setUp()
 //  - tearDown()
 //
-template <typename TYPE>
-struct FileDataIOFixture;
+template <typename TYPE> struct FileDataIOFixture;
 
-
-template <>
-class FileDataIOFixture<CFile> : public Test
+template <> class FileDataIOFixture<CFile> : public Test
 {
 public:
-	FileDataIOFixture(const wxString& testName)
-		: Test("FileDataIO", "CFile - " + testName) {}
+	FileDataIOFixture(const wxString &testName)
+	: Test("FileDataIO", "CFile - " + testName)
+	{
+	}
 
+	CFile *m_emptyFile;
+	CFile *m_predefFile;
 
-	CFile* m_emptyFile;
-	CFile* m_predefFile;
-
-	void setUp() {
+	void setUp()
+	{
 		m_emptyFile = m_predefFile = NULL;
 		const CPath emptyPath = CPath("FileDataIOTest.empty");
-		const CPath datPath   = CPath("FileDataIOTest.dat");
+		const CPath datPath = CPath("FileDataIOTest.dat");
 
 		m_emptyFile = new CFile();
 		m_emptyFile->Create(emptyPath, true);
@@ -105,7 +100,8 @@ public:
 		ASSERT_EQUALS(TEST_LENGTH, m_predefFile->GetLength());
 	}
 
-	void tearDown() {
+	void tearDown()
+	{
 		delete m_emptyFile;
 		delete m_predefFile;
 
@@ -114,19 +110,19 @@ public:
 	}
 };
 
-
-template <>
-class FileDataIOFixture<CMemFile> : public Test
+template <> class FileDataIOFixture<CMemFile> : public Test
 {
 public:
-	FileDataIOFixture(const wxString& testName)
-		: Test("FileDataIO", "CMemFile - " + testName) {}
+	FileDataIOFixture(const wxString &testName)
+	: Test("FileDataIO", "CMemFile - " + testName)
+	{
+	}
 
+	CMemFile *m_emptyFile;
+	CMemFile *m_predefFile;
 
-	CMemFile* m_emptyFile;
-	CMemFile* m_predefFile;
-
-	void setUp() {
+	void setUp()
+	{
 		m_emptyFile = m_predefFile = NULL;
 
 		m_emptyFile = new CMemFile();
@@ -137,12 +133,12 @@ public:
 		ASSERT_EQUALS(TEST_LENGTH, m_predefFile->GetLength());
 	}
 
-	void tearDown() {
+	void tearDown()
+	{
 		delete m_emptyFile;
 		delete m_predefFile;
 	}
 };
-
 
 /////////////////////////////////////////////////////////////////////
 // A writeWrite interface should be implemented for each set of
@@ -158,70 +154,49 @@ public:
 //    value at the current position in the file.
 //  - wxString name(), which returns the human-readble name of the type
 //
-template <typename TYPE>
-struct RWInterface;
+template <typename TYPE> struct RWInterface;
 
-template <>
-struct RWInterface<uint8>
+template <> struct RWInterface<uint8>
 {
-	static uint8 genValue(size_t j) {
-		return j & 0xff;
-	}
+	static uint8 genValue(size_t j) { return j & 0xff; }
 
-	static uint8 readValue(CFileDataIO* file) {
-		return file->ReadUInt8();
-	}
+	static uint8 readValue(CFileDataIO *file) { return file->ReadUInt8(); }
 
-	static void writeValue(CFileDataIO* file, uint8 value) {
-		file->WriteUInt8(value);
-	}
+	static void writeValue(CFileDataIO *file, uint8 value) { file->WriteUInt8(value); }
 
 	static wxString name() { return "UInt8"; }
 };
 
-
-template <>
-struct RWInterface<uint16>
+template <> struct RWInterface<uint16>
 {
-	static uint16 genValue(size_t j) {
-		return (((j + 1) & 0xff) << 8) | (j & 0xff);
-	}
+	static uint16 genValue(size_t j) { return (((j + 1) & 0xff) << 8) | (j & 0xff); }
 
-	static uint16 readValue(CFileDataIO* file) {
-		return file->ReadUInt16();
-	}
+	static uint16 readValue(CFileDataIO *file) { return file->ReadUInt16(); }
 
-	static void writeValue(CFileDataIO* file, uint16 value) {
-		file->WriteUInt16(value);
-	}
+	static void writeValue(CFileDataIO *file, uint16 value) { file->WriteUInt16(value); }
 
 	static wxString name() { return "UInt16"; }
 };
 
-
-template <>
-struct RWInterface<uint32>
+template <> struct RWInterface<uint32>
 {
-	static uint32 genValue(size_t j) {
-		return (((j + 3) & 0xff) << 24) | (((j + 2) & 0xff) << 16) | (((j + 1) & 0xff) << 8) | (j & 0xff);
+	static uint32 genValue(size_t j)
+	{
+		return (((j + 3) & 0xff) << 24) | (((j + 2) & 0xff) << 16) | (((j + 1) & 0xff) << 8) |
+		       (j & 0xff);
 	}
 
-	static uint32 readValue(CFileDataIO* file) {
-		return file->ReadUInt32();
-	}
+	static uint32 readValue(CFileDataIO *file) { return file->ReadUInt32(); }
 
-	static void writeValue(CFileDataIO* file, uint32 value) {
-		file->WriteUInt32(value);
-	}
+	static void writeValue(CFileDataIO *file, uint32 value) { file->WriteUInt32(value); }
 
 	static wxString name() { return "UInt32"; }
 };
 
-
-template <>
-struct RWInterface<CMD4Hash>
+template <> struct RWInterface<CMD4Hash>
 {
-	static CMD4Hash genValue(size_t j) {
+	static CMD4Hash genValue(size_t j)
+	{
 		CMD4Hash value;
 		for (size_t y = j; y < j + 16; y++) {
 			value[y - j] = y & 0xff;
@@ -230,61 +205,51 @@ struct RWInterface<CMD4Hash>
 		return value;
 	}
 
-	static CMD4Hash readValue(CFileDataIO* file) {
-		return file->ReadHash();
-	}
+	static CMD4Hash readValue(CFileDataIO *file) { return file->ReadHash(); }
 
-	static void writeValue(CFileDataIO* file, CMD4Hash value) {
-		file->WriteHash(value);
-	}
+	static void writeValue(CFileDataIO *file, CMD4Hash value) { file->WriteHash(value); }
 
 	static wxString name() { return "CMD4Hash"; }
 };
 
-
-template <>
-struct RWInterface<CUInt128>
+template <> struct RWInterface<CUInt128>
 {
-	static CUInt128 genValue(size_t j) {
+	static CUInt128 genValue(size_t j)
+	{
 		CUInt128 value;
 		for (size_t y = 0; y < 16; y += 4) {
 			value.Set32BitChunk(y >> 2,
-					    ((j + y    ) & 0xff)       |
-					    ((j + y + 1) & 0xff) << 8  |
-					    ((j + y + 2) & 0xff) << 16 |
-					    ((j + y + 3) & 0xff) << 24);
+				((j + y) & 0xff) | ((j + y + 1) & 0xff) << 8 | ((j + y + 2) & 0xff) << 16 |
+					((j + y + 3) & 0xff) << 24);
 		}
 
 		return value;
 	}
 
-	static CUInt128 readValue(CFileDataIO* file) {
-		return file->ReadUInt128();
-	}
+	static CUInt128 readValue(CFileDataIO *file) { return file->ReadUInt128(); }
 
-	static void writeValue(CFileDataIO* file, CUInt128 value) {
-		file->WriteUInt128(value);
-	}
+	static void writeValue(CFileDataIO *file, CUInt128 value) { file->WriteUInt128(value); }
 
 	static wxString name() { return "CUInt128"; }
 };
-
 
 /////////////////////////////////////////////////////////////////////
 // The following tests ensure that the given implementations
 // of the CFileDataIO interface properly does so.
 
-template <typename IMPL, typename TYPE, size_t SIZE>
-class ReadTest : public FileDataIOFixture<IMPL>
+template <typename IMPL, typename TYPE, size_t SIZE> class ReadTest : public FileDataIOFixture<IMPL>
 {
 	typedef RWInterface<TYPE> RW;
 
 public:
 	ReadTest()
-		: FileDataIOFixture<IMPL>("Read " + RW::name()) {}
+	: FileDataIOFixture<IMPL>("Read " + RW::name())
+	{
+	}
 
-	void run() {
-		CFileDataIO* file = this->m_predefFile;
+	void run()
+	{
+		CFileDataIO *file = this->m_predefFile;
 
 		for (size_t j = 0; j < TEST_LENGTH + 1 - SIZE; ++j) {
 			ASSERT_EQUALS(j, file->Seek(j, wxFromStart));
@@ -304,7 +269,7 @@ public:
 		// Check that only the given length is written to the target buffer
 		char testBuffer[32];
 		memset(testBuffer, 127, 32);
-		char* buf = testBuffer + 8;
+		char *buf = testBuffer + 8;
 
 		for (int i = 0; i < 16; ++i) {
 			ASSERT_EQUALS(0u, file->Seek(0, wxFromStart));
@@ -323,25 +288,26 @@ public:
 	}
 };
 
-
-template <typename IMPL, typename TYPE, size_t SIZE>
-class WriteTest : public FileDataIOFixture<IMPL>
+template <typename IMPL, typename TYPE, size_t SIZE> class WriteTest : public FileDataIOFixture<IMPL>
 {
 	typedef RWInterface<TYPE> RW;
 
 public:
 	WriteTest()
-		: FileDataIOFixture<IMPL>("Write " + RW::name()) {}
+	: FileDataIOFixture<IMPL>("Write " + RW::name())
+	{
+	}
 
-	void run() {
+	void run()
+	{
 		const unsigned char CanaryData = 170;
 		const unsigned char canaryBlock[] = { CanaryData };
 
-		CFileDataIO* file = this->m_predefFile;
+		CFileDataIO *file = this->m_predefFile;
 
 		for (size_t j = 0; j < TEST_LENGTH + 1 - SIZE; ++j) {
 			// Clear before, after and at the target byte(s)
-			for (int t = -static_cast<int>(SIZE); t < (int)(2*SIZE); ++t) {
+			for (int t = -static_cast<int>(SIZE); t < (int)(2 * SIZE); ++t) {
 				if ((j + t) < TEST_LENGTH && ((int)j + t) >= 0) {
 					file->Seek(j + t, wxFromStart);
 					ASSERT_EQUALS(j + t, file->GetPosition());
@@ -362,7 +328,7 @@ public:
 			ASSERT_EQUALS(j + SIZE, file->GetPosition());
 
 			// Check before, after and at the target byte
-			for (int t = -static_cast<int>(SIZE); t < (int)(2*SIZE); ++t) {
+			for (int t = -static_cast<int>(SIZE); t < (int)(2 * SIZE); ++t) {
 				if ((j + t) < TEST_LENGTH && ((int)j + t) >= 0) {
 					if (t) {
 						if (t < 0 || t >= (int)SIZE) {
@@ -383,16 +349,17 @@ public:
 	}
 };
 
-
-template <typename IMPL>
-class SeekTest : public FileDataIOFixture<IMPL>
+template <typename IMPL> class SeekTest : public FileDataIOFixture<IMPL>
 {
 public:
 	SeekTest()
-		: FileDataIOFixture<IMPL>("Seek") {}
+	: FileDataIOFixture<IMPL>("Seek")
+	{
+	}
 
-	void run() {
-		CFileDataIO* file = this->m_predefFile;
+	void run()
+	{
+		CFileDataIO *file = this->m_predefFile;
 
 		ASSERT_EQUALS(0u, file->GetPosition());
 		for (size_t pos = 0; pos < TEST_LENGTH * 2; pos += pos + 1) {
@@ -431,16 +398,17 @@ public:
 	}
 };
 
-
-template <typename IMPL>
-class WritePastEndTest : public FileDataIOFixture<IMPL>
+template <typename IMPL> class WritePastEndTest : public FileDataIOFixture<IMPL>
 {
 public:
 	WritePastEndTest()
-		: FileDataIOFixture<IMPL>("Write Past End") {}
+	: FileDataIOFixture<IMPL>("Write Past End")
+	{
+	}
 
-	void run() {
-		CFileDataIO* file = this->m_emptyFile;
+	void run()
+	{
+		CFileDataIO *file = this->m_emptyFile;
 
 		ASSERT_EQUALS(0u, file->GetLength());
 		ASSERT_EQUALS(0u, file->GetPosition());
@@ -467,7 +435,6 @@ public:
 
 		// TODO: ReadUInt128
 
-
 		char tmp[42];
 		memset(tmp, 0, 42);
 		file->Write(tmp, 42);
@@ -487,48 +454,44 @@ public:
 	}
 };
 
-
-template <typename IMPL>
-class StringTest : public FileDataIOFixture<IMPL>
+template <typename IMPL> class StringTest : public FileDataIOFixture<IMPL>
 {
 public:
 	StringTest()
-		: FileDataIOFixture<IMPL>("String") {}
+	: FileDataIOFixture<IMPL>("String")
+	{
+	}
 
 	struct Encoding
 	{
-		const EUtf8Str		id;
-		const char*		header;
-		const size_t		headLen;
+		const EUtf8Str id;
+		const char *header;
+		const size_t headLen;
 	};
 
 	struct TestString
 	{
-		const wxChar*		str;
+		const wxChar *str;
 		// Raw and UTF8 expected lengths ...
-		const size_t		lengths[2];
+		const size_t lengths[2];
 	};
 
-	void run() {
-		CFileDataIO* file = this->m_emptyFile;
+	void run()
+	{
+		CFileDataIO *file = this->m_emptyFile;
 
 		// TODO: Need to test non-ascii values when using unicode/etc, zero-length lengthfields
-		Encoding encodings[] =
-		{
-			{utf8strNone,	NULL,			0},
-			{utf8strOptBOM,	"\xEF\xBB\xBF",		3},
-			{utf8strRaw,	NULL,			0}
-		};
+		Encoding encodings[] = { { utf8strNone, NULL, 0 },
+			{ utf8strOptBOM, "\xEF\xBB\xBF", 3 },
+			{ utf8strRaw, NULL, 0 } };
 
-		TestString testData[] =
-		{
-			{ L"0123456789abcdef",	{ 16, 16 } },
-			{ L"",			{  0,  0 } },
-			{ L"abc ø def æ ghi å",	{ 17, 20 } },
-			{ L"aáeéuúó",		{  7, 11 } },
-			{ L"uüoöÿeëaäyÿ",		{ 11, 17 } },
+		TestString testData[] = {
+			{ L"0123456789abcdef", { 16, 16 } },
+			{ L"", { 0, 0 } },
+			{ L"abc ø def æ ghi å", { 17, 20 } },
+			{ L"aáeéuúó", { 7, 11 } },
+			{ L"uüoöÿeëaäyÿ", { 11, 17 } },
 		};
-
 
 		for (size_t str = 0; str < ArraySize(testData); ++str) {
 			CONTEXT(wxString("Testing string: '") << testData[str].str << "'");
@@ -536,8 +499,9 @@ public:
 			for (size_t enc = 0; enc < ArraySize(encodings); ++enc) {
 				CONTEXT(wxString::Format("Testing encoding: %i", encodings[enc].id));
 
-				const wxChar* curStr = testData[str].str;
-				size_t strLen = testData[str].lengths[(encodings[enc].id == utf8strNone) ? 0 : 1];
+				const wxChar *curStr = testData[str].str;
+				size_t strLen =
+					testData[str].lengths[(encodings[enc].id == utf8strNone) ? 0 : 1];
 				size_t headLen = encodings[enc].headLen;
 
 				file->WriteString(curStr, encodings[enc].id, 2);
@@ -555,7 +519,6 @@ public:
 				ASSERT_EQUALS(0u, file->Seek(0, wxFromStart));
 				ASSERT_EQUALS(curStr, file->ReadString(encodings[enc].id, 2));
 				ASSERT_EQUALS(0u, file->Seek(0, wxFromStart));
-
 
 				file->WriteString(curStr, encodings[enc].id, 4);
 				ASSERT_EQUALS(strLen + 4 + headLen, file->GetPosition());
@@ -577,7 +540,8 @@ public:
 
 		CAssertOff silence;
 		for (size_t enc = 0; enc < ArraySize(encodings); ++enc) {
-			CONTEXT(wxString::Format("Testing encoding against poisoning: %i", encodings[enc].id));
+			CONTEXT(wxString::Format(
+				"Testing encoding against poisoning: %i", encodings[enc].id));
 
 			//////////////////////////////////////////////
 			// Check if we guard against "poisoning".
@@ -598,17 +562,18 @@ public:
 	}
 };
 
-
 // Do not attempt to use this test with CMemFile.
-template <typename IMPL>
-class LargeFileTest : public FileDataIOFixture<IMPL>
+template <typename IMPL> class LargeFileTest : public FileDataIOFixture<IMPL>
 {
 public:
 	LargeFileTest()
-		: FileDataIOFixture<IMPL>("LargeFile") {}
+	: FileDataIOFixture<IMPL>("LargeFile")
+	{
+	}
 
-	void run() {
-		CFile* file = dynamic_cast<CFile*>(this->m_emptyFile);
+	void run()
+	{
+		CFile *file = dynamic_cast<CFile *>(this->m_emptyFile);
 
 		ASSERT_TRUE(file != NULL);
 		ASSERT_EQUALS(2147483647UL, file->Seek(2147483647L, wxFromStart));
@@ -619,46 +584,42 @@ public:
 	}
 };
 
-
-
 /////////////////////////////////////////////////////////////////////
 // Registration of all tests
 
-ReadTest<CFile, uint8, 1>			CFileReadUInt8Test;
-ReadTest<CFile, uint16, 2>			CFileReadUInt16Test;
-ReadTest<CFile, uint32, 4>			CFileReadUInt32Test;
-ReadTest<CFile, CMD4Hash, 16>		CFileReadCMD4HashTest;
-ReadTest<CFile, CUInt128, 16>		CFileReadCUInt128Test;
+ReadTest<CFile, uint8, 1> CFileReadUInt8Test;
+ReadTest<CFile, uint16, 2> CFileReadUInt16Test;
+ReadTest<CFile, uint32, 4> CFileReadUInt32Test;
+ReadTest<CFile, CMD4Hash, 16> CFileReadCMD4HashTest;
+ReadTest<CFile, CUInt128, 16> CFileReadCUInt128Test;
 
-WriteTest<CFile, uint8, 1>			CFileWriteUInt8Test;
-WriteTest<CFile, uint16, 2>			CFileWriteUInt16Test;
-WriteTest<CFile, uint32, 4>			CFileWriteUInt32Test;
-WriteTest<CFile, CMD4Hash, 16>		CFileWriteCMD4HashTest;
-WriteTest<CFile, CUInt128, 16>		CFileWriteCUInt128Test;
+WriteTest<CFile, uint8, 1> CFileWriteUInt8Test;
+WriteTest<CFile, uint16, 2> CFileWriteUInt16Test;
+WriteTest<CFile, uint32, 4> CFileWriteUInt32Test;
+WriteTest<CFile, CMD4Hash, 16> CFileWriteCMD4HashTest;
+WriteTest<CFile, CUInt128, 16> CFileWriteCUInt128Test;
 
-SeekTest<CFile>						CFileSeekTest;
-WritePastEndTest<CFile>				CFileWritePastEnd;
-StringTest<CFile>					CFileStringTest;
+SeekTest<CFile> CFileSeekTest;
+WritePastEndTest<CFile> CFileWritePastEnd;
+StringTest<CFile> CFileStringTest;
 
-LargeFileTest<CFile>				CFileLargeFileTest;
+LargeFileTest<CFile> CFileLargeFileTest;
 
+ReadTest<CMemFile, uint8, 1> CMemFileReadUInt8Test;
+ReadTest<CMemFile, uint16, 2> CMemFileReadUInt16Test;
+ReadTest<CMemFile, uint32, 4> CMemFileReadUInt32Test;
+ReadTest<CMemFile, CMD4Hash, 16> CMemFileReadCMD4HashTest;
+ReadTest<CMemFile, CUInt128, 16> CMemFileReadCUInt128Test;
 
-ReadTest<CMemFile, uint8, 1>		CMemFileReadUInt8Test;
-ReadTest<CMemFile, uint16, 2>		CMemFileReadUInt16Test;
-ReadTest<CMemFile, uint32, 4>		CMemFileReadUInt32Test;
-ReadTest<CMemFile, CMD4Hash, 16>	CMemFileReadCMD4HashTest;
-ReadTest<CMemFile, CUInt128, 16>	CMemFileReadCUInt128Test;
+WriteTest<CMemFile, uint8, 1> CMemFileWriteUInt8Test;
+WriteTest<CMemFile, uint16, 2> CMemFileWriteUInt16Test;
+WriteTest<CMemFile, uint32, 4> CMemFileWriteUInt32Test;
+WriteTest<CMemFile, CMD4Hash, 16> CMemFileWriteCMD4HashTest;
+WriteTest<CMemFile, CUInt128, 16> CMemFileWriteCUInt128Test;
 
-WriteTest<CMemFile, uint8, 1>		CMemFileWriteUInt8Test;
-WriteTest<CMemFile, uint16, 2>		CMemFileWriteUInt16Test;
-WriteTest<CMemFile, uint32, 4>		CMemFileWriteUInt32Test;
-WriteTest<CMemFile, CMD4Hash, 16>	CMemFileWriteCMD4HashTest;
-WriteTest<CMemFile, CUInt128, 16>	CMemFileWriteCUInt128Test;
-
-SeekTest<CMemFile>					CMemFileSeekTest;
-WritePastEndTest<CMemFile>			CMemFileWritePastEnd;
-StringTest<CMemFile>				CMemFileStringTest;
-
+SeekTest<CMemFile> CMemFileSeekTest;
+WritePastEndTest<CMemFile> CMemFileWritePastEnd;
+StringTest<CMemFile> CMemFileStringTest;
 
 /////////////////////////////////////////////////////////////////////
 // CMemFile specific tests
@@ -694,15 +655,14 @@ TEST(CMemFile, AttachedBuffer)
 	ASSERT_RAISES(CRunTimeException, file.WriteUInt8(0));
 
 	// Init with invalid buffer should fail
-	ASSERT_RAISES(CRunTimeException, new CMemFile(static_cast<const uint8_t*>(NULL), 1024));
-	ASSERT_RAISES(CRunTimeException, new CMemFile(static_cast<uint8_t*>(NULL), 1024));
+	ASSERT_RAISES(CRunTimeException, new CMemFile(static_cast<const uint8_t *>(NULL), 1024));
+	ASSERT_RAISES(CRunTimeException, new CMemFile(static_cast<uint8_t *>(NULL), 1024));
 }
-
 
 TEST(CMemFile, ConstBuffer)
 {
 	uint8_t arr[10];
-	CMemFile file(const_cast<const uint8_t*>(arr), sizeof(arr));
+	CMemFile file(const_cast<const uint8_t *>(arr), sizeof(arr));
 
 	ASSERT_RAISES(CRunTimeException, file.WriteUInt8(0));
 	ASSERT_RAISES(CRunTimeException, file.WriteUInt16(0));
@@ -712,7 +672,6 @@ TEST(CMemFile, ConstBuffer)
 	char buffer[sizeof(arr)];
 	ASSERT_RAISES(CRunTimeException, file.Write(buffer, sizeof(arr)));
 }
-
 
 TEST(CMemFile, SetLength)
 {
@@ -727,7 +686,6 @@ TEST(CMemFile, SetLength)
 	ASSERT_EQUALS(512u, file.Seek(0, wxFromEnd));
 }
 
-
 /////////////////////////////////////////////////////////////////////
 // CFile specific tests
 
@@ -735,22 +693,23 @@ const CPath testFile = CPath("TestFile.dat");
 const unsigned testMode = 0600;
 
 DECLARE(CFile);
-	void setUp() {
-		// Ensure that the testfile doesn't exist
-		if (testFile.FileExists()) {
-			if (!CPath::RemoveFile(testFile)) {
-				MULE_VALIDATE_STATE(false, "Failed to remove temporary file.");
-			}
+void setUp()
+{
+	// Ensure that the testfile doesn't exist
+	if (testFile.FileExists()) {
+		if (!CPath::RemoveFile(testFile)) {
+			MULE_VALIDATE_STATE(false, "Failed to remove temporary file.");
 		}
 	}
+}
 
-	void tearDown() {
-		if (testFile.FileExists()) {
-			CPath::RemoveFile(testFile);
-		}
+void tearDown()
+{
+	if (testFile.FileExists()) {
+		CPath::RemoveFile(testFile);
 	}
+}
 END_DECLARE;
-
 
 TEST(CFile, Constructor)
 {
@@ -839,7 +798,6 @@ TEST(CFile, Constructor)
 	}
 }
 
-
 TEST(CFile, Create)
 {
 	ASSERT_FALSE(testFile.FileExists());
@@ -909,7 +867,6 @@ TEST(CFile, Create)
 	ASSERT_TRUE(wxFile::Access(testFile.GetRaw(), wxFile::write));
 }
 
-
 TEST(CFile, SetLength)
 {
 	CFile file(testFile, CFile::write);
@@ -922,7 +879,6 @@ TEST(CFile, SetLength)
 	ASSERT_EQUALS(512u, file.GetLength());
 	ASSERT_EQUALS(512u, file.Seek(0, wxFromEnd));
 }
-
 
 TEST(CFile, GetAvailable)
 {
@@ -947,4 +903,3 @@ TEST(CFile, GetAvailable)
 
 	ASSERT_EQUALS(0u, file.GetAvailable());
 }
-

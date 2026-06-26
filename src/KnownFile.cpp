@@ -25,8 +25,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
-#include "KnownFile.h"		// Do_not_auto_remove
+#include "KnownFile.h" // Do_not_auto_remove
 
 #include <protocol/kad/Constants.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -37,39 +36,40 @@
 #include <wx/config.h>
 
 #ifdef CLIENT_GUI
-#include "UpDownClientEC.h"	// Needed for CUpDownClient
+#include "UpDownClientEC.h" // Needed for CUpDownClient
 #else
-#include "updownclient.h"	// Needed for CUpDownClient
+#include "updownclient.h" // Needed for CUpDownClient
 #endif
 
-#include "MemFile.h"		// Needed for CMemFile
-#include "Packet.h"		// Needed for CPacket
-#include "Preferences.h"	// Needed for CPreferences
-#include "KnownFileList.h"	// Needed for CKnownFileList
-#include "amule.h"		// Needed for theApp
-#include "PartFile.h"		// Needed for SavePartFile
-#include "ClientList.h"	// Needed for clientlist (buddy support)
+#include "MemFile.h"       // Needed for CMemFile
+#include "Packet.h"        // Needed for CPacket
+#include "Preferences.h"   // Needed for CPreferences
+#include "KnownFileList.h" // Needed for CKnownFileList
+#include "amule.h"         // Needed for theApp
+#include "PartFile.h"      // Needed for SavePartFile
+#include "ClientList.h"    // Needed for clientlist (buddy support)
 #include "Logger.h"
-#include "ScopedPtr.h"		// Needed for CScopedArray and CScopedPtr
-#include "GuiEvents.h"		// Needed for Notify_*
-#include "SearchFile.h"		// Needed for CSearchFile
-#include "FileArea.h"		// Needed for CFileArea
-#include "FileAutoClose.h"	// Needed for CFileAutoClose
-#include "Server.h"			// Needed for CServer
+#include "ScopedPtr.h"     // Needed for CScopedArray and CScopedPtr
+#include "GuiEvents.h"     // Needed for Notify_*
+#include "SearchFile.h"    // Needed for CSearchFile
+#include "FileArea.h"      // Needed for CFileArea
+#include "FileAutoClose.h" // Needed for CFileAutoClose
+#include "Server.h"        // Needed for CServer
 
-#include "CryptoPP_Inc.h"       // Needed for MD4
+#include "CryptoPP_Inc.h" // Needed for MD4
 
 #include <common/Format.h>
 
 CFileStatistic::CFileStatistic(CKnownFile *parent)
-	: fileParent(parent),
-	  requested(0),
-	  transferred(0),
-	  accepted(0),
-	  alltimerequested(0),
-	  alltimetransferred(0),
-	  alltimeaccepted(0)
-{}
+: fileParent(parent)
+, requested(0)
+, transferred(0)
+, accepted(0)
+, alltimerequested(0)
+, alltimetransferred(0)
+, alltimeaccepted(0)
+{
+}
 
 #ifndef CLIENT_GUI
 
@@ -79,7 +79,7 @@ void CFileStatistic::AddRequest()
 	alltimerequested++;
 	theApp->knownfiles->requested++;
 	if (fileParent && fileParent->IsPartFile()) {
-		static_cast<CPartFile*>(fileParent)->MarkStatsDirty();
+		static_cast<CPartFile *>(fileParent)->MarkStatsDirty();
 	}
 	if (fileParent) {
 		fileParent->MarkECChanged();
@@ -93,7 +93,7 @@ void CFileStatistic::AddAccepted()
 	alltimeaccepted++;
 	theApp->knownfiles->accepted++;
 	if (fileParent && fileParent->IsPartFile()) {
-		static_cast<CPartFile*>(fileParent)->MarkStatsDirty();
+		static_cast<CPartFile *>(fileParent)->MarkStatsDirty();
 	}
 	if (fileParent) {
 		fileParent->MarkECChanged();
@@ -107,7 +107,7 @@ void CFileStatistic::AddTransferred(uint64 bytes)
 	alltimetransferred += bytes;
 	theApp->knownfiles->transferred += bytes;
 	if (fileParent && fileParent->IsPartFile()) {
-		static_cast<CPartFile*>(fileParent)->MarkStatsDirty();
+		static_cast<CPartFile *>(fileParent)->MarkStatsDirty();
 	}
 	if (fileParent) {
 		fileParent->MarkECChanged();
@@ -117,10 +117,9 @@ void CFileStatistic::AddTransferred(uint64 bytes)
 
 #endif // CLIENT_GUI
 
-
 /* Static storage for the process-wide EC change generation counter.
  * See `CKnownFile::MarkECChanged()` doc in KnownFile.h. */
-std::atomic<uint64> CKnownFile::s_globalEcGen{0};
+std::atomic<uint64> CKnownFile::s_globalEcGen{ 0 };
 
 void CKnownFile::MarkECChanged()
 {
@@ -128,42 +127,39 @@ void CKnownFile::MarkECChanged()
 	// strictly ascending across all files and all threads; readers
 	// (`Get_EC_Response_GetUpdate`) compare against the highest gen they
 	// have already sent and ignore lesser ones.
-	m_ecGen.store(s_globalEcGen.fetch_add(1, std::memory_order_relaxed) + 1,
-		std::memory_order_relaxed);
+	m_ecGen.store(s_globalEcGen.fetch_add(1, std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 }
-
 
 /* Abstract File (base class)*/
 
 CAbstractFile::CAbstractFile()
-	: m_iRating(0),
-	  m_hasComment(false),
-	  m_iUserRating(0),
-	  m_nFileSize(0)
-{}
-
-
-CAbstractFile::CAbstractFile(const CAbstractFile& other)
-	: m_abyFileHash(other.m_abyFileHash),
-	  m_strComment(other.m_strComment),
-	  m_iRating(other.m_iRating),
-	  m_hasComment(other.m_hasComment),
-	  m_iUserRating(other.m_iUserRating),
-	  m_taglist(other.m_taglist),
-	  m_kadNotes(),
-	  m_nFileSize(other.m_nFileSize),
-	  m_fileName(other.m_fileName)
+: m_iRating(0)
+, m_hasComment(false)
+, m_iUserRating(0)
+, m_nFileSize(0)
 {
-/* // TODO: Currently it's not safe to duplicate the entries, but isn't needed either.
-	CKadEntryPtrList::const_iterator it = other.m_kadNotes.begin();
-	for (; it != other.m_kadNotes.end(); ++it) {
-		m_kadNotes.push_back(new Kademlia::CEntry(**it));
-	}
-*/
 }
 
+CAbstractFile::CAbstractFile(const CAbstractFile &other)
+: m_abyFileHash(other.m_abyFileHash)
+, m_strComment(other.m_strComment)
+, m_iRating(other.m_iRating)
+, m_hasComment(other.m_hasComment)
+, m_iUserRating(other.m_iUserRating)
+, m_taglist(other.m_taglist)
+, m_kadNotes()
+, m_nFileSize(other.m_nFileSize)
+, m_fileName(other.m_fileName)
+{
+	/* // TODO: Currently it's not safe to duplicate the entries, but isn't needed either.
+		CKadEntryPtrList::const_iterator it = other.m_kadNotes.begin();
+		for (; it != other.m_kadNotes.end(); ++it) {
+			m_kadNotes.push_back(new Kademlia::CEntry(**it));
+		}
+	*/
+}
 
-void CAbstractFile::SetFileName(const CPath& fileName)
+void CAbstractFile::SetFileName(const CPath &fileName)
 {
 	m_fileName = fileName;
 }
@@ -171,7 +167,7 @@ void CAbstractFile::SetFileName(const CPath& fileName)
 uint32 CAbstractFile::GetIntTagValue(uint8 tagname) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if (((*it).GetNameID() == tagname) && (*it).IsInt()) {
 			return (*it).GetInt();
 		}
@@ -179,11 +175,11 @@ uint32 CAbstractFile::GetIntTagValue(uint8 tagname) const
 	return 0;
 }
 
-bool CAbstractFile::GetIntTagValue(uint8 tagname, uint32& ruValue) const
+bool CAbstractFile::GetIntTagValue(uint8 tagname, uint32 &ruValue) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
-		if (((*it).GetNameID() == tagname) && (*it).IsInt()){
+	for (; it != m_taglist.end(); ++it) {
+		if (((*it).GetNameID() == tagname) && (*it).IsInt()) {
 			ruValue = (*it).GetInt();
 			return true;
 		}
@@ -191,10 +187,10 @@ bool CAbstractFile::GetIntTagValue(uint8 tagname, uint32& ruValue) const
 	return false;
 }
 
-uint32 CAbstractFile::GetIntTagValue(const wxString& tagname) const
+uint32 CAbstractFile::GetIntTagValue(const wxString &tagname) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).IsInt() && ((*it).GetName() == tagname)) {
 			return (*it).GetInt();
 		}
@@ -202,10 +198,10 @@ uint32 CAbstractFile::GetIntTagValue(const wxString& tagname) const
 	return 0;
 }
 
-const wxString& CAbstractFile::GetStrTagValue(uint8 tagname) const
+const wxString &CAbstractFile::GetStrTagValue(uint8 tagname) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).GetNameID() == tagname && (*it).IsStr()) {
 			return (*it).GetStr();
 		}
@@ -213,10 +209,10 @@ const wxString& CAbstractFile::GetStrTagValue(uint8 tagname) const
 	return EmptyString;
 }
 
-const wxString& CAbstractFile::GetStrTagValue(const wxString& tagname) const
+const wxString &CAbstractFile::GetStrTagValue(const wxString &tagname) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).IsStr() && ((*it).GetName() == tagname)) {
 			return (*it).GetStr();
 		}
@@ -227,7 +223,7 @@ const wxString& CAbstractFile::GetStrTagValue(const wxString& tagname) const
 const CTag *CAbstractFile::GetTag(uint8 tagname, uint8 tagtype) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).GetNameID() == tagname && (*it).GetType() == tagtype) {
 			return &(*it);
 		}
@@ -235,10 +231,10 @@ const CTag *CAbstractFile::GetTag(uint8 tagname, uint8 tagtype) const
 	return NULL;
 }
 
-const CTag *CAbstractFile::GetTag(const wxString& tagname, uint8 tagtype) const
+const CTag *CAbstractFile::GetTag(const wxString &tagname, uint8 tagtype) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).GetType() == tagtype && (*it).GetName() == tagname) {
 			return &(*it);
 		}
@@ -249,7 +245,7 @@ const CTag *CAbstractFile::GetTag(const wxString& tagname, uint8 tagtype) const
 const CTag *CAbstractFile::GetTag(uint8 tagname) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).GetNameID() == tagname) {
 			return &(*it);
 		}
@@ -257,10 +253,10 @@ const CTag *CAbstractFile::GetTag(uint8 tagname) const
 	return NULL;
 }
 
-const CTag *CAbstractFile::GetTag(const wxString& tagname) const
+const CTag *CAbstractFile::GetTag(const wxString &tagname) const
 {
 	ArrayOfCTag::const_iterator it = m_taglist.begin();
-	for (; it != m_taglist.end(); ++it){
+	for (; it != m_taglist.end(); ++it) {
 		if ((*it).GetName() == tagname) {
 			return &(*it);
 		}
@@ -272,13 +268,10 @@ void CAbstractFile::AddTagUnique(const CTag &rTag)
 {
 	ArrayOfCTag::iterator it = m_taglist.begin();
 	for (; it != m_taglist.end(); ++it) {
-		if ( ( ((*it).GetNameID() != 0 &&
-			(*it).GetNameID() == rTag.GetNameID()) ||
-		       (!(*it).GetName().IsEmpty() &&
-			!rTag.GetName().IsEmpty() &&
-			(*it).GetName() == rTag.GetName()) ) &&
-		     (*it).GetType() == rTag.GetType())
-		{
+		if ((((*it).GetNameID() != 0 && (*it).GetNameID() == rTag.GetNameID()) ||
+			    (!(*it).GetName().IsEmpty() && !rTag.GetName().IsEmpty() &&
+				    (*it).GetName() == rTag.GetName())) &&
+			(*it).GetType() == rTag.GetType()) {
 			it = m_taglist.erase(it);
 			m_taglist.insert(it, rTag);
 			return;
@@ -292,8 +285,8 @@ void CAbstractFile::AddNote(Kademlia::CEntry *pEntry)
 {
 	CKadEntryPtrList::iterator it = m_kadNotes.begin();
 	for (; it != m_kadNotes.end(); ++it) {
-		Kademlia::CEntry* entry = *it;
-		if(entry->m_uIP == pEntry->m_uIP || entry->m_uSourceID == pEntry->m_uSourceID) {
+		Kademlia::CEntry *entry = *it;
+		if (entry->m_uIP == pEntry->m_uIP || entry->m_uSourceID == pEntry->m_uSourceID) {
 			delete pEntry;
 			return;
 		}
@@ -301,34 +294,29 @@ void CAbstractFile::AddNote(Kademlia::CEntry *pEntry)
 	m_kadNotes.push_front(pEntry);
 }
 #else
-void CAbstractFile::AddNote(Kademlia::CEntry *)
-{
-}
+void CAbstractFile::AddNote(Kademlia::CEntry *) {}
 #endif
-
 
 /* Known File */
 
 CKnownFile::CKnownFile()
-	: statistic(this)
+: statistic(this)
 {
 	Init();
 }
 
 CKnownFile::CKnownFile(uint32 ecid)
-	: CECID(ecid),
-	  statistic(this)
+: CECID(ecid)
+, statistic(this)
 {
 	Init();
 }
 
-
-//#warning Experimental: Construct a CKnownFile from a CSearchFile
+// #warning Experimental: Construct a CKnownFile from a CSearchFile
 CKnownFile::CKnownFile(const CSearchFile &searchFile)
-:
-	// This will copy the file hash
-	CAbstractFile(static_cast<const CAbstractFile &>(searchFile)),
-	statistic(this)
+: // This will copy the file hash
+	CAbstractFile(static_cast<const CAbstractFile &>(searchFile))
+, statistic(this)
 {
 	Init();
 
@@ -338,7 +326,6 @@ CKnownFile::CKnownFile(const CSearchFile &searchFile)
 	// Use CKnownFile::SetFileSize()
 	SetFileSize(searchFile.GetFileSize());
 }
-
 
 void CKnownFile::Init()
 {
@@ -375,14 +362,13 @@ void CKnownFile::Init()
 	// this in CKnownFileList::Append's "newly added" branch.
 	m_lastSeen = 0;
 	m_bAutoUpPriority = thePrefs::GetNewAutoUp();
-	m_iUpPriority = ( m_bAutoUpPriority ) ? PR_HIGH : PR_NORMAL;
+	m_iUpPriority = (m_bAutoUpPriority) ? PR_HIGH : PR_NORMAL;
 	m_hashingProgress = 0;
 
 #ifndef CLIENT_GUI
 	m_pAICHHashSet = new CAICHHashSet(this);
 #endif
 }
-
 
 void CKnownFile::SetFileSize(uint64 nFileSize)
 {
@@ -395,49 +381,49 @@ void CKnownFile::SetFileSize(uint64 nFileSize)
 	// according the ed2k protocol
 	//----------------------------------------------------------------------
 	//
-	//File size: 3 bytes
-	//File hash: 2D55E87D0E21F49B9AD25F98531F3724
-	//Nr. hashs: 0
+	// File size: 3 bytes
+	// File hash: 2D55E87D0E21F49B9AD25F98531F3724
+	// Nr. hashs: 0
 	//
 	//
-	//File size: 1*PARTSIZE
-	//File hash: A72CA8DF7F07154E217C236C89C17619
-	//Nr. hashs: 2
-	//Hash[  0]: 4891ED2E5C9C49F442145A3A5F608299
-	//Hash[  1]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
+	// File size: 1*PARTSIZE
+	// File hash: A72CA8DF7F07154E217C236C89C17619
+	// Nr. hashs: 2
+	// Hash[  0]: 4891ED2E5C9C49F442145A3A5F608299
+	// Hash[  1]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
 	//
 	//
-	//File size: 1*PARTSIZE + 1 byte
-	//File hash: 2F620AE9D462CBB6A59FE8401D2B3D23
-	//Nr. hashs: 2
-	//Hash[  0]: 121795F0BEDE02DDC7C5426D0995F53F
-	//Hash[  1]: C329E527945B8FE75B3C5E8826755747
+	// File size: 1*PARTSIZE + 1 byte
+	// File hash: 2F620AE9D462CBB6A59FE8401D2B3D23
+	// Nr. hashs: 2
+	// Hash[  0]: 121795F0BEDE02DDC7C5426D0995F53F
+	// Hash[  1]: C329E527945B8FE75B3C5E8826755747
 	//
 	//
-	//File size: 2*PARTSIZE
-	//File hash: A54C5E562D5E03CA7D77961EB9A745A4
-	//Nr. hashs: 3
-	//Hash[  0]: B3F5CE2A06BF403BFB9BFFF68BDDC4D9
-	//Hash[  1]: 509AA30C9EA8FC136B1159DF2F35B8A9
-	//Hash[  2]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
+	// File size: 2*PARTSIZE
+	// File hash: A54C5E562D5E03CA7D77961EB9A745A4
+	// Nr. hashs: 3
+	// Hash[  0]: B3F5CE2A06BF403BFB9BFFF68BDDC4D9
+	// Hash[  1]: 509AA30C9EA8FC136B1159DF2F35B8A9
+	// Hash[  2]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
 	//
 	//
-	//File size: 3*PARTSIZE
-	//File hash: 5E249B96F9A46A18FC2489B005BF2667
-	//Nr. hashs: 4
-	//Hash[  0]: 5319896A2ECAD43BF17E2E3575278E72
-	//Hash[  1]: D86EF157D5E49C5ED502EDC15BB5F82B
-	//Hash[  2]: 10F2D5B1FCB95C0840519C58D708480F
-	//Hash[  3]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
+	// File size: 3*PARTSIZE
+	// File hash: 5E249B96F9A46A18FC2489B005BF2667
+	// Nr. hashs: 4
+	// Hash[  0]: 5319896A2ECAD43BF17E2E3575278E72
+	// Hash[  1]: D86EF157D5E49C5ED502EDC15BB5F82B
+	// Hash[  2]: 10F2D5B1FCB95C0840519C58D708480F
+	// Hash[  3]: 31D6CFE0D16AE931B73C59D7E0C089C0	*special part hash*
 	//
 	//
-	//File size: 3*PARTSIZE + 1 byte
-	//File hash: 797ED552F34380CAFF8C958207E40355
-	//Nr. hashs: 4
-	//Hash[  0]: FC7FD02CCD6987DCF1421F4C0AF94FB8
-	//Hash[  1]: 2FE466AF8A7C06DA3365317B75A5ACFE
-	//Hash[  2]: 873D3BF52629F7C1527C6E8E473C1C30
-	//Hash[  3]: BCE50BEE7877BB07BB6FDA56BFE142FB
+	// File size: 3*PARTSIZE + 1 byte
+	// File hash: 797ED552F34380CAFF8C958207E40355
+	// Nr. hashs: 4
+	// Hash[  0]: FC7FD02CCD6987DCF1421F4C0AF94FB8
+	// Hash[  1]: 2FE466AF8A7C06DA3365317B75A5ACFE
+	// Hash[  2]: 873D3BF52629F7C1527C6E8E473C1C30
+	// Hash[  3]: BCE50BEE7877BB07BB6FDA56BFE142FB
 	//
 
 	// File size       Data parts      ED2K parts      ED2K part hashs
@@ -448,8 +434,8 @@ void CKnownFile::SetFileSize(uint64 nFileSize)
 	// PARTSIZE*2      2               3(!)            3(!)
 	// PARTSIZE*2+1    3               3               3
 
-	if (nFileSize == 0){
-		//wxFAIL; // Kry - Why commented out by lemonfan? it can never be 0
+	if (nFileSize == 0) {
+		// wxFAIL; // Kry - Why commented out by lemonfan? it can never be 0
 		m_iPartCount = 0;
 		m_iED2KPartCount = 0;
 		m_iED2KPartHashCount = 0;
@@ -477,31 +463,30 @@ void CKnownFile::SetFileSize(uint64 nFileSize)
 	}
 }
 
-
-void CKnownFile::AddUploadingClient(CUpDownClient* client)
+void CKnownFile::AddUploadingClient(CUpDownClient *client)
 {
 	m_ClientUploadList.insert(CCLIENTREF(client, "CKnownFile::AddUploadingClient m_ClientUploadList"));
 
 	SourceItemType type = UNAVAILABLE_SOURCE;
 	switch (client->GetUploadState()) {
-		case US_UPLOADING:
-		case US_ONUPLOADQUEUE:
-			type = AVAILABLE_SOURCE;
-			break;
-		default: {
-			// Any other state is UNAVAILABLE_SOURCE by default.
-		}
+	case US_UPLOADING:
+	case US_ONUPLOADQUEUE:
+		type = AVAILABLE_SOURCE;
+		break;
+	default: {
+		// Any other state is UNAVAILABLE_SOURCE by default.
+	}
 	}
 
-	Notify_SharedCtrlAddClient(this, CCLIENTREF(client, "CKnownFile::AddUploadingClient Notify_SharedCtrlAddClient"), type);
+	Notify_SharedCtrlAddClient(
+		this, CCLIENTREF(client, "CKnownFile::AddUploadingClient Notify_SharedCtrlAddClient"), type);
 
 	UpdateAutoUpPriority();
 	// GetQueuedCount() = m_ClientUploadList.size() — exported via EC.
 	MarkECChanged();
 }
 
-
-void CKnownFile::RemoveUploadingClient(CUpDownClient* client)
+void CKnownFile::RemoveUploadingClient(CUpDownClient *client)
 {
 	if (m_ClientUploadList.erase(CCLIENTREF(client, ""))) {
 		Notify_SharedCtrlRemoveClient(client->ECID(), this);
@@ -510,12 +495,11 @@ void CKnownFile::RemoveUploadingClient(CUpDownClient* client)
 	}
 }
 
-
 #ifdef CLIENT_GUI
 
 CKnownFile::CKnownFile(const CEC_SharedFile_Tag *tag)
-	: CECID(tag->ID()),
-	  statistic(this)
+: CECID(tag->ID())
+, statistic(this)
 {
 	Init();
 
@@ -525,55 +509,50 @@ CKnownFile::CKnownFile(const CEC_SharedFile_Tag *tag)
 	m_queuedCount = 0;
 }
 
-CKnownFile::~CKnownFile()
-{}
+CKnownFile::~CKnownFile() {}
 
-void CKnownFile::UpdateAutoUpPriority()
-{}
-
+void CKnownFile::UpdateAutoUpPriority() {}
 
 #else // ! CLIENT_GUI
 
 CKnownFile::~CKnownFile()
 {
 	SourceSet::iterator it = m_ClientUploadList.begin();
-	for ( ; it != m_ClientUploadList.end(); ++it ) {
+	for (; it != m_ClientUploadList.end(); ++it) {
 		it->ClearUploadFileID();
 	}
 
 	delete m_pAICHHashSet;
 }
 
-
-void CKnownFile::SetFilePath(const CPath& filePath)
+void CKnownFile::SetFilePath(const CPath &filePath)
 {
 	m_filePath = filePath;
 	// EC exports the path printable for non-partfiles (EC_TAG_KNOWNFILE_FILENAME).
 	MarkECChanged();
 }
 
-
 // needed for memfiles. its probably better to switch everything to CFile...
-bool CKnownFile::LoadHashsetFromFile(const CFileDataIO* file, bool checkhash)
+bool CKnownFile::LoadHashsetFromFile(const CFileDataIO *file, bool checkhash)
 {
 	CMD4Hash checkid = file->ReadHash();
 
 	uint16 parts = file->ReadUInt16();
 	m_hashlist.clear();
-	for (uint16 i = 0; i < parts; ++i){
+	for (uint16 i = 0; i < parts; ++i) {
 		CMD4Hash cur_hash = file->ReadHash();
 		m_hashlist.push_back(cur_hash);
 	}
 
 	// SLUGFILLER: SafeHash - always check for valid m_hashlist
-	if (!checkhash){
+	if (!checkhash) {
 		m_abyFileHash = checkid;
-		if (parts <= 1) {	// nothing to check
+		if (parts <= 1) { // nothing to check
 			return true;
 		}
 	} else {
-		if ( m_abyFileHash != checkid ) {
-			return false;	// wrong file?
+		if (m_abyFileHash != checkid) {
+			return false; // wrong file?
 		} else {
 			if (parts != GetED2KPartHashCount()) {
 				return false;
@@ -590,7 +569,7 @@ bool CKnownFile::LoadHashsetFromFile(const CFileDataIO* file, bool checkhash)
 		CreateHashFromHashlist(m_hashlist, &checkid);
 	}
 
-	if ( m_abyFileHash == checkid ) {
+	if (m_abyFileHash == checkid) {
 		return true;
 	} else {
 		m_hashlist.clear();
@@ -598,133 +577,126 @@ bool CKnownFile::LoadHashsetFromFile(const CFileDataIO* file, bool checkhash)
 	}
 }
 
-
-bool CKnownFile::LoadTagsFromFile(const CFileDataIO* file)
+bool CKnownFile::LoadTagsFromFile(const CFileDataIO *file)
 {
 	uint32 tagcount = file->ReadUInt32();
 	m_taglist.clear();
 	for (uint32 j = 0; j != tagcount; ++j) {
 		CTag newtag(*file, true);
-		switch(newtag.GetNameID()){
-			case FT_FILENAME:
-				if (GetFileName().IsOk()) {
-					// Unlike eMule, we actually prefer the second
-					// filename tag, since we use it to specify the
-					// 'universial' filename (see CPath::ToUniv).
-					CPath path = CPath::FromUniv(newtag.GetStr());
+		switch (newtag.GetNameID()) {
+		case FT_FILENAME:
+			if (GetFileName().IsOk()) {
+				// Unlike eMule, we actually prefer the second
+				// filename tag, since we use it to specify the
+				// 'universial' filename (see CPath::ToUniv).
+				CPath path = CPath::FromUniv(newtag.GetStr());
 
-					// May be invalid, if from older versions where
-					// unicoded filenames be saved as empty-strings.
-					if (path.IsOk()) {
-						SetFileName(path);
-					}
-				} else {
-					SetFileName(CPath(newtag.GetStr()));
+				// May be invalid, if from older versions where
+				// unicoded filenames be saved as empty-strings.
+				if (path.IsOk()) {
+					SetFileName(path);
 				}
-				break;
-
-			case FT_FILESIZE:
-				SetFileSize(newtag.GetInt());
-				m_AvailPartFrequency.clear();
-				m_AvailPartFrequency.insert(
-					m_AvailPartFrequency.begin(),
-					GetPartCount(), 0);
-				break;
-
-			case FT_ATTRANSFERRED:
-				statistic.SetAllTimeTransferred(statistic.GetAllTimeTransferred() + newtag.GetInt());
-				break;
-
-			case FT_ATTRANSFERREDHI:
-				statistic.SetAllTimeTransferred(statistic.GetAllTimeTransferred() + (((uint64)newtag.GetInt()) << 32));
-				break;
-
-			case FT_ATREQUESTED:
-				statistic.SetAllTimeRequests(newtag.GetInt());
-				break;
-
-			case FT_ATACCEPTED:
-				statistic.SetAllTimeAccepts(newtag.GetInt());
-				break;
-
-			case FT_ULPRIORITY:
-				m_iUpPriority = newtag.GetInt();
-				if( m_iUpPriority == PR_AUTO ){
-					m_iUpPriority = PR_HIGH;
-					m_bAutoUpPriority = true;
-				} else {
-					if (	m_iUpPriority != PR_VERY_LOW &&
-						m_iUpPriority != PR_LOW &&
-						m_iUpPriority != PR_NORMAL &&
-						m_iUpPriority != PR_HIGH &&
-						m_iUpPriority != PR_VERYHIGH &&
-						m_iUpPriority != PR_POWERSHARE) {
-						m_iUpPriority = PR_NORMAL;
-					}
-
-					m_bAutoUpPriority = false;
-				}
-				break;
-
-			case FT_PERMISSIONS:
-			case FT_KADLASTPUBLISHKEY:
-			case FT_PARTFILENAME:
-				// Old tags, not used anymore. Just purge them.
-				break;
-
-			case FT_AICH_HASH: {
-				CAICHHash hash;
-				bool hashSizeOk =
-					hash.DecodeBase32(newtag.GetStr()) == CAICHHash::GetHashSize();
-				wxASSERT(hashSizeOk);
-				if (hashSizeOk) {
-					m_pAICHHashSet->SetMasterHash(hash, AICH_HASHSETCOMPLETE);
-					// EC exports GetAICHMasterHash() as a wxString tag.
-					MarkECChanged();
-				}
-				break;
+			} else {
+				SetFileName(CPath(newtag.GetStr()));
 			}
+			break;
 
-			case FT_KADLASTPUBLISHSRC:
-				SetLastPublishTimeKadSrc( newtag.GetInt(), 0 );
+		case FT_FILESIZE:
+			SetFileSize(newtag.GetInt());
+			m_AvailPartFrequency.clear();
+			m_AvailPartFrequency.insert(m_AvailPartFrequency.begin(), GetPartCount(), 0);
+			break;
 
-				if(GetLastPublishTimeKadSrc() > (uint32)time(NULL)+KADEMLIAREPUBLISHTIMES) {
-					//There may be a possibility of an older client that saved a random number here.. This will check for that..
-					SetLastPublishTimeKadSrc(0, 0);
+		case FT_ATTRANSFERRED:
+			statistic.SetAllTimeTransferred(statistic.GetAllTimeTransferred() + newtag.GetInt());
+			break;
+
+		case FT_ATTRANSFERREDHI:
+			statistic.SetAllTimeTransferred(
+				statistic.GetAllTimeTransferred() + (((uint64)newtag.GetInt()) << 32));
+			break;
+
+		case FT_ATREQUESTED:
+			statistic.SetAllTimeRequests(newtag.GetInt());
+			break;
+
+		case FT_ATACCEPTED:
+			statistic.SetAllTimeAccepts(newtag.GetInt());
+			break;
+
+		case FT_ULPRIORITY:
+			m_iUpPriority = newtag.GetInt();
+			if (m_iUpPriority == PR_AUTO) {
+				m_iUpPriority = PR_HIGH;
+				m_bAutoUpPriority = true;
+			} else {
+				if (m_iUpPriority != PR_VERY_LOW && m_iUpPriority != PR_LOW &&
+					m_iUpPriority != PR_NORMAL && m_iUpPriority != PR_HIGH &&
+					m_iUpPriority != PR_VERYHIGH && m_iUpPriority != PR_POWERSHARE) {
+					m_iUpPriority = PR_NORMAL;
 				}
-				break;
 
-			case FT_KADLASTPUBLISHNOTES:
-				SetLastPublishTimeKadNotes( newtag.GetInt() );
-				break;
+				m_bAutoUpPriority = false;
+			}
+			break;
 
-			case FT_LASTSEEN:
-				m_lastSeen = newtag.GetInt();
-				break;
+		case FT_PERMISSIONS:
+		case FT_KADLASTPUBLISHKEY:
+		case FT_PARTFILENAME:
+			// Old tags, not used anymore. Just purge them.
+			break;
 
-			default:
-				// Store them here and write them back on saving.
-				m_taglist.push_back(newtag);
+		case FT_AICH_HASH: {
+			CAICHHash hash;
+			bool hashSizeOk = hash.DecodeBase32(newtag.GetStr()) == CAICHHash::GetHashSize();
+			wxASSERT(hashSizeOk);
+			if (hashSizeOk) {
+				m_pAICHHashSet->SetMasterHash(hash, AICH_HASHSETCOMPLETE);
+				// EC exports GetAICHMasterHash() as a wxString tag.
+				MarkECChanged();
+			}
+			break;
+		}
+
+		case FT_KADLASTPUBLISHSRC:
+			SetLastPublishTimeKadSrc(newtag.GetInt(), 0);
+
+			if (GetLastPublishTimeKadSrc() > (uint32)time(NULL) + KADEMLIAREPUBLISHTIMES) {
+				// There may be a possibility of an older client that saved a random number
+				// here.. This will check for that..
+				SetLastPublishTimeKadSrc(0, 0);
+			}
+			break;
+
+		case FT_KADLASTPUBLISHNOTES:
+			SetLastPublishTimeKadNotes(newtag.GetInt());
+			break;
+
+		case FT_LASTSEEN:
+			m_lastSeen = newtag.GetInt();
+			break;
+
+		default:
+			// Store them here and write them back on saving.
+			m_taglist.push_back(newtag);
 		}
 	}
 
 	return true;
 }
 
-
-bool CKnownFile::LoadDateFromFile(const CFileDataIO* file)
+bool CKnownFile::LoadDateFromFile(const CFileDataIO *file)
 {
 	m_lastDateChanged = file->ReadUInt32();
 
 	return true;
 }
 
-
-bool CKnownFile::LoadFromFile(const CFileDataIO* file)
+bool CKnownFile::LoadFromFile(const CFileDataIO *file)
 {
 	// SLUGFILLER: SafeHash - load first, verify later
 	bool ret1 = LoadDateFromFile(file);
-	bool ret2 = LoadHashsetFromFile(file,false);
+	bool ret2 = LoadHashsetFromFile(file, false);
 	bool ret3 = LoadTagsFromFile(file);
 	UpdatePartsInfo();
 	// Migration: a known.met written before FT_LASTSEEN was added
@@ -734,15 +706,14 @@ bool CKnownFile::LoadFromFile(const CFileDataIO* file)
 	// TTL prune on first save after upgrade rather than waiting a
 	// TTL window for all records to look "fresh now".
 	if (m_lastSeen == 0) {
-		m_lastSeen = (uint32) m_lastDateChanged;
+		m_lastSeen = (uint32)m_lastDateChanged;
 	}
 	// Final hash-count verification, needs to be done after the tags are loaded.
-	return ret1 && ret2 && ret3 && GetED2KPartHashCount()==GetHashCount();
+	return ret1 && ret2 && ret3 && GetED2KPartHashCount() == GetHashCount();
 	// SLUGFILLER: SafeHash
 }
 
-
-bool CKnownFile::WriteToFile(CFileDataIO* file)
+bool CKnownFile::WriteToFile(CFileDataIO *file)
 {
 	wxCHECK(!IsPartFile(), false);
 
@@ -757,8 +728,8 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	for (int i = 0; i < parts; ++i)
 		file->WriteHash(m_hashlist[i]);
 
-	//tags
-	const int iFixedTags = 9;	// +1 for FT_LASTSEEN
+	// tags
+	const int iFixedTags = 9; // +1 for FT_LASTSEEN
 	uint32 tagcount = iFixedTags;
 	if (HasProperAICHHashSet()) {
 		tagcount++;
@@ -772,7 +743,7 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	//
 	// The code for writing the float tags SHOULD BE ENABLED in SOME MONTHS (after most
 	// people are using the newer eMule versions which do not write broken float tags).
-	for (size_t j = 0; j < m_taglist.size(); ++j){
+	for (size_t j = 0; j < m_taglist.size(); ++j) {
 		if (m_taglist[j].IsInt() || m_taglist[j].IsStr()) {
 			++tagcount;
 		}
@@ -782,7 +753,7 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 		++tagcount;
 	}
 
-	if (m_lastPublishTimeKadNotes){
+	if (m_lastPublishTimeKadNotes) {
 		++tagcount;
 	}
 
@@ -794,7 +765,7 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	// compatibility with pre-2.2 and other clients.
 	CTagString nametag_unicode(FT_FILENAME, GetFileName().GetRaw());
 	// We write it with BOM to keep eMule compatibility
-	nametag_unicode.WriteTagToFile(file,utf8strOptBOM);
+	nametag_unicode.WriteTagToFile(file, utf8strOptBOM);
 
 	// The non-unicoded filename is written in an 'universial'
 	// format, which allows us to identify files, even if the
@@ -830,26 +801,26 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	CTagInt32 lastseentag(FT_LASTSEEN, m_lastSeen);
 	lastseentag.WriteTagToFile(file);
 
-	//AICH Filehash
+	// AICH Filehash
 	if (HasProperAICHHashSet()) {
 		CTagString aichtag(FT_AICH_HASH, m_pAICHHashSet->GetMasterHash().GetString());
 		aichtag.WriteTagToFile(file);
 	}
 
 	// Kad sources
-	if (m_lastPublishTimeKadSrc){
+	if (m_lastPublishTimeKadSrc) {
 		CTagInt32 kadLastPubSrc(FT_KADLASTPUBLISHSRC, m_lastPublishTimeKadSrc);
 		kadLastPubSrc.WriteTagToFile(file);
 	}
 
 	// Kad notes
-	if (m_lastPublishTimeKadNotes){
+	if (m_lastPublishTimeKadNotes) {
 		CTagInt32 kadLastPubNotes(FT_KADLASTPUBLISHNOTES, m_lastPublishTimeKadNotes);
 		kadLastPubNotes.WriteTagToFile(file);
 	}
 
-	//other tags
-	for (size_t j = 0; j < m_taglist.size(); ++j){
+	// other tags
+	for (size_t j = 0; j < m_taglist.size(); ++j) {
 		if (m_taglist[j].IsInt() || m_taglist[j].IsStr()) {
 			m_taglist[j].WriteTagToFile(file);
 		}
@@ -857,8 +828,7 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	return true;
 }
 
-
-void CKnownFile::CreateHashFromHashlist(const ArrayOfCMD4Hash& hashes, CMD4Hash* Output)
+void CKnownFile::CreateHashFromHashlist(const ArrayOfCMD4Hash &hashes, CMD4Hash *Output)
 {
 	wxCHECK_RET(hashes.size(), "No input to hash from in CreateHashFromHashlist");
 
@@ -872,8 +842,8 @@ void CKnownFile::CreateHashFromHashlist(const ArrayOfCMD4Hash& hashes, CMD4Hash*
 	CreateHashFromInput(&buffer[0], buffer.size(), Output, NULL);
 }
 
-
-void CKnownFile::CreateHashFromFile(CFileAutoClose& file, uint64 offset, uint32 Length, CMD4Hash* Output, CAICHHashTree* pShaHashOut)
+void CKnownFile::CreateHashFromFile(
+	CFileAutoClose &file, uint64 offset, uint32 Length, CMD4Hash *Output, CAICHHashTree *pShaHashOut)
 {
 	wxCHECK_RET(Length, "No input to hash from in CreateHashFromFile");
 
@@ -884,96 +854,97 @@ void CKnownFile::CreateHashFromFile(CFileAutoClose& file, uint64 offset, uint32 
 	area.CheckError();
 }
 
-
-void CKnownFile::CreateHashFromInput(const uint8_t* input, uint32 Length, CMD4Hash* Output, CAICHHashTree* pShaHashOut )
+void CKnownFile::CreateHashFromInput(
+	const uint8_t *input, uint32 Length, CMD4Hash *Output, CAICHHashTree *pShaHashOut)
 {
 	wxASSERT_MSG(Output || pShaHashOut, "Nothing to do in CreateHashFromInput");
-	{ wxCHECK_RET(input, "No input to hash from in CreateHashFromInput"); }
+	{
+		wxCHECK_RET(input, "No input to hash from in CreateHashFromInput");
+	}
 	wxASSERT(Length <= PARTSIZE); // We never hash more than one PARTSIZE
 
 	CMemFile data(input, Length);
 
 	uint32 Required = Length;
-	uint8  X[64*128];
+	uint8 X[64 * 128];
 
-	uint32	posCurrentEMBlock = 0;
-	uint32	nIACHPos = 0;
+	uint32 posCurrentEMBlock = 0;
+	uint32 nIACHPos = 0;
 	CScopedPtr<CAICHHashAlgo> pHashAlg(CAICHHashSet::GetNewHashAlgo());
 
 	// This is all AICH.
 	while (Required >= 64) {
 		uint32 len = Required / 64;
-		if (len > sizeof(X)/(64 * sizeof(X[0]))) {
-			len = sizeof(X)/(64 * sizeof(X[0]));
+		if (len > sizeof(X) / (64 * sizeof(X[0]))) {
+			len = sizeof(X) / (64 * sizeof(X[0]));
 		}
 
 		data.Read(&X, len * 64);
 
 		// SHA hash needs 180KB blocks
 		if (pShaHashOut) {
-			if (nIACHPos + len*64 >= EMBLOCKSIZE) {
+			if (nIACHPos + len * 64 >= EMBLOCKSIZE) {
 				uint32 nToComplete = EMBLOCKSIZE - nIACHPos;
 				pHashAlg->Add(X, nToComplete);
-				wxASSERT( nIACHPos + nToComplete == EMBLOCKSIZE );
+				wxASSERT(nIACHPos + nToComplete == EMBLOCKSIZE);
 				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg.get());
 				posCurrentEMBlock += EMBLOCKSIZE;
 				pHashAlg->Reset();
-				pHashAlg->Add(X+nToComplete,(len*64) - nToComplete);
-				nIACHPos = (len*64) - nToComplete;
-			}
-			else{
-				pHashAlg->Add(X, len*64);
-				nIACHPos += len*64;
+				pHashAlg->Add(X + nToComplete, (len * 64) - nToComplete);
+				nIACHPos = (len * 64) - nToComplete;
+			} else {
+				pHashAlg->Add(X, len * 64);
+				nIACHPos += len * 64;
 			}
 		}
 
-		Required -= len*64;
+		Required -= len * 64;
 	}
 	// bytes to read
 	Required = Length % 64;
-	if (Required != 0){
-		data.Read(&X,Required);
+	if (Required != 0) {
+		data.Read(&X, Required);
 
-		if (pShaHashOut != NULL){
-			if (nIACHPos + Required >= EMBLOCKSIZE){
+		if (pShaHashOut != NULL) {
+			if (nIACHPos + Required >= EMBLOCKSIZE) {
 				uint32 nToComplete = EMBLOCKSIZE - nIACHPos;
 				pHashAlg->Add(X, nToComplete);
-				wxASSERT( nIACHPos + nToComplete == EMBLOCKSIZE );
+				wxASSERT(nIACHPos + nToComplete == EMBLOCKSIZE);
 				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg.get());
 				posCurrentEMBlock += EMBLOCKSIZE;
 				pHashAlg->Reset();
-				pHashAlg->Add(X+nToComplete, Required - nToComplete);
+				pHashAlg->Add(X + nToComplete, Required - nToComplete);
 				nIACHPos = Required - nToComplete;
-			}
-			else{
+			} else {
 				pHashAlg->Add(X, Required);
 				nIACHPos += Required;
 			}
 		}
 	}
-	if (pShaHashOut != NULL){
-		if(nIACHPos > 0){
+	if (pShaHashOut != NULL) {
+		if (nIACHPos > 0) {
 			pShaHashOut->SetBlockHash(nIACHPos, posCurrentEMBlock, pHashAlg.get());
 			posCurrentEMBlock += nIACHPos;
 		}
-		wxASSERT( posCurrentEMBlock == Length );
-		wxCHECK2( pShaHashOut->ReCalculateHash(pHashAlg.get(), false), );
+		wxASSERT(posCurrentEMBlock == Length);
+		wxCHECK2(pShaHashOut->ReCalculateHash(pHashAlg.get(), false), );
 	}
 
-	if (Output != NULL){
+	if (Output != NULL) {
 		CryptoPP::Weak::MD4 md4_hasher;
 		md4_hasher.CalculateDigest(Output->GetHash(), input, Length);
 	}
 }
 
-
-const CMD4Hash& CKnownFile::GetPartHash(uint16 part) const {
-	wxASSERT( part < m_hashlist.size() );
+const CMD4Hash &CKnownFile::GetPartHash(uint16 part) const
+{
+	wxASSERT(part < m_hashlist.size());
 
 	return m_hashlist[part];
 }
 
-CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byRequestedVersion, uint16 nRequestedOptions)
+CPacket *CKnownFile::CreateSrcInfoPacket(
+	const CUpDownClient *forClient, uint8 byRequestedVersion, uint16 nRequestedOptions)
 {
 	// Kad reviewed
 
@@ -981,8 +952,9 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 		return NULL;
 	}
 
-	if (((static_cast<CKnownFile*>(forClient->GetRequestFile()) != this)
-		&& (forClient->GetUploadFile() != this)) || forClient->GetUploadFileID() != GetFileHash()) {
+	if (((static_cast<CKnownFile *>(forClient->GetRequestFile()) != this) &&
+		    (forClient->GetUploadFile() != this)) ||
+		forClient->GetUploadFileID() != GetFileHash()) {
 		wxString file1 = _("Unknown");
 		if (forClient->GetRequestFile() && forClient->GetRequestFile()->GetFileName().IsOk()) {
 			file1 = forClient->GetRequestFile()->GetFileName().GetPrintable();
@@ -993,16 +965,20 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 		if (GetFileName().IsOk()) {
 			file2 = GetFileName().GetPrintable();
 		}
-		AddDebugLogLineN(logKnownFiles, "File mismatch on source packet (K) Sending: " + file1 + "  From: " + file2);
+		AddDebugLogLineN(logKnownFiles,
+			"File mismatch on source packet (K) Sending: " + file1 + "  From: " + file2);
 		return NULL;
 	}
 
-	const BitVector& rcvstatus = forClient->GetUpPartStatus();
+	const BitVector &rcvstatus = forClient->GetUpPartStatus();
 	bool SupportsUploadChunksState = !rcvstatus.empty();
-	//wxASSERT(rcvstatus.size() == GetPartCount()); // Obviously!
+	// wxASSERT(rcvstatus.size() == GetPartCount()); // Obviously!
 	if (rcvstatus.size() != GetPartCount()) {
 		// Yuck. Same file but different part count? Seriously fucked up.
-		AddDebugLogLineN(logKnownFiles, CFormat("Impossible situation: different partcounts for the same known file: %i (client) and %i (file)") % rcvstatus.size() % GetPartCount());
+		AddDebugLogLineN(logKnownFiles,
+			CFormat("Impossible situation: different partcounts for the same known file: %i "
+				"(client) and %i (file)") %
+				rcvstatus.size() % GetPartCount());
 		return NULL;
 	}
 
@@ -1010,7 +986,7 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 
 	uint8 byUsedVersion;
 	bool bIsSX2Packet;
-	if (forClient->SupportsSourceExchange2() && byRequestedVersion > 0){
+	if (forClient->SupportsSourceExchange2() && byRequestedVersion > 0) {
 		// the client uses SourceExchange2 and requested the highest version he knows
 		// and we send the highest version we know, but of course not higher than his request
 		byUsedVersion = std::min(byRequestedVersion, (uint8)SOURCEEXCHANGE2_VERSION);
@@ -1019,13 +995,16 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 
 		// we don't support any special SX2 options yet, reserved for later use
 		if (nRequestedOptions != 0) {
-			AddDebugLogLineN(logKnownFiles, CFormat("Client requested unknown options for SourceExchange2: %u") % nRequestedOptions);
+			AddDebugLogLineN(logKnownFiles,
+				CFormat("Client requested unknown options for SourceExchange2: %u") %
+					nRequestedOptions);
 		}
 	} else {
 		byUsedVersion = forClient->GetSourceExchange1Version();
 		bIsSX2Packet = false;
 		if (forClient->SupportsSourceExchange2()) {
-			AddDebugLogLineN(logKnownFiles, "Client which announced to support SX2 sent SX1 packet instead");
+			AddDebugLogLineN(logKnownFiles,
+				"Client which announced to support SX2 sent SX1 packet instead");
 		}
 	}
 
@@ -1036,28 +1015,27 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 	uint32 cDbgNoSrc = 0;
 
 	SourceSet::iterator it = m_ClientUploadList.begin();
-	for ( ; it != m_ClientUploadList.end(); ++it ) {
+	for (; it != m_ClientUploadList.end(); ++it) {
 		const CUpDownClient *cur_src = it->GetClient();
 
-		if (	cur_src->HasLowID() ||
-			cur_src == forClient ||
-			!(	cur_src->GetUploadState() == US_UPLOADING ||
+		if (cur_src->HasLowID() || cur_src == forClient ||
+			!(cur_src->GetUploadState() == US_UPLOADING ||
 				cur_src->GetUploadState() == US_ONUPLOADQUEUE)) {
 			continue;
 		}
 
 		bool bNeeded = false;
 
-		if ( SupportsUploadChunksState ) {
-			const BitVector& srcstatus = cur_src->GetUpPartStatus();
-			if ( !srcstatus.empty() ) {
-				//wxASSERT(srcstatus.size() == GetPartCount()); // Obviously!
+		if (SupportsUploadChunksState) {
+			const BitVector &srcstatus = cur_src->GetUpPartStatus();
+			if (!srcstatus.empty()) {
+				// wxASSERT(srcstatus.size() == GetPartCount()); // Obviously!
 				if (srcstatus.size() != GetPartCount()) {
 					continue;
 				}
-				if ( cur_src->GetUpPartCount() == forClient->GetUpPartCount() ) {
-					for (int x = 0; x < GetPartCount(); x++ ) {
-						if ( srcstatus.get(x) && !rcvstatus.get(x) ) {
+				if (cur_src->GetUpPartCount() == forClient->GetUpPartCount()) {
+					for (int x = 0; x < GetPartCount(); x++) {
+						if (srcstatus.get(x) && !rcvstatus.get(x)) {
 							// We know the receiving client needs
 							// a chunk from this client.
 							bNeeded = true;
@@ -1078,14 +1056,14 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 			// chunks to return as much sources as possible which
 			// have the most available chunks. but this could be
 			// a noticeable performance problem.
-			const BitVector& srcstatus = cur_src->GetUpPartStatus();
-			if ( !srcstatus.empty() ) {
-				//wxASSERT(srcstatus.size() == GetPartCount());
+			const BitVector &srcstatus = cur_src->GetUpPartStatus();
+			if (!srcstatus.empty()) {
+				// wxASSERT(srcstatus.size() == GetPartCount());
 				if (srcstatus.size() != GetPartCount()) {
 					continue;
 				}
-				for (int x = 0; x < GetPartCount(); x++ ) {
-					if ( srcstatus.get(x) ) {
+				for (int x = 0; x < GetPartCount(); x++) {
+					if (srcstatus.get(x)) {
 						// this client has at least one chunk
 						bNeeded = true;
 						break;
@@ -1098,10 +1076,10 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 			}
 		}
 
-		if ( bNeeded ) {
+		if (bNeeded) {
 			nCount++;
 			uint32 dwID;
-			if(byUsedVersion >= 3) {
+			if (byUsedVersion >= 3) {
 				dwID = cur_src->GetUserIDHybrid();
 			} else {
 				dwID = cur_src->GetIP();
@@ -1112,19 +1090,21 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 			data.WriteUInt16(cur_src->GetServerPort());
 
 			if (byUsedVersion >= 2) {
-			    data.WriteHash(cur_src->GetUserHash());
+				data.WriteHash(cur_src->GetUserHash());
 			}
 
-			if (byUsedVersion >= 4){
+			if (byUsedVersion >= 4) {
 				// CryptSettings - SourceExchange V4
 				// 5 Reserved (!)
 				// 1 CryptLayer Required
 				// 1 CryptLayer Requested
 				// 1 CryptLayer Supported
-				const uint8 uSupportsCryptLayer	= cur_src->SupportsCryptLayer() ? 1 : 0;
-				const uint8 uRequestsCryptLayer	= cur_src->RequestsCryptLayer() ? 1 : 0;
-				const uint8 uRequiresCryptLayer	= cur_src->RequiresCryptLayer() ? 1 : 0;
-				const uint8 byCryptOptions = (uRequiresCryptLayer << 2) | (uRequestsCryptLayer << 1) | (uSupportsCryptLayer << 0);
+				const uint8 uSupportsCryptLayer = cur_src->SupportsCryptLayer() ? 1 : 0;
+				const uint8 uRequestsCryptLayer = cur_src->RequestsCryptLayer() ? 1 : 0;
+				const uint8 uRequiresCryptLayer = cur_src->RequiresCryptLayer() ? 1 : 0;
+				const uint8 byCryptOptions = (uRequiresCryptLayer << 2) |
+							     (uRequestsCryptLayer << 1) |
+							     (uSupportsCryptLayer << 0);
 				data.WriteUInt8(byCryptOptions);
 			}
 
@@ -1141,20 +1121,18 @@ CPacket* CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 b
 	data.Seek(bIsSX2Packet ? 17 : 16, wxFromStart);
 	data.WriteUInt16(nCount);
 
-	CPacket* result = new CPacket(data, OP_EMULEPROT, bIsSX2Packet ? OP_ANSWERSOURCES2 : OP_ANSWERSOURCES);
+	CPacket *result =
+		new CPacket(data, OP_EMULEPROT, bIsSX2Packet ? OP_ANSWERSOURCES2 : OP_ANSWERSOURCES);
 
-	if ( result->GetPacketSize() > 354 ) {
+	if (result->GetPacketSize() > 354) {
 		result->PackPacket();
 	}
 
 	return result;
 }
 
-
-void CKnownFile::CreateOfferedFilePacket(
-	CMemFile *files,
-	CServer *pServer,
-	CUpDownClient *pClient) {
+void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpDownClient *pClient)
+{
 
 	// This function is used for offering files to the local server and for sending
 	// shared files to some other client. In each case we send our IP+Port only, if
@@ -1170,10 +1148,10 @@ void CKnownFile::CreateOfferedFilePacket(
 
 	if (pServer) {
 		if (pServer->GetTCPFlags() & SRV_TCPFLG_COMPRESSION) {
-			#define FILE_COMPLETE_ID		0xfbfbfbfb
-			#define FILE_COMPLETE_PORT	0xfbfb
-			#define FILE_INCOMPLETE_ID	0xfcfcfcfc
-			#define FILE_INCOMPLETE_PORT	0xfcfc
+#define FILE_COMPLETE_ID 0xfbfbfbfb
+#define FILE_COMPLETE_PORT 0xfbfb
+#define FILE_INCOMPLETE_ID 0xfcfcfcfc
+#define FILE_INCOMPLETE_PORT 0xfcfc
 			// complete   file: ip 251.251.251 (0xfbfbfbfb) port 0xfbfb
 			// incomplete file: op 252.252.252 (0xfcfcfcfc) port 0xfcfc
 			if (GetStatus() == PS_COMPLETE) {
@@ -1184,7 +1162,7 @@ void CKnownFile::CreateOfferedFilePacket(
 				nClientPort = FILE_INCOMPLETE_PORT;
 			}
 		} else {
-			if (theApp->IsConnectedED2K() && !::IsLowID(theApp->GetED2KID())){
+			if (theApp->IsConnectedED2K() && !::IsLowID(theApp->GetED2KID())) {
 				nClientID = theApp->GetID();
 				nClientPort = thePrefs::GetPort();
 			}
@@ -1209,18 +1187,19 @@ void CKnownFile::CreateOfferedFilePacket(
 	if (pClient && pClient->GetVBTTags()) {
 		tags.push_back(new CTagVarInt(FT_FILESIZE, GetFileSize()));
 	} else {
-		if (!IsLargeFile()){
+		if (!IsLargeFile()) {
 			tags.push_back(new CTagInt32(FT_FILESIZE, GetFileSize()));
 		} else {
 			// Large file
 			// we send 2*32 bit tags to servers, but a real 64 bit tag to other clients.
 			if (pServer) {
-				if (!pServer->SupportsLargeFilesTCP()){
+				if (!pServer->SupportsLargeFilesTCP()) {
 					wxFAIL;
 					tags.push_back(new CTagInt32(FT_FILESIZE, 0));
 				} else {
 					tags.push_back(new CTagInt32(FT_FILESIZE, (uint32)GetFileSize()));
-					tags.push_back(new CTagInt32(FT_FILESIZE_HI, (uint32)(GetFileSize() >> 32)));
+					tags.push_back(
+						new CTagInt32(FT_FILESIZE_HI, (uint32)(GetFileSize() >> 32)));
 				}
 			} else {
 				if (!pClient->SupportsLargeFiles()) {
@@ -1234,7 +1213,8 @@ void CKnownFile::CreateOfferedFilePacket(
 	}
 
 	if (GetFileRating()) {
-		tags.push_back(new CTagVarInt(FT_FILERATING, GetFileRating(), (pClient && pClient->GetVBTTags()) ? 0 : 32));
+		tags.push_back(new CTagVarInt(
+			FT_FILERATING, GetFileRating(), (pClient && pClient->GetVBTTags()) ? 0 : 32));
 	}
 
 	// NOTE: Archives and CD-Images are published+searched with file type "Pro"
@@ -1249,7 +1229,8 @@ void CKnownFile::CreateOfferedFilePacket(
 	}
 	if (!bAddedFileType) {
 		// Send string file type tags to:
-		//	- newer servers, in case there is no integer type available for the file type (e.g. emulecollection)
+		//	- newer servers, in case there is no integer type available for the file type (e.g.
+		// emulecollection)
 		//	- older servers
 		//	- all clients
 		wxString strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(GetFileName())));
@@ -1264,8 +1245,7 @@ void CKnownFile::CreateOfferedFilePacket(
 
 	bool unicode_support =
 		// eservers that support UNICODE.
-		(pServer && (pServer->GetUnicodeSupport()))
-		||
+		(pServer && (pServer->GetUnicodeSupport())) ||
 		// clients that support unicode
 		(pClient && pClient->GetUnicodeSupport());
 	eStrEncode = unicode_support ? utf8strRaw : utf8strNone;
@@ -1276,17 +1256,16 @@ void CKnownFile::CreateOfferedFilePacket(
 	// have to identify the support for new tags by version.
 	bool new_ed2k =
 		// eMule client > 0.42f
-		(pClient && pClient->IsEmuleClient() && pClient->GetVersion()  >= MAKE_CLIENT_VERSION(0,42,7))
-		||
+		(pClient && pClient->IsEmuleClient() &&
+			pClient->GetVersion() >= MAKE_CLIENT_VERSION(0, 42, 7)) ||
 		// aMule >= 2.0.0rc8. Sadly, there's no way to check the rcN number, so I checked
 		// the rc8 changelog. On rc8 OSInfo was introduced, so...
-		(pClient && pClient->GetClientSoft() == SO_AMULE && !pClient->GetClientOSInfo().IsEmpty())
-		||
+		(pClient && pClient->GetClientSoft() == SO_AMULE && !pClient->GetClientOSInfo().IsEmpty()) ||
 		// eservers use a flag for this, at least.
 		(pServer && (pServer->GetTCPFlags() & SRV_TCPFLG_NEWTAGS));
 
-	for (TagPtrList::iterator it = tags.begin(); it != tags.end(); ++it ) {
-		CTag* pTag = *it;
+	for (TagPtrList::iterator it = tags.begin(); it != tags.end(); ++it) {
+		CTag *pTag = *it;
 		if (new_ed2k) {
 			pTag->WriteNewEd2kTag(files, eStrEncode);
 		} else {
@@ -1295,7 +1274,6 @@ void CKnownFile::CreateOfferedFilePacket(
 		delete pTag;
 	}
 }
-
 
 // Updates priority of file if autopriority is activated
 void CKnownFile::UpdateAutoUpPriority()
@@ -1319,25 +1297,25 @@ void CKnownFile::UpdateAutoUpPriority()
 	}
 }
 
-void CKnownFile::SetFileCommentRating(const wxString& strNewComment, int8 iNewRating)
+void CKnownFile::SetFileCommentRating(const wxString &strNewComment, int8 iNewRating)
 {
 	if (m_strComment != strNewComment || m_iRating != iNewRating) {
 		SetLastPublishTimeKadNotes(0);
 		wxString strCfgPath = "/" + m_abyFileHash.Encode() + "/";
 
-		wxConfigBase* cfg = wxConfigBase::Get();
+		wxConfigBase *cfg = wxConfigBase::Get();
 		if (strNewComment.IsEmpty() && iNewRating == 0) {
 			cfg->DeleteGroup(strCfgPath);
 		} else {
-			cfg->Write( strCfgPath + "Comment", strNewComment);
-			cfg->Write( strCfgPath + "Rate", (int)iNewRating);
+			cfg->Write(strCfgPath + "Comment", strNewComment);
+			cfg->Write(strCfgPath + "Rate", (int)iNewRating);
 		}
 
 		m_strComment = strNewComment;
 		m_iRating = iNewRating;
 
 		SourceSet::iterator it = m_ClientUploadList.begin();
-		for ( ; it != m_ClientUploadList.end(); ++it ) {
+		for (; it != m_ClientUploadList.end(); ++it) {
 			it->SetCommentDirty();
 		}
 		// EC exports both comment and rating.
@@ -1345,23 +1323,24 @@ void CKnownFile::SetFileCommentRating(const wxString& strNewComment, int8 iNewRa
 	}
 }
 
-
-void CKnownFile::SetUpPriority(uint8 iNewUpPriority, bool m_bsave){
+void CKnownFile::SetUpPriority(uint8 iNewUpPriority, bool m_bsave)
+{
 	if (m_iUpPriority != iNewUpPriority && IsPartFile()) {
-		static_cast<CPartFile*>(this)->MarkMetDirty();
+		static_cast<CPartFile *>(this)->MarkMetDirty();
 	}
 	if (m_iUpPriority != iNewUpPriority) {
 		MarkECChanged();
 	}
 	m_iUpPriority = iNewUpPriority;
-	if( IsPartFile() && m_bsave ) {
-		static_cast<CPartFile*>(this)->SavePartFile();
+	if (IsPartFile() && m_bsave) {
+		static_cast<CPartFile *>(this)->SavePartFile();
 	}
 }
 
-void CKnownFile::SetAutoUpPriority(bool flag){
+void CKnownFile::SetAutoUpPriority(bool flag)
+{
 	if (m_bAutoUpPriority != flag && IsPartFile()) {
-		static_cast<CPartFile*>(this)->MarkMetDirty();
+		static_cast<CPartFile *>(this)->MarkMetDirty();
 	}
 	if (m_bAutoUpPriority != flag) {
 		// EC exports prio with the auto flag folded in (+10 offset for auto).
@@ -1370,7 +1349,8 @@ void CKnownFile::SetAutoUpPriority(bool flag){
 	m_bAutoUpPriority = flag;
 }
 
-void CKnownFile::SetPublishedED2K(bool val){
+void CKnownFile::SetPublishedED2K(bool val)
+{
 	if (m_PublishedED2K == val) {
 		// No-op state changes are a hot path during ClearED2KPublishInfo
 		// (which writes false to every shared file regardless of current
@@ -1385,17 +1365,17 @@ void CKnownFile::SetPublishedED2K(bool val){
 
 bool CKnownFile::PublishNotes()
 {
-	if(m_lastPublishTimeKadNotes > (uint32)time(NULL)) {
+	if (m_lastPublishTimeKadNotes > (uint32)time(NULL)) {
 		return false;
 	}
 
-	if(!GetFileComment().IsEmpty()) {
-		m_lastPublishTimeKadNotes = (uint32)time(NULL)+KADEMLIAREPUBLISHTIMEN;
+	if (!GetFileComment().IsEmpty()) {
+		m_lastPublishTimeKadNotes = (uint32)time(NULL) + KADEMLIAREPUBLISHTIMEN;
 		return true;
 	}
 
-	if(GetFileRating() != 0) {
-		m_lastPublishTimeKadNotes = (uint32)time(NULL)+KADEMLIAREPUBLISHTIMEN;
+	if (GetFileRating() != 0) {
+		m_lastPublishTimeKadNotes = (uint32)time(NULL) + KADEMLIAREPUBLISHTIMEN;
 		return true;
 	}
 
@@ -1406,12 +1386,13 @@ bool CKnownFile::PublishSrc()
 {
 	uint32 lastBuddyIP = 0;
 
-	if( theApp->IsFirewalled() ) {
-		CUpDownClient* buddy = theApp->clientlist->GetBuddy();
-		if( buddy ) {
+	if (theApp->IsFirewalled()) {
+		CUpDownClient *buddy = theApp->clientlist->GetBuddy();
+		if (buddy) {
 			lastBuddyIP = theApp->clientlist->GetBuddy()->GetIP();
-			if( lastBuddyIP != m_lastBuddyIP ) {
-				SetLastPublishTimeKadSrc( (uint32)time(NULL)+KADEMLIAREPUBLISHTIMES, lastBuddyIP );
+			if (lastBuddyIP != m_lastBuddyIP) {
+				SetLastPublishTimeKadSrc(
+					(uint32)time(NULL) + KADEMLIAREPUBLISHTIMES, lastBuddyIP);
 				return true;
 			}
 		} else {
@@ -1419,13 +1400,12 @@ bool CKnownFile::PublishSrc()
 		}
 	}
 
-	if(m_lastPublishTimeKadSrc > (uint32)time(NULL)) {
+	if (m_lastPublishTimeKadSrc > (uint32)time(NULL)) {
 		return false;
 	}
 
-	SetLastPublishTimeKadSrc((uint32)time(NULL)+KADEMLIAREPUBLISHTIMES,lastBuddyIP);
+	SetLastPublishTimeKadSrc((uint32)time(NULL) + KADEMLIAREPUBLISHTIMES, lastBuddyIP);
 	return true;
-
 }
 
 void CKnownFile::UpdatePartsInfo()
@@ -1435,7 +1415,7 @@ void CKnownFile::UpdatePartsInfo()
 	bool flag = (time(NULL) - m_nCompleteSourcesTime > 0);
 
 	// Ensure the frequency-list is ready
-	if ( m_AvailPartFrequency.size() != GetPartCount() ) {
+	if (m_AvailPartFrequency.size() != GetPartCount()) {
 		m_AvailPartFrequency.clear();
 		m_AvailPartFrequency.insert(m_AvailPartFrequency.begin(), GetPartCount(), 0);
 	}
@@ -1445,20 +1425,20 @@ void CKnownFile::UpdatePartsInfo()
 		count.reserve(m_ClientUploadList.size());
 
 		SourceSet::iterator it = m_ClientUploadList.begin();
-		for ( ; it != m_ClientUploadList.end(); ++it ) {
-			CUpDownClient* client = it->GetClient();
-			if ( !client->GetUpPartStatus().empty() && client->GetUpPartCount() == partcount ) {
+		for (; it != m_ClientUploadList.end(); ++it) {
+			CUpDownClient *client = it->GetClient();
+			if (!client->GetUpPartStatus().empty() && client->GetUpPartCount() == partcount) {
 				count.push_back(client->GetUpCompleteSourcesCount());
 			}
 		}
 
 		m_nCompleteSourcesCount = m_nCompleteSourcesCountLo = m_nCompleteSourcesCountHi = 0;
 
-		if( partcount > 0) {
+		if (partcount > 0) {
 			m_nCompleteSourcesCount = m_AvailPartFrequency[0];
 		}
 		for (uint16 i = 1; i < partcount; ++i) {
-			if( m_nCompleteSourcesCount > m_AvailPartFrequency[i]) {
+			if (m_nCompleteSourcesCount > m_AvailPartFrequency[i]) {
 				m_nCompleteSourcesCount = m_AvailPartFrequency[i];
 			}
 		}
@@ -1469,9 +1449,9 @@ void CKnownFile::UpdatePartsInfo()
 			std::sort(count.begin(), count.end(), std::less<uint16>());
 
 			// calculate range
-			int i = n >> 1;			// (n / 2)
-			int j = (n * 3) >> 2;	// (n * 3) / 4
-			int k = (n * 7) >> 3;	// (n * 7) / 8
+			int i = n >> 1;       // (n / 2)
+			int j = (n * 3) >> 2; // (n * 3) / 4
+			int k = (n * 7) >> 3; // (n * 7) / 8
 
 			// For complete files, trust the people your uploading to more...
 
@@ -1485,34 +1465,34 @@ void CKnownFile::UpdatePartsInfo()
 			// For high guess
 			//	Adjust 100% network and 0% what we see.
 			if (n < 20) {
-				if ( count[i] < m_nCompleteSourcesCount ) {
+				if (count[i] < m_nCompleteSourcesCount) {
 					m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
 				} else {
 					m_nCompleteSourcesCountLo = count[i];
 				}
-				m_nCompleteSourcesCount= m_nCompleteSourcesCountLo;
+				m_nCompleteSourcesCount = m_nCompleteSourcesCountLo;
 				m_nCompleteSourcesCountHi = count[j];
-				if( m_nCompleteSourcesCountHi < m_nCompleteSourcesCount ) {
+				if (m_nCompleteSourcesCountHi < m_nCompleteSourcesCount) {
 					m_nCompleteSourcesCountHi = m_nCompleteSourcesCount;
 				}
 			} else {
-			// Many sources..
-			// For low guess
-			//	Use what we see.
-			// For normal guess
-			//	Adjust network accounts for 100%, we account for
-			//	0% with what we see and make sure we are still above the low.
-			// For high guess
-			//	Adjust network accounts for 100%, we account for 0%
-			//	with what we see and make sure we are still above the normal.
+				// Many sources..
+				// For low guess
+				//	Use what we see.
+				// For normal guess
+				//	Adjust network accounts for 100%, we account for
+				//	0% with what we see and make sure we are still above the low.
+				// For high guess
+				//	Adjust network accounts for 100%, we account for 0%
+				//	with what we see and make sure we are still above the normal.
 
 				m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
 				m_nCompleteSourcesCount = count[j];
-				if( m_nCompleteSourcesCount < m_nCompleteSourcesCountLo ) {
+				if (m_nCompleteSourcesCount < m_nCompleteSourcesCountLo) {
 					m_nCompleteSourcesCount = m_nCompleteSourcesCountLo;
 				}
-				m_nCompleteSourcesCountHi= count[k];
-				if( m_nCompleteSourcesCountHi < m_nCompleteSourcesCount ) {
+				m_nCompleteSourcesCountHi = count[k];
+				if (m_nCompleteSourcesCountHi < m_nCompleteSourcesCount) {
 					m_nCompleteSourcesCountHi = m_nCompleteSourcesCount;
 				}
 			}
@@ -1526,45 +1506,46 @@ void CKnownFile::UpdatePartsInfo()
 	Notify_SharedFilesUpdateItem(this);
 }
 
-
-void CKnownFile::UpdateUpPartsFrequency( CUpDownClient* client, bool increment )
+void CKnownFile::UpdateUpPartsFrequency(CUpDownClient *client, bool increment)
 {
-	if ( m_AvailPartFrequency.size() != GetPartCount() ) {
+	if (m_AvailPartFrequency.size() != GetPartCount()) {
 		m_AvailPartFrequency.clear();
 		m_AvailPartFrequency.insert(m_AvailPartFrequency.begin(), GetPartCount(), 0);
-		if ( !increment ) {
+		if (!increment) {
 			return;
 		}
 	}
 
-	const BitVector& freq = client->GetUpPartStatus();
+	const BitVector &freq = client->GetUpPartStatus();
 	unsigned int size = freq.size();
-	if ( size != m_AvailPartFrequency.size() ) {
+	if (size != m_AvailPartFrequency.size()) {
 		return;
 	}
 
-	if ( increment ) {
-		for ( unsigned int i = 0; i < size; ++i ) {
-			if ( freq.get(i) ) {
+	if (increment) {
+		for (unsigned int i = 0; i < size; ++i) {
+			if (freq.get(i)) {
 				m_AvailPartFrequency[i]++;
 			}
 		}
 	} else {
-		for ( unsigned int i = 0; i < size; ++i ) {
-			if ( freq.get(i) ) {
+		for (unsigned int i = 0; i < size; ++i) {
+			if (freq.get(i)) {
 				m_AvailPartFrequency[i]--;
 			}
 		}
 	}
 }
 
-void CKnownFile::ClearPriority() {
-	if ( !m_bAutoUpPriority ) return;
-	m_iUpPriority = ( m_bAutoUpPriority ) ? PR_HIGH : PR_NORMAL;
+void CKnownFile::ClearPriority()
+{
+	if (!m_bAutoUpPriority)
+		return;
+	m_iUpPriority = (m_bAutoUpPriority) ? PR_HIGH : PR_NORMAL;
 	UpdateAutoUpPriority();
 }
 
-static void GuessAndRemoveExt(CPath& name)
+static void GuessAndRemoveExt(CPath &name)
 {
 	wxString ext = name.GetExt();
 
@@ -1574,19 +1555,14 @@ static void GuessAndRemoveExt(CPath& name)
 		if (name.GetExt() == "tar") {
 			name = name.RemoveExt();
 		}
-	// might be an extension if length == 3
-	// and also remove some common non-three-character extensions
-	} else if (ext.Length() == 3  ||
-		   ext == "7z"   ||
-		   ext == "rm"   ||
-		   ext == "jpeg" ||
-		   ext == "mpeg"
-		   ) {
+		// might be an extension if length == 3
+		// and also remove some common non-three-character extensions
+	} else if (ext.Length() == 3 || ext == "7z" || ext == "rm" || ext == "jpeg" || ext == "mpeg") {
 		name = name.RemoveExt();
 	}
 }
 
-void CKnownFile::SetFileName(const CPath& filename)
+void CKnownFile::SetFileName(const CPath &filename)
 {
 	CAbstractFile::SetFileName(filename);
 	// Invalidate the cached EC ed2k link; SetFileName is the only event
@@ -1603,7 +1579,7 @@ void CKnownFile::SetFileName(const CPath& filename)
 	Kademlia::CSearchManager::GetWords(tmpName.GetPrintable(), &wordlist);
 }
 
-const wxString& CKnownFile::GetCachedED2kLinkBase() const
+const wxString &CKnownFile::GetCachedED2kLinkBase() const
 {
 	if (m_cachedED2kLinkBase.IsEmpty()) {
 		// theApp->CreateED2kLink with add_source=false produces just the
@@ -1619,7 +1595,7 @@ const wxString& CKnownFile::GetCachedED2kLinkBase() const
 
 wxString CKnownFile::GetED2kLinkForEC(bool add_source) const
 {
-	const wxString& base = GetCachedED2kLinkBase();
+	const wxString &base = GetCachedED2kLinkBase();
 	if (!add_source) {
 		return base;
 	}
@@ -1637,31 +1613,26 @@ wxString CKnownFile::GetED2kLinkForEC(bool add_source) const
 		return base;
 	}
 	uint32 clientID = theApp->GetID();
-	return base + CFormat("|sources,%u.%u.%u.%u:%u|/")
-		% (clientID & 0xff)
-		% ((clientID >> 8) & 0xff)
-		% ((clientID >> 16) & 0xff)
-		% ((clientID >> 24) & 0xff)
-		% thePrefs::GetPort();
+	return base + CFormat("|sources,%u.%u.%u.%u:%u|/") % (clientID & 0xff) % ((clientID >> 8) & 0xff) %
+			      ((clientID >> 16) & 0xff) % ((clientID >> 24) & 0xff) % thePrefs::GetPort();
 }
 
 #endif // CLIENT_GUI
 
-//For File Comment //
+// For File Comment //
 void CKnownFile::LoadComment() const
 {
-	#ifndef CLIENT_GUI
+#ifndef CLIENT_GUI
 	wxString strCfgPath = "/" + m_abyFileHash.Encode() + "/";
 
-	wxConfigBase* cfg = wxConfigBase::Get();
+	wxConfigBase *cfg = wxConfigBase::Get();
 
-	m_strComment = cfg->Read( strCfgPath + "Comment", "");
-	m_iRating = cfg->Read( strCfgPath + "Rate", 0l);
-	#endif
+	m_strComment = cfg->Read(strCfgPath + "Comment", "");
+	m_iRating = cfg->Read(strCfgPath + "Rate", 0l);
+#endif
 
 	m_bCommentLoaded = true;
 }
-
 
 wxString CKnownFile::GetAICHMasterHash() const
 {
@@ -1676,28 +1647,29 @@ wxString CKnownFile::GetAICHMasterHash() const
 #endif
 }
 
-
 bool CKnownFile::HasProperAICHHashSet() const
 {
 #ifdef CLIENT_GUI
 	return m_AICHMasterHash.Length() != 0;
 #else
-	return m_pAICHHashSet->HasValidMasterHash() &&
-		(m_pAICHHashSet->GetStatus() == AICH_HASHSETCOMPLETE ||
-		 m_pAICHHashSet->GetStatus() == AICH_VERIFIED);
+	return m_pAICHHashSet->HasValidMasterHash() && (m_pAICHHashSet->GetStatus() == AICH_HASHSETCOMPLETE ||
+							       m_pAICHHashSet->GetStatus() == AICH_VERIFIED);
 #endif
 }
 
 wxString CKnownFile::GetFeedback() const
 {
-	return	  wxString(_("File name")) + ": " + GetFileName().GetPrintable() + "\n"
-		+ _("File size") + ": " + CastItoXBytes(GetFileSize()) + "\n"
-		+ _("Share ratio") + wxString(CFormat(": %.2f%%\n") % (((double)statistic.GetAllTimeTransferred() / (double)GetFileSize()) * 100.0))
-		+ _("Uploaded") + ": " + CastItoXBytes(statistic.GetTransferred()) + " (" + CastItoXBytes(statistic.GetAllTimeTransferred()) + ")\n"
-		+ _("Requested") + wxString(CFormat(": %u (%u)\n") % statistic.GetRequests() % statistic.GetAllTimeRequests())
-		+ _("Accepted") + wxString(CFormat(": %u (%u)\n") % statistic.GetAccepts() % statistic.GetAllTimeAccepts())
-		+ _("On Queue") + wxString(CFormat(": %u\n") % GetQueuedCount())
-		+ _("Complete sources") + wxString(CFormat(": %u\n") % m_nCompleteSourcesCount);
+	return wxString(_("File name")) + ": " + GetFileName().GetPrintable() + "\n" + _("File size") + ": " +
+	       CastItoXBytes(GetFileSize()) + "\n" + _("Share ratio") +
+	       wxString(CFormat(": %.2f%%\n") %
+			(((double)statistic.GetAllTimeTransferred() / (double)GetFileSize()) * 100.0)) +
+	       _("Uploaded") + ": " + CastItoXBytes(statistic.GetTransferred()) + " (" +
+	       CastItoXBytes(statistic.GetAllTimeTransferred()) + ")\n" + _("Requested") +
+	       wxString(CFormat(": %u (%u)\n") % statistic.GetRequests() % statistic.GetAllTimeRequests()) +
+	       _("Accepted") +
+	       wxString(CFormat(": %u (%u)\n") % statistic.GetAccepts() % statistic.GetAllTimeAccepts()) +
+	       _("On Queue") + wxString(CFormat(": %u\n") % GetQueuedCount()) + _("Complete sources") +
+	       wxString(CFormat(": %u\n") % m_nCompleteSourcesCount);
 }
 
 // File_checked_for_headers

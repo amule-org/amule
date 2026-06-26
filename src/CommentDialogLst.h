@@ -26,7 +26,7 @@
 #ifndef COMMENTDIALOGLST_H
 #define COMMENTDIALOGLST_H
 
-#include <wx/dialog.h>		// Needed for wxDialog	// Do_not_auto_remove
+#include <wx/dialog.h> // Needed for wxDialog	// Do_not_auto_remove
 #include <wx/sizer.h>
 
 class CMuleListCtrl;
@@ -40,7 +40,7 @@ class CKnownFile;
 class CCommentDialogLst : public wxDialog
 {
 public:
-	CCommentDialogLst(wxWindow* pParent, CPartFile* file);
+	CCommentDialogLst(wxWindow *pParent, CPartFile *file);
 	~CCommentDialogLst();
 
 	/**
@@ -54,11 +54,11 @@ public:
 	 * Pointer-value comparison only — `file` may already be freed.
 	 * Wired via MuleNotify::KnownFileBeingDestroyed (GuiEvents.cpp).
 	 */
-	static void DropReferencesTo(const CKnownFile* file);
+	static void DropReferencesTo(const CKnownFile *file);
 
 private:
-	void OnBnClickedApply(wxCommandEvent& evt);
-	void OnBnClickedRefresh(wxCommandEvent& evt);
+	void OnBnClickedApply(wxCommandEvent &evt);
+	void OnBnClickedRefresh(wxCommandEvent &evt);
 
 	/**
 	 * Updates the contents of the comments/ratings list.
@@ -71,11 +71,10 @@ private:
 	void ClearList();
 
 	//! The file to display comments for.
-	CPartFile* m_file;
+	CPartFile *m_file;
 
 	//! The list containing comments/ratings.
-	CMuleListCtrl* m_list;
-
+	CMuleListCtrl *m_list;
 
 	wxDECLARE_EVENT_TABLE();
 };

@@ -23,41 +23,31 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef UPNPCOMPATIBILITY_H
 #define UPNPCOMPATIBILITY_H
-
 
 #include <upnp.h>
 #include <upnptools.h>
 
-
 #include <sstream>
 
+#include <common/MuleDebug.h>       // for CMuleException::
+#include <common/StringFunctions.h> // for char2unicode()
 
-#include <common/MuleDebug.h>		// for CMuleException::
-#include <common/StringFunctions.h>	// for char2unicode()
-
-
-#include "Logger.h"				// for Add(Debug)LogLineM()
-
+#include "Logger.h" // for Add(Debug)LogLineM()
 
 class CUPnPException : public CMuleException
 {
 public:
-	CUPnPException(const std::ostringstream& msg)
-	:
-	CMuleException(
-		"CUPnPException",
-		wxString(char2unicode(msg.str().c_str()))) {}
+	CUPnPException(const std::ostringstream &msg)
+	: CMuleException("CUPnPException", wxString(char2unicode(msg.str().c_str())))
+	{
+	}
 };
-
 
 // There is no need to create mutex/mutex locker classes using ithread.h
 // because wx already has them.
 #define CUPnPMutex wxMutex
 #define CUPnPMutexLocker wxMutexLocker
 
-
 #endif // UPNPCOMPATIBILITY_H
-

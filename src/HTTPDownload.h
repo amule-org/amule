@@ -27,21 +27,20 @@
 #ifndef HTTPDOWNLOAD_H
 #define HTTPDOWNLOAD_H
 
-#include "GuiEvents.h"		// Needed for HTTP_Download_File
-#include <wx/datetime.h>	// Needed for wxDateTime
-#include <wx/event.h>		// Needed for wxEvtHandler
-#include <wx/webrequest.h>	// Needed for wxWebRequest
+#include "GuiEvents.h"     // Needed for HTTP_Download_File
+#include <wx/datetime.h>   // Needed for wxDateTime
+#include <wx/event.h>      // Needed for wxEvtHandler
+#include <wx/webrequest.h> // Needed for wxWebRequest
 #include <set>
 
 class wxWebRequestEvent;
 
-
-enum HTTPDownloadResult {
+enum HTTPDownloadResult
+{
 	HTTP_Success = 0,
 	HTTP_Error,
 	HTTP_Skipped
 };
-
 
 //
 // Startup HTTP downloader (version check, server.met, nodes.dat, ipfilter,
@@ -66,44 +65,48 @@ public:
 	/** Note: wxChar* was historically used here to dodge thread-unsafe
 	 *  wxString refcounting; no longer strictly required on the main
 	 *  thread, but kept for API compatibility. */
-	CHTTPDownloadThread(const wxString& url, const wxString& filename, const wxString& oldfilename, HTTP_Download_File file_id,
-						bool showDialog, bool checkDownloadNewer);
+	CHTTPDownloadThread(const wxString &url,
+		const wxString &filename,
+		const wxString &oldfilename,
+		HTTP_Download_File file_id,
+		bool showDialog,
+		bool checkDownloadNewer);
 
 	static void StopAll();
 
 	// Legacy wxThread-style entry points retained as stubs for the six
 	// existing call sites. The request is already started from the ctor
 	// on the main thread, so Create()/Run() have nothing to do.
-	bool	Create()	{ return true; }
-	void	Run()		{ /* request started in ctor */ }
-	void	Stop();		// fire-and-forget cancel; terminal event follows
-	void	OnExit()	{ /* no-op: we self-destroy on terminal state */ }
+	bool Create() { return true; }
+	void Run() { /* request started in ctor */ }
+	void Stop(); // fire-and-forget cancel; terminal event follows
+	void OnExit() { /* no-op: we self-destroy on terminal state */ }
 
 	// Called by the companion dialog before it tears itself down, so that
 	// subsequent terminal-state cleanup does not post events to a dead
 	// handler.
-	void	DetachCompanion();
+	void DetachCompanion();
 
 private:
-	void	OnStateEvent(wxWebRequestEvent& evt);
-	void	FinishAndDestroy(int result);
+	void OnStateEvent(wxWebRequestEvent &evt);
+	void FinishAndDestroy(int result);
 
-	static wxString FormatDateHTTP(const wxDateTime& date);
+	static wxString FormatDateHTTP(const wxDateTime &date);
 
-	wxWebRequest		m_request;
-	wxString		m_url;
-	wxString		m_tempfile;
-	wxDateTime		m_lastmodified;	//! Date on which the file being updated was last modified.
-	int			m_result;
-	int			m_response;	//! HTTP response code (e.g. 200)
-	int			m_error;	//! Additional error code
-	HTTP_Download_File	m_file_id;
-	wxEvtHandler*		m_companion;
-	bool			m_finishPosted;	//! Guard against double-posting on terminal state
+	wxWebRequest m_request;
+	wxString m_url;
+	wxString m_tempfile;
+	wxDateTime m_lastmodified; //! Date on which the file being updated was last modified.
+	int m_result;
+	int m_response; //! HTTP response code (e.g. 200)
+	int m_error;    //! Additional error code
+	HTTP_Download_File m_file_id;
+	wxEvtHandler *m_companion;
+	bool m_finishPosted; //! Guard against double-posting on terminal state
 
-	typedef std::set<CHTTPDownloadThread *>	ThreadSet;
-	static ThreadSet	s_allThreads;
-	static wxMutex		s_allThreadsMutex;
+	typedef std::set<CHTTPDownloadThread *> ThreadSet;
+	static ThreadSet s_allThreads;
+	static wxMutex s_allThreadsMutex;
 };
 
 #endif // HTTPDOWNLOAD_H

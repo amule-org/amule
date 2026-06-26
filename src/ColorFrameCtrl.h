@@ -26,33 +26,34 @@
 #ifndef COLORFRAMECTRL_H
 #define COLORFRAMECTRL_H
 
-#include <wx/brush.h>		// Needed for wxBrush
-#include <wx/control.h>		// Needed for wxControl
+#include <wx/brush.h>   // Needed for wxBrush
+#include <wx/control.h> // Needed for wxControl
 
-#include "Types.h"		// Needed for RECT
+#include "Types.h" // Needed for RECT
 
 class wxColour;
 
 /////////////////////////////////////////////////////////////////////////////
 // CColorFrameCtrl window
 
-class CColorFrameCtrl : public wxControl {
+class CColorFrameCtrl : public wxControl
+{
 
 public:
-	CColorFrameCtrl( wxWindow* parent, int id,int wid,int hei );
+	CColorFrameCtrl(wxWindow *parent, int id, int wid, int hei);
 	virtual ~CColorFrameCtrl();
 
-	void SetFrameBrushColour(const wxColour& colour);
-	void SetBackgroundBrushColour(const wxColour& colour);
-protected:
+	void SetFrameBrushColour(const wxColour &colour);
+	void SetBackgroundBrushColour(const wxColour &colour);
 
-	void OnPaint(wxPaintEvent& evt);
-	void OnSize(wxSizeEvent& evt);
+protected:
+	void OnPaint(wxPaintEvent &evt);
+	void OnSize(wxSizeEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 
 	RECT m_rectClient;
-	wxBrush m_brushBack,m_brushFrame;
+	wxBrush m_brushBack, m_brushFrame;
 };
 
 /////////////////////////////////////////////////////////////////////////////

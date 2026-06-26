@@ -45,95 +45,208 @@ there client on the eMule forum..
 
 #include <list>
 
-
 class CMemFile;
 struct SSearchTerm;
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 class CContact;
 class CKadUDPKey;
 class CKadClientSearcher;
 
-struct FetchNodeID_Struct {
+struct FetchNodeID_Struct
+{
 	uint32_t ip;
 	uint32_t tcpPort;
 	uint64_t expire;
-	CKadClientSearcher* requester;
+	CKadClientSearcher *requester;
 };
 
-#define DebugSendF(what, ip, port)	AddDebugLogLineN(logClientKadUDP, what + wxString(" to ") + KadIPPortToString(ip, port))
-#define DebugRecvF(what, ip, port)	AddDebugLogLineN(logClientKadUDP, what + wxString(" from ") + KadIPPortToString(ip, port))
+#define DebugSendF(what, ip, port) \
+	AddDebugLogLineN(logClientKadUDP, what + wxString(" to ") + KadIPPortToString(ip, port))
+#define DebugRecvF(what, ip, port) \
+	AddDebugLogLineN(logClientKadUDP, what + wxString(" from ") + KadIPPortToString(ip, port))
 
-#define DebugSend(what, ip, port)	DebugSendF(wxSTRINGIZE_T(what), ip, port)
-#define DebugRecv(what, ip, port)	DebugRecvF(wxSTRINGIZE_T(what), ip, port)
-
+#define DebugSend(what, ip, port) DebugSendF(wxSTRINGIZE_T(what), ip, port)
+#define DebugRecv(what, ip, port) DebugRecvF(wxSTRINGIZE_T(what), ip, port)
 
 class CKademliaUDPListener : public CPacketTracking
 {
 public:
 	~CKademliaUDPListener();
-	void Bootstrap(uint32_t ip, uint16_t port, uint8_t kadVersion = 0, const CUInt128* cryptTargetID = NULL);
-	void FirewalledCheck(uint32_t ip, uint16_t port, const CKadUDPKey& senderKey, uint8_t kadVersion);
-	void SendMyDetails(uint8_t opcode, uint32_t ip, uint16_t port, uint8_t kadVersion, const CKadUDPKey& targetKey, const CUInt128* cryptTargetID, bool requestAckPacket);
-	void SendNullPacket(uint8_t opcode, uint32_t ip, uint16_t port, const CKadUDPKey& targetKey, const CUInt128* cryptTargetID);
-	void SendPublishSourcePacket(const CContact& contact, const CUInt128& targetID, const CUInt128& contactID, const TagPtrList& tags);
-	virtual void ProcessPacket(const uint8_t* data, uint32_t lenData, uint32_t ip, uint16_t port, bool validReceiverKey, const CKadUDPKey& senderKey);
-	void SendPacket(const CMemFile& data, uint8_t opcode, uint32_t destinationHost, uint16_t destinationPort, const CKadUDPKey& targetKey, const CUInt128* cryptTargetID);
+	void Bootstrap(
+		uint32_t ip, uint16_t port, uint8_t kadVersion = 0, const CUInt128 *cryptTargetID = NULL);
+	void FirewalledCheck(uint32_t ip, uint16_t port, const CKadUDPKey &senderKey, uint8_t kadVersion);
+	void SendMyDetails(uint8_t opcode,
+		uint32_t ip,
+		uint16_t port,
+		uint8_t kadVersion,
+		const CKadUDPKey &targetKey,
+		const CUInt128 *cryptTargetID,
+		bool requestAckPacket);
+	void SendNullPacket(uint8_t opcode,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &targetKey,
+		const CUInt128 *cryptTargetID);
+	void SendPublishSourcePacket(const CContact &contact,
+		const CUInt128 &targetID,
+		const CUInt128 &contactID,
+		const TagPtrList &tags);
+	virtual void ProcessPacket(const uint8_t *data,
+		uint32_t lenData,
+		uint32_t ip,
+		uint16_t port,
+		bool validReceiverKey,
+		const CKadUDPKey &senderKey);
+	void SendPacket(const CMemFile &data,
+		uint8_t opcode,
+		uint32_t destinationHost,
+		uint16_t destinationPort,
+		const CKadUDPKey &targetKey,
+		const CUInt128 *cryptTargetID);
 
-//	bool FindNodeIDByIP(CKadClientSearcher *requester, uint32_t ip, uint16_t tcpPort, uint16_t udpPort);
+	//	bool FindNodeIDByIP(CKadClientSearcher *requester, uint32_t ip, uint16_t tcpPort, uint16_t
+	// udpPort);
 	void ExpireClientSearch(CKadClientSearcher *expireImmediately = NULL);
+
 private:
-	static SSearchTerm* CreateSearchExpressionTree(CMemFile& bio, int iLevel);
-	static void Free(SSearchTerm* pSearchTerms);
+	static SSearchTerm *CreateSearchExpressionTree(CMemFile &bio, int iLevel);
+	static void Free(SSearchTerm *pSearchTerms);
 
 	// Kad1.0
-	void SendLegacyChallenge(uint32_t ip, uint16_t port, const CUInt128& contactID);
+	void SendLegacyChallenge(uint32_t ip, uint16_t port, const CUInt128 &contactID);
 
-	void ProcessSearchResponse		(CMemFile &bio);
-	void ProcessSearchResponse		(const uint8_t* packetData, uint32_t lenPacket);
-	void ProcessPublishResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip);
-	void ProcessSearchNotesResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip);
-	void ProcessFirewalledRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void ProcessFirewalledResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, const CKadUDPKey& senderKey);
-	void ProcessFirewalledAckResponse	(uint32_t lenPacket);
-	void ProcessFindBuddyRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void ProcessFindBuddyResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void ProcessCallbackRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
+	void ProcessSearchResponse(CMemFile &bio);
+	void ProcessSearchResponse(const uint8_t *packetData, uint32_t lenPacket);
+	void ProcessPublishResponse(const uint8_t *packetData, uint32_t lenPacket, uint32_t ip);
+	void ProcessSearchNotesResponse(const uint8_t *packetData, uint32_t lenPacket, uint32_t ip);
+	void ProcessFirewalledRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void ProcessFirewalledResponse(
+		const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, const CKadUDPKey &senderKey);
+	void ProcessFirewalledAckResponse(uint32_t lenPacket);
+	void ProcessFindBuddyRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void ProcessFindBuddyResponse(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void ProcessCallbackRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
 
 	// Kad2.0
-	bool AddContact2(const uint8_t* data, uint32_t lenData, uint32_t ip, uint16_t& port, uint8_t* outVersion, const CKadUDPKey& key, bool& ipVerified, bool update, bool fromHelloReq, bool* outRequestsACK, CUInt128* outContactID);
+	bool AddContact2(const uint8_t *data,
+		uint32_t lenData,
+		uint32_t ip,
+		uint16_t &port,
+		uint8_t *outVersion,
+		const CKadUDPKey &key,
+		bool &ipVerified,
+		bool update,
+		bool fromHelloReq,
+		bool *outRequestsACK,
+		CUInt128 *outContactID);
 
-	void Process2BootstrapRequest		(uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2BootstrapResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey, bool validReceiverKey);
-	void Process2HelloRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey, bool validReceiverKey);
-	void Process2HelloResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey, bool validReceiverKey);
-	void Process2HelloResponseAck		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, bool validReceiverKey);
-	void ProcessKademlia2Request		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void ProcessKademlia2Response		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2SearchNotesRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2SearchKeyRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2SearchSourceRequest	(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2SearchResponse		(const uint8_t* packetData, uint32_t lenPacket, const CKadUDPKey& senderKey);
-	void Process2PublishNotesRequest	(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2PublishKeyRequest		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2PublishSourceRequest	(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2PublishResponse		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2Ping			(uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
-	void Process2Pong			(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip);
-	void Process2FirewallUDP		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip);
-	void ProcessFirewalled2Request		(const uint8_t* packetData, uint32_t lenPacket, uint32_t ip, uint16_t port, const CKadUDPKey& senderKey);
+	void Process2BootstrapRequest(uint32_t ip, uint16_t port, const CKadUDPKey &senderKey);
+	void Process2BootstrapResponse(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
+	void Process2HelloRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
+	void Process2HelloResponse(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
+	void Process2HelloResponseAck(
+		const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, bool validReceiverKey);
+	void ProcessKademlia2Request(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void ProcessKademlia2Response(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2SearchNotesRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2SearchKeyRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2SearchSourceRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2SearchResponse(
+		const uint8_t *packetData, uint32_t lenPacket, const CKadUDPKey &senderKey);
+	void Process2PublishNotesRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2PublishKeyRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2PublishSourceRequest(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2PublishResponse(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
+	void Process2Ping(uint32_t ip, uint16_t port, const CKadUDPKey &senderKey);
+	void Process2Pong(const uint8_t *packetData, uint32_t lenPacket, uint32_t ip);
+	void Process2FirewallUDP(const uint8_t *packetData, uint32_t lenPacket, uint32_t ip);
+	void ProcessFirewalled2Request(const uint8_t *packetData,
+		uint32_t lenPacket,
+		uint32_t ip,
+		uint16_t port,
+		const CKadUDPKey &senderKey);
 
 	// Debug
-//	void DebugClientOutput(const wxString& place, uint32_t kad_ip, uint32_t port, const uint8_t* data = NULL, int len = 0);
+	//	void DebugClientOutput(const wxString& place, uint32_t kad_ip, uint32_t port, const uint8_t*
+	// data = NULL, int len = 0);
 
-	typedef std::list<FetchNodeID_Struct>	FetchNodeIDList;
+	typedef std::list<FetchNodeID_Struct> FetchNodeIDList;
 	FetchNodeIDList m_fetchNodeIDRequests;
 };
 
-} // End namespace
+} // namespace Kademlia
 
 #endif //__KAD_UDP_LISTENER_H__
 // File_checked_for_headers

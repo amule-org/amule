@@ -43,8 +43,8 @@
 #include <cstdlib>
 #include <unistd.h>
 
-
-namespace {
+namespace
+{
 
 // AppImage's AppRun exports both env vars: APPIMAGE = the original .AppImage
 // path the user invoked; APPDIR = the squashfs mount point. We need both —
@@ -52,13 +52,13 @@ namespace {
 // at its real on-disk path, APPDIR to find the bundled .desktop and icons.
 wxString GetAppImagePath()
 {
-	const char* env = getenv("APPIMAGE");
+	const char *env = getenv("APPIMAGE");
 	return env ? wxString::FromUTF8(env) : wxString();
 }
 
 wxString GetAppDir()
 {
-	const char* env = getenv("APPDIR");
+	const char *env = getenv("APPDIR");
 	return env ? wxString::FromUTF8(env) : wxString();
 }
 
@@ -68,7 +68,7 @@ wxString GetAppDir()
 // any path arithmetic on top of it lands in the wrong tree.
 wxString GetUserDataHome()
 {
-	const char* xdg = getenv("XDG_DATA_HOME");
+	const char *xdg = getenv("XDG_DATA_HOME");
 	if (xdg && *xdg) {
 		return wxString::FromUTF8(xdg);
 	}
@@ -88,12 +88,12 @@ wxString GetUserIconsDir()
 // Read the bundled .desktop, swap Exec= and TryExec= to point at $APPIMAGE,
 // and write the result to ~/.local/share/applications/org.amule.aMule.desktop.
 // Returns true on success.
-bool InstallDesktopFile(const wxString& appimagePath, const wxString& sourceDesktop, const wxString& destDesktop)
+bool InstallDesktopFile(
+	const wxString &appimagePath, const wxString &sourceDesktop, const wxString &destDesktop)
 {
 	wxTextFile in(sourceDesktop);
 	if (!in.Open()) {
-		AddDebugLogLineC(logGeneral,
-			wxT("AppImageIntegration: failed to open ") + sourceDesktop);
+		AddDebugLogLineC(logGeneral, wxT("AppImageIntegration: failed to open ") + sourceDesktop);
 		return false;
 	}
 
@@ -102,8 +102,7 @@ bool InstallDesktopFile(const wxString& appimagePath, const wxString& sourceDesk
 		out.Open();
 		out.Clear();
 	} else if (!out.Create()) {
-		AddDebugLogLineC(logGeneral,
-			wxT("AppImageIntegration: failed to create ") + destDesktop);
+		AddDebugLogLineC(logGeneral, wxT("AppImageIntegration: failed to create ") + destDesktop);
 		return false;
 	}
 
@@ -129,12 +128,12 @@ bool InstallDesktopFile(const wxString& appimagePath, const wxString& sourceDesk
 // Walk $APPDIR/usr/share/icons/hicolor and mirror the org.amule.aMule.* PNG
 // files into ~/.local/share/icons/hicolor preserving the size subdirs.
 // Best-effort: any single copy failure is logged but doesn't abort the rest.
-bool InstallIcons(const wxString& appdir, const wxString& userIconsDir)
+bool InstallIcons(const wxString &appdir, const wxString &userIconsDir)
 {
 	const wxString sourceHicolor = appdir + wxT("/usr/share/icons/hicolor");
 	if (!wxDirExists(sourceHicolor)) {
-		AddDebugLogLineC(logGeneral,
-			wxT("AppImageIntegration: hicolor tree missing at ") + sourceHicolor);
+		AddDebugLogLineC(
+			logGeneral, wxT("AppImageIntegration: hicolor tree missing at ") + sourceHicolor);
 		return false;
 	}
 
@@ -148,7 +147,7 @@ bool InstallIcons(const wxString& appdir, const wxString& userIconsDir)
 
 	bool anyOk = false;
 	for (size_t i = 0; i < found.GetCount(); ++i) {
-		const wxString& src = found[i];
+		const wxString &src = found[i];
 		wxString relative = src.Mid(sourceHicolor.length());
 		wxString dest = userIconsDir + wxT("/hicolor") + relative;
 
@@ -172,7 +171,7 @@ bool InstallIcons(const wxString& appdir, const wxString& userIconsDir)
 // if they're missing — modern compositors inotify-watch the dirs and pick
 // up new files within seconds anyway. wxExecute with wxEXEC_SYNC still
 // returns instantly if the binary isn't found.
-void RefreshSystemCaches(const wxString& userAppsDir, const wxString& userIconsDir)
+void RefreshSystemCaches(const wxString &userAppsDir, const wxString &userIconsDir)
 {
 	wxExecute(wxT("update-desktop-database \"") + userAppsDir + wxT("\""),
 		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
@@ -187,8 +186,8 @@ bool DesktopFileAlreadyInstalled()
 
 } // anonymous namespace
 
-
-namespace AppImageIntegration {
+namespace AppImageIntegration
+{
 
 bool ShouldPrompt()
 {
@@ -211,7 +210,7 @@ bool ShouldPrompt()
 #endif
 }
 
-void PromptAndInstall(wxWindow* parent)
+void PromptAndInstall(wxWindow *parent)
 {
 	if (!ShouldPrompt()) {
 		return;
@@ -245,7 +244,9 @@ void PromptAndInstall(wxWindow* parent)
 	const wxString appimagePath = GetAppImagePath();
 	const wxString appdir = GetAppDir();
 	if (appdir.IsEmpty()) {
-		const wxString msg = _("Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way.");
+		const wxString msg =
+			_("Cannot install desktop integration: the APPDIR environment variable is not set. "
+			  "This usually means the AppImage was launched in a non-standard way.");
 		AddLogLineC(msg);
 		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
 		return;
@@ -255,9 +256,10 @@ void PromptAndInstall(wxWindow* parent)
 	const wxString userIconsDir = GetUserIconsDir();
 
 	if (!wxDirExists(userAppsDir) && !wxFileName::Mkdir(userAppsDir, 0755, wxPATH_MKDIR_FULL)) {
-		const wxString msg = wxString::Format(
-			_("Cannot install desktop integration: failed to create %s. Check that your home directory is writable."),
-			userAppsDir);
+		const wxString msg =
+			wxString::Format(_("Cannot install desktop integration: failed to create %s. Check "
+					   "that your home directory is writable."),
+				userAppsDir);
 		AddLogLineC(msg);
 		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
 		return;
@@ -267,8 +269,8 @@ void PromptAndInstall(wxWindow* parent)
 	const wxString destDesktop = userAppsDir + wxT("/org.amule.aMule.desktop");
 
 	if (!InstallDesktopFile(appimagePath, sourceDesktop, destDesktop)) {
-		const wxString msg = wxString::Format(
-			_("Cannot install desktop integration: failed to write %s. Check that your home directory is writable."),
+		const wxString msg = wxString::Format(_("Cannot install desktop integration: failed to write "
+							"%s. Check that your home directory is writable."),
 			destDesktop);
 		AddLogLineC(msg);
 		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
@@ -281,8 +283,11 @@ void PromptAndInstall(wxWindow* parent)
 	AddLogLineN(_("AppImage integration: aMule added to your application menu."));
 
 	wxMessageDialog success(parent,
-		_("aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n\n"
-		  "On some desktops, aMule may need to restart for the dock / taskbar icon to bind to the new launcher entry. Modern Wayland compositors (GNOME, KDE) pick this up live, but a restart is the safe fallback if the icon stays generic.\n\n"
+		_("aMule has been added to your application menu. You can now launch it from your "
+		  "applications list, and the launcher will run this same AppImage.\n\n"
+		  "On some desktops, aMule may need to restart for the dock / taskbar icon to bind to the "
+		  "new launcher entry. Modern Wayland compositors (GNOME, KDE) pick this up live, but a "
+		  "restart is the safe fallback if the icon stays generic.\n\n"
 		  "Restart aMule now?"),
 		_("aMule installed"),
 		wxYES_NO | wxNO_DEFAULT | wxICON_INFORMATION);
@@ -296,10 +301,10 @@ void PromptAndInstall(wxWindow* parent)
 	// once we fully exit. This gives aMule's normal shutdown path time to
 	// save partfiles, release the EC port, etc., before the new instance
 	// tries to grab the same locks.
-	const wxString relaunchCmd = wxString::Format(
-		wxT("sh -c 'while kill -0 %d 2>/dev/null; do sleep 0.2; done; exec \"%s\"'"),
-		static_cast<int>(getpid()),
-		appimagePath);
+	const wxString relaunchCmd =
+		wxString::Format(wxT("sh -c 'while kill -0 %d 2>/dev/null; do sleep 0.2; done; exec \"%s\"'"),
+			static_cast<int>(getpid()),
+			appimagePath);
 	wxExecute(relaunchCmd, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER);
 
 	// Trigger normal close on the main dialog — same path as red X / File>Quit.

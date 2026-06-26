@@ -29,36 +29,48 @@
 using namespace muleunit;
 using Kademlia::CUInt128;
 
-namespace muleunit {
-	// Needed for ASSERT_EQUALS with CUInt128
-	template<> wxString StringFrom<CUInt128>(const CUInt128& value) {
-		return value.ToHexString();
-	}
-
-	typedef uint8_t ByteArray[16];
-	// Needed for ASSERT_EQUALS with uint8_t[16]
-	template<> wxString StringFrom<ByteArray>(const ByteArray& value) {
-		wxString retval;
-		for (int i = 0; i < 16; i++) {
-			if (i) {
-				retval.Append(wxString::Format(" %02X", value[i]));
-			} else {
-				retval.Append(wxString::Format("%02X", value[i]));
-			}
-		}
-		return retval;
-	}
+namespace muleunit
+{
+// Needed for ASSERT_EQUALS with CUInt128
+template <> wxString StringFrom<CUInt128>(const CUInt128 &value)
+{
+	return value.ToHexString();
 }
+
+typedef uint8_t ByteArray[16];
+// Needed for ASSERT_EQUALS with uint8_t[16]
+template <> wxString StringFrom<ByteArray>(const ByteArray &value)
+{
+	wxString retval;
+	for (int i = 0; i < 16; i++) {
+		if (i) {
+			retval.Append(wxString::Format(" %02X", value[i]));
+		} else {
+			retval.Append(wxString::Format("%02X", value[i]));
+		}
+	}
+	return retval;
+}
+} // namespace muleunit
 
 // Put static test data into a namespace to avoid possible clash with muleunit namespace
-namespace TestData {
-	static uint8_t sequence[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
-	static uint8_t zero[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	static uint8_t one[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
-	static uint8_t minusOne[16] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-	static uint8_t uintValue[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x12, 0x34, 0x56, 0x78 };
-	static uint8_t randomValue[16] = { 0xef, 0xac, 0xd6, 0x21, 0x99, 0x1b, 0x05, 0xbe, 0xfb, 0x97, 0xdf, 0xdd, 0xab, 0x4b, 0x88, 0xe3 };
-}
+// clang-format off
+namespace TestData
+{
+static uint8_t sequence[16] = {
+	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf
+};
+static uint8_t zero[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static uint8_t one[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+static uint8_t minusOne[16] = {
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+};
+static uint8_t uintValue[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x12, 0x34, 0x56, 0x78 };
+static uint8_t randomValue[16] = {
+	0xef, 0xac, 0xd6, 0x21, 0x99, 0x1b, 0x05, 0xbe, 0xfb, 0x97, 0xdf, 0xdd, 0xab, 0x4b, 0x88, 0xe3
+};
+} // namespace TestData
+// clang-format on
 
 DECLARE_SIMPLE(CUInt128);
 
@@ -70,23 +82,16 @@ TEST_M(CUInt128, ConstructorAndToByteArray, "Reading/writing byte sequences")
 
 	CUInt128 test((uint8_t *)&TestData::sequence);
 	test.ToByteArray((uint8_t *)&result);
-	ASSERT_TRUE_M(TestData::sequence[0] == result[0] &&
-		      TestData::sequence[1] == result[1] &&
-		      TestData::sequence[2] == result[2] &&
-		      TestData::sequence[3] == result[3] &&
-		      TestData::sequence[4] == result[4] &&
-		      TestData::sequence[5] == result[5] &&
-		      TestData::sequence[6] == result[6] &&
-		      TestData::sequence[7] == result[7] &&
-		      TestData::sequence[8] == result[8] &&
-		      TestData::sequence[9] == result[9] &&
-		      TestData::sequence[10] == result[10] &&
-		      TestData::sequence[11] == result[11] &&
-		      TestData::sequence[12] == result[12] &&
-		      TestData::sequence[13] == result[13] &&
-		      TestData::sequence[14] == result[14] &&
-		      TestData::sequence[15] == result[15],
-		      wxString("Expected '") + StringFrom(TestData::sequence) + "' but got '" + StringFrom(result) + "'");
+	ASSERT_TRUE_M(TestData::sequence[0] == result[0] && TestData::sequence[1] == result[1] &&
+			      TestData::sequence[2] == result[2] && TestData::sequence[3] == result[3] &&
+			      TestData::sequence[4] == result[4] && TestData::sequence[5] == result[5] &&
+			      TestData::sequence[6] == result[6] && TestData::sequence[7] == result[7] &&
+			      TestData::sequence[8] == result[8] && TestData::sequence[9] == result[9] &&
+			      TestData::sequence[10] == result[10] && TestData::sequence[11] == result[11] &&
+			      TestData::sequence[12] == result[12] && TestData::sequence[13] == result[13] &&
+			      TestData::sequence[14] == result[14] && TestData::sequence[15] == result[15],
+		wxString("Expected '") + StringFrom(TestData::sequence) + "' but got '" + StringFrom(result) +
+			"'");
 }
 
 TEST(CUInt128, ToHexString)
@@ -98,8 +103,12 @@ TEST(CUInt128, ToHexString)
 TEST(CUInt128, ToBinaryString)
 {
 	CUInt128 test((uint8_t *)&TestData::sequence);
-	ASSERT_EQUALS("00000000000000010000001000000011000001000000010100000110000001110000100000001001000010100000101100001100000011010000111000001111", test.ToBinaryString());
-	ASSERT_EQUALS("10000001000000011000001000000010100000110000001110000100000001001000010100000101100001100000011010000111000001111", test.ToBinaryString(true));
+	ASSERT_EQUALS("00000000000000010000001000000011000001000000010100000110000001110000100000001001000010"
+		      "100000101100001100000011010000111000001111",
+		test.ToBinaryString());
+	ASSERT_EQUALS("10000001000000011000001000000010100000110000001110000100000001001000010100000101100001"
+		      "100000011010000111000001111",
+		test.ToBinaryString(true));
 	CUInt128 testZero((uint8_t *)&TestData::zero);
 	ASSERT_EQUALS("0", testZero.ToBinaryString(true));
 }
@@ -320,11 +329,13 @@ TEST_M(CUInt128, OperatorShiftLeftAssign, "operator<<=(unsigned)")
 
 TEST_M(CUInt128, OperatorAddAssignCUInt128, "operator+=(const CUInt128&)")
 {
+	// clang-format off
 	uint8_t d0[16] = { 0xfc, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
 	uint8_t r1[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xd, 0x30, 0x53, 0x76 };
 	uint8_t r2[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
 	uint8_t r3[16] = { 0xfc, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
 	uint8_t r4[16] = { 0xf8, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
+	// clang-format on
 	CUInt128 a((uint8_t *)&TestData::sequence);
 	CUInt128 d((uint8_t *)&d0);
 
@@ -344,8 +355,10 @@ TEST_M(CUInt128, OperatorAddAssignCUInt128, "operator+=(const CUInt128&)")
 
 TEST_M(CUInt128, OperatorAddAssignUint32, "operator+=(uint32_t)")
 {
+	// clang-format off
 	uint8_t r1[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xd, 0x30, 0x53, 0x76 };
 	uint8_t r2[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
+	// clang-format on
 	CUInt128 a((uint8_t *)&TestData::sequence);
 
 	a += 0x01234567u;
@@ -359,11 +372,13 @@ TEST_M(CUInt128, OperatorAddAssignUint32, "operator+=(uint32_t)")
 
 TEST_M(CUInt128, OperatorSubtractAssignCUInt128, "operator-=(const CUInt128&)")
 {
+	// clang-format off
 	uint8_t d0[16] = { 0xfc, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
 	uint8_t r1[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xd, 0x30, 0x53, 0x76 };
 	uint8_t r2[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
 	uint8_t r3[16] = { 0xfc, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
 	uint8_t r4[16] = { 0xf8, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
+	// clang-format on
 	CUInt128 a((uint8_t *)&r4);
 	CUInt128 d((uint8_t *)&d0);
 
@@ -383,8 +398,10 @@ TEST_M(CUInt128, OperatorSubtractAssignCUInt128, "operator-=(const CUInt128&)")
 
 TEST_M(CUInt128, OperatorSubtractAssignUint32, "operator-=(uint32_t)")
 {
+	// clang-format off
 	uint8_t r1[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xd, 0x30, 0x53, 0x76 };
 	uint8_t r2[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xc, 0xc, 0x30, 0x53, 0x76 };
+	// clang-format on
 	CUInt128 a((uint8_t *)&r2);
 
 	a -= 0xff000000u;
@@ -398,8 +415,12 @@ TEST_M(CUInt128, OperatorSubtractAssignUint32, "operator-=(uint32_t)")
 
 TEST_M(CUInt128, OperatorXorAssignCUInt128, "operator^=(const CUInt128&)")
 {
-	uint8_t xd[16] = { 0xff, 0x00, 0xee, 0x11, 0xdd, 0x22, 0xcc, 0x33, 0xbb, 0x44, 0xaa, 0x55, 0x99, 0x66, 0x88, 0x77 };
-	uint8_t xr[16] = { 0xff, 0x01, 0xec, 0x12, 0xd9, 0x27, 0xca, 0x34, 0xb3, 0x4d, 0xa0, 0x5e, 0x95, 0x6b, 0x86, 0x78 };
+	uint8_t xd[16] = {
+		0xff, 0x00, 0xee, 0x11, 0xdd, 0x22, 0xcc, 0x33, 0xbb, 0x44, 0xaa, 0x55, 0x99, 0x66, 0x88, 0x77
+	};
+	uint8_t xr[16] = {
+		0xff, 0x01, 0xec, 0x12, 0xd9, 0x27, 0xca, 0x34, 0xb3, 0x4d, 0xa0, 0x5e, 0x95, 0x6b, 0x86, 0x78
+	};
 	CUInt128 a((uint8_t *)&TestData::sequence);
 	CUInt128 x((uint8_t *)&xd);
 

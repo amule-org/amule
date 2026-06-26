@@ -26,14 +26,11 @@
 #ifndef DEADSOURCELIST_H
 #define DEADSOURCELIST_H
 
-
 #include <map>
 
 #include "Types.h"
 
-
 class CUpDownClient;
-
 
 /**
  * This class keeps track of "invalid" sources.
@@ -57,29 +54,26 @@ public:
 	 */
 	CDeadSourceList(bool isGlobal = false);
 
-
 	/**
 	 * Adds a client to the list of dead sources.
 	 */
-	void		AddDeadSource(const CUpDownClient* client);
+	void AddDeadSource(const CUpDownClient *client);
 
 	/**
 	 * Returns true if the client object is a dead source.
 	 */
-	bool		IsDeadSource(const CUpDownClient* client);
-
+	bool IsDeadSource(const CUpDownClient *client);
 
 	/**
 	 * Returns the number of sources.
 	 */
-	uint32		GetDeadSourcesCount() const;
+	uint32 GetDeadSourcesCount() const;
 
 private:
 	/**
 	 * Removes too old entries from the list.
 	 */
-	void		CleanUp();
-
+	void CleanUp();
 
 	/**
 	 * Record of dead source.
@@ -103,48 +97,44 @@ private:
 		 */
 		CDeadSource(uint32 ID, uint16 Port, uint32 ServerIP, uint16 KadPort);
 
-
 		/**
 		 * Equality operator.
 		 */
-		bool operator==(const CDeadSource& other) const;
-
+		bool operator==(const CDeadSource &other) const;
 
 		/**
 		 * Sets the timestamp for the time where this entry will expire.
 		 */
-		void	SetTimeout( uint64 t );
+		void SetTimeout(uint64 t);
 
 		/**
 		 * Returns the timestamp of this entry.
 		 */
-		uint64	GetTimeout() const;
+		uint64 GetTimeout() const;
 
 	private:
 		//! The ID/IP of the client.
-		uint32			m_ID;
+		uint32 m_ID;
 		//! The TCP port of the client
-		uint16			m_Port;
+		uint16 m_Port;
 		//! The Kad port of the client.
-		uint16			m_KadPort;
+		uint16 m_KadPort;
 		//! The IP of the server the client is connected to.
-		uint32			m_ServerIP;
+		uint32 m_ServerIP;
 		//! The timestamp of DOOM!
-		uint64			m_TimeStamp;
+		uint64 m_TimeStamp;
 	};
 
-
-	typedef std::multimap< uint32, CDeadSource > DeadSourceMap;
+	typedef std::multimap<uint32, CDeadSource> DeadSourceMap;
 	typedef DeadSourceMap::iterator DeadSourceIterator;
 	typedef std::pair<DeadSourceIterator, DeadSourceIterator> DeadSourcePair;
 	//! List of currently dead sources.
 	DeadSourceMap m_sources;
 
-
 	//! The timestamp of when the last cleanup was performed.
-	uint64	m_dwLastCleanUp;
+	uint64 m_dwLastCleanUp;
 	//! Specifies if the list is global or not.
-	bool	m_bGlobalList;
+	bool m_bGlobalList;
 };
 
 #endif

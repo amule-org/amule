@@ -26,8 +26,8 @@
 #ifndef CHATWND_H
 #define CHATWND_H
 
-#include <wx/panel.h>		// Needed for wxPanel
-#include <wx/notebook.h>		// Needed for wxNotebookEvent
+#include <wx/panel.h>    // Needed for wxPanel
+#include <wx/notebook.h> // Needed for wxNotebookEvent
 #include "Types.h"
 
 class CFriend;
@@ -38,61 +38,61 @@ class CMD4Hash;
 class CChatWnd : public wxPanel
 {
 public:
-	CChatWnd(wxWindow* pParent = NULL);
+	CChatWnd(wxWindow *pParent = NULL);
 	~CChatWnd() {};
 
-	void StartSession(CFriend* friend_client, bool setfocus = true);
+	void StartSession(CFriend *friend_client, bool setfocus = true);
 
-	void	UpdateFriend(CFriend* toupdate);
-	void	RemoveFriend(CFriend* todel);
+	void UpdateFriend(CFriend *toupdate);
+	void RemoveFriend(CFriend *todel);
 
-	void	ProcessMessage(uint64 sender, const wxString& message);
-	void	ConnectionResult(bool success, const wxString& message, uint64 id);
+	void ProcessMessage(uint64 sender, const wxString &message);
+	void ConnectionResult(bool success, const wxString &message, uint64 id);
 
-	void	SendMessage(const wxString& message, const wxString& client_name = "", uint64 to_id = 0);
+	void SendMessage(const wxString &message, const wxString &client_name = "", uint64 to_id = 0);
 
-	bool	IsIdValid(uint64 id);
-	void	ShowCaptchaResult(uint64 id, bool ok);
-	void	EndSession(uint64 id);
+	bool IsIdValid(uint64 id);
+	void ShowCaptchaResult(uint64 id, bool ok);
+	void EndSession(uint64 id);
 
 protected:
 	/**
 	 * Event-handler for displaying the chat-popup menu.
 	 */
-	void	OnNMRclickChatTab(wxMouseEvent& evt);
+	void OnNMRclickChatTab(wxMouseEvent &evt);
 	/**
 	 * Event-handler of the Close item on the popup-menu.
 	 */
-	void	OnPopupClose(wxCommandEvent& evt);
+	void OnPopupClose(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler of the CloseAll item on the popup-menu.
 	 */
-	void	OnPopupCloseAll(wxCommandEvent& evt);
+	void OnPopupCloseAll(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler of the CloseOthers item on the popup-menu.
 	 */
-	void	OnPopupCloseOthers(wxCommandEvent& evt);
+	void OnPopupCloseOthers(wxCommandEvent &evt);
 
 	/**
 	 * Event-handler of the AddFriend item on the popup-menu.
 	 */
-	void	OnAddFriend(wxCommandEvent& evt);
+	void OnAddFriend(wxCommandEvent &evt);
 
-	void	OnBnClickedCsend(wxCommandEvent& evt);
-	void	OnBnClickedCclose(wxCommandEvent& evt);
-	void	OnAllPagesClosed(wxNotebookEvent& evt);
-	void	CheckNewButtonsState();
+	void OnBnClickedCsend(wxCommandEvent &evt);
+	void OnBnClickedCclose(wxCommandEvent &evt);
+	void OnAllPagesClosed(wxNotebookEvent &evt);
+	void CheckNewButtonsState();
 
 	wxDECLARE_EVENT_TABLE();
 
 	//! Variable used to ensure that the popup menu doesn't get displayed twice.
-	wxMenu* m_menu;
+	wxMenu *m_menu;
 	//! Pointer to the control serving as the friend list
-	CFriendListCtrl* friendlistctrl;
+	CFriendListCtrl *friendlistctrl;
 	//! Pointer to the chat tabs.
-	CChatSelector*	chatselector;
+	CChatSelector *chatselector;
 };
 
 #endif

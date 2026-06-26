@@ -29,7 +29,6 @@
 #include <string> // Needed to use std::string
 #include "MuleDebug.h"
 
-
 /**
  * This class offers a typesafe alternative to wxString::Format.
  *
@@ -85,20 +84,23 @@
  */
 class CFormat
 {
-      private:
+private:
 	/**
 	 * Structure to hold a format specifier.
 	 */
-	struct FormatSpecifier {
-		unsigned	argIndex;	//!< Argument index. (Position, unless specified otherwise.)
-		wxChar		flag;		//!< The optional flag character.
-		unsigned	width;		//!< The optional field width.
-		signed		precision;	//!< The optional precision value.
+	struct FormatSpecifier
+	{
+		unsigned argIndex; //!< Argument index. (Position, unless specified otherwise.)
+		wxChar flag;       //!< The optional flag character.
+		unsigned width;    //!< The optional field width.
+		signed precision;  //!< The optional precision value.
 		// length is not stored
-		wxChar		type;		//!< The conversion type.
-		size_t		startPos;	//!< Position of the first character of the format-specifier in the format-string.
-		size_t		endPos;		//!< Position of the last character of the format-specifier in the format-string.
-		wxString	result;		//!< Result of the conversion. Initialized to the format-specifier.
+		wxChar type;     //!< The conversion type.
+		size_t startPos; //!< Position of the first character of the format-specifier in the
+				 //!< format-string.
+		size_t endPos;   //!< Position of the last character of the format-specifier in the
+				 //!< format-string.
+		wxString result; //!< Result of the conversion. Initialized to the format-specifier.
 	};
 
 public:
@@ -107,7 +109,7 @@ public:
 	 *
 	 * @param str The format-string to be used.
 	 */
-	CFormat(const wxChar* str)	{ Init(str); }
+	CFormat(const wxChar *str) { Init(str); }
 
 	/**
 	 * Constructor.
@@ -117,7 +119,7 @@ public:
 	 *
 	 * @param str The format-string to be used.
 	 */
-	CFormat(const wxString& str)	{ Init(str); }
+	CFormat(const wxString &str) { Init(str); }
 
 	/**
 	 * Feeds a value into the format-string.
@@ -131,18 +133,24 @@ public:
 	 * Specialize this member template to teach CFormat how to handle
 	 * other types.
 	 */
-	template<typename _Tp> CFormat& operator%(_Tp value);
+	template <typename _Tp> CFormat &operator%(_Tp value);
 
 	// Overload hack to map all pointer types to void*
-	template<typename _Tp> CFormat& operator%(_Tp* value)	{ return this->operator%<void*>(value); }
+	template <typename _Tp> CFormat &operator%(_Tp *value) { return this->operator% <void *>(value); }
 
 	// explicit overloads to avoid pass-by-value even in debug builds.
-	CFormat& operator%(const wxString& value)		{ return this->operator%<const wxString&>(value); }
-	CFormat& operator%(const CFormat& value)		{ return this->operator%<const wxString&>(value); }
-	CFormat& operator%(const std::string& value)	{ return this->operator%<const wxString&>(wxString(value.c_str(), wxConvUTF8)); }
+	CFormat &operator%(const wxString &value) { return this->operator% <const wxString &>(value); }
+	CFormat &operator%(const CFormat &value) { return this->operator% <const wxString &>(value); }
+	CFormat &operator%(const std::string &value)
+	{
+		return this->operator% <const wxString &>(wxString(value.c_str(), wxConvUTF8));
+	}
 	// Narrow string literals are passed directly (after dropping the wxT()
 	// wrapping sweep); dispatch to the wxString overload.
-	CFormat& operator%(const char* value)			{ return this->operator%<const wxString&>(wxString(value, wxConvUTF8)); }
+	CFormat &operator%(const char *value)
+	{
+		return this->operator% <const wxString &>(wxString(value, wxConvUTF8));
+	}
 
 	/**
 	 * Returns the resulting string.
@@ -152,7 +160,7 @@ public:
 	/**
 	 * Implicit conversion to wxString.
 	 */
-	operator wxString() const		{ return GetString(); };
+	operator wxString() const { return GetString(); };
 
 private:
 	/**
@@ -160,42 +168,76 @@ private:
 	 *
 	 * Initializes member variables and parses the given format string.
 	 */
-	void	Init(const wxString& str);
+	void Init(const wxString &str);
 
 	//! Type holding format specifiers.
-	typedef std::list<FormatSpecifier>	FormatList;
+	typedef std::list<FormatSpecifier> FormatList;
 
 	//! Retrieve the modifiers for the given format specifier.
 	wxString GetModifiers(FormatList::const_iterator it) const;
 
 	//! Do one argument conversion.
-	template<typename _Tp>
-	void	ProcessArgument(FormatList::iterator it, _Tp value);
+	template <typename _Tp> void ProcessArgument(FormatList::iterator it, _Tp value);
 
 	//! List of the valid format-specifiers found in the format string.
-	FormatList	m_formats;
+	FormatList m_formats;
 
 	//! Number of the previous argument.
-	unsigned	m_argIndex;
+	unsigned m_argIndex;
 
 	//! The format-string fed to the parser.
-	wxString	m_formatString;
+	wxString m_formatString;
 };
 
 // type mappings
-template<> inline CFormat& CFormat::operator%(char value)		{ return *this % (wxChar)value; }
-template<> inline CFormat& CFormat::operator%(signed char value)	{ return *this % (wxChar)value; }
-template<> inline CFormat& CFormat::operator%(unsigned char value)	{ return *this % (wxChar)value; }
-template<> inline CFormat& CFormat::operator%(bool value)		{ return *this % (signed long long)value; }
-template<> inline CFormat& CFormat::operator%(signed short value)	{ return *this % (signed long long)value; }
-template<> inline CFormat& CFormat::operator%(unsigned short value)	{ return *this % (unsigned long long)value; }
-template<> inline CFormat& CFormat::operator%(signed int value)		{ return *this % (signed long long)value; }
-template<> inline CFormat& CFormat::operator%(unsigned int value)	{ return *this % (unsigned long long)value; }
-template<> inline CFormat& CFormat::operator%(signed long value)	{ return *this % (signed long long)value; }
-template<> inline CFormat& CFormat::operator%(unsigned long value)	{ return *this % (unsigned long long)value; }
-template<> inline CFormat& CFormat::operator%(float value)		{ return *this % (double)value; }
-template<> inline CFormat& CFormat::operator%(const wxChar* value)	{ return this->operator%<const wxString&>(wxString(value)); }
-
+template <> inline CFormat &CFormat::operator%(char value)
+{
+	return *this % (wxChar)value;
+}
+template <> inline CFormat &CFormat::operator%(signed char value)
+{
+	return *this % (wxChar)value;
+}
+template <> inline CFormat &CFormat::operator%(unsigned char value)
+{
+	return *this % (wxChar)value;
+}
+template <> inline CFormat &CFormat::operator%(bool value)
+{
+	return *this % (signed long long)value;
+}
+template <> inline CFormat &CFormat::operator%(signed short value)
+{
+	return *this % (signed long long)value;
+}
+template <> inline CFormat &CFormat::operator%(unsigned short value)
+{
+	return *this % (unsigned long long)value;
+}
+template <> inline CFormat &CFormat::operator%(signed int value)
+{
+	return *this % (signed long long)value;
+}
+template <> inline CFormat &CFormat::operator%(unsigned int value)
+{
+	return *this % (unsigned long long)value;
+}
+template <> inline CFormat &CFormat::operator%(signed long value)
+{
+	return *this % (signed long long)value;
+}
+template <> inline CFormat &CFormat::operator%(unsigned long value)
+{
+	return *this % (unsigned long long)value;
+}
+template <> inline CFormat &CFormat::operator%(float value)
+{
+	return *this % (double)value;
+}
+template <> inline CFormat &CFormat::operator%(const wxChar *value)
+{
+	return this->operator% <const wxString &>(wxString(value));
+}
 
 #define WXLONGLONGFMTSPEC wxLongLongFmtSpec
 

@@ -23,51 +23,51 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "SafeFile.h"			// Interface declarations.
-#include "MD4Hash.h"			// Needed for CMD4Hash
-#include "kademlia/utils/UInt128.h"	// Needed for CUInt128
-#include "ScopedPtr.h"			// Needed for CScopedPtr and CScopedArray
+#include "SafeFile.h"               // Interface declarations.
+#include "MD4Hash.h"                // Needed for CMD4Hash
+#include "kademlia/utils/UInt128.h" // Needed for CUInt128
+#include "ScopedPtr.h"              // Needed for CScopedPtr and CScopedArray
 #include "Logger.h"
-#include <common/Format.h>		// Needed for CFormat
-#include <common/StringFunctions.h>	// Needed for EscapeForLog
-#include "CompilerSpecific.h"		// Needed for __FUNCTION__
+#include <common/Format.h>          // Needed for CFormat
+#include <common/StringFunctions.h> // Needed for EscapeForLog
+#include "CompilerSpecific.h"       // Needed for __FUNCTION__
 
-#include <cstring>              // For std::memcpy
+#include <cstring> // For std::memcpy
 
-#define CHECK_BOM(size, x) ((size >= 3)  && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
+#define CHECK_BOM(size, x) \
+	((size >= 3) && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
 
-const char BOMHeader[3] = { '\xEF', '\xBB', '\xBF'};
+const char BOMHeader[3] = { '\xEF', '\xBB', '\xBF' };
 
+CSafeIOException::CSafeIOException(const wxString &type, const wxString &desc)
+: CMuleException("SafeIO::" + type, desc)
+{
+}
 
-CSafeIOException::CSafeIOException(const wxString& type, const wxString& desc)
-	: CMuleException("SafeIO::" + type, desc) {}
+CEOFException::CEOFException(const wxString &desc)
+: CSafeIOException("EOF", desc)
+{
+}
 
+CIOFailureException::CIOFailureException(const wxString &desc)
+: CSafeIOException("IOFailure", desc)
+{
+}
 
-CEOFException::CEOFException(const wxString& desc)
-	: CSafeIOException("EOF", desc) {}
-
-
-CIOFailureException::CIOFailureException(const wxString& desc)
-	: CSafeIOException("IOFailure", desc) {}
-
-CIOFailureException::CIOFailureException(const wxString& type, const wxString& desc)
-	: CSafeIOException("IOFailure::" + type, desc) {}
-
+CIOFailureException::CIOFailureException(const wxString &type, const wxString &desc)
+: CSafeIOException("IOFailure::" + type, desc)
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CFileDataIO
 
-
-CFileDataIO::~CFileDataIO()
-{
-}
-
+CFileDataIO::~CFileDataIO() {}
 
 bool CFileDataIO::Eof() const
 {
 	return GetPosition() >= GetLength();
 }
-
 
 void CFileDataIO::Read(void *buffer, size_t count) const
 {
@@ -86,8 +86,7 @@ void CFileDataIO::Read(void *buffer, size_t count) const
 	}
 }
 
-
-void CFileDataIO::Write(const void* buffer, size_t count)
+void CFileDataIO::Write(const void *buffer, size_t count)
 {
 	MULE_VALIDATE_PARAMS(buffer, "Attempting to read from NULL buffer.");
 
@@ -96,25 +95,24 @@ void CFileDataIO::Write(const void* buffer, size_t count)
 	}
 }
 
-
 uint64 CFileDataIO::Seek(sint64 offset, wxSeekMode from) const
 {
 	sint64 newpos = 0;
 	switch (from) {
-		case wxFromStart:
-			newpos = offset;
-			break;
+	case wxFromStart:
+		newpos = offset;
+		break;
 
-		case wxFromCurrent:
-			newpos = GetPosition() + offset;
-			break;
+	case wxFromCurrent:
+		newpos = GetPosition() + offset;
+		break;
 
-		case wxFromEnd:
-			newpos = GetLength() + offset;
-			break;
+	case wxFromEnd:
+		newpos = GetLength() + offset;
+		break;
 
-		default:
-			MULE_VALIDATE_PARAMS(false, "Invalid seek-mode specified.");
+	default:
+		MULE_VALIDATE_PARAMS(false, "Invalid seek-mode specified.");
 	}
 
 	MULE_VALIDATE_PARAMS(newpos >= 0, "Position after seeking would be less than zero!");
@@ -126,7 +124,6 @@ uint64 CFileDataIO::Seek(sint64 offset, wxSeekMode from) const
 	return result;
 }
 
-
 uint8 CFileDataIO::ReadUInt8() const
 {
 	uint8 value = 0;
@@ -134,7 +131,6 @@ uint8 CFileDataIO::ReadUInt8() const
 
 	return value;
 }
-
 
 uint16 CFileDataIO::ReadUInt16() const
 {
@@ -144,7 +140,6 @@ uint16 CFileDataIO::ReadUInt16() const
 	return ENDIAN_SWAP_16(value);
 }
 
-
 uint32 CFileDataIO::ReadUInt32() const
 {
 	uint32 value = 0;
@@ -153,7 +148,6 @@ uint32 CFileDataIO::ReadUInt32() const
 	return ENDIAN_SWAP_32(value);
 }
 
-
 uint64 CFileDataIO::ReadUInt64() const
 {
 	uint64 value = 0;
@@ -161,7 +155,6 @@ uint64 CFileDataIO::ReadUInt64() const
 
 	return ENDIAN_SWAP_64(value);
 }
-
 
 // UInt128 values are stored a little weird way...
 // Four little-endian 32-bit numbers, stored in
@@ -177,7 +170,6 @@ CUInt128 CFileDataIO::ReadUInt128() const
 	return value;
 }
 
-
 CMD4Hash CFileDataIO::ReadHash() const
 {
 	CMD4Hash value;
@@ -185,7 +177,6 @@ CMD4Hash CFileDataIO::ReadHash() const
 
 	return value;
 }
-
 
 float CFileDataIO::ReadFloat() const
 {
@@ -198,8 +189,7 @@ float CFileDataIO::ReadFloat() const
 	return retVal;
 }
 
-
-unsigned char* CFileDataIO::ReadBsob(uint8* puSize) const
+unsigned char *CFileDataIO::ReadBsob(uint8 *puSize) const
 {
 	MULE_VALIDATE_PARAMS(puSize, "NULL pointer argument in ReadBsob");
 
@@ -211,16 +201,19 @@ unsigned char* CFileDataIO::ReadBsob(uint8* puSize) const
 	return bsob.release();
 }
 
-
 wxString CFileDataIO::ReadString(bool bOptUTF8, uint8 SizeLen, bool SafeRead) const
 {
 	uint32 readLen;
 	switch (SizeLen) {
-		case sizeof(uint16):	readLen = ReadUInt16();	break;
-		case sizeof(uint32):	readLen = ReadUInt32();	break;
+	case sizeof(uint16):
+		readLen = ReadUInt16();
+		break;
+	case sizeof(uint32):
+		readLen = ReadUInt32();
+		break;
 
-		default:
-			MULE_VALIDATE_PARAMS(false, "Invalid SizeLen value in ReadString");
+	default:
+		MULE_VALIDATE_PARAMS(false, "Invalid SizeLen value in ReadString");
 	}
 
 	if (SafeRead) {
@@ -230,7 +223,6 @@ wxString CFileDataIO::ReadString(bool bOptUTF8, uint8 SizeLen, bool SafeRead) co
 	return ReadOnlyString(bOptUTF8, readLen);
 }
 
-
 wxString CFileDataIO::ReadOnlyString(bool bOptUTF8, uint16 raw_len) const
 {
 	// We only need to set the the NULL terminator, since we know that
@@ -239,7 +231,7 @@ wxString CFileDataIO::ReadOnlyString(bool bOptUTF8, uint16 raw_len) const
 	std::vector<char> val_array(raw_len + 1);
 	val_array[raw_len] = 0;
 
-	char* val = &(val_array[0]);
+	char *val = &(val_array[0]);
 
 	Read(val, raw_len);
 	wxString str;
@@ -261,12 +253,10 @@ wxString CFileDataIO::ReadOnlyString(bool bOptUTF8, uint16 raw_len) const
 	return str;
 }
 
-
 void CFileDataIO::WriteUInt8(uint8 value)
 {
 	Write(&value, sizeof(uint8));
 }
-
 
 void CFileDataIO::WriteUInt16(uint16 value)
 {
@@ -275,14 +265,12 @@ void CFileDataIO::WriteUInt16(uint16 value)
 	Write(&value, sizeof(uint16));
 }
 
-
 void CFileDataIO::WriteUInt32(uint32 value)
 {
 	ENDIAN_SWAP_I_32(value);
 
 	Write(&value, sizeof(uint32));
 }
-
 
 void CFileDataIO::WriteUInt64(uint64 value)
 {
@@ -291,11 +279,10 @@ void CFileDataIO::WriteUInt64(uint64 value)
 	Write(&value, sizeof(uint64));
 }
 
-
 // UInt128 values are stored a little weird way...
 // Four little-endian 32-bit numbers, stored in
 // big-endian order
-void CFileDataIO::WriteUInt128(const Kademlia::CUInt128& value)
+void CFileDataIO::WriteUInt128(const Kademlia::CUInt128 &value)
 {
 	for (int i = 0; i < 4; i++) {
 		// Four 32bits chunks
@@ -303,12 +290,10 @@ void CFileDataIO::WriteUInt128(const Kademlia::CUInt128& value)
 	}
 }
 
-
-void CFileDataIO::WriteHash(const CMD4Hash& value)
+void CFileDataIO::WriteHash(const CMD4Hash &value)
 {
 	Write(value.GetHash(), MD4HASH_LENGTH);
 }
-
 
 void CFileDataIO::WriteFloat(float value)
 {
@@ -319,34 +304,31 @@ void CFileDataIO::WriteFloat(float value)
 	Write(&value, sizeof(float));
 }
 
-
-void CFileDataIO::WriteBsob(const unsigned char* value, uint8 size)
+void CFileDataIO::WriteBsob(const unsigned char *value, uint8 size)
 {
 	WriteUInt8(size);
 	Write(value, size);
 }
 
-
-void CFileDataIO::WriteString(const wxString& str, EUtf8Str eEncode, uint8 SizeLen)
+void CFileDataIO::WriteString(const wxString &str, EUtf8Str eEncode, uint8 SizeLen)
 {
 	switch (eEncode) {
-		case utf8strRaw:
-		case utf8strOptBOM: {
-			Unicode2CharBuf s(unicode2UTF8(str));
-			if (s.data()) {
-				WriteStringCore(s, eEncode, SizeLen);
-				break;
-			}
-		}
-		/* fall through */
-		default: {
-			// Non UTF-8 strings are saved as Latin-1
-			wxCharBuffer s1 = str.mb_str(wxConvISO8859_1);
-			WriteStringCore(s1, utf8strNone, SizeLen);
+	case utf8strRaw:
+	case utf8strOptBOM: {
+		Unicode2CharBuf s(unicode2UTF8(str));
+		if (s.data()) {
+			WriteStringCore(s, eEncode, SizeLen);
+			break;
 		}
 	}
+	/* fall through */
+	default: {
+		// Non UTF-8 strings are saved as Latin-1
+		wxCharBuffer s1 = str.mb_str(wxConvISO8859_1);
+		WriteStringCore(s1, utf8strNone, SizeLen);
+	}
+	}
 }
-
 
 void CFileDataIO::WriteStringCore(const char *s, EUtf8Str eEncode, uint8 SizeLen)
 {
@@ -359,37 +341,38 @@ void CFileDataIO::WriteStringCore(const char *s, EUtf8Str eEncode, uint8 SizeLen
 	}
 
 	switch (SizeLen) {
-		case 0:
-			// Don't write size.
-			break;
+	case 0:
+		// Don't write size.
+		break;
 
-		case sizeof(uint16):
-			// We must not allow too long strings to be written,
-			// as this would allow for a buggy clients to "poison"
-			// us, by sending ISO8859-1 strings that expand to a
-			// greater than 16b length when converted as UTF-8.
-			if (real_length > 0xFFFF) {
-				AddDebugLogLineN(logCFile,
-					CFormat(wxT("WriteStringCore: oversized string (%u bytes) truncated to 0xFFFF"))
-						% real_length);
+	case sizeof(uint16):
+		// We must not allow too long strings to be written,
+		// as this would allow for a buggy clients to "poison"
+		// us, by sending ISO8859-1 strings that expand to a
+		// greater than 16b length when converted as UTF-8.
+		if (real_length > 0xFFFF) {
+			AddDebugLogLineN(logCFile,
+				CFormat(wxT(
+					"WriteStringCore: oversized string (%u bytes) truncated to 0xFFFF")) %
+					real_length);
 
-				real_length = std::min<uint32>(real_length, 0xFFFF);
-				if (eEncode == utf8strOptBOM) {
-					sLength = real_length - 3;
-				} else {
-					sLength = real_length;
-				}
+			real_length = std::min<uint32>(real_length, 0xFFFF);
+			if (eEncode == utf8strOptBOM) {
+				sLength = real_length - 3;
+			} else {
+				sLength = real_length;
 			}
+		}
 
-			WriteUInt16(real_length);
-			break;
+		WriteUInt16(real_length);
+		break;
 
-		case sizeof(uint32):
-			WriteUInt32(real_length);
-			break;
+	case sizeof(uint32):
+		WriteUInt32(real_length);
+		break;
 
-		default:
-			MULE_VALIDATE_PARAMS(false, "Invalid length for string-length field.");
+	default:
+		MULE_VALIDATE_PARAMS(false, "Invalid length for string-length field.");
 	}
 
 	// The BOM header must be written even if the string is empty.
@@ -404,7 +387,6 @@ void CFileDataIO::WriteStringCore(const char *s, EUtf8Str eEncode, uint8 SizeLen
 	}
 }
 
-
 CTag *CFileDataIO::ReadTag(bool bOptACP) const
 {
 	CTag *retVal = NULL;
@@ -414,81 +396,80 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 		type = ReadUInt8();
 		name = ReadString(false);
 
-		switch (type)
-		{
-			// NOTE: This tag data type is accepted and stored only to give us the possibility to upgrade
-			// the net in some months.
-			//
-			// And still.. it doesn't work this way without breaking backward compatibility. To properly
-			// do this without messing up the network the following would have to be done:
-			//	 -	those tag types have to be ignored by any client, otherwise those tags would also be sent (and
-			//		that's really the problem)
-			//
-			//	 -	ignoring means, each client has to read and right throw away those tags, so those tags get
-			//		get never stored in any tag list which might be sent by that client to some other client.
-			//
-			//	 -	all calling functions have to be changed to deal with the 'nr. of tags' attribute (which was
-			//		already parsed) correctly.. just ignoring those tags here is not enough, any taglists have to
-			//		be built with the knowledge that the 'nr. of tags' attribute may get decreased during the tag
-			//		reading..
-			//
-			// If those new tags would just be stored and sent to remote clients, any malicious or just bugged
-			// client could let send a lot of nodes "corrupted" packets...
-			//
-			case TAGTYPE_HASH16:
-			{
-				retVal = new CTagHash(name, ReadHash());
-				break;
-			}
-
-			case TAGTYPE_STRING:
-				retVal = new CTagString(name, ReadString(bOptACP));
-				break;
-
-			case TAGTYPE_UINT64:
-				retVal = new CTagInt64(name, ReadUInt64());
-				break;
-
-			case TAGTYPE_UINT32:
-				retVal = new CTagInt32(name, ReadUInt32());
-				break;
-
-			case TAGTYPE_UINT16:
-				retVal = new CTagInt16(name, ReadUInt16());
-				break;
-
-			case TAGTYPE_UINT8:
-				retVal = new CTagInt8(name, ReadUInt8());
-				break;
-
-			case TAGTYPE_FLOAT32:
-				retVal = new CTagFloat(name, ReadFloat());
-				break;
-
-			// NOTE: This tag data type is accepted and stored only to give us the possibility to upgrade
-			// the net in some months.
-			//
-			// And still.. it doesn't work this way without breaking backward compatibility
-			case TAGTYPE_BSOB:
-			{
-				uint8 size = 0;
-				CScopedArray<unsigned char> value(ReadBsob(&size));
-
-				retVal = new CTagBsob(name, value.get(), size);
-				break;
-			}
-
-			default:
-				// name comes from arbitrary network bytes -- escape control
-				// chars before logging so a malformed / malicious tag can't
-				// inject newlines and corrupt downstream log collectors (#266).
-				throw wxString(CFormat("Invalid Kad tag type; type=0x%02x name=%s\n") % type % EscapeForLog(name));
+		switch (type) {
+		// NOTE: This tag data type is accepted and stored only to give us the possibility to upgrade
+		// the net in some months.
+		//
+		// And still.. it doesn't work this way without breaking backward compatibility. To properly
+		// do this without messing up the network the following would have to be done:
+		//	 -	those tag types have to be ignored by any client, otherwise those tags would
+		// also be sent (and 		that's really the problem)
+		//
+		//	 -	ignoring means, each client has to read and right throw away those tags, so
+		// those tags get 		get never stored in any tag list which might be sent by that
+		// client to some other client.
+		//
+		//	 -	all calling functions have to be changed to deal with the 'nr. of tags'
+		// attribute (which was 		already parsed) correctly.. just ignoring those tags
+		// here is not enough, any taglists have to 		be built with the knowledge that the
+		// 'nr. of tags' attribute may get decreased during the tag 		reading..
+		//
+		// If those new tags would just be stored and sent to remote clients, any malicious or just
+		// bugged client could let send a lot of nodes "corrupted" packets...
+		//
+		case TAGTYPE_HASH16: {
+			retVal = new CTagHash(name, ReadHash());
+			break;
 		}
-	} catch(const CMuleException& e) {
+
+		case TAGTYPE_STRING:
+			retVal = new CTagString(name, ReadString(bOptACP));
+			break;
+
+		case TAGTYPE_UINT64:
+			retVal = new CTagInt64(name, ReadUInt64());
+			break;
+
+		case TAGTYPE_UINT32:
+			retVal = new CTagInt32(name, ReadUInt32());
+			break;
+
+		case TAGTYPE_UINT16:
+			retVal = new CTagInt16(name, ReadUInt16());
+			break;
+
+		case TAGTYPE_UINT8:
+			retVal = new CTagInt8(name, ReadUInt8());
+			break;
+
+		case TAGTYPE_FLOAT32:
+			retVal = new CTagFloat(name, ReadFloat());
+			break;
+
+		// NOTE: This tag data type is accepted and stored only to give us the possibility to upgrade
+		// the net in some months.
+		//
+		// And still.. it doesn't work this way without breaking backward compatibility
+		case TAGTYPE_BSOB: {
+			uint8 size = 0;
+			CScopedArray<unsigned char> value(ReadBsob(&size));
+
+			retVal = new CTagBsob(name, value.get(), size);
+			break;
+		}
+
+		default:
+			// name comes from arbitrary network bytes -- escape control
+			// chars before logging so a malformed / malicious tag can't
+			// inject newlines and corrupt downstream log collectors (#266).
+			throw wxString(CFormat("Invalid Kad tag type; type=0x%02x name=%s\n") % type %
+				       EscapeForLog(name));
+		}
+	} catch (const CMuleException &e) {
 		AddLogLineN(e.what());
 		delete retVal;
 		throw;
-	} catch(const wxString& e) {
+	} catch (const wxString &e) {
 		AddLogLineN(e);
 		throw;
 	}
@@ -496,72 +477,68 @@ CTag *CFileDataIO::ReadTag(bool bOptACP) const
 	return retVal;
 }
 
-
-void CFileDataIO::ReadTagPtrList(TagPtrList* taglist, bool bOptACP) const
+void CFileDataIO::ReadTagPtrList(TagPtrList *taglist, bool bOptACP) const
 {
 	MULE_VALIDATE_PARAMS(taglist, "NULL pointer argument in ReadTagPtrList");
 
 	uint32 count = ReadUInt8();
-	for (uint32 i = 0; i < count; i++)
-	{
-		CTag* tag = ReadTag(bOptACP);
+	for (uint32 i = 0; i < count; i++) {
+		CTag *tag = ReadTag(bOptACP);
 		taglist->push_back(tag);
 	}
 }
 
-
-void CFileDataIO::WriteTag(const CTag& tag)
+void CFileDataIO::WriteTag(const CTag &tag)
 {
-	try
-	{
+	try {
 		WriteUInt8(tag.GetType());
 
 		if (!tag.GetName().IsEmpty()) {
-			WriteString(tag.GetName(),utf8strNone);
+			WriteString(tag.GetName(), utf8strNone);
 		} else {
 			WriteUInt16(1);
 			WriteUInt8(tag.GetNameID());
 		}
 
-		switch (tag.GetType())
-		{
-			case TAGTYPE_HASH16:
-				// Do NOT use this to transfer any tags for at least half a year!!
-				WriteHash(CMD4Hash(tag.GetHash()));
-				break;
-			case TAGTYPE_STRING:
-				WriteString(tag.GetStr(), utf8strRaw); // Always UTF8
-				break;
-			case TAGTYPE_UINT64:
-				WriteUInt64(tag.GetInt());
-				break;
-			case TAGTYPE_UINT32:
-				WriteUInt32(tag.GetInt());
-				break;
-			case TAGTYPE_FLOAT32:
-				WriteFloat(tag.GetFloat());
-				break;
-			case TAGTYPE_BSOB:
-				WriteBsob(tag.GetBsob(), tag.GetBsobSize());
-				break;
-			case TAGTYPE_UINT16:
-				WriteUInt16(tag.GetInt());
-				break;
-			case TAGTYPE_UINT8:
-				WriteUInt8(tag.GetInt());
-				break;
-			case TAGTYPE_BLOB:
-				// NOTE: This will break backward compatibility with met files for eMule versions prior to 0.44a
-				// and any aMule prior to SVN 26/02/2005
-				WriteUInt32(tag.GetBlobSize());
-				Write(tag.GetBlob(), tag.GetBlobSize());
-				break;
-			default:
-				//TODO: Support more tag types
-				// With the if above, this should NEVER happen.
-				AddLogLineNS(CFormat("CFileDataIO::WriteTag: Unknown tag: type=0x%02X") % tag.GetType());
-				wxFAIL;
-				break;
+		switch (tag.GetType()) {
+		case TAGTYPE_HASH16:
+			// Do NOT use this to transfer any tags for at least half a year!!
+			WriteHash(CMD4Hash(tag.GetHash()));
+			break;
+		case TAGTYPE_STRING:
+			WriteString(tag.GetStr(), utf8strRaw); // Always UTF8
+			break;
+		case TAGTYPE_UINT64:
+			WriteUInt64(tag.GetInt());
+			break;
+		case TAGTYPE_UINT32:
+			WriteUInt32(tag.GetInt());
+			break;
+		case TAGTYPE_FLOAT32:
+			WriteFloat(tag.GetFloat());
+			break;
+		case TAGTYPE_BSOB:
+			WriteBsob(tag.GetBsob(), tag.GetBsobSize());
+			break;
+		case TAGTYPE_UINT16:
+			WriteUInt16(tag.GetInt());
+			break;
+		case TAGTYPE_UINT8:
+			WriteUInt8(tag.GetInt());
+			break;
+		case TAGTYPE_BLOB:
+			// NOTE: This will break backward compatibility with met files for eMule versions
+			// prior to 0.44a and any aMule prior to SVN 26/02/2005
+			WriteUInt32(tag.GetBlobSize());
+			Write(tag.GetBlob(), tag.GetBlobSize());
+			break;
+		default:
+			// TODO: Support more tag types
+			//  With the if above, this should NEVER happen.
+			AddLogLineNS(
+				CFormat("CFileDataIO::WriteTag: Unknown tag: type=0x%02X") % tag.GetType());
+			wxFAIL;
+			break;
 		}
 	} catch (...) {
 		AddLogLineNS("Exception in CDataIO:WriteTag");
@@ -569,11 +546,10 @@ void CFileDataIO::WriteTag(const CTag& tag)
 	}
 }
 
-
-void CFileDataIO::WriteTagPtrList(const TagPtrList& tagList)
+void CFileDataIO::WriteTagPtrList(const TagPtrList &tagList)
 {
 	uint32 count = tagList.size();
-	wxASSERT( count <= 0xFF );
+	wxASSERT(count <= 0xFF);
 
 	WriteUInt8(count);
 	TagPtrList::const_iterator it;
@@ -582,7 +558,8 @@ void CFileDataIO::WriteTagPtrList(const TagPtrList& tagList)
 	}
 }
 
-uint64 CFileDataIO::GetIntTagValue() const {
+uint64 CFileDataIO::GetIntTagValue() const
+{
 
 	uint8 type = ReadUInt8();
 
@@ -590,24 +567,24 @@ uint64 CFileDataIO::GetIntTagValue() const {
 
 	switch (type) {
 
-		case TAGTYPE_UINT64:
-			return ReadUInt64();
-			break;
+	case TAGTYPE_UINT64:
+		return ReadUInt64();
+		break;
 
-		case TAGTYPE_UINT32:
-			return ReadUInt32();
-			break;
+	case TAGTYPE_UINT32:
+		return ReadUInt32();
+		break;
 
-		case TAGTYPE_UINT16:
-			return ReadUInt16();
-			break;
+	case TAGTYPE_UINT16:
+		return ReadUInt16();
+		break;
 
-		case TAGTYPE_UINT8:
-			return ReadUInt8();
-			break;
+	case TAGTYPE_UINT8:
+		return ReadUInt8();
+		break;
 
-		default:
-			throw wxString("Wrong tag type reading int tag");
+	default:
+		throw wxString("Wrong tag type reading int tag");
 	}
 }
 // File_checked_for_headers

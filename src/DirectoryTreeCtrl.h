@@ -32,29 +32,28 @@
 
 #include <common/Path.h>
 
-
 class CDirectoryTreeCtrl : public wxTreeCtrl
 {
 public:
 	typedef std::vector<CPath> PathList;
 
-	CDirectoryTreeCtrl(wxWindow* parent, int id, const wxPoint& pos, wxSize siz, int flags);
+	CDirectoryTreeCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags);
 	virtual ~CDirectoryTreeCtrl();
 
 	// get all explicitly-shared directories (single right-click is now
 	// "recursive", double-click is "this dir only"). Returns only the
 	// directories the user has individually marked.
-	void GetSharedDirectories(PathList* list);
+	void GetSharedDirectories(PathList *list);
 	// set list of explicitly-shared directories
-	void SetSharedDirectories(PathList* list);
+	void SetSharedDirectories(PathList *list);
 
 	// Recursive-share intents: roots the user wants to share together
 	// with every descendant. The actual descendant enumeration is now
 	// deferred to the PrefsUnifiedDlg apply path (formerly happened
 	// synchronously inside OnRButtonDown and froze the UI on large
 	// trees like /home).
-	void GetRecursiveSharedDirectories(PathList* list);
-	void SetRecursiveSharedDirectories(PathList* list);
+	void GetRecursiveSharedDirectories(PathList *list);
+	void SetRecursiveSharedDirectories(PathList *list);
 
 	// User made any changes to list?
 	bool HasChanged;
@@ -64,17 +63,17 @@ public:
 
 private:
 	// add a new item
-	void AddChildItem(wxTreeItemId hBranch, const CPath& item);
+	void AddChildItem(wxTreeItemId hBranch, const CPath &item);
 	// add subdirectory items
-	void AddSubdirectories(wxTreeItemId hBranch, const CPath& path);
+	void AddSubdirectories(wxTreeItemId hBranch, const CPath &path);
 	// returns true if folder has at least one subdirectory
-	bool HasSubdirectories(const CPath& path);
+	bool HasSubdirectories(const CPath &path);
 	// return the full path of an item (like C:\abc\somewhere\inheaven\)
 	CPath GetFullPath(wxTreeItemId hItem);
 	// check status of an item has changed
 	void CheckChanged(wxTreeItemId hItem, bool bChecked, bool recursed);
 	// returns true if a subdirectory of strDir is shared
-	bool HasSharedSubdirectory(const CPath& path);
+	bool HasSharedSubdirectory(const CPath &path);
 	// set shared directories according to list
 	void UpdateSharedDirectories();
 	// when sharing a directory, make all parent directories red
@@ -83,28 +82,28 @@ private:
 	void SetHasSharedSubdirectory(wxTreeItemId hItem, bool add);
 
 	// share list access
-	bool IsShared(const CPath& path);
-	void AddShare(const CPath& path);
-	void DelShare(const CPath& path);
+	bool IsShared(const CPath &path);
+	void AddShare(const CPath &path);
+	void DelShare(const CPath &path);
 	void MarkChildren(wxTreeItemId hChild, bool mark, bool recursed);
 
 	// Recursive-share intent helpers. These aren't `const` because
 	// GetKey() may resolve cwd for relative paths via wxGetCwd().
-	bool IsRecursiveShare(const CPath& path);
-	bool IsInsideRecursiveShare(const CPath& path);
-	void AddRecursiveShare(const CPath& path);
-	void DelRecursiveShare(const CPath& path);
+	bool IsRecursiveShare(const CPath &path);
+	bool IsInsideRecursiveShare(const CPath &path);
+	void AddRecursiveShare(const CPath &path);
+	void DelRecursiveShare(const CPath &path);
 	// Sweep all m_lstShared entries that are descendants of `root`.
 	// Used by OnRButtonDown's unshare path so that a recursive share
 	// whose flat descendants survived from a previous Prefs session
 	// (loaded from shareddir.dat) is fully removed by right-clicking
 	// the root again — without forcing the tree to expand every
 	// subdir in the UI just to find them.
-	void DelSharesUnder(const CPath& root);
+	void DelSharesUnder(const CPath &root);
 
-	void OnItemExpanding(wxTreeEvent& evt);
-	void OnRButtonDown(wxTreeEvent& evt);
-	void OnItemActivated(wxTreeEvent& evt);
+	void OnItemExpanding(wxTreeEvent &evt);
+	void OnRButtonDown(wxTreeEvent &evt);
+	void OnItemActivated(wxTreeEvent &evt);
 
 	typedef std::pair<wxString, CPath> SharedMapItem;
 	typedef std::map<wxString, CPath> SharedMap;
@@ -114,7 +113,7 @@ private:
 	// consistent across the two maps.
 	SharedMap m_lstSharedRecursive;
 	// get map key from path (normalized path)
-	wxString GetKey(const CPath& path);
+	wxString GetKey(const CPath &path);
 
 	bool m_IsInit;
 	// Are we running the remote GUI, and from a remote location?

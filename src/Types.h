@@ -27,30 +27,30 @@
 #define TYPES_H
 
 #ifndef USE_STD_STRING
-#include <wx/string.h>		// Needed for wxString and ""
+#include <wx/string.h> // Needed for wxString and ""
 #endif
 
-#include <list>			// Needed for std::list
-#include <vector>		// Needed for std::vector
+#include <list>   // Needed for std::list
+#include <vector> // Needed for std::vector
 
 #ifndef _MSC_VER
-	#ifndef __STDC_FORMAT_MACROS
-		#define __STDC_FORMAT_MACROS
-	#endif
-	#include <inttypes.h>
-	#define LONGLONG(x) x##ll
-	#define ULONGLONG(x) x##llu
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+#include <inttypes.h>
+#define LONGLONG(x) x##ll
+#define ULONGLONG(x) x##llu
 #else
-	typedef unsigned __int8 uint8_t;
-	typedef unsigned __int16 uint16_t;
-	typedef unsigned __int32 uint32_t;
-	typedef unsigned __int64 uint64_t;
-	typedef signed __int8 int8_t;
-	typedef signed __int16 int16_t;
-	typedef signed __int32 int32_t;
-	typedef signed __int64 int64_t;
-	#define LONGLONG(x) x##i64
-	#define ULONGLONG(x) x##ui64
+typedef unsigned __int8 uint8_t;
+typedef unsigned __int16 uint16_t;
+typedef unsigned __int32 uint32_t;
+typedef unsigned __int64 uint64_t;
+typedef signed __int8 int8_t;
+typedef signed __int16 int16_t;
+typedef signed __int32 int32_t;
+typedef signed __int64 int64_t;
+#define LONGLONG(x) x##i64
+#define ULONGLONG(x) x##ui64
 #endif
 
 // These are _MSC_VER defines used in eMule. They should
@@ -94,19 +94,18 @@
  * Backwards compatibility with emule.
  * Note that the int* types are indeed unsigned.
  */
-typedef uint8_t		int8;
-typedef uint8_t		uint8;
-typedef uint16_t	int16;
-typedef uint16_t	uint16;
-typedef uint32_t	int32;
-typedef uint32_t	uint32;
-typedef uint64_t	int64;
-typedef uint64_t	uint64;
-typedef int8_t		sint8;
-typedef int16_t		sint16;
-typedef int32_t		sint32;
-typedef int64_t		sint64;
-
+typedef uint8_t int8;
+typedef uint8_t uint8;
+typedef uint16_t int16;
+typedef uint16_t uint16;
+typedef uint32_t int32;
+typedef uint32_t uint32;
+typedef uint64_t int64;
+typedef uint64_t uint64;
+typedef int8_t sint8;
+typedef int16_t sint16;
+typedef int32_t sint32;
+typedef int64_t sint64;
 
 class CKnownFile;
 
@@ -115,15 +114,15 @@ class CKnownFile;
 #ifndef USE_STD_STRING
 typedef std::list<wxString> CStringList;
 #endif
-typedef std::list<CKnownFile*> CKnownFilePtrList;
+typedef std::list<CKnownFile *> CKnownFilePtrList;
 //@}
 
-typedef std::vector<uint8>  ArrayOfUInts8;
+typedef std::vector<uint8> ArrayOfUInts8;
 typedef std::vector<uint16> ArrayOfUInts16;
 typedef std::vector<uint32> ArrayOfUInts32;
 typedef std::vector<uint64> ArrayOfUInts64;
 
-typedef std::list<uint32>	ListOfUInts32;
+typedef std::list<uint32> ListOfUInts32;
 
 /* This is the Evil Void String For Returning On Const References From Hell */
 // IT MEANS I WANT TO USE IT EVERYWHERE. DO NOT MOVE IT.
@@ -136,38 +135,37 @@ static const wxString EmptyString = "";
 #endif
 
 #ifndef __cplusplus
-	typedef int bool;
+typedef int bool;
 #endif
 
-
-#ifdef _WIN32			// Used in non-wx-apps too (ed2k), so don't use __WINDOWS__ here !
-	#ifndef NOMINMAX
-		#define NOMINMAX
-	#endif
-	#include <windows.h> // Needed for RECT  // Do_not_auto_remove
-	// Windows compilers don't have these constants
-	#ifndef W_OK
-		enum
-		{
-			F_OK = 0,   // test for existence
-			X_OK = 1,   //          execute permission
-			W_OK = 2,   //          write
-			R_OK = 4    //          read
-		};
-	#endif // W_OK
-	#ifdef __WINDOWS__
-		#include <wx/msw/winundef.h>	// Do_not_auto_remove
-	#endif
-	#undef GetUserName
-#else // _WIN32
-	typedef struct sRECT {
-	  uint32 left;
-	  uint32 top;
-	  uint32 right;
-	  uint32 bottom;
-	} RECT;
+#ifdef _WIN32 // Used in non-wx-apps too (ed2k), so don't use __WINDOWS__ here !
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h> // Needed for RECT  // Do_not_auto_remove
+// Windows compilers don't have these constants
+#ifndef W_OK
+enum
+{
+	F_OK = 0, // test for existence
+	X_OK = 1, //          execute permission
+	W_OK = 2, //          write
+	R_OK = 4  //          read
+};
+#endif // W_OK
+#ifdef __WINDOWS__
+#include <wx/msw/winundef.h> // Do_not_auto_remove
+#endif
+#undef GetUserName
+#else  // _WIN32
+typedef struct sRECT
+{
+	uint32 left;
+	uint32 top;
+	uint32 right;
+	uint32 bottom;
+} RECT;
 #endif /* _WIN32 */
-
 
 #endif /* TYPES_H */
 // File_checked_for_headers

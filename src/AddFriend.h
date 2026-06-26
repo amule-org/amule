@@ -26,20 +26,20 @@
 #ifndef ADDFRIEND_H
 #define ADDFRIEND_H
 
-#include <wx/dialog.h>		// Needed for wxDialog
+#include <wx/dialog.h> // Needed for wxDialog
 
 class CAddFriend : public wxDialog
 {
 public:
-	CAddFriend(wxWindow* parent);
+	CAddFriend(wxWindow *parent);
 	~CAddFriend() {};
 
 protected:
 	wxDECLARE_EVENT_TABLE();
 
 private:
-	void OnAddBtn(wxCommandEvent& evt);
-	void OnCloseBtn(wxCommandEvent& evt);
+	void OnAddBtn(wxCommandEvent &evt);
+	void OnCloseBtn(wxCommandEvent &evt);
 };
 
 #endif

@@ -23,29 +23,29 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "config.h"
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
-#include <stdint.h>		// uintptr_t for pointer arithmetic in the
-				// SIGBUS handler -- `unsigned long` is 4 bytes on
-				// LLP64 and would silently truncate pointers.
+#include <stdint.h> // uintptr_t for pointer arithmetic in the
+		    // SIGBUS handler -- `unsigned long` is 4 bytes on
+		    // LLP64 and would silently truncate pointers.
 #endif
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
 
-#include "FileArea.h"		// Interface declarations.
-#include "FileAutoClose.h"	// Needed for CFileAutoClose
+#include "FileArea.h"      // Interface declarations.
+#include "FileAutoClose.h" // Needed for CFileAutoClose
 
 #ifndef ENABLE_MMAP
-#	define ENABLE_MMAP	0
+#define ENABLE_MMAP 0
 #endif
 
-#if ENABLE_MMAP && defined(HAVE_MMAP) && defined(HAVE_SYSCONF) && (defined(HAVE__SC_PAGESIZE) || defined(HAVE__SC_PAGE_SIZE))
-#	define USE_MMAP
+#if ENABLE_MMAP && defined(HAVE_MMAP) && defined(HAVE_SYSCONF) && \
+	(defined(HAVE__SC_PAGESIZE) || defined(HAVE__SC_PAGE_SIZE))
+#define USE_MMAP
 #endif
 
 #ifdef USE_MMAP
@@ -66,8 +66,9 @@ class CFileAreaSigHandler
 {
 public:
 	static void Init() {};
-	static void Add(CFileArea&) {};
-	static void Remove(CFileArea&) {};
+	static void Add(CFileArea &) {};
+	static void Remove(CFileArea &) {};
+
 private:
 	CFileAreaSigHandler() {};
 };
@@ -78,8 +79,9 @@ class CFileAreaSigHandler
 {
 public:
 	static void Init();
-	static void Add(CFileArea& area);
-	static void Remove(CFileArea& area);
+	static void Add(CFileArea &area);
+	static void Remove(CFileArea &area);
+
 private:
 	CFileAreaSigHandler() {};
 	static wxMutex mutex;
@@ -89,9 +91,9 @@ private:
 	static void Handler(int sig, siginfo_t *info, void *ctx);
 };
 
-wxMutex          CFileAreaSigHandler::mutex;
-CFileArea *      CFileAreaSigHandler::first;
-bool             CFileAreaSigHandler::initialized = false;
+wxMutex CFileAreaSigHandler::mutex;
+CFileArea *CFileAreaSigHandler::first;
+bool CFileAreaSigHandler::initialized = false;
 struct sigaction CFileAreaSigHandler::old_segv;
 struct sigaction CFileAreaSigHandler::old_bus;
 
@@ -111,7 +113,8 @@ void CFileAreaSigHandler::Handler(int sig, siginfo_t *info, void *ctx)
 		wxMutexLocker lock(mutex);
 		cur = first;
 		while (cur) {
-			if (cur->m_mmap_buffer && info->si_addr >= cur->m_mmap_buffer && info->si_addr < cur->m_mmap_buffer + cur->m_length)
+			if (cur->m_mmap_buffer && info->si_addr >= cur->m_mmap_buffer &&
+				info->si_addr < cur->m_mmap_buffer + cur->m_length)
 				break;
 			cur = cur->m_next;
 		}
@@ -120,13 +123,18 @@ void CFileAreaSigHandler::Handler(int sig, siginfo_t *info, void *ctx)
 	// mark error if found
 	if (cur && gs_pageSize > 0) {
 		cur->m_error = true;
-		char *start_addr = ((char *) info->si_addr) - (((uintptr_t) info->si_addr) % gs_pageSize);
-		if (mmap(start_addr, gs_pageSize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) != MAP_FAILED)
+		char *start_addr = ((char *)info->si_addr) - (((uintptr_t)info->si_addr) % gs_pageSize);
+		if (mmap(start_addr,
+			    gs_pageSize,
+			    PROT_READ | PROT_WRITE,
+			    MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+			    -1,
+			    0) != MAP_FAILED)
 			return;
 	}
 
 	// call old handler
-	struct sigaction* sa = (sig == SIGSEGV) ? &old_segv : &old_bus;
+	struct sigaction *sa = (sig == SIGSEGV) ? &old_segv : &old_bus;
 	if (sa->sa_flags & SA_SIGINFO)
 		sa->sa_sigaction(sig, info, ctx);
 	else if (sa->sa_handler == SIG_DFL || sa->sa_handler == SIG_IGN)
@@ -151,7 +159,7 @@ void CFileAreaSigHandler::Init()
 	memset(&sa, 0, sizeof(sa));
 	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = Handler;
-	sa.sa_flags = SA_NODEFER|SA_SIGINFO;
+	sa.sa_flags = SA_NODEFER | SA_SIGINFO;
 	if (sigaction(SIGSEGV, &sa, &old_segv))
 		return;
 	if (sigaction(SIGBUS, &sa, &old_bus)) {
@@ -161,14 +169,14 @@ void CFileAreaSigHandler::Init()
 	initialized = true;
 }
 
-void CFileAreaSigHandler::Add(CFileArea& area)
+void CFileAreaSigHandler::Add(CFileArea &area)
 {
 	wxMutexLocker lock(mutex);
 	area.m_next = first;
 	first = &area;
 }
 
-void CFileAreaSigHandler::Remove(CFileArea& area)
+void CFileAreaSigHandler::Remove(CFileArea &area)
 {
 	wxMutexLocker lock(mutex);
 	CFileArea **cur = &first;
@@ -184,11 +192,15 @@ void CFileAreaSigHandler::Remove(CFileArea& area)
 #endif
 
 CFileArea::CFileArea()
-	: m_buffer(NULL), m_mmap_buffer(NULL), m_length(0), m_next(NULL), m_file(NULL), m_error(false)
+: m_buffer(NULL)
+, m_mmap_buffer(NULL)
+, m_length(0)
+, m_next(NULL)
+, m_file(NULL)
+, m_error(false)
 {
 	CFileAreaSigHandler::Init();
 }
-
 
 CFileArea::~CFileArea()
 {
@@ -198,14 +210,12 @@ CFileArea::~CFileArea()
 
 bool CFileArea::Close()
 {
-	if (m_buffer != NULL && m_mmap_buffer == NULL)
-	{
+	if (m_buffer != NULL && m_mmap_buffer == NULL) {
 		delete[] m_buffer;
 		m_buffer = NULL;
 	}
 #ifdef USE_MMAP
-	if (m_mmap_buffer)
-	{
+	if (m_mmap_buffer) {
 		munmap(m_mmap_buffer, m_length);
 		// remove from list
 		CFileAreaSigHandler::Remove(*this);
@@ -220,20 +230,19 @@ bool CFileArea::Close()
 	return true;
 }
 
-
-void CFileArea::ReadAt(CFileAutoClose& file, uint64 offset, size_t count)
+void CFileArea::ReadAt(CFileAutoClose &file, uint64 offset, size_t count)
 {
 	Close();
 
 #ifdef USE_MMAP
 	uint64 offEnd = offset + count;
 	if (gs_pageSize > 0 && offEnd < 0x100000000ull) {
-		uint64 offStart = offset & (~((uint64)gs_pageSize-1));
+		uint64 offStart = offset & (~((uint64)gs_pageSize - 1));
 		m_length = offEnd - offStart;
 		void *p = mmap(NULL, m_length, PROT_READ, MAP_SHARED, file.fd(), offStart);
 		if (p != MAP_FAILED) {
 			m_file = &file;
-			m_mmap_buffer = (uint8_t*) p;
+			m_mmap_buffer = (uint8_t *)p;
 			m_buffer = m_mmap_buffer + (offset - offStart);
 
 			// add to list to catch errors correctly
@@ -248,19 +257,18 @@ void CFileArea::ReadAt(CFileAutoClose& file, uint64 offset, size_t count)
 }
 
 #ifdef USE_MMAP
-void CFileArea::StartWriteAt(CFileAutoClose& file, uint64 offset, size_t count)
+void CFileArea::StartWriteAt(CFileAutoClose &file, uint64 offset, size_t count)
 {
 	Close();
 
 	uint64 offEnd = offset + count;
 	if (file.GetLength() >= offEnd && gs_pageSize > 0 && offEnd < 0x100000000ull) {
-		uint64 offStart = offset & (~((uint64)gs_pageSize-1));
+		uint64 offStart = offset & (~((uint64)gs_pageSize - 1));
 		m_length = offEnd - offStart;
-		void *p = mmap(NULL, m_length, PROT_READ|PROT_WRITE, MAP_SHARED, file.fd(), offStart);
-		if (p != MAP_FAILED)
-		{
+		void *p = mmap(NULL, m_length, PROT_READ | PROT_WRITE, MAP_SHARED, file.fd(), offStart);
+		if (p != MAP_FAILED) {
 			m_file = &file;
-			m_mmap_buffer = (uint8_t*) p;
+			m_mmap_buffer = (uint8_t *)p;
 			m_buffer = m_mmap_buffer + (offset - offStart);
 
 			// add to list to catch errors correctly
@@ -272,15 +280,14 @@ void CFileArea::StartWriteAt(CFileAutoClose& file, uint64 offset, size_t count)
 	m_buffer = new uint8_t[count];
 }
 #else
-void CFileArea::StartWriteAt(CFileAutoClose&, uint64, size_t count)
+void CFileArea::StartWriteAt(CFileAutoClose &, uint64, size_t count)
 {
 	Close();
 	m_buffer = new uint8_t[count];
 }
 #endif
 
-
-bool CFileArea::FlushAt(CFileAutoClose& file, uint64 offset, size_t count)
+bool CFileArea::FlushAt(CFileAutoClose &file, uint64 offset, size_t count)
 {
 	if (!m_buffer)
 		return false;
@@ -305,4 +312,3 @@ void CFileArea::CheckError()
 	if (err)
 		throw CIOFailureException("Read error, failed to read from file.");
 }
-

@@ -25,12 +25,11 @@
 #ifndef MULEUDPSOCKET_H
 #define MULEUDPSOCKET_H
 
+#include "Types.h"            // Needed for uint16 and uint32
+#include "ThrottledSocket.h"  // Needed for ThrottledControlSocket
+#include "amuleIPV4Address.h" // Needed for amuleIPV4Address
 
-#include "Types.h"				// Needed for uint16 and uint32
-#include "ThrottledSocket.h"	// Needed for ThrottledControlSocket
-#include "amuleIPV4Address.h"	// Needed for amuleIPV4Address
-
-#include <wx/thread.h>		// Needed for wxMutex
+#include <wx/thread.h> // Needed for wxMutex
 
 class CEncryptedDatagramSocket;
 class CProxyData;
@@ -62,13 +61,15 @@ public:
 	 * @param address The address where the socket will listen.
 	 * @param ProxyData ProxyData associated with the socket.
 	 */
-	CMuleUDPSocket(const wxString& name, int id, const amuleIPV4Address& address, const CProxyData* ProxyData = NULL);
+	CMuleUDPSocket(const wxString &name,
+		int id,
+		const amuleIPV4Address &address,
+		const CProxyData *ProxyData = NULL);
 
 	/**
 	 * Destructor, safely closes the socket if opened.
 	 */
 	virtual ~CMuleUDPSocket();
-
 
 	/**
 	 * Opens the socket.
@@ -85,7 +86,6 @@ public:
 	 * already closed socket is an illegal operation.
 	 */
 	void Close();
-
 
 	/** This function is called by aMule when the socket may send. */
 	virtual void OnSend(int errorCode);
@@ -110,15 +110,20 @@ public:
 	 *
 	 * Note that CMuleUDPSocket takes ownership of the packet.
 	 */
-	void	SendPacket(CPacket* packet, uint32 IP, uint16 port, bool bEncrypt, const uint8* pachTargetClientHashORKadID, bool bKad, uint32 nReceiverVerifyKey);
-
+	void SendPacket(CPacket *packet,
+		uint32 IP,
+		uint16 port,
+		bool bEncrypt,
+		const uint8 *pachTargetClientHashORKadID,
+		bool bKad,
+		uint32 nReceiverVerifyKey);
 
 	/**
 	 * Returns true if the socket is Ok, false otherwise.
 	 *
 	 * @see wxSocketBase::Ok
 	 */
-	bool	Ok();
+	bool Ok();
 
 	/** Read buffer size */
 	static const unsigned UDP_BUFFER_SIZE = 16384;
@@ -131,11 +136,10 @@ protected:
 	 * @param buffer The data that has been received.
 	 * @param length The length of the data buffer.
 	 */
-	virtual void OnPacketReceived(uint32 ip, uint16 port, uint8_t* buffer, size_t length) = 0;
-
+	virtual void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length) = 0;
 
 	/** See ThrottledControlSocket::SendControlData */
-	SocketSentBytes  SendControlData(uint32 maxNumberOfBytesToSend, uint32 minFragSize);
+	SocketSentBytes SendControlData(uint32 maxNumberOfBytesToSend, uint32 minFragSize);
 
 private:
 	/**
@@ -146,8 +150,7 @@ private:
 	 * @param ip The target ip address.
 	 * @param port The target port.
 	 */
-	bool	SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port);
-
+	bool SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port);
 
 	/**
 	 * Creates a new socket.
@@ -155,49 +158,48 @@ private:
 	 * Calling this function when a socket already exists
 	 * is an illegal operation.
 	 */
-	void	CreateSocket();
+	void CreateSocket();
 
 	/**
 	 * Destroys the current socket, if any.
 	 */
-	void	DestroySocket();
-
+	void DestroySocket();
 
 	//! Specifies if the last write attempt would cause the socket to block.
-	bool					m_busy;
+	bool m_busy;
 	//! The name of the socket, used for debugging messages.
-	wxString				m_name;
+	wxString m_name;
 	//! The socket-ID, used for event-handling.
-	int						m_id;
+	int m_id;
 	//! The address at which the socket is currently bound.
-	amuleIPV4Address		m_addr;
+	amuleIPV4Address m_addr;
 	//! Proxy settings used by the socket ...
-	const CProxyData*		m_proxy;
+	const CProxyData *m_proxy;
 	//! Mutex needed due to the use of the UBT.
-	wxMutex					m_mutex;
+	wxMutex m_mutex;
 	//! The currently opened socket, if any.
-	CEncryptedDatagramSocket*	m_socket;
+	CEncryptedDatagramSocket *m_socket;
 
 	//! Storage struct used for queueing packets.
 	struct UDPPack
 	{
 		//! The packet, which at this point is owned by CMuleUDPSocket.
-		CPacket*	packet;
+		CPacket *packet;
 		//! The timestamp of when the packet was queued.
-		uint64		time;
+		uint64 time;
 		//! Target IP address.
-		uint32		IP;
+		uint32 IP;
 		//! Target port.
-		uint16		port;
+		uint16 port;
 		//! If the packet is encrypted.
-		bool	bEncrypt;
+		bool bEncrypt;
 		//! Is it a kad packet?
-		bool	bKad;
+		bool bKad;
 		// The verification key for RC4 encryption.
 		uint32 nReceiverVerifyKey;
 		// Client hash or kad ID.
 		uint8 pachTargetClientHashORKadID[16];
-	} ;
+	};
 
 	//! The queue of packets waiting to be sent.
 	std::list<UDPPack> m_queue;

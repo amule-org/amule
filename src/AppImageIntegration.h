@@ -27,8 +27,8 @@
 
 #include <wx/window.h>
 
-
-namespace AppImageIntegration {
+namespace AppImageIntegration
+{
 
 // Whether we're running from inside an AppImage AND the user hasn't yet
 // installed launcher integration AND hasn't opted out via prefs. When true,
@@ -45,7 +45,7 @@ bool ShouldPrompt();
 // On No: nothing this run; the prompt fires again on next launch.
 // "Don't ask again" checked: sets the prefs flag so we never prompt again,
 // regardless of which button was clicked.
-void PromptAndInstall(wxWindow* parent);
+void PromptAndInstall(wxWindow *parent);
 
 } // namespace AppImageIntegration
 

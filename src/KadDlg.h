@@ -26,7 +26,7 @@
 #ifndef KADDLG_H
 #define KADDLG_H
 
-#include <wx/panel.h>		// Needed for wxPanel
+#include <wx/panel.h> // Needed for wxPanel
 
 class COScopeCtrl;
 class wxListEvent;
@@ -34,28 +34,27 @@ class wxCommandEvent;
 class wxMouseEvent;
 typedef struct UpdateInfo GraphUpdateInfo;
 
-
 class CKadDlg : public wxPanel
 {
 public:
-	CKadDlg(wxWindow* pParent);
+	CKadDlg(wxWindow *pParent);
 	~CKadDlg() {};
 
 	void Init();
 	void SetUpdatePeriod(int step);
 	void SetGraphColors();
-	void UpdateGraph(const GraphUpdateInfo& update);
+	void UpdateGraph(const GraphUpdateInfo &update);
 	void UpdateNodeCount(unsigned nodes);
 
 private:
-	COScopeCtrl* m_kad_scope;
+	COScopeCtrl *m_kad_scope;
 
 	// Event handlers
-	void		OnBnClickedBootstrapClient(wxCommandEvent& evt);
-	void		OnBnClickedBootstrapKnown(wxCommandEvent& evt);
-	void		OnBnClickedDisconnectKad(wxCommandEvent& evt);
-	void		OnBnClickedUpdateNodeList(wxCommandEvent& evt);
-	void		OnFieldsChange(wxCommandEvent& evt);
+	void OnBnClickedBootstrapClient(wxCommandEvent &evt);
+	void OnBnClickedBootstrapKnown(wxCommandEvent &evt);
+	void OnBnClickedDisconnectKad(wxCommandEvent &evt);
+	void OnBnClickedUpdateNodeList(wxCommandEvent &evt);
+	void OnFieldsChange(wxCommandEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 };

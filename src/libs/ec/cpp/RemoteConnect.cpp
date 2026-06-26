@@ -25,44 +25,49 @@
 
 #include "RemoteConnect.h"
 
-#include <common/SmartPtr.h>	// Needed for CSmartPtr
+#include <common/SmartPtr.h> // Needed for CSmartPtr
 #include <common/MD5Sum.h>
 #include <common/Format.h>
 #include "../../../amuleIPV4Address.h"
-#include "../../../NetworkFunctions.h"	// IsLoopbackIP / IsLanIP / IsLinkLocalIP / StringIPtoUint32
+#include "../../../NetworkFunctions.h" // IsLoopbackIP / IsLanIP / IsLinkLocalIP / StringIPtoUint32
 
 #include <wx/intl.h>
-#include <common/StringFunctions.h>	// unicode2char for stderr message
+#include <common/StringFunctions.h> // unicode2char for stderr message
 #ifdef __WINDOWS__
-	#include <process.h>		// _exit
+#include <process.h> // _exit
 #else
-	#include <unistd.h>		// _exit
+#include <unistd.h> // _exit
 #endif
 
 wxDEFINE_EVENT(wxEVT_EC_CONNECTION, wxEvent);
-CECLoginPacket::CECLoginPacket(const wxString& client, const wxString& version,
-							   bool canZLIB, bool canUTF8numbers, bool canNotify,
-							   bool preferNoZlib)
-:
-CECPacket(EC_OP_AUTH_REQ)
+CECLoginPacket::CECLoginPacket(const wxString &client,
+	const wxString &version,
+	bool canZLIB,
+	bool canUTF8numbers,
+	bool canNotify,
+	bool preferNoZlib)
+: CECPacket(EC_OP_AUTH_REQ)
 {
 	AddTag(CECTag(EC_TAG_CLIENT_NAME, client));
 	AddTag(CECTag(EC_TAG_CLIENT_VERSION, version));
 	AddTag(CECTag(EC_TAG_PROTOCOL_VERSION, (uint64)EC_CURRENT_PROTOCOL_VERSION));
 
-	#ifdef EC_VERSION_ID
+#ifdef EC_VERSION_ID
 	CMD4Hash versionhash;
 	wxCHECK2(versionhash.Decode(EC_VERSION_ID), /* Do nothing. */);
 	AddTag(CECTag(EC_TAG_VERSION_ID, versionhash));
-	#endif
+#endif
 
 	// Send capabilities:
 	// support ZLIB compression
-	if (canZLIB)		AddTag(CECEmptyTag(EC_TAG_CAN_ZLIB));
+	if (canZLIB)
+		AddTag(CECEmptyTag(EC_TAG_CAN_ZLIB));
 	// support encoding of integers as UTF-8
-	if (canUTF8numbers) AddTag(CECEmptyTag(EC_TAG_CAN_UTF8_NUMBERS));
+	if (canUTF8numbers)
+		AddTag(CECEmptyTag(EC_TAG_CAN_UTF8_NUMBERS));
 	// client accepts push messages
-	if (canNotify)		AddTag(CECEmptyTag(EC_TAG_CAN_NOTIFY));
+	if (canNotify)
+		AddTag(CECEmptyTag(EC_TAG_CAN_NOTIFY));
 	// client can decode the sentinel-extended children-count wire format
 	// from CECTag::WriteChildren (#199). Always advertised by new
 	// clients; old servers ignore the unknown tag.
@@ -82,12 +87,12 @@ CECPacket(EC_OP_AUTH_REQ)
 	// peer-IP inspection would misclassify e.g. WireGuard tunnel
 	// endpoints as "local" when the underlying transit is anything but.
 	// Old servers ignore the unknown tag and fall back to always-zlib.
-	if (preferNoZlib)	AddTag(CECEmptyTag(EC_TAG_PREFER_NO_ZLIB));
+	if (preferNoZlib)
+		AddTag(CECEmptyTag(EC_TAG_PREFER_NO_ZLIB));
 }
 
-CECAuthPacket::CECAuthPacket(const wxString& pass)
-:
-CECPacket(EC_OP_AUTH_PASSWD)
+CECAuthPacket::CECAuthPacket(const wxString &pass)
+: CECPacket(EC_OP_AUTH_PASSWD)
 {
 	CMD4Hash passhash;
 	wxCHECK2(passhash.Decode(pass), /* Do nothing. */);
@@ -99,25 +104,26 @@ CECPacket(EC_OP_AUTH_PASSWD)
  *
  */
 
-CRemoteConnect::CRemoteConnect(wxEvtHandler* evt_handler)
-:
-CECMuleSocket(evt_handler != 0),
-m_ec_state(EC_INIT),
-m_req_fifo(),
+CRemoteConnect::CRemoteConnect(wxEvtHandler *evt_handler)
+: CECMuleSocket(evt_handler != 0)
+, m_ec_state(EC_INIT)
+, m_req_fifo()
+,
 // Give application some indication about how fast requests are served
 // When request fifo contain more that certain number of entries, it may
 // indicate that either core or network is slowing us down
-m_req_count(0),
+m_req_count(0)
+,
 // This is not mean to be absolute limit, because we can't drop requests
 // out of calling context; it is just signal to application to slow down
-m_req_fifo_thr(20),
-m_notifier(evt_handler),
-m_canZLIB(false),
-m_canUTF8numbers(false),
-m_canNotify(false),
-m_preferNoZlib(false),
-m_forceZlib(false),
-m_serverPartialUpdate(false)
+m_req_fifo_thr(20)
+, m_notifier(evt_handler)
+, m_canZLIB(false)
+, m_canUTF8numbers(false)
+, m_canNotify(false)
+, m_preferNoZlib(false)
+, m_forceZlib(false)
+, m_serverPartialUpdate(false)
 {
 }
 
@@ -134,9 +140,12 @@ void CRemoteConnect::SetCapabilities(bool canZLIB, bool canUTF8numbers, bool can
 	m_canNotify = canNotify;
 }
 
-bool CRemoteConnect::ConnectToCore(const wxString &host, int port,
-	const wxString &WXUNUSED(login), const wxString &pass,
-	const wxString& client, const wxString& version)
+bool CRemoteConnect::ConnectToCore(const wxString &host,
+	int port,
+	const wxString &WXUNUSED(login),
+	const wxString &pass,
+	const wxString &client,
+	const wxString &version)
 {
 	m_connectionPassword = pass;
 
@@ -175,16 +184,16 @@ bool CRemoteConnect::ConnectToCore(const wxString &host, int port,
 	if (m_canZLIB && !m_forceZlib) {
 		uint32 resolved_ip = 0;
 		if (StringIPtoUint32(addr.IPAddress(), resolved_ip)) {
-			m_preferNoZlib = IsLoopbackIP(resolved_ip)
-				|| IsLanIP(resolved_ip)
-				|| IsLinkLocalIP(resolved_ip);
+			m_preferNoZlib = IsLoopbackIP(resolved_ip) || IsLanIP(resolved_ip) ||
+					 IsLinkLocalIP(resolved_ip);
 		}
 	}
 
 	if (ConnectSocket(addr)) {
 		// We get here only in case of synchronous connect.
 		// Otherwise we continue in OnConnect.
-		CECLoginPacket login_req(m_client, m_version, m_canZLIB, m_canUTF8numbers, m_canNotify, m_preferNoZlib);
+		CECLoginPacket login_req(
+			m_client, m_version, m_canZLIB, m_canUTF8numbers, m_canNotify, m_preferNoZlib);
 
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
@@ -212,11 +221,10 @@ bool CRemoteConnect::IsConnectedToLocalHost()
 	return addr.Hostname(GetPeer()) ? addr.IsLocalHost() : false;
 }
 
-void CRemoteConnect::WriteDoneAndQueueEmpty()
-{
-}
+void CRemoteConnect::WriteDoneAndQueueEmpty() {}
 
-void CRemoteConnect::OnConnect() {
+void CRemoteConnect::OnConnect()
+{
 	// Apply the EC-tuned TCP keepalive timings now that the underlying
 	// asio socket is fully connected on the async path (sync clients
 	// got it inside CECMuleSocket::InternalConnect already; this is
@@ -226,7 +234,8 @@ void CRemoteConnect::OnConnect() {
 
 	if (m_notifier) {
 		wxASSERT(m_ec_state == EC_CONNECT_SENT);
-		CECLoginPacket login_req(m_client, m_version, m_canZLIB, m_canUTF8numbers, m_canNotify, m_preferNoZlib);
+		CECLoginPacket login_req(
+			m_client, m_version, m_canZLIB, m_canUTF8numbers, m_canNotify, m_preferNoZlib);
 		CECSocket::SendPacket(&login_req);
 
 		m_ec_state = EC_REQ_SENT;
@@ -235,11 +244,12 @@ void CRemoteConnect::OnConnect() {
 	}
 }
 
-void CRemoteConnect::OnLost() {
+void CRemoteConnect::OnLost()
+{
 	if (m_notifier) {
 		// Notify app of failure — amulegui's wxEvent handler flips the
 		// UI to "disconnected" and stops trying to update.
-		wxECSocketEvent event(wxEVT_EC_CONNECTION,false,_("Connection failure"));
+		wxECSocketEvent event(wxEVT_EC_CONNECTION, false, _("Connection failure"));
 		m_notifier->AddPendingEvent(event);
 		return;
 	}
@@ -250,8 +260,7 @@ void CRemoteConnect::OnLost() {
 	// sitting at the amulecmd prompt with a dead socket. Failing fast
 	// is the right semantic — supervisor (systemd unit / docker /
 	// shell loop) is the recovery layer and decides whether to restart.
-	fprintf(stderr, "%s\n",
-		(const char *)unicode2char(_("External Connection lost — exiting.")));
+	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost — exiting.")));
 	fflush(stderr);
 	// _exit instead of exit() because the asio worker thread that
 	// just fired this is mid-callback; racing static destructors
@@ -265,30 +274,30 @@ const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint3
 	CECPacket *next_packet = 0;
 	m_req_count--;
 	packet->DebugPrint(true, trueSize);
-	switch(m_ec_state) {
-		case EC_REQ_SENT:
-			if (ProcessAuthPacket(packet)) {
-				CECAuthPacket passwdPacket(m_connectionPassword);
-				CECSocket::SendPacket(&passwdPacket);
-				m_ec_state = EC_PASSWD_SENT;
+	switch (m_ec_state) {
+	case EC_REQ_SENT:
+		if (ProcessAuthPacket(packet)) {
+			CECAuthPacket passwdPacket(m_connectionPassword);
+			CECSocket::SendPacket(&passwdPacket);
+			m_ec_state = EC_PASSWD_SENT;
+		}
+		break;
+	case EC_PASSWD_SENT:
+		ProcessAuthPacket(packet);
+		break;
+	case EC_OK:
+		if (!m_req_fifo.empty()) {
+			CECPacketHandlerBase *handler = m_req_fifo.front();
+			m_req_fifo.pop_front();
+			if (handler) {
+				handler->HandlePacket(packet);
 			}
-			break;
-		case EC_PASSWD_SENT:
-			ProcessAuthPacket(packet);
-			break;
-		case EC_OK:
-			if ( !m_req_fifo.empty() ) {
-				CECPacketHandlerBase *handler = m_req_fifo.front();
-				m_req_fifo.pop_front();
-				if ( handler ) {
-					handler->HandlePacket(packet);
-				}
-			} else {
-				printf("EC error - packet received, but request fifo is empty\n");
-			}
-			break;
-		default:
-			break;
+		} else {
+			printf("EC error - packet received, but request fifo is empty\n");
+		}
+		break;
+	default:
+		break;
 	}
 
 	// no reply by default
@@ -311,7 +320,8 @@ void CRemoteConnect::SendPacket(const CECPacket *request)
 	SendRequest(0, request);
 }
 
-bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply) {
+bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
+{
 	bool result = false;
 
 	if (!reply) {
@@ -319,23 +329,25 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply) {
 		CloseSocket();
 	} else {
 		if ((m_ec_state == EC_REQ_SENT) && (reply->GetOpCode() == EC_OP_AUTH_SALT)) {
-				const CECTag *passwordSalt = reply->GetTagByName(EC_TAG_PASSWD_SALT);
-				if ( NULL != passwordSalt) {
-					wxString saltHash = MD5Sum(CFormat("%lX") % passwordSalt->GetInt()).GetHash();
-					m_connectionPassword = MD5Sum(m_connectionPassword.Lower() + saltHash).GetHash();
-					m_ec_state = EC_SALT_RECEIVED;
-					return true;
-				} else {
-					m_server_reply = _("External Connection: Bad reply, handshake failed. Connection closed.");
-					m_ec_state = EC_FAIL;
-					CloseSocket();
-				}
+			const CECTag *passwordSalt = reply->GetTagByName(EC_TAG_PASSWD_SALT);
+			if (NULL != passwordSalt) {
+				wxString saltHash = MD5Sum(CFormat("%lX") % passwordSalt->GetInt()).GetHash();
+				m_connectionPassword =
+					MD5Sum(m_connectionPassword.Lower() + saltHash).GetHash();
+				m_ec_state = EC_SALT_RECEIVED;
+				return true;
+			} else {
+				m_server_reply = _("External Connection: Bad reply, handshake failed. "
+						   "Connection closed.");
+				m_ec_state = EC_FAIL;
+				CloseSocket();
+			}
 		} else if ((m_ec_state == EC_PASSWD_SENT) && (reply->GetOpCode() == EC_OP_AUTH_OK)) {
 			m_ec_state = EC_OK;
 			result = true;
 			if (reply->GetTagByName(EC_TAG_SERVER_VERSION)) {
 				m_server_reply = _("Succeeded! Connection established to aMule ") +
-					reply->GetTagByName(EC_TAG_SERVER_VERSION)->GetStringData();
+						 reply->GetTagByName(EC_TAG_SERVER_VERSION)->GetStringData();
 			} else {
 				m_server_reply = _("Succeeded! Connection established.");
 			}
@@ -361,19 +373,19 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply) {
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 				m_serverPartialUpdate = true;
 			}
-		}else {
+		} else {
 			m_ec_state = EC_FAIL;
 			const CECTag *reason = reply->GetTagByName(EC_TAG_STRING);
 			if (reason != NULL) {
 				m_server_reply = wxString(_("External Connection: Access denied because: ")) +
-					wxGetTranslation(reason->GetStringData());
+						 wxGetTranslation(reason->GetStringData());
 			} else {
 				m_server_reply = _("External Connection: Handshake failed.");
 			}
 			CloseSocket();
 		}
 	}
-	if ( m_notifier ) {
+	if (m_notifier) {
 		wxECSocketEvent event(wxEVT_EC_CONNECTION, result, m_server_reply);
 		m_notifier->AddPendingEvent(event);
 	}
@@ -382,17 +394,20 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply) {
 
 /******************** EC API ***********************/
 
-void CRemoteConnect::StartKad() {
+void CRemoteConnect::StartKad()
+{
 	CECPacket req(EC_OP_KAD_START);
 	SendPacket(&req);
 }
 
-void CRemoteConnect::StopKad() {
+void CRemoteConnect::StopKad()
+{
 	CECPacket req(EC_OP_KAD_STOP);
 	SendPacket(&req);
 }
 
-void CRemoteConnect::ConnectED2K(uint32 ip, uint16 port) {
+void CRemoteConnect::ConnectED2K(uint32 ip, uint16 port)
+{
 	CECPacket req(EC_OP_SERVER_CONNECT);
 	if (ip && port) {
 		req.AddTag(CECTag(EC_TAG_SERVER, EC_IPv4_t(ip, port)));
@@ -400,12 +415,14 @@ void CRemoteConnect::ConnectED2K(uint32 ip, uint16 port) {
 	SendPacket(&req);
 }
 
-void CRemoteConnect::DisconnectED2K() {
+void CRemoteConnect::DisconnectED2K()
+{
 	CECPacket req(EC_OP_SERVER_DISCONNECT);
 	SendPacket(&req);
 }
 
-void CRemoteConnect::RemoveServer(uint32 ip, uint16 port) {
+void CRemoteConnect::RemoveServer(uint32 ip, uint16 port)
+{
 	CECPacket req(EC_OP_SERVER_REMOVE);
 	if (ip && port) {
 		req.AddTag(CECTag(EC_TAG_SERVER, EC_IPv4_t(ip, port)));

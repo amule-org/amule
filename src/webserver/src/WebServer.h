@@ -27,24 +27,24 @@
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
-#include "config.h"		// Needed for WITH_LIBPNG
+#include "config.h" // Needed for WITH_LIBPNG
 
 #ifdef WITH_LIBPNG
-	#include <png.h>
+#include <png.h>
 #endif
 
 #include "WebInterface.h"
-#include <map>				// Needed for std::map
-#include <set>				// Needed for std::set
+#include <map> // Needed for std::map
+#include <set> // Needed for std::set
 #include "RLE.h"
 #include "OtherStructs.h"
-#include <ec/cpp/ECID.h>	// Needed for CECID
+#include <ec/cpp/ECID.h> // Needed for CECID
 
 #ifdef ENABLE_UPNP
-#	include "UPnPBase.h"
+#include "UPnPBase.h"
 #endif
 
-#include <wx/datetime.h>	// For DownloadFile::wxtLastSeenComplete
+#include <wx/datetime.h> // For DownloadFile::wxtLastSeenComplete
 
 #ifdef _MSC_VER
 #define strncasecmp _strnicmp
@@ -62,8 +62,8 @@ class CMD4Hash;
 // existed but was never wired up (set to 300, but no `7200`-using site
 // referenced it). Keep the live behaviour (2 hours) and have the
 // macro own the value so the timeout can be changed in one place.
-#define SESSION_TIMEOUT_SECS	7200	// 2 hours session expiration
-#define SHORT_FILENAME_LENGTH	40	// Max size of file name.
+#define SESSION_TIMEOUT_SECS 7200 // 2 hours session expiration
+#define SHORT_FILENAME_LENGTH 40  // Max size of file name.
 
 wxString _SpecialChars(wxString str);
 
@@ -76,164 +76,151 @@ class CEC_KadNode_Tag;
 
 class CURLDecoder
 {
-      public:
-	static wxString	Decode(const wxString& url);
+public:
+	static wxString Decode(const wxString &url);
 };
 
-class DownloadFile : public CECID {
-	public:
-		wxString	sFileName;
-		uint8		nFileStatus;
-		uint64		lFileSize;
-		uint64		lFileCompleted;
-		uint64		lFileTransferred;
-		unsigned long	lFileSpeed;
-		long		lSourceCount;
-		long		lNotCurrentSourceCount;
-		long		lTransferringSourceCount;
-		long		lSourceCountA4AF;
-		double		fCompleted;
-		uint32		lFilePrio;
-		bool		bFileAutoPriority;
-		wxString	sFileHash;
-		wxString	sED2kLink;
-		uint8		nCat;
-		wxDateTime	wxtLastSeenComplete;
+class DownloadFile : public CECID
+{
+public:
+	wxString sFileName;
+	uint8 nFileStatus;
+	uint64 lFileSize;
+	uint64 lFileCompleted;
+	uint64 lFileTransferred;
+	unsigned long lFileSpeed;
+	long lSourceCount;
+	long lNotCurrentSourceCount;
+	long lTransferringSourceCount;
+	long lSourceCountA4AF;
+	double fCompleted;
+	uint32 lFilePrio;
+	bool bFileAutoPriority;
+	wxString sFileHash;
+	wxString sED2kLink;
+	uint8 nCat;
+	wxDateTime wxtLastSeenComplete;
 
-		CMD4Hash	nHash;
+	CMD4Hash nHash;
 
-		CProgressImage *m_Image;
-		PartFileEncoderData m_Encoder;
-		ArrayOfUInts16 m_PartInfo;
-		std::vector<Gap_Struct> m_ReqParts;
-		ArrayOfUInts64	m_Gaps;
+	CProgressImage *m_Image;
+	PartFileEncoderData m_Encoder;
+	ArrayOfUInts16 m_PartInfo;
+	std::vector<Gap_Struct> m_ReqParts;
+	ArrayOfUInts64 m_Gaps;
 
-		// container require this
-		static class DownloadFileInfo *GetContainerInstance();
-		DownloadFile(CEC_PartFile_Tag *);
-		void ProcessUpdate(CEC_PartFile_Tag *);
-		uint32 ID() { return ECID(); }
+	// container require this
+	static class DownloadFileInfo *GetContainerInstance();
+	DownloadFile(CEC_PartFile_Tag *);
+	void ProcessUpdate(CEC_PartFile_Tag *);
+	uint32 ID() { return ECID(); }
 };
 
-class SharedFile : public CECID {
-	public:
-		wxString	sFileName;
-		uint64		lFileSize;
-		uint64		nFileTransferred;
-		uint64		nFileAllTimeTransferred;
-		uint16		nFileRequests;
-		uint32		nFileAllTimeRequests;
-		uint16		nFileAccepts;
-		uint32		nFileAllTimeAccepts;
-		uint8		nFilePriority;
-		bool		bFileAutoPriority;
-		wxString	sFileHash;
-		wxString	sED2kLink;
+class SharedFile : public CECID
+{
+public:
+	wxString sFileName;
+	uint64 lFileSize;
+	uint64 nFileTransferred;
+	uint64 nFileAllTimeTransferred;
+	uint16 nFileRequests;
+	uint32 nFileAllTimeRequests;
+	uint16 nFileAccepts;
+	uint32 nFileAllTimeAccepts;
+	uint8 nFilePriority;
+	bool bFileAutoPriority;
+	wxString sFileHash;
+	wxString sED2kLink;
 
-		CMD4Hash	nHash;
+	CMD4Hash nHash;
 
-		static class SharedFileInfo *GetContainerInstance();
-		SharedFile(CEC_SharedFile_Tag *);
-		void ProcessUpdate(CEC_SharedFile_Tag *);
-		uint32 ID() { return ECID(); }
+	static class SharedFileInfo *GetContainerInstance();
+	SharedFile(CEC_SharedFile_Tag *);
+	void ProcessUpdate(CEC_SharedFile_Tag *);
+	uint32 ID() { return ECID(); }
 };
 
-class ServerEntry {
-	public:
-		wxString	sServerName;
-		wxString	sServerDescription;
-		uint32		nServerIP;
-		uint16		nServerPort;
-		wxString	sServerIP;
-		int		nServerUsers;
-		int		nServerMaxUsers;
-		int		nServerFiles;
+class ServerEntry
+{
+public:
+	wxString sServerName;
+	wxString sServerDescription;
+	uint32 nServerIP;
+	uint16 nServerPort;
+	wxString sServerIP;
+	int nServerUsers;
+	int nServerMaxUsers;
+	int nServerFiles;
 
-		static class ServersInfo *GetContainerInstance();
-		uint32 ID() { return nServerIP; }
+	static class ServersInfo *GetContainerInstance();
+	uint32 ID() { return nServerIP; }
 };
 
 // This is a client we are uploading to, not a file
-class UploadFile : public CECID {
-	public:
-		wxString  sUserName;
-		uint32 nTransferredUp;
-		uint32 nTransferredDown;
-		uint32 nSpeed;
-		uint32 nUploadFile;		// ECID of shared file uploading to client
+class UploadFile : public CECID
+{
+public:
+	wxString sUserName;
+	uint32 nTransferredUp;
+	uint32 nTransferredDown;
+	uint32 nSpeed;
+	uint32 nUploadFile; // ECID of shared file uploading to client
 
-		UploadFile(CEC_UpDownClient_Tag *tag);
+	UploadFile(CEC_UpDownClient_Tag *tag);
 
-		static class UploadsInfo *GetContainerInstance();
-		uint32 ID() { return ECID(); }
+	static class UploadsInfo *GetContainerInstance();
+	uint32 ID() { return ECID(); }
 };
 
-class SearchFile : public CECID {
-	public:
-		wxString sFileName;
-		uint64 lFileSize;
-		CMD4Hash  nHash;
-		wxString  sHash;
-		long lSourceCount;
-		bool bPresent;
+class SearchFile : public CECID
+{
+public:
+	wxString sFileName;
+	uint64 lFileSize;
+	CMD4Hash nHash;
+	wxString sHash;
+	long lSourceCount;
+	bool bPresent;
 
-		SearchFile(CEC_SearchFile_Tag *);
+	SearchFile(CEC_SearchFile_Tag *);
 
-		void ProcessUpdate(CEC_SearchFile_Tag *);
-		static class SearchInfo *GetContainerInstance();
-		uint32 ID() { return ECID(); }
+	void ProcessUpdate(CEC_SearchFile_Tag *);
+	static class SearchInfo *GetContainerInstance();
+	uint32 ID() { return ECID(); }
 };
-
 
 /*!
  * T - type of items in container
  */
-template <class T>
-class ItemsContainer {
-	protected:
-		CamulewebApp *m_webApp;
-		std::list<T> m_items;
+template <class T> class ItemsContainer
+{
+protected:
+	CamulewebApp *m_webApp;
+	std::list<T> m_items;
 
+	void EraseAll() { m_items.erase(m_items.begin(), m_items.end()); }
 
-		void EraseAll()
-		{
-			m_items.erase(m_items.begin(), m_items.end());
-		}
-	public:
-		ItemsContainer(CamulewebApp *webApp)
-		{
-			m_webApp = webApp;
-		}
-		virtual ~ItemsContainer() { }
+public:
+	ItemsContainer(CamulewebApp *webApp) { m_webApp = webApp; }
+	virtual ~ItemsContainer() {}
 
+	int ItemCount() { return m_items.size(); }
 
-		int ItemCount()
-		{
-			return m_items.size();
-		}
+	T *AddItem(T &item)
+	{
+		m_items.push_back(item);
+		T *real_ptr = &(m_items.back());
+		return real_ptr;
+	}
 
+	/*!
+	 * Re-query server: refresh all dataset
+	 */
+	virtual bool ReQuery() = 0;
 
-		T *AddItem(T &item)
-		{
-			m_items.push_back(item);
-			T *real_ptr = &(m_items.back());
-			return real_ptr;
-		}
-
-		/*!
-		 * Re-query server: refresh all dataset
-		 */
-		virtual bool ReQuery() = 0;
-
-		typedef typename std::list<T>::iterator ItemIterator;
-		ItemIterator GetBeginIterator()
-		{
-			return m_items.begin();
-		}
-		ItemIterator GetEndIterator()
-		{
-			return m_items.end();
-		}
+	typedef typename std::list<T>::iterator ItemIterator;
+	ItemIterator GetBeginIterator() { return m_items.begin(); }
+	ItemIterator GetEndIterator() { return m_items.end(); }
 };
 
 /*!
@@ -241,302 +228,317 @@ class ItemsContainer {
  * I - type of item ID
  * G - type of tag in EC
  */
-template <class T, class G, class I>
-class UpdatableItemsContainer : public ItemsContainer<T> {
-	protected:
-		// need duplicate list with a map, so check "do we already have"
-		// will take O(log(n)) instead of O(n)
-		// map will contain pointers to items in list
-		std::map<I, T *> m_items_hash;
-	public:
-		UpdatableItemsContainer(CamulewebApp *webApp) : ItemsContainer<T>(webApp)
-		{
-		}
+template <class T, class G, class I> class UpdatableItemsContainer : public ItemsContainer<T>
+{
+protected:
+	// need duplicate list with a map, so check "do we already have"
+	// will take O(log(n)) instead of O(n)
+	// map will contain pointers to items in list
+	std::map<I, T *> m_items_hash;
 
-		T *AddItem(T &item)
-		{
-			T *real_ptr = ItemsContainer<T>::AddItem(item);
-			m_items_hash[item.ID()] = real_ptr;
-			return real_ptr;
-		}
+public:
+	UpdatableItemsContainer(CamulewebApp *webApp)
+	: ItemsContainer<T>(webApp)
+	{
+	}
 
-		T *GetByID(I id)
-		{
-			// avoid creating nodes
-			return m_items_hash.count(id) ? m_items_hash[id] : NULL;
-		}
+	T *AddItem(T &item)
+	{
+		T *real_ptr = ItemsContainer<T>::AddItem(item);
+		m_items_hash[item.ID()] = real_ptr;
+		return real_ptr;
+	}
 
-		T * GetByHash(const CMD4Hash &fileHash)
-		{
-			T * ret = 0;
-			for (typename std::map<I, T *>::iterator it = m_items_hash.begin(); it != m_items_hash.end(); ++it) {
-				if (it->second->nHash == fileHash) {
-					ret = it->second;
-					break;
-				}
+	T *GetByID(I id)
+	{
+		// avoid creating nodes
+		return m_items_hash.count(id) ? m_items_hash[id] : NULL;
+	}
+
+	T *GetByHash(const CMD4Hash &fileHash)
+	{
+		T *ret = 0;
+		for (typename std::map<I, T *>::iterator it = m_items_hash.begin(); it != m_items_hash.end();
+			++it) {
+			if (it->second->nHash == fileHash) {
+				ret = it->second;
+				break;
 			}
-			return ret;
 		}
+		return ret;
+	}
 
-		/*!
-		 * Process answer of update request, create list of new items for
-		 * full request later. Also remove items that no longer exist in core.
-		 *
-		 * Partial-update protocol negotiated at auth: when the server is
-		 * partial-update-capable, files unchanged since the last cycle
-		 * are simply absent from the response; deletions arrive as
-		 * explicit `EC_TAG_FILE_REMOVED` markers. The bulk "anything
-		 * missing == deleted" loop below would otherwise wipe most of
-		 * the library every cycle on big libraries (#713). When the
-		 * server is not partial-update-capable (or didn't echo the
-		 * capability), the encoder's per-file diff makes unchanged
-		 * tags effectively empty alive-markers and the bulk-deletion
-		 * loop stays correct.
-		 */
-		void ProcessUpdate(const CECPacket *reply, CECPacket *full_req, int req_type)
-		{
-			const bool partial_update = this->m_webApp->IsServerPartialUpdateActive();
+	/*!
+	 * Process answer of update request, create list of new items for
+	 * full request later. Also remove items that no longer exist in core.
+	 *
+	 * Partial-update protocol negotiated at auth: when the server is
+	 * partial-update-capable, files unchanged since the last cycle
+	 * are simply absent from the response; deletions arrive as
+	 * explicit `EC_TAG_FILE_REMOVED` markers. The bulk "anything
+	 * missing == deleted" loop below would otherwise wipe most of
+	 * the library every cycle on big libraries (#713). When the
+	 * server is not partial-update-capable (or didn't echo the
+	 * capability), the encoder's per-file diff makes unchanged
+	 * tags effectively empty alive-markers and the bulk-deletion
+	 * loop stays correct.
+	 */
+	void ProcessUpdate(const CECPacket *reply, CECPacket *full_req, int req_type)
+	{
+		const bool partial_update = this->m_webApp->IsServerPartialUpdateActive();
 
-			std::set<I> core_files;
-			std::set<I> removed_files;
-			for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
-				const CECTag *raw_tag = &*it;
-				if (raw_tag->GetTagName() == EC_TAG_FILE_REMOVED) {
-					// Explicit deletion marker from a partial-
-					// update-capable server.
-					removed_files.insert(raw_tag->GetInt());
-					continue;
-				}
-				G *tag = (G *) raw_tag;
-
-				if (!partial_update) {
-					core_files.insert(tag->ID());
-				}
-				if ( m_items_hash.count(tag->ID()) ) {
-					T *item = m_items_hash[tag->ID()];
-					item->ProcessUpdate(tag);
-				} else {
-					full_req->AddTag(CECTag(req_type, tag->ID()));
-				}
+		std::set<I> core_files;
+		std::set<I> removed_files;
+		for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
+			const CECTag *raw_tag = &*it;
+			if (raw_tag->GetTagName() == EC_TAG_FILE_REMOVED) {
+				// Explicit deletion marker from a partial-
+				// update-capable server.
+				removed_files.insert(raw_tag->GetInt());
+				continue;
 			}
+			G *tag = (G *)raw_tag;
 
-			std::list<I> del_ids;
-			if (partial_update) {
-				// Only delete what the server explicitly told us to
-				// delete. Skipped early when there's nothing to
-				// remove this cycle (the common case).
-				if (!removed_files.empty()) {
-					for(typename std::list<T>::iterator j = this->m_items.begin(); j != this->m_items.end(); ++j) {
-						if (removed_files.count(j->ID())) {
-							T *real_ptr = &*j;
-							this->ItemDeleted(real_ptr);
-							del_ids.push_back(j->ID());
-						}
-					}
-				}
+			if (!partial_update) {
+				core_files.insert(tag->ID());
+			}
+			if (m_items_hash.count(tag->ID())) {
+				T *item = m_items_hash[tag->ID()];
+				item->ProcessUpdate(tag);
 			} else {
-				for(typename std::list<T>::iterator j = this->m_items.begin(); j != this->m_items.end(); ++j) {
-					if ( core_files.count(j->ID()) == 0 ) {
-						// item may contain data that need to be freed externally, before
-						// dtor is called and memory freed
+				full_req->AddTag(CECTag(req_type, tag->ID()));
+			}
+		}
 
+		std::list<I> del_ids;
+		if (partial_update) {
+			// Only delete what the server explicitly told us to
+			// delete. Skipped early when there's nothing to
+			// remove this cycle (the common case).
+			if (!removed_files.empty()) {
+				for (typename std::list<T>::iterator j = this->m_items.begin();
+					j != this->m_items.end();
+					++j) {
+					if (removed_files.count(j->ID())) {
 						T *real_ptr = &*j;
 						this->ItemDeleted(real_ptr);
-
 						del_ids.push_back(j->ID());
 					}
 				}
 			}
-			for(typename std::list<I>::iterator j = del_ids.begin(); j != del_ids.end(); ++j) {
-				m_items_hash.erase(*j);
-				for(typename std::list<T>::iterator k = this->m_items.begin(); k != this->m_items.end(); ++k) {
-					if ( *j == k->ID() ) {
-						this->m_items.erase(k);
-						break;
-					}
+		} else {
+			for (typename std::list<T>::iterator j = this->m_items.begin();
+				j != this->m_items.end();
+				++j) {
+				if (core_files.count(j->ID()) == 0) {
+					// item may contain data that need to be freed externally, before
+					// dtor is called and memory freed
+
+					T *real_ptr = &*j;
+					this->ItemDeleted(real_ptr);
+
+					del_ids.push_back(j->ID());
 				}
 			}
 		}
-
-		void ProcessFull(const CECPacket *reply)
-		{
-			for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
-				G *tag = (G *) & *it;
-				// initialize item data from EC tag
-				T item(tag);
-				T *real_ptr = AddItem(item);
-				// initialize any external data that may depend on this item
-				this->ItemInserted(real_ptr);
-			}
-		}
-
-		bool DoRequery(int cmd, int tag)
-		{
-			CECPacket req_sts(cmd, EC_DETAIL_UPDATE);
-
-			//
-			// Phase 1: request status
-			const CECPacket *reply = this->m_webApp->SendRecvMsg_v2(&req_sts);
-			if ( !reply ) {
-				return false;
-			}
-
-			//
-			// Phase 2: update status, mark new files for subsequent query
-			CECPacket req_full(cmd);
-
-			ProcessUpdate(reply, &req_full, tag);
-
-			delete reply;
-
-			// Phase 3: request full info about files we don't have yet
-			if ( req_full.HasChildTags() ) {
-				reply = this->m_webApp->SendRecvMsg_v2(&req_full);
-				if ( !reply ) {
-					return false;
+		for (typename std::list<I>::iterator j = del_ids.begin(); j != del_ids.end(); ++j) {
+			m_items_hash.erase(*j);
+			for (typename std::list<T>::iterator k = this->m_items.begin();
+				k != this->m_items.end();
+				++k) {
+				if (*j == k->ID()) {
+					this->m_items.erase(k);
+					break;
 				}
-				ProcessFull(reply);
-				delete reply;
 			}
-			return true;
 		}
+	}
 
-		virtual void ItemDeleted(T *) { }
-		virtual void ItemInserted(T *) { }
-};
-
-class UploadsInfo : public ItemsContainer<UploadFile> {
-	public:
-		// can be only one instance.
-		static UploadsInfo *m_This;
-
-		UploadsInfo(CamulewebApp *webApp);
-
-		virtual bool ReQuery();
-};
-
-class ServersInfo : public ItemsContainer<ServerEntry> {
-	public:
-		// can be only one instance.
-		static ServersInfo *m_This;
-
-		ServersInfo(CamulewebApp *webApp);
-
-		virtual bool ReQuery();
-
-};
-
-
-class SharedFileInfo : public UpdatableItemsContainer<SharedFile, CEC_SharedFile_Tag, uint32> {
-	public:
-		// can be only one instance.
-		static SharedFileInfo *m_This;
-
-		SharedFileInfo(CamulewebApp *webApp);
-
-		virtual bool ReQuery();
-
-};
-
-class SearchInfo : public UpdatableItemsContainer<SearchFile, CEC_SearchFile_Tag, uint32> {
-	public:
-		static SearchInfo *m_This;
-
-		SearchInfo(CamulewebApp *webApp);
-
-		virtual bool ReQuery();
-
-};
-
-
-class CImageLib;
-class DownloadFileInfo : public UpdatableItemsContainer<DownloadFile, CEC_PartFile_Tag, uint32> {
-		CImageLib *m_ImageLib;
-
-		// parameters of progress images
-		wxString m_Template;
-		int m_width, m_height;
-	public:
-		// can be only one instance.
-		static DownloadFileInfo *m_This;
-
-		DownloadFileInfo(CamulewebApp *webApp, CImageLib *imlib);
-
-		void LoadImageParams(wxString &tpl, int width, int height);
-
-		virtual bool ReQuery();
-
-		// container requirements
-		void ItemInserted(DownloadFile *item);
-		void ItemDeleted(DownloadFile *item);
-};
-
-class CAnyImage {
-	protected:
-		unsigned char *m_data;
-
-		int m_width, m_height;
-		wxString m_name;
-
-		int m_size, m_alloc_size;
-		wxString m_Http;
-
-		void Realloc(int size);
-
-		void SetHttpType(wxString ext);
-	public:
-		CAnyImage(int size);
-		CAnyImage(int width, int height);
-		virtual ~CAnyImage();
-
-		const wxString& GetHTTP() const { return m_Http; }
-
-		virtual unsigned char *RequestData(int &size);
-};
-
-class CFileImage : public virtual CAnyImage {
-	public:
-		CFileImage(const wxString& name);
-
-		bool OpenOk() { return m_size != 0; }
-};
-
-class CImage3D_Modifiers {
-		unsigned char *m_modifiers;
-		int m_width;
-	public:
-		CImage3D_Modifiers(int width);
-		~CImage3D_Modifiers();
-
-		unsigned char operator[](int i)
-		{
-			return (i < m_width) ? m_modifiers[i] : 0;
+	void ProcessFull(const CECPacket *reply)
+	{
+		for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
+			G *tag = (G *)&*it;
+			// initialize item data from EC tag
+			T item(tag);
+			T *real_ptr = AddItem(item);
+			// initialize any external data that may depend on this item
+			this->ItemInserted(real_ptr);
 		}
-};
+	}
 
-class CProgressImage : public virtual CAnyImage {
-	protected:
-		DownloadFile *m_file;
-
-		wxString m_template;
+	bool DoRequery(int cmd, int tag)
+	{
+		CECPacket req_sts(cmd, EC_DETAIL_UPDATE);
 
 		//
-		// Turn list of gaps, partstatus into array of color strips
-		typedef struct Color_Gap_Struct : public Gap_Struct {
-			uint32 color;
-		} Color_Gap_Struct;
+		// Phase 1: request status
+		const CECPacket *reply = this->m_webApp->SendRecvMsg_v2(&req_sts);
+		if (!reply) {
+			return false;
+		}
 
-		// result of rendering - single line
-		uint32 *m_ColorLine;
-		void CreateSpan();
-	public:
-		CProgressImage(int w, int h, wxString &tmpl, DownloadFile *file);
+		//
+		// Phase 2: update status, mark new files for subsequent query
+		CECPacket req_full(cmd);
 
-		~CProgressImage();
+		ProcessUpdate(reply, &req_full, tag);
 
-		const wxString &Name() { return m_name; }
+		delete reply;
 
-		virtual wxString GetHTML() = 0;
+		// Phase 3: request full info about files we don't have yet
+		if (req_full.HasChildTags()) {
+			reply = this->m_webApp->SendRecvMsg_v2(&req_full);
+			if (!reply) {
+				return false;
+			}
+			ProcessFull(reply);
+			delete reply;
+		}
+		return true;
+	}
+
+	virtual void ItemDeleted(T *) {}
+	virtual void ItemInserted(T *) {}
+};
+
+class UploadsInfo : public ItemsContainer<UploadFile>
+{
+public:
+	// can be only one instance.
+	static UploadsInfo *m_This;
+
+	UploadsInfo(CamulewebApp *webApp);
+
+	virtual bool ReQuery();
+};
+
+class ServersInfo : public ItemsContainer<ServerEntry>
+{
+public:
+	// can be only one instance.
+	static ServersInfo *m_This;
+
+	ServersInfo(CamulewebApp *webApp);
+
+	virtual bool ReQuery();
+};
+
+class SharedFileInfo : public UpdatableItemsContainer<SharedFile, CEC_SharedFile_Tag, uint32>
+{
+public:
+	// can be only one instance.
+	static SharedFileInfo *m_This;
+
+	SharedFileInfo(CamulewebApp *webApp);
+
+	virtual bool ReQuery();
+};
+
+class SearchInfo : public UpdatableItemsContainer<SearchFile, CEC_SearchFile_Tag, uint32>
+{
+public:
+	static SearchInfo *m_This;
+
+	SearchInfo(CamulewebApp *webApp);
+
+	virtual bool ReQuery();
+};
+
+class CImageLib;
+class DownloadFileInfo : public UpdatableItemsContainer<DownloadFile, CEC_PartFile_Tag, uint32>
+{
+	CImageLib *m_ImageLib;
+
+	// parameters of progress images
+	wxString m_Template;
+	int m_width, m_height;
+
+public:
+	// can be only one instance.
+	static DownloadFileInfo *m_This;
+
+	DownloadFileInfo(CamulewebApp *webApp, CImageLib *imlib);
+
+	void LoadImageParams(wxString &tpl, int width, int height);
+
+	virtual bool ReQuery();
+
+	// container requirements
+	void ItemInserted(DownloadFile *item);
+	void ItemDeleted(DownloadFile *item);
+};
+
+class CAnyImage
+{
+protected:
+	unsigned char *m_data;
+
+	int m_width, m_height;
+	wxString m_name;
+
+	int m_size, m_alloc_size;
+	wxString m_Http;
+
+	void Realloc(int size);
+
+	void SetHttpType(wxString ext);
+
+public:
+	CAnyImage(int size);
+	CAnyImage(int width, int height);
+	virtual ~CAnyImage();
+
+	const wxString &GetHTTP() const { return m_Http; }
+
+	virtual unsigned char *RequestData(int &size);
+};
+
+class CFileImage : public virtual CAnyImage
+{
+public:
+	CFileImage(const wxString &name);
+
+	bool OpenOk() { return m_size != 0; }
+};
+
+class CImage3D_Modifiers
+{
+	unsigned char *m_modifiers;
+	int m_width;
+
+public:
+	CImage3D_Modifiers(int width);
+	~CImage3D_Modifiers();
+
+	unsigned char operator[](int i) { return (i < m_width) ? m_modifiers[i] : 0; }
+};
+
+class CProgressImage : public virtual CAnyImage
+{
+protected:
+	DownloadFile *m_file;
+
+	wxString m_template;
+
+	//
+	// Turn list of gaps, partstatus into array of color strips
+	typedef struct Color_Gap_Struct : public Gap_Struct
+	{
+		uint32 color;
+	} Color_Gap_Struct;
+
+	// result of rendering - single line
+	uint32 *m_ColorLine;
+	void CreateSpan();
+
+public:
+	CProgressImage(int w, int h, wxString &tmpl, DownloadFile *file);
+
+	~CProgressImage();
+
+	const wxString &Name() { return m_name; }
+
+	virtual wxString GetHTML() = 0;
 };
 
 #ifdef WITH_LIBPNG
@@ -544,46 +546,48 @@ class CProgressImage : public virtual CAnyImage {
 //
 // Dynamic png image generation
 //
-class CDynPngImage : public virtual CAnyImage {
+class CDynPngImage : public virtual CAnyImage
+{
 
-	public:
-		CDynPngImage(int w, int h);
-		~CDynPngImage();
+public:
+	CDynPngImage(int w, int h);
+	~CDynPngImage();
 
-		virtual unsigned char *RequestData(int &size);
+	virtual unsigned char *RequestData(int &size);
 
-	protected:
-		png_bytep m_img_data;
-		png_bytep *m_row_ptrs;
+protected:
+	png_bytep m_img_data;
+	png_bytep *m_row_ptrs;
 
-		static void png_write_fn(png_structp png_ptr, png_bytep data, png_size_t length);
-
+	static void png_write_fn(png_structp png_ptr, png_bytep data, png_size_t length);
 };
 
 //
 // Dynamic png image generation from gap info
-class CDynProgressImage : public virtual CProgressImage, public virtual CDynPngImage {
-		CImage3D_Modifiers m_modifiers;
+class CDynProgressImage : public virtual CProgressImage, public virtual CDynPngImage
+{
+	CImage3D_Modifiers m_modifiers;
 
-		void DrawImage();
-	public:
-		CDynProgressImage(int w, int h,	wxString &tmpl, DownloadFile *file);
-		~CDynProgressImage();
+	void DrawImage();
 
-		virtual unsigned char *RequestData(int &size);
-		virtual wxString GetHTML();
+public:
+	CDynProgressImage(int w, int h, wxString &tmpl, DownloadFile *file);
+	~CDynProgressImage();
+
+	virtual unsigned char *RequestData(int &size);
+	virtual wxString GetHTML();
 };
 
 #else
 
-
 //
 // Fallback to original implementation
-class CDynProgressImage : public virtual CProgressImage {
-	public:
-		CDynProgressImage(int w, int h,	wxString &tmpl, DownloadFile *file);
+class CDynProgressImage : public virtual CProgressImage
+{
+public:
+	CDynProgressImage(int w, int h, wxString &tmpl, DownloadFile *file);
 
-		virtual wxString GetHTML();
+	virtual wxString GetHTML();
 };
 
 #endif
@@ -592,40 +596,43 @@ class CDynProgressImage : public virtual CProgressImage {
 // Representing statistical sample for some parameter. Circular buffer
 // inside to avoid rellocations
 //
-class CStatsData {
-		uint32 *m_data;
-		uint32 m_max_value;
-		int m_size;
-		int m_start_index, m_end_index, m_curr_index;
-	public:
-		CStatsData(int size);
-		~CStatsData();
+class CStatsData
+{
+	uint32 *m_data;
+	uint32 m_max_value;
+	int m_size;
+	int m_start_index, m_end_index, m_curr_index;
 
-		int Size() const { return m_size; }
-		uint32 Max() const { return m_max_value; }
-		uint32 GetFirst();
-		uint32 GetNext();
+public:
+	CStatsData(int size);
+	~CStatsData();
 
-		void PushSample(uint32 sample);
+	int Size() const { return m_size; }
+	uint32 Max() const { return m_max_value; }
+	uint32 GetFirst();
+	uint32 GetNext();
+
+	void PushSample(uint32 sample);
 };
 
-class CStatsCollection {
-		CStatsData *m_down_speed, *m_up_speed,
-			*m_conn_number, *m_kad_count;
+class CStatsCollection
+{
+	CStatsData *m_down_speed, *m_up_speed, *m_conn_number, *m_kad_count;
 
-		CamulewebApp *m_iface;
-		double m_LastTimeStamp;
-		int m_size;
-	public:
-		CStatsCollection(int size, CamulewebApp	*iface);
-		~CStatsCollection();
+	CamulewebApp *m_iface;
+	double m_LastTimeStamp;
+	int m_size;
 
-		CStatsData *DownloadSpeed() { return m_down_speed; }
-		CStatsData *UploadSpeed() { return m_up_speed; }
-		CStatsData *ConnCount() { return m_conn_number; }
-		CStatsData *KadCount() { return m_kad_count; }
+public:
+	CStatsCollection(int size, CamulewebApp *iface);
+	~CStatsCollection();
 
-		void ReQuery();
+	CStatsData *DownloadSpeed() { return m_down_speed; }
+	CStatsData *UploadSpeed() { return m_up_speed; }
+	CStatsData *ConnCount() { return m_conn_number; }
+	CStatsData *KadCount() { return m_kad_count; }
+
+	void ReQuery();
 };
 
 #ifdef WITH_LIBPNG
@@ -635,94 +642,100 @@ class CStatsCollection {
 // dynamically generated images.
 // Easiest way to represt numbers: 7-segments model
 //
-class CNumImageMask {
-		png_bytep *m_row_mask_ptrs;
-		int m_width, m_height;
-		int m_v_segsize, m_h_segsize;
+class CNumImageMask
+{
+	png_bytep *m_row_mask_ptrs;
+	int m_width, m_height;
+	int m_v_segsize, m_h_segsize;
 
-		// mask generation
-		void DrawHorzLine(int off);
-		void DrawVertLine(int off_x, int off_y);
-		void DrawSegment(int id);
+	// mask generation
+	void DrawHorzLine(int off);
+	void DrawVertLine(int off_x, int off_y);
+	void DrawSegment(int id);
 
-		// 0-9 are digit glyphs; 10-13 are unit-prefix glyphs K, M, G, T
-		// for axis labels scaled by powers of 1000.
-		static const int m_num_to_7_decode[14];
-	public:
-		CNumImageMask(int number, int width, int height);
-		~CNumImageMask();
+	// 0-9 are digit glyphs; 10-13 are unit-prefix glyphs K, M, G, T
+	// for axis labels scaled by powers of 1000.
+	static const int m_num_to_7_decode[14];
 
-		void Apply(png_bytep *image, int off_x, int off_y);
+public:
+	CNumImageMask(int number, int width, int height);
+	~CNumImageMask();
+
+	void Apply(png_bytep *image, int off_x, int off_y);
 };
 
-class CDynStatisticImage : public virtual CDynPngImage {
-		CStatsData *m_data;
+class CDynStatisticImage : public virtual CDynPngImage
+{
+	CStatsData *m_data;
 
-		// size of "font" of imprinted numbers
-		int m_num_font_w_size, m_num_font_h_size;
+	// size of "font" of imprinted numbers
+	int m_num_font_w_size, m_num_font_h_size;
 
-		int m_left_margin, m_bottom_margin;
-		int m_y_axis_size;
+	int m_left_margin, m_bottom_margin;
+	int m_y_axis_size;
 
-		// 0-9 are digit glyphs; 10-13 are unit-prefix glyphs K, M, G, T
-		// used by the axis-label renderer when the y-axis maximum exceeds
-		// what 4 digits can hold.
-		CNumImageMask *m_digits[14];
+	// 0-9 are digit glyphs; 10-13 are unit-prefix glyphs K, M, G, T
+	// used by the axis-label renderer when the y-axis maximum exceeds
+	// what 4 digits can hold.
+	CNumImageMask *m_digits[14];
 
-		// indicates whether data should be divided on 1024 before
-		// drawing graph.
-		bool m_scale1024;
+	// indicates whether data should be divided on 1024 before
+	// drawing graph.
+	bool m_scale1024;
 
-		//
-		// Prepared background
-		//
-		png_bytep m_background;
-		png_bytep *m_row_bg_ptrs;
+	//
+	// Prepared background
+	//
+	png_bytep m_background;
+	png_bytep *m_row_bg_ptrs;
 
-		void DrawImage();
-	public:
-		CDynStatisticImage(int height, bool scale1024, CStatsData *data);
-		~CDynStatisticImage();
+	void DrawImage();
 
-		virtual unsigned char *RequestData(int &size);
-		virtual wxString GetHTML();
+public:
+	CDynStatisticImage(int height, bool scale1024, CStatsData *data);
+	~CDynStatisticImage();
+
+	virtual unsigned char *RequestData(int &size);
+	virtual wxString GetHTML();
 };
 
 #endif
 
-class CImageLib {
-		typedef std::map<wxString, CAnyImage *> ImageMap;
-		ImageMap m_image_map;
-		wxString m_image_dir;
-	public:
-		CImageLib(wxString image_dir);
-		~CImageLib();
+class CImageLib
+{
+	typedef std::map<wxString, CAnyImage *> ImageMap;
+	ImageMap m_image_map;
+	wxString m_image_dir;
 
-		CAnyImage *GetImage(const wxString &name);
-		void AddImage(CAnyImage *img, const wxString &name);
-		void RemoveImage(const wxString &name);
+public:
+	CImageLib(wxString image_dir);
+	~CImageLib();
+
+	CAnyImage *GetImage(const wxString &name);
+	void AddImage(CAnyImage *img, const wxString &name);
+	void RemoveImage(const wxString &name);
 };
 
-class CParsedUrl {
-		wxString m_path, m_file;
-		std::map<wxString, wxString> m_params;
-	public:
-		CParsedUrl(const wxString &url);
+class CParsedUrl
+{
+	wxString m_path, m_file;
+	std::map<wxString, wxString> m_params;
 
-		const wxString &Path() { return m_path; }
-		const wxString &File() { return m_file; }
+public:
+	CParsedUrl(const wxString &url);
 
-		const wxString &Param(const wxString &key)
-		{
-			return m_params[key];
-		}
+	const wxString &Path() { return m_path; }
+	const wxString &File() { return m_file; }
 
-		void ConvertParams(std::map<std::string, std::string> &);
+	const wxString &Param(const wxString &key) { return m_params[key]; }
+
+	void ConvertParams(std::map<std::string, std::string> &);
 };
 
 // Changing this to a typedef struct{} makes egcs compiler do it all wrong and crash on run
-struct ThreadData {
-	CParsedUrl	parsedURL;
+struct ThreadData
+{
+	CParsedUrl parsedURL;
 	// CParsedUrl of the *original* request URL, before
 	// CWebSocket::OnRequestReceived concatenated the POST body onto
 	// it (see comment at WebSocket.cpp:197-208). Used by the login
@@ -734,15 +747,15 @@ struct ThreadData {
 	// existing merged `parsedURL` above stays the source of truth
 	// for every non-credential parameter so #724's POST-on-
 	// query-URL fix isn't disturbed.
-	CParsedUrl	getOnlyParsedURL;
-	wxString	sURL;
+	CParsedUrl getOnlyParsedURL;
+	wxString sURL;
 	// Opaque 64-bit session token; 0 means "no session cookie yet".
 	// Sourced from CryptoPP::AutoSeededRandomPool when a new session
 	// is created, see CScriptWebServer::CheckLoggedin in
 	// WebServer.cpp. Was `int` + rand() before #870, which made
 	// session IDs trivially guessable.
-	uint64_t	SessionID;
-	CWebSocket	*pSocket;
+	uint64_t SessionID;
+	CWebSocket *pSocket;
 };
 
 #ifdef ENABLE_UPNP
@@ -750,125 +763,134 @@ class CUPnPControlPoint;
 class CUPnPPortMapping;
 #endif
 
-class CWebLibSocketServer : public CLibSocketServer {
+class CWebLibSocketServer : public CLibSocketServer
+{
 public:
-	CWebLibSocketServer(const class amuleIPV4Address& adr, int flags, CWebServerBase * webServerBase);
+	CWebLibSocketServer(const class amuleIPV4Address &adr, int flags, CWebServerBase *webServerBase);
 
-	virtual	void OnAccept();
+	virtual void OnAccept();
+
 private:
-	CWebServerBase * m_webServerBase;
+	CWebServerBase *m_webServerBase;
 };
 
-class CWebServerBase : public wxEvtHandler {
-	protected:
-		CWebLibSocketServer *m_webserver_socket;
+class CWebServerBase : public wxEvtHandler
+{
+protected:
+	CWebLibSocketServer *m_webserver_socket;
 
-		ServersInfo m_ServersInfo;
-		SharedFileInfo m_SharedFileInfo;
-		DownloadFileInfo m_DownloadFileInfo;
-		UploadsInfo m_UploadsInfo;
-		SearchInfo m_SearchInfo;
+	ServersInfo m_ServersInfo;
+	SharedFileInfo m_SharedFileInfo;
+	DownloadFileInfo m_DownloadFileInfo;
+	UploadsInfo m_UploadsInfo;
+	SearchInfo m_SearchInfo;
 
-		CStatsCollection m_Stats;
+	CStatsCollection m_Stats;
 
-		CImageLib m_ImageLib;
+	CImageLib m_ImageLib;
 
-		virtual void ProcessURL(ThreadData) = 0;
-		virtual void ProcessImgFileReq(ThreadData) = 0;
+	virtual void ProcessURL(ThreadData) = 0;
+	virtual void ProcessImgFileReq(ThreadData) = 0;
 
-		int GzipCompress(Bytef *dest, uLongf *destLen,
-			const Bytef *source, uLong sourceLen, int level);
+	int GzipCompress(Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen, int level);
 
-		friend class CWebSocket;
-		friend class CPhPLibContext;
+	friend class CWebSocket;
+	friend class CPhPLibContext;
 
-		bool m_upnpEnabled;
-		int m_upnpTCPPort;
+	bool m_upnpEnabled;
+	int m_upnpTCPPort;
 #ifdef ENABLE_UPNP
-		CUPnPControlPoint *m_upnp;
-		std::vector<CUPnPPortMapping> m_upnpMappings;
+	CUPnPControlPoint *m_upnp;
+	std::vector<CUPnPPortMapping> m_upnpMappings;
 #endif
-		CAsioService *m_AsioService;
-	public:
-		CWebServerBase(CamulewebApp *webApp, const wxString& templateDir);
-		virtual ~CWebServerBase();
+	CAsioService *m_AsioService;
 
-		void Send_Discard_V2_Request(CECPacket *request);
+public:
+	CWebServerBase(CamulewebApp *webApp, const wxString &templateDir);
+	virtual ~CWebServerBase();
 
-		void StartServer();
-		void StopServer();
+	void Send_Discard_V2_Request(CECPacket *request);
 
-		void Print(const wxString &s);
+	void StartServer();
+	void StopServer();
 
-		long GetWSPrefs();
+	void Print(const wxString &s);
 
-		//
-		// Command interface
-		//
-		void Send_ReloadSharedFile_Cmd();
+	long GetWSPrefs();
 
-		void Send_SharedFile_Cmd(wxString file_hash, wxString cmd, uint32 opt_arg = 0);
-		void Send_DownloadFile_Cmd(wxString file_hash, wxString cmd, uint32 opt_arg = 0);
+	//
+	// Command interface
+	//
+	void Send_ReloadSharedFile_Cmd();
 
-		void Send_DownloadSearchFile_Cmd(wxString file_hash, uint8 cat);
+	void Send_SharedFile_Cmd(wxString file_hash, wxString cmd, uint32 opt_arg = 0);
+	void Send_DownloadFile_Cmd(wxString file_hash, wxString cmd, uint32 opt_arg = 0);
 
-		void Send_Server_Cmd(uint32 ip, uint16 port, wxString cmd);
-		void Send_AddServer_Cmd(wxString addr, wxString port, wxString name);
+	void Send_DownloadSearchFile_Cmd(wxString file_hash, uint8 cat);
 
-		void Send_Search_Cmd(wxString search, wxString extention, wxString type,
-			EC_SEARCH_TYPE search_type, uint32 avail, uint32 min_size, uint32 max_size);
+	void Send_Server_Cmd(uint32 ip, uint16 port, wxString cmd);
+	void Send_AddServer_Cmd(wxString addr, wxString port, wxString name);
 
-		bool Send_DownloadEd2k_Cmd(wxString link, uint8 cat);
+	void Send_Search_Cmd(wxString search,
+		wxString extention,
+		wxString type,
+		EC_SEARCH_TYPE search_type,
+		uint32 avail,
+		uint32 min_size,
+		uint32 max_size);
 
-		void Reload_Stats()
-		{
-			m_Stats.ReQuery();
-		}
+	bool Send_DownloadEd2k_Cmd(wxString link, uint8 cat);
 
-		CamulewebApp	*webInterface;
+	void Reload_Stats() { m_Stats.ReQuery(); }
 
+	CamulewebApp *webInterface;
 };
 
-class CSession {
-	public:
-		bool m_logged_in;
-		time_t m_last_access;
-		std::map<std::string, std::string> m_vars, m_get_vars;
+class CSession
+{
+public:
+	bool m_logged_in;
+	time_t m_last_access;
+	std::map<std::string, std::string> m_vars, m_get_vars;
 
-		void LoadVars(CParsedUrl &url);
+	void LoadVars(CParsedUrl &url);
 };
 
 /*
  * Script based webserver
  */
-class CScriptWebServer : public CWebServerBase {
-		wxString m_www_root;
-		wxString m_index;
+class CScriptWebServer : public CWebServerBase
+{
+	wxString m_www_root;
+	wxString m_index;
 
-		char *ProcessHtmlRequest(const char *filename, long &size);
-		char *ProcessPhpRequest(const char *filename, CSession *sess, long &size);
+	char *ProcessHtmlRequest(const char *filename, long &size);
+	char *ProcessPhpRequest(const char *filename, CSession *sess, long &size);
 
-		char *GetErrorPage(const char *message, long &size);
-		char *Get_404_Page(long &size);
+	char *GetErrorPage(const char *message, long &size);
+	char *Get_404_Page(long &size);
 
-		std::map<uint64_t, CSession> m_sessions;
+	std::map<uint64_t, CSession> m_sessions;
 
-		CSession *CheckLoggedin(ThreadData &);
-	protected:
-		virtual void ProcessURL(ThreadData);
-		virtual void ProcessImgFileReq(ThreadData);
-	public:
-		CScriptWebServer(CamulewebApp *webApp, const wxString& templateDir);
-		~CScriptWebServer();
+	CSession *CheckLoggedin(ThreadData &);
 
+protected:
+	virtual void ProcessURL(ThreadData);
+	virtual void ProcessImgFileReq(ThreadData);
+
+public:
+	CScriptWebServer(CamulewebApp *webApp, const wxString &templateDir);
+	~CScriptWebServer();
 };
 
-class CNoTemplateWebServer : public CScriptWebServer {
-	protected:
-		virtual void ProcessURL(ThreadData);
-	public:
-		CNoTemplateWebServer(CamulewebApp *webApp);
-		~CNoTemplateWebServer();
+class CNoTemplateWebServer : public CScriptWebServer
+{
+protected:
+	virtual void ProcessURL(ThreadData);
+
+public:
+	CNoTemplateWebServer(CamulewebApp *webApp);
+	~CNoTemplateWebServer();
 };
 
 #endif // WEBSERVER_H

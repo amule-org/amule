@@ -30,33 +30,31 @@
 #ifndef _WXCAS_H
 #define _WXCAS_H
 
-
 #include <wx/app.h>
 
 #include "wxcasframe.h"
 
 /// Application
-class WxCas: public wxApp
+class WxCas : public wxApp
 {
 private:
-	WxCasFrame * m_frame;
+	WxCasFrame *m_frame;
 
 protected:
 	wxLocale m_locale; // Used to tell wxCas to use aMule catalog
 
 public:
-
 	/// Application initialisation
-	virtual bool OnInit ();
+	virtual bool OnInit();
 
 	/// Cleaning on exit
 	virtual int OnExit();
 
 	/// Get application main frame
-	WxCasFrame *GetMainFrame () const;
+	WxCasFrame *GetMainFrame() const;
 };
 
-DECLARE_APP ( WxCas )
+DECLARE_APP(WxCas)
 
 #endif /* _WXCAS_H */
 // File_checked_for_headers

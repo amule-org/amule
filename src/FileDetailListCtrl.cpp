@@ -23,17 +23,18 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "muuli_wdr.h"		// Needed for ID_CLOSEWNDFD
-#include "FileDetailListCtrl.h"	// Interface declarations
+#include "muuli_wdr.h"          // Needed for ID_CLOSEWNDFD
+#include "FileDetailListCtrl.h" // Interface declarations
 
 #define wxLIST_STATE_DESELECTED 0x0000
 
 wxBEGIN_EVENT_TABLE(CFileDetailListCtrl, CMuleListCtrl)
-	EVT_LIST_ITEM_SELECTED(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl::OnSelect) // Care for single selection
+	EVT_LIST_ITEM_SELECTED(
+		IDC_LISTCTRLFILENAMES, CFileDetailListCtrl::OnSelect) // Care for single selection
 wxEND_EVENT_TABLE()
 
-
-CFileDetailListCtrl::CFileDetailListCtrl(wxWindow * &parent, int id, const wxPoint & pos, wxSize siz, int flags):CMuleListCtrl(parent, id, pos, siz, flags)
+CFileDetailListCtrl::CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoint &pos, wxSize siz, int flags)
+: CMuleListCtrl(parent, id, pos, siz, flags)
 {
 	// Set sorter function
 	SetSortFunc(SortProc);
@@ -50,20 +51,22 @@ CFileDetailListCtrl::CFileDetailListCtrl(wxWindow * &parent, int id, const wxPoi
 int CFileDetailListCtrl::SortProc(wxUIntPtr param1, wxUIntPtr param2, wxIntPtr sortData)
 {
 	// Comparison for different sortings
-	SourcenameItem *item1 = reinterpret_cast<SourcenameItem*>(param1);
-	SourcenameItem *item2 = reinterpret_cast<SourcenameItem*>(param2);
+	SourcenameItem *item1 = reinterpret_cast<SourcenameItem *>(param1);
+	SourcenameItem *item2 = reinterpret_cast<SourcenameItem *>(param2);
 
 	int mod = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
 
 	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
-		case 1: return mod * (item1->count - item2->count);			// Sources descending
-		case 0: return mod * item1->name.CmpNoCase(item2->name);	// Name descending
-		default: return 0;
+	case 1:
+		return mod * (item1->count - item2->count); // Sources descending
+	case 0:
+		return mod * item1->name.CmpNoCase(item2->name); // Name descending
+	default:
+		return 0;
 	}
 }
 
-
-void CFileDetailListCtrl::OnSelect(wxListEvent& event)
+void CFileDetailListCtrl::OnSelect(wxListEvent &event)
 {
 	// Damn wxLC_SINGLE_SEL does not work! So we have to care for single selection ourselves:
 	long realpos = event.m_itemIndex;

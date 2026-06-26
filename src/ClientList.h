@@ -26,7 +26,7 @@
 #ifndef CLIENTLIST_H
 #define CLIENTLIST_H
 
-#include "DeadSourceList.h"	// Needed for CDeadSourceList
+#include "DeadSourceList.h" // Needed for CDeadSourceList
 #include "ClientRef.h"
 
 #include <deque>
@@ -36,10 +36,11 @@ class CUpDownClient;
 class CClientTCPSocket;
 class CDeletedClient;
 class CMD4Hash;
-namespace Kademlia {
-	class CContact;
-	class CUInt128;
-}
+namespace Kademlia
+{
+class CContact;
+class CUInt128;
+} // namespace Kademlia
 
 enum buddyState
 {
@@ -48,9 +49,7 @@ enum buddyState
 	Connected
 };
 
-
-#define BAN_CLEANUP_TIME	1200000 // 20 min
-
+#define BAN_CLEANUP_TIME 1200000 // 20 min
 
 /**
  * This class takes care of managing existing clients.
@@ -73,13 +72,12 @@ public:
 	 */
 	~CClientList();
 
-
 	/**
 	 * Adds a client to the global list of clients.
 	 *
 	 * @param toadd The new client.
 	 */
-	void	AddClient( CUpDownClient* toadd );
+	void AddClient(CUpDownClient *toadd);
 
 	/**
 	 * Removes a client from the  client lists.
@@ -88,8 +86,7 @@ public:
 	 *
 	 * To be called from CUpDownClient::Safe_Delete only.
 	 */
-	void	RemoveClient( CUpDownClient* client );
-
+	void RemoveClient(CUpDownClient *client);
 
 	/**
 	 * Updates the recorded IP of the specified client.
@@ -101,7 +98,7 @@ public:
 	 * IP-address, and will update the old entry with the new value. There
 	 * will only be added an entry if the new IP isn't zero.
 	 */
-	void	UpdateClientIP( CUpDownClient* client, uint32 newIP );
+	void UpdateClientIP(CUpDownClient *client, uint32 newIP);
 
 	/**
 	 * Updates the recorded ID of the specified client.
@@ -114,7 +111,7 @@ public:
 	 * two functions, this function will always ensure that there is an entry
 	 * for the client, regardless of the value of newID.
 	 */
-	void	UpdateClientID( CUpDownClient* client, uint32 newID );
+	void UpdateClientID(CUpDownClient *client, uint32 newID);
 
 	/**
 	 * Updates the recorded hash of the specified client.
@@ -126,20 +123,17 @@ public:
 	 * user-hash, and will update the old entry with the new value. There will
 	 * only be added an entry if the new hash is valid.
 	 */
-	void	UpdateClientHash( CUpDownClient* client, const CMD4Hash& newHash );
-
+	void UpdateClientHash(CUpDownClient *client, const CMD4Hash &newHash);
 
 	/**
 	 * Returns the number of listed clients.
 	 */
-	uint32	GetClientCount() const;
-
+	uint32 GetClientCount() const;
 
 	/**
 	 * Deletes all tracked clients.
 	 */
-	void	DeleteAll();
-
+	void DeleteAll();
 
 	/**
 	 * Replaces a new client-instance with the an already existing client, if one such exist.
@@ -152,8 +146,7 @@ public:
 	 * the new one. If that is the case, it will delete the new instance and set the pointer to
 	 * the existing one.
 	 */
-	bool	AttachToAlreadyKnown( CUpDownClient** client, CClientTCPSocket* sender );
-
+	bool AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket *sender);
 
 	/**
 	 * Finds a client with the specified ip and port.
@@ -161,8 +154,7 @@ public:
 	 * @param clientip The IP of the client to find.
 	 * @param port The port used by the client.
 	 */
-	CUpDownClient* FindClientByIP( uint32 clientip, uint16 port );
-
+	CUpDownClient *FindClientByIP(uint32 clientip, uint16 port);
 
 	/**
 	 * Finds a client with the specified ip.
@@ -171,8 +163,7 @@ public:
 	 *
 	 * Returns the first client found if there are several with same ip.
 	 */
-	CUpDownClient* FindClientByIP( uint32 clientip );
-
+	CUpDownClient *FindClientByIP(uint32 clientip);
 
 	/**
 	 * Finds a client with the specified ECID.
@@ -180,12 +171,10 @@ public:
 	 * @param clientip The IP of the client to find.
 	 *
 	 */
-	CUpDownClient* FindClientByECID(uint32 ecid) const;
-
+	CUpDownClient *FindClientByECID(uint32 ecid) const;
 
 	//! The list-type used to store clients IPs and ban time information
 	typedef std::map<uint32, uint64> ClientMap;
-
 
 	/**
 	 * Adds a client to the list of tracked clients.
@@ -196,7 +185,7 @@ public:
 	 * have been deleted and makes it possible to spot port or hash
 	 * changes.
 	 */
-	void	AddTrackClient(CUpDownClient* toadd);
+	void AddTrackClient(CUpDownClient *toadd);
 
 	/**
 	 * Returns the number of tracked client.
@@ -204,7 +193,7 @@ public:
 	 * @param dwIP The IP-address which of the clients.
 	 * @return The number of clients tracked at the specified IP.
 	 */
-	uint16	GetClientsFromIP(uint32 dwIP);
+	uint16 GetClientsFromIP(uint32 dwIP);
 
 	/**
 	 * Checks if a client has changed its user-hash.
@@ -214,15 +203,14 @@ public:
 	 * @param pNewHash The userhash associated with the client.
 	 *
 	 */
-	bool	ComparePriorUserhash( uint32 dwIP, uint16 nPort, void* pNewHash );
-
+	bool ComparePriorUserhash(uint32 dwIP, uint16 nPort, void *pNewHash);
 
 	/**
 	 * Bans an IP address for 2 hours.
 	 *
 	 * @param dwIP The IP from which all clients will be banned.
 	 */
-	void	AddBannedClient(uint32 dwIP);
+	void AddBannedClient(uint32 dwIP);
 
 	/**
 	 * Checks if a client has been banned.
@@ -230,15 +218,14 @@ public:
 	 * @param dwIP The IP to check.
 	 * @return True if the IP is banned, false otherwise.
 	 */
-	bool	IsBannedClient(uint32 dwIP);
+	bool IsBannedClient(uint32 dwIP);
 
 	/**
 	 * Unbans an IP address, if it has been banned.
 	 *
 	 * @param dwIP The IP address to unban.
 	 */
-	void	RemoveBannedClient(uint32 dwIP);
-
+	void RemoveBannedClient(uint32 dwIP);
 
 	/**
 	 * Main loop.
@@ -246,8 +233,7 @@ public:
 	 * This function takes care of cleaning the various lists and deleting
 	 * pending clients on the deletion-queue.
 	 */
-	void	Process();
-
+	void Process();
 
 	/**
 	 * This function removes all clients filtered by the current IPFilter.
@@ -256,12 +242,10 @@ public:
 	 * that no client-connections to illegal IPs exist. These would otherwise
 	 * be allowed to exist, bypassing the IPFilter.
 	 */
-	void	FilterQueues();
-
+	void FilterQueues();
 
 	//! The type of the list used to store client-pointers for a couple of tasks.
 	typedef std::deque<CClientRef> SourceList;
-
 
 	/**
 	 * Returns a list of clients with the specified user-hash.
@@ -272,7 +256,7 @@ public:
 	 * provided that the hash is a valid non-empty userhash. Empty hashes will
 	 * simply result in nothing being found.
 	 */
-	SourceList	GetClientsByHash( const CMD4Hash& hash );
+	SourceList GetClientsByHash(const CMD4Hash &hash);
 
 	/**
 	 * Returns a list of clients with the specified IP.
@@ -283,29 +267,26 @@ public:
 	 * provided that the IP is a non-zero value. A value of zero will not
 	 * result in any results.
 	 */
-	SourceList	GetClientsByIP( unsigned long ip );
-
+	SourceList GetClientsByIP(unsigned long ip);
 
 	//! The type of the lists used to store IPs and IDs.
 	typedef std::multimap<uint32, CClientRef> IDMap;
 	//! The pairs of the IP/ID list.
 	typedef std::pair<uint32, CClientRef> IDMapPair;
 
-
 	/**
 	 * Returns a list of all clients.
 	 *
 	 * @return The complete list of clients.
 	 */
-	const IDMap& GetClientList();
-
+	const IDMap &GetClientList();
 
 	/**
 	 * Adds a source to the list of dead sources.
 	 *
 	 * @param client The source to be recorded as dead.
 	 */
-	void		AddDeadSource(const CUpDownClient* client);
+	void AddDeadSource(const CUpDownClient *client);
 
 	/**
 	 * Checks if a source is recorded as being dead.
@@ -316,50 +297,53 @@ public:
 	 * Sources that are dead are not to be considered valid
 	 * sources and should not be added to partfiles.
 	 */
-	bool		IsDeadSource(const CUpDownClient* client);
+	bool IsDeadSource(const CUpDownClient *client);
 
 	/**
 	 * Sends a message to a client, identified by a GUI_ID
 	 *
 	 * @return Success
 	 */
-	 bool	SendChatMessage(uint64 client_id, const wxString& message);
+	bool SendChatMessage(uint64 client_id, const wxString &message);
 
 	/**
 	 * Stops a chat session with a client.
 	 *
 	 */
-	 void	SetChatState(uint64 client_id, uint8 state);
+	void SetChatState(uint64 client_id, uint8 state);
 
-	uint8	GetBuddyStatus() const {return m_nBuddyStatus;}
+	uint8 GetBuddyStatus() const { return m_nBuddyStatus; }
 	// This must be used on CreateKadSourceLink and if we ever add the columns
 	// on shared files control.
-	CUpDownClient* GetBuddy() { return m_pBuddy.GetClient(); }
+	CUpDownClient *GetBuddy() { return m_pBuddy.GetClient(); }
 	uint32 GetBuddyIP();
 	uint16 GetBuddyPort();
-	bool RequestTCP(Kademlia::CContact* contact, uint8_t connectOptions);
-	void RequestBuddy(Kademlia::CContact* contact, uint8_t connectOptions);
-	bool IncomingBuddy(Kademlia::CContact* contact, Kademlia::CUInt128* buddyID);
-	void RemoveFromKadList(CUpDownClient* torem);
-	void AddToKadList(CUpDownClient* toadd);
-	bool DoRequestFirewallCheckUDP(const Kademlia::CContact& contact);
+	bool RequestTCP(Kademlia::CContact *contact, uint8_t connectOptions);
+	void RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptions);
+	bool IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID);
+	void RemoveFromKadList(CUpDownClient *torem);
+	void AddToKadList(CUpDownClient *toadd);
+	bool DoRequestFirewallCheckUDP(const Kademlia::CContact &contact);
 
 	void AddKadFirewallRequest(uint32 ip);
 	bool IsKadFirewallCheckIP(uint32 ip) const;
 
 	// Direct Callback list
-	void	AddDirectCallbackClient(CUpDownClient *toAdd);
-	void	RemoveDirectCallback(CUpDownClient *toRemove) { m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, "")); }
-	void	AddTrackCallbackRequests(uint32_t ip);
-	bool	AllowCallbackRequest(uint32_t ip) const;
+	void AddDirectCallbackClient(CUpDownClient *toAdd);
+	void RemoveDirectCallback(CUpDownClient *toRemove)
+	{
+		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
+	}
+	void AddTrackCallbackRequests(uint32_t ip);
+	bool AllowCallbackRequest(uint32_t ip) const;
 
 protected:
 	/*
 	 * Avoids unwanted clients to be forever in the client list
 	 */
-	void	CleanUpClientList();
+	void CleanUpClientList();
 
-	void	ProcessDirectCallbackList();
+	void ProcessDirectCallbackList();
 
 private:
 	/**
@@ -371,8 +355,7 @@ private:
 	 * This functions searches through the list of clients and finds the first match
 	 * using the same checks as CUpDownClient::Compare, but without the overhead.
 	 */
-	CUpDownClient* FindMatchingClient( CUpDownClient* client );
-
+	CUpDownClient *FindMatchingClient(CUpDownClient *client);
 
 	/**
 	 * Check if we already know this IP.
@@ -384,67 +367,65 @@ private:
 	 */
 	bool IsIPAlreadyKnown(uint32_t ip);
 
-
 	/**
 	 * Helperfunction which removes the client from the IP-list.
 	 */
-	void	RemoveIPFromList( CUpDownClient* client );
+	void RemoveIPFromList(CUpDownClient *client);
 	/**
 	 * Helperfunction which removes the client from the ID-list.
 	 */
-	bool	RemoveIDFromList( CUpDownClient* client );
+	bool RemoveIDFromList(CUpDownClient *client);
 	/**
 	 * Helperfunction which removes the client from the hash-list.
 	 */
-	void	RemoveHashFromList( CUpDownClient* client );
-
+	void RemoveHashFromList(CUpDownClient *client);
 
 	//! The type of the list used to store user-hashes.
 	typedef std::multimap<CMD4Hash, CClientRef> HashMap;
 	//! The pairs of the Hash-list.
 	typedef std::pair<CMD4Hash, CClientRef> HashMapPair;
 
-
 	//! The map of clients with valid hashes
-	HashMap	m_hashList;
+	HashMap m_hashList;
 
 	//! The map of clients with valid IPs
-	IDMap	m_ipList;
+	IDMap m_ipList;
 
 	//! The full lists of clients
-	IDMap	m_clientList;
+	IDMap m_clientList;
 
 	//! This is the map of banned clients.
 	ClientMap m_bannedList;
 	//! This variable is used to keep track of the last time the banned-list was pruned.
-	uint64	m_dwLastBannCleanUp;
+	uint64 m_dwLastBannCleanUp;
 
 	//! This is the map of tracked clients.
-	std::map<uint32, CDeletedClient*> m_trackedClientsList;
+	std::map<uint32, CDeletedClient *> m_trackedClientsList;
 	//! This keeps track of the last time the tracked-list was pruned.
-	uint64	m_dwLastTrackedCleanUp;
+	uint64 m_dwLastTrackedCleanUp;
 
 	//! This keeps track of the last time the client-list was pruned.
 	uint64 m_dwLastClientCleanUp;
 
 	//! List of unusable sources.
-	CDeadSourceList	m_deadSources;
+	CDeadSourceList m_deadSources;
 
 	/* Kad Stuff */
-	CClientRefSet	m_KadSources;
-	CClientRef		m_pBuddy;
+	CClientRefSet m_KadSources;
+	CClientRef m_pBuddy;
 	uint8 m_nBuddyStatus;
 
-	typedef struct {
+	typedef struct
+	{
 		uint32 ip;
 		uint64 inserted;
 	} IpAndTicks;
-	typedef std::list<IpAndTicks>	IpAndTicksList;
-	IpAndTicksList			m_firewallCheckRequests;
+	typedef std::list<IpAndTicks> IpAndTicksList;
+	IpAndTicksList m_firewallCheckRequests;
 
-	typedef CClientRefList	DirectCallbackList;
-	DirectCallbackList		m_currentDirectCallbacks;
-	IpAndTicksList			m_directCallbackRequests;
+	typedef CClientRefList DirectCallbackList;
+	DirectCallbackList m_currentDirectCallbacks;
+	IpAndTicksList m_directCallbackRequests;
 };
 
 #endif

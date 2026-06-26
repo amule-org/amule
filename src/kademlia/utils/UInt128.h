@@ -43,7 +43,8 @@ there client on the eMule forum..
 #include "../../Types.h"
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 /**
@@ -60,31 +61,22 @@ namespace Kademlia {
 class CUInt128
 {
 public:
-	CUInt128(const CUInt128& value) noexcept
-	{
-		SetValue(value);
-	}
+	CUInt128(const CUInt128 &value) noexcept { SetValue(value); }
 
 	explicit CUInt128(bool fill = false) noexcept
 	{
 		m_data.u64_data[0] = m_data.u64_data[1] = (fill ? (uint64_t)-1 : 0);
 	}
 
-	explicit CUInt128(uint32_t value) noexcept
-	{
-		SetValue(value);
-	}
+	explicit CUInt128(uint32_t value) noexcept { SetValue(value); }
 
-	explicit CUInt128(const uint8_t *valueBE) noexcept
-	{
-		SetValueBE(valueBE);
-	}
+	explicit CUInt128(const uint8_t *valueBE) noexcept { SetValueBE(valueBE); }
 
 	/**
 	 * Generates a new number, copying the most significant 'numBits' bits from 'value'.
 	 * The remaining bits are randomly generated.
 	 */
-	CUInt128(const CUInt128& value, unsigned numBits);
+	CUInt128(const CUInt128 &value, unsigned numBits);
 
 	/* Bit at level 0 being most significant. */
 	unsigned GetBitNumber(unsigned bit) const noexcept
@@ -93,7 +85,7 @@ public:
 	}
 
 	/* Bit at level 0 being most significant. */
-	CUInt128& SetBitNumber(unsigned bit, unsigned value)
+	CUInt128 &SetBitNumber(unsigned bit, unsigned value)
 	{
 		wxCHECK(bit <= 127, *this);
 
@@ -106,10 +98,7 @@ public:
 	}
 
 	/* Chunk 0 being the most significant */
-	uint32_t Get32BitChunk(unsigned val) const noexcept
-	{
-		return val < 4 ? m_data.u32_data[3 - val] : 0;
-	}
+	uint32_t Get32BitChunk(unsigned val) const noexcept { return val < 4 ? m_data.u32_data[3 - val] : 0; }
 
 	/* Chunk 0 being the most significant */
 	void Set32BitChunk(unsigned chunk, uint32_t value)
@@ -119,7 +108,7 @@ public:
 		m_data.u32_data[3 - chunk] = value;
 	}
 
-	CUInt128& SetValueBE(const uint8_t *valueBE) noexcept;
+	CUInt128 &SetValueBE(const uint8_t *valueBE) noexcept;
 
 	wxString ToHexString() const;
 	wxString ToBinaryString(bool trim = false) const;
@@ -128,24 +117,24 @@ public:
 	/**
 	 * Stores value used by the crypt functions.
 	 *
-	 * Since eMule started to use the value as-is (four little-endian 32-bit integers in big-endian order),
-	 * we have to reproduce that same representation on every platform.
+	 * Since eMule started to use the value as-is (four little-endian 32-bit integers in big-endian
+	 * order), we have to reproduce that same representation on every platform.
 	 *
 	 * @param buf Buffer to hold the value. Must be large enough to hold the data (16 bytes at least),
 	 *	and must not be NULL.
 	 */
 	void StoreCryptValue(uint8_t *buf) const;
 
-      private:
-	int CompareTo(const CUInt128& other) const noexcept;
+private:
+	int CompareTo(const CUInt128 &other) const noexcept;
 	int CompareTo(uint32_t value) const noexcept;
-	CUInt128& Add(const CUInt128& value) noexcept;
-	CUInt128& Add(uint32_t value) noexcept { return value ? Add(CUInt128(value)) : *this; }
-	CUInt128& Subtract(const CUInt128& value) noexcept;
-	CUInt128& Subtract(uint32_t value) noexcept { return value ? Subtract(CUInt128(value)) : *this; }
-	CUInt128& ShiftLeft(unsigned bits) noexcept;
+	CUInt128 &Add(const CUInt128 &value) noexcept;
+	CUInt128 &Add(uint32_t value) noexcept { return value ? Add(CUInt128(value)) : *this; }
+	CUInt128 &Subtract(const CUInt128 &value) noexcept;
+	CUInt128 &Subtract(uint32_t value) noexcept { return value ? Subtract(CUInt128(value)) : *this; }
+	CUInt128 &ShiftLeft(unsigned bits) noexcept;
 
-	CUInt128& XOR(const CUInt128& value) noexcept
+	CUInt128 &XOR(const CUInt128 &value) noexcept
 	{
 		m_data.u64_data[0] ^= value.m_data.u64_data[0];
 		m_data.u64_data[1] ^= value.m_data.u64_data[1];
@@ -155,46 +144,53 @@ public:
 
 	bool IsZero() const noexcept { return (m_data.u64_data[0] | m_data.u64_data[1]) == 0; }
 
-      public:
-	bool operator< (const CUInt128& value) const noexcept { return (CompareTo(value) <  0); }
-	bool operator> (const CUInt128& value) const noexcept { return (CompareTo(value) >  0); }
-	bool operator<=(const CUInt128& value) const noexcept { return (CompareTo(value) <= 0); }
-	bool operator>=(const CUInt128& value) const noexcept { return (CompareTo(value) >= 0); }
-	bool operator==(const CUInt128& value) const noexcept { return (CompareTo(value) == 0); }
-	bool operator!=(const CUInt128& value) const noexcept { return (CompareTo(value) != 0); }
+public:
+	bool operator<(const CUInt128 &value) const noexcept { return (CompareTo(value) < 0); }
+	bool operator>(const CUInt128 &value) const noexcept { return (CompareTo(value) > 0); }
+	bool operator<=(const CUInt128 &value) const noexcept { return (CompareTo(value) <= 0); }
+	bool operator>=(const CUInt128 &value) const noexcept { return (CompareTo(value) >= 0); }
+	bool operator==(const CUInt128 &value) const noexcept { return (CompareTo(value) == 0); }
+	bool operator!=(const CUInt128 &value) const noexcept { return (CompareTo(value) != 0); }
 
-	bool operator< (uint32_t value) const noexcept { return (CompareTo(value) <  0); }
-	bool operator> (uint32_t value) const noexcept { return (CompareTo(value) >  0); }
+	bool operator<(uint32_t value) const noexcept { return (CompareTo(value) < 0); }
+	bool operator>(uint32_t value) const noexcept { return (CompareTo(value) > 0); }
 	bool operator<=(uint32_t value) const noexcept { return (CompareTo(value) <= 0); }
 	bool operator>=(uint32_t value) const noexcept { return (CompareTo(value) >= 0); }
 	bool operator==(uint32_t value) const noexcept { return (CompareTo(value) == 0); }
 	bool operator!=(uint32_t value) const noexcept { return (CompareTo(value) != 0); }
 
-	CUInt128& operator= (const CUInt128& value) noexcept { SetValue(value); return *this; }
-	CUInt128& operator+=(const CUInt128& value) noexcept { return Add(value); }
-	CUInt128& operator-=(const CUInt128& value) noexcept { return Subtract(value); }
-	CUInt128& operator^=(const CUInt128& value) noexcept { return XOR(value); }
+	CUInt128 &operator=(const CUInt128 &value) noexcept
+	{
+		SetValue(value);
+		return *this;
+	}
+	CUInt128 &operator+=(const CUInt128 &value) noexcept { return Add(value); }
+	CUInt128 &operator-=(const CUInt128 &value) noexcept { return Subtract(value); }
+	CUInt128 &operator^=(const CUInt128 &value) noexcept { return XOR(value); }
 
-	CUInt128& operator= (uint32_t value) noexcept { SetValue(value); return *this; }
-	CUInt128& operator+=(uint32_t value) noexcept { return Add(value); }
-	CUInt128& operator-=(uint32_t value) noexcept { return Subtract(value); }
-	CUInt128& operator^=(uint32_t value) noexcept { return value ? XOR(CUInt128(value)) : *this; }
+	CUInt128 &operator=(uint32_t value) noexcept
+	{
+		SetValue(value);
+		return *this;
+	}
+	CUInt128 &operator+=(uint32_t value) noexcept { return Add(value); }
+	CUInt128 &operator-=(uint32_t value) noexcept { return Subtract(value); }
+	CUInt128 &operator^=(uint32_t value) noexcept { return value ? XOR(CUInt128(value)) : *this; }
 
-	CUInt128& operator<<=(unsigned bits) noexcept { return ShiftLeft(bits); }
+	CUInt128 &operator<<=(unsigned bits) noexcept { return ShiftLeft(bits); }
 
-	CUInt128  operator+(const CUInt128& value) const noexcept { return CUInt128(*this).operator+=(value); }
-	CUInt128  operator-(const CUInt128& value) const noexcept { return CUInt128(*this).operator-=(value); }
-	CUInt128  operator^(const CUInt128& value) const noexcept { return CUInt128(*this).operator^=(value); }
+	CUInt128 operator+(const CUInt128 &value) const noexcept { return CUInt128(*this).operator+=(value); }
+	CUInt128 operator-(const CUInt128 &value) const noexcept { return CUInt128(*this).operator-=(value); }
+	CUInt128 operator^(const CUInt128 &value) const noexcept { return CUInt128(*this).operator^=(value); }
 
-	CUInt128  operator+(uint32_t value) const noexcept { return CUInt128(*this).operator+=(value); }
-	CUInt128  operator-(uint32_t value) const noexcept { return CUInt128(*this).operator-=(value); }
-	CUInt128  operator^(uint32_t value) const noexcept { return CUInt128(*this).operator^=(value); }
+	CUInt128 operator+(uint32_t value) const noexcept { return CUInt128(*this).operator+=(value); }
+	CUInt128 operator-(uint32_t value) const noexcept { return CUInt128(*this).operator-=(value); }
+	CUInt128 operator^(uint32_t value) const noexcept { return CUInt128(*this).operator^=(value); }
 
-	CUInt128  operator<<(unsigned bits) const noexcept { return CUInt128(*this).operator<<=(bits); }
-
+	CUInt128 operator<<(unsigned bits) const noexcept { return CUInt128(*this).operator<<=(bits); }
 
 private:
-	void SetValue(const CUInt128& other) noexcept
+	void SetValue(const CUInt128 &other) noexcept
 	{
 		m_data.u64_data[0] = other.m_data.u64_data[0];
 		m_data.u64_data[1] = other.m_data.u64_data[1];
@@ -207,23 +203,51 @@ private:
 		m_data.u64_data[1] = 0;
 	}
 
-	union {
+	union
+	{
 		uint32_t u32_data[4];
 		uint64_t u64_data[2];
 	} m_data;
 };
 
-inline bool operator==(uint32_t x, const CUInt128& y) noexcept { return y.operator==(x); }
-inline bool operator!=(uint32_t x, const CUInt128& y) noexcept { return y.operator!=(x); }
-inline bool operator<(uint32_t x, const CUInt128& y) noexcept { return y.operator>(x); }
-inline bool operator>(uint32_t x, const CUInt128& y) noexcept { return y.operator<(x); }
-inline bool operator<=(uint32_t x, const CUInt128& y) noexcept { return y.operator>=(x); }
-inline bool operator>=(uint32_t x, const CUInt128& y) noexcept { return y.operator<=(x); }
-inline CUInt128 operator+(uint32_t x, const CUInt128& y) noexcept { return y.operator+(x); }
-inline CUInt128 operator-(uint32_t x, const CUInt128& y) noexcept { return CUInt128(x).operator-(y); }
-inline CUInt128 operator^(uint32_t x, const CUInt128& y) noexcept { return y.operator^(x); }
+inline bool operator==(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator==(x);
+}
+inline bool operator!=(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator!=(x);
+}
+inline bool operator<(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator>(x);
+}
+inline bool operator>(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator<(x);
+}
+inline bool operator<=(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator>=(x);
+}
+inline bool operator>=(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator<=(x);
+}
+inline CUInt128 operator+(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator+(x);
+}
+inline CUInt128 operator-(uint32_t x, const CUInt128 &y) noexcept
+{
+	return CUInt128(x).operator-(y);
+}
+inline CUInt128 operator^(uint32_t x, const CUInt128 &y) noexcept
+{
+	return y.operator^(x);
+}
 
-} // End namespace
+} // namespace Kademlia
 
 #endif
 // File_checked_for_headers

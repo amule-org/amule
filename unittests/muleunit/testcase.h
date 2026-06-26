@@ -19,22 +19,18 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef TESTCASE_H
 #define TESTCASE_H
 
-
 #include <wx/string.h>
 #include <list>
-
 
 namespace muleunit
 {
 
 class Test;
 
-typedef std::list<Test*> TestList;
-
+typedef std::list<Test *> TestList;
 
 /**
  * A TestCase is a collection of unit tests (instance of Test) and is
@@ -43,13 +39,12 @@ typedef std::list<Test*> TestList;
 class TestCase
 {
 public:
-
 	/**
 	 * Main TestCase constructor.
 	 *
 	 * @param name TestCase name
 	 */
-	TestCase(const wxString& name);
+	TestCase(const wxString &name);
 
 	virtual ~TestCase();
 
@@ -65,7 +60,7 @@ public:
 	 *
 	 * @return Test list
 	 */
-	const TestList& getTests() const;
+	const TestList &getTests() const;
 
 	/**
 	 * Execute all Tests in the Test list of this TestCase, returning false if there were failures.
@@ -102,7 +97,7 @@ public:
 	 *
 	 * @return The name of the TestCase
 	 */
-	const wxString& getName() const;
+	const wxString &getName() const;
 
 protected:
 	int m_failuresCount;
@@ -114,6 +109,5 @@ private:
 	void runTests(Test *test);
 };
 
-} // MuleUnit ns
+} // namespace muleunit
 #endif // TESTCASE_H
-

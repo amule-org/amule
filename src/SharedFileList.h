@@ -30,9 +30,9 @@
 #include <list>
 #include <map>
 #include <unordered_map>
-#include <wx/thread.h>		// Needed for wxMutex
+#include <wx/thread.h> // Needed for wxMutex
 
-#include "Types.h"		// Needed for uint16 and uint64
+#include "Types.h" // Needed for uint16 and uint64
 
 struct UnknownFile_Struct;
 
@@ -47,14 +47,14 @@ class CAICHHash;
 class CThreadTask;
 class CSharedDirWatcher;
 
-
-typedef std::map<CMD4Hash,CKnownFile*> CKnownFileMap;
+typedef std::map<CMD4Hash, CKnownFile *> CKnownFileMap;
 typedef std::map<wxString, CPath> StringPathMap;
 typedef std::list<CPath> PathList;
 
-class CSharedFileList {
+class CSharedFileList
+{
 public:
-	CSharedFileList(CKnownFileList* in_filelist);
+	CSharedFileList(CKnownFileList *in_filelist);
 	~CSharedFileList();
 
 	// Yield/cancel hook for chunked reloads. Invoked periodically
@@ -65,25 +65,33 @@ public:
 	// that don't have a UI to drive.
 	using ReloadYieldCb = std::function<bool(size_t /*filesScanned*/)>;
 
-	void	Reload();
+	void Reload();
 	// Cancellable + progress-reporting variant. Returns true if the
 	// walk completed normally, false if `yieldCb` requested abort.
-	bool	Reload(ReloadYieldCb yieldCb);
-	void	SafeAddKFile(CKnownFile* toadd, bool bOnlyAdd = false);
-	void	RemoveFile(CKnownFile* toremove);
-	CKnownFile*	GetFileByID(const CMD4Hash& filehash);
-	short	GetFilePriorityByID(const CMD4Hash& filehash);
-	const CKnownFile* GetFileByIndex(unsigned int index) const;
-	size_t	GetCount()	{ wxMutexLocker lock(list_mut); return m_Files_map.size(); }
-	size_t  GetFileCount()	{ wxMutexLocker lock(list_mut); return m_Files_map.size(); }
-	void	CopyFileList(std::vector<CKnownFile*>& out_list) const;
-	void	UpdateItem(CKnownFile* toupdate);
-	void    GetSharedFilesByDirectory(const wxString& directory, CKnownFilePtrList& list);
-	void	ClearED2KPublishInfo();
-	void	RepublishFile(CKnownFile* pFile);
-	void	Process();
-	void	PublishNextTurn()	{ m_lastPublishED2KFlag = true; }
-	bool	RenameFile(CKnownFile* pFile, const CPath& newName);
+	bool Reload(ReloadYieldCb yieldCb);
+	void SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd = false);
+	void RemoveFile(CKnownFile *toremove);
+	CKnownFile *GetFileByID(const CMD4Hash &filehash);
+	short GetFilePriorityByID(const CMD4Hash &filehash);
+	const CKnownFile *GetFileByIndex(unsigned int index) const;
+	size_t GetCount()
+	{
+		wxMutexLocker lock(list_mut);
+		return m_Files_map.size();
+	}
+	size_t GetFileCount()
+	{
+		wxMutexLocker lock(list_mut);
+		return m_Files_map.size();
+	}
+	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
+	void UpdateItem(CKnownFile *toupdate);
+	void GetSharedFilesByDirectory(const wxString &directory, CKnownFilePtrList &list);
+	void ClearED2KPublishInfo();
+	void RepublishFile(CKnownFile *pFile);
+	void Process();
+	void PublishNextTurn() { m_lastPublishED2KFlag = true; }
+	bool RenameFile(CKnownFile *pFile, const CPath &newName);
 
 	/**
 	 * Returns the name of a folder visible to the public.
@@ -95,33 +103,33 @@ public:
 	 * The returned public name consists of only subdirectories that are shared.
 	 * Example: /ed2k/shared/games/tetris -> "games/tetris" if /ed2k/shared are not marked as shared
 	 */
-	wxString		GetPublicSharedDirName(const CPath& dir);
-	const CPath*	GetDirForPublicSharedDirName(const wxString& strSharedDir) const;
+	wxString GetPublicSharedDirName(const CPath &dir);
+	const CPath *GetDirForPublicSharedDirName(const wxString &strSharedDir) const;
 
 	/**
 	 * Returns true, if the specified path points to a shared directory or single shared file.
 	 */
-	bool			IsShared(const CPath& path) const;
+	bool IsShared(const CPath &path) const;
 
 	/* Kad Stuff */
-	void	Publish();
-	void	AddKeywords(CKnownFile* pFile);
-	void	RemoveKeywords(CKnownFile* pFile);
+	void Publish();
+	void AddKeywords(CKnownFile *pFile);
+	void RemoveKeywords(CKnownFile *pFile);
 	// This is actually unused, but keep it here - will be needed later.
-	void	ClearKadSourcePublishInfo();
+	void ClearKadSourcePublishInfo();
 
 	/**
 	 * Checks for files which missing or wrong AICH hashes.
 	 * Those that are found are scheduled for ACIH hashing.
 	 */
-	void CheckAICHHashes(const std::list<CAICHHash>& hashes);
+	void CheckAICHHashes(const std::list<CAICHHash> &hashes);
 
 	/**
 	 * Toggle automatic rescan of shared directories at runtime.
 	 * Called when the user flips the corresponding pref in the
 	 * Directories panel.
 	 */
-	void	EnableDirectoryWatcher(bool enable);
+	void EnableDirectoryWatcher(bool enable);
 
 	// Incremental-rescan entry points used by CSharedDirWatcher to apply
 	// a single fs-watcher event without re-walking every shared dir.
@@ -136,54 +144,57 @@ public:
 	// All three are safe to call from the wxFileSystemWatcher event
 	// thread (i.e. wx's main thread on every supported backend), and
 	// take list_mut internally via AddFile/RemoveFile.
-	void	NotifyPathAdded(const wxString& fullPath);
-	void	NotifyPathRemoved(const wxString& fullPath);
-	void	NotifyPathModified(const wxString& fullPath);
+	void NotifyPathAdded(const wxString &fullPath);
+	void NotifyPathRemoved(const wxString &fullPath);
+	void NotifyPathModified(const wxString &fullPath);
 
 private:
 	typedef std::list<CThreadTask *> TaskList;
 
-	bool	AddFile(CKnownFile* pFile);
+	bool AddFile(CKnownFile *pFile);
 	// Per-path attach: stat fname under directory, look it up in
 	// known.met, and either AddFile() the existing CKnownFile or push
 	// a CHashingTask onto hashTasks. Shared between the bulk-Reload
 	// directory walk and the per-event watcher dispatch so the two
 	// paths agree on what counts as shareable.
-	enum AddPathResult {
-		kAddPathSkipped,    // broken link, zero size, stat failed
-		kAddPathKnown,      // matched a CKnownFile, attached (or already attached)
-		kAddPathQueued      // unknown file, CHashingTask pushed
+	enum AddPathResult
+	{
+		kAddPathSkipped, // broken link, zero size, stat failed
+		kAddPathKnown,   // matched a CKnownFile, attached (or already attached)
+		kAddPathQueued   // unknown file, CHashingTask pushed
 	};
-	AddPathResult	AddPathToShares(const CPath& directory, const CPath& fname,
-		TaskList & hashTasks);
+	AddPathResult AddPathToShares(const CPath &directory, const CPath &fname, TaskList &hashTasks);
 	// scanned/aborted are in/out: the caller passes a running count
 	// and a flag that the dir walker flips on abort. Lets a single
 	// counter span all paths in one Reload() pass.
-	unsigned	AddFilesFromDirectory(const CPath& directory, TaskList & hashTasks,
-		const ReloadYieldCb & yieldCb, size_t & scanned, bool & aborted);
-	void	FindSharedFiles(const ReloadYieldCb & yieldCb, bool & aborted);
-	bool	reloading;
+	unsigned AddFilesFromDirectory(const CPath &directory,
+		TaskList &hashTasks,
+		const ReloadYieldCb &yieldCb,
+		size_t &scanned,
+		bool &aborted);
+	void FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborted);
+	bool reloading;
 
-	void	SendListToServer();
+	void SendListToServer();
 	uint64 m_lastPublishED2K;
-	bool	 m_lastPublishED2KFlag;
+	bool m_lastPublishED2KFlag;
 
-	CKnownFileList*	filelist;
+	CKnownFileList *filelist;
 
-	CKnownFileMap		m_Files_map;
+	CKnownFileMap m_Files_map;
 	// Secondary index keyed by full path so the watcher can resolve a
 	// DELETE/RENAME event to its CKnownFile* in O(1) without walking
 	// m_Files_map. Maintained alongside m_Files_map in AddFile() and
 	// RemoveFile(); both insertion and erase happen under list_mut so
 	// the two stay consistent. Key is the file's current
 	// GetFilePath().JoinPaths(GetFileName()) raw string.
-	std::unordered_map<wxString, CKnownFile*>  m_pathIndex;
-	mutable wxMutex		list_mut;
+	std::unordered_map<wxString, CKnownFile *> m_pathIndex;
+	mutable wxMutex list_mut;
 
-	StringPathMap m_PublicSharedDirNames;  //! used for mapping strings to shared directories
+	StringPathMap m_PublicSharedDirNames; //! used for mapping strings to shared directories
 
 	/* Kad Stuff */
-	CPublishKeywordList* m_keywords;
+	CPublishKeywordList *m_keywords;
 	unsigned int m_currFileSrc;
 	unsigned int m_currFileNotes;
 	unsigned int m_currFileKey;
@@ -193,7 +204,7 @@ private:
 	// Fs-watcher for auto-rescan of shared dirs. Owned here; created
 	// lazily on EnableDirectoryWatcher(true). Forward-declared in this
 	// header to keep wx/fswatcher.h out of public includes.
-	CSharedDirWatcher * m_dirWatcher;
+	CSharedDirWatcher *m_dirWatcher;
 };
 
 #endif // SHAREDFILELIST_H

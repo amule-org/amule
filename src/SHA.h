@@ -69,26 +69,30 @@
 
 class CSHA : public CAICHHashAlgo
 {
-// Construction
+	// Construction
+
 public:
 	CSHA();
 	virtual ~CSHA() {};
-// Operations
+	// Operations
+
 public:
-	virtual void	Reset();
-	virtual void	Add(const void* pData, uint32 nLength);
-	virtual void	Finish(CAICHHash& Hash);
-	virtual void	GetHash(CAICHHash& Hash);
+	virtual void Reset();
+	virtual void Add(const void *pData, uint32 nLength);
+	virtual void Finish(CAICHHash &Hash);
+	virtual void GetHash(CAICHHash &Hash);
+
 protected:
-	void			Compile();
+	void Compile();
+
 private:
-	uint32	m_nCount[2];
-	uint32	m_nHash[5];
-	uint32	m_nBuffer[16];
+	uint32 m_nCount[2];
+	uint32 m_nHash[5];
+	uint32 m_nBuffer[16];
 };
 
-#define SHA1_BLOCK_SIZE		64
-#define SHA1_DIGEST_SIZE	20
+#define SHA1_BLOCK_SIZE 64
+#define SHA1_DIGEST_SIZE 20
 
 #endif // __SHA_H__
 // File_checked_for_headers

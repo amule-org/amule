@@ -26,12 +26,13 @@
 #include "eD2kFiles.h"
 #include "Print.h"
 #include "../../SafeFile.h"
-#include "../../ClientCredits.h"	// Needed for MAXPUBKEYSIZE
-#include "../../OtherFunctions.h"	// Needed for CastItoXBytes
+#include "../../ClientCredits.h"  // Needed for MAXPUBKEYSIZE
+#include "../../OtherFunctions.h" // Needed for CastItoXBytes
 #include <protocol/ed2k/Constants.h>
 #include <tags/FileTags.h>
 
-enum VersionType {
+enum VersionType
+{
 	PrefFile,
 	PartMetFile,
 	CreditFile,
@@ -72,13 +73,13 @@ static wxString VersionInfo(uint8_t version, uint8_t type)
 	return hex(version) + ' ' + verStr;
 };
 
-void DecodePreferencesDat(const CFileDataIO& file)
+void DecodePreferencesDat(const CFileDataIO &file)
 {
 	cout << "(Version): " << VersionInfo(file.ReadUInt8(), PrefFile);
 	cout << "\nUserHash : " << file.ReadHash() << '\n';
 }
 
-void DecodeFriendList(const CFileDataIO& file)
+void DecodeFriendList(const CFileDataIO &file)
 {
 	uint8_t version = file.ReadUInt8();
 	cout << "Version : " << VersionInfo(version, KnownFileList) << endl;
@@ -103,10 +104,10 @@ void DecodeFriendList(const CFileDataIO& file)
 	}
 }
 
-void DecodeServerMet(const CFileDataIO& file)
+void DecodeServerMet(const CFileDataIO &file)
 {
 	uint8_t version = file.ReadUInt8();
-	cout << "Version : " << VersionInfo(version, KnownFileList)  << endl;
+	cout << "Version : " << VersionInfo(version, KnownFileList) << endl;
 	if (version != 0xE0 && version != MET_HEADER) {
 		cerr << "File seems to be corrupt, invalid version!" << endl;
 		return;
@@ -125,7 +126,7 @@ void DecodeServerMet(const CFileDataIO& file)
 	}
 }
 
-void DecodeClientsMet(const CFileDataIO& file)
+void DecodeClientsMet(const CFileDataIO &file)
 {
 	uint8_t version = file.ReadUInt8();
 	cout << "Version : " << VersionInfo(version, CreditFile) << endl;
@@ -146,8 +147,10 @@ void DecodeClientsMet(const CFileDataIO& file)
 		uint32_t downhi = file.ReadUInt32();
 		uint64_t totalup = (static_cast<uint64_t>(uphi) << 32) + uploaded;
 		uint64_t totaldown = (static_cast<uint64_t>(downhi) << 32) + downloaded;
-		cout << "\n\tUploadedHI   : " << uphi << "   Total : " << totalup << " (" << CastItoXBytes(totalup) << ')';
-		cout << "\n\tDownloadedHI : " << downhi << "   Total : " << totaldown << " (" << CastItoXBytes(totaldown) << ')';
+		cout << "\n\tUploadedHI   : " << uphi << "   Total : " << totalup << " ("
+		     << CastItoXBytes(totalup) << ')';
+		cout << "\n\tDownloadedHI : " << downhi << "   Total : " << totaldown << " ("
+		     << CastItoXBytes(totaldown) << ')';
 		cout << "\n\t(Reserved)   : " << file.ReadUInt16();
 		uint8_t keysize = file.ReadUInt8();
 		cout << "\n\tKeySize      : " << (unsigned)keysize;
@@ -163,12 +166,12 @@ void DecodeClientsMet(const CFileDataIO& file)
 	}
 }
 
-static inline void PrintDateFromFile(const CFileDataIO& file, const wxString& prefix = "")
+static inline void PrintDateFromFile(const CFileDataIO &file, const wxString &prefix = "")
 {
 	cout << prefix << "LastChanged : " << CTimeT(file.ReadUInt32()) << '\n';
 }
 
-static void PrintHashsetFromFile(const CFileDataIO& file, const wxString& prefix = "")
+static void PrintHashsetFromFile(const CFileDataIO &file, const wxString &prefix = "")
 {
 	cout << prefix << "FileHash    : " << file.ReadHash() << '\n';
 
@@ -176,8 +179,7 @@ static void PrintHashsetFromFile(const CFileDataIO& file, const wxString& prefix
 	cout << prefix << "Parts       : " << parts << '\n';
 
 	cout << prefix << "HashSet     : ";
-	for (uint16_t i = 0; i < parts; i++)
-	{
+	for (uint16_t i = 0; i < parts; i++) {
 		if (i) {
 			cout << ", ";
 		}
@@ -186,7 +188,7 @@ static void PrintHashsetFromFile(const CFileDataIO& file, const wxString& prefix
 	cout << '\n';
 }
 
-void DecodeKnownMet(const CFileDataIO& file)
+void DecodeKnownMet(const CFileDataIO &file)
 {
 	uint8_t version = file.ReadUInt8();
 	cout << "Version : " << VersionInfo(version, KnownFileList) << endl;
@@ -208,12 +210,13 @@ void DecodeKnownMet(const CFileDataIO& file)
 	}
 }
 
-void DecodePartMetFile(const CFileDataIO& file)
+void DecodePartMetFile(const CFileDataIO &file)
 {
 	uint16_t PartCount = 0;
 	uint8_t version = file.ReadUInt8();
 	cout << "Version     : " << VersionInfo(version, PartMetFile) << endl;
-	if (version != PARTFILE_VERSION && version != PARTFILE_SPLITTEDVERSION && version != PARTFILE_VERSION_LARGEFILE) {
+	if (version != PARTFILE_VERSION && version != PARTFILE_SPLITTEDVERSION &&
+		version != PARTFILE_VERSION_LARGEFILE) {
 		cerr << "File seems to be corrupt, invalid version!" << endl;
 		return;
 	}
@@ -262,7 +265,7 @@ void DecodePartMetFile(const CFileDataIO& file)
 	cout << '\n';
 }
 
-void DecodeStatisticsDat(const CFileDataIO& file)
+void DecodeStatisticsDat(const CFileDataIO &file)
 {
 	uint8_t version = file.ReadUInt8();
 	cout << "Version : " << (unsigned)version << '\n';
@@ -274,7 +277,7 @@ void DecodeStatisticsDat(const CFileDataIO& file)
 	}
 }
 
-void DecodeCanceledMet(const CFileDataIO& file)
+void DecodeCanceledMet(const CFileDataIO &file)
 {
 	uint8_t version = file.ReadUInt8();
 	cout << "Version : " << VersionInfo(version, CanceledFileList) << endl;

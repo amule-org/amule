@@ -26,66 +26,75 @@
 #ifndef FRIEND_H
 #define FRIEND_H
 
-
-#include <ec/cpp/ECID.h>	// Needed for CECID
+#include <ec/cpp/ECID.h> // Needed for CECID
 #include "MD4Hash.h"
-#include "ClientRef.h"		// Needed for CClientRef
+#include "ClientRef.h" // Needed for CClientRef
 
 class CFile;
 class CFileDataIO;
 
-#define	FF_NAME		0x01
-#define	FF_FRIENDSLOT	0x02
+#define FF_NAME 0x01
+#define FF_FRIENDSLOT 0x02
 
-class CFriend  : public CECID
+class CFriend : public CECID
 {
-friend class CFriendListRem;
+	friend class CFriendListRem;
+
 public:
-	CFriend()	{ Init(); }
+	CFriend() { Init(); }
 	~CFriend() {};
 
 	CFriend(CClientRef client);
-	CFriend( const CMD4Hash& userhash, uint32 tm_dwLastSeen, uint32 tm_dwLastUsedIP, uint32 tm_nLastUsedPort, uint32 tm_dwLastChatted, const wxString& tm_strName);
-	CFriend(uint32 ecid) : CECID(ecid)	{ Init(); }
+	CFriend(const CMD4Hash &userhash,
+		uint32 tm_dwLastSeen,
+		uint32 tm_dwLastUsedIP,
+		uint32 tm_nLastUsedPort,
+		uint32 tm_dwLastChatted,
+		const wxString &tm_strName);
+	CFriend(uint32 ecid)
+	: CECID(ecid)
+	{
+		Init();
+	}
 
-	void	SetUserHash(const CMD4Hash& userhash) { m_UserHash = userhash;}
-	bool	HasHash() const			{ return !m_UserHash.IsEmpty(); }
-	const	CMD4Hash& GetUserHash() const { return m_UserHash; }
+	void SetUserHash(const CMD4Hash &userhash) { m_UserHash = userhash; }
+	bool HasHash() const { return !m_UserHash.IsEmpty(); }
+	const CMD4Hash &GetUserHash() const { return m_UserHash; }
 
-	void SetName(const wxString& name) { m_strName = name; }
+	void SetName(const wxString &name) { m_strName = name; }
 
-	void	LinkClient(CClientRef client);
-	const CClientRef& GetLinkedClient() const { return m_LinkedClient; }
-	void	UnLinkClient(bool notify = true);
+	void LinkClient(CClientRef client);
+	const CClientRef &GetLinkedClient() const { return m_LinkedClient; }
+	void UnLinkClient(bool notify = true);
 
-	bool	HasFriendSlot();
-	void	SetPersistentFriendSlot(bool v)	{ m_HasFriendSlot = v; }
+	bool HasFriendSlot();
+	void SetPersistentFriendSlot(bool v) { m_HasFriendSlot = v; }
 
-	const wxString& GetName() const	{ return m_strName; }
-	uint16 GetPort() const			{ return m_nLastUsedPort; }
-	uint32 GetIP() const			{ return m_dwLastUsedIP; }
+	const wxString &GetName() const { return m_strName; }
+	uint16 GetPort() const { return m_nLastUsedPort; }
+	uint32 GetIP() const { return m_dwLastUsedIP; }
 
-	void	LoadFromFile(CFileDataIO* file);
-	void	WriteToFile(CFileDataIO* file);
+	void LoadFromFile(CFileDataIO *file);
+	void WriteToFile(CFileDataIO *file);
 
 private:
-	void	Init();
+	void Init();
 
-	CClientRef	m_LinkedClient;
+	CClientRef m_LinkedClient;
 
-	CMD4Hash	m_UserHash;
-	uint32		m_dwLastUsedIP;
-	uint16		m_nLastUsedPort;
-	wxString	m_strName;
+	CMD4Hash m_UserHash;
+	uint32 m_dwLastUsedIP;
+	uint16 m_nLastUsedPort;
+	wxString m_strName;
 
 	// Persistent friend-slot flag. The live CUpDownClient's m_bFriendSlot
 	// is a per-session reflection of this; this is the source of truth
 	// across disconnects and daemon restarts.
-	bool		m_HasFriendSlot;
+	bool m_HasFriendSlot;
 
 	// write-only info, never used (kept in order not to break the save file)
-	uint32		m_dwLastSeen;
-	uint32		m_dwLastChatted;
+	uint32 m_dwLastSeen;
+	uint32 m_dwLastChatted;
 };
 
 #endif

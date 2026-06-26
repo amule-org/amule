@@ -45,7 +45,8 @@ there client on the eMule forum..
 class CFileDataIO;
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 class CRoutingBin;
@@ -64,51 +65,77 @@ class CKadUDPKey;
 class CRoutingZone
 {
 public:
-
 	CRoutingZone();
 	~CRoutingZone();
 
-	bool	 OnBigTimer() const;
-	void	 OnSmallTimer();
+	bool OnBigTimer() const;
+	void OnSmallTimer();
 	uint32_t Consolidate();
 
-	bool	 Add(const CUInt128 &id, uint32_t ip, uint16_t port, uint16_t tport, uint8_t version, const CKadUDPKey& key, bool& ipVerified, bool update, bool fromHello);
-	bool	 AddUnfiltered(const CUInt128 &id, uint32_t ip, uint16_t port, uint16_t tport, uint8_t version, const CKadUDPKey& key, bool& ipVerified, bool update, bool fromHello);
-	bool	 Add(CContact *contact, bool& update, bool& outIpVerified);
+	bool Add(const CUInt128 &id,
+		uint32_t ip,
+		uint16_t port,
+		uint16_t tport,
+		uint8_t version,
+		const CKadUDPKey &key,
+		bool &ipVerified,
+		bool update,
+		bool fromHello);
+	bool AddUnfiltered(const CUInt128 &id,
+		uint32_t ip,
+		uint16_t port,
+		uint16_t tport,
+		uint8_t version,
+		const CKadUDPKey &key,
+		bool &ipVerified,
+		bool update,
+		bool fromHello);
+	bool Add(CContact *contact, bool &update, bool &outIpVerified);
 
-	void	 ReadFile(const wxString& specialNodesdat = "");
+	void ReadFile(const wxString &specialNodesdat = "");
 
-	bool	 VerifyContact(const CUInt128& id, uint32_t ip);
-	CContact *GetContact(const CUInt128& id) const noexcept;
+	bool VerifyContact(const CUInt128 &id, uint32_t ip);
+	CContact *GetContact(const CUInt128 &id) const noexcept;
 	CContact *GetContact(uint32_t ip, uint16_t port, bool tcpPort) const noexcept;
 	CContact *GetRandomContact(uint32_t maxType, uint32_t minKadVersion) const;
 	uint32_t GetNumContacts() const noexcept;
-	void	 GetNumContacts(uint32_t& nInOutContacts, uint32_t& nInOutFilteredContacts, uint8_t minVersion) const noexcept;
+	void GetNumContacts(uint32_t &nInOutContacts,
+		uint32_t &nInOutFilteredContacts,
+		uint8_t minVersion) const noexcept;
 
-	// Check if we know a contact with the same IP or ID but not matching IP/ID and other limitations, similar checks like when adding a node to the table except allowing duplicates
-	bool	IsAcceptableContact(const CContact *toCheck) const;
+	// Check if we know a contact with the same IP or ID but not matching IP/ID and other limitations,
+	// similar checks like when adding a node to the table except allowing duplicates
+	bool IsAcceptableContact(const CContact *toCheck) const;
 
 	// Returns a list of all contacts in all leafs of this zone.
-	void	 GetAllEntries(ContactList *result, bool emptyFirst = true) const;
+	void GetAllEntries(ContactList *result, bool emptyFirst = true) const;
 
 	// Returns the *maxRequired* tokens that are closest to the target within this zone's subtree.
-	void	 GetClosestTo(uint32_t maxType, const CUInt128& target, const CUInt128& distance, uint32_t maxRequired, ContactMap *result, bool emptyFirst = true, bool setInUse = false) const;
+	void GetClosestTo(uint32_t maxType,
+		const CUInt128 &target,
+		const CUInt128 &distance,
+		uint32_t maxRequired,
+		ContactMap *result,
+		bool emptyFirst = true,
+		bool setInUse = false) const;
 
 	// Ideally: Returns all contacts that are in buckets of common range between us and the asker.
 	// In practice: returns the contacts from the top (2^{logBase+1}) buckets.
 	uint32_t GetBootstrapContacts(ContactList *results, uint32_t maxRequired) const;
 
 	uint32_t EstimateCount() const;
-	bool	 HasOnlyLANNodes() const noexcept;
+	bool HasOnlyLANNodes() const noexcept;
 
-	time_t	 m_nextBigTimer;
-	time_t	 m_nextSmallTimer;
+	time_t m_nextBigTimer;
+	time_t m_nextSmallTimer;
 
 private:
-
-	CRoutingZone(CRoutingZone *super_zone, int level, const CUInt128& zone_index) { Init(super_zone, level, zone_index); }
-	void Init(CRoutingZone *super_zone, int level, const CUInt128& zone_index);
-	void ReadBootstrapNodesDat(CFileDataIO& file);
+	CRoutingZone(CRoutingZone *super_zone, int level, const CUInt128 &zone_index)
+	{
+		Init(super_zone, level, zone_index);
+	}
+	void Init(CRoutingZone *super_zone, int level, const CUInt128 &zone_index);
+	void ReadBootstrapNodesDat(CFileDataIO &file);
 #if 0
 	void WriteBootstrapFile();
 #endif
@@ -170,7 +197,7 @@ private:
 	CRoutingBin *m_bin;
 };
 
-} // End namespace
+} // namespace Kademlia
 
 #endif // __ROUTING_ZONE__
 // File_checked_for_headers

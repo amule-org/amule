@@ -30,7 +30,6 @@
 #ifndef _WXCASPIX_H
 #define _WXCASPIX_H
 
-
 #include <wx/bitmap.h>
 
 class WxCasPix
@@ -48,7 +47,7 @@ private:
 #endif
 
 public:
-	static wxBitmap getPixmap( const wxString& name );
+	static wxBitmap getPixmap(const wxString &name);
 };
 
 #endif /* _WXCASPIX_H */

@@ -19,7 +19,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef TESTREGISTRY_H
 #define TESTREGISTRY_H
 
@@ -27,12 +26,10 @@
 
 namespace muleunit
 {
-	class Test;
-	class TestCase;
+class Test;
+class TestCase;
 
-
-typedef std::list<TestCase*> TestCaseList;
-
+typedef std::list<TestCase *> TestCaseList;
 
 /**
  * The TestRegistry is the main class used to register all tests,
@@ -62,13 +59,12 @@ public:
 	static bool runAndPrint();
 
 private:
-	static TestRegistry& instance();
+	static TestRegistry &instance();
 	void add(Test *test);
 
 	bool runTests();
 	TestCaseList m_testCases;
 };
 
-} // MuleUnit ns
+} // namespace muleunit
 #endif // TESTREGISTRY_H
-

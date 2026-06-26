@@ -27,14 +27,15 @@
 
 #include <wx/thread.h>
 
-
 class CMuleThread : public wxThread
 {
 public:
 	//! @see wxThread::wxThread
 	CMuleThread(wxThreadKind kind = wxTHREAD_DETACHED)
-		: wxThread(kind),
-		m_stop(false) {}
+	: wxThread(kind)
+	, m_stop(false)
+	{
+	}
 
 	/**
 	 * Stops the thread.
@@ -65,9 +66,10 @@ public:
 		// for instance Pause().
 		return wxThread::TestDestroy() || m_stop;
 	}
+
 private:
 	//! Is set if Stop is called.
-	bool	m_stop;
+	bool m_stop;
 };
 
 #endif

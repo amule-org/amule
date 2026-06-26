@@ -22,34 +22,37 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 #include "SharedFilePeersListCtrl.h"
-#include "KnownFile.h"		// Do_not_auto_remove
+#include "KnownFile.h" // Do_not_auto_remove
 
 static CGenericClientListCtrlColumn s_sources_column_info[] = {
-	{ ColumnUserName,		wxTRANSLATE("User Name"),	260 },
-	{ ColumnUserDownloaded,		wxTRANSLATE("Downloaded"),	65 },
-	{ ColumnUserSpeedDown,		wxTRANSLATE("Download Speed"),	65 },
-	{ ColumnUserUploaded,		wxTRANSLATE("Uploaded"),	65 },
-	{ ColumnUserSpeedUp,		wxTRANSLATE("Upload Speed"),	65 },
-	{ ColumnUserAvailable,		wxTRANSLATE("Available Parts"),	170 },
-	{ ColumnUserVersion,		wxTRANSLATE("Version"),		50 },
-	{ ColumnUserQueueRankLocal,	wxTRANSLATE("Upload Status"),	70 },
-	{ ColumnUserQueueRankRemote,	wxTRANSLATE("Download Status"),	70 },
-	{ ColumnUserOrigin,		wxTRANSLATE("Origin"),		110 },
-	{ ColumnUserFileNameUpload,	wxTRANSLATE("Local File Name"),	200 },
-	{ ColumnUserSharedFiles,	wxTRANSLATE("Shares File List"), 100 }
+	{ ColumnUserName, wxTRANSLATE("User Name"), 260 },
+	{ ColumnUserDownloaded, wxTRANSLATE("Downloaded"), 65 },
+	{ ColumnUserSpeedDown, wxTRANSLATE("Download Speed"), 65 },
+	{ ColumnUserUploaded, wxTRANSLATE("Uploaded"), 65 },
+	{ ColumnUserSpeedUp, wxTRANSLATE("Upload Speed"), 65 },
+	{ ColumnUserAvailable, wxTRANSLATE("Available Parts"), 170 },
+	{ ColumnUserVersion, wxTRANSLATE("Version"), 50 },
+	{ ColumnUserQueueRankLocal, wxTRANSLATE("Upload Status"), 70 },
+	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 70 },
+	{ ColumnUserOrigin, wxTRANSLATE("Origin"), 110 },
+	{ ColumnUserFileNameUpload, wxTRANSLATE("Local File Name"), 200 },
+	{ ColumnUserSharedFiles, wxTRANSLATE("Shares File List"), 100 }
 };
 
 wxBEGIN_EVENT_TABLE(CSharedFilePeersListCtrl, CGenericClientListCtrl)
 wxEND_EVENT_TABLE()
 
-CSharedFilePeersListCtrl::CSharedFilePeersListCtrl(
-	wxWindow *parent, wxWindowID winid, const wxPoint& pos, const wxSize& size,
-	long style, const wxValidator& validator, const wxString& name )
-:
-CGenericClientListCtrl( "Peers", parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name )
+CSharedFilePeersListCtrl::CSharedFilePeersListCtrl(wxWindow *parent,
+	wxWindowID winid,
+	const wxPoint &pos,
+	const wxSize &size,
+	long style,
+	const wxValidator &validator,
+	const wxString &name)
+: CGenericClientListCtrl("Peers", parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name)
 {
 	// Setting the sorter function.
-	SetSortFunc( SourceSortProc );
+	SetSortFunc(SourceSortProc);
 
 	m_columndata.n_columns = sizeof(s_sources_column_info) / sizeof(CGenericClientListCtrlColumn);
 	m_columndata.columns = s_sources_column_info;
@@ -57,16 +60,17 @@ CGenericClientListCtrl( "Peers", parent, winid, pos, size, style | wxLC_OWNERDRA
 	InitColumnData();
 }
 
-CSharedFilePeersListCtrl::~CSharedFilePeersListCtrl()
-{
-}
+CSharedFilePeersListCtrl::~CSharedFilePeersListCtrl() {}
 
 int CSharedFilePeersListCtrl::SourceSortProc(wxUIntPtr param1, wxUIntPtr param2, wxIntPtr sortData)
 {
-	return CGenericClientListCtrl::SortProc(param1, param2, s_sources_column_info[sortData & CMuleListCtrl::COLUMN_MASK].cid | (sortData & CMuleListCtrl::SORT_DES));
+	return CGenericClientListCtrl::SortProc(param1,
+		param2,
+		s_sources_column_info[sortData & CMuleListCtrl::COLUMN_MASK].cid |
+			(sortData & CMuleListCtrl::SORT_DES));
 }
 
-void CSharedFilePeersListCtrl::SetShowSources(CKnownFile * f, bool b) const
+void CSharedFilePeersListCtrl::SetShowSources(CKnownFile *f, bool b) const
 {
 	f->SetShowPeers(b);
 }

@@ -23,9 +23,7 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-#include "config.h"		// Needed for PACKAGE
+#include "config.h" // Needed for PACKAGE
 
 #include <wx/log.h>
 
@@ -33,68 +31,61 @@
 #include "ed2khash.h"
 
 // Application implementation
-IMPLEMENT_APP (alcc)
+IMPLEMENT_APP(alcc)
 
 /// Running Alcc
-int alcc::OnRun ()
+int alcc::OnRun()
 {
-  // Used to tell alcc to use aMule catalog
-  m_locale.Init();
-  m_locale.AddCatalog(PACKAGE);
+	// Used to tell alcc to use aMule catalog
+	m_locale.Init();
+	m_locale.AddCatalog(PACKAGE);
 
-  wxLog::DontCreateOnDemand();
-  wxLogStderr * stderrLog = new wxLogStderr;
-  wxLogStderr * stdoutLog = new wxLogStderr(stdout);
-  delete wxLog::SetActiveTarget(stderrLog); // Log on Stderr
-  wxLog::SetTimestamp("");   // Disable timestamp on messages
+	wxLog::DontCreateOnDemand();
+	wxLogStderr *stderrLog = new wxLogStderr;
+	wxLogStderr *stdoutLog = new wxLogStderr(stdout);
+	delete wxLog::SetActiveTarget(stderrLog); // Log on Stderr
+	wxLog::SetTimestamp("");                  // Disable timestamp on messages
 
-  Ed2kHash hash;
-  size_t i;
-  for (i=0;i<(m_filesToHash.GetCount());++i)
-    {
-      if (wxFileExists(m_filesToHash[i]))
-        {
-          if (m_flagVerbose)
-            {
-              wxLogMessage(_("Processing file number %u: %s"),i+1,m_filesToHash[i].c_str());
+	Ed2kHash hash;
+	size_t i;
+	for (i = 0; i < (m_filesToHash.GetCount()); ++i) {
+		if (wxFileExists(m_filesToHash[i])) {
+			if (m_flagVerbose) {
+				wxLogMessage(
+					_("Processing file number %u: %s"), i + 1, m_filesToHash[i].c_str());
 
-              if (m_flagPartHashes)
-                {
-                  wxLogMessage(_("You have asked for part hashes (Only used for files > 9.5 MB)"));
-                }
-            }
+				if (m_flagPartHashes) {
+					wxLogMessage(_("You have asked for part hashes (Only used for files "
+						       "> 9.5 MB)"));
+				}
+			}
 
-          if (hash.SetED2KHashFromFile(m_filesToHash[i], NULL))
-            {
+			if (hash.SetED2KHashFromFile(m_filesToHash[i], NULL)) {
 				// Print the link to stdout
 				wxLog::SetActiveTarget(stdoutLog);
-                wxLogMessage("%s", hash.GetED2KLink(m_flagPartHashes).c_str());
+				wxLogMessage("%s", hash.GetED2KLink(m_flagPartHashes).c_str());
 				// Everything else goes to stderr
 				wxLog::SetActiveTarget(stderrLog);
-            }
-        }
-      else
-        {
-            if (m_flagVerbose)
-                {
-                    wxLogMessage(_("%s ---> Non existent file !\n"),m_filesToHash[i].c_str());
-                }
-        }
-    }
-  delete stdoutLog;
-  return 0;
+			}
+		} else {
+			if (m_flagVerbose) {
+				wxLogMessage(_("%s ---> Non existent file !\n"), m_filesToHash[i].c_str());
+			}
+		}
+	}
+	delete stdoutLog;
+	return 0;
 }
 
 // On exit
-int
-alcc::OnExit()
+int alcc::OnExit()
 {
-  delete wxLog::SetActiveTarget(NULL);
-  return 0;
+	delete wxLog::SetActiveTarget(NULL);
+	return 0;
 }
 
 /// Parse command line
-void alcc::OnInitCmdLine(wxCmdLineParser& cmdline)
+void alcc::OnInitCmdLine(wxCmdLineParser &cmdline)
 {
 	cmdline.AddSwitch("h", "help", "show this help message", wxCMD_LINE_OPTION_HELP);
 	cmdline.AddSwitch("v", "verbose", "be verbose");
@@ -103,23 +94,22 @@ void alcc::OnInitCmdLine(wxCmdLineParser& cmdline)
 }
 
 /// Command line preprocessing
-bool alcc::OnCmdLineParsed(wxCmdLineParser& cmdline)
+bool alcc::OnCmdLineParsed(wxCmdLineParser &cmdline)
 {
 
-  wxFileName filename;
-  size_t i;
+	wxFileName filename;
+	size_t i;
 
-  m_flagVerbose = cmdline.Found("v");
-  m_flagPartHashes = cmdline.Found("p");
+	m_flagVerbose = cmdline.Found("v");
+	m_flagPartHashes = cmdline.Found("p");
 
-  m_filesToHash.Clear();
-  for (i = 0; i < cmdline.GetParamCount(); ++i)
-    {
-      filename.Assign(cmdline.GetParam(i));
-      m_filesToHash.Add(filename.GetFullPath());
-    }
-  m_filesToHash.Shrink();
+	m_filesToHash.Clear();
+	for (i = 0; i < cmdline.GetParamCount(); ++i) {
+		filename.Assign(cmdline.GetParam(i));
+		m_filesToHash.Add(filename.GetFullPath());
+	}
+	m_filesToHash.Shrink();
 
-  return true;
+	return true;
 }
 // File_checked_for_headers

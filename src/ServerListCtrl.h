@@ -26,27 +26,26 @@
 #ifndef SERVERLISTCTRL_H
 #define SERVERLISTCTRL_H
 
-#include "MuleListCtrl.h"	// Needed for CMuleListCtrl
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl
 
-#define	COLUMN_SERVER_NAME	0
-#define	COLUMN_SERVER_ADDR	1
-#define	COLUMN_SERVER_PORT	2
-#define	COLUMN_SERVER_DESC	3
-#define	COLUMN_SERVER_PING	4
-#define	COLUMN_SERVER_USERS	5
-#define	COLUMN_SERVER_FILES	6
-#define	COLUMN_SERVER_PRIO	7
-#define	COLUMN_SERVER_FAILS	8
-#define	COLUMN_SERVER_STATIC	9
-#define	COLUMN_SERVER_VERSION	10
-#define	COLUMN_SERVER_TCPFLAGS	11
-#define	COLUMN_SERVER_UDPFLAGS	12
+#define COLUMN_SERVER_NAME 0
+#define COLUMN_SERVER_ADDR 1
+#define COLUMN_SERVER_PORT 2
+#define COLUMN_SERVER_DESC 3
+#define COLUMN_SERVER_PING 4
+#define COLUMN_SERVER_USERS 5
+#define COLUMN_SERVER_FILES 6
+#define COLUMN_SERVER_PRIO 7
+#define COLUMN_SERVER_FAILS 8
+#define COLUMN_SERVER_STATIC 9
+#define COLUMN_SERVER_VERSION 10
+#define COLUMN_SERVER_TCPFLAGS 11
+#define COLUMN_SERVER_UDPFLAGS 12
 
 class CServer;
 class CServerList;
 class wxListEvent;
 class wxCommandEvent;
-
 
 /**
  * The CServerListCtrl is used to display the list of servers which the user
@@ -61,20 +60,18 @@ public:
 	 *
 	 * @see CMuleListCtrl::CMuleListCtrl
 	 */
-	CServerListCtrl(
-	            wxWindow *parent,
-                wxWindowID winid = -1,
-                const wxPoint &pos = wxDefaultPosition,
-                const wxSize &size = wxDefaultSize,
-                long style = wxLC_ICON,
-                const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = "mulelistctrl" );
+	CServerListCtrl(wxWindow *parent,
+		wxWindowID winid = -1,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = wxLC_ICON,
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = "mulelistctrl");
 
 	/**
 	 * Destructor.
 	 */
 	virtual ~CServerListCtrl();
-
 
 	/**
 	 * Adds a server to the list.
@@ -85,20 +82,19 @@ public:
 	 * the result that it is legal to add servers already in the list, though
 	 * not recommended.
 	 */
-	void	AddServer( CServer* toadd );
+	void AddServer(CServer *toadd);
 
 	/**
 	 * Removes a server from the displayed list.
 	 */
-	void	RemoveServer(CServer* server);
+	void RemoveServer(CServer *server);
 
 	/**
 	 * Removes all servers with the specified state.
 	 *
 	 * @param state All items with this state will be removed, default being all.
 	 */
-	void	RemoveAllServers(int state = wxLIST_STATE_DONTCARE);
-
+	void RemoveAllServers(int state = wxLIST_STATE_DONTCARE);
 
 	/**
 	 * Updates the displayed information on a server.
@@ -112,7 +108,7 @@ public:
 	 * generally be avoided, since it will result in the server-count getting
 	 * skewed until the next AddServer call.
 	 */
-	void	RefreshServer( CServer* server );
+	void RefreshServer(CServer *server);
 
 	/**
 	 * Sets the highlighting of the specified server.
@@ -124,60 +120,57 @@ public:
 	 * one time, so calling this function while another item is already
 	 * highlighted will result in the old item not being highlighted any more.
 	 */
-	void	HighlightServer( const CServer* server, bool highlight );
-
-
+	void HighlightServer(const CServer *server, bool highlight);
 
 	/**
 	 * This function updates the server-count in the server-wnd.
 	 */
-	void	ShowServerCount();
+	void ShowServerCount();
 
 protected:
 	/// Return old column order.
 	wxString GetOldColumnOrder() const;
 
 private:
-
 	/**
 	 * Event-handler for handling item activation (connect).
 	 */
-	void	OnItemActivated( wxListEvent& event );
+	void OnItemActivated(wxListEvent &event);
 
 	/**
 	 * Event-handler for displaying the popup-menu.
 	 */
-	void	OnItemRightClicked( wxListEvent& event );
+	void OnItemRightClicked(wxListEvent &event);
 
 	/**
 	 * Event-handler for priority changes.
 	 */
-	void	OnPriorityChange( wxCommandEvent& event );
+	void OnPriorityChange(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for static changes.
 	 */
-	void	OnStaticChange( wxCommandEvent& event );
+	void OnStaticChange(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for server connections.
 	 */
-	void	OnConnectToServer( wxCommandEvent& event );
+	void OnConnectToServer(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for copying server-urls to the clipboard.
 	 */
-	void	OnGetED2kURL( wxCommandEvent& event );
+	void OnGetED2kURL(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for server removal.
 	 */
-	void	OnRemoveServers( wxCommandEvent& event );
+	void OnRemoveServers(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for deleting servers when the delete-key is pressed.
 	 */
-	void	OnKeyPressed( wxKeyEvent& event );
+	void OnKeyPressed(wxKeyEvent &event);
 
 	/**
 	 * Sorter function.
@@ -186,10 +179,8 @@ private:
 	 */
 	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
 
-
 	//! Used to keep track of the last high-lighted item.
-	const CServer* m_connected;
-
+	const CServer *m_connected;
 
 	wxDECLARE_EVENT_TABLE();
 };

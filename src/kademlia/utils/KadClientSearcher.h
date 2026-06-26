@@ -40,11 +40,11 @@ enum EKadClientSearchRes
 
 class CKadClientSearcher
 {
-      public:
-	virtual	void KadSearchNodeIDByIPResult(EKadClientSearchRes status, const unsigned char* nodeID) = 0;
-	virtual	void KadSearchIPByNodeIDResult(EKadClientSearchRes status, uint32_t ip, uint16_t port) = 0;
+public:
+	virtual void KadSearchNodeIDByIPResult(EKadClientSearchRes status, const unsigned char *nodeID) = 0;
+	virtual void KadSearchIPByNodeIDResult(EKadClientSearchRes status, uint32_t ip, uint16_t port) = 0;
 };
 
-}
+} // namespace Kademlia
 
 #endif /* KADEMLIA_UTILS_KADCLIENTSEARCHER_H */

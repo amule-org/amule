@@ -33,7 +33,6 @@
 #endif
 #include <string> // Do_not_auto_remove (g++-4.0.1 except win32)
 
-
 /**
  * This class provides an easy way to lock non-critical
  * files used by multiple applications. However, since
@@ -56,16 +55,16 @@ public:
 	 * will be created if it does not already exist. This
 	 * file is not removed afterwards.
 	 */
-	CFileLock(const std::string& file);
+	CFileLock(const std::string &file);
 
 	/** Releases the lock, if any is held. */
 	~CFileLock();
 
 private:
 	//! Not copyable.
-	CFileLock(const CFileLock&);
+	CFileLock(const CFileLock &);
 	//! Not assignable.
-	CFileLock& operator=(const CFileLock&);
+	CFileLock &operator=(const CFileLock &);
 
 	/** Locks or unlocks the lock-file, returning true on success. */
 	bool SetLock(bool doLock);
@@ -81,15 +80,14 @@ private:
 	bool m_ok;
 };
 
-
-inline CFileLock::CFileLock(const std::string& file)
+inline CFileLock::CFileLock(const std::string &file)
 #ifdef _WIN32
-	: m_ok(false)
+: m_ok(false)
 {
 	hd = CreateFileA((file + "_lock").c_str(),
 		GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,		// share - shareable
-		NULL,									// security - not inheritable
+		FILE_SHARE_READ | FILE_SHARE_WRITE, // share - shareable
+		NULL,                               // security - not inheritable
 		CREATE_ALWAYS,
 		FILE_ATTRIBUTE_ARCHIVE,
 		NULL);
@@ -98,8 +96,8 @@ inline CFileLock::CFileLock(const std::string& file)
 	}
 }
 #else
-	: m_fd(-1),
-	  m_ok(false)
+: m_fd(-1)
+, m_ok(false)
 {
 	// File must be open with O_WRONLY to be able to set write-locks.
 	m_fd = ::open((file + "_lock").c_str(), O_CREAT | O_WRONLY, 0600);
@@ -108,7 +106,6 @@ inline CFileLock::CFileLock(const std::string& file)
 	}
 }
 #endif
-
 
 inline CFileLock::~CFileLock()
 {
@@ -126,7 +123,6 @@ inline CFileLock::~CFileLock()
 	}
 #endif
 }
-
 
 inline bool CFileLock::SetLock(bool doLock)
 {

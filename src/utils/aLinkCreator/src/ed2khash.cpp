@@ -25,237 +25,214 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 ////////////////////////////////////////////////////////////////////////////////
 
-
 #include <wx/ffile.h>
 #include <wx/log.h>
 #include <wx/regex.h>
 
 #include "ed2khash.h"
 
-
 /// Constructor
-Ed2kHash::Ed2kHash():MD4()
+Ed2kHash::Ed2kHash()
+: MD4()
 {
-  m_ed2kArrayOfHashes.Clear();
-  m_filename.Clear();
-  m_fileSize=0;
+	m_ed2kArrayOfHashes.Clear();
+	m_filename.Clear();
+	m_fileSize = 0;
 }
 
 /// Destructor
-Ed2kHash::~Ed2kHash()
-{}
+Ed2kHash::~Ed2kHash() {}
 
 /// Set Ed2k hash from a file
 // returns false if aborted
-bool Ed2kHash::SetED2KHashFromFile(const wxFileName& filename, MD4Hook hook)
+bool Ed2kHash::SetED2KHashFromFile(const wxFileName &filename, MD4Hook hook)
 {
-  // Open file and let wxFFile destructor close the file
-  // Closing it explicitly may crash on Win32 ...
-  wxFFile file(filename.GetFullPath(), "rbS");
-  if (! file.IsOpened())
-    {
-	  // This doesn't make much sense to me, but it is what it was before and actually works.
-	  wxLogError(_("Unable to open %s"), ((const char*)filename.GetFullPath().mb_str(wxConvISO8859_1)));
-      return (false);
-    }
-  else
-    {
-      unsigned char ret[MD4_HASHLEN_BYTE];
-      MD4Context hdc;
+	// Open file and let wxFFile destructor close the file
+	// Closing it explicitly may crash on Win32 ...
+	wxFFile file(filename.GetFullPath(), "rbS");
+	if (!file.IsOpened()) {
+		// This doesn't make much sense to me, but it is what it was before and actually works.
+		wxLogError(_("Unable to open %s"),
+			((const char *)filename.GetFullPath().mb_str(wxConvISO8859_1)));
+		return (false);
+	} else {
+		unsigned char ret[MD4_HASHLEN_BYTE];
+		MD4Context hdc;
 
-      size_t read;
-      size_t partcount;
-      wxFileOffset totalread;
+		size_t read;
+		size_t partcount;
+		wxFileOffset totalread;
 
-      char *buf = new char[BUFSIZE];
+		char *buf = new char[BUFSIZE];
 
-      bool goAhead = true;
+		bool goAhead = true;
 
 #ifdef WANT_STRING_IMPLEMENTATION
 
-      wxString tmpHash("");
+		wxString tmpHash("");
 #else
 
-      unsigned char* tmpCharHash = NULL;
+		unsigned char *tmpCharHash = NULL;
 #endif
-      // Clear Ed2k Hash
-      m_ed2kArrayOfHashes.Clear();
+		// Clear Ed2k Hash
+		m_ed2kArrayOfHashes.Clear();
 
-      // Processing each block
-      totalread=0;
-      partcount = 0;
-      while (!file.Eof())
-        {
-          size_t dataread = 0;
-          MD4Init(&hdc);
-          while (dataread < PARTSIZE && !file.Eof())
-            {
-              if (hook)
-                {
-                  goAhead = hook((int)((double)(100.0 * totalread) / file.Length()));
-                }
-              if (goAhead)
-                {
-                  if ((dataread + BUFSIZE) > PARTSIZE)
-                    {
-                      read = file.Read(buf, PARTSIZE - dataread);
-                    }
-                  else
-                    {
-                      read = file.Read(buf, BUFSIZE);
-                    }
-                  dataread += read;
-                  totalread += read;
-                  MD4Update(&hdc, reinterpret_cast<unsigned char const *>(buf),
-                            read);
-                }
-              else
-                {
-		  // User cancelled via the progress hook -- release both the
-		  // per-buffer read scratch *and* the cumulative parthash buffer
-		  // grown by realloc() below.  Pre-fix this path freed only buf,
-		  // leaking tmpCharHash across every cancelled hash.
-		  delete [] buf;
+		// Processing each block
+		totalread = 0;
+		partcount = 0;
+		while (!file.Eof()) {
+			size_t dataread = 0;
+			MD4Init(&hdc);
+			while (dataread < PARTSIZE && !file.Eof()) {
+				if (hook) {
+					goAhead = hook((int)((double)(100.0 * totalread) / file.Length()));
+				}
+				if (goAhead) {
+					if ((dataread + BUFSIZE) > PARTSIZE) {
+						read = file.Read(buf, PARTSIZE - dataread);
+					} else {
+						read = file.Read(buf, BUFSIZE);
+					}
+					dataread += read;
+					totalread += read;
+					MD4Update(&hdc, reinterpret_cast<unsigned char const *>(buf), read);
+				} else {
+					// User cancelled via the progress hook -- release both the
+					// per-buffer read scratch *and* the cumulative parthash buffer
+					// grown by realloc() below.  Pre-fix this path freed only buf,
+					// leaking tmpCharHash across every cancelled hash.
+					delete[] buf;
 #ifndef WANT_STRING_IMPLEMENTATION
-		  free(tmpCharHash);
+					free(tmpCharHash);
 #endif
-                  return (false);
-                }
+					return (false);
+				}
+			}
+			MD4Final(&hdc, ret);
 
-            }
-          MD4Final(&hdc, ret);
+			// Add part-hash
+			m_ed2kArrayOfHashes.Add(
+				charToHex(reinterpret_cast<const char *>(ret), MD4_HASHLEN_BYTE));
 
-          // Add part-hash
-          m_ed2kArrayOfHashes.Add(charToHex(reinterpret_cast<const char *>(ret),
-                                            MD4_HASHLEN_BYTE));
-
-          partcount++;
+			partcount++;
 
 #ifdef WANT_STRING_IMPLEMENTATION
-          // MD4_HASHLEN_BYTE is ABSOLUTELY needed as we dont want NULL
-          // character to be interpreted as the end of the parthash string
+			// MD4_HASHLEN_BYTE is ABSOLUTELY needed as we dont want NULL
+			// character to be interpreted as the end of the parthash string
 #if wxUSE_UNICODE
 
-          tmpHash += wxString(reinterpret_cast<const wchar_t *>(ret),MD4_HASHLEN_BYTE);
+			tmpHash += wxString(reinterpret_cast<const wchar_t *>(ret), MD4_HASHLEN_BYTE);
 #else
 
-          tmpHash += wxString(reinterpret_cast<const char *>(ret),MD4_HASHLEN_BYTE);
+			tmpHash += wxString(reinterpret_cast<const char *>(ret), MD4_HASHLEN_BYTE);
 #endif
 #else
 
-          unsigned char *tmpPtr = (unsigned char*)realloc(tmpCharHash,
-                                                sizeof(unsigned char) * (MD4_HASHLEN_BYTE * partcount));
-	  if (tmpPtr) {
-		  tmpCharHash = tmpPtr;
-	  } else {
-		  delete [] buf;
-		  free(tmpCharHash);
-		  wxLogError(_("Out of memory while calculating ed2k hash!"));
-		  return (false);
-	  }
-          memcpy ( tmpCharHash + MD4_HASHLEN_BYTE * (partcount - 1), ret, MD4_HASHLEN_BYTE );
+			unsigned char *tmpPtr = (unsigned char *)realloc(
+				tmpCharHash, sizeof(unsigned char) * (MD4_HASHLEN_BYTE * partcount));
+			if (tmpPtr) {
+				tmpCharHash = tmpPtr;
+			} else {
+				delete[] buf;
+				free(tmpCharHash);
+				wxLogError(_("Out of memory while calculating ed2k hash!"));
+				return (false);
+			}
+			memcpy(tmpCharHash + MD4_HASHLEN_BYTE * (partcount - 1), ret, MD4_HASHLEN_BYTE);
 #endif
+		}
 
-        }
+		delete[] buf;
 
-      delete [] buf;
-
-      // hash == hash of concatenned parthashes
-      if (partcount > 1)
-        {
-          wxString finalHash;
+		// hash == hash of concatenned parthashes
+		if (partcount > 1) {
+			wxString finalHash;
 
 #ifdef WANT_STRING_IMPLEMENTATION
 
-          finalHash=calcMd4FromString(tmpHash);
+			finalHash = calcMd4FromString(tmpHash);
 #else
 
-          MD4Init(&hdc);
-          MD4Update(&hdc, tmpCharHash, MD4_HASHLEN_BYTE * partcount);
-          MD4Final(&hdc, ret);
+			MD4Init(&hdc);
+			MD4Update(&hdc, tmpCharHash, MD4_HASHLEN_BYTE * partcount);
+			MD4Final(&hdc, ret);
 
-          finalHash = charToHex(reinterpret_cast<const char *>(ret),
-                                MD4_HASHLEN_BYTE);
+			finalHash = charToHex(reinterpret_cast<const char *>(ret), MD4_HASHLEN_BYTE);
 #endif
 
-          m_ed2kArrayOfHashes.Add(finalHash);
-        }
+			m_ed2kArrayOfHashes.Add(finalHash);
+		}
 
 #ifndef WANT_STRING_IMPLEMENTATION
-      free(tmpCharHash);
-      tmpCharHash=NULL;
+		free(tmpCharHash);
+		tmpCharHash = NULL;
 #endif
 
-      m_ed2kArrayOfHashes.Shrink();
+		m_ed2kArrayOfHashes.Shrink();
 
-      // Set members
-      m_fileSize = file.Length();
-      m_filename = filename.GetFullName();
+		// Set members
+		m_fileSize = file.Length();
+		m_filename = filename.GetFullName();
 
-      return true;
-    }
+		return true;
+	}
 }
 
 /// Set Ed2k hash from a file
-bool Ed2kHash::SetED2KHashFromFile(const wxString& filename, MD4Hook hook)
+bool Ed2kHash::SetED2KHashFromFile(const wxString &filename, MD4Hook hook)
 {
-  return SetED2KHashFromFile(wxFileName(filename), hook);
+	return SetED2KHashFromFile(wxFileName(filename), hook);
 }
 
 #define WXLONGLONGFMTSPEC wxLongLongFmtSpec
 
 /// Get Ed2k link
-wxString Ed2kHash::GetED2KLink(const bool addPartHashes, const wxArrayString* arrayOfUrls)
+wxString Ed2kHash::GetED2KLink(const bool addPartHashes, const wxArrayString *arrayOfUrls)
 {
-  // Constructing ed2k basic link
-  wxString ed2kLink = "ed2k://|file|" + CleanFilename(m_filename)
-                      + wxString::Format("|%" WXLONGLONGFMTSPEC "u|", m_fileSize)
-                      + m_ed2kArrayOfHashes.Last() + "|";
+	// Constructing ed2k basic link
+	wxString ed2kLink = "ed2k://|file|" + CleanFilename(m_filename) +
+			    wxString::Format("|%" WXLONGLONGFMTSPEC "u|", m_fileSize) +
+			    m_ed2kArrayOfHashes.Last() + "|";
 
+	// Add optional URLs
+	if (arrayOfUrls && !arrayOfUrls->IsEmpty()) {
+		size_t i;
+		for (i = 0; i < arrayOfUrls->GetCount(); i++) {
+			ed2kLink += "s=" + (*arrayOfUrls)[i] + "|";
+		}
+	}
 
-  // Add optional URLs
-  if ( arrayOfUrls && !arrayOfUrls->IsEmpty())
-    {
-      size_t i;
-      for ( i = 0; i < arrayOfUrls->GetCount(); i++ )
-        {
-          ed2kLink += "s=" + (*arrayOfUrls)[i] + "|";
-        }
-    }
+	// Add Optional part-hashes
+	if (addPartHashes && m_ed2kArrayOfHashes.GetCount() > 1) {
+		ed2kLink += "p=";
+		size_t i;
+		for (i = 0; i < (m_ed2kArrayOfHashes.GetCount() - 1); ++i) {
+			ed2kLink += m_ed2kArrayOfHashes[i] + ":";
+		}
+		ed2kLink.RemoveLast(); // Remove last :
+		ed2kLink += "|";
+	}
 
-  // Add Optional part-hashes
-  if (addPartHashes && m_ed2kArrayOfHashes.GetCount()>1)
-    {
-      ed2kLink += "p=";
-      size_t i;
-      for (i=0;i<(m_ed2kArrayOfHashes.GetCount()-1);++i)
-        {
-          ed2kLink += m_ed2kArrayOfHashes[i] + ":";
-        }
-      ed2kLink.RemoveLast(); // Remove last :
-      ed2kLink += "|";
-    }
+	// Add last slash
+	ed2kLink += "/";
 
-  // Add last slash
-  ed2kLink += "/";
-
-  return ed2kLink;
+	return ed2kLink;
 }
 
 /// Strip all non-alphanumeric characters of a filename string
-wxString Ed2kHash::CleanFilename(const wxString& filename)
+wxString Ed2kHash::CleanFilename(const wxString &filename)
 {
-  wxString name(filename);
+	wxString name(filename);
 
-  wxRegEx toStrip("[^[:alnum:]_.-]");
-  toStrip.Replace(&name, "_");
+	wxRegEx toStrip("[^[:alnum:]_.-]");
+	toStrip.Replace(&name, "_");
 
-  return (name);
+	return (name);
 }
 
 /// Get Ed2k Array of hashes
 wxArrayString Ed2kHash::GetED2KHash()
 {
-  return (m_ed2kArrayOfHashes);
+	return (m_ed2kArrayOfHashes);
 }
 // File_checked_for_headers

@@ -22,21 +22,16 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef MULEGIFCTRL_H
 #define MULEGIFCTRL_H
-
 
 #include <wx/control.h>
 #include <wx/timer.h>
 
-
 const int GIFTIMERID = 271283;
-
 
 class MuleGIFDecoder;
 class wxBitmap;
-
 
 /**
  * MuleGifCtrl is a simple widget for displaying a gif animation.
@@ -66,13 +61,13 @@ public:
 	/**
 	 * Constructor. See wxWindow class documentation for more information.
 	 */
-	MuleGifCtrl(
-		wxWindow *parent, wxWindowID id,
-		const wxPoint& pos = wxDefaultPosition,
-		const wxSize& size = wxDefaultSize,
+	MuleGifCtrl(wxWindow *parent,
+		wxWindowID id,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
 		long style = 0,
-		const wxValidator& validator = wxDefaultValidator,
-		const wxString& name = wxControlNameStr);
+		const wxValidator &validator = wxDefaultValidator,
+		const wxString &name = wxControlNameStr);
 
 	/**
 	 * Destructor
@@ -93,7 +88,7 @@ public:
 	 * use the utility hexdump. Look at inetdownload.h for how to format
 	 * the output.
 	 */
-	bool LoadData(const char* data, int size);
+	bool LoadData(const char *data, int size);
 
 	/**
 	 * This function starts playing the animation provided that a animation is
@@ -117,7 +112,7 @@ private:
 	/**
 	 * Timer function that selects the next frame in an animation.
 	 */
-	void OnTimer( wxTimerEvent& event );
+	void OnTimer(wxTimerEvent &event);
 
 	/**
 	 * Function for drawing the animation.
@@ -126,12 +121,12 @@ private:
 	 * using a wxBufferedPaintDC. By doing so and also catching the
 	 * ERASE_BACKGROUND events we avoid flickering on redraws.
 	 */
-	void OnPaint( wxPaintEvent& event );
+	void OnPaint(wxPaintEvent &event);
 
 	/**
 	 * This function is used to avoid flicker when redrawing.
 	 */
-	void OnErase( wxEraseEvent& WXUNUSED(event) ) {}
+	void OnErase(wxEraseEvent &WXUNUSED(event)) {}
 
 	//! Enables the event functions OnErase(), OnTimer() and OnPaint().
 	wxDECLARE_EVENT_TABLE();

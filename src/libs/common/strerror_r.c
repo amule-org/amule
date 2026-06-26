@@ -25,17 +25,17 @@
 #include "config.h"
 
 #ifndef _XOPEN_SOURCE
-#	define _XOPEN_SOURCE	600
+#define _XOPEN_SOURCE 600
 #endif
 
-#include <string.h>			/* Needed for strerror_r() and size_t */
+#include <string.h> /* Needed for strerror_r() and size_t */
 
 #ifdef HAVE_ERRNO_H
-#	include <errno.h>		/* Needed for errno */
+#include <errno.h> /* Needed for errno */
 #endif
 
 #ifndef HAVE_STRERROR_R
-#	ifdef HAVE_STRERROR
+#ifdef HAVE_STRERROR
 
 /* Replacement strerror_r() function for systems that don't have any.
    Note that this replacement function is NOT thread-safe! */
@@ -61,20 +61,20 @@ int mule_strerror_r(int errnum, char *buf, size_t buflen)
 	return 0;
 }
 
-#	else
+#else
 
 /* No way to get error description */
 int mule_strerror_r()
 {
 #ifdef HAVE_ERRNO_H
-	errno = ENOSYS;	/* not implemented */
+	errno = ENOSYS; /* not implemented */
 #endif
 	return -1;
 }
 
-#	endif
+#endif
 #else
-#	ifdef STRERROR_R_CHAR_P
+#ifdef STRERROR_R_CHAR_P
 
 /* Replacement strerror_r() function for systems that return a char*. */
 int mule_strerror_r(int errnum, char *buf, size_t buflen)
@@ -99,12 +99,12 @@ int mule_strerror_r(int errnum, char *buf, size_t buflen)
 	return 0;
 }
 
-#	else
+#else
 
 /* Nothing to do, library strerror_r() is XSI-compliant. */
 int mule_strerror_r(int errnum, char *buf, size_t buflen)
 {
 	return strerror_r(errnum, buf, buflen);
 }
-#	endif
+#endif
 #endif

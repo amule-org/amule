@@ -41,7 +41,7 @@ class CKnownFile;
 class CFileDetailDialog : public wxDialog
 {
 public:
-	CFileDetailDialog(wxWindow *parent, std::vector<CPartFile *> & files, int index);
+	CFileDetailDialog(wxWindow *parent, std::vector<CPartFile *> &files, int index);
 	virtual ~CFileDetailDialog();
 
 	/**
@@ -53,35 +53,35 @@ public:
 	 * only — `file` may already be freed. Wired via
 	 * MuleNotify::KnownFileBeingDestroyed (GuiEvents.cpp).
 	 */
-	static void DropReferencesTo(const CKnownFile* file);
+	static void DropReferencesTo(const CKnownFile *file);
 
 protected:
-	void OnTimer(wxTimerEvent& evt);
+	void OnTimer(wxTimerEvent &evt);
 	wxDECLARE_EVENT_TABLE();
 
 private:
 	void UpdateData(bool resetFilename);
-	std::vector<CPartFile *> & m_files;
-	CPartFile* m_file;
+	std::vector<CPartFile *> &m_files;
+	CPartFile *m_file;
 	int m_index;
 	wxTimer m_timer;
 	bool m_filenameChanged;
 
-	void OnClosewnd(wxCommandEvent& evt);
+	void OnClosewnd(wxCommandEvent &evt);
 	void FillSourcenameList();
 	void setEnableForApplyButton();
 	void setValueForFilenameTextEdit(const wxString &s);
 	void resetValueForFilenameTextEdit();
 
-	void OnBnClickedButtonStrip(wxCommandEvent& evt);
-	void OnBnClickedShowComment(wxCommandEvent& evt);
-	void OnBnClickedTakeOver(wxCommandEvent& evt);
-	void OnListClickedTakeOver(wxListEvent& evt);
-	void OnTextFileNameChange(wxCommandEvent& evt);
-	void OnBnClickedOk(wxCommandEvent& evt);
-	void OnBnClickedApply(wxCommandEvent& evt);
-	void OnBnClickedPrevFile(wxCommandEvent& evt);
-	void OnBnClickedNextFile(wxCommandEvent& evt);
+	void OnBnClickedButtonStrip(wxCommandEvent &evt);
+	void OnBnClickedShowComment(wxCommandEvent &evt);
+	void OnBnClickedTakeOver(wxCommandEvent &evt);
+	void OnListClickedTakeOver(wxListEvent &evt);
+	void OnTextFileNameChange(wxCommandEvent &evt);
+	void OnBnClickedOk(wxCommandEvent &evt);
+	void OnBnClickedApply(wxCommandEvent &evt);
+	void OnBnClickedPrevFile(wxCommandEvent &evt);
+	void OnBnClickedNextFile(wxCommandEvent &evt);
 };
 
 #endif // FILEDETAILDIALOG_H

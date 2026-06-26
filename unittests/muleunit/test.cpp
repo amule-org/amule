@@ -28,10 +28,10 @@ using namespace muleunit;
 /** Entry for a context. */
 struct BTEntry
 {
-	BTEntry(const wxString& f, int l, const wxString& m)
-		: file(f)
-		, line(l)
-		, msg(m)
+	BTEntry(const wxString &f, int l, const wxString &m)
+	: file(f)
+	, line(l)
+	, msg(m)
 	{
 	}
 
@@ -40,29 +40,28 @@ struct BTEntry
 	wxString msg;
 };
 
-
 static std::list<BTEntry> g_backtrace;
 
-namespace muleunit {
-	/** Structure used to contain a snapshot of the contexts. */
-	struct BTList
+namespace muleunit
+{
+/** Structure used to contain a snapshot of the contexts. */
+struct BTList
+{
+	BTList(const std::list<BTEntry> &lst)
+	: snapshot(lst)
 	{
-		BTList(const std::list<BTEntry>& lst)
-			: snapshot(lst)
-		{
-		}
+	}
 
-		std::list<BTEntry> snapshot;
-	};
-}
+	std::list<BTEntry> snapshot;
+};
+} // namespace muleunit
 
-
-CTestFailureException::CTestFailureException(const wxString& msg, const wxString& file, long lineNumber)
-	: m_bt(std::make_shared<BTList>(g_backtrace)), m_message(msg.ToAscii())
+CTestFailureException::CTestFailureException(const wxString &msg, const wxString &file, long lineNumber)
+: m_bt(std::make_shared<BTList>(g_backtrace))
+, m_message(msg.ToAscii())
 {
 	m_bt->snapshot.push_back(BTEntry(file, lineNumber, msg));
 }
-
 
 void CTestFailureException::PrintBT() const
 {
@@ -75,18 +74,15 @@ void CTestFailureException::PrintBT() const
 	}
 }
 
-
-const char* CTestFailureException::what () const noexcept
+const char *CTestFailureException::what() const noexcept
 {
 	return m_message.c_str();
 }
 
-
-CContext::CContext(const wxString& file, int line, const wxString& msg)
+CContext::CContext(const wxString &file, int line, const wxString &msg)
 {
 	g_backtrace.push_back(BTEntry(file, line, msg));
 }
-
 
 CContext::~CContext()
 {
@@ -94,7 +90,6 @@ CContext::~CContext()
 }
 
 extern unsigned s_disableAssertions;
-
 
 CAssertOff::CAssertOff()
 {
@@ -106,44 +101,27 @@ CAssertOff::~CAssertOff()
 	s_disableAssertions--;
 }
 
-
-
-Test::Test(const wxString& testCaseName, const wxString& testName)
-		: m_testCaseName(testCaseName),
-		  m_testName(testName)
+Test::Test(const wxString &testCaseName, const wxString &testName)
+: m_testCaseName(testCaseName)
+, m_testName(testName)
 {
 	TestRegistry::addTest(this);
 }
 
+Test::~Test() {}
 
-Test::~Test()
-{
-}
+void Test::setUp() {}
 
+void Test::tearDown() {}
 
-void Test::setUp()
-{
-}
+void Test::run() {}
 
-
-void Test::tearDown()
-{
-}
-
-
-void Test::run()
-{
-}
-
-
-const wxString& Test::getTestName() const
+const wxString &Test::getTestName() const
 {
 	return m_testName;
 }
 
-
-const wxString& Test::getTestCaseName() const
+const wxString &Test::getTestCaseName() const
 {
 	return m_testCaseName;
 }
-

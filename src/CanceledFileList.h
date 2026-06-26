@@ -38,23 +38,23 @@ public:
 	// Ctor, calls Init()
 	CCanceledFileList();
 	// Save list
-	void	Save();
+	void Save();
 	// Check if hash belongs to a canceled file
-	bool	IsCanceledFile(const CMD4Hash& hash) const;
+	bool IsCanceledFile(const CMD4Hash &hash) const;
 	// Add a hash to the list (returns true if added, false if already in list)
-	bool	Add(const CMD4Hash& hash);
+	bool Add(const CMD4Hash &hash);
 	// Remove a hash from the list (returns true if removed, false if not in list)
-	bool	Remove(const CMD4Hash& hash);
+	bool Remove(const CMD4Hash &hash);
 
 private:
 	// The list
 	typedef std::set<CMD4Hash> CanceledFileList;
 	CanceledFileList m_canceledFileList;
 	// The filename "canceled.met"
-	wxString	m_filename;
+	wxString m_filename;
 
 	// Load list from file (if it exists)
-	bool	Init();
+	bool Init();
 };
 
 #endif // CANCELEDFILELIST_H

@@ -34,24 +34,24 @@
 #define ENDIAN_SWAP_32(x) (wxUINT32_SWAP_ON_BE(x))
 #define ENDIAN_SWAP_I_32(x) x = wxUINT32_SWAP_ON_BE(x)
 
-#if ((defined __GNUC__) && __GNUC__ >= 2) || defined (_MSC_VER) || (defined(__SUNPRO_CC) && (__SUNPRO_CC >= 0x550))
-	#define ENDIAN_SWAP_64(x) (wxUINT64_SWAP_ON_BE(x))
-	#define ENDIAN_SWAP_I_64(x) x = wxUINT64_SWAP_ON_BE(x)
+#if ((defined __GNUC__) && __GNUC__ >= 2) || defined(_MSC_VER) || \
+	(defined(__SUNPRO_CC) && (__SUNPRO_CC >= 0x550))
+#define ENDIAN_SWAP_64(x) (wxUINT64_SWAP_ON_BE(x))
+#define ENDIAN_SWAP_I_64(x) x = wxUINT64_SWAP_ON_BE(x)
 #endif
 
 // ntohs
-#define ENDIAN_NTOHS(x) ( wxUINT16_SWAP_ON_LE(x) )
+#define ENDIAN_NTOHS(x) (wxUINT16_SWAP_ON_LE(x))
 // ntohl
-#define ENDIAN_NTOHL(x) ( wxUINT32_SWAP_ON_LE(x) )
+#define ENDIAN_NTOHL(x) (wxUINT32_SWAP_ON_LE(x))
 // new
-#define ENDIAN_NTOHLL(x) ( wxUINT64_SWAP_ON_LE(x) )
+#define ENDIAN_NTOHLL(x) (wxUINT64_SWAP_ON_LE(x))
 // htons
-#define ENDIAN_HTONS(x) ( wxUINT16_SWAP_ON_LE(x) )
+#define ENDIAN_HTONS(x) (wxUINT16_SWAP_ON_LE(x))
 // htonl
-#define ENDIAN_HTONL(x) ( wxUINT32_SWAP_ON_LE(x) )
+#define ENDIAN_HTONL(x) (wxUINT32_SWAP_ON_LE(x))
 // new
-#define ENDIAN_HTONLL(x) ( wxUINT64_SWAP_ON_LE(x) )
-
+#define ENDIAN_HTONLL(x) (wxUINT64_SWAP_ON_LE(x))
 
 /**
  * Returns the value in the given bytestream.
@@ -59,12 +59,10 @@
  * The value is returned exactly as it is found.
  */
 // \{
-inline uint16 RawPeekUInt16(const void* p);
-inline uint32 RawPeekUInt32(const void* p);
-inline uint64 RawPeekUInt64(const void* p);
+inline uint16 RawPeekUInt16(const void *p);
+inline uint32 RawPeekUInt32(const void *p);
+inline uint64 RawPeekUInt64(const void *p);
 // \}
-
-
 
 /**
  * Writes the specified value into the bytestream.
@@ -72,11 +70,10 @@ inline uint64 RawPeekUInt64(const void* p);
  * The value is written exactly as it is.
  */
 // \{
-inline void RawPokeUInt16(void* p, uint16 nVal);
-inline void RawPokeUInt32(void* p, uint32 nVal);
-inline void RawPokeUInt64(void* p, uint64 nVal);
+inline void RawPokeUInt16(void *p, uint16 nVal);
+inline void RawPokeUInt32(void *p, uint32 nVal);
+inline void RawPokeUInt64(void *p, uint64 nVal);
 // \}
-
 
 /**
  * Returns the value in the given bytestream.
@@ -84,12 +81,11 @@ inline void RawPokeUInt64(void* p, uint64 nVal);
  * The value is returned as little-endian.
  */
 // \{
-inline uint8 PeekUInt8(const void* p);
-inline uint16 PeekUInt16(const void* p);
-inline uint32 PeekUInt32(const void* p);
-inline uint64 PeekUInt64(const void* p);
+inline uint8 PeekUInt8(const void *p);
+inline uint16 PeekUInt16(const void *p);
+inline uint32 PeekUInt32(const void *p);
+inline uint64 PeekUInt64(const void *p);
 // \}
-
 
 /**
  * Writes the specified value into the bytestream.
@@ -97,135 +93,120 @@ inline uint64 PeekUInt64(const void* p);
  * The value is written as little-endian.
  */
 // \{
-inline void PokeUInt8(void* p, uint8 nVal);
-inline void PokeUInt16(void* p, uint16 nVal);
-inline void PokeUInt32(void* p, uint32 nVal);
-inline void PokeUInt64(void* p, uint64 nVal);
+inline void PokeUInt8(void *p, uint8 nVal);
+inline void PokeUInt16(void *p, uint16 nVal);
+inline void PokeUInt32(void *p, uint32 nVal);
+inline void PokeUInt64(void *p, uint64 nVal);
 // \}
 
-
 #if defined(__arm__) || defined(__sparc__) || defined(__mips__) || defined(GCC_USES_STRICT_ALIASING)
-	#define ARCHSPECIFIC_USE_MEMCPY
+#define ARCHSPECIFIC_USE_MEMCPY
 #endif
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Peek - helper functions for read-accessing memory without modifying the memory pointer
 
-inline uint16 RawPeekUInt16(const void* p)
+inline uint16 RawPeekUInt16(const void *p)
 {
 #ifndef ARCHSPECIFIC_USE_MEMCPY
-	return *((uint16*)p);
+	return *((uint16 *)p);
 #else
 	uint16 value;
-	memcpy( &value, p, sizeof( uint16 ) );
+	memcpy(&value, p, sizeof(uint16));
 	return value;
 #endif
 }
 
-
-inline uint32 RawPeekUInt32(const void* p)
+inline uint32 RawPeekUInt32(const void *p)
 {
 #ifndef ARCHSPECIFIC_USE_MEMCPY
-	return *((uint32*)p);
+	return *((uint32 *)p);
 #else
 	uint32 value;
-	memcpy( &value, p, sizeof( uint32 ) );
+	memcpy(&value, p, sizeof(uint32));
 	return value;
 #endif
 }
 
-
-inline uint64 RawPeekUInt64(const void* p)
+inline uint64 RawPeekUInt64(const void *p)
 {
 #ifndef ARCHSPECIFIC_USE_MEMCPY
-	return *((uint64*)p);
+	return *((uint64 *)p);
 #else
 	uint64 value;
-	memcpy( &value, p, sizeof( uint64 ) );
+	memcpy(&value, p, sizeof(uint64));
 	return value;
 #endif
 }
 
-
-inline uint8 PeekUInt8(const void* p)
+inline uint8 PeekUInt8(const void *p)
 {
-	return *((uint8*)p);
+	return *((uint8 *)p);
 }
 
-
-inline uint16 PeekUInt16(const void* p)
+inline uint16 PeekUInt16(const void *p)
 {
-	return ENDIAN_SWAP_16( RawPeekUInt16( p ) );
+	return ENDIAN_SWAP_16(RawPeekUInt16(p));
 }
 
-
-inline uint32 PeekUInt32(const void* p)
+inline uint32 PeekUInt32(const void *p)
 {
-	return ENDIAN_SWAP_32( RawPeekUInt32( p ) );
+	return ENDIAN_SWAP_32(RawPeekUInt32(p));
 }
 
-inline uint64 PeekUInt64(const void* p)
+inline uint64 PeekUInt64(const void *p)
 {
-	return ENDIAN_SWAP_64( RawPeekUInt64( p ) );
+	return ENDIAN_SWAP_64(RawPeekUInt64(p));
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Poke - helper functions for write-accessing memory without modifying the memory pointer
 
-
-inline void RawPokeUInt16(void* p, uint16 nVal)
+inline void RawPokeUInt16(void *p, uint16 nVal)
 {
 #ifndef ARCHSPECIFIC_USE_MEMCPY
-	*((uint16*)p) = nVal;
+	*((uint16 *)p) = nVal;
 #else
-	memcpy( p, &nVal, sizeof(uint16) );
+	memcpy(p, &nVal, sizeof(uint16));
 #endif
 }
 
-
-inline void RawPokeUInt32(void* p, uint32 nVal)
+inline void RawPokeUInt32(void *p, uint32 nVal)
 {
 #ifndef ARCHSPECIFIC_USE_MEMCPY
-	*((uint32*)p) = nVal;
+	*((uint32 *)p) = nVal;
 #else
-	memcpy( p, &nVal, sizeof(uint32) );
+	memcpy(p, &nVal, sizeof(uint32));
 #endif
 }
 
-
-inline void RawPokeUInt64(void* p, uint64 nVal)
+inline void RawPokeUInt64(void *p, uint64 nVal)
 {
 #ifndef ARCHSPECIFIC_USE_MEMCPY
-	*((uint64*)p) = nVal;
+	*((uint64 *)p) = nVal;
 #else
-	memcpy( p, &nVal, sizeof(uint64) );
+	memcpy(p, &nVal, sizeof(uint64));
 #endif
 }
 
-
-inline void PokeUInt8(void* p, uint8 nVal)
+inline void PokeUInt8(void *p, uint8 nVal)
 {
-	*((uint8*)p) = nVal;
+	*((uint8 *)p) = nVal;
 }
 
-
-inline void PokeUInt16(void* p, uint16 nVal)
+inline void PokeUInt16(void *p, uint16 nVal)
 {
-	RawPokeUInt16( p, ENDIAN_SWAP_16( nVal ) );
+	RawPokeUInt16(p, ENDIAN_SWAP_16(nVal));
 }
 
-
-inline void PokeUInt32(void* p, uint32 nVal)
+inline void PokeUInt32(void *p, uint32 nVal)
 {
-	RawPokeUInt32( p, ENDIAN_SWAP_32( nVal ) );
+	RawPokeUInt32(p, ENDIAN_SWAP_32(nVal));
 }
 
-inline void PokeUInt64(void* p, uint64 nVal)
+inline void PokeUInt64(void *p, uint64 nVal)
 {
-	RawPokeUInt64( p, ENDIAN_SWAP_64( nVal ) );
+	RawPokeUInt64(p, ENDIAN_SWAP_64(nVal));
 }
 
 // Don't pollute the preprocessor namespace

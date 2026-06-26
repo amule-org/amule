@@ -32,26 +32,27 @@
 #define USE_MULE_PEN_CACHE 1
 #define USE_MULE_BRUSH_CACHE 1
 
-std::map<uint32_t, wxPen*> wxPenCache;
-std::map<uint32_t, wxBrush*> wxBrushCache;
+std::map<uint32_t, wxPen *> wxPenCache;
+std::map<uint32_t, wxBrush *> wxBrushCache;
 
-const wxPen& CMuleColour::GetPen(int width, wxPenStyle style) const
+const wxPen &CMuleColour::GetPen(int width, wxPenStyle style) const
 {
 #if USE_MULE_PEN_CACHE
-	wxPen* result = NULL;
+	wxPen *result = NULL;
 
 	if (m_cachedpen && (m_cachedpen->GetWidth() == width) && (m_cachedpen->GetStyle() == style)) {
 		result = m_cachedpen;
 	} else {
 		const uint32_t hash = ((width & 0xF) << 28) | ((style & 0xF) << 24) | (GetULong() & 0xFFFFFF);
-		std::map<uint32_t, wxPen*>::iterator it = wxPenCache.find(hash);
+		std::map<uint32_t, wxPen *>::iterator it = wxPenCache.find(hash);
 		if (it != wxPenCache.end()) {
 			result = it->second;
 			m_cachedpen = result;
 		} else {
-			result = wxThePenList->FindOrCreatePen(wxColour(m_red, m_green, m_blue), width, style);
+			result =
+				wxThePenList->FindOrCreatePen(wxColour(m_red, m_green, m_blue), width, style);
 			m_cachedpen = result;
-			wxPenCache.insert(std::pair<uint32_t, wxPen*>(hash, result));
+			wxPenCache.insert(std::pair<uint32_t, wxPen *>(hash, result));
 		}
 	}
 
@@ -61,23 +62,23 @@ const wxPen& CMuleColour::GetPen(int width, wxPenStyle style) const
 #endif
 }
 
-const wxBrush& CMuleColour::GetBrush(wxBrushStyle style) const
+const wxBrush &CMuleColour::GetBrush(wxBrushStyle style) const
 {
 #if USE_MULE_BRUSH_CACHE
-	wxBrush* result = NULL;
+	wxBrush *result = NULL;
 
 	if (m_cachedbrush && (m_cachedbrush->GetStyle() == style)) {
 		result = m_cachedbrush;
 	} else {
 		const uint32_t hash = ((style & 0xF) << 24) | (GetULong() & 0xFFFFFF);
-		std::map<uint32_t, wxBrush*>::iterator it = wxBrushCache.find(hash);
+		std::map<uint32_t, wxBrush *>::iterator it = wxBrushCache.find(hash);
 		if (it != wxBrushCache.end()) {
 			result = it->second;
 			m_cachedbrush = result;
 		} else {
 			result = wxTheBrushList->FindOrCreateBrush(wxColour(m_red, m_green, m_blue), style);
 			m_cachedbrush = result;
-			wxBrushCache.insert(std::pair<uint32_t, wxBrush*>(hash, result));
+			wxBrushCache.insert(std::pair<uint32_t, wxBrush *>(hash, result));
 		}
 	}
 

@@ -23,12 +23,10 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef STRING_FUNCTIONS_H
 #define STRING_FUNCTIONS_H
 
-#include "../../Types.h"		// Needed for uint16 and uint32
-
+#include "../../Types.h" // Needed for uint16 and uint32
 
 // UTF8 types: No UTF8, BOM prefix, or Raw UTF8
 enum EUtf8Str
@@ -74,29 +72,62 @@ enum EUtf8Str
 typedef const wxCharBuffer Unicode2CharBuf;
 typedef const wxWCharBuffer Char2UnicodeBuf;
 
-Unicode2CharBuf unicode2char(const wxChar* x);
-Unicode2CharBuf unicode2char(const Char2UnicodeBuf& x);
-inline Unicode2CharBuf unicode2char(const wxString& x)		{ return unicode2char(x.wc_str()); }
-inline Char2UnicodeBuf char2unicode(const char* x)	{ return wxConvLibc.cMB2WX(x); }
+Unicode2CharBuf unicode2char(const wxChar *x);
+Unicode2CharBuf unicode2char(const Char2UnicodeBuf &x);
+inline Unicode2CharBuf unicode2char(const wxString &x)
+{
+	return unicode2char(x.wc_str());
+}
+inline Char2UnicodeBuf char2unicode(const char *x)
+{
+	return wxConvLibc.cMB2WX(x);
+}
 
-inline Unicode2CharBuf unicode2UTF8(const wxChar* x)	{ return wxConvUTF8.cWX2MB(x); }
-inline Unicode2CharBuf unicode2UTF8(const Char2UnicodeBuf& x)	{ return wxConvUTF8.cWX2MB(x); }
-inline Unicode2CharBuf unicode2UTF8(const wxString& x)	{ return x.utf8_str(); }
-inline Char2UnicodeBuf UTF82unicode(const char* x)	{ return wxConvUTF8.cMB2WX(x); }
+inline Unicode2CharBuf unicode2UTF8(const wxChar *x)
+{
+	return wxConvUTF8.cWX2MB(x);
+}
+inline Unicode2CharBuf unicode2UTF8(const Char2UnicodeBuf &x)
+{
+	return wxConvUTF8.cWX2MB(x);
+}
+inline Unicode2CharBuf unicode2UTF8(const wxString &x)
+{
+	return x.utf8_str();
+}
+inline Char2UnicodeBuf UTF82unicode(const char *x)
+{
+	return wxConvUTF8.cMB2WX(x);
+}
 
-inline const wxCharBuffer char2UTF8(const char *x)	{ return unicode2UTF8(char2unicode(x)); }
-inline const wxCharBuffer UTF82char(const char *x)	{ return unicode2char(UTF82unicode(x)); }
+inline const wxCharBuffer char2UTF8(const char *x)
+{
+	return unicode2UTF8(char2unicode(x));
+}
+inline const wxCharBuffer UTF82char(const char *x)
+{
+	return unicode2char(UTF82unicode(x));
+}
 
-inline Unicode2CharBuf filename2char(const wxChar* x)	{ return wxConvFileName->cWC2MB(x); }
-inline Unicode2CharBuf filename2char(const wxString& x)	{ return x.mb_str(*wxConvFileName); }
-inline Char2UnicodeBuf char2filename(const char* x)	{ return wxConvFileName->cMB2WC(x); }
-
+inline Unicode2CharBuf filename2char(const wxChar *x)
+{
+	return wxConvFileName->cWC2MB(x);
+}
+inline Unicode2CharBuf filename2char(const wxString &x)
+{
+	return x.mb_str(*wxConvFileName);
+}
+inline Char2UnicodeBuf char2filename(const char *x)
+{
+	return wxConvFileName->cMB2WC(x);
+}
 
 //
 // Replaces "&" with "&&" in 'in' for use with text-labels
 //
-inline wxString MakeStringEscaped(wxString in) {
-	in.Replace("&","&&");
+inline wxString MakeStringEscaped(wxString in)
+{
+	in.Replace("&", "&&");
 	return in;
 }
 
@@ -109,7 +140,8 @@ inline wxString MakeStringEscaped(wxString in) {
 // any character >= 0x80 (UTF-8 continuation bytes / wide Unicode)
 // pass through untouched.
 //
-inline wxString EscapeForLog(const wxString& in) {
+inline wxString EscapeForLog(const wxString &in)
+{
 	wxString out;
 	out.reserve(in.length());
 	for (size_t i = 0; i < in.length(); ++i) {
@@ -124,9 +156,10 @@ inline wxString EscapeForLog(const wxString& in) {
 }
 
 // Make a string be a folder
-inline wxString MakeFoldername(wxString path) {
+inline wxString MakeFoldername(wxString path)
+{
 
-	if ( !path.IsEmpty() && ( path.Right(1) == '/') ) {
+	if (!path.IsEmpty() && (path.Right(1) == '/')) {
 		path.RemoveLast();
 	}
 
@@ -134,29 +167,29 @@ inline wxString MakeFoldername(wxString path) {
 }
 
 // Duplicates a string
-inline char* nstrdup(const char* src)
+inline char *nstrdup(const char *src)
 {
 	size_t len = (src ? strlen(src) : 0) + 1;
 	char *res = new char[len];
-	if ( src ) strcpy(res, src);
-	res[len-1] = 0;
+	if (src)
+		strcpy(res, src);
+	res[len - 1] = 0;
 	return res;
 }
-
 
 // Replacements for atoi and atol that removes the need for converting
 // a string to normal chars with unicode2char. The value returned is the
 // value represented in the string or 0 if the conversion failed.
-inline long StrToLong(const wxString& str)
+inline long StrToLong(const wxString &str)
 {
 	long value = 0;
-	if (!str.ToLong(&value)) {	// value may be changed even if it fails according to wx docu
+	if (!str.ToLong(&value)) { // value may be changed even if it fails according to wx docu
 		value = 0;
 	}
 	return value;
 }
 
-inline unsigned long StrToULong(const wxString& str)
+inline unsigned long StrToULong(const wxString &str)
 {
 	unsigned long value = 0;
 	if (!str.ToULong(&value)) {
@@ -165,7 +198,7 @@ inline unsigned long StrToULong(const wxString& str)
 	return value;
 }
 
-inline unsigned long long StrToULongLong(const wxString& str)
+inline unsigned long long StrToULongLong(const wxString &str)
 {
 	unsigned long long value = 0;
 	if (!str.ToULongLong(&value)) {
@@ -174,43 +207,40 @@ inline unsigned long long StrToULongLong(const wxString& str)
 	return value;
 }
 
-inline size_t GetRawSize(const wxString& rstr, EUtf8Str eEncode)
+inline size_t GetRawSize(const wxString &rstr, EUtf8Str eEncode)
 {
 	size_t RealLen = 0;
 	switch (eEncode) {
-		case utf8strOptBOM:
-			RealLen = 3;
-		/* fall through */
-		case utf8strRaw: {
-			Unicode2CharBuf s(unicode2UTF8(rstr));
-			if (s) {
-				RealLen += strlen(s);
-				break;
-			} else {
-				RealLen = 0;
-			}
+	case utf8strOptBOM:
+		RealLen = 3;
+	/* fall through */
+	case utf8strRaw: {
+		Unicode2CharBuf s(unicode2UTF8(rstr));
+		if (s) {
+			RealLen += strlen(s);
+			break;
+		} else {
+			RealLen = 0;
 		}
-		/* fall through */
-		default: {
-			Unicode2CharBuf s(unicode2char(rstr));
-			if (s) {
-				RealLen = strlen(s);
-			}
+	}
+	/* fall through */
+	default: {
+		Unicode2CharBuf s(unicode2char(rstr));
+		if (s) {
+			RealLen = strlen(s);
 		}
+	}
 	}
 
 	return RealLen;
 }
 
-
 /****************************************************/
 /***************** Non-inlines **********************/
 /****************************************************/
 
-
 // Makes sIn suitable for inclusion in an URL, by escaping all chars that could cause trouble.
-wxString URLEncode(const wxString& sIn);
-
+wxString URLEncode(const wxString &sIn);
 
 /**
  * Converts a hexadecimal number to a char.
@@ -218,8 +248,7 @@ wxString URLEncode(const wxString& sIn);
  * @param hex The hex-number, must be at most 2 digits long.
  * @return The resulting char or \0 if conversion failed.
  */
-wxChar HexToDec( const wxString& hex );
-
+wxChar HexToDec(const wxString &hex);
 
 /**
  * This function converts all valid HTML escape-codes to their corresponding chars.
@@ -227,14 +256,12 @@ wxChar HexToDec( const wxString& hex );
  * @param str The string to unescape.
  * @return The unescaped version of the input string.
  */
-wxString UnescapeHTML( const wxString& str );
-
+wxString UnescapeHTML(const wxString &str);
 
 /**
  * Ensures that the url pass is valid by escaping various chars.
  */
-wxString validateURI(const wxString& url);
-
+wxString validateURI(const wxString &url);
 
 /**
  * Compares two strings, while taking numerals into consideration.
@@ -250,13 +277,12 @@ wxString validateURI(const wxString& url);
  * Currently does not handle floats (they are treated as to separate
  * fields, nor negative numbers.
  */
-int FuzzyStrCmp(const wxString& a, const wxString& b);
+int FuzzyStrCmp(const wxString &a, const wxString &b);
 
 /**
  * As with FuzzyStrCmp, but case insensitive.
  */
-int FuzzyStrCaseCmp(const wxString& a, const wxString& b);
-
+int FuzzyStrCaseCmp(const wxString &a, const wxString &b);
 
 /**
  * This class provides a simple and fast tokenizer.
@@ -268,7 +294,7 @@ public:
 	 * @param str The string to tokenize.
 	 * @param delim The delimiter used to split the string.
 	 */
-	CSimpleTokenizer(const wxString& str, wxChar delim);
+	CSimpleTokenizer(const wxString &str, wxChar delim);
 
 	/**
 	 * Returns the next part of the string separated by the
@@ -303,12 +329,11 @@ private:
 	wxChar m_delim;
 
 	//! A pointer to the current position in the string.
-	const wxChar* m_ptr;
+	const wxChar *m_ptr;
 
 	//! The number of tokens encountered.
 	size_t m_count;
 };
-
 
 #endif // STRING_FUNCTIONS_H
 // File_checked_for_headers

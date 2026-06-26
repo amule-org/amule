@@ -41,18 +41,17 @@
 #include "php_syntree.h"
 #include "php_core_lib.h"
 
-
 void php_native_shared_file_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1");
 		return;
 	}
 	char *str_hash = si->var->value.str_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 2");
 		return;
 	}
@@ -60,7 +59,7 @@ void php_native_shared_file_cmd(PHP_VALUE_NODE *)
 	si = get_scope_item(g_current_scope, "__param_2");
 	PHP_VAR_NODE *opt_param = si ? si->var : 0;
 
-	if ( !strcmp(cmd_name, "prio") && !opt_param ) {
+	if (!strcmp(cmd_name, "prio") && !opt_param) {
 		php_report_error(PHP_ERROR, "Command 'prio' need 3-rd argument");
 		return;
 	}
@@ -81,14 +80,14 @@ void php_native_reload_shared_file_cmd(PHP_VALUE_NODE *)
 void php_native_download_file_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1");
 		return;
 	}
 	char *str_hash = si->var->value.str_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 2");
 		return;
 	}
@@ -96,7 +95,7 @@ void php_native_download_file_cmd(PHP_VALUE_NODE *)
 	si = get_scope_item(g_current_scope, "__param_2");
 	PHP_VAR_NODE *opt_param = si ? si->var : 0;
 
-	if ( (!strcmp(cmd_name, "prio") || !strcmp(cmd_name, "setcat")) && !opt_param ) {
+	if ((!strcmp(cmd_name, "prio") || !strcmp(cmd_name, "setcat")) && !opt_param) {
 		php_report_error(PHP_ERROR, "Commands 'prio' and 'setcat' needs 3-rd argument");
 		return;
 	}
@@ -110,7 +109,7 @@ void php_native_download_file_cmd(PHP_VALUE_NODE *)
 void php_native_kad_connect(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Missing or bad argument 1: $bootstrap_ip_addr");
 		return;
 	}
@@ -118,7 +117,7 @@ void php_native_kad_connect(PHP_VALUE_NODE *)
 	unsigned int ipaddr = si->var->value.int_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Missing or bad argument 2: $bootstrap_ip_port");
 		return;
 	}
@@ -139,14 +138,14 @@ void php_native_kad_disconnect(PHP_VALUE_NODE *)
 void php_native_add_server_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING) ) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Missing or bad argument 1: $server_addr");
 		return;
 	}
 	char *addr = si->var->value.str_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Missing argument 2: $server_port");
 		return;
 	}
@@ -154,7 +153,7 @@ void php_native_add_server_cmd(PHP_VALUE_NODE *)
 	int port = si->var->value.int_val;
 
 	si = get_scope_item(g_current_scope, "__param_2");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING) ) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 3: $server_name");
 		return;
 	}
@@ -169,7 +168,7 @@ void php_native_add_server_cmd(PHP_VALUE_NODE *)
 void php_native_server_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Missing argument 1: $server_ip");
 		return;
 	}
@@ -177,7 +176,7 @@ void php_native_server_cmd(PHP_VALUE_NODE *)
 	uint32_t ip = si->var->value.int_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Missing argument 2: $server_port");
 		return;
 	}
@@ -185,7 +184,7 @@ void php_native_server_cmd(PHP_VALUE_NODE *)
 	int port = si->var->value.int_val;
 
 	si = get_scope_item(g_current_scope, "__param_2");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 3: $command");
 		return;
 	}
@@ -226,14 +225,13 @@ void php_get_amule_options(PHP_VALUE_NODE *result)
 	cast_value_array(result);
 }
 
-
 /*
  * Set amule options from given array. Argument looks like "amule_get_options" result
  */
 void php_set_amule_options(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_ARRAY)) {
+	if (!si || (si->var->value.type != PHP_VAL_ARRAY)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (options array)");
 		return;
 	}
@@ -245,14 +243,14 @@ void php_set_amule_options(PHP_VALUE_NODE *)
 void php_native_search_download_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (file hash)");
 		return;
 	}
 	char *str_hash = si->var->value.str_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 2 (category)");
 		return;
 	}
@@ -265,54 +263,61 @@ void php_native_search_download_cmd(PHP_VALUE_NODE *)
 void php_native_search_start_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (search term)");
 		return;
 	}
 	char *search = si->var->value.str_val;
 
-	if ( !(si = get_scope_item(g_current_scope, "__param_1")) || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!(si = get_scope_item(g_current_scope, "__param_1")) || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 2 (file extension)");
 		return;
 	}
 	char *ext = si->var->value.str_val;
 
-	if ( !(si = get_scope_item(g_current_scope, "__param_2")) || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!(si = get_scope_item(g_current_scope, "__param_2")) || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 3 (file type)");
 		return;
 	}
 	char *type = si->var->value.str_val;
 
-	if ( !(si = get_scope_item(g_current_scope, "__param_3")) ) {
+	if (!(si = get_scope_item(g_current_scope, "__param_3"))) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 4 (search type)");
 		return;
 	}
 	cast_value_dnum(&si->var->value);
 	int search_type = si->var->value.int_val;
 
-	if ( !(si = get_scope_item(g_current_scope, "__param_4")) ) {
+	if (!(si = get_scope_item(g_current_scope, "__param_4"))) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 5 (availability)");
 		return;
 	}
 	cast_value_dnum(&si->var->value);
 	int avail = si->var->value.int_val;
 
-	if ( !(si = get_scope_item(g_current_scope, "__param_5")) ) {
+	if (!(si = get_scope_item(g_current_scope, "__param_5"))) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 6 (min size)");
 		return;
 	}
 	cast_value_dnum(&si->var->value);
 	int min_size = si->var->value.int_val;
 
-	if ( !(si = get_scope_item(g_current_scope, "__param_6")) ) {
+	if (!(si = get_scope_item(g_current_scope, "__param_6"))) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 7 (max size)");
 		return;
 	}
 	cast_value_dnum(&si->var->value);
 	int max_size = si->var->value.int_val;
 
-	printf("php_native_search_start_cmd:\nsearch=%s\next=%s\nfile_type=%s\nsearch_type=%d\navail=%d\nmin_size=%d\nmax_size=%d\n",
-	       search, ext, type, search_type, avail, min_size, max_size);
+	printf("php_native_search_start_cmd:\nsearch=%s\next=%s\nfile_type=%s\nsearch_type=%d\navail=%d\nmin_"
+	       "size=%d\nmax_size=%d\n",
+		search,
+		ext,
+		type,
+		search_type,
+		avail,
+		min_size,
+		max_size);
 }
 
 /*
@@ -324,7 +329,7 @@ void php_get_log(PHP_VALUE_NODE *result)
 
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	bool rst;
-	if ( !si ) {
+	if (!si) {
 		rst = false;
 	} else {
 		cast_value_dnum(&si->var->value);
@@ -343,7 +348,7 @@ void php_get_serverinfo(PHP_VALUE_NODE *result)
 
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	bool rst;
-	if ( !si ) {
+	if (!si) {
 		rst = false;
 	} else {
 		cast_value_dnum(&si->var->value);
@@ -352,21 +357,20 @@ void php_get_serverinfo(PHP_VALUE_NODE *result)
 	printf("php_get_serverinfo: reset=%d\n", rst);
 }
 
-
 /*
  * Download ed2k link. Params: link, category (default=0)
  */
 void php_native_ed2k_download_cmd(PHP_VALUE_NODE *result)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
-	if ( !si || (si->var->value.type != PHP_VAL_STRING)) {
+	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (file link)");
 		return;
 	}
 	char *str_link = si->var->value.str_val;
 
 	si = get_scope_item(g_current_scope, "__param_1");
-	if ( !si ) {
+	if (!si) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 2 (category)");
 		return;
 	}
@@ -375,7 +379,6 @@ void php_native_ed2k_download_cmd(PHP_VALUE_NODE *result)
 
 	printf("php_native_ed2k_download_cmd: file_link=%s category=%d\n", str_link, cat);
 }
-
 
 void amule_fake_obj_array_create(int count, char *class_name, PHP_VALUE_NODE *result)
 {
@@ -412,44 +415,39 @@ void amule_load_uploads(PHP_VALUE_NODE *result)
 	amule_fake_obj_array_create(17, "AmuleUploadFile", result);
 }
 
-void amule_load_stats()
-{
-}
+void amule_load_stats() {}
 
-void amule_load_stats_tree(PHP_VALUE_NODE *)
-{
-}
-
+void amule_load_stats_tree(PHP_VALUE_NODE *) {}
 
 void php_native_load_amule_vars(PHP_VALUE_NODE *result)
 {
 	PHP_SCOPE_ITEM *si_str = get_scope_item(g_current_scope, "__param_0");
-	if ( !si_str  ) {
+	if (!si_str) {
 		php_report_error(PHP_ERROR, "Missing argument 'varname' for 'load_amule_vars'");
 		return;
 	}
 	PHP_VALUE_NODE *str = &si_str->var->value;
-	if ( str->type != PHP_VAL_STRING ) {
+	if (str->type != PHP_VAL_STRING) {
 		php_report_error(PHP_ERROR, "Argument 'varname' for 'load_amule_vars' must be string");
 		return;
 	}
 	char *varname = str->str_val;
-	if ( result ) {
+	if (result) {
 		cast_value_array(result);
 	}
-	if ( strcmp(varname, "downloads") == 0 ) {
+	if (strcmp(varname, "downloads") == 0) {
 		amule_load_downloads(result);
-	} else if ( strcmp(varname, "uploads") == 0 ) {
+	} else if (strcmp(varname, "uploads") == 0) {
 		amule_load_uploads(result);
-	} else if ( strcmp(varname, "shared") == 0 ) {
+	} else if (strcmp(varname, "shared") == 0) {
 		amule_load_shared(result);
-	} else if ( strcmp(varname, "searchresult") == 0 ) {
+	} else if (strcmp(varname, "searchresult") == 0) {
 		amule_load_search(result);
-	} else if ( strcmp(varname, "servers") == 0 ) {
+	} else if (strcmp(varname, "servers") == 0) {
 		amule_load_servers(result);
-	} else if ( strcmp(varname, "stats_graph") == 0 ) {
+	} else if (strcmp(varname, "stats_graph") == 0) {
 		amule_load_stats();
-	} else if ( strcmp(varname, "stats_tree") == 0 ) {
+	} else if (strcmp(varname, "stats_tree") == 0) {
 		amule_load_stats_tree(result);
 	} else {
 		value_value_free(result);
@@ -462,7 +460,7 @@ void php_native_load_amule_vars(PHP_VALUE_NODE *result)
  */
 void amule_fake_prop_get(void *obj, char *prop_name, PHP_VALUE_NODE *result)
 {
-	if ( !strcmp(prop_name, "name") || !strcmp(prop_name, "hash") ) {
+	if (!strcmp(prop_name, "name") || !strcmp(prop_name, "hash")) {
 		result->type = PHP_VAL_STRING;
 		result->str_val = strdup("some_str");
 	} else {
@@ -498,7 +496,7 @@ void amule_search_file_prop_get(void *obj, char *prop_name, PHP_VALUE_NODE *resu
 
 void amule_version(PHP_VALUE_NODE *val)
 {
-	if ( !val ) {
+	if (!val) {
 		return;
 	}
 	value_value_free(val);
@@ -507,27 +505,31 @@ void amule_version(PHP_VALUE_NODE *val)
 	val->str_val = strdup(PACKAGE_VERSION);
 }
 
-
 PHP_BLTIN_FUNC_DEF amule_lib_funcs[] = {
 	{
 		"amule_load_vars",
-		1, php_native_load_amule_vars,
+		1,
+		php_native_load_amule_vars,
 	},
 	{
 		"amule_get_stats",
-		0, php_get_amule_stats,
+		0,
+		php_get_amule_stats,
 	},
 	{
 		"amule_get_categories",
-		0, php_get_amule_categories,
+		0,
+		php_get_amule_categories,
 	},
 	{
 		"amule_get_options",
-		0, php_get_amule_options,
+		0,
+		php_get_amule_options,
 	},
 	{
 		"amule_set_options",
-		1, php_set_amule_options,
+		1,
+		php_set_amule_options,
 	},
 	{
 		"amule_do_server_cmd",
@@ -551,7 +553,8 @@ PHP_BLTIN_FUNC_DEF amule_lib_funcs[] = {
 	},
 	{
 		"amule_do_reload_shared_cmd",
-		0, php_native_reload_shared_file_cmd,
+		0,
+		php_native_reload_shared_file_cmd,
 	},
 	{
 		"amule_do_search_download_cmd",
@@ -570,24 +573,31 @@ PHP_BLTIN_FUNC_DEF amule_lib_funcs[] = {
 	},
 	{
 		"amule_get_log",
-		1, php_get_log,
+		1,
+		php_get_log,
 	},
 	{
 		"amule_get_serverinfo",
-		1, php_get_serverinfo,
+		1,
+		php_get_serverinfo,
 	},
 	{
 		"amule_get_version",
-		0, amule_version,
+		0,
+		amule_version,
 	},
-	{ 0, 0, 0, },
+	{
+		0,
+		0,
+		0,
+	},
 };
 
 void php_init_amule_lib()
 {
 	// load function definitions
 	PHP_BLTIN_FUNC_DEF *curr_def = amule_lib_funcs;
-	while ( curr_def->name ) {
+	while (curr_def->name) {
 		php_add_native_func(curr_def);
 		curr_def++;
 	}
@@ -601,19 +611,19 @@ void php_init_amule_lib()
 
 int main(int argc, char *argv[])
 {
-	const char *filename = ( argc == 2 ) ? argv[1] : "test.php";
+	const char *filename = (argc == 2) ? argv[1] : "test.php";
 
 	CWriteStrBuffer buffer;
 
-	//phpdebug = 0;
+	// phpdebug = 0;
 
-	CPhpFilter php_filter((CWebServerBase*)0, (CSession *)0,filename, &buffer);
+	CPhpFilter php_filter((CWebServerBase *)0, (CSession *)0, filename, &buffer);
 
 	int size = buffer.Length();
-	char *buf = new char [size+1];
+	char *buf = new char[size + 1];
 	buffer.CopyAll(buf);
 	printf("%s", buf);
-	delete [] buf;
+	delete[] buf;
 
 	return 0;
 }

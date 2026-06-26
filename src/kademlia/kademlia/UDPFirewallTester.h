@@ -37,52 +37,71 @@ namespace Kademlia
 class CUInt128;
 class CKadUDPKey;
 
-struct UsedClient_Struct {
-	CContact	contact;
-	bool		answered;
+struct UsedClient_Struct
+{
+	CContact contact;
+	bool answered;
 };
 
-#define UDP_FIREWALLTEST_CLIENTSTOASK	2	// more clients increase the chance of a false positive, while less the chance of a false negative
+#define UDP_FIREWALLTEST_CLIENTSTOASK \
+	2 // more clients increase the chance of a false positive, while less the chance of a false negative
 
 class CUDPFirewallTester
 {
-      public:
-	static bool	IsFirewalledUDP(bool lastStateIfTesting); // Are we UDP firewalled - if unknown open is assumed unless onlyVerified == true
-	static void	SetUDPFWCheckResult(bool succeeded, bool testCancelled, uint32_t fromIP, uint16_t incomingPort);
-	static void	ReCheckFirewallUDP(bool setUnverified);
-	static bool	IsFWCheckUDPRunning() noexcept		{ return m_fwChecksFinishedUDP < UDP_FIREWALLTEST_CLIENTSTOASK && !CKademlia::IsRunningInLANMode(); }
-	static bool	IsVerified() noexcept			{ return m_isFWVerifiedUDP || CKademlia::IsRunningInLANMode(); }
+public:
+	static bool IsFirewalledUDP(bool lastStateIfTesting); // Are we UDP firewalled - if unknown open is
+							      // assumed unless onlyVerified == true
+	static void SetUDPFWCheckResult(
+		bool succeeded, bool testCancelled, uint32_t fromIP, uint16_t incomingPort);
+	static void ReCheckFirewallUDP(bool setUnverified);
+	static bool IsFWCheckUDPRunning() noexcept
+	{
+		return m_fwChecksFinishedUDP < UDP_FIREWALLTEST_CLIENTSTOASK &&
+		       !CKademlia::IsRunningInLANMode();
+	}
+	static bool IsVerified() noexcept { return m_isFWVerifiedUDP || CKademlia::IsRunningInLANMode(); }
 
-	static void	AddPossibleTestContact(const CUInt128& clientID, uint32_t ip, uint16_t port, uint16_t tport, const CUInt128& target, uint8_t version, const CKadUDPKey& udpKey, bool ipVerified)
+	static void AddPossibleTestContact(const CUInt128 &clientID,
+		uint32_t ip,
+		uint16_t port,
+		uint16_t tport,
+		const CUInt128 &target,
+		uint8_t version,
+		const CKadUDPKey &udpKey,
+		bool ipVerified)
 	{
 		if (!IsFWCheckUDPRunning()) {
 			return;
 		}
 		// add the possible contact to our list - no checks in advance
-		m_possibleTestClients.push_front(CContact(clientID, ip, port, tport, version, udpKey, ipVerified, target));
+		m_possibleTestClients.push_front(
+			CContact(clientID, ip, port, tport, version, udpKey, ipVerified, target));
 		QueryNextClient();
 	}
 
-	static void	Reset(); // when stopping Kad
-	static void	Connected();
-	static void	QueryNextClient(); // try the next available client for the firewallcheck
+	static void Reset(); // when stopping Kad
+	static void Connected();
+	static void QueryNextClient(); // try the next available client for the firewallcheck
 
-      private:
+private:
 	// are we in search for testclients
-	static bool	GetUDPCheckClientsNeeded() noexcept	{ return (m_fwChecksRunningUDP + m_fwChecksFinishedUDP) < UDP_FIREWALLTEST_CLIENTSTOASK; }
-	static bool	m_firewalledUDP;
-	static bool	m_firewalledLastStateUDP;
-	static bool	m_isFWVerifiedUDP;
-	static bool	m_nodeSearchStarted;
-	static bool	m_timedOut;
-	static uint8_t	m_fwChecksRunningUDP;
-	static uint8_t	m_fwChecksFinishedUDP;
-	static uint64_t	m_testStart;
-	static uint64_t	m_lastSucceededTime;
+	static bool GetUDPCheckClientsNeeded() noexcept
+	{
+		return (m_fwChecksRunningUDP + m_fwChecksFinishedUDP) < UDP_FIREWALLTEST_CLIENTSTOASK;
+	}
+	static bool m_firewalledUDP;
+	static bool m_firewalledLastStateUDP;
+	static bool m_isFWVerifiedUDP;
+	static bool m_nodeSearchStarted;
+	static bool m_timedOut;
+	static uint8_t m_fwChecksRunningUDP;
+	static uint8_t m_fwChecksFinishedUDP;
+	static uint64_t m_testStart;
+	static uint64_t m_lastSucceededTime;
 	typedef std::list<CContact> PossibleClientList;
 	typedef std::list<UsedClient_Struct> UsedClientList;
 	static PossibleClientList m_possibleTestClients;
-	static UsedClientList	m_usedTestClients;
+	static UsedClientList m_usedTestClients;
 };
 
 } // namespace Kademlia

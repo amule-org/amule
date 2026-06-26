@@ -26,27 +26,24 @@
 #ifndef EDITSERVERLISTDLG_H
 #define EDITSERVERLISTDLG_H
 
-
 class wxTextCtrl;
 
 class EditServerListDlg : public wxDialog
 {
 public:
-    EditServerListDlg(wxWindow *parent,
-                      const wxString& caption,
-                      const wxString& message,
-                      const wxString& filename);
+	EditServerListDlg(
+		wxWindow *parent, const wxString &caption, const wxString &message, const wxString &filename);
 
-    virtual ~EditServerListDlg();
+	virtual ~EditServerListDlg();
 
-    void OnOK(wxCommandEvent& event);
+	void OnOK(wxCommandEvent &event);
 
 protected:
-    wxTextCtrl* m_textctrl;
-    wxString    m_file;
+	wxTextCtrl *m_textctrl;
+	wxString m_file;
 
 private:
-    wxDECLARE_EVENT_TABLE();
+	wxDECLARE_EVENT_TABLE();
 };
 
 #endif // EDITSERVERLISTDLG_H

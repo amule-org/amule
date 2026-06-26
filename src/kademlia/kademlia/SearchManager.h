@@ -46,7 +46,8 @@ there client on the eMule forum..
 class CMemFile;
 
 ////////////////////////////////////////
-namespace Kademlia {
+namespace Kademlia
+{
 ////////////////////////////////////////
 
 class CSearch;
@@ -54,7 +55,7 @@ class CRoutingZone;
 class CKadClientSearcher;
 
 typedef std::list<wxString> WordList;
-typedef std::map<CUInt128, CSearch*> SearchMap;
+typedef std::map<CUInt128, CSearch *> SearchMap;
 
 class CSearchManager
 {
@@ -62,29 +63,35 @@ class CSearchManager
 	friend class CKademlia;
 
 public:
-
 	static bool IsSearching(uint32_t searchID) noexcept;
 	static void StopSearch(uint32_t searchID, bool delayDelete);
 	static void StopAllSearches();
 
 	// Search for a particular file
 	// Will return unique search id, returns zero if already searching for this file.
-	static CSearch* PrepareLookup(uint32_t type, bool start, const CUInt128& id);
+	static CSearch *PrepareLookup(uint32_t type, bool start, const CUInt128 &id);
 
 	// Will return unique search id, returns zero if already searching for this keyword.
-	static CSearch* PrepareFindKeywords(const wxString& keyword, uint32_t searchTermsDataSize, const uint8_t *searchTermsData, uint32_t searchid);
+	static CSearch *PrepareFindKeywords(const wxString &keyword,
+		uint32_t searchTermsDataSize,
+		const uint8_t *searchTermsData,
+		uint32_t searchid);
 
-	static bool StartSearch(CSearch* search);
+	static bool StartSearch(CSearch *search);
 
-	static void ProcessResponse(const CUInt128& target, uint32_t fromIP, uint16_t fromPort, ContactList *results);
-	static void ProcessResult(const CUInt128& target, const CUInt128& answer, TagPtrList *info);
-	static void ProcessPublishResult(const CUInt128& target, const uint8_t load, const bool loadResponse);
+	static void ProcessResponse(
+		const CUInt128 &target, uint32_t fromIP, uint16_t fromPort, ContactList *results);
+	static void ProcessResult(const CUInt128 &target, const CUInt128 &answer, TagPtrList *info);
+	static void ProcessPublishResult(const CUInt128 &target, const uint8_t load, const bool loadResponse);
 
-	static void GetWords(const wxString& str, WordList *words, bool allowDuplicates = false);
+	static void GetWords(const wxString &str, WordList *words, bool allowDuplicates = false);
 
 	static void UpdateStats() noexcept;
 
-	static bool AlreadySearchingFor(const CUInt128& target) noexcept { return m_searches.count(target) > 0; }
+	static bool AlreadySearchingFor(const CUInt128 &target) noexcept
+	{
+		return m_searches.count(target) > 0;
+	}
 
 	// Find a CSearch by searchID (m_searches is keyed by target hash;
 	// this iterates) and invoke its RequestMoreResults().  Returns true
@@ -98,25 +105,24 @@ public:
 	// the currently-selected tab being a Kad search (vs ED2K).
 	static bool IsKadSearch(uint32_t searchID);
 
-	static const wxChar* GetInvalidKeywordChars() { return L" ()[]{}<>,._-!?:;\\/\""; }
+	static const wxChar *GetInvalidKeywordChars() { return L" ()[]{}<>,._-!?:;\\/\""; }
 
 	static void CancelNodeFWCheckUDPSearch();
 	static bool FindNodeFWCheckUDP();
-	static bool IsFWCheckUDPSearch(const CUInt128& target);
+	static bool IsFWCheckUDPSearch(const CUInt128 &target);
 
 private:
-
-	static void FindNode(const CUInt128& id, bool complete);
-	static bool FindNodeSpecial(const CUInt128& id, CKadClientSearcher *requester);
+	static void FindNode(const CUInt128 &id, bool complete);
+	static bool FindNodeSpecial(const CUInt128 &id, CKadClientSearcher *requester);
 	static void CancelNodeSpecial(CKadClientSearcher *requester);
 
 	static void JumpStart();
 
-	static uint32_t  m_nextID;
+	static uint32_t m_nextID;
 	static SearchMap m_searches;
 };
 
-} // End namespace
+} // namespace Kademlia
 
 #endif // __SEARCHMANAGER_H__
 // File_checked_for_headers

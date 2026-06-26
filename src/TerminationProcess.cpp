@@ -23,29 +23,22 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "TerminationProcess.h"
 
+#include <wx/intl.h> // Needed for _()
 
-#include <wx/intl.h>		// Needed for _()
-
-
-#include <common/Format.h>	// Needed for CFormat
-#include "Logger.h"		// Needed for AddLogLineM
-
+#include <common/Format.h> // Needed for CFormat
+#include "Logger.h"        // Needed for AddLogLineM
 
 CTerminationProcess::CTerminationProcess(const wxString &cmd)
-:
-wxProcess(),
-m_cmd(cmd)
+: wxProcess()
+, m_cmd(cmd)
 {
 }
-
 
 void CTerminationProcess::OnTerminate(int pid, int status)
 {
-	AddLogLineN(CFormat(_("Command '%s' with pid '%d' has finished with status code '%d'.")) %
-			m_cmd % pid % status);
+	AddLogLineN(CFormat(_("Command '%s' with pid '%d' has finished with status code '%d'.")) % m_cmd %
+		    pid % status);
 	delete this;
 }
-

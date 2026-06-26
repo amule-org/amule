@@ -13,13 +13,11 @@
 
 #include <climits>
 
-
-CDownloadBandwidthThrottler& CDownloadBandwidthThrottler::Get()
+CDownloadBandwidthThrottler &CDownloadBandwidthThrottler::Get()
 {
 	static CDownloadBandwidthThrottler s_instance;
 	return s_instance;
 }
-
 
 void CDownloadBandwidthThrottler::RefillBudget(uint32 maxDownloadKBps, uint32 tickPeriodMs)
 {
@@ -34,8 +32,7 @@ void CDownloadBandwidthThrottler::RefillBudget(uint32 maxDownloadKBps, uint32 ti
 
 	// uint64 intermediate so a MaxDownload up to the UI cap (1 000 000 KB/s)
 	// doesn't overflow uint32: 1 000 000 * 1024 * 300 = 3 * 10^11 > 2^32.
-	const int64_t budget =
-		(int64_t)maxDownloadKBps * 1024 * tickPeriodMs / 1000;
+	const int64_t budget = (int64_t)maxDownloadKBps * 1024 * tickPeriodMs / 1000;
 
 	m_unlimited.store(false, std::memory_order_release);
 	// Add this tick's budget to whatever leftover was unconsumed last
@@ -59,7 +56,6 @@ void CDownloadBandwidthThrottler::RefillBudget(uint32 maxDownloadKBps, uint32 ti
 	m_bytesAvailable.store(newBudget, std::memory_order_release);
 }
 
-
 uint32 CDownloadBandwidthThrottler::Reserve(uint32 wantBytes)
 {
 	if (m_unlimited.load(std::memory_order_acquire)) {
@@ -68,21 +64,17 @@ uint32 CDownloadBandwidthThrottler::Reserve(uint32 wantBytes)
 
 	int64_t current = m_bytesAvailable.load(std::memory_order_acquire);
 	while (current > 0) {
-		const uint32 granted = (current < (int64_t)wantBytes)
-			? (uint32)current
-			: wantBytes;
-		if (m_bytesAvailable.compare_exchange_weak(
-				current,
-				current - granted,
-				std::memory_order_acq_rel,
-				std::memory_order_acquire)) {
+		const uint32 granted = (current < (int64_t)wantBytes) ? (uint32)current : wantBytes;
+		if (m_bytesAvailable.compare_exchange_weak(current,
+			    current - granted,
+			    std::memory_order_acq_rel,
+			    std::memory_order_acquire)) {
 			return granted;
 		}
 		// CAS failed; `current` was reloaded with the latest value.
 	}
 	return 0;
 }
-
 
 void CDownloadBandwidthThrottler::Refund(uint32 bytes)
 {

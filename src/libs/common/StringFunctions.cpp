@@ -25,10 +25,10 @@
 
 #include "StringFunctions.h"
 
-#include <wx/filename.h>	// Needed for wxFileName
-#include <wx/uri.h>		// Needed for wxURI
+#include <wx/filename.h> // Needed for wxFileName
+#include <wx/uri.h>      // Needed for wxURI
 
-#include <cstring>		// Needed for std::strlen()
+#include <cstring> // Needed for std::strlen()
 
 // Implementation of the non-inlines
 
@@ -39,18 +39,18 @@
 // On other platforms (some Linux) wxConvLibc silently converts to UTF8
 // so the console can show even Chinese chars.
 //
-Unicode2CharBuf unicode2char(const wxChar* s)
+Unicode2CharBuf unicode2char(const wxChar *s)
 {
 	// First try the straight way.
 	Unicode2CharBuf buf1(wxConvLibc.cWX2MB(s));
-	if ((const char *) buf1) {
+	if ((const char *)buf1) {
 		return buf1;
 	}
 	// Failed. Try to convert as much as possible.
 	size_t len = wxStrlen(s);
-	size_t maxlen = len * 4;		// Allow for an encoding of up to 4 byte per char.
-	wxCharBuffer buf(maxlen + 1);	// This is wasteful, but the string is used temporary anyway.
-	char * data = buf.data();
+	size_t maxlen = len * 4;      // Allow for an encoding of up to 4 byte per char.
+	wxCharBuffer buf(maxlen + 1); // This is wasteful, but the string is used temporary anyway.
+	char *data = buf.data();
 	for (size_t i = 0, pos = 0; i < len; i++) {
 		size_t len_char = wxConvLibc.FromWChar(data + pos, maxlen - pos, s + i, 1);
 		if (len_char != wxCONV_FAILED) {
@@ -63,44 +63,41 @@ Unicode2CharBuf unicode2char(const wxChar* s)
 	return buf;
 }
 
-
 static uint8_t base16Chars[17] = "0123456789ABCDEF";
 
-wxString URLEncode(const wxString& sIn)
+wxString URLEncode(const wxString &sIn)
 {
 	wxString sOut;
 
-	for ( unsigned int i = 0; i < sIn.Length(); ++i ) {
-		unsigned char curChar = sIn.GetChar( i );
+	for (unsigned int i = 0; i < sIn.Length(); ++i) {
+		unsigned char curChar = sIn.GetChar(i);
 
-		if ( isalnum( curChar ) ) {
-	        sOut += curChar;
-	    } else if( isspace ( curChar ) ) {
-		    sOut += "+";
+		if (isalnum(curChar)) {
+			sOut += curChar;
+		} else if (isspace(curChar)) {
+			sOut += "+";
 		} else {
 			sOut += "%";
-			sOut += base16Chars[ curChar >> 4];
-			sOut += base16Chars[ curChar & 0xf];
+			sOut += base16Chars[curChar >> 4];
+			sOut += base16Chars[curChar & 0xf];
 		}
-
 	}
 
 	return sOut;
 }
 
-
-wxChar HexToDec( const wxString& hex )
+wxChar HexToDec(const wxString &hex)
 {
 	wxChar result = 0;
 	wxString str = hex.Upper();
 
-	for ( size_t i = 0; i < str.Len(); ++i ) {
+	for (size_t i = 0; i < str.Len(); ++i) {
 		result *= 16;
 		wxChar cur = str.GetChar(i);
 
-		if ( isdigit( cur ) ) {
+		if (isdigit(cur)) {
 			result += cur - '0';
-		} else if ( cur >= 'A' && cur <= 'F' ) {
+		} else if (cur >= 'A' && cur <= 'F') {
 			result += cur - 'A' + 10;
 		} else {
 			return '\0';
@@ -110,8 +107,7 @@ wxChar HexToDec( const wxString& hex )
 	return result;
 }
 
-
-wxString UnescapeHTML(const wxString& str)
+wxString UnescapeHTML(const wxString &str)
 {
 	wxWritableCharBuffer buf = str.char_str(wxConvUTF8);
 
@@ -147,25 +143,24 @@ wxString UnescapeHTML(const wxString& str)
 	return result;
 }
 
-
-wxString validateURI(const wxString& url)
+wxString validateURI(const wxString &url)
 {
 	wxURI uri(url);
 
 	return uri.BuildURI();
 }
 
-
-enum ECharType {
+enum ECharType
+{
 	ECTInteger,
 	ECTText,
 	ECTNone
 };
 
-inline wxString GetNextField(const wxString& str, size_t& cookie)
+inline wxString GetNextField(const wxString &str, size_t &cookie)
 {
 	// These are taken to separate "fields"
-	static const wxChar* s_delims = L"\t\n\x0b\x0c\r !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
+	static const wxChar *s_delims = L"\t\n\x0b\x0c\r !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~";
 
 	wxString field;
 	ECharType curType = ECTNone;
@@ -198,8 +193,7 @@ inline wxString GetNextField(const wxString& str, size_t& cookie)
 	return field;
 }
 
-
-int FuzzyStrCmp(const wxString& a, const wxString& b)
+int FuzzyStrCmp(const wxString &a, const wxString &b)
 {
 	size_t aCookie = 0, bCookie = 0;
 	wxString aField, bField;
@@ -215,39 +209,35 @@ int FuzzyStrCmp(const wxString& a, const wxString& b)
 			if (aInteger < bInteger) {
 				return -1;
 			} else if (aInteger > bInteger) {
-				return  1;
+				return 1;
 			}
 		} else if (aField < bField) {
 			return -1;
 		} else if (aField > bField) {
-			return  1;
+			return 1;
 		}
 	} while (!aField.IsEmpty() && !bField.IsEmpty());
 
 	return 0;
 }
 
-
-int FuzzyStrCaseCmp(const wxString& a, const wxString& b)
+int FuzzyStrCaseCmp(const wxString &a, const wxString &b)
 {
 	return FuzzyStrCmp(a.Lower(), b.Lower());
 }
 
-
-
-CSimpleTokenizer::CSimpleTokenizer(const wxString& str, wxChar token)
-	: m_string(str),
-	  m_delim(token),
-	  m_ptr(m_string.c_str()),
-	  m_count(0)
+CSimpleTokenizer::CSimpleTokenizer(const wxString &str, wxChar token)
+: m_string(str)
+, m_delim(token)
+, m_ptr(m_string.c_str())
+, m_count(0)
 {
 }
 
-
 wxString CSimpleTokenizer::next()
 {
-	const wxChar* start = m_ptr;
-	const wxChar* end   = m_string.c_str() + m_string.Len() + 1;
+	const wxChar *start = m_ptr;
+	const wxChar *end = m_string.c_str() + m_string.Len() + 1;
 
 	for (; m_ptr < end; ++m_ptr) {
 		if (*m_ptr == m_delim) {
@@ -260,12 +250,10 @@ wxString CSimpleTokenizer::next()
 	return m_string.Mid(start - m_string.c_str(), m_ptr++ - start);
 }
 
-
 wxString CSimpleTokenizer::remaining() const
 {
 	return m_string.Mid(m_ptr - m_string.c_str());
 }
-
 
 size_t CSimpleTokenizer::tokenCount() const
 {

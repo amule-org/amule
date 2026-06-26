@@ -23,7 +23,7 @@
  *  along with this program; if not, write to the
  *  Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
-*/
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,21 +32,20 @@
 #include "configfile.h"
 #include "functions.h"
 
-#define STRINGIFY(x)	#x
-#define STRINGIFY_EXPAND(x)	STRINGIFY(x)
+#define STRINGIFY(x) #x
+#define STRINGIFY_EXPAND(x) STRINGIFY(x)
 
-#define MAX_CONF_ARG_LEN_STR	STRINGIFY_EXPAND(MAX_CONF_ARG_LEN)
+#define MAX_CONF_ARG_LEN_STR STRINGIFY_EXPAND(MAX_CONF_ARG_LEN)
 
-#define MAX_CONF_KEY_LEN	12
-#define MAX_CONF_KEY_LEN_STR	STRINGIFY_EXPAND(MAX_CONF_KEY_LEN)
+#define MAX_CONF_KEY_LEN 12
+#define MAX_CONF_KEY_LEN_STR STRINGIFY_EXPAND(MAX_CONF_KEY_LEN)
 
 int writeconfig(void)
 {
 	FILE *config;
 	char *path;
 	unsigned int i;
-	char *def[] = {
-		"# cas config file\n",
+	char *def[] = { "# cas config file\n",
 		"#\n",
 		"# font - full path to a ttf font\n",
 		"# font_size - size the font\n",
@@ -63,14 +62,13 @@ int writeconfig(void)
 		"sixth_line 23,102,1\n",
 		"seventh_line 23,119,1\n",
 		"template /usr/share/cas/tmp.html\n"
-		"img_type 0\n"
-	};
+		"img_type 0\n" };
 
 	path = get_path("casrc");
 	if (path == NULL)
 		return 0;
 
-	if ( (config = fopen(path, "w")) == NULL)
+	if ((config = fopen(path, "w")) == NULL)
 		return 0;
 
 	for (i = 0; i < sizeof(def) / sizeof(char *); i++)
@@ -90,15 +88,13 @@ int readconfig(CONF *config)
 	char buffer[120], option[15], *path;
 	FILE *conf;
 	int i;
-	char lines[IMG_TEXTLINES][13] = {
-		"first_line",
+	char lines[IMG_TEXTLINES][13] = { "first_line",
 		"second_line",
 		"third_line",
 		"fourth_line",
 		"fifth_line",
 		"sixth_line",
-		"seventh_line"
-	};
+		"seventh_line" };
 
 	path = get_path("casrc");
 	if (path == NULL) {
@@ -118,23 +114,31 @@ int readconfig(CONF *config)
 	buffer[0] = 0;
 	while (!feof(conf)) {
 		// Jacobo221 - [ToDo] Only first char per line is comment...
-		if (fgets (buffer,120,conf)) {
+		if (fgets(buffer, 120, conf)) {
 			if (buffer[0] != '#') {
 				/* Only two fields per line */
-				sscanf(buffer, "%" MAX_CONF_KEY_LEN_STR "s %*" MAX_CONF_ARG_LEN_STR "s", option);
-				fflush (stdout);
-		// Jacobo221 - [ToDo] So lines can't be swapped...
+				sscanf(buffer,
+					"%" MAX_CONF_KEY_LEN_STR "s %*" MAX_CONF_ARG_LEN_STR "s",
+					option);
+				fflush(stdout);
+				// Jacobo221 - [ToDo] So lines can't be swapped...
 				if (strcmp(option, "font") == 0) {
-					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s", config->font);
+					sscanf(buffer,
+						"%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s",
+						config->font);
 				}
 				if (strcmp(option, "font_size") == 0) {
 					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %10f", &config->size);
 				}
 				if (strcmp(option, "source_image") == 0) {
-					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s", config->source);
+					sscanf(buffer,
+						"%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s",
+						config->source);
 				}
 				if (strcmp(option, "template") == 0) {
-					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s", config->template);
+					sscanf(buffer,
+						"%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s",
+						config->template);
 				}
 				if (strcmp(option, "img_type") == 0) {
 					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %1d", &config->img_type);
@@ -144,7 +148,8 @@ int readconfig(CONF *config)
 					if (strcmp(option, lines[i]) == 0) {
 						sscanf(buffer,
 							"%*" MAX_CONF_KEY_LEN_STR "s %4d,%4d,%4d",
-							&config->x[i], &config->y[i],
+							&config->x[i],
+							&config->y[i],
 							&config->enabled[i]);
 					}
 				}
@@ -156,4 +161,3 @@ int readconfig(CONF *config)
 
 	return 1;
 }
-

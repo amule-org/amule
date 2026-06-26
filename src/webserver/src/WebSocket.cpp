@@ -24,42 +24,41 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "WebSocket.h"
 #include <cerrno>
 #include <cctype>
 
-namespace {
-
-char* FindHeaderCaseInsensitive(char* haystack, const char* needle)
+namespace
 {
-	if ( haystack == NULL || needle == NULL ) {
+
+char *FindHeaderCaseInsensitive(char *haystack, const char *needle)
+{
+	if (haystack == NULL || needle == NULL) {
 		return NULL;
 	}
 	size_t needle_len = strlen(needle);
-	if ( needle_len == 0 ) {
+	if (needle_len == 0) {
 		return haystack;
 	}
 	size_t haystack_len = strlen(haystack);
-	if ( needle_len > haystack_len ) {
+	if (needle_len > haystack_len) {
 		return NULL;
 	}
-	for ( size_t i = 0; i <= haystack_len - needle_len; ++i ) {
-		if ( strncasecmp(haystack + i, needle, needle_len) == 0 ) {
+	for (size_t i = 0; i <= haystack_len - needle_len; ++i) {
+		if (strncasecmp(haystack + i, needle, needle_len) == 0) {
 			return haystack + i;
 		}
 	}
 	return NULL;
 }
 
-}
-
+} // namespace
 
 CWebSocket::CWebSocket(CWebServerBase *parent)
-	: m_dwBufSize(4096)
-	, m_dwRecv(0)
-	, m_dwHttpHeaderLen(0)
-	, m_dwHttpContentLen(0)
+: m_dwBufSize(4096)
+, m_dwRecv(0)
+, m_dwHttpHeaderLen(0)
+, m_dwHttpContentLen(0)
 {
 	m_pHead = 0;
 	m_pTail = 0;
@@ -72,21 +71,20 @@ CWebSocket::CWebSocket(CWebServerBase *parent)
 	// reflecting the *usable* span we hand to Read() so the
 	// `m_dwBufSize - m_dwRecv` reads below still leave the spare slot
 	// free for the terminator.
-	m_pBuf = new char [4096 + 1];
+	m_pBuf = new char[4096 + 1];
 	m_IsGet = false;
 	m_IsPost = false;
 
 	m_pParent = parent;
 
 	Notify(true);
-
 }
 
 CWebSocket::~CWebSocket()
 {
-	CChunk* pChunk = m_pHead;
+	CChunk *pChunk = m_pHead;
 	while (pChunk) {
-		CChunk* pNext = pChunk->m_pNext;
+		CChunk *pNext = pChunk->m_pNext;
 		delete pChunk;
 		pChunk = pNext;
 	}
@@ -108,8 +106,8 @@ void CWebSocket::OnReceive(int)
 		// slot for the NUL terminator written below, matching the
 		// `+1` overhead the ctor uses (see #873).
 		uint32 newsize = m_dwBufSize + (m_dwBufSize >> 1);
-		char* newbuffer = new char[newsize + 1];
-		char* oldbuffer = m_pBuf;
+		char *newbuffer = new char[newsize + 1];
+		char *oldbuffer = m_pBuf;
 		memcpy(newbuffer, oldbuffer, m_dwBufSize);
 		delete[] oldbuffer;
 		m_pBuf = newbuffer;
@@ -122,24 +120,23 @@ void CWebSocket::OnReceive(int)
 	if (read == 0) {
 		if (LastError()) {
 			Close();
-			return ;
+			return;
 		}
 	}
 
 	m_pBuf[m_dwRecv] = '\0';
 
-
 	//
 	// Check what kind of request is that
-	if ( !m_IsGet && !m_IsPost && m_dwRecv >= 4) {
-		if ( !strncasecmp(m_pBuf, "GET", 3) ) {
+	if (!m_IsGet && !m_IsPost && m_dwRecv >= 4) {
+		if (!strncasecmp(m_pBuf, "GET", 3)) {
 			m_IsGet = true;
-		} else if ( !strncasecmp(m_pBuf, "POST", 4) ) {
+		} else if (!strncasecmp(m_pBuf, "POST", 4)) {
 			m_IsPost = true;
 		} else {
 			// unknown request - close the socket
 			Close();
-			return ;
+			return;
 		}
 	}
 	//
@@ -148,8 +145,8 @@ void CWebSocket::OnReceive(int)
 
 	//
 	// "GET" must have last line empty
-	if ( m_IsGet ) {
-		if ( !strncasecmp(m_pBuf + m_dwRecv - 4, "\r\n\r\n", 4) ) {
+	if (m_IsGet) {
+		if (!strncasecmp(m_pBuf + m_dwRecv - 4, "\r\n\r\n", 4)) {
 			//
 			// Process request
 			OnRequestReceived(m_pBuf, 0, 0);
@@ -157,24 +154,25 @@ void CWebSocket::OnReceive(int)
 	}
 	//
 	// "POST" have "Content-Length"
-	if ( m_IsPost ) {
+	if (m_IsPost) {
 		char *cont_len = FindHeaderCaseInsensitive(m_pBuf, "Content-Length");
 		// do we have received all the line ?
-		if ( cont_len && strstr(cont_len, "\r\n\r\n") ) {
+		if (cont_len && strstr(cont_len, "\r\n\r\n")) {
 			cont_len += strlen("Content-Length:");
 			// can be white space following
-			while ( isspace(*cont_len) ) cont_len++;
+			while (isspace(*cont_len))
+				cont_len++;
 			int len = atoi(cont_len);
-			if ( len <= 0 ) {
+			if (len <= 0) {
 				Close();
-				return ;
+				return;
 			}
 			// do we have all of data ?
 			char *cont = strstr(m_pBuf, "\r\n\r\n");
 			cont += 4;
 			uint32 bodyOffset = static_cast<uint32>(cont - m_pBuf);
 			uint32 bodyLen = static_cast<uint32>(len);
-			if ( bodyOffset <= m_dwRecv && bodyLen <= m_dwRecv - bodyOffset ) {
+			if (bodyOffset <= m_dwRecv && bodyLen <= m_dwRecv - bodyOffset) {
 				OnRequestReceived(m_pBuf, cont, len);
 			}
 		}
@@ -187,7 +185,7 @@ void CWebSocket::OnSend(int)
 		uint32 nRes = Write(m_pHead->m_pToSend, m_pHead->m_dwSize);
 		if (nRes >= m_pHead->m_dwSize) {
 			// erase this chunk
-			CChunk* pNext = m_pHead->m_pNext;
+			CChunk *pNext = m_pHead->m_pNext;
 			delete m_pHead;
 			if (!(m_pHead = pNext)) {
 				m_pTail = NULL;
@@ -207,23 +205,23 @@ void CWebSocket::OnSend(int)
 	}
 }
 
-void CWebSocket::OnRequestReceived(char* pHeader, char* pData, uint32 dwDataLen)
+void CWebSocket::OnRequestReceived(char *pHeader, char *pData, uint32 dwDataLen)
 {
 	bool is_post = false;
-	if ( strncmp(pHeader, "GET", 3) == 0 ) {
-	} else if ( strncmp(pHeader, "POST", 4) == 0 ) {
+	if (strncmp(pHeader, "GET", 3) == 0) {
+	} else if (strncmp(pHeader, "POST", 4) == 0) {
 		is_post = true;
 	} else {
 		// invalid request
-		return ;
+		return;
 	}
 	char *path = strchr(pHeader, ' ');
-	if ( !path ) {
+	if (!path) {
 		return;
 	}
 	*path++ = 0;
 	pHeader = strchr(path, ' ');
-	if ( !pHeader ) {
+	if (!pHeader) {
 		return;
 	}
 	*pHeader++ = 0;
@@ -237,7 +235,7 @@ void CWebSocket::OnRequestReceived(char* pHeader, char* pData, uint32 dwDataLen)
 	// CParsedUrl gives it that signal without re-parsing or
 	// regex-on-string heuristics (#872).
 	wxString sOriginalURL = sURL;
-	if ( is_post ) {
+	if (is_post) {
 		// Append the POST body to the URL so CParsedUrl picks up the
 		// form fields the same way it does for GET-style ?key=value
 		// pairs.  Use `&` rather than `?` when the URL already has a
@@ -259,21 +257,21 @@ void CWebSocket::OnRequestReceived(char* pHeader, char* pData, uint32 dwDataLen)
 	// guessable (#870).
 	uint64_t sessid = 0;
 	char *current_cookie = strstr(pHeader, "Cookie: ");
-	if ( current_cookie == NULL ) {
+	if (current_cookie == NULL) {
 		current_cookie = strstr(pHeader, "cookie: ");
 	}
-	if ( current_cookie ) {
+	if (current_cookie) {
 		current_cookie = strstr(current_cookie, "amuleweb_session_id");
-		if ( current_cookie ) {
+		if (current_cookie) {
 			char *value = strchr(current_cookie, '=');
-			if ( value ) {
+			if (value) {
 				++value;
 				errno = 0;
 				char *endptr = NULL;
 				unsigned long long parsed = strtoull(value, &endptr, 10);
-				if ( endptr != value && errno != ERANGE &&
+				if (endptr != value && errno != ERANGE &&
 					(*endptr == '\0' || *endptr == ';' ||
-					 std::isspace(static_cast<unsigned char>(*endptr))) ) {
+						std::isspace(static_cast<unsigned char>(*endptr)))) {
 					sessid = static_cast<uint64_t>(parsed);
 				}
 			}
@@ -282,10 +280,10 @@ void CWebSocket::OnRequestReceived(char* pHeader, char* pData, uint32 dwDataLen)
 	ThreadData Data = { CParsedUrl(sURL), CParsedUrl(sOriginalURL), sURL, sessid, this };
 
 	wxString sFile = Data.parsedURL.File();
-	if (sFile.Length() > 4 ) {
-		wxString url_ext = sFile.Right( sFile.Length() - sFile.Find('.', true) ).MakeLower();
-		if ( (url_ext==".gif") || (url_ext==".jpg") || (url_ext==".ico") ||
-			(url_ext==".png") || (url_ext==".bmp") || (url_ext==".jpeg") ) {
+	if (sFile.Length() > 4) {
+		wxString url_ext = sFile.Right(sFile.Length() - sFile.Find('.', true)).MakeLower();
+		if ((url_ext == ".gif") || (url_ext == ".jpg") || (url_ext == ".ico") ||
+			(url_ext == ".png") || (url_ext == ".bmp") || (url_ext == ".jpeg")) {
 			m_pParent->ProcessImgFileReq(Data);
 		} else {
 			m_pParent->ProcessURL(Data);
@@ -302,19 +300,24 @@ void CWebSocket::OnRequestReceived(char* pHeader, char* pData, uint32 dwDataLen)
 	m_IsPost = 0;
 }
 
-void CWebSocket::SendContent(const char* szStdResponse, const void* pContent, uint32 dwContentSize) {
+void CWebSocket::SendContent(const char *szStdResponse, const void *pContent, uint32 dwContentSize)
+{
 	char szBuf[0x1000]; // 0x1000 is safe because it's just used for the header
-	int nLen = snprintf(szBuf, sizeof(szBuf), "HTTP/1.1 200 OK\r\n%sContent-Length: %d\r\n\r\n", szStdResponse, dwContentSize);
+	int nLen = snprintf(szBuf,
+		sizeof(szBuf),
+		"HTTP/1.1 200 OK\r\n%sContent-Length: %d\r\n\r\n",
+		szStdResponse,
+		dwContentSize);
 	SendData(szBuf, nLen);
 	SendData(pContent, dwContentSize);
 }
 
-void CWebSocket::SendHttpHeaders(const char* szType, bool use_gzip, uint32 content_len, uint64_t session_id)
+void CWebSocket::SendHttpHeaders(const char *szType, bool use_gzip, uint32 content_len, uint64_t session_id)
 {
 	char szBuf[0x1000];
 
 	char cookie[256];
-	if ( session_id ) {
+	if (session_id) {
 		// HttpOnly: the cookie isn't readable from JavaScript, which
 		// blunts the "steal the session via reflected XSS" path
 		// (the cookie still rides on every request the browser
@@ -329,33 +332,39 @@ void CWebSocket::SendHttpHeaders(const char* szType, bool use_gzip, uint32 conte
 		// would silently lock out every direct-HTTP user (browser
 		// refuses the cookie -> infinite login loop). Wiring this
 		// to a preference is a follow-up. (#871)
-		snprintf(cookie, sizeof(cookie),
+		snprintf(cookie,
+			sizeof(cookie),
 			"Set-Cookie: amuleweb_session_id=%llu; HttpOnly; SameSite=Strict\r\n",
 			static_cast<unsigned long long>(session_id));
 	} else {
 		cookie[0] = 0;
 	}
 
-	snprintf(szBuf, sizeof(szBuf), "HTTP/1.1 200 OK\r\nServer: aMule\r\nPragma: no-cache\r\nExpires: 0\r\n"
+	snprintf(szBuf,
+		sizeof(szBuf),
+		"HTTP/1.1 200 OK\r\nServer: aMule\r\nPragma: no-cache\r\nExpires: 0\r\n"
 		"Cache-Control: no-cache, no-store, must-revalidate\r\n"
 		"%s"
 		"Connection: close\r\nContent-Type: %s\r\n"
 		"Content-Length: %d\r\n%s\r\n",
-		 cookie, szType, content_len, (use_gzip ? "Content-Encoding: gzip\r\n" : ""));
+		cookie,
+		szType,
+		content_len,
+		(use_gzip ? "Content-Encoding: gzip\r\n" : ""));
 
 	SendData(szBuf, strlen(szBuf));
 }
 
-void CWebSocket::SendData(const void* pData, uint32 dwDataSize)
+void CWebSocket::SendData(const void *pData, uint32 dwDataSize)
 {
-	if (!dwDataSize) {	// sanity
+	if (!dwDataSize) { // sanity
 		return;
 	}
-	const char * data = (const char*) pData;
+	const char *data = (const char *)pData;
 	bool outputRequired = !m_pHead;
 
 	// push it to our tails
-	CChunk* pChunk = new CChunk;
+	CChunk *pChunk = new CChunk;
 	pChunk->m_pNext = NULL;
 	pChunk->m_dwSize = dwDataSize;
 	pChunk->m_pData = new char[dwDataSize];

@@ -35,7 +35,8 @@
 
 class wxEvtHandler;
 
-enum DnsSolveType {
+enum DnsSolveType
+{
 	DNS_UDP,
 	DNS_SOURCE,
 	DNS_SERVER_CONNECT
@@ -43,20 +44,19 @@ enum DnsSolveType {
 
 // Time between DNS solving the same address
 // 30 minutes * 60 s/m * 1000 ms/s
-#define DNS_SOLVE_TIME 30*60*1000
-
+#define DNS_SOLVE_TIME 30 * 60 * 1000
 
 class CAsyncDNS : public wxThread
 {
 public:
-	CAsyncDNS(const wxString& ipName, DnsSolveType type, wxEvtHandler* handler, void* socket = NULL);
+	CAsyncDNS(const wxString &ipName, DnsSolveType type, wxEvtHandler *handler, void *socket = NULL);
 	virtual ExitCode Entry();
 
 private:
 	DnsSolveType m_type;
 	wxString m_ipName;
-	void* m_socket;
-	wxEvtHandler* m_handler;
+	void *m_socket;
+	wxEvtHandler *m_handler;
 };
 
 #endif // ASYNCDNS_H

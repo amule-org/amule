@@ -37,20 +37,21 @@
 #include <iostream>
 
 #if defined __GNUC__ && defined __GNUC_MINOR__
-#	if __GNUC__ > 3 || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 2))
-#		define __attribute_always_inline__	__attribute__((__always_inline__))
-#	else
-#		define __attrbiute_always_inline__
-#	endif
+#if __GNUC__ > 3 || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 2))
+#define __attribute_always_inline__ __attribute__((__always_inline__))
 #else
-#	define __attribute_always_inline__
+#define __attrbiute_always_inline__
+#endif
+#else
+#define __attribute_always_inline__
 #endif
 
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
-enum SDMODE {
+enum SDMODE
+{
 	SD_DISPLAY,
 	SD_SAFE,
 	SD_UTF8,
@@ -59,17 +60,38 @@ enum SDMODE {
 
 extern SDMODE g_stringDecodeMode;
 
-inline void SetStringsMode(SDMODE mode)	{ g_stringDecodeMode = mode; }
-inline SDMODE GetStringsMode()	{ return g_stringDecodeMode; }
+inline void SetStringsMode(SDMODE mode)
+{
+	g_stringDecodeMode = mode;
+}
+inline SDMODE GetStringsMode()
+{
+	return g_stringDecodeMode;
+}
 
-wxString MakePrintableString(const wxString& str);
+wxString MakePrintableString(const wxString &str);
 
-inline std::ostream& operator<<(std::ostream& x, const Kademlia::CUInt128& y)	{ return x << y.ToHexString(); }
-inline std::ostream& operator<<(std::ostream& x, const CMD4Hash& y)		{ return x << y.Encode(); }
+inline std::ostream &operator<<(std::ostream &x, const Kademlia::CUInt128 &y)
+{
+	return x << y.ToHexString();
+}
+inline std::ostream &operator<<(std::ostream &x, const CMD4Hash &y)
+{
+	return x << y.Encode();
+}
 
-inline wxString hex(uint8_t value)	{ return wxString::Format("0x%02x", value); }
-inline wxString hex(uint16_t value)	{ return wxString::Format("0x%04x", value); }
-inline wxString hex(uint32_t value)	{ return wxString::Format("0x%08x", value); }
+inline wxString hex(uint8_t value)
+{
+	return wxString::Format("0x%02x", value);
+}
+inline wxString hex(uint16_t value)
+{
+	return wxString::Format("0x%04x", value);
+}
+inline wxString hex(uint32_t value)
+{
+	return wxString::Format("0x%08x", value);
+}
 
 inline void PrintByteArray(const void *buf, unsigned int size)
 {
@@ -78,55 +100,59 @@ inline void PrintByteArray(const void *buf, unsigned int size)
 	}
 }
 
-
 class CTimeT
 {
-      public:
+public:
 	explicit CTimeT(time_t t) { m_time = t; }
 	operator time_t() const { return m_time; }
-      private:
+
+private:
 	time_t m_time;
 };
 
 class CKadIP
 {
-      public:
+public:
 	explicit CKadIP(uint32_t ip) { m_ip = ip; }
 	operator uint32_t() const { return m_ip; }
-      private:
+
+private:
 	uint32_t m_ip;
 };
 
 class CeD2kIP
 {
-      public:
+public:
 	explicit CeD2kIP(uint32_t ip) { m_ip = ip; }
 	operator uint32_t() const { return m_ip; }
-      private:
+
+private:
 	uint32_t m_ip;
 };
 
 class CServerTag : public CTag
 {
-      public:
-	CServerTag(const CTag& tag)
-		: CTag(tag)
-	{}
+public:
+	CServerTag(const CTag &tag)
+	: CTag(tag)
+	{
+	}
 };
 
 class CFriendTag : public CTag
 {
-      public:
-	CFriendTag(const CTag& tag)
-		: CTag(tag)
-	{}
+public:
+	CFriendTag(const CTag &tag)
+	: CTag(tag)
+	{
+	}
 };
 
-std::ostream& operator<<(std::ostream& x, const CTimeT& y);
-std::ostream& operator<<(std::ostream& x, const CKadIP& ip);
-std::ostream& operator<<(std::ostream& x, const CeD2kIP& ip);
-std::ostream& operator<<(std::ostream& x, const CTag& tag);
-std::ostream& operator<<(std::ostream& x, const CServerTag& tag);
-std::ostream& operator<<(std::ostream& x, const CFriendTag& tag);
+std::ostream &operator<<(std::ostream &x, const CTimeT &y);
+std::ostream &operator<<(std::ostream &x, const CKadIP &ip);
+std::ostream &operator<<(std::ostream &x, const CeD2kIP &ip);
+std::ostream &operator<<(std::ostream &x, const CTag &tag);
+std::ostream &operator<<(std::ostream &x, const CServerTag &tag);
+std::ostream &operator<<(std::ostream &x, const CFriendTag &tag);
 
 #endif /* FILEVIEW_PRINT_H */

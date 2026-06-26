@@ -27,25 +27,24 @@
 #include <wx/colordlg.h>
 
 #ifdef __WINDOWS__
-	#include <io.h> // Do_not_auto_remove
+#include <io.h> // Do_not_auto_remove
 #endif
 
-#include "CatDialog.h"			// Interface declarations.
-#include "DownloadListCtrl.h"		// Needed for CDownloadListCtrl
-#include "TransferWnd.h"		// Needed for CTransferWnd
-#include "amuleDlg.h"			// Needed for CamuleDlg
-#include "SearchDlg.h"			// Needed for UpdateCatChoice
-#include <common/StringFunctions.h>	// Needed for MakeFoldername
-#include "OtherFunctions.h"		// Needed for CastChild
-#include "Preferences.h"		// Needed for CPreferences
-#include "amule.h"			// Needed for theApp
-#include "muuli_wdr.h"			// Needed for CategoriesEditWindow
+#include "CatDialog.h"              // Interface declarations.
+#include "DownloadListCtrl.h"       // Needed for CDownloadListCtrl
+#include "TransferWnd.h"            // Needed for CTransferWnd
+#include "amuleDlg.h"               // Needed for CamuleDlg
+#include "SearchDlg.h"              // Needed for UpdateCatChoice
+#include <common/StringFunctions.h> // Needed for MakeFoldername
+#include "OtherFunctions.h"         // Needed for CastChild
+#include "Preferences.h"            // Needed for CPreferences
+#include "amule.h"                  // Needed for theApp
+#include "muuli_wdr.h"              // Needed for CategoriesEditWindow
 
-
-wxBEGIN_EVENT_TABLE(CCatDialog,wxDialog)
-	EVT_BUTTON(wxID_OK,		CCatDialog::OnBnClickedOk)
-	EVT_BUTTON(IDC_CATCOLOR,	CCatDialog::OnBnClickColor)
-	EVT_BUTTON(IDC_BROWSE,		CCatDialog::OnBnClickedBrowse)
+wxBEGIN_EVENT_TABLE(CCatDialog, wxDialog)
+	EVT_BUTTON(wxID_OK, CCatDialog::OnBnClickedOk)
+	EVT_BUTTON(IDC_CATCOLOR, CCatDialog::OnBnClickColor)
+	EVT_BUTTON(IDC_BROWSE, CCatDialog::OnBnClickedBrowse)
 wxEND_EVENT_TABLE()
 
 /*
@@ -55,13 +54,11 @@ wxEND_EVENT_TABLE()
  * types, in one case it is (CPreferences *), on the other case it is
  * (CPreferencesRem *). A proper fix involves a class hierarchy redesign.
  */
-CCatDialog::CCatDialog(wxWindow* parent, bool allowbrowse, int index)
-:
-wxDialog(parent, -1, _("Category"),
-	wxDefaultPosition, wxDefaultSize,
-	wxDEFAULT_DIALOG_STYLE|wxSYSTEM_MENU)
+CCatDialog::CCatDialog(wxWindow *parent, bool allowbrowse, int index)
+: wxDialog(
+	  parent, -1, _("Category"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
 {
-	wxSizer* content = CategoriesEditWindow(this, true);
+	wxSizer *content = CategoriesEditWindow(this, true);
 	content->Show(this, true);
 	Center();
 	m_category = NULL;
@@ -75,19 +72,19 @@ wxDialog(parent, -1, _("Category"),
 
 	if (m_category) {
 		// Filling values by the specified category
-		CastChild(IDC_TITLE,	wxTextCtrl)->SetValue(m_category->title);
+		CastChild(IDC_TITLE, wxTextCtrl)->SetValue(m_category->title);
 		// We use the 'raw' filename, since the value is also passed to wxDirSelector
-		CastChild(IDC_INCOMING,	wxTextCtrl)->SetValue(m_category->path.GetRaw());
-		CastChild(IDC_COMMENT,	wxTextCtrl)->SetValue(m_category->comment);
-		CastChild(IDC_PRIOCOMBO,wxChoice)->SetSelection(m_category->prio);
+		CastChild(IDC_INCOMING, wxTextCtrl)->SetValue(m_category->path.GetRaw());
+		CastChild(IDC_COMMENT, wxTextCtrl)->SetValue(m_category->comment);
+		CastChild(IDC_PRIOCOMBO, wxChoice)->SetSelection(m_category->prio);
 
 		m_colour = CMuleColour(m_category->color);
 	} else {
 		// Default values for new categories
-		CastChild(IDC_TITLE,	wxTextCtrl)->SetValue(_("New Category"));
-		CastChild(IDC_INCOMING,	wxTextCtrl)->SetValue(thePrefs::GetIncomingDir().GetRaw());
-		CastChild(IDC_COMMENT,	wxTextCtrl)->SetValue("");
-		CastChild(IDC_PRIOCOMBO,wxChoice)->SetSelection(0);
+		CastChild(IDC_TITLE, wxTextCtrl)->SetValue(_("New Category"));
+		CastChild(IDC_INCOMING, wxTextCtrl)->SetValue(thePrefs::GetIncomingDir().GetRaw());
+		CastChild(IDC_COMMENT, wxTextCtrl)->SetValue("");
+		CastChild(IDC_PRIOCOMBO, wxChoice)->SetSelection(0);
 
 		m_colour = CMuleColour(rand() % 255, rand() % 255, rand() % 255);
 	}
@@ -99,11 +96,7 @@ wxDialog(parent, -1, _("Category"),
 	}
 }
 
-
-CCatDialog::~CCatDialog()
-{
-}
-
+CCatDialog::~CCatDialog() {}
 
 wxBitmap CCatDialog::MakeBitmap()
 {
@@ -116,29 +109,24 @@ wxBitmap CCatDialog::MakeBitmap()
 	return bitmap;
 }
 
-
-void CCatDialog::OnBnClickedBrowse(wxCommandEvent& WXUNUSED(evt))
+void CCatDialog::OnBnClickedBrowse(wxCommandEvent &WXUNUSED(evt))
 {
 	wxString dir = CastChild(IDC_INCOMING, wxTextCtrl)->GetValue();
 
 	dir = wxDirSelector(
-		_("Choose a folder for incoming files"),
-		dir, wxDD_DEFAULT_STYLE, wxDefaultPosition, this);
+		_("Choose a folder for incoming files"), dir, wxDD_DEFAULT_STYLE, wxDefaultPosition, this);
 	if (!dir.IsEmpty()) {
 		CastChild(IDC_INCOMING, wxTextCtrl)->SetValue(dir);
 	}
 }
 
-
-void CCatDialog::OnBnClickedOk(wxCommandEvent& WXUNUSED(evt))
+void CCatDialog::OnBnClickedOk(wxCommandEvent &WXUNUSED(evt))
 {
 	wxString newname = CastChild(IDC_TITLE, wxTextCtrl)->GetValue();
 
 	// No empty names
 	if (newname.IsEmpty()) {
-		wxMessageBox(
-			_("You must specify a name for the category!"),
-			_("Info"), wxOK, this);
+		wxMessageBox(_("You must specify a name for the category!"), _("Info"), wxOK, this);
 		return;
 	}
 
@@ -146,9 +134,7 @@ void CCatDialog::OnBnClickedOk(wxCommandEvent& WXUNUSED(evt))
 
 	// No empty dirs please
 	if (!newpath.IsOk()) {
-		wxMessageBox(
-			_("You must specify a path for the category!"),
-			_("Info"), wxOK, this);
+		wxMessageBox(_("You must specify a path for the category!"), _("Info"), wxOK, this);
 
 		return;
 	}
@@ -159,8 +145,11 @@ void CCatDialog::OnBnClickedOk(wxCommandEvent& WXUNUSED(evt))
 #ifndef CLIENT_GUI
 	if (!newpath.DirExists()) {
 		if (!CPath::MakeDir(newpath)) {
-			wxMessageBox(_("Failed to create incoming dir for category. Please specify a valid path!"),
-				_("Info"), wxOK, this);
+			wxMessageBox(
+				_("Failed to create incoming dir for category. Please specify a valid path!"),
+				_("Info"),
+				wxOK,
+				this);
 			return;
 		}
 	}
@@ -189,17 +178,21 @@ void CCatDialog::OnBnClickedOk(wxCommandEvent& WXUNUSED(evt))
 
 	if (!m_category) {
 		// New category, or the old one is gone
-		 theApp->glob_prefs->CreateCategory(
-			m_category, newname, newpath,
+		theApp->glob_prefs->CreateCategory(m_category,
+			newname,
+			newpath,
 			CastChild(IDC_COMMENT, wxTextCtrl)->GetValue(),
 			m_colour.GetULong(),
 			CastChild(IDC_PRIOCOMBO, wxChoice)->GetSelection());
 
 		theApp->amuledlg->m_transferwnd->AddCategory(m_category);
 	} else {
-		theApp->glob_prefs->UpdateCategory(index, newname, newpath,
-		CastChild(IDC_COMMENT, wxTextCtrl)->GetValue(), m_colour.GetULong(),
-		CastChild(IDC_PRIOCOMBO, wxChoice)->GetSelection());
+		theApp->glob_prefs->UpdateCategory(index,
+			newname,
+			newpath,
+			CastChild(IDC_COMMENT, wxTextCtrl)->GetValue(),
+			m_colour.GetULong(),
+			CastChild(IDC_PRIOCOMBO, wxChoice)->GetSelection());
 
 		theApp->amuledlg->m_transferwnd->UpdateCategory(index);
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->Refresh();
@@ -209,8 +202,7 @@ void CCatDialog::OnBnClickedOk(wxCommandEvent& WXUNUSED(evt))
 	EndModal(wxID_OK);
 }
 
-
-void CCatDialog::OnBnClickColor(wxCommandEvent& WXUNUSED(evt))
+void CCatDialog::OnBnClickColor(wxCommandEvent &WXUNUSED(evt))
 {
 	wxColour newcol = wxGetColourFromUser(this, m_colour);
 	if (newcol.Ok()) {

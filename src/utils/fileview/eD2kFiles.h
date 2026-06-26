@@ -28,15 +28,15 @@
 
 class CFileDataIO;
 
-void DecodePreferencesDat(const CFileDataIO& file);
-void DecodeFriendList(const CFileDataIO& file);
-void DecodeServerMet(const CFileDataIO& file);
-void DecodeClientsMet(const CFileDataIO& file);
-void DecodeKnownMet(const CFileDataIO& file);
-void DecodePartMetFile(const CFileDataIO& file);
-void DecodeCanceledMet(const CFileDataIO& file);
+void DecodePreferencesDat(const CFileDataIO &file);
+void DecodeFriendList(const CFileDataIO &file);
+void DecodeServerMet(const CFileDataIO &file);
+void DecodeClientsMet(const CFileDataIO &file);
+void DecodeKnownMet(const CFileDataIO &file);
+void DecodePartMetFile(const CFileDataIO &file);
+void DecodeCanceledMet(const CFileDataIO &file);
 
 /* Not really eD2k related... */
-void DecodeStatisticsDat(const CFileDataIO& file);
+void DecodeStatisticsDat(const CFileDataIO &file);
 
 #endif /* FILEVIEW_ED2KFILES_H */

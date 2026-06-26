@@ -28,12 +28,12 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 
 #ifndef CRYPTOPP_INCLUDE_PREFIX
-	#include "config.h"		// Needed for CRYPTOPP_INCLUDE_PREFIX
+#include "config.h" // Needed for CRYPTOPP_INCLUDE_PREFIX
 #endif
 
-#define noinline	noinline
+#define noinline noinline
 
-#define CRYPTO_HEADER(hdr)	<CRYPTOPP_INCLUDE_PREFIX/hdr>
+#define CRYPTO_HEADER(hdr) <CRYPTOPP_INCLUDE_PREFIX/hdr>
 
 #include CRYPTO_HEADER(config.h)
 #include CRYPTO_HEADER(md4.h)

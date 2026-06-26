@@ -27,23 +27,17 @@
 
 #include <wx/textbuf.h>
 
-
 //! The maximum number of chars read at once in GetNextLine
 const size_t TXTBUF_SIZE = 1024;
 
+CTextFile::CTextFile() {}
 
-CTextFile::CTextFile()
-{
-}
-
-
-bool CTextFile::Open(const wxString& path, EOpenMode mode)
+bool CTextFile::Open(const wxString &path, EOpenMode mode)
 {
 	return Open(CPath(path), mode);
 }
 
-
-bool CTextFile::Open(const CPath& path, EOpenMode mode)
+bool CTextFile::Open(const CPath &path, EOpenMode mode)
 {
 	// wxFFile doesn't call close itself, but asserts instead.
 	Close();
@@ -63,17 +57,12 @@ bool CTextFile::Open(const CPath& path, EOpenMode mode)
 	return IsOpened();
 }
 
-
-CTextFile::~CTextFile()
-{
-}
-
+CTextFile::~CTextFile() {}
 
 bool CTextFile::IsOpened() const
 {
 	return m_file.IsOpened();
 }
-
 
 bool CTextFile::Eof() const
 {
@@ -83,14 +72,12 @@ bool CTextFile::Eof() const
 	return m_file.IsOpened() ? m_file.Eof() : true;
 }
 
-
 bool CTextFile::Close()
 {
 	return m_file.Close();
 }
 
-
-wxString CTextFile::GetNextLine(EReadTextFile flags, const wxMBConv& conv, bool* result)
+wxString CTextFile::GetNextLine(EReadTextFile flags, const wxMBConv &conv, bool *result)
 {
 	wxCHECK_MSG(m_file.IsOpened(), "", "Trying to read from closed file.");
 	wxCHECK_MSG(!m_file.Eof(), "", "Trying to read past EOF");
@@ -170,8 +157,7 @@ wxString CTextFile::GetNextLine(EReadTextFile flags, const wxMBConv& conv, bool*
 	return line;
 }
 
-
-bool CTextFile::WriteLine(const wxString& line, const wxMBConv& conv)
+bool CTextFile::WriteLine(const wxString &line, const wxMBConv &conv)
 {
 	wxCHECK_MSG(m_file.IsOpened(), false, "Trying to read from closed file.");
 	wxCHECK_MSG((m_mode == write), false, "Trying to read from non-readable file.");
@@ -196,8 +182,7 @@ bool CTextFile::WriteLine(const wxString& line, const wxMBConv& conv)
 	return false;
 }
 
-
-wxArrayString CTextFile::ReadLines(EReadTextFile flags, const wxMBConv& conv)
+wxArrayString CTextFile::ReadLines(EReadTextFile flags, const wxMBConv &conv)
 {
 	wxArrayString lines;
 
@@ -214,8 +199,7 @@ wxArrayString CTextFile::ReadLines(EReadTextFile flags, const wxMBConv& conv)
 	return lines;
 }
 
-
-bool CTextFile::WriteLines(const wxArrayString& lines, const wxMBConv& conv)
+bool CTextFile::WriteLines(const wxArrayString &lines, const wxMBConv &conv)
 {
 	bool result = true;
 
@@ -225,4 +209,3 @@ bool CTextFile::WriteLines(const wxArrayString& lines, const wxMBConv& conv)
 
 	return result;
 }
-

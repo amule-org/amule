@@ -35,7 +35,7 @@
 #define COMPILERSPECIFIC_H
 
 #if defined(__SUNPRO_CC)
-#	define	__FUNCTION__	__FILE__+__LINE__
+#define __FUNCTION__ __FILE__ + __LINE__
 #endif
 
 #endif /* COMPILERSPECIFIC_H */

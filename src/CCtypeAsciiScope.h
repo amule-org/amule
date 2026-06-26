@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <cstring>
 
-
 // RAII helper that pins LC_CTYPE to "C" for the duration of its scope
 // and restores the previous value on destruction.
 //
@@ -48,9 +47,10 @@
 class CCtypeAsciiScope
 {
 public:
-	CCtypeAsciiScope() : m_saved(NULL)
+	CCtypeAsciiScope()
+	: m_saved(NULL)
 	{
-		const char* current = std::setlocale(LC_CTYPE, NULL);
+		const char *current = std::setlocale(LC_CTYPE, NULL);
 		if (current) {
 			m_saved = strdup(current);
 		}
@@ -65,11 +65,11 @@ public:
 		}
 	}
 
-	CCtypeAsciiScope(const CCtypeAsciiScope&) = delete;
-	CCtypeAsciiScope& operator=(const CCtypeAsciiScope&) = delete;
+	CCtypeAsciiScope(const CCtypeAsciiScope &) = delete;
+	CCtypeAsciiScope &operator=(const CCtypeAsciiScope &) = delete;
 
 private:
-	char* m_saved;
+	char *m_saved;
 };
 
 #endif // CCTYPEASCIISCOPE_H

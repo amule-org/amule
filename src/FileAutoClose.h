@@ -26,7 +26,7 @@
 #ifndef FILEAUTOCLOSE_H
 #define FILEAUTOCLOSE_H
 
-#include "CFile.h"			// Needed for CFile
+#include "CFile.h" // Needed for CFile
 
 /**
  * This class encapsulates the CFile class.
@@ -38,7 +38,6 @@
 class CFileAutoClose
 {
 public:
-
 	/**
 	 * Creates a closed file.
 	 */
@@ -50,7 +49,7 @@ public:
 	 * To check if the file was successfully opened, a
 	 * call to IsOpened() is required.
 	 */
-	CFileAutoClose(const CPath& path, CFile::OpenMode mode = CFile::read);
+	CFileAutoClose(const CPath &path, CFile::OpenMode mode = CFile::read);
 
 	/**
 	 * Request auto closing of the file handle.
@@ -67,7 +66,7 @@ public:
 	 * @param mode The opening mode (see CFile).
 	 * @return True if the file was opened, false otherwise.
 	 */
-	bool Open(const CPath& path, CFile::OpenMode mode = CFile::read);
+	bool Open(const CPath &path, CFile::OpenMode mode = CFile::read);
 
 	/**
 	 * Calling Create is equivalent of calling open with OpenMode 'write'.
@@ -77,7 +76,7 @@ public:
 	 *
 	 * @see CFile::Open
 	 */
-	bool Create(const CPath& path, bool overwrite = false);
+	bool Create(const CPath &path, bool overwrite = false);
 
 	/**
 	 * Closes the file.
@@ -105,7 +104,7 @@ public:
 	 * Returns the path of the currently opened file.
 	 *
 	 */
-	const CPath& GetFilePath() const;
+	const CPath &GetFilePath() const;
 
 	/**
 	 * Returns true if the file is opened, false otherwise.
@@ -121,7 +120,7 @@ public:
 	 *
 	 * See CFileDataIO::Read
 	 */
-	void ReadAt(void* buffer, uint64 offset, size_t count);
+	void ReadAt(void *buffer, uint64 offset, size_t count);
 
 	/**
 	 * Write 'count' bytes from 'buffer' into the file.
@@ -132,7 +131,7 @@ public:
 	 *
 	 * See CFileDataIO::Write
 	 */
-	void WriteAt(const void* buffer, uint64 offset, size_t count);
+	void WriteAt(const void *buffer, uint64 offset, size_t count);
 
 	/**
 	 * Returns true when the file-position is past or at the end of the file.
@@ -158,8 +157,8 @@ public:
 private:
 	//! A CFileAutoClose is neither copyable nor assignable.
 	//@{
-	CFileAutoClose(const CFileAutoClose&);
-	CFileAutoClose& operator=(const CFileAutoClose&);
+	CFileAutoClose(const CFileAutoClose &);
+	CFileAutoClose &operator=(const CFileAutoClose &);
 	//@}
 
 	/**
@@ -185,7 +184,6 @@ private:
 	//! Last access time (s)
 	uint64 m_lastAccess;
 };
-
 
 #endif // FILEAUTOCLOSE_H
 // File_checked_for_headers

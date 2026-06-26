@@ -29,7 +29,6 @@
 #include <wx/event.h>
 #include <iosfwd>
 
-
 enum DebugType
 {
 	//! Standard warning, not debug
@@ -118,8 +117,6 @@ enum DebugType
 	// array in Logger.cpp!
 };
 
-
-
 /**
  * Container-class for the debugging categories.
  */
@@ -132,61 +129,61 @@ public:
 	 * @param type The actual debug-category type.
 	 * @param name The user-readable name.
 	 */
-	CDebugCategory( DebugType type, const wxString& name )
-		: m_name(name), m_type(type), m_enabled(false)
-	{}
-
+	CDebugCategory(DebugType type, const wxString &name)
+	: m_name(name)
+	, m_type(type)
+	, m_enabled(false)
+	{
+	}
 
 	/**
 	 * Returns true if the category is enabled.
 	 */
-	bool IsEnabled() const		{ return m_enabled; }
+	bool IsEnabled() const { return m_enabled; }
 
 	/**
 	 * Enables/Disables the category.
 	 */
-	void SetEnabled( bool enabled )	{ m_enabled = enabled; }
-
+	void SetEnabled(bool enabled) { m_enabled = enabled; }
 
 	/**
 	 * Returns the user-readable name.
 	 */
-	const wxString& GetName() const	{ return m_name; }
+	const wxString &GetName() const { return m_name; }
 
 	/**
 	 * Returns the actual type.
 	 */
-	DebugType GetType() const	{ return m_type; }
+	DebugType GetType() const { return m_type; }
 
 private:
 	//! The user-readable name.
-	wxString	m_name;
+	wxString m_name;
 	//! The actual type.
-	DebugType	m_type;
+	DebugType m_type;
 	//! Whenever or not the category is enabled.
-	bool		m_enabled;
+	bool m_enabled;
 };
-
 
 /**
  * Functions for logging operations.
  */
-class CLogger: public wxEvtHandler
+class CLogger : public wxEvtHandler
 {
 public:
 	/**
 	 * Returns true if debug-messages should be generated for a specific category.
 	 */
 #ifdef __DEBUG__
-	bool IsEnabled( DebugType ) const;
+	bool IsEnabled(DebugType) const;
 #else
-	bool IsEnabled( DebugType ) const	{ return false; }
+	bool IsEnabled(DebugType) const { return false; }
 #endif
 
 	/**
 	 * Enables or disables debug-messages for a specific category.
 	 */
-	void SetEnabled( DebugType type, bool enabled );
+	void SetEnabled(DebugType type, bool enabled);
 
 	/**
 	 * Sets the global verbose-debug flag that gates IsEnabled() per category.
@@ -203,13 +200,12 @@ public:
 	/**
 	 * Returns true if logging to stdout is enabled
 	 */
-	bool IsEnabledStdoutLog() const		{ return m_StdoutLog; }
+	bool IsEnabledStdoutLog() const { return m_StdoutLog; }
 
 	/**
 	 * Enables or disables logging to stdout.
 	 */
-	void SetEnabledStdoutLog(bool enabled)	{ m_StdoutLog = enabled; }
-
+	void SetEnabledStdoutLog(bool enabled) { m_StdoutLog = enabled; }
 
 	/**
 	 * Logs the specified line of text, prefixed with the name of the DebugType.
@@ -225,8 +221,7 @@ public:
 	 * event will be sent directly to the application, otherwise it will be
 	 * queued in the event-loop.
 	 */
-	void AddLogLine(
-		const wxString &file,
+	void AddLogLine(const wxString &file,
 		int line,
 		bool critical,
 		DebugType type,
@@ -236,18 +231,9 @@ public:
 
 	// for UPnP
 	void AddLogLine(
-		const wxString &file,
-		int line,
-		bool critical,
-		DebugType type,
-		const std::ostringstream &msg);
+		const wxString &file, int line, bool critical, DebugType type, const std::ostringstream &msg);
 
-	void AddLogLine(
-		const wxString &file,
-		int line,
-		bool critical,
-		const std::ostringstream &msg);
-
+	void AddLogLine(const wxString &file, int line, bool critical, const std::ostringstream &msg);
 
 	/**
 	 * Emergency log for crashes.
@@ -257,7 +243,7 @@ public:
 	/**
 	 * Returns a category specified by index.
 	 */
-	const CDebugCategory&	GetDebugCategory( int index );
+	const CDebugCategory &GetDebugCategory(int index);
 
 	/**
 	 * Returns the number of debug-categories.
@@ -267,7 +253,7 @@ public:
 	/**
 	 * Open Logfile, true on success
 	 */
-	bool OpenLogfile(const wxString & name);
+	bool OpenLogfile(const wxString &name);
 
 	/**
 	 * Close Logfile
@@ -277,30 +263,29 @@ public:
 	/**
 	 * Get name of Logfile
 	 */
-	const wxString & GetLogfileName() const {
-		return m_LogfileName;
-	}
+	const wxString &GetLogfileName() const { return m_LogfileName; }
 
 	/**
 	 * Event handler
 	 */
-	void OnLoggingEvent(class CLoggingEvent& evt);
+	void OnLoggingEvent(class CLoggingEvent &evt);
 
 	/**
 	 * Construct
 	 */
-	CLogger() {
+	CLogger()
+	{
 		applog = NULL;
 		m_StdoutLog = false;
 		m_count = 0;
 	}
 
 private:
-	class wxFFileOutputStream* applog;	// the logfile
+	class wxFFileOutputStream *applog; // the logfile
 	wxString m_LogfileName;
 	wxString m_ApplogBuf;
 	bool m_StdoutLog;
-	int  m_count;			// output line counter
+	int m_count; // output line counter
 	wxMutex m_lineLock;
 
 	/**
@@ -311,12 +296,12 @@ private:
 	/**
 	 * Really output a single line
 	 */
-	void DoLine(const wxString & line, bool toStdout, bool toGUI);
+	void DoLine(const wxString &line, bool toStdout, bool toGUI);
 
 	/**
 	 * Really output several lines
 	 */
-	void DoLines(const wxString & lines, bool critical, bool toStdout, bool toGUI);
+	void DoLines(const wxString &lines, bool critical, bool toStdout, bool toGUI);
 
 	wxDECLARE_EVENT_TABLE();
 };
@@ -337,68 +322,56 @@ public:
 	void DoLogText(const wxString &msg);
 };
 
-
 wxDECLARE_EVENT(MULE_EVT_LOGLINE, wxEvent);
 
 /** This event is sent when a log-line is queued. */
 class CLoggingEvent : public wxEvent
 {
 public:
-	CLoggingEvent(bool critical, bool toStdout, bool toGUI, const wxString& msg)
-		: wxEvent(-1, MULE_EVT_LOGLINE)
-		, m_critical(critical)
-		, m_stdout(toStdout)
-		, m_GUI(toGUI)
-		// Deep copy, to avoid thread-unsafe reference counting. */
-		, m_msg(msg.c_str(), msg.Length())
+	CLoggingEvent(bool critical, bool toStdout, bool toGUI, const wxString &msg)
+	: wxEvent(-1, MULE_EVT_LOGLINE)
+	, m_critical(critical)
+	, m_stdout(toStdout)
+	, m_GUI(toGUI)
+	// Deep copy, to avoid thread-unsafe reference counting. */
+	, m_msg(msg.c_str(), msg.Length())
 	{
 	}
 
-	const wxString& Message() const {
-		return m_msg;
-	}
+	const wxString &Message() const { return m_msg; }
 
-	bool IsCritical() const {
-		return m_critical;
-	}
+	bool IsCritical() const { return m_critical; }
 
-	bool ToStdout() const {
-		return m_stdout;
-	}
+	bool ToStdout() const { return m_stdout; }
 
-	bool ToGUI() const {
-		return m_GUI;
-	}
+	bool ToGUI() const { return m_GUI; }
 
-	wxEvent* Clone() const {
-		return new CLoggingEvent(m_critical, m_stdout, m_GUI, m_msg);
-	}
+	wxEvent *Clone() const { return new CLoggingEvent(m_critical, m_stdout, m_GUI, m_msg); }
 
 private:
-	bool		m_critical;
-	bool		m_stdout;
-	bool		m_GUI;
-	wxString	m_msg;
+	bool m_critical;
+	bool m_stdout;
+	bool m_GUI;
+	wxString m_msg;
 };
 
-
-typedef void (wxEvtHandler::*MuleLogEventFunction)(CLoggingEvent&);
+typedef void (wxEvtHandler::*MuleLogEventFunction)(CLoggingEvent &);
 
 //! Event-handler for log-line events dispatched to GUI / stdout sinks.
 #define EVT_MULE_LOGGING(func) \
 	wx__DECLARE_EVT0(MULE_EVT_LOGLINE, wxEVENT_HANDLER_CAST(MuleLogEventFunction, func))
 
-
 // access the logfile for EC
 class CLoggerAccess
 {
 private:
-	class wxFFileInputStream * m_logfile;
-	class wxCharBuffer * m_buffer;
+	class wxFFileInputStream *m_logfile;
+	class wxCharBuffer *m_buffer;
 	size_t m_bufferlen;
 	size_t m_pos;
 
 	bool m_ready;
+
 public:
 	//
 	// construct/destruct
@@ -412,13 +385,12 @@ public:
 	//
 	// get a String (if there is one)
 	//
-	bool GetString(wxString & s);
+	bool GetString(wxString &s);
 	//
 	// is a String available ?
 	//
 	bool HasString();
 };
-
 
 /**
  * These macros should be used when logging. The
@@ -431,34 +403,59 @@ public:
  * AddLogLineMS will also always print to stdout.
  */
 #ifdef MULEUNIT
-	#define AddDebugLogLineN(...) do {} while (false)
-	#define AddLogLineN(...) do {} while (false)
-	#define AddLogLineNS(...) do {} while (false)
-	#define AddDebugLogLineC(...) do {} while (false)
-	#define AddLogLineC(...) do {} while (false)
-	#define AddLogLineCS(...) do {} while (false)
-	#define AddDebugLogLineF(...) do {} while (false)
-	#define AddLogLineF(...) do {} while (false)
+#define AddDebugLogLineN(...) \
+	do { \
+	} while (false)
+#define AddLogLineN(...) \
+	do { \
+	} while (false)
+#define AddLogLineNS(...) \
+	do { \
+	} while (false)
+#define AddDebugLogLineC(...) \
+	do { \
+	} while (false)
+#define AddLogLineC(...) \
+	do { \
+	} while (false)
+#define AddLogLineCS(...) \
+	do { \
+	} while (false)
+#define AddDebugLogLineF(...) \
+	do { \
+	} while (false)
+#define AddLogLineF(...) \
+	do { \
+	} while (false)
 #else
 // Macros for 'N'on critical logging
-	#ifdef __DEBUG__
-		#define AddDebugLogLineN(type, string) if (theLogger.IsEnabled(type)) theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string)
-	#else
-		#define AddDebugLogLineN(type, string)	do {} while (false)
-	#endif
-	#define AddLogLineN(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string)
-	#define AddLogLineNS(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, true)
+#ifdef __DEBUG__
+#define AddDebugLogLineN(type, string) \
+	if (theLogger.IsEnabled(type)) \
+	theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string)
+#else
+#define AddDebugLogLineN(type, string) \
+	do { \
+	} while (false)
+#endif
+#define AddLogLineN(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string)
+#define AddLogLineNS(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, true)
 // Macros for 'C'ritical logging
-	#define AddDebugLogLineC(type, string) theLogger.AddLogLine(__TFILE__, __LINE__, true, type, string)
-	#define AddLogLineC(string) theLogger.AddLogLine(__TFILE__, __LINE__, true, logStandard, string)
-	#define AddLogLineCS(string) theLogger.AddLogLine(__TFILE__, __LINE__, true, logStandard, string, true)
+#define AddDebugLogLineC(type, string) theLogger.AddLogLine(__TFILE__, __LINE__, true, type, string)
+#define AddLogLineC(string) theLogger.AddLogLine(__TFILE__, __LINE__, true, logStandard, string)
+#define AddLogLineCS(string) theLogger.AddLogLine(__TFILE__, __LINE__, true, logStandard, string, true)
 // Macros for logging to logfile only
-	#ifdef __DEBUG__
-		#define AddDebugLogLineF(type, string) if (theLogger.IsEnabled(type)) theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string, false, false)
-	#else
-		#define AddDebugLogLineF(type, string)	do {} while (false)
-	#endif
-	#define AddLogLineF(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
+#ifdef __DEBUG__
+#define AddDebugLogLineF(type, string) \
+	if (theLogger.IsEnabled(type)) \
+	theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string, false, false)
+#else
+#define AddDebugLogLineF(type, string) \
+	do { \
+	} while (false)
+#endif
+#define AddLogLineF(string) \
+	theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
 #endif
 
 #endif

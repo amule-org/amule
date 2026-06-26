@@ -30,7 +30,6 @@
 #ifndef _WXCASFRAME_H
 #define _WXCASFRAME_H
 
-
 #include <wx/bitmap.h>
 #include <wx/button.h>
 #include <wx/filename.h>
@@ -43,19 +42,18 @@
 #include <wx/timer.h>
 #include <wx/toolbar.h>
 
-
 #include "onlinesig.h"
 
-#ifdef __LINUX__		// System monitoring on Linux
+#ifdef __LINUX__ // System monitoring on Linux
 #include "linuxmon.h"
 #endif
 
 /// Main wxCas Frame
-class WxCasFrame: public wxFrame
+class WxCasFrame : public wxFrame
 {
 private:
 	wxToolBar *m_toolbar;
-	wxBitmap m_toolBarBitmaps[ 6 ];
+	wxBitmap m_toolBarBitmaps[6];
 
 	wxBoxSizer *m_frameVBox;
 	wxBoxSizer *m_mainPanelVBox;
@@ -94,14 +92,13 @@ private:
 	wxStaticText *m_hitLine;
 	wxButton *m_hitButton;
 
-
-	wxTimer * m_refresh_timer;
-	wxTimer * m_ftp_update_timer;
+	wxTimer *m_refresh_timer;
+	wxTimer *m_ftp_update_timer;
 
 	OnLineSig *m_aMuleSig;
 	unsigned int m_maxLineCount;
 
-#ifdef __LINUX__		// System monitoring on Linux
+#ifdef __LINUX__ // System monitoring on Linux
 
 	wxStaticText *m_sysLine_1;
 	wxStaticText *m_sysLine_2;
@@ -110,21 +107,21 @@ private:
 
 	enum
 	{
-	    ID_BAR_REFRESH = 1000,
-	    ID_BAR_SAVE,
-	    ID_BAR_PRINT,
-	    ID_BAR_PREFS,
-	    ID_BAR_ABOUT,
-	    ID_REFRESH_TIMER,
-	    ID_FTP_UPDATE_TIMER,
-	    ID_HIT_BUTTON,
-	    ID_ABS_HIT_BUTTON
+		ID_BAR_REFRESH = 1000,
+		ID_BAR_SAVE,
+		ID_BAR_PRINT,
+		ID_BAR_PREFS,
+		ID_BAR_ABOUT,
+		ID_REFRESH_TIMER,
+		ID_FTP_UPDATE_TIMER,
+		ID_HIT_BUTTON,
+		ID_ABS_HIT_BUTTON
 	};
 
 	// Get maximum of 2 uint
-	unsigned int GetMaxUInt( const unsigned int a, const unsigned int b )
+	unsigned int GetMaxUInt(const unsigned int a, const unsigned int b)
 	{
-		return ( ( a ) > ( b ) ? ( a ) : ( b ) );
+		return ((a) > (b) ? (a) : (b));
 	}
 
 	// Constructing Stat_lines
@@ -140,46 +137,47 @@ private:
 	wxString MakeHitsLine_1() const;
 	wxString MakeHitsLine_2() const;
 
-#ifdef __LINUX__		// System monitoring on Linux
+#ifdef __LINUX__ // System monitoring on Linux
 	// Constructing Sys_lines
 	wxString MakeSysLine_1() const;
 	wxString MakeSysLine_2() const;
 #endif
 
 protected:
-	bool UpdateStatsPanel ();
-	void UpdateAll ( bool forceFitting = FALSE );
+	bool UpdateStatsPanel();
+	void UpdateAll(bool forceFitting = FALSE);
 	void SaveAbsoluteHits();
 
-	void OnBarRefresh ( wxCommandEvent & event );
-	void OnBarAbout ( wxCommandEvent & event );
-	void OnBarSave ( wxCommandEvent & event );
-	void OnBarPrint ( wxCommandEvent & event );
-	void OnBarPrefs ( wxCommandEvent & event );
-	void OnRefreshTimer ( wxTimerEvent & event );
-	void OnFtpUpdateTimer ( wxTimerEvent & event );
-	void OnHitButton ( wxCommandEvent & event );
-	void OnAbsHitButton ( wxCommandEvent & event );
+	void OnBarRefresh(wxCommandEvent &event);
+	void OnBarAbout(wxCommandEvent &event);
+	void OnBarSave(wxCommandEvent &event);
+	void OnBarPrint(wxCommandEvent &event);
+	void OnBarPrefs(wxCommandEvent &event);
+	void OnRefreshTimer(wxTimerEvent &event);
+	void OnFtpUpdateTimer(wxTimerEvent &event);
+	void OnHitButton(wxCommandEvent &event);
+	void OnAbsHitButton(wxCommandEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
+
 public:
 	/// Constructor
-	WxCasFrame ( const wxString& title );
+	WxCasFrame(const wxString &title);
 
 	/// Destructor
-	~WxCasFrame ();
+	~WxCasFrame();
 
 	/// Get Online statistics image
-	wxImage *GetStatImage () const;
+	wxImage *GetStatImage() const;
 
 	/// Refresh timer period changing
-	bool ChangeRefreshPeriod( const int newPeriod );
+	bool ChangeRefreshPeriod(const int newPeriod);
 
 	/// Refresh timer period changing
-	bool ChangeFtpUpdatePeriod( const int newPeriod );
+	bool ChangeFtpUpdatePeriod(const int newPeriod);
 
 	/// Set amulesig.dat file
-	void SetAmuleSigFile( const wxFileName& file );
+	void SetAmuleSigFile(const wxFileName &file);
 };
 
 #endif /* _WXCASFRAME_H */

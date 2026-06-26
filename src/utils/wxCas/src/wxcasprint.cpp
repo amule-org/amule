@@ -27,7 +27,6 @@
 /// 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 #include <wx/image.h>
 
 #include "wxcas.h"
@@ -35,25 +34,24 @@
 #include "wxcasprint.h"
 
 // Constructor
-WxCasPrint::WxCasPrint ( const wxString& title ) : wxPrintout ( title )
-{}
+WxCasPrint::WxCasPrint(const wxString &title)
+: wxPrintout(title)
+{
+}
 
 // Destructor
-WxCasPrint::~WxCasPrint ()
-{}
+WxCasPrint::~WxCasPrint() {}
 
-bool
-WxCasPrint::OnPrintPage ( int page )
+bool WxCasPrint::OnPrintPage(int page)
 {
-	wxDC * dc = GetDC ();
-	if ( dc ) {
-		if ( page == 1 ) {
-			DrawPageOne ( dc );
+	wxDC *dc = GetDC();
+	if (dc) {
+		if (page == 1) {
+			DrawPageOne(dc);
 		}
 
-
-		dc->SetDeviceOrigin ( 0, 0 );
-		dc->SetUserScale ( 1.0, 1.0 );
+		dc->SetDeviceOrigin(0, 0);
+		dc->SetUserScale(1.0, 1.0);
 
 		return TRUE;
 	} else {
@@ -61,19 +59,16 @@ WxCasPrint::OnPrintPage ( int page )
 	}
 }
 
-bool
-WxCasPrint::OnBeginDocument ( int startPage, int endPage )
+bool WxCasPrint::OnBeginDocument(int startPage, int endPage)
 {
-	if ( !wxPrintout::OnBeginDocument ( startPage, endPage ) ) {
+	if (!wxPrintout::OnBeginDocument(startPage, endPage)) {
 		return FALSE;
 	} else {
 		return TRUE;
 	}
 }
 
-void
-WxCasPrint::GetPageInfo ( int *minPage, int *maxPage, int *selPageFrom,
-                          int *selPageTo )
+void WxCasPrint::GetPageInfo(int *minPage, int *maxPage, int *selPageFrom, int *selPageTo)
 {
 	*minPage = 1;
 	*maxPage = 1;
@@ -81,41 +76,39 @@ WxCasPrint::GetPageInfo ( int *minPage, int *maxPage, int *selPageFrom,
 	*selPageTo = 1;
 }
 
-bool
-WxCasPrint::HasPage ( int pageNum )
+bool WxCasPrint::HasPage(int pageNum)
 {
-	return ( pageNum == 1 );
+	return (pageNum == 1);
 }
 
-void
-WxCasPrint::DrawPageOne ( wxDC * dc )
+void WxCasPrint::DrawPageOne(wxDC *dc)
 {
 	wxInt32 dc_w, dc_h;
 
 	// Get the size of the DC in pixels
-	dc->GetSize ( &dc_w, &dc_h );
+	dc->GetSize(&dc_w, &dc_h);
 
 	// Get the size of the image in pixels
-	wxImage *statImage = wxGetApp ().GetMainFrame () ->GetStatImage ();
+	wxImage *statImage = wxGetApp().GetMainFrame()->GetStatImage();
 
 	wxUint32 marginX = 50;
 	wxUint32 marginY = 50;
 
-	wxUint32 sizeX = statImage->GetWidth () + 2 * marginX;
-	wxUint32 sizeY = statImage->GetHeight () + 2 * marginY;
+	wxUint32 sizeX = statImage->GetWidth() + 2 * marginX;
+	wxUint32 sizeY = statImage->GetHeight() + 2 * marginY;
 
 	// Calculate a suitable scaling factor
-	float scale = wxMin ( ( float ) ( dc_w ) / sizeX, ( float ) ( dc_h ) / sizeY );
+	float scale = wxMin((float)(dc_w) / sizeX, (float)(dc_h) / sizeY);
 
 	// Calculate the position on the DC for centring the graphic
-	float posX = marginX + ( dc_w - sizeX * scale ) / 2.0;
-	float posY = marginY + ( dc_h - sizeY * scale ) / 2.0;
+	float posX = marginX + (dc_w - sizeX * scale) / 2.0;
+	float posY = marginY + (dc_h - sizeY * scale) / 2.0;
 
 	// Set the scale and origin
-	dc->SetUserScale ( scale, scale );
-	dc->SetDeviceOrigin ( ( wxCoord ) posX, ( wxCoord ) posY );
+	dc->SetUserScale(scale, scale);
+	dc->SetDeviceOrigin((wxCoord)posX, (wxCoord)posY);
 
 	// Draw image
-	dc->DrawBitmap ( wxBitmap( *statImage ), 0, 0, FALSE );
+	dc->DrawBitmap(wxBitmap(*statImage), 0, 0, FALSE);
 }
 // File_checked_for_headers

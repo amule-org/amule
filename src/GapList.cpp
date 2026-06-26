@@ -22,16 +22,15 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #include "Types.h"
-#include <protocol/ed2k/Constants.h>	// for PARTSIZE
+#include <protocol/ed2k/Constants.h> // for PARTSIZE
 #include "GapList.h"
 
 #include "Logger.h"
 #include <common/Format.h>
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1800) 
-#include <algorithm> // for std::min and std::max 
+#if defined(_MSC_VER) && (_MSC_VER >= 1800)
+#include <algorithm> // for std::min and std::max
 #endif
 
 void CGapList::Init(uint64 fileSize, bool isEmpty)
@@ -40,8 +39,7 @@ void CGapList::Init(uint64 fileSize, bool isEmpty)
 	m_iPartCount = fileSize / PARTSIZE + 1;
 	m_sizeLastPart = fileSize % PARTSIZE;
 	// file with size of n * PARTSIZE
-	if (m_sizeLastPart == 0
-		&& fileSize) {  // that's only for pre-init in ctor
+	if (m_sizeLastPart == 0 && fileSize) { // that's only for pre-init in ctor
 		m_sizeLastPart = PARTSIZE;
 		m_iPartCount--;
 	}
@@ -58,14 +56,13 @@ void CGapList::Init(uint64 fileSize, bool isEmpty)
 	m_totalGapSizeValid = true;
 }
 
-
 void CGapList::AddGap(uint64 gapstart, uint64 gapend)
 {
 	if (!ArgCheck(gapstart, gapend)) {
 		return;
 	}
 
-//	AddDebugLogLineN(logPartFile, CFormat("  AddGap: %5d - %5d") % gapstart % gapend);
+	//	AddDebugLogLineN(logPartFile, CFormat("  AddGap: %5d - %5d") % gapstart % gapend);
 
 	// mark involved part(s) as incomplete
 	uint16 partlast = gapend / PARTSIZE;
@@ -82,7 +79,7 @@ void CGapList::AddGap(uint64 gapstart, uint64 gapend)
 	while (it != m_gaplist.end()) {
 		iterator it2 = it++;
 		uint64 curGapStart = it2->second;
-		uint64 curGapEnd   = it2->first;
+		uint64 curGapEnd = it2->first;
 
 		if (curGapStart >= gapstart && curGapEnd <= gapend) {
 			// this gap is inside the new gap - delete
@@ -100,7 +97,7 @@ void CGapList::AddGap(uint64 gapstart, uint64 gapend)
 		} else if (curGapStart <= gapstart && curGapEnd >= gapend) {
 			// new gap is already inside this gap - return
 			return;
-		// now all cases of overlap are ruled out
+			// now all cases of overlap are ruled out
 		} else if (curGapStart > gapstart) {
 			// this gap is the first behind the new gap -> insert before it
 			it = it2;
@@ -111,7 +108,7 @@ void CGapList::AddGap(uint64 gapstart, uint64 gapend)
 	if (it != m_gaplist.begin()) {
 		--it;
 	}
-	m_gaplist.insert(it, std::pair<uint64,uint64>(gapend, gapstart));
+	m_gaplist.insert(it, std::pair<uint64, uint64>(gapend, gapstart));
 }
 
 void CGapList::AddGap(uint16 part)
@@ -132,7 +129,7 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 		return;
 	}
 
-//	AddDebugLogLineN(logPartFile, CFormat("  FillGap: %5d - %5d") % partstart % partend);
+	//	AddDebugLogLineN(logPartFile, CFormat("  FillGap: %5d - %5d") % partstart % partend);
 
 	// mark involved part(s) to be reexamined for completeness
 	uint16 partlast = partend / PARTSIZE;
@@ -148,7 +145,7 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 	while (it != m_gaplist.end()) {
 		iterator it2 = it++;
 		uint64 curGapStart = it2->second;
-		uint64 curGapEnd   = it2->first;
+		uint64 curGapEnd = it2->first;
 
 		if (curGapStart >= partstart) {
 			if (curGapEnd <= partend) {
@@ -156,7 +153,8 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 				m_gaplist.erase(it2);
 			} else if (curGapStart <= partend) {
 				// lower part of this gap is in the part - shrink gap:
-				//   (this is the most common case: curGapStart == partstart && curGapEnd > partend)
+				//   (this is the most common case: curGapStart == partstart && curGapEnd >
+				//   partend)
 				it2->second = partend + 1;
 				// end of our part was in the gap: we're done
 				break;
@@ -176,7 +174,7 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 				if (it3 != m_gaplist.begin()) {
 					--it3;
 				}
-				m_gaplist.insert(it3, std::pair<uint64,uint64>(partstart - 1, curGapStart));
+				m_gaplist.insert(it3, std::pair<uint64, uint64>(partstart - 1, curGapStart));
 				// we're done
 				break;
 			} else if (curGapEnd >= partstart) {
@@ -186,7 +184,7 @@ void CGapList::FillGap(uint64 partstart, uint64 partend)
 				if (it3 != m_gaplist.begin()) {
 					--it3;
 				}
-				m_gaplist.insert(it3, std::pair<uint64,uint64>(partstart - 1, curGapStart));
+				m_gaplist.insert(it3, std::pair<uint64, uint64>(partstart - 1, curGapStart));
 				// and delete the old one
 				m_gaplist.erase(it2);
 			}
@@ -232,7 +230,7 @@ uint32 CGapList::GetGapSize(uint16 part) const
 	ListType::const_iterator it = m_gaplist.lower_bound(uRangeStart);
 	for (; it != m_gaplist.end(); ++it) {
 		uint64 curGapStart = it->second;
-		uint64 curGapEnd   = it->first;
+		uint64 curGapEnd = it->first;
 
 		if (curGapStart <= uRangeStart && curGapEnd >= uRangeEnd) {
 			// total range is in this gap
@@ -252,7 +250,7 @@ uint32 CGapList::GetGapSize(uint16 part) const
 		}
 	}
 
-	wxASSERT( uTotalGapSize <= uRangeEnd - uRangeStart + 1 );
+	wxASSERT(uTotalGapSize <= uRangeEnd - uRangeStart + 1);
 	return uTotalGapSize;
 }
 
@@ -267,12 +265,12 @@ bool CGapList::IsComplete(uint64 gapstart, uint64 gapend) const
 	ListType::const_iterator it = m_gaplist.lower_bound(gapstart);
 	for (; it != m_gaplist.end(); ++it) {
 		uint64 curGapStart = it->second;
-		uint64 curGapEnd   = it->first;
+		uint64 curGapEnd = it->first;
 
-		if (  (curGapStart >= gapstart    && curGapEnd   <= gapend)
-			||(curGapStart >= gapstart    && curGapStart <= gapend)
-			||(curGapEnd   <= gapend      && curGapEnd   >= gapstart)
-			||(gapstart    >= curGapStart && gapend      <= curGapEnd)) {
+		if ((curGapStart >= gapstart && curGapEnd <= gapend) ||
+			(curGapStart >= gapstart && curGapStart <= gapend) ||
+			(curGapEnd <= gapend && curGapEnd >= gapstart) ||
+			(gapstart >= curGapStart && gapend <= curGapEnd)) {
 			return false;
 		}
 		if (curGapStart > gapend) {
@@ -284,19 +282,19 @@ bool CGapList::IsComplete(uint64 gapstart, uint64 gapend) const
 
 bool CGapList::IsComplete(uint16 part)
 {
-// There is a bug in the ED2K protocol:
-// For files of size n * PARTSIZE one part too much is transmitted in the availability bitfield.
-// Allow completion detection of this dummy part, and always report it as complete
-// (so it doesn't get asked for).
+	// There is a bug in the ED2K protocol:
+	// For files of size n * PARTSIZE one part too much is transmitted in the availability bitfield.
+	// Allow completion detection of this dummy part, and always report it as complete
+	// (so it doesn't get asked for).
 	if (part == m_iPartCount && m_sizeLastPart == PARTSIZE) {
 		return true;
 	}
-// Remaining error check
+	// Remaining error check
 	if (part >= m_iPartCount) {
 		wxFAIL;
 		return false;
 	}
-	ePartComplete status = (ePartComplete) m_partsComplete[part];
+	ePartComplete status = (ePartComplete)m_partsComplete[part];
 	if (status == unknown) {
 		uint64 partstart = part * PARTSIZE;
 		uint64 partend = partstart + GetPartSize(part) - 1;
@@ -317,7 +315,7 @@ inline bool CGapList::ArgCheck(uint64 gapstart, uint64 &gapend) const
 	// gaps shouldn't go past file anymore either
 	if (gapend >= m_filesize) {
 		wxFAIL;
-		gapend = m_filesize - 1;	// fix it
+		gapend = m_filesize - 1; // fix it
 	}
 	return true;
 }

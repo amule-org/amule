@@ -25,37 +25,36 @@
 
 #include "UploadDiskIOThread.h"
 
-#include "updownclient.h"		// Needed for CUpDownClient
-#include "UploadQueue.h"		// Needed for CUploadQueue
-#include "SharedFileList.h"		// Needed for CSharedFileList
-#include "KnownFile.h"			// Needed for CKnownFile
-#include "PartFile.h"			// Needed for CPartFile
-#include "ClientTCPSocket.h"	// Needed for CClientTCPSocket
-#include "Packet.h"				// Needed for CPacket
-#include "MemFile.h"			// Needed for CMemFile
-#include "amule.h"				// Needed for theApp
+#include "updownclient.h"    // Needed for CUpDownClient
+#include "UploadQueue.h"     // Needed for CUploadQueue
+#include "SharedFileList.h"  // Needed for CSharedFileList
+#include "KnownFile.h"       // Needed for CKnownFile
+#include "PartFile.h"        // Needed for CPartFile
+#include "ClientTCPSocket.h" // Needed for CClientTCPSocket
+#include "Packet.h"          // Needed for CPacket
+#include "MemFile.h"         // Needed for CMemFile
+#include "amule.h"           // Needed for theApp
 #include "Logger.h"
-#include "OtherFunctions.h"		// Needed for GetFiletype / ftArchive
+#include "OtherFunctions.h" // Needed for GetFiletype / ftArchive
 #include "MD4Hash.h"
-#include "ScopedPtr.h"			// Needed for CScopedArray
+#include "ScopedPtr.h" // Needed for CScopedArray
 #include "UploadBandwidthThrottler.h"
-#include "Statistics.h"			// Needed for theStats
+#include "Statistics.h" // Needed for theStats
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
-#include <algorithm>			// Needed for std::min / std::max
+#include <algorithm> // Needed for std::min / std::max
 #include <zlib.h>
 
 // eMule ref: UploadDiskIOThread.cpp:43-45
-#define SLOT_COMPRESSIONCHECK_DATARATE	(1024*150)	// 150 KB/s — above this we may disable compression
-#define MAX_FINISHED_REQUESTS_COMPRESSION	15			// max queued finished reads before disabling compression
-#define BIGBUFFER_MINDATARATE			(75 * 1024)	// eMule: BIGBUFFER_MINDATARATE
-
+#define SLOT_COMPRESSIONCHECK_DATARATE (1024 * 150) // 150 KB/s — above this we may disable compression
+#define MAX_FINISHED_REQUESTS_COMPRESSION 15        // max queued finished reads before disabling compression
+#define BIGBUFFER_MINDATARATE (75 * 1024)           // eMule: BIGBUFFER_MINDATARATE
 
 // eMule ref: CUploadDiskIOThread::CUploadDiskIOThread() — line 49
 CUploadDiskIOThread::CUploadDiskIOThread()
-	: wxThread(wxTHREAD_JOINABLE)
-	, m_condition(m_mutex)
+: wxThread(wxTHREAD_JOINABLE)
+, m_condition(m_mutex)
 {
 	m_bRun = false;
 	m_bSignalThrottler = false;
@@ -70,9 +69,8 @@ CUploadDiskIOThread::CUploadDiskIOThread()
 
 CUploadDiskIOThread::~CUploadDiskIOThread()
 {
-	wxASSERT( !m_bRun );
+	wxASSERT(!m_bRun);
 }
-
 
 // eMule ref: CUploadDiskIOThread::EndThread() — line 77
 void CUploadDiskIOThread::EndThread()
@@ -82,9 +80,8 @@ void CUploadDiskIOThread::EndThread()
 		m_bRun = false;
 		m_condition.Signal();
 	}
-	Wait();	// join — replaces m_eventThreadEnded->Lock()
+	Wait(); // join — replaces m_eventThreadEnded->Lock()
 }
-
 
 // eMule ref: CUploadDiskIOThread::NewBlockRequestsAvailable() — UploadDiskIOThread.h:55
 // Called by main thread when new block requests are added for a client.
@@ -98,7 +95,6 @@ void CUploadDiskIOThread::NewBlockRequestsAvailable()
 	m_condition.Signal();
 }
 
-
 // eMule ref: CUploadDiskIOThread::SocketNeedsMoreData() — UploadDiskIOThread.h:56
 // Called by throttler when it drains a socket and needs more data.
 void CUploadDiskIOThread::SocketNeedsMoreData()
@@ -108,24 +104,22 @@ void CUploadDiskIOThread::SocketNeedsMoreData()
 	m_condition.Signal();
 }
 
-
 // eMule ref: CUploadDiskIOThread::RunInternal() — line 84
-void* CUploadDiskIOThread::Entry()
+void *CUploadDiskIOThread::Entry()
 {
 	m_bRun = true;
 
-	while (m_bRun)	// eMule ref: line 88
+	while (m_bRun) // eMule ref: line 88
 	{
 		// eMule ref: lines 92-109 — reset events, lock upload list, iterate clients
 		{
 			wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
-			const CClientRefList& uploadList = theApp->uploadqueue->GetUploadingList();
+			const CClientRefList &uploadList = theApp->uploadqueue->GetUploadingList();
 
-			for (CClientRefList::const_iterator it = uploadList.begin(); it != uploadList.end(); ++it)
-			{
-				CUpDownClient* client = it->GetClient();
-				if (client != NULL && client->GetSocket() != NULL && client->IsConnected())
-				{
+			for (CClientRefList::const_iterator it = uploadList.begin(); it != uploadList.end();
+				++it) {
+				CUpDownClient *client = it->GetClient();
+				if (client != NULL && client->GetSocket() != NULL && client->IsConnected()) {
 					StartCreateNextBlockPackage(client);
 				}
 			}
@@ -134,16 +128,15 @@ void* CUploadDiskIOThread::Entry()
 		// eMule ref: lines 112-143 — drain pending IO / finished IO
 		// Simplified: reads are synchronous, so m_listPendingIO doesn't exist.
 		// All completed reads are already in m_listFinishedIO.
-		while (!m_listFinishedIO.empty())	// eMule ref: line 142
+		while (!m_listFinishedIO.empty()) // eMule ref: line 142
 		{
-			ReadRequest_Struct* req = m_listFinishedIO.front();
+			ReadRequest_Struct *req = m_listFinishedIO.front();
 			m_listFinishedIO.pop_front();
 			ReadCompletionRoutine(req);
 		}
 
 		// eMule ref: lines 146-149 — signal throttler if we put new data on a socket
-		if (m_bSignalThrottler && theApp->uploadBandwidthThrottler != NULL)
-		{
+		if (m_bSignalThrottler && theApp->uploadBandwidthThrottler != NULL) {
 			theApp->uploadBandwidthThrottler->NewUploadDataAvailable();
 			m_bSignalThrottler = false;
 		}
@@ -167,13 +160,16 @@ void* CUploadDiskIOThread::Entry()
 
 	// Cleanup — eMule ref: lines 157-180
 	// No overlapped I/O to cancel. Just clear the open files list.
-	for (std::list<OpenFile_Struct*>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it) {
+	for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end();
+		++it) {
 		delete *it;
 	}
 	m_listOpenFiles.clear();
 
 	// Discard any unprocessed finished reads
-	for (std::list<ReadRequest_Struct*>::iterator it = m_listFinishedIO.begin(); it != m_listFinishedIO.end(); ++it) {
+	for (std::list<ReadRequest_Struct *>::iterator it = m_listFinishedIO.begin();
+		it != m_listFinishedIO.end();
+		++it) {
 		delete *it;
 	}
 	m_listFinishedIO.clear();
@@ -181,9 +177,8 @@ void* CUploadDiskIOThread::Entry()
 	return NULL;
 }
 
-
 // eMule ref: CUploadDiskIOThread::StartCreateNextBlockPackage() — line 185
-void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
+void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient *client)
 {
 	// eMule ref: lines 188-189 — lock block lists
 	wxMutexLocker lockBlockLists(client->m_blockListLock);
@@ -196,7 +191,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
 	// uploadLock (taken by Entry() before calling this function), which prevents the socket
 	// from being freed — disconnect/cleanup requires uploadLock. (eMule ref: line 187)
 	sint64 nCurQueueSessionPayloadUp = client->m_nCurQueueSessionPayloadUp;
-	CClientTCPSocket* pSock = client->GetSocket();
+	CClientTCPSocket *pSock = client->GetSocket();
 	if (pSock != NULL)
 		nCurQueueSessionPayloadUp += (sint64)pSock->PeekSentPayload();
 	sint64 addedPayloadQueueSession = client->m_addedPayloadQueueSession;
@@ -207,62 +202,64 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
 
 	if (client->m_BlockRequests_queue.empty() ||
 		(addedPayloadQueueSession > nCurQueueSessionPayloadUp &&
-		 (uint32)(addedPayloadQueueSession - nCurQueueSessionPayloadUp) > nBufferLimit))
-	{
+			(uint32)(addedPayloadQueueSession - nCurQueueSessionPayloadUp) > nBufferLimit)) {
 		return;
 	}
 
 	try {
 		// eMule ref: lines 211-212 — buffer while below limit
 		while (!client->m_BlockRequests_queue.empty() &&
-			   (addedPayloadQueueSession <= nCurQueueSessionPayloadUp ||
-			    (uint32)(addedPayloadQueueSession - nCurQueueSessionPayloadUp) < nBufferLimit))
-		{
-			Requested_Block_Struct* currentblock = client->m_BlockRequests_queue.front();
+			(addedPayloadQueueSession <= nCurQueueSessionPayloadUp ||
+				(uint32)(addedPayloadQueueSession - nCurQueueSessionPayloadUp) <
+					nBufferLimit)) {
+			Requested_Block_Struct *currentblock = client->m_BlockRequests_queue.front();
 
 			// eMule ref: lines 215-223 — check file ID switch; defer to main thread
-			if (md4cmp(currentblock->FileID, client->GetUploadFileID().GetHash()) != 0)
-			{
-				AddDebugLogLineN(logClient, "CUploadDiskIOThread::StartCreateNextBlockPackage: Switched fileid, waiting for mainthread");
+			if (md4cmp(currentblock->FileID, client->GetUploadFileID().GetHash()) != 0) {
+				AddDebugLogLineN(logClient,
+					"CUploadDiskIOThread::StartCreateNextBlockPackage: Switched fileid, "
+					"waiting for mainthread");
 				return;
 			}
 
 			// eMule ref: lines 227-244 — resolve file from shared list
-			CKnownFile* srcfile = theApp->sharedfiles->GetFileByID(CMD4Hash(currentblock->FileID));
+			CKnownFile *srcfile =
+				theApp->sharedfiles->GetFileByID(CMD4Hash(currentblock->FileID));
 			if (srcfile == NULL) {
 				throw wxString("requested file not found");
 			}
 
-			CPartFile* srcPartFile = srcfile->IsPartFile() ? static_cast<CPartFile*>(srcfile) : NULL;
+			CPartFile *srcPartFile =
+				srcfile->IsPartFile() ? static_cast<CPartFile *>(srcfile) : NULL;
 
 			// eMule ref: lines 247-252 — validate block offsets
 			if (currentblock->EndOffset > srcfile->GetFileSize()) {
-				throw wxString(CFormat("Asked for data up to %d beyond end of file (%d)")
-					% currentblock->EndOffset % srcfile->GetFileSize());
+				throw wxString(CFormat("Asked for data up to %d beyond end of file (%d)") %
+					       currentblock->EndOffset % srcfile->GetFileSize());
 			} else if (currentblock->StartOffset > currentblock->EndOffset) {
-				throw wxString(CFormat("Asked for invalid block (start %d > end %d)")
-					% currentblock->StartOffset % currentblock->EndOffset);
+				throw wxString(CFormat("Asked for invalid block (start %d > end %d)") %
+					       currentblock->StartOffset % currentblock->EndOffset);
 			}
 
 			uint64 togo = currentblock->EndOffset - currentblock->StartOffset;
 			if (togo > EMBLOCKSIZE * 3) {
-				throw wxString(CFormat("Client requested too large block (%d > %d)")
-					% togo % (EMBLOCKSIZE * 3));
+				throw wxString(CFormat("Client requested too large block (%d > %d)") % togo %
+					       (EMBLOCKSIZE * 3));
 			}
 
 			// eMule ref: lines 256-298 — find/create file struct in m_listOpenFiles
 			// In eMule this opens a HANDLE; here we track per-file metadata only.
 			// CFileArea opens the file internally as needed.
-			OpenFile_Struct* pFileStruct = NULL;
-			for (std::list<OpenFile_Struct*>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it)
-			{
+			OpenFile_Struct *pFileStruct = NULL;
+			for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin();
+				it != m_listOpenFiles.end();
+				++it) {
 				if (md4cmp((*it)->ucMD4FileHash, currentblock->FileID) == 0) {
 					pFileStruct = *it;
 					break;
 				}
 			}
-			if (pFileStruct == NULL)
-			{
+			if (pFileStruct == NULL) {
 				pFileStruct = new OpenFile_Struct;
 				md4cpy(pFileStruct->ucMD4FileHash, currentblock->FileID);
 				pFileStruct->nInUse = 0;
@@ -272,21 +269,25 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
 			}
 
 			// eMule ref: lines 301-345 — ReadFile(OVERLAPPED) → replaced with CFileArea::ReadAt()
-			// Read is synchronous on this thread; go straight to m_listFinishedIO (no pending list).
-			ReadRequest_Struct* req = new ReadRequest_Struct;
+			// Read is synchronous on this thread; go straight to m_listFinishedIO (no pending
+			// list).
+			ReadRequest_Struct *req = new ReadRequest_Struct;
 			req->pFileStruct = pFileStruct;
 			req->pClient = client;
 			req->uStartOffset = currentblock->StartOffset;
 			req->uEndOffset = currentblock->EndOffset;
-			req->pBlock = currentblock;  // snapshot before moving to DoneBlocks_list
+			req->pBlock = currentblock; // snapshot before moving to DoneBlocks_list
 
 			if (srcPartFile) {
-				if (!srcPartFile->IsComplete(currentblock->StartOffset, currentblock->EndOffset - 1)) {
+				if (!srcPartFile->IsComplete(
+					    currentblock->StartOffset, currentblock->EndOffset - 1)) {
 					delete req;
-					throw wxString(CFormat("Asked for incomplete block (%d - %d)")
-						% currentblock->StartOffset % (currentblock->EndOffset - 1));
+					throw wxString(CFormat("Asked for incomplete block (%d - %d)") %
+						       currentblock->StartOffset %
+						       (currentblock->EndOffset - 1));
 				}
-				if (!srcPartFile->ReadData(req->area, currentblock->StartOffset, (uint32)togo)) {
+				if (!srcPartFile->ReadData(
+					    req->area, currentblock->StartOffset, (uint32)togo)) {
 					delete req;
 					throw wxString("Failed to read from requested partfile");
 				}
@@ -294,7 +295,9 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
 				CFileAutoClose file;
 				CPath fullname = srcfile->GetFilePath().JoinPaths(srcfile->GetFileName());
 				if (!file.Open(fullname, CFile::read)) {
-					AddLogLineN(CFormat(_("Failed to open file (%s), removing from list of shared files.")) % srcfile->GetFileName());
+					AddLogLineN(CFormat(_("Failed to open file (%s), removing from list "
+							      "of shared files.")) %
+						    srcfile->GetFileName());
 					theApp->sharedfiles->RemoveFile(srcfile);
 					delete req;
 					throw wxString("Failed to open requested file");
@@ -305,7 +308,8 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
 
 			pFileStruct->nInUse++;
 
-			// Set upload file ID on the client — mirrors eMule's SetUploadFileID call in the main thread path
+			// Set upload file ID on the client — mirrors eMule's SetUploadFileID call in the main
+			// thread path
 			client->SetUploadFileID(srcfile);
 
 			// eMule ref: line 343 — add to m_listFinishedIO (skipping m_listPendingIO)
@@ -318,22 +322,22 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient* client)
 			client->m_DoneBlocks_list.push_front(client->m_BlockRequests_queue.front());
 			client->m_BlockRequests_queue.pop_front();
 		}
-	} catch (const wxString& DEBUG_ONLY(error)) {
-		AddDebugLogLineN(logClient, CFormat("CUploadDiskIOThread: error for client '%s': %s")
-			% client->GetUserName() % error);
+	} catch (const wxString &DEBUG_ONLY(error)) {
+		AddDebugLogLineN(logClient,
+			CFormat("CUploadDiskIOThread: error for client '%s': %s") % client->GetUserName() %
+				error);
 		client->m_bIOError = true;
-	} catch (const CIOFailureException& error) {
+	} catch (const CIOFailureException &error) {
 		AddDebugLogLineC(logClient, "CUploadDiskIOThread: IO failure: " + error.what());
 		client->m_bIOError = true;
-	} catch (const CEOFException&) {
+	} catch (const CEOFException &) {
 		AddDebugLogLineN(logClient, "CUploadDiskIOThread: EOF reading block");
 		client->m_bIOError = true;
 	}
 }
 
-
 // eMule ref: CUploadDiskIOThread::ReadCompletetionRoutine() — line 369
-void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct* req)
+void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct *req)
 {
 	if (req == NULL) {
 		wxASSERT(false);
@@ -347,11 +351,10 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct* req)
 	// by a concurrent disconnect; matches eMule's design (lock scope to line 482).
 	{
 		wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
-		const CClientRefList& uploadList = theApp->uploadqueue->GetUploadingList();
+		const CClientRefList &uploadList = theApp->uploadqueue->GetUploadingList();
 
 		bool bFound = false;
-		for (CClientRefList::const_iterator it = uploadList.begin(); it != uploadList.end(); ++it)
-		{
+		for (CClientRefList::const_iterator it = uploadList.begin(); it != uploadList.end(); ++it) {
 			if (it->GetClient() == req->pClient) {
 				bFound = true;
 				break;
@@ -359,42 +362,43 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct* req)
 		}
 
 		if (!bFound) {
-			AddDebugLogLineN(logClient, "CUploadDiskIOThread::ReadCompletionRoutine: Client not found in uploadlist anymore, discarding block");
+			AddDebugLogLineN(logClient,
+				"CUploadDiskIOThread::ReadCompletionRoutine: Client not found in uploadlist "
+				"anymore, discarding block");
 			bError = true;
 		}
 
 		// eMule ref: lines 408-482 — create packets and send
-		if (!bError)
-		{
-			CUpDownClient* client = req->pClient;
-			CClientTCPSocket* pSocket = client->GetSocket();
+		if (!bError) {
+			CUpDownClient *client = req->pClient;
+			CClientTCPSocket *pSocket = client->GetSocket();
 
 			// eMule ref: lines 420-422 — check socket still connected
 			if (pSocket == NULL || !client->IsConnected()) {
-				AddDebugLogLineN(logClient, "CUploadDiskIOThread::ReadCompletionRoutine: Client has no connected socket");
+				AddDebugLogLineN(logClient,
+					"CUploadDiskIOThread::ReadCompletionRoutine: Client has no connected "
+					"socket");
 				bError = true;
 				client->m_bIOError = true;
 			}
 
-			if (!bError)
-			{
+			if (!bError) {
 				// eMule ref: lines 428-447 — decide compression
 				// Disable compression if socket is starved and data rate is high.
 				// Once disabled for a client, stays disabled for the session.
 				bool bUseCompression = false;
-				if (!client->m_bDisableCompression && req->pFileStruct->bCompress && client->m_byDataCompVer == 1)
-				{
-					if ((sint32)m_listFinishedIO.size() > MAX_FINISHED_REQUESTS_COMPRESSION &&
-						theStats::GetUploadRate() > SLOT_COMPRESSIONCHECK_DATARATE)
-					{
+				if (!client->m_bDisableCompression && req->pFileStruct->bCompress &&
+					client->m_byDataCompVer == 1) {
+					if ((sint32)m_listFinishedIO.size() >
+							MAX_FINISHED_REQUESTS_COMPRESSION &&
+						theStats::GetUploadRate() > SLOT_COMPRESSIONCHECK_DATARATE) {
 						client->m_bDisableCompression = true;
-					}
-					else if (client->GetUploadDatarate() > SLOT_COMPRESSIONCHECK_DATARATE &&
-						     pSocket != NULL && !pSocket->HasQueues(true) && !pSocket->IsBusyQuickCheck())
-					{
+					} else if (client->GetUploadDatarate() >
+							   SLOT_COMPRESSIONCHECK_DATARATE &&
+						   pSocket != NULL && !pSocket->HasQueues(true) &&
+						   !pSocket->IsBusyQuickCheck()) {
 						client->m_bDisableCompression = true;
-					}
-					else {
+					} else {
 						bUseCompression = true;
 					}
 				}
@@ -406,17 +410,23 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct* req)
 				uint32 data_rate = client->GetUploadDatarate();
 				if (bUseCompression) {
 					CreatePackedPackets(req->area.GetBuffer(),
-						req->uStartOffset, req->uEndOffset, packetList,
-						req->pFileStruct->ucMD4FileHash, data_rate);
+						req->uStartOffset,
+						req->uEndOffset,
+						packetList,
+						req->pFileStruct->ucMD4FileHash,
+						data_rate);
 				} else {
 					CreateStandardPackets(req->area.GetBuffer(),
-						req->uStartOffset, req->uEndOffset, packetList,
-						req->pFileStruct->ucMD4FileHash, data_rate);
+						req->uStartOffset,
+						req->uEndOffset,
+						packetList,
+						req->pFileStruct->ucMD4FileHash,
+						data_rate);
 				}
 
 				// eMule ref: lines 478-482 — send all packets
-				for (CPacketList::iterator it = packetList.begin(); it != packetList.end(); ++it)
-				{
+				for (CPacketList::iterator it = packetList.begin(); it != packetList.end();
+					++it) {
 					theStats::AddUploadToSoft(client->GetClientSoft(), it->second);
 					pSocket->SendPacket(it->first, true, false, it->second);
 				}
@@ -432,16 +442,16 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct* req)
 	delete req;
 }
 
-
 // eMule ref: CUploadDiskIOThread::ReleaseOvOpenFile() — line 498
-bool CUploadDiskIOThread::ReleaseOpenFile(OpenFile_Struct* pFileStruct)
+bool CUploadDiskIOThread::ReleaseOpenFile(OpenFile_Struct *pFileStruct)
 {
-	for (std::list<OpenFile_Struct*>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it)
-	{
+	for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end();
+		++it) {
 		if (*it == pFileStruct) {
 			pFileStruct->nInUse--;
 			if (pFileStruct->nInUse == 0) {
-				// eMule: CloseHandle(hFile). We have no persistent handle — CFileArea already closed.
+				// eMule: CloseHandle(hFile). We have no persistent handle — CFileArea already
+				// closed.
 				m_listOpenFiles.erase(it);
 				delete pFileStruct;
 			}
@@ -452,9 +462,13 @@ bool CUploadDiskIOThread::ReleaseOpenFile(OpenFile_Struct* pFileStruct)
 	return false;
 }
 
-
 // eMule 0.70b ref: CUploadDiskIOThread::CreateStandardPackets()
-void CUploadDiskIOThread::CreateStandardPackets(const uint8_t* buffer, uint64 startOffset, uint64 endOffset, CPacketList& packetList, const uint8_t* fileHash, uint32 uploadDatarate)
+void CUploadDiskIOThread::CreateStandardPackets(const uint8_t *buffer,
+	uint64 startOffset,
+	uint64 endOffset,
+	CPacketList &packetList,
+	const uint8_t *fileHash,
+	uint32 uploadDatarate)
 {
 	uint32 togo = (uint32)(endOffset - startOffset);
 
@@ -468,8 +482,8 @@ void CUploadDiskIOThread::CreateStandardPackets(const uint8_t* buffer, uint64 st
 	const uint32 chunkSize = std::min(std::max(uploadDatarate / 8u, 10240u), (uint32)EMBLOCKSIZE);
 	uint32 nPacketSize = (togo <= chunkSize + 2600u) ? togo : chunkSize;
 
-	while (togo){
-		if (togo < nPacketSize*2) {
+	while (togo) {
+		if (togo < nPacketSize * 2) {
 			nPacketSize = togo;
 		}
 
@@ -493,24 +507,30 @@ void CUploadDiskIOThread::CreateStandardPackets(const uint8_t* buffer, uint64 st
 		char *tempbuf = new char[nPacketSize];
 		memfile.Read(tempbuf, nPacketSize);
 		data.Write(tempbuf, nPacketSize);
-		delete [] tempbuf;
-		CPacket* packet = new CPacket(data, (bLargeBlocks ? OP_EMULEPROT : OP_EDONKEYPROT), (bLargeBlocks ? (uint8)OP_SENDINGPART_I64 : (uint8)OP_SENDINGPART));
+		delete[] tempbuf;
+		CPacket *packet = new CPacket(data,
+			(bLargeBlocks ? OP_EMULEPROT : OP_EDONKEYPROT),
+			(bLargeBlocks ? (uint8)OP_SENDINGPART_I64 : (uint8)OP_SENDINGPART));
 		theStats::AddUpOverheadFileRequest(16 + 2 * (bLargeBlocks ? 8 : 4));
 		packetList.push_back(std::make_pair(packet, nPacketSize));
 	}
 }
 
-
 // eMule 0.70b ref: CUploadDiskIOThread::CreatePackedPackets()
-void CUploadDiskIOThread::CreatePackedPackets(const uint8_t* buffer, uint64 startOffset, uint64 endOffset, CPacketList& packetList, const uint8_t* fileHash, uint32 uploadDatarate)
+void CUploadDiskIOThread::CreatePackedPackets(const uint8_t *buffer,
+	uint64 startOffset,
+	uint64 endOffset,
+	CPacketList &packetList,
+	const uint8_t *fileHash,
+	uint32 uploadDatarate)
 {
 	uint32 togo = (uint32)(endOffset - startOffset);
-	uLongf newsize = togo+300;
+	uLongf newsize = togo + 300;
 	CScopedArray<uint8_t> output(newsize);
 	// eMule 0.70b: use compression level 1 instead of 9 — for typical 10240-byte
 	// blocks the size difference is small (~4-12%) but level 1 is 1.5-2.5x faster.
 	uint16 result = compress2(output.get(), &newsize, buffer, togo, 1);
-	if (result != Z_OK || togo <= newsize){
+	if (result != Z_OK || togo <= newsize) {
 		CreateStandardPackets(buffer, startOffset, endOffset, packetList, fileHash, uploadDatarate);
 		return;
 	}
@@ -525,7 +545,7 @@ void CUploadDiskIOThread::CreatePackedPackets(const uint8_t* buffer, uint64 star
 	uint32 nPacketSize = (togo <= chunkSize + 2600u) ? togo : chunkSize;
 
 	while (togo) {
-		if (togo < nPacketSize*2) {
+		if (togo < nPacketSize * 2) {
 			nPacketSize = togo;
 		}
 		togo -= nPacketSize;
@@ -542,17 +562,17 @@ void CUploadDiskIOThread::CreatePackedPackets(const uint8_t* buffer, uint64 star
 		data.WriteUInt32(newsize);
 		char *tempbuf = new char[nPacketSize];
 		memfile.Read(tempbuf, nPacketSize);
-		data.Write(tempbuf,nPacketSize);
-		delete [] tempbuf;
-		CPacket* packet = new CPacket(data, OP_EMULEPROT, (isLargeBlock ? OP_COMPRESSEDPART_I64 : OP_COMPRESSEDPART));
+		data.Write(tempbuf, nPacketSize);
+		delete[] tempbuf;
+		CPacket *packet = new CPacket(
+			data, OP_EMULEPROT, (isLargeBlock ? OP_COMPRESSEDPART_I64 : OP_COMPRESSEDPART));
 
 		// approximate payload size
-		uint32 payloadSize = static_cast<uint32>(
-			(static_cast<uint64>(nPacketSize) * oldSize) /
-			newsize);
+		uint32 payloadSize =
+			static_cast<uint32>((static_cast<uint64>(nPacketSize) * oldSize) / newsize);
 
-		if (togo == 0 && totalPayloadSize+payloadSize < oldSize) {
-			payloadSize = oldSize-totalPayloadSize;
+		if (togo == 0 && totalPayloadSize + payloadSize < oldSize) {
+			payloadSize = oldSize - totalPayloadSize;
 		}
 
 		totalPayloadSize += payloadSize;

@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-
 #ifndef FILEFUNCTIONS_H
 #define FILEFUNCTIONS_H
 
@@ -32,33 +31,32 @@
 
 #include <wx/dir.h>
 
-
 // Dir iterator: needed because wxWidget's wxFindNextFile and
 // wxFindFirstFile are bugged like hell.
 class CDirIterator : private wxDir
 {
 public:
-	enum FileType {
+	enum FileType
+	{
 		FileNoHidden = wxDIR_FILES,
-		DirNoHidden  = wxDIR_DIRS,
+		DirNoHidden = wxDIR_DIRS,
 		File = wxDIR_FILES | wxDIR_HIDDEN,
-		Dir  = wxDIR_DIRS  | wxDIR_HIDDEN,
-		Any  = wxDIR_FILES | wxDIR_DIRS   | wxDIR_HIDDEN
+		Dir = wxDIR_DIRS | wxDIR_HIDDEN,
+		Any = wxDIR_FILES | wxDIR_DIRS | wxDIR_HIDDEN
 	};
 
-	CDirIterator(const CPath& dir);
+	CDirIterator(const CPath &dir);
 	~CDirIterator();
 
 	// extraFlags is OR'd into the wxDir search flags on top of `type`,
 	// so callers that need wxDIR_NO_FOLLOW (or any other wx flag) can
 	// pass it through without this common library knowing about
 	// application-level preferences.
-	CPath GetFirstFile(FileType type, const wxString& mask = "", int extraFlags = 0);
+	CPath GetFirstFile(FileType type, const wxString &mask = "", int extraFlags = 0);
 	CPath GetNextFile();
 
-	bool HasSubDirs(const wxString& spec = "");
+	bool HasSubDirs(const wxString &spec = "");
 };
-
 
 //! Filetypes understood by UnpackArchive
 enum EFileType
@@ -77,7 +75,6 @@ enum EFileType
 	EFT_Error
 };
 
-
 typedef std::pair<bool, EFileType> UnpackResult;
 
 /**
@@ -93,7 +90,7 @@ typedef std::pair<bool, EFileType> UnpackResult;
  * Zip archive, the first file found matching any in the files array (case-
  * insensitive) will be unpacked and overwrite the archive.
  */
-UnpackResult UnpackArchive(const CPath& file, const char* files[]);
+UnpackResult UnpackArchive(const CPath &file, const char *files[]);
 
 #endif
 // File_checked_for_headers

@@ -29,7 +29,6 @@
 #include <wx/string.h>
 #include <wx/strconv.h>
 
-
 class CPath;
 
 /** Criteria used when reading an entire file to an array of strings. */
@@ -48,7 +47,6 @@ enum EReadTextFile
 	txtReadDefault = txtIgnoreEmptyLines | txtIgnoreComments | txtStripWhitespace
 };
 
-
 /**
  * Text file class.
  *
@@ -65,7 +63,8 @@ class CTextFile
 {
 public:
 	// Open modes. Note that these are mutually exclusive!
-	enum EOpenMode {
+	enum EOpenMode
+	{
 		//! Opens the file for reading, if it exists.
 		read,
 		//! Opens the file for writing, overwriting old contents.
@@ -79,17 +78,16 @@ public:
 
 	/** Opens the specified file, returning true on success. */
 	//\{
-	bool Open(const wxString& path, EOpenMode mode);
-	bool Open(const CPath& path, EOpenMode mode);
+	bool Open(const wxString &path, EOpenMode mode);
+	bool Open(const CPath &path, EOpenMode mode);
 	//\}
 
 	/** Returns true if the file is opened. */
-	bool		IsOpened() const;
+	bool IsOpened() const;
 	/** Returns true if GetNextLine has reached the end of the file. */
-	bool		Eof() const;
+	bool Eof() const;
 	/** Closes the file, returning true on success. */
-	bool		Close();
-
+	bool Close();
 
 	/**
 	 * Returns the next line of a readable file.
@@ -101,27 +99,27 @@ public:
 	 * the file will also be returned unless otherwise specified, so this cannot be used to test for EOF.
 	 * Instead, use the function Eof().
 	 **/
-	wxString	GetNextLine(EReadTextFile flags = txtReadAll, const wxMBConv& conv = wxConvLibc, bool* result = NULL);
+	wxString GetNextLine(
+		EReadTextFile flags = txtReadAll, const wxMBConv &conv = wxConvLibc, bool *result = NULL);
 
 	/**
 	 * Writes the line to a writable file, returning true on success.
 	 *
 	 * @param conv The converter used to convert from widechar to multibyte.
 	 */
-	bool		WriteLine(const wxString& line, const wxMBConv& conv = wxConvLibc);
-
+	bool WriteLine(const wxString &line, const wxMBConv &conv = wxConvLibc);
 
 	/** Reads and returns the contents of a text-file, using the specified criteria and converter. */
-	wxArrayString ReadLines(EReadTextFile flags = txtReadDefault, const wxMBConv& conv = wxConvLibc);
+	wxArrayString ReadLines(EReadTextFile flags = txtReadDefault, const wxMBConv &conv = wxConvLibc);
 
 	/** Writes the lines to the file, using the given converter, returning true if no errors occurred. */
-	bool WriteLines(const wxArrayString& lines, const wxMBConv& conv = wxConvLibc);
+	bool WriteLines(const wxArrayString &lines, const wxMBConv &conv = wxConvLibc);
 
 private:
 	//! The actual file object.
-	wxFFile		m_file;
+	wxFFile m_file;
 	//! The mode in with which the file was opened.
-	EOpenMode	m_mode;
+	EOpenMode m_mode;
 };
 
 #endif /* TEXTFILE_H */

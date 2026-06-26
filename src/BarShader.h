@@ -26,7 +26,7 @@
 #ifndef BARSHADER_H
 #define BARSHADER_H
 
-#include "Types.h"	// Needed for uint16 and uint32
+#include "Types.h" // Needed for uint16 and uint32
 #include "MuleColour.h"
 
 class wxRect;
@@ -92,7 +92,7 @@ public:
 	 * Calling this function sets a new filesize, which is the virtual
 	 * length of the bar. This function must be called before any filling.
 	 */
-	void SetFileSize(uint64 fileSize)	{ m_FileSize = fileSize; }
+	void SetFileSize(uint64 fileSize) { m_FileSize = fileSize; }
 
 	/**
 	 * Fills in a range with a certain color.
@@ -106,14 +106,14 @@ public:
 	 * removed or resized. If the value of end is larger than the current
 	 * filesize, the filesize is increased to the value of end.
 	 */
-	void FillRange(uint64 start, uint64 end, const CMuleColour& colour);
+	void FillRange(uint64 start, uint64 end, const CMuleColour &colour);
 
 	/**
 	 * Fill the entire bar with a span of the specified color.
 	 *
 	 * @param colour The colour of the new span.
 	 */
-	void Fill(const CMuleColour& colour)
+	void Fill(const CMuleColour &colour)
 	{
 		m_Content.clear();
 		m_Content.resize(m_Width, colour);
@@ -130,7 +130,7 @@ public:
 	 * This functions draws the bar with the height and width specified
 	 * through either the constructor or with SetWidth() and SetHeight().
 	 */
-	void Draw( wxDC* dc, int iLeft, int iTop, bool bFlat );
+	void Draw(wxDC *dc, int iLeft, int iTop, bool bFlat);
 
 private:
 	/**
@@ -139,15 +139,15 @@ private:
 	void BuildModifiers();
 
 	//! The width of the drawn bar
-	unsigned	m_Width;
+	unsigned m_Width;
 	//! The height of the drawn bar
-	unsigned	m_Height;
+	unsigned m_Height;
 	//! The virtual filesize associated with the bar
-	uint64	m_FileSize;
+	uint64 m_FileSize;
 	//! Pointer to array of modifiers used to create 3D effect. Size is (m_Height+1)/2 when set.
-	double*	m_Modifiers;
+	double *m_Modifiers;
 	//! The current 3d level
-	uint16	m_used3dlevel;
+	uint16 m_used3dlevel;
 
 	// color for each pixel across the width is stored here
 	std::vector<CMuleColour> m_Content;

@@ -25,20 +25,18 @@
 #ifndef AMULE_REMOTE_GUI_H
 #define AMULE_REMOTE_GUI_H
 
-
-#include <deque>				// std::deque for CStatGraphRem rolling-average windows
-#include <functional>				// std::function for the CSharedFilesRem
-								// Reload(yieldCb) shim — matches the daemon-side
-								// signature added in PrefsUnifiedDlg's commit path.
-#include <ec/cpp/RemoteConnect.h>		// Needed for CRemoteConnect
-
+#include <deque>                  // std::deque for CStatGraphRem rolling-average windows
+#include <functional>             // std::function for the CSharedFilesRem
+				  // Reload(yieldCb) shim — matches the daemon-side
+				  // signature added in PrefsUnifiedDlg's commit path.
+#include <ec/cpp/RemoteConnect.h> // Needed for CRemoteConnect
 
 #include "Statistics.h"
 #include "Preferences.h"
 #include "Statistics.h"
 #include "RLE.h"
-#include "SearchList.h"			// Needed for CSearchFile
-#include "kademlia/utils/UInt128.h"	// Needed for CUInt128
+#include "SearchList.h"             // Needed for CSearchFile
+#include "kademlia/utils/UInt128.h" // Needed for CUInt128
 
 class CED2KFileLink;
 class CServer;
@@ -55,7 +53,8 @@ class wxTimerEvent;
 
 #include <wx/dialog.h>
 
-class CEConnectDlg : public wxDialog {
+class CEConnectDlg : public wxDialog
+{
 	wxString host;
 	int port;
 
@@ -65,10 +64,11 @@ class CEConnectDlg : public wxDialog {
 	bool m_force_zlib;
 
 	wxDECLARE_EVENT_TABLE();
+
 public:
 	CEConnectDlg();
 
-	void OnOK(wxCommandEvent& event);
+	void OnOK(wxCommandEvent &event);
 
 	wxString Host() { return host; }
 	int Port() { return port; }
@@ -80,31 +80,40 @@ public:
 };
 
 wxDECLARE_EVENT(wxEVT_EC_INIT_DONE, wxEvent);
-class wxECInitDoneEvent : public wxEvent {
+class wxECInitDoneEvent : public wxEvent
+{
 public:
-	wxECInitDoneEvent() : wxEvent(-1, wxEVT_EC_INIT_DONE)
+	wxECInitDoneEvent()
+	: wxEvent(-1, wxEVT_EC_INIT_DONE)
 	{
 	}
 
-	wxEvent *Clone(void) const
-	{
-		return new wxECInitDoneEvent(*this);
-	}
+	wxEvent *Clone(void) const { return new wxECInitDoneEvent(*this); }
 };
 
-class CPreferencesRem : public CPreferences, public CECPacketHandlerBase {
+class CPreferencesRem : public CPreferences, public CECPacketHandlerBase
+{
 	CRemoteConnect *m_conn;
 	uint32 m_exchange_send_selected_prefs;
 	uint32 m_exchange_recv_selected_prefs;
 
 	virtual void HandlePacket(const CECPacket *packet);
+
 public:
 	CPreferencesRem(CRemoteConnect *);
 
-	bool CreateCategory(Category_Struct *& category, const wxString& name, const CPath& path,
-						const wxString& comment, uint32 color, uint8 prio);
-	bool UpdateCategory(uint8 cat, const wxString& name, const CPath& path,
-						const wxString& comment, uint32 color, uint8 prio);
+	bool CreateCategory(Category_Struct *&category,
+		const wxString &name,
+		const CPath &path,
+		const wxString &comment,
+		uint32 color,
+		uint8 prio);
+	bool UpdateCategory(uint8 cat,
+		const wxString &name,
+		const CPath &path,
+		const wxString &comment,
+		uint32 color,
+		uint8 prio);
 
 	void RemoveCat(uint8 cat);
 
@@ -117,10 +126,11 @@ public:
 // I - type of id of item
 // G - type of tag used to create/update items
 //
-template <class T, class I, class G = CECTag>
-class CRemoteContainer : public CECPacketHandlerBase {
+template <class T, class I, class G = CECTag> class CRemoteContainer : public CECPacketHandlerBase
+{
 protected:
-	enum {
+	enum
+	{
 		IDLE,            // no request in the air
 		STATUS_REQ_SENT, // sent request for item status
 		FULL_REQ_SENT    // sent request for full info
@@ -142,57 +152,58 @@ protected:
 
 	virtual void HandlePacket(const CECPacket *packet)
 	{
-		switch(this->m_state) {
-			case IDLE: wxFAIL; break; // not expecting anything
-			case STATUS_REQ_SENT:
-				// if derived class choose not to proceed, return - but with good status
-				this->m_state = IDLE;
-				if ( this->Phase1Done(packet) ) {
-					if (this->m_inc_tags) {
-						// Incremental tags: new items always carry full info.
-						ProcessUpdate(packet, NULL, m_full_req_tag);
-					} else {
-						// Non-incremental tags: we might get partial info on new items.
-						// Collect all this items in a tag, and then request full info about them.
-						CECPacket req_full(this->m_full_req_cmd);
+		switch (this->m_state) {
+		case IDLE:
+			wxFAIL;
+			break; // not expecting anything
+		case STATUS_REQ_SENT:
+			// if derived class choose not to proceed, return - but with good status
+			this->m_state = IDLE;
+			if (this->Phase1Done(packet)) {
+				if (this->m_inc_tags) {
+					// Incremental tags: new items always carry full info.
+					ProcessUpdate(packet, NULL, m_full_req_tag);
+				} else {
+					// Non-incremental tags: we might get partial info on new items.
+					// Collect all this items in a tag, and then request full info about
+					// them.
+					CECPacket req_full(this->m_full_req_cmd);
 
-						ProcessUpdate(packet, &req_full, m_full_req_tag);
+					ProcessUpdate(packet, &req_full, m_full_req_tag);
 
-						// Phase 3: request full info about files we don't have yet
-						if ( req_full.HasChildTags() ) {
-							m_conn->SendRequest(this, &req_full);
-							this->m_state = FULL_REQ_SENT;
-						}
+					// Phase 3: request full info about files we don't have yet
+					if (req_full.HasChildTags()) {
+						m_conn->SendRequest(this, &req_full);
+						this->m_state = FULL_REQ_SENT;
 					}
 				}
-				break;
-			case FULL_REQ_SENT:
-				ProcessFull(packet);
-				m_state = IDLE;
-				break;
+			}
+			break;
+		case FULL_REQ_SENT:
+			ProcessFull(packet);
+			m_state = IDLE;
+			break;
 		}
 	}
+
 public:
 	CRemoteContainer(CRemoteConnect *conn, bool inc_tags)
-		: m_state(IDLE),
-		  m_conn(conn),
-		  m_item_count(0),
-		  m_inc_tags(inc_tags),
-		  m_full_req_cmd(0),
-		  m_full_req_tag(0)
-	{}
+	: m_state(IDLE)
+	, m_conn(conn)
+	, m_item_count(0)
+	, m_inc_tags(inc_tags)
+	, m_full_req_cmd(0)
+	, m_full_req_tag(0)
+	{
+	}
 
-	virtual ~CRemoteContainer()
-	{}
+	virtual ~CRemoteContainer() {}
 
 	typedef typename std::list<T *>::iterator iterator;
 	iterator begin() { return m_items.begin(); }
 	iterator end() { return m_items.end(); }
 
-	uint32 GetCount()
-	{
-		return m_item_count;
-	}
+	uint32 GetCount() { return m_item_count; }
 
 	void AddItem(T *item)
 	{
@@ -228,8 +239,8 @@ public:
 		if ( !reply.get() ) {
 			return false;
 		}
-		for(typename std::list<T *>::iterator j = this->m_items.begin(); j != this->m_items.end(); j++) {
-			this->DeleteItem(*j);
+		for(typename std::list<T *>::iterator j = this->m_items.begin(); j != this->m_items.end();
+	j++) { this->DeleteItem(*j);
 		}
 
 		Flush();
@@ -241,11 +252,12 @@ public:
 	*/
 	void FullReload(int cmd)
 	{
-		if ( this->m_state != IDLE ) {
+		if (this->m_state != IDLE) {
 			return;
 		}
 
-		for(typename std::list<T *>::iterator j = this->m_items.begin(); j != this->m_items.end(); ++j) {
+		for (typename std::list<T *>::iterator j = this->m_items.begin(); j != this->m_items.end();
+			++j) {
 			this->DeleteItem(*j);
 		}
 
@@ -263,7 +275,7 @@ public:
 	//
 	void DoRequery(int cmd, int tag)
 	{
-		if ( this->m_state != IDLE ) {
+		if (this->m_state != IDLE) {
 			return;
 		}
 		CECPacket req_sts(cmd, m_inc_tags ? EC_DETAIL_INC_UPDATE : EC_DETAIL_UPDATE);
@@ -322,7 +334,7 @@ public:
 		}
 	}
 
-	void RemoveItem(iterator & it)
+	void RemoveItem(iterator &it)
 	{
 		I item_id = GetItemID(*it);
 		// reduce count
@@ -341,12 +353,12 @@ public:
 		std::set<I> core_files;
 		for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
 			const G *tag = static_cast<const G *>(&*it);
-			if ( tag->GetTagName() != req_type ) {
+			if (tag->GetTagName() != req_type) {
 				continue;
 			}
 
 			core_files.insert(tag->ID());
-			if ( m_items_hash.count(tag->ID()) ) {
+			if (m_items_hash.count(tag->ID())) {
 				// Item already known: update it
 				T *item = m_items_hash[tag->ID()];
 				ProcessItemUpdate(tag, item);
@@ -363,36 +375,24 @@ public:
 				}
 			}
 		}
-		for(iterator it = begin(); it != end();) {
+		for (iterator it = begin(); it != end();) {
 			iterator it2 = it++;
-			if ( core_files.count(GetItemID(*it2)) == 0 ) {
+			if (core_files.count(GetItemID(*it2)) == 0) {
 				RemoveItem(it2);
 			}
 		}
 	}
 
-	virtual T *CreateItem(const G *)
-	{
-		return 0;
-	}
-	virtual void DeleteItem(T *)
-	{
-	}
-	virtual I GetItemID(T *)
-	{
-		return I();
-	}
-	virtual void ProcessItemUpdate(const G *, T *)
-	{
-	}
+	virtual T *CreateItem(const G *) { return 0; }
+	virtual void DeleteItem(T *) {}
+	virtual I GetItemID(T *) { return I(); }
+	virtual void ProcessItemUpdate(const G *, T *) {}
 
-	virtual bool Phase1Done(const CECPacket *)
-	{
-		return true;
-	}
+	virtual bool Phase1Done(const CECPacket *) { return true; }
 };
 
-class CServerConnectRem {
+class CServerConnectRem
+{
 	CRemoteConnect *m_Conn;
 	uint32 m_ID;
 
@@ -412,16 +412,18 @@ public:
 	//
 	// Actions
 	//
-	void ConnectToServer(CServer* server);
+	void ConnectToServer(CServer *server);
 	void ConnectToAnyServer();
 	void StopConnectionTry();
 	void Disconnect();
 };
 
-class CServerListRem : public CRemoteContainer<CServer, uint32, CEC_Server_Tag> {
+class CServerListRem : public CRemoteContainer<CServer, uint32, CEC_Server_Tag>
+{
 	uint32 m_TotalUser, m_TotalFile;
 
 	virtual void HandlePacket(const CECPacket *packet);
+
 public:
 	CServerListRem(CRemoteConnect *);
 	void GetUserFileStatus(uint32 &total_user, uint32 &total_file)
@@ -432,18 +434,18 @@ public:
 
 	void UpdateUserFileStatus(CServer *server);
 
-	CServer* GetServerByAddress(const wxString& address, uint16 port) const;
-	CServer* GetServerByIPTCP(uint32 nIP, uint16 nPort) const;
+	CServer *GetServerByAddress(const wxString &address, uint16 port) const;
+	CServer *GetServerByIPTCP(uint32 nIP, uint16 nPort) const;
 
 	//
 	// Actions
 	//
-	void RemoveServer(CServer* server);
+	void RemoveServer(CServer *server);
 	void UpdateServerMetFromURL(wxString url);
-	void SetStaticServer(CServer* server, bool isStatic);
-	void SetServerPrio(CServer* server, uint32 prio);
-	void SaveServerMet() {}	// not needed here
-	void FilterServers() {}	// not needed here
+	void SetStaticServer(CServer *server, bool isStatic);
+	void SetServerPrio(CServer *server, uint32 prio);
+	void SaveServerMet() {} // not needed here
+	void FilterServers() {} // not needed here
 
 	//
 	// template
@@ -454,11 +456,12 @@ public:
 	void ProcessItemUpdate(const CEC_Server_Tag *, CServer *);
 };
 
-class CUpDownClientListRem : public CRemoteContainer<CClientRef, uint32, CEC_UpDownClient_Tag> {
+class CUpDownClientListRem : public CRemoteContainer<CClientRef, uint32, CEC_UpDownClient_Tag>
+{
 public:
 	CUpDownClientListRem(CRemoteConnect *);
 
-	void FilterQueues() {}	// not needed here
+	void FilterQueues() {} // not needed here
 	//
 	// template
 	//
@@ -476,12 +479,14 @@ public:
 	void DropReferencesTo(const CKnownFile *file);
 };
 
-class CDownQueueRem : public std::map<uint32, CPartFile*> {
+class CDownQueueRem : public std::map<uint32, CPartFile *>
+{
 	CRemoteConnect *m_conn;
-public:
-	CDownQueueRem(CRemoteConnect * conn) { m_conn = conn; }
 
-	CPartFile* GetFileByID(uint32 id);
+public:
+	CDownQueueRem(CRemoteConnect *conn) { m_conn = conn; }
+
+	CPartFile *GetFileByID(uint32 id);
 
 	//
 	// User actions
@@ -495,19 +500,21 @@ public:
 	// Actions
 	//
 	void StopUDPRequests() {}
-	void AddFileLinkToDownload(CED2KFileLink*, uint8);
+	void AddFileLinkToDownload(CED2KFileLink *, uint8);
 	bool AddLink(const wxString &link, uint8 category = 0);
-	void AddLinks(const wxArrayString& links, uint8 category = 0);
+	void AddLinks(const wxArrayString &links, uint8 category = 0);
 	void UnsetCompletedFilesExist();
 	void ResetCatParts(int cat);
-	void AddSearchToDownload(CSearchFile* toadd, uint8 category);
-	void ClearCompleted(const ListOfUInts32 & ecids);
+	void AddSearchToDownload(CSearchFile *toadd, uint8 category);
+	void ClearCompleted(const ListOfUInts32 &ecids);
 };
 
-class CSharedFilesRem  : public std::map<uint32, CKnownFile*> {
+class CSharedFilesRem : public std::map<uint32, CKnownFile *>
+{
 	CRemoteConnect *m_conn;
+
 public:
-	CSharedFilesRem(CRemoteConnect * conn);
+	CSharedFilesRem(CRemoteConnect *conn);
 
 	CKnownFile *GetFileByID(uint32 id);
 
@@ -517,9 +524,9 @@ public:
 	// Actions
 	//
 	void Reload(bool sendtoserver = true, bool firstload = false);
-	bool RenameFile(CKnownFile* file, const CPath& newName);
-	void SetFileCommentRating(CKnownFile* file, const wxString& newComment, int8 newRating);
-	void CopyFileList(std::vector<CKnownFile*>& out_list) const;
+	bool RenameFile(CKnownFile *file, const CPath &newName);
+	void SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating);
+	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 
 	// Remote-side shim for the daemon's cancellable-progress Reload
 	// added in the shared-dirs deferred-apply flow. The actual file
@@ -527,7 +534,8 @@ public:
 	// existing EC-driven Reload(sendtoserver=true) and ignore the
 	// progress callback. Returns true (never "cancelled") because
 	// the local-thread part of the operation is essentially instant.
-	bool Reload(std::function<bool(size_t)> /* yieldCb */) {
+	bool Reload(std::function<bool(size_t)> /* yieldCb */)
+	{
 		Reload();
 		return true;
 	}
@@ -538,13 +546,15 @@ public:
 	void EnableDirectoryWatcher(bool /* enable */) {}
 };
 
-class CKnownFilesRem : public CRemoteContainer<CKnownFile, uint32, CEC_SharedFile_Tag> {
-	CKnownFile * CreateKnownFile(const CEC_SharedFile_Tag *tag, CKnownFile *file = NULL);
-	CPartFile  * CreatePartFile(const CEC_PartFile_Tag *tag);
+class CKnownFilesRem : public CRemoteContainer<CKnownFile, uint32, CEC_SharedFile_Tag>
+{
+	CKnownFile *CreateKnownFile(const CEC_SharedFile_Tag *tag, CKnownFile *file = NULL);
+	CPartFile *CreatePartFile(const CEC_PartFile_Tag *tag);
 
-	bool m_initialUpdate;	// improved handling for first data transfer
+	bool m_initialUpdate; // improved handling for first data transfer
+
 public:
-	CKnownFilesRem(CRemoteConnect * conn);
+	CKnownFilesRem(CRemoteConnect *conn);
 
 	CKnownFile *FindKnownFileByID(uint32 id) { return GetByID(id); }
 
@@ -555,7 +565,11 @@ public:
 	//
 	// template
 	//
-	CKnownFile *CreateItem(const CEC_SharedFile_Tag *) { wxFAIL; return NULL; }	// unused, required by template
+	CKnownFile *CreateItem(const CEC_SharedFile_Tag *)
+	{
+		wxFAIL;
+		return NULL;
+	} // unused, required by template
 	void DeleteItem(CKnownFile *);
 	uint32 GetItemID(CKnownFile *);
 	void ProcessItemUpdate(const CEC_SharedFile_Tag *, CKnownFile *);
@@ -565,8 +579,10 @@ public:
 	void ProcessItemUpdatePartfile(const CEC_PartFile_Tag *, CPartFile *);
 };
 
-class CIPFilterRem {
+class CIPFilterRem
+{
 	CRemoteConnect *m_conn;
+
 public:
 	CIPFilterRem(CRemoteConnect *conn);
 
@@ -578,8 +594,10 @@ public:
 	bool IsReady() const { return true; }
 };
 
-class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag> {
+class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>
+{
 	virtual void HandlePacket(const CECPacket *);
+
 public:
 	CSearchListRem(CRemoteConnect *);
 
@@ -587,15 +605,15 @@ public:
 	typedef std::map<wxUIntPtr, CSearchResultList> ResultMap;
 	ResultMap m_results;
 
-	const CSearchResultList& GetSearchResults(wxUIntPtr nSearchID);
+	const CSearchResultList &GetSearchResults(wxUIntPtr nSearchID);
 	void RemoveResults(wxUIntPtr nSearchID);
-	const CSearchResultList& GetSearchResults(wxUIntPtr nSearchID) const;
+	const CSearchResultList &GetSearchResults(wxUIntPtr nSearchID) const;
 	//
 	// Actions
 	//
 
-	wxString StartNewSearch(uint32* nSearchID, SearchType search_type,
-		const CSearchList::CSearchParams& params);
+	wxString StartNewSearch(
+		uint32 *nSearchID, SearchType search_type, const CSearchList::CSearchParams &params);
 
 	void StopSearch(bool globalOnly = false);
 
@@ -616,17 +634,20 @@ public:
 	bool Phase1Done(const CECPacket *);
 };
 
-class CFriendListRem : public CRemoteContainer<CFriend, uint32, CEC_Friend_Tag> {
+class CFriendListRem : public CRemoteContainer<CFriend, uint32, CEC_Friend_Tag>
+{
 	virtual void HandlePacket(const CECPacket *);
+
 public:
 	CFriendListRem(CRemoteConnect *);
 
-	void		AddFriend(const CClientRef& toadd);
-	void		AddFriend(const CMD4Hash& userhash, uint32 lastUsedIP, uint32 lastUsedPort, const wxString& name);
-	void		RemoveFriend(CFriend* toremove);
-	void		RequestSharedFileList(CFriend* Friend);
-	void		RequestSharedFileList(CClientRef& client);
-	void		SetFriendSlot(CFriend* Friend, bool new_state);
+	void AddFriend(const CClientRef &toadd);
+	void AddFriend(
+		const CMD4Hash &userhash, uint32 lastUsedIP, uint32 lastUsedPort, const wxString &name);
+	void RemoveFriend(CFriend *toremove);
+	void RequestSharedFileList(CFriend *Friend);
+	void RequestSharedFileList(CClientRef &client);
+	void SetFriendSlot(CFriend *Friend, bool new_state);
 
 	//
 	// template
@@ -637,8 +658,10 @@ public:
 	void ProcessItemUpdate(const CEC_Friend_Tag *, CFriend *);
 };
 
-class CStatsUpdaterRem : public CECPacketHandlerBase {
+class CStatsUpdaterRem : public CECPacketHandlerBase
+{
 	virtual void HandlePacket(const CECPacket *);
+
 public:
 	CStatsUpdaterRem() {}
 };
@@ -650,24 +673,28 @@ public:
 // only the new tail through CamuleDlg::AddServerMessageLine so the GUI
 // text control behaves the same as the monolithic build (append-only,
 // no scroll reset). EC_OP_CLEAR_SERVERINFO is used on the Reset button.
-class CServerInfoHandlerRem : public CECPacketHandlerBase {
+class CServerInfoHandlerRem : public CECPacketHandlerBase
+{
 public:
 	wxString m_seenSoFar;
 	virtual void HandlePacket(const CECPacket *);
 };
 
-class CStatTreeRem : public CECPacketHandlerBase {
+class CStatTreeRem : public CECPacketHandlerBase
+{
 	virtual void HandlePacket(const CECPacket *);
 	CRemoteConnect *m_conn;
+
 public:
-	CStatTreeRem(CRemoteConnect * conn) { m_conn = conn; }
+	CStatTreeRem(CRemoteConnect *conn) { m_conn = conn; }
 	void DoRequery();
 };
 
 // Async EC poller that pulls the rolling-window graph history from the
 // daemon and feeds CStatisticsDlg / CKadDlg via the same UpdateStatGraphs
 // pipeline monolithic amule uses.
-class CStatGraphRem : public CECPacketHandlerBase {
+class CStatGraphRem : public CECPacketHandlerBase
+{
 	virtual void HandlePacket(const CECPacket *);
 	CRemoteConnect *m_conn;
 	// Last timestamp the daemon reported; sent back on the next request
@@ -684,31 +711,40 @@ class CStatGraphRem : public CECPacketHandlerBase {
 	std::deque<float> m_winDl;
 	std::deque<float> m_winUp;
 	std::deque<float> m_winKad;
+
 public:
 	// Peak connection count seen so far. CLIENT_GUI doesn't get the
 	// daemon's CStatTreeItemMaxValue accessor, so we track it locally
 	// off the connection samples we already unpack for the graphs.
 	uint32 m_peakConnections;
+
 public:
-	CStatGraphRem(CRemoteConnect * conn)
-		: m_conn(conn), m_lastTimestamp(0.0), m_peakConnections(0) {}
+	CStatGraphRem(CRemoteConnect *conn)
+	: m_conn(conn)
+	, m_lastTimestamp(0.0)
+	, m_peakConnections(0)
+	{
+	}
 	void DoRequery();
 };
 
-class CListenSocketRem {
+class CListenSocketRem
+{
 	uint32 m_peak_connections;
+
 public:
 	uint32 GetPeakConnections() { return m_peak_connections; }
 };
 
-class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppCommon {
-	wxTimer*	poll_timer;
+class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppCommon
+{
+	wxTimer *poll_timer;
 	// Watchdog on the initial EC connect attempt. Started when the user
 	// clicks OK on the connection dialog; fires if no OnECConnection
 	// event has arrived within the timeout, so a wrong host / firewalled
 	// daemon doesn't leave amulegui "not responding" indefinitely with
 	// no visible window while TCP SYN silently times out over minutes.
-	wxTimer*	connect_timeout_timer;
+	wxTimer *connect_timeout_timer;
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 
@@ -723,18 +759,18 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	void OnFatalException();
 #endif
 
-	void OnPollTimer(wxTimerEvent& evt);
-	void OnConnectTimeout(wxTimerEvent& evt);
+	void OnPollTimer(wxTimerEvent &evt);
+	void OnConnectTimeout(wxTimerEvent &evt);
 
-	void OnECConnection(wxEvent& event);
-	void OnECInitDone(wxEvent& event);
-	void OnNotifyEvent(CMuleGUIEvent& evt);
-	void OnFinishedHTTPDownload(CMuleInternalEvent& event);
+	void OnECConnection(wxEvent &event);
+	void OnECInitDone(wxEvent &event);
+	void OnNotifyEvent(CMuleGUIEvent &evt);
+	void OnFinishedHTTPDownload(CMuleInternalEvent &event);
 
 	CStatsUpdaterRem m_stats_updater;
 	CServerInfoHandlerRem m_serverinfo_handler;
-public:
 
+public:
 	void Startup();
 
 	bool ShowConnectionDialog();
@@ -757,7 +793,7 @@ public:
 
 	CPreferencesRem *glob_prefs;
 
-	CAsioService*	m_AsioService;
+	CAsioService *m_AsioService;
 
 	//
 	// Provide access to core data thru EC
@@ -771,8 +807,8 @@ public:
 	CSearchListRem *searchlist;
 	CFriendListRem *friendlist;
 	CListenSocketRem *listensocket;
-	CStatTreeRem * stattree;
-	CStatGraphRem * statgraphs;
+	CStatTreeRem *stattree;
+	CStatGraphRem *statgraphs;
 
 	CStatistics *m_statistics;
 
@@ -784,41 +820,42 @@ public:
 	wxString GetServerLog(bool reset = false);
 
 	void AddServerMessageLine(wxString &msg);
-	void AddRemoteLogLine(const wxString& line);
+	void AddRemoteLogLine(const wxString &line);
 
-	void SetOSFiles(wxString ) { /* onlinesig is created on remote side */ }
+	void SetOSFiles(wxString) { /* onlinesig is created on remote side */ }
 
 	bool IsConnected() const { return IsConnectedED2K() || IsConnectedKad(); }
 	bool IsFirewalled() const;
 	bool IsConnectedED2K() const;
 	bool IsConnectedKad() const
 	{
-		return ((m_ConnState & CONNECTED_KAD_OK)
-				|| (m_ConnState & CONNECTED_KAD_FIREWALLED));
+		return ((m_ConnState & CONNECTED_KAD_OK) || (m_ConnState & CONNECTED_KAD_FIREWALLED));
 	}
 	bool IsFirewalledKad() const { return (m_ConnState & CONNECTED_KAD_FIREWALLED) != 0; }
 
-	bool IsKadRunning() const { return ((m_ConnState & CONNECTED_KAD_OK)
-				|| (m_ConnState & CONNECTED_KAD_FIREWALLED)
-				|| (m_ConnState & CONNECTED_KAD_NOT)); }
+	bool IsKadRunning() const
+	{
+		return ((m_ConnState & CONNECTED_KAD_OK) || (m_ConnState & CONNECTED_KAD_FIREWALLED) ||
+			(m_ConnState & CONNECTED_KAD_NOT));
+	}
 
 	// Check Kad state (UDP)
-	bool IsFirewalledKadUDP() const		{ return theStats::IsFirewalledKadUDP(); }
-	bool IsKadRunningInLanMode() const	{ return theStats::IsKadRunningInLanMode(); }
+	bool IsFirewalledKadUDP() const { return theStats::IsFirewalledKadUDP(); }
+	bool IsKadRunningInLanMode() const { return theStats::IsKadRunningInLanMode(); }
 	// Kad stats
-	uint32 GetKadUsers() const			{ return theStats::GetKadUsers(); }
-	uint32 GetKadFiles() const			{ return theStats::GetKadFiles(); }
-	uint32 GetKadIndexedSources() const	{ return theStats::GetKadIndexedSources(); }
-	uint32 GetKadIndexedKeywords() const{ return theStats::GetKadIndexedKeywords(); }
-	uint32 GetKadIndexedNotes() const	{ return theStats::GetKadIndexedNotes(); }
-	uint32 GetKadIndexedLoad() const	{ return theStats::GetKadIndexedLoad(); }
-	const CUInt128&	GetKadID() const	{ return m_kadID; }
+	uint32 GetKadUsers() const { return theStats::GetKadUsers(); }
+	uint32 GetKadFiles() const { return theStats::GetKadFiles(); }
+	uint32 GetKadIndexedSources() const { return theStats::GetKadIndexedSources(); }
+	uint32 GetKadIndexedKeywords() const { return theStats::GetKadIndexedKeywords(); }
+	uint32 GetKadIndexedNotes() const { return theStats::GetKadIndexedNotes(); }
+	uint32 GetKadIndexedLoad() const { return theStats::GetKadIndexedLoad(); }
+	const CUInt128 &GetKadID() const { return m_kadID; }
 	// True IP of machine
-	uint32 GetKadIPAddress() const		{ return theStats::GetKadIPAddress(); }
+	uint32 GetKadIPAddress() const { return theStats::GetKadIPAddress(); }
 	// Buddy status
-	uint8	GetBuddyStatus() const		{ return theStats::GetBuddyStatus(); }
-	uint32	GetBuddyIP() const			{ return theStats::GetBuddyIP(); }
-	uint32	GetBuddyPort() const		{ return theStats::GetBuddyPort(); }
+	uint8 GetBuddyStatus() const { return theStats::GetBuddyStatus(); }
+	uint32 GetBuddyIP() const { return theStats::GetBuddyIP(); }
+	uint32 GetBuddyPort() const { return theStats::GetBuddyPort(); }
 
 	void StartKad();
 	void StopKad();
@@ -826,7 +863,7 @@ public:
 	/** Bootstraps kad from the specified IP (must be in hostorder). */
 	void BootstrapKad(uint32 ip, uint16 port);
 	/** Updates the nodes.dat file from the specified url. */
-	void UpdateNotesDat(const wxString& str);
+	void UpdateNotesDat(const wxString &str);
 
 	void DisconnectED2K();
 
@@ -839,11 +876,11 @@ public:
 	uint8 m_ConnState;
 	uint32 m_clientID;
 
-	wxLocale	m_locale;
+	wxLocale m_locale;
 	// This KnownFile collects all currently uploading clients for display in the upload list control
-	CKnownFile * m_allUploadingKnownFile;
+	CKnownFile *m_allUploadingKnownFile;
 
-	CUInt128	m_kadID;
+	CUInt128 m_kadID;
 
 	wxDECLARE_EVENT_TABLE();
 };

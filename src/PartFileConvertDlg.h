@@ -37,26 +37,26 @@ class CPartFileConvertDlg : public wxDialog
 public:
 	CPartFileConvertDlg(wxWindow *parent);
 
-	static void	ShowGUI(wxWindow *parent);
-	static void	UpdateProgress(float percent, wxString text = "", wxString header = "");
-	static void	UpdateJobInfo(ConvertInfo& info);
-	static void	RemoveJobInfo(unsigned id);
-	static void	ClearInfo();
-	static void	CloseGUI();
+	static void ShowGUI(wxWindow *parent);
+	static void UpdateProgress(float percent, wxString text = "", wxString header = "");
+	static void UpdateJobInfo(ConvertInfo &info);
+	static void RemoveJobInfo(unsigned id);
+	static void ClearInfo();
+	static void CloseGUI();
 
 protected:
-	wxGauge*	m_pb_current;
-	wxListCtrl*	m_joblist;
+	wxGauge *m_pb_current;
+	wxListCtrl *m_joblist;
 
-	void	OnAddFolder(wxCommandEvent& event);
-	void	OnClose(wxCloseEvent& event);
-	void	OnCloseButton(wxCommandEvent& event);
-	void	RetrySel(wxCommandEvent& event);
-	void	RemoveSel(wxCommandEvent& event);
+	void OnAddFolder(wxCommandEvent &event);
+	void OnClose(wxCloseEvent &event);
+	void OnCloseButton(wxCommandEvent &event);
+	void RetrySel(wxCommandEvent &event);
+	void RemoveSel(wxCommandEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
 
-	static CPartFileConvertDlg*	s_convert_gui;
+	static CPartFileConvertDlg *s_convert_gui;
 };
 
 #endif /* PARTFILECONVERTDLG_H */

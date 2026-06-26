@@ -36,33 +36,39 @@ class CECSocket;
 /**
  * High level EC packet handler class
  */
-class CECPacket : public CECEmptyTag {
+class CECPacket : public CECEmptyTag
+{
 	friend class CECSocket;
-	public:
-		CECPacket(ec_opcode_t opCode, EC_DETAIL_LEVEL detail_level = EC_DETAIL_FULL)
-		: CECEmptyTag(0), m_opCode(opCode)
-		{
-			// since EC_DETAIL_FULL is default - no point transmit it
-			if ( detail_level != EC_DETAIL_FULL ) {
-				AddTag(CECTag(EC_TAG_DETAIL_LEVEL, (uint64)detail_level));
-			}
+
+public:
+	CECPacket(ec_opcode_t opCode, EC_DETAIL_LEVEL detail_level = EC_DETAIL_FULL)
+	: CECEmptyTag(0)
+	, m_opCode(opCode)
+	{
+		// since EC_DETAIL_FULL is default - no point transmit it
+		if (detail_level != EC_DETAIL_FULL) {
+			AddTag(CECTag(EC_TAG_DETAIL_LEVEL, (uint64)detail_level));
 		}
+	}
 
-		ec_opcode_t	GetOpCode(void) const { return m_opCode; }
-		uint32_t		GetPacketLength(void) const { return CECTag::GetTagLen(); }
-		EC_DETAIL_LEVEL GetDetailLevel() const
-		{
-			const CECTag *tag = GetTagByName(EC_TAG_DETAIL_LEVEL);
-			return (tag) ? (EC_DETAIL_LEVEL)tag->GetInt() : EC_DETAIL_FULL;
-		}
-		void DebugPrint(bool incoming, uint32 trueSize = 0) const;
+	ec_opcode_t GetOpCode(void) const { return m_opCode; }
+	uint32_t GetPacketLength(void) const { return CECTag::GetTagLen(); }
+	EC_DETAIL_LEVEL GetDetailLevel() const
+	{
+		const CECTag *tag = GetTagByName(EC_TAG_DETAIL_LEVEL);
+		return (tag) ? (EC_DETAIL_LEVEL)tag->GetInt() : EC_DETAIL_FULL;
+	}
+	void DebugPrint(bool incoming, uint32 trueSize = 0) const;
 
-	private:
-		CECPacket()	: CECEmptyTag() {}
+private:
+	CECPacket()
+	: CECEmptyTag()
+	{
+	}
 
-		bool ReadFromSocket(CECSocket& socket);
-		bool WritePacket(CECSocket& socket) const;
-		ec_opcode_t	m_opCode;
+	bool ReadFromSocket(CECSocket &socket);
+	bool WritePacket(CECSocket &socket) const;
+	ec_opcode_t m_opCode;
 };
 
 #endif /* ECPACKET_H */
