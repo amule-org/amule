@@ -1,0 +1,37 @@
+name: clang-format
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'unittests/**'
+      - '.clang-format'
+      - '.github/workflows/clang-format.yml'
+  pull_request:
+    branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'unittests/**'
+      - '.clang-format'
+      - '.github/workflows/clang-format.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  clang-format:
+    name: Check clang-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check src/
+        uses: jidicula/clang-format-action@v4.18.0
+        with:
+          clang-format-version: '18'
+          check-path: 'src'
+      - name: Check unittests/
+        uses: jidicula/clang-format-action@v4.18.0
+        with:
+          clang-format-version: '18'
+          check-path: 'unittests'
