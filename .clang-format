@@ -1,0 +1,43 @@
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+AccessModifierOffset: -8
+AlignAfterOpenBracket: DontAlign
+AlignEscapedNewlines: DontAlign
+AllowShortFunctionsOnASingleLine: Inline
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel:  false
+  AfterClass:      true
+  AfterControlStatement: false
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterNamespace:  true
+  AfterObjCDeclaration: false
+  AfterStruct:     true
+  AfterUnion:      true
+  AfterExternBlock: false
+  BeforeCatch:     false
+  BeforeElse:      false
+  IndentBraces:    false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+BreakConstructorInitializers: BeforeComma
+ConstructorInitializerIndentWidth: 0
+ContinuationIndentWidth: 8
+ColumnLimit:     110
+EmptyLineBeforeAccessModifier: Always
+MacroBlockBegin: '^wx(BEGIN_EVENT_TABLE|BEGIN_EVENT_TABLE_TEMPLATE)'
+MacroBlockEnd:   '^wxEND_EVENT_TABLE'
+Cpp11BracedListStyle: false
+NamespaceIndentation: None
+PointerAlignment: Right
+SortIncludes:    false
+IndentWidth:     8
+TabWidth:        8
+UseTab:          ForContinuationAndIndentation
+...
+
