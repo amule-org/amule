@@ -25,15 +25,15 @@
 #ifndef LIBWEBCOMMON_ROLE_H
 #define LIBWEBCOMMON_ROLE_H
 
-
 // Role enumeration shared between the REST API dispatcher and the JWT
 // machinery. Kept in its own tiny header so the rest of libwebcommon
 // (and the API handlers that consume it) can refer to roles without
 // pulling in the full Jwt header.
-enum class Role {
-	PUBLIC,   // No credentials required (login, version)
-	GUEST,    // Authenticated as any role (read-only endpoints)
-	ADMIN     // Authenticated as admin (mutating endpoints)
+enum class Role
+{
+	PUBLIC, // No credentials required (login, version)
+	GUEST,  // Authenticated as any role (read-only endpoints)
+	ADMIN   // Authenticated as admin (mutating endpoints)
 };
 
 #endif // LIBWEBCOMMON_ROLE_H

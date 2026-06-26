@@ -28,7 +28,6 @@
 #include <wx/string.h>
 #include <cstdint>
 
-
 // Streaming JSON output. Appends to an internal or caller-owned wxString
 // buffer; the buffer holds JSON text suitable for UTF-8 emission via
 // wxString::utf8_str() at flush time.
@@ -44,7 +43,8 @@
 // Commas between siblings are inserted automatically. Calling Key()
 // outside an object, or omitting it inside one, is a programmer error
 // (no runtime check; tests cover the legal patterns).
-class CJsonWriter {
+class CJsonWriter
+{
 public:
 	CJsonWriter();
 	explicit CJsonWriter(wxString *external_buf);
@@ -73,11 +73,11 @@ public:
 	const wxString &GetBuffer() const { return *m_buf; }
 
 private:
-	wxString  m_internal;
+	wxString m_internal;
 	wxString *m_buf;
 	// True when the next value/key/closer must be preceded by a comma.
 	// Reset by BeginObject/BeginArray/Key.
-	bool      m_needs_comma;
+	bool m_needs_comma;
 
 	void MaybeComma();
 	void WriteEscapedString(const wxString &s);

@@ -33,13 +33,10 @@
 #include <thread>
 #include <vector>
 
-
 using namespace muleunit;
 using namespace webapi;
 
-
 DECLARE_SIMPLE(State)
-
 
 TEST(State, FreshHasNoSnapshot)
 {
@@ -48,7 +45,6 @@ TEST(State, FreshHasNoSnapshot)
 	ASSERT_FALSE(s.EcConnected());
 	ASSERT_EQUALS(static_cast<std::time_t>(0), s.SnapshotAt());
 }
-
 
 TEST(State, MarkTickSuccessFlagsFreshness)
 {
@@ -62,7 +58,6 @@ TEST(State, MarkTickSuccessFlagsFreshness)
 	ASSERT_TRUE(s.SnapshotAt() >= before);
 	ASSERT_TRUE(s.SnapshotAt() <= after);
 }
-
 
 TEST(State, MarkTickFailurePreservesSnapshotAt)
 {
@@ -81,38 +76,36 @@ TEST(State, MarkTickFailurePreservesSnapshotAt)
 	ASSERT_EQUALS(first_snapshot_at, s.SnapshotAt());
 }
 
-
 TEST(State, WriteStatusRoundtrip)
 {
 	CState s;
 	StatusSnapshot in;
-	in.ed2k_state     = "connected";
-	in.kad_state      = "connecting";
-	in.ed2k_lowid     = true;
+	in.ed2k_state = "connected";
+	in.kad_state = "connecting";
+	in.ed2k_lowid = true;
 	in.kad_firewalled = false;
-	in.server_name    = "Some Server";
-	in.server_ip      = "192.0.2.42";
-	in.server_port    = 4242;
-	in.download_bps   = 12345;
-	in.upload_bps     = 6789;
-	in.ul_queue_len   = 3;
+	in.server_name = "Some Server";
+	in.server_ip = "192.0.2.42";
+	in.server_port = 4242;
+	in.download_bps = 12345;
+	in.upload_bps = 6789;
+	in.ul_queue_len = 3;
 	in.total_src_count = 17;
 	s.WriteStatus(in);
 
 	const StatusSnapshot out = s.Status();
-	ASSERT_EQUALS(std::string("connected"),  out.ed2k_state);
+	ASSERT_EQUALS(std::string("connected"), out.ed2k_state);
 	ASSERT_EQUALS(std::string("connecting"), out.kad_state);
-	ASSERT_TRUE (out.ed2k_lowid);
+	ASSERT_TRUE(out.ed2k_lowid);
 	ASSERT_FALSE(out.kad_firewalled);
 	ASSERT_EQUALS(std::string("Some Server"), out.server_name);
-	ASSERT_EQUALS(std::string("192.0.2.42"),  out.server_ip);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(4242),  out.server_port);
+	ASSERT_EQUALS(std::string("192.0.2.42"), out.server_ip);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), out.server_port);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(12345), out.download_bps);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(6789),  out.upload_bps);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(3),  out.ul_queue_len);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(6789), out.upload_bps);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(3), out.ul_queue_len);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(17), out.total_src_count);
 }
-
 
 TEST(State, MutateDownloadsRoundtripAndFind)
 {
@@ -126,8 +119,8 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 		a.is_downloading = true;
 		a.download.size_done = 250;
 		a.priority = "high";
-		a.download.status   = "downloading";
-		a.download.percent  = 25.0;
+		a.download.status = "downloading";
+		a.download.percent = 25.0;
 		cache.emplace(a.ecid, a);
 
 		FileSnapshot b;
@@ -145,8 +138,10 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
 	std::string foo_name, bar_name;
 	for (const auto &f : out) {
-		if (f.ecid == 100) foo_name = f.name;
-		if (f.ecid == 200) bar_name = f.name;
+		if (f.ecid == 100)
+			foo_name = f.name;
+		if (f.ecid == 200)
+			bar_name = f.name;
 	}
 	ASSERT_EQUALS(std::string("foo.iso"), foo_name);
 	ASSERT_EQUALS(std::string("bar.iso"), bar_name);
@@ -162,7 +157,6 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 	ASSERT_FALSE(s.FindDownload("0000000000000000000000000000000c", miss));
 }
 
-
 TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 {
 	// `decoded_gaps` + `decoded_part_sources` are populated by the
@@ -177,24 +171,24 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 		a.ecid = 42;
 		a.hash = "dddd3333dddd3333dddd3333dddd3333";
 		a.name = "with-rle.iso";
-		a.size = 9728000ull * 3;   // exactly 3 parts
+		a.size = 9728000ull * 3; // exactly 3 parts
 		a.is_downloading = true;
 		// One gap covering byte ranges 100..200 and 9728000..9800000:
 		// the first lies entirely in part 0, the second entirely in
 		// part 1.
-		a.download.decoded_gaps        = {100ull, 200ull, 9728000ull, 9800000ull};
+		a.download.decoded_gaps = { 100ull, 200ull, 9728000ull, 9800000ull };
 		// Three parts with source counts [5, 0, 7].
-		a.download.decoded_part_sources = {5, 0, 7};
+		a.download.decoded_part_sources = { 5, 0, 7 };
 		cache.emplace(a.ecid, a);
 	});
 
 	const auto out = s.Downloads();
 	ASSERT_EQUALS(static_cast<size_t>(1), out.size());
 	ASSERT_EQUALS(static_cast<size_t>(4), out[0].download.decoded_gaps.size());
-	ASSERT_EQUALS(static_cast<std::uint64_t>(100),       out[0].download.decoded_gaps[0]);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(200),       out[0].download.decoded_gaps[1]);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000),   out[0].download.decoded_gaps[2]);
-	ASSERT_EQUALS(static_cast<std::uint64_t>(9800000),   out[0].download.decoded_gaps[3]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(100), out[0].download.decoded_gaps[0]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(200), out[0].download.decoded_gaps[1]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000), out[0].download.decoded_gaps[2]);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(9800000), out[0].download.decoded_gaps[3]);
 	ASSERT_EQUALS(static_cast<size_t>(3), out[0].download.decoded_part_sources.size());
 	ASSERT_EQUALS(static_cast<std::uint16_t>(5), out[0].download.decoded_part_sources[0]);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(0), out[0].download.decoded_part_sources[1]);
@@ -208,7 +202,6 @@ TEST(State, MutateDownloadsDecodedRleFieldsRoundtrip)
 	ASSERT_EQUALS(static_cast<size_t>(3), via_find.download.decoded_part_sources.size());
 	ASSERT_EQUALS(static_cast<std::uint16_t>(7), via_find.download.decoded_part_sources[2]);
 }
-
 
 TEST(State, MutateClientsAndSharedRoundtrip)
 {
@@ -241,7 +234,6 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Shared().size());
 	ASSERT_EQUALS(std::string("shared.iso"), s.Shared()[0].name);
 }
-
 
 TEST(State, WriteKadAndPreferencesRoundtrip)
 {
@@ -293,10 +285,9 @@ TEST(State, WriteKadAndPreferencesRoundtrip)
 
 	const auto c_out = s.Categories();
 	ASSERT_EQUALS(static_cast<size_t>(2), c_out.size());
-	ASSERT_EQUALS(std::string("All"),    c_out[0].name);
+	ASSERT_EQUALS(std::string("All"), c_out[0].name);
 	ASSERT_EQUALS(std::string("Movies"), c_out[1].name);
 }
-
 
 TEST(State, WriteServersRoundtripAndOrder)
 {
@@ -318,10 +309,9 @@ TEST(State, WriteServersRoundtripAndOrder)
 	// refresher ticks.
 	const auto out = s.Servers();
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
-	ASSERT_EQUALS(std::string("first-by-ecid"),  out[0].name);
+	ASSERT_EQUALS(std::string("first-by-ecid"), out[0].name);
 	ASSERT_EQUALS(std::string("second-by-ecid"), out[1].name);
 }
-
 
 TEST(State, AppendAmuleLogUncappedHistory)
 {
@@ -350,12 +340,11 @@ TEST(State, AppendAmuleLogUncappedHistory)
 	const auto out = s.AmuleLog();
 	ASSERT_EQUALS(static_cast<size_t>(2000), out.size());
 	// Oldest-first preserved.
-	ASSERT_EQUALS(std::string("first-0"),     out[0]);
-	ASSERT_EQUALS(std::string("first-999"),   out[999]);
-	ASSERT_EQUALS(std::string("second-0"),    out[1000]);
-	ASSERT_EQUALS(std::string("second-999"),  out[1999]);
+	ASSERT_EQUALS(std::string("first-0"), out[0]);
+	ASSERT_EQUALS(std::string("first-999"), out[999]);
+	ASSERT_EQUALS(std::string("second-0"), out[1000]);
+	ASSERT_EQUALS(std::string("second-999"), out[1999]);
 }
-
 
 TEST(State, WriteServerInfoRoundtrip)
 {
@@ -375,7 +364,6 @@ TEST(State, WriteServerInfoRoundtrip)
 	s.WriteServerInfo(replacement);
 	ASSERT_EQUALS(std::string("totally different\n"), s.ServerInfo().text);
 }
-
 
 TEST(State, WriteStatsTreeRoundtripRecursive)
 {
@@ -400,38 +388,36 @@ TEST(State, WriteStatsTreeRoundtripRecursive)
 	s.WriteStatsTree(root);
 
 	const StatsTreeNode out = s.StatsTree();
-	ASSERT_EQUALS(std::string("root"),                                    out.label);
-	ASSERT_EQUALS(static_cast<size_t>(2),                                 out.children.size());
-	ASSERT_EQUALS(std::string("Transfer"),                                out.children[0].label);
-	ASSERT_EQUALS(static_cast<size_t>(1),                                 out.children[0].children.size());
-	ASSERT_EQUALS(std::string("Total bytes transferred: 12.3 GiB"),       out.children[0].children[0].label);
-	ASSERT_EQUALS(std::string("Connection"),                              out.children[1].label);
+	ASSERT_EQUALS(std::string("root"), out.label);
+	ASSERT_EQUALS(static_cast<size_t>(2), out.children.size());
+	ASSERT_EQUALS(std::string("Transfer"), out.children[0].label);
+	ASSERT_EQUALS(static_cast<size_t>(1), out.children[0].children.size());
+	ASSERT_EQUALS(std::string("Total bytes transferred: 12.3 GiB"), out.children[0].children[0].label);
+	ASSERT_EQUALS(std::string("Connection"), out.children[1].label);
 }
-
 
 TEST(State, WriteGraphsRoundtripAllSeries)
 {
 	CState s;
 	StatsGraphs g;
 	g.interval_seconds = 1;
-	g.download_bps     = {100, 200, 300};
-	g.upload_bps       = {10, 20, 30};
-	g.connections      = {1, 2, 3};
-	g.kad_nodes        = {500, 600, 700};
+	g.download_bps = { 100, 200, 300 };
+	g.upload_bps = { 10, 20, 30 };
+	g.connections = { 1, 2, 3 };
+	g.kad_nodes = { 500, 600, 700 };
 	g.session_download_bytes = 1024;
-	g.session_upload_bytes   = 256;
-	g.session_kad_bytes      = 4096;
+	g.session_upload_bytes = 256;
+	g.session_kad_bytes = 4096;
 	s.WriteGraphs(g);
 
 	const StatsGraphs out = s.Graphs();
-	ASSERT_EQUALS(static_cast<std::uint32_t>(1),    out.interval_seconds);
-	ASSERT_EQUALS(static_cast<size_t>(3),           out.download_bps.size());
-	ASSERT_EQUALS(static_cast<std::uint32_t>(300),  out.download_bps[2]);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(700),  out.kad_nodes[2]);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1), out.interval_seconds);
+	ASSERT_EQUALS(static_cast<size_t>(3), out.download_bps.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(300), out.download_bps[2]);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(700), out.kad_nodes[2]);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(1024), out.session_download_bytes);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), out.session_kad_bytes);
 }
-
 
 TEST(State, SearchResultsRoundtripAndOrderByEcid)
 {
@@ -457,13 +443,12 @@ TEST(State, SearchResultsRoundtripAndOrderByEcid)
 
 	// std::map iterates ECID-ascending → Search() vector is sorted.
 	const auto out = s.Search();
-	ASSERT_EQUALS(static_cast<size_t>(2),                 out.size());
-	ASSERT_EQUALS(std::string("first-by-ecid.iso"),       out[0].name);
-	ASSERT_EQUALS(std::string("ascii-name.iso"),          out[1].name);
+	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
+	ASSERT_EQUALS(std::string("first-by-ecid.iso"), out[0].name);
+	ASSERT_EQUALS(std::string("ascii-name.iso"), out[1].name);
 	ASSERT_TRUE(out[0].already_have);
 	ASSERT_FALSE(out[1].already_have);
 }
-
 
 TEST(State, ResetListsLeavesLogsAlone)
 {
@@ -471,24 +456,27 @@ TEST(State, ResetListsLeavesLogsAlone)
 	// "EC disconnected at HH:MM" alongside earlier traffic. ResetLists
 	// must not nuke either log buffer.
 	CState s;
-	s.AppendAmuleLog({"persistent line"});
-	s.WriteServerInfo({"persistent server info"});
+	s.AppendAmuleLog({ "persistent line" });
+	s.WriteServerInfo({ "persistent server info" });
 	s.ResetLists();
 	ASSERT_EQUALS(static_cast<size_t>(1), s.AmuleLog().size());
-	ASSERT_EQUALS(std::string("persistent server info"),
-		s.ServerInfo().text);
+	ASSERT_EQUALS(std::string("persistent server info"), s.ServerInfo().text);
 }
-
 
 TEST(State, ResetListsClearsAll)
 {
 	CState s;
 	s.MutateDownloads([](FileMap &cache) {
-		FileSnapshot d; d.ecid = 1; d.name = "a"; d.is_downloading = true;
+		FileSnapshot d;
+		d.ecid = 1;
+		d.name = "a";
+		d.is_downloading = true;
 		cache.emplace(1, d);
 	});
 	s.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
-		ClientSnapshot c; c.ecid = 1; c.client_name = "b";
+		ClientSnapshot c;
+		c.ecid = 1;
+		c.client_name = "b";
 		cache.emplace(1, c);
 	});
 	s.MutateShared([](FileMap &cache) {
@@ -496,7 +484,10 @@ TEST(State, ResetListsClearsAll)
 		// creating a new map slot, matching the unified-map model.
 		auto it = cache.find(1);
 		if (it == cache.end()) {
-			FileSnapshot x; x.ecid = 1; x.name = "c"; x.is_shared = true;
+			FileSnapshot x;
+			x.ecid = 1;
+			x.name = "c";
+			x.is_shared = true;
 			cache.emplace(1, x);
 		} else {
 			it->second.is_shared = true;
@@ -512,7 +503,6 @@ TEST(State, ResetListsClearsAll)
 	ASSERT_EQUALS(static_cast<size_t>(0), s.Shared().size());
 }
 
-
 TEST(State, ConcurrentReadersDontTearSnapshot)
 {
 	// Spin up 4 readers + 1 writer for 100ms. The writer churns
@@ -524,17 +514,17 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	// pair, which we then assert against.
 
 	CState s;
-	std::atomic<bool> stop{false};
-	std::atomic<int>  observed{0};
-	std::atomic<int>  torn{0};
+	std::atomic<bool> stop{ false };
+	std::atomic<int> observed{ 0 };
+	std::atomic<int> torn{ 0 };
 
-	std::thread writer([&]{
+	std::thread writer([&] {
 		std::uint64_t gen = 1;
 		while (!stop.load()) {
 			StatusSnapshot v;
-			v.download_bps    = gen;
-			v.upload_bps      = gen * 2;
-			v.ul_queue_len    = static_cast<std::uint32_t>(gen & 0xffffffff);
+			v.download_bps = gen;
+			v.upload_bps = gen * 2;
+			v.ul_queue_len = static_cast<std::uint32_t>(gen & 0xffffffff);
 			v.total_src_count = static_cast<std::uint32_t>(gen & 0xffffffff);
 			s.WriteStatus(v);
 			++gen;
@@ -543,15 +533,17 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 
 	std::vector<std::thread> readers;
 	for (int i = 0; i < 4; ++i) {
-		readers.emplace_back([&]{
+		readers.emplace_back([&] {
 			while (!stop.load()) {
 				StatusSnapshot r = s.Status();
 				observed.fetch_add(1);
 				// Invariants enforced by the writer's single
 				// unique_lock acquisition: upload_bps == 2 *
 				// download_bps; ul_queue_len == total_src_count.
-				if (r.upload_bps != 2 * r.download_bps) torn.fetch_add(1);
-				if (r.ul_queue_len != r.total_src_count) torn.fetch_add(1);
+				if (r.upload_bps != 2 * r.download_bps)
+					torn.fetch_add(1);
+				if (r.ul_queue_len != r.total_src_count)
+					torn.fetch_add(1);
 			}
 		});
 	}
@@ -559,7 +551,8 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	stop.store(true);
 	writer.join();
-	for (auto &t : readers) t.join();
+	for (auto &t : readers)
+		t.join();
 
 	// Sanity: the loop actually exercised the contention path. A bar
 	// of `> 0` passes with a single observation, which a debug build

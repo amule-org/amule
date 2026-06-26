@@ -34,13 +34,10 @@
 #include <thread>
 #include <vector>
 
-
 using namespace muleunit;
 using namespace webapi;
 
-
 DECLARE_SIMPLE(Auth)
-
 
 // ---------- CRevocationSet ---------------------------------------
 
@@ -75,14 +72,13 @@ TEST(Auth, RevocationSet_ExpiredEntryGcsOnNextLookup)
 	ASSERT_EQUALS(static_cast<std::size_t>(0), rs.Size());
 }
 
-
 // ---------- CRateLimiter -----------------------------------------
 
 TEST(Auth, RateLimiter_NoFailuresMeansNoLockout)
 {
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 60;
-	cfg.threshold       = 3;
+	cfg.window_seconds = 60;
+	cfg.threshold = 3;
 	cfg.lockout_seconds = 60;
 	CRateLimiter rl(cfg);
 	const auto d = rl.Check("192.0.2.1");
@@ -92,8 +88,8 @@ TEST(Auth, RateLimiter_NoFailuresMeansNoLockout)
 TEST(Auth, RateLimiter_ThresholdFailuresLockOut)
 {
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 60;
-	cfg.threshold       = 3;
+	cfg.window_seconds = 60;
+	cfg.threshold = 3;
 	cfg.lockout_seconds = 120;
 	CRateLimiter rl(cfg);
 	const std::string ip = "192.0.2.2";
@@ -102,7 +98,7 @@ TEST(Auth, RateLimiter_ThresholdFailuresLockOut)
 	ASSERT_FALSE(rl.Check(ip).locked_out);
 	rl.NoteFailure(ip);
 	ASSERT_FALSE(rl.Check(ip).locked_out);
-	rl.NoteFailure(ip);   // third → lockout armed
+	rl.NoteFailure(ip); // third → lockout armed
 	const auto d = rl.Check(ip);
 	ASSERT_TRUE(d.locked_out);
 	ASSERT_TRUE(d.retry_after_seconds > 0);
@@ -112,15 +108,15 @@ TEST(Auth, RateLimiter_ThresholdFailuresLockOut)
 TEST(Auth, RateLimiter_SuccessClearsBucket)
 {
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 60;
-	cfg.threshold       = 2;
+	cfg.window_seconds = 60;
+	cfg.threshold = 2;
 	cfg.lockout_seconds = 60;
 	CRateLimiter rl(cfg);
 	const std::string ip = "192.0.2.3";
 
 	rl.NoteFailure(ip);
 	rl.NoteSuccess(ip);
-	rl.NoteFailure(ip);   // only one failure since the reset
+	rl.NoteFailure(ip); // only one failure since the reset
 
 	ASSERT_FALSE(rl.Check(ip).locked_out);
 }
@@ -128,18 +124,17 @@ TEST(Auth, RateLimiter_SuccessClearsBucket)
 TEST(Auth, RateLimiter_DifferentIpsTrackedSeparately)
 {
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 60;
-	cfg.threshold       = 2;
+	cfg.window_seconds = 60;
+	cfg.threshold = 2;
 	cfg.lockout_seconds = 60;
 	CRateLimiter rl(cfg);
 
 	rl.NoteFailure("198.51.100.1");
-	rl.NoteFailure("198.51.100.1");   // locks out .1
+	rl.NoteFailure("198.51.100.1"); // locks out .1
 
-	ASSERT_TRUE (rl.Check("198.51.100.1").locked_out);
+	ASSERT_TRUE(rl.Check("198.51.100.1").locked_out);
 	ASSERT_FALSE(rl.Check("198.51.100.2").locked_out);
 }
-
 
 TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 {
@@ -148,8 +143,8 @@ TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 	// Clock injection lets us step `now` past lockout_until without
 	// burning real time on a sleep.
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 60;
-	cfg.threshold       = 1;
+	cfg.window_seconds = 60;
+	cfg.threshold = 1;
 	cfg.lockout_seconds = 1;
 	std::time_t fake_now = 1000;
 	CRateLimiter rl(cfg, [&] { return fake_now; });
@@ -164,7 +159,6 @@ TEST(Auth, RateLimiter_LockoutExpiresAfterLockoutSeconds)
 	ASSERT_FALSE(d.locked_out);
 	ASSERT_EQUALS(static_cast<std::time_t>(0), d.retry_after_seconds);
 }
-
 
 TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 {
@@ -181,23 +175,22 @@ TEST(Auth, RateLimiter_SlidingWindowSplitAttemptsStillLockOut)
 	//   t=4  NoteFailure  → failures=[3, 4],       count=2  (evict<1)
 	//   t=5  NoteFailure  → failures=[3, 4, 5],    count=3 → LOCKOUT
 	CRateLimiter::Config cfg;
-	cfg.window_seconds  = 3;
-	cfg.threshold       = 3;
+	cfg.window_seconds = 3;
+	cfg.threshold = 3;
 	cfg.lockout_seconds = 60;
 	std::time_t fake_now = 0;
 	CRateLimiter rl(cfg, [&] { return fake_now; });
 	const std::string ip = "203.0.113.9";
 
-	rl.NoteFailure(ip);                                          // t=0
+	rl.NoteFailure(ip); // t=0
 	fake_now = 3;
-	rl.NoteFailure(ip);                                          // t=3
+	rl.NoteFailure(ip); // t=3
 	fake_now = 4;
-	rl.NoteFailure(ip);                                          // t=4 (boundary crossing)
+	rl.NoteFailure(ip); // t=4 (boundary crossing)
 	fake_now = 5;
-	rl.NoteFailure(ip);                                          // t=5 (sliding count reaches 3)
+	rl.NoteFailure(ip); // t=5 (sliding count reaches 3)
 	ASSERT_TRUE(rl.Check(ip).locked_out);
 }
-
 
 // ---------- Revocation × Verify cross-test -----------------------
 
@@ -235,7 +228,6 @@ TEST(Auth, RevocationListBlocksOtherwiseValidToken)
 	ASSERT_TRUE(rev.IsRevoked(vr2.jti));
 }
 
-
 // ---------- Token extraction -------------------------------------
 
 TEST(Auth, ExtractBearerToken_HappyPath)
@@ -266,15 +258,13 @@ TEST(Auth, ExtractBearerToken_TolerantOfExtraSpaces)
 
 TEST(Auth, ExtractCookieValue_HappyPath)
 {
-	ASSERT_EQUALS(std::string("xyz"),
-		ExtractCookieValue("amuleapi_token=xyz", "amuleapi_token"));
+	ASSERT_EQUALS(std::string("xyz"), ExtractCookieValue("amuleapi_token=xyz", "amuleapi_token"));
 }
 
 TEST(Auth, ExtractCookieValue_OtherCookiesInWay)
 {
 	const std::string header = "foo=1; amuleapi_token=abc; bar=2";
-	ASSERT_EQUALS(std::string("abc"),
-		ExtractCookieValue(header, "amuleapi_token"));
+	ASSERT_EQUALS(std::string("abc"), ExtractCookieValue(header, "amuleapi_token"));
 }
 
 TEST(Auth, ExtractCookieValue_MissingReturnsEmpty)
@@ -282,7 +272,6 @@ TEST(Auth, ExtractCookieValue_MissingReturnsEmpty)
 	ASSERT_TRUE(ExtractCookieValue("foo=1; bar=2", "amuleapi_token").empty());
 	ASSERT_TRUE(ExtractCookieValue("", "amuleapi_token").empty());
 }
-
 
 // ---------- ISO-8601 ---------------------------------------------
 

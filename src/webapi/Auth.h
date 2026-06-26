@@ -34,7 +34,6 @@
 #include <set>
 #include <string>
 
-
 // State containers + helpers for the /auth/* surface. Live on the
 // amuleapi process side (not in libwebcommon) because they're stateful
 // and amuleweb has no use for them.
@@ -46,9 +45,8 @@
 // never contends in v0.1 — but a future worker-pool model gets
 // correctness for free.
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 // Server-side bearer-token revocation list. JWTs are stateless by
 // design; for /auth/logout to actually invalidate a token, the server
@@ -63,7 +61,8 @@ namespace webapi {
 // GC: lazy on Revoke() — sweeps entries whose exp has already
 // passed. Cheap (~O(log n) lookup per sweep) and amortizes the work
 // across calls instead of needing a periodic timer.
-class CRevocationSet {
+class CRevocationSet
+{
 public:
 	void Revoke(const std::string &jti, std::time_t exp);
 	bool IsRevoked(const std::string &jti) const;
@@ -75,10 +74,9 @@ public:
 private:
 	void GcExpired() const;
 
-	mutable std::mutex                              m_mu;
-	mutable std::map<std::string, std::time_t>      m_revoked;
+	mutable std::mutex m_mu;
+	mutable std::map<std::string, std::time_t> m_revoked;
 };
-
 
 // Per-IP sliding-window login rate limiter (). Tracks
 // failed `/auth/login` attempts, locks the offending IP out for
@@ -91,12 +89,14 @@ private:
 // under bot-scan load. No active GC; cold buckets get overwritten
 // when the offender comes back, and the daemon's process lifetime
 // bounds the worst case.
-class CRateLimiter {
+class CRateLimiter
+{
 public:
-	struct Config {
-		unsigned    window_seconds   = 60;
-		unsigned    threshold        = 5;
-		unsigned    lockout_seconds  = 300;
+	struct Config
+	{
+		unsigned window_seconds = 60;
+		unsigned threshold = 5;
+		unsigned lockout_seconds = 300;
 	};
 
 	// Clock injection. Default is std::time(nullptr); tests pass a
@@ -106,12 +106,14 @@ public:
 	using Clock = std::function<std::time_t()>;
 
 	explicit CRateLimiter(Config cfg, Clock clock = nullptr)
-		: m_cfg(cfg),
-		  m_clock(clock ? std::move(clock)
-		                : [] { return std::time(nullptr); }) {}
+	: m_cfg(cfg)
+	, m_clock(clock ? std::move(clock) : [] { return std::time(nullptr); })
+	{
+	}
 
-	struct Decision {
-		bool        locked_out          = false;
+	struct Decision
+	{
+		bool locked_out = false;
 		std::time_t retry_after_seconds = 0;
 	};
 
@@ -132,7 +134,8 @@ public:
 	const Config &Cfg() const { return m_cfg; }
 
 private:
-	struct Bucket {
+	struct Bucket
+	{
 		// Sliding window of failure timestamps. The legacy `unsigned
 		// failure_count + std::time_t window_start` shape implemented
 		// a TUMBLING window (the count reset wholesale when the
@@ -144,15 +147,14 @@ private:
 		// trip happens whenever the live count crosses threshold,
 		// regardless of how the failures distribute across windows.
 		std::deque<std::time_t> failures;
-		std::time_t             lockout_until = 0;
+		std::time_t lockout_until = 0;
 	};
 
-	Config                                          m_cfg;
-	Clock                                           m_clock;
-	mutable std::mutex                              m_mu;
-	std::map<std::string, Bucket>                   m_buckets;
+	Config m_cfg;
+	Clock m_clock;
+	mutable std::mutex m_mu;
+	std::map<std::string, Bucket> m_buckets;
 };
-
 
 // HTTP `Authorization: Bearer <jwt>` extractor. Returns the empty
 // string if the header is absent, doesn't start with `Bearer `, or
@@ -160,18 +162,14 @@ private:
 // per RFC 6750 §2.1.
 std::string ExtractBearerToken(const std::string &authorization_header);
 
-
 // Extracts `<cookie_name>=<value>` from a Cookie header. Returns the
 // empty string on miss.
-std::string ExtractCookieValue(const std::string &cookie_header,
-                               const std::string &cookie_name);
-
+std::string ExtractCookieValue(const std::string &cookie_header, const std::string &cookie_name);
 
 // ISO-8601 / RFC 3339 in UTC: "2026-06-19T11:00:00Z". 20-char fixed
 // length; clients can `Date.parse(...)` it.
 std::string FormatIso8601Utc(std::time_t t);
 
-
-}  // namespace webapi
+} // namespace webapi
 
 #endif // WEBAPI_AUTH_H

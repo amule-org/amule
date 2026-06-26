@@ -1,3 +1,6 @@
+// clang-format off
+// Vendored third-party header (picojson) — kept verbatim; not subject to
+// aMule's clang-format style.
 /*
  * Copyright 2009-2010 Cybozu Labs, Inc.
  * Copyright 2011-2014 Kazuho Oku

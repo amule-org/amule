@@ -26,25 +26,23 @@
 
 #include <cstring>
 
-
 // strncasecmp on POSIX is declared in <strings.h>, but most libc
 // implementations also expose it via <string.h> + <cstring>. Be
 // explicit so the build doesn't depend on the implicit include.
 #ifdef _WIN32
-#  include <string.h>
-#  define strncasecmp _strnicmp
+#include <string.h>
+#define strncasecmp _strnicmp
 #else
-#  include <strings.h>
+#include <strings.h>
 #endif
 
-
-namespace webcommon {
-
-
-std::pair<const char*, std::size_t> FindHttpHeaderValue(
-	const char *block, const char *name)
+namespace webcommon
 {
-	if (!block || !name) return {nullptr, 0};
+
+std::pair<const char *, std::size_t> FindHttpHeaderValue(const char *block, const char *name)
+{
+	if (!block || !name)
+		return { nullptr, 0 };
 	const std::size_t name_len = std::strlen(name);
 	const char *line = block;
 	// `block` starts with the HTTP-version line of the request
@@ -52,9 +50,11 @@ std::pair<const char*, std::size_t> FindHttpHeaderValue(
 	// land on the first header.
 	while (*line) {
 		const char *eol = std::strstr(line, "\r\n");
-		if (!eol) break;
+		if (!eol)
+			break;
 		// End-of-headers marker: blank line.
-		if (eol == line) break;
+		if (eol == line)
+			break;
 		// Move to the line *after* the current one for the next
 		// iteration before doing the match, so an early `continue`
 		// can't loop forever.
@@ -62,61 +62,61 @@ std::pair<const char*, std::size_t> FindHttpHeaderValue(
 		// Skip the version line on the first iteration: it doesn't
 		// start with `name:` so the strncasecmp+colon check below
 		// naturally rejects it.
-		if (line + name_len < eol
-		    && strncasecmp(line, name, name_len) == 0
-		    && line[name_len] == ':') {
+		if (line + name_len < eol && strncasecmp(line, name, name_len) == 0 &&
+			line[name_len] == ':') {
 			const char *value = line + name_len + 1;
 			// Strip leading OWS per RFC 7230 §3.2.
-			while (*value == ' ' || *value == '\t') ++value;
+			while (*value == ' ' || *value == '\t')
+				++value;
 			// Strip trailing OWS likewise. Both sides may be
 			// present per the spec, though no real client we've
 			// ever seen sends trailing whitespace.
 			const char *value_end = eol;
-			while (value_end > value
-			       && (value_end[-1] == ' ' || value_end[-1] == '\t')) {
+			while (value_end > value && (value_end[-1] == ' ' || value_end[-1] == '\t')) {
 				--value_end;
 			}
-			return {value, static_cast<std::size_t>(value_end - value)};
+			return { value, static_cast<std::size_t>(value_end - value) };
 		}
 		line = next;
 	}
-	return {nullptr, 0};
+	return { nullptr, 0 };
 }
 
-
-std::pair<const char*, std::size_t> FindCookieValue(
+std::pair<const char *, std::size_t> FindCookieValue(
 	const char *cookies, std::size_t cookies_len, const char *cookie_name)
 {
-	if (!cookies || !cookie_name) return {nullptr, 0};
+	if (!cookies || !cookie_name)
+		return { nullptr, 0 };
 	const std::size_t name_len = std::strlen(cookie_name);
 	const char *end = cookies + cookies_len;
 	const char *p = cookies;
 	while (p < end) {
 		// Skip leading OWS / separators.
-		while (p < end && (*p == ' ' || *p == '\t' || *p == ';')) ++p;
-		if (p + name_len + 1 > end) break;
-		if (strncasecmp(p, cookie_name, name_len) == 0
-		    && p[name_len] == '=') {
+		while (p < end && (*p == ' ' || *p == '\t' || *p == ';'))
+			++p;
+		if (p + name_len + 1 > end)
+			break;
+		if (strncasecmp(p, cookie_name, name_len) == 0 && p[name_len] == '=') {
 			const char *value = p + name_len + 1;
 			const char *value_end = value;
-			while (value_end < end && *value_end != ';') ++value_end;
+			while (value_end < end && *value_end != ';')
+				++value_end;
 			// RFC 6265 §5.2 permits OWS (SP / HTAB) on either side
 			// of `=` and between the value and the trailing `;`.
 			// Strip both ends so a header like `Cookie: foo= bar `
 			// matches a token-equal of `bar` rather than ` bar `.
-			while (value < value_end
-			    && (*value == ' ' || *value == '\t')) ++value;
-			while (value_end > value
-			    && (value_end[-1] == ' ' || value_end[-1] == '\t')) {
+			while (value < value_end && (*value == ' ' || *value == '\t'))
+				++value;
+			while (value_end > value && (value_end[-1] == ' ' || value_end[-1] == '\t')) {
 				--value_end;
 			}
-			return {value, static_cast<std::size_t>(value_end - value)};
+			return { value, static_cast<std::size_t>(value_end - value) };
 		}
 		// Skip this cookie pair (up to next ';').
-		while (p < end && *p != ';') ++p;
+		while (p < end && *p != ';')
+			++p;
 	}
-	return {nullptr, 0};
+	return { nullptr, 0 };
 }
 
-
-}  // namespace webcommon
+} // namespace webcommon

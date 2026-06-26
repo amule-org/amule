@@ -30,9 +30,7 @@
 
 using namespace muleunit;
 
-
 DECLARE_SIMPLE(JsonWriter)
-
 
 TEST(JsonWriter, EmptyObject)
 {
@@ -42,7 +40,6 @@ TEST(JsonWriter, EmptyObject)
 	ASSERT_EQUALS(wxString("{}"), w.GetBuffer());
 }
 
-
 TEST(JsonWriter, EmptyArray)
 {
 	CJsonWriter w;
@@ -51,46 +48,47 @@ TEST(JsonWriter, EmptyArray)
 	ASSERT_EQUALS(wxString("[]"), w.GetBuffer());
 }
 
-
 TEST(JsonWriter, ObjectWithStringValue)
 {
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("app"); w.ValueString("aMule");
+	w.Key("app");
+	w.ValueString("aMule");
 	w.EndObject();
 	ASSERT_EQUALS(wxString("{\"app\":\"aMule\"}"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, ObjectWithMultipleKeys)
 {
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("app");     w.ValueString("aMule");
-	w.Key("version"); w.ValueString("2.3.3");
-	w.Key("api");     w.ValueString("v0.1");
+	w.Key("app");
+	w.ValueString("aMule");
+	w.Key("version");
+	w.ValueString("2.3.3");
+	w.Key("api");
+	w.ValueString("v0.1");
 	w.EndObject();
-	ASSERT_EQUALS(
-		wxString("{\"app\":\"aMule\",\"version\":\"2.3.3\",\"api\":\"v0.1\"}"),
-		w.GetBuffer());
+	ASSERT_EQUALS(wxString("{\"app\":\"aMule\",\"version\":\"2.3.3\",\"api\":\"v0.1\"}"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, Primitives)
 {
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("n");   w.ValueNull();
-	w.Key("t");   w.ValueBool(true);
-	w.Key("f");   w.ValueBool(false);
-	w.Key("i");   w.ValueInt(-42);
-	w.Key("u");   w.ValueUInt(uint64_t(42));
+	w.Key("n");
+	w.ValueNull();
+	w.Key("t");
+	w.ValueBool(true);
+	w.Key("f");
+	w.ValueBool(false);
+	w.Key("i");
+	w.ValueInt(-42);
+	w.Key("u");
+	w.ValueUInt(uint64_t(42));
 	w.EndObject();
-	ASSERT_EQUALS(
-		wxString("{\"n\":null,\"t\":true,\"f\":false,\"i\":-42,\"u\":42}"),
-		w.GetBuffer());
+	ASSERT_EQUALS(wxString("{\"n\":null,\"t\":true,\"f\":false,\"i\":-42,\"u\":42}"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, IntegerBoundaries)
 {
@@ -101,10 +99,8 @@ TEST(JsonWriter, IntegerBoundaries)
 	w.ValueUInt(std::numeric_limits<uint64_t>::max());
 	w.EndArray();
 	ASSERT_EQUALS(
-		wxString("[-9223372036854775808,9223372036854775807,18446744073709551615]"),
-		w.GetBuffer());
+		wxString("[-9223372036854775808,9223372036854775807,18446744073709551615]"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, DoubleSpecials)
 {
@@ -118,19 +114,18 @@ TEST(JsonWriter, DoubleSpecials)
 	ASSERT_EQUALS(wxString("[null,null,null]"), w.GetBuffer());
 }
 
-
 TEST(JsonWriter, NestedObject)
 {
 	CJsonWriter w;
 	w.BeginObject();
 	w.Key("outer");
 	w.BeginObject();
-	w.Key("inner"); w.ValueString("v");
+	w.Key("inner");
+	w.ValueString("v");
 	w.EndObject();
 	w.EndObject();
 	ASSERT_EQUALS(wxString("{\"outer\":{\"inner\":\"v\"}}"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, ArrayOfObjects)
 {
@@ -138,15 +133,18 @@ TEST(JsonWriter, ArrayOfObjects)
 	w.BeginObject();
 	w.Key("items");
 	w.BeginArray();
-	w.BeginObject(); w.Key("k"); w.ValueInt(1); w.EndObject();
-	w.BeginObject(); w.Key("k"); w.ValueInt(2); w.EndObject();
+	w.BeginObject();
+	w.Key("k");
+	w.ValueInt(1);
+	w.EndObject();
+	w.BeginObject();
+	w.Key("k");
+	w.ValueInt(2);
+	w.EndObject();
 	w.EndArray();
 	w.EndObject();
-	ASSERT_EQUALS(
-		wxString("{\"items\":[{\"k\":1},{\"k\":2}]}"),
-		w.GetBuffer());
+	ASSERT_EQUALS(wxString("{\"items\":[{\"k\":1},{\"k\":2}]}"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, EscapesQuoteAndBackslash)
 {
@@ -155,14 +153,12 @@ TEST(JsonWriter, EscapesQuoteAndBackslash)
 	ASSERT_EQUALS(wxString("\"a\\\"b\\\\c\""), w.GetBuffer());
 }
 
-
 TEST(JsonWriter, EscapesShortControlChars)
 {
 	CJsonWriter w;
 	w.ValueString(wxString::FromUTF8("\b\f\n\r\t"));
 	ASSERT_EQUALS(wxString("\"\\b\\f\\n\\r\\t\""), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, EscapesGenericControlChars)
 {
@@ -175,11 +171,8 @@ TEST(JsonWriter, EscapesGenericControlChars)
 	w.ValueString(wxString(wxUniChar(uint32_t(0x1F))));
 	w.ValueString(wxString(wxUniChar(uint32_t(0x7F))));
 	w.EndArray();
-	ASSERT_EQUALS(
-		wxString("[\"\\u0000\",\"\\u0001\",\"\\u001f\",\"\\u007f\"]"),
-		w.GetBuffer());
+	ASSERT_EQUALS(wxString("[\"\\u0000\",\"\\u0001\",\"\\u001f\",\"\\u007f\"]"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, SupplementaryPlaneAsSurrogatePair)
 {
@@ -190,13 +183,13 @@ TEST(JsonWriter, SupplementaryPlaneAsSurrogatePair)
 	ASSERT_EQUALS(wxString("\"\\ud83d\\ude00\""), w.GetBuffer());
 }
 
-
 TEST(JsonWriter, BmpNonAsciiEmittedVerbatim)
 {
 	// Non-control codepoints in the BMP are passed through as wxString
 	// content. The serializer encodes the whole buffer as UTF-8 at
 	// flush time; here we just verify the round trip is invariant.
-	const wxString input = wxString::FromUTF8("\xD0\xBF\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"); // "привет"
+	const wxString input =
+		wxString::FromUTF8("\xD0\xBF\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82"); // "привет"
 	CJsonWriter w;
 	w.ValueString(input);
 	// The wxString contains exactly: " <6 cyrillic chars> "
@@ -206,7 +199,6 @@ TEST(JsonWriter, BmpNonAsciiEmittedVerbatim)
 	expected += wxT("\"");
 	ASSERT_EQUALS(expected, w.GetBuffer());
 }
-
 
 TEST(JsonWriter, KeyEscaping)
 {
@@ -220,7 +212,6 @@ TEST(JsonWriter, KeyEscaping)
 	ASSERT_EQUALS(wxString("{\"a\\\"b\":1}"), w.GetBuffer());
 }
 
-
 TEST(JsonWriter, ValueRawFragment)
 {
 	// A pre-formatted JSON fragment is appended verbatim. Caller is
@@ -228,12 +219,13 @@ TEST(JsonWriter, ValueRawFragment)
 	// whether a comma is needed before/after.
 	CJsonWriter w;
 	w.BeginObject();
-	w.Key("pre"); w.ValueRaw(wxT("[1,2,3]"));
-	w.Key("post"); w.ValueInt(4);
+	w.Key("pre");
+	w.ValueRaw(wxT("[1,2,3]"));
+	w.Key("post");
+	w.ValueInt(4);
 	w.EndObject();
 	ASSERT_EQUALS(wxString("{\"pre\":[1,2,3],\"post\":4}"), w.GetBuffer());
 }
-
 
 TEST(JsonWriter, ExternalBuffer)
 {
@@ -244,12 +236,12 @@ TEST(JsonWriter, ExternalBuffer)
 	{
 		CJsonWriter w(&shared);
 		w.BeginObject();
-		w.Key("x"); w.ValueInt(1);
+		w.Key("x");
+		w.ValueInt(1);
 		w.EndObject();
 	}
 	ASSERT_EQUALS(wxString("prefix:{\"x\":1}"), shared);
 }
-
 
 TEST(JsonWriter, LargeString)
 {

@@ -34,9 +34,8 @@
 #include <string>
 #include <vector>
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 // Event published over the SSE channel. Wire shape mirrors
 // `text/event-stream` per RFC 6202 §4: the SSE-emitter writes
@@ -48,12 +47,12 @@ namespace webapi {
 // `resync` event covers the restart case for SSE subscribers: when
 // a client reconnects with Last-Event-ID > the bus's current max,
 // it gets a resync event and re-GETs all affected collections.
-struct Event {
-	std::uint64_t id        = 0;
-	std::string   name;     // "download_added", "status_changed", etc.
-	std::string   data;     // JSON payload (typed per `name`)
+struct Event
+{
+	std::uint64_t id = 0;
+	std::string name; // "download_added", "status_changed", etc.
+	std::string data; // JSON payload (typed per `name`)
 };
-
 
 // In-memory SSE event bus. One instance per amuleapi process; the
 // refresher publishes events as cache deltas surface and SSE
@@ -74,16 +73,20 @@ struct Event {
 // in a single tick before any subscriber has had a chance to
 // drain); worst-case memory ≈ capacity × ~1 KB JSON payload, so
 // 16 384 ≈ 16 MB.
-class CEventBus {
+class CEventBus
+{
 public:
 	// Compile-time floor + default. Capacity is settable at
 	// construction; values below kMinCapacity are clamped up to the
 	// floor. Floor exists so an operator can't accidentally
 	// effectively disable SSE replay by setting capacity=1.
 	static constexpr std::size_t kDefaultCapacity = 16384;
-	static constexpr std::size_t kMinCapacity     = 16;
+	static constexpr std::size_t kMinCapacity = 16;
 
-	CEventBus() : CEventBus(kDefaultCapacity) {}
+	CEventBus()
+	: CEventBus(kDefaultCapacity)
+	{
+	}
 	explicit CEventBus(std::size_t capacity);
 
 	// Effective ring capacity actually in use (post-clamp).
@@ -102,16 +105,14 @@ public:
 	// goes through cv->mutex wake/sleep cycles on every drainer).
 	// Each (name, data) pair is treated identically to a Publish
 	// call: monotonic id assignment, evict-oldest if the ring fills.
-	void PublishBatch(
-		const std::vector<std::pair<std::string, std::string>> &events);
+	void PublishBatch(const std::vector<std::pair<std::string, std::string>> &events);
 
 	// Drain every event with `id > since_id` into `out`. Returns
 	// the highest id we found (== since_id if nothing new). Blocks
 	// up to `timeout` if there are no new events; returns early
 	// when something becomes available.
-	std::uint64_t Drain(std::uint64_t since_id,
-	                    std::chrono::milliseconds timeout,
-	                    std::vector<Event> &out);
+	std::uint64_t Drain(
+		std::uint64_t since_id, std::chrono::milliseconds timeout, std::vector<Event> &out);
 
 	// The id of the bus's oldest currently-stored event, or 0 if the
 	// bus is empty. Used by the Last-Event-ID reconnect path: if
@@ -142,15 +143,14 @@ public:
 	bool IsShutdown() const;
 
 private:
-	const std::size_t                           m_capacity;
-	mutable std::mutex                          m_mu;
-	std::condition_variable                     m_cv;
-	std::deque<Event>                           m_ring;
-	std::atomic<std::uint64_t>                  m_next_id{1};
-	std::atomic<bool>                           m_shutdown{false};
+	const std::size_t m_capacity;
+	mutable std::mutex m_mu;
+	std::condition_variable m_cv;
+	std::deque<Event> m_ring;
+	std::atomic<std::uint64_t> m_next_id{ 1 };
+	std::atomic<bool> m_shutdown{ false };
 };
 
-
-}  // namespace webapi
+} // namespace webapi
 
 #endif // WEBAPI_EVENT_BUS_H

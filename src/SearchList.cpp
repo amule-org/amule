@@ -494,14 +494,14 @@ uint8 CSearchList::GetSearchLifecyclePercent() const
 		if (elapsed <= 0) {
 			return 0;
 		}
-		uint32 pct = (uint32) ((elapsed * 100) / SEARCHKEYWORD_LIFETIME);
-		return (pct > 99) ? 99 : (uint8) pct;
+		uint32 pct = (uint32)((elapsed * 100) / SEARCHKEYWORD_LIFETIME);
+		return (pct > 99) ? 99 : (uint8)pct;
 	}
 
 	if (m_searchType == GlobalSearch) {
 		// Real server-queue-driven percent (0..100).
 		uint32 pct = GetSearchProgress();
-		return (pct > 100) ? 100 : (uint8) pct;
+		return (pct > 100) ? 100 : (uint8)pct;
 	}
 
 	// LocalSearch is instantaneous and never observed RUNNING here.

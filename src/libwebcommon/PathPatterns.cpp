@@ -24,9 +24,8 @@
 
 #include "PathPatterns.h"
 
-
-namespace web_api_path {
-
+namespace web_api_path
+{
 
 std::vector<std::string> SplitPath(const std::string &path)
 {
@@ -52,21 +51,23 @@ std::vector<std::string> SplitPath(const std::string &path)
 	return out;
 }
 
-
 bool LooksMalicious(const std::string &path)
 {
 	// NUL byte anywhere. Some downstream tooling (sscanf, fopen) is
 	// NUL-terminated; embedded NULs are a classic injection vector.
-	if (path.find('\0') != std::string::npos) return true;
+	if (path.find('\0') != std::string::npos)
+		return true;
 
 	// Encoded NUL — explicit reject even though today's routes don't
 	// percent-decode path segments. A future hash-by-name endpoint
 	// that does decode would otherwise admit this.
 	for (size_t i = 0; i + 2 < path.size(); ++i) {
-		if (path[i] != '%') continue;
+		if (path[i] != '%')
+			continue;
 		const char h = path[i + 1];
 		const char l = path[i + 2];
-		if (h == '0' && l == '0') return true;
+		if (h == '0' && l == '0')
+			return true;
 	}
 
 	// Encoded ".." (percent-encoded dot). Match `%2e` and `%2E` in
@@ -75,14 +76,14 @@ bool LooksMalicious(const std::string &path)
 	// any pair of "is a `%2e`-looking triplet" tokens that are
 	// adjacent.
 	for (size_t i = 0; i + 5 < path.size(); ++i) {
-		const bool dot1 = path[i] == '%'
-		    && path[i + 1] == '2'
-		    && (path[i + 2] == 'e' || path[i + 2] == 'E');
-		if (!dot1) continue;
-		const bool dot2 = path[i + 3] == '%'
-		    && path[i + 4] == '2'
-		    && (path[i + 5] == 'e' || path[i + 5] == 'E');
-		if (dot2) return true;
+		const bool dot1 =
+			path[i] == '%' && path[i + 1] == '2' && (path[i + 2] == 'e' || path[i + 2] == 'E');
+		if (!dot1)
+			continue;
+		const bool dot2 = path[i + 3] == '%' && path[i + 4] == '2' &&
+				  (path[i + 5] == 'e' || path[i + 5] == 'E');
+		if (dot2)
+			return true;
 	}
 
 	// Literal ".." segment. SplitPath would happily emit a "..":
@@ -91,10 +92,9 @@ bool LooksMalicious(const std::string &path)
 	size_t seg_start = (path[0] == '/') ? 1 : 0;
 	for (size_t i = seg_start; i <= path.size(); ++i) {
 		const bool boundary = (i == path.size()) || (path[i] == '/');
-		if (!boundary) continue;
-		if (i - seg_start == 2
-		    && path[seg_start] == '.'
-		    && path[seg_start + 1] == '.') {
+		if (!boundary)
+			continue;
+		if (i - seg_start == 2 && path[seg_start] == '.' && path[seg_start + 1] == '.') {
 			return true;
 		}
 		seg_start = i + 1;
@@ -103,13 +103,16 @@ bool LooksMalicious(const std::string &path)
 	return false;
 }
 
-
-namespace {
+namespace
+{
 int HexNibble(char c)
 {
-	if (c >= '0' && c <= '9') return c - '0';
-	if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-	if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
 	return -1;
 }
 
@@ -121,8 +124,9 @@ std::string PercentDecode(const std::string &in)
 	std::string out;
 	out.reserve(in.size());
 	for (size_t i = 0; i < in.size(); ++i) {
-		if (in[i] == '+') { out += ' '; }
-		else if (in[i] == '%' && i + 2 < in.size()) {
+		if (in[i] == '+') {
+			out += ' ';
+		} else if (in[i] == '%' && i + 2 < in.size()) {
 			const int hi = HexNibble(in[i + 1]);
 			const int lo = HexNibble(in[i + 2]);
 			if (hi >= 0 && lo >= 0) {
@@ -137,7 +141,7 @@ std::string PercentDecode(const std::string &in)
 	}
 	return out;
 }
-}  // namespace
+} // namespace
 
 std::map<std::string, std::string> ParseQuery(const std::string &q)
 {
@@ -165,7 +169,6 @@ std::map<std::string, std::string> ParseQuery(const std::string &q)
 	return out;
 }
 
-
 RoutePattern ParsePattern(const std::string &pattern)
 {
 	RoutePattern out;
@@ -182,10 +185,9 @@ RoutePattern ParsePattern(const std::string &pattern)
 	return out;
 }
 
-
 bool Match(const RoutePattern &pattern,
-           const std::vector<std::string> &path_segments,
-           std::map<std::string, std::string> &out_captures)
+	const std::vector<std::string> &path_segments,
+	std::map<std::string, std::string> &out_captures)
 {
 	if (pattern.segments.size() != path_segments.size()) {
 		return false;
@@ -202,18 +204,19 @@ bool Match(const RoutePattern &pattern,
 	return true;
 }
 
-
 bool ShapeEqual(const RoutePattern &a, const RoutePattern &b)
 {
-	if (a.segments.size() != b.segments.size()) return false;
+	if (a.segments.size() != b.segments.size())
+		return false;
 	for (size_t i = 0; i < a.segments.size(); ++i) {
 		const bool a_cap = !a.capture_names[i].empty();
 		const bool b_cap = !b.capture_names[i].empty();
-		if (a_cap != b_cap) return false;
-		if (!a_cap && a.segments[i] != b.segments[i]) return false;
+		if (a_cap != b_cap)
+			return false;
+		if (!a_cap && a.segments[i] != b.segments[i])
+			return false;
 	}
 	return true;
 }
-
 
 } // namespace web_api_path

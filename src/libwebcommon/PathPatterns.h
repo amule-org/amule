@@ -29,19 +29,17 @@
 #include <string>
 #include <vector>
 
-
 // URL-path primitives used by the REST router. Kept dependency-free
 // (no wx, no amule-internal headers) so the unit tests can link this
 // translation unit on its own.
 
-namespace web_api_path {
-
+namespace web_api_path
+{
 
 // Splits `path` on '/'. A leading '/' produces no leading empty
 // segment; a trailing '/' produces a trailing empty segment (so
 // "/a/" → ["a", ""] is distinguishable from "/a" → ["a"]).
 std::vector<std::string> SplitPath(const std::string &path);
-
 
 // Returns true if the raw path looks like a traversal/injection
 // attempt: contains a NUL byte, encoded NUL (%00), a literal ".."
@@ -51,19 +49,18 @@ std::vector<std::string> SplitPath(const std::string &path);
 // protection.
 bool LooksMalicious(const std::string &path);
 
-
 // Parses ?k=v&k2=v2 into a map. Percent-decodes `%hh` pairs and
 // converts `+` to space per application/x-www-form-urlencoded.
 // Malformed `%hh` triplets pass through verbatim so a stray `%` in
 // a path query doesn't silently drop characters.
 std::map<std::string, std::string> ParseQuery(const std::string &q);
 
-
 // A pattern is a path string with optional `{name}` capture segments.
 // Example: "/downloads/{hash}/pause" parses to
 //  segments      = ["downloads", "{hash}", "pause"]
 //  capture_names = ["", "hash", ""]
-struct RoutePattern {
+struct RoutePattern
+{
 	std::vector<std::string> segments;
 	// Per-segment capture name. Empty when the segment is a literal.
 	std::vector<std::string> capture_names;
@@ -71,19 +68,16 @@ struct RoutePattern {
 
 RoutePattern ParsePattern(const std::string &pattern);
 
-
 // Matches `path_segments` against `pattern`. On match, fills
 // `out_captures` with the captured segment values and returns true.
 bool Match(const RoutePattern &pattern,
-           const std::vector<std::string> &path_segments,
-           std::map<std::string, std::string> &out_captures);
-
+	const std::vector<std::string> &path_segments,
+	std::map<std::string, std::string> &out_captures);
 
 // Two patterns are "shape-equivalent" if they would match the same
 // set of paths regardless of capture names. Used at route-registration
 // time to flag duplicate routes.
 bool ShapeEqual(const RoutePattern &a, const RoutePattern &b);
-
 
 } // namespace web_api_path
 

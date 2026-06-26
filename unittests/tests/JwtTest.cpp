@@ -35,14 +35,12 @@
 
 using namespace muleunit;
 
-
 DECLARE(Jwt)
-	std::vector<unsigned char> MakeSecret(unsigned char fill)
-	{
-		return std::vector<unsigned char>(32, fill);
-	}
+std::vector<unsigned char> MakeSecret(unsigned char fill)
+{
+	return std::vector<unsigned char>(32, fill);
+}
 END_DECLARE;
-
 
 TEST(Jwt, IssueProducesThreeDottedParts)
 {
@@ -51,12 +49,12 @@ TEST(Jwt, IssueProducesThreeDottedParts)
 	// Header.Payload.Signature — exactly two dots.
 	int dots = 0;
 	for (size_t i = 0; i < token.size(); ++i) {
-		if (token[i] == '.') ++dots;
+		if (token[i] == '.')
+			++dots;
 	}
 	ASSERT_EQUALS(2, dots);
 	ASSERT_TRUE(!token.empty());
 }
-
 
 TEST(Jwt, RoundtripAdmin)
 {
@@ -69,7 +67,6 @@ TEST(Jwt, RoundtripAdmin)
 	ASSERT_EQUALS(issued.expires_at, r.exp);
 }
 
-
 TEST(Jwt, RoundtripGuest)
 {
 	CJwt auth(MakeSecret(0x22));
@@ -80,21 +77,19 @@ TEST(Jwt, RoundtripGuest)
 	ASSERT_TRUE(r.role == Role::GUEST);
 }
 
-
 TEST(Jwt, ExpiryIs24Hours)
 {
 	CJwt auth(MakeSecret(0x33));
 	const std::time_t before = std::time(nullptr);
 	const CJwt::IssuedToken issued = auth.Issue(Role::ADMIN);
-	const std::time_t after  = std::time(nullptr);
+	const std::time_t after = std::time(nullptr);
 
 	// expires_at must be between [before+86400, after+86400] — same-
 	// second tolerance for the clock tick.
 	const std::time_t lifetime = 24 * 60 * 60;
 	ASSERT_TRUE(issued.expires_at >= before + lifetime);
-	ASSERT_TRUE(issued.expires_at <= after  + lifetime);
+	ASSERT_TRUE(issued.expires_at <= after + lifetime);
 }
-
 
 TEST(Jwt, IssueEmitsJti)
 {
@@ -104,7 +99,6 @@ TEST(Jwt, IssueEmitsJti)
 	ASSERT_FALSE(issued.jti.empty());
 	ASSERT_EQUALS(static_cast<size_t>(22), issued.jti.size());
 }
-
 
 TEST(Jwt, IssueProducesUniqueJti)
 {
@@ -120,7 +114,6 @@ TEST(Jwt, IssueProducesUniqueJti)
 	}
 }
 
-
 TEST(Jwt, VerifyRecoversJti)
 {
 	CJwt auth(MakeSecret(0x13));
@@ -130,7 +123,6 @@ TEST(Jwt, VerifyRecoversJti)
 	ASSERT_TRUE(auth.Verify(issued.token, r));
 	ASSERT_EQUALS(issued.jti, r.jti);
 }
-
 
 TEST(Jwt, TamperedSignatureRejected)
 {
@@ -145,14 +137,13 @@ TEST(Jwt, TamperedSignatureRejected)
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-
 TEST(Jwt, TamperedPayloadRejected)
 {
 	CJwt auth(MakeSecret(0x55));
 	std::string token = auth.Issue(Role::GUEST).token;
 
 	// Flip a payload byte (between the two dots) so the HMAC mismatches.
-	const size_t first_dot  = token.find('.');
+	const size_t first_dot = token.find('.');
 	const size_t second_dot = token.find('.', first_dot + 1);
 	const size_t mid = (first_dot + second_dot) / 2;
 	token[mid] = (token[mid] == 'X') ? 'Y' : 'X';
@@ -161,17 +152,15 @@ TEST(Jwt, TamperedPayloadRejected)
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-
 TEST(Jwt, WrongSecretRejected)
 {
 	CJwt issuer(MakeSecret(0x66));
-	CJwt verifier(MakeSecret(0x67));   // different secret
+	CJwt verifier(MakeSecret(0x67)); // different secret
 
 	const std::string token = issuer.Issue(Role::ADMIN).token;
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(verifier.Verify(token, r));
 }
-
 
 TEST(Jwt, MalformedNoDotsRejected)
 {
@@ -182,7 +171,6 @@ TEST(Jwt, MalformedNoDotsRejected)
 	ASSERT_FALSE(auth.Verify("too.many.dots.here", r));
 	ASSERT_FALSE(auth.Verify("", r));
 }
-
 
 TEST(Jwt, MalformedBase64Rejected)
 {
@@ -198,7 +186,6 @@ TEST(Jwt, MalformedBase64Rejected)
 	ASSERT_FALSE(auth.Verify("aaa.bbb.!!!", r));
 }
 
-
 // --- Header-validation tests (alg-confusion defence) ----------------
 //
 // These tests build a custom JWT byte-for-byte: an arbitrary header
@@ -208,10 +195,10 @@ TEST(Jwt, MalformedBase64Rejected)
 // regressed (e.g. someone removes it for "performance"), these
 // tests start failing.
 
-namespace {
+namespace
+{
 
-const char b64_alphabet[] =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 std::string Base64UrlEncodeForTest(const unsigned char *data, size_t len)
 {
@@ -221,37 +208,34 @@ std::string Base64UrlEncodeForTest(const unsigned char *data, size_t len)
 		const unsigned b0 = data[i];
 		const unsigned b1 = (i + 1 < len) ? data[i + 1] : 0;
 		const unsigned b2 = (i + 2 < len) ? data[i + 2] : 0;
-		out += b64_alphabet[ (b0 >> 2) & 0x3f ];
-		out += b64_alphabet[ ((b0 << 4) | (b1 >> 4)) & 0x3f ];
-		if (i + 1 < len) out += b64_alphabet[ ((b1 << 2) | (b2 >> 6)) & 0x3f ];
-		if (i + 2 < len) out += b64_alphabet[ b2 & 0x3f ];
+		out += b64_alphabet[(b0 >> 2) & 0x3f];
+		out += b64_alphabet[((b0 << 4) | (b1 >> 4)) & 0x3f];
+		if (i + 1 < len)
+			out += b64_alphabet[((b1 << 2) | (b2 >> 6)) & 0x3f];
+		if (i + 2 < len)
+			out += b64_alphabet[b2 & 0x3f];
 	}
 	return out;
 }
 
 std::string CraftToken(const std::vector<unsigned char> &secret,
-                       const std::string &header_json,
-                       const std::string &payload_json)
+	const std::string &header_json,
+	const std::string &payload_json)
 {
 	const std::string h_b64 = Base64UrlEncodeForTest(
-		reinterpret_cast<const unsigned char *>(header_json.data()),
-		header_json.size());
+		reinterpret_cast<const unsigned char *>(header_json.data()), header_json.size());
 	const std::string p_b64 = Base64UrlEncodeForTest(
-		reinterpret_cast<const unsigned char *>(payload_json.data()),
-		payload_json.size());
+		reinterpret_cast<const unsigned char *>(payload_json.data()), payload_json.size());
 	const std::string signing_input = h_b64 + "." + p_b64;
 	unsigned char mac[CryptoPP::SHA256::DIGESTSIZE];
-	CryptoPP::HMAC<CryptoPP::SHA256> hmac(
-		secret.empty() ? nullptr : secret.data(), secret.size());
-	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()),
-	            signing_input.size());
+	CryptoPP::HMAC<CryptoPP::SHA256> hmac(secret.empty() ? nullptr : secret.data(), secret.size());
+	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()), signing_input.size());
 	hmac.Final(mac);
 	const std::string sig = Base64UrlEncodeForTest(mac, sizeof(mac));
 	return signing_input + "." + sig;
 }
 
-}  // namespace
-
+} // namespace
 
 TEST(Jwt, AlgNoneRejectedEvenWithValidHs256Mac)
 {
@@ -259,67 +243,56 @@ TEST(Jwt, AlgNoneRejectedEvenWithValidHs256Mac)
 	CJwt auth(secret);
 	// Header says alg:none, signature is a valid HS256 MAC against the
 	// test secret. Verify must still reject because alg != HS256.
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"none\",\"typ\":\"JWT\"}",
 		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-
 TEST(Jwt, AlgHs512RejectedEvenWithValidHs256Mac)
 {
 	const auto secret = MakeSecret(0xAA);
 	CJwt auth(secret);
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS512\",\"typ\":\"JWT\"}",
 		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-
 TEST(Jwt, AlgRs256RejectedEvenWithValidHs256Mac)
 {
 	const auto secret = MakeSecret(0xBB);
 	CJwt auth(secret);
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"RS256\",\"typ\":\"JWT\"}",
 		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-
 TEST(Jwt, MissingAlgRejected)
 {
 	const auto secret = MakeSecret(0xCC);
 	CJwt auth(secret);
 	const std::string token = CraftToken(
-		secret,
-		"{\"typ\":\"JWT\"}",
-		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
+		secret, "{\"typ\":\"JWT\"}", "{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, WrongTypRejected)
 {
 	const auto secret = MakeSecret(0xDD);
 	CJwt auth(secret);
 	// typ is optional in RFC 7519, but if present it MUST be "JWT".
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"not-a-jwt\"}",
 		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, ExpInPastRejected)
 {
@@ -327,29 +300,23 @@ TEST(Jwt, ExpInPastRejected)
 	CJwt auth(secret);
 	// Yesterday — Verify must reject expired tokens regardless of MAC.
 	const std::time_t yesterday = std::time(nullptr) - 86400;
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		std::string("{\"role\":\"admin\",\"exp\":")
-		    + std::to_string(yesterday) + ",\"jti\":\"t\"}");
+		std::string("{\"role\":\"admin\",\"exp\":") + std::to_string(yesterday) + ",\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, MalformedPayloadJsonRejected)
 {
 	const auto secret = MakeSecret(0xFF);
 	CJwt auth(secret);
 	// Valid HS256 MAC but the payload isn't valid JSON.
-	const std::string token = CraftToken(
-		secret,
-		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		"not json at all");
+	const std::string token =
+		CraftToken(secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", "not json at all");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, MissingJtiRejected)
 {
@@ -360,13 +327,10 @@ TEST(Jwt, MissingJtiRejected)
 	const auto secret = MakeSecret(0x01);
 	CJwt auth(secret);
 	const std::string token = CraftToken(
-		secret,
-		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		"{\"role\":\"admin\",\"exp\":9999999999}");
+		secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", "{\"role\":\"admin\",\"exp\":9999999999}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, EmptyJtiRejected)
 {
@@ -379,16 +343,13 @@ TEST(Jwt, EmptyJtiRejected)
 	// pass and the empty-jti check is the only available reject
 	// path.
 	const std::time_t now = std::time(nullptr);
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		std::string("{\"role\":\"admin\",\"iat\":")
-		    + std::to_string(now) + ",\"exp\":"
-		    + std::to_string(now + 3600) + ",\"jti\":\"\"}");
+		std::string("{\"role\":\"admin\",\"iat\":") + std::to_string(now) +
+			",\"exp\":" + std::to_string(now + 3600) + ",\"jti\":\"\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, MissingIatRejected)
 {
@@ -399,15 +360,12 @@ TEST(Jwt, MissingIatRejected)
 	const auto secret = MakeSecret(0x03);
 	CJwt auth(secret);
 	const std::time_t now = std::time(nullptr);
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		std::string("{\"role\":\"admin\",\"exp\":")
-		    + std::to_string(now + 3600) + ",\"jti\":\"t\"}");
+		std::string("{\"role\":\"admin\",\"exp\":") + std::to_string(now + 3600) + ",\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, ExpIatLifetimeCapExceeded)
 {
@@ -420,16 +378,13 @@ TEST(Jwt, ExpIatLifetimeCapExceeded)
 	CJwt auth(secret);
 	const std::time_t now = std::time(nullptr);
 	const std::time_t two_days = 2 * 24 * 60 * 60;
-	const std::string token = CraftToken(
-		secret,
+	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		std::string("{\"role\":\"admin\",\"iat\":")
-		    + std::to_string(now) + ",\"exp\":"
-		    + std::to_string(now + two_days) + ",\"jti\":\"t\"}");
+		std::string("{\"role\":\"admin\",\"iat\":") + std::to_string(now) +
+			",\"exp\":" + std::to_string(now + two_days) + ",\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 // --- Base64UrlDecode structural-invariant boundary tests ------------
 //
@@ -452,20 +407,18 @@ TEST(Jwt, Base64UrlDecodeRejectsLenMod4EqualsOne)
 	// header section has length % 4 == 1 (9 chars). Any 9-char string
 	// drawn from the b64url alphabet works; the decoder rejects on
 	// size alone before inspecting the bytes.
-	const std::string h_b64 = "AAAAAAAAA";    // 9 chars
-	const std::string p_b64 = "AAAA";         // 4 chars (mod 4 == 0)
+	const std::string h_b64 = "AAAAAAAAA"; // 9 chars
+	const std::string p_b64 = "AAAA";      // 4 chars (mod 4 == 0)
 	const std::string signing_input = h_b64 + "." + p_b64;
 	unsigned char mac[CryptoPP::SHA256::DIGESTSIZE];
 	CryptoPP::HMAC<CryptoPP::SHA256> hmac(secret.data(), secret.size());
-	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()),
-	            signing_input.size());
+	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()), signing_input.size());
 	hmac.Final(mac);
 	const std::string sig = Base64UrlEncodeForTest(mac, sizeof(mac));
 	const std::string token = signing_input + "." + sig;
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 {
@@ -480,15 +433,13 @@ TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 	const std::string signing_input = h_b64 + "." + p_b64;
 	unsigned char mac[CryptoPP::SHA256::DIGESTSIZE];
 	CryptoPP::HMAC<CryptoPP::SHA256> hmac(secret.data(), secret.size());
-	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()),
-	            signing_input.size());
+	hmac.Update(reinterpret_cast<const unsigned char *>(signing_input.data()), signing_input.size());
 	hmac.Final(mac);
 	const std::string sig = Base64UrlEncodeForTest(mac, sizeof(mac));
 	const std::string token = signing_input + "." + sig;
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 // --- Depth-cap defence against unauthenticated stack-overflow -------
 //
@@ -501,21 +452,23 @@ TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 // Tests craft tokens past the cap, sign with the matching HMAC so
 // the MAC compare passes, then assert Verify() rejects.
 
-namespace {
+namespace
+{
 
 std::string DeeplyNested(const std::string &leaf, std::size_t levels)
 {
 	// {"a":{"a":...{"a":leaf}...}}  → levels openers.
 	std::string out;
 	out.reserve(levels * 6 + leaf.size() + levels);
-	for (std::size_t i = 0; i < levels; ++i) out += "{\"a\":";
+	for (std::size_t i = 0; i < levels; ++i)
+		out += "{\"a\":";
 	out += leaf;
-	for (std::size_t i = 0; i < levels; ++i) out += "}";
+	for (std::size_t i = 0; i < levels; ++i)
+		out += "}";
 	return out;
 }
 
-}  // namespace
-
+} // namespace
 
 TEST(Jwt, DeeplyNestedPayloadRejected)
 {
@@ -523,23 +476,18 @@ TEST(Jwt, DeeplyNestedPayloadRejected)
 	CJwt auth(secret);
 	// 200 levels — well over the 32-opener cap but small enough that
 	// the test stays fast and doesn't itself risk a stack overflow.
-	const std::string token = CraftToken(
-		secret,
-		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
-		DeeplyNested("1", 200));
+	const std::string token =
+		CraftToken(secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", DeeplyNested("1", 200));
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
-
 
 TEST(Jwt, DeeplyNestedHeaderRejected)
 {
 	const auto secret = MakeSecret(0xAB);
 	CJwt auth(secret);
 	const std::string token = CraftToken(
-		secret,
-		DeeplyNested("\"x\"", 200),
-		"{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
+		secret, DeeplyNested("\"x\"", 200), "{\"role\":\"admin\",\"exp\":9999999999,\"jti\":\"t\"}");
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }

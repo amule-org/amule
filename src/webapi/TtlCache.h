@@ -30,9 +30,8 @@
 #include <mutex>
 #include <utility>
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 // Single-flight TTL cache for lazy-fetched endpoints
 // (/logs/serverinfo, /stats/tree, /stats/graphs/{graph},
@@ -58,8 +57,8 @@ namespace webapi {
 //
 // The cached `T` must be copyable (returned by value so `m_mu` isn't
 // held across JSON serialisation).
-template <class T>
-class CTtlCache {
+template <class T> class CTtlCache
+{
 public:
 	using clock_t = std::chrono::steady_clock;
 
@@ -69,8 +68,7 @@ public:
 	// runs fetch, re-takes the lock, stores, broadcasts);
 	// concurrent callers wait on the condvar until inflight clears
 	// and then read the stored value.
-	template <class Fetcher>
-	T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch)
+	template <class Fetcher> T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch)
 	{
 		std::unique_lock<std::mutex> lk(m_mu);
 		while (true) {
@@ -85,7 +83,7 @@ public:
 				// case yet another fetch is needed (e.g. the
 				// inflight result raced our TTL clamp because
 				// fetch was slow).
-				m_cv.wait(lk, [this]{ return !m_inflight; });
+				m_cv.wait(lk, [this] { return !m_inflight; });
 				continue;
 			}
 			// We're the inflight worker. Claim the slot, drop the
@@ -109,9 +107,9 @@ public:
 			}
 			{
 				std::lock_guard<std::mutex> g(m_mu);
-				m_value      = std::move(fetched);
+				m_value = std::move(fetched);
 				m_fetched_at = clock_t::now();
-				m_inflight   = false;
+				m_inflight = false;
 			}
 			m_cv.notify_all();
 			// Re-acquire to read the value under the lock so
@@ -134,14 +132,13 @@ public:
 	}
 
 private:
-	mutable std::mutex      m_mu;
+	mutable std::mutex m_mu;
 	std::condition_variable m_cv;
-	clock_t::time_point     m_fetched_at{};
-	T                       m_value{};
-	bool                    m_inflight = false;
+	clock_t::time_point m_fetched_at{};
+	T m_value{};
+	bool m_inflight = false;
 };
 
-
-}  // namespace webapi
+} // namespace webapi
 
 #endif // WEBAPI_TTL_CACHE_H

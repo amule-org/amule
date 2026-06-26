@@ -28,9 +28,7 @@
 using namespace muleunit;
 using namespace web_api_path;
 
-
 DECLARE_SIMPLE(PathPatterns)
-
 
 // ----------------------------------------------------------------------
 // SplitPath
@@ -62,8 +60,8 @@ TEST(PathPatterns, SplitPath_Multiple)
 	auto s = SplitPath("/downloads/abc/pause");
 	ASSERT_EQUALS(static_cast<size_t>(3), s.size());
 	ASSERT_EQUALS(std::string("downloads"), s[0]);
-	ASSERT_EQUALS(std::string("abc"),       s[1]);
-	ASSERT_EQUALS(std::string("pause"),     s[2]);
+	ASSERT_EQUALS(std::string("abc"), s[1]);
+	ASSERT_EQUALS(std::string("pause"), s[2]);
 }
 
 TEST(PathPatterns, SplitPath_TrailingSlash)
@@ -84,7 +82,6 @@ TEST(PathPatterns, SplitPath_NoLeadingSlash)
 	ASSERT_EQUALS(std::string("a"), s[0]);
 	ASSERT_EQUALS(std::string("b"), s[1]);
 }
-
 
 // ----------------------------------------------------------------------
 // ParseQuery
@@ -130,7 +127,6 @@ TEST(PathPatterns, ParseQuery_EqualsInValue)
 	ASSERT_EQUALS(std::string("a=b"), m["expr"]);
 }
 
-
 TEST(PathPatterns, ParseQuery_PercentDecode)
 {
 	// %20 in both keys and values; values are application/x-www-form-
@@ -139,7 +135,6 @@ TEST(PathPatterns, ParseQuery_PercentDecode)
 	ASSERT_EQUALS(std::string("c=d"), m["a b"]);
 	ASSERT_EQUALS(std::string("f g"), m["e"]);
 }
-
 
 TEST(PathPatterns, ParseQuery_MalformedPercentPassThrough)
 {
@@ -152,7 +147,6 @@ TEST(PathPatterns, ParseQuery_MalformedPercentPassThrough)
 	ASSERT_EQUALS(std::string("trailing%"), m2["k"]);
 }
 
-
 TEST(PathPatterns, ParseQuery_PercentCaseInsensitive)
 {
 	// Both `%2F` and `%2f` decode to `/` per RFC 3986.
@@ -160,7 +154,6 @@ TEST(PathPatterns, ParseQuery_PercentCaseInsensitive)
 	ASSERT_EQUALS(std::string("foo/bar"), m["a"]);
 	ASSERT_EQUALS(std::string("foo/bar"), m["b"]);
 }
-
 
 // ----------------------------------------------------------------------
 // ParsePattern
@@ -179,8 +172,8 @@ TEST(PathPatterns, ParsePattern_SingleCapture)
 	RoutePattern p = ParsePattern("/downloads/{hash}");
 	ASSERT_EQUALS(static_cast<size_t>(2), p.segments.size());
 	ASSERT_EQUALS(std::string("downloads"), p.segments[0]);
-	ASSERT_EQUALS(std::string("{hash}"),    p.segments[1]);
-	ASSERT_EQUALS(std::string(""),     p.capture_names[0]);
+	ASSERT_EQUALS(std::string("{hash}"), p.segments[1]);
+	ASSERT_EQUALS(std::string(""), p.capture_names[0]);
 	ASSERT_EQUALS(std::string("hash"), p.capture_names[1]);
 }
 
@@ -189,9 +182,8 @@ TEST(PathPatterns, ParsePattern_CaptureMidPath)
 	RoutePattern p = ParsePattern("/downloads/{hash}/pause");
 	ASSERT_EQUALS(static_cast<size_t>(3), p.segments.size());
 	ASSERT_EQUALS(std::string("hash"), p.capture_names[1]);
-	ASSERT_EQUALS(std::string(""),     p.capture_names[2]);
+	ASSERT_EQUALS(std::string(""), p.capture_names[2]);
 }
-
 
 // ----------------------------------------------------------------------
 // Match
@@ -200,7 +192,7 @@ TEST(PathPatterns, ParsePattern_CaptureMidPath)
 TEST(PathPatterns, Match_Literal_OK)
 {
 	RoutePattern p = ParsePattern("/version");
-	std::map<std::string,std::string> caps;
+	std::map<std::string, std::string> caps;
 	ASSERT_TRUE(Match(p, SplitPath("/version"), caps));
 	ASSERT_EQUALS(static_cast<size_t>(0), caps.size());
 }
@@ -208,22 +200,22 @@ TEST(PathPatterns, Match_Literal_OK)
 TEST(PathPatterns, Match_Literal_Mismatch)
 {
 	RoutePattern p = ParsePattern("/version");
-	std::map<std::string,std::string> caps;
+	std::map<std::string, std::string> caps;
 	ASSERT_FALSE(Match(p, SplitPath("/status"), caps));
 }
 
 TEST(PathPatterns, Match_Literal_DifferentLength)
 {
 	RoutePattern p = ParsePattern("/a/b");
-	std::map<std::string,std::string> caps;
+	std::map<std::string, std::string> caps;
 	ASSERT_FALSE(Match(p, SplitPath("/a/b/c"), caps));
-	ASSERT_FALSE(Match(p, SplitPath("/a"),     caps));
+	ASSERT_FALSE(Match(p, SplitPath("/a"), caps));
 }
 
 TEST(PathPatterns, Match_Capture_Single)
 {
 	RoutePattern p = ParsePattern("/downloads/{hash}");
-	std::map<std::string,std::string> caps;
+	std::map<std::string, std::string> caps;
 	ASSERT_TRUE(Match(p, SplitPath("/downloads/31d6cfe0"), caps));
 	ASSERT_EQUALS(std::string("31d6cfe0"), caps["hash"]);
 }
@@ -231,7 +223,7 @@ TEST(PathPatterns, Match_Capture_Single)
 TEST(PathPatterns, Match_Capture_Mid)
 {
 	RoutePattern p = ParsePattern("/downloads/{hash}/pause");
-	std::map<std::string,std::string> caps;
+	std::map<std::string, std::string> caps;
 	ASSERT_TRUE(Match(p, SplitPath("/downloads/abc/pause"), caps));
 	ASSERT_EQUALS(std::string("abc"), caps["hash"]);
 }
@@ -239,11 +231,10 @@ TEST(PathPatterns, Match_Capture_Mid)
 TEST(PathPatterns, Match_Capture_LengthMismatch)
 {
 	RoutePattern p = ParsePattern("/downloads/{hash}/pause");
-	std::map<std::string,std::string> caps;
+	std::map<std::string, std::string> caps;
 	ASSERT_FALSE(Match(p, SplitPath("/downloads/abc"), caps));
 	ASSERT_FALSE(Match(p, SplitPath("/downloads/abc/pause/extra"), caps));
 }
-
 
 // ----------------------------------------------------------------------
 // ShapeEqual

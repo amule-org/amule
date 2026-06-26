@@ -29,7 +29,6 @@
 
 #include <wx/string.h>
 
-
 // XOR-accumulator constant-time equality. Returns false immediately
 // on length mismatch (length is not the secret); for equal-length
 // inputs the timing is data-independent.
@@ -44,11 +43,12 @@
 // variable callers MUST pad to a common bound first or accept a
 // length-side-channel leak.
 
-namespace webcommon {
+namespace webcommon
+{
 
 bool ConstantTimeEquals(const std::string &a, const std::string &b);
-bool ConstantTimeEquals(const wxString   &a, const wxString   &b);
+bool ConstantTimeEquals(const wxString &a, const wxString &b);
 
-}  // namespace webcommon
+} // namespace webcommon
 
 #endif // LIBWEBCOMMON_CONSTANTTIME_H

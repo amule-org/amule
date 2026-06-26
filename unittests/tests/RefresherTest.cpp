@@ -27,7 +27,7 @@
 #include "Refresher.h"
 #include "State.h"
 
-#include "RLE.h"   // PartFileEncoderData for the rle_state arg
+#include "RLE.h" // PartFileEncoderData for the rle_state arg
 
 #include <ec/cpp/ECPacket.h>
 #include <ec/cpp/ECTag.h>
@@ -36,13 +36,10 @@
 #include <cstdint>
 #include <map>
 
-
 using namespace muleunit;
 using namespace webapi;
 
-
 DECLARE_SIMPLE(Refresher)
-
 
 // ----------------------------------------------------------------------
 // EC_TAG_FILE_REMOVED — INC-protocol deletion marker. With GET_UPDATE
@@ -91,7 +88,6 @@ TEST(Refresher, FileRemovedErasesFromDownloads)
 	ASSERT_EQUALS(std::string("survivor.iso"), cache.find(99)->second.name);
 }
 
-
 TEST(Refresher, FileRemovedErasesFromShared)
 {
 	// Symmetric to FileRemovedErasesFromDownloads. The server-side
@@ -118,7 +114,6 @@ TEST(Refresher, FileRemovedErasesFromShared)
 	ASSERT_TRUE(cache.empty());
 }
 
-
 TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 {
 	// Cache contains a single known download.
@@ -144,7 +139,6 @@ TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 	ASSERT_TRUE(cache.find(7) != cache.end());
 	ASSERT_EQUALS(std::string("kept.iso"), cache.find(7)->second.name);
 }
-
 
 // ----------------------------------------------------------------------
 // Empty response (no churn since the last tick) — INC protocol's
@@ -179,7 +173,6 @@ TEST(Refresher, EmptyResponseLeavesCachesIntact)
 	ASSERT_EQUALS(static_cast<size_t>(1), shared.size());
 }
 
-
 // ----------------------------------------------------------------------
 // Mixed top-level dispatch — one GET_UPDATE response carries both
 // EC_TAG_PARTFILE and EC_TAG_KNOWNFILE at the same level. The two
@@ -195,7 +188,7 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 
 	CECPacket resp(EC_OP_SHARED_FILES);
 	// One partfile (ECID 10) — should land in downloads only.
-	resp.AddTag(CECTag(EC_TAG_PARTFILE,  static_cast<std::uint32_t>(10)));
+	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(10)));
 	// One sharedfile (ECID 20) — should land in shared only.
 	resp.AddTag(CECTag(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(20)));
 	// A FILE_REMOVED marker (ECID 99) — erases from both walkers'
@@ -216,7 +209,6 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 	ASSERT_TRUE(shared.find(20) != shared.end());
 	ASSERT_TRUE(shared.find(10) == shared.end());
 }
-
 
 // ----------------------------------------------------------------------
 // Shared partfile dispatch — amuled's /shared surface is the union
@@ -244,15 +236,13 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 	// which is how the live code recovers it.
 	std::map<std::uint32_t, std::pair<std::string, std::string>> fallback;
 	fallback[50] = std::make_pair(
-		std::string("aaaa3333aaaa3333aaaa3333aaaa3333"),
-		std::string("shared-test.iso"));
+		std::string("aaaa3333aaaa3333aaaa3333aaaa3333"), std::string("shared-test.iso"));
 	ApplyGetUpdateToShared(&resp, cache);
 
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(50) != cache.end());
 	ASSERT_EQUALS(static_cast<std::uint32_t>(50), cache.find(50)->second.ecid);
 }
-
 
 TEST(Refresher, UnsharedPartfileSkippedFromShared)
 {
@@ -272,7 +262,6 @@ TEST(Refresher, UnsharedPartfileSkippedFromShared)
 	ASSERT_TRUE(cache.empty());
 }
 
-
 TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 {
 	// Pre-seed a shared partfile in cache (was sharing on previous
@@ -288,7 +277,7 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 		s.hash = "dddd4444dddd4444dddd4444dddd4444";
 		s.name = "was-sharing.iso";
 		s.is_shared = true;
-		s.shared.xfer_session = 99;  // stale stat to verify the reset
+		s.shared.xfer_session = 99; // stale stat to verify the reset
 		cache.emplace(70, s);
 	}
 	CECPacket resp(EC_OP_SHARED_FILES);
@@ -304,10 +293,8 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 	ASSERT_TRUE(!cache.find(70)->second.is_shared);
 	// Stale upload stats from the prior sharing period must be cleared
 	// so /shared can never re-surface them.
-	ASSERT_EQUALS(static_cast<std::uint64_t>(0),
-	              cache.find(70)->second.shared.xfer_session);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), cache.find(70)->second.shared.xfer_session);
 }
-
 
 TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 {
@@ -333,7 +320,6 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 	ASSERT_EQUALS(std::string("still-sharing.iso"), cache.find(80)->second.name);
 }
 
-
 TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 {
 	// Mirror of the previous test: a PARTFILE with the SHARED flag
@@ -348,7 +334,6 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 
 	ASSERT_TRUE(cache.empty());
 }
-
 
 // ----------------------------------------------------------------------
 // New ECID arrives in one tick with identity baked in — the whole
@@ -380,7 +365,6 @@ TEST(Refresher, NewPartfileInsertedInOneTick)
 	ASSERT_TRUE(cache.find(55) != cache.end());
 	ASSERT_EQUALS(static_cast<std::uint32_t>(55), cache.find(55)->second.ecid);
 }
-
 
 // ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
@@ -420,11 +404,10 @@ TEST(Refresher, ServersFromContainerMergesByEcid)
 	ApplyGetUpdateToServers(&resp, cache);
 
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
-	ASSERT_TRUE(cache.find(42)   != cache.end());
-	ASSERT_TRUE(cache.find(9999) == cache.end());   // evicted
+	ASSERT_TRUE(cache.find(42) != cache.end());
+	ASSERT_TRUE(cache.find(9999) == cache.end()); // evicted
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1234), cache[42].users);
 }
-
 
 TEST(Refresher, ServersEmptyContainerEmptiesCache)
 {
@@ -441,7 +424,6 @@ TEST(Refresher, ServersEmptyContainerEmptiesCache)
 
 	ASSERT_TRUE(cache.empty());
 }
-
 
 TEST(Refresher, ServersNoContainerLeavesCacheAlone)
 {
@@ -461,7 +443,6 @@ TEST(Refresher, ServersNoContainerLeavesCacheAlone)
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(7) != cache.end());
 }
-
 
 // ----------------------------------------------------------------------
 // RLE state map — cleaned up alongside the cache when a partfile
@@ -489,10 +470,9 @@ TEST(Refresher, RleStateErasedAlongsideFileRemoved)
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 
-	ASSERT_TRUE(cache.find(77)     == cache.end());
+	ASSERT_TRUE(cache.find(77) == cache.end());
 	ASSERT_TRUE(rle_state.find(77) == rle_state.end());
 }
-
 
 TEST(Refresher, RleStatePreservedForKnownEntryAcrossTick)
 {
@@ -515,10 +495,9 @@ TEST(Refresher, RleStatePreservedForKnownEntryAcrossTick)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 
-	ASSERT_TRUE(cache.find(5)     != cache.end());
+	ASSERT_TRUE(cache.find(5) != cache.end());
 	ASSERT_TRUE(rle_state.find(5) != rle_state.end());
 }
-
 
 // ----------------------------------------------------------------------
 // /stats/tree — recursive walk strips the root container and surfaces
@@ -543,8 +522,7 @@ TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(101));
-		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS,
-			static_cast<std::uint8_t>(9 /* PS_COMPLETE */)));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint8_t>(9 /* PS_COMPLETE */)));
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_STOPPED, true));
 		resp.AddTag(pf);
 	}
@@ -554,7 +532,6 @@ TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 	ASSERT_TRUE(cache.find(101) != cache.end());
 	ASSERT_EQUALS(std::string("completed"), cache.find(101)->second.download.status);
 }
-
 
 TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 {
@@ -567,8 +544,7 @@ TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(102));
-		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS,
-			static_cast<std::uint8_t>(8 /* PS_COMPLETING */)));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint8_t>(8 /* PS_COMPLETING */)));
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_STOPPED, true));
 		resp.AddTag(pf);
 	}
@@ -577,7 +553,6 @@ TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 	ASSERT_TRUE(cache.find(102) != cache.end());
 	ASSERT_EQUALS(std::string("completing"), cache.find(102)->second.download.status);
 }
-
 
 TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 {
@@ -592,8 +567,7 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 	{
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(103));
 		// PS_READY = 0 (transferring). User paused it.
-		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS,
-			static_cast<std::uint8_t>(0)));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint8_t>(0)));
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_STOPPED, true));
 		resp.AddTag(pf);
 	}
@@ -602,7 +576,6 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 	ASSERT_TRUE(cache.find(103) != cache.end());
 	ASSERT_EQUALS(std::string("paused"), cache.find(103)->second.download.status);
 }
-
 
 TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 {
@@ -616,8 +589,7 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 	{
 		CECTag transfer(EC_TAG_STATTREE_NODE, wxString("Transfer"));
 		{
-			CECTag total(EC_TAG_STATTREE_NODE,
-				wxString("Total bytes transferred: 12.3 GiB"));
+			CECTag total(EC_TAG_STATTREE_NODE, wxString("Total bytes transferred: 12.3 GiB"));
 			transfer.AddTag(total);
 		}
 		root.AddTag(transfer);
@@ -634,19 +606,15 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 	// The root container itself is discarded; we expose its 2 children
 	// (Transfer + Connection) as top-level nodes.
 	ASSERT_TRUE(out.label.empty());
-	ASSERT_EQUALS(static_cast<size_t>(2),                 out.children.size());
+	ASSERT_EQUALS(static_cast<size_t>(2), out.children.size());
 	// Transfer subtree.
-	ASSERT_EQUALS(std::string("Transfer"),                out.children[0].label);
-	ASSERT_EQUALS(static_cast<size_t>(1),                 out.children[0].children.size());
-	ASSERT_EQUALS(std::string("Total bytes transferred: 12.3 GiB"),
-	              out.children[0].children[0].label);
+	ASSERT_EQUALS(std::string("Transfer"), out.children[0].label);
+	ASSERT_EQUALS(static_cast<size_t>(1), out.children[0].children.size());
+	ASSERT_EQUALS(std::string("Total bytes transferred: 12.3 GiB"), out.children[0].children[0].label);
 	// Connection is a leaf at this depth.
-	ASSERT_EQUALS(std::string("Connection"),              out.children[1].label);
-	ASSERT_EQUALS(static_cast<size_t>(0),                 out.children[1].children.size());
+	ASSERT_EQUALS(std::string("Connection"), out.children[1].label);
+	ASSERT_EQUALS(static_cast<size_t>(0), out.children[1].children.size());
 }
-
-
-
 
 // ----------------------------------------------------------------------
 // AdvanceSearchProgress — maps EC_TAG_SEARCH_LIFECYCLE_STATE +
@@ -656,22 +624,22 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 // longer masks it per-kind — it just passes it through and clamps.
 // ----------------------------------------------------------------------
 
-namespace {
+namespace
+{
 
 webapi::SearchProgressSnapshot MakeActive(const std::string &kind)
 {
 	webapi::SearchProgressSnapshot s;
 	s.active = true;
-	s.kind   = kind;
+	s.kind = kind;
 	return s;
 }
 
-constexpr std::uint32_t LIFECYCLE_IDLE     = 0;
-constexpr std::uint32_t LIFECYCLE_RUNNING  = 1;
+constexpr std::uint32_t LIFECYCLE_IDLE = 0;
+constexpr std::uint32_t LIFECYCLE_RUNNING = 1;
 constexpr std::uint32_t LIFECYCLE_FINISHED = 2;
 
-}  // namespace
-
+} // namespace
 
 TEST(Refresher, SearchProgressRunningCarriesPercentForGlobal)
 {
@@ -682,7 +650,6 @@ TEST(Refresher, SearchProgressRunningCarriesPercentForGlobal)
 	ASSERT_TRUE(!s.complete);
 	ASSERT_EQUALS(static_cast<uint32_t>(42), s.percent);
 }
-
 
 TEST(Refresher, SearchProgressRunningPassesThroughKadRamp)
 {
@@ -696,7 +663,6 @@ TEST(Refresher, SearchProgressRunningPassesThroughKadRamp)
 	ASSERT_EQUALS(static_cast<uint32_t>(37), s.percent);
 }
 
-
 TEST(Refresher, SearchProgressRunningClampsPercentAbove100)
 {
 	using webapi::AdvanceSearchProgress;
@@ -708,7 +674,6 @@ TEST(Refresher, SearchProgressRunningClampsPercentAbove100)
 	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
 }
 
-
 TEST(Refresher, SearchProgressFinishedSetsComplete)
 {
 	using webapi::AdvanceSearchProgress;
@@ -718,7 +683,6 @@ TEST(Refresher, SearchProgressFinishedSetsComplete)
 	ASSERT_TRUE(s.complete);
 	ASSERT_EQUALS(static_cast<uint32_t>(100), s.percent);
 }
-
 
 TEST(Refresher, SearchProgressIdleZeroesOutGracefully)
 {

@@ -36,14 +36,13 @@
 // the build doesn't depend on the implicit include. Mirror the shim
 // libwebcommon/HeaderParse.cpp already uses.
 #ifdef _WIN32
-#  define strncasecmp _strnicmp
+#define strncasecmp _strnicmp
 #else
-#  include <strings.h>
+#include <strings.h>
 #endif
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 // ---------- CRevocationSet ---------------------------------------
 
@@ -54,12 +53,12 @@ void CRevocationSet::Revoke(const std::string &jti, std::time_t exp)
 	GcExpired();
 }
 
-
 bool CRevocationSet::IsRevoked(const std::string &jti) const
 {
 	std::lock_guard<std::mutex> lock(m_mu);
 	auto it = m_revoked.find(jti);
-	if (it == m_revoked.end()) return false;
+	if (it == m_revoked.end())
+		return false;
 	// Lazy GC: if the entry has already expired, drop it. Saves a
 	// tick of memory and prevents stale entries from accumulating
 	// for tokens nobody will ever present again.
@@ -70,13 +69,11 @@ bool CRevocationSet::IsRevoked(const std::string &jti) const
 	return true;
 }
 
-
 std::size_t CRevocationSet::Size() const
 {
 	std::lock_guard<std::mutex> lock(m_mu);
 	return m_revoked.size();
 }
-
 
 void CRevocationSet::GcExpired() const
 {
@@ -98,7 +95,6 @@ void CRevocationSet::GcExpired() const
 	}
 }
 
-
 // ---------- CRateLimiter -----------------------------------------
 
 CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
@@ -106,12 +102,13 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 	std::lock_guard<std::mutex> lock(m_mu);
 	const std::time_t now = m_clock();
 	auto it = m_buckets.find(ip);
-	if (it == m_buckets.end()) return Decision{};
+	if (it == m_buckets.end())
+		return Decision{};
 
 	Bucket &b = it->second;
 	if (b.lockout_until > now) {
 		Decision d;
-		d.locked_out          = true;
+		d.locked_out = true;
 		d.retry_after_seconds = b.lockout_until - now;
 		return d;
 	}
@@ -127,13 +124,11 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 	// remain in failures until the next NoteFailure fires, and a
 	// caller inspecting bucket size via a future debug surface would
 	// see counts that include already-out-of-window failures.
-	while (!b.failures.empty()
-	    && (now - b.failures.front()) > m_cfg.window_seconds) {
+	while (!b.failures.empty() && (now - b.failures.front()) > m_cfg.window_seconds) {
 		b.failures.pop_front();
 	}
 	return Decision{};
 }
-
 
 void CRateLimiter::NoteFailure(const std::string &ip)
 {
@@ -148,8 +143,7 @@ void CRateLimiter::NoteFailure(const std::string &ip)
 	// implemented a TUMBLING window — an attacker could split
 	// threshold-1 attempts across the two adjacent windows and
 	// never trip lockout. Per-stamp expiry closes the gap.
-	while (!b.failures.empty()
-	    && (now - b.failures.front()) > m_cfg.window_seconds) {
+	while (!b.failures.empty() && (now - b.failures.front()) > m_cfg.window_seconds) {
 		b.failures.pop_front();
 	}
 	b.failures.push_back(now);
@@ -159,13 +153,11 @@ void CRateLimiter::NoteFailure(const std::string &ip)
 	}
 }
 
-
 void CRateLimiter::NoteSuccess(const std::string &ip)
 {
 	std::lock_guard<std::mutex> lock(m_mu);
 	m_buckets.erase(ip);
 }
-
 
 // ---------- Header extraction ------------------------------------
 
@@ -175,37 +167,35 @@ std::string ExtractBearerToken(const std::string &authorization_header)
 	// case-insensitive; the token itself is the bare base64url
 	// triplet our own CJwt emits.
 	const char *prefix = "Bearer ";
-	const size_t plen  = std::strlen(prefix);
-	if (authorization_header.size() <= plen) return std::string();
+	const size_t plen = std::strlen(prefix);
+	if (authorization_header.size() <= plen)
+		return std::string();
 	if (strncasecmp(authorization_header.c_str(), prefix, plen) != 0) {
 		return std::string();
 	}
 	// Trim leading OWS after the scheme name (some clients add extra
 	// spaces; RFC 7230 §3.2.3 allows them).
 	size_t i = plen;
-	while (i < authorization_header.size()
-	       && (authorization_header[i] == ' ' || authorization_header[i] == '\t')) {
+	while (i < authorization_header.size() &&
+		(authorization_header[i] == ' ' || authorization_header[i] == '\t')) {
 		++i;
 	}
-	if (i >= authorization_header.size()) return std::string();
+	if (i >= authorization_header.size())
+		return std::string();
 	return authorization_header.substr(i);
 }
 
-
-std::string ExtractCookieValue(const std::string &cookie_header,
-                               const std::string &cookie_name)
+std::string ExtractCookieValue(const std::string &cookie_header, const std::string &cookie_name)
 {
 	// Delegate to libwebcommon's pointer-arithmetic helper so the
 	// parsing rules (case-insensitive name match, `;` separators,
 	// OWS trimming) stay in one place.
-	const auto v = webcommon::FindCookieValue(
-		cookie_header.c_str(),
-		cookie_header.size(),
-		cookie_name.c_str());
-	if (!v.first || v.second == 0) return std::string();
+	const auto v =
+		webcommon::FindCookieValue(cookie_header.c_str(), cookie_header.size(), cookie_name.c_str());
+	if (!v.first || v.second == 0)
+		return std::string();
 	return std::string(v.first, v.second);
 }
-
 
 // ---------- ISO-8601 ---------------------------------------------
 
@@ -218,10 +208,11 @@ std::string FormatIso8601Utc(std::time_t t)
 	gmtime_r(&t, &out);
 #endif
 	char buf[32];
-	const int n = std::snprintf(buf, sizeof(buf),
+	const int n = std::snprintf(buf,
+		sizeof(buf),
 		"%04d-%02d-%02dT%02d:%02d:%02dZ",
 		out.tm_year + 1900,
-		out.tm_mon  + 1,
+		out.tm_mon + 1,
 		out.tm_mday,
 		out.tm_hour,
 		out.tm_min,
@@ -229,9 +220,9 @@ std::string FormatIso8601Utc(std::time_t t)
 	// snprintf's return is the bytes that *would* have been written.
 	// Our format produces exactly 20 chars + NUL, so anything else
 	// is a libc bug — return whatever we got rather than crashing.
-	if (n < 0) return std::string();
+	if (n < 0)
+		return std::string();
 	return std::string(buf, std::min<size_t>(n, sizeof(buf) - 1));
 }
 
-
-}  // namespace webapi
+} // namespace webapi

@@ -41,28 +41,39 @@
 #include <cstring>
 
 #ifndef _WIN32
-#  include <fcntl.h>
-#  include <sys/stat.h>
-#  include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
-
-namespace {
+namespace
+{
 
 bool HexDecode(const std::string &in, std::vector<unsigned char> &out)
 {
-	if (in.size() % 2 != 0) return false;
+	if (in.size() % 2 != 0)
+		return false;
 	out.clear();
 	out.reserve(in.size() / 2);
 	auto nibble = [](char c, unsigned &v) -> bool {
-		if (c >= '0' && c <= '9') { v = c - '0';        return true; }
-		if (c >= 'a' && c <= 'f') { v = c - 'a' + 10;   return true; }
-		if (c >= 'A' && c <= 'F') { v = c - 'A' + 10;   return true; }
+		if (c >= '0' && c <= '9') {
+			v = c - '0';
+			return true;
+		}
+		if (c >= 'a' && c <= 'f') {
+			v = c - 'a' + 10;
+			return true;
+		}
+		if (c >= 'A' && c <= 'F') {
+			v = c - 'A' + 10;
+			return true;
+		}
 		return false;
 	};
 	for (size_t i = 0; i < in.size(); i += 2) {
 		unsigned hi, lo;
-		if (!nibble(in[i], hi) || !nibble(in[i + 1], lo)) return false;
+		if (!nibble(in[i], hi) || !nibble(in[i + 1], lo))
+			return false;
 		out.push_back(static_cast<unsigned char>((hi << 4) | lo));
 	}
 	return true;
@@ -74,8 +85,8 @@ std::string HexEncode(const std::vector<unsigned char> &data)
 	std::string out;
 	out.resize(data.size() * 2);
 	for (size_t i = 0; i < data.size(); ++i) {
-		out[i * 2]     = hex[(data[i] >> 4) & 0x0F];
-		out[i * 2 + 1] = hex[ data[i]       & 0x0F];
+		out[i * 2] = hex[(data[i] >> 4) & 0x0F];
+		out[i * 2 + 1] = hex[data[i] & 0x0F];
 	}
 	return out;
 }
@@ -86,9 +97,11 @@ std::string HexEncode(const std::vector<unsigned char> &data)
 std::string Trim(const std::string &s)
 {
 	size_t a = 0;
-	while (a < s.size() && std::isspace(static_cast<unsigned char>(s[a]))) ++a;
+	while (a < s.size() && std::isspace(static_cast<unsigned char>(s[a])))
+		++a;
 	size_t b = s.size();
-	while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1]))) --b;
+	while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1])))
+		--b;
 	return s.substr(a, b - a);
 }
 
@@ -97,9 +110,11 @@ std::string Trim(const std::string &s)
 // a "password".
 bool LooksLikeMd5Hex(const std::string &s)
 {
-	if (s.size() != 32) return false;
+	if (s.size() != 32)
+		return false;
 	for (char c : s) {
-		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return false;
+		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
+			return false;
 	}
 	return true;
 }
@@ -110,7 +125,6 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 	return fn.GetFullPath();
 }
 
-
 // Crash-safe writer for the 0600 secret files (amuleapi-passwords,
 // amuleapi-jwt-secret). Writes the body to a sibling `<name>.tmp`,
 // fsyncs, then atomically rename(2)s onto the target. A partial write
@@ -119,24 +133,23 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 // the daemon has. Falls back to a non-atomic best-effort path on
 // Windows (POSIX rename(2) semantics aren't available there for
 // existing-target replacement).
-bool WriteFileAtomic0600(const wxString &target_path,
-                         const std::string &body)
+bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 {
 #ifndef _WIN32
 	const std::string final_p(target_path.utf8_str());
 	const std::string tmp_p = final_p + ".tmp";
 
-	const int fd = ::open(tmp_p.c_str(),
-		O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-	if (fd < 0) return false;
-	::fchmod(fd, S_IRUSR | S_IWUSR);   // belt+braces against odd umasks
+	const int fd = ::open(tmp_p.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	if (fd < 0)
+		return false;
+	::fchmod(fd, S_IRUSR | S_IWUSR); // belt+braces against odd umasks
 
 	std::size_t written = 0;
 	while (written < body.size()) {
-		const ssize_t n = ::write(fd, body.data() + written,
-			body.size() - written);
+		const ssize_t n = ::write(fd, body.data() + written, body.size() - written);
 		if (n < 0) {
-			if (errno == EINTR) continue;
+			if (errno == EINTR)
+				continue;
 			::close(fd);
 			::unlink(tmp_p.c_str());
 			return false;
@@ -161,7 +174,8 @@ bool WriteFileAtomic0600(const wxString &target_path,
 	// Windows: best-effort. wxFile::Write returns the bytes written;
 	// short writes are caught and reported.
 	wxFile f;
-	if (!f.Create(target_path, true)) return false;
+	if (!f.Create(target_path, true))
+		return false;
 	if (body.empty()) {
 		f.Close();
 		return true;
@@ -172,8 +186,7 @@ bool WriteFileAtomic0600(const wxString &target_path,
 #endif
 }
 
-}  // namespace
-
+} // namespace
 
 wxString DefaultConfigDir()
 {
@@ -188,7 +201,6 @@ wxString DefaultConfigDir()
 	return d;
 }
 
-
 bool CAmuleApiConfig::Load(const wxString &config_dir)
 {
 	m_configDir = config_dir;
@@ -196,45 +208,46 @@ bool CAmuleApiConfig::Load(const wxString &config_dir)
 
 	if (!wxDirExists(m_configDir)) {
 		if (!wxMkdir(m_configDir, 0700)) {
-			m_lastError = "config dir does not exist and could not be created: "
-				+ std::string(m_configDir.utf8_str());
+			m_lastError = "config dir does not exist and could not be created: " +
+				      std::string(m_configDir.utf8_str());
 			return false;
 		}
 	}
 
-	const wxString cfg_path     = JoinPath(m_configDir, "amuleapi.conf");
-	const wxString secret_path  = JoinPath(m_configDir, "amuleapi-jwt-secret");
-	const wxString pwfile_path  = JoinPath(m_configDir, "amuleapi-passwords");
+	const wxString cfg_path = JoinPath(m_configDir, "amuleapi.conf");
+	const wxString secret_path = JoinPath(m_configDir, "amuleapi-jwt-secret");
+	const wxString pwfile_path = JoinPath(m_configDir, "amuleapi-passwords");
 
-	if (!LoadAmuleapiConf(cfg_path))   return false;
-	if (!LoadJwtSecret(secret_path))   return false;
-	if (!LoadPasswords(pwfile_path))   return false;
+	if (!LoadAmuleapiConf(cfg_path))
+		return false;
+	if (!LoadJwtSecret(secret_path))
+		return false;
+	if (!LoadPasswords(pwfile_path))
+		return false;
 
 	return true;
 }
 
-
 bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 {
-	const char *defaults =
-		"[Server]\n"
-		"BindAddress=127.0.0.1\n"
-		"Port=4713\n"
-		"AllowCORS=0\n"
-		"StaticRoot=\n"
-		"\n"
-		"[EC]\n"
-		"Host=127.0.0.1\n"
-		"Port=4712\n"
-		"Password=\n"
-		"\n"
-		"[Auth]\n"
-		"LoginFailureWindowSeconds=60\n"
-		"LoginFailureThreshold=5\n"
-		"LoginLockoutSeconds=300\n"
-		"\n"
-		"[Streaming]\n"
-		"EventBusRingCapacity=16384\n";
+	const char *defaults = "[Server]\n"
+			       "BindAddress=127.0.0.1\n"
+			       "Port=4713\n"
+			       "AllowCORS=0\n"
+			       "StaticRoot=\n"
+			       "\n"
+			       "[EC]\n"
+			       "Host=127.0.0.1\n"
+			       "Port=4712\n"
+			       "Password=\n"
+			       "\n"
+			       "[Auth]\n"
+			       "LoginFailureWindowSeconds=60\n"
+			       "LoginFailureThreshold=5\n"
+			       "LoginLockoutSeconds=300\n"
+			       "\n"
+			       "[Streaming]\n"
+			       "EventBusRingCapacity=16384\n";
 
 	if (!wxFileExists(path)) {
 		// First-run: write mode-0600 defaults file. EC password stays
@@ -247,8 +260,7 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		// mid-write can't leave a truncated config that the next
 		// start would happily load as partial → silent default flip.
 		if (!WriteFileAtomic0600(path, std::string(defaults))) {
-			m_lastError = "cannot create amuleapi.conf: "
-				+ std::string(path.utf8_str());
+			m_lastError = "cannot create amuleapi.conf: " + std::string(path.utf8_str());
 			return false;
 		}
 	}
@@ -256,13 +268,13 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	// Enforce 0600 on every load so a hand-edit (or a `cp` from a
 	// loose-permission source) doesn't silently widen the EC
 	// password's exposure.
-	if (!EnforceOwnerOnly(path)) return false;
+	if (!EnforceOwnerOnly(path))
+		return false;
 
-	wxFileConfig cfg("", "", path, "",
-		wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH);
+	wxFileConfig cfg("", "", path, "", wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH);
 
 	wxString s;
-	long     n = 0;
+	long n = 0;
 
 	if (cfg.Read("/Server/BindAddress", &s) && !s.IsEmpty()) {
 		m_server.bind_address = std::string(s.utf8_str());
@@ -323,7 +335,6 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	return true;
 }
 
-
 bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 {
 	// Rotation is operator-manual today: delete amuleapi-jwt-secret
@@ -347,7 +358,8 @@ bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 		return true;
 	}
 
-	if (!EnforceOwnerOnly(path)) return false;
+	if (!EnforceOwnerOnly(path))
+		return false;
 
 	wxFile f(path, wxFile::read);
 	if (!f.IsOpened()) {
@@ -360,7 +372,7 @@ bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 	// edits.
 	if (sz < 64 || sz > 4096) {
 		m_lastError = "amuleapi-jwt-secret has unexpected size; "
-			"expected 64 hex chars (256-bit secret)";
+			      "expected 64 hex chars (256-bit secret)";
 		return false;
 	}
 	std::string buf(static_cast<size_t>(sz), '\0');
@@ -382,7 +394,6 @@ bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 	return true;
 }
 
-
 bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 {
 	if (!wxFileExists(path)) {
@@ -393,7 +404,8 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 		return WritePasswordsFile(m_configDir, "", "");
 	}
 
-	if (!EnforceOwnerOnly(path)) return false;
+	if (!EnforceOwnerOnly(path))
+		return false;
 
 	wxFile f(path, wxFile::read);
 	if (!f.IsOpened()) {
@@ -414,14 +426,12 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 	std::string remainder = buf;
 	while (!remainder.empty()) {
 		const size_t nl = remainder.find('\n');
-		const std::string raw = (nl == std::string::npos)
-			? remainder
-			: remainder.substr(0, nl);
-		remainder = (nl == std::string::npos) ? std::string()
-		                                       : remainder.substr(nl + 1);
+		const std::string raw = (nl == std::string::npos) ? remainder : remainder.substr(0, nl);
+		remainder = (nl == std::string::npos) ? std::string() : remainder.substr(nl + 1);
 
 		const std::string line = Trim(raw);
-		if (line.empty() || line[0] == '#') continue;
+		if (line.empty() || line[0] == '#')
+			continue;
 		const size_t eq = line.find('=');
 		if (eq == std::string::npos) {
 			m_lastError = "amuleapi-passwords: malformed line (no '=')";
@@ -429,14 +439,17 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 		}
 		const std::string key = Trim(line.substr(0, eq));
 		const std::string val = Trim(line.substr(eq + 1));
-		if (val.empty()) continue;   // role explicitly disabled
+		if (val.empty())
+			continue; // role explicitly disabled
 		if (!LooksLikeMd5Hex(val)) {
-			m_lastError = "amuleapi-passwords: value for '" + key +
-				"' is not 32 lowercase hex chars";
+			m_lastError =
+				"amuleapi-passwords: value for '" + key + "' is not 32 lowercase hex chars";
 			return false;
 		}
-		if      (key == "admin") m_adminPasswordMd5 = val;
-		else if (key == "guest") m_guestPasswordMd5 = val;
+		if (key == "admin")
+			m_adminPasswordMd5 = val;
+		else if (key == "guest")
+			m_guestPasswordMd5 = val;
 		else {
 			m_lastError = "amuleapi-passwords: unknown key '" + key + "'";
 			return false;
@@ -444,7 +457,6 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 	}
 	return true;
 }
-
 
 bool CAmuleApiConfig::EnforceOwnerOnly(const wxString &path)
 {
@@ -460,10 +472,13 @@ bool CAmuleApiConfig::EnforceOwnerOnly(const wxString &path)
 	}
 	if ((st.st_mode & 0077) != 0) {
 		char buf[256];
-		std::snprintf(buf, sizeof(buf),
+		std::snprintf(buf,
+			sizeof(buf),
 			"%s has mode 0%o; expected 0600 (owner read/write only). "
 			"Fix with: chmod 600 \"%s\"",
-			p.c_str(), st.st_mode & 0777, p.c_str());
+			p.c_str(),
+			st.st_mode & 0777,
+			p.c_str());
 		m_lastError = buf;
 		return false;
 	}
@@ -471,24 +486,26 @@ bool CAmuleApiConfig::EnforceOwnerOnly(const wxString &path)
 #endif
 }
 
-
-bool CAmuleApiConfig::WritePasswordsFile(const wxString &config_dir,
-                                         const std::string &admin_md5,
-                                         const std::string &guest_md5)
+bool CAmuleApiConfig::WritePasswordsFile(
+	const wxString &config_dir, const std::string &admin_md5, const std::string &guest_md5)
 {
 	const wxString path = JoinPath(config_dir, "amuleapi-passwords");
 	std::string body;
-	if (!admin_md5.empty()) body += "admin=" + admin_md5 + "\n";
-	if (!guest_md5.empty()) body += "guest=" + guest_md5 + "\n";
-	if (!WriteFileAtomic0600(path, body)) return false;
-	if (!admin_md5.empty()) m_adminPasswordMd5 = admin_md5;
-	if (!guest_md5.empty()) m_guestPasswordMd5 = guest_md5;
+	if (!admin_md5.empty())
+		body += "admin=" + admin_md5 + "\n";
+	if (!guest_md5.empty())
+		body += "guest=" + guest_md5 + "\n";
+	if (!WriteFileAtomic0600(path, body))
+		return false;
+	if (!admin_md5.empty())
+		m_adminPasswordMd5 = admin_md5;
+	if (!guest_md5.empty())
+		m_guestPasswordMd5 = guest_md5;
 	return true;
 }
 
-
-bool CAmuleApiConfig::WriteJwtSecretFile(const wxString &config_dir,
-                                         const std::vector<unsigned char> &secret_32)
+bool CAmuleApiConfig::WriteJwtSecretFile(
+	const wxString &config_dir, const std::vector<unsigned char> &secret_32)
 {
 	if (secret_32.size() != 32) {
 		m_lastError = "WriteJwtSecretFile: expected 32 bytes";

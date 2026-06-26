@@ -19,7 +19,8 @@
 
 #include <string>
 
-namespace webapi {
+namespace webapi
+{
 
 bool IsDir(const std::string &path);
 
@@ -30,9 +31,8 @@ bool IsDir(const std::string &path);
 // (missing file, escape, OS error) returns false — the caller emits
 // an opaque 404 either way to keep the directory layout non-
 // enumerable from outside.
-bool ResolveWithinRoot(const std::string &root, const std::string &rel,
-                       std::string &fs_out);
+bool ResolveWithinRoot(const std::string &root, const std::string &rel, std::string &fs_out);
 
-}  // namespace webapi
+} // namespace webapi
 
-#endif  // AMULE_WEBAPI_STATICFS_H
+#endif // AMULE_WEBAPI_STATICFS_H

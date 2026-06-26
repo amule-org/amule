@@ -28,9 +28,8 @@
 #include <shared_mutex>
 #include <utility>
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 bool CState::HasFirstSnapshot() const
 {
@@ -38,13 +37,11 @@ bool CState::HasFirstSnapshot() const
 	return m_has_first_snapshot;
 }
 
-
 std::time_t CState::SnapshotAt() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	return m_snapshot_at;
 }
-
 
 bool CState::EcConnected() const
 {
@@ -52,20 +49,17 @@ bool CState::EcConnected() const
 	return m_ec_connected;
 }
 
-
 StatusSnapshot CState::Status() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	return m_status;
 }
 
-
 KadSnapshot CState::Kad() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	return m_kad;
 }
-
 
 CState::DashboardSnapshot CState::Dashboard() const
 {
@@ -76,13 +70,12 @@ CState::DashboardSnapshot CState::Dashboard() const
 	// different tick than `ed2k.*` / `speeds.*`.
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	DashboardSnapshot out;
-	out.status       = m_status;
-	out.kad          = m_kad;
-	out.snapshot_at  = m_snapshot_at;
+	out.status = m_status;
+	out.kad = m_kad;
+	out.snapshot_at = m_snapshot_at;
 	out.ec_connected = m_ec_connected;
 	return out;
 }
-
 
 PreferencesSnapshot CState::Preferences() const
 {
@@ -90,13 +83,11 @@ PreferencesSnapshot CState::Preferences() const
 	return m_preferences;
 }
 
-
 std::vector<CategorySnapshot> CState::Categories() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	return m_categories;
 }
-
 
 std::vector<std::string> CState::AmuleLog() const
 {
@@ -104,13 +95,11 @@ std::vector<std::string> CState::AmuleLog() const
 	return m_amule_log_lines;
 }
 
-
 ServerInfoLog CState::ServerInfo() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	return m_server_info;
 }
-
 
 StatsTreeNode CState::StatsTree() const
 {
@@ -118,31 +107,27 @@ StatsTreeNode CState::StatsTree() const
 	return m_stats_tree;
 }
 
-
 StatsGraphs CState::Graphs() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	return m_graphs;
 }
 
-
 std::vector<SearchResult> CState::Search() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<SearchResult> out;
 	out.reserve(m_search.size());
-	for (const auto &kv : m_search) out.push_back(kv.second);
+	for (const auto &kv : m_search)
+		out.push_back(kv.second);
 	return out;
 }
 
-
-void CState::MutateSearch(const std::function<
-	void(std::map<std::uint32_t, SearchResult> &)> &fn)
+void CState::MutateSearch(const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_search);
 }
-
 
 SearchProgressSnapshot CState::SearchProgress() const
 {
@@ -150,16 +135,14 @@ SearchProgressSnapshot CState::SearchProgress() const
 	return m_search_progress;
 }
 
-
 void CState::MarkSearchStarted(const std::string &kind)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_search.clear();
 	m_search_progress = SearchProgressSnapshot{};
 	m_search_progress.active = true;
-	m_search_progress.kind   = kind;
+	m_search_progress.kind = kind;
 }
-
 
 void CState::WriteSearchProgress(SearchProgressSnapshot s)
 {
@@ -167,20 +150,17 @@ void CState::WriteSearchProgress(SearchProgressSnapshot s)
 	m_search_progress = std::move(s);
 }
 
-
 void CState::WriteStatsTree(StatsTreeNode t)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_stats_tree = std::move(t);
 }
 
-
 void CState::WriteGraphs(StatsGraphs g)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_graphs = std::move(g);
 }
-
 
 void CState::AppendAmuleLog(std::vector<std::string> new_lines)
 {
@@ -193,13 +173,11 @@ void CState::AppendAmuleLog(std::vector<std::string> new_lines)
 		std::make_move_iterator(new_lines.end()));
 }
 
-
 void CState::ClearAmuleLog()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_amule_log_lines.clear();
 }
-
 
 void CState::WriteServerInfo(ServerInfoLog s)
 {
@@ -207,16 +185,15 @@ void CState::WriteServerInfo(ServerInfoLog s)
 	m_server_info = std::move(s);
 }
 
-
 std::vector<ServerSnapshot> CState::Servers() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<ServerSnapshot> out;
 	out.reserve(m_servers.size());
-	for (const auto &kv : m_servers) out.push_back(kv.second);
+	for (const auto &kv : m_servers)
+		out.push_back(kv.second);
 	return out;
 }
-
 
 void CState::WriteStatus(StatusSnapshot s)
 {
@@ -224,13 +201,11 @@ void CState::WriteStatus(StatusSnapshot s)
 	m_status = std::move(s);
 }
 
-
 void CState::WriteKad(KadSnapshot k)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_kad = std::move(k);
 }
-
 
 void CState::WritePreferences(PreferencesSnapshot p)
 {
@@ -238,21 +213,17 @@ void CState::WritePreferences(PreferencesSnapshot p)
 	m_preferences = std::move(p);
 }
 
-
 void CState::WriteCategories(std::vector<CategorySnapshot> c)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_categories = std::move(c);
 }
 
-
-void CState::MutateServers(const std::function<
-	void(std::map<std::uint32_t, ServerSnapshot> &)> &fn)
+void CState::MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_servers);
 }
-
 
 std::vector<FileSnapshot> CState::Downloads() const
 {
@@ -260,11 +231,11 @@ std::vector<FileSnapshot> CState::Downloads() const
 	std::vector<FileSnapshot> out;
 	out.reserve(m_files.size());
 	for (const auto &kv : m_files) {
-		if (kv.second.is_downloading) out.push_back(kv.second);
+		if (kv.second.is_downloading)
+			out.push_back(kv.second);
 	}
 	return out;
 }
-
 
 std::vector<FileSnapshot> CState::Shared() const
 {
@@ -272,79 +243,77 @@ std::vector<FileSnapshot> CState::Shared() const
 	std::vector<FileSnapshot> out;
 	out.reserve(m_files.size());
 	for (const auto &kv : m_files) {
-		if (kv.second.is_shared) out.push_back(kv.second);
+		if (kv.second.is_shared)
+			out.push_back(kv.second);
 	}
 	return out;
 }
-
 
 std::vector<FileSnapshot> CState::Files() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<FileSnapshot> out;
 	out.reserve(m_files.size());
-	for (const auto &kv : m_files) out.push_back(kv.second);
+	for (const auto &kv : m_files)
+		out.push_back(kv.second);
 	return out;
 }
-
 
 std::vector<ClientSnapshot> CState::Clients() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<ClientSnapshot> out;
 	out.reserve(m_clients.size());
-	for (const auto &kv : m_clients) out.push_back(kv.second);
+	for (const auto &kv : m_clients)
+		out.push_back(kv.second);
 	return out;
 }
 
-
-bool CState::FindDownload(const std::string &hash_hex,
-                          FileSnapshot &out) const
+bool CState::FindDownload(const std::string &hash_hex, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::uint32_t ecid = 0;
-	if (!m_files.FindEcidByHash(hash_hex, ecid)) return false;
+	if (!m_files.FindEcidByHash(hash_hex, ecid))
+		return false;
 	const auto it = m_files.find(ecid);
-	if (it == m_files.end() || !it->second.is_downloading) return false;
+	if (it == m_files.end() || !it->second.is_downloading)
+		return false;
 	out = it->second;
 	return true;
 }
 
-
-bool CState::FindDownloadByEcid(std::uint32_t ecid,
-                                FileSnapshot &out) const
+bool CState::FindDownloadByEcid(std::uint32_t ecid, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	auto it = m_files.find(ecid);
-	if (it == m_files.end() || !it->second.is_downloading) return false;
+	if (it == m_files.end() || !it->second.is_downloading)
+		return false;
 	out = it->second;
 	return true;
 }
 
-
-bool CState::FindShared(const std::string &hash_hex,
-                        FileSnapshot &out) const
+bool CState::FindShared(const std::string &hash_hex, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::uint32_t ecid = 0;
-	if (!m_files.FindEcidByHash(hash_hex, ecid)) return false;
+	if (!m_files.FindEcidByHash(hash_hex, ecid))
+		return false;
 	const auto it = m_files.find(ecid);
-	if (it == m_files.end() || !it->second.is_shared) return false;
+	if (it == m_files.end() || !it->second.is_shared)
+		return false;
 	out = it->second;
 	return true;
 }
 
-
-bool CState::FindSharedByEcid(std::uint32_t ecid,
-                              FileSnapshot &out) const
+bool CState::FindSharedByEcid(std::uint32_t ecid, FileSnapshot &out) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	auto it = m_files.find(ecid);
-	if (it == m_files.end() || !it->second.is_shared) return false;
+	if (it == m_files.end() || !it->second.is_shared)
+		return false;
 	out = it->second;
 	return true;
 }
-
 
 // MutateDownloads + MutateShared both lock + hand out m_files. Both
 // walkers operate on the same unified map (and the same lock acquisition,
@@ -358,21 +327,17 @@ void CState::MutateDownloads(const std::function<void(FileMap &)> &fn)
 	fn(m_files);
 }
 
-
 void CState::MutateShared(const std::function<void(FileMap &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_files);
 }
 
-
-void CState::MutateClients(const std::function<
-	void(std::map<std::uint32_t, ClientSnapshot> &)> &fn)
+void CState::MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	fn(m_clients);
 }
-
 
 void CState::ResetLists()
 {
@@ -389,12 +354,11 @@ void CState::ResetLists()
 	// amuleapi-tick scoped.
 }
 
-
 void CState::MarkTickSuccess()
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_has_first_snapshot = true;
-	m_ec_connected       = true;
+	m_ec_connected = true;
 	// `m_snapshot_at` is stamped at tick-END (here), not tick-start.
 	// Clients reading `snapshot_at` therefore see "the wall-clock
 	// moment the daemon finished assembling this snapshot", with the
@@ -403,9 +367,8 @@ void CState::MarkTickSuccess()
 	// freshness checks ("is this stale by more than 5 s?") that's
 	// fine; if a future caller wants sub-second precision, document
 	// the skew or stamp both tick_started_at and tick_ended_at.
-	m_snapshot_at        = std::time(nullptr);
+	m_snapshot_at = std::time(nullptr);
 }
-
 
 void CState::MarkTickFailure()
 {
@@ -424,5 +387,4 @@ void CState::MarkTickFailure()
 	m_ec_connected = false;
 }
 
-
-}  // namespace webapi
+} // namespace webapi

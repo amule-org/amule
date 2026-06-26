@@ -24,9 +24,8 @@
 
 #include "EventBus.h"
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 // C++14 requires an out-of-class definition for static constexpr
 // members used by reference (test code may bind them through a
@@ -35,12 +34,10 @@ namespace webapi {
 constexpr std::size_t CEventBus::kDefaultCapacity;
 constexpr std::size_t CEventBus::kMinCapacity;
 
-
 CEventBus::CEventBus(std::size_t capacity)
-	: m_capacity(capacity < kMinCapacity ? kMinCapacity : capacity)
+: m_capacity(capacity < kMinCapacity ? kMinCapacity : capacity)
 {
 }
-
 
 void CEventBus::Publish(const std::string &name, const std::string &data)
 {
@@ -59,7 +56,8 @@ void CEventBus::Publish(const std::string &name, const std::string &data)
 		// invariant every subscriber depends on.
 		// Single-lock-section publish keeps fetch+push atomic.
 		ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
-		if (m_ring.size() >= m_capacity) m_ring.pop_front();
+		if (m_ring.size() >= m_capacity)
+			m_ring.pop_front();
 		m_ring.push_back(std::move(ev));
 	}
 	// notify_all so every blocked drainer wakes and races to its
@@ -68,11 +66,10 @@ void CEventBus::Publish(const std::string &name, const std::string &data)
 	m_cv.notify_all();
 }
 
-
-void CEventBus::PublishBatch(
-	const std::vector<std::pair<std::string, std::string>> &events)
+void CEventBus::PublishBatch(const std::vector<std::pair<std::string, std::string>> &events)
 {
-	if (events.empty()) return;
+	if (events.empty())
+		return;
 	{
 		std::lock_guard<std::mutex> g(m_mu);
 		// Same id-monotonicity invariant as Publish: assign + push
@@ -87,28 +84,28 @@ void CEventBus::PublishBatch(
 			ev.name = kv.first;
 			ev.data = kv.second;
 			ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
-			if (m_ring.size() >= m_capacity) m_ring.pop_front();
+			if (m_ring.size() >= m_capacity)
+				m_ring.pop_front();
 			m_ring.push_back(std::move(ev));
 		}
 	}
 	m_cv.notify_all();
 }
 
-
-std::uint64_t CEventBus::Drain(std::uint64_t since_id,
-                               std::chrono::milliseconds timeout,
-                               std::vector<Event> &out)
+std::uint64_t CEventBus::Drain(
+	std::uint64_t since_id, std::chrono::milliseconds timeout, std::vector<Event> &out)
 {
 	out.clear();
 	// Fast-fail on shutdown so a freshly-spawned SSE worker that
 	// raced past the IsShutdown poll doesn't block in wait_for.
-	if (m_shutdown.load(std::memory_order_acquire)) return since_id;
+	if (m_shutdown.load(std::memory_order_acquire))
+		return since_id;
 	std::unique_lock<std::mutex> lk(m_mu);
 
 	// Quick path: any events with id > since_id already in ring?
 	auto has_newer = [&]() {
-		return m_shutdown.load(std::memory_order_acquire)
-		    || (!m_ring.empty() && m_ring.back().id > since_id);
+		return m_shutdown.load(std::memory_order_acquire) ||
+		       (!m_ring.empty() && m_ring.back().id > since_id);
 	};
 	if (!has_newer()) {
 		// Wait up to `timeout` for someone to publish OR for the
@@ -118,18 +115,19 @@ std::uint64_t CEventBus::Drain(std::uint64_t since_id,
 		m_cv.wait_for(lk, timeout, has_newer);
 	}
 
-	if (m_shutdown.load(std::memory_order_acquire)) return since_id;
+	if (m_shutdown.load(std::memory_order_acquire))
+		return since_id;
 
 	std::uint64_t max_seen = since_id;
 	for (const auto &ev : m_ring) {
 		if (ev.id > since_id) {
 			out.push_back(ev);
-			if (ev.id > max_seen) max_seen = ev.id;
+			if (ev.id > max_seen)
+				max_seen = ev.id;
 		}
 	}
 	return max_seen;
 }
-
 
 std::uint64_t CEventBus::OldestId() const
 {
@@ -137,13 +135,11 @@ std::uint64_t CEventBus::OldestId() const
 	return m_ring.empty() ? 0 : m_ring.front().id;
 }
 
-
 std::uint64_t CEventBus::NewestId() const
 {
 	std::lock_guard<std::mutex> g(m_mu);
 	return m_ring.empty() ? 0 : m_ring.back().id;
 }
-
 
 void CEventBus::ResetForTest()
 {
@@ -155,7 +151,6 @@ void CEventBus::ResetForTest()
 	}
 	m_cv.notify_all();
 }
-
 
 void CEventBus::Shutdown()
 {
@@ -170,11 +165,9 @@ void CEventBus::Shutdown()
 	m_cv.notify_all();
 }
 
-
 bool CEventBus::IsShutdown() const
 {
 	return m_shutdown.load(std::memory_order_acquire);
 }
 
-
-}  // namespace webapi
+} // namespace webapi

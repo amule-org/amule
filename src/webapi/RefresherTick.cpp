@@ -42,9 +42,8 @@
 #include <memory>
 #include <set>
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 bool RefresherTick(CamuleapiApp &app, CState &state)
 {
@@ -67,7 +66,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_STAT_REQ, EC_DETAIL_FULL));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp) return false;
+		if (!resp)
+			return false;
 		StatusSnapshot s;
 		ParseStatusFromPacket(resp, s);
 		state.WriteStatus(std::move(s));
@@ -99,10 +99,10 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// snapshot_at is set after the whole tick succeeds; per-substruct
 	// atomicity was already best-effort.
 	{
-		std::unique_ptr<CECPacket> req(
-			new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
+		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp) return false;
+		if (!resp)
+			return false;
 		auto &rle = app.PartfileRleStateRequireStateWriteLock();
 
 		// Snapshot the cache's pre-tick ECID set so we can evict
@@ -111,22 +111,22 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// but we also want to cover the case where ApplyGetUpdate*
 		// itself evicts in some future hardening path).
 		std::set<std::uint32_t> ecids_before;
-		state.MutateDownloads(
-			[&](FileMap &cache) {
-				for (const auto &kv : cache) {
-					if (kv.second.is_downloading) ecids_before.insert(kv.first);
+		state.MutateDownloads([&](FileMap &cache) {
+			for (const auto &kv : cache) {
+				if (kv.second.is_downloading)
+					ecids_before.insert(kv.first);
+			}
+			ApplyGetUpdateToDownloads(resp, cache, rle);
+			// Evict RLE state for ECIDs that no longer carry the
+			// downloading role after the apply. The walker handles
+			// FILE_REMOVED already; this is defence in depth.
+			for (auto ecid : ecids_before) {
+				auto it = cache.find(ecid);
+				if (it == cache.end() || !it->second.is_downloading) {
+					rle.erase(ecid);
 				}
-				ApplyGetUpdateToDownloads(resp, cache, rle);
-				// Evict RLE state for ECIDs that no longer carry the
-				// downloading role after the apply. The walker handles
-				// FILE_REMOVED already; this is defence in depth.
-				for (auto ecid : ecids_before) {
-					auto it = cache.find(ecid);
-					if (it == cache.end() || !it->second.is_downloading) {
-						rle.erase(ecid);
-					}
-				}
-			});
+			}
+		});
 
 		// Shared walker reads + writes the same unified m_files map.
 		// No more dl_identity_fallback compose: when the shared walker
@@ -134,15 +134,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// entry in `cache` already carries hash + name from the
 		// downloads walker above. See FileSnapshot in State.h for the
 		// shared-storage rationale.
-		state.MutateShared(
-			[&](FileMap &cache) {
-				ApplyGetUpdateToShared(resp, cache);
-			});
+		state.MutateShared([&](FileMap &cache) { ApplyGetUpdateToShared(resp, cache); });
 
-		state.MutateServers(
-			[&](std::map<std::uint32_t, ServerSnapshot> &cache) {
-				ApplyGetUpdateToServers(resp, cache);
-			});
+		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &cache) {
+			ApplyGetUpdateToServers(resp, cache);
+		});
 
 		// /clients — every alive peer in theApp->clientlist (download
 		// sources, upload slots, queue waiters, etc.). Build an
@@ -152,12 +148,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// contract is hash-only — ECIDs never leak out).
 		std::map<std::uint32_t, std::string> file_hash_by_ecid;
 		for (const auto &f : state.Files()) {
-			if (!f.hash.empty()) file_hash_by_ecid.emplace(f.ecid, f.hash);
+			if (!f.hash.empty())
+				file_hash_by_ecid.emplace(f.ecid, f.hash);
 		}
-		state.MutateClients(
-			[&](std::map<std::uint32_t, ClientSnapshot> &cache) {
-				ApplyGetUpdateToClients(resp, cache, file_hash_by_ecid);
-			});
+		state.MutateClients([&](std::map<std::uint32_t, ClientSnapshot> &cache) {
+			ApplyGetUpdateToClients(resp, cache, file_hash_by_ecid);
+		});
 		delete resp;
 	}
 
@@ -173,22 +169,20 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// back. amuleapi pins a daemon version carrying the new lifecycle
 	// tags, so we read them directly with no sentinel-decode fallback.
 	if (state.SearchProgress().active) {
-		std::uint32_t percent         = 0;
+		std::uint32_t percent = 0;
 		std::uint32_t lifecycle_state = 0;
 		{
-			std::unique_ptr<CECPacket> req(
-				new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
+			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
-			if (!resp) return false;
-			state.MutateSearch(
-				[&](std::map<std::uint32_t, SearchResult> &cache) {
-					ApplySearchFull(resp, cache);
-				});
+			if (!resp)
+				return false;
+			state.MutateSearch([&](std::map<std::uint32_t, SearchResult> &cache) {
+				ApplySearchFull(resp, cache);
+			});
 			delete resp;
 		}
 		{
-			std::unique_ptr<CECPacket> req(
-				new CECPacket(EC_OP_SEARCH_PROGRESS));
+			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
 			if (resp) {
 				// Unified 0..100 the daemon computes for every search kind
@@ -203,8 +197,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 				delete resp;
 			}
 		}
-		const SearchProgressSnapshot next = AdvanceSearchProgress(
-			state.SearchProgress(), lifecycle_state, percent);
+		const SearchProgressSnapshot next =
+			AdvanceSearchProgress(state.SearchProgress(), lifecycle_state, percent);
 		state.WriteSearchProgress(next);
 	}
 
@@ -216,12 +210,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// hard to spot in JSON (empty defaults look like "0 KB/s" not
 	// "field not requested").
 	{
-		const std::uint32_t selection =
-			EC_PREFS_CATEGORIES | EC_PREFS_GENERAL | EC_PREFS_CONNECTIONS;
+		const std::uint32_t selection = EC_PREFS_CATEGORIES | EC_PREFS_GENERAL | EC_PREFS_CONNECTIONS;
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_PREFERENCES));
 		req->AddTag(CECTag(EC_TAG_SELECT_PREFS, selection));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp) return false;
+		if (!resp)
+			return false;
 		PreferencesSnapshot p;
 		std::vector<CategorySnapshot> cats;
 		ParsePreferencesFromPacket(resp, p, cats);
@@ -241,16 +235,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	return true;
 }
 
-
 void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state)
 {
 	// Sole writer of `app.LastSeenForEvents()`. ONLY the wxApp
 	// refresher loop calls this; HTTP-server inline RefresherTick
 	// call sites do NOT.
-	EmitDiffsAndUpdate(app.EventBus(),
-	                   app.LastSeenForEvents(),
-	                   state);
+	EmitDiffsAndUpdate(app.EventBus(), app.LastSeenForEvents(), state);
 }
 
-
-}  // namespace webapi
+} // namespace webapi

@@ -30,13 +30,10 @@
 #include <chrono>
 #include <thread>
 
-
 using namespace muleunit;
 using namespace webapi;
 
-
 DECLARE_SIMPLE(EventBus)
-
 
 TEST(EventBus, EmptyBusOldestAndNewestAreZero)
 {
@@ -44,7 +41,6 @@ TEST(EventBus, EmptyBusOldestAndNewestAreZero)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0), bus.OldestId());
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0), bus.NewestId());
 }
-
 
 TEST(EventBus, PublishAssignsMonotonicIds)
 {
@@ -56,7 +52,6 @@ TEST(EventBus, PublishAssignsMonotonicIds)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(1), bus.OldestId());
 	ASSERT_EQUALS(static_cast<std::uint64_t>(3), bus.NewestId());
 }
-
 
 TEST(EventBus, DrainSinceZeroReturnsEverything)
 {
@@ -72,7 +67,6 @@ TEST(EventBus, DrainSinceZeroReturnsEverything)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(2), high);
 }
 
-
 TEST(EventBus, DrainSinceFiltersOlder)
 {
 	CEventBus bus;
@@ -80,19 +74,17 @@ TEST(EventBus, DrainSinceFiltersOlder)
 	bus.Publish("b", "{}");
 	bus.Publish("c", "{}");
 	std::vector<Event> out;
-	const std::uint64_t high = bus.Drain(/*since=*/1,
-	                                     std::chrono::milliseconds(0), out);
+	const std::uint64_t high = bus.Drain(/*since=*/1, std::chrono::milliseconds(0), out);
 	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
 	ASSERT_EQUALS(std::string("b"), out[0].name);
 	ASSERT_EQUALS(std::string("c"), out[1].name);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(3), high);
 }
 
-
 TEST(EventBus, DrainBlocksUntilPublish)
 {
 	CEventBus bus;
-	std::atomic<bool> drain_returned{false};
+	std::atomic<bool> drain_returned{ false };
 	std::vector<Event> got;
 
 	std::thread waiter([&] {
@@ -118,25 +110,21 @@ TEST(EventBus, DrainBlocksUntilPublish)
 	ASSERT_EQUALS(std::string("late"), got[0].name);
 }
 
-
 TEST(EventBus, DrainTimesOutWhenNothingPublished)
 {
 	CEventBus bus;
 	std::vector<Event> out;
 	const auto start = std::chrono::steady_clock::now();
-	const std::uint64_t high = bus.Drain(0,
-		std::chrono::milliseconds(120), out);
+	const std::uint64_t high = bus.Drain(0, std::chrono::milliseconds(120), out);
 	const auto elapsed = std::chrono::steady_clock::now() - start;
 
 	ASSERT_TRUE(out.empty());
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0), high);
 	// The drain should have spent the full timeout waiting; 80 ms of
 	// slack to absorb scheduling jitter.
-	const auto ms = std::chrono::duration_cast<
-		std::chrono::milliseconds>(elapsed).count();
+	const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
 	ASSERT_TRUE(ms >= 80);
 }
-
 
 TEST(EventBus, RingCapDropsOldestWhenFull)
 {
@@ -159,13 +147,11 @@ TEST(EventBus, RingCapDropsOldestWhenFull)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(over), bus.NewestId());
 }
 
-
 TEST(EventBus, ExplicitCapacityHonored)
 {
 	CEventBus bus(/*capacity=*/256);
 	ASSERT_EQUALS(static_cast<std::size_t>(256), bus.Capacity());
 }
-
 
 TEST(EventBus, BelowMinCapacityIsClampedUp)
 {
@@ -176,12 +162,11 @@ TEST(EventBus, BelowMinCapacityIsClampedUp)
 	ASSERT_EQUALS(CEventBus::kMinCapacity, bus.Capacity());
 }
 
-
 TEST(EventBus, ConcurrentPublishersHaveDistinctIds)
 {
 	CEventBus bus;
 	const int per_thread = 50;
-	const int n_threads  = 4;
+	const int n_threads = 4;
 	std::vector<std::thread> ths;
 	for (int t = 0; t < n_threads; ++t) {
 		ths.emplace_back([&] {
@@ -190,7 +175,8 @@ TEST(EventBus, ConcurrentPublishersHaveDistinctIds)
 			}
 		});
 	}
-	for (auto &t : ths) t.join();
+	for (auto &t : ths)
+		t.join();
 
 	const int total = per_thread * n_threads;
 	// We can have dropped some if total > capacity; what's *guaranteed*

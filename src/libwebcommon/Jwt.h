@@ -33,7 +33,6 @@
 
 #include "Role.h"
 
-
 // HS256 JWT machinery for the /api/v0 surface. Token shape per
 // RFC 7519: <base64url(header)>.<base64url(payload)>.<base64url(sig)>
 //
@@ -51,7 +50,8 @@
 // can run a server-side revocation list — `/auth/logout` adds the
 // jti, Verify rejects on the next request. The revocation set lives
 // in the owner, not in this library.
-class CJwt {
+class CJwt
+{
 public:
 	// `secret` is the HMAC-SHA-256 key. amuleapi loads 32 random bytes
 	// (256 bits, matching the digest size) from amuleapi-jwt-secret;
@@ -59,20 +59,22 @@ public:
 	// vectors are reproducible.
 	explicit CJwt(std::vector<unsigned char> secret);
 
-	struct IssuedToken {
+	struct IssuedToken
+	{
 		std::string token;
-		std::string jti;          // emitted in the `jti` claim
-		std::time_t expires_at;   // matches the `exp` claim
+		std::string jti;        // emitted in the `jti` claim
+		std::time_t expires_at; // matches the `exp` claim
 	};
 
 	// Generates a fresh JWT for the given role with a 24 h expiry.
 	// Each call returns a fresh `jti`.
 	IssuedToken Issue(Role role);
 
-	struct VerifyResult {
-		Role        role;
+	struct VerifyResult
+	{
+		Role role;
 		std::time_t exp;
-		std::string jti;          // for revocation-list lookup
+		std::string jti; // for revocation-list lookup
 	};
 
 	// Verifies a token's signature, header `alg`/`typ`, and payload

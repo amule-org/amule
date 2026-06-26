@@ -26,27 +26,24 @@
 
 #include <cryptopp/sha.h>
 
-
-namespace webcommon {
-
+namespace webcommon
+{
 
 std::string Etag(const std::string &body_utf8)
 {
 	CryptoPP::SHA256 sha;
 	unsigned char digest[CryptoPP::SHA256::DIGESTSIZE];
-	sha.CalculateDigest(digest,
-		reinterpret_cast<const unsigned char *>(body_utf8.data()),
-		body_utf8.size());
+	sha.CalculateDigest(
+		digest, reinterpret_cast<const unsigned char *>(body_utf8.data()), body_utf8.size());
 	static const char hex[] = "0123456789abcdef";
 	std::string out;
 	out.reserve(16);
 	for (int i = 0; i < 8; ++i) {
 		out.push_back(hex[(digest[i] >> 4) & 0x0F]);
-		out.push_back(hex[ digest[i]       & 0x0F]);
+		out.push_back(hex[digest[i] & 0x0F]);
 	}
 	return out;
 }
-
 
 // Strip leading/trailing whitespace + optional `W/` weak-validator
 // prefix + optional outer double quotes from one If-None-Match
@@ -56,11 +53,11 @@ std::string Etag(const std::string &body_utf8)
 static std::string NormalizeOneValidator(const std::string &raw)
 {
 	std::size_t start = 0;
-	std::size_t end   = raw.size();
-	while (start < end &&
-	       (raw[start] == ' ' || raw[start] == '\t')) ++start;
-	while (end > start &&
-	       (raw[end - 1] == ' ' || raw[end - 1] == '\t')) --end;
+	std::size_t end = raw.size();
+	while (start < end && (raw[start] == ' ' || raw[start] == '\t'))
+		++start;
+	while (end > start && (raw[end - 1] == ' ' || raw[end - 1] == '\t'))
+		--end;
 	// Strip weak-validator prefix `W/` (case-sensitive per RFC).
 	if (end - start >= 2 && raw[start] == 'W' && raw[start + 1] == '/') {
 		start += 2;
@@ -73,11 +70,10 @@ static std::string NormalizeOneValidator(const std::string &raw)
 	return raw.substr(start, end - start);
 }
 
-
-bool IfNoneMatchHits(const std::string &if_none_match,
-                     const std::string &etag)
+bool IfNoneMatchHits(const std::string &if_none_match, const std::string &etag)
 {
-	if (if_none_match.empty()) return false;
+	if (if_none_match.empty())
+		return false;
 	// Header value may be a single validator or a comma-separated
 	// list — walk it, normalise each entry, return true on any hit.
 	// `*` matches any existing representation; the caller only
@@ -85,16 +81,15 @@ bool IfNoneMatchHits(const std::string &if_none_match,
 	std::size_t pos = 0;
 	while (pos <= if_none_match.size()) {
 		const std::size_t comma = if_none_match.find(',', pos);
-		const std::size_t end   = (comma == std::string::npos)
-			? if_none_match.size() : comma;
-		const std::string entry = NormalizeOneValidator(
-			if_none_match.substr(pos, end - pos));
-		if (entry == "*" || entry == etag) return true;
-		if (comma == std::string::npos) break;
+		const std::size_t end = (comma == std::string::npos) ? if_none_match.size() : comma;
+		const std::string entry = NormalizeOneValidator(if_none_match.substr(pos, end - pos));
+		if (entry == "*" || entry == etag)
+			return true;
+		if (comma == std::string::npos)
+			break;
 		pos = comma + 1;
 	}
 	return false;
 }
 
-
-}  // namespace webcommon
+} // namespace webcommon

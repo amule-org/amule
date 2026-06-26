@@ -47,14 +47,13 @@
 #include <thread>
 #include <utility>
 
-
 namespace beast = boost::beast;
-namespace http  = boost::beast::http;
-namespace asio  = boost::asio;
-using tcp       = boost::asio::ip::tcp;
+namespace http = boost::beast::http;
+namespace asio = boost::asio;
+using tcp = boost::asio::ip::tcp;
 
-
-namespace {
+namespace
+{
 
 // Per-connection session. Reads one request, hands it to the user
 // handler, writes the response, closes. No keep-alive — the API
@@ -73,7 +72,7 @@ namespace {
 // `503 Service Unavailable` + a `Retry-After` hint inside the
 // streaming dispatch path before the worker thread is created.
 constexpr int kMaxConcurrentStreamingSessions = 32;
-std::atomic<int> g_streaming_session_count{0};
+std::atomic<int> g_streaming_session_count{ 0 };
 
 class Session;
 
@@ -85,19 +84,21 @@ class Session;
 std::mutex g_live_streams_mu;
 std::vector<std::weak_ptr<Session>> g_live_streams;
 
-class Session : public std::enable_shared_from_this<Session> {
+class Session : public std::enable_shared_from_this<Session>
+{
 public:
 	Session(tcp::socket socket,
-	        CHttpServer::Handler handler,
-	        CHttpServer::StreamingResolver streaming_resolver,
-	        CHttpServer::StreamingHandler  streaming_handler,
-	        CHttpServer::StreamingPreflight streaming_preflight)
-		: m_stream(std::move(socket)),
-		  m_handler(std::move(handler)),
-		  m_streaming_resolver(std::move(streaming_resolver)),
-		  m_streaming_handler(std::move(streaming_handler)),
-		  m_streaming_preflight(std::move(streaming_preflight))
-	{}
+		CHttpServer::Handler handler,
+		CHttpServer::StreamingResolver streaming_resolver,
+		CHttpServer::StreamingHandler streaming_handler,
+		CHttpServer::StreamingPreflight streaming_preflight)
+	: m_stream(std::move(socket))
+	, m_handler(std::move(handler))
+	, m_streaming_resolver(std::move(streaming_resolver))
+	, m_streaming_handler(std::move(streaming_handler))
+	, m_streaming_preflight(std::move(streaming_preflight))
+	{
+	}
 
 	~Session()
 	{
@@ -114,7 +115,7 @@ public:
 		if (m_stream_worker.joinable()) {
 			if (!m_worker_exited.load(std::memory_order_acquire)) {
 				std::cerr << "amuleapi: FATAL Session dtor reached "
-				             "with worker still running\n";
+					     "with worker still running\n";
 				std::abort();
 			}
 			m_stream_worker.detach();
@@ -122,8 +123,7 @@ public:
 		// Release the session slot. Decrement only fires if we
 		// actually acquired one (DispatchStreaming sets the flag).
 		if (m_session_slot_held) {
-			g_streaming_session_count.fetch_sub(
-				1, std::memory_order_acq_rel);
+			g_streaming_session_count.fetch_sub(1, std::memory_order_acq_rel);
 		}
 	}
 
@@ -143,7 +143,7 @@ public:
 		// even if the strand-posted close is delayed.
 		m_stream_alive.store(false, std::memory_order_release);
 		auto self = shared_from_this();
-		boost::asio::post(m_stream.get_executor(), [self]{
+		boost::asio::post(m_stream.get_executor(), [self] {
 			beast::error_code ec;
 			beast::get_lowest_layer(self->m_stream).socket().close(ec);
 		});
@@ -178,8 +178,8 @@ private:
 		m_stream.expires_after(std::chrono::seconds(10));
 
 		auto self = shared_from_this();
-		http::async_read(m_stream, m_buffer, *m_parser,
-			[self](beast::error_code ec, std::size_t bytes) {
+		http::async_read(
+			m_stream, m_buffer, *m_parser, [self](beast::error_code ec, std::size_t bytes) {
 				(void)bytes;
 				if (ec == http::error::end_of_stream) {
 					self->DoClose();
@@ -205,10 +205,9 @@ private:
 		CHttpServer::Request r;
 		r.method = std::string(req.method_string());
 		r.target = std::string(req.target());
-		r.body   = req.body();
+		r.body = req.body();
 		for (const auto &h : req) {
-			r.headers.emplace(std::string(h.name_string()),
-			                  std::string(h.value()));
+			r.headers.emplace(std::string(h.name_string()), std::string(h.value()));
 		}
 		// Remote endpoint for rate-limiting. `.address()` returns a
 		// boost::asio::ip::address which `.to_string()`-es to the
@@ -219,14 +218,14 @@ private:
 		{
 			beast::error_code ec;
 			const auto ep = m_stream.socket().remote_endpoint(ec);
-			if (!ec) r.remote_addr = ep.address().to_string();
+			if (!ec)
+				r.remote_addr = ep.address().to_string();
 		}
 
 		// streaming dispatch. The streaming_resolver is
 		// invoked synchronously and short-circuits the standard
 		// request→response→close path when it returns true.
-		if (m_streaming_resolver && m_streaming_handler
-		    && m_streaming_resolver(r)) {
+		if (m_streaming_resolver && m_streaming_handler && m_streaming_resolver(r)) {
 			DispatchStreaming(std::move(r));
 			return;
 		}
@@ -244,16 +243,14 @@ private:
 			// Authorization or Cookie fragments). Keep the body
 			// generic; log detail to stderr.
 			std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
-			resp.status       = 500;
+			resp.status = 500;
 			resp.content_type = "application/json";
-			resp.body =
-				"{\"error\":{\"code\":\"internal\","
-				"\"message\":\"internal server error\"}}";
+			resp.body = "{\"error\":{\"code\":\"internal\","
+				    "\"message\":\"internal server error\"}}";
 		}
 
 		WriteResponse(std::move(resp));
 	}
-
 
 	// Streaming path. Writes the response head, then spawns a worker
 	// thread for the streaming handler. Session stays alive across
@@ -265,13 +262,12 @@ private:
 	void WriteCapRefusal()
 	{
 		CHttpServer::Response refused;
-		refused.status       = 503;
+		refused.status = 503;
 		refused.content_type = "application/json";
 		refused.headers["Retry-After"] = "10";
-		refused.body =
-			"{\"error\":{\"code\":\"sessions_exhausted\","
-			"\"message\":\"too many concurrent streaming sessions; "
-			"retry in a few seconds\"}}";
+		refused.body = "{\"error\":{\"code\":\"sessions_exhausted\","
+			       "\"message\":\"too many concurrent streaming sessions; "
+			       "retry in a few seconds\"}}";
 		WriteResponse(std::move(refused));
 	}
 
@@ -286,8 +282,7 @@ private:
 		// burns one short HTTP exchange and goes away. Empty
 		// preflight (default) preserves the prior contract.
 		if (m_streaming_preflight) {
-			boost::optional<CHttpServer::Response> rej =
-				m_streaming_preflight(r);
+			boost::optional<CHttpServer::Response> rej = m_streaming_preflight(r);
 			if (rej) {
 				WriteResponse(std::move(*rej));
 				return;
@@ -298,11 +293,9 @@ private:
 		// long-lived work. fetch_add returns the OLD value, so we
 		// hold the slot iff that old value was strictly below the
 		// cap. Otherwise we roll back and refuse the connection.
-		const int prior_count = g_streaming_session_count.fetch_add(
-			1, std::memory_order_acq_rel);
+		const int prior_count = g_streaming_session_count.fetch_add(1, std::memory_order_acq_rel);
 		if (prior_count >= kMaxConcurrentStreamingSessions) {
-			g_streaming_session_count.fetch_sub(
-				1, std::memory_order_acq_rel);
+			g_streaming_session_count.fetch_sub(1, std::memory_order_acq_rel);
 			WriteCapRefusal();
 			return;
 		}
@@ -330,14 +323,14 @@ private:
 		// on the heap so the SocketWriter can read them at first-
 		// write time).
 		auto handler = m_streaming_handler;
-		auto self    = shared_from_this();
+		auto self = shared_from_this();
 		// Head data — owned by the worker thread, referenced by the
 		// SocketWriter (via SocketWriter::HeadData). Defaults set
 		// here; handler can overwrite before calling writer.Write
 		// the first time.
 		auto head = std::make_shared<SocketWriter::HeadData>();
 		head->headers["Cache-Control"] = "no-cache";
-		head->headers["Connection"]    = "keep-alive";
+		head->headers["Connection"] = "keep-alive";
 
 		auto writer = std::make_shared<SocketWriter>(self, head);
 
@@ -349,25 +342,23 @@ private:
 		// Non-loopback bind + unauth peer = thread-per-connection DoS
 		// amplifier. PreflightEvents (auth before slot claim, before
 		// thread spawn) bounds pre-auth cost to one HTTP exchange.
-		m_stream_worker = std::thread([self, handler, writer, head,
-		                               r = std::move(r)]() mutable {
+		m_stream_worker = std::thread([self, handler, writer, head, r = std::move(r)]() mutable {
 			// RAII guard: tip the worker-exited flag on EVERY exit
 			// path out of this lambda, including a future refactor
 			// that adds an early `return` after the catch block.
 			// The Session destructor's std::abort() guard only
 			// fires if this flag is true, so missing the flip on
 			// some path would tear down a still-running thread.
-			struct WorkerExitMarker {
+			struct WorkerExitMarker
+			{
 				std::shared_ptr<Session> s;
-				~WorkerExitMarker() {
-					s->m_worker_exited.store(true,
-						std::memory_order_release);
+				~WorkerExitMarker()
+				{
+					s->m_worker_exited.store(true, std::memory_order_release);
 				}
-			} marker{self};
+			} marker{ self };
 			try {
-				handler(r, *writer,
-				        head->status, head->content_type,
-				        head->headers);
+				handler(r, *writer, head->status, head->content_type, head->headers);
 			} catch (const std::exception &) {
 				// Streaming handler exceptions are silent — close
 				// quietly.
@@ -387,25 +378,30 @@ private:
 	// socket. Defers writing the HTTP response head until the first
 	// Write call — that's when the streaming handler has finalised
 	// status / content_type / headers via the out-params we pass it.
-	class SocketWriter : public CHttpServer::Writer {
+	class SocketWriter : public CHttpServer::Writer
+	{
 	public:
-		struct HeadData {
-			unsigned    status       = 200;
+		struct HeadData
+		{
+			unsigned status = 200;
 			std::string content_type = "text/event-stream";
 			std::map<std::string, std::string> headers;
 		};
 
 		SocketWriter(std::shared_ptr<Session> session,
-		             std::shared_ptr<Session::SocketWriter::HeadData> head)
-			: m_session(std::move(session)),
-			  m_head(std::move(head)) {}
+			std::shared_ptr<Session::SocketWriter::HeadData> head)
+		: m_session(std::move(session))
+		, m_head(std::move(head))
+		{
+		}
 
 		bool Write(const std::string &chunk) override
 		{
 			if (!m_session->m_stream_alive.load(std::memory_order_acquire)) {
 				return false;
 			}
-			if (!EnsureHeadWritten()) return false;
+			if (!EnsureHeadWritten())
+				return false;
 
 			// SSE wire shape uses chunked transfer encoding; each
 			// "chunk" written here is a single HTTP/1.1 chunk frame:
@@ -414,19 +410,17 @@ private:
 			// Zero-length chunks would terminate the message (per
 			// RFC 7230 §4.1) so we skip them — the heartbeat path
 			// always passes at least ": keepalive\n\n" anyway.
-			if (chunk.empty()) return true;
+			if (chunk.empty())
+				return true;
 			std::ostringstream framed;
-			framed << std::hex << chunk.size() << "\r\n"
-			       << chunk << "\r\n";
+			framed << std::hex << chunk.size() << "\r\n" << chunk << "\r\n";
 			const std::string out = framed.str();
 
 			std::lock_guard<std::mutex> g(m_session->m_socket_mu);
 			beast::error_code ec;
-			asio::write(m_session->m_stream.socket(),
-				asio::buffer(out), ec);
+			asio::write(m_session->m_stream.socket(), asio::buffer(out), ec);
 			if (ec) {
-				m_session->m_stream_alive.store(false,
-					std::memory_order_release);
+				m_session->m_stream_alive.store(false, std::memory_order_release);
 				return false;
 			}
 			return true;
@@ -455,11 +449,21 @@ private:
 			std::ostringstream head;
 			head << "HTTP/1.1 " << m_head->status << " ";
 			switch (m_head->status) {
-				case 200: head << "OK"; break;
-				case 401: head << "Unauthorized"; break;
-				case 403: head << "Forbidden"; break;
-				case 404: head << "Not Found"; break;
-				default:  head << "OK"; break;
+			case 200:
+				head << "OK";
+				break;
+			case 401:
+				head << "Unauthorized";
+				break;
+			case 403:
+				head << "Forbidden";
+				break;
+			case 404:
+				head << "Not Found";
+				break;
+			default:
+				head << "OK";
+				break;
 			}
 			head << "\r\n";
 			head << "Server: amuleapi\r\n";
@@ -471,8 +475,7 @@ private:
 			// chunked half-message. For those we omit
 			// Transfer-Encoding so the response simply terminates
 			// at connection close.
-			const bool chunked = (m_head->status >= 200
-			                      && m_head->status < 300);
+			const bool chunked = (m_head->status >= 200 && m_head->status < 300);
 			if (chunked) {
 				head << "Transfer-Encoding: chunked\r\n";
 			}
@@ -484,11 +487,9 @@ private:
 
 			std::lock_guard<std::mutex> g(m_session->m_socket_mu);
 			beast::error_code ec;
-			asio::write(m_session->m_stream.socket(),
-				asio::buffer(head_bytes), ec);
+			asio::write(m_session->m_stream.socket(), asio::buffer(head_bytes), ec);
 			if (ec) {
-				m_session->m_stream_alive.store(false,
-					std::memory_order_release);
+				m_session->m_stream_alive.store(false, std::memory_order_release);
 				return false;
 			}
 			return true;
@@ -497,7 +498,7 @@ private:
 	private:
 		std::shared_ptr<Session> m_session;
 		std::shared_ptr<HeadData> m_head;
-		std::atomic<bool>        m_head_written{false};
+		std::atomic<bool> m_head_written{ false };
 	};
 
 	void WriteResponse(CHttpServer::Response &&resp)
@@ -514,11 +515,10 @@ private:
 		m_response->prepare_payload();
 
 		auto self = shared_from_this();
-		http::async_write(m_stream, *m_response,
-			[self](beast::error_code ec, std::size_t) {
-				(void)ec;
-				self->DoClose();
-			});
+		http::async_write(m_stream, *m_response, [self](beast::error_code ec, std::size_t) {
+			(void)ec;
+			self->DoClose();
+		});
 	}
 
 	void DoClose()
@@ -529,8 +529,7 @@ private:
 		if (m_stream_alive.exchange(false, std::memory_order_acq_rel)) {
 			std::lock_guard<std::mutex> g(m_socket_mu);
 			beast::error_code ec;
-			asio::write(m_stream.socket(),
-				asio::buffer(std::string("0\r\n\r\n")), ec);
+			asio::write(m_stream.socket(), asio::buffer(std::string("0\r\n\r\n")), ec);
 		}
 		beast::error_code ec;
 		m_stream.socket().shutdown(tcp::socket::shutdown_send, ec);
@@ -538,58 +537,71 @@ private:
 		// away.
 	}
 
-	beast::tcp_stream                                m_stream;
-	beast::flat_buffer                               m_buffer{8192};
+	beast::tcp_stream m_stream;
+	beast::flat_buffer m_buffer{ 8192 };
 	boost::optional<http::request_parser<http::string_body>> m_parser;
 	boost::optional<http::response<http::string_body>> m_response;
-	CHttpServer::Handler                             m_handler;
+	CHttpServer::Handler m_handler;
 
 	// streaming state.
-	CHttpServer::StreamingResolver  m_streaming_resolver;
-	CHttpServer::StreamingHandler   m_streaming_handler;
+	CHttpServer::StreamingResolver m_streaming_resolver;
+	CHttpServer::StreamingHandler m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
-	std::atomic<bool>               m_stream_alive{false};
+	std::atomic<bool> m_stream_alive{ false };
 	// Set true by the worker on exit. The Session destructor asserts
 	// on it before detach()ing the thread handle (Session is shared-
 	// ptr-owned by the worker, so dtor only runs after the last ref
 	// drops — and that ref is held by the worker lambda, which only
 	// releases it as a final statement).
-	std::atomic<bool>               m_worker_exited{false};
-	std::mutex                      m_socket_mu;
-	std::thread                     m_stream_worker;
+	std::atomic<bool> m_worker_exited{ false };
+	std::mutex m_socket_mu;
+	std::thread m_stream_worker;
 	// Whether this session is accounted against
 	// g_streaming_session_count. Set in DispatchStreaming after a
 	// successful slot acquisition; the dtor decrements iff this is
 	// true so refused-cap sessions don't double-account.
-	bool                            m_session_slot_held = false;
+	bool m_session_slot_held = false;
 };
-
 
 // Accept loop. One Listener per HttpServer; spawns a Session per
 // connection via shared_from_this.
-class Listener : public std::enable_shared_from_this<Listener> {
+class Listener : public std::enable_shared_from_this<Listener>
+{
 public:
-	Listener(asio::io_context &ioc, tcp::endpoint endpoint,
-	         CHttpServer::Handler handler,
-	         CHttpServer::StreamingResolver streaming_resolver,
-	         CHttpServer::StreamingHandler  streaming_handler,
-	         CHttpServer::StreamingPreflight streaming_preflight)
-		: m_ioc(ioc),
-		  m_acceptor(asio::make_strand(ioc)),
-		  m_handler(std::move(handler)),
-		  m_streaming_resolver(std::move(streaming_resolver)),
-		  m_streaming_handler(std::move(streaming_handler)),
-		  m_streaming_preflight(std::move(streaming_preflight))
+	Listener(asio::io_context &ioc,
+		tcp::endpoint endpoint,
+		CHttpServer::Handler handler,
+		CHttpServer::StreamingResolver streaming_resolver,
+		CHttpServer::StreamingHandler streaming_handler,
+		CHttpServer::StreamingPreflight streaming_preflight)
+	: m_ioc(ioc)
+	, m_acceptor(asio::make_strand(ioc))
+	, m_handler(std::move(handler))
+	, m_streaming_resolver(std::move(streaming_resolver))
+	, m_streaming_handler(std::move(streaming_handler))
+	, m_streaming_preflight(std::move(streaming_preflight))
 	{
 		beast::error_code ec;
 		m_acceptor.open(endpoint.protocol(), ec);
-		if (ec) { m_error = ec.message(); return; }
+		if (ec) {
+			m_error = ec.message();
+			return;
+		}
 		m_acceptor.set_option(asio::socket_base::reuse_address(true), ec);
-		if (ec) { m_error = ec.message(); return; }
+		if (ec) {
+			m_error = ec.message();
+			return;
+		}
 		m_acceptor.bind(endpoint, ec);
-		if (ec) { m_error = ec.message(); return; }
+		if (ec) {
+			m_error = ec.message();
+			return;
+		}
 		m_acceptor.listen(asio::socket_base::max_listen_connections, ec);
-		if (ec) { m_error = ec.message(); return; }
+		if (ec) {
+			m_error = ec.message();
+			return;
+		}
 	}
 
 	bool Ok() const { return m_error.empty(); }
@@ -611,26 +623,28 @@ public:
 			std::lock_guard<std::mutex> g(g_live_streams_mu);
 			live.reserve(g_live_streams.size());
 			for (auto &w : g_live_streams) {
-				if (auto s = w.lock()) live.push_back(std::move(s));
+				if (auto s = w.lock())
+					live.push_back(std::move(s));
 			}
 			g_live_streams.clear();
 		}
-		for (auto &s : live) s->RequestCancel();
+		for (auto &s : live)
+			s->RequestCancel();
 	}
 
 private:
 	void DoAccept()
 	{
 		auto self = shared_from_this();
-		m_acceptor.async_accept(asio::make_strand(m_ioc),
-			[self](beast::error_code ec, tcp::socket socket) {
+		m_acceptor.async_accept(
+			asio::make_strand(m_ioc), [self](beast::error_code ec, tcp::socket socket) {
 				if (!ec) {
-					std::make_shared<Session>(
-						std::move(socket),
+					std::make_shared<Session>(std::move(socket),
 						self->m_handler,
 						self->m_streaming_resolver,
 						self->m_streaming_handler,
-						self->m_streaming_preflight)->Start();
+						self->m_streaming_preflight)
+						->Start();
 				}
 				// Loop unless the acceptor has been closed. operation_aborted
 				// fires on Stop() and signals "exit cleanly".
@@ -640,40 +654,38 @@ private:
 			});
 	}
 
-	asio::io_context              &m_ioc;
-	tcp::acceptor                  m_acceptor;
-	CHttpServer::Handler           m_handler;
+	asio::io_context &m_ioc;
+	tcp::acceptor m_acceptor;
+	CHttpServer::Handler m_handler;
 	CHttpServer::StreamingResolver m_streaming_resolver;
-	CHttpServer::StreamingHandler  m_streaming_handler;
+	CHttpServer::StreamingHandler m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
-	std::string                    m_error;
+	std::string m_error;
 };
 
-}  // namespace
+} // namespace
 
-
-struct CHttpServer::Impl {
-	asio::io_context           ioc{1};
-	std::shared_ptr<Listener>  listener;
-	std::thread                thread;
-	std::atomic<bool>          running{false};
+struct CHttpServer::Impl
+{
+	asio::io_context ioc{ 1 };
+	std::shared_ptr<Listener> listener;
+	std::thread thread;
+	std::atomic<bool> running{ false };
 };
 
-
-CHttpServer::CHttpServer()  = default;
+CHttpServer::CHttpServer() = default;
 
 CHttpServer::~CHttpServer()
 {
 	Stop();
 }
 
-
 bool CHttpServer::Start(const std::string &bind_address,
-                        unsigned           port,
-                        Handler            handler,
-                        StreamingResolver  streaming_resolver,
-                        StreamingHandler   streaming_handler,
-                        StreamingPreflight streaming_preflight)
+	unsigned port,
+	Handler handler,
+	StreamingResolver streaming_resolver,
+	StreamingHandler streaming_handler,
+	StreamingPreflight streaming_preflight)
 {
 	if (m_impl) {
 		m_lastError = "HttpServer already started";
@@ -702,27 +714,29 @@ bool CHttpServer::Start(const std::string &bind_address,
 	// upper bound regardless.
 	if (!addr.is_loopback()) {
 		std::cerr << "amuleapi: WARN BindAddress=" << bind_address
-		          << " is not loopback. SSE sessions are capped at "
-		          << kMaxConcurrentStreamingSessions
-		          << " concurrent — beyond that the daemon returns "
-		             "503. Put a reverse proxy in front for remote "
-		             "access.\n";
+			  << " is not loopback. SSE sessions are capped at "
+			  << kMaxConcurrentStreamingSessions
+			  << " concurrent — beyond that the daemon returns "
+			     "503. Put a reverse proxy in front for remote "
+			     "access.\n";
 	}
 
-	m_impl->listener = std::make_shared<Listener>(
-		m_impl->ioc, endpoint, std::move(handler),
-		std::move(streaming_resolver), std::move(streaming_handler),
+	m_impl->listener = std::make_shared<Listener>(m_impl->ioc,
+		endpoint,
+		std::move(handler),
+		std::move(streaming_resolver),
+		std::move(streaming_handler),
 		std::move(streaming_preflight));
 	if (!m_impl->listener->Ok()) {
-		m_lastError = "bind to " + bind_address + ":" + std::to_string(port)
-			+ " failed: " + m_impl->listener->Error();
+		m_lastError = "bind to " + bind_address + ":" + std::to_string(port) +
+			      " failed: " + m_impl->listener->Error();
 		m_impl.reset();
 		return false;
 	}
 	m_impl->listener->Run();
 
 	m_impl->running.store(true, std::memory_order_release);
-	m_impl->thread = std::thread([this]{
+	m_impl->thread = std::thread([this] {
 		try {
 			m_impl->ioc.run();
 		} catch (const std::exception &e) {
@@ -730,20 +744,21 @@ bool CHttpServer::Start(const std::string &bind_address,
 			// quietly. Catch + log to stderr so an operator running in
 			// foreground sees a one-line cause; daemon mode loses the
 			// message.
-			std::cerr << "amuleapi: HTTP I/O loop exited on exception: "
-			          << e.what() << std::endl;
+			std::cerr << "amuleapi: HTTP I/O loop exited on exception: " << e.what() << std::endl;
 		}
 		m_impl->running.store(false, std::memory_order_release);
 	});
 	return true;
 }
 
-
 void CHttpServer::Stop()
 {
-	if (!m_impl) return;
-	if (m_impl->listener) m_impl->listener->Stop();
+	if (!m_impl)
+		return;
+	if (m_impl->listener)
+		m_impl->listener->Stop();
 	m_impl->ioc.stop();
-	if (m_impl->thread.joinable()) m_impl->thread.join();
+	if (m_impl->thread.joinable())
+		m_impl->thread.join();
 	m_impl.reset();
 }

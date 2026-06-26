@@ -24,12 +24,13 @@
 
 #include "ConstantTime.h"
 
-
-namespace webcommon {
+namespace webcommon
+{
 
 bool ConstantTimeEquals(const std::string &a, const std::string &b)
 {
-	if (a.size() != b.size()) return false;
+	if (a.size() != b.size())
+		return false;
 	unsigned char acc = 0;
 	for (size_t i = 0; i < a.size(); ++i) {
 		acc |= static_cast<unsigned char>(a[i] ^ b[i]);
@@ -41,9 +42,7 @@ bool ConstantTimeEquals(const wxString &a, const wxString &b)
 {
 	const wxScopedCharBuffer au = a.utf8_str();
 	const wxScopedCharBuffer bu = b.utf8_str();
-	return ConstantTimeEquals(
-		std::string(au.data(), au.length()),
-		std::string(bu.data(), bu.length()));
+	return ConstantTimeEquals(std::string(au.data(), au.length()), std::string(bu.data(), bu.length()));
 }
 
-}  // namespace webcommon
+} // namespace webcommon

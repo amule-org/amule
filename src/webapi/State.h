@@ -34,7 +34,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 // Cached snapshot of amuled state. One instance lives inside
 // CamuleapiApp for the whole process; the refresher (wxApp thread)
 // writes; the HTTP server (Boost.Asio thread) reads.
@@ -47,8 +46,8 @@
 // outside the critical section — multiple clients stack with no
 // per-handler bottleneck.
 
-namespace webapi {
-
+namespace webapi
+{
 
 // One per file in amuled's state — keyed by ECID. Each file may
 // participate in either or both of two roles:
@@ -79,35 +78,37 @@ namespace webapi {
 // shared), the refresher resets that side's sub-block to default so
 // `/downloads` or `/shared` can never serve stale stats from a
 // previous active period.
-struct FileSnapshot {
+struct FileSnapshot
+{
 	// Identity / shared metadata (always populated).
-	std::uint32_t ecid       = 0;
-	std::string   hash;             // 32-char hex MD4
-	std::string   name;
-	std::string   ed2k_link;
-	std::uint64_t size       = 0;
-	std::string   priority;         // "very_low" | "low" | "normal"
-	                                // | "high"     | "release" | "auto"
+	std::uint32_t ecid = 0;
+	std::string hash; // 32-char hex MD4
+	std::string name;
+	std::string ed2k_link;
+	std::uint64_t size = 0;
+	std::string priority; // "very_low" | "low" | "normal"
+			      // | "high"     | "release" | "auto"
 
-	bool          is_downloading = false;
-	bool          is_shared      = false;
+	bool is_downloading = false;
+	bool is_shared = false;
 
 	// Download-side state — meaningful when `is_downloading` is true,
 	// reset to default on the true→false transition (and never read
 	// by `/downloads` when the flag is false).
-	struct DownloadSide {
-		std::uint64_t size_done             = 0;
-		std::uint64_t size_xfer             = 0;
-		std::uint32_t speed_bps             = 0;
-		std::string   status;          // "downloading" | "paused"
-		                                // | "completed" | "hashing" | ...
-		bool          priority_auto         = false;
-		std::uint32_t category              = 0;
-		double        percent               = 0.0;
-		std::uint32_t sources_total         = 0;
-		std::uint32_t sources_not_current   = 0;
-		std::uint32_t sources_transferring  = 0;
-		std::uint32_t sources_a4af          = 0;
+	struct DownloadSide
+	{
+		std::uint64_t size_done = 0;
+		std::uint64_t size_xfer = 0;
+		std::uint32_t speed_bps = 0;
+		std::string status; // "downloading" | "paused"
+				    // | "completed" | "hashing" | ...
+		bool priority_auto = false;
+		std::uint32_t category = 0;
+		double percent = 0.0;
+		std::uint32_t sources_total = 0;
+		std::uint32_t sources_not_current = 0;
+		std::uint32_t sources_transferring = 0;
+		std::uint32_t sources_a4af = 0;
 
 		// Decoded per-part state, populated by the refresher's RLE
 		// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +
@@ -122,17 +123,17 @@ struct FileSnapshot {
 
 	// Shared-side state — meaningful when `is_shared` is true,
 	// reset on the true→false transition.
-	struct SharedSide {
-		std::uint64_t xfer_session        = 0;
-		std::uint64_t xfer_total          = 0;
-		std::uint32_t requests_session    = 0;
-		std::uint32_t requests_total      = 0;
-		std::uint32_t accepts_session     = 0;
-		std::uint32_t accepts_total       = 0;
-		std::uint32_t complete_sources    = 0;
+	struct SharedSide
+	{
+		std::uint64_t xfer_session = 0;
+		std::uint64_t xfer_total = 0;
+		std::uint32_t requests_session = 0;
+		std::uint32_t requests_total = 0;
+		std::uint32_t accepts_session = 0;
+		std::uint32_t accepts_total = 0;
+		std::uint32_t complete_sources = 0;
 	} shared;
 };
-
 
 // One per peer (CUpDownClient) in the daemon's active client list.
 // Populated from the EC_TAG_CLIENT subtree inside the GET_UPDATE
@@ -147,25 +148,26 @@ struct FileSnapshot {
 //  * /clients → no filter, full set surfaced
 // (/downloads/{hash}/sources can filter by
 // upload_file_hash matching the partfile.)
-struct ClientSnapshot {
-	std::uint32_t ecid                  = 0;
-	std::string   client_name;
-	std::string   user_hash;           // peer's user hash (32-char lowercase hex MD4)
-	std::string   ip;                  // dotted-quad
-	std::uint16_t port                 = 0;
+struct ClientSnapshot
+{
+	std::uint32_t ecid = 0;
+	std::string client_name;
+	std::string user_hash; // peer's user hash (32-char lowercase hex MD4)
+	std::string ip;        // dotted-quad
+	std::uint16_t port = 0;
 
 	// Software identity. EC_TAG_CLIENT_SOFTWARE ships a numeric code
 	// (SO_AMULE / SO_EMULE / etc); we decode it server-side into a
 	// short label here so consumers don't need the lookup table.
-	std::string   software;            // "amule" | "emule" | "edonkey" | "mldonkey" | ...
-	std::string   software_version;    // free-form string from EC_TAG_CLIENT_SOFT_VER_STR
-	std::string   os_info;             // free-form (CLIENT_OS_INFO)
+	std::string software;         // "amule" | "emule" | "edonkey" | "mldonkey" | ...
+	std::string software_version; // free-form string from EC_TAG_CLIENT_SOFT_VER_STR
+	std::string os_info;          // free-form (CLIENT_OS_INFO)
 
 	// State machine values. We decode the raw US_*/DS_*/IS_* ints
 	// into wire strings so consumers don't reach into amule's enums.
-	std::string   upload_state;        // "uploading" | "queued" | "banned" | "connecting" | "idle" | ...
-	std::string   download_state;      // "downloading" | "onqueue" | "noneededparts" | ... | "idle"
-	std::string   ident_state;         // "unknown" | "identified" | "bad_guy" | ...
+	std::string upload_state;   // "uploading" | "queued" | "banned" | "connecting" | "idle" | ...
+	std::string download_state; // "downloading" | "onqueue" | "noneededparts" | ... | "idle"
+	std::string ident_state;    // "unknown" | "identified" | "bad_guy" | ...
 
 	// File context — different per direction. Both correlators are
 	// 32-char lowercase MD4 hashes resolved by the refresher from
@@ -179,19 +181,19 @@ struct ClientSnapshot {
 	//    downloading FROM this peer + the filename the peer
 	//    advertised (OP_REQFILENAMEANSWER). Empty when not in
 	//    download role.
-	std::string   upload_file_hash;     // EC_TAG_CLIENT_UPLOAD_FILE resolved
-	std::string   download_file_hash;   // EC_TAG_CLIENT_REQUEST_FILE resolved
-	std::string   download_file_name;   // EC_TAG_CLIENT_REMOTE_FILENAME
+	std::string upload_file_hash;   // EC_TAG_CLIENT_UPLOAD_FILE resolved
+	std::string download_file_hash; // EC_TAG_CLIENT_REQUEST_FILE resolved
+	std::string download_file_name; // EC_TAG_CLIENT_REMOTE_FILENAME
 
 	// Per-session transfer stats. CLIENT_UPLOAD_SESSION = bytes
 	// uploaded TO this peer; PARTFILE_SIZE_XFER (when re-keyed on a
 	// CLIENT_* tag) = bytes downloaded FROM this peer.
-	std::uint64_t xfer_up_session       = 0;
-	std::uint64_t xfer_down_session     = 0;
-	std::uint64_t xfer_up_total         = 0;
-	std::uint64_t xfer_down_total       = 0;
-	std::uint32_t upload_speed_bps      = 0;
-	std::uint32_t download_speed_bps    = 0;
+	std::uint64_t xfer_up_session = 0;
+	std::uint64_t xfer_down_session = 0;
+	std::uint64_t xfer_up_total = 0;
+	std::uint64_t xfer_down_total = 0;
+	std::uint32_t upload_speed_bps = 0;
+	std::uint32_t download_speed_bps = 0;
 
 	// Upload queue position (for peers in US_ONUPLOADQUEUE).
 	// 0 when not queued.
@@ -199,77 +201,76 @@ struct ClientSnapshot {
 	// Remote queue rank — our position in THE PEER's upload queue
 	// (i.e. how many other ed2k clients they're going to upload to
 	// before us). 0xFFFF when their queue is full.
-	std::uint16_t remote_queue_rank      = 0;
+	std::uint16_t remote_queue_rank = 0;
 
-	std::uint32_t score                  = 0;   // EC_TAG_CLIENT_SCORE
-	std::string   obfuscation_status;    // "none" | "supported" | "required"
-	bool          friend_slot            = false;
+	std::uint32_t score = 0;        // EC_TAG_CLIENT_SCORE
+	std::string obfuscation_status; // "none" | "supported" | "required"
+	bool friend_slot = false;
 };
-
 
 // One per eD2k server in the configured server list. Identity is
 // the EC ECID (stable per amuled process lifetime). Servers are
 // fetched at full-state per refresher tick (`EC_OP_GET_SERVER_LIST`
 // has no two-phase INC equivalent — see `ExternalConn.cpp:2023`),
 // so the refresher rebuilds the whole map each cycle.
-struct ServerSnapshot {
-	std::uint32_t ecid              = 0;
-	std::string   name;
-	std::string   description;
-	std::string   version;
-	std::string   address;           // host:port form (canonical)
-	std::uint32_t ip                = 0;    // host-byte-order IPv4
-	std::uint16_t port              = 0;
-	std::uint32_t ping_ms           = 0;
-	std::uint32_t failed            = 0;
-	std::uint32_t users             = 0;
-	std::uint32_t max_users         = 0;
-	std::uint32_t files             = 0;
-	std::string   priority;          // "low" | "normal" | "high"
-	bool          is_static         = false;
+struct ServerSnapshot
+{
+	std::uint32_t ecid = 0;
+	std::string name;
+	std::string description;
+	std::string version;
+	std::string address;  // host:port form (canonical)
+	std::uint32_t ip = 0; // host-byte-order IPv4
+	std::uint16_t port = 0;
+	std::uint32_t ping_ms = 0;
+	std::uint32_t failed = 0;
+	std::uint32_t users = 0;
+	std::uint32_t max_users = 0;
+	std::uint32_t files = 0;
+	std::string priority; // "low" | "normal" | "high"
+	bool is_static = false;
 };
-
 
 // /kad endpoint. Single composite snapshot pulled from the STAT_REQ
 // response we're already fetching for /status — saves a roundtrip
 // since amuled's `EC_OP_STAT_REQ` at `EC_DETAIL_CMD` ships every
 // `EC_TAG_STATS_KAD_*` we want here.
-struct KadSnapshot {
-	std::string   state;           // "disabled" | "connecting" | "connected"
-	bool          firewalled       = false;
-	bool          firewalled_udp   = false;
-	bool          in_lan_mode      = false;
-	std::uint32_t users            = 0;
-	std::uint32_t files            = 0;
-	std::uint32_t nodes            = 0;
-	std::uint32_t indexed_sources  = 0;
+struct KadSnapshot
+{
+	std::string state; // "disabled" | "connecting" | "connected"
+	bool firewalled = false;
+	bool firewalled_udp = false;
+	bool in_lan_mode = false;
+	std::uint32_t users = 0;
+	std::uint32_t files = 0;
+	std::uint32_t nodes = 0;
+	std::uint32_t indexed_sources = 0;
 	std::uint32_t indexed_keywords = 0;
-	std::uint32_t indexed_notes    = 0;
-	std::uint32_t indexed_load     = 0;
-	std::string   ip;              // dotted-quad
+	std::uint32_t indexed_notes = 0;
+	std::uint32_t indexed_load = 0;
+	std::string ip; // dotted-quad
 	// Buddy is the LowID-buddy state (for NAT-T peers). Most users see
 	// "no_buddy"; networks behind aggressive NAT see "connected".
-	std::string   buddy_status;    // "no_buddy" | "connecting" | "connected"
-	std::string   buddy_ip;
-	std::uint16_t buddy_port       = 0;
+	std::string buddy_status; // "no_buddy" | "connecting" | "connected"
+	std::string buddy_ip;
+	std::uint16_t buddy_port = 0;
 };
-
 
 // One per download category (categories live in amuled's preferences;
 // the EC packet bundles them under `EC_PREFS_CATEGORIES`). Index 0
 // is the implicit "All" category. Refresher fetches the full set on
 // each tick — categories rarely change but the cost is bounded by
 // the typical 0-10 entry count.
-struct CategorySnapshot {
-	std::uint32_t index            = 0;
-	std::string   name;
-	std::string   path;
-	std::string   comment;
-	std::uint32_t color            = 0;
-	std::uint8_t  priority_code    = 0;
-	std::string   priority;        // human-readable (very_low/low/normal/high/release/auto)
+struct CategorySnapshot
+{
+	std::uint32_t index = 0;
+	std::string name;
+	std::string path;
+	std::string comment;
+	std::uint32_t color = 0;
+	std::uint8_t priority_code = 0;
+	std::string priority; // human-readable (very_low/low/normal/high/release/auto)
 };
-
 
 // One node in the recursive stats tree (amuled's "Statistics" panel
 // contents — counters, ratios, uptime, transfer aggregates, etc.).
@@ -277,11 +278,11 @@ struct CategorySnapshot {
 // returns the rendered text (e.g. "Total bytes transferred: 12.3 GiB")
 // rather than a typed value, so we pass it through as a single
 // human-readable string and let clients render the tree verbatim.
-struct StatsTreeNode {
+struct StatsTreeNode
+{
 	std::string label;
 	std::vector<StatsTreeNode> children;
 };
-
 
 // Time-series data for /stats/graphs/{graph}. amuled keeps a
 // circular buffer of uint32 samples per series at 1-sec cadence;
@@ -293,7 +294,8 @@ struct StatsTreeNode {
 // Four series fan out from a single `EC_OP_GET_STATSGRAPHS` packet
 // (download, upload, connections, kad). Handler picks the one named
 // in the `{graph}` path segment.
-struct StatsGraphs {
+struct StatsGraphs
+{
 	// Sample cadence in seconds. amuled's CStatsCollection uses 1s.
 	// Used as the `interval` field in the response.
 	std::uint32_t interval_seconds = 1;
@@ -307,48 +309,47 @@ struct StatsGraphs {
 	// alongside the time-series so the panel can show "this session
 	// total" without needing a separate roundtrip.
 	std::uint64_t session_download_bytes = 0;
-	std::uint64_t session_upload_bytes   = 0;
-	std::uint64_t session_kad_bytes      = 0;
+	std::uint64_t session_upload_bytes = 0;
+	std::uint64_t session_kad_bytes = 0;
 };
-
 
 // One result from a /search/results poll. Identity is the file's
 // MD4 hash. amuled accumulates results in its `searchlist`
 // singleton as packets come in from servers/Kad; the client polls
 // EC_OP_SEARCH_RESULTS to drain.
-struct SearchResult {
-	std::uint32_t ecid                  = 0;
-	std::string   hash;             // 32-char hex MD4
-	std::string   name;
-	std::uint64_t size                  = 0;
-	std::uint32_t source_count          = 0;
+struct SearchResult
+{
+	std::uint32_t ecid = 0;
+	std::string hash; // 32-char hex MD4
+	std::string name;
+	std::uint64_t size = 0;
+	std::uint32_t source_count = 0;
 	std::uint32_t complete_source_count = 0;
-	bool          already_have          = false;
-	std::uint8_t  rating                = 0;
+	bool already_have = false;
+	std::uint8_t rating = 0;
 };
-
 
 // Refresher-tracked lifecycle of the currently-active (or last-finished)
 // search. The refresher reads EC_TAG_SEARCH_LIFECYCLE_STATE (added in the
 // EC protocol cleanup landed earlier in this PR) and maps it directly
 // here — no sentinel decode, no state machine, no defensive timeout.
-struct SearchProgressSnapshot {
+struct SearchProgressSnapshot
+{
 	// True between POST /search and the daemon-reported finished state.
 	// Drives whether the refresher keeps polling EC_OP_SEARCH_RESULTS +
 	// EC_OP_SEARCH_PROGRESS.
-	bool          active   = false;
+	bool active = false;
 	// "global" | "local" | "kad". Captured from POST /search's `type`
 	// param. Surfaced in `search_progress` SSE so consumers can
 	// distinguish which network produced the result set.
-	std::string   kind;
-	std::uint32_t percent  = 0;     // 0..100, daemon-computed for every
-	                                // kind (global = real server-queue
-	                                // percent; Kad = cosmetic time-ramp;
-	                                // 100 on finished)
-	bool          complete = false; // true exactly once on the lifecycle
-	                                // RUNNING → FINISHED edge
+	std::string kind;
+	std::uint32_t percent = 0; // 0..100, daemon-computed for every
+				   // kind (global = real server-queue
+				   // percent; Kad = cosmetic time-ramp;
+				   // 100 on finished)
+	bool complete = false;     // true exactly once on the lifecycle
+				   // RUNNING → FINISHED edge
 };
-
 
 // `m_amule_log_lines` in CState caches /logs/amule. amule's EC
 // server piggybacks new lines on STAT_REQ at `EC_DETAIL_FULL` (see
@@ -361,55 +362,55 @@ struct SearchProgressSnapshot {
 // in memory until amuleapi restarts; log volume is bounded by
 // operator habits (idle ~tens of KB/day; busy ~hundreds).
 
-
 // /logs/serverinfo. amule has no incremental EC op for this log
 // (no equivalent of CLoggerAccess for ServerInfoLog), so the
 // refresher fetches the entire string via EC_OP_GET_SERVERINFO each
 // tick and the cache stores the latest snapshot. Server-info logs
 // are small (a few KB at most — just server connection chatter), so
 // the per-tick rebuild cost is negligible.
-struct ServerInfoLog {
+struct ServerInfoLog
+{
 	std::string text;
 };
-
 
 // amuled preferences subset surfaced via /preferences. The amuled
 // preferences corpus is enormous (every UI panel has its own
 // section); for v0.1 we ship the common-case fields:
 // nick, transfer limits, ports, connection toggles. / later
 // can extend this if a real client reports needing more.
-struct PreferencesSnapshot {
+struct PreferencesSnapshot
+{
 	// [General]
-	std::string   nickname;
-	std::string   user_hash;
-	std::string   host_name;
-	bool          check_new_version = false;
+	std::string nickname;
+	std::string user_hash;
+	std::string host_name;
+	bool check_new_version = false;
 
 	// [Connection]
-	std::uint32_t max_upload_kbps        = 0;
-	std::uint32_t max_download_kbps      = 0;
-	std::uint32_t max_upload_cap_kbps    = 0;
-	std::uint32_t max_download_cap_kbps  = 0;
-	std::uint32_t slot_allocation        = 0;
-	std::uint16_t tcp_port               = 0;
-	std::uint16_t udp_port               = 0;
-	bool          udp_disabled           = false;
-	std::uint32_t max_sources_per_file   = 0;
-	std::uint32_t max_connections        = 0;
-	bool          autoconnect            = false;
-	bool          reconnect              = false;
-	bool          network_ed2k           = false;
-	bool          network_kad            = false;
+	std::uint32_t max_upload_kbps = 0;
+	std::uint32_t max_download_kbps = 0;
+	std::uint32_t max_upload_cap_kbps = 0;
+	std::uint32_t max_download_cap_kbps = 0;
+	std::uint32_t slot_allocation = 0;
+	std::uint16_t tcp_port = 0;
+	std::uint16_t udp_port = 0;
+	bool udp_disabled = false;
+	std::uint32_t max_sources_per_file = 0;
+	std::uint32_t max_connections = 0;
+	bool autoconnect = false;
+	bool reconnect = false;
+	bool network_ed2k = false;
+	bool network_kad = false;
 };
 
-
-struct StatusSnapshot {
+struct StatusSnapshot
+{
 	// "connected" / "connecting" / "disconnected" — the literal
 	// string the API returns. Done at parse time rather than
 	// emit time so the snapshot is self-describing (debug-dump-
 	// friendly) and the emit path stays one-liner trivial.
-	std::string ed2k_state    = "disconnected";
-	std::string kad_state     = "disabled";
+	std::string ed2k_state = "disconnected";
+	std::string kad_state = "disabled";
 
 	// Nickname is intentionally NOT a /status field — it lives in the
 	// preferences EC namespace, not the STAT_REQ response. amuleapi
@@ -428,20 +429,19 @@ struct StatusSnapshot {
 	// (NAT'd, can't accept incoming). adds NAT-T affordances
 	// that change this calculus; until then the field maps 1:1 to the
 	// EC CONNSTATE bit.
-	bool        ed2k_lowid    = false;
+	bool ed2k_lowid = false;
 	// True when Kad is running but firewalled.
-	bool        kad_firewalled = false;
+	bool kad_firewalled = false;
 
 	// Bytes per second (NOT kB) so the field name matches the wire
 	// units throughout. Clients that want kB/s do the divide.
 	std::uint64_t download_bps = 0;
-	std::uint64_t upload_bps   = 0;
+	std::uint64_t upload_bps = 0;
 
 	// Aggregate counts pulled by the same EC_OP_STATS round-trip.
-	std::uint32_t ul_queue_len     = 0;
-	std::uint32_t total_src_count  = 0;
+	std::uint32_t ul_queue_len = 0;
+	std::uint32_t total_src_count = 0;
 };
-
 
 // ECID-keyed file map + hash→ECID index in lockstep. The index is
 // maintained inline on every emplace/erase so the obvious lookup
@@ -457,20 +457,21 @@ struct StatusSnapshot {
 // Invariant: a FileSnapshot's `hash` is content-derived and never
 // changes once set. Walkers MUST NOT reassign `hash` via the iterator
 // (the index would desync). Set hash before emplace, never after.
-class FileMap {
+class FileMap
+{
 public:
-	using map_type       = std::unordered_map<std::uint32_t, FileSnapshot>;
-	using iterator       = map_type::iterator;
+	using map_type = std::unordered_map<std::uint32_t, FileSnapshot>;
+	using iterator = map_type::iterator;
 	using const_iterator = map_type::const_iterator;
 
-	iterator       find(std::uint32_t ecid)       { return m_files.find(ecid); }
+	iterator find(std::uint32_t ecid) { return m_files.find(ecid); }
 	const_iterator find(std::uint32_t ecid) const { return m_files.find(ecid); }
-	iterator       begin()       { return m_files.begin(); }
+	iterator begin() { return m_files.begin(); }
 	const_iterator begin() const { return m_files.begin(); }
-	iterator       end()         { return m_files.end(); }
-	const_iterator end()   const { return m_files.end(); }
-	std::size_t    size()  const { return m_files.size(); }
-	bool           empty() const { return m_files.empty(); }
+	iterator end() { return m_files.end(); }
+	const_iterator end() const { return m_files.end(); }
+	std::size_t size() const { return m_files.size(); }
+	bool empty() const { return m_files.empty(); }
 
 	// By-value param so callers can pass either an lvalue (copies) or
 	// rvalue (moves) with the same call site — std::unordered_map's
@@ -507,57 +508,59 @@ public:
 	bool FindEcidByHash(const std::string &hash, std::uint32_t &out) const
 	{
 		auto it = m_hash_to_ecid.find(hash);
-		if (it == m_hash_to_ecid.end()) return false;
+		if (it == m_hash_to_ecid.end())
+			return false;
 		out = it->second;
 		return true;
 	}
 
 private:
-	map_type                                       m_files;
+	map_type m_files;
 	std::unordered_map<std::string, std::uint32_t> m_hash_to_ecid;
 };
-
 
 // One State instance per amuleapi process. The mutex protects every
 // member field; refresh swaps the whole struct under it, handlers
 // read the substructs they need under it.
-class CState {
+class CState
+{
 public:
 	// True once the refresher has completed at least one successful
 	// tick. Until then, the /status endpoint returns 503 with
 	// `ec_unavailable` so clients can tell "amuleapi is up but amuled
 	// isn't responding" apart from a hard 5xx.
-	bool             HasFirstSnapshot() const;
+	bool HasFirstSnapshot() const;
 
 	// Wall-clock at which the last successful tick completed. Used
 	// to populate `snapshot_at` / `snapshot_at_unix` on every list
 	// response.
-	std::time_t      SnapshotAt() const;
+	std::time_t SnapshotAt() const;
 
 	// True iff the most recent tick succeeded. False after a tick
 	// failed (EC timeout / disconnect); the refresher keeps the
 	// stale snapshot for clients but flips this flag.
-	bool             EcConnected() const;
+	bool EcConnected() const;
 
-	StatusSnapshot                  Status()      const;
-	KadSnapshot                     Kad()         const;
+	StatusSnapshot Status() const;
+	KadSnapshot Kad() const;
 	// One-shot snapshot of the four scalars /api/v0/status composes
 	// from. Taken under a single shared_lock so the four pieces
 	// describe the same refresher tick — no risk of `status` and
 	// `kad` straddling a tick boundary.
-	struct DashboardSnapshot {
+	struct DashboardSnapshot
+	{
 		StatusSnapshot status;
-		KadSnapshot    kad;
-		std::time_t    snapshot_at = 0;
-		bool           ec_connected = false;
+		KadSnapshot kad;
+		std::time_t snapshot_at = 0;
+		bool ec_connected = false;
 	};
-	DashboardSnapshot               Dashboard()   const;
-	PreferencesSnapshot             Preferences() const;
+	DashboardSnapshot Dashboard() const;
+	PreferencesSnapshot Preferences() const;
 	// Full snapshot of the amule log lines (oldest-first). API
 	// handlers slice the tail before serialising via the
 	// `?tail=N` query param.
-	std::vector<std::string>        AmuleLog()    const;
-	ServerInfoLog                   ServerInfo()  const;
+	std::vector<std::string> AmuleLog() const;
+	ServerInfoLog ServerInfo() const;
 
 	// Flat list views. Reads the ECID-keyed map under shared_lock and
 	// returns a copy of the snapshot values in unordered_map iteration
@@ -568,21 +571,21 @@ public:
 	// `Downloads()` filters `m_files` by `is_downloading`, `Shared()`
 	// filters by `is_shared`. Both views consult the same underlying
 	// unified map — see FileSnapshot above for the role-flag model.
-	std::vector<FileSnapshot>     Downloads() const;
-	std::vector<FileSnapshot>     Shared()    const;
+	std::vector<FileSnapshot> Downloads() const;
+	std::vector<FileSnapshot> Shared() const;
 	// Unfiltered view used by EventDiff to compute role-flag
 	// transitions. Not surfaced on the REST API.
-	std::vector<FileSnapshot>     Files()     const;
+	std::vector<FileSnapshot> Files() const;
 
 	// Full peer list (all upload_state values, including queue
 	// waiters, idle peers, and banned). Backs /clients.
 	// The legacy /uploads endpoint is retired — consumers query
 	// /clients and filter by role on their side.
-	std::vector<ClientSnapshot>   Clients()   const;
+	std::vector<ClientSnapshot> Clients() const;
 
-	std::vector<ServerSnapshot>   Servers()   const;
-	std::vector<SearchResult>     Search()    const;
-	SearchProgressSnapshot        SearchProgress() const;
+	std::vector<ServerSnapshot> Servers() const;
+	std::vector<SearchResult> Search() const;
+	SearchProgressSnapshot SearchProgress() const;
 
 	// Categories aren't ECID-keyed (they come in via the
 	// preferences packet as an indexed array); keep them as a plain
@@ -590,27 +593,23 @@ public:
 	std::vector<CategorySnapshot> Categories() const;
 
 	// /stats/tree returns the recursive tree as a single bare object.
-	StatsTreeNode                 StatsTree()  const;
+	StatsTreeNode StatsTree() const;
 	// /stats/graphs/{graph} reads one series out of the bundle.
-	StatsGraphs                   Graphs()     const;
+	StatsGraphs Graphs() const;
 
 	// Look up a single file by 32-char hex hash, then check the role.
 	// Returns true on hit + role match, false on miss; on miss `out`
 	// is left untouched. Used by /downloads/{hash} (download role) and
 	// /shared/{hash} (shared role) — both inspect the same m_files map.
-	bool             FindDownload(const std::string &hash_hex,
-	                              FileSnapshot &out) const;
-	bool             FindShared  (const std::string &hash_hex,
-	                              FileSnapshot &out) const;
+	bool FindDownload(const std::string &hash_hex, FileSnapshot &out) const;
+	bool FindShared(const std::string &hash_hex, FileSnapshot &out) const;
 
 	// ECID-keyed counterparts. Used internally — there is no
 	// /downloads/{ecid} or /shared/{ecid} path; the wire surface is
 	// hash-only. CClientList::ApplyGetUpdate also reaches in here when
 	// resolving EC_TAG_CLIENT_UPLOAD_FILE.
-	bool             FindDownloadByEcid(std::uint32_t ecid,
-	                                    FileSnapshot &out) const;
-	bool             FindSharedByEcid (std::uint32_t ecid,
-	                                    FileSnapshot &out) const;
+	bool FindDownloadByEcid(std::uint32_t ecid, FileSnapshot &out) const;
+	bool FindSharedByEcid(std::uint32_t ecid, FileSnapshot &out) const;
 
 	// INC-mode delta application. The refresher takes the unique_lock
 	// once per EC roundtrip, then calls a callback with a mutable
@@ -622,81 +621,77 @@ public:
 	// the SAME m_files map; the callback decides which role to flip.
 	// MutateDownloads/Shared hand out the FileMap wrapper, which keeps
 	// its internal hash→ECID index in sync on every emplace/erase.
-	void             MutateDownloads(const std::function<void(FileMap &)> &fn);
-	void             MutateShared   (const std::function<void(FileMap &)> &fn);
-	void             MutateClients  (const std::function<
-	                  void(std::map<std::uint32_t, ClientSnapshot>   &)> &fn);
-	void             MutateServers  (const std::function<
-	                  void(std::map<std::uint32_t, ServerSnapshot>   &)> &fn);
-	void             MutateSearch   (const std::function<
-	                  void(std::map<std::uint32_t, SearchResult>     &)> &fn);
+	void MutateDownloads(const std::function<void(FileMap &)> &fn);
+	void MutateShared(const std::function<void(FileMap &)> &fn);
+	void MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn);
+	void MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn);
+	void MutateSearch(const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn);
 
 	// Wholesale reset paths. Called by the refresher after a
 	// MarkTickFailure → MarkTickSuccess transition (the server's
 	// CValueMap was reset on reconnect; stale entries that vanished
 	// during the disconnect window would otherwise live forever in
 	// the cache).
-	void             ResetLists();
+	void ResetLists();
 
 	// Refresher-side write paths.
-	void             WriteStatus(StatusSnapshot s);
-	void             WriteKad(KadSnapshot k);
-	void             WritePreferences(PreferencesSnapshot p);
-	void             WriteCategories(std::vector<CategorySnapshot> c);
+	void WriteStatus(StatusSnapshot s);
+	void WriteKad(KadSnapshot k);
+	void WritePreferences(PreferencesSnapshot p);
+	void WriteCategories(std::vector<CategorySnapshot> c);
 	// Append one or more new amule-log lines to the ring; trims oldest
 	// entries when capacity is exceeded. Called once per refresher
 	// tick with the lines drained from EC_TAG_STATS_LOGGER_MESSAGE.
-	void             AppendAmuleLog(std::vector<std::string> new_lines);
+	void AppendAmuleLog(std::vector<std::string> new_lines);
 	// Drop every cached amule-log line. Called by DELETE /logs/amule
 	// after the EC_OP_RESET_LOG roundtrip — the refresher only appends
 	// (it has no equivalent of "shrink to amuled's current count"), so
 	// the in-process cache MUST be cleared explicitly or the next GET
 	// will keep returning the pre-reset lines. The next refresher tick
 	// resumes appending from amuled's now-empty buffer.
-	void             ClearAmuleLog();
-	void             WriteServerInfo(ServerInfoLog s);
+	void ClearAmuleLog();
+	void WriteServerInfo(ServerInfoLog s);
 	// Called by POST /search. Wipes m_search, sets m_search_progress
 	// to active=true with the requested `kind`. The refresher takes
 	// over from there, mapping EC_TAG_SEARCH_LIFECYCLE_STATE into
 	// `complete` / `active` on each tick.
-	void             MarkSearchStarted(const std::string &kind);
+	void MarkSearchStarted(const std::string &kind);
 	// Refresher-side write path for the search progress snapshot.
-	void             WriteSearchProgress(SearchProgressSnapshot s);
-	void             WriteStatsTree(StatsTreeNode t);
-	void             WriteGraphs(StatsGraphs g);
-	void             MarkTickSuccess();
-	void             MarkTickFailure();
+	void WriteSearchProgress(SearchProgressSnapshot s);
+	void WriteStatsTree(StatsTreeNode t);
+	void WriteGraphs(StatsGraphs g);
+	void MarkTickSuccess();
+	void MarkTickFailure();
 
 private:
 	mutable std::shared_timed_mutex m_mu;
 
-	bool             m_has_first_snapshot = false;
-	bool             m_ec_connected       = false;
-	std::time_t      m_snapshot_at        = 0;
+	bool m_has_first_snapshot = false;
+	bool m_ec_connected = false;
+	std::time_t m_snapshot_at = 0;
 
-	StatusSnapshot                                  m_status;
-	KadSnapshot                                     m_kad;
-	PreferencesSnapshot                             m_preferences;
-	std::vector<CategorySnapshot>                   m_categories;
+	StatusSnapshot m_status;
+	KadSnapshot m_kad;
+	PreferencesSnapshot m_preferences;
+	std::vector<CategorySnapshot> m_categories;
 	// Unified ECID-keyed file map. A single entry may participate in
 	// the /downloads view (`is_downloading`), the /shared view
 	// (`is_shared`), or both. See FileSnapshot's header comment for
 	// why the two views share storage. FileMap also owns a hash→ECID
 	// index, maintained inline on every emplace/erase so /downloads/{hash}
 	// + /shared/{hash} lookups stay O(1) avg without a per-tick rebuild.
-	FileMap                                         m_files;
+	FileMap m_files;
 
-	std::map<std::uint32_t, ClientSnapshot>         m_clients;
-	std::map<std::uint32_t, ServerSnapshot>         m_servers;
-	std::vector<std::string>                        m_amule_log_lines;
-	ServerInfoLog                                   m_server_info;
-	StatsTreeNode                                   m_stats_tree;
-	StatsGraphs                                     m_graphs;
-	std::map<std::uint32_t, SearchResult>           m_search;
-	SearchProgressSnapshot                          m_search_progress;
+	std::map<std::uint32_t, ClientSnapshot> m_clients;
+	std::map<std::uint32_t, ServerSnapshot> m_servers;
+	std::vector<std::string> m_amule_log_lines;
+	ServerInfoLog m_server_info;
+	StatsTreeNode m_stats_tree;
+	StatsGraphs m_graphs;
+	std::map<std::uint32_t, SearchResult> m_search;
+	SearchProgressSnapshot m_search_progress;
 };
 
-
-}  // namespace webapi
+} // namespace webapi
 
 #endif // WEBAPI_STATE_H

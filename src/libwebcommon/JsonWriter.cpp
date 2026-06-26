@@ -27,16 +27,15 @@
 #include <cmath>
 #include <cstdio>
 
-
 CJsonWriter::CJsonWriter()
-	: m_buf(&m_internal),
-	  m_needs_comma(false)
+: m_buf(&m_internal)
+, m_needs_comma(false)
 {
 }
 
 CJsonWriter::CJsonWriter(wxString *external_buf)
-	: m_buf(external_buf),
-	  m_needs_comma(false)
+: m_buf(external_buf)
+, m_needs_comma(false)
 {
 }
 
@@ -171,9 +170,7 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 			if (j != s.end()) {
 				const uint32_t lo = wxUniChar(*j).GetValue();
 				if (lo >= 0xDC00 && lo <= 0xDFFF) {
-					cp = 0x10000u
-					   + ((cp - 0xD800u) << 10)
-					   + (lo - 0xDC00u);
+					cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
 					i = j;
 					paired = true;
 				}
@@ -190,20 +187,34 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 			cp = 0xFFFD;
 		}
 		switch (cp) {
-		case '"':  *m_buf += wxT("\\\""); continue;
-		case '\\': *m_buf += wxT("\\\\"); continue;
-		case '\b': *m_buf += wxT("\\b"); continue;
-		case '\f': *m_buf += wxT("\\f"); continue;
-		case '\n': *m_buf += wxT("\\n"); continue;
-		case '\r': *m_buf += wxT("\\r"); continue;
-		case '\t': *m_buf += wxT("\\t"); continue;
-		default: break;
+		case '"':
+			*m_buf += wxT("\\\"");
+			continue;
+		case '\\':
+			*m_buf += wxT("\\\\");
+			continue;
+		case '\b':
+			*m_buf += wxT("\\b");
+			continue;
+		case '\f':
+			*m_buf += wxT("\\f");
+			continue;
+		case '\n':
+			*m_buf += wxT("\\n");
+			continue;
+		case '\r':
+			*m_buf += wxT("\\r");
+			continue;
+		case '\t':
+			*m_buf += wxT("\\t");
+			continue;
+		default:
+			break;
 		}
 		if (cp < 0x20 || cp == 0x7F) {
 			// Control characters: \uXXXX form.
 			char buf[8];
-			std::snprintf(buf, sizeof(buf), "\\u%04x",
-				static_cast<unsigned>(cp));
+			std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(cp));
 			*m_buf += wxString::FromAscii(buf);
 		} else if (cp <= 0xFFFF) {
 			// BMP non-control: emit verbatim. Non-ASCII bytes ride
@@ -217,7 +228,9 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 			uint32_t hi = 0xD800 | ((v >> 10) & 0x3FF);
 			uint32_t lo = 0xDC00 | (v & 0x3FF);
 			char buf[16];
-			std::snprintf(buf, sizeof(buf), "\\u%04x\\u%04x",
+			std::snprintf(buf,
+				sizeof(buf),
+				"\\u%04x\\u%04x",
 				static_cast<unsigned>(hi),
 				static_cast<unsigned>(lo));
 			*m_buf += wxString::FromAscii(buf);

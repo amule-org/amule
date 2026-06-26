@@ -23,20 +23,19 @@
 #include <sys/types.h>
 
 #ifdef _WIN32
-#  include <direct.h>
-#  include <io.h>
-#  include <process.h>
-#  include <windows.h>
+#include <direct.h>
+#include <io.h>
+#include <process.h>
+#include <windows.h>
 #else
-#  include <unistd.h>
+#include <unistd.h>
 #endif
-
 
 using namespace muleunit;
 using namespace webapi;
 
-
-namespace {
+namespace
+{
 
 // Per-test scratch dir. POSIX uses mkdtemp(); Windows builds a unique
 // name under %TEMP%. The dir is created empty; callers populate it and
@@ -48,8 +47,7 @@ std::string MakeScratchRoot(const char *tag)
 	char tmp[MAX_PATH];
 	DWORD n = GetTempPathA(MAX_PATH, tmp);
 	std::string base(tmp, n);
-	std::string dir = base + "amule-staticfs-" + tag + "-"
-		+ std::to_string(static_cast<long>(_getpid()));
+	std::string dir = base + "amule-staticfs-" + tag + "-" + std::to_string(static_cast<long>(_getpid()));
 	_mkdir(dir.c_str());
 	return dir;
 #else
@@ -58,11 +56,11 @@ std::string MakeScratchRoot(const char *tag)
 	tpl += "-XXXXXX";
 	std::vector<char> buf(tpl.begin(), tpl.end());
 	buf.push_back('\0');
-	if (!mkdtemp(buf.data())) return std::string();
+	if (!mkdtemp(buf.data()))
+		return std::string();
 	return std::string(buf.data());
 #endif
 }
-
 
 bool MkSubdir(const std::string &path)
 {
@@ -73,18 +71,17 @@ bool MkSubdir(const std::string &path)
 #endif
 }
 
-
 // Write a single byte file. The content isn't load-bearing for these
 // tests — they only verify the resolver's accept/reject decision and
 // the resolved path, not file body.
 bool WriteFile(const std::string &path, const std::string &body)
 {
 	std::ofstream f(path.c_str(), std::ios::binary);
-	if (!f.is_open()) return false;
+	if (!f.is_open())
+		return false;
 	f << body;
 	return f.good();
 }
-
 
 void RemoveAll(const std::string &path)
 {
@@ -98,11 +95,9 @@ void RemoveAll(const std::string &path)
 	(void)std::system(cmd.c_str());
 }
 
-}  // namespace
-
+} // namespace
 
 DECLARE_SIMPLE(StaticFs)
-
 
 // ----------------------------------------------------------------------
 // Plain accept paths — file exists inside root.
@@ -124,7 +119,6 @@ TEST(StaticFs, FileAtRootResolvesAndReturnsTrue)
 	RemoveAll(root);
 }
 
-
 TEST(StaticFs, RootWithTrailingSlashResolves)
 {
 	// Regression: Windows _fullpath() preserves a trailing slash from
@@ -142,7 +136,6 @@ TEST(StaticFs, RootWithTrailingSlashResolves)
 	RemoveAll(root);
 }
 
-
 TEST(StaticFs, NestedFileResolvesAndReturnsTrue)
 {
 	const std::string root = MakeScratchRoot("nested");
@@ -155,7 +148,6 @@ TEST(StaticFs, NestedFileResolvesAndReturnsTrue)
 
 	RemoveAll(root);
 }
-
 
 // ----------------------------------------------------------------------
 // Reject paths — opaque false return for any failure mode, so the
@@ -173,15 +165,11 @@ TEST(StaticFs, MissingFileReturnsFalse)
 	RemoveAll(root);
 }
 
-
 TEST(StaticFs, MissingRootReturnsFalse)
 {
 	std::string out;
-	ASSERT_TRUE(!ResolveWithinRoot(
-		"/this/path/should/not/exist/amuleapi-test",
-		"index.html", out));
+	ASSERT_TRUE(!ResolveWithinRoot("/this/path/should/not/exist/amuleapi-test", "index.html", out));
 }
-
 
 TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 {
@@ -192,7 +180,7 @@ TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 	// would land outside root.
 	const std::string parent = MakeScratchRoot("parent-escape");
 	ASSERT_TRUE(!parent.empty());
-	const std::string root    = parent + "/root";
+	const std::string root = parent + "/root";
 	const std::string outside = parent + "/outside";
 	ASSERT_TRUE(MkSubdir(root));
 	ASSERT_TRUE(MkSubdir(outside));
@@ -203,7 +191,6 @@ TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 
 	RemoveAll(parent);
 }
-
 
 // ----------------------------------------------------------------------
 // Symlink containment — the security-critical case the resolver
@@ -217,22 +204,20 @@ TEST(StaticFs, SymlinkEscapingRootIsRejected)
 {
 	const std::string parent = MakeScratchRoot("symlink-escape");
 	ASSERT_TRUE(!parent.empty());
-	const std::string root    = parent + "/root";
+	const std::string root = parent + "/root";
 	const std::string outside = parent + "/outside";
 	ASSERT_TRUE(MkSubdir(root));
 	ASSERT_TRUE(MkSubdir(outside));
 	ASSERT_TRUE(WriteFile(outside + "/secret.txt", "pwn"));
 	// Plant a symlink INSIDE root that points OUTSIDE root.
 	const std::string link = root + "/leak.txt";
-	ASSERT_TRUE(symlink((outside + "/secret.txt").c_str(),
-		link.c_str()) == 0);
+	ASSERT_TRUE(symlink((outside + "/secret.txt").c_str(), link.c_str()) == 0);
 
 	std::string out;
 	ASSERT_TRUE(!ResolveWithinRoot(root, "leak.txt", out));
 
 	RemoveAll(parent);
 }
-
 
 TEST(StaticFs, SymlinkPointingInsideRootIsAccepted)
 {
@@ -242,16 +227,14 @@ TEST(StaticFs, SymlinkPointingInsideRootIsAccepted)
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(WriteFile(root + "/real.txt", "ok"));
 	const std::string link = root + "/alias.txt";
-	ASSERT_TRUE(symlink((root + "/real.txt").c_str(),
-		link.c_str()) == 0);
+	ASSERT_TRUE(symlink((root + "/real.txt").c_str(), link.c_str()) == 0);
 
 	std::string out;
 	ASSERT_TRUE(ResolveWithinRoot(root, "alias.txt", out));
 
 	RemoveAll(root);
 }
-#endif  // !_WIN32
-
+#endif // !_WIN32
 
 // ----------------------------------------------------------------------
 // IsDir — the tiny stat-wrapper used by the discovery chain. The
@@ -265,11 +248,10 @@ TEST(StaticFs, IsDirTrueForExistingDirectory)
 	const std::string root = MakeScratchRoot("isdir-yes");
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(IsDir(root));
-	ASSERT_TRUE(IsDir(root + "/"));  // trailing slash tolerated
+	ASSERT_TRUE(IsDir(root + "/")); // trailing slash tolerated
 
 	RemoveAll(root);
 }
-
 
 TEST(StaticFs, IsDirFalseForFile)
 {
@@ -282,7 +264,6 @@ TEST(StaticFs, IsDirFalseForFile)
 
 	RemoveAll(root);
 }
-
 
 TEST(StaticFs, IsDirFalseForMissingPath)
 {

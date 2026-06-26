@@ -32,11 +32,11 @@
 #include <sstream>
 #include <thread>
 
+namespace webapi
+{
 
-namespace webapi {
-
-
-namespace {
+namespace
+{
 
 // Minimal JSON string escaper. JsonWriter (libwebcommon) is the
 // canonical formatter for response bodies, but the event-data
@@ -52,26 +52,39 @@ std::string EscJson(const std::string &s)
 	out.reserve(s.size() + 8);
 	for (unsigned char c : s) {
 		switch (c) {
-			case '\\': out += "\\\\"; break;
-			case '"':  out += "\\\""; break;
-			case '\b': out += "\\b";  break;
-			case '\f': out += "\\f";  break;
-			case '\n': out += "\\n";  break;
-			case '\r': out += "\\r";  break;
-			case '\t': out += "\\t";  break;
-			default:
-				if (c < 0x20) {
-					char buf[8];
-					std::snprintf(buf, sizeof(buf), "\\u%04x", c);
-					out += buf;
-				} else {
-					out += static_cast<char>(c);
-				}
+		case '\\':
+			out += "\\\\";
+			break;
+		case '"':
+			out += "\\\"";
+			break;
+		case '\b':
+			out += "\\b";
+			break;
+		case '\f':
+			out += "\\f";
+			break;
+		case '\n':
+			out += "\\n";
+			break;
+		case '\r':
+			out += "\\r";
+			break;
+		case '\t':
+			out += "\\t";
+			break;
+		default:
+			if (c < 0x20) {
+				char buf[8];
+				std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+				out += buf;
+			} else {
+				out += static_cast<char>(c);
+			}
 		}
 	}
 	return out;
 }
-
 
 // Each ToJson emits the SAME shape as the corresponding REST list-item
 // writer in Api.cpp (WriteDownloadObject / WriteSharedObject /
@@ -91,25 +104,19 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
-	  << ",\"size\":" << f.size
-	  << ",\"size_done\":" << f.download.size_done
-	  << ",\"size_xfer\":" << f.download.size_xfer
-	  << ",\"speed_bps\":" << f.download.speed_bps
+	  << ",\"size\":" << f.size << ",\"size_done\":" << f.download.size_done
+	  << ",\"size_xfer\":" << f.download.size_xfer << ",\"speed_bps\":" << f.download.speed_bps
 	  << ",\"status\":\"" << EscJson(f.download.status) << "\""
 	  << ",\"priority\":\"" << EscJson(f.priority) << "\""
 	  << ",\"priority_auto\":" << (f.download.priority_auto ? "true" : "false")
-	  << ",\"category\":" << f.download.category
-	  << ",\"sources\":{"
-	    << "\"total\":" << f.download.sources_total
-	    << ",\"not_current\":" << f.download.sources_not_current
-	    << ",\"transferring\":" << f.download.sources_transferring
-	    << ",\"a4af\":" << f.download.sources_a4af
-	    << "}"
+	  << ",\"category\":" << f.download.category << ",\"sources\":{"
+	  << "\"total\":" << f.download.sources_total << ",\"not_current\":" << f.download.sources_not_current
+	  << ",\"transferring\":" << f.download.sources_transferring
+	  << ",\"a4af\":" << f.download.sources_a4af << "}"
 	  << ",\"progress\":{\"percent\":" << f.download.percent << "}"
 	  << "}";
 	return o.str();
 }
-
 
 // shared_* event payload — mirrors WriteSharedObject. Reads the
 // shared sub-block of FileSnapshot.
@@ -120,52 +127,40 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
-	  << ",\"size\":" << f.size
-	  << ",\"priority\":\"" << EscJson(f.priority) << "\""
+	  << ",\"size\":" << f.size << ",\"priority\":\"" << EscJson(f.priority) << "\""
 	  << ",\"complete_sources\":" << f.shared.complete_sources
-	  << ",\"xfer\":{\"session\":" << f.shared.xfer_session
-	    << ",\"total\":" << f.shared.xfer_total << "}"
+	  << ",\"xfer\":{\"session\":" << f.shared.xfer_session << ",\"total\":" << f.shared.xfer_total << "}"
 	  << ",\"requests\":{\"session\":" << f.shared.requests_session
-	    << ",\"total\":" << f.shared.requests_total << "}"
+	  << ",\"total\":" << f.shared.requests_total << "}"
 	  << ",\"accepts\":{\"session\":" << f.shared.accepts_session
-	    << ",\"total\":" << f.shared.accepts_total << "}"
+	  << ",\"total\":" << f.shared.accepts_total << "}"
 	  << "}";
 	return o.str();
 }
-
 
 std::string ToJson(const ServerSnapshot &s)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ecid\":" << s.ecid
-	  << ",\"name\":\"" << EscJson(s.name) << "\""
+	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
 	  << ",\"version\":\"" << EscJson(s.version) << "\""
 	  << ",\"address\":\"" << EscJson(s.address) << "\""
-	  << ",\"port\":" << s.port
-	  << ",\"users\":" << s.users
-	  << ",\"max_users\":" << s.max_users
-	  << ",\"files\":" << s.files
-	  << ",\"priority\":\"" << EscJson(s.priority) << "\""
-	  << ",\"ping_ms\":" << s.ping_ms
-	  << ",\"failed\":" << s.failed
-	  << ",\"static\":" << (s.is_static ? "true" : "false")
-	  << "}";
+	  << ",\"port\":" << s.port << ",\"users\":" << s.users << ",\"max_users\":" << s.max_users
+	  << ",\"files\":" << s.files << ",\"priority\":\"" << EscJson(s.priority) << "\""
+	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed\":" << s.failed
+	  << ",\"static\":" << (s.is_static ? "true" : "false") << "}";
 	return o.str();
 }
-
 
 std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"client_ecid\":" << c.ecid
-	  << ",\"client_name\":\"" << EscJson(c.client_name) << "\""
+	  << "\"client_ecid\":" << c.ecid << ",\"client_name\":\"" << EscJson(c.client_name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
-	  << ",\"port\":" << c.port
-	  << ",\"software\":\"" << EscJson(c.software) << "\""
+	  << ",\"port\":" << c.port << ",\"software\":\"" << EscJson(c.software) << "\""
 	  << ",\"software_version\":\"" << EscJson(c.software_version) << "\""
 	  << ",\"os_info\":\"" << EscJson(c.os_info) << "\""
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
@@ -175,22 +170,16 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"upload_file_hash\":\"" << EscJson(c.upload_file_hash) << "\""
 	  << ",\"download_file_hash\":\"" << EscJson(c.download_file_hash) << "\""
 	  << ",\"xfer\":{"
-	    << "\"up_session\":" << c.xfer_up_session
-	    << ",\"down_session\":" << c.xfer_down_session
-	    << ",\"up_total\":" << c.xfer_up_total
-	    << ",\"down_total\":" << c.xfer_down_total
-	    << "}"
+	  << "\"up_session\":" << c.xfer_up_session << ",\"down_session\":" << c.xfer_down_session
+	  << ",\"up_total\":" << c.xfer_up_total << ",\"down_total\":" << c.xfer_down_total << "}"
 	  << ",\"upload_speed_bps\":" << c.upload_speed_bps
 	  << ",\"download_speed_bps\":" << c.download_speed_bps
 	  << ",\"queue_waiting_position\":" << c.queue_waiting_position
-	  << ",\"remote_queue_rank\":" << c.remote_queue_rank
-	  << ",\"score\":" << c.score
+	  << ",\"remote_queue_rank\":" << c.remote_queue_rank << ",\"score\":" << c.score
 	  << ",\"obfuscation_status\":\"" << EscJson(c.obfuscation_status) << "\""
-	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false")
-	  << "}";
+	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false") << "}";
 	return o.str();
 }
-
 
 // Status event payload mirrors the REST /status envelope nesting
 // (ed2k.*, kad.* including the kad.network rollup, speeds.*, queue.*,
@@ -198,41 +187,29 @@ std::string ToJson(const ClientSnapshot &c)
 // REST nesting groups data from StatusSnapshot AND KadSnapshot AND
 // the dashboard's ec_connected bit — all three are read in one
 // shared_lock by state.Dashboard() at the call site.
-std::string ToJsonStatusEvent(const StatusSnapshot &s,
-                              const KadSnapshot    &k,
-                              bool                  ec_connected)
+std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
 	std::ostringstream o;
 	o << "{"
-	  << "\"ec_connected\":" << (ec_connected ? "true" : "false")
-	  << ",\"ed2k\":{"
-	    << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
-	    << ",\"low_id\":" << (s.ed2k_lowid ? "true" : "false")
-	    << ",\"server_name\":\"" << EscJson(s.server_name) << "\""
-	    << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
-	    << ",\"server_port\":" << s.server_port
-	    << "}"
+	  << "\"ec_connected\":" << (ec_connected ? "true" : "false") << ",\"ed2k\":{"
+	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
+	  << ",\"low_id\":" << (s.ed2k_lowid ? "true" : "false") << ",\"server_name\":\""
+	  << EscJson(s.server_name) << "\""
+	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
+	  << ",\"server_port\":" << s.server_port << "}"
 	  << ",\"kad\":{"
-	    << "\"state\":\"" << EscJson(s.kad_state) << "\""
-	    << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false")
-	    << ",\"network\":{"
-	      << "\"users\":" << k.users
-	      << ",\"files\":" << k.files
-	      << ",\"nodes\":" << k.nodes
-	      << "}"
-	    << "}"
+	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
+	  << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false") << ",\"network\":{"
+	  << "\"users\":" << k.users << ",\"files\":" << k.files << ",\"nodes\":" << k.nodes << "}"
+	  << "}"
 	  << ",\"speeds\":{"
-	    << "\"download_bps\":" << s.download_bps
-	    << ",\"upload_bps\":" << s.upload_bps
-	    << "}"
+	  << "\"download_bps\":" << s.download_bps << ",\"upload_bps\":" << s.upload_bps << "}"
 	  << ",\"queue\":{"
-	    << "\"upload_queue_length\":" << s.ul_queue_len
-	    << ",\"total_source_count\":" << s.total_src_count
-	    << "}"
+	  << "\"upload_queue_length\":" << s.ul_queue_len << ",\"total_source_count\":" << s.total_src_count
+	  << "}"
 	  << "}";
 	return o.str();
 }
-
 
 // Coarse equality — every field. For we treat any change as
 // "_updated" (emit the full new snapshot). v0.2 could introduce
@@ -253,96 +230,62 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s,
 // their cached id.
 bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 {
-	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
-	    && a.ed2k_link == b.ed2k_link
-	    && a.size == b.size
-	    && a.priority == b.priority
-	    && a.download.size_done == b.download.size_done
-	    && a.download.size_xfer == b.download.size_xfer
-	    && a.download.speed_bps == b.download.speed_bps
-	    && a.download.status    == b.download.status
-	    && a.download.priority_auto == b.download.priority_auto
-	    && a.download.category  == b.download.category
-	    && a.download.sources_total        == b.download.sources_total
-	    && a.download.sources_not_current  == b.download.sources_not_current
-	    && a.download.sources_transferring == b.download.sources_transferring
-	    && a.download.sources_a4af         == b.download.sources_a4af
-	    && a.download.percent  == b.download.percent;
+	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
+	       a.size == b.size && a.priority == b.priority && a.download.size_done == b.download.size_done &&
+	       a.download.size_xfer == b.download.size_xfer && a.download.speed_bps == b.download.speed_bps &&
+	       a.download.status == b.download.status &&
+	       a.download.priority_auto == b.download.priority_auto &&
+	       a.download.category == b.download.category &&
+	       a.download.sources_total == b.download.sources_total &&
+	       a.download.sources_not_current == b.download.sources_not_current &&
+	       a.download.sources_transferring == b.download.sources_transferring &&
+	       a.download.sources_a4af == b.download.sources_a4af && a.download.percent == b.download.percent;
 }
 bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 {
-	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name
-	    && a.ed2k_link == b.ed2k_link
-	    && a.size == b.size
-	    && a.priority == b.priority
-	    && a.shared.complete_sources == b.shared.complete_sources
-	    && a.shared.xfer_session     == b.shared.xfer_session
-	    && a.shared.xfer_total       == b.shared.xfer_total
-	    && a.shared.requests_session == b.shared.requests_session
-	    && a.shared.requests_total   == b.shared.requests_total
-	    && a.shared.accepts_session  == b.shared.accepts_session
-	    && a.shared.accepts_total    == b.shared.accepts_total;
+	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
+	       a.size == b.size && a.priority == b.priority &&
+	       a.shared.complete_sources == b.shared.complete_sources &&
+	       a.shared.xfer_session == b.shared.xfer_session && a.shared.xfer_total == b.shared.xfer_total &&
+	       a.shared.requests_session == b.shared.requests_session &&
+	       a.shared.requests_total == b.shared.requests_total &&
+	       a.shared.accepts_session == b.shared.accepts_session &&
+	       a.shared.accepts_total == b.shared.accepts_total;
 }
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 {
-	return a.name == b.name
-	    && a.description == b.description
-	    && a.version == b.version
-	    && a.address == b.address
-	    && a.port == b.port
-	    && a.users == b.users
-	    && a.max_users == b.max_users
-	    && a.files == b.files
-	    && a.priority == b.priority
-	    && a.ping_ms == b.ping_ms
-	    && a.failed == b.failed
-	    && a.is_static == b.is_static;
+	return a.name == b.name && a.description == b.description && a.version == b.version &&
+	       a.address == b.address && a.port == b.port && a.users == b.users &&
+	       a.max_users == b.max_users && a.files == b.files && a.priority == b.priority &&
+	       a.ping_ms == b.ping_ms && a.failed == b.failed && a.is_static == b.is_static;
 }
 bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
-	return a.client_name == b.client_name
-	    && a.user_hash == b.user_hash
-	    && a.ip == b.ip
-	    && a.port == b.port
-	    && a.software == b.software
-	    && a.software_version == b.software_version
-	    && a.os_info == b.os_info
-	    && a.upload_state == b.upload_state
-	    && a.download_state == b.download_state
-	    && a.ident_state == b.ident_state
-	    && a.download_file_name == b.download_file_name
-	    && a.upload_file_hash == b.upload_file_hash
-	    && a.download_file_hash == b.download_file_hash
-	    && a.xfer_up_session == b.xfer_up_session
-	    && a.xfer_down_session == b.xfer_down_session
-	    && a.xfer_up_total == b.xfer_up_total
-	    && a.xfer_down_total == b.xfer_down_total
-	    && a.upload_speed_bps == b.upload_speed_bps
-	    && a.download_speed_bps == b.download_speed_bps
-	    && a.queue_waiting_position == b.queue_waiting_position
-	    && a.remote_queue_rank == b.remote_queue_rank
-	    && a.score == b.score
-	    && a.obfuscation_status == b.obfuscation_status
-	    && a.friend_slot == b.friend_slot;
+	return a.client_name == b.client_name && a.user_hash == b.user_hash && a.ip == b.ip &&
+	       a.port == b.port && a.software == b.software && a.software_version == b.software_version &&
+	       a.os_info == b.os_info && a.upload_state == b.upload_state &&
+	       a.download_state == b.download_state && a.ident_state == b.ident_state &&
+	       a.download_file_name == b.download_file_name && a.upload_file_hash == b.upload_file_hash &&
+	       a.download_file_hash == b.download_file_hash && a.xfer_up_session == b.xfer_up_session &&
+	       a.xfer_down_session == b.xfer_down_session && a.xfer_up_total == b.xfer_up_total &&
+	       a.xfer_down_total == b.xfer_down_total && a.upload_speed_bps == b.upload_speed_bps &&
+	       a.download_speed_bps == b.download_speed_bps &&
+	       a.queue_waiting_position == b.queue_waiting_position &&
+	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
+	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot;
 }
 bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 {
-	return a.ed2k_state == b.ed2k_state && a.kad_state == b.kad_state
-	    && a.ed2k_lowid == b.ed2k_lowid
-	    && a.kad_firewalled == b.kad_firewalled
-	    && a.server_name == b.server_name
-	    && a.server_ip == b.server_ip
-	    && a.server_port == b.server_port
-	    && a.download_bps == b.download_bps
-	    && a.upload_bps == b.upload_bps
-	    && a.ul_queue_len == b.ul_queue_len
-	    && a.total_src_count == b.total_src_count;
+	return a.ed2k_state == b.ed2k_state && a.kad_state == b.kad_state && a.ed2k_lowid == b.ed2k_lowid &&
+	       a.kad_firewalled == b.kad_firewalled && a.server_name == b.server_name &&
+	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
+	       a.download_bps == b.download_bps && a.upload_bps == b.upload_bps &&
+	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count;
 }
 bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 {
 	return a.users == b.users && a.files == b.files && a.nodes == b.nodes;
 }
-
 
 // Generic map-diff helper. Walks both old and new, emitting:
 //  - `<base>_removed` for keys in old missing from new (identity-only)
@@ -357,19 +300,20 @@ bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 // notify_all) so a cold-start diff on a 5K-download library doesn't
 // fire 5K notify_all cycles inside the refresher loop.
 template <class Map, class IdentityFn>
-void DiffMap(CEventBus &bus, const std::string &base,
-             const Map &old_items, const Map &new_items,
-             IdentityFn removed_id_payload_fn)
+void DiffMap(CEventBus &bus,
+	const std::string &base,
+	const Map &old_items,
+	const Map &new_items,
+	IdentityFn removed_id_payload_fn)
 {
 	std::vector<std::pair<std::string, std::string>> batch;
 	batch.reserve(old_items.size() + new_items.size());
 	const std::string removed_name = base + "_removed";
-	const std::string added_name   = base + "_added";
+	const std::string added_name = base + "_added";
 	const std::string updated_name = base + "_updated";
 	for (const auto &kv : old_items) {
 		if (new_items.find(kv.first) == new_items.end()) {
-			batch.emplace_back(removed_name,
-			                   removed_id_payload_fn(kv.second));
+			batch.emplace_back(removed_name, removed_id_payload_fn(kv.second));
 		}
 	}
 	for (const auto &kv : new_items) {
@@ -382,7 +326,6 @@ void DiffMap(CEventBus &bus, const std::string &base,
 	}
 	bus.PublishBatch(batch);
 }
-
 
 // For hash-keyed file events emit removed payloads as
 // `{"hash":"..."}` so consumers can drop the cache entry without
@@ -405,24 +348,23 @@ std::string RemovedEcidPayload(const ClientSnapshot &c)
 	return o.str();
 }
 
-
 // Build an ECID-keyed map from the vector view that CState exposes.
 // The cache's internal layout is std::map<ECID, Snapshot>; the public
 // accessor returns std::vector<Snapshot>. For diffing we want
 // random-access-by-ECID, so we lift it back into a map. Cheap — O(N)
 // with N typically <1000 per substruct.
-template <class Snap>
-std::map<std::uint32_t, Snap> ByEcid(const std::vector<Snap> &v)
+template <class Snap> std::map<std::uint32_t, Snap> ByEcid(const std::vector<Snap> &v)
 {
 	std::map<std::uint32_t, Snap> m;
-	for (const auto &x : v) m.emplace(x.ecid, x);
+	for (const auto &x : v)
+		m.emplace(x.ecid, x);
 	return m;
 }
 
-}  // namespace
+} // namespace
 
-
-namespace {
+namespace
+{
 
 // Single-writer invariant: only the wxApp refresher tick mutates
 // LastSeenState + publishes diffs. Anything else (a future inline-
@@ -439,21 +381,19 @@ void EnforceSinglePublisher()
 	const std::thread::id self = std::this_thread::get_id();
 	std::thread::id expected;
 	if (g_publisher_thread.compare_exchange_strong(expected, self)) {
-		return;          // first caller — claimed it
+		return; // first caller — claimed it
 	}
-	if (expected == self) return;
+	if (expected == self)
+		return;
 	std::cerr << "amuleapi: EmitDiffsAndUpdate called from two "
-	             "different threads; this breaks the single-writer "
-	             "invariant on LastSeenState and the EventBus.\n";
+		     "different threads; this breaks the single-writer "
+		     "invariant on LastSeenState and the EventBus.\n";
 	std::abort();
 }
 
-}  // namespace
+} // namespace
 
-
-void EmitDiffsAndUpdate(CEventBus &bus,
-                        LastSeenState &prev,
-                        const CState &state)
+void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state)
 {
 	EnforceSinglePublisher();
 	// Snapshot the current state under its read locks. Each accessor
@@ -463,9 +403,9 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	// a file that flipped is_shared false→true on an existing ECID
 	// must fire `shared_added` even though it's been in the unified
 	// map all along.
-	auto new_files     = ByEcid(state.Files());
-	auto new_servers   = ByEcid(state.Servers());
-	auto new_clients   = ByEcid(state.Clients());
+	auto new_files = ByEcid(state.Files());
+	auto new_servers = ByEcid(state.Servers());
+	auto new_clients = ByEcid(state.Clients());
 	// Read the full dashboard for status_changed — the event payload
 	// mirrors the REST /status nested envelope which pulls from
 	// StatusSnapshot + KadSnapshot + ec_connected. Dashboard() takes
@@ -474,8 +414,8 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	// N).
 	auto new_dashboard = state.Dashboard();
 	const StatusSnapshot &new_status = new_dashboard.status;
-	const KadSnapshot    &new_kad    = new_dashboard.kad;
-	const bool            new_ec     = new_dashboard.ec_connected;
+	const KadSnapshot &new_kad = new_dashboard.kad;
+	const bool new_ec = new_dashboard.ec_connected;
 
 	// Files: role-flag-aware diff. download_* fires on is_downloading
 	// transitions; shared_* on is_shared transitions. A single tick
@@ -484,8 +424,7 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	{
 		std::vector<std::pair<std::string, std::string>> batch;
 		batch.reserve(new_files.size());
-		const auto push = [&](const char *name,
-		                      const std::string &payload) {
+		const auto push = [&](const char *name, const std::string &payload) {
 			batch.emplace_back(name, payload);
 		};
 		// _removed first — clients can tear down their cache slot
@@ -512,10 +451,8 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 		// previous tick's is_downloading / is_shared value.
 		for (const auto &kv : new_files) {
 			const auto it = prev.files.find(kv.first);
-			const bool was_downloading = (it != prev.files.end()
-			                              && it->second.is_downloading);
-			const bool was_shared      = (it != prev.files.end()
-			                              && it->second.is_shared);
+			const bool was_downloading = (it != prev.files.end() && it->second.is_downloading);
+			const bool was_shared = (it != prev.files.end() && it->second.is_shared);
 			if (kv.second.is_downloading) {
 				if (!was_downloading) {
 					push("download_added", ToJsonDownloadEvent(kv.second));
@@ -533,14 +470,12 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 		}
 		bus.PublishBatch(batch);
 	}
-	DiffMap(bus, "server", prev.servers, new_servers,
-		[](const ServerSnapshot &s) {
-			return RemovedEcidPayload(s);
-		});
-	DiffMap(bus, "client", prev.clients, new_clients,
-		[](const ClientSnapshot &c) {
-			return RemovedEcidPayload(c);
-		});
+	DiffMap(bus, "server", prev.servers, new_servers, [](const ServerSnapshot &s) {
+		return RemovedEcidPayload(s);
+	});
+	DiffMap(bus, "client", prev.clients, new_clients, [](const ClientSnapshot &c) {
+		return RemovedEcidPayload(c);
+	});
 
 	// /status: one event when anything in the dashboard envelope
 	// changes (StatusSnapshot fields OR Kad network rollup OR
@@ -549,22 +484,19 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	// subscribers already see the current state via REST; the
 	// *change* events are what they're here for).
 	if (!prev.status_initialised) {
-		bus.Publish("status_changed",
-			ToJsonStatusEvent(new_status, new_kad, new_ec));
+		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
 		prev.status_initialised = true;
-	} else if (!Equal(prev.status, new_status)
-	        || !Equal(prev.kad, new_kad)
-	        || prev.ec_connected != new_ec) {
-		bus.Publish("status_changed",
-			ToJsonStatusEvent(new_status, new_kad, new_ec));
+	} else if (!Equal(prev.status, new_status) || !Equal(prev.kad, new_kad) ||
+		   prev.ec_connected != new_ec) {
+		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
 	}
 
 	// Snapshot the new state for next tick's diff baseline.
-	prev.files        = std::move(new_files);
-	prev.servers      = std::move(new_servers);
-	prev.clients      = std::move(new_clients);
-	prev.status       = new_status;
-	prev.kad          = new_kad;
+	prev.files = std::move(new_files);
+	prev.servers = std::move(new_servers);
+	prev.clients = std::move(new_clients);
+	prev.status = new_status;
+	prev.kad = new_kad;
 	prev.ec_connected = new_ec;
 
 	// Search events. `search_result_added` per new ECID in the results
@@ -580,9 +512,9 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 		const auto search_now = ByEcid(state.Search());
 		const auto progress_now = state.SearchProgress();
 		if (!prev.search_initialised) {
-			prev.search             = search_now;
-			prev.search_complete    = progress_now.complete;
-			prev.search_percent     = progress_now.percent;
+			prev.search = search_now;
+			prev.search_complete = progress_now.complete;
+			prev.search_percent = progress_now.percent;
 			prev.search_initialised = true;
 		} else {
 			// New result entries.
@@ -593,14 +525,14 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 					// sources is a nested {total, complete} object, matching
 					// the /search/results[] entry rather than flattening it.
 					payload << "{\"hash\":\"" << EscJson(kv.second.hash) << "\""
-					        << ",\"name\":\"" << EscJson(kv.second.name) << "\""
-					        << ",\"size\":" << kv.second.size
-					        << ",\"sources\":{\"total\":" << kv.second.source_count
-					        << ",\"complete\":" << kv.second.complete_source_count << "}"
-					        << ",\"already_have\":"
-					        << (kv.second.already_have ? "true" : "false")
-					        << ",\"rating\":" << static_cast<int>(kv.second.rating)
-					        << "}";
+						<< ",\"name\":\"" << EscJson(kv.second.name) << "\""
+						<< ",\"size\":" << kv.second.size
+						<< ",\"sources\":{\"total\":" << kv.second.source_count
+						<< ",\"complete\":" << kv.second.complete_source_count << "}"
+						<< ",\"already_have\":"
+						<< (kv.second.already_have ? "true" : "false")
+						<< ",\"rating\":" << static_cast<int>(kv.second.rating)
+						<< "}";
 					bus.Publish("search_result_added", payload.str());
 				}
 			}
@@ -612,17 +544,17 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 			const bool percent_moved = progress_now.percent != prev.search_percent;
 			if (finished_edge || percent_moved) {
 				std::ostringstream payload;
-				payload << "{\"state\":\""
-				        << (progress_now.complete ? "finished" : "running") << "\""
-				        << ",\"percent\":" << progress_now.percent
-				        << ",\"results\":" << search_now.size()
-				        << ",\"kind\":\"" << EscJson(progress_now.kind) << "\""
-				        << "}";
+				payload << "{\"state\":\"" << (progress_now.complete ? "finished" : "running")
+					<< "\""
+					<< ",\"percent\":" << progress_now.percent
+					<< ",\"results\":" << search_now.size() << ",\"kind\":\""
+					<< EscJson(progress_now.kind) << "\""
+					<< "}";
 				bus.Publish("search_progress", payload.str());
 			}
-			prev.search          = std::move(search_now);
+			prev.search = std::move(search_now);
 			prev.search_complete = progress_now.complete;
-			prev.search_percent  = progress_now.percent;
+			prev.search_percent = progress_now.percent;
 		}
 	}
 
@@ -646,7 +578,8 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 		payload << "{\"lines\":[";
 		bool first = true;
 		for (std::size_t i = prev.amule_log_count; i < amule_log.size(); ++i) {
-			if (!first) payload << ",";
+			if (!first)
+				payload << ",";
 			first = false;
 			payload << "\"" << EscJson(amule_log[i]) << "\"";
 		}
@@ -656,5 +589,4 @@ void EmitDiffsAndUpdate(CEventBus &bus,
 	}
 }
 
-
-}  // namespace webapi
+} // namespace webapi

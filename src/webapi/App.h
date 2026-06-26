@@ -35,17 +35,15 @@
 #include "State.h"
 
 #include "Jwt.h"
-#include "RLE.h"   // PartFileEncoderData
+#include "RLE.h" // PartFileEncoderData
 
 #include <cstdint>
 #include <map>
 #include <mutex>
 
-
 class CApiDispatcher;
 class CECPacket;
 class CHttpServer;
-
 
 // amuleapi daemon entry. Inherits CaMuleExternalConnector to reuse
 // the EC bring-up machinery (CRemoteConnect, --host / --port /
@@ -63,7 +61,8 @@ class CHttpServer;
 // every EC roundtrip — CRemoteConnect stays single-threaded as
 // required, and concurrent mutations + the refresher tick interleave
 // correctly.
-class CamuleapiApp : public CaMuleExternalConnector {
+class CamuleapiApp : public CaMuleExternalConnector
+{
 public:
 	CamuleapiApp();
 	~CamuleapiApp();
@@ -71,8 +70,8 @@ public:
 	const wxString GetGreetingTitle() override { return _("aMule REST API"); }
 
 	bool OnInit() override;
-	int  OnRun()  override;
-	int  OnExit() override;
+	int OnRun() override;
+	int OnExit() override;
 
 	// Serialized EC roundtrip. Takes the EC lock, calls
 	// SendRecvMsg_v2, releases. Callable from any thread; the
@@ -105,8 +104,8 @@ public:
 	// (`SendRecvSerialized` takes it) but the State write lock is
 	// the actual serializer. The method name encodes the
 	// precondition so a code-review reader notices it.
-	std::map<std::uint32_t, PartFileEncoderData> &
-		PartfileRleStateRequireStateWriteLock() {
+	std::map<std::uint32_t, PartFileEncoderData> &PartfileRleStateRequireStateWriteLock()
+	{
 		return m_partfile_rle;
 	}
 
@@ -146,15 +145,15 @@ private:
 	// never enters the interactive readline path that amulecmd uses.
 	void TextShell(const wxString &prompt) override;
 
-	CAmuleApiConfig                 m_apiConfig;
-	webapi::CState                  m_state;
-	std::mutex                      m_ec_mtx;   // serializes m_ECClient
-	std::unique_ptr<CJwt>           m_jwt;
+	CAmuleApiConfig m_apiConfig;
+	webapi::CState m_state;
+	std::mutex m_ec_mtx; // serializes m_ECClient
+	std::unique_ptr<CJwt> m_jwt;
 	std::unique_ptr<CApiDispatcher> m_dispatcher;
-	std::unique_ptr<CHttpServer>    m_http;
+	std::unique_ptr<CHttpServer> m_http;
 	std::map<std::uint32_t, PartFileEncoderData> m_partfile_rle;
-	std::unique_ptr<webapi::CEventBus>           m_event_bus;
-	webapi::LastSeenState                        m_last_seen;
+	std::unique_ptr<webapi::CEventBus> m_event_bus;
+	webapi::LastSeenState m_last_seen;
 
 	// CLI capture: --bind / --http-port override the matching keys in
 	// amuleapi.conf when present. --set-*-pass and --foreground are
@@ -163,18 +162,18 @@ private:
 	// value verbatim" — the base class' m_host / m_port / m_password
 	// fields have no such predicate of their own.
 	wxString m_cliBindAddress;
-	long     m_cliHttpPort       = 0;
+	long m_cliHttpPort = 0;
 	wxString m_cliConfigDirOverride;
 	wxString m_cliSetAdminPass;
 	wxString m_cliSetGuestPass;
-	bool     m_cliHasBindAddress  = false;
-	bool     m_cliHasHttpPort     = false;
-	bool     m_cliHasSetAdminPass = false;
-	bool     m_cliHasSetGuestPass = false;
+	bool m_cliHasBindAddress = false;
+	bool m_cliHasHttpPort = false;
+	bool m_cliHasSetAdminPass = false;
+	bool m_cliHasSetGuestPass = false;
 	// Did the operator pass --host / --port / --password explicitly?
-	bool     m_cliHasEcHost       = false;
-	bool     m_cliHasEcPort       = false;
-	bool     m_cliHasEcPassword   = false;
+	bool m_cliHasEcHost = false;
+	bool m_cliHasEcPort = false;
+	bool m_cliHasEcPassword = false;
 };
 
 DECLARE_APP(CamuleapiApp)

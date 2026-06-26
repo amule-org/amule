@@ -30,34 +30,33 @@
 #include <map>
 #include <cstdint>
 
-
-namespace webapi {
-
+namespace webapi
+{
 
 class CEventBus;
-
 
 // One "last seen" snapshot of all the substructs we publish events
 // for. Owned by CamuleapiApp; mutated AFTER each successful tick by
 // `EmitDiffsAndUpdate`. The first tick fires `_added` for every alive
 // entry (cold start); subsequent ticks fire only the deltas.
-struct LastSeenState {
+struct LastSeenState
+{
 	// `files` mirrors CState::m_files (unified ECID-keyed map with
 	// `is_downloading` / `is_shared` flags). Role-flag transitions
 	// false→true emit the corresponding `_added` event, true→false
 	// the `_removed`; a file may participate in both views and emit
 	// both event families.
-	std::map<std::uint32_t, FileSnapshot>     files;
-	std::map<std::uint32_t, ServerSnapshot>   servers;
-	std::map<std::uint32_t, ClientSnapshot>   clients;
+	std::map<std::uint32_t, FileSnapshot> files;
+	std::map<std::uint32_t, ServerSnapshot> servers;
+	std::map<std::uint32_t, ClientSnapshot> clients;
 	// Status event payload mirrors the REST /status envelope, which
 	// pulls from THREE sources (StatusSnapshot + KadSnapshot +
 	// ec_connected flag). All three must be diffed against the prior
 	// tick to decide whether to fire `status_changed`.
-	StatusSnapshot                            status;
-	KadSnapshot                               kad;
-	bool                                      ec_connected = false;
-	bool                                      status_initialised = false;
+	StatusSnapshot status;
+	KadSnapshot kad;
+	bool ec_connected = false;
+	bool status_initialised = false;
 
 	// log-tail tracking for the `log_appended` event.
 	// `amule_log_count` is the size of `state.AmuleLog()` at the
@@ -66,20 +65,19 @@ struct LastSeenState {
 	// First-tick cold-start is gated by `amule_log_initialised` so
 	// we don't dump every historical line as one event — clients
 	// can GET /api/v0/logs/amule for the history.
-	std::size_t                               amule_log_count = 0;
-	bool                                      amule_log_initialised = false;
+	std::size_t amule_log_count = 0;
+	bool amule_log_initialised = false;
 
 	// Search-events baseline. Diffed against state.Search() +
 	// state.SearchProgress() each tick. New ECIDs → search_result_added;
 	// a percent change or the running→finished edge → search_progress
 	// (the terminal frame, state="finished", supersedes the old
 	// standalone search_finished event).
-	std::map<std::uint32_t, SearchResult>     search;
-	bool                                      search_complete   = false;
-	std::uint32_t                             search_percent    = 0;
-	bool                                      search_initialised = false;
+	std::map<std::uint32_t, SearchResult> search;
+	bool search_complete = false;
+	std::uint32_t search_percent = 0;
+	bool search_initialised = false;
 };
-
 
 // Walk every (old vs current) substruct, publish typed events for
 // each delta, then overwrite `prev` with the current snapshot so the
@@ -98,11 +96,8 @@ struct LastSeenState {
 // (ed2k.*, kad.* with kad.network rollup, speeds.*, queue.*, plus
 // top-level ec_connected). Pulled from state.Dashboard() so all
 // three pieces stay consistent within a tick.
-void EmitDiffsAndUpdate(CEventBus &bus,
-                        LastSeenState &prev,
-                        const CState &state);
+void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state);
 
-
-}  // namespace webapi
+} // namespace webapi
 
 #endif // WEBAPI_EVENT_DIFF_H

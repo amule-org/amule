@@ -32,13 +32,10 @@
 #include <string>
 #include <vector>
 
-
 using namespace muleunit;
 using namespace webapi;
 
-
 DECLARE_SIMPLE(EventDiff)
-
 
 // Drain `bus` non-blockingly and return all events in id order.
 static std::vector<Event> DrainAll(CEventBus &bus)
@@ -48,14 +45,13 @@ static std::vector<Event> DrainAll(CEventBus &bus)
 	return out;
 }
 
-
 // log_appended cold-start: the first tick must not emit log_appended
 // for pre-existing lines (clients GET /api/v0/logs/amule for the
 // history; the event channel is live-tail only).
 TEST(EventDiff, LogAppendedColdStartSilent)
 {
 	CState state;
-	state.AppendAmuleLog({"old line 1\n", "old line 2\n"});
+	state.AppendAmuleLog({ "old line 1\n", "old line 2\n" });
 	CEventBus bus;
 	LastSeenState prev;
 
@@ -72,20 +68,19 @@ TEST(EventDiff, LogAppendedColdStartSilent)
 	ASSERT_TRUE(prev.amule_log_initialised);
 }
 
-
 // After cold-start, a single appended line publishes exactly one
 // log_appended event with the new line in `lines`.
 TEST(EventDiff, LogAppendedFiresOnSingleNewLine)
 {
 	CState state;
-	state.AppendAmuleLog({"old line\n"});
+	state.AppendAmuleLog({ "old line\n" });
 	CEventBus bus;
 	LastSeenState prev;
 
 	// Tick 1: baseline.
 	EmitDiffsAndUpdate(bus, prev, state);
 	// Tick 2: amuled appended a fresh line. Expect log_appended.
-	state.AppendAmuleLog({"new line\n"});
+	state.AppendAmuleLog({ "new line\n" });
 	EmitDiffsAndUpdate(bus, prev, state);
 
 	const auto drained = DrainAll(bus);
@@ -105,7 +100,6 @@ TEST(EventDiff, LogAppendedFiresOnSingleNewLine)
 	ASSERT_EQUALS(static_cast<std::size_t>(2), prev.amule_log_count);
 }
 
-
 // A batch of multiple new lines lands in one event with a `lines`
 // array — never N separate events. Bus traffic ≪ line traffic.
 TEST(EventDiff, LogAppendedBatchesMultipleLinesIntoOneEvent)
@@ -114,8 +108,8 @@ TEST(EventDiff, LogAppendedBatchesMultipleLinesIntoOneEvent)
 	CEventBus bus;
 	LastSeenState prev;
 
-	EmitDiffsAndUpdate(bus, prev, state);  // cold-start, log is empty
-	state.AppendAmuleLog({"A\n", "B\n", "C\n"});
+	EmitDiffsAndUpdate(bus, prev, state); // cold-start, log is empty
+	state.AppendAmuleLog({ "A\n", "B\n", "C\n" });
 	EmitDiffsAndUpdate(bus, prev, state);
 
 	const auto drained = DrainAll(bus);
@@ -134,27 +128,25 @@ TEST(EventDiff, LogAppendedBatchesMultipleLinesIntoOneEvent)
 	ASSERT_EQUALS(static_cast<std::size_t>(3), prev.amule_log_count);
 }
 
-
 // Idle ticks (no new lines) must not publish log_appended.
 TEST(EventDiff, LogAppendedSilentOnIdleTick)
 {
 	CState state;
-	state.AppendAmuleLog({"baseline\n"});
+	state.AppendAmuleLog({ "baseline\n" });
 	CEventBus bus;
 	LastSeenState prev;
 
 	EmitDiffsAndUpdate(bus, prev, state);
-	(void)DrainAll(bus);   // discard cold-start events
+	(void)DrainAll(bus); // discard cold-start events
 
-	EmitDiffsAndUpdate(bus, prev, state);   // idle
-	EmitDiffsAndUpdate(bus, prev, state);   // idle
+	EmitDiffsAndUpdate(bus, prev, state); // idle
+	EmitDiffsAndUpdate(bus, prev, state); // idle
 
 	const auto drained = DrainAll(bus);
 	for (const auto &ev : drained) {
 		ASSERT_TRUE(ev.name != "log_appended");
 	}
 }
-
 
 // JSON escaping: a line containing characters that need JSON-escaping
 // (backslash, double quote, control chars) must produce a valid JSON
@@ -169,13 +161,14 @@ TEST(EventDiff, LogAppendedEscapesJsonHazards)
 	EmitDiffsAndUpdate(bus, prev, state);
 
 	// A line with: a quote, a backslash, a control char.
-	state.AppendAmuleLog({std::string("hi \"quoted\\path\" \x01 done\n")});
+	state.AppendAmuleLog({ std::string("hi \"quoted\\path\" \x01 done\n") });
 	EmitDiffsAndUpdate(bus, prev, state);
 
 	const auto drained = DrainAll(bus);
 	std::string payload;
 	for (const auto &ev : drained) {
-		if (ev.name == "log_appended") payload = ev.data;
+		if (ev.name == "log_appended")
+			payload = ev.data;
 	}
 	// The raw characters must NOT appear unescaped in the payload.
 	// `\"` must become `\\\"`, `\\` must become `\\\\`, `\x01` must
@@ -185,13 +178,12 @@ TEST(EventDiff, LogAppendedEscapesJsonHazards)
 	ASSERT_TRUE(payload.find("\\u0001") != std::string::npos);
 }
 
-
 // Truncation case (DELETE /logs/amule shrinks the vector): the diff
 // must silently resync the baseline counter without publishing.
 TEST(EventDiff, LogAppendedSilentOnTruncation)
 {
 	CState state;
-	state.AppendAmuleLog({"a\n", "b\n", "c\n"});
+	state.AppendAmuleLog({ "a\n", "b\n", "c\n" });
 	CEventBus bus;
 	LastSeenState prev;
 
@@ -200,7 +192,7 @@ TEST(EventDiff, LogAppendedSilentOnTruncation)
 
 	// Force a smaller log: rebuild State with a shorter vector.
 	CState state2;
-	state2.AppendAmuleLog({"a\n"});
+	state2.AppendAmuleLog({ "a\n" });
 	EmitDiffsAndUpdate(bus, prev, state2);
 
 	const auto drained = DrainAll(bus);

@@ -37,47 +37,44 @@
 #include <vector>
 
 #ifndef _WIN32
-#  include <sys/stat.h>
-#  include <unistd.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
-
 
 using namespace muleunit;
 
-
 DECLARE(AmuleApiConfig)
-	// Fresh per-test config dir under the system temp tree. Tearing
-	// down inside the test bodies avoids muleunit's lack of a
-	// TearDown hook in the DECLARE_SIMPLE style — each test owns its
-	// own dir. wxStandardPaths::GetTempDir() returns `/tmp` on
-	// POSIX and `%TEMP%` on Windows (typically `C:\\Users\\<user>\\
+// Fresh per-test config dir under the system temp tree. Tearing
+// down inside the test bodies avoids muleunit's lack of a
+// TearDown hook in the DECLARE_SIMPLE style — each test owns its
+// own dir. wxStandardPaths::GetTempDir() returns `/tmp` on
+// POSIX and `%TEMP%` on Windows (typically `C:\\Users\\<user>\\
 	// AppData\\Local\\Temp`), so the test is portable across the CI
-	// matrix.
-	wxString MakeTmpDir(const char *tag)
-	{
-		wxString d;
-		d.Printf("%s/amuleapi-cfg-test-%s-%ld",
-			wxStandardPaths::Get().GetTempDir(),
-			tag, static_cast<long>(::wxGetProcessId()));
-		// Best-effort cleanup of any stragglers from a prior crashed run.
-		wxString secret = d + "/amuleapi-jwt-secret";
-		wxString pwfile = d + "/amuleapi-passwords";
-		wxString conf   = d + "/amuleapi.conf";
-		::wxRemoveFile(secret);
-		::wxRemoveFile(pwfile);
-		::wxRemoveFile(conf);
-		::wxRmdir(d);
-		return d;
-	}
+// matrix.
+wxString MakeTmpDir(const char *tag)
+{
+	wxString d;
+	d.Printf("%s/amuleapi-cfg-test-%s-%ld",
+		wxStandardPaths::Get().GetTempDir(),
+		tag,
+		static_cast<long>(::wxGetProcessId()));
+	// Best-effort cleanup of any stragglers from a prior crashed run.
+	wxString secret = d + "/amuleapi-jwt-secret";
+	wxString pwfile = d + "/amuleapi-passwords";
+	wxString conf = d + "/amuleapi.conf";
+	::wxRemoveFile(secret);
+	::wxRemoveFile(pwfile);
+	::wxRemoveFile(conf);
+	::wxRmdir(d);
+	return d;
+}
 END_DECLARE;
-
 
 TEST(AmuleApiConfig, DefaultConfigDirIsNonEmpty)
 {
 	const wxString d = DefaultConfigDir();
 	ASSERT_TRUE(!d.IsEmpty());
 }
-
 
 TEST(AmuleApiConfig, FreshLoadCreatesAllThreeFiles)
 {
@@ -90,16 +87,13 @@ TEST(AmuleApiConfig, FreshLoadCreatesAllThreeFiles)
 	ASSERT_TRUE(::wxFileExists(dir + "/amuleapi-passwords"));
 }
 
-
 TEST(AmuleApiConfig, FreshLoadProducesStreamingDefaults)
 {
 	const wxString dir = MakeTmpDir("stream-defaults");
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
-	ASSERT_EQUALS(static_cast<unsigned>(16384),
-		cfg.StreamingCfg().event_bus_ring_capacity);
+	ASSERT_EQUALS(static_cast<unsigned>(16384), cfg.StreamingCfg().event_bus_ring_capacity);
 }
-
 
 TEST(AmuleApiConfig, GeneratedJwtSecretIs32Bytes)
 {
@@ -108,7 +102,6 @@ TEST(AmuleApiConfig, GeneratedJwtSecretIs32Bytes)
 	ASSERT_TRUE(cfg.Load(dir));
 	ASSERT_EQUALS(static_cast<size_t>(32), cfg.JwtSecret().size());
 }
-
 
 TEST(AmuleApiConfig, GeneratedJwtSecretIsRandom)
 {
@@ -126,7 +119,6 @@ TEST(AmuleApiConfig, GeneratedJwtSecretIsRandom)
 	ASSERT_TRUE(a != b);
 }
 
-
 TEST(AmuleApiConfig, JwtSecretRoundTripStable)
 {
 	const wxString dir = MakeTmpDir("jwt-rt");
@@ -143,7 +135,6 @@ TEST(AmuleApiConfig, JwtSecretRoundTripStable)
 	ASSERT_TRUE(first == second);
 }
 
-
 TEST(AmuleApiConfig, EmptyPasswordsFilePassesLoad)
 {
 	const wxString dir = MakeTmpDir("pw-empty");
@@ -153,7 +144,6 @@ TEST(AmuleApiConfig, EmptyPasswordsFilePassesLoad)
 	ASSERT_TRUE(cfg.AdminPasswordMd5().empty());
 	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
 }
-
 
 TEST(AmuleApiConfig, WritePasswordsFileReloadable)
 {
@@ -172,7 +162,6 @@ TEST(AmuleApiConfig, WritePasswordsFileReloadable)
 	ASSERT_EQUALS(guest_md5, cfg2.GuestPasswordMd5());
 }
 
-
 TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 {
 	const wxString dir = MakeTmpDir("pw-bad");
@@ -185,15 +174,13 @@ TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 	bad.Write(bad_line, std::strlen(bad_line));
 	bad.Close();
 #ifndef _WIN32
-	::chmod(std::string((dir + "/amuleapi-passwords").utf8_str()).c_str(),
-		S_IRUSR | S_IWUSR);
+	::chmod(std::string((dir + "/amuleapi-passwords").utf8_str()).c_str(), S_IRUSR | S_IWUSR);
 #endif
 
 	CAmuleApiConfig cfg;
 	ASSERT_FALSE(cfg.Load(dir));
 	ASSERT_TRUE(!cfg.LastError().empty());
 }
-
 
 #ifndef _WIN32
 // POSIX-only: the production hardening (mode-bit check in
@@ -211,13 +198,12 @@ TEST(AmuleApiConfig, LooserSecretFilePermissionsRejected)
 {
 	const wxString dir = MakeTmpDir("perm");
 	CAmuleApiConfig cfg;
-	ASSERT_TRUE(cfg.Load(dir));   // first load auto-creates with 0600
+	ASSERT_TRUE(cfg.Load(dir)); // first load auto-creates with 0600
 
 	// Loosen the secret file to 0644 and verify the next Load fails
 	// with an actionable error. This guards the "operator
 	// accidentally chmodded the secret world-readable" scenario.
-	const std::string path =
-		std::string((dir + "/amuleapi-jwt-secret").utf8_str());
+	const std::string path = std::string((dir + "/amuleapi-jwt-secret").utf8_str());
 	ASSERT_EQUALS(0, ::chmod(path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
 
 	CAmuleApiConfig cfg2;
@@ -225,7 +211,6 @@ TEST(AmuleApiConfig, LooserSecretFilePermissionsRejected)
 	ASSERT_TRUE(cfg2.LastError().find("0600") != std::string::npos);
 }
 #endif
-
 
 TEST(AmuleApiConfig, ConfDefaultsArePopulated)
 {

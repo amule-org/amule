@@ -30,7 +30,6 @@
 
 #include <wx/string.h>
 
-
 // amuleapi's three on-disk config files (in the user's amule config
 // dir; independent of remote.conf):
 //
@@ -49,12 +48,14 @@
 // refuses to start with an actionable error. Windows has no
 // equivalent enforcement (QUICKSTART covers ACL mitigation).
 
-class CAmuleApiConfig {
+class CAmuleApiConfig
+{
 public:
-	struct Server {
-		std::string bind_address    = "127.0.0.1";
-		unsigned    port            = 4713;
-		bool        allow_cors      = false;
+	struct Server
+	{
+		std::string bind_address = "127.0.0.1";
+		unsigned port = 4713;
+		bool allow_cors = false;
 		std::vector<std::string> cors_origin_allowlist;
 		// Filesystem root of a bundled web frontend. Empty (default) =
 		// API-only deployment: non-/api/ paths return 404. Non-empty =
@@ -64,19 +65,22 @@ public:
 		std::string static_root;
 	};
 
-	struct Ec {
-		std::string host     = "127.0.0.1";
-		unsigned    port     = 4712;
-		std::string password;   // matches amuled's [ExternalConnect]/Password
+	struct Ec
+	{
+		std::string host = "127.0.0.1";
+		unsigned port = 4712;
+		std::string password; // matches amuled's [ExternalConnect]/Password
 	};
 
-	struct Auth {
+	struct Auth
+	{
 		unsigned login_failure_window_seconds = 60;
-		unsigned login_failure_threshold      = 5;
-		unsigned login_lockout_seconds        = 300;
+		unsigned login_failure_threshold = 5;
+		unsigned login_lockout_seconds = 300;
 	};
 
-	struct Streaming {
+	struct Streaming
+	{
 		// SSE ring capacity. Sized for a cold-start tick on a busy
 		// node (5K downloads + 5K shared can publish ~10K `*_added`
 		// in one tick before any subscriber drains). Values below
@@ -93,11 +97,11 @@ public:
 	// LastError() so the caller can surface it via Show(...).
 	bool Load(const wxString &config_dir);
 
-	const wxString    &ConfigDir()    const { return m_configDir; }
-	const Server      &ServerCfg()    const { return m_server; }
-	const Ec          &EcCfg()        const { return m_ec; }
-	const Auth        &AuthCfg()      const { return m_auth; }
-	const Streaming   &StreamingCfg() const { return m_streaming; }
+	const wxString &ConfigDir() const { return m_configDir; }
+	const Server &ServerCfg() const { return m_server; }
+	const Ec &EcCfg() const { return m_ec; }
+	const Auth &AuthCfg() const { return m_auth; }
+	const Streaming &StreamingCfg() const { return m_streaming; }
 
 	// Raw HMAC secret (32 bytes when loaded from a valid 64-char
 	// hex file). May be reloaded from disk via Load(...).
@@ -114,12 +118,10 @@ public:
 	// Test/CLI helpers — used by `amuleapi --set-admin-pass=...` and
 	// the unit test. Writes the file with mode 0600; the caller is
 	// responsible for hashing the plaintext to MD5 hex first.
-	bool WritePasswordsFile(const wxString &config_dir,
-	                        const std::string &admin_md5,
-	                        const std::string &guest_md5);
+	bool WritePasswordsFile(
+		const wxString &config_dir, const std::string &admin_md5, const std::string &guest_md5);
 
-	bool WriteJwtSecretFile(const wxString &config_dir,
-	                        const std::vector<unsigned char> &secret_32);
+	bool WriteJwtSecretFile(const wxString &config_dir, const std::vector<unsigned char> &secret_32);
 
 private:
 	bool LoadAmuleapiConf(const wxString &path);
@@ -131,18 +133,17 @@ private:
 	// failure.
 	bool EnforceOwnerOnly(const wxString &path);
 
-	wxString    m_configDir;
-	Server      m_server;
-	Ec          m_ec;
-	Auth        m_auth;
-	Streaming   m_streaming;
+	wxString m_configDir;
+	Server m_server;
+	Ec m_ec;
+	Auth m_auth;
+	Streaming m_streaming;
 	std::vector<unsigned char> m_jwtSecret;
 	std::string m_adminPasswordMd5;
 	std::string m_guestPasswordMd5;
 
 	std::string m_lastError;
 };
-
 
 // Canonical config dir per platform. Mirrors amule's own
 // GetUserDataDir() but without the dependency on `amule.h` — amuleapi
@@ -152,6 +153,5 @@ private:
 //  macOS:          $HOME/Library/Application Support/aMule
 //  Windows:        %APPDATA%/aMule
 wxString DefaultConfigDir();
-
 
 #endif // WEBAPI_CONFIG_H

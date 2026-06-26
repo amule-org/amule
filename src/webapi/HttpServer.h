@@ -33,7 +33,6 @@
 
 #include <boost/optional.hpp>
 
-
 // Boost.Beast-based HTTP/1.1 server. Runs in its own std::thread —
 // boost::asio::io_context::run() is blocking and Beast's async
 // chain stays inside that thread until Stop() is called.
@@ -42,16 +41,24 @@
 // that need EC use the wxQueueEvent-based bridge in Api.cpp to fan
 // out onto the wxApp thread; HttpServer stays transport-only.
 
-namespace boost { namespace asio { class io_context; } }
+namespace boost
+{
+namespace asio
+{
+class io_context;
+}
+} // namespace boost
 
-class CHttpServer {
+class CHttpServer
+{
 public:
 	// The dispatch callback runs on the HTTP server's I/O thread.
 	// Anything stateful it touches must be either thread-safe or
 	// trampolined onto the wxApp thread.
-	struct Request {
-		std::string method;            // "GET", "POST", ...
-		std::string target;            // raw URI: "/api/v0/version?x=1"
+	struct Request
+	{
+		std::string method; // "GET", "POST", ...
+		std::string target; // raw URI: "/api/v0/version?x=1"
 		std::map<std::string, std::string> headers;
 		std::string body;
 		// Client IP as observed by the accept socket. amuleapi rate-
@@ -60,8 +67,9 @@ public:
 		std::string remote_addr;
 	};
 
-	struct Response {
-		unsigned    status = 200;
+	struct Response
+	{
+		unsigned status = 200;
 		std::string content_type = "application/json";
 		std::map<std::string, std::string> headers;
 		std::string body;
@@ -73,7 +81,8 @@ public:
 	// handler is given a `Writer` it can use to push chunks at will;
 	// the connection stays open until the writer signals close or
 	// the peer disconnects.
-	class Writer {
+	class Writer
+	{
 	public:
 		// Write a chunk of bytes to the connection. Returns false if
 		// the connection has been torn down (peer disconnect or
@@ -94,9 +103,10 @@ public:
 	// hasn't returned AND the connection is alive — typical impls run
 	// an event loop inside the handler and exit when the connection
 	// closes (which Writer::Alive surfaces).
-	using StreamingHandler = std::function<void(
-		const Request &, Writer &writer,
-		unsigned &http_status, std::string &content_type,
+	using StreamingHandler = std::function<void(const Request &,
+		Writer &writer,
+		unsigned &http_status,
+		std::string &content_type,
 		std::map<std::string, std::string> &response_headers)>;
 
 	// Optional resolver: tells the HTTP server whether an incoming
@@ -114,19 +124,18 @@ public:
 	// unauthenticated peer can't tie up a slot for the read-timeout
 	// window. Empty preflight (default) preserves the pre-existing
 	// "auth inside the handler" behaviour.
-	using StreamingPreflight = std::function<
-		boost::optional<Response>(const Request &)>;
+	using StreamingPreflight = std::function<boost::optional<Response>(const Request &)>;
 
 	// Bind + listen on `bind_address`:`port`. Returns false (and
 	// populates LastError) on bind failure — the most common reason
 	// is the port being in use by another amuleapi instance or a
 	// stale TIME_WAIT socket.
 	bool Start(const std::string &bind_address,
-	           unsigned           port,
-	           Handler            handler,
-	           StreamingResolver  streaming_resolver = nullptr,
-	           StreamingHandler   streaming_handler  = nullptr,
-	           StreamingPreflight streaming_preflight = nullptr);
+		unsigned port,
+		Handler handler,
+		StreamingResolver streaming_resolver = nullptr,
+		StreamingHandler streaming_handler = nullptr,
+		StreamingPreflight streaming_preflight = nullptr);
 
 	// Stops the io_context, joins the thread. Safe to call from any
 	// thread; Start() must have succeeded.
@@ -145,8 +154,7 @@ public:
 private:
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;
-	std::string           m_lastError;
+	std::string m_lastError;
 };
-
 
 #endif // WEBAPI_HTTPSERVER_H
