@@ -1834,13 +1834,21 @@ void CUpDownClient::ProcessAICHFileHash(CMemFile *data, const CPartFile *file)
 }
 // File_checked_for_headers
 
-bool CUpDownClient::HasUsefulBlocksFor(CUpDownClient* other) const {
-	// Check part-level availability, not block-level. A block fits within a single part (180 KB << 9.28 MB).
-	for (std::list<Requested_Block_Struct*>::const_iterator it = m_DownloadBlocks_list.begin(); it != m_DownloadBlocks_list.end(); ++it) {
-		if (other->IsPartAvailable((*it)->StartOffset / PARTSIZE)) return true;
+bool CUpDownClient::HasUsefulBlocksFor(CUpDownClient *other) const
+{
+	// Check part-level availability, not block-level.
+	// A block fits within a single part (180 KB << 9.28 MB).
+	for (std::list<Requested_Block_Struct *>::const_iterator it = m_DownloadBlocks_list.begin();
+		 it != m_DownloadBlocks_list.end(); ++it) {
+		if (other->IsPartAvailable((*it)->StartOffset / PARTSIZE)) {
+			return true;
+		}
 	}
-	for (std::list<Pending_Block_Struct*>::const_iterator it = m_PendingBlocks_list.begin(); it != m_PendingBlocks_list.end(); ++it) {
-		if (other->IsPartAvailable((*it)->block->StartOffset / PARTSIZE)) return true;
+	for (std::list<Pending_Block_Struct *>::const_iterator it = m_PendingBlocks_list.begin();
+		 it != m_PendingBlocks_list.end(); ++it) {
+		if (other->IsPartAvailable((*it)->block->StartOffset / PARTSIZE)) {
+			return true;
+		}
 	}
 	return false;
 }
