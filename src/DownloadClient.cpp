@@ -643,8 +643,8 @@ void CUpDownClient::SendBlockRequests()
 
 		CUpDownClient *slower_client = NULL;
 
-		bool nearCompletion = m_reqfile && 
-			m_reqfile->GetPartCount() > 4 && 
+		bool nearCompletion = m_reqfile &&
+			m_reqfile->GetPartCount() > 4 &&
 			(m_reqfile->GetFileSize() > m_reqfile->GetCompletedSize()) &&
 			((m_reqfile->GetFileSize() - m_reqfile->GetCompletedSize()) <= (4 * PARTSIZE));
 
@@ -691,21 +691,16 @@ void CUpDownClient::SendBlockRequests()
 					m_PendingBlocks_list.push_back(pblock);
 				}
 			} else {
-				// Original code assumed this could never happen:
-				// // WTF, we just freed blocks.
-				// wxFAIL_MSG("No free blocks to request after freeing some blocks");
-				// return;
-				
 				// It's possible the freed blocks were not available on our source.
 				// Just drop ourselves gracefully instead of crashing.
 				if (!GetSentCancelTransfer()) {
-					CPacket* packet = new CPacket(OP_CANCELTRANSFER, 0, OP_EDONKEYPROT);
+					CPacket *packet = new CPacket(OP_CANCELTRANSFER, 0, OP_EDONKEYPROT);
 					theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
 					ClearDownloadBlockRequests();
 					SendPacket(packet, true, true);
 					SetSentCancelTransfer(1);
 				}
-				AddDebugLogLineN( logLocalClient, "Local Client: OP_CANCELTRANSFER (freed blocks not available here) to " + GetFullIP() );
+				AddDebugLogLineN(logLocalClient, "Local Client: OP_CANCELTRANSFER (freed blocks not available here) to " + GetFullIP());
 				SetDownloadState(DS_NONEEDEDPARTS);
 				return;
 			}
