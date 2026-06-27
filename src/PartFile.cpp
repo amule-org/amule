@@ -1527,8 +1527,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 		// We copy the list to a temporary vector to prevent iterator invalidation
 		// (e.g. if TickDownloadAndMeasure() triggers DropSlowSources, which
 		// synchronously removes clients).
-		std::vector<CClientRef> temp_list(m_downloadingSourcesList.begin(),
-			m_downloadingSourcesList.end());
+		std::vector<CClientRef> temp_list(
+			m_downloadingSourcesList.begin(), m_downloadingSourcesList.end());
 		for (size_t i = 0; i < temp_list.size(); ++i) {
 			CUpDownClient *cur_src = temp_list[i].GetClient();
 			if (cur_src && cur_src->GetDownloadState() == DS_DOWNLOADING) {

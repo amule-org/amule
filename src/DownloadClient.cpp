@@ -643,10 +643,10 @@ void CUpDownClient::SendBlockRequests()
 
 		CUpDownClient *slower_client = NULL;
 
-		bool nearCompletion = m_reqfile &&
-			m_reqfile->GetPartCount() > 4 &&
-			(m_reqfile->GetFileSize() > m_reqfile->GetCompletedSize()) &&
-			((m_reqfile->GetFileSize() - m_reqfile->GetCompletedSize()) <= (4 * PARTSIZE));
+		bool nearCompletion = m_reqfile && m_reqfile->GetPartCount() > 4 &&
+				      (m_reqfile->GetFileSize() > m_reqfile->GetCompletedSize()) &&
+				      ((m_reqfile->GetFileSize() - m_reqfile->GetCompletedSize()) <=
+					      (4 * PARTSIZE));
 
 		if (thePrefs::GetDropSlowSources() || nearCompletion) {
 			slower_client = m_reqfile->GetSlowerDownloadingClient(m_lastaverage, this);
@@ -700,7 +700,10 @@ void CUpDownClient::SendBlockRequests()
 					SendPacket(packet, true, true);
 					SetSentCancelTransfer(1);
 				}
-				AddDebugLogLineN(logLocalClient, "Local Client: OP_CANCELTRANSFER (freed blocks not available here) to " + GetFullIP());
+				AddDebugLogLineN(logLocalClient,
+					"Local Client: OP_CANCELTRANSFER (freed blocks not available "
+					"here) to " +
+						GetFullIP());
 				SetDownloadState(DS_NONEEDEDPARTS);
 				return;
 			}
@@ -1838,14 +1841,18 @@ bool CUpDownClient::HasUsefulBlocksFor(CUpDownClient *other) const
 {
 	// Check part-level availability, not block-level.
 	// A block fits within a single part (180 KB << 9.28 MB).
-	for (std::list<Requested_Block_Struct *>::const_iterator it = m_DownloadBlocks_list.begin();
-		 it != m_DownloadBlocks_list.end(); ++it) {
+	for (std::list<Requested_Block_Struct *>::const_iterator it =
+					 m_DownloadBlocks_list.begin();
+			 it != m_DownloadBlocks_list.end();
+			 ++it) {
 		if (other->IsPartAvailable((*it)->StartOffset / PARTSIZE)) {
 			return true;
 		}
 	}
-	for (std::list<Pending_Block_Struct *>::const_iterator it = m_PendingBlocks_list.begin();
-		 it != m_PendingBlocks_list.end(); ++it) {
+	for (std::list<Pending_Block_Struct *>::const_iterator it =
+					 m_PendingBlocks_list.begin();
+			 it != m_PendingBlocks_list.end();
+			 ++it) {
 		if (other->IsPartAvailable((*it)->block->StartOffset / PARTSIZE)) {
 			return true;
 		}
