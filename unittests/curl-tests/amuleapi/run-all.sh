@@ -44,16 +44,53 @@ if [ ! -x "$BIN" ]; then
 	exit 2
 fi
 
+# One stable 256-bit JWT secret (64 hex chars) reused by every phase's
+# daemon. See run_phase: a fixed secret makes a brief instance overlap
+# on the port harmless instead of a token-verification failure.
+JWT_SECRET=$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')
+
 run_phase() {
 	local script=$1
 	echo "==================== $script ===================="
 	# Narrowly target the regtest daemon so a dev who happens to have
 	# `vim path/to/amuleapi.cpp` open doesn't get their editor killed.
 	# The config-dir suffix is uniquely ours.
-	pkill -f "amuleapi --config-dir=/tmp/amuleapi-regtest" 2>/dev/null
-	sleep 1
+	#
+	# Tear down the previous phase's daemon CLEANLY before reusing port
+	# 4713. A bare `pkill; sleep 1` races graceful shutdown: amuleapi
+	# binds with SO_REUSEADDR, so a lingering old instance can briefly
+	# share the port with the new one. Each phase regenerates its config
+	# dir (and its JWT secret), so during that overlap a token minted by
+	# one instance is rejected by the other ("invalid or expired token").
+	# Wait for every matching process to exit, escalating to SIGKILL, and
+	# for the listen socket to be released.
+	local pat="amuleapi --config-dir=/tmp/amuleapi-regtest"
+	pkill -f "$pat" 2>/dev/null
+	local w
+	for w in $(seq 1 40); do
+		pgrep -f "$pat" >/dev/null 2>&1 || break
+		sleep 0.25
+	done
+	if pgrep -f "$pat" >/dev/null 2>&1; then
+		pkill -9 -f "$pat" 2>/dev/null
+		for w in $(seq 1 20); do
+			pgrep -f "$pat" >/dev/null 2>&1 || break
+			sleep 0.25
+		done
+	fi
+	for w in $(seq 1 40); do
+		ss -tln 2>/dev/null | grep -q ":4713 " || break
+		sleep 0.25
+	done
 	rm -rf /tmp/amuleapi-regtest
 	mkdir -p /tmp/amuleapi-regtest
+	# Pin a stable JWT secret for every phase (belt-and-suspenders with
+	# the clean teardown above): if two instances ever do overlap on the
+	# port, they share the secret, so a freshly-minted token still
+	# verifies regardless of which instance answers. amuleapi loads this
+	# file as-is instead of generating a per-process secret.
+	printf '%s' "$JWT_SECRET" > /tmp/amuleapi-regtest/amuleapi-jwt-secret
+	chmod 600 /tmp/amuleapi-regtest/amuleapi-jwt-secret
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
 		--host=127.0.0.1 --port=4712 --password=amule \
 		--set-admin-pass=adminpass > /dev/null 2>&1
@@ -97,10 +134,15 @@ run_phase() {
 	done
 	# Scripts that bounce the daemon themselves (25-cors.sh rewrites
 	# amuleapi.conf to flip CORS modes) read these envs to know how
-	# to restart cleanly.
+	# to restart cleanly. AMULE_SHARED_DIR lets a phase self-provision
+	# a shared-file fixture (17-shared-priority-patch): it points at a
+	# directory the connected amuled shares (its Incoming, typically),
+	# so the smoke doesn't depend on the operator's library already
+	# holding a shared file. Unset is fine unless a phase needs it.
 	AMULEAPI_BIN="$BIN" \
 	AMULEAPI_CONFIG_DIR=/tmp/amuleapi-regtest \
 	AMULEAPI_LOG=/tmp/amuleapi.log \
+	AMULE_SHARED_DIR="${AMULE_SHARED_DIR:-}" \
 	bash "$SCRIPT_DIR/$script"
 	local rc=$?
 	echo "$script exit=$rc"

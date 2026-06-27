@@ -78,7 +78,7 @@ LoginFailureThreshold=5
 LoginLockoutSeconds=300
 
 [Streaming]
-EventBusRingCapacity=32
+EventBusRingCapacity=4
 EOF
 "$BIN" --config-dir="$CONFIG_DIR" \
 	--host=127.0.0.1 --port=4712 --password=amule \
@@ -96,11 +96,26 @@ ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed after bounce"
 
-# Let the refresher fill the ring with enough events that
-# OldestId starts climbing — required for the gap case below. With
-# the bus at 32 slots, a few ticks of server / client / download
-# churn are enough.
-sleep 8
+# Deterministically rotate the ring past id 1 instead of hoping the
+# ambient refresher emits >capacity events in a fixed sleep (flaky on
+# a quiet daemon). With the bus at 4 slots, a few add/delete cycles —
+# each a download_added + download_removed the refresher observes on
+# its next tick — guarantee OldestId climbs above 1. Each op is spaced
+# past one tick so the refresher can't coalesce an add+delete pair
+# into a no-op. End on a delete so the queue is clean for test 4.
+FILL_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
+FILL_HASH="0031c9cba65c50dd2015c184b2ca2c88"
+for _ in 1 2 3 4; do
+	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"ed2k_link\":\"$FILL_LINK\"}" "$HOST/api/v0/downloads"
+	sleep 2
+	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/downloads/$FILL_HASH"
+	sleep 2
+done
+# Final settle so the last download_removed is in the ring.
+sleep 1
 
 # --- 1. resync(reason=gap) — Last-Event-ID below OldestId. -------
 #

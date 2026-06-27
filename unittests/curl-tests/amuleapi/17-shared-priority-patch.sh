@@ -89,9 +89,35 @@ sleep 4
 # knownfiles + downloading-and-shared partfiles per Phase 4f).
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
+
+# Self-provision a fixture when the daemon shares nothing. /shared only
+# lists completed knownfiles (a partfile shows up only once a part has
+# finished), so a synthetic ed2k link won't do — we must plant a real
+# file in a directory amuled shares and let it hash in. AMULE_SHARED_DIR
+# (set by run-all.sh) points at that directory, typically amuled's
+# Incoming. The fixture is reused across runs once it exists.
 if [ "$COUNT" = "0" ]; then
-	echo "    info: no shared files; cannot exercise PATCH path"
-	_die "smoke needs at least one shared file"
+	if [ -z "$AMULE_SHARED_DIR" ]; then
+		echo "    info: no shared files and AMULE_SHARED_DIR unset"
+		_die "set AMULE_SHARED_DIR to a directory amuled shares so the smoke can plant a fixture"
+	fi
+	FIXTURE="$AMULE_SHARED_DIR/amuleapi-regtest-shared.dat"
+	if [ ! -f "$FIXTURE" ]; then
+		head -c 1048576 /dev/urandom > "$FIXTURE" \
+			|| _die "cannot write fixture to AMULE_SHARED_DIR=$AMULE_SHARED_DIR"
+	fi
+	echo "    info: planted fixture $FIXTURE; reloading shares"
+	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/shared/reload"
+	# Wait for amuled to hash the file and surface it in /shared.
+	for _ in $(seq 1 30); do
+		sleep 1
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+		COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
+		[ "$COUNT" != "0" ] && break
+	done
+	[ "$COUNT" != "0" ] \
+		|| _die "fixture planted in $AMULE_SHARED_DIR but never appeared in /shared after reload"
 fi
 TEST_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
 SAVED_PRIORITY=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].priority')
