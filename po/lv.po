@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-25 11:16+0000\n"
+"PO-Revision-Date: 2026-06-27 18:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -378,7 +378,7 @@ msgstr "Pieslēdzas %s"
 
 #: src/amule.cpp:2284
 msgid "Disconnected from eD2k"
-msgstr ""
+msgstr "Atslēgts no eD2k"
 
 #: src/amule.cpp:2292
 msgid "Kad started."
@@ -398,7 +398,7 @@ msgstr "Pieslēgts Kad (aiz ugunsmūra)"
 
 #: src/amule.cpp:2307
 msgid "Disconnected from Kad"
-msgstr ""
+msgstr "Atslēgts no Kad"
 
 #: src/amule.cpp:2339
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
@@ -529,7 +529,7 @@ msgstr "eD2k: Pieslēdzas"
 
 #: src/amuleDlg.cpp:786
 msgid "eD2k: Disconnected"
-msgstr ""
+msgstr "eD2k: Atslēgts"
 
 #: src/amuleDlg.cpp:792
 msgid "Kad: Firewalled"
@@ -564,11 +564,11 @@ msgstr ""
 #: src/amuleDlg.cpp:858 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:977
 #: src/muuli_wdr.cpp:2172
 msgid "Disconnect"
-msgstr ""
+msgstr "Atslēgties"
 
 #: src/amuleDlg.cpp:859
 msgid "Disconnect from the currently connected networks"
-msgstr "Atvienoties no tīkliem, kuriem pašlaik esiet pieslēdzies"
+msgstr "Atslēgties no tīkliem, kuriem pašlaik esiet pieslēdzies"
 
 #: src/amuleDlg.cpp:864 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:980
 #: src/muuli_wdr.cpp:2321 src/muuli_wdr.cpp:2770 src/muuli_wdr.cpp:3102
@@ -610,7 +610,7 @@ msgstr "aMule (%s | Pieslēgts)"
 #: src/amuleDlg.cpp:979
 #, c-format
 msgid "aMule (%s | Disconnected)"
-msgstr ""
+msgstr "aMule (%s | Atslēgts)"
 
 #: src/amuleDlg.cpp:1027
 #, c-format
@@ -1038,7 +1038,7 @@ msgstr "Pieslēgts"
 #: src/ClientDetailDialog.cpp:138 src/MuleTrayIcon.cpp:373
 #: src/MuleTrayIcon.cpp:386 src/ServerWnd.cpp:227
 msgid "Disconnected"
-msgstr ""
+msgstr "Atslēgts"
 
 #: src/ClientDetailDialog.cpp:160 src/ClientDetailDialog.cpp:164
 #: src/DownloadListCtrl.cpp:967 src/GenericClientListCtrl.cpp:926
@@ -1053,7 +1053,7 @@ msgstr ""
 
 #: src/ClientRef.cpp:198
 msgid "Bad Guy"
-msgstr ""
+msgstr "Sliktais čalis"
 
 #: src/ClientRef.cpp:200
 msgid "Verified - OK"
@@ -1810,11 +1810,11 @@ msgstr ""
 
 #: src/ExternalConn.cpp:2339
 msgid "Disconnected from eD2k."
-msgstr ""
+msgstr "Atslēgts no eD2k."
 
 #: src/ExternalConn.cpp:2343
 msgid "Disconnected from Kad."
-msgstr ""
+msgstr "Atslēgts no Kad."
 
 #: src/ExternalConn.cpp:2352
 #, c-format
@@ -3091,7 +3091,7 @@ msgstr "Nezināms izmērs"
 
 #: src/muuli_wdr.cpp:811
 msgid "Required Information"
-msgstr ""
+msgstr "Nepieciešamā informācija"
 
 #: src/muuli_wdr.cpp:816
 msgid "IP Address :"
@@ -3103,7 +3103,7 @@ msgstr "Ports :"
 
 #: src/muuli_wdr.cpp:826
 msgid "Additional Information"
-msgstr ""
+msgstr "Papildinformācija"
 
 #: src/muuli_wdr.cpp:831
 msgid "Username :"
@@ -3244,7 +3244,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:1167
 msgid "Queue rank:"
-msgstr ""
+msgstr "Rindas pozīcija:"
 
 #: src/muuli_wdr.cpp:1174
 msgid "Queue score:"
@@ -3990,7 +3990,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:2330
 msgid "Disconnect Kad"
-msgstr ""
+msgstr "Atslēgt Kad"
 
 #: src/muuli_wdr.cpp:2364
 msgid "Use Secure User Identification"
@@ -5556,7 +5556,7 @@ msgstr ""
 
 #: src/ServerList.cpp:355
 msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr ""
+msgstr "Jūs esiet pieslēdzies serverim, kuru mēģiniet dzēst. Lūdzu, vispirms atslēdzieties."
 
 #: src/ServerList.cpp:527
 #, c-format
@@ -5646,7 +5646,7 @@ msgstr ""
 
 #: src/ServerListCtrl.cpp:155
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."
-msgstr ""
+msgstr "Jūs esiet pieslēdzies serverim, kuru mēģiniet dzēst. Lūdzu, vispirms atslēdzieties. Serveris NETIKA dzēsts."
 
 #: src/ServerListCtrl.cpp:158
 msgid "(Unknown name)"
@@ -5732,7 +5732,7 @@ msgstr ""
 #: src/ServerSocket.cpp:320
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "Serveris %s (%s) noraidīja pieteikšanos (nav piešķirts klienta ID). Atslēdzas."
 
 #: src/ServerSocket.cpp:362
 #, c-format
@@ -6576,19 +6576,19 @@ msgstr "Pieslēgties tikai Kad."
 
 #: src/TextClient.cpp:1007
 msgid "Disconnect from the network."
-msgstr ""
+msgstr "Atslēgties no tīkla."
 
 #: src/TextClient.cpp:1008
 msgid "This will disconnect from all networks that are currently connected.\n"
-msgstr ""
+msgstr "Tiks atslēgi visi pašlaik pieslēgtie tīkli.\n"
 
 #: src/TextClient.cpp:1009
 msgid "Disconnect from eD2k only."
-msgstr ""
+msgstr "Atslēgties tikai no eD2k."
 
 #: src/TextClient.cpp:1010
 msgid "Disconnect from Kad only."
-msgstr ""
+msgstr "Atslēgties tikai no Kad."
 
 #: src/TextClient.cpp:1012
 msgid "Add an eD2k or magnet link to core."
@@ -6810,11 +6810,11 @@ msgstr ""
 
 #: src/TextClient.cpp:1102
 msgid "Show upload queue."
-msgstr ""
+msgstr "Rādīt augšupielādes rindu."
 
 #: src/TextClient.cpp:1103
 msgid "Show download queue."
-msgstr ""
+msgstr "Rādīt lejupielādes rindu."
 
 #: src/TextClient.cpp:1104
 msgid "Show log."
@@ -6822,7 +6822,7 @@ msgstr ""
 
 #: src/TextClient.cpp:1105
 msgid "Show servers list."
-msgstr ""
+msgstr "Rādīt serveru sarakstu."
 
 #: src/TextClient.cpp:1106
 msgid "Show shared files list."
@@ -7292,7 +7292,7 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp:860
 msgid "aMule is running, but disconnected"
-msgstr ""
+msgstr "aMule darbojas, bet atslēgta no tīkla"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:931
 msgid "aMule is connecting..."

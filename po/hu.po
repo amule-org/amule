@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-25 11:10+0000\n"
+"PO-Revision-Date: 2026-06-29 10:01+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
 "Language: hu\n"
@@ -2238,29 +2238,29 @@ msgstr ""
 #: src/IP2Country.cpp:82
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "Létező GeoLite2-Country.mmdb migrálva %s helyre"
 
 #: src/IP2Country.cpp:134
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences → IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: MaxMind van kiválasztva GeoIP forrásként, de nincs megadva licenckulcs. Nyissa meg a Beállítások → IP2Country pontot, illessze be az ingyenes MaxMind licenckulcsát, és kattintson a „Frissítés most” gombra."
 
 #: src/IP2Country.cpp:140
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences → IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: Egyéni URL van kiválasztva GeoIP forrásnak, de nincs URL konfigurálva. Nyissa meg a Beállítások → IP2Country pontot, és adjon meg egy URL-t, amely egy .mmdb (vagy egy olyat tartalmazó .gz / .tar.gz) fájlra mutat."
 
 #: src/IP2Country.cpp:146
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: nem sikerült a GeoIP letöltési URL-t feoldani."
 
 #: src/IP2Country.cpp:157
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "Új GeoIP.dat letöltés %s-ról"
+msgstr "Új %s letöltése %s cím alól"
 
 #: src/IP2Country.cpp:191
-#, fuzzy, c-format
+#, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr "GeoIP.dat fájl letöltése sikertelen, frissítés félbeszakítása."
+msgstr "%s letöltése sikertelen, frissítés megszakítása."
 
 #: src/IP2Country.cpp:201 src/IPFilter.cpp:500
 #, c-format
@@ -2278,13 +2278,13 @@ msgid "Successfully updated %s"
 msgstr "%s frissítése sikerrel járt."
 
 #: src/IP2Country.cpp:228
-#, fuzzy, c-format
+#, c-format
 msgid "Error updating %s"
-msgstr "Hiba a GeoIP.dat frissítése közben."
+msgstr "Hiba %s frissítésekor"
 
 #: src/IP2Country.cpp:249
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "DB-IP letöltése a jelen hónapnak sikertelen - újrapróbálkozás az elmúlt hónap URL-jával."
 
 #: src/IP2Country.cpp:254 src/IPFilter.cpp:512 src/ServerList.cpp:872
 #, c-format
@@ -2495,9 +2495,8 @@ msgid "Connection failure"
 msgstr "Kapcsolódási hiba"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp:254
-#, fuzzy
 msgid "External Connection lost — exiting."
-msgstr "Külső kapcsolat lezárva."
+msgstr "Külső kapcsolat elveszítve - kilépés."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp:318
 msgid "EC connection failed. Empty reply."
@@ -2572,39 +2571,32 @@ msgid "Select All"
 msgstr "Mindent kijelöl"
 
 #: src/MuleTrayIcon.cpp:367
-#, fuzzy
 msgid "eD2k: "
-msgstr "eD2k"
+msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp:370
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "Csatlakozva"
+msgstr "Csatlakozva (LowID)"
 
 #: src/MuleTrayIcon.cpp:371
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "Csatlakozva"
+msgstr "Csatlakozva (HighID)"
 
 #: src/MuleTrayIcon.cpp:380
-#, fuzzy
 msgid "Kad: "
-msgstr " Kad: "
+msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp:383
-#, fuzzy
 msgid "Connected (firewalled)"
-msgstr "Kapcsolódva a Kad-hoz (tűzfal mögül)"
+msgstr "Kapcsolódva (tűzfal mögül)"
 
 #: src/MuleTrayIcon.cpp:393
-#, fuzzy
 msgid "Server: "
-msgstr "Kiszolgáló IP: "
+msgstr "Szerver: "
 
 #: src/MuleTrayIcon.cpp:394
-#, fuzzy
 msgid "Server IP: "
-msgstr "Kiszolgáló IP:"
+msgstr "Szerver IP: "
 
 #: src/MuleTrayIcon.cpp:399 src/MuleTrayIcon.cpp:400 src/MuleTrayIcon.cpp:823
 #: src/MuleTrayIcon.cpp:837 src/TextClient.cpp:811 src/TextClient.cpp:824
@@ -2944,7 +2936,7 @@ msgstr "Több"
 
 #: src/muuli_wdr.cpp:325
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr ""
+msgstr "Kérje meg a már válaszolt Kad partnereket, hogy szélesítsék a keresést. Minden kattintás a legközelebbi partnertől kérdez le kapcsolatokat (KADEMLIA_FIND_VALUE_MORE), további fájltalálatokat hozva, amelyeket a keresés kezdeti alfa határa kihagyott."
 
 #: src/muuli_wdr.cpp:330
 msgid "Stop"
@@ -3339,11 +3331,11 @@ msgstr "Engedélyezve indításnál az aMule új verziót fog keresni."
 
 #: src/muuli_wdr.cpp:1225
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "aMule automatikus indítása bejelentkezéskor"
 
 #: src/muuli_wdr.cpp:1226
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
-msgstr ""
+msgstr "Felhasználónkénti automatikus indítási bejegyzést regisztrál, hogy az aMule bejelentkezéskor elinduljon. Ha áthelyezi az aMule bináris fájlt, indítsa el az aMule-t manuálisan a bejegyzés frissítéséhez."
 
 #: src/muuli_wdr.cpp:1229
 msgid "Start minimized"
@@ -3625,14 +3617,16 @@ msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"Elvégzett letöltések tárolási helye. Minden fájl ebben a könytárban automatikusan megosztásra kerül másokkal.\n"
+"Ha a könyvtár fájlokat tartalmaz, amelyek ne kerüljenek megosztásra, állítsa át egy megfelelő alkönyvtárra."
 
 #: src/muuli_wdr.cpp:1570
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "Válassza ki a könyvtárat az elvégzett letöltéseknek. A könyvtár minden fájlja másokkal megosztásra kerül."
 
 #: src/muuli_wdr.cpp:1574
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "(Minden fájl ebben a könyvtárban másokkal megosztásra kerül)"
 
 #: src/muuli_wdr.cpp:1576
 msgid "Folder for temporary download files"
@@ -3652,11 +3646,11 @@ msgstr "Rejtett fájlok megosztása"
 
 #: src/muuli_wdr.cpp:1599
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "Megosztott könyvtárak automatikus újraszkennelése"
 
 #: src/muuli_wdr.cpp:1605
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "Szimbólikus hivatkozások követése megosztott könyvtárakban"
 
 #: src/muuli_wdr.cpp:1624
 msgid "Graphs"
@@ -3683,7 +3677,6 @@ msgid "Upload graph scale:"
 msgstr "Feltöltési grafikon méretaránya:"
 
 #: src/muuli_wdr.cpp:1660
-#, fuzzy
 msgid "Colors: "
 msgstr "Színek: "
 
@@ -3724,7 +3717,6 @@ msgid "Active connections"
 msgstr "Aktív kapcsolatok"
 
 #: src/muuli_wdr.cpp:1675
-#, fuzzy
 msgid "Systray Icon Speed Bar"
 msgstr "Sebességmérő a rendszertálcán"
 
@@ -4161,9 +4153,8 @@ msgid "Use system-wide ipfilter.dat if available"
 msgstr "Rendszer-szintű ipfilter.dat használatának engedélyezése"
 
 #: src/muuli_wdr.cpp:2441
-#, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr "Ha nem talál helyi ipfilter.dat-ot, akkor a rendszerszintű IP szűrő állomány használatát engedi."
+msgstr "Ha nem talál helyi ipfilter.dat fájlt, akkor engedje a rendszerszintű ipfilter fájl használatát."
 
 #: src/muuli_wdr.cpp:2458
 msgid "Enable Online-Signature"
@@ -4198,30 +4189,28 @@ msgid "Render the country flag column in the transfers, queue and search views. 
 msgstr ""
 
 #: src/muuli_wdr.cpp:2520
-#, fuzzy
 msgid "Database"
-msgstr "Adatráta :"
+msgstr "Adatbázis"
 
 #: src/muuli_wdr.cpp:2536
-#, fuzzy
 msgid "Source:"
-msgstr "Források"
+msgstr "Forrás:"
 
 #: src/muuli_wdr.cpp:2539
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP (ingyenes, fiók nélkül)"
 
 #: src/muuli_wdr.cpp:2540
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2 (ingyenes, fiók szükséges)"
 
 #: src/muuli_wdr.cpp:2541
 msgid "Custom URL"
-msgstr ""
+msgstr "Egyéni URL"
 
 #: src/muuli_wdr.cpp:2544
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "Válassza ki a GeoIP MMDB adatbázis szolgáltatóját. DB-IP az alapértelmezett - nincs szükség fiókra. MaxMind egy ingyenes fiókot és licenckulcsot igényel. Használjon egyéni URL-t bármely más MMDB host megadásához (pl. egy helyi tükörhöz)."
 
 #: src/muuli_wdr.cpp:2561
 msgid ""
@@ -4230,10 +4219,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"Nincs szükség konfigurációra.\n"
+"\n"
+"IP-to-Country adat DB-IP.com által - https://db-ip.com\n"
+"Licenc: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp:2574
 msgid "License key:"
-msgstr ""
+msgstr "Licenckulcs:"
 
 #: src/muuli_wdr.cpp:2580
 msgid ""
@@ -4244,11 +4237,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"Regisztráljon egy ingyenes MaxMind fiókért, majd generáljon egy licenckulcsot:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"Ez a termék a MaxMind által létrehozott GeoLite2 adatokat tartalmaz - https://www.maxmind.com\n"
+"Licenc: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"Hozzárendelést és fiókregisztrációt igényel; legalább 30 naponta frissítse."
 
 #: src/muuli_wdr.cpp:2595
-#, fuzzy
 msgid "Download URL:"
-msgstr "Letöltés: "
+msgstr "Letöltési URL:"
 
 #: src/muuli_wdr.cpp:2601
 msgid ""
@@ -4256,19 +4254,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Egy .mmdb fájlra vagy egy azt tartalmazó .gz / .tar.gz fájlra kell mutasson.\n"
+"Az URL tartalmazhat hitelesítő adatokat (https://user:pass@host/...).\n"
+"A licenc- és megnevezési feltételeket a felmenő URL határozza meg - ön a felelőss."
 
 #: src/muuli_wdr.cpp:2614
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "GeoIP adatbázis letöltése a kiválasztott forrásból."
 
 #: src/muuli_wdr.cpp:2616
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "IP szűrő automatikus letöltése indításkor"
+msgstr "Automatikus frissítés indításkor"
 
 #: src/muuli_wdr.cpp:2617
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "GeoIP adatbázis újonnani letöltése a kiválasztott forrásból minden aMule indításkor."
 
 #: src/muuli_wdr.cpp:2640
 msgid "Filter incoming messages (except current chat):"
@@ -4375,9 +4375,8 @@ msgid "Remember those settings"
 msgstr "Emlékezzen ezekre a beállításokra"
 
 #: src/muuli_wdr.cpp:2766
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "Gzip tömörítés használata"
+msgstr "ZLIB tömörítés erőltetése"
 
 #: src/muuli_wdr.cpp:2790
 msgid "Enable Verbose Debug-Logging."
@@ -4624,9 +4623,8 @@ msgid "Please choose a folder to search for temporary downloads! (subfolders wil
 msgstr "Válassz egy mappát ahol ideiglenes letöltéseket fogok keresni! (az almappákban is)"
 
 #: src/PartFileConvertDlg.cpp:208
-#, fuzzy
 msgid "Do you want the source files of successfully imported downloads be deleted?"
-msgstr "Töröljem a sikeresen importált letöltések forrásait?"
+msgstr "Törölni akarja a sikeresen importált letöltések forrás fájljait?"
 
 #: src/PartFileConvertDlg.cpp:209
 msgid "Remove sources?"
@@ -4704,7 +4702,7 @@ msgstr "Adatforgalmi hiba a partfile mentésekor: "
 #: src/PartFile.cpp:1030
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "0/ismeretlen bájt lett írva a '%s' helyre -- megőrizve a létezö .part.met fájlt."
 
 #: src/PartFile.cpp:1110
 #, c-format

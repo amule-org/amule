@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-06-25 11:15+0000\n"
+"PO-Revision-Date: 2026-06-27 18:01+0000\n"
 "Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
 "Language-Team: Spanish <es_ES@li.org>\n"
 "Language: es\n"
@@ -120,7 +120,7 @@ msgstr "Fija la geometría de la aplicación. I<E<lt>geomE<gt>> usa el mismo for
 #. type: Plain text
 #: amule.1.in:35 amuled.1.in:43 amulegui.1.in:36
 msgid "Prints log messages to stdout."
-msgstr "Imprime mensajes de registro en la salida estándar"
+msgstr "Imprime mensajes de registro en la salida estándar."
 
 #. type: Plain text
 #: amule.1.in:38 amuled.1.in:46 amulegui.1.in:39
@@ -532,7 +532,7 @@ msgstr "Valores disponibles para I<E<lt>whatE<gt>>:"
 #. type: Plain text
 #: amulecmd.1.in:117
 msgid "Get bandwidth limits."
-msgstr "Obtener limites de ancho de banda."
+msgstr "Obtener los límites de ancho de banda."
 
 #. type: Plain text
 #: amulecmd.1.in:119
@@ -597,7 +597,7 @@ msgstr "Recargar un objeto dado."
 #. type: Plain text
 #: amulecmd.1.in:151
 msgid "Reload shared files list."
-msgstr "Recargar lista de archivos compartidos."
+msgstr "Recargar la lista de archivos compartidos."
 
 #. type: Plain text
 #: amulecmd.1.in:153
@@ -687,7 +687,7 @@ msgstr "Asigna un valor dado de opción."
 #. type: Plain text
 #: amulecmd.1.in:200
 msgid "Set bandwidth limits."
-msgstr "Asignar limites de ancho de banda."
+msgstr "Establecer los límites de ancho de banda."
 
 #. type: Plain text
 #: amulecmd.1.in:202
@@ -702,12 +702,12 @@ msgstr "Muestra la cola de subida/descarga, la lista de servidores, o la lista d
 #. type: Plain text
 #: amulecmd.1.in:210
 msgid "Show download queue."
-msgstr "Mostrar cola de descarga."
+msgstr "Mostrar la cola de descarga."
 
 #. type: Plain text
 #: amulecmd.1.in:212
 msgid "Show log."
-msgstr "Mostrar registro."
+msgstr "Mostrar el registro."
 
 #. type: Plain text
 #: amulecmd.1.in:214
@@ -717,12 +717,12 @@ msgstr "Mostrar lista de servidores."
 #. type: Plain text
 #: amulecmd.1.in:216
 msgid "Show shared files list."
-msgstr "Mostrar lista de archivos compartidos."
+msgstr "Mostrar la lista de archivos compartidos."
 
 #. type: Plain text
 #: amulecmd.1.in:218
 msgid "Show upload queue."
-msgstr "Mostrar cola de subida."
+msgstr "Mostrar la cola de subida."
 
 #. type: Plain text
 #: amulecmd.1.in:222
@@ -1074,7 +1074,7 @@ msgstr "Cargar/Guardar del aMule remoto la configuración del servidor web.  Est
 #. type: Plain text
 #: amuleweb.1.in:114
 msgid "Disable PHP interpreter (deprecated)"
-msgstr "Deshabilitar interprete PHP (obsoleto)"
+msgstr "Deshabilitar el intérprete PHP (obsoleto)"
 
 #. type: Plain text
 #: amuleweb.1.in:117

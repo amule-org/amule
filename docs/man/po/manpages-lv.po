@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-06-25 11:16+0000\n"
+"PO-Revision-Date: 2026-06-27 18:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -173,7 +173,7 @@ msgstr "Parāda pašreizējo versijas numuru."
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:22
 #: ../../src/utils/cas/docs/cas.1.in:33
 msgid "Prints a short usage description."
-msgstr ""
+msgstr "Sniedz īsu lietošanas aprakstu."
 
 #. type: TP
 #: amule.1.in:62 amuled.1.in:70 ed2k.1.in:40
@@ -286,7 +286,7 @@ msgstr ""
 #: ../../src/utils/wxCas/docs/wxcas.1.in:21
 #, no-wrap
 msgid "SEE ALSO"
-msgstr ""
+msgstr "SKATIET ARĪ"
 
 #. type: SH
 #: amule.1.in:91 amulecmd.1.in:289 amuled.1.in:94 amulegui.1.in:70
@@ -504,7 +504,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:104
 msgid "Start downloading a file."
-msgstr ""
+msgstr "Sākt datnes lejupielādi."
 
 #. type: Plain text
 #: amulecmd.1.in:108
@@ -599,7 +599,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:153
 msgid "Reload IP filter tables."
-msgstr ""
+msgstr "Pārlādēt IP adrešu filtru tabulas."
 
 #. type: Plain text
 #: amulecmd.1.in:156
@@ -679,7 +679,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:195
 msgid "Sets a given preferences value."
-msgstr ""
+msgstr "Iestata norādīto iestatījumu vērtību."
 
 #. type: Plain text
 #: amulecmd.1.in:200
@@ -699,7 +699,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:210
 msgid "Show download queue."
-msgstr ""
+msgstr "Rādīt lejupielādes rindu."
 
 #. type: Plain text
 #: amulecmd.1.in:212
@@ -709,7 +709,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:214
 msgid "Show servers list."
-msgstr ""
+msgstr "Rādīt serveru sarakstu."
 
 #. type: Plain text
 #: amulecmd.1.in:216
@@ -719,7 +719,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:218
 msgid "Show upload queue."
-msgstr ""
+msgstr "Rādīt augšupielādes rindu."
 
 #. type: Plain text
 #: amulecmd.1.in:222
@@ -806,7 +806,7 @@ msgstr "vai"
 #. type: Plain text
 #: amulecmd.1.in:276
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr ""
+msgstr "B<amulecmd> B<--create-config-from>=I</home/lietotājvārds/.aMule/amule.conf>"
 
 #. type: Plain text
 #: amulecmd.1.in:278 amuleweb.1.in:191
@@ -860,7 +860,7 @@ msgstr ""
 #: amuled.1.in:33
 #, no-wrap
 msgid "B<[ -p> I<E<lt>pathE<gt>>, B<--pid-file>=I<E<lt>pathE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -p> I<E<lt>ceļšE<gt>>, B<--pid-file>=I<E<lt>ceļšE<gt>> B<]>"
 
 #. type: Plain text
 #: amuled.1.in:37
@@ -961,7 +961,7 @@ msgstr "[B<-l> I<E<lt>valodaE<gt>>]"
 #. type: Plain text
 #: amuleweb.1.in:18
 msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
-msgstr ""
+msgstr "[B<-t> I<E<lt>nosaukumsE<gt>>] [B<-s> I<E<lt>portsE<gt>>]"
 
 #. type: Plain text
 #: amuleweb.1.in:20
@@ -1008,7 +1008,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:84
 msgid "Enable UPnP."
-msgstr ""
+msgstr "Iespējot UPnP."
 
 #. type: TP
 #: amuleweb.1.in:84
@@ -1145,7 +1145,7 @@ msgstr "ED2K"
 #: ed2k.1.in:1
 #, no-wrap
 msgid "aMule eD2k link parser v1.5.1"
-msgstr ""
+msgstr "aMule eD2k saišu parsētājs v1.5.1"
 
 #. type: Plain text
 #: ed2k.1.in:6
@@ -1340,7 +1340,7 @@ msgstr ""
 #: ../../src/utils/wxCas/docs/wxcas.1.in:1
 #, no-wrap
 msgid "wxCas"
-msgstr ""
+msgstr "wxCas"
 
 #. type: Plain text
 #: ../../src/utils/wxCas/docs/wxcas.1.in:5

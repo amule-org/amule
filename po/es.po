@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-25 11:07+0000\n"
+"PO-Revision-Date: 2026-06-29 10:01+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -1425,7 +1425,7 @@ msgstr "Última recepción"
 
 #: src/DownloadListCtrl.cpp:411
 msgid "Are you sure that you wish to delete the selected file?"
-msgstr "¿Seguro que desea borrar el archivo archivo seleccionado?"
+msgstr "¿Seguro que desea borrar el archivo seleccionado?"
 
 #: src/DownloadListCtrl.cpp:413
 msgid "Are you sure that you wish to delete the selected files?"
@@ -3640,7 +3640,7 @@ msgid ""
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
 "Las descargas completadas se guardan aquí. Todos los archivos de esta carpeta se compartirán automáticamente con otros usuarios.\n"
-"Si esta carpeta contiene archivos que no quiere compartir, apúntelo a un sub-directorio exclusivo para aMule"
+"Si esta carpeta contiene archivos que no quiere compartir, apúntelo a un sub-directorio exclusivo para aMule."
 
 #: src/muuli_wdr.cpp:1570
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
@@ -3796,7 +3796,7 @@ msgstr "Tema a usar: "
 
 #: src/muuli_wdr.cpp:1778
 msgid "Show \"Fast eD2k Links Handler\" in every window."
-msgstr "Mostrar el \"Gestor rápido de enlaces eD2k\" en todas las ventanas"
+msgstr "Mostrar el \"Gestor rápido de enlaces eD2k\" en todas las ventanas."
 
 #: src/muuli_wdr.cpp:1781
 msgid "Show extended info on categories tabs"
@@ -3984,7 +3984,7 @@ msgstr "Lista de servidores"
 
 #: src/muuli_wdr.cpp:2146
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
-msgstr "Introduzca el URL de un archivo server.met y pulse el botón de la izquierda para actualizar la lista de servidores conocidos."
+msgstr "Introduzca la URL de un archivo server.met y pulse el botón de la izquierda para actualizar la lista de servidores conocidos."
 
 #: src/muuli_wdr.cpp:2151
 msgid "Add server manually: Name"
@@ -4036,7 +4036,7 @@ msgstr "Nodos (0)"
 
 #: src/muuli_wdr.cpp:2245
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
-msgstr "Introduzca el URL del archivo nodes.dat y pulse el botón de la izquierda para actualizar la lista de nodos conocidos."
+msgstr "Introduzca la URL del archivo nodes.dat y pulse el botón de la izquierda para actualizar la lista de nodos conocidos."
 
 #: src/muuli_wdr.cpp:2248
 msgid "Nodes stats"
@@ -4068,7 +4068,7 @@ msgstr "Desconectar Kad"
 
 #: src/muuli_wdr.cpp:2364
 msgid "Use Secure User Identification"
-msgstr "Usar la identificación segura de usuario (ISU)"
+msgstr "Usar la Identificación Segura de Usuario (ISU)"
 
 #: src/muuli_wdr.cpp:2366
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
@@ -4128,7 +4128,7 @@ msgstr "Filtrar los clientes"
 
 #: src/muuli_wdr.cpp:2401
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr "Habilitar el filtrado de las IP de clientes definidas en el archivo ~/.aMule/ipfilter.dat"
+msgstr "Habilitar el filtrado de las IP de clientes definidas en el archivo ~/.aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp:2403
 msgid "Filter servers"
@@ -4136,7 +4136,7 @@ msgstr "Filtrar los servidores"
 
 #: src/muuli_wdr.cpp:2405
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr "Habilitar el filtrado de las IP de servidores definidas en el archivo ~/.aMule/ipfilter.dat"
+msgstr "Habilitar el filtrado de las IP de servidores definidas en el archivo ~/.aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp:2409
 msgid "Reload List"
@@ -5430,12 +5430,12 @@ msgstr "Actualizando carpetas compartidas"
 #: src/PrefsUnifiedDlg.cpp:2023
 #, c-format
 msgid "Scanned %u directories…"
-msgstr "Escaneadas %u carpetas"
+msgstr "Escaneadas %u carpetas…"
 
 #: src/PrefsUnifiedDlg.cpp:2073
 #, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "Recargando archivos compartidos: %u archivos escaneados."
+msgstr "Recargando archivos compartidos: %u archivos escaneados"
 
 #: src/SearchDlg.cpp:282
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
@@ -5520,7 +5520,7 @@ msgstr "Copiar el enlace eD2k al portapapeles"
 
 #: src/SearchListCtrl.cpp:811
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Actualmente no estás conectado a un servidor que admita la función de búsqueda de 'Archivos relacionados'."
+msgstr "Actualmente no estás conectado a un servidor que admita la función de búsqueda de 'Archivos Relacionados'"
 
 #: src/SearchListCtrl.cpp:1105
 msgid "Canceled"
@@ -5593,7 +5593,7 @@ msgstr "Error al conectar con %s (%s:%i)."
 
 #: src/ServerConnect.cpp:462
 msgid "ERROR: Socket invalid at timeout check"
-msgstr "ERROR: socket no válido en la comprobación de tiempo de espera."
+msgstr "ERROR: socket no válido en la comprobación de tiempo de espera"
 
 #: src/ServerConnect.cpp:472
 #, c-format
@@ -6849,7 +6849,7 @@ msgstr "Obtener el nivel de filtrado de IP."
 
 #: src/TextClient.cpp:1046
 msgid "Get bandwidth limits."
-msgstr "Obtener los límites del ancho de banda."
+msgstr "Obtener los límites de ancho de banda."
 
 #: src/TextClient.cpp:1048
 msgid "Execute a search."
