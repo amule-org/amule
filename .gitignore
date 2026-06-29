@@ -46,3 +46,6 @@ packaging/windows/installer_strings_generated.nsh
 .aider*
 
 .cache/
+
+build-macos/
+dist/
