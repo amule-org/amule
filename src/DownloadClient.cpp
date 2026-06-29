@@ -1723,7 +1723,7 @@ void CUpDownClient::ProcessAICHAnswer(const uint8_t *packet, uint32 size)
 				return;
 			} else {
 				AddDebugLogLineN(logAICHTransfer,
-					"AICH Packet Answer: Succeeded to read and validate received "
+					"AICH Packet Answer: Failed to read and validate received "
 					"recoverydata");
 			}
 		} else {
