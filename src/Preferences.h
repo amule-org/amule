@@ -217,6 +217,13 @@ public:
 	static const wxString &GetConfigDir() { return s_configDir; }
 	static void SetConfigDir(const wxString &dir) { s_configDir = dir; }
 
+	// True when this process started without an existing
+	// preferences.dat, i.e. a fresh install / first launch. Captured
+	// once in the CPreferences constructor (before the file is
+	// created) so the first-run setup wizard can be shown exactly
+	// once. Always false in the remote GUI, which has no local config.
+	static bool IsFirstRun() { return s_firstRun; }
+
 	static bool Score() { return s_scorsystem; }
 	static void SetScoreSystem(bool val) { s_scorsystem = val; }
 	static bool Reconnect() { return s_reconnect; }
@@ -732,6 +739,7 @@ private:
 
 protected:
 	static wxString s_configDir;
+	static bool s_firstRun;
 
 	////////////// USER
 	static wxString s_nick;

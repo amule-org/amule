@@ -80,6 +80,7 @@ CPreferences::CFGMap CPreferences::s_CfgList;
 CPreferences::CFGList CPreferences::s_MiscList;
 
 wxString CPreferences::s_configDir;
+bool CPreferences::s_firstRun = false;
 
 /* Proxy */
 CProxyData CPreferences::s_ProxyData;
@@ -994,6 +995,16 @@ CPreferences::CPreferences()
 
 	// load preferences.dat or set standard values
 	wxString fullpath(s_configDir + "preferences.dat");
+
+	// Capture the first-run state before we (possibly) create
+	// preferences.dat below: the absence of that file marks a fresh
+	// install, which the GUI uses to decide whether to show the
+	// first-run setup wizard. Done in the monolithic/daemon core only;
+	// the remote GUI compiles CLIENT_GUI and keeps the default false.
+#ifndef CLIENT_GUI
+	s_firstRun = !wxFileExists(fullpath);
+#endif
+
 	CFile preffile;
 	if (wxFileExists(fullpath)) {
 		if (preffile.Open(fullpath, CFile::read)) {

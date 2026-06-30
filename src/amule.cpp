@@ -39,7 +39,6 @@
 #include <wx/dialog.h>   // Needed for the bootstrap dialog (GUI-only)
 #include <wx/sizer.h>    // Needed for wxBoxSizer (GUI-only)
 #include <wx/stattext.h> // Needed for wxStaticText (GUI-only)
-#include <wx/statline.h> // Needed for wxStaticLine (GUI-only)
 #include <wx/checkbox.h> // Needed for wxCheckBox (GUI-only)
 #endif
 #include <wx/config.h> // Do_not_auto_remove (win32)
@@ -112,6 +111,7 @@
 #include <wx/msgdlg.h>
 
 #include "amuleDlg.h"
+#include "FirstRunWizard.h" // Needed for the first-run setup wizard (GUI-only)
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -527,19 +527,9 @@ bool CamuleApp::OnInit()
 
 	glob_prefs = new CPreferences();
 
-	CPath outDir;
-	if (CheckMuleDirectory("temp", thePrefs::GetTempDir(), thePrefs::GetConfigDir() + "Temp", outDir)) {
-		thePrefs::SetTempDir(outDir);
-	} else {
-		return false;
-	}
-
-	if (CheckMuleDirectory(
-		    "incoming", thePrefs::GetIncomingDir(), thePrefs::GetConfigDir() + "Incoming", outDir)) {
-		thePrefs::SetIncomingDir(outDir);
-	} else {
-		return false;
-	}
+	// The temp / incoming directories are validated and created further
+	// down, after the first-run wizard has had a chance to point them
+	// somewhere else.
 
 	// Initialize wx sockets (needed for http download in background with Asio sockets)
 	wxSocketBase::Initialize();
@@ -653,6 +643,43 @@ bool CamuleApp::OnInit()
 
 		vfile.Write();
 		vfile.Close();
+	}
+
+	// First launch: run the guided setup wizard before the network
+	// stack comes up, so the chosen ports, enabled networks and UPnP
+	// setting take effect when ReinitializeNetwork() runs below. The
+	// wizard applies and saves every preference it collects; it only
+	// hands back which bootstrap files to fetch, since those downloads
+	// need the (not-yet-created) server list and sockets.
+#ifndef AMULE_DAEMON
+	bool wizardWantsServerMet = false;
+	bool wizardWantsNodesDat = false;
+	if (thePrefs::IsFirstRun()) {
+		// On a fresh install the server list is always empty and
+		// nodes.dat is absent, so offer both downloads as needed.
+		const bool needServerMet = thePrefs::GetNetworkED2K();
+		const bool needNodesDat = thePrefs::GetNetworkKademlia() &&
+					  !wxFileExists(thePrefs::GetConfigDir() + "nodes.dat");
+
+		FirstRunWizard::Result wiz = FirstRunWizard::Run(NULL, needServerMet, needNodesDat);
+		wizardWantsServerMet = wiz.downloadServerMet;
+		wizardWantsNodesDat = wiz.downloadNodesDat;
+	}
+#endif
+
+	// Validate (and create if needed) the temp / incoming directories.
+	// Deferred to here so the first-run wizard above could redirect them.
+	CPath outDir;
+	if (CheckMuleDirectory("temp", thePrefs::GetTempDir(), thePrefs::GetConfigDir() + "Temp", outDir)) {
+		thePrefs::SetTempDir(outDir);
+	} else {
+		return false;
+	}
+	if (CheckMuleDirectory(
+		    "incoming", thePrefs::GetIncomingDir(), thePrefs::GetConfigDir() + "Incoming", outDir)) {
+		thePrefs::SetIncomingDir(outDir);
+	} else {
+		return false;
 	}
 
 	m_statistics = new CStatistics();
@@ -782,78 +809,84 @@ bool CamuleApp::OnInit()
 	m_app_state = APP_STATE_RUNNING;
 
 	{
+#ifndef AMULE_DAEMON
+		if (thePrefs::IsFirstRun()) {
+			// The first-run wizard already collected the user's
+			// bootstrap choices (and UPnP / port settings, which were
+			// applied before ReinitializeNetwork ran). Act on them now
+			// that the server list and sockets exist.
+			if (wizardWantsServerMet) {
+				serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
+			}
+			if (wizardWantsNodesDat) {
+				UpdateNotesDat(thePrefs::GetKadNodesUrl());
+			}
+		} else {
+			const bool needServerMet =
+				!serverlist->GetServerCount() && thePrefs::GetNetworkED2K();
+			const bool needNodesDat = thePrefs::GetNetworkKademlia() &&
+						  !wxFileExists(thePrefs::GetConfigDir() + "nodes.dat");
+
+			if (needServerMet || needNodesDat) {
+				// Returning user who is missing a bootstrap file (e.g.
+				// just enabled a network): offer to fetch what's gone.
+				// UPnP / ports live in Preferences for these users, so
+				// this dialog stays focused on the missing files.
+				wxDialog dlg(static_cast<wxWindow *>(theApp->amuledlg),
+					wxID_ANY,
+					_("Network bootstrap"));
+				wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
+
+				topSizer->Add(new wxStaticText(&dlg,
+						      wxID_ANY,
+						      _("aMule has detected missing network bootstrap "
+							"files.\nSelect which ones to download:")),
+					0,
+					wxALL,
+					10);
+
+				wxCheckBox *serverMetCheck = NULL;
+				if (needServerMet) {
+					serverMetCheck = new wxCheckBox(
+						&dlg, wxID_ANY, _("eD2k server list (server.met)"));
+					serverMetCheck->SetValue(true);
+					topSizer->Add(serverMetCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+				}
+				wxCheckBox *nodesDatCheck = NULL;
+				if (needNodesDat) {
+					nodesDatCheck = new wxCheckBox(
+						&dlg, wxID_ANY, _("Kad bootstrap nodes (nodes.dat)"));
+					nodesDatCheck->SetValue(true);
+					topSizer->Add(nodesDatCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+				}
+
+				if (wxSizer *btnSizer = dlg.CreateButtonSizer(wxOK | wxCANCEL))
+					topSizer->Add(btnSizer, 0, wxEXPAND | wxALL, 10);
+
+				dlg.SetSizerAndFit(topSizer);
+
+				if (dlg.ShowModal() == wxID_OK) {
+					if (serverMetCheck && serverMetCheck->GetValue()) {
+						serverlist->UpdateServerMetFromURL(
+							thePrefs::GetEd2kServersUrl());
+					}
+					if (nodesDatCheck && nodesDatCheck->GetValue()) {
+						UpdateNotesDat(thePrefs::GetKadNodesUrl());
+					}
+				}
+			}
+		}
+#else
 		const bool needServerMet = !serverlist->GetServerCount() && thePrefs::GetNetworkED2K();
 		const bool needNodesDat = thePrefs::GetNetworkKademlia() &&
 					  !wxFileExists(thePrefs::GetConfigDir() + "nodes.dat");
-
-		if (needServerMet || needNodesDat) {
-#ifndef AMULE_DAEMON
-			wxDialog dlg(
-				static_cast<wxWindow *>(theApp->amuledlg), wxID_ANY, _("Network bootstrap"));
-			wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
-
-			topSizer->Add(new wxStaticText(&dlg,
-					      wxID_ANY,
-					      _("aMule has detected missing network bootstrap "
-						"files.\nSelect which ones to download:")),
-				0,
-				wxALL,
-				10);
-
-			wxCheckBox *serverMetCheck = NULL;
-			if (needServerMet) {
-				serverMetCheck =
-					new wxCheckBox(&dlg, wxID_ANY, _("eD2k server list (server.met)"));
-				serverMetCheck->SetValue(true);
-				topSizer->Add(serverMetCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
-			}
-			wxCheckBox *nodesDatCheck = NULL;
-			if (needNodesDat) {
-				nodesDatCheck =
-					new wxCheckBox(&dlg, wxID_ANY, _("Kad bootstrap nodes (nodes.dat)"));
-				nodesDatCheck->SetValue(true);
-				topSizer->Add(nodesDatCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
-			}
-
-#ifdef ENABLE_UPNP
-			topSizer->Add(new wxStaticLine(&dlg), 0, wxEXPAND | wxALL, 10);
-			wxCheckBox *upnpCheck =
-				new wxCheckBox(&dlg, wxID_ANY, _("Use UPnP to open ports in your router"));
-			upnpCheck->SetValue(true);
-			topSizer->Add(upnpCheck, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
-#endif
-
-			if (wxSizer *btnSizer = dlg.CreateButtonSizer(wxOK | wxCANCEL))
-				topSizer->Add(btnSizer, 0, wxEXPAND | wxALL, 10);
-
-			dlg.SetSizerAndFit(topSizer);
-
-			if (dlg.ShowModal() == wxID_OK) {
-				if (serverMetCheck && serverMetCheck->GetValue()) {
-					serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
-				}
-				if (nodesDatCheck && nodesDatCheck->GetValue()) {
-					UpdateNotesDat(thePrefs::GetKadNodesUrl());
-				}
-#ifdef ENABLE_UPNP
-				// UPnP was already configured by ReinitializeNetwork()
-				// using the (default-off on first run) preference, so we
-				// must both persist the user's choice and start UPnP now
-				// for the current session.
-				thePrefs::SetUPnPEnabled(upnpCheck->GetValue());
-				glob_prefs->Save();
-				StartUPnP();
-#endif
-			}
-#else
-			if (needServerMet) {
-				serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
-			}
-			if (needNodesDat) {
-				UpdateNotesDat(thePrefs::GetKadNodesUrl());
-			}
-#endif
+		if (needServerMet) {
+			serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
 		}
+		if (needNodesDat) {
+			UpdateNotesDat(thePrefs::GetKadNodesUrl());
+		}
+#endif
 	}
 
 	// Autoconnect if that option is enabled

@@ -24,6 +24,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		EncryptedStreamSocket.cpp
 		EncryptedDatagramSocket.cpp
 		ExternalConn.cpp
+		FirstRunWizard.cpp
 		FriendList.cpp
 		IPFilter.cpp
 		KnownFileList.cpp
