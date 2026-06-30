@@ -151,6 +151,20 @@ private:
 	void OnRightClick(wxListEvent &event);
 
 	/**
+	 * Event-handler for double-clicks (item activation) on the list-items.
+	 *
+	 * Opens the activated file with the video player configured in
+	 * Preferences -> Misc -> Video player (falling back to the platform's
+	 * default file-association opener when none is set).
+	 */
+	void OnItemActivated(wxListEvent &event);
+
+	/**
+	 * Launches the given file using the configured video player.
+	 */
+	void PreviewFile(CKnownFile *file);
+
+	/**
 	 * Event-handler for right-clicks on the list-items.
 	 */
 	void OnGetFeedback(wxCommandEvent &event);

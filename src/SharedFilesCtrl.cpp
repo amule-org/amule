@@ -39,12 +39,16 @@
 #include "BarShader.h"      // Needed for CBarShader
 #include "DataToText.h"     // Needed for PriorityToStr
 #include "GuiEvents.h"      // Needed for CoreNotify_*
-#include "MuleCollection.h" // Needed for CMuleCollection
-#include "DownloadQueue.h"  // Needed for CDownloadQueue
-#include "TransferWnd.h"    // Needed for CTransferWnd
+#include "MuleCollection.h"      // Needed for CMuleCollection
+#include "DownloadQueue.h"       // Needed for CDownloadQueue
+#include "TransferWnd.h"         // Needed for CTransferWnd
+#include "TerminationProcess.h"  // Needed for CTerminationProcess
+#include <common/Format.h>       // Needed for CFormat
+#include "Logger.h"              // Needed for AddLogLineC
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
+	EVT_LIST_ITEM_ACTIVATED(-1, CSharedFilesCtrl::OnItemActivated)
 
 	EVT_MENU(MP_PRIOVERYLOW, CSharedFilesCtrl::OnSetPriority)
 	EVT_MENU(MP_PRIOLOW, CSharedFilesCtrl::OnSetPriority)
@@ -186,6 +190,97 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		delete m_menu;
 
 		m_menu = NULL;
+	}
+}
+
+#ifdef __WINDOWS__
+#define QUOTE "\""
+#else
+#define QUOTE "\'"
+#endif
+
+void CSharedFilesCtrl::OnItemActivated(wxListEvent &event)
+{
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(event.GetIndex()));
+	if (file != NULL) {
+		PreviewFile(file);
+	}
+}
+
+void CSharedFilesCtrl::PreviewFile(CKnownFile *file)
+{
+	wxString command;
+	if (thePrefs::GetVideoPlayer().IsEmpty()) {
+		// Fall back to the platform's default file-association opener
+		// (xdg-open on Linux/BSD, open on macOS, default shell handler
+		// on Windows). A custom player from Preferences -> Misc ->
+		// Video player still takes precedence.
+		// Command names (open / xdg-open) intentionally stay untranslated
+		// -- they're literal tool names the user would type on a shell.
+		wxString defaultPreview;
+#if defined(__WXMAC__) || defined(__APPLE__)
+		defaultPreview = "open";
+		command = "open " QUOTE "$file" QUOTE;
+#elif defined(__WXMSW__) || defined(_WIN32)
+		defaultPreview = _("the default Windows shell handler");
+		command = "cmd /c start \"\" " QUOTE "$file" QUOTE;
+#else
+		defaultPreview = "xdg-open";
+		command = "xdg-open " QUOTE "$file" QUOTE;
+#endif
+		wxMessageBox(CFormat(_("To prevent this warning to show up in every preview,\nset your "
+				       "preferred video player in preferences (default is %s).")) %
+				     defaultPreview,
+			_("File preview"),
+			wxOK,
+			this);
+	} else {
+		command = thePrefs::GetVideoPlayer();
+	}
+
+	wxString fullPath; // File name with full path
+	wxString fileName; // File name only, without path
+
+	if (file->IsPartFile()) {
+		// Incomplete file: preview the partially downloaded data in temp.
+		CPartFile *partFile = static_cast<CPartFile *>(file);
+		fileName = partFile->GetPartMetFileName().RemoveExt().GetRaw();
+		fullPath = thePrefs::GetTempDir()
+				   .JoinPaths(partFile->GetPartMetFileName().RemoveExt())
+				   .GetRaw();
+	} else {
+		fileName = file->GetFileName().GetRaw();
+		fullPath = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
+	}
+
+	// Compatibility with the player command's magic strings.
+	if (!command.Replace("$file", "%PARTFILE")) {
+		if ((command.Find("%PARTFILE") == wxNOT_FOUND) &&
+			(command.Find("%PARTNAME") == wxNOT_FOUND)) {
+			// No magic string, so we just append the filename to the player command.
+			// Need to use quotes in case filename contains spaces.
+			command << " " << QUOTE << "%PARTFILE" << QUOTE;
+		}
+	}
+
+#ifndef __WINDOWS__
+	// We have to escape quote characters in the file name, otherwise arbitrary
+	// options could be passed to the player.
+	fullPath.Replace(QUOTE, "\\" QUOTE);
+	fileName.Replace(QUOTE, "\\" QUOTE);
+#endif
+
+	command.Replace("%PARTFILE", fullPath);
+	command.Replace("%PARTNAME", fileName);
+
+	// We can't use wxShell here, it blocks the app.
+	CTerminationProcess *p = new CTerminationProcess(command);
+	int ret = wxExecute(command, wxEXEC_ASYNC, p);
+	bool ok = ret > 0;
+	if (!ok) {
+		delete p;
+		AddLogLineC(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) %
+			    command);
 	}
 }
 
