@@ -38,6 +38,7 @@
 #include <wx/spinctrl.h>
 #include <wx/button.h>
 #include <wx/dirdlg.h>
+#include <wx/msgdlg.h>
 #include <wx/valtext.h>
 
 #include "amule.h"       // Needed for theApp / glob_prefs
@@ -60,6 +61,16 @@ namespace
 // The upload limit is ~80% of the raw upstream capacity (leaving ACK /
 // protocol headroom), while the download limit is left unlimited (0)
 // and only the download capacity carries the line's raw downstream rate.
+//
+// Each profile also carries its own peer limits (maxConnections /
+// maxConnectionsPer5Sec / maxSourcesPerFile). A slow uplink can only
+// usefully feed a handful of peers, so a modest line keeps fewer
+// sources and connections rather than being swamped by half-open
+// connection overhead, while a fat uplink is allowed many more. These
+// are scaled to each line's *upstream capacity* directly here, instead
+// of being re-derived from the upload-limit field through coarse
+// kByte/s buckets — modern presets all sit far above the old top
+// bucket, so every line would otherwise collapse onto the same maximum.
 struct ConnectionProfile
 {
 	const char *label;
@@ -67,27 +78,24 @@ struct ConnectionProfile
 	int downloadKBs;    // download limit (0 == unlimited)
 	int uploadCapKBs;   // raw upstream line capacity
 	int downloadCapKBs; // raw downstream line capacity
+	int maxConnections;
+	int maxConnectionsPer5Sec;
+	int maxSourcesPerFile;
 };
 
 // Labels are wxTRANSLATE-marked (so xgettext extracts them) and
 // translated at display time with wxGetTranslation below.
 const ConnectionProfile s_profiles[] = {
-	{wxTRANSLATE("Mobile / 4G–5G (20 / 5 Mbit)"), 500, 0, 625, 2500},
-	{wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000},
-	{wxTRANSLATE("VDSL (50 / 10 Mbit)"), 1000, 0, 1250, 6250},
-	{wxTRANSLATE("Cable (200 / 20 Mbit)"), 2000, 0, 2500, 25000},
-	{wxTRANSLATE("Fibre 300 (300 / 100 Mbit)"), 10000, 0, 12500, 37500},
-	{wxTRANSLATE("Fibre Gigabit (1000 / 1000 Mbit)"), 0, 0, 125000, 125000},
+	{wxTRANSLATE("Mobile / 4G-5G (20 / 5 Mbit)"), 500, 0, 625, 2500, 300, 20, 400},
+	{wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000, 200, 15, 250},
+	{wxTRANSLATE("VDSL (50 / 10 Mbit)"), 1000, 0, 1250, 6250, 400, 25, 500},
+	{wxTRANSLATE("Cable (200 / 20 Mbit)"), 2000, 0, 2500, 25000, 500, 30, 600},
+	{wxTRANSLATE("Fibre 300 (300 / 100 Mbit)"), 10000, 0, 12500, 37500, 500, 40, 800},
+	{wxTRANSLATE("Fibre Gigabit (1000 / 1000 Mbit)"), 0, 0, 125000, 125000, 500, 50, 1000},
 };
 
 const size_t s_profileCount = sizeof(s_profiles) / sizeof(s_profiles[0]);
 
-// Derived "max sources / max connections" recommendation tiers, keyed
-// on the upload limit (kByte/s). eMule derives these the same way: a
-// slow uplink can only usefully feed a handful of peers, so capping
-// sources and connections keeps a small line from being swamped by
-// half-open connection overhead, while a fat uplink is allowed many
-// more. An unlimited (0) upload limit is treated as a fast line.
 struct DerivedLimits
 {
 	int maxConnections;
@@ -95,21 +103,56 @@ struct DerivedLimits
 	int maxSourcesPerFile;
 };
 
+// Keep the connection count within the OS-aware ceiling: on legacy
+// Windows the half-open-connection limit makes a flat 500 (plus a hot
+// 50-per-5s) too aggressive, so the recommendation pulls the top end
+// back down to something the platform can actually sustain.
+DerivedLimits ClampLimits(DerivedLimits d)
+{
+	const int recommended = thePrefs::GetRecommendedMaxConnections();
+	if (recommended > 0 && d.maxConnections > recommended) {
+		d.maxConnections = recommended;
+	}
+	return d;
+}
+
+// Recommended peer limits for the current upload setting. A preset
+// carries its own per-line numbers (see the table above); for a
+// manually-entered upload limit ("Other") we still bucket, but on a
+// modern kByte/s scale rather than the old <4/7/13/25/50 tiers — those
+// all fall below today's typical uplinks, so every line would otherwise
+// land in the top bucket. An unlimited (0) upload limit is treated as a
+// fast line. The caller clamps the result through ClampLimits().
 DerivedLimits DeriveLimits(int uploadKBs)
 {
-	const int up = (uploadKBs <= 0) ? 1000 : uploadKBs;
-	if (up < 4) {
-		return {80, 7, 120};
-	} else if (up < 7) {
-		return {120, 10, 200};
-	} else if (up < 13) {
-		return {200, 15, 300};
-	} else if (up < 25) {
+	const int up = (uploadKBs <= 0) ? 100000 : uploadKBs;
+	if (up < 50) {
+		return {200, 15, 250};
+	} else if (up < 200) {
 		return {300, 20, 400};
-	} else if (up < 50) {
-		return {400, 30, 500};
+	} else if (up < 1000) {
+		return {400, 25, 500};
+	} else if (up < 2500) {
+		return {500, 30, 600};
+	} else if (up < 10000) {
+		return {500, 40, 800};
 	}
 	return {500, 50, 1000};
+}
+
+// Resolve the limits for the current wizard state: the selected
+// preset's own numbers when a profile is active, otherwise the
+// manually-derived bucket. Always clamped to the OS recommendation.
+DerivedLimits ResolveLimits(int profileSel, int uploadKBs)
+{
+	DerivedLimits d;
+	if (profileSel >= 0 && profileSel < (int)s_profileCount) {
+		const ConnectionProfile &p = s_profiles[profileSel];
+		d = {p.maxConnections, p.maxConnectionsPer5Sec, p.maxSourcesPerFile};
+	} else {
+		d = DeriveLimits(uploadKBs);
+	}
+	return ClampLimits(d);
 }
 
 enum
@@ -284,10 +327,12 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 		wxBOTTOM,
 		8);
 
-	// Labels reuse the existing Networks-panel strings (PreferencesConnectionTab)
-	// so translators don't get wizard-only duplicates; the guidance sentence
-	// above carries the "server-based / serverless" explanation.
-	m_ed2kCtrl = new wxCheckBox(page, wxID_ANY, _("ED2K"));
+	// Network labels reuse existing catalog strings so translators don't get
+	// wizard-only duplicates; the guidance sentence above carries the
+	// "server-based / serverless" explanation. Use the project's "eD2k"
+	// spelling (an existing catalog string) rather than the Networks panel's
+	// mis-cased "ED2K".
+	m_ed2kCtrl = new wxCheckBox(page, wxID_ANY, _("eD2k"));
 	m_ed2kCtrl->SetValue(thePrefs::GetNetworkED2K());
 	sizer->Add(m_ed2kCtrl, 0, wxBOTTOM, 4);
 
@@ -298,9 +343,9 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	wxFlexGridSizer *grid = new wxFlexGridSizer(2, 2, 6, 8);
 	grid->AddGrowableCol(1);
 
-	// Port labels reuse the existing Ports-panel strings rather than coining
-	// new wizard-only wording for the same controls.
-	grid->Add(new wxStaticText(page, wxID_ANY, _("Standard TCP Port ")),
+	// Port labels mirror the existing Ports-panel wording rather than coining
+	// new wizard-only phrasing for the same controls (trailing spaces trimmed).
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Standard TCP Port")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_tcpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
@@ -308,7 +353,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	m_tcpPortCtrl->SetValue(thePrefs::GetPort());
 	grid->Add(m_tcpPortCtrl, 0, wxEXPAND);
 
-	grid->Add(new wxStaticText(page, wxID_ANY, _("Extended UDP port (Kad / global search) ")),
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Extended UDP port (Kad / global search)")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_udpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
@@ -432,7 +477,7 @@ void CFirstRunWizard::UpdateDerivedLabel()
 	if (!m_derivedLabel || !m_uploadCtrl) {
 		return;
 	}
-	DerivedLimits d = DeriveLimits(m_uploadCtrl->GetValue());
+	DerivedLimits d = ResolveLimits(m_speedCtrl->GetSelection(), m_uploadCtrl->GetValue());
 	m_derivedLabel->SetLabel(CFormat(_("Based on this, aMule will allow up to %i sources per file\n"
 					   "and %i client connections."))
 		% d.maxSourcesPerFile % d.maxConnections);
@@ -514,7 +559,7 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 		thePrefs::SetMaxGraphDownloadRate(downCap);
 	}
 
-	DerivedLimits d = DeriveLimits(up);
+	DerivedLimits d = ResolveLimits(sel, up);
 	thePrefs::SetMaxConnections(d.maxConnections);
 	thePrefs::SetMaxConsPerFive(d.maxConnectionsPer5Sec);
 	thePrefs::SetMaxSourcesPerFile(d.maxSourcesPerFile);
@@ -565,6 +610,23 @@ Result Run(wxWindow *parent, bool needServerMet, bool needNodesDat)
 	res.finished = wizard.RunIt();
 	if (res.finished) {
 		wizard.Apply(res);
+	} else {
+		// The user cancelled. Only Finish records FirstRunWizardDone, so
+		// without this the wizard would reappear on every launch with no
+		// way to dismiss it for good. Offer the same persistent
+		// "don't show again" choice the AppImage integration prompt uses
+		// (see AppImageIntegration.cpp / AppImageIntegrationDeclined). Yes
+		// (re-show) is the safe default; No remembers the dismissal.
+		wxMessageDialog ask(parent,
+			_("Show this setup wizard again the next time you start aMule?"),
+			_("Setup not finished"),
+			wxYES_NO | wxICON_QUESTION);
+		if (ask.ShowModal() == wxID_NO) {
+			thePrefs::SetFirstRunWizardDone(true);
+			if (theApp->glob_prefs) {
+				theApp->glob_prefs->Save();
+			}
+		}
 	}
 	return res;
 }

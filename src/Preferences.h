@@ -299,6 +299,10 @@ public:
 
 	static uint32 GetMaxDownload() { return s_maxdownload; }
 	static uint16 GetMaxConnections() { return s_maxconnections; }
+	// OS-aware ceiling for the connection count (accounts for the
+	// half-open-connection limit on legacy Windows). Used as the default
+	// MaxConnections and to clamp the first-run wizard's derived limits.
+	static int32 GetRecommendedMaxConnections();
 	static uint16 GetMaxSourcePerFile() { return s_maxsourceperfile; }
 	static uint16 GetMaxSourcePerFileSoft()
 	{
@@ -728,8 +732,6 @@ public:
 	static void SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
 
 protected:
-	static int32 GetRecommendedMaxConnections();
-
 	//! Temporary storage for statistic-colors.
 	static unsigned long s_colors[cntStatColors];
 	//! Reference for checking if the colors has changed.
