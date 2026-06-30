@@ -47,31 +47,37 @@
 
 namespace
 {
-// A predefined connection profile. Capacities are stored as the
-// suggested aMule rate *limits* in kByte/s (0 == unlimited), which is
-// exactly what the preferences expect, so picking a profile just fills
-// the two spin controls. The values mirror the common eMule connection
-// list: the upload figure is ~80% of the line's raw upstream capacity
-// (leaving ACK / protocol headroom), the download figure is the raw
-// downstream capacity.
+// A predefined connection profile. Each profile carries two distinct
+// pairs of kByte/s values:
+//   * the suggested rate *limits* (uploadKBs / downloadKBs, 0 ==
+//     unlimited), which fill the two spin controls and become
+//     MaxUpload / MaxDownload; and
+//   * the raw line *capacity* (uploadCapKBs / downloadCapKBs), which
+//     becomes MaxGraphUploadRate / MaxGraphDownloadRate -- the value
+//     that scales the statistics graphs and feeds the dynamic-upload
+//     logic. Capacity is never 0, so a fast (unlimited-limit) line
+//     still gets sensibly scaled graphs instead of the old default.
+// The upload limit is ~80% of the raw upstream capacity (leaving ACK /
+// protocol headroom), while the download limit is left unlimited (0)
+// and only the download capacity carries the line's raw downstream rate.
 struct ConnectionProfile
 {
 	const char *label;
-	int uploadKBs;	 // 0 == unlimited
-	int downloadKBs; // 0 == unlimited
+	int uploadKBs;	    // upload limit (0 == unlimited)
+	int downloadKBs;    // download limit (0 == unlimited)
+	int uploadCapKBs;   // raw upstream line capacity
+	int downloadCapKBs; // raw downstream line capacity
 };
 
 // Labels are wxTRANSLATE-marked (so xgettext extracts them) and
 // translated at display time with wxGetTranslation below.
 const ConnectionProfile s_profiles[] = {
-	{wxTRANSLATE("Modem (56k)"), 4, 6},
-	{wxTRANSLATE("ISDN (64k)"), 6, 7},
-	{wxTRANSLATE("ISDN dual (128k)"), 12, 14},
-	{wxTRANSLATE("DSL 1 Mbit (256k up)"), 25, 100},
-	{wxTRANSLATE("DSL 2 Mbit (384k up)"), 38, 200},
-	{wxTRANSLATE("DSL 6 Mbit (576k up)"), 57, 600},
-	{wxTRANSLATE("DSL 16 Mbit (1 Mbit up)"), 100, 1500},
-	{wxTRANSLATE("Cable / Fibre (fast)"), 0, 0},
+	{wxTRANSLATE("Mobile / 4G–5G (20 / 5 Mbit)"), 500, 0, 625, 2500},
+	{wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000},
+	{wxTRANSLATE("VDSL (50 / 10 Mbit)"), 1000, 0, 1250, 6250},
+	{wxTRANSLATE("Cable (200 / 20 Mbit)"), 2000, 0, 2500, 25000},
+	{wxTRANSLATE("Fibre 300 (300 / 100 Mbit)"), 10000, 0, 12500, 37500},
+	{wxTRANSLATE("Fibre Gigabit (1000 / 1000 Mbit)"), 0, 0, 125000, 125000},
 };
 
 const size_t s_profileCount = sizeof(s_profiles) / sizeof(s_profiles[0]);
@@ -278,18 +284,23 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 		wxBOTTOM,
 		8);
 
-	m_ed2kCtrl = new wxCheckBox(page, wxID_ANY, _("Enable eD2k (server-based) network"));
+	// Labels reuse the existing Networks-panel strings (PreferencesConnectionTab)
+	// so translators don't get wizard-only duplicates; the guidance sentence
+	// above carries the "server-based / serverless" explanation.
+	m_ed2kCtrl = new wxCheckBox(page, wxID_ANY, _("ED2K"));
 	m_ed2kCtrl->SetValue(thePrefs::GetNetworkED2K());
 	sizer->Add(m_ed2kCtrl, 0, wxBOTTOM, 4);
 
-	m_kadCtrl = new wxCheckBox(page, wxID_ANY, _("Enable Kad (serverless) network"));
+	m_kadCtrl = new wxCheckBox(page, wxID_ANY, _("Kademlia"));
 	m_kadCtrl->SetValue(thePrefs::GetNetworkKademlia());
 	sizer->Add(m_kadCtrl, 0, wxBOTTOM, 12);
 
 	wxFlexGridSizer *grid = new wxFlexGridSizer(2, 2, 6, 8);
 	grid->AddGrowableCol(1);
 
-	grid->Add(new wxStaticText(page, wxID_ANY, _("TCP port (incoming connections):")),
+	// Port labels reuse the existing Ports-panel strings rather than coining
+	// new wizard-only wording for the same controls.
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Standard TCP Port ")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_tcpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
@@ -297,7 +308,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	m_tcpPortCtrl->SetValue(thePrefs::GetPort());
 	grid->Add(m_tcpPortCtrl, 0, wxEXPAND);
 
-	grid->Add(new wxStaticText(page, wxID_ANY, _("UDP port (searches & source queries):")),
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Extended UDP port (Kad / global search) ")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_udpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
@@ -309,7 +320,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 
 #ifdef ENABLE_UPNP
 	sizer->Add(new wxStaticLine(page), 0, wxEXPAND | wxBOTTOM, 8);
-	m_upnpCtrl = new wxCheckBox(page, wxID_ANY, _("Automatically open these ports on my router (UPnP)"));
+	m_upnpCtrl = new wxCheckBox(page, wxID_ANY, _("Enable UPnP for router port forwarding"));
 	m_upnpCtrl->SetValue(true);
 	sizer->Add(m_upnpCtrl, 0, wxBOTTOM, 4);
 	sizer->Add(new wxStaticText(page,
@@ -379,24 +390,33 @@ wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 		wxBOTTOM,
 		12);
 
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("Completed downloads (Incoming):")),
+	// Folder labels and Browse buttons reuse the existing Directories-panel
+	// strings (PreferencesDirectoriesTab) instead of new wizard-only wording.
+	sizer->Add(new wxStaticText(page, wxID_ANY, _("Destination folder for downloads")),
 		0,
 		wxBOTTOM,
 		4);
 	wxBoxSizer *incRow = new wxBoxSizer(wxHORIZONTAL);
 	m_incomingCtrl = new wxTextCtrl(page, wxID_ANY, thePrefs::GetIncomingDir().GetRaw());
 	incRow->Add(m_incomingCtrl, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
-	incRow->Add(new wxButton(page, ID_FRW_BROWSE_INCOMING, _("Browse...")), 0);
-	sizer->Add(incRow, 0, wxEXPAND | wxBOTTOM, 12);
+	incRow->Add(new wxButton(page, ID_FRW_BROWSE_INCOMING, _("Browse")), 0);
+	sizer->Add(incRow, 0, wxEXPAND | wxBOTTOM, 4);
 
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("Files being downloaded (Temp):")),
+	// Warn that everything dropped in the Incoming folder is shared, reusing
+	// the same hint shown on the Directories preferences panel.
+	sizer->Add(new wxStaticText(page, wxID_ANY, _("(All files in this folder are shared with other peers)")),
+		0,
+		wxBOTTOM,
+		12);
+
+	sizer->Add(new wxStaticText(page, wxID_ANY, _("Folder for temporary download files")),
 		0,
 		wxBOTTOM,
 		4);
 	wxBoxSizer *tmpRow = new wxBoxSizer(wxHORIZONTAL);
 	m_tempCtrl = new wxTextCtrl(page, wxID_ANY, thePrefs::GetTempDir().GetRaw());
 	tmpRow->Add(m_tempCtrl, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
-	tmpRow->Add(new wxButton(page, ID_FRW_BROWSE_TEMP, _("Browse...")), 0);
+	tmpRow->Add(new wxButton(page, ID_FRW_BROWSE_TEMP, _("Browse")), 0);
 	sizer->Add(tmpRow, 0, wxEXPAND);
 
 	page->SetSizer(sizer);
@@ -438,8 +458,8 @@ void CFirstRunWizard::OnUploadChanged(wxSpinEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::OnBrowseIncoming(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString dir =
-		::wxDirSelector(_("Select the Incoming directory"), m_incomingCtrl->GetValue(), 0, wxDefaultPosition, this);
+	wxString dir = ::wxDirSelector(
+		_("Destination folder for downloads"), m_incomingCtrl->GetValue(), 0, wxDefaultPosition, this);
 	if (!dir.IsEmpty()) {
 		m_incomingCtrl->SetValue(dir);
 	}
@@ -447,8 +467,8 @@ void CFirstRunWizard::OnBrowseIncoming(wxCommandEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::OnBrowseTemp(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString dir =
-		::wxDirSelector(_("Select the Temp directory"), m_tempCtrl->GetValue(), 0, wxDefaultPosition, this);
+	wxString dir = ::wxDirSelector(
+		_("Folder for temporary download files"), m_tempCtrl->GetValue(), 0, wxDefaultPosition, this);
 	if (!dir.IsEmpty()) {
 		m_tempCtrl->SetValue(dir);
 	}
@@ -468,6 +488,31 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 	const int down = m_downloadCtrl->GetValue();
 	thePrefs::SetMaxUpload(up);
 	thePrefs::SetMaxDownload(down);
+
+	// Line capacity (MaxGraphUploadRate / MaxGraphDownloadRate) is a
+	// separate value from the limits above: it scales the statistics
+	// graphs and feeds the dynamic-upload logic. If a preset is still
+	// selected, take its raw line capacity; otherwise the user typed
+	// values by hand, so estimate from the limits (upload limits sit
+	// ~80% below the raw rate, i.e. cap = limit / 0.8 = limit * 5 / 4).
+	// A 0 (unlimited) manual limit tells us nothing, so the existing
+	// capacity is kept rather than zeroing it.
+	int upCap = 0;
+	int downCap = 0;
+	const int sel = m_speedCtrl->GetSelection();
+	if (sel >= 0 && sel < (int)s_profileCount) {
+		upCap = s_profiles[sel].uploadCapKBs;
+		downCap = s_profiles[sel].downloadCapKBs;
+	} else {
+		upCap = (up > 0) ? (up * 5 + 3) / 4 : (int)thePrefs::GetMaxGraphUploadRate();
+		downCap = (down > 0) ? down : (int)thePrefs::GetMaxGraphDownloadRate();
+	}
+	if (upCap > 0) {
+		thePrefs::SetMaxGraphUploadRate(upCap);
+	}
+	if (downCap > 0) {
+		thePrefs::SetMaxGraphDownloadRate(downCap);
+	}
 
 	DerivedLimits d = DeriveLimits(up);
 	thePrefs::SetMaxConnections(d.maxConnections);
@@ -492,6 +537,12 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 	if (!tmp.IsEmpty()) {
 		thePrefs::SetTempDir(CPath(tmp));
 	}
+
+	// Record that the wizard ran to completion, so it is not shown again
+	// on the next launch. This is only reached when the user pressed
+	// Finish (Run() calls Apply() only then), so a cancelled run leaves
+	// the flag false and the wizard reappears next time.
+	thePrefs::SetFirstRunWizardDone(true);
 
 	if (theApp->glob_prefs) {
 		theApp->glob_prefs->Save();

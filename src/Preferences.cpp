@@ -81,6 +81,7 @@ CPreferences::CFGList CPreferences::s_MiscList;
 
 wxString CPreferences::s_configDir;
 bool CPreferences::s_firstRun = false;
+bool CPreferences::s_firstRunWizardDone = false;
 
 /* Proxy */
 CProxyData CPreferences::s_ProxyData;
@@ -1003,6 +1004,20 @@ CPreferences::CPreferences()
 	// the remote GUI compiles CLIENT_GUI and keeps the default false.
 #ifndef CLIENT_GUI
 	s_firstRun = !wxFileExists(fullpath);
+
+	// Migration for installs that predate the explicit first-run flag:
+	// they have a populated config but no /eMule/FirstRunWizardDone
+	// entry. Mark the wizard as already done for them so it never
+	// retroactively pops up. A genuine fresh install (no preferences.dat)
+	// is left alone, so the wizard runs once and then persists its own
+	// flag via FirstRunWizard::Apply(). LoadAllItems() has already run by
+	// this point, so the entry is the authoritative signal.
+	if (!s_firstRun) {
+		wxConfigBase *cfg = wxConfigBase::Get();
+		if (cfg && !cfg->HasEntry("/eMule/FirstRunWizardDone")) {
+			s_firstRunWizardDone = true;
+		}
+	}
 #endif
 
 	CFile preffile;
@@ -1329,6 +1344,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(new Cfg_Bool("/eMule/MessageUseCaptchas", s_IsChatCaptchaEnabled, true));
 	s_MiscList.push_back(
 		new Cfg_Bool("/GUI/AppImageIntegrationDeclined", s_appimageIntegrationDeclined, false));
+	s_MiscList.push_back(
+		new Cfg_Bool("/eMule/FirstRunWizardDone", s_firstRunWizardDone, false));
 
 	NewCfgItem(IDC_FILTERCOMMENTS, (new Cfg_Bool("/eMule/FilterComments", s_FilterComments, false)));
 	NewCfgItem(IDC_COMMENTWORD, (new Cfg_Str("/eMule/CommentFilter", s_CommentFilterString, "")));

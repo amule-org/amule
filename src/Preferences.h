@@ -224,6 +224,16 @@ public:
 	// once. Always false in the remote GUI, which has no local config.
 	static bool IsFirstRun() { return s_firstRun; }
 
+	// True once the first-run setup wizard has actually been completed
+	// (the user pressed Finish). Unlike IsFirstRun(), which is merely
+	// inferred from the absence of preferences.dat, this is an explicit
+	// persisted flag (/eMule/FirstRunWizardDone, written in
+	// FirstRunWizard::Apply): it distinguishes a completed run from a
+	// cancelled one and lets the wizard be re-triggered simply by
+	// clearing the flag. Always false in the remote GUI.
+	static bool IsFirstRunWizardDone() { return s_firstRunWizardDone; }
+	static void SetFirstRunWizardDone(bool val) { s_firstRunWizardDone = val; }
+
 	static bool Score() { return s_scorsystem; }
 	static void SetScoreSystem(bool val) { s_scorsystem = val; }
 	static bool Reconnect() { return s_reconnect; }
@@ -740,6 +750,7 @@ private:
 protected:
 	static wxString s_configDir;
 	static bool s_firstRun;
+	static bool s_firstRunWizardDone;
 
 	////////////// USER
 	static wxString s_nick;

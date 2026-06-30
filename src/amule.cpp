@@ -652,9 +652,13 @@ bool CamuleApp::OnInit()
 	// hands back which bootstrap files to fetch, since those downloads
 	// need the (not-yet-created) server list and sockets.
 #ifndef AMULE_DAEMON
+	bool firstRunWizardShown = false;
 	bool wizardWantsServerMet = false;
 	bool wizardWantsNodesDat = false;
-	if (thePrefs::IsFirstRun()) {
+	// Gate on the explicit "wizard completed" flag rather than the
+	// inferred first-run flag: a cancelled wizard leaves the flag unset,
+	// so it reappears next launch until the user actually finishes it.
+	if (!thePrefs::IsFirstRunWizardDone()) {
 		// On a fresh install the server list is always empty and
 		// nodes.dat is absent, so offer both downloads as needed.
 		const bool needServerMet = thePrefs::GetNetworkED2K();
@@ -662,6 +666,7 @@ bool CamuleApp::OnInit()
 					  !wxFileExists(thePrefs::GetConfigDir() + "nodes.dat");
 
 		FirstRunWizard::Result wiz = FirstRunWizard::Run(NULL, needServerMet, needNodesDat);
+		firstRunWizardShown = true;
 		wizardWantsServerMet = wiz.downloadServerMet;
 		wizardWantsNodesDat = wiz.downloadNodesDat;
 	}
@@ -810,7 +815,7 @@ bool CamuleApp::OnInit()
 
 	{
 #ifndef AMULE_DAEMON
-		if (thePrefs::IsFirstRun()) {
+		if (firstRunWizardShown) {
 			// The first-run wizard already collected the user's
 			// bootstrap choices (and UPnP / port settings, which were
 			// applied before ReinitializeNetwork ran). Act on them now
