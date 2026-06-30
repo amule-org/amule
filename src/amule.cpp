@@ -788,34 +788,37 @@ bool CamuleApp::OnInit()
 
 		if (needServerMet || needNodesDat) {
 #ifndef AMULE_DAEMON
-			wxDialog dlg(static_cast<wxWindow *>(theApp->amuledlg), wxID_ANY,
-				_("Network bootstrap"));
+			wxDialog dlg(
+				static_cast<wxWindow *>(theApp->amuledlg), wxID_ANY, _("Network bootstrap"));
 			wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
 
-			topSizer->Add(new wxStaticText(&dlg, wxID_ANY,
+			topSizer->Add(new wxStaticText(&dlg,
+					      wxID_ANY,
 					      _("aMule has detected missing network bootstrap "
 						"files.\nSelect which ones to download:")),
-				0, wxALL, 10);
+				0,
+				wxALL,
+				10);
 
 			wxCheckBox *serverMetCheck = NULL;
 			if (needServerMet) {
-				serverMetCheck = new wxCheckBox(&dlg, wxID_ANY,
-					_("eD2k server list (server.met)"));
+				serverMetCheck =
+					new wxCheckBox(&dlg, wxID_ANY, _("eD2k server list (server.met)"));
 				serverMetCheck->SetValue(true);
 				topSizer->Add(serverMetCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
 			}
 			wxCheckBox *nodesDatCheck = NULL;
 			if (needNodesDat) {
-				nodesDatCheck = new wxCheckBox(&dlg, wxID_ANY,
-					_("Kad bootstrap nodes (nodes.dat)"));
+				nodesDatCheck =
+					new wxCheckBox(&dlg, wxID_ANY, _("Kad bootstrap nodes (nodes.dat)"));
 				nodesDatCheck->SetValue(true);
 				topSizer->Add(nodesDatCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
 			}
 
 #ifdef ENABLE_UPNP
 			topSizer->Add(new wxStaticLine(&dlg), 0, wxEXPAND | wxALL, 10);
-			wxCheckBox *upnpCheck = new wxCheckBox(&dlg, wxID_ANY,
-				_("Use UPnP to open ports in your router"));
+			wxCheckBox *upnpCheck =
+				new wxCheckBox(&dlg, wxID_ANY, _("Use UPnP to open ports in your router"));
 			upnpCheck->SetValue(true);
 			topSizer->Add(upnpCheck, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
 #endif
@@ -827,8 +830,7 @@ bool CamuleApp::OnInit()
 
 			if (dlg.ShowModal() == wxID_OK) {
 				if (serverMetCheck && serverMetCheck->GetValue()) {
-					serverlist->UpdateServerMetFromURL(
-						thePrefs::GetEd2kServersUrl());
+					serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
 				}
 				if (nodesDatCheck && nodesDatCheck->GetValue()) {
 					UpdateNotesDat(thePrefs::GetKadNodesUrl());
