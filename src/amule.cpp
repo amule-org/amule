@@ -837,6 +837,7 @@ bool CamuleApp::OnInit()
 				}
 #ifdef ENABLE_UPNP
 				thePrefs::SetUPnPEnabled(upnpCheck->GetValue());
+				glob_prefs->Save();
 #endif
 			}
 #else
@@ -848,6 +849,7 @@ bool CamuleApp::OnInit()
 			}
 #ifdef ENABLE_UPNP
 			thePrefs::SetUPnPEnabled(true);
+			glob_prefs->Save();
 #endif
 #endif
 		}
