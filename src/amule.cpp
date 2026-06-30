@@ -36,7 +36,11 @@
 
 #include <wx/cmdline.h> // Needed for wxCmdLineParser
 #ifndef AMULE_DAEMON
-#include <wx/choicdlg.h> // Needed for wxMultiChoiceDialog (GUI-only)
+#include <wx/dialog.h>   // Needed for the bootstrap dialog (GUI-only)
+#include <wx/sizer.h>    // Needed for wxBoxSizer (GUI-only)
+#include <wx/stattext.h> // Needed for wxStaticText (GUI-only)
+#include <wx/statline.h> // Needed for wxStaticLine (GUI-only)
+#include <wx/checkbox.h> // Needed for wxCheckBox (GUI-only)
 #endif
 #include <wx/config.h> // Do_not_auto_remove (win32)
 #include <wx/fileconf.h>
@@ -784,37 +788,54 @@ bool CamuleApp::OnInit()
 
 		if (needServerMet || needNodesDat) {
 #ifndef AMULE_DAEMON
-			wxArrayString choices;
-			if (needServerMet)
-				choices.Add(_("eD2k server list (server.met)"));
-			if (needNodesDat)
-				choices.Add(_("Kad bootstrap nodes (nodes.dat)"));
+			wxDialog dlg(static_cast<wxWindow *>(theApp->amuledlg), wxID_ANY,
+				_("Network bootstrap"));
+			wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
 
-			wxArrayInt defaults;
-			for (size_t i = 0; i < choices.GetCount(); ++i)
-				defaults.Add(i);
+			topSizer->Add(new wxStaticText(&dlg, wxID_ANY,
+					      _("aMule has detected missing network bootstrap "
+						"files.\nSelect which ones to download:")),
+				0, wxALL, 10);
 
-			wxMultiChoiceDialog dlg(static_cast<wxWindow *>(theApp->amuledlg),
-				_("aMule has detected missing network bootstrap files.\nSelect which ones to "
-				  "download:"),
-				_("Network bootstrap"),
-				choices);
-			dlg.SetSelections(defaults);
+			wxCheckBox *serverMetCheck = NULL;
+			if (needServerMet) {
+				serverMetCheck = new wxCheckBox(&dlg, wxID_ANY,
+					_("eD2k server list (server.met)"));
+				serverMetCheck->SetValue(true);
+				topSizer->Add(serverMetCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+			}
+			wxCheckBox *nodesDatCheck = NULL;
+			if (needNodesDat) {
+				nodesDatCheck = new wxCheckBox(&dlg, wxID_ANY,
+					_("Kad bootstrap nodes (nodes.dat)"));
+				nodesDatCheck->SetValue(true);
+				topSizer->Add(nodesDatCheck, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+			}
+
+#ifdef ENABLE_UPNP
+			topSizer->Add(new wxStaticLine(&dlg), 0, wxEXPAND | wxALL, 10);
+			wxCheckBox *upnpCheck = new wxCheckBox(&dlg, wxID_ANY,
+				_("Use UPnP to open ports in your router"));
+			upnpCheck->SetValue(true);
+			topSizer->Add(upnpCheck, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
+#endif
+
+			if (wxSizer *btnSizer = dlg.CreateButtonSizer(wxOK | wxCANCEL))
+				topSizer->Add(btnSizer, 0, wxEXPAND | wxALL, 10);
+
+			dlg.SetSizerAndFit(topSizer);
 
 			if (dlg.ShowModal() == wxID_OK) {
-				const wxArrayInt sel = dlg.GetSelections();
-				int idx = 0;
-				if (needServerMet) {
-					if (sel.Index(idx++) != wxNOT_FOUND) {
-						serverlist->UpdateServerMetFromURL(
-							thePrefs::GetEd2kServersUrl());
-					}
+				if (serverMetCheck && serverMetCheck->GetValue()) {
+					serverlist->UpdateServerMetFromURL(
+						thePrefs::GetEd2kServersUrl());
 				}
-				if (needNodesDat) {
-					if (sel.Index(idx++) != wxNOT_FOUND) {
-						UpdateNotesDat(thePrefs::GetKadNodesUrl());
-					}
+				if (nodesDatCheck && nodesDatCheck->GetValue()) {
+					UpdateNotesDat(thePrefs::GetKadNodesUrl());
 				}
+#ifdef ENABLE_UPNP
+				thePrefs::SetUPnPEnabled(upnpCheck->GetValue());
+#endif
 			}
 #else
 			if (needServerMet) {
@@ -823,6 +844,9 @@ bool CamuleApp::OnInit()
 			if (needNodesDat) {
 				UpdateNotesDat(thePrefs::GetKadNodesUrl());
 			}
+#ifdef ENABLE_UPNP
+			thePrefs::SetUPnPEnabled(true);
+#endif
 #endif
 		}
 	}
