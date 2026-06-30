@@ -836,8 +836,13 @@ bool CamuleApp::OnInit()
 					UpdateNotesDat(thePrefs::GetKadNodesUrl());
 				}
 #ifdef ENABLE_UPNP
+				// UPnP was already configured by ReinitializeNetwork()
+				// using the (default-off on first run) preference, so we
+				// must both persist the user's choice and start UPnP now
+				// for the current session.
 				thePrefs::SetUPnPEnabled(upnpCheck->GetValue());
 				glob_prefs->Save();
+				StartUPnP();
 #endif
 			}
 #else
@@ -847,10 +852,6 @@ bool CamuleApp::OnInit()
 			if (needNodesDat) {
 				UpdateNotesDat(thePrefs::GetKadNodesUrl());
 			}
-#ifdef ENABLE_UPNP
-			thePrefs::SetUPnPEnabled(true);
-			glob_prefs->Save();
-#endif
 #endif
 		}
 	}
@@ -1044,42 +1045,57 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	}
 
 #ifdef ENABLE_UPNP
-	if (thePrefs::GetUPnPEnabled()) {
-		try {
-			m_upnpMappings[0] = CUPnPPortMapping(myaddr[0].Service(),
-				"TCP",
-				thePrefs::GetUPnPECEnabled(),
-				"aMule TCP External Connections Socket");
-			m_upnpMappings[1] = CUPnPPortMapping(myaddr[1].Service(),
-				"UDP",
-				thePrefs::GetUPnPEnabled(),
-				"aMule UDP socket (TCP+3)");
-			m_upnpMappings[2] = CUPnPPortMapping(myaddr[2].Service(),
-				"TCP",
-				thePrefs::GetUPnPEnabled(),
-				"aMule TCP Listen Socket");
-			m_upnpMappings[3] = CUPnPPortMapping(myaddr[3].Service(),
-				"UDP",
-				thePrefs::GetUPnPEnabled(),
-				"aMule UDP Extended eMule Socket");
-			m_upnp = new CUPnPControlPoint(thePrefs::GetUPnPTCPPort());
-
-			wxStopWatch count; // Wait UPnP service responses for 3s before add port mappings
-			while (count.Time() < 3000 && !m_upnp->WanServiceDetected())
-				;
-
-			m_upnp->AddPortMappings(m_upnpMappings);
-		} catch (CUPnPException &e) {
-			wxString error_msg;
-			error_msg << e.what();
-			AddLogLineC(error_msg);
-			fprintf(stderr, "%s\n", (const char *)unicode2char(error_msg));
-		}
-	}
+	StartUPnP();
 #endif
 
 	return ok;
 }
+
+#ifdef ENABLE_UPNP
+void CamuleApp::StartUPnP()
+{
+	// Nothing to do when UPnP is disabled, and we must never create a
+	// second control point if one already exists (e.g. the first-run
+	// bootstrap dialog enabling UPnP after ReinitializeNetwork() ran).
+	if (!thePrefs::GetUPnPEnabled() || m_upnp) {
+		return;
+	}
+
+	// The mapped ports come straight from the preferences rather than the
+	// listening sockets, so this can run independently of
+	// ReinitializeNetwork() (which owns the local myaddr[] array).
+	try {
+		m_upnpMappings[0] = CUPnPPortMapping(thePrefs::ECPort(),
+			"TCP",
+			thePrefs::GetUPnPECEnabled(),
+			"aMule TCP External Connections Socket");
+		m_upnpMappings[1] = CUPnPPortMapping(thePrefs::GetPort() + 3,
+			"UDP",
+			thePrefs::GetUPnPEnabled(),
+			"aMule UDP socket (TCP+3)");
+		m_upnpMappings[2] = CUPnPPortMapping(thePrefs::GetPort(),
+			"TCP",
+			thePrefs::GetUPnPEnabled(),
+			"aMule TCP Listen Socket");
+		m_upnpMappings[3] = CUPnPPortMapping(thePrefs::GetUDPPort(),
+			"UDP",
+			thePrefs::GetUPnPEnabled(),
+			"aMule UDP Extended eMule Socket");
+		m_upnp = new CUPnPControlPoint(thePrefs::GetUPnPTCPPort());
+
+		wxStopWatch count; // Wait UPnP service responses for 3s before add port mappings
+		while (count.Time() < 3000 && !m_upnp->WanServiceDetected())
+			;
+
+		m_upnp->AddPortMappings(m_upnpMappings);
+	} catch (CUPnPException &e) {
+		wxString error_msg;
+		error_msg << e.what();
+		AddLogLineC(error_msg);
+		fprintf(stderr, "%s\n", (const char *)unicode2char(error_msg));
+	}
+}
+#endif
 
 /* Original implementation by Bouc7 of the eMule Project.
    aMule Signature idea was designed by BigBob and implemented

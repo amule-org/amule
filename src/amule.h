@@ -301,6 +301,10 @@ public:
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
 	std::vector<CUPnPPortMapping> m_upnpMappings;
+	// Build the port mappings from the current preferences and start the
+	// UPnP control point. Safe to call more than once: it is a no-op when
+	// UPnP is disabled or already running.
+	void StartUPnP();
 #endif
 	wxLocale m_locale;
 
