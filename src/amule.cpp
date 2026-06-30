@@ -1111,10 +1111,8 @@ void CamuleApp::StartUPnP()
 			"UDP",
 			thePrefs::GetUPnPEnabled(),
 			"aMule UDP socket (TCP+3)");
-		m_upnpMappings[2] = CUPnPPortMapping(thePrefs::GetPort(),
-			"TCP",
-			thePrefs::GetUPnPEnabled(),
-			"aMule TCP Listen Socket");
+		m_upnpMappings[2] = CUPnPPortMapping(
+			thePrefs::GetPort(), "TCP", thePrefs::GetUPnPEnabled(), "aMule TCP Listen Socket");
 		m_upnpMappings[3] = CUPnPPortMapping(thePrefs::GetUDPPort(),
 			"UDP",
 			thePrefs::GetUPnPEnabled(),

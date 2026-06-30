@@ -1344,8 +1344,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(new Cfg_Bool("/eMule/MessageUseCaptchas", s_IsChatCaptchaEnabled, true));
 	s_MiscList.push_back(
 		new Cfg_Bool("/GUI/AppImageIntegrationDeclined", s_appimageIntegrationDeclined, false));
-	s_MiscList.push_back(
-		new Cfg_Bool("/eMule/FirstRunWizardDone", s_firstRunWizardDone, false));
+	s_MiscList.push_back(new Cfg_Bool("/eMule/FirstRunWizardDone", s_firstRunWizardDone, false));
 
 	NewCfgItem(IDC_FILTERCOMMENTS, (new Cfg_Bool("/eMule/FilterComments", s_FilterComments, false)));
 	NewCfgItem(IDC_COMMENTWORD, (new Cfg_Str("/eMule/CommentFilter", s_CommentFilterString, "")));

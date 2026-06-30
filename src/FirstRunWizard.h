@@ -41,7 +41,7 @@ namespace FirstRunWizard
 // sockets that the caller initialises afterwards.
 struct Result
 {
-	bool finished = false;	   // false if the user cancelled
+	bool finished = false;          // false if the user cancelled
 	bool downloadServerMet = false; // fetch eD2k server list (server.met)
 	bool downloadNodesDat = false;  // fetch Kad bootstrap nodes (nodes.dat)
 };
@@ -53,7 +53,7 @@ struct Result
 // whether each file is currently missing, so we don't offer to download
 // something that is already present.
 Result Run(wxWindow *parent, bool needServerMet, bool needNodesDat);
-}
+} // namespace FirstRunWizard
 
 #endif // !AMULE_DAEMON
 
