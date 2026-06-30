@@ -74,7 +74,7 @@ namespace
 struct ConnectionProfile
 {
 	const char *label;
-	int uploadKBs;	    // upload limit (0 == unlimited)
+	int uploadKBs;      // upload limit (0 == unlimited)
 	int downloadKBs;    // download limit (0 == unlimited)
 	int uploadCapKBs;   // raw upstream line capacity
 	int downloadCapKBs; // raw downstream line capacity
@@ -86,12 +86,12 @@ struct ConnectionProfile
 // Labels are wxTRANSLATE-marked (so xgettext extracts them) and
 // translated at display time with wxGetTranslation below.
 const ConnectionProfile s_profiles[] = {
-	{wxTRANSLATE("Mobile / 4G-5G (20 / 5 Mbit)"), 500, 0, 625, 2500, 300, 20, 400},
-	{wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000, 200, 15, 250},
-	{wxTRANSLATE("VDSL (50 / 10 Mbit)"), 1000, 0, 1250, 6250, 400, 25, 500},
-	{wxTRANSLATE("Cable (200 / 20 Mbit)"), 2000, 0, 2500, 25000, 500, 30, 600},
-	{wxTRANSLATE("Fibre 300 (300 / 100 Mbit)"), 10000, 0, 12500, 37500, 500, 40, 800},
-	{wxTRANSLATE("Fibre Gigabit (1000 / 1000 Mbit)"), 0, 0, 125000, 125000, 500, 50, 1000},
+	{ wxTRANSLATE("Mobile / 4G-5G (20 / 5 Mbit)"), 500, 0, 625, 2500, 300, 20, 400 },
+	{ wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000, 200, 15, 250 },
+	{ wxTRANSLATE("VDSL (50 / 10 Mbit)"), 1000, 0, 1250, 6250, 400, 25, 500 },
+	{ wxTRANSLATE("Cable (200 / 20 Mbit)"), 2000, 0, 2500, 25000, 500, 30, 600 },
+	{ wxTRANSLATE("Fibre 300 (300 / 100 Mbit)"), 10000, 0, 12500, 37500, 500, 40, 800 },
+	{ wxTRANSLATE("Fibre Gigabit (1000 / 1000 Mbit)"), 0, 0, 125000, 125000, 500, 50, 1000 },
 };
 
 const size_t s_profileCount = sizeof(s_profiles) / sizeof(s_profiles[0]);
@@ -127,17 +127,17 @@ DerivedLimits DeriveLimits(int uploadKBs)
 {
 	const int up = (uploadKBs <= 0) ? 100000 : uploadKBs;
 	if (up < 50) {
-		return {200, 15, 250};
+		return { 200, 15, 250 };
 	} else if (up < 200) {
-		return {300, 20, 400};
+		return { 300, 20, 400 };
 	} else if (up < 1000) {
-		return {400, 25, 500};
+		return { 400, 25, 500 };
 	} else if (up < 2500) {
-		return {500, 30, 600};
+		return { 500, 30, 600 };
 	} else if (up < 10000) {
-		return {500, 40, 800};
+		return { 500, 40, 800 };
 	}
-	return {500, 50, 1000};
+	return { 500, 50, 1000 };
 }
 
 // Resolve the limits for the current wizard state: the selected
@@ -148,7 +148,7 @@ DerivedLimits ResolveLimits(int profileSel, int uploadKBs)
 	DerivedLimits d;
 	if (profileSel >= 0 && profileSel < (int)s_profileCount) {
 		const ConnectionProfile &p = s_profiles[profileSel];
-		d = {p.maxConnections, p.maxConnectionsPer5Sec, p.maxSourcesPerFile};
+		d = { p.maxConnections, p.maxConnectionsPer5Sec, p.maxSourcesPerFile };
 	} else {
 		d = DeriveLimits(uploadKBs);
 	}
@@ -213,9 +213,9 @@ private:
 };
 
 CFirstRunWizard::CFirstRunWizard(wxWindow *parent, bool needServerMet, bool needNodesDat)
-	: wxWizard(parent, wxID_ANY, _("aMule first-run setup")),
-	  m_needServerMet(needServerMet),
-	  m_needNodesDat(needNodesDat)
+: wxWizard(parent, wxID_ANY, _("aMule first-run setup"))
+, m_needServerMet(needServerMet)
+, m_needNodesDat(needNodesDat)
 {
 	wxWizardPageSimple *nick = BuildNickPage();
 	wxWizardPageSimple *conn = BuildConnectionPage();
@@ -320,9 +320,9 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
 	sizer->Add(new wxStaticText(page, wxID_ANY, _("Networks & ports")), 0, wxBOTTOM, 8);
-	sizer->Add(new wxStaticText(page,
-			   wxID_ANY,
-			   _("aMule can use two networks. We recommend keeping both enabled.")),
+	sizer->Add(
+		new wxStaticText(
+			page, wxID_ANY, _("aMule can use two networks. We recommend keeping both enabled.")),
 		0,
 		wxBOTTOM,
 		8);
@@ -343,17 +343,16 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	wxFlexGridSizer *grid = new wxFlexGridSizer(2, 2, 6, 8);
 	grid->AddGrowableCol(1);
 
-	// Port labels mirror the existing Ports-panel wording rather than coining
-	// new wizard-only phrasing for the same controls (trailing spaces trimmed).
-	grid->Add(new wxStaticText(page, wxID_ANY, _("Standard TCP Port")),
-		0,
-		wxALIGN_CENTER_VERTICAL);
+	// Port labels mirror the existing Ports-panel wording (including the
+	// trailing spaces) so the controls reuse the already-translated msgids
+	// instead of introducing wizard-only strings every translator must redo.
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Standard TCP Port ")), 0, wxALIGN_CENTER_VERTICAL);
 	m_tcpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
 	m_tcpPortCtrl->SetRange(1, 65535);
 	m_tcpPortCtrl->SetValue(thePrefs::GetPort());
 	grid->Add(m_tcpPortCtrl, 0, wxEXPAND);
 
-	grid->Add(new wxStaticText(page, wxID_ANY, _("Extended UDP port (Kad / global search)")),
+	grid->Add(new wxStaticText(page, wxID_ANY, _("Extended UDP port (Kad / global search) ")),
 		0,
 		wxALIGN_CENTER_VERTICAL);
 	m_udpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
@@ -399,14 +398,12 @@ wxWizardPageSimple *CFirstRunWizard::BuildBootstrapPage()
 			8);
 
 		if (m_needServerMet) {
-			m_serverMetCtrl =
-				new wxCheckBox(page, wxID_ANY, _("eD2k server list (server.met)"));
+			m_serverMetCtrl = new wxCheckBox(page, wxID_ANY, _("eD2k server list (server.met)"));
 			m_serverMetCtrl->SetValue(true);
 			sizer->Add(m_serverMetCtrl, 0, wxBOTTOM, 4);
 		}
 		if (m_needNodesDat) {
-			m_nodesDatCtrl =
-				new wxCheckBox(page, wxID_ANY, _("Kad bootstrap nodes (nodes.dat)"));
+			m_nodesDatCtrl = new wxCheckBox(page, wxID_ANY, _("Kad bootstrap nodes (nodes.dat)"));
 			m_nodesDatCtrl->SetValue(true);
 			sizer->Add(m_nodesDatCtrl, 0, wxBOTTOM, 4);
 		}
@@ -437,10 +434,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 
 	// Folder labels and Browse buttons reuse the existing Directories-panel
 	// strings (PreferencesDirectoriesTab) instead of new wizard-only wording.
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("Destination folder for downloads")),
-		0,
-		wxBOTTOM,
-		4);
+	sizer->Add(new wxStaticText(page, wxID_ANY, _("Destination folder for downloads")), 0, wxBOTTOM, 4);
 	wxBoxSizer *incRow = new wxBoxSizer(wxHORIZONTAL);
 	m_incomingCtrl = new wxTextCtrl(page, wxID_ANY, thePrefs::GetIncomingDir().GetRaw());
 	incRow->Add(m_incomingCtrl, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
@@ -449,15 +443,14 @@ wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 
 	// Warn that everything dropped in the Incoming folder is shared, reusing
 	// the same hint shown on the Directories preferences panel.
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("(All files in this folder are shared with other peers)")),
+	sizer->Add(
+		new wxStaticText(page, wxID_ANY, _("(All files in this folder are shared with other peers)")),
 		0,
 		wxBOTTOM,
 		12);
 
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("Folder for temporary download files")),
-		0,
-		wxBOTTOM,
-		4);
+	sizer->Add(
+		new wxStaticText(page, wxID_ANY, _("Folder for temporary download files")), 0, wxBOTTOM, 4);
 	wxBoxSizer *tmpRow = new wxBoxSizer(wxHORIZONTAL);
 	m_tempCtrl = new wxTextCtrl(page, wxID_ANY, thePrefs::GetTempDir().GetRaw());
 	tmpRow->Add(m_tempCtrl, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
@@ -479,8 +472,8 @@ void CFirstRunWizard::UpdateDerivedLabel()
 	}
 	DerivedLimits d = ResolveLimits(m_speedCtrl->GetSelection(), m_uploadCtrl->GetValue());
 	m_derivedLabel->SetLabel(CFormat(_("Based on this, aMule will allow up to %i sources per file\n"
-					   "and %i client connections."))
-		% d.maxSourcesPerFile % d.maxConnections);
+					   "and %i client connections.")) %
+				 d.maxSourcesPerFile % d.maxConnections);
 }
 
 void CFirstRunWizard::OnSpeedChoice(wxCommandEvent &WXUNUSED(evt))
@@ -503,8 +496,11 @@ void CFirstRunWizard::OnUploadChanged(wxSpinEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::OnBrowseIncoming(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString dir = ::wxDirSelector(
-		_("Destination folder for downloads"), m_incomingCtrl->GetValue(), 0, wxDefaultPosition, this);
+	wxString dir = ::wxDirSelector(_("Destination folder for downloads"),
+		m_incomingCtrl->GetValue(),
+		0,
+		wxDefaultPosition,
+		this);
 	if (!dir.IsEmpty()) {
 		m_incomingCtrl->SetValue(dir);
 	}
