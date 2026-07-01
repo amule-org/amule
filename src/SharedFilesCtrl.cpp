@@ -27,6 +27,9 @@
 
 #include <common/MenuIDs.h>
 
+#include <wx/filename.h> // Needed for wxFileName
+#include <wx/filesys.h>  // Needed for wxFileSystem::FileNameToURL
+
 #include "muuli_wdr.h"      // Needed for ID_SHFILELIST
 #include "SharedFilesWnd.h" // Needed for CSharedFilesWnd
 #include "amuleDlg.h"       // Needed for CamuleDlg
@@ -42,9 +45,13 @@
 #include "MuleCollection.h" // Needed for CMuleCollection
 #include "DownloadQueue.h"  // Needed for CDownloadQueue
 #include "TransferWnd.h"    // Needed for CTransferWnd
+#include "TerminationProcess.h" // Needed for CTerminationProcess
+#include "Logger.h"         // Needed for AddLogLineC
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
+
+	EVT_MENU(MP_VIEW, CSharedFilesCtrl::OnPlayFile)
 
 	EVT_MENU(MP_PRIOVERYLOW, CSharedFilesCtrl::OnSetPriority)
 	EVT_MENU(MP_PRIOLOW, CSharedFilesCtrl::OnSetPriority)
@@ -127,6 +134,17 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 
 	if ((m_menu == NULL) && (item_hit != -1)) {
 		m_menu = new wxMenu(_("Shared Files"));
+
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item_hit));
+
+		m_menu->Append(MP_VIEW, _("Play"));
+		// For files still being downloaded, only offer Play once
+		// enough of the beginning has arrived for a player to make
+		// sense of it (same rule the Downloads list uses for Preview).
+		m_menu->Enable(MP_VIEW,
+			!file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable());
+		m_menu->AppendSeparator();
+
 		wxMenu *prioMenu = new wxMenu();
 		prioMenu->AppendCheckItem(MP_PRIOVERYLOW, _("Very low"));
 		prioMenu->AppendCheckItem(MP_PRIOLOW, _("Low"));
@@ -139,7 +157,6 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(0, _("Priority"), prioMenu);
 		m_menu->AppendSeparator();
 
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item_hit));
 		if (file->GetFileComment().IsEmpty() && !file->GetFileRating()) {
 			m_menu->Append(MP_CMT, _("Add Comment/Rating"));
 		} else {
@@ -206,6 +223,91 @@ void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))
 
 	if (!feed.IsEmpty()) {
 		theApp->CopyTextToClipboard(feed);
+	}
+}
+
+#ifdef __WINDOWS__
+#define QUOTE "\""
+#else
+#define QUOTE "\'"
+#endif
+
+void CSharedFilesCtrl::OnPlayFile(wxCommandEvent &WXUNUSED(event))
+{
+	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (index == -1) {
+		return;
+	}
+
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
+
+	// Resolve the on-disk location: files still being downloaded live
+	// as extensionless .part data in the temp dir, completed files at
+	// their shared location.
+	wxString fullPath; // File name with full path
+	wxString fileName; // File name only, without path
+	if (file->IsPartFile() && !file->IsCompleted()) {
+		CPartFile *partFile = static_cast<CPartFile *>(file);
+		fileName = partFile->GetPartMetFileName().RemoveExt().GetRaw();
+		fullPath = thePrefs::GetTempDir()
+				   .JoinPaths(partFile->GetPartMetFileName().RemoveExt())
+				   .GetRaw();
+	} else {
+		fileName = file->GetFileName().GetRaw();
+		fullPath = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
+	}
+
+	const FileType type = GetFiletype(file->GetFileName());
+	if (type != ftVideo && type != ftAudio) {
+		// Not a media file: hand it to the browser configured in
+		// Preferences -> General -> Browser Selection (or the system
+		// default browser when none is set). The file:// conversion
+		// percent-encodes spaces, which matters because LaunchUrl
+		// appends the target unquoted to the browser command.
+		theApp->amuledlg->LaunchUrl(wxFileSystem::FileNameToURL(wxFileName(fullPath)));
+		return;
+	}
+
+	// Media file: launch the configured video player, falling back to
+	// the OS default opener when none is set. Command building mirrors
+	// CDownloadListCtrl::PreviewFile, including the %PARTFILE/%PARTNAME
+	// magic strings.
+	wxString command = thePrefs::GetVideoPlayer();
+	if (command.IsEmpty()) {
+#if defined(__WXMAC__) || defined(__APPLE__)
+		command = "open";
+#elif defined(__WXMSW__) || defined(_WIN32)
+		command = "cmd /c start \"\"";
+#else
+		command = "xdg-open";
+#endif
+	}
+
+	if (!command.Replace("$file", "%PARTFILE")) {
+		if ((command.Find("%PARTFILE") == wxNOT_FOUND) &&
+			(command.Find("%PARTNAME") == wxNOT_FOUND)) {
+			// No magic string, so we just append the filename to the player command
+			// Need to use quotes in case filename contains spaces
+			command << " " << QUOTE << "%PARTFILE" << QUOTE;
+		}
+	}
+
+#ifndef __WINDOWS__
+	// We have to escape quote characters in the file name, otherwise arbitrary
+	// options could be passed to the player.
+	fullPath.Replace(QUOTE, "\\" QUOTE);
+	fileName.Replace(QUOTE, "\\" QUOTE);
+#endif
+
+	command.Replace("%PARTFILE", fullPath);
+	command.Replace("%PARTNAME", fileName);
+
+	// We can't use wxShell here, it blocks the app
+	CTerminationProcess *p = new CTerminationProcess(command);
+	if (wxExecute(command, wxEXEC_ASYNC, p) <= 0) {
+		delete p;
+		AddLogLineC(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) %
+			    command);
 	}
 }
 

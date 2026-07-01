@@ -156,6 +156,13 @@ private:
 	void OnGetFeedback(wxCommandEvent &event);
 
 	/**
+	 * Event-handler for the Play menu item. Audio/video files are
+	 * opened with the configured video player, anything else with
+	 * the configured browser.
+	 */
+	void OnPlayFile(wxCommandEvent &event);
+
+	/**
 	 * Event-handler for the Set Priority menu items.
 	 */
 	void OnSetPriority(wxCommandEvent &event);

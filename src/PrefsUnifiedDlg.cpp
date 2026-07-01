@@ -29,6 +29,7 @@
 #include <common/Macros.h> // Needed for itemsof()
 
 #include <wx/colordlg.h>
+#include <wx/filefn.h> // wxFileExists
 #include <wx/progdlg.h>
 #include <wx/stdpaths.h>
 #include <wx/tooltip.h>
@@ -515,6 +516,21 @@ bool PrefsUnifiedDlg::TransferToWindow()
 				     it->first % it->second->GetKey());
 		}
 	}
+
+#if defined(__WXMAC__) || defined(__APPLE__)
+	// On macOS aMule can't guess a video player from file associations
+	// the way `open` does, so if the user never picked one, prefill the
+	// field with the Homebrew VLC binary when it's installed. Only the
+	// widget is touched: the value is persisted only if the user
+	// confirms the dialog with OK.
+	{
+		static const wxString vlcPath = "/opt/homebrew/bin/vlc";
+		wxTextCtrl *videoPlayer = CastChild(IDC_VIDEOPLAYER, wxTextCtrl);
+		if (videoPlayer && videoPlayer->GetValue().IsEmpty() && wxFileExists(vlcPath)) {
+			videoPlayer->SetValue(vlcPath);
+		}
+	}
+#endif
 
 	// Load the user's intent (explicit non-recursive vs marked-recursive
 	// roots) into the tree control's two maps. shareddir_list itself
