@@ -89,11 +89,20 @@ void *CPartFileHashThread::Entry()
 
 	AddDebugLogLineN(logPartFile, wxT("Hash thread: started"));
 
-	while (m_bRun) {
+	// Loop until EndThread() clears m_bRun, then drain one final batch
+	// before returning. Dropping a queued job would skip its
+	// --m_pendingHashes (the only decrement), and ~CPartFile blocks on
+	// `while (m_pendingHashes > 0)` with no other decrementer — so a
+	// dropped job hangs shutdown. Draining also means the part is
+	// actually hashed rather than left unverified (its m_aChangedPart
+	// entry was already cleared at enqueue, so the sync-hash fallback
+	// won't catch it). Mirrors CPartFileWriteThread.
+	for (;;) {
 		// Move queued jobs to a local work list under the lock.
 		// Mirrors CPartFileWriteThread's pattern: minimise lock hold
 		// time so the main thread can keep enqueueing.
 		std::list<HashJob> workList;
+		bool keepRunning;
 		{
 			wxMutexLocker lock(m_mutex);
 			if (m_bRun && !m_bWorkPending) {
@@ -101,10 +110,15 @@ void *CPartFileHashThread::Entry()
 			}
 			m_bWorkPending = false;
 			workList.swap(m_jobList);
+			// Captured under the lock with the swap; the batch we just
+			// took is drained whatever m_bRun does next.
+			keepRunning = m_bRun;
 		}
 
-		for (std::list<HashJob>::iterator it = workList.begin(); it != workList.end() && m_bRun;
-			++it) {
+		// No m_bRun check in the loop condition: a batch, once taken, is
+		// always processed in full so a shutdown never abandons a job
+		// (which would leave m_pendingHashes stuck and hang ~CPartFile).
+		for (std::list<HashJob>::iterator it = workList.begin(); it != workList.end(); ++it) {
 			const uint64 startTick = GetTickCount64();
 
 			// CPartFile::m_pendingHashes was incremented before enqueue
@@ -148,6 +162,12 @@ void *CPartFileHashThread::Entry()
 			// AND event posted) so ~CPartFile's wait on the counter
 			// includes the event-post step.
 			--it->pFile->m_pendingHashes;
+		}
+
+		// Exit only after the batch above is fully processed, so every
+		// job's --m_pendingHashes runs and ~CPartFile's wait can complete.
+		if (!keepRunning) {
+			break;
 		}
 	}
 
