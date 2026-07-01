@@ -94,7 +94,11 @@ void CClientCreditsList::LoadList()
 		// else: the backup doesn't exist, create it
 		if (bCreateBackup) {
 			file.Close(); // close the file before copying
-			if (!CPath::CloneFile(fileName, bakFileName, true)) {
+			// Small same-directory config backup (clients.met ->
+			// clients.met.bak); the plain wxCopyFile path is the right
+			// fit, not the buffered CFile::CloneFile used for large,
+			// possibly cross-filesystem data-file copies.
+			if (!CPath::BackupFile(fileName, wxT(".bak"))) {
 				AddDebugLogLineC(
 					logCredits, CFormat("Could not create backup file '%s'") % fileName);
 			}

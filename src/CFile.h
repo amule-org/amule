@@ -133,6 +133,24 @@ public:
 	bool Create(const wxString &path, bool overwrite = false, int accessMode = wxS_DEFAULT);
 
 	/**
+	 * Copies a file, streaming through a large buffer.
+	 *
+	 * Used for data-file copies that can cross filesystems (e.g. the
+	 * Temp -> Incoming move on download completion, when a rename fails
+	 * because the two directories live on different mounts). Unlike
+	 * wxCopyFile's hard-coded 4 KiB buffer, this streams through a 1 MiB
+	 * buffer, which is what lets cross-filesystem copies over NFS / sshfs
+	 * reach line speed. See amule-org/amule#11.
+	 *
+	 * The silly name (vs. CopyFile) avoids the CopyFile #define set on MSW.
+	 *
+	 * @param overwrite If false and the destination exists, fails.
+	 * @return true on success. On failure the (partial) destination is
+	 *         removed so a failed copy never leaves a corrupt file behind.
+	 */
+	static bool CloneFile(const CPath &src, const CPath &dst, bool overwrite = false);
+
+	/**
 	 * Closes the file.
 	 *
 	 * Note that calling Close on an closed file

@@ -28,6 +28,8 @@
 #include <common/Path.h> // Needed for CPath
 #include "config.h"      // Needed for HAVE_SYS_PARAM_H
 
+#include <vector> // Needed for the CopyFile stream buffer
+
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -541,5 +543,66 @@ bool CFile::SetLength(uint64 new_len)
 	syscall_check(result, m_filePath, "truncating file");
 
 	return result;
+}
+
+bool CFile::CloneFile(const CPath &src, const CPath &dst, bool overwrite)
+{
+	if (!overwrite && dst.FileExists()) {
+		return false;
+	}
+
+	CFile in;
+	if (!in.Open(src, CFile::read)) {
+		return false;
+	}
+
+	CFile out;
+	if (!out.Open(dst, CFile::write)) {
+		return false;
+	}
+
+	// Stream through a 1 MiB heap buffer. The previous implementation
+	// (wxCopyFile) used a hard-coded 4 KiB buffer, which throttled
+	// cross-filesystem copies over NFS / sshfs to a fraction of line speed
+	// (amule-org/amule#11). Heap-allocated, not a stack array: CopyFile can
+	// run on the completion worker thread, where musl caps the stack at
+	// 128 KiB.
+	const size_t bufferSize = 1u << 20;
+	std::vector<char> buffer(bufferSize);
+
+	try {
+		uint64 remaining = in.GetLength();
+		while (remaining) {
+			const size_t chunk =
+				(remaining < bufferSize) ? static_cast<size_t>(remaining) : bufferSize;
+			in.Read(buffer.data(), chunk);
+			out.Write(buffer.data(), chunk);
+			remaining -= chunk;
+		}
+		// Close (not just rely on the destructor): flushes the trailing
+		// sub-buffer write and surfaces any deferred error, e.g. an ENOSPC
+		// that only shows up when the write buffer drains.
+		if (!out.Close()) {
+			CPath::RemoveFile(dst);
+			return false;
+		}
+	} catch (const CSafeIOException &e) {
+		AddDebugLogLineC(
+			logCFile, CFormat(wxT("Failed to copy %s to %s: %s")) % src % dst % e.what());
+		// Close before unlinking: Windows can't remove an open file. Close
+		// may itself throw while draining, so guard it — we're already on
+		// the failure path.
+		try {
+			if (out.IsOpened()) {
+				out.Close();
+			}
+		} catch (const CSafeIOException &) {
+			// best-effort
+		}
+		CPath::RemoveFile(dst);
+		return false;
+	}
+
+	return true;
 }
 // File_checked_for_headers

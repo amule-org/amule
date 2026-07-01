@@ -543,11 +543,6 @@ bool CPath::StartsWith(const CPath &other) const
 	return PATHNCMP(a.c_str(), b.c_str(), checkLen) == 0;
 }
 
-bool CPath::CloneFile(const CPath &src, const CPath &dst, bool overwrite)
-{
-	return ::wxCopyFile(src.m_filesystem, dst.m_filesystem, overwrite);
-}
-
 bool CPath::RemoveFile(const CPath &file)
 {
 	return ::wxRemoveFile(file.m_filesystem);
@@ -564,7 +559,11 @@ bool CPath::BackupFile(const CPath &src, const wxString &appendix)
 
 	CPath dst = CPath(src.m_filesystem + appendix);
 
-	if (CPath::CloneFile(src, dst, true)) {
+	// Small same-directory .met/config backup — wxCopyFile's 4 KiB buffer
+	// is fine here. Large data-file copies use CFile::CloneFile (higher
+	// layer) instead; see amule-org/amule#11. mulecommon deliberately has
+	// no dependency on the CFile layer, so this stays on wxCopyFile.
+	if (::wxCopyFile(src.m_filesystem, dst.m_filesystem, true)) {
 		// Try to ensure that the backup gets physically written
 #if defined __WINDOWS__ || defined __IRIX__
 		wxFFile backupFile;

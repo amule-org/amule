@@ -414,7 +414,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath &fileName)
 		} else if (s_pfconverting->removeSource) {
 			ret = CPath::RenameFile(oldfile, newfilename.RemoveExt());
 		} else {
-			ret = CPath::CloneFile(oldfile, newfilename.RemoveExt(), false);
+			ret = CFile::CloneFile(oldfile, newfilename.RemoveExt(), false);
 		}
 		if (!ret) {
 			file->Delete();
@@ -429,7 +429,7 @@ ConvStatus CPartFileConvert::performConvertToeMule(const CPath &fileName)
 	if (s_pfconverting->removeSource) {
 		CPath::RenameFile(folder.JoinPaths(partfile), newfilename);
 	} else {
-		CPath::CloneFile(folder.JoinPaths(partfile), newfilename, false);
+		CFile::CloneFile(folder.JoinPaths(partfile), newfilename, false);
 	}
 
 	file->m_hashlist.clear();

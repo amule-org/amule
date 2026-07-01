@@ -31,6 +31,7 @@
 
 #include "ThreadTasks.h"      // Interface declarations
 #include "PartFile.h"         // Needed for CPartFile
+#include "CFile.h"            // Needed for CFile::CloneFile
 #include "Logger.h"           // Needed for Add(Debug)LogLine{C,N}
 #include <common/Format.h>    // Needed for CFormat
 #include "amule.h"            // Needed for theApp
@@ -563,7 +564,7 @@ void CCompletionTask::Entry()
 	// Move will handle dirs on the same partition, otherwise copy is needed.
 	CPath partfilename = m_metPath.RemoveExt();
 	if (!CPath::RenameFile(partfilename, newName)) {
-		if (!CPath::CloneFile(partfilename, newName, true)) {
+		if (!CFile::CloneFile(partfilename, newName, true)) {
 			m_error = true;
 			return;
 		}
