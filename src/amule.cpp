@@ -58,6 +58,8 @@
 #endif
 
 #include <common/Format.h> // Needed for CFormat
+#include <common/DataFileVersion.h> // Needed for MET_HEADER (server.met probe)
+#include "CFile.h" // Needed for CFile (server.met probe)
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -448,6 +450,33 @@ int CamuleApp::InitGui(bool, wxString &)
 	return 0;
 }
 
+// Probe server.met for actual server entries rather than mere existence.
+// ~CServerList() calls SaveServerMet() unconditionally whenever eD2k is
+// enabled, so a cancelled first run with zero servers still leaves a
+// valid-but-empty file (header 0xE0 + a uint32 count of 0). Checking the
+// count — not just the file — is what keeps the bootstrap page from
+// re-offering the download after such a run. The header/count layout
+// mirrors CServerList::SaveServerMet().
+static bool ServerMetHasServers(const wxString& path)
+{
+	if (!wxFileExists(path)) {
+		return false;
+	}
+	try {
+		CFile file(path, CFile::read);
+		if (!file.IsOpened()) {
+			return false;
+		}
+		uint8_t version = file.ReadUInt8();
+		if (version != 0xE0 && version != MET_HEADER) {
+			return false;
+		}
+		return file.ReadUInt32() > 0;
+	} catch (const CSafeIOException&) {
+		return false;
+	}
+}
+
 //
 // Application initialization
 //
@@ -659,9 +688,13 @@ bool CamuleApp::OnInit()
 	// inferred first-run flag: a cancelled wizard leaves the flag unset,
 	// so it reappears next launch until the user actually finishes it.
 	if (!thePrefs::IsFirstRunWizardDone()) {
-		// On a fresh install the server list is always empty and
-		// nodes.dat is absent, so offer both downloads as needed.
-		const bool needServerMet = thePrefs::GetNetworkED2K();
+		// Only offer a bootstrap download when the corresponding data
+		// is actually missing: the wizard can reappear after a cancelled
+		// run (the "done" flag stays unset), and by then the user may
+		// already have populated server.met (probed for real entries,
+		// since a cancelled run leaves an empty one) or nodes.dat.
+		const bool needServerMet = thePrefs::GetNetworkED2K() &&
+					   !ServerMetHasServers(thePrefs::GetConfigDir() + "server.met");
 		const bool needNodesDat = thePrefs::GetNetworkKademlia() &&
 					  !wxFileExists(thePrefs::GetConfigDir() + "nodes.dat");
 
