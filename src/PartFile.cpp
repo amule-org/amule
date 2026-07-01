@@ -1269,7 +1269,18 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 
 					AddGap(i);
 					errorfound = true;
-					corruptParts.push_back((uint16)i);
+					const uint16 part = (uint16)i;
+					// Mirror the mid-download corruption path: flag the
+					// part in m_corrupted_list. It is not needed for the
+					// AICH block recovery below, but it primes the ICH
+					// fallback for when no trusted AICH hashset is
+					// available, and — since m_corrupted_list is persisted
+					// to the .met — it keeps the corrupt state across a
+					// restart that happens mid-recovery.
+					if (!IsCorruptedPart(part)) {
+						m_corrupted_list.push_back(part);
+					}
+					corruptParts.push_back(part);
 				}
 			} else {
 				if (!IsComplete(i)) {
