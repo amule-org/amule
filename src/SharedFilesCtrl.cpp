@@ -30,23 +30,23 @@
 #include <wx/filename.h> // Needed for wxFileName
 #include <wx/filesys.h>  // Needed for wxFileSystem::FileNameToURL
 
-#include "muuli_wdr.h"      // Needed for ID_SHFILELIST
-#include "SharedFilesWnd.h" // Needed for CSharedFilesWnd
-#include "amuleDlg.h"       // Needed for CamuleDlg
-#include "CommentDialog.h"  // Needed for CCommentDialog
-#include "PartFile.h"       // Needed for CPartFile
-#include "SharedFileList.h" // Needed for CKnownFileMap
-#include "amule.h"          // Needed for theApp
-#include "ServerConnect.h"  // Needed for CServerConnect
-#include "Preferences.h"    // Needed for thePrefs
-#include "BarShader.h"      // Needed for CBarShader
-#include "DataToText.h"     // Needed for PriorityToStr
-#include "GuiEvents.h"      // Needed for CoreNotify_*
-#include "MuleCollection.h" // Needed for CMuleCollection
-#include "DownloadQueue.h"  // Needed for CDownloadQueue
-#include "TransferWnd.h"    // Needed for CTransferWnd
+#include "muuli_wdr.h"          // Needed for ID_SHFILELIST
+#include "SharedFilesWnd.h"     // Needed for CSharedFilesWnd
+#include "amuleDlg.h"           // Needed for CamuleDlg
+#include "CommentDialog.h"      // Needed for CCommentDialog
+#include "PartFile.h"           // Needed for CPartFile
+#include "SharedFileList.h"     // Needed for CKnownFileMap
+#include "amule.h"              // Needed for theApp
+#include "ServerConnect.h"      // Needed for CServerConnect
+#include "Preferences.h"        // Needed for thePrefs
+#include "BarShader.h"          // Needed for CBarShader
+#include "DataToText.h"         // Needed for PriorityToStr
+#include "GuiEvents.h"          // Needed for CoreNotify_*
+#include "MuleCollection.h"     // Needed for CMuleCollection
+#include "DownloadQueue.h"      // Needed for CDownloadQueue
+#include "TransferWnd.h"        // Needed for CTransferWnd
 #include "TerminationProcess.h" // Needed for CTerminationProcess
-#include "Logger.h"         // Needed for AddLogLineC
+#include "Logger.h"             // Needed for AddLogLineC
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
@@ -141,8 +141,8 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		// For files still being downloaded, only offer Play once
 		// enough of the beginning has arrived for a player to make
 		// sense of it (same rule the Downloads list uses for Preview).
-		m_menu->Enable(MP_VIEW,
-			!file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable());
+		m_menu->Enable(
+			MP_VIEW, !file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable());
 		m_menu->AppendSeparator();
 
 		wxMenu *prioMenu = new wxMenu();
@@ -249,9 +249,8 @@ void CSharedFilesCtrl::OnPlayFile(wxCommandEvent &WXUNUSED(event))
 	if (file->IsPartFile() && !file->IsCompleted()) {
 		CPartFile *partFile = static_cast<CPartFile *>(file);
 		fileName = partFile->GetPartMetFileName().RemoveExt().GetRaw();
-		fullPath = thePrefs::GetTempDir()
-				   .JoinPaths(partFile->GetPartMetFileName().RemoveExt())
-				   .GetRaw();
+		fullPath =
+			thePrefs::GetTempDir().JoinPaths(partFile->GetPartMetFileName().RemoveExt()).GetRaw();
 	} else {
 		fileName = file->GetFileName().GetRaw();
 		fullPath = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();

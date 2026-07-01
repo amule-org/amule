@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 09:20-0700\n"
+"POT-Creation-Date: 2026-07-01 15:49-0700\n"
 "PO-Revision-Date: 2026-06-25 11:11+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -184,7 +184,7 @@ msgid "Password set and external connections enabled."
 msgstr "Wachtwoord ingesteld en externe verbindingen ingeschakeld."
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1035 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
@@ -532,8 +532,8 @@ msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:544 src/KadDlg.cpp:190 src/PartFile.cpp:1015
-#: src/PrefsUnifiedDlg.cpp:854 src/PrefsUnifiedDlg.cpp:982
-#: src/PrefsUnifiedDlg.cpp:1167
+#: src/PrefsUnifiedDlg.cpp:870 src/PrefsUnifiedDlg.cpp:998
+#: src/PrefsUnifiedDlg.cpp:1183
 msgid "Message"
 msgstr "Bericht"
 
@@ -704,7 +704,7 @@ msgstr "Berichten"
 msgid "Messages Window"
 msgstr "Berichtenvenster"
 
-#: src/amuleDlg.cpp:1503 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:204
+#: src/amuleDlg.cpp:1503 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:205
 #: src/Statistics.cpp:779 src/Statistics.cpp:1161
 msgid "Statistics"
 msgstr "Statistieken"
@@ -713,7 +713,7 @@ msgstr "Statistieken"
 msgid "Statistics Graph Window"
 msgstr "Statistiekenvenster (Grafieken)"
 
-#: src/amuleDlg.cpp:1510 src/muuli_wdr.cpp:3113 src/PrefsUnifiedDlg.cpp:220
+#: src/amuleDlg.cpp:1510 src/muuli_wdr.cpp:3113 src/PrefsUnifiedDlg.cpp:221
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Voorkeuren"
@@ -1155,7 +1155,7 @@ msgstr "Gebruikersnaam"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:101
+#: src/SharedFilesCtrl.cpp:108
 msgid "File Name"
 msgstr "Bestandsnaam"
 
@@ -1195,33 +1195,33 @@ msgstr "Auto [No]"
 msgid "Auto [Hi]"
 msgstr "Auto [Ho]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:131
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
 msgid "Very low"
 msgstr "Heel laag"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:132
+#: src/SharedFilesCtrl.cpp:150
 msgid "Low"
 msgstr "Laag"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:133
+#: src/SharedFilesCtrl.cpp:151
 msgid "Normal"
 msgstr "Normaal"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:134
+#: src/SharedFilesCtrl.cpp:152
 msgid "High"
 msgstr "Hoog"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:135
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
 msgid "Very High"
 msgstr "Heel hoog"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:136
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
 msgid "Release"
 msgstr "Vrijgeven"
 
@@ -1371,7 +1371,7 @@ msgid "Part"
 msgstr "Deel"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:102
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
 msgid "Size"
 msgstr "Grootte"
 
@@ -1394,7 +1394,7 @@ msgstr "Bronnen"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:104 src/SharedFilesCtrl.cpp:139
+#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
 msgid "Priority"
 msgstr "Prioriteit"
 
@@ -1422,7 +1422,7 @@ msgstr "Weet u zeker dat u het geselecteerde bestand wilt verwijderen?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Weet u zeker dat u de geselecteerde bestanden wilt verwijderen?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:198
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1432,7 +1432,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:137
+#: src/SharedFilesCtrl.cpp:155
 msgid "Auto"
 msgstr "Auto"
 
@@ -1484,11 +1484,11 @@ msgstr "Bekijk alle commentaren"
 msgid "Copy magnet URI to clipboard"
 msgstr "Kopieer magnet-URI naar klembord"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:158
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
 msgid "Copy eD2k &link to clipboard"
 msgstr "Kopieer eD2k &link naar klembord"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
 msgid "Copy feedback to clipboard"
 msgstr "Kopieer feedback naar klembord"
 
@@ -1504,11 +1504,11 @@ msgstr "Toewijzen aan catgorie"
 msgid "&Open the file"
 msgstr "&Open het bestand"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:745
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
 msgid "Enter new name for this file:"
 msgstr "Voer een nieuwe naam voor dit bestand in:"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:746
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
 msgid "File rename"
 msgstr "Naam wijzigen"
 
@@ -1544,7 +1544,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Voorbeeld"
 
-#: src/DownloadListCtrl.cpp:1459
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "FOUT: Opstarten externe mediaspeler mislukt! Commando: '%s'"
@@ -2845,7 +2845,7 @@ msgstr "Zoeken"
 msgid "Name:"
 msgstr "Naam:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:103
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
 msgid "Type"
 msgstr "Type"
 
@@ -2989,7 +2989,7 @@ msgstr "Verwijdert complete downloads"
 msgid "File sources:"
 msgstr "Bestandsbronnen:"
 
-#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:189
+#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:190
 msgid "General"
 msgstr "Algemeen"
 
@@ -4482,7 +4482,7 @@ msgstr "Sluit deze chat-sessie."
 msgid "Connect to any server and/or Kad"
 msgstr "Verbind met een server en/of Kad"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Gedeelde bestanden"
 
@@ -5029,63 +5029,63 @@ msgstr "TCP-poort kan niet hoger zijn dan 65532 omdat de server UDP-poort de TCP
 msgid "Default port will be used (%d)"
 msgstr "Standaard poort zal worden gebruikt (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:190 src/Statistics.cpp:859
+#: src/PrefsUnifiedDlg.cpp:191 src/Statistics.cpp:859
 msgid "Connection"
 msgstr "Verbinding"
 
-#: src/PrefsUnifiedDlg.cpp:191 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:192 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "Mappen"
 
-#: src/PrefsUnifiedDlg.cpp:192 src/Statistics.cpp:904
+#: src/PrefsUnifiedDlg.cpp:193 src/Statistics.cpp:904
 msgid "Servers"
 msgstr "Servers"
 
-#: src/PrefsUnifiedDlg.cpp:193 src/ServerListCtrl.cpp:94
+#: src/PrefsUnifiedDlg.cpp:194 src/ServerListCtrl.cpp:94
 msgid "Files"
 msgstr "Bestanden"
 
-#: src/PrefsUnifiedDlg.cpp:194
+#: src/PrefsUnifiedDlg.cpp:195
 msgid "Security"
 msgstr "Beveiliging"
 
-#: src/PrefsUnifiedDlg.cpp:195
+#: src/PrefsUnifiedDlg.cpp:196
 msgid "Interface"
 msgstr "Interface"
 
-#: src/PrefsUnifiedDlg.cpp:202
+#: src/PrefsUnifiedDlg.cpp:203
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:205
+#: src/PrefsUnifiedDlg.cpp:206
 msgid "Proxy"
 msgstr "Proxy"
 
-#: src/PrefsUnifiedDlg.cpp:206
+#: src/PrefsUnifiedDlg.cpp:207
 msgid "Filters"
 msgstr "Filters"
 
-#: src/PrefsUnifiedDlg.cpp:207
+#: src/PrefsUnifiedDlg.cpp:208
 msgid "Remote Controls"
 msgstr "Besturing op afstand"
 
-#: src/PrefsUnifiedDlg.cpp:208
+#: src/PrefsUnifiedDlg.cpp:209
 msgid "Online Signature"
 msgstr "Online handtekening"
 
-#: src/PrefsUnifiedDlg.cpp:209
+#: src/PrefsUnifiedDlg.cpp:210
 msgid "Advanced"
 msgstr "Geavanceerd"
 
-#: src/PrefsUnifiedDlg.cpp:210
+#: src/PrefsUnifiedDlg.cpp:211
 msgid "Events"
 msgstr "Gebeurtenissen"
 
-#: src/PrefsUnifiedDlg.cpp:213
+#: src/PrefsUnifiedDlg.cpp:214
 msgid "Debugging"
 msgstr "Foutopsporing"
 
-#: src/PrefsUnifiedDlg.cpp:324
+#: src/PrefsUnifiedDlg.cpp:325
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5095,15 +5095,15 @@ msgstr ""
 "    %PARTFILE - volledig pad naar het bestand\n"
 "    %PARTNAME - alleen bestandsnaam"
 
-#: src/PrefsUnifiedDlg.cpp:345
+#: src/PrefsUnifiedDlg.cpp:346
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:361
+#: src/PrefsUnifiedDlg.cpp:362
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:402
+#: src/PrefsUnifiedDlg.cpp:403
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5119,26 +5119,26 @@ msgstr ""
 "aMule zal goed draaien zonder deze instellingen\n"
 "te wijzigen."
 
-#: src/PrefsUnifiedDlg.cpp:465
+#: src/PrefsUnifiedDlg.cpp:466
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Kon Cfg niet verbinden met widget met ID %d en sleutel %s"
 
-#: src/PrefsUnifiedDlg.cpp:513
+#: src/PrefsUnifiedDlg.cpp:514
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Kon data niet overdragen van Cfg naar widget met ID %d en sleutel %s"
 
-#: src/PrefsUnifiedDlg.cpp:566
+#: src/PrefsUnifiedDlg.cpp:582
 msgid "The type of proxy you are connecting to"
 msgstr "Het type proxy waarmee u verbinding maakt"
 
-#: src/PrefsUnifiedDlg.cpp:740
+#: src/PrefsUnifiedDlg.cpp:756
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Kon data niet overdragen van Widget naar Cfg met ID %d en sleutel %s"
 
-#: src/PrefsUnifiedDlg.cpp:814
+#: src/PrefsUnifiedDlg.cpp:830
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5146,31 +5146,31 @@ msgstr ""
 "aMule moet opnieuw gestart worden om deze veranderingen toe te passen:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:821
+#: src/PrefsUnifiedDlg.cpp:837
 msgid "- TCP port changed.\n"
 msgstr "- TCP-poort veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:826
+#: src/PrefsUnifiedDlg.cpp:842
 msgid "- UDP port changed.\n"
 msgstr "- UDP-poort veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:831
+#: src/PrefsUnifiedDlg.cpp:847
 msgid "- External connect port changed.\n"
 msgstr "- Poort voor externe verbinding is veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:835
+#: src/PrefsUnifiedDlg.cpp:851
 msgid "- External connect acceptance changed.\n"
 msgstr "- Acceptatie voor externe verbinding veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:839
+#: src/PrefsUnifiedDlg.cpp:855
 msgid "- External connect interface changed.\n"
 msgstr "- Interface voor externe verbinding veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:843
+#: src/PrefsUnifiedDlg.cpp:859
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "- Ondersteuning voor Protocol-obfuscatie is veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:852
+#: src/PrefsUnifiedDlg.cpp:868
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5178,7 +5178,7 @@ msgstr ""
 "Uw Auto-update serverlijst is leeg.\n"
 "'Auto-update serverlijst bij het opstarten' wordt uitgeschakeld."
 
-#: src/PrefsUnifiedDlg.cpp:863
+#: src/PrefsUnifiedDlg.cpp:879
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5186,19 +5186,19 @@ msgstr ""
 "U hebt externe verbindingen ingeschakeld maar geen wachtwoord ingesteld.\n"
 "Externe verbindingen kunnen niet ingeschakeld worden tenzij een geldig wachtwoord is ingesteld."
 
-#: src/PrefsUnifiedDlg.cpp:876
+#: src/PrefsUnifiedDlg.cpp:892
 msgid "- Language changed.\n"
 msgstr "- Taal veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:881
+#: src/PrefsUnifiedDlg.cpp:897
 msgid "- Temp folder changed.\n"
 msgstr "- Tijdelijke map veranderd.\n"
 
-#: src/PrefsUnifiedDlg.cpp:886
+#: src/PrefsUnifiedDlg.cpp:902
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K-netwerk ingeschakeld.\n"
 
-#: src/PrefsUnifiedDlg.cpp:975
+#: src/PrefsUnifiedDlg.cpp:991
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5206,7 +5206,7 @@ msgstr ""
 "Zowel het eD2K als het Kad-netwerk zijn uitgeschakeld.\n"
 "U kun niet verbinden tot u minimaal een netwerk inschakelt."
 
-#: src/PrefsUnifiedDlg.cpp:980
+#: src/PrefsUnifiedDlg.cpp:996
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5214,7 +5214,7 @@ msgstr ""
 "Kad zal niet starten als uw UDP-poort is uitgeschakeld.\n"
 "Schakel de UDP-poort in of schakel Kad uit."
 
-#: src/PrefsUnifiedDlg.cpp:1033
+#: src/PrefsUnifiedDlg.cpp:1049
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5224,20 +5224,20 @@ msgstr ""
 "U MOET aMule nu opnieuw starten.\n"
 "Als u dat niet doet moet u niet klagen als er iets misgaat.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1094
+#: src/PrefsUnifiedDlg.cpp:1110
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1096
+#: src/PrefsUnifiedDlg.cpp:1112
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1097
+#: src/PrefsUnifiedDlg.cpp:1113
 #, fuzzy
 msgid "Autostart"
 msgstr "Automatisch verversen gestart"
 
-#: src/PrefsUnifiedDlg.cpp:1164
+#: src/PrefsUnifiedDlg.cpp:1180
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5247,41 +5247,41 @@ msgstr ""
 "Vul minimaal een URL naar een geldig server.met bestand in.\n"
 "Klik op de knop \"Lijst\" hiernaast om een URL in te voeren."
 
-#: src/PrefsUnifiedDlg.cpp:1305
+#: src/PrefsUnifiedDlg.cpp:1321
 msgid "Temporary files"
 msgstr "Tijdelijke bestanden"
 
-#: src/PrefsUnifiedDlg.cpp:1310
+#: src/PrefsUnifiedDlg.cpp:1326
 msgid "Incoming files"
 msgstr "Binnenkomende bestanden"
 
-#: src/PrefsUnifiedDlg.cpp:1315
+#: src/PrefsUnifiedDlg.cpp:1331
 msgid "Online Signatures"
 msgstr "Online handtekeningen"
 
-#: src/PrefsUnifiedDlg.cpp:1328
+#: src/PrefsUnifiedDlg.cpp:1344
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "Kies een map voor %s"
 
-#: src/PrefsUnifiedDlg.cpp:1344
+#: src/PrefsUnifiedDlg.cpp:1360
 msgid "Browse for videoplayer"
 msgstr "Blader naar videospeler"
 
-#: src/PrefsUnifiedDlg.cpp:1348
+#: src/PrefsUnifiedDlg.cpp:1364
 msgid "Select browser"
 msgstr "Selecteer browser"
 
-#: src/PrefsUnifiedDlg.cpp:1354
+#: src/PrefsUnifiedDlg.cpp:1370
 #, c-format
 msgid "Executable%s"
 msgstr "Uitvoerbare%s"
 
-#: src/PrefsUnifiedDlg.cpp:1374
+#: src/PrefsUnifiedDlg.cpp:1390
 msgid "Edit server list"
 msgstr "Bewerk serverlijst"
 
-#: src/PrefsUnifiedDlg.cpp:1375
+#: src/PrefsUnifiedDlg.cpp:1391
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5289,149 +5289,149 @@ msgstr ""
 "Voeg hier URL's toe om server.met bestanden te downloaden.\n"
 "Slechts één url per regel."
 
-#: src/PrefsUnifiedDlg.cpp:1423
+#: src/PrefsUnifiedDlg.cpp:1439
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1552
+#: src/PrefsUnifiedDlg.cpp:1568
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1554
+#: src/PrefsUnifiedDlg.cpp:1570
 #, fuzzy
 msgid "Custom source"
 msgstr "Complete bronnen"
 
-#: src/PrefsUnifiedDlg.cpp:1556
+#: src/PrefsUnifiedDlg.cpp:1572
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1576
+#: src/PrefsUnifiedDlg.cpp:1592
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Status:"
 
-#: src/PrefsUnifiedDlg.cpp:1578
+#: src/PrefsUnifiedDlg.cpp:1594
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Status:"
 
-#: src/PrefsUnifiedDlg.cpp:1582
+#: src/PrefsUnifiedDlg.cpp:1598
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1584
+#: src/PrefsUnifiedDlg.cpp:1600
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1626 src/PrefsUnifiedDlg.cpp:1650
+#: src/PrefsUnifiedDlg.cpp:1642 src/PrefsUnifiedDlg.cpp:1666
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "Update-vertraging: %d seconde"
 msgstr[1] "Update-vertraging: %d seconden"
 
-#: src/PrefsUnifiedDlg.cpp:1634
+#: src/PrefsUnifiedDlg.cpp:1650
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "Tijd voor gemiddeldengrafiek: %d minuut"
 msgstr[1] "Tijd voor gemiddeldengrafiek: %d minuten"
 
-#: src/PrefsUnifiedDlg.cpp:1643
+#: src/PrefsUnifiedDlg.cpp:1659
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Schaal verbindingengrafiek: %d"
 
-#: src/PrefsUnifiedDlg.cpp:1658
+#: src/PrefsUnifiedDlg.cpp:1674
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "Grootte van bestandsbuffer: %d byte"
 msgstr[1] "Grootte van bestandsbuffer: %d bytes"
 
-#: src/PrefsUnifiedDlg.cpp:1668
+#: src/PrefsUnifiedDlg.cpp:1684
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "Grootte van uploadwachtrij: %d client"
 msgstr[1] "Grootte van uploadwachtrij: %d clients"
 
-#: src/PrefsUnifiedDlg.cpp:1678
+#: src/PrefsUnifiedDlg.cpp:1694
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "Server-verbinding verversingsinterval: %d minuut"
 msgstr[1] "Server-verbinding verversingsinterval: %d minuten"
 
-#: src/PrefsUnifiedDlg.cpp:1683
+#: src/PrefsUnifiedDlg.cpp:1699
 msgid "Server connection refresh interval: Disabled"
 msgstr "Server verbinding verversingstijd: Uitgeschakeld"
 
-#: src/PrefsUnifiedDlg.cpp:1727
+#: src/PrefsUnifiedDlg.cpp:1743
 msgid "disabled"
 msgstr "uitgeschakeld"
 
-#: src/PrefsUnifiedDlg.cpp:1753
+#: src/PrefsUnifiedDlg.cpp:1769
 #, c-format
 msgid "Execute command on '%s' event"
 msgstr "Voer commando uit bij gebeurtenis '%s'"
 
-#: src/PrefsUnifiedDlg.cpp:1760
+#: src/PrefsUnifiedDlg.cpp:1776
 msgid "Enable command execution on core"
 msgstr "Schakel uitvoeren van commando's in kern in"
 
-#: src/PrefsUnifiedDlg.cpp:1772
+#: src/PrefsUnifiedDlg.cpp:1788
 msgid "Core command:"
 msgstr "Kerncommando:"
 
-#: src/PrefsUnifiedDlg.cpp:1788
+#: src/PrefsUnifiedDlg.cpp:1804
 msgid "Enable command execution on GUI"
 msgstr "Schakel uitvoeren van commando's in GUI in"
 
-#: src/PrefsUnifiedDlg.cpp:1800
+#: src/PrefsUnifiedDlg.cpp:1816
 msgid "GUI command:"
 msgstr "GUI commando:"
 
-#: src/PrefsUnifiedDlg.cpp:1816
+#: src/PrefsUnifiedDlg.cpp:1832
 msgid "The following variables will be replaced:"
 msgstr "De volgende variabelen worden vervangen:"
 
-#: src/PrefsUnifiedDlg.cpp:1975
+#: src/PrefsUnifiedDlg.cpp:1991
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1980
+#: src/PrefsUnifiedDlg.cpp:1996
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1983
+#: src/PrefsUnifiedDlg.cpp:1999
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Gedeelde mappen"
 
-#: src/PrefsUnifiedDlg.cpp:2012
+#: src/PrefsUnifiedDlg.cpp:2028
 #, fuzzy
 msgid "Reloading shared files…"
 msgstr "Laad uw gedeelde bestanden opnieuw"
 
-#: src/PrefsUnifiedDlg.cpp:2012
+#: src/PrefsUnifiedDlg.cpp:2028
 msgid "Scanning for subdirectories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2013
+#: src/PrefsUnifiedDlg.cpp:2029
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Gedeelde mappen"
 
-#: src/PrefsUnifiedDlg.cpp:2040
+#: src/PrefsUnifiedDlg.cpp:2056
 #, c-format
 msgid "Scanned %u directories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2090
+#: src/PrefsUnifiedDlg.cpp:2106
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Laad gedeelde-bestandenlijst opnieuw."
@@ -5480,7 +5480,7 @@ msgstr "Geen zoekwoord opgegeven voor zoeken in Kad - afbreken"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Onverwachte fout bij Kad-zoekopdracht: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:105
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
 msgid "FileID"
 msgstr "Bestands-ID"
 
@@ -6102,88 +6102,92 @@ msgstr "Lokale bestandsnaam"
 msgid "Shares File List"
 msgstr "Deelt bestandenlijst"
 
-#: src/SharedFilesCtrl.cpp:106
+#: src/SharedFilesCtrl.cpp:113
 msgid "Requests"
 msgstr "Aanvragen"
 
-#: src/SharedFilesCtrl.cpp:107
+#: src/SharedFilesCtrl.cpp:114
 msgid "Accepted Requests"
 msgstr "Geaccepteerde aanvragen"
 
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:115
 msgid "Transferred Data"
 msgstr "Overgebrachte gegevens"
 
-#: src/SharedFilesCtrl.cpp:109
+#: src/SharedFilesCtrl.cpp:116
 msgid "Share Ratio"
 msgstr "Deelverhouding"
 
-#: src/SharedFilesCtrl.cpp:110
+#: src/SharedFilesCtrl.cpp:117
 msgid "Obtained Parts"
 msgstr "Ontvangen delen"
 
-#: src/SharedFilesCtrl.cpp:111
+#: src/SharedFilesCtrl.cpp:118
 msgid "Complete Sources"
 msgstr "Complete bronnen"
 
-#: src/SharedFilesCtrl.cpp:112
+#: src/SharedFilesCtrl.cpp:119
 msgid "Directory Path"
 msgstr "Pad naar map"
 
-#: src/SharedFilesCtrl.cpp:144
+#: src/SharedFilesCtrl.cpp:140
+msgid "Play"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:161
 msgid "Add Comment/Rating"
 msgstr "Voeg commentaar/waardering toe"
 
-#: src/SharedFilesCtrl.cpp:146
+#: src/SharedFilesCtrl.cpp:163
 msgid "Edit Comment/Rating"
 msgstr "Bewerk commentaar/waardering"
 
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:167
 msgid "Rename"
 msgstr "Hernoemen"
 
-#: src/SharedFilesCtrl.cpp:154
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add files in collection to transfer list"
 msgstr "Voeg bestanden in verzameling toe aan overdrachtenlijst"
 
-#: src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:174
 msgid "Copy magnet &URI to clipboard"
 msgstr "Kopieer magnet &URI naar klembord"
 
-#: src/SharedFilesCtrl.cpp:159
+#: src/SharedFilesCtrl.cpp:176
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Kopieer eD2k-link naar klembord (&Source)"
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:178
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Kopieer eD2k-link naar klembord (Bron) (&With Crypt options)"
 
-#: src/SharedFilesCtrl.cpp:162
+#: src/SharedFilesCtrl.cpp:179
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Kopieer eD2k-link naar klembord (&Hostnaam)"
 
-#: src/SharedFilesCtrl.cpp:164
+#: src/SharedFilesCtrl.cpp:181
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Kopieer eD2k-link naar klembord (Hostnaam) (Met &Crypt opties)"
 
-#: src/SharedFilesCtrl.cpp:165
+#: src/SharedFilesCtrl.cpp:182
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Kopieer eD2k-link naar klembord (&AICH info)"
 
-#: src/SharedFilesCtrl.cpp:166
+#: src/SharedFilesCtrl.cpp:183
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopieer eD2k-link naar klembord (&AICH-info + bron)"
 
-#: src/SharedFilesCtrl.cpp:320
+#: src/SharedFilesCtrl.cpp:421
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "U heeft een Hoog ID nodig om een geldige bronlink te maken"
 
-#: src/SharedFilesCtrl.cpp:512
+#: src/SharedFilesCtrl.cpp:613
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Gedeelde bestanden (%i)"
 
-#: src/SharedFilesCtrl.cpp:658 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[PartBestand]"
 

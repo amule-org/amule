@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 09:20-0700\n"
+"POT-Creation-Date: 2026-07-01 15:49-0700\n"
 "PO-Revision-Date: 2026-06-25 11:06+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -183,7 +183,7 @@ msgid "Password set and external connections enabled."
 msgstr "Heslo nastaveno a externí připojení povoleno."
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1035 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
 msgid "WARNING"
 msgstr "VAROVÁNÍ"
 
@@ -527,8 +527,8 @@ msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:544 src/KadDlg.cpp:190 src/PartFile.cpp:1015
-#: src/PrefsUnifiedDlg.cpp:854 src/PrefsUnifiedDlg.cpp:982
-#: src/PrefsUnifiedDlg.cpp:1167
+#: src/PrefsUnifiedDlg.cpp:870 src/PrefsUnifiedDlg.cpp:998
+#: src/PrefsUnifiedDlg.cpp:1183
 msgid "Message"
 msgstr "Zpráva"
 
@@ -700,7 +700,7 @@ msgstr "Zprávy"
 msgid "Messages Window"
 msgstr "Okno zpráv"
 
-#: src/amuleDlg.cpp:1503 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:204
+#: src/amuleDlg.cpp:1503 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:205
 #: src/Statistics.cpp:779 src/Statistics.cpp:1161
 msgid "Statistics"
 msgstr "Statistiky"
@@ -709,7 +709,7 @@ msgstr "Statistiky"
 msgid "Statistics Graph Window"
 msgstr "Okno se statistikami"
 
-#: src/amuleDlg.cpp:1510 src/muuli_wdr.cpp:3113 src/PrefsUnifiedDlg.cpp:220
+#: src/amuleDlg.cpp:1510 src/muuli_wdr.cpp:3113 src/PrefsUnifiedDlg.cpp:221
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Nastavení"
@@ -1155,7 +1155,7 @@ msgstr "Jméno"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:101
+#: src/SharedFilesCtrl.cpp:108
 msgid "File Name"
 msgstr "Název souboru"
 
@@ -1196,33 +1196,33 @@ msgstr "Auto [No]"
 msgid "Auto [Hi]"
 msgstr "Auto [Vy]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:131
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
 msgid "Very low"
 msgstr "Velmi nízká"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:132
+#: src/SharedFilesCtrl.cpp:150
 msgid "Low"
 msgstr "Nízká"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:133
+#: src/SharedFilesCtrl.cpp:151
 msgid "Normal"
 msgstr "Normální"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:134
+#: src/SharedFilesCtrl.cpp:152
 msgid "High"
 msgstr "Vysoká"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:135
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
 msgid "Very High"
 msgstr "Velmi vysoká"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:136
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
 msgid "Release"
 msgstr "Vydání"
 
@@ -1372,7 +1372,7 @@ msgid "Part"
 msgstr "Část"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:102
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
 msgid "Size"
 msgstr "Velikost"
 
@@ -1395,7 +1395,7 @@ msgstr "Zdroje"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:104 src/SharedFilesCtrl.cpp:139
+#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
 msgid "Priority"
 msgstr "Priorita"
 
@@ -1423,7 +1423,7 @@ msgstr "Opravdu si přejete smazat vybraný soubor?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Opravdu si přejete smazat vybrané soubory?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:198
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1433,7 +1433,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:137
+#: src/SharedFilesCtrl.cpp:155
 msgid "Auto"
 msgstr "Auto"
 
@@ -1485,11 +1485,11 @@ msgstr "Zobrazit všechny komentáře"
 msgid "Copy magnet URI to clipboard"
 msgstr "Zkopírovat magnet URI do schránky"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:158
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
 msgid "Copy eD2k &link to clipboard"
 msgstr "Zkopírovat eD2k &odkaz do schránky"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
 msgid "Copy feedback to clipboard"
 msgstr "Uložit odezvu do schránky"
 
@@ -1505,11 +1505,11 @@ msgstr "Zařadit do kategorie"
 msgid "&Open the file"
 msgstr "&Otevřít tento soubor"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:745
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
 msgid "Enter new name for this file:"
 msgstr "Zadejte nový název pro tento soubor:"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:746
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
 msgid "File rename"
 msgstr "Přejmenování souboru"
 
@@ -1543,7 +1543,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Náhled souboru"
 
-#: src/DownloadListCtrl.cpp:1459
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "CHYBA: Nezdařilo se spustit externí přehrávač! Příkaz: `%s'"
@@ -2836,7 +2836,7 @@ msgstr "Vyhledávání"
 msgid "Name:"
 msgstr "Název:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:103
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
 msgid "Type"
 msgstr "Typ"
 
@@ -2980,7 +2980,7 @@ msgstr "Vyčistí dokončená stahování"
 msgid "File sources:"
 msgstr "Zdroje souboru:"
 
-#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:189
+#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:190
 msgid "General"
 msgstr "Hlavní"
 
@@ -4478,7 +4478,7 @@ msgstr "Zavře tento chat."
 msgid "Connect to any server and/or Kad"
 msgstr "Připojit k nějakému serveru a/nebo Kadu"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Sdílené soubory"
 
@@ -5029,78 +5029,78 @@ msgstr "TCP port nemůže být vyšší než 65532, protože UDP port je TCP+3"
 msgid "Default port will be used (%d)"
 msgstr "Bude použit výchozí port (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:190 src/Statistics.cpp:859
+#: src/PrefsUnifiedDlg.cpp:191 src/Statistics.cpp:859
 msgid "Connection"
 msgstr "Připojení"
 
-#: src/PrefsUnifiedDlg.cpp:191 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:192 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "Adresáře"
 
-#: src/PrefsUnifiedDlg.cpp:192 src/Statistics.cpp:904
+#: src/PrefsUnifiedDlg.cpp:193 src/Statistics.cpp:904
 msgid "Servers"
 msgstr "Servery"
 
-#: src/PrefsUnifiedDlg.cpp:193 src/ServerListCtrl.cpp:94
+#: src/PrefsUnifiedDlg.cpp:194 src/ServerListCtrl.cpp:94
 msgid "Files"
 msgstr "Soubory"
 
-#: src/PrefsUnifiedDlg.cpp:194
+#: src/PrefsUnifiedDlg.cpp:195
 msgid "Security"
 msgstr "Bezpečnost"
 
-#: src/PrefsUnifiedDlg.cpp:195
+#: src/PrefsUnifiedDlg.cpp:196
 msgid "Interface"
 msgstr "Rozhraní"
 
-#: src/PrefsUnifiedDlg.cpp:202
+#: src/PrefsUnifiedDlg.cpp:203
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:205
+#: src/PrefsUnifiedDlg.cpp:206
 msgid "Proxy"
 msgstr "Proxy"
 
-#: src/PrefsUnifiedDlg.cpp:206
+#: src/PrefsUnifiedDlg.cpp:207
 msgid "Filters"
 msgstr "Filtry"
 
-#: src/PrefsUnifiedDlg.cpp:207
+#: src/PrefsUnifiedDlg.cpp:208
 msgid "Remote Controls"
 msgstr "Vzdálené ovládání"
 
-#: src/PrefsUnifiedDlg.cpp:208
+#: src/PrefsUnifiedDlg.cpp:209
 msgid "Online Signature"
 msgstr "Online podpis"
 
-#: src/PrefsUnifiedDlg.cpp:209
+#: src/PrefsUnifiedDlg.cpp:210
 msgid "Advanced"
 msgstr "Pokročilé"
 
-#: src/PrefsUnifiedDlg.cpp:210
+#: src/PrefsUnifiedDlg.cpp:211
 msgid "Events"
 msgstr "Události"
 
-#: src/PrefsUnifiedDlg.cpp:213
+#: src/PrefsUnifiedDlg.cpp:214
 msgid "Debugging"
 msgstr "Debugování"
 
-#: src/PrefsUnifiedDlg.cpp:324
+#: src/PrefsUnifiedDlg.cpp:325
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:345
+#: src/PrefsUnifiedDlg.cpp:346
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:361
+#: src/PrefsUnifiedDlg.cpp:362
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:402
+#: src/PrefsUnifiedDlg.cpp:403
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5116,26 +5116,26 @@ msgstr ""
 "aMule poběží v pohodě bez změny\n"
 "nastavení na tomto tabu."
 
-#: src/PrefsUnifiedDlg.cpp:465
+#: src/PrefsUnifiedDlg.cpp:466
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:513
+#: src/PrefsUnifiedDlg.cpp:514
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:566
+#: src/PrefsUnifiedDlg.cpp:582
 msgid "The type of proxy you are connecting to"
 msgstr "Typ proxy, ke které se připojujete"
 
-#: src/PrefsUnifiedDlg.cpp:740
+#: src/PrefsUnifiedDlg.cpp:756
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:814
+#: src/PrefsUnifiedDlg.cpp:830
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5143,65 +5143,65 @@ msgstr ""
 "Restartujte aMule, aby se projevily následující změny:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:821
+#: src/PrefsUnifiedDlg.cpp:837
 msgid "- TCP port changed.\n"
 msgstr "- TCP port změněn.\n"
 
-#: src/PrefsUnifiedDlg.cpp:826
+#: src/PrefsUnifiedDlg.cpp:842
 msgid "- UDP port changed.\n"
 msgstr "- UDP port změněn.\n"
 
-#: src/PrefsUnifiedDlg.cpp:831
+#: src/PrefsUnifiedDlg.cpp:847
 #, fuzzy
 msgid "- External connect port changed.\n"
 msgstr "Externí připojení uzavřeno."
 
-#: src/PrefsUnifiedDlg.cpp:835
+#: src/PrefsUnifiedDlg.cpp:851
 #, fuzzy
 msgid "- External connect acceptance changed.\n"
 msgstr "Nové externí připojení přijato"
 
-#: src/PrefsUnifiedDlg.cpp:839
+#: src/PrefsUnifiedDlg.cpp:855
 #, fuzzy
 msgid "- External connect interface changed.\n"
 msgstr "Externí připojení uzavřeno."
 
-#: src/PrefsUnifiedDlg.cpp:843
+#: src/PrefsUnifiedDlg.cpp:859
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "Zatemnění protokolu"
 
-#: src/PrefsUnifiedDlg.cpp:852
+#: src/PrefsUnifiedDlg.cpp:868
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:863
+#: src/PrefsUnifiedDlg.cpp:879
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:876
+#: src/PrefsUnifiedDlg.cpp:892
 msgid "- Language changed.\n"
 msgstr "- Jazyk byl změněn.\n"
 
-#: src/PrefsUnifiedDlg.cpp:881
+#: src/PrefsUnifiedDlg.cpp:897
 msgid "- Temp folder changed.\n"
 msgstr "- Dočasný adresář byl změněn.\n"
 
-#: src/PrefsUnifiedDlg.cpp:886
+#: src/PrefsUnifiedDlg.cpp:902
 msgid "- ED2K network enabled.\n"
 msgstr "- Síť eD2k povolena.\n"
 
-#: src/PrefsUnifiedDlg.cpp:975
+#: src/PrefsUnifiedDlg.cpp:991
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:980
+#: src/PrefsUnifiedDlg.cpp:996
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5209,7 +5209,7 @@ msgstr ""
 "Kad se nespustí, když máte zakázaný UDP port.\n"
 "Povolte UDP port, nebo zakažte připojování na Kad."
 
-#: src/PrefsUnifiedDlg.cpp:1033
+#: src/PrefsUnifiedDlg.cpp:1049
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5219,61 +5219,61 @@ msgstr ""
 "Nyní MUSÍTE restartovat aMule.\n"
 "Pokud to neuděláte, tak si pak nestěžujte, když se přihodí něco špatného.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1094
+#: src/PrefsUnifiedDlg.cpp:1110
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1096
+#: src/PrefsUnifiedDlg.cpp:1112
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1097
+#: src/PrefsUnifiedDlg.cpp:1113
 #, fuzzy
 msgid "Autostart"
 msgstr "Automatické obnovování spuštěno"
 
-#: src/PrefsUnifiedDlg.cpp:1164
+#: src/PrefsUnifiedDlg.cpp:1180
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
 "Click on the button \"List\" by this checkbox to enter an URL."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1305
+#: src/PrefsUnifiedDlg.cpp:1321
 msgid "Temporary files"
 msgstr "Dočasné soubory"
 
-#: src/PrefsUnifiedDlg.cpp:1310
+#: src/PrefsUnifiedDlg.cpp:1326
 msgid "Incoming files"
 msgstr "Příchozí soubory"
 
-#: src/PrefsUnifiedDlg.cpp:1315
+#: src/PrefsUnifiedDlg.cpp:1331
 msgid "Online Signatures"
 msgstr "Online podpisy"
 
-#: src/PrefsUnifiedDlg.cpp:1328
+#: src/PrefsUnifiedDlg.cpp:1344
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "Zvolte adresář pro %s"
 
-#: src/PrefsUnifiedDlg.cpp:1344
+#: src/PrefsUnifiedDlg.cpp:1360
 msgid "Browse for videoplayer"
 msgstr "Zvolit přehrávač videa"
 
-#: src/PrefsUnifiedDlg.cpp:1348
+#: src/PrefsUnifiedDlg.cpp:1364
 msgid "Select browser"
 msgstr "Výběr prohlížeče"
 
-#: src/PrefsUnifiedDlg.cpp:1354
+#: src/PrefsUnifiedDlg.cpp:1370
 #, c-format
 msgid "Executable%s"
 msgstr "Spustitelný soubor %s"
 
-#: src/PrefsUnifiedDlg.cpp:1374
+#: src/PrefsUnifiedDlg.cpp:1390
 msgid "Edit server list"
 msgstr "Upravit seznam serverů"
 
-#: src/PrefsUnifiedDlg.cpp:1375
+#: src/PrefsUnifiedDlg.cpp:1391
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5281,42 +5281,42 @@ msgstr ""
 "Sem přidejte URL pro stažení server.met souborů.\n"
 "Pouze jedno URL na každý řádek."
 
-#: src/PrefsUnifiedDlg.cpp:1423
+#: src/PrefsUnifiedDlg.cpp:1439
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1552
+#: src/PrefsUnifiedDlg.cpp:1568
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1554
+#: src/PrefsUnifiedDlg.cpp:1570
 #, fuzzy
 msgid "Custom source"
 msgstr "Kompletní zdroje"
 
-#: src/PrefsUnifiedDlg.cpp:1556
+#: src/PrefsUnifiedDlg.cpp:1572
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1576
+#: src/PrefsUnifiedDlg.cpp:1592
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Stav:"
 
-#: src/PrefsUnifiedDlg.cpp:1578
+#: src/PrefsUnifiedDlg.cpp:1594
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Stav:"
 
-#: src/PrefsUnifiedDlg.cpp:1582
+#: src/PrefsUnifiedDlg.cpp:1598
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1584
+#: src/PrefsUnifiedDlg.cpp:1600
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1626 src/PrefsUnifiedDlg.cpp:1650
+#: src/PrefsUnifiedDlg.cpp:1642 src/PrefsUnifiedDlg.cpp:1666
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
@@ -5324,7 +5324,7 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
-#: src/PrefsUnifiedDlg.cpp:1634
+#: src/PrefsUnifiedDlg.cpp:1650
 #, fuzzy, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
@@ -5332,12 +5332,12 @@ msgstr[0] "Čas pro průměrný graf: %d minut"
 msgstr[1] "Čas pro průměrný graf: %d minut"
 msgstr[2] ""
 
-#: src/PrefsUnifiedDlg.cpp:1643
+#: src/PrefsUnifiedDlg.cpp:1659
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1658
+#: src/PrefsUnifiedDlg.cpp:1674
 #, fuzzy, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
@@ -5345,7 +5345,7 @@ msgstr[0] "Velikost zásobníku pro soubory: %d bajtů"
 msgstr[1] "Velikost zásobníku pro soubory: %d bajtů"
 msgstr[2] ""
 
-#: src/PrefsUnifiedDlg.cpp:1668
+#: src/PrefsUnifiedDlg.cpp:1684
 #, fuzzy, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
@@ -5353,7 +5353,7 @@ msgstr[0] "Velikost fronty pro odesílání: %d klientů"
 msgstr[1] "Velikost fronty pro odesílání: %d klientů"
 msgstr[2] ""
 
-#: src/PrefsUnifiedDlg.cpp:1678
+#: src/PrefsUnifiedDlg.cpp:1694
 #, fuzzy, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
@@ -5361,74 +5361,74 @@ msgstr[0] "Interval pro obnovení připojení k serveru: %d minut"
 msgstr[1] "Interval pro obnovení připojení k serveru: %d minut"
 msgstr[2] ""
 
-#: src/PrefsUnifiedDlg.cpp:1683
+#: src/PrefsUnifiedDlg.cpp:1699
 msgid "Server connection refresh interval: Disabled"
 msgstr "Interval pro obnovení připojení k serveru: Zakázáno"
 
-#: src/PrefsUnifiedDlg.cpp:1727
+#: src/PrefsUnifiedDlg.cpp:1743
 msgid "disabled"
 msgstr "zakázáno"
 
-#: src/PrefsUnifiedDlg.cpp:1753
+#: src/PrefsUnifiedDlg.cpp:1769
 #, fuzzy, c-format
 msgid "Execute command on '%s' event"
 msgstr "Spustí příkaz při událost `%s'"
 
-#: src/PrefsUnifiedDlg.cpp:1760
+#: src/PrefsUnifiedDlg.cpp:1776
 msgid "Enable command execution on core"
 msgstr "Povolit jaderné příkazy"
 
-#: src/PrefsUnifiedDlg.cpp:1772
+#: src/PrefsUnifiedDlg.cpp:1788
 msgid "Core command:"
 msgstr "Příkaz jádra:"
 
-#: src/PrefsUnifiedDlg.cpp:1788
+#: src/PrefsUnifiedDlg.cpp:1804
 msgid "Enable command execution on GUI"
 msgstr "Povolit GUI příkazy"
 
-#: src/PrefsUnifiedDlg.cpp:1800
+#: src/PrefsUnifiedDlg.cpp:1816
 msgid "GUI command:"
 msgstr "Příkaz GUI:"
 
-#: src/PrefsUnifiedDlg.cpp:1816
+#: src/PrefsUnifiedDlg.cpp:1832
 msgid "The following variables will be replaced:"
 msgstr "Následující proměnné budou nahrazeny:"
 
-#: src/PrefsUnifiedDlg.cpp:1975
+#: src/PrefsUnifiedDlg.cpp:1991
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1980
+#: src/PrefsUnifiedDlg.cpp:1996
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1983
+#: src/PrefsUnifiedDlg.cpp:1999
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Sdílené adresáře"
 
-#: src/PrefsUnifiedDlg.cpp:2012
+#: src/PrefsUnifiedDlg.cpp:2028
 #, fuzzy
 msgid "Reloading shared files…"
 msgstr "Znovu načíst vaše sdílené soubory"
 
-#: src/PrefsUnifiedDlg.cpp:2012
+#: src/PrefsUnifiedDlg.cpp:2028
 msgid "Scanning for subdirectories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2013
+#: src/PrefsUnifiedDlg.cpp:2029
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Sdílené adresáře"
 
-#: src/PrefsUnifiedDlg.cpp:2040
+#: src/PrefsUnifiedDlg.cpp:2056
 #, c-format
 msgid "Scanned %u directories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2090
+#: src/PrefsUnifiedDlg.cpp:2106
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Znovu načte seznam sdílených souborů."
@@ -5478,7 +5478,7 @@ msgstr ""
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Neočekávaná chyba během vyhledávání v síti Kad: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:105
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
 msgid "FileID"
 msgstr "ID souboru"
 
@@ -6114,89 +6114,93 @@ msgstr "Název souboru"
 msgid "Shares File List"
 msgstr "Sdílené soubory"
 
-#: src/SharedFilesCtrl.cpp:106
+#: src/SharedFilesCtrl.cpp:113
 msgid "Requests"
 msgstr "Požadavky"
 
-#: src/SharedFilesCtrl.cpp:107
+#: src/SharedFilesCtrl.cpp:114
 msgid "Accepted Requests"
 msgstr "Přijaté požadavky"
 
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:115
 msgid "Transferred Data"
 msgstr "Přenesená data"
 
-#: src/SharedFilesCtrl.cpp:109
+#: src/SharedFilesCtrl.cpp:116
 msgid "Share Ratio"
 msgstr "Poměr sdílení"
 
-#: src/SharedFilesCtrl.cpp:110
+#: src/SharedFilesCtrl.cpp:117
 msgid "Obtained Parts"
 msgstr "Obdržené části"
 
-#: src/SharedFilesCtrl.cpp:111
+#: src/SharedFilesCtrl.cpp:118
 msgid "Complete Sources"
 msgstr "Kompletní zdroje"
 
-#: src/SharedFilesCtrl.cpp:112
+#: src/SharedFilesCtrl.cpp:119
 msgid "Directory Path"
 msgstr "Cesta"
 
-#: src/SharedFilesCtrl.cpp:144
+#: src/SharedFilesCtrl.cpp:140
+msgid "Play"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:161
 msgid "Add Comment/Rating"
 msgstr "Přidat komentář/hodnocení"
 
-#: src/SharedFilesCtrl.cpp:146
+#: src/SharedFilesCtrl.cpp:163
 msgid "Edit Comment/Rating"
 msgstr "Upravit komentář/hodnocení"
 
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:167
 msgid "Rename"
 msgstr "Přejmenovat"
 
-#: src/SharedFilesCtrl.cpp:154
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add files in collection to transfer list"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:174
 msgid "Copy magnet &URI to clipboard"
 msgstr "Zkopírovat magnet URI do schránky"
 
-#: src/SharedFilesCtrl.cpp:159
+#: src/SharedFilesCtrl.cpp:176
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Zkopírovat eD2k odkaz do schránky (%zdroj)"
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:178
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:162
+#: src/SharedFilesCtrl.cpp:179
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:164
+#: src/SharedFilesCtrl.cpp:181
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:165
+#: src/SharedFilesCtrl.cpp:182
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:166
+#: src/SharedFilesCtrl.cpp:183
 #, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Zkopírovat ED2K odkaz do schránky (AICH info)"
 
-#: src/SharedFilesCtrl.cpp:320
+#: src/SharedFilesCtrl.cpp:421
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "K vytvoření platného odkazu potřebujete HighID"
 
-#: src/SharedFilesCtrl.cpp:512
+#: src/SharedFilesCtrl.cpp:613
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Sdílené soubory (%i)"
 
-#: src/SharedFilesCtrl.cpp:658 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[PartSoubor]"
 

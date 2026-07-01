@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 09:20-0700\n"
+"POT-Creation-Date: 2026-07-01 15:49-0700\n"
 "PO-Revision-Date: 2026-06-25 11:07+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -183,7 +183,7 @@ msgid "Password set and external connections enabled."
 msgstr "Pasahitza ezarria eta kanpo konexioak gaiturik."
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1035 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
 msgid "WARNING"
 msgstr "OHARRA"
 
@@ -531,8 +531,8 @@ msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 msgstr "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
 
 #: src/amuleDlg.cpp:544 src/KadDlg.cpp:190 src/PartFile.cpp:1015
-#: src/PrefsUnifiedDlg.cpp:854 src/PrefsUnifiedDlg.cpp:982
-#: src/PrefsUnifiedDlg.cpp:1167
+#: src/PrefsUnifiedDlg.cpp:870 src/PrefsUnifiedDlg.cpp:998
+#: src/PrefsUnifiedDlg.cpp:1183
 msgid "Message"
 msgstr "Mezua"
 
@@ -704,7 +704,7 @@ msgstr "Mezuak"
 msgid "Messages Window"
 msgstr "Mezu leihoa"
 
-#: src/amuleDlg.cpp:1503 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:204
+#: src/amuleDlg.cpp:1503 src/muuli_wdr.cpp:3111 src/PrefsUnifiedDlg.cpp:205
 #: src/Statistics.cpp:779 src/Statistics.cpp:1161
 msgid "Statistics"
 msgstr "Estatistikak"
@@ -713,7 +713,7 @@ msgstr "Estatistikak"
 msgid "Statistics Graph Window"
 msgstr "Estatistika grafiko leihoa"
 
-#: src/amuleDlg.cpp:1510 src/muuli_wdr.cpp:3113 src/PrefsUnifiedDlg.cpp:220
+#: src/amuleDlg.cpp:1510 src/muuli_wdr.cpp:3113 src/PrefsUnifiedDlg.cpp:221
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Hobespenak"
@@ -1155,7 +1155,7 @@ msgstr "Erabiltzaile izena"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:101
+#: src/SharedFilesCtrl.cpp:108
 msgid "File Name"
 msgstr "Fitxategi izena"
 
@@ -1195,33 +1195,33 @@ msgstr "Auto [Nor]"
 msgid "Auto [Hi]"
 msgstr "Auto[Alt]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:131
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
 msgid "Very low"
 msgstr "Oso txikia"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:132
+#: src/SharedFilesCtrl.cpp:150
 msgid "Low"
 msgstr "Baxua"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:133
+#: src/SharedFilesCtrl.cpp:151
 msgid "Normal"
 msgstr "Normala"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:134
+#: src/SharedFilesCtrl.cpp:152
 msgid "High"
 msgstr "Altua"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:135
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
 msgid "Very High"
 msgstr "Oso Altua"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:136
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
 msgid "Release"
 msgstr "Bertsioa"
 
@@ -1371,7 +1371,7 @@ msgid "Part"
 msgstr "Zatia"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:102
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
 msgid "Size"
 msgstr "Tamaina"
 
@@ -1394,7 +1394,7 @@ msgstr "Jatorriak"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:104 src/SharedFilesCtrl.cpp:139
+#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
 msgid "Priority"
 msgstr "Lehentasuna"
 
@@ -1422,7 +1422,7 @@ msgstr "Ziur zaude aukeratutako fitxategia ezabatu nahi duzula?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Ziur zaude aukeratutako fitxategia ezabatu nahi duzula?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:198
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1432,7 +1432,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:137
+#: src/SharedFilesCtrl.cpp:155
 msgid "Auto"
 msgstr "Auto"
 
@@ -1484,11 +1484,11 @@ msgstr "Erakutsi iruzkin guztiak"
 msgid "Copy magnet URI to clipboard"
 msgstr "Kopiatu URI magnetikoa arbelera"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:158
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
 msgid "Copy eD2k &link to clipboard"
 msgstr "Kopiatu eD2k &lotura arbelera"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
 msgid "Copy feedback to clipboard"
 msgstr "Kopiatu berrelikadura arbelera"
 
@@ -1504,11 +1504,11 @@ msgstr "Ezarri kategoria bat"
 msgid "&Open the file"
 msgstr "&Ireki fitxategia"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:745
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
 msgid "Enter new name for this file:"
 msgstr "Sar izen berri bat fitxategi honentzat:"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:746
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
 msgid "File rename"
 msgstr "Fitxategia berrizendatu"
 
@@ -1544,7 +1544,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Fitxategi aurreikuspena"
 
-#: src/DownloadListCtrl.cpp:1459
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: `%s'"
@@ -2842,7 +2842,7 @@ msgstr "Bilatu"
 msgid "Name:"
 msgstr "Izena:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:103
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
 msgid "Type"
 msgstr "Mota"
 
@@ -2986,7 +2986,7 @@ msgstr "Garbitu amaituriko deskargak"
 msgid "File sources:"
 msgstr "Fitxategiaren iturburua:"
 
-#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:189
+#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:190
 msgid "General"
 msgstr "Orokorra"
 
@@ -4480,7 +4480,7 @@ msgstr "Itxi elkarrizketa saio hau."
 msgid "Connect to any server and/or Kad"
 msgstr "Konektatu edozein zerbitzari eta/edo Kad"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Partekatutako fitxategiak"
 
@@ -5025,63 +5025,63 @@ msgstr "TCP ataka ezin da 65532 baino altuagoa izan UDP socket-a TCP+3 bait da"
 msgid "Default port will be used (%d)"
 msgstr "Lehenetsiriko ataka erabiliko da (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:190 src/Statistics.cpp:859
+#: src/PrefsUnifiedDlg.cpp:191 src/Statistics.cpp:859
 msgid "Connection"
 msgstr "Konexioa"
 
-#: src/PrefsUnifiedDlg.cpp:191 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:192 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "Direktorioak"
 
-#: src/PrefsUnifiedDlg.cpp:192 src/Statistics.cpp:904
+#: src/PrefsUnifiedDlg.cpp:193 src/Statistics.cpp:904
 msgid "Servers"
 msgstr "Zerbitzariak"
 
-#: src/PrefsUnifiedDlg.cpp:193 src/ServerListCtrl.cpp:94
+#: src/PrefsUnifiedDlg.cpp:194 src/ServerListCtrl.cpp:94
 msgid "Files"
 msgstr "Fitxategiak"
 
-#: src/PrefsUnifiedDlg.cpp:194
+#: src/PrefsUnifiedDlg.cpp:195
 msgid "Security"
 msgstr "Segurtasuna"
 
-#: src/PrefsUnifiedDlg.cpp:195
+#: src/PrefsUnifiedDlg.cpp:196
 msgid "Interface"
 msgstr "Interfazea"
 
-#: src/PrefsUnifiedDlg.cpp:202
+#: src/PrefsUnifiedDlg.cpp:203
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:205
+#: src/PrefsUnifiedDlg.cpp:206
 msgid "Proxy"
 msgstr "Proxy-a"
 
-#: src/PrefsUnifiedDlg.cpp:206
+#: src/PrefsUnifiedDlg.cpp:207
 msgid "Filters"
 msgstr "Iragazkiak"
 
-#: src/PrefsUnifiedDlg.cpp:207
+#: src/PrefsUnifiedDlg.cpp:208
 msgid "Remote Controls"
 msgstr "Urruneko kontrolak"
 
-#: src/PrefsUnifiedDlg.cpp:208
+#: src/PrefsUnifiedDlg.cpp:209
 msgid "Online Signature"
 msgstr "Sinadura linean"
 
-#: src/PrefsUnifiedDlg.cpp:209
+#: src/PrefsUnifiedDlg.cpp:210
 msgid "Advanced"
 msgstr "Aurreratua"
 
-#: src/PrefsUnifiedDlg.cpp:210
+#: src/PrefsUnifiedDlg.cpp:211
 msgid "Events"
 msgstr "Gertaerak"
 
-#: src/PrefsUnifiedDlg.cpp:213
+#: src/PrefsUnifiedDlg.cpp:214
 msgid "Debugging"
 msgstr "Araztena"
 
-#: src/PrefsUnifiedDlg.cpp:324
+#: src/PrefsUnifiedDlg.cpp:325
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5091,15 +5091,15 @@ msgstr ""
 "    %PARTFILE - fitxategiaren bide osoa\n"
 "    %PARTNAME - fitxategi-izena soilik"
 
-#: src/PrefsUnifiedDlg.cpp:345
+#: src/PrefsUnifiedDlg.cpp:346
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:361
+#: src/PrefsUnifiedDlg.cpp:362
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:402
+#: src/PrefsUnifiedDlg.cpp:403
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5115,26 +5115,26 @@ msgstr ""
 "Amulek ondo funtzionatu beharko luke ezarpen\n"
 "hauek aldatu gabe."
 
-#: src/PrefsUnifiedDlg.cpp:465
+#: src/PrefsUnifiedDlg.cpp:466
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Huts %d IDa eta %s gakoaz konfiguraziotik programara konektatzean"
 
-#: src/PrefsUnifiedDlg.cpp:513
+#: src/PrefsUnifiedDlg.cpp:514
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Huts %d IDa eta %s gakoaz konfiguraziotik programara datuak bidaltzean"
 
-#: src/PrefsUnifiedDlg.cpp:566
+#: src/PrefsUnifiedDlg.cpp:582
 msgid "The type of proxy you are connecting to"
 msgstr "Konektatzen ari zaren Proxy-aren mota"
 
-#: src/PrefsUnifiedDlg.cpp:740
+#: src/PrefsUnifiedDlg.cpp:756
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Huts %d IDa eta %s gakoaz programatik konfiguraziora datuak bidaltzean"
 
-#: src/PrefsUnifiedDlg.cpp:814
+#: src/PrefsUnifiedDlg.cpp:830
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5142,32 +5142,32 @@ msgstr ""
 "aMule berrabiarazi egin behar da aldaketa hauek gaitu ahal izateko:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:821
+#: src/PrefsUnifiedDlg.cpp:837
 msgid "- TCP port changed.\n"
 msgstr "- TCP ataka aldaturik.\n"
 
-#: src/PrefsUnifiedDlg.cpp:826
+#: src/PrefsUnifiedDlg.cpp:842
 msgid "- UDP port changed.\n"
 msgstr "- UDP - ataka aldaturik.\n"
 
-#: src/PrefsUnifiedDlg.cpp:831
+#: src/PrefsUnifiedDlg.cpp:847
 msgid "- External connect port changed.\n"
 msgstr "- Kanpo konexio ataka aldatua.\n"
 
-#: src/PrefsUnifiedDlg.cpp:835
+#: src/PrefsUnifiedDlg.cpp:851
 msgid "- External connect acceptance changed.\n"
 msgstr "- Lanpo konexio onarpena aldatua.\n"
 
-#: src/PrefsUnifiedDlg.cpp:839
+#: src/PrefsUnifiedDlg.cpp:855
 msgid "- External connect interface changed.\n"
 msgstr "- Kanpo konexio interfazea aldatua.\n"
 
-#: src/PrefsUnifiedDlg.cpp:843
+#: src/PrefsUnifiedDlg.cpp:859
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "Protokolo nahastea"
 
-#: src/PrefsUnifiedDlg.cpp:852
+#: src/PrefsUnifiedDlg.cpp:868
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5175,7 +5175,7 @@ msgstr ""
 "Auto-eguneraketa zerbitzari zerrenda hutsa dago.\n"
 "'Auto-eguneratu zerbitzari zerrenda abioan' ezgaitu egingo da."
 
-#: src/PrefsUnifiedDlg.cpp:863
+#: src/PrefsUnifiedDlg.cpp:879
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5183,19 +5183,19 @@ msgstr ""
 "Kanpo konexioak gaiturik dituzu baina ez duzu pasahitzik ezarri.\n"
 "Kanpo konexiorik ezin da onartu baliozko pasahitza ezarri arte."
 
-#: src/PrefsUnifiedDlg.cpp:876
+#: src/PrefsUnifiedDlg.cpp:892
 msgid "- Language changed.\n"
 msgstr "- Hizkuntza aldaturik.\n"
 
-#: src/PrefsUnifiedDlg.cpp:881
+#: src/PrefsUnifiedDlg.cpp:897
 msgid "- Temp folder changed.\n"
 msgstr "- Aldiroko karpeta aldaturik.\n"
 
-#: src/PrefsUnifiedDlg.cpp:886
+#: src/PrefsUnifiedDlg.cpp:902
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K sarea gaiturik.\n"
 
-#: src/PrefsUnifiedDlg.cpp:975
+#: src/PrefsUnifiedDlg.cpp:991
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5203,7 +5203,7 @@ msgstr ""
 "Bai eD2k eta bai Kad sareak ezgaiturik daude.\n"
 "Ezingo zara konektatu behintzat bietako bat gaitu arte."
 
-#: src/PrefsUnifiedDlg.cpp:980
+#: src/PrefsUnifiedDlg.cpp:996
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5211,7 +5211,7 @@ msgstr ""
 "Kad ezin da abiarazi zure UDP ataka ezgaiturik badago.\n"
 "UDP ataka gaitu edo Kad ezgaitu."
 
-#: src/PrefsUnifiedDlg.cpp:1033
+#: src/PrefsUnifiedDlg.cpp:1049
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5221,20 +5221,20 @@ msgstr ""
 "aMule orain berrabiarazi BEHAR duzu.\n"
 "Orain ez berrabiaraziaz gero ez kexatu ezer txarra gertatzen bada.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1094
+#: src/PrefsUnifiedDlg.cpp:1110
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1096
+#: src/PrefsUnifiedDlg.cpp:1112
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1097
+#: src/PrefsUnifiedDlg.cpp:1113
 #, fuzzy
 msgid "Autostart"
 msgstr "Auto berritzea abiarazirik"
 
-#: src/PrefsUnifiedDlg.cpp:1164
+#: src/PrefsUnifiedDlg.cpp:1180
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5244,41 +5244,41 @@ msgstr ""
 "Mesedez bete behintzat baliozko server.met fitxategi batetara zuzenduaz.\n"
 "Klikatu \"zerrenda\" botoia URL-a sartzeko."
 
-#: src/PrefsUnifiedDlg.cpp:1305
+#: src/PrefsUnifiedDlg.cpp:1321
 msgid "Temporary files"
 msgstr "Aldi baterako fitxategiak"
 
-#: src/PrefsUnifiedDlg.cpp:1310
+#: src/PrefsUnifiedDlg.cpp:1326
 msgid "Incoming files"
 msgstr "Sarrera fitxategiak"
 
-#: src/PrefsUnifiedDlg.cpp:1315
+#: src/PrefsUnifiedDlg.cpp:1331
 msgid "Online Signatures"
 msgstr "Linean sinadurak"
 
-#: src/PrefsUnifiedDlg.cpp:1328
+#: src/PrefsUnifiedDlg.cpp:1344
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "Aukeratu karpeta bat %s-rentzat"
 
-#: src/PrefsUnifiedDlg.cpp:1344
+#: src/PrefsUnifiedDlg.cpp:1360
 msgid "Browse for videoplayer"
 msgstr "Arakatu bideo erreproduzigailua"
 
-#: src/PrefsUnifiedDlg.cpp:1348
+#: src/PrefsUnifiedDlg.cpp:1364
 msgid "Select browser"
 msgstr "Hautatu nabigatzailea"
 
-#: src/PrefsUnifiedDlg.cpp:1354
+#: src/PrefsUnifiedDlg.cpp:1370
 #, c-format
 msgid "Executable%s"
 msgstr "Abiarazgarria%s"
 
-#: src/PrefsUnifiedDlg.cpp:1374
+#: src/PrefsUnifiedDlg.cpp:1390
 msgid "Edit server list"
 msgstr "Editatu zerbitzari zerrenda"
 
-#: src/PrefsUnifiedDlg.cpp:1375
+#: src/PrefsUnifiedDlg.cpp:1391
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5286,149 +5286,149 @@ msgstr ""
 "Gehitu hemen server.met deskargatzeko URL-a.\n"
 "URL helbide bat lerro bakoitzean."
 
-#: src/PrefsUnifiedDlg.cpp:1423
+#: src/PrefsUnifiedDlg.cpp:1439
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1552
+#: src/PrefsUnifiedDlg.cpp:1568
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1554
+#: src/PrefsUnifiedDlg.cpp:1570
 #, fuzzy
 msgid "Custom source"
 msgstr "Jatorri osoak"
 
-#: src/PrefsUnifiedDlg.cpp:1556
+#: src/PrefsUnifiedDlg.cpp:1572
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1576
+#: src/PrefsUnifiedDlg.cpp:1592
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Egoera:"
 
-#: src/PrefsUnifiedDlg.cpp:1578
+#: src/PrefsUnifiedDlg.cpp:1594
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Egoera:"
 
-#: src/PrefsUnifiedDlg.cpp:1582
+#: src/PrefsUnifiedDlg.cpp:1598
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1584
+#: src/PrefsUnifiedDlg.cpp:1600
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1626 src/PrefsUnifiedDlg.cpp:1650
+#: src/PrefsUnifiedDlg.cpp:1642 src/PrefsUnifiedDlg.cpp:1666
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "Eguneratze maiztasuna: seg %d"
 msgstr[1] "Eguneratze maiztasuna: %d seg"
 
-#: src/PrefsUnifiedDlg.cpp:1634
+#: src/PrefsUnifiedDlg.cpp:1650
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "Batez besteko grafiko denbora: minutu %d"
 msgstr[1] "Batez besteko grafiko denbora: %d minutu"
 
-#: src/PrefsUnifiedDlg.cpp:1643
+#: src/PrefsUnifiedDlg.cpp:1659
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Konexio grafiko eskala: %d"
 
-#: src/PrefsUnifiedDlg.cpp:1658
+#: src/PrefsUnifiedDlg.cpp:1674
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "Fitxategi buffer tamaina: byte %d"
 msgstr[1] "Fitxategi buffer tamaina: %d byte"
 
-#: src/PrefsUnifiedDlg.cpp:1668
+#: src/PrefsUnifiedDlg.cpp:1684
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "Igoera ilara tamaina: bezero %d"
 msgstr[1] "Igoera ilara tamaina: %d bezero"
 
-#: src/PrefsUnifiedDlg.cpp:1678
+#: src/PrefsUnifiedDlg.cpp:1694
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "Zerbitzari konexio berritze maiztasuna: minutu %d"
 msgstr[1] "Zerbitzari konexio berritze maiztasuna: %d minutu"
 
-#: src/PrefsUnifiedDlg.cpp:1683
+#: src/PrefsUnifiedDlg.cpp:1699
 msgid "Server connection refresh interval: Disabled"
 msgstr "Zerbitzarira konexio berritze maiztasuna: Ezgaiturik"
 
-#: src/PrefsUnifiedDlg.cpp:1727
+#: src/PrefsUnifiedDlg.cpp:1743
 msgid "disabled"
 msgstr "ezgaiturik"
 
-#: src/PrefsUnifiedDlg.cpp:1753
+#: src/PrefsUnifiedDlg.cpp:1769
 #, c-format
 msgid "Execute command on '%s' event"
 msgstr "Gertaeran'%s' komandoa exekutatu"
 
-#: src/PrefsUnifiedDlg.cpp:1760
+#: src/PrefsUnifiedDlg.cpp:1776
 msgid "Enable command execution on core"
 msgstr "Gaitu komando exekuzioa muinean"
 
-#: src/PrefsUnifiedDlg.cpp:1772
+#: src/PrefsUnifiedDlg.cpp:1788
 msgid "Core command:"
 msgstr "Muin komandoa:"
 
-#: src/PrefsUnifiedDlg.cpp:1788
+#: src/PrefsUnifiedDlg.cpp:1804
 msgid "Enable command execution on GUI"
 msgstr "Gaitu komando exekuzioa urruneko interfazean"
 
-#: src/PrefsUnifiedDlg.cpp:1800
+#: src/PrefsUnifiedDlg.cpp:1816
 msgid "GUI command:"
 msgstr "Urruneko interfaze komandoa:"
 
-#: src/PrefsUnifiedDlg.cpp:1816
+#: src/PrefsUnifiedDlg.cpp:1832
 msgid "The following variables will be replaced:"
 msgstr "Hurrengo aldagaiak aldatuko dira:"
 
-#: src/PrefsUnifiedDlg.cpp:1975
+#: src/PrefsUnifiedDlg.cpp:1991
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1980
+#: src/PrefsUnifiedDlg.cpp:1996
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1983
+#: src/PrefsUnifiedDlg.cpp:1999
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Partekatutako karpetak"
 
-#: src/PrefsUnifiedDlg.cpp:2012
+#: src/PrefsUnifiedDlg.cpp:2028
 #, fuzzy
 msgid "Reloading shared files…"
 msgstr "Berritu zure partekatutako fitxategiak"
 
-#: src/PrefsUnifiedDlg.cpp:2012
+#: src/PrefsUnifiedDlg.cpp:2028
 msgid "Scanning for subdirectories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2013
+#: src/PrefsUnifiedDlg.cpp:2029
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Partekatutako karpetak"
 
-#: src/PrefsUnifiedDlg.cpp:2040
+#: src/PrefsUnifiedDlg.cpp:2056
 #, c-format
 msgid "Scanned %u directories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2090
+#: src/PrefsUnifiedDlg.cpp:2106
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Partekatutako fitxategi zerrenda birkargatu."
@@ -5479,7 +5479,7 @@ msgstr "Bilatzeko gakoa: %s"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Espero gabeko errorea Kad bilaketa egitean: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:105
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
 msgid "FileID"
 msgstr "FitxategiID"
 
@@ -6102,89 +6102,93 @@ msgstr "Fitxategi lokalaren izena"
 msgid "Shares File List"
 msgstr "Partekatutako fitxategi zerrendak"
 
-#: src/SharedFilesCtrl.cpp:106
+#: src/SharedFilesCtrl.cpp:113
 msgid "Requests"
 msgstr "Eskaerak"
 
-#: src/SharedFilesCtrl.cpp:107
+#: src/SharedFilesCtrl.cpp:114
 msgid "Accepted Requests"
 msgstr "Onartutako eskaerak"
 
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:115
 msgid "Transferred Data"
 msgstr "Transferitutako datuak"
 
-#: src/SharedFilesCtrl.cpp:109
+#: src/SharedFilesCtrl.cpp:116
 msgid "Share Ratio"
 msgstr "Partekatze erlazioa"
 
-#: src/SharedFilesCtrl.cpp:110
+#: src/SharedFilesCtrl.cpp:117
 msgid "Obtained Parts"
 msgstr "Eskuratutako zatiak"
 
-#: src/SharedFilesCtrl.cpp:111
+#: src/SharedFilesCtrl.cpp:118
 msgid "Complete Sources"
 msgstr "Jatorri osoak"
 
-#: src/SharedFilesCtrl.cpp:112
+#: src/SharedFilesCtrl.cpp:119
 msgid "Directory Path"
 msgstr "Karpeta bidea"
 
-#: src/SharedFilesCtrl.cpp:144
+#: src/SharedFilesCtrl.cpp:140
+msgid "Play"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:161
 msgid "Add Comment/Rating"
 msgstr "Iruzkina/Kalifikazioa gehitu"
 
-#: src/SharedFilesCtrl.cpp:146
+#: src/SharedFilesCtrl.cpp:163
 msgid "Edit Comment/Rating"
 msgstr "Iruzkina/Kalifikazioa editatu"
 
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:167
 msgid "Rename"
 msgstr "Izena aldatu"
 
-#: src/SharedFilesCtrl.cpp:154
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add files in collection to transfer list"
 msgstr "Gehitu fitxategiak bildumara zerrenda bidaltzeko"
 
-#: src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:174
 msgid "Copy magnet &URI to clipboard"
 msgstr "Kopiat&URI magnetikoa arbelera"
 
-#: src/SharedFilesCtrl.cpp:159
+#: src/SharedFilesCtrl.cpp:176
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Kopiatu eD2k lotura arbelera (&Jatorria)"
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:178
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Kopiatu eD2k lotura arbelera (Jatorria) (&zifratu aukerekin)"
 
-#: src/SharedFilesCtrl.cpp:162
+#: src/SharedFilesCtrl.cpp:179
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Kopiatu eD2k lotura arbelera (&ostalaria)"
 
-#: src/SharedFilesCtrl.cpp:164
+#: src/SharedFilesCtrl.cpp:181
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Kopiatu eD2k lotura arbelera (ostalaria) (&zifratu aukerekin)"
 
-#: src/SharedFilesCtrl.cpp:165
+#: src/SharedFilesCtrl.cpp:182
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Kopiatu eD2k lotura arbelera (&AICH argb)"
 
-#: src/SharedFilesCtrl.cpp:166
+#: src/SharedFilesCtrl.cpp:183
 #, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopiatu eD2k lotura arbelera (&AICH argb)"
 
-#: src/SharedFilesCtrl.cpp:320
+#: src/SharedFilesCtrl.cpp:421
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "ID altua behar duzu baliozko jatorri lotura bat sortzeko"
 
-#: src/SharedFilesCtrl.cpp:512
+#: src/SharedFilesCtrl.cpp:613
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Partekatutako fitxategiak (%i)"
 
-#: src/SharedFilesCtrl.cpp:658 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[ZatiFitxategia]"
 
