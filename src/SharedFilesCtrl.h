@@ -162,6 +162,14 @@ private:
 	 */
 	void OnPlayFile(wxCommandEvent &event);
 
+#ifndef CLIENT_GUI
+	/**
+	 * Event-handler for the Delete menu item. Deletes the selected
+	 * files from disk (permanently, no trash) and unshares them.
+	 */
+	void OnDeleteFile(wxCommandEvent &event);
+#endif
+
 	/**
 	 * Event-handler for the Set Priority menu items.
 	 */

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 15:49-0700\n"
+"POT-Creation-Date: 2026-07-01 16:44-0700\n"
 "PO-Revision-Date: 2026-06-25 11:09+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -183,7 +183,7 @@ msgid "Password set and external connections enabled."
 msgstr "גישה חיצונית חדשה התקבלה"
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:463
 msgid "WARNING"
 msgstr "אזהרה"
 
@@ -1150,7 +1150,7 @@ msgstr "שם משתמש"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:111
 msgid "File Name"
 msgstr "שם קובץ"
 
@@ -1190,33 +1190,33 @@ msgstr "אוטומטי [לא]"
 msgid "Auto [Hi]"
 msgstr "אוטומטי [גבוה]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:159
 msgid "Very low"
 msgstr "מאוד נמוך"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:160
 msgid "Low"
 msgstr "נמוך"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:151
+#: src/SharedFilesCtrl.cpp:161
 msgid "Normal"
 msgstr "רגיל"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:152
+#: src/SharedFilesCtrl.cpp:162
 msgid "High"
 msgstr "גבוה"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:163
 msgid "Very High"
 msgstr "מאוד גבוה"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:164
 msgid "Release"
 msgstr "שחרור"
 
@@ -1366,7 +1366,7 @@ msgid "Part"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:112
 msgid "Size"
 msgstr "גודל"
 
@@ -1389,7 +1389,7 @@ msgstr "מקורות"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:114 src/SharedFilesCtrl.cpp:167
 msgid "Priority"
 msgstr "עדיפות"
 
@@ -1417,7 +1417,7 @@ msgstr "האם אתה בטוח שברצונך למחוק את הקובץ שנב�
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "האם אתה בטוח שברצונל ךמחוק את הקבצים שנבחרו?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:225
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1425,7 +1425,7 @@ msgid ""
 msgstr ""
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:155
+#: src/SharedFilesCtrl.cpp:165
 msgid "Auto"
 msgstr "אוטמטי"
 
@@ -1477,11 +1477,11 @@ msgstr "הראה את כל ההערות"
 msgid "Copy magnet URI to clipboard"
 msgstr "העתק מגנט URI ללוח"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:185
 msgid "Copy eD2k &link to clipboard"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:194
 msgid "Copy feedback to clipboard"
 msgstr "העתק משוב ללוח"
 
@@ -1497,11 +1497,11 @@ msgstr "ייחס לקטיגוריה"
 msgid "&Open the file"
 msgstr "&תפתח את הקובץ"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:887
 msgid "Enter new name for this file:"
 msgstr "הכנס שם חדש עבור קובץ זה"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:888
 msgid "File rename"
 msgstr "שינוי שם לקובץ"
 
@@ -1535,7 +1535,7 @@ msgstr ""
 msgid "File preview"
 msgstr "תקדימון לקובץ"
 
-#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:318
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "שגיאה: הרצת נגן הסרטים נכשלה! הפקודה: '%s'"
@@ -2816,7 +2816,7 @@ msgstr "חיפוש"
 msgid "Name:"
 msgstr "שם:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:113
 msgid "Type"
 msgstr "סוג/טיפוס"
 
@@ -4456,7 +4456,7 @@ msgstr "סגור את הצ'אט הנוכחי."
 msgid "Connect to any server and/or Kad"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:139 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "קבצים משותפים"
 
@@ -5453,7 +5453,7 @@ msgstr ""
 msgid "Unexpected error while attempting Kad search: "
 msgstr "שגיאה לא צפויה בעת ניסיון ביצוע חיפוש ב קאד: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:115
 msgid "FileID"
 msgstr "מ\"ז של קובץ"
 
@@ -6090,93 +6090,102 @@ msgstr "שם קובץ"
 msgid "Shares File List"
 msgstr "קבצים משותפים"
 
-#: src/SharedFilesCtrl.cpp:113
+#: src/SharedFilesCtrl.cpp:116
 msgid "Requests"
 msgstr "בקשות"
 
-#: src/SharedFilesCtrl.cpp:114
+#: src/SharedFilesCtrl.cpp:117
 msgid "Accepted Requests"
 msgstr "בקשות שהתקבלו"
 
-#: src/SharedFilesCtrl.cpp:115
+#: src/SharedFilesCtrl.cpp:118
 msgid "Transferred Data"
 msgstr "מידע שנשנלח"
 
-#: src/SharedFilesCtrl.cpp:116
+#: src/SharedFilesCtrl.cpp:119
 msgid "Share Ratio"
 msgstr "יחס שיתוף"
 
-#: src/SharedFilesCtrl.cpp:117
+#: src/SharedFilesCtrl.cpp:120
 msgid "Obtained Parts"
 msgstr "חלקים שהושגו"
 
-#: src/SharedFilesCtrl.cpp:118
+#: src/SharedFilesCtrl.cpp:121
 msgid "Complete Sources"
 msgstr "מקורות שלמים"
 
-#: src/SharedFilesCtrl.cpp:119
+#: src/SharedFilesCtrl.cpp:122
 msgid "Directory Path"
 msgstr "נתיב תיקייה"
 
-#: src/SharedFilesCtrl.cpp:140
+#: src/SharedFilesCtrl.cpp:143
 msgid "Play"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:150
+msgid "Delete"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add Comment/Rating"
 msgstr "הוסף תגובה/דירוג"
 
-#: src/SharedFilesCtrl.cpp:163
+#: src/SharedFilesCtrl.cpp:173
 msgid "Edit Comment/Rating"
 msgstr "ערוך תגובה/דירוג"
 
-#: src/SharedFilesCtrl.cpp:167
+#: src/SharedFilesCtrl.cpp:177
 msgid "Rename"
 msgstr "שנה שם"
 
-#: src/SharedFilesCtrl.cpp:171
+#: src/SharedFilesCtrl.cpp:181
 msgid "Add files in collection to transfer list"
 msgstr "הוסף קבצים שבאסופה לרשימת המשלוח"
 
-#: src/SharedFilesCtrl.cpp:174
+#: src/SharedFilesCtrl.cpp:184
 msgid "Copy magnet &URI to clipboard"
 msgstr "העתק מגנט &URI ללוח"
 
-#: src/SharedFilesCtrl.cpp:176
+#: src/SharedFilesCtrl.cpp:186
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:178
+#: src/SharedFilesCtrl.cpp:188
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:179
+#: src/SharedFilesCtrl.cpp:189
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:181
+#: src/SharedFilesCtrl.cpp:191
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:182
+#: src/SharedFilesCtrl.cpp:192
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:183
+#: src/SharedFilesCtrl.cpp:193
 #, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "העתק קישור ED2k ללוח (מידע &AICH)"
 
-#: src/SharedFilesCtrl.cpp:421
+#: src/SharedFilesCtrl.cpp:345
+#, fuzzy, c-format
+msgid "ERROR: Failed to delete '%s'"
+msgstr "שגיאה: יצירת קובץ-החלקים נכשלה)"
+
+#: src/SharedFilesCtrl.cpp:462
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "אתה צריך מ\"ז גבוה (HighID) כדי לחןר קישור-מקור תקף"
 
-#: src/SharedFilesCtrl.cpp:613
+#: src/SharedFilesCtrl.cpp:654
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "קבצים משותפים (%i)"
 
-#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:800 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[קובץ-חלקים]"
 

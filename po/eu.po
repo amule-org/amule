@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 15:49-0700\n"
+"POT-Creation-Date: 2026-07-01 16:44-0700\n"
 "PO-Revision-Date: 2026-06-25 11:07+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -183,7 +183,7 @@ msgid "Password set and external connections enabled."
 msgstr "Pasahitza ezarria eta kanpo konexioak gaiturik."
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:463
 msgid "WARNING"
 msgstr "OHARRA"
 
@@ -1155,7 +1155,7 @@ msgstr "Erabiltzaile izena"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:111
 msgid "File Name"
 msgstr "Fitxategi izena"
 
@@ -1195,33 +1195,33 @@ msgstr "Auto [Nor]"
 msgid "Auto [Hi]"
 msgstr "Auto[Alt]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:159
 msgid "Very low"
 msgstr "Oso txikia"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:160
 msgid "Low"
 msgstr "Baxua"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:151
+#: src/SharedFilesCtrl.cpp:161
 msgid "Normal"
 msgstr "Normala"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:152
+#: src/SharedFilesCtrl.cpp:162
 msgid "High"
 msgstr "Altua"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:163
 msgid "Very High"
 msgstr "Oso Altua"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:164
 msgid "Release"
 msgstr "Bertsioa"
 
@@ -1371,7 +1371,7 @@ msgid "Part"
 msgstr "Zatia"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:112
 msgid "Size"
 msgstr "Tamaina"
 
@@ -1394,7 +1394,7 @@ msgstr "Jatorriak"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:114 src/SharedFilesCtrl.cpp:167
 msgid "Priority"
 msgstr "Lehentasuna"
 
@@ -1422,7 +1422,7 @@ msgstr "Ziur zaude aukeratutako fitxategia ezabatu nahi duzula?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Ziur zaude aukeratutako fitxategia ezabatu nahi duzula?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:225
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1432,7 +1432,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:155
+#: src/SharedFilesCtrl.cpp:165
 msgid "Auto"
 msgstr "Auto"
 
@@ -1484,11 +1484,11 @@ msgstr "Erakutsi iruzkin guztiak"
 msgid "Copy magnet URI to clipboard"
 msgstr "Kopiatu URI magnetikoa arbelera"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:185
 msgid "Copy eD2k &link to clipboard"
 msgstr "Kopiatu eD2k &lotura arbelera"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:194
 msgid "Copy feedback to clipboard"
 msgstr "Kopiatu berrelikadura arbelera"
 
@@ -1504,11 +1504,11 @@ msgstr "Ezarri kategoria bat"
 msgid "&Open the file"
 msgstr "&Ireki fitxategia"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:887
 msgid "Enter new name for this file:"
 msgstr "Sar izen berri bat fitxategi honentzat:"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:888
 msgid "File rename"
 msgstr "Fitxategia berrizendatu"
 
@@ -1544,7 +1544,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Fitxategi aurreikuspena"
 
-#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:318
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: `%s'"
@@ -2842,7 +2842,7 @@ msgstr "Bilatu"
 msgid "Name:"
 msgstr "Izena:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:113
 msgid "Type"
 msgstr "Mota"
 
@@ -4480,7 +4480,7 @@ msgstr "Itxi elkarrizketa saio hau."
 msgid "Connect to any server and/or Kad"
 msgstr "Konektatu edozein zerbitzari eta/edo Kad"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:139 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Partekatutako fitxategiak"
 
@@ -5479,7 +5479,7 @@ msgstr "Bilatzeko gakoa: %s"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Espero gabeko errorea Kad bilaketa egitean: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:115
 msgid "FileID"
 msgstr "FitxategiID"
 
@@ -6102,93 +6102,102 @@ msgstr "Fitxategi lokalaren izena"
 msgid "Shares File List"
 msgstr "Partekatutako fitxategi zerrendak"
 
-#: src/SharedFilesCtrl.cpp:113
+#: src/SharedFilesCtrl.cpp:116
 msgid "Requests"
 msgstr "Eskaerak"
 
-#: src/SharedFilesCtrl.cpp:114
+#: src/SharedFilesCtrl.cpp:117
 msgid "Accepted Requests"
 msgstr "Onartutako eskaerak"
 
-#: src/SharedFilesCtrl.cpp:115
+#: src/SharedFilesCtrl.cpp:118
 msgid "Transferred Data"
 msgstr "Transferitutako datuak"
 
-#: src/SharedFilesCtrl.cpp:116
+#: src/SharedFilesCtrl.cpp:119
 msgid "Share Ratio"
 msgstr "Partekatze erlazioa"
 
-#: src/SharedFilesCtrl.cpp:117
+#: src/SharedFilesCtrl.cpp:120
 msgid "Obtained Parts"
 msgstr "Eskuratutako zatiak"
 
-#: src/SharedFilesCtrl.cpp:118
+#: src/SharedFilesCtrl.cpp:121
 msgid "Complete Sources"
 msgstr "Jatorri osoak"
 
-#: src/SharedFilesCtrl.cpp:119
+#: src/SharedFilesCtrl.cpp:122
 msgid "Directory Path"
 msgstr "Karpeta bidea"
 
-#: src/SharedFilesCtrl.cpp:140
+#: src/SharedFilesCtrl.cpp:143
 msgid "Play"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:150
+msgid "Delete"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add Comment/Rating"
 msgstr "Iruzkina/Kalifikazioa gehitu"
 
-#: src/SharedFilesCtrl.cpp:163
+#: src/SharedFilesCtrl.cpp:173
 msgid "Edit Comment/Rating"
 msgstr "Iruzkina/Kalifikazioa editatu"
 
-#: src/SharedFilesCtrl.cpp:167
+#: src/SharedFilesCtrl.cpp:177
 msgid "Rename"
 msgstr "Izena aldatu"
 
-#: src/SharedFilesCtrl.cpp:171
+#: src/SharedFilesCtrl.cpp:181
 msgid "Add files in collection to transfer list"
 msgstr "Gehitu fitxategiak bildumara zerrenda bidaltzeko"
 
-#: src/SharedFilesCtrl.cpp:174
+#: src/SharedFilesCtrl.cpp:184
 msgid "Copy magnet &URI to clipboard"
 msgstr "Kopiat&URI magnetikoa arbelera"
 
-#: src/SharedFilesCtrl.cpp:176
+#: src/SharedFilesCtrl.cpp:186
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Kopiatu eD2k lotura arbelera (&Jatorria)"
 
-#: src/SharedFilesCtrl.cpp:178
+#: src/SharedFilesCtrl.cpp:188
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Kopiatu eD2k lotura arbelera (Jatorria) (&zifratu aukerekin)"
 
-#: src/SharedFilesCtrl.cpp:179
+#: src/SharedFilesCtrl.cpp:189
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Kopiatu eD2k lotura arbelera (&ostalaria)"
 
-#: src/SharedFilesCtrl.cpp:181
+#: src/SharedFilesCtrl.cpp:191
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Kopiatu eD2k lotura arbelera (ostalaria) (&zifratu aukerekin)"
 
-#: src/SharedFilesCtrl.cpp:182
+#: src/SharedFilesCtrl.cpp:192
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Kopiatu eD2k lotura arbelera (&AICH argb)"
 
-#: src/SharedFilesCtrl.cpp:183
+#: src/SharedFilesCtrl.cpp:193
 #, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopiatu eD2k lotura arbelera (&AICH argb)"
 
-#: src/SharedFilesCtrl.cpp:421
+#: src/SharedFilesCtrl.cpp:345
+#, fuzzy, c-format
+msgid "ERROR: Failed to delete '%s'"
+msgstr "ERROREA: Huts '%s' zati fitxategia irekitzean"
+
+#: src/SharedFilesCtrl.cpp:462
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "ID altua behar duzu baliozko jatorri lotura bat sortzeko"
 
-#: src/SharedFilesCtrl.cpp:613
+#: src/SharedFilesCtrl.cpp:654
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Partekatutako fitxategiak (%i)"
 
-#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:800 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[ZatiFitxategia]"
 

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 15:49-0700\n"
+"POT-Creation-Date: 2026-07-01 16:44-0700\n"
 "PO-Revision-Date: 2026-06-25 11:07+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -186,7 +186,7 @@ msgid "Password set and external connections enabled."
 msgstr "Νέα εξωτερική σύνδεση έγινε δεκτή"
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:463
 msgid "WARNING"
 msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ"
 
@@ -1165,7 +1165,7 @@ msgstr "Όνομα Χρήστη"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:111
 msgid "File Name"
 msgstr "Όνομα αρχείου"
 
@@ -1205,33 +1205,33 @@ msgstr "Αυτόματη [Κανονική]"
 msgid "Auto [Hi]"
 msgstr "Αυτόματη [Υψηλή]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:159
 msgid "Very low"
 msgstr "Πολύ χαμηλή"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:160
 msgid "Low"
 msgstr "Χαμηλή"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:151
+#: src/SharedFilesCtrl.cpp:161
 msgid "Normal"
 msgstr "Κανονική"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:152
+#: src/SharedFilesCtrl.cpp:162
 msgid "High"
 msgstr "Υψηλή"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:163
 msgid "Very High"
 msgstr "Πολύ υψηλή"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:164
 msgid "Release"
 msgstr "Επίσημη έκδοση"
 
@@ -1381,7 +1381,7 @@ msgid "Part"
 msgstr "Μέρος"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:112
 msgid "Size"
 msgstr "Μέγεθος"
 
@@ -1404,7 +1404,7 @@ msgstr "Αρ. πηγών"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:114 src/SharedFilesCtrl.cpp:167
 msgid "Priority"
 msgstr "Προτεραιότητα"
 
@@ -1432,7 +1432,7 @@ msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετ�
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε τα συγκεκριμένα αρχεία;"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:225
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1442,7 +1442,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:155
+#: src/SharedFilesCtrl.cpp:165
 msgid "Auto"
 msgstr "Αυτόματη"
 
@@ -1494,11 +1494,11 @@ msgstr "Εμφάνιση όλων των σχολίων"
 msgid "Copy magnet URI to clipboard"
 msgstr "Αντιγραφή μαγνητικής URI στο πρόχειρο"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:185
 msgid "Copy eD2k &link to clipboard"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:194
 msgid "Copy feedback to clipboard"
 msgstr "Αντιγραφή των συμβουλών στην πρόχειρη μνήμη"
 
@@ -1514,11 +1514,11 @@ msgstr "Ανάθεση σε κατηγορία"
 msgid "&Open the file"
 msgstr "&Άνοιγμα αρχείου"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:887
 msgid "Enter new name for this file:"
 msgstr "Δώστε νέο όνομα γι αυτό το αρχείο:"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:888
 msgid "File rename"
 msgstr "Μετονομασία αρχείου"
 
@@ -1554,7 +1554,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Προεπισκόπηση αρχείου"
 
-#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:318
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "ΣΦΑΛΜΑ: Αποτυχία εκτέλεσης του εξωτερικού προγράμματος εμφάνισης πολυμέσων! Εντολή: `%s'"
@@ -2862,7 +2862,7 @@ msgstr "Αναζήτηση"
 msgid "Name:"
 msgstr "Όνομα:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:113
 msgid "Type"
 msgstr "Τύπος"
 
@@ -4513,7 +4513,7 @@ msgstr "Κλείσιμο της συνομιλίας."
 msgid "Connect to any server and/or Kad"
 msgstr "Σύνδεση σε κάθε διακομιστή ή/και Kad"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:139 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Κοινόχρηστα αρχεία"
 
@@ -5518,7 +5518,7 @@ msgstr ""
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Άγνωστο σφάλμα όταν έγινε απόπειρα αναζήτησης στο Kad:"
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:115
 msgid "FileID"
 msgstr "Τιμή ταυτότητας αρχείου"
 
@@ -6155,93 +6155,102 @@ msgstr "Όνομα αρχείου"
 msgid "Shares File List"
 msgstr "Κοινόχρηστα αρχεία"
 
-#: src/SharedFilesCtrl.cpp:113
+#: src/SharedFilesCtrl.cpp:116
 msgid "Requests"
 msgstr "Αιτήσεις"
 
-#: src/SharedFilesCtrl.cpp:114
+#: src/SharedFilesCtrl.cpp:117
 msgid "Accepted Requests"
 msgstr "Δεκτές αιτήσεις"
 
-#: src/SharedFilesCtrl.cpp:115
+#: src/SharedFilesCtrl.cpp:118
 msgid "Transferred Data"
 msgstr "Όγκος δεδομένων που μεταφέρθηκαν"
 
-#: src/SharedFilesCtrl.cpp:116
+#: src/SharedFilesCtrl.cpp:119
 msgid "Share Ratio"
 msgstr "Λόγος συμμετοχής"
 
-#: src/SharedFilesCtrl.cpp:117
+#: src/SharedFilesCtrl.cpp:120
 msgid "Obtained Parts"
 msgstr "Κεκτημένα τμήματα"
 
-#: src/SharedFilesCtrl.cpp:118
+#: src/SharedFilesCtrl.cpp:121
 msgid "Complete Sources"
 msgstr "Ολοκληρωμένες πηγές"
 
-#: src/SharedFilesCtrl.cpp:119
+#: src/SharedFilesCtrl.cpp:122
 msgid "Directory Path"
 msgstr "Μονοπάτι καταλόγου"
 
-#: src/SharedFilesCtrl.cpp:140
+#: src/SharedFilesCtrl.cpp:143
 msgid "Play"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:150
+msgid "Delete"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add Comment/Rating"
 msgstr "Προσθήκη σχολίου/Αξιολόγησης"
 
-#: src/SharedFilesCtrl.cpp:163
+#: src/SharedFilesCtrl.cpp:173
 msgid "Edit Comment/Rating"
 msgstr "Επεξεργασία σχολίου/Αξιολόγησης"
 
-#: src/SharedFilesCtrl.cpp:167
+#: src/SharedFilesCtrl.cpp:177
 msgid "Rename"
 msgstr "Μετονομασία"
 
-#: src/SharedFilesCtrl.cpp:171
+#: src/SharedFilesCtrl.cpp:181
 msgid "Add files in collection to transfer list"
 msgstr "Προσθήκη των αρχείων της συλλογής στην λίστα με τα μεταφερόμενα"
 
-#: src/SharedFilesCtrl.cpp:174
+#: src/SharedFilesCtrl.cpp:184
 msgid "Copy magnet &URI to clipboard"
 msgstr "Αντιγραφή μαγνήτη &URI στην πρόχειρη μνήμη"
 
-#: src/SharedFilesCtrl.cpp:176
+#: src/SharedFilesCtrl.cpp:186
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο (&Πηγή)"
 
-#: src/SharedFilesCtrl.cpp:178
+#: src/SharedFilesCtrl.cpp:188
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο (Πηγή) (& Με κρυπτογραφικές επιλογές)"
 
-#: src/SharedFilesCtrl.cpp:179
+#: src/SharedFilesCtrl.cpp:189
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο (&Όνομα υπολογιστή)"
 
-#: src/SharedFilesCtrl.cpp:181
+#: src/SharedFilesCtrl.cpp:191
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο (Όνομα υπολογιστή) (&Με κρυπτογραφικές επιλογές)"
 
-#: src/SharedFilesCtrl.cpp:182
+#: src/SharedFilesCtrl.cpp:192
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο) (Πληροφορίες AICH)"
 
-#: src/SharedFilesCtrl.cpp:183
+#: src/SharedFilesCtrl.cpp:193
 #, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο) (Πληροφορίες AICH)"
 
-#: src/SharedFilesCtrl.cpp:421
+#: src/SharedFilesCtrl.cpp:345
+#, fuzzy, c-format
+msgid "ERROR: Failed to delete '%s'"
+msgstr "ΣΦΑΛΜΑ: Αποτυχία ανοίγματος του ημιτελούς αρχείου '%s'"
+
+#: src/SharedFilesCtrl.cpp:462
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Χρειάζεται Υψηλή Προτεραιότητα για τη δημιουργία έγκυρου πηγαίου συνδέσμου"
 
-#: src/SharedFilesCtrl.cpp:613
+#: src/SharedFilesCtrl.cpp:654
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Κοινόχρηστα αρχεία (%i)"
 
-#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:800 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[Μέρος αρχείου]"
 

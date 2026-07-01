@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 15:49-0700\n"
+"POT-Creation-Date: 2026-07-01 16:44-0700\n"
 "PO-Revision-Date: 2026-06-25 11:06+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -186,7 +186,7 @@ msgid "Password set and external connections enabled."
 msgstr "Contrassenya definida i connexions externes activades."
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:463
 msgid "WARNING"
 msgstr "AVÍS"
 
@@ -1155,7 +1155,7 @@ msgstr "Usuari"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:111
 msgid "File Name"
 msgstr "Fitxer"
 
@@ -1195,33 +1195,33 @@ msgstr "Auto [No]"
 msgid "Auto [Hi]"
 msgstr "Auto [Al]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:159
 msgid "Very low"
 msgstr "Molt baixa"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:160
 msgid "Low"
 msgstr "Baixa"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:151
+#: src/SharedFilesCtrl.cpp:161
 msgid "Normal"
 msgstr "Normal"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:152
+#: src/SharedFilesCtrl.cpp:162
 msgid "High"
 msgstr "Alta"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:163
 msgid "Very High"
 msgstr "Molt alta"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:164
 msgid "Release"
 msgstr "Llançament"
 
@@ -1371,7 +1371,7 @@ msgid "Part"
 msgstr "Part"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:112
 msgid "Size"
 msgstr "Mida"
 
@@ -1394,7 +1394,7 @@ msgstr "Fonts"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:114 src/SharedFilesCtrl.cpp:167
 msgid "Priority"
 msgstr "Prioritat"
 
@@ -1422,7 +1422,7 @@ msgstr "Esteu segur que voleu esborrar el fitxer seleccionat?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Esteu segur que voleu esborrar els fitxers seleccionats?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:225
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1432,7 +1432,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:155
+#: src/SharedFilesCtrl.cpp:165
 msgid "Auto"
 msgstr "Auto"
 
@@ -1484,11 +1484,11 @@ msgstr "Mostra els comentaris"
 msgid "Copy magnet URI to clipboard"
 msgstr "Copia l'enllaç amb format Magnet al porta-retalls"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:185
 msgid "Copy eD2k &link to clipboard"
 msgstr "Copia &l'enllaç eD2k al porta-retalls"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:194
 msgid "Copy feedback to clipboard"
 msgstr "Copia la &informació al porta-retalls"
 
@@ -1504,11 +1504,11 @@ msgstr "Assigna a una categoria"
 msgid "&Open the file"
 msgstr "&Obre el fitxer"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:887
 msgid "Enter new name for this file:"
 msgstr "Introduïu un nom nou per al fitxer:"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:888
 msgid "File rename"
 msgstr "Reanomena"
 
@@ -1544,7 +1544,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Previsualització"
 
-#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:318
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "ERROR: No s'ha pogut executar un reproductor multimèdia extern! Ordre: `%s'"
@@ -2842,7 +2842,7 @@ msgstr "Cerca"
 msgid "Name:"
 msgstr "Nom:"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:113
 msgid "Type"
 msgstr "Tipus"
 
@@ -4479,7 +4479,7 @@ msgstr "Tanca aquesta sessió de xat."
 msgid "Connect to any server and/or Kad"
 msgstr "Connecta amb qualsevol servidor i/o Kad"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:139 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Compartits"
 
@@ -5477,7 +5477,7 @@ msgstr "No hi ha cap paraula clau per a la cerca Kad - s'està avortant"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Error inesperat mentre s'intentava fer una cerca Kad: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:115
 msgid "FileID"
 msgstr "Resum del fitxer"
 
@@ -6099,92 +6099,101 @@ msgstr "Nom de fitxer local"
 msgid "Shares File List"
 msgstr "Llista de fitxers compartits"
 
-#: src/SharedFilesCtrl.cpp:113
+#: src/SharedFilesCtrl.cpp:116
 msgid "Requests"
 msgstr "Peticions"
 
-#: src/SharedFilesCtrl.cpp:114
+#: src/SharedFilesCtrl.cpp:117
 msgid "Accepted Requests"
 msgstr "Peticions acceptades"
 
-#: src/SharedFilesCtrl.cpp:115
+#: src/SharedFilesCtrl.cpp:118
 msgid "Transferred Data"
 msgstr "Dades transferides"
 
-#: src/SharedFilesCtrl.cpp:116
+#: src/SharedFilesCtrl.cpp:119
 msgid "Share Ratio"
 msgstr "Ràtio"
 
-#: src/SharedFilesCtrl.cpp:117
+#: src/SharedFilesCtrl.cpp:120
 msgid "Obtained Parts"
 msgstr "Parts obtingudes"
 
-#: src/SharedFilesCtrl.cpp:118
+#: src/SharedFilesCtrl.cpp:121
 msgid "Complete Sources"
 msgstr "Fonts completes"
 
-#: src/SharedFilesCtrl.cpp:119
+#: src/SharedFilesCtrl.cpp:122
 msgid "Directory Path"
 msgstr "Ubicació"
 
-#: src/SharedFilesCtrl.cpp:140
+#: src/SharedFilesCtrl.cpp:143
 msgid "Play"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:150
+msgid "Delete"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add Comment/Rating"
 msgstr "Afegeix comentari / valoració"
 
-#: src/SharedFilesCtrl.cpp:163
+#: src/SharedFilesCtrl.cpp:173
 msgid "Edit Comment/Rating"
 msgstr "Edita comentari / valoració"
 
-#: src/SharedFilesCtrl.cpp:167
+#: src/SharedFilesCtrl.cpp:177
 msgid "Rename"
 msgstr "Reanomena"
 
-#: src/SharedFilesCtrl.cpp:171
+#: src/SharedFilesCtrl.cpp:181
 msgid "Add files in collection to transfer list"
 msgstr "Afegeix els fitxers de la col·lecció a les transferències"
 
-#: src/SharedFilesCtrl.cpp:174
+#: src/SharedFilesCtrl.cpp:184
 msgid "Copy magnet &URI to clipboard"
 msgstr "Copia l'enllaç en format &Magnet al porta-retalls"
 
-#: src/SharedFilesCtrl.cpp:176
+#: src/SharedFilesCtrl.cpp:186
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Copia l'enllaç eD2k al porta-retalls (&Font)"
 
-#: src/SharedFilesCtrl.cpp:178
+#: src/SharedFilesCtrl.cpp:188
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Copia l'enllaç eD2k al porta-retalls (Font) (amb les opcions de &xifrat)"
 
-#: src/SharedFilesCtrl.cpp:179
+#: src/SharedFilesCtrl.cpp:189
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Copia l'enllaç eD2k al porta-retalls (&Nom de l'ordinador)"
 
-#: src/SharedFilesCtrl.cpp:181
+#: src/SharedFilesCtrl.cpp:191
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Copia l'enllaç eD2k al porta-retalls (Nom de l'ordinador) (amb les &opcions de xifrat)"
 
-#: src/SharedFilesCtrl.cpp:182
+#: src/SharedFilesCtrl.cpp:192
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Copia l'enllaç eD2k al porta-retalls (amb l'informació &AICH)"
 
-#: src/SharedFilesCtrl.cpp:183
+#: src/SharedFilesCtrl.cpp:193
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Copia l'enllaç eD2k al porta-retalls (informació &AICH + font)"
 
-#: src/SharedFilesCtrl.cpp:421
+#: src/SharedFilesCtrl.cpp:345
+#, fuzzy, c-format
+msgid "ERROR: Failed to delete '%s'"
+msgstr "ERROR: No s'ha pogut obrir el fitxer part '%s'"
+
+#: src/SharedFilesCtrl.cpp:462
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Necessiteu ID Alta per crear un enllaç font vàlid"
 
-#: src/SharedFilesCtrl.cpp:613
+#: src/SharedFilesCtrl.cpp:654
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Fitxers compartits (%i)"
 
-#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:800 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[Fitxer de parts]"
 

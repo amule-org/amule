@@ -52,6 +52,9 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
 
 	EVT_MENU(MP_VIEW, CSharedFilesCtrl::OnPlayFile)
+#ifndef CLIENT_GUI
+	EVT_MENU(MP_DELETEFILE, CSharedFilesCtrl::OnDeleteFile)
+#endif
 
 	EVT_MENU(MP_PRIOVERYLOW, CSharedFilesCtrl::OnSetPriority)
 	EVT_MENU(MP_PRIOLOW, CSharedFilesCtrl::OnSetPriority)
@@ -143,6 +146,13 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		// sense of it (same rule the Downloads list uses for Preview).
 		m_menu->Enable(
 			MP_VIEW, !file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable());
+#ifndef CLIENT_GUI
+		m_menu->Append(MP_DELETEFILE, _("Delete"));
+		// Files still being downloaded are owned by the download queue;
+		// deleting their .part data here would corrupt the download, so
+		// the entry only applies to completed files.
+		m_menu->Enable(MP_DELETEFILE, !file->IsPartFile());
+#endif
 		m_menu->AppendSeparator();
 
 		wxMenu *prioMenu = new wxMenu();
@@ -309,6 +319,37 @@ void CSharedFilesCtrl::OnPlayFile(wxCommandEvent &WXUNUSED(event))
 			    command);
 	}
 }
+
+#ifndef CLIENT_GUI
+void CSharedFilesCtrl::OnDeleteFile(wxCommandEvent &WXUNUSED(event))
+{
+	// Collect the files first: unsharing a file removes its row, which
+	// would invalidate an ongoing GetNextItem() iteration.
+	std::vector<CKnownFile *> files;
+	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	while (index != -1) {
+		files.push_back(reinterpret_cast<CKnownFile *>(GetItemData(index)));
+		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	}
+
+	for (size_t i = 0; i < files.size(); ++i) {
+		CKnownFile *file = files[i];
+		if (file->IsPartFile()) {
+			// The menu entry is disabled for files still being
+			// downloaded, but a multi-selection may contain a mix.
+			continue;
+		}
+
+		const CPath path = file->GetFilePath().JoinPaths(file->GetFileName());
+		if (!CPath::RemoveFile(path)) {
+			AddLogLineC(CFormat(_("ERROR: Failed to delete '%s'")) % path.GetPrintable());
+			continue;
+		}
+
+		theApp->sharedfiles->RemoveFile(file);
+	}
+}
+#endif
 
 void CSharedFilesCtrl::ShowFileList()
 {

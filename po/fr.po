@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-01 15:49-0700\n"
+"POT-Creation-Date: 2026-07-01 16:44-0700\n"
 "PO-Revision-Date: 2026-06-25 11:08+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -193,7 +193,7 @@ msgid "Password set and external connections enabled."
 msgstr "Mot de passe renseigné et connexions externes activées."
 
 #: src/amule.cpp:634 src/KadDlg.cpp:174 src/KadDlg.cpp:183
-#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:422
+#: src/PrefsUnifiedDlg.cpp:1051 src/SharedFilesCtrl.cpp:463
 msgid "WARNING"
 msgstr "AVERTISSEMENT"
 
@@ -1164,7 +1164,7 @@ msgstr "Nom d'utilisateur"
 
 #: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:157
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:111
 msgid "File Name"
 msgstr "Nom du fichier"
 
@@ -1204,33 +1204,33 @@ msgstr "Auto [Normale]"
 msgid "Auto [Hi]"
 msgstr "Auto [Haute]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:149
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:159
 msgid "Very low"
 msgstr "Très basse"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2020
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:160
 msgid "Low"
 msgstr "Basse"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2021
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
-#: src/SharedFilesCtrl.cpp:151
+#: src/SharedFilesCtrl.cpp:161
 msgid "Normal"
 msgstr "Normale"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2022
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
-#: src/SharedFilesCtrl.cpp:152
+#: src/SharedFilesCtrl.cpp:162
 msgid "High"
 msgstr "Haute"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:153
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:163
 msgid "Very High"
 msgstr "Très haute"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:154
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:164
 msgid "Release"
 msgstr "Release"
 
@@ -1379,7 +1379,7 @@ msgid "Part"
 msgstr "Partie"
 
 #: src/DownloadListCtrl.cpp:158 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:109
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:112
 msgid "Size"
 msgstr "Taille"
 
@@ -1402,7 +1402,7 @@ msgstr "Sources"
 
 #: src/DownloadListCtrl.cpp:164 src/DownloadListCtrl.cpp:646
 #: src/ServerListCtrl.cpp:95 src/ServerListCtrl.cpp:412
-#: src/SharedFilesCtrl.cpp:111 src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:114 src/SharedFilesCtrl.cpp:167
 msgid "Priority"
 msgstr "Priorité"
 
@@ -1430,7 +1430,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer le fichier sélectionné ?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Êtes-vous sûr de vouloir supprimer les fichiers sélectionnés ?"
 
-#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:215
+#: src/DownloadListCtrl.cpp:549 src/SharedFilesCtrl.cpp:225
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1440,7 +1440,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2023
-#: src/SharedFilesCtrl.cpp:155
+#: src/SharedFilesCtrl.cpp:165
 msgid "Auto"
 msgstr "Auto"
 
@@ -1492,11 +1492,11 @@ msgstr "Afficher tous les commentaires"
 msgid "Copy magnet URI to clipboard"
 msgstr "Copier le lien magnet dans le presse-papiers"
 
-#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:175
+#: src/DownloadListCtrl.cpp:675 src/SharedFilesCtrl.cpp:185
 msgid "Copy eD2k &link to clipboard"
 msgstr "Copier le &lien eD2k dans le presse-papiers"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:184
+#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:194
 msgid "Copy feedback to clipboard"
 msgstr "Copier le rapport dans le presse-papiers"
 
@@ -1512,11 +1512,11 @@ msgstr "Associer à une catégorie"
 msgid "&Open the file"
 msgstr "&Ouvrir le fichier"
 
-#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:846
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:887
 msgid "Enter new name for this file:"
 msgstr "Entrez un nouveau nom pour ce fichier :"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:847
+#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:888
 msgid "File rename"
 msgstr "Renommer"
 
@@ -1552,7 +1552,7 @@ msgstr ""
 msgid "File preview"
 msgstr "Aperçu"
 
-#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:308
+#: src/DownloadListCtrl.cpp:1459 src/SharedFilesCtrl.cpp:318
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "ERREUR : Échec de l'exécution du lecteur multimédia externe ! Commande : '%s'"
@@ -2839,7 +2839,7 @@ msgstr "Rechercher"
 msgid "Name:"
 msgstr "Nom :"
 
-#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:110
+#: src/muuli_wdr.cpp:199 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:113
 msgid "Type"
 msgstr "Type"
 
@@ -4483,7 +4483,7 @@ msgstr "Ferme cette session de discussion."
 msgid "Connect to any server and/or Kad"
 msgstr "Se connecter à n'importe quel serveur et/ou Kad"
 
-#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:136 src/Statistics.cpp:927
+#: src/muuli_wdr.cpp:3109 src/SharedFilesCtrl.cpp:139 src/Statistics.cpp:927
 msgid "Shared Files"
 msgstr "Fichiers partagés"
 
@@ -5476,7 +5476,7 @@ msgstr "Pas de mot-clé pour la recherche Kad - abandon"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Erreur imprévue lors de la tentative de recherche Kad : "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:112
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:115
 msgid "FileID"
 msgstr "ID du fichier"
 
@@ -6095,92 +6095,101 @@ msgstr "Nom du fichier local"
 msgid "Shares File List"
 msgstr "Partage de la liste des fichiers"
 
-#: src/SharedFilesCtrl.cpp:113
+#: src/SharedFilesCtrl.cpp:116
 msgid "Requests"
 msgstr "Demandes"
 
-#: src/SharedFilesCtrl.cpp:114
+#: src/SharedFilesCtrl.cpp:117
 msgid "Accepted Requests"
 msgstr "Demandes acceptées"
 
-#: src/SharedFilesCtrl.cpp:115
+#: src/SharedFilesCtrl.cpp:118
 msgid "Transferred Data"
 msgstr "Données transférées"
 
-#: src/SharedFilesCtrl.cpp:116
+#: src/SharedFilesCtrl.cpp:119
 msgid "Share Ratio"
 msgstr "Taux de partage"
 
-#: src/SharedFilesCtrl.cpp:117
+#: src/SharedFilesCtrl.cpp:120
 msgid "Obtained Parts"
 msgstr "Parties obtenues"
 
-#: src/SharedFilesCtrl.cpp:118
+#: src/SharedFilesCtrl.cpp:121
 msgid "Complete Sources"
 msgstr "Sources complètes"
 
-#: src/SharedFilesCtrl.cpp:119
+#: src/SharedFilesCtrl.cpp:122
 msgid "Directory Path"
 msgstr "Chemin du répertoire"
 
-#: src/SharedFilesCtrl.cpp:140
+#: src/SharedFilesCtrl.cpp:143
 msgid "Play"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:150
+msgid "Delete"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:171
 msgid "Add Comment/Rating"
 msgstr "Ajouter un Commentaire/Note"
 
-#: src/SharedFilesCtrl.cpp:163
+#: src/SharedFilesCtrl.cpp:173
 msgid "Edit Comment/Rating"
 msgstr "Éditer un Commentaire/Note"
 
-#: src/SharedFilesCtrl.cpp:167
+#: src/SharedFilesCtrl.cpp:177
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/SharedFilesCtrl.cpp:171
+#: src/SharedFilesCtrl.cpp:181
 msgid "Add files in collection to transfer list"
 msgstr "Ajouter des fichiers de la collection à la liste de transferts"
 
-#: src/SharedFilesCtrl.cpp:174
+#: src/SharedFilesCtrl.cpp:184
 msgid "Copy magnet &URI to clipboard"
 msgstr "Copier le &lien magnet dans le presse-papiers"
 
-#: src/SharedFilesCtrl.cpp:176
+#: src/SharedFilesCtrl.cpp:186
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Copier le lien eD2k dans le presse-papiers (&Source)"
 
-#: src/SharedFilesCtrl.cpp:178
+#: src/SharedFilesCtrl.cpp:188
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Copier le lien eD2k dans le presse-papiers (Source) (Avec &options de chiffrage)"
 
-#: src/SharedFilesCtrl.cpp:179
+#: src/SharedFilesCtrl.cpp:189
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Copier le lien eD2k dans le presse-papiers (Nom d'&hôte)"
 
-#: src/SharedFilesCtrl.cpp:181
+#: src/SharedFilesCtrl.cpp:191
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Copier le lien eD2k dans le presse-papiers (Nom d'hôte) (Avec options de &chiffrage)"
 
-#: src/SharedFilesCtrl.cpp:182
+#: src/SharedFilesCtrl.cpp:192
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Copier le lien eD2k dans le presse-papiers (Info &AICH)"
 
-#: src/SharedFilesCtrl.cpp:183
+#: src/SharedFilesCtrl.cpp:193
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Copier le lien eD2k dans le presse-papiers (Info &AICH + Source)"
 
-#: src/SharedFilesCtrl.cpp:421
+#: src/SharedFilesCtrl.cpp:345
+#, fuzzy, c-format
+msgid "ERROR: Failed to delete '%s'"
+msgstr "ERREUR : Impossible d'ouvrir fichier .part : '%s'"
+
+#: src/SharedFilesCtrl.cpp:462
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Vous devez être en HighID pour créer un lien valide"
 
-#: src/SharedFilesCtrl.cpp:613
+#: src/SharedFilesCtrl.cpp:654
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Fichiers partagés (%i)"
 
-#: src/SharedFilesCtrl.cpp:759 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:800 src/TextClient.cpp:977
 msgid "[PartFile]"
 msgstr "[Fichier .part]"
 
