@@ -449,7 +449,14 @@ bool CKademliaUDPListener::AddContact2(const uint8_t *data,
 							*outRequestsACK = true;
 						}
 					} else {
-						wxFAIL;
+						// The "requests ACK" bit is only meaningful in a
+						// KADEMLIA2_HELLO_RES; a HELLO_REQ carrying it is
+						// nonstandard. It is remote-controllable, though, so
+						// log and ignore rather than asserting (#267).
+						AddDebugLogLineN(logClientKadUDP,
+							"Ignoring unexpected 'requests ACK' bit in a Kad2 "
+							"HELLO_REQ (sender: " +
+								KadIPToString(ip) + ")");
 					}
 				}
 			}
