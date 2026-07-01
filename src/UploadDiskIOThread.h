@@ -27,6 +27,7 @@
 #define UPLOADDISKIOTHREAD_H
 
 #include <list>
+#include <atomic>
 #include <utility> // Needed for std::pair
 
 #include <wx/thread.h>
@@ -107,8 +108,8 @@ private:
 	void ReadCompletionRoutine(ReadRequest_Struct *req);     // eMule ref: line 369
 	bool ReleaseOpenFile(OpenFile_Struct *pFileStruct);      // eMule ref: line 498
 
-	volatile bool m_bRun;    // eMule ref: m_bRun (line 77)
-	bool m_bSignalThrottler; // eMule ref: m_bSignalThrottler (line 78)
+	std::atomic<bool> m_bRun{ false }; // eMule ref: m_bRun (line 77)
+	bool m_bSignalThrottler;           // eMule ref: m_bSignalThrottler (line 78)
 
 	wxMutex m_mutex;
 	wxCondition m_condition; // replaces m_eventNewBlockRequests + m_eventSocketNeedsData

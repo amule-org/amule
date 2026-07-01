@@ -27,6 +27,7 @@
 #define PARTFILEHASHTHREAD_H
 
 #include <list>
+#include <atomic>
 #include <wx/event.h>
 #include <wx/thread.h>
 
@@ -72,7 +73,7 @@ public:
 private:
 	void *Entry() override;
 
-	volatile bool m_bRun;
+	std::atomic<bool> m_bRun{ false };
 	bool m_bWorkPending; // sticky wake flag
 
 	wxMutex m_mutex;
