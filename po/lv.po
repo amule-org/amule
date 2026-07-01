@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-06-17 20:13+0200\n"
-"PO-Revision-Date: 2026-06-27 18:01+0000\n"
+"PO-Revision-Date: 2026-07-01 15:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -7602,15 +7602,15 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:36
 msgid "aMule (required)"
-msgstr ""
+msgstr "aMule (nepieciešams)"
 
 #: packaging/windows/installer_strings.c:37
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "Darbvirsmas saīsne"
 
 #: packaging/windows/installer_strings.c:38
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "Palaist aMule, kad es piesakos"
 
 #: packaging/windows/installer_strings.c:39
 msgid "Uninstall"
@@ -7618,54 +7618,60 @@ msgstr "Noņemt"
 
 #: packaging/windows/installer_strings.c:40
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "Dzēst lietotāja datus (konfigurācijas datni, ED2K serverus, Kad mezglus, part datnes)"
 
 #: packaging/windows/installer_strings.c:43
 msgid "aMule application files (required)."
-msgstr ""
+msgstr "Uzstāda aMule programmas datnes (nepieciešams)."
 
 #: packaging/windows/installer_strings.c:44
 msgid "Place an aMule shortcut on the desktop."
-msgstr ""
+msgstr "Izveido aMule saīsni uz darbvirsmas."
 
 #: packaging/windows/installer_strings.c:45
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "Automātiski palaidīs aMule, kad pašreizējais lietotājs, kas uzstāda aMule, pieteiksies (katra lietotāja atsevišķs iestatījums)."
 
 #: packaging/windows/installer_strings.c:46
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "Dzēš aMule programmas datnes, Sākt izvēlnes un darbvirsmas saīsnes, automātiskās startēšanas un programmas pievienošanas/noņemšanas ierakstus (nepieciešams)."
 
 #: packaging/windows/installer_strings.c:47
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "Neatgriezeniski dzēš pašreizējā lietotāja %APPDATA%\\aMule mapi (satur aMule.conf datni, ED2K serveru sarakstu, Kad mezglus, part datnes, IP filtrus, draugu sarakstu). Neatķeksējiet, ja vēlaties saglabāt savus iestatījumus."
 
 #: packaging/windows/installer_strings.c:53
 msgid ""
 "aMule appears to be running from $INSTDIR.\r\n"
 "Please close aMule (and aMuleD / aMuleGUI) and try again."
 msgstr ""
+"Izskatās, ka aMule, kas uzstādīta $INSTDIR mapē, darbojas.\n"
+"Lūdzu, aizveriet aMule (un aMuleD / aMuleGUI) un mēģiniet vēlreiz."
 
 #: packaging/windows/installer_strings.c:54
 msgid ""
 "aMule daemon (amuled.exe) appears to be running from $INSTDIR.\r\n"
 "Please stop it and try again."
 msgstr ""
+"Izskatās, ka aMule pakalpojums (amuled.exe), kas uzstādīts $INSTDIR mapē, darbojas.\n"
+"Lūdzu, apturiet to un mēģiniet vēlreiz."
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "Noņem iepriekš uzstādīto aMule versiju $0 mapē…"
 
 #: packaging/windows/installer_strings.c:56
 msgid ""
 "Could not remove the previous aMule installation at $0.\r\n"
 "Please close any running aMule processes and try again, or uninstall the previous version manually first."
 msgstr ""
+"Nevarēja noņemt iepriekš uzstādīto aMule versiju $0 mapē.\n"
+"Lūdzu, aizveriet visus darbojošos aMule procesus un mēģiniet vēlreiz, jeb pašrocīgi noņemiet iepriekšējo versiju."
 
 #: packaging/windows/installer_strings.c:57
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "Izskatās, ka aMule darbojas. Lūdzu, aizveriet to un vēlreiz palaidiet noņemšanas programmu."
 
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "Dzēš lietotāja datus, kas atrodas $APPDATA\\aMule mapē…"

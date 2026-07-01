@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-06-27 18:01+0000\n"
+"PO-Revision-Date: 2026-07-01 15:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -179,32 +179,32 @@ msgstr "Sniedz īsu lietošanas aprakstu."
 #: amule.1.in:62 amuled.1.in:70 ed2k.1.in:40
 #, no-wrap
 msgid "B<[ eD2k-link ]>"
-msgstr ""
+msgstr "B<[ eD2k-saite ]>"
 
 #. type: Plain text
 #: amule.1.in:65 amuled.1.in:73 ed2k.1.in:43
 msgid "Adds an eD2k-link to the core."
-msgstr ""
+msgstr "Pievieno eD2k saiti lejupielādes sarakstam."
 
 #. type: Plain text
 #: amule.1.in:67 amulecmd.1.in:79 amuled.1.in:75 ed2k.1.in:45
 msgid "The eD2k link to be added can be:"
-msgstr ""
+msgstr "Pievienojamā eD2k saite var būt:"
 
 #. type: Plain text
 #: amule.1.in:70 amulecmd.1.in:82 amuled.1.in:78 ed2k.1.in:48
 msgid "a file link (ed2k://|file|...), it will be added to the download queue;"
-msgstr ""
+msgstr "datnes saite (ed2k://|datne|…), tā tiks pievienota lejupielādes rindai;"
 
 #. type: Plain text
 #: amule.1.in:72 amulecmd.1.in:84 amuled.1.in:80 ed2k.1.in:50
 msgid "a server link (ed2k://|server|...), it will be added to the server list;"
-msgstr ""
+msgstr "servera saite (ed2k://|serveris|…), tas tiks pievienots serveru sarakstam;"
 
 #. type: Plain text
 #: amule.1.in:74 amuled.1.in:82 ed2k.1.in:52
 msgid "a serverlist link, in which case all servers in the list will be added to the server list;"
-msgstr ""
+msgstr "serveru saraksta saite, šajā gadījumā visi sarakstā esošie serveri tiks pievienoti serveru sarakstam;"
 
 #. type: Plain text
 #: amule.1.in:76 amuled.1.in:84
