@@ -105,11 +105,19 @@ void *CPartFileWriteThread::Entry()
 {
 	m_bRun = true;
 
-	while (m_bRun) {
+	// Loop until EndThread() clears m_bRun, then drain one final batch
+	// before returning. A shutdown signal must never drop queued writes:
+	// WriteToBuffer FillGap()s each range at queue time and the gaplist is
+	// persisted, so a dropped write would leave the .met claiming bytes
+	// that never reached disk — a silently corrupt part on the next
+	// launch. Each swapped batch is therefore drained in full, and the
+	// exit check happens only after that batch is on disk.
+	for (;;) {
 		// Move queued items to a local work list under the lock.
 		// This minimises lock hold time — main thread can keep queueing
 		// while we process the local list.
 		std::list<ToWrite> workList;
+		bool keepRunning;
 		{
 			wxMutexLocker lock(m_mutex);
 			if (m_bRun && !m_bWorkPending) {
@@ -117,12 +125,16 @@ void *CPartFileWriteThread::Entry()
 			}
 			m_bWorkPending = false;
 			workList.swap(m_flushList);
+			// Captured under the lock together with the swap, so the
+			// batch we just took is drained whatever m_bRun does next.
+			keepRunning = m_bRun;
 		}
 
-		// Process all queued writes synchronously.
+		// Process all queued writes synchronously. No m_bRun check in
+		// the loop condition: a batch, once taken, is always written in
+		// full so a shutdown never abandons it half-drained.
 		// eMule ref: WriteBuffers() — line 122
-		for (std::list<ToWrite>::iterator it = workList.begin(); it != workList.end() && m_bRun;
-			++it) {
+		for (std::list<ToWrite>::iterator it = workList.begin(); it != workList.end(); ++it) {
 			PartFileBufferedData *pBuffer = it->pBuffer;
 			uint32 lenData = (uint32)(pBuffer->end - pBuffer->start + 1);
 
@@ -169,6 +181,12 @@ void *CPartFileWriteThread::Entry()
 			// retry loops).
 			// eMule ref: WriteCompletionRoutine — line 182
 			pBuffer->flushed = writeOk ? PB_WRITTEN : PB_ERROR;
+		}
+
+		// Exit only after the batch above is on disk, so EndThread()
+		// genuinely drains rather than dropping in-flight writes.
+		if (!keepRunning) {
+			break;
 		}
 	}
 
