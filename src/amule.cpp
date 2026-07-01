@@ -57,9 +57,9 @@
 #include <glib.h> // g_set_prgname() — wl_app_id / WM_CLASS binding
 #endif
 
-#include <common/Format.h> // Needed for CFormat
+#include <common/Format.h>          // Needed for CFormat
 #include <common/DataFileVersion.h> // Needed for MET_HEADER (server.met probe)
-#include "CFile.h" // Needed for CFile (server.met probe)
+#include "CFile.h"                  // Needed for CFile (server.met probe)
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -457,7 +457,7 @@ int CamuleApp::InitGui(bool, wxString &)
 // count — not just the file — is what keeps the bootstrap page from
 // re-offering the download after such a run. The header/count layout
 // mirrors CServerList::SaveServerMet().
-static bool ServerMetHasServers(const wxString& path)
+static bool ServerMetHasServers(const wxString &path)
 {
 	if (!wxFileExists(path)) {
 		return false;
@@ -472,7 +472,7 @@ static bool ServerMetHasServers(const wxString& path)
 			return false;
 		}
 		return file.ReadUInt32() > 0;
-	} catch (const CSafeIOException&) {
+	} catch (const CSafeIOException &) {
 		return false;
 	}
 }
