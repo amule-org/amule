@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-02 15:39+0200\n"
+"POT-Creation-Date: 2026-07-02 19:51+0200\n"
 "PO-Revision-Date: 2026-06-25 11:11+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -22,73 +22,65 @@ msgstr ""
 "X-Generator: Poedit 2.3\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
-#: src/AboutDialog.cpp:49
+#: src/AboutDialog.cpp:60
 #, fuzzy
 msgid "About aMule"
 msgstr "어뮬 보이기"
 
-#: src/AboutDialog.cpp:59
+#: src/AboutDialog.cpp:70
 msgid "aMule remote control "
 msgstr "어뮬 원격제어"
 
-#: src/AboutDialog.cpp:64
+#: src/AboutDialog.cpp:75
 msgid "Snapshot:"
 msgstr "스냅삿"
 
-#: src/AboutDialog.cpp:66
+#: src/AboutDialog.cpp:77
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
 msgstr ""
 
-#: src/AboutDialog.cpp:67
-msgid "Website: https://amule-org.github.io \n"
-msgstr ""
-
-#: src/AboutDialog.cpp:68
-msgid "Forum: https://github.com/amule-org/amule/discussions \n"
-msgstr ""
-
-#: src/AboutDialog.cpp:69
-#, fuzzy
-msgid "Documentation: https://amule-org.github.io/docs \n"
-msgstr "\t더 많은 정보는 https://amule-org.github.io/docs을 참조하세요."
-
-#: src/AboutDialog.cpp:70
-#, fuzzy
-msgid ""
-"Issues: https://github.com/amule-org/amule/issues \n"
-"\n"
-msgstr "버그는 https://github.com/amule-org/amule/issues로 보고해 주십시오."
-
-#: src/AboutDialog.cpp:71
+#: src/AboutDialog.cpp:81
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
 msgstr ""
 
-#: src/AboutDialog.cpp:71
+#: src/AboutDialog.cpp:81
 msgid "Part of aMule is based on \n"
 msgstr ""
 
-#: src/AboutDialog.cpp:72
+#: src/AboutDialog.cpp:82
 msgid "Kademlia: Peer-to-peer routing based on the XOR metric.\n"
 msgstr ""
 
-#: src/AboutDialog.cpp:73
+#: src/AboutDialog.cpp:83
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 msgstr ""
 
-#: src/AboutDialog.cpp:74
-msgid "https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n"
+#: src/AboutDialog.cpp:96
+msgid "Website:"
 msgstr ""
 
-#: src/AboutDialog.cpp:94
+#: src/AboutDialog.cpp:97
+msgid "Forum:"
+msgstr ""
+
+#: src/AboutDialog.cpp:98
+msgid "Documentation:"
+msgstr ""
+
+#: src/AboutDialog.cpp:99
+msgid "Issues:"
+msgstr ""
+
+#: src/AboutDialog.cpp:107
 #, fuzzy
 msgid "Click to check for a newer version."
 msgstr "시작할때 새 버젼이 있는지 확인"
 
-#: src/AboutDialog.cpp:95
+#: src/AboutDialog.cpp:108
 msgid "Check for updates"
 msgstr ""
 
@@ -7954,6 +7946,16 @@ msgstr ""
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Documentation: https://amule-org.github.io/docs \n"
+#~ msgstr "\t더 많은 정보는 https://amule-org.github.io/docs을 참조하세요."
+
+#, fuzzy
+#~ msgid ""
+#~ "Issues: https://github.com/amule-org/amule/issues \n"
+#~ "\n"
+#~ msgstr "버그는 https://github.com/amule-org/amule/issues로 보고해 주십시오."
 
 #, fuzzy
 #~ msgid "Not found"
