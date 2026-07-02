@@ -348,8 +348,10 @@ void CSearchListCtrl::UpdateItemColor(long index)
 		// themes the base is white-ish, so setting a channel that is
 		// already 255 is a no-op and every state collapses to the same
 		// colour -- the cue was invisible. Two hand-tuned palettes
-		// instead, chosen at draw time via IsDark().
-		const bool isDark = wxSystemSettings::GetAppearance().IsDark();
+		// instead, chosen at draw time via the list's own background
+		// (see IsListBackgroundDark in MuleListCtrl.h for why we can't
+		// key off wxSystemSettings::GetAppearance().IsDark() alone).
+		const bool isDark = IsListBackgroundDark(this);
 		wxColour colour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 
 		switch (file->GetDownloadStatus()) {

@@ -1070,7 +1070,7 @@ void CGenericClientListCtrl::DrawClientItem(wxDC *dc,
 					// Queue rank change cue: down (good) = blue, up (bad) = red.
 					// Pure *wxBLUE / *wxRED were unreadable on dark themes;
 					// swap to a hand-tuned palette that contrasts on both.
-					const bool isDark = wxSystemSettings::GetAppearance().IsDark();
+					const bool isDark = IsListBackgroundDark(this);
 					if (qrDiff < 0) {
 						dc->SetTextForeground(isDark ? wxColour(120, 170, 255)
 									     : wxColour(0, 80, 200));
@@ -1164,7 +1164,7 @@ void CGenericClientListCtrl::DrawClientItem(wxDC *dc,
 				// "watch out: peer is advertising a different name for
 				// this hash" warning cue. Pure *wxRED was unreadable on
 				// dark themes.
-				const bool isDark = wxSystemSettings::GetAppearance().IsDark();
+				const bool isDark = IsListBackgroundDark(this);
 				dc->SetTextForeground(isDark ? wxColour(255, 100, 100) : wxColour(220, 0, 0));
 			}
 		}
