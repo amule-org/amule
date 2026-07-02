@@ -222,6 +222,7 @@ public:
 		m_sync = false;
 		m_IP = L"?";
 		m_IPint = 0;
+		m_connectTimeoutMs = 0;
 		m_socket = new ip::tcp::socket(s_io_service);
 
 		// Set socket to non blocking
@@ -244,6 +245,10 @@ public:
 
 	void Notify(bool notify) { m_notify = notify; }
 
+	// Bound the synchronous connect (0 = no bound, the default). Only
+	// honoured on the sync connect path — see Connect().
+	void SetConnectTimeout(int ms) { m_connectTimeoutMs = ms; }
+
 	bool Connect(const amuleIPV4Address &adr, bool wait)
 	{
 		if (!m_proxyState) {
@@ -257,9 +262,51 @@ public:
 
 		if (wait || m_sync) {
 			error_code ec;
-			m_socket->connect(adr.GetEndpoint(), ec);
+			if (m_connectTimeoutMs > 0) {
+				// Bounded synchronous connect: async_connect raced
+				// against a steady_timer, both driven here on the
+				// io_service. This path is only reached by the
+				// synchronous EC clients (amulecmd), which don't start
+				// the CAsioService thread pool, so the io_service is
+				// otherwise idle and safe to run locally. Portable
+				// across every platform through asio, with no per-OS
+				// socket-timeout handling — a wrong or unreachable host
+				// now fails in m_connectTimeoutMs instead of hanging on
+				// the OS TCP connect timeout (minutes).
+				ec = boost::asio::error::would_block;
+				m_socket->async_connect(
+					adr.GetEndpoint(), [&ec](const error_code &e) { ec = e; });
+				steady_timer timer(s_io_service);
+				timer.expires_after(std::chrono::milliseconds(m_connectTimeoutMs));
+				bool timedOut = false;
+				timer.async_wait([this, &timedOut](const error_code &e) {
+					// Fires only while the connect is still pending;
+					// closing the socket aborts it so run_one() returns.
+					if (e != boost::asio::error::operation_aborted) {
+						timedOut = true;
+						error_code ignore;
+						m_socket->close(ignore);
+					}
+				});
+				s_io_service.restart();
+				while (ec == boost::asio::error::would_block) {
+					if (s_io_service.run_one() == 0) {
+						break;
+					}
+				}
+				timer.cancel();
+				s_io_service.poll(); // drain the cancelled timer handler
+				if (timedOut) {
+					ec = boost::asio::error::timed_out;
+				}
+			} else {
+				m_socket->connect(adr.GetEndpoint(), ec);
+			}
 			m_OK = !ec;
 			m_connected = m_OK;
+			if (ec) {
+				m_ErrorCode = ec.value();
+			}
 			return m_OK;
 		} else {
 			auto self = shared_from_this();
@@ -761,8 +808,9 @@ private:
 	bool m_closed;
 	std::atomic<bool> m_destroying; // set once Destroy() has been called
 	bool m_proxyState;
-	bool m_notify; // set by Notify()
-	bool m_sync;   // copied from !m_notify on Connect()
+	bool m_notify;          // set by Notify()
+	bool m_sync;            // copied from !m_notify on Connect()
+	int m_connectTimeoutMs; // 0 = no bound; honoured on the sync connect path
 };
 
 /**
@@ -808,6 +856,11 @@ bool CLibSocket::IsOk() const
 void CLibSocket::EnableTcpKeepalive(int idleSec, int probeIntervalSec, int probeCount)
 {
 	m_aSocket->EnableTcpKeepalive(idleSec, probeIntervalSec, probeCount);
+}
+
+void CLibSocket::SetConnectTimeout(int ms)
+{
+	m_aSocket->SetConnectTimeout(ms);
 }
 
 wxString CLibSocket::GetPeer()

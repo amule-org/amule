@@ -452,6 +452,12 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		m_ECClient = new CRemoteConnect(NULL);
 		m_ECClient->SetCapabilities(m_ZLIB, true, false); // ZLIB, UTF8 numbers, notification
 		m_ECClient->SetForceZlib(m_forceZLIB);
+		// Bound the blocking EC connect so a wrong or unreachable host
+		// fails fast instead of hanging on the OS TCP connect timeout
+		// (which can be minutes). The GUI clients have their own async
+		// connect watchdog; this covers the synchronous CLI/EC clients.
+		// 15s matches the amulegui watchdog budget.
+		m_ECClient->SetConnectTimeout(15000);
 
 		// ConnectToCore is blocking since m_ECClient was initialized with NULL
 		if (!m_ECClient->ConnectToCore(

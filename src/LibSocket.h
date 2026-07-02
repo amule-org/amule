@@ -76,6 +76,10 @@ public:
 	// wx Stuff
 	void Notify(bool);
 	bool Connect(const amuleIPV4Address &adr, bool wait);
+	// Bound the synchronous connect to `ms` milliseconds (0 = no bound,
+	// the default). Only affects the blocking connect path used by the
+	// synchronous EC clients (amulecmd); the async path is unaffected.
+	void SetConnectTimeout(int ms);
 	bool IsConnected() const;
 	bool IsOk() const;
 	void SetLocal(const amuleIPV4Address &local);
