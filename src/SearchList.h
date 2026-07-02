@@ -213,6 +213,16 @@ private:
 	void OnGlobalSearchTimer(CTimerEvent &evt);
 
 	/**
+	 * Shared cleanup for global-search completion. Releases the search
+	 * packet, stops the timer, notifies 100% progress, and sets
+	 * m_ed2kSearchFinished. Callers decide whether to also reset
+	 * m_currentSearch: StopSearch does (explicit abort), the natural-
+	 * drain path in OnGlobalSearchTimer does not (preserving the ID
+	 * lets GetSearchLifecycleState report FINISHED instead of IDLE).
+	 */
+	void FinalizeGlobalSearch();
+
+	/**
 	 * Adds the specified file to the current search's results.
 	 *
 	 * @param toadd The result to add.
@@ -251,6 +261,14 @@ private:
 
 	//! If the current search is a KAD search this signals if it is finished.
 	bool m_KadSearchFinished;
+
+	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
+	//! and global searches. Cleared to false in StartNewSearch when an
+	//! ED2K search is issued; set back to true in LocalSearchEnd (local)
+	//! or FinalizeGlobalSearch (global — both natural drain and
+	//! explicit abort). GetSearchLifecycleState uses this as the
+	//! RUNNING vs FINISHED signal for the ED2K branch.
+	bool m_ed2kSearchFinished;
 
 	//! Wall-clock start of the current/last search. Stamped in
 	//! StartNewSearch; feeds the Kad cosmetic progress ramp in
