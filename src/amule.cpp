@@ -982,11 +982,24 @@ bool CamuleApp::OnInit()
 			AddLogLineC(CFormat(_("web server running on pid %d")) % webserver_pid);
 		} else {
 			delete p;
-			ShowAlert(_("You requested to run web server on startup, but the amuleweb binary "
-				    "cannot be run. Please install the package containing aMule web server, "
-				    "or build aMule from source with -DBUILD_WEBSERVER=YES and install it."),
-				_("ERROR"),
-				wxOK | wxICON_ERROR);
+			// Defer the modal until after OnInit returns. During
+			// OnInit the main window is not yet visible on Windows,
+			// so a modal ShowAlert spawns invisible and blocks the
+			// message loop waiting on input that can't be given —
+			// aMule then boots into an unresponsive white window
+			// with only the Windows error ding audible. CallAfter
+			// fires the alert once amuledlg is shown, matching the
+			// AppImage-integration prompt pattern in
+			// CamuleGuiApp::OnInit.
+			CallAfter([this]() {
+				ShowAlert(_("You requested to run web server on startup, "
+					    "but the amuleweb binary cannot be run. Please "
+					    "install the package containing aMule web "
+					    "server, or build aMule from source with "
+					    "-DBUILD_WEBSERVER=YES and install it."),
+					_("ERROR"),
+					wxOK | wxICON_ERROR);
+			});
 		}
 	}
 
