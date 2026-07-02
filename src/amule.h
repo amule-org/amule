@@ -393,7 +393,9 @@ protected:
 private:
 	virtual void OnUnhandledException();
 
+#ifdef ENABLE_VERSION_CHECK
 	void CheckNewVersion(uint32 result);
+#endif
 
 	uint32 m_localip;
 };

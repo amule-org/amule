@@ -138,7 +138,7 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `ENABLE_UPNP`            | YES     | UPnP port forwarding                                                     |
 | `ENABLE_IP2COUNTRY`      | YES     | libmaxminddb country flags ([docs/IP2Country.md](IP2Country.md))         |
 | `ENABLE_CCACHE`          | AUTO    | use ccache as compiler launcher when found (`AUTO`/`ON`/`OFF`); set `OFF` for distro builds that manage ccache themselves, `ON` to hard-fail if ccache is missing |
-| `DEFAULT_VERSION_CHECK`  | ON      | initial state of the in-app "Check for new aMule version" preference on fresh installs; packagers shipping aMule via an OS package manager typically want `OFF` |
+| `ENABLE_VERSION_CHECK`   | ON      | compile in the in-app new-version check (startup notification, the "Check for new version at startup" preference, and the About dialog's "Check for updates" button). Packagers shipping aMule via an OS package manager want `OFF`, so nothing contacts GitHub and the distro's package manager owns updates |
 
 For the full list:
 

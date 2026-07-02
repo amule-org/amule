@@ -264,8 +264,10 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	AddLogLineN(wxString(" - ") +
 		    wxString(CFormat(_("This is aMule %s based on eMule.")) % GetMuleVersion()));
 	AddLogLineN(wxString("   ") + wxString(CFormat(_("Running on %s")) % wxGetOsDescription()));
+#ifdef ENABLE_VERSION_CHECK
 	AddLogLineN(" - " + wxString(_("Visit https://github.com/amule-org/amule/releases/latest to check if "
 				       "a new version is available.")));
+#endif
 	AddLogLineN("");
 
 #ifdef ENABLE_IP2COUNTRY
@@ -324,10 +326,12 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 
 	Show(true);
 
+#ifdef ENABLE_VERSION_CHECK
 	// Defer the "is a newer aMule available?" check until the event loop is
 	// running (past the heavy startup I/O), then check and maybe pop up.
 	// Shared with amulegui — both frontends run it from CamuleDlg.
 	CallAfter(&CamuleDlg::StartupVersionCheck);
+#endif
 
 	// Workaround for wxMSW: Create_Toolbar() above (and the Realize()
 	// inside Apply_Toolbar_Skin) runs before the frame is mapped at
@@ -555,6 +559,7 @@ void CamuleDlg::OnImportButton(wxCommandEvent &WXUNUSED(ev))
 #endif
 }
 
+#ifdef ENABLE_VERSION_CHECK
 void CamuleDlg::StartupVersionCheck()
 {
 	if (!thePrefs::GetCheckNewVersion()) {
@@ -608,13 +613,16 @@ void CamuleDlg::OnStartupVersionCheckDone(wxCommandEvent &evt)
 		wxLaunchDefaultBrowser(wxT("https://github.com/amule-org/amule/releases/latest"));
 	}
 }
+#endif // ENABLE_VERSION_CHECK
 
 CamuleDlg::~CamuleDlg()
 {
 	theApp->amuledlg = NULL;
 
+#ifdef ENABLE_VERSION_CHECK
 	delete m_startupVersionCheck;
 	m_startupVersionCheck = NULL;
+#endif
 
 #ifdef ENABLE_IP2COUNTRY
 	delete m_IP2Country;

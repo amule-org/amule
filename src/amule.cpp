@@ -807,7 +807,7 @@ bool CamuleApp::OnInit()
 
 	// Fire the deferred startup HTTP downloads now that the heavy local
 	// I/O is done — see the comment in OnInit() further up.
-#ifdef AMULE_DAEMON
+#if defined(AMULE_DAEMON) && defined(ENABLE_VERSION_CHECK)
 	// Only the headless daemon runs the core (log-only) version check.
 	// The GUI clients (monolithic + amulegui) run their own check via the
 	// shared CVersionCheck (CamuleDlg::StartupVersionCheck), which also
@@ -832,7 +832,7 @@ bool CamuleApp::OnInit()
 		version_check->Create();
 		version_check->Run();
 	}
-#endif // AMULE_DAEMON
+#endif // AMULE_DAEMON && ENABLE_VERSION_CHECK
 	if (thePrefs::GetNetworkED2K() && thePrefs::AutoServerlist()) {
 		serverlist->StartAutoUpdate();
 	}
@@ -1984,9 +1984,11 @@ void CamuleApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
 	case HTTP_ServerMetAuto:
 		serverlist->AutoDownloadFinished(event.GetExtraInt64());
 		break;
+#ifdef ENABLE_VERSION_CHECK
 	case HTTP_VersionCheck:
 		CheckNewVersion(event.GetExtraInt64());
 		break;
+#endif
 	case HTTP_NodesDat:
 		if (event.GetExtraInt64() == HTTP_Success) {
 
@@ -2022,6 +2024,7 @@ void CamuleApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
 	}
 }
 
+#ifdef ENABLE_VERSION_CHECK
 void CamuleApp::CheckNewVersion(uint32 result)
 {
 	if (result == HTTP_Success) {
@@ -2140,6 +2143,7 @@ void CamuleApp::CheckNewVersion(uint32 result)
 		AddLogLineC(_("Failed to download the version check file"));
 	}
 }
+#endif // ENABLE_VERSION_CHECK
 
 bool CamuleApp::IsConnected() const
 {

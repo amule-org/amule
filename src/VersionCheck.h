@@ -25,6 +25,10 @@
 #ifndef VERSIONCHECK_H
 #define VERSIONCHECK_H
 
+#include "config.h" // for ENABLE_VERSION_CHECK
+
+#ifdef ENABLE_VERSION_CHECK
+
 #include <wx/event.h>
 #include <wx/string.h>
 #include <wx/webrequest.h>
@@ -82,5 +86,7 @@ private:
 	Status m_status;
 	wxString m_latest;
 };
+
+#endif // ENABLE_VERSION_CHECK
 
 #endif // VERSIONCHECK_H

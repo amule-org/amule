@@ -26,6 +26,8 @@
 
 #include "config.h" // Needed for VERSION_MJR / MIN / UPDATE (via ClientVersion.h)
 
+#ifdef ENABLE_VERSION_CHECK
+
 #include <common/ClientVersion.h> // VERSION_MJR / VERSION_MIN / VERSION_UPDATE
 #include "OtherFunctions.h"       // make_full_ed2k_version
 #include "Logger.h"               // AddDebugLogLineN / logGeneral
@@ -153,3 +155,5 @@ void CVersionCheck::Finish(Status status)
 		m_notify->AddPendingEvent(evt);
 	}
 }
+
+#endif // ENABLE_VERSION_CHECK

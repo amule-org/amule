@@ -26,6 +26,8 @@
 #ifndef AMULEDLG_H
 #define AMULEDLG_H
 
+#include "config.h" // for ENABLE_VERSION_CHECK (gates the startup version-check members)
+
 #include <wx/archive.h>
 #include <wx/filename.h>
 #include <wx/frame.h> // Needed for wxFrame
@@ -227,6 +229,7 @@ private:
 	int m_CurrentBlinkBitmap;
 	uint32 m_last_iconizing;
 
+#ifdef ENABLE_VERSION_CHECK
 	// Deferred startup "is a newer aMule available?" check, shared with
 	// amulegui via CVersionCheck. Owned; created lazily by
 	// StartupVersionCheck() when the "check at startup" preference is on.
@@ -236,6 +239,7 @@ private:
 	// shows the "new version" popup at most once per detected version.
 	void StartupVersionCheck();
 	void OnStartupVersionCheckDone(wxCommandEvent &evt);
+#endif // ENABLE_VERSION_CHECK
 
 public:
 	// Track iconize state from wxIconizeEvent::IsIconized(), which is

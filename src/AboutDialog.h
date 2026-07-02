@@ -27,6 +27,8 @@
 
 #include <wx/dialog.h>
 
+#include "config.h" // for ENABLE_VERSION_CHECK
+
 #include "VersionCheck.h"
 
 class wxStaticText;
@@ -34,14 +36,15 @@ class wxButton;
 class wxHyperlinkCtrl;
 
 // The Help/About dialog. Shows the aMule version + credits with native
-// clickable links (previously a plain wxMessageBox) and adds a live "Check
-// for updates" control backed by the shared CVersionCheck, so both the
-// monolithic GUI and amulegui can tell the user whether a newer release is
-// available and offer a clickable download link.
+// clickable links (previously a plain wxMessageBox) and, when the version
+// check is compiled in (ENABLE_VERSION_CHECK), a live "Check for updates"
+// control backed by the shared CVersionCheck.
 class CAboutDlg : public wxDialog
 {
 public:
 	explicit CAboutDlg(wxWindow *parent);
+
+#ifdef ENABLE_VERSION_CHECK
 
 private:
 	void OnCheckClicked(wxCommandEvent &evt);
@@ -51,6 +54,7 @@ private:
 	wxStaticText *m_status;
 	wxHyperlinkCtrl *m_downloadLink;
 	wxButton *m_checkButton;
+#endif // ENABLE_VERSION_CHECK
 };
 
 #endif // ABOUTDIALOG_H

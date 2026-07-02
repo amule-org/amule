@@ -39,8 +39,10 @@
 
 namespace
 {
+#ifdef ENABLE_VERSION_CHECK
 const int ID_CHECK_UPDATES = wxID_HIGHEST + 1;
 const wxString RELEASES_URL = wxT("https://github.com/amule-org/amule/releases/latest");
+#endif // ENABLE_VERSION_CHECK
 
 // A hyperlink whose colour is uniform (system link colour) in every state —
 // dropping wxHyperlinkCtrl's red rollover / purple visited defaults so links
@@ -58,9 +60,11 @@ wxHyperlinkCtrl *MakeLink(wxWindow *parent, const wxString &url)
 
 CAboutDlg::CAboutDlg(wxWindow *parent)
 : wxDialog(parent, wxID_ANY, _("About aMule"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
+#ifdef ENABLE_VERSION_CHECK
 , m_status(NULL)
 , m_downloadLink(NULL)
 , m_checkButton(NULL)
+#endif
 {
 	// Header (version + description) and the credits block reuse the exact
 	// strings the old wxMessageBox About used, so their existing translations
@@ -103,6 +107,7 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 		linkGrid->Add(MakeLink(this, l.url), wxSizerFlags().CenterVertical());
 	}
 
+#ifdef ENABLE_VERSION_CHECK
 	// Update-check controls.
 	m_status = new wxStaticText(this, wxID_ANY, _("Click to check for a newer version."));
 	m_checkButton = new wxButton(this, ID_CHECK_UPDATES, _("Check for updates"));
@@ -113,6 +118,7 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 	wxBoxSizer *checkRow = new wxBoxSizer(wxHORIZONTAL);
 	checkRow->Add(m_status, wxSizerFlags(1).CenterVertical().Border(wxRIGHT, 10));
 	checkRow->Add(m_checkButton, wxSizerFlags().CenterVertical());
+#endif // ENABLE_VERSION_CHECK
 
 	wxBoxSizer *right = new wxBoxSizer(wxVERTICAL);
 	right->Add(new wxStaticText(this, wxID_ANY, head));
@@ -121,9 +127,11 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 	right->Add(
 		MakeLink(this, wxT("https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf")),
 		wxSizerFlags().Border(wxTOP, 2));
+#ifdef ENABLE_VERSION_CHECK
 	right->Add(new wxStaticLine(this, wxID_ANY), wxSizerFlags().Expand().Border(wxTOP | wxBOTTOM, 10));
 	right->Add(checkRow, wxSizerFlags().Expand());
 	right->Add(m_downloadLink, wxSizerFlags().Border(wxTOP, 4));
+#endif // ENABLE_VERSION_CHECK
 
 	wxBoxSizer *topRow = new wxBoxSizer(wxHORIZONTAL);
 	if (logoBmp.IsOk()) {
@@ -139,9 +147,13 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 	SetSizerAndFit(top);
 	Centre();
 
+#ifdef ENABLE_VERSION_CHECK
 	Bind(wxEVT_BUTTON, &CAboutDlg::OnCheckClicked, this, ID_CHECK_UPDATES);
 	Bind(wxEVT_VERSION_CHECK_DONE, &CAboutDlg::OnCheckDone, this);
+#endif // ENABLE_VERSION_CHECK
 }
+
+#ifdef ENABLE_VERSION_CHECK
 
 void CAboutDlg::OnCheckClicked(wxCommandEvent &WXUNUSED(evt))
 {
@@ -173,3 +185,4 @@ void CAboutDlg::OnCheckDone(wxCommandEvent &evt)
 	GetSizer()->Layout();
 	Fit();
 }
+#endif // ENABLE_VERSION_CHECK

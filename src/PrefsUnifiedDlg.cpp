@@ -317,6 +317,13 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
 // This must be done now or pages won't Fit();
+#ifndef ENABLE_VERSION_CHECK
+			// The in-app version check is compiled out (OS-package build):
+			// hide the now-dead "Check for new version at startup" checkbox.
+			if (wxWindow *vc = FindWindow(IDC_NEWVERSION)) {
+				vc->Hide();
+			}
+#endif
 #ifdef __WINDOWS__
 			CastChild(IDC_BROWSERTABS, wxCheckBox)->Enable(false);
 #endif /* __WINDOWS__ */
