@@ -47,7 +47,7 @@
 // macOS do propagate dark backgrounds to lists, so on those platforms
 // this luminance test degrades to the same answer as IsDark() and
 // behaviour is unchanged.
-static inline bool IsListBackgroundDark(const wxWindow* w)
+static inline bool IsListBackgroundDark(const wxWindow *w)
 {
 	const wxColour bg = w->GetBackgroundColour();
 	return (bg.Red() * 299 + bg.Green() * 587 + bg.Blue() * 114) / 1000 < 128;
