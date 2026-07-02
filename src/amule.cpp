@@ -807,6 +807,13 @@ bool CamuleApp::OnInit()
 
 	// Fire the deferred startup HTTP downloads now that the heavy local
 	// I/O is done — see the comment in OnInit() further up.
+#ifdef AMULE_DAEMON
+	// Only the headless daemon runs the core (log-only) version check.
+	// The GUI clients (monolithic + amulegui) run their own check via the
+	// shared CVersionCheck (CamuleDlg::StartupVersionCheck), which also
+	// drives the About dialog's "Check for updates" button — so gating
+	// this to the daemon avoids a redundant second fetch in the monolithic
+	// app.
 	if (thePrefs::GetCheckNewVersion()) {
 		// Test if there's any new version. The URL is the GitHub
 		// Releases "latest" endpoint, which returns JSON describing the
@@ -825,6 +832,7 @@ bool CamuleApp::OnInit()
 		version_check->Create();
 		version_check->Run();
 	}
+#endif // AMULE_DAEMON
 	if (thePrefs::GetNetworkED2K() && thePrefs::AutoServerlist()) {
 		serverlist->StartAutoUpdate();
 	}

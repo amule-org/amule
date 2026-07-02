@@ -39,6 +39,7 @@
 
 class wxTimerEvent;
 class wxTextCtrl;
+class CVersionCheck;
 
 class CIP2Country;
 class CTransferWnd;
@@ -225,6 +226,16 @@ private:
 	bool m_BlinkMessages;
 	int m_CurrentBlinkBitmap;
 	uint32 m_last_iconizing;
+
+	// Deferred startup "is a newer aMule available?" check, shared with
+	// amulegui via CVersionCheck. Owned; created lazily by
+	// StartupVersionCheck() when the "check at startup" preference is on.
+	CVersionCheck *m_startupVersionCheck = nullptr;
+	// Kick off the deferred startup version check (no-op if the preference
+	// is off); the result is handled by OnStartupVersionCheckDone, which
+	// shows the "new version" popup at most once per detected version.
+	void StartupVersionCheck();
+	void OnStartupVersionCheckDone(wxCommandEvent &evt);
 
 public:
 	// Track iconize state from wxIconizeEvent::IsIconized(), which is

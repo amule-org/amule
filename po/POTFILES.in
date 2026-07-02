@@ -1,3 +1,4 @@
+src/AboutDialog.cpp
 src/AddFriend.cpp
 src/AppImageIntegration.cpp
 src/amuleAppCommon.cpp

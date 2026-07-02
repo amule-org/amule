@@ -46,6 +46,7 @@
 #include "amuleDlg.h" // Interface declarations.
 
 #include <common/Format.h>    // Needed for CFormat
+#include "AboutDialog.h"      // Needed for CAboutDlg
 #include "amule.h"            // Needed for theApp
 #include "ChatWnd.h"          // Needed for CChatWnd
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
@@ -323,6 +324,11 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 
 	Show(true);
 
+	// Defer the "is a newer aMule available?" check until the event loop is
+	// running (past the heavy startup I/O), then check and maybe pop up.
+	// Shared with amulegui — both frontends run it from CamuleDlg.
+	CallAfter(&CamuleDlg::StartupVersionCheck);
+
 	// Workaround for wxMSW: Create_Toolbar() above (and the Realize()
 	// inside Apply_Toolbar_Skin) runs before the frame is mapped at
 	// its final on-screen size. wxMSW's native toolbar control
@@ -519,29 +525,11 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 
 void CamuleDlg::OnAboutButton(wxCommandEvent &WXUNUSED(ev))
 {
-	wxString msg = " ";
-#ifdef CLIENT_GUI
-	msg << _("aMule remote control ") << VERSION;
-#else
-	msg << "aMule " << VERSION;
-#endif
-	msg << " ";
-#ifdef GITDATE
-	msg << _("Snapshot:") << "\n " << GITDATE;
-#endif
-	msg << "\n\n"
-	    << _("'All-Platform' p2p client based on eMule \n\n")
-	    << _("Website: https://amule-org.github.io \n")
-	    << _("Forum: https://github.com/amule-org/amule/discussions \n")
-	    << _("Documentation: https://amule-org.github.io/docs \n")
-	    << _("Issues: https://github.com/amule-org/amule/issues \n\n")
-	    << _("Copyright (c) 2003-2026 aMule Team \n\n") << _("Part of aMule is based on \n")
-	    << _("Kademlia: Peer-to-peer routing based on the XOR metric.\n")
-	    << _(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n")
-	    << _("https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n");
-
+	// The version + credits text, plus a live "Check for updates" control
+	// backed by the shared CVersionCheck, now live in CAboutDlg.
 	if (m_is_safe_state) {
-		wxMessageBox(msg, _("Message"), wxOK | wxICON_INFORMATION, this);
+		CAboutDlg dlg(this);
+		dlg.ShowModal();
 	}
 }
 
@@ -567,9 +555,66 @@ void CamuleDlg::OnImportButton(wxCommandEvent &WXUNUSED(ev))
 #endif
 }
 
+void CamuleDlg::StartupVersionCheck()
+{
+	if (!thePrefs::GetCheckNewVersion()) {
+		return;
+	}
+	if (!m_startupVersionCheck) {
+		m_startupVersionCheck = new CVersionCheck();
+		Bind(wxEVT_VERSION_CHECK_DONE, &CamuleDlg::OnStartupVersionCheckDone, this);
+	}
+	m_startupVersionCheck->Start(this, wxID_ANY);
+}
+
+void CamuleDlg::OnStartupVersionCheckDone(wxCommandEvent &evt)
+{
+	if (evt.GetInt() != CVersionCheck::Outdated || !m_startupVersionCheck || !m_is_safe_state) {
+		return;
+	}
+	const wxString latest = m_startupVersionCheck->LatestVersion();
+
+	// Notify at most once per detected version: the last version we popped
+	// up about is remembered in a small file next to the other
+	// version-check state, so we don't nag on every startup.
+	const wxString stampPath = thePrefs::GetConfigDir() + wxT("last_version_notified");
+	wxTextFile stamp(stampPath);
+	if (wxFileExists(stampPath)) {
+		if (stamp.Open()) {
+			const wxString seen = stamp.GetLineCount() ? stamp.GetLine(0) : wxString();
+			if (seen == latest) {
+				stamp.Close();
+				return; // already notified about this version
+			}
+			stamp.Clear();
+			stamp.AddLine(latest);
+			stamp.Write();
+			stamp.Close();
+		}
+	} else if (stamp.Create()) {
+		stamp.AddLine(latest);
+		stamp.Write();
+		stamp.Close();
+	}
+
+	wxMessageDialog dlg(this,
+		CFormat(_("A new version of aMule (%s) is available.\n\n"
+			  "You are running %s.\n\n"
+			  "Would you like to open the download page?")) %
+			latest % VERSION,
+		_("New version available"),
+		wxYES_NO | wxICON_INFORMATION);
+	if (dlg.ShowModal() == wxID_YES) {
+		wxLaunchDefaultBrowser(wxT("https://github.com/amule-org/amule/releases/latest"));
+	}
+}
+
 CamuleDlg::~CamuleDlg()
 {
 	theApp->amuledlg = NULL;
+
+	delete m_startupVersionCheck;
+	m_startupVersionCheck = NULL;
 
 #ifdef ENABLE_IP2COUNTRY
 	delete m_IP2Country;
