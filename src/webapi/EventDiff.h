@@ -76,6 +76,11 @@ struct LastSeenState
 	std::map<std::uint32_t, SearchResult> search;
 	bool search_complete = false;
 	std::uint32_t search_percent = 0;
+	// Baseline `generation` from the previous tick. Any bump between
+	// ticks (POST /search → MarkSearchStarted) forces a search_progress
+	// emit, so back-to-back searches that start and finish inside one
+	// refresher interval still deliver a terminal frame to SSE clients.
+	std::uint64_t search_generation = 0;
 	bool search_initialised = false;
 };
 

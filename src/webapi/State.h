@@ -349,6 +349,13 @@ struct SearchProgressSnapshot
 				   // 100 on finished)
 	bool complete = false;     // true exactly once on the lifecycle
 				   // RUNNING → FINISHED edge
+	// Monotonically-increasing per POST /search. MarkSearchStarted
+	// bumps it; the refresher copies it through unchanged. EventDiff
+	// treats a generation change as a guaranteed emit trigger so the
+	// terminal `search_progress` frame can't be lost when a search
+	// starts and finishes inside a single refresher tick (a race
+	// against the tick boundary; see @ngosang's PR review).
+	std::uint64_t generation = 0;
 };
 
 // `m_amule_log_lines` in CState caches /logs/amule. amule's EC

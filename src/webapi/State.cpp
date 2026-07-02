@@ -139,9 +139,11 @@ void CState::MarkSearchStarted(const std::string &kind)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_search.clear();
+	const auto next_generation = m_search_progress.generation + 1;
 	m_search_progress = SearchProgressSnapshot{};
 	m_search_progress.active = true;
 	m_search_progress.kind = kind;
+	m_search_progress.generation = next_generation;
 }
 
 void CState::WriteSearchProgress(SearchProgressSnapshot s)
@@ -347,7 +349,13 @@ void CState::ResetLists()
 	m_servers.clear();
 	m_categories.clear();
 	m_search.clear();
+	// Preserve `generation` across the struct reset. It's the diff-
+	// emit trigger for EventDiff; letting it walk backwards on an EC
+	// reconnect would confuse consumers that persist their last-seen
+	// value across the reconnect blip.
+	const auto keep_generation = m_search_progress.generation;
 	m_search_progress = SearchProgressSnapshot{};
+	m_search_progress.generation = keep_generation;
 	// Logs + stats_tree + graphs survive EC reconnects on purpose —
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not

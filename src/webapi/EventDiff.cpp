@@ -515,6 +515,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			prev.search = search_now;
 			prev.search_complete = progress_now.complete;
 			prev.search_percent = progress_now.percent;
+			prev.search_generation = progress_now.generation;
 			prev.search_initialised = true;
 		} else {
 			// New result entries.
@@ -536,13 +537,19 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 					bus.Publish("search_result_added", payload.str());
 				}
 			}
-			// search_progress: a percent change while running, or the
-			// running→finished edge (complete false→true). MarkSearchStarted
-			// resets complete=false + percent=0 so a new search after a
-			// previous completion gets fresh edges.
+			// search_progress: a percent change while running, the
+			// running→finished edge (complete false→true), or a
+			// generation bump from a new POST /search. The generation
+			// trigger is what catches back-to-back searches whose
+			// entire lifecycle fits inside one refresher tick — the
+			// percent+complete comparison would see 100→100 / true→true
+			// on such runs and emit nothing. MarkSearchStarted also
+			// resets complete=false + percent=0 so ordinary runs still
+			// get fresh edges too.
+			const bool generation_bumped = progress_now.generation != prev.search_generation;
 			const bool finished_edge = progress_now.complete && !prev.search_complete;
 			const bool percent_moved = progress_now.percent != prev.search_percent;
-			if (finished_edge || percent_moved) {
+			if (generation_bumped || finished_edge || percent_moved) {
 				std::ostringstream payload;
 				payload << "{\"state\":\"" << (progress_now.complete ? "finished" : "running")
 					<< "\""
@@ -555,6 +562,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			prev.search = std::move(search_now);
 			prev.search_complete = progress_now.complete;
 			prev.search_percent = progress_now.percent;
+			prev.search_generation = progress_now.generation;
 		}
 	}
 
