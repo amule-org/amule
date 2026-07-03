@@ -593,6 +593,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
       "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
       "size":             3217,
       "priority":         "normal",
+      "priority_auto":    false,
       "complete_sources": 12,
       "xfer":     { "session": 5242880,  "total": 314572800 },
       "requests": { "session": 42,       "total": 1837 },
@@ -603,6 +604,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 ```
 
 `xfer.session` / `xfer.total` are bytes uploaded during the current amuled process vs over the file's lifetime. `requests` counts how many peers have asked for the file; `accepts` counts how many of those requests were granted an upload slot. The `session` counters reset on amuled restart; `total` is persisted in `known.met`.
+
+`priority` is the upload priority — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` — and `priority_auto` is `true` when amuled is deriving that level automatically from the upload queue. This mirrors the `/downloads` shape (base `priority` + separate `priority_auto` flag); on an auto file `priority` reports the current derived level, not the literal string `"auto"`.
 
 The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters.
 
@@ -636,8 +639,10 @@ Changes the upload priority of a single shared file. `{hash}` is the 32-char MD4
 **Body:**
 
 ```json
-{ "priority": "very_low" | "low" | "normal" | "high" | "release" }
+{ "priority": "very_low" | "low" | "normal" | "high" | "release" | "auto" }
 ```
+
+Send a bare level to pin it (the file's `priority_auto` becomes `false`). Send `"auto"` to hand level selection to amuled — it derives the level from the upload queue, and `GET /api/v0/shared` then reports the derived base `priority` with `priority_auto: true`. The combined `"*_auto"` strings are not accepted as input, since `"auto"` is the level the daemon computes rather than one the caller pins.
 
 **Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
 

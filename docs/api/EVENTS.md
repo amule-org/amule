@@ -252,7 +252,7 @@ Only the hash; clients look up and drop the cache entry by hash.
 
 #### `shared_added` / `shared_updated`
 
-Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `xfer.session`, `xfer.total`, `requests.*`, and `accepts.*` — clients see live upload counters without polling.
+Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item shape. `_updated` fires on any field-level change including `priority`, `priority_auto`, `xfer.session`, `xfer.total`, `requests.*`, and `accepts.*` — clients see live upload counters (and priority changes) without polling.
 
 ```json
 {
@@ -261,6 +261,7 @@ Identical to the REST [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) list-item
   "ed2k_link":        "ed2k://|file|release-notes.txt|3217|1a2b...|/",
   "size":             3217,
   "priority":         "normal",
+  "priority_auto":    false,
   "complete_sources": 12,
   "xfer":     { "session": 5242880, "total": 314572800 },
   "requests": { "session": 42,      "total": 1837 },

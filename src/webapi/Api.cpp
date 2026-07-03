@@ -1650,6 +1650,8 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueInt(static_cast<int64_t>(f.size));
 	w.Key("priority");
 	w.ValueString(wxString::FromUTF8(f.priority.c_str()));
+	w.Key("priority_auto");
+	w.ValueBool(f.shared.priority_auto);
 	w.Key("complete_sources");
 	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources));
 	w.Key("xfer");
@@ -4234,40 +4236,29 @@ namespace
 {
 
 // Inverse of SharedPriorityName in Refresher.cpp. Wire form mirrors
-// the /shared[].priority enum: bare priorities ("low", "normal",
-// "high", "release", "very_low", "auto") + their *_auto variants
-// (encoded by amule as `prio + 10`). Returns false on unknown enum.
+// the /shared[].priority enum: bare upload priorities plus "auto".
+// Setting "auto" hands level selection to amuled (it derives the level
+// from the upload queue and reports it back as `priority` + a true
+// `priority_auto`); to pin a fixed level, send the bare name. The
+// combined "*_auto" strings are intentionally NOT accepted as input --
+// "auto" is the level the daemon computes, so a caller can't pin it.
+// Returns false on unknown enum.
 bool SharedPriorityToCode(const std::string &name, std::uint8_t &out)
 {
 	if (name == "very_low") {
 		out = PR_VERY_LOW;
 		return true;
-	} else if (name == "very_low_auto") {
-		out = PR_VERY_LOW + 10;
-		return true;
 	} else if (name == "low") {
 		out = PR_LOW;
-		return true;
-	} else if (name == "low_auto") {
-		out = PR_LOW + 10;
 		return true;
 	} else if (name == "normal") {
 		out = PR_NORMAL;
 		return true;
-	} else if (name == "normal_auto") {
-		out = PR_NORMAL + 10;
-		return true;
 	} else if (name == "high") {
 		out = PR_HIGH;
 		return true;
-	} else if (name == "high_auto") {
-		out = PR_HIGH + 10;
-		return true;
 	} else if (name == "release") {
 		out = PR_VERYHIGH;
-		return true;
-	} else if (name == "release_auto") {
-		out = PR_VERYHIGH + 10;
 		return true;
 	} else if (name == "auto") {
 		out = PR_AUTO;
@@ -4321,8 +4312,7 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 		return ErrorResponse(400,
 			"bad_request",
 			"`priority` must be one of "
-			"very_low, low, normal, high, release, auto "
-			"(and their *_auto variants)");
+			"very_low, low, normal, high, release, auto");
 	}
 
 	CMD4Hash file_hash;

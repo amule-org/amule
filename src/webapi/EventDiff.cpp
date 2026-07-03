@@ -128,6 +128,7 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
 	  << ",\"size\":" << f.size << ",\"priority\":\"" << EscJson(f.priority) << "\""
+	  << ",\"priority_auto\":" << (f.shared.priority_auto ? "true" : "false")
 	  << ",\"complete_sources\":" << f.shared.complete_sources
 	  << ",\"xfer\":{\"session\":" << f.shared.xfer_session << ",\"total\":" << f.shared.xfer_total << "}"
 	  << ",\"requests\":{\"session\":" << f.shared.requests_session
@@ -246,6 +247,7 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 {
 	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
 	       a.size == b.size && a.priority == b.priority &&
+	       a.shared.priority_auto == b.shared.priority_auto &&
 	       a.shared.complete_sources == b.shared.complete_sources &&
 	       a.shared.xfer_session == b.shared.xfer_session && a.shared.xfer_total == b.shared.xfer_total &&
 	       a.shared.requests_session == b.shared.requests_session &&

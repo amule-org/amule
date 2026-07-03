@@ -199,7 +199,13 @@ const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 // the PR_* enum values are tiny and never overlap with the 0x80 bit.
 constexpr std::uint8_t kAutoPriorityOffset = 10;
 
-const char *DownloadPriorityName(std::uint8_t pr_code_raw, bool &auto_out)
+// Decodes the shared `+ 10` auto-flag offset carried by both
+// `EC_TAG_PARTFILE_PRIO` (download, down-side) and
+// `EC_TAG_KNOWNFILE_PRIO` (shared, up-side): a raw code >= 10 is an
+// auto entry whose base level is `raw - 10`. Returns the base level as
+// a wire string and reports the auto flag via `auto_out`, so downloads
+// and shared surface priority identically (`priority` + `priority_auto`).
+const char *PriorityName(std::uint8_t pr_code_raw, bool &auto_out)
 {
 	std::uint8_t pr;
 	if (pr_code_raw >= kAutoPriorityOffset) {
@@ -222,34 +228,6 @@ const char *DownloadPriorityName(std::uint8_t pr_code_raw, bool &auto_out)
 		return "release";
 	case PR_AUTO:
 		auto_out = true;
-		return "auto";
-	default:
-		return "normal";
-	}
-}
-
-// Shared-file up-priority. Same `+ 10` auto-flag encoding (see
-// ECSpecialCoreTags.cpp:236 — `(IsAutoUpPriority() ? GetUpPriority()
-// + 10 : GetUpPriority())`). Auto is surfaced as the literal "auto"
-// string because /shared doesn't expose a separate priority_auto
-// field (it's an upload-side cosmetic choice, not a queue-priority
-// driver like for downloads).
-const char *SharedPriorityName(std::uint8_t pr_code)
-{
-	const std::uint8_t pr = pr_code >= kAutoPriorityOffset ? pr_code - kAutoPriorityOffset : pr_code;
-	const bool is_auto = pr_code >= kAutoPriorityOffset;
-	switch (pr) {
-	case PR_VERY_LOW:
-		return is_auto ? "very_low_auto" : "very_low";
-	case PR_LOW:
-		return is_auto ? "low_auto" : "low";
-	case PR_NORMAL:
-		return is_auto ? "normal_auto" : "normal";
-	case PR_HIGH:
-		return is_auto ? "high_auto" : "high";
-	case PR_VERYHIGH:
-		return is_auto ? "release_auto" : "release";
-	case PR_AUTO:
 		return "auto";
 	default:
 		return "normal";
@@ -329,7 +307,7 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		std::uint8_t pr_raw = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_PRIO, pr_raw)) {
 			bool prio_auto = false;
-			f.priority = DownloadPriorityName(pr_raw, prio_auto);
+			f.priority = PriorityName(pr_raw, prio_auto);
 			f.download.priority_auto = prio_auto;
 		}
 	}
@@ -728,7 +706,9 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 	{
 		std::uint8_t pr = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_PRIO, pr)) {
-			f.priority = SharedPriorityName(pr);
+			bool sh_auto = false;
+			f.priority = PriorityName(pr, sh_auto);
+			f.shared.priority_auto = sh_auto;
 		}
 	}
 }
@@ -1501,7 +1481,7 @@ void ParseCategoryTag(const CECTag *cat_tag, CategorySnapshot &c)
 	// PR_* code space.
 	{
 		bool _ignore = false;
-		c.priority = DownloadPriorityName(c.priority_code, _ignore);
+		c.priority = PriorityName(c.priority_code, _ignore);
 	}
 }
 

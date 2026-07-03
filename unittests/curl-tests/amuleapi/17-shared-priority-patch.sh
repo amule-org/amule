@@ -6,13 +6,13 @@
 #   PATCH /api/v0/shared/{hash}
 #       body: {priority: <enum>}
 #
-# Priority enum mirrors the /shared GET shape (combined wire strings
-# including the *_auto variants):
+# Priority input enum (base levels + "auto"):
 #   very_low | low | normal | high | release | auto
-#   very_low_auto | low_auto | normal_auto | high_auto | release_auto
 #
-# auto-priority is encoded amule-side as `prio + 10`; the handler
-# splits the wire string into the raw PR_* code + auto offset.
+# Output mirrors /downloads: a base `priority` string plus a
+# `priority_auto` boolean. Sending "auto" hands level selection to
+# amuled (it derives the level from the upload queue, priority_auto=true);
+# the combined "*_auto" strings are NOT accepted as input (400).
 
 set -u
 set -o pipefail
@@ -121,7 +121,8 @@ if [ "$COUNT" = "0" ]; then
 fi
 TEST_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
 SAVED_PRIORITY=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].priority')
-echo "    info: saved hash=$TEST_HASH priority=$SAVED_PRIORITY"
+SAVED_AUTO=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].priority_auto')
+echo "    info: saved hash=$TEST_HASH priority=$SAVED_PRIORITY priority_auto=$SAVED_AUTO"
 
 # --- 1. Auth + admin gate. -----------------------------------------
 _curl -X PATCH -H "Content-Type: application/json" \
@@ -142,6 +143,7 @@ for p in low normal high release very_low; do
 		-d "{\"priority\":\"$p\"}" "$HOST/api/v0/shared/$TEST_HASH"
 	_assert_status 200 "PATCH priority=$p → 200"
 	_assert_json_eq '.priority' "$p" "PATCH response shows priority=$p"
+	_assert_json_eq '.priority_auto' false "PATCH priority=$p → priority_auto=false"
 
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
 	OBS=$(printf '%s' "$CURL_BODY" \
@@ -155,29 +157,36 @@ for p in low normal high release very_low; do
 	fi
 done
 
-# --- 3. PATCH auto variants. --------------------------------------
-# Pure "auto" amule resolves to a concrete derived enum (e.g.
-# "normal_auto" depending on the file's stats), so we don't pin it
-# to "auto" verbatim — just assert the response carries SOME *_auto
-# variant.
-for p in low_auto high_auto; do
-	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
-		-H "Content-Type: application/json" \
-		-d "{\"priority\":\"$p\"}" "$HOST/api/v0/shared/$TEST_HASH"
-	_assert_status 200 "PATCH priority=$p → 200"
-	_assert_json_eq '.priority' "$p" "PATCH response shows priority=$p"
-done
-# Bare "auto" → response should be an *_auto variant.
+# --- 3. PATCH "auto" → priority_auto=true + a derived base level. --
+# amuled derives the concrete level from the upload queue, so we don't
+# pin the base string — just assert the flag is set and the reported
+# level is a known base enum (never a combined "*_auto" string).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"priority":"auto"}' "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 200 "PATCH priority=auto → 200"
-RESOLVED=$(printf '%s' "$CURL_BODY" | jq -r '.priority')
-case "$RESOLVED" in
-	auto|*_auto) _pass "PATCH priority=auto resolved to $RESOLVED (an auto variant)" ;;
-	*)           _fail "PATCH priority=auto" \
-	                   "expected an *_auto variant, got '$RESOLVED'" ;;
+_assert_json_eq '.priority_auto' true "PATCH priority=auto → priority_auto=true"
+BASE_PRIO=$(printf '%s' "$CURL_BODY" | jq -r '.priority')
+case "$BASE_PRIO" in
+	very_low|low|normal|high|release) _pass "PATCH auto → derived base level=$BASE_PRIO" ;;
+	*) _fail "PATCH auto base level" "expected a base enum, got '$BASE_PRIO'" ;;
 esac
+
+# Immediate GET reflects the auto flag (no stale cache).
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+GAUTO=$(printf '%s' "$CURL_BODY" \
+	| jq -r --arg h "$TEST_HASH" '.shared[] | select(.hash == $h) | .priority_auto')
+if [ "$GAUTO" = "true" ]; then
+	_pass "IMMEDIATE GET /shared shows priority_auto=true (no stale)"
+else
+	_fail "IMMEDIATE GET /shared priority_auto" "expected true, got $GAUTO (stale cache)"
+fi
+
+# The combined "*_auto" strings are no longer accepted as input.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"high_auto"}' "$HOST/api/v0/shared/$TEST_HASH"
+_assert_status 400 "PATCH removed variant high_auto → 400"
 
 # --- 4. Error paths. ----------------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -202,9 +211,17 @@ _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 405 "DELETE /shared/{hash} → 405"
 
 # --- 6. Restore saved priority. -----------------------------------
+# If the file was on auto, restore "auto" (SAVED_PRIORITY holds the
+# derived base level, not the literal "auto"); otherwise restore the
+# saved bare level.
+if [ "$SAVED_AUTO" = "true" ]; then
+	RESTORE=auto
+else
+	RESTORE=$SAVED_PRIORITY
+fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"priority\":\"$SAVED_PRIORITY\"}" "$HOST/api/v0/shared/$TEST_HASH"
+	-d "{\"priority\":\"$RESTORE\"}" "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 200 "PATCH (restore saved priority) → 200"
 
 # --- Summary. -----------------------------------------------------

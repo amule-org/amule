@@ -173,6 +173,8 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].xfer.total is numeric'
 	_assert_json_eq '.shared[0].priority | type' string \
 		'/shared[0].priority is string'
+	_assert_json_eq '.shared[0].priority_auto | type' boolean \
+		'/shared[0].priority_auto is boolean'
 fi
 
 # --- 7. Method gate (POST/DELETE not allowed on read-only). -------

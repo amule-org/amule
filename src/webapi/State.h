@@ -125,6 +125,10 @@ struct FileSnapshot
 	// reset on the true→false transition.
 	struct SharedSide
 	{
+		// Upload-side auto-priority flag, mirroring `download.priority_auto`.
+		// The base level lands in the top-level `priority` field; this says
+		// whether amuled is deriving it automatically from the upload queue.
+		bool priority_auto = false;
 		std::uint64_t xfer_session = 0;
 		std::uint64_t xfer_total = 0;
 		std::uint32_t requests_session = 0;
