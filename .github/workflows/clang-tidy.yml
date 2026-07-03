@@ -1,0 +1,209 @@
+name: clang-tidy
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'unittests/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'config.h.cm'
+      - '.clang-tidy'
+      - '.clang-tidy-new-code'
+      - '.github/workflows/clang-tidy.yml'
+  pull_request:
+    branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'unittests/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'config.h.cm'
+      - '.clang-tidy'
+      - '.clang-tidy-new-code'
+      - '.github/workflows/clang-tidy.yml'
+
+# A push to a PR branch fires both `push` and `pull_request`; cancel superseded
+# runs so we don't analyze the same ref twice concurrently.
+concurrency:
+  group: clang-tidy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 500M
+  LLVM_VERSION: '21'
+
+  # Kept in sync with .github/workflows/ccpp.yml so compile_commands.json
+  # matches the real Ubuntu build.
+  cmake_ubuntu_deps: |-
+    binutils-dev \
+    build-essential \
+    ccache \
+    cmake \
+    gettext \
+    libboost-all-dev \
+    libcrypto++-dev \
+    libgd-dev \
+    libglib2.0-dev \
+    libmaxminddb-dev \
+    libreadline-dev \
+    libupnp-dev \
+    libwxgtk3.2-dev \
+    pkg-config \
+    wx3.2-headers
+
+  cmake_config_flags: |-
+    -B build \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=YES \
+    -DBUILD_ALC=YES \
+    -DBUILD_ALCC=YES \
+    -DBUILD_AMULECMD=YES \
+    -DBUILD_AMULEAPI=YES \
+    -DBUILD_CAS=YES \
+    -DBUILD_DAEMON=YES \
+    -DBUILD_WXCAS=YES \
+    -DBUILD_ED2K=YES \
+    -DBUILD_MONOLITHIC=YES \
+    -DBUILD_REMOTEGUI=YES \
+    -DBUILD_TESTING=YES \
+    -DBUILD_WEBSERVER=YES \
+    -DENABLE_NLS=YES \
+    -DENABLE_UPNP=YES \
+    -DENABLE_IP2COUNTRY=YES
+
+jobs:
+  # Whole-tree Tier-1 gate: the bug-oriented checks in .clang-tidy must report
+  # zero warnings anywhere under src/.
+  clang-tidy-full:
+    name: clang-tidy (whole tree, Tier-1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: restore ccache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: clang-tidy-ccache-
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }} jq
+          wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
+          sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+      - name: create build system
+        run: cmake ${{ env.cmake_config_flags }}
+      - name: build (generate headers + compile_commands.json)
+        run: cmake --build build
+      - name: save ccache
+        uses: actions/cache/save@v6
+        if: always()
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: clang-tidy-ccache-${{ github.run_id }}
+      - name: clang-tidy Tier-1 over src/
+        run: |
+          # Analyze every src/ translation unit except the generated lexers
+          # and parsers, which are not ours to lint.
+          mapfile -t files < <(jq -r '.[].file' build/compile_commands.json \
+            | grep -E '/src/' \
+            | grep -vE '/(Scanner|Parser|IPFilterScanner)\.cpp$' \
+            | sort -u)
+          echo "Analyzing ${#files[@]} translation units"
+          # Pin the analyzer binary too: the helper scripts otherwise fall back
+          # to the unversioned `clang-tidy` (an older distro build on the runner)
+          # instead of the LLVM ${LLVM_VERSION} we validated against.
+          run-clang-tidy-${LLVM_VERSION} \
+            -clang-tidy-binary clang-tidy-${LLVM_VERSION} \
+            -p build -quiet "${files[@]}" 2>&1 \
+            | tee tidy-full.log || true
+          # A header warning is reported once per including TU; keep project
+          # locations only (drop system, wxWidgets and generated sources).
+          # clang-diagnostic-* are compiler pass-throughs, not our configured
+          # checks -- the build step above is the real compile gate, and a file
+          # compiled into several targets can carry an incomplete -I set in one
+          # of them; drop those so they don't masquerade as lint findings.
+          grep -E ': (warning|error):' tidy-full.log \
+            | grep -E '/src/' \
+            | grep -vE '/wx-[0-9]|/(Scanner|Parser|IPFilterScanner)\.cpp|clang-diagnostic-' \
+            | sort -u > tidy-hits.txt || true
+          if [ -s tidy-hits.txt ]; then
+            echo "::error::clang-tidy Tier-1 reported warnings:"
+            cat tidy-hits.txt
+            exit 1
+          fi
+          echo "clang-tidy Tier-1: clean"
+
+  # Diff-only Tier-2 gate: the maintainability checks in .clang-tidy-new-code
+  # must not fire on any line the change touches.
+  clang-tidy-diff:
+    name: clang-tidy (changed lines, Tier-2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: restore ccache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: clang-tidy-ccache-
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
+          wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
+          sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+      - name: determine diff base
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            def="${{ github.event.repository.default_branch }}"
+            git fetch --no-tags origin "+refs/heads/$def:refs/remotes/origin/$def" || true
+            base="$(git merge-base HEAD "origin/$def" 2>/dev/null || true)"
+          fi
+          # A branch cut straight from the default tip (or a missing ref) leaves
+          # base empty; fall back to the previous commit so the diff is never
+          # the whole tree.
+          if [ -z "$base" ]; then
+            base="$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD)"
+          fi
+          echo "Using diff base: $base"
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+      - name: create build system
+        run: cmake ${{ env.cmake_config_flags }}
+      - name: build (generate headers + compile_commands.json)
+        run: cmake --build build
+      - name: save ccache
+        uses: actions/cache/save@v6
+        if: always()
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: clang-tidy-ccache-${{ github.run_id }}
+      - name: clang-tidy Tier-2 on changed lines
+        run: |
+          git diff -U0 "${{ steps.base.outputs.sha }}"...HEAD -- 'src/**' \
+            | clang-tidy-diff-${LLVM_VERSION}.py \
+                -clang-tidy-binary clang-tidy-${LLVM_VERSION} \
+                -p1 -path build -config-file .clang-tidy-new-code -quiet 2>&1 \
+            | tee tidy-diff.log || true
+          # See the Tier-1 job: clang-diagnostic-* are compiler pass-throughs
+          # (the build step is the compile gate), not our configured checks.
+          grep -E ': (warning|error):' tidy-diff.log \
+            | grep -vE '/wx-[0-9]|clang-diagnostic-' \
+            | sort -u > diff-hits.txt || true
+          if [ -s diff-hits.txt ]; then
+            echo "::error::clang-tidy Tier-2 reported warnings on changed lines:"
+            cat diff-hits.txt
+            exit 1
+          fi
+          echo "clang-tidy Tier-2: clean"
