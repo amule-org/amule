@@ -55,8 +55,7 @@ wxEND_EVENT_TABLE()
  * (CPreferencesRem *). A proper fix involves a class hierarchy redesign.
  */
 CCatDialog::CCatDialog(wxWindow *parent, bool allowbrowse, int index)
-: wxDialog(
-	  parent, -1, _("Category"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
+: wxDialog(parent, -1, _("Category"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
 	wxSizer *content = CategoriesEditWindow(this, true);
 	content->Show(this, true);

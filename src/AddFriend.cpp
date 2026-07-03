@@ -39,12 +39,7 @@ wxBEGIN_EVENT_TABLE(CAddFriend, wxDialog)
 wxEND_EVENT_TABLE()
 
 CAddFriend::CAddFriend(wxWindow *parent)
-: wxDialog(parent,
-	  9995,
-	  _("Add a Friend"),
-	  wxDefaultPosition,
-	  wxDefaultSize,
-	  wxDEFAULT_DIALOG_STYLE)
+: wxDialog(parent, 9995, _("Add a Friend"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
 	wxSizer *content = addFriendDlg(this, TRUE);
 	content->Show(this, TRUE);

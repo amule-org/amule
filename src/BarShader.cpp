@@ -189,7 +189,8 @@ void CBarShader::Draw(wxDC *dc, int iLeft, int iTop, bool bFlat)
 		for (unsigned y = 0; y < Max; y++) {
 			for (unsigned x = 0; x < m_Width; x++) {
 				unsigned cRed = (unsigned)std::lround(m_Content[x].Red() * m_Modifiers[y]);
-				unsigned cGreen = (unsigned)std::lround(m_Content[x].Green() * m_Modifiers[y]);
+				unsigned cGreen =
+					(unsigned)std::lround(m_Content[x].Green() * m_Modifiers[y]);
 				unsigned cBlue = (unsigned)std::lround(m_Content[x].Blue() * m_Modifiers[y]);
 				cRed = std::min(255u, cRed);
 				cGreen = std::min(255u, cGreen);

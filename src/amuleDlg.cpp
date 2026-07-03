@@ -164,8 +164,8 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	  title,
 	  where,
 	  dlg_size,
-	  wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxDIALOG_NO_PARENT | wxMINIMIZE_BOX |
-		  wxMAXIMIZE_BOX | wxCLOSE_BOX,
+	  wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxDIALOG_NO_PARENT | wxMINIMIZE_BOX | wxMAXIMIZE_BOX |
+		  wxCLOSE_BOX,
 	  "aMule")
 , m_activewnd(NULL)
 , m_transferwnd(NULL)

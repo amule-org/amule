@@ -50,12 +50,7 @@ std::set<CCommentDialog *> &OpenInstances()
 
 // IMPLEMENT_DYNAMIC(CCommentDialog, CDialog)
 CCommentDialog::CCommentDialog(wxWindow *parent, CKnownFile *file)
-: wxDialog(parent,
-	  -1,
-	  _("File Comments"),
-	  wxDefaultPosition,
-	  wxDefaultSize,
-	  wxDEFAULT_DIALOG_STYLE)
+: wxDialog(parent, -1, _("File Comments"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
 	m_file = file;
 	wxSizer *content = commentDlg(this, TRUE);
