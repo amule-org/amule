@@ -217,7 +217,14 @@ static void ApplyProxyToSession(wxWebSession &session)
 static wxWebSession &GetAmuleWebSession()
 {
 #ifdef AMULE_HTTP_CURL_BIND
-	if (wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
+	// Switch to the curl backend only when an interface is actually bound —
+	// curl is just the means to make HTTP bindable. Forcing it otherwise would
+	// needlessly change the HTTP stack for users who don't use this feature (on
+	// macOS the default is the native URLSession backend, with its own TLS /
+	// proxy handling). No behavioural change on Linux, where the default is
+	// already curl.
+	if (!thePrefs::GetNetworkInterface().IsEmpty() &&
+		wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
 		static wxWebSession curlSession = wxWebSession::New(wxWebSessionBackendCURL);
 		if (curlSession.IsOpened()) {
 			return curlSession;
