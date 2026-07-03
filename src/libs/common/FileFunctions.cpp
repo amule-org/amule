@@ -154,8 +154,8 @@ static bool UnpackZipFile(const wxString &file, const char *files[])
 						// Zip compression method" inside seconds
 						// (#376). Bail and let the caller treat this
 						// download as failed; the next fetch will
-						// pick up the clean copy.
-						run = false;
+						// pick up the clean copy. (run is set false after
+						// the loop, so no assignment is needed here.)
 						break;
 					}
 					target.Write(buffer, zip.LastRead());

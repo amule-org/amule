@@ -348,6 +348,10 @@ sint64 CFile::doRead(void *buffer, size_t count) const
 
 	size_t totalRead = 0;
 	while (totalRead < count) {
+		// m_mutex is this CFile's own lock guarding its buffer/fd; holding it
+		// across the blocking read is intended -- it serialises access to this
+		// single file object, not a shared global section.
+		// NOLINTNEXTLINE(clang-analyzer-unix.BlockInCriticalSection)
 		int current = ::read(m_fd, (char *)buffer + totalRead, count - totalRead);
 
 		if (current == -1) {

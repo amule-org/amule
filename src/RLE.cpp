@@ -106,7 +106,9 @@ bool RLE_Data::Realloc(int size)
 
 const uint8 *RLE_Data::Decode(const uint8 *buff, int len)
 {
-	uint8 *decBuf = m_len ? new uint8[m_len] : 0;
+	// Value-initialise: a truncated encoding can leave the tail unwritten,
+	// so zero-fill rather than XOR/copy uninitialised bytes into m_buff.
+	uint8 *decBuf = m_len ? new uint8[m_len]() : nullptr;
 
 	// If data exceeds the buffer, switch to counting only.
 	// Then resize and make a second pass.
@@ -117,7 +119,7 @@ const uint8 *RLE_Data::Decode(const uint8 *buff, int len)
 			if (i < len - 2 && buff[i + 1] == buff[i]) {
 				// This is a sequence.
 				uint8 seqLen = buff[i + 2];
-				if (j + seqLen <= m_len) {
+				if (decBuf && j + seqLen <= m_len) {
 					memset(decBuf + j, buff[i], seqLen);
 				}
 				j += seqLen;
@@ -136,20 +138,29 @@ const uint8 *RLE_Data::Decode(const uint8 *buff, int len)
 			Realloc(j);          // size has changed, adjust
 			if (overrun) {
 				delete[] decBuf;
-				decBuf = new uint8[m_len];
+				decBuf = new uint8[m_len]();
 			}
 		}
 	}
 	//
-	// Recreate data from diff
+	// Recreate data from diff. The two-pass loop above guarantees decBuf's
+	// allocation is >= m_len (on underrun m_len shrinks, decBuf is not
+	// reallocated) and every byte in [0, m_len) is written or zero-init, so
+	// the copy below is in-bounds and defined. The path-sensitive analyzer
+	// can't prove that invariant across the mid-loop Realloc, so it reports
+	// uninitialised / out-of-bounds / null false positives here.
 	//
-	if (m_use_diff) {
-		for (int k = 0; k < m_len; k++) {
-			m_buff[k] ^= decBuf[k];
+	// NOLINTBEGIN(clang-analyzer-core.uninitialized.Assign,clang-analyzer-security.ArrayBound,clang-analyzer-core.NonNullParamChecker)
+	if (decBuf) {
+		if (m_use_diff) {
+			for (int k = 0; k < m_len; k++) {
+				m_buff[k] ^= decBuf[k];
+			}
+		} else {
+			memcpy(m_buff, decBuf, m_len);
 		}
-	} else {
-		memcpy(m_buff, decBuf, m_len);
 	}
+	// NOLINTEND(clang-analyzer-core.uninitialized.Assign,clang-analyzer-security.ArrayBound,clang-analyzer-core.NonNullParamChecker)
 	delete[] decBuf;
 	return m_buff;
 }

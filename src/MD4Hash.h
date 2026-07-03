@@ -248,7 +248,10 @@ private:
 	//!
 	//! The raw representation of the MD4-hash. In most cases, you should
 	//! try to avoid direct access and instead use the member functions.
-	unsigned char m_hash[MD4HASH_LENGTH];
+	// Value-initialised so the buffer is never read uninitialised even if a
+	// future ctor forgets to set it; the analyzer also can't see through the
+	// RawPokeUInt64 pokes in Clear()/SetHash, so this keeps it quiet too.
+	unsigned char m_hash[MD4HASH_LENGTH] = {};
 };
 
 #endif
