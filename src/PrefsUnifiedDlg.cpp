@@ -170,6 +170,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHECKBOX(IDC_NETWORKKAD, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_UPNP_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_UPNP_WEBSERVER_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_MEDIAMETA_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 
 	// Autostart-on-login: state lives in the OS (registry / plist /
 	// .desktop), not aMule.conf, so it gets its own handler that
@@ -667,6 +668,17 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_SERVERRETRIES)->Enable(thePrefs::DeadServer());
 	FindWindow(IDC_STARTNEXTFILE_SAME)->Enable(thePrefs::StartNextFile());
 	FindWindow(IDC_STARTNEXTFILE_ALPHA)->Enable(thePrefs::StartNextFile());
+
+	// Gate the ffprobe path controls on the master Media metadata toggle
+	// so a disabled feature doesn't show a live-looking Detect / Browse
+	// UI that silently does nothing.
+	{
+		const bool mmOn = thePrefs::GetMediaMetadataEnabled();
+		FindWindow(IDC_MEDIAMETA_FFPROBEPATHTEXT)->Enable(mmOn);
+		FindWindow(IDC_MEDIAMETA_FFPROBEPATH)->Enable(mmOn);
+		FindWindow(IDC_MEDIAMETA_FFPROBEBROWSE)->Enable(mmOn);
+		FindWindow(IDC_MEDIAMETA_FFPROBEDETECT)->Enable(mmOn);
+	}
 
 	// The tray icon is the only recovery surface for a window hidden
 	// via the close button: on Linux/Windows the option needs the tray
@@ -1219,6 +1231,13 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 	case IDC_UPNP_ENABLED:
 		FindWindow(IDC_UPNPTCPPORT)->Enable(value);
 		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(value);
+		break;
+
+	case IDC_MEDIAMETA_ENABLED:
+		FindWindow(IDC_MEDIAMETA_FFPROBEPATHTEXT)->Enable(value);
+		FindWindow(IDC_MEDIAMETA_FFPROBEPATH)->Enable(value);
+		FindWindow(IDC_MEDIAMETA_FFPROBEBROWSE)->Enable(value);
+		FindWindow(IDC_MEDIAMETA_FFPROBEDETECT)->Enable(value);
 		break;
 
 	case IDC_UPNP_WEBSERVER_ENABLED:
