@@ -129,7 +129,7 @@ void CStatisticsDlg::ApplyStatsColor(int index)
 	const wxColour &cr = acrStat[index];
 
 	int iRes = aRes[index];
-	int iTrend = aTrend[index];
+	int iTrend = (unsigned char)aTrend[index];
 	COScopeCtrl **ppscope = apscope[index];
 	CColorFrameCtrl *ctrl;
 	switch (index) {

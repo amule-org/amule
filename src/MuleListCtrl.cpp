@@ -660,6 +660,10 @@ void CMuleListCtrl::OnChar(wxKeyEvent &evt)
 		// shift and '1' is pressed, the result is '1' rather than '!'
 		// (as it should be on my keyboard). This has been reported:
 		// http://sourceforge.net/tracker/index.php?func=detail&aid=1864810&group_id=9863&atid=109863
+		// GetUnicodeKey() returns wxChar, which is a signed char in wx's UTF-8
+		// build (Debian amd64) but wchar_t in the wide build; an unsigned-char
+		// cast would truncate the wide case, so the widening is left as-is.
+		// NOLINTNEXTLINE(bugprone-signed-char-misuse)
 		key = evt.GetUnicodeKey();
 	} else if (key >= WXK_START) {
 		// wxKeycodes are ignored, as they signify events such as the 'home'

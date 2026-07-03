@@ -61,7 +61,7 @@ int writeconfig(void)
 		"fifth_line 23,85,1\n",
 		"sixth_line 23,102,1\n",
 		"seventh_line 23,119,1\n",
-		"template /usr/share/cas/tmp.html\n"
+		"template /usr/share/cas/tmp.html\n",
 		"img_type 0\n" };
 
 	path = get_path("casrc");
@@ -114,6 +114,9 @@ int readconfig(CONF *config)
 	buffer[0] = 0;
 	while (!feof(conf)) {
 		// Jacobo221 - [ToDo] Only first char per line is comment...
+		// fgets() is null-checked, so a failed read is handled; the legacy
+		// feof() loop is harmless here.
+		// NOLINTNEXTLINE(clang-analyzer-unix.Stream)
 		if (fgets(buffer, 120, conf)) {
 			if (buffer[0] != '#') {
 				/* Only two fields per line */

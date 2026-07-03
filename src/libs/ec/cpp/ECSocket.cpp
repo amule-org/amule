@@ -361,7 +361,7 @@ bool CECSocket::SocketRealError()
 void CECSocket::OnError()
 {
 #ifdef __DEBUG__
-	cout << GetLastErrorMsg() << endl;
+	cout << GetLastErrorMsg() << '\n';
 #endif
 }
 

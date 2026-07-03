@@ -1877,7 +1877,9 @@ void CUpDownClient::ReGetClientSoft()
 				if (
 					// Exceptions:
 					(m_byCompatibleClient != 0xf0) // Chinese leech mod
-					&& (1 == 1)                    // Your ad here
+					// Placeholder kept so new exception conditions can be ANDed in.
+					// NOLINTNEXTLINE(misc-redundant-expression)
+					&& (1 == 1) // Your ad here
 				) {
 					AddLogLineNS(CFormat("Compatible client found with "
 							     "ET_COMPATIBLECLIENT of %x") %
