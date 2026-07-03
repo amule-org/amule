@@ -516,7 +516,13 @@ public:
 	}
 	bool AlreadyHave() const
 	{
-		return GetTagByNameSafe(EC_TAG_PARTFILE_STATUS)->GetInt() != 0; /* == CSearchFile::NEW */
+		// "Already have" means the file is downloaded/shared or actively
+		// downloading -- NOT a result the user canceled/removed, which is
+		// re-downloadable and must not read as held. Values mirror
+		// CSearchFile::DownloadStatus: NEW=0, DOWNLOADED=1, QUEUED=2,
+		// CANCELED=3, QUEUEDCANCELED=4.
+		const int st = GetTagByNameSafe(EC_TAG_PARTFILE_STATUS)->GetInt();
+		return st != 0 /* NEW */ && st != 3 /* CANCELED */;
 	}
 	uint32 DownloadStatus(uint32 *target = 0) const
 	{
