@@ -1388,8 +1388,11 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
 
     wxStaticText *item26b = new wxStaticText( parent, IDC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, 0 );
     item25->Add( item26b, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
-    wxTextCtrl *item27b = new wxTextCtrl( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(80,-1), 0 );
-    item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges. On Windows, enter the interface index.") );
+    // Editable combo: the drop-down is filled at runtime with the machine's
+    // interfaces (PrefsUnifiedDlg), but it stays editable so an interface that
+    // is down when the dialog opens (e.g. a VPN tunnel) can still be typed in.
+    wxComboBox *item27b = new wxComboBox( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0, NULL, wxCB_DROPDOWN );
+    item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges.") );
     item25->Add( item27b, wxSizerFlags().Expand().CenterHorizontal() );
     item0->Add( item25, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
     wxFlexGridSizer *item28 = new wxFlexGridSizer( 2, 0, 0 );

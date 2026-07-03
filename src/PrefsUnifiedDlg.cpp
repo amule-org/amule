@@ -29,10 +29,23 @@
 #include <common/Macros.h> // Needed for itemsof()
 
 #include <wx/colordlg.h>
+#include <wx/combobox.h> // network-interface drop-down (bind-to-interface)
 #include <wx/progdlg.h>
 #include <wx/stdpaths.h>
 #include <wx/tooltip.h>
 #include <wx/utils.h> // wxGetUserHome
+
+// Network-interface enumeration for the "Bind to interface" drop-down.
+#ifdef __WINDOWS__
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#include <vector>
+#else
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#endif
 
 #include "amule.h" // Needed for theApp
 #include "amuleDlg.h"
@@ -61,6 +74,60 @@
 #include "Statistics.h"
 #include "UserEvents.h"
 #include "PlatformSpecific.h" // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+
+namespace
+{
+// Enumerate this machine's usable network interfaces for the "Bind to
+// interface" drop-down. The strings returned are exactly what gets stored in
+// the preference and later resolved to an index in LibSocketAsio.cpp: POSIX
+// interface names (en0, eth0, tun0) and, on Windows, adapter friendly names
+// (Ethernet, Wi-Fi). Loopback is skipped. The control stays editable, so an
+// interface that is down right now (a VPN tunnel) can still be typed in.
+wxArrayString DetectNetworkInterfaces()
+{
+	wxArrayString result;
+#ifdef __WINDOWS__
+	ULONG size = 15000;
+	std::vector<uint8_t> buf(size);
+	const ULONG flags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
+			    GAA_FLAG_SKIP_DNS_SERVER;
+	PIP_ADAPTER_ADDRESSES aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
+	ULONG ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
+	if (ret == ERROR_BUFFER_OVERFLOW) {
+		buf.resize(size);
+		aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
+		ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
+	}
+	if (ret == NO_ERROR) {
+		for (PIP_ADAPTER_ADDRESSES p = aa; p != NULL; p = p->Next) {
+			if (p->IfType == IF_TYPE_SOFTWARE_LOOPBACK || p->FriendlyName == NULL) {
+				continue;
+			}
+			wxString name(p->FriendlyName);
+			if (result.Index(name) == wxNOT_FOUND) {
+				result.Add(name);
+			}
+		}
+	}
+#else
+	struct ifaddrs *ifaces = NULL;
+	if (getifaddrs(&ifaces) == 0) {
+		for (struct ifaddrs *p = ifaces; p != NULL; p = p->ifa_next) {
+			if (p->ifa_name == NULL || (p->ifa_flags & IFF_LOOPBACK)) {
+				continue;
+			}
+			// getifaddrs lists one node per address family, so names repeat.
+			wxString name = wxString::FromUTF8(p->ifa_name);
+			if (result.Index(name) == wxNOT_FOUND) {
+				result.Add(name);
+			}
+		}
+		freeifaddrs(ifaces);
+	}
+#endif
+	return result;
+}
+} // namespace
 
 wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 // Events
@@ -463,6 +530,13 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_ShareSelector = CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl);
 	m_buttonColor = CastChild(IDC_COLOR_BUTTON, wxButton);
 	m_choiceColor = CastChild(IDC_COLORSELECTOR, wxChoice);
+
+	// Fill the "Bind to interface" drop-down with the detected interfaces.
+	// Done before the Cfg->widget transfer below so the stored value (which
+	// may be an interface that is currently down) is preserved as typed text.
+	if (wxComboBox *ifaceBox = CastChild(IDC_INTERFACE, wxComboBox)) {
+		ifaceBox->Append(DetectNetworkInterfaces());
+	}
 
 	// Connect the Cfgs with their widgets
 	thePrefs::CFGMap::iterator it = thePrefs::s_CfgList.begin();

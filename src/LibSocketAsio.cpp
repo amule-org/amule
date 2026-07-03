@@ -42,6 +42,7 @@
 #include <algorithm> // Needed for std::min - Boost up to 1.54 fails to compile with MSVC 2013 otherwise
 #include <atomic>
 #include <chrono>
+#include <vector> // GetAdaptersAddresses buffer (Windows interface resolution)
 
 // Trip the compile if we accidentally pull a deprecated Asio API back in.
 #define BOOST_ASIO_NO_DEPRECATED
@@ -76,6 +77,7 @@
 // SIO_KEEPALIVE_VALS + struct tcp_keepalive for SetTcpKeepalive.
 // winsock2.h is already brought in transitively by boost::asio.
 #include <mstcpip.h>
+#include <iphlpapi.h> // GetAdaptersAddresses (friendly-name -> interface index)
 // IP_UNICAST_IF / IPV6_UNICAST_IF are Vista+; define them if the SDK target
 // (see _WIN32_WINNT above) predates their headers. Values are ABI-stable.
 #ifndef IP_UNICAST_IF
@@ -167,6 +169,37 @@ static inline void SetTcpKeepalive(Handle native, int idleSec, int intervalSec, 
 #endif
 }
 
+#ifdef __WINDOWS__
+// Map a Windows adapter FriendlyName (what the prefs dropdown shows, e.g.
+// "Ethernet", "Wi-Fi") to its interface index. if_nametoindex() can't do this
+// on Windows — it expects the adapter's GUID-style name, not the friendly one,
+// so the enumerated dropdown value is resolved here instead. Returns 0 if not
+// found (the caller then tries a bare numeric index).
+static unsigned int ResolveWindowsInterfaceIndex(const wxString &friendlyName)
+{
+	ULONG size = 15000;
+	std::vector<uint8_t> buf(size);
+	const ULONG flags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
+			    GAA_FLAG_SKIP_DNS_SERVER;
+	PIP_ADAPTER_ADDRESSES aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
+	ULONG ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
+	if (ret == ERROR_BUFFER_OVERFLOW) {
+		buf.resize(size);
+		aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
+		ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
+	}
+	if (ret != NO_ERROR) {
+		return 0;
+	}
+	for (PIP_ADAPTER_ADDRESSES p = aa; p != NULL; p = p->Next) {
+		if (p->FriendlyName != NULL && friendlyName == wxString(p->FriendlyName)) {
+			return p->IfIndex ? p->IfIndex : p->Ipv6IfIndex;
+		}
+	}
+	return 0;
+}
+#endif // __WINDOWS__
+
 // Pin a socket's egress to a named network interface, *without* requiring
 // elevated privileges. SO_BINDTODEVICE would do this on Linux but needs
 // CAP_NET_RAW (root); the options below do not:
@@ -176,12 +209,12 @@ static inline void SetTcpKeepalive(Handle native, int idleSec, int intervalSec, 
 //
 // Unlike binding to a local IP (SetLocal), this pins the *route*, so traffic
 // can't leak out via the default-route interface — the VPN-leak case behind
-// amule-org/amule#173. The interface is named (e.g. "tun0", "eth0", "en0")
-// and resolved to an index via if_nametoindex(); a bare numeric index is also
-// accepted, which is the practical input on Windows where interfaces aren't
-// named the POSIX way. No-op (with a debug log) when the name is empty,
-// unresolvable, or the platform lacks the option. aMule sockets are IPv4, so
-// callers pass isV6 == false; the v6 branch is kept for completeness.
+// amule-org/amule#173. The interface value is what the prefs dropdown stores:
+// a POSIX name ("tun0", "eth0", "en0") resolved via if_nametoindex(), a Windows
+// adapter FriendlyName resolved via GetAdaptersAddresses(), or a bare numeric
+// index. No-op (with a debug log) when the value is empty, unresolvable, or the
+// platform lacks the option. aMule sockets are IPv4, so callers pass
+// isV6 == false; the v6 branch is kept for completeness.
 template <typename Handle> static void SetBoundInterface(Handle native, const wxString &ifname, bool isV6)
 {
 	if (ifname.IsEmpty()) {
@@ -189,11 +222,13 @@ template <typename Handle> static void SetBoundInterface(Handle native, const wx
 	}
 
 	unsigned int idx = 0;
-#ifndef __WINDOWS__
+#ifdef __WINDOWS__
+	idx = ResolveWindowsInterfaceIndex(ifname);
+#else
 	idx = if_nametoindex(static_cast<const char *>(ifname.utf8_str()));
 #endif
 	if (idx == 0) {
-		// Fall back to a bare interface index (the usual input on Windows).
+		// Fall back to a bare interface index (also the manual Windows path).
 		unsigned long n = 0;
 		if (ifname.ToULong(&n) && n > 0 && n <= 0xFFFFFFFFul) {
 			idx = static_cast<unsigned int>(n);

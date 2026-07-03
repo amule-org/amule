@@ -786,6 +786,11 @@ IF (NEED_LIB_MULESOCKET)
 		PRIVATE ${Boost_LIBRARIES}
 		PUBLIC wxWidgets::BASE
 	)
+	if (WIN32)
+		# GetAdaptersAddresses() in LibSocketAsio.cpp resolves a Windows
+		# adapter FriendlyName to its interface index for bind-to-interface.
+		target_link_libraries (mulesocket PRIVATE iphlpapi)
+	endif()
 endif()
 
 # On MinGW-built Windows targets, bundle the MSYS2 MinGW64 runtime DLLs
