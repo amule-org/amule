@@ -29,6 +29,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		IPFilter.cpp
 		KnownFileList.cpp
 		ListenSocket.cpp
+		MediaProbe.cpp
 		MuleUDPSocket.cpp
 		SearchFile.cpp
 		SearchList.cpp
