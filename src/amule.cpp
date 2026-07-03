@@ -1001,7 +1001,10 @@ bool CamuleApp::OnInit()
 	// Run webserver?
 	if (thePrefs::GetWSIsEnabled()) {
 		wxString aMuleConfigFile = thePrefs::GetConfigDir() + m_configFile;
-		const wxString &amulewebPath = thePrefs::GetWSPath();
+		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs
+		// on Linux where that block is #ifdef'd out, so it can't see the write.
+		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+		wxString amulewebPath = thePrefs::GetWSPath();
 
 #if defined(__WXMAC__) && !defined(AMULE_DAEMON)
 		// For the Mac GUI application, look for amuleweb in the bundle
