@@ -74,6 +74,9 @@ wxBEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 	EVT_MULE_HASHING(CamuleGuiApp::OnFinishedHashing)
 	EVT_MULE_AICH_HASHING(CamuleGuiApp::OnFinishedAICHHashing)
 
+	// MediaProbe (#140) — attaches media tags on the main thread.
+	EVT_MULE_MEDIA_PROBE(CamuleGuiApp::OnMediaProbeFinished)
+
 	// CPartFileHashThread per-part result
 	EVT_PARTFILE_HASH_RESULT(CamuleGuiApp::OnPartFileHashResult)
 

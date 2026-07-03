@@ -40,6 +40,7 @@
 #include "ServerConnect.h" // Needed for CServerConnect
 #include "KnownFileList.h" // Needed for CKnownFileList
 #include "ThreadTasks.h"   // Needed for CThreadScheduler and CHasherTask
+#include "OtherFunctions.h" // Needed for GetED2KFileTypeID / ED2KFT_* (MaybeScheduleMediaProbe)
 #include "Preferences.h"   // Needed for thePrefs
 #include "DownloadQueue.h" // Needed for CDownloadQueue
 #include "amule.h"         // Needed for theApp
@@ -583,9 +584,46 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 		// overwritten here.
 		const wxString key = pFile->GetFilePath().JoinPaths(pFile->GetFileName()).GetRaw();
 		m_pathIndex[key] = pFile;
+		MaybeScheduleMediaProbe(pFile);
 		return true;
 	}
 	return false;
+}
+
+void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile)
+{
+	// Called from AddFile under list_mut so we already know pFile is
+	// live and stable for the duration of this call.
+	// #140 — probe local shared audio / video files with ffprobe to
+	// populate FT_MEDIA_LENGTH / _BITRATE / _CODEC. Cost-limiting:
+	//  * off by default in Preferences,
+	//  * only fires when the ffprobe path is populated,
+	//  * only for files whose ED2K file-type is audio / video (cheap
+	//    extension-based filter — a .zip renamed to .mp4 gets
+	//    scheduled and ffprobe fails fast in the worker, but this
+	//    filter skips the mass of docs / archives / images in a
+	//    typical share tree),
+	//  * only when the file doesn't already carry FT_MEDIA_LENGTH
+	//    (retrofits pre-#140 known.met entries once, then never
+	//    re-probes).
+	// CThreadScheduler naturally throttles: it runs one task at a
+	// time at ETP_Low so hashing / completion never starve.
+	if (!thePrefs::GetMediaMetadataEnabled()) {
+		return;
+	}
+	const wxString &ffprobePath = thePrefs::GetMediaMetadataFFProbePath();
+	if (ffprobePath.IsEmpty()) {
+		return;
+	}
+	const EED2KFileType type = GetED2KFileTypeID(pFile->GetFileName());
+	if (type != ED2KFT_AUDIO && type != ED2KFT_VIDEO) {
+		return;
+	}
+	if (pFile->GetIntTagValue(FT_MEDIA_LENGTH) > 0) {
+		return;
+	}
+	const CPath fullPath = pFile->GetFilePath().JoinPaths(pFile->GetFileName());
+	CThreadScheduler::AddTask(new CMediaProbeTask(pFile->GetFileHash(), fullPath, ffprobePath));
 }
 
 void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)

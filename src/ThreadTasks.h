@@ -28,6 +28,7 @@
 #define TASKS_H
 
 #include "ThreadScheduler.h"
+#include "MD4Hash.h" // Needed for CMD4Hash on CMediaProbeTask + CMediaProbeEvent
 #include <common/Path.h>
 
 class CKnownFile;
@@ -117,6 +118,36 @@ protected:
 
 private:
 	void SetHashingProgress(uint16 part);
+};
+
+/**
+ * Runs MediaProbe against a shared audio / video file so its
+ * FT_MEDIA_LENGTH / _BITRATE / _CODEC tags can be published to
+ * ed2k + Kad. Scheduled by CSharedFileList::AddFile for eligible
+ * files (see issue #140). Posts MULE_EVT_MEDIA_PROBE on success;
+ * the main-thread handler attaches the tags via AddTagUnique so
+ * subsequent publish paths pick them up automatically.
+ */
+class CMediaProbeTask : public CThreadTask
+{
+public:
+	CMediaProbeTask(const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath);
+
+protected:
+	//! @see CThreadTask::Entry
+	virtual void Entry();
+
+	//! Identifies the CKnownFile to attach the tags to when the
+	//! result event fires on the main thread. Resolved via
+	//! CKnownFileList::FindKnownFileByID at that point since the
+	//! file may have been unshared while we were probing.
+	CMD4Hash m_hash;
+	//! Full path to the file. Snapshotted at ctor time so the
+	//! worker thread doesn't touch shared CKnownFile state.
+	CPath m_path;
+	//! ffprobe binary path snapshotted at ctor time so the task
+	//! doesn't need to reach into thePrefs from the worker thread.
+	wxString m_ffprobePath;
 };
 
 /**
@@ -230,6 +261,32 @@ private:
 };
 
 /**
+ * This event is sent when a CMediaProbeTask successfully extracted
+ * media metadata. The main-thread handler resolves the hash back to
+ * a CKnownFile* (via CKnownFileList::FindKnownFileByID) and attaches
+ * the FT_MEDIA_* tags there — doing that from the worker thread would
+ * race with the publish paths that read m_taglist.
+ */
+class CMediaProbeEvent : public wxEvent
+{
+public:
+	CMediaProbeEvent(const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec);
+
+	virtual wxEvent *Clone() const;
+
+	const CMD4Hash &GetHash() const { return m_hash; }
+	uint32 GetLengthSeconds() const { return m_lengthSeconds; }
+	uint32 GetBitrateKbps() const { return m_bitrateKbps; }
+	const wxString &GetCodec() const { return m_codec; }
+
+private:
+	CMD4Hash m_hash;
+	uint32 m_lengthSeconds;
+	uint32 m_bitrateKbps;
+	wxString m_codec;
+};
+
+/**
  * This event is sent when a part-file has been completed.
  */
 class CCompletionEvent : public wxEvent
@@ -306,10 +363,12 @@ private:
 wxDECLARE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_FILE_COMPLETED, wxEvent);
+wxDECLARE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
 
 typedef void (wxEvtHandler::*MuleHashingEventFunction)(CHashingEvent &);
 typedef void (wxEvtHandler::*MuleCompletionEventFunction)(CCompletionEvent &);
 typedef void (wxEvtHandler::*MuleAllocFinishedEventFunction)(CAllocFinishedEvent &);
+typedef void (wxEvtHandler::*MuleMediaProbeEventFunction)(CMediaProbeEvent &);
 
 //! Event-handler for completed hashings of new shared files and partfiles.
 #define EVT_MULE_HASHING(func) \
@@ -326,6 +385,10 @@ typedef void (wxEvtHandler::*MuleAllocFinishedEventFunction)(CAllocFinishedEvent
 //! Event-handler for partfile preallocation finished events.
 #define EVT_MULE_ALLOC_FINISHED(func) \
 	wx__DECLARE_EVT0(MULE_EVT_ALLOC_FINISHED, wxEVENT_HANDLER_CAST(MuleAllocFinishedEventFunction, func))
+
+//! Event-handler for MediaProbe-completed events.
+#define EVT_MULE_MEDIA_PROBE(func) \
+	wx__DECLARE_EVT0(MULE_EVT_MEDIA_PROBE, wxEVENT_HANDLER_CAST(MuleMediaProbeEventFunction, func))
 
 #endif // TASKS_H
 // File_checked_for_headers

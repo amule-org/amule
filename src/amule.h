@@ -77,6 +77,7 @@ class CTimer;
 class CTimerEvent;
 class wxSingleInstanceChecker;
 class CHashingEvent;
+class CMediaProbeEvent;
 class CMuleInternalEvent;
 class CCompletionEvent;
 class CAllocFinishedEvent;
@@ -363,6 +364,10 @@ protected:
 	void OnFinishedHashing(CHashingEvent &evt);
 	void OnPartFileHashResult(CPartFileHashResultEvent &evt);
 	void OnFinishedAICHHashing(CHashingEvent &evt);
+	// #140 — CMediaProbeTask marshals results back here so we can
+	// attach FT_MEDIA_* tags on the main thread (the worker never
+	// touches CKnownFile state).
+	void OnMediaProbeFinished(CMediaProbeEvent &evt);
 	void OnFinishedCompletion(CCompletionEvent &evt);
 	void OnFinishedAllocation(CAllocFinishedEvent &evt);
 	void OnFinishedHTTPDownload(CMuleInternalEvent &evt);

@@ -152,6 +152,13 @@ private:
 	typedef std::list<CThreadTask *> TaskList;
 
 	bool AddFile(CKnownFile *pFile);
+
+	// #140 — invoked by AddFile once list_mut is held. Kicks off a
+	// CMediaProbeTask when the preference is enabled and the file
+	// looks like media (audio / video by ED2K file type) and hasn't
+	// been probed yet. Returns silently if any gate fails.
+	void MaybeScheduleMediaProbe(CKnownFile *pFile);
+
 	// Per-path attach: stat fname under directory, look it up in
 	// known.met, and either AddFile() the existing CKnownFile or push
 	// a CHashingTask onto hashTasks. Shared between the bulk-Reload

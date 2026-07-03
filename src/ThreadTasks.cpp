@@ -30,6 +30,7 @@
 #include <unordered_set> // CAICHSyncTask orphan-prune liveRoots set
 
 #include "ThreadTasks.h"      // Interface declarations
+#include "MediaProbe.h"       // Needed for CMediaProbeTask
 #include "PartFile.h"         // Needed for CPartFile
 #include "CFile.h"            // Needed for CFile::CloneFile
 #include "Logger.h"           // Needed for Add(Debug)LogLine{C,N}
@@ -253,6 +254,38 @@ void CHashingTask::OnLastTask()
 		// Make sure the AICH-hashes are up to date.
 		CThreadScheduler::AddTask(new CAICHSyncTask());
 	}
+}
+
+////////////////////////////////////////////////////////////
+// CMediaProbeTask
+
+CMediaProbeTask::CMediaProbeTask(const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath)
+// ETP_Low so an in-progress hashing or completion job always wins
+// the CPU. The task-type + desc combine to give the scheduler a
+// dedup key: two concurrent adds of the same hash silently collapse
+// into one probe.
+: CThreadTask("Media Probe", hash.Encode(), ETP_Low)
+, m_hash(hash)
+, m_path(fullPath)
+, m_ffprobePath(ffprobePath)
+{
+}
+
+void CMediaProbeTask::Entry()
+{
+	// Probe is entirely off-main and touches no CKnownFile state.
+	MediaInfo info;
+	if (!MediaProbe::Probe(m_ffprobePath, m_path, info)) {
+		return;
+	}
+	if (TestDestroy()) {
+		return;
+	}
+	// Marshal the result back to the main thread; the handler there
+	// resolves m_hash to the CKnownFile (which may have been
+	// unshared while we were probing) and attaches the tags.
+	CMediaProbeEvent evt(m_hash, info.length_seconds, info.bitrate_kbps, info.codec);
+	wxQueueEvent(wxTheApp, evt.Clone());
 }
 
 ////////////////////////////////////////////////////////////
@@ -726,6 +759,21 @@ void CAllocateFileTask::OnExit()
 
 wxDEFINE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
+wxDEFINE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
+
+CMediaProbeEvent::CMediaProbeEvent(const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec)
+: wxEvent(-1, MULE_EVT_MEDIA_PROBE)
+, m_hash(hash)
+, m_lengthSeconds(lengthSeconds)
+, m_bitrateKbps(bitrateKbps)
+, m_codec(codec)
+{
+}
+
+wxEvent *CMediaProbeEvent::Clone() const
+{
+	return new CMediaProbeEvent(m_hash, m_lengthSeconds, m_bitrateKbps, m_codec);
+}
 CHashingEvent::CHashingEvent(wxEventType type, CKnownFile *result, const CKnownFile *owner)
 : wxEvent(-1, type)
 , m_owner(owner)

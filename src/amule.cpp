@@ -58,6 +58,7 @@
 #endif
 
 #include <common/Format.h>          // Needed for CFormat
+#include <tags/FileTags.h>          // Needed for FT_MEDIA_* on OnMediaProbeFinished
 #include <common/DataFileVersion.h> // Needed for MET_HEADER (server.met probe)
 #include "CFile.h"                  // Needed for CFile (server.met probe)
 #include "kademlia/kademlia/Kademlia.h"
@@ -1786,6 +1787,38 @@ void CamuleApp::OnFinishedAICHHashing(CHashingEvent &evt)
 		// `owner`'s exported value change.
 		owner->MarkECChanged();
 	}
+}
+
+void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
+{
+	// The task ran off-main; the file may have been unshared while
+	// we were probing. Re-resolve the hash instead of holding a
+	// CKnownFile* across the boundary.
+	CKnownFile *file = theApp->knownfiles->FindKnownFileByID(evt.GetHash());
+	if (!file) {
+		return;
+	}
+
+	// AddTagUnique replaces any existing tag with the same ID, so
+	// re-probing a file (e.g. mtime changed) simply overwrites the
+	// previous values rather than accumulating duplicates.
+	if (evt.GetLengthSeconds()) {
+		file->AddTagUnique(CTagInt32(FT_MEDIA_LENGTH, evt.GetLengthSeconds()));
+	}
+	if (evt.GetBitrateKbps()) {
+		file->AddTagUnique(CTagInt32(FT_MEDIA_BITRATE, evt.GetBitrateKbps()));
+	}
+	if (!evt.GetCodec().IsEmpty()) {
+		file->AddTagUnique(CTagString(FT_MEDIA_CODEC, evt.GetCodec()));
+	}
+	// EC exports the tag list; the remote GUI + web UI need to see
+	// the new values on next refresher tick.
+	file->MarkECChanged();
+	// Persist immediately so the tags survive a crash before the
+	// next scheduled known.met flush. CKnownFileList::Save is cheap
+	// (append-only over a memory buffer) and this only fires when a
+	// probe actually succeeded, so overhead is bounded.
+	theApp->knownfiles->Save();
 }
 
 void CamuleApp::OnFinishedCompletion(CCompletionEvent &evt)
