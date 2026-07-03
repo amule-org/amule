@@ -70,7 +70,6 @@
 #include "MuleUDPSocket.h"
 #include "OtherFunctions.h" // DeleteContents
 #include "ScopedPtr.h"
-#include "Preferences.h" // thePrefs::GetNetworkInterface() for bind-to-interface
 #include <common/Macros.h>
 
 #ifdef __WINDOWS__
@@ -98,6 +97,17 @@
 using namespace boost::asio;
 using namespace boost::system; // for error_code
 static io_context s_io_service;
+
+// The network interface to bind every socket to (empty = system default).
+// Pushed in by the core via SetSocketBindInterface() rather than read from
+// thePrefs directly: mulesocket must not depend on CPreferences, since EC-only
+// tools (amulecmd, amuleweb) link this library but not the full preferences.
+static wxString s_bindToInterface;
+
+void SetSocketBindInterface(const wxString &iface)
+{
+	s_bindToInterface = iface;
+}
 
 //
 // Mark a freshly-created socket close-on-exec so subprocesses launched
@@ -386,14 +396,13 @@ public:
 		// fix, #173). This must apply even when no local IP is bound (no
 		// SetLocal call), so open the socket here to set the option before
 		// connect; asio's connect happily reuses an already-open socket.
-		if (!thePrefs::GetNetworkInterface().IsEmpty()) {
+		if (!s_bindToInterface.IsEmpty()) {
 			error_code openEc;
 			if (!m_socket->is_open()) {
 				m_socket->open(ip::tcp::v4(), openEc);
 			}
 			if (!openEc) {
-				SetBoundInterface(
-					m_socket->native_handle(), thePrefs::GetNetworkInterface(), false);
+				SetBoundInterface(m_socket->native_handle(), s_bindToInterface, false);
 			}
 		}
 
@@ -1125,7 +1134,7 @@ public:
 		try {
 			open(m_address.GetEndpoint().protocol());
 			SetCloexecOnSocket(native_handle());
-			SetBoundInterface(native_handle(), thePrefs::GetNetworkInterface(), false);
+			SetBoundInterface(native_handle(), s_bindToInterface, false);
 			set_option(ip::tcp::acceptor::reuse_address(true));
 			bind(m_address.GetEndpoint());
 			listen();
@@ -1581,7 +1590,7 @@ private:
 			SetCloexecOnSocket(m_socket->native_handle());
 			// Pin this UDP socket (ed2k client/server + Kad all funnel
 			// through here) to the configured interface (#173).
-			SetBoundInterface(m_socket->native_handle(), thePrefs::GetNetworkInterface(), false);
+			SetBoundInterface(m_socket->native_handle(), s_bindToInterface, false);
 			m_socket->bind(endpoint);
 			AddDebugLogLineN(logAsio,
 				CFormat("Created UDP socket %s %d") % m_address.IPAddress() %

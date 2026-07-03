@@ -74,6 +74,7 @@
 #include "InternalEvents.h"       // Needed for CMuleInternalEvent
 #include "IPFilter.h"             // Needed for CIPFilter
 #include "KnownFileList.h"        // Needed for CKnownFileList
+#include "LibSocket.h"            // Needed for SetSocketBindInterface
 #include "ListenSocket.h"         // Needed for CListenSocket
 #include "Logger.h"               // Needed for CLogger // Do_not_auto_remove
 #include "MagnetURI.h"            // Needed for CMagnetURI
@@ -555,6 +556,10 @@ bool CamuleApp::OnInit()
 	}
 
 	glob_prefs = new CPreferences();
+
+	// Push the bind-to-interface preference into the socket library before any
+	// socket is opened (mulesocket can't read CPreferences itself).
+	SetSocketBindInterface(thePrefs::GetNetworkInterface());
 
 	// The temp / incoming directories are validated and created further
 	// down, after the first-run wizard has had a chance to point them

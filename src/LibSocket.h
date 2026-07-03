@@ -247,4 +247,10 @@ private:
 	class CAsioServiceThread *m_threads;
 };
 
+// Set the network interface every socket binds its egress to (empty = system
+// default). Pushed in by the core from thePrefs::GetNetworkInterface() so this
+// socket library stays independent of CPreferences. Takes effect for sockets
+// opened after the call.
+void SetSocketBindInterface(const wxString &iface);
+
 #endif /* __LIBSOCKET_H__ */

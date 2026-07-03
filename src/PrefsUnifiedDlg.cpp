@@ -909,6 +909,11 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- UDP port changed.\n");
 	}
 
+	if (CfgChanged(IDC_INTERFACE)) {
+		restart_needed = true;
+		restart_needed_msg += _("- Network interface binding changed.\n");
+	}
+
 	if (CfgChanged(IDC_EXT_CONN_TCP_PORT)) {
 		restart_needed = true;
 		restart_needed_msg += _("- External connect port changed.\n");
