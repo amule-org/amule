@@ -278,8 +278,13 @@ public:
 	bool PublishSrc();
 	bool PublishNotes();
 
-	// TODO: This must be implemented if we ever want to have metadata.
-	uint32 GetMetaDataVer() const { return /*m_uMetaDataVer*/ 0; }
+	// Nonzero when this file has verified media metadata attached
+	// (probed by MediaProbe at share-add time). Derived from tag
+	// presence — a nonzero FT_MEDIA_LENGTH is the only source of
+	// this tag in aMule, so its presence is the "we've probed and
+	// have data worth publishing" signal that Kad's publisher gates
+	// on (Search.cpp:1422). No separate m_uMetaDataVer field needed.
+	uint32 GetMetaDataVer() const;
 
 	// file sharing
 	virtual CPacket *CreateSrcInfoPacket(

@@ -121,6 +121,17 @@ void CFileStatistic::AddTransferred(uint64 bytes)
  * See `CKnownFile::MarkECChanged()` doc in KnownFile.h. */
 std::atomic<uint64> CKnownFile::s_globalEcGen{ 0 };
 
+uint32 CKnownFile::GetMetaDataVer() const
+{
+	// Derived from tag presence, no separate m_uMetaDataVer field.
+	// FT_MEDIA_LENGTH is the only tag MediaProbe populates
+	// unconditionally on a successful probe (bitrate and codec are
+	// best-effort per format), so nonzero length is the reliable
+	// "we've probed this and have data worth publishing" signal.
+	// Kad's publisher (Search.cpp:1422) uses this exact gate.
+	return GetIntTagValue(FT_MEDIA_LENGTH) > 0 ? 1 : 0;
+}
+
 void CKnownFile::MarkECChanged()
 {
 	// Single atomic pre-increment + atomic store. Generation values are
@@ -1239,7 +1250,23 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 		}
 	}
 
-	// There, we could add MetaData info, if we ever get to have that.
+	// Media metadata (populated by MediaProbe at share-add time).
+	// Emit each tag only when nonzero / non-empty; older ed2k
+	// clients / servers happily ignore unknown tag IDs but should
+	// never be asked to parse a 0-valued FT_MEDIA_LENGTH. VBT
+	// (variable-bit) encoding for capable eMule clients and the
+	// TYPETAGINTEGER-capable servers; fixed 32-bit otherwise.
+	const bool useVBT = pClient && pClient->GetVBTTags();
+	if (uint32 len = GetIntTagValue(FT_MEDIA_LENGTH)) {
+		tags.push_back(new CTagVarInt(FT_MEDIA_LENGTH, len, useVBT ? 0 : 32));
+	}
+	if (uint32 br = GetIntTagValue(FT_MEDIA_BITRATE)) {
+		tags.push_back(new CTagVarInt(FT_MEDIA_BITRATE, br, useVBT ? 0 : 32));
+	}
+	const wxString &codec = GetStrTagValue(FT_MEDIA_CODEC);
+	if (!codec.IsEmpty()) {
+		tags.push_back(new CTagString(FT_MEDIA_CODEC, codec));
+	}
 
 	EUtf8Str eStrEncode;
 
