@@ -769,6 +769,45 @@ void CSharedFileList::NotifyPathRemoved(const wxString &fullPath)
 	RemoveFile(file);
 }
 
+void CSharedFileList::NotifyDirRemoved(const wxString &dirPath)
+{
+	if (dirPath.IsEmpty()) {
+		return;
+	}
+
+	// Trailing separator so ".../Season 1" does not match sibling ".../Season 10".
+	wxString prefix = dirPath;
+	const wxString sep(wxFileName::GetPathSeparator());
+	if (!prefix.EndsWith(sep)) {
+		prefix += sep;
+	}
+
+	// Collect under the lock, detach outside it: RemoveFile re-locks and erases
+	// from m_pathIndex.
+	std::vector<CKnownFile *> victims;
+	{
+		wxMutexLocker lock(list_mut);
+		for (std::unordered_map<wxString, CKnownFile *>::const_iterator it = m_pathIndex.begin();
+			it != m_pathIndex.end();
+			++it) {
+			if (it->first.StartsWith(prefix)) {
+				victims.push_back(it->second);
+			}
+		}
+	}
+
+	if (victims.empty()) {
+		return;
+	}
+
+	AddDebugLogLineN(logKnownFiles,
+		CFormat("Watcher: detaching %zu shared file(s) under removed dir '%s'") % victims.size() %
+			dirPath);
+	for (std::vector<CKnownFile *>::iterator it = victims.begin(); it != victims.end(); ++it) {
+		RemoveFile(*it);
+	}
+}
+
 void CSharedFileList::NotifyPathModified(const wxString &fullPath)
 {
 	if (fullPath.IsEmpty()) {

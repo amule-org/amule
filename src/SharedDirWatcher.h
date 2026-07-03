@@ -113,6 +113,15 @@ private:
 	// "auto-share new subdirs of watched parents" behaviour.
 	void RegisterNewSubdirectory(const wxString &path);
 
+	// Tear down a renamed-away / deleted shared dir: detach its subtree, drop it
+	// from the runtime shared set + its watch. Never touches the user's
+	// explicit/recursive config. Returns true if it removed a set entry.
+	bool HandleDirRemoved(const wxString &path);
+
+	// Is `path` in the runtime shared set? Distinguishes a dir event from a
+	// file event once the path is gone from disk.
+	bool IsInSharedSet(const wxString &path) const;
+
 	// Closes the inotify/kqueue race window inside RegisterNewSubdirectory:
 	// between the kernel mkdir and our wxFileSystemWatcher::Add(), any
 	// files or subdirs created inside the new directory fire on a watch

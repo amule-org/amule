@@ -148,6 +148,11 @@ public:
 	void NotifyPathRemoved(const wxString &fullPath);
 	void NotifyPathModified(const wxString &fullPath);
 
+	// Detach every shared file under `dirPath` (separator-anchored prefix, so
+	// ".../Season 1" does not swallow sibling ".../Season 10"). For a renamed
+	// or deleted dir, whose subtree moves with no per-file events.
+	void NotifyDirRemoved(const wxString &dirPath);
+
 private:
 	typedef std::list<CThreadTask *> TaskList;
 

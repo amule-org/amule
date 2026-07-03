@@ -425,6 +425,56 @@ void CSharedDirWatcher::RegisterNewSubdirectory(const wxString &path)
 	ScanNewSubdirRace(p);
 }
 
+bool CSharedDirWatcher::IsInSharedSet(const wxString &path) const
+{
+	CPath p(path);
+	if (!p.IsOk()) {
+		return false;
+	}
+	const thePrefs::PathList &shared = theApp->glob_prefs->shareddir_list;
+	for (size_t i = 0; i < shared.size(); ++i) {
+		if (shared[i].IsSameDir(p)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CSharedDirWatcher::HandleDirRemoved(const wxString &path)
+{
+	// Detach the vanished dir's subtree (NotifyPathRemoved is per-file only).
+	m_parent->NotifyDirRemoved(path);
+
+	// Drop it from the runtime union so scans stop chasing a dead path. Leave
+	// the user's explicit/recursive config alone -- the union is recomputed
+	// from it on reload anyway.
+	bool removed = false;
+	CPath gone(path);
+	if (gone.IsOk()) {
+		thePrefs::PathList &shared = theApp->glob_prefs->shareddir_list;
+		for (size_t i = 0; i < shared.size(); ++i) {
+			if (shared[i].IsSameDir(gone)) {
+				shared.erase(shared.begin() + i);
+				removed = true;
+				AddDebugLogLineN(logKnownFiles,
+					CFormat("Shared-dir watcher: dropped '%s' from shared set "
+						"(directory removed)") %
+						path);
+				break;
+			}
+		}
+	}
+
+#ifndef __WXOSX__
+	// Remove its per-subdir watch (macOS covers the whole tree via FSEvents).
+	if (removed && m_watcher) {
+		m_watcher->Remove(wxFileName::DirName(path));
+	}
+#endif
+
+	return removed;
+}
+
 void CSharedDirWatcher::ScanNewSubdirRace(const CPath &parent)
 {
 	if (!parent.IsOk() || !parent.DirExists()) {
@@ -622,6 +672,22 @@ void CSharedDirWatcher::FlushPendingEvents()
 		// own event slot will handle the add. Treat the rename as
 		// (delete-old) then schedule new-path processing.
 		if (ev.flags & wxFSW_EVENT_RENAME) {
+			// Directory rename: the subtree moved with no per-file events, so
+			// the file pipeline would just log a bogus "does not exist" and
+			// share nothing. Register the new dir (watch + walk contents); it
+			// only re-shares under a recursive ancestor, so an explicitly
+			// picked folder isn't resurrected at its new name.
+			if (!ev.renamedTo.IsEmpty() && wxFileName::DirExists(ev.renamedTo)) {
+				// Tear down the old path only if it's gone (inotify shape).
+				// Backends that report the rename against the still-existing
+				// parent deliver the old subtree via a separate DELETE, so
+				// never touch a path that still exists (that's the parent).
+				if (!wxFileName::DirExists(path) && IsInSharedSet(path)) {
+					HandleDirRemoved(path);
+				}
+				RegisterNewSubdirectory(ev.renamedTo);
+				continue;
+			}
 			m_parent->NotifyPathRemoved(path);
 			if (!ev.renamedTo.IsEmpty()) {
 				m_parent->NotifyPathAdded(ev.renamedTo);
@@ -635,7 +701,20 @@ void CSharedDirWatcher::FlushPendingEvents()
 		// multiple flags because fs-watcher fires DELETE for the
 		// rename's source on some backends.
 		if (ev.flags & wxFSW_EVENT_DELETE) {
-			m_parent->NotifyPathRemoved(path);
+			// A vanished shared *dir* isn't in the file index, so
+			// NotifyPathRemoved would no-op. Detach its subtree only when it is
+			// a shared dir AND genuinely gone from disk -- a spurious/transient
+			// DELETE, or a delete-then-recreate coalesced into this debounce
+			// window, must not unshare a directory that still exists. The
+			// shared-set check also keeps this off the hot path of ordinary
+			// file DELETEs (no O(files) scan per file).
+			if (IsInSharedSet(path) && !wxFileName::DirExists(path)) {
+				if (HandleDirRemoved(path)) {
+					theApp->glob_prefs->SaveSharedFolders();
+				}
+			} else {
+				m_parent->NotifyPathRemoved(path);
+			}
 			continue;
 		}
 
