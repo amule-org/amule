@@ -235,6 +235,10 @@ wxSizer *PreferencesGeneralTab(wxWindow *parent, bool call_fit = TRUE, bool set_
 #define IDC_UPNPTCPPORTTEXT 10137
 #define IDC_UPNPTCPPORT 10138
 #define IDC_ADDRESS 10139
+// 10410: bind-to-interface text control (functional, next free above the top
+// of the current range). Its label IDC_INTERFACETEXT lives in the 10355+
+// orphan-label band below.
+#define IDC_INTERFACE 10410
 #define ID_TEXT 10140
 #define IDC_MAXSOURCEPERFILE 10141
 #define IDC_MAXCON 10142
@@ -286,6 +290,7 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 // IDs below name orphan labels / static boxes so amulegui can hide
 // them via PrefsUnifiedDlg's amuledOnlyPrefs[].
 #define IDC_ADDRESSTEXT 10355
+#define IDC_INTERFACETEXT 10362
 #define IDC_EXT_CONN_PARAMS_BOX 10356
 #define IDC_EXT_CONN_IPTEXT 10357
 #define IDC_EXT_CONN_TCPPORTTEXT 10358

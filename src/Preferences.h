@@ -245,6 +245,7 @@ public:
 	static Cfg_Lang_Base *GetCfgLang() { return s_cfgLang; }
 
 	static const wxString &GetAddress() { return s_Addr; }
+	static const wxString &GetNetworkInterface() { return s_NetworkInterface; }
 	static uint16 GetPort() { return s_port; }
 	static void SetPort(uint16 val);
 	static uint16 GetUDPPort() { return s_udpport; }
@@ -766,6 +767,7 @@ protected:
 	static uint32 s_maxdownload;
 	static uint32 s_slotallocation;
 	static wxString s_Addr;
+	static wxString s_NetworkInterface;
 	static uint16 s_port;
 	static uint16 s_udpport;
 	static bool s_UDPEnable;

@@ -1385,6 +1385,12 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     wxTextCtrl *item27 = new wxTextCtrl( parent, IDC_ADDRESS, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item27->SetToolTip( _("Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound.") );
     item25->Add( item27, wxSizerFlags().Expand().CenterHorizontal() );
+
+    wxStaticText *item26b = new wxStaticText( parent, IDC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, 0 );
+    item25->Add( item26b, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    wxTextCtrl *item27b = new wxTextCtrl( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges. On Windows, enter the interface index.") );
+    item25->Add( item27b, wxSizerFlags().Expand().CenterHorizontal() );
     item0->Add( item25, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
     wxFlexGridSizer *item28 = new wxFlexGridSizer( 2, 0, 0 );
     item28->AddGrowableCol( 0 );

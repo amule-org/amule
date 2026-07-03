@@ -93,6 +93,7 @@ uint32 CPreferences::s_maxupload;
 uint32 CPreferences::s_maxdownload;
 uint32 CPreferences::s_slotallocation;
 wxString CPreferences::s_Addr;
+wxString CPreferences::s_NetworkInterface;
 uint16 CPreferences::s_port;
 uint16 CPreferences::s_udpport;
 bool CPreferences::s_UDPEnable;
@@ -1134,6 +1135,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_UDPPORT, (MkCfg_Int("/eMule/UDPPort", s_udpport, DEFAULT_UDP_PORT)));
 	NewCfgItem(IDC_UDPENABLE, (new Cfg_Bool("/eMule/UDPEnable", s_UDPEnable, true)));
 	NewCfgItem(IDC_ADDRESS, (new Cfg_Str("/eMule/Address", s_Addr, "")));
+	NewCfgItem(IDC_INTERFACE, (new Cfg_Str("/eMule/NetworkInterface", s_NetworkInterface, "")));
 	NewCfgItem(IDC_AUTOCONNECT, (new Cfg_Bool("/eMule/Autoconnect", s_autoconnect, true)));
 	NewCfgItem(IDC_MAXSOURCEPERFILE, (MkCfg_Int("/eMule/MaxSourcesPerFile", s_maxsourceperfile, 300)));
 	NewCfgItem(IDC_MAXCON,

@@ -643,6 +643,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	const int amuledOnlyPrefs[] = {
 		IDC_ADDRESS,
 		IDC_ADDRESSTEXT,
+		IDC_INTERFACE,
+		IDC_INTERFACETEXT,
 		IDC_UPNP_ENABLED,
 		IDC_UPNPTCPPORT,
 		IDC_UPNPTCPPORTTEXT,

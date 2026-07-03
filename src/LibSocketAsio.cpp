@@ -69,16 +69,28 @@
 #include "MuleUDPSocket.h"
 #include "OtherFunctions.h" // DeleteContents
 #include "ScopedPtr.h"
+#include "Preferences.h" // thePrefs::GetNetworkInterface() for bind-to-interface
 #include <common/Macros.h>
 
 #ifdef __WINDOWS__
 // SIO_KEEPALIVE_VALS + struct tcp_keepalive for SetTcpKeepalive.
 // winsock2.h is already brought in transitively by boost::asio.
 #include <mstcpip.h>
+// IP_UNICAST_IF / IPV6_UNICAST_IF are Vista+; define them if the SDK target
+// (see _WIN32_WINNT above) predates their headers. Values are ABI-stable.
+#ifndef IP_UNICAST_IF
+#define IP_UNICAST_IF 31
+#endif
+#ifndef IPV6_UNICAST_IF
+#define IPV6_UNICAST_IF 31
+#endif
 #else
 #include <fcntl.h>       // FD_CLOEXEC
 #include <netinet/tcp.h> // TCP_KEEPIDLE / TCP_KEEPINTVL / TCP_KEEPCNT
 #include <sys/socket.h>  // SO_KEEPALIVE
+#include <netinet/in.h>  // IP_UNICAST_IF / IP_BOUND_IF / IPPROTO_*
+#include <net/if.h>      // if_nametoindex
+#include <arpa/inet.h>   // htonl
 #endif
 
 using namespace boost::asio;
@@ -153,6 +165,81 @@ static inline void SetTcpKeepalive(Handle native, int idleSec, int intervalSec, 
 	(void)count;
 #endif
 #endif
+}
+
+// Pin a socket's egress to a named network interface, *without* requiring
+// elevated privileges. SO_BINDTODEVICE would do this on Linux but needs
+// CAP_NET_RAW (root); the options below do not:
+//
+//   Linux / Windows : IP_UNICAST_IF  / IPV6_UNICAST_IF
+//   macOS / *BSD    : IP_BOUND_IF    / IPV6_BOUND_IF
+//
+// Unlike binding to a local IP (SetLocal), this pins the *route*, so traffic
+// can't leak out via the default-route interface — the VPN-leak case behind
+// amule-org/amule#173. The interface is named (e.g. "tun0", "eth0", "en0")
+// and resolved to an index via if_nametoindex(); a bare numeric index is also
+// accepted, which is the practical input on Windows where interfaces aren't
+// named the POSIX way. No-op (with a debug log) when the name is empty,
+// unresolvable, or the platform lacks the option. aMule sockets are IPv4, so
+// callers pass isV6 == false; the v6 branch is kept for completeness.
+template <typename Handle> static void SetBoundInterface(Handle native, const wxString &ifname, bool isV6)
+{
+	if (ifname.IsEmpty()) {
+		return;
+	}
+
+	unsigned int idx = 0;
+#ifndef __WINDOWS__
+	idx = if_nametoindex(static_cast<const char *>(ifname.utf8_str()));
+#endif
+	if (idx == 0) {
+		// Fall back to a bare interface index (the usual input on Windows).
+		unsigned long n = 0;
+		if (ifname.ToULong(&n) && n > 0 && n <= 0xFFFFFFFFul) {
+			idx = static_cast<unsigned int>(n);
+		}
+	}
+	if (idx == 0) {
+		AddDebugLogLineC(logAsio, CFormat("Bind-to-interface: no interface named '%s'") % ifname);
+		return;
+	}
+
+	int err = 0;
+#ifdef __WINDOWS__
+	if (!isV6) {
+		DWORD v = htonl(idx); // IPv4 IP_UNICAST_IF wants the index in network byte order
+		err = ::setsockopt(
+			native, IPPROTO_IP, IP_UNICAST_IF, reinterpret_cast<const char *>(&v), sizeof(v));
+	} else {
+		DWORD v = idx; // IPv6 wants host byte order
+		err = ::setsockopt(
+			native, IPPROTO_IPV6, IPV6_UNICAST_IF, reinterpret_cast<const char *>(&v), sizeof(v));
+	}
+#elif defined(IP_BOUND_IF)   // macOS / *BSD — index in host byte order
+	int v = static_cast<int>(idx);
+	err = ::setsockopt(
+		native, isV6 ? IPPROTO_IPV6 : IPPROTO_IP, isV6 ? IPV6_BOUND_IF : IP_BOUND_IF, &v, sizeof(v));
+#elif defined(IP_UNICAST_IF) // Linux
+	if (!isV6) {
+		uint32_t v = htonl(idx); // IPv4 IP_UNICAST_IF wants network byte order
+		err = ::setsockopt(native, IPPROTO_IP, IP_UNICAST_IF, &v, sizeof(v));
+	} else {
+		uint32_t v = idx; // IPv6 wants host byte order
+		err = ::setsockopt(native, IPPROTO_IPV6, IPV6_UNICAST_IF, &v, sizeof(v));
+	}
+#else
+	(void)native;
+	(void)isV6;
+	AddDebugLogLineC(logAsio, wxT("Bind-to-interface not supported on this platform"));
+	return;
+#endif
+	if (err != 0) {
+		AddDebugLogLineC(logAsio,
+			CFormat("Bind-to-interface: failed to pin socket to '%s' (index %u)") % ifname % idx);
+	} else {
+		AddDebugLogLineF(logAsio,
+			CFormat("Bind-to-interface: pinned socket to '%s' (index %u)") % ifname % idx);
+	}
 }
 
 // Number of threads in the Asio thread pool
@@ -259,6 +346,21 @@ public:
 		m_OK = false;
 		m_sync = !m_notify; // set this once for the whole lifetime of the socket
 		AddDebugLogLineF(logAsio, CFormat("Connect %s %p") % m_IP % this);
+
+		// Pin outbound traffic to the configured network interface (VPN-leak
+		// fix, #173). This must apply even when no local IP is bound (no
+		// SetLocal call), so open the socket here to set the option before
+		// connect; asio's connect happily reuses an already-open socket.
+		if (!thePrefs::GetNetworkInterface().IsEmpty()) {
+			error_code openEc;
+			if (!m_socket->is_open()) {
+				m_socket->open(ip::tcp::v4(), openEc);
+			}
+			if (!openEc) {
+				SetBoundInterface(
+					m_socket->native_handle(), thePrefs::GetNetworkInterface(), false);
+			}
+		}
 
 		if (wait || m_sync) {
 			error_code ec;
@@ -988,6 +1090,7 @@ public:
 		try {
 			open(m_address.GetEndpoint().protocol());
 			SetCloexecOnSocket(native_handle());
+			SetBoundInterface(native_handle(), thePrefs::GetNetworkInterface(), false);
 			set_option(ip::tcp::acceptor::reuse_address(true));
 			bind(m_address.GetEndpoint());
 			listen();
@@ -1441,6 +1544,9 @@ private:
 			// until the user restarts amule — see #103.
 			m_socket->set_option(socket_base::reuse_address(true));
 			SetCloexecOnSocket(m_socket->native_handle());
+			// Pin this UDP socket (ed2k client/server + Kad all funnel
+			// through here) to the configured interface (#173).
+			SetBoundInterface(m_socket->native_handle(), thePrefs::GetNetworkInterface(), false);
 			m_socket->bind(endpoint);
 			AddDebugLogLineN(logAsio,
 				CFormat("Created UDP socket %s %d") % m_address.IPAddress() %
