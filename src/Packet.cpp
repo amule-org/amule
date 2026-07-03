@@ -154,7 +154,10 @@ CPacket::CPacket(uint8_t *pPacketPart, uint32 nSize, bool bLast, bool bFromPF)
 
 CPacket::~CPacket()
 {
-	// Never deletes pBuffer when completebuffer is not NULL
+	// Never deletes pBuffer when completebuffer is not NULL. This is not a
+	// redundant null-guard: pBuffer aliases into completebuffer when the latter
+	// is set, so exactly one of the two owns the allocation and must be freed.
+	// NOLINTNEXTLINE(readability-delete-null-pointer)
 	if (completebuffer) {
 		delete[] completebuffer;
 	} else {

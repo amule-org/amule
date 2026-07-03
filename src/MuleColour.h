@@ -31,6 +31,7 @@
 #include <wx/brush.h> // needed for wxBrushStyle enum values
 #include <wx/font.h>  // needed for wxFontStyle enum values
 #include "Types.h"
+#include <cmath> // Needed for std::lround
 
 class wxPen;
 class wxBrush;
@@ -108,9 +109,9 @@ public:
 
 	const CMuleColour &BlendWith(const CMuleColour &colour, double covered)
 	{
-		unsigned int red = (unsigned int)(Red() + (colour.Red() * covered) + 0.5);
-		unsigned int green = (unsigned int)(Green() + (colour.Green() * covered) + 0.5);
-		unsigned int blue = (unsigned int)(Blue() + (colour.Blue() * covered) + 0.5);
+		unsigned int red = (unsigned int)std::lround(Red() + (colour.Red() * covered));
+		unsigned int green = (unsigned int)std::lround(Green() + (colour.Green() * covered));
+		unsigned int blue = (unsigned int)std::lround(Blue() + (colour.Blue() * covered));
 		Set((red < 255) ? red : 255, (green < 255) ? green : 255, (blue < 255) ? blue : 255);
 		return *this;
 	}

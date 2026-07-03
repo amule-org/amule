@@ -26,6 +26,7 @@
 #include <wx/dc.h>
 #include <wx/image.h>
 #include "BarShader.h" // Interface declarations.
+#include <cmath>       // Needed for std::lround
 #include <cstring>     // Needed for std::memcpy
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1800)
@@ -187,9 +188,9 @@ void CBarShader::Draw(wxDC *dc, int iLeft, int iTop, bool bFlat)
 		unsigned idx = 0;
 		for (unsigned y = 0; y < Max; y++) {
 			for (unsigned x = 0; x < m_Width; x++) {
-				unsigned cRed = (unsigned)(m_Content[x].Red() * m_Modifiers[y] + .5f);
-				unsigned cGreen = (unsigned)(m_Content[x].Green() * m_Modifiers[y] + .5f);
-				unsigned cBlue = (unsigned)(m_Content[x].Blue() * m_Modifiers[y] + .5f);
+				unsigned cRed = (unsigned)std::lround(m_Content[x].Red() * m_Modifiers[y]);
+				unsigned cGreen = (unsigned)std::lround(m_Content[x].Green() * m_Modifiers[y]);
+				unsigned cBlue = (unsigned)std::lround(m_Content[x].Blue() * m_Modifiers[y]);
 				cRed = std::min(255u, cRed);
 				cGreen = std::min(255u, cGreen);
 				cBlue = std::min(255u, cBlue);
