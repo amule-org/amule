@@ -66,7 +66,7 @@
 #include "SharedDirsApplyTask.h" // Recursive-share expansion worker
 #include "muuli_wdr.h"
 #include "Logger.h"
-#include "MediaProbe.h"  // Needed for the FFProbePath Detect button handler
+#include "MediaProbe.h"    // Needed for the FFProbePath Detect button handler
 #include <common/Format.h> // Needed for CFormat
 #include "TransferWnd.h"   // Needed for CTransferWnd::UpdateCatTabTitles()
 #include "KadDlg.h"        // Needed for CKadDlg
@@ -1486,9 +1486,11 @@ void PrefsUnifiedDlg::OnButtonMediaMetaDetect(wxCommandEvent &WXUNUSED(evt))
 	// to also validate the binary here (Browse... covers that).
 	const wxString path = MediaProbe::AutoDetectPath();
 	if (path.IsEmpty()) {
-		wxMessageBox(_("ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."),
+		wxMessageBox(_("ffprobe not found on PATH or in the standard install locations. Install "
+			       "ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."),
 			_("Media metadata extraction"),
-			wxOK | wxICON_INFORMATION, this);
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	}
 	CastChild(IDC_MEDIAMETA_FFPROBEPATH, wxTextCtrl)->SetValue(path);

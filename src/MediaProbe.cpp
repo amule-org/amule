@@ -49,8 +49,8 @@ bool CanRun(const wxString &binary)
 	// wxEXEC_NODISABLE / wxEXEC_NOEVENTS mirror the pattern in
 	// AppImageIntegration.cpp — we never want the wait to spin the
 	// event loop or grey out top-level windows.
-	const long rc = wxExecute(binary + wxT(" -version"), out, err,
-		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+	const long rc = wxExecute(
+		binary + wxT(" -version"), out, err, wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
 	// wxExecute returns the child's exit code on success or -1 if it
 	// couldn't spawn (typical: file not found on Windows CreateProcess,
 	// or ENOENT after fork+exec on POSIX).
@@ -186,17 +186,17 @@ bool Probe(const wxString &ffprobePath, const CPath &file, MediaInfo &out)
 	// POSIX and Windows. wxExecute forwards the string to the shell
 	// as-is; embedded `"` in filenames would corrupt the quoting but
 	// that's a vanishingly rare case on shared media files.
-	const wxString cmd = wxT("\"") + ffprobePath + wxT("\"")
-		+ wxT(" -v error")
-		+ wxT(" -show_entries format=duration,bit_rate:stream=codec_name")
-		+ wxT(" -of default=nk=0:nw=1 \"") + file.GetRaw() + wxT("\"");
+	const wxString cmd = wxT("\"") + ffprobePath + wxT("\"") + wxT(" -v error") +
+			     wxT(" -show_entries format=duration,bit_rate:stream=codec_name") +
+			     wxT(" -of default=nk=0:nw=1 \"") + file.GetRaw() + wxT("\"");
 
 	wxArrayString stdout_lines, stderr_lines;
-	const long rc = wxExecute(cmd, stdout_lines, stderr_lines,
-		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+	const long rc =
+		wxExecute(cmd, stdout_lines, stderr_lines, wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
 	if (rc != 0) {
 		AddDebugLogLineN(logGeneral,
-			CFormat(wxT("MediaProbe: ffprobe failed (rc=%ld) for %s")) % rc % file.GetPrintable());
+			CFormat(wxT("MediaProbe: ffprobe failed (rc=%ld) for %s")) % rc %
+				file.GetPrintable());
 		return false;
 	}
 

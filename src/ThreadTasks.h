@@ -270,7 +270,8 @@ private:
 class CMediaProbeEvent : public wxEvent
 {
 public:
-	CMediaProbeEvent(const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec);
+	CMediaProbeEvent(
+		const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec);
 
 	virtual wxEvent *Clone() const;
 

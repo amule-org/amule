@@ -35,18 +35,18 @@
 
 #include <wx/utils.h>
 
-#include "Packet.h"        // Needed for CPacket
-#include "MemFile.h"       // Needed for CMemFile
-#include "ServerConnect.h" // Needed for CServerConnect
-#include "KnownFileList.h" // Needed for CKnownFileList
-#include "ThreadTasks.h"   // Needed for CThreadScheduler and CHasherTask
+#include "Packet.h"         // Needed for CPacket
+#include "MemFile.h"        // Needed for CMemFile
+#include "ServerConnect.h"  // Needed for CServerConnect
+#include "KnownFileList.h"  // Needed for CKnownFileList
+#include "ThreadTasks.h"    // Needed for CThreadScheduler and CHasherTask
 #include "OtherFunctions.h" // Needed for GetED2KFileTypeID / ED2KFT_* (MaybeScheduleMediaProbe)
-#include "Preferences.h"   // Needed for thePrefs
-#include "DownloadQueue.h" // Needed for CDownloadQueue
-#include "amule.h"         // Needed for theApp
-#include "PartFile.h"      // Needed for PartFile
-#include "Server.h"        // Needed for CServer
-#include "Statistics.h"    // Needed for theStats
+#include "Preferences.h"    // Needed for thePrefs
+#include "DownloadQueue.h"  // Needed for CDownloadQueue
+#include "amule.h"          // Needed for theApp
+#include "PartFile.h"       // Needed for PartFile
+#include "Server.h"         // Needed for CServer
+#include "Statistics.h"     // Needed for theStats
 #include "Logger.h"
 #include <common/Format.h>
 #include <common/FileFunctions.h>

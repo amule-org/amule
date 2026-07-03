@@ -761,7 +761,8 @@ wxDEFINE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
 
-CMediaProbeEvent::CMediaProbeEvent(const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec)
+CMediaProbeEvent::CMediaProbeEvent(
+	const CMD4Hash &hash, uint32 lengthSeconds, uint32 bitrateKbps, const wxString &codec)
 : wxEvent(-1, MULE_EVT_MEDIA_PROBE)
 , m_hash(hash)
 , m_lengthSeconds(lengthSeconds)
