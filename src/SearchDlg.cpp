@@ -297,8 +297,8 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 	// These are the IDs of the search-fields
 	int textfields[] = { IDC_SEARCHNAME, IDC_EDITSEARCHEXTENSION };
 
-	for (uint16 i = 0; i < itemsof(textfields); i++) {
-		enable |= !CastChild(textfields[i], wxTextCtrl)->GetValue().IsEmpty();
+	for (int textfield : textfields) {
+		enable |= !CastChild(textfield, wxTextCtrl)->GetValue().IsEmpty();
 	}
 
 	// Check if either of the dropdowns have been changed
@@ -309,8 +309,8 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 
 	// These are the IDs of the search-fields
 	int spinfields[] = { IDC_SPINSEARCHMIN, IDC_SPINSEARCHMAX, IDC_SPINSEARCHAVAILABILITY };
-	for (uint16 i = 0; i < itemsof(spinfields); i++) {
-		enable |= (CastChild(spinfields[i], wxSpinCtrl)->GetValue() > 0);
+	for (int spinfield : spinfields) {
+		enable |= (CastChild(spinfield, wxSpinCtrl)->GetValue() > 0);
 	}
 
 	// Enable the "Reset" button if any fields contain text

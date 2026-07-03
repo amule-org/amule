@@ -127,7 +127,9 @@ void CKadDlg::UpdateGraph(const GraphUpdateInfo &update)
 	} else {
 		// Check the current node-count to see if we should increase the graph height
 		if (m_kad_scope->GetUpperLimit() < update.kadnodes[2]) {
-			// Grow the limit by 50 sized increments.
+			// Grow the limit by 50 sized increments. The integer ceiling-to-50 is
+			// intentional; a whole number is what we want for the axis range.
+			// NOLINTNEXTLINE(bugprone-integer-division)
 			m_kad_scope->SetRanges(0.0, ((nodeCount + 49) / 50) * 50);
 		}
 
@@ -151,8 +153,8 @@ void CKadDlg::OnFieldsChange(wxCommandEvent &WXUNUSED(evt))
 	int textfields[] = { ID_NODE_IP1, ID_NODE_IP2, ID_NODE_IP3, ID_NODE_IP4, ID_NODE_PORT };
 
 	bool enable = true;
-	for (uint16 i = 0; i < itemsof(textfields); i++) {
-		enable &= !CastChild(textfields[i], wxTextCtrl)->GetValue().IsEmpty();
+	for (int textfield : textfields) {
+		enable &= !CastChild(textfield, wxTextCtrl)->GetValue().IsEmpty();
 	}
 
 	// Enable the node connect button if all fields contain text
