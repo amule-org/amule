@@ -103,11 +103,11 @@ CSearchFile::CSearchFile(const CMemFile &data,
 	}
 }
 
-CSearchFile::CSearchFile(const CSearchFile &other)
+// CECID() below deliberately allocates a fresh EC ID instead of copying other's.
+CSearchFile::CSearchFile(const CSearchFile &other) // NOLINT(bugprone-copy-constructor-init)
 : CAbstractFile(other)
-, CECID()
-, // create a new ID for now
-m_parent(other.m_parent)
+, CECID() // create a new ID for now
+, m_parent(other.m_parent)
 , m_showChildren(other.m_showChildren)
 , m_searchID(other.m_searchID)
 , m_sourceCount(other.m_sourceCount)

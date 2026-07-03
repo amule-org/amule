@@ -572,6 +572,9 @@ public:
 	/**
 	 * @see CStatTreeItemBase::GetDisplayString()
 	 */
+	// Deliberately calls the grandparent: CStatTreeItemHiddenCounter shows only the
+	// base label and hides the parent CStatTreeItemCounter's count display.
+	// NOLINTNEXTLINE(bugprone-parent-virtual-call)
 	virtual wxString GetDisplayString() const { return CStatTreeItemBase::GetDisplayString(); }
 #endif
 

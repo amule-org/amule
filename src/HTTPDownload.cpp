@@ -59,7 +59,7 @@ public:
 		  _("Downloading..."),
 		  wxDefaultPosition,
 		  wxDefaultSize,
-		  wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
+		  wxDEFAULT_DIALOG_STYLE)
 	{
 		downloadDlg(this, true)->Show(this, true);
 

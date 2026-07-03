@@ -422,6 +422,9 @@ wxString get_backtrace(unsigned n)
 			AllAddresses += address[i] + " ";
 		}
 	}
+	// bt_strings is the char** block returned by backtrace_symbols(); passing it
+	// through free()'s void* parameter is the documented, intended idiom.
+	// NOLINTNEXTLINE(bugprone-multi-level-implicit-pointer-conversion)
 	free(bt_strings);
 
 	/* Get line numbers from addresses */

@@ -75,6 +75,12 @@ public:
 	~CClientRef() { Unlink(); }
 	CClientRef &operator=(const CClientRef &ref)
 	{
+		// Self-assignment would be a use-after-free: Link() Unlinks the current
+		// client first, and if this holds the last reference that deletes it,
+		// leaving ref.m_client dangling before it is re-Linked.
+		if (this == &ref) {
+			return *this;
+		}
 #ifdef DEBUG_ZOMBIE_CLIENTS
 		m_from = "assigned from " + ref.m_from;
 		Link(ref.m_client, m_from);

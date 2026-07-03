@@ -44,7 +44,7 @@ CAddFriend::CAddFriend(wxWindow *parent)
 	  _("Add a Friend"),
 	  wxDefaultPosition,
 	  wxDefaultSize,
-	  wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
+	  wxDEFAULT_DIALOG_STYLE)
 {
 	wxSizer *content = addFriendDlg(this, TRUE);
 	content->Show(this, TRUE);

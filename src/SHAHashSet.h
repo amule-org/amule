@@ -116,11 +116,8 @@ public:
 	CAICHHash(uint8_t *data) { Read(data); }
 	CAICHHash(const CAICHHash &k1) { *this = k1; }
 	~CAICHHash() {}
-	CAICHHash &operator=(const CAICHHash &k1)
-	{
-		memcpy(m_abyBuffer, k1.m_abyBuffer, HASHSIZE);
-		return *this;
-	}
+	// Defaulted: member-wise copy of the POD hash buffer, self-assignment-safe.
+	CAICHHash &operator=(const CAICHHash &k1) = default;
 	friend bool operator==(const CAICHHash &k1, const CAICHHash &k2)
 	{
 		return memcmp(k1.m_abyBuffer, k2.m_abyBuffer, HASHSIZE) == 0;
@@ -242,13 +239,8 @@ public:
 		m_pPartFile = NULL;
 	}
 	CAICHRequestedData(const CAICHRequestedData &) = default;
-	CAICHRequestedData &operator=(const CAICHRequestedData &k1)
-	{
-		m_nPart = k1.m_nPart;
-		m_pPartFile = k1.m_pPartFile;
-		m_pClient = k1.m_pClient;
-		return *this;
-	}
+	// Defaulted: member-wise copy (CClientRef::operator= guards self-assignment).
+	CAICHRequestedData &operator=(const CAICHRequestedData &) = default;
 	uint16 m_nPart;
 	CPartFile *m_pPartFile;
 	CClientRef m_pClient;

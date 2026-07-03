@@ -55,7 +55,7 @@ CCommentDialog::CCommentDialog(wxWindow *parent, CKnownFile *file)
 	  _("File Comments"),
 	  wxDefaultPosition,
 	  wxDefaultSize,
-	  wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
+	  wxDEFAULT_DIALOG_STYLE)
 {
 	m_file = file;
 	wxSizer *content = commentDlg(this, TRUE);
