@@ -1367,6 +1367,17 @@ void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent &event)
 
 	wxString str = wxFileSelector(title, "", "", "", wildcard, 0, this);
 
+#ifdef __WXMAC__
+	// wxCocoa quirk: the modal NSOpenPanel steals key-window status;
+	// when it dismisses (Open OR Cancel), Cocoa returns focus + Z-order
+	// to whichever aMule window was active before Preferences opened,
+	// not to Preferences itself. IsShown() still returns true and no
+	// wxEVT_CLOSE_WINDOW fires — the dialog is alive but ordered
+	// behind the main window, which visibly reads as "Preferences
+	// closed after Browse click". Raise() restores its Z-order.
+	Raise();
+#endif
+
 	if (!str.IsEmpty()) {
 		wxTextCtrl *widget = CastChild(id, wxTextCtrl);
 		widget->SetValue(str);
