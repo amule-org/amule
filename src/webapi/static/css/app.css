@@ -1,0 +1,560 @@
+/* aMule Web — design system + responsive shell, styled after the aMule /
+   amuleGUI desktop app. Vanilla CSS, no preprocessor.
+
+   Theme resolution (light by default):
+     - :root                         -> light tokens
+     - prefers-color-scheme: dark    -> dark tokens (when no manual override)
+     - :root[data-theme="dark|light"]-> manual override from the toolbar button
+*/
+
+:root {
+  /* light theme */
+  color-scheme: light;
+  --bg: #e9edf2;
+  --surface: #ffffff;
+  --surface-2: #e7ebf0;
+  --toolbar: #dde3ea;
+  --border: #cbd2db;
+  --text: #1f2430;
+  --text-dim: #5b6472;
+  --accent: #1664c0;
+  --accent-contrast: #ffffff;
+  --ok: #2e9e54;
+  --warn: #d68a0c;
+  --bad: #cf3b3b;
+  --low: #d68a0c;
+  --sel: rgba(22, 100, 192, .2);
+  --stripe: rgba(0, 0, 0, .025);
+  --radius: 7px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .12);
+  --toolbar-h: 60px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* dark tokens — shared by "system + OS dark" and the explicit override */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #1b1f24;
+    --surface: #242a31;
+    --surface-2: #2c333c;
+    --toolbar: #1f252b;
+    --border: #3a424d;
+    --text: #e6e9ee;
+    --text-dim: #9aa3b1;
+    --accent: #3f7cc2;
+    --accent-contrast: #ffffff;
+    --ok: #46b85f;
+    --warn: #e0a13a;
+    --bad: #f0625f;
+    --low: #e0a13a;
+    --sel: rgba(75, 155, 255, .16);
+    --stripe: rgba(255, 255, 255, .03);
+    --shadow: 0 1px 3px rgba(0, 0, 0, .4);
+  }
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1b1f24;
+  --surface: #242a31;
+  --surface-2: #2c333c;
+  --toolbar: #1f252b;
+  --border: #3a424d;
+  --text: #e6e9ee;
+  --text-dim: #9aa3b1;
+  --accent: #3f7cc2;
+  --accent-contrast: #ffffff;
+  --ok: #46b85f;
+  --warn: #e0a13a;
+  --bad: #f0625f;
+  --low: #e0a13a;
+  --sel: rgba(75, 155, 255, .16);
+  --stripe: rgba(255, 255, 255, .03);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Shell: fill the viewport as a column — toolbar and status bar stay put,
+   only the view scrolls (desktop-app feel). */
+#app { height: 100%; display: flex; flex-direction: column; }
+
+a { color: var(--accent); text-decoration: none; }
+b { font-weight: 600; }
+
+.icon { display: inline-block; vertical-align: middle; flex: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); border: 0;
+}
+
+/* --- toolbar / nav (aMule-style icon buttons) --- */
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  min-height: var(--toolbar-h);
+  background: var(--toolbar);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  flex: none;
+}
+.brand { display: flex; align-items: center; padding-right: 4px; }
+.brand-logo { height: 30px; width: auto; }
+/* hamburger, shown only on small screens (.app-toolbar prefix outranks .btn) */
+.app-toolbar .nav-toggle { display: none; }
+.route-title { display: none; }    /* current section name, mobile only */
+.nav-tools { display: none; }      /* drawer copies of the header tools, mobile only */
+.nav > .conn-btn { display: none; } /* drawer copy of the connect button, mobile only */
+
+.nav {
+  display: flex;
+  gap: 2px;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 60px;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.tool-btn .icon { width: 20px; height: 20px; }
+.tool-label { font-size: 11px; font-weight: 500; }
+.tool-btn:hover { background: var(--surface-2); color: var(--text); }
+.tool-btn.active { background: var(--sel); color: var(--accent); }
+
+.header-tools { display: flex; align-items: center; gap: 8px; }
+/* Keep the right-hand buttons (Add, theme, logout) the same height. */
+.header-tools .btn, .header-tools .input { height: 34px; }
+.ed2k-add { display: flex; gap: 6px; }
+.ed2k-input { width: 180px; max-width: 38vw; }
+
+/* --- status bar (bottom, like aMule) --- */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 14px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  flex-wrap: wrap;
+  flex: none;
+}
+.status-left { display: inline-flex; align-items: center; }
+/* amulegui-style footer: live badge left, everything else pushed right */
+.status-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-left: auto; }
+.status-item { display: inline-flex; align-items: center; gap: 6px; }
+/* vertical divider between status groups, like amulegui's wxStaticLine */
+.status-sep { width: 1px; align-self: stretch; min-height: 16px; background: var(--border); }
+.conn-div { color: var(--text-dim); }
+/* connection state as plain colored text (no badge), like amulegui's labels */
+.conn-state.ok { color: var(--ok); }
+.conn-state.warn, .conn-state.low { color: var(--warn); }
+.conn-state.off { color: var(--text-dim); }
+.status-chip {
+  padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.status-chip .icon { width: 12px; height: 12px; }
+.status-chip.ok { color: var(--ok); border-color: var(--ok); }
+.status-chip.warn, .status-chip.low { color: var(--warn); border-color: var(--warn); }
+.status-chip.off { color: var(--text-dim); }
+.speeds { gap: 12px; font-variant-numeric: tabular-nums; }
+.speed { display: inline-flex; align-items: center; gap: 4px; }
+.speed .icon { width: 14px; height: 14px; }
+.speed.dl { color: var(--ok); }
+.speed.ul { color: var(--accent); }
+
+/* --- view container --- */
+.view { flex: 1 1 auto; overflow: auto; padding: 16px; }
+.view > * { max-width: 1400px; margin-left: auto; margin-right: auto; }
+.view-header {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.spacer { flex: 1 1 auto; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.server-toolbars { --srv-field: 190px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.server-toolbars .input-sm { width: var(--srv-field); max-width: 100%; }
+/* URL input spans the two add-server inputs combined (2 fields + the .toolbar gap). */
+.server-toolbars .input-url { width: calc(var(--srv-field) * 2 + 6px); max-width: 100%; }
+
+/* --- buttons + inputs --- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.btn .icon { width: 16px; height: 16px; }
+.btn:hover { background: var(--surface-2); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+/* Keep the accent fill on hover; .btn:hover would otherwise repaint it grey. */
+.btn-primary:hover { background: var(--accent); filter: brightness(1.05); }
+.btn-ghost { background: transparent; }
+.btn-danger { color: var(--bad); border-color: var(--bad); }
+.btn-icon { padding: 6px; }
+.btn-sm { padding: 4px 8px; font-size: 13px; }
+.btn-sm .icon { width: 15px; height: 15px; }
+
+.input, select, textarea {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius);
+  font: inherit;
+}
+.input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent); outline-offset: -1px;
+}
+
+/* Guest mode: hide admin-only controls. */
+body.role-guest .admin-only { display: none !important; }
+
+/* --- tables (native list look) --- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.data th, table.data td {
+  padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.data th {
+  position: sticky; top: 0; background: var(--surface-2);
+  font-weight: 600; cursor: default; z-index: 1;
+}
+table.data th.sortable { cursor: pointer; user-select: none; }
+table.data th.sortable:hover { color: var(--accent); }
+table.data th .sort-arrow { display: inline-flex; vertical-align: middle; opacity: .8; }
+table.data th .sort-arrow .icon { width: 12px; height: 12px; }
+table.data tbody tr:nth-child(even) { background: var(--stripe); }
+table.data tbody tr:hover { background: var(--surface-2); }
+table.data tbody tr.connected,
+table.data tbody tr.connected:nth-child(even) { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+table.data tbody tr.connected:hover { background: color-mix(in srgb, var(--accent) 26%, var(--surface)); }
+table.data tbody tr.connected td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+table.data tbody tr.connecting,
+table.data tbody tr.connecting:nth-child(even) { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); }
+table.data tbody tr.connecting:hover { background: color-mix(in srgb, var(--warn) 26%, var(--surface)); }
+table.data tbody tr.connecting td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+table.data td.num, table.data th.num { text-align: right; }
+table.data td.name { white-space: normal; word-break: break-word; min-width: 220px; max-width: 520px; }
+.row-selected, .row-selected:hover { background: var(--sel) !important; }
+
+/* --- progress bar (flat, accent-filled) --- */
+.progress {
+  position: relative; height: 18px; min-width: 90px; border-radius: 3px;
+  background: var(--surface-2); overflow: hidden; border: 1px solid var(--border);
+}
+.progress-fill {
+  position: absolute; inset: 0 auto 0 0; overflow: hidden;
+  width: calc(var(--p, 0) * 1%); background: var(--accent);
+}
+/* Two centred copies of the % keep it legible over both regions in either
+   theme: the base reads on the empty track, the fill copy (white, clipped to
+   the fill) reads on the accent. ponytail: fill copy is sized to the whole bar
+   via 10000%/--p so both stay centred on the bar, not on the fill. */
+.progress-label {
+  position: absolute; inset: 0; text-align: center;
+  font-size: 12px; font-weight: 600; line-height: 18px; color: var(--text);
+}
+.progress-label-fill {
+  right: auto; width: calc(10000% / max(var(--p, 0), 1));
+  color: var(--accent-contrast);
+}
+
+/* --- badges --- */
+.badge { padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--border); }
+.badge.downloading { color: var(--ok); border-color: var(--ok); }
+.badge.paused { color: var(--text-dim); }
+.badge.waiting { color: var(--warn); border-color: var(--warn); }
+
+/* --- placeholders --- */
+.placeholder {
+  padding: 40px 16px; text-align: center; color: var(--text-dim);
+}
+.placeholder-loading::after { content: ""; }
+
+/* --- cards / forms --- */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+}
+.card h3 { margin: 0 0 12px; font-size: 15px; }
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.form-grid-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; color: var(--text-dim); }
+.field-inline { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+
+/* --- login --- */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login-form {
+  width: 100%; max-width: 340px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 28px 24px;
+  display: flex; flex-direction: column; gap: 14px; text-align: center;
+}
+.login-logo { height: 52px; margin: 0 auto; }
+.login-title { font-size: 16px; margin: 0; color: var(--text-dim); font-weight: 500; }
+.login-error { color: var(--bad); min-height: 1em; margin: 0; font-size: 13px; }
+
+/* --- toast + modal --- */
+.toast-host {
+  position: fixed; right: 16px; bottom: 16px; z-index: 100;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 10px 14px; border-radius: var(--radius); box-shadow: var(--shadow);
+  background: var(--surface); border-left: 4px solid var(--accent);
+  color: var(--text); max-width: 360px; animation: toast-in .2s ease;
+}
+.toast.success { border-left-color: var(--ok); }
+.toast.error { border-left-color: var(--bad); }
+.toast.warn { border-left-color: var(--warn); }
+.toast-out { opacity: 0; transition: opacity .3s; }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: grid; place-items: center; z-index: 90; padding: 16px;
+  /* Overrides the `.view > *` max-width/auto-margins when the overlay is
+     rendered inline in a view (otherwise the backdrop is capped to 1400px). */
+  max-width: none; margin: 0;
+}
+.modal {
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px; max-width: 420px; width: 100%;
+}
+.modal-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.modal-header h3 { margin: 0; font-size: 15px; }
+/* Inline categories panel header (title + Add category button). */
+.cat-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cat-panel-header h3 { margin: 0; font-size: 15px; }
+.modal-msg { margin: 0 0 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* --- transfers / shared extras --- */
+.input-sm { padding: 3px 6px; font-size: 13px; }
+.totals-line { padding: 8px 4px; color: var(--text-dim); font-size: 13px; }
+.section-title { margin: 18px auto 8px; font-size: 15px; }
+/* When a title shares its row with controls, drop the auto side margins
+   (they'd push it inside the flex row) and vertical spacing. */
+.view-header .section-title { margin: 0; }
+/* Keep this cell a real table-cell (not display:flex) so its bottom border
+   collapses with the row like every other column. */
+.row-actions { white-space: nowrap; }
+.row-actions .btn { vertical-align: middle; }
+.peer-flags { white-space: nowrap; }
+.peer-flags .icon { vertical-align: middle; margin-right: 3px; color: var(--text-dim); }
+.row-actions .btn + .btn { margin-left: 4px; }
+.row-actions select + .btn { margin-left: 6px; }
+.color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; }
+
+/* --- search --- */
+.search-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px; margin-bottom: 12px;
+}
+.search-grid .input, .search-grid select { width: 100%; padding: 4px 8px; }
+.search-grid .field-inline .input { flex: 1; min-width: 0; }
+.search-grid .field-inline select { width: auto; flex: 0 0 auto; }
+.search-grid .field-wide { grid-column: span 2; }
+.search-form { margin-bottom: 8px; }
+.search-progress { color: var(--text-dim); font-size: 13px; }
+.pane-toolbar .search-progress { margin-left: 6px; }
+.net-pane .pane-toolbar { margin-bottom: 12px; }
+.hint { color: var(--text-dim); font-size: 13px; margin: 8px 0 0; }
+
+/* --- kad / stat grid --- */
+.kad-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.kad-stat-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.kad-stat-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* --- stats --- */
+.charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px; }
+/* Statistics page: fixed 2×2 grid like the desktop statsDlg —
+   Download | Upload on top, Connections | Statistics Tree below. */
+.stats-grid { grid-template-columns: 1fr 1fr; }
+.stats-tree-card { display: flex; flex-direction: column; min-height: 0; max-height: 340px; }
+.stats-tree-card .stats-tree { overflow-y: auto; min-height: 0; }
+.chart-card { margin-bottom: 0; }
+.chart-legend {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;
+  font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums;
+}
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-chip { display: inline-block; width: 16px; height: 10px; border-radius: 2px; }
+/* Borderless chart (used inside the Networks/Kad pane, which already has its
+   own surface + border). Sits below the controls with some breathing room. */
+.chart-bare { padding: 0; margin-top: 18px; }
+.chart-bare h3 { margin: 0 0 10px; font-size: 14px; font-weight: 500; color: var(--text-dim); }
+.chart-host { width: 100%; }
+.stats-tree { font-size: 13px; }
+.stats-tree details { margin: 2px 0; padding-left: 12px; border-left: 1px solid var(--border); }
+.stats-tree summary { cursor: pointer; padding: 2px 0; font-weight: 600; }
+.stats-tree .tree-leaf { padding: 2px 0 2px 14px; color: var(--text-dim); }
+
+/* --- preferences (PrefsUnifiedDlg-style: category list + panel) --- */
+/* Preferences use the shared notebook (.net-pane / .net-pane-body); only the
+   in-panel group boxes need extra styling here. */
+.prefs-panel fieldset {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px; margin: 0 0 14px; min-width: 0;
+}
+.prefs-panel legend { padding: 0 6px; font-size: 13px; font-weight: 600; color: var(--text-dim); }
+.prefs-panel > .form-grid { margin-bottom: 14px; }
+.prefs-actions { justify-content: flex-end; }
+
+/* --- log/pre views --- */
+.logbox-wrap { position: relative; }
+.logbox-clear {
+  position: absolute; top: 8px; right: 8px; z-index: 1;
+}
+.logbox {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 12.5px;
+  padding: 12px; border-radius: var(--radius); overflow: auto; max-height: 30vh;
+  white-space: pre-wrap; word-break: break-word; margin: 0;
+}
+.logbox-sm { max-height: 22vh; }
+/* keep the box's line-height (and padding) when there is no log content yet */
+.logbox:empty::before { content: "\00a0"; }
+
+/* --- connection button: same look as the nav tool-btn, coloured by state --- */
+.conn-btn .icon { width: 20px; height: 20px; }
+.conn-btn.disconnected .icon { color: var(--bad); }  /* red — disconnected */
+.conn-btn.connecting   .icon { color: var(--warn); } /* amber — connecting */
+.conn-btn.connected    .icon { color: var(--ok); }   /* green — connected */
+
+/* --- notebook-style tabs (CMuleNotebook look) --- */
+.tabs {
+  display: flex; gap: 2px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.tab {
+  border: 1px solid var(--border); border-bottom: none;
+  background: var(--surface-2); color: var(--text-dim);
+  padding: 6px 14px; border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer; font: inherit; line-height: 1.4; margin-bottom: -1px;
+}
+.tab:hover { background: var(--surface); color: var(--text); }
+.tab.active {
+  background: var(--surface); color: var(--text); font-weight: 600;
+  border-color: var(--border); border-bottom-color: var(--surface);
+}
+.tab-badge {
+  margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: 11px;
+  background: var(--border); color: var(--text-dim);
+}
+.tab.active .tab-badge { background: var(--accent); color: var(--accent-contrast); }
+
+/* --- Networks split (top: ED2K/Kad, bottom: log/server info) --- */
+.net-split { display: flex; flex-direction: column; gap: 16px; }
+/* notebook: content box hangs off the tab strip's bottom line, no outer card */
+.net-pane { display: flex; flex-direction: column; }
+.net-pane .tabs { margin-bottom: 0; }
+.net-pane-body {
+  min-height: 0; background: var(--surface);
+  border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius); padding: 12px;
+}
+
+/* --- responsive --- */
+@media (max-width: 860px) {
+  /* header shrinks to: hamburger + logo + section name (tools move into the drawer) */
+  .header-tools, .app-toolbar > .conn-btn { display: none; }
+  .route-title { display: block; font-size: 18px; font-weight: 600; }
+  .brand-logo { height: 26px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  /* notebook tab strips: single scrolling row instead of wrapping to 2 lines */
+  .net-pane .tabs { flex-wrap: nowrap; overflow-x: auto; }
+  .net-pane .tab { flex: 0 0 auto; }
+
+  /* nav collapses into a hamburger-driven side drawer */
+  .app-toolbar .nav-toggle { display: inline-flex; padding: 10px; }
+  .nav {
+    position: fixed; top: var(--toolbar-h); bottom: 0; left: 0;
+    width: min(260px, 80vw);
+    flex-direction: column; gap: 2px; padding: 8px;
+    background: var(--toolbar); border-right: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transform: translateX(-100%); transition: transform .2s ease;
+    z-index: 80; overflow-y: auto; overflow-x: hidden;
+  }
+  .nav.open { transform: none; }
+  .nav .tool-btn {
+    flex-direction: row; justify-content: flex-start; gap: 10px;
+    min-height: 44px; padding: 8px 12px; width: 100%;
+  }
+  .nav .tool-label { font-size: 14px; }
+  .nav > .conn-btn { display: flex; }
+  .nav-tools .lang-code { display: none; } /* the drawer row shows "Language" instead */
+  .nav-backdrop {
+    position: fixed; inset: var(--toolbar-h) 0 0 0;
+    background: rgba(0, 0, 0, .35); z-index: 79;
+  }
+  .nav-tools {
+    display: flex; flex-direction: column; gap: 2px;
+    margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .nav-tools .btn { justify-content: flex-start; min-height: 44px; border-color: transparent; }
+  /* reveal the buttons' sr-only labels as drawer row text */
+  .nav-tools .sr-only {
+    position: static; width: auto; height: auto; margin: 0;
+    clip: auto; overflow: visible;
+  }
+}
+@media (max-width: 600px) {
+  .view { padding: 10px; }
+  /* condensed status bar: hide separators (they orphan on wrap) + network info.
+     Unwrap the left/right groups so live + speed share the first line and the
+     wide connection block wraps beneath them. */
+  .statusbar { font-size: 12px; gap: 8px; padding: 6px 10px; }
+  .status-left, .status-right { display: contents; }
+  .status-sep { display: none; }
+  .status-extra { display: none; }
+  .speeds { gap: 8px; }
+  .status-chip {
+    display: inline-block; max-width: 45vw; vertical-align: middle;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* keep a long ed2k server name from overflowing the row */
+  .conn-state {
+    display: inline-block; max-width: 40vw; vertical-align: middle;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}

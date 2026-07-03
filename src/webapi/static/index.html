@@ -1,25 +1,35 @@
 <!doctype html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>amuleapi is running</title>
-	<style>
-		html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a1a; color: #d0d0d0; }
-		body { display: flex; align-items: center; justify-content: center; }
-		.wrap { text-align: center; max-width: 32em; padding: 2em; }
-		h1 { font-size: 1.6em; margin: 0 0 .4em; color: #f0f0f0; }
-		p { margin: .8em 0; line-height: 1.4; }
-		code { background: #2a2a2a; padding: .15em .35em; border-radius: 3px; font-size: 0.95em; }
-		a { color: #8ab4f8; }
-	</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>aMule Web</title>
+  <link rel="icon" href="img/favicon.ico">
+  <!-- Apply the saved theme before first paint to avoid a flash. -->
+  <script>
+    try {
+      var t = localStorage.getItem("amule.theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="css/app.css">
+  <!-- Resolve the vendored libraries' bare specifiers (hooks imports "preact"). -->
+  <script type="importmap">
+  {
+    "imports": {
+      "preact":       "./js/vendor/preact.module.js",
+      "preact/hooks": "./js/vendor/hooks.module.js",
+      "htm":          "./js/vendor/htm.module.js"
+    }
+  }
+  </script>
 </head>
 <body>
-	<div class="wrap">
-		<h1>amuleapi is running</h1>
-		<p>The daemon is up and the REST surface is being served under <code>/api/v0/</code>.</p>
-		<p>No frontend bundle is wired up at this <code>StaticRoot</code> yet; this placeholder confirms static serving works end-to-end. Point <code>StaticRoot</code> in your <code>amuleapi.conf</code> at a real frontend directory to replace this page.</p>
-		<p>See <a href="https://github.com/amule-org/amule">amule-org/amule</a> for the API reference.</p>
-	</div>
+  <div id="app">
+    <div class="placeholder placeholder-loading">Loading…</div>
+  </div>
+  <noscript>This application requires JavaScript.</noscript>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
