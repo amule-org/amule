@@ -448,6 +448,14 @@ struct StatusSnapshot
 	// Aggregate counts pulled by the same EC_OP_STATS round-trip.
 	std::uint32_t ul_queue_len = 0;
 	std::uint32_t total_src_count = 0;
+
+	// ed2k network-wide totals (all connected servers). Surfaced in
+	// /status as ed2k.network.{users,files} — symmetric with
+	// kad.network.{users,files,nodes} on KadSnapshot. Populated from
+	// EC_TAG_STATS_ED2K_{USERS,FILES}, present in the same
+	// EC_OP_STAT_REQ response we already parse.
+	std::uint32_t ed2k_users = 0;
+	std::uint32_t ed2k_files = 0;
 };
 
 // ECID-keyed file map + hash→ECID index in lockstep. The index is

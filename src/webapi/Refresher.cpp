@@ -118,6 +118,18 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_TOTAL_SRC_COUNT)) {
 		out.total_src_count = static_cast<std::uint32_t>(t->GetInt());
 	}
+	// ed2k network aggregate — the same EC_OP_STAT_REQ response
+	// already carries KAD_USERS / KAD_FILES (parsed further down in
+	// ParseKadFromPacket), plus ED2K_USERS / ED2K_FILES sitting right
+	// next to them (ExternalConn.cpp:762-768). Read them here so
+	// /status can surface ed2k.network.{users,files} symmetric with
+	// kad.network.{users,files,nodes} — no extra EC round-trip.
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_USERS)) {
+		out.ed2k_users = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_FILES)) {
+		out.ed2k_files = static_cast<std::uint32_t>(t->GetInt());
+	}
 	// Nickname intentionally absent: it isn't shipped in the
 	// EC_OP_STAT_REQ response. amuled returns it from
 	// EC_OP_GET_PREFERENCES / EC_OP_GET_STATSTREE@DETAIL_WEB; the

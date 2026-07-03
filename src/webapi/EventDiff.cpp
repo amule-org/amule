@@ -196,7 +196,8 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 	  << ",\"low_id\":" << (s.ed2k_lowid ? "true" : "false") << ",\"server_name\":\""
 	  << EscJson(s.server_name) << "\""
 	  << ",\"server_ip\":\"" << EscJson(s.server_ip) << "\""
-	  << ",\"server_port\":" << s.server_port << "}"
+	  << ",\"server_port\":" << s.server_port << ",\"network\":{"
+	  << "\"users\":" << s.ed2k_users << ",\"files\":" << s.ed2k_files << "}}"
 	  << ",\"kad\":{"
 	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
 	  << ",\"firewalled\":" << (s.kad_firewalled ? "true" : "false") << ",\"network\":{"
@@ -280,7 +281,8 @@ bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
 	       a.kad_firewalled == b.kad_firewalled && a.server_name == b.server_name &&
 	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
 	       a.download_bps == b.download_bps && a.upload_bps == b.upload_bps &&
-	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count;
+	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count &&
+	       a.ed2k_users == b.ed2k_users && a.ed2k_files == b.ed2k_files;
 }
 bool Equal(const KadSnapshot &a, const KadSnapshot &b)
 {

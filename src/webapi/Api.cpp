@@ -1393,6 +1393,17 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.ValueString(wxString::FromUTF8(s.server_ip.c_str()));
 	w.Key("server_port");
 	w.ValueInt(static_cast<int64_t>(s.server_port));
+	// Network rollup, symmetric with kad.network below. Aggregate
+	// user + file counts across all connected ed2k servers, taken
+	// from the same EC_OP_STAT_REQ response the kad counters ride
+	// on — no extra round-trip.
+	w.Key("network");
+	w.BeginObject();
+	w.Key("users");
+	w.ValueInt(static_cast<int64_t>(s.ed2k_users));
+	w.Key("files");
+	w.ValueInt(static_cast<int64_t>(s.ed2k_files));
+	w.EndObject();
 	w.EndObject();
 
 	w.Key("kad");
