@@ -4748,6 +4748,29 @@ CHttpServer::Response CApiDispatcher::HandleCategoryDelete(
 
 	(void)RefresherTick(m_app, m_state);
 
+	// amuled renumbers every download's category on delete (files at the
+	// deleted index reset to 0, files above it shift down by one), but it
+	// mutates m_category directly in CPartFile::RemoveCategory without
+	// flagging the partfile dirty, so the change is never echoed back over
+	// the incremental EC feed (EC_DETAIL_INC_UPDATE) that RefresherTick
+	// consumes. Mirror the renumber into our cached snapshot ourselves —
+	// exactly as amulegui does in CDownQueueRem::ResetCatParts — otherwise
+	// downloads keep the stale (now-deleted) index and the next-created
+	// category silently re-adopts them.
+	m_state.MutateDownloads([idx](webapi::FileMap &files) {
+		for (auto &kv : files) {
+			webapi::FileSnapshot &f = kv.second;
+			if (!f.is_downloading) {
+				continue;
+			}
+			if (f.download.category == idx) {
+				f.download.category = 0;
+			} else if (f.download.category > idx) {
+				f.download.category -= 1;
+			}
+		}
+	});
+
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
