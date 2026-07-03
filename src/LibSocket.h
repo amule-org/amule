@@ -253,9 +253,20 @@ private:
 // opened after the call.
 void SetSocketBindInterface(const wxString &iface);
 
-// Resolve a bind-interface value (POSIX name, Windows adapter friendly name, or
-// numeric index) to an interface index; 0 if empty or not resolvable. Lets the
-// core validate the preference and warn the user before any socket is opened.
-unsigned int ResolveBindInterfaceIndex(const wxString &iface);
+// Outcome of validating the configured bind interface, so the core can report
+// it once at startup instead of discovering it silently per socket.
+enum BindInterfaceStatus
+{
+	BindIface_Empty,      // no interface configured (default)
+	BindIface_OK,         // resolves and binds
+	BindIface_NotFound,   // name/index does not match any interface
+	BindIface_Denied,     // bind needs a privilege we don't have (Linux CAP_NET_RAW)
+	BindIface_Unsupported // platform can't bind, or another error
+};
+
+// Validate the configured bind interface on a throwaway socket. Lets the core
+// warn the user (not found / permission denied) before any real socket opens,
+// rather than leaving traffic silently unbound.
+BindInterfaceStatus TestSocketBindInterface(const wxString &iface);
 
 #endif /* __LIBSOCKET_H__ */

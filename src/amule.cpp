@@ -560,21 +560,36 @@ bool CamuleApp::OnInit()
 	// Push the bind-to-interface preference into the socket library before any
 	// socket is opened (mulesocket can't read CPreferences itself). It's a
 	// security-relevant choice (VPN-leak prevention), so make the outcome
-	// visible: confirm the bind when the interface resolves, and warn loudly
-	// when it does not — otherwise a typo would silently leave traffic on the
-	// default route while the user believes it is contained.
+	// visible: confirm the bind when it applies, and warn loudly when it does
+	// not (bad name, or missing privilege on Linux) — otherwise traffic would
+	// silently stay on the default route while the user believes it is contained.
 	const wxString &bindInterface = thePrefs::GetNetworkInterface();
 	SetSocketBindInterface(bindInterface);
-	if (!bindInterface.IsEmpty()) {
-		if (ResolveBindInterfaceIndex(bindInterface) != 0) {
-			AddLogLineN(
-				CFormat(_("Binding all network traffic to interface: %s")) % bindInterface);
-		} else {
-			AddLogLineC(CFormat(_("WARNING: configured network interface '%s' was not found - "
-					      "traffic is NOT bound to it and may leave via the default "
-					      "route. Check the interface name in Preferences.")) %
-				    bindInterface);
-		}
+	switch (TestSocketBindInterface(bindInterface)) {
+	case BindIface_Empty:
+		break; // no interface configured — nothing to report
+	case BindIface_OK:
+		AddLogLineN(CFormat(_("Binding all network traffic to interface: %s")) % bindInterface);
+		break;
+	case BindIface_NotFound:
+		AddLogLineC(CFormat(_("WARNING: configured network interface '%s' was not found - "
+				      "traffic is NOT bound to it and may leave via the default "
+				      "route. Check the interface name in Preferences.")) %
+			    bindInterface);
+		break;
+	case BindIface_Denied:
+		AddLogLineC(CFormat(_("WARNING: binding to network interface '%s' requires elevated "
+				      "privileges and was NOT applied - traffic may leave via the "
+				      "default route. Grant the capability (e.g. 'sudo setcap "
+				      "cap_net_raw+ep' on the aMule binary) or run with sufficient "
+				      "privileges.")) %
+			    bindInterface);
+		break;
+	default:
+		AddLogLineC(CFormat(_("WARNING: could not bind to network interface '%s' - traffic "
+				      "may leave via the default route.")) %
+			    bindInterface);
+		break;
 	}
 
 	// The temp / incoming directories are validated and created further

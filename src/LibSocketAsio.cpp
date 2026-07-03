@@ -88,10 +88,13 @@
 #else
 #include <fcntl.h>       // FD_CLOEXEC
 #include <netinet/tcp.h> // TCP_KEEPIDLE / TCP_KEEPINTVL / TCP_KEEPCNT
-#include <sys/socket.h>  // SO_KEEPALIVE
-#include <netinet/in.h>  // IP_UNICAST_IF / IP_BOUND_IF / IPPROTO_*
-#include <net/if.h>      // if_nametoindex
+#include <sys/socket.h>  // SO_KEEPALIVE / SO_BINDTODEVICE
+#include <netinet/in.h>  // IP_BOUND_IF / IPPROTO_*
+#include <net/if.h>      // if_nametoindex / if_indextoname / IF_NAMESIZE
 #include <arpa/inet.h>   // htonl
+#include <unistd.h>      // close() for the startup bind probe
+#include <cstring>       // strlen() for SO_BINDTODEVICE
+#include <cerrno>        // errno / EPERM
 #endif
 
 using namespace boost::asio;
@@ -210,12 +213,16 @@ static unsigned int ResolveWindowsInterfaceIndex(const wxString &friendlyName)
 }
 #endif // __WINDOWS__
 
+#ifdef __WINDOWS__
+typedef SOCKET NativeSocketHandle;
+#else
+typedef int NativeSocketHandle;
+#endif
+
 // Resolve a bind-interface value to an interface index (0 if empty or not
 // resolvable): a POSIX name via if_nametoindex(), a Windows adapter
-// FriendlyName via GetAdaptersAddresses(), or a bare numeric index. Exported so
-// the core can validate the preference once at startup and warn the user before
-// any socket is opened, rather than failing silently per socket.
-unsigned int ResolveBindInterfaceIndex(const wxString &ifname)
+// FriendlyName via GetAdaptersAddresses(), or a bare numeric index.
+static unsigned int ResolveBindInterfaceIndex(const wxString &ifname)
 {
 	if (ifname.IsEmpty()) {
 		return 0;
@@ -236,72 +243,144 @@ unsigned int ResolveBindInterfaceIndex(const wxString &ifname)
 	return idx;
 }
 
-// Pin a socket's egress to a named network interface, *without* requiring
-// elevated privileges. SO_BINDTODEVICE would do this on Linux but needs
-// CAP_NET_RAW (root); the options below do not:
+// Bind a raw socket's egress to a network interface. Unlike binding to a local
+// IP (SetLocal), this pins the *route*, so traffic can't leak out via the
+// default-route interface — the VPN-leak case behind amule-org/amule#173.
 //
-//   Linux / Windows : IP_UNICAST_IF  / IPV6_UNICAST_IF
-//   macOS / *BSD    : IP_BOUND_IF    / IPV6_BOUND_IF
+// Each platform needs the option that is a real egress *constraint*:
+//   Linux         : SO_BINDTODEVICE. IP_UNICAST_IF is only a routing preference
+//                   here (verified: it silently falls back to the default
+//                   route), so it can't prevent leaks. SO_BINDTODEVICE may
+//                   require CAP_NET_RAW on some kernels — the caller surfaces
+//                   that instead of pretending traffic is contained.
+//   macOS / Darwin: IP_BOUND_IF / IPV6_BOUND_IF (Darwin's SO_BINDTODEVICE
+//                   equivalent; a true constraint, no privileges needed).
+//   Windows       : IP_UNICAST_IF / IPV6_UNICAST_IF (a real constraint on
+//                   Windows, unlike Linux).
 //
-// Unlike binding to a local IP (SetLocal), this pins the *route*, so traffic
-// can't leak out via the default-route interface — the VPN-leak case behind
-// amule-org/amule#173. The interface value is what the prefs dropdown stores:
-// a POSIX name ("tun0", "eth0", "en0") resolved via if_nametoindex(), a Windows
-// adapter FriendlyName resolved via GetAdaptersAddresses(), or a bare numeric
-// index. No-op (with a debug log) when the value is empty, unresolvable, or the
-// platform lacks the option. aMule sockets are IPv4, so callers pass
-// isV6 == false; the v6 branch is kept for completeness.
+// Returns 0 on success or an errno-style code on failure; sets *notFound when
+// the interface can't be resolved (distinct from a permission error). aMule
+// sockets are IPv4, so callers pass isV6 == false; the v6 path is kept for
+// completeness.
+static int ApplyBindToInterface(NativeSocketHandle native, const wxString &ifname, bool isV6, bool *notFound)
+{
+	*notFound = false;
+	unsigned int idx = ResolveBindInterfaceIndex(ifname);
+	if (idx == 0) {
+		*notFound = true;
+		return -1;
+	}
+#ifdef __WINDOWS__
+	if (!isV6) {
+		DWORD v = htonl(idx); // IPv4 IP_UNICAST_IF wants the index in network byte order
+		if (::setsockopt(native,
+			    IPPROTO_IP,
+			    IP_UNICAST_IF,
+			    reinterpret_cast<const char *>(&v),
+			    sizeof(v)) != 0) {
+			return ::WSAGetLastError();
+		}
+	} else {
+		DWORD v = idx; // IPv6 wants host byte order
+		if (::setsockopt(native,
+			    IPPROTO_IPV6,
+			    IPV6_UNICAST_IF,
+			    reinterpret_cast<const char *>(&v),
+			    sizeof(v)) != 0) {
+			return ::WSAGetLastError();
+		}
+	}
+	return 0;
+#elif defined(__linux__)
+	// SO_BINDTODEVICE takes the interface *name*; derive the canonical name
+	// from the resolved index (also normalises a numeric-index entry).
+	(void)isV6; // family-agnostic
+	char devName[IF_NAMESIZE] = { 0 };
+	if (if_indextoname(idx, devName) == NULL) {
+		*notFound = true;
+		return -1;
+	}
+	if (::setsockopt(native, SOL_SOCKET, SO_BINDTODEVICE, devName, strlen(devName)) != 0) {
+		return errno;
+	}
+	return 0;
+#elif defined(IP_BOUND_IF) // macOS / Darwin — index in host byte order
+	int v = static_cast<int>(idx);
+	if (::setsockopt(native,
+		    isV6 ? IPPROTO_IPV6 : IPPROTO_IP,
+		    isV6 ? IPV6_BOUND_IF : IP_BOUND_IF,
+		    &v,
+		    sizeof(v)) != 0) {
+		return errno;
+	}
+	return 0;
+#else
+	(void)native;
+	(void)isV6;
+	return ENOTSUP;
+#endif
+}
+
+// Per-socket egress bind (reads the interface pushed in by the core). Kept on
+// the debug channel to avoid spamming the normal log on every connect — the
+// core reports the overall outcome once at startup via TestSocketBindInterface.
 template <typename Handle> static void SetBoundInterface(Handle native, const wxString &ifname, bool isV6)
 {
 	if (ifname.IsEmpty()) {
 		return;
 	}
-
-	unsigned int idx = ResolveBindInterfaceIndex(ifname);
-	if (idx == 0) {
-		// Unresolvable — the core already warned the user loudly at startup
-		// (see SetSocketBindInterface caller); keep the per-socket note on the
-		// debug channel to avoid spamming the normal log on every connect.
-		AddDebugLogLineC(logAsio, CFormat("Bind-to-interface: no interface named '%s'") % ifname);
-		return;
+	bool notFound = false;
+	int err = ApplyBindToInterface(static_cast<NativeSocketHandle>(native), ifname, isV6, &notFound);
+	if (err == 0) {
+		AddDebugLogLineF(logAsio, CFormat("Bind-to-interface: bound socket to '%s'") % ifname);
+	} else {
+		AddDebugLogLineC(logAsio,
+			CFormat("Bind-to-interface: could not bind socket to '%s' (%s)") % ifname %
+				(notFound ? "no such interface" : "error"));
 	}
+}
 
-	int err = 0;
+// Validate the configured interface once, on a throwaway socket, so the core
+// can report the real outcome at startup (found / not-found / permission
+// denied) rather than discovering it silently per socket.
+BindInterfaceStatus TestSocketBindInterface(const wxString &ifname)
+{
+	if (ifname.IsEmpty()) {
+		return BindIface_Empty;
+	}
+	if (ResolveBindInterfaceIndex(ifname) == 0) {
+		return BindIface_NotFound;
+	}
 #ifdef __WINDOWS__
-	if (!isV6) {
-		DWORD v = htonl(idx); // IPv4 IP_UNICAST_IF wants the index in network byte order
-		err = ::setsockopt(
-			native, IPPROTO_IP, IP_UNICAST_IF, reinterpret_cast<const char *>(&v), sizeof(v));
-	} else {
-		DWORD v = idx; // IPv6 wants host byte order
-		err = ::setsockopt(
-			native, IPPROTO_IPV6, IPV6_UNICAST_IF, reinterpret_cast<const char *>(&v), sizeof(v));
-	}
-#elif defined(IP_BOUND_IF)   // macOS / *BSD — index in host byte order
-	int v = static_cast<int>(idx);
-	err = ::setsockopt(
-		native, isV6 ? IPPROTO_IPV6 : IPPROTO_IP, isV6 ? IPV6_BOUND_IF : IP_BOUND_IF, &v, sizeof(v));
-#elif defined(IP_UNICAST_IF) // Linux
-	if (!isV6) {
-		uint32_t v = htonl(idx); // IPv4 IP_UNICAST_IF wants network byte order
-		err = ::setsockopt(native, IPPROTO_IP, IP_UNICAST_IF, &v, sizeof(v));
-	} else {
-		uint32_t v = idx; // IPv6 wants host byte order
-		err = ::setsockopt(native, IPPROTO_IPV6, IPV6_UNICAST_IF, &v, sizeof(v));
+	SOCKET fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd == INVALID_SOCKET) {
+		return BindIface_OK; // resolved; can't probe, assume ok
 	}
 #else
-	(void)native;
-	(void)isV6;
-	AddDebugLogLineC(logAsio, wxT("Bind-to-interface not supported on this platform"));
-	return;
-#endif
-	if (err != 0) {
-		AddDebugLogLineC(logAsio,
-			CFormat("Bind-to-interface: failed to pin socket to '%s' (index %u)") % ifname % idx);
-	} else {
-		AddDebugLogLineF(logAsio,
-			CFormat("Bind-to-interface: pinned socket to '%s' (index %u)") % ifname % idx);
+	int fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		return BindIface_OK;
 	}
+#endif
+	bool notFound = false;
+	int err = ApplyBindToInterface(fd, ifname, false, &notFound);
+#ifdef __WINDOWS__
+	::closesocket(fd);
+#else
+	::close(fd);
+#endif
+	if (err == 0) {
+		return BindIface_OK;
+	}
+	if (notFound) {
+		return BindIface_NotFound;
+	}
+#ifndef __WINDOWS__
+	if (err == EPERM || err == EACCES) {
+		return BindIface_Denied;
+	}
+#endif
+	return BindIface_Unsupported;
 }
 
 // Number of threads in the Asio thread pool
