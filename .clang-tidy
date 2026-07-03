@@ -67,25 +67,66 @@
 #   src/extern/.clang-tidy        (vendored wx code)
 #   src/webserver/src/.clang-tidy (PHP interpreter, mostly generated)
 
+# Tier-1 bug/UB checks (added for the whole-tree lint gate). These point at
+# real defects -- use-after-move, null derefs, uninitialised reads, lifetime
+# and self-assignment errors, dangerous conversions, suspicious arithmetic --
+# and were each measured against the tree before adding: the clang-analyzer
+# `cplusplus.*` / `nullability.*` families and most bugprone-* checks below
+# are clean or fire only a handful of real hits. The whole `cplusplus.*`
+# family is enabled EXCEPT `NewDeleteLeaks` (28 false positives from wxThread
+# detached self-delete, same reason it was suppressed before); `NewDelete`
+# (the use-after-free / double-free checker) is the high-value one this pulls
+# back in. Its only non-project hits are in wx template headers, dropped via
+# ExcludeHeaderFilterRegex below.
+#
+# `bugprone-narrowing-conversions` is deliberately NOT in this whole-tree set:
+# it fires ~350× on this C-derived codebase (implicit int->uint8 and friends),
+# so it's enforced diff-only on changed lines in CI instead. Same reasoning
+# retires `branch-clone` / `reserved-identifier` (hundreds / ~2000 idiom hits).
 Checks: >
   -*,
   clang-analyzer-core.*,
-  clang-analyzer-cplusplus.StringChecker,
+  clang-analyzer-cplusplus.*,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
   clang-analyzer-deadcode.*,
+  clang-analyzer-nullability.*,
   clang-analyzer-optin.core.*,
   clang-analyzer-optin.cplusplus.UninitializedObject,
   clang-analyzer-security.ArrayBound,
   clang-analyzer-unix.*,
+  bugprone-bool-pointer-implicit-conversion,
+  bugprone-copy-constructor-init,
+  bugprone-dangling-handle,
+  bugprone-incorrect-roundings,
+  bugprone-infinite-loop,
+  bugprone-integer-division,
+  bugprone-macro-repeated-side-effects,
   bugprone-misplaced-widening-cast,
+  bugprone-move-forwarding-reference,
   bugprone-multi-level-implicit-pointer-conversion,
+  bugprone-not-null-terminated-result,
+  bugprone-parent-virtual-call,
   bugprone-signed-char-misuse,
   bugprone-sizeof-expression,
+  bugprone-standalone-empty,
+  bugprone-string-constructor,
   bugprone-suspicious-include,
+  bugprone-suspicious-missing-comma,
+  bugprone-suspicious-memory-comparison,
   bugprone-too-small-loop-variable,
+  bugprone-unhandled-self-assignment,
+  bugprone-use-after-move,
   misc-redundant-expression,
   performance-avoid-endl,
-  performance-unnecessary-copy-initialization
+  performance-move-const-arg,
+  performance-unnecessary-copy-initialization,
+  readability-delete-null-pointer
 
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*/src/.*\.(h|hpp)$'
+# clang-analyzer path diagnostics can surface inside instantiated wx template
+# headers (e.g. cplusplus.NewDelete in wx/buffer.h, wx/string.h) even though
+# HeaderFilterRegex targets project headers -- exclude the wx system headers
+# so those library-internal false positives don't fail the gate.
+ExcludeHeaderFilterRegex: '.*/wx-[0-9.]+/.*'
 FormatStyle: none

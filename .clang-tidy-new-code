@@ -1,0 +1,48 @@
+# Diff-only lint config — enforced on CHANGED lines in pull requests only,
+# NOT whole-tree. Complements the whole-tree bug gate in `.clang-tidy`.
+#
+# Purpose: these are the "usually fix" maintainability/modernization checks.
+# On a 20-year-old codebase they fire tens of thousands of times whole-tree
+# (modernize-use-using ~10.7k, use-override ~9.4k, use-nullptr ~7.2k,
+# misc-const-correctness ~4.1k, bugprone-narrowing-conversions ~350), so a
+# whole-tree green gate is impractical -- it would churn nearly every file.
+# Instead the CI runs `clang-tidy-diff.py` with THIS config over the PR patch,
+# so new/changed code is held to a modern standard while the existing tree is
+# left untouched. Tier-1 bug checks are NOT repeated here -- new code is
+# already covered for those by the whole-tree `.clang-tidy` gate.
+#
+# Chosen set (high value, low friction on new code):
+#   bugprone-narrowing-conversions   dangerous implicit narrowing (int->uint8)
+#   modernize-use-nullptr            NULL -> nullptr (type safety)
+#   modernize-use-emplace            emplace_back over push_back(temp)
+#   modernize-loop-convert           index loops -> range-based where clearer
+#   modernize-use-equals-default     hand-written trivial special members
+#   modernize-use-equals-delete      '= delete' over private-unimplemented
+#   modernize-make-unique/shared     make_* over new
+#   performance-for-range-copy       range-for copying instead of const&
+#   performance-unnecessary-value-param  by-value params only read
+#
+# Deliberately EXCLUDED (even diff-only), and why:
+#   modernize-use-override   omitted per project decision (revisit as a
+#                            one-shot whole-tree --fix sweep if wanted)
+#   modernize-use-using      stylistic typedef->using churn, low value
+#   modernize-use-auto       readability-contentious (auto can obscure types)
+#   misc-const-correctness   high false-positive / churn even on new code
+
+Checks: >
+  -*,
+  bugprone-narrowing-conversions,
+  modernize-use-nullptr,
+  modernize-use-emplace,
+  modernize-loop-convert,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-make-unique,
+  modernize-make-shared,
+  performance-for-range-copy,
+  performance-unnecessary-value-param
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*/src/.*\.(h|hpp)$'
+ExcludeHeaderFilterRegex: '.*/wx-[0-9.]+/.*'
+FormatStyle: none
