@@ -269,4 +269,11 @@ enum BindInterfaceStatus
 // rather than leaving traffic silently unbound.
 BindInterfaceStatus TestSocketBindInterface(const wxString &iface);
 
+// Bind an already-open raw socket to the given interface, reusing the exact
+// same per-platform logic as aMule's own sockets. For non-asio sockets such as
+// libcurl's HTTP socket (via CURLOPT_SOCKOPTFUNCTION). The fd is passed as
+// uintptr_t so a Windows SOCKET survives without truncation. Returns true if
+// bound (or nothing to do), false if the bind failed.
+bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface);
+
 #endif /* __LIBSOCKET_H__ */

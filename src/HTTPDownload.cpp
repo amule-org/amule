@@ -38,6 +38,7 @@
 #include "InternalEvents.h"         // Needed for CMuleInternalEvent
 #include "Preferences.h"
 #include "Proxy.h"
+#include "LibSocket.h" // BindRawSocketToInterface for the curl bind hook
 
 #ifndef AMULE_DAEMON
 #include "inetdownload.h" // Needed for inetDownload
@@ -156,7 +157,7 @@ wxDEFINE_EVENT(wxEVT_HTTP_PROGRESS, wxEvent);
 wxDEFINE_EVENT(wxEVT_HTTP_SHUTDOWN, wxEvent);
 #endif
 
-// Apply the current proxy prefs to the shared wxWebSession.
+// Apply the current proxy prefs to the given wxWebSession.
 //
 // wxWebProxy / wxWebSession::SetProxy are wx 3.3+ only. On wx 3.2 there is
 // no programmatic way to set a proxy on wxWebRequest, so we rely on the
@@ -169,10 +170,9 @@ wxDEFINE_EVENT(wxEVT_HTTP_SHUTDOWN, wxEvent);
 // SOCKS proxies are intentionally skipped even when SetProxy is available:
 // wx 3.3's wxWebProxy is HTTP-only. A libcurl backend would be required if
 // SOCKS support mattered — that is out of scope for this fix.
-static void ApplyProxyToDefaultSession()
+static void ApplyProxyToSession(wxWebSession &session)
 {
 #if wxCHECK_VERSION(3, 3, 0)
-	wxWebSession &session = wxWebSession::GetDefault();
 	const CProxyData *pd = thePrefs::GetProxyData();
 	if (!pd || !pd->m_proxyEnable || pd->m_proxyType == PROXY_NONE) {
 		session.SetProxy(wxWebProxy::FromURL(wxString())); // clear
@@ -192,7 +192,78 @@ static void ApplyProxyToDefaultSession()
 		url = CFormat("http://%s:%u") % pd->m_proxyHostName % pd->m_proxyPort;
 	}
 	session.SetProxy(wxWebProxy::FromURL(url));
+#else
+	(void)session;
 #endif
+}
+
+// aMule standardises on libcurl for all HTTP (version check, IP2Country,
+// server.met) so the bind-to-interface hook below works uniformly on every
+// platform. Linux and macOS already default to the curl backend; on Windows
+// the default may be WinHTTP, so request curl explicitly. Falls back to the
+// platform default if curl isn't available at runtime — HTTP still works, it
+// just can't be pinned to an interface (the core warns about that separately).
+static wxWebSession &GetAmuleWebSession()
+{
+#if wxUSE_WEBREQUEST_CURL
+	if (wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
+		static wxWebSession curlSession = wxWebSession::New(wxWebSessionBackendCURL);
+		if (curlSession.IsOpened()) {
+			return curlSession;
+		}
+	}
+#endif
+	return wxWebSession::GetDefault();
+}
+
+#if defined(AMULE_HAVE_LIBCURL) && wxUSE_WEBREQUEST_CURL
+// libcurl invokes this on the freshly-created socket, before connect(). Bind
+// it to the configured interface using aMule's own per-platform logic (the
+// same SO_BINDTODEVICE / IP_BOUND_IF / IP_UNICAST_IF path the P2P sockets use),
+// so HTTP can't leak past a bound interface. See amule-org/amule#173.
+extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsocktype)
+{
+	const wxString &iface = thePrefs::GetNetworkInterface();
+	if (!iface.IsEmpty()) {
+		BindRawSocketToInterface(static_cast<uintptr_t>(curlfd), iface);
+	}
+	return CURL_SOCKOPT_OK;
+}
+#endif
+
+// Tune the libcurl handle backing an HTTP request: CURLOPT_NOSIGNAL so the
+// synchronous-resolver fallback doesn't raise SIGALRM in this multi-threaded
+// process, CURLOPT_CONNECTTIMEOUT_MS so the connect phase (incl. DNS) gives up
+// after 30 s instead of the full OS resolver timeout, and — when an interface
+// is configured — CURLOPT_SOCKOPTFUNCTION to bind egress to it. No-op when the
+// request isn't backed by libcurl.
+static void CustomizeCurlRequest(wxWebRequest &request)
+{
+#if defined(AMULE_HAVE_LIBCURL) && wxUSE_WEBREQUEST_CURL
+	if (CURL *curl = static_cast<CURL *>(request.GetNativeHandle())) {
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000L);
+		if (!thePrefs::GetNetworkInterface().IsEmpty()) {
+			curl_easy_setopt(curl, CURLOPT_SOCKOPTFUNCTION, amuleHttpSockoptCallback);
+		}
+	}
+#else
+	(void)request;
+#endif
+}
+
+// Single entry point for all aMule HTTP: curl-backed session + proxy +
+// interface bind, so every HTTP channel is consistent and honours the
+// bind-to-interface preference.
+wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
+{
+	wxWebSession &session = GetAmuleWebSession();
+	ApplyProxyToSession(session);
+	wxWebRequest request = session.CreateRequest(handler, url);
+	if (request.IsOk()) {
+		CustomizeCurlRequest(request);
+	}
+	return request;
 }
 
 CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
@@ -243,29 +314,16 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 		return;
 	}
 
-	ApplyProxyToDefaultSession();
-
-	m_request = wxWebSession::GetDefault().CreateRequest(this, m_url);
+	// Curl-backed session + proxy + interface bind, all in one place (shared
+	// with the version check). The threaded-resolver caveat still applies: the
+	// CONNECTTIMEOUT set inside bounds the visible delay before Failed fires,
+	// but not the cleanup-time pthread_join on libcurl's threaded resolver.
+	m_request = CreateAmuleWebRequest(this, m_url);
 	if (!m_request.IsOk()) {
 		AddLogLineC(CFormat(_("Failed to create HTTP request for %s")) % m_url);
 		FinishAndDestroy(HTTP_Error);
 		return;
 	}
-
-#if defined(AMULE_HAVE_LIBCURL) && wxUSE_WEBREQUEST_CURL
-	// When wx was built with the libcurl backend AND we found <curl/curl.h>
-	// at configure time, set CURLOPT_NOSIGNAL so the synchronous-resolver
-	// fallback doesn't raise SIGALRM in this multi-threaded process, and
-	// CURLOPT_CONNECTTIMEOUT_MS so the connect phase (incl. DNS) gives up
-	// after 30 s instead of waiting the full OS resolver timeout (~5 min).
-	// This does NOT close the cleanup-time pthread_join hang on libcurl's
-	// threaded resolver — that's bounded by the OS DNS timeout regardless
-	// — but it bounds the visible delay before the Failed event fires.
-	if (CURL *curl = static_cast<CURL *>(m_request.GetNativeHandle())) {
-		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000L);
-	}
-#endif
 
 	// Storage_File: wx streams the response body to an internal temp file
 	// and hands us the path on completion. We then rename it to the

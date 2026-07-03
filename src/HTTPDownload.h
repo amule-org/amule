@@ -35,6 +35,13 @@
 
 class wxWebRequestEvent;
 
+// Create an HTTP request through aMule's shared path: a curl-backed
+// wxWebSession (uniform across platforms), the current proxy pref applied, and
+// egress bound to the configured network interface when one is set. Used by
+// every HTTP channel (this downloader + the version check) so they behave
+// consistently and honour bind-to-interface (amule-org/amule#173).
+wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url);
+
 enum HTTPDownloadResult
 {
 	HTTP_Success = 0,

@@ -340,6 +340,17 @@ template <typename Handle> static void SetBoundInterface(Handle native, const wx
 	}
 }
 
+// Bind an already-open raw socket (e.g. libcurl's HTTP socket) to the
+// configured interface, reusing the exact same logic as aMule's own sockets.
+bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface)
+{
+	if (iface.IsEmpty()) {
+		return true;
+	}
+	bool notFound = false;
+	return ApplyBindToInterface(static_cast<NativeSocketHandle>(fd), iface, false, &notFound) == 0;
+}
+
 // Validate the configured interface once, on a throwaway socket, so the core
 // can report the real outcome at startup (found / not-found / permission
 // denied) rather than discovering it silently per socket.

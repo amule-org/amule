@@ -31,6 +31,7 @@
 #include <common/ClientVersion.h> // VERSION_MJR / VERSION_MIN / VERSION_UPDATE
 #include "OtherFunctions.h"       // make_full_ed2k_version
 #include "Logger.h"               // AddDebugLogLineN / logGeneral
+#include "HTTPDownload.h"         // CreateAmuleWebRequest (shared curl session + interface bind)
 
 #include <wx/regex.h>
 #include <wx/tokenzr.h>
@@ -66,7 +67,10 @@ void CVersionCheck::Start(wxEvtHandler *notify, int notifyId)
 	m_status = Checking;
 	m_latest.Clear();
 
-	m_request = wxWebSession::GetDefault().CreateRequest(this, VERSION_CHECK_URL);
+	// Shared aMule HTTP path: curl-backed session, proxy, and egress bound to
+	// the configured network interface when one is set (so the check doesn't
+	// leak past a bound interface).
+	m_request = CreateAmuleWebRequest(this, VERSION_CHECK_URL);
 	if (!m_request.IsOk()) {
 		Finish(Failed);
 		return;
