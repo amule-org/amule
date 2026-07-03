@@ -146,6 +146,16 @@ int CamuleRemoteGuiApp::OnExit()
 
 	wxSocketBase::Shutdown(); // needed because we also called Initialize() manually
 
+	// Skip wx's static-destructor / module cleanup, exactly as the monolithic
+	// app does in CamuleGuiApp::OnExit (amule.cpp). wx's WebRequestModule
+	// teardown destroys the platform wxWebSession, whose dtor dereferences
+	// already-freed state and raise(SIGABRT)s on quit (amule-org/amule#18,
+	// PR #159). amulegui links wxWebRequest too, so it hits the identical
+	// crash. By this point our own cleanup (timer, sockets) has run; _Exit
+	// bypasses atexit + static destructors so the buggy wx dtor never runs.
+	// Remove once the upstream wx fix lands in a release we depend on.
+	std::_Exit(0);
+
 	return wxApp::OnExit();
 }
 
