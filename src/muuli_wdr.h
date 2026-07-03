@@ -274,6 +274,16 @@ wxSizer *PreferencesServerTab(wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define IDC_MINDISKSPACE 10168
 #define IDC_SRCSEEDS 10169
 #define IDC_UAP 10170
+// Media metadata extraction (issue #140). Sit in the high band (>= 10420)
+// so we don't clash with an eventual wxDesigner regeneration or with
+// other in-flight branches — bind-to-interface reserves 10410, so we
+// start at 10420 leaving a 10-ID cushion. The label at IDC_MEDIAMETA_
+// FFPROBEPATHTEXT lives in the 10355+ orphan-label band with the
+// other daemon-only labels (amuleguii hides via amuledOnlyPrefs[]).
+#define IDC_MEDIAMETA_ENABLED 10420
+#define IDC_MEDIAMETA_FFPROBEPATH 10421
+#define IDC_MEDIAMETA_FFPROBEBROWSE 10422
+#define IDC_MEDIAMETA_FFPROBEDETECT 10423
 wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_INCFILES 10171
@@ -291,6 +301,10 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 // them via PrefsUnifiedDlg's amuledOnlyPrefs[].
 #define IDC_ADDRESSTEXT 10355
 #define IDC_INTERFACETEXT 10362
+// Orphan label for the ffprobe path text control. Grouped with the
+// rest so amulegui hides it via amuledOnlyPrefs[] (probing runs on
+// the daemon side; the remote GUI has no business setting the path).
+#define IDC_MEDIAMETA_FFPROBEPATHTEXT 10370
 #define IDC_EXT_CONN_PARAMS_BOX 10356
 #define IDC_EXT_CONN_IPTEXT 10357
 #define IDC_EXT_CONN_TCPPORTTEXT 10358

@@ -1556,13 +1556,54 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item21 = new wxCheckBox( parent, IDC_UAP, _("Add new shared files with auto priority"), wxDefaultPosition, wxDefaultSize, 0 );
     item19->Add( item21, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
     item0->Add( item19, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
+
+    // Media metadata extraction (issue #140). Optional feature that
+    // runs ffprobe against each shared file at share-add / known.met
+    // load time to populate FT_MEDIA_LENGTH / _BITRATE / _CODEC on
+    // the CKnownFile; the ed2k + Kad publishers then advertise those
+    // tags automatically. Whole box hides in amulegui (see
+    // PrefsUnifiedDlg's amuledOnlyPrefs[]) since the probing itself
+    // runs daemon-side.
+    wxStaticBox *item22 = new wxStaticBox( parent, -1, _("Media metadata extraction") );
+    wxStaticBoxSizer *item22sz = new wxStaticBoxSizer( item22, wxVERTICAL );
+
+    wxCheckBox *item23 = new wxCheckBox( parent, IDC_MEDIAMETA_ENABLED,
+        _("Extract length / bitrate / codec from shared audio and video files"),
+        wxDefaultPosition, wxDefaultSize, 0 );
+    item23->SetToolTip( _("When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed.") );
+    item22sz->Add( item23, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
+
+    wxFlexGridSizer *item24 = new wxFlexGridSizer( 4, 0, 0 );
+    item24->AddGrowableCol( 1 );
+
+    wxStaticText *item25 = new wxStaticText( parent, IDC_MEDIAMETA_FFPROBEPATHTEXT,
+        _("Path to ffprobe:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item24->Add( item25, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+
+    CMuleTextCtrl *item26 = new CMuleTextCtrl( parent, IDC_MEDIAMETA_FFPROBEPATH,
+        "", wxDefaultPosition, wxSize(80,-1), 0 );
+    item26->SetToolTip( _("Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup.") );
+    item24->Add( item26, wxSizerFlags(1).Expand().CenterVertical() );
+
+    wxButton *item27 = new wxButton( parent, IDC_MEDIAMETA_FFPROBEBROWSE,
+        _("Browse"), wxDefaultPosition, wxDefaultSize, 0 );
+    item24->Add( item27, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+
+    wxButton *item28 = new wxButton( parent, IDC_MEDIAMETA_FFPROBEDETECT,
+        _("Detect"), wxDefaultPosition, wxDefaultSize, 0 );
+    item28->SetToolTip( _("Search the standard install locations for an ffprobe binary and fill the path field.") );
+    item24->Add( item28, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+
+    item22sz->Add( item24, wxSizerFlags().Expand().CenterVertical() );
+    item0->Add( item22sz, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
+
     if (set_sizer)
     {
         parent->SetSizer( item0 );
         if (call_fit)
             item0->SetSizeHints( parent );
     }
-    
+
     return item0;
 }
 

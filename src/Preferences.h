@@ -624,6 +624,16 @@ public:
 	static bool GetCheckNewVersion() { return s_NewVersionCheck; }
 	static void SetCheckNewVersion(bool val) { s_NewVersionCheck = val; }
 
+	// Media metadata (issue #140) — probe local shared files with
+	// ffprobe so we advertise Length / Bitrate / Codec to peers.
+	// The path defaults to whatever MediaProbe::AutoDetectPath()
+	// returns at first-run; the user can override or blank it out
+	// from Preferences -> Files.
+	static bool GetMediaMetadataEnabled() { return s_MediaMetadataEnabled; }
+	static void SetMediaMetadataEnabled(bool val) { s_MediaMetadataEnabled = val; }
+	static const wxString &GetMediaMetadataFFProbePath() { return s_MediaMetadataFFProbePath; }
+	static void SetMediaMetadataFFProbePath(const wxString &val) { s_MediaMetadataFFProbePath = val; }
+
 	// Networks
 	static bool GetNetworkKademlia() { return s_ConnectToKad; }
 	static void SetNetworkKademlia(bool val) { s_ConnectToKad = val; }
@@ -941,6 +951,10 @@ protected:
 
 	// Version check
 	static bool s_NewVersionCheck;
+
+	// Media metadata (issue #140)
+	static bool s_MediaMetadataEnabled;
+	static wxString s_MediaMetadataFFProbePath;
 
 	// Kad
 	static bool s_ConnectToKad;

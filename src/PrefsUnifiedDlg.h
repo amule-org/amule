@@ -122,6 +122,7 @@ protected:
 	void OnButtonBrowseApplication(wxCommandEvent &event);
 	void OnButtonDir(wxCommandEvent &event);
 	void OnButtonEditAddr(wxCommandEvent &event);
+	void OnButtonMediaMetaDetect(wxCommandEvent &event);
 	void OnButtonColorChange(wxCommandEvent &event);
 	void OnButtonIPFilterReload(wxCommandEvent &event);
 	void OnButtonIPFilterUpdate(wxCommandEvent &event);

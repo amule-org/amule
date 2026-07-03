@@ -219,6 +219,8 @@ bool CPreferences::s_AutoRescanSharedDirs;
 bool CPreferences::s_FollowSymlinksInShares;
 bool CPreferences::s_AutoSortDownload;
 bool CPreferences::s_NewVersionCheck;
+bool CPreferences::s_MediaMetadataEnabled;
+wxString CPreferences::s_MediaMetadataFFProbePath;
 bool CPreferences::s_ConnectToKad;
 bool CPreferences::s_ConnectToED2K;
 unsigned CPreferences::s_maxClientVersions;
@@ -1387,6 +1389,18 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	 */
 	NewCfgItem(IDC_NEWVERSION, (new Cfg_Bool("/eMule/NewVersionCheck", s_NewVersionCheck, true)));
 #endif // ENABLE_VERSION_CHECK
+
+	/**
+	 * Media metadata extraction (issue #140). Off by default so an
+	 * upgrade doesn't kick off a background probe of every shared
+	 * file until the user opts in. Path default is empty — populated
+	 * on demand by MediaProbe::AutoDetectPath() the first time the
+	 * user enables the feature or presses "Detect" in the UI.
+	 */
+	NewCfgItem(IDC_MEDIAMETA_ENABLED,
+		(new Cfg_Bool("/MediaMetadata/Enabled", s_MediaMetadataEnabled, false)));
+	NewCfgItem(IDC_MEDIAMETA_FFPROBEPATH,
+		(new Cfg_Str("/MediaMetadata/FFProbePath", s_MediaMetadataFFProbePath, "")));
 
 	/**
 	 * Obfuscation
