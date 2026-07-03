@@ -197,15 +197,26 @@ static void ApplyProxyToSession(wxWebSession &session)
 #endif
 }
 
-// aMule standardises on libcurl for all HTTP (version check, IP2Country,
-// server.met) so the bind-to-interface hook below works uniformly on every
-// platform. Linux and macOS already default to the curl backend; on Windows
-// the default may be WinHTTP, so request curl explicitly. Falls back to the
-// platform default if curl isn't available at runtime — HTTP still works, it
-// just can't be pinned to an interface (the core warns about that separately).
+// HTTP-on-curl is what lets us bind egress to an interface (via the sockopt
+// hook below). We select it on Linux and macOS but deliberately NOT on Windows:
+//
+//   Linux  : curl is already the default backend — use it.
+//   macOS  : the default is the native URLSession backend (whose handle isn't a
+//            CURL*), so request curl explicitly to get a bindable handle.
+//   Windows: the wxMSW libcurl backend is broken — a forced curl request never
+//            progresses and hangs (verified with a standalone wxWebRequest, not
+//            just amuled). WinHTTP (the default) works but has no interface-bind
+//            API, so on Windows HTTP simply stays on WinHTTP and is not bound.
+//
+// P2P traffic is bound on all platforms regardless; only the Windows HTTP
+// side-channels (version check, IP2Country, server.met) are left unbound.
+#if wxUSE_WEBREQUEST_CURL && !defined(__WINDOWS__)
+#define AMULE_HTTP_CURL_BIND 1
+#endif
+
 static wxWebSession &GetAmuleWebSession()
 {
-#if wxUSE_WEBREQUEST_CURL
+#ifdef AMULE_HTTP_CURL_BIND
 	if (wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
 		static wxWebSession curlSession = wxWebSession::New(wxWebSessionBackendCURL);
 		if (curlSession.IsOpened()) {
@@ -216,11 +227,11 @@ static wxWebSession &GetAmuleWebSession()
 	return wxWebSession::GetDefault();
 }
 
-#if defined(AMULE_HAVE_LIBCURL) && wxUSE_WEBREQUEST_CURL
+#if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
 // libcurl invokes this on the freshly-created socket, before connect(). Bind
 // it to the configured interface using aMule's own per-platform logic (the
-// same SO_BINDTODEVICE / IP_BOUND_IF / IP_UNICAST_IF path the P2P sockets use),
-// so HTTP can't leak past a bound interface. See amule-org/amule#173.
+// same SO_BINDTODEVICE / IP_BOUND_IF path the P2P sockets use), so HTTP can't
+// leak past a bound interface. See amule-org/amule#173.
 extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsocktype)
 {
 	const wxString &iface = thePrefs::GetNetworkInterface();
@@ -235,11 +246,11 @@ extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsockty
 // synchronous-resolver fallback doesn't raise SIGALRM in this multi-threaded
 // process, CURLOPT_CONNECTTIMEOUT_MS so the connect phase (incl. DNS) gives up
 // after 30 s instead of the full OS resolver timeout, and — when an interface
-// is configured — CURLOPT_SOCKOPTFUNCTION to bind egress to it. No-op when the
-// request isn't backed by libcurl.
+// is configured — CURLOPT_SOCKOPTFUNCTION to bind egress to it. Only runs where
+// curl is the selected backend (Linux / macOS); a no-op on Windows (WinHTTP).
 static void CustomizeCurlRequest(wxWebRequest &request)
 {
-#if defined(AMULE_HAVE_LIBCURL) && wxUSE_WEBREQUEST_CURL
+#if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
 	if (CURL *curl = static_cast<CURL *>(request.GetNativeHandle())) {
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000L);
