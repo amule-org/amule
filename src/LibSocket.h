@@ -253,4 +253,9 @@ private:
 // opened after the call.
 void SetSocketBindInterface(const wxString &iface);
 
+// Resolve a bind-interface value (POSIX name, Windows adapter friendly name, or
+// numeric index) to an interface index; 0 if empty or not resolvable. Lets the
+// core validate the preference and warn the user before any socket is opened.
+unsigned int ResolveBindInterfaceIndex(const wxString &iface);
+
 #endif /* __LIBSOCKET_H__ */

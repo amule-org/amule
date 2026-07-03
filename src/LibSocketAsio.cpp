@@ -210,6 +210,32 @@ static unsigned int ResolveWindowsInterfaceIndex(const wxString &friendlyName)
 }
 #endif // __WINDOWS__
 
+// Resolve a bind-interface value to an interface index (0 if empty or not
+// resolvable): a POSIX name via if_nametoindex(), a Windows adapter
+// FriendlyName via GetAdaptersAddresses(), or a bare numeric index. Exported so
+// the core can validate the preference once at startup and warn the user before
+// any socket is opened, rather than failing silently per socket.
+unsigned int ResolveBindInterfaceIndex(const wxString &ifname)
+{
+	if (ifname.IsEmpty()) {
+		return 0;
+	}
+	unsigned int idx = 0;
+#ifdef __WINDOWS__
+	idx = ResolveWindowsInterfaceIndex(ifname);
+#else
+	idx = if_nametoindex(static_cast<const char *>(ifname.utf8_str()));
+#endif
+	if (idx == 0) {
+		// Fall back to a bare interface index (also the manual Windows path).
+		unsigned long n = 0;
+		if (ifname.ToULong(&n) && n > 0 && n <= 0xFFFFFFFFul) {
+			idx = static_cast<unsigned int>(n);
+		}
+	}
+	return idx;
+}
+
 // Pin a socket's egress to a named network interface, *without* requiring
 // elevated privileges. SO_BINDTODEVICE would do this on Linux but needs
 // CAP_NET_RAW (root); the options below do not:
@@ -231,20 +257,11 @@ template <typename Handle> static void SetBoundInterface(Handle native, const wx
 		return;
 	}
 
-	unsigned int idx = 0;
-#ifdef __WINDOWS__
-	idx = ResolveWindowsInterfaceIndex(ifname);
-#else
-	idx = if_nametoindex(static_cast<const char *>(ifname.utf8_str()));
-#endif
+	unsigned int idx = ResolveBindInterfaceIndex(ifname);
 	if (idx == 0) {
-		// Fall back to a bare interface index (also the manual Windows path).
-		unsigned long n = 0;
-		if (ifname.ToULong(&n) && n > 0 && n <= 0xFFFFFFFFul) {
-			idx = static_cast<unsigned int>(n);
-		}
-	}
-	if (idx == 0) {
+		// Unresolvable — the core already warned the user loudly at startup
+		// (see SetSocketBindInterface caller); keep the per-socket note on the
+		// debug channel to avoid spamming the normal log on every connect.
 		AddDebugLogLineC(logAsio, CFormat("Bind-to-interface: no interface named '%s'") % ifname);
 		return;
 	}
