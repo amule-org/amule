@@ -558,8 +558,14 @@ bool CamuleApp::OnInit()
 	glob_prefs = new CPreferences();
 
 	// Push the bind-to-interface preference into the socket library before any
-	// socket is opened (mulesocket can't read CPreferences itself).
+	// socket is opened (mulesocket can't read CPreferences itself). Log it at
+	// normal level when set: it's a security-relevant choice (VPN-leak
+	// prevention) the user should see confirmed, like the listen sockets below.
 	SetSocketBindInterface(thePrefs::GetNetworkInterface());
+	if (!thePrefs::GetNetworkInterface().IsEmpty()) {
+		AddLogLineN(CFormat(_("Binding all network traffic to interface: %s")) %
+			    thePrefs::GetNetworkInterface());
+	}
 
 	// The temp / incoming directories are validated and created further
 	// down, after the first-run wizard has had a chance to point them
