@@ -241,7 +241,7 @@ static string getVersion()
 static void badLink(const string &type, const string &err, const string &uri)
 {
 	std::cout << "Invalid " << type << "-link, " + err << ":\n"
-		  << "\t" << uri << std::endl;
+		  << "\t" << uri << '\n';
 }
 
 /**
@@ -260,14 +260,14 @@ static void writeLink(const string &uri, const string &config_dir)
 		file.open(path.c_str(), std::ofstream::out | std::ofstream::app);
 
 		if (!file.is_open()) {
-			std::cout << "ERROR! Failed to open " << path << " for writing!" << std::endl;
+			std::cout << "ERROR! Failed to open " << path << " for writing!" << '\n';
 			exit(1);
 		}
 	}
 
-	file << uri << std::endl;
+	file << uri << '\n';
 
-	std::cout << "Link successfully queued." << std::endl;
+	std::cout << "Link successfully queued." << '\n';
 }
 
 /**
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
 		if (arg.compare(0, 7, "magnet:") == 0) {
 			string ed2k = CMagnetED2KConverter(arg);
 			if (ed2k.empty()) {
-				std::cerr << "Cannot convert magnet URI to ed2k:\n\t" << arg << std::endl;
+				std::cerr << "Cannot convert magnet URI to ed2k:\n\t" << arg << '\n';
 				errors = true;
 				continue;
 			} else {
@@ -431,14 +431,14 @@ int main(int argc, char *argv[])
 			} else if ((type == "serverlist") && checkServerListLink(arg)) {
 				writeLink(arg, config_path);
 			} else {
-				std::cout << "Unknown or invalid link-type:\n\t" << arg << std::endl;
+				std::cout << "Unknown or invalid link-type:\n\t" << arg << '\n';
 				errors = true;
 			}
 		} else if (arg == "-c" || arg == "--config-dir") {
 			if (i < argc - 1) {
 				config_path = argv[++i];
 			} else {
-				std::cerr << "Missing mandatory argument for " << arg << std::endl;
+				std::cerr << "Missing mandatory argument for " << arg << '\n';
 				errors = true;
 			}
 		} else if (arg.substr(0, 2) == "-c") {
@@ -462,10 +462,10 @@ int main(int argc, char *argv[])
 				<< "    --list, -l              Show all links of an emulecollection\n"
 				<< "    --emulecollection, -e   Loads all links of an emulecollection\n\n"
 				<< "*** NOTE: Option order is important! ***\n"
-				<< std::endl;
+				<< '\n';
 
 		} else if (arg == "-v" || arg == "--version") {
-			std::cout << getVersion() << std::endl;
+			std::cout << getVersion() << '\n';
 		} else if (arg == "-t" || arg == "--category") {
 			if (i < argc - 1) {
 				if ((category == "") && (0 != atoi(argv[++i]))) {
@@ -473,7 +473,7 @@ int main(int argc, char *argv[])
 					category += argv[i];
 				}
 			} else {
-				std::cerr << "Missing mandatory argument for " << arg << std::endl;
+				std::cerr << "Missing mandatory argument for " << arg << '\n';
 				errors = true;
 			}
 		} else if (arg == "-e" || arg == "--emulecollection" || arg == "-l" || arg == "--list") {
@@ -483,19 +483,19 @@ int main(int argc, char *argv[])
 				if (my_collection.Open(/* emulecollection file */ argv[++i])) {
 					for (size_t e = 0; e < my_collection.size(); e++)
 						if (listOnly)
-							std::cout << my_collection[e] << std::endl;
+							std::cout << my_collection[e] << '\n';
 						else
 							writeLink(my_collection[e], config_path);
 				} else {
-					std::cerr << "Invalid emulecollection file: " << argv[i] << std::endl;
+					std::cerr << "Invalid emulecollection file: " << argv[i] << '\n';
 					errors = true;
 				}
 			} else {
-				std::cerr << "Missing mandatory argument for " << arg << std::endl;
+				std::cerr << "Missing mandatory argument for " << arg << '\n';
 				errors = true;
 			}
 		} else {
-			std::cerr << "Bad parameter value:\n\t" << arg << "\n" << std::endl;
+			std::cerr << "Bad parameter value:\n\t" << arg << "\n" << '\n';
 			errors = true;
 		}
 	}

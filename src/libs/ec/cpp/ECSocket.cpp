@@ -1023,7 +1023,7 @@ const CECPacket *CECSocket::ReadPacket()
 	if (((flags & 0x60) != 0x20) || (flags & EC_FLAG_UNKNOWN_MASK)) {
 		// Protocol error - other end might use an older protocol
 		AddDebugLogLineN(logEC, "ReadPacket: protocol error");
-		cout << "ReadPacket: packet have invalid flags " << flags << endl;
+		cout << "ReadPacket: packet have invalid flags " << flags << '\n';
 		CloseAndDispatchLost();
 		return 0;
 	}
@@ -1040,7 +1040,7 @@ const CECPacket *CECSocket::ReadPacket()
 		if (zerror != Z_OK) {
 			AddDebugLogLineN(logEC, "ReadPacket: zlib error");
 			ShowZError(zerror, &m_z);
-			cout << "ReadPacket: failed zlib init" << endl;
+			cout << "ReadPacket: failed zlib init" << '\n';
 			CloseAndDispatchLost();
 			return 0;
 		}
@@ -1051,7 +1051,7 @@ const CECPacket *CECSocket::ReadPacket()
 
 	if (!packet->ReadFromSocket(*this)) {
 		AddDebugLogLineN(logEC, "ReadPacket: error in packet read");
-		cout << "ReadPacket: error in packet read" << endl;
+		cout << "ReadPacket: error in packet read" << '\n';
 		delete packet;
 		packet = NULL;
 		CloseAndDispatchLost();
@@ -1062,7 +1062,7 @@ const CECPacket *CECSocket::ReadPacket()
 		if (zerror != Z_OK) {
 			AddDebugLogLineN(logEC, "ReadPacket: zlib error");
 			ShowZError(zerror, &m_z);
-			cout << "ReadPacket: failed zlib free" << endl;
+			cout << "ReadPacket: failed zlib free" << '\n';
 			CloseAndDispatchLost();
 		}
 	}

@@ -563,7 +563,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 					<< "}";
 				bus.Publish("search_progress", payload.str());
 			}
-			prev.search = std::move(search_now);
+			prev.search = search_now;
 			prev.search_complete = progress_now.complete;
 			prev.search_percent = progress_now.percent;
 			prev.search_generation = progress_now.generation;

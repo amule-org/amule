@@ -143,9 +143,7 @@ CSearch::~CSearch()
 		}
 	}
 
-	if (m_searchTermsData) {
-		delete[] m_searchTermsData;
-	}
+	delete[] m_searchTermsData;
 
 	switch (m_type) {
 	case KEYWORD:
@@ -1266,7 +1264,7 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 		packetdata.WriteUInt128(contact->GetClientID());
 		if (contact->GetVersion() >= 2) {
 			if (contact->GetVersion() >= 6) {
-				CUInt128 clientID = contact->GetClientID();
+				const CUInt128 &clientID = contact->GetClientID();
 				CKademlia::GetUDPListener()->SendPacket(packetdata,
 					KADEMLIA2_REQ,
 					contact->GetIPAddress(),

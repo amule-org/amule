@@ -221,7 +221,7 @@ void CKademliaUDPListener::SendPublishSourcePacket(
 		DebugSend(KadPublishReq, contact.GetIPAddress(), contact.GetUDPPort());
 	}
 	if (contact.GetVersion() >= 6) { // obfuscated ?
-		CUInt128 clientID = contact.GetClientID();
+		const CUInt128 &clientID = contact.GetClientID();
 		SendPacket(packetdata,
 			opcode,
 			contact.GetIPAddress(),

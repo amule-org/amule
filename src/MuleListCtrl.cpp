@@ -243,7 +243,7 @@ void CMuleListCtrl::LoadSettings()
 			tokenList.push_front(tokens.GetNextToken());
 		}
 		for (CStringList::iterator it = tokenList.begin(); it != tokenList.end(); ++it) {
-			wxString token = *it;
+			const wxString &token = *it;
 			wxString name = token.BeforeFirst(':');
 			long order = StrToLong(token.AfterFirst(':').BeforeLast(':'));
 			long alt = StrToLong(token.AfterLast(':'));

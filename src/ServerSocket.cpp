@@ -72,9 +72,7 @@ CServerSocket::CServerSocket(CServerConnect *in_serverconnect, const CProxyData 
 
 CServerSocket::~CServerSocket()
 {
-	if (cur_server) {
-		delete cur_server;
-	}
+	delete cur_server;
 	cur_server = NULL;
 }
 

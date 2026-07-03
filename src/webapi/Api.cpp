@@ -1465,7 +1465,7 @@ namespace
 // ready CJsonWriter.
 void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 {
-	const wxString js = w.GetBuffer();
+	const wxString &js = w.GetBuffer();
 	const wxScopedCharBuffer ub = js.utf8_str();
 	r.body.assign(ub.data(), ub.length());
 }

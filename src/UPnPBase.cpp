@@ -1506,7 +1506,7 @@ void CUPnPControlPoint::AddRootDevice(
 	CUPnPMutexLocker lock(m_RootDeviceListMutex);
 
 	// Root node's URLBase
-	std::string OriginalURLBase(urlBase);
+	const std::string &OriginalURLBase(urlBase);
 	std::string FixedURLBase(OriginalURLBase.empty() ? location : OriginalURLBase);
 
 	// Get the UDN (Unique Device Name)

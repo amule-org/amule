@@ -744,7 +744,7 @@ bool CHttpServer::Start(const std::string &bind_address,
 			// quietly. Catch + log to stderr so an operator running in
 			// foreground sees a one-line cause; daemon mode loses the
 			// message.
-			std::cerr << "amuleapi: HTTP I/O loop exited on exception: " << e.what() << std::endl;
+			std::cerr << "amuleapi: HTTP I/O loop exited on exception: " << e.what() << '\n';
 		}
 		m_impl->running.store(false, std::memory_order_release);
 	});

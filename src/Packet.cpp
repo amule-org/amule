@@ -157,14 +157,13 @@ CPacket::~CPacket()
 	// Never deletes pBuffer when completebuffer is not NULL
 	if (completebuffer) {
 		delete[] completebuffer;
-	} else if (pBuffer) {
-		// On the other hand, if completebuffer is NULL and pBuffer is not NULL
+	} else {
+		// If completebuffer is NULL, pBuffer is ours to free (delete[] on a
+		// null pBuffer is a no-op).
 		delete[] pBuffer;
 	}
 
-	if (tempbuffer) {
-		delete[] tempbuffer;
-	}
+	delete[] tempbuffer;
 }
 
 uint32 CPacket::GetPacketSizeFromHeader(const uint8_t *rawHeader)

@@ -544,7 +544,7 @@ uint8 CPartFile::LoadPartFile(
 					break;
 				case FT_CORRUPTEDPARTS: {
 					wxASSERT(m_corrupted_list.empty());
-					wxString strCorruptedParts(newtag.GetStr());
+					const wxString &strCorruptedParts(newtag.GetStr());
 					wxStringTokenizer tokenizer(strCorruptedParts, ",");
 					while (tokenizer.HasMoreTokens()) {
 						wxString token = tokenizer.GetNextToken();

@@ -49,9 +49,7 @@ CBarShader::CBarShader(unsigned height, unsigned width)
 
 CBarShader::~CBarShader()
 {
-	if (m_Modifiers) {
-		delete[] m_Modifiers;
-	}
+	delete[] m_Modifiers;
 }
 
 void CBarShader::SetHeight(unsigned height)
@@ -98,9 +96,7 @@ void CBarShader::BuildModifiers()
 {
 	wxASSERT(m_used3dlevel < 7);
 
-	if (m_Modifiers) {
-		delete[] m_Modifiers;
-	}
+	delete[] m_Modifiers;
 
 	unsigned depth = (7 - m_used3dlevel);
 	unsigned count = HALF(m_Height);

@@ -400,7 +400,7 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 	}
 
 	case wxWebRequest::State_Completed: {
-		wxWebResponse response = evt.GetResponse();
+		const wxWebResponse &response = evt.GetResponse();
 		m_response = response.IsOk() ? response.GetStatus() : 0;
 		m_error = 0;
 
