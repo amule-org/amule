@@ -144,6 +144,12 @@ target_link_libraries (NetworkFunctionsTest
 	wxWidgets::NET
 )
 
+if (WIN32)
+	# This test compiles LibSocket.cpp directly (not via the mulesocket
+	# library), so it needs iphlpapi for GetAdaptersAddresses() itself.
+	target_link_libraries (NetworkFunctionsTest iphlpapi)
+endif()
+
 add_executable (PathTest
 	PathTest.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
