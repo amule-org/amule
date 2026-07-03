@@ -64,11 +64,11 @@ msgstr ""
 
 #: src/AboutDialog.cpp:96
 msgid "Website:"
-msgstr ""
+msgstr "Ιστοσελίδα:"
 
 #: src/AboutDialog.cpp:97
 msgid "Forum:"
-msgstr ""
+msgstr "Συζητήσεις:"
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"

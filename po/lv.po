@@ -58,19 +58,19 @@ msgstr " Autortiesības (c) 2002-2011 Petars Majmunkovs ( petar@maymounkov.org )
 
 #: src/AboutDialog.cpp:96
 msgid "Website:"
-msgstr ""
+msgstr "Vietne:"
 
 #: src/AboutDialog.cpp:97
 msgid "Forum:"
-msgstr ""
+msgstr "Forums:"
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"
-msgstr ""
+msgstr "Dokumentācija:"
 
 #: src/AboutDialog.cpp:99
 msgid "Issues:"
-msgstr ""
+msgstr "Problēmas:"
 
 #: src/AboutDialog.cpp:107
 #, fuzzy

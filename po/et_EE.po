@@ -65,11 +65,11 @@ msgstr " Copyright (C) 2002-2011 Petar Maymounkov <petar@maymounkov.org>\n"
 
 #: src/AboutDialog.cpp:96
 msgid "Website:"
-msgstr ""
+msgstr "Web:"
 
 #: src/AboutDialog.cpp:97
 msgid "Forum:"
-msgstr ""
+msgstr "Foorum:"
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"

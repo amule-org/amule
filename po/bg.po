@@ -64,7 +64,7 @@ msgstr ""
 
 #: src/AboutDialog.cpp:97
 msgid "Forum:"
-msgstr ""
+msgstr "форум:"
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"

@@ -69,19 +69,19 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/AboutDialog.cpp:96
 msgid "Website:"
-msgstr ""
+msgstr "Sito:"
 
 #: src/AboutDialog.cpp:97
 msgid "Forum:"
-msgstr ""
+msgstr "Forum:"
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"
-msgstr ""
+msgstr "Documentazione:"
 
 #: src/AboutDialog.cpp:99
 msgid "Issues:"
-msgstr ""
+msgstr "Segnalazioni:"
 
 #: src/AboutDialog.cpp:107
 #, fuzzy

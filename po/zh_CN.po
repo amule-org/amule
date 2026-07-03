@@ -75,7 +75,7 @@ msgstr ""
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"
-msgstr ""
+msgstr "文档："
 
 #: src/AboutDialog.cpp:99
 msgid "Issues:"

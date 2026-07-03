@@ -71,11 +71,11 @@ msgstr "Copyright (c) 2002-2011 Петр Маймунков ( petar@maymounkov.o
 
 #: src/AboutDialog.cpp:96
 msgid "Website:"
-msgstr ""
+msgstr "Сайт:"
 
 #: src/AboutDialog.cpp:97
 msgid "Forum:"
-msgstr ""
+msgstr "Форум:"
 
 #: src/AboutDialog.cpp:98
 msgid "Documentation:"
