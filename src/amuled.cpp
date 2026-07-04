@@ -43,6 +43,12 @@
 #endif
 #endif
 
+#ifndef __WINDOWS__
+#include <cstdio>  // fprintf() for the pre-wxEntry "forking to background" notice
+#include <cstring> // strcmp() for the pre-wxEntry daemon-flag scan
+#include <fcntl.h> // open()/O_RDWR for the early daemonize fork
+#endif
+
 #include <wx/utils.h>
 
 #include <common/LocaleInit.h>  // Needed for aMuleInitLocale()
@@ -107,7 +113,76 @@ wxBEGIN_EVENT_TABLE(CamuleDaemonApp, wxAppConsole)
 	EVT_MULE_ALLOC_FINISHED(CamuleDaemonApp::OnFinishedAllocation)
 wxEND_EVENT_TABLE()
 
-IMPLEMENT_APP(CamuleDaemonApp)
+IMPLEMENT_APP_NO_MAIN(CamuleDaemonApp)
+
+#ifndef __WINDOWS__
+// amuled's `-f`/`--full-daemon` must daemonize BEFORE wxEntry() initialises
+// wxWidgets. On macOS wxWidgets links the Cocoa core, which spins up framework
+// threads during app init; forking *after* that and then calling into ObjC from
+// the child -- the FSEvents run-loop pump, the version-check HTTP fetch, Kad
+// startup -- trips the ObjC fork-safety guard and aborts (or spins at 100% CPU).
+// Forking first lets Cocoa initialise fresh in the child and sidesteps the whole
+// fork-after-init hazard class; it's harmless on Linux/*BSD. Everything then
+// runs in the child, so the partfile/UBT worker threads constructed during
+// OnInit() land in the daemon instead of being orphaned by a mid-init fork
+// (the reason that fork used to sit inside OnInit -- #849). Windows never forks.
+static bool AmuledWantsDaemonFork(int argc, char **argv)
+{
+	for (int i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "--") == 0) {
+			break; // end-of-options marker
+		}
+		if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--full-daemon") == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void AmuledDaemonizeEarly()
+{
+	// Say goodbye on the still-attached terminal before detaching stdio. This
+	// runs before wxEntry(), so there's no gettext yet -- plain English notice.
+	fprintf(stdout, "amuled: forking to background - see you\n");
+	fflush(stdout);
+
+	// Detach stdio to /dev/null and fork; the original process exits so the
+	// shell returns, and the child -- session leader after setsid() -- carries
+	// on into wxEntry(). The pid file is written later from InitGui() (now
+	// running in this child) with getpid().
+	for (int i_fd = 0; i_fd < 3; ++i_fd) {
+		close(i_fd);
+	}
+	int fd = open("/dev/null", O_RDWR);
+	if (fd >= 0) {
+		// fd is 0 (lowest free after the closes); dup twice to reopen
+		// stdout(1) and stderr(2) on /dev/null. (Empty bodies: the dup
+		// return is intentionally ignored -- silences -Wunused-result.)
+		if (dup(fd)) {
+		}
+		if (dup(fd)) {
+		}
+	}
+	pid_t pid = fork();
+	if (pid < 0) {
+		_exit(1);
+	}
+	if (pid > 0) {
+		_exit(0); // original process: leave without running static dtors
+	}
+	setsid(); // child detaches from the controlling tty
+}
+#endif // !__WINDOWS__
+
+int main(int argc, char **argv)
+{
+#ifndef __WINDOWS__
+	if (AmuledWantsDaemonFork(argc, argv)) {
+		AmuledDaemonizeEarly();
+	}
+#endif
+	return wxEntry(argc, argv);
+}
 
 #ifdef __WINDOWS__
 //
@@ -181,44 +256,24 @@ int CamuleDaemonApp::InitGui(bool, wxString &)
 	if (!enable_daemon_fork) {
 		return 0;
 	}
-	AddLogLineNS(_("amuled: forking to background - see you"));
+	// The fork+setsid+stdio detach happens before wxEntry() now (see main()
+	// above), so this runs in the daemon child. Silence the stdout log and
+	// drop the pid file with our own (post-setsid) pid.
 	theLogger.SetEnabledStdoutLog(false);
-	//
-	// fork to background and detach from controlling tty
-	// while redirecting stdout to /dev/null
-	//
-	for (int i_fd = 0; i_fd < 3; i_fd++) {
-		close(i_fd);
-	}
-	int fd = open("/dev/null", O_RDWR);
-	if (dup(fd)) {
-	} // prevent GCC warning
-	if (dup(fd)) {
-	}
-	pid_t pid = fork();
-
-	wxASSERT(pid != -1);
-
-	if (pid) {
-		exit(0);
-	} else {
-		pid = setsid();
+	if (!m_PidFile.IsEmpty()) {
 		//
-		// Create a Pid file with the Pid of the Child, so any daemon-manager
+		// Create a Pid file with the Pid of the daemon, so any daemon-manager
 		// can easily manage the process
 		//
-		if (!m_PidFile.IsEmpty()) {
-			wxString temp = CFormat("%d\n") % pid;
-			wxFFile ff(m_PidFile, "w");
-			if (!ff.Error()) {
-				ff.Write(temp);
-				ff.Close();
-			} else {
-				AddLogLineNS(_("Cannot Create Pid File"));
-			}
+		wxString temp = CFormat("%d\n") % (int)getpid();
+		wxFFile ff(m_PidFile, "w");
+		if (!ff.Error()) {
+			ff.Write(temp);
+			ff.Close();
+		} else {
+			AddLogLineNS(_("Cannot Create Pid File"));
 		}
 	}
-
 #endif
 	return 0;
 }
