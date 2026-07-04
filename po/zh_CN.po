@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-03 16:52+0200\n"
-"PO-Revision-Date: 2026-07-03 16:18+0000\n"
+"PO-Revision-Date: 2026-07-04 17:01+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -252,27 +252,27 @@ msgstr "对 aMule 退出的内存 Debug 结果："
 #: src/amule.cpp:577
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "将 amule 的 p2p 流量绑定到接口：%s（HTTP 流量使用默认路由）"
 
 #: src/amule.cpp:581
 #, c-format
 msgid "Binding all network traffic to interface: %s"
-msgstr ""
+msgstr "将所有网络流量绑定到接口：%s"
 
 #: src/amule.cpp:585
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "警告：未找到配置的网络接口'%s' - 流量未绑定到该接口，可能通过默认路由离开。 在设置中检查接口名。"
 
 #: src/amule.cpp:591
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "警告：绑定到网络接口“%s”需要提升权限，但未成功 - 流量可能通过默认路由离开。请授予相应权限（例如，在 aMule 二进制文件上运行“sudo setcap cap_net_raw+ep”），或以足够的权限运行命令。"
 
 #: src/amule.cpp:599
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "警告：无法绑定到网络接口“%s” − 流量可能经默认路由离开。"
 
 #: src/amule.cpp:658
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
@@ -3553,13 +3553,12 @@ msgid "Advanced users only: If you have multiple network interfaces, enter the a
 msgstr "只限高级用户：如果您有多个网络接口，请输入 aMule 将要绑定接口的地址。"
 
 #: src/muuli_wdr.cpp:1389
-#, fuzzy
 msgid "Bind to network interface (empty for any):"
-msgstr "为本地地址绑定 IP (全部绑定则留空):"
+msgstr "绑定网络接口（留空绑定全部）："
 
 #: src/muuli_wdr.cpp:1395
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
-msgstr ""
+msgstr "仅限高级用户：将 aMule 的所有流量绑定到一个网络接口，可以从列表中选择，也可以按名称（例如 tun0、eth0、en0）输入或索引。与绑定到 IP 地址不同，这可以防止流量通过默认路由泄漏—— 在 VPN 环境下有用。无需管理员权限。"
 
 #: src/muuli_wdr.cpp:1401
 msgid "Max sources per downloading file:"
@@ -3699,31 +3698,31 @@ msgstr "添加新共享文件时设优先级为自动"
 
 #: src/muuli_wdr.cpp:1567 src/PrefsUnifiedDlg.cpp:1491
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "媒体元数据提取"
 
 #: src/muuli_wdr.cpp:1571
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "从共享的音视频文件提取长度/比特率/编解码器信息"
 
 #: src/muuli_wdr.cpp:1573
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "启用此功能后，aMule 会对每个共享媒体文件运行 ffprobe 填充其他客户端在搜索到该文件时看到的“长度”、“比特率”和“编解码器”列。需要安装 ffmpeg（ffprobe 二进制文件）。"
 
 #: src/muuli_wdr.cpp:1580
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "ffprobe 路径："
 
 #: src/muuli_wdr.cpp:1585
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "ffprobe 二进制文件的完整路径。留空让 amule 在启动时自动检测。"
 
 #: src/muuli_wdr.cpp:1593
 msgid "Detect"
-msgstr ""
+msgstr "检测"
 
 #: src/muuli_wdr.cpp:1594
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "搜索标准的 ffprobe 二进制文件安装路径，并填写路径字段。"
 
 #: src/muuli_wdr.cpp:1614
 msgid "Destination folder for downloads"
@@ -5250,9 +5249,8 @@ msgid "- UDP port changed.\n"
 msgstr "- UDP端口已更改。\n"
 
 #: src/PrefsUnifiedDlg.cpp:923
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "- 更改了外部连接接口。\n"
+msgstr "- 更改了网络接口绑定.\n"
 
 #: src/PrefsUnifiedDlg.cpp:928
 msgid "- External connect port changed.\n"
@@ -5372,9 +5370,8 @@ msgid "Select browser"
 msgstr "选择浏览器"
 
 #: src/PrefsUnifiedDlg.cpp:1449
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "选择浏览器"
+msgstr "选择 ffprobe 文件"
 
 #: src/PrefsUnifiedDlg.cpp:1455
 #, c-format
@@ -5383,7 +5380,7 @@ msgstr "可执行%s"
 
 #: src/PrefsUnifiedDlg.cpp:1489
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "未在 PATH 或标准安装位置找到 ffprobe。安装 ffmpeg（ffmpeg 自带 ffprobe），或使用“浏览”手动选择一个二进制文件。"
 
 #: src/PrefsUnifiedDlg.cpp:1504
 msgid "Edit server list"

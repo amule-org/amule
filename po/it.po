@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-03 16:52+0200\n"
-"PO-Revision-Date: 2026-07-03 16:27+0000\n"
+"PO-Revision-Date: 2026-07-04 17:01+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -268,17 +268,17 @@ msgstr "Associazione di tutto il traffico di rete all'interfaccia: %s"
 #: src/amule.cpp:585
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "ATTENZIONE: l'interfaccia di rete configurata '%s' non è stata trovata - il traffico NON è associato ad essa e potrebbe uscire tramite la route predefinita. Controlla il nome dell'interfaccia nelle Preferenze."
 
 #: src/amule.cpp:591
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "ATTENZIONE: l'associazione all'interfaccia di rete '%s' richiede privilegi elevati e NON è stata applicata - il traffico potrebbe uscire tramite la route predefinita. Concedi la capability (ad es. 'sudo setcap cap_net_raw+ep' sul binario di aMule) oppure esegui con privilegi sufficienti."
 
 #: src/amule.cpp:599
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "ATTENZIONE: impossibile associare all'interfaccia di rete '%s' - il traffico potrebbe uscire tramite la route predefinita."
 
 #: src/amule.cpp:658
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
@@ -3565,13 +3565,12 @@ msgid "Advanced users only: If you have multiple network interfaces, enter the a
 msgstr "Solo per utenti esperti: se hai interfacce di rete multiple, inserisci l'indirizzo dell'interfaccia che aMule dovrà utilizzare."
 
 #: src/muuli_wdr.cpp:1389
-#, fuzzy
 msgid "Bind to network interface (empty for any):"
-msgstr "Lega l'indirizzo locale all'IP (lascia vuoto per qualsiasi):"
+msgstr "Associa all'interfaccia di rete (vuoto per qualsiasi):"
 
 #: src/muuli_wdr.cpp:1395
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
-msgstr ""
+msgstr "Solo per utenti esperti: forza tutto il traffico di aMule su un'unica interfaccia di rete, scelta dall'elenco oppure digitata per nome (ad es. tun0, eth0, en0) o indice. A differenza dell'associazione a un IP, questo impedisce al traffico di fuoriuscire tramite la route predefinita - utile con una VPN. Non richiede privilegi elevati."
 
 #: src/muuli_wdr.cpp:1401
 msgid "Max sources per downloading file:"
@@ -3711,31 +3710,31 @@ msgstr "Assegna priorità automatica ai nuovi file condivisi"
 
 #: src/muuli_wdr.cpp:1567 src/PrefsUnifiedDlg.cpp:1491
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "Estrazione dei metadati multimediali"
 
 #: src/muuli_wdr.cpp:1571
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "Estrai durata / bitrate / codec dai file audio e video condivisi"
 
 #: src/muuli_wdr.cpp:1573
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "Quando abilitato, aMule esegue ffprobe su ogni file multimediale condiviso per compilare le colonne Durata / Bitrate / Codec che gli altri client vedono quando trovano il file in una ricerca. Richiede l'installazione di ffmpeg (il binario ffprobe)."
 
 #: src/muuli_wdr.cpp:1580
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "Percorso di ffprobe:"
 
 #: src/muuli_wdr.cpp:1585
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "Percorso completo del binario ffprobe. Lascia vuoto per far sì che aMule lo rilevi automaticamente all'avvio."
 
 #: src/muuli_wdr.cpp:1593
 msgid "Detect"
-msgstr ""
+msgstr "Rileva"
 
 #: src/muuli_wdr.cpp:1594
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "Cerca nei percorsi di installazione standard un binario ffprobe e compila il campo del percorso."
 
 #: src/muuli_wdr.cpp:1614
 msgid "Destination folder for downloads"
@@ -5261,9 +5260,8 @@ msgid "- UDP port changed.\n"
 msgstr "- Modifica della porta UDP.\n"
 
 #: src/PrefsUnifiedDlg.cpp:923
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "- Interfaccia connessione esterna modificata. \n"
+msgstr "- Associazione all'interfaccia di rete modificata.\n"
 
 #: src/PrefsUnifiedDlg.cpp:928
 msgid "- External connect port changed.\n"
@@ -5383,9 +5381,8 @@ msgid "Select browser"
 msgstr "Scegli browser"
 
 #: src/PrefsUnifiedDlg.cpp:1449
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "Scegli browser"
+msgstr "Seleziona il binario ffprobe"
 
 #: src/PrefsUnifiedDlg.cpp:1455
 #, c-format
@@ -5394,7 +5391,7 @@ msgstr "Eseguibile%s"
 
 #: src/PrefsUnifiedDlg.cpp:1489
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "ffprobe non trovato nel PATH né nei percorsi di installazione standard. Installa ffmpeg (che include ffprobe) oppure usa Sfoglia per selezionare manualmente un binario."
 
 #: src/PrefsUnifiedDlg.cpp:1504
 msgid "Edit server list"
