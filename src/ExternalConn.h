@@ -65,6 +65,12 @@ class CObjTagMap
 public:
 	CValueMap &GetValueMap(uint32 ECID) { return m_obj_map[ECID]; }
 
+	// Drop the per-ECID field cache. Called when an encoder for this ECID
+	// is freshly (re-)created so the next EC_DETAIL_INC_UPDATE emits every
+	// identifying field (hash / name / size) instead of suppressing them
+	// against a stale cache the peer no longer holds.
+	void EraseValueMap(uint32 ECID) { m_obj_map.erase(ECID); }
+
 	size_t size() { return m_obj_map.size(); }
 };
 

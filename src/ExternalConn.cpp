@@ -143,7 +143,12 @@ class CFileEncoderMap : public std::map<uint32, CKnownFile_Encoder *>
 
 public:
 	~CFileEncoderMap();
-	void UpdateEncoders();
+	// If freshEcids is non-null, receives the ECIDs whose encoder was
+	// (re-)created this call. Freshly-created encoders signal that the
+	// caller's per-ECID EC caches (CObjTagMap valuemap, sent-with-detail
+	// set) are stale w.r.t. the client's local view and must be dropped
+	// so INC_UPDATE emissions re-send identifying fields.
+	void UpdateEncoders(IDSet *freshEcids = nullptr);
 };
 
 CFileEncoderMap::~CFileEncoderMap()
@@ -156,7 +161,7 @@ CFileEncoderMap::~CFileEncoderMap()
 
 // Check if encoder contains files that are no longer used
 // or if we have new files without encoder yet.
-void CFileEncoderMap::UpdateEncoders()
+void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 {
 	IDSet curr_files, dead_files;
 	// Downloads
@@ -167,6 +172,9 @@ void CFileEncoderMap::UpdateEncoders()
 		curr_files.insert(id);
 		if (!count(id)) {
 			(*this)[id] = new CPartFile_Encoder(downloads[i]);
+			if (freshEcids) {
+				freshEcids->insert(id);
+			}
 		}
 	}
 	// Shares
@@ -183,6 +191,9 @@ void CFileEncoderMap::UpdateEncoders()
 		curr_files.insert(id);
 		if (!count(id)) {
 			(*this)[id] = new CKnownFile_Encoder(shares[i]);
+			if (freshEcids) {
+				freshEcids->insert(id);
+			}
 		}
 	}
 	// Check for removed files, and store them in a set for deletion.
@@ -910,7 +921,20 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	const uint64 ec_snapshot = CKnownFile::GetGlobalECGen();
 	const uint64 ec_threshold = io_lastEcGenSeen;
 
-	encoders.UpdateEncoders();
+	// Freshly-created encoders this cycle. Every entry is an ECID whose
+	// prior encoder was either destroyed (file dropped from m_Files_map /
+	// downloadqueue) or never existed. In both cases the peer's mirrored
+	// state for that ECID is empty, so any INC_UPDATE the ctor would
+	// suppress against a cached value in `tagmap.GetValueMap(ecid)` or a
+	// membership in `io_sentWithDetailIds` produces a hash-less tag that
+	// the client rejects (`amule-remote-gui.cpp` #808 guard). Drop both
+	// caches so the file re-appears in full detail on this response.
+	std::set<uint32> freshEcids;
+	encoders.UpdateEncoders(&freshEcids);
+	for (uint32 ecid : freshEcids) {
+		tagmap.EraseValueMap(ecid);
+		io_sentWithDetailIds.erase(ecid);
+	}
 
 	// Snapshot the IDs of all files currently alive on the server. Used
 	// by the partial-update path below to diff against the previous cycle
