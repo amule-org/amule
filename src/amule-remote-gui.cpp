@@ -122,6 +122,11 @@ void CEConnectDlg::OnOK(wxCommandEvent &evt)
 wxDEFINE_EVENT(wxEVT_EC_INIT_DONE, wxEvent);
 
 wxBEGIN_EVENT_TABLE(CamuleRemoteGuiApp, wxApp)
+	// macOS Dock right-click -> Quit ends the session without going through
+	// the red-X / Cmd+Q paths; catch it so ShutDown + OnExit cleanup still runs.
+	EVT_QUERY_END_SESSION(CamuleRemoteGuiApp::OnQueryEndSession)
+	EVT_END_SESSION(CamuleRemoteGuiApp::OnEndSession)
+
 	// Core timer
 	EVT_TIMER(ID_CORE_TIMER_EVENT, CamuleRemoteGuiApp::OnPollTimer)
 	// Watchdog on the initial EC connect attempt
@@ -146,6 +151,17 @@ int CamuleRemoteGuiApp::OnExit()
 
 	wxSocketBase::Shutdown(); // needed because we also called Initialize() manually
 
+	// Mirror CamuleApp::OnExit (#141): CMuleListCtrl::SaveSettings runs from
+	// the frame's lazily-scheduled destructor, so drain the pending-delete
+	// queue (where CamuleDlg::OnClose -> ShutDown parked amuledlg->Destroy())
+	// and then tear down wxConfig to flush it. Otherwise the red-X + confirm
+	// path reaches here with the destroy still queued and the column widths /
+	// sort orders it would have written are lost (CMD+Q happens to drain
+	// naturally). The _Exit(0) below skips wx's own cleanup that normally does
+	// both, so we do it by hand here.
+	DeletePendingObjects();
+	delete wxConfigBase::Set(nullptr);
+
 	// Skip wx's static-destructor / module cleanup, exactly as the monolithic
 	// app does in CamuleGuiApp::OnExit (amule.cpp). wx's WebRequestModule
 	// teardown destroys the platform wxWebSession, whose dtor dereferences
@@ -157,6 +173,27 @@ int CamuleRemoteGuiApp::OnExit()
 	std::_Exit(0);
 
 	return wxApp::OnExit();
+}
+
+void CamuleRemoteGuiApp::OnQueryEndSession(wxCloseEvent &evt)
+{
+	// Flag the quit so CamuleDlg::OnClose skips its HideOnClose-veto branch
+	// and actually quits on a Dock right-click -> Quit (as for Cmd+Q).
+	SetQuitting();
+	evt.Skip();
+}
+
+void CamuleRemoteGuiApp::OnEndSession(wxCloseEvent &evt)
+{
+	// The Dock-Quit path can bypass OnExit, so run ShutDown (unless OnClose
+	// already did -- it nulls amuledlg) and then OnExit explicitly, so the
+	// list-control destructors + wxConfig flush run and column widths / sort
+	// orders persist. Mirrors CamuleGuiApp::OnEndSession (amule-gui.cpp).
+	if (amuledlg) {
+		ShutDown(evt);
+	}
+	OnExit();
+	evt.Skip();
 }
 
 #if wxUSE_ON_FATAL_EXCEPTION

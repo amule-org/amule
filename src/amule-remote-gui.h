@@ -752,6 +752,12 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 
 	int OnExit();
 
+	// Catch alternate quit paths (macOS Dock right-click -> Quit) so the
+	// ShutDown + OnExit cleanup (list-control SaveSettings, wxConfig flush)
+	// runs even when wx skips OnExit. Mirrors CamuleGuiApp (amule-gui.cpp).
+	void OnEndSession(wxCloseEvent &evt);
+	void OnQueryEndSession(wxCloseEvent &evt);
+
 #if wxUSE_ON_FATAL_EXCEPTION
 	// Print a libbfd/addr2line-resolved backtrace on fatal signal.
 	// Mirrors CamuleApp::OnFatalException so amulegui crashes (#692)
