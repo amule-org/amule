@@ -132,6 +132,15 @@ Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<
 
 Each endpoint documents its own response shape under the endpoint section. List endpoints wrap their array under the resource plural name (`{"downloads": [...]}`, `{"shared": [...]}`) so clients can extend the envelope with sibling metadata without breaking JSON-parser pipelines.
 
+### Localization and number formatting
+
+The API is a machine contract: **all API text is English and all numbers use the C locale** (a `.` decimal separator, no digit grouping), independent of the `amuleapi`/`amuled` locale or the `--locale` option. Localization is a client concern.
+
+- **Text** — enum-like fields (download status, priorities, upload/connection states) and the `/stats/tree` node label templates cross the wire in English. Strings relayed from amuled (for example `error.message` on an `amuled_rejected` failure, or connect/disconnect `message` fields) are passed through verbatim and are never translated by amuleapi.
+- **Numbers** — every JSON number is C-locale. `/stats/tree` values are raw and typed (seconds, bytes, bytes/second, …) so the client does its own formatting and localization; nothing arrives pre-formatted with a locale's decimal separator.
+
+Explicitly **out of scope** (not English-normalized): `GET /api/v0/logs/amule` content — daemon log lines are gettext-translated at the daemon's locale by nature — and user/external data such as file names, category names and comments, and server names and descriptions.
+
 ### Error envelope
 
 Every non-2xx response carries the same shape:
@@ -977,18 +986,44 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 
 A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
 
-The envelope is `{ "nodes": [...] }`. Each node is `{ "label": "<text>", "children": [...] }`; a leaf is a node whose `children` array is empty, with its value baked into the `label` string (e.g. `"Total uploaded: 12.4 GB"`).
+The envelope is `{ "nodes": [...] }`. Each node is `{ "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty.
+
+`label` is the **untranslated English template** (e.g. `"Total uploaded: %s"`), and `values` are the **typed, raw** values that fill its `%s` placeholders in order — the client formats and localizes them. This keeps the response identical regardless of the amuleapi/amuled `--locale` (see [Response model](#response-model)). A container node (one that only groups children) has an empty `values` array.
+
+Each value is `{ "type": "<type>", "value": <raw> }`:
+
+| `type` | `value` JSON | meaning |
+| --- | --- | --- |
+| `integer`, `istring`, `ishort` | number | plain count |
+| `bytes` | number | raw bytes |
+| `speed` | number | raw bytes/second |
+| `time` | number | raw seconds |
+| `double` | number | raw double |
+| `string` | string | opaque English string (e.g. a ratio, or `"Not available"`) |
+
+A value may carry a nested `extra` value of the same shape — the parenthetical "(total …)" some nodes append (e.g. session vs. total transfer).
 
 ```json
 {
   "nodes": [
     {
       "label": "Transfers",
+      "values": [],
       "children": [
         {
           "label": "Uploads",
+          "values": [],
           "children": [
-            { "label": "Total uploaded: 12.4 GB", "children": [] }
+            {
+              "label": "Total uploaded: %s",
+              "values": [ { "type": "bytes", "value": 13314398208 } ],
+              "children": []
+            },
+            {
+              "label": "Session UL:DL Ratio (Total): %s",
+              "values": [ { "type": "string", "value": "1 : 769.34 (1 : 1125.54)" } ],
+              "children": []
+            }
           ]
         }
       ]

@@ -24,6 +24,7 @@
 
 #include "JsonWriter.h"
 
+#include <clocale>
 #include <cmath>
 #include <cstdio>
 
@@ -128,6 +129,19 @@ void CJsonWriter::ValueDouble(double v)
 		// already handled those above.
 		char buf[64];
 		std::snprintf(buf, sizeof(buf), "%.17g", v);
+		// JSON numbers are always C-locale (a '.' decimal point), but snprintf
+		// honours LC_NUMERIC, which amuleapi/amuleweb inherit from --locale.
+		// %g never emits digit grouping, so the only possible locale artifact is
+		// the decimal separator; normalise it to '.' so the output is valid JSON
+		// regardless of the process locale.
+		const char decimal_point = *std::localeconv()->decimal_point;
+		if (decimal_point != '.') {
+			for (char *p = buf; *p; ++p) {
+				if (*p == decimal_point) {
+					*p = '.';
+				}
+			}
+		}
 		*m_buf += wxString::FromAscii(buf);
 	}
 	m_needs_comma = true;

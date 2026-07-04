@@ -3175,11 +3175,41 @@ std::string TailString(const std::string &text, std::size_t tail_lines)
 namespace
 {
 
+void WriteStatsValue(CJsonWriter &w, const webapi::StatsTreeValue &v)
+{
+	w.BeginObject();
+	w.Key("type");
+	w.ValueString(wxString::FromUTF8(v.type.c_str()));
+	w.Key("value");
+	switch (v.kind) {
+	case webapi::StatsTreeValue::Num:
+		w.ValueUInt(v.num);
+		break;
+	case webapi::StatsTreeValue::Dbl:
+		w.ValueDouble(v.dbl);
+		break;
+	case webapi::StatsTreeValue::Str:
+		w.ValueString(wxString::FromUTF8(v.str.c_str()));
+		break;
+	}
+	// Optional nested sub-value (the parenthetical "(total …)" some nodes carry).
+	if (!v.extra.empty()) {
+		w.Key("extra");
+		WriteStatsValue(w, v.extra.front());
+	}
+	w.EndObject();
+}
+
 void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 {
 	w.BeginObject();
 	w.Key("label");
 	w.ValueString(wxString::FromUTF8(n.label.c_str()));
+	w.Key("values");
+	w.BeginArray();
+	for (const auto &v : n.values)
+		WriteStatsValue(w, v);
+	w.EndArray();
 	w.Key("children");
 	w.BeginArray();
 	for (const auto &c : n.children)

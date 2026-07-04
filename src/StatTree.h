@@ -1032,8 +1032,10 @@ protected:
 	uint64_t (*m_totalfunc2)();
 
 private:
-	//! Formatted String for display or EC
-	wxString GetString() const;
+	//! Formatted "a : b (c : d)" ratio string. cLocale=true renders C-locale
+	//! numbers and an untranslated English "Not available" for the EC/API wire
+	//! (locale-independent); the default renders in the GUI locale for display.
+	wxString GetString(bool cLocale = false) const;
 };
 
 /**

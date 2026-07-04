@@ -540,34 +540,34 @@ void CStatTreeItemAverageSpeed::AddECValues(CECTag *tag) const
 
 /* CStatTreeItemRatio */
 
-wxString CStatTreeItemRatio::GetString() const
+wxString CStatTreeItemRatio::GetString(bool cLocale) const
 {
+	// Number formatter: C-locale (period, locale-independent) for the EC/API
+	// wire, or CFormat (honours LC_NUMERIC) for GUI display.
+	const auto num = [cLocale](double d) -> wxString {
+		return cLocale ? wxString::FromCDouble(d, 2) : (CFormat(wxT("%.2f")) % d).GetString();
+	};
+
 	wxString ret;
-	double v1 = m_counter1->GetValue();
-	double v2 = m_counter2->GetValue();
+	double v1 = static_cast<double>(m_counter1->GetValue());
+	double v2 = static_cast<double>(m_counter2->GetValue());
 	if (v1 > 0 && v2 > 0) {
-		if (v2 < v1) {
-			ret = CFormat("%.2f : 1") % (v1 / v2);
-		} else {
-			ret = CFormat("1 : %.2f") % (v2 / v1);
-		}
+		ret = (v2 < v1) ? num(v1 / v2) + wxT(" : 1") : wxT("1 : ") + num(v2 / v1);
 	} else {
-		ret = _("Not available");
+		// English on the wire (client translates); localised for the GUI.
+		ret = cLocale ? wxString(wxTRANSLATE("Not available")) : _("Not available");
 	}
 
 	// show the total ratio
 	if (m_totalfunc1 && m_totalfunc2) {
-		double t1 = m_totalfunc1() + v1;
-		double t2 = m_totalfunc2() + v2;
+		double t1 = static_cast<double>(m_totalfunc1()) + v1;
+		double t2 = static_cast<double>(m_totalfunc2()) + v2;
 		// Guard against fresh-install / zero-history cases. Without
 		// this, t1/t2 or t2/t1 divides by zero and the UI surfaces
 		// "(1 : nan)" or "(1 : inf)".
 		if (t1 > 0 && t2 > 0) {
-			if (t2 < t1) {
-				ret += CFormat(" (%.2f : 1)") % (t1 / t2);
-			} else {
-				ret += CFormat(" (1 : %.2f)") % (t2 / t1);
-			}
+			ret += (t2 < t1) ? wxT(" (") + num(t1 / t2) + wxT(" : 1)")
+					 : wxT(" (1 : ") + num(t2 / t1) + wxT(")");
 		}
 	}
 
@@ -583,7 +583,11 @@ wxString CStatTreeItemRatio::GetDisplayString() const
 
 void CStatTreeItemRatio::AddECValues(CECTag *tag) const
 {
-	CECTag value(EC_TAG_STAT_NODE_VALUE, GetString());
+	// API contract: English text, C-locale numbers. GetString(false) formats via
+	// CFormat (honours LC_NUMERIC) and translates "Not available" at the daemon
+	// locale, so the wire value uses GetString(true) instead. The GUI path
+	// (GetDisplayString -> GetString()) is unaffected.
+	CECTag value(EC_TAG_STAT_NODE_VALUE, GetString(true));
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_STRING));
 	tag->AddTag(value);
 }

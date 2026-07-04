@@ -2,6 +2,8 @@
 
 This document is the contract for the `/api/v0/events` Server-Sent Events stream. For the REST surface see [REFERENCE.md](REFERENCE.md). For first-run setup see [../QUICKSTART-AMULEAPI.md](../QUICKSTART-AMULEAPI.md).
 
+Event payloads follow the same machine contract as the REST responses: **English text and C-locale numbers**, independent of the `amuleapi`/`amuled` `--locale` (see [Localization and number formatting](REFERENCE.md#localization-and-number-formatting)). The same out-of-scope carve-outs apply (log line content and user/external data are not English-normalized).
+
 ## Why SSE
 
 Polling `/api/v0/downloads` every second for a few thousand transfers is a multi-MB-per-tick conversation that the ETag cache helps with but can't eliminate — even a 304 still costs the round trip. SSE lets the daemon push only the deltas the client hasn't seen: a single `download_updated` per transfer per second, against a JSON envelope of a few hundred bytes.

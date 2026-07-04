@@ -1275,7 +1275,10 @@ static CECPacket *Get_EC_Response_Server_Add(const CECPacket *request)
 		response = new CECPacket(EC_OP_NOOP);
 	} else {
 		response = new CECPacket(EC_OP_FAILED);
-		response->AddTag(CECTag(EC_TAG_STRING, _("Server not added")));
+		// wxTRANSLATE (not _()) so the wire string stays English; the API
+		// contract is English text / C-locale numbers, and webapi relays this
+		// verbatim. Consistent with the other EC_OP_FAILED replies here.
+		response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Server not added")));
 		delete toadd;
 	}
 

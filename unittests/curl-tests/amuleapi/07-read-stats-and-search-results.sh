@@ -89,7 +89,16 @@ _assert_json_eq '.nodes | type'            array  '/stats/tree .nodes is array'
 # entry rather than pinning specific text (locale-dependent).
 _assert_json_eq '.nodes | length > 0'      true   '/stats/tree has at least one top-level node'
 _assert_json_eq '.nodes[0].label | type'   string '/stats/tree first node has a label'
+_assert_json_eq '.nodes[0].values | type'  array  '/stats/tree first node has a values array'
 _assert_json_eq '.nodes[0].children | type' array '/stats/tree first node has a children array'
+# Typed values: labels are English "%s" templates, values carry the raw typed
+# data (integer/bytes/time/…), so the payload is locale-independent. Assert at
+# least one typed value exists and every value type is from the known set.
+_assert_json_eq '[.. | .values? // empty | .[]?] | length > 0' true \
+	'/stats/tree carries at least one typed value'
+_assert_json_eq '([.. | .values? // empty | .[]? | .type] | unique)
+	- ["integer","istring","bytes","ishort","time","speed","string","double"]
+	| length == 0' true '/stats/tree value types are all from the known set'
 
 # --- 3. /stats/graphs/{graph} — all four named graphs. -------------
 for g in download upload connections kad; do

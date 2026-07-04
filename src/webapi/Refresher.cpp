@@ -1265,16 +1265,82 @@ void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, Serv
 namespace
 {
 
+// EC value type -> stable lowercase API string. Mirrors the EC_VALUE_* enum
+// (ECCodes.h); the numeric value is carried raw (seconds, bytes, bytes/s, …)
+// so clients format and localize.
+const char *ECStatValueTypeName(int type)
+{
+	switch (type) {
+	case EC_VALUE_INTEGER:
+		return "integer";
+	case EC_VALUE_ISTRING:
+		return "istring";
+	case EC_VALUE_BYTES:
+		return "bytes";
+	case EC_VALUE_ISHORT:
+		return "ishort";
+	case EC_VALUE_TIME:
+		return "time";
+	case EC_VALUE_SPEED:
+		return "speed";
+	case EC_VALUE_STRING:
+		return "string";
+	case EC_VALUE_DOUBLE:
+		return "double";
+	default:
+		return "integer";
+	}
+}
+
+// Extract one EC_TAG_STAT_NODE_VALUE as a typed value, raw and untranslated
+// (mirrors ECSpecialTags::FormatValue but without wxGetTranslation / unit
+// formatting). Recurses one level for the optional nested "(total …)" value.
+void ExtractStatsValue(const CECTag *v, StatsTreeValue &out)
+{
+	const CECTag *vt = v->GetTagByName(EC_TAG_STAT_VALUE_TYPE);
+	const int type = vt != nullptr ? (int)vt->GetInt() : EC_VALUE_INTEGER;
+	out.type = ECStatValueTypeName(type);
+	switch (type) {
+	case EC_VALUE_STRING:
+		// The wire string is English (daemon uses wxTRANSLATE); the API must
+		// relay it verbatim and never translate -- that is a client concern.
+		out.kind = StatsTreeValue::Str;
+		out.str = std::string(v->GetStringData().utf8_str());
+		break;
+	case EC_VALUE_DOUBLE:
+		out.kind = StatsTreeValue::Dbl;
+		out.dbl = v->GetDoubleData();
+		break;
+	default:
+		out.kind = StatsTreeValue::Num;
+		out.num = v->GetInt();
+		break;
+	}
+	const CECTag *nested = v->GetTagByName(EC_TAG_STAT_NODE_VALUE);
+	if (nested) {
+		StatsTreeValue e;
+		ExtractStatsValue(nested, e);
+		out.extra.push_back(std::move(e));
+	}
+}
+
 void ParseStatsTreeNode(const CECTag *node, StatsTreeNode &out)
 {
 	const CEC_StatTree_Node_Tag *n = static_cast<const CEC_StatTree_Node_Tag *>(node);
-	out.label = std::string(n->GetDisplayString().utf8_str());
+	// Untranslated English label template exactly as EC carries it (e.g.
+	// "Uptime: %s"); NOT GetDisplayString(), which translates and locale-formats
+	// in the amuleapi process and would make output depend on --locale.
+	out.label = std::string(n->GetStringData().utf8_str());
 	for (CECTag::const_iterator it = n->begin(); it != n->end(); ++it) {
-		if (it->GetTagName() != EC_TAG_STATTREE_NODE)
-			continue;
-		StatsTreeNode child;
-		ParseStatsTreeNode(&*it, child);
-		out.children.push_back(std::move(child));
+		if (it->GetTagName() == EC_TAG_STAT_NODE_VALUE) {
+			StatsTreeValue v;
+			ExtractStatsValue(&*it, v);
+			out.values.push_back(std::move(v));
+		} else if (it->GetTagName() == EC_TAG_STATTREE_NODE) {
+			StatsTreeNode child;
+			ParseStatsTreeNode(&*it, child);
+			out.children.push_back(std::move(child));
+		}
 	}
 }
 
@@ -1283,6 +1349,7 @@ void ParseStatsTreeNode(const CECTag *node, StatsTreeNode &out)
 void ParseStatsTreeFromPacket(const CECPacket *resp, StatsTreeNode &out)
 {
 	out.label.clear();
+	out.values.clear();
 	out.children.clear();
 	if (!resp)
 		return;

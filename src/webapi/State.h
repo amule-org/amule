@@ -276,15 +276,41 @@ struct CategorySnapshot
 	std::string priority; // human-readable (very_low/low/normal/high/release/auto)
 };
 
+// One typed value carried by a stats-tree node. The EC packet transports
+// the untranslated English label template plus one or more typed values
+// (EC_TAG_STAT_NODE_VALUE), so the API exposes them structurally rather than
+// flattening through GetDisplayString() (which translates and locale-formats
+// in the amuleapi process). `type` is the EC value type as a stable lowercase
+// string; the raw value lands in exactly one of num/dbl/str per `kind`.
+// `extra` holds the optional nested sub-value (the parenthetical "(total …)"
+// some nodes carry) — at most one level deep, matching the EC encoding.
+struct StatsTreeValue
+{
+	enum Kind
+	{
+		Num, // integer/istring/bytes/ishort/time/speed -> num (raw seconds/bytes/…)
+		Dbl, // double -> dbl
+		Str  // string -> str (raw, untranslated English)
+	};
+
+	std::string type;
+	Kind kind = Num;
+	std::uint64_t num = 0;
+	double dbl = 0.0;
+	std::string str;
+	std::vector<StatsTreeValue> extra;
+};
+
 // One node in the recursive stats tree (amuled's "Statistics" panel
 // contents — counters, ratios, uptime, transfer aggregates, etc.).
-// amule emits a flat-label representation: `GetDisplayString()`
-// returns the rendered text (e.g. "Total bytes transferred: 12.3 GiB")
-// rather than a typed value, so we pass it through as a single
-// human-readable string and let clients render the tree verbatim.
+// `label` is the untranslated English template exactly as EC carries it
+// (e.g. "Uptime: %s"); `values` are the typed raw values that fill it, so
+// clients do their own formatting/localization. The API contract is English
+// text + C-locale numbers, independent of the amuleapi/amuled --locale.
 struct StatsTreeNode
 {
 	std::string label;
+	std::vector<StatsTreeValue> values;
 	std::vector<StatsTreeNode> children;
 };
 
