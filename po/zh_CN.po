@@ -4636,7 +4636,7 @@ msgid "hours"
 msgstr "小时"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
+msgid "days"
 msgstr "日"
 
 #: src/OtherFunctions.cpp:685

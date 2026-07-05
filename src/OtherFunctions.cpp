@@ -105,7 +105,7 @@ wxString CastSecondsToHM(uint32 count, uint16 msecs)
 	} else if (count < 86400) {
 		return CFormat("%u:%02u %s") % (count / 3600) % ((count % 3600) / 60) % _("hours");
 	} else {
-		return CFormat("%u %s %02u:%02u %s") % (count / 86400) % _("Days") %
+		return CFormat("%u %s %02u:%02u %s") % (count / 86400) % _("days") %
 		       ((count % 86400) / 3600) % ((count % 3600) / 60) % _("hours");
 	}
 }

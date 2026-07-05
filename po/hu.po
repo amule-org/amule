@@ -4619,7 +4619,7 @@ msgid "hours"
 msgstr "óra"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
+msgid "days"
 msgstr "nap"
 
 #: src/OtherFunctions.cpp:685

@@ -4660,8 +4660,8 @@ msgid "hours"
 msgstr "hores"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
-msgstr "Díes"
+msgid "days"
+msgstr "díes"
 
 #: src/OtherFunctions.cpp:685
 msgid "all"

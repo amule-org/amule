@@ -4635,8 +4635,8 @@ msgid "hours"
 msgstr "saat"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
-msgstr "Gün"
+msgid "days"
+msgstr "gün"
 
 #: src/OtherFunctions.cpp:685
 msgid "all"

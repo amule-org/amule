@@ -4682,7 +4682,7 @@ msgid "hours"
 msgstr "год"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
+msgid "days"
 msgstr "діб"
 
 #: src/OtherFunctions.cpp:685

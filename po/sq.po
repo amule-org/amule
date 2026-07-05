@@ -4659,8 +4659,8 @@ msgid "hours"
 msgstr "ore"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
-msgstr "Dite"
+msgid "days"
+msgstr "dite"
 
 #: src/OtherFunctions.cpp:685
 msgid "all"

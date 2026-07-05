@@ -4636,8 +4636,8 @@ msgid "hours"
 msgstr "timmar"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
-msgstr "Dagar"
+msgid "days"
+msgstr "dagar"
 
 #: src/OtherFunctions.cpp:685
 msgid "all"

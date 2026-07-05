@@ -4683,7 +4683,7 @@ msgid "hours"
 msgstr "val."
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
+msgid "days"
 msgstr "dienų"
 
 #: src/OtherFunctions.cpp:685

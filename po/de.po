@@ -4630,8 +4630,8 @@ msgid "hours"
 msgstr "Stunden"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
-msgstr "Tage"
+msgid "days"
+msgstr "tage"
 
 #: src/OtherFunctions.cpp:685
 msgid "all"

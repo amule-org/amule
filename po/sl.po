@@ -4674,7 +4674,7 @@ msgid "hours"
 msgstr "ur"
 
 #: src/OtherFunctions.cpp:108
-msgid "Days"
+msgid "days"
 msgstr "dni"
 
 #: src/OtherFunctions.cpp:685
