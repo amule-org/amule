@@ -37,8 +37,11 @@
 #include <boost/beast/version.hpp>
 #include <boost/optional.hpp>
 
+#include <zlib.h>
+
 #include <atomic>
 #include <cassert>
+#include <cctype>
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -73,6 +76,177 @@ namespace
 // streaming dispatch path before the worker thread is created.
 constexpr int kMaxConcurrentStreamingSessions = 32;
 std::atomic<int> g_streaming_session_count{ 0 };
+
+// Bodies smaller than this are sent uncompressed. Below ~250 bytes the
+// gzip header (~10 bytes) + trailer (~8 bytes) plus the deflate block
+// framing eats most of any ratio gain, and error/heartbeat payloads
+// are common in that size range.
+constexpr size_t kGzipMinBodyBytes = 256;
+
+// Case-insensitive token search for "gzip" in an Accept-Encoding header
+// value. Real clients (curl, browsers) send "gzip, deflate, br" or
+// "gzip;q=1.0" — no legitimate client sends "gzip;q=0" (which per
+// RFC 9110 means "explicitly not gzip") so we don't parse q-values;
+// presence of the token is treated as accept. The `x-gzip` legacy
+// alias is not honoured, which is fine because no client emitting it
+// today would fail to also accept plain identity.
+bool AcceptsGzip(const std::string &accept_encoding)
+{
+	if (accept_encoding.empty()) {
+		return false;
+	}
+	auto is_boundary = [](char c) { return c == '\0' || c == ',' || c == ' ' || c == '\t' || c == ';'; };
+	// Lowercase once so ::find is O(n) not O(n log n).
+	std::string lc;
+	lc.reserve(accept_encoding.size());
+	for (char c : accept_encoding) {
+		lc.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+	}
+	for (size_t p = 0; (p = lc.find("gzip", p)) != std::string::npos; p += 4) {
+		const bool left_ok = (p == 0) || is_boundary(lc[p - 1]);
+		const char right = (p + 4 < lc.size()) ? lc[p + 4] : '\0';
+		if (left_ok && is_boundary(right)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// One-shot gzip encoder for regular (non-streaming) response bodies.
+// Returns false on any zlib error; the caller then serves the response
+// uncompressed rather than 500ing, since a transient zlib failure
+// shouldn't turn into a user-visible outage.
+bool GzipOnce(const std::string &in, std::string &out)
+{
+	z_stream zs{};
+	// windowBits = 15 + 16 → deflate with gzip wrapper (header + CRC
+	// trailer). mem_level 8, default strategy — matches HTTP server
+	// convention (nginx, Apache mod_deflate ship these defaults).
+	if (deflateInit2(&zs, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 + 16, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+		return false;
+	}
+	zs.next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(in.data()));
+	zs.avail_in = static_cast<uInt>(in.size());
+	// deflateBound is an upper bound on Z_FINISH output size; safe
+	// to resize once and slice.
+	const uLong bound = deflateBound(&zs, static_cast<uLong>(in.size()));
+	out.resize(bound);
+	// std::string::data() is const-qualified pre-C++17; `&out[0]` is
+	// non-const in every standard we build against.
+	zs.next_out = reinterpret_cast<Bytef *>(&out[0]);
+	zs.avail_out = static_cast<uInt>(bound);
+	const int rc = deflate(&zs, Z_FINISH);
+	if (rc != Z_STREAM_END) {
+		deflateEnd(&zs);
+		out.clear();
+		return false;
+	}
+	out.resize(zs.total_out);
+	deflateEnd(&zs);
+	return true;
+}
+
+// Streaming gzip encoder for SSE bodies. One instance per SSE session;
+// Z_SYNC_FLUSH after each Compress() call emits the deflate block
+// boundary immediately so the browser sees events live rather than
+// after a compression buffer fills.
+//
+// The deflate dictionary is shared across events, so repeated JSON
+// keys / hash prefixes / priority strings across events compress
+// against the same reference — this is where the big ratio comes
+// from on delta-heavy SSE streams.
+class SseGzipStream
+{
+public:
+	SseGzipStream() = default;
+	// Non-copyable / non-movable: `m_z` holds internal pointers that
+	// zlib manages; a copy would double-free at destruction, and a
+	// move would leave the source in a state deflateEnd can't safely
+	// handle. Owned by SocketWriter (held via shared_ptr elsewhere),
+	// so no copy or move is needed in practice.
+	SseGzipStream(const SseGzipStream &) = delete;
+	SseGzipStream &operator=(const SseGzipStream &) = delete;
+	SseGzipStream(SseGzipStream &&) = delete;
+	SseGzipStream &operator=(SseGzipStream &&) = delete;
+
+	bool Init()
+	{
+		if (deflateInit2(&m_z, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 + 16, 8, Z_DEFAULT_STRATEGY) !=
+			Z_OK) {
+			return false;
+		}
+		m_inited = true;
+		return true;
+	}
+	~SseGzipStream()
+	{
+		if (m_inited) {
+			deflateEnd(&m_z);
+		}
+	}
+
+	// Deflate `in`, appending compressed bytes to `out`. Uses
+	// Z_SYNC_FLUSH so accumulated bytes are byte-aligned and emitted
+	// immediately. Returns false on zlib error.
+	bool CompressSync(const std::string &in, std::string &out)
+	{
+		if (!m_inited) {
+			return false;
+		}
+		m_z.next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(in.data()));
+		m_z.avail_in = static_cast<uInt>(in.size());
+		Bytef scratch[16384];
+		while (true) {
+			m_z.next_out = scratch;
+			m_z.avail_out = sizeof(scratch);
+			const int rc = deflate(&m_z, Z_SYNC_FLUSH);
+			if (rc != Z_OK && rc != Z_BUF_ERROR) {
+				return false;
+			}
+			out.append(reinterpret_cast<char *>(scratch), sizeof(scratch) - m_z.avail_out);
+			// Z_SYNC_FLUSH is complete when the flush block has
+			// been emitted AND all input consumed. `avail_out > 0`
+			// means we didn't hit the scratch boundary during the
+			// current call, so deflate had room to finish flushing.
+			if (m_z.avail_in == 0 && m_z.avail_out > 0) {
+				break;
+			}
+		}
+		return true;
+	}
+
+	// Emit any pending Z_FINISH trailer bytes (gzip CRC + length).
+	// Called from the SSE worker's exit path before the chunked-
+	// terminator so the browser sees a complete gzip stream. Safe to
+	// call multiple times — subsequent calls return empty output.
+	bool Finish(std::string &out)
+	{
+		if (!m_inited || m_finished) {
+			return true;
+		}
+		m_finished = true;
+		m_z.next_in = nullptr;
+		m_z.avail_in = 0;
+		Bytef scratch[4096];
+		while (true) {
+			m_z.next_out = scratch;
+			m_z.avail_out = sizeof(scratch);
+			const int rc = deflate(&m_z, Z_FINISH);
+			out.append(reinterpret_cast<char *>(scratch), sizeof(scratch) - m_z.avail_out);
+			if (rc == Z_STREAM_END) {
+				return true;
+			}
+			if (rc != Z_OK && rc != Z_BUF_ERROR) {
+				return false;
+			}
+		}
+	}
+
+private:
+	z_stream m_z{};
+	bool m_inited = false;
+	bool m_finished = false;
+};
 
 class Session;
 
@@ -209,6 +383,11 @@ private:
 		for (const auto &h : req) {
 			r.headers.emplace(std::string(h.name_string()), std::string(h.value()));
 		}
+		// Content-Encoding negotiation is per-request state, not per-
+		// response. Sample once here so both the regular WriteResponse
+		// path and the streaming SocketWriter see the same decision;
+		// the header can't legally change between the two.
+		m_accepts_gzip = AcceptsGzip(std::string(req[http::field::accept_encoding]));
 		// Remote endpoint for rate-limiting. `.address()` returns a
 		// boost::asio::ip::address which `.to_string()`-es to the
 		// canonical IPv4 / IPv6 form ("192.0.2.1", "::1", "fe80::%lo0"...).
@@ -331,8 +510,18 @@ private:
 		auto head = std::make_shared<SocketWriter::HeadData>();
 		head->headers["Cache-Control"] = "no-cache";
 		head->headers["Connection"] = "keep-alive";
+		// nginx (and many other reverse proxies) buffer response
+		// bodies by default when they detect chunked-transfer +
+		// text-ish content, which stalls SSE delivery entirely — the
+		// operator sees "events show up in bursts every N seconds"
+		// with N depending on how large the proxy's default buffer
+		// is. `X-Accel-Buffering: no` is nginx's opt-out (also
+		// respected by ingress-nginx / OpenResty); harmless on
+		// backends that don't recognise it. Emitted regardless of
+		// gzip status because the buffering problem is orthogonal.
+		head->headers["X-Accel-Buffering"] = "no";
 
-		auto writer = std::make_shared<SocketWriter>(self, head);
+		auto writer = std::make_shared<SocketWriter>(self, head, m_accepts_gzip);
 
 		// One std::thread per streaming session — cheap at expected
 		// scale (1–5 concurrent SSE subscribers) and keeps the drain
@@ -367,6 +556,11 @@ private:
 			// auth-rejected on a HEAD probe), still emit the head so
 			// the client sees the right status code.
 			writer->EnsureHeadWritten();
+			// Emit gzip trailer (Z_FINISH) if compressing, BEFORE
+			// DoClose writes the chunked-terminator. Otherwise the
+			// browser's gzip decoder sees a truncated stream at
+			// end-of-response and raises a decoding error.
+			writer->Finalize();
 			self->DoClose();
 			// `marker` runs here, flipping m_worker_exited and
 			// dropping `self` only AFTER the flag is set — so the
@@ -389,9 +583,11 @@ private:
 		};
 
 		SocketWriter(std::shared_ptr<Session> session,
-			std::shared_ptr<Session::SocketWriter::HeadData> head)
+			std::shared_ptr<Session::SocketWriter::HeadData> head,
+			bool wants_gzip)
 		: m_session(std::move(session))
 		, m_head(std::move(head))
+		, m_wants_gzip(wants_gzip)
 		{
 		}
 
@@ -400,8 +596,9 @@ private:
 			if (!m_session->m_stream_alive.load(std::memory_order_acquire)) {
 				return false;
 			}
-			if (!EnsureHeadWritten())
+			if (!EnsureHeadWritten()) {
 				return false;
+			}
 
 			// SSE wire shape uses chunked transfer encoding; each
 			// "chunk" written here is a single HTTP/1.1 chunk frame:
@@ -410,10 +607,35 @@ private:
 			// Zero-length chunks would terminate the message (per
 			// RFC 7230 §4.1) so we skip them — the heartbeat path
 			// always passes at least ": keepalive\n\n" anyway.
-			if (chunk.empty())
+			if (chunk.empty()) {
 				return true;
+			}
+			// gzip path: run the SSE bytes through the persistent
+			// deflate stream with Z_SYNC_FLUSH so the block is
+			// emitted immediately (browser sees the event live) and
+			// the dictionary carries across events (repeated JSON
+			// keys / hash prefixes compress to a few bits). On a
+			// deflate error we fall through to the uncompressed
+			// path for THIS chunk — but zlib doesn't recover its
+			// stream state after an error mid-session, so future
+			// chunks would also be broken; we tear the session
+			// down by returning false rather than silently emit a
+			// mid-stream encoding mismatch that the browser would
+			// abort on anyway.
+			const std::string *payload = &chunk;
+			std::string compressed;
+			if (m_wants_gzip) {
+				if (!m_gzip.CompressSync(chunk, compressed)) {
+					m_session->m_stream_alive.store(false, std::memory_order_release);
+					return false;
+				}
+				// Z_SYNC_FLUSH on an empty input still emits the
+				// 5-byte block-boundary marker, so `compressed`
+				// is never empty here for a non-empty `chunk`.
+				payload = &compressed;
+			}
 			std::ostringstream framed;
-			framed << std::hex << chunk.size() << "\r\n" << chunk << "\r\n";
+			framed << std::hex << payload->size() << "\r\n" << *payload << "\r\n";
 			const std::string out = framed.str();
 
 			std::lock_guard<std::mutex> g(m_session->m_socket_mu);
@@ -424,6 +646,36 @@ private:
 				return false;
 			}
 			return true;
+		}
+
+		// Emit any Z_FINISH trailer bytes (gzip CRC + length) as a
+		// final chunked frame. Called from the SSE worker's exit
+		// path BEFORE DoClose so the browser sees a well-terminated
+		// gzip stream when it expected one. Safe on non-gzip
+		// sessions (no-op), safe to call multiple times (idempotent
+		// via SseGzipStream::m_finished).
+		void Finalize()
+		{
+			if (!m_wants_gzip) {
+				return;
+			}
+			if (!m_session->m_stream_alive.load(std::memory_order_acquire)) {
+				return;
+			}
+			std::string tail;
+			if (!m_gzip.Finish(tail) || tail.empty()) {
+				return;
+			}
+			std::ostringstream framed;
+			framed << std::hex << tail.size() << "\r\n" << tail << "\r\n";
+			const std::string out = framed.str();
+
+			std::lock_guard<std::mutex> g(m_session->m_socket_mu);
+			beast::error_code ec;
+			asio::write(m_session->m_stream.socket(), asio::buffer(out), ec);
+			if (ec) {
+				m_session->m_stream_alive.store(false, std::memory_order_release);
+			}
 		}
 
 		bool Alive() const override
@@ -445,6 +697,23 @@ private:
 		{
 			if (m_head_written.exchange(true, std::memory_order_acq_rel)) {
 				return true;
+			}
+			// Late gzip init + header injection. Deferred to here so
+			// a) SocketWriter's ctor stays trivial, and b) the
+			// handler had a chance to override head->headers between
+			// construction and first Write. If deflateInit2 itself
+			// fails we downgrade to identity encoding for this
+			// session rather than 500 the whole SSE — the head
+			// hasn't gone out yet, so it's safe to erase the flag.
+			if (m_wants_gzip) {
+				if (m_gzip.Init()) {
+					m_head->headers["Content-Encoding"] = "gzip";
+					if (m_head->headers.find("Vary") == m_head->headers.end()) {
+						m_head->headers["Vary"] = "Accept-Encoding";
+					}
+				} else {
+					m_wants_gzip = false;
+				}
 			}
 			std::ostringstream head;
 			head << "HTTP/1.1 " << m_head->status << " ";
@@ -499,10 +768,43 @@ private:
 		std::shared_ptr<Session> m_session;
 		std::shared_ptr<HeadData> m_head;
 		std::atomic<bool> m_head_written{ false };
+		// Sampled once at construction from the request's Accept-
+		// Encoding. Cleared at head-write time if deflateInit2
+		// fails, so subsequent Write calls fall through to the
+		// identity path without leaking a partially-init'd stream.
+		bool m_wants_gzip;
+		SseGzipStream m_gzip;
 	};
 
 	void WriteResponse(CHttpServer::Response &&resp)
 	{
+		// Regular (non-streaming) response gzip encoding. Gated by:
+		//  * client Accept-Encoding contains gzip,
+		//  * body is above kGzipMinBodyBytes (header overhead is a
+		//    significant fraction below that),
+		//  * handler didn't already set Content-Encoding (a future
+		//    pre-gzipped static asset path would use that hook).
+		// deflate() fallback: on any zlib error we ship the original
+		// uncompressed body rather than 500 — better degraded than
+		// broken. Content-Length is set correctly by
+		// prepare_payload() based on the post-swap body.
+		//
+		// Vary: Accept-Encoding is added regardless of whether *this*
+		// response was compressed, so any intermediary cache keys the
+		// entry correctly across clients that do / don't send the
+		// header.
+		if (m_accepts_gzip && resp.body.size() >= kGzipMinBodyBytes &&
+			resp.headers.find("Content-Encoding") == resp.headers.end()) {
+			std::string compressed;
+			if (GzipOnce(resp.body, compressed)) {
+				resp.body = std::move(compressed);
+				resp.headers["Content-Encoding"] = "gzip";
+			}
+		}
+		if (resp.headers.find("Vary") == resp.headers.end()) {
+			resp.headers["Vary"] = "Accept-Encoding";
+		}
+
 		m_response.emplace();
 		m_response->version(11);
 		m_response->result(resp.status);
@@ -561,6 +863,13 @@ private:
 	// successful slot acquisition; the dtor decrements iff this is
 	// true so refused-cap sessions don't double-account.
 	bool m_session_slot_held = false;
+	// Sampled from the request's Accept-Encoding header in Dispatch.
+	// Read by WriteResponse (single-shot body compression) and by
+	// DispatchStreaming (per-event Z_SYNC_FLUSH on the SSE socket
+	// writer). Kept as a plain bool because both readers run either on
+	// the same thread that populated it or on a worker spawned after
+	// the write, so no atomic is needed.
+	bool m_accepts_gzip = false;
 };
 
 // Accept loop. One Listener per HttpServer; spawns a Session per

@@ -46,6 +46,12 @@ target_link_libraries (amuleapi
 	PRIVATE webcommon
 	PRIVATE wxWidgets::NET
 	PRIVATE ${Boost_LIBRARIES}
+	# zlib powers the on-the-wire gzip encoder in HttpServer (Content-
+	# Encoding: gzip on regular responses + per-event Z_SYNC_FLUSH on
+	# SSE). NEED_ZLIB is already set by cmake/options.cmake for
+	# BUILD_AMULEAPI, so zlib.cmake has already run at project scope
+	# and ZLIB::ZLIB is available.
+	PRIVATE ZLIB::ZLIB
 )
 
 # Same gettext shim as amuleweb — _() in the CLI text needs libintl on
