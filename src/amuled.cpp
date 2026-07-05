@@ -312,6 +312,17 @@ bool CamuleDaemonApp::Initialize(int &argc_, wxChar **argv_)
 		encName = "UTF-8";
 	}
 
+#ifdef __WXOSX__
+	// macOS reports "Mac OS Roman" from GetSystemEncodingName() regardless
+	// of the user's locale, but HFS+/APFS file names are always UTF-8.
+	// Encoding with Mac Roman turns e.g. U+00AA into the single byte 0xAA,
+	// which the kernel rejects as invalid UTF-8 (EILSEQ) when the completed
+	// file is opened, leaving non-ASCII downloads stuck in PS_ERROR. The GUI
+	// is unaffected because it keeps wx's default (UTF-8) file-name
+	// converter; force UTF-8 here to match it.
+	encName = "UTF-8";
+#endif
+
 	static wxConvBrokenFileNames fileconv(encName);
 	wxConvFileName = &fileconv;
 #endif // __UNIX__
