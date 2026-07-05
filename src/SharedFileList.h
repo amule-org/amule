@@ -180,13 +180,25 @@ private:
 	// a CHashingTask onto hashTasks. Shared between the bulk-Reload
 	// directory walk and the per-event watcher dispatch so the two
 	// paths agree on what counts as shareable.
+	//
+	// notifyGuiOnKnownAdd: the bulk-Reload path repaints the whole
+	// shared-files view with Notify_SharedFilesShowFileList() once the
+	// walk finishes, so it leaves this false. The incremental watcher
+	// path has no such follow-up, so it passes true to get a per-file
+	// Notify_SharedFilesShowFile() when a known file is freshly attached
+	// (otherwise a re-shared file -- e.g. a rename in Incoming to a name
+	// already in known.met -- updates the core share set but never
+	// reaches the GUI view).
 	enum AddPathResult
 	{
 		kAddPathSkipped, // broken link, zero size, stat failed
 		kAddPathKnown,   // matched a CKnownFile, attached (or already attached)
 		kAddPathQueued   // unknown file, CHashingTask pushed
 	};
-	AddPathResult AddPathToShares(const CPath &directory, const CPath &fname, TaskList &hashTasks);
+	AddPathResult AddPathToShares(const CPath &directory,
+		const CPath &fname,
+		TaskList &hashTasks,
+		bool notifyGuiOnKnownAdd = false);
 	// scanned/aborted are in/out: the caller passes a running count
 	// and a flag that the dir walker flips on abort. Lets a single
 	// counter span all paths in one Reload() pass.

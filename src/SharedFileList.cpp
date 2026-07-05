@@ -560,7 +560,7 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 // and the incremental watcher path (NotifyPathAdded below) so the two
 // agree on shareability rules.
 CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
-	const CPath &directory, const CPath &fname, TaskList &hashTasks)
+	const CPath &directory, const CPath &fname, TaskList &hashTasks, bool notifyGuiOnKnownAdd)
 {
 	CPath fullPath = directory.JoinPaths(fname);
 
@@ -597,6 +597,14 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 		toadd->SetFilePath(directory);
 		if (AddFile(toadd)) {
 			AddDebugLogLineN(logKnownFiles, CFormat("Added known file '%s' to shares") % fname);
+			// The bulk-Reload caller repaints the whole view once its
+			// walk finishes; the incremental watcher caller has no such
+			// follow-up, so tell the GUI about this freshly-shared file
+			// directly (otherwise it stays invisible in the shared-files
+			// view despite being in the core share set -- see the header).
+			if (notifyGuiOnKnownAdd) {
+				Notify_SharedFilesShowFile(toadd);
+			}
 		} else {
 			AddDebugLogLineN(logKnownFiles, CFormat("File already shared, skipping: %s") % fname);
 		}
@@ -820,7 +828,7 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
 	}
 
 	TaskList hashTasks;
-	switch (AddPathToShares(directory, fname, hashTasks)) {
+	switch (AddPathToShares(directory, fname, hashTasks, /*notifyGuiOnKnownAdd=*/true)) {
 	case kAddPathQueued:
 		// Hand the new hashing task to the scheduler. The thread
 		// will call SafeAddKFile() when it finishes, which is
