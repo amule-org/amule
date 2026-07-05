@@ -81,7 +81,10 @@ export function setLang(code) {
   location.reload();
 }
 
-// en -> es -> en
-export function cycleLang() {
-  setLang(LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]);
+// Language autonym ("English", "español"...), capitalized. Native, no data.
+export function langName(code) {
+  try {
+    const n = new Intl.DisplayNames([code], { type: "language" }).of(code);
+    return n ? n[0].toUpperCase() + n.slice(1) : code.toUpperCase();
+  } catch (_) { return code.toUpperCase(); }
 }

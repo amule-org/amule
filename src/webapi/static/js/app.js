@@ -12,7 +12,7 @@ import { data } from "./events.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
 import { toast, Placeholder, confirmDialog } from "./components.js";
 import { formatSpeed, formatInt } from "./format.js";
-import { t, terr, getLang, cycleLang } from "./i18n.js";
+import { t, terr, getLang, setLang, LANGS, langName } from "./i18n.js";
 import { Icon } from "./icons.js";
 import { getTheme, cycleTheme } from "./theme.js";
 import { Login } from "./views/login.js";
@@ -127,7 +127,7 @@ function Toolbar({ route, onLogout }) {
             <span class="tool-label">${r.label}</span>
           </a>`)}
         <div class="nav-tools">
-          <${LangButton} />
+          <${LangSelect} />
           <${ThemeButton} />
           <button class="btn btn-ghost" title=${t("app_logout")} onClick=${doLogout}>
             <${Icon} name="logout" /><span class="sr-only">${t("app_logout")}</span>
@@ -141,7 +141,7 @@ function Toolbar({ route, onLogout }) {
                  onInput=${(e) => setLink(e.target.value)} />
           <button class="btn admin-only" type="submit">${t("app_add")}</button>
         </form>
-        <${LangButton} />
+        <${LangSelect} />
         <${ThemeButton} />
         <button class="btn btn-ghost" title=${t("app_logout")} onClick=${doLogout}>
           <${Icon} name="logout" /><span class="sr-only">${t("app_logout")}</span>
@@ -187,16 +187,20 @@ function ConnectButton({ status }) {
     </button>`;
 }
 
-// Cycles en -> es; the page reloads so module-level t() calls re-resolve.
-function LangButton() {
+// Dropdown of every language in LANGS; selecting one reloads the page so
+// module-level t() calls re-resolve. Native <select> scales to any language
+// count and gives the platform picker on mobile for free.
+function LangSelect() {
   const lang = getLang();
   return html`
-    <button class="btn btn-ghost" title=${t("app_language") + ": " + lang.toUpperCase()}
-            onClick=${cycleLang}>
+    <label class="lang-select btn btn-ghost" title=${t("app_language")}>
       <${Icon} name="language" />
-      <span class="lang-code">${lang.toUpperCase()}</span>
-      <span class="sr-only">${t("app_language")}</span>
-    </button>`;
+      <select aria-label=${t("app_language")}
+              onChange=${(e) => setLang(e.target.value)}>
+        ${LANGS.map((c) => html`
+          <option value=${c} selected=${c === lang}>${langName(c)}</option>`)}
+      </select>
+    </label>`;
 }
 
 // Cycles system -> light -> dark and shows the matching icon.

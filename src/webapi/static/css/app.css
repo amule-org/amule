@@ -229,6 +229,12 @@ b { font-weight: 600; }
 .btn-sm { padding: 4px 8px; font-size: 13px; }
 .btn-sm .icon { width: 15px; height: 15px; }
 
+/* Language picker: globe icon + native <select>, blended into the ghost toolbar. */
+.lang-select { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.lang-select select {
+  border: none; background: transparent; padding: 2px 4px; cursor: pointer;
+}
+
 .input, select, textarea {
   padding: 7px 9px;
   border: 1px solid var(--border);
@@ -522,7 +528,8 @@ table.data td.name { white-space: normal; word-break: break-word; min-width: 220
   }
   .nav .tool-label { font-size: 14px; }
   .nav > .conn-btn { display: flex; }
-  .nav-tools .lang-code { display: none; } /* the drawer row shows "Language" instead */
+  .nav-tools .lang-select { min-height: 44px; width: 100%; border-color: transparent; }
+  .nav-tools .lang-select select { flex: 1 1 auto; }
   .nav-backdrop {
     position: fixed; inset: var(--toolbar-h) 0 0 0;
     background: rgba(0, 0, 0, .35); z-index: 79;
