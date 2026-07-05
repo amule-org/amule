@@ -7,7 +7,7 @@
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder, toast, Tabs } from "../components.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 // Categories -> group boxes -> fields (keys the PATCH endpoint accepts;
 // readonly fields are shown but never sent). Labels come from the
@@ -67,7 +67,7 @@ export default function Preferences({ isGuest }) {
           for (const f of grp.fields) v[s.id + "." + f.key] = (p[s.id] || {})[f.key];
       setValues(v);
       setLoaded(true);
-    }).catch((e) => setError(e.message || t("prefs_error")));
+    }).catch((e) => setError(terr(e) || t("prefs_error")));
   }, []);
 
   const setVal = (id, val) => setValues((vs) => ({ ...vs, [id]: val }));
@@ -114,7 +114,7 @@ export default function Preferences({ isGuest }) {
     for (const s of SECTIONS) body[s.id] = collect(s);
     setBusy(true);
     try { await api.patch("preferences", body); toast(t("prefs_toast_saved"), "success"); }
-    catch (err) { toast(err.message || t("prefs_error"), "error"); }
+    catch (err) { toast(terr(err) || t("prefs_error"), "error"); }
     finally { setBusy(false); }
   };
 

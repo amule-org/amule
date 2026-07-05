@@ -10,7 +10,7 @@ import { html, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog } from "../components.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
-import { t, tn } from "../i18n.js";
+import { t, tn, terr } from "../i18n.js";
 import { CategoriesPanel } from "./categories.js";
 import { PeersPanel } from "./peers.js";
 
@@ -69,7 +69,7 @@ export default function Downloads({ isGuest }) {
   // --- mutations --------------------------------------------------------
   const mutate = async (fn) => {
     try { await fn(); data.refresh("downloads"); }
-    catch (e) { toast(e.message || t("downloads_error"), "error"); }
+    catch (e) { toast(terr(e) || t("downloads_error"), "error"); }
   };
   const pause = (h) => mutate(() => api.patch("downloads/" + h, { status: "paused" }));
   const resume = (h) => mutate(() => api.patch("downloads/" + h, { status: "resumed" }));
@@ -93,7 +93,7 @@ export default function Downloads({ isGuest }) {
       await Promise.all(hashes.map(op));
       if (action === "delete") setSelection(new Set());
       toast(t("downloads_toast_done"), "success");
-    } catch (e) { toast(e.message || t("downloads_error"), "error"); }
+    } catch (e) { toast(terr(e) || t("downloads_error"), "error"); }
     data.refresh("downloads");
   };
 
@@ -104,7 +104,7 @@ export default function Downloads({ isGuest }) {
     try {
       await Promise.all(hashes.map((h) => api.patch("downloads/" + h, patch)));
       toast(t("downloads_toast_done"), "success");
-    } catch (e) { toast(e.message || t("downloads_error"), "error"); }
+    } catch (e) { toast(terr(e) || t("downloads_error"), "error"); }
     data.refresh("downloads");
   };
 

@@ -8,7 +8,7 @@ import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, Placeholder, toast, confirmDialog } from "../components.js";
 import { formatInt } from "../format.js";
 import { Icon } from "../icons.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 export function ServersPanel({ isGuest }) {
   const servers = useStore("servers") || [];
@@ -41,12 +41,12 @@ export function ServersPanel({ isGuest }) {
   const connect = async (ecid) => {
     setConnectingEcid(ecid);
     try { await api.post("servers/" + ecid + "/connect"); toast(t("networks_server_toast_connecting"), "success"); }
-    catch (e) { setConnectingEcid(null); toast(e.message || t("networks_server_error"), "error"); }
+    catch (e) { setConnectingEcid(null); toast(terr(e) || t("networks_server_error"), "error"); }
   };
   const remove = async (s) => {
     if (!(await confirmDialog(t("networks_server_confirm_remove", { name: s.name })))) return;
     try { await api.del("servers/" + s.ecid); data.refresh("servers"); }
-    catch (e) { toast(e.message || t("networks_server_error"), "error"); }
+    catch (e) { toast(terr(e) || t("networks_server_error"), "error"); }
   };
   const addServer = async (e) => {
     e.preventDefault();
@@ -55,18 +55,18 @@ export function ServersPanel({ isGuest }) {
     const body = { address };
     if (name.trim()) body.name = name.trim();
     try { await api.post("servers", body); setAddr(""); setName(""); toast(t("networks_server_toast_added"), "success"); data.refresh("servers"); }
-    catch (err) { toast(err.message || t("networks_server_error"), "error"); }
+    catch (err) { toast(terr(err) || t("networks_server_error"), "error"); }
   };
   const updateFromUrl = async (e) => {
     e.preventDefault();
     const servers_url = url.trim();
     if (!servers_url) { toast(t("networks_server_toast_enter_url"), "warn"); return; }
     try { await api.post("servers/update", { servers_url }); toast(t("networks_server_toast_updating"), "success"); setTimeout(() => data.refresh("servers"), 2000); }
-    catch (err) { toast(err.message || t("networks_server_error"), "error"); }
+    catch (err) { toast(terr(err) || t("networks_server_error"), "error"); }
   };
   const disconnect = async () => {
     try { await api.post("networks/disconnect", { network: "ed2k" }); toast(t("networks_server_disconnected"), "success"); }
-    catch (e) { toast(e.message || t("networks_server_error"), "error"); }
+    catch (e) { toast(terr(e) || t("networks_server_error"), "error"); }
   };
 
   const list = servers.slice().sort((a, b) => sortDir * cmp(sortVal(a, sortKey), sortVal(b, sortKey)));

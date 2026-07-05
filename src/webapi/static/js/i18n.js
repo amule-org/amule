@@ -60,6 +60,20 @@ export function tn(key, n, params) {
   return t(key + "_" + plural.select(n), { n, ...params });
 }
 
+// ApiError -> localized text. The API contract is English text / C-locale
+// numbers (see docs/api/REFERENCE.md), so error strings arrive in English and
+// localization is the client's job. Priority: exact known message (the
+// wxTRANSLATE strings amuled relays verbatim) -> generic per error code with
+// the raw detail as {message} -> the raw message.
+export function terr(e) {
+  if (!e) return "";
+  const exact = dict["common_apierr_" + e.message];
+  if (exact !== undefined) return exact;
+  if (e.code && dict["common_err_" + e.code] !== undefined)
+    return t("common_err_" + e.code, { message: e.message || "" });
+  return e.message || "";
+}
+
 export function getLang() { return lang; }
 
 export function setLang(code) {

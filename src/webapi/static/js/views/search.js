@@ -14,7 +14,7 @@ import { html, useState, useEffect, useRef } from "../dom.js";
 import { Badge, Placeholder, Tabs, toast } from "../components.js";
 import { formatBytes } from "../format.js";
 import { Icon } from "../icons.js";
-import { t, tn } from "../i18n.js";
+import { t, tn, terr } from "../i18n.js";
 
 const SIZE_UNITS = { B: 1, KB: 1024, MB: 1048576, GB: 1073741824 };
 // [API value, label key] — the value goes to the backend verbatim.
@@ -88,7 +88,7 @@ export default function Search({ isGuest }) {
       setSearching(pr.state === "running");
       if (pr.state === "running") { if (!pollRef.current) startPolling(); }
       else stopPolling();
-    } catch (e) { setProgress(e.message || t("search_error")); }
+    } catch (e) { setProgress(terr(e) || t("search_error")); }
   };
 
   // Fallback only: while SSE is live the search channel drives everything,
@@ -151,7 +151,7 @@ export default function Search({ isGuest }) {
       setProgress(progressText({ state: "running", kind: type }));
       startPolling();
       toast(t("search_toast_search_started"), "success");
-    } catch (err) { toast(err.message || t("search_error"), "error"); }
+    } catch (err) { toast(terr(err) || t("search_error"), "error"); }
   };
 
   const stop = async () => {
@@ -168,14 +168,14 @@ export default function Search({ isGuest }) {
       await Promise.all(hashes.map((h) => api.post("search/results/" + h + "/download", { category })));
       toast(tn("search_toast_added_downloads", hashes.length), "success");
       setSelection(new Set());
-    } catch (e) { toast(e.message || t("search_error"), "error"); }
+    } catch (e) { toast(terr(e) || t("search_error"), "error"); }
   };
 
   const downloadOne = async (h) => {
     try {
       await api.post("search/results/" + h + "/download", { category: catFor(h) });
       toast(tn("search_toast_added_downloads", 1), "success");
-    } catch (e) { toast(e.message || t("search_error"), "error"); }
+    } catch (e) { toast(terr(e) || t("search_error"), "error"); }
   };
 
   const toggleRow = (hash, checked) => {

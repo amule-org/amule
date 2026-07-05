@@ -8,7 +8,7 @@ import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast } from "../components.js";
 import { formatBytes, formatInt } from "../format.js";
 import { Icon } from "../icons.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("shared_prio_" + v)]);
@@ -31,11 +31,11 @@ export default function Shared({ isGuest }) {
 
   const setPriority = async (hash, p) => {
     try { await api.patch("shared/" + hash, { priority: p }); data.refresh("shared"); }
-    catch (e) { toast(e.message || t("shared_error"), "error"); }
+    catch (e) { toast(terr(e) || t("shared_error"), "error"); }
   };
   const reload = async () => {
     try { await api.post("shared/reload"); toast(t("shared_toast_reloading"), "success"); setTimeout(() => data.refresh("shared"), 1500); }
-    catch (e) { toast(e.message || t("shared_error"), "error"); }
+    catch (e) { toast(terr(e) || t("shared_error"), "error"); }
   };
 
   const list = shared.slice().sort((a, b) => sortDir * cmp(sortVal(a, sortKey), sortVal(b, sortKey)));

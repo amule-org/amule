@@ -14,7 +14,7 @@ import { html, useState, useEffect, useStore } from "../dom.js";
 import { toast } from "../components.js";
 import { Chart } from "../charts.js";
 import { formatInt } from "../format.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 const GRAPH_POLL_MS = 2000;
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
@@ -41,7 +41,7 @@ export function KadPanel() {
 
   const netOp = async (op) => {
     try { await api.post("networks/" + op, { network: "kad" }); toast(op === "connect" ? t("networks_kad_toast_connecting") : t("networks_kad_toast_disconnecting"), "success"); }
-    catch (e) { toast(e.message || t("networks_kad_error"), "error"); }
+    catch (e) { toast(terr(e) || t("networks_kad_error"), "error"); }
   };
   const bootstrap = async (e) => {
     e.preventDefault();
@@ -50,7 +50,7 @@ export function KadPanel() {
     const portv = idx > 0 ? Number(node.slice(idx + 1)) : 0;
     if (!ipv || !portv) { toast(t("networks_kad_toast_enter_ip_port"), "warn"); return; }
     try { await api.post("kad/bootstrap", { ip: ipv, port: portv }); toast(t("networks_kad_toast_bootstrapping"), "success"); setNode(""); }
-    catch (err) { toast(err.message || t("networks_kad_error"), "error"); }
+    catch (err) { toast(terr(err) || t("networks_kad_error"), "error"); }
   };
 
   return html`
@@ -74,7 +74,7 @@ export function KadInfoPanel() {
 
   const load = async () => {
     try { setDetail(await api.get("kad")); setError(""); }
-    catch (e) { setError(e.message || t("networks_kad_error")); }
+    catch (e) { setError(terr(e) || t("networks_kad_error")); }
   };
 
   useEffect(() => { data.ensureStatus(); }, []);

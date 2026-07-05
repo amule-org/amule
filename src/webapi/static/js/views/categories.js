@@ -9,7 +9,7 @@ import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder, toast, confirmDialog } from "../components.js";
 import { Icon } from "../icons.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("downloads_prio_" + v)]);
@@ -27,7 +27,7 @@ export function CategoriesPanel({ isGuest }) {
 
   const load = async () => {
     try { setCategories((await api.get("categories")).categories || []); setLoadErr(""); }
-    catch (e) { setLoadErr(e.message || t("downloads_cat_error")); }
+    catch (e) { setLoadErr(terr(e) || t("downloads_cat_error")); }
   };
   useEffect(() => { load(); }, []);
 
@@ -52,12 +52,12 @@ export function CategoriesPanel({ isGuest }) {
       if (editing !== null) await api.patch("categories/" + editing, body);
       else await api.post("categories", body);
       toast(t("downloads_cat_toast_saved"), "success"); setFormOpen(false); load();
-    } catch (err) { toast(err.message || t("downloads_cat_error"), "error"); }
+    } catch (err) { toast(terr(err) || t("downloads_cat_error"), "error"); }
   };
   const remove = async (c) => {
     if (!(await confirmDialog(t("downloads_cat_confirm_delete", { name: c.name })))) return;
     try { await api.del("categories/" + c.index); toast(t("downloads_cat_toast_deleted"), "success"); load(); }
-    catch (e) { toast(e.message || t("downloads_cat_error"), "error"); }
+    catch (e) { toast(terr(e) || t("downloads_cat_error"), "error"); }
   };
 
   const row = (c) => html`

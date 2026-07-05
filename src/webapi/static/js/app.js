@@ -12,7 +12,7 @@ import { data } from "./events.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
 import { toast, Placeholder, confirmDialog } from "./components.js";
 import { formatSpeed, formatInt } from "./format.js";
-import { t, getLang, cycleLang } from "./i18n.js";
+import { t, terr, getLang, cycleLang } from "./i18n.js";
 import { Icon } from "./icons.js";
 import { getTheme, cycleTheme } from "./theme.js";
 import { Login } from "./views/login.js";
@@ -94,7 +94,7 @@ function Toolbar({ route, onLogout }) {
       toast(t("app_toast_link_added"), "success");
       if (currentRoute() === "downloads") data.refresh("downloads");
     } catch (e) {
-      toast(e.message || t("app_error"), "error");
+      toast(terr(e) || t("app_error"), "error");
     }
   };
 
@@ -177,7 +177,7 @@ function ConnectButton({ status }) {
         await api.post("networks/connect", { network: "both" });
         toast(t("app_toast_connecting"), "success");
       }
-    } catch (e) { toast(e.message || t("app_error"), "error"); }
+    } catch (e) { toast(terr(e) || t("app_error"), "error"); }
   };
 
   return html`

@@ -11,7 +11,7 @@ import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useRef, useEffect } from "../dom.js";
 import { toast, confirmDialog } from "../components.js";
-import { t } from "../i18n.js";
+import { t, terr } from "../i18n.js";
 
 const SRV_POLL_MS = 5000;
 const AMULE_TAIL = 500; // initial history; live lines then arrive via log_appended
@@ -33,12 +33,12 @@ export function AmuleLogPanel() {
       if (!boxRef.current) return;
       boxRef.current.textContent = (r.lines || []).join("");
       boxRef.current.scrollTop = boxRef.current.scrollHeight;
-    } catch (e) { if (boxRef.current) boxRef.current.textContent = e.message || t("networks_log_error"); }
+    } catch (e) { if (boxRef.current) boxRef.current.textContent = terr(e) || t("networks_log_error"); }
   };
   const clear = async () => {
     if (!(await confirmDialog(t("networks_log_confirm_clear_amule")))) return;
     try { await api.del("logs/amule"); if (boxRef.current) boxRef.current.textContent = ""; toast(t("networks_log_toast_cleared"), "success"); }
-    catch (e) { toast(e.message || t("networks_log_error"), "error"); }
+    catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
   };
 
   useEffect(() => {
@@ -71,12 +71,12 @@ export function ServerInfoPanel() {
       if (!boxRef.current) return;
       boxRef.current.textContent = r.text || "";
       boxRef.current.scrollTop = boxRef.current.scrollHeight;
-    } catch (e) { if (boxRef.current) boxRef.current.textContent = e.message || t("networks_log_error"); }
+    } catch (e) { if (boxRef.current) boxRef.current.textContent = terr(e) || t("networks_log_error"); }
   };
   const clear = async () => {
     if (!(await confirmDialog(t("networks_log_confirm_clear_serverinfo")))) return;
     try { await api.del("logs/serverinfo"); if (boxRef.current) boxRef.current.textContent = ""; toast(t("networks_log_toast_cleared"), "success"); }
-    catch (e) { toast(e.message || t("networks_log_error"), "error"); }
+    catch (e) { toast(terr(e) || t("networks_log_error"), "error"); }
   };
 
   useEffect(() => {

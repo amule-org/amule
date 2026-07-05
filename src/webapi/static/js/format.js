@@ -1,6 +1,8 @@
 // Pure value formatters shared by every view. No DOM, no framework —
 // just the presentation rules that match aMule Web.
 
+import { t } from "./i18n.js";
+
 const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
 
 export function formatBytes(n) {
@@ -24,4 +26,15 @@ export function formatPercent(p) {
 
 export function formatInt(n) {
   return (Number(n) || 0).toLocaleString();
+}
+
+// Seconds -> human duration, mirroring CastSecondsToHM (src/OtherFunctions.cpp).
+export function formatDuration(s) {
+  s = Math.floor(Number(s) || 0);
+  const pad = (n) => String(n).padStart(2, "0");
+  if (s < 60) return pad(s) + " " + t("stats_secs");
+  if (s < 3600) return Math.floor(s / 60) + ":" + pad(s % 60) + " " + t("stats_mins");
+  if (s < 86400) return Math.floor(s / 3600) + ":" + pad(Math.floor((s % 3600) / 60)) + " " + t("stats_hours");
+  return Math.floor(s / 86400) + " " + t("stats_days") + " " +
+    pad(Math.floor((s % 86400) / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + " " + t("stats_hours");
 }

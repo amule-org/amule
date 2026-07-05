@@ -8,8 +8,8 @@ import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder } from "../components.js";
 import { Chart } from "../charts.js";
-import { formatSpeed, formatInt } from "../format.js";
-import { t } from "../i18n.js";
+import { formatBytes, formatSpeed, formatInt, formatDuration } from "../format.js";
+import { t, terr } from "../i18n.js";
 
 const GRAPH_POLL_MS = 2000;
 const TREE_EVERY = 3; // refresh tree every N graph ticks
@@ -65,7 +65,7 @@ export default function Stats() {
           setExpanded((prev) => prev.size ? prev : new Set(nodes.map((_, i) => String(i))));
         }
       }
-      catch (e) { if (alive) setTreeErr(e.message || t("stats_error")); }
+      catch (e) { if (alive) setTreeErr(terr(e) || t("stats_error")); }
     };
     const refresh = () => {
       GRAPHS.forEach(loadGraph);
@@ -99,13 +99,54 @@ export default function Stats() {
     </div>`;
 }
 
+// The API sends untranslated English label templates ("Uptime: %s") plus raw
+// typed values; we translate the template and format the values client-side so
+// the display honours the UI language and locale. See docs/api/REFERENCE.md.
+
+// Translate a label template by its exact English text; fall back to the raw
+// English for dynamic labels (client names, versions, OS) that have no key.
+function tLabel(label) {
+  const key = "stats_tree_" + label;
+  const s = t(key);
+  return s === key ? label : s;
+}
+
+// One typed value -> display string. Mirrors ECSpecialTags::FormatValue.
+function fmtValue(v, spec) {
+  if (!v) return "";
+  let s;
+  switch (v.type) {
+    case "bytes": s = formatBytes(v.value); break;
+    case "speed": s = formatBytes(v.value) + "/s"; break;
+    case "time": s = formatDuration(v.value); break;
+    case "double": s = /f/.test(spec || "") ? Number(v.value).toFixed(2) : String(v.value); break;
+    case "string": s = tLabel(String(v.value)); break;
+    default: s = formatInt(v.value); break; // integer/istring/ishort
+  }
+  if (v.extra) {
+    // A double sub-value is a percentage (GUI hardcodes "%.2f%%").
+    const e = v.extra.type === "double" ? Number(v.extra.value).toFixed(2) + "%" : fmtValue(v.extra);
+    s += " (" + e + ")";
+  }
+  return s;
+}
+
+// Fill the label template's printf placeholders from values, in order.
+function nodeText(node) {
+  const values = node.values || [];
+  let i = 0;
+  return tLabel(node.label).replace(/%(%|[-.0-9]*(?:ll|l|h)?[a-zA-Z])/g,
+    (m, spec) => spec === "%" ? "%" : fmtValue(values[i++], spec));
+}
+
 function TreeNode({ node, path, expanded, onToggle }) {
   const children = node.children || [];
-  if (!children.length) return html`<div class="tree-leaf">${node.label}</div>`;
+  const text = nodeText(node);
+  if (!children.length) return html`<div class="tree-leaf">${text}</div>`;
   const open = expanded.has(path);
   return html`
     <details open=${open} onToggle=${(e) => { if (e.target.open !== open) onToggle(path, e.target.open); }}>
-      <summary>${node.label}</summary>
+      <summary>${text}</summary>
       ${children.map((c, i) => html`<${TreeNode} node=${c} path=${path + "." + i} expanded=${expanded} onToggle=${onToggle} />`)}
     </details>`;
 }
