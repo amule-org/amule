@@ -583,7 +583,7 @@ void CDownloadListCtrl::OnPreviewFile(wxCommandEvent &WXUNUSED(event))
 	ItemList files = ::GetSelectedItems(this);
 
 	if (files.size() == 1) {
-		PreviewFile(files.front()->GetFile());
+		PreviewFile(files.front()->GetFile(), this);
 	}
 }
 
@@ -592,7 +592,7 @@ void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 	CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(evt.GetIndex()))->GetFile();
 
 	if ((!file->IsPartFile() || file->IsCompleted()) && file->PreviewAvailable()) {
-		PreviewFile(file);
+		PreviewFile(file, this);
 	}
 }
 
@@ -1379,7 +1379,7 @@ void CDownloadListCtrl::DrawFileStatusBar(
 #define QUOTE "\'"
 #endif
 
-void CDownloadListCtrl::PreviewFile(CPartFile *file)
+void CDownloadListCtrl::PreviewFile(CKnownFile *file, wxWindow *parent)
 {
 	wxString command;
 	if (thePrefs::GetVideoPlayer().IsEmpty()) {
@@ -1410,7 +1410,7 @@ void CDownloadListCtrl::PreviewFile(CPartFile *file)
 				     defaultPreview,
 			_("File preview"),
 			wxOK,
-			this);
+			parent);
 	} else {
 		command = thePrefs::GetVideoPlayer();
 	}
@@ -1421,13 +1421,15 @@ void CDownloadListCtrl::PreviewFile(CPartFile *file)
 	// Check if we are (pre)viewing a completed file or not
 	if (!file->IsCompleted()) {
 		// Remove the .met and see if out video player specifiation uses the magic string
-		partName = file->GetPartMetFileName().RemoveExt().GetRaw();
-		partFile = thePrefs::GetTempDir().JoinPaths(file->GetPartMetFileName().RemoveExt()).GetRaw();
+		CPartFile *partfile = static_cast<CPartFile *>(file);
+		partName = partfile->GetPartMetFileName().RemoveExt().GetRaw();
+		partFile =
+			thePrefs::GetTempDir().JoinPaths(partfile->GetPartMetFileName().RemoveExt()).GetRaw();
 	} else {
 		// This is a complete file
 		// FIXME: This is probably not going to work if the filenames are mangled ...
 		partName = file->GetFileName().GetRaw();
-		partFile = file->GetFullName().GetRaw();
+		partFile = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
 	}
 
 	// Compatibility with old behaviour

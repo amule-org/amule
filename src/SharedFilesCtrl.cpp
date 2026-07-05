@@ -27,21 +27,22 @@
 
 #include <common/MenuIDs.h>
 
-#include "muuli_wdr.h"      // Needed for ID_SHFILELIST
-#include "SharedFilesWnd.h" // Needed for CSharedFilesWnd
-#include "amuleDlg.h"       // Needed for CamuleDlg
-#include "CommentDialog.h"  // Needed for CCommentDialog
-#include "PartFile.h"       // Needed for CPartFile
-#include "SharedFileList.h" // Needed for CKnownFileMap
-#include "amule.h"          // Needed for theApp
-#include "ServerConnect.h"  // Needed for CServerConnect
-#include "Preferences.h"    // Needed for thePrefs
-#include "BarShader.h"      // Needed for CBarShader
-#include "DataToText.h"     // Needed for PriorityToStr
-#include "GuiEvents.h"      // Needed for CoreNotify_*
-#include "MuleCollection.h" // Needed for CMuleCollection
-#include "DownloadQueue.h"  // Needed for CDownloadQueue
-#include "TransferWnd.h"    // Needed for CTransferWnd
+#include "muuli_wdr.h"        // Needed for ID_SHFILELIST
+#include "SharedFilesWnd.h"   // Needed for CSharedFilesWnd
+#include "amuleDlg.h"         // Needed for CamuleDlg
+#include "CommentDialog.h"    // Needed for CCommentDialog
+#include "PartFile.h"         // Needed for CPartFile
+#include "SharedFileList.h"   // Needed for CKnownFileMap
+#include "amule.h"            // Needed for theApp
+#include "ServerConnect.h"    // Needed for CServerConnect
+#include "Preferences.h"      // Needed for thePrefs
+#include "BarShader.h"        // Needed for CBarShader
+#include "DataToText.h"       // Needed for PriorityToStr
+#include "GuiEvents.h"        // Needed for CoreNotify_*
+#include "MuleCollection.h"   // Needed for CMuleCollection
+#include "DownloadQueue.h"    // Needed for CDownloadQueue
+#include "TransferWnd.h"      // Needed for CTransferWnd
+#include "DownloadListCtrl.h" // Needed for CDownloadListCtrl::PreviewFile
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
@@ -66,6 +67,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_MENU(MP_GETAICHED2KLINKSRC, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_RENAME, CSharedFilesCtrl::OnRename)
 	EVT_MENU(MP_WS, CSharedFilesCtrl::OnGetFeedback)
+	EVT_MENU(MP_VIEW, CSharedFilesCtrl::OnPlayFile)
 
 	EVT_CHAR(CSharedFilesCtrl::OnKeyPressed)
 wxEND_EVENT_TABLE()
@@ -127,6 +129,10 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 
 	if ((m_menu == NULL) && (item_hit != -1)) {
 		m_menu = new wxMenu(_("Shared Files"));
+
+		m_menu->Append(MP_VIEW, _("&Play"));
+		m_menu->AppendSeparator();
+
 		wxMenu *prioMenu = new wxMenu();
 		prioMenu->AppendCheckItem(MP_PRIOVERYLOW, _("Very low"));
 		prioMenu->AppendCheckItem(MP_PRIOLOW, _("Low"));
@@ -165,6 +171,11 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(MP_GETAICHED2KLINK, _("Copy eD2k link to clipboard (&AICH info)"));
 		m_menu->Append(MP_GETAICHED2KLINKSRC, _("Copy eD2k link to clipboard (&AICH info + Source)"));
 		m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
+
+		// Incomplete files shared while downloading can only be played
+		// if enough of the beginning has been downloaded.
+		m_menu->Enable(
+			MP_VIEW, file->IsCompleted() || static_cast<CPartFile *>(file)->PreviewAvailable());
 
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
@@ -762,6 +773,15 @@ void CSharedFilesCtrl::OnKeyPressed(wxKeyEvent &event)
 		return;
 	}
 	event.Skip();
+}
+
+void CSharedFilesCtrl::OnPlayFile(wxCommandEvent &WXUNUSED(event))
+{
+	if (GetSelectedItemCount() == 1) {
+		long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+
+		CDownloadListCtrl::PreviewFile(reinterpret_cast<CKnownFile *>(GetItemData(index)), this);
+	}
 }
 
 void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))

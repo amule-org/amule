@@ -33,6 +33,7 @@
 #include "Constants.h"    // Needed for DownloadItemType
 #include "MuleListCtrl.h" // Needed for CMuleListCtrl
 
+class CKnownFile;
 class CPartFile;
 class wxBitmap;
 class wxRect;
@@ -130,6 +131,17 @@ public:
 	 */
 	void DoItemSelectionChanged();
 
+	/**
+	 * Executes the user-selected preview command on the specified file.
+	 *
+	 * Works for incomplete downloads (previewing the partfile in the
+	 * temp dir) as well as for completed/shared files.
+	 *
+	 * @param file The file to be previewed.
+	 * @param parent Window used as parent for any message boxes.
+	 */
+	static void PreviewFile(CKnownFile *file, wxWindow *parent);
+
 protected:
 	/// Return old column order.
 	wxString GetOldColumnOrder() const;
@@ -183,13 +195,6 @@ private:
 	void OnMouseMiddleClick(wxListEvent &event);
 	void OnKeyPressed(wxKeyEvent &event);
 	void OnItemSelectionChanged(wxListEvent &event);
-
-	/**
-	 * Executes the user-selected preview command on the specified file.
-	 *
-	 * @file The file to be previewed.
-	 */
-	void PreviewFile(CPartFile *file);
 
 	/**
 	 * Show file detail dialog for item at index

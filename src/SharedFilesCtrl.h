@@ -190,6 +190,11 @@ private:
 	 */
 	void OnAddCollection(wxCommandEvent &WXUNUSED(evt));
 
+	/**
+	 * Event-handler for the Play menu item.
+	 */
+	void OnPlayFile(wxCommandEvent &event);
+
 	//! Pointer used to ensure that the menu isn't displayed twice.
 	wxMenu *m_menu;
 
