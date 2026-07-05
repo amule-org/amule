@@ -57,7 +57,54 @@
 #include "kademlia/kademlia/Search.h"
 #include "ClientList.h"
 
+#include <vector>
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 typedef std::deque<CKnownFile *> KnownFileArray;
+
+// m_pathIndex key canonicalization. macOS hands the same filename to different
+// subsystems in different Unicode normalization forms: known.met / download
+// names arrive decomposed (NFD) while FSEvents can report the very same path
+// composed (NFC), and a file's CREATE and DELETE events may even disagree. A
+// plain map keyed on the raw path string therefore misses when the lookup form
+// differs from the stored form, so a completed download with an accented name
+// (e.g. "corazón") never auto-unshares on delete. Fold every key to NFC so all
+// variants of one name collapse to a single entry. Off macOS filenames are
+// opaque byte strings with no OS-level normalization, so this is identity.
+static wxString NormalizePathKey(const wxString &path)
+{
+#ifdef __APPLE__
+	const wxScopedCharBuffer utf8 = path.utf8_str();
+	if (utf8.data() == NULL || utf8.length() == 0) {
+		return path;
+	}
+	CFStringRef s = CFStringCreateWithBytes(kCFAllocatorDefault,
+		(const UInt8 *)utf8.data(),
+		(CFIndex)utf8.length(),
+		kCFStringEncodingUTF8,
+		false);
+	if (s == NULL) {
+		return path;
+	}
+	CFMutableStringRef mut = CFStringCreateMutableCopy(kCFAllocatorDefault, 0, s);
+	CFRelease(s);
+	if (mut == NULL) {
+		return path;
+	}
+	CFStringNormalize(mut, kCFStringNormalizationFormC);
+	const CFIndex maxLen =
+		CFStringGetMaximumSizeForEncoding(CFStringGetLength(mut), kCFStringEncodingUTF8) + 1;
+	std::vector<char> buf((size_t)maxLen);
+	const Boolean ok = CFStringGetCString(mut, buf.data(), maxLen, kCFStringEncodingUTF8);
+	CFRelease(mut);
+	return ok ? wxString::FromUTF8(buf.data()) : path;
+#else
+	return path;
+#endif
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CPublishKeyword
@@ -582,7 +629,8 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 		// path via the post-completion path. Stale entries left
 		// over from a previous shared-list membership are
 		// overwritten here.
-		const wxString key = pFile->GetFilePath().JoinPaths(pFile->GetFileName()).GetRaw();
+		const wxString key =
+			NormalizePathKey(pFile->GetFilePath().JoinPaths(pFile->GetFileName()).GetRaw());
 		m_pathIndex[key] = pFile;
 		MaybeScheduleMediaProbe(pFile);
 		return true;
@@ -695,7 +743,7 @@ void CSharedFileList::RefreshPathIndex(CKnownFile *file)
 		return;
 	}
 	wxMutexLocker lock(list_mut);
-	const wxString key = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
+	const wxString key = NormalizePathKey(file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw());
 	// Drop any stale keys pointing at this file (the pre-completion
 	// Temp/<name> entry, or the "" placeholder from a not-yet-pathed
 	// CPartFile) so the index maps only its current on-disk location.
@@ -729,7 +777,8 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 	// Same path key we wrote into the index in AddFile(). erase() is a
 	// no-op if the entry isn't present (e.g. the file was inserted
 	// before m_pathIndex existed in an older save snapshot).
-	const wxString key = toremove->GetFilePath().JoinPaths(toremove->GetFileName()).GetRaw();
+	const wxString key =
+		NormalizePathKey(toremove->GetFilePath().JoinPaths(toremove->GetFileName()).GetRaw());
 	m_pathIndex.erase(key);
 	/* This file keywords must not be published to kad anymore */
 	m_keywords->RemoveKeywords(toremove);
@@ -755,7 +804,7 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
 	// drop list_mut before doing any filesystem work.
 	{
 		wxMutexLocker existsCheck(list_mut);
-		if (m_pathIndex.find(fullPath) != m_pathIndex.end()) {
+		if (m_pathIndex.find(NormalizePathKey(fullPath)) != m_pathIndex.end()) {
 			return;
 		}
 	}
@@ -800,7 +849,7 @@ void CSharedFileList::NotifyPathRemoved(const wxString &fullPath)
 	CKnownFile *file = NULL;
 	{
 		wxMutexLocker lock(list_mut);
-		auto it = m_pathIndex.find(fullPath);
+		auto it = m_pathIndex.find(NormalizePathKey(fullPath));
 		if (it == m_pathIndex.end()) {
 			return;
 		}
@@ -819,7 +868,8 @@ void CSharedFileList::NotifyDirRemoved(const wxString &dirPath)
 	}
 
 	// Trailing separator so ".../Season 1" does not match sibling ".../Season 10".
-	wxString prefix = dirPath;
+	// NFC-fold to match the normalized keys stored in m_pathIndex (see NormalizePathKey).
+	wxString prefix = NormalizePathKey(dirPath);
 	const wxString sep(wxFileName::GetPathSeparator());
 	if (!prefix.EndsWith(sep)) {
 		prefix += sep;
@@ -864,7 +914,7 @@ void CSharedFileList::NotifyPathModified(const wxString &fullPath)
 	CKnownFile *file = NULL;
 	{
 		wxMutexLocker lock(list_mut);
-		auto it = m_pathIndex.find(fullPath);
+		auto it = m_pathIndex.find(NormalizePathKey(fullPath));
 		if (it == m_pathIndex.end()) {
 			// Path appeared via MODIFY but wasn't already shared
 			// — treat as add. List_mut is dropped at scope exit
