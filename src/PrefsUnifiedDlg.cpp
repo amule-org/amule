@@ -300,48 +300,21 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	preferencesDlgTop(this, false);
 
 	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxListCtrl);
-	// Pad the tab icons so they don't sit flush against the cell label
-	// and (on Mac) so they don't drop to the row baseline. wxOSX
-	// NSTableView draws the image with zero native horizontal gap and
-	// vertically centres the bitmap; wxGTK and wxMSW already insert a
-	// few pixels of horizontal padding natively and align top-to-top.
-	//
-	// Two-dimensional padding gated on Mac only:
-	//  * Right pad — visible gap between icon and the cell text.
-	//  * Bottom pad — taller bitmap; with the 16x16 source pinned to
-	//    the bitmap's top, NSTableView's vertical centring then lifts
-	//    the icon up to sit alongside the text baseline instead of
-	//    falling to the bottom of the row.
 	const int kPrefsIconW = 16;
 	const int kPrefsIconH = 16;
-#ifdef __WXOSX__
-	const int kPrefsIconRightPad = 14;
-	const int kPrefsIconBottomPad = 9;
-#else
-	const int kPrefsIconRightPad = 0;
-	const int kPrefsIconBottomPad = 0;
-#endif
-	const int kPrefsImageW = kPrefsIconW + kPrefsIconRightPad;
-	const int kPrefsImageH = kPrefsIconH + kPrefsIconBottomPad;
 
 	// The page art only exists at one (16x16) size. Wrap each icon in a
 	// wxBitmapBundle with a smooth 2x upscale so DPI-aware builds render
 	// it at the correct logical size on hi-DPI screens instead of a tiny
 	// 16-physical-pixel square (same treatment as the main toolbar). The
-	// mask is turned into an alpha channel first, because high-quality
-	// scaling needs it and the padding below must stay transparent. Each
-	// resolution is padded to its own scale of the kPrefsImageW/H canvas,
-	// source pinned to the top-left; the padding is a no-op off Mac.
+	// mask is turned into an alpha channel first because high-quality
+	// scaling needs it.
 	auto makeIcon = [&](const wxBitmap &src) -> wxBitmapBundle {
 		wxImage img = src.ConvertToImage();
 		if (!img.HasAlpha()) {
 			img.InitAlpha();
 		}
 		wxImage img2x = img.Scale(img.GetWidth() * 2, img.GetHeight() * 2, wxIMAGE_QUALITY_HIGH);
-		if (kPrefsIconRightPad != 0 || kPrefsIconBottomPad != 0) {
-			img = img.Size(wxSize(kPrefsImageW, kPrefsImageH), wxPoint(0, 0));
-			img2x = img2x.Size(wxSize(kPrefsImageW * 2, kPrefsImageH * 2), wxPoint(0, 0));
-		}
 		return wxBitmapBundle::FromBitmaps(wxBitmap(img), wxBitmap(img2x));
 	};
 
