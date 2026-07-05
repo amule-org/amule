@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-07-03 16:20+0000\n"
+"PO-Revision-Date: 2026-07-05 16:32+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -101,7 +101,7 @@ msgstr "B<[ -c> I<E<lt>ceļšE<gt>>, B<--config-dir>=I<E<lt>ceļšE<gt>> B<]>"
 #: amule.1.in:29 amuled.1.in:30 amulegui.1.in:30 ed2k.1.in:24
 #: ../../src/utils/cas/docs/cas.1.in:30
 msgid "Read config from I<E<lt>pathE<gt>> instead of home"
-msgstr ""
+msgstr "Ielādēt norādītā I<E<lt>ceļaE<gt>> konfigurācijas iestatījumu datni, nevis noklusētās aMule mapes"
 
 #. type: TP
 #: amule.1.in:29 amulegui.1.in:30
@@ -194,12 +194,12 @@ msgstr "Pievienojamā eD2k saite var būt:"
 #. type: Plain text
 #: amule.1.in:70 amulecmd.1.in:82 amuled.1.in:78 ed2k.1.in:48
 msgid "a file link (ed2k://|file|...), it will be added to the download queue;"
-msgstr "datnes saite (ed2k://|datne|…), tā tiks pievienota lejupielādes rindai;"
+msgstr "datnes saite (ed2k://|datne|…), datne, ko ietver šī saite, tiks pievienota lejupielādes rindai;"
 
 #. type: Plain text
 #: amule.1.in:72 amulecmd.1.in:84 amuled.1.in:80 ed2k.1.in:50
 msgid "a server link (ed2k://|server|...), it will be added to the server list;"
-msgstr "servera saite (ed2k://|serveris|…), tas tiks pievienots serveru sarakstam;"
+msgstr "servera saite (ed2k://|serveris|…), serveris, ko ietver šī saite, tiks pievienots serveru sarakstam;"
 
 #. type: Plain text
 #: amule.1.in:74 amuled.1.in:82 ed2k.1.in:52
@@ -226,7 +226,7 @@ msgstr "Ceļi"
 #. type: Plain text
 #: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:141
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
-msgstr ""
+msgstr "Visi komandrindas parametri, kas pieņem I<E<lt>ceļaE<gt>> argumentu, ja tas nesatur mapi (t.i., tikai datnes nosaukumu), tiek uzskatīts, ka šī datne atrodas I<~/.aMule> konfigurācijas mapē."
 
 #. type: SH
 #: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:175
@@ -276,7 +276,7 @@ msgstr "AUTORTIESĪBAS"
 #: ../../src/utils/cas/docs/cas.1.in:48
 #: ../../src/utils/wxCas/docs/wxcas.1.in:21
 msgid "aMule and all of its related utilities are distributed under the GNU General Public License."
-msgstr ""
+msgstr "aMule un visi ar to saistītie rīki tiek izplatīti saskaņā ar GNU General Public License licences noteikumiem."
 
 #. type: SH
 #: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
@@ -326,7 +326,7 @@ msgstr "aMuleCmd v@PACKAGE_VERSION@"
 #: ../../src/utils/cas/docs/cas.1.in:1 ../../src/utils/wxCas/docs/wxcas.1.in:1
 #, no-wrap
 msgid "aMule utilities"
-msgstr ""
+msgstr "aMule rīki"
 
 #. type: Plain text
 #: amulecmd.1.in:7
@@ -336,7 +336,7 @@ msgstr "amulecmd - komandrindas programma aMule vadīšanai"
 #. type: Plain text
 #: amulecmd.1.in:13 amuleweb.1.in:12
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-h> I<E<lt>resursdatorsE<gt>>] [B<-p> I<E<lt>portsE<gt>>] [B<-P> I<E<lt>paroleE<gt>>] [B<-f> I<E<lt>ceļšE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in:17
@@ -395,7 +395,7 @@ msgstr "B<[ -f> I<E<lt>ceļšE<gt>>, B<--config-file>=I<E<lt>ceļšE<gt>> B<]>"
 #. type: Plain text
 #: amulecmd.1.in:43 amuleweb.1.in:60
 msgid "Use the given configuration file.  Default configuration file is I<~/.aMule/remote.conf>"
-msgstr ""
+msgstr "Lietot norādīto konfigurācijas datni. Pēc noklusējuma tiek lietota I<~/.aMule/remote.conf> konfigurācijas datne"
 
 #. type: Plain text
 #: amulecmd.1.in:46 amuleweb.1.in:63
@@ -416,7 +416,7 @@ msgstr "B<[ -l> I<E<lt>valodaE<gt>>, B<--locale>=I<E<lt>valodaE<gt>> B<]>"
 #. type: Plain text
 #: amulecmd.1.in:54 amuleweb.1.in:71
 msgid "Sets program locale (language).  See the B<NOTES> section for the description of the I<E<lt>langE<gt>> parameter."
-msgstr ""
+msgstr "Iestata programmas lokalizāciju (valodu). Plašāku informāciju par I<E<lt>valodasE<gt>> parametru skatiet B<PIEZĪMES> sadaļā."
 
 #. type: Plain text
 #: amulecmd.1.in:57 amuleweb.1.in:74
