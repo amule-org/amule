@@ -648,11 +648,16 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 		//      m_pathIndex). Detach the stale entry and install the
 		//      live one so the view mirrors knownfiles.
 		CKnownFile *stale = NULL;
+		bool alreadyCanonical = false;
 		{
 			wxMutexLocker lock(list_mut);
 			CKnownFileMap::iterator it = m_Files_map.find(toadd->GetFileHash());
-			if (it != m_Files_map.end() && it->second != toadd) {
-				stale = it->second;
+			if (it != m_Files_map.end()) {
+				if (it->second != toadd) {
+					stale = it->second;
+				} else {
+					alreadyCanonical = true;
+				}
 			}
 		}
 		if (stale) {
@@ -665,6 +670,15 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 			if (AddFile(toadd)) {
 				Notify_SharedFilesShowFile(toadd);
 			}
+		} else if (alreadyCanonical) {
+			// Same pointer, already the canonical shared entry, but its
+			// path may have moved since it was first shared: a partfile
+			// downloaded this session was keyed under the Temp dir and has
+			// just been re-added from CPartFile::CompleteFileEnded() with
+			// SetFilePath(Incoming). AddFile()'s insert no-ops here, so the
+			// index still points at the stale Temp path and the dir-watcher
+			// can't resolve a DELETE of the completed file. Re-key it.
+			RefreshPathIndex(toadd);
 		}
 	}
 
@@ -672,6 +686,35 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 		// Publishing of files is not anymore handled here.
 		// Instead, the timer does it by itself.
 		m_lastPublishED2KFlag = true;
+	}
+}
+
+void CSharedFileList::RefreshPathIndex(CKnownFile *file)
+{
+	if (!file) {
+		return;
+	}
+	wxMutexLocker lock(list_mut);
+	const wxString key = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
+	// Drop any stale keys pointing at this file (the pre-completion
+	// Temp/<name> entry, or the "" placeholder from a not-yet-pathed
+	// CPartFile) so the index maps only its current on-disk location.
+	// O(shared files), but only runs on the rare re-add of an
+	// already-shared file (download completion / re-share).
+	bool rekeyed = false;
+	for (std::unordered_map<wxString, CKnownFile *>::iterator it = m_pathIndex.begin();
+		it != m_pathIndex.end();) {
+		if (it->second == file && it->first != key) {
+			it = m_pathIndex.erase(it);
+			rekeyed = true;
+		} else {
+			++it;
+		}
+	}
+	m_pathIndex[key] = file;
+	if (rekeyed) {
+		AddDebugLogLineN(
+			logKnownFiles, CFormat("Path index re-keyed to '%s' (file moved/completed)") % key);
 	}
 }
 

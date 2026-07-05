@@ -158,6 +158,17 @@ private:
 
 	bool AddFile(CKnownFile *pFile);
 
+	// Re-key m_pathIndex for an already-shared file whose on-disk path
+	// changed since it was first added. A partfile shared while
+	// downloading is keyed under the Temp dir (or "" before SetFilePath
+	// ran); on completion it moves to Incoming with SetFilePath(), but
+	// AddFile only writes m_pathIndex on a fresh insert, so the re-add
+	// leaves the index pointing at the stale path. Drops any keys
+	// pointing at `file` and installs its current
+	// GetFilePath().JoinPaths(GetFileName()) key, so the dir-watcher can
+	// resolve a later DELETE of the completed file. Takes list_mut.
+	void RefreshPathIndex(CKnownFile *file);
+
 	// #140 — invoked by AddFile once list_mut is held. Kicks off a
 	// CMediaProbeTask when the preference is enabled and the file
 	// looks like media (audio / video by ED2K file type) and hasn't
