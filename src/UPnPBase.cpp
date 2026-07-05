@@ -785,19 +785,22 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 		goto error;
 	}
 
-	// We could ask for just the right device here. If the root device
-	// contains the device we want, it will respond with the full XML doc,
-	// including the root device and every sub-device it has.
+	// Search for the InternetGatewayDevice specifically rather than
+	// upnp:rootdevice. Searching rootdevice makes *every* UPnP speaker on
+	// the LAN answer the M-SEARCH, and our SEARCH_RESULT handler then
+	// fetches description.xml from each one synchronously on a libupnp
+	// worker thread. On a busy LAN (or one with a slow/unreachable device)
+	// that saturates libupnp's mini-server thread pool, so incoming SSDP
+	// packets back up until ThreadPoolAdd hits its cap and starts dropping
+	// jobs ("libupnp ThreadPoolAdd too many jobs"). Targeting the IGW type
+	// means only gateways answer, which is all we need for port mapping;
+	// any gateway that appears later is still caught via its periodic
+	// IGW-typed ADVERTISEMENT_ALIVE announcement.
 	//
-	// But let's find out what we have in our network by calling UPnP::ROOT_DEVICE.
-	//
-	// We should not search twice, because this will produce two
-	// UPNP_DISCOVERY_SEARCH_TIMEOUT events, and we might end with problems
-	// on the mutex.
-	ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::ROOT_DEVICE.c_str(), NULL);
-	// ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::Device::IGW.c_str(), this);
-	// ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::Device::LAN.c_str(), this);
-	// ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::Device::WAN_Connection.c_str(), this);
+	// We must not search more than once, because each search produces its
+	// own UPNP_DISCOVERY_SEARCH_TIMEOUT event, and we might end with
+	// problems on the mutex.
+	ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::Device::IGW.c_str(), NULL);
 	if (ret != UPNP_E_SUCCESS) {
 		msg << "error(UpnpSearchAsync): Error sending search request: ";
 		goto error;
@@ -1557,11 +1560,19 @@ bool CUPnPControlPoint::ShouldSkipAdvertisementFetch(const std::string &location
 void CUPnPControlPoint::RecordAdvertisementFetchResult(const std::string &location, bool success)
 {
 	CUPnPMutexLocker lock(m_failedFetchCacheMutex);
-	if (success) {
-		m_failedFetchCache.erase(location);
-	} else {
-		m_failedFetchCache[location] = time(NULL);
-	}
+	// Record the attempt time regardless of outcome. We used to erase the
+	// entry on success, which meant every subsequent ALIVE announcement for
+	// an already-classified location re-issued a blocking UpnpDownloadXmlDoc
+	// on a libupnp worker thread. ALIVE announcements arrive in dense,
+	// repeating bursts (one per service class, every few seconds per
+	// device), so on a busy LAN those re-fetches alone can keep the
+	// mini-server thread pool saturated. Rate-limiting successes the same
+	// way as failures bounds ALIVE-triggered downloads to one per location
+	// per FAILED_FETCH_TTL_SECS; nothing is lost because a gateway found on
+	// the first fetch is already registered (later ALIVEs only refresh the
+	// expiry, which the TTL comfortably covers).
+	m_failedFetchCache[location] = time(NULL);
+	(void)success;
 }
 
 void CUPnPControlPoint::Subscribe(CUPnPService &service)
