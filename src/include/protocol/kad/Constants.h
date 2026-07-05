@@ -31,8 +31,8 @@
 // MOD Note: Do not change this part - Merkur
 
 #define KADEMLIAASKTIME SEC2MS(1)         // 1 second
-#define KADEMLIATOTALFILE 5               // Total files to search sources for.
-#define KADEMLIAREASKTIME HR2MS(1)        // 1 hour
+#define KADEMLIATOTALFILE 50              // Total files to search sources for.
+#define KADEMLIAREASKTIME MIN2MS(30)      // 30 mins
 #define KADEMLIAPUBLISHTIME SEC(2)        // 2 second
 #define KADEMLIATOTALSTORENOTES 1         // Total hashes to store.
 #define KADEMLIATOTALSTORESRC 3           // Total hashes to store.
