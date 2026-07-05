@@ -99,6 +99,23 @@ _assert_json_eq '[.. | .values? // empty | .[]?] | length > 0' true \
 _assert_json_eq '([.. | .values? // empty | .[]? | .type] | unique)
 	- ["integer","istring","bytes","ishort","time","speed","string","double"]
 	| length == 0' true '/stats/tree value types are all from the known set'
+# Stable machine keys: locale-independent identifiers on the fixed skeleton
+# nodes, safe to pin (unlike labels). Uptime is always the first node.
+_assert_json_eq '.nodes[0].key' uptime '/stats/tree first node key is "uptime"'
+_assert_json_eq '[.. | objects | select(has("key")) | .key] as $k
+	| (["ul_dl_ratio","download_data","servers_working"] | all(($k | index(.)) != null))' \
+	true '/stats/tree carries the expected stable keys'
+_assert_json_eq '[.. | objects | select(has("key")) | .key]
+	| (length > 0) and (length == (unique | length))' \
+	true '/stats/tree keys are present and unique'
+# The ratio node keeps its composite string value for legacy consumers...
+_assert_json_eq '[.. | objects | select(.key? == "ul_dl_ratio") | .values[0].type] | .[0]' \
+	string '/stats/tree ratio node still carries its composite string value'
+# ...and when the daemon can compute it, exposes numeric ratio fields. Absent
+# on a freshly-started daemon with no transfer, so assert shape, not presence.
+_assert_json_eq '[.. | objects | select(has("ratio")) | .ratio | (.session, .total)
+	| select(. != null) | type] | all(. == "number")' \
+	true '/stats/tree ratio fields, when present, are numbers'
 
 # --- 3. /stats/graphs/{graph} — all four named graphs. -------------
 for g in download upload connections kad; do

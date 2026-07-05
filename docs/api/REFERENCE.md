@@ -986,9 +986,11 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 
 A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
 
-The envelope is `{ "nodes": [...] }`. Each node is `{ "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty.
+The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty.
 
 `label` is the **untranslated English template** (e.g. `"Total uploaded: %s"`), and `values` are the **typed, raw** values that fill its `%s` placeholders in order — the client formats and localizes them. This keeps the response identical regardless of the amuleapi/amuled `--locale` (see [Response model](#response-model)). A container node (one that only groups children) has an empty `values` array.
+
+`key` is a **stable, machine-readable identifier** for the node (e.g. `"upload_data"`, `"ul_dl_ratio"`, `"servers_working"`). Unlike `label`, it does not change when the label is reworded, and it is never translated — use it to locate a specific field instead of matching on the label string. The `key` is optional: it is present only for nodes the daemon assigns one to, and it is omitted entirely when absent (older daemons that predate this field emit no `key` at all). Keys are unique within the tree.
 
 Each value is `{ "type": "<type>", "value": <raw> }`:
 
@@ -1003,25 +1005,32 @@ Each value is `{ "type": "<type>", "value": <raw> }`:
 
 A value may carry a nested `extra` value of the same shape — the parenthetical "(total …)" some nodes append (e.g. session vs. total transfer).
 
+The UL:DL ratio node (`key: "ul_dl_ratio"`) additionally carries a `ratio` object with numeric `session` and `total` fields, so clients don't have to parse its composite string value. Both are **download-per-upload** doubles (received ÷ sent bytes): `session` for the current session, `total` for all time. Each field appears only when the daemon can compute it (both sides greater than zero); the whole `ratio` object is omitted when neither is available and on daemons that predate this field. No other node type carries `ratio`.
+
 ```json
 {
   "nodes": [
     {
+      "key": "transfer",
       "label": "Transfers",
       "values": [],
       "children": [
         {
+          "key": "uploads",
           "label": "Uploads",
           "values": [],
           "children": [
             {
+              "key": "upload_data",
               "label": "Total uploaded: %s",
               "values": [ { "type": "bytes", "value": 13314398208 } ],
               "children": []
             },
             {
+              "key": "ul_dl_ratio",
               "label": "Session UL:DL Ratio (Total): %s",
               "values": [ { "type": "string", "value": "1 : 769.34 (1 : 1125.54)" } ],
+              "ratio": { "session": 769.34, "total": 1125.54 },
               "children": []
             }
           ]

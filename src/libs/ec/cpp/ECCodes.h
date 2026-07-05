@@ -417,6 +417,18 @@ enum ECTagNames
 	EC_TAG_STATSGRAPH_SESSION_UL = 0x1B0C,
 	EC_TAG_STATSGRAPH_SESSION_KAD = 0x1B0D,
 	EC_TAG_STATSGRAPH_SESSION_TIMESPAN = 0x1B0E,
+	// Stable, untranslated machine key for a stat-tree node. Optional
+	// subtag of EC_TAG_STATTREE_NODE; legacy consumers skip it (see the
+	// STATTREE_NODEID precedent). Lets API clients look a field up by a
+	// fixed identifier instead of matching the English label.
+	EC_TAG_STAT_NODE_KEY = 0x1B0F,
+	// Raw numeric UL:DL ratio (download-per-upload, i.e. received/sent) as
+	// a double, so API clients don't parse the composite ratio string.
+	// Optional subtags of the ratio's EC_TAG_STATTREE_NODE; legacy
+	// consumers skip them. _RATIO is the session ratio, _RATIO_TOTAL the
+	// all-time ratio. Present only when computable (both sides > 0).
+	EC_TAG_STAT_NODE_RATIO = 0x1B10,
+	EC_TAG_STAT_NODE_RATIO_TOTAL = 0x1B11,
 	EC_TAG_PREFS_SECURITY = 0x1C00,
 	EC_TAG_SECURITY_CAN_SEE_SHARES = 0x1C01,
 	EC_TAG_IPFILTER_CLIENTS = 0x1C02,
@@ -1242,6 +1254,12 @@ wxString GetDebugNameECTagNames(uint16 arg)
 		return "EC_TAG_STATSGRAPH_SESSION_KAD";
 	case 0x1B0E:
 		return "EC_TAG_STATSGRAPH_SESSION_TIMESPAN";
+	case 0x1B0F:
+		return "EC_TAG_STAT_NODE_KEY";
+	case 0x1B10:
+		return "EC_TAG_STAT_NODE_RATIO";
+	case 0x1B11:
+		return "EC_TAG_STAT_NODE_RATIO_TOTAL";
 	case 0x1C00:
 		return "EC_TAG_PREFS_SECURITY";
 	case 0x1C01:

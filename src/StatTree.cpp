@@ -192,6 +192,9 @@ CECTag *CStatTreeItemBase::CreateECTag(uint32_t max_children)
 		wxMutexLocker lock(m_lock);
 		CECTag *tag = new CECTag(EC_TAG_STATTREE_NODE, m_label);
 		tag->AddTag(CECTag(EC_TAG_STATTREE_NODEID, m_uniqueid));
+		if (!m_key.IsEmpty()) {
+			tag->AddTag(CECTag(EC_TAG_STAT_NODE_KEY, m_key));
+		}
 		AddECValues(tag);
 		m_visible_counter = max_children - 1;
 		for (std::list<CStatTreeItemBase *>::const_iterator it = m_children.begin();
@@ -590,6 +593,23 @@ void CStatTreeItemRatio::AddECValues(CECTag *tag) const
 	CECTag value(EC_TAG_STAT_NODE_VALUE, GetString(true));
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_STRING));
 	tag->AddTag(value);
+
+	// Raw numeric ratios (download-per-upload, i.e. received/sent) so API
+	// clients don't have to parse the composite string above. Distinct tag
+	// names, so the display formatter and legacy consumers ignore them.
+	// Same guards as GetString(): only emitted when both sides are > 0.
+	double v1 = static_cast<double>(m_counter1->GetValue());
+	double v2 = static_cast<double>(m_counter2->GetValue());
+	if (v1 > 0 && v2 > 0) {
+		tag->AddTag(CECTag(EC_TAG_STAT_NODE_RATIO, v2 / v1));
+	}
+	if (m_totalfunc1 && m_totalfunc2) {
+		double t1 = static_cast<double>(m_totalfunc1()) + v1;
+		double t2 = static_cast<double>(m_totalfunc2()) + v2;
+		if (t1 > 0 && t2 > 0) {
+			tag->AddTag(CECTag(EC_TAG_STAT_NODE_RATIO_TOTAL, t2 / t1));
+		}
+	}
 }
 
 /* CStatTreeItemReconnects */

@@ -163,6 +163,27 @@ public:
 	 * @return the newly added item.
 	 */
 	CStatTreeItemBase *AddChild(CStatTreeItemBase *child, uint32_t id = 0, bool skipOneLevel = false);
+
+	/**
+	 * Assigns a stable, untranslated machine key to this node.
+	 *
+	 * The key is emitted over EC (EC_TAG_STAT_NODE_KEY) so API clients can
+	 * look a field up by a fixed identifier instead of matching the
+	 * translated/formatted label. Returns this node so the call can be
+	 * chained onto a freshly-constructed item, e.g.
+	 * AddChild(new CStatTreeItemFoo(...)->SetKey("foo")).
+	 *
+	 * @param key stable identifier; empty means "no key" (tag omitted).
+	 * @return this node.
+	 */
+	CStatTreeItemBase *SetKey(const wxString &key)
+	{
+		m_key = key;
+		return this;
+	}
+
+	//! Returns the stable machine key for this node (empty if none).
+	const wxString &GetKey() const { return m_key; }
 #endif
 
 	/**
@@ -315,6 +336,9 @@ protected:
 
 	//! Flags for the node.
 	unsigned m_flags;
+
+	//! Stable, untranslated machine key (empty = none). @see SetKey
+	wxString m_key;
 #endif
 
 private:

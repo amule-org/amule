@@ -776,7 +776,7 @@ GraphUpdateInfo CStatistics::GetPointsForUpdate()
 
 void CStatistics::InitStatsTree()
 {
-	s_statTree = new CStatTreeItemBase(wxTRANSLATE("Statistics"));
+	s_statTree = (new CStatTreeItemBase(wxTRANSLATE("Statistics")))->SetKey("statistics");
 
 	CStatTreeItemBase *tmpRoot1;
 	CStatTreeItemBase *tmpRoot2;
@@ -784,9 +784,10 @@ void CStatistics::InitStatsTree()
 	s_uptime = static_cast<CStatTreeItemTimer *>(
 		s_statTree->AddChild(new CStatTreeItemTimer(wxTRANSLATE("Uptime: %s"))));
 
-	tmpRoot1 = s_statTree->AddChild(new CStatTreeItemBase(wxTRANSLATE("Transfer"), stSortChildren));
+	tmpRoot1 = s_statTree->AddChild(
+		(new CStatTreeItemBase(wxTRANSLATE("Transfer"), stSortChildren))->SetKey("transfer"));
 
-	tmpRoot2 = tmpRoot1->AddChild(new CStatTreeItemBase(wxTRANSLATE("Uploads")), 2);
+	tmpRoot2 = tmpRoot1->AddChild((new CStatTreeItemBase(wxTRANSLATE("Uploads")))->SetKey("uploads"), 2);
 	s_sessionUpload = static_cast<CStatTreeItemUlDlCounter *>(tmpRoot2->AddChild(
 		new CStatTreeItemUlDlCounter(wxTRANSLATE("Uploaded Data (Session (Total)): %s"),
 			theStats::GetTotalSentBytes,
@@ -818,10 +819,14 @@ void CStatistics::InitStatsTree()
 	s_totalFailedUploads = static_cast<CStatTreeItemCounter *>(tmpRoot2->AddChild(
 		new CStatTreeItemCounter(wxTRANSLATE("Total failed upload sessions: %s"))));
 	s_totalUploadTime = new CStatTreeItemCounter("");
-	tmpRoot2->AddChild(new CStatTreeItemAverage(
-		wxTRANSLATE("Average upload time: %s"), s_totalUploadTime, s_totalSuccUploads, dmTime));
+	tmpRoot2->AddChild((new CStatTreeItemAverage(wxTRANSLATE("Average upload time: %s"),
+				    s_totalUploadTime,
+				    s_totalSuccUploads,
+				    dmTime))
+				   ->SetKey("upload_avg_time"));
 
-	tmpRoot2 = tmpRoot1->AddChild(new CStatTreeItemBase(wxTRANSLATE("Downloads")), 1);
+	tmpRoot2 =
+		tmpRoot1->AddChild((new CStatTreeItemBase(wxTRANSLATE("Downloads")))->SetKey("downloads"), 1);
 	s_sessionDownload = static_cast<CStatTreeItemUlDlCounter *>(tmpRoot2->AddChild(
 		new CStatTreeItemUlDlCounter(wxTRANSLATE("Downloaded Data (Session (Total)): %s"),
 			theStats::GetTotalReceivedBytes,
@@ -849,18 +854,24 @@ void CStatistics::InitStatsTree()
 	s_activeDownloads = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
 		new CStatTreeItemNativeCounter(wxTRANSLATE("Active Downloads (chunks): %s"))));
 
-	tmpRoot1->AddChild(new CStatTreeItemRatio(wxTRANSLATE("Session UL:DL Ratio (Total): %s"),
-				   s_sessionUpload,
-				   s_sessionDownload,
-				   theStats::GetTotalSentBytes,
-				   theStats::GetTotalReceivedBytes),
+	tmpRoot1->AddChild((new CStatTreeItemRatio(wxTRANSLATE("Session UL:DL Ratio (Total): %s"),
+				    s_sessionUpload,
+				    s_sessionDownload,
+				    theStats::GetTotalSentBytes,
+				    theStats::GetTotalReceivedBytes))
+				   ->SetKey("ul_dl_ratio"),
 		3);
 
-	tmpRoot1 = s_statTree->AddChild(new CStatTreeItemBase(wxTRANSLATE("Connection")));
-	tmpRoot1->AddChild(new CStatTreeItemAverageSpeed(
-		wxTRANSLATE("Average download rate (Session): %s"), s_sessionDownload, s_uptime));
-	tmpRoot1->AddChild(new CStatTreeItemAverageSpeed(
-		wxTRANSLATE("Average upload rate (Session): %s"), s_sessionUpload, s_uptime));
+	tmpRoot1 = s_statTree->AddChild(
+		(new CStatTreeItemBase(wxTRANSLATE("Connection")))->SetKey("connection"));
+	tmpRoot1->AddChild(
+		(new CStatTreeItemAverageSpeed(
+			 wxTRANSLATE("Average download rate (Session): %s"), s_sessionDownload, s_uptime))
+			->SetKey("avg_download_rate"));
+	tmpRoot1->AddChild(
+		(new CStatTreeItemAverageSpeed(
+			 wxTRANSLATE("Average upload rate (Session): %s"), s_sessionUpload, s_uptime))
+			->SetKey("avg_upload_rate"));
 	s_downloadrate = static_cast<CStatTreeItemRateCounter *>(tmpRoot1->AddChild(
 		new CStatTreeItemRateCounter(wxTRANSLATE("Max download rate (Session): %s"), true, 30000)));
 	s_uploadrate = static_cast<CStatTreeItemRateCounter *>(tmpRoot1->AddChild(
@@ -878,7 +889,8 @@ void CStatistics::InitStatsTree()
 	s_avgConnections = static_cast<CStatTreeItemSimple *>(tmpRoot1->AddChild(
 		new CStatTreeItemSimple(wxTRANSLATE("Average Connections (estimate): %g"))));
 	s_avgConnections->SetValue(0.0);
-	tmpRoot1->AddChild(new CStatTreeItemPeakConnections(wxTRANSLATE("Peak Connections (estimate): %i")));
+	tmpRoot1->AddChild((new CStatTreeItemPeakConnections(wxTRANSLATE("Peak Connections (estimate): %i")))
+				   ->SetKey("peak_connections"));
 
 	s_clients = static_cast<CStatTreeItemHiddenCounter *>(s_statTree->AddChild(
 		new CStatTreeItemHiddenCounter(wxTRANSLATE("Clients"), stSortChildren | stSortByValue)));
@@ -897,11 +909,12 @@ void CStatistics::InitStatsTree()
 	s_banned = static_cast<CStatTreeItemNativeCounter *>(
 		s_clients->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Banned: %s")), 1));
 	s_clients->AddChild(
-		new CStatTreeItemTotalClients(wxTRANSLATE("Total: %i Known: %i"), s_clients, s_unknown),
+		(new CStatTreeItemTotalClients(wxTRANSLATE("Total: %i Known: %i"), s_clients, s_unknown))
+			->SetKey("clients_total"),
 		0x80000000);
 
 	// TODO: Use counters?
-	tmpRoot1 = s_statTree->AddChild(new CStatTreeItemBase(wxTRANSLATE("Servers")));
+	tmpRoot1 = s_statTree->AddChild((new CStatTreeItemBase(wxTRANSLATE("Servers")))->SetKey("servers"));
 	s_workingServers = static_cast<CStatTreeItemSimple *>(
 		tmpRoot1->AddChild(new CStatTreeItemSimple(wxTRANSLATE("Working Servers: %i"))));
 	s_failedServers = static_cast<CStatTreeItemSimple *>(
@@ -924,14 +937,66 @@ void CStatistics::InitStatsTree()
 		tmpRoot1->AddChild(new CStatTreeItemSimple(wxTRANSLATE("Server Occupation: %.2f%%"))));
 	s_serverOccupation->SetValue(0.0);
 
-	tmpRoot1 = s_statTree->AddChild(new CStatTreeItemBase(wxTRANSLATE("Shared Files")));
+	tmpRoot1 = s_statTree->AddChild(
+		(new CStatTreeItemBase(wxTRANSLATE("Shared Files")))->SetKey("shared_files"));
 	s_numberOfShared = static_cast<CStatTreeItemCounter *>(
 		tmpRoot1->AddChild(new CStatTreeItemCounter(wxTRANSLATE("Number of Shared Files: %s"))));
 	s_sizeOfShare = static_cast<CStatTreeItemCounter *>(
 		tmpRoot1->AddChild(new CStatTreeItemCounter(wxTRANSLATE("Total size of Shared Files: %s"))));
 	s_sizeOfShare->SetDisplayMode(dmBytes);
-	tmpRoot1->AddChild(new CStatTreeItemAverage(
-		wxTRANSLATE("Average file size: %s"), s_sizeOfShare, s_numberOfShared, dmBytes));
+	tmpRoot1->AddChild(
+		(new CStatTreeItemAverage(
+			 wxTRANSLATE("Average file size: %s"), s_sizeOfShare, s_numberOfShared, dmBytes))
+			->SetKey("shared_avg_size"));
+
+	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY). Assigned
+	// here so they stay fixed regardless of label wording or translation.
+	// See docs/api/REFERENCE.md (GET /api/v0/stats/tree).
+	s_uptime->SetKey("uptime");
+	s_sessionUpload->SetKey("upload_data");
+	s_totalUpOverhead->SetKey("upload_total_overhead");
+	s_fileReqUpOverhead->SetKey("upload_filereq_overhead");
+	s_sourceXchgUpOverhead->SetKey("upload_srcexch_overhead");
+	s_serverUpOverhead->SetKey("upload_server_overhead");
+	s_kadUpOverhead->SetKey("upload_kad_overhead");
+	s_cryptUpOverhead->SetKey("upload_crypt_overhead");
+	s_activeUploads->SetKey("active_uploads");
+	s_waitingUploads->SetKey("waiting_uploads");
+	s_totalSuccUploads->SetKey("upload_sessions_success");
+	s_totalFailedUploads->SetKey("upload_sessions_failed");
+	s_sessionDownload->SetKey("download_data");
+	s_totalDownOverhead->SetKey("download_total_overhead");
+	s_fileReqDownOverhead->SetKey("download_filereq_overhead");
+	s_sourceXchgDownOverhead->SetKey("download_srcexch_overhead");
+	s_serverDownOverhead->SetKey("download_server_overhead");
+	s_kadDownOverhead->SetKey("download_kad_overhead");
+	s_cryptDownOverhead->SetKey("download_crypt_overhead");
+	s_foundSources->SetKey("found_sources");
+	s_activeDownloads->SetKey("active_downloads");
+	s_downloadrate->SetKey("max_download_rate");
+	s_uploadrate->SetKey("max_upload_rate");
+	s_reconnects->SetKey("reconnects");
+	s_sinceFirstTransfer->SetKey("since_first_transfer");
+	s_sinceConnected->SetKey("connected_since");
+	s_activeConnections->SetKey("active_connections");
+	s_limitReached->SetKey("max_conn_limit_reached");
+	s_avgConnections->SetKey("avg_connections");
+	s_clients->SetKey("clients");
+	s_unknown->SetKey("clients_unknown");
+	s_filtered->SetKey("clients_filtered");
+	s_banned->SetKey("clients_banned");
+	s_workingServers->SetKey("servers_working");
+	s_failedServers->SetKey("servers_failed");
+	s_totalServers->SetKey("servers_total");
+	s_deletedServers->SetKey("servers_deleted");
+	s_filteredServers->SetKey("servers_filtered");
+	s_usersOnWorking->SetKey("servers_users_working");
+	s_filesOnWorking->SetKey("servers_files_working");
+	s_totalUsers->SetKey("servers_total_users");
+	s_totalFiles->SetKey("servers_total_files");
+	s_serverOccupation->SetKey("servers_occupation");
+	s_numberOfShared->SetKey("shared_count");
+	s_sizeOfShare->SetKey("shared_size");
 }
 
 void CStatistics::UpdateStatsTree()

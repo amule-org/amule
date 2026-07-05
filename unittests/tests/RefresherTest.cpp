@@ -588,8 +588,14 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 	CECTag root(EC_TAG_STATTREE_NODE, wxString("root-container-label-discarded"));
 	{
 		CECTag transfer(EC_TAG_STATTREE_NODE, wxString("Transfer"));
+		// Nodes may carry a stable machine key; Connection below omits it
+		// to exercise the "no key" path.
+		transfer.AddTag(CECTag(EC_TAG_STAT_NODE_KEY, wxString("transfer")));
 		{
 			CECTag total(EC_TAG_STATTREE_NODE, wxString("Total bytes transferred: 12.3 GiB"));
+			// Raw numeric ratios ride along as distinctly-named double tags.
+			total.AddTag(CECTag(EC_TAG_STAT_NODE_RATIO, static_cast<double>(2.5)));
+			total.AddTag(CECTag(EC_TAG_STAT_NODE_RATIO_TOTAL, static_cast<double>(3.5)));
 			transfer.AddTag(total);
 		}
 		root.AddTag(transfer);
@@ -609,10 +615,25 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 	ASSERT_EQUALS(static_cast<size_t>(2), out.children.size());
 	// Transfer subtree.
 	ASSERT_EQUALS(std::string("Transfer"), out.children[0].label);
+	// Stable machine key is parsed when present...
+	ASSERT_EQUALS(std::string("transfer"), out.children[0].key);
 	ASSERT_EQUALS(static_cast<size_t>(1), out.children[0].children.size());
 	ASSERT_EQUALS(std::string("Total bytes transferred: 12.3 GiB"), out.children[0].children[0].label);
+	// ...and empty when the node omits the tag (Transfer's child + Connection).
+	ASSERT_TRUE(out.children[0].children[0].key.empty());
+	// Raw numeric ratios are parsed from the distinctly-named double tags.
+	ASSERT_TRUE(out.children[0].children[0].has_ratio_session);
+	ASSERT_TRUE(out.children[0].children[0].ratio_session > 2.49 &&
+		    out.children[0].children[0].ratio_session < 2.51);
+	ASSERT_TRUE(out.children[0].children[0].has_ratio_total);
+	ASSERT_TRUE(out.children[0].children[0].ratio_total > 3.49 &&
+		    out.children[0].children[0].ratio_total < 3.51);
+	// Nodes without the ratio tags report neither.
+	ASSERT_TRUE(!out.children[0].has_ratio_session);
+	ASSERT_TRUE(!out.children[0].has_ratio_total);
 	// Connection is a leaf at this depth.
 	ASSERT_EQUALS(std::string("Connection"), out.children[1].label);
+	ASSERT_TRUE(out.children[1].key.empty());
 	ASSERT_EQUALS(static_cast<size_t>(0), out.children[1].children.size());
 }
 

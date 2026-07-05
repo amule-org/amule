@@ -3203,6 +3203,12 @@ void WriteStatsValue(CJsonWriter &w, const webapi::StatsTreeValue &v)
 void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 {
 	w.BeginObject();
+	// Stable machine key, when the daemon provides one (omitted otherwise
+	// so a legacy daemon simply yields no "key" field).
+	if (!n.key.empty()) {
+		w.Key("key");
+		w.ValueString(wxString::FromUTF8(n.key.c_str()));
+	}
 	w.Key("label");
 	w.ValueString(wxString::FromUTF8(n.label.c_str()));
 	w.Key("values");
@@ -3210,6 +3216,22 @@ void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 	for (const auto &v : n.values)
 		WriteStatsValue(w, v);
 	w.EndArray();
+	// Raw numeric UL:DL ratio (download-per-upload), for the ratio node only.
+	// Emitted when the daemon provided at least one component; each field is
+	// present only when computable, so a legacy daemon yields no "ratio" key.
+	if (n.has_ratio_session || n.has_ratio_total) {
+		w.Key("ratio");
+		w.BeginObject();
+		if (n.has_ratio_session) {
+			w.Key("session");
+			w.ValueDouble(n.ratio_session);
+		}
+		if (n.has_ratio_total) {
+			w.Key("total");
+			w.ValueDouble(n.ratio_total);
+		}
+		w.EndObject();
+	}
 	w.Key("children");
 	w.BeginArray();
 	for (const auto &c : n.children)

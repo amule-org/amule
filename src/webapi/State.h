@@ -309,9 +309,21 @@ struct StatsTreeValue
 // text + C-locale numbers, independent of the amuleapi/amuled --locale.
 struct StatsTreeNode
 {
+	// Stable, untranslated machine key (EC_TAG_STAT_NODE_KEY). Empty when
+	// the node carries no key; omitted from JSON in that case.
+	std::string key;
 	std::string label;
 	std::vector<StatsTreeValue> values;
 	std::vector<StatsTreeNode> children;
+
+	// Raw numeric UL:DL ratio (download-per-upload) for the ratio node,
+	// parsed from EC_TAG_STAT_NODE_RATIO[_TOTAL]. Present only on that node
+	// and only when the daemon could compute it (both sides > 0); surfaced
+	// as a "ratio" object so clients need not parse the composite string.
+	bool has_ratio_session = false;
+	double ratio_session = 0.0;
+	bool has_ratio_total = false;
+	double ratio_total = 0.0;
 };
 
 // Time-series data for /stats/graphs/{graph}. amuled keeps a

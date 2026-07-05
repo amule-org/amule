@@ -1331,6 +1331,24 @@ void ParseStatsTreeNode(const CECTag *node, StatsTreeNode &out)
 	// "Uptime: %s"); NOT GetDisplayString(), which translates and locale-formats
 	// in the amuleapi process and would make output depend on --locale.
 	out.label = std::string(n->GetStringData().utf8_str());
+	// Stable machine key, if the daemon set one. Legacy daemons omit the
+	// tag; out.key stays empty and is dropped from the JSON.
+	const CECTag *keyTag = n->GetTagByName(EC_TAG_STAT_NODE_KEY);
+	if (keyTag) {
+		out.key = std::string(keyTag->GetStringData().utf8_str());
+	}
+	// Raw numeric ratio (download-per-upload), only present on the ratio node
+	// and only when the daemon could compute it. Legacy daemons omit both.
+	const CECTag *ratioTag = n->GetTagByName(EC_TAG_STAT_NODE_RATIO);
+	if (ratioTag) {
+		out.has_ratio_session = true;
+		out.ratio_session = ratioTag->GetDoubleData();
+	}
+	const CECTag *ratioTotalTag = n->GetTagByName(EC_TAG_STAT_NODE_RATIO_TOTAL);
+	if (ratioTotalTag) {
+		out.has_ratio_total = true;
+		out.ratio_total = ratioTotalTag->GetDoubleData();
+	}
 	for (CECTag::const_iterator it = n->begin(); it != n->end(); ++it) {
 		if (it->GetTagName() == EC_TAG_STAT_NODE_VALUE) {
 			StatsTreeValue v;
