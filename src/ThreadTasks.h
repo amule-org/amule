@@ -144,6 +144,27 @@ protected:
 };
 
 /**
+ * This task calculates MD4 & AICH hashes for a known file to
+ * check file integrity against the stored hashes in the .met files
+ */
+class CVerifyLocalDataTask : public CThreadTask
+{
+public:
+	explicit CVerifyLocalDataTask(const CMD4Hash &md4);
+
+protected:
+	/** See CThreadTask::Entry */
+	virtual void Entry();
+
+	std::vector<uint16> m_corruptedMD4;
+	std::vector<std::pair<uint16, std::vector<uint8>>> m_corruptedAICH;
+	CMD4Hash m_fileID;
+
+private:
+	void PrintReport(const CPath &fullPath, const bool checkedAICH);
+};
+
+/**
  * This task performs the final tasks on a complete download.
  *
  * This includes finding a usable destination filename, removing

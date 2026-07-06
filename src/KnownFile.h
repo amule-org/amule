@@ -165,6 +165,7 @@ class CFile;
 class CKnownFile : public CAbstractFile, public CECID
 {
 	friend class CHashingTask;
+	friend class CVerifyLocalDataTask;
 
 public:
 	CKnownFile();

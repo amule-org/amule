@@ -195,6 +195,10 @@ private:
 	 */
 	void OnAddCollection(wxCommandEvent &WXUNUSED(evt));
 
+#ifndef CLIENT_GUI
+	void OnVerifyLocalData(wxCommandEvent &WXUNUSED(evt));
+#endif
+
 	//! Pointer used to ensure that the menu isn't displayed twice.
 	wxMenu *m_menu;
 

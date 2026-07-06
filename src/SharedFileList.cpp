@@ -1698,7 +1698,7 @@ void CSharedFileList::CheckAICHHashes(const std::list<CAICHHash> &hashes)
 	wxMutexLocker locker(list_mut);
 
 	// Now we check that all files which are in the sharedfilelist have a
-	// corresponding hash in our list. Those how don't are queued for hashing.
+	// corresponding hash in our list. Those who don't are queued for hashing.
 	CKnownFileMap::iterator it = m_Files_map.begin();
 	for (; it != m_Files_map.end(); ++it) {
 		const CKnownFile *file = it->second;

@@ -84,6 +84,7 @@ enum
 	MP_CLOSE_ALL_TABS,
 	MP_CLOSE_OTHER_TABS,
 	MP_RENAME,
+	MP_VERIFY,
 
 	/* Razor 1a - Modif by MikaelB
 	     Opcodes for :

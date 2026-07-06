@@ -501,6 +501,186 @@ bool CAICHSyncTask::ConvertToKnown2ToKnown264()
 }
 
 ////////////////////////////////////////////////////////////
+// CVerifyLocalDataTask
+
+CVerifyLocalDataTask::CVerifyLocalDataTask(const CMD4Hash &md4)
+: CThreadTask("VerifyLocalData", md4.Encode(), ETP_High) /*ETP_High as this is requested by the user*/
+, m_fileID(md4)
+{
+}
+
+void CVerifyLocalDataTask::PrintReport(const CPath &fullPath, const bool checkedAICH)
+{
+
+	std::string scope = checkedAICH ? "MD4 & AICH" : "MD4";
+
+	if (m_corruptedMD4.empty() && m_corruptedAICH.empty()) {
+		AddLogLineN(CFormat(_("Verify Local Data (%s): Result OK for %s")) % scope % fullPath);
+		return;
+	}
+
+	std::string res_md4;
+	res_md4.reserve(10 + m_corruptedMD4.size() * 3);
+	for (size_t i = 0; i < m_corruptedMD4.size(); ++i) {
+		res_md4 += std::to_string(static_cast<int>(m_corruptedMD4[i]));
+		if (i < m_corruptedMD4.size() - 1) {
+			res_md4 += ",";
+		}
+	}
+
+	std::string res_aich;
+	res_aich.reserve(10 + m_corruptedAICH.size() * 5);
+	if (checkedAICH) {
+		for (size_t i = 0; i < m_corruptedAICH.size(); ++i) {
+			res_aich += std::to_string(static_cast<int>(m_corruptedAICH[i].first)) + ": (";
+
+			for (size_t j = 0; j < m_corruptedAICH[i].second.size(); ++j) {
+				res_aich += std::to_string(static_cast<int>(m_corruptedAICH[i].second[j]));
+				if (j < m_corruptedAICH[i].second.size() - 1) {
+					res_aich += ",";
+				}
+			}
+			res_aich += ")";
+			if (i < m_corruptedAICH.size() - 1) {
+				res_aich += ", ";
+			}
+		}
+	}
+
+	AddLogLineC(CFormat(_("Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s")) %
+		    scope % fullPath % res_md4 % (checkedAICH ? "AICH: " : "") %
+		    (checkedAICH ? res_aich : ""));
+}
+
+void CVerifyLocalDataTask::Entry()
+{
+	CKnownFile *knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
+	if (knownFile == nullptr) {
+		AddDebugLogLineC(logVerifyLocalData,
+			CFormat("Warning, file was removed before verifying it: %s") % GetDesc());
+		return;
+	}
+
+	if (knownFile->IsPartFile()) {
+		AddDebugLogLineC(
+			logVerifyLocalData, CFormat("Warning, file is a part file, skipping %s") % GetDesc());
+		return;
+	}
+
+	CFileAutoClose file;
+	CPath filepath = knownFile->GetFilePath();
+	CPath filename = knownFile->GetFileName();
+	CPath fullPath = filepath.JoinPaths(filename);
+	if (!file.Open(fullPath, CFile::read)) {
+		AddDebugLogLineC(
+			logVerifyLocalData, CFormat("Warning, failed to open file, skipping: %s") % fullPath);
+		return;
+	}
+
+	uint64 fileLength = 0;
+	try {
+		fileLength = file.GetLength();
+	} catch (const CIOFailureException &) {
+		AddDebugLogLineC(logVerifyLocalData,
+			CFormat("Warning, failed to retrieve file-length, skipping: %s") % fullPath);
+		return;
+	}
+
+	if (fileLength > MAX_FILE_SIZE) {
+		AddDebugLogLineC(logVerifyLocalData,
+			CFormat("Warning, file is larger than supported size, skipping: %s") % fullPath);
+		return;
+	} else if (fileLength == 0) {
+		// Zero-size partfiles should be hashed, but not zero-sized shared-files.
+		AddDebugLogLineC(
+			logVerifyLocalData, CFormat("Warning, 0-size file, skipping: %s") % fullPath);
+
+		return;
+	}
+
+	// We don't use directly the AICHHashSet from the knownFile, it is not thread-safe:
+	// While we are checking AICH hashes here, a peer could send us an OP_AICHREQUEST on the same
+	// file which will call LoadHashSet() and FreeHashSet() on the same working set...
+	// Create our own working copy here
+	CKnownFile storedFile;
+	storedFile.SetFileSize(knownFile->GetFileSize());
+	storedFile.GetAICHHashset()->SetMasterHash(
+		knownFile->GetAICHHashset()->GetMasterHash(), knownFile->GetAICHHashset()->GetStatus());
+	bool isAICHloaded = storedFile.GetAICHHashset()->LoadHashSet();
+
+	if (!isAICHloaded) {
+		AddDebugLogLineN(logVerifyLocalData,
+			CFormat("Verify Local Data error: failed to load hashset. File: %s") %
+				knownFile->GetFileName());
+	}
+
+	try {
+		for (uint16 part = 0; part < knownFile->GetPartCount() && !TestDestroy(); part++) {
+
+			const uint64 offset = part * PARTSIZE; // We'll read at most PARTSIZE bytes per cycle
+			const uint64 partLength = knownFile->GetPartSize(part);
+
+			CMD4Hash md4Hash;
+			CKnownFile calculatedCAICHOwner;
+			CAICHHashTree *aichHash = nullptr;
+			if (isAICHloaded) {
+				calculatedCAICHOwner.SetFileSize(knownFile->GetFileSize());
+				aichHash = calculatedCAICHOwner.GetAICHHashset()->m_pHashTree.FindHash(
+					offset, partLength);
+			}
+
+			knownFile->CreateHashFromFile(file, offset, partLength, &md4Hash, aichHash);
+			if (isAICHloaded) {
+				std::vector<uint8> corruptedAICHinThisPart;
+				uint8 block = 0;
+				for (uint64 pos = offset; pos < offset + partLength;
+					block++, pos += EMBLOCKSIZE) {
+					const uint32 nBlockSize =
+						min<uint32>(EMBLOCKSIZE, offset + partLength - pos);
+					CAICHHashTree *pVerifiedBlock =
+						storedFile.GetAICHHashset()->m_pHashTree.FindHash(
+							pos, nBlockSize);
+					CAICHHashTree *pOurBlock =
+						calculatedCAICHOwner.GetAICHHashset()->m_pHashTree.FindHash(
+							pos, nBlockSize);
+					if (pVerifiedBlock == nullptr || pOurBlock == nullptr ||
+						!pVerifiedBlock->GetHashValid() ||
+						!pOurBlock->GetHashValid()) {
+						AddDebugLogLineN(logVerifyLocalData,
+							CFormat("Verify Local Data error: Invalid/NULL AICH "
+								"block. File: %s, part %d, block %d") %
+								knownFile->GetFileName() % part % block);
+						continue;
+					}
+					if (pOurBlock->GetHash() != pVerifiedBlock->GetHash())
+						corruptedAICHinThisPart.push_back(block);
+				}
+				if (!corruptedAICHinThisPart.empty())
+					m_corruptedAICH.emplace_back(part, corruptedAICHinThisPart);
+			}
+
+			// For files smaller than PARTSIZE, GetPartHash is empty, and the MD4 of the part
+			// is the same as the MD4 of the file, no ID=MD4(concatenation of parts' MD4) is done
+			// Check comment in CKnownFile::SetFileSize() for further info
+			if (knownFile->GetHashCount() == 0) {
+				if (md4Hash != m_fileID)
+					m_corruptedMD4.push_back(part);
+				break;
+			}
+
+			if (knownFile->GetPartHash(part) != md4Hash)
+				m_corruptedMD4.push_back(part);
+		}
+
+		if (!TestDestroy()) // don't print an unfinished report
+			PrintReport(fullPath, isAICHloaded);
+
+	} catch (const CSafeIOException &e) {
+		AddDebugLogLineC(logVerifyLocalData, "IO exception while hashing file: " + e.what());
+	}
+}
+
+////////////////////////////////////////////////////////////
 // CCompletionTask
 
 CCompletionTask::CCompletionTask(const CPartFile *file)

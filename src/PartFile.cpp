@@ -4047,7 +4047,7 @@ void CPartFile::AICHRecoveryDataAvailable(uint16 nPart)
 		return;
 	}
 
-	// now compare the hash we just did, to the verified hash and readd all blocks which are ok
+	// now compare the hash we just did, to the verified hash and read all blocks which are ok
 	uint32 nRecovered = 0;
 	for (uint32 pos = 0; pos < length; pos += EMBLOCKSIZE) {
 		const uint32 nBlockSize = min<uint32>(EMBLOCKSIZE, length - pos);

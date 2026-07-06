@@ -75,7 +75,8 @@ CDebugCategory g_debugcats[] = { CDebugCategory(logGeneral, "General"),
 	CDebugCategory(logEC, "External Connect"),
 	CDebugCategory(logHTTP, "HTTP"),
 	CDebugCategory(logAsio, "Asio Sockets"),
-	CDebugCategory(logMediaProbe, "Media Probe") };
+	CDebugCategory(logMediaProbe, "Media Probe"),
+	CDebugCategory(logVerifyLocalData, "Verify Local Data") };
 
 const int categoryCount = itemsof(g_debugcats);
 
