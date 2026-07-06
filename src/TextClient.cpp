@@ -858,7 +858,7 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		}
 		tab = response->GetTagByNameSafe(EC_TAG_PREFS_FILES);
 		s << CFormat(_("Endgame source rotation is %s.\n")) %
-				((tab->GetTagByName(EC_TAG_FILES_ENDGAME) == NULL) ? _("OFF") : _("ON"));
+				((tab->GetTagByName(EC_TAG_FILES_ENDGAME) == nullptr) ? _("OFF") : _("ON"));
 	} break;
 	case EC_OP_STRINGS:
 		for (CECPacket::const_iterator it = response->begin(); it != response->end(); ++it) {

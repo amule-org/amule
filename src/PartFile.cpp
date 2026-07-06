@@ -1529,8 +1529,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 		// synchronously removes clients).
 		std::vector<CClientRef> temp_list(
 			m_downloadingSourcesList.begin(), m_downloadingSourcesList.end());
-		for (size_t i = 0; i < temp_list.size(); ++i) {
-			CUpDownClient *cur_src = temp_list[i].GetClient();
+		for (CClientRef &ref : temp_list) {
+			CUpDownClient *cur_src = ref.GetClient();
 			if (cur_src && cur_src->GetDownloadState() == DS_DOWNLOADING) {
 				++transferingsrc;
 				kBpsDown += cur_src->TickDownloadAndMeasure();
@@ -1542,8 +1542,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 		// (e.g. if TickDownloadAndMeasure() triggers DropSlowSources, which
 		// synchronously removes clients).
 		std::vector<CClientRef> temp_list(m_SrcList.begin(), m_SrcList.end());
-		for (size_t i = 0; i < temp_list.size(); ++i) {
-			CUpDownClient *cur_src = temp_list[i].GetClient();
+		for (CClientRef &ref : temp_list) {
+			CUpDownClient *cur_src = ref.GetClient();
 			if (!cur_src) {
 				continue;
 			}

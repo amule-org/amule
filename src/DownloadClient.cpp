@@ -644,7 +644,7 @@ void CUpDownClient::SendBlockRequests()
 		CUpDownClient *slower_client = NULL;
 
 		bool nearCompletion =
-			m_reqfile && m_reqfile->GetPartCount() > 4 &&
+			m_reqfile->GetPartCount() > 4 &&
 			(m_reqfile->GetFileSize() > m_reqfile->GetCompletedSize()) &&
 			((m_reqfile->GetFileSize() - m_reqfile->GetCompletedSize()) <= (4 * PARTSIZE));
 
@@ -669,6 +669,7 @@ void CUpDownClient::SendBlockRequests()
 		}
 
 		if (slower_client == this && nearCompletion) {
+			// requeue instead of self-banishing at endgame
 			slower_client->SetDownloadState(DS_ONQUEUE);
 		} else {
 			slower_client->SetDownloadState(DS_NONEEDEDPARTS);
@@ -709,6 +710,7 @@ void CUpDownClient::SendBlockRequests()
 					"here) to " +
 						GetFullIP());
 				if (nearCompletion) {
+					// requeue instead of self-banishing at endgame
 					SetDownloadState(DS_ONQUEUE);
 				} else {
 					SetDownloadState(DS_NONEEDEDPARTS);
@@ -1849,17 +1851,13 @@ bool CUpDownClient::HasUsefulBlocksFor(CUpDownClient *other) const
 {
 	// Check part-level availability, not block-level.
 	// A block fits within a single part (180 KB << 9.28 MB).
-	for (std::list<Requested_Block_Struct *>::const_iterator it = m_DownloadBlocks_list.begin();
-		it != m_DownloadBlocks_list.end();
-		++it) {
-		if (other->IsPartAvailable((*it)->StartOffset / PARTSIZE)) {
+	for (const Requested_Block_Struct *block : m_DownloadBlocks_list) {
+		if (other->IsPartAvailable(block->StartOffset / PARTSIZE)) {
 			return true;
 		}
 	}
-	for (std::list<Pending_Block_Struct *>::const_iterator it = m_PendingBlocks_list.begin();
-		it != m_PendingBlocks_list.end();
-		++it) {
-		if (other->IsPartAvailable((*it)->block->StartOffset / PARTSIZE)) {
+	for (const Pending_Block_Struct *pblock : m_PendingBlocks_list) {
+		if (other->IsPartAvailable(pblock->block->StartOffset / PARTSIZE)) {
 			return true;
 		}
 	}

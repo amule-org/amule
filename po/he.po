@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-06 22:41+0200\n"
+"POT-Creation-Date: 2026-07-06 23:08+0200\n"
 "PO-Revision-Date: 2026-07-05 16:22+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -119,7 +119,7 @@ msgstr "מידע"
 msgid "The specified userhash is not valid!"
 msgstr "גיבוב-המשתמש הספציפי אינו תקף!"
 
-#: src/AppImageIntegration.cpp:296
+#: src/AppImageIntegration.cpp:313
 msgid ""
 "aMule can install desktop launchers, icons, and shell command shortcuts into your home directory so it appears in your application menu like a regularly installed app.\n"
 "\n"
@@ -128,48 +128,48 @@ msgid ""
 "Install desktop integration now?"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:302
+#: src/AppImageIntegration.cpp:319
 msgid "Add aMule to your application menu?"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:304
+#: src/AppImageIntegration.cpp:321
 msgid "Install"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:304
+#: src/AppImageIntegration.cpp:321
 msgid "Not now"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:305
+#: src/AppImageIntegration.cpp:322
 msgid "Don't ask again"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:325
+#: src/AppImageIntegration.cpp:342
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:328 src/AppImageIntegration.cpp:341
-#: src/AppImageIntegration.cpp:362
+#: src/AppImageIntegration.cpp:345 src/AppImageIntegration.cpp:358
+#: src/AppImageIntegration.cpp:379
 #, fuzzy
 msgid "aMule integration failed"
 msgstr "התחברות נכשלה "
 
-#: src/AppImageIntegration.cpp:337
+#: src/AppImageIntegration.cpp:354
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:358
+#: src/AppImageIntegration.cpp:375
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:388
+#: src/AppImageIntegration.cpp:405
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:393
+#: src/AppImageIntegration.cpp:410
 msgid ""
 "aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n"
 "\n"
@@ -178,15 +178,15 @@ msgid ""
 "Restart aMule now?"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:399
+#: src/AppImageIntegration.cpp:416
 msgid "aMule installed"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:401
+#: src/AppImageIntegration.cpp:418
 msgid "Restart now"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:401
+#: src/AppImageIntegration.cpp:418
 msgid "Later"
 msgstr ""
 
@@ -293,7 +293,7 @@ msgid "Password set and external connections enabled."
 msgstr "גישה חיצונית חדשה התקבלה"
 
 #: src/amule.cpp:691 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1128 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1129 src/SharedFilesCtrl.cpp:321
 msgid "WARNING"
 msgstr "אזהרה"
 
@@ -477,11 +477,11 @@ msgstr ""
 msgid "No networks selected"
 msgstr ""
 
-#: src/amule.cpp:2495 src/TextClient.cpp:855
+#: src/amule.cpp:2495 src/TextClient.cpp:882
 msgid "with LowID"
 msgstr "עם מ\"ז נמוך (LowID)"
 
-#: src/amule.cpp:2495 src/TextClient.cpp:856
+#: src/amule.cpp:2495 src/TextClient.cpp:883
 msgid "with HighID"
 msgstr "עם מ\"ז גבוהה (HighID)"
 
@@ -616,8 +616,8 @@ msgstr "קאד: מכובה"
 #: src/amuleDlg.cpp:893 src/DownloadListCtrl.cpp:408
 #: src/DownloadListCtrl.cpp:647 src/FriendListCtrl.cpp:177
 #: src/muuli_wdr.cpp:682 src/muuli_wdr.cpp:733 src/muuli_wdr.cpp:795
-#: src/muuli_wdr.cpp:847 src/muuli_wdr.cpp:2019 src/muuli_wdr.cpp:2101
-#: src/muuli_wdr.cpp:2824 src/ServerListCtrl.cpp:160 src/ServerListCtrl.cpp:537
+#: src/muuli_wdr.cpp:847 src/muuli_wdr.cpp:2023 src/muuli_wdr.cpp:2105
+#: src/muuli_wdr.cpp:2828 src/ServerListCtrl.cpp:160 src/ServerListCtrl.cpp:537
 #: src/ServerListCtrl.cpp:558 src/TransferWnd.cpp:373
 #: src/utils/wxCas/src/wxcasprefs.cpp:235
 msgid "Cancel"
@@ -628,7 +628,7 @@ msgid "Stop the current connection attempts"
 msgstr "הפסק את ניסיונות ההתחברות הנוכחיים"
 
 #: src/amuleDlg.cpp:899 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:963
-#: src/muuli_wdr.cpp:2223
+#: src/muuli_wdr.cpp:2227
 msgid "Disconnect"
 msgstr "מנותק"
 
@@ -637,7 +637,7 @@ msgid "Disconnect from the currently connected networks"
 msgstr "התנתק מהרשתות שאליהם אתה מחובר כעת"
 
 #: src/amuleDlg.cpp:905 src/MuleTrayIcon.cpp:465 src/MuleTrayIcon.cpp:966
-#: src/muuli_wdr.cpp:2372 src/muuli_wdr.cpp:2821 src/muuli_wdr.cpp:3153
+#: src/muuli_wdr.cpp:2376 src/muuli_wdr.cpp:2825 src/muuli_wdr.cpp:3157
 msgid "Connect"
 msgstr "התחבר"
 
@@ -692,7 +692,7 @@ msgstr "אישרור יצאיה"
 msgid "Launch Command: "
 msgstr ""
 
-#: src/amuleDlg.cpp:1396 src/muuli_wdr.cpp:1824 src/Preferences.cpp:890
+#: src/amuleDlg.cpp:1396 src/muuli_wdr.cpp:1828 src/Preferences.cpp:891
 msgid "- default -"
 msgstr ""
 
@@ -707,81 +707,81 @@ msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr ""
 
 #: src/amuleDlg.cpp:1531 src/amuleDlg.cpp:1750 src/muuli_wdr.cpp:1412
-#: src/muuli_wdr.cpp:3155
+#: src/muuli_wdr.cpp:3159
 msgid "Networks"
 msgstr "רשתות"
 
-#: src/amuleDlg.cpp:1535 src/muuli_wdr.cpp:3155
+#: src/amuleDlg.cpp:1535 src/muuli_wdr.cpp:3159
 msgid "Networks Window"
 msgstr "חלון הרשתות"
 
-#: src/amuleDlg.cpp:1537 src/muuli_wdr.cpp:3156
+#: src/amuleDlg.cpp:1537 src/muuli_wdr.cpp:3160
 msgid "Searches"
 msgstr "חיפושים"
 
-#: src/amuleDlg.cpp:1541 src/muuli_wdr.cpp:3156
+#: src/amuleDlg.cpp:1541 src/muuli_wdr.cpp:3160
 msgid "Searches Window"
 msgstr "חלון החיפושים"
 
 #: src/amuleDlg.cpp:1543 src/DownloadListCtrl.cpp:638 src/muuli_wdr.cpp:380
-#: src/muuli_wdr.cpp:1514 src/muuli_wdr.cpp:3157 src/Statistics.cpp:829
+#: src/muuli_wdr.cpp:1514 src/muuli_wdr.cpp:3161 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "הורדות"
 
-#: src/amuleDlg.cpp:1547 src/muuli_wdr.cpp:3157
+#: src/amuleDlg.cpp:1547 src/muuli_wdr.cpp:3161
 #, fuzzy
 msgid "Downloads Window"
 msgstr "מוריד מהרשת"
 
-#: src/amuleDlg.cpp:1549 src/muuli_wdr.cpp:3048
+#: src/amuleDlg.cpp:1549 src/muuli_wdr.cpp:3052
 msgid "Shared files"
 msgstr ""
 
-#: src/amuleDlg.cpp:1553 src/muuli_wdr.cpp:3159
+#: src/amuleDlg.cpp:1553 src/muuli_wdr.cpp:3163
 msgid "Shared Files Window"
 msgstr "חלון הקבצים המשותפים"
 
-#: src/amuleDlg.cpp:1555 src/muuli_wdr.cpp:2688 src/muuli_wdr.cpp:3113
-#: src/muuli_wdr.cpp:3160
+#: src/amuleDlg.cpp:1555 src/muuli_wdr.cpp:2692 src/muuli_wdr.cpp:3117
+#: src/muuli_wdr.cpp:3164
 msgid "Messages"
 msgstr "הודעות"
 
-#: src/amuleDlg.cpp:1559 src/muuli_wdr.cpp:3160
+#: src/amuleDlg.cpp:1559 src/muuli_wdr.cpp:3164
 msgid "Messages Window"
 msgstr "חלון ההודעות"
 
-#: src/amuleDlg.cpp:1561 src/muuli_wdr.cpp:3161 src/PrefsUnifiedDlg.cpp:276
+#: src/amuleDlg.cpp:1561 src/muuli_wdr.cpp:3165 src/PrefsUnifiedDlg.cpp:277
 #: src/Statistics.cpp:779 src/Statistics.cpp:1226
 msgid "Statistics"
 msgstr "סטטיסטיקות"
 
-#: src/amuleDlg.cpp:1565 src/muuli_wdr.cpp:3161
+#: src/amuleDlg.cpp:1565 src/muuli_wdr.cpp:3165
 msgid "Statistics Graph Window"
 msgstr "חלון גרפי הסטטיסטיקה"
 
-#: src/amuleDlg.cpp:1568 src/muuli_wdr.cpp:3163 src/PrefsUnifiedDlg.cpp:292
+#: src/amuleDlg.cpp:1568 src/muuli_wdr.cpp:3167 src/PrefsUnifiedDlg.cpp:293
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "העדפות"
 
-#: src/amuleDlg.cpp:1572 src/muuli_wdr.cpp:3163
+#: src/amuleDlg.cpp:1572 src/muuli_wdr.cpp:3167
 msgid "Preferences Settings Window"
 msgstr "חלון הגדרת ההעדפות"
 
-#: src/amuleDlg.cpp:1575 src/muuli_wdr.cpp:3164
+#: src/amuleDlg.cpp:1575 src/muuli_wdr.cpp:3168
 msgid "Import"
 msgstr "ייבא"
 
-#: src/amuleDlg.cpp:1579 src/muuli_wdr.cpp:3164
+#: src/amuleDlg.cpp:1579 src/muuli_wdr.cpp:3168
 msgid "The partfile importer tool"
 msgstr "כלי הייבא עבור קובץ-החלקים"
 
-#: src/amuleDlg.cpp:1582 src/muuli_wdr.cpp:3165
+#: src/amuleDlg.cpp:1582 src/muuli_wdr.cpp:3169
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "אודות"
 
-#: src/amuleDlg.cpp:1582 src/muuli_wdr.cpp:3165
+#: src/amuleDlg.cpp:1582 src/muuli_wdr.cpp:3169
 msgid "About/Help"
 msgstr "אודות/עזרה"
 
@@ -885,8 +885,8 @@ msgstr ""
 #: src/FileDetailDialog.cpp:186 src/GenericClientListCtrl.cpp:1136
 #: src/GenericClientListCtrl.cpp:1147 src/GenericClientListCtrl.cpp:1157
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
-#: src/MuleTrayIcon.cpp:409 src/MuleTrayIcon.cpp:835 src/PartFile.cpp:2816
-#: src/PartFile.cpp:2822 src/Server.cpp:134 src/Server.cpp:210
+#: src/MuleTrayIcon.cpp:409 src/MuleTrayIcon.cpp:835 src/PartFile.cpp:2827
+#: src/PartFile.cpp:2833 src/Server.cpp:134 src/Server.cpp:210
 #: src/Statistics.cpp:1159
 msgid "Unknown"
 msgstr "לא ידוע"
@@ -1104,7 +1104,7 @@ msgid "Disabled"
 msgstr ""
 
 #: src/ClientDetailDialog.cpp:130 src/MuleTrayIcon.cpp:383
-#: src/ServerWnd.cpp:177 src/ServerWnd.cpp:224 src/TextClient.cpp:866
+#: src/ServerWnd.cpp:177 src/ServerWnd.cpp:224 src/TextClient.cpp:893
 msgid "Connected"
 msgstr "מחובר"
 
@@ -1250,19 +1250,19 @@ msgstr "אוטומטי [גבוה]"
 msgid "Very low"
 msgstr "מאוד נמוך"
 
-#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2070
+#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:641 src/muuli_wdr.cpp:2074
 #: src/ServerListCtrl.cpp:244 src/ServerListCtrl.cpp:408
 #: src/SharedFilesCtrl.cpp:132
 msgid "Low"
 msgstr "נמוך"
 
-#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2071
+#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2075
 #: src/ServerListCtrl.cpp:247 src/ServerListCtrl.cpp:409
 #: src/SharedFilesCtrl.cpp:133
 msgid "Normal"
 msgstr "רגיל"
 
-#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2072
+#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2076
 #: src/ServerListCtrl.cpp:250 src/ServerListCtrl.cpp:410
 #: src/SharedFilesCtrl.cpp:134
 msgid "High"
@@ -1294,7 +1294,7 @@ msgid "On Queue"
 msgstr "על התור"
 
 #: src/DataToText.cpp:76 src/libs/ec/cpp/ECSpecialTags.cpp:52
-#: src/OtherFunctions.cpp:695 src/PartFile.cpp:4358 src/TransferWnd.cpp:346
+#: src/OtherFunctions.cpp:695 src/PartFile.cpp:4369 src/TransferWnd.cpp:346
 msgid "Downloading"
 msgstr "מוריד מהרשת"
 
@@ -1354,8 +1354,8 @@ msgstr "שרת מקומי"
 msgid "Remote Server"
 msgstr "שרת מרוחק"
 
-#: src/DataToText.cpp:152 src/muuli_wdr.cpp:205 src/muuli_wdr.cpp:2941
-#: src/SearchDlg.cpp:108 src/TextClient.cpp:863
+#: src/DataToText.cpp:152 src/muuli_wdr.cpp:205 src/muuli_wdr.cpp:2945
+#: src/SearchDlg.cpp:108 src/TextClient.cpp:890
 msgid "Kad"
 msgstr "קאד"
 
@@ -1426,7 +1426,7 @@ msgstr ""
 msgid "Size"
 msgstr "גודל"
 
-#: src/DownloadListCtrl.cpp:159 src/muuli_wdr.cpp:3008
+#: src/DownloadListCtrl.cpp:159 src/muuli_wdr.cpp:3012
 msgid "Transferred"
 msgstr "הועברו"
 
@@ -1439,7 +1439,7 @@ msgid "Progress"
 msgstr "התקדמות"
 
 #: src/DownloadListCtrl.cpp:163 src/FileDetailListCtrl.cpp:44
-#: src/PartFile.cpp:4404 src/SearchListCtrl.cpp:92
+#: src/PartFile.cpp:4415 src/SearchListCtrl.cpp:92
 msgid "Sources"
 msgstr "מקורות"
 
@@ -1449,7 +1449,7 @@ msgstr "מקורות"
 msgid "Priority"
 msgstr "עדיפות"
 
-#: src/DownloadListCtrl.cpp:165 src/PartFile.cpp:4407 src/SearchListCtrl.cpp:95
+#: src/DownloadListCtrl.cpp:165 src/PartFile.cpp:4418 src/SearchListCtrl.cpp:95
 msgid "Status"
 msgstr "מצב"
 
@@ -1480,7 +1480,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2073
+#: src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2077
 #: src/SharedFilesCtrl.cpp:137
 msgid "Auto"
 msgstr "אוטמטי"
@@ -2111,7 +2111,7 @@ msgstr ""
 msgid "CRITICAL - no client on StartChatSession"
 msgstr ""
 
-#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2437 src/muuli_wdr.cpp:3089
+#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2441 src/muuli_wdr.cpp:3093
 msgid "Friends"
 msgstr "חברים"
 
@@ -2398,8 +2398,8 @@ msgstr "מבואה לא תקפה על מנת לבצע אתחול"
 msgid "Please fill all fields required"
 msgstr "אנא מלא את כל השדות כפי שנדרש"
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:947
-#: src/PrefsUnifiedDlg.cpp:1075 src/PrefsUnifiedDlg.cpp:1267
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:948
+#: src/PrefsUnifiedDlg.cpp:1076 src/PrefsUnifiedDlg.cpp:1268
 msgid "Message"
 msgstr "הודעה"
 
@@ -2471,7 +2471,7 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:2992
+#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:2996
 msgid "Requested"
 msgstr ""
 
@@ -2505,30 +2505,30 @@ msgstr "גירסה לא ידועה"
 msgid "Unable to get error description for error %d"
 msgstr "אזהרה: לא ניתן לפתוח את קובץ הסקין '%s' לקריאה"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4336
+#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4347
 msgid "Hashing"
 msgstr "מגבב"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4342
+#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4353
 msgid "Completing"
 msgstr "מסיים"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4345
+#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4356
 msgid "Complete"
 msgstr "סיים"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:47 src/OtherFunctions.cpp:699
-#: src/PartFile.cpp:4348 src/TransferWnd.cpp:348
+#: src/PartFile.cpp:4359 src/TransferWnd.cpp:348
 msgid "Paused"
 msgstr "הושהה"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:49 src/OtherFunctions.cpp:697
-#: src/PartFile.cpp:4351 src/TransferWnd.cpp:347
+#: src/PartFile.cpp:4362 src/TransferWnd.cpp:347
 msgid "Erroneous"
 msgstr "שגוי"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:54 src/OtherFunctions.cpp:693
-#: src/PartFile.cpp:4360 src/TransferWnd.cpp:345
+#: src/PartFile.cpp:4371 src/TransferWnd.cpp:345
 msgid "Waiting"
 msgstr "ממתין"
 
@@ -2597,7 +2597,7 @@ msgid "WARNING: "
 msgstr ""
 
 #: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:766 src/muuli_wdr.cpp:1182
-#: src/muuli_wdr.cpp:2896 src/muuli_wdr.cpp:3129
+#: src/muuli_wdr.cpp:2900 src/muuli_wdr.cpp:3133
 msgid "Close"
 msgstr "סגור"
 
@@ -2658,7 +2658,7 @@ msgid "Server IP: "
 msgstr "כתובת IP של השרת:"
 
 #: src/MuleTrayIcon.cpp:398 src/MuleTrayIcon.cpp:399 src/MuleTrayIcon.cpp:810
-#: src/MuleTrayIcon.cpp:824 src/TextClient.cpp:861 src/TextClient.cpp:874
+#: src/MuleTrayIcon.cpp:824 src/TextClient.cpp:888 src/TextClient.cpp:901
 msgid "Not connected"
 msgstr "לא מחובר"
 
@@ -2712,7 +2712,7 @@ msgstr "יציאה"
 
 #: src/MuleTrayIcon.cpp:566 src/MuleTrayIcon.cpp:932 src/MuleTrayIcon.cpp:952
 #: src/muuli_wdr.cpp:1325 src/muuli_wdr.cpp:1333 src/muuli_wdr.cpp:1340
-#: src/muuli_wdr.cpp:1699 src/muuli_wdr.cpp:1705 src/OtherFunctions.cpp:89
+#: src/muuli_wdr.cpp:1703 src/muuli_wdr.cpp:1709 src/OtherFunctions.cpp:89
 #: src/StatisticsDlg.cpp:93 src/StatisticsDlg.cpp:95
 msgid "kB/s"
 msgstr "ק\"ב/ש"
@@ -2952,7 +2952,7 @@ msgstr "בתים"
 msgid "KB"
 msgstr "ק\"ב"
 
-#: src/muuli_wdr.cpp:262 src/muuli_wdr.cpp:281 src/muuli_wdr.cpp:1546
+#: src/muuli_wdr.cpp:262 src/muuli_wdr.cpp:281 src/muuli_wdr.cpp:1550
 #: src/OtherFunctions.cpp:62
 msgid "MB"
 msgstr "מ\"ב"
@@ -3022,7 +3022,7 @@ msgstr "מנקה הורדות שהושלמו"
 msgid "File sources:"
 msgstr "מקורות שנמצאו :"
 
-#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:261
+#: src/muuli_wdr.cpp:467 src/muuli_wdr.cpp:1018 src/PrefsUnifiedDlg.cpp:262
 msgid "General"
 msgstr "כללי"
 
@@ -3043,7 +3043,7 @@ msgstr "שם מלא :"
 #: src/muuli_wdr.cpp:1120 src/muuli_wdr.cpp:1125 src/muuli_wdr.cpp:1132
 #: src/muuli_wdr.cpp:1137 src/muuli_wdr.cpp:1144 src/muuli_wdr.cpp:1158
 #: src/muuli_wdr.cpp:1165 src/muuli_wdr.cpp:1170 src/muuli_wdr.cpp:1177
-#: src/muuli_wdr.cpp:2994 src/muuli_wdr.cpp:3002 src/muuli_wdr.cpp:3010
+#: src/muuli_wdr.cpp:2998 src/muuli_wdr.cpp:3006 src/muuli_wdr.cpp:3014
 msgid "N/A"
 msgstr "ל\"ת"
 
@@ -3217,7 +3217,7 @@ msgstr "שם משתמש :"
 msgid "Userhash :"
 msgstr "גיבוב משתשמ :"
 
-#: src/muuli_wdr.cpp:844 src/muuli_wdr.cpp:2218
+#: src/muuli_wdr.cpp:844 src/muuli_wdr.cpp:2222
 #: src/utils/aLinkCreator/src/alcframe.cpp:137
 msgid "Add"
 msgstr "הוסף"
@@ -3226,15 +3226,15 @@ msgstr "הוסף"
 msgid "Download-Speed"
 msgstr "מהירות הורדה"
 
-#: src/muuli_wdr.cpp:903 src/muuli_wdr.cpp:940 src/muuli_wdr.cpp:2316
+#: src/muuli_wdr.cpp:903 src/muuli_wdr.cpp:940 src/muuli_wdr.cpp:2320
 msgid "Current"
 msgstr "נוכחיים"
 
-#: src/muuli_wdr.cpp:911 src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:2324
+#: src/muuli_wdr.cpp:911 src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:2328
 msgid "Running average"
 msgstr "ממוצע רץ"
 
-#: src/muuli_wdr.cpp:919 src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:2332
+#: src/muuli_wdr.cpp:919 src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:2336
 msgid "Session average"
 msgstr "ממוצע ההרצה הנוכחית"
 
@@ -3246,7 +3246,7 @@ msgstr "מהירות-העלאה"
 msgid "Connections"
 msgstr "חיבורים"
 
-#: src/muuli_wdr.cpp:977 src/muuli_wdr.cpp:1724
+#: src/muuli_wdr.cpp:977 src/muuli_wdr.cpp:1728
 msgid "Active downloads"
 msgstr "הורדות פעילות"
 
@@ -3254,7 +3254,7 @@ msgstr "הורדות פעילות"
 msgid "Active connections (1:1)"
 msgstr "חיבורים פעילים (1:1)"
 
-#: src/muuli_wdr.cpp:993 src/muuli_wdr.cpp:1725
+#: src/muuli_wdr.cpp:993 src/muuli_wdr.cpp:1729
 msgid "Active uploads"
 msgstr "העלאות פעילים"
 
@@ -3456,8 +3456,8 @@ msgstr ""
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1276 src/muuli_wdr.cpp:1293 src/muuli_wdr.cpp:1589
-#: src/muuli_wdr.cpp:1620 src/muuli_wdr.cpp:1632 src/muuli_wdr.cpp:2531
+#: src/muuli_wdr.cpp:1276 src/muuli_wdr.cpp:1293 src/muuli_wdr.cpp:1593
+#: src/muuli_wdr.cpp:1624 src/muuli_wdr.cpp:1636 src/muuli_wdr.cpp:2535
 #: src/utils/aLinkCreator/src/alcframe.cpp:135
 #: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
 msgid "Browse"
@@ -3551,7 +3551,7 @@ msgstr ""
 msgid "Kademlia"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1418 src/muuli_wdr.cpp:2936
+#: src/muuli_wdr.cpp:1418 src/muuli_wdr.cpp:2940
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -3631,684 +3631,688 @@ msgstr ""
 msgid "Try to download first and last chunks first"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1525
+#: src/muuli_wdr.cpp:1526
+msgid "Endgame mode: rotate to faster sources for the final blocks"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1529
 msgid "Start next paused file when a file completes"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1528
+#: src/muuli_wdr.cpp:1532
 msgid "From the same category"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1530
+#: src/muuli_wdr.cpp:1534
 msgid "In alphabetic order"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1532
+#: src/muuli_wdr.cpp:1536
 msgid "Preallocate disk space for new files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1533
+#: src/muuli_wdr.cpp:1537
 msgid "For new files preallocates disk space for the whole file, thus reduces fragmentation"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1538
+#: src/muuli_wdr.cpp:1542
 msgid "Stop downloads when free disk space reaches "
 msgstr ""
 
-#: src/muuli_wdr.cpp:1539
+#: src/muuli_wdr.cpp:1543
 msgid "Select this if you want aMule to check your disk space"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1543
+#: src/muuli_wdr.cpp:1547
 msgid "Enter here the min disk space desired."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1549
+#: src/muuli_wdr.cpp:1553
 msgid "Save 10 sources on rare files (< 20 sources)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1553 src/Statistics.cpp:790
+#: src/muuli_wdr.cpp:1557 src/Statistics.cpp:790
 msgid "Uploads"
 msgstr "ההעלאות"
 
-#: src/muuli_wdr.cpp:1556
+#: src/muuli_wdr.cpp:1560
 msgid "Add new shared files with auto priority"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1567 src/PrefsUnifiedDlg.cpp:1494
+#: src/muuli_wdr.cpp:1571 src/PrefsUnifiedDlg.cpp:1495
 msgid "Media metadata extraction"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1571
+#: src/muuli_wdr.cpp:1575
 msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1573
+#: src/muuli_wdr.cpp:1577
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1580
+#: src/muuli_wdr.cpp:1584
 msgid "Path to ffprobe:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1585
+#: src/muuli_wdr.cpp:1589
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1593
+#: src/muuli_wdr.cpp:1597
 msgid "Detect"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1594
+#: src/muuli_wdr.cpp:1598
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1614
+#: src/muuli_wdr.cpp:1618
 msgid "Destination folder for downloads"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1618
+#: src/muuli_wdr.cpp:1622
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1621
+#: src/muuli_wdr.cpp:1625
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1625
+#: src/muuli_wdr.cpp:1629
 msgid "(All files in this folder are shared with other peers)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1627
+#: src/muuli_wdr.cpp:1631
 msgid "Folder for temporary download files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1635
+#: src/muuli_wdr.cpp:1639
 msgid "Shared folders"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1638
+#: src/muuli_wdr.cpp:1642
 msgid "(Right click on folder icon for recursive share)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1644
+#: src/muuli_wdr.cpp:1648
 msgid "Share hidden files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1650
+#: src/muuli_wdr.cpp:1654
 msgid "Automatically rescan shared folders for changes"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1656
+#: src/muuli_wdr.cpp:1660
 msgid "Follow symbolic links in shared folders"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1675
+#: src/muuli_wdr.cpp:1679
 msgid "Graphs"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1678 src/muuli_wdr.cpp:1740
+#: src/muuli_wdr.cpp:1682 src/muuli_wdr.cpp:1744
 msgid "Update delay : 5 secs"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1682
+#: src/muuli_wdr.cpp:1686
 msgid "Time for average graph: 100 mins"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1686
+#: src/muuli_wdr.cpp:1690
 msgid "Connections Graph Scale: 100 "
 msgstr ""
 
-#: src/muuli_wdr.cpp:1693
+#: src/muuli_wdr.cpp:1697
 msgid "Download graph scale:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1701
+#: src/muuli_wdr.cpp:1705
 msgid "Upload graph scale:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1711
+#: src/muuli_wdr.cpp:1715
 msgid "Colors: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:1715
+#: src/muuli_wdr.cpp:1719
 msgid "Background"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1716
+#: src/muuli_wdr.cpp:1720
 msgid "Grid"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1717
+#: src/muuli_wdr.cpp:1721
 msgid "Download current"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1718
+#: src/muuli_wdr.cpp:1722
 msgid "Download running average"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1719
+#: src/muuli_wdr.cpp:1723
 msgid "Download session average"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1720
+#: src/muuli_wdr.cpp:1724
 msgid "Upload current"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1721
+#: src/muuli_wdr.cpp:1725
 msgid "Upload running average"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1722
+#: src/muuli_wdr.cpp:1726
 msgid "Upload session average"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1723
+#: src/muuli_wdr.cpp:1727
 msgid "Active connections"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1726
+#: src/muuli_wdr.cpp:1730
 msgid "Systray Icon Speed Bar"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1727
+#: src/muuli_wdr.cpp:1731
 msgid "Kad-nodes current"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1728
+#: src/muuli_wdr.cpp:1732
 msgid "Kad-nodes running"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1729
+#: src/muuli_wdr.cpp:1733
 msgid "Kad-nodes session"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1733 src/muuli_wdr.cpp:2091
+#: src/muuli_wdr.cpp:1737 src/muuli_wdr.cpp:2095
 msgid "Select"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1737
+#: src/muuli_wdr.cpp:1741
 msgid "Tree"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1747
+#: src/muuli_wdr.cpp:1751
 msgid "Number of Client Versions shown (0=unlimited)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1772
+#: src/muuli_wdr.cpp:1776
 msgid "!!! WARNING !!!"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1784
+#: src/muuli_wdr.cpp:1788
 msgid "Max new connections / 5 secs"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1789
+#: src/muuli_wdr.cpp:1793
 msgid "File Buffer Size: 240000 bytes"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1793
+#: src/muuli_wdr.cpp:1797
 msgid "Upload Queue Size: 5000 clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1797
+#: src/muuli_wdr.cpp:1801
 msgid "Server connection refresh interval: Disable"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1801
+#: src/muuli_wdr.cpp:1805
 msgid "Disable computer's timed standby mode"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1820
+#: src/muuli_wdr.cpp:1824
 msgid "Skin to use: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:1829
+#: src/muuli_wdr.cpp:1833
 msgid "Show \"Fast eD2k Links Handler\" in every window."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1832
+#: src/muuli_wdr.cpp:1836
 msgid "Show extended info on categories tabs"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1835
+#: src/muuli_wdr.cpp:1839
 msgid "Show application version on title"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1837
+#: src/muuli_wdr.cpp:1841
 msgid "Show transfer rates on title"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1839
+#: src/muuli_wdr.cpp:1843
 msgid "Before application name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1841
+#: src/muuli_wdr.cpp:1845
 msgid "After application name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1844
+#: src/muuli_wdr.cpp:1848
 msgid "Show overhead bandwidth"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1848
+#: src/muuli_wdr.cpp:1852
 msgid "Vertical toolbar orientation"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1854
+#: src/muuli_wdr.cpp:1858
 msgid "Download Queue Files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1857
+#: src/muuli_wdr.cpp:1861
 msgid "Show progress percentage"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1863
+#: src/muuli_wdr.cpp:1867
 msgid "Show progress bar"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1866
+#: src/muuli_wdr.cpp:1870
 msgid "Flat"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1870
+#: src/muuli_wdr.cpp:1874
 msgid "Round"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1873
+#: src/muuli_wdr.cpp:1877
 msgid "Auto-sort files (high CPU)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1875
+#: src/muuli_wdr.cpp:1879
 msgid "aMule will sort the columns in your download list automatically"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1892
+#: src/muuli_wdr.cpp:1896
 msgid "External Connection Parameters"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1895
+#: src/muuli_wdr.cpp:1899
 msgid "Accept external connections"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1902
+#: src/muuli_wdr.cpp:1906
 msgid "IP of the listening interface:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1905
+#: src/muuli_wdr.cpp:1909
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1911 src/muuli_wdr.cpp:1957
+#: src/muuli_wdr.cpp:1915 src/muuli_wdr.cpp:1961
 msgid "TCP port:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1917
+#: src/muuli_wdr.cpp:1921
 msgid "Enable UPnP port forwarding on the EC port"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1921 src/muuli_wdr.cpp:2808
+#: src/muuli_wdr.cpp:1925 src/muuli_wdr.cpp:2812
 #: src/utils/wxCas/src/wxcasprefs.cpp:167
 msgid "Password"
 msgstr "סיסמא"
 
-#: src/muuli_wdr.cpp:1927
+#: src/muuli_wdr.cpp:1931
 msgid "Web server parameters"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1930
+#: src/muuli_wdr.cpp:1934
 msgid "Run webserver on startup"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1936
+#: src/muuli_wdr.cpp:1940
 msgid "Web template"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1941
+#: src/muuli_wdr.cpp:1945
 msgid "Full rights password"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1945
+#: src/muuli_wdr.cpp:1949
 msgid "Enable Low rights User"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1950
+#: src/muuli_wdr.cpp:1954
 msgid "Low rights password"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1964
+#: src/muuli_wdr.cpp:1968
 msgid "Enable UPnP port forwarding of the web server port"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1969
+#: src/muuli_wdr.cpp:1973
 msgid "Web server UPnP TCP port (Optional)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1977
+#: src/muuli_wdr.cpp:1981
 msgid "Page Refresh Time (in secs)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1984
+#: src/muuli_wdr.cpp:1988
 msgid "Enable Gzip compression"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2015 src/muuli_wdr.cpp:2098 src/ServerWnd.cpp:233
+#: src/muuli_wdr.cpp:2019 src/muuli_wdr.cpp:2102 src/ServerWnd.cpp:233
 #: src/ServerWnd.cpp:241
 msgid "OK"
 msgstr "בסדר"
 
-#: src/muuli_wdr.cpp:2017
+#: src/muuli_wdr.cpp:2021
 msgid "Click here to apply any changes made to the preferences."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2020
+#: src/muuli_wdr.cpp:2024
 msgid "Reset any changes made to the preferences."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2042
+#: src/muuli_wdr.cpp:2046
 msgid "Title :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2049
+#: src/muuli_wdr.cpp:2053
 msgid "Comment :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2056
+#: src/muuli_wdr.cpp:2060
 msgid "Incoming Dir :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2065
+#: src/muuli_wdr.cpp:2069
 msgid "Change priority for new assigned files :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2069
+#: src/muuli_wdr.cpp:2073
 #, fuzzy
 msgid "Don't change"
 msgstr "- מבואת UDP שונתה \n"
 
-#: src/muuli_wdr.cpp:2081
+#: src/muuli_wdr.cpp:2085
 msgid "Select color for this Category (currently selected) :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2146 src/muuli_wdr.cpp:2168
+#: src/muuli_wdr.cpp:2150 src/muuli_wdr.cpp:2172
 #: src/utils/wxCas/src/wxcasframe.cpp:133
 #: src/utils/wxCas/src/wxcasframe.cpp:136
 msgid "Reset"
 msgstr "אתחל מחדש"
 
-#: src/muuli_wdr.cpp:2147 src/muuli_wdr.cpp:2169
+#: src/muuli_wdr.cpp:2151 src/muuli_wdr.cpp:2173
 msgid "Click this button to reset the log."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2189
+#: src/muuli_wdr.cpp:2193
 msgid "Click on this button to update the servers list from URL ..."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2193
+#: src/muuli_wdr.cpp:2197
 msgid "Server list"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2197
+#: src/muuli_wdr.cpp:2201
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2202
+#: src/muuli_wdr.cpp:2206
 msgid "Add server manually: Name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2205
+#: src/muuli_wdr.cpp:2209
 msgid "Enter the name of the new server here"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2207 src/ServerWnd.cpp:180
+#: src/muuli_wdr.cpp:2211 src/ServerWnd.cpp:180
 msgid "IP:Port"
 msgstr "אי.פי.:מבואה"
 
-#: src/muuli_wdr.cpp:2210
+#: src/muuli_wdr.cpp:2214
 msgid "Enter the IP of the server here, using the x.x.x.x format."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2216
+#: src/muuli_wdr.cpp:2220
 msgid "Enter the port of the server here."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2219
+#: src/muuli_wdr.cpp:2223
 msgid "Add manually a server (fill fields to the left before) ..."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2248
+#: src/muuli_wdr.cpp:2252
 msgid "aMule Log"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2252
+#: src/muuli_wdr.cpp:2256
 msgid "Server Info"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2256
+#: src/muuli_wdr.cpp:2260
 msgid "ED2K Info"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2260
+#: src/muuli_wdr.cpp:2264
 msgid "Kad Info"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2288
+#: src/muuli_wdr.cpp:2292
 msgid "Click on this button to update the nodes list from URL ..."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2292
+#: src/muuli_wdr.cpp:2296
 msgid "Nodes (0)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2296
+#: src/muuli_wdr.cpp:2300
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2299
+#: src/muuli_wdr.cpp:2303
 msgid "Nodes stats"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2339
+#: src/muuli_wdr.cpp:2343
 msgid "Bootstrap"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2342
+#: src/muuli_wdr.cpp:2346
 msgid "New node"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2347
+#: src/muuli_wdr.cpp:2351
 msgid "IP:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2367
+#: src/muuli_wdr.cpp:2371
 msgid "Port:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2378
+#: src/muuli_wdr.cpp:2382
 msgid "Bootstrap from known clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2381
+#: src/muuli_wdr.cpp:2385
 msgid "Disconnect Kad"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2415
+#: src/muuli_wdr.cpp:2419
 msgid "Use Secure User Identification"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2417
+#: src/muuli_wdr.cpp:2421
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2419
+#: src/muuli_wdr.cpp:2423
 msgid "Protocol Obfuscation"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2422
+#: src/muuli_wdr.cpp:2426
 msgid "Support Protocol Obfuscation"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2424
+#: src/muuli_wdr.cpp:2428
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2426
+#: src/muuli_wdr.cpp:2430
 msgid "Use obfuscation for outgoing connections"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2428
+#: src/muuli_wdr.cpp:2432
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2430
+#: src/muuli_wdr.cpp:2434
 msgid "Accept only obfuscated connections"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2431
+#: src/muuli_wdr.cpp:2435
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2436
+#: src/muuli_wdr.cpp:2440
 msgid "Everybody"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2438
+#: src/muuli_wdr.cpp:2442
 msgid "No one"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2440
+#: src/muuli_wdr.cpp:2444
 msgid "Who can see my shared files:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2441
+#: src/muuli_wdr.cpp:2445
 msgid "Select who can request to view a list of your shared files."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2443
+#: src/muuli_wdr.cpp:2447
 msgid "IP-Filtering"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2450
+#: src/muuli_wdr.cpp:2454
 msgid "Filter clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2452
+#: src/muuli_wdr.cpp:2456
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2454
+#: src/muuli_wdr.cpp:2458
 msgid "Filter servers"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2456
+#: src/muuli_wdr.cpp:2460
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2460
+#: src/muuli_wdr.cpp:2464
 msgid "Reload List"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2461
+#: src/muuli_wdr.cpp:2465
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2467
+#: src/muuli_wdr.cpp:2471
 msgid "URL:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2471 src/muuli_wdr.cpp:2664
+#: src/muuli_wdr.cpp:2475 src/muuli_wdr.cpp:2668
 msgid "Update now"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2474
+#: src/muuli_wdr.cpp:2478
 msgid "Auto-update ipfilter at startup"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2478
+#: src/muuli_wdr.cpp:2482
 msgid "Filtering Level:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2484
+#: src/muuli_wdr.cpp:2488
 msgid "Always filter LAN IPs"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2487
+#: src/muuli_wdr.cpp:2491
 msgid "Paranoid handling of non-matching IPs"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2489
+#: src/muuli_wdr.cpp:2493
 msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2491
+#: src/muuli_wdr.cpp:2495
 msgid "Use system-wide ipfilter.dat if available"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2492
+#: src/muuli_wdr.cpp:2496
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2509
+#: src/muuli_wdr.cpp:2513
 msgid "Enable Online-Signature"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2511
+#: src/muuli_wdr.cpp:2515
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2515
+#: src/muuli_wdr.cpp:2519
 msgid "Update Frequency (Secs):"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2518
+#: src/muuli_wdr.cpp:2522
 msgid "Change the frequency (in seconds) of Online Signature updates."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2526
+#: src/muuli_wdr.cpp:2530
 msgid "Save online signature file in: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:2532
+#: src/muuli_wdr.cpp:2536
 msgid "Click here to select the directory containing the the Online Signature files."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2565
+#: src/muuli_wdr.cpp:2569
 msgid "Show country flags for clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2566
+#: src/muuli_wdr.cpp:2570
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2571
+#: src/muuli_wdr.cpp:2575
 #, fuzzy
 msgid "Database"
 msgstr "קצב מידע :"
 
-#: src/muuli_wdr.cpp:2587
+#: src/muuli_wdr.cpp:2591
 #, fuzzy
 msgid "Source:"
 msgstr "מקורות"
 
-#: src/muuli_wdr.cpp:2590
+#: src/muuli_wdr.cpp:2594
 msgid "DB-IP (free, no account)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2591
+#: src/muuli_wdr.cpp:2595
 msgid "MaxMind GeoLite2 (free, account required)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2592
+#: src/muuli_wdr.cpp:2596
 msgid "Custom URL"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2595
+#: src/muuli_wdr.cpp:2599
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2612
+#: src/muuli_wdr.cpp:2616
 msgid ""
 "No configuration required.\n"
 "\n"
@@ -4316,11 +4320,11 @@ msgid ""
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2625
+#: src/muuli_wdr.cpp:2629
 msgid "License key:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2631
+#: src/muuli_wdr.cpp:2635
 msgid ""
 "Sign up for a free MaxMind account, then generate a License Key:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
@@ -4330,230 +4334,230 @@ msgid ""
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2646
+#: src/muuli_wdr.cpp:2650
 #, fuzzy
 msgid "Download URL:"
 msgstr "מוריד: "
 
-#: src/muuli_wdr.cpp:2652
+#: src/muuli_wdr.cpp:2656
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2665
+#: src/muuli_wdr.cpp:2669
 msgid "Download the GeoIP database from the selected source."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2667
+#: src/muuli_wdr.cpp:2671
 msgid "Auto-update on startup"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2668
+#: src/muuli_wdr.cpp:2672
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2691
+#: src/muuli_wdr.cpp:2695
 msgid "Filter incoming messages (except current chat):"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2693
+#: src/muuli_wdr.cpp:2697
 msgid "Filter all messages"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2695
+#: src/muuli_wdr.cpp:2699
 msgid "Filter messages from people not on your friend list"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2697
+#: src/muuli_wdr.cpp:2701
 msgid "Filter messages from unknown clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2699
+#: src/muuli_wdr.cpp:2703
 msgid "Filter messages containing (use ',' as separator):"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2702 src/muuli_wdr.cpp:2713
+#: src/muuli_wdr.cpp:2706 src/muuli_wdr.cpp:2717
 msgid "add here the words amule should filter and block messages including it"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2704
+#: src/muuli_wdr.cpp:2708
 msgid "Show received messages in the log"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2707
+#: src/muuli_wdr.cpp:2711
 msgid "Comments"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2710
+#: src/muuli_wdr.cpp:2714
 msgid "Filter comments containing (use ',' as separator):"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2733
+#: src/muuli_wdr.cpp:2737
 msgid "Enable authentication"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2734
+#: src/muuli_wdr.cpp:2738
 msgid "Enable/disable username/password authentication"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2737
+#: src/muuli_wdr.cpp:2741
 msgid "Username: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:2740
+#: src/muuli_wdr.cpp:2744
 msgid "The username to use to connect to the proxy"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2742
+#: src/muuli_wdr.cpp:2746
 msgid "Password:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2745
+#: src/muuli_wdr.cpp:2749
 msgid "The password to use to connect to the proxy"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2747
+#: src/muuli_wdr.cpp:2751
 msgid "Enable Proxy"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2748
+#: src/muuli_wdr.cpp:2752
 msgid "Enable/disable proxy support"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2751
+#: src/muuli_wdr.cpp:2755
 msgid "Proxy type:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2762
+#: src/muuli_wdr.cpp:2766
 msgid "Proxy host:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2765
+#: src/muuli_wdr.cpp:2769
 msgid "The proxy host name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2767
+#: src/muuli_wdr.cpp:2771
 msgid "Proxy port:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2770
+#: src/muuli_wdr.cpp:2774
 msgid "The proxy port"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2789
+#: src/muuli_wdr.cpp:2793
 msgid "Connect to:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2798
+#: src/muuli_wdr.cpp:2802
 msgid "Login to remote amule"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2803
+#: src/muuli_wdr.cpp:2807
 msgid "User name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2814
+#: src/muuli_wdr.cpp:2818
 msgid "Remember those settings"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2817
+#: src/muuli_wdr.cpp:2821
 #, fuzzy
 msgid "Force ZLIB compression"
 msgstr "השמתש בדחיסת gzip"
 
-#: src/muuli_wdr.cpp:2841
+#: src/muuli_wdr.cpp:2845
 msgid "Enable Verbose Debug-Logging."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2843
+#: src/muuli_wdr.cpp:2847
 #, fuzzy
 msgid "Only to Logfile"
 msgstr "&תפתח את הקובץ"
 
-#: src/muuli_wdr.cpp:2845
+#: src/muuli_wdr.cpp:2849
 msgid "Message Categories:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2869 src/PartFileConvertDlg.cpp:160
+#: src/muuli_wdr.cpp:2873 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
 msgstr "ממתין..."
 
-#: src/muuli_wdr.cpp:2889
+#: src/muuli_wdr.cpp:2893
 msgid "Add imports"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2892
+#: src/muuli_wdr.cpp:2896
 msgid "Retry selected"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2894
+#: src/muuli_wdr.cpp:2898
 msgid "Remove selected"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2957
+#: src/muuli_wdr.cpp:2961
 msgid "Event Types"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2976
+#: src/muuli_wdr.cpp:2980
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3000
+#: src/muuli_wdr.cpp:3004
 #, fuzzy
 msgid "Active Uploads"
 msgstr "העלאות פעילים :"
 
-#: src/muuli_wdr.cpp:3014
+#: src/muuli_wdr.cpp:3018
 msgid "Percent of total files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3053
+#: src/muuli_wdr.cpp:3057
 #, fuzzy
 msgid "All files"
 msgstr "קבצים משותפים"
 
-#: src/muuli_wdr.cpp:3054
+#: src/muuli_wdr.cpp:3058
 #, fuzzy
 msgid "Selected files"
 msgstr "בחר מסנן תצוגה"
 
-#: src/muuli_wdr.cpp:3055
+#: src/muuli_wdr.cpp:3059
 #, fuzzy
 msgid "Active uploads only"
 msgstr "העלאות פעילים"
 
-#: src/muuli_wdr.cpp:3057
+#: src/muuli_wdr.cpp:3061
 #, fuzzy
 msgid "Show Clients for"
 msgstr "לקוחות"
 
-#: src/muuli_wdr.cpp:3059
+#: src/muuli_wdr.cpp:3063
 msgid "Reload:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3063
+#: src/muuli_wdr.cpp:3067
 msgid "Reload your shared files"
 msgstr "טען מחדש את הקבצים המשותפים שלך"
 
-#: src/muuli_wdr.cpp:3125
+#: src/muuli_wdr.cpp:3129
 msgid "Send"
 msgstr "שלח"
 
-#: src/muuli_wdr.cpp:3126
+#: src/muuli_wdr.cpp:3130
 msgid "Sends the specified message."
 msgstr "שולח את ההודעה המצויינת."
 
-#: src/muuli_wdr.cpp:3130
+#: src/muuli_wdr.cpp:3134
 msgid "Close this chat-session."
 msgstr "סגור את הצ'אט הנוכחי."
 
-#: src/muuli_wdr.cpp:3153
+#: src/muuli_wdr.cpp:3157
 msgid "Connect to any server and/or Kad"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3159 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3163 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "קבצים משותפים"
 
@@ -4632,7 +4636,7 @@ msgstr "כל האחרים"
 msgid "Incomplete"
 msgstr "חלקי"
 
-#: src/OtherFunctions.cpp:701 src/PartFile.cpp:4365 src/TransferWnd.cpp:349
+#: src/OtherFunctions.cpp:701 src/PartFile.cpp:4376 src/TransferWnd.cpp:349
 msgid "Stopped"
 msgstr "נעצר"
 
@@ -4841,342 +4845,342 @@ msgstr "נמצא חלק שהושלם (%i) בתוך %s"
 msgid "Finished rehashing %s"
 msgstr "הסתיים הגיבוב מחדש של %s"
 
-#: src/PartFile.cpp:2334
+#: src/PartFile.cpp:2345
 #, c-format
 msgid "Unexpected error while completing %s. File paused"
 msgstr ""
 
-#: src/PartFile.cpp:2371
+#: src/PartFile.cpp:2382
 #, c-format
 msgid "Finished downloading: %s"
 msgstr "הסתיימה ההורדה של: %s"
 
-#: src/PartFile.cpp:2376
+#: src/PartFile.cpp:2387
 #, fuzzy, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
 msgstr "הסתיימה ההורדה של: %s"
 
-#: src/PartFile.cpp:2435
+#: src/PartFile.cpp:2446
 #, c-format
 msgid "Deleting file: %s"
 msgstr "מוחק את הקובץ: %s"
 
-#: src/PartFile.cpp:2514
+#: src/PartFile.cpp:2525
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
 msgstr ""
 
-#: src/PartFile.cpp:2519
+#: src/PartFile.cpp:2530
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
 msgstr ""
 
-#: src/PartFile.cpp:2542
+#: src/PartFile.cpp:2553
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
 msgstr ""
 
-#: src/PartFile.cpp:2554 src/PartFile.cpp:2561
+#: src/PartFile.cpp:2565 src/PartFile.cpp:2572
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
 msgstr ""
 
-#: src/PartFile.cpp:3320
+#: src/PartFile.cpp:3331
 #, c-format
 msgid "WARNING: Not enough free disk-space! Pausing file: %s"
 msgstr "אזהרה. אין מספיק שטח דיסק פנוי! משהה את הקובץ %s"
 
-#: src/PartFile.cpp:3654
+#: src/PartFile.cpp:3665
 #, c-format
 msgid "Downloaded part %i is corrupt in file: %s"
 msgstr "החלק %i שירד מתוך הקובץ %s פגום"
 
-#: src/PartFile.cpp:3702
+#: src/PartFile.cpp:3713
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "ICH: תוקן החלק הפגום %i עבור %s -< בתים שנמשרו: %s"
 
-#: src/PartFile.cpp:4338
+#: src/PartFile.cpp:4349
 msgid "Allocating"
 msgstr ""
 
-#: src/PartFile.cpp:4354
+#: src/PartFile.cpp:4365
 msgid "Insufficient disk space"
 msgstr ""
 
-#: src/PartFile.cpp:4403 src/SearchListCtrl.cpp:1078
+#: src/PartFile.cpp:4414 src/SearchListCtrl.cpp:1078
 #: src/SharedFilePeersListCtrl.cpp:29 src/SourceListCtrl.cpp:29
 msgid "Downloaded"
 msgstr ""
 
-#: src/PartFile.cpp:4663
+#: src/PartFile.cpp:4679
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr ""
 
-#: src/Preferences.cpp:612
+#: src/Preferences.cpp:613
 msgid "System default"
 msgstr "ברירת מחדל של המערכת"
 
-#: src/Preferences.cpp:613
+#: src/Preferences.cpp:614
 msgid "Albanian"
 msgstr "אלבני"
 
-#: src/Preferences.cpp:614
+#: src/Preferences.cpp:615
 msgid "Arabic"
 msgstr "ערבית"
 
-#: src/Preferences.cpp:615
+#: src/Preferences.cpp:616
 #, fuzzy
 msgid "Asturian"
 msgstr "אסטונית"
 
-#: src/Preferences.cpp:616
+#: src/Preferences.cpp:617
 msgid "Basque"
 msgstr "בסקית"
 
-#: src/Preferences.cpp:617
+#: src/Preferences.cpp:618
 msgid "Bulgarian"
 msgstr "בולגרית"
 
-#: src/Preferences.cpp:618
+#: src/Preferences.cpp:619
 msgid "Catalan"
 msgstr "קטלונית"
 
-#: src/Preferences.cpp:619
+#: src/Preferences.cpp:620
 msgid "Chinese (Simplified)"
 msgstr "סינית (מופשטת)"
 
-#: src/Preferences.cpp:620
+#: src/Preferences.cpp:621
 msgid "Chinese (Traditional)"
 msgstr "סינית (מסורתית)"
 
-#: src/Preferences.cpp:621
+#: src/Preferences.cpp:622
 msgid "Croatian"
 msgstr "קרואטית"
 
-#: src/Preferences.cpp:622
+#: src/Preferences.cpp:623
 msgid "Czech"
 msgstr "צ'כית"
 
-#: src/Preferences.cpp:623
+#: src/Preferences.cpp:624
 msgid "Danish"
 msgstr "דנית"
 
-#: src/Preferences.cpp:624
+#: src/Preferences.cpp:625
 msgid "Dutch"
 msgstr "הולנדית"
 
-#: src/Preferences.cpp:625
+#: src/Preferences.cpp:626
 msgid "English (U.K.)"
 msgstr "אנגלית (בריטית)"
 
-#: src/Preferences.cpp:626
+#: src/Preferences.cpp:627
 #, fuzzy
 msgid "English (U.S.)"
 msgstr "אנגלית (בריטית)"
 
-#: src/Preferences.cpp:627
+#: src/Preferences.cpp:628
 msgid "Estonian"
 msgstr "אסטונית"
 
-#: src/Preferences.cpp:628
+#: src/Preferences.cpp:629
 msgid "Finnish"
 msgstr "פינית"
 
-#: src/Preferences.cpp:629
+#: src/Preferences.cpp:630
 msgid "French"
 msgstr "צרפתית"
 
-#: src/Preferences.cpp:630
+#: src/Preferences.cpp:631
 msgid "Galician"
 msgstr "גאלית"
 
-#: src/Preferences.cpp:631
+#: src/Preferences.cpp:632
 msgid "German"
 msgstr "גרמנית"
 
-#: src/Preferences.cpp:632
+#: src/Preferences.cpp:633
 msgid "Greek"
 msgstr "יוונית"
 
-#: src/Preferences.cpp:633
+#: src/Preferences.cpp:634
 msgid "Hebrew"
 msgstr ""
 
-#: src/Preferences.cpp:634
+#: src/Preferences.cpp:635
 msgid "Hungarian"
 msgstr "הונגרית"
 
-#: src/Preferences.cpp:635
+#: src/Preferences.cpp:636
 msgid "Italian"
 msgstr "איטלקית"
 
-#: src/Preferences.cpp:636
+#: src/Preferences.cpp:637
 msgid "Italian (Swiss)"
 msgstr "איטלקית (שוויצרית)"
 
-#: src/Preferences.cpp:637
+#: src/Preferences.cpp:638
 msgid "Japanese"
 msgstr "יפנית"
 
-#: src/Preferences.cpp:638
+#: src/Preferences.cpp:639
 msgid "Korean"
 msgstr "קוראינית"
 
-#: src/Preferences.cpp:639
+#: src/Preferences.cpp:640
 msgid "Lithuanian"
 msgstr "ליטאית"
 
-#: src/Preferences.cpp:640
+#: src/Preferences.cpp:641
 msgid "Norwegian (Nynorsk)"
 msgstr "נורבגית (Nynorsk)"
 
-#: src/Preferences.cpp:641
+#: src/Preferences.cpp:642
 msgid "Polish"
 msgstr "פונלית"
 
-#: src/Preferences.cpp:642
+#: src/Preferences.cpp:643
 msgid "Portuguese"
 msgstr "פורטגזית"
 
-#: src/Preferences.cpp:643
+#: src/Preferences.cpp:644
 msgid "Portuguese (Brazilian)"
 msgstr "פורטגזית (ברזילאית)"
 
-#: src/Preferences.cpp:644
+#: src/Preferences.cpp:645
 #, fuzzy
 msgid "Romanian"
 msgstr "אלבני"
 
-#: src/Preferences.cpp:645
+#: src/Preferences.cpp:646
 msgid "Russian"
 msgstr "רוסית"
 
-#: src/Preferences.cpp:646
+#: src/Preferences.cpp:647
 msgid "Slovenian"
 msgstr "סלובקית"
 
-#: src/Preferences.cpp:647
+#: src/Preferences.cpp:648
 msgid "Spanish"
 msgstr "ספרדית"
 
-#: src/Preferences.cpp:648
+#: src/Preferences.cpp:649
 msgid "Swedish"
 msgstr "שוודית"
 
-#: src/Preferences.cpp:649
+#: src/Preferences.cpp:650
 msgid "Turkish"
 msgstr "טורקית"
 
-#: src/Preferences.cpp:650
+#: src/Preferences.cpp:651
 msgid "Ukrainian"
 msgstr ""
 
-#: src/Preferences.cpp:753
+#: src/Preferences.cpp:754
 msgid "Change Language"
 msgstr ""
 
-#: src/Preferences.cpp:817
+#: src/Preferences.cpp:818
 msgid "There are no translations installed for aMule"
 msgstr ""
 
-#: src/Preferences.cpp:818
+#: src/Preferences.cpp:819
 #, fuzzy
 msgid "No languages available"
 msgstr "לא זמין"
 
-#: src/Preferences.cpp:949
+#: src/Preferences.cpp:950
 msgid "no options available"
 msgstr ""
 
-#: src/Preferences.cpp:1919
+#: src/Preferences.cpp:1921
 msgid "Invalid category found, skipping"
 msgstr ""
 
-#: src/Preferences.cpp:2088
+#: src/Preferences.cpp:2090
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "מבואת ה TCP אינה יכולה להיות גבוהה יותר מ 65532 מאחר שמבואת ה UDP של השרת היא מבואת ה TCP +3"
 
-#: src/Preferences.cpp:2089
+#: src/Preferences.cpp:2091
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "נשתמש במבואה שבברירת מחדך (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:262 src/Statistics.cpp:866
+#: src/PrefsUnifiedDlg.cpp:263 src/Statistics.cpp:866
 msgid "Connection"
 msgstr "חיבור"
 
-#: src/PrefsUnifiedDlg.cpp:263 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:264 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "מלונים"
 
-#: src/PrefsUnifiedDlg.cpp:264 src/Statistics.cpp:917
+#: src/PrefsUnifiedDlg.cpp:265 src/Statistics.cpp:917
 msgid "Servers"
 msgstr "שרתים"
 
-#: src/PrefsUnifiedDlg.cpp:265 src/ServerListCtrl.cpp:94
+#: src/PrefsUnifiedDlg.cpp:266 src/ServerListCtrl.cpp:94
 msgid "Files"
 msgstr "קבצים"
 
-#: src/PrefsUnifiedDlg.cpp:266
+#: src/PrefsUnifiedDlg.cpp:267
 msgid "Security"
 msgstr "אבטחה"
 
-#: src/PrefsUnifiedDlg.cpp:267
+#: src/PrefsUnifiedDlg.cpp:268
 msgid "Interface"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:274
+#: src/PrefsUnifiedDlg.cpp:275
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:277
+#: src/PrefsUnifiedDlg.cpp:278
 msgid "Proxy"
 msgstr "פרוקסי"
 
-#: src/PrefsUnifiedDlg.cpp:278
+#: src/PrefsUnifiedDlg.cpp:279
 msgid "Filters"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:279
+#: src/PrefsUnifiedDlg.cpp:280
 msgid "Remote Controls"
 msgstr "שליטה מרחוק"
 
-#: src/PrefsUnifiedDlg.cpp:280
+#: src/PrefsUnifiedDlg.cpp:281
 msgid "Online Signature"
 msgstr "חתימה מקוונת"
 
-#: src/PrefsUnifiedDlg.cpp:281
+#: src/PrefsUnifiedDlg.cpp:282
 msgid "Advanced"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:282
+#: src/PrefsUnifiedDlg.cpp:283
 msgid "Events"
 msgstr "ארועים"
 
-#: src/PrefsUnifiedDlg.cpp:285
+#: src/PrefsUnifiedDlg.cpp:286
 msgid "Debugging"
 msgstr "ניפוי שגיאות"
 
-#: src/PrefsUnifiedDlg.cpp:386
+#: src/PrefsUnifiedDlg.cpp:387
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:407
+#: src/PrefsUnifiedDlg.cpp:408
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:423
+#: src/PrefsUnifiedDlg.cpp:424
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:464
+#: src/PrefsUnifiedDlg.cpp:465
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5186,26 +5190,26 @@ msgid ""
 "these settings."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:534
+#: src/PrefsUnifiedDlg.cpp:535
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:582
+#: src/PrefsUnifiedDlg.cpp:583
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:635
+#: src/PrefsUnifiedDlg.cpp:636
 msgid "The type of proxy you are connecting to"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:828
+#: src/PrefsUnifiedDlg.cpp:829
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:902
+#: src/PrefsUnifiedDlg.cpp:903
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5213,46 +5217,46 @@ msgstr ""
 "אימיול חייב להיות מאותחל מחדש על מנת לאפשר את השינויים הללו:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:909
+#: src/PrefsUnifiedDlg.cpp:910
 msgid "- TCP port changed.\n"
 msgstr "- מבואת TCP שונתה \n"
 
-#: src/PrefsUnifiedDlg.cpp:914
+#: src/PrefsUnifiedDlg.cpp:915
 msgid "- UDP port changed.\n"
 msgstr "- מבואת UDP שונתה \n"
 
-#: src/PrefsUnifiedDlg.cpp:919
+#: src/PrefsUnifiedDlg.cpp:920
 #, fuzzy
 msgid "- Network interface binding changed.\n"
 msgstr "חיבור חיצוני נסגר."
 
-#: src/PrefsUnifiedDlg.cpp:924
+#: src/PrefsUnifiedDlg.cpp:925
 #, fuzzy
 msgid "- External connect port changed.\n"
 msgstr "חיבור חיצוני נסגר."
 
-#: src/PrefsUnifiedDlg.cpp:928
+#: src/PrefsUnifiedDlg.cpp:929
 #, fuzzy
 msgid "- External connect acceptance changed.\n"
 msgstr "גישה חיצונית חדשה התקבלה"
 
-#: src/PrefsUnifiedDlg.cpp:932
+#: src/PrefsUnifiedDlg.cpp:933
 #, fuzzy
 msgid "- External connect interface changed.\n"
 msgstr "חיבור חיצוני נסגר."
 
-#: src/PrefsUnifiedDlg.cpp:936
+#: src/PrefsUnifiedDlg.cpp:937
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "חיבור חיצוני נסגר."
 
-#: src/PrefsUnifiedDlg.cpp:945
+#: src/PrefsUnifiedDlg.cpp:946
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:956
+#: src/PrefsUnifiedDlg.cpp:957
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5260,26 +5264,26 @@ msgstr ""
 "אתה אפשרת חיבוריים חיצוניים אבל לא הזנת סיסמא תקיפה.\n"
 "חיבורים חיצוניים לא יאופשרו אלא אם כן תוזן סיסמא תקיפה."
 
-#: src/PrefsUnifiedDlg.cpp:969
+#: src/PrefsUnifiedDlg.cpp:970
 msgid "- Language changed.\n"
 msgstr "- השפה שונתה.\n"
 
-#: src/PrefsUnifiedDlg.cpp:974
+#: src/PrefsUnifiedDlg.cpp:975
 msgid "- Temp folder changed.\n"
 msgstr "- הפסרייה הזמנית שונתה.\n"
 
-#: src/PrefsUnifiedDlg.cpp:979
+#: src/PrefsUnifiedDlg.cpp:980
 #, fuzzy
 msgid "- ED2K network enabled.\n"
 msgstr "כל הרשתות מנוטרלות."
 
-#: src/PrefsUnifiedDlg.cpp:1068
+#: src/PrefsUnifiedDlg.cpp:1069
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1073
+#: src/PrefsUnifiedDlg.cpp:1074
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5287,7 +5291,7 @@ msgstr ""
 "קאד לא יתחיל אם מבואת ה UDB מנוטרלת.\n"
 "תאפשר את מבואת ה UDP או שתנטרל את קאד."
 
-#: src/PrefsUnifiedDlg.cpp:1126
+#: src/PrefsUnifiedDlg.cpp:1127
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5297,20 +5301,20 @@ msgstr ""
 "אתה חייב לאתחל את אימיול עכשיו!\n"
 "אם לא תאתחל את אימיול עכשיו אל תתלונן אם משהו רע יקרה.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1187
+#: src/PrefsUnifiedDlg.cpp:1188
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1189
+#: src/PrefsUnifiedDlg.cpp:1190
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1190
+#: src/PrefsUnifiedDlg.cpp:1191
 #, fuzzy
 msgid "Autostart"
 msgstr "רענון אוטמטי התחיל"
 
-#: src/PrefsUnifiedDlg.cpp:1264
+#: src/PrefsUnifiedDlg.cpp:1265
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5320,50 +5324,50 @@ msgstr ""
 "בבקשה תכניס לפחות כתובת URL אחת שתצביע לקובץ server.met תקף.\n"
 "לחץ על הכפתור \"רשימה\" שליד הצ'קבוקס הזה כדי להכניס בתובת URL."
 
-#: src/PrefsUnifiedDlg.cpp:1405
+#: src/PrefsUnifiedDlg.cpp:1406
 msgid "Temporary files"
 msgstr "קבצים זמניים"
 
-#: src/PrefsUnifiedDlg.cpp:1410
+#: src/PrefsUnifiedDlg.cpp:1411
 msgid "Incoming files"
 msgstr "קבצים נכנסים"
 
-#: src/PrefsUnifiedDlg.cpp:1415
+#: src/PrefsUnifiedDlg.cpp:1416
 msgid "Online Signatures"
 msgstr "חתימה מקוונת"
 
-#: src/PrefsUnifiedDlg.cpp:1428
+#: src/PrefsUnifiedDlg.cpp:1429
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "בחר תיקייה עבור %s"
 
-#: src/PrefsUnifiedDlg.cpp:1444
+#: src/PrefsUnifiedDlg.cpp:1445
 msgid "Browse for videoplayer"
 msgstr "חפש נגן סרטים"
 
-#: src/PrefsUnifiedDlg.cpp:1448
+#: src/PrefsUnifiedDlg.cpp:1449
 msgid "Select browser"
 msgstr "בחר דפדפן"
 
-#: src/PrefsUnifiedDlg.cpp:1452
+#: src/PrefsUnifiedDlg.cpp:1453
 #, fuzzy
 msgid "Select ffprobe binary"
 msgstr "בחר דפדפן"
 
-#: src/PrefsUnifiedDlg.cpp:1458
+#: src/PrefsUnifiedDlg.cpp:1459
 #, c-format
 msgid "Executable%s"
 msgstr "קובץ הרצה %s"
 
-#: src/PrefsUnifiedDlg.cpp:1492
+#: src/PrefsUnifiedDlg.cpp:1493
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1507
+#: src/PrefsUnifiedDlg.cpp:1508
 msgid "Edit server list"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1508
+#: src/PrefsUnifiedDlg.cpp:1509
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5371,150 +5375,150 @@ msgstr ""
 "הוסף כאן כתובות URL שמהם ניתן להוריד קבצי server.met.\n"
 "רק כתובת אחת בכל שורה."
 
-#: src/PrefsUnifiedDlg.cpp:1556
+#: src/PrefsUnifiedDlg.cpp:1557
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1685
+#: src/PrefsUnifiedDlg.cpp:1686
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1687
+#: src/PrefsUnifiedDlg.cpp:1688
 #, fuzzy
 msgid "Custom source"
 msgstr "מקורות שלמים"
 
-#: src/PrefsUnifiedDlg.cpp:1689
+#: src/PrefsUnifiedDlg.cpp:1690
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1709
+#: src/PrefsUnifiedDlg.cpp:1710
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "סטאטוס:"
 
-#: src/PrefsUnifiedDlg.cpp:1711
+#: src/PrefsUnifiedDlg.cpp:1712
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "סטאטוס:"
 
-#: src/PrefsUnifiedDlg.cpp:1715
+#: src/PrefsUnifiedDlg.cpp:1716
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1717
+#: src/PrefsUnifiedDlg.cpp:1718
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1759 src/PrefsUnifiedDlg.cpp:1783
+#: src/PrefsUnifiedDlg.cpp:1760 src/PrefsUnifiedDlg.cpp:1784
 #, fuzzy, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "השהיית עדון: %d שניות"
 msgstr[1] "השהיית עדון: %d שניות"
 
-#: src/PrefsUnifiedDlg.cpp:1767
+#: src/PrefsUnifiedDlg.cpp:1768
 #, fuzzy, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "זמן עבור גרף הממוצע: %d דקות"
 msgstr[1] "זמן עבור גרף הממוצע: %d דקות"
 
-#: src/PrefsUnifiedDlg.cpp:1776
+#: src/PrefsUnifiedDlg.cpp:1777
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "סקאלאת גרף החיבורים: %d"
 
-#: src/PrefsUnifiedDlg.cpp:1791
+#: src/PrefsUnifiedDlg.cpp:1792
 #, fuzzy, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "גודל זיכרון זמני לקובץ: %d בתים"
 msgstr[1] "גודל זיכרון זמני לקובץ: %d בתים"
 
-#: src/PrefsUnifiedDlg.cpp:1801
+#: src/PrefsUnifiedDlg.cpp:1802
 #, fuzzy, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "גודל תור ההאלעות: %d לקוחות"
 msgstr[1] "גודל תור ההאלעות: %d לקוחות"
 
-#: src/PrefsUnifiedDlg.cpp:1811
+#: src/PrefsUnifiedDlg.cpp:1812
 #, fuzzy, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "רענון חיבור לשרת כל: %d דקות"
 msgstr[1] "רענון חיבור לשרת כל: %d דקות"
 
-#: src/PrefsUnifiedDlg.cpp:1816
+#: src/PrefsUnifiedDlg.cpp:1817
 msgid "Server connection refresh interval: Disabled"
 msgstr "רענון חיבור לשרת: מנוטרל"
 
-#: src/PrefsUnifiedDlg.cpp:1860
+#: src/PrefsUnifiedDlg.cpp:1861
 #, fuzzy
 msgid "disabled"
 msgstr "נוטרל [%s]"
 
-#: src/PrefsUnifiedDlg.cpp:1886
+#: src/PrefsUnifiedDlg.cpp:1887
 #, fuzzy, c-format
 msgid "Execute command on '%s' event"
 msgstr "בצע פקודה בעת ארוע '%s'"
 
-#: src/PrefsUnifiedDlg.cpp:1893
+#: src/PrefsUnifiedDlg.cpp:1894
 msgid "Enable command execution on core"
 msgstr "אפשר הרצת פקודות על הליבה"
 
-#: src/PrefsUnifiedDlg.cpp:1905
+#: src/PrefsUnifiedDlg.cpp:1906
 msgid "Core command:"
 msgstr "פקודת ליבה:"
 
-#: src/PrefsUnifiedDlg.cpp:1921
+#: src/PrefsUnifiedDlg.cpp:1922
 msgid "Enable command execution on GUI"
 msgstr "אפשר ביצוע פקודות על ממשק גרפי"
 
-#: src/PrefsUnifiedDlg.cpp:1933
+#: src/PrefsUnifiedDlg.cpp:1934
 msgid "GUI command:"
 msgstr "פקודת ממשק גרפי:"
 
-#: src/PrefsUnifiedDlg.cpp:1949
+#: src/PrefsUnifiedDlg.cpp:1950
 msgid "The following variables will be replaced:"
 msgstr "המשתנים הבאים יוחלפו:"
 
-#: src/PrefsUnifiedDlg.cpp:2108
+#: src/PrefsUnifiedDlg.cpp:2109
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2113
+#: src/PrefsUnifiedDlg.cpp:2114
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2116
+#: src/PrefsUnifiedDlg.cpp:2117
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "טען מחדש את הקבצים המשותפים שלך"
 
-#: src/PrefsUnifiedDlg.cpp:2145
+#: src/PrefsUnifiedDlg.cpp:2146
 #, fuzzy
 msgid "Reloading shared files…"
 msgstr "טען מחדש את הקבצים המשותפים שלך"
 
-#: src/PrefsUnifiedDlg.cpp:2145
+#: src/PrefsUnifiedDlg.cpp:2146
 msgid "Scanning for subdirectories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2146
+#: src/PrefsUnifiedDlg.cpp:2147
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "קורא את הספרייה הזמנית"
 
-#: src/PrefsUnifiedDlg.cpp:2173
+#: src/PrefsUnifiedDlg.cpp:2174
 #, c-format
 msgid "Scanned %u directories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2223
+#: src/PrefsUnifiedDlg.cpp:2224
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "טוען מחדש את רשימת הקבצים המשותפים."
@@ -6119,7 +6123,7 @@ msgstr "ממוצע משתמשים:"
 msgid "Average Files:"
 msgstr "ממוצע קבצים:"
 
-#: src/ServerWnd.cpp:289 src/TextClient.cpp:877
+#: src/ServerWnd.cpp:289 src/TextClient.cpp:904
 msgid "Not running"
 msgstr "לא פועל"
 
@@ -6283,7 +6287,7 @@ msgstr "אתה צריך מ\"ז גבוה (HighID) כדי לחןר קישור-מק
 msgid "Shared Files (%i)"
 msgstr "קבצים משותפים (%i)"
 
-#: src/SharedFilesCtrl.cpp:658 src/TextClient.cpp:977
+#: src/SharedFilesCtrl.cpp:658 src/TextClient.cpp:1004
 msgid "[PartFile]"
 msgstr "[קובץ-חלקים]"
 
@@ -6542,41 +6546,41 @@ msgstr "אף פעם"
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
 msgstr "פקודת '%s עם pid '%d' סיים עם קוד סטטוס '%d'."
 
-#: src/TextClient.cpp:222
+#: src/TextClient.cpp:224
 msgid "Execute <str> and exit."
 msgstr "הרץ <str> וצא."
 
-#: src/TextClient.cpp:308
+#: src/TextClient.cpp:310
 msgid "Invalid IP format. Use xxx.xxx.xxx.xxx:xxxx\n"
 msgstr "פורמט IP לא חוקי. התמש ב xxx.xxx.xxx.xxx:xxxx\n"
 
-#: src/TextClient.cpp:425
+#: src/TextClient.cpp:427
 msgid "This command requires an argument. Valid arguments: 'all', filename, or a number.\n"
 msgstr "הפקודה הזאת דורשת ארגומנט. ארגומנט חוקי יכול להיות: 'all' שם קובץ או מספר.\n"
 
-#: src/TextClient.cpp:471
+#: src/TextClient.cpp:473
 msgid "Processing by hash: "
 msgstr "מעבד על פי גיבוב: "
 
-#: src/TextClient.cpp:490
+#: src/TextClient.cpp:492
 msgid "Processing by filename: "
 msgstr "מעבד על פי שם קובץ: "
 
-#: src/TextClient.cpp:514
+#: src/TextClient.cpp:516
 msgid "This command requires an argument. Valid arguments: a file hash.\n"
 msgstr "פקודה זאת דורשת ארגומנט. ארגומנט חוקי: גיבוב של קובץ.\n"
 
-#: src/TextClient.cpp:542
+#: src/TextClient.cpp:544
 msgid "Not a valid number\n"
 msgstr "לא מספר חוקי\n"
 
-#: src/TextClient.cpp:546
+#: src/TextClient.cpp:548
 msgid "Not a valid hash (length should be exactly 32 chars)\n"
 msgstr "לא גיבוב חוקי (האורך חייב להיות בדיוק 32 תווים)\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
-#: src/TextClient.cpp:657
+#: src/TextClient.cpp:681
 msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
@@ -6584,7 +6588,7 @@ msgstr ""
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
-#: src/TextClient.cpp:664
+#: src/TextClient.cpp:688
 msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
@@ -6592,82 +6596,87 @@ msgstr ""
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
-#: src/TextClient.cpp:678
+#: src/TextClient.cpp:702
 msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
 msgstr ""
 
-#: src/TextClient.cpp:695
+#: src/TextClient.cpp:719
 #, fuzzy, c-format
 msgid "Download File: %lu %s\n"
 msgstr "הורדות (%i)"
 
-#: src/TextClient.cpp:790 src/webserver/src/WebServer.cpp:389
+#: src/TextClient.cpp:814 src/webserver/src/WebServer.cpp:389
 msgid "Request failed with an unknown error."
 msgstr "הבקשה נכשלה עם שגיאה לא ידועה"
 
-#: src/TextClient.cpp:794
+#: src/TextClient.cpp:818
 msgid "Operation was successful."
 msgstr "הפעולה הסתיימה בהצלחה."
 
-#: src/TextClient.cpp:799
+#: src/TextClient.cpp:823
 #, c-format
 msgid "Request failed with the following error: %s"
 msgstr "הבקשה נכשלה עם השגיאה הבאה: %s"
 
-#: src/TextClient.cpp:812
+#: src/TextClient.cpp:836
 #, c-format
 msgid "IP filtering for clients is %s.\n"
 msgstr "סינון IP עבור לקוחות הוא %s.\n"
 
-#: src/TextClient.cpp:813 src/TextClient.cpp:820
+#: src/TextClient.cpp:837 src/TextClient.cpp:844 src/TextClient.cpp:861
 msgid "OFF"
 msgstr "מכובה"
 
-#: src/TextClient.cpp:814 src/TextClient.cpp:821
+#: src/TextClient.cpp:838 src/TextClient.cpp:845 src/TextClient.cpp:861
 msgid "ON"
 msgstr "דלוק"
 
-#: src/TextClient.cpp:819
+#: src/TextClient.cpp:843
 #, c-format
 msgid "IP filtering for servers is %s.\n"
 msgstr "סינון IP עבור שרתים הוא %s.\n"
 
-#: src/TextClient.cpp:825
+#: src/TextClient.cpp:849
 #, c-format
 msgid "Current IPFilter Level is %d.\n"
 msgstr "רמת סינום IP נוכחית היא %d.\n"
 
-#: src/TextClient.cpp:832
+#: src/TextClient.cpp:856
 #, c-format
 msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
 msgstr ""
 
-#: src/TextClient.cpp:846
+#: src/TextClient.cpp:860
+#, c-format
+msgid "Endgame source rotation is %s.\n"
+msgstr ""
+
+#: src/TextClient.cpp:873
 msgid "eD2k"
 msgstr ""
 
-#: src/TextClient.cpp:852
+#: src/TextClient.cpp:879
 #, c-format
 msgid "Connected to %s %s %s"
 msgstr "מחובר ל %s·%s·%s"
 
-#: src/TextClient.cpp:859
+#: src/TextClient.cpp:886
 msgid "Now connecting"
 msgstr "מתחבר עכשיו"
 
-#: src/TextClient.cpp:868 src/utils/wxCas/src/wxcasframe.cpp:1002
+#: src/TextClient.cpp:895 src/utils/wxCas/src/wxcasframe.cpp:1002
 #: src/utils/wxCas/src/wxcasframe.cpp:1014
 msgid "firewalled"
 msgstr "חסום-חומתאש"
 
-#: src/TextClient.cpp:870 src/utils/wxCas/src/wxcasframe.cpp:1000
+#: src/TextClient.cpp:897 src/utils/wxCas/src/wxcasframe.cpp:1000
 #: src/utils/wxCas/src/wxcasframe.cpp:1012
 msgid "ok"
 msgstr "בסדר"
 
-#: src/TextClient.cpp:883
+#: src/TextClient.cpp:910
 #, c-format
 msgid ""
 "\n"
@@ -6676,7 +6685,7 @@ msgstr ""
 "\n"
 "הורדה:\t%s"
 
-#: src/TextClient.cpp:886
+#: src/TextClient.cpp:913
 #, c-format
 msgid ""
 "\n"
@@ -6685,7 +6694,7 @@ msgstr ""
 "\n"
 "העלאה:\t%s"
 
-#: src/TextClient.cpp:889
+#: src/TextClient.cpp:916
 #, c-format
 msgid ""
 "\n"
@@ -6694,7 +6703,7 @@ msgstr ""
 "\n"
 "לקוחות בתור:\t%d\n"
 
-#: src/TextClient.cpp:892
+#: src/TextClient.cpp:919
 #, c-format
 msgid ""
 "\n"
@@ -6703,38 +6712,38 @@ msgstr ""
 "\n"
 "סה\"כ מקורות:\t%d\n"
 
-#: src/TextClient.cpp:1006
+#: src/TextClient.cpp:1033
 #, c-format
 msgid "Number of search results: %i\n"
 msgstr "מספר תוצאות חיפוש: %i\n"
 
-#: src/TextClient.cpp:1019
+#: src/TextClient.cpp:1046
 #, c-format
 msgid "Search progress: %u %% \n"
 msgstr ""
 
-#: src/TextClient.cpp:1021
+#: src/TextClient.cpp:1048
 msgid "Search progress not available"
 msgstr ""
 
-#: src/TextClient.cpp:1026
+#: src/TextClient.cpp:1053
 #, c-format
 msgid "Received an unknown reply from the server, OpCode = %#x."
 msgstr "התקבלה תשובה לא מוכרת מהשרת, קוד-פעולה = %#x."
 
-#: src/TextClient.cpp:1042
+#: src/TextClient.cpp:1069
 msgid "Show short status information."
 msgstr "הראה מידעה על מצב בקיצור."
 
-#: src/TextClient.cpp:1043
+#: src/TextClient.cpp:1070
 msgid "Show connection status, current up/download speeds, etc.\n"
 msgstr "הראה מצב חיבורים, מהירות הורדה/האלכה נוכחיים וכו'.\n"
 
-#: src/TextClient.cpp:1048
+#: src/TextClient.cpp:1075
 msgid "Show full statistics tree."
 msgstr "הראה את עץ הסטטיסטיקה המלא."
 
-#: src/TextClient.cpp:1049
+#: src/TextClient.cpp:1076
 msgid ""
 "Optionally, a number in the range 0-255 can be passed as an argument to this\n"
 "command, which tells how many entries of the client version subtrees should be\n"
@@ -6748,51 +6757,51 @@ msgstr ""
 "\n"
 "דוגמא: 'statistics·5' יראה רק את חמשת הגרסאות הראשונים עבור כל סוג לקוח.\n"
 
-#: src/TextClient.cpp:1056
+#: src/TextClient.cpp:1083
 msgid "Shut down aMule."
 msgstr ""
 
-#: src/TextClient.cpp:1057
+#: src/TextClient.cpp:1084
 msgid ""
 "Shut down the remote running core (amule/amuled).\n"
 "This will also shut down the text client, since it is unusable without a\n"
 "running core.\n"
 msgstr ""
 
-#: src/TextClient.cpp:1062
+#: src/TextClient.cpp:1089
 #, fuzzy
 msgid "Reload the given object."
 msgstr "טוען מחדש את האובייקט הנתון."
 
-#: src/TextClient.cpp:1065
+#: src/TextClient.cpp:1092
 #, fuzzy
 msgid "Reload shared files list."
 msgstr "טוען מחדש את רשימת הקבצים המשותפים."
 
-#: src/TextClient.cpp:1071
+#: src/TextClient.cpp:1098
 #, fuzzy
 msgid "Reload IP filtering table."
 msgstr "טוען מחדש את טבלת סינון ה IP מהקובץ."
 
-#: src/TextClient.cpp:1076
+#: src/TextClient.cpp:1103
 #, fuzzy
 msgid "Reload current IP filtering table."
 msgstr "בחר את אמת סינון הIP."
 
-#: src/TextClient.cpp:1081
+#: src/TextClient.cpp:1108
 #, fuzzy
 msgid "Update IP filtering table from URL."
 msgstr "טוען מחדש את טבלת סינון ה IP מהקובץ."
 
-#: src/TextClient.cpp:1082
+#: src/TextClient.cpp:1109
 msgid "If URL is omitted the URL from the preferences is used."
 msgstr ""
 
-#: src/TextClient.cpp:1087
+#: src/TextClient.cpp:1114
 msgid "Connect to the network."
 msgstr "התחבר לרשת."
 
-#: src/TextClient.cpp:1089
+#: src/TextClient.cpp:1116
 msgid ""
 "This will connect to all networks that are enabled in Preferences.\n"
 "You may also optionally specify a server address in IP:Port form, to connect to\n"
@@ -6804,36 +6813,36 @@ msgstr ""
 "שרת זה בלבד. ה IP חייב להיות ארבעה מספרים מופרדים בנקודות בפורמט IPv4, \n"
 "או שם שרת שניתן להמירו ל IP."
 
-#: src/TextClient.cpp:1094
+#: src/TextClient.cpp:1121
 msgid "Connect to eD2k only."
 msgstr ""
 
-#: src/TextClient.cpp:1095
+#: src/TextClient.cpp:1122
 msgid "Connect to Kad only."
 msgstr "התחבר רק לקאד."
 
-#: src/TextClient.cpp:1099
+#: src/TextClient.cpp:1126
 msgid "Disconnect from the network."
 msgstr "התנתק מהרשת."
 
-#: src/TextClient.cpp:1100
+#: src/TextClient.cpp:1127
 msgid "This will disconnect from all networks that are currently connected.\n"
 msgstr "פעולה זו תנתק את כל הרשתות המחוברות.\n"
 
-#: src/TextClient.cpp:1104
+#: src/TextClient.cpp:1131
 msgid "Disconnect from eD2k only."
 msgstr ""
 
-#: src/TextClient.cpp:1108
+#: src/TextClient.cpp:1135
 msgid "Disconnect from Kad only."
 msgstr "התנתק רק מ קאד."
 
-#: src/TextClient.cpp:1112
+#: src/TextClient.cpp:1139
 #, fuzzy
 msgid "Add an eD2k or magnet link to core."
 msgstr "מוסיף קישור ed2k או מגנט לליבה."
 
-#: src/TextClient.cpp:1113
+#: src/TextClient.cpp:1140
 msgid ""
 "The eD2k link to be added can be:\n"
 "*) a file link (ed2k://|file|...), it will be added to the download queue,\n"
@@ -6844,52 +6853,52 @@ msgid ""
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
 
-#: src/TextClient.cpp:1121
+#: src/TextClient.cpp:1148
 msgid "Set a preference value."
 msgstr "הגדר ערך מועדף."
 
-#: src/TextClient.cpp:1125
+#: src/TextClient.cpp:1152
 #, fuzzy
 msgid "Set IP filtering preferences."
 msgstr "הגדר העדפת מסנן IP."
 
-#: src/TextClient.cpp:1130
+#: src/TextClient.cpp:1157
 msgid "Turn IP filtering on for both clients and servers."
 msgstr "הדלק סינון IP הן עבור הלקוחות והן עבור השרתים."
 
-#: src/TextClient.cpp:1135
+#: src/TextClient.cpp:1162
 msgid "Turn IP filtering off for both clients and servers."
 msgstr "כבה סינון IP הן עבור הלקוחות והן עבור השרתים."
 
-#: src/TextClient.cpp:1140
+#: src/TextClient.cpp:1167
 msgid "Enable/Disable IP filtering for clients."
 msgstr "אפשר/נטרל סינון IP עבור לקוחות."
 
-#: src/TextClient.cpp:1145
+#: src/TextClient.cpp:1172
 msgid "Turn IP filtering on for clients."
 msgstr "הדלק סינון IP עבור לקוחות."
 
-#: src/TextClient.cpp:1150
+#: src/TextClient.cpp:1177
 msgid "Turn IP filtering off for clients."
 msgstr "כבה סינון IP עבור לקוחות."
 
-#: src/TextClient.cpp:1155
+#: src/TextClient.cpp:1182
 msgid "Enable/Disable IP filtering for servers."
 msgstr "אפשר/נטרל סינון IP עבור שרתים."
 
-#: src/TextClient.cpp:1160
+#: src/TextClient.cpp:1187
 msgid "Turn IP filtering on for servers."
 msgstr "הדלק סינון IP עבור שרתים."
 
-#: src/TextClient.cpp:1165
+#: src/TextClient.cpp:1192
 msgid "Turn IP filtering off for servers."
 msgstr "כבה סינון IP עבור שרתים."
 
-#: src/TextClient.cpp:1170
+#: src/TextClient.cpp:1197
 msgid "Select IP filtering level."
 msgstr "בחר את אמת סינון הIP."
 
-#: src/TextClient.cpp:1171
+#: src/TextClient.cpp:1198
 msgid ""
 "Valid filtering levels are in the range 0-255, and it's default (initial)\n"
 "value is 127.\n"
@@ -6897,66 +6906,79 @@ msgstr ""
 "רמות סינון תקפים המ בתווך של 0-255, ברירת המחדשל (ערך התחלתי)\n"
 "הוא 127.\n"
 
-#: src/TextClient.cpp:1177
+#: src/TextClient.cpp:1204
 msgid "Set bandwidth limits."
 msgstr "קבע תיחום רוחב פס."
 
-#: src/TextClient.cpp:1178
+#: src/TextClient.cpp:1205
 msgid "The value given to these commands has to be in kilobytes/sec.\n"
 msgstr "הערך שמועבר לפקודות אלו חייב להיות ביחידות של ק\"ב/ש.\n"
 
-#: src/TextClient.cpp:1182
+#: src/TextClient.cpp:1209
 msgid "Set upload bandwidth limit."
 msgstr "קבע מגבלת רוחב פס בהעלאה."
 
-#: src/TextClient.cpp:1183 src/TextClient.cpp:1188
+#: src/TextClient.cpp:1210 src/TextClient.cpp:1215
 #, fuzzy
 msgid "The given value must be in kilobytes/sec.\n"
 msgstr "הערך שמועבר לפקודות אלו חייב להיות ביחידות של ק\"ב/ש.\n"
 
-#: src/TextClient.cpp:1187
+#: src/TextClient.cpp:1214
 msgid "Set download bandwidth limit."
 msgstr "קבע מגבלת רוחב פס בהורדה."
 
-#: src/TextClient.cpp:1193
+#: src/TextClient.cpp:1219
+msgid "Enable or disable endgame source rotation."
+msgstr ""
+
+#: src/TextClient.cpp:1220
+#, fuzzy
+msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
+msgstr "הערך שמועבר לפקודות אלו חייב להיות ביחידות של ק\"ב/ש.\n"
+
+#: src/TextClient.cpp:1225
 msgid "Get and display a preference value."
 msgstr "שלוף ותציג ערך של העדפה."
 
-#: src/TextClient.cpp:1199
+#: src/TextClient.cpp:1231
 #, fuzzy
 msgid "Get IP filtering preferences."
 msgstr "שלוף העדפה עבור סינון IP."
 
-#: src/TextClient.cpp:1204
+#: src/TextClient.cpp:1236
 #, fuzzy
 msgid "Get IP filtering state for both clients and servers."
 msgstr "שלוף העדפה עבור סינון IP עבור השרתים והלקוחות."
 
-#: src/TextClient.cpp:1209
+#: src/TextClient.cpp:1241
 #, fuzzy
 msgid "Get IP filtering state for clients only."
 msgstr "שלוף העדפה עבור סינון IP רק עבור הלקוחות."
 
-#: src/TextClient.cpp:1214
+#: src/TextClient.cpp:1246
 #, fuzzy
 msgid "Get IP filtering state for servers only."
 msgstr "שלוף העדפה עבור סינון IP רק עבור השרתים."
 
-#: src/TextClient.cpp:1219
+#: src/TextClient.cpp:1251
 #, fuzzy
 msgid "Get IP filtering level."
 msgstr "בחר את אמת סינון הIP."
 
-#: src/TextClient.cpp:1224
+#: src/TextClient.cpp:1256
 msgid "Get bandwidth limits."
 msgstr "שלוף הגבלת רוחב הפס."
 
-#: src/TextClient.cpp:1228
+#: src/TextClient.cpp:1259
+msgid "Get endgame source rotation state."
+msgstr ""
+
+#: src/TextClient.cpp:1265
 #, fuzzy
 msgid "Execute a search."
 msgstr "הרץ חיפוש בקאדימליה"
 
-#: src/TextClient.cpp:1229
+#: src/TextClient.cpp:1266
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -6975,46 +6997,46 @@ msgid ""
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
 
-#: src/TextClient.cpp:1247
+#: src/TextClient.cpp:1284
 #, fuzzy
 msgid "Execute a global search."
 msgstr "הרץ חיפוש גלובלי."
 
-#: src/TextClient.cpp:1251
+#: src/TextClient.cpp:1288
 #, fuzzy
 msgid "Execute a local search"
 msgstr "הרץ חיפוש מקומי"
 
-#: src/TextClient.cpp:1252
+#: src/TextClient.cpp:1289
 #, fuzzy
 msgid "Execute a kad search"
 msgstr "הרץ חיפוש בקאדימליה"
 
-#: src/TextClient.cpp:1256
+#: src/TextClient.cpp:1293
 #, fuzzy
 msgid "Show the results of the last search."
 msgstr "הראה את התוצאות של החיפוש האחרון."
 
-#: src/TextClient.cpp:1257
+#: src/TextClient.cpp:1294
 #, fuzzy
 msgid "Return the results of the previous search.\n"
 msgstr "מחזירת את התוצאות של החיפוש האחרון.\n"
 
-#: src/TextClient.cpp:1262
+#: src/TextClient.cpp:1299
 #, fuzzy
 msgid "Show the progress of a search."
 msgstr "מראה את התקדמות החיפוש."
 
-#: src/TextClient.cpp:1263
+#: src/TextClient.cpp:1300
 #, fuzzy
 msgid "Show the progress of a search.\n"
 msgstr "מראה התקדמות של חיפוש.\n"
 
-#: src/TextClient.cpp:1268
+#: src/TextClient.cpp:1305
 msgid "Start downloading a file"
 msgstr "התחל בהורדת קובץ"
 
-#: src/TextClient.cpp:1270
+#: src/TextClient.cpp:1307
 msgid ""
 "The number of a file from the last search has to be given.\n"
 "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
@@ -7022,82 +7044,82 @@ msgstr ""
 "מספר הקובץ מהחיפוש האחרון חייב להמסר.\n"
 "דוגמה: 'download·12'· יתחיל להוריד את קובץ מספר 12 מהחיפוש האחרון.\n"
 
-#: src/TextClient.cpp:1278
+#: src/TextClient.cpp:1315
 msgid "Pause download."
 msgstr "השהה הורדה."
 
-#: src/TextClient.cpp:1280
+#: src/TextClient.cpp:1317
 msgid "Resume download."
 msgstr "המשך הורדה."
 
-#: src/TextClient.cpp:1282
+#: src/TextClient.cpp:1319
 msgid "Cancel download."
 msgstr "בטל הורדה."
 
-#: src/TextClient.cpp:1286
+#: src/TextClient.cpp:1323
 msgid "Set download priority."
 msgstr "קבע את העדיפות של ההורדה."
 
-#: src/TextClient.cpp:1287
+#: src/TextClient.cpp:1324
 msgid "Set priority of a download to Low, Normal, High or Auto.\n"
 msgstr "קבע את עדיפות ההורדה ל נמוך, נורמלי, גבוה או אוטומטי.\n"
 
-#: src/TextClient.cpp:1290
+#: src/TextClient.cpp:1327
 msgid "Set priority to low."
 msgstr "קבע את העדיפות ל 'נמוך'."
 
-#: src/TextClient.cpp:1293
+#: src/TextClient.cpp:1330
 msgid "Set priority to normal."
 msgstr "קבע את העדיפות ל 'נורמלי'."
 
-#: src/TextClient.cpp:1297
+#: src/TextClient.cpp:1334
 msgid "Set priority to high."
 msgstr "קבע את העדיפות ל 'גבוה'."
 
-#: src/TextClient.cpp:1299
+#: src/TextClient.cpp:1336
 msgid "Set priority to auto."
 msgstr "קבע את העדיפות ל 'אוטומטי'."
 
-#: src/TextClient.cpp:1303
+#: src/TextClient.cpp:1340
 msgid "Show queues/lists."
 msgstr "הראה תורים/רשימות."
 
-#: src/TextClient.cpp:1304
+#: src/TextClient.cpp:1341
 #, fuzzy
 msgid "Show upload/download queue, server list or shared files list.\n"
 msgstr "הראה תורים של הרודות/העלאות, רשימת שרתים או רשימת קבצים משותפים.\n"
 
-#: src/TextClient.cpp:1306
+#: src/TextClient.cpp:1343
 msgid "Show upload queue."
 msgstr "הראה צור העלאות"
 
-#: src/TextClient.cpp:1307
+#: src/TextClient.cpp:1344
 msgid "Show download queue."
 msgstr "הראה את תור ההורדות."
 
-#: src/TextClient.cpp:1308
+#: src/TextClient.cpp:1345
 msgid "Show log."
 msgstr "הראה יומן."
 
-#: src/TextClient.cpp:1310
+#: src/TextClient.cpp:1347
 msgid "Show servers list."
 msgstr "הראה את רשימת השרתים."
 
-#: src/TextClient.cpp:1312
+#: src/TextClient.cpp:1349
 #, fuzzy
 msgid "Show shared files list."
 msgstr "טוען מחדש את רשימת הקבצים המשותפים."
 
-#: src/TextClient.cpp:1314
+#: src/TextClient.cpp:1351
 msgid "Reset log."
 msgstr "אפס את הימון."
 
-#: src/TextClient.cpp:1323
+#: src/TextClient.cpp:1360
 #, c-format
 msgid "Deprecated command, use '%s' instead."
 msgstr ""
 
-#: src/TextClient.cpp:1324
+#: src/TextClient.cpp:1361
 #, c-format
 msgid ""
 "This is a deprecated command, and may be removed in the future.\n"
