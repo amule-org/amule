@@ -79,7 +79,7 @@ bool CEC_Category_Tag::Create()
 	if (!ret) {
 		GetTagByName(EC_TAG_CATEGORY_PATH)
 			->SetStringData(theApp->glob_prefs->GetCatPath(theApp->glob_prefs->GetCatCount() - 1)
-					.GetRaw());
+						.GetRaw());
 	}
 	return ret;
 }
