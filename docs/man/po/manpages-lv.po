@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-07-05 16:32+0000\n"
+"PO-Revision-Date: 2026-07-06 14:35+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -416,7 +416,7 @@ msgstr "B<[ -l> I<E<lt>valodaE<gt>>, B<--locale>=I<E<lt>valodaE<gt>> B<]>"
 #. type: Plain text
 #: amulecmd.1.in:54 amuleweb.1.in:71
 msgid "Sets program locale (language).  See the B<NOTES> section for the description of the I<E<lt>langE<gt>> parameter."
-msgstr "Iestata programmas lokalizāciju (valodu). Plašāku informāciju par I<E<lt>valodasE<gt>> parametru skatiet B<PIEZĪMES> sadaļā."
+msgstr "Iestata programmas lokāli (valodu). Plašāku informāciju par I<E<lt>valodasE<gt>> parametru skatiet B<PIEZĪMES> sadaļā."
 
 #. type: Plain text
 #: amulecmd.1.in:57 amuleweb.1.in:74
@@ -604,7 +604,7 @@ msgstr "Pārlādēt IP adrešu filtru tabulas."
 #. type: Plain text
 #: amulecmd.1.in:156
 msgid "Reset the log."
-msgstr ""
+msgstr "Notīrīt žurnālu."
 
 #. type: Plain text
 #: amulecmd.1.in:158
@@ -624,7 +624,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:166
 msgid "Available search types:"
-msgstr ""
+msgstr "Iespējamie meklēšanas veidi:"
 
 #. type: Plain text
 #: amulecmd.1.in:169
@@ -639,7 +639,7 @@ msgstr "Veic meklēšanu Kademlia tīklā."
 #. type: Plain text
 #: amulecmd.1.in:173
 msgid "Performs a local search."
-msgstr ""
+msgstr "Veic vietējo meklēšanu."
 
 #. type: Plain text
 #: amulecmd.1.in:177
@@ -704,7 +704,7 @@ msgstr "Rādīt lejupielādes rindu."
 #. type: Plain text
 #: amulecmd.1.in:212
 msgid "Show log."
-msgstr ""
+msgstr "Skatīt žurnālu."
 
 #. type: Plain text
 #: amulecmd.1.in:214
@@ -729,7 +729,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:224
 msgid "Show statistics tree."
-msgstr ""
+msgstr "Parādīt statistiku."
 
 #. type: Plain text
 #: amulecmd.1.in:228
@@ -770,12 +770,12 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:263 amuleweb.1.in:166
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
-msgstr ""
+msgstr "Papildus iepriekšminētajam formātam variet vienkārši norādīt valodas nosaukumu angļu valodā. Tātad arī B<-l latvian> arguments ir derīgs un līdzvērtīgs B<-l lv_LV>."
 
 #. type: Plain text
 #: amulecmd.1.in:266 amuleweb.1.in:169
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
-msgstr ""
+msgstr "Ja valoda nav norādīta ne kā komandrindas arguments, ne konfigurācijas datnē, tiks izmantota sistēmas noklusējuma valoda."
 
 #. type: Plain text
 #: amulecmd.1.in:268 amuleweb.1.in:177
@@ -796,7 +796,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:272
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
-msgstr ""
+msgstr "B<amulecmd> B<-h> I<resursdatora_nosaukums> B<-p> I<EC_ports> B<-P> I<EC_parole> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in:274 amuleweb.1.in:187
@@ -839,7 +839,7 @@ msgstr "aMule fona programma"
 #. type: Plain text
 #: amuled.1.in:6
 msgid "amuled - the all-platform eMule p2p client - daemonized version"
-msgstr ""
+msgstr "amuled - visu operētājsistēmu eMule P2P klients - fona programma"
 
 #. type: Plain text
 #: amuled.1.in:9 ../../src/utils/cas/docs/cas.1.in:11
@@ -919,7 +919,7 @@ msgstr ""
 #. type: Plain text
 #: amulegui.1.in:42
 msgid "Skip connection dialog."
-msgstr ""
+msgstr "Izlaist savienojuma logu."
 
 #. type: Plain text
 #: amulegui.1.in:46
@@ -998,7 +998,7 @@ msgstr ""
 #: amuleweb.1.in:77
 #, no-wrap
 msgid "B<[ -s> I<E<lt>portE<gt>>, B<--server-port>=I<E<lt>portE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -s> I<E<lt>portsE<gt>>, B<--server-port>=I<E<lt>portsE<gt>> B<]>"
 
 #. type: Plain text
 #: amuleweb.1.in:80
@@ -1029,7 +1029,7 @@ msgstr "Iespējo gzip saspiešanu HTTP trafikam, lai ietaupītu datu pārraides 
 #. type: Plain text
 #: amuleweb.1.in:93
 msgid "Disables using gzip compression (this is the default)."
-msgstr ""
+msgstr "Atspējo gzip saspiešanu (noklusējuma iestatījums)."
 
 #. type: TP
 #: amuleweb.1.in:93
@@ -1056,7 +1056,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:102
 msgid "Allows guest access."
-msgstr ""
+msgstr "Ļauj viesu piekļuvi."
 
 #. type: Plain text
 #: amuleweb.1.in:105
@@ -1093,7 +1093,7 @@ msgstr ""
 #: amuleweb.1.in:169
 #, no-wrap
 msgid "SKIN SUPPORT"
-msgstr ""
+msgstr "APDARES ATBALSTS"
 
 #. type: Plain text
 #: amuleweb.1.in:173
@@ -1123,12 +1123,12 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:185
 msgid "B<amuleweb> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-s> I<HTTPport> B<-A> I<AdminPassword> B<-w>"
-msgstr ""
+msgstr "B<amuleweb> B<-h> I<resursdatora_nosaukums> B<-p> I<EC_ports> B<-P> I<EC_parole> B<-s> I<HTTP_ports> B<-A> I<Administratora_(pilnas_piekļuves)_parole> B<-w>"
 
 #. type: Plain text
 #: amuleweb.1.in:189
 msgid "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr ""
+msgstr "B<amuleweb> B<--create-config-from>=I</home/lietotājvārds/.aMule/amule.conf>"
 
 #. type: Plain text
 #: amuleweb.1.in:195
@@ -1150,7 +1150,7 @@ msgstr "aMule eD2k saišu parsētājs v1.5.1"
 #. type: Plain text
 #: ed2k.1.in:6
 msgid "ed2k - aMule eD2k link parser"
-msgstr ""
+msgstr "ed2k - aMule eD2k saišu parsētājs"
 
 #. type: Plain text
 #: ed2k.1.in:10
@@ -1196,7 +1196,7 @@ msgstr "magnētsaite;"
 #. type: Plain text
 #: ed2k.1.in:56
 msgid "an emulecollection file."
-msgstr ""
+msgstr "emulecollection datne."
 
 #. type: Plain text
 #: ed2k.1.in:61
@@ -1212,7 +1212,7 @@ msgstr "~/.aMule/ED2KLinks"
 #: ../../src/utils/aLinkCreator/docs/alc.1.in:1
 #, no-wrap
 msgid "ALC"
-msgstr ""
+msgstr "ALC"
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alc.1.in:1
@@ -1223,7 +1223,7 @@ msgstr "aLinkCreator"
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alc.1.in:5
 msgid "aLinkCreator - the aMule eD2k link creator"
-msgstr ""
+msgstr "aLinkCreator - aMule eD2k saites veidotājs"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alc.1.in:9
@@ -1240,7 +1240,7 @@ msgstr ""
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:1
 #, no-wrap
 msgid "ALCC"
-msgstr ""
+msgstr "ALCC"
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:1
@@ -1277,7 +1277,7 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in:1
 #, no-wrap
 msgid "CAS"
-msgstr ""
+msgstr "CAS"
 
 #. type: TH
 #: ../../src/utils/cas/docs/cas.1.in:1
@@ -1334,7 +1334,7 @@ msgstr ""
 #: ../../src/utils/wxCas/docs/wxcas.1.in:1
 #, no-wrap
 msgid "WXCAS"
-msgstr ""
+msgstr "WXCAS"
 
 #. type: TH
 #: ../../src/utils/wxCas/docs/wxcas.1.in:1
