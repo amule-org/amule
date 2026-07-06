@@ -852,11 +852,8 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 					connMaxUL->GetInt() % connMaxDL->GetInt();
 		}
 		tab = response->GetTagByNameSafe(EC_TAG_PREFS_FILES);
-		const CECTag *endgameTag = tab->GetTagByName(EC_TAG_FILES_ENDGAME);
-		if (endgameTag) {
-			s << CFormat(_("Endgame source rotation is %s.\n")) %
-					(endgameTag->GetInt() ? _("ON") : _("OFF"));
-		}
+		s << CFormat(_("Endgame source rotation is %s.\n")) %
+				((tab->GetTagByName(EC_TAG_FILES_ENDGAME) == NULL) ? _("OFF") : _("ON"));
 	} break;
 	case EC_OP_STRINGS:
 		for (CECPacket::const_iterator it = response->begin(); it != response->end(); ++it) {
