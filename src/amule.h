@@ -46,6 +46,7 @@ class CDownloadQueue;
 class CUploadQueue;
 class CPartFileWriteThread;
 class CPartFileHashThread;
+class CMediaProbeThread;
 class CPartFileHashResultEvent;
 class CServerConnect;
 class CSharedFileList;
@@ -283,6 +284,7 @@ public:
 	CUploadQueue *uploadqueue;
 	CPartFileWriteThread *partFileWriteThread;
 	CPartFileHashThread *partFileHashThread;
+	CMediaProbeThread *mediaProbeThread;
 	CServerConnect *serverconnect;
 	CSharedFileList *sharedfiles;
 	CServerList *serverlist;

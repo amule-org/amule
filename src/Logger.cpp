@@ -74,7 +74,8 @@ CDebugCategory g_debugcats[] = { CDebugCategory(logGeneral, "General"),
 	CDebugCategory(logKadEntryTracking, "Kademlia Entry Tracking"),
 	CDebugCategory(logEC, "External Connect"),
 	CDebugCategory(logHTTP, "HTTP"),
-	CDebugCategory(logAsio, "Asio Sockets") };
+	CDebugCategory(logAsio, "Asio Sockets"),
+	CDebugCategory(logMediaProbe, "Media Probe") };
 
 const int categoryCount = itemsof(g_debugcats);
 

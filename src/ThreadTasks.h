@@ -120,35 +120,10 @@ private:
 	void SetHashingProgress(uint16 part);
 };
 
-/**
- * Runs MediaProbe against a shared audio / video file so its
- * FT_MEDIA_LENGTH / _BITRATE / _CODEC tags can be published to
- * ed2k + Kad. Scheduled by CSharedFileList::AddFile for eligible
- * files (see issue #140). Posts MULE_EVT_MEDIA_PROBE on success;
- * the main-thread handler attaches the tags via AddTagUnique so
- * subsequent publish paths pick them up automatically.
- */
-class CMediaProbeTask : public CThreadTask
-{
-public:
-	CMediaProbeTask(const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath);
-
-protected:
-	//! @see CThreadTask::Entry
-	virtual void Entry();
-
-	//! Identifies the CKnownFile to attach the tags to when the
-	//! result event fires on the main thread. Resolved via
-	//! CKnownFileList::FindKnownFileByID at that point since the
-	//! file may have been unshared while we were probing.
-	CMD4Hash m_hash;
-	//! Full path to the file. Snapshotted at ctor time so the
-	//! worker thread doesn't touch shared CKnownFile state.
-	CPath m_path;
-	//! ffprobe binary path snapshotted at ctor time so the task
-	//! doesn't need to reach into thePrefs from the worker thread.
-	wxString m_ffprobePath;
-};
+// Media metadata probing (#140/#280) runs on the dedicated
+// CMediaProbeThread, not the shared CThreadScheduler, so a slow/hung
+// ffprobe can't stall completions. Results still arrive via the
+// CMediaProbeEvent below. See MediaProbeThread.h.
 
 /**
  * This task synchronizes the AICH hashlist.

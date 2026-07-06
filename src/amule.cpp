@@ -94,6 +94,7 @@
 #include "UploadQueue.h"         // Needed for CUploadQueue
 #include "PartFileWriteThread.h" // Needed for CPartFileWriteThread
 #include "PartFileHashThread.h"  // Needed for CPartFileHashThread
+#include "MediaProbeThread.h"    // Needed for CMediaProbeThread
 #include "UploadBandwidthThrottler.h"
 #include "UploadDiskIOThread.h"
 #include "UserEvents.h"
@@ -215,6 +216,7 @@ CamuleApp::CamuleApp()
 #endif
 	core_timer = NULL;
 	partFileHashThread = NULL;
+	mediaProbeThread = nullptr;
 
 	m_localip = 0;
 	m_dwPublicIP = 0;
@@ -341,6 +343,15 @@ int CamuleApp::OnExit()
 
 	delete uploadqueue;
 	uploadqueue = NULL;
+
+	// Stop the media-probe worker: it's independent of the download
+	// pipeline, so tear it down early. Queued probes are dropped; any
+	// in-flight ffprobe is bounded by MediaProbe's timeout.
+	if (mediaProbeThread) {
+		mediaProbeThread->EndThread();
+		delete mediaProbeThread;
+		mediaProbeThread = nullptr;
+	}
 
 	// Stop hash thread first so any in-flight HashSinglePart finishes
 	// and m_pendingHashes drops to 0 before ~CPartFile waits on it.
@@ -834,6 +845,9 @@ bool CamuleApp::OnInit()
 	// PartFileBufferedData queue (#849).
 	partFileWriteThread = new CPartFileWriteThread();
 	partFileHashThread = new CPartFileHashThread();
+	// #280: dedicated worker for ffprobe metadata, isolated from the shared
+	// CThreadScheduler so a slow/hung probe can never stall completions.
+	mediaProbeThread = new CMediaProbeThread();
 
 	m_AsioService = new CAsioService;
 
@@ -1814,6 +1828,11 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	if (!evt.GetCodec().IsEmpty()) {
 		file->AddTagUnique(CTagString(FT_MEDIA_CODEC, evt.GetCodec()));
 	}
+	// Traced under logMediaProbe — the "metadata actually landed"
+	// confirmation, logged once per file when tags are attached.
+	AddDebugLogLineN(logMediaProbe,
+		CFormat(wxT("Media metadata: %s -> length=%us bitrate=%ukbps codec=%s")) %
+			file->GetFileName() % evt.GetLengthSeconds() % evt.GetBitrateKbps() % evt.GetCodec());
 	// EC exports the tag list; the remote GUI + web UI need to see
 	// the new values on next refresher tick.
 	file->MarkECChanged();

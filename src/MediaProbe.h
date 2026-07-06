@@ -21,6 +21,8 @@
 #ifndef MEDIAPROBE_H
 #define MEDIAPROBE_H
 
+#include <atomic>
+
 #include <wx/string.h>
 
 #include "Types.h"
@@ -72,11 +74,20 @@ wxString AutoDetectPath();
 // (a file the probe can't read still gets shared, just without
 // media tags).
 //
-// The probe forks a subprocess and waits synchronously; expect
-// 30-100 ms per file on typical hardware. Callers MUST run this off
-// the main thread — CSharedFileList threading extends the existing
-// batch-scan path.
-bool Probe(const wxString &ffprobePath, const CPath &file, MediaInfo &out);
+// The probe spawns ffprobe as a child process and waits for it with a
+// `timeoutMs` wall-clock bound: if the child outlives the deadline it is
+// killed and the probe reports failure. `keepRunning` is polled during the
+// wait — when it flips false (worker shutdown) the child is killed
+// immediately so the caller's join can complete. Both bounds mean a
+// slow/hung ffprobe can never wedge the worker or the shutdown path.
+//
+// Callers MUST run this off the main thread — it blocks for the duration
+// of the child (typically 30-100 ms, at most `timeoutMs`).
+bool Probe(const wxString &ffprobePath,
+	const CPath &file,
+	MediaInfo &out,
+	unsigned timeoutMs,
+	const std::atomic<bool> &keepRunning);
 
 } // namespace MediaProbe
 

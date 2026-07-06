@@ -35,18 +35,19 @@
 
 #include <wx/utils.h>
 
-#include "Packet.h"         // Needed for CPacket
-#include "MemFile.h"        // Needed for CMemFile
-#include "ServerConnect.h"  // Needed for CServerConnect
-#include "KnownFileList.h"  // Needed for CKnownFileList
-#include "ThreadTasks.h"    // Needed for CThreadScheduler and CHasherTask
-#include "OtherFunctions.h" // Needed for GetED2KFileTypeID / ED2KFT_* (MaybeScheduleMediaProbe)
-#include "Preferences.h"    // Needed for thePrefs
-#include "DownloadQueue.h"  // Needed for CDownloadQueue
-#include "amule.h"          // Needed for theApp
-#include "PartFile.h"       // Needed for PartFile
-#include "Server.h"         // Needed for CServer
-#include "Statistics.h"     // Needed for theStats
+#include "Packet.h"           // Needed for CPacket
+#include "MemFile.h"          // Needed for CMemFile
+#include "ServerConnect.h"    // Needed for CServerConnect
+#include "KnownFileList.h"    // Needed for CKnownFileList
+#include "ThreadTasks.h"      // Needed for CThreadScheduler and CHasherTask
+#include "MediaProbeThread.h" // Needed for CMediaProbeThread (media probe queue)
+#include "OtherFunctions.h"   // Needed for GetED2KFileTypeID / ED2KFT_* (MaybeScheduleMediaProbe)
+#include "Preferences.h"      // Needed for thePrefs
+#include "DownloadQueue.h"    // Needed for CDownloadQueue
+#include "amule.h"            // Needed for theApp
+#include "PartFile.h"         // Needed for PartFile
+#include "Server.h"           // Needed for CServer
+#include "Statistics.h"       // Needed for theStats
 #include "Logger.h"
 #include <common/Format.h>
 #include <common/FileFunctions.h>
@@ -676,10 +677,23 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile)
 		return;
 	}
 	if (pFile->GetIntTagValue(FT_MEDIA_LENGTH) > 0) {
+		AddDebugLogLineN(logMediaProbe,
+			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return;
 	}
 	const CPath fullPath = pFile->GetFilePath().JoinPaths(pFile->GetFileName());
-	CThreadScheduler::AddTask(new CMediaProbeTask(pFile->GetFileHash(), fullPath, ffprobePath));
+	// #280: run on the dedicated media-probe worker, NOT the shared
+	// CThreadScheduler — a slow/hung ffprobe there wedges completions.
+	if (theApp->mediaProbeThread) {
+		AddDebugLogLineN(logMediaProbe,
+			CFormat(wxT("MediaProbe: queueing %s (ffprobe=%s)")) % pFile->GetFileName() %
+				ffprobePath);
+		theApp->mediaProbeThread->QueueProbe(pFile->GetFileHash(), fullPath, ffprobePath);
+	} else {
+		AddDebugLogLineN(logMediaProbe,
+			CFormat(wxT("MediaProbe: dropped %s — probe thread not ready")) %
+				pFile->GetFileName());
+	}
 }
 
 void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)

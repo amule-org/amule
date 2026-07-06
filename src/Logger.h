@@ -112,7 +112,9 @@ enum DebugType
 	//! Warnings/Errors related to HTTP traffic
 	logHTTP,
 	//! Warnings/Errors related to Boost Asio networking
-	logAsio
+	logAsio,
+	//! Media-metadata probing (ffprobe) subsystem.
+	logMediaProbe
 	// IMPORTANT NOTE: when you add values to this enum, update the g_debugcats
 	// array in Logger.cpp!
 };
