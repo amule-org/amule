@@ -410,7 +410,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildBootstrapPage()
 	} else {
 		sizer->Add(new wxStaticText(page,
 				   wxID_ANY,
-				   _("Your peer lists are already in place — nothing to download.")),
+				   _("Your peer lists are already in place - nothing to download.")),
 			0);
 	}
 

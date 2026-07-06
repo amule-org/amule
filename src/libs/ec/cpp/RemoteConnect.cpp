@@ -260,7 +260,7 @@ void CRemoteConnect::OnLost()
 	// sitting at the amulecmd prompt with a dead socket. Failing fast
 	// is the right semantic — supervisor (systemd unit / docker /
 	// shell loop) is the recovery layer and decides whether to restart.
-	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost — exiting.")));
+	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost - exiting.")));
 	fflush(stderr);
 	// _exit instead of exit() because the asio worker thread that
 	// just fired this is mid-callback; racing static destructors
