@@ -167,7 +167,21 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 			{
 				uint8 nID;
 				uint8 nType;
-			} _aMetaTags[] = { { FT_FILETYPE, 2 }, { FT_FILEFORMAT, 2 } };
+			} _aMetaTags[] = { { FT_FILETYPE, 2 },
+				{ FT_FILEFORMAT, 2 },
+				// Media metadata (#280) advertised by the source: length /
+				// bitrate (uint32) + codec (string). Inherit it so a download
+				// carries FT_MEDIA_* immediately -- visible while downloading
+				// and persisted on completion -- without needing a local
+				// ffprobe. Source-agnostic: ed2k and Kad use the same tag IDs
+				// (TAG_MEDIA_* == FT_MEDIA_*), and the completion probe still
+				// fills in files whose source advertised nothing (its
+				// FT_MEDIA_LENGTH>0 gate skips the ones handled here).
+				// (type 3 = TAGTYPE_UINT32, type 2 = TAGTYPE_STRING; bare
+				// literals to match the FT_FILETYPE/FT_FILEFORMAT entries above.)
+				{ FT_MEDIA_LENGTH, 3 },
+				{ FT_MEDIA_BITRATE, 3 },
+				{ FT_MEDIA_CODEC, 2 } };
 			for (unsigned int t = 0; t < itemsof(_aMetaTags); ++t) {
 				if (pTag.GetType() == _aMetaTags[t].nType &&
 					pTag.GetNameID() == _aMetaTags[t].nID) {
