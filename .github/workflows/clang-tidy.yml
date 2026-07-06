@@ -38,6 +38,18 @@ env:
   CCACHE_MAXSIZE: 500M
   LLVM_VERSION: '21'
 
+  # clang-tidy result cache (ctcache). The whole-tree Tier-1 job runs the
+  # Clang Static Analyzer over every TU -- path-sensitive and slow. ctcache
+  # keys each TU on its preprocessed source + resolved .clang-tidy config +
+  # analyzer version and, by default, stores a digest ONLY when clang-tidy
+  # emits zero diagnostics (a clean TU). A warning-emitting TU is never
+  # cached, so it re-runs and re-emits every time -- the grep-based gate
+  # below is unaffected. On a warm cache only TUs whose preprocessed output
+  # actually changed are re-analyzed.
+  CTCACHE_DIR: ${{ github.workspace }}/.ctcache
+  # Pinned commit of matus-chochlik/ctcache (audited; do not float to a tag).
+  CTCACHE_SHA: 0c7fee26e09ae8a393ed7d56164102da118ab23a
+
   # Kept in sync with .github/workflows/ccpp.yml so compile_commands.json
   # matches the real Ubuntu build.
   cmake_ubuntu_deps: |-
@@ -91,12 +103,37 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
           restore-keys: clang-tidy-ccache-
+      # Roll the ctcache forward run-to-run: save under the run id, restore the
+      # newest previous one via the shared prefix. Bump the version suffix when
+      # LLVM_VERSION or CTCACHE_SHA changes so a stale cache can't mask a shift
+      # in analyzer output or digest scheme.
+      - name: restore ctcache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CTCACHE_DIR }}
+          key: clang-tidy-ctcache-llvm${{ env.LLVM_VERSION }}-${{ env.CTCACHE_SHA }}-${{ github.run_id }}
+          restore-keys: clang-tidy-ctcache-llvm${{ env.LLVM_VERSION }}-${{ env.CTCACHE_SHA }}-
       - name: install deps
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }} jq
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
           sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+      # Fetch the pinned ctcache wrapper. If the download fails, the next step
+      # falls back to the bare analyzer binary, so ctcache availability never
+      # becomes a gate dependency.
+      - name: fetch ctcache
+        run: |
+          mkdir -p "$HOME/ctcache"
+          if curl -fsSL "https://github.com/matus-chochlik/ctcache/archive/${CTCACHE_SHA}.tar.gz" \
+               | tar -xz --strip-components=1 -C "$HOME/ctcache"; then
+            chmod +x "$HOME/ctcache/clang-tidy"
+            echo "CTCACHE_WRAPPER=$HOME/ctcache/clang-tidy" >> "$GITHUB_ENV"
+            echo "ctcache wrapper ready: $HOME/ctcache/clang-tidy"
+          else
+            echo "::warning::ctcache fetch failed; falling back to uncached clang-tidy-${LLVM_VERSION}"
+            echo "CTCACHE_WRAPPER=clang-tidy-${LLVM_VERSION}" >> "$GITHUB_ENV"
+          fi
       - name: create build system
         run: cmake ${{ env.cmake_config_flags }}
       - name: build (generate headers + compile_commands.json)
@@ -108,6 +145,10 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: clang-tidy-ccache-${{ github.run_id }}
       - name: clang-tidy Tier-1 over src/
+        env:
+          # The ctcache wrapper shells out to this real analyzer on a cache
+          # miss; keep it pinned to the LLVM_VERSION we validated against.
+          CTCACHE_CLANG_TIDY: clang-tidy-${{ env.LLVM_VERSION }}
         run: |
           # Analyze every src/ translation unit except the generated lexers
           # and parsers, which are not ours to lint.
@@ -116,11 +157,14 @@ jobs:
             | grep -vE '/(Scanner|Parser|IPFilterScanner)\.cpp$' \
             | sort -u)
           echo "Analyzing ${#files[@]} translation units"
-          # Pin the analyzer binary too: the helper scripts otherwise fall back
-          # to the unversioned `clang-tidy` (an older distro build on the runner)
-          # instead of the LLVM ${LLVM_VERSION} we validated against.
+          # Route the analyzer through the ctcache wrapper (bare binary on
+          # fetch fallback). ctcache stores a digest only for TUs that emit
+          # zero diagnostics, so warning-bearing TUs always re-run -- the grep
+          # gate below is authoritative regardless of cache state. The wrapper
+          # forwards every arg and stream verbatim; -quiet keeps clean TUs'
+          # stdout empty so they qualify for caching.
           run-clang-tidy-${LLVM_VERSION} \
-            -clang-tidy-binary clang-tidy-${LLVM_VERSION} \
+            -clang-tidy-binary "${CTCACHE_WRAPPER}" \
             -p build -quiet "${files[@]}" 2>&1 \
             | tee tidy-full.log || true
           # A header warning is reported once per including TU; keep project
@@ -139,6 +183,15 @@ jobs:
             exit 1
           fi
           echo "clang-tidy Tier-1: clean"
+      # Persist AFTER the analysis so the newly-populated clean digests are
+      # stored; if: always() so a Tier-1 failure still saves the hits computed
+      # this run. Unlike ccache (filled by the build), ctcache is filled here.
+      - name: save ctcache
+        uses: actions/cache/save@v6
+        if: always()
+        with:
+          path: ${{ env.CTCACHE_DIR }}
+          key: clang-tidy-ctcache-llvm${{ env.LLVM_VERSION }}-${{ env.CTCACHE_SHA }}-${{ github.run_id }}
 
   # Diff-only Tier-2 gate: the maintainability checks in .clang-tidy-new-code
   # must not fire on any line the change touches.
