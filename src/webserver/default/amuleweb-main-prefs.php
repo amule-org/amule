@@ -20,7 +20,7 @@ var initvals = new Object;
 	//var_dump($HTTP_GET_VARS);
 	if ( ($HTTP_GET_VARS["Submit"] == "Apply") && ($_SESSION["guest_login"] == 0) ) {
 		$file_opts = array("check_free_space", "extract_metadata", 
-			"ich_en","aich_trust", "preview_prio","save_sources", "resume_same_cat",
+			"ich_en","aich_trust", "preview_prio","save_sources", "resume_same_cat", "endgame",
 			"min_free_space", "new_files_paused", "alloc_full", "alloc_full_chunks",
 			"new_files_auto_dl_prio", "new_files_auto_ul_prio"
 		);
@@ -99,6 +99,7 @@ function init_data()
 		"aich_trust", "alloc_full", "alloc_full_chunks",
 		"check_free_space", "extract_metadata", "ich_en",
 		"new_files_auto_dl_prio", "new_files_auto_ul_prio",
+		"endgame",
 		"use_gzip",
 		"network_ed2k", "network_kad"
 		)
@@ -267,6 +268,12 @@ function init_data()
             <td> 
               <input name="aich_trust" type="checkbox" id="aich_trust4"></td>
             <td> AICH trusts every hash (not recommended)</td>
+            <td></td>
+          </tr>
+          <tr> 
+            <td> 
+              <input name="endgame" type="checkbox" id="endgame_chk"></td>
+            <td> Endgame mode: rotate to faster sources</td>
             <td></td>
           </tr>
           <tr> 
