@@ -201,33 +201,43 @@ CTag::~CTag()
 CTag &CTag::operator=(const CTag &rhs)
 {
 	if (&rhs != this) {
+		// Release whatever THIS currently owns, keyed on its *current*
+		// type — the same dispatch the destructor uses. The union means
+		// the owned pointer only exists for string / hash / blob / bsob
+		// tags; for an int/float tag that union slot holds a scalar, not
+		// a pointer. Freeing based on the RHS type (as this used to) frees
+		// a garbage "pointer" whenever the two tags' types differ — e.g.
+		// assigning a string tag onto a slot that currently holds an int,
+		// which is exactly what std::vector<CTag>::erase does when it
+		// shifts elements. That corrupts the heap (observed as a double
+		// free in a wxString destructor).
+		if (IsStr()) {
+			delete m_pstrVal;
+		} else if (IsHash()) {
+			delete m_hashVal;
+		} else if (IsBlob() || IsBsob()) {
+			delete[] m_pData;
+		}
+
 		m_uType = rhs.m_uType;
 		m_uName = rhs.m_uName;
 		m_Name = rhs.m_Name;
 		m_nSize = 0;
 		if (rhs.IsStr()) {
-			wxString *p = new wxString(rhs.GetStr());
-			delete m_pstrVal;
-			m_pstrVal = p;
+			m_pstrVal = new wxString(rhs.GetStr());
 		} else if (rhs.IsInt()) {
 			m_uVal = rhs.GetInt();
 		} else if (rhs.IsFloat()) {
 			m_fVal = rhs.GetFloat();
 		} else if (rhs.IsHash()) {
-			CMD4Hash *p = new CMD4Hash(rhs.GetHash());
-			delete m_hashVal;
-			m_hashVal = p;
+			m_hashVal = new CMD4Hash(rhs.GetHash());
 		} else if (rhs.IsBlob()) {
 			m_nSize = rhs.GetBlobSize();
-			unsigned char *p = new unsigned char[rhs.GetBlobSize()];
-			delete[] m_pData;
-			m_pData = p;
+			m_pData = new unsigned char[rhs.GetBlobSize()];
 			memcpy(m_pData, rhs.GetBlob(), rhs.GetBlobSize());
 		} else if (rhs.IsBsob()) {
 			m_nSize = rhs.GetBsobSize();
-			unsigned char *p = new unsigned char[rhs.GetBsobSize()];
-			delete[] m_pData;
-			m_pData = p;
+			m_pData = new unsigned char[rhs.GetBsobSize()];
 			memcpy(m_pData, rhs.GetBsob(), rhs.GetBsobSize());
 		} else {
 			wxFAIL;
