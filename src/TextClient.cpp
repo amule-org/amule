@@ -88,6 +88,8 @@ enum
 	CMD_ID_SET_BWLIMIT_UP,
 	CMD_ID_SET_BWLIMIT_DOWN,
 	CMD_ID_GET_BWLIMITS,
+	CMD_ID_SET_ENDGAME,
+	CMD_ID_GET_ENDGAME,
 	CMD_ID_STATTREE,
 	CMD_ID_SEARCH,
 	CMD_ID_SEARCH_GLOBAL,
@@ -612,6 +614,23 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		request->AddTag(CECTag(EC_TAG_SELECT_PREFS, (uint32)EC_PREFS_CONNECTIONS));
 		request_list.push_back(request);
 		break;
+	case CMD_ID_SET_ENDGAME: {
+		unsigned long int val;
+		if (args.ToULong(&val) && (val == 0 || val == 1)) {
+			request = new CECPacket(EC_OP_SET_PREFERENCES);
+			CECEmptyTag prefs(EC_TAG_PREFS_FILES);
+			prefs.AddTag(CECTag(EC_TAG_FILES_ENDGAME, (uint8)val));
+			request->AddTag(prefs);
+			request_list.push_back(request);
+		} else {
+			return CMD_ERR_INVALID_ARG;
+		}
+	} break;
+	case CMD_ID_GET_ENDGAME:
+		request = new CECPacket(EC_OP_GET_PREFERENCES);
+		request->AddTag(CECTag(EC_TAG_SELECT_PREFS, (uint32)EC_PREFS_FILES));
+		request_list.push_back(request);
+		break;
 
 	case CMD_ID_STATTREE:
 		request = new CECPacket(EC_OP_GET_STATSTREE);
@@ -831,6 +850,12 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		if (connMaxUL && connMaxDL) {
 			s << CFormat(_("Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n")) %
 					connMaxUL->GetInt() % connMaxDL->GetInt();
+		}
+		tab = response->GetTagByNameSafe(EC_TAG_PREFS_FILES);
+		const CECTag *endgameTag = tab->GetTagByName(EC_TAG_FILES_ENDGAME);
+		if (endgameTag) {
+			s << CFormat(_("Endgame source rotation is %s.\n")) %
+					(endgameTag->GetInt() ? _("ON") : _("OFF"));
 		}
 	} break;
 	case EC_OP_STRINGS:
@@ -1187,6 +1212,11 @@ void CamulecmdApp::OnInitCommandSet()
 		wxTRANSLATE("Set download bandwidth limit."),
 		wxTRANSLATE("The given value must be in kilobytes/sec.\n"),
 		CMD_PARAM_ALWAYS);
+	tmp->AddCommand("Endgame",
+		CMD_ID_SET_ENDGAME,
+		wxTRANSLATE("Enable or disable endgame source rotation."),
+		wxTRANSLATE("The given value must be 1 (enable) or 0 (disable).\n"),
+		CMD_PARAM_ALWAYS);
 
 	tmp = m_commands.AddCommand("Get",
 		CMD_ERR_INCOMPLETE,
@@ -1222,6 +1252,11 @@ void CamulecmdApp::OnInitCommandSet()
 
 	tmp->AddCommand(
 		"BwLimits", CMD_ID_GET_BWLIMITS, wxTRANSLATE("Get bandwidth limits."), "", CMD_PARAM_NEVER);
+	tmp->AddCommand("Endgame",
+		CMD_ID_GET_ENDGAME,
+		wxTRANSLATE("Get endgame source rotation state."),
+		"",
+		CMD_PARAM_NEVER);
 
 	tmp = m_commands.AddCommand("Search",
 		CMD_ID_SEARCH,
