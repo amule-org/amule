@@ -192,14 +192,18 @@ wxString GetUserBinDir()
 
 // True if `path` names an existing symlink (broken or intact). Distinct
 // from wxFileExists which returns true for a symlink pointing at a
-// non-existent target BUT ALSO returns true for a regular file — we
+// non-existent target BUT ALSO returns true for a regular file - we
 // need to know the difference before deciding whether it's safe to
-// replace with our own symlink.
+// replace with our own symlink. POSIX-only; MinGW-w64 (Windows) has
+// neither lstat nor S_ISLNK, and the whole AppImage integration path
+// is a no-op there anyway (ShouldPrompt returns false on non-GTK).
+#ifdef __WXGTK__
 bool IsSymlink(const wxString &path)
 {
 	struct stat st;
 	return lstat((const char *)path.mb_str(wxConvUTF8), &st) == 0 && S_ISLNK(st.st_mode);
 }
+#endif
 
 // The names AppRun's argv[0]-dispatch case knows about. Any name that
 // AppRun doesn't recognize falls back to `amule`, so a stale symlink
@@ -225,6 +229,11 @@ const wxString kAppRunNames[] = {
 // these paths (protects e.g. a user's distro-packaged amule binary if
 // it somehow lives under ~/.local/bin); existing symlinks ARE replaced
 // so a re-install of a new AppImage refreshes the targets.
+// POSIX-only (uses symlink(2) and IsSymlink() which use lstat/S_ISLNK).
+// The AppImage integration flow is inherently Linux-only; ShouldPrompt
+// returns false on Windows / macOS, so this function is never actually
+// called on those platforms - but it still needs to compile.
+#ifdef __WXGTK__
 int InstallCommandSymlinks(const wxString &appdir, const wxString &appimagePath)
 {
 	const wxString binDir = GetUserBinDir();
@@ -259,6 +268,14 @@ int InstallCommandSymlinks(const wxString &appdir, const wxString &appimagePath)
 	}
 	return created;
 }
+#else
+// Non-GTK stub - never called at runtime (PromptAndInstall bails
+// early via ShouldPrompt on !__WXGTK__), but needs to link.
+int InstallCommandSymlinks(const wxString &, const wxString &)
+{
+	return 0;
+}
+#endif // __WXGTK__
 
 } // anonymous namespace
 
