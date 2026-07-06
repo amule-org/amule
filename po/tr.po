@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-06 22:14+0200\n"
+"POT-Creation-Date: 2026-07-06 22:41+0200\n"
 "PO-Revision-Date: 2026-07-05 16:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -121,9 +121,12 @@ msgstr "Bilgi"
 msgid "The specified userhash is not valid!"
 msgstr "Belirlenen kullanıcı adreslemesi geçersiz!"
 
-#: src/AppImageIntegration.cpp:220
+#: src/AppImageIntegration.cpp:296
+#, fuzzy
 msgid ""
-"aMule can install a desktop launcher and icon into your home directory so it appears in your application menu like a regularly installed app. This is reversible — the files live under ~/.local/share/applications and ~/.local/share/icons and can be removed at any time.\n"
+"aMule can install desktop launchers, icons, and shell command shortcuts into your home directory so it appears in your application menu like a regularly installed app.\n"
+"\n"
+"This is reversible - the files live under ~/.local/share/applications, ~/.local/share/icons, and ~/.local/bin, and can be removed at any time.\n"
 "\n"
 "Install desktop integration now?"
 msgstr ""
@@ -131,46 +134,47 @@ msgstr ""
 "\n"
 "Masaüstü birleşimi şimdi kurulsun mu?"
 
-#: src/AppImageIntegration.cpp:225
+#: src/AppImageIntegration.cpp:302
 msgid "Add aMule to your application menu?"
 msgstr "aMule uygulama menünüze eklensin mi?"
 
-#: src/AppImageIntegration.cpp:227
+#: src/AppImageIntegration.cpp:304
 msgid "Install"
 msgstr "Kur"
 
-#: src/AppImageIntegration.cpp:227
+#: src/AppImageIntegration.cpp:304
 msgid "Not now"
 msgstr "Şimdi değil"
 
-#: src/AppImageIntegration.cpp:228
+#: src/AppImageIntegration.cpp:305
 msgid "Don't ask again"
 msgstr "Tekrar sorma"
 
-#: src/AppImageIntegration.cpp:248
+#: src/AppImageIntegration.cpp:325
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
 msgstr "Masaüstü birleşimi kurulamaz: APPDIR ortam değişkeni tanımlı değil. Bu, genelde AppImage başlatılmasının standart olmayan bir yolla yapıldığı manasına gelir."
 
-#: src/AppImageIntegration.cpp:251 src/AppImageIntegration.cpp:264
-#: src/AppImageIntegration.cpp:276
+#: src/AppImageIntegration.cpp:328 src/AppImageIntegration.cpp:341
+#: src/AppImageIntegration.cpp:362
 msgid "aMule integration failed"
 msgstr "aMule birleşimi başarısız"
 
-#: src/AppImageIntegration.cpp:260
+#: src/AppImageIntegration.cpp:337
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
 msgstr "Masaüstü birleşimi kurulamaz: %s oluşturulması başarısız oldu. Ev dizininizin yazılabilir olduğundan emin olun."
 
-#: src/AppImageIntegration.cpp:272
+#: src/AppImageIntegration.cpp:358
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
 msgstr "Masaüstü birleşimi kurulamaz: %s yazması başarısız oldu. Ev dizininizin yazılabilir olduğundan emin olun."
 
-#: src/AppImageIntegration.cpp:283
-msgid "AppImage integration: aMule added to your application menu."
+#: src/AppImageIntegration.cpp:388
+#, fuzzy, c-format
+msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
 msgstr "AppImage birleşimi: aMule uygulama menünüze ilave edildi."
 
-#: src/AppImageIntegration.cpp:286
+#: src/AppImageIntegration.cpp:393
 msgid ""
 "aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n"
 "\n"
@@ -184,15 +188,15 @@ msgstr ""
 "\n"
 "aMule şimdi tekrar başlatılsın mı?"
 
-#: src/AppImageIntegration.cpp:292
+#: src/AppImageIntegration.cpp:399
 msgid "aMule installed"
 msgstr "aMule kuruldu"
 
-#: src/AppImageIntegration.cpp:294
+#: src/AppImageIntegration.cpp:401
 msgid "Restart now"
 msgstr "Şimdi tekrar başlat"
 
-#: src/AppImageIntegration.cpp:294
+#: src/AppImageIntegration.cpp:401
 msgid "Later"
 msgstr "Daha sonra"
 

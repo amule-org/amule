@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-06 22:14+0200\n"
+"POT-Creation-Date: 2026-07-06 22:41+0200\n"
 "PO-Revision-Date: 2026-07-05 16:27+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -130,55 +130,58 @@ msgstr "Informação"
 msgid "The specified userhash is not valid!"
 msgstr "A chave de utilizador especificada não é válida!"
 
-#: src/AppImageIntegration.cpp:220
+#: src/AppImageIntegration.cpp:296
 msgid ""
-"aMule can install a desktop launcher and icon into your home directory so it appears in your application menu like a regularly installed app. This is reversible — the files live under ~/.local/share/applications and ~/.local/share/icons and can be removed at any time.\n"
+"aMule can install desktop launchers, icons, and shell command shortcuts into your home directory so it appears in your application menu like a regularly installed app.\n"
+"\n"
+"This is reversible - the files live under ~/.local/share/applications, ~/.local/share/icons, and ~/.local/bin, and can be removed at any time.\n"
 "\n"
 "Install desktop integration now?"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:225
+#: src/AppImageIntegration.cpp:302
 #, fuzzy
 msgid "Add aMule to your application menu?"
 msgstr "Depois do nome da aplicação"
 
-#: src/AppImageIntegration.cpp:227
+#: src/AppImageIntegration.cpp:304
 msgid "Install"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:227
+#: src/AppImageIntegration.cpp:304
 msgid "Not now"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:228
+#: src/AppImageIntegration.cpp:305
 msgid "Don't ask again"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:248
+#: src/AppImageIntegration.cpp:325
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:251 src/AppImageIntegration.cpp:264
-#: src/AppImageIntegration.cpp:276
+#: src/AppImageIntegration.cpp:328 src/AppImageIntegration.cpp:341
+#: src/AppImageIntegration.cpp:362
 #, fuzzy
 msgid "aMule integration failed"
 msgstr "A ligação falhou "
 
-#: src/AppImageIntegration.cpp:260
+#: src/AppImageIntegration.cpp:337
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:272
+#: src/AppImageIntegration.cpp:358
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:283
-msgid "AppImage integration: aMule added to your application menu."
+#: src/AppImageIntegration.cpp:388
+#, c-format
+msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
 msgstr ""
 
-#: src/AppImageIntegration.cpp:286
+#: src/AppImageIntegration.cpp:393
 msgid ""
 "aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n"
 "\n"
@@ -187,15 +190,15 @@ msgid ""
 "Restart aMule now?"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:292
+#: src/AppImageIntegration.cpp:399
 msgid "aMule installed"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:294
+#: src/AppImageIntegration.cpp:401
 msgid "Restart now"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:294
+#: src/AppImageIntegration.cpp:401
 msgid "Later"
 msgstr ""
 

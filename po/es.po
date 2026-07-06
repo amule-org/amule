@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-06 22:14+0200\n"
+"POT-Creation-Date: 2026-07-06 22:41+0200\n"
 "PO-Revision-Date: 2026-07-05 16:19+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -129,9 +129,12 @@ msgstr "Información"
 msgid "The specified userhash is not valid!"
 msgstr "¡El hash de usuario especificado no es válido!"
 
-#: src/AppImageIntegration.cpp:220
+#: src/AppImageIntegration.cpp:296
+#, fuzzy
 msgid ""
-"aMule can install a desktop launcher and icon into your home directory so it appears in your application menu like a regularly installed app. This is reversible — the files live under ~/.local/share/applications and ~/.local/share/icons and can be removed at any time.\n"
+"aMule can install desktop launchers, icons, and shell command shortcuts into your home directory so it appears in your application menu like a regularly installed app.\n"
+"\n"
+"This is reversible - the files live under ~/.local/share/applications, ~/.local/share/icons, and ~/.local/bin, and can be removed at any time.\n"
 "\n"
 "Install desktop integration now?"
 msgstr ""
@@ -139,46 +142,47 @@ msgstr ""
 "\n"
 "¿Instalar la integración de escritorio ahora?"
 
-#: src/AppImageIntegration.cpp:225
+#: src/AppImageIntegration.cpp:302
 msgid "Add aMule to your application menu?"
 msgstr "¿Añadir aMule al menú de aplicaciones?"
 
-#: src/AppImageIntegration.cpp:227
+#: src/AppImageIntegration.cpp:304
 msgid "Install"
 msgstr "Instalar"
 
-#: src/AppImageIntegration.cpp:227
+#: src/AppImageIntegration.cpp:304
 msgid "Not now"
 msgstr "Ahora no"
 
-#: src/AppImageIntegration.cpp:228
+#: src/AppImageIntegration.cpp:305
 msgid "Don't ask again"
 msgstr "No volver a preguntar"
 
-#: src/AppImageIntegration.cpp:248
+#: src/AppImageIntegration.cpp:325
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
 msgstr "No se puede instalar la integración de escritorio: la variable de entorno APPDIR no está definida. Esto generalmente significa que el AppImage no se inició de forma normal."
 
-#: src/AppImageIntegration.cpp:251 src/AppImageIntegration.cpp:264
-#: src/AppImageIntegration.cpp:276
+#: src/AppImageIntegration.cpp:328 src/AppImageIntegration.cpp:341
+#: src/AppImageIntegration.cpp:362
 msgid "aMule integration failed"
 msgstr "La integración de aMule ha fallado"
 
-#: src/AppImageIntegration.cpp:260
+#: src/AppImageIntegration.cpp:337
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
 msgstr "No se puede instalar la integración de escritorio: error al crear %s. Compruebe que su directorio personal tenga permisos de escritura."
 
-#: src/AppImageIntegration.cpp:272
+#: src/AppImageIntegration.cpp:358
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
 msgstr "No se puede instalar la integración de escritorio: error al escribir %s. Compruebe que su directorio personal tenga permisos de escritura."
 
-#: src/AppImageIntegration.cpp:283
-msgid "AppImage integration: aMule added to your application menu."
+#: src/AppImageIntegration.cpp:388
+#, fuzzy, c-format
+msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
 msgstr "Integración de AppImage: aMule se ha añadido al menú de aplicaciones."
 
-#: src/AppImageIntegration.cpp:286
+#: src/AppImageIntegration.cpp:393
 msgid ""
 "aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n"
 "\n"
@@ -192,15 +196,15 @@ msgstr ""
 "\n"
 "¿Reiniciar aMule ahora?"
 
-#: src/AppImageIntegration.cpp:292
+#: src/AppImageIntegration.cpp:399
 msgid "aMule installed"
 msgstr "aMule instalado"
 
-#: src/AppImageIntegration.cpp:294
+#: src/AppImageIntegration.cpp:401
 msgid "Restart now"
 msgstr "Reiniciar ahora"
 
-#: src/AppImageIntegration.cpp:294
+#: src/AppImageIntegration.cpp:401
 msgid "Later"
 msgstr "Más tarde"
 
