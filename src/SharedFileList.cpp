@@ -647,7 +647,7 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 	return false;
 }
 
-void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile)
+void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceReprobe)
 {
 	// Called from AddFile under list_mut so we already know pFile is
 	// live and stable for the duration of this call.
@@ -676,12 +676,30 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile)
 	if (type != ED2KFT_AUDIO && type != ED2KFT_VIDEO) {
 		return;
 	}
-	if (pFile->GetIntTagValue(FT_MEDIA_LENGTH) > 0) {
+	// Never probe an in-progress download. A partfile is shared while
+	// transferring, so this fires from AddFile() during the download; there is
+	// no complete file to read yet (its on-disk name is <hash>.part), and its
+	// metadata is derived exactly once -- on completion, which re-enters here
+	// with bForceReprobe set. Skipping unconditionally (not just when metadata
+	// happened to be inherited from the search result) keeps that guarantee.
+	if (!bForceReprobe && pFile->IsPartFile()) {
+		AddDebugLogLineN(logMediaProbe,
+			CFormat(wxT("MediaProbe: skip (incomplete download) %s")) % pFile->GetFileName());
+		return;
+	}
+	if (!bForceReprobe && pFile->GetIntTagValue(FT_MEDIA_LENGTH) > 0) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return;
 	}
 	const CPath fullPath = pFile->GetFilePath().JoinPaths(pFile->GetFileName());
+	// Only probe a file that is actually on disk at this resolved path -- a
+	// stale known.met record can outlive its deleted file, and this is cheap
+	// insurance against handing ffprobe a path that cannot succeed. (In-progress
+	// downloads are already excluded by the partfile guard above.)
+	if (!fullPath.FileExists()) {
+		return;
+	}
 	// #280: run on the dedicated media-probe worker, NOT the shared
 	// CThreadScheduler — a slow/hung ffprobe there wedges completions.
 	if (theApp->mediaProbeThread) {
@@ -749,6 +767,17 @@ void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 			// index still points at the stale Temp path and the dir-watcher
 			// can't resolve a DELETE of the completed file. Re-key it.
 			RefreshPathIndex(toadd);
+			// A download just completed. Because the file was shared as a
+			// partfile, its hash was already in the map, so AddFile()'s
+			// insert (which is what normally schedules the media probe) no-op'd
+			// above -- a media download would otherwise only get its FT_MEDIA_*
+			// tags on the next startup rescan. Now that it is complete on disk
+			// at its Incoming path, schedule the probe here. QueueProbe() only
+			// enqueues (it never runs ffprobe inline), so this cannot stall the
+			// completion. Force it (bypassing the already-has-FT_MEDIA gate) so
+			// the authoritative local probe overwrites any metadata inherited
+			// from the search result, which is only a during-download preview.
+			MaybeScheduleMediaProbe(toadd, /*bForceReprobe=*/true);
 		}
 	}
 

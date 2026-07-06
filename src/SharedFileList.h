@@ -173,7 +173,12 @@ private:
 	// CMediaProbeTask when the preference is enabled and the file
 	// looks like media (audio / video by ED2K file type) and hasn't
 	// been probed yet. Returns silently if any gate fails.
-	void MaybeScheduleMediaProbe(CKnownFile *pFile);
+	// bForceReprobe bypasses the "already has FT_MEDIA_LENGTH" gate: set on
+	// download completion, where the authoritative local probe must overwrite
+	// any metadata inherited from the search result (which is only a
+	// during-download preview). Left false everywhere else so startup rescans
+	// still probe each file at most once.
+	void MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceReprobe = false);
 
 	// Per-path attach: stat fname under directory, look it up in
 	// known.met, and either AddFile() the existing CKnownFile or push
