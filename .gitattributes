@@ -10,3 +10,8 @@
 # Without this attribute, the placeholders stay as literal `$Format:...$`
 # strings inside the archive, and the cmake fallback ignores the file.
 .git_archival.txt  export-subst
+
+# gettext catalogs and their autopoint/gettextize skeleton files must stay
+# LF. A Windows checkout with core.autocrlf=true otherwise rewrites them to
+# CRLF on commit (this happened to 12 po/ infra files in #225 / c844cb9).
+po/** text=auto eol=lf
