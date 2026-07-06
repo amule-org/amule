@@ -615,11 +615,16 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		request_list.push_back(request);
 		break;
 	case CMD_ID_SET_ENDGAME: {
-		unsigned long int val;
-		if (args.ToULong(&val) && (val == 0 || val == 1)) {
+		uint8 val = 2;
+		if (args.IsSameAs("ON", false) || args.IsSameAs("1", false)) {
+			val = 1;
+		} else if (args.IsSameAs("OFF", false) || args.IsSameAs("0", false)) {
+			val = 0;
+		}
+		if (val != 2) {
 			request = new CECPacket(EC_OP_SET_PREFERENCES);
 			CECEmptyTag prefs(EC_TAG_PREFS_FILES);
-			prefs.AddTag(CECTag(EC_TAG_FILES_ENDGAME, (uint8)val));
+			prefs.AddTag(CECTag(EC_TAG_FILES_ENDGAME, val));
 			request->AddTag(prefs);
 			request_list.push_back(request);
 		} else {
@@ -1212,7 +1217,7 @@ void CamulecmdApp::OnInitCommandSet()
 	tmp->AddCommand("Endgame",
 		CMD_ID_SET_ENDGAME,
 		wxTRANSLATE("Enable or disable endgame source rotation."),
-		wxTRANSLATE("The given value must be 1 (enable) or 0 (disable).\n"),
+		wxTRANSLATE("The given value must be 1/ON (enable) or 0/OFF (disable).\n"),
 		CMD_PARAM_ALWAYS);
 
 	tmp = m_commands.AddCommand("Get",
