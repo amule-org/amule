@@ -41,6 +41,7 @@
 #include <wx/utils.h>
 
 #include <cstdlib>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace
@@ -184,6 +185,81 @@ bool DesktopFileAlreadyInstalled()
 	return wxFileExists(GetUserApplicationsDir() + wxT("/org.amule.aMule.desktop"));
 }
 
+wxString GetUserBinDir()
+{
+	return wxGetUserHome() + wxT("/.local/bin");
+}
+
+// True if `path` names an existing symlink (broken or intact). Distinct
+// from wxFileExists which returns true for a symlink pointing at a
+// non-existent target BUT ALSO returns true for a regular file — we
+// need to know the difference before deciding whether it's safe to
+// replace with our own symlink.
+bool IsSymlink(const wxString &path)
+{
+	struct stat st;
+	return lstat((const char *)path.mb_str(wxConvUTF8), &st) == 0 && S_ISLNK(st.st_mode);
+}
+
+// The names AppRun's argv[0]-dispatch case knows about. Any name that
+// AppRun doesn't recognize falls back to `amule`, so a stale symlink
+// to a since-removed binary still launches the monolithic GUI —
+// never a hard failure. Order matches the AppRun case statement.
+const wxString kAppRunNames[] = {
+	wxT("amule"),
+	wxT("amuled"),
+	wxT("amulegui"),
+	wxT("amulecmd"),
+	wxT("amuleweb"),
+	wxT("amuleapi"),
+	wxT("ed2k"),
+	wxT("cas"),
+	wxT("wxcas"),
+	wxT("alc"),
+	wxT("alcc"),
+};
+
+// Create ~/.local/bin/<name> symlinks for each AppRun-dispatched
+// binary that this AppImage actually bundles. Returns the count
+// created. Refuses to clobber a pre-existing regular file at any of
+// these paths (protects e.g. a user's distro-packaged amule binary if
+// it somehow lives under ~/.local/bin); existing symlinks ARE replaced
+// so a re-install of a new AppImage refreshes the targets.
+int InstallCommandSymlinks(const wxString &appdir, const wxString &appimagePath)
+{
+	const wxString binDir = GetUserBinDir();
+	if (!wxDirExists(binDir) && !wxFileName::Mkdir(binDir, 0755, wxPATH_MKDIR_FULL)) {
+		AddDebugLogLineC(logGeneral, wxT("AppImageIntegration: failed to create ") + binDir);
+		return 0;
+	}
+
+	int created = 0;
+	for (const wxString &name : kAppRunNames) {
+		// Only if this AppImage actually bundles the binary.
+		const wxString bundled = appdir + wxT("/usr/bin/") + name;
+		if (!wxFileExists(bundled)) {
+			continue;
+		}
+		const wxString linkPath = binDir + wxT("/") + name;
+		if (wxFileExists(linkPath) && !IsSymlink(linkPath)) {
+			AddDebugLogLineC(logGeneral,
+				wxT("AppImageIntegration: not clobbering existing non-symlink ") + linkPath);
+			continue;
+		}
+		if (IsSymlink(linkPath)) {
+			wxRemoveFile(linkPath);
+		}
+		if (symlink((const char *)appimagePath.mb_str(wxConvUTF8),
+			    (const char *)linkPath.mb_str(wxConvUTF8)) == 0) {
+			++created;
+		} else {
+			AddDebugLogLineC(
+				logGeneral, wxT("AppImageIntegration: symlink failed for ") + linkPath);
+		}
+	}
+	return created;
+}
+
 } // anonymous namespace
 
 namespace AppImageIntegration
@@ -217,10 +293,11 @@ void PromptAndInstall(wxWindow *parent)
 	}
 
 	wxRichMessageDialog dlg(parent,
-		_("aMule can install a desktop launcher and icon into your home directory "
-		  "so it appears in your application menu like a regularly installed app. "
-		  "This is reversible — the files live under ~/.local/share/applications "
-		  "and ~/.local/share/icons and can be removed at any time.\n\n"
+		_("aMule can install desktop launchers, icons, and shell command "
+		  "shortcuts into your home directory so it appears in your application "
+		  "menu like a regularly installed app.\n\n"
+		  "This is reversible - the files live under ~/.local/share/applications, "
+		  "~/.local/share/icons, and ~/.local/bin, and can be removed at any time.\n\n"
 		  "Install desktop integration now?"),
 		_("Add aMule to your application menu?"),
 		wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
@@ -265,22 +342,52 @@ void PromptAndInstall(wxWindow *parent)
 		return;
 	}
 
-	const wxString sourceDesktop = appdir + wxT("/usr/share/applications/org.amule.aMule.desktop");
-	const wxString destDesktop = userAppsDir + wxT("/org.amule.aMule.desktop");
+	// Shell-command shortcuts first: the amulegui .desktop file
+	// installed below points at ~/.local/bin/amulegui to route
+	// clicks to the correct AppRun dispatch. If that symlink doesn't
+	// materialise the .gui .desktop's Exec= still resolves via PATH
+	// lookup, but a fresh installation with an untouched
+	// ~/.local/bin/ path is the happy case we design for here.
+	const int symlinkCount = InstallCommandSymlinks(appdir, appimagePath);
 
-	if (!InstallDesktopFile(appimagePath, sourceDesktop, destDesktop)) {
+	// Install org.amule.aMule.desktop (monolithic amule). Exec= points
+	// straight at the AppImage - default AppRun dispatch is amule.
+	const wxString sourceAmuleDesktop = appdir + wxT("/usr/share/applications/org.amule.aMule.desktop");
+	const wxString destAmuleDesktop = userAppsDir + wxT("/org.amule.aMule.desktop");
+	if (!InstallDesktopFile(appimagePath, sourceAmuleDesktop, destAmuleDesktop)) {
 		const wxString msg = wxString::Format(_("Cannot install desktop integration: failed to write "
 							"%s. Check that your home directory is writable."),
-			destDesktop);
+			destAmuleDesktop);
 		AddLogLineC(msg);
 		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
 		return;
 	}
 
+	// Install org.amule.aMule.gui.desktop (remote-GUI amulegui). Exec=
+	// points at the ~/.local/bin/amulegui symlink so AppRun's basename
+	// dispatch picks amulegui rather than the default amule. Only
+	// attempt if the AppImage actually bundles amulegui AND the
+	// symlink was created; otherwise silently skip (a
+	// TESTING=OFF-only build has no amulegui).
+	const wxString guiSource = appdir + wxT("/usr/share/applications/org.amule.aMule.gui.desktop");
+	const wxString guiSymlink = GetUserBinDir() + wxT("/amulegui");
+	if (wxFileExists(guiSource) && wxFileExists(guiSymlink)) {
+		const wxString destGuiDesktop = userAppsDir + wxT("/org.amule.aMule.gui.desktop");
+		if (!InstallDesktopFile(guiSymlink, guiSource, destGuiDesktop)) {
+			AddDebugLogLineC(logGeneral,
+				wxT("AppImageIntegration: failed to install amulegui .desktop; "
+				    "amulegui menu entry and scheme-handler association will not "
+				    "work until re-integrated"));
+		}
+	}
+
 	InstallIcons(appdir, userIconsDir);
 	RefreshSystemCaches(userAppsDir, userIconsDir);
 
-	AddLogLineN(_("AppImage integration: aMule added to your application menu."));
+	AddLogLineN(wxString::Format(
+		_("AppImage integration: aMule added to your application menu (%d shell shortcuts under "
+		  "~/.local/bin)."),
+		symlinkCount));
 
 	wxMessageDialog success(parent,
 		_("aMule has been added to your application menu. You can now launch it from your "

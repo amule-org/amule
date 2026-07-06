@@ -339,7 +339,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	const bool no_pass = m_apiConfig.AdminPasswordMd5().empty() && m_apiConfig.GuestPasswordMd5().empty();
 	if (non_loopback && no_pass) {
 		Show(CFormat(_("amuleapi: refusing to start with BindAddress=%s and no "
-			       "admin/guest password configured — this would expose the "
+			       "admin/guest password configured - this would expose the "
 			       "REST surface to anyone reachable on that interface. "
 			       "Either bind to 127.0.0.1, or run "
 			       "`amuleapi --set-admin-pass=<plain>` first.\n")) %
