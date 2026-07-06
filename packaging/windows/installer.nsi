@@ -197,6 +197,8 @@ Var StartMenuFolder
 LangString MYSTR_SEC_CORE              ${LANG_ENGLISH} "aMule (required)"
 LangString MYSTR_SEC_DESKTOP           ${LANG_ENGLISH} "Desktop shortcut"
 LangString MYSTR_SEC_AUTOSTART         ${LANG_ENGLISH} "Start aMule when I log in"
+LangString MYSTR_SEC_PROTO_ED2K        ${LANG_ENGLISH} "Register aMule for ed2k:// links"
+LangString MYSTR_SEC_PROTO_MAGNET      ${LANG_ENGLISH} "Register aMule for magnet: links (eD2k-compatible only)"
 LangString MYSTR_SEC_UNINSTALL         ${LANG_ENGLISH} "Uninstall"
 LangString MYSTR_SEC_REMOVE_USERDATA   ${LANG_ENGLISH} "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
 
@@ -204,7 +206,9 @@ LangString MYSTR_SEC_REMOVE_USERDATA   ${LANG_ENGLISH} "Remove user data (config
 LangString MYSTR_DESC_CORE             ${LANG_ENGLISH} "aMule application files (required)."
 LangString MYSTR_DESC_DESKTOP          ${LANG_ENGLISH} "Place an aMule shortcut on the desktop."
 LangString MYSTR_DESC_AUTOSTART        ${LANG_ENGLISH} "Launch aMule automatically when the current user logs in (per-user setting)."
-LangString MYSTR_DESC_UNINSTALL        ${LANG_ENGLISH} "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, and Add/Remove Programs entry (required)."
+LangString MYSTR_DESC_PROTO_ED2K       ${LANG_ENGLISH} "Registers aMule as the default handler for ed2k:// links. Overwrites any previous handler for the current user."
+LangString MYSTR_DESC_PROTO_MAGNET     ${LANG_ENGLISH} "Registers aMule as the default handler for magnet: links. aMule only handles eD2k-compatible magnets - BitTorrent magnets will NOT open in aMule. Leave unchecked if you use a BitTorrent client."
+LangString MYSTR_DESC_UNINSTALL        ${LANG_ENGLISH} "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
 LangString MYSTR_DESC_REMOVE_USERDATA  ${LANG_ENGLISH} "Permanently delete %APPDATA%\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
 
 ; Runtime messages (MessageBox / DetailPrint).
@@ -365,11 +369,28 @@ Section /o "Start aMule when I log in" SecAutostart
   ExecWait '"$INSTDIR\bin\amule.exe" --configure-autostart on'
 SectionEnd
 
+; URL scheme handler registration - two separate sections. ed2k is
+; default ON (clicking an eD2k link on the web is the common case);
+; magnet is default OFF because aMule only handles the eD2k-compatible
+; subset, and a user with a BitTorrent client would otherwise silently
+; lose BT magnet clicks. Both delegate to --configure-protocols with a
+; per-scheme value (ed2k:on / magnet:on) so all four surfaces
+; (installer, wizard, prefs, CLI) stay in sync.
+Section "Register aMule for ed2k:// links" SecProtoEd2k
+  ExecWait '"$INSTDIR\bin\amule.exe" --configure-protocols ed2k:on'
+SectionEnd
+
+Section /o "Register aMule for magnet: links (eD2k-compatible only)" SecProtoMagnet
+  ExecWait '"$INSTDIR\bin\amule.exe" --configure-protocols magnet:on'
+SectionEnd
+
 ; Component descriptions surfaced on the Components page.
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecCore}      "$(MYSTR_DESC_CORE)"
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop}   "$(MYSTR_DESC_DESKTOP)"
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecAutostart} "$(MYSTR_DESC_AUTOSTART)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecCore}        "$(MYSTR_DESC_CORE)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop}     "$(MYSTR_DESC_DESKTOP)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecAutostart}   "$(MYSTR_DESC_AUTOSTART)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecProtoEd2k}   "$(MYSTR_DESC_PROTO_ED2K)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecProtoMagnet} "$(MYSTR_DESC_PROTO_MAGNET)"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; --------------------------------------------------------------------
@@ -418,6 +439,29 @@ Section "Uninstall" un.SecUninstall
   StrCmp $1 "" autostart_done 0
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "aMule"
   autostart_done:
+
+  ; URL scheme handlers — same "only wipe if still pointing at us"
+  ; guard as autostart above, so a user's manual re-registration
+  ; against another app survives the uninstall.
+  ReadRegStr $0 HKCU "Software\Classes\ed2k\shell\open\command" ""
+  StrCmp $0 "" ed2k_done 0
+  Push $0
+  Push "$INSTDIR"
+  Call un.StrContains
+  Pop $1
+  StrCmp $1 "" ed2k_done 0
+  DeleteRegKey HKCU "Software\Classes\ed2k"
+  ed2k_done:
+
+  ReadRegStr $0 HKCU "Software\Classes\magnet\shell\open\command" ""
+  StrCmp $0 "" magnet_done 0
+  Push $0
+  Push "$INSTDIR"
+  Call un.StrContains
+  Pop $1
+  StrCmp $1 "" magnet_done 0
+  DeleteRegKey HKCU "Software\Classes\magnet"
+  magnet_done:
 
   ; Application files. Explicit RMDir /r on the known subtrees first
   ; for safety, then the catch-all on $INSTDIR.
@@ -501,6 +545,8 @@ Function .onInit
   SectionSetText ${SecCore}      "$(MYSTR_SEC_CORE)"
   SectionSetText ${SecDesktop}   "$(MYSTR_SEC_DESKTOP)"
   SectionSetText ${SecAutostart} "$(MYSTR_SEC_AUTOSTART)"
+  SectionSetText ${SecProtoEd2k}   "$(MYSTR_SEC_PROTO_ED2K)"
+  SectionSetText ${SecProtoMagnet} "$(MYSTR_SEC_PROTO_MAGNET)"
 FunctionEnd
 
 Function un.onInit

@@ -28,6 +28,8 @@
 
 #include <wx/dialog.h> // Needed for wxDialog
 
+#include "ProtocolHandlerManager.h" // Needed for UriScheme enum
+
 class Cfg_Base;
 class CDirectoryTreeCtrl;
 
@@ -164,6 +166,12 @@ public:
 	void OnColorCategorySelected(wxCommandEvent &event);
 	void OnCheckBoxChange(wxCommandEvent &event);
 	void OnAutostartToggle(wxCommandEvent &event);
+	void OnProtocolEd2kToggle(wxCommandEvent &event);
+	void OnProtocolMagnetToggle(wxCommandEvent &event);
+	// Shared implementation for the two OnProtocol*Toggle handlers —
+	// same live-OS-state write model as autostart, gated by a wx
+	// confirm dialog when a non-aMule handler is currently in place.
+	void HandleProtocolToggle(UriScheme scheme, int checkboxId, bool wanted);
 	void OnPrefsPageChange(wxListEvent &event);
 	void OnToolTipDelayChange(wxSpinEvent &event);
 	void OnScrollBarChange(wxScrollEvent &event);

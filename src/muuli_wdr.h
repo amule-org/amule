@@ -222,6 +222,8 @@ wxSizer *clientDetails(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = 
 // Picked above the existing wxDesigner-generated range so a future
 // regeneration of muuli_wdr.* doesn't reuse this ID for something else.
 #define IDC_AUTOSTART_LOGIN 10334
+#define IDC_PROTOCOL_ED2K 10335
+#define IDC_PROTOCOL_MAGNET 10336
 wxSizer *PreferencesGeneralTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_MAXDOWN 10129

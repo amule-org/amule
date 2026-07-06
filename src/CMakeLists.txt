@@ -198,6 +198,20 @@ if (BUILD_DAEMON)
 		)
 	endif()
 
+	if (APPLE)
+		# ProtocolHandlerManager_mac.mm calls
+		# LSCopyDefaultHandlerForURLScheme /
+		# LSSetDefaultHandlerForURLScheme from ApplicationServices.
+		# amuled on macOS runs from the terminal (no .app bundle), so
+		# LSSetDefault… will always fail there — but the CLI
+		# --configure-protocols path still routes through this file,
+		# so we need the framework linked to satisfy the loader.
+		target_link_libraries (amuled
+			PRIVATE "-framework ApplicationServices"
+			PRIVATE "-framework Foundation"
+		)
+	endif()
+
 	install (TARGETS amuled
 		RUNTIME DESTINATION bin
 	)
@@ -337,6 +351,22 @@ if (BUILD_MONOLITHIC)
 				-json "{\"NSAllowsArbitraryLoads\": true}"
 				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
 			COMMENT "Opting aMule.app out of App Transport Security"
+			VERBATIM
+		)
+
+		# Declare aMule as a candidate handler for ed2k:// and magnet:
+		# URLs so LaunchServices considers the bundle eligible.
+		# Making aMule the *default* is a separate step
+		# (LSSetDefaultHandlerForURLScheme via ProtocolHandlerManager);
+		# this only advertises the capability. Without this key, calling
+		# LSSetDefault… from ProtocolHandlerManager returns
+		# kLSApplicationNotFoundErr because LaunchServices doesn't know
+		# we support the scheme.
+		add_custom_command (TARGET amule POST_BUILD
+			COMMAND /usr/bin/plutil -replace CFBundleURLTypes
+				-json "[{\"CFBundleURLName\": \"eD2k URL\", \"CFBundleURLSchemes\": [\"ed2k\"]}, {\"CFBundleURLName\": \"Magnet URL\", \"CFBundleURLSchemes\": [\"magnet\"]}]"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
+			COMMENT "Declaring aMule.app as ed2k:// and magnet: URL handler"
 			VERBATIM
 		)
 
@@ -524,6 +554,22 @@ if (BUILD_REMOTEGUI)
 				-json "{\"NSAllowsArbitraryLoads\": true}"
 				"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Info.plist"
 			COMMENT "Opting aMuleGUI.app out of App Transport Security"
+			VERBATIM
+		)
+
+		# Declare aMuleGUI as a candidate ed2k:// / magnet: handler.
+		# The remote-GUI variant is a legitimate scheme handler in a
+		# remote-daemon setup — clicking a link on the laptop launches
+		# amulegui, which forwards the URL over EC to a remote amuled.
+		# Without this key macOS launches aMuleGUI for the URL but
+		# drops the URL delivery because the bundle metadata says the
+		# app doesn't advertise the scheme. Identical shape to the
+		# aMule.app patch above.
+		add_custom_command (TARGET amulegui POST_BUILD
+			COMMAND /usr/bin/plutil -replace CFBundleURLTypes
+				-json "[{\"CFBundleURLName\": \"eD2k URL\", \"CFBundleURLSchemes\": [\"ed2k\"]}, {\"CFBundleURLName\": \"Magnet URL\", \"CFBundleURLSchemes\": [\"magnet\"]}]"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Info.plist"
+			COMMENT "Declaring aMuleGUI.app as ed2k:// and magnet: URL handler"
 			VERBATIM
 		)
 

@@ -1227,6 +1227,18 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     itemAutostart->SetToolTip( _("Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry.") );
     item0->Add( itemAutostart, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
+    // URL-scheme handler toggles. Same OS-is-source-of-truth model as
+    // autostart above: state lives in HKCU\Software\Classes\<scheme>
+    // (Windows), $XDG_CONFIG_HOME/mimeapps.list (Linux), or
+    // LaunchServices (macOS), never in aMule.conf.
+    wxCheckBox *itemProtoEd2k = new wxCheckBox( parent, IDC_PROTOCOL_ED2K, _("Register aMule for ed2k:// links"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemProtoEd2k->SetToolTip( _("Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here.") );
+    item0->Add( itemProtoEd2k, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
+    wxCheckBox *itemProtoMagnet = new wxCheckBox( parent, IDC_PROTOCOL_MAGNET, _("Register aMule for magnet: links"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemProtoMagnet->SetToolTip( _("aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off.") );
+    item0->Add( itemProtoMagnet, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
     wxCheckBox *item8 = new wxCheckBox( parent, IDC_STARTMIN, _("Start minimized"), wxDefaultPosition, wxDefaultSize, 0 );
     item8->SetToolTip( _("Enabling this makes aMule minimize itself upon start.") );
     item0->Add( item8, 0, wxALIGN_CENTER_VERTICAL, 0 );

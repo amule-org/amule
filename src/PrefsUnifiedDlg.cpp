@@ -50,7 +50,8 @@
 
 #include "amule.h" // Needed for theApp
 #include "amuleDlg.h"
-#include "AutostartManager.h" // Autostart-on-login toggle backend
+#include "AutostartManager.h"       // Autostart-on-login toggle backend
+#include "ProtocolHandlerManager.h" // ed2k:// + magnet: scheme-handler toggle backend
 #ifdef ENABLE_IP2COUNTRY
 #include "IP2Country.h"  // CIP2Country::Update / GetDatabasePath
 #include <wx/artprov.h>  // wxArtProvider::GetBitmap for the IP2Country tab icon
@@ -178,6 +179,12 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	// .desktop), not aMule.conf, so it gets its own handler that
 	// writes immediately on toggle rather than waiting for OnOk.
 	EVT_CHECKBOX(IDC_AUTOSTART_LOGIN, PrefsUnifiedDlg::OnAutostartToggle)
+
+	// ed2k:// and magnet: URL-scheme handler toggles: same live-OS-
+	// state model as autostart above, but with an "another app is
+	// currently registered, overwrite?" confirm gate before Enable.
+	EVT_CHECKBOX(IDC_PROTOCOL_ED2K, PrefsUnifiedDlg::OnProtocolEd2kToggle)
+	EVT_CHECKBOX(IDC_PROTOCOL_MAGNET, PrefsUnifiedDlg::OnProtocolMagnetToggle)
 
 	EVT_BUTTON(ID_PREFS_OK_TOP, PrefsUnifiedDlg::OnOk)
 	EVT_BUTTON(ID_PREFS_CANCEL_TOP, PrefsUnifiedDlg::OnCancel)
@@ -600,6 +607,33 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	wxCheckBox *autostartCb = static_cast<wxCheckBox *>(FindWindow(IDC_AUTOSTART_LOGIN));
 	if (autostartCb) {
 		autostartCb->SetValue(AutostartManager::IsEnabled());
+	}
+
+	// URL-scheme handler checkboxes: same live-OS-state model.
+	// On macOS, LaunchServices has no "clear default handler" call
+	// (see ProtocolHandlerManager.cpp:BackendRemove), so Disable is a
+	// no-op — toggling an already-checked box off doesn't change
+	// anything the user can observe. Rather than expose a dead
+	// control, hide the checkbox once aMule is the current handler:
+	// the user opted in, we're the handler, there's nothing further
+	// for them to do here. If they later switch away via macOS'
+	// native "Change All…" chooser, the checkbox reappears on next
+	// Preferences open with the "off" state, and they can opt back in.
+	wxCheckBox *ed2kCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_ED2K));
+	if (ed2kCb) {
+		bool enabled = ProtocolHandlerManager::IsEnabled(UriScheme::Ed2k);
+		ed2kCb->SetValue(enabled);
+#ifdef __WXMAC__
+		ed2kCb->Show(!enabled);
+#endif
+	}
+	wxCheckBox *magnetCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_MAGNET));
+	if (magnetCb) {
+		bool enabled = ProtocolHandlerManager::IsEnabled(UriScheme::Magnet);
+		magnetCb->SetValue(enabled);
+#ifdef __WXMAC__
+		magnetCb->Show(!enabled);
+#endif
 	}
 
 #ifdef ENABLE_IP2COUNTRY
@@ -1192,6 +1226,66 @@ void PrefsUnifiedDlg::OnAutostartToggle(wxCommandEvent &event)
 			wxOK | wxICON_WARNING,
 			this);
 	}
+}
+
+void PrefsUnifiedDlg::HandleProtocolToggle(UriScheme scheme, int checkboxId, bool wanted)
+{
+	// Same live-OS-state semantics as the autostart toggle above,
+	// with one extra gate: before Enable overwrites a pre-existing
+	// third-party handler, confirm with the user. Disable never
+	// touches a non-aMule handler (Manager contract).
+	if (wanted) {
+		wxString current = ProtocolHandlerManager::GetCurrentHandler(scheme);
+		if (!current.empty()) {
+			wxString msg;
+			if (scheme == UriScheme::Magnet) {
+				msg = wxString::Format(
+					_("aMule only handles eD2k-compatible magnets. If you replace the "
+					  "current magnet handler (%s), BitTorrent magnet links will stop "
+					  "working - aMule cannot download BitTorrent content. Continue?"),
+					current);
+			} else {
+				msg = wxString::Format(_("Another application is currently the default "
+							 "handler for these links (%s). Replace it with "
+							 "aMule?"),
+					current);
+			}
+			int answer = wxMessageBox(
+				msg, _("Register URL handler"), wxYES_NO | wxICON_QUESTION, this);
+			if (answer != wxYES) {
+				// Roll the checkbox back - user declined.
+				wxCheckBox *cb = static_cast<wxCheckBox *>(FindWindow(checkboxId));
+				if (cb) {
+					cb->SetValue(false);
+				}
+				return;
+			}
+		}
+	}
+
+	bool ok = wanted ? ProtocolHandlerManager::Enable(scheme) : ProtocolHandlerManager::Disable(scheme);
+	if (!ok) {
+		wxCheckBox *cb = static_cast<wxCheckBox *>(FindWindow(checkboxId));
+		if (cb) {
+			cb->SetValue(!wanted);
+		}
+		wxMessageBox(wanted ? _("Could not register aMule as the URL handler. The registration "
+					"store may be read-only.")
+				    : _("Could not remove the URL handler registration."),
+			_("Register URL handler"),
+			wxOK | wxICON_WARNING,
+			this);
+	}
+}
+
+void PrefsUnifiedDlg::OnProtocolEd2kToggle(wxCommandEvent &event)
+{
+	HandleProtocolToggle(UriScheme::Ed2k, IDC_PROTOCOL_ED2K, event.IsChecked());
+}
+
+void PrefsUnifiedDlg::OnProtocolMagnetToggle(wxCommandEvent &event)
+{
+	HandleProtocolToggle(UriScheme::Magnet, IDC_PROTOCOL_MAGNET, event.IsChecked());
 }
 
 void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)

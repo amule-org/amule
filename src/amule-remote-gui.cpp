@@ -660,6 +660,11 @@ void CamuleRemoteGuiApp::Startup()
 	poll_timer->Start(1000);
 	amuledlg->StartGuiTimer();
 
+	// Drain any pre-connect URL queued by ProtocolHandler_QueueSchemeLink
+	// (cold-launch: click → wrote ED2KLinks → user then connects). Saves
+	// a ~1 s wait for OnPollTimer to notice the file. No-op if empty.
+	AddLinksFromFile();
+
 	// Now activate GeoIP, so that the download dialog doesn't get destroyed immediately
 #ifdef ENABLE_IP2COUNTRY
 	if (thePrefs::IsGeoIPEnabled()) {

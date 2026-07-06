@@ -110,10 +110,14 @@ bool InstallDesktopFile(
 	for (size_t i = 0; i < in.GetLineCount(); ++i) {
 		wxString line = in[i];
 		if (line.StartsWith(wxT("Exec="))) {
-			// Quote the AppImage path so spaces survive; %F passes file
-			// arguments from the shell when the launcher is invoked with
-			// drag-and-drop or "Open With".
-			line = wxT("Exec=\"") + appimagePath + wxT("\" %F");
+			// Quote the AppImage path so spaces survive. %u (single URL)
+			// matches the shipped org.amule.aMule.desktop; aMule accepts
+			// both ed2k:// / magnet: URLs (via scheme handler clicks) and
+			// local file paths, and the .desktop spec's URL substitutions
+			// pass file paths through unmodified. Previously %F, which
+			// silently swallowed URL clicks once scheme registration was
+			// wired up (users would see aMule launch but the URL gone).
+			line = wxT("Exec=\"") + appimagePath + wxT("\" %u");
 		} else if (line.StartsWith(wxT("TryExec="))) {
 			line = wxT("TryExec=") + appimagePath;
 		}

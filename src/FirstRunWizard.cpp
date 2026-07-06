@@ -41,8 +41,10 @@
 #include <wx/msgdlg.h>
 #include <wx/valtext.h>
 
-#include "amule.h"       // Needed for theApp / glob_prefs
-#include "Preferences.h" // Needed for thePrefs
+#include "amule.h"                  // Needed for theApp / glob_prefs
+#include "AutostartManager.h"       // Needed for Integrations page autostart toggle
+#include "Preferences.h"            // Needed for thePrefs
+#include "ProtocolHandlerManager.h" // Needed for Integrations page URL-scheme toggles
 #include <common/Format.h>
 #include <common/Path.h> // Needed for CPath
 
@@ -180,6 +182,7 @@ private:
 	wxWizardPageSimple *BuildConnectionPage();
 	wxWizardPageSimple *BuildNetworkPage();
 	wxWizardPageSimple *BuildBootstrapPage();
+	wxWizardPageSimple *BuildIntegrationsPage();
 	wxWizardPageSimple *BuildFoldersPage();
 
 	void UpdateDerivedLabel();
@@ -208,6 +211,9 @@ private:
 #endif
 	wxCheckBox *m_serverMetCtrl = NULL;
 	wxCheckBox *m_nodesDatCtrl = NULL;
+	wxCheckBox *m_autostartCtrl = nullptr;
+	wxCheckBox *m_registerEd2kCtrl = nullptr;
+	wxCheckBox *m_registerMagnetCtrl = nullptr;
 	wxTextCtrl *m_incomingCtrl = NULL;
 	wxTextCtrl *m_tempCtrl = NULL;
 };
@@ -221,12 +227,14 @@ CFirstRunWizard::CFirstRunWizard(wxWindow *parent, bool needServerMet, bool need
 	wxWizardPageSimple *conn = BuildConnectionPage();
 	wxWizardPageSimple *net = BuildNetworkPage();
 	wxWizardPageSimple *boot = BuildBootstrapPage();
+	wxWizardPageSimple *integrations = BuildIntegrationsPage();
 	wxWizardPageSimple *folders = BuildFoldersPage();
 
 	wxWizardPageSimple::Chain(nick, conn);
 	wxWizardPageSimple::Chain(conn, net);
 	wxWizardPageSimple::Chain(net, boot);
-	wxWizardPageSimple::Chain(boot, folders);
+	wxWizardPageSimple::Chain(boot, integrations);
+	wxWizardPageSimple::Chain(integrations, folders);
 
 	m_firstPage = nick;
 
@@ -418,6 +426,72 @@ wxWizardPageSimple *CFirstRunWizard::BuildBootstrapPage()
 	return page;
 }
 
+wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
+{
+	wxWizardPageSimple *page = new wxWizardPageSimple(this);
+	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+
+	sizer->Add(new wxStaticText(page, wxID_ANY, _("Integrations (optional)")), 0, wxBOTTOM, 8);
+	sizer->Add(new wxStaticText(page,
+			   wxID_ANY,
+			   _("Choose how aMule integrates with your system. You can\n"
+			     "change any of these later in Preferences.")),
+		0,
+		wxBOTTOM,
+		12);
+
+	// All three checkboxes reuse the exact strings introduced by the
+	// Preferences panel so translators only see them once. The three
+	// backends (AutostartManager, ProtocolHandlerManager for ed2k,
+	// same for magnet) all live in the OS, not in aMule.conf.
+	m_autostartCtrl = new wxCheckBox(page, wxID_ANY, _("Start aMule automatically when I log in"));
+	m_autostartCtrl->SetValue(AutostartManager::IsEnabled());
+	sizer->Add(m_autostartCtrl, 0, wxBOTTOM, 4);
+
+	// On macOS the "un-register" path is a no-op (LaunchServices
+	// deliberately blocks programmatic reset), so once aMule already
+	// holds the scheme registration we skip creating the checkbox
+	// entirely — it would be a dead control. On Linux and Windows,
+	// Disable actually works, so the box is always created and simply
+	// reflects live state. Same rationale as the Preferences panel.
+	bool magnetEnabled = ProtocolHandlerManager::IsEnabled(UriScheme::Magnet);
+#ifdef __WXMAC__
+	const bool showEd2kBox = !ProtocolHandlerManager::IsEnabled(UriScheme::Ed2k);
+	const bool showMagnetBox = !magnetEnabled;
+#else
+	const bool showEd2kBox = true;
+	const bool showMagnetBox = true;
+#endif
+
+	if (showEd2kBox) {
+		m_registerEd2kCtrl = new wxCheckBox(page, wxID_ANY, _("Register aMule for ed2k:// links"));
+		// Default ON in the wizard (opt-in to the common case). If the
+		// user is already the current handler, honour that too.
+		m_registerEd2kCtrl->SetValue(true);
+		sizer->Add(m_registerEd2kCtrl, 0, wxBOTTOM, 4);
+	}
+
+	if (showMagnetBox) {
+		m_registerMagnetCtrl = new wxCheckBox(page, wxID_ANY, _("Register aMule for magnet: links"));
+		// Default OFF: aMule only handles the eD2k-compatible subset of
+		// magnets; leaving this off in the wizard avoids silently
+		// stealing BitTorrent magnet clicks from a BT client. Preserve
+		// the current state if the user has already opted in elsewhere.
+		m_registerMagnetCtrl->SetValue(magnetEnabled);
+		sizer->Add(m_registerMagnetCtrl, 0, wxBOTTOM, 2);
+		sizer->Add(new wxStaticText(page,
+				   wxID_ANY,
+				   _("Only eD2k-compatible magnets. Leave off if you use a BitTorrent "
+				     "client.")),
+			0,
+			wxLEFT | wxBOTTOM,
+			20);
+	}
+
+	page->SetSizer(sizer);
+	return page;
+}
+
 wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 {
 	wxWizardPageSimple *page = new wxWizardPageSimple(this);
@@ -577,6 +651,35 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 	wxString tmp = m_tempCtrl->GetValue().Trim().Trim(false);
 	if (!tmp.IsEmpty()) {
 		thePrefs::SetTempDir(CPath(tmp));
+	}
+
+	// Integrations page. All three writes go straight to the OS
+	// (registry / mimeapps.list / LaunchServices / autostart store);
+	// none touch aMule.conf, so glob_prefs->Save() below doesn't
+	// cover them. Silent Enable/Disable — on a fresh install the
+	// "another handler is currently registered" prompt is normally
+	// irrelevant, and if it fires the user is already choosing
+	// aMule as their client in the wizard.
+	if (m_autostartCtrl) {
+		if (m_autostartCtrl->GetValue()) {
+			AutostartManager::Enable();
+		} else {
+			AutostartManager::Disable();
+		}
+	}
+	if (m_registerEd2kCtrl) {
+		if (m_registerEd2kCtrl->GetValue()) {
+			ProtocolHandlerManager::Enable(UriScheme::Ed2k);
+		} else {
+			ProtocolHandlerManager::Disable(UriScheme::Ed2k);
+		}
+	}
+	if (m_registerMagnetCtrl) {
+		if (m_registerMagnetCtrl->GetValue()) {
+			ProtocolHandlerManager::Enable(UriScheme::Magnet);
+		} else {
+			ProtocolHandlerManager::Disable(UriScheme::Magnet);
+		}
 	}
 
 	// Record that the wizard ran to completion, so it is not shown again

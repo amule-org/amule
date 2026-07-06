@@ -39,14 +39,15 @@
 #include <string.h> // Needed for strcmp (IsWaylandSession)
 #endif
 
-#include "amule.h"            // Interface declarations.
-#include "AutostartManager.h" // Needed for --configure-autostart handling
-#include "CamuleFileConfig.h" // CamuleFileConfig + CCtypeAsciiScope (#852)
-#include <common/Format.h>    // Needed for CFormat
-#include "CFile.h"            // Needed for CFile
-#include "ED2KLink.h"         // Needed for command line passing of links
-#include "FileLock.h"         // Needed for CFileLock
-#include "GuiEvents.h"        // Needed for Notify_*
+#include "amule.h"                  // Interface declarations.
+#include "AutostartManager.h"       // Needed for --configure-autostart handling
+#include "ProtocolHandlerManager.h" // Needed for --configure-protocols handling
+#include "CamuleFileConfig.h"       // CamuleFileConfig + CCtypeAsciiScope (#852)
+#include <common/Format.h>          // Needed for CFormat
+#include "CFile.h"                  // Needed for CFile
+#include "ED2KLink.h"               // Needed for command line passing of links
+#include "FileLock.h"               // Needed for CFileLock
+#include "GuiEvents.h"              // Needed for Notify_*
 #include "KnownFile.h"
 #include "Logger.h"
 #include "MagnetURI.h" // Needed for CMagnetURI
@@ -281,6 +282,16 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	cmdline.AddOption("",
 		"configure-autostart",
 		"Enable or disable starting this binary on user login (on|off), then exit.");
+	// One-shot ed2k:// + magnet: URL-scheme handler toggle. Called by
+	// the Windows installer's Components-page checkboxes and by the
+	// Preferences UI / first-run wizard; lives in ProtocolHandlerManager
+	// so the OS-specific store (Windows registry, Linux mimeapps.list,
+	// macOS LaunchServices) is hidden from callers.
+	cmdline.AddOption("",
+		"configure-protocols",
+		"Register/unregister aMule as the default handler for URL schemes, then exit. "
+		"Values: on|off (both schemes) or ed2k:on|ed2k:off|magnet:on|magnet:off "
+		"(per-scheme). The Windows installer invokes the per-scheme form.");
 #ifdef AMULE_DAEMON
 	cmdline.AddSwitch("f", "full-daemon", "Fork to background.");
 	cmdline.AddOption("p", "pid-file", "After fork, create a pid-file in the given fullname file.");
@@ -366,6 +377,63 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		// Return-false here propagates to OnInit returning false, which
 		// makes wxApp terminate cleanly with exit code 0/1 per `ok`.
 		// Using exit() directly would skip wx destructors.
+		return false;
+	}
+
+	wxString protocols_arg;
+	if (cmdline.Found("configure-protocols", &protocols_arg)) {
+		protocols_arg.MakeLower();
+		// Parse both the legacy bare on|off (applies to both schemes)
+		// and the per-scheme ed2k:on|ed2k:off|magnet:on|magnet:off form
+		// the Windows installer's two SecProto* sections now use.
+		bool doEd2k = false, doMagnet = false;
+		bool wantEnable = false;
+		bool parsed = true;
+		if (protocols_arg == wxT("on") || protocols_arg == wxT("yes") ||
+			protocols_arg == wxT("true") || protocols_arg == wxT("1")) {
+			doEd2k = doMagnet = true;
+			wantEnable = true;
+		} else if (protocols_arg == wxT("off") || protocols_arg == wxT("no") ||
+			   protocols_arg == wxT("false") || protocols_arg == wxT("0")) {
+			doEd2k = doMagnet = true;
+			wantEnable = false;
+		} else if (protocols_arg == wxT("ed2k:on")) {
+			doEd2k = true;
+			wantEnable = true;
+		} else if (protocols_arg == wxT("ed2k:off")) {
+			doEd2k = true;
+			wantEnable = false;
+		} else if (protocols_arg == wxT("magnet:on")) {
+			doMagnet = true;
+			wantEnable = true;
+		} else if (protocols_arg == wxT("magnet:off")) {
+			doMagnet = true;
+			wantEnable = false;
+		} else {
+			parsed = false;
+		}
+		if (!parsed) {
+			fprintf(stderr,
+				"configure-protocols expects 'on', 'off', 'ed2k:on', 'ed2k:off', "
+				"'magnet:on' or 'magnet:off' (got '%s')\n",
+				(const char *)unicode2char(protocols_arg));
+			return false;
+		}
+		bool ok = true;
+		if (doEd2k) {
+			ok &= (wantEnable ? ProtocolHandlerManager::Enable(UriScheme::Ed2k)
+					  : ProtocolHandlerManager::Disable(UriScheme::Ed2k));
+		}
+		if (doMagnet) {
+			ok &= (wantEnable ? ProtocolHandlerManager::Enable(UriScheme::Magnet)
+					  : ProtocolHandlerManager::Disable(UriScheme::Magnet));
+		}
+		printf("%s: %s%s\n",
+			ok ? (wantEnable ? "protocols enabled" : "protocols disabled")
+			   : (wantEnable ? "protocols enable FAILED" : "protocols disable FAILED"),
+			doEd2k ? "ed2k" : "",
+			doMagnet ? (doEd2k ? ", magnet" : "magnet") : "");
+		// Same one-shot exit semantics as --configure-autostart above.
 		return false;
 	}
 
@@ -573,6 +641,12 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// exists — disabling autostart is always a deliberate choice we
 	// don't second-guess.
 	AutostartManager::SelfHealOnStartup();
+
+	// Same idea for the URL-scheme handler registration: if we're the
+	// current handler for ed2k:/magnet: but the registered path drifted
+	// (user moved the AppImage / .app / install dir), rewrite it. No-op
+	// if we aren't the current handler for a given scheme.
+	ProtocolHandlerManager::SelfHealOnStartup();
 
 	return true;
 }

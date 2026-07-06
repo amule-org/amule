@@ -106,6 +106,8 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 	set (COMMON_SOURCES
 		amuleAppCommon.cpp
 		AutostartManager.cpp
+		ProtocolHandlerManager.cpp
+		$<$<BOOL:${APPLE}>:ProtocolHandlerManager_mac.mm>
 		ClientRef.cpp
 		ECSpecialMuleTags.cpp
 		GetTickCount.cpp
