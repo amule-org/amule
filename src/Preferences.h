@@ -377,6 +377,9 @@ public:
 	static bool IsSafeServerConnectEnabled() { return s_safeServerConnect; }
 	static void SetSafeServerConnectEnabled(bool val) { s_safeServerConnect = val; }
 
+	static bool GetEndgame() { return s_Endgame; }
+	static void SetEndgame(bool val) { s_Endgame = val; }
+
 	static bool IsCheckDiskspaceEnabled() { return s_checkDiskspace; }
 	static void SetCheckDiskspaceEnabled(bool val) { s_checkDiskspace = val; }
 	static uint32 GetMinFreeDiskSpaceMB() { return s_uMinFreeDiskSpace; }
@@ -840,6 +843,7 @@ protected:
 	static bool s_smartidcheck;
 	static uint8 s_smartidstate;
 	static bool s_safeServerConnect;
+	static bool s_Endgame;
 	static bool s_startMinimized;
 	static uint16 s_MaxConperFive;
 	static bool s_checkDiskspace;

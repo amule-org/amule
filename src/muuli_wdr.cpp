@@ -1522,6 +1522,10 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item9 = new wxCheckBox( parent, IDC_PREVIEWPRIO, _("Try to download first and last chunks first"), wxDefaultPosition, wxDefaultSize, 0 );
     item9->SetValue( TRUE );
     item5->Add( item9, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
+
+    wxCheckBox *itemEndgame = new wxCheckBox( parent, IDC_ENDGAME, _("Endgame mode: rotate to faster sources for the final blocks"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemEndgame->SetValue( FALSE );
+    item5->Add( itemEndgame, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
     wxCheckBox *item10 = new wxCheckBox( parent, IDC_STARTNEXTFILE, _("Start next paused file when a file completes"), wxDefaultPosition, wxDefaultSize, 0 );
     item10->SetValue( TRUE );
     item5->Add( item10, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );

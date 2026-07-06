@@ -79,7 +79,7 @@ bool CEC_Category_Tag::Create()
 	if (!ret) {
 		GetTagByName(EC_TAG_CATEGORY_PATH)
 			->SetStringData(theApp->glob_prefs->GetCatPath(theApp->glob_prefs->GetCatCount() - 1)
-						.GetRaw());
+					.GetRaw());
 	}
 	return ret;
 }
@@ -246,6 +246,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 		if (thePrefs::GetPreviewPrio()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_PREVIEW_PRIO));
+		}
+		if (thePrefs::GetEndgame()) {
+			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_ENDGAME));
 		}
 		if (thePrefs::GetNewAutoUp()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_NEW_AUTO_UL_PRIO));
@@ -508,6 +511,7 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetAddNewFilesPaused, EC_TAG_FILES_NEW_PAUSED);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetNewAutoDown, EC_TAG_FILES_NEW_AUTO_DL_PRIO);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetPreviewPrio, EC_TAG_FILES_PREVIEW_PRIO);
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetEndgame, EC_TAG_FILES_ENDGAME);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetNewAutoUp, EC_TAG_FILES_NEW_AUTO_UL_PRIO);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetStartNextFile, EC_TAG_FILES_START_NEXT_PAUSED);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetStartNextFileSame, EC_TAG_FILES_RESUME_SAME_CAT);

@@ -305,6 +305,7 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 // rest so amulegui hides it via amuledOnlyPrefs[] (probing runs on
 // the daemon side; the remote GUI has no business setting the path).
 #define IDC_MEDIAMETA_FFPROBEPATHTEXT 10370
+#define IDC_ENDGAME 10424
 #define IDC_EXT_CONN_PARAMS_BOX 10356
 #define IDC_EXT_CONN_IPTEXT 10357
 #define IDC_EXT_CONN_TCPPORTTEXT 10358

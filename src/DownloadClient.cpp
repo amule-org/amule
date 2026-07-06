@@ -648,7 +648,7 @@ void CUpDownClient::SendBlockRequests()
 			(m_reqfile->GetFileSize() > m_reqfile->GetCompletedSize()) &&
 			((m_reqfile->GetFileSize() - m_reqfile->GetCompletedSize()) <= (4 * PARTSIZE));
 
-		if (thePrefs::GetDropSlowSources() || nearCompletion) {
+		if (thePrefs::GetDropSlowSources() || (nearCompletion && thePrefs::GetEndgame())) {
 			slower_client = m_reqfile->GetSlowerDownloadingClient(m_lastaverage, this);
 		}
 

@@ -143,6 +143,7 @@ bool CPreferences::s_bpreviewprio;
 bool CPreferences::s_smartidcheck;
 uint8 CPreferences::s_smartidstate;
 bool CPreferences::s_safeServerConnect;
+bool CPreferences::s_Endgame;
 bool CPreferences::s_startMinimized;
 uint16 CPreferences::s_MaxConperFive;
 bool CPreferences::s_checkDiskspace;
@@ -1186,6 +1187,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	 * Files
 	 **/
 	NewCfgItem(IDC_TEMPFILES, (new Cfg_Path("/eMule/TempDir", s_tempdir, appdir + "Temp")));
+	NewCfgItem(IDC_ENDGAME, (new Cfg_Bool("/eMule/Endgame", s_Endgame, true)));
 
 #if defined(__WXMAC__) || defined(__WINDOWS__)
 	wxString incpath = wxStandardPaths::Get().GetDocumentsDir();
