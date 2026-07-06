@@ -413,17 +413,20 @@ bool Probe(const wxString &ffprobePath,
 		return false;
 	}
 
-	// -show_entries constrains the output to the three fields we care about
-	// (codec of every stream + format-level duration + format-level bit_rate).
-	// -of default=nk=0:nw=1 emits one bare "key=value" per line, no INI
-	// section headers, no line wrapping. -v error silences informational
-	// chatter. Tokens are passed as a real argv (no shell), so the file path
-	// needs no quoting/escaping.
+	// -show_entries constrains the output to what we care about: each stream's
+	// codec_name plus its codec_type (so we can prefer the video track's codec,
+	// then the audio track's, over subtitle / data streams), and the format-
+	// level duration + bit_rate. -of default=nk=0:nw=1 emits one bare
+	// "key=value" per line, no INI section headers, no line wrapping; ffprobe
+	// prints the stream fields in the requested order, so each stream is a
+	// codec_name line immediately followed by its codec_type line. -v error
+	// silences informational chatter. Tokens are passed as a real argv (no
+	// shell), so the file path needs no quoting/escaping.
 	wxArrayString argv;
 	argv.Add(wxT("-v"));
 	argv.Add(wxT("error"));
 	argv.Add(wxT("-show_entries"));
-	argv.Add(wxT("format=duration,bit_rate:stream=codec_name"));
+	argv.Add(wxT("format=duration,bit_rate:stream=codec_name,codec_type"));
 	argv.Add(wxT("-of"));
 	argv.Add(wxT("default=nk=0:nw=1"));
 	argv.Add(file.GetRaw());
@@ -452,7 +455,10 @@ bool Probe(const wxString &ffprobePath,
 
 	MediaInfo info;
 	bool got_duration = false;
-	bool got_codec = false;
+	// Codec selection: the first video track's codec, else the first audio
+	// track's. Subtitle / data streams (e.g. a leading subrip track in an
+	// mkv) never win, so we don't advertise "subrip" as a file's codec.
+	wxString videoCodec, audioCodec, pendingCodec;
 	for (const wxString &line : stdout_lines) {
 		// Split on the first '=' only — codec_name values themselves
 		// don't contain '=' but the parser mustn't assume that.
@@ -466,13 +472,24 @@ bool Probe(const wxString &ffprobePath,
 			got_duration = ParseSeconds(value, info.length_seconds);
 		} else if (key == wxT("bit_rate")) {
 			(void)ParseBitrateKbps(value, info.bitrate_kbps);
-		} else if (key == wxT("codec_name") && !got_codec) {
-			// First stream's codec wins — this is video for
-			// video containers, audio for audio-only files.
-			info.codec = value;
-			got_codec = true;
+		} else if (key == wxT("codec_name")) {
+			// Held until this stream's codec_type line arrives next.
+			pendingCodec = value;
+		} else if (key == wxT("codec_type")) {
+			if (value == wxT("video") && videoCodec.IsEmpty()) {
+				videoCodec = pendingCodec;
+			} else if (value == wxT("audio") && audioCodec.IsEmpty()) {
+				audioCodec = pendingCodec;
+			}
+			pendingCodec.clear();
 		}
 	}
+	if (!videoCodec.IsEmpty()) {
+		info.codec = videoCodec;
+	} else if (!audioCodec.IsEmpty()) {
+		info.codec = audioCodec;
+	}
+	const bool got_codec = !info.codec.IsEmpty();
 
 	// A file with zero streams / zero duration produces an all-blank
 	// MediaInfo which is meaningless to advertise — treat it as a
