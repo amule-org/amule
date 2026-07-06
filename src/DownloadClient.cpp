@@ -668,7 +668,11 @@ void CUpDownClient::SendBlockRequests()
 			slower_client->SetSentCancelTransfer(1);
 		}
 
-		slower_client->SetDownloadState(DS_NONEEDEDPARTS);
+		if (slower_client == this && nearCompletion) {
+			slower_client->SetDownloadState(DS_ONQUEUE);
+		} else {
+			slower_client->SetDownloadState(DS_NONEEDEDPARTS);
+		}
 
 		if (slower_client != this) {
 			// Re-request freed blocks.
@@ -704,7 +708,11 @@ void CUpDownClient::SendBlockRequests()
 					"Local Client: OP_CANCELTRANSFER (freed blocks not available "
 					"here) to " +
 						GetFullIP());
-				SetDownloadState(DS_NONEEDEDPARTS);
+				if (nearCompletion) {
+					SetDownloadState(DS_ONQUEUE);
+				} else {
+					SetDownloadState(DS_NONEEDEDPARTS);
+				}
 				return;
 			}
 		} else {
