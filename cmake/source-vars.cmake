@@ -113,6 +113,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 		GetTickCount.cpp
 		GuiEvents.cpp
 		HTTPDownload.cpp
+		InstanceLock.cpp
 		KnownFile.cpp
 		Logger.cpp
 		MediaProbe.cpp

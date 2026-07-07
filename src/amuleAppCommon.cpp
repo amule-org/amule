@@ -28,10 +28,11 @@
 //
 
 #include <wx/wx.h>
-#include <wx/cmdline.h>  // Needed for wxCmdLineParser
-#include <wx/snglinst.h> // Needed for wxSingleInstanceChecker
-#include <wx/textfile.h> // Needed for wxTextFile
-#include <wx/config.h>   // Do_not_auto_remove (win32)
+#include <wx/cmdline.h> // Needed for wxCmdLineParser
+
+#include "InstanceLock.h" // Needed for InstanceLock (replaces wxSingleInstanceChecker on POSIX)
+#include <wx/textfile.h>  // Needed for wxTextFile
+#include <wx/config.h>    // Do_not_auto_remove (win32)
 #include <wx/fileconf.h>
 
 #ifdef __WXGTK__
@@ -83,17 +84,13 @@ CamuleAppCommon::CamuleAppCommon()
 
 CamuleAppCommon::~CamuleAppCommon()
 {
-#if defined(__WXMAC__) && defined(AMULE_DAEMON)
-	// #warning TODO: fix wxSingleInstanceChecker for amuled on Mac (wx link problems)
-#else
 	delete m_singleInstance;
-#endif
 }
 
 #ifdef __WXGTK__
 bool CamuleAppCommon::IsWaylandSession()
 {
-	// Explicit GDK_BACKEND=x11 forces the app onto XWayland — OS
+	// Explicit GDK_BACKEND=x11 forces the app onto XWayland - OS
 	// minimize events come through reliably, so treat it as X11.
 	// This is the documented user workaround for "I want MinToTray
 	// on Wayland": launch with `GDK_BACKEND=x11 amule`. Same trick
@@ -124,12 +121,17 @@ bool CamuleAppCommon::IsWaylandSession()
 
 void CamuleAppCommon::RefreshSingleInstanceChecker()
 {
-#if defined(__WXMAC__) && defined(AMULE_DAEMON)
-	// #warning TODO: fix wxSingleInstanceChecker for amuled on Mac (wx link problems)
-#else
+	// Reacquire after daemonization fork(). POSIX advisory locks are
+	// owned by the parent process, not inherited by the child, so the
+	// forked daemon needs to relock the same file. Historically this
+	// path was disabled on __WXMAC__ + AMULE_DAEMON because linking
+	// wxSingleInstanceChecker into a wxAppConsole (headless) binary
+	// pulled in Cocoa framework symbols. InstanceLock has no wx-GUI
+	// dependencies on POSIX (fcntl only), so amuled/Mac now has
+	// working single-instance detection too.
 	delete m_singleInstance;
-	m_singleInstance = new wxSingleInstanceChecker("muleLock", thePrefs::GetConfigDir());
-#endif
+	m_singleInstance = new InstanceLock();
+	m_singleInstance->Acquire("muleLock", thePrefs::GetConfigDir());
 }
 
 void CamuleAppCommon::AddLinksFromFile()
@@ -371,7 +373,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 				"configure-autostart expects 'on' or 'off' (got '%s')\n",
 				(const char *)unicode2char(autostart_arg));
 		}
-		// Exit either way — this flag is a one-shot toggle, not a
+		// Exit either way - this flag is a one-shot toggle, not a
 		// "run aMule WITH autostart enabled" combo. (Caller can chain:
 		// `amule --configure-autostart on && amule`.)
 		// Return-false here propagates to OnInit returning false, which
@@ -539,18 +541,12 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		}
 	}
 
-#if defined(__WXMAC__) && defined(AMULE_DAEMON)
-	// #warning TODO: fix wxSingleInstanceChecker for amuled on Mac (wx link problems)
-	AddLogLineCS("WARNING: The check for other instances is currently disabled in amuled.\n"
-		     "Please make sure that no other instance of aMule is running or your files might be "
-		     "corrupted.\n");
-#else
 	AddLogLineNS("Checking if there is an instance already running...");
 
-	m_singleInstance = new wxSingleInstanceChecker();
+	m_singleInstance = new InstanceLock();
 	wxString lockfile = IsRemoteGui() ? "muleLockRGUI" : "muleLock";
-	if (m_singleInstance->Create(lockfile, thePrefs::GetConfigDir()) &&
-		m_singleInstance->IsAnotherRunning()) {
+	InstanceLock::Result lockResult = m_singleInstance->Acquire(lockfile, thePrefs::GetConfigDir());
+	if (lockResult == InstanceLock::LOCK_HELD) {
 		AddLogLineCS(CFormat("There is an instance of %s already running") % m_appName);
 		AddLogLineNS(CFormat("(lock file: %s%s)") % thePrefs::GetConfigDir() % lockfile);
 		if (linksPassed) {
@@ -575,10 +571,13 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		}
 
 		return false;
+	} else if (lockResult == InstanceLock::LOCK_ERROR) {
+		AddLogLineCS(CFormat("Could not access lock file (%s%s); continuing without single-instance "
+				     "protection.") %
+			     thePrefs::GetConfigDir() % lockfile);
 	} else {
 		AddLogLineNS("No other instances are running.");
 	}
-#endif
 
 #ifndef __WINDOWS__
 	// Close standard-input
@@ -598,7 +597,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// case-insensitive sorted-array binary searches are locale-
 	// deterministic. The initial parse below also has to run under
 	// LC_CTYPE="C" so the in-memory sort order matches what subsequent
-	// Read / Write calls will use — otherwise a session that runs under
+	// Read / Write calls will use - otherwise a session that runs under
 	// a non-C locale silently accumulates duplicate key=value lines in
 	// amule.conf (#852).
 	{
@@ -638,7 +637,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// moved the AppImage / .app / install dir since they enabled the
 	// toggle), silently rewrite it to the current canonical path so
 	// the next login launches the right binary. No-op if no entry
-	// exists — disabling autostart is always a deliberate choice we
+	// exists - disabling autostart is always a deliberate choice we
 	// don't second-guess.
 	AutostartManager::SelfHealOnStartup();
 

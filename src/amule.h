@@ -76,7 +76,7 @@ class wxCloseEvent;
 class wxFFileOutputStream;
 class CTimer;
 class CTimerEvent;
-class wxSingleInstanceChecker;
+class InstanceLock;
 class CHashingEvent;
 class CMediaProbeEvent;
 class CMuleInternalEvent;
@@ -116,8 +116,10 @@ void OnShutdownSignal(int /* sig */);
 class CamuleAppCommon
 {
 private:
-	// Used to detect a previous running instance of aMule
-	wxSingleInstanceChecker *m_singleInstance;
+	// Used to detect a previous running instance of aMule.
+	// InstanceLock replaces wxSingleInstanceChecker on POSIX so single-
+	// instance detection survives PID-namespace boundaries (Flatpak).
+	InstanceLock *m_singleInstance;
 
 	bool CheckPassedLink(const wxString &in, wxString &out, int cat);
 
@@ -176,7 +178,7 @@ public:
 	// distro, any compositor). xdg-shell intentionally doesn't deliver
 	// iconify-state notifications to clients, so several tray-icon
 	// features that rely on detecting "user just minimized the
-	// window" cannot work there — the call sites use this flag to
+	// window" cannot work there - the call sites use this flag to
 	// disable / grey out the relevant prefs and skip the broken paths.
 	static bool IsWaylandSession();
 #endif
@@ -366,7 +368,7 @@ protected:
 	void OnFinishedHashing(CHashingEvent &evt);
 	void OnPartFileHashResult(CPartFileHashResultEvent &evt);
 	void OnFinishedAICHHashing(CHashingEvent &evt);
-	// #140 — CMediaProbeTask marshals results back here so we can
+	// #140 - CMediaProbeTask marshals results back here so we can
 	// attach FT_MEDIA_* tags on the main thread (the worker never
 	// touches CKnownFile state).
 	void OnMediaProbeFinished(CMediaProbeEvent &evt);
@@ -455,7 +457,7 @@ class CamuleGuiApp : public CamuleApp, public CamuleGuiBase
 	// while no aMule windows are visible. Default wxApp::MacReopenApp
 	// behaviour is to do nothing when the frame is hidden, so a
 	// window hidden via the close button (HideOnClose pref) stays
-	// permanently hidden — the app appears stuck.
+	// permanently hidden - the app appears stuck.
 	virtual void MacReopenApp();
 #endif
 
