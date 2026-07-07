@@ -61,6 +61,29 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # Gate: the release version must have a docs/CHANGELOG.md entry before we
+      # tag. The AppStream metainfo <releases> is generated from that changelog
+      # at build time, so a missing entry would ship a stale store version (the
+      # 3.0.1-labelled-3.0.0 drift this process fixes). Runs before tagging so a
+      # forgotten changelog blocks the release instead of shipping wrong.
+      - name: Verify CHANGELOG has an entry for this version
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # Throwaway fork-test tags (e.g. 0.0.0-fork-test) won't be in the
+          # changelog; don't block them.
+          case "${VERSION}" in
+            0.0.0*|*fork-test*) echo "Test version ${VERSION}; skipping CHANGELOG gate."; exit 0 ;;
+          esac
+          top="$(grep -m1 -oE '^## Version [^ ]+' docs/CHANGELOG.md | awk '{print $3}')"
+          if [ "${top}" != "${VERSION}" ]; then
+            echo "::error::docs/CHANGELOG.md newest entry is '${top}', but releasing '${VERSION}'."
+            echo "Add a '## Version ${VERSION}' block (date line + summary paragraph) to docs/CHANGELOG.md before releasing -- the AppStream metainfo release list is generated from it."
+            exit 1
+          fi
+          echo "CHANGELOG newest entry matches ${VERSION}."
       - name: Create and push tag if missing
         if: github.event_name == 'workflow_dispatch'
         env:

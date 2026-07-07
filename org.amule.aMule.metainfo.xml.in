@@ -34,25 +34,11 @@
   <url type="bugtracker">https://github.com/amule-org/amule/issues</url>
   <url type="help">https://amule-org.github.io/docs</url>
 
-  <!-- TODO: Auto generate me from changelog! -->
-  <releases>
-    <release version="3.0.1" date="2026-06-24">
-      <url>https://amule-org.github.io/blog/amule-3-0-1</url>
-      <description>
-        <p>
-          First point release after the 3.0.0 rebirth: a new IP2Country preferences panel, remote-GUI (amulegui) improvements over EC, smarter search with length/bitrate/codec columns, AICH request rate-limiting, a top-to-bottom WebUI / WebServer modernization and security pass, a Weblate-driven translation pipeline, and a one-click release process. No on-disk format or config changes — a drop-in upgrade from 3.0.0.
-        </p>
-      </description>
-    </release>
-    <release version="3.0.0" date="2026-06-08">
-      <url>https://amule-org.github.io/blog/amule-3-0-0</url>
-      <description>
-        <p>
-          First major release in five years. Headline changes are dramatic throughput improvements (peer-to-peer downloads see ~100–380× speedups over 2.3.3 across macOS, Linux, and Windows), a full build-system overhaul (CMake replaces autotools), a modernized dependency stack, native binaries for Linux / macOS / Windows, and a broad legacy-API cleanup.
-        </p>
-      </description>
-    </release>
-  </releases>
+  <!-- Releases are generated from docs/CHANGELOG.md by
+       packaging/gen-metainfo-releases.py at build time (single source of
+       truth so the store-visible version can't drift from the shipped one).
+       Do not edit the release list here; edit docs/CHANGELOG.md. -->
+@RELEASES@
 
   <launchable type="desktop-id">org.amule.aMule.desktop</launchable>
   <screenshots>

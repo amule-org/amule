@@ -436,9 +436,35 @@ if (BUILD_REMOTEGUI)
 	)
 endif()
 
-install (FILES org.amule.aMule.metainfo.xml
-	DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo"
-)
+# The AppStream metainfo's <releases> list is generated from docs/CHANGELOG.md
+# at build time so the store-visible version can't drift from the shipped one
+# (single source of truth). This runs inside any CMake build -- including
+# flatpak-builder / Flathub building from a tag -- so the tagged source tree is
+# self-sufficient. AppStream metainfo is a freedesktop concept; gate it to Linux
+# (macOS/Windows never consumed the installed copy) so those builds need no
+# python3.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	find_package (Python3 COMPONENTS Interpreter REQUIRED)
+	set (_amule_metainfo "${CMAKE_CURRENT_BINARY_DIR}/org.amule.aMule.metainfo.xml")
+	add_custom_command (
+		OUTPUT "${_amule_metainfo}"
+		COMMAND "${Python3_EXECUTABLE}"
+			"${CMAKE_CURRENT_SOURCE_DIR}/packaging/gen-metainfo-releases.py"
+			--changelog "${CMAKE_CURRENT_SOURCE_DIR}/docs/CHANGELOG.md"
+			--template "${CMAKE_CURRENT_SOURCE_DIR}/org.amule.aMule.metainfo.xml.in"
+			--output "${_amule_metainfo}"
+		DEPENDS
+			"${CMAKE_CURRENT_SOURCE_DIR}/packaging/gen-metainfo-releases.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/org.amule.aMule.metainfo.xml.in"
+			"${CMAKE_CURRENT_SOURCE_DIR}/docs/CHANGELOG.md"
+		COMMENT "Generating AppStream metainfo releases from docs/CHANGELOG.md"
+		VERBATIM
+	)
+	add_custom_target (amule_metainfo ALL DEPENDS "${_amule_metainfo}")
+	install (FILES "${_amule_metainfo}"
+		DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo"
+	)
+endif()
 
 install (FILES LICENSE.md
 	DESTINATION "${CMAKE_INSTALL_DOCDIR}"
