@@ -33,7 +33,17 @@
 #include <wx/utils.h>
 #include <wx/wfstream.h>
 
+// See CryptoPP_Inc.h for pragma rationale.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-copy"
+#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
+#endif
 #include <cryptopp/osrng.h>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <cctype>
 #include <cerrno>

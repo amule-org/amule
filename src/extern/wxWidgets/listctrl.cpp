@@ -233,7 +233,22 @@ private:
 //  wxListLineData (internal)
 //-----------------------------------------------------------------------------
 
+// WX_DECLARE_LIST expands to a class with a user-provided dtor and an
+// implicit copy ctor; that's the deprecated combination P0806 targets.
+// Clang emits it as -Wdeprecated-copy-with-user-provided-dtor at the
+// macro invocation site (fires under the strict deprecation audit),
+// GCC's -Wdeprecated-copy doesn't decompose into that sub-case so it's
+// silent there. Suppress only at this site to keep the audit-strict
+// build clean; the macro comes from vendored wx and we don't want to
+// rewrite it.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#endif
 WX_DECLARE_LIST(wxListItemData, wxListItemDataList);
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #include <wx/listimpl.cpp>
 WX_DEFINE_LIST(wxListItemDataList)
 
