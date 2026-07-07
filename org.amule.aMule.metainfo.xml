@@ -36,6 +36,14 @@
 
   <!-- TODO: Auto generate me from changelog! -->
   <releases>
+    <release version="3.0.1" date="2026-06-24">
+      <url>https://amule-org.github.io/blog/amule-3-0-1</url>
+      <description>
+        <p>
+          First point release after the 3.0.0 rebirth: a new IP2Country preferences panel, remote-GUI (amulegui) improvements over EC, smarter search with length/bitrate/codec columns, AICH request rate-limiting, a top-to-bottom WebUI / WebServer modernization and security pass, a Weblate-driven translation pipeline, and a one-click release process. No on-disk format or config changes — a drop-in upgrade from 3.0.0.
+        </p>
+      </description>
+    </release>
     <release version="3.0.0" date="2026-06-08">
       <url>https://amule-org.github.io/blog/amule-3-0-0</url>
       <description>
