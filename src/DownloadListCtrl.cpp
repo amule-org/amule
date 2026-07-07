@@ -31,6 +31,7 @@
 #include <common/Format.h>    // Needed for CFormat
 #include "amule.h"            // Needed for theApp
 #include "amuleDlg.h"         // Needed for CamuleDlg
+#include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
 #include "BarShader.h"        // Needed for CBarShader
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst
 #include "DataToText.h"       // Needed for PriorityToStr
@@ -1450,9 +1451,16 @@ void CDownloadListCtrl::PreviewFile(CPartFile *file)
 	command.Replace("%PARTFILE", partFile);
 	command.Replace("%PARTNAME", partName);
 
-	// We can't use wxShell here, it blocks the app
+	// We can't use wxShell here, it blocks the app.
+	// Inside an AppImage, hand the player a sanitized environment: the bundle's
+	// library/module dirs are stripped from the child's search paths so a host
+	// player (e.g. Celluloid) loads system libraries, not the older bundled
+	// ones -- otherwise it dies on an undefined symbol (#334). A no-op copy
+	// outside an AppImage, where we launch with the inherited environment.
 	CTerminationProcess *p = new CTerminationProcess(command);
-	int ret = wxExecute(command, wxEXEC_ASYNC, p);
+	wxExecuteEnv execEnv;
+	const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
+	long ret = wxExecute(command, wxEXEC_ASYNC, p, sanitized ? &execEnv : nullptr);
 	bool ok = ret > 0;
 	if (!ok) {
 		delete p;

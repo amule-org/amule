@@ -27,6 +27,12 @@ if [ -d "${HERE}/apprun-hooks" ]; then
     done
 fi
 
+# The AppImage runtime already exports APPDIR when it mounts the image, but set
+# it explicitly so detection also works when AppRun is invoked from an extracted
+# tree (--appimage-extract). aMule reads APPDIR both for desktop integration and
+# to strip these bundle paths back out when it launches external programs like
+# the preview player (#334).
+export APPDIR="${HERE}"
 export PATH="${HERE}/usr/bin:${PATH}"
 export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH:-}"
 

@@ -25,12 +25,14 @@
 #include "UserEvents.h"
 
 #include <common/Format.h>
+#include "AppImageEnv.h" // Needed for GetSanitizedExecEnv
 #include "Logger.h"
 #include "Preferences.h"
 #include "PartFile.h"
 #include "TerminationProcess.h" // Needed for CTerminationProcess
 
 #include <wx/process.h>
+#include <wx/utils.h> // Needed for wxExecuteEnv
 
 #define USEREVENTS_EVENT(ID, NAME, VARS) { #ID, NAME, false, "", false, "" },
 static struct
@@ -144,8 +146,13 @@ static void ExecuteCommand(enum CUserEvents::EventType event, const void *object
 		   } */
 	}
 	if (!command.empty()) {
+		// Inside an AppImage, run the user command with a sanitized environment
+		// so it loads system libraries rather than the bundled ones (#334); a
+		// no-op copy elsewhere.
 		CTerminationProcess *p = new CTerminationProcess(cmd);
-		if (!wxExecute(command, wxEXEC_ASYNC, p)) {
+		wxExecuteEnv execEnv;
+		const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
+		if (!wxExecute(command, wxEXEC_ASYNC, p, sanitized ? &execEnv : nullptr)) {
 			// If wxExecute fails, we need to delete the CTerminationProcess
 			// otherwise it will leak.
 			delete p;

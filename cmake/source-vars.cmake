@@ -105,6 +105,7 @@ endif()
 if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 	set (COMMON_SOURCES
 		amuleAppCommon.cpp
+		AppImageEnv.cpp
 		AutostartManager.cpp
 		ProtocolHandlerManager.cpp
 		$<$<BOOL:${APPLE}>:ProtocolHandlerManager_mac.mm>
