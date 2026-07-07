@@ -146,6 +146,9 @@ bool CPreferences::s_safeServerConnect;
 bool CPreferences::s_Endgame;
 bool CPreferences::s_startMinimized;
 uint16 CPreferences::s_MaxConperFive;
+uint16 CPreferences::s_kadMaxSourceSearches;
+uint64 CPreferences::s_kadSourceReaskMins;
+uint64 CPreferences::s_sourceReaskMins;
 bool CPreferences::s_checkDiskspace;
 uint32 CPreferences::s_uMinFreeDiskSpace;
 wxString CPreferences::s_yourHostname;
@@ -339,6 +342,22 @@ public:
 		return false;
 	}
 
+	/** @see Cfg_Base::ResetToDefault. Shows the default in the widget without
+	    touching the stored variable, so Cancel is a no-op and OK commits it. */
+	virtual bool ResetToDefault()
+	{
+		if (!m_widget) {
+			return false;
+		}
+
+		TYPE saved = m_value;
+		m_value = m_default;
+		bool ok = TransferToWindow();
+		m_value = saved;
+
+		return ok;
+	}
+
 #endif
 
 	/** Sets the default value. */
@@ -523,6 +542,23 @@ public:
 		}
 
 		return false;
+	}
+
+	/** @see Cfg_Base::ResetToDefault. Cfg_Int's TransferToWindow rebuilds the
+	    widget from m_real_value, so the default is shown by briefly staging it
+	    there and restoring it, leaving the committed value for OK/Cancel. */
+	virtual bool ResetToDefault()
+	{
+		if (!m_widget) {
+			return false;
+		}
+
+		TYPE saved = m_real_value;
+		m_real_value = (TYPE)m_default;
+		bool ok = TransferToWindow();
+		m_real_value = saved;
+
+		return ok;
 	}
 #endif
 
@@ -1143,7 +1179,11 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_MAXSOURCEPERFILE, (MkCfg_Int("/eMule/MaxSourcesPerFile", s_maxsourceperfile, 300)));
 	NewCfgItem(IDC_MAXCON,
 		(MkCfg_Int("/eMule/MaxConnections", s_maxconnections, GetRecommendedMaxConnections())));
-	NewCfgItem(IDC_MAXCON5SEC, (MkCfg_Int("/eMule/MaxConnectionsPerFiveSeconds", s_MaxConperFive, 20)));
+	NewCfgItem(IDC_MAXCON5SEC, (MkCfg_Int("/eMule/MaxConnectionsPerFiveSeconds", s_MaxConperFive, 50)));
+	NewCfgItem(
+		IDC_KADMAXSEARCHES, (MkCfg_Int("/eMule/KadMaxSourceSearches", s_kadMaxSourceSearches, 30)));
+	NewCfgItem(IDC_KADREASKTIME, (MkCfg_Int("/eMule/KadSourceReaskMinutes", s_kadSourceReaskMins, 30)));
+	NewCfgItem(IDC_SOURCEREASKTIME, (MkCfg_Int("/eMule/SourceReaskMinutes", s_sourceReaskMins, 15)));
 
 	/**
 	 * Proxy
@@ -1604,6 +1644,39 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 		s_byCryptTCPPaddingLength = GetRandomUint8() % 254;
 	}
 	SetSlotAllocation(s_slotallocation);
+
+	// One-time bump of the raised MaxConnectionsPerFiveSeconds default (20 ->
+	// 50). Every registered key is written to amule.conf unconditionally, so an
+	// existing config already holds the old default and would never pick up the
+	// new one. The marker makes this run exactly once, and the == 20 guard means
+	// a value the user set (including a deliberate 20 after this upgrade) is left
+	// alone.
+	if (!cfg->HasEntry("/eMule/MaxConPerFiveDefaultBumped")) {
+		if (s_MaxConperFive == 20) {
+			s_MaxConperFive = 50;
+		}
+		cfg->Write("/eMule/MaxConPerFiveDefaultBumped", true);
+	}
+
+	// Keep the source-search knobs within their supported ranges even if
+	// amule.conf was hand-edited. SourceReaskMinutes must stay >= 15 so the
+	// UDP reask (issued at getter - 20s) never drops below the ~10 min floor
+	// that gets clients auto-banned for reask spam.
+	if (s_kadMaxSourceSearches < 5) {
+		s_kadMaxSourceSearches = 5;
+	} else if (s_kadMaxSourceSearches > 50) {
+		s_kadMaxSourceSearches = 50;
+	}
+	if (s_kadSourceReaskMins < 30) {
+		s_kadSourceReaskMins = 30;
+	} else if (s_kadSourceReaskMins > 60) {
+		s_kadSourceReaskMins = 60;
+	}
+	if (s_sourceReaskMins < 15) {
+		s_sourceReaskMins = 15;
+	} else if (s_sourceReaskMins > 60) {
+		s_sourceReaskMins = 60;
+	}
 #endif
 }
 

@@ -89,7 +89,7 @@ struct ConnectionProfile
 // translated at display time with wxGetTranslation below.
 const ConnectionProfile s_profiles[] = {
 	{ wxTRANSLATE("Mobile / 4G-5G (20 / 5 Mbit)"), 500, 0, 625, 2500, 300, 20, 400 },
-	{ wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000, 200, 15, 250 },
+	{ wxTRANSLATE("ADSL (24 / 1 Mbit)"), 100, 0, 125, 3000, 200, 20, 250 },
 	{ wxTRANSLATE("VDSL (50 / 10 Mbit)"), 1000, 0, 1250, 6250, 400, 25, 500 },
 	{ wxTRANSLATE("Cable (200 / 20 Mbit)"), 2000, 0, 2500, 25000, 500, 30, 600 },
 	{ wxTRANSLATE("Fibre 300 (300 / 100 Mbit)"), 10000, 0, 12500, 37500, 500, 40, 800 },
@@ -129,7 +129,7 @@ DerivedLimits DeriveLimits(int uploadKBs)
 {
 	const int up = (uploadKBs <= 0) ? 100000 : uploadKBs;
 	if (up < 50) {
-		return { 200, 15, 250 };
+		return { 200, 20, 250 };
 	} else if (up < 200) {
 		return { 300, 20, 400 };
 	} else if (up < 1000) {

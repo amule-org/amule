@@ -139,6 +139,17 @@ public:
 	virtual bool ConnectToWidget(int WXUNUSED(id), wxWindow *WXUNUSED(parent) = NULL) { return false; }
 
 	/**
+	 * Pushes the default value into the associated widget, if any.
+	 *
+	 * @return True if a widget was updated, false otherwise.
+	 *
+	 * The change is only reflected in the widget, not committed to the
+	 * variable, so a subsequent Cancel leaves the stored value untouched
+	 * (OK commits it via TransferFromWindow like any other edit).
+	 */
+	virtual bool ResetToDefault() { return false; }
+
+	/**
 	 * Gets the key associated with Cfg object.
 	 *
 	 * @return The config-key of this object.
@@ -323,6 +334,19 @@ public:
 	static void SetDeadserverRetries(uint16 val) { s_deadserverretries = val; }
 	static uint64 GetServerKeepAliveTimeout() { return s_dwServerKeepAliveTimeoutMins * 60000; }
 	static void SetServerKeepAliveTimeout(uint64 val) { s_dwServerKeepAliveTimeoutMins = val / 60000; }
+
+	// Concurrent files that may search Kad for sources at once (was the
+	// KADEMLIATOTALFILE constant). Compared against a uint8 source-count.
+	static uint16 GetKadMaxSourceSearches() { return s_kadMaxSourceSearches; }
+	static void SetKadMaxSourceSearches(uint16 val) { s_kadMaxSourceSearches = val; }
+	// Per-file Kad re-search interval (was KADEMLIAREASKTIME). Stored in
+	// minutes; returned/accepted in milliseconds to match the tick arithmetic.
+	static uint64 GetKadSourceReaskTime() { return s_kadSourceReaskMins * 60000; }
+	static void SetKadSourceReaskTime(uint64 val) { s_kadSourceReaskMins = val / 60000; }
+	// Interval before re-asking a known source (was FILEREASKTIME). Same
+	// minutes-stored / milliseconds-exposed convention.
+	static uint64 GetSourceReaskTime() { return s_sourceReaskMins * 60000; }
+	static void SetSourceReaskTime(uint64 val) { s_sourceReaskMins = val / 60000; }
 
 	static const wxString &GetLanguageID() { return s_languageID; }
 	static void SetLanguageID(const wxString &new_id) { s_languageID = new_id; }
@@ -846,6 +870,12 @@ protected:
 	static bool s_Endgame;
 	static bool s_startMinimized;
 	static uint16 s_MaxConperFive;
+	// Source-search tuning (see the matching accessors). Reask intervals are
+	// stored in minutes (uint64, like s_dwServerKeepAliveTimeoutMins) so the
+	// getters can widen to milliseconds without narrowing.
+	static uint16 s_kadMaxSourceSearches;
+	static uint64 s_kadSourceReaskMins;
+	static uint64 s_sourceReaskMins;
 	static bool s_checkDiskspace;
 	static uint32 s_uMinFreeDiskSpace;
 	static wxString s_yourHostname;

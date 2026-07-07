@@ -1797,10 +1797,18 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     wxStaticBox *item5 = new wxStaticBox( parent, -1, "" );
     wxStaticBoxSizer *item4 = new wxStaticBoxSizer( item5, wxVERTICAL );
 
-    wxStaticText *item6 = new wxStaticText( parent, -1, _("Max new connections / 5 secs"), wxDefaultPosition, wxDefaultSize, 0 );
-    item4->Add( item6, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
-    wxSpinCtrl *item7 = new wxSpinCtrl( parent, IDC_MAXCON5SEC, "20", wxDefaultPosition, wxDefaultSize, 0, 5, 500, 20 );
-    item4->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 5 );
+    // Numeric tuning knobs in a compact two-column grid (label | spin) so the
+    // panel stays short enough that the controls below it are not clipped.
+    wxFlexGridSizer *item6 = new wxFlexGridSizer( 0, 2, 4, 8 );
+    item6->Add( new wxStaticText( parent, -1, _("Max new connections / 5 secs"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( parent, IDC_MAXCON5SEC, "50", wxDefaultPosition, wxDefaultSize, 0, 20, 500, 50 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxStaticText( parent, -1, _("Concurrent Kad source lookups"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( parent, IDC_KADMAXSEARCHES, "30", wxDefaultPosition, wxDefaultSize, 0, 5, 50, 30 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxStaticText( parent, -1, _("Kad source re-search interval (minutes)"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( parent, IDC_KADREASKTIME, "30", wxDefaultPosition, wxDefaultSize, 0, 30, 60, 30 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxStaticText( parent, -1, _("Source re-ask interval (minutes)"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( parent, IDC_SOURCEREASKTIME, "15", wxDefaultPosition, wxDefaultSize, 0, 15, 60, 15 ), wxSizerFlags().CenterVertical() );
+    item4->Add( item6, wxSizerFlags().Border(wxTOP, 5) );
 
     wxStaticText *item8 = new wxStaticText( parent, IDC_FILEBUFFERSIZE_STATIC, _("File Buffer Size: 240000 bytes"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->Add( item8, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
@@ -1823,7 +1831,7 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
         if (call_fit)
             item0->SetSizeHints( parent );
     }
-    
+
     return item0;
 }
 
@@ -2028,6 +2036,9 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBox *item4 = new wxStaticBox( parent, -1, "" );
     wxStaticBoxSizer *item3 = new wxStaticBoxSizer( item4, wxHORIZONTAL );
 
+    wxButton *item7 = new wxButton( parent, IDC_TWEAKS_RESET, _("Reset page to defaults"), wxDefaultPosition, wxDefaultSize, 0 );
+    item7->SetToolTip( _("Reset the settings on the current page to their default values.") );
+    item3->Add( item7, wxSizerFlags().Center().Border(wxALL, 5) );
     wxButton *item5 = new wxButton( parent, ID_PREFS_OK_TOP, _("OK"), wxDefaultPosition, wxDefaultSize, 0 );
     item5->SetDefault();
     item5->SetToolTip( _("Click here to apply any changes made to the preferences.") );

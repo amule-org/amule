@@ -343,6 +343,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_UL_QUEUE, thePrefs::GetQueueSize()));
 		cwPrefs.AddTag(
 			CECTag(EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, thePrefs::GetServerKeepAliveTimeout()));
+		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_KAD_MAX_SEARCHES, thePrefs::GetKadMaxSourceSearches()));
+		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_KAD_REASK_MS, thePrefs::GetKadSourceReaskTime()));
+		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_SOURCE_REASK_MS, thePrefs::GetSourceReaskTime()));
 		AddTag(cwPrefs);
 	}
 
@@ -607,6 +610,15 @@ void CEC_Prefs_Packet::Apply() const
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT)) != NULL) {
 			thePrefs::SetServerKeepAliveTimeout(oneTag->GetInt());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_MAX_SEARCHES)) != nullptr) {
+			thePrefs::SetKadMaxSourceSearches(static_cast<uint16>(oneTag->GetInt()));
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_REASK_MS)) != nullptr) {
+			thePrefs::SetKadSourceReaskTime(oneTag->GetInt());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_SOURCE_REASK_MS)) != nullptr) {
+			thePrefs::SetSourceReaskTime(oneTag->GetInt());
 		}
 	}
 

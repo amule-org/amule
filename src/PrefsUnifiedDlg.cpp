@@ -198,6 +198,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_BUTTON(IDC_SELBROWSER, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEBROWSE, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEDETECT, PrefsUnifiedDlg::OnButtonMediaMetaDetect)
+	EVT_BUTTON(IDC_TWEAKS_RESET, PrefsUnifiedDlg::OnButtonTweaksReset)
 
 	EVT_SPINCTRL(IDC_TOOLTIPDELAY, PrefsUnifiedDlg::OnToolTipDelayChange)
 
@@ -511,6 +512,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_CurrentPanel = DefaultWidget;
 	prefs_sizer->Add(DefaultWidget, wxSizerFlags().Expand().Expand());
 	m_CurrentPanel->Show(true);
+
+	// The reset button only applies to the Advanced page; hide it until that
+	// page is selected (OnPrefsPageChange toggles it thereafter).
+	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
+		resetBtn->Show(false);
+	}
 
 	// Select the first item
 	m_PrefsIcons->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
@@ -1594,6 +1601,31 @@ void PrefsUnifiedDlg::OnButtonMediaMetaDetect(wxCommandEvent &WXUNUSED(evt))
 	CastChild(IDC_MEDIAMETA_FFPROBEPATH, wxTextCtrl)->SetValue(path);
 }
 
+void PrefsUnifiedDlg::OnButtonTweaksReset(wxCommandEvent &WXUNUSED(evt))
+{
+	if (wxMessageBox(_("Reset the settings on this page to their default values?"),
+		    _("Reset to defaults"),
+		    wxYES_NO | wxICON_QUESTION,
+		    this) != wxYES) {
+		return;
+	}
+
+	// Walk the currently shown page's controls and reset each one that is bound
+	// to a preference. Only the widgets are updated; the change is committed on
+	// OK and discarded on Cancel. The button is shown only on the Advanced page
+	// (see OnPrefsPageChange), so m_CurrentPanel is that page.
+	if (!m_CurrentPanel) {
+		return;
+	}
+
+	for (wxWindow *child : m_CurrentPanel->GetChildren()) {
+		Cfg_Base *cfg = GetCfg(child->GetId());
+		if (cfg) {
+			cfg->ResetToDefault();
+		}
+	}
+}
+
 void PrefsUnifiedDlg::OnButtonEditAddr(wxCommandEvent &WXUNUSED(evt))
 {
 	wxString fullpath(thePrefs::GetConfigDir() + "addresses.dat");
@@ -1822,6 +1854,12 @@ void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent &event)
 	m_CurrentPanel = reinterpret_cast<wxPanel *>(m_PrefsIcons->GetItemData(event.GetIndex()));
 	if (pages[event.GetIndex()].m_function == PreferencesDirectoriesTab) {
 		CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl)->Init();
+	}
+
+	// The reset-to-defaults button applies to the current page's controls; keep
+	// it to the Advanced page, whose expert tuning knobs it is meant to undo.
+	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
+		resetBtn->Show(pages[event.GetIndex()].m_function == PreferencesaMuleTweaksTab);
 	}
 
 	prefs_sizer->Add(m_CurrentPanel, wxSizerFlags().Expand().Expand());

@@ -1597,7 +1597,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 				}
 				// doubled reasktime for no needed parts - save connections and traffic
 				if (!((!cur_src->GetLastAskedTime()) ||
-					    (dwCurTick - cur_src->GetLastAskedTime()) > FILEREASKTIME * 2)) {
+					    (dwCurTick - cur_src->GetLastAskedTime()) >
+						    thePrefs::GetSourceReaskTime() * 2)) {
 					break;
 				}
 				// Recheck this client to see if still NNP..
@@ -1622,7 +1623,7 @@ uint32 CPartFile::Process(uint8 m_icounter)
 				if (theApp->IsConnected() &&
 					((!cur_src->GetLastAskedTime()) ||
 						(dwCurTick - cur_src->GetLastAskedTime()) >
-							FILEREASKTIME - 20000)) {
+							thePrefs::GetSourceReaskTime() - 20000)) {
 					cur_src->UDPReaskForDownload();
 				}
 
@@ -1636,7 +1637,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 			case DS_WAITCALLBACKKAD: {
 				if (theApp->IsConnected() &&
 					((!cur_src->GetLastAskedTime()) ||
-						(dwCurTick - cur_src->GetLastAskedTime()) > FILEREASKTIME)) {
+						(dwCurTick - cur_src->GetLastAskedTime()) >
+							thePrefs::GetSourceReaskTime())) {
 					if (!cur_src->AskForDownload()) {
 						// I left this break here just as a reminder
 						// just in case re rearange things..
@@ -1674,7 +1676,7 @@ uint32 CPartFile::Process(uint8 m_icounter)
 		if (GetMaxSourcePerFileUDP() > GetSourceCount()) {
 			// Once we can handle lowID users in Kad, we remove the second IsConnected
 			if (theApp->downloadqueue->DoKademliaFileRequest() &&
-				(Kademlia::CKademlia::GetTotalFile() < KADEMLIATOTALFILE) &&
+				(Kademlia::CKademlia::GetTotalFile() < thePrefs::GetKadMaxSourceSearches()) &&
 				(dwCurTick > m_LastSearchTimeKad) && Kademlia::CKademlia::IsConnected() &&
 				theApp->IsConnected() && !IsStopped()) {
 				// Kademlia
@@ -1697,8 +1699,8 @@ uint32 CPartFile::Process(uint8 m_icounter)
 					if (m_TotalSearchesKad < 7) {
 						m_TotalSearchesKad++;
 					}
-					m_LastSearchTimeKad =
-						dwCurTick + (KADEMLIAREASKTIME * m_TotalSearchesKad);
+					m_LastSearchTimeKad = dwCurTick + (thePrefs::GetKadSourceReaskTime() *
+										  m_TotalSearchesKad);
 					SetKadFileSearchID(pSearch->GetSearchID());
 				}
 			}

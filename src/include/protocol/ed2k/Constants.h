@@ -34,7 +34,9 @@
 #define CONNECTION_TIMEOUT \
 	40000 // set this lower if you want less connections at once, set  it higher if you have enough
 	      // sockets (edonkey has its own timeout too, so a very high value won't effect this)
-#define FILEREASKTIME MIN2MS(15) // 15 mins (was 1300000 ~21.7 min); kept above the ~10 min reask-ban floor
+// The source re-ask interval (formerly FILEREASKTIME) is now a user preference:
+// thePrefs::GetSourceReaskTime(). Its lower bound is clamped above the ~10 min
+// reask-ban floor.
 #define SERVERREASKTIME \
 	800000 // don't set this too low, it wont speed up anything, but it could kill amule or your
 	       // internetconnection
@@ -67,7 +69,7 @@
 
 // MOD Note: end
 
-#define MAXCONPER5SEC 20
+#define MAXCONPER5SEC 50
 #define MAX_UP_CLIENTS_ALLOWED \
 	250 // max. clients allowed regardless UPLOAD_CLIENT_DATARATE or any other factors. Don't set this too
 	    // low, use DATARATE to adjust uploadspeed per client
