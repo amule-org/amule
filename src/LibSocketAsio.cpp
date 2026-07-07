@@ -410,6 +410,10 @@ public:
 	: ip::tcp::endpoint(impl)
 	{
 	}
+	// User-provided copy ctor above suppresses the implicitly-declared
+	// copy-assignment operator under C++11+ (deprecated form); make the
+	// default one explicit so -Wdeprecated-copy stays quiet.
+	CamuleIPV4Endpoint &operator=(const CamuleIPV4Endpoint &) = default;
 	CamuleIPV4Endpoint(const ip::tcp::endpoint &ep) { *this = ep; }
 	CamuleIPV4Endpoint(const ip::udp::endpoint &ep)
 	{

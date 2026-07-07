@@ -288,7 +288,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildConnectionPage()
 	}
 	m_speedCtrl->Append(_("Other / set manually"));
 	m_speedCtrl->SetSelection((int)s_profileCount); // "Other" until a profile is chosen
-	sizer->Add(m_speedCtrl, 0, wxEXPAND | wxBOTTOM, 12);
+	sizer->Add(m_speedCtrl, 0, static_cast<int>(wxEXPAND) | wxBOTTOM, 12);
 
 	wxFlexGridSizer *grid = new wxFlexGridSizer(2, 2, 6, 8);
 	grid->AddGrowableCol(1);
@@ -309,7 +309,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildConnectionPage()
 	m_downloadCtrl->SetValue(thePrefs::GetMaxDownload());
 	grid->Add(m_downloadCtrl, 0, wxEXPAND);
 
-	sizer->Add(grid, 0, wxEXPAND | wxBOTTOM, 12);
+	sizer->Add(grid, 0, static_cast<int>(wxEXPAND) | wxBOTTOM, 12);
 
 	m_derivedLabel = new wxStaticText(page, wxID_ANY, wxEmptyString);
 	sizer->Add(m_derivedLabel, 0, wxEXPAND);
@@ -368,10 +368,10 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	m_udpPortCtrl->SetValue(thePrefs::GetUDPPort());
 	grid->Add(m_udpPortCtrl, 0, wxEXPAND);
 
-	sizer->Add(grid, 0, wxEXPAND | wxBOTTOM, 12);
+	sizer->Add(grid, 0, static_cast<int>(wxEXPAND) | wxBOTTOM, 12);
 
 #ifdef ENABLE_UPNP
-	sizer->Add(new wxStaticLine(page), 0, wxEXPAND | wxBOTTOM, 8);
+	sizer->Add(new wxStaticLine(page), 0, static_cast<int>(wxEXPAND) | wxBOTTOM, 8);
 	m_upnpCtrl = new wxCheckBox(page, wxID_ANY, _("Enable UPnP for router port forwarding"));
 	m_upnpCtrl->SetValue(true);
 	sizer->Add(m_upnpCtrl, 0, wxBOTTOM, 4);
@@ -511,9 +511,9 @@ wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 	sizer->Add(new wxStaticText(page, wxID_ANY, _("Destination folder for downloads")), 0, wxBOTTOM, 4);
 	wxBoxSizer *incRow = new wxBoxSizer(wxHORIZONTAL);
 	m_incomingCtrl = new wxTextCtrl(page, wxID_ANY, thePrefs::GetIncomingDir().GetRaw());
-	incRow->Add(m_incomingCtrl, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+	incRow->Add(m_incomingCtrl, 1, static_cast<int>(wxALIGN_CENTER_VERTICAL) | wxRIGHT, 6);
 	incRow->Add(new wxButton(page, ID_FRW_BROWSE_INCOMING, _("Browse")), 0);
-	sizer->Add(incRow, 0, wxEXPAND | wxBOTTOM, 4);
+	sizer->Add(incRow, 0, static_cast<int>(wxEXPAND) | wxBOTTOM, 4);
 
 	// Warn that everything dropped in the Incoming folder is shared, reusing
 	// the same hint shown on the Directories preferences panel.
@@ -527,7 +527,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 		new wxStaticText(page, wxID_ANY, _("Folder for temporary download files")), 0, wxBOTTOM, 4);
 	wxBoxSizer *tmpRow = new wxBoxSizer(wxHORIZONTAL);
 	m_tempCtrl = new wxTextCtrl(page, wxID_ANY, thePrefs::GetTempDir().GetRaw());
-	tmpRow->Add(m_tempCtrl, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+	tmpRow->Add(m_tempCtrl, 1, static_cast<int>(wxALIGN_CENTER_VERTICAL) | wxRIGHT, 6);
 	tmpRow->Add(new wxButton(page, ID_FRW_BROWSE_TEMP, _("Browse")), 0);
 	sizer->Add(tmpRow, 0, wxEXPAND);
 

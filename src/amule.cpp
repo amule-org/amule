@@ -967,7 +967,7 @@ bool CamuleApp::OnInit()
 				}
 
 				if (wxSizer *btnSizer = dlg.CreateButtonSizer(wxOK | wxCANCEL))
-					topSizer->Add(btnSizer, 0, wxEXPAND | wxALL, 10);
+					topSizer->Add(btnSizer, 0, static_cast<int>(wxEXPAND) | wxALL, 10);
 
 				dlg.SetSizerAndFit(topSizer);
 

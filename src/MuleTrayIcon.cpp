@@ -288,8 +288,21 @@ CMuleTrayIcon::CMuleTrayIcon()
 	// `org.amule.aMule` is both the AppStream/.desktop id and the icon
 	// name installed under share/icons/hicolor/*/apps/. AppIndicator3
 	// looks the icon up via the standard XDG icon-theme path.
+	//
+	// AyatanaIndicators upstream split the library into
+	// libayatana-appindicator-glib (GLib-only, GMenu-based, no GTK
+	// dep) and started emitting a deprecation warning when the
+	// GTK-based libayatana-appindicator3-0.1 is loaded. Migrating
+	// to the new library is tracked as future work — -glib isn't
+	// yet packaged on Ubuntu / Fedora / openSUSE / Debian, so
+	// switching today would lock out every major distro. The
+	// warning is harmless console noise; silence it locally so a
+	// project-wide -Werror=deprecated-declarations stays useful.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 	m_indicator = app_indicator_new(
 		"org.amule.aMule", "org.amule.aMule", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+#pragma GCC diagnostic pop
 
 	// ACTIVE = visible. The user already opted in by enabling the tray
 	// icon in Preferences, so showing it immediately is the expected
