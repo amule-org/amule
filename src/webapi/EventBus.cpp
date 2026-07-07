@@ -29,10 +29,15 @@ namespace webapi
 
 // C++14 requires an out-of-class definition for static constexpr
 // members used by reference (test code may bind them through a
-// const auto& parameter). C++17 inlined that, but the project is
-// pinned to C++14.
+// const auto& parameter). C++17 made static constexpr members
+// implicitly inline, so the same lines emit -Wdeprecated on
+// GCC in C++17 mode ("redundant redeclaration of constexpr static
+// data member"). Guard so it compiles clean under both language
+// levels.
+#if __cplusplus < 201703L
 constexpr std::size_t CEventBus::kDefaultCapacity;
 constexpr std::size_t CEventBus::kMinCapacity;
+#endif
 
 CEventBus::CEventBus(std::size_t capacity)
 : m_capacity(capacity < kMinCapacity ? kMinCapacity : capacity)

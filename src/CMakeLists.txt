@@ -3,6 +3,32 @@ set (INCLUDE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set (SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set (EC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/ec/cpp")
 
+# Promote deprecation warnings to errors for our own source targets.
+# Applied here (not via CMAKE_CXX_FLAGS) so config-phase
+# check_include_file_cxx / find_package probes aren't affected: those
+# probes compile stubs against third-party headers (cryptopp, wx,
+# boost) that legitimately emit deprecation warnings; -Werror on
+# those would make cryptopp discovery fail at configure time.
+#
+# GCC and Clang are covered:
+#   -Wdeprecated-declarations  -> users of a [[deprecated]] API
+#   -Wdeprecated-copy          -> P0806 implicit copy special member
+#                                 when the class provides another one
+#   -Wdeprecated               -> broad umbrella (C++17 constexpr
+#                                 static-member redecl, throw() spec)
+#
+# The pragma-wraps landed in #341 keep cryptopp and vendored wx quiet
+# under -isystem-less discovery; without those wraps this gate would
+# fire on ~230 cryptopp header hits on macOS.
+add_compile_options (
+	-Wdeprecated
+	-Wdeprecated-declarations
+	-Wdeprecated-copy
+	-Werror=deprecated
+	-Werror=deprecated-declarations
+	-Werror=deprecated-copy
+)
+
 # Embed every PNG under src/icons/ as a static byte-array table in a
 # generated C TU (see src/icons/embed_icons.py for the format).
 # CamuleArtProvider then exposes the entries to wxArtProvider at
