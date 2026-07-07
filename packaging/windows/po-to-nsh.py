@@ -141,7 +141,7 @@ KEYS = [
     ("MYSTR_DESC_PROTO_MAGNET",
         "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."),
     ("MYSTR_DESC_UNINSTALL",
-        "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, and Add/Remove Programs entry (required)."),
+        "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."),
     ("MYSTR_DESC_REMOVE_USERDATA",
         "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."),
     ("MYSTR_MSG_AMULE_RUNNING",

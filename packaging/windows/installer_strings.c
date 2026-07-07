@@ -43,7 +43,7 @@ static const char *const installer_strings[] = {
 	_("aMule application files (required)."),
 	_("Place an aMule shortcut on the desktop."),
 	_("Launch aMule automatically when the current user logs in (per-user setting)."),
-	_("Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, and Add/Remove Programs entry (required)."),
+	_("Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."),
 	_("Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."),
 
 	/* Runtime messages (MessageBox / DetailPrint).
