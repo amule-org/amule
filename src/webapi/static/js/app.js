@@ -127,6 +127,12 @@ function Toolbar({ route, onLogout }) {
             <span class="tool-label">${r.label}</span>
           </a>`)}
         <div class="nav-tools">
+          <form class="ed2k-add admin-only" onSubmit=${(e) => { e.preventDefault(); addEd2k(); }}>
+            <input class="input ed2k-input" type="text" placeholder="ed2k://|file|…"
+                   aria-label=${t("app_add_ed2k_link")} value=${link}
+                   onInput=${(e) => setLink(e.target.value)} />
+            <button class="btn admin-only" type="submit">${t("app_add")}</button>
+          </form>
           <${LangSelect} />
           <${ThemeButton} />
           <button class="btn btn-ghost" title=${t("app_logout")} onClick=${doLogout}>

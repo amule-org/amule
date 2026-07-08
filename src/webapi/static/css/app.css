@@ -538,6 +538,9 @@ table.data td.name { white-space: normal; word-break: break-word; min-width: 220
     display: flex; flex-direction: column; gap: 2px;
     margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border);
   }
+  .nav-tools .ed2k-add { padding: 4px 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .nav-tools .ed2k-add .btn { justify-content: center; min-height: 34px; border-color: var(--border); flex: 0 0 auto; padding: 0 12px; }
+  .nav-tools .ed2k-input { flex: 1 1 auto; width: 100%; max-width: none; }
   .nav-tools .btn { justify-content: flex-start; min-height: 44px; border-color: transparent; }
   /* reveal the buttons' sr-only labels as drawer row text */
   .nav-tools .sr-only {
