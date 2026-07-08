@@ -1686,11 +1686,11 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     itemExcludeRegex->SetToolTip(_("When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."));
     item9->Add( itemExcludeRegex, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-#ifndef CLIENT_GUI
     // Live preview: how many currently-shared files the typed pattern would
-    // exclude. Needs the core's in-memory shared list, so it is omitted in
-    // the remote GUI (amulegui) -- the pattern/regex fields above still work
-    // there and sync to amuled over EC.
+    // exclude. Needs the core's in-memory shared list, which the remote GUI
+    // (amulegui) does not have; this file is built once into muleappgui with
+    // CLIENT_GUI undefined, so PrefsUnifiedDlg removes the button + info at
+    // runtime there (the pattern/regex fields still work and sync over EC).
     wxBoxSizer *itemPreviewRow = new wxBoxSizer( wxHORIZONTAL );
     wxButton *itemPreviewBtn = new wxButton( parent, IDC_EXCLUDE_SHARE_PREVIEW, _("Preview"), wxDefaultPosition, wxDefaultSize, 0 );
     itemPreviewBtn->SetToolTip(_("Show how many shared files the current pattern would exclude."));
@@ -1698,7 +1698,6 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     wxStaticText *itemPreviewInfo = new wxStaticText( parent, IDC_EXCLUDE_SHARE_PREVIEW_INFO, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     itemPreviewRow->Add( itemPreviewInfo, wxSizerFlags(1).CenterVertical() );
     item9->Add( itemPreviewRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
-#endif
 
     item0->Add( item9, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
     if (set_sizer)

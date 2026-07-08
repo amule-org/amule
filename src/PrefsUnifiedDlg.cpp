@@ -522,6 +522,19 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		resetBtn->Show(false);
 	}
 
+#ifdef CLIENT_GUI
+	// The shared-file exclusion preview counts against the core's in-memory
+	// shared list, which the remote GUI has no local access to (its handler
+	// is compiled out too). Remove the button and its info label here; the
+	// pattern/regex fields still work and sync to amuled over EC.
+	if (wxWindow *previewBtn = FindWindow(IDC_EXCLUDE_SHARE_PREVIEW)) {
+		previewBtn->Show(false);
+	}
+	if (wxWindow *previewInfo = FindWindow(IDC_EXCLUDE_SHARE_PREVIEW_INFO)) {
+		previewInfo->Show(false);
+	}
+#endif
+
 	// Select the first item
 	m_PrefsIcons->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
 
