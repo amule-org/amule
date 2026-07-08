@@ -346,8 +346,8 @@ void PlatformSpecific::PreventSleepMode()
 // - http://developer.apple.com/library/mac/#qa/qa1340/_index.html
 // - http://www.cimgf.com/2009/10/14/the-journey-to-disabling-sleep-with-iokit/
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 // 10.6 only
-		CFStringRef reasonForActivity = CFSTR("Prevent Display Sleep");
-		IOReturn success = IOPMAssertionCreateWithName(kIOPMAssertionTypeNoDisplaySleep,
+		CFStringRef reasonForActivity = CFSTR("aMule is transferring files");
+		IOReturn success = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep,
 			kIOPMAssertionLevelOn,
 			reasonForActivity,
 			&assertionID);
@@ -360,7 +360,7 @@ void PlatformSpecific::PreventSleepMode()
 
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 // 10.5 only
 		IOReturn success = IOPMAssertionCreate(
-			kIOPMAssertionTypeNoDisplaySleep, kIOPMAssertionLevelOn, &assertionID);
+			kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn, &assertionID);
 		if (success == kIOReturnSuccess) {
 			// Correctly vetoed, flag so we don't do it again.
 			m_preventingSleepMode = true;
