@@ -199,6 +199,9 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEBROWSE, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEDETECT, PrefsUnifiedDlg::OnButtonMediaMetaDetect)
 	EVT_BUTTON(IDC_TWEAKS_RESET, PrefsUnifiedDlg::OnButtonTweaksReset)
+#ifndef CLIENT_GUI
+	EVT_BUTTON(IDC_EXCLUDE_SHARE_PREVIEW, PrefsUnifiedDlg::OnButtonExcludePreview)
+#endif
 
 	EVT_SPINCTRL(IDC_TOOLTIPDELAY, PrefsUnifiedDlg::OnToolTipDelayChange)
 
@@ -1043,6 +1046,29 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		theApp->sharedfiles->Reload();
 	}
 
+	if (CfgChanged(IDC_EXCLUDE_SHARE_PATTERNS) || CfgChanged(IDC_EXCLUDE_SHARE_REGEX)) {
+		// Reject-on-apply: in regex mode an invalid expression leaves the
+		// filter disabled (fail-open, never exclude-all), so tell the user
+		// rather than silently sharing everything.
+		if (thePrefs::ExcludeSharePatternsUseRegex()) {
+			CShareExcludeFilter probe;
+			probe.Compile(thePrefs::GetExcludeSharePatterns(), true);
+			if (!probe.IsValid()) {
+				wxMessageBox(_("The shared-file exclusion pattern is not a valid "
+					       "regular expression. The filter has been left disabled."),
+					_("Invalid regular expression"),
+					wxOK | wxICON_WARNING,
+					this);
+			}
+		}
+		thePrefs::RecompileShareExcludeFilter();
+		// Re-scan so newly excluded files leave the shareset and files no
+		// longer matching return.
+		if (!sharedDirsCommitted) {
+			theApp->sharedfiles->Reload();
+		}
+	}
+
 	if (CfgChanged(IDC_OSDIR) || CfgChanged(IDC_ONLINESIG)) {
 		wxTextCtrl *widget = CastChild(IDC_OSDIR, wxTextCtrl);
 
@@ -1535,6 +1561,31 @@ void PrefsUnifiedDlg::OnButtonDir(wxCommandEvent &event)
 		widget->SetValue(str);
 	}
 }
+
+#ifndef CLIENT_GUI
+void PrefsUnifiedDlg::OnButtonExcludePreview(wxCommandEvent &WXUNUSED(event))
+{
+	wxStaticText *info = CastChild(IDC_EXCLUDE_SHARE_PREVIEW_INFO, wxStaticText);
+
+	const wxString patterns = CastChild(IDC_EXCLUDE_SHARE_PATTERNS, wxTextCtrl)->GetValue();
+	const bool useRegex = CastChild(IDC_EXCLUDE_SHARE_REGEX, wxCheckBox)->GetValue();
+
+	wxArrayString names;
+	theApp->sharedfiles->GetSharedFileNames(names);
+
+	const int excluded = thePrefs::PreviewExcludeCount(patterns, useRegex, names);
+	if (excluded == wxNOT_FOUND) {
+		info->SetLabel(_("Invalid regular expression"));
+	} else {
+		info->SetLabel(CFormat(wxPLURAL("Would exclude %u of %u shared file",
+				       "Would exclude %u of %u shared files",
+				       names.GetCount())) %
+			       (unsigned)excluded % (unsigned)names.GetCount());
+	}
+	// The label width just changed; re-lay-out its row so it is not clipped.
+	info->GetParent()->Layout();
+}
+#endif
 
 void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent &event)
 {

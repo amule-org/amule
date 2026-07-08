@@ -429,8 +429,9 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	// So just store the hashing tasks for now.
 	TaskList hashTasks;
 	size_t scanned = 0;
+	size_t excluded = 0;
 	for (std::list<CPath>::iterator it = sharedPaths.begin(); it != sharedPaths.end(); ++it) {
-		AddFilesFromDirectory(*it, hashTasks, yieldCb, scanned, aborted);
+		AddFilesFromDirectory(*it, hashTasks, yieldCb, scanned, excluded, aborted);
 		if (aborted) {
 			break;
 		}
@@ -460,6 +461,13 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 				    GetCount())) %
 			    GetCount() % addedFiles);
 	}
+
+	if (excluded > 0) {
+		AddLogLineN(CFormat(wxPLURAL("Excluded %i file from sharing by filter",
+				    "Excluded %i files from sharing by filter",
+				    excluded)) %
+			    excluded);
+	}
 }
 
 // Checks if the dir a is the same as b. If they are, then logs the message and returns true.
@@ -478,6 +486,7 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 	TaskList &hashTasks,
 	const ReloadYieldCb &yieldCb,
 	size_t &scanned,
+	size_t &excluded,
 	bool &aborted)
 {
 	// Do not allow these folders to be shared:
@@ -535,6 +544,9 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 		case kAddPathKnown:
 			knownFiles++;
 			break;
+		case kAddPathExcluded:
+			excluded++;
+			break;
 		case kAddPathSkipped:
 			break;
 		}
@@ -572,6 +584,14 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 	}
 
 	AddDebugLogLineN(logKnownFiles, CFormat("Found shared file: %s") % fullPath);
+
+	// User-configured name exclusion. Checked before the stat calls below
+	// so excluded files cost only a name match. Applies identically to the
+	// bulk walk and the incremental watcher path.
+	if (thePrefs::IsShareExcluded(fname.GetPrintable())) {
+		AddDebugLogLineN(logKnownFiles, CFormat("Excluded from shares by filter: %s") % fullPath);
+		return kAddPathExcluded;
+	}
 
 	time_t fdate = CPath::GetModificationTime(fullPath);
 	sint64 fsize = fullPath.GetFileSize();
@@ -881,6 +901,7 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath)
 		}
 		break;
 	case kAddPathKnown:
+	case kAddPathExcluded:
 	case kAddPathSkipped:
 		// AddPathToShares already wrote a debug log line; no
 		// further action needed.
@@ -1119,6 +1140,16 @@ void CSharedFileList::CopyFileList(std::vector<CKnownFile *> &out_list) const
 	out_list.reserve(m_Files_map.size());
 	for (CKnownFileMap::const_iterator it = m_Files_map.begin(); it != m_Files_map.end(); ++it) {
 		out_list.push_back(it->second);
+	}
+}
+
+void CSharedFileList::GetSharedFileNames(wxArrayString &out) const
+{
+	wxMutexLocker lock(list_mut);
+
+	out.Alloc(m_Files_map.size());
+	for (const auto &entry : m_Files_map) {
+		out.Add(entry.second->GetFileName().GetPrintable());
 	}
 }
 

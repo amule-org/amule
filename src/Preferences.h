@@ -40,6 +40,40 @@
 class CPreferences;
 class wxConfigBase;
 class wxWindow;
+class wxRegEx;
+
+// Compiled shared-file-name exclusion filter. Holds either a set of
+// wildcard globs (matched case-insensitively with wxMatchWild) or a
+// single regex, chosen by the useRegex flag passed to Compile(). An
+// empty pattern -- or a regex that fails to compile -- yields an
+// inactive filter (Matches() always false): a bad pattern fails open,
+// it never excludes everything. Owns a heap wxRegEx, so non-copyable.
+class CShareExcludeFilter
+{
+public:
+	CShareExcludeFilter();
+	~CShareExcludeFilter();
+
+	// In wildcard mode the string is split on '|' into globs. In regex
+	// mode the whole string is one regex, so '|' is native alternation
+	// and is NOT split.
+	void Compile(const wxString &patterns, bool useRegex);
+
+	bool Matches(const wxString &fileName) const;
+
+	bool IsActive() const { return m_active; }
+	bool IsValid() const { return m_valid; }
+
+private:
+	CShareExcludeFilter(const CShareExcludeFilter &);
+	CShareExcludeFilter &operator=(const CShareExcludeFilter &);
+
+	wxArrayString m_globs; // lowercased globs (wildcard mode)
+	wxRegEx *m_regex;      // compiled regex (regex mode), owned
+	bool m_useRegex;
+	bool m_active;
+	bool m_valid;
+};
 
 enum EViewSharedFilesAccess
 {
@@ -638,6 +672,31 @@ public:
 	static bool FollowSymlinksInShares() { return s_FollowSymlinksInShares; }
 	static void SetFollowSymlinksInShares(bool val) { s_FollowSymlinksInShares = val; }
 
+	// Shared-file exclusion by name. Patterns are a '|'-separated list of
+	// wildcards, or a single regex when ExcludeSharePatternsUseRegex().
+	static const wxString &GetExcludeSharePatterns() { return s_ExcludeSharePatterns; }
+	static void SetExcludeSharePatterns(const wxString &val) { s_ExcludeSharePatterns = val; }
+	static bool ExcludeSharePatternsUseRegex() { return s_ExcludeSharePatternsUseRegex; }
+	static void SetExcludeSharePatternsUseRegex(bool val) { s_ExcludeSharePatternsUseRegex = val; }
+
+	// (Re)compile the live filter from the current pattern string + mode.
+	// Call after loading prefs or after the Directories panel changes them.
+	static void RecompileShareExcludeFilter()
+	{
+		s_ShareExcludeFilter.Compile(s_ExcludeSharePatterns, s_ExcludeSharePatternsUseRegex);
+	}
+	// True if the shared-file basename matches the live exclusion filter.
+	static bool IsShareExcluded(const wxString &fileName)
+	{
+		return s_ShareExcludeFilter.Matches(fileName);
+	}
+	// Count how many names in the list would be excluded by a candidate
+	// (pattern, useRegex) -- used by the Directories panel's live preview,
+	// which tests the typed-but-unsaved pattern without touching the live
+	// filter. Returns wxNOT_FOUND if the regex does not compile.
+	static int PreviewExcludeCount(
+		const wxString &patterns, bool useRegex, const wxArrayString &fileNames);
+
 	static bool AutoSortDownload() { return s_AutoSortDownload; }
 	static bool AutoSortDownload(bool val)
 	{
@@ -980,6 +1039,12 @@ protected:
 
 	// Follow symlinks while walking shared dirs.
 	static bool s_FollowSymlinksInShares;
+
+	// Shared-file exclusion by name: the raw pattern string, the mode
+	// flag, and the compiled filter derived from them.
+	static wxString s_ExcludeSharePatterns;
+	static bool s_ExcludeSharePatternsUseRegex;
+	static CShareExcludeFilter s_ShareExcludeFilter;
 
 	static bool s_AutoSortDownload;
 

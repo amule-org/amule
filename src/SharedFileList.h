@@ -30,6 +30,7 @@
 #include <list>
 #include <map>
 #include <unordered_map>
+#include <wx/arrstr.h> // Needed for wxArrayString
 #include <wx/thread.h> // Needed for wxMutex
 
 #include "Types.h" // Needed for uint16 and uint64
@@ -85,6 +86,9 @@ public:
 		return m_Files_map.size();
 	}
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
+	// Fill `out` with the basenames of all currently shared files. Used by
+	// the Directories panel's exclusion-filter live preview.
+	void GetSharedFileNames(wxArrayString &out) const;
 	void UpdateItem(CKnownFile *toupdate);
 	void GetSharedFilesByDirectory(const wxString &directory, CKnownFilePtrList &list);
 	void ClearED2KPublishInfo();
@@ -196,9 +200,10 @@ private:
 	// reaches the GUI view).
 	enum AddPathResult
 	{
-		kAddPathSkipped, // broken link, zero size, stat failed
-		kAddPathKnown,   // matched a CKnownFile, attached (or already attached)
-		kAddPathQueued   // unknown file, CHashingTask pushed
+		kAddPathSkipped,  // broken link, zero size, stat failed
+		kAddPathExcluded, // name matched the user's exclusion filter
+		kAddPathKnown,    // matched a CKnownFile, attached (or already attached)
+		kAddPathQueued    // unknown file, CHashingTask pushed
 	};
 	AddPathResult AddPathToShares(const CPath &directory,
 		const CPath &fname,
@@ -211,6 +216,7 @@ private:
 		TaskList &hashTasks,
 		const ReloadYieldCb &yieldCb,
 		size_t &scanned,
+		size_t &excluded,
 		bool &aborted);
 	void FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborted);
 	bool reloading;

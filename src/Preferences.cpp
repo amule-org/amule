@@ -32,6 +32,7 @@
 
 #include <wx/config.h>
 #include <wx/dir.h>
+#include <wx/regex.h> // Needed for wxRegEx (shared-file exclusion filter)
 #include <wx/stdpaths.h>
 #include <wx/stopwatch.h>
 #include <wx/tokenzr.h>
@@ -221,6 +222,9 @@ bool CPreferences::s_IsChatCaptchaEnabled;
 bool CPreferences::s_ShareHiddenFiles;
 bool CPreferences::s_AutoRescanSharedDirs;
 bool CPreferences::s_FollowSymlinksInShares;
+wxString CPreferences::s_ExcludeSharePatterns;
+bool CPreferences::s_ExcludeSharePatternsUseRegex;
+CShareExcludeFilter CPreferences::s_ShareExcludeFilter;
 bool CPreferences::s_AutoSortDownload;
 bool CPreferences::s_NewVersionCheck;
 bool CPreferences::s_MediaMetadataEnabled;
@@ -1029,6 +1033,96 @@ protected:
 	bool m_is_skin;
 };
 
+CShareExcludeFilter::CShareExcludeFilter()
+: m_regex(nullptr)
+, m_useRegex(false)
+, m_active(false)
+, m_valid(true)
+{
+}
+
+CShareExcludeFilter::~CShareExcludeFilter()
+{
+	delete m_regex;
+}
+
+void CShareExcludeFilter::Compile(const wxString &patterns, bool useRegex)
+{
+	m_globs.Clear();
+	delete m_regex;
+	m_regex = nullptr;
+	m_useRegex = useRegex;
+	m_active = false;
+	m_valid = true;
+
+	wxString trimmed = patterns;
+	trimmed.Trim(true).Trim(false);
+	if (trimmed.IsEmpty()) {
+		return;
+	}
+
+	if (useRegex) {
+		// The whole string is one regex: '|' is native alternation, so
+		// it is NOT split. Case-insensitive to match the wildcard mode.
+		m_regex = new wxRegEx(trimmed, wxRE_ADVANCED | wxRE_ICASE | wxRE_NOSUB);
+		if (m_regex->IsValid()) {
+			m_active = true;
+		} else {
+			// Fail open: a bad regex disables the filter rather than
+			// excluding everything.
+			delete m_regex;
+			m_regex = nullptr;
+			m_valid = false;
+		}
+	} else {
+		// Wildcard mode: '|' separates globs, matched case-insensitively
+		// (globs are lowercased here, the filename is lowercased in
+		// Matches()).
+		wxStringTokenizer tokenizer(trimmed, wxT("|"));
+		while (tokenizer.HasMoreTokens()) {
+			wxString glob = tokenizer.GetNextToken();
+			glob.Trim(true).Trim(false);
+			if (!glob.IsEmpty()) {
+				m_globs.Add(glob.Lower());
+			}
+		}
+		m_active = !m_globs.IsEmpty();
+	}
+}
+
+bool CShareExcludeFilter::Matches(const wxString &fileName) const
+{
+	if (!m_active) {
+		return false;
+	}
+	if (m_useRegex) {
+		return m_regex && m_regex->Matches(fileName);
+	}
+	const wxString lower = fileName.Lower();
+	for (size_t i = 0; i < m_globs.GetCount(); ++i) {
+		if (wxMatchWild(m_globs[i], lower, false)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+int CPreferences::PreviewExcludeCount(const wxString &patterns, bool useRegex, const wxArrayString &fileNames)
+{
+	CShareExcludeFilter filter;
+	filter.Compile(patterns, useRegex);
+	if (!filter.IsValid()) {
+		return wxNOT_FOUND;
+	}
+	int count = 0;
+	for (size_t i = 0; i < fileNames.GetCount(); ++i) {
+		if (filter.Matches(fileNames[i])) {
+			++count;
+		}
+	}
+	return count;
+}
+
 /// new implementation
 CPreferences::CPreferences()
 {
@@ -1418,6 +1512,31 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Bool("/eMule/FollowSymlinksInShares", s_FollowSymlinksInShares, true)));
 
 	/**
+	 * Shared-file exclusion by name. A '|'-separated list of wildcard
+	 * patterns, or a single regex when ExcludeSharePatternsUseRegex is on.
+	 *
+	 * The default excludes OS-generated metadata junk that no peer wants to
+	 * download. Matching is case-insensitive. Configs missing the key pick
+	 * this up on load (not just fresh installs) -- intentional for this
+	 * junk, which should never have been shared:
+	 *   macOS   .DS_Store, ._* (AppleDouble), .Spotlight-V100, .Trashes,
+	 *           .fseventsd, .DocumentRevisions-V100, .TemporaryItems, .apdisk
+	 *   Windows Thumbs.db, ehthumbs.db, desktop.ini
+	 *   Linux   .directory (KDE folder metadata)
+	 * Deliberately NOT included: broad download-temp globs (*.part, *.tmp,
+	 * *.!ut, *INCOMPLETE*) -- those can match real user files, so they are
+	 * left for the user to add.
+	 **/
+	NewCfgItem(IDC_EXCLUDE_SHARE_PATTERNS,
+		(new Cfg_Str("/eMule/ExcludeSharePatterns",
+			s_ExcludeSharePatterns,
+			".DS_Store|._*|.Spotlight-V100|.Trashes|.fseventsd|"
+			".DocumentRevisions-V100|.TemporaryItems|.apdisk|"
+			"Thumbs.db|ehthumbs.db|desktop.ini|.directory")));
+	NewCfgItem(IDC_EXCLUDE_SHARE_REGEX,
+		(new Cfg_Bool("/eMule/ExcludeSharePatternsUseRegex", s_ExcludeSharePatternsUseRegex, false)));
+
+	/**
 	 * Auto-Sorting of downloads
 	 **/
 	NewCfgItem(IDC_AUTOSORT, (new Cfg_Bool("/eMule/AutoSortDownloads", s_AutoSortDownload, false)));
@@ -1678,6 +1797,9 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 		s_sourceReaskMins = 60;
 	}
 #endif
+
+	// Compile the shared-file exclusion filter from the values just loaded.
+	RecompileShareExcludeFilter();
 }
 
 void CPreferences::SaveAllItems(wxConfigBase *cfg)

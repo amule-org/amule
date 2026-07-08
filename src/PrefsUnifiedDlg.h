@@ -123,6 +123,11 @@ protected:
 
 	void OnButtonBrowseApplication(wxCommandEvent &event);
 	void OnButtonDir(wxCommandEvent &event);
+#ifndef CLIENT_GUI
+	// Live preview of the shared-file exclusion filter. Core-only: it reads
+	// the in-memory shared list, absent in the remote GUI.
+	void OnButtonExcludePreview(wxCommandEvent &event);
+#endif
 	void OnButtonEditAddr(wxCommandEvent &event);
 	void OnButtonMediaMetaDetect(wxCommandEvent &event);
 	void OnButtonTweaksReset(wxCommandEvent &event);

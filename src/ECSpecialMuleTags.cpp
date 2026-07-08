@@ -292,6 +292,10 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		dirPrefs.AddTag(CECTag(EC_TAG_DIRECTORIES_AUTO_RESCAN, thePrefs::AutoRescanSharedDirs()));
 		dirPrefs.AddTag(
 			CECTag(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, thePrefs::FollowSymlinksInShares()));
+		dirPrefs.AddTag(
+			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS, thePrefs::GetExcludeSharePatterns()));
+		dirPrefs.AddTag(
+			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_REGEX, thePrefs::ExcludeSharePatternsUseRegex()));
 		AddTag(dirPrefs);
 	}
 
@@ -550,11 +554,38 @@ void CEC_Prefs_Packet::Apply() const
 			thisTab,
 			thePrefs::SetFollowSymlinksInShares,
 			EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS);
+
+		// Shared-file exclusion filter. Compare each incoming tag against the
+		// current value so we only recompile + rescan when the remote GUI
+		// actually changed something.
+		bool excludeChanged = false;
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS)) != nullptr) {
+			if (oneTag->GetStringData() != thePrefs::GetExcludeSharePatterns()) {
+				thePrefs::SetExcludeSharePatterns(oneTag->GetStringData());
+				excludeChanged = true;
+			}
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_REGEX)) != nullptr) {
+			const bool useRegex = oneTag->GetInt() != 0;
+			if (useRegex != thePrefs::ExcludeSharePatternsUseRegex()) {
+				thePrefs::SetExcludeSharePatternsUseRegex(useRegex);
+				excludeChanged = true;
+			}
+		}
+		if (excludeChanged) {
+			thePrefs::RecompileShareExcludeFilter();
+		}
+
 		// Apply the new auto-rescan state immediately on amuled so a
 		// remote toggle from amulegui doesn't need a daemon restart to
 		// take effect.
 		if (theApp->sharedfiles) {
 			theApp->sharedfiles->EnableDirectoryWatcher(thePrefs::AutoRescanSharedDirs());
+			// Same for a changed exclusion filter: re-walk so newly excluded
+			// files leave the shareset and un-excluded ones return.
+			if (excludeChanged) {
+				theApp->sharedfiles->Reload();
+			}
 		}
 	}
 

@@ -298,6 +298,10 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 // regeneration of muuli_wdr.* doesn't reuse this ID for something else.
 #define IDC_AUTO_RESCAN_SHARED 10333
 #define IDC_FOLLOW_SYMLINKS_SHARED 10343
+#define IDC_EXCLUDE_SHARE_PATTERNS 10440
+#define IDC_EXCLUDE_SHARE_REGEX 10441
+#define IDC_EXCLUDE_SHARE_PREVIEW 10442
+#define IDC_EXCLUDE_SHARE_PREVIEW_INFO 10443
 // 10344..10354 are ID_BUTTON* toolbar IDs; 10355..10399 free. The
 // IDs below name orphan labels / static boxes so amulegui can hide
 // them via PrefsUnifiedDlg's amuledOnlyPrefs[].

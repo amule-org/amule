@@ -1673,6 +1673,33 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     itemFollowSymlinks->SetValue( TRUE );
     item9->Add( itemFollowSymlinks, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
+    // Shared-file exclusion filter: files whose name matches are not shared.
+    wxBoxSizer *itemExcludeRow = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *itemExcludeLabel = new wxStaticText( parent, -1, _("Exclude files matching:"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemExcludeRow->Add( itemExcludeLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
+    CMuleTextCtrl *itemExcludePatterns = new CMuleTextCtrl( parent, IDC_EXCLUDE_SHARE_PATTERNS, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    itemExcludePatterns->SetToolTip(_("Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."));
+    itemExcludeRow->Add( itemExcludePatterns, wxSizerFlags(1).Expand().CenterVertical() );
+    item9->Add( itemExcludeRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+
+    wxCheckBox *itemExcludeRegex = new wxCheckBox( parent, IDC_EXCLUDE_SHARE_REGEX, _("Patterns are regular expressions"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemExcludeRegex->SetToolTip(_("When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."));
+    item9->Add( itemExcludeRegex, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
+#ifndef CLIENT_GUI
+    // Live preview: how many currently-shared files the typed pattern would
+    // exclude. Needs the core's in-memory shared list, so it is omitted in
+    // the remote GUI (amulegui) -- the pattern/regex fields above still work
+    // there and sync to amuled over EC.
+    wxBoxSizer *itemPreviewRow = new wxBoxSizer( wxHORIZONTAL );
+    wxButton *itemPreviewBtn = new wxButton( parent, IDC_EXCLUDE_SHARE_PREVIEW, _("Preview"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemPreviewBtn->SetToolTip(_("Show how many shared files the current pattern would exclude."));
+    itemPreviewRow->Add( itemPreviewBtn, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
+    wxStaticText *itemPreviewInfo = new wxStaticText( parent, IDC_EXCLUDE_SHARE_PREVIEW_INFO, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    itemPreviewRow->Add( itemPreviewInfo, wxSizerFlags(1).CenterVertical() );
+    item9->Add( itemPreviewRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+#endif
+
     item0->Add( item9, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
     if (set_sizer)
     {
