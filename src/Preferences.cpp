@@ -1765,14 +1765,20 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	SetSlotAllocation(s_slotallocation);
 
 	// One-time bump of the raised MaxConnectionsPerFiveSeconds default (20 ->
-	// 50). Every registered key is written to amule.conf unconditionally, so an
-	// existing config already holds the old default and would never pick up the
-	// new one. The marker makes this run exactly once, and the == 20 guard means
-	// a value the user set (including a deliberate 20 after this upgrade) is left
-	// alone.
+	// 50). An existing config holds the old default and would never pick up
+	// the new one. The marker makes this run exactly once, and the == 20 guard
+	// means a value the user set (including a deliberate 20 after this upgrade)
+	// is left alone.
+	//
+	// The value is written straight into cfg alongside the marker, not just
+	// into the s_MaxConperFive static: amuled never calls Save()/SaveAllItems,
+	// so a static-only bump is lost on exit while the explicitly-written marker
+	// persists -- which on the next boot suppresses the re-run and reverts the
+	// value to the un-bumped 20. Writing both keeps them in lockstep on disk.
 	if (!cfg->HasEntry("/eMule/MaxConPerFiveDefaultBumped")) {
 		if (s_MaxConperFive == 20) {
 			s_MaxConperFive = 50;
+			cfg->Write("/eMule/MaxConnectionsPerFiveSeconds", (long)s_MaxConperFive);
 		}
 		cfg->Write("/eMule/MaxConPerFiveDefaultBumped", true);
 	}

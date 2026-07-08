@@ -594,6 +594,12 @@ struct IniLine
 static std::vector<IniLine> ReadIniLines(const wxString &path)
 {
 	std::vector<IniLine> lines;
+	// A missing file is the normal "not configured yet" case (e.g. no
+	// ~/.config/mimeapps.list on a headless daemon). Bail before opening so
+	// wxFile does not log a spurious "can't open file (error 2)" for it.
+	if (!wxFile::Exists(path)) {
+		return lines;
+	}
 	wxFile f(path, wxFile::read);
 	if (!f.IsOpened()) {
 		return lines;
