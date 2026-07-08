@@ -88,8 +88,17 @@ function Toolbar({ route, onLogout }) {
   const addEd2k = async () => {
     const value = link.trim();
     if (!value) return;
+
+    const links = [];
+    const regex = /(ed2k:\/\/\|file\|.+?\|\/|magnet:\?.+?(?=\s*(?:ed2k:\/\/|magnet:|$)))/gi;
+    let match;
+    while ((match = regex.exec(value)) !== null) {
+      links.push(match[1].trim());
+    }
+    const payload = links.length > 0 ? { links } : { ed2k_link: value };
+
     try {
-      await api.post("downloads", { ed2k_link: value });
+      await api.post("downloads", payload);
       setLink("");
       toast(t("app_toast_link_added"), "success");
       if (currentRoute() === "downloads") data.refresh("downloads");
