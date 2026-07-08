@@ -103,7 +103,7 @@ async function refreshStatus() {
 // --- SSE ---------------------------------------------------------------
 function openSse() {
   if (es) return;
-  es = new EventSource("/api/v0/events");
+  es = new EventSource(window.location.pathname.replace(/\/?$/, "/") + "api/v0/events");
 
   es.addEventListener("open", () => {
     sseFails = 0;

@@ -4,12 +4,12 @@
 // - Parses the {error:{code,message}} envelope into ApiError.
 // - Caches ETags per GET target and revalidates with If-None-Match so a
 //   304 short-circuits re-downloading/parsing an unchanged body.
-// - Absolute "/api/v0" base: amuleapi serves this frontend on the same origin
-//   as the REST + SSE API, so the fixed root always resolves.
+// - Dynamic base path: derived from window.location.pathname so it works
+//   both at the root (/) and under a reverse proxy subpath (e.g. /amule/).
 
 import { t } from "./i18n.js";
 
-const BASE = "/api/v0";
+const BASE = window.location.pathname.replace(/\/?$/, "/") + "api/v0";
 
 export class ApiError extends Error {
   constructor(status, code, message) {
