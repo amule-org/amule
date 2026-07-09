@@ -33,6 +33,8 @@
 #include <ec/cpp/ECTag.h>
 #include <ec/cpp/ECCodes.h>
 
+#include "include/protocol/ed2k/ClientSoftware.h" // SO_* client-software enum
+
 #include <cstdint>
 #include <map>
 
@@ -715,4 +717,65 @@ TEST(Refresher, SearchProgressIdleZeroesOutGracefully)
 	ASSERT_TRUE(!s.active);
 	ASSERT_TRUE(!s.complete);
 	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
+}
+
+// --- #359: peer software_version must be locale-independent ----------
+//
+// The daemon formats the version string with gettext, so an unidentified
+// client yields _("Unknown") -- "Desconocido" on a Spanish daemon. amuleapi
+// is a separate process and can't reverse the translation, so the refresher
+// keys off the numeric software code (locale-independent) and emits the
+// lowercase "unknown" sentinel instead of the translated string.
+
+// Build a one-client GET_UPDATE response: an EC_TAG_CLIENT container with a
+// single child client carrying the software code and (optionally) a version
+// string. Mirrors the amuled-side EC_TAG_CLIENT shape.
+static void PutOneClient(CECPacket &resp,
+	std::uint32_t ecid,
+	std::uint32_t soft,
+	const char *ver_str /* nullptr = omit the version tag */)
+{
+	CECTag container(EC_TAG_CLIENT, static_cast<std::uint32_t>(0));
+	CECTag cli(EC_TAG_CLIENT, ecid);
+	cli.AddTag(CECTag(EC_TAG_CLIENT_SOFTWARE, soft));
+	if (ver_str)
+		cli.AddTag(CECTag(EC_TAG_CLIENT_SOFT_VER_STR, wxString::FromUTF8(ver_str)));
+	container.AddTag(cli);
+	resp.AddTag(container);
+}
+
+TEST(Refresher, ClientVersionUnknownYieldsLocaleIndependentSentinel)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	// Unidentified client + a translated version string, as a non-English
+	// daemon would ship it. Must NOT leak into the API response.
+	PutOneClient(resp, 7, static_cast<std::uint32_t>(SO_UNKNOWN), "Desconocido");
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+	ASSERT_TRUE(cache.find(7) != cache.end());
+	ASSERT_EQUALS(std::string("unknown"), cache[7].software_version);
+}
+
+TEST(Refresher, ClientVersionKnownStringPassesThrough)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	PutOneClient(resp, 8, static_cast<std::uint32_t>(SO_AMULE), "aMule 2.3.3");
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+	ASSERT_TRUE(cache.find(8) != cache.end());
+	ASSERT_EQUALS(std::string("aMule 2.3.3"), cache[8].software_version);
+}
+
+TEST(Refresher, ClientKnownButNoVersionStringFallsBackToSentinel)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	// Known software, but the daemon shipped no version string at all.
+	PutOneClient(resp, 9, static_cast<std::uint32_t>(SO_EMULE), nullptr);
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+	ASSERT_TRUE(cache.find(9) != cache.end());
+	ASSERT_EQUALS(std::string("unknown"), cache[9].software_version);
 }

@@ -527,14 +527,31 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		if (c->AssignIfExist(EC_TAG_CLIENT_USER_PORT, v))
 			cs.port = v;
 	}
-	{
-		std::uint32_t v = 0;
-		if (c->AssignIfExist(EC_TAG_CLIENT_SOFTWARE, v))
-			cs.software = ClientSoftwareName(v);
+	std::uint32_t soft_code = static_cast<std::uint32_t>(SO_UNKNOWN);
+	if (c->AssignIfExist(EC_TAG_CLIENT_SOFTWARE, soft_code))
+		cs.software = ClientSoftwareName(soft_code);
+
+	// software_version: the daemon formats this with gettext -- an
+	// unidentified peer yields _("Unknown"), which is "Desconocido" on a
+	// Spanish daemon and would leak the daemon locale into the English-only
+	// API (#359). amuleapi runs in its own process and can't reverse the
+	// translation, so we key off the locale-independent numeric software
+	// code instead of the string: a client the daemon couldn't identify
+	// (SO_UNKNOWN, which is exactly the branch that sets the translated
+	// "Unknown") gets the lowercase "unknown" sentinel, matching the other
+	// enum-like string fields. A known client with an absent/empty version
+	// string falls through to the same sentinel.
+	if (soft_code != static_cast<std::uint32_t>(SO_UNKNOWN)) {
+		if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR)) {
+			cs.software_version = std::string(t->GetStringData().utf8_str());
+		}
 	}
-	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR)) {
-		cs.software_version = std::string(t->GetStringData().utf8_str());
+	if (cs.software_version.empty()) {
+		cs.software_version = "unknown";
 	}
+	// os_info is the peer's own self-reported OS string (raw external data,
+	// not gettext-translated by our daemon), so it carries no locale-leak;
+	// it is frequently empty because most clients don't send it.
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_OS_INFO)) {
 		cs.os_info = std::string(t->GetStringData().utf8_str());
 	}
