@@ -467,7 +467,7 @@ void CEC_Prefs_Packet::Apply() const
 			thePrefs::SetWSPort(oneTag->GetInt());
 		}
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetAmuleApiIsEnabled, EC_TAG_AMULEAPI_AUTORUN);
-		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PORT)) != NULL) {
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PORT)) != nullptr) {
 			thePrefs::SetAmuleApiPort(static_cast<uint16>(oneTag->GetInt()));
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_PASSWD_HASH)) != NULL) {
