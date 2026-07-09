@@ -25,7 +25,7 @@
 
 #include <wx/config.h>
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
-#include <wx/radiobox.h>
+#include <wx/radiobut.h>
 
 #include "SharedFilesWnd.h" // Interface declarations
 #include "SharedFilesCtrl.h"
@@ -41,7 +41,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesWnd, wxPanel)
 	EVT_LIST_ITEM_DESELECTED(ID_SHFILELIST, CSharedFilesWnd::OnItemSelectionChanged)
 	EVT_BUTTON(ID_BTNRELSHARED, CSharedFilesWnd::OnBtnReloadShared)
 	EVT_BUTTON(ID_SHAREDCLIENTTOGGLE, CSharedFilesWnd::OnToggleClientList)
-	EVT_RADIOBOX(ID_SHOW_CLIENTS_MODE, CSharedFilesWnd::OnSelectClientsMode)
+	// The "show clients for" radio buttons are bound dynamically in the ctor.
 
 	EVT_SPLITTER_SASH_POS_CHANGING(ID_SHARESSPLATTER, CSharedFilesWnd::OnSashPositionChanging)
 wxEND_EVENT_TABLE()
@@ -55,7 +55,12 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	m_bar_requests = CastChild("popbar", wxGauge);
 	m_bar_accepted = CastChild("popbarAccept", wxGauge);
 	m_bar_transfer = CastChild("popbarTrans", wxGauge);
-	m_radioClientMode = CastChild(ID_SHOW_CLIENTS_MODE, wxRadioBox);
+	m_radioShowAll = CastChild("showClientsAll", wxRadioButton);
+	m_radioShowSelected = CastChild("showClientsSelected", wxRadioButton);
+	m_radioShowUploading = CastChild("showClientsUploading", wxRadioButton);
+	m_radioShowAll->Bind(wxEVT_RADIOBUTTON, &CSharedFilesWnd::OnSelectClientsMode, this);
+	m_radioShowSelected->Bind(wxEVT_RADIOBUTTON, &CSharedFilesWnd::OnSelectClientsMode, this);
+	m_radioShowUploading->Bind(wxEVT_RADIOBUTTON, &CSharedFilesWnd::OnSelectClientsMode, this);
 	sharedfilesctrl = CastChild("sharedFilesCt", CSharedFilesCtrl);
 	peerslistctrl = CastChild(ID_SHAREDCLIENTLIST, CSharedFilePeersListCtrl);
 	wxASSERT(sharedfilesctrl);
@@ -73,7 +78,34 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	// Load the last used splitter position
 	m_splitter = config->Read("/GUI/SharedWnd/Splitter", 463l);
 	m_clientShow = (EClientShow)config->Read("/GUI/SharedWnd/ClientShowMode", ClientShowAll);
-	m_radioClientMode->SetSelection(m_clientShow);
+	SetClientShowMode(m_clientShow);
+}
+
+CSharedFilesWnd::EClientShow CSharedFilesWnd::GetClientShowMode() const
+{
+	if (m_radioShowSelected->GetValue()) {
+		return ClientShowSelected;
+	}
+	if (m_radioShowUploading->GetValue()) {
+		return ClientShowUploading;
+	}
+	return ClientShowAll;
+}
+
+void CSharedFilesWnd::SetClientShowMode(EClientShow mode)
+{
+	switch (mode) {
+		case ClientShowSelected:
+			m_radioShowSelected->SetValue(true);
+			break;
+		case ClientShowUploading:
+			m_radioShowUploading->SetValue(true);
+			break;
+		case ClientShowAll:
+		default:
+			m_radioShowAll->SetValue(true);
+			break;
+	}
 }
 
 CSharedFilesWnd::~CSharedFilesWnd()
@@ -219,7 +251,7 @@ void CSharedFilesWnd::OnBtnReloadShared(wxCommandEvent &WXUNUSED(evt))
 
 void CSharedFilesWnd::OnItemSelectionChanged(wxListEvent &evt)
 {
-	EClientShow clientShowMode = (EClientShow)m_radioClientMode->GetSelection();
+	EClientShow clientShowMode = GetClientShowMode();
 
 	// Only update the list of clients if that list shows clients related to the selected shared files
 	if (clientShowMode == ClientShowSelected) {
@@ -341,7 +373,7 @@ void CSharedFilesWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 void CSharedFilesWnd::OnSelectClientsMode(wxCommandEvent &WXUNUSED(evt))
 {
 	EClientShow clientShowLast = m_clientShow;
-	m_clientShow = (EClientShow)m_radioClientMode->GetSelection();
+	m_clientShow = GetClientShowMode();
 
 	if (m_clientShow != clientShowLast) {
 		SelectionUpdated();

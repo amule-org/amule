@@ -3099,13 +3099,20 @@ wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticText *item2 = new wxStaticText( parent, -1, _("Shared files"), wxDefaultPosition, wxDefaultSize, 0 );
     item2->SetName( "sharedFilesLabel" );
     item1->Add( item2, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-    wxString strs3[] = 
-    {
-        _("All files"), 
-        _("Selected files"), 
-        _("Active uploads only")
-    };
-    wxRadioBox *item3 = new wxRadioBox( parent, ID_SHOW_CLIENTS_MODE, _("Show Clients for"), wxDefaultPosition, wxDefaultSize, 3, strs3, 1, int(wxNO_BORDER)|wxRA_SPECIFY_ROWS );
+    // "Show Clients for" as a label + inline radio buttons. This replaces a
+    // wxRadioBox whose title row wasted vertical space in the header.
+    wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *itemShowLabel = new wxStaticText( parent, -1, _("Show Clients for"), wxDefaultPosition, wxDefaultSize, 0 );
+    item3->Add( itemShowLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 8) );
+    wxRadioButton *itemShowAll = new wxRadioButton( parent, ID_SHOW_CLIENTS_MODE, _("All files"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
+    itemShowAll->SetName( "showClientsAll" );
+    item3->Add( itemShowAll, wxSizerFlags().CenterVertical().Border(wxRIGHT, 8) );
+    wxRadioButton *itemShowSelected = new wxRadioButton( parent, -1, _("Selected files"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemShowSelected->SetName( "showClientsSelected" );
+    item3->Add( itemShowSelected, wxSizerFlags().CenterVertical().Border(wxRIGHT, 8) );
+    wxRadioButton *itemShowUploading = new wxRadioButton( parent, -1, _("Active uploads only"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemShowUploading->SetName( "showClientsUploading" );
+    item3->Add( itemShowUploading, wxSizerFlags().CenterVertical() );
     item1->Add( item3, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item4 = new wxStaticText( parent, -1, _("Reload:"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->SetName( "sharedFilesLabel" );

@@ -34,7 +34,7 @@ class CSharedFilePeersListCtrl;
 class wxListEvent;
 class wxGauge;
 class wxSplitterEvent;
-class wxRadioBox;
+class wxRadioButton;
 
 /**
  * This class represents the window containing the list of shared files.
@@ -113,8 +113,11 @@ private:
 	wxGauge *m_bar_accepted;
 	//! Pointer to the gauge used for showing the transferred ratio.
 	wxGauge *m_bar_transfer;
-	//! Pointer to the radio box selecting the client mode.
-	wxRadioBox *m_radioClientMode;
+	//! Radio buttons selecting which clients are shown (replaces the old
+	//! wxRadioBox; see sharedfilesTopDlg in muuli_wdr.cpp).
+	wxRadioButton *m_radioShowAll;
+	wxRadioButton *m_radioShowSelected;
+	wxRadioButton *m_radioShowUploading;
 	//! Flag if window has been prepared
 	bool m_prepared;
 	//! Minimum position of splitter bar
@@ -130,6 +133,11 @@ private:
 		ClientShowUploading
 	};
 	EClientShow m_clientShow;
+
+	//! Read the mode currently picked by the radio buttons.
+	EClientShow GetClientShowMode() const;
+	//! Check the radio button matching the given mode.
+	void SetClientShowMode(EClientShow mode);
 
 	wxDECLARE_EVENT_TABLE();
 };
