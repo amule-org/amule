@@ -9,7 +9,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Cross-cutting concerns**
 - [Base URL and transport](#base-url-and-transport)
 - [Authentication](#authentication) — [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
-- [Response model](#response-model) — [Success envelope](#success-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
+- [Response model](#response-model) — [Success envelope](#success-envelope), [List pagination and sorting](#list-pagination-and-sorting), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
 - [Error code catalog](#error-code-catalog)
 - [Backward compatibility](#backward-compatibility)
 
@@ -131,6 +131,39 @@ Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<
 ### Success envelope
 
 Each endpoint documents its own response shape under the endpoint section. List endpoints wrap their array under the resource plural name (`{"downloads": [...]}`, `{"shared": [...]}`) so clients can extend the envelope with sibling metadata without breaking JSON-parser pipelines.
+
+### List pagination and sorting
+
+The list endpoints — `GET /downloads`, `/clients`, `/shared`, `/servers`, and `/search/results` — accept optional query parameters for server-side windowing and ordering, and always return pagination metadata beside the array:
+
+| Param    | Default          | Notes |
+|----------|------------------|-------|
+| `limit`  | *(all items)*    | Maximum items to return, capped at `500`. Omitted → the full set (pre-pagination behaviour). Non-integer or negative → `400 bad_request`. |
+| `offset` | `0`              | Items to skip before the window. Non-integer or negative → `400 bad_request`. |
+| `sort`   | *(native order)* | Field to sort by; endpoint-specific (table below). Unknown field → `400 bad_request`. |
+| `order`  | `asc`            | `asc` or `desc`; anything else → `400 bad_request`. |
+
+Sorting is applied to the full filtered set **before** slicing, so pagination is stable across requests (a stable sort — equal keys keep native order). The response adds three sibling keys to the array:
+
+```json
+{ "shared": [ ... ], "total": 8431, "offset": 100, "limit": 50 }
+```
+
+- `total` — item count after any endpoint-specific filter (e.g. `/clients?filter=`), before slicing.
+- `offset` — the offset applied.
+- `limit` — the effective page size (equals the number of items returned when `limit` was omitted).
+
+Omitting all four parameters preserves the previous response exactly, plus the additive `total` / `offset` / `limit` keys.
+
+**Sortable fields per endpoint:**
+
+| Endpoint              | `sort` values |
+|-----------------------|---------------|
+| `GET /downloads`      | `name`, `size`, `progress`, `speed`, `status` |
+| `GET /clients`        | `name`, `software` |
+| `GET /shared`         | `name`, `size` |
+| `GET /servers`        | `name`, `users`, `ping`, `files` |
+| `GET /search/results` | `name`, `size`, `sources`, `rating` |
 
 ### Localization and number formatting
 

@@ -1678,17 +1678,158 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndObject();
 }
 
-// Helper for every list endpoint's envelope: snapshot_at +
-// snapshot_at_unix + the list under its named key. ec_unavailable +
-// 503 is also emitted here so each handler doesn't repeat the check.
+// --- List pagination + sorting (issue #357) ---------------------------
+// Server-side window shared by every list endpoint. `limit` (capped at
+// 500), `offset`, `sort` (an endpoint-defined field) and `order`
+// (asc|desc). Omitting `limit` returns the full set, preserving the
+// pre-#357 behaviour; `total`, `offset` and `limit` metadata are always
+// emitted so a paging consumer can size its requests.
+struct ListParams
+{
+	bool has_limit = false;
+	std::size_t limit = 0;
+	std::size_t offset = 0;
+	std::string sort; // empty = unsorted (native snapshot order)
+	bool desc = false;
+};
+
+// Endpoint-specific sortable fields: field name -> ascending comparator.
+// A vector (not a map) so the definition site reads as an ordered list
+// and an unknown `sort` value is simply a lookup miss -> 400.
+template <class T>
+using ListComparators = std::vector<std::pair<std::string, std::function<bool(const T &, const T &)>>>;
+
+std::unique_ptr<CHttpServer::Response> BadRequestPtr(const char *message)
+{
+	return std::unique_ptr<CHttpServer::Response>(
+		new CHttpServer::Response(ErrorResponse(400, "bad_request", message)));
+}
+
+// Parse ?limit/&offset/&sort/&order from a raw query string. `limit` is
+// clamped to 500; a non-numeric/oversized limit or offset, and a bad
+// `order`, are 400s. `sort` is validated later against the endpoint's
+// comparator table (BuildListWindow).
+std::unique_ptr<CHttpServer::Response> ParseListParams(const std::string &query, ListParams &out)
+{
+	const auto qmap = web_api_path::ParseQuery(query);
+	auto parseCount = [](const std::string &s, std::size_t &v) -> bool {
+		if (s.empty() || s.size() > 9) // > ~1e9 is nonsense for these lists
+			return false;
+		std::size_t val = 0;
+		for (char c : s) {
+			if (c < '0' || c > '9')
+				return false;
+			val = val * 10 + static_cast<std::size_t>(c - '0');
+		}
+		v = val;
+		return true;
+	};
+	const auto limit_it = qmap.find("limit");
+	if (limit_it != qmap.end()) {
+		std::size_t v = 0;
+		if (!parseCount(limit_it->second, v))
+			return BadRequestPtr("`limit` must be a non-negative integer");
+		out.has_limit = true;
+		out.limit = std::min<std::size_t>(v, 500);
+	}
+	const auto offset_it = qmap.find("offset");
+	if (offset_it != qmap.end()) {
+		std::size_t v = 0;
+		if (!parseCount(offset_it->second, v))
+			return BadRequestPtr("`offset` must be a non-negative integer");
+		out.offset = v;
+	}
+	const auto order_it = qmap.find("order");
+	if (order_it != qmap.end()) {
+		if (order_it->second == "asc")
+			out.desc = false;
+		else if (order_it->second == "desc")
+			out.desc = true;
+		else
+			return BadRequestPtr("`order` must be \"asc\" or \"desc\"");
+	}
+	const auto sort_it = qmap.find("sort");
+	if (sort_it != qmap.end())
+		out.sort = sort_it->second;
+	return nullptr;
+}
+
+// Stable-sort the full set (if `params.sort` is set) then slice to the
+// requested window. `out_window` is filled with pointers into `items`
+// (no element copies) and `out_total` with the pre-slice count. Returns
+// a 400 when `params.sort` is set but absent from `comparators`.
+template <class T>
+std::unique_ptr<CHttpServer::Response> BuildListWindow(const std::vector<T> &items,
+	const ListParams &params,
+	const ListComparators<T> &comparators,
+	std::vector<const T *> &out_window,
+	std::size_t &out_total)
+{
+	out_total = items.size();
+	std::vector<const T *> ptrs;
+	ptrs.reserve(items.size());
+	for (const auto &it : items)
+		ptrs.push_back(&it);
+
+	if (!params.sort.empty()) {
+		auto c = std::find_if(comparators.begin(), comparators.end(), [&](const auto &p) {
+			return p.first == params.sort;
+		});
+		if (c == comparators.end())
+			return BadRequestPtr("unknown `sort` field for this endpoint");
+		const auto &cmp = c->second;
+		std::stable_sort(ptrs.begin(), ptrs.end(), [&](const T *a, const T *b) {
+			return params.desc ? cmp(*b, *a) : cmp(*a, *b);
+		});
+	}
+
+	const std::size_t begin = std::min(params.offset, out_total);
+	const std::size_t end = params.has_limit ? std::min(begin + params.limit, out_total) : out_total;
+	out_window.assign(ptrs.begin() + begin, ptrs.begin() + end);
+	return nullptr;
+}
+
+// Emit the `total` / `offset` / `limit` pagination metadata. `limit`
+// echoes the effective page size (the actual number returned when the
+// caller omitted `limit`).
+void WritePageMeta(CJsonWriter &w, std::size_t total, const ListParams &params, std::size_t returned)
+{
+	w.Key("total");
+	w.ValueUInt(total);
+	w.Key("offset");
+	w.ValueUInt(params.offset);
+	w.Key("limit");
+	w.ValueUInt(params.has_limit ? params.limit : returned);
+}
+
+// Extract the raw query string from a request target ("/x?a=1" -> "a=1").
+std::string QueryOf(const CHttpServer::Request &req)
+{
+	std::string path, query;
+	SplitPathAndQuery(req.target, path, query);
+	return query;
+}
+
+// Helper for every list endpoint's envelope: the list under its named
+// key plus #357 pagination metadata. ec_unavailable + 503 is emitted here
+// so each handler doesn't repeat the check.
 template <class T, class WriterFn>
-CHttpServer::Response ListResponse(
-	const webapi::CState &state, const char *plural_key, const std::vector<T> &items, WriterFn write_item)
+CHttpServer::Response ListResponse(const webapi::CState &state,
+	const char *plural_key,
+	const std::vector<T> &items,
+	WriterFn write_item,
+	const ListParams &params = ListParams(),
+	const ListComparators<T> &comparators = ListComparators<T>())
 {
 	if (!state.HasFirstSnapshot()) {
 		return ErrorResponse(
 			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
 	}
+	std::vector<const T *> window;
+	std::size_t total = 0;
+	if (auto err = BuildListWindow(items, params, comparators, window, total))
+		return *err;
+
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
@@ -1700,9 +1841,10 @@ CHttpServer::Response ListResponse(
 	w.BeginObject();
 	w.Key(plural_key);
 	w.BeginArray();
-	for (const auto &item : items)
-		write_item(w, item);
+	for (const T *item : window)
+		write_item(w, *item);
 	w.EndArray();
+	WritePageMeta(w, total, params, window.size());
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -1872,13 +2014,43 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 			downloads.end());
 	}
 
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+	static const ListComparators<webapi::FileSnapshot> kComps = {
+		{ "name",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.name < b.name;
+			} },
+		{ "size",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.size < b.size;
+			} },
+		{ "progress",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.download.percent < b.download.percent;
+			} },
+		{ "speed",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.download.speed_bps < b.download.speed_bps;
+			} },
+		{ "status",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.download.status < b.download.status;
+			} },
+	};
 	return ListResponse(
-		m_state, "downloads", downloads, [](CJsonWriter &w, const webapi::FileSnapshot &d) {
+		m_state,
+		"downloads",
+		downloads,
+		[](CJsonWriter &w, const webapi::FileSnapshot &d) {
 			// List mode — omit `progress.parts` (Q2 + the per-list
 			// shape: omitting parts keeps the list response compact,
 			// detail endpoint is where parts ship).
 			WriteDownloadObject(w, d, /*include_parts=*/false);
-		});
+		},
+		params,
+		kComps);
 }
 
 CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &req)
@@ -1931,7 +2103,20 @@ CHttpServer::Response CApiDispatcher::HandleClients(const CHttpServer::Request &
 			clients.end());
 	}
 
-	return ListResponse(m_state, "clients", clients, WriteClientObject);
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+	static const ListComparators<webapi::ClientSnapshot> kComps = {
+		{ "name",
+			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
+				return a.client_name < b.client_name;
+			} },
+		{ "software",
+			[](const webapi::ClientSnapshot &a, const webapi::ClientSnapshot &b) {
+				return a.software < b.software;
+			} },
+	};
+	return ListResponse(m_state, "clients", clients, WriteClientObject, params, kComps);
 }
 
 CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Request &req)
@@ -1940,7 +2125,21 @@ CHttpServer::Response CApiDispatcher::HandleSharedList(const CHttpServer::Reques
 		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
 	if (!a.ok)
 		return a.rejection;
-	return ListResponse(m_state, "shared", m_state.Shared(), WriteSharedObject);
+
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+	static const ListComparators<webapi::FileSnapshot> kComps = {
+		{ "name",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.name < b.name;
+			} },
+		{ "size",
+			[](const webapi::FileSnapshot &a, const webapi::FileSnapshot &b) {
+				return a.size < b.size;
+			} },
+	};
+	return ListResponse(m_state, "shared", m_state.Shared(), WriteSharedObject, params, kComps);
 }
 
 CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
@@ -2628,7 +2827,29 @@ CHttpServer::Response CApiDispatcher::HandleServers(const CHttpServer::Request &
 		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
 	if (!a.ok)
 		return a.rejection;
-	return ListResponse(m_state, "servers", m_state.Servers(), WriteServerObject);
+
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+	static const ListComparators<webapi::ServerSnapshot> kComps = {
+		{ "name",
+			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
+				return a.name < b.name;
+			} },
+		{ "users",
+			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
+				return a.users < b.users;
+			} },
+		{ "ping",
+			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
+				return a.ping_ms < b.ping_ms;
+			} },
+		{ "files",
+			[](const webapi::ServerSnapshot &a, const webapi::ServerSnapshot &b) {
+				return a.files < b.files;
+			} },
+	};
+	return ListResponse(m_state, "servers", m_state.Servers(), WriteServerObject, params, kComps);
 }
 
 namespace
@@ -3482,6 +3703,35 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	const std::vector<webapi::SearchResult> results_vec = m_state.Search();
 	const webapi::SearchProgressSnapshot progress = m_state.SearchProgress();
 
+	// #357 pagination/sort. This endpoint keeps its own envelope (the
+	// `progress` object rides alongside `results`), so it can't call
+	// ListResponse, but it shares the window + page-meta helpers.
+	ListParams params;
+	if (auto err = ParseListParams(QueryOf(req), params))
+		return *err;
+	static const ListComparators<webapi::SearchResult> kComps = {
+		{ "name",
+			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
+				return a.name < b.name;
+			} },
+		{ "size",
+			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
+				return a.size < b.size;
+			} },
+		{ "sources",
+			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
+				return a.source_count < b.source_count;
+			} },
+		{ "rating",
+			[](const webapi::SearchResult &a, const webapi::SearchResult &b) {
+				return a.rating < b.rating;
+			} },
+	};
+	std::vector<const webapi::SearchResult *> window;
+	std::size_t total = 0;
+	if (auto err = BuildListWindow(results_vec, params, kComps, window, total))
+		return *err;
+
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
@@ -3489,9 +3739,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	w.BeginObject();
 	w.Key("results");
 	w.BeginArray();
-	for (const auto &item : results_vec)
-		WriteSearchObject(w, item);
+	for (const webapi::SearchResult *item : window)
+		WriteSearchObject(w, *item);
 	w.EndArray();
+	WritePageMeta(w, total, params, window.size());
 	// Mirrors the `search_progress` SSE event field-for-field. `state`
 	// is canonical and encodes the full lifecycle (running / finished /
 	// idle), so we don't also emit redundant `active` / `complete`
