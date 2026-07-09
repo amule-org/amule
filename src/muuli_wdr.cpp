@@ -2383,8 +2383,8 @@ item9->SetName("kadScope");
     wxStaticText *item19 = new wxStaticText( parent, -1, _("Session average"), wxDefaultPosition, wxDefaultSize, 0 );
     item17->Add( item19, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item10->Add( item17, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-    item7->Add( item10, wxSizerFlags().Bottom().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
-    item2->Add( item7, wxSizerFlags(1).Expand().CenterVertical() );
+    item7->Add( item10, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
+    item2->Add( item7, wxSizerFlags(1).Expand() );
     item1->Add( item2, 0, wxGROW, 0 );
 
     wxStaticBox *item21 = new wxStaticBox( parent, -1, _("Bootstrap") );
@@ -2423,16 +2423,17 @@ item9->SetName("kadScope");
     wxButton *item36 = new wxButton( parent, ID_NODECONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item36->Enable( false );
     item22->Add( item36, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
-    item20->Add( item22, 0, wxALIGN_RIGHT, 0 );
+    item20->Add( item22, wxSizerFlags().Expand().Border(wxALL, 5) );
 
-    item20->Add( 20, 20, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Bootstrap actions stacked directly under the New node box, with
+    // padding but no filler spacers -- the column is top-aligned so the
+    // graph column beside it takes all the freed vertical space.
     wxButton *item37 = new wxButton( parent, ID_KNOWNNODECONNECT, _("Bootstrap from known clients"), wxDefaultPosition, wxDefaultSize, 0 );
-    item20->Add( item37, wxSizerFlags().Expand().CenterVertical() );
-    item20->Add( 20, 20, wxSizerFlags().Center().Border(wxALL, 5) );
+    item20->Add( item37, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
     wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Disconnect Kad"), wxDefaultPosition, wxDefaultSize, 0 );
-    item20->Add( item38, wxSizerFlags().Expand().CenterVertical() );
-    item1->Add( item20, wxSizerFlags().Expand().Right() );
-    item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
+    item20->Add( item38, wxSizerFlags().Expand().Border(wxALL, 5) );
+    item1->Add( item20, wxSizerFlags().Top() );
+    item0->Add( item1, wxSizerFlags(1).Expand() );
     if (set_sizer)
     {
         parent->SetSizer( item0 );
