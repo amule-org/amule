@@ -1701,8 +1701,7 @@ using ListComparators = std::vector<std::pair<std::string, std::function<bool(co
 
 std::unique_ptr<CHttpServer::Response> BadRequestPtr(const char *message)
 {
-	return std::unique_ptr<CHttpServer::Response>(
-		new CHttpServer::Response(ErrorResponse(400, "bad_request", message)));
+	return std::make_unique<CHttpServer::Response>(ErrorResponse(400, "bad_request", message));
 }
 
 // Parse ?limit/&offset/&sort/&order from a raw query string. `limit` is
