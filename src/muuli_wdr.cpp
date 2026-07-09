@@ -2193,14 +2193,11 @@ wxSizer *ServerInfoLog( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
-
     CMuleTextCtrl *item2 = new CMuleTextCtrl( parent, ID_SERVERINFO, "", wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL );
-    item1->Add( item2, wxSizerFlags(1).Expand().CenterHorizontal() );
-    wxButton *item3 = new wxButton( parent, ID_BTN_RESET_SERVER, _("Reset"), wxDefaultPosition, wxDefaultSize, 0 );
+    item0->Add( item2, wxSizerFlags(1).Expand().Border(wxALL, 5) );
+    wxButton *item3 = new wxButton( parent, ID_BTN_RESET_SERVER, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->SetToolTip( _("Click this button to reset the log.") );
-    item1->Add( item3, wxSizerFlags().Expand().CenterHorizontal().Border(wxALL, 5) );
-    item0->Add( item1, wxSizerFlags(1).Expand().CenterVertical() );
+    item0->Add( item3, wxSizerFlags().Right().Border(wxRIGHT|wxBOTTOM, 5) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );
@@ -2355,9 +2352,11 @@ item9->SetName("kadScope");
     wxASSERT( item9 );
     item7->Add( item9, 1, wxGROW, 5 );
 
+    // Three legend entries packed tight at the left. No growable columns:
+    // the row is Expand()ed so Linux has room to draw every label (avoids
+    // clipping "Session average"), but without growable cols the entries
+    // stay next to each other instead of being spread across the width.
     wxFlexGridSizer *item10 = new wxFlexGridSizer( 3, 0, 0 );
-    item10->AddGrowableCol( 0 );
-    item10->AddGrowableCol( 1 );
 
     wxBoxSizer *item11 = new wxBoxSizer( wxHORIZONTAL );
 
