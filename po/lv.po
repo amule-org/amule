@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-09 15:24+0200\n"
-"PO-Revision-Date: 2026-07-08 13:30+0000\n"
+"PO-Revision-Date: 2026-07-09 14:36+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -426,7 +426,7 @@ msgstr ""
 #: src/amule.cpp:2138
 #, c-format
 msgid "ServerMessage: %s"
-msgstr ""
+msgstr "Servera ziņojums: %s"
 
 #: src/amule.cpp:2181 src/IP2Country.cpp:233 src/IPFilter.cpp:506
 #: src/ServerList.cpp:875
@@ -453,7 +453,7 @@ msgstr "Jūs izmantojiet novecojušu aMule versiju!"
 #: src/amule.cpp:2293
 #, c-format
 msgid "Your aMule version is %i.%i.%i and the latest version is %li.%li.%li"
-msgstr ""
+msgstr "Jūsu aMule versija — %i.%i.%i un jaunākā versija — %li.%li.%li"
 
 #: src/amule.cpp:2297
 msgid "The latest version can always be found at https://github.com/amule-org/amule/releases/latest"
@@ -847,7 +847,7 @@ msgstr ""
 #: src/amule-remote-gui.cpp:560 src/ExternalConnector.cpp:469
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
-msgstr ""
+msgstr "Neizdevās pieslēgties. Nevar izveidot savienojumu ar %s:%d\n"
 
 #: src/amule-remote-gui.cpp:567 src/amule-remote-gui.cpp:576
 msgid "Going down"
@@ -874,12 +874,12 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp:954 src/ExternalConn.cpp:1894
 msgid "Invalid link or already on list."
-msgstr ""
+msgstr "Nederīga saite vai jau ir sarakstā."
 
 #: src/amule-remote-gui.cpp:981
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
-msgstr ""
+msgstr "Nevar izveidot '%s' mapi '%s' kategorijai, turpinam izmantot '%s' mapi."
 
 #: src/amule-remote-gui.cpp:1765 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
@@ -901,7 +901,7 @@ msgstr "Nezināms"
 #: src/BaseClient.cpp:1381
 #, c-format
 msgid "Failed to retrieve shared files from user '%s'"
-msgstr ""
+msgstr "Neizdevās iegūt lietotāja '%s' kopīgoto datņu sarakstu"
 
 #: src/BaseClient.cpp:1632
 msgid "Searching buddy for lowid connection"
@@ -928,7 +928,7 @@ msgstr ""
 #: src/BaseClient.cpp:2083
 #, c-format
 msgid "NickName: %s ID: %u"
-msgstr ""
+msgstr "Iesauka: %s ID: %u"
 
 #: src/BaseClient.cpp:2085
 #, c-format
@@ -1542,7 +1542,7 @@ msgstr ""
 
 #: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:158
 msgid "Copy eD2k &link to clipboard"
-msgstr ""
+msgstr "Kopēt eD2k saiti starp&liktuvē"
 
 #: src/DownloadListCtrl.cpp:677 src/SharedFilesCtrl.cpp:167
 msgid "Copy feedback to clipboard"
@@ -1689,7 +1689,7 @@ msgstr[1] ""
 #: src/DownloadQueue.cpp:1492
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
-msgstr ""
+msgstr "Nederīga eD2k saite! KĻŪDA: %s"
 
 #: src/ExternalConn.cpp:340
 msgid "Client sent packet after authentication failed."
@@ -5305,9 +5305,8 @@ msgid "The shared-file exclusion pattern is not a valid regular expression. The 
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:1072 src/PrefsUnifiedDlg.cpp:1591
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "Nederīga protokola versija."
+msgstr "Nederīga regulārā izteiksme"
 
 #: src/PrefsUnifiedDlg.cpp:1149
 msgid ""

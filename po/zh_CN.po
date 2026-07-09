@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-09 15:24+0200\n"
-"PO-Revision-Date: 2026-07-08 13:29+0000\n"
+"PO-Revision-Date: 2026-07-09 14:34+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -3816,23 +3816,23 @@ msgstr "在共享文件夹中跟踪符号链接"
 
 #: src/muuli_wdr.cpp:1676
 msgid "Exclude files matching:"
-msgstr ""
+msgstr "排除文件匹配："
 
 #: src/muuli_wdr.cpp:1679
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr ""
+msgstr "以“|”分隔的通配符模式，例如 .DS_Store|Thumbs.db|*.tmp。不会共享文件名匹配的文件。匹配不区分大小写。"
 
 #: src/muuli_wdr.cpp:1683
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "模式是正则表达式"
 
 #: src/muuli_wdr.cpp:1684
 msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
-msgstr ""
+msgstr "启用后，整个字段是一个正则表达式（'|' 表示交替）。禁用后，它是一个以 '|' 分隔的通配符列表。"
 
 #: src/muuli_wdr.cpp:1694
 msgid "Show how many shared files the current pattern would exclude."
-msgstr ""
+msgstr "显示当前模式会排除多少共享文件。"
 
 #: src/muuli_wdr.cpp:1715
 msgid "Graphs"
@@ -3936,17 +3936,15 @@ msgstr "5 秒内最大新连接数"
 
 #: src/muuli_wdr.cpp:1829
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "并发 Kad 源查找"
 
 #: src/muuli_wdr.cpp:1831
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "FTP上传周期 (分钟)"
+msgstr "Kad 源重新搜索间隔（分钟）"
 
 #: src/muuli_wdr.cpp:1833
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "FTP上传周期 (分钟)"
+msgstr "源重新请求间隔（分钟）"
 
 #: src/muuli_wdr.cpp:1837
 msgid "File Buffer Size: 240000 bytes"
@@ -4117,13 +4115,12 @@ msgid "Enable Gzip compression"
 msgstr "启用 Gzip 压缩"
 
 #: src/muuli_wdr.cpp:2086
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "系统默认"
+msgstr "重置页面为默认"
 
 #: src/muuli_wdr.cpp:2087
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "重置当前页面设置为默认值。"
 
 #: src/muuli_wdr.cpp:2089 src/muuli_wdr.cpp:2172 src/ServerWnd.cpp:233
 #: src/ServerWnd.cpp:241
@@ -5400,12 +5397,11 @@ msgstr "-ED2K网络已启用。\n"
 
 #: src/PrefsUnifiedDlg.cpp:1070
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "共享文件排除模式不是有效的正则表达式。已禁用该筛选器。"
 
 #: src/PrefsUnifiedDlg.cpp:1072 src/PrefsUnifiedDlg.cpp:1591
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "非法协议版本。"
+msgstr "无效的正则表达式"
 
 #: src/PrefsUnifiedDlg.cpp:1149
 msgid ""
@@ -5495,11 +5491,11 @@ msgid "Choose a folder for %s"
 msgstr "为%s选择文件夹"
 
 #: src/PrefsUnifiedDlg.cpp:1593
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
-msgstr[0] "发现 %i 个已知共享文件"
-msgstr[1] "发现 %i 个已知共享文件"
+msgstr[0] "将排除 %u 个共享文件，共 %u 个"
+msgstr[1] "将排除 %u 个共享文件，共 %u 个"
 
 #: src/PrefsUnifiedDlg.cpp:1610
 msgid "Browse for videoplayer"
@@ -5524,12 +5520,11 @@ msgstr "未在 PATH 或标准安装位置找到 ffprobe。安装 ffmpeg（ffmpeg
 
 #: src/PrefsUnifiedDlg.cpp:1670
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "重置此页面设置为默认值?"
 
 #: src/PrefsUnifiedDlg.cpp:1671
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "系统默认"
+msgstr "重置为默认"
 
 #: src/PrefsUnifiedDlg.cpp:1698
 msgid "Edit server list"
@@ -6304,8 +6299,8 @@ msgstr[1] "发现 %i 个已知共享的文件， %i 个未知"
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "筛选器排除了 %i 个文件的共享"
+msgstr[1] "筛选器排除了 %i 个文件的共享"
 
 #: src/SharedFileList.cpp:477
 #, c-format

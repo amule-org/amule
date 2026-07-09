@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-09 15:24+0200\n"
-"PO-Revision-Date: 2026-07-08 13:24+0000\n"
+"PO-Revision-Date: 2026-07-09 14:26+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -3826,23 +3826,23 @@ msgstr "Segui i collegamenti simbolici nelle cartelle condivise"
 
 #: src/muuli_wdr.cpp:1676
 msgid "Exclude files matching:"
-msgstr ""
+msgstr "Escludi i file corrispondenti a:"
 
 #: src/muuli_wdr.cpp:1679
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr ""
+msgstr "Modelli con caratteri jolly separati da '|', ad es. .DS_Store|Thumbs.db|*.tmp. I file il cui nome corrisponde non vengono condivisi. La corrispondenza non distingue tra maiuscole e minuscole."
 
 #: src/muuli_wdr.cpp:1683
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "I pattern sono espressioni regolari"
 
 #: src/muuli_wdr.cpp:1684
 msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
-msgstr ""
+msgstr "Se attivato, l'intero campo è un'unica espressione regolare ('|' indica l'alternanza). Se disattivato, è un elenco di caratteri jolly separati da '|'."
 
 #: src/muuli_wdr.cpp:1694
 msgid "Show how many shared files the current pattern would exclude."
-msgstr ""
+msgstr "Mostra quanti file condivisi verrebbero esclusi dal pattern attuale."
 
 #: src/muuli_wdr.cpp:1715
 msgid "Graphs"
@@ -3946,17 +3946,15 @@ msgstr "Numero massimo nuove connessioni / 5 secondi"
 
 #: src/muuli_wdr.cpp:1829
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "Ricerche di fonti Kad simultanee"
 
 #: src/muuli_wdr.cpp:1831
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "Intervallo di aggiornamento FTP in minuti"
+msgstr "Intervallo tra le ricerche di fonti Kad (minuti)"
 
 #: src/muuli_wdr.cpp:1833
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "Intervallo di aggiornamento FTP in minuti"
+msgstr "Intervallo tra le richieste alle fonti (minuti)"
 
 #: src/muuli_wdr.cpp:1837
 msgid "File Buffer Size: 240000 bytes"
@@ -4127,13 +4125,12 @@ msgid "Enable Gzip compression"
 msgstr "Abilita compressione gzip"
 
 #: src/muuli_wdr.cpp:2086
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "Predefinita di sistema"
+msgstr "Ripristina i valori predefiniti della pagina"
 
 #: src/muuli_wdr.cpp:2087
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "Ripristina le impostazioni della pagina corrente ai loro valori predefiniti."
 
 #: src/muuli_wdr.cpp:2089 src/muuli_wdr.cpp:2172 src/ServerWnd.cpp:233
 #: src/ServerWnd.cpp:241
@@ -5409,12 +5406,11 @@ msgstr "- Rete ed2k abilitata.\n"
 
 #: src/PrefsUnifiedDlg.cpp:1070
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "Il pattern di esclusione dei file condivisi non è un'espressione regolare valida. Il filtro è stato lasciato disattivato."
 
 #: src/PrefsUnifiedDlg.cpp:1072 src/PrefsUnifiedDlg.cpp:1591
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "Versione protocollo non valida."
+msgstr "Espressione regolare non valida"
 
 #: src/PrefsUnifiedDlg.cpp:1149
 msgid ""
@@ -5504,11 +5500,11 @@ msgid "Choose a folder for %s"
 msgstr "Scegli una directory per i %s"
 
 #: src/PrefsUnifiedDlg.cpp:1593
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
-msgstr[0] "Trovati %i file condiviso conosciuto"
-msgstr[1] "Trovati %i file condivisi conosciuti"
+msgstr[0] "Escluderebbe %u di %u file condiviso"
+msgstr[1] "Escluderebbe %u di %u file condivisi"
 
 #: src/PrefsUnifiedDlg.cpp:1610
 msgid "Browse for videoplayer"
@@ -5533,12 +5529,11 @@ msgstr "ffprobe non trovato nel PATH né nei percorsi di installazione standard.
 
 #: src/PrefsUnifiedDlg.cpp:1670
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "Ripristinare le impostazioni di questa pagina ai loro valori predefiniti?"
 
 #: src/PrefsUnifiedDlg.cpp:1671
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "Predefinita di sistema"
+msgstr "Ripristina i valori predefiniti"
 
 #: src/PrefsUnifiedDlg.cpp:1698
 msgid "Edit server list"
@@ -6313,8 +6308,8 @@ msgstr[1] "Trovati %i file condivisi conosciuti, %i sconosciuti"
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Escluso %i file dalla condivisione tramite il filtro"
+msgstr[1] "Esclusi %i file dalla condivisione tramite il filtro"
 
 #: src/SharedFileList.cpp:477
 #, c-format
