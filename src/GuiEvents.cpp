@@ -582,6 +582,9 @@ void ServerThaw()
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_serverwnd && theApp->amuledlg->m_serverwnd->serverlistctrl) {
 		theApp->amuledlg->m_serverwnd->serverlistctrl->Thaw();
+		// A bulk (re)load just finished -- size the columns to their
+		// content once, now that every row is present.
+		theApp->amuledlg->m_serverwnd->serverlistctrl->FitColumnsToContent();
 	}
 #endif
 }

@@ -25,6 +25,8 @@
 
 #include "ServerListCtrl.h" // Interface declarations
 
+#include <algorithm> // Needed for std::max
+
 #include <common/MenuIDs.h>
 
 #include <wx/menu.h>
@@ -360,6 +362,35 @@ void CServerListCtrl::ShowServerCount()
 		label->SetLabel(CFormat(_("Servers (%i)")) % GetItemCount());
 		label->GetParent()->Layout();
 	}
+}
+
+void CServerListCtrl::FitColumnsToContent()
+{
+	// Upper bound for the Description column: descriptions can be very
+	// long (full forum URLs etc.), so cap it rather than let one row blow
+	// the column out. The other columns hold short, bounded values.
+	const int descMaxWidth = 300;
+
+	Freeze();
+	for (int col = 0; col < GetColumnCount(); ++col) {
+		// Leave hidden columns (width 0, e.g. the TCP/UDP flag columns or
+		// ones the user hid via the header menu) hidden.
+		if (GetColumnWidth(col) == 0) {
+			continue;
+		}
+
+		SetColumnWidth(col, wxLIST_AUTOSIZE);
+		const int contentWidth = GetColumnWidth(col);
+		SetColumnWidth(col, wxLIST_AUTOSIZE_USEHEADER);
+		const int headerWidth = GetColumnWidth(col);
+
+		int width = std::max(contentWidth, headerWidth);
+		if (col == COLUMN_SERVER_DESC && width > descMaxWidth) {
+			width = descMaxWidth;
+		}
+		SetColumnWidth(col, width);
+	}
+	Thaw();
 }
 
 void CServerListCtrl::OnItemActivated(wxListEvent &event)

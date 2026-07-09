@@ -127,6 +127,14 @@ public:
 	 */
 	void ShowServerCount();
 
+	/**
+	 * Resize every visible column to fit its content (and at least its
+	 * header). The Description column is capped so a very long description
+	 * cannot dominate the list. Meant to be called once after a bulk
+	 * (re)load, not on every per-server refresh.
+	 */
+	void FitColumnsToContent();
+
 protected:
 	/// Return old column order.
 	wxString GetOldColumnOrder() const;
