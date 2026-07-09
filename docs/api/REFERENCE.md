@@ -1288,6 +1288,12 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. The matchi
 
 ## Backward compatibility
 
-`/api/v0/` is frozen against any breaking change. Endpoints may add new fields to response bodies and new optional fields to request bodies; clients SHOULD ignore unknown fields. Renaming, removing, or tightening a field's type is a v1 affair.
+`/api/v0/` is frozen against any breaking change once released. Within a version only **additive** changes are made, and a conformant client must tolerate them:
+
+- **New endpoints** may be added at any time.
+- **New optional query parameters** may be added to existing endpoints, always with a backward-compatible default — omitting the parameter preserves the prior behaviour (as the list-pagination `limit`/`offset`/`sort`/`order` params did).
+- **New fields** may be added to response bodies, and new optional fields to request bodies. Clients **MUST ignore unknown fields**, and must not depend on field order or on a field's absence.
+
+Anything that could break a conformant client — renaming, removing, or retyping a field; changing a field's semantics or an endpoint's default behaviour; making an optional input required; or removing an endpoint — is deferred to the next version (`/api/v1/`) rather than applied in place.
 
 `POST /api/v0/auth/login`'s default body shape (no token unless `?type=bearer`) IS a change from the very first amuleapi cuts; the legacy "token always in body" behaviour is reachable only via the opt-in. This is documented and committed.
