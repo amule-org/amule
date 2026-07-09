@@ -23,7 +23,7 @@ const isUp = (c) => (c.upload_speed_bps || 0) > 0 || ACTIVE(c.upload_state);
 const ALL = ["all", "downloads", "uploads"];
 const DL = ["all", "downloads"];
 const UL = ["all", "uploads"];
-const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software_version].filter(Boolean).join(" ") || "—";
+const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
 const rankLabel = (c) => !c.remote_queue_rank ? "—" : c.remote_queue_rank >= 0xFFFF ? t("downloads_peer_queue_full") : c.remote_queue_rank;
 const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
 
