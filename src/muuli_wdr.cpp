@@ -38,6 +38,7 @@
 #include "muuli_wdr.h"
 
 #include <wx/intl.h>
+#include <wx/wrapsizer.h> // Needed for the responsive statistics legends
 
 // Euro sign hack of the year
 #if wxUSE_UNICODE
@@ -892,9 +893,9 @@ wxSizer *statsDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 item3->SetName("dloadScope");
     wxASSERT( item3 );
     item1->Add( item3, wxSizerFlags(1).Expand().Border(wxALL, 5) );
-    wxFlexGridSizer *item4 = new wxFlexGridSizer( 2, 0, 0 );
-    item4->AddGrowableCol( 0 );
-    item4->AddGrowableCol( 1 );
+    // Responsive legend: a wrap sizer keeps all three entries on one row
+    // when the graph is wide, and wraps them to 2/1 columns as it narrows.
+    wxWrapSizer *item4 = new wxWrapSizer( wxHORIZONTAL );
 
     wxBoxSizer *item5 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -920,7 +921,7 @@ item3->SetName("dloadScope");
     wxStaticText *item13 = new wxStaticText( parent, -1, _("Session average"), wxDefaultPosition, wxDefaultSize, 0 );
     item11->Add( item13, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item4->Add( item11, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-    item1->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
+    item1->Add( item4, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxBOTTOM, 5) );
     wxStaticBox *item15 = new wxStaticBox( parent, -1, _("Upload-Speed") );
     wxStaticBoxSizer *item14 = new wxStaticBoxSizer( item15, wxVERTICAL );
@@ -929,9 +930,7 @@ item3->SetName("dloadScope");
 item16->SetName("uloadScope");
     wxASSERT( item16 );
     item14->Add( item16, wxSizerFlags(1).Expand().Border(wxALL, 5) );
-    wxFlexGridSizer *item17 = new wxFlexGridSizer( 2, 0, 0 );
-    item17->AddGrowableCol( 0 );
-    item17->AddGrowableCol( 1 );
+    wxWrapSizer *item17 = new wxWrapSizer( wxHORIZONTAL );
 
     wxBoxSizer *item18 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -957,7 +956,7 @@ item16->SetName("uloadScope");
     wxStaticText *item26 = new wxStaticText( parent, -1, _("Session average"), wxDefaultPosition, wxDefaultSize, 0 );
     item24->Add( item26, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item17->Add( item24, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-    item14->Add( item17, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
+    item14->Add( item17, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
     item0->Add( item14, wxSizerFlags(1).Expand().Border(wxBOTTOM, 5) );
     wxStaticBox *item28 = new wxStaticBox( parent, -1, _("Connections") );
     wxStaticBoxSizer *item27 = new wxStaticBoxSizer( item28, wxVERTICAL );
@@ -966,9 +965,7 @@ item16->SetName("uloadScope");
 item29->SetName("otherScope");
     wxASSERT( item29 );
     item27->Add( item29, wxSizerFlags(1).Expand().Border(wxALL, 5) );
-    wxFlexGridSizer *item30 = new wxFlexGridSizer( 2, 0, 0 );
-    item30->AddGrowableCol( 0 );
-    item30->AddGrowableCol( 1 );
+    wxWrapSizer *item30 = new wxWrapSizer( wxHORIZONTAL );
 
     wxBoxSizer *item31 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -994,7 +991,7 @@ item29->SetName("otherScope");
     wxStaticText *item39 = new wxStaticText( parent, -1, _("Active uploads"), wxDefaultPosition, wxDefaultSize, 0 );
     item37->Add( item39, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item30->Add( item37, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-    item27->Add( item30, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
+    item27->Add( item30, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
     item0->Add( item27, wxSizerFlags(1).Expand().Border(wxALL, 5) );
     wxStaticBox *item41 = new wxStaticBox( parent, -1, _("Statistics Tree") );
     wxStaticBoxSizer *item40 = new wxStaticBoxSizer( item41, wxVERTICAL );
