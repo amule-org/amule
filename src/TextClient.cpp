@@ -1382,6 +1382,16 @@ int CamulecmdApp::OnRun()
 
 // Stub functions needed by the linker in ASIO builds
 #include "GuiEvents.h"
+
+// MULE_EVT_NOTIFY is declared in GuiEvents.h and referenced by the header-inline
+// CMuleGUIEvent (its ctor and Clone()) that this console binary pulls in, but amulecmd
+// links no TU that defines it: GuiEvents.cpp lives in muleappcore and WebInterface.cpp
+// in the webserver, neither of which amulecmd links. Non-LTO builds dead-strip the
+// unused inline copies before the symbol is demanded; LTO keeps the CMuleGUIEvent vtable
+// and the reference survives to the final link, so the definition must live here. Same
+// per-binary event-definition pattern as MULE_EVT_LOGLINE in LoggerConsole.cpp.
+wxDEFINE_EVENT(MULE_EVT_NOTIFY, wxEvent);
+
 namespace MuleNotify
 {
 void HandleNotification(const class CMuleNotiferBase &) {}
