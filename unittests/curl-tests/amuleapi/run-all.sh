@@ -201,6 +201,7 @@ PHASES=(
 	26-rfc-followup-endpoints.sh
 	27-static-frontend.sh
 	28-list-pagination-sort.sh
+	29-bulk-mutations.sh
 )
 
 # Override list from the command line if given.

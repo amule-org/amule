@@ -144,7 +144,10 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
 _assert_status 202 "POST /downloads (Ubuntu ISO) → 202"
-_assert_json_eq '.ok' true 'POST /downloads response.ok==true'
+# Unified per-item envelope (#358): one accepted result keyed by the link.
+_assert_json_eq '.results | length' 1 'POST /downloads returns one result'
+_assert_json_eq '.results[0].ok' true 'POST /downloads results[0].ok==true'
+_assert_json_eq ".results[0].id" "$TEST_LINK" 'POST /downloads results[0].id echoes the link'
 
 # Poll until the new partfile surfaces in /downloads (amuled's ADD_LINK
 # is async — allocation + hashing happen post-roundtrip). Bound at

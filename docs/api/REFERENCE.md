@@ -9,7 +9,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Cross-cutting concerns**
 - [Base URL and transport](#base-url-and-transport)
 - [Authentication](#authentication) — [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
-- [Response model](#response-model) — [Success envelope](#success-envelope), [List pagination and sorting](#list-pagination-and-sorting), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
+- [Response model](#response-model) — [Success envelope](#success-envelope), [List pagination and sorting](#list-pagination-and-sorting), [Bulk mutations and the `results` envelope](#bulk-mutations-and-the-results-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
 - [Error code catalog](#error-code-catalog)
 - [Backward compatibility](#backward-compatibility)
 
@@ -26,6 +26,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
 - [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view; `{hash}` is the 32-char MD4 hex hash
 - [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
+- [`PATCH /api/v0/downloads`](#patch-apiv0downloads) — bulk pause / resume / priority / category
+- [`DELETE /api/v0/downloads`](#delete-apiv0downloads) — bulk cancel + remove
 - [`PATCH /api/v0/downloads/{hash}`](#patch-apiv0downloadshash) — pause / resume / priority / category
 - [`DELETE /api/v0/downloads/{hash}`](#delete-apiv0downloadshash) — cancel + remove
 - [`POST /api/v0/downloads/clear_completed`](#post-apiv0downloadsclear_completed) — bulk-clear completed staging buffer
@@ -36,6 +38,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Shared files**
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
+- [`PATCH /api/v0/shared`](#patch-apiv0shared) — bulk change upload priority
 - [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
 
 **Servers**
@@ -164,6 +167,33 @@ Omitting all four parameters preserves the previous response exactly, plus the a
 | `GET /shared`         | `name`, `size` |
 | `GET /servers`        | `name`, `users`, `ping`, `files` |
 | `GET /search/results` | `name`, `size`, `sources`, `rating` |
+
+### Bulk mutations and the `results` envelope
+
+Every mutation that operates on more than one item — `POST /downloads`, `PATCH /downloads`, `DELETE /downloads`, `PATCH /shared` — reports one entry per input item under a unified `results` array, so a client submitting N items learns the fate of each rather than an aggregate counter or a first-error-only summary:
+
+```json
+{
+  "results": [
+    { "id": "8b54a3c2…", "ok": true },
+    { "id": "0011…",     "ok": false, "error": { "code": "not_found", "message": "no download with that hash" } }
+  ]
+}
+```
+
+- `id` — the item key: the MD4 hash for `/downloads` and `/shared`, or the submitted ed2k link for `POST /downloads`.
+- `ok` — whether that single item's mutation succeeded.
+- `error` — present only when `ok` is false; same `{code,message}` shape as the top-level [error envelope](#error-envelope).
+
+Processing is **best-effort per item** — each item is an independent EC roundtrip, so a mid-batch failure does not abort the rest. The **HTTP status aggregates** the batch:
+
+| Status | Meaning |
+|--------|---------|
+| `200 OK` (`202 Accepted` for the async `POST /downloads` add) | every item succeeded |
+| `207 Multi-Status` | a mix — inspect each `results[].ok` |
+| `503 ec_unavailable` | *every* item failed because the daemon was unreachable |
+
+A malformed **request** (missing/empty `hashes`, an invalid patch field) is still a top-level `400 bad_request` and returns the plain error envelope, not `results`. The `hashes` array is capped at 500 entries.
 
 ### Localization and number formatting
 
@@ -467,21 +497,48 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads"
 ```
 
-**Response:** `202 Accepted` (all links accepted), `207 Multi-Status` (partial), or `503 ec_unavailable` (every link rejected by EC).
+**Response:** `202 Accepted` (all links accepted — the add is asynchronous: amuled allocates and hashes the partfile before it surfaces in `GET /downloads`, typically within one refresher tick), `207 Multi-Status` (partial), or `503 ec_unavailable` (every link blocked by an EC disconnect). Per-item outcomes use the shared [bulk `results` envelope](#bulk-mutations-and-the-results-envelope), keyed by the submitted link:
 
 ```json
 {
-  "ok": true,
-  "accepted": 1,
-  "failed": 1,
-  "disconnected": 0,
-  "accepted_links": ["ed2k://|file|a|...|/"],
-  "failed_links":   ["ed2k://|file|b|...|/"],
-  "first_error":    "malformed ed2k link"
+  "results": [
+    { "id": "ed2k://|file|a|...|/", "ok": true },
+    { "id": "ed2k://|file|b|...|/", "ok": false,
+      "error": { "code": "amuled_rejected", "message": "malformed ed2k link" } }
+  ]
 }
 ```
 
-**Errors:** `400 bad_request` (malformed body, both forms used, non-string link), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (malformed body, both forms used, non-string link, link not starting with `ed2k://`), `503 ec_unavailable`.
+
+#### `PATCH /api/v0/downloads`
+
+**Auth:** `ADMIN`
+
+Bulk pause/resume, priority, or category change over multiple downloads — the same patch applied to every listed hash.
+
+**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `status` (`"paused"` | `"resumed"`), `priority` (`low` | `normal` | `high` | `release` | `auto`), `category` (integer 0–255).
+
+```sh
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"hashes":["8b54a3c2…","0a1b2c3d…"],"priority":"high"}' "http://$HOST/api/v0/downloads"
+```
+
+**Response:** the [bulk `results` envelope](#bulk-mutations-and-the-results-envelope) (`200` all ok / `207` partial / `503`), keyed by hash. Per-item `error.code` is `not_found`, `amuled_rejected`, or `ec_unavailable`.
+
+**Errors:** `400 bad_request` (missing/empty `hashes`, no patch field present, invalid field value), `503 ec_unavailable`.
+
+#### `DELETE /api/v0/downloads`
+
+**Auth:** `ADMIN`
+
+Bulk cancel + remove of active downloads (deletes each `.part`/`.met` from disk). A completed entry is rejected per-item with `completed_use_clear_completed` — clear those via `POST /downloads/clear_completed`.
+
+**Body:** `{ "hashes": ["<md4>", …] }` (non-empty, max 500).
+
+**Response:** the [bulk `results` envelope](#bulk-mutations-and-the-results-envelope), keyed by hash. Per-item `error.code` is `not_found`, `completed_use_clear_completed`, `amuled_rejected`, or `ec_unavailable`.
+
+**Errors:** `400 bad_request` (missing/empty `hashes`), `503 ec_unavailable`.
 
 #### `PATCH /api/v0/downloads/{hash}`
 
@@ -673,6 +730,18 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 Returns `202 Accepted`.
 
 **Errors:** `503 ec_unavailable`.
+
+#### `PATCH /api/v0/shared`
+
+**Auth:** `ADMIN`
+
+Bulk upload-priority change over multiple shared files — the same `priority` applied to every listed hash.
+
+**Body:** `{ "hashes": ["<md4>", …], "priority": "<level>" }` — a non-empty `hashes` array (max 500) plus a required `priority` (`very_low` | `low` | `normal` | `high` | `release` | `auto`).
+
+**Response:** the [bulk `results` envelope](#bulk-mutations-and-the-results-envelope) (`200` all ok / `207` partial / `503`), keyed by hash. Per-item `error.code` is `not_found`, `amuled_rejected`, or `ec_unavailable`.
+
+**Errors:** `400 bad_request` (missing/empty `hashes`, missing/invalid `priority`), `503 ec_unavailable`.
 
 #### `PATCH /api/v0/shared/{hash}`
 

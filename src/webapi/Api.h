@@ -108,6 +108,9 @@ private:
 	// clear completed downloads.
 	CHttpServer::Response HandleDownloadDelete(const CHttpServer::Request &, const std::string &key);
 	CHttpServer::Response HandleDownloadsClearCompleted(const CHttpServer::Request &);
+	// bulk mutations over a `hashes` array, per-item `results` envelope (#358).
+	CHttpServer::Response HandleDownloadsBulkPatch(const CHttpServer::Request &);
+	CHttpServer::Response HandleDownloadsBulkDelete(const CHttpServer::Request &);
 	// server lifecycle.
 	CHttpServer::Response HandleServerAdd(const CHttpServer::Request &);
 	CHttpServer::Response HandleServerConnect(const CHttpServer::Request &, const std::string &ecid_str);
@@ -132,6 +135,8 @@ private:
 	CHttpServer::Response HandleKadBootstrap(const CHttpServer::Request &);
 	// shared file priority PATCH. `key` = hash OR ECID.
 	CHttpServer::Response HandleSharedPatch(const CHttpServer::Request &, const std::string &key);
+	// bulk shared-priority PATCH over a `hashes` array (#358).
+	CHttpServer::Response HandleSharedBulkPatch(const CHttpServer::Request &);
 
 	// Static-frontend fallthrough. Resolves `url_path` under
 	// ServerCfg().static_root, returns the file with a content-type

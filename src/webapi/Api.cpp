@@ -698,7 +698,16 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			// add a download by ed2k link.
 			return HandleDownloadAdd(req);
 		}
-		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / POST on /downloads");
+		if (req.method == "PATCH") {
+			// bulk pause/resume/priority/category over {hashes:[...]}.
+			return HandleDownloadsBulkPatch(req);
+		}
+		if (req.method == "DELETE") {
+			// bulk cancel+remove over {hashes:[...]}.
+			return HandleDownloadsBulkDelete(req);
+		}
+		return ErrorResponse(
+			405, "method_not_allowed", "only GET / HEAD / POST / PATCH / DELETE on /downloads");
 	}
 
 	// bulk clear-completed.
@@ -721,10 +730,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	}
 
 	if (path == "/api/v0/shared") {
-		if (req.method != "GET" && req.method != "HEAD") {
-			return ErrorResponse(405, "method_not_allowed", "only GET on /shared");
+		if (req.method == "GET" || req.method == "HEAD") {
+			return HandleSharedList(req);
 		}
-		return HandleSharedList(req);
+		if (req.method == "PATCH") {
+			// bulk upload-priority PATCH over {hashes:[...], priority}.
+			return HandleSharedBulkPatch(req);
+		}
+		return ErrorResponse(405, "method_not_allowed", "only GET / HEAD / PATCH on /shared");
 	}
 
 	if (path == "/api/v0/shared/reload") {
@@ -2183,6 +2196,121 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	return r;
 }
 
+namespace
+{
+
+// --- Bulk mutation results (issue #358) -------------------------------
+// Every bulk mutation (POST /downloads, PATCH/DELETE /downloads,
+// PATCH /shared) reports one entry per input item under a unified
+// `results` array, so a client that submits N items learns the fate of
+// each without parallel arrays or a first-error-only summary.
+struct BulkItem
+{
+	std::string id; // the item key: ed2k link or MD4 hash
+	bool ok = false;
+	int http = 200;      // per-item semantic status; used only to aggregate
+	std::string code;    // error code   (when !ok)
+	std::string message; // error message (when !ok)
+};
+
+BulkItem BulkOk(const std::string &id)
+{
+	BulkItem b;
+	b.id = id;
+	b.ok = true;
+	return b;
+}
+
+BulkItem BulkErr(const std::string &id, int http, const char *code, const std::string &message)
+{
+	BulkItem b;
+	b.id = id;
+	b.ok = false;
+	b.http = http;
+	b.code = code;
+	b.message = message;
+	return b;
+}
+
+// Emit `{"results":[{"id","ok"[,"error":{"code","message"}]}]}`. Aggregate
+// status: every item ok -> `all_ok_status`; every item failed because the
+// daemon was unreachable (503) -> 503; any other mix -> 207 Multi-Status.
+CHttpServer::Response BulkResultsResponse(const std::vector<BulkItem> &items, int all_ok_status)
+{
+	bool all_ok = true;
+	bool all_unreachable = !items.empty();
+	for (const auto &it : items) {
+		if (!it.ok) {
+			all_ok = false;
+			if (it.http != 503)
+				all_unreachable = false;
+		} else {
+			all_unreachable = false;
+		}
+	}
+
+	CHttpServer::Response r;
+	r.status = all_ok ? all_ok_status : (all_unreachable ? 503 : 207);
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("results");
+	w.BeginArray();
+	for (const auto &it : items) {
+		w.BeginObject();
+		w.Key("id");
+		w.ValueString(wxString::FromUTF8(it.id.c_str()));
+		w.Key("ok");
+		w.ValueBool(it.ok);
+		if (!it.ok) {
+			w.Key("error");
+			w.BeginObject();
+			w.Key("code");
+			w.ValueString(wxString::FromUTF8(it.code.c_str()));
+			w.Key("message");
+			w.ValueString(wxString::FromUTF8(it.message.c_str()));
+			w.EndObject();
+		}
+		w.EndObject();
+	}
+	w.EndArray();
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// Extract a non-empty `hashes` string array (max 500) from a parsed body.
+// On any shape problem fills `err` with a 400 and returns false.
+bool ParseBulkHashes(const picojson::object &obj, std::vector<std::string> &out, CHttpServer::Response &err)
+{
+	const auto it = obj.find("hashes");
+	if (it == obj.end() || !it->second.is<picojson::array>()) {
+		err = ErrorResponse(400, "bad_request", "`hashes` must be an array of 32-char hex strings");
+		return false;
+	}
+	const auto &arr = it->second.get<picojson::array>();
+	if (arr.empty()) {
+		err = ErrorResponse(400, "bad_request", "`hashes` must contain at least one entry");
+		return false;
+	}
+	if (arr.size() > 500) {
+		err = ErrorResponse(400, "bad_request", "`hashes` may contain at most 500 entries");
+		return false;
+	}
+	out.clear();
+	out.reserve(arr.size());
+	for (const auto &v : arr) {
+		if (!v.is<std::string>()) {
+			err = ErrorResponse(400, "bad_request", "`hashes` entries must be strings");
+			return false;
+		}
+		out.push_back(v.get<std::string>());
+	}
+	return true;
+}
+
+} // namespace
+
 CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Request &req)
 {
 	auto a = AuthenticateRequestRateLimited(
@@ -2275,10 +2403,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	// the whole picture at the end — never short-circuit on an EC
 	// blip mid-batch (an unconditional 503 would silently throw away
 	// the links amuled already queued from earlier iterations).
-	std::vector<std::string> accepted_links;
-	std::vector<std::string> failed_links;
-	std::vector<std::string> ec_disconnected_links;
-	std::string first_error;
+	// Unified per-item envelope (#358): one `results` entry per submitted
+	// link, keyed by the link itself. amuleapi is not yet shipped, so this
+	// deliberately replaces the previous ok/accepted/failed counter shape
+	// rather than extending it -- there are no released clients to break.
+	std::vector<BulkItem> results;
+	results.reserve(links.size());
 	for (const auto &link : links) {
 		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_ADD_LINK));
 		CECTag link_tag(EC_TAG_STRING, wxString::FromUTF8(link.c_str()));
@@ -2286,22 +2416,18 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 		ec_req->AddTag(link_tag);
 		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 		if (!ec_resp) {
-			ec_disconnected_links.push_back(link);
-			if (first_error.empty()) {
-				first_error = "EC roundtrip failed for ADD_LINK";
-			}
+			results.push_back(
+				BulkErr(link, 503, "ec_unavailable", "EC roundtrip failed for ADD_LINK"));
 			continue;
 		}
 		std::string ec_err_msg;
-		const bool failed = IsEcFailedResponse(ec_resp, ec_err_msg);
-		delete ec_resp;
-		if (failed) {
-			failed_links.push_back(link);
-			if (first_error.empty())
-				first_error = ec_err_msg;
-		} else {
-			accepted_links.push_back(link);
+		if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+			delete ec_resp;
+			results.push_back(BulkErr(link, 400, "amuled_rejected", ec_err_msg));
+			continue;
 		}
+		delete ec_resp;
+		results.push_back(BulkOk(link));
 	}
 
 	// Inline-refresh the cache so the response sees post-mutation
@@ -2313,64 +2439,10 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	// the new entry.
 	(void)RefresherTick(m_app, m_state);
 
-	CHttpServer::Response r;
-	// 202 (all clean), 207 (any rejection or mid-batch disconnect
-	// with at least one accept), 503 (every link blocked by an EC
-	// disconnect — the operator's amuled is unreachable and nothing
-	// could land at all). 207 is per the partial-success convention
-	// documented in QUICKSTART.
-	const bool all_ok = failed_links.empty() && ec_disconnected_links.empty();
-	const bool none_landed = accepted_links.empty();
-	r.status = all_ok ? 202 : (none_landed && !ec_disconnected_links.empty()) ? 503 : 207;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key("ok");
-	w.ValueBool(all_ok);
-	w.Key("accepted");
-	w.ValueInt(static_cast<int64_t>(accepted_links.size()));
-	w.Key("failed");
-	w.ValueInt(static_cast<int64_t>(failed_links.size()));
-	w.Key("disconnected");
-	w.ValueInt(static_cast<int64_t>(ec_disconnected_links.size()));
-	if (!accepted_links.empty()) {
-		w.Key("accepted_links");
-		w.BeginArray();
-		for (const auto &l : accepted_links) {
-			w.ValueString(wxString::FromUTF8(l.c_str()));
-		}
-		w.EndArray();
-	}
-	if (!failed_links.empty()) {
-		w.Key("failed_links");
-		w.BeginArray();
-		for (const auto &l : failed_links) {
-			w.ValueString(wxString::FromUTF8(l.c_str()));
-		}
-		w.EndArray();
-	}
-	if (!ec_disconnected_links.empty()) {
-		// Distinct from `failed_links` — amuled didn't reject these,
-		// it just wasn't there to receive them. Clients can retry
-		// this subset once /api/v0/status reports ec_connected=true.
-		w.Key("disconnected_links");
-		w.BeginArray();
-		for (const auto &l : ec_disconnected_links) {
-			w.ValueString(wxString::FromUTF8(l.c_str()));
-		}
-		w.EndArray();
-	}
-	if (!first_error.empty()) {
-		w.Key("first_error");
-		w.ValueString(wxString::FromUTF8(first_error.c_str()));
-	}
-	w.Key("message");
-	w.ValueString(wxString::FromUTF8("link(s) accepted; new downloads will appear after amuled has "
-					 "allocated and hashed the partfiles (typically within one "
-					 "refresher tick)"));
-	w.EndObject();
-	FinalizeJsonBody(w, r);
-	return r;
+	// All accepted -> 202 (async: amuled allocates + hashes the partfile
+	// before it surfaces in GET /downloads, typically within one tick); a
+	// mix -> 207; every link blocked by an EC disconnect -> 503.
+	return BulkResultsResponse(results, 202);
 }
 
 CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
@@ -4650,6 +4722,302 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	WriteSharedObject(w, s_after);
 	FinalizeJsonBody(w, r);
 	return r;
+}
+
+// --- Bulk mutations (issue #358) -------------------------------------
+// PATCH/DELETE /downloads and PATCH /shared take a `hashes` array and
+// apply the same op to each, reporting per-item outcomes under `results`
+// (see BulkResultsResponse). Best-effort per item -- each hash is an
+// independent EC roundtrip, so a mid-batch failure doesn't abort the
+// rest. One RefresherTick runs after the whole batch. All-ok is 200
+// (the mutations complete synchronously, unlike the async POST /downloads
+// add which is 202); a mix is 207 Multi-Status; an all-unreachable batch
+// collapses to 503.
+
+CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err))
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	const auto &obj = root.get<picojson::object>();
+
+	std::vector<std::string> hashes;
+	CHttpServer::Response bad;
+	if (!ParseBulkHashes(obj, hashes, bad))
+		return bad;
+
+	// Validate the patch ONCE -- the same op list applies to every hash, so
+	// a malformed patch is a 400 for the whole request; per-hash problems
+	// (not found, amuled rejection) surface per item. Fixed order
+	// (status, priority, category) keeps the wire effect deterministic.
+	struct PatchOp
+	{
+		ec_opcode_t op;
+		bool has_inner;
+		ec_tagname_t inner_name;
+		std::uint8_t inner_value;
+	};
+	std::vector<PatchOp> ops;
+	{
+		const auto it = obj.find("status");
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>())
+				return ErrorResponse(400,
+					"bad_request",
+					"`status` must be one of \"paused\" or \"resumed\"");
+			const std::string &v = it->second.get<std::string>();
+			if (v == "paused")
+				ops.push_back(
+					{ EC_OP_PARTFILE_PAUSE, false, static_cast<ec_tagname_t>(0), 0 });
+			else if (v == "resumed")
+				ops.push_back(
+					{ EC_OP_PARTFILE_RESUME, false, static_cast<ec_tagname_t>(0), 0 });
+			else
+				return ErrorResponse(400,
+					"bad_request",
+					"`status` must be one of \"paused\" or \"resumed\"");
+		}
+	}
+	{
+		const auto it = obj.find("priority");
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>())
+				return ErrorResponse(
+					400, "bad_request", "`priority` must be a wire-string enum");
+			std::uint8_t code = 0;
+			if (!DownloadPriorityToCode(it->second.get<std::string>(), code))
+				return ErrorResponse(400,
+					"bad_request",
+					"`priority` must be one of low, normal, high, release, auto");
+			ops.push_back({ EC_OP_PARTFILE_PRIO_SET, true, EC_TAG_PARTFILE_PRIO, code });
+		}
+	}
+	{
+		const auto it = obj.find("category");
+		if (it != obj.end()) {
+			if (!it->second.is<double>())
+				return ErrorResponse(
+					400, "bad_request", "`category` must be a non-negative integer");
+			const double v = it->second.get<double>();
+			if (v < 0 || v > 255)
+				return ErrorResponse(400, "bad_request", "`category` must be in [0, 255]");
+			ops.push_back({ EC_OP_PARTFILE_SET_CAT,
+				true,
+				EC_TAG_PARTFILE_CAT,
+				static_cast<std::uint8_t>(v) });
+		}
+	}
+	if (ops.empty())
+		return ErrorResponse(400,
+			"bad_request",
+			"request body must include at least one of `status`, `priority`, or `category`");
+
+	std::vector<BulkItem> results;
+	results.reserve(hashes.size());
+	for (const std::string &raw : hashes) {
+		std::string needle = raw;
+		std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+			return static_cast<char>(std::tolower(c));
+		});
+		webapi::FileSnapshot d;
+		if (!m_state.FindDownload(needle, d)) {
+			results.push_back(BulkErr(raw, 404, "not_found", "no download with that hash"));
+			continue;
+		}
+		CMD4Hash file_hash;
+		if (!HashFromHex(d.hash, file_hash)) {
+			results.push_back(
+				BulkErr(raw, 500, "internal_error", "failed to decode partfile hash"));
+			continue;
+		}
+		bool item_ok = true;
+		for (const PatchOp &pop : ops) {
+			std::unique_ptr<CECPacket> p(new CECPacket(pop.op));
+			CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
+			if (pop.has_inner)
+				hash_tag.AddTag(CECTag(pop.inner_name, pop.inner_value));
+			p->AddTag(hash_tag);
+			const CECPacket *ec_resp = m_app.SendRecvSerialized(p.get());
+			if (!ec_resp) {
+				results.push_back(BulkErr(raw, 503, "ec_unavailable", "EC roundtrip failed"));
+				item_ok = false;
+				break;
+			}
+			std::string ec_err;
+			if (IsEcFailedResponse(ec_resp, ec_err)) {
+				delete ec_resp;
+				results.push_back(BulkErr(raw, 400, "amuled_rejected", ec_err));
+				item_ok = false;
+				break;
+			}
+			delete ec_resp;
+		}
+		if (item_ok)
+			results.push_back(BulkOk(raw));
+	}
+	(void)RefresherTick(m_app, m_state);
+	return BulkResultsResponse(results, 200);
+}
+
+CHttpServer::Response CApiDispatcher::HandleDownloadsBulkDelete(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err))
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	const auto &obj = root.get<picojson::object>();
+
+	std::vector<std::string> hashes;
+	CHttpServer::Response bad;
+	if (!ParseBulkHashes(obj, hashes, bad))
+		return bad;
+
+	std::vector<BulkItem> results;
+	results.reserve(hashes.size());
+	for (const std::string &raw : hashes) {
+		std::string needle = raw;
+		std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+			return static_cast<char>(std::tolower(c));
+		});
+		webapi::FileSnapshot d;
+		if (!m_state.FindDownload(needle, d)) {
+			results.push_back(BulkErr(raw, 404, "not_found", "no download with that hash"));
+			continue;
+		}
+		// Same guard as the single-item DELETE: completed entries are not
+		// removable here (use POST /downloads/clear_completed).
+		if (d.download.status == "completed") {
+			results.push_back(BulkErr(raw,
+				409,
+				"completed_use_clear_completed",
+				"DELETE only removes active downloads; use POST "
+				"/downloads/clear_completed to clear a completed entry"));
+			continue;
+		}
+		CMD4Hash file_hash;
+		if (!HashFromHex(d.hash, file_hash)) {
+			results.push_back(
+				BulkErr(raw, 500, "internal_error", "failed to decode partfile hash"));
+			continue;
+		}
+		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_PARTFILE_DELETE));
+		ec_req->AddTag(CECTag(EC_TAG_PARTFILE, file_hash));
+		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+		if (!ec_resp) {
+			results.push_back(
+				BulkErr(raw, 503, "ec_unavailable", "EC roundtrip failed for DELETE"));
+			continue;
+		}
+		std::string ec_err;
+		if (IsEcFailedResponse(ec_resp, ec_err)) {
+			delete ec_resp;
+			results.push_back(BulkErr(raw, 400, "amuled_rejected", ec_err));
+			continue;
+		}
+		delete ec_resp;
+		results.push_back(BulkOk(raw));
+	}
+	(void)RefresherTick(m_app, m_state);
+	return BulkResultsResponse(results, 200);
+}
+
+CHttpServer::Response CApiDispatcher::HandleSharedBulkPatch(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err))
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	const auto &obj = root.get<picojson::object>();
+
+	std::vector<std::string> hashes;
+	CHttpServer::Response bad;
+	if (!ParseBulkHashes(obj, hashes, bad))
+		return bad;
+
+	// `priority` required + validated once for the whole batch.
+	const auto pit = obj.find("priority");
+	if (pit == obj.end())
+		return ErrorResponse(400, "bad_request", "request body must include `priority`");
+	if (!pit->second.is<std::string>())
+		return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
+	std::uint8_t code = 0;
+	if (!SharedPriorityToCode(pit->second.get<std::string>(), code))
+		return ErrorResponse(400,
+			"bad_request",
+			"`priority` must be one of very_low, low, normal, high, release, auto");
+
+	std::vector<BulkItem> results;
+	results.reserve(hashes.size());
+	for (const std::string &raw : hashes) {
+		std::string needle = raw;
+		std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+			return static_cast<char>(std::tolower(c));
+		});
+		webapi::FileSnapshot s;
+		if (!m_state.FindShared(needle, s)) {
+			results.push_back(BulkErr(raw, 404, "not_found", "no shared file with that hash"));
+			continue;
+		}
+		CMD4Hash file_hash;
+		if (!HashFromHex(s.hash, file_hash)) {
+			results.push_back(BulkErr(raw, 500, "internal_error", "failed to decode file hash"));
+			continue;
+		}
+		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SHARED_SET_PRIO));
+		CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
+		hash_tag.AddTag(CECTag(EC_TAG_PARTFILE_PRIO, code));
+		ec_req->AddTag(hash_tag);
+		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+		if (!ec_resp) {
+			results.push_back(BulkErr(
+				raw, 503, "ec_unavailable", "EC roundtrip failed for SHARED_SET_PRIO"));
+			continue;
+		}
+		std::string ec_err;
+		if (IsEcFailedResponse(ec_resp, ec_err)) {
+			delete ec_resp;
+			results.push_back(BulkErr(raw, 400, "amuled_rejected", ec_err));
+			continue;
+		}
+		delete ec_resp;
+		results.push_back(BulkOk(raw));
+	}
+	(void)RefresherTick(m_app, m_state);
+	return BulkResultsResponse(results, 200);
 }
 
 CHttpServer::Response CApiDispatcher::HandleSharedReload(const CHttpServer::Request &req)
