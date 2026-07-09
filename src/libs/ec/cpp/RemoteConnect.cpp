@@ -346,8 +346,9 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			m_ec_state = EC_OK;
 			result = true;
 			if (reply->GetTagByName(EC_TAG_SERVER_VERSION)) {
-				m_server_reply = _("Succeeded! Connection established to aMule ") +
-						 reply->GetTagByName(EC_TAG_SERVER_VERSION)->GetStringData();
+				m_serverVersion = reply->GetTagByName(EC_TAG_SERVER_VERSION)->GetStringData();
+				m_server_reply =
+					_("Succeeded! Connection established to aMule ") + m_serverVersion;
 			} else {
 				m_server_reply = _("Succeeded! Connection established.");
 			}

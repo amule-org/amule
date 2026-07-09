@@ -89,6 +89,13 @@ public:
 	// entries we didn't see this tick" path.
 	bool IsServerPartialUpdateActive();
 
+	// Version string of the connected amuled, captured from the
+	// EC_TAG_SERVER_VERSION tag of the AUTH_OK handshake. Empty string
+	// when EC is not (yet) connected, or when talking to a daemon old
+	// enough to omit the tag. Read under m_ec_mtx since m_ECClient is
+	// torn down / rebuilt across reconnects.
+	wxString GetDaemonVersion();
+
 	// Refresher needs the cache. Single CState instance per process.
 	webapi::CState &State() { return m_state; }
 

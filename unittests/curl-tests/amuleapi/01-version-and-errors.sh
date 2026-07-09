@@ -86,6 +86,15 @@ _assert_json_eq '.api_version' v0       '/api/v0/version reports api_version=v0'
 _assert_json_eq '.amule_version | length > 0' \
 	true '/api/v0/version reports a non-empty amule_version'
 
+# 2b. daemon_version field — the connected amuled's version, taken from
+#     the EC_TAG_SERVER_VERSION handshake tag. Distinct from
+#     amule_version (which is amuleapi's own build). The regression
+#     amuled is a live modern build that always advertises the tag, so
+#     assert it's populated. (Against a daemon old enough to omit the
+#     tag, or before EC connects, this field is legitimately empty.)
+_assert_json_eq '.daemon_version | length > 0' \
+	true '/api/v0/version reports a non-empty daemon_version'
+
 # 3. Method other than GET/HEAD → 405 with the canonical error envelope.
 _curl -X DELETE "$HOST/api/v0/version"
 _assert_status 405 "DELETE /api/v0/version yields 405"

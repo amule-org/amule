@@ -176,6 +176,10 @@ public:
 	}
 	void SendPacket(const CECPacket *request) { m_ECClient->SendPacket(request); }
 	bool IsServerPartialUpdateActive() const { return m_ECClient->ServerSupportsPartialUpdate(); }
+	// Version string of the connected core, from the EC AUTH_OK handshake.
+	// Empty when not connected (m_ECClient null) or when the daemon is old
+	// enough to omit the EC_TAG_SERVER_VERSION tag.
+	wxString GetServerVersion() const { return m_ECClient ? m_ECClient->GetServerVersion() : wxString(); }
 	void ConnectAndRun(const wxString &ProgName, const wxString &ProgVersion);
 	void ShowGreet();
 

@@ -277,9 +277,17 @@ curl -s http://$HOST/api/v0/version
 {
   "name": "amuleapi",
   "api_version": "v0",
-  "amule_version": "2.4.0-29-g..."
+  "amule_version": "2.4.0-29-g...",
+  "daemon_version": "2.4.0-29-g..."
 }
 ```
+
+| Field | Meaning |
+| --- | --- |
+| `name` | Always `"amuleapi"`. |
+| `api_version` | REST contract version served on this path (`"v0"`). |
+| `amule_version` | amuleapi's **own** build version. |
+| `daemon_version` | Version of the **connected amuled**, from the EC handshake. Empty string when EC is not (yet) connected, or when the daemon is old enough not to advertise it. Normally equal to `amule_version` (both are built from the same source tree), but they can differ if a mismatched amuleapi is pointed at a different amuled. |
 
 #### `GET /api/v0/status`
 

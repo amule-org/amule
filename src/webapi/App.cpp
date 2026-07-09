@@ -511,6 +511,14 @@ bool CamuleapiApp::IsServerPartialUpdateActive()
 	return CaMuleExternalConnector::IsServerPartialUpdateActive();
 }
 
+wxString CamuleapiApp::GetDaemonVersion()
+{
+	// Serialize with the rest of the EC access: m_ECClient is torn down
+	// and rebuilt across reconnects. The base accessor is null-safe.
+	std::lock_guard<std::mutex> lock(m_ec_mtx);
+	return CaMuleExternalConnector::GetServerVersion();
+}
+
 int CamuleapiApp::OnExit()
 {
 	// Tear down in reverse construction order: HTTP server first

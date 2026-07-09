@@ -1088,6 +1088,12 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	w.ValueString(wxT("v0"));
 	w.Key("amule_version");
 	w.ValueString(wxString::FromAscii(VERSION));
+	// Version of the connected amuled, from the EC handshake. Empty
+	// string when EC is not (yet) connected or the daemon predates the
+	// EC_TAG_SERVER_VERSION tag. Distinct from amule_version above,
+	// which is amuleapi's own build version.
+	w.Key("daemon_version");
+	w.ValueString(m_app.GetDaemonVersion());
 	w.EndObject();
 	const wxString js = w.GetBuffer();
 	const wxScopedCharBuffer ub = js.utf8_str();

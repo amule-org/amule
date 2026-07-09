@@ -81,6 +81,7 @@ private:
 
 	wxString m_connectionPassword;
 	wxString m_server_reply;
+	wxString m_serverVersion;
 	wxString m_client;
 	wxString m_version;
 
@@ -136,6 +137,11 @@ public:
 		const wxString &version);
 
 	const wxString &GetServerReply() const { return m_server_reply; }
+
+	// Version string of the connected aMule core, as reported in the
+	// EC_TAG_SERVER_VERSION tag of the AUTH_OK reply. Empty until the
+	// handshake completes (or if an old daemon omits the tag).
+	const wxString &GetServerVersion() const { return m_serverVersion; }
 
 	bool RequestFifoFull() { return m_req_count > m_req_fifo_thr; }
 
