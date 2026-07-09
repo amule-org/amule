@@ -95,16 +95,16 @@ CSharedFilesWnd::EClientShow CSharedFilesWnd::GetClientShowMode() const
 void CSharedFilesWnd::SetClientShowMode(EClientShow mode)
 {
 	switch (mode) {
-		case ClientShowSelected:
-			m_radioShowSelected->SetValue(true);
-			break;
-		case ClientShowUploading:
-			m_radioShowUploading->SetValue(true);
-			break;
-		case ClientShowAll:
-		default:
-			m_radioShowAll->SetValue(true);
-			break;
+	case ClientShowSelected:
+		m_radioShowSelected->SetValue(true);
+		break;
+	case ClientShowUploading:
+		m_radioShowUploading->SetValue(true);
+		break;
+	case ClientShowAll:
+	default:
+		m_radioShowAll->SetValue(true);
+		break;
 	}
 }
 

@@ -55,7 +55,7 @@
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "KadDlg.h"           // Needed for CKadDlg
 #include "Logger.h"
-#include "MuleTextCtrl.h"    // Needed for CMuleTextCtrl (fast-links placeholder)
+#include "MuleTextCtrl.h" // Needed for CMuleTextCtrl (fast-links placeholder)
 #include "MuleTrayIcon.h"
 #include "muuli_wdr.h"   // Needed for ID_BUTTON*
 #include "Preferences.h" // Needed for CPreferences
