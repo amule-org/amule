@@ -298,6 +298,11 @@ struct StatsTreeValue
 	std::uint64_t num = 0;
 	double dbl = 0.0;
 	std::string str;
+	// Locale-independent token for a well-known sentinel value
+	// (EC_TAG_STAT_VALUE_ENUM, e.g. "never"/"not_available"). Empty when the
+	// value is not a sentinel; surfaced as an additive "enum" field so
+	// clients need not match the English `value`/`str`.
+	std::string enum_token;
 	std::vector<StatsTreeValue> extra;
 };
 
@@ -312,6 +317,10 @@ struct StatsTreeNode
 	// Stable, untranslated machine key (EC_TAG_STAT_NODE_KEY). Empty when
 	// the node carries no key; omitted from JSON in that case.
 	std::string key;
+	// Raw, untranslated machine value for data-labelled nodes (client
+	// version / OS string), from EC_TAG_STAT_NODE_RAW. Empty when absent;
+	// surfaced as "raw" so clients need not parse it out of `label`.
+	std::string raw;
 	std::string label;
 	std::vector<StatsTreeValue> values;
 	std::vector<StatsTreeNode> children;

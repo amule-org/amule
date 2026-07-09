@@ -195,6 +195,9 @@ CECTag *CStatTreeItemBase::CreateECTag(uint32_t max_children)
 		if (!m_key.IsEmpty()) {
 			tag->AddTag(CECTag(EC_TAG_STAT_NODE_KEY, m_key));
 		}
+		if (!m_rawvalue.IsEmpty()) {
+			tag->AddTag(CECTag(EC_TAG_STAT_NODE_RAW, m_rawvalue));
+		}
 		AddECValues(tag);
 		m_visible_counter = max_children - 1;
 		for (std::list<CStatTreeItemBase *>::const_iterator it = m_children.begin();
@@ -590,16 +593,23 @@ void CStatTreeItemRatio::AddECValues(CECTag *tag) const
 	// CFormat (honours LC_NUMERIC) and translates "Not available" at the daemon
 	// locale, so the wire value uses GetString(true) instead. The GUI path
 	// (GetDisplayString -> GetString()) is unaffected.
+	const double v1 = static_cast<double>(m_counter1->GetValue());
+	const double v2 = static_cast<double>(m_counter2->GetValue());
 	CECTag value(EC_TAG_STAT_NODE_VALUE, GetString(true));
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_STRING));
+	// Same guard as GetString(): with no session ratio the value is the
+	// "Not available" sentinel -- tag it with a locale-independent token.
+	// The English string above stays for GUI/legacy consumers (which ignore
+	// this sub-tag); API clients prefer the token.
+	if (!(v1 > 0 && v2 > 0)) {
+		value.AddTag(CECTag(EC_TAG_STAT_VALUE_ENUM, wxString(wxT("not_available"))));
+	}
 	tag->AddTag(value);
 
 	// Raw numeric ratios (download-per-upload, i.e. received/sent) so API
 	// clients don't have to parse the composite string above. Distinct tag
 	// names, so the display formatter and legacy consumers ignore them.
 	// Same guards as GetString(): only emitted when both sides are > 0.
-	double v1 = static_cast<double>(m_counter1->GetValue());
-	double v2 = static_cast<double>(m_counter2->GetValue());
 	if (v1 > 0 && v2 > 0) {
 		tag->AddTag(CECTag(EC_TAG_STAT_NODE_RATIO, v2 / v1));
 	}
@@ -643,6 +653,7 @@ wxString CStatTreeItemMaxConnLimitReached::GetDisplayString() const
 void CStatTreeItemMaxConnLimitReached::AddECValues(CECTag *tag) const
 {
 	wxString result;
+	const bool never = (m_count == 0);
 	if (m_count) {
 		result = CFormat("%i : %s %s") % m_count % m_time.FormatISODate() % m_time.FormatISOTime();
 	} else {
@@ -650,6 +661,12 @@ void CStatTreeItemMaxConnLimitReached::AddECValues(CECTag *tag) const
 	}
 	CECTag value(EC_TAG_STAT_NODE_VALUE, result);
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_STRING));
+	// Additive, locale-independent token for the sentinel; the English
+	// display string above stays for GUI/legacy consumers (which ignore
+	// this sub-tag), API clients prefer the token.
+	if (never) {
+		value.AddTag(CECTag(EC_TAG_STAT_VALUE_ENUM, wxString(wxT("never"))));
+	}
 	tag->AddTag(value);
 }
 

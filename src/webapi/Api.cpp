@@ -3490,6 +3490,13 @@ void WriteStatsValue(CJsonWriter &w, const webapi::StatsTreeValue &v)
 		w.ValueString(wxString::FromUTF8(v.str.c_str()));
 		break;
 	}
+	// Additive, locale-independent token for well-known sentinel values
+	// ("never"/"not_available"); the English "value" above is kept so old
+	// clients keep working. Omitted when the value is not a sentinel.
+	if (!v.enum_token.empty()) {
+		w.Key("enum");
+		w.ValueString(wxString::FromUTF8(v.enum_token.c_str()));
+	}
 	// Optional nested sub-value (the parenthetical "(total …)" some nodes carry).
 	if (!v.extra.empty()) {
 		w.Key("extra");
@@ -3506,6 +3513,12 @@ void WriteStatsNode(CJsonWriter &w, const webapi::StatsTreeNode &n)
 	if (!n.key.empty()) {
 		w.Key("key");
 		w.ValueString(wxString::FromUTF8(n.key.c_str()));
+	}
+	// Raw machine value (client version / OS string) for data-labelled
+	// nodes; omitted when absent so clients read it without parsing `label`.
+	if (!n.raw.empty()) {
+		w.Key("raw");
+		w.ValueString(wxString::FromUTF8(n.raw.c_str()));
 	}
 	w.Key("label");
 	w.ValueString(wxString::FromUTF8(n.label.c_str()));

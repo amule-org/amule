@@ -1333,6 +1333,13 @@ void ExtractStatsValue(const CECTag *v, StatsTreeValue &out)
 		out.num = v->GetInt();
 		break;
 	}
+	// Locale-independent sentinel token, when the daemon tagged this value
+	// (e.g. "never"/"not_available"). Additive: the English string above is
+	// left intact; enum_token stays empty and is dropped otherwise.
+	const CECTag *et = v->GetTagByName(EC_TAG_STAT_VALUE_ENUM);
+	if (et) {
+		out.enum_token = std::string(et->GetStringData().utf8_str());
+	}
 	const CECTag *nested = v->GetTagByName(EC_TAG_STAT_NODE_VALUE);
 	if (nested) {
 		StatsTreeValue e;
@@ -1353,6 +1360,12 @@ void ParseStatsTreeNode(const CECTag *node, StatsTreeNode &out)
 	const CECTag *keyTag = n->GetTagByName(EC_TAG_STAT_NODE_KEY);
 	if (keyTag) {
 		out.key = std::string(keyTag->GetStringData().utf8_str());
+	}
+	// Raw machine value (client version / OS string) for data-labelled
+	// nodes. Legacy daemons omit it; out.raw stays empty and is dropped.
+	const CECTag *rawTag = n->GetTagByName(EC_TAG_STAT_NODE_RAW);
+	if (rawTag) {
+		out.raw = std::string(rawTag->GetStringData().utf8_str());
 	}
 	// Raw numeric ratio (download-per-upload), only present on the ratio node
 	// and only when the daemon could compute it. Legacy daemons omit both.

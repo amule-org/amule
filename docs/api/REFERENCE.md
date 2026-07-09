@@ -1098,11 +1098,13 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 
 A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
 
-The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty.
+The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "raw": "<value>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty. `key` and `raw` are optional (see below).
 
 `label` is the **untranslated English template** (e.g. `"Total uploaded: %s"`), and `values` are the **typed, raw** values that fill its `%s` placeholders in order — the client formats and localizes them. This keeps the response identical regardless of the amuleapi/amuled `--locale` (see [Response model](#response-model)). A container node (one that only groups children) has an empty `values` array.
 
-`key` is a **stable, machine-readable identifier** for the node (e.g. `"upload_data"`, `"ul_dl_ratio"`, `"servers_working"`). Unlike `label`, it does not change when the label is reworded, and it is never translated — use it to locate a specific field instead of matching on the label string. The `key` is optional: it is present only for nodes the daemon assigns one to, and it is omitted entirely when absent (older daemons that predate this field emit no `key` at all). Keys are unique within the tree.
+`key` is a **stable, machine-readable identifier** for the node (e.g. `"upload_data"`, `"ul_dl_ratio"`, `"servers_working"`). Unlike `label`, it does not change when the label is reworded, and it is never translated — use it to locate a specific field instead of matching on the label string. The `key` is optional: it is present only for nodes the daemon assigns one to, and it is omitted entirely when absent (older daemons that predate this field emit no `key` at all). Keys are unique among the fixed skeleton nodes; the dynamic per-client-software rows share a key by kind (see below).
+
+`raw` is the **raw, untranslated machine value** for nodes whose `label` is itself data — the per-client-software breakdown rows, where the label is a version or OS string (`"v0.70b: %s"`, `"Linux: %s"`). It carries just that value (`"v0.70b"`, `"Linux"`) so a client reads it directly instead of parsing it out of the `label`. Present only on those rows; omitted otherwise and on daemons that predate the field. These rows are grouped under the `client_versions` / `client_operating_system` container nodes and each row carries `key: "client_version"` / `key: "client_os"` — so the `key` tells you the kind and `raw` gives the value.
 
 Each value is `{ "type": "<type>", "value": <raw> }`:
 
@@ -1114,6 +1116,8 @@ Each value is `{ "type": "<type>", "value": <raw> }`:
 | `time` | number | raw seconds |
 | `double` | number | raw double |
 | `string` | string | opaque English string (e.g. a ratio, or `"Not available"`) |
+
+A `string` value that is a **well-known sentinel** additionally carries an `enum` field with a stable, locale-independent token — currently `"never"` (a "Never" timestamp, e.g. max-connection-limit-reached) and `"not_available"` (a ratio with no data yet). The English `value` is left in place unchanged, so this is purely additive: prefer `enum` when present and fall back to `value` otherwise. It is absent on non-sentinel values and on daemons that predate the field.
 
 A value may carry a nested `extra` value of the same shape — the parenthetical "(total …)" some nodes append (e.g. session vs. total transfer).
 
@@ -1150,6 +1154,26 @@ The UL:DL ratio node (`key: "ul_dl_ratio"`) additionally carries a `ratio` objec
       ]
     }
   ]
+}
+```
+
+A per-client-software version row (note `raw`), and a sentinel value (note the additive `enum`):
+
+```json
+{
+  "key": "client_version",
+  "raw": "v0.70b",
+  "label": "v0.70b: %s",
+  "values": [ { "type": "istring", "value": 42, "extra": { "type": "double", "value": 12.5 } } ],
+  "children": []
+}
+```
+
+```json
+{
+  "label": "Max Connection Limit Reached: %s",
+  "values": [ { "type": "string", "value": "Never", "enum": "never" } ],
+  "children": []
 }
 ```
 

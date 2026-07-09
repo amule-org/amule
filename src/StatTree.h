@@ -184,6 +184,24 @@ public:
 
 	//! Returns the stable machine key for this node (empty if none).
 	const wxString &GetKey() const { return m_key; }
+
+	/**
+	 * Attach a raw, untranslated machine value for a node whose label is
+	 * data (e.g. a client version or OS string). Serialized as
+	 * EC_TAG_STAT_NODE_RAW so API clients need not parse it out of the
+	 * composite label. Returns this node so the call can be chained.
+	 *
+	 * @param raw the raw value; empty means "none" (tag omitted).
+	 * @return this node.
+	 */
+	CStatTreeItemBase *SetRawValue(const wxString &raw)
+	{
+		m_rawvalue = raw;
+		return this;
+	}
+
+	//! Returns the raw machine value for this node (empty if none).
+	const wxString &GetRawValue() const { return m_rawvalue; }
 #endif
 
 	/**
@@ -339,6 +357,10 @@ protected:
 
 	//! Stable, untranslated machine key (empty = none). @see SetKey
 	wxString m_key;
+
+	//! Raw untranslated machine value for data-labelled nodes (empty = none).
+	//! @see SetRawValue
+	wxString m_rawvalue;
 #endif
 
 private:

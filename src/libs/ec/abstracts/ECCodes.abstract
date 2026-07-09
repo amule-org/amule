@@ -471,6 +471,8 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_STAT_NODE_KEY                      0x1B0F
 		EC_TAG_STAT_NODE_RATIO                    0x1B10
 		EC_TAG_STAT_NODE_RATIO_TOTAL              0x1B11
+		EC_TAG_STAT_NODE_RAW                      0x1B12
+		EC_TAG_STAT_VALUE_ENUM                    0x1B13
 
 	EC_TAG_PREFS_SECURITY                     0x1C00
 		EC_TAG_SECURITY_CAN_SEE_SHARES            0x1C01

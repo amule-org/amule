@@ -105,9 +105,12 @@ _assert_json_eq '.nodes[0].key' uptime '/stats/tree first node key is "uptime"'
 _assert_json_eq '[.. | objects | select(has("key")) | .key] as $k
 	| (["ul_dl_ratio","download_data","servers_working"] | all(($k | index(.)) != null))' \
 	true '/stats/tree carries the expected stable keys'
+# Skeleton keys are unique; the dynamic per-client-software rows deliberately
+# share a key by kind (client_version / client_os), so exclude those.
 _assert_json_eq '[.. | objects | select(has("key")) | .key]
+	| map(select(. != "client_version" and . != "client_os"))
 	| (length > 0) and (length == (unique | length))' \
-	true '/stats/tree keys are present and unique'
+	true '/stats/tree skeleton keys are present and unique'
 # The ratio node keeps its composite string value for legacy consumers...
 _assert_json_eq '[.. | objects | select(.key? == "ul_dl_ratio") | .values[0].type] | .[0]' \
 	string '/stats/tree ratio node still carries its composite string value'
@@ -116,6 +119,20 @@ _assert_json_eq '[.. | objects | select(.key? == "ul_dl_ratio") | .values[0].typ
 _assert_json_eq '[.. | objects | select(has("ratio")) | .ratio | (.session, .total)
 	| select(. != null) | type] | all(. == "number")' \
 	true '/stats/tree ratio fields, when present, are numbers'
+# raw: the untranslated version/OS value on per-client-software rows. Absent
+# unless peers with version/OS info have connected, so assert shape, not
+# presence -- when present it is a string and rides a keyed dynamic row.
+_assert_json_eq '[.. | objects | select(has("raw")) | .raw | type] | all(. == "string")' \
+	true '/stats/tree raw fields, when present, are strings'
+# enum: additive locale-independent token on well-known sentinel string values
+# ("never"/"not_available"). Assert the tokens are from the known set and always
+# accompany a string value (the English value is kept alongside).
+_assert_json_eq '([.. | objects | .values? // empty | .[]? | select(has("enum")) | .enum]
+	| unique) - ["never","not_available"] | length == 0' \
+	true '/stats/tree enum tokens are from the known set'
+_assert_json_eq '[.. | objects | .values? // empty | .[]? | select(has("enum"))
+	| (.type == "string" and (.value | type) == "string")] | all(.)' \
+	true '/stats/tree enum tokens ride on a string value (kept for legacy clients)'
 
 # --- 3. /stats/graphs/{graph} — all four named graphs. -------------
 for g in download upload connections kad; do

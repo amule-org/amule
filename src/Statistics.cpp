@@ -1161,6 +1161,9 @@ void CStatistics::AddKnownClient(CUpDownClient *pClient)
 			(versionStr.IsEmpty() ? wxString(wxTRANSLATE("Unknown")) : versionStr) + ": %s",
 			stShowPercent | stHideIfZero);
 		version->SetKey("client_version");
+		// Raw version string (empty for "Unknown" -> tag omitted), so API
+		// clients read it without parsing the composite label.
+		version->SetRawValue(versionStr);
 		++(*version);
 		versionRoot->AddChild(version, clientVersion, SupportsOSInfo(clientSoft));
 	}
@@ -1178,6 +1181,8 @@ void CStatistics::AddKnownClient(CUpDownClient *pClient)
 				(OS_ID ? OSInfo : wxString(wxTRANSLATE("Not Received"))) + ": %s",
 				stShowPercent | stHideIfZero);
 			OSNode->SetKey("client_os");
+			// Raw OS string (empty for "Not Received" -> tag omitted).
+			OSNode->SetRawValue(OSInfo);
 			++(*OSNode);
 			OSRoot->AddChild(OSNode, OS_ID, true);
 		}

@@ -434,6 +434,16 @@ enum ECTagNames
 	// all-time ratio. Present only when computable (both sides > 0).
 	EC_TAG_STAT_NODE_RATIO = 0x1B10,
 	EC_TAG_STAT_NODE_RATIO_TOTAL = 0x1B11,
+	// Raw, untranslated machine value for a node whose label is data
+	// (client version / OS string). Optional sibling of the display label;
+	// legacy consumers skip it. Lets API clients read the value without
+	// parsing it out of the composite label.
+	EC_TAG_STAT_NODE_RAW = 0x1B12,
+	// Stable, locale-independent token for a well-known sentinel *value*
+	// (e.g. "never", "not_available"). Optional sub-tag of an
+	// EC_TAG_STAT_NODE_VALUE; the English display string stays alongside it
+	// (EC_VALUE_STRING) so GUI/legacy consumers are unaffected.
+	EC_TAG_STAT_VALUE_ENUM = 0x1B13,
 	EC_TAG_PREFS_SECURITY = 0x1C00,
 	EC_TAG_SECURITY_CAN_SEE_SHARES = 0x1C01,
 	EC_TAG_IPFILTER_CLIENTS = 0x1C02,
@@ -1278,6 +1288,10 @@ wxString GetDebugNameECTagNames(uint16 arg)
 		return "EC_TAG_STAT_NODE_RATIO";
 	case 0x1B11:
 		return "EC_TAG_STAT_NODE_RATIO_TOTAL";
+	case 0x1B12:
+		return "EC_TAG_STAT_NODE_RAW";
+	case 0x1B13:
+		return "EC_TAG_STAT_VALUE_ENUM";
 	case 0x1C00:
 		return "EC_TAG_PREFS_SECURITY";
 	case 0x1C01:
