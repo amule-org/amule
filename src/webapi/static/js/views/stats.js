@@ -38,8 +38,10 @@ export default function Stats() {
   const [graphData, setGraphData] = useState({}); // name -> [xs, ys, avgYs]
   const [tree, setTree] = useState(null);          // null=loading, []=empty
   const [treeErr, setTreeErr] = useState("");
-  // Expanded tree nodes by index path ("0", "0.2", …). Index paths survive
-  // the label changes each refresh brings (labels embed live values).
+  // Expanded tree nodes by key path ("transfer", "transfer.uploads", …).
+  // Node keys are stable machine ids (falling back to the index for keyless
+  // nodes), so state survives both the per-refresh label changes and
+  // structural shifts in dynamic subtrees.
   const [expanded, setExpanded] = useState(new Set());
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function Stats() {
           setTree(nodes);
           setTreeErr("");
           // first load: open the top-level branches, like the GUI
-          setExpanded((prev) => prev.size ? prev : new Set(nodes.map((_, i) => String(i))));
+          setExpanded((prev) => prev.size ? prev : new Set(nodes.map((n, i) => n.key || String(i))));
         }
       }
       catch (e) { if (alive) setTreeErr(terr(e) || t("stats_error")); }
@@ -92,7 +94,7 @@ export default function Stats() {
         <div class="stats-tree">
           ${treeErr ? html`<p>${treeErr}</p>`
             : tree === null ? html`<${Placeholder} kind="loading">${t("stats_loading")}<//>`
-            : tree.length ? tree.map((n, i) => html`<${TreeNode} node=${n} path=${String(i)} expanded=${expanded} onToggle=${onToggle} />`)
+            : tree.length ? tree.map((n, i) => html`<${TreeNode} node=${n} path=${n.key || String(i)} expanded=${expanded} onToggle=${onToggle} />`)
             : html`<${Placeholder} kind="info">${t("stats_empty")}<//>`}
         </div>
       </div>
@@ -105,10 +107,24 @@ export default function Stats() {
 
 // Translate a label template by its exact English text; fall back to the raw
 // English for dynamic labels (client names, versions, OS) that have no key.
+// Used for string values ("Unknown", "Never", …) and as the keyless fallback.
 function tLabel(label) {
   const key = "stats_tree_" + label;
   const s = t(key);
   return s === key ? label : s;
+}
+
+// Translate a node's label template. Prefer the stable machine key
+// (stats_tree_<key>) so translations survive label rewording and don't depend
+// on matching English text; fall back to the label for keyless nodes (dynamic
+// client/version/OS/server rows) and legacy daemons that send no key.
+function tNodeLabel(node) {
+  if (node.key) {
+    const key = "stats_tree_" + node.key;
+    const s = t(key);
+    if (s !== key) return s;
+  }
+  return tLabel(node.label);
 }
 
 // One typed value -> display string. Mirrors ECSpecialTags::FormatValue.
@@ -131,11 +147,26 @@ function fmtValue(v, spec) {
   return s;
 }
 
+// UL:DL ratio from the raw numbers (node.ratio), formatted locale-aware
+// instead of pasting the daemon's pre-formatted composite string. Mirrors the
+// desktop GUI's "1 : <session> (1 : <total>)".
+function formatRatio(r) {
+  const n = (x) => Number(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let s = "1 : " + n(r.session);
+  if (r.total != null) s += " (1 : " + n(r.total) + ")";
+  return s;
+}
+
 // Fill the label template's printf placeholders from values, in order.
 function nodeText(node) {
+  // Ratio node: build from node.ratio when present; else fall back to the
+  // composite string value (legacy daemons emit no ratio object).
+  if (node.ratio && node.ratio.session != null) {
+    return tNodeLabel(node).replace("%s", formatRatio(node.ratio));
+  }
   const values = node.values || [];
   let i = 0;
-  return tLabel(node.label).replace(/%(%|[-.0-9]*(?:ll|l|h)?[a-zA-Z])/g,
+  return tNodeLabel(node).replace(/%(%|[-.0-9]*(?:ll|l|h)?[a-zA-Z])/g,
     (m, spec) => spec === "%" ? "%" : fmtValue(values[i++], spec));
 }
 
@@ -147,6 +178,6 @@ function TreeNode({ node, path, expanded, onToggle }) {
   return html`
     <details open=${open} onToggle=${(e) => { if (e.target.open !== open) onToggle(path, e.target.open); }}>
       <summary>${text}</summary>
-      ${children.map((c, i) => html`<${TreeNode} node=${c} path=${path + "." + i} expanded=${expanded} onToggle=${onToggle} />`)}
+      ${children.map((c, i) => html`<${TreeNode} node=${c} path=${path + "." + (c.key || i)} expanded=${expanded} onToggle=${onToggle} />`)}
     </details>`;
 }
