@@ -1137,11 +1137,13 @@ void CStatistics::AddKnownClient(CUpDownClient *pClient)
 		++(*client);
 		s_clients->AddChild(client, id);
 		if (SupportsOSInfo(clientSoft)) {
-			client->AddChild(
-				new CStatTreeItemBase(wxTRANSLATE("Version"), stSortChildren | stCapChildren),
+			client->AddChild((new CStatTreeItemBase(
+						  wxTRANSLATE("Version"), stSortChildren | stCapChildren))
+						 ->SetKey("client_versions"),
 				2);
-			client->AddChild(new CStatTreeItemBase(wxTRANSLATE("Operating System"),
-						 stSortChildren | stSortByValue),
+			client->AddChild((new CStatTreeItemBase(wxTRANSLATE("Operating System"),
+						  stSortChildren | stSortByValue))
+						 ->SetKey("client_operating_system"),
 				1);
 		}
 	}
@@ -1158,6 +1160,7 @@ void CStatistics::AddKnownClient(CUpDownClient *pClient)
 		CStatTreeItemCounter *version = new CStatTreeItemCounter(
 			(versionStr.IsEmpty() ? wxString(wxTRANSLATE("Unknown")) : versionStr) + ": %s",
 			stShowPercent | stHideIfZero);
+		version->SetKey("client_version");
 		++(*version);
 		versionRoot->AddChild(version, clientVersion, SupportsOSInfo(clientSoft));
 	}
@@ -1174,6 +1177,7 @@ void CStatistics::AddKnownClient(CUpDownClient *pClient)
 			OSNode = new CStatTreeItemCounter(
 				(OS_ID ? OSInfo : wxString(wxTRANSLATE("Not Received"))) + ": %s",
 				stShowPercent | stHideIfZero);
+			OSNode->SetKey("client_os");
 			++(*OSNode);
 			OSRoot->AddChild(OSNode, OS_ID, true);
 		}
