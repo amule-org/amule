@@ -27,6 +27,7 @@
 #include <wx/intl.h>
 #include <wx/dataobj.h>
 #include <wx/clipbrd.h>
+#include <wx/settings.h>
 
 /**
  * These are the IDs used to identify the different menu-items.
@@ -58,6 +59,8 @@ wxBEGIN_EVENT_TABLE(CMuleTextCtrl, wxTextCtrl)
 	EVT_MENU(CMTCE_Clear, CMuleTextCtrl::OnClear)
 	EVT_MENU(CMTCE_SelAll, CMuleTextCtrl::OnSelAll)
 #endif
+	EVT_SET_FOCUS(CMuleTextCtrl::OnSetFocus)
+	EVT_KILL_FOCUS(CMuleTextCtrl::OnKillFocus)
 wxEND_EVENT_TABLE()
 
 CMuleTextCtrl::CMuleTextCtrl(wxWindow *parent,
@@ -145,5 +148,53 @@ void CMuleTextCtrl::Clear()
 	}
 }
 #endif
+
+void CMuleTextCtrl::SetPlaceholder(const wxString &hint)
+{
+	m_placeholder = hint;
+	m_normalColour = GetForegroundColour();
+	m_hasPlaceholder = true;
+	if (FindFocus() != this && IsEmpty()) {
+		ApplyPlaceholder();
+	}
+}
+
+void CMuleTextCtrl::RefreshPlaceholder()
+{
+	if (m_hasPlaceholder && !m_showingPlaceholder && FindFocus() != this && IsEmpty()) {
+		ApplyPlaceholder();
+	}
+}
+
+void CMuleTextCtrl::ApplyPlaceholder()
+{
+	m_showingPlaceholder = true;
+	SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+	// ChangeValue() (not SetValue()) so no EVT_TEXT fires for the hint.
+	ChangeValue(m_placeholder);
+}
+
+void CMuleTextCtrl::RemovePlaceholder()
+{
+	m_showingPlaceholder = false;
+	ChangeValue(wxEmptyString);
+	SetForegroundColour(m_normalColour);
+}
+
+void CMuleTextCtrl::OnSetFocus(wxFocusEvent &evt)
+{
+	if (m_showingPlaceholder) {
+		RemovePlaceholder();
+	}
+	evt.Skip();
+}
+
+void CMuleTextCtrl::OnKillFocus(wxFocusEvent &evt)
+{
+	if (m_hasPlaceholder && !m_showingPlaceholder && IsEmpty()) {
+		ApplyPlaceholder();
+	}
+	evt.Skip();
+}
 
 // File_checked_for_headers

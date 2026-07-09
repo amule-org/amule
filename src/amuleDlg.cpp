@@ -55,6 +55,7 @@
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "KadDlg.h"           // Needed for CKadDlg
 #include "Logger.h"
+#include "MuleTextCtrl.h"    // Needed for CMuleTextCtrl (fast-links placeholder)
 #include "MuleTrayIcon.h"
 #include "muuli_wdr.h"   // Needed for ID_BUTTON*
 #include "Preferences.h" // Needed for CPreferences
@@ -1088,7 +1089,12 @@ void CamuleDlg::OnClose(wxCloseEvent &evt)
 
 void CamuleDlg::OnBnClickedFast(wxCommandEvent &WXUNUSED(evt))
 {
-	wxTextCtrl *ctl = CastChild("FastEd2kLinks", wxTextCtrl);
+	CMuleTextCtrl *ctl = CastChild("FastEd2kLinks", CMuleTextCtrl);
+
+	// Nothing typed yet -- only the placeholder hint is on screen.
+	if (ctl->IsShowingPlaceholder()) {
+		return;
+	}
 
 	wxArrayString links;
 	for (int i = 0; i < ctl->GetNumberOfLines(); i++) {
@@ -1101,6 +1107,7 @@ void CamuleDlg::OnBnClickedFast(wxCommandEvent &WXUNUSED(evt))
 	}
 
 	ctl->SetValue("");
+	ctl->RefreshPlaceholder();
 
 	theApp->downloadqueue->AddLinks(links, m_transferwnd->downloadlistctrl->GetCategory());
 }

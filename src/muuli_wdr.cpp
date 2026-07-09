@@ -91,16 +91,17 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     contentSizer = item1;
 
     item0->Add( item1, wxSizerFlags(1).Expand().CenterVertical() );
-    wxFlexGridSizer *item2 = new wxFlexGridSizer( 3, 0, 0 );
-    item2->AddGrowableCol( 1 );
+    wxFlexGridSizer *item2 = new wxFlexGridSizer( 2, 0, 0 );
+    item2->AddGrowableCol( 0 );
     s_fed2klh = item2;
 
-    wxStaticText *item3 = new wxStaticText( parent, -1, _("eD2k Link: "), wxDefaultPosition, wxDefaultSize, 0 );
-    item2->Add( item3, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    // The old "eD2k Link:" label is gone -- the text control's placeholder
+    // ("Paste eD2k or magnet links here") now conveys the same thing.
     CMuleTextCtrl *item4 = new CMuleTextCtrl( parent, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
     item4->SetName( "FastEd2kLinks" );
+    item4->SetPlaceholder( _("Paste eD2k or magnet links here") );
     item2->Add( item4, wxSizerFlags(1).Expand().Border(wxALL, 5) );
-    wxButton *item5 = new wxButton( parent, ID_BUTTON_FAST, _("Commit"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxButton *item5 = new wxButton( parent, ID_BUTTON_FAST, _("Add links"), wxDefaultPosition, wxDefaultSize, 0 );
     item5->SetToolTip( _("Click here to add the eD2k link in the text control to your download queue.") );
     item2->Add( item5, wxSizerFlags().Center().Border(wxRIGHT, 5) );
     item0->Add( item2, wxSizerFlags().Expand().CenterVertical() );
@@ -2214,14 +2215,11 @@ wxSizer *aMuleLog( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
-
     CMuleTextCtrl *item2 = new CMuleTextCtrl( parent, ID_LOGVIEW, "", wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL|wxTE_RICH2 );
-    item1->Add( item2, wxSizerFlags(1).Expand().CenterHorizontal() );
-    wxButton *item3 = new wxButton( parent, ID_BTN_RESET, _("Reset"), wxDefaultPosition, wxDefaultSize, 0 );
+    item0->Add( item2, wxSizerFlags(1).Expand().Border(wxALL, 5) );
+    wxButton *item3 = new wxButton( parent, ID_BTN_RESET, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->SetToolTip( _("Click this button to reset the log.") );
-    item1->Add( item3, wxSizerFlags().Expand().CenterHorizontal().Border(wxALL, 5) );
-    item0->Add( item1, wxSizerFlags(1).Expand().CenterVertical() );
+    item0->Add( item3, wxSizerFlags().Right().Border(wxRIGHT|wxBOTTOM, 5) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );

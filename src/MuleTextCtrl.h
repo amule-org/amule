@@ -26,9 +26,11 @@
 #define MULETEXTCTRL_H
 
 #include <wx/textctrl.h>
+#include <wx/colour.h>
 
 class wxCommandEvent;
 class wxMouseEvent;
+class wxFocusEvent;
 
 /**
  * This class is a slightly improved wxTextCtrl that supports the traditional
@@ -60,6 +62,27 @@ public:
 	 * Destructor, which currently does nothing.
 	 */
 	virtual ~CMuleTextCtrl() {};
+
+	/**
+	 * Enable a grey placeholder shown while the control is empty and
+	 * unfocused, cleared automatically on focus/typing. Works on all
+	 * platforms (unlike wxTextCtrl::SetHint(), which does nothing for
+	 * multi-line controls under GTK/MSW).
+	 */
+	void SetPlaceholder(const wxString &hint);
+
+	/**
+	 * True while the placeholder text is being displayed, i.e. the user
+	 * has not entered anything. Callers reading the value should treat
+	 * this as an empty control.
+	 */
+	bool IsShowingPlaceholder() const { return m_showingPlaceholder; }
+
+	/**
+	 * Re-show the placeholder if the control is empty and unfocused.
+	 * Call this after programmatically clearing the value.
+	 */
+	void RefreshPlaceholder();
 
 #ifdef __WXMAC__
 	/**
@@ -98,6 +121,22 @@ protected:
 	 * This functions takes care of clearing the text.
 	 */
 	void OnClear(wxCommandEvent &evt);
+
+	/**
+	 * Placeholder focus handlers: clear the hint when the control gains
+	 * focus, restore it on blur if the user left the control empty.
+	 */
+	void OnSetFocus(wxFocusEvent &evt);
+	void OnKillFocus(wxFocusEvent &evt);
+
+private:
+	void ApplyPlaceholder();
+	void RemovePlaceholder();
+
+	wxString m_placeholder;
+	wxColour m_normalColour;
+	bool m_hasPlaceholder = false;
+	bool m_showingPlaceholder = false;
 
 	wxDECLARE_EVENT_TABLE();
 };
