@@ -2057,9 +2057,12 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     wxListCtrl *item2 = new wxListCtrl( parent, ID_PREFSLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
     item1->Add( item2, wxSizerFlags().Expand().Border(wxALL, 5) );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxALL, 0) );
-    wxStaticBox *item4 = new wxStaticBox( parent, -1, "" );
-    wxStaticBoxSizer *item3 = new wxStaticBoxSizer( item4, wxHORIZONTAL );
+    // Plain button row (no static-box container). A leading stretch spacer
+    // right-aligns the whole group; the page-scoped "Reset" button (hidden
+    // except on the Advanced page, see PrefsUnifiedDlg) sits left of OK/Cancel.
+    wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
+    item3->AddStretchSpacer( 1 );
     wxButton *item7 = new wxButton( parent, IDC_TWEAKS_RESET, _("Reset page to defaults"), wxDefaultPosition, wxDefaultSize, 0 );
     item7->SetToolTip( _("Reset the settings on the current page to their default values.") );
     item3->Add( item7, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -2070,7 +2073,7 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item6 = new wxButton( parent, ID_PREFS_CANCEL_TOP, _("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
     item6->SetToolTip( _("Reset any changes made to the preferences.") );
     item3->Add( item6, wxSizerFlags().Center().Border(wxALL, 5) );
-    item0->Add( item3, wxSizerFlags().CenterHorizontal().Border(wxALL, 5) );
+    item0->Add( item3, wxSizerFlags().Expand().Border(wxALL, 5) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );
