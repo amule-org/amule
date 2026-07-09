@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule Manual zh_TW\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-10 16:45+0200\n"
+"POT-Creation-Date: 2026-07-09 14:20+0200\n"
 "PO-Revision-Date: 2026-07-08 13:30+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -170,13 +170,13 @@ msgstr "給輸入成功的 eD2k 連結分類編號為 I<E<lt>號碼E<gt>>"
 
 #. type: Plain text
 #: amule.1.in:59 amulecmd.1.in:70 amuled.1.in:67 amulegui.1.in:63
-#: amuleweb.1.in:130 ed2k.1.in:40
+#: amuleweb.1.in:134 ed2k.1.in:40
 msgid "Displays the current version number."
 msgstr "顯示目前的版本號碼。"
 
 #. type: Plain text
 #: amule.1.in:62 amulecmd.1.in:73 amuled.1.in:70 amulegui.1.in:60
-#: amuleweb.1.in:127 ed2k.1.in:37
+#: amuleweb.1.in:131 ed2k.1.in:37
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:22
 #: ../../src/utils/cas/docs/cas.1.in:33
 msgid "Prints a short usage description."
@@ -219,24 +219,24 @@ msgid "a magnet link."
 msgstr "magnet 連結。"
 
 #. type: SH
-#: amule.1.in:77 amulecmd.1.in:233 amuleweb.1.in:136
+#: amule.1.in:77 amulecmd.1.in:233 amuleweb.1.in:140
 #, no-wrap
 msgid "NOTES"
 msgstr "附註"
 
 #. type: SS
-#: amule.1.in:78 amulecmd.1.in:234 amuleweb.1.in:137
+#: amule.1.in:78 amulecmd.1.in:234 amuleweb.1.in:141
 #, no-wrap
 msgid "Paths"
 msgstr "路徑"
 
 #. type: Plain text
-#: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:141
+#: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:145
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "對於有 I<E<lt>路徑E<gt>> 的選項，如果 I<路徑> 裏面沒有含目錄 (即只有單純檔名)，則會被認為是在 aMule 的設定檔所在目錄 I<~/.aMule> 下。"
 
 #. type: SH
-#: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:175
+#: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:179
 #: ed2k.1.in:61 ../../src/utils/cas/docs/cas.1.in:37
 #, no-wrap
 msgid "FILES"
@@ -249,7 +249,7 @@ msgstr "~/.aMule/*"
 
 #. type: SH
 #: amule.1.in:84 amulecmd.1.in:282 amuled.1.in:87 amulegui.1.in:63
-#: amuleweb.1.in:195 ed2k.1.in:63 ../../src/utils/aLinkCreator/docs/alc.1.in:11
+#: amuleweb.1.in:199 ed2k.1.in:63 ../../src/utils/aLinkCreator/docs/alc.1.in:11
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:26
 #: ../../src/utils/cas/docs/cas.1.in:43
 #: ../../src/utils/wxCas/docs/wxcas.1.in:16
@@ -259,7 +259,7 @@ msgstr "回報問題"
 
 #. type: Plain text
 #: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
-#: amuleweb.1.in:198 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
+#: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
 #: ../../src/utils/wxCas/docs/wxcas.1.in:19
@@ -268,7 +268,7 @@ msgstr "請到我們的論壇 (I<https://github.com/amule-org/amule/discussions>
 
 #. type: SH
 #: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
-#: amuleweb.1.in:198 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
+#: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
 #: ../../src/utils/wxCas/docs/wxcas.1.in:19
@@ -278,7 +278,7 @@ msgstr "版權"
 
 #. type: Plain text
 #: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
-#: amuleweb.1.in:200 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
+#: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
 #: ../../src/utils/wxCas/docs/wxcas.1.in:21
@@ -287,7 +287,7 @@ msgstr "aMule 與附加的工具程式都遵守 GNU 的 GPL 協定。"
 
 #. type: SH
 #: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
-#: amuleweb.1.in:200 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
+#: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
 #: ../../src/utils/wxCas/docs/wxcas.1.in:21
@@ -297,7 +297,7 @@ msgstr "參考"
 
 #. type: SH
 #: amule.1.in:91 amulecmd.1.in:289 amuled.1.in:94 amulegui.1.in:70
-#: amuleweb.1.in:202 ed2k.1.in:70 ../../src/utils/aLinkCreator/docs/alc.1.in:18
+#: amuleweb.1.in:206 ed2k.1.in:70 ../../src/utils/aLinkCreator/docs/alc.1.in:18
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:33
 #: ../../src/utils/cas/docs/cas.1.in:50
 #: ../../src/utils/wxCas/docs/wxcas.1.in:23
@@ -306,7 +306,7 @@ msgid "AUTHOR"
 msgstr "作者"
 
 #. type: Plain text
-#: amule.1.in:92 amulecmd.1.in:290 amuled.1.in:95 amuleweb.1.in:203
+#: amule.1.in:92 amulecmd.1.in:290 amuled.1.in:95 amuleweb.1.in:207
 #: ed2k.1.in:71 ../../src/utils/aLinkCreator/docs/alc.1.in:19
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:34
 #: ../../src/utils/cas/docs/cas.1.in:51
@@ -361,72 +361,72 @@ msgid "B<amulecmd> is a console-based client to control aMule."
 msgstr "B<amulecmd> 是終端機模式下控制 aMule 的的客戶端程式。"
 
 #. type: TP
-#: amulecmd.1.in:29 amuleweb.1.in:46
+#: amulecmd.1.in:29 amuleweb.1.in:50
 #, no-wrap
 msgid "B<[ -h> I<E<lt>hostE<gt>>, B<--host>=I<E<lt>hostE<gt>> B<]>"
 msgstr "B<[ -h> I<E<lt>主機E<gt>>, B<--host>=I<E<lt>主機E<gt>> B<]>"
 
 #. type: Plain text
-#: amulecmd.1.in:33 amuleweb.1.in:50
+#: amulecmd.1.in:33 amuleweb.1.in:54
 msgid "Host where aMule is running (default: I<127.0.0.1>).  I<E<lt>hostE<gt>> might be an IP address or a DNS name"
 msgstr "正在執行 aMule 核心的主機 (預設：I<127.0.0.1>)， I<E<lt>主機E<gt>> 可以是 IP 位址或網域名稱"
 
 #. type: TP
-#: amulecmd.1.in:33 amuleweb.1.in:50
+#: amulecmd.1.in:33 amuleweb.1.in:54
 #, no-wrap
 msgid "B<[ -p> I<E<lt>portE<gt>>, B<--port>=I<E<lt>portE<gt>> B<]>"
 msgstr "B<[ -p> I<E<lt>通訊埠E<gt>>, B<--port>=I<E<lt>通訊埠E<gt>> B<]>"
 
 #. type: Plain text
-#: amulecmd.1.in:36 amuleweb.1.in:53
+#: amulecmd.1.in:36 amuleweb.1.in:57
 msgid "aMule's port for External Connections, as set in Preferences-E<gt>Remote Controls (default: I<4712>)"
 msgstr "aMule 外部連線用的通訊埠，在 偏好設定 E<gt>  遠端控制 設定 (預設：I<4712>)"
 
 #. type: TP
-#: amulecmd.1.in:36 amuleweb.1.in:53
+#: amulecmd.1.in:36 amuleweb.1.in:57
 #, no-wrap
 msgid "B<[ -P> I<E<lt>passwordE<gt>>, B<--password>=I<E<lt>passwordE<gt>> B<]>"
 msgstr "B<[ -P> I<E<lt>密碼E<gt>>, B<--password>=I<E<lt>密碼E<gt>> B<]>"
 
 #. type: Plain text
-#: amulecmd.1.in:39 amuleweb.1.in:56
+#: amulecmd.1.in:39 amuleweb.1.in:60
 msgid "External Connections password."
 msgstr "外部連線密碼。"
 
 #. type: TP
-#: amulecmd.1.in:39 amuleweb.1.in:56
+#: amulecmd.1.in:39 amuleweb.1.in:60
 #, no-wrap
 msgid "B<[ -f> I<E<lt>pathE<gt>>, B<--config-file>=I<E<lt>pathE<gt>> B<]>"
 msgstr "B<[ -f> I<E<lt>路徑E<gt>>, B<--config-file>=I<E<lt>路徑E<gt>> B<]>"
 
 #. type: Plain text
-#: amulecmd.1.in:43 amuleweb.1.in:60
+#: amulecmd.1.in:43 amuleweb.1.in:64
 msgid "Use the given configuration file.  Default configuration file is I<~/.aMule/remote.conf>"
 msgstr "使用指定的設定檔，預設是 I<~/.aMule/remote.conf>"
 
 #. type: Plain text
-#: amulecmd.1.in:46 amuleweb.1.in:63
+#: amulecmd.1.in:46 amuleweb.1.in:67
 msgid "Do not print any output to stdout."
 msgstr "不將任何資訊顯示在標準輸出。"
 
 #. type: Plain text
-#: amulecmd.1.in:50 amuleweb.1.in:67
+#: amulecmd.1.in:50 amuleweb.1.in:71
 msgid "Be verbose - show also debug messages."
 msgstr "詳細模式 - 也顯示除錯訊息。"
 
 #. type: TP
-#: amulecmd.1.in:50 amuleweb.1.in:67
+#: amulecmd.1.in:50 amuleweb.1.in:71
 #, no-wrap
 msgid "B<[ -l> I<E<lt>langE<gt>>, B<--locale>=I<E<lt>langE<gt>> B<]>"
 msgstr "B<[ -l> I<E<lt>語言E<gt>>, B<--locale>=I<E<lt>語言E<gt>> B<]>"
 
 #. type: Plain text
-#: amulecmd.1.in:54 amuleweb.1.in:71
+#: amulecmd.1.in:54 amuleweb.1.in:75
 msgid "Sets program locale (language).  See the B<NOTES> section for the description of the I<E<lt>langE<gt>> parameter."
 msgstr "設定程式的語系 (語言)。請看 B<附註> 章節裏關於 I<E<lt>語言E<gt>> 參數的說明。"
 
 #. type: Plain text
-#: amulecmd.1.in:57 amuleweb.1.in:74
+#: amulecmd.1.in:57 amuleweb.1.in:78
 msgid "Write command line options to config file and exit"
 msgstr "將命令列選項寫入設定檔後離開"
 
@@ -442,18 +442,18 @@ msgid "Execute I<E<lt>commandE<gt>> as if it was entered at amulecmd's prompt an
 msgstr "像在 amulecmd 的命令列模式下一樣，執行 I<E<lt>指令E<gt>> 後離開。"
 
 #. type: TP
-#: amulecmd.1.in:60 amuleweb.1.in:117
+#: amulecmd.1.in:60 amuleweb.1.in:121
 #, no-wrap
 msgid "B<[ --create-config-from>=I<E<lt>pathE<gt>> B<]>"
 msgstr "B<[ --create-config-from>=I<E<lt>路徑E<gt>> B<]>"
 
 #. type: Plain text
-#: amulecmd.1.in:63 amuleweb.1.in:120
+#: amulecmd.1.in:63 amuleweb.1.in:124
 msgid "Create config file based upon I<E<lt>pathE<gt>>, which must point to a valid aMule config file, and then exit."
 msgstr "參考 I<E<lt>pathE<gt>> 裏的資料來建立設定檔後離開。(I<E<lt>pathE<gt>> 裏必須有有效的 aMule 設定檔)"
 
 #. type: Plain text
-#: amulecmd.1.in:67 amuleweb.1.in:124
+#: amulecmd.1.in:67 amuleweb.1.in:128
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
 msgstr ""
 
@@ -758,43 +758,43 @@ msgid "Show connection status, current up/download speeds, etc."
 msgstr "顯示 連線狀態、目前的上傳/下載速度 等等。"
 
 #. type: SS
-#: amulecmd.1.in:238 amuleweb.1.in:141
+#: amulecmd.1.in:238 amuleweb.1.in:145
 #, no-wrap
 msgid "Languages"
 msgstr "語言"
 
 #. type: Plain text
-#: amulecmd.1.in:244 amuleweb.1.in:147
+#: amulecmd.1.in:244 amuleweb.1.in:151
 msgid "The I<E<lt>langE<gt>> parameter for the B<-l> option has the following form: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] where I<lang> is the primary language, I<LANG> is a sublanguage/territory, I<encoding> is the character set to use and I<modifier> allows the user to select a specific instance of localization data within a single category."
 msgstr "B<-l> 選項的 I<E<lt>語系E<gt>> 參數有以下幾種樣式：I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>]。其中：I<lang> 是主要的語系代碼，I<LANG> 是語系次分類、使用地區代碼，I<encoding> 是使用的編碼，I<modifier> 則讓使用者用一個代號就指定一組語系設定。例如：「zh_TW.UTF-8@Taiwan」"
 
 #. type: Plain text
-#: amulecmd.1.in:246 amuleweb.1.in:149
+#: amulecmd.1.in:246 amuleweb.1.in:153
 msgid "For example, the following strings are valid:"
 msgstr "例如，以下的字串都有效："
 
 #. type: Plain text
-#: amulecmd.1.in:260 amuleweb.1.in:163
+#: amulecmd.1.in:260 amuleweb.1.in:167
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
 msgstr "雖然上面這些都是合於規定的語系設定參數，但 I<encoding> 和 I<modifier> 目前已經沒在使用了。"
 
 #. type: Plain text
-#: amulecmd.1.in:263 amuleweb.1.in:166
+#: amulecmd.1.in:263 amuleweb.1.in:170
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
 msgstr "你也可以使用完整的英文名稱來設定語系，例如：B<-l german> 也等於 B<-l de_DE>。"
 
 #. type: Plain text
-#: amulecmd.1.in:266 amuleweb.1.in:169
+#: amulecmd.1.in:266 amuleweb.1.in:173
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
 msgstr "沒有在命令列或設定檔中設定語系時，會使用系統預設語言。"
 
 #. type: Plain text
-#: amulecmd.1.in:268 amuleweb.1.in:177
+#: amulecmd.1.in:268 amuleweb.1.in:181
 msgid "~/.aMule/remote.conf"
 msgstr "~/.aMule/remote.conf"
 
 #. type: SH
-#: amulecmd.1.in:268 amuleweb.1.in:181
+#: amulecmd.1.in:268 amuleweb.1.in:185
 #, no-wrap
 msgid "EXAMPLE"
 msgstr "範例"
@@ -810,7 +810,7 @@ msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgstr "B<amulecmd> B<-h> I<主機名稱> B<-p> I<外部連線通訊埠> B<-P> I<外部連線密碼> B<-w>"
 
 #. type: Plain text
-#: amulecmd.1.in:274 amuleweb.1.in:187
+#: amulecmd.1.in:274 amuleweb.1.in:191
 msgid "or"
 msgstr "或"
 
@@ -820,7 +820,7 @@ msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 #. type: Plain text
-#: amulecmd.1.in:278 amuleweb.1.in:191
+#: amulecmd.1.in:278 amuleweb.1.in:195
 msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "這樣就會將設定儲存到 I<$HOME/.aMule/remote.conf>，然後你只需要再輸入："
 
@@ -991,160 +991,165 @@ msgid "[B<--amule-config-file>=I<E<lt>pathE<gt>>]"
 msgstr "[B<--amule-config-file>=I<E<lt>路徑E<gt>>]"
 
 #. type: Plain text
-#: amuleweb.1.in:46
+#: amuleweb.1.in:45
+msgid "B<DEPRECATED:> amuleweb is deprecated and may be removed in aMule 3.2 or later.  It is not being removed yet; consider migrating to amuleapi, the REST/SSE API."
+msgstr ""
+
+#. type: Plain text
+#: amuleweb.1.in:50
 msgid "B<amuleweb> manages your access to amule through a web browser.  You can start amuleweb together with B<amule>(1), or separately, any time later.  Options can be specified via command-line or via config-file.  Command-line options take precedence over config-file options."
 msgstr "B<amuleweb> 可以經由網頁瀏覽器來管理 amule。你可以和 B<amule>(1) 一起執行 amuleweb，也可以稍候再另外執行。可以在命令列或是用用設定檔指定參數，命令列參數會優先於設定檔的參數。"
 
 #. type: TP
-#: amuleweb.1.in:74
+#: amuleweb.1.in:78
 #, no-wrap
 msgid "B<[ -t> I<E<lt>nameE<gt>>, B<--template>=I<E<lt>nameE<gt>> B<]>"
 msgstr "B<[ -t> I<E<lt>名稱E<gt>>, B<--template>=I<E<lt>名稱E<gt>> B<]>"
 
 #. type: Plain text
-#: amuleweb.1.in:77
+#: amuleweb.1.in:81
 msgid "Loads the template named I<E<lt>nameE<gt>>. See the B<SKIN SUPPORT> section for details."
 msgstr "載入 I<E<lt>名稱E<gt>> 這個模板。詳細請參考 B<外觀面板支援> 章節。"
 
 #. type: TP
-#: amuleweb.1.in:77
+#: amuleweb.1.in:81
 #, no-wrap
 msgid "B<[ -s> I<E<lt>portE<gt>>, B<--server-port>=I<E<lt>portE<gt>> B<]>"
 msgstr "B<[ -s> I<E<lt>通訊埠E<gt>>, B<--server-port>=I<E<lt>通訊埠E<gt>> B<]>"
 
 #. type: Plain text
-#: amuleweb.1.in:80
+#: amuleweb.1.in:84
 msgid "Webserver's HTTP port. This is the port you must point your browser to (default: I<4711>)."
 msgstr "網頁伺服器的 HTTP 連接埠：要用瀏覽器連線時必須加以指定 (預設：I<4711>)。"
 
 #. type: Plain text
-#: amuleweb.1.in:84
+#: amuleweb.1.in:88
 msgid "Enable UPnP."
 msgstr "啟用 UPnP。"
 
 #. type: TP
-#: amuleweb.1.in:84
+#: amuleweb.1.in:88
 #, fuzzy, no-wrap
 #| msgid "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port> I<E<lt>portE<gt>> B<]>"
 msgid "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port>=I<E<lt>portE<gt>> B<]>"
 msgstr "B<[ -U> I<E<lt>通訊埠E<gt>>, B<--upnp-port> I<E<lt>通訊埠E<gt>> B<]>"
 
 #. type: Plain text
-#: amuleweb.1.in:87
+#: amuleweb.1.in:91
 msgid "UPnP port."
 msgstr "UPnP 通訊埠。"
 
 #. type: Plain text
-#: amuleweb.1.in:90
+#: amuleweb.1.in:94
 msgid "Enables using gzip compression in HTTP traffic to save bandwidth."
 msgstr "在 HTTP 傳輸時啟用 gzip 壓縮以節省頻寬。"
 
 #. type: Plain text
-#: amuleweb.1.in:93
+#: amuleweb.1.in:97
 msgid "Disables using gzip compression (this is the default)."
 msgstr "停用 gzip 壓縮 (這是預設值)。"
 
 #. type: TP
-#: amuleweb.1.in:93
+#: amuleweb.1.in:97
 #, no-wrap
 msgid "B<[ -A> I<E<lt>passwdE<gt>>, B<--admin-pass>=I<E<lt>passwdE<gt>> B<]>"
 msgstr "B<[ -A> I<E<lt>密碼E<gt>>, B<--admin-pass>=I<E<lt>密碼E<gt>> B<]>"
 
 #. type: Plain text
-#: amuleweb.1.in:96
+#: amuleweb.1.in:100
 msgid "Full access password for webserver."
 msgstr "網站伺服器的完整存取密碼。"
 
 #. type: TP
-#: amuleweb.1.in:96
+#: amuleweb.1.in:100
 #, no-wrap
 msgid "B<[ -G> I<E<lt>passwdE<gt>>, B<--guest-pass>=I<E<lt>passwdE<gt>> B<]>"
 msgstr "B<[ -G> I<E<lt>密碼E<gt>>, B<--guest-pass>=I<E<lt>密碼E<gt>> B<]>"
 
 #. type: Plain text
-#: amuleweb.1.in:99
+#: amuleweb.1.in:103
 msgid "Guest password for webserver."
 msgstr "網站伺服器的訪客密碼。"
 
 #. type: Plain text
-#: amuleweb.1.in:102
+#: amuleweb.1.in:106
 msgid "Allows guest access."
 msgstr "允許訪客連線。"
 
 #. type: Plain text
-#: amuleweb.1.in:105
+#: amuleweb.1.in:109
 msgid "Denies guest access (default)."
 msgstr "禁止訪客連線 (預設)。"
 
 #. type: Plain text
-#: amuleweb.1.in:111
+#: amuleweb.1.in:115
 msgid "Load/save webserver settings from/to remote aMule.  This causes amuleweb to ignore command-line and config-file settings, and load them from aMule.  When saving preferences none will be written to the config file, but to aMule.  (Of course, this works only for those settings that can be set in aMule's Preferences-E<gt>Remote Controls.)"
 msgstr "從遠端的 aMule 載入網頁伺服器設定/將設定儲存到遠端。這個會使 amuleweb 忽略命令列與設定檔內的設定、並從遠端載入新設定；儲存時則只會寫入遠端 aMule 的設定。(當然，只限於 aMule 的 偏好設定 E<gt> 遠端控制 裏的幾個設定項目)"
 
 #. type: Plain text
-#: amuleweb.1.in:114
+#: amuleweb.1.in:118
 msgid "Disable PHP interpreter (deprecated)"
 msgstr "停用 PHP 解譯器 (不建議)"
 
 #. type: Plain text
-#: amuleweb.1.in:117
+#: amuleweb.1.in:121
 msgid "Recompiles PHP pages on each request."
 msgstr "爲每個要求重編譯 PHP 頁面。"
 
 #. type: TP
-#: amuleweb.1.in:130
+#: amuleweb.1.in:134
 #, no-wrap
 msgid "B<[ --amule-config-file>=I<E<lt>pathE<gt>> B<]>"
 msgstr "B<[ --amule-config-file>=I<E<lt>路徑E<gt>> B<]>"
 
 #. type: Plain text
-#: amuleweb.1.in:136
+#: amuleweb.1.in:140
 msgid "aMule config file path.  B<DO NOT USE DIRECTLY!> aMule uses this option when starting amuleweb at aMule startup.  This option causes all other command-line and config-file settings to be ignored, preferences to be read from the given config file, and also implies the B<-q -L> options."
 msgstr "aMule 設定擋路徑。B<請不要直接使用！>這個選項會導致原有命令列和設定檔的設定都被忽略都被忽略。 啟動 aMule 後在開啟 amuleweb 時會用這個選項，從指定的設定檔讀取偏好設定，並自行加上 B<-q -L> 選項。"
 
 #. type: SH
-#: amuleweb.1.in:169
+#: amuleweb.1.in:173
 #, no-wrap
 msgid "SKIN SUPPORT"
 msgstr "外觀面板支援"
 
 #. type: Plain text
-#: amuleweb.1.in:173
+#: amuleweb.1.in:177
 msgid "B<amuleweb> is capable of displaying information in different skins.  These skins are called templates, and you can make amuleweb load a specific template via the B<-t> command line option.  Templates are searched in two places: first in I<~/.aMule/webserver/> and then in I</usr/share/amule/webserver/> if you installed with --prefix=/usr."
 msgstr "B<amuleweb> 可以用不同的外觀面板顯示資訊；這些面板稱為「模板」，你可以用在命令列用 B<-t> 選項讓 amuleweb 載入指定的模板。程式會在兩個地方搜尋模板：先從 I<~/.aMule/webserver/>，然後如果是用 --prefix=/usr 安裝程式，就會再到 I</usr/share/amule/webserver/> 搜尋。"
 
 #. type: Plain text
-#: amuleweb.1.in:175
+#: amuleweb.1.in:179
 msgid "Each template must be in a subdirectory of the template name, and this directory must contain all files the template needs."
 msgstr "每個模板都必須被放在以該模板名稱命名的子目錄下，這個目錄裏也必須包含所有模板需要的檔案。"
 
 #. type: Plain text
-#: amuleweb.1.in:179
+#: amuleweb.1.in:183
 msgid "~/.aMule/webserver/"
 msgstr "~/.aMule/webserver/"
 
 #. type: Plain text
-#: amuleweb.1.in:181
+#: amuleweb.1.in:185
 msgid "I<$(pkgdatadir)>/webserver/"
 msgstr "I<$(pkgdatadir)>/webserver/"
 
 #. type: Plain text
-#: amuleweb.1.in:183
+#: amuleweb.1.in:187
 msgid "Typically amuleweb will be first run as:"
 msgstr "通常 amuleweb 會優先以這樣執行："
 
 #. type: Plain text
-#: amuleweb.1.in:185
+#: amuleweb.1.in:189
 msgid "B<amuleweb> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-s> I<HTTPport> B<-A> I<AdminPassword> B<-w>"
 msgstr "B<amuleweb> B<-h> I<主機名稱> B<-p> I<外部連線通訊埠> B<-P> I<外部連線密碼> B<-s> I<HTTP 通訊埠> B<-A> I<管理者密碼> B<-w>"
 
 #. type: Plain text
-#: amuleweb.1.in:189
+#: amuleweb.1.in:193
 msgid "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 #. type: Plain text
-#: amuleweb.1.in:195
+#: amuleweb.1.in:199
 msgid "Of course, you may specify any more or less options on the first example line, and you may also totally omit it."
 msgstr "當然，你可以指定比第一行範例裏更多或更少的選項，甚至您也可以完全不使用。"
 

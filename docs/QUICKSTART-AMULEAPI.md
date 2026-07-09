@@ -7,6 +7,8 @@ exposes its own HTTP surface on a separate port. amuleapi is the first
 shipping REST API for aMule — there is no prior on-the-wire surface to
 migrate from.
 
+> aMule's older web frontend, **amuleweb**, is **deprecated** — it may be removed in aMule 3.2 or later (it is not being removed yet). amuleapi is its intended replacement.
+
 For the endpoint list see the [What ships](#what-ships) section below. Full per-endpoint contracts (methods, query params, request bodies, response shapes, error codes) live in [`docs/api/REFERENCE.md`](api/REFERENCE.md); the SSE event catalog and Last-Event-ID reconnect semantics live in [`docs/api/EVENTS.md`](api/EVENTS.md). The source of truth for routing is [`src/webapi/Api.cpp`](../src/webapi/Api.cpp).
 
 ## Requirements

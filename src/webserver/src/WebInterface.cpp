@@ -99,6 +99,13 @@ bool CamulewebApp::OnInit()
 
 int CamulewebApp::OnRun()
 {
+	// Deprecation notice (printed once at startup, honours --quiet). amuleweb
+	// is not being removed yet -- this only warns operators that it may go
+	// away in a future release so they can plan a move to amuleapi. Kept as a
+	// plain (untranslated) operator-facing string to avoid churning every po
+	// catalogue for a transitional warning.
+	Show(wxT("\nNOTE: amuleweb is deprecated and may be removed in aMule 3.2 or later.\n"
+		 "      Consider migrating to amuleapi (the REST/SSE API). See amuleweb(1).\n\n"));
 	ConnectAndRun("aMuleweb", VERSION);
 	return 0;
 }

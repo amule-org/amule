@@ -39,6 +39,10 @@ amuleweb \- aMule web server
 .RB [ \-\-amule\-config\-file = \fI<path> ]
 
 .SH DESCRIPTION
+.B DEPRECATED:
+amuleweb is deprecated and may be removed in aMule 3.2 or later.
+It is not being removed yet; consider migrating to amuleapi, the REST/SSE API.
+.PP
 \fBamuleweb\fR manages your access to amule through a web browser.
 You can start amuleweb together with \fBamule\fR(1), or separately, any time later.
 Options can be specified via command-line or via config-file.
