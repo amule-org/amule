@@ -177,11 +177,12 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].priority_auto is boolean'
 fi
 
-# --- 7. Method gate (POST/DELETE not allowed on read-only). -------
-for ep in downloads shared; do
-	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
-	_assert_status 405 "DELETE /api/v0/$ep → 405"
-done
+# --- 7. Method gate. DELETE is method-gated on the /shared collection
+# (no bulk-unshare endpoint); the /downloads collection now accepts a bulk
+# DELETE (issue #358, exercised by 29-bulk-mutations.sh), so it is no
+# longer 405 here.
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
+_assert_status 405 "DELETE /api/v0/shared → 405"
 
 # --- Summary. -----------------------------------------------------
 echo

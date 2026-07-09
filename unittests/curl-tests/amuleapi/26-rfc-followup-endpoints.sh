@@ -221,10 +221,11 @@ if [ "$RC" = "202" ]; then
 else
 	_fail "downloads array status" "expected 202, got $RC: $(cat /tmp/p11_dl.json)"
 fi
-if jq -e '.accepted == 1 and .failed == 0' /tmp/p11_dl.json >/dev/null 2>&1; then
-	_pass "POST /downloads array reports accepted=1, failed=0"
+# Unified per-item envelope (#358): one accepted result, no legacy counters.
+if jq -e '(.results | length) == 1 and .results[0].ok == true' /tmp/p11_dl.json >/dev/null 2>&1; then
+	_pass "POST /downloads array reports one ok result"
 else
-	_fail "downloads array counts" "$(cat /tmp/p11_dl.json)"
+	_fail "downloads array results" "$(cat /tmp/p11_dl.json)"
 fi
 # Mixing both forms → 400
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
