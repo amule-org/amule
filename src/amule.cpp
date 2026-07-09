@@ -89,6 +89,7 @@
 #include "ServerConnect.h"              // Needed for CServerConnect
 #include "ServerUDPSocket.h"            // Needed for CServerUDPSocket
 #include "Statistics.h"                 // Needed for CStatistics
+#include "TerminationProcessAmuleApi.h" // Needed for CTerminationProcessAmuleApi
 #include "TerminationProcessAmuleweb.h" // Needed for CTerminationProcessAmuleweb
 #include "ThreadTasks.h"
 #include "UploadQueue.h"         // Needed for CUploadQueue
@@ -221,6 +222,7 @@ CamuleApp::CamuleApp()
 	m_localip = 0;
 	m_dwPublicIP = 0;
 	webserver_pid = 0;
+	amuleapi_pid = 0;
 
 	enable_daemon_fork = false;
 
@@ -288,6 +290,19 @@ int CamuleApp::OnExit()
 			AddLogLineNS(
 				CFormat(_("Killing amuleweb instance with pid '%d' ... ")) % webserver_pid);
 			if (wxKill(webserver_pid, wxSIGKILL, &rc) == -1) {
+				AddLogLineNS(_("Failed"));
+			}
+		}
+	}
+
+	// Kill amuleapi if running
+	if (amuleapi_pid) {
+		AddLogLineNS(CFormat(_("Terminating amuleapi instance with pid '%d' ... ")) % amuleapi_pid);
+		wxKillError rc;
+		if (wxKill(amuleapi_pid, wxSIGTERM, &rc) == -1) {
+			AddLogLineNS(
+				CFormat(_("Killing amuleapi instance with pid '%d' ... ")) % amuleapi_pid);
+			if (wxKill(amuleapi_pid, wxSIGKILL, &rc) == -1) {
 				AddLogLineNS(_("Failed"));
 			}
 		}
@@ -1068,6 +1083,61 @@ bool CamuleApp::OnInit()
 					    "install the package containing aMule web "
 					    "server, or build aMule from source with "
 					    "-DBUILD_WEBSERVER=YES and install it."),
+					_("ERROR"),
+					wxOK | wxICON_ERROR);
+			});
+		}
+	}
+
+	// Run amuleapi?
+	if (thePrefs::GetAmuleApiIsEnabled()) {
+		wxString aMuleConfigFile = thePrefs::GetConfigDir() + m_configFile;
+		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs
+		// on Linux where that block is #ifdef'd out, so it can't see the write.
+		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+		wxString amuleapiPath = thePrefs::GetAmuleApiPath();
+
+#if defined(__WXMAC__) && !defined(AMULE_DAEMON)
+		// For the Mac GUI application, look for amuleapi in the bundle
+		CFURLRef amuleapiUrl =
+			CFBundleCopyAuxiliaryExecutableURL(CFBundleGetMainBundle(), CFSTR("amuleapi"));
+
+		if (amuleapiUrl) {
+			CFURLRef absoluteUrl = CFURLCopyAbsoluteURL(amuleapiUrl);
+			CFRelease(amuleapiUrl);
+
+			if (absoluteUrl) {
+				CFStringRef amuleapiCfstr =
+					CFURLCopyFileSystemPath(absoluteUrl, kCFURLPOSIXPathStyle);
+				CFRelease(absoluteUrl);
+				amuleapiPath = wxCFStringRef(amuleapiCfstr).AsString();
+			}
+		}
+#endif
+
+		// amuleapi binds loopback (127.0.0.1) by default, which requires no
+		// admin password, so auto-start stays credential-free. It reads the EC
+		// host/port/hashed-password from amule.conf via --amule-config-file,
+		// exactly like amuleweb.
+		wxString cmd = QUOTE + amuleapiPath +
+			       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile +
+			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() + QUOTE +
+			       wxString::Format(wxT(" --http-port=%u"), thePrefs::GetAmuleApiPort());
+		CTerminationProcessAmuleApi *p = new CTerminationProcessAmuleApi(cmd, &amuleapi_pid);
+		amuleapi_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));
+		bool amuleapi_ok = amuleapi_pid > 0;
+		if (amuleapi_ok) {
+			AddLogLineC(CFormat(_("amuleapi running on pid %d")) % amuleapi_pid);
+		} else {
+			delete p;
+			// See the amuleweb branch above for why this is deferred with
+			// CallAfter rather than shown inline during OnInit.
+			CallAfter([this]() {
+				ShowAlert(_("You requested to run amuleapi on startup, "
+					    "but the amuleapi binary cannot be run. Please "
+					    "install the package containing aMule's REST API "
+					    "server, or build aMule from source with "
+					    "-DBUILD_AMULEAPI=YES and install it."),
 					_("ERROR"),
 					wxOK | wxICON_ERROR);
 			});

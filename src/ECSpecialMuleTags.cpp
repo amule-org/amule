@@ -183,6 +183,10 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 		rc_prefs.AddTag(CECTag(EC_TAG_WEBSERVER_REFRESH, thePrefs::GetWebPageRefresh()));
 		rc_prefs.AddTag(CECTag(EC_TAG_WEBSERVER_TEMPLATE, thePrefs::GetWebTemplate()));
+		rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_PORT, thePrefs::GetAmuleApiPort()));
+		if (thePrefs::GetAmuleApiIsEnabled()) {
+			rc_prefs.AddTag(CECEmptyTag(EC_TAG_AMULEAPI_AUTORUN));
+		}
 		AddTag(rc_prefs);
 	}
 
@@ -461,6 +465,10 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetWSIsEnabled, EC_TAG_WEBSERVER_AUTORUN);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_WEBSERVER_PORT)) != NULL) {
 			thePrefs::SetWSPort(oneTag->GetInt());
+		}
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetAmuleApiIsEnabled, EC_TAG_AMULEAPI_AUTORUN);
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PORT)) != NULL) {
+			thePrefs::SetAmuleApiPort(static_cast<uint16>(oneTag->GetInt()));
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_PASSWD_HASH)) != NULL) {
 			thePrefs::SetWSPass(oneTag->GetMD4Data().Encode());

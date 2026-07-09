@@ -1972,10 +1972,30 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     item11->Add( item13, wxSizerFlags(1).Center().Border(wxLEFT, 5) );
     item1->Add( item11, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags().Expand().Border(wxALL, 0) );
+    wxStaticBox *item37 = new wxStaticBox( parent, -1, _("aMule API server parameters") );
+    wxStaticBoxSizer *item36 = new wxStaticBoxSizer( item37, wxVERTICAL );
+
+    wxCheckBox *item38 = new wxCheckBox( parent, IDC_ENABLE_AMULEAPI, _("Run amuleapi (REST API) on startup"), wxDefaultPosition, wxDefaultSize, 0 );
+    item36->Add( item38, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
+    wxBoxSizer *item39 = new wxBoxSizer( wxHORIZONTAL );
+
+    wxStaticText *item40 = new wxStaticText( parent, -1, _("HTTP port:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item39->Add( item40, 1, wxALIGN_CENTER_VERTICAL, 5 );
+
+    wxSpinCtrl *item41 = new wxSpinCtrl( parent, IDC_AMULEAPI_PORT, "4713", wxDefaultPosition, wxDefaultSize, 0, 1025, 65535, 4713 );
+    item39->Add( item41, 0, wxALIGN_CENTER, 5 );
+
+    item36->Add( item39, wxSizerFlags().Expand().CenterVertical() );
+
+    wxStaticText *item42 = new wxStaticText( parent, -1, _("Binds to 127.0.0.1 only. Set an admin password in amuleapi.conf to expose it to other hosts."), wxDefaultPosition, wxDefaultSize, 0 );
+    item36->Add( item42, wxSizerFlags().Border(wxLEFT, 5) );
+
+    item0->Add( item36, wxSizerFlags().Expand().Border(wxALL, 0) );
     wxStaticBox *item15 = new wxStaticBox( parent, -1, _("Web server parameters") );
     wxStaticBoxSizer *item14 = new wxStaticBoxSizer( item15, wxVERTICAL );
 
-    wxCheckBox *item16 = new wxCheckBox( parent, IDC_ENABLE_WEB, _("Run webserver on startup"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxCheckBox *item16 = new wxCheckBox( parent, IDC_ENABLE_WEB, _("Run webserver on startup (deprecated)"), wxDefaultPosition, wxDefaultSize, 0 );
     item14->Add( item16, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
     wxFlexGridSizer *item17 = new wxFlexGridSizer( 2, 0, 0 );

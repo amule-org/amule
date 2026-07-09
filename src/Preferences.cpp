@@ -181,6 +181,9 @@ uint16 CPreferences::s_nWebPort;
 uint16 CPreferences::s_nWebUPnPTCPPort;
 bool CPreferences::s_bWebEnabled;
 bool CPreferences::s_bWebUseGzip;
+bool CPreferences::s_bAmuleApiEnabled;
+uint16 CPreferences::s_nAmuleApiPort;
+wxString CPreferences::s_sAmuleApiPath;
 uint32 CPreferences::s_nWebPageRefresh;
 bool CPreferences::s_bWebLowEnabled;
 wxString CPreferences::s_WebTemplate;
@@ -1364,6 +1367,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_ONLINESIG, (new Cfg_Bool("/eMule/OnlineSignature", s_onlineSig, false)));
 	NewCfgItem(IDC_OSUPDATE, (MkCfg_Int("/eMule/OnlineSignatureUpdate", s_OSUpdate, 5)));
 	NewCfgItem(IDC_ENABLE_WEB, (new Cfg_Bool("/WebServer/Enabled", s_bWebEnabled, false)));
+	NewCfgItem(IDC_ENABLE_AMULEAPI, (new Cfg_Bool("/AmuleApi/Enabled", s_bAmuleApiEnabled, false)));
+	NewCfgItem(IDC_AMULEAPI_PORT, (MkCfg_Int("/AmuleApi/HttpPort", s_nAmuleApiPort, 4713)));
 	NewCfgItem(IDC_WEB_PASSWD, (new Cfg_Str_Encrypted("/WebServer/Password", s_sWebPassword)));
 	NewCfgItem(IDC_WEB_PASSWD_LOW, (new Cfg_Str_Encrypted("/WebServer/PasswordLow", s_sWebLowPassword)));
 	NewCfgItem(IDC_WEB_PORT, (MkCfg_Int("/WebServer/Port", s_nWebPort, 4711)));
@@ -1632,6 +1637,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	wxConfigBase::Get()->DeleteEntry("/eMule/GeoIPUpdateUrl"); // get rid of the old one for a while
 
 	s_MiscList.push_back(new Cfg_Str("/WebServer/Path", s_sWebPath, "amuleweb"));
+	s_MiscList.push_back(new Cfg_Str("/AmuleApi/Path", s_sAmuleApiPath, "amuleapi"));
 
 	s_MiscList.push_back(new Cfg_Str("/eMule/StatsServerName", s_StatsServerName, "Shorty's ED2K stats"));
 	s_MiscList.push_back(new Cfg_Str(

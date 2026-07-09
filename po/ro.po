@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 13:28+0200\n"
+"POT-Creation-Date: 2026-07-09 15:24+0200\n"
 "PO-Revision-Date: 2026-07-08 13:27+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -202,11 +202,11 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
-#: src/amuleAppCommon.cpp:181 src/amule.cpp:1071 src/amule.cpp:1185
-#: src/amule.cpp:1487 src/amule-remote-gui.cpp:510 src/amule-remote-gui.cpp:563
-#: src/amule-remote-gui.cpp:577 src/amule-remote-gui.cpp:596
-#: src/amule-remote-gui.cpp:963 src/amule-remote-gui.cpp:990
-#: src/DownloadQueue.cpp:1472
+#: src/amuleAppCommon.cpp:181 src/amule.cpp:1086 src/amule.cpp:1141
+#: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
+#: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
+#: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
 msgid "ERROR"
 msgstr "EROARE"
 
@@ -218,72 +218,83 @@ msgstr "A eșuat deschiderea fișierului legătură eD2k."
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
 msgstr "ATENȚIE: Nu vă puteți adăuga ca sursă pentru o legătură eD2k cât timp aveți lowid."
 
-#: src/amule.cpp:255
+#: src/amule.cpp:257
 msgid "Now, exiting main app..."
 msgstr "Acum, se oprește aplicația principală..."
 
-#: src/amule.cpp:285
+#: src/amule.cpp:287
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Se termină instanța amuleweb cu pid '%d' ... "
 
-#: src/amule.cpp:289
+#: src/amule.cpp:291
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Se omoară instanța amuleweb cu pid '%d' ... "
 
-#: src/amule.cpp:291 src/ClientRef.cpp:180 src/ServerListCtrl.cpp:98
+#: src/amule.cpp:293 src/amule.cpp:306 src/ClientRef.cpp:180
+#: src/ServerListCtrl.cpp:98
 msgid "Failed"
 msgstr "Eșuat"
 
-#: src/amule.cpp:297
+#: src/amule.cpp:300
+#, fuzzy, c-format
+msgid "Terminating amuleapi instance with pid '%d' ... "
+msgstr "Se termină instanța amuleweb cu pid '%d' ... "
+
+#: src/amule.cpp:304
+#, fuzzy, c-format
+msgid "Killing amuleapi instance with pid '%d' ... "
+msgstr "Se omoară instanța amuleweb cu pid '%d' ... "
+
+#: src/amule.cpp:312
 msgid "aMule OnExit: Terminating core."
 msgstr "aMule la ieșire: Se închide nucleul."
 
-#: src/amule.cpp:408
+#: src/amule.cpp:423
 msgid "aMule shutdown completed."
 msgstr "aMule închidere terminată."
 
-#: src/amule.cpp:412
+#: src/amule.cpp:427
 msgid "Memory debug results for aMule exit:"
 msgstr "Rezultatele depanării memoriei pentru ieșirea aMule:"
 
-#: src/amule.cpp:588
+#: src/amule.cpp:603
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
 msgstr ""
 
-#: src/amule.cpp:592
+#: src/amule.cpp:607
 #, c-format
 msgid "Binding all network traffic to interface: %s"
 msgstr ""
 
-#: src/amule.cpp:596
+#: src/amule.cpp:611
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
 msgstr ""
 
-#: src/amule.cpp:602
+#: src/amule.cpp:617
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr ""
 
-#: src/amule.cpp:610
+#: src/amule.cpp:625
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr ""
 
-#: src/amule.cpp:669
+#: src/amule.cpp:684
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Limba dumneavoastră a fost schimbată la cea implicită a sistemului datorită schimbării configurației. Regretăm."
 
-#: src/amule.cpp:671 src/amule.cpp:1475 src/CatDialog.cpp:128
+#: src/amule.cpp:686 src/amule.cpp:1545 src/CatDialog.cpp:128
 #: src/CatDialog.cpp:136 src/CatDialog.cpp:149 src/ServerList.cpp:366
 #: src/ServerListCtrl.cpp:152
 msgid "Info"
 msgstr "Info"
 
-#: src/amule.cpp:678
+#: src/amule.cpp:693
 msgid ""
 "\n"
 "EC configuration"
@@ -291,56 +302,66 @@ msgstr ""
 "\n"
 "configurație EC"
 
-#: src/amule.cpp:681
+#: src/amule.cpp:696
 msgid "Password set and external connections enabled."
 msgstr "Configurarea parolei și conexiunile externe sunt activate."
 
-#: src/amule.cpp:691 src/KadDlg.cpp:176 src/KadDlg.cpp:185
+#: src/amule.cpp:706 src/KadDlg.cpp:176 src/KadDlg.cpp:185
 #: src/PrefsUnifiedDlg.cpp:1209 src/SharedFilesCtrl.cpp:321
 msgid "WARNING"
 msgstr "ATENȚIE"
 
-#: src/amule.cpp:943
+#: src/amule.cpp:958
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Rețele"
 
-#: src/amule.cpp:948
+#: src/amule.cpp:963
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
 
-#: src/amule.cpp:957
+#: src/amule.cpp:972
 #, fuzzy
 msgid "eD2k server list (server.met)"
 msgstr "S-a găsit %i server în server.met"
 
-#: src/amule.cpp:964
+#: src/amule.cpp:979
 msgid "Kad bootstrap nodes (nodes.dat)"
 msgstr ""
 
-#: src/amule.cpp:1053
+#: src/amule.cpp:1068
 #, c-format
 msgid "web server running on pid %d"
 msgstr "server web rulând pe pid %d"
 
-#: src/amule.cpp:1066
+#: src/amule.cpp:1081
 #, fuzzy
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 msgstr "Ați solicitat să ruleze la pornire serverul web, dar fișierul binar amuleweb nu poate fi rulat. Instalați pachetul care conține serverul web aMule, sau compilați aMule utilizând --enable-webserver și apoi rulați make install"
 
-#: src/amule.cpp:1153
+#: src/amule.cpp:1130
+#, fuzzy, c-format
+msgid "amuleapi running on pid %d"
+msgstr "server web rulând pe pid %d"
+
+#: src/amule.cpp:1136
+#, fuzzy
+msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
+msgstr "Ați solicitat să ruleze la pornire serverul web, dar fișierul binar amuleweb nu poate fi rulat. Instalați pachetul care conține serverul web aMule, sau compilați aMule utilizând --enable-webserver și apoi rulați make install"
+
+#: src/amule.cpp:1223
 #, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "Nu se pot lega porturile la adresa specificată: %s"
 
-#: src/amule.cpp:1177
+#: src/amule.cpp:1247
 #, c-format
 msgid "Port %u is not available. You will be LOWID\n"
 msgstr "Portul %u nu este disponibil. Veți fi LOWID\n"
 
-#: src/amule.cpp:1182
+#: src/amule.cpp:1252
 #, c-format
 msgid ""
 "Port %u is not available!\n"
@@ -355,48 +376,48 @@ msgstr ""
 "\n"
 "Verificați rețeaua pentru a vă asigura că portul este deschis pentru intrare și ieșire."
 
-#: src/amule.cpp:1279
+#: src/amule.cpp:1349
 msgid "Failed to create OnlineSig File"
 msgstr "A eșuat crearea fișierului Semnătură Online"
 
-#: src/amule.cpp:1287
+#: src/amule.cpp:1357
 msgid "Failed to create aMule OnlineSig File"
 msgstr "A eșuat crearea fișierului aMule Semnătură Online"
 
-#: src/amule.cpp:1450
+#: src/amule.cpp:1520
 msgid "The selected locale seems not to be installed on your box. (Note: I'll try to set it anyway)"
 msgstr "Localizarea selectată se pare că nu este instalată pe computer. (Notă: Se va încerca configurarea acesteia oricum)"
 
-#: src/amule.cpp:1460
+#: src/amule.cpp:1530
 #, c-format
 msgid "This is the first time you run aMule %s"
 msgstr "Aceasta este prima dată când rulați aMule %s"
 
-#: src/amule.cpp:1463
+#: src/amule.cpp:1533
 msgid "This version is a testing version, updated daily, and\n"
 msgstr "Această versiune este o versiune de testare, actualizată zilnic și\n"
 
-#: src/amule.cpp:1464
+#: src/amule.cpp:1534
 msgid "we give no warranty it won't break anything, burn your house,\n"
 msgstr "nu vă dăm nici un fel de garanție dacă nu se va strica nimic, ardeți-vă casa,\n"
 
-#: src/amule.cpp:1465
+#: src/amule.cpp:1535
 msgid "or kill your dog. But it *should* be safe to use anyway.\n"
 msgstr "sau omorâți-vă câinele. Dar * ar trebui să fie * sigur de utilizat oricum.\n"
 
-#: src/amule.cpp:1470
+#: src/amule.cpp:1540
 msgid "More information, support and new releases can found at our homepage,\n"
 msgstr "Mai multe informații, suport și versiuni noi pot fi găsite pe pagina noastră web,\n"
 
-#: src/amule.cpp:1471
+#: src/amule.cpp:1541
 msgid "at https://amule-org.github.io, or in our IRC channel #aMule at irc.libera.chat.\n"
 msgstr "la https://amule-org.github.io, sau în canalul nostru IRC #aMule at irc.libera.chat.\n"
 
-#: src/amule.cpp:1473
+#: src/amule.cpp:1543
 msgid "Feel free to report any bugs to https://github.com/amule-org/amule/issues"
 msgstr "Raportați orice fel de probleme la https://github.com/amule-org/amule/issues"
 
-#: src/amule.cpp:1485
+#: src/amule.cpp:1555
 msgid ""
 "The folder for Online Signature files you specified is INVALID!\n"
 " OnlineSignature will be DISABLED until you fix it on preferences."
@@ -404,137 +425,137 @@ msgstr ""
 "Dosarul specificat pentru Semnătura Online NU ESTE VALID!\n"
 "Semnătura Online va fi DEZACTIVATĂ până va fi reparată problema în preferințe."
 
-#: src/amule.cpp:1548
+#: src/amule.cpp:1618
 msgid "Server hostname notified"
 msgstr "S-a notificat numele serverului"
 
-#: src/amule.cpp:1894
+#: src/amule.cpp:1964
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Prealocarea spațiului pe disc pentru fișierul '%s' a eșuat: %s"
 
-#: src/amule.cpp:2023
+#: src/amule.cpp:2093
 msgid "ERROR: can't open logfile"
 msgstr "EROARE: nu se poate deschide fișierul jurnal"
 
-#: src/amule.cpp:2027
+#: src/amule.cpp:2097
 msgid "WARNING: logfile is empty. Something is wrong."
 msgstr "ATENȚIE: fișierul jurnal este gol. Ceva este greșit."
 
-#: src/amule.cpp:2044
+#: src/amule.cpp:2114
 msgid "Log has been reset"
 msgstr "Jurnalul a fost resetat"
 
-#: src/amule.cpp:2068
+#: src/amule.cpp:2138
 #, c-format
 msgid "ServerMessage: %s"
 msgstr "Mesaj server: %s"
 
-#: src/amule.cpp:2111 src/IP2Country.cpp:233 src/IPFilter.cpp:506
+#: src/amule.cpp:2181 src/IP2Country.cpp:233 src/IPFilter.cpp:506
 #: src/ServerList.cpp:875
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
 msgstr "Se omite descărcarea a %s, fiindcă fișierul solicitat nu este mai nou."
 
-#: src/amule.cpp:2114
+#: src/amule.cpp:2184
 msgid "Failed to download the nodes list."
 msgstr "A eșuat descărcarea listei de noduri."
 
-#: src/amule.cpp:2135
+#: src/amule.cpp:2205
 msgid "Failed to open the downloaded version check file"
 msgstr "A eșuat deschiderea fișierului de verificare a versiunii"
 
-#: src/amule.cpp:2138 src/amule.cpp:2157 src/amule.cpp:2188 src/amule.cpp:2210
+#: src/amule.cpp:2208 src/amule.cpp:2227 src/amule.cpp:2258 src/amule.cpp:2280
 msgid "Corrupted version check file"
 msgstr "Fișierul de verificare a versiunii este corupt"
 
-#: src/amule.cpp:2221
+#: src/amule.cpp:2291
 msgid "You are using an outdated version of aMule!"
 msgstr "Utilizați o versiune învechită de aMule!"
 
-#: src/amule.cpp:2223
+#: src/amule.cpp:2293
 #, c-format
 msgid "Your aMule version is %i.%i.%i and the latest version is %li.%li.%li"
 msgstr "Versiunea dumneavoastră de aMule este %i.%i.%i iar ultima versiune este %li.%li.%li"
 
-#: src/amule.cpp:2227
+#: src/amule.cpp:2297
 msgid "The latest version can always be found at https://github.com/amule-org/amule/releases/latest"
 msgstr "Ultima versiune poate fi găsită mereu la https://github.com/amule-org/amule/releases/latest"
 
-#: src/amule.cpp:2230
+#: src/amule.cpp:2300
 #, c-format
 msgid "WARNING: Your aMuled version is outdated: %i.%i.%i < %li.%li.%li"
 msgstr "ATENȚIE: Versiunea dumneavoastră aMuled este învechită: %i.%i.%i < %li.%li.%li"
 
-#: src/amule.cpp:2236
+#: src/amule.cpp:2306
 msgid "Your copy of aMule is up to date."
 msgstr "Copia dumneavoastră aMule este actualizată."
 
-#: src/amule.cpp:2243
+#: src/amule.cpp:2313
 msgid "Failed to download the version check file"
 msgstr "A eșuat descărcarea fișierului de verificare a versiunii"
 
-#: src/amule.cpp:2412 src/amule-remote-gui.cpp:845
+#: src/amule.cpp:2482 src/amule-remote-gui.cpp:845
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr "Utilizatori: %s | Fișiere: %s"
 
-#: src/amule.cpp:2413 src/amule-remote-gui.cpp:846
+#: src/amule.cpp:2483 src/amule-remote-gui.cpp:846
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr "Utilizatori: E: %s K: %s | Fișiere: E: %s K: %s"
 
-#: src/amule.cpp:2427 src/amule-remote-gui.cpp:859
+#: src/amule.cpp:2497 src/amule-remote-gui.cpp:859
 msgid "No networks selected"
 msgstr "Nu este selectată nicio rețea"
 
-#: src/amule.cpp:2495 src/TextClient.cpp:882
+#: src/amule.cpp:2565 src/TextClient.cpp:882
 msgid "with LowID"
 msgstr "cu LowID"
 
-#: src/amule.cpp:2495 src/TextClient.cpp:883
+#: src/amule.cpp:2565 src/TextClient.cpp:883
 msgid "with HighID"
 msgstr "cu HighID"
 
-#: src/amule.cpp:2497
+#: src/amule.cpp:2567
 #, c-format
 msgid "Connected to %s %s"
 msgstr "Conectat la %s %s"
 
-#: src/amule.cpp:2501
+#: src/amule.cpp:2571
 #, c-format
 msgid "Connecting to %s"
 msgstr "Conectare la %s"
 
-#: src/amule.cpp:2503
+#: src/amule.cpp:2573
 msgid "Disconnected from eD2k"
 msgstr "Deconectat de la eD2k"
 
-#: src/amule.cpp:2511
+#: src/amule.cpp:2581
 msgid "Kad started."
 msgstr "Kad este pornit."
 
-#: src/amule.cpp:2513
+#: src/amule.cpp:2583
 msgid "Kad stopped."
 msgstr "Kad este oprit."
 
-#: src/amule.cpp:2521
+#: src/amule.cpp:2591
 msgid "Connected to Kad (ok)"
 msgstr "Conectat la Kad (ok)"
 
-#: src/amule.cpp:2523
+#: src/amule.cpp:2593
 msgid "Connected to Kad (firewalled)"
 msgstr "Conectat la Kad (prin firewall)"
 
-#: src/amule.cpp:2526
+#: src/amule.cpp:2596
 msgid "Disconnected from Kad"
 msgstr "Deconectat de la Kad"
 
-#: src/amule.cpp:2557
+#: src/amule.cpp:2627
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
 msgstr "Nu se poate utiliza rețeaua Kad dacă portul UDP este dezactivat în preferințe, nu se pornește."
 
-#: src/amule.cpp:2561
+#: src/amule.cpp:2631
 msgid "Kad network disabled on preferences, not connecting."
 msgstr "Rețeaua Kad este dezactivată în preferințe, nu se conectează."
 
@@ -628,8 +649,8 @@ msgstr "Kad: Închis"
 #: src/amuleDlg.cpp:895 src/DownloadListCtrl.cpp:409
 #: src/DownloadListCtrl.cpp:648 src/FriendListCtrl.cpp:177
 #: src/muuli_wdr.cpp:684 src/muuli_wdr.cpp:735 src/muuli_wdr.cpp:797
-#: src/muuli_wdr.cpp:849 src/muuli_wdr.cpp:2073 src/muuli_wdr.cpp:2155
-#: src/muuli_wdr.cpp:2875 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:568
+#: src/muuli_wdr.cpp:849 src/muuli_wdr.cpp:2093 src/muuli_wdr.cpp:2175
+#: src/muuli_wdr.cpp:2895 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:568
 #: src/ServerListCtrl.cpp:589 src/TransferWnd.cpp:373
 #: src/utils/wxCas/src/wxcasprefs.cpp:235
 msgid "Cancel"
@@ -640,7 +661,7 @@ msgid "Stop the current connection attempts"
 msgstr "Oprește încercările curente de conectare"
 
 #: src/amuleDlg.cpp:901 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
-#: src/muuli_wdr.cpp:2271
+#: src/muuli_wdr.cpp:2291
 msgid "Disconnect"
 msgstr "Deconectează"
 
@@ -649,7 +670,7 @@ msgid "Disconnect from the currently connected networks"
 msgstr "Deconectează de la rețelele curent conectate"
 
 #: src/amuleDlg.cpp:907 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
-#: src/muuli_wdr.cpp:2422 src/muuli_wdr.cpp:2872 src/muuli_wdr.cpp:3211
+#: src/muuli_wdr.cpp:2442 src/muuli_wdr.cpp:2892 src/muuli_wdr.cpp:3231
 msgid "Connect"
 msgstr "Conectează"
 
@@ -704,7 +725,7 @@ msgstr "Confirmare închidere"
 msgid "Launch Command: "
 msgstr "Lansare comandă:"
 
-#: src/amuleDlg.cpp:1409 src/muuli_wdr.cpp:1872 src/Preferences.cpp:931
+#: src/amuleDlg.cpp:1409 src/muuli_wdr.cpp:1872 src/Preferences.cpp:934
 msgid "- default -"
 msgstr "- implicit -"
 
@@ -719,80 +740,80 @@ msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "ATENȚIE: Nu se poate deschide fișierul aspect '%s' pentru citit"
 
 #: src/amuleDlg.cpp:1544 src/amuleDlg.cpp:1763 src/muuli_wdr.cpp:1422
-#: src/muuli_wdr.cpp:3213
+#: src/muuli_wdr.cpp:3233
 msgid "Networks"
 msgstr "Rețele"
 
-#: src/amuleDlg.cpp:1548 src/muuli_wdr.cpp:3213
+#: src/amuleDlg.cpp:1548 src/muuli_wdr.cpp:3233
 msgid "Networks Window"
 msgstr "Fereastra rețelelor"
 
-#: src/amuleDlg.cpp:1550 src/muuli_wdr.cpp:3214
+#: src/amuleDlg.cpp:1550 src/muuli_wdr.cpp:3234
 msgid "Searches"
 msgstr "Căutări"
 
-#: src/amuleDlg.cpp:1554 src/muuli_wdr.cpp:3214
+#: src/amuleDlg.cpp:1554 src/muuli_wdr.cpp:3234
 msgid "Searches Window"
 msgstr "Fereastra căutărilor"
 
 #: src/amuleDlg.cpp:1556 src/DownloadListCtrl.cpp:639 src/muuli_wdr.cpp:382
-#: src/muuli_wdr.cpp:1524 src/muuli_wdr.cpp:3215 src/Statistics.cpp:829
+#: src/muuli_wdr.cpp:1524 src/muuli_wdr.cpp:3235 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Descărcări"
 
-#: src/amuleDlg.cpp:1560 src/muuli_wdr.cpp:3215
+#: src/amuleDlg.cpp:1560 src/muuli_wdr.cpp:3235
 msgid "Downloads Window"
 msgstr "Fereastra descărcărilor"
 
-#: src/amuleDlg.cpp:1562 src/muuli_wdr.cpp:3099
+#: src/amuleDlg.cpp:1562 src/muuli_wdr.cpp:3119
 msgid "Shared files"
 msgstr "Fișiere partajate"
 
-#: src/amuleDlg.cpp:1566 src/muuli_wdr.cpp:3217
+#: src/amuleDlg.cpp:1566 src/muuli_wdr.cpp:3237
 msgid "Shared Files Window"
 msgstr "Fereastra fișierelor partajate"
 
-#: src/amuleDlg.cpp:1568 src/muuli_wdr.cpp:2739 src/muuli_wdr.cpp:3171
-#: src/muuli_wdr.cpp:3218
+#: src/amuleDlg.cpp:1568 src/muuli_wdr.cpp:2759 src/muuli_wdr.cpp:3191
+#: src/muuli_wdr.cpp:3238
 msgid "Messages"
 msgstr "Mesaje"
 
-#: src/amuleDlg.cpp:1572 src/muuli_wdr.cpp:3218
+#: src/amuleDlg.cpp:1572 src/muuli_wdr.cpp:3238
 msgid "Messages Window"
 msgstr "Fereastra mesajelor"
 
-#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3219 src/PrefsUnifiedDlg.cpp:288
+#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
 #: src/Statistics.cpp:779 src/Statistics.cpp:1226
 msgid "Statistics"
 msgstr "Statistici"
 
-#: src/amuleDlg.cpp:1578 src/muuli_wdr.cpp:3219
+#: src/amuleDlg.cpp:1578 src/muuli_wdr.cpp:3239
 msgid "Statistics Graph Window"
 msgstr "Fereastra graficului statisticilor"
 
-#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3221 src/PrefsUnifiedDlg.cpp:304
+#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3241 src/PrefsUnifiedDlg.cpp:304
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Preferințe"
 
-#: src/amuleDlg.cpp:1585 src/muuli_wdr.cpp:3221
+#: src/amuleDlg.cpp:1585 src/muuli_wdr.cpp:3241
 msgid "Preferences Settings Window"
 msgstr "Fereastra configurare preferințe"
 
-#: src/amuleDlg.cpp:1588 src/muuli_wdr.cpp:3222
+#: src/amuleDlg.cpp:1588 src/muuli_wdr.cpp:3242
 msgid "Import"
 msgstr "Importă"
 
-#: src/amuleDlg.cpp:1592 src/muuli_wdr.cpp:3222
+#: src/amuleDlg.cpp:1592 src/muuli_wdr.cpp:3242
 msgid "The partfile importer tool"
 msgstr "Unealta de importat fișiere parțiale"
 
-#: src/amuleDlg.cpp:1595 src/muuli_wdr.cpp:3223
+#: src/amuleDlg.cpp:1595 src/muuli_wdr.cpp:3243
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Despre"
 
-#: src/amuleDlg.cpp:1595 src/muuli_wdr.cpp:3223
+#: src/amuleDlg.cpp:1595 src/muuli_wdr.cpp:3243
 msgid "About/Help"
 msgstr "Despre/Ajutor"
 
@@ -1261,19 +1282,19 @@ msgstr "Automat [În]"
 msgid "Very low"
 msgstr "Foarte joasă"
 
-#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2124
+#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2144
 #: src/ServerListCtrl.cpp:246 src/ServerListCtrl.cpp:439
 #: src/SharedFilesCtrl.cpp:132
 msgid "Low"
 msgstr "Joasă"
 
-#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2125
+#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2145
 #: src/ServerListCtrl.cpp:249 src/ServerListCtrl.cpp:440
 #: src/SharedFilesCtrl.cpp:133
 msgid "Normal"
 msgstr "Normal"
 
-#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2126
+#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2146
 #: src/ServerListCtrl.cpp:252 src/ServerListCtrl.cpp:441
 #: src/SharedFilesCtrl.cpp:134
 msgid "High"
@@ -1365,7 +1386,7 @@ msgstr "Server local"
 msgid "Remote Server"
 msgstr "Server distant"
 
-#: src/DataToText.cpp:152 src/muuli_wdr.cpp:207 src/muuli_wdr.cpp:2992
+#: src/DataToText.cpp:152 src/muuli_wdr.cpp:207 src/muuli_wdr.cpp:3012
 #: src/SearchDlg.cpp:108 src/TextClient.cpp:890
 msgid "Kad"
 msgstr "Kad"
@@ -1437,7 +1458,7 @@ msgstr "Parte"
 msgid "Size"
 msgstr "Dimensiune"
 
-#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3059
+#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3079
 msgid "Transferred"
 msgstr "Transferat"
 
@@ -1493,7 +1514,7 @@ msgstr ""
 "Feedback de la: %s (%s)\n"
 "\n"
 
-#: src/DownloadListCtrl.cpp:645 src/muuli_wdr.cpp:2127
+#: src/DownloadListCtrl.cpp:645 src/muuli_wdr.cpp:2147
 #: src/SharedFilesCtrl.cpp:137
 msgid "Auto"
 msgstr "Automat"
@@ -2147,7 +2168,7 @@ msgstr "A eșuat deschiderea fișierului listă prieteni 'emfriends.met' pentru 
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "CRITIC - niciun client în StartChatSession"
 
-#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2488 src/muuli_wdr.cpp:3147
+#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2508 src/muuli_wdr.cpp:3167
 msgid "Friends"
 msgstr "Prieteni"
 
@@ -2510,7 +2531,7 @@ msgstr "Rată de partajare"
 msgid "Uploaded"
 msgstr "Încărcat"
 
-#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:3043
+#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:3063
 msgid "Requested"
 msgstr "Cerut"
 
@@ -2634,7 +2655,7 @@ msgid "WARNING: "
 msgstr "ATENȚIE:"
 
 #: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:768 src/muuli_wdr.cpp:1180
-#: src/muuli_wdr.cpp:2947 src/muuli_wdr.cpp:3187
+#: src/muuli_wdr.cpp:2967 src/muuli_wdr.cpp:3207
 msgid "Close"
 msgstr "Închide"
 
@@ -2652,7 +2673,7 @@ msgid "Paste"
 msgstr "Lipește"
 
 #: src/MuleTextCtrl.cpp:89 src/muuli_wdr.cpp:348 src/muuli_wdr.cpp:710
-#: src/muuli_wdr.cpp:2198 src/muuli_wdr.cpp:2217
+#: src/muuli_wdr.cpp:2218 src/muuli_wdr.cpp:2237
 #: src/utils/aLinkCreator/src/alcframe.cpp:142
 msgid "Clear"
 msgstr "Curăță"
@@ -3083,7 +3104,7 @@ msgstr "Nume complet :"
 #: src/muuli_wdr.cpp:1118 src/muuli_wdr.cpp:1123 src/muuli_wdr.cpp:1130
 #: src/muuli_wdr.cpp:1135 src/muuli_wdr.cpp:1142 src/muuli_wdr.cpp:1156
 #: src/muuli_wdr.cpp:1163 src/muuli_wdr.cpp:1168 src/muuli_wdr.cpp:1175
-#: src/muuli_wdr.cpp:3045 src/muuli_wdr.cpp:3053 src/muuli_wdr.cpp:3061
+#: src/muuli_wdr.cpp:3065 src/muuli_wdr.cpp:3073 src/muuli_wdr.cpp:3081
 msgid "N/A"
 msgstr "NU SE APLICĂ"
 
@@ -3259,7 +3280,7 @@ msgstr "Nume utilizator:"
 msgid "Userhash :"
 msgstr "Index utilizator :"
 
-#: src/muuli_wdr.cpp:846 src/muuli_wdr.cpp:2266
+#: src/muuli_wdr.cpp:846 src/muuli_wdr.cpp:2286
 #: src/utils/aLinkCreator/src/alcframe.cpp:137
 msgid "Add"
 msgstr "Adaugă"
@@ -3268,15 +3289,15 @@ msgstr "Adaugă"
 msgid "Download-Speed"
 msgstr "Viteză-descărcare"
 
-#: src/muuli_wdr.cpp:905 src/muuli_wdr.cpp:940 src/muuli_wdr.cpp:2366
+#: src/muuli_wdr.cpp:905 src/muuli_wdr.cpp:940 src/muuli_wdr.cpp:2386
 msgid "Current"
 msgstr "Curentul"
 
-#: src/muuli_wdr.cpp:913 src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:2374
+#: src/muuli_wdr.cpp:913 src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:2394
 msgid "Running average"
 msgstr "Medie rulare"
 
-#: src/muuli_wdr.cpp:921 src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:2382
+#: src/muuli_wdr.cpp:921 src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:2402
 msgid "Session average"
 msgstr "Medie sesiune"
 
@@ -3514,7 +3535,7 @@ msgid "Enter your browser name here. Leave this field empty to use the system de
 msgstr "Introduceți aici numele navigatorului. Lăsați acest câmp necompletat pentru utilizarea navigatorului implicit de sistem."
 
 #: src/muuli_wdr.cpp:1286 src/muuli_wdr.cpp:1303 src/muuli_wdr.cpp:1603
-#: src/muuli_wdr.cpp:1634 src/muuli_wdr.cpp:1646 src/muuli_wdr.cpp:2582
+#: src/muuli_wdr.cpp:1634 src/muuli_wdr.cpp:1646 src/muuli_wdr.cpp:2602
 #: src/utils/aLinkCreator/src/alcframe.cpp:135
 #: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
 msgid "Browse"
@@ -3609,7 +3630,7 @@ msgstr "Număr maxim de conexiuni simultane:"
 msgid "Kademlia"
 msgstr "Kademlia"
 
-#: src/muuli_wdr.cpp:1428 src/muuli_wdr.cpp:2987
+#: src/muuli_wdr.cpp:1428 src/muuli_wdr.cpp:3007
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -3909,7 +3930,7 @@ msgstr "Noduri Kad care rulează"
 msgid "Kad-nodes session"
 msgstr "Noduri Kad pe sesiune"
 
-#: src/muuli_wdr.cpp:1773 src/muuli_wdr.cpp:2145
+#: src/muuli_wdr.cpp:1773 src/muuli_wdr.cpp:2165
 msgid "Select"
 msgstr "Selectează"
 
@@ -4039,7 +4060,7 @@ msgstr "IP a interfeței de ascultare:"
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
 msgstr "Introduceți aici un ip valid în formatul a.b.c.d pentru ascultarea interfeței EC. Un câmp gol sau 0.0.0.0 va însemna orice interfață."
 
-#: src/muuli_wdr.cpp:1959 src/muuli_wdr.cpp:2005
+#: src/muuli_wdr.cpp:1959 src/muuli_wdr.cpp:2025
 msgid "TCP port:"
 msgstr "port TCP:"
 
@@ -4047,369 +4068,388 @@ msgstr "port TCP:"
 msgid "Enable UPnP port forwarding on the EC port"
 msgstr "Activează înaintarea portului UPnP pe portul EC"
 
-#: src/muuli_wdr.cpp:1969 src/muuli_wdr.cpp:2859
+#: src/muuli_wdr.cpp:1969 src/muuli_wdr.cpp:2879
 #: src/utils/wxCas/src/wxcasprefs.cpp:167
 msgid "Password"
 msgstr "Parolă"
 
 #: src/muuli_wdr.cpp:1975
-msgid "Web server parameters"
+#, fuzzy
+msgid "aMule API server parameters"
 msgstr "Parametrii server web"
 
 #: src/muuli_wdr.cpp:1978
-msgid "Run webserver on startup"
+msgid "Run amuleapi (REST API) on startup"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1983
+#, fuzzy
+msgid "HTTP port:"
+msgstr "port TCP:"
+
+#: src/muuli_wdr.cpp:1991
+msgid "Binds to 127.0.0.1 only. Set an admin password in amuleapi.conf to expose it to other hosts."
+msgstr ""
+
+#: src/muuli_wdr.cpp:1995
+msgid "Web server parameters"
+msgstr "Parametrii server web"
+
+#: src/muuli_wdr.cpp:1998
+#, fuzzy
+msgid "Run webserver on startup (deprecated)"
 msgstr "Rulează la pornire serverul web"
 
-#: src/muuli_wdr.cpp:1984
+#: src/muuli_wdr.cpp:2004
 msgid "Web template"
 msgstr "Șablon web"
 
-#: src/muuli_wdr.cpp:1989
+#: src/muuli_wdr.cpp:2009
 msgid "Full rights password"
 msgstr "Parolă cu drepturi depline"
 
-#: src/muuli_wdr.cpp:1993
+#: src/muuli_wdr.cpp:2013
 msgid "Enable Low rights User"
 msgstr "Activează utilizatorul cu drepturi scăzute"
 
-#: src/muuli_wdr.cpp:1998
+#: src/muuli_wdr.cpp:2018
 msgid "Low rights password"
 msgstr "Parolă cu drepturi scăzute"
 
-#: src/muuli_wdr.cpp:2012
+#: src/muuli_wdr.cpp:2032
 msgid "Enable UPnP port forwarding of the web server port"
 msgstr "Activează înaintarea portului UPnP pe portul serverului web"
 
-#: src/muuli_wdr.cpp:2017
+#: src/muuli_wdr.cpp:2037
 msgid "Web server UPnP TCP port (Optional)"
 msgstr "Port UPnP TCP server web (facultativ)"
 
-#: src/muuli_wdr.cpp:2025
+#: src/muuli_wdr.cpp:2045
 msgid "Page Refresh Time (in secs)"
 msgstr "Timp reîmprospătare pagină (în secunde)"
 
-#: src/muuli_wdr.cpp:2032
+#: src/muuli_wdr.cpp:2052
 msgid "Enable Gzip compression"
 msgstr "Activează compresia Gzip"
 
-#: src/muuli_wdr.cpp:2066
+#: src/muuli_wdr.cpp:2086
 #, fuzzy
 msgid "Reset page to defaults"
 msgstr "Valoare implicită a sistemului"
 
-#: src/muuli_wdr.cpp:2067
+#: src/muuli_wdr.cpp:2087
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2069 src/muuli_wdr.cpp:2152 src/ServerWnd.cpp:233
+#: src/muuli_wdr.cpp:2089 src/muuli_wdr.cpp:2172 src/ServerWnd.cpp:233
 #: src/ServerWnd.cpp:241
 msgid "OK"
 msgstr "Bine"
 
-#: src/muuli_wdr.cpp:2071
+#: src/muuli_wdr.cpp:2091
 msgid "Click here to apply any changes made to the preferences."
 msgstr "Apăsați aici pentru a aplica orice modificare efectuată la preferințe."
 
-#: src/muuli_wdr.cpp:2074
+#: src/muuli_wdr.cpp:2094
 msgid "Reset any changes made to the preferences."
 msgstr "Resetează orice schimbare efectuată la preferințe."
 
-#: src/muuli_wdr.cpp:2096
+#: src/muuli_wdr.cpp:2116
 msgid "Title :"
 msgstr "Titlu :"
 
-#: src/muuli_wdr.cpp:2103
+#: src/muuli_wdr.cpp:2123
 msgid "Comment :"
 msgstr "Comentariu :"
 
-#: src/muuli_wdr.cpp:2110
+#: src/muuli_wdr.cpp:2130
 msgid "Incoming Dir :"
 msgstr "Director intrare :"
 
-#: src/muuli_wdr.cpp:2119
+#: src/muuli_wdr.cpp:2139
 msgid "Change priority for new assigned files :"
 msgstr "Schimbă prioritatea pentru noile fișiere alocate :"
 
-#: src/muuli_wdr.cpp:2123
+#: src/muuli_wdr.cpp:2143
 msgid "Don't change"
 msgstr "Nu modifica"
 
-#: src/muuli_wdr.cpp:2135
+#: src/muuli_wdr.cpp:2155
 msgid "Select color for this Category (currently selected) :"
 msgstr "Selectați culoarea pentru această categorie (selectată curent):"
 
-#: src/muuli_wdr.cpp:2199 src/muuli_wdr.cpp:2218
+#: src/muuli_wdr.cpp:2219 src/muuli_wdr.cpp:2238
 msgid "Click this button to reset the log."
 msgstr "Apăsați acest buton pentru resetarea jurnalului."
 
-#: src/muuli_wdr.cpp:2237
+#: src/muuli_wdr.cpp:2257
 msgid "Click on this button to update the servers list from URL ..."
 msgstr "Apăsați acest buton pentru a se actualiza lista serverelor din URL ..."
 
-#: src/muuli_wdr.cpp:2241
+#: src/muuli_wdr.cpp:2261
 msgid "Server list"
 msgstr "Listă server"
 
-#: src/muuli_wdr.cpp:2245
+#: src/muuli_wdr.cpp:2265
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 msgstr "Introduceți aici adresa URL pentru un fișier server.met și apăsați butonul din stânga pentru a actualiza lista serverelor. cunoscute."
 
-#: src/muuli_wdr.cpp:2250
+#: src/muuli_wdr.cpp:2270
 msgid "Add server manually: Name"
 msgstr "Adăugare server manual: Nume"
 
-#: src/muuli_wdr.cpp:2253
+#: src/muuli_wdr.cpp:2273
 msgid "Enter the name of the new server here"
 msgstr "Introduceți aici numele noului server"
 
-#: src/muuli_wdr.cpp:2255 src/ServerWnd.cpp:180
+#: src/muuli_wdr.cpp:2275 src/ServerWnd.cpp:180
 msgid "IP:Port"
 msgstr "IP:Port"
 
-#: src/muuli_wdr.cpp:2258
+#: src/muuli_wdr.cpp:2278
 msgid "Enter the IP of the server here, using the x.x.x.x format."
 msgstr "Introduceți aici adresa IP a serverului, utilizând formatul x.x.x.x  ."
 
-#: src/muuli_wdr.cpp:2264
+#: src/muuli_wdr.cpp:2284
 msgid "Enter the port of the server here."
 msgstr "Introduceți aici portul serverului."
 
-#: src/muuli_wdr.cpp:2267
+#: src/muuli_wdr.cpp:2287
 msgid "Add manually a server (fill fields to the left before) ..."
 msgstr "Adăugați un server manual (completați întâi câmpurile din stânga) ..."
 
-#: src/muuli_wdr.cpp:2296
+#: src/muuli_wdr.cpp:2316
 msgid "aMule Log"
 msgstr "Jurnal aMule"
 
-#: src/muuli_wdr.cpp:2300
+#: src/muuli_wdr.cpp:2320
 msgid "Server Info"
 msgstr "Informație server"
 
-#: src/muuli_wdr.cpp:2304
+#: src/muuli_wdr.cpp:2324
 msgid "ED2K Info"
 msgstr "Informație eD2k"
 
-#: src/muuli_wdr.cpp:2308
+#: src/muuli_wdr.cpp:2328
 msgid "Kad Info"
 msgstr "Informație Kad"
 
-#: src/muuli_wdr.cpp:2336
+#: src/muuli_wdr.cpp:2356
 msgid "Click on this button to update the nodes list from URL ..."
 msgstr "Apăsați pe acest buton pentru a actualiza lista nodurilor din URL ..."
 
-#: src/muuli_wdr.cpp:2340
+#: src/muuli_wdr.cpp:2360
 msgid "Nodes (0)"
 msgstr "Noduri (0)"
 
-#: src/muuli_wdr.cpp:2344
+#: src/muuli_wdr.cpp:2364
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
 msgstr "Introduceți aici adresa url către un fișier nodes.dat și apăsați butonul din stânga pentru actualizarea listei nodurilor cunoscute."
 
-#: src/muuli_wdr.cpp:2347
+#: src/muuli_wdr.cpp:2367
 msgid "Nodes stats"
 msgstr "Stare noduri"
 
-#: src/muuli_wdr.cpp:2389
+#: src/muuli_wdr.cpp:2409
 msgid "Bootstrap"
 msgstr "Bootstrap"
 
-#: src/muuli_wdr.cpp:2392
+#: src/muuli_wdr.cpp:2412
 msgid "New node"
 msgstr "Nod nou"
 
-#: src/muuli_wdr.cpp:2397
+#: src/muuli_wdr.cpp:2417
 msgid "IP:"
 msgstr "IP:"
 
-#: src/muuli_wdr.cpp:2417
+#: src/muuli_wdr.cpp:2437
 msgid "Port:"
 msgstr "Port:"
 
-#: src/muuli_wdr.cpp:2430
+#: src/muuli_wdr.cpp:2450
 msgid "Bootstrap from known clients"
 msgstr "Bootstrap de la clienții cunoscuți"
 
-#: src/muuli_wdr.cpp:2432
+#: src/muuli_wdr.cpp:2452
 msgid "Disconnect Kad"
 msgstr "Deconectare Kad"
 
-#: src/muuli_wdr.cpp:2466
+#: src/muuli_wdr.cpp:2486
 msgid "Use Secure User Identification"
 msgstr "Utilizează identificarea securizată a utilizatorilor"
 
-#: src/muuli_wdr.cpp:2468
+#: src/muuli_wdr.cpp:2488
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
 msgstr "Este recomandat să activați această opțiune. Nu veți primii credite dacă SUI nu este activat."
 
-#: src/muuli_wdr.cpp:2470
+#: src/muuli_wdr.cpp:2490
 msgid "Protocol Obfuscation"
 msgstr "Protocol disimulare"
 
-#: src/muuli_wdr.cpp:2473
+#: src/muuli_wdr.cpp:2493
 msgid "Support Protocol Obfuscation"
 msgstr "Suport protocol disimulare"
 
-#: src/muuli_wdr.cpp:2475
+#: src/muuli_wdr.cpp:2495
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
 msgstr "Această opțiune activează Protocolul Disimulare, și determină aMule să accepte conexiuni disimulate de la alți clienți."
 
-#: src/muuli_wdr.cpp:2477
+#: src/muuli_wdr.cpp:2497
 msgid "Use obfuscation for outgoing connections"
 msgstr "Utilizați disimularea pentru conexiunile de ieșire"
 
-#: src/muuli_wdr.cpp:2479
+#: src/muuli_wdr.cpp:2499
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
 msgstr "Această opțiune determină aMule să utilizeze Protocolul Disimulare când conectează alți clienți/servere."
 
-#: src/muuli_wdr.cpp:2481
+#: src/muuli_wdr.cpp:2501
 msgid "Accept only obfuscated connections"
 msgstr "Acceptă numai conexiuni disimulate"
 
-#: src/muuli_wdr.cpp:2482
+#: src/muuli_wdr.cpp:2502
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
 msgstr "Această opțiune face aMule să accepte numai conexiuni disimulate. Veți avea mai puține surse, dar tot traficul va fi disimulat"
 
-#: src/muuli_wdr.cpp:2487
+#: src/muuli_wdr.cpp:2507
 msgid "Everybody"
 msgstr "Fiecare"
 
-#: src/muuli_wdr.cpp:2489
+#: src/muuli_wdr.cpp:2509
 msgid "No one"
 msgstr "Nimănui"
 
-#: src/muuli_wdr.cpp:2491
+#: src/muuli_wdr.cpp:2511
 msgid "Who can see my shared files:"
 msgstr "Cine poate vedea fișierele mele partajate:"
 
-#: src/muuli_wdr.cpp:2492
+#: src/muuli_wdr.cpp:2512
 msgid "Select who can request to view a list of your shared files."
 msgstr "Selectați cine poate solicita să vizualizeze o listă a fișierelor partajate."
 
-#: src/muuli_wdr.cpp:2494
+#: src/muuli_wdr.cpp:2514
 msgid "IP-Filtering"
 msgstr "Filtrare-IP"
 
-#: src/muuli_wdr.cpp:2501
+#: src/muuli_wdr.cpp:2521
 msgid "Filter clients"
 msgstr "Filtru clienți"
 
-#: src/muuli_wdr.cpp:2503
+#: src/muuli_wdr.cpp:2523
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "Activați filtrarea IP-urilor client cum este definit în fișierul ~/.aMule/ipfilter.dat."
 
-#: src/muuli_wdr.cpp:2505
+#: src/muuli_wdr.cpp:2525
 msgid "Filter servers"
 msgstr "Filtrare servere"
 
-#: src/muuli_wdr.cpp:2507
+#: src/muuli_wdr.cpp:2527
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "Activați filtrarea IP-urilor server cum este definit în fișierul ~/.aMule/ipfilter.dat."
 
-#: src/muuli_wdr.cpp:2511
+#: src/muuli_wdr.cpp:2531
 msgid "Reload List"
 msgstr "Reîncarcă lista"
 
-#: src/muuli_wdr.cpp:2512
+#: src/muuli_wdr.cpp:2532
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
 msgstr "Reîncarcă lista IP-urilor de filtrat din fișierul ~/.aMule/ipfilter.dat"
 
-#: src/muuli_wdr.cpp:2518
+#: src/muuli_wdr.cpp:2538
 msgid "URL:"
 msgstr "URL:"
 
-#: src/muuli_wdr.cpp:2522 src/muuli_wdr.cpp:2715
+#: src/muuli_wdr.cpp:2542 src/muuli_wdr.cpp:2735
 msgid "Update now"
 msgstr "Actualizează acum"
 
-#: src/muuli_wdr.cpp:2525
+#: src/muuli_wdr.cpp:2545
 msgid "Auto-update ipfilter at startup"
 msgstr "Actualizare automată filtru ip la pornire"
 
-#: src/muuli_wdr.cpp:2529
+#: src/muuli_wdr.cpp:2549
 msgid "Filtering Level:"
 msgstr "Nivel de filtrare:"
 
-#: src/muuli_wdr.cpp:2535
+#: src/muuli_wdr.cpp:2555
 msgid "Always filter LAN IPs"
 msgstr "Filtrează mereu IP-urile LAN"
 
-#: src/muuli_wdr.cpp:2538
+#: src/muuli_wdr.cpp:2558
 msgid "Paranoid handling of non-matching IPs"
 msgstr "Manipulare paranoică a IP-urilor care nu se potrivesc"
 
-#: src/muuli_wdr.cpp:2540
+#: src/muuli_wdr.cpp:2560
 msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 msgstr "Respinge pachetele dacă adresa ip a clientului este diferită de adresa ip de unde este primit pachetul. Utilizați cu precauție."
 
-#: src/muuli_wdr.cpp:2542
+#: src/muuli_wdr.cpp:2562
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Utilizați în tot sistemul ipfilter.dat dacă este disponibil"
 
-#: src/muuli_wdr.cpp:2543
+#: src/muuli_wdr.cpp:2563
 #, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
 msgstr "Dacă nu s-a găsit local ipfilter.dat, permite utilizarea unui fișier ipfilter din sistem."
 
-#: src/muuli_wdr.cpp:2560
+#: src/muuli_wdr.cpp:2580
 msgid "Enable Online-Signature"
 msgstr "Activare semnătură online"
 
-#: src/muuli_wdr.cpp:2562
+#: src/muuli_wdr.cpp:2582
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
 msgstr "Activați scrierea fișierului OS, care poate fi utilizat de aplicații exterioare la crearea semnăturilor și aprecierii."
 
-#: src/muuli_wdr.cpp:2566
+#: src/muuli_wdr.cpp:2586
 msgid "Update Frequency (Secs):"
 msgstr "Frecvență actualizare (secunde)"
 
-#: src/muuli_wdr.cpp:2569
+#: src/muuli_wdr.cpp:2589
 msgid "Change the frequency (in seconds) of Online Signature updates."
 msgstr "Schimbați frecvența (în secunde) a actualizărilor semnăturii online."
 
-#: src/muuli_wdr.cpp:2577
+#: src/muuli_wdr.cpp:2597
 msgid "Save online signature file in: "
 msgstr "Salvează fișierul semnăturii online în:"
 
-#: src/muuli_wdr.cpp:2583
+#: src/muuli_wdr.cpp:2603
 msgid "Click here to select the directory containing the the Online Signature files."
 msgstr "Apăsați aici pentru a selecta directorul care conține fișierele cu semnătura online."
 
-#: src/muuli_wdr.cpp:2616
+#: src/muuli_wdr.cpp:2636
 msgid "Show country flags for clients"
 msgstr "Arată steagul țării pentru clienți"
 
-#: src/muuli_wdr.cpp:2617
+#: src/muuli_wdr.cpp:2637
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2622
+#: src/muuli_wdr.cpp:2642
 #, fuzzy
 msgid "Database"
 msgstr "Rată date :"
 
-#: src/muuli_wdr.cpp:2638
+#: src/muuli_wdr.cpp:2658
 #, fuzzy
 msgid "Source:"
 msgstr "Surse"
 
-#: src/muuli_wdr.cpp:2641
+#: src/muuli_wdr.cpp:2661
 msgid "DB-IP (free, no account)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2642
+#: src/muuli_wdr.cpp:2662
 msgid "MaxMind GeoLite2 (free, account required)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2643
+#: src/muuli_wdr.cpp:2663
 msgid "Custom URL"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2646
+#: src/muuli_wdr.cpp:2666
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2663
+#: src/muuli_wdr.cpp:2683
 msgid ""
 "No configuration required.\n"
 "\n"
@@ -4417,11 +4457,11 @@ msgid ""
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2676
+#: src/muuli_wdr.cpp:2696
 msgid "License key:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2682
+#: src/muuli_wdr.cpp:2702
 msgid ""
 "Sign up for a free MaxMind account, then generate a License Key:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
@@ -4431,225 +4471,225 @@ msgid ""
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2697
+#: src/muuli_wdr.cpp:2717
 #, fuzzy
 msgid "Download URL:"
 msgstr "Descărcare:"
 
-#: src/muuli_wdr.cpp:2703
+#: src/muuli_wdr.cpp:2723
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2716
+#: src/muuli_wdr.cpp:2736
 msgid "Download the GeoIP database from the selected source."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2718
+#: src/muuli_wdr.cpp:2738
 #, fuzzy
 msgid "Auto-update on startup"
 msgstr "Actualizare automată filtru ip la pornire"
 
-#: src/muuli_wdr.cpp:2719
+#: src/muuli_wdr.cpp:2739
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2742
+#: src/muuli_wdr.cpp:2762
 msgid "Filter incoming messages (except current chat):"
 msgstr "Filtrare mesaje de intrare (cu excepția chat-ului curent):"
 
-#: src/muuli_wdr.cpp:2744
+#: src/muuli_wdr.cpp:2764
 msgid "Filter all messages"
 msgstr "Filtrează toate mesajele"
 
-#: src/muuli_wdr.cpp:2746
+#: src/muuli_wdr.cpp:2766
 msgid "Filter messages from people not on your friend list"
 msgstr "Filtrare mesaje de la persoane care nu sunt în lista de prieteni"
 
-#: src/muuli_wdr.cpp:2748
+#: src/muuli_wdr.cpp:2768
 msgid "Filter messages from unknown clients"
 msgstr "Filtrare mesaje de la clienți necunoscuți"
 
-#: src/muuli_wdr.cpp:2750
+#: src/muuli_wdr.cpp:2770
 msgid "Filter messages containing (use ',' as separator):"
 msgstr "Filtrare mesaje conținând )utilizați ',' ca separator):"
 
-#: src/muuli_wdr.cpp:2753 src/muuli_wdr.cpp:2764
+#: src/muuli_wdr.cpp:2773 src/muuli_wdr.cpp:2784
 msgid "add here the words amule should filter and block messages including it"
 msgstr "adăugați aici cuvintele pe care amule trebuie să le filtreze și să blocheze mesajele care le includ"
 
-#: src/muuli_wdr.cpp:2755
+#: src/muuli_wdr.cpp:2775
 msgid "Show received messages in the log"
 msgstr "Arată în jurnal mesajele primite"
 
-#: src/muuli_wdr.cpp:2758
+#: src/muuli_wdr.cpp:2778
 msgid "Comments"
 msgstr "Comentarii"
 
-#: src/muuli_wdr.cpp:2761
+#: src/muuli_wdr.cpp:2781
 msgid "Filter comments containing (use ',' as separator):"
 msgstr "Filtrare comentarii conținând (utilizați ',' ca separator):"
 
-#: src/muuli_wdr.cpp:2784
+#: src/muuli_wdr.cpp:2804
 msgid "Enable authentication"
 msgstr "Activează autentificarea"
 
-#: src/muuli_wdr.cpp:2785
+#: src/muuli_wdr.cpp:2805
 msgid "Enable/disable username/password authentication"
 msgstr "Activează/dezactivează autentificarea cu nume utilizator/parolă"
 
-#: src/muuli_wdr.cpp:2788
+#: src/muuli_wdr.cpp:2808
 msgid "Username: "
 msgstr "Utilizator:"
 
-#: src/muuli_wdr.cpp:2791
+#: src/muuli_wdr.cpp:2811
 msgid "The username to use to connect to the proxy"
 msgstr "Numele de utilizator de utilizat pentru conectarea la proxy"
 
-#: src/muuli_wdr.cpp:2793
+#: src/muuli_wdr.cpp:2813
 msgid "Password:"
 msgstr "Parolă:"
 
-#: src/muuli_wdr.cpp:2796
+#: src/muuli_wdr.cpp:2816
 msgid "The password to use to connect to the proxy"
 msgstr "Parola de utilizat pentru conectarea la proxy"
 
-#: src/muuli_wdr.cpp:2798
+#: src/muuli_wdr.cpp:2818
 msgid "Enable Proxy"
 msgstr "Activează proxy"
 
-#: src/muuli_wdr.cpp:2799
+#: src/muuli_wdr.cpp:2819
 msgid "Enable/disable proxy support"
 msgstr "Activează/dezactivează suportul proxy"
 
-#: src/muuli_wdr.cpp:2802
+#: src/muuli_wdr.cpp:2822
 msgid "Proxy type:"
 msgstr "Tip proxy:"
 
-#: src/muuli_wdr.cpp:2813
+#: src/muuli_wdr.cpp:2833
 msgid "Proxy host:"
 msgstr "Gazdă proxy:"
 
-#: src/muuli_wdr.cpp:2816
+#: src/muuli_wdr.cpp:2836
 msgid "The proxy host name"
 msgstr "Numele de gazdă proxy"
 
-#: src/muuli_wdr.cpp:2818
+#: src/muuli_wdr.cpp:2838
 msgid "Proxy port:"
 msgstr "Port proxy:"
 
-#: src/muuli_wdr.cpp:2821
+#: src/muuli_wdr.cpp:2841
 msgid "The proxy port"
 msgstr "Portul proxy"
 
-#: src/muuli_wdr.cpp:2840
+#: src/muuli_wdr.cpp:2860
 msgid "Connect to:"
 msgstr "Conectează la:"
 
-#: src/muuli_wdr.cpp:2849
+#: src/muuli_wdr.cpp:2869
 msgid "Login to remote amule"
 msgstr "Autentificare la amule distant"
 
-#: src/muuli_wdr.cpp:2854
+#: src/muuli_wdr.cpp:2874
 msgid "User name"
 msgstr "Nume utilizator"
 
-#: src/muuli_wdr.cpp:2865
+#: src/muuli_wdr.cpp:2885
 msgid "Remember those settings"
 msgstr "Amintește aceste configurări"
 
-#: src/muuli_wdr.cpp:2868
+#: src/muuli_wdr.cpp:2888
 #, fuzzy
 msgid "Force ZLIB compression"
 msgstr "Utilizează compresia gzip"
 
-#: src/muuli_wdr.cpp:2892
+#: src/muuli_wdr.cpp:2912
 msgid "Enable Verbose Debug-Logging."
 msgstr "Activează jurnalizarea de depanare detaliată."
 
-#: src/muuli_wdr.cpp:2894
+#: src/muuli_wdr.cpp:2914
 msgid "Only to Logfile"
 msgstr "Numai la fișierul jurnal"
 
-#: src/muuli_wdr.cpp:2896
+#: src/muuli_wdr.cpp:2916
 msgid "Message Categories:"
 msgstr "Categorii mesaje:"
 
-#: src/muuli_wdr.cpp:2920 src/PartFileConvertDlg.cpp:160
+#: src/muuli_wdr.cpp:2940 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
 msgstr "Așteptați..."
 
-#: src/muuli_wdr.cpp:2940
+#: src/muuli_wdr.cpp:2960
 msgid "Add imports"
 msgstr "Adaugă importurile"
 
-#: src/muuli_wdr.cpp:2943
+#: src/muuli_wdr.cpp:2963
 msgid "Retry selected"
 msgstr "Reîncearcă selectatele"
 
-#: src/muuli_wdr.cpp:2945
+#: src/muuli_wdr.cpp:2965
 msgid "Remove selected"
 msgstr "Elimină selecția"
 
-#: src/muuli_wdr.cpp:3008
+#: src/muuli_wdr.cpp:3028
 msgid "Event Types"
 msgstr "Tipuri de evenimente"
 
-#: src/muuli_wdr.cpp:3027
+#: src/muuli_wdr.cpp:3047
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
 msgstr "Statistici și clienți în coadă pentru fișier(ele) selectate : Sesiune / Tot timpul"
 
-#: src/muuli_wdr.cpp:3051
+#: src/muuli_wdr.cpp:3071
 msgid "Active Uploads"
 msgstr "Încărcări active"
 
-#: src/muuli_wdr.cpp:3065
+#: src/muuli_wdr.cpp:3085
 msgid "Percent of total files"
 msgstr "Procentul din totalul fișierelor"
 
-#: src/muuli_wdr.cpp:3105
+#: src/muuli_wdr.cpp:3125
 msgid "Show Clients for"
 msgstr "Arată clienții pentru"
 
-#: src/muuli_wdr.cpp:3107
+#: src/muuli_wdr.cpp:3127
 msgid "All files"
 msgstr "Toate fișierele"
 
-#: src/muuli_wdr.cpp:3110
+#: src/muuli_wdr.cpp:3130
 msgid "Selected files"
 msgstr "Fișierele selectate"
 
-#: src/muuli_wdr.cpp:3113
+#: src/muuli_wdr.cpp:3133
 msgid "Active uploads only"
 msgstr "Numai încărcările active"
 
-#: src/muuli_wdr.cpp:3117
+#: src/muuli_wdr.cpp:3137
 msgid "Reload:"
 msgstr "Reîncarcă:"
 
-#: src/muuli_wdr.cpp:3121
+#: src/muuli_wdr.cpp:3141
 msgid "Reload your shared files"
 msgstr "Reîncărcați fișierele partajate"
 
-#: src/muuli_wdr.cpp:3183
+#: src/muuli_wdr.cpp:3203
 msgid "Send"
 msgstr "Trimite"
 
-#: src/muuli_wdr.cpp:3184
+#: src/muuli_wdr.cpp:3204
 msgid "Sends the specified message."
 msgstr "Trimite mesajul specificat"
 
-#: src/muuli_wdr.cpp:3188
+#: src/muuli_wdr.cpp:3208
 msgid "Close this chat-session."
 msgstr "Închide această sesiune de chat."
 
-#: src/muuli_wdr.cpp:3211
+#: src/muuli_wdr.cpp:3231
 msgid "Connect to any server and/or Kad"
 msgstr "Conectare la orice server și/sau Kad"
 
-#: src/muuli_wdr.cpp:3217 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3237 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "Fișiere partajate"
 
@@ -5012,188 +5052,188 @@ msgstr "Descărcat"
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "EROARE: A eșuat deschiderea fișierului parțial '%s'"
 
-#: src/Preferences.cpp:653
+#: src/Preferences.cpp:656
 msgid "System default"
 msgstr "Valoare implicită a sistemului"
 
-#: src/Preferences.cpp:654
+#: src/Preferences.cpp:657
 msgid "Albanian"
 msgstr "Albaneză"
 
-#: src/Preferences.cpp:655
+#: src/Preferences.cpp:658
 msgid "Arabic"
 msgstr "Arabă"
 
-#: src/Preferences.cpp:656
+#: src/Preferences.cpp:659
 msgid "Asturian"
 msgstr "Asturian"
 
-#: src/Preferences.cpp:657
+#: src/Preferences.cpp:660
 msgid "Basque"
 msgstr "Bască"
 
-#: src/Preferences.cpp:658
+#: src/Preferences.cpp:661
 msgid "Bulgarian"
 msgstr "Bulgară"
 
-#: src/Preferences.cpp:659
+#: src/Preferences.cpp:662
 msgid "Catalan"
 msgstr "Catalană"
 
-#: src/Preferences.cpp:660
+#: src/Preferences.cpp:663
 msgid "Chinese (Simplified)"
 msgstr "Chineză (Simplificat)"
 
-#: src/Preferences.cpp:661
+#: src/Preferences.cpp:664
 msgid "Chinese (Traditional)"
 msgstr "Chinez (tradițional)"
 
-#: src/Preferences.cpp:662
+#: src/Preferences.cpp:665
 msgid "Croatian"
 msgstr "Croată"
 
-#: src/Preferences.cpp:663
+#: src/Preferences.cpp:666
 msgid "Czech"
 msgstr "Cehă"
 
-#: src/Preferences.cpp:664
+#: src/Preferences.cpp:667
 msgid "Danish"
 msgstr "Daneză"
 
-#: src/Preferences.cpp:665
+#: src/Preferences.cpp:668
 msgid "Dutch"
 msgstr "Olandeză"
 
-#: src/Preferences.cpp:666
+#: src/Preferences.cpp:669
 msgid "English (U.K.)"
 msgstr "Englez (U.K.)"
 
-#: src/Preferences.cpp:667
+#: src/Preferences.cpp:670
 #, fuzzy
 msgid "English (U.S.)"
 msgstr "Englez (U.K.)"
 
-#: src/Preferences.cpp:668
+#: src/Preferences.cpp:671
 msgid "Estonian"
 msgstr "Estonă"
 
-#: src/Preferences.cpp:669
+#: src/Preferences.cpp:672
 msgid "Finnish"
 msgstr "Finlandeză"
 
-#: src/Preferences.cpp:670
+#: src/Preferences.cpp:673
 msgid "French"
 msgstr "Franceză"
 
-#: src/Preferences.cpp:671
+#: src/Preferences.cpp:674
 msgid "Galician"
 msgstr "Galiciană"
 
-#: src/Preferences.cpp:672
+#: src/Preferences.cpp:675
 msgid "German"
 msgstr "Germană"
 
-#: src/Preferences.cpp:673
+#: src/Preferences.cpp:676
 msgid "Greek"
 msgstr "Grecesc"
 
-#: src/Preferences.cpp:674
+#: src/Preferences.cpp:677
 msgid "Hebrew"
 msgstr "Ebraică"
 
-#: src/Preferences.cpp:675
+#: src/Preferences.cpp:678
 msgid "Hungarian"
 msgstr "Maghiară"
 
-#: src/Preferences.cpp:676
+#: src/Preferences.cpp:679
 msgid "Italian"
 msgstr "Italiană"
 
-#: src/Preferences.cpp:677
+#: src/Preferences.cpp:680
 msgid "Italian (Swiss)"
 msgstr "Italian (elvețian)"
 
-#: src/Preferences.cpp:678
+#: src/Preferences.cpp:681
 msgid "Japanese"
 msgstr "Japoneză"
 
-#: src/Preferences.cpp:679
+#: src/Preferences.cpp:682
 msgid "Korean"
 msgstr "Koreană"
 
-#: src/Preferences.cpp:680
+#: src/Preferences.cpp:683
 msgid "Lithuanian"
 msgstr "Lituaniană"
 
-#: src/Preferences.cpp:681
+#: src/Preferences.cpp:684
 msgid "Norwegian (Nynorsk)"
 msgstr "Norvegian"
 
-#: src/Preferences.cpp:682
+#: src/Preferences.cpp:685
 msgid "Polish"
 msgstr "Poloneză"
 
-#: src/Preferences.cpp:683
+#: src/Preferences.cpp:686
 msgid "Portuguese"
 msgstr "Portugheză"
 
-#: src/Preferences.cpp:684
+#: src/Preferences.cpp:687
 msgid "Portuguese (Brazilian)"
 msgstr "Portugheză (Brazilia)"
 
-#: src/Preferences.cpp:685
+#: src/Preferences.cpp:688
 msgid "Romanian"
 msgstr "Română"
 
-#: src/Preferences.cpp:686
+#: src/Preferences.cpp:689
 msgid "Russian"
 msgstr "Rusă"
 
-#: src/Preferences.cpp:687
+#: src/Preferences.cpp:690
 msgid "Slovenian"
 msgstr "Slovenă"
 
-#: src/Preferences.cpp:688
+#: src/Preferences.cpp:691
 msgid "Spanish"
 msgstr "Spaniolă"
 
-#: src/Preferences.cpp:689
+#: src/Preferences.cpp:692
 msgid "Swedish"
 msgstr "Suedeză"
 
-#: src/Preferences.cpp:690
+#: src/Preferences.cpp:693
 msgid "Turkish"
 msgstr "Turcă"
 
-#: src/Preferences.cpp:691
+#: src/Preferences.cpp:694
 msgid "Ukrainian"
 msgstr "Ucraineană"
 
-#: src/Preferences.cpp:794
+#: src/Preferences.cpp:797
 msgid "Change Language"
 msgstr "Schimbă limba"
 
-#: src/Preferences.cpp:858
+#: src/Preferences.cpp:861
 msgid "There are no translations installed for aMule"
 msgstr "Nu sunt instalate traduceri pentru aMule"
 
-#: src/Preferences.cpp:859
+#: src/Preferences.cpp:862
 msgid "No languages available"
 msgstr "Nu sunt limbi disponibile"
 
-#: src/Preferences.cpp:990
+#: src/Preferences.cpp:993
 msgid "no options available"
 msgstr "Nu sunt opțiuni disponibile"
 
-#: src/Preferences.cpp:2122
+#: src/Preferences.cpp:2128
 msgid "Invalid category found, skipping"
 msgstr "S-a găsit o categorie nevalidă, se omite"
 
-#: src/Preferences.cpp:2291
+#: src/Preferences.cpp:2297
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "Portul TCP nu poate fi mai mare decât 65532 fiindcă soclul UDP al serverului trebuie să fie TCP+3"
 
-#: src/Preferences.cpp:2292
+#: src/Preferences.cpp:2298
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Va fi folosit portul implicit (%d)"
@@ -7917,59 +7957,59 @@ msgstr "Dosar care conține fișierul semnătură"
 msgid "Folder where generating the statistic image"
 msgstr "Dosar unde se generează imaginea statistică"
 
-#: src/webserver/src/WebInterface.cpp:227
+#: src/webserver/src/WebInterface.cpp:234
 msgid "Loads template <str>"
 msgstr "Încarcă modelul <str>"
 
-#: src/webserver/src/WebInterface.cpp:231
+#: src/webserver/src/WebInterface.cpp:238
 msgid "Web server HTTP port"
 msgstr "Port server web HTTP"
 
-#: src/webserver/src/WebInterface.cpp:237
+#: src/webserver/src/WebInterface.cpp:244
 msgid "Use UPnP port forwarding on web server port"
 msgstr "Utilizează înaintarea portului UPnP pe portul serverului web"
 
-#: src/webserver/src/WebInterface.cpp:241
+#: src/webserver/src/WebInterface.cpp:248
 msgid "UPnP port"
 msgstr "Port UPnP"
 
-#: src/webserver/src/WebInterface.cpp:243
+#: src/webserver/src/WebInterface.cpp:250
 msgid "Use gzip compression"
 msgstr "Utilizează compresia gzip"
 
-#: src/webserver/src/WebInterface.cpp:250
+#: src/webserver/src/WebInterface.cpp:257
 msgid "Full access password for web server"
 msgstr "Parola pentru accesul nerestricționat pentru serverul web"
 
-#: src/webserver/src/WebInterface.cpp:256
+#: src/webserver/src/WebInterface.cpp:263
 msgid "Guest password for web server"
 msgstr "Parola de oaspete pentru serverul web"
 
-#: src/webserver/src/WebInterface.cpp:260
+#: src/webserver/src/WebInterface.cpp:267
 msgid "Allow guest access"
 msgstr "Permite accesul oaspeților"
 
-#: src/webserver/src/WebInterface.cpp:262
+#: src/webserver/src/WebInterface.cpp:269
 msgid "Deny guest access"
 msgstr "Interzice accesul oaspeților"
 
-#: src/webserver/src/WebInterface.cpp:266
+#: src/webserver/src/WebInterface.cpp:273
 msgid "Load/save web server settings from/to remote aMule"
 msgstr "Încarcă/salvează configurările serverului web de la/la aMule distant"
 
-#: src/webserver/src/WebInterface.cpp:271
+#: src/webserver/src/WebInterface.cpp:278
 msgid "aMule config file path. DO NOT USE DIRECTLY!"
 msgstr "Calea fișierului de configurare aMule. NU UTILIZAȚI DIRECT!"
 
-#: src/webserver/src/WebInterface.cpp:280
+#: src/webserver/src/WebInterface.cpp:287
 msgid "Disable PHP interpreter (deprecated)"
 msgstr "Dezactivează interpretorul PHP (învechit)"
 
-#: src/webserver/src/WebInterface.cpp:287
+#: src/webserver/src/WebInterface.cpp:294
 msgid "Recompile PHP pages on each request"
 msgstr "Recompilează paginile PHP la fiecare solicitare"
 
-#: src/webserver/src/WebInterface.cpp:393
+#: src/webserver/src/WebInterface.cpp:400
 msgid "aMule Web Server"
 msgstr "Serverul Web aMule"
 

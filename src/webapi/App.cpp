@@ -32,6 +32,9 @@
 #include "MD4Hash.h"
 #include "config.h" // VERSION
 
+#include <ec/cpp/ECFileConfig.h> // CECFileConfig, for --amule-config-file
+#include <wx/filename.h>         // wxFileName::FileExists
+
 #include <common/Format.h>
 #include <common/MD5Sum.h>
 
@@ -91,6 +94,12 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddOption("",
+		"amule-config-file",
+		_("Read the EC connection (host/port/password) from an amule.conf instead of "
+		  "--host/--port/--password. Used by amule to auto-start amuleapi."),
+		wxCMD_LINE_VAL_STRING,
+		wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddOption("",
 		"set-admin-pass",
 		_("Hash <plain> with MD5 and write it as the admin password into amuleapi-passwords (mode "
 		  "0600), then exit."),
@@ -120,6 +129,9 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		m_cliHasHttpPort = true;
 	}
 	parser.Found("config-dir", &m_cliConfigDirOverride);
+	if (parser.Found("amule-config-file", &m_cliAmuleConfigFile)) {
+		m_cliHasAmuleConfigFile = true;
+	}
 	if (parser.Found("set-admin-pass", &m_cliSetAdminPass)) {
 		m_cliHasSetAdminPass = true;
 	}
@@ -222,6 +234,20 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		// gives the operator a working setup.
 		const wxString plain = wxString::FromUTF8(m_apiConfig.EcCfg().password.c_str());
 		m_password.Decode(MD5Sum(plain).GetHash());
+	}
+
+	// --amule-config-file wins for the EC connection: read host/port and the
+	// already-hashed ECPassword straight from an amule.conf (same as
+	// amuleweb). This is how amule auto-starts amuleapi -- amule only holds
+	// the hashed EC password, so it can't pass a plaintext --password.
+	if (m_cliHasAmuleConfigFile) {
+		if (!wxFileName::FileExists(m_cliAmuleConfigFile)) {
+			Show(CFormat("amuleapi: --amule-config-file '%s' does not exist\n") %
+				m_cliAmuleConfigFile);
+			return false;
+		}
+		CECFileConfig cfg(m_cliAmuleConfigFile);
+		LoadAmuleConfig(cfg); // sets m_host / m_port / m_password
 	}
 
 	return true;

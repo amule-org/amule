@@ -394,6 +394,7 @@ protected:
 	// using `int` makes the intent explicit and avoids %ld for what
 	// is really an int-sized value.
 	int webserver_pid;
+	int amuleapi_pid;
 
 	wxString server_msg;
 

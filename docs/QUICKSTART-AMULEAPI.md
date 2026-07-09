@@ -87,6 +87,28 @@ aMule does not ship init-system units (systemd, launchd, Windows
 service) for any of its daemons. If you want one, write a downstream
 unit that wraps the command above.
 
+### Auto-starting from aMule
+
+aMule can launch amuleapi for you when it starts, the same way it can
+launch amuleweb. Enable **Run amuleapi (REST API) on startup** under
+*Preferences → Remote Controls*, or set `/AmuleApi/Enabled=1` in
+`amule.conf`. aMule then spawns:
+
+```sh
+amuleapi --amule-config-file=<amule.conf> --config-dir=<amule data dir> --http-port=<AmuleApi/HttpPort>
+```
+
+`--amule-config-file` points amuleapi at aMule's own `amule.conf` so it
+reads the EC host, port and (hashed) password straight from there — no
+plaintext EC password on the command line. The auto-started instance
+binds `127.0.0.1` only, so it needs no admin password; set one in
+`amuleapi.conf` (or via `--set-admin-pass`) if you later expose it to
+other hosts. amuleapi is stopped when aMule exits.
+
+The HTTP port is configurable in the same preferences panel (or
+`/AmuleApi/HttpPort`, default `4713`). When aMule runs as `amuled`, the
+amulegui remote client can toggle the setting over EC.
+
 ## Verifying
 
 ```sh

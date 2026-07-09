@@ -533,6 +533,15 @@ public:
 	static void SetWSPath(const wxString &path) { s_sWebPath = path; }
 	static bool GetWSIsEnabled() { return s_bWebEnabled; }
 	static void SetWSIsEnabled(bool bEnable) { s_bWebEnabled = bEnable; }
+
+	// amuleapi (REST/SSE API daemon). Auto-started by amule as a child
+	// process when enabled, mirroring the WebServer autorun above.
+	static bool GetAmuleApiIsEnabled() { return s_bAmuleApiEnabled; }
+	static void SetAmuleApiIsEnabled(bool bEnable) { s_bAmuleApiEnabled = bEnable; }
+	static uint16 GetAmuleApiPort() { return s_nAmuleApiPort; }
+	static void SetAmuleApiPort(uint16 uPort) { s_nAmuleApiPort = uPort; }
+	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
+	static void SetAmuleApiPath(const wxString &path) { s_sAmuleApiPath = path; }
 	static bool GetWebUseGzip() { return s_bWebUseGzip; }
 	static void SetWebUseGzip(bool bUse) { s_bWebUseGzip = bUse; }
 	static uint32 GetWebPageRefresh() { return s_nWebPageRefresh; }
@@ -974,6 +983,11 @@ protected:
 	static uint16 s_nWebUPnPTCPPort;
 	static bool s_bWebEnabled;
 	static bool s_bWebUseGzip;
+
+	// amuleapi (REST/SSE API daemon) autorun.
+	static bool s_bAmuleApiEnabled;
+	static uint16 s_nAmuleApiPort;
+	static wxString s_sAmuleApiPath;
 	static uint32 s_nWebPageRefresh;
 	static bool s_bWebLowEnabled;
 	static wxString s_WebTemplate;

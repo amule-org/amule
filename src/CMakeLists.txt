@@ -756,6 +756,7 @@ if (NEED_LIB_MULEAPPCORE)
 		RandomFunctions.cpp
 		RC4Encrypt.cpp
 		StateMachine.cpp
+		TerminationProcessAmuleApi.cpp
 		TerminationProcessAmuleweb.cpp
 		ThreadScheduler.cpp
 		UPnPBase.cpp

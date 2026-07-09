@@ -11,6 +11,7 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .RB_untranslated [ \-\-bind " " \fI<address> ]
 .RB_untranslated [ \-\-http\-port " " \fI<num> ]
 .RB_untranslated [ \-\-config\-dir " " \fI<path> ]
+.RB_untranslated [ \-\-amule\-config\-file " " \fI<path> ]
 .RB_untranslated [ \-\-foreground ]
 
 .B_untranslated amuleapi
@@ -61,6 +62,15 @@ Path to the amuleapi config dir. Defaults to the same per\-platform
 aMule data directory that \fBamuled\fR uses (~/.aMule/ on Linux,
 ~/Library/Application Support/aMule/ on macOS, %APPDATA%\\aMule\\ on
 Windows). Creates the dir with mode 0700 if absent.
+.TP
+\fB[ \-\-amule\-config\-file\fR=\fI<path>\fR \fB]\fR
+Read the EC host, port and password from an existing \fBamule\fR(1) /
+\fBamuled\fR(1) \fIamule.conf\fR, the same way \fBamuleweb\fR(1) does. This
+is how aMule auto\-starts amuleapi (see \fIRun amuleapi on startup\fR in the
+GUI, or \fI/AmuleApi/Enabled\fR in \fIamule.conf\fR): amuled only stores the
+MD5\-hashed EC password, so passing the config file lets amuleapi
+authenticate without a plaintext \fB\-\-password\fR on the command line.
+Overrides \fB\-\-host\fR / \fB\-\-port\fR / \fB\-\-password\fR.
 .TP
 \fB[ \-\-set\-admin\-pass\fR=\fI<plain>\fR \fB]\fR
 Hash \fI<plain>\fR with MD5 and store it as the admin password in
