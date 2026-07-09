@@ -6,6 +6,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, Placeholder, toast, confirmDialog } from "../components.js";
+import { VirtualTable, sortRows } from "../table.js";
 import { formatInt } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
@@ -69,16 +70,6 @@ export function ServersPanel({ isGuest }) {
     catch (e) { toast(terr(e) || t("networks_server_error"), "error"); }
   };
 
-  const list = servers.slice().sort((a, b) => sortDir * cmp(sortVal(a, sortKey), sortVal(b, sortKey)));
-  const cols = isGuest ? 8 : 9;
-
-  const sortArrow = (key) => key === sortKey
-    ? html`<span class="sort-arrow"><${Icon} name=${sortDir > 0 ? "sort-asc" : "sort-desc"} /></span>` : null;
-  const Th = (label, key, num) => html`
-    <th class=${(key ? "sortable " : "") + (num ? "num" : "")} onClick=${key ? () => toggleSort(key) : null}>
-      ${label}${sortArrow(key)}
-    </th>`;
-
   // Match the connected server by IPv4 + port. The two sides format the address
   // differently: the server list ships `address` as "ip:port", while
   // status.ed2k.server_ip comes from EC_IPv4_t::StringIP() — "[ip:port]" with
@@ -89,28 +80,36 @@ export function ServersPanel({ isGuest }) {
     && ipv4(ed2k.server_ip) !== "" && ipv4(ed2k.server_ip) === ipv4(s.address)
     && ed2k.server_port === s.port;
 
-  const row = (s) => html`
-    <tr class=${isConnected(s) ? "connected" : connectingEcid === s.ecid ? "connecting" : ""}>
-      <td class="name" title=${s.name}>
-        ${s.name}${s.static ? html`<${Badge} title=${t("networks_server_badge_static_title")}>${t("networks_server_badge_static")}<//>` : null}
-      </td>
-      <td>${s.description || ""}</td>
-      <td>${s.version || ""}</td>
-      <td class="num">${s.address && s.address.includes(":") ? s.address : (s.address + ":" + s.port)}</td>
-      <td class="num">${formatInt(s.users) + (s.max_users ? " / " + formatInt(s.max_users) : "")}</td>
-      <td class="num">${formatInt(s.files)}</td>
-      <td class="num">${s.ping_ms ? s.ping_ms + " ms" : "—"}</td>
-      <td>${s.priority || ""}</td>
-      ${isGuest ? null : html`
-        <td class="row-actions admin-only">
-          <button class="btn btn-icon btn-sm" title=${t("networks_server_connect")} onClick=${() => connect(s.ecid)}>
-            <${Icon} name="connect" />
-          </button>
-          <button class="btn btn-icon btn-sm btn-danger" title=${t("networks_server_remove")} onClick=${() => remove(s)}>
-            <${Icon} name="remove" />
-          </button>
-        </td>`}
-    </tr>`;
+  const columns = [
+    { key: "name", label: t("networks_server_name"), cls: "name", sortable: true,
+      sortVal: (s) => (s.name || "").toLowerCase(),
+      // flex cell so a long name ellipsizes without hiding the "static" badge
+      cell: (s) => html`<div class="name-cell" title=${s.name}><span class="name-text">${s.name}</span>${s.static ? html`<${Badge} title=${t("networks_server_badge_static_title")}>${t("networks_server_badge_static")}<//>` : null}</div>` },
+    { key: "description", label: t("networks_server_description"), width: "180px", sortable: true,
+      sortVal: (s) => (s.description || "").toLowerCase(), cell: (s) => s.description || "" },
+    { label: t("networks_server_version"), width: "90px", cell: (s) => s.version || "" },
+    { label: t("networks_server_address"), num: true, width: "180px",
+      cell: (s) => s.address && s.address.includes(":") ? s.address : (s.address + ":" + s.port) },
+    { key: "users", label: t("networks_server_users"), num: true, width: "130px", sortable: true,
+      sortVal: (s) => s.users || 0,
+      cell: (s) => formatInt(s.users) + (s.max_users ? " / " + formatInt(s.max_users) : "") },
+    { key: "files", label: t("networks_server_files"), num: true, width: "110px", sortable: true,
+      sortVal: (s) => s.files || 0, cell: (s) => formatInt(s.files) },
+    { key: "ping", label: t("networks_server_ping"), num: true, width: "90px", sortable: true,
+      sortVal: (s) => s.ping_ms || 0, cell: (s) => s.ping_ms ? s.ping_ms + " ms" : "—" },
+    { label: t("networks_server_priority"), width: "90px", cell: (s) => s.priority || "" },
+    ...(isGuest ? [] : [{ label: t("networks_server_actions"), cls: "row-actions admin-only", width: "90px",
+      cell: (s) => html`
+        <button class="btn btn-icon btn-sm" title=${t("networks_server_connect")} onClick=${() => connect(s.ecid)}>
+          <${Icon} name="connect" />
+        </button>
+        <button class="btn btn-icon btn-sm btn-danger" title=${t("networks_server_remove")} onClick=${() => remove(s)}>
+          <${Icon} name="remove" />
+        </button>` }]),
+  ];
+
+  const list = sortRows(servers, columns, sortKey, sortDir);
+  const rowClass = (s) => isConnected(s) ? "connected" : connectingEcid === s.ecid ? "connecting" : "";
 
   return html`
     <div class="server-toolbars admin-only">
@@ -127,32 +126,7 @@ export function ServersPanel({ isGuest }) {
         <button class="btn btn-sm" type="submit">${t("networks_server_update_from_url")}</button>
       </form>
     </div>
-    <div class="table-wrap">
-      <table class="data">
-        <thead>
-          <tr>
-            ${Th(t("networks_server_name"), "name")}${Th(t("networks_server_description"), "description")}${Th(t("networks_server_version"))}${Th(t("networks_server_address"))}
-            ${Th(t("networks_server_users"), "users", true)}${Th(t("networks_server_files"), "files", true)}${Th(t("networks_server_ping"), "ping", true)}${Th(t("networks_server_priority"))}
-            ${isGuest ? null : html`<th class="admin-only">${t("networks_server_actions")}</th>`}
-          </tr>
-        </thead>
-        <tbody>
-          ${list.length
-            ? list.map(row)
-            : html`<tr><td colspan=${cols}><${Placeholder} kind="info">${t("networks_server_empty")}<//></td></tr>`}
-        </tbody>
-      </table>
-    </div>`;
+    <${VirtualTable} columns=${columns} rows=${list} rowKey=${(s) => s.ecid} rowClass=${rowClass}
+                     sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                     empty=${html`<${Placeholder} kind="info">${t("networks_server_empty")}<//>`} />`;
 }
-
-function sortVal(s, k) {
-  switch (k) {
-    case "name": return (s.name || "").toLowerCase();
-    case "description": return (s.description || "").toLowerCase();
-    case "users": return s.users || 0;
-    case "files": return s.files || 0;
-    case "ping": return s.ping_ms || 0;
-    default: return 0;
-  }
-}
-function cmp(a, b) { return a < b ? -1 : a > b ? 1 : 0; }

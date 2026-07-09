@@ -8,6 +8,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, Placeholder, Tabs } from "../components.js";
+import { VirtualTable, sortRows, textMatcher } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t } from "../i18n.js";
@@ -26,39 +27,64 @@ const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : 
 const rankLabel = (c) => !c.remote_queue_rank ? "—" : c.remote_queue_rank >= 0xFFFF ? t("downloads_peer_queue_full") : c.remote_queue_rank;
 const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
 
+// Each column carries key + sortVal so the header is clickable-to-sort (the
+// flags column has no key → stays non-sortable).
 const COLS = [
-  { cls: "peer-flags", show: ALL, cell: (c) => peerFlags(c) },
-  { th: "downloads_peer_col_name", show: ALL, cell: (c) => html`<span title=${c.client_name}>${c.client_name || "—"}</span>` },
-  { th: "downloads_peer_col_software", show: ALL, cell: (c) => softLabel(c) },
-  { th: "downloads_peer_col_file", cls: "name", show: ALL, cell: (c) => html`<span title=${c.download_file_name}>${c.download_file_name || "—"}</span>` },
+  { cls: "peer-flags", width: "60px", show: ALL, cell: (c) => peerFlags(c) },
+  { key: "name", th: "downloads_peer_col_name", width: "170px", show: ALL, sortable: true,
+    sortVal: (c) => (c.client_name || "").toLowerCase(),
+    cell: (c) => html`<span title=${c.client_name}>${c.client_name || "—"}</span>` },
+  { key: "software", th: "downloads_peer_col_software", width: "140px", show: ALL, sortable: true,
+    sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
+  { key: "file", th: "downloads_peer_col_file", cls: "name", show: ALL, sortable: true,
+    sortVal: (c) => (c.download_file_name || "").toLowerCase(),
+    cell: (c) => html`<span title=${c.download_file_name}>${c.download_file_name || "—"}</span>` },
 
-  { th: "downloads_peer_col_dl_state", show: DL, cell: (c) => stateBadge(c.download_state) },
-  { th: "downloads_peer_col_dl_speed", num: true, show: DL, cell: (c) => formatSpeed(c.download_speed_bps) },
-  { th: "downloads_peer_col_downloaded", num: true, show: DL, cell: (c) => bytesOf(c, "down_total") },
-  { th: "downloads_peer_col_downloaded_session", num: true, show: ["downloads"], cell: (c) => bytesOf(c, "down_session") },
-  { th: "downloads_peer_col_remote_rank", num: true, show: ["downloads"], cell: (c) => rankLabel(c) },
+  { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", show: DL, sortable: true,
+    sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
+  { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", show: DL, sortable: true,
+    sortVal: (c) => c.download_speed_bps || 0, cell: (c) => formatSpeed(c.download_speed_bps) },
+  { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", show: DL, sortable: true,
+    sortVal: (c) => (c.xfer && c.xfer.down_total) || 0, cell: (c) => bytesOf(c, "down_total") },
+  { key: "dl_session", th: "downloads_peer_col_downloaded_session", num: true, width: "110px", show: ["downloads"], sortable: true,
+    sortVal: (c) => (c.xfer && c.xfer.down_session) || 0, cell: (c) => bytesOf(c, "down_session") },
+  { key: "remote_rank", th: "downloads_peer_col_remote_rank", num: true, width: "90px", show: ["downloads"], sortable: true,
+    sortVal: (c) => c.remote_queue_rank || 0, cell: (c) => rankLabel(c) },
 
-  { th: "downloads_peer_col_ul_state", show: UL, cell: (c) => stateBadge(c.upload_state) },
-  { th: "downloads_peer_col_ul_speed", num: true, show: UL, cell: (c) => formatSpeed(c.upload_speed_bps) },
-  { th: "downloads_peer_col_uploaded", num: true, show: UL, cell: (c) => bytesOf(c, "up_total") },
-  { th: "downloads_peer_col_uploaded_session", num: true, show: ["uploads"], cell: (c) => bytesOf(c, "up_session") },
-  { th: "downloads_peer_col_queue_pos", num: true, show: ["uploads"], cell: (c) => c.queue_waiting_position || "—" },
-  { th: "downloads_peer_col_score", num: true, show: ["uploads"], cell: (c) => c.score || "—" },
+  { key: "ul_state", th: "downloads_peer_col_ul_state", width: "120px", show: UL, sortable: true,
+    sortVal: (c) => c.upload_state || "", cell: (c) => stateBadge(c.upload_state) },
+  { key: "ul_speed", th: "downloads_peer_col_ul_speed", num: true, width: "100px", show: UL, sortable: true,
+    sortVal: (c) => c.upload_speed_bps || 0, cell: (c) => formatSpeed(c.upload_speed_bps) },
+  { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", show: UL, sortable: true,
+    sortVal: (c) => (c.xfer && c.xfer.up_total) || 0, cell: (c) => bytesOf(c, "up_total") },
+  { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "110px", show: ["uploads"], sortable: true,
+    sortVal: (c) => (c.xfer && c.xfer.up_session) || 0, cell: (c) => bytesOf(c, "up_session") },
+  { key: "queue_pos", th: "downloads_peer_col_queue_pos", num: true, width: "90px", show: ["uploads"], sortable: true,
+    sortVal: (c) => c.queue_waiting_position || 0, cell: (c) => c.queue_waiting_position || "—" },
+  { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", show: ["uploads"], sortable: true,
+    sortVal: (c) => c.score || 0, cell: (c) => c.score || "—" },
 ];
-const colClass = (col) => [col.num ? "num" : "", col.cls || ""].filter(Boolean).join(" ");
 
 const IDENT_FILTERS = ["all", "identified", "not_identified"].map((v) => [v, t("downloads_peer_ident_" + v)]);
 
 export function PeersPanel() {
   const clients = useStore("clients") || [];
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all"); // direction tab: all / downloads / uploads
   const [ident, setIdent] = useState("identified");
+  const [q, setQ] = useState("");
+  const [sortKey, setSortKey] = useState(null); // null → default sort (busiest first)
+  const [sortDir, setSortDir] = useState(1);
 
   useEffect(() => {
     data.register({ key: "clients", eventPrefix: "client", id: "client_ecid",
       list: () => api.get("clients").then((r) => r.clients || []) });
     data.ensure("clients");
   }, []);
+
+  const toggleSort = (key) => {
+    if (sortKey === key) setSortDir(-sortDir);
+    else { setSortKey(key); setSortDir(1); }
+  };
 
   const nDown = clients.filter(isDown).length;
   const nUp = clients.filter(isUp).length;
@@ -68,9 +94,7 @@ export function PeersPanel() {
   else if (filter === "uploads") list = list.filter(isUp);
   if (ident === "identified") list = list.filter((c) => c.ident_state === "identified");
   else if (ident === "not_identified") list = list.filter((c) => c.ident_state !== "identified");
-  list.sort((a, b) =>
-    ((b.download_speed_bps || 0) + (b.upload_speed_bps || 0)) -
-    ((a.download_speed_bps || 0) + (a.upload_speed_bps || 0)));
+  if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.client_name || "") + " " + (c.download_file_name || ""))); }
 
   const tabs = [
     { key: "all", label: t("downloads_peer_all"), badge: clients.length },
@@ -78,7 +102,18 @@ export function PeersPanel() {
     { key: "uploads", label: t("downloads_peer_upload"), badge: nUp },
   ];
 
-  const cols = COLS.filter((col) => col.show.includes(filter));
+  const columns = COLS.filter((col) => col.show.includes(filter))
+    .map((col) => ({ ...col, label: col.th ? t(col.th) : "" }));
+
+  // Sort by the chosen column when set (and visible in this tab); otherwise keep
+  // the default "busiest peers first" order (combined dl+ul speed, descending).
+  if (columns.some((c) => c.key === sortKey && c.sortVal)) {
+    list = sortRows(list, columns, sortKey, sortDir);
+  } else {
+    list.sort((a, b) =>
+      ((b.download_speed_bps || 0) + (b.upload_speed_bps || 0)) -
+      ((a.download_speed_bps || 0) + (a.upload_speed_bps || 0)));
+  }
 
   return html`
     <h3 class="section-title">${t("downloads_peer_title")}</h3>
@@ -90,22 +125,12 @@ export function PeersPanel() {
           <select class="input input-sm" value=${ident} onChange=${(e) => setIdent(e.target.value)}>
             ${IDENT_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
+          <span>${t("downloads_peer_filter")}:</span>
+          <input class="input input-sm" type="text" value=${q} onInput=${(e) => setQ(e.target.value)} />
         </div>
-        <div class="table-wrap">
-          <table class="data">
-            <thead>
-              <tr>${cols.map((col) => html`<th class=${colClass(col)}>${col.th ? t(col.th) : ""}</th>`)}</tr>
-            </thead>
-            <tbody>
-              ${list.length
-                ? list.map((c) => html`
-                    <tr key=${c.client_ecid}>
-                      ${cols.map((col) => html`<td class=${colClass(col)}>${col.cell(c)}</td>`)}
-                    </tr>`)
-                : html`<tr><td colspan=${cols.length}><${Placeholder} kind="info">${t("downloads_peer_empty")}<//></td></tr>`}
-            </tbody>
-          </table>
-        </div>
+        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(c) => c.client_ecid}
+                         sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                         empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />
       </div>
     </section>`;
 }

@@ -273,6 +273,24 @@ table.data td.num, table.data th.num { text-align: right; }
 table.data td.name { white-space: normal; word-break: break-word; min-width: 220px; max-width: 520px; }
 .row-selected, .row-selected:hover { background: var(--sel) !important; }
 
+/* virtualized tables: fixed layout keeps columns from jittering as the visible
+   window changes; single-line cells keep every row the same fixed height. */
+.table-wrap.virtual { overflow-y: auto; overflow-x: auto; }
+table.data.virtual { table-layout: fixed; }
+table.data.virtual td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+table.data.virtual td.name { white-space: nowrap; word-break: normal; min-width: 0; max-width: none; }
+/* striping is applied by absolute-index class (see table.js), not nth-child,
+   because the leading spacer row would flip the parity. */
+table.data.virtual tbody tr:nth-child(even) { background: none; }
+table.data.virtual tbody tr.stripe { background: var(--stripe); }
+table.data.virtual tbody tr.spacer td { border: 0; padding: 0; }
+table.data.virtual tbody tr.spacer:hover { background: transparent; }
+/* name cell with a trailing badge: ellipsize the name but keep the badge
+   visible — a plain clipped cell would hide the badge behind the ellipsis. */
+table.data.virtual td .name-cell { display: flex; align-items: center; gap: 6px; }
+table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+table.data.virtual td .name-cell .badge { flex-shrink: 0; }
+
 /* --- progress bar (flat, accent-filled) --- */
 .progress {
   position: relative; height: 18px; min-width: 90px; border-radius: 3px;

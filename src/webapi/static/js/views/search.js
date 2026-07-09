@@ -12,6 +12,7 @@ import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef } from "../dom.js";
 import { Badge, Placeholder, Tabs, toast } from "../components.js";
+import { VirtualTable, sortRows, textMatcher } from "../table.js";
 import { formatBytes } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -190,20 +191,20 @@ export default function Search({ isGuest }) {
     else { setSortKey(key); setSortDir(1); }
   };
 
-  // Front-end filter: case-insensitive, word-order-independent — every
-  // whitespace-separated token must appear somewhere in the name.
-  const tokens = filter.toLowerCase().split(/\s+/).filter(Boolean);
-  const matchName = (name) => { const n = (name || "").toLowerCase(); return tokens.every((tok) => n.includes(tok)); };
-  const sorted = results.slice().sort((a, b) => sortDir * cmp(sortVal(a, sortKey), sortVal(b, sortKey)));
-  const list = tokens.length ? sorted.filter((r) => matchName(r.name)) : sorted;
-  const allSelected = list.length > 0 && list.every((r) => selection.has(r.hash));
+  const match = textMatcher(filter);
+  const filtered = filter ? results.filter((r) => match(r.name)) : results;
+  const allSelected = filtered.length > 0 && filtered.every((r) => selection.has(r.hash));
+  const selectedCount = filtered.filter((r) => selection.has(r.hash)).length;
 
-  const sortArrow = (key) => key === sortKey
-    ? html`<span class="sort-arrow"><${Icon} name=${sortDir > 0 ? "sort-asc" : "sort-desc"} /></span>` : null;
-  const Th = (label, key, num) => html`
-    <th class=${(key ? "sortable " : "") + (num ? "num" : "")} onClick=${key ? () => toggleSort(key) : null}>
-      ${label}${sortArrow(key)}
-    </th>`;
+  // Keep the selection free of results hidden by the filter: on a filter change,
+  // drop any selected hash no longer visible (the still-visible ones stay).
+  useEffect(() => {
+    setSelection((prev) => {
+      const vis = new Set(filtered.map((r) => r.hash));
+      const next = new Set(); prev.forEach((h) => vis.has(h) && next.add(h));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filter]);
 
   const catOptions = () => html`
     <option value=${0}>${t("search_category_none")}</option>
@@ -214,29 +215,34 @@ export default function Search({ isGuest }) {
       ${Object.keys(SIZE_UNITS).map((u) => html`<option value=${u}>${u}</option>`)}
     </select>`;
 
-  const resultRow = (r) => {
-    const selected = selection.has(r.hash);
-    const src = r.sources || {};
-    return html`
-      <tr class=${selected ? "row-selected" : ""}>
-        <td><input type="checkbox" checked=${selected} onChange=${(e) => toggleRow(r.hash, e.target.checked)} /></td>
-        <td class="name" title=${r.name}>
-          ${r.name}${r.already_have ? html`<${Badge} title=${t("search_already_have_title")}>${t("search_badge_have")}<//>` : null}
-        </td>
-        <td class="num">${formatBytes(r.size)}</td>
-        <td class="num" title=${t("search_title_complete_total")}>${(src.complete || 0) + " / " + (src.total || 0)}</td>
-        <td class="num">${r.rating || 0}</td>
-        <td class="row-actions admin-only">
-          <select class="input input-sm" value=${catFor(r.hash)}
-                  onChange=${(e) => setRowCat({ ...rowCat, [r.hash]: Number(e.target.value) })}>
-            ${catOptions()}
-          </select>
-          <button class="btn btn-icon btn-sm" type="button" title=${t("search_download")} onClick=${() => downloadOne(r.hash)}>
-            <${Icon} name="downloads" />
-          </button>
-        </td>
-      </tr>`;
-  };
+  const columns = [
+    { label: html`<input type="checkbox" title=${t("search_select_all")} checked=${allSelected}
+                         onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
+      cell: (r) => html`<input type="checkbox" checked=${selection.has(r.hash)} onChange=${(e) => toggleRow(r.hash, e.target.checked)} />` },
+    { key: "name", label: t("search_name"), cls: "name", sortable: true,
+      sortVal: (r) => (r.name || "").toLowerCase(),
+      // flex cell so a long name ellipsizes without hiding the "already have" badge
+      cell: (r) => html`<div class="name-cell" title=${r.name}><span class="name-text">${r.name}</span>${r.already_have ? html`<${Badge} title=${t("search_already_have_title")}>${t("search_badge_have")}<//>` : null}</div>` },
+    { key: "size", label: t("search_size"), num: true, width: "110px", sortable: true,
+      sortVal: (r) => r.size || 0, cell: (r) => formatBytes(r.size) },
+    { key: "sources", label: t("search_sources"), num: true, width: "120px", sortable: true,
+      sortVal: (r) => (r.sources && r.sources.total) || 0,
+      cell: (r) => { const src = r.sources || {}; return html`<span title=${t("search_title_complete_total")}>${(src.complete || 0) + " / " + (src.total || 0)}</span>`; } },
+    { key: "rating", label: t("search_rating"), num: true, width: "90px", sortable: true,
+      sortVal: (r) => r.rating || 0, cell: (r) => r.rating || 0 },
+    { label: t("search_actions"), cls: "row-actions admin-only", width: "180px",
+      cell: (r) => html`
+        <select class="input input-sm" value=${catFor(r.hash)}
+                onChange=${(e) => setRowCat({ ...rowCat, [r.hash]: Number(e.target.value) })}>
+          ${catOptions()}
+        </select>
+        <button class="btn btn-icon btn-sm" type="button" title=${t("search_download")} onClick=${() => downloadOne(r.hash)}>
+          <${Icon} name="downloads" />
+        </button>` },
+  ];
+
+  const list = sortRows(filtered, columns, sortKey, sortDir);
+  const rowClass = (r) => selection.has(r.hash) ? "row-selected" : "";
 
   return html`
     <form class="card search-form" onSubmit=${startSearch}>
@@ -272,33 +278,20 @@ export default function Search({ isGuest }) {
                active="results" onSelect=${() => {}} />
       <div class="net-pane-body">
         <div class="toolbar pane-toolbar">
-          <span class="admin-only">${t("search_selected")}:</span>
           <select class="input input-sm admin-only" value=${cat} onChange=${(e) => setCat(e.target.value)}>
             ${catOptions()}
           </select>
           <button class="btn btn-sm admin-only" onClick=${downloadSelected}>${t("search_download")}</button>
+          <span class="selected-count admin-only">${t("search_selected")} ${selectedCount}</span>
           <span class="search-progress">${progress}</span>
           <div class="spacer"></div>
           <span>${t("search_filter")}:</span>
           <input class="input input-sm" type="text" value=${filter} onInput=${(e) => setFilter(e.target.value)} />
         </div>
 
-        <div class="table-wrap">
-          <table class="data">
-            <thead>
-              <tr>
-                <th><input type="checkbox" title=${t("search_select_all")} checked=${allSelected}
-                           onChange=${(e) => toggleAll(e.target.checked)} /></th>${Th(t("search_name"), "name")}${Th(t("search_size"), "size", true)}
-                ${Th(t("search_sources"), "sources", true)}${Th(t("search_rating"), "rating", true)}${Th(t("search_actions"))}
-              </tr>
-            </thead>
-            <tbody>
-              ${list.length
-                ? list.map(resultRow)
-                : html`<tr><td colspan="6"><${Placeholder} kind="info">${t("search_empty")}<//></td></tr>`}
-            </tbody>
-          </table>
-        </div>
+        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
+                         sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                         empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
       </div>
     </section>`;
 }
@@ -306,11 +299,3 @@ export default function Search({ isGuest }) {
 function field(label, control, cls = "") {
   return html`<div class=${"field " + cls}><label>${label}</label>${control}</div>`;
 }
-function sortVal(r, k) {
-  if (k === "name") return (r.name || "").toLowerCase();
-  if (k === "size") return r.size || 0;
-  if (k === "sources") return (r.sources && r.sources.total) || 0;
-  if (k === "rating") return r.rating || 0;
-  return 0;
-}
-function cmp(a, b) { return a < b ? -1 : a > b ? 1 : 0; }

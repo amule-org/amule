@@ -8,6 +8,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog } from "../components.js";
+import { VirtualTable, sortRows, textMatcher } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -27,6 +28,7 @@ export default function Downloads({ isGuest }) {
   const [sortDir, setSortDir] = useState(1);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterText, setFilterText] = useState("");
   const [manageCats, setManageCats] = useState(false);
 
   const loadCategories = () =>
@@ -64,7 +66,7 @@ export default function Downloads({ isGuest }) {
     setSelection(next);
   };
   const toggleAll = (checked) =>
-    setSelection(checked ? new Set(downloads.map((d) => d.hash)) : new Set());
+    setSelection(checked ? new Set(list.map((d) => d.hash)) : new Set());
 
   // --- mutations --------------------------------------------------------
   const mutate = async (fn) => {
@@ -117,61 +119,76 @@ export default function Downloads({ isGuest }) {
   let list = downloads.slice();
   if (filterStatus !== "all") list = list.filter((d) => matchStatus(d, filterStatus));
   if (filterCategory !== "all") list = list.filter((d) => d.category === Number(filterCategory));
-  list.sort((a, b) => sortDir * cmp(sortVal(a, sortKey), sortVal(b, sortKey)));
+  if (filterText) { const match = textMatcher(filterText); list = list.filter((d) => match(d.name)); }
+  const allSelected = list.length > 0 && list.every((d) => selection.has(d.hash));
+  const selectedCount = list.filter((d) => selection.has(d.hash)).length;
 
-  let size = 0, done = 0, speed = 0;
-  for (const d of list) { size += d.size || 0; done += d.size_done || 0; speed += d.speed_bps || 0; }
+  // Keep the selection free of rows hidden by the current filters: on a filter
+  // change, drop any selected hash no longer visible (the still-visible ones stay).
+  useEffect(() => {
+    setSelection((prev) => {
+      const vis = new Set(list.map((d) => d.hash));
+      const next = new Set(); prev.forEach((h) => vis.has(h) && next.add(h));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filterStatus, filterCategory, filterText]);
 
-  const allSelected = downloads.length > 0 && downloads.every((d) => selection.has(d.hash));
-
-  // --- header cells -----------------------------------------------------
-  const sortArrow = (key) => key === sortKey
-    ? html`<span class="sort-arrow"><${Icon} name=${sortDir > 0 ? "sort-asc" : "sort-desc"} /></span>` : null;
-  const Th = (label, key, num) => html`
-    <th class=${(key ? "sortable " : "") + (num ? "num" : "")} onClick=${key ? () => toggleSort(key) : null}>
-      ${label}${sortArrow(key)}
-    </th>`;
-
-  const downloadRow = (d) => {
-    const selected = selection.has(d.hash);
-    const paused = d.status === "paused";
-    const src = d.sources || {};
-    return html`
-      <tr class=${selected ? "row-selected" : ""}>
-        <td><input type="checkbox" checked=${selected} onChange=${(e) => toggleRow(d.hash, e.target.checked)} /></td>
-        <td class="name" title=${d.name}>${d.name}</td>
-        <td class="num">${formatBytes(d.size)}</td>
-        <td class="num">${formatBytes(d.size_done)}</td>
-        <td><${ProgressBar} percent=${d.progress && d.progress.percent} /></td>
-        <td class="num">${formatSpeed(d.speed_bps)}</td>
-        <td class="num" title=${t("downloads_title_transferring_total")}>${(src.transferring || 0) + " / " + (src.total || 0)}</td>
-        <td>${statusBadge(d.status)}</td>
-        ${isGuest
-          ? html`<td>${prioLabel(d)}</td>`
-          : html`<td>
-              <select class="input input-sm admin-only" value=${prioValue(d)}
-                      onChange=${(e) => setPriority(d.hash, e.target.value)}>
-                ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
-              </select></td>`}
-        ${isGuest
-          ? html`<td>${categoryName(d.category)}</td>`
-          : html`<td>
-              <select class="input input-sm admin-only" value=${d.category}
-                      onChange=${(e) => setCategory(d.hash, Number(e.target.value))}>
-                <option value=${0}>${t("downloads_category_none")}</option>
-                ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
-              </select></td>`}
-        <td class="row-actions admin-only">
+  const columns = [
+    { label: html`<input type="checkbox" title=${t("downloads_select_all")} checked=${allSelected}
+                         onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
+      cell: (d) => html`<input type="checkbox" checked=${selection.has(d.hash)} onChange=${(e) => toggleRow(d.hash, e.target.checked)} />` },
+    { key: "name", label: t("downloads_name"), cls: "name", sortable: true,
+      sortVal: (d) => (d.name || "").toLowerCase(),
+      cell: (d) => html`<span title=${d.name}>${d.name}</span>` },
+    { key: "size", label: t("downloads_size"), num: true, width: "110px", sortable: true,
+      sortVal: (d) => d.size || 0, cell: (d) => formatBytes(d.size) },
+    { key: "done", label: t("downloads_col_done"), num: true, width: "110px", sortable: true,
+      sortVal: (d) => d.size_done || 0, cell: (d) => formatBytes(d.size_done) },
+    { key: "progress", label: t("downloads_progress"), width: "150px", sortable: true,
+      sortVal: (d) => (d.progress && d.progress.percent) || 0,
+      cell: (d) => html`<${ProgressBar} percent=${d.progress && d.progress.percent} />` },
+    { key: "speed", label: t("downloads_speed"), num: true, width: "100px", sortable: true,
+      sortVal: (d) => d.speed_bps || 0, cell: (d) => formatSpeed(d.speed_bps) },
+    { key: "sources", label: t("downloads_sources"), num: true, width: "100px", sortable: true,
+      sortVal: (d) => (d.sources && d.sources.total) || 0,
+      cell: (d) => { const src = d.sources || {}; return html`<span title=${t("downloads_title_transferring_total")}>${(src.transferring || 0) + " / " + (src.total || 0)}</span>`; } },
+    { key: "status", label: t("downloads_status_label"), width: "120px", sortable: true,
+      sortVal: (d) => d.status || "", cell: (d) => statusBadge(d.status) },
+    { key: "priority", label: t("downloads_priority"), width: "150px", sortable: true,
+      sortVal: (d) => d.priority || "", cell: (d) => isGuest
+        ? prioLabel(d)
+        : html`
+            <select class="input input-sm admin-only" value=${prioValue(d)}
+                    onChange=${(e) => setPriority(d.hash, e.target.value)}>
+              ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
+            </select>` },
+    { key: "category", label: t("downloads_category"), width: "150px", sortable: true,
+      sortVal: (d) => categoryName(d.category).toLowerCase(),
+      cell: (d) => isGuest
+        ? categoryName(d.category)
+        : html`
+            <select class="input input-sm admin-only" value=${d.category}
+                    onChange=${(e) => setCategory(d.hash, Number(e.target.value))}>
+              <option value=${0}>${t("downloads_category_none")}</option>
+              ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
+            </select>` },
+    { label: t("downloads_actions"), cls: "row-actions admin-only", width: "100px", cell: (d) => {
+        const paused = d.status === "paused";
+        return html`
           <button class="btn btn-icon btn-sm" title=${paused ? t("downloads_resume") : t("downloads_pause")}
                   onClick=${() => paused ? resume(d.hash) : pause(d.hash)}>
             <${Icon} name=${paused ? "play" : "pause"} />
           </button>
           <button class="btn btn-icon btn-sm btn-danger" title=${t("downloads_cancel")} onClick=${() => del(d)}>
             <${Icon} name="cancel" />
-          </button>
-        </td>
-      </tr>`;
-  };
+          </button>`; } },
+  ];
+
+  list = sortRows(list, columns, sortKey, sortDir);
+  const rowClass = (d) => selection.has(d.hash) ? "row-selected" : "";
+
+  let size = 0, done = 0, speed = 0;
+  for (const d of list) { size += d.size || 0; done += d.size_done || 0; speed += d.speed_bps || 0; }
 
   const categoryTabs = [
     { key: "all", label: t("downloads_all"), badge: downloads.length },
@@ -217,6 +234,7 @@ export default function Downloads({ isGuest }) {
             <option value=${0}>${t("downloads_category_none")}</option>
             ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
           </select>
+          <span class="selected-count">${t("downloads_selected")} ${selectedCount}</span>
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
@@ -224,32 +242,17 @@ export default function Downloads({ isGuest }) {
           <select class="input input-sm" value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
             ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
+          <span>${t("downloads_filter")}:</span>
+          <input class="input input-sm" type="text" value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
         </div>
       </div>
 
-      <div class="table-wrap">
-        <table class="data">
-          <thead>
-            <tr>
-              <th><input type="checkbox" title=${t("downloads_select_all")} checked=${allSelected}
-                         onChange=${(e) => toggleAll(e.target.checked)} /></th>
-              ${Th(t("downloads_name"), "name")}${Th(t("downloads_size"), "size", true)}${Th(t("downloads_col_done"), "done", true)}
-              ${Th(t("downloads_progress"))}${Th(t("downloads_speed"), "speed", true)}${Th(t("downloads_sources"), "sources", true)}
-              ${Th(t("downloads_status_label"), "status")}${Th(t("downloads_priority"), "priority")}${Th(t("downloads_category"))}
-              <th class="admin-only">${t("downloads_actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${list.length
-              ? list.map(downloadRow)
-              : html`<tr><td colspan="11"><${Placeholder} kind="info">${t("downloads_empty")}<//></td></tr>`}
-          </tbody>
-        </table>
-      </div>
+      <${VirtualTable} columns=${columns} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
+                       sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                       empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
 
       <div class="totals-line">
-        <span>${tn("downloads_files_count", list.length)}</span> · <span>${t("downloads_size")} ${formatBytes(size)}</span> ·
-        <span>${t("downloads_col_done")} ${formatBytes(done)}</span> · <span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
+        <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
       </div>
       </div>
     </section>`}
@@ -277,16 +280,3 @@ function statusBadge(s) {
   // t() falls back to the raw status for values without a key.
   return html`<${Badge} kind=${cls}>${t("downloads_status_" + s)}<//>`;
 }
-function sortVal(d, k) {
-  switch (k) {
-    case "name": return (d.name || "").toLowerCase();
-    case "size": return d.size || 0;
-    case "done": return d.size_done || 0;
-    case "speed": return d.speed_bps || 0;
-    case "sources": return (d.sources && d.sources.total) || 0;
-    case "status": return d.status || "";
-    case "priority": return d.priority || "";
-    default: return 0;
-  }
-}
-function cmp(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
