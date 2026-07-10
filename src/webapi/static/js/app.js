@@ -82,36 +82,52 @@ function Shell({ role, onLogout }) {
     <${StatusBar} />`;
 }
 
-// One-shot warning when amuleapi's build (amule_version) differs from the
-// connected amuled (daemon_version) — a config mismatch a transient toast would
-// miss. Lives in Shell so a dismiss sticks for the session. daemon_version is
-// empty when EC isn't connected; skip the banner then.
+// Persistent alerts from the one-shot GET /version fetch, both linking to About:
+//   - version mismatch: amuleapi's build (amule_version) differs from the
+//     connected amuled (daemon_version) — a config mismatch a toast would miss.
+//   - update available: the daemon's version check found a newer release
+//     (update.check_enabled && update.update_available).
+// Lives in Shell so a dismiss sticks for the session; each row dismisses on its
+// own. daemon_version is empty when EC isn't connected; skip mismatch then.
 function VersionBanner() {
   const [mismatch, setMismatch] = useState(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [update, setUpdate] = useState(null);
+  const [mismatchGone, setMismatchGone] = useState(false);
+  const [updateGone, setUpdateGone] = useState(false);
 
   useEffect(() => {
     let alive = true;
     api.get("version")
       .then((v) => {
-        if (alive && v.daemon_version && v.amule_version !== v.daemon_version) {
+        if (!alive) return;
+        if (v.daemon_version && v.amule_version !== v.daemon_version) {
           setMismatch({ ui: v.amule_version, daemon: v.daemon_version });
+        }
+        if (v.update && v.update.check_enabled && v.update.update_available === true) {
+          setUpdate({ version: v.update.latest_version });
         }
       })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
 
-  if (!mismatch || dismissed) return null;
-  return html`
-    <div class="version-banner" role="alert">
-      <${Icon} name="warning" size=${18} />
-      <span>${t("about_version_mismatch", mismatch)}</span>
+  const banner = (cls, icon, text, onClose) => html`
+    <div class=${"version-banner" + cls} role="alert">
+      <${Icon} name=${icon} size=${18} />
+      <a class="version-banner-link" href="#/about">${text}</a>
       <button class="btn btn-ghost version-banner-close" aria-label=${t("common_close")}
-              onClick=${() => setDismissed(true)}>
+              onClick=${onClose}>
         <${Icon} name="cancel" size=${16} />
       </button>
     </div>`;
+
+  return html`
+    ${update && !updateGone
+      ? banner(" update", "downloads", t("app_update_banner", update), () => setUpdateGone(true))
+      : null}
+    ${mismatch && !mismatchGone
+      ? banner("", "warning", t("about_version_mismatch", mismatch), () => setMismatchGone(true))
+      : null}`;
 }
 
 function Toolbar({ route, onLogout }) {

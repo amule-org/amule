@@ -366,6 +366,15 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 }
 .version-banner .icon { color: var(--warn); flex: 0 0 auto; }
 .version-banner-close { margin-left: auto; padding: 4px; }
+.version-banner-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* Update-available: informational accent tint, not the warn colour. */
+.version-banner.update {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border-bottom-color: var(--accent);
+}
+.version-banner.update .icon { color: var(--accent); }
+.update-actions { margin-top: 14px; }
+.update-status.available { color: var(--accent); font-weight: 500; }
 
 /* --- toast + modal --- */
 .toast-host {
