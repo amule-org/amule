@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-10 20:18+0200\n"
-"PO-Revision-Date: 2026-07-10 16:07+0000\n"
+"PO-Revision-Date: 2026-07-10 19:10+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1696,9 +1696,9 @@ msgid "You are already trying to download the file '%s'"
 msgstr "Ops! Você já está tentando baixar o arquivo '%s'"
 
 #: src/DownloadQueue.cpp:406
-#, fuzzy, c-format
+#, c-format
 msgid "You already have the file '%s' (requested as '%s')"
-msgstr "Você já tem o arquivo '%s'"
+msgstr "Você já tem o arquivo '%s' (pedido como '%s')"
 
 #: src/DownloadQueue.cpp:409
 #, c-format
@@ -1895,11 +1895,11 @@ msgstr "%d de %d links falharam (inválidos ou já estava na lista)."
 
 #: src/ExternalConn.cpp:1936
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "A checagem de versão foi desacelerada; tente novamente em breve."
 
 #: src/ExternalConn.cpp:1941
 msgid "Version check is not available on this daemon."
-msgstr ""
+msgstr "A checagem de versão não está disponível neste daemon."
 
 #: src/ExternalConn.cpp:2065
 msgid "File not found."
@@ -4089,12 +4089,11 @@ msgstr "Porta HTTP:"
 
 #: src/muuli_wdr.cpp:1997
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "A interface do servidor HTTP do amuleapi que escuta em 127.0.0.1 (padrão) aceita apenas conexões locais; use 0.0.0.0 or um IP específico para expô-la a outros hospedeiros (configure uma senha de administração abaixo)."
 
 #: src/muuli_wdr.cpp:2000
-#, fuzzy
 msgid "Admin password"
-msgstr "Verificando senha\n"
+msgstr "Senha de administração"
 
 #: src/muuli_wdr.cpp:2008
 msgid "Web server parameters"
@@ -5390,9 +5389,8 @@ msgid "- Protocol obfuscation support changed.\n"
 msgstr "- Suporte de protocolo de ofuscamento mudou.\n"
 
 #: src/PrefsUnifiedDlg.cpp:1025
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "-Idioma alterado.\n"
+msgstr "- A configuração do amuleapi mudou.\n"
 
 #: src/PrefsUnifiedDlg.cpp:1034
 msgid ""
@@ -5491,13 +5489,12 @@ msgid "Could not remove the URL handler registration."
 msgstr "Não foi possível remover o registro de manipulação de URL."
 
 #: src/PrefsUnifiedDlg.cpp:1421 src/PrefsUnifiedDlg.cpp:1442
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "Senha definida e conexões externas habilitadas."
+msgstr "O servidor web e o aMule API necessitam que as conexões externas estejam habilitadas."
 
 #: src/PrefsUnifiedDlg.cpp:1428
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr ""
+msgstr "O servidor web do aMules está deprecado. Ao invés disso, considere rodar sob a API do aMule."
 
 #: src/PrefsUnifiedDlg.cpp:1482
 msgid ""
