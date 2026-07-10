@@ -15,7 +15,7 @@ import { t, tn, terr } from "../i18n.js";
 import { CategoriesPanel } from "./categories.js";
 import { PeersPanel } from "./peers.js";
 
-const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
+const PRIORITIES = ["auto", "low", "normal", "high"]
   .map((v) => [v, t("downloads_prio_" + v)]);
 const STATUS_FILTERS = ["all", "downloading", "waiting", "paused", "stopped", "completed"]
   .map((v) => [v, t("downloads_status_" + v)]);

@@ -11,7 +11,7 @@ import { Placeholder, toast, confirmDialog } from "../components.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 
-const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
+const PRIORITIES = ["auto", "low", "normal", "high"]
   .map((v) => [v, t("downloads_prio_" + v)]);
 
 export function CategoriesPanel({ isGuest }) {
