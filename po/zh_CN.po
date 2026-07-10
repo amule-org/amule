@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-10 11:35+0200\n"
-"PO-Revision-Date: 2026-07-09 14:34+0000\n"
+"PO-Revision-Date: 2026-07-10 10:47+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -244,14 +244,14 @@ msgid "Failed"
 msgstr "失败"
 
 #: src/amule.cpp:300
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
+msgstr "正在终止 pid 为“%d”的 amuleapi 实例 ... "
 
 #: src/amule.cpp:304
-#, fuzzy, c-format
+#, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
+msgstr "正在终止 pid 为“%d”的 amuleapi 实例 ... "
 
 #: src/amule.cpp:312
 msgid "aMule OnExit: Terminating core."
@@ -347,14 +347,13 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "您要求启动时运行 Web 服务器，但 amuleweb 程序无法运行， 请先安装包含 amule web 服务器的 aMule 包，或者使用 -DBUILD_WEBSERVER=YES 选项从源码构建 aMule 并安装它。"
 
 #: src/amule.cpp:1115
-#, fuzzy, c-format
+#, c-format
 msgid "amuleapi running on pid %d"
-msgstr "web 服务器正在运行，pid 为 %d"
+msgstr "amuleapi 正在运行，pid 为 %d"
 
 #: src/amule.cpp:1121
-#, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr "您要求启动时运行 Web 服务器，但 amuleweb 程序无法运行， 请先安装包含 amule web 服务器的 aMule 包，或者使用 -DBUILD_WEBSERVER=YES 选项从源码构建 aMule 并安装它。"
+msgstr "您要求启动时运行 amuleapi，但 amuleapi 程序无法运行， 请先安装包含 amule REST API 服务器的 包，或者使用 -DBUILD_AMULEAPI=YES 选项从源码构建 aMule 并安装它。"
 
 #: src/amule.cpp:1208
 #, c-format
@@ -2876,14 +2875,12 @@ msgid "Total UL: %s"
 msgstr "总上传: %s"
 
 #: src/muuli_wdr.cpp:103
-#, fuzzy
 msgid "Paste eD2k or magnet links here"
-msgstr "添加一个eD2k或magnet链接到核心。"
+msgstr "在此添加 eD2k 或 magnet 链接"
 
 #: src/muuli_wdr.cpp:105
-#, fuzzy
 msgid "Add links"
-msgstr "加为好友"
+msgstr "添加链接"
 
 #: src/muuli_wdr.cpp:106
 msgid "Click here to add the eD2k link in the text control to your download queue."
@@ -4069,31 +4066,28 @@ msgid "Password"
 msgstr "密码"
 
 #: src/muuli_wdr.cpp:1975
-#, fuzzy
 msgid "aMule API server parameters"
-msgstr "Web 服务参数"
+msgstr "aMule API 服务器参数"
 
 #: src/muuli_wdr.cpp:1978
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "启动时运行 amuleapi (REST API)"
 
 #: src/muuli_wdr.cpp:1983
-#, fuzzy
 msgid "HTTP port:"
-msgstr "TCP 端口："
+msgstr "HTTP 端口："
 
 #: src/muuli_wdr.cpp:1991
 msgid "Binds to 127.0.0.1 only. Set an admin password in amuleapi.conf to expose it to other hosts."
-msgstr ""
+msgstr "仅绑定到 127.0.0.1。在 amuleapi.conf 中设置管理员密码将其暴露给其他主机。"
 
 #: src/muuli_wdr.cpp:1995
 msgid "Web server parameters"
 msgstr "Web 服务参数"
 
 #: src/muuli_wdr.cpp:1998
-#, fuzzy
 msgid "Run webserver on startup (deprecated)"
-msgstr "启动时运行 Web 服务"
+msgstr "启动时运行 web 服务器（已废弃）"
 
 #: src/muuli_wdr.cpp:2004
 msgid "Web template"
