@@ -1213,8 +1213,8 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     item6->SetToolTip( _("This specifies the language used on controls.") );
     item4->Add( item6, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item4, wxSizerFlags().Expand().CenterHorizontal() );
-    wxCheckBox *item7 = new wxCheckBox( parent, IDC_NEWVERSION, _("Check for new version at startup"), wxDefaultPosition, wxDefaultSize, 0 );
-    item7->SetToolTip( _("Enabling this will make aMule check for new version at startup") );
+    wxCheckBox *item7 = new wxCheckBox( parent, IDC_NEWVERSION, _("Periodically check for a new version"), wxDefaultPosition, wxDefaultSize, 0 );
+    item7->SetToolTip( _("Enabling this will make aMule check for a new version at startup and once a day while running") );
     item0->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
     // Autostart-on-login toggle (per-OS backend: Windows registry,

@@ -261,6 +261,17 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 	if (CURL *curl = static_cast<CURL *>(request.GetNativeHandle())) {
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000L);
+		// Stall guard: abort a transfer that averages under 1 byte/s for 60 s
+		// once connected. CURLOPT_CONNECTTIMEOUT only covers the connect phase,
+		// so without this a server that accepts the connection then stops
+		// sending would leave the request hanging indefinitely (harmless to the
+		// event loop since it is async, but it leaks a pending request — and it
+		// matters more for the unattended periodic version check). A total
+		// CURLOPT_TIMEOUT is deliberately avoided so large but legitimately slow
+		// downloads (IP2Country DB, server.met) are not capped; the low-speed
+		// limit only fires on a genuine stall, not on slow-but-progressing ones.
+		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+		curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 60L);
 		if (!thePrefs::GetNetworkInterface().IsEmpty()) {
 			curl_easy_setopt(curl, CURLOPT_SOCKOPTFUNCTION, amuleHttpSockoptCallback);
 		}

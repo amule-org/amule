@@ -882,17 +882,17 @@ bool CamuleApp::OnInit()
 
 	// Fire the deferred startup HTTP downloads now that the heavy local
 	// I/O is done — see the comment in OnInit() further up.
-#if defined(AMULE_DAEMON) && defined(ENABLE_VERSION_CHECK)
-	// Only the headless daemon runs the core (log-only) version check.
-	// The GUI clients (monolithic + amulegui) run their own check via the
-	// shared CVersionCheck (CamuleDlg::StartupVersionCheck), which also
-	// drives the About dialog's "Check for updates" button — so gating
-	// this to the daemon avoids a redundant second fetch in the monolithic
-	// app.
+#ifdef ENABLE_VERSION_CHECK
+	// Both the daemon and the monolithic app run the core version check: it
+	// updates the internal state relayed over EC (the /version "update"
+	// object) and, on the monolithic, drives the GUI popup via
+	// Notify_VersionCheckResult. amulegui is not a CamuleApp and runs its own
+	// CVersionCheck instead. The About dialog's "Check for updates" button
+	// remains on CVersionCheck for its interactive UX.
 	if (thePrefs::GetCheckNewVersion()) {
 		StartVersionCheck();
 	}
-#endif // AMULE_DAEMON && ENABLE_VERSION_CHECK
+#endif // ENABLE_VERSION_CHECK
 	if (thePrefs::GetNetworkED2K() && thePrefs::AutoServerlist()) {
 		serverlist->StartAutoUpdate();
 	}
@@ -1718,6 +1718,23 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 			serverconnect->CheckForTimeout();
 		}
 		listensocket->UpdateConnectionsStatus();
+
+#ifdef ENABLE_VERSION_CHECK
+		// Periodic re-check: once per day, so a long-running amuled or
+		// monolithic amule keeps its version state (and the EC /version
+		// "update" object) fresh instead of only checking at startup. Fires
+		// immediately the first time the preference is enabled at runtime
+		// (m_versionCheckLastAttempt == 0). StartVersionCheck() self-stamps
+		// m_versionCheckLastAttempt and skips the fetch within its own short
+		// cooldown, so re-entry here is harmless.
+		if (thePrefs::GetCheckNewVersion()) {
+			const time_t nowSec = time(nullptr);
+			if (m_versionCheckLastAttempt == 0 ||
+				nowSec - m_versionCheckLastAttempt >= 24 * 60 * 60) {
+				StartVersionCheck();
+			}
+		}
+#endif // ENABLE_VERSION_CHECK
 	}
 
 	if (msCur - msPrev5 > 5000) { // every 5 seconds
@@ -2255,6 +2272,11 @@ void CamuleApp::CheckNewVersion(uint32 result)
 			m_versionCheckOutdated = (vc.state == CVersionCompareResult::Outdated);
 			m_versionCheckDone = true;
 			m_versionCheckTimestamp = time(nullptr);
+
+			// Drive the monolithic GUI's "new version" popup from the shared
+			// engine (no-op on the daemon; amulegui runs its own check). This
+			// is why the monolithic no longer needs a separate CVersionCheck.
+			Notify_VersionCheckResult(m_versionCheckLatest, m_versionCheckOutdated);
 
 			AddDebugLogLineN(logGeneral,
 				wxString("Running: ") + VERSION + ", Version check: " + vc.latest);

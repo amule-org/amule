@@ -147,6 +147,7 @@ void ShowConnState(long state);
 void ShowUserCount(wxString str);
 void ShowUpdateCatTabTitles();
 void ShowGUI();
+void VersionCheckResult(wxString latest, bool outdated);
 
 void CategoryAdded();
 void CategoryUpdate(uint32 cat);
@@ -530,6 +531,8 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_ShowUserCount(str) MuleNotify::DoNotify(&MuleNotify::ShowUserCount, str)
 #define Notify_ShowUpdateCatTabTitles() MuleNotify::DoNotify(&MuleNotify::ShowUpdateCatTabTitles)
 #define Notify_ShowGUI() MuleNotify::DoNotify(&MuleNotify::ShowGUI)
+#define Notify_VersionCheckResult(latest, outdated) \
+	MuleNotify::DoNotify(&MuleNotify::VersionCheckResult, latest, outdated)
 
 // categories
 #define Notify_CategoryAdded() MuleNotify::DoNotify(&MuleNotify::CategoryAdded)

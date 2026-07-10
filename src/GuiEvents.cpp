@@ -120,6 +120,26 @@ void ShowUserCount(wxString NOT_ON_DAEMON(str))
 #endif
 }
 
+// Fired by the core version check (CamuleApp::CheckNewVersion) on the
+// monolithic app so the outdated-version popup is driven from the shared
+// engine instead of a separate GUI-only CVersionCheck. A no-op on the
+// daemon (headless) and never fired in amulegui (which runs its own
+// CVersionCheck and has no CamuleApp engine).
+//
+// `latest` is by value because MuleNotify stores every argument by value
+// (CMuleNotifier2::m_arg1, via DeepCopy) and invokes the handler with it; a
+// const& parameter would leave that stored member a dangling reference. This
+// matches every other notify handler, so the value-param check is suppressed.
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
+void VersionCheckResult(wxString NOT_ON_DAEMON(latest), bool NOT_ON_DAEMON(outdated))
+{
+#ifndef AMULE_DAEMON
+	if (outdated && theApp->amuledlg) {
+		theApp->amuledlg->ShowVersionAvailable(latest);
+	}
+#endif
+}
+
 void Search_Update_Progress(uint32 NOT_ON_DAEMON(val))
 {
 #ifndef AMULE_DAEMON

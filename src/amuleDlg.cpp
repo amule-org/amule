@@ -29,7 +29,9 @@
 #include <wx/config.h>   // Do_not_auto_remove (MacOS 10.3, wx 2.7)
 #include <wx/confbase.h> // Do_not_auto_remove (MacOS 10.3, wx 2.7)
 #include <wx/html/htmlwin.h>
+#include <wx/checkbox.h> // Needed for wxCheckBox (version popup)
 #include <wx/mimetype.h> // Do_not_auto_remove (win32)
+#include <wx/statbmp.h>  // Needed for wxStaticBitmap (version popup)
 #include <wx/stattext.h>
 #include <wx/stdpaths.h>
 #include <wx/textfile.h> // Do_not_auto_remove (win32)
@@ -327,10 +329,12 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 
 	Show(true);
 
-#ifdef ENABLE_VERSION_CHECK
-	// Defer the "is a newer aMule available?" check until the event loop is
-	// running (past the heavy startup I/O), then check and maybe pop up.
-	// Shared with amulegui — both frontends run it from CamuleDlg.
+#if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
+	// amulegui only: defer the "is a newer aMule available?" check until the
+	// event loop is running (past the heavy startup I/O), then check and maybe
+	// pop up. The monolithic app drives this from the shared core engine
+	// (CamuleApp::StartVersionCheck -> Notify_VersionCheckResult) instead, so
+	// there is a single fetch that also feeds the EC version state.
 	CallAfter(&CamuleDlg::StartupVersionCheck);
 #endif
 
@@ -560,7 +564,95 @@ void CamuleDlg::OnImportButton(wxCommandEvent &WXUNUSED(ev))
 #endif
 }
 
-#ifdef ENABLE_VERSION_CHECK
+// Always compiled (independent of ENABLE_VERSION_CHECK) so the shared
+// MuleNotify handler in GuiEvents.cpp links in an OS-package build with the
+// check compiled out; it is simply never invoked there.
+void CamuleDlg::ShowVersionAvailable(const wxString &latest)
+{
+	if (!m_is_safe_state || latest.IsEmpty() || m_versionPopupShown) {
+		return;
+	}
+
+	// Version-based opt-out: last_version_notified holds the exact version the
+	// user ticked "Don't ask again" for. We skip only that version, so a newer
+	// release (e.g. muting 3.1, then 3.2 appears) re-triggers the popup. The
+	// file is written only on opt-out, not on every show, so an outdated user
+	// who dismisses without opting out is reminded again next run.
+	const wxString stampPath = thePrefs::GetConfigDir() + wxT("last_version_notified");
+	if (wxFileExists(stampPath)) {
+		wxTextFile stamp(stampPath);
+		if (stamp.Open()) {
+			const wxString mutedVersion = stamp.GetLineCount() ? stamp.GetLine(0) : wxString();
+			stamp.Close();
+			if (mutedVersion == latest) {
+				return; // user opted out of this specific version
+			}
+		}
+	}
+
+	// Show at most once per session, so the daily periodic re-check does not
+	// re-pop within the same run (and covers the case where startup found us
+	// up to date but a release appeared later).
+	m_versionPopupShown = true;
+
+	// Custom dialog so it carries the aMule icon (as in the About box) instead
+	// of the generic information icon, alongside the per-version "Don't ask
+	// again" opt-out.
+	wxDialog dlg(this, wxID_ANY, _("New version available"));
+
+	wxStaticText *msg = new wxStaticText(&dlg,
+		wxID_ANY,
+		CFormat(_("A new version of aMule (%s) is available.\n\n"
+			  "You are running %s.\n\n"
+			  "Would you like to open the download page?")) %
+			latest % VERSION);
+	wxCheckBox *dontAsk = new wxCheckBox(&dlg, wxID_ANY, _("Don't ask again"));
+
+	wxBoxSizer *topRow = new wxBoxSizer(wxHORIZONTAL);
+	const wxBitmap logoBmp = wxArtProvider::GetBitmap(wxT("amule:amule"), wxART_MESSAGE_BOX);
+	if (logoBmp.IsOk()) {
+		topRow->Add(
+			new wxStaticBitmap(&dlg, wxID_ANY, logoBmp), wxSizerFlags().Top().Border(wxALL, 12));
+	}
+	topRow->Add(msg, wxSizerFlags(1).CenterVertical().Border(wxALL, 12));
+
+	// Bottom row: the opt-out checkbox on the left, the Yes/No buttons on the
+	// right (a stretch spacer pushes them apart).
+	wxBoxSizer *bottomRow = new wxBoxSizer(wxHORIZONTAL);
+	bottomRow->Add(dontAsk, wxSizerFlags().CenterVertical());
+	bottomRow->AddStretchSpacer();
+	bottomRow->Add(dlg.CreateButtonSizer(wxYES | wxNO), wxSizerFlags().CenterVertical());
+
+	wxBoxSizer *top = new wxBoxSizer(wxVERTICAL);
+	top->Add(topRow, wxSizerFlags(1).Expand());
+	top->Add(bottomRow, wxSizerFlags().Expand().Border(wxALL, 10));
+
+	// wxDialog auto-closes on OK/Cancel but not Yes/No; map them so ShowModal
+	// returns wxID_YES / wxID_NO (Enter = Yes, Esc = No).
+	dlg.SetAffirmativeId(wxID_YES);
+	dlg.SetEscapeId(wxID_NO);
+
+	dlg.SetSizerAndFit(top);
+	dlg.Centre();
+	const int answer = dlg.ShowModal();
+
+	if (dontAsk->IsChecked()) {
+		// Persist the opt-out for this version only.
+		wxTextFile stamp(stampPath);
+		if (wxFileExists(stampPath) ? stamp.Open() : stamp.Create()) {
+			stamp.Clear();
+			stamp.AddLine(latest);
+			stamp.Write();
+			stamp.Close();
+		}
+	}
+
+	if (answer == wxID_YES) {
+		wxLaunchDefaultBrowser(wxT("https://github.com/amule-org/amule/releases/latest"));
+	}
+}
+
+#if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
 void CamuleDlg::StartupVersionCheck()
 {
 	if (!thePrefs::GetCheckNewVersion()) {
@@ -570,57 +662,24 @@ void CamuleDlg::StartupVersionCheck()
 		m_startupVersionCheck = new CVersionCheck();
 		Bind(wxEVT_VERSION_CHECK_DONE, &CamuleDlg::OnStartupVersionCheckDone, this);
 	}
+	m_lastGuiVersionCheck = time(nullptr);
 	m_startupVersionCheck->Start(this, wxID_ANY);
 }
 
 void CamuleDlg::OnStartupVersionCheckDone(wxCommandEvent &evt)
 {
-	if (evt.GetInt() != CVersionCheck::Outdated || !m_startupVersionCheck || !m_is_safe_state) {
+	if (evt.GetInt() != CVersionCheck::Outdated || !m_startupVersionCheck) {
 		return;
 	}
-	const wxString latest = m_startupVersionCheck->LatestVersion();
-
-	// Notify at most once per detected version: the last version we popped
-	// up about is remembered in a small file next to the other
-	// version-check state, so we don't nag on every startup.
-	const wxString stampPath = thePrefs::GetConfigDir() + wxT("last_version_notified");
-	wxTextFile stamp(stampPath);
-	if (wxFileExists(stampPath)) {
-		if (stamp.Open()) {
-			const wxString seen = stamp.GetLineCount() ? stamp.GetLine(0) : wxString();
-			if (seen == latest) {
-				stamp.Close();
-				return; // already notified about this version
-			}
-			stamp.Clear();
-			stamp.AddLine(latest);
-			stamp.Write();
-			stamp.Close();
-		}
-	} else if (stamp.Create()) {
-		stamp.AddLine(latest);
-		stamp.Write();
-		stamp.Close();
-	}
-
-	wxMessageDialog dlg(this,
-		CFormat(_("A new version of aMule (%s) is available.\n\n"
-			  "You are running %s.\n\n"
-			  "Would you like to open the download page?")) %
-			latest % VERSION,
-		_("New version available"),
-		wxYES_NO | wxICON_INFORMATION);
-	if (dlg.ShowModal() == wxID_YES) {
-		wxLaunchDefaultBrowser(wxT("https://github.com/amule-org/amule/releases/latest"));
-	}
+	ShowVersionAvailable(m_startupVersionCheck->LatestVersion());
 }
-#endif // ENABLE_VERSION_CHECK
+#endif // ENABLE_VERSION_CHECK && CLIENT_GUI
 
 CamuleDlg::~CamuleDlg()
 {
 	theApp->amuledlg = NULL;
 
-#ifdef ENABLE_VERSION_CHECK
+#if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
 	delete m_startupVersionCheck;
 	m_startupVersionCheck = NULL;
 #endif
@@ -1343,6 +1402,20 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 			m_sharedfileswnd->peerslistctrl->SortList();
 		}
 		m_kademliawnd->UpdateNodeCount(CStatistics::GetKadNodes());
+
+#if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
+		// amulegui periodic re-check (daily). amulegui is not a CamuleApp, so
+		// it has no core engine; it re-runs its own CVersionCheck. Fires
+		// immediately the first time the preference is enabled at runtime
+		// (m_lastGuiVersionCheck == 0). StartupVersionCheck() is a no-op while
+		// a check is already in flight. The monolithic app drives its periodic
+		// check from CamuleApp::OnCoreTimer instead.
+		if (thePrefs::GetCheckNewVersion() &&
+			(m_lastGuiVersionCheck == 0 ||
+				time(nullptr) - m_lastGuiVersionCheck >= 24 * 60 * 60)) {
+			StartupVersionCheck();
+		}
+#endif
 	}
 
 	if (msCur - msPrev1 > 1000) { // every second

@@ -256,20 +256,32 @@ private:
 	bool m_BlinkMessages;
 	int m_CurrentBlinkBitmap;
 	uint32 m_last_iconizing;
+	// The "new version available" popup is shown at most once per session;
+	// the daily periodic re-check must not re-pop within the same run.
+	bool m_versionPopupShown = false;
 
-#ifdef ENABLE_VERSION_CHECK
-	// Deferred startup "is a newer aMule available?" check, shared with
-	// amulegui via CVersionCheck. Owned; created lazily by
-	// StartupVersionCheck() when the "check at startup" preference is on.
+#if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
+	// amulegui-only: it is not a CamuleApp and so has no core version-check
+	// engine, so the remote GUI runs its own CVersionCheck. The monolithic
+	// app instead drives the popup from the shared core engine via
+	// Notify_VersionCheckResult -> ShowVersionAvailable(). Owned; created
+	// lazily by StartupVersionCheck() when the preference is on. A periodic
+	// re-check is fired from OnGUITimer.
 	CVersionCheck *m_startupVersionCheck = nullptr;
-	// Kick off the deferred startup version check (no-op if the preference
-	// is off); the result is handled by OnStartupVersionCheckDone, which
-	// shows the "new version" popup at most once per detected version.
+	time_t m_lastGuiVersionCheck = 0;
 	void StartupVersionCheck();
 	void OnStartupVersionCheckDone(wxCommandEvent &evt);
-#endif // ENABLE_VERSION_CHECK
+#endif // ENABLE_VERSION_CHECK && CLIENT_GUI
 
 public:
+	// Show the "a new version is available" popup: at most once per session
+	// (m_versionPopupShown), and never for a version the user muted via the
+	// dialog's "Don't ask again" checkbox (recorded per-version in
+	// last_version_notified, so a newer release still asks). Called from the
+	// core engine (Notify_VersionCheckResult) in the monolithic app and from
+	// OnStartupVersionCheckDone in amulegui.
+	void ShowVersionAvailable(const wxString &latest);
+
 	// Track iconize state from wxIconizeEvent::IsIconized(), which is
 	// reliable across platforms — unlike wxFrame::IsIconized() which
 	// can return false on wxGTK after a minimize-button click while
