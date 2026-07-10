@@ -24,17 +24,13 @@
 
 #include "VersionCheck.h"
 
-#include "config.h" // Needed for VERSION_MJR / MIN / UPDATE (via ClientVersion.h)
+#include "config.h" // Needed for ENABLE_VERSION_CHECK
 
 #ifdef ENABLE_VERSION_CHECK
 
-#include <common/ClientVersion.h> // VERSION_MJR / VERSION_MIN / VERSION_UPDATE
-#include "OtherFunctions.h"       // make_full_ed2k_version
-#include "Logger.h"               // AddDebugLogLineN / logGeneral
-#include "HTTPDownload.h"         // CreateAmuleWebRequest (shared curl session + interface bind)
-
-#include <wx/regex.h>
-#include <wx/tokenzr.h>
+#include "OtherFunctions.h" // CompareLatestReleaseVersion
+#include "Logger.h"         // AddDebugLogLineN / logGeneral
+#include "HTTPDownload.h"   // CreateAmuleWebRequest (shared curl session + interface bind)
 
 wxDEFINE_EVENT(wxEVT_VERSION_CHECK_DONE, wxCommandEvent);
 
@@ -106,48 +102,20 @@ void CVersionCheck::OnRequestState(wxWebRequestEvent &evt)
 
 CVersionCheck::Status CVersionCheck::Evaluate(const wxString &json)
 {
-	// Extract the `tag_name` string — the same field the daemon-side check
-	// reads. /releases/latest excludes pre-releases, so the tag names a
-	// stable release. A regex on the one well-known field is robust against
-	// whitespace and field-order changes without a full JSON parser.
-	wxRegEx tagRe(wxT("\"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\""));
-	if (!tagRe.IsValid() || !tagRe.Matches(json)) {
-		return Failed;
-	}
-	wxString tag = tagRe.GetMatch(json, 1);
-
-	// Tolerate an optional leading v/V (aMule tags are bare semver, but be
-	// defensive in case a future maintainer switches to vX.Y.Z).
-	if (tag.StartsWith(wxT("v")) || tag.StartsWith(wxT("V"))) {
-		tag = tag.Mid(1);
-	}
-	// Strip any pre-release / build-metadata suffix so the integer compare
-	// sees only MAJOR.MINOR.UPDATE.
-	size_t suffixPos = tag.find_first_of(wxT("-+"));
-	if (suffixPos != wxString::npos) {
-		tag = tag.Mid(0, suffixPos);
-	}
-	if (tag.IsEmpty()) {
-		return Failed;
-	}
-
-	long fields[] = { 0, 0, 0 };
-	wxStringTokenizer tkz(tag, wxT("."));
-	for (int i = 0; i < 3 && tkz.HasMoreTokens(); ++i) {
-		// Tags with fewer than three components (e.g. "3.1") are valid;
-		// the missing fields stay 0.
-		if (!tkz.GetNextToken().ToLong(&fields[i])) {
-			return Failed;
-		}
-	}
-
-	long curVer = make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE);
-	long newVer = make_full_ed2k_version(fields[0], fields[1], fields[2]);
-	if (curVer < newVer) {
-		m_latest = wxString::Format(wxT("%ld.%ld.%ld"), fields[0], fields[1], fields[2]);
+	// Shared parse + compare (see OtherFunctions.cpp:CompareLatestReleaseVersion).
+	// Same logic the daemon check and amuleapi use, so there is a single
+	// source of truth for how a GitHub release tag is interpreted.
+	const CVersionCompareResult r = CompareLatestReleaseVersion(json);
+	switch (r.state) {
+	case CVersionCompareResult::Outdated:
+		m_latest = r.latest;
 		return Outdated;
+	case CVersionCompareResult::UpToDate:
+		return UpToDate;
+	case CVersionCompareResult::ParseError:
+	default:
+		return Failed;
 	}
-	return UpToDate;
 }
 
 void CVersionCheck::Finish(Status status)

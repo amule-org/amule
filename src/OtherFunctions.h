@@ -317,6 +317,31 @@ inline long int make_full_ed2k_version(int a, int b, int c)
 	return ((a << 17) | (b << 10) | (c << 7));
 }
 
+// Outcome of comparing the latest published release against this build.
+struct CVersionCompareResult
+{
+	enum State
+	{
+		ParseError, // tag_name missing or unparseable
+		UpToDate,   // running version is >= the latest release
+		Outdated,   // a newer release exists
+	} state = ParseError;
+
+	// Parsed components of the latest release tag (0 on ParseError).
+	long major = 0;
+	long minor = 0;
+	long update = 0;
+	// "major.minor.update" convenience string; empty on ParseError.
+	wxString latest;
+};
+
+// Parse the `tag_name` from a GitHub /releases/latest JSON body and compare
+// it against this binary's compiled VERSION_MJR/MIN/UPDATE. Pure and
+// wxBase-only (no GUI, no preferences), so the daemon check
+// (CamuleApp::CheckNewVersion), the GUI check (CVersionCheck) and amuleapi
+// all share one implementation.
+CVersionCompareResult CompareLatestReleaseVersion(const wxString &json);
+
 wxString GetConfigDir(const wxString &configFile);
 
 /**

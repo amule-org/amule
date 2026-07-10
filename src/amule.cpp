@@ -2215,92 +2215,38 @@ void CamuleApp::CheckNewVersion(uint32 result)
 				jsonContent += file.GetLine(i);
 			}
 
-			// Extract the `tag_name` string from the JSON.  The
-			// /releases/latest endpoint excludes pre-releases by
-			// design, so any tag_name we see here represents the
-			// latest stable Release.  We don't need a full JSON
-			// parser for one well-known field — a regex on the
-			// `"tag_name": "..."` pair is robust against
-			// whitespace and field-order changes.
-			wxRegEx tagRe("\"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\"");
-			if (!tagRe.IsValid() || !tagRe.Matches(jsonContent)) {
+			// Shared parse + compare (OtherFunctions.cpp:
+			// CompareLatestReleaseVersion) — the same logic the GUI
+			// check (CVersionCheck) and amuleapi use. Folds the
+			// former regex/strip/tokenize block into one call; the
+			// ParseError branch covers every "corrupt input" case the
+			// inline code returned on (bad regex, empty tag, non-numeric
+			// component).
+			const CVersionCompareResult vc = CompareLatestReleaseVersion(jsonContent);
+			if (vc.state == CVersionCompareResult::ParseError) {
 				AddLogLineC(_("Corrupted version check file"));
 				file.Close();
 				wxRemoveFile(filename);
 				return;
 			}
-			wxString versionLine = tagRe.GetMatch(jsonContent, 1);
-
-			// Strip the optional `v` prefix (aMule's tags are bare
-			// semver, but be tolerant in case a future maintainer
-			// switches to vX.Y.Z).
-			if (versionLine.StartsWith("v") || versionLine.StartsWith("V")) {
-				versionLine = versionLine.Mid(1);
-			}
-
-			// Strip any pre-release / build-metadata suffix so the
-			// integer comparison sees only MAJOR.MINOR.UPDATE.
-			// /releases/latest already excludes pre-releases, but
-			// be defensive: a stable tag like `3.0.0+build42`
-			// should still parse.
-			size_t suffixPos = versionLine.find_first_of(wxT("-+"));
-			if (suffixPos != wxString::npos) {
-				versionLine = versionLine.Mid(0, suffixPos);
-			}
-
-			// Catch degenerate inputs where the prefix/suffix
-			// strip leaves nothing behind (e.g. tag_name "v",
-			// "-foo", "v-rc1").  Without this guard the
-			// tokenizer returns no tokens, all three fields
-			// stay at 0, and the comparison silently reports
-			// "up to date" against an unparseable input.
-			if (versionLine.IsEmpty()) {
-				AddLogLineC(_("Corrupted version check file"));
-				file.Close();
-				wxRemoveFile(filename);
-				return;
-			}
-
-			wxStringTokenizer tkz(versionLine, ".");
 
 			AddDebugLogLineN(logGeneral,
-				wxString("Running: ") + VERSION + ", Version check: " + versionLine);
+				wxString("Running: ") + VERSION + ", Version check: " + vc.latest);
 
-			long fields[] = { 0, 0, 0 };
-			for (int i = 0; i < 3; ++i) {
-				if (!tkz.HasMoreTokens()) {
-					// Tags with fewer than three components (e.g.
-					// a maintainer tagging "3.1" instead of "3.1.0")
-					// are valid; treat the missing field as 0.
-					break;
-				}
-				wxString token = tkz.GetNextToken();
-
-				if (!token.ToLong(&fields[i])) {
-					AddLogLineC(_("Corrupted version check file"));
-					file.Close();
-					wxRemoveFile(filename);
-					return;
-				}
-			}
-
-			long curVer = make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE);
-			long newVer = make_full_ed2k_version(fields[0], fields[1], fields[2]);
-
-			if (curVer < newVer) {
+			if (vc.state == CVersionCompareResult::Outdated) {
 				AddLogLineC(_("You are using an outdated version of aMule!"));
 				// cppcheck-suppress zerodiv
 				AddLogLineN(CFormat(_("Your aMule version is %i.%i.%i and the latest version "
 						      "is %li.%li.%li")) %
-					    VERSION_MJR % VERSION_MIN % VERSION_UPDATE % fields[0] %
-					    fields[1] % fields[2]);
+					    VERSION_MJR % VERSION_MIN % VERSION_UPDATE % vc.major % vc.minor %
+					    vc.update);
 				AddLogLineN(_("The latest version can always be found at "
 					      "https://github.com/amule-org/amule/releases/latest"));
 #ifdef AMULE_DAEMON
 				AddLogLineCS(CFormat(_("WARNING: Your aMuled version is outdated: %i.%i.%i < "
 						       "%li.%li.%li")) %
-					     VERSION_MJR % VERSION_MIN % VERSION_UPDATE % fields[0] %
-					     fields[1] % fields[2]);
+					     VERSION_MJR % VERSION_MIN % VERSION_UPDATE % vc.major %
+					     vc.minor % vc.update);
 #endif
 			} else {
 				AddLogLineN(_("Your copy of aMule is up to date."));

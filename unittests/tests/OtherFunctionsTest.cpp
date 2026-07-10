@@ -69,3 +69,89 @@ TEST(Base64, NoHeaderProducesPlainBase64)
 	ASSERT_FALSE(result.Contains(wxT("-----")));
 	ASSERT_TRUE(result.Contains(wxT("TWFu")));
 }
+
+// CompareLatestReleaseVersion — the shared release-tag parse + version
+// comparison used by the daemon check (CamuleApp::CheckNewVersion) and the
+// GUI check (CVersionCheck). Comparisons use extreme tags (999.x / 0.0.1) so
+// the up-to-date / outdated results are deterministic regardless of the
+// version this test binary was compiled with.
+
+DECLARE_SIMPLE(VersionCompare)
+
+TEST(VersionCompare, ParsesTagAndReportsOutdated)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"999.5.3\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::Outdated);
+	ASSERT_EQUALS(999, r.major);
+	ASSERT_EQUALS(5, r.minor);
+	ASSERT_EQUALS(3, r.update);
+	ASSERT_EQUALS(wxString(wxT("999.5.3")), r.latest);
+}
+
+TEST(VersionCompare, ReportsUpToDate)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"0.0.1\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::UpToDate);
+}
+
+// A leading v/V is tolerated.
+TEST(VersionCompare, StripsVPrefix)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"v999.5.3\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::Outdated);
+	ASSERT_EQUALS(999, r.major);
+	ASSERT_EQUALS(5, r.minor);
+	ASSERT_EQUALS(3, r.update);
+}
+
+// A pre-release / build-metadata suffix is stripped before comparison.
+TEST(VersionCompare, StripsSuffix)
+{
+	CVersionCompareResult a = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"999.5.3-rc1\"}"));
+	ASSERT_EQUALS(999, a.major);
+	ASSERT_EQUALS(5, a.minor);
+	ASSERT_EQUALS(3, a.update);
+
+	CVersionCompareResult b = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"999.5.3+build42\"}"));
+	ASSERT_EQUALS(3, b.update);
+}
+
+// Tags with fewer than three components are valid; missing fields are 0.
+TEST(VersionCompare, FewerComponents)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"999.5\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::Outdated);
+	ASSERT_EQUALS(999, r.major);
+	ASSERT_EQUALS(5, r.minor);
+	ASSERT_EQUALS(0, r.update);
+	ASSERT_EQUALS(wxString(wxT("999.5.0")), r.latest);
+}
+
+// Whitespace around the JSON colon is tolerated (regex match, not full parse).
+TEST(VersionCompare, WhitespaceTolerant)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{ \"tag_name\"  :   \"999.5.3\" }"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::Outdated);
+	ASSERT_EQUALS(999, r.major);
+}
+
+// No tag_name field at all is a ParseError.
+TEST(VersionCompare, ParseErrorNoTag)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"name\": \"whatever\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::ParseError);
+}
+
+// A tag that reduces to empty after prefix/suffix strip is a ParseError.
+TEST(VersionCompare, ParseErrorEmptyAfterStrip)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"v\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::ParseError);
+}
+
+// A non-numeric version component is a ParseError.
+TEST(VersionCompare, ParseErrorNonNumeric)
+{
+	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"3.x.0\"}"));
+	ASSERT_TRUE(r.state == CVersionCompareResult::ParseError);
+}

@@ -33,6 +33,8 @@
 #include "config.h"      // Needed for a number of defines
 
 #include <wx/stdpaths.h> // Do_not_auto_remove
+#include <wx/regex.h>    // Needed for CompareLatestReleaseVersion tag parse
+#include <wx/tokenzr.h>  // Needed for CompareLatestReleaseVersion tokenizer
 #include <common/StringFunctions.h>
 #include <common/ClientVersion.h>
 #include <common/MD5Sum.h>
@@ -1441,6 +1443,55 @@ void DumpMem_DW(const uint32 *ptr, int count)
 			printf("\n");
 	}
 	printf("\n");
+}
+
+CVersionCompareResult CompareLatestReleaseVersion(const wxString &json)
+{
+	CVersionCompareResult result;
+
+	// Extract the `tag_name` string. /releases/latest excludes pre-releases,
+	// so the tag names a stable release. A regex on the one well-known field
+	// is robust against whitespace / field order without a full JSON parser.
+	wxRegEx tagRe(wxT("\"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\""));
+	if (!tagRe.IsValid() || !tagRe.Matches(json)) {
+		return result; // ParseError
+	}
+	wxString tag = tagRe.GetMatch(json, 1);
+
+	// Tolerate an optional leading v/V (aMule tags are bare semver, but be
+	// defensive in case a future maintainer switches to vX.Y.Z).
+	if (tag.StartsWith(wxT("v")) || tag.StartsWith(wxT("V"))) {
+		tag = tag.Mid(1);
+	}
+	// Strip any pre-release / build-metadata suffix so the integer compare
+	// sees only MAJOR.MINOR.UPDATE.
+	size_t suffixPos = tag.find_first_of(wxT("-+"));
+	if (suffixPos != wxString::npos) {
+		tag = tag.Mid(0, suffixPos);
+	}
+	if (tag.IsEmpty()) {
+		return result; // ParseError
+	}
+
+	long fields[] = { 0, 0, 0 };
+	wxStringTokenizer tkz(tag, wxT("."));
+	for (int i = 0; i < 3 && tkz.HasMoreTokens(); ++i) {
+		// Tags with fewer than three components (e.g. "3.1") are valid;
+		// the missing fields stay 0.
+		if (!tkz.GetNextToken().ToLong(&fields[i])) {
+			return result; // ParseError
+		}
+	}
+
+	result.major = fields[0];
+	result.minor = fields[1];
+	result.update = fields[2];
+	result.latest = wxString::Format(wxT("%ld.%ld.%ld"), fields[0], fields[1], fields[2]);
+
+	const long curVer = make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE);
+	const long newVer = make_full_ed2k_version(fields[0], fields[1], fields[2]);
+	result.state = (curVer < newVer) ? CVersionCompareResult::Outdated : CVersionCompareResult::UpToDate;
+	return result;
 }
 
 wxString GetConfigDir(const wxString &configFileBase)
