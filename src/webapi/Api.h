@@ -95,6 +95,7 @@ public:
 
 private:
 	CHttpServer::Response HandleVersion(const CHttpServer::Request &);
+	CHttpServer::Response HandleVersionCheck(const CHttpServer::Request &);
 	CHttpServer::Response HandleLogin(const CHttpServer::Request &);
 	CHttpServer::Response HandleLogout(const CHttpServer::Request &);
 	CHttpServer::Response HandleSession(const CHttpServer::Request &);

@@ -662,6 +662,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleVersion(req);
 	}
 
+	if (path == "/api/v0/version/check") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed", "only POST on /api/v0/version/check");
+		}
+		return HandleVersionCheck(req);
+	}
+
 	if (path == "/api/v0/auth/login") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed", "only POST on /auth/login");
@@ -1094,6 +1101,41 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	// which is amuleapi's own build version.
 	w.Key("daemon_version");
 	w.ValueString(m_app.GetDaemonVersion());
+
+	// Update-availability, relayed from the connected daemon (never checked
+	// by amuleapi itself). All fields are English / C-locale per the API
+	// contract. When the daemon can't check -- built without
+	// ENABLE_VERSION_CHECK, the check_new_version pref off, or a pre-3.1
+	// daemon that emits none of these tags -- check_enabled is false and a
+	// client should show nothing. update_available / last_checked are null
+	// until a check has completed.
+	{
+		const auto prefs = m_state.Preferences();
+		const auto status = m_state.Status();
+		const bool check_enabled = prefs.version_check_available && prefs.check_new_version;
+		const bool checked = status.version_check_done;
+		w.Key("update");
+		w.BeginObject();
+		w.Key("check_enabled");
+		w.ValueBool(check_enabled);
+		w.Key("checked");
+		w.ValueBool(checked);
+		w.Key("latest_version");
+		w.ValueString(wxString::FromUTF8(status.version_check_latest.c_str()));
+		w.Key("update_available");
+		if (checked) {
+			w.ValueBool(status.version_check_outdated);
+		} else {
+			w.ValueNull();
+		}
+		w.Key("last_checked");
+		if (checked && status.version_check_timestamp > 0) {
+			w.ValueUInt(status.version_check_timestamp);
+		} else {
+			w.ValueNull();
+		}
+		w.EndObject();
+	}
 	w.EndObject();
 	const wxString js = w.GetBuffer();
 	const wxScopedCharBuffer ub = js.utf8_str();
@@ -2316,6 +2358,58 @@ bool ParseBulkHashes(const picojson::object &obj, std::vector<std::string> &out,
 }
 
 } // namespace
+
+CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	// The daemon owns the check; amuleapi only triggers it. Reject early
+	// when the daemon can't check, so we never send an EC op that will fail
+	// and never expose the daemon's localized reason (English-only contract).
+	const auto prefs = m_state.Preferences();
+	if (!(prefs.version_check_available && prefs.check_new_version)) {
+		return ErrorResponse(409,
+			"update_check_unavailable",
+			"version check is disabled or unavailable on the connected daemon");
+	}
+
+	auto ec_req = std::make_unique<CECPacket>(EC_OP_VERSION_CHECK);
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for version check");
+	}
+	// The daemon replies EC_OP_NOOP (accepted) or EC_OP_FAILED (throttled).
+	const bool failed = ec_resp->GetOpCode() == EC_OP_FAILED;
+	delete ec_resp;
+	if (failed) {
+		// The only expected failure past the gate above is the daemon's
+		// throttle. Report an English code; the daemon's message is not relayed.
+		return ErrorResponse(429,
+			"update_check_throttled",
+			"version check was throttled by the daemon; try again shortly");
+	}
+
+	// Accepted. The check runs asynchronously on the daemon; the result
+	// (latest_version / update_available / last_checked) appears on a
+	// subsequent GET /api/v0/version once it completes.
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("status");
+	w.ValueString("started");
+	w.EndObject();
+	const wxString js = w.GetBuffer();
+	const wxScopedCharBuffer ub = js.utf8_str();
+	r.body.assign(ub.data(), ub.length());
+	return r;
+}
 
 CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Request &req)
 {

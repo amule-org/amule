@@ -443,6 +443,11 @@ struct PreferencesSnapshot
 	std::string user_hash;
 	std::string host_name;
 	bool check_new_version = false;
+	// Capability: the connected daemon is built with ENABLE_VERSION_CHECK
+	// (emits EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE). False for OS-package
+	// or pre-3.1 daemons; combined with check_new_version to decide whether
+	// update checking is active. See /version's "update" object.
+	bool version_check_available = false;
 
 	// [Connection]
 	std::uint32_t max_upload_kbps = 0;
@@ -507,6 +512,17 @@ struct StatusSnapshot
 	// EC_OP_STAT_REQ response we already parse.
 	std::uint32_t ed2k_users = 0;
 	std::uint32_t ed2k_files = 0;
+
+	// Version-check result, relayed on the same EC_OP_STATS round-trip
+	// (EC_TAG_GENERAL_VERSION_CHECK_*). done == a check has completed;
+	// latest is the release string; outdated == a newer release exists;
+	// timestamp is the unix time the check completed. Surfaced in
+	// /version's "update" object. Absent (done == false) on daemons that
+	// have not checked yet or were built without ENABLE_VERSION_CHECK.
+	bool version_check_done = false;
+	bool version_check_outdated = false;
+	std::string version_check_latest;
+	std::uint64_t version_check_timestamp = 0;
 };
 
 // ECID-keyed file map + hash→ECID index in lockstep. The index is

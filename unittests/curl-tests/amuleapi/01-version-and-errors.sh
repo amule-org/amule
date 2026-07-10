@@ -95,6 +95,18 @@ _assert_json_eq '.amule_version | length > 0' \
 _assert_json_eq '.daemon_version | length > 0' \
 	true '/api/v0/version reports a non-empty daemon_version'
 
+# 2c. update object — version-check info relayed from the daemon. Whether the
+#     daemon has actually completed a check depends on its build
+#     (ENABLE_VERSION_CHECK) and network access, so assert the shape (keys +
+#     types) rather than concrete values. update_available / last_checked are
+#     boolean|null / number|null; only assert their presence.
+_assert_json_eq '.update | type' object '/api/v0/version has an update object'
+_assert_json_eq '.update.check_enabled | type' boolean 'update.check_enabled is boolean'
+_assert_json_eq '.update.checked | type' boolean 'update.checked is boolean'
+_assert_json_eq '.update.latest_version | type' string 'update.latest_version is string'
+_assert_json_eq '.update | has("update_available")' true 'update has update_available'
+_assert_json_eq '.update | has("last_checked")' true 'update has last_checked'
+
 # 3. Method other than GET/HEAD → 405 with the canonical error envelope.
 _curl -X DELETE "$HOST/api/v0/version"
 _assert_status 405 "DELETE /api/v0/version yields 405"
@@ -110,6 +122,18 @@ _assert_json_eq '.error.code' not_found \
 # 5. HEAD /api/v0/version — same status code as GET, no body required.
 _curl -I "$HOST/api/v0/version"
 _assert_status 200 "HEAD /api/v0/version returns 200"
+
+# 6. POST /api/v0/version/check is admin-only: unauthenticated → 401. (The
+#    admin-authenticated happy path — 202 started / 429 throttled — is
+#    exercised where an admin token is available.)
+_curl -X POST "$HOST/api/v0/version/check"
+_assert_status 401 "POST /api/v0/version/check without auth yields 401"
+
+# 7. GET /api/v0/version/check → 405 (POST only).
+_curl "$HOST/api/v0/version/check"
+_assert_status 405 "GET /api/v0/version/check yields 405"
+_assert_json_eq '.error.code' method_not_allowed \
+	'/api/v0/version/check GET 405 carries error.code=method_not_allowed'
 
 # Summary.
 echo

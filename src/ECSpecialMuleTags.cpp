@@ -26,6 +26,7 @@
 #include <ec/cpp/ECTag.h>         // Needed for CECTag
 #include <ec/cpp/ECSpecialTags.h> // Needed for special EC tag creator classes
 
+#include "config.h" // Needed for ENABLE_VERSION_CHECK
 #include "Preferences.h"
 #include "amule.h"
 #include "SharedFileList.h" // for EnableDirectoryWatcher on the apply path
@@ -105,6 +106,19 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		user_prefs.AddTag(CECTag(EC_TAG_USER_HASH, thePrefs::GetUserHash()));
 		user_prefs.AddTag(CECTag(EC_TAG_USER_HOST, thePrefs::GetYourHostname()));
 		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_CHECK_NEW_VERSION, thePrefs::GetCheckNewVersion()));
+		// Capability signal: whether this build can actually perform version
+		// checks (ENABLE_VERSION_CHECK). Emitted as a bool by every 3.1+
+		// daemon — true when compiled in, false when compiled out — so a
+		// client can tell "compiled out" (false) apart from an old daemon
+		// that predates the tag (absent). Distinct from the CHECK_NEW_VERSION
+		// *preference* above; a client treats update checking as active only
+		// when (available AND pref).
+#ifdef ENABLE_VERSION_CHECK
+		const bool versionCheckAvailable = true;
+#else
+		const bool versionCheckAvailable = false;
+#endif
+		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE, versionCheckAvailable));
 		AddTag(user_prefs);
 	}
 

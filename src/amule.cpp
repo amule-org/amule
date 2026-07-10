@@ -890,22 +890,7 @@ bool CamuleApp::OnInit()
 	// this to the daemon avoids a redundant second fetch in the monolithic
 	// app.
 	if (thePrefs::GetCheckNewVersion()) {
-		// Test if there's any new version. The URL is the GitHub
-		// Releases "latest" endpoint, which returns JSON describing the
-		// most recent non-prerelease, non-draft Release.  We parse the
-		// `tag_name` field in CheckNewVersion() below. This replaces the
-		// legacy SourceForge `lastversion` text file, which has been
-		// unmaintained since the project moved to GitHub years ago.
-		// We use the thread base because I don't want a dialog to pop up.
-		CHTTPDownloadThread *version_check = new CHTTPDownloadThread(
-			"https://api.github.com/repos/amule-org/amule/releases/latest",
-			thePrefs::GetConfigDir() + "last_version_check",
-			thePrefs::GetConfigDir() + "last_version",
-			HTTP_VersionCheck,
-			false,
-			false);
-		version_check->Create();
-		version_check->Run();
+		StartVersionCheck();
 	}
 #endif // AMULE_DAEMON && ENABLE_VERSION_CHECK
 	if (thePrefs::GetNetworkED2K() && thePrefs::AutoServerlist()) {
@@ -2195,6 +2180,37 @@ void CamuleApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
 }
 
 #ifdef ENABLE_VERSION_CHECK
+bool CamuleApp::StartVersionCheck()
+{
+	// Throttle against GitHub's unauthenticated rate limit (60 req/hr):
+	// skip triggers arriving within the cooldown of the last attempt. The
+	// startup call is the first attempt (m_versionCheckLastAttempt == 0) so
+	// it always runs.
+	const time_t kMinInterval = 60; // seconds
+	const time_t now = time(nullptr);
+	if (m_versionCheckLastAttempt != 0 && now - m_versionCheckLastAttempt < kMinInterval) {
+		return false;
+	}
+	m_versionCheckLastAttempt = now;
+
+	// The GitHub Releases "latest" endpoint returns JSON describing the
+	// most recent non-prerelease, non-draft Release. CheckNewVersion()
+	// parses the tag_name on completion (via HTTP_VersionCheck ->
+	// OnFinishedHTTPDownload). Fire-and-forget through the download thread
+	// so no dialog pops up. Reused by OnInit (startup) and the
+	// EC_OP_VERSION_CHECK trigger.
+	CHTTPDownloadThread *version_check =
+		new CHTTPDownloadThread("https://api.github.com/repos/amule-org/amule/releases/latest",
+			thePrefs::GetConfigDir() + "last_version_check",
+			thePrefs::GetConfigDir() + "last_version",
+			HTTP_VersionCheck,
+			false,
+			false);
+	version_check->Create();
+	version_check->Run();
+	return true;
+}
+
 void CamuleApp::CheckNewVersion(uint32 result)
 {
 	if (result == HTTP_Success) {
@@ -2229,6 +2245,14 @@ void CamuleApp::CheckNewVersion(uint32 result)
 				wxRemoveFile(filename);
 				return;
 			}
+
+			// Persist the outcome so it can be relayed over EC to
+			// amuleapi (the /version "update" object) and read by the
+			// UIs. Set on any successful parse (up-to-date or outdated).
+			m_versionCheckLatest = vc.latest;
+			m_versionCheckOutdated = (vc.state == CVersionCompareResult::Outdated);
+			m_versionCheckDone = true;
+			m_versionCheckTimestamp = time(nullptr);
 
 			AddDebugLogLineN(logGeneral,
 				wxString("Running: ") + VERSION + ", Version check: " + vc.latest);

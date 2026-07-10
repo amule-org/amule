@@ -149,6 +149,8 @@ EC_OP_SERVER_SET_STATIC_PRIO        0x56
 
 EC_OP_FRIEND                        0x57
 
+EC_OP_VERSION_CHECK                 0x58
+
 [/Section]
 
 [Section Content]
@@ -366,6 +368,10 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_USER_HASH                          0x1202
 		EC_TAG_USER_HOST                          0x1203
 		EC_TAG_GENERAL_CHECK_NEW_VERSION          0x1204
+		EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE    0x1205
+		EC_TAG_GENERAL_VERSION_CHECK_LATEST       0x1206
+		EC_TAG_GENERAL_VERSION_CHECK_OUTDATED     0x1207
+		EC_TAG_GENERAL_VERSION_CHECK_TIMESTAMP    0x1208
 
 	EC_TAG_PREFS_CONNECTIONS                  0x1300
 		EC_TAG_CONN_DL_CAP                        0x1301

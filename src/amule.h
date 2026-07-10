@@ -400,11 +400,39 @@ protected:
 
 	CTimer *core_timer;
 
+public:
+#ifdef ENABLE_VERSION_CHECK
+	// Result of the last completed version check, relayed over EC to
+	// amuleapi (the /version "update" object) and read by the UIs.
+	bool IsVersionCheckDone() const { return m_versionCheckDone; }
+	bool IsVersionCheckOutdated() const { return m_versionCheckOutdated; }
+	const wxString &GetVersionCheckLatest() const { return m_versionCheckLatest; }
+	// Unix time the last check completed (0 if never). Relayed so clients
+	// can show how stale the result is (checks are startup-only).
+	time_t GetVersionCheckTimestamp() const { return m_versionCheckTimestamp; }
+
+	// Kick off an async GitHub /releases/latest fetch; CheckNewVersion()
+	// stores the outcome when it completes. Reused by OnInit (startup) and
+	// the EC_OP_VERSION_CHECK trigger. Returns false when throttled (a
+	// check ran within the cooldown window) so the trigger caller can
+	// report "try again later" instead of hammering GitHub's rate limit.
+	bool StartVersionCheck();
+#endif
+
 private:
 	virtual void OnUnhandledException();
 
 #ifdef ENABLE_VERSION_CHECK
 	void CheckNewVersion(uint32 result);
+
+	bool m_versionCheckDone = false;
+	bool m_versionCheckOutdated = false;
+	wxString m_versionCheckLatest;
+	// Unix time the last check completed (0 = never).
+	time_t m_versionCheckTimestamp = 0;
+	// Wall-clock of the last StartVersionCheck() attempt, for throttling
+	// the EC trigger against GitHub's unauthenticated rate limit.
+	time_t m_versionCheckLastAttempt = 0;
 #endif
 
 	uint32 m_localip;

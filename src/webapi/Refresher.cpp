@@ -130,6 +130,18 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_FILES)) {
 		out.ed2k_files = static_cast<std::uint32_t>(t->GetInt());
 	}
+	// Version-check result (present only once the daemon has completed a
+	// check). LATEST carries the release string; its presence means a check
+	// is done. OUTDATED is an empty marker present only for a newer release.
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_LATEST)) {
+		out.version_check_done = true;
+		out.version_check_latest = std::string(t->GetStringData().utf8_str());
+		out.version_check_outdated =
+			resp->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_OUTDATED) != nullptr;
+		if (const CECTag *ts = resp->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_TIMESTAMP)) {
+			out.version_check_timestamp = static_cast<std::uint64_t>(ts->GetInt());
+		}
+	}
 	// Nickname intentionally absent: it isn't shipped in the
 	// EC_OP_STAT_REQ response. amuled returns it from
 	// EC_OP_GET_PREFERENCES / EC_OP_GET_STATSTREE@DETAIL_WEB; the
@@ -1617,6 +1629,12 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 	}
 	if (gen->GetTagByName(EC_TAG_GENERAL_CHECK_NEW_VERSION)) {
 		out.check_new_version = true;
+	}
+	// Capability: 3.1+ daemons always send this bool (true when built with
+	// ENABLE_VERSION_CHECK, false when compiled out). Absent means a pre-3.1
+	// daemon that can't relay a result over EC anyway, so it stays false.
+	if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE)) {
+		out.version_check_available = t->GetInt() != 0;
 	}
 }
 

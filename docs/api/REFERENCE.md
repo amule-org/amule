@@ -14,7 +14,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [Backward compatibility](#backward-compatibility)
 
 **System**
-- [`GET /api/v0/version`](#get-apiv0version) — public version probe
+- [`GET /api/v0/version`](#get-apiv0version) — public version probe (+ daemon update-availability)
+- [`POST /api/v0/version/check`](#post-apiv0versioncheck) — trigger a daemon-side version check
 - [`GET /api/v0/status`](#get-apiv0status) — connection state, network state, headline counters
 
 **Authentication**
@@ -278,7 +279,14 @@ curl -s http://$HOST/api/v0/version
   "name": "amuleapi",
   "api_version": "v0",
   "amule_version": "2.4.0-29-g...",
-  "daemon_version": "2.4.0-29-g..."
+  "daemon_version": "2.4.0-29-g...",
+  "update": {
+    "check_enabled": true,
+    "checked": true,
+    "latest_version": "3.0.1",
+    "update_available": false,
+    "last_checked": 1783675590
+  }
 }
 ```
 
@@ -288,6 +296,41 @@ curl -s http://$HOST/api/v0/version
 | `api_version` | REST contract version served on this path (`"v0"`). |
 | `amule_version` | amuleapi's **own** build version. |
 | `daemon_version` | Version of the **connected amuled**, from the EC handshake. Empty string when EC is not (yet) connected, or when the daemon is old enough not to advertise it. Normally equal to `amule_version` (both are built from the same source tree), but they can differ if a mismatched amuleapi is pointed at a different amuled. |
+| `update` | Update-availability, **relayed from the connected daemon** — amuleapi never contacts GitHub itself. See the sub-table. |
+
+The `update` object:
+
+| Field | Meaning |
+| --- | --- |
+| `check_enabled` | `true` only when the daemon can check **and** is configured to: built with `ENABLE_VERSION_CHECK` **and** its `NewVersionCheck` preference on. `false` for OS-package builds, the preference off, or a pre-3.1 daemon. When `false`, a client should show nothing. |
+| `checked` | `true` once the daemon has completed at least one check this session (so `latest_version` is known). The daemon checks at startup; use `POST /api/v0/version/check` to trigger a fresh one. |
+| `latest_version` | Latest release string (e.g. `"3.0.1"`); empty string when not yet checked or unavailable. |
+| `update_available` | `true` when a newer release exists, `false` when up to date, `null` when unknown (not yet checked or disabled). |
+| `last_checked` | Unix time (seconds) the last check completed; `null` when never checked. Useful because checks are startup-only unless re-triggered. |
+
+#### `POST /api/v0/version/check`
+
+**Auth:** `ADMIN`
+
+Triggers an on-demand version check **on the daemon** (amuleapi does not fetch GitHub itself). Fire-and-forget: the request returns as soon as the daemon accepts it, and the result appears on a subsequent `GET /api/v0/version` once the async check completes. Throttled by the daemon to respect GitHub's rate limit.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/version/check
+```
+
+**Response:** `202 Accepted`
+
+```json
+{ "status": "started" }
+```
+
+**Errors:**
+
+| Status | `error.code` | When |
+| --- | --- | --- |
+| `409` | `update_check_unavailable` | The daemon can't check (`update.check_enabled` is `false`). |
+| `429` | `update_check_throttled` | A check ran too recently; retry shortly. |
+| `503` | `ec_unavailable` | The EC round-trip to amuled failed. |
 
 #### `GET /api/v0/status`
 
