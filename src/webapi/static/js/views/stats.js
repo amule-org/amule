@@ -105,26 +105,34 @@ export default function Stats() {
 // typed values; we translate the template and format the values client-side so
 // the display honours the UI language and locale. See docs/api/REFERENCE.md.
 
+// t() echoes the key back when there's no entry; treat that as "missing" and
+// use the fallback. The one place that knows this convention.
+function tOr(key, fallback) {
+  const s = t(key);
+  return s === key ? fallback : s;
+}
+
 // Translate a label template by its exact English text; fall back to the raw
 // English for dynamic labels (client names, versions, OS) that have no key.
-// Used for string values ("Unknown", "Never", …) and as the keyless fallback.
-function tLabel(label) {
-  const key = "stats_tree_" + label;
-  const s = t(key);
-  return s === key ? label : s;
-}
+function tLabel(label) { return tOr("stats_tree_" + label, label); }
+
+// Locale-independent sentinel token ("never"/"not_available") -> localized.
+function tEnum(token) { return tOr("stats_tree_enum_" + token, token); }
 
 // Translate a node's label template. Prefer the stable machine key
 // (stats_tree_<key>) so translations survive label rewording and don't depend
-// on matching English text; fall back to the label for keyless nodes (dynamic
-// client/version/OS/server rows) and legacy daemons that send no key.
+// on matching English text; fall back to the label for legacy daemons.
 function tNodeLabel(node) {
-  if (node.key) {
-    const key = "stats_tree_" + node.key;
-    const s = t(key);
-    if (s !== key) return s;
+  // Dynamic per-client version/OS rows: the label head is data. Render `raw`
+  // verbatim when present (version/OS string, never translated); when raw is
+  // absent it's a known placeholder we translate by kind. Keep the ": %s"
+  // tail so nodeText still fills the count/percent. ponytail: heads have no ":".
+  if (node.key === "client_version" || node.key === "client_os") {
+    const tail = node.label.slice(node.label.indexOf(":"));
+    if (node.raw) return node.raw + tail;
+    return tOr("stats_tree_" + node.key + "_unknown", node.label) + tail;
   }
-  return tLabel(node.label);
+  return tOr("stats_tree_" + node.key, tLabel(node.label));
 }
 
 // One typed value -> display string. Mirrors ECSpecialTags::FormatValue.
@@ -136,7 +144,7 @@ function fmtValue(v, spec) {
     case "speed": s = formatBytes(v.value) + "/s"; break;
     case "time": s = formatDuration(v.value); break;
     case "double": s = /f/.test(spec || "") ? Number(v.value).toFixed(2) : String(v.value); break;
-    case "string": s = tLabel(String(v.value)); break;
+    case "string": s = v.enum ? tEnum(v.enum) : tLabel(String(v.value)); break;
     default: s = formatInt(v.value); break; // integer/istring/ishort
   }
   if (v.extra) {
