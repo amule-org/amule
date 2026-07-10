@@ -107,7 +107,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << ",\"size\":" << f.size << ",\"size_done\":" << f.download.size_done
 	  << ",\"size_xfer\":" << f.download.size_xfer << ",\"speed_bps\":" << f.download.speed_bps
 	  << ",\"status\":\"" << EscJson(f.download.status) << "\""
-	  << ",\"priority\":\"" << EscJson(f.priority) << "\""
+	  << ",\"priority\":\"" << EscJson(f.download.priority) << "\""
 	  << ",\"priority_auto\":" << (f.download.priority_auto ? "true" : "false")
 	  << ",\"category\":" << f.download.category << ",\"sources\":{"
 	  << "\"total\":" << f.download.sources_total << ",\"not_current\":" << f.download.sources_not_current
@@ -127,7 +127,7 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"ed2k_link\":\"" << EscJson(f.ed2k_link) << "\""
-	  << ",\"size\":" << f.size << ",\"priority\":\"" << EscJson(f.priority) << "\""
+	  << ",\"size\":" << f.size << ",\"priority\":\"" << EscJson(f.shared.priority) << "\""
 	  << ",\"priority_auto\":" << (f.shared.priority_auto ? "true" : "false")
 	  << ",\"complete_sources\":" << f.shared.complete_sources
 	  << ",\"xfer\":{\"session\":" << f.shared.xfer_session << ",\"total\":" << f.shared.xfer_total << "}"
@@ -233,9 +233,9 @@ std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, boo
 bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 {
 	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
-	       a.size == b.size && a.priority == b.priority && a.download.size_done == b.download.size_done &&
-	       a.download.size_xfer == b.download.size_xfer && a.download.speed_bps == b.download.speed_bps &&
-	       a.download.status == b.download.status &&
+	       a.size == b.size && a.download.priority == b.download.priority &&
+	       a.download.size_done == b.download.size_done && a.download.size_xfer == b.download.size_xfer &&
+	       a.download.speed_bps == b.download.speed_bps && a.download.status == b.download.status &&
 	       a.download.priority_auto == b.download.priority_auto &&
 	       a.download.category == b.download.category &&
 	       a.download.sources_total == b.download.sources_total &&
@@ -246,7 +246,7 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 {
 	return a.ecid == b.ecid && a.hash == b.hash && a.name == b.name && a.ed2k_link == b.ed2k_link &&
-	       a.size == b.size && a.priority == b.priority &&
+	       a.size == b.size && a.shared.priority == b.shared.priority &&
 	       a.shared.priority_auto == b.shared.priority_auto &&
 	       a.shared.complete_sources == b.shared.complete_sources &&
 	       a.shared.xfer_session == b.shared.xfer_session && a.shared.xfer_total == b.shared.xfer_total &&

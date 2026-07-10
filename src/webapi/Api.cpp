@@ -1612,7 +1612,7 @@ void WriteDownloadObject(CJsonWriter &w, const webapi::FileSnapshot &f, bool inc
 	w.Key("status");
 	w.ValueString(wxString::FromUTF8(f.download.status.c_str()));
 	w.Key("priority");
-	w.ValueString(wxString::FromUTF8(f.priority.c_str()));
+	w.ValueString(wxString::FromUTF8(f.download.priority.c_str()));
 	w.Key("priority_auto");
 	w.ValueBool(f.download.priority_auto);
 	w.Key("category");
@@ -1710,7 +1710,7 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.Key("size");
 	w.ValueInt(static_cast<int64_t>(f.size));
 	w.Key("priority");
-	w.ValueString(wxString::FromUTF8(f.priority.c_str()));
+	w.ValueString(wxString::FromUTF8(f.shared.priority.c_str()));
 	w.Key("priority_auto");
 	w.ValueBool(f.shared.priority_auto);
 	w.Key("complete_sources");

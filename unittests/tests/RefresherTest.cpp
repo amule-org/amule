@@ -369,6 +369,53 @@ TEST(Refresher, NewPartfileInsertedInOneTick)
 }
 
 // ----------------------------------------------------------------------
+// A partfile that is BOTH downloading and shared carries two independent
+// priorities: the download priority (EC_TAG_PARTFILE_PRIO, surfaced on
+// /downloads) and the upload priority (EC_TAG_KNOWNFILE_PRIO, surfaced on
+// /shared). They live in separate sub-blocks; the shared-walker pass must
+// not clobber the download value written by the downloads-walker pass.
+// (Regression: a single top-level snapshot `priority` field let the two
+// overwrite each other — /downloads reported the upload level.)
+// ----------------------------------------------------------------------
+
+TEST(Refresher, BothFilePrioritiesAreIndependent)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+
+	// Downloads pass: partfile ECID 77 at download priority PR_HIGH (=2,
+	// Constants.h) → "high".
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(77));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_PRIO, static_cast<std::uint8_t>(2)));
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	ASSERT_TRUE(cache.find(77) != cache.end());
+	ASSERT_TRUE(cache.find(77)->second.is_downloading);
+	ASSERT_EQUALS(std::string("high"), cache.find(77)->second.download.priority);
+
+	// Shared pass: SAME ECID, shared flag on, upload priority PR_LOW (=0)
+	// → "low". Must land in shared.priority and leave download.priority.
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(77));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(1)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_PRIO, static_cast<std::uint8_t>(0)));
+		resp.AddTag(pf);
+		ApplyGetUpdateToShared(&resp, cache);
+	}
+
+	const auto it = cache.find(77);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.is_downloading);
+	ASSERT_TRUE(it->second.is_shared);
+	ASSERT_EQUALS(std::string("high"), it->second.download.priority); // not clobbered
+	ASSERT_EQUALS(std::string("low"), it->second.shared.priority);
+}
+
+// ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and
 // merges per-ECID; cache entries not seen in the response get evicted

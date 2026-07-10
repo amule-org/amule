@@ -323,7 +323,7 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		std::uint8_t pr_raw = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_PRIO, pr_raw)) {
 			bool prio_auto = false;
-			f.priority = PriorityName(pr_raw, prio_auto);
+			f.download.priority = PriorityName(pr_raw, prio_auto);
 			f.download.priority_auto = prio_auto;
 		}
 	}
@@ -740,7 +740,7 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 		std::uint8_t pr = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_PRIO, pr)) {
 			bool sh_auto = false;
-			f.priority = PriorityName(pr, sh_auto);
+			f.shared.priority = PriorityName(pr, sh_auto);
 			f.shared.priority_auto = sh_auto;
 		}
 	}

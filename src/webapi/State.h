@@ -86,8 +86,6 @@ struct FileSnapshot
 	std::string name;
 	std::string ed2k_link;
 	std::uint64_t size = 0;
-	std::string priority; // "very_low" | "low" | "normal"
-			      // | "high"     | "release" | "auto"
 
 	bool is_downloading = false;
 	bool is_shared = false;
@@ -102,6 +100,9 @@ struct FileSnapshot
 		std::uint32_t speed_bps = 0;
 		std::string status; // "downloading" | "paused"
 				    // | "completed" | "hashing" | ...
+		// Download priority: "very_low" | "low" | "normal" | "high"
+		// | "release" | "auto".
+		std::string priority;
 		bool priority_auto = false;
 		std::uint32_t category = 0;
 		double percent = 0.0;
@@ -125,9 +126,13 @@ struct FileSnapshot
 	// reset on the true→false transition.
 	struct SharedSide
 	{
-		// Upload-side auto-priority flag, mirroring `download.priority_auto`.
-		// The base level lands in the top-level `priority` field; this says
-		// whether amuled is deriving it automatically from the upload queue.
+		// Upload priority level, distinct from the download-side value —
+		// a partfile that is both downloading and shared carries two
+		// independent priorities, so each side stores its own.
+		std::string priority; // upload priority: "very_low" | "low"
+				      // | "normal" | "high" | "release" | "auto"
+		// Upload-side auto-priority flag, mirroring `download.priority_auto`;
+		// says whether amuled is deriving it automatically from the queue.
 		bool priority_auto = false;
 		std::uint64_t xfer_session = 0;
 		std::uint64_t xfer_total = 0;

@@ -118,7 +118,7 @@ TEST(State, MutateDownloadsRoundtripAndFind)
 		a.size = 1000;
 		a.is_downloading = true;
 		a.download.size_done = 250;
-		a.priority = "high";
+		a.download.priority = "high";
 		a.download.status = "downloading";
 		a.download.percent = 25.0;
 		cache.emplace(a.ecid, a);
@@ -228,7 +228,7 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 		x.name = "shared.iso";
 		x.size = 4096;
 		x.is_shared = true;
-		x.priority = "normal";
+		x.shared.priority = "normal";
 		cache.emplace(x.ecid, x);
 	});
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Shared().size());

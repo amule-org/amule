@@ -210,6 +210,77 @@ _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 405 "DELETE /shared/{hash} → 405"
 
+# --- 5b. Both-file priority independence. --------------------------
+# A partfile that is BOTH downloading and shared carries two independent
+# priorities: a download priority (EC_TAG_PARTFILE_PRIO) on /downloads and
+# an upload priority (EC_TAG_KNOWNFILE_PRIO) on /shared. They must not
+# clobber each other — a prior build stored a single `priority` on the
+# snapshot entry, so the shared refresher pass overwrote the download
+# value and /downloads reported the UPLOAD level. The scenario needs a
+# file present in both lists (a partfile with >=1 completed part, which
+# requires a live source), so skip when none exists; the unit test
+# (RefresherTest.BothFilePrioritiesAreIndependent) covers the split
+# against crafted EC packets.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/downloads"
+DL_BODY=$CURL_BODY
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+SH_BODY=$CURL_BODY
+BOTH_HASH=$(jq -rn --argjson d "$DL_BODY" --argjson s "$SH_BODY" \
+	'([$d.downloads[].hash] - ([$d.downloads[].hash] - [$s.shared[].hash]))[0] // ""')
+if [ -z "$BOTH_HASH" ]; then
+	echo "    info: no downloading-and-shared partfile present; skipping independence check"
+else
+	echo "    info: both-file hash=$BOTH_HASH"
+	B_DL_PRIO=$(jq -rn --argjson d "$DL_BODY" --arg h "$BOTH_HASH" \
+		'$d.downloads[] | select(.hash == $h) | .priority')
+	B_DL_AUTO=$(jq -rn --argjson d "$DL_BODY" --arg h "$BOTH_HASH" \
+		'$d.downloads[] | select(.hash == $h) | .priority_auto')
+	B_SH_PRIO=$(jq -rn --argjson s "$SH_BODY" --arg h "$BOTH_HASH" \
+		'$s.shared[] | select(.hash == $h) | .priority')
+	B_SH_AUTO=$(jq -rn --argjson s "$SH_BODY" --arg h "$BOTH_HASH" \
+		'$s.shared[] | select(.hash == $h) | .priority_auto')
+	# Set the two sides to DISTINCT levels. On the buggy build the shared
+	# pass clobbers the download value, so /downloads reports "low".
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"priority":"high"}' "$HOST/api/v0/downloads/$BOTH_HASH"
+	_assert_status 200 "PATCH download priority=high (both-file) → 200"
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"priority":"low"}' "$HOST/api/v0/shared/$BOTH_HASH"
+	_assert_status 200 "PATCH shared priority=low (both-file) → 200"
+
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/downloads"
+	OBS_DL=$(printf '%s' "$CURL_BODY" | jq -r --arg h "$BOTH_HASH" \
+		'.downloads[] | select(.hash == $h) | .priority')
+	if [ "$OBS_DL" = "high" ]; then
+		_pass "/downloads reports download priority (high), not clobbered by shared PATCH"
+	else
+		_fail "/downloads priority independence" \
+			"expected high, got $OBS_DL (shared priority leaked onto /downloads)"
+	fi
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+	OBS_SH=$(printf '%s' "$CURL_BODY" | jq -r --arg h "$BOTH_HASH" \
+		'.shared[] | select(.hash == $h) | .priority')
+	if [ "$OBS_SH" = "low" ]; then
+		_pass "/shared reports upload priority (low), not clobbered by download PATCH"
+	else
+		_fail "/shared priority independence" \
+			"expected low, got $OBS_SH (download priority leaked onto /shared)"
+	fi
+
+	# Restore both sides. (If BOTH_HASH == TEST_HASH, section 6 restores
+	# the shared side again — idempotent.)
+	[ "$B_DL_AUTO" = "true" ] && B_DL_RESTORE=auto || B_DL_RESTORE=$B_DL_PRIO
+	[ "$B_SH_AUTO" = "true" ] && B_SH_RESTORE=auto || B_SH_RESTORE=$B_SH_PRIO
+	curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"priority\":\"$B_DL_RESTORE\"}" "$HOST/api/v0/downloads/$BOTH_HASH"
+	curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"priority\":\"$B_SH_RESTORE\"}" "$HOST/api/v0/shared/$BOTH_HASH"
+fi
+
 # --- 6. Restore saved priority. -----------------------------------
 # If the file was on auto, restore "auto" (SAVED_PRIORITY holds the
 # derived base level, not the literal "auto"); otherwise restore the
