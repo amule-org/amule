@@ -540,6 +540,10 @@ public:
 	static void SetAmuleApiIsEnabled(bool bEnable) { s_bAmuleApiEnabled = bEnable; }
 	static uint16 GetAmuleApiPort() { return s_nAmuleApiPort; }
 	static void SetAmuleApiPort(uint16 uPort) { s_nAmuleApiPort = uPort; }
+	static const wxString &GetAmuleApiBindAddress() { return s_sAmuleApiBindAddress; }
+	static void SetAmuleApiBindAddress(const wxString &addr) { s_sAmuleApiBindAddress = addr; }
+	static const wxString &GetAmuleApiPass() { return s_sAmuleApiPassword; }
+	static void SetAmuleApiPass(const wxString &pass) { s_sAmuleApiPassword = pass; }
 	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
 	static void SetAmuleApiPath(const wxString &path) { s_sAmuleApiPath = path; }
 	static bool GetWebUseGzip() { return s_bWebUseGzip; }
@@ -993,6 +997,8 @@ protected:
 	// amuleapi (REST/SSE API daemon) autorun.
 	static bool s_bAmuleApiEnabled;
 	static uint16 s_nAmuleApiPort;
+	static wxString s_sAmuleApiBindAddress;
+	static wxString s_sAmuleApiPassword;
 	static wxString s_sAmuleApiPath;
 	static uint32 s_nWebPageRefresh;
 	static bool s_bWebLowEnabled;

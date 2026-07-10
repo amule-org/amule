@@ -201,6 +201,12 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetAmuleApiIsEnabled()) {
 			rc_prefs.AddTag(CECEmptyTag(EC_TAG_AMULEAPI_AUTORUN));
 		}
+		rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_BIND, thePrefs::GetAmuleApiBindAddress()));
+		if (!thePrefs::GetAmuleApiPass().IsEmpty()) {
+			CMD4Hash passhash;
+			wxCHECK2(passhash.Decode(thePrefs::GetAmuleApiPass()), /* Do nothing. */);
+			rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_PASSWD, passhash));
+		}
 		AddTag(rc_prefs);
 	}
 
@@ -495,6 +501,12 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetAmuleApiIsEnabled, EC_TAG_AMULEAPI_AUTORUN);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PORT)) != nullptr) {
 			thePrefs::SetAmuleApiPort(static_cast<uint16>(oneTag->GetInt()));
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_BIND)) != nullptr) {
+			thePrefs::SetAmuleApiBindAddress(oneTag->GetStringData());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PASSWD)) != nullptr) {
+			thePrefs::SetAmuleApiPass(oneTag->GetMD4Data().Encode());
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_PASSWD_HASH)) != NULL) {
 			thePrefs::SetWSPass(oneTag->GetMD4Data().Encode());

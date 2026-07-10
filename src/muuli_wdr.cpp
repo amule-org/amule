@@ -1988,8 +1988,21 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
 
     item36->Add( item39, wxSizerFlags().Expand().CenterVertical() );
 
-    wxStaticText *item42 = new wxStaticText( parent, -1, _("Binds to 127.0.0.1 only. Set an admin password in amuleapi.conf to expose it to other hosts."), wxDefaultPosition, wxDefaultSize, 0 );
-    item36->Add( item42, wxSizerFlags().Border(wxLEFT, 5) );
+    wxFlexGridSizer *item42 = new wxFlexGridSizer( 2, 0, 0 );
+    item42->AddGrowableCol( 1 );
+
+    wxStaticText *item43 = new wxStaticText( parent, -1, _("IP of the listening interface:"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+    item42->Add( item43, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    CMuleTextCtrl *item44 = new CMuleTextCtrl( parent, IDC_AMULEAPI_BIND, "", wxDefaultPosition, wxDefaultSize, 0 );
+    item44->SetToolTip( _("The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below).") );
+    item42->Add( item44, wxSizerFlags(1).Expand().CenterVertical() );
+
+    wxStaticText *item45 = new wxStaticText( parent, -1, _("Admin password"), wxDefaultPosition, wxDefaultSize, 0 );
+    item42->Add( item45, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    CMuleTextCtrl *item46 = new CMuleTextCtrl( parent, IDC_AMULEAPI_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
+    item42->Add( item46, wxSizerFlags(1).Expand().CenterVertical() );
+
+    item36->Add( item42, wxSizerFlags().Expand().CenterVertical() );
 
     item0->Add( item36, wxSizerFlags().Expand().Border(wxALL, 0) );
     wxStaticBox *item15 = new wxStaticBox( parent, -1, _("Web server parameters") );

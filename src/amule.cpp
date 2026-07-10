@@ -1100,13 +1100,15 @@ bool CamuleApp::OnInit()
 		}
 #endif
 
-		// amuleapi binds loopback (127.0.0.1) by default, which requires no
-		// admin password, so auto-start stays credential-free. It reads the EC
-		// host/port/hashed-password from amule.conf via --amule-config-file,
-		// exactly like amuleweb.
+		// amuleapi reads its EC host/port/hashed-password AND its admin
+		// password from amule.conf via --amule-config-file, exactly like
+		// amuleweb. The HTTP bind address and port are passed explicitly. A
+		// non-loopback bind requires an admin password; both are configured
+		// in the Remote Controls preferences.
 		wxString cmd = QUOTE + amuleapiPath +
 			       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile +
-			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() + QUOTE +
+			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() +
+			       QUOTE " " QUOTE "--bind=" + thePrefs::GetAmuleApiBindAddress() + QUOTE +
 			       wxString::Format(wxT(" --http-port=%u"), thePrefs::GetAmuleApiPort());
 		CTerminationProcessAmuleApi *p = new CTerminationProcessAmuleApi(cmd, &amuleapi_pid);
 		amuleapi_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));

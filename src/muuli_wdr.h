@@ -304,6 +304,8 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define IDC_EXCLUDE_SHARE_PREVIEW_INFO 10443
 #define IDC_ENABLE_AMULEAPI 10450
 #define IDC_AMULEAPI_PORT 10451
+#define IDC_AMULEAPI_BIND 10452
+#define IDC_AMULEAPI_PASSWD 10453
 // 10344..10354 are ID_BUTTON* toolbar IDs; 10355..10399 free. The
 // IDs below name orphan labels / static boxes so amulegui can hide
 // them via PrefsUnifiedDlg's amuledOnlyPrefs[].

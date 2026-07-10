@@ -248,6 +248,17 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		}
 		CECFileConfig cfg(m_cliAmuleConfigFile);
 		LoadAmuleConfig(cfg); // sets m_host / m_port / m_password
+
+		// amule pushes the amuleapi admin password (already MD5-hashed by the
+		// prefs dialog) via /AmuleApi/Password, exactly as it hands amuleweb
+		// /WebServer/Password. Apply it in memory only -- the amuleapi-passwords
+		// file is never touched, so a standalone operator's saved password is
+		// preserved. Empty/unset leaves the file-loaded value (loopback stays
+		// credential-free).
+		wxString adminHash;
+		if (cfg.Read(wxT("/AmuleApi/Password"), &adminHash) && !adminHash.IsEmpty()) {
+			m_apiConfig.SetAdminPasswordMd5(std::string(adminHash.Lower().utf8_str()));
+		}
 	}
 
 	return true;

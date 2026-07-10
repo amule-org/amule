@@ -406,6 +406,8 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_WEBSERVER_TEMPLATE                 0x1506
 		EC_TAG_AMULEAPI_AUTORUN                   0x1507
 		EC_TAG_AMULEAPI_PORT                      0x1508
+		EC_TAG_AMULEAPI_PASSWD                    0x1509
+		EC_TAG_AMULEAPI_BIND                      0x150A
 
 	EC_TAG_PREFS_ONLINESIG                    0x1600
 		EC_TAG_ONLINESIG_ENABLED                  0x1601

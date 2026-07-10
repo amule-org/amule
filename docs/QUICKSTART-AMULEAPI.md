@@ -90,20 +90,33 @@ unit that wraps the command above.
 ### Auto-starting from aMule
 
 aMule can launch amuleapi for you when it starts, the same way it can
-launch amuleweb. Enable **Run amuleapi (REST API) on startup** under
-*Preferences → Remote Controls*, or set `/AmuleApi/Enabled=1` in
-`amule.conf`. aMule then spawns:
+launch amuleweb. Everything is configured under *Preferences → Remote
+Controls* (**aMule API server parameters**): tick **Run amuleapi (REST
+API) on startup**, then set the **listening interface**, **HTTP port**,
+and **admin password**. These map to `/AmuleApi/Enabled`,
+`/AmuleApi/BindAddress`, `/AmuleApi/HttpPort` and `/AmuleApi/Password`
+(MD5-hashed) in `amule.conf`, and are also editable from a remote
+amulegui over EC. aMule then spawns:
 
 ```sh
-amuleapi --amule-config-file=<amule.conf> --config-dir=<amule data dir> --http-port=<AmuleApi/HttpPort>
+amuleapi --amule-config-file=<amule.conf> --config-dir=<amule data dir> --bind=<AmuleApi/BindAddress> --http-port=<AmuleApi/HttpPort>
 ```
 
 `--amule-config-file` points amuleapi at aMule's own `amule.conf` so it
-reads the EC host, port and (hashed) password straight from there — no
-plaintext EC password on the command line. The auto-started instance
-binds `127.0.0.1` only, so it needs no admin password; set one in
-`amuleapi.conf` (or via `--set-admin-pass`) if you later expose it to
-other hosts. amuleapi is stopped when aMule exits.
+reads the EC host/port/(hashed) password **and** the admin password hash
+(`/AmuleApi/Password`) straight from there — exactly as amuleapi's sibling
+amuleweb reads `/WebServer/Password`. Nothing sensitive is passed on the
+command line, and the admin hash is applied in memory only: a standalone
+`amuleapi-passwords` file is never touched. Because the admin password is
+supplied, you can bind a non-loopback interface directly from the prefs
+panel to expose the API to other hosts. Changing any of these settings
+prompts you to restart aMule, which relaunches amuleapi with the new
+parameters. amuleapi is stopped when aMule exits.
+
+When amuleapi is started **standalone** (no `--amule-config-file`), nothing
+here applies: it reads its bind/port from `amuleapi.conf` and its admin
+password from the `amuleapi-passwords` file (set via `--set-admin-pass`),
+exactly as before.
 
 The HTTP port is configurable in the same preferences panel (or
 `/AmuleApi/HttpPort`, default `4713`). When aMule runs as `amuled`, the

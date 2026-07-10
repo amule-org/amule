@@ -1009,6 +1009,14 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- Protocol obfuscation support changed.\n");
 	}
 
+	// amuleapi is launched once at startup with its bind/port/password, so
+	// any change to those takes effect only after aMule relaunches it.
+	if (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
+		CfgChanged(IDC_AMULEAPI_BIND) || CfgChanged(IDC_AMULEAPI_PASSWD)) {
+		restart_needed = true;
+		restart_needed_msg += _("- amuleapi settings changed.\n");
+	}
+
 	// Force port checking
 	thePrefs::SetPort(thePrefs::GetPort());
 
