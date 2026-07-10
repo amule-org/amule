@@ -145,6 +145,17 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d "{\"name\":\"x\",\"priority\":\"bogus\"}" "$HOST/api/v0/categories"
 _assert_status 400 "POST /categories (bad priority enum) → 400"
 
+# A category priority is applied to its files as a DOWNLOAD priority, so it
+# takes the restricted download set (low/normal/high/auto). very_low and
+# release are downloads-invalid — the daemon clamps them to Normal on the
+# next restart — so they must be rejected here too (issue #384).
+for p in very_low release; do
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"name\":\"x\",\"priority\":\"$p\"}" "$HOST/api/v0/categories"
+	_assert_status 400 "POST /categories (priority=$p rejected) → 400"
+done
+
 # --- 4. PATCH /categories/{idx}. ----------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
@@ -171,6 +182,13 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"priority":"bogus"}' "$HOST/api/v0/categories/$NEW_IDX"
 _assert_status 400 "PATCH /categories bogus enum → 400"
+
+for p in very_low release; do
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"priority\":\"$p\"}" "$HOST/api/v0/categories/$NEW_IDX"
+	_assert_status 400 "PATCH /categories (priority=$p rejected) → 400"
+done
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \

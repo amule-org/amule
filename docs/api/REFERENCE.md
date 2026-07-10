@@ -950,7 +950,7 @@ amuled's category system lets users tag downloads with one of N user-defined buc
 }
 ```
 
-`name` required; others optional. `color` is a 24-bit RGB integer; `priority` is the same enum the shared-file PATCH accepts.
+`name` required; others optional. `color` is a 24-bit RGB integer. `priority` is applied to the category's member files as a download priority, so it takes the same restricted set as [`PATCH /downloads`](#patch-apiv0downloads) — `"low"` / `"normal"` / `"high"` / `"auto"`. `very_low` and `release` are rejected (the daemon would clamp them to `normal` on the next restart).
 
 **Response:** `201 Created` → the new category object.
 

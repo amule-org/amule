@@ -5175,14 +5175,16 @@ bool ParseCategoryIndex(const std::string &s, std::uint8_t &out)
 }
 
 // Inverse of CategoryPriorityName (Refresher.cpp's ParseCategoryTag).
-// Categories use the SAME priority enum as downloads, including the
-// `+10` auto-flag offset. Maps wire strings to PR_* codes.
+// A category priority is applied to member files as a DOWNLOAD priority
+// (CDownloadQueue::SetCatPrio -> CPartFile::SetDownPriority), so it must use
+// the same restricted set as DownloadPriorityToCode: low / normal / high /
+// auto. very_low and release are not real download levels -- the .part.met
+// loader clamps anything but PR_LOW/PR_NORMAL/PR_HIGH back to Normal on the
+// next restart -- so accepting them here would be the same silent downgrade
+// #396 fixed for the direct download PATCH path (issue #384).
 bool CategoryPriorityToCode(const std::string &name, std::uint8_t &out)
 {
-	if (name == "very_low") {
-		out = PR_VERY_LOW;
-		return true;
-	} else if (name == "low") {
+	if (name == "low") {
 		out = PR_LOW;
 		return true;
 	} else if (name == "normal") {
@@ -5190,9 +5192,6 @@ bool CategoryPriorityToCode(const std::string &name, std::uint8_t &out)
 		return true;
 	} else if (name == "high") {
 		out = PR_HIGH;
-		return true;
-	} else if (name == "release") {
-		out = PR_VERYHIGH;
 		return true;
 	} else if (name == "auto") {
 		out = PR_AUTO;
@@ -5300,8 +5299,7 @@ CHttpServer::Response ParseCategoryFields(const picojson::object &obj, CategoryF
 			if (!CategoryPriorityToCode(it->second.get<std::string>(), out.prio)) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`priority` must be one of low, normal, high, "
-					"release, very_low, auto");
+					"`priority` must be one of low, normal, high, auto");
 			}
 			out.has_prio = true;
 		}
