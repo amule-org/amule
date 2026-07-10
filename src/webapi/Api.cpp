@@ -1952,12 +1952,14 @@ bool IsEcFailedResponse(const CECPacket *resp, std::string &out_msg)
 }
 
 // Map our wire-string priorities back to amule's PR_* encoding (the
-// inverse of DownloadPriorityName in Refresher.cpp). Note: amule's
-// PR_* values for DOWNLOADS only span LOW/NORMAL/HIGH/VERYHIGH/AUTO —
-// no `very_low` (that's a shared/upload-side enum). `release` is the
-// wire string for the highest priority (`PR_VERYHIGH`, raw code 3).
-// `PR_AUTO=5` is the magic value amule's PartFile uses internally
-// when the user picks "auto".
+// inverse of DownloadPriorityName in Refresher.cpp). Downloads support
+// only LOW/NORMAL/HIGH plus AUTO: CPartFile's .part.met loader clamps
+// any download priority that isn't one of those back to PR_NORMAL on
+// load (PR_AUTO=5 is the magic value stored as High + the auto flag),
+// so `very_low` and `release` are shared/upload-side levels only. They
+// are intentionally rejected here so the download PATCH enum matches
+// what the daemon can actually hold; the shared side keeps the full
+// set in SharedPriorityToCode.
 // Returns false if the wire string isn't a known download priority.
 bool DownloadPriorityToCode(const std::string &name, std::uint8_t &out)
 {
@@ -1969,9 +1971,6 @@ bool DownloadPriorityToCode(const std::string &name, std::uint8_t &out)
 		return true;
 	} else if (name == "high") {
 		out = PR_HIGH;
-		return true;
-	} else if (name == "release") {
-		out = PR_VERYHIGH;
 		return true;
 	} else if (name == "auto") {
 		out = PR_AUTO;
@@ -2561,7 +2560,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 				return ErrorResponse(400,
 					"bad_request",
 					"`priority` must be one of "
-					"low, normal, high, release, auto");
+					"low, normal, high, auto");
 			}
 			auto err = send_op(
 				EC_OP_PARTFILE_PRIO_SET, /*has_inner=*/true, EC_TAG_PARTFILE_PRIO, code);
@@ -4824,7 +4823,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 			if (!DownloadPriorityToCode(it->second.get<std::string>(), code))
 				return ErrorResponse(400,
 					"bad_request",
-					"`priority` must be one of low, normal, high, release, auto");
+					"`priority` must be one of low, normal, high, auto");
 			ops.push_back({ EC_OP_PARTFILE_PRIO_SET, true, EC_TAG_PARTFILE_PRIO, code });
 		}
 	}

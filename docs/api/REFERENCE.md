@@ -461,6 +461,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 
 `status` is one of `"downloading"`, `"waiting"`, `"hashing"`, `"allocating"`, `"paused"`, `"stopped"`, `"completing"` or `"completed"`. `"stopped"` is a paused file that has also dropped all its sources and reset its Kad source search (set via `PATCH` `status:"stopped"`); it is distinct from `"paused"`, which retains its sources.
 
+`priority` is the download priority — one of `"low"`, `"normal"` or `"high"` — and `priority_auto` is `true` when amuled is deriving that level automatically. Downloads never report `very_low` or `release`; those are shared/upload-side levels only.
+
 The list shape omits `progress.parts` to keep large libraries compact. Use the detail endpoint for per-part state.
 
 The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
@@ -527,7 +529,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 Bulk pause/resume, priority, or category change over multiple downloads — the same patch applied to every listed hash.
 
-**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `status` (`"paused"` | `"resumed"` | `"stopped"`), `priority` (`low` | `normal` | `high` | `release` | `auto`), `category` (integer 0–255).
+**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `status` (`"paused"` | `"resumed"` | `"stopped"`), `priority` (`low` | `normal` | `high` | `auto`), `category` (integer 0–255).
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
@@ -559,7 +561,7 @@ Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex
 **Body:** at least one of:
 
 - `status` — `"paused"`, `"resumed"` or `"stopped"`. `"paused"` halts transfer but keeps the file's sources; `"stopped"` additionally drops all known sources and resets the Kad source search (a stopped file must rediscover sources from scratch on resume); `"resumed"` clears either state. A stopped file reports `status: "stopped"` in the download object (see [`GET /downloads`](#get-apiv0downloads)).
-- `priority` — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` / `"auto"`
+- `priority` — `"low"` / `"normal"` / `"high"` / `"auto"`. Downloads support only these levels; the daemon clamps any other value to `normal`. (Shared files support the wider `very_low` … `release` set — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).)
 - `category` — uint8
 
 ```sh

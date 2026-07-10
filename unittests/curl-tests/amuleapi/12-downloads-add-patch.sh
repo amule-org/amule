@@ -260,17 +260,18 @@ else
 	_pass "IMMEDIATE GET after resume-from-stopped shows active status ($UNSTOPPED)"
 fi
 
-# 5c. PATCH priority=release. Response + immediate GET both show
-# release.
+# 5c. PATCH priority=high. Response + immediate GET both show high.
+# Downloads support low/normal/high/auto only (very_low and release are
+# shared/upload-side levels — rejected below in section 6).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"release"}' "$HOST/api/v0/downloads/$TEST_HASH"
-_assert_status 200 "PATCH priority=release → 200"
-_assert_json_eq '.priority' release 'PATCH response shows priority=release'
+	-d '{"priority":"high"}' "$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 200 "PATCH priority=high → 200"
+_assert_json_eq '.priority' high 'PATCH response shows priority=high'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/downloads/$TEST_HASH"
-_assert_json_eq '.priority' release \
-	'IMMEDIATE GET after PATCH priority=release shows priority=release'
+_assert_json_eq '.priority' high \
+	'IMMEDIATE GET after PATCH priority=high shows priority=high'
 
 # 5d. Combined PATCH — status + priority + category in one body.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -296,6 +297,19 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"priority":"bogus"}' "$HOST/api/v0/downloads/$TEST_HASH"
 _assert_status 400 "PATCH unknown priority enum → 400"
+
+# Downloads reject the shared/upload-only levels: very_low and release
+# are not valid download priorities (the daemon would clamp them to
+# normal), so the API refuses them rather than silently downgrading.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"very_low"}' "$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 400 "PATCH priority=very_low (shared-only) → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"release"}' "$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 400 "PATCH priority=release (shared-only) → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
