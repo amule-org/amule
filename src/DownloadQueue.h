@@ -95,8 +95,15 @@ public:
 
 	/**
 	 * Returns true if the file is currently being shared or downloaded
+	 *
+	 * @param fileid       Hash of the file the caller is trying to add.
+	 * @param requestedName Name the file was requested under (search result or
+	 *                      ed2k link). Optional: when it differs from the name
+	 *                      of the already-present file (same hash, different
+	 *                      filename) it is appended to the log line so the
+	 *                      message can be correlated with the download command.
 	 */
-	bool IsFileExisting(const CMD4Hash &fileid) const;
+	bool IsFileExisting(const CMD4Hash &fileid, const wxString &requestedName = wxEmptyString) const;
 
 	/**
 	 * Returns true if the specified file is on the download-queue.

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 15:24+0200\n"
+"POT-Creation-Date: 2026-07-10 10:45+0200\n"
 "PO-Revision-Date: 2026-07-09 14:23+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -206,7 +206,7 @@ msgstr[1] ""
 #: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
 #: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
 #: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "VIGA"
 
@@ -783,7 +783,7 @@ msgid "Messages Window"
 msgstr "Teadete Aken"
 
 #: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
-#: src/Statistics.cpp:779 src/Statistics.cpp:1226
+#: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statistika"
 
@@ -915,7 +915,7 @@ msgstr "Ei suuda luua kataloogi '%s' '%s' kategooria jaoks, säilitan '%s' katal
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
 #: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
-#: src/Statistics.cpp:1159
+#: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Teadmata"
 
@@ -1666,11 +1666,11 @@ msgid_plural "Found %u part files"
 msgstr[0] "Leidsin %u osalist faili"
 msgstr[1] "Leidsin %u part(osalist) faili."
 
-#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1526
+#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1535
 msgid "Filesystem for Temp directory cannot handle large files."
 msgstr "Temp kataloogi failisüsteem ei suuda suuri faile käidelda."
 
-#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1531
+#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1540
 msgid "Filesystem for Incoming directory cannot handle large files."
 msgstr "Sisenevate failide kataloogi failisüsteem ei suuda suuri faile käidelda."
 
@@ -1684,34 +1684,39 @@ msgstr "Tõmban '%s'"
 msgid "You are already trying to download the file '%s'"
 msgstr "Sa juba proovid faili '%s' tõmmata"
 
-#: src/DownloadQueue.cpp:401
+#: src/DownloadQueue.cpp:406
+#, fuzzy, c-format
+msgid "You already have the file '%s' (requested as '%s')"
+msgstr "Fail '%s' on juba olemas"
+
+#: src/DownloadQueue.cpp:409
 #, c-format
 msgid "You already have the file '%s'"
 msgstr "Fail '%s' on juba olemas"
 
-#: src/DownloadQueue.cpp:407
+#: src/DownloadQueue.cpp:416
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Sa juba proovid '%s' faili tõmmata"
 
-#: src/DownloadQueue.cpp:1446
+#: src/DownloadQueue.cpp:1455
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Ei suuda muuta magnet linki eD2k lingiks: %s"
 
-#: src/DownloadQueue.cpp:1454
+#: src/DownloadQueue.cpp:1463
 #, c-format
 msgid "Unknown protocol of link: %s"
 msgstr "Lingi %s protokoll on tundmatu"
 
-#: src/DownloadQueue.cpp:1468
+#: src/DownloadQueue.cpp:1477
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/DownloadQueue.cpp:1492
+#: src/DownloadQueue.cpp:1501
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Vigane eD2k link! VIGA: %s"
@@ -2607,19 +2612,19 @@ msgstr "EC ühendus ebaõnnestus. Tühi vastus."
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Väline Ühendus: Vigane vastus, kätlemine ebaõnnestus. Ühendus suletud."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:349
+#: src/libs/ec/cpp/RemoteConnect.cpp:351
 msgid "Succeeded! Connection established to aMule "
 msgstr "Õnnestus! Ühendus aMulaga loodud "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:353
 msgid "Succeeded! Connection established."
 msgstr "Õnnestus! Ühendus loodud."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:380
+#: src/libs/ec/cpp/RemoteConnect.cpp:381
 msgid "External Connection: Access denied because: "
 msgstr "Väline Ühendus: Ligipääs keelatud sest: "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:383
+#: src/libs/ec/cpp/RemoteConnect.cpp:384
 msgid "External Connection: Handshake failed."
 msgstr "Väline Ühendus: Kätlemine ebaõnnestus."
 
@@ -6689,11 +6694,11 @@ msgstr "Jagatud failide suurus kokku: %s"
 msgid "Average file size: %s"
 msgstr "Keskmine faili suurus: %s"
 
-#: src/Statistics.cpp:1143
+#: src/Statistics.cpp:1144
 msgid "Operating System"
 msgstr "Operatsioonisüsteem"
 
-#: src/Statistics.cpp:1175
+#: src/Statistics.cpp:1181
 msgid "Not Received"
 msgstr "Pole vastu võetud"
 
@@ -6702,11 +6707,11 @@ msgstr "Pole vastu võetud"
 msgid "Active connections (1:%u)"
 msgstr "Aktiivseid ühendusi (l:%u)"
 
-#: src/StatTree.cpp:561
+#: src/StatTree.cpp:564
 msgid "Not available"
 msgstr "Info puudub"
 
-#: src/StatTree.cpp:638 src/StatTree.cpp:649
+#: src/StatTree.cpp:648 src/StatTree.cpp:660
 msgid "Never"
 msgstr "Mitte kunagi"
 

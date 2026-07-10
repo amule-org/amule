@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 15:24+0200\n"
+"POT-Creation-Date: 2026-07-10 10:45+0200\n"
 "PO-Revision-Date: 2026-07-09 14:32+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -209,7 +209,7 @@ msgstr[3] ""
 #: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
 #: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
 #: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "NAPAKA"
 
@@ -788,7 +788,7 @@ msgid "Messages Window"
 msgstr "Okno s sporočili"
 
 #: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
-#: src/Statistics.cpp:779 src/Statistics.cpp:1226
+#: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statistika"
 
@@ -920,7 +920,7 @@ msgstr "Ni moč ustvariti mape »%s« za kategorijo »%s«, obdržana bo mapa »
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
 #: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
-#: src/Statistics.cpp:1159
+#: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Neznano"
 
@@ -1684,11 +1684,11 @@ msgstr[1] "Najdena %u delna datoteka"
 msgstr[2] "Najdeni %u delni datoteki"
 msgstr[3] "Najdene %u delne datoteke"
 
-#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1526
+#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1535
 msgid "Filesystem for Temp directory cannot handle large files."
 msgstr "Datotečni sistem z začasno mapo ne more shranjevati velikih datotek."
 
-#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1531
+#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1540
 msgid "Filesystem for Incoming directory cannot handle large files."
 msgstr "Datotečni sistem z mapo prejetih datotek ne more shranjevati velikih datotek."
 
@@ -1702,27 +1702,32 @@ msgstr "Prejemanje %s"
 msgid "You are already trying to download the file '%s'"
 msgstr "Datoteko »%s« že poskušate prejeti."
 
-#: src/DownloadQueue.cpp:401
+#: src/DownloadQueue.cpp:406
+#, fuzzy, c-format
+msgid "You already have the file '%s' (requested as '%s')"
+msgstr "Datoteko »%s« že imate."
+
+#: src/DownloadQueue.cpp:409
 #, c-format
 msgid "You already have the file '%s'"
 msgstr "Datoteko »%s« že imate."
 
-#: src/DownloadQueue.cpp:407
+#: src/DownloadQueue.cpp:416
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Datoteko %s že poskušate prejemati"
 
-#: src/DownloadQueue.cpp:1446
+#: src/DownloadQueue.cpp:1455
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Povezave magnet ni moč pretvoriti v eD2k: %s"
 
-#: src/DownloadQueue.cpp:1454
+#: src/DownloadQueue.cpp:1463
 #, c-format
 msgid "Unknown protocol of link: %s"
 msgstr "Neznan protokol povezave: %s"
 
-#: src/DownloadQueue.cpp:1468
+#: src/DownloadQueue.cpp:1477
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
@@ -1731,7 +1736,7 @@ msgstr[1] ""
 msgstr[2] ""
 msgstr[3] ""
 
-#: src/DownloadQueue.cpp:1492
+#: src/DownloadQueue.cpp:1501
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Neveljavna povezava eD2k. NAPAKA: %s"
@@ -2637,19 +2642,19 @@ msgstr "Zunanja povezava ni uspela. Prazen odgovor."
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Zunanja povezava: slab odgovor, rokovanje ni uspelo. Povezava prekinjena."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:349
+#: src/libs/ec/cpp/RemoteConnect.cpp:351
 msgid "Succeeded! Connection established to aMule "
 msgstr "Uspeh! Vzpostavljena povezava z aMule "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:353
 msgid "Succeeded! Connection established."
 msgstr "Uspeh! Povezava vzpostavljena."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:380
+#: src/libs/ec/cpp/RemoteConnect.cpp:381
 msgid "External Connection: Access denied because: "
 msgstr "Zunanja povezava: dostop je bil zavrnjen. Razlog: "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:383
+#: src/libs/ec/cpp/RemoteConnect.cpp:384
 msgid "External Connection: Handshake failed."
 msgstr "Zunanja povezava: rokovanje ni uspelo."
 
@@ -6748,11 +6753,11 @@ msgstr "Skupna velikost deljenih datotek: %s"
 msgid "Average file size: %s"
 msgstr "Povprečna velikost datoteke: %s"
 
-#: src/Statistics.cpp:1143
+#: src/Statistics.cpp:1144
 msgid "Operating System"
 msgstr "Operacijski sistem"
 
-#: src/Statistics.cpp:1175
+#: src/Statistics.cpp:1181
 msgid "Not Received"
 msgstr "Ni prejeto"
 
@@ -6761,11 +6766,11 @@ msgstr "Ni prejeto"
 msgid "Active connections (1:%u)"
 msgstr "Dejavne povezave (1:%u)"
 
-#: src/StatTree.cpp:561
+#: src/StatTree.cpp:564
 msgid "Not available"
 msgstr "Ni na voljo"
 
-#: src/StatTree.cpp:638 src/StatTree.cpp:649
+#: src/StatTree.cpp:648 src/StatTree.cpp:660
 msgid "Never"
 msgstr "Nikoli"
 

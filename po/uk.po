@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 15:24+0200\n"
+"POT-Creation-Date: 2026-07-10 10:45+0200\n"
 "PO-Revision-Date: 2026-07-09 14:33+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -206,7 +206,7 @@ msgstr[2] ""
 #: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
 #: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
 #: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "ПОМИЛКА"
 
@@ -784,7 +784,7 @@ msgid "Messages Window"
 msgstr "Вікно повідомлень"
 
 #: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
-#: src/Statistics.cpp:779 src/Statistics.cpp:1226
+#: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Статистика"
 
@@ -916,7 +916,7 @@ msgstr ""
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
 #: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
-#: src/Statistics.cpp:1159
+#: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Невідомо"
 
@@ -1678,11 +1678,11 @@ msgstr[0] "Знайдений %u частковий файл"
 msgstr[1] "Знайдені %u часткові файли"
 msgstr[2] "Знайдені %u часткових файлів"
 
-#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1526
+#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1535
 msgid "Filesystem for Temp directory cannot handle large files."
 msgstr "Файлова система для теки тимчасових файлів не може обробити великі файли."
 
-#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1531
+#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1540
 msgid "Filesystem for Incoming directory cannot handle large files."
 msgstr "Файлова система для теки вхідних файлів не може обробити великі файли."
 
@@ -1696,27 +1696,32 @@ msgstr "Звантажую %s"
 msgid "You are already trying to download the file '%s'"
 msgstr "Ви вже спробували звантажити файл '%s'"
 
-#: src/DownloadQueue.cpp:401
+#: src/DownloadQueue.cpp:406
+#, fuzzy, c-format
+msgid "You already have the file '%s' (requested as '%s')"
+msgstr "Ви вже маєте файл '%s'"
+
+#: src/DownloadQueue.cpp:409
 #, c-format
 msgid "You already have the file '%s'"
 msgstr "Ви вже маєте файл '%s'"
 
-#: src/DownloadQueue.cpp:407
+#: src/DownloadQueue.cpp:416
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Ви вже спробували звантажити файл %s"
 
-#: src/DownloadQueue.cpp:1446
+#: src/DownloadQueue.cpp:1455
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Неможливо перетворити magnet-посилання в eD2k-посилання: %s"
 
-#: src/DownloadQueue.cpp:1454
+#: src/DownloadQueue.cpp:1463
 #, c-format
 msgid "Unknown protocol of link: %s"
 msgstr "Невідомий протокол посилання: %s"
 
-#: src/DownloadQueue.cpp:1468
+#: src/DownloadQueue.cpp:1477
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
@@ -1724,7 +1729,7 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
-#: src/DownloadQueue.cpp:1492
+#: src/DownloadQueue.cpp:1501
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Невірне eD2k-посилання! ПОМИЛКА: %s"
@@ -2635,19 +2640,19 @@ msgstr "EC з'єднання невдале. Порожня відповідь."
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Зовнішнє з'єднання: невірна відповідь сервера. З'єднання закрите."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:349
+#: src/libs/ec/cpp/RemoteConnect.cpp:351
 msgid "Succeeded! Connection established to aMule "
 msgstr "Успіх! Встановлене з'єднання до aMule"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:353
 msgid "Succeeded! Connection established."
 msgstr "Успіх! Встановлене з'єднання."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:380
+#: src/libs/ec/cpp/RemoteConnect.cpp:381
 msgid "External Connection: Access denied because: "
 msgstr "Зовнішнє з'єднання: в доступі відмовлено з причини: "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:383
+#: src/libs/ec/cpp/RemoteConnect.cpp:384
 #, fuzzy
 msgid "External Connection: Handshake failed."
 msgstr "Зовнішнє з'єднання: в доступі відмовлено"
@@ -6761,11 +6766,11 @@ msgstr "Загальний розмір спільних файлів: %s"
 msgid "Average file size: %s"
 msgstr "Середній розмір файлу: %s"
 
-#: src/Statistics.cpp:1143
+#: src/Statistics.cpp:1144
 msgid "Operating System"
 msgstr "Операційна система"
 
-#: src/Statistics.cpp:1175
+#: src/Statistics.cpp:1181
 msgid "Not Received"
 msgstr "Не отримана"
 
@@ -6774,11 +6779,11 @@ msgstr "Не отримана"
 msgid "Active connections (1:%u)"
 msgstr "Чинні з'єднання (1:%u)"
 
-#: src/StatTree.cpp:561
+#: src/StatTree.cpp:564
 msgid "Not available"
 msgstr "Недоступний"
 
-#: src/StatTree.cpp:638 src/StatTree.cpp:649
+#: src/StatTree.cpp:648 src/StatTree.cpp:660
 msgid "Never"
 msgstr "Ніколи"
 

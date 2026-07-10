@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 15:24+0200\n"
+"POT-Creation-Date: 2026-07-10 10:45+0200\n"
 "PO-Revision-Date: 2026-07-09 14:22+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -215,7 +215,7 @@ msgstr[1] "Konnte %u Links aus ED2KLinks nicht hinzufügen (Details: siehe Log)"
 #: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
 #: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
 #: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "FEHLER"
 
@@ -789,7 +789,7 @@ msgid "Messages Window"
 msgstr "Nachrichten, Chat, Freundesliste"
 
 #: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
-#: src/Statistics.cpp:779 src/Statistics.cpp:1226
+#: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statistiken"
 
@@ -923,7 +923,7 @@ msgstr "Konnte das Verzeichnis '%s' für die Kategorie '%s' nicht erstellen, nut
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
 #: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
-#: src/Statistics.cpp:1159
+#: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Unbekannt"
 
@@ -1673,11 +1673,11 @@ msgid_plural "Found %u part files"
 msgstr[0] "%u part-Datei gefunden"
 msgstr[1] "%u part-Dateien gefunden"
 
-#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1526
+#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1535
 msgid "Filesystem for Temp directory cannot handle large files."
 msgstr "Das Dateisystem für temporäre Dateien unterstützt keine großen Dateien."
 
-#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1531
+#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1540
 msgid "Filesystem for Incoming directory cannot handle large files."
 msgstr "Das Dateisystem für fertige Dateien unterstützt keine großen Dateien."
 
@@ -1691,34 +1691,39 @@ msgstr "Herunterladen von %s"
 msgid "You are already trying to download the file '%s'"
 msgstr "Du versuchst bereits, die Datei '%s' herunterzuladen"
 
-#: src/DownloadQueue.cpp:401
+#: src/DownloadQueue.cpp:406
+#, fuzzy, c-format
+msgid "You already have the file '%s' (requested as '%s')"
+msgstr "Die Datei '%s' ist bereits vorhanden"
+
+#: src/DownloadQueue.cpp:409
 #, c-format
 msgid "You already have the file '%s'"
 msgstr "Die Datei '%s' ist bereits vorhanden"
 
-#: src/DownloadQueue.cpp:407
+#: src/DownloadQueue.cpp:416
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Die Datei %s wird bereits heruntergeladen"
 
-#: src/DownloadQueue.cpp:1446
+#: src/DownloadQueue.cpp:1455
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Kann Magnet-Verweis nicht in eD2k umwandeln: %s"
 
-#: src/DownloadQueue.cpp:1454
+#: src/DownloadQueue.cpp:1463
 #, c-format
 msgid "Unknown protocol of link: %s"
 msgstr "Unbekanntes Protokoll von Verweis: %s"
 
-#: src/DownloadQueue.cpp:1468
+#: src/DownloadQueue.cpp:1477
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
 msgstr[0] "Konnte %u Link nicht hinzufügen (Details: siehe Log)"
 msgstr[1] "Konnte %u Links nicht hinzufügen (Details: siehe Log)"
 
-#: src/DownloadQueue.cpp:1492
+#: src/DownloadQueue.cpp:1501
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Ungültiger eD2k-Link! Fehler: %s"
@@ -2611,19 +2616,19 @@ msgstr "EC-Verbindung fehlgeschlagen. Leere Antwort."
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Externe Verbindungen: Falsche Antwort, Verhandlung fehlgeschlagen. Verbindung beendet."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:349
+#: src/libs/ec/cpp/RemoteConnect.cpp:351
 msgid "Succeeded! Connection established to aMule "
 msgstr "Gelungen! Verbindung aufgebaut zu aMule "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:353
 msgid "Succeeded! Connection established."
 msgstr "Verbindung hergestellt."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:380
+#: src/libs/ec/cpp/RemoteConnect.cpp:381
 msgid "External Connection: Access denied because: "
 msgstr "Externe Verbindungen: Zugriff verweigert wegen:"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:383
+#: src/libs/ec/cpp/RemoteConnect.cpp:384
 msgid "External Connection: Handshake failed."
 msgstr "Externe Verbindungen: Verhandlung fehlgeschlagen."
 
@@ -6673,11 +6678,11 @@ msgstr "Gesamtgröße der freigegebenen Dateien: %s"
 msgid "Average file size: %s"
 msgstr "Durchschnittliche Dateigröße: %s"
 
-#: src/Statistics.cpp:1143
+#: src/Statistics.cpp:1144
 msgid "Operating System"
 msgstr "Betriebssystem"
 
-#: src/Statistics.cpp:1175
+#: src/Statistics.cpp:1181
 msgid "Not Received"
 msgstr "Nicht empfangen"
 
@@ -6686,11 +6691,11 @@ msgstr "Nicht empfangen"
 msgid "Active connections (1:%u)"
 msgstr "Aktive Verbindungen (1:%u)"
 
-#: src/StatTree.cpp:561
+#: src/StatTree.cpp:564
 msgid "Not available"
 msgstr "Nicht verfügbar"
 
-#: src/StatTree.cpp:638 src/StatTree.cpp:649
+#: src/StatTree.cpp:648 src/StatTree.cpp:660
 msgid "Never"
 msgstr "Niemals"
 

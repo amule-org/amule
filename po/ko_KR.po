@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 15:24+0200\n"
+"POT-Creation-Date: 2026-07-10 10:45+0200\n"
 "PO-Revision-Date: 2026-07-09 14:28+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -201,7 +201,7 @@ msgstr[1] ""
 #: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
 #: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
 #: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr ""
 
@@ -791,7 +791,7 @@ msgid "Messages Window"
 msgstr "메시지 창"
 
 #: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
-#: src/Statistics.cpp:779 src/Statistics.cpp:1226
+#: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "통계"
 
@@ -927,7 +927,7 @@ msgstr ""
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
 #: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
-#: src/Statistics.cpp:1159
+#: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "알수없는"
 
@@ -1676,11 +1676,11 @@ msgid_plural "Found %u part files"
 msgstr[0] "%u 부분파일을 찾았음"
 msgstr[1] "%u 부분파일을 찾았음"
 
-#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1526
+#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1535
 msgid "Filesystem for Temp directory cannot handle large files."
 msgstr ""
 
-#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1531
+#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1540
 msgid "Filesystem for Incoming directory cannot handle large files."
 msgstr ""
 
@@ -1694,34 +1694,39 @@ msgstr "내려받기 %s"
 msgid "You are already trying to download the file '%s'"
 msgstr "이미 '%s' 파일을 내려받으려고 하고있음"
 
-#: src/DownloadQueue.cpp:401
+#: src/DownloadQueue.cpp:406
+#, fuzzy, c-format
+msgid "You already have the file '%s' (requested as '%s')"
+msgstr "이미 %s 파일을 가지고 있음"
+
+#: src/DownloadQueue.cpp:409
 #, c-format
 msgid "You already have the file '%s'"
 msgstr "이미 %s 파일을 가지고 있음"
 
-#: src/DownloadQueue.cpp:407
+#: src/DownloadQueue.cpp:416
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "이미 %s 파일을 내려받으려고 하고있음"
 
-#: src/DownloadQueue.cpp:1446
+#: src/DownloadQueue.cpp:1455
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
 msgstr ""
 
-#: src/DownloadQueue.cpp:1454
+#: src/DownloadQueue.cpp:1463
 #, c-format
 msgid "Unknown protocol of link: %s"
 msgstr "링크의 알려지지 않은 프로토콜: %s"
 
-#: src/DownloadQueue.cpp:1468
+#: src/DownloadQueue.cpp:1477
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/DownloadQueue.cpp:1492
+#: src/DownloadQueue.cpp:1501
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr ""
@@ -2629,19 +2634,19 @@ msgstr ""
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "외부연결: 서버 응답 불량. 연결이 끊겼습니다."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:349
+#: src/libs/ec/cpp/RemoteConnect.cpp:351
 msgid "Succeeded! Connection established to aMule "
 msgstr "성공! 어뮬에 연결 되었습니다 "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:353
 msgid "Succeeded! Connection established."
 msgstr "성공! 연결이 되었습니다."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:380
+#: src/libs/ec/cpp/RemoteConnect.cpp:381
 msgid "External Connection: Access denied because: "
 msgstr ""
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:383
+#: src/libs/ec/cpp/RemoteConnect.cpp:384
 #, fuzzy
 msgid "External Connection: Handshake failed."
 msgstr "외부연결 암호"
@@ -6740,11 +6745,11 @@ msgstr "공유파일의 전체 크기: %s"
 msgid "Average file size: %s"
 msgstr ""
 
-#: src/Statistics.cpp:1143
+#: src/Statistics.cpp:1144
 msgid "Operating System"
 msgstr "운영체제"
 
-#: src/Statistics.cpp:1175
+#: src/Statistics.cpp:1181
 msgid "Not Received"
 msgstr "받은게 없음"
 
@@ -6753,11 +6758,11 @@ msgstr "받은게 없음"
 msgid "Active connections (1:%u)"
 msgstr "활성화된 연결 (1:%u)"
 
-#: src/StatTree.cpp:561
+#: src/StatTree.cpp:564
 msgid "Not available"
 msgstr "유효하지 않음"
 
-#: src/StatTree.cpp:638 src/StatTree.cpp:649
+#: src/StatTree.cpp:648 src/StatTree.cpp:660
 msgid "Never"
 msgstr "결코"
 

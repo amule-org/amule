@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-09 15:24+0200\n"
+"POT-Creation-Date: 2026-07-10 10:45+0200\n"
 "PO-Revision-Date: 2026-07-09 14:24+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -207,7 +207,7 @@ msgstr[1] ""
 #: src/amule.cpp:1255 src/amule.cpp:1557 src/amule-remote-gui.cpp:510
 #: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
 #: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1472
+#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "ERROREA"
 
@@ -784,7 +784,7 @@ msgid "Messages Window"
 msgstr "Mezu leihoa"
 
 #: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3239 src/PrefsUnifiedDlg.cpp:288
-#: src/Statistics.cpp:779 src/Statistics.cpp:1226
+#: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Estatistikak"
 
@@ -916,7 +916,7 @@ msgstr "Ezin da '%s' direktorioa sortu '%s' kategoriarentzat, '%s' direktorioa m
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
 #: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
-#: src/Statistics.cpp:1159
+#: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Ezezaguna"
 
@@ -1667,11 +1667,11 @@ msgid_plural "Found %u part files"
 msgstr[0] "zati fitxategi %u aurkitu da"
 msgstr[1] "%u zati fitxategi aurkitu dira"
 
-#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1526
+#: src/DownloadQueue.cpp:238 src/DownloadQueue.cpp:1535
 msgid "Filesystem for Temp directory cannot handle large files."
 msgstr "Aldiroko direktorioaren fitxategi sistemak ez ditu fitxategi luzeak onartzen."
 
-#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1531
+#: src/DownloadQueue.cpp:242 src/DownloadQueue.cpp:1540
 msgid "Filesystem for Incoming directory cannot handle large files."
 msgstr "Sarrera direktorioaren fitxategi sistemak ez ditu fitxategi luzeak onartzen."
 
@@ -1685,34 +1685,39 @@ msgstr "%s Deskargatzen"
 msgid "You are already trying to download the file '%s'"
 msgstr "Dagoeneko '%s' fitxategia deskargatzen ari zara"
 
-#: src/DownloadQueue.cpp:401
+#: src/DownloadQueue.cpp:406
+#, fuzzy, c-format
+msgid "You already have the file '%s' (requested as '%s')"
+msgstr "Dagoeneko baduzu '%s' fitxategia"
+
+#: src/DownloadQueue.cpp:409
 #, c-format
 msgid "You already have the file '%s'"
 msgstr "Dagoeneko baduzu '%s' fitxategia"
 
-#: src/DownloadQueue.cpp:407
+#: src/DownloadQueue.cpp:416
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Dagoeneko %s fitxategia deskargatzen ari zara"
 
-#: src/DownloadQueue.cpp:1446
+#: src/DownloadQueue.cpp:1455
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Ezin da lotura magnetikoa eD2k bihurtu: %s"
 
-#: src/DownloadQueue.cpp:1454
+#: src/DownloadQueue.cpp:1463
 #, c-format
 msgid "Unknown protocol of link: %s"
 msgstr "Lotura protokolo ezezaguna: %s"
 
-#: src/DownloadQueue.cpp:1468
+#: src/DownloadQueue.cpp:1477
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/DownloadQueue.cpp:1492
+#: src/DownloadQueue.cpp:1501
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Okerreko eD2k lotura! ERROREA: %s"
@@ -2608,19 +2613,19 @@ msgstr "EC konexioa huts egin du. Erantzun hutsa."
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Kanpo konexioa: Okerreko erantzuna, esku-emateak huts egin du. Konexioa itxirik."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:349
+#: src/libs/ec/cpp/RemoteConnect.cpp:351
 msgid "Succeeded! Connection established to aMule "
 msgstr "Lortua! Amulera konexioa sortua "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:353
 msgid "Succeeded! Connection established."
 msgstr "Lortua! Konexioa sortua."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:380
+#: src/libs/ec/cpp/RemoteConnect.cpp:381
 msgid "External Connection: Access denied because: "
 msgstr "Kanpo konexioa: Sarrera ukatze arrazoia: "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:383
+#: src/libs/ec/cpp/RemoteConnect.cpp:384
 msgid "External Connection: Handshake failed."
 msgstr "Kanpo Konexioa: Esku-emateak huts egin du."
 
@@ -6685,11 +6690,11 @@ msgstr "Guztira partekatutako fitxategi tamaina: %s"
 msgid "Average file size: %s"
 msgstr "Bataz besteko fitxategi tamaina: %s"
 
-#: src/Statistics.cpp:1143
+#: src/Statistics.cpp:1144
 msgid "Operating System"
 msgstr "Sistema eragilea"
 
-#: src/Statistics.cpp:1175
+#: src/Statistics.cpp:1181
 msgid "Not Received"
 msgstr "Ez Jasoa"
 
@@ -6698,11 +6703,11 @@ msgstr "Ez Jasoa"
 msgid "Active connections (1:%u)"
 msgstr "Konexio aktiboak (1:%u)"
 
-#: src/StatTree.cpp:561
+#: src/StatTree.cpp:564
 msgid "Not available"
 msgstr "Ez dago erabilgarri"
 
-#: src/StatTree.cpp:638 src/StatTree.cpp:649
+#: src/StatTree.cpp:648 src/StatTree.cpp:660
 msgid "Never"
 msgstr "Inoiz ere ez"
 

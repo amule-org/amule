@@ -229,7 +229,7 @@ void CDownloadQueue::LoadSourceSeeds()
 
 void CDownloadQueue::AddSearchToDownload(CSearchFile *toadd, uint8 category)
 {
-	if (IsFileExisting(toadd->GetFileHash())) {
+	if (IsFileExisting(toadd->GetFileHash(), toadd->GetFileName().GetPrintable())) {
 		return;
 	}
 
@@ -381,7 +381,7 @@ void CDownloadQueue::AddDownload(CPartFile *file, bool paused, uint8 category)
 	AddLogLineC(CFormat(_("Downloading %s")) % file->GetFileName());
 }
 
-bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid) const
+bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requestedName) const
 {
 	if (CKnownFile *file = theApp->sharedfiles->GetFileByID(fileid)) {
 		if (file->IsPartFile()) {
@@ -398,7 +398,16 @@ bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid) const
 				return false;
 			}
 
-			AddLogLineC(CFormat(_("You already have the file '%s'")) % fullpath);
+			// Files are matched by hash, so the already-present file can carry a
+			// different name than the one requested. Surface the requested name
+			// too when it differs, so the log can be correlated with the search
+			// result or ed2k link the download was started from.
+			if (!requestedName.IsEmpty() && requestedName != file->GetFileName().GetPrintable()) {
+				AddLogLineC(CFormat(_("You already have the file '%s' (requested as '%s')")) %
+					    fullpath % requestedName);
+			} else {
+				AddLogLineC(CFormat(_("You already have the file '%s'")) % fullpath);
+			}
 		}
 
 		return true;
@@ -1515,7 +1524,7 @@ bool CDownloadQueue::AddED2KLink(const CED2KLink *link, uint8 category)
 bool CDownloadQueue::AddED2KLink(const CED2KFileLink *link, uint8 category)
 {
 	CPartFile *file = NULL;
-	if (IsFileExisting(link->GetHashKey())) {
+	if (IsFileExisting(link->GetHashKey(), link->GetName())) {
 		// Must be a shared file if we are to add hashes or sources
 		if ((file = GetFileByID(link->GetHashKey())) == NULL) {
 			return false;
