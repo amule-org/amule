@@ -337,7 +337,7 @@ static IOPMAssertionID assertionID;
 void PlatformSpecific::PreventSleepMode()
 {
 	if (!m_preventingSleepMode) {
-#ifdef _MSC_VER
+#ifdef __WINDOWS__
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 		m_preventingSleepMode = true;
 
@@ -377,7 +377,7 @@ void PlatformSpecific::PreventSleepMode()
 void PlatformSpecific::AllowSleepMode()
 {
 	if (m_preventingSleepMode) {
-#ifdef _MSC_VER
+#ifdef __WINDOWS__
 		SetThreadExecutionState(ES_CONTINUOUS); // Clear the system request flag.
 		m_preventingSleepMode = false;
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 // 10.5 only
