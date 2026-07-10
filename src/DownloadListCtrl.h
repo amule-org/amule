@@ -72,11 +72,27 @@ public:
 	/**
 	 * Adds a file to the list, but it wont show unless it matches the current category.
 	 *
-	 * @param A valid pointer to a new partfile.
+	 * @param file A valid pointer to a new partfile.
+	 * @param deferView If true, only the internal model entry is created;
+	 *                  the file is not shown and the list is not sorted.
+	 *                  Used for a bulk load (remote GUI first sync), where
+	 *                  the caller shows and sorts the whole list once
+	 *                  afterwards via ShowFileList() instead of paying an
+	 *                  O(n^2) per-item sort. See issue #414.
 	 *
 	 * Please note that duplicates wont be added.
 	 */
-	void AddFile(CPartFile *file);
+	void AddFile(CPartFile *file, bool deferView = false);
+
+	/**
+	 * Shows every model item belonging to the current category and sorts
+	 * the list a single time, wrapped in Freeze()/Thaw().
+	 *
+	 * Batch counterpart to AddFile()'s per-item path, used after a
+	 * deferred bulk load so a large queue populates in one pass. Mirrors
+	 * CSharedFilesCtrl::ShowFileList().
+	 */
+	void ShowFileList();
 
 	/**
 	 * Removes the specified file from the list.

@@ -1533,7 +1533,11 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 						new CPartFile(static_cast<const CEC_PartFile_Tag *>(tag));
 					ProcessItemUpdate(tag, file);
 					(*theApp->downloadqueue)[id] = file;
-					theApp->amuledlg->m_transferwnd->downloadlistctrl->AddFile(file);
+					// On the initial full sync, defer the per-item show +
+					// sort; the whole list is shown and sorted once below
+					// via ShowFileList() (issue #414 — O(n^2) otherwise).
+					theApp->amuledlg->m_transferwnd->downloadlistctrl->AddFile(
+						file, /*deferView=*/m_initialUpdate);
 					newFile = file;
 				} else {
 					newFile = new CKnownFile(tag);
@@ -1551,6 +1555,7 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 
 	if (m_initialUpdate) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFileList();
+		theApp->amuledlg->m_transferwnd->downloadlistctrl->ShowFileList();
 		m_initialUpdate = false;
 	} else if (partial_update) {
 		// Apply explicit removals from `EC_TAG_FILE_REMOVED` markers.

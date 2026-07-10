@@ -191,7 +191,7 @@ CDownloadListCtrl::~CDownloadListCtrl()
 	}
 }
 
-void CDownloadListCtrl::AddFile(CPartFile *file)
+void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 {
 	wxASSERT(file);
 
@@ -202,6 +202,15 @@ void CDownloadListCtrl::AddFile(CPartFile *file)
 
 		m_ListItems.insert(ListItemsPair(file, newitem));
 
+		// During a bulk load (remote GUI first sync) the caller defers
+		// the display: showing and, above all, re-sorting the list on
+		// every one of thousands of files is O(n^2) and freezes the GUI
+		// (issue #414). ShowFileList() shows and sorts the whole list
+		// once afterwards, mirroring the shared-files view.
+		if (deferView) {
+			return;
+		}
+
 		// Check if the new file is visible in the current category
 		if (file->CheckShowItemInGivenCat(m_category)) {
 			ShowFile(file, true);
@@ -211,6 +220,35 @@ void CDownloadListCtrl::AddFile(CPartFile *file)
 			SortList();
 		}
 	}
+}
+
+void CDownloadListCtrl::ShowFileList()
+{
+	// Batch counterpart to AddFile()'s per-item path: show every model
+	// item that belongs in the current category, then sort the list a
+	// single time. Used after a deferred bulk load (remote GUI first
+	// sync) so a large queue populates in one pass instead of paying an
+	// O(n^2) per-item sort. Freeze()/Thaw() collapses the repaints into
+	// one. Mirrors CSharedFilesCtrl::ShowFileList().
+	Freeze();
+
+	bool hasCompletedDownloads = false;
+
+	for (const auto &entry : m_ListItems) {
+		CPartFile *file = entry.second->GetFile();
+		if (file->CheckShowItemInGivenCat(m_category)) {
+			ShowFile(file, true);
+			if (file->IsCompleted()) {
+				hasCompletedDownloads = true;
+			}
+		}
+	}
+
+	CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(hasCompletedDownloads);
+
+	SortList();
+
+	Thaw();
 }
 
 void CDownloadListCtrl::RemoveFile(CPartFile *file)
