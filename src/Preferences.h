@@ -718,6 +718,12 @@ public:
 
 	static bool GetCheckNewVersion() { return s_NewVersionCheck; }
 	static void SetCheckNewVersion(bool val) { s_NewVersionCheck = val; }
+	// Runtime-only (not persisted): whether the connected daemon can actually
+	// perform version checks (advertised via EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE).
+	// Set from the EC prefs-apply; the remote GUI reads it to hide the
+	// "check for new version" checkbox against a daemon that can't check.
+	static bool GetVersionCheckAvailable() { return s_versionCheckAvailable; }
+	static void SetVersionCheckAvailable(bool val) { s_versionCheckAvailable = val; }
 
 	// Media metadata (issue #140) — probe local shared files with
 	// ffprobe so we advertise Length / Bitrate / Codec to peers.
@@ -1064,6 +1070,8 @@ protected:
 
 	// Version check
 	static bool s_NewVersionCheck;
+	// Runtime-only capability of the connected daemon (not persisted).
+	static bool s_versionCheckAvailable;
 
 	// Media metadata (issue #140)
 	static bool s_MediaMetadataEnabled;

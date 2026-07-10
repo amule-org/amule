@@ -230,6 +230,10 @@ bool CPreferences::s_ExcludeSharePatternsUseRegex;
 CShareExcludeFilter CPreferences::s_ShareExcludeFilter;
 bool CPreferences::s_AutoSortDownload;
 bool CPreferences::s_NewVersionCheck;
+// Default true so the monolithic app (which never receives the capability tag
+// over EC and doesn't consult this flag) is unaffected; the remote GUI
+// overwrites it from each prefs-apply.
+bool CPreferences::s_versionCheckAvailable = true;
 bool CPreferences::s_MediaMetadataEnabled;
 wxString CPreferences::s_MediaMetadataFFProbePath;
 bool CPreferences::s_ConnectToKad;
@@ -1546,15 +1550,18 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	 **/
 	NewCfgItem(IDC_AUTOSORT, (new Cfg_Bool("/eMule/AutoSortDownloads", s_AutoSortDownload, false)));
 
-#ifdef ENABLE_VERSION_CHECK
+#if defined(ENABLE_VERSION_CHECK) || defined(CLIENT_GUI)
 	/**
-	 * Version check. Only registered when the feature is compiled in
+	 * Version check. Registered when the feature is compiled in
 	 * (-DENABLE_VERSION_CHECK, ON by default; OFF for OS-package builds where
-	 * the distro's package manager owns updates). Defaults to on; the user can
-	 * still turn it off in Preferences.
+	 * the distro's package manager owns updates), OR in the remote GUI
+	 * (CLIENT_GUI) regardless of its own build — there the checkbox edits the
+	 * *connected daemon's* preference, so it must stay wired even when amulegui
+	 * itself was built without the feature. PrefsUnifiedDlg hides the checkbox
+	 * when the daemon can't check. Defaults to on; the user can turn it off.
 	 */
 	NewCfgItem(IDC_NEWVERSION, (new Cfg_Bool("/eMule/NewVersionCheck", s_NewVersionCheck, true)));
-#endif // ENABLE_VERSION_CHECK
+#endif // ENABLE_VERSION_CHECK || CLIENT_GUI
 
 	/**
 	 * Media metadata extraction (issue #140). Off by default so an

@@ -422,6 +422,18 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_GENERAL_CHECK_NEW_VERSION)) != NULL) {
 			thePrefs::SetCheckNewVersion(oneTag->GetInt() != 0);
 		}
+#ifdef CLIENT_GUI
+		// Capability of the connected daemon. 3.1+ daemons always send this
+		// bool (true = can check, false = ENABLE_VERSION_CHECK compiled out).
+		// A pre-3.1 daemon omits it but still supports the NewVersionCheck
+		// preference, so treat "absent" as available (keep the checkbox) —
+		// only an explicit false hides it.
+		if (const CECTag *vc = thisTab->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE)) {
+			thePrefs::SetVersionCheckAvailable(vc->GetInt() != 0);
+		} else {
+			thePrefs::SetVersionCheckAvailable(true);
+		}
+#endif
 	}
 
 	//

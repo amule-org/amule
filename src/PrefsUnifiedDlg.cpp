@@ -384,8 +384,23 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
 // This must be done now or pages won't Fit();
-#ifndef ENABLE_VERSION_CHECK
-			// The in-app version check is compiled out (OS-package build):
+#if defined(CLIENT_GUI)
+			// Remote GUI: this checkbox toggles the *daemon's* version-check
+			// preference, so its visibility follows the connected daemon's
+			// capability, NOT amulegui's own build. An amulegui compiled
+			// without ENABLE_VERSION_CHECK still shows it against a capable
+			// daemon — it is only a remote editor of the daemon's pref. The
+			// capability arrives via the EC tag on prefs-apply: a 3.1+ daemon
+			// built without ENABLE_VERSION_CHECK reports false (hide); a
+			// pre-3.1 daemon omits the tag and is treated as capable (show),
+			// since it still supports the preference.
+			if (!thePrefs::GetVersionCheckAvailable()) {
+				if (wxWindow *vc = FindWindow(IDC_NEWVERSION)) {
+					vc->Hide();
+				}
+			}
+#elif !defined(ENABLE_VERSION_CHECK)
+			// Monolithic built without the in-app check (OS-package build):
 			// hide the now-dead "Check for new version at startup" checkbox.
 			if (wxWindow *vc = FindWindow(IDC_NEWVERSION)) {
 				vc->Hide();
