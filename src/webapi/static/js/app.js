@@ -26,6 +26,7 @@ const ROUTES = [
   { key: "shared", label: t("app_nav_shared") },
   { key: "stats", label: t("app_nav_stats") },
   { key: "preferences", label: t("app_nav_preferences") },
+  { key: "about", label: t("app_nav_about") },
 ];
 // Routable but not shown in the toolbar (reached from in-page links).
 const HIDDEN_ROUTES = [];
@@ -74,10 +75,43 @@ function Shell({ role, onLogout }) {
 
   return html`
     <${Toolbar} route=${route} onLogout=${onLogout} />
+    <${VersionBanner} />
     <main class="view" id="view">
       <${RouteView} route=${route} role=${role} />
     </main>
     <${StatusBar} />`;
+}
+
+// One-shot warning when amuleapi's build (amule_version) differs from the
+// connected amuled (daemon_version) — a config mismatch a transient toast would
+// miss. Lives in Shell so a dismiss sticks for the session. daemon_version is
+// empty when EC isn't connected; skip the banner then.
+function VersionBanner() {
+  const [mismatch, setMismatch] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    api.get("version")
+      .then((v) => {
+        if (alive && v.daemon_version && v.amule_version !== v.daemon_version) {
+          setMismatch({ ui: v.amule_version, daemon: v.daemon_version });
+        }
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  if (!mismatch || dismissed) return null;
+  return html`
+    <div class="version-banner" role="alert">
+      <${Icon} name="warning" size=${18} />
+      <span>${t("about_version_mismatch", mismatch)}</span>
+      <button class="btn btn-ghost version-banner-close" aria-label=${t("common_close")}
+              onClick=${() => setDismissed(true)}>
+        <${Icon} name="cancel" size=${16} />
+      </button>
+    </div>`;
 }
 
 function Toolbar({ route, onLogout }) {

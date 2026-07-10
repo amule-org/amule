@@ -357,6 +357,15 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .login-title { font-size: 16px; margin: 0; color: var(--text-dim); font-weight: 500; }
 .login-error { color: var(--bad); min-height: 1em; margin: 0; font-size: 13px; }
 
+/* --- version mismatch banner --- */
+.version-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 16px; background: color-mix(in srgb, var(--warn) 15%, var(--surface));
+  border-bottom: 1px solid var(--warn); color: var(--text); font-size: 13px;
+}
+.version-banner .icon { color: var(--warn); flex: 0 0 auto; }
+.version-banner-close { margin-left: auto; padding: 4px; }
+
 /* --- toast + modal --- */
 .toast-host {
   position: fixed; right: 16px; bottom: 16px; z-index: 100;
