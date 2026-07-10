@@ -2166,8 +2166,9 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     item16->Add( item21, wxSizerFlags().CenterVertical().Right().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item16, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    wxStaticBox *item23 = new wxStaticBox( parent, -1, "" );
-    wxStaticBoxSizer *item22 = new wxStaticBoxSizer( item23, wxHORIZONTAL );
+    // Plain button row (no static-box container) so no border is drawn
+    // around OK/Cancel, matching the Settings dialog.
+    wxBoxSizer *item22 = new wxBoxSizer( wxHORIZONTAL );
 
     wxButton *item24 = new wxButton( parent, wxID_OK, _("OK"), wxDefaultPosition, wxDefaultSize, 0 );
     item24->SetDefault();
