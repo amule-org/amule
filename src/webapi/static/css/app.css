@@ -324,6 +324,7 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   background: var(--surface-2); border: 1px solid var(--border); }
 .badge.downloading { color: var(--ok); border-color: var(--ok); }
 .badge.paused { color: var(--text-dim); }
+.badge.stopped { color: var(--bad); border-color: var(--bad); }
 .badge.waiting { color: var(--warn); border-color: var(--warn); }
 
 /* --- placeholders --- */

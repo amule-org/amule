@@ -33,6 +33,7 @@ const ICONS = {
   edit: () => html`<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>`,
   pause: () => html`<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>`,
   play: () => html`<path d="M7 5l12 7-12 7z"/>`,
+  stop: () => html`<rect x="6" y="6" width="12" height="12" rx="1"/>`,
   up: () => html`<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>`,
   down: () => html`<path d="M12 5v14"/><path d="M5 12l7 7 7-7"/>`,
   live: () => html`<circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/>`,

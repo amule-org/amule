@@ -17,7 +17,7 @@ import { PeersPanel } from "./peers.js";
 
 const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("downloads_prio_" + v)]);
-const STATUS_FILTERS = ["all", "downloading", "waiting", "paused", "completed"]
+const STATUS_FILTERS = ["all", "downloading", "waiting", "paused", "stopped", "completed"]
   .map((v) => [v, t("downloads_status_" + v)]);
 
 export default function Downloads({ isGuest }) {
@@ -75,6 +75,7 @@ export default function Downloads({ isGuest }) {
   };
   const pause = (h) => mutate(() => api.patch("downloads/" + h, { status: "paused" }));
   const resume = (h) => mutate(() => api.patch("downloads/" + h, { status: "resumed" }));
+  const stop = (h) => mutate(() => api.patch("downloads/" + h, { status: "stopped" }));
   const setPriority = (h, p) => mutate(() => api.patch("downloads/" + h, { priority: p }));
   const setCategory = (h, c) => mutate(() => api.patch("downloads/" + h, { category: c }));
 
@@ -106,7 +107,7 @@ export default function Downloads({ isGuest }) {
       if (!(await confirmDialog(tn("downloads_confirm_cancel_selected", hashes.length)))) return;
       return runBulk((h) => api.del("downloads", { hashes: h }), { clearSelection: true });
     }
-    const status = action === "pause" ? "paused" : "resumed";
+    const status = action === "pause" ? "paused" : action === "stop" ? "stopped" : "resumed";
     return runBulk((h) => api.patch("downloads", { hashes: h, status }));
   };
 
@@ -175,13 +176,18 @@ export default function Downloads({ isGuest }) {
               <option value=${0}>${t("downloads_category_none")}</option>
               ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
             </select>` },
-    { label: t("downloads_actions"), cls: "row-actions admin-only", width: "100px", cell: (d) => {
-        const paused = d.status === "paused";
+    { label: t("downloads_actions"), cls: "row-actions admin-only", width: "130px", cell: (d) => {
+        const inactive = d.status === "paused" || d.status === "stopped";
+        const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
         return html`
-          <button class="btn btn-icon btn-sm" title=${paused ? t("downloads_resume") : t("downloads_pause")}
-                  onClick=${() => paused ? resume(d.hash) : pause(d.hash)}>
-            <${Icon} name=${paused ? "play" : "pause"} />
+          <button class="btn btn-icon btn-sm" title=${inactive ? t("downloads_resume") : t("downloads_pause")}
+                  onClick=${() => inactive ? resume(d.hash) : pause(d.hash)}>
+            <${Icon} name=${inactive ? "play" : "pause"} />
           </button>
+          ${canStop ? html`
+            <button class="btn btn-icon btn-sm" title=${t("downloads_stop")} onClick=${() => stop(d.hash)}>
+              <${Icon} name="stop" />
+            </button>` : null}
           <button class="btn btn-icon btn-sm btn-danger" title=${t("downloads_cancel")} onClick=${() => del(d)}>
             <${Icon} name="cancel" />
           </button>`; } },
@@ -225,6 +231,7 @@ export default function Downloads({ isGuest }) {
         <div class="toolbar admin-only">
           <button class="btn btn-sm" onClick=${() => bulk("pause")}><${Icon} name="pause" /> ${t("downloads_pause")}</button>
           <button class="btn btn-sm" onClick=${() => bulk("resume")}><${Icon} name="play" /> ${t("downloads_resume")}</button>
+          <button class="btn btn-sm" onClick=${() => bulk("stop")}><${Icon} name="stop" /> ${t("downloads_stop")}</button>
           <button class="btn btn-sm btn-danger" onClick=${() => bulk("delete")}><${Icon} name="cancel" /> ${t("downloads_cancel")}</button>
           <select class="input input-sm" value=""
                   onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v) bulkPatch({ priority: v }); }}>
@@ -268,6 +275,7 @@ function matchStatus(d, f) {
   if (f === "downloading") return d.status === "downloading";
   if (f === "waiting") return d.status === "waiting" || d.status === "hashing" || d.status === "allocating";
   if (f === "paused") return d.status === "paused";
+  if (f === "stopped") return d.status === "stopped";
   if (f === "completed") return d.status === "completed" || d.status === "completing";
   return true;
 }
@@ -279,6 +287,7 @@ function prioLabel(d) {
 }
 function statusBadge(s) {
   const cls = s === "downloading" ? "downloading" : s === "paused" ? "paused"
+    : s === "stopped" ? "stopped"
     : (s === "waiting" || s === "hashing" || s === "allocating") ? "waiting" : "";
   // t() falls back to the raw status for values without a key.
   return html`<${Badge} kind=${cls}>${t("downloads_status_" + s)}<//>`;
