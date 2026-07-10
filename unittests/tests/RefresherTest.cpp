@@ -416,6 +416,62 @@ TEST(Refresher, BothFilePrioritiesAreIndependent)
 }
 
 // ----------------------------------------------------------------------
+// A partfile that starts downloading BEFORE it shares. Its upload
+// priority (EC_TAG_KNOWNFILE_PRIO) is emitted on early ticks while it is
+// still download-only; amuled then CValueMap-suppresses the unchanged
+// tag. When the file later flips shared, the shared walker never sees
+// the priority tag again. The downloads walker must therefore latch the
+// upload priority from the partfile tag, and the share-off reset must
+// preserve it, so /shared reports a real level instead of "".
+// (Regression: amule-org/amule#384 follow-up — empty shared `priority`.)
+// ----------------------------------------------------------------------
+
+TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+
+	// Tick 1 — download-only. The partfile tag carries both priorities
+	// (download PR_HIGH=2 → "high", upload PR_LOW=0 → "low") and an
+	// explicit not-shared flag. Downloads walker runs first, then shared.
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(78));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_PRIO, static_cast<std::uint8_t>(2)));
+		pf.AddTag(CECTag(EC_TAG_KNOWNFILE_PRIO, static_cast<std::uint8_t>(0)));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(0)));
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+		ApplyGetUpdateToShared(&resp, cache);
+	}
+	{
+		const auto it = cache.find(78);
+		ASSERT_TRUE(it != cache.end());
+		ASSERT_TRUE(!it->second.is_shared);
+		// Upload priority was latched by the downloads walker and NOT
+		// wiped by the share-off reset.
+		ASSERT_EQUALS(std::string("low"), it->second.shared.priority);
+	}
+
+	// Tick 2 — file flips shared, but the unchanged upload priority is
+	// now suppressed (no EC_TAG_KNOWNFILE_PRIO child). Without the latch
+	// the shared walker would leave shared.priority empty.
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(78));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_SHARED, static_cast<std::uint8_t>(1)));
+		resp.AddTag(pf);
+		ApplyGetUpdateToShared(&resp, cache);
+	}
+
+	const auto it = cache.find(78);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.is_shared);
+	ASSERT_EQUALS(std::string("high"), it->second.download.priority);
+	ASSERT_EQUALS(std::string("low"), it->second.shared.priority); // not empty
+}
+
+// ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and
 // merges per-ECID; cache entries not seen in the response get evicted

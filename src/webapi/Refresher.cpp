@@ -328,6 +328,20 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		}
 	}
 	{
+		// Upload priority also rides on the partfile tag (the base
+		// CEC_SharedFile_Tag ctor adds EC_TAG_KNOWNFILE_PRIO). Capture
+		// it here, from the file's first downloading tick, so a partfile
+		// that starts sharing only later still has a shared `priority`:
+		// by then amuled has CValueMap-suppressed the unchanged tag and
+		// the shared walker would never see it (empty-priority bug).
+		std::uint8_t up_raw = 0;
+		if (pf->AssignIfExist(EC_TAG_KNOWNFILE_PRIO, up_raw)) {
+			bool up_auto = false;
+			f.shared.priority = PriorityName(up_raw, up_auto);
+			f.shared.priority_auto = up_auto;
+		}
+	}
+	{
 		std::uint8_t cat = 0;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_CAT, cat))
 			f.download.category = cat;
@@ -777,6 +791,21 @@ void DecodeRleBlobsForPartFile(
 	}
 }
 
+// Clear the shared *session statistics* on a share-role-off transition
+// while preserving the upload priority. The stats (xfer/requests/accepts
+// counters) are per-share-session and must not survive; the upload
+// priority is a persistent file attribute that amuled CValueMap-
+// suppresses once sent, so wiping it here would strand a partfile that
+// re-shares later with an empty `priority`.
+void ClearSharedRoleKeepPriority(FileSnapshot &f)
+{
+	std::string prio = std::move(f.shared.priority);
+	const bool prio_auto = f.shared.priority_auto;
+	f.shared = FileSnapshot::SharedSide{};
+	f.shared.priority = std::move(prio);
+	f.shared.priority_auto = prio_auto;
+}
+
 } // namespace
 
 void ApplyGetUpdateToDownloads(
@@ -865,9 +894,10 @@ void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache)
 			auto fit = cache.find(ecid);
 			if (fit != cache.end()) {
 				fit->second.is_shared = false;
-				fit->second.shared = FileSnapshot::SharedSide{};
 				if (!fit->second.is_downloading)
 					cache.erase(fit);
+				else
+					ClearSharedRoleKeepPriority(fit->second);
 			}
 			continue;
 		}
@@ -884,14 +914,15 @@ void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache)
 				if (!is_shared) {
 					// Partfile is_shared transitioned false (or
 					// arrived for the first time unshared).
-					// Reset the shared sub-block; entry stays in
-					// m_files because downloading role may still
+					// Reset the shared session stats; entry stays
+					// in m_files because downloading role may still
 					// hold it. If it doesn't, the downloads-walker
-					// FILE_REMOVED will drop it.
+					// FILE_REMOVED will drop it. Upload priority is
+					// preserved (persistent file attribute).
 					auto fit = cache.find(ecid);
 					if (fit != cache.end()) {
 						fit->second.is_shared = false;
-						fit->second.shared = FileSnapshot::SharedSide{};
+						ClearSharedRoleKeepPriority(fit->second);
 					}
 					continue;
 				}
