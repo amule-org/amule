@@ -7,7 +7,7 @@
 //  - Views live in views/<section>.js and default-export a component;
 //    a missing/failed module shows a friendly placeholder.
 
-import { api, setUnauthorizedHandler } from "./api.js";
+import { api, bulkFailures, setUnauthorizedHandler } from "./api.js";
 import { data } from "./events.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
 import { toast, Placeholder, confirmDialog } from "./components.js";
@@ -98,9 +98,17 @@ function Toolbar({ route, onLogout }) {
     const payload = links.length > 0 ? { links } : { ed2k_link: value };
 
     try {
-      await api.post("downloads", payload);
-      setLink("");
-      toast(t("app_toast_link_added"), "success");
+      // POST /downloads returns the bulk `results` envelope keyed by link; on a
+      // 207 partial some links were rejected, so report them and keep the input.
+      const failed = bulkFailures(await api.post("downloads", payload));
+      if (failed.length) {
+        toast(t("common_bulk_partial", { failed: failed.length,
+                total: (payload.links ? payload.links.length : 1),
+                message: terr(failed[0].error) }), "warn");
+      } else {
+        setLink("");
+        toast(t("app_toast_link_added"), "success");
+      }
       if (currentRoute() === "downloads") data.refresh("downloads");
     } catch (e) {
       toast(terr(e) || t("app_error"), "error");

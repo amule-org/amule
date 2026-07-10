@@ -3,7 +3,7 @@
 // multi-select with select-all, text filter, live totals, reload shares.
 // Live via the SSE "shared" channel.
 
-import { api } from "../api.js";
+import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast } from "../components.js";
@@ -47,8 +47,13 @@ export default function Shared({ isGuest }) {
   const bulkPriority = async (p) => {
     const hashes = Array.from(selection);
     if (!hashes.length) { toast(t("shared_toast_no_files_selected"), "warn"); return; }
-    try { await api.patch("shared", { hashes, priority: p }); toast(t("shared_toast_done"), "success"); }
-    catch (e) { toast(terr(e) || t("shared_error"), "error"); }
+    try {
+      const failed = bulkFailures(await api.patch("shared", { hashes, priority: p }));
+      if (failed.length)
+        toast(t("common_bulk_partial", { failed: failed.length, total: hashes.length,
+                message: terr(failed[0].error) }), "warn");
+      else toast(t("shared_toast_done"), "success");
+    } catch (e) { toast(terr(e) || t("shared_error"), "error"); }
     data.refresh("shared");
   };
   const reload = async () => {

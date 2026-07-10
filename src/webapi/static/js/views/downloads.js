@@ -4,7 +4,7 @@
 // bulk actions, clear-completed, live totals, an ed2k adder for mobile, and a
 // bottom Peers panel (see peers.js).
 
-import { api } from "../api.js";
+import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog } from "../components.js";
@@ -84,31 +84,34 @@ export default function Downloads({ isGuest }) {
     mutate(() => api.del("downloads/" + d.hash));
   };
 
-  const bulk = async (action) => {
+  // Run one collection-level bulk mutation and report per-item failures (207).
+  const runBulk = async (fn, { clearSelection = false } = {}) => {
     const hashes = Array.from(selection);
     if (!hashes.length) { toast(t("downloads_toast_no_files_selected"), "warn"); return; }
-    if (action === "delete" && !(await confirmDialog(tn("downloads_confirm_cancel_selected", hashes.length)))) return;
-    const op = (h) => action === "pause" ? api.patch("downloads/" + h, { status: "paused" })
-      : action === "resume" ? api.patch("downloads/" + h, { status: "resumed" })
-      : api.del("downloads/" + h);
     try {
-      await Promise.all(hashes.map(op));
-      if (action === "delete") setSelection(new Set());
-      toast(t("downloads_toast_done"), "success");
+      const failed = bulkFailures(await fn(hashes));
+      if (failed.length)
+        toast(t("common_bulk_partial", { failed: failed.length, total: hashes.length,
+                message: terr(failed[0].error) }), "warn");
+      else toast(t("downloads_toast_done"), "success");
+      if (clearSelection) setSelection(new Set());
     } catch (e) { toast(terr(e) || t("downloads_error"), "error"); }
     data.refresh("downloads");
   };
 
-  // Apply the same field change (priority/category) to every selected row.
-  const bulkPatch = async (patch) => {
-    const hashes = Array.from(selection);
-    if (!hashes.length) { toast(t("downloads_toast_no_files_selected"), "warn"); return; }
-    try {
-      await Promise.all(hashes.map((h) => api.patch("downloads/" + h, patch)));
-      toast(t("downloads_toast_done"), "success");
-    } catch (e) { toast(terr(e) || t("downloads_error"), "error"); }
-    data.refresh("downloads");
+  const bulk = async (action) => {
+    if (action === "delete") {
+      const hashes = Array.from(selection);
+      if (!hashes.length) { toast(t("downloads_toast_no_files_selected"), "warn"); return; }
+      if (!(await confirmDialog(tn("downloads_confirm_cancel_selected", hashes.length)))) return;
+      return runBulk((h) => api.del("downloads", { hashes: h }), { clearSelection: true });
+    }
+    const status = action === "pause" ? "paused" : "resumed";
+    return runBulk((h) => api.patch("downloads", { hashes: h, status }));
   };
+
+  // Apply the same field change (priority/category) to every selected row.
+  const bulkPatch = (patch) => runBulk((h) => api.patch("downloads", { hashes: h, ...patch }));
 
   const clearCompleted = async () => {
     if (!(await confirmDialog(t("downloads_confirm_clear_completed")))) return;

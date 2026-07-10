@@ -10,6 +10,7 @@
   "common_err_ec_unavailable": "Sin conexión con el núcleo de aMule ({message})",
   "common_err_amuled_rejected": "aMule rechazó la operación: {message}",
   "common_apierr_Server not added": "Servidor no añadido",
+  "common_bulk_partial": "{failed} de {total} fallaron: {message}",
   "common_yes": "Sí",
   "common_cancel": "Cancelar",
   "common_legend_current": "Actual",

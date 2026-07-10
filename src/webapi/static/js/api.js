@@ -20,6 +20,11 @@ export class ApiError extends Error {
   }
 }
 
+// Failed entries of a bulk `results` envelope ([] if all ok / not a bulk resp).
+export function bulkFailures(res) {
+  return ((res && res.results) || []).filter((r) => !r.ok);
+}
+
 // path -> { etag, data }
 const etagCache = new Map();
 
@@ -83,7 +88,7 @@ export const api = {
   get: (path, opts) => request("GET", path, { useEtag: true, ...opts }),
   post: (path, body) => request("POST", path, { body }),
   patch: (path, body) => request("PATCH", path, { body }),
-  del: (path) => request("DELETE", path),
+  del: (path, body) => request("DELETE", path, { body }),
 
   // auth
   login: (password) => request("POST", "auth/login", { body: { password } }),

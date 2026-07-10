@@ -10,6 +10,7 @@
   "common_err_ec_unavailable": "No connection to the aMule core ({message})",
   "common_err_amuled_rejected": "aMule rejected the operation: {message}",
   "common_apierr_Server not added": "Server not added",
+  "common_bulk_partial": "{failed} of {total} failed: {message}",
   "common_yes": "Yes",
   "common_cancel": "Cancel",
   "common_legend_current": "Current",
