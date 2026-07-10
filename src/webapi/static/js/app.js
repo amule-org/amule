@@ -343,23 +343,27 @@ function Speeds({ status }) {
 // --- router -------------------------------------------------------------
 function RouteView({ route, role }) {
   const [View, setView] = useState(null);
-  const [missing, setMissing] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
     setView(null);
-    setMissing(false);
+    setFailed(false);
     import("./views/" + route + ".js")
       .then((mod) => {
         if (!alive) return;
-        const Component = mod.default || mod.View;
-        if (Component) setView(() => Component); else setMissing(true);
+        if (mod.default) setView(() => mod.default);
+        else { console.error("View '" + route + "' has no default export"); setFailed(true); }
       })
-      .catch(() => { if (alive) setMissing(true); });
+      .catch((e) => {
+        if (!alive) return;
+        console.error("Failed to load view '" + route + "':", e);
+        setFailed(true);
+      });
     return () => { alive = false; };
   }, [route]);
 
-  if (missing) return html`<${Placeholder} kind="info">${t("app_coming_soon")}<//>`;
+  if (failed) return html`<${Placeholder} kind="error">${t("app_view_error")}<//>`;
   if (!View) return html`<${Placeholder} kind="loading">${t("app_loading")}<//>`;
   // key=route forces a fresh mount (and cleanup) when switching sections.
   return html`<${View} key=${route} role=${role} isGuest=${role === "guest"} />`;

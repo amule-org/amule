@@ -331,6 +331,7 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   padding: 40px 16px; text-align: center; color: var(--text-dim);
 }
 .placeholder-loading::after { content: ""; }
+.placeholder-error { color: var(--bad); }
 
 /* --- cards / forms --- */
 .card {
