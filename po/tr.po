@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-10 16:27+0200\n"
+"POT-Creation-Date: 2026-07-10 17:23+0200\n"
 "PO-Revision-Date: 2026-07-10 10:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -312,7 +312,7 @@ msgid "Password set and external connections enabled."
 msgstr "Parola ayarlandı ve dış bağlantılar etkinleştirildi."
 
 #: src/amule.cpp:706 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1232 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1251 src/SharedFilesCtrl.cpp:321
 msgid "WARNING"
 msgstr "UYARI"
 
@@ -784,7 +784,7 @@ msgstr "Sohbet"
 msgid "Messages Window"
 msgstr "Sohbet Penceresi"
 
-#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:288
+#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "İstatistikler"
@@ -793,7 +793,7 @@ msgstr "İstatistikler"
 msgid "Statistics Graph Window"
 msgstr "İstatistik Grafik Penceresi"
 
-#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:304
+#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Ayarlar"
@@ -2461,8 +2461,10 @@ msgstr "Ön yükleme için geçersiz port"
 msgid "Please fill all fields required"
 msgstr "İstenilen tüm alanları doldurunuz."
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1028
-#: src/PrefsUnifiedDlg.cpp:1179 src/PrefsUnifiedDlg.cpp:1431
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1036
+#: src/PrefsUnifiedDlg.cpp:1198 src/PrefsUnifiedDlg.cpp:1423
+#: src/PrefsUnifiedDlg.cpp:1431 src/PrefsUnifiedDlg.cpp:1445
+#: src/PrefsUnifiedDlg.cpp:1486
 msgid "Message"
 msgstr "İleti"
 
@@ -3079,7 +3081,7 @@ msgstr "Tamamlanan aktarımları temizler."
 msgid "File sources:"
 msgstr "Dosya kaynakları:"
 
-#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:273
+#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:276
 msgid "General"
 msgstr "Genel"
 
@@ -3754,7 +3756,7 @@ msgstr "Gönderilenler"
 msgid "Add new shared files with auto priority"
 msgstr "Dosyaları paylaşılanlara otomatik öncelikle ekle"
 
-#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1683
+#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1738
 msgid "Media metadata extraction"
 msgstr ""
 
@@ -5242,63 +5244,63 @@ msgstr "TCP portu numarası, UDP soketi TCP+3 olduğundan 65532' den yüksek ola
 msgid "Default port will be used (%d)"
 msgstr "Varsayılan port kullanılacak (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:274 src/Statistics.cpp:866
+#: src/PrefsUnifiedDlg.cpp:277 src/Statistics.cpp:866
 msgid "Connection"
 msgstr "Bağlantı"
 
-#: src/PrefsUnifiedDlg.cpp:275 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:278 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "Dizinler"
 
-#: src/PrefsUnifiedDlg.cpp:276 src/Statistics.cpp:917
+#: src/PrefsUnifiedDlg.cpp:279 src/Statistics.cpp:917
 msgid "Servers"
 msgstr "Sunucular"
 
-#: src/PrefsUnifiedDlg.cpp:277 src/ServerListCtrl.cpp:96
+#: src/PrefsUnifiedDlg.cpp:280 src/ServerListCtrl.cpp:96
 msgid "Files"
 msgstr "Dosyalar"
 
-#: src/PrefsUnifiedDlg.cpp:278
+#: src/PrefsUnifiedDlg.cpp:281
 msgid "Security"
 msgstr "Güvenlik"
 
-#: src/PrefsUnifiedDlg.cpp:279
+#: src/PrefsUnifiedDlg.cpp:282
 msgid "Interface"
 msgstr "Arayüz"
 
-#: src/PrefsUnifiedDlg.cpp:286
+#: src/PrefsUnifiedDlg.cpp:289
 msgid "IP2Country"
 msgstr "IP2Country"
 
-#: src/PrefsUnifiedDlg.cpp:289
+#: src/PrefsUnifiedDlg.cpp:292
 msgid "Proxy"
 msgstr "Vekil sunucu"
 
-#: src/PrefsUnifiedDlg.cpp:290
+#: src/PrefsUnifiedDlg.cpp:293
 msgid "Filters"
 msgstr "Süzgeçler"
 
-#: src/PrefsUnifiedDlg.cpp:291
+#: src/PrefsUnifiedDlg.cpp:294
 msgid "Remote Controls"
 msgstr "Uzak Denetimler"
 
-#: src/PrefsUnifiedDlg.cpp:292
+#: src/PrefsUnifiedDlg.cpp:295
 msgid "Online Signature"
 msgstr "Çevrimiçi İmza"
 
-#: src/PrefsUnifiedDlg.cpp:293
+#: src/PrefsUnifiedDlg.cpp:296
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-#: src/PrefsUnifiedDlg.cpp:294
+#: src/PrefsUnifiedDlg.cpp:297
 msgid "Events"
 msgstr "Olaylar"
 
-#: src/PrefsUnifiedDlg.cpp:297
+#: src/PrefsUnifiedDlg.cpp:300
 msgid "Debugging"
 msgstr "Hata Çıktısı"
 
-#: src/PrefsUnifiedDlg.cpp:413
+#: src/PrefsUnifiedDlg.cpp:416
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5308,15 +5310,15 @@ msgstr ""
 "    %PARTFILE - dosyanın tam yolu\n"
 "    %PARTNAME - dosyanın sadece adı"
 
-#: src/PrefsUnifiedDlg.cpp:434
+#: src/PrefsUnifiedDlg.cpp:437
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr "Sistem tepsisi ikon desteği, derleme esnasında libayatana-appindicator3'e ihtiyaç duyar."
 
-#: src/PrefsUnifiedDlg.cpp:450
+#: src/PrefsUnifiedDlg.cpp:453
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr "Wayland ile kullanılamaz: protokol bir pencere küçültüldüğünde bunu iletmez, yani bu seçenek sistemin küçült düğmesi tıklamasını yakalayamaz. Çözüm: yerine XWayland kullanmak için aMule'ü `GDK_BACKEND=x11` ile başlatın."
 
-#: src/PrefsUnifiedDlg.cpp:491
+#: src/PrefsUnifiedDlg.cpp:494
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5332,26 +5334,26 @@ msgstr ""
 "Bu ayarlarla oynanmasa da\n"
 "aMule gayet iyi işleyecektir."
 
-#: src/PrefsUnifiedDlg.cpp:580
+#: src/PrefsUnifiedDlg.cpp:583
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Cfg %d Kimliği ve %s anahtarı ile parçacığa bağlanamadı"
 
-#: src/PrefsUnifiedDlg.cpp:628
+#: src/PrefsUnifiedDlg.cpp:631
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Cfg' den %d Kimliği ve %s anahtarı ile Parçacığa veri aktarılamadı"
 
-#: src/PrefsUnifiedDlg.cpp:708
+#: src/PrefsUnifiedDlg.cpp:711
 msgid "The type of proxy you are connecting to"
 msgstr "Bağlanacağınız vekil sunucu türü"
 
-#: src/PrefsUnifiedDlg.cpp:901
+#: src/PrefsUnifiedDlg.cpp:904
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Parçacıktan %d Kimliği ve %s anahtarı ile Cfg' ye veri aktarılamadı"
 
-#: src/PrefsUnifiedDlg.cpp:975
+#: src/PrefsUnifiedDlg.cpp:978
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5359,41 +5361,41 @@ msgstr ""
 "Değişikliklerin uygulanması için, aMule yeniden başlatılmalı\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:982
+#: src/PrefsUnifiedDlg.cpp:985
 msgid "- TCP port changed.\n"
 msgstr "- TCP portu değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:987
+#: src/PrefsUnifiedDlg.cpp:990
 msgid "- UDP port changed.\n"
 msgstr "- UDP Portu değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:992
+#: src/PrefsUnifiedDlg.cpp:995
 #, fuzzy
 msgid "- Network interface binding changed.\n"
 msgstr "- Dışarıdan bağlantı arayüzü değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:997
+#: src/PrefsUnifiedDlg.cpp:1000
 msgid "- External connect port changed.\n"
 msgstr "- Dışarıdan bağlantı portu değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1001
+#: src/PrefsUnifiedDlg.cpp:1004
 msgid "- External connect acceptance changed.\n"
 msgstr "- Dışarıdan bağlantı kabul edilme işlemi değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1005
+#: src/PrefsUnifiedDlg.cpp:1008
 msgid "- External connect interface changed.\n"
 msgstr "- Dışarıdan bağlantı arayüzü değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1009
+#: src/PrefsUnifiedDlg.cpp:1012
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "- Protokol gizleme desteği değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1017
+#: src/PrefsUnifiedDlg.cpp:1025
 #, fuzzy
 msgid "- amuleapi settings changed.\n"
 msgstr "- Dil ayarları değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1026
+#: src/PrefsUnifiedDlg.cpp:1034
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5401,7 +5403,7 @@ msgstr ""
 "Otomatik Sunucu güncelleme listeniz boş.\n"
 "'Sunucu listesini başlangıçta otomatikman güncelle' devre dışı bırakılacak."
 
-#: src/PrefsUnifiedDlg.cpp:1037
+#: src/PrefsUnifiedDlg.cpp:1045
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5409,28 +5411,28 @@ msgstr ""
 "Dışarıdan bağlantıları aktifleştirmiş ama bir şifre belirlememişsiniz.\n"
 "Geçerli bir şifre belirlenmedikçe dışarıdan bağlantılar devre dışı kalacaktır."
 
-#: src/PrefsUnifiedDlg.cpp:1050
+#: src/PrefsUnifiedDlg.cpp:1069
 msgid "- Language changed.\n"
 msgstr "- Dil ayarları değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1055
+#: src/PrefsUnifiedDlg.cpp:1074
 msgid "- Temp folder changed.\n"
 msgstr "- Geçici Dosyalar dizini değişti.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1060
+#: src/PrefsUnifiedDlg.cpp:1079
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K ağı etkinleştirildi.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1093
+#: src/PrefsUnifiedDlg.cpp:1112
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1095 src/PrefsUnifiedDlg.cpp:1614
+#: src/PrefsUnifiedDlg.cpp:1114 src/PrefsUnifiedDlg.cpp:1669
 #, fuzzy
 msgid "Invalid regular expression"
 msgstr "Geçersiz protokol sürümü."
 
-#: src/PrefsUnifiedDlg.cpp:1172
+#: src/PrefsUnifiedDlg.cpp:1191
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5438,7 +5440,7 @@ msgstr ""
 "Hem eD2k hem de Kad ağları devre dışı bırakılmış.\n"
 "En az birini etkinleştirmeden bağlanamayacaksınız."
 
-#: src/PrefsUnifiedDlg.cpp:1177
+#: src/PrefsUnifiedDlg.cpp:1196
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5446,7 +5448,7 @@ msgstr ""
 "UDP portu devre dışı bırakılmışsa Kad başlamayacaktır.\n"
 "UDP portu açın veya Kademlia'yı devre dışı bırakın."
 
-#: src/PrefsUnifiedDlg.cpp:1230
+#: src/PrefsUnifiedDlg.cpp:1249
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5456,43 +5458,52 @@ msgstr ""
 "aMule' yi ŞİMDİ yeniden başlatmalısınız.\n"
 "Şimdi yeniden başlatmazsanız, kötü şeyler olabilir.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1291
+#: src/PrefsUnifiedDlg.cpp:1310
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr "Oturum açıldığında otomatik başlatma için aMule kaydedilemedi. Otomatik başlatma deposu salt okunur olabilir."
 
-#: src/PrefsUnifiedDlg.cpp:1293
+#: src/PrefsUnifiedDlg.cpp:1312
 msgid "Could not remove the autostart-at-login entry."
 msgstr "Oturum açılışında otomatik başlatma unsuru kaldırılamadı."
 
-#: src/PrefsUnifiedDlg.cpp:1294
+#: src/PrefsUnifiedDlg.cpp:1313
 msgid "Autostart"
 msgstr "Otomatik başlatma"
 
-#: src/PrefsUnifiedDlg.cpp:1312
+#: src/PrefsUnifiedDlg.cpp:1331
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1317
+#: src/PrefsUnifiedDlg.cpp:1336
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1323 src/PrefsUnifiedDlg.cpp:1344
+#: src/PrefsUnifiedDlg.cpp:1342 src/PrefsUnifiedDlg.cpp:1363
 msgid "Register URL handler"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1341
+#: src/PrefsUnifiedDlg.cpp:1360
 #, fuzzy
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
 msgstr "Oturum açıldığında otomatik başlatma için aMule kaydedilemedi. Otomatik başlatma deposu salt okunur olabilir."
 
-#: src/PrefsUnifiedDlg.cpp:1343
+#: src/PrefsUnifiedDlg.cpp:1362
 #, fuzzy
 msgid "Could not remove the URL handler registration."
 msgstr "Oturum açılışında otomatik başlatma unsuru kaldırılamadı."
 
-#: src/PrefsUnifiedDlg.cpp:1428
+#: src/PrefsUnifiedDlg.cpp:1421 src/PrefsUnifiedDlg.cpp:1443
+#, fuzzy
+msgid "The web server and aMule API require external connections to be enabled."
+msgstr "Parola ayarlandı ve dış bağlantılar etkinleştirildi."
+
+#: src/PrefsUnifiedDlg.cpp:1429
+msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp:1483
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5502,66 +5513,66 @@ msgstr ""
 "Lütfen geçerli bir server.met dosyasını gösteren en az bir adres yazınız.\n"
 "Bir adres girmek için bu kutucuğun yanındaki \"Liste\" düğmesine basınız."
 
-#: src/PrefsUnifiedDlg.cpp:1569
+#: src/PrefsUnifiedDlg.cpp:1624
 msgid "Temporary files"
 msgstr "Geçici dosya(lar)"
 
-#: src/PrefsUnifiedDlg.cpp:1574
+#: src/PrefsUnifiedDlg.cpp:1629
 msgid "Incoming files"
 msgstr "Gelen dosya(lar)"
 
-#: src/PrefsUnifiedDlg.cpp:1579
+#: src/PrefsUnifiedDlg.cpp:1634
 msgid "Online Signatures"
 msgstr "Çevrimiçi İmzalar"
 
-#: src/PrefsUnifiedDlg.cpp:1592
+#: src/PrefsUnifiedDlg.cpp:1647
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "%s için bir dizin seçiniz."
 
-#: src/PrefsUnifiedDlg.cpp:1616
+#: src/PrefsUnifiedDlg.cpp:1671
 #, fuzzy, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
 msgstr[0] "Bilinen %i adet paylaşılmış dosya bulundu"
 msgstr[1] "Bilinen %i adet paylaşılmış dosya bulundu"
 
-#: src/PrefsUnifiedDlg.cpp:1633
+#: src/PrefsUnifiedDlg.cpp:1688
 msgid "Browse for videoplayer"
 msgstr "Ortam Çalıcısı için göz at"
 
-#: src/PrefsUnifiedDlg.cpp:1637
+#: src/PrefsUnifiedDlg.cpp:1692
 msgid "Select browser"
 msgstr "Tarayıcı Seçiniz"
 
-#: src/PrefsUnifiedDlg.cpp:1641
+#: src/PrefsUnifiedDlg.cpp:1696
 #, fuzzy
 msgid "Select ffprobe binary"
 msgstr "Tarayıcı Seçiniz"
 
-#: src/PrefsUnifiedDlg.cpp:1647
+#: src/PrefsUnifiedDlg.cpp:1702
 #, c-format
 msgid "Executable%s"
 msgstr "Çalıştırılabilir %s"
 
-#: src/PrefsUnifiedDlg.cpp:1681
+#: src/PrefsUnifiedDlg.cpp:1736
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1693
+#: src/PrefsUnifiedDlg.cpp:1748
 msgid "Reset the settings on this page to their default values?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1694
+#: src/PrefsUnifiedDlg.cpp:1749
 #, fuzzy
 msgid "Reset to defaults"
 msgstr "Sistem öntanımlısı"
 
-#: src/PrefsUnifiedDlg.cpp:1721
+#: src/PrefsUnifiedDlg.cpp:1776
 msgid "Edit server list"
 msgstr "Sunucu listesini düzenle"
 
-#: src/PrefsUnifiedDlg.cpp:1722
+#: src/PrefsUnifiedDlg.cpp:1777
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5569,114 +5580,114 @@ msgstr ""
 "Server.met dosyasını indirmek için buraya bağlantı adresi girin.\n"
 "Her satıra sadece bir adres yazılmalıdır."
 
-#: src/PrefsUnifiedDlg.cpp:1770
+#: src/PrefsUnifiedDlg.cpp:1825
 msgid "IP2Country update failed"
 msgstr "IP2Country güncellemesi başarısız oldu"
 
-#: src/PrefsUnifiedDlg.cpp:1899
+#: src/PrefsUnifiedDlg.cpp:1954
 msgid "Data by MaxMind GeoLite2"
 msgstr "Veriler MaxMind GeoLite2 tarafından sağlanmıştır"
 
-#: src/PrefsUnifiedDlg.cpp:1901
+#: src/PrefsUnifiedDlg.cpp:1956
 msgid "Custom source"
 msgstr "Kişiselleştirilmiş kaynak"
 
-#: src/PrefsUnifiedDlg.cpp:1903
+#: src/PrefsUnifiedDlg.cpp:1958
 msgid "Data by DB-IP.com"
 msgstr "Veriler DB-IP.com tarafından sağlanmıştır"
 
-#: src/PrefsUnifiedDlg.cpp:1923
+#: src/PrefsUnifiedDlg.cpp:1978
 #, c-format
 msgid "Status: Loaded%s"
 msgstr "Durum: %s yüklendi"
 
-#: src/PrefsUnifiedDlg.cpp:1925
+#: src/PrefsUnifiedDlg.cpp:1980
 #, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Durum: %s - %s yüklendi"
 
-#: src/PrefsUnifiedDlg.cpp:1929
+#: src/PrefsUnifiedDlg.cpp:1984
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr "Durum: yükleme başarısız oldu - güncellemek için 'Şimdi güncelle' düğmesine tıklayın."
 
-#: src/PrefsUnifiedDlg.cpp:1931
+#: src/PrefsUnifiedDlg.cpp:1986
 msgid "Status: Not found - click 'Update now' to download."
 msgstr "Durum: bulunamadı - indirmek için 'Şimdi güncelle' düğmesine tıklayın."
 
-#: src/PrefsUnifiedDlg.cpp:1979 src/PrefsUnifiedDlg.cpp:2003
+#: src/PrefsUnifiedDlg.cpp:2034 src/PrefsUnifiedDlg.cpp:2058
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "Güncelleme gecikmesi: %d saniye"
 msgstr[1] "Güncelleme gecikmesi: %d saniye"
 
-#: src/PrefsUnifiedDlg.cpp:1987
+#: src/PrefsUnifiedDlg.cpp:2042
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "Ortalama grafiği için süre: %d dakika"
 msgstr[1] "Ortalama grafiği için süre: %d dakika"
 
-#: src/PrefsUnifiedDlg.cpp:1996
+#: src/PrefsUnifiedDlg.cpp:2051
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Bağlantı Grafik Ölçüsü: %d"
 
-#: src/PrefsUnifiedDlg.cpp:2011
+#: src/PrefsUnifiedDlg.cpp:2066
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "Dosya Alım Boyutu: %d bayt"
 msgstr[1] "Dosya Alım Boyutu: %d bayt"
 
-#: src/PrefsUnifiedDlg.cpp:2021
+#: src/PrefsUnifiedDlg.cpp:2076
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "Gönderme Sıra Boyutu: %d kullanıcı"
 msgstr[1] "Gönderme Sıra Boyutu: %d kullanıcı"
 
-#: src/PrefsUnifiedDlg.cpp:2031
+#: src/PrefsUnifiedDlg.cpp:2086
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "Sunucu bağlantısı yenileme sıklığı: %d dakika"
 msgstr[1] "Sunucu bağlantısı yenileme sıklığı: %d dakika"
 
-#: src/PrefsUnifiedDlg.cpp:2036
+#: src/PrefsUnifiedDlg.cpp:2091
 msgid "Server connection refresh interval: Disabled"
 msgstr "Sunucu bağlantısı yenileme döngüsü: Devre dışı"
 
-#: src/PrefsUnifiedDlg.cpp:2080
+#: src/PrefsUnifiedDlg.cpp:2135
 msgid "disabled"
 msgstr "devre dışı"
 
-#: src/PrefsUnifiedDlg.cpp:2106
+#: src/PrefsUnifiedDlg.cpp:2161
 #, c-format
 msgid "Execute command on '%s' event"
 msgstr "'%s' olayında komut çalıştır."
 
-#: src/PrefsUnifiedDlg.cpp:2113
+#: src/PrefsUnifiedDlg.cpp:2168
 msgid "Enable command execution on core"
 msgstr "Çekirdekte komut çalıştırmayı aktifleştir."
 
-#: src/PrefsUnifiedDlg.cpp:2125
+#: src/PrefsUnifiedDlg.cpp:2180
 msgid "Core command:"
 msgstr "Çekirdek komutu:"
 
-#: src/PrefsUnifiedDlg.cpp:2141
+#: src/PrefsUnifiedDlg.cpp:2196
 msgid "Enable command execution on GUI"
 msgstr "Arayüzde komut çalıştırmayı etkinleştir."
 
-#: src/PrefsUnifiedDlg.cpp:2153
+#: src/PrefsUnifiedDlg.cpp:2208
 msgid "GUI command:"
 msgstr "Arayüz komutu:"
 
-#: src/PrefsUnifiedDlg.cpp:2169
+#: src/PrefsUnifiedDlg.cpp:2224
 msgid "The following variables will be replaced:"
 msgstr "Şu girdiler değiştirilecek:"
 
-#: src/PrefsUnifiedDlg.cpp:2328
+#: src/PrefsUnifiedDlg.cpp:2383
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
@@ -5684,32 +5695,32 @@ msgstr ""
 "Şu dizinler sistem dizinleri veya hassas konumlar gibi görünüyor:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:2333
+#: src/PrefsUnifiedDlg.cpp:2388
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr "Bunları yinelemeli olarak paylaşmanız, kapsadıkları her dosyayı eD2k/Kad ağlarında yayınlayacaktır. Bunu hakikaten yapmak istiyor musunuz?"
 
-#: src/PrefsUnifiedDlg.cpp:2336
+#: src/PrefsUnifiedDlg.cpp:2391
 msgid "Confirm shared folders"
 msgstr "Paylaşılan dizinleri teyit et"
 
-#: src/PrefsUnifiedDlg.cpp:2365
+#: src/PrefsUnifiedDlg.cpp:2420
 msgid "Reloading shared files…"
 msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
 
-#: src/PrefsUnifiedDlg.cpp:2365
+#: src/PrefsUnifiedDlg.cpp:2420
 msgid "Scanning for subdirectories…"
 msgstr "Alt dizinler taranıyor…"
 
-#: src/PrefsUnifiedDlg.cpp:2366
+#: src/PrefsUnifiedDlg.cpp:2421
 msgid "Updating shared folders"
 msgstr "Paylaşılan dizinler güncelleniyor"
 
-#: src/PrefsUnifiedDlg.cpp:2393
+#: src/PrefsUnifiedDlg.cpp:2448
 #, c-format
 msgid "Scanned %u directories…"
 msgstr "%u dizin tarandı…"
 
-#: src/PrefsUnifiedDlg.cpp:2443
+#: src/PrefsUnifiedDlg.cpp:2498
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Paylaşılmış dosyalar yeniden yükleniyor: %u dosya tarandı"

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-10 16:27+0200\n"
+"POT-Creation-Date: 2026-07-10 17:23+0200\n"
 "PO-Revision-Date: 2026-07-10 10:47+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -313,7 +313,7 @@ msgid "Password set and external connections enabled."
 msgstr "密码已设置，启用远程连接。"
 
 #: src/amule.cpp:706 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1232 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1251 src/SharedFilesCtrl.cpp:321
 msgid "WARNING"
 msgstr "警告"
 
@@ -788,7 +788,7 @@ msgstr "消息"
 msgid "Messages Window"
 msgstr "消息窗口"
 
-#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:288
+#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "统计"
@@ -797,7 +797,7 @@ msgstr "统计"
 msgid "Statistics Graph Window"
 msgstr "统计图窗口"
 
-#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:304
+#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "设置"
@@ -2463,8 +2463,10 @@ msgstr "无效端口"
 msgid "Please fill all fields required"
 msgstr "请填写所有必要信息"
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1028
-#: src/PrefsUnifiedDlg.cpp:1179 src/PrefsUnifiedDlg.cpp:1431
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1036
+#: src/PrefsUnifiedDlg.cpp:1198 src/PrefsUnifiedDlg.cpp:1423
+#: src/PrefsUnifiedDlg.cpp:1431 src/PrefsUnifiedDlg.cpp:1445
+#: src/PrefsUnifiedDlg.cpp:1486
 msgid "Message"
 msgstr "消息"
 
@@ -3078,7 +3080,7 @@ msgstr "清除已完成的下载"
 msgid "File sources:"
 msgstr "文件源:"
 
-#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:273
+#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:276
 msgid "General"
 msgstr "常规"
 
@@ -3752,7 +3754,7 @@ msgstr "上传"
 msgid "Add new shared files with auto priority"
 msgstr "添加新共享文件时设优先级为自动"
 
-#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1683
+#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1738
 msgid "Media metadata extraction"
 msgstr "媒体元数据提取"
 
@@ -5234,63 +5236,63 @@ msgstr "TCP端口不可高于65532，因为服务器UDP端口值为TCP端口值+
 msgid "Default port will be used (%d)"
 msgstr "缺省端口将被使用（%d）"
 
-#: src/PrefsUnifiedDlg.cpp:274 src/Statistics.cpp:866
+#: src/PrefsUnifiedDlg.cpp:277 src/Statistics.cpp:866
 msgid "Connection"
 msgstr "连接"
 
-#: src/PrefsUnifiedDlg.cpp:275 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:278 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "目录"
 
-#: src/PrefsUnifiedDlg.cpp:276 src/Statistics.cpp:917
+#: src/PrefsUnifiedDlg.cpp:279 src/Statistics.cpp:917
 msgid "Servers"
 msgstr "服务器"
 
-#: src/PrefsUnifiedDlg.cpp:277 src/ServerListCtrl.cpp:96
+#: src/PrefsUnifiedDlg.cpp:280 src/ServerListCtrl.cpp:96
 msgid "Files"
 msgstr "文件"
 
-#: src/PrefsUnifiedDlg.cpp:278
+#: src/PrefsUnifiedDlg.cpp:281
 msgid "Security"
 msgstr "安全"
 
-#: src/PrefsUnifiedDlg.cpp:279
+#: src/PrefsUnifiedDlg.cpp:282
 msgid "Interface"
 msgstr "界面"
 
-#: src/PrefsUnifiedDlg.cpp:286
+#: src/PrefsUnifiedDlg.cpp:289
 msgid "IP2Country"
 msgstr "IP2Country"
 
-#: src/PrefsUnifiedDlg.cpp:289
+#: src/PrefsUnifiedDlg.cpp:292
 msgid "Proxy"
 msgstr "代理"
 
-#: src/PrefsUnifiedDlg.cpp:290
+#: src/PrefsUnifiedDlg.cpp:293
 msgid "Filters"
 msgstr "过滤"
 
-#: src/PrefsUnifiedDlg.cpp:291
+#: src/PrefsUnifiedDlg.cpp:294
 msgid "Remote Controls"
 msgstr "远程控制"
 
-#: src/PrefsUnifiedDlg.cpp:292
+#: src/PrefsUnifiedDlg.cpp:295
 msgid "Online Signature"
 msgstr "在线签名"
 
-#: src/PrefsUnifiedDlg.cpp:293
+#: src/PrefsUnifiedDlg.cpp:296
 msgid "Advanced"
 msgstr "高级"
 
-#: src/PrefsUnifiedDlg.cpp:294
+#: src/PrefsUnifiedDlg.cpp:297
 msgid "Events"
 msgstr "事件"
 
-#: src/PrefsUnifiedDlg.cpp:297
+#: src/PrefsUnifiedDlg.cpp:300
 msgid "Debugging"
 msgstr "调试"
 
-#: src/PrefsUnifiedDlg.cpp:413
+#: src/PrefsUnifiedDlg.cpp:416
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5300,15 +5302,15 @@ msgstr ""
 "    %PARTFILE - 文件的完整路径\n"
 "    %PARTNAME - 仅文件名"
 
-#: src/PrefsUnifiedDlg.cpp:434
+#: src/PrefsUnifiedDlg.cpp:437
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr "系统托盘图标支持在编译时需要 libayatana-appindicator3。"
 
-#: src/PrefsUnifiedDlg.cpp:450
+#: src/PrefsUnifiedDlg.cpp:453
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr "在 Wayland 上不可用：该协议无法报告窗口何时被最小化，因此此选项无法拦截系统的最小化按钮。解决方法：使用 `GDK_BACKEND=x11` 启动 aMule，以改用 XWayland。"
 
-#: src/PrefsUnifiedDlg.cpp:491
+#: src/PrefsUnifiedDlg.cpp:494
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5324,26 +5326,26 @@ msgstr ""
 "即使不改动这些设置，aMule\n"
 "也完全可以正常运行。"
 
-#: src/PrefsUnifiedDlg.cpp:580
+#: src/PrefsUnifiedDlg.cpp:583
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "使用ID %d和密匙%s连接Cfg到小插件失败"
 
-#: src/PrefsUnifiedDlg.cpp:628
+#: src/PrefsUnifiedDlg.cpp:631
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "通过ID %d和密匙%s把数据从Cfg转移到小插件失败"
 
-#: src/PrefsUnifiedDlg.cpp:708
+#: src/PrefsUnifiedDlg.cpp:711
 msgid "The type of proxy you are connecting to"
 msgstr "正在连接的代理服务器类型"
 
-#: src/PrefsUnifiedDlg.cpp:901
+#: src/PrefsUnifiedDlg.cpp:904
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "通过ID %d和密匙%s把数据从小插件转移到Cfg失败"
 
-#: src/PrefsUnifiedDlg.cpp:975
+#: src/PrefsUnifiedDlg.cpp:978
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5351,40 +5353,40 @@ msgstr ""
 "重启aMule后这些更改才能生效：\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:982
+#: src/PrefsUnifiedDlg.cpp:985
 msgid "- TCP port changed.\n"
 msgstr "- TCP端口已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:987
+#: src/PrefsUnifiedDlg.cpp:990
 msgid "- UDP port changed.\n"
 msgstr "- UDP端口已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:992
+#: src/PrefsUnifiedDlg.cpp:995
 msgid "- Network interface binding changed.\n"
 msgstr "- 更改了网络接口绑定.\n"
 
-#: src/PrefsUnifiedDlg.cpp:997
+#: src/PrefsUnifiedDlg.cpp:1000
 msgid "- External connect port changed.\n"
 msgstr "- 外部连接端口已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1001
+#: src/PrefsUnifiedDlg.cpp:1004
 msgid "- External connect acceptance changed.\n"
 msgstr "- 更改了外部连接接受。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1005
+#: src/PrefsUnifiedDlg.cpp:1008
 msgid "- External connect interface changed.\n"
 msgstr "- 更改了外部连接接口。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1009
+#: src/PrefsUnifiedDlg.cpp:1012
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "- 模糊协议支持已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1017
+#: src/PrefsUnifiedDlg.cpp:1025
 #, fuzzy
 msgid "- amuleapi settings changed.\n"
 msgstr "- 语言已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1026
+#: src/PrefsUnifiedDlg.cpp:1034
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5392,7 +5394,7 @@ msgstr ""
 "您的自动更新服务器列表是可空的，\n"
 "启动时自动更新服务器列表功能将被禁用。"
 
-#: src/PrefsUnifiedDlg.cpp:1037
+#: src/PrefsUnifiedDlg.cpp:1045
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5400,27 +5402,27 @@ msgstr ""
 "您已经启用了远程连接但还没有设置密码。\n"
 "远程连接在没有有效密码的情况下不能使用。"
 
-#: src/PrefsUnifiedDlg.cpp:1050
+#: src/PrefsUnifiedDlg.cpp:1069
 msgid "- Language changed.\n"
 msgstr "- 语言已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1055
+#: src/PrefsUnifiedDlg.cpp:1074
 msgid "- Temp folder changed.\n"
 msgstr "- 临时文件目录已更改。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1060
+#: src/PrefsUnifiedDlg.cpp:1079
 msgid "- ED2K network enabled.\n"
 msgstr "-ED2K网络已启用。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1093
+#: src/PrefsUnifiedDlg.cpp:1112
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
 msgstr "共享文件排除模式不是有效的正则表达式。已禁用该筛选器。"
 
-#: src/PrefsUnifiedDlg.cpp:1095 src/PrefsUnifiedDlg.cpp:1614
+#: src/PrefsUnifiedDlg.cpp:1114 src/PrefsUnifiedDlg.cpp:1669
 msgid "Invalid regular expression"
 msgstr "无效的正则表达式"
 
-#: src/PrefsUnifiedDlg.cpp:1172
+#: src/PrefsUnifiedDlg.cpp:1191
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5428,7 +5430,7 @@ msgstr ""
 "eD2k 和 Kad 网络都已被禁用，\n"
 "你至少要启用其中的一项才能连接。"
 
-#: src/PrefsUnifiedDlg.cpp:1177
+#: src/PrefsUnifiedDlg.cpp:1196
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5436,7 +5438,7 @@ msgstr ""
 "如果你的 UDP 端口被禁用，Kad 将不能启动。\n"
 "启动 UDP 端口或禁用 Kad。"
 
-#: src/PrefsUnifiedDlg.cpp:1230
+#: src/PrefsUnifiedDlg.cpp:1249
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5446,41 +5448,50 @@ msgstr ""
 "你必须现在重启aMule，\n"
 "如果现在不重启的话，出现任何问题可别怪别人。\n"
 
-#: src/PrefsUnifiedDlg.cpp:1291
+#: src/PrefsUnifiedDlg.cpp:1310
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr "无法将 aMule 注册为登录时自动启动。自动启动存储可能为只读。"
 
-#: src/PrefsUnifiedDlg.cpp:1293
+#: src/PrefsUnifiedDlg.cpp:1312
 msgid "Could not remove the autostart-at-login entry."
 msgstr "无法移除登录时自动启动的条目。"
 
-#: src/PrefsUnifiedDlg.cpp:1294
+#: src/PrefsUnifiedDlg.cpp:1313
 msgid "Autostart"
 msgstr "自启动"
 
-#: src/PrefsUnifiedDlg.cpp:1312
+#: src/PrefsUnifiedDlg.cpp:1331
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
 msgstr "aMule 仅支持兼容 eD2k 的磁力链接。如果替换当前磁力链接处理程序（%s），BitTorrent 磁力链接将停止工作——aMule 无法下载 BitTorrent 内容。是否继续？"
 
-#: src/PrefsUnifiedDlg.cpp:1317
+#: src/PrefsUnifiedDlg.cpp:1336
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
 msgstr "目前已存在另一个应用程序作为这些链接（%s) 的默认处理程序。是否要将其换成aMule？"
 
-#: src/PrefsUnifiedDlg.cpp:1323 src/PrefsUnifiedDlg.cpp:1344
+#: src/PrefsUnifiedDlg.cpp:1342 src/PrefsUnifiedDlg.cpp:1363
 msgid "Register URL handler"
 msgstr "注册URL处理程序"
 
-#: src/PrefsUnifiedDlg.cpp:1341
+#: src/PrefsUnifiedDlg.cpp:1360
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
 msgstr "无法将 aMule 注册为URL处理程序。自动启动存储可能为只读。"
 
-#: src/PrefsUnifiedDlg.cpp:1343
+#: src/PrefsUnifiedDlg.cpp:1362
 msgid "Could not remove the URL handler registration."
 msgstr "无法移除URL处理程序的注册。"
 
-#: src/PrefsUnifiedDlg.cpp:1428
+#: src/PrefsUnifiedDlg.cpp:1421 src/PrefsUnifiedDlg.cpp:1443
+#, fuzzy
+msgid "The web server and aMule API require external connections to be enabled."
+msgstr "密码已设置，启用远程连接。"
+
+#: src/PrefsUnifiedDlg.cpp:1429
+msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp:1483
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5490,64 +5501,64 @@ msgstr ""
 "请输入至少一个指向有效 server.met 的网址，\n"
 "点击这个勾选框旁边的\"列表\"按钮然后输入网址。"
 
-#: src/PrefsUnifiedDlg.cpp:1569
+#: src/PrefsUnifiedDlg.cpp:1624
 msgid "Temporary files"
 msgstr "临时文件"
 
-#: src/PrefsUnifiedDlg.cpp:1574
+#: src/PrefsUnifiedDlg.cpp:1629
 msgid "Incoming files"
 msgstr "传入文件"
 
-#: src/PrefsUnifiedDlg.cpp:1579
+#: src/PrefsUnifiedDlg.cpp:1634
 msgid "Online Signatures"
 msgstr "在线签名"
 
-#: src/PrefsUnifiedDlg.cpp:1592
+#: src/PrefsUnifiedDlg.cpp:1647
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "为%s选择文件夹"
 
-#: src/PrefsUnifiedDlg.cpp:1616
+#: src/PrefsUnifiedDlg.cpp:1671
 #, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
 msgstr[0] "将排除 %u 个共享文件，共 %u 个"
 msgstr[1] "将排除 %u 个共享文件，共 %u 个"
 
-#: src/PrefsUnifiedDlg.cpp:1633
+#: src/PrefsUnifiedDlg.cpp:1688
 msgid "Browse for videoplayer"
 msgstr "浏览寻找视频播放器"
 
-#: src/PrefsUnifiedDlg.cpp:1637
+#: src/PrefsUnifiedDlg.cpp:1692
 msgid "Select browser"
 msgstr "选择浏览器"
 
-#: src/PrefsUnifiedDlg.cpp:1641
+#: src/PrefsUnifiedDlg.cpp:1696
 msgid "Select ffprobe binary"
 msgstr "选择 ffprobe 文件"
 
-#: src/PrefsUnifiedDlg.cpp:1647
+#: src/PrefsUnifiedDlg.cpp:1702
 #, c-format
 msgid "Executable%s"
 msgstr "可执行%s"
 
-#: src/PrefsUnifiedDlg.cpp:1681
+#: src/PrefsUnifiedDlg.cpp:1736
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr "未在 PATH 或标准安装位置找到 ffprobe。安装 ffmpeg（ffmpeg 自带 ffprobe），或使用“浏览”手动选择一个二进制文件。"
 
-#: src/PrefsUnifiedDlg.cpp:1693
+#: src/PrefsUnifiedDlg.cpp:1748
 msgid "Reset the settings on this page to their default values?"
 msgstr "重置此页面设置为默认值?"
 
-#: src/PrefsUnifiedDlg.cpp:1694
+#: src/PrefsUnifiedDlg.cpp:1749
 msgid "Reset to defaults"
 msgstr "重置为默认"
 
-#: src/PrefsUnifiedDlg.cpp:1721
+#: src/PrefsUnifiedDlg.cpp:1776
 msgid "Edit server list"
 msgstr "编辑服务器列表"
 
-#: src/PrefsUnifiedDlg.cpp:1722
+#: src/PrefsUnifiedDlg.cpp:1777
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5555,114 +5566,114 @@ msgstr ""
 "在此添加下载 server.met 文件的地址\n"
 "每行只限一个。"
 
-#: src/PrefsUnifiedDlg.cpp:1770
+#: src/PrefsUnifiedDlg.cpp:1825
 msgid "IP2Country update failed"
 msgstr "IP2Country 更新失败"
 
-#: src/PrefsUnifiedDlg.cpp:1899
+#: src/PrefsUnifiedDlg.cpp:1954
 msgid "Data by MaxMind GeoLite2"
 msgstr "数据来自 MaxMind GeoLite2"
 
-#: src/PrefsUnifiedDlg.cpp:1901
+#: src/PrefsUnifiedDlg.cpp:1956
 msgid "Custom source"
 msgstr "自定义源"
 
-#: src/PrefsUnifiedDlg.cpp:1903
+#: src/PrefsUnifiedDlg.cpp:1958
 msgid "Data by DB-IP.com"
 msgstr "数据来源：DB-IP.com"
 
-#: src/PrefsUnifiedDlg.cpp:1923
+#: src/PrefsUnifiedDlg.cpp:1978
 #, c-format
 msgid "Status: Loaded%s"
 msgstr "状态：已加载%s"
 
-#: src/PrefsUnifiedDlg.cpp:1925
+#: src/PrefsUnifiedDlg.cpp:1980
 #, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "状态：已加载%s~%s"
 
-#: src/PrefsUnifiedDlg.cpp:1929
+#: src/PrefsUnifiedDlg.cpp:1984
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr "状态：加载失败 - 点击“立即更新”以刷新。"
 
-#: src/PrefsUnifiedDlg.cpp:1931
+#: src/PrefsUnifiedDlg.cpp:1986
 msgid "Status: Not found - click 'Update now' to download."
 msgstr "状态：未找到 - 点击“立即更新”进行下载。"
 
-#: src/PrefsUnifiedDlg.cpp:1979 src/PrefsUnifiedDlg.cpp:2003
+#: src/PrefsUnifiedDlg.cpp:2034 src/PrefsUnifiedDlg.cpp:2058
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "更新延迟：%d秒"
 msgstr[1] "更新延迟：%d秒"
 
-#: src/PrefsUnifiedDlg.cpp:1987
+#: src/PrefsUnifiedDlg.cpp:2042
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "平均值图表显示时间：%d分钟"
 msgstr[1] "平均值图表显示时间：%d分钟"
 
-#: src/PrefsUnifiedDlg.cpp:1996
+#: src/PrefsUnifiedDlg.cpp:2051
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "网络连接图表缩放：%d"
 
-#: src/PrefsUnifiedDlg.cpp:2011
+#: src/PrefsUnifiedDlg.cpp:2066
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "文件缓冲区大小：%d字节"
 msgstr[1] "文件缓冲区大小：%d字节"
 
-#: src/PrefsUnifiedDlg.cpp:2021
+#: src/PrefsUnifiedDlg.cpp:2076
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "上传队列长度：%d个用户"
 msgstr[1] "上传队列长度：%d个用户"
 
-#: src/PrefsUnifiedDlg.cpp:2031
+#: src/PrefsUnifiedDlg.cpp:2086
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "服务器连接刷新周期：%d分钟"
 msgstr[1] "服务器连接刷新周期：%d分钟"
 
-#: src/PrefsUnifiedDlg.cpp:2036
+#: src/PrefsUnifiedDlg.cpp:2091
 msgid "Server connection refresh interval: Disabled"
 msgstr "服务器连接刷新周期：已禁用"
 
-#: src/PrefsUnifiedDlg.cpp:2080
+#: src/PrefsUnifiedDlg.cpp:2135
 msgid "disabled"
 msgstr "禁用"
 
-#: src/PrefsUnifiedDlg.cpp:2106
+#: src/PrefsUnifiedDlg.cpp:2161
 #, c-format
 msgid "Execute command on '%s' event"
 msgstr "在“%s”事件时执行命令"
 
-#: src/PrefsUnifiedDlg.cpp:2113
+#: src/PrefsUnifiedDlg.cpp:2168
 msgid "Enable command execution on core"
 msgstr "在核心启用执行命令"
 
-#: src/PrefsUnifiedDlg.cpp:2125
+#: src/PrefsUnifiedDlg.cpp:2180
 msgid "Core command:"
 msgstr "核心命令："
 
-#: src/PrefsUnifiedDlg.cpp:2141
+#: src/PrefsUnifiedDlg.cpp:2196
 msgid "Enable command execution on GUI"
 msgstr "在图形界面端启用执行命令"
 
-#: src/PrefsUnifiedDlg.cpp:2153
+#: src/PrefsUnifiedDlg.cpp:2208
 msgid "GUI command:"
 msgstr "图形界面命令："
 
-#: src/PrefsUnifiedDlg.cpp:2169
+#: src/PrefsUnifiedDlg.cpp:2224
 msgid "The following variables will be replaced:"
 msgstr "以下变量将被替换："
 
-#: src/PrefsUnifiedDlg.cpp:2328
+#: src/PrefsUnifiedDlg.cpp:2383
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
@@ -5670,32 +5681,32 @@ msgstr ""
 "以下文件夹看起来像是系统或敏感位置：\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:2333
+#: src/PrefsUnifiedDlg.cpp:2388
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr "递归共享会将每个子文件发布到 eD2k/Kad 网络上。您确定要这样做吗？"
 
-#: src/PrefsUnifiedDlg.cpp:2336
+#: src/PrefsUnifiedDlg.cpp:2391
 msgid "Confirm shared folders"
 msgstr "确认共享的文件夹"
 
-#: src/PrefsUnifiedDlg.cpp:2365
+#: src/PrefsUnifiedDlg.cpp:2420
 msgid "Reloading shared files…"
 msgstr "正重新加载共享文件…"
 
-#: src/PrefsUnifiedDlg.cpp:2365
+#: src/PrefsUnifiedDlg.cpp:2420
 msgid "Scanning for subdirectories…"
 msgstr "正在扫描子目录…"
 
-#: src/PrefsUnifiedDlg.cpp:2366
+#: src/PrefsUnifiedDlg.cpp:2421
 msgid "Updating shared folders"
 msgstr "正在上传共享的文件夹"
 
-#: src/PrefsUnifiedDlg.cpp:2393
+#: src/PrefsUnifiedDlg.cpp:2448
 #, c-format
 msgid "Scanned %u directories…"
 msgstr "已扫描 %u 个目录……"
 
-#: src/PrefsUnifiedDlg.cpp:2443
+#: src/PrefsUnifiedDlg.cpp:2498
 #, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "正重新加载共享文件：扫描了 %u 个文件"

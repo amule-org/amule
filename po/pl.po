@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-10 16:27+0200\n"
+"POT-Creation-Date: 2026-07-10 17:23+0200\n"
 "PO-Revision-Date: 2026-07-10 10:42+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -310,7 +310,7 @@ msgid "Password set and external connections enabled."
 msgstr "Ustawione hasło i włączone połączenia zewnętrzne."
 
 #: src/amule.cpp:706 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1232 src/SharedFilesCtrl.cpp:321
+#: src/PrefsUnifiedDlg.cpp:1251 src/SharedFilesCtrl.cpp:321
 msgid "WARNING"
 msgstr "UWAGA"
 
@@ -785,7 +785,7 @@ msgstr "Wiadomości"
 msgid "Messages Window"
 msgstr "Okno wiadomości"
 
-#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:288
+#: src/amuleDlg.cpp:1574 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statystyki"
@@ -794,7 +794,7 @@ msgstr "Statystyki"
 msgid "Statistics Graph Window"
 msgstr "Okno wykresów statystyk"
 
-#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:304
+#: src/amuleDlg.cpp:1581 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Preferencje"
@@ -2473,8 +2473,10 @@ msgstr "Nieprawidłowy port do rozruchu"
 msgid "Please fill all fields required"
 msgstr "Proszę wypełnij wszystkie wymagane pola"
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1028
-#: src/PrefsUnifiedDlg.cpp:1179 src/PrefsUnifiedDlg.cpp:1431
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1036
+#: src/PrefsUnifiedDlg.cpp:1198 src/PrefsUnifiedDlg.cpp:1423
+#: src/PrefsUnifiedDlg.cpp:1431 src/PrefsUnifiedDlg.cpp:1445
+#: src/PrefsUnifiedDlg.cpp:1486
 msgid "Message"
 msgstr "Wiadomość"
 
@@ -3101,7 +3103,7 @@ msgstr "Wyczyść skończone pobierania"
 msgid "File sources:"
 msgstr "Źródła pliku:"
 
-#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:273
+#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:276
 msgid "General"
 msgstr "Ogólne"
 
@@ -3776,7 +3778,7 @@ msgstr "Wysyłanie"
 msgid "Add new shared files with auto priority"
 msgstr "Dodaj udostępnione pliki z automatycznym priorytetem"
 
-#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1683
+#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1738
 msgid "Media metadata extraction"
 msgstr ""
 
@@ -5271,63 +5273,63 @@ msgstr "Port TCP nie może być większy niż 65532, gdyż gniazdo UDP serwera b
 msgid "Default port will be used (%d)"
 msgstr "Zostanie użyty domyślny port (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:274 src/Statistics.cpp:866
+#: src/PrefsUnifiedDlg.cpp:277 src/Statistics.cpp:866
 msgid "Connection"
 msgstr "Połączenie"
 
-#: src/PrefsUnifiedDlg.cpp:275 src/SearchListCtrl.cpp:107
+#: src/PrefsUnifiedDlg.cpp:278 src/SearchListCtrl.cpp:107
 msgid "Directories"
 msgstr "Katalogi"
 
-#: src/PrefsUnifiedDlg.cpp:276 src/Statistics.cpp:917
+#: src/PrefsUnifiedDlg.cpp:279 src/Statistics.cpp:917
 msgid "Servers"
 msgstr "Serwery"
 
-#: src/PrefsUnifiedDlg.cpp:277 src/ServerListCtrl.cpp:96
+#: src/PrefsUnifiedDlg.cpp:280 src/ServerListCtrl.cpp:96
 msgid "Files"
 msgstr "Pliki"
 
-#: src/PrefsUnifiedDlg.cpp:278
+#: src/PrefsUnifiedDlg.cpp:281
 msgid "Security"
 msgstr "Bezpieczeństwo"
 
-#: src/PrefsUnifiedDlg.cpp:279
+#: src/PrefsUnifiedDlg.cpp:282
 msgid "Interface"
 msgstr "Interfejs"
 
-#: src/PrefsUnifiedDlg.cpp:286
+#: src/PrefsUnifiedDlg.cpp:289
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:289
+#: src/PrefsUnifiedDlg.cpp:292
 msgid "Proxy"
 msgstr "Proxy"
 
-#: src/PrefsUnifiedDlg.cpp:290
+#: src/PrefsUnifiedDlg.cpp:293
 msgid "Filters"
 msgstr "Filtry"
 
-#: src/PrefsUnifiedDlg.cpp:291
+#: src/PrefsUnifiedDlg.cpp:294
 msgid "Remote Controls"
 msgstr "Zdalna kontrola"
 
-#: src/PrefsUnifiedDlg.cpp:292
+#: src/PrefsUnifiedDlg.cpp:295
 msgid "Online Signature"
 msgstr "Sygnatura Online"
 
-#: src/PrefsUnifiedDlg.cpp:293
+#: src/PrefsUnifiedDlg.cpp:296
 msgid "Advanced"
 msgstr "Zawansowane"
 
-#: src/PrefsUnifiedDlg.cpp:294
+#: src/PrefsUnifiedDlg.cpp:297
 msgid "Events"
 msgstr "Zdarzenia"
 
-#: src/PrefsUnifiedDlg.cpp:297
+#: src/PrefsUnifiedDlg.cpp:300
 msgid "Debugging"
 msgstr "Debugowanie"
 
-#: src/PrefsUnifiedDlg.cpp:413
+#: src/PrefsUnifiedDlg.cpp:416
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5337,15 +5339,15 @@ msgstr ""
 "    %PARTFILE - pełna ścieżka do pliku\n"
 "    %PARTNAME - tylko nazwa pliku"
 
-#: src/PrefsUnifiedDlg.cpp:434
+#: src/PrefsUnifiedDlg.cpp:437
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:450
+#: src/PrefsUnifiedDlg.cpp:453
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:491
+#: src/PrefsUnifiedDlg.cpp:494
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5359,26 +5361,26 @@ msgstr ""
 "\n"
 "aMule będzie działał prawidłowo bez zmiany tych ustawień."
 
-#: src/PrefsUnifiedDlg.cpp:580
+#: src/PrefsUnifiedDlg.cpp:583
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Błąd połączenia Cfg do widżetu z identyfikatorem %d i kluczem %s"
 
-#: src/PrefsUnifiedDlg.cpp:628
+#: src/PrefsUnifiedDlg.cpp:631
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Błąd przesyłania danych połączenia z Cfg do widżetu z identyfikatorem %d i kluczem %s"
 
-#: src/PrefsUnifiedDlg.cpp:708
+#: src/PrefsUnifiedDlg.cpp:711
 msgid "The type of proxy you are connecting to"
 msgstr "Typ serwera proxy do którego się łączysz"
 
-#: src/PrefsUnifiedDlg.cpp:901
+#: src/PrefsUnifiedDlg.cpp:904
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Błąd przesyłania danych połączenia z widżetu do Cfg z identyfikatorem %d i kluczem %s"
 
-#: src/PrefsUnifiedDlg.cpp:975
+#: src/PrefsUnifiedDlg.cpp:978
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5386,45 +5388,45 @@ msgstr ""
 "aMule musi zostać zrestartowany przed wprowadzeniem tych zmian:\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:982
+#: src/PrefsUnifiedDlg.cpp:985
 msgid "- TCP port changed.\n"
 msgstr "- Zmieniono port TCP.\n"
 
-#: src/PrefsUnifiedDlg.cpp:987
+#: src/PrefsUnifiedDlg.cpp:990
 msgid "- UDP port changed.\n"
 msgstr "- Zmieniono port UDP.\n"
 
-#: src/PrefsUnifiedDlg.cpp:992
+#: src/PrefsUnifiedDlg.cpp:995
 #, fuzzy
 msgid "- Network interface binding changed.\n"
 msgstr "Zewnętrzne połączenie zamknięte."
 
-#: src/PrefsUnifiedDlg.cpp:997
+#: src/PrefsUnifiedDlg.cpp:1000
 #, fuzzy
 msgid "- External connect port changed.\n"
 msgstr "Zewnętrzne połączenie zamknięte."
 
-#: src/PrefsUnifiedDlg.cpp:1001
+#: src/PrefsUnifiedDlg.cpp:1004
 #, fuzzy
 msgid "- External connect acceptance changed.\n"
 msgstr "Nowe zewnętrzne połączenie zaakceptowane"
 
-#: src/PrefsUnifiedDlg.cpp:1005
+#: src/PrefsUnifiedDlg.cpp:1008
 #, fuzzy
 msgid "- External connect interface changed.\n"
 msgstr "Zewnętrzne połączenie zamknięte."
 
-#: src/PrefsUnifiedDlg.cpp:1009
+#: src/PrefsUnifiedDlg.cpp:1012
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "Maskowanie protokołu"
 
-#: src/PrefsUnifiedDlg.cpp:1017
+#: src/PrefsUnifiedDlg.cpp:1025
 #, fuzzy
 msgid "- amuleapi settings changed.\n"
 msgstr "- Zmieniono język.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1026
+#: src/PrefsUnifiedDlg.cpp:1034
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5432,7 +5434,7 @@ msgstr ""
 "Twoja lista auto-aktualizacji serwerów jest pusta.\n"
 "'Autoaktualizacja listy serwerów przy starcie' zostanie wyłączona."
 
-#: src/PrefsUnifiedDlg.cpp:1037
+#: src/PrefsUnifiedDlg.cpp:1045
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5440,28 +5442,28 @@ msgstr ""
 "Połączenia zewnętrzne zostały włączone, ale nie zostało podane hasło.\n"
 "Połączenia zewnętrzne nie mogą być włączone dopóki nie zostanie podane poprawne hasło."
 
-#: src/PrefsUnifiedDlg.cpp:1050
+#: src/PrefsUnifiedDlg.cpp:1069
 msgid "- Language changed.\n"
 msgstr "- Zmieniono język.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1055
+#: src/PrefsUnifiedDlg.cpp:1074
 msgid "- Temp folder changed.\n"
 msgstr "- Zmieniono folder tymczasowy.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1060
+#: src/PrefsUnifiedDlg.cpp:1079
 msgid "- ED2K network enabled.\n"
 msgstr "- sieć ED2K włączona.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1093
+#: src/PrefsUnifiedDlg.cpp:1112
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1095 src/PrefsUnifiedDlg.cpp:1614
+#: src/PrefsUnifiedDlg.cpp:1114 src/PrefsUnifiedDlg.cpp:1669
 #, fuzzy
 msgid "Invalid regular expression"
 msgstr "Zła wersja protokołu."
 
-#: src/PrefsUnifiedDlg.cpp:1172
+#: src/PrefsUnifiedDlg.cpp:1191
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5469,7 +5471,7 @@ msgstr ""
 "Zarówno sieć eD2K jak i Kad zostały wyłączone.\n"
 "Nie będzie możliwe połączenie, dopóki nie włączysz przynajmniej jednej z nich."
 
-#: src/PrefsUnifiedDlg.cpp:1177
+#: src/PrefsUnifiedDlg.cpp:1196
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5477,7 +5479,7 @@ msgstr ""
 "Kad nie uruchomi się, jeśli twój port UDP jest wyłączony.\n"
 "Włącz port UDP lub wyłącz Kad."
 
-#: src/PrefsUnifiedDlg.cpp:1230
+#: src/PrefsUnifiedDlg.cpp:1249
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5487,42 +5489,51 @@ msgstr ""
 "Musisz zrestartować teraz aMule.\n"
 "Jeśli nie zrestartujesz go teraz, nie narzekaj, jeśli stanie się coś złego.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1291
+#: src/PrefsUnifiedDlg.cpp:1310
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1293
+#: src/PrefsUnifiedDlg.cpp:1312
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1294
+#: src/PrefsUnifiedDlg.cpp:1313
 #, fuzzy
 msgid "Autostart"
 msgstr "automatyczne odświeżanie rozpoczęte"
 
-#: src/PrefsUnifiedDlg.cpp:1312
+#: src/PrefsUnifiedDlg.cpp:1331
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1317
+#: src/PrefsUnifiedDlg.cpp:1336
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1323 src/PrefsUnifiedDlg.cpp:1344
+#: src/PrefsUnifiedDlg.cpp:1342 src/PrefsUnifiedDlg.cpp:1363
 msgid "Register URL handler"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1341
+#: src/PrefsUnifiedDlg.cpp:1360
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1343
+#: src/PrefsUnifiedDlg.cpp:1362
 msgid "Could not remove the URL handler registration."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1428
+#: src/PrefsUnifiedDlg.cpp:1421 src/PrefsUnifiedDlg.cpp:1443
+#, fuzzy
+msgid "The web server and aMule API require external connections to be enabled."
+msgstr "Ustawione hasło i włączone połączenia zewnętrzne."
+
+#: src/PrefsUnifiedDlg.cpp:1429
+msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp:1483
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5532,24 +5543,24 @@ msgstr ""
 "Proszę wpisać co najmniej jeden URL wskazujący poprawny plik server.met.\n"
 " Kliknij na przycisku \"Lista\", aby wpisać URL."
 
-#: src/PrefsUnifiedDlg.cpp:1569
+#: src/PrefsUnifiedDlg.cpp:1624
 msgid "Temporary files"
 msgstr "Pliki tymczasowe"
 
-#: src/PrefsUnifiedDlg.cpp:1574
+#: src/PrefsUnifiedDlg.cpp:1629
 msgid "Incoming files"
 msgstr "Pliki przychodzące"
 
-#: src/PrefsUnifiedDlg.cpp:1579
+#: src/PrefsUnifiedDlg.cpp:1634
 msgid "Online Signatures"
 msgstr "Sygnatury Online"
 
-#: src/PrefsUnifiedDlg.cpp:1592
+#: src/PrefsUnifiedDlg.cpp:1647
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "Wybierz folder na %s"
 
-#: src/PrefsUnifiedDlg.cpp:1616
+#: src/PrefsUnifiedDlg.cpp:1671
 #, fuzzy, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
@@ -5557,42 +5568,42 @@ msgstr[0] "Znaleziono %i znany udostępniony plik"
 msgstr[1] "Znaleziono %i znane udostępnionych plików"
 msgstr[2] "Znaleziono %i znanych udostępnionych plików"
 
-#: src/PrefsUnifiedDlg.cpp:1633
+#: src/PrefsUnifiedDlg.cpp:1688
 msgid "Browse for videoplayer"
 msgstr "Szukaj odtwarzacza filmów"
 
-#: src/PrefsUnifiedDlg.cpp:1637
+#: src/PrefsUnifiedDlg.cpp:1692
 msgid "Select browser"
 msgstr "Wybierz przeglądarkę"
 
-#: src/PrefsUnifiedDlg.cpp:1641
+#: src/PrefsUnifiedDlg.cpp:1696
 #, fuzzy
 msgid "Select ffprobe binary"
 msgstr "Wybierz przeglądarkę"
 
-#: src/PrefsUnifiedDlg.cpp:1647
+#: src/PrefsUnifiedDlg.cpp:1702
 #, c-format
 msgid "Executable%s"
 msgstr "Program%s"
 
-#: src/PrefsUnifiedDlg.cpp:1681
+#: src/PrefsUnifiedDlg.cpp:1736
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1693
+#: src/PrefsUnifiedDlg.cpp:1748
 msgid "Reset the settings on this page to their default values?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1694
+#: src/PrefsUnifiedDlg.cpp:1749
 #, fuzzy
 msgid "Reset to defaults"
 msgstr "Domyślny systemowy"
 
-#: src/PrefsUnifiedDlg.cpp:1721
+#: src/PrefsUnifiedDlg.cpp:1776
 msgid "Edit server list"
 msgstr "Edytuj listę serwerów"
 
-#: src/PrefsUnifiedDlg.cpp:1722
+#: src/PrefsUnifiedDlg.cpp:1777
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5600,42 +5611,42 @@ msgstr ""
 "Dodaj jeden URL w każdej linii.\n"
 "Tylko jeden URL w każdej linii."
 
-#: src/PrefsUnifiedDlg.cpp:1770
+#: src/PrefsUnifiedDlg.cpp:1825
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1899
+#: src/PrefsUnifiedDlg.cpp:1954
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1901
+#: src/PrefsUnifiedDlg.cpp:1956
 #, fuzzy
 msgid "Custom source"
 msgstr "Pełne źródła"
 
-#: src/PrefsUnifiedDlg.cpp:1903
+#: src/PrefsUnifiedDlg.cpp:1958
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1923
+#: src/PrefsUnifiedDlg.cpp:1978
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Status:"
 
-#: src/PrefsUnifiedDlg.cpp:1925
+#: src/PrefsUnifiedDlg.cpp:1980
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Status:"
 
-#: src/PrefsUnifiedDlg.cpp:1929
+#: src/PrefsUnifiedDlg.cpp:1984
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1931
+#: src/PrefsUnifiedDlg.cpp:1986
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1979 src/PrefsUnifiedDlg.cpp:2003
+#: src/PrefsUnifiedDlg.cpp:2034 src/PrefsUnifiedDlg.cpp:2058
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
@@ -5643,7 +5654,7 @@ msgstr[0] "Opóźnienie odświeżania: %d sekunda"
 msgstr[1] "Opóźnienie odświeżania: %d sekundy"
 msgstr[2] "Opóźnienie odświeżania: %d sekund"
 
-#: src/PrefsUnifiedDlg.cpp:1987
+#: src/PrefsUnifiedDlg.cpp:2042
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
@@ -5651,12 +5662,12 @@ msgstr[0] "Czas dla przeciętnego wykresu: %d minuta"
 msgstr[1] "Czas dla przeciętnego wykresu: %d minuty"
 msgstr[2] "Czas dla przeciętnego wykresu: %d minut"
 
-#: src/PrefsUnifiedDlg.cpp:1996
+#: src/PrefsUnifiedDlg.cpp:2051
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Skala wykresu połączeń: %d"
 
-#: src/PrefsUnifiedDlg.cpp:2011
+#: src/PrefsUnifiedDlg.cpp:2066
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
@@ -5664,7 +5675,7 @@ msgstr[0] "Rozmiar bufora pliku: %d bajt"
 msgstr[1] "Rozmiar bufora pliku: %d bajty"
 msgstr[2] "Rozmiar bufora pliku: %d bajtów"
 
-#: src/PrefsUnifiedDlg.cpp:2021
+#: src/PrefsUnifiedDlg.cpp:2076
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
@@ -5672,7 +5683,7 @@ msgstr[0] "Rozmiar kolejki wysyłania: %d klient"
 msgstr[1] "Rozmiar kolejki wysyłania: %d klientów"
 msgstr[2] "Rozmiar kolejki wysyłania: %d klientów"
 
-#: src/PrefsUnifiedDlg.cpp:2031
+#: src/PrefsUnifiedDlg.cpp:2086
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
@@ -5680,74 +5691,74 @@ msgstr[0] "Odświeżanie połączeń do serwera co: %d minutę"
 msgstr[1] "Odświeżanie połączeń do serwera co: %d minuty"
 msgstr[2] "Odświeżanie połączeń do serwera co: %d minut"
 
-#: src/PrefsUnifiedDlg.cpp:2036
+#: src/PrefsUnifiedDlg.cpp:2091
 msgid "Server connection refresh interval: Disabled"
 msgstr "Odświeżanie połączeń do serwera co: Wyłączone"
 
-#: src/PrefsUnifiedDlg.cpp:2080
+#: src/PrefsUnifiedDlg.cpp:2135
 msgid "disabled"
 msgstr "wyłączone"
 
-#: src/PrefsUnifiedDlg.cpp:2106
+#: src/PrefsUnifiedDlg.cpp:2161
 #, fuzzy, c-format
 msgid "Execute command on '%s' event"
 msgstr "Wykonaj komendę przy wydarzeniu `%s'"
 
-#: src/PrefsUnifiedDlg.cpp:2113
+#: src/PrefsUnifiedDlg.cpp:2168
 msgid "Enable command execution on core"
 msgstr "Włącz wykonanie komendy w rdzeniu"
 
-#: src/PrefsUnifiedDlg.cpp:2125
+#: src/PrefsUnifiedDlg.cpp:2180
 msgid "Core command:"
 msgstr "Komenda rdzenia:"
 
-#: src/PrefsUnifiedDlg.cpp:2141
+#: src/PrefsUnifiedDlg.cpp:2196
 msgid "Enable command execution on GUI"
 msgstr "Włącz wykonanie komendy w GUI"
 
-#: src/PrefsUnifiedDlg.cpp:2153
+#: src/PrefsUnifiedDlg.cpp:2208
 msgid "GUI command:"
 msgstr "Komenda GUI:"
 
-#: src/PrefsUnifiedDlg.cpp:2169
+#: src/PrefsUnifiedDlg.cpp:2224
 msgid "The following variables will be replaced:"
 msgstr "Następujące zmienne zostaną zastąpione:"
 
-#: src/PrefsUnifiedDlg.cpp:2328
+#: src/PrefsUnifiedDlg.cpp:2383
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2333
+#: src/PrefsUnifiedDlg.cpp:2388
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2336
+#: src/PrefsUnifiedDlg.cpp:2391
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Udostępnione foldery"
 
-#: src/PrefsUnifiedDlg.cpp:2365
+#: src/PrefsUnifiedDlg.cpp:2420
 #, fuzzy
 msgid "Reloading shared files…"
 msgstr "Przeładuj twoje udostępnione pliki"
 
-#: src/PrefsUnifiedDlg.cpp:2365
+#: src/PrefsUnifiedDlg.cpp:2420
 msgid "Scanning for subdirectories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2366
+#: src/PrefsUnifiedDlg.cpp:2421
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Udostępnione foldery"
 
-#: src/PrefsUnifiedDlg.cpp:2393
+#: src/PrefsUnifiedDlg.cpp:2448
 #, c-format
 msgid "Scanned %u directories…"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2443
+#: src/PrefsUnifiedDlg.cpp:2498
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Przeładowuje listę udostępnionych plików."

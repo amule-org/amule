@@ -174,6 +174,9 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHECKBOX(IDC_UPNP_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_UPNP_WEBSERVER_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_MEDIAMETA_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_EXT_CONN_ACCEPT, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_ENABLE_WEB, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_ENABLE_AMULEAPI, PrefsUnifiedDlg::OnCheckBoxChange)
 
 	// Autostart-on-login: state lives in the OS (registry / plist /
 	// .desktop), not aMule.conf, so it gets its own handler that
@@ -1010,9 +1013,14 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	}
 
 	// amuleapi is launched once at startup with its bind/port/password, so
-	// any change to those takes effect only after aMule relaunches it.
-	if (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
-		CfgChanged(IDC_AMULEAPI_BIND) || CfgChanged(IDC_AMULEAPI_PASSWD)) {
+	// any change to those takes effect only after aMule relaunches it. Skip
+	// the prompt when external connections won't be usable (off, or on but
+	// without a password — the guard further down then disables amuleapi
+	// anyway), so we don't tell the user to restart for a service that will
+	// not run.
+	const bool ecUsable = thePrefs::AcceptExternalConnections() && !thePrefs::ECPassword().IsEmpty();
+	if (ecUsable && (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
+				CfgChanged(IDC_AMULEAPI_BIND) || CfgChanged(IDC_AMULEAPI_PASSWD))) {
 		restart_needed = true;
 		restart_needed_msg += _("- amuleapi settings changed.\n");
 	}
@@ -1036,6 +1044,17 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		wxMessageBox(_(
 			"You have enabled external connections but have not specified a password.\nExternal "
 			"connections cannot be enabled unless a valid password is specified."));
+	}
+
+	// The web server and amuleapi are EC clients of the core; without external
+	// connections (which the check above may itself have just turned off for a
+	// missing password) they can never connect. OnCheckBoxChange already warns
+	// live and reverts the toggles, so this is a silent backstop that keeps the
+	// saved prefs consistent for a config loaded in a mismatched state.
+	if ((thePrefs::GetWSIsEnabled() || thePrefs::GetAmuleApiIsEnabled()) &&
+		!thePrefs::AcceptExternalConnections()) {
+		thePrefs::SetWSIsEnabled(false);
+		thePrefs::SetAmuleApiIsEnabled(false);
 	}
 
 	// save the preferences on ok
@@ -1392,6 +1411,41 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		FindWindow(IDC_WEBUPNPTCPPORT)->Enable(value);
 		FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(value);
 		break;
+
+	// The web server and amuleapi are EC clients of the core: they can only
+	// run when external connections are enabled. Warn live and refuse the
+	// invalid combination instead of waiting for OK.
+	case IDC_ENABLE_WEB:
+	case IDC_ENABLE_AMULEAPI:
+		if (value && !CastChild(IDC_EXT_CONN_ACCEPT, wxCheckBox)->IsChecked()) {
+			wxMessageBox(_("The web server and aMule API require external connections "
+				       "to be enabled."),
+				_("Message"),
+				wxOK | wxICON_INFORMATION);
+			CastChild(id, wxCheckBox)->SetValue(false);
+		} else if (value && id == IDC_ENABLE_WEB) {
+			// Enabled and allowed: nudge toward the actively-developed API.
+			wxMessageBox(_("The aMule web server is deprecated. Consider running the aMule "
+				       "API instead."),
+				_("Message"),
+				wxOK | wxICON_INFORMATION);
+		}
+		break;
+
+	case IDC_EXT_CONN_ACCEPT: {
+		// Turning external connections off strands both EC-client services.
+		wxCheckBox *web = CastChild(IDC_ENABLE_WEB, wxCheckBox);
+		wxCheckBox *api = CastChild(IDC_ENABLE_AMULEAPI, wxCheckBox);
+		if (!value && (web->IsChecked() || api->IsChecked())) {
+			web->SetValue(false);
+			api->SetValue(false);
+			wxMessageBox(_("The web server and aMule API require external connections "
+				       "to be enabled."),
+				_("Message"),
+				wxOK | wxICON_INFORMATION);
+		}
+		break;
+	}
 
 	case IDC_NETWORKKAD: {
 		wxCheckBox *udpPort = (wxCheckBox *)FindWindow(IDC_UDPENABLE);
