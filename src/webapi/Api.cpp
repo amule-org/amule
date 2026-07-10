@@ -2519,14 +2519,14 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 
 	bool any_change = false;
 
-	// status: "paused" | "resumed"
+	// status: "paused" | "resumed" | "stopped"
 	{
 		const auto it = obj.find("status");
 		if (it != obj.end()) {
 			if (!it->second.is<std::string>()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\" or \"resumed\"");
+					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
 			}
 			const std::string &v = it->second.get<std::string>();
 			ec_opcode_t op;
@@ -2534,10 +2534,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 				op = EC_OP_PARTFILE_PAUSE;
 			else if (v == "resumed")
 				op = EC_OP_PARTFILE_RESUME;
+			else if (v == "stopped")
+				op = EC_OP_PARTFILE_STOP;
 			else {
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\" or \"resumed\"");
+					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
 			}
 			auto err = send_op(op, /*has_inner=*/false, static_cast<ec_tagname_t>(0), 0);
 			if (err.status >= 400)
@@ -4795,7 +4797,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 			if (!it->second.is<std::string>())
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\" or \"resumed\"");
+					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
 			const std::string &v = it->second.get<std::string>();
 			if (v == "paused")
 				ops.push_back(
@@ -4803,10 +4805,13 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 			else if (v == "resumed")
 				ops.push_back(
 					{ EC_OP_PARTFILE_RESUME, false, static_cast<ec_tagname_t>(0), 0 });
+			else if (v == "stopped")
+				ops.push_back(
+					{ EC_OP_PARTFILE_STOP, false, static_cast<ec_tagname_t>(0), 0 });
 			else
 				return ErrorResponse(400,
 					"bad_request",
-					"`status` must be one of \"paused\" or \"resumed\"");
+					"`status` must be one of \"paused\", \"resumed\" or \"stopped\"");
 		}
 	}
 	{

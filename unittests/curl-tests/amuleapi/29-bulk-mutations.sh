@@ -66,6 +66,13 @@ _jq '.results[0].id'    "$H0"            "  results[0].id echoes the hash"
 _jq '.results[0].ok'    false            "  results[0].ok is false"
 _jq '.results[0].error.code' not_found   "  results[0].error.code is not_found"
 
+# status:"stopped" is a recognized bulk value — it reaches the per-hash
+# loop (bogus hash → not_found), proving the parse accepts it, unlike a
+# bad enum (see the 400 section).
+_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"status\":\"stopped\"}"
+_status 207 "PATCH /downloads status=stopped [bogus hash]"
+_jq '.results[0].error.code' not_found   "  bulk status=stopped results[0] not_found (value accepted)"
+
 _req DELETE /api/v0/downloads "{\"hashes\":[\"$H0\"]}"
 _status 207 "DELETE /downloads [bogus hash]"
 _jq '.results[0].error.code' not_found   "  DELETE results[0] not_found"
@@ -86,6 +93,7 @@ _req PATCH /api/v0/downloads "{\"priority\":\"high\"}";            _status 400 "
 _req PATCH /api/v0/downloads "{\"hashes\":[]}";                    _status 400 "PATCH /downloads empty hashes"
 _req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"]}";            _status 400 "PATCH /downloads no patch fields"
 _req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"priority\":\"bogus\"}"; _status 400 "PATCH /downloads bad priority"
+_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"status\":\"bogus\"}";   _status 400 "PATCH /downloads bad status"
 _req DELETE /api/v0/downloads "{}";                               _status 400 "DELETE /downloads missing hashes"
 _req PATCH /api/v0/shared "{\"hashes\":[\"$H0\"]}";              _status 400 "PATCH /shared missing priority"
 _req PATCH /api/v0/shared "{\"hashes\":[\"$H0\"],\"priority\":\"nope\"}";     _status 400 "PATCH /shared bad priority"

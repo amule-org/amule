@@ -230,6 +230,36 @@ else
 	_pass "IMMEDIATE GET after PATCH resumed shows non-paused (status=$RESUMED)"
 fi
 
+# 5b2. PATCH status=stopped — the stop action (pause + drop all
+# sources + reset the Kad source search). amuleapi surfaces it as the
+# distinct wire status "stopped" (vs "paused", which keeps its
+# sources). Response body + immediate GET must both show it.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"status":"stopped"}' "$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 200 "PATCH /downloads/{hash} status=stopped → 200"
+_assert_json_eq '.status' stopped 'PATCH response body shows status=stopped'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/downloads/$TEST_HASH"
+_assert_json_eq '.status' stopped \
+	'IMMEDIATE GET after PATCH stopped shows status=stopped (no stale cache)'
+
+# 5b3. Resume clears the stopped state (ResumeFile clears both the
+# paused and stopped flags), so the next GET must be neither.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"status":"resumed"}' "$HOST/api/v0/downloads/$TEST_HASH"
+_assert_status 200 "PATCH status=resumed (clear stop) → 200"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/downloads/$TEST_HASH"
+UNSTOPPED=$(printf '%s' "$CURL_BODY" | jq -r '.status')
+if [ "$UNSTOPPED" = "stopped" ] || [ "$UNSTOPPED" = "paused" ]; then
+	_fail "IMMEDIATE GET after resume-from-stopped" \
+		"still inactive (status=$UNSTOPPED) — resume did not clear stop"
+else
+	_pass "IMMEDIATE GET after resume-from-stopped shows active status ($UNSTOPPED)"
+fi
+
 # 5c. PATCH priority=release. Response + immediate GET both show
 # release.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \

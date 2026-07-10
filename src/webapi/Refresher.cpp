@@ -161,8 +161,12 @@ const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 		return "completing";
 
 	if (stopped)
-		return "paused"; // PS_PAUSED is implied
-				 // by EC_TAG_PARTFILE_STOPPED
+		return "stopped"; // stop = pause + drop all sources +
+				  // stop searching; the daemon reports it as
+				  // PS_PAUSED with EC_TAG_PARTFILE_STOPPED set,
+				  // surfaced here as a distinct wire status so
+				  // clients can tell it apart from a plain pause
+				  // (see /downloads PATCH status="stopped")
 	switch (ps_code) {
 	case PS_READY:
 		return "downloading";

@@ -556,19 +556,21 @@ TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 	ASSERT_EQUALS(std::string("completing"), cache.find(102)->second.download.status);
 }
 
-TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
+TEST(Refresher, StatusDecodeStoppedNonCompleteReportsStopped)
 {
-	// Sanity check the other direction: a download that's stopped
-	// but NOT yet completed (user paused mid-transfer) must still
-	// report "paused" — the fix only carves out
-	// PS_COMPLETE/PS_COMPLETING.
+	// A download that's stopped but NOT yet completed (user hit Stop
+	// mid-transfer) surfaces as the distinct wire status "stopped":
+	// stop = pause + drop all sources + reset the Kad source search,
+	// and clients need to tell it apart from a plain "paused" (which
+	// keeps its sources). PS_COMPLETE / PS_COMPLETING still take
+	// priority over the stopped flag — see the two tests above.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(103));
-		// PS_READY = 0 (transferring). User paused it.
+		// PS_READY = 0 (transferring). User stopped it.
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint8_t>(0)));
 		pf.AddTag(CECTag(EC_TAG_PARTFILE_STOPPED, true));
 		resp.AddTag(pf);
@@ -576,7 +578,29 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteStaysPaused)
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 	ASSERT_TRUE(cache.find(103) != cache.end());
-	ASSERT_EQUALS(std::string("paused"), cache.find(103)->second.download.status);
+	ASSERT_EQUALS(std::string("stopped"), cache.find(103)->second.download.status);
+}
+
+TEST(Refresher, StatusDecodePausedNotStoppedReportsPaused)
+{
+	// The complement: a paused file that is NOT stopped (PS_PAUSED with
+	// the stopped flag clear) keeps its sources and reports "paused",
+	// distinct from the "stopped" state above. Pins that the "stopped"
+	// wire status is gated on EC_TAG_PARTFILE_STOPPED, not on PS_PAUSED.
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+
+	CECPacket resp(EC_OP_SHARED_FILES);
+	{
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(104));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint8_t>(7 /* PS_PAUSED */)));
+		pf.AddTag(CECTag(EC_TAG_PARTFILE_STOPPED, false));
+		resp.AddTag(pf);
+	}
+
+	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	ASSERT_TRUE(cache.find(104) != cache.end());
+	ASSERT_EQUALS(std::string("paused"), cache.find(104)->second.download.status);
 }
 
 TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
