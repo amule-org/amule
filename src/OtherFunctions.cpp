@@ -1489,7 +1489,8 @@ CVersionCompareResult CompareLatestReleaseVersion(const wxString &json)
 	result.latest = wxString::Format(wxT("%ld.%ld.%ld"), fields[0], fields[1], fields[2]);
 
 	const long curVer = make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE);
-	const long newVer = make_full_ed2k_version(fields[0], fields[1], fields[2]);
+	const long newVer = make_full_ed2k_version(
+		static_cast<int>(fields[0]), static_cast<int>(fields[1]), static_cast<int>(fields[2]));
 	result.state = (curVer < newVer) ? CVersionCompareResult::Outdated : CVersionCompareResult::UpToDate;
 	return result;
 }
