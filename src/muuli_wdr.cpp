@@ -2180,15 +2180,17 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item16, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     // Plain button row (no static-box container) so no border is drawn
-    // around OK/Cancel, matching the Settings dialog.
+    // around OK/Cancel, matching the Settings dialog. A leading stretch
+    // spacer right-aligns the buttons, like the Preferences/About dialogs.
     wxBoxSizer *item22 = new wxBoxSizer( wxHORIZONTAL );
 
+    item22->AddStretchSpacer( 1 );
     wxButton *item24 = new wxButton( parent, wxID_OK, _("OK"), wxDefaultPosition, wxDefaultSize, 0 );
     item24->SetDefault();
     item22->Add( item24, wxSizerFlags().Center().Border(wxALL, 5) );
     wxButton *item25 = new wxButton( parent, wxID_CANCEL, _("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
     item22->Add( item25, wxSizerFlags().Center().Border(wxALL, 5) );
-    item0->Add( item22, wxSizerFlags().Center().Border(wxALL, 5) );
+    item0->Add( item22, wxSizerFlags().Expand().Border(wxALL, 5) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );
