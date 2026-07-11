@@ -472,6 +472,79 @@ TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
 }
 
 // ----------------------------------------------------------------------
+// Single-file detail decode (issue #417). The download-detail and
+// shared-detail endpoints read these off the same snapshot the walkers
+// build, so pin that the new tags land in the right sub-blocks.
+// ----------------------------------------------------------------------
+
+TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(101));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_LAST_SEEN_COMP, static_cast<std::uint32_t>(1700000000)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_LAST_RECV, static_cast<std::uint32_t>(1700000123)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_DOWNLOAD_ACTIVE, static_cast<std::uint32_t>(3600)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_AVAILABLE_PARTS, static_cast<std::uint16_t>(12)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_HASHED_PART_COUNT, static_cast<std::uint16_t>(3)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_LOST_CORRUPTION, static_cast<std::uint64_t>(9728000)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_GAINED_COMPRESSION, static_cast<std::uint64_t>(4096)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_SAVED_ICH, static_cast<std::uint32_t>(7)));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_PARTMETID, static_cast<std::uint32_t>(42)));
+	// Base CKnownFile tags carried on the partfile tag too.
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(5)));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_AICH_MASTERHASH, std::string("ABCDEF0123")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("042.part.met")));
+	resp.AddTag(pf);
+
+	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+
+	const auto it = cache.find(101);
+	ASSERT_TRUE(it != cache.end());
+	const auto &d = it->second;
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000000), d.download.last_seen_complete);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000123), d.download.last_changed);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(3600), d.download.download_active_time);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(12), d.download.available_part_count);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(3), d.download.hashing_progress);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(9728000), d.download.lost_to_corruption);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(4096), d.download.gained_by_compression);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(7), d.download.saved_by_ich);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(42), d.download.partmet_id);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5), d.queued_count);
+	ASSERT_EQUALS(std::string("ABCDEF0123"), d.aich_hash);
+	ASSERT_EQUALS(std::string("042.part.met"), d.knownfile_filename);
+}
+
+TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
+{
+	FileMap cache;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	CECTag kf(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(202));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_COMPLETE_SOURCES, static_cast<std::uint16_t>(8)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_LOW, static_cast<std::uint16_t>(5)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_HIGH, static_cast<std::uint16_t>(11)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(9)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_AICH_MASTERHASH, std::string("FEDCBA9876")));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("/home/kizar/Incoming")));
+	resp.AddTag(kf);
+
+	ApplyGetUpdateToShared(&resp, cache);
+
+	const auto it = cache.find(202);
+	ASSERT_TRUE(it != cache.end());
+	const auto &s = it->second;
+	ASSERT_EQUALS(static_cast<std::uint16_t>(5), s.shared.complete_sources_low);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(11), s.shared.complete_sources_high);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(9), s.queued_count);
+	ASSERT_EQUALS(std::string("FEDCBA9876"), s.aich_hash);
+	// Completed known file → the tag is the directory path (the write
+	// layer maps a shared partfile to "[PartFile]" instead).
+	ASSERT_EQUALS(std::string("/home/kizar/Incoming"), s.knownfile_filename);
+}
+
+// ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and
 // merges per-ECID; cache entries not seen in the response get evicted

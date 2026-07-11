@@ -38,6 +38,8 @@
 #include "State.h"
 
 #include "Constants.h"
+#include "OtherFunctions.h" // GetFiletypeByName for the shared file_type token
+#include <common/Path.h>    // CPath
 
 #include <ec/cpp/ECPacket.h>
 #include <ec/cpp/ECCodes.h>
@@ -848,9 +850,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_detail, path_segs, caps)) {
+			if (req.method == "GET" || req.method == "HEAD") {
+				return HandleSharedDetail(req, caps["hash"]);
+			}
 			if (req.method != "PATCH") {
-				return ErrorResponse(
-					405, "method_not_allowed", "only PATCH on /shared/{hash}");
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only GET / HEAD / PATCH on /shared/{hash}");
 			}
 			return HandleSharedPatch(req, caps["hash"]);
 		}
@@ -1592,7 +1598,8 @@ void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndArray();
 }
 
-void WriteDownloadObject(CJsonWriter &w, const webapi::FileSnapshot &f, bool include_parts = false)
+void WriteDownloadObject(
+	CJsonWriter &w, const webapi::FileSnapshot &f, bool include_parts = false, bool detail = false)
 {
 	w.BeginObject();
 	w.Key("hash");
@@ -1636,6 +1643,50 @@ void WriteDownloadObject(CJsonWriter &w, const webapi::FileSnapshot &f, bool inc
 		WriteProgressParts(w, f);
 	}
 	w.EndObject();
+	if (detail) {
+		// Detail-only fields (GET /downloads/{hash}); omitted from the
+		// list. `part_count` and `remaining_time` are computed here from
+		// the snapshot — no EC tag exists for them.
+		const std::int64_t part_count =
+			(f.size == 0) ? 0 : static_cast<std::int64_t>((f.size + kPartSize - 1) / kPartSize);
+		// ETA seconds; -1 when stalled/paused (speed ~0), mirroring the
+		// desktop getTimeRemaining().
+		std::int64_t remaining_time = -1;
+		if (f.download.speed_bps > 0) {
+			remaining_time = (f.size > f.download.size_done)
+						 ? static_cast<std::int64_t>((f.size - f.download.size_done) /
+									     f.download.speed_bps)
+						 : 0;
+		}
+		w.Key("last_seen_complete");
+		w.ValueInt(static_cast<int64_t>(f.download.last_seen_complete));
+		w.Key("last_changed");
+		w.ValueInt(static_cast<int64_t>(f.download.last_changed));
+		w.Key("download_active_time");
+		w.ValueInt(static_cast<int64_t>(f.download.download_active_time));
+		w.Key("available_part_count");
+		w.ValueInt(static_cast<int64_t>(f.download.available_part_count));
+		w.Key("part_count");
+		w.ValueInt(part_count);
+		w.Key("remaining_time");
+		w.ValueInt(remaining_time);
+		w.Key("hashing_progress");
+		w.ValueInt(static_cast<int64_t>(f.download.hashing_progress));
+		w.Key("lost_to_corruption");
+		w.ValueInt(static_cast<int64_t>(f.download.lost_to_corruption));
+		w.Key("gained_by_compression");
+		w.ValueInt(static_cast<int64_t>(f.download.gained_by_compression));
+		w.Key("saved_by_ich");
+		w.ValueInt(static_cast<int64_t>(f.download.saved_by_ich));
+		w.Key("aich_hash");
+		w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
+		w.Key("met_file");
+		w.ValueString(wxString::FromUTF8(f.knownfile_filename.c_str()));
+		w.Key("partmet_id");
+		w.ValueInt(static_cast<int64_t>(f.download.partmet_id));
+		w.Key("queued_count");
+		w.ValueInt(static_cast<int64_t>(f.queued_count));
+	}
 	w.EndObject();
 }
 
@@ -1698,9 +1749,10 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.EndObject();
 }
 
-void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
+// Base shared-file fields, shared by the list writer and the detail
+// writer. Emits keys into an already-open object (no Begin/End).
+void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
 {
-	w.BeginObject();
 	w.Key("hash");
 	w.ValueString(wxString::FromUTF8(f.hash.c_str()));
 	w.Key("name");
@@ -1736,6 +1788,59 @@ void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.Key("total");
 	w.ValueInt(static_cast<int64_t>(f.shared.accepts_total));
 	w.EndObject();
+}
+
+void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)
+{
+	w.BeginObject();
+	WriteSharedBaseFields(w, f);
+	w.EndObject();
+}
+
+// Locale-independent file-type token for the shared detail endpoint:
+// the desktop's own category label (GetFiletypeByName, untranslated)
+// lowercased — e.g. "audio", "video"(s), "cd-images", "any". Reuses the
+// GUI categorization rather than duplicating the extension table.
+std::string FileTypeToken(const std::string &name)
+{
+	const wxString desc =
+		GetFiletypeByName(CPath(wxString::FromUTF8(name.c_str())), /*translated=*/false);
+	std::string s(desc.utf8_str());
+	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
+		return static_cast<char>(std::tolower(c));
+	});
+	return s;
+}
+
+// GET /shared/{hash} detail: every list field plus the shared-table gaps
+// + shared-applicable identity fields. See issue #417 Part B.
+void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
+{
+	w.BeginObject();
+	WriteSharedBaseFields(w, f);
+	w.Key("file_type");
+	w.ValueString(wxString::FromUTF8(FileTypeToken(f.name).c_str()));
+	w.Key("share_ratio");
+	w.ValueDouble(
+		f.size > 0 ? static_cast<double>(f.shared.xfer_total) / static_cast<double>(f.size) : 0.0);
+	w.Key("path");
+	// A shared partfile has no real directory path (its EC_TAG_KNOWNFILE
+	// _FILENAME is the .part.met basename); the desktop shows "[PartFile]".
+	w.ValueString(f.is_downloading ? wxString::FromAscii("[PartFile]")
+				       : wxString::FromUTF8(f.knownfile_filename.c_str()));
+	w.Key("complete_sources_range");
+	w.BeginObject();
+	w.Key("low");
+	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_low));
+	w.Key("high");
+	w.ValueInt(static_cast<int64_t>(f.shared.complete_sources_high));
+	w.EndObject();
+	w.Key("aich_hash");
+	w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
+	w.Key("part_count");
+	w.ValueInt(f.size == 0 ? 0 : static_cast<int64_t>((f.size + kPartSize - 1) / kPartSize));
+	w.Key("queued_count");
+	w.ValueInt(static_cast<int64_t>(f.queued_count));
 	w.EndObject();
 }
 
@@ -2238,7 +2343,44 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDetail(
 	r.status = 200;
 	r.content_type = "application/json";
 	CJsonWriter w;
-	WriteDownloadObject(w, d, /*include_parts=*/true);
+	WriteDownloadObject(w, d, /*include_parts=*/true, /*detail=*/true);
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleSharedDetail(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	// {hash} is the 32-char MD4; URL is case-tolerant, State keys are
+	// lowercase — down-case before the O(1) lookup (mirrors the download
+	// detail handler).
+	webapi::FileSnapshot s;
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+	if (!m_state.FindShared(needle, s)) {
+		return ErrorResponse(404, "not_found", "no shared file with that hash");
+	}
+
+	// Bare object (the detail resource itself), same shape contract as
+	// GET /downloads/{hash}: every GET /shared list field plus the
+	// Part-B detail fields.
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	WriteSharedDetailObject(w, s);
 	FinalizeJsonBody(w, r);
 	return r;
 }

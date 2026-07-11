@@ -90,6 +90,17 @@ struct FileSnapshot
 	bool is_downloading = false;
 	bool is_shared = false;
 
+	// File-level attributes carried by the base CKnownFile EC tags, so
+	// they're available on both the download and shared detail endpoints.
+	// Detail-only (the list endpoints don't emit them).
+	std::string aich_hash;          // AICH master hash (hex); "" if none
+	std::uint32_t queued_count = 0; // clients on this file's upload queue
+	// EC_TAG_KNOWNFILE_FILENAME: a partfile's on-disk basename (e.g.
+	// `001.part`), or a completed known file's directory path.
+	// Interpreted per endpoint — `met_file` on /downloads/{hash},
+	// `path` on /shared/{hash}.
+	std::string knownfile_filename;
+
 	// Download-side state — meaningful when `is_downloading` is true,
 	// reset to default on the true→false transition (and never read
 	// by `/downloads` when the flag is false).
@@ -110,6 +121,19 @@ struct FileSnapshot
 		std::uint32_t sources_not_current = 0;
 		std::uint32_t sources_transferring = 0;
 		std::uint32_t sources_a4af = 0;
+
+		// Detail-only fields (GET /downloads/{hash}); the list endpoint
+		// omits them. All decoded from tags CEC_PartFile_Tag already
+		// emits under INC_UPDATE.
+		std::uint32_t last_seen_complete = 0;    // unix ts; 0 = unknown
+		std::uint32_t last_changed = 0;          // unix ts of last change
+		std::uint32_t download_active_time = 0;  // seconds downloading
+		std::uint16_t available_part_count = 0;  // parts across sources
+		std::uint16_t hashing_progress = 0;      // part being hashed
+		std::uint64_t lost_to_corruption = 0;    // bytes
+		std::uint64_t gained_by_compression = 0; // bytes
+		std::uint32_t saved_by_ich = 0;          // packets recovered by ICH
+		std::uint32_t partmet_id = 0;            // numeric partfile id
 
 		// Decoded per-part state, populated by the refresher's RLE
 		// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +
@@ -141,6 +165,12 @@ struct FileSnapshot
 		std::uint32_t accepts_session = 0;
 		std::uint32_t accepts_total = 0;
 		std::uint32_t complete_sources = 0;
+
+		// Detail-only (GET /shared/{hash}). The complete-sources range
+		// backs the desktop `< N` / `N - M` display; the scalar
+		// `complete_sources` above stays as-is.
+		std::uint16_t complete_sources_low = 0;
+		std::uint16_t complete_sources_high = 0;
 	} shared;
 };
 

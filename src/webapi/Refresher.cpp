@@ -275,6 +275,23 @@ std::string TagHashLower(const CEC_SharedFile_Tag *sf)
 // `is_new` distinguishes first-encounter from INC update — used only
 // for the status-string re-derive (idle-on-status-suppressed shouldn't
 // silently lose the prior status).
+
+// Decode the base CKnownFile detail tags carried by BOTH EC_TAG_PARTFILE
+// and EC_TAG_KNOWNFILE (via the CEC_SharedFile_Tag base ctor), so the
+// download and shared detail endpoints share one decode. Detail-only;
+// absent from the list payloads. INC-safe: only assigns when a tag is
+// present this frame, otherwise the prior value is retained.
+void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
+{
+	if (const CECTag *aich = t->GetTagByName(EC_TAG_KNOWNFILE_AICH_MASTERHASH))
+		f.aich_hash = std::string(aich->GetStringData().utf8_str());
+	std::uint32_t q = 0;
+	if (t->AssignIfExist(EC_TAG_KNOWNFILE_ON_QUEUE, q))
+		f.queued_count = q;
+	if (const CECTag *fn = t->GetTagByName(EC_TAG_KNOWNFILE_FILENAME))
+		f.knownfile_filename = std::string(fn->GetStringData().utf8_str());
+}
+
 void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 {
 	wxString fn;
@@ -357,6 +374,36 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_A4AF, v))
 			f.download.sources_a4af = v;
 	}
+	// Detail-only fields (surfaced on GET /downloads/{hash} only).
+	{
+		std::uint32_t v = 0;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_LAST_SEEN_COMP, v))
+			f.download.last_seen_complete = v;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_LAST_RECV, v))
+			f.download.last_changed = v;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_DOWNLOAD_ACTIVE, v))
+			f.download.download_active_time = v;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_SAVED_ICH, v))
+			f.download.saved_by_ich = v;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_PARTMETID, v))
+			f.download.partmet_id = v;
+	}
+	{
+		std::uint16_t v = 0;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_AVAILABLE_PARTS, v))
+			f.download.available_part_count = v;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_HASHED_PART_COUNT, v))
+			f.download.hashing_progress = v;
+	}
+	{
+		std::uint64_t v = 0;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_LOST_CORRUPTION, v))
+			f.download.lost_to_corruption = v;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_GAINED_COMPRESSION, v))
+			f.download.gained_by_compression = v;
+	}
+	// Base CKnownFile detail tags (aich_hash, queued_count, met_file).
+	MergeKnownFileDetail(pf, f);
 	// Recompute percent unconditionally — both inputs may have moved.
 	f.download.percent =
 		(f.size > 0)
@@ -749,6 +796,11 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 		std::uint16_t v = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_COMPLETE_SOURCES, v))
 			f.shared.complete_sources = v;
+		// Detail-only complete-sources range (GET /shared/{hash}).
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_LOW, v))
+			f.shared.complete_sources_low = v;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_HIGH, v))
+			f.shared.complete_sources_high = v;
 	}
 	{
 		std::uint8_t pr = 0;
@@ -758,6 +810,8 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 			f.shared.priority_auto = sh_auto;
 		}
 	}
+	// Base CKnownFile detail tags (aich_hash, queued_count, path source).
+	MergeKnownFileDetail(sf, f);
 }
 
 } // namespace

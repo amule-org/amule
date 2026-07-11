@@ -142,6 +142,17 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} has no snapshot_at envelope (bare object)'
 	_assert_json_eq '.progress.percent | type' number \
 		'/downloads/{hash} carries progress.percent'
+	# Part-A detail fields (issue #417) — detail-only, type-tolerant.
+	_assert_json_eq '.part_count | type' number \
+		'/downloads/{hash} carries part_count'
+	_assert_json_eq '.remaining_time | type' number \
+		'/downloads/{hash} carries remaining_time'
+	_assert_json_eq '.aich_hash | type' string \
+		'/downloads/{hash} carries aich_hash'
+	_assert_json_eq '.met_file | type' string \
+		'/downloads/{hash} carries met_file'
+	_assert_json_eq '.queued_count | type' number \
+		'/downloads/{hash} carries queued_count'
 
 	# Uppercase hash → same hit (case-insensitive route).
 	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')
@@ -175,7 +186,33 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].priority is string'
 	_assert_json_eq '.shared[0].priority_auto | type' boolean \
 		'/shared[0].priority_auto is boolean'
+
+	# --- 6b. GET /shared/{hash} detail endpoint (issue #417 Part B). ---
+	SHASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$SHASH"
+	_assert_status 200 "GET /api/v0/shared/{hash} → 200 (new detail endpoint)"
+	_assert_json_eq '.hash' "$SHASH" \
+		'/shared/{hash} returns bare object keyed by hash'
+	_assert_json_eq '.snapshot_at | type' null \
+		'/shared/{hash} has no snapshot_at envelope (bare object)'
+	_assert_json_eq '.file_type | type' string \
+		'/shared/{hash} carries file_type'
+	_assert_json_eq '.share_ratio | type' number \
+		'/shared/{hash} carries share_ratio'
+	_assert_json_eq '.path | type' string \
+		'/shared/{hash} carries path'
+	_assert_json_eq '.complete_sources_range | type' object \
+		'/shared/{hash} carries complete_sources_range'
+	_assert_json_eq '.aich_hash | type' string \
+		'/shared/{hash} carries aich_hash'
+	_assert_json_eq '.part_count | type' number \
+		'/shared/{hash} carries part_count'
 fi
+
+# --- 6c. /shared/{hash} missing-hash 404. -------------------------
+_curl -H "Authorization: Bearer $TOKEN" \
+	"$HOST/api/v0/shared/baadbaadbaadbaadbaadbaadbaadbaad"
+_assert_status 404 "GET /shared/{nonexistent-hash} → 404"
 
 # --- 7. Method gate. DELETE is method-gated on the /shared collection
 # (no bulk-unshare endpoint); the /downloads collection now accepts a bulk

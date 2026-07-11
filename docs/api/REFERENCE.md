@@ -38,6 +38,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 
 **Shared files**
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
+- [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
 - [`PATCH /api/v0/shared`](#patch-apiv0shared) — bulk change upload priority
 - [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
@@ -523,7 +524,25 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads/8b54a3c20fae9e4b9f7e0c2c8c01b6b1"
 ```
 
-Same envelope as the list item, plus a `progress.parts` array — one entry per ~9.28 MiB chunk with `state` (transferring / complete / empty / corrupt / etc.) and `sources` (count of peers offering that chunk).
+Same envelope as the list item, plus the detail-only fields below (all omitted from the `GET /downloads` list to keep it lean):
+
+| Field | Type | Meaning |
+|---|---|---|
+| `progress.parts` | array | One entry per ~9.28 MiB chunk: `{ "state": string, "sources": int }` — `state` is `transferring`/`complete`/`empty`/`corrupt`/…, `sources` counts peers offering that chunk. |
+| `last_seen_complete` | int | Unix ts a complete copy was last seen across sources; `0` = never/unknown. |
+| `last_changed` | int | Unix ts the partfile last received data. |
+| `download_active_time` | int | Seconds spent actively downloading. |
+| `available_part_count` | int | Number of parts available across the current sources. |
+| `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `remaining_time` | int | ETA in seconds; `-1` when stalled or paused (speed ≈ 0). |
+| `hashing_progress` | int | Index of the part currently being hashed (0 when idle). |
+| `lost_to_corruption` | int | Bytes discarded to corruption. |
+| `gained_by_compression` | int | Bytes saved by on-the-wire compression. |
+| `saved_by_ich` | int | Packets recovered by Intelligent Corruption Handling. |
+| `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
+| `met_file` | string | The partfile's on-disk basename (e.g. `001.part`). |
+| `partmet_id` | int | Numeric partfile id. |
+| `queued_count` | int | Clients waiting on this file's upload queue. |
 
 **Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
 
@@ -766,6 +785,29 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/shared"
 The SSE `shared_added` / `shared_updated` event payload matches this object byte-for-byte, so a subscriber that received `shared_updated` does not need to re-GET to see the moved counters.
 
 **Errors:** `503 ec_unavailable`.
+
+#### `GET /api/v0/shared/{hash}`
+
+**Auth:** `GUEST`
+
+Detail view for a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive). Returns every field of the [`GET /shared`](#get-apiv0shared) list item plus the detail-only fields below — one call for everything about a shared file. The list endpoint is unchanged.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/8b54a3c20fae9e4b9f7e0c2c8c01b6b1"
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `file_type` | string | Category token derived from the extension, lowercased: `"audio"`, `"videos"`, `"archives"`, `"cd-images"`, `"pictures"`, `"texts"`, `"programs"`, or `"any"` for unknown. |
+| `share_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
+| `path` | string | Directory path of the on-disk file, or `"[PartFile]"` when the shared file is still an incomplete partfile. |
+| `complete_sources_range` | object | `{ "low": int, "high": int }` — the estimated full-copy source range behind the scalar `complete_sources`. |
+| `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
+| `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
+| `queued_count` | int | Clients waiting on this file's upload queue. |
+
+**Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
 
 #### `POST /api/v0/shared/reload`
 

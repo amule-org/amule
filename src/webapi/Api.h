@@ -134,6 +134,8 @@ private:
 	CHttpServer::Response HandleNetworksConnect(const CHttpServer::Request &);
 	CHttpServer::Response HandleNetworksDisconnect(const CHttpServer::Request &);
 	CHttpServer::Response HandleKadBootstrap(const CHttpServer::Request &);
+	// single shared-file detail (GET / HEAD). `key` = 32-char MD4 hash.
+	CHttpServer::Response HandleSharedDetail(const CHttpServer::Request &, const std::string &key);
 	// shared file priority PATCH. `key` = hash OR ECID.
 	CHttpServer::Response HandleSharedPatch(const CHttpServer::Request &, const std::string &key);
 	// bulk shared-priority PATCH over a `hashes` array (#358).
