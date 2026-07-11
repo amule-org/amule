@@ -1951,8 +1951,9 @@ CSession *CScriptWebServer::CheckLoggedin(ThreadData &Data)
 		static CryptoPP::AutoSeededRandomPool s_sessionPool;
 		do {
 			uint64_t fresh = 0;
-			s_sessionPool.GenerateBlock(
-				reinterpret_cast<CryptoPP::byte *>(&fresh), sizeof(fresh));
+			// unsigned char* (== Crypto++'s byte) binds on every Crypto++
+			// version; CryptoPP::byte only exists from 5.6.5+ (issue #449).
+			s_sessionPool.GenerateBlock(reinterpret_cast<unsigned char *>(&fresh), sizeof(fresh));
 			Data.SessionID = fresh;
 			// Loop on 0 (which means "no session" elsewhere in this
 			// file) or on the astronomically unlikely collision with
