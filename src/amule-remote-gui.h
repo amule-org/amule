@@ -553,10 +553,20 @@ class CKnownFilesRem : public CRemoteContainer<CKnownFile, uint32, CEC_SharedFil
 
 	bool m_initialUpdate; // improved handling for first data transfer
 
+	// Set once by the app on a reconnect. A reconnected partial-update
+	// server sends a full snapshot but never re-emits FILE_REMOVED for
+	// files deleted while we were disconnected, so ProcessUpdate() forces
+	// a single prune-by-absence against that snapshot, then clears this.
+	bool m_reconnectReconcile = false;
+
 public:
 	CKnownFilesRem(CRemoteConnect *conn);
 
 	CKnownFile *FindKnownFileByID(uint32 id) { return GetByID(id); }
+
+	// Arm the one-shot reconcile prune for the next full update (reconnect)
+	// and reset every reused file's differential decoders (see the .cpp).
+	void ArmReconnectReconcile();
 
 	uint16 requested;
 	uint32 transferred;
@@ -745,6 +755,26 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	// daemon doesn't leave amulegui "not responding" indefinitely with
 	// no visible window while TCP SYN silently times out over minutes.
 	wxTimer *connect_timeout_timer;
+
+	// --- Reconnect-after-loss (issue #444) ---
+	// When the EC connection drops after startup (e.g. the machine slept),
+	// amulegui no longer exits: it freezes the UI behind a modal dialog and
+	// retries every 5 s until the connection is restored (then reconciles
+	// all state against the fresh server snapshot in place) or the user
+	// aborts. EC connection params are captured in Startup() so a reconnect
+	// can be attempted without the (destroyed) connection dialog.
+	bool m_reconnecting = false;
+	int m_reconnectAttempt = 0;
+	int m_reconnectCountdown = 0;
+	wxTimer *m_reconnectTimer = nullptr;
+	class CReconnectDialog *m_reconnectDlg = nullptr;
+	wxString m_ecHost;
+	int m_ecPort = 0;
+	wxString m_ecPass;
+	void BeginReconnect();
+	void AttemptReconnect();
+	void ScheduleNextReconnect();
+	void OnReconnectTimer(wxTimerEvent &evt);
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 

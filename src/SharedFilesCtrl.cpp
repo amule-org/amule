@@ -226,6 +226,19 @@ void CSharedFilesCtrl::ShowFileList()
 	Thaw();
 }
 
+void CSharedFilesCtrl::BeginBatchUpdate()
+{
+	// ShowFile() appends without sorting, so a reconnect resync only needs
+	// the repaints coalesced (Freeze) and one final sort in EndBatchUpdate.
+	Freeze();
+}
+
+void CSharedFilesCtrl::EndBatchUpdate()
+{
+	SortList();
+	Thaw();
+}
+
 void CSharedFilesCtrl::RemoveFile(CKnownFile *toRemove)
 {
 	long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(toRemove));

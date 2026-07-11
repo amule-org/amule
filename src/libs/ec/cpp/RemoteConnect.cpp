@@ -247,6 +247,18 @@ void CRemoteConnect::OnConnect()
 void CRemoteConnect::OnLost()
 {
 	if (m_notifier) {
+		// A dial is still pending: the async connect hasn't completed, so
+		// EC_CONNECT_SENT hasn't advanced to EC_REQ_SENT yet. A LibSocketLost
+		// arriving now is not the death of this dial — it's a stale event that
+		// was already queued for the *previous* connection before the socket
+		// impl was swapped (CLibSocket::ResetForReconnect). It still targets
+		// this reused wrapper, but IsDestroying() now sees the fresh impl, so
+		// it slips through. Swallowing it stops that stale lost from aborting
+		// an in-flight reconnect; a genuinely failed dial is caught instead by
+		// amulegui's connect-timeout watchdog (CamuleRemoteGuiApp::OnConnectTimeout).
+		if (m_ec_state == EC_CONNECT_SENT) {
+			return;
+		}
 		// Notify app of failure — amulegui's wxEvent handler flips the
 		// UI to "disconnected" and stops trying to update.
 		wxECSocketEvent event(wxEVT_EC_CONNECTION, false, _("Connection failure"));

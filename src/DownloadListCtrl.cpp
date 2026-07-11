@@ -217,9 +217,33 @@ void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 			if (file->IsCompleted()) {
 				CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(true);
 			}
-			SortList();
+			// During a batch update (a reconnect resync — issue #444) the
+			// row is still appended, but the per-item sort is deferred to
+			// EndBatchUpdate()'s single SortList() so a large add stays
+			// O(n log n) instead of O(n^2).
+			if (!m_batchUpdate) {
+				SortList();
+			}
 		}
 	}
+}
+
+void CDownloadListCtrl::BeginBatchUpdate()
+{
+	// Coalesce a burst of AddFile()/UpdateItem() calls into a single
+	// repaint (Freeze) and suppress the per-item SortList; EndBatchUpdate()
+	// sorts once. Used when reconciling the whole list against a fresh
+	// server snapshot after a reconnect (issue #444) — a 10k library would
+	// otherwise pay 10k row repaints + O(n^2) sorts.
+	Freeze();
+	m_batchUpdate = true;
+}
+
+void CDownloadListCtrl::EndBatchUpdate()
+{
+	m_batchUpdate = false;
+	SortList();
+	Thaw();
 }
 
 void CDownloadListCtrl::ShowFileList()

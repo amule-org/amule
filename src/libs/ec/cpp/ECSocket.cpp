@@ -283,6 +283,32 @@ CECSocket::~CECSocket()
 	}
 }
 
+void CECSocket::ResetProtocolState()
+{
+	// Drop any output queued for the dead connection so it isn't flushed as
+	// garbage onto the reconnected socket.
+	while (!m_output_queue.empty()) {
+		CQueuedData *data = m_output_queue.front();
+		m_output_queue.pop_front();
+		delete data;
+	}
+	// Rewind the RX/TX packet-reassembly state machine to the ctor's
+	// "expecting a fresh EC_HEADER_SIZE header" state (see the ctor).
+	// CSmartPtr is aMule's own smart pointer, not std::unique_ptr, so
+	// make_unique doesn't apply; .reset(new ...) mirrors the ctor init.
+	// NOLINTNEXTLINE(modernize-make-unique)
+	m_curr_rx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
+	// NOLINTNEXTLINE(modernize-make-unique)
+	m_curr_tx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
+	m_rx_flags = 0;
+	m_tx_flags = 0;
+	m_bytes_needed = EC_HEADER_SIZE;
+	m_in_header = true;
+	m_curr_packet_len = 0;
+	// Re-negotiated by the reconnected session's auth handshake.
+	m_haveNotificationSupport = false;
+}
+
 bool CECSocket::ConnectSocket(uint32_t ip, uint16_t port)
 {
 	bool res = InternalConnect(ip, port, !m_use_events);

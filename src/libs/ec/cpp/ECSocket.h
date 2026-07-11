@@ -124,6 +124,14 @@ public:
 
 	bool ConnectSocket(uint32_t ip, uint16_t port);
 
+	// Reset the EC packet layer to its just-constructed state so the SAME
+	// socket object can be reused for a fresh connection (amulegui reconnect,
+	// issue #444). Drops any queued output from the dead connection and
+	// rewinds the RX/TX reassembly state machine to "expecting a header";
+	// without this a mid-packet read left over from the drop misparses the
+	// reconnected session's first bytes and the login handshake fails.
+	void ResetProtocolState();
+
 	void CloseSocket() { InternalClose(); }
 
 	// Locally-initiated abort: CloseSocket + OnLost. Use from the

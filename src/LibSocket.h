@@ -88,6 +88,13 @@ public:
 	void Close();
 	void Destroy();
 
+	// Swap in a fresh asio socket impl on this same wrapper so the socket
+	// can be re-connected after a loss WITHOUT recreating the CLibSocket
+	// (and therefore without invalidating any pointer the app still holds
+	// to us — the remote GUI pins its CRemoteConnect in every container).
+	// The outgoing impl is detached race-safely first (see LinkSocketImpl).
+	void ResetForReconnect();
+
 	// Get last error, 0 == no error
 	int LastError() const;
 

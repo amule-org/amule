@@ -869,6 +869,14 @@ private:
 	void HandleConnect(const error_code &err)
 	{
 		m_OK = !err;
+		if (m_OK) {
+			// A successful connect means the socket is healthy: clear any
+			// stale error left on this impl (e.g. an EBADF/aborted read that
+			// completed during the reconnect socket-swap). Otherwise
+			// SocketRealError() stays true and CECSocket::WritePacket refuses
+			// to send the EC login on the reused connection (#444).
+			m_ErrorCode = 0;
+		}
 		AddDebugLogLineF(logAsio, CFormat("HandleConnect %d %s") % m_OK % m_IP);
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
 		if (!wrapper) {
@@ -1133,6 +1141,15 @@ uint32 CLibSocket::GetPeerInt()
 void CLibSocket::Destroy()
 {
 	m_aSocket->Destroy();
+}
+
+void CLibSocket::ResetForReconnect()
+{
+	// LinkSocketImpl() detaches the outgoing impl (OnWrapperGone, so any
+	// in-flight asio callback that still holds a shared_from_this() ref
+	// no-ops its notify branch) before swapping the fresh one in. The old
+	// impl then tears its socket down once the last pending handler drops.
+	LinkSocketImpl(std::make_shared<CAsioSocketImpl>(this));
 }
 
 bool CLibSocket::IsDestroying() const

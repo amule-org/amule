@@ -95,6 +95,15 @@ public:
 	void ShowFileList();
 
 	/**
+	 * Bracket a burst of AddFile()/UpdateItem() calls (a reconnect resync —
+	 * issue #444) so the list repaints once (Freeze) and sorts once, instead
+	 * of per-item. Existing rows are updated in place; new rows are appended
+	 * without a per-item sort. EndBatchUpdate() does the single SortList().
+	 */
+	void BeginBatchUpdate();
+	void EndBatchUpdate();
+
+	/**
 	 * Removes the specified file from the list.
 	 *
 	 * @param file A valid pointer of the file to be removed.
@@ -236,6 +245,10 @@ private:
 
 	//! Flag if change of item selection is pending
 	bool m_ItemSelectionChangePending;
+
+	//! True between BeginBatchUpdate()/EndBatchUpdate(): AddFile() appends
+	//! rows but defers the per-item SortList to one final sort (issue #444).
+	bool m_batchUpdate = false;
 
 	//! The number of displayed files
 	int m_filecount;

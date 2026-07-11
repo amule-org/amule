@@ -102,6 +102,19 @@ public:
 	void DecodeParts(const class CECTag *tag, ArrayOfUInts16 &outdata);
 	void DecodeGaps(const class CECTag *tag, ArrayOfUInts64 &outdata);
 	void DecodeReqs(const class CECTag *tag, ArrayOfUInts64 &outdata);
+
+	// Drop the retained differential baselines so the next Decode* starts
+	// from an empty buffer. The RLE stream is a diff against the previously
+	// decoded state, which is per-EC-connection on the daemon (CFileEncoderMap).
+	// After a reconnect the daemon's encoders restart empty, so a reused
+	// decoder must reset too or every gap/part/req diff XORs against stale
+	// data and paints garbage (all-red progress bars) — see aMule #444.
+	void ResetDecoder()
+	{
+		m_part_status.ResetEncoder();
+		m_gap_status.ResetEncoder();
+		m_req_status.ResetEncoder();
+	}
 };
 
 #endif
