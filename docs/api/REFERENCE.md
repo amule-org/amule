@@ -26,6 +26,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Downloads**
 - [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
 - [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view; `{hash}` is the 32-char MD4 hex hash
+- [`GET /api/v0/downloads/{hash}/comments`](#get-apiv0downloadshashcomments) — per-source comments/ratings list
 - [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
 - [`PATCH /api/v0/downloads`](#patch-apiv0downloads) — bulk pause / resume / priority / category
 - [`DELETE /api/v0/downloads`](#delete-apiv0downloads) — bulk cancel + remove
@@ -543,8 +544,44 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `met_file` | string | The partfile's on-disk basename (e.g. `001.part`). |
 | `partmet_id` | int | Numeric partfile id. |
 | `queued_count` | int | Clients waiting on this file's upload queue. |
+| `comment` | string | The user's own comment on this file (`""` if none). |
+| `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). See the [rating scale](#get-apiv0downloadshashcomments). |
 
 **Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
+
+#### `GET /api/v0/downloads/{hash}/comments`
+
+**Auth:** `GUEST`
+
+The comments and ratings this download's **sources** report for the file (the desktop "Show all comments" list). Downloads-only — a completed/shared file has no live source list.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/downloads/8b54a3c2…/comments"
+```
+
+```json
+{
+  "count": 2,
+  "comments": [
+    { "username": "alice", "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
+    { "username": "bob",   "filename": "some_movie.avi", "rating": -1, "comment": "no rating here" }
+  ]
+}
+```
+
+A per-source `rating` of `-1` means the source left a comment but no rating. Rating scale (from the desktop `GetRateString()`):
+
+| value | meaning |
+|---|---|
+| 0 | Not rated |
+| 1 | Invalid / Corrupt / Fake |
+| 2 | Poor |
+| 3 | Fair |
+| 4 | Good |
+| 5 | Excellent |
+
+**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads`
 
@@ -625,6 +662,7 @@ Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex
 - `status` — `"paused"`, `"resumed"` or `"stopped"`. `"paused"` halts transfer but keeps the file's sources; `"stopped"` additionally drops all known sources and resets the Kad source search (a stopped file must rediscover sources from scratch on resume); `"resumed"` clears either state. A stopped file reports `status: "stopped"` in the download object (see [`GET /downloads`](#get-apiv0downloads)).
 - `priority` — `"low"` / `"normal"` / `"high"` / `"auto"`. Downloads support only these levels; the daemon clamps any other value to `normal`. (Shared files support the wider `very_low` … `release` set — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).)
 - `category` — uint8
+- `comment` + `rating` — set the file's comment (string, ≤ 50 chars) and rating (integer `0`–`5`). Must be sent **together**; only settable when the partfile is also shared (≥ 1 complete chunk), else `409 not_shared`. Primarily a shared-file action — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
@@ -635,7 +673,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `200 OK` — the updated download object (full detail envelope including `progress.parts`).
 
-**Errors:** `400 bad_request` (no recognised field, invalid enum), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (no recognised field, invalid enum, or `comment`/`rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `DELETE /api/v0/downloads/{hash}`
 
@@ -806,6 +844,8 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
 | `part_count` | int | Total parts, `ceil(size / 9.28 MiB)`. |
 | `queued_count` | int | Clients waiting on this file's upload queue. |
+| `comment` | string | The user's own comment on this file (`""` if none). |
+| `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
 
 **Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
 
@@ -844,17 +884,23 @@ Bulk upload-priority change over multiple shared files — the same `priority` a
 
 **Auth:** `ADMIN`
 
-Changes the upload priority of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive).
+Changes the upload priority and/or the comment+rating of a single shared file. `{hash}` is the 32-char MD4 hex hash (case-insensitive). The body must include at least one of `priority` or the `comment`+`rating` pair.
 
 **Body:**
 
 ```json
-{ "priority": "very_low" | "low" | "normal" | "high" | "release" | "auto" }
+{
+  "priority": "very_low" | "low" | "normal" | "high" | "release" | "auto",
+  "comment":  "<string, ≤ 50 chars>",
+  "rating":   0
+}
 ```
 
-Send a bare level to pin it (the file's `priority_auto` becomes `false`). Send `"auto"` to hand level selection to amuled — it derives the level from the upload queue, and `GET /api/v0/shared` then reports the derived base `priority` with `priority_auto: true`. The combined `"*_auto"` strings are not accepted as input, since `"auto"` is the level the daemon computes rather than one the caller pins.
+Send a bare priority level to pin it (the file's `priority_auto` becomes `false`). Send `"auto"` to hand level selection to amuled — it derives the level from the upload queue, and `GET /api/v0/shared` then reports the derived base `priority` with `priority_auto: true`. The combined `"*_auto"` strings are not accepted as input, since `"auto"` is the level the daemon computes rather than one the caller pins.
 
-**Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
+`comment` and `rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `comment` is capped at 50 characters; `rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) for a downloading file that is also shared.
+
+**Errors:** `400 bad_request` (missing/invalid fields, or `comment`/`rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 

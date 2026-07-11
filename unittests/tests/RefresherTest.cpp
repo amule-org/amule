@@ -544,6 +544,44 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(std::string("/home/kizar/Incoming"), s.knownfile_filename);
 }
 
+// Comment/rating (issue #419): the user's own comment+rating land at the
+// top level; the per-source EC_TAG_PARTFILE_COMMENTS container decodes
+// into download.source_comments (4 index-grouped children per source,
+// rating -1 = unrated).
+TEST(Refresher, CommentRatingAndSourceCommentsDecode)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(303));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_COMMENT, std::string("my own note")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, static_cast<std::uint32_t>(4)));
+	CECEmptyTag comments(EC_TAG_PARTFILE_COMMENTS);
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, std::string("alice")));
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, std::string("movie.mkv")));
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, static_cast<std::uint64_t>(5)));
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, std::string("great quality")));
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, std::string("bob")));
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, std::string("film.avi")));
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, static_cast<std::uint64_t>(-1))); // unrated
+	comments.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, std::string("no rating here")));
+	pf.AddTag(comments);
+	resp.AddTag(pf);
+
+	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+
+	const auto it = cache.find(303);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_EQUALS(std::string("my own note"), it->second.comment);
+	ASSERT_EQUALS(4, static_cast<int>(it->second.rating));
+	ASSERT_EQUALS(static_cast<size_t>(2), it->second.download.source_comments.size());
+	ASSERT_EQUALS(std::string("alice"), it->second.download.source_comments[0].username);
+	ASSERT_EQUALS(std::string("movie.mkv"), it->second.download.source_comments[0].filename);
+	ASSERT_EQUALS(5, static_cast<int>(it->second.download.source_comments[0].rating));
+	ASSERT_EQUALS(-1, static_cast<int>(it->second.download.source_comments[1].rating));
+	ASSERT_EQUALS(std::string("no rating here"), it->second.download.source_comments[1].comment);
+}
+
 // ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and

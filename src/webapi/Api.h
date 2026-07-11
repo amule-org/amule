@@ -103,6 +103,8 @@ private:
 	CHttpServer::Response HandleDownloads(const CHttpServer::Request &);
 	// `key` accepts the lowercase 32-char hex hash OR the decimal ECID.
 	CHttpServer::Response HandleDownloadDetail(const CHttpServer::Request &, const std::string &key);
+	// per-source comments/ratings list. `key` = 32-char MD4 hash.
+	CHttpServer::Response HandleDownloadComments(const CHttpServer::Request &, const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd(const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloadPatch(const CHttpServer::Request &, const std::string &key);

@@ -290,6 +290,12 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 		f.queued_count = q;
 	if (const CECTag *fn = t->GetTagByName(EC_TAG_KNOWNFILE_FILENAME))
 		f.knownfile_filename = std::string(fn->GetStringData().utf8_str());
+	// The user's own comment + rating (issue #419).
+	if (const CECTag *cm = t->GetTagByName(EC_TAG_KNOWNFILE_COMMENT))
+		f.comment = std::string(cm->GetStringData().utf8_str());
+	std::uint32_t rt = 0;
+	if (t->AssignIfExist(EC_TAG_KNOWNFILE_RATING, rt))
+		f.rating = static_cast<std::int32_t>(rt);
 }
 
 void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
@@ -401,6 +407,26 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 			f.download.lost_to_corruption = v;
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_GAINED_COMPRESSION, v))
 			f.download.gained_by_compression = v;
+	}
+	// Per-source comments/ratings (issue #419). The EC container packs
+	// four children per source, evaluated by index: username, filename,
+	// rating (int8; -1 = unrated), comment. Rebuild the list whenever the
+	// container is present (CValueMap-suppressed when unchanged, so an
+	// absent container keeps the prior list).
+	if (const CECTag *cont = pf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
+		std::vector<const CECTag *> kids;
+		for (CECTag::const_iterator cit = cont->begin(); cit != cont->end(); ++cit)
+			kids.push_back(&*cit);
+		f.download.source_comments.clear();
+		for (std::size_t i = 0; i + 3 < kids.size(); i += 4) {
+			FileSnapshot::DownloadSide::SourceComment c;
+			c.username = std::string(kids[i]->GetStringData().utf8_str());
+			c.filename = std::string(kids[i + 1]->GetStringData().utf8_str());
+			c.rating =
+				static_cast<std::int32_t>(static_cast<std::int64_t>(kids[i + 2]->GetInt()));
+			c.comment = std::string(kids[i + 3]->GetStringData().utf8_str());
+			f.download.source_comments.push_back(std::move(c));
+		}
 	}
 	// Base CKnownFile detail tags (aich_hash, queued_count, met_file).
 	MergeKnownFileDetail(pf, f);

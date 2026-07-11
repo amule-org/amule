@@ -153,6 +153,18 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} carries met_file'
 	_assert_json_eq '.queued_count | type' number \
 		'/downloads/{hash} carries queued_count'
+	_assert_json_eq '.comment | type' string \
+		'/downloads/{hash} carries comment'
+	_assert_json_eq '.rating | type' number \
+		'/downloads/{hash} carries rating'
+
+	# Per-source comments sub-resource (issue #419).
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/comments"
+	_assert_status 200 "GET /downloads/{hash}/comments → 200"
+	_assert_json_eq '.count | type' number \
+		'/downloads/{hash}/comments carries numeric count'
+	_assert_json_eq '.comments | type' array \
+		'/downloads/{hash}/comments.comments is an array'
 
 	# Uppercase hash → same hit (case-insensitive route).
 	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')
@@ -207,6 +219,10 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries aich_hash'
 	_assert_json_eq '.part_count | type' number \
 		'/shared/{hash} carries part_count'
+	_assert_json_eq '.comment | type' string \
+		'/shared/{hash} carries comment'
+	_assert_json_eq '.rating | type' number \
+		'/shared/{hash} carries rating'
 fi
 
 # --- 6c. /shared/{hash} missing-hash 404. -------------------------

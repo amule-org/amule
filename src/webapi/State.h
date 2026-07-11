@@ -95,6 +95,8 @@ struct FileSnapshot
 	// Detail-only (the list endpoints don't emit them).
 	std::string aich_hash;          // AICH master hash (hex); "" if none
 	std::uint32_t queued_count = 0; // clients on this file's upload queue
+	std::string comment;            // the user's own file comment
+	std::int32_t rating = 0;        // the user's own rating, 0-5 (0 = unrated)
 	// EC_TAG_KNOWNFILE_FILENAME: a partfile's on-disk basename (e.g.
 	// `001.part`), or a completed known file's directory path.
 	// Interpreted per endpoint — `met_file` on /downloads/{hash},
@@ -134,6 +136,18 @@ struct FileSnapshot
 		std::uint64_t gained_by_compression = 0; // bytes
 		std::uint32_t saved_by_ich = 0;          // packets recovered by ICH
 		std::uint32_t partmet_id = 0;            // numeric partfile id
+
+		// Per-source comments/ratings (GET /downloads/{hash}/comments,
+		// issue #419). Downloads-only — needs a live source list. A
+		// `rating` of -1 means the source left a comment but no rating.
+		struct SourceComment
+		{
+			std::string username;
+			std::string filename;
+			std::int32_t rating = 0;
+			std::string comment;
+		};
+		std::vector<SourceComment> source_comments;
 
 		// Decoded per-part state, populated by the refresher's RLE
 		// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +

@@ -978,6 +978,24 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// /downloads/{hash}/comments — per-source comments/ratings list
+	// (issue #419). Downloads-only: needs a live source list. Matched
+	// before /downloads/{hash} (more segments).
+	{
+		static const auto dl_comments =
+			web_api_path::ParsePattern("/api/v0/downloads/{hash}/comments");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(dl_comments, path_segs, caps)) {
+			if (req.method != "GET" && req.method != "HEAD") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only GET / HEAD on /downloads/{hash}/comments");
+			}
+			return HandleDownloadComments(req, caps["hash"]);
+		}
+	}
+
 	// /downloads/{hash} — single-resource detail (GET / HEAD) and the
 	// mutation surface (PATCH for status/priority/category, DELETE for
 	// clear-completed single). `{hash}` is the lowercase 32-char hex
@@ -1686,6 +1704,10 @@ void WriteDownloadObject(
 		w.ValueInt(static_cast<int64_t>(f.download.partmet_id));
 		w.Key("queued_count");
 		w.ValueInt(static_cast<int64_t>(f.queued_count));
+		w.Key("comment");
+		w.ValueString(wxString::FromUTF8(f.comment.c_str()));
+		w.Key("rating");
+		w.ValueInt(static_cast<int64_t>(f.rating));
 	}
 	w.EndObject();
 }
@@ -1841,6 +1863,10 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueInt(f.size == 0 ? 0 : static_cast<int64_t>((f.size + kPartSize - 1) / kPartSize));
 	w.Key("queued_count");
 	w.ValueInt(static_cast<int64_t>(f.queued_count));
+	w.Key("comment");
+	w.ValueString(wxString::FromUTF8(f.comment.c_str()));
+	w.Key("rating");
+	w.ValueInt(static_cast<int64_t>(f.rating));
 	w.EndObject();
 }
 
@@ -2385,6 +2411,55 @@ CHttpServer::Response CApiDispatcher::HandleSharedDetail(
 	return r;
 }
 
+CHttpServer::Response CApiDispatcher::HandleDownloadComments(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	webapi::FileSnapshot d;
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+	if (!m_state.FindDownload(needle, d)) {
+		return ErrorResponse(404, "not_found", "no download with that hash");
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("count");
+	w.ValueInt(static_cast<int64_t>(d.download.source_comments.size()));
+	w.Key("comments");
+	w.BeginArray();
+	for (const auto &c : d.download.source_comments) {
+		w.BeginObject();
+		w.Key("username");
+		w.ValueString(wxString::FromUTF8(c.username.c_str()));
+		w.Key("filename");
+		w.ValueString(wxString::FromUTF8(c.filename.c_str()));
+		w.Key("rating");
+		w.ValueInt(static_cast<int64_t>(c.rating));
+		w.Key("comment");
+		w.ValueString(wxString::FromUTF8(c.comment.c_str()));
+		w.EndObject();
+	}
+	w.EndArray();
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
 namespace
 {
 
@@ -2686,6 +2761,82 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	return BulkResultsResponse(results, 202);
 }
 
+namespace
+{
+// Handle the optional `comment`+`rating` pair shared by PATCH
+// /downloads/{hash} and PATCH /shared/{hash} (issue #419). Both must be
+// present together or neither. Sends EC_OP_SHARED_FILE_SET_COMMENT, which
+// amuled resolves against the shared-files registry — so the file must be
+// shared. Returns false and fills `err` on any problem; sets `applied`
+// when a valid pair was written. A body with neither field is a no-op
+// (returns true, applied=false).
+bool TrySetCommentRating(CamuleapiApp &app,
+	const picojson::object &obj,
+	const webapi::FileSnapshot &f,
+	bool &applied,
+	CHttpServer::Response &err)
+{
+	applied = false;
+	const auto cit = obj.find("comment");
+	const auto rit = obj.find("rating");
+	const bool has_c = cit != obj.end();
+	const bool has_r = rit != obj.end();
+	if (!has_c && !has_r)
+		return true;
+	if (has_c != has_r) {
+		err = ErrorResponse(400, "bad_request", "`comment` and `rating` must be set together");
+		return false;
+	}
+	if (!cit->second.is<std::string>()) {
+		err = ErrorResponse(400, "bad_request", "`comment` must be a string");
+		return false;
+	}
+	const std::string comment = cit->second.get<std::string>();
+	// MAXFILECOMMENTLEN (include/protocol/ed2k/Constants.h) = 50.
+	if (comment.size() > 50) {
+		err = ErrorResponse(400, "bad_request", "`comment` exceeds 50 characters");
+		return false;
+	}
+	if (!rit->second.is<double>()) {
+		err = ErrorResponse(400, "bad_request", "`rating` must be an integer in [0, 5]");
+		return false;
+	}
+	const double rd = rit->second.get<double>();
+	const int rating = static_cast<int>(rd);
+	if (static_cast<double>(rating) != rd || rating < 0 || rating > 5) {
+		err = ErrorResponse(400, "bad_request", "`rating` must be an integer in [0, 5]");
+		return false;
+	}
+	if (!f.is_shared) {
+		err = ErrorResponse(409, "not_shared", "comment and rating can only be set on a shared file");
+		return false;
+	}
+	CMD4Hash file_hash;
+	if (!HashFromHex(f.hash, file_hash)) {
+		err = ErrorResponse(500, "internal_error", "failed to decode file hash");
+		return false;
+	}
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SHARED_FILE_SET_COMMENT));
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE_COMMENT, comment));
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, static_cast<std::uint8_t>(rating)));
+	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		err = ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SET_COMMENT");
+		return false;
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		err = ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+		return false;
+	}
+	delete ec_resp;
+	applied = true;
+	return true;
+}
+} // namespace
+
 CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	const CHttpServer::Request &req, const std::string &key)
 {
@@ -2828,11 +2979,23 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		}
 	}
 
+	// comment + rating (both required together; issue #419). Only
+	// settable on a file that is shared (a downloading partfile with
+	// ≥1 complete chunk); otherwise TrySetCommentRating returns 409.
+	{
+		bool applied = false;
+		CHttpServer::Response cr_err;
+		if (!TrySetCommentRating(m_app, obj, d, applied, cr_err))
+			return cr_err;
+		if (applied)
+			any_change = true;
+	}
+
 	if (!any_change) {
 		return ErrorResponse(400,
 			"bad_request",
 			"request body must include at least one of "
-			"`status`, `priority`, or `category`");
+			"`status`, `priority`, `category`, or `comment`+`rating`");
 	}
 
 	// Inline refresh so the response below sees post-mutation state.
@@ -4930,40 +5093,58 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	}
 	const auto &obj = root.get<picojson::object>();
 
+	bool any_change = false;
+
+	// priority (optional now that comment/rating share this endpoint).
 	const auto pit = obj.find("priority");
-	if (pit == obj.end()) {
-		return ErrorResponse(400, "bad_request", "request body must include `priority`");
-	}
-	if (!pit->second.is<std::string>()) {
-		return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
-	}
-	std::uint8_t code = 0;
-	if (!SharedPriorityToCode(pit->second.get<std::string>(), code)) {
-		return ErrorResponse(400,
-			"bad_request",
-			"`priority` must be one of "
-			"very_low, low, normal, high, release, auto");
-	}
+	if (pit != obj.end()) {
+		if (!pit->second.is<std::string>()) {
+			return ErrorResponse(400, "bad_request", "`priority` must be a wire-string enum");
+		}
+		std::uint8_t code = 0;
+		if (!SharedPriorityToCode(pit->second.get<std::string>(), code)) {
+			return ErrorResponse(400,
+				"bad_request",
+				"`priority` must be one of "
+				"very_low, low, normal, high, release, auto");
+		}
+		CMD4Hash file_hash;
+		if (!HashFromHex(s.hash, file_hash)) {
+			return ErrorResponse(500, "internal_error", "failed to decode file hash");
+		}
+		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SHARED_SET_PRIO));
+		CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
+		hash_tag.AddTag(CECTag(EC_TAG_PARTFILE_PRIO, code));
+		ec_req->AddTag(hash_tag);
 
-	CMD4Hash file_hash;
-	if (!HashFromHex(s.hash, file_hash)) {
-		return ErrorResponse(500, "internal_error", "failed to decode file hash");
-	}
-	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SHARED_SET_PRIO));
-	CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
-	hash_tag.AddTag(CECTag(EC_TAG_PARTFILE_PRIO, code));
-	ec_req->AddTag(hash_tag);
-
-	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
-	if (!ec_resp) {
-		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SHARED_SET_PRIO");
-	}
-	std::string ec_err_msg;
-	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+		if (!ec_resp) {
+			return ErrorResponse(
+				503, "ec_unavailable", "EC roundtrip failed for SHARED_SET_PRIO");
+		}
+		std::string ec_err_msg;
+		if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+			delete ec_resp;
+			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		}
 		delete ec_resp;
-		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+		any_change = true;
 	}
-	delete ec_resp;
+
+	// comment + rating (both required together; issue #419).
+	{
+		bool applied = false;
+		CHttpServer::Response cr_err;
+		if (!TrySetCommentRating(m_app, obj, s, applied, cr_err))
+			return cr_err;
+		if (applied)
+			any_change = true;
+	}
+
+	if (!any_change) {
+		return ErrorResponse(
+			400, "bad_request", "request body must include `priority` or `comment`+`rating`");
+	}
 
 	(void)RefresherTick(m_app, m_state);
 
