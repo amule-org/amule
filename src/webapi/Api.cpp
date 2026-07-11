@@ -4301,6 +4301,10 @@ void WriteSearchObject(CJsonWriter &w, const webapi::SearchResult &r)
 	w.ValueBool(r.already_have);
 	w.Key("rating");
 	w.ValueInt(static_cast<int64_t>(r.rating));
+	w.Key("status");
+	w.ValueString(wxString::FromUTF8(r.status.c_str()));
+	w.Key("type");
+	w.ValueString(wxString::FromUTF8(r.type.c_str()));
 	w.EndObject();
 }
 

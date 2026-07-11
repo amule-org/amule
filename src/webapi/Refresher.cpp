@@ -31,6 +31,8 @@
 #include "State.h"
 
 #include "Constants.h"                            // PS_* / PR_* / US_* / DS_* / OBST_* enums
+#include "OtherFunctions.h"                       // GetFiletypeByName for the search-result `type`
+#include <common/Path.h>                          // CPath
 #include "ClientList.h"                           // buddyState enum (Disconnected/Connecting/Connected)
 #include "ClientCredits.h"                        // EIdentState (IS_NOTAVAILABLE / IS_IDENTIFIED / ...)
 #include "Server.h"                               // SRV_PR_* server priority constants
@@ -1699,6 +1701,43 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 
 // --- /search/results (full fetch per tick) -----------------------------
 
+namespace
+{
+// CSearchFile::DownloadStatus (SearchFile.h) → wire string (issue #429).
+// Values are ABI-stable (serialized over EC as EC_TAG_PARTFILE_STATUS).
+const char *SearchStatusName(std::uint32_t code)
+{
+	switch (code) {
+	case 0: // NEW
+		return "new";
+	case 1: // DOWNLOADED
+		return "downloaded";
+	case 2: // QUEUED
+		return "queued";
+	case 3: // CANCELED
+		return "canceled";
+	case 4: // QUEUEDCANCELED
+		return "queued_canceled";
+	default:
+		return "new";
+	}
+}
+
+// Locale-independent file-type token from the filename, mirroring the
+// desktop's GetFiletypeByName (untranslated) lowercased — same tokens as
+// the shared-detail `file_type`.
+std::string SearchTypeToken(const std::string &name)
+{
+	const wxString desc =
+		GetFiletypeByName(CPath(wxString::FromUTF8(name.c_str())), /*translated=*/false);
+	std::string s(desc.utf8_str());
+	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
+		return static_cast<char>(std::tolower(c));
+	});
+	return s;
+}
+} // namespace
+
 void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult> &cache)
 {
 	cache.clear();
@@ -1736,6 +1775,14 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_RATING, v))
 				r.rating = v;
 		}
+		// Download status (issue #429): amuled packs the CSearchFile
+		// status in EC_TAG_PARTFILE_STATUS on every search-result tag.
+		{
+			std::uint32_t v = 0;
+			r.status = SearchStatusName(sf->AssignIfExist(EC_TAG_PARTFILE_STATUS, v) ? v : 0);
+		}
+		// File type, computed from the filename (no EC data needed).
+		r.type = SearchTypeToken(r.name);
 		cache.emplace(r.ecid, std::move(r));
 	}
 }

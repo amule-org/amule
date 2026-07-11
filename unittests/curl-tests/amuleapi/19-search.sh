@@ -193,6 +193,10 @@ if [ -n "$RESULT_HASH" ]; then
 	_assert_json_eq '.results[0].hash | length' 32     '/search/results[0].hash is 32-char hex'
 	_assert_json_eq '.results[0].name | type'   string '/search/results[0].name is string'
 	_assert_json_eq '.results[0].size | type'   number '/search/results[0].size is numeric'
+	# Download status + file type (issue #429).
+	_assert_json_eq '[.results[0].status] | inside(["new","downloaded","queued","canceled","queued_canceled"])' \
+		true '/search/results[0].status is a known enum value'
+	_assert_json_eq '.results[0].type | type'   string '/search/results[0].type is string'
 
 	# progress envelope. `progress` exists on every GET /search/results
 	# response (even before any POST /search). `state` is canonical

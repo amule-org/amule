@@ -537,6 +537,8 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 						<< ",\"already_have\":"
 						<< (kv.second.already_have ? "true" : "false")
 						<< ",\"rating\":" << static_cast<int>(kv.second.rating)
+						<< ",\"status\":\"" << EscJson(kv.second.status) << "\""
+						<< ",\"type\":\"" << EscJson(kv.second.type) << "\""
 						<< "}";
 					bus.Publish("search_result_added", payload.str());
 				}

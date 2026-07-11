@@ -461,6 +461,13 @@ struct SearchResult
 	std::uint32_t complete_source_count = 0;
 	bool already_have = false;
 	std::uint8_t rating = 0;
+	// Download status of the result on this node (issue #429), a lowercase
+	// string from the CSearchFile enum: "new" | "downloaded" | "queued" |
+	// "canceled" | "queued_canceled".
+	std::string status;
+	// File-type token derived from the filename (like the shared-detail
+	// `file_type`), e.g. "video"/"audio"; "" if the name has no extension.
+	std::string type;
 };
 
 // Refresher-tracked lifecycle of the currently-active (or last-finished)

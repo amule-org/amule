@@ -1018,6 +1018,38 @@ constexpr std::uint32_t LIFECYCLE_FINISHED = 2;
 
 } // namespace
 
+// Search result status + type (issue #429): EC_TAG_PARTFILE_STATUS decodes
+// to the lowercase status string, and `type` is derived from the filename.
+TEST(Refresher, SearchResultStatusAndTypeDecode)
+{
+	std::map<std::uint32_t, SearchResult> cache;
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(70));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("cool.movie.mkv")));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(123)));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_STATUS, static_cast<std::uint32_t>(2))); // QUEUED
+	resp.AddTag(sf);
+	// A second result with no status tag defaults to "new"; a .mp3 → audio.
+	CECTag sf2(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(71));
+	sf2.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("song.mp3")));
+	sf2.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(4)));
+	resp.AddTag(sf2);
+
+	ApplySearchFull(&resp, cache);
+
+	const auto it = cache.find(70);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_EQUALS(std::string("queued"), it->second.status);
+	// GetFiletypeByName's label lowercased — "videos", same tokens as the
+	// shared-detail file_type (issue #417), not a bespoke "video".
+	ASSERT_EQUALS(std::string("videos"), it->second.type);
+
+	const auto it2 = cache.find(71);
+	ASSERT_TRUE(it2 != cache.end());
+	ASSERT_EQUALS(std::string("new"), it2->second.status);
+	ASSERT_EQUALS(std::string("audio"), it2->second.type);
+}
+
 TEST(Refresher, SearchProgressRunningCarriesPercentForGlobal)
 {
 	using webapi::AdvanceSearchProgress;
