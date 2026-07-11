@@ -356,7 +356,8 @@ if [ -n "$FIRST_ECID" ]; then
 		and has("server_ip") and has("server_port") and has("server_name")
 		and has("kad_port") and has("source_origin")
 		and has("available_parts") and has("mod_version")
-		and has("view_shared_disabled")')
+		and has("view_shared_disabled")
+		and has("is_friend") and has("dl_up_modifier")')
 	if [ "$OK" = "true" ]; then
 		_pass "/clients/{ecid} returns detail superset (ecid=$FIRST_ECID)"
 	else

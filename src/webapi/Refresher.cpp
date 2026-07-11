@@ -926,6 +926,19 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		if (c->AssignIfExist(EC_TAG_CLIENT_DISABLE_VIEW_SHARED, v))
 			cs.view_shared_disabled = v;
 	}
+
+	// --- Friend status + DL/UP modifier (issue #423, new EC tags) ----
+	// Absent when talking to a core built before #423 (older peers just
+	// don't send them); the AssignIfExist / GetTagByName guards leave
+	// the defaults in place.
+	{
+		bool v = false;
+		if (c->AssignIfExist(EC_TAG_CLIENT_IS_FRIEND, v))
+			cs.is_friend = v;
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SCORE_RATIO)) {
+		cs.dl_up_modifier = t->GetDoubleData();
+	}
 }
 
 void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)

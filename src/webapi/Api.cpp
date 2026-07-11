@@ -1886,6 +1886,13 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
 	w.Key("view_shared_disabled");
 	w.ValueBool(c.view_shared_disabled);
+	// Friend status + DL/UP modifier (issue #423). is_friend is
+	// friends-list membership, distinct from the friend_slot reserved
+	// upload slot above.
+	w.Key("is_friend");
+	w.ValueBool(c.is_friend);
+	w.Key("dl_up_modifier");
+	w.ValueDouble(c.dl_up_modifier);
 	// Completeness of the linked download for this peer; omitted when
 	// not computable (no linked file / unknown part count).
 	if (c.part_progress_percent >= 0.0) {

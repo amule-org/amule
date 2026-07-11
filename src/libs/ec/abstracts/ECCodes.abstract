@@ -332,6 +332,8 @@ EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_OS_INFO                     0x0629
 	EC_TAG_CLIENT_AVAILABLE_PARTS             0x062A
 	EC_TAG_CLIENT_UPLOAD_PART_STATUS          0x062B
+	EC_TAG_CLIENT_IS_FRIEND                   0x062C
+	EC_TAG_CLIENT_SCORE_RATIO                 0x062D
 
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701

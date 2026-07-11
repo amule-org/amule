@@ -340,6 +340,11 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	if (detail_level != EC_DETAIL_INC_UPDATE) {
 		return;
 	}
+	// Friend status + DL/UP modifier (issue #423). IsFriend() is the
+	// friends-list membership (distinct from the FRIEND_SLOT reserved
+	// upload slot above); GetScoreRatio() is the GUI "DL/UP modifier".
+	AddTag(CECTag(EC_TAG_CLIENT_IS_FRIEND, client->IsFriend()), valuemap);
+	AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, (double)client->GetScoreRatio()), valuemap);
 	AddTag(CECTag(EC_TAG_CLIENT_DISABLE_VIEW_SHARED, client->HasDisabledSharedFiles()), valuemap);
 	AddTag(CECTag(EC_TAG_CLIENT_VERSION, client->GetVersion()), valuemap);
 	AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, client->GetClientModString()), valuemap);

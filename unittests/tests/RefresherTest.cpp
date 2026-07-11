@@ -1227,6 +1227,9 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	hi.AddTag(CECTag(EC_TAG_CLIENT_AVAILABLE_PARTS, static_cast<std::uint32_t>(7)));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, wxString::FromUTF8("mod-x")));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_DISABLE_VIEW_SHARED, true));
+	// #423 friend status + DL/UP modifier.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_IS_FRIEND, true));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, static_cast<double>(2.5)));
 	container.AddTag(hi);
 
 	// A LowID peer (hybrid id < 0x1000000) with no section-B tags.
@@ -1252,9 +1255,14 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(7), cs.available_parts);
 	ASSERT_EQUALS(std::string("mod-x"), cs.mod_version);
 	ASSERT_TRUE(cs.view_shared_disabled);
+	ASSERT_TRUE(cs.is_friend);
+	ASSERT_TRUE(cs.dl_up_modifier > 2.4 && cs.dl_up_modifier < 2.6);
 
 	const auto it2 = cache.find(51);
 	ASSERT_TRUE(it2 != cache.end());
 	ASSERT_TRUE(!it2->second.high_id);
 	ASSERT_TRUE(!it2->second.has_available_parts);
+	// #423 fields absent on the wire => defaults preserved.
+	ASSERT_TRUE(!it2->second.is_friend);
+	ASSERT_TRUE(it2->second.dl_up_modifier == 0.0);
 }
