@@ -538,8 +538,19 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 						<< (kv.second.already_have ? "true" : "false")
 						<< ",\"rating\":" << static_cast<int>(kv.second.rating)
 						<< ",\"status\":\"" << EscJson(kv.second.status) << "\""
-						<< ",\"type\":\"" << EscJson(kv.second.type) << "\""
-						<< "}";
+						<< ",\"type\":\"" << EscJson(kv.second.type) << "\"";
+					// Media metadata (issue #430) — same shape as
+					// WriteSearchObject; omitted when the hit has none.
+					if (kv.second.has_media) {
+						const auto &m = kv.second.media;
+						payload << ",\"media\":{\"length_s\":" << m.length_s
+							<< ",\"bitrate\":" << m.bitrate << ",\"codec\":\""
+							<< EscJson(m.codec) << "\",\"artist\":\""
+							<< EscJson(m.artist) << "\",\"album\":\""
+							<< EscJson(m.album) << "\",\"title\":\""
+							<< EscJson(m.title) << "\"}";
+					}
+					payload << "}";
 					bus.Publish("search_result_added", payload.str());
 				}
 			}

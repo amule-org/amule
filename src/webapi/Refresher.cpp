@@ -1783,6 +1783,36 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 		}
 		// File type, computed from the filename (no EC data needed).
 		r.type = SearchTypeToken(r.name);
+		// Media metadata (issue #430): present only when the hit carried
+		// FT_MEDIA_* tags (known/probed locally). Any present tag marks
+		// has_media so the API emits the `media` object.
+		{
+			std::uint32_t v = 0;
+			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
+				r.media.length_s = v;
+				r.has_media = true;
+			}
+			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
+				r.media.bitrate = v;
+				r.has_media = true;
+			}
+		}
+		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
+			r.media.codec = std::string(x->GetStringData().utf8_str());
+			r.has_media = true;
+		}
+		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
+			r.media.artist = std::string(x->GetStringData().utf8_str());
+			r.has_media = true;
+		}
+		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
+			r.media.album = std::string(x->GetStringData().utf8_str());
+			r.has_media = true;
+		}
+		if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
+			r.media.title = std::string(x->GetStringData().utf8_str());
+			r.has_media = true;
+		}
 		cache.emplace(r.ecid, std::move(r));
 	}
 }

@@ -197,6 +197,10 @@ if [ -n "$RESULT_HASH" ]; then
 	_assert_json_eq '[.results[0].status] | inside(["new","downloaded","queued","canceled","queued_canceled"])' \
 		true '/search/results[0].status is a known enum value'
 	_assert_json_eq '.results[0].type | type'   string '/search/results[0].type is string'
+	# Media metadata (issue #430): an object when the hit is locally
+	# known/probed, absent otherwise — both are valid.
+	_assert_json_eq '.results[0].media | type | test("^(object|null)$")' \
+		true '/search/results[0].media is an object or absent'
 
 	# progress envelope. `progress` exists on every GET /search/results
 	# response (even before any POST /search). `state` is canonical

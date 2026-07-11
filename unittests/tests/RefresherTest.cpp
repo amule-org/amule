@@ -1105,6 +1105,41 @@ TEST(Refresher, SearchProgressIdleZeroesOutGracefully)
 	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
 }
 
+// Search result media metadata (issue #430): the EC_TAG_KNOWNFILE_MEDIA_*
+// tags (present only for hits known/probed locally) decode into the
+// SearchResult media sub-struct and set has_media; a hit with none stays
+// has_media=false so the API omits the `media` object.
+TEST(Refresher, SearchResultMediaDecode)
+{
+	std::map<std::uint32_t, SearchResult> cache;
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+	CECTag sf(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(80));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("show.s01e01.mkv")));
+	sf.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(999)));
+	sf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, static_cast<std::uint32_t>(1320)));
+	sf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, static_cast<std::uint32_t>(2500)));
+	sf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, std::string("h264")));
+	resp.AddTag(sf);
+	// A second hit with no media tags stays has_media=false.
+	CECTag sf2(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(81));
+	sf2.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("nomedia.bin")));
+	sf2.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(4)));
+	resp.AddTag(sf2);
+
+	ApplySearchFull(&resp, cache);
+
+	const auto it = cache.find(80);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.has_media);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1320), it->second.media.length_s);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(2500), it->second.media.bitrate);
+	ASSERT_EQUALS(std::string("h264"), it->second.media.codec);
+
+	const auto it2 = cache.find(81);
+	ASSERT_TRUE(it2 != cache.end());
+	ASSERT_TRUE(!it2->second.has_media);
+}
+
 // --- #359: peer software_version must be locale-independent ----------
 //
 // The daemon formats the version string with gettext, so an unidentified

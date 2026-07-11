@@ -468,6 +468,19 @@ struct SearchResult
 	// File-type token derived from the filename (like the shared-detail
 	// `file_type`), e.g. "video"/"audio"; "" if the name has no extension.
 	std::string type;
+	// Audio/video media metadata (issue #430), same shape as the file
+	// detail endpoints' `media` object. `has_media` gates it — omitted
+	// when the hit carries no FT_MEDIA_* tags (most remote results).
+	bool has_media = false;
+	struct Media
+	{
+		std::uint32_t length_s = 0;
+		std::uint32_t bitrate = 0;
+		std::string codec;
+		std::string artist;
+		std::string album;
+		std::string title;
+	} media;
 };
 
 // Refresher-tracked lifecycle of the currently-active (or last-finished)

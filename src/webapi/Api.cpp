@@ -4305,6 +4305,25 @@ void WriteSearchObject(CJsonWriter &w, const webapi::SearchResult &r)
 	w.ValueString(wxString::FromUTF8(r.status.c_str()));
 	w.Key("type");
 	w.ValueString(wxString::FromUTF8(r.type.c_str()));
+	// Media metadata (issue #430) — same shape as the file-detail `media`
+	// object; omitted entirely when the hit carries no media tags.
+	if (r.has_media) {
+		w.Key("media");
+		w.BeginObject();
+		w.Key("length_s");
+		w.ValueInt(static_cast<int64_t>(r.media.length_s));
+		w.Key("bitrate");
+		w.ValueInt(static_cast<int64_t>(r.media.bitrate));
+		w.Key("codec");
+		w.ValueString(wxString::FromUTF8(r.media.codec.c_str()));
+		w.Key("artist");
+		w.ValueString(wxString::FromUTF8(r.media.artist.c_str()));
+		w.Key("album");
+		w.ValueString(wxString::FromUTF8(r.media.album.c_str()));
+		w.Key("title");
+		w.ValueString(wxString::FromUTF8(r.media.title.c_str()));
+		w.EndObject();
+	}
 	w.EndObject();
 }
 

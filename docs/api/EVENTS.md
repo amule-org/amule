@@ -412,11 +412,12 @@ Emitted per new result that appears in the results map between refresher ticks.
   "already_have": false,
   "rating": 0,
   "status": "new",
-  "type": "videos"
+  "type": "videos",
+  "media": { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
 }
 ```
 
-Key results by `hash`. The payload is byte-for-byte identical to a `/search/results` array entry (including `status` and `type` — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)) (`sources` is the nested `{total, complete}` object, same as the REST endpoint). amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
+Key results by `hash`. The payload is byte-for-byte identical to a `/search/results` array entry (including `status` and `type` — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)); `sources` is the nested `{total, complete}` object, and `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, same as the REST endpoint. amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
 
 #### `search_progress`
 

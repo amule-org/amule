@@ -397,6 +397,32 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	if (file->HasRating()) {
 		AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, (uint8)file->UserRating()), valuemap);
 	}
+	// Media metadata (issue #430). A hit carries FT_MEDIA_* tags only when
+	// the file is known/probed locally; emit each EC_TAG_KNOWNFILE_MEDIA_*
+	// (defined by issue #418) only when its value is present, so results
+	// without media cost nothing.
+	if (uint32 len = file->GetIntTagValue(FT_MEDIA_LENGTH)) {
+		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, len), valuemap);
+	}
+	if (uint32 br = file->GetIntTagValue(FT_MEDIA_BITRATE)) {
+		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, br), valuemap);
+	}
+	const wxString &codec = file->GetStrTagValue(FT_MEDIA_CODEC);
+	if (!codec.IsEmpty()) {
+		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, codec), valuemap);
+	}
+	const wxString &artist = file->GetStrTagValue(FT_MEDIA_ARTIST);
+	if (!artist.IsEmpty()) {
+		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, artist), valuemap);
+	}
+	const wxString &album = file->GetStrTagValue(FT_MEDIA_ALBUM);
+	if (!album.IsEmpty()) {
+		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ALBUM, album), valuemap);
+	}
+	const wxString &title = file->GetStrTagValue(FT_MEDIA_TITLE);
+	if (!title.IsEmpty()) {
+		AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_TITLE, title), valuemap);
+	}
 }
 
 //
