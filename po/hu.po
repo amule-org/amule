@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-10 20:18+0200\n"
+"POT-Creation-Date: 2026-07-11 11:38+0200\n"
 "PO-Revision-Date: 2026-07-11 08:44+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -206,10 +206,10 @@ msgid_plural "Could not add %u links from ED2KLinks file (see log for details)."
 msgstr[0] ""
 
 #: src/amuleAppCommon.cpp:181 src/amule.cpp:1071 src/amule.cpp:1128
-#: src/amule.cpp:1242 src/amule.cpp:1544 src/amule-remote-gui.cpp:510
-#: src/amule-remote-gui.cpp:563 src/amule-remote-gui.cpp:577
-#: src/amule-remote-gui.cpp:596 src/amule-remote-gui.cpp:963
-#: src/amule-remote-gui.cpp:990 src/DownloadQueue.cpp:1481
+#: src/amule.cpp:1242 src/amule.cpp:1544 src/amule-remote-gui.cpp:511
+#: src/amule-remote-gui.cpp:564 src/amule-remote-gui.cpp:578
+#: src/amule-remote-gui.cpp:597 src/amule-remote-gui.cpp:964
+#: src/amule-remote-gui.cpp:991 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "HIBA"
 
@@ -497,17 +497,17 @@ msgstr "Az aMule verziód naprakész."
 msgid "Failed to download the version check file"
 msgstr "Verzió-ellenőrzés fájl letöltése sikertelen."
 
-#: src/amule.cpp:2476 src/amule-remote-gui.cpp:845
+#: src/amule.cpp:2476 src/amule-remote-gui.cpp:846
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr "Felhasználók: %s | Fájlok: %s"
 
-#: src/amule.cpp:2477 src/amule-remote-gui.cpp:846
+#: src/amule.cpp:2477 src/amule-remote-gui.cpp:847
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr "Felhasználók: E: %s K: %s | Fájlok: E: %s K: %s"
 
-#: src/amule.cpp:2491 src/amule-remote-gui.cpp:859
+#: src/amule.cpp:2491 src/amule-remote-gui.cpp:860
 msgid "No networks selected"
 msgstr "Nincs hálózat kiválasztva"
 
@@ -647,11 +647,11 @@ msgstr "Kad: Kapcsolódás"
 msgid "Kad: Off"
 msgstr "Kad: Nincs kapcsolat"
 
-#: src/amuleDlg.cpp:954 src/DownloadListCtrl.cpp:409
-#: src/DownloadListCtrl.cpp:648 src/FriendListCtrl.cpp:177
-#: src/muuli_wdr.cpp:684 src/muuli_wdr.cpp:735 src/muuli_wdr.cpp:797
-#: src/muuli_wdr.cpp:849 src/muuli_wdr.cpp:2106 src/muuli_wdr.cpp:2189
-#: src/muuli_wdr.cpp:2909 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:568
+#: src/amuleDlg.cpp:954 src/DownloadListCtrl.cpp:447
+#: src/DownloadListCtrl.cpp:686 src/FriendListCtrl.cpp:177
+#: src/muuli_wdr.cpp:741 src/muuli_wdr.cpp:792 src/muuli_wdr.cpp:854
+#: src/muuli_wdr.cpp:906 src/muuli_wdr.cpp:2163 src/muuli_wdr.cpp:2248
+#: src/muuli_wdr.cpp:2968 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:568
 #: src/ServerListCtrl.cpp:589 src/TransferWnd.cpp:373
 #: src/utils/wxCas/src/wxcasprefs.cpp:235
 msgid "Cancel"
@@ -662,7 +662,7 @@ msgid "Stop the current connection attempts"
 msgstr "Aktuális kapcsolódási kísérletek leállítása"
 
 #: src/amuleDlg.cpp:960 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
-#: src/muuli_wdr.cpp:2305
+#: src/muuli_wdr.cpp:2364
 msgid "Disconnect"
 msgstr "Szétkapcsolás"
 
@@ -671,7 +671,7 @@ msgid "Disconnect from the currently connected networks"
 msgstr "Leválaszt az éppen kapcsolódott hálózatokról."
 
 #: src/amuleDlg.cpp:966 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
-#: src/muuli_wdr.cpp:2456 src/muuli_wdr.cpp:2906 src/muuli_wdr.cpp:3245
+#: src/muuli_wdr.cpp:2515 src/muuli_wdr.cpp:2965 src/muuli_wdr.cpp:3304
 msgid "Connect"
 msgstr "Kapcsolatfelvétel"
 
@@ -725,7 +725,7 @@ msgstr "Kilépés megerősítése"
 msgid "Launch Command: "
 msgstr "Parancs futtatása: "
 
-#: src/amuleDlg.cpp:1482 src/muuli_wdr.cpp:1872 src/Preferences.cpp:940
+#: src/amuleDlg.cpp:1482 src/muuli_wdr.cpp:1929 src/Preferences.cpp:940
 msgid "- default -"
 msgstr "- alapértelmezett -"
 
@@ -739,81 +739,81 @@ msgstr "A(z) '%s' felület könyvtár nem létezik"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "FIGYELEM: Nem tudom a(z) '%s' felület fáljt megnyitni olvasásra"
 
-#: src/amuleDlg.cpp:1617 src/amuleDlg.cpp:1836 src/muuli_wdr.cpp:1422
-#: src/muuli_wdr.cpp:3247
+#: src/amuleDlg.cpp:1617 src/amuleDlg.cpp:1836 src/muuli_wdr.cpp:1479
+#: src/muuli_wdr.cpp:3306
 msgid "Networks"
 msgstr "Hálózatok"
 
-#: src/amuleDlg.cpp:1621 src/muuli_wdr.cpp:3247
+#: src/amuleDlg.cpp:1621 src/muuli_wdr.cpp:3306
 msgid "Networks Window"
 msgstr "Hálózatok ablaka"
 
-#: src/amuleDlg.cpp:1623 src/muuli_wdr.cpp:3248
+#: src/amuleDlg.cpp:1623 src/muuli_wdr.cpp:3307
 msgid "Searches"
 msgstr "Keresések"
 
-#: src/amuleDlg.cpp:1627 src/muuli_wdr.cpp:3248
+#: src/amuleDlg.cpp:1627 src/muuli_wdr.cpp:3307
 msgid "Searches Window"
 msgstr "Keresés ablaka"
 
-#: src/amuleDlg.cpp:1629 src/DownloadListCtrl.cpp:639 src/muuli_wdr.cpp:382
-#: src/muuli_wdr.cpp:1524 src/muuli_wdr.cpp:3249 src/Statistics.cpp:829
+#: src/amuleDlg.cpp:1629 src/DownloadListCtrl.cpp:677 src/muuli_wdr.cpp:382
+#: src/muuli_wdr.cpp:1581 src/muuli_wdr.cpp:3308 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Letöltések"
 
-#: src/amuleDlg.cpp:1633 src/muuli_wdr.cpp:3249
+#: src/amuleDlg.cpp:1633 src/muuli_wdr.cpp:3308
 msgid "Downloads Window"
 msgstr "Letöltések ablaka"
 
-#: src/amuleDlg.cpp:1635 src/muuli_wdr.cpp:3133
+#: src/amuleDlg.cpp:1635 src/muuli_wdr.cpp:3192
 msgid "Shared files"
 msgstr "Megosztott fájlok"
 
-#: src/amuleDlg.cpp:1639 src/muuli_wdr.cpp:3251
+#: src/amuleDlg.cpp:1639 src/muuli_wdr.cpp:3310
 msgid "Shared Files Window"
 msgstr "Megosztott fájlok ablaka"
 
-#: src/amuleDlg.cpp:1641 src/muuli_wdr.cpp:2773 src/muuli_wdr.cpp:3205
-#: src/muuli_wdr.cpp:3252
+#: src/amuleDlg.cpp:1641 src/muuli_wdr.cpp:2832 src/muuli_wdr.cpp:3264
+#: src/muuli_wdr.cpp:3311
 msgid "Messages"
 msgstr "Üzenetek"
 
-#: src/amuleDlg.cpp:1645 src/muuli_wdr.cpp:3252
+#: src/amuleDlg.cpp:1645 src/muuli_wdr.cpp:3311
 msgid "Messages Window"
 msgstr "Üzenetek ablaka"
 
-#: src/amuleDlg.cpp:1647 src/muuli_wdr.cpp:3253 src/PrefsUnifiedDlg.cpp:291
+#: src/amuleDlg.cpp:1647 src/muuli_wdr.cpp:3312 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statisztikák"
 
-#: src/amuleDlg.cpp:1651 src/muuli_wdr.cpp:3253
+#: src/amuleDlg.cpp:1651 src/muuli_wdr.cpp:3312
 msgid "Statistics Graph Window"
 msgstr "Statisztikai grafikonok ablaka"
 
-#: src/amuleDlg.cpp:1654 src/muuli_wdr.cpp:3255 src/PrefsUnifiedDlg.cpp:307
+#: src/amuleDlg.cpp:1654 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Beállítások"
 
-#: src/amuleDlg.cpp:1658 src/muuli_wdr.cpp:3255
+#: src/amuleDlg.cpp:1658 src/muuli_wdr.cpp:3314
 msgid "Preferences Settings Window"
 msgstr "Tulajdonságok beállításának ablaka"
 
-#: src/amuleDlg.cpp:1661 src/muuli_wdr.cpp:3256
+#: src/amuleDlg.cpp:1661 src/muuli_wdr.cpp:3315
 msgid "Import"
 msgstr "Importálás"
 
-#: src/amuleDlg.cpp:1665 src/muuli_wdr.cpp:3256
+#: src/amuleDlg.cpp:1665 src/muuli_wdr.cpp:3315
 msgid "The partfile importer tool"
 msgstr "A részfájl importáló eszköz"
 
-#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3257
+#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3316
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Névjegy"
 
-#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3257
+#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3316
 msgid "About/Help"
 msgstr "Névjegy/Súgó"
 
@@ -841,44 +841,44 @@ msgstr "aMule"
 msgid "Fatal Error: Failed to create Core Timer"
 msgstr "Végzetes hiba: a Mag Időzítőjének létrehozása sikertelen"
 
-#: src/amule-remote-gui.cpp:73
+#: src/amule-remote-gui.cpp:74
 msgid "Connect to remote amule"
 msgstr "Kapcsolódás a távoli aMule-hez"
 
-#: src/amule-remote-gui.cpp:398
+#: src/amule-remote-gui.cpp:399
 msgid "Fatal Error: Failed to create Poll Timer"
 msgstr "Végzetes hiba: a Lekérdezés Időzítőjének létrehozása sikertelen"
 
-#: src/amule-remote-gui.cpp:421
+#: src/amule-remote-gui.cpp:422
 msgid "Going to event loop..."
 msgstr "Esemény ciklus megkezdése..."
 
-#: src/amule-remote-gui.cpp:476
+#: src/amule-remote-gui.cpp:477
 msgid "Connecting..."
 msgstr "Kapcsolódás..."
 
-#: src/amule-remote-gui.cpp:509
+#: src/amule-remote-gui.cpp:510
 msgid "Connection failed. Please check the host, port, and password."
 msgstr "Kapcsolat sikertelen. Kerém ellenőrizze a host, port és jelszó értékeket."
 
-#: src/amule-remote-gui.cpp:546
+#: src/amule-remote-gui.cpp:547
 msgid "Remote GUI EC event handler"
 msgstr "Távoli GUI EC esemény kezelő"
 
-#: src/amule-remote-gui.cpp:560 src/ExternalConnector.cpp:469
+#: src/amule-remote-gui.cpp:561 src/ExternalConnector.cpp:469
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
 msgstr "Kapcsolat sikertelen. Kapcsolat felvétel %s:%d-el nem lehetséges\n"
 
-#: src/amule-remote-gui.cpp:567 src/amule-remote-gui.cpp:576
+#: src/amule-remote-gui.cpp:568 src/amule-remote-gui.cpp:577
 msgid "Going down"
 msgstr "Kikapcsolás folyamatban"
 
-#: src/amule-remote-gui.cpp:577
+#: src/amule-remote-gui.cpp:578
 msgid "Connection closed - aMule has terminated probably."
 msgstr "Kapcsolat megszünt - aMule valószínüleg befejeződött."
 
-#: src/amule-remote-gui.cpp:593
+#: src/amule-remote-gui.cpp:594
 #, c-format
 msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
@@ -887,32 +887,32 @@ msgstr ""
 "Kapcsolat időtúllépés. Képtelen a %s:%d elérése a megadott időn bellül.\n"
 "Kérem ellenőrízze a host, port értékeket, és hogy a külső kapcsolatok aktiválva vannak az aMule-ban."
 
-#: src/amule-remote-gui.cpp:691
+#: src/amule-remote-gui.cpp:692
 msgid "Ready"
 msgstr "Készen"
 
-#: src/amule-remote-gui.cpp:903 src/TransferWnd.cpp:338
+#: src/amule-remote-gui.cpp:904 src/TransferWnd.cpp:338
 msgid "All"
 msgstr "Mind"
 
-#: src/amule-remote-gui.cpp:954 src/ExternalConn.cpp:1908
+#: src/amule-remote-gui.cpp:955 src/ExternalConn.cpp:1908
 msgid "Invalid link or already on list."
 msgstr "Érvénytelen hivatkozás, vagy már rajta van a listán."
 
-#: src/amule-remote-gui.cpp:981
+#: src/amule-remote-gui.cpp:982
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "A '%s' könyvtár létrehozása a '%s' kategóriához nem lehetséges, a '%s' könyvtár megtartva."
 
-#: src/amule-remote-gui.cpp:1765 src/BaseClient.cpp:1835
+#: src/amule-remote-gui.cpp:1771 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
 #: src/ClientDetailDialog.cpp:123 src/DataToText.cpp:61 src/DataToText.cpp:86
 #: src/DataToText.cpp:101 src/DataToText.cpp:136 src/DataToText.cpp:165
-#: src/DownloadListCtrl.cpp:1071 src/DownloadListCtrl.cpp:1084
-#: src/DownloadListCtrl.cpp:1095 src/ExternalConn.cpp:550
-#: src/FileDetailDialog.cpp:186 src/GenericClientListCtrl.cpp:1136
+#: src/DownloadListCtrl.cpp:1109 src/DownloadListCtrl.cpp:1122
+#: src/DownloadListCtrl.cpp:1133 src/ExternalConn.cpp:550
+#: src/FileDetailDialog.cpp:187 src/GenericClientListCtrl.cpp:1136
 #: src/GenericClientListCtrl.cpp:1147 src/GenericClientListCtrl.cpp:1157
 #: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
 #: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
@@ -1012,7 +1012,7 @@ msgstr "Hiba a %s fájl mentése közben: %s"
 msgid "Enter Captcha"
 msgstr "Captcha megadása"
 
-#: src/CatDialog.cpp:58 src/DownloadListCtrl.cpp:682 src/muuli_wdr.cpp:243
+#: src/CatDialog.cpp:58 src/DownloadListCtrl.cpp:720 src/muuli_wdr.cpp:243
 #: src/SearchListCtrl.cpp:690 src/TransferWnd.cpp:333
 msgid "Category"
 msgstr "Kategória"
@@ -1139,7 +1139,7 @@ msgid "Disconnected"
 msgstr "Szétkapcsolva"
 
 #: src/ClientDetailDialog.cpp:151 src/ClientDetailDialog.cpp:155
-#: src/DownloadListCtrl.cpp:948 src/GenericClientListCtrl.cpp:945
+#: src/DownloadListCtrl.cpp:986 src/GenericClientListCtrl.cpp:945
 #: src/GenericClientListCtrl.cpp:956
 #, c-format
 msgid "%.1f kB/s"
@@ -1243,7 +1243,7 @@ msgstr "Értékelés"
 msgid "Comment"
 msgstr "Megjegyzés"
 
-#: src/CommentDialogLst.cpp:128 src/muuli_wdr.cpp:759
+#: src/CommentDialogLst.cpp:128 src/muuli_wdr.cpp:816
 msgid "No comments"
 msgstr "Nincs megjegyzés"
 
@@ -1274,19 +1274,19 @@ msgstr "Auto [Ma]"
 msgid "Very low"
 msgstr "Nagyon alacsony"
 
-#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:642 src/muuli_wdr.cpp:2157
+#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:680 src/muuli_wdr.cpp:2214
 #: src/ServerListCtrl.cpp:246 src/ServerListCtrl.cpp:439
 #: src/SharedFilesCtrl.cpp:132
 msgid "Low"
 msgstr "Alacsony"
 
-#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:643 src/muuli_wdr.cpp:2158
+#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:681 src/muuli_wdr.cpp:2215
 #: src/ServerListCtrl.cpp:249 src/ServerListCtrl.cpp:440
 #: src/SharedFilesCtrl.cpp:133
 msgid "Normal"
 msgstr "Normál"
 
-#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:644 src/muuli_wdr.cpp:2159
+#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:682 src/muuli_wdr.cpp:2216
 #: src/ServerListCtrl.cpp:252 src/ServerListCtrl.cpp:441
 #: src/SharedFilesCtrl.cpp:134
 msgid "High"
@@ -1378,7 +1378,7 @@ msgstr "Helyi kiszolgáló"
 msgid "Remote Server"
 msgstr "Távoli kiszolgáló"
 
-#: src/DataToText.cpp:152 src/muuli_wdr.cpp:207 src/muuli_wdr.cpp:3026
+#: src/DataToText.cpp:152 src/muuli_wdr.cpp:207 src/muuli_wdr.cpp:3085
 #: src/SearchDlg.cpp:108 src/TextClient.cpp:890
 msgid "Kad"
 msgstr "Kad"
@@ -1449,7 +1449,7 @@ msgstr "Rész"
 msgid "Size"
 msgstr "Méret"
 
-#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3093
+#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3152
 msgid "Transferred"
 msgstr "Átmásolva"
 
@@ -1466,7 +1466,7 @@ msgstr "Folyamatjelző"
 msgid "Sources"
 msgstr "Források"
 
-#: src/DownloadListCtrl.cpp:165 src/DownloadListCtrl.cpp:647
+#: src/DownloadListCtrl.cpp:165 src/DownloadListCtrl.cpp:685
 #: src/ServerListCtrl.cpp:97 src/ServerListCtrl.cpp:443
 #: src/SharedFilesCtrl.cpp:104 src/SharedFilesCtrl.cpp:139
 msgid "Priority"
@@ -1488,15 +1488,15 @@ msgstr "Utoljára teljesnek látott"
 msgid "Last Reception"
 msgstr "Utoljára fogadott"
 
-#: src/DownloadListCtrl.cpp:405
+#: src/DownloadListCtrl.cpp:443
 msgid "Are you sure that you wish to delete the selected file?"
 msgstr "Biztos, hogy törlöd a kiválasztott fájlt?"
 
-#: src/DownloadListCtrl.cpp:407
+#: src/DownloadListCtrl.cpp:445
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Biztos, hogy törlöd a kiválasztott fájlokat?"
 
-#: src/DownloadListCtrl.cpp:550 src/SharedFilesCtrl.cpp:198
+#: src/DownloadListCtrl.cpp:588 src/SharedFilesCtrl.cpp:198
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1505,108 +1505,108 @@ msgstr ""
 "Visszajelzés %s-től (%s):\n"
 "\n"
 
-#: src/DownloadListCtrl.cpp:645 src/muuli_wdr.cpp:2160
+#: src/DownloadListCtrl.cpp:683 src/muuli_wdr.cpp:2217
 #: src/SharedFilesCtrl.cpp:137
 msgid "Auto"
 msgstr "Automatikus"
 
-#: src/DownloadListCtrl.cpp:649 src/TransferWnd.cpp:374
+#: src/DownloadListCtrl.cpp:687 src/TransferWnd.cpp:374
 msgid "&Stop"
 msgstr "&Állj"
 
-#: src/DownloadListCtrl.cpp:650 src/TransferWnd.cpp:375
+#: src/DownloadListCtrl.cpp:688 src/TransferWnd.cpp:375
 msgid "&Pause"
 msgstr "&Szüneteltet"
 
-#: src/DownloadListCtrl.cpp:651 src/TransferWnd.cpp:376
+#: src/DownloadListCtrl.cpp:689 src/TransferWnd.cpp:376
 msgid "&Resume"
 msgstr "&Folytatás"
 
-#: src/DownloadListCtrl.cpp:652
+#: src/DownloadListCtrl.cpp:690
 msgid "C&lear completed"
 msgstr "Befejezettek &eltávolítása"
 
-#: src/DownloadListCtrl.cpp:657
+#: src/DownloadListCtrl.cpp:695
 msgid "Swap every A4AF to this file now"
 msgstr "Összes A4AF cseréje ehhez a fájhoz most"
 
-#: src/DownloadListCtrl.cpp:658
+#: src/DownloadListCtrl.cpp:696
 msgid "Swap every A4AF to this file (Auto)"
 msgstr "Összes A4AF cseréje ehhez a fájhoz most (Automatikusan)"
 
-#: src/DownloadListCtrl.cpp:662
+#: src/DownloadListCtrl.cpp:700
 msgid "Swap every A4AF to any other file now"
 msgstr "Összes A4AF cseréje a többi fájhoz most"
 
-#: src/DownloadListCtrl.cpp:664
+#: src/DownloadListCtrl.cpp:702
 msgid "Extended Options"
 msgstr "Kibővített beállítások"
 
-#: src/DownloadListCtrl.cpp:669 src/DownloadListCtrl.cpp:721
-#: src/muuli_wdr.cpp:1693
+#: src/DownloadListCtrl.cpp:707 src/DownloadListCtrl.cpp:759
+#: src/muuli_wdr.cpp:1750
 msgid "Preview"
 msgstr "Előnézet"
 
-#: src/DownloadListCtrl.cpp:670
+#: src/DownloadListCtrl.cpp:708
 msgid "Show file &details"
 msgstr "Fájl &részleteinek megjelenítése"
 
-#: src/DownloadListCtrl.cpp:671 src/muuli_wdr.cpp:659
+#: src/DownloadListCtrl.cpp:709 src/muuli_wdr.cpp:716
 msgid "Show all comments"
 msgstr "Összes megjegyzés megjelenítése"
 
-#: src/DownloadListCtrl.cpp:675
+#: src/DownloadListCtrl.cpp:713
 msgid "Copy magnet URI to clipboard"
 msgstr "Magnet URI másolása a vágólapra"
 
-#: src/DownloadListCtrl.cpp:676 src/SharedFilesCtrl.cpp:158
+#: src/DownloadListCtrl.cpp:714 src/SharedFilesCtrl.cpp:158
 msgid "Copy eD2k &link to clipboard"
 msgstr "eD2k hivatkozás másolása a vágólapra"
 
-#: src/DownloadListCtrl.cpp:677 src/SharedFilesCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:715 src/SharedFilesCtrl.cpp:167
 msgid "Copy feedback to clipboard"
 msgstr "Visszajelzés másolása a vágólapra"
 
-#: src/DownloadListCtrl.cpp:686
+#: src/DownloadListCtrl.cpp:724
 msgid "unassign"
 msgstr "hozzárendelés megszüntetése"
 
-#: src/DownloadListCtrl.cpp:692
+#: src/DownloadListCtrl.cpp:730
 msgid "Assign to category"
 msgstr "Hozzárendelés kategórához"
 
-#: src/DownloadListCtrl.cpp:723
+#: src/DownloadListCtrl.cpp:761
 msgid "&Open the file"
 msgstr "Fájl &megnyitása"
 
-#: src/DownloadListCtrl.cpp:791 src/SharedFilesCtrl.cpp:745
+#: src/DownloadListCtrl.cpp:829 src/SharedFilesCtrl.cpp:745
 msgid "Enter new name for this file:"
 msgstr "Írd be az új nevet ennek a fájlnak:"
 
-#: src/DownloadListCtrl.cpp:792 src/SharedFilesCtrl.cpp:746
+#: src/DownloadListCtrl.cpp:830 src/SharedFilesCtrl.cpp:746
 msgid "File rename"
 msgstr "Fájl átnevezés"
 
-#: src/DownloadListCtrl.cpp:946 src/GenericClientListCtrl.cpp:943
+#: src/DownloadListCtrl.cpp:984 src/GenericClientListCtrl.cpp:943
 #: src/GenericClientListCtrl.cpp:954
 #, c-format
 msgid "%.1f MB/s"
 msgstr "%.1f MB/s"
 
-#: src/DownloadListCtrl.cpp:1082 src/DownloadListCtrl.cpp:1093
+#: src/DownloadListCtrl.cpp:1120 src/DownloadListCtrl.cpp:1131
 msgid "%y/%m/%d %H:%M:%S"
 msgstr "%y.%m.%d %H:%M:%S"
 
-#: src/DownloadListCtrl.cpp:1238
+#: src/DownloadListCtrl.cpp:1276
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Letöltések (%i)"
 
-#: src/DownloadListCtrl.cpp:1403
+#: src/DownloadListCtrl.cpp:1441
 msgid "the default Windows shell handler"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp:1409
+#: src/DownloadListCtrl.cpp:1447
 #, c-format
 msgid ""
 "To prevent this warning to show up in every preview,\n"
@@ -1615,11 +1615,11 @@ msgstr ""
 "Állítsd be a kedvenc videó-lejátszódat a beállításoknál,\n"
 " hogy ezt a figyemeztetést ne kapd minden előnézetnél (alapértelmezett az %s)."
 
-#: src/DownloadListCtrl.cpp:1412
+#: src/DownloadListCtrl.cpp:1450
 msgid "File preview"
 msgstr "Fájl előnézet"
 
-#: src/DownloadListCtrl.cpp:1467
+#: src/DownloadListCtrl.cpp:1505
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "HIBA: Külső média-lejátszó indítása sikertelen! Parancs: `%s'"
@@ -2141,16 +2141,16 @@ msgstr "A program verziójának kiírása."
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
 msgstr "ZLIB tömörítés kikényszerítése a tárcsázott IP-cím helyétől függetlenül (hasznos, ha a szerver egy VPN-alagúton keresztül érhető el, amely LAN IP-címre kerül feloldásra)."
 
-#: src/FileDetailDialog.cpp:76
+#: src/FileDetailDialog.cpp:77
 msgid "File Details"
 msgstr "Fájl részletei"
 
-#: src/FileDetailDialog.cpp:171
+#: src/FileDetailDialog.cpp:172
 #, c-format
 msgid "%.1f%% done"
 msgstr "%.1f%% kész"
 
-#: src/FileDetailDialog.cpp:173 src/utils/wxCas/src/wxcasframe.cpp:1064
+#: src/FileDetailDialog.cpp:174 src/utils/wxCas/src/wxcasframe.cpp:1064
 #: src/utils/wxCas/src/wxcasframe.cpp:1072
 #, c-format
 msgid "%.2f kB/s"
@@ -2168,7 +2168,7 @@ msgstr "A barátokat tartalmazó emfriends.dat fájl írásra megnyitása sikert
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "KRITIKUS - nincsen kliens a StartChatSession-en"
 
-#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2522 src/muuli_wdr.cpp:3181
+#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2581 src/muuli_wdr.cpp:3240
 msgid "Friends"
 msgstr "Barátok"
 
@@ -2522,7 +2522,7 @@ msgstr "Megosztási arány"
 msgid "Uploaded"
 msgstr "Feltöltve"
 
-#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:3077
+#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:3136
 msgid "Requested"
 msgstr "Kért"
 
@@ -2645,8 +2645,8 @@ msgstr "HIBA: "
 msgid "WARNING: "
 msgstr "FIGYELEM: "
 
-#: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:768 src/muuli_wdr.cpp:1180
-#: src/muuli_wdr.cpp:2981 src/muuli_wdr.cpp:3221
+#: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:825 src/muuli_wdr.cpp:1237
+#: src/muuli_wdr.cpp:3040 src/muuli_wdr.cpp:3280
 msgid "Close"
 msgstr "Bezár"
 
@@ -2663,8 +2663,8 @@ msgstr "Másolás"
 msgid "Paste"
 msgstr "Beillesztés"
 
-#: src/MuleTextCtrl.cpp:89 src/muuli_wdr.cpp:348 src/muuli_wdr.cpp:710
-#: src/muuli_wdr.cpp:2232 src/muuli_wdr.cpp:2251
+#: src/MuleTextCtrl.cpp:89 src/muuli_wdr.cpp:348 src/muuli_wdr.cpp:767
+#: src/muuli_wdr.cpp:2291 src/muuli_wdr.cpp:2310
 #: src/utils/aLinkCreator/src/alcframe.cpp:142
 msgid "Clear"
 msgstr "Törlés"
@@ -2755,8 +2755,8 @@ msgid "Exit"
 msgstr "Kilépés"
 
 #: src/MuleTrayIcon.cpp:579 src/MuleTrayIcon.cpp:945 src/MuleTrayIcon.cpp:965
-#: src/muuli_wdr.cpp:1335 src/muuli_wdr.cpp:1343 src/muuli_wdr.cpp:1350
-#: src/muuli_wdr.cpp:1739 src/muuli_wdr.cpp:1745 src/OtherFunctions.cpp:91
+#: src/muuli_wdr.cpp:1392 src/muuli_wdr.cpp:1400 src/muuli_wdr.cpp:1407
+#: src/muuli_wdr.cpp:1796 src/muuli_wdr.cpp:1802 src/OtherFunctions.cpp:91
 #: src/StatisticsDlg.cpp:93 src/StatisticsDlg.cpp:95
 msgid "kB/s"
 msgstr "kB/s"
@@ -2998,7 +2998,7 @@ msgstr "bájt"
 msgid "KB"
 msgstr "KB"
 
-#: src/muuli_wdr.cpp:264 src/muuli_wdr.cpp:283 src/muuli_wdr.cpp:1560
+#: src/muuli_wdr.cpp:264 src/muuli_wdr.cpp:283 src/muuli_wdr.cpp:1617
 #: src/OtherFunctions.cpp:64
 msgid "MB"
 msgstr "MB"
@@ -3047,7 +3047,7 @@ msgstr "Kérje meg a már válaszolt Kad partnereket, hogy szélesítsék a kere
 msgid "Stop"
 msgstr "Leállít"
 
-#: src/muuli_wdr.cpp:338 src/muuli_wdr.cpp:1329 src/SearchListCtrl.cpp:688
+#: src/muuli_wdr.cpp:338 src/muuli_wdr.cpp:1386 src/SearchListCtrl.cpp:688
 msgid "Download"
 msgstr "Letöltés"
 
@@ -3067,7 +3067,7 @@ msgstr "Befejeződött letöltések törlése"
 msgid "File sources:"
 msgstr "Fájl források:"
 
-#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1016 src/PrefsUnifiedDlg.cpp:276
+#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1073 src/PrefsUnifiedDlg.cpp:276
 msgid "General"
 msgstr "Általános"
 
@@ -3081,14 +3081,16 @@ msgstr "Teljes név :"
 #: src/muuli_wdr.cpp:562 src/muuli_wdr.cpp:570 src/muuli_wdr.cpp:578
 #: src/muuli_wdr.cpp:586 src/muuli_wdr.cpp:596 src/muuli_wdr.cpp:603
 #: src/muuli_wdr.cpp:625 src/muuli_wdr.cpp:633 src/muuli_wdr.cpp:641
-#: src/muuli_wdr.cpp:1031 src/muuli_wdr.cpp:1034 src/muuli_wdr.cpp:1046
-#: src/muuli_wdr.cpp:1053 src/muuli_wdr.cpp:1058 src/muuli_wdr.cpp:1065
-#: src/muuli_wdr.cpp:1070 src/muuli_wdr.cpp:1077 src/muuli_wdr.cpp:1082
-#: src/muuli_wdr.cpp:1089 src/muuli_wdr.cpp:1101 src/muuli_wdr.cpp:1111
-#: src/muuli_wdr.cpp:1118 src/muuli_wdr.cpp:1123 src/muuli_wdr.cpp:1130
-#: src/muuli_wdr.cpp:1135 src/muuli_wdr.cpp:1142 src/muuli_wdr.cpp:1156
-#: src/muuli_wdr.cpp:1163 src/muuli_wdr.cpp:1168 src/muuli_wdr.cpp:1175
-#: src/muuli_wdr.cpp:3079 src/muuli_wdr.cpp:3087 src/muuli_wdr.cpp:3095
+#: src/muuli_wdr.cpp:661 src/muuli_wdr.cpp:668 src/muuli_wdr.cpp:675
+#: src/muuli_wdr.cpp:682 src/muuli_wdr.cpp:689 src/muuli_wdr.cpp:696
+#: src/muuli_wdr.cpp:1088 src/muuli_wdr.cpp:1091 src/muuli_wdr.cpp:1103
+#: src/muuli_wdr.cpp:1110 src/muuli_wdr.cpp:1115 src/muuli_wdr.cpp:1122
+#: src/muuli_wdr.cpp:1127 src/muuli_wdr.cpp:1134 src/muuli_wdr.cpp:1139
+#: src/muuli_wdr.cpp:1146 src/muuli_wdr.cpp:1158 src/muuli_wdr.cpp:1168
+#: src/muuli_wdr.cpp:1175 src/muuli_wdr.cpp:1180 src/muuli_wdr.cpp:1187
+#: src/muuli_wdr.cpp:1192 src/muuli_wdr.cpp:1199 src/muuli_wdr.cpp:1213
+#: src/muuli_wdr.cpp:1220 src/muuli_wdr.cpp:1225 src/muuli_wdr.cpp:1232
+#: src/muuli_wdr.cpp:3138 src/muuli_wdr.cpp:3146 src/muuli_wdr.cpp:3154
 msgid "N/A"
 msgstr "N/A"
 
@@ -3164,31 +3166,61 @@ msgstr "Tömörítéssel nyert :"
 msgid "Packages saved by I.C.H. :"
 msgstr "I.S.K.-val megmentett csomagok :"
 
-#: src/muuli_wdr.cpp:647
+#: src/muuli_wdr.cpp:653
+#, fuzzy
+msgid "Media Info"
+msgstr "Kad infó"
+
+#: src/muuli_wdr.cpp:660
+msgid "Length :"
+msgstr ""
+
+#: src/muuli_wdr.cpp:667
+#, fuzzy
+msgid "Bitrate :"
+msgstr "Nincs értékelve"
+
+#: src/muuli_wdr.cpp:674
+msgid "Codec :"
+msgstr ""
+
+#: src/muuli_wdr.cpp:681
+msgid "Artist :"
+msgstr ""
+
+#: src/muuli_wdr.cpp:688
+msgid "Album :"
+msgstr ""
+
+#: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2186
+msgid "Title :"
+msgstr "Cím :"
+
+#: src/muuli_wdr.cpp:704
 msgid "File Names"
 msgstr "Fájl nevek"
 
-#: src/muuli_wdr.cpp:655
+#: src/muuli_wdr.cpp:712
 msgid "Takeover"
 msgstr "Átvétel"
 
-#: src/muuli_wdr.cpp:662
+#: src/muuli_wdr.cpp:719
 msgid "Cleanup"
 msgstr "Kitisztítás"
 
-#: src/muuli_wdr.cpp:676 src/muuli_wdr.cpp:732
+#: src/muuli_wdr.cpp:733 src/muuli_wdr.cpp:789
 msgid "Apply"
 msgstr "Alkalmaz"
 
-#: src/muuli_wdr.cpp:680
+#: src/muuli_wdr.cpp:737
 msgid "Ok"
 msgstr "Ok"
 
-#: src/muuli_wdr.cpp:702
+#: src/muuli_wdr.cpp:759
 msgid "Comment/Rate file (Text will be visible to all users)"
 msgstr "Megjegyzés/Értékelés ehhez a fájlhoz (ezt az összes felhasználó látni fogja)"
 
-#: src/muuli_wdr.cpp:708
+#: src/muuli_wdr.cpp:765
 msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
@@ -3196,587 +3228,587 @@ msgstr ""
 "Megadhatod egy film hosszát, történetét, nyelvét...\n"
 "és ha a fájl hamis, elmondhatod ezt a többi aMule felhasználónak."
 
-#: src/muuli_wdr.cpp:716
+#: src/muuli_wdr.cpp:773
 msgid "File Quality"
 msgstr "Fájl minősítése"
 
-#: src/muuli_wdr.cpp:721 src/OtherFunctions.cpp:272 src/OtherFunctions.cpp:284
+#: src/muuli_wdr.cpp:778 src/OtherFunctions.cpp:272 src/OtherFunctions.cpp:284
 msgid "Not rated"
 msgstr "Nincs értékelve"
 
-#: src/muuli_wdr.cpp:722 src/OtherFunctions.cpp:274
+#: src/muuli_wdr.cpp:779 src/OtherFunctions.cpp:274
 msgid "Invalid / Corrupt / Fake"
 msgstr "Érvénytelen / Sérült / Hamis"
 
-#: src/muuli_wdr.cpp:723 src/OtherFunctions.cpp:276
+#: src/muuli_wdr.cpp:780 src/OtherFunctions.cpp:276
 msgid "Poor"
 msgstr "Gyenge"
 
-#: src/muuli_wdr.cpp:724 src/OtherFunctions.cpp:278
+#: src/muuli_wdr.cpp:781 src/OtherFunctions.cpp:278
 msgid "Fair"
 msgstr "Korrekt"
 
-#: src/muuli_wdr.cpp:725 src/OtherFunctions.cpp:280
+#: src/muuli_wdr.cpp:782 src/OtherFunctions.cpp:280
 msgid "Good"
 msgstr "Jó"
 
-#: src/muuli_wdr.cpp:726 src/OtherFunctions.cpp:282
+#: src/muuli_wdr.cpp:783 src/OtherFunctions.cpp:282
 msgid "Excellent"
 msgstr "Kitűnő"
 
-#: src/muuli_wdr.cpp:729
+#: src/muuli_wdr.cpp:786
 msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "Értékeld a fájlt minőségét vagy adj tanácsot a többi felhasználónak, ha a fájl érvénytelen ..."
 
-#: src/muuli_wdr.cpp:766
+#: src/muuli_wdr.cpp:823
 msgid "Refresh"
 msgstr "Frissít"
 
-#: src/muuli_wdr.cpp:789
+#: src/muuli_wdr.cpp:846
 msgid "Downloading, please wait ..."
 msgstr "Letöltés folyamatban, kis türelmet ..."
 
-#: src/muuli_wdr.cpp:793
+#: src/muuli_wdr.cpp:850
 msgid "Unknown size"
 msgstr "Ismeretlen méret"
 
-#: src/muuli_wdr.cpp:814
+#: src/muuli_wdr.cpp:871
 msgid "Required Information"
 msgstr "Kötelező adatok"
 
-#: src/muuli_wdr.cpp:819
+#: src/muuli_wdr.cpp:876
 msgid "IP Address :"
 msgstr "IP-cím :"
 
-#: src/muuli_wdr.cpp:823
+#: src/muuli_wdr.cpp:880
 msgid "Port :"
 msgstr "Port :"
 
-#: src/muuli_wdr.cpp:829
+#: src/muuli_wdr.cpp:886
 msgid "Additional Information"
 msgstr "Kiegészítő adatok"
 
-#: src/muuli_wdr.cpp:834
+#: src/muuli_wdr.cpp:891
 msgid "Username :"
 msgstr "User név :"
 
-#: src/muuli_wdr.cpp:838
+#: src/muuli_wdr.cpp:895
 msgid "Userhash :"
 msgstr "Userhash :"
 
-#: src/muuli_wdr.cpp:846 src/muuli_wdr.cpp:2300
+#: src/muuli_wdr.cpp:903 src/muuli_wdr.cpp:2359
 #: src/utils/aLinkCreator/src/alcframe.cpp:137
 msgid "Add"
 msgstr "Hozzáad"
 
-#: src/muuli_wdr.cpp:889
+#: src/muuli_wdr.cpp:946
 msgid "Download-Speed"
 msgstr "Letöltési sebesség"
 
-#: src/muuli_wdr.cpp:905 src/muuli_wdr.cpp:940 src/muuli_wdr.cpp:2400
+#: src/muuli_wdr.cpp:962 src/muuli_wdr.cpp:997 src/muuli_wdr.cpp:2459
 msgid "Current"
 msgstr "Aktuális"
 
-#: src/muuli_wdr.cpp:913 src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:2408
+#: src/muuli_wdr.cpp:970 src/muuli_wdr.cpp:1005 src/muuli_wdr.cpp:2467
 msgid "Running average"
 msgstr "Futásátlag"
 
-#: src/muuli_wdr.cpp:921 src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:2416
+#: src/muuli_wdr.cpp:978 src/muuli_wdr.cpp:1013 src/muuli_wdr.cpp:2475
 msgid "Session average"
 msgstr "Munkafolyamatok átlaga"
 
-#: src/muuli_wdr.cpp:926
+#: src/muuli_wdr.cpp:983
 msgid "Upload-Speed"
 msgstr "Feltöltési sebesség"
 
-#: src/muuli_wdr.cpp:961
+#: src/muuli_wdr.cpp:1018
 msgid "Connections"
 msgstr "Kapcsolatok"
 
-#: src/muuli_wdr.cpp:975 src/muuli_wdr.cpp:1764
+#: src/muuli_wdr.cpp:1032 src/muuli_wdr.cpp:1821
 msgid "Active downloads"
 msgstr "Aktív letöltések"
 
-#: src/muuli_wdr.cpp:983
+#: src/muuli_wdr.cpp:1040
 msgid "Active connections (1:1)"
 msgstr "Aktív kapcsolatok (1:1)"
 
-#: src/muuli_wdr.cpp:991 src/muuli_wdr.cpp:1765
+#: src/muuli_wdr.cpp:1048 src/muuli_wdr.cpp:1822
 msgid "Active uploads"
 msgstr "Aktív feltöltések"
 
-#: src/muuli_wdr.cpp:996
+#: src/muuli_wdr.cpp:1053
 msgid "Statistics Tree"
 msgstr "Statisztika fa"
 
-#: src/muuli_wdr.cpp:1023
+#: src/muuli_wdr.cpp:1080
 msgid "Username:"
 msgstr "Felhasználó neve:"
 
-#: src/muuli_wdr.cpp:1025
+#: src/muuli_wdr.cpp:1082
 msgid "Userhash:"
 msgstr "Felhasználói hash:"
 
-#: src/muuli_wdr.cpp:1044
+#: src/muuli_wdr.cpp:1101
 msgid "Client software:"
 msgstr "Kliensszoftver:"
 
-#: src/muuli_wdr.cpp:1051
+#: src/muuli_wdr.cpp:1108
 msgid "Client version:"
 msgstr "Kliensverzió:"
 
-#: src/muuli_wdr.cpp:1056 src/ServerWnd.cpp:268
+#: src/muuli_wdr.cpp:1113 src/ServerWnd.cpp:268
 msgid "IP address:"
 msgstr "IP-cím:"
 
-#: src/muuli_wdr.cpp:1063
+#: src/muuli_wdr.cpp:1120
 msgid "User ID:"
 msgstr "Felhasználó ID:"
 
-#: src/muuli_wdr.cpp:1068
+#: src/muuli_wdr.cpp:1125
 msgid "Server IP:"
 msgstr "Kiszolgáló IP:"
 
-#: src/muuli_wdr.cpp:1075
+#: src/muuli_wdr.cpp:1132
 msgid "Server name:"
 msgstr "Kiszolgáló neve:"
 
-#: src/muuli_wdr.cpp:1080
+#: src/muuli_wdr.cpp:1137
 msgid "Obfuscation:"
 msgstr "Zavarás:"
 
-#: src/muuli_wdr.cpp:1087
+#: src/muuli_wdr.cpp:1144
 msgid "Kad:"
 msgstr "Kad:"
 
-#: src/muuli_wdr.cpp:1094
+#: src/muuli_wdr.cpp:1151
 msgid "Transfers to client"
 msgstr "Átvitel a kliensnek"
 
-#: src/muuli_wdr.cpp:1099
+#: src/muuli_wdr.cpp:1156
 msgid "Current request:"
 msgstr "Aktuális kérés:"
 
-#: src/muuli_wdr.cpp:1109
+#: src/muuli_wdr.cpp:1166
 msgid "Average upload rate:"
 msgstr "Átlagos feltöltési arány:"
 
-#: src/muuli_wdr.cpp:1116
+#: src/muuli_wdr.cpp:1173
 msgid "Average download rate:"
 msgstr "Átlagos letöltési arány:"
 
-#: src/muuli_wdr.cpp:1121
+#: src/muuli_wdr.cpp:1178
 msgid "Uploaded (session):"
 msgstr "Feltöltve (ebben a szakaszban):"
 
-#: src/muuli_wdr.cpp:1128
+#: src/muuli_wdr.cpp:1185
 msgid "Downloaded (session):"
 msgstr "Letöltve (ebben a szakaszban):"
 
-#: src/muuli_wdr.cpp:1133
+#: src/muuli_wdr.cpp:1190
 msgid "Uploaded (total):"
 msgstr "Feltöltve (összesen):"
 
-#: src/muuli_wdr.cpp:1140
+#: src/muuli_wdr.cpp:1197
 msgid "Downloaded (total):"
 msgstr "Letöltve (összesen):"
 
-#: src/muuli_wdr.cpp:1147
+#: src/muuli_wdr.cpp:1204
 msgid "Scores"
 msgstr "Eredmények"
 
-#: src/muuli_wdr.cpp:1154
+#: src/muuli_wdr.cpp:1211
 msgid "DL/UP modifier:"
 msgstr "Le/Fel módosító:"
 
-#: src/muuli_wdr.cpp:1161
+#: src/muuli_wdr.cpp:1218
 msgid "Secure ident:"
 msgstr "Biztonsági azonosító:"
 
-#: src/muuli_wdr.cpp:1166
+#: src/muuli_wdr.cpp:1223
 msgid "Queue rank:"
 msgstr "Várólista helyezés:"
 
-#: src/muuli_wdr.cpp:1173
+#: src/muuli_wdr.cpp:1230
 msgid "Queue score:"
 msgstr "Feltöltési várólista pontszám:"
 
-#: src/muuli_wdr.cpp:1197
+#: src/muuli_wdr.cpp:1254
 msgid "Nick"
 msgstr "Becenév"
 
-#: src/muuli_wdr.cpp:1200
+#: src/muuli_wdr.cpp:1257
 msgid "https://amule-org.github.io - the multi-platform Mule"
 msgstr "https://amule-org.github.io - a multi-platform Mule"
 
-#: src/muuli_wdr.cpp:1201
+#: src/muuli_wdr.cpp:1258
 msgid "This is the name that other users will see when connecting to you."
 msgstr "Ezt a nevet fogja a többi felhasználó látni, amikor kapcsolódnak hozzád."
 
-#: src/muuli_wdr.cpp:1207
+#: src/muuli_wdr.cpp:1264
 msgid "Language: "
 msgstr "Nyelv: "
 
-#: src/muuli_wdr.cpp:1208 src/muuli_wdr.cpp:1267 src/muuli_wdr.cpp:1271
-#: src/muuli_wdr.cpp:1274
+#: src/muuli_wdr.cpp:1265 src/muuli_wdr.cpp:1324 src/muuli_wdr.cpp:1328
+#: src/muuli_wdr.cpp:1331
 msgid "The delay before showing tool-tips."
 msgstr "Késleltetés a tool-tippek előtt."
 
-#: src/muuli_wdr.cpp:1213
+#: src/muuli_wdr.cpp:1270
 msgid "This specifies the language used on controls."
 msgstr "Ez határozza meg a nyelvet, amelyet az irányításhoz használ."
 
-#: src/muuli_wdr.cpp:1216
+#: src/muuli_wdr.cpp:1273
 #, fuzzy
 msgid "Periodically check for a new version"
 msgstr "Indításkor új verzió keresése"
 
-#: src/muuli_wdr.cpp:1217
+#: src/muuli_wdr.cpp:1274
 #, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
 msgstr "Engedélyezve indításnál az aMule új verziót fog keresni."
 
-#: src/muuli_wdr.cpp:1224
+#: src/muuli_wdr.cpp:1281
 msgid "Start aMule automatically when I log in"
 msgstr "aMule automatikus indítása bejelentkezéskor"
 
-#: src/muuli_wdr.cpp:1225
+#: src/muuli_wdr.cpp:1282
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Felhasználónkénti automatikus indítási bejegyzést regisztrál, hogy az aMule bejelentkezéskor elinduljon. Ha áthelyezi az aMule bináris fájlt, indítsa el az aMule-t manuálisan a bejegyzés frissítéséhez."
 
-#: src/muuli_wdr.cpp:1232
+#: src/muuli_wdr.cpp:1289
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1233
+#: src/muuli_wdr.cpp:1290
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1236
+#: src/muuli_wdr.cpp:1293
 msgid "Register aMule for magnet: links"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1237
+#: src/muuli_wdr.cpp:1294
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1240
+#: src/muuli_wdr.cpp:1297
 msgid "Start minimized"
 msgstr "Indítás minimalizálva"
 
-#: src/muuli_wdr.cpp:1241
+#: src/muuli_wdr.cpp:1298
 msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "Engedélyezve indításnál minimalizálni fogja magát az aMule."
 
-#: src/muuli_wdr.cpp:1244
+#: src/muuli_wdr.cpp:1301
 msgid "Prompt on exit"
 msgstr "Figyelmeztetés kilépéskor"
 
-#: src/muuli_wdr.cpp:1246
+#: src/muuli_wdr.cpp:1303
 msgid "Makes aMule prompt before exiting."
 msgstr "Figyelmeztessen az aMule bezárása előtt."
 
-#: src/muuli_wdr.cpp:1249
+#: src/muuli_wdr.cpp:1306
 msgid "Enable Tray Icon"
 msgstr "Tálca ikon engedélyezése"
 
-#: src/muuli_wdr.cpp:1250
+#: src/muuli_wdr.cpp:1307
 msgid "This Enables/Disables the system tray (or taskbar) icon."
 msgstr "Ez engedélyezi/tiltja a tálca ikont."
 
-#: src/muuli_wdr.cpp:1253
+#: src/muuli_wdr.cpp:1310
 msgid "Hide application window when close button is pressed"
 msgstr "Az alkalmazás ablakának elrejtése a bezárás gomb megnyomásakor"
 
-#: src/muuli_wdr.cpp:1256
+#: src/muuli_wdr.cpp:1313
 msgid "Minimize to Tray Icon"
 msgstr "Minimalizálás a rendszer tálcára"
 
-#: src/muuli_wdr.cpp:1257
+#: src/muuli_wdr.cpp:1314
 msgid "Enabling this will make aMule minimize to the System Tray, rather than the taskbar."
 msgstr "Engedélyezve az aMule a rendszer tálcára fogja magát minimalizálni a tálca helyett."
 
-#: src/muuli_wdr.cpp:1260
+#: src/muuli_wdr.cpp:1317
 msgid "Show notifications when finished downloading"
 msgstr "Értesítések megjelenítése a letöltés befejezésekor"
 
-#: src/muuli_wdr.cpp:1261
+#: src/muuli_wdr.cpp:1318
 msgid "Enabling this will make aMule to show notifications when finished downloading."
 msgstr "Ezt engedélyezve az aMule értesítéseket fog megjeleníteni a befejezett letöltésekről."
 
-#: src/muuli_wdr.cpp:1266
+#: src/muuli_wdr.cpp:1323
 msgid "Tooltip delay time: "
 msgstr "Szóbuborék késési idő: "
 
-#: src/muuli_wdr.cpp:1273
+#: src/muuli_wdr.cpp:1330
 msgid "seconds"
 msgstr "másodperc"
 
-#: src/muuli_wdr.cpp:1277
+#: src/muuli_wdr.cpp:1334
 msgid "Browser Selection"
 msgstr "Böngésző kiválasztása"
 
-#: src/muuli_wdr.cpp:1283
+#: src/muuli_wdr.cpp:1340
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
 msgstr "Írd ide a böngésződ nevét. Hagyd üresen, hogy a rendszer alapértelmezett böngészőjéhez."
 
-#: src/muuli_wdr.cpp:1286 src/muuli_wdr.cpp:1303 src/muuli_wdr.cpp:1603
-#: src/muuli_wdr.cpp:1634 src/muuli_wdr.cpp:1646 src/muuli_wdr.cpp:2616
+#: src/muuli_wdr.cpp:1343 src/muuli_wdr.cpp:1360 src/muuli_wdr.cpp:1660
+#: src/muuli_wdr.cpp:1691 src/muuli_wdr.cpp:1703 src/muuli_wdr.cpp:2675
 #: src/utils/aLinkCreator/src/alcframe.cpp:135
 #: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
 msgid "Browse"
 msgstr "Tallóz"
 
-#: src/muuli_wdr.cpp:1290
+#: src/muuli_wdr.cpp:1347
 msgid "Open in new tab if possible"
 msgstr "Megnyitás új fülön, ha lehetséges"
 
-#: src/muuli_wdr.cpp:1292
+#: src/muuli_wdr.cpp:1349
 msgid "Open the web page in a new tab instead of in a new window when possible"
 msgstr "Weboldal megnyitása új fülön új ablak helyett, ha lehetséges"
 
-#: src/muuli_wdr.cpp:1296
+#: src/muuli_wdr.cpp:1353
 msgid "Video Player"
 msgstr "Videólejátszó"
 
-#: src/muuli_wdr.cpp:1323
+#: src/muuli_wdr.cpp:1380
 msgid "Bandwidth limits"
 msgstr "Sávszélesség korlátok"
 
-#: src/muuli_wdr.cpp:1337
+#: src/muuli_wdr.cpp:1394
 msgid "Upload"
 msgstr "Feltöltés"
 
-#: src/muuli_wdr.cpp:1345
+#: src/muuli_wdr.cpp:1402
 msgid "Slot Allocation"
 msgstr "Slot kiosztás"
 
-#: src/muuli_wdr.cpp:1354
+#: src/muuli_wdr.cpp:1411
 msgid "Ports"
 msgstr "Portok"
 
-#: src/muuli_wdr.cpp:1360
+#: src/muuli_wdr.cpp:1417
 msgid "Standard TCP Port "
 msgstr "Szabvány TCP port "
 
-#: src/muuli_wdr.cpp:1364
+#: src/muuli_wdr.cpp:1421
 msgid "This is the standard eD2k port and cannot be disabled."
 msgstr "Ez a szabvány eD2k port és nem lehet letiltani."
 
-#: src/muuli_wdr.cpp:1367
+#: src/muuli_wdr.cpp:1424
 msgid "UDP port for server requests (TCP+3):"
 msgstr "UDP port a kiszolgáló kérésekhez (TCP+3):"
 
-#: src/muuli_wdr.cpp:1369
+#: src/muuli_wdr.cpp:1426
 msgid "4665"
 msgstr "4665"
 
-#: src/muuli_wdr.cpp:1372
+#: src/muuli_wdr.cpp:1429
 msgid "Extended UDP port (Kad / global search) "
 msgstr "Bővített UDP port (Kad / globális keresés) "
 
-#: src/muuli_wdr.cpp:1376
+#: src/muuli_wdr.cpp:1433
 msgid "This UDP port is used for extended eD2k requests and Kad network"
 msgstr "Ezt az UDP portot a bővített eD2k kérések és a Kad hálózat használja"
 
-#: src/muuli_wdr.cpp:1379
+#: src/muuli_wdr.cpp:1436
 msgid "Enable UPnP for router port forwarding"
 msgstr "UPnP engedélyezése a router port továbbításhoz"
 
-#: src/muuli_wdr.cpp:1383
+#: src/muuli_wdr.cpp:1440
 msgid "UPnP TCP Port (Optional):"
 msgstr "UPnP TCP port (nem kötelező):"
 
-#: src/muuli_wdr.cpp:1393
+#: src/muuli_wdr.cpp:1450
 msgid "Bind local address to IP (empty for any):"
 msgstr "Lokális cím IP-hez csatolása (mindet ha üres):"
 
-#: src/muuli_wdr.cpp:1396
+#: src/muuli_wdr.cpp:1453
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
 msgstr "Csak haladó felhasználóknak: Ha több hálózati kártyád van, írd ide a címet, amelyhez az aMule kötve legyen."
 
-#: src/muuli_wdr.cpp:1399
+#: src/muuli_wdr.cpp:1456
 #, fuzzy
 msgid "Bind to network interface (empty for any):"
 msgstr "Lokális cím IP-hez csatolása (mindet ha üres):"
 
-#: src/muuli_wdr.cpp:1405
+#: src/muuli_wdr.cpp:1462
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1411
+#: src/muuli_wdr.cpp:1468
 msgid "Max sources per downloading file:"
 msgstr "Max források letöltési fájlonként:"
 
-#: src/muuli_wdr.cpp:1415
+#: src/muuli_wdr.cpp:1472
 msgid "Max simultaneous connections:"
 msgstr "Max egyidejű kapcsolatok:"
 
-#: src/muuli_wdr.cpp:1425
+#: src/muuli_wdr.cpp:1482
 msgid "Kademlia"
 msgstr "Kademlia"
 
-#: src/muuli_wdr.cpp:1428 src/muuli_wdr.cpp:3021
+#: src/muuli_wdr.cpp:1485 src/muuli_wdr.cpp:3080
 msgid "ED2K"
 msgstr "ED2K"
 
-#: src/muuli_wdr.cpp:1435
+#: src/muuli_wdr.cpp:1492
 msgid "Autoconnect on startup"
 msgstr "Automatikus kapcsolódás induláskor"
 
-#: src/muuli_wdr.cpp:1438
+#: src/muuli_wdr.cpp:1495
 msgid "Reconnect on loss"
 msgstr "Kapcsolódás megismétlése megszakadt kapcsolat esetén"
 
-#: src/muuli_wdr.cpp:1460
+#: src/muuli_wdr.cpp:1517
 msgid "Remove dead server after"
 msgstr "Halott kiszolgálók eltávolítása"
 
-#: src/muuli_wdr.cpp:1464
+#: src/muuli_wdr.cpp:1521
 msgid "retries"
 msgstr "próbálkozás után"
 
-#: src/muuli_wdr.cpp:1469
+#: src/muuli_wdr.cpp:1526
 msgid "Auto-update server list at startup"
 msgstr "Kiszolgáló lista automatikus frissítése indításkor"
 
-#: src/muuli_wdr.cpp:1472
+#: src/muuli_wdr.cpp:1529
 msgid "List"
 msgstr "Lista"
 
-#: src/muuli_wdr.cpp:1475
+#: src/muuli_wdr.cpp:1532
 msgid "Update server list when connecting to a server"
 msgstr "Kiszolgáló lista frissítése kiszolgálóhoz való kapcsolódáskor"
 
-#: src/muuli_wdr.cpp:1478
+#: src/muuli_wdr.cpp:1535
 msgid "Update server list when a client connects"
 msgstr "Kiszolgáló lista frissítése amikor egy ügyfél kapcsolódik"
 
-#: src/muuli_wdr.cpp:1481
+#: src/muuli_wdr.cpp:1538
 msgid "Use priority system"
 msgstr "Prioritási rendszer használata"
 
-#: src/muuli_wdr.cpp:1485
+#: src/muuli_wdr.cpp:1542
 msgid "Use smart LowID check on connect"
 msgstr "Intelligens LowID ellenőrzés használata kapcsolódáskor"
 
-#: src/muuli_wdr.cpp:1489
+#: src/muuli_wdr.cpp:1546
 msgid "Safe connect"
 msgstr "Biztonságos kapcsolódás"
 
-#: src/muuli_wdr.cpp:1493
+#: src/muuli_wdr.cpp:1550
 msgid "Autoconnect to servers in static list only"
 msgstr "Automatikus kapcsolódás kizárólag az állandó kiszolgálókhoz"
 
-#: src/muuli_wdr.cpp:1496
+#: src/muuli_wdr.cpp:1553
 msgid "Set manually added servers to High Priority"
 msgstr "A kézileg hozzáadott kiszolgálók Magas Prioritással történő felvétele"
 
-#: src/muuli_wdr.cpp:1514
+#: src/muuli_wdr.cpp:1571
 msgid "Intelligent Corruption Handling (I.C.H.)"
 msgstr "Intelligens Sérülés Kezelő (I.S.K.)"
 
-#: src/muuli_wdr.cpp:1517
+#: src/muuli_wdr.cpp:1574
 msgid "Enable"
 msgstr "Engedélyezés"
 
-#: src/muuli_wdr.cpp:1520
+#: src/muuli_wdr.cpp:1577
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
 msgstr "Feljett I.S.K. megbízzon minden hash-ben (nem ajánlott)"
 
-#: src/muuli_wdr.cpp:1527
+#: src/muuli_wdr.cpp:1584
 msgid "Add files to download in pause mode"
 msgstr "Fájlok felvétele szüneteltetett módban"
 
-#: src/muuli_wdr.cpp:1529
+#: src/muuli_wdr.cpp:1586
 msgid "Add files to download with auto priority"
 msgstr "Új letöltések felvétele automatikus prioritással"
 
-#: src/muuli_wdr.cpp:1532
+#: src/muuli_wdr.cpp:1589
 msgid "Try to download first and last chunks first"
 msgstr "Előszőr az első és utolsó adatelemet próbálja meg letölteni"
 
-#: src/muuli_wdr.cpp:1536
+#: src/muuli_wdr.cpp:1593
 msgid "Endgame mode: rotate to faster sources for the final blocks"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1539
+#: src/muuli_wdr.cpp:1596
 msgid "Start next paused file when a file completes"
 msgstr "Következő szüneteltetett fájl indítása amikor egy letöltés befejeződik"
 
-#: src/muuli_wdr.cpp:1542
+#: src/muuli_wdr.cpp:1599
 msgid "From the same category"
 msgstr "Ugyanabból a kategóriából"
 
-#: src/muuli_wdr.cpp:1544
+#: src/muuli_wdr.cpp:1601
 msgid "In alphabetic order"
 msgstr "Betűrendi sorrendben"
 
-#: src/muuli_wdr.cpp:1546
+#: src/muuli_wdr.cpp:1603
 msgid "Preallocate disk space for new files"
 msgstr "Lemezterület helyfogalalás az új fájloknak"
 
-#: src/muuli_wdr.cpp:1547
+#: src/muuli_wdr.cpp:1604
 msgid "For new files preallocates disk space for the whole file, thus reduces fragmentation"
 msgstr "Az új fájlok számára előre lefoglalja a lemezterületet, így csökkentve a töredezettséget"
 
-#: src/muuli_wdr.cpp:1552
+#: src/muuli_wdr.cpp:1609
 msgid "Stop downloads when free disk space reaches "
 msgstr "Letöltések megállítása amikor a szabad hely kevesebb mint "
 
-#: src/muuli_wdr.cpp:1553
+#: src/muuli_wdr.cpp:1610
 msgid "Select this if you want aMule to check your disk space"
 msgstr "Jelöld be, ha azt szeretnéd, hogy az aMule ellenőrizze a szabad lemezterületet"
 
-#: src/muuli_wdr.cpp:1557
+#: src/muuli_wdr.cpp:1614
 msgid "Enter here the min disk space desired."
 msgstr "Add meg a kívánt min. szabad lemezterületet."
 
-#: src/muuli_wdr.cpp:1563
+#: src/muuli_wdr.cpp:1620
 msgid "Save 10 sources on rare files (< 20 sources)"
 msgstr "Mentsen el 10 forrást ritka fájloknál (< 20 forrás)"
 
-#: src/muuli_wdr.cpp:1567 src/Statistics.cpp:790
+#: src/muuli_wdr.cpp:1624 src/Statistics.cpp:790
 msgid "Uploads"
 msgstr "Feltöltések"
 
-#: src/muuli_wdr.cpp:1570
+#: src/muuli_wdr.cpp:1627
 msgid "Add new shared files with auto priority"
 msgstr "Új megosztott fájl felvétele automatikus prioritással"
 
-#: src/muuli_wdr.cpp:1581 src/PrefsUnifiedDlg.cpp:1737
+#: src/muuli_wdr.cpp:1638 src/PrefsUnifiedDlg.cpp:1737
 msgid "Media metadata extraction"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1585
+#: src/muuli_wdr.cpp:1642
 msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1587
+#: src/muuli_wdr.cpp:1644
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1594
+#: src/muuli_wdr.cpp:1651
 msgid "Path to ffprobe:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1599
+#: src/muuli_wdr.cpp:1656
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1607
+#: src/muuli_wdr.cpp:1664
 msgid "Detect"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1608
+#: src/muuli_wdr.cpp:1665
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1628
+#: src/muuli_wdr.cpp:1685
 msgid "Destination folder for downloads"
 msgstr "Célkönyvtár a letöltéseknek"
 
-#: src/muuli_wdr.cpp:1632
+#: src/muuli_wdr.cpp:1689
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
@@ -3784,660 +3816,656 @@ msgstr ""
 "Elvégzett letöltések tárolási helye. Minden fájl ebben a könytárban automatikusan megosztásra kerül másokkal.\n"
 "Ha a könyvtár fájlokat tartalmaz, amelyek ne kerüljenek megosztásra, állítsa át egy megfelelő alkönyvtárra."
 
-#: src/muuli_wdr.cpp:1635
+#: src/muuli_wdr.cpp:1692
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
 msgstr "Válassza ki a könyvtárat az elvégzett letöltéseknek. A könyvtár minden fájlja másokkal megosztásra kerül."
 
-#: src/muuli_wdr.cpp:1639
+#: src/muuli_wdr.cpp:1696
 msgid "(All files in this folder are shared with other peers)"
 msgstr "(Minden fájl ebben a könyvtárban másokkal megosztásra kerül)"
 
-#: src/muuli_wdr.cpp:1641
+#: src/muuli_wdr.cpp:1698
 msgid "Folder for temporary download files"
 msgstr "Könyvtár az ideiglenes letöltési fájloknak"
 
-#: src/muuli_wdr.cpp:1649
+#: src/muuli_wdr.cpp:1706
 msgid "Shared folders"
 msgstr "Megosztott mappák"
 
-#: src/muuli_wdr.cpp:1652
+#: src/muuli_wdr.cpp:1709
 msgid "(Right click on folder icon for recursive share)"
 msgstr "(Jobb klikk az mappa ikonra az összes alatta levő mappát is megosztja)"
 
-#: src/muuli_wdr.cpp:1658
+#: src/muuli_wdr.cpp:1715
 msgid "Share hidden files"
 msgstr "Rejtett fájlok megosztása"
 
-#: src/muuli_wdr.cpp:1664
+#: src/muuli_wdr.cpp:1721
 msgid "Automatically rescan shared folders for changes"
 msgstr "Megosztott könyvtárak automatikus újraszkennelése"
 
-#: src/muuli_wdr.cpp:1670
+#: src/muuli_wdr.cpp:1727
 msgid "Follow symbolic links in shared folders"
 msgstr "Szimbólikus hivatkozások követése megosztott könyvtárakban"
 
-#: src/muuli_wdr.cpp:1676
+#: src/muuli_wdr.cpp:1733
 msgid "Exclude files matching:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1679
+#: src/muuli_wdr.cpp:1736
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1683
+#: src/muuli_wdr.cpp:1740
 msgid "Patterns are regular expressions"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1684
+#: src/muuli_wdr.cpp:1741
 msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1694
+#: src/muuli_wdr.cpp:1751
 msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1715
+#: src/muuli_wdr.cpp:1772
 msgid "Graphs"
 msgstr "Grafikonok"
 
-#: src/muuli_wdr.cpp:1718 src/muuli_wdr.cpp:1780
+#: src/muuli_wdr.cpp:1775 src/muuli_wdr.cpp:1837
 msgid "Update delay : 5 secs"
 msgstr "Frissítés késleltetés: 5 mp"
 
-#: src/muuli_wdr.cpp:1722
+#: src/muuli_wdr.cpp:1779
 msgid "Time for average graph: 100 mins"
 msgstr "Grafikon átlagos ideje: 100 perc"
 
-#: src/muuli_wdr.cpp:1726
+#: src/muuli_wdr.cpp:1783
 msgid "Connections Graph Scale: 100 "
 msgstr "Kapcsolatok grafikon skálája: 100 "
 
-#: src/muuli_wdr.cpp:1733
+#: src/muuli_wdr.cpp:1790
 msgid "Download graph scale:"
 msgstr "Letöltési grafikon méretaránya:"
 
-#: src/muuli_wdr.cpp:1741
+#: src/muuli_wdr.cpp:1798
 msgid "Upload graph scale:"
 msgstr "Feltöltési grafikon méretaránya:"
 
-#: src/muuli_wdr.cpp:1751
+#: src/muuli_wdr.cpp:1808
 msgid "Colors: "
 msgstr "Színek: "
 
-#: src/muuli_wdr.cpp:1755
+#: src/muuli_wdr.cpp:1812
 msgid "Background"
 msgstr "Háttér"
 
-#: src/muuli_wdr.cpp:1756
+#: src/muuli_wdr.cpp:1813
 msgid "Grid"
 msgstr "Rács"
 
-#: src/muuli_wdr.cpp:1757
+#: src/muuli_wdr.cpp:1814
 msgid "Download current"
 msgstr "Aktuális letöltés"
 
-#: src/muuli_wdr.cpp:1758
+#: src/muuli_wdr.cpp:1815
 msgid "Download running average"
 msgstr "Letöltési futás átlaga"
 
-#: src/muuli_wdr.cpp:1759
+#: src/muuli_wdr.cpp:1816
 msgid "Download session average"
 msgstr "Letöltési folyamatok átlaga"
 
-#: src/muuli_wdr.cpp:1760
+#: src/muuli_wdr.cpp:1817
 msgid "Upload current"
 msgstr "Aktuális feltöltés"
 
-#: src/muuli_wdr.cpp:1761
+#: src/muuli_wdr.cpp:1818
 msgid "Upload running average"
 msgstr "Feltöltési futás átlaga"
 
-#: src/muuli_wdr.cpp:1762
+#: src/muuli_wdr.cpp:1819
 msgid "Upload session average"
 msgstr "Feltöltési folyamatok átlaga"
 
-#: src/muuli_wdr.cpp:1763
+#: src/muuli_wdr.cpp:1820
 msgid "Active connections"
 msgstr "Aktív kapcsolatok"
 
-#: src/muuli_wdr.cpp:1766
+#: src/muuli_wdr.cpp:1823
 msgid "Systray Icon Speed Bar"
 msgstr "Sebességmérő a rendszertálcán"
 
-#: src/muuli_wdr.cpp:1767
+#: src/muuli_wdr.cpp:1824
 msgid "Kad-nodes current"
 msgstr "Kad-csomópontok aktuális"
 
-#: src/muuli_wdr.cpp:1768
+#: src/muuli_wdr.cpp:1825
 msgid "Kad-nodes running"
 msgstr "Kad-csomópontok futó"
 
-#: src/muuli_wdr.cpp:1769
+#: src/muuli_wdr.cpp:1826
 msgid "Kad-nodes session"
 msgstr "Kad-csomópontok folyamat"
 
-#: src/muuli_wdr.cpp:1773 src/muuli_wdr.cpp:2178
+#: src/muuli_wdr.cpp:1830 src/muuli_wdr.cpp:2235
 msgid "Select"
 msgstr "Kiválaszt"
 
-#: src/muuli_wdr.cpp:1777
+#: src/muuli_wdr.cpp:1834
 msgid "Tree"
 msgstr "Fa"
 
-#: src/muuli_wdr.cpp:1787
+#: src/muuli_wdr.cpp:1844
 msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Megjelenített ügyfél verziók száma (0=mind)"
 
-#: src/muuli_wdr.cpp:1812
+#: src/muuli_wdr.cpp:1869
 msgid "!!! WARNING !!!"
 msgstr "!!! FIGYELEM !!!"
 
-#: src/muuli_wdr.cpp:1827
+#: src/muuli_wdr.cpp:1884
 msgid "Max new connections / 5 secs"
 msgstr "Max új kapcsolat / 5 mp"
 
-#: src/muuli_wdr.cpp:1829
+#: src/muuli_wdr.cpp:1886
 msgid "Concurrent Kad source lookups"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1831
+#: src/muuli_wdr.cpp:1888
 #, fuzzy
 msgid "Kad source re-search interval (minutes)"
 msgstr "FTP frissítési gyakorisága percekben"
 
-#: src/muuli_wdr.cpp:1833
+#: src/muuli_wdr.cpp:1890
 #, fuzzy
 msgid "Source re-ask interval (minutes)"
 msgstr "FTP frissítési gyakorisága percekben"
 
-#: src/muuli_wdr.cpp:1837
+#: src/muuli_wdr.cpp:1894
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Fájl buffer méret: 240000 bájt"
 
-#: src/muuli_wdr.cpp:1841
+#: src/muuli_wdr.cpp:1898
 msgid "Upload Queue Size: 5000 clients"
 msgstr "Feltöltők várólistájának nagysága: 5000 kliens"
 
-#: src/muuli_wdr.cpp:1845
+#: src/muuli_wdr.cpp:1902
 msgid "Server connection refresh interval: Disable"
 msgstr "Kiszolgáló kapcsolat frissítési gyakorisága: Tiltva"
 
-#: src/muuli_wdr.cpp:1849
+#: src/muuli_wdr.cpp:1906
 msgid "Disable computer's timed standby mode"
 msgstr "Számítógép időzített készenléti állapotának hatástalanítása"
 
-#: src/muuli_wdr.cpp:1868
+#: src/muuli_wdr.cpp:1925
 msgid "Skin to use: "
 msgstr "Használt felület: "
 
-#: src/muuli_wdr.cpp:1877
+#: src/muuli_wdr.cpp:1934
 msgid "Show \"Fast eD2k Links Handler\" in every window."
 msgstr "A \"Gyors eD2k hivatkozás kezelő\" mutatása minden ablakban."
 
-#: src/muuli_wdr.cpp:1880
+#: src/muuli_wdr.cpp:1937
 msgid "Show extended info on categories tabs"
 msgstr "Kibővített infók megjelenítése a kategória füleken"
 
-#: src/muuli_wdr.cpp:1883
+#: src/muuli_wdr.cpp:1940
 msgid "Show application version on title"
 msgstr "Az alkalmazás verziójának megjelenítése a címsorban"
 
-#: src/muuli_wdr.cpp:1885
+#: src/muuli_wdr.cpp:1942
 msgid "Show transfer rates on title"
 msgstr "Átviteli ráták megjelenítése a címsorban"
 
-#: src/muuli_wdr.cpp:1887
+#: src/muuli_wdr.cpp:1944
 msgid "Before application name"
 msgstr "Az alkalmazás neve előtt"
 
-#: src/muuli_wdr.cpp:1889
+#: src/muuli_wdr.cpp:1946
 msgid "After application name"
 msgstr "Az alkalmazás neve után"
 
-#: src/muuli_wdr.cpp:1892
+#: src/muuli_wdr.cpp:1949
 msgid "Show overhead bandwidth"
 msgstr "Többletterhelés sávszélességének mutatása"
 
-#: src/muuli_wdr.cpp:1896
+#: src/muuli_wdr.cpp:1953
 msgid "Vertical toolbar orientation"
 msgstr "Függőleges eszköztár elrendezés"
 
-#: src/muuli_wdr.cpp:1902
+#: src/muuli_wdr.cpp:1959
 msgid "Download Queue Files"
 msgstr "Letöltendő fájlok várakozási sora"
 
-#: src/muuli_wdr.cpp:1905
+#: src/muuli_wdr.cpp:1962
 msgid "Show progress percentage"
 msgstr "Százalékos arány mutatása"
 
-#: src/muuli_wdr.cpp:1911
+#: src/muuli_wdr.cpp:1968
 msgid "Show progress bar"
 msgstr "Folyamatjelző csík mutatása"
 
-#: src/muuli_wdr.cpp:1914
+#: src/muuli_wdr.cpp:1971
 msgid "Flat"
 msgstr "Lapos"
 
-#: src/muuli_wdr.cpp:1918
+#: src/muuli_wdr.cpp:1975
 msgid "Round"
 msgstr "Gömbölyű"
 
-#: src/muuli_wdr.cpp:1921
+#: src/muuli_wdr.cpp:1978
 msgid "Auto-sort files (high CPU)"
 msgstr "Fájlok automatikus rendezése (erős CPU)"
 
-#: src/muuli_wdr.cpp:1923
+#: src/muuli_wdr.cpp:1980
 msgid "aMule will sort the columns in your download list automatically"
 msgstr "Az aMule automatikusan rendezni fogja az oszlopokat a letöltési listádban"
 
-#: src/muuli_wdr.cpp:1940
+#: src/muuli_wdr.cpp:1997
 msgid "External Connection Parameters"
 msgstr "Külső kapcsolatok jellemzői"
 
-#: src/muuli_wdr.cpp:1943
+#: src/muuli_wdr.cpp:2000
 msgid "Accept external connections"
 msgstr "Külső kapcsolat elfogadása"
 
-#: src/muuli_wdr.cpp:1950 src/muuli_wdr.cpp:1994
+#: src/muuli_wdr.cpp:2007 src/muuli_wdr.cpp:2051
 msgid "IP of the listening interface:"
 msgstr "Hallgató interfész IP-je:"
 
-#: src/muuli_wdr.cpp:1953
+#: src/muuli_wdr.cpp:2010
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
 msgstr "Adjon meg itt egy érvényes IP címet a.b.c.d formában az EC hallgató interfésznek. Üres mező vagy 0.0.0.0 jelentése: bármelyik interfész."
 
-#: src/muuli_wdr.cpp:1959 src/muuli_wdr.cpp:2038
+#: src/muuli_wdr.cpp:2016 src/muuli_wdr.cpp:2095
 msgid "TCP port:"
 msgstr "TCP port:"
 
-#: src/muuli_wdr.cpp:1965
+#: src/muuli_wdr.cpp:2022
 msgid "Enable UPnP port forwarding on the EC port"
 msgstr "UPnP port továbbítás engedélyezése az EC porton"
 
-#: src/muuli_wdr.cpp:1969 src/muuli_wdr.cpp:2893
+#: src/muuli_wdr.cpp:2026 src/muuli_wdr.cpp:2952
 #: src/utils/wxCas/src/wxcasprefs.cpp:167
 msgid "Password"
 msgstr "Jelszó"
 
-#: src/muuli_wdr.cpp:1975
+#: src/muuli_wdr.cpp:2032
 #, fuzzy
 msgid "aMule API server parameters"
 msgstr "Web kiszolgáló paraméterek"
 
-#: src/muuli_wdr.cpp:1978
+#: src/muuli_wdr.cpp:2035
 msgid "Run amuleapi (REST API) on startup"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1983
+#: src/muuli_wdr.cpp:2040
 #, fuzzy
 msgid "HTTP port:"
 msgstr "TCP port:"
 
-#: src/muuli_wdr.cpp:1997
+#: src/muuli_wdr.cpp:2054
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2000
+#: src/muuli_wdr.cpp:2057
 #, fuzzy
 msgid "Admin password"
 msgstr "Jelszó ellenőrzése\n"
 
-#: src/muuli_wdr.cpp:2008
+#: src/muuli_wdr.cpp:2065
 msgid "Web server parameters"
 msgstr "Web kiszolgáló paraméterek"
 
-#: src/muuli_wdr.cpp:2011
+#: src/muuli_wdr.cpp:2068
 #, fuzzy
 msgid "Run webserver on startup (deprecated)"
 msgstr "Webkiszolgáló indítása induláskor"
 
-#: src/muuli_wdr.cpp:2017
+#: src/muuli_wdr.cpp:2074
 msgid "Web template"
 msgstr "Web minta"
 
-#: src/muuli_wdr.cpp:2022
+#: src/muuli_wdr.cpp:2079
 msgid "Full rights password"
 msgstr "Admin jelszó"
 
-#: src/muuli_wdr.cpp:2026
+#: src/muuli_wdr.cpp:2083
 msgid "Enable Low rights User"
 msgstr "Vendég felhasználó engedélyezése"
 
-#: src/muuli_wdr.cpp:2031
+#: src/muuli_wdr.cpp:2088
 msgid "Low rights password"
 msgstr "Vendég jelszó"
 
-#: src/muuli_wdr.cpp:2045
+#: src/muuli_wdr.cpp:2102
 msgid "Enable UPnP port forwarding of the web server port"
 msgstr "A web kiszolgáló port UPnP továbbításának engedélyezése"
 
-#: src/muuli_wdr.cpp:2050
+#: src/muuli_wdr.cpp:2107
 msgid "Web server UPnP TCP port (Optional)"
 msgstr "Web szerver UPnP TCP port (nem kötelező)"
 
-#: src/muuli_wdr.cpp:2058
+#: src/muuli_wdr.cpp:2115
 msgid "Page Refresh Time (in secs)"
 msgstr "Oldal frissítésének időzítése (mp múlva)"
 
-#: src/muuli_wdr.cpp:2065
+#: src/muuli_wdr.cpp:2122
 msgid "Enable Gzip compression"
 msgstr "Gzip tömörítés engedélyezése"
 
-#: src/muuli_wdr.cpp:2099
+#: src/muuli_wdr.cpp:2156
 #, fuzzy
 msgid "Reset page to defaults"
 msgstr "Alapértelmezett"
 
-#: src/muuli_wdr.cpp:2100
+#: src/muuli_wdr.cpp:2157
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2102 src/muuli_wdr.cpp:2186 src/ServerWnd.cpp:233
+#: src/muuli_wdr.cpp:2159 src/muuli_wdr.cpp:2245 src/ServerWnd.cpp:233
 #: src/ServerWnd.cpp:241
 msgid "OK"
 msgstr "OK"
 
-#: src/muuli_wdr.cpp:2104
+#: src/muuli_wdr.cpp:2161
 msgid "Click here to apply any changes made to the preferences."
 msgstr "Kattints ide a beállítási módosítások alkalmazásához."
 
-#: src/muuli_wdr.cpp:2107
+#: src/muuli_wdr.cpp:2164
 msgid "Reset any changes made to the preferences."
 msgstr "Beállítási módosítások figyelmen kívül hagyása."
 
-#: src/muuli_wdr.cpp:2129
-msgid "Title :"
-msgstr "Cím :"
-
-#: src/muuli_wdr.cpp:2136
+#: src/muuli_wdr.cpp:2193
 msgid "Comment :"
 msgstr "Megjegyzés:"
 
-#: src/muuli_wdr.cpp:2143
+#: src/muuli_wdr.cpp:2200
 msgid "Incoming Dir :"
 msgstr "Bejövő Mappa :"
 
-#: src/muuli_wdr.cpp:2152
+#: src/muuli_wdr.cpp:2209
 msgid "Change priority for new assigned files :"
 msgstr "Újonnan hozzárendelt fájlok prioritásának változtatása :"
 
-#: src/muuli_wdr.cpp:2156
+#: src/muuli_wdr.cpp:2213
 msgid "Don't change"
 msgstr "Ne változzon"
 
-#: src/muuli_wdr.cpp:2168
+#: src/muuli_wdr.cpp:2225
 msgid "Select color for this Category (currently selected) :"
 msgstr "Válassz színt ehhez a kategóriához (jelenleg kiválasztva) :"
 
-#: src/muuli_wdr.cpp:2233 src/muuli_wdr.cpp:2252
+#: src/muuli_wdr.cpp:2292 src/muuli_wdr.cpp:2311
 msgid "Click this button to reset the log."
 msgstr "Kattints erre a gombra a logfájl visszaállításához."
 
-#: src/muuli_wdr.cpp:2271
+#: src/muuli_wdr.cpp:2330
 msgid "Click on this button to update the servers list from URL ..."
 msgstr "Kattints erre a gombra a kiszolgálólista frissítéséhez  ..."
 
-#: src/muuli_wdr.cpp:2275
+#: src/muuli_wdr.cpp:2334
 msgid "Server list"
 msgstr "Kiszolgálók listája"
 
-#: src/muuli_wdr.cpp:2279
+#: src/muuli_wdr.cpp:2338
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 msgstr "Adj meg egy címet a server.met fájlhoz és nyomd meg a baloldali gombot az ismert kiszolgálók listájának frissítéséhez."
 
-#: src/muuli_wdr.cpp:2284
+#: src/muuli_wdr.cpp:2343
 msgid "Add server manually: Name"
 msgstr "Kiszolgáló hozzáadása kézzel: Név"
 
-#: src/muuli_wdr.cpp:2287
+#: src/muuli_wdr.cpp:2346
 msgid "Enter the name of the new server here"
 msgstr "Add meg az új kiszolgáló nevét"
 
-#: src/muuli_wdr.cpp:2289 src/ServerWnd.cpp:180
+#: src/muuli_wdr.cpp:2348 src/ServerWnd.cpp:180
 msgid "IP:Port"
 msgstr "IP:Port"
 
-#: src/muuli_wdr.cpp:2292
+#: src/muuli_wdr.cpp:2351
 msgid "Enter the IP of the server here, using the x.x.x.x format."
 msgstr "Itt add meg a kiszolgálók IP-jét, használd az x.x.x.x formát."
 
-#: src/muuli_wdr.cpp:2298
+#: src/muuli_wdr.cpp:2357
 msgid "Enter the port of the server here."
 msgstr "Add meg a kiszolgáló portját."
 
-#: src/muuli_wdr.cpp:2301
+#: src/muuli_wdr.cpp:2360
 msgid "Add manually a server (fill fields to the left before) ..."
 msgstr "Kiszolgáló felvétel kézzel (töltsd ki a baloldali mezőket először) ..."
 
-#: src/muuli_wdr.cpp:2330
+#: src/muuli_wdr.cpp:2389
 msgid "aMule Log"
 msgstr "aMule Napló"
 
-#: src/muuli_wdr.cpp:2334
+#: src/muuli_wdr.cpp:2393
 msgid "Server Info"
 msgstr "Kiszolgáló Infó"
 
-#: src/muuli_wdr.cpp:2338
+#: src/muuli_wdr.cpp:2397
 msgid "ED2K Info"
 msgstr "ED2K infó"
 
-#: src/muuli_wdr.cpp:2342
+#: src/muuli_wdr.cpp:2401
 msgid "Kad Info"
 msgstr "Kad infó"
 
-#: src/muuli_wdr.cpp:2370
+#: src/muuli_wdr.cpp:2429
 msgid "Click on this button to update the nodes list from URL ..."
 msgstr "Kattints erre a gombra a csomópont-lista frissítéséhez URL-ből ..."
 
-#: src/muuli_wdr.cpp:2374
+#: src/muuli_wdr.cpp:2433
 msgid "Nodes (0)"
 msgstr "Csomópontok (0)"
 
-#: src/muuli_wdr.cpp:2378
+#: src/muuli_wdr.cpp:2437
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
 msgstr "Adj meg egy címet a nodes.dat fájlhoz és nyomd meg a baloldali gombot az ismert csomópontok listájának frissítéséhez."
 
-#: src/muuli_wdr.cpp:2381
+#: src/muuli_wdr.cpp:2440
 msgid "Nodes stats"
 msgstr "Csomópont statisztikák"
 
-#: src/muuli_wdr.cpp:2423
+#: src/muuli_wdr.cpp:2482
 msgid "Bootstrap"
 msgstr "Rendszerbetöltés"
 
-#: src/muuli_wdr.cpp:2426
+#: src/muuli_wdr.cpp:2485
 msgid "New node"
 msgstr "Új csomópont (node)"
 
-#: src/muuli_wdr.cpp:2431
+#: src/muuli_wdr.cpp:2490
 msgid "IP:"
 msgstr "IP:"
 
-#: src/muuli_wdr.cpp:2451
+#: src/muuli_wdr.cpp:2510
 msgid "Port:"
 msgstr "Port:"
 
-#: src/muuli_wdr.cpp:2464
+#: src/muuli_wdr.cpp:2523
 msgid "Bootstrap from known clients"
 msgstr "Indítás ismert kliensektől"
 
-#: src/muuli_wdr.cpp:2466
+#: src/muuli_wdr.cpp:2525
 msgid "Disconnect Kad"
 msgstr "Leválasztás a Kad-ról"
 
-#: src/muuli_wdr.cpp:2500
+#: src/muuli_wdr.cpp:2559
 msgid "Use Secure User Identification"
 msgstr "Biztonságos azonosítás használata"
 
-#: src/muuli_wdr.cpp:2502
+#: src/muuli_wdr.cpp:2561
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
 msgstr "Ajánlott ezt az opciót engedélyezni. Nem fogsz kreditet kapni, ha nincs engedélyezve."
 
-#: src/muuli_wdr.cpp:2504
+#: src/muuli_wdr.cpp:2563
 msgid "Protocol Obfuscation"
 msgstr "Protokoll zavarás"
 
-#: src/muuli_wdr.cpp:2507
+#: src/muuli_wdr.cpp:2566
 msgid "Support Protocol Obfuscation"
 msgstr "Protokoll zavarás támogatása"
 
-#: src/muuli_wdr.cpp:2509
+#: src/muuli_wdr.cpp:2568
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
 msgstr "Ez az opció engedélyezi a protokoll zavarást, és az aMule elfogad zavart kapcsolatokat más ügyfelektől."
 
-#: src/muuli_wdr.cpp:2511
+#: src/muuli_wdr.cpp:2570
 msgid "Use obfuscation for outgoing connections"
 msgstr "Kimenő kapcsolatok zavarása"
 
-#: src/muuli_wdr.cpp:2513
+#: src/muuli_wdr.cpp:2572
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
 msgstr "Ez az opció engedélyezi a protokoll zavarást, amikor más ügyfelekhez/kiszolgálókhoz kapcsolódik az aMule."
 
-#: src/muuli_wdr.cpp:2515
+#: src/muuli_wdr.cpp:2574
 msgid "Accept only obfuscated connections"
 msgstr "Csak zavart kapcsolatok elfogadása"
 
-#: src/muuli_wdr.cpp:2516
+#: src/muuli_wdr.cpp:2575
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
 msgstr "Ezen opció hatására az aMule csak zavart kapcsolatokat fog elfogadni. Kevesebb forrásod lesz, de a teljes forgalom zavart lesz"
 
-#: src/muuli_wdr.cpp:2521
+#: src/muuli_wdr.cpp:2580
 msgid "Everybody"
 msgstr "Mindenki"
 
-#: src/muuli_wdr.cpp:2523
+#: src/muuli_wdr.cpp:2582
 msgid "No one"
 msgstr "Senki"
 
-#: src/muuli_wdr.cpp:2525
+#: src/muuli_wdr.cpp:2584
 msgid "Who can see my shared files:"
 msgstr "Ki láthatja a megosztott fájljaimat:"
 
-#: src/muuli_wdr.cpp:2526
+#: src/muuli_wdr.cpp:2585
 msgid "Select who can request to view a list of your shared files."
 msgstr "Válaszd ki, hogy kik kérdezhetik le megosztott fájlaid listáját."
 
-#: src/muuli_wdr.cpp:2528
+#: src/muuli_wdr.cpp:2587
 msgid "IP-Filtering"
 msgstr "IP-szűrés"
 
-#: src/muuli_wdr.cpp:2535
+#: src/muuli_wdr.cpp:2594
 msgid "Filter clients"
 msgstr "Kliensek szűrése"
 
-#: src/muuli_wdr.cpp:2537
+#: src/muuli_wdr.cpp:2596
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "A ~/.aMule/ipfilter.dat állományban IP-jű kliensek szűrésének engedélyezése."
 
-#: src/muuli_wdr.cpp:2539
+#: src/muuli_wdr.cpp:2598
 msgid "Filter servers"
 msgstr "Kiszolgálók szűrése"
 
-#: src/muuli_wdr.cpp:2541
+#: src/muuli_wdr.cpp:2600
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "A ~/.aMule/ipfilter.dat állományban IP-jű kiszolgálók szűrésének engedélyezése."
 
-#: src/muuli_wdr.cpp:2545
+#: src/muuli_wdr.cpp:2604
 msgid "Reload List"
 msgstr "Lista újratöltése"
 
-#: src/muuli_wdr.cpp:2546
+#: src/muuli_wdr.cpp:2605
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
 msgstr "IP-k listájának újratöltése a ~/.aMule/ipfilter.dat fájlból"
 
-#: src/muuli_wdr.cpp:2552
+#: src/muuli_wdr.cpp:2611
 msgid "URL:"
 msgstr "URL:"
 
-#: src/muuli_wdr.cpp:2556 src/muuli_wdr.cpp:2749
+#: src/muuli_wdr.cpp:2615 src/muuli_wdr.cpp:2808
 msgid "Update now"
 msgstr "Frissítés most"
 
-#: src/muuli_wdr.cpp:2559
+#: src/muuli_wdr.cpp:2618
 msgid "Auto-update ipfilter at startup"
 msgstr "IP szűrő automatikus letöltése indításkor"
 
-#: src/muuli_wdr.cpp:2563
+#: src/muuli_wdr.cpp:2622
 msgid "Filtering Level:"
 msgstr "Szűrési szint:"
 
-#: src/muuli_wdr.cpp:2569
+#: src/muuli_wdr.cpp:2628
 msgid "Always filter LAN IPs"
 msgstr "Mindig szűrje ki a LAN IP-ket"
 
-#: src/muuli_wdr.cpp:2572
+#: src/muuli_wdr.cpp:2631
 msgid "Paranoid handling of non-matching IPs"
 msgstr "A nem-megegyező IP-k paranoid kezelése"
 
-#: src/muuli_wdr.cpp:2574
+#: src/muuli_wdr.cpp:2633
 msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 msgstr "Eldobja a csomagot, ha a kliens IP különbözik az IP-től, ahonnan a csomag jött. Óvatosan használd."
 
-#: src/muuli_wdr.cpp:2576
+#: src/muuli_wdr.cpp:2635
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Rendszer-szintű ipfilter.dat használatának engedélyezése"
 
-#: src/muuli_wdr.cpp:2577
+#: src/muuli_wdr.cpp:2636
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
 msgstr "Ha nem talál helyi ipfilter.dat fájlt, akkor engedje a rendszerszintű ipfilter fájl használatát."
 
-#: src/muuli_wdr.cpp:2594
+#: src/muuli_wdr.cpp:2653
 msgid "Enable Online-Signature"
 msgstr "Online-aláírás engedélyezése"
 
-#: src/muuli_wdr.cpp:2596
+#: src/muuli_wdr.cpp:2655
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
 msgstr "Az online-aláírás fájl írásának engedélyezése, amit külső alkalmazások használhatnak fel aláírások létrehozásához és így tovább."
 
-#: src/muuli_wdr.cpp:2600
+#: src/muuli_wdr.cpp:2659
 msgid "Update Frequency (Secs):"
 msgstr "Frissítési gyakoriság (mp):"
 
-#: src/muuli_wdr.cpp:2603
+#: src/muuli_wdr.cpp:2662
 msgid "Change the frequency (in seconds) of Online Signature updates."
 msgstr "Online aláírás frissítési gyakoriságának módosítása (mp-ben)."
 
-#: src/muuli_wdr.cpp:2611
+#: src/muuli_wdr.cpp:2670
 msgid "Save online signature file in: "
 msgstr "Online aláírási fájl kimentési helye: "
 
-#: src/muuli_wdr.cpp:2617
+#: src/muuli_wdr.cpp:2676
 msgid "Click here to select the directory containing the the Online Signature files."
 msgstr "Kattints ide az online aláírást tartalmazó könyvtár kiválasztásához."
 
-#: src/muuli_wdr.cpp:2650
+#: src/muuli_wdr.cpp:2709
 msgid "Show country flags for clients"
 msgstr "Kliensek országzászlajainak megjelenítése"
 
-#: src/muuli_wdr.cpp:2651
+#: src/muuli_wdr.cpp:2710
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2656
+#: src/muuli_wdr.cpp:2715
 msgid "Database"
 msgstr "Adatbázis"
 
-#: src/muuli_wdr.cpp:2672
+#: src/muuli_wdr.cpp:2731
 msgid "Source:"
 msgstr "Forrás:"
 
-#: src/muuli_wdr.cpp:2675
+#: src/muuli_wdr.cpp:2734
 msgid "DB-IP (free, no account)"
 msgstr "DB-IP (ingyenes, fiók nélkül)"
 
-#: src/muuli_wdr.cpp:2676
+#: src/muuli_wdr.cpp:2735
 msgid "MaxMind GeoLite2 (free, account required)"
 msgstr "MaxMind GeoLite2 (ingyenes, fiók szükséges)"
 
-#: src/muuli_wdr.cpp:2677
+#: src/muuli_wdr.cpp:2736
 msgid "Custom URL"
 msgstr "Egyéni URL"
 
-#: src/muuli_wdr.cpp:2680
+#: src/muuli_wdr.cpp:2739
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
 msgstr "Válassza ki a GeoIP MMDB adatbázis szolgáltatóját. DB-IP az alapértelmezett - nincs szükség fiókra. MaxMind egy ingyenes fiókot és licenckulcsot igényel. Használjon egyéni URL-t bármely más MMDB host megadásához (pl. egy helyi tükörhöz)."
 
-#: src/muuli_wdr.cpp:2697
+#: src/muuli_wdr.cpp:2756
 msgid ""
 "No configuration required.\n"
 "\n"
@@ -4449,11 +4477,11 @@ msgstr ""
 "IP-to-Country adat DB-IP.com által - https://db-ip.com\n"
 "Licenc: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
-#: src/muuli_wdr.cpp:2710
+#: src/muuli_wdr.cpp:2769
 msgid "License key:"
 msgstr "Licenckulcs:"
 
-#: src/muuli_wdr.cpp:2716
+#: src/muuli_wdr.cpp:2775
 msgid ""
 "Sign up for a free MaxMind account, then generate a License Key:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
@@ -4469,11 +4497,11 @@ msgstr ""
 "Licenc: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Hozzárendelést és fiókregisztrációt igényel; legalább 30 naponta frissítse."
 
-#: src/muuli_wdr.cpp:2731
+#: src/muuli_wdr.cpp:2790
 msgid "Download URL:"
 msgstr "Letöltési URL:"
 
-#: src/muuli_wdr.cpp:2737
+#: src/muuli_wdr.cpp:2796
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
 "URL may include credentials (https://user:pass@host/...).\n"
@@ -4483,211 +4511,211 @@ msgstr ""
 "Az URL tartalmazhat hitelesítő adatokat (https://user:pass@host/...).\n"
 "A licenc- és megnevezési feltételeket a felmenő URL határozza meg - ön a felelőss."
 
-#: src/muuli_wdr.cpp:2750
+#: src/muuli_wdr.cpp:2809
 msgid "Download the GeoIP database from the selected source."
 msgstr "GeoIP adatbázis letöltése a kiválasztott forrásból."
 
-#: src/muuli_wdr.cpp:2752
+#: src/muuli_wdr.cpp:2811
 msgid "Auto-update on startup"
 msgstr "Automatikus frissítés indításkor"
 
-#: src/muuli_wdr.cpp:2753
+#: src/muuli_wdr.cpp:2812
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
 msgstr "GeoIP adatbázis újonnani letöltése a kiválasztott forrásból minden aMule indításkor."
 
-#: src/muuli_wdr.cpp:2776
+#: src/muuli_wdr.cpp:2835
 msgid "Filter incoming messages (except current chat):"
 msgstr "Bejövő üzenetek kiszűrése (kivéve az aktuális csevegés):"
 
-#: src/muuli_wdr.cpp:2778
+#: src/muuli_wdr.cpp:2837
 msgid "Filter all messages"
 msgstr "Összes üzenet szűrése"
 
-#: src/muuli_wdr.cpp:2780
+#: src/muuli_wdr.cpp:2839
 msgid "Filter messages from people not on your friend list"
 msgstr "Barát listában nem szereplőktől érkező üzenetek kiszűrése"
 
-#: src/muuli_wdr.cpp:2782
+#: src/muuli_wdr.cpp:2841
 msgid "Filter messages from unknown clients"
 msgstr "Ismeretlen kliensektől érkező üzenetek kiszűrése"
 
-#: src/muuli_wdr.cpp:2784
+#: src/muuli_wdr.cpp:2843
 msgid "Filter messages containing (use ',' as separator):"
 msgstr "A következő(ke)t tartalmazó üzenetek kiszűrése (elválasztónak ','-t használj):"
 
-#: src/muuli_wdr.cpp:2787 src/muuli_wdr.cpp:2798
+#: src/muuli_wdr.cpp:2846 src/muuli_wdr.cpp:2857
 msgid "add here the words amule should filter and block messages including it"
 msgstr "Azon szavak felvétele, amelyeket az amule-nak ki kellene szűrni és blokkolni az ezeket tartalmazó üzeneteket"
 
-#: src/muuli_wdr.cpp:2789
+#: src/muuli_wdr.cpp:2848
 msgid "Show received messages in the log"
 msgstr "A kapott üzenetek megjelenítése a naplóban"
 
-#: src/muuli_wdr.cpp:2792
+#: src/muuli_wdr.cpp:2851
 msgid "Comments"
 msgstr "Megjegyzések"
 
-#: src/muuli_wdr.cpp:2795
+#: src/muuli_wdr.cpp:2854
 msgid "Filter comments containing (use ',' as separator):"
 msgstr "Megjegyzések kiszűrése, melyek tartalmazzák (',' az elválasztó):"
 
-#: src/muuli_wdr.cpp:2818
+#: src/muuli_wdr.cpp:2877
 msgid "Enable authentication"
 msgstr "Hitelesítés engedélyezése"
 
-#: src/muuli_wdr.cpp:2819
+#: src/muuli_wdr.cpp:2878
 msgid "Enable/disable username/password authentication"
 msgstr "Felhasználói név/jelszó hitelesítés engedélyezése/tiltása"
 
-#: src/muuli_wdr.cpp:2822
+#: src/muuli_wdr.cpp:2881
 msgid "Username: "
 msgstr "Felhasználói név: "
 
-#: src/muuli_wdr.cpp:2825
+#: src/muuli_wdr.cpp:2884
 msgid "The username to use to connect to the proxy"
 msgstr "Felhasználói név a proxy kapcsolathoz"
 
-#: src/muuli_wdr.cpp:2827
+#: src/muuli_wdr.cpp:2886
 msgid "Password:"
 msgstr "Jelszó:"
 
-#: src/muuli_wdr.cpp:2830
+#: src/muuli_wdr.cpp:2889
 msgid "The password to use to connect to the proxy"
 msgstr "Jelszó a proxy kapcsolathoz"
 
-#: src/muuli_wdr.cpp:2832
+#: src/muuli_wdr.cpp:2891
 msgid "Enable Proxy"
 msgstr "Proxy engedélyezése"
 
-#: src/muuli_wdr.cpp:2833
+#: src/muuli_wdr.cpp:2892
 msgid "Enable/disable proxy support"
 msgstr "Proxy támogatás engedélyezése/tiltása"
 
-#: src/muuli_wdr.cpp:2836
+#: src/muuli_wdr.cpp:2895
 msgid "Proxy type:"
 msgstr "Proxy típusa:"
 
-#: src/muuli_wdr.cpp:2847
+#: src/muuli_wdr.cpp:2906
 msgid "Proxy host:"
 msgstr "Proxy host:"
 
-#: src/muuli_wdr.cpp:2850
+#: src/muuli_wdr.cpp:2909
 msgid "The proxy host name"
 msgstr "A proxy host neve"
 
-#: src/muuli_wdr.cpp:2852
+#: src/muuli_wdr.cpp:2911
 msgid "Proxy port:"
 msgstr "Proxy port:"
 
-#: src/muuli_wdr.cpp:2855
+#: src/muuli_wdr.cpp:2914
 msgid "The proxy port"
 msgstr "A proxy port"
 
-#: src/muuli_wdr.cpp:2874
+#: src/muuli_wdr.cpp:2933
 msgid "Connect to:"
 msgstr "Kapcsolódás ehhez:"
 
-#: src/muuli_wdr.cpp:2883
+#: src/muuli_wdr.cpp:2942
 msgid "Login to remote amule"
 msgstr "Bejeletkezés a távoli amule-ra"
 
-#: src/muuli_wdr.cpp:2888
+#: src/muuli_wdr.cpp:2947
 msgid "User name"
 msgstr "Felhasználói név"
 
-#: src/muuli_wdr.cpp:2899
+#: src/muuli_wdr.cpp:2958
 msgid "Remember those settings"
 msgstr "Emlékezzen ezekre a beállításokra"
 
-#: src/muuli_wdr.cpp:2902
+#: src/muuli_wdr.cpp:2961
 msgid "Force ZLIB compression"
 msgstr "ZLIB tömörítés erőltetése"
 
-#: src/muuli_wdr.cpp:2926
+#: src/muuli_wdr.cpp:2985
 msgid "Enable Verbose Debug-Logging."
 msgstr "Bőbeszédű hiba-naplózás engedélyezése."
 
-#: src/muuli_wdr.cpp:2928
+#: src/muuli_wdr.cpp:2987
 msgid "Only to Logfile"
 msgstr "Csak napló fájlba"
 
-#: src/muuli_wdr.cpp:2930
+#: src/muuli_wdr.cpp:2989
 msgid "Message Categories:"
 msgstr "Üzenet kategóriák:"
 
-#: src/muuli_wdr.cpp:2954 src/PartFileConvertDlg.cpp:160
+#: src/muuli_wdr.cpp:3013 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
 msgstr "Várakozás..."
 
-#: src/muuli_wdr.cpp:2974
+#: src/muuli_wdr.cpp:3033
 msgid "Add imports"
 msgstr "Importálandók hozzáadása"
 
-#: src/muuli_wdr.cpp:2977
+#: src/muuli_wdr.cpp:3036
 msgid "Retry selected"
 msgstr "Kijelöltek újrapróbálása"
 
-#: src/muuli_wdr.cpp:2979
+#: src/muuli_wdr.cpp:3038
 msgid "Remove selected"
 msgstr "Kijelöltek eltávolítása"
 
-#: src/muuli_wdr.cpp:3042
+#: src/muuli_wdr.cpp:3101
 msgid "Event Types"
 msgstr "Esemény típusok"
 
-#: src/muuli_wdr.cpp:3061
+#: src/muuli_wdr.cpp:3120
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
 msgstr "Statisztikák és várakozó kliensek a kiválasztott fájl(ok)hoz: Folyamat / Valaha"
 
-#: src/muuli_wdr.cpp:3085
+#: src/muuli_wdr.cpp:3144
 msgid "Active Uploads"
 msgstr "Aktív feltöltések"
 
-#: src/muuli_wdr.cpp:3099
+#: src/muuli_wdr.cpp:3158
 msgid "Percent of total files"
 msgstr "Összes fájl százalékaként"
 
-#: src/muuli_wdr.cpp:3139
+#: src/muuli_wdr.cpp:3198
 msgid "Show Clients for"
 msgstr "Kliensek megjelenítése ehhez:"
 
-#: src/muuli_wdr.cpp:3141
+#: src/muuli_wdr.cpp:3200
 msgid "All files"
 msgstr "Összes fájl"
 
-#: src/muuli_wdr.cpp:3144
+#: src/muuli_wdr.cpp:3203
 msgid "Selected files"
 msgstr "Kiválasztott fájlok"
 
-#: src/muuli_wdr.cpp:3147
+#: src/muuli_wdr.cpp:3206
 msgid "Active uploads only"
 msgstr "Csak aktív feltöltések"
 
-#: src/muuli_wdr.cpp:3151
+#: src/muuli_wdr.cpp:3210
 msgid "Reload:"
 msgstr "Újratöltés:"
 
-#: src/muuli_wdr.cpp:3155
+#: src/muuli_wdr.cpp:3214
 msgid "Reload your shared files"
 msgstr "Megosztott fájlok frissítése"
 
-#: src/muuli_wdr.cpp:3217
+#: src/muuli_wdr.cpp:3276
 msgid "Send"
 msgstr "Küldés"
 
-#: src/muuli_wdr.cpp:3218
+#: src/muuli_wdr.cpp:3277
 msgid "Sends the specified message."
 msgstr "Megadott üzenet küldése."
 
-#: src/muuli_wdr.cpp:3222
+#: src/muuli_wdr.cpp:3281
 msgid "Close this chat-session."
 msgstr "Csevegési folyamat bezárása."
 
-#: src/muuli_wdr.cpp:3245
+#: src/muuli_wdr.cpp:3304
 msgid "Connect to any server and/or Kad"
 msgstr "Kapcsolódás bármelyik kiszolgálóhoz és/vagy a Kad-hoz"
 
-#: src/muuli_wdr.cpp:3251 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3310 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "Megosztott fájlok"
 
