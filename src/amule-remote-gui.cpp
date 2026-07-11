@@ -56,6 +56,7 @@
 #include "Logger.h"
 #include "muuli_wdr.h"       // Needed for IDs
 #include "PartFile.h"        // Needed for CPartFile
+#include <tags/FileTags.h>   // Needed for FT_MEDIA_* metadata tag names
 #include "SearchDlg.h"       // Needed for CSearchDlg
 #include "Server.h"          // Needed for GetListName
 #include "ServerWnd.h"       // Needed for CServerWnd
@@ -2087,6 +2088,29 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 				}
 			}
 		}
+	}
+
+	// Media metadata (issue #418): store the EC tags on the proxy as the
+	// same FT_MEDIA_* CTags the monolithic file carries, so the identical
+	// GetIntTagValue / GetStrTagValue / GetMetaDataVer calls in the File
+	// Details dialog work unchanged in the remote build.
+	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_LENGTH)) {
+		file->AddTagUnique(CTagInt32(FT_MEDIA_LENGTH, m->GetInt()));
+	}
+	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_BITRATE)) {
+		file->AddTagUnique(CTagInt32(FT_MEDIA_BITRATE, m->GetInt()));
+	}
+	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
+		file->AddTagUnique(CTagString(FT_MEDIA_CODEC, m->GetStringData()));
+	}
+	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
+		file->AddTagUnique(CTagString(FT_MEDIA_ARTIST, m->GetStringData()));
+	}
+	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
+		file->AddTagUnique(CTagString(FT_MEDIA_ALBUM, m->GetStringData()));
+	}
+	if (const CECTag *m = tag->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
+		file->AddTagUnique(CTagString(FT_MEDIA_TITLE, m->GetStringData()));
 	}
 
 	// Get comments

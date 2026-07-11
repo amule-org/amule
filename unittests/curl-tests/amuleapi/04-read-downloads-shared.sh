@@ -173,6 +173,10 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_status 200 "GET /downloads/{hash}/filenames → 200"
 	_assert_json_eq '.filenames | type' array \
 		'/downloads/{hash}/filenames.filenames is an array'
+	# `media` (issue #418) is omitted for a file with no probed metadata,
+	# which the smoke daemon's test files never have.
+	_assert_json_eq '.media | type' null \
+		'/downloads/{hash} omits media when unprobed'
 
 	# A4AF source list sub-resource (issue #421).
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/a4af"

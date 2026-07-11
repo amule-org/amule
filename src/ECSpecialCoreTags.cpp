@@ -25,6 +25,7 @@
 
 #include <ec/cpp/ECTag.h>         // Needed for CECTag
 #include <ec/cpp/ECSpecialTags.h> // Needed for special EC tag creator classes
+#include <tags/FileTags.h>        // Needed for FT_MEDIA_* metadata tag names
 
 // Since there are only constructors defined here,
 // removing everything from non-local builds.
@@ -260,6 +261,19 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 
 	AddTag(EC_TAG_KNOWNFILE_COMMENT, file->GetFileComment(), valuemap);
 	AddTag(EC_TAG_KNOWNFILE_RATING, file->GetFileRating(), valuemap);
+
+	// Audio/video media metadata (issue #418). Only emitted once the file
+	// has been probed (GetMetaDataVer() != 0), so non-media files add no
+	// tags. Emitted by this shared base ctor, so both /shared and
+	// /downloads (partfiles) carry it with no per-role code.
+	if (file->GetMetaDataVer() != 0) {
+		AddTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, file->GetIntTagValue(FT_MEDIA_LENGTH), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, file->GetIntTagValue(FT_MEDIA_BITRATE), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, file->GetStrTagValue(FT_MEDIA_CODEC), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, file->GetStrTagValue(FT_MEDIA_ARTIST), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_MEDIA_ALBUM, file->GetStrTagValue(FT_MEDIA_ALBUM), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_MEDIA_TITLE, file->GetStrTagValue(FT_MEDIA_TITLE), valuemap);
+	}
 }
 
 CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(

@@ -97,6 +97,21 @@ struct FileSnapshot
 	std::uint32_t queued_count = 0; // clients on this file's upload queue
 	std::string comment;            // the user's own file comment
 	std::int32_t rating = 0;        // the user's own rating, 0-5 (0 = unrated)
+
+	// Audio/video media metadata (issue #418). amuled emits it only for
+	// probed files (GetMetaDataVer != 0), so `has_media` gates the
+	// `media` object on the detail endpoints — omitted entirely when false.
+	bool has_media = false;
+	struct Media
+	{
+		std::uint32_t length_s = 0; // duration, seconds
+		std::uint32_t bitrate = 0;
+		std::string codec;
+		std::string artist;
+		std::string album;
+		std::string title;
+	} media;
+
 	// EC_TAG_KNOWNFILE_FILENAME: a partfile's on-disk basename (e.g.
 	// `001.part`), or a completed known file's directory path.
 	// Interpreted per endpoint — `met_file` on /downloads/{hash},

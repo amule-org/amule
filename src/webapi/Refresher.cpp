@@ -296,6 +296,36 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 	std::uint32_t rt = 0;
 	if (t->AssignIfExist(EC_TAG_KNOWNFILE_RATING, rt))
 		f.rating = static_cast<std::int32_t>(rt);
+	// Audio/video media metadata (issue #418). amuled emits these only
+	// for probed files, so any one present this frame marks the file as
+	// having media (INC-safe: absent tags keep the prior value).
+	{
+		std::uint32_t v = 0;
+		if (t->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
+			f.media.length_s = v;
+			f.has_media = true;
+		}
+		if (t->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_BITRATE, v)) {
+			f.media.bitrate = v;
+			f.has_media = true;
+		}
+	}
+	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_CODEC)) {
+		f.media.codec = std::string(x->GetStringData().utf8_str());
+		f.has_media = true;
+	}
+	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ARTIST)) {
+		f.media.artist = std::string(x->GetStringData().utf8_str());
+		f.has_media = true;
+	}
+	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_ALBUM)) {
+		f.media.album = std::string(x->GetStringData().utf8_str());
+		f.has_media = true;
+	}
+	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
+		f.media.title = std::string(x->GetStringData().utf8_str());
+		f.has_media = true;
+	}
 }
 
 void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)

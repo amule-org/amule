@@ -644,6 +644,63 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item55->Add( item62, wxSizerFlags().Expand().CenterVertical() );
     item53->Add( item55, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item53, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
+    // Media Info (issue #418) — populated from FT_MEDIA_* when the file
+    // has probed metadata; the six labels show "N/A" otherwise. Layout +
+    // styling mirror the "Intelligent Corruption Handling" box above:
+    // "label :" static text plus a HOTLIGHT-coloured value, two fields
+    // per row in a 2-column growable grid.
+    wxStaticBox *mediaBox = new wxStaticBox( parent, -1, _("Media Info") );
+    wxStaticBoxSizer *mediaBoxSizer = new wxStaticBoxSizer( mediaBox, wxVERTICAL );
+    wxFlexGridSizer *mediaGrid = new wxFlexGridSizer( 2, 0, 0 );
+    mediaGrid->AddGrowableCol( 0 );
+    mediaGrid->AddGrowableCol( 1 );
+
+    wxBoxSizer *mLenRow = new wxBoxSizer( wxHORIZONTAL );
+    mLenRow->Add( new wxStaticText( parent, -1, _("Length :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    wxStaticText *mLenVal = new wxStaticText( parent, IDC_FD_MEDIA_LENGTH, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    mLenVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    mLenRow->Add( mLenVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    mediaGrid->Add( mLenRow, wxSizerFlags().Expand().CenterVertical() );
+
+    wxBoxSizer *mBrRow = new wxBoxSizer( wxHORIZONTAL );
+    mBrRow->Add( new wxStaticText( parent, -1, _("Bitrate :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    wxStaticText *mBrVal = new wxStaticText( parent, IDC_FD_MEDIA_BITRATE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    mBrVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    mBrRow->Add( mBrVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    mediaGrid->Add( mBrRow, wxSizerFlags().Expand().CenterVertical() );
+
+    wxBoxSizer *mCodecRow = new wxBoxSizer( wxHORIZONTAL );
+    mCodecRow->Add( new wxStaticText( parent, -1, _("Codec :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    wxStaticText *mCodecVal = new wxStaticText( parent, IDC_FD_MEDIA_CODEC, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    mCodecVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    mCodecRow->Add( mCodecVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    mediaGrid->Add( mCodecRow, wxSizerFlags().Expand().CenterVertical() );
+
+    wxBoxSizer *mArtistRow = new wxBoxSizer( wxHORIZONTAL );
+    mArtistRow->Add( new wxStaticText( parent, -1, _("Artist :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    wxStaticText *mArtistVal = new wxStaticText( parent, IDC_FD_MEDIA_ARTIST, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    mArtistVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    mArtistRow->Add( mArtistVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    mediaGrid->Add( mArtistRow, wxSizerFlags().Expand().CenterVertical() );
+
+    wxBoxSizer *mAlbumRow = new wxBoxSizer( wxHORIZONTAL );
+    mAlbumRow->Add( new wxStaticText( parent, -1, _("Album :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    wxStaticText *mAlbumVal = new wxStaticText( parent, IDC_FD_MEDIA_ALBUM, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    mAlbumVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    mAlbumRow->Add( mAlbumVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    mediaGrid->Add( mAlbumRow, wxSizerFlags().Expand().CenterVertical() );
+
+    wxBoxSizer *mTitleRow = new wxBoxSizer( wxHORIZONTAL );
+    mTitleRow->Add( new wxStaticText( parent, -1, _("Title :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    wxStaticText *mTitleVal = new wxStaticText( parent, IDC_FD_MEDIA_TITLE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    mTitleVal->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    mTitleRow->Add( mTitleVal, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    mediaGrid->Add( mTitleRow, wxSizerFlags().Expand().CenterVertical() );
+
+    mediaBoxSizer->Add( mediaGrid, wxSizerFlags().Expand().CenterVertical() );
+    item0->Add( mediaBoxSizer, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
     wxStaticBox *item66 = new wxStaticBox( parent, -1, _("File Names") );
     wxStaticBoxSizer *item65 = new wxStaticBoxSizer( item66, wxVERTICAL );
 

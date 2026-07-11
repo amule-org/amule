@@ -662,6 +662,42 @@ TEST(Refresher, A4afAutoAndSourcesDecode)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5678), it->second.download.a4af_sources[1]);
 }
 
+// Media metadata (issue #418): the six FT_MEDIA_* EC tags decode into the
+// `media` sub-struct and set `has_media`; a file with no media tags keeps
+// has_media=false (so the API omits the `media` object).
+TEST(Refresher, MediaMetadataDecode)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(606));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_LENGTH, static_cast<std::uint32_t>(5400)));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_BITRATE, static_cast<std::uint32_t>(1500)));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_CODEC, std::string("h264")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ARTIST, std::string("Some Artist")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_ALBUM, std::string("Some Album")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_MEDIA_TITLE, std::string("Some Title")));
+	resp.AddTag(pf);
+	// A second file with no media tags stays has_media=false.
+	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(607)));
+
+	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+
+	const auto it = cache.find(606);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.has_media);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5400), it->second.media.length_s);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1500), it->second.media.bitrate);
+	ASSERT_EQUALS(std::string("h264"), it->second.media.codec);
+	ASSERT_EQUALS(std::string("Some Artist"), it->second.media.artist);
+	ASSERT_EQUALS(std::string("Some Album"), it->second.media.album);
+	ASSERT_EQUALS(std::string("Some Title"), it->second.media.title);
+
+	const auto it2 = cache.find(607);
+	ASSERT_TRUE(it2 != cache.end());
+	ASSERT_TRUE(!it2->second.has_media);
+}
+
 // ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and

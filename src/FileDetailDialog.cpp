@@ -36,6 +36,7 @@
 #include "SharedFileList.h"     // Needed for CSharedFileList
 #include "OtherFunctions.h"
 #include "MuleColour.h"
+#include <tags/FileTags.h> // Needed for FT_MEDIA_* metadata tag names
 
 #include <set>
 
@@ -190,6 +191,23 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 
 	CastChild(IDC_LASTSEENCOMPL, wxControl)->SetLabel(bufferS);
+
+	// Media Info (issue #418): populate from FT_MEDIA_* when the file has
+	// probed metadata; the labels stay at their "N/A" default otherwise.
+	// Works identically in the monolithic and remote (amulegui) builds —
+	// the remote proxy stores the same FT_MEDIA_* tags off EC.
+	if (m_file->GetMetaDataVer() != 0) {
+		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)
+			->SetLabel(CastSecondsToHM(m_file->GetIntTagValue(FT_MEDIA_LENGTH)));
+		CastChild(IDC_FD_MEDIA_BITRATE, wxControl)
+			->SetLabel(CFormat(wxT("%u kbps")) % m_file->GetIntTagValue(FT_MEDIA_BITRATE));
+		CastChild(IDC_FD_MEDIA_CODEC, wxControl)
+			->SetLabel(FormatMediaCodec(m_file->GetStrTagValue(FT_MEDIA_CODEC)));
+		CastChild(IDC_FD_MEDIA_ARTIST, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_ARTIST));
+		CastChild(IDC_FD_MEDIA_ALBUM, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_ALBUM));
+		CastChild(IDC_FD_MEDIA_TITLE, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_TITLE));
+	}
+
 	setEnableForApplyButton();
 	// disable "Show all comments" button if there are no comments
 	FileRatingList list;

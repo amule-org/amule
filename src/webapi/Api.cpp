@@ -1652,6 +1652,30 @@ void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.EndArray();
 }
 
+// Emit the `media` object (issue #418) when the file carries probed
+// audio/video metadata; nothing at all otherwise. Shared by the download
+// and shared detail writers.
+void WriteMediaIfPresent(CJsonWriter &w, const webapi::FileSnapshot &f)
+{
+	if (!f.has_media)
+		return;
+	w.Key("media");
+	w.BeginObject();
+	w.Key("length_s");
+	w.ValueInt(static_cast<int64_t>(f.media.length_s));
+	w.Key("bitrate");
+	w.ValueInt(static_cast<int64_t>(f.media.bitrate));
+	w.Key("codec");
+	w.ValueString(wxString::FromUTF8(f.media.codec.c_str()));
+	w.Key("artist");
+	w.ValueString(wxString::FromUTF8(f.media.artist.c_str()));
+	w.Key("album");
+	w.ValueString(wxString::FromUTF8(f.media.album.c_str()));
+	w.Key("title");
+	w.ValueString(wxString::FromUTF8(f.media.title.c_str()));
+	w.EndObject();
+}
+
 void WriteDownloadObject(
 	CJsonWriter &w, const webapi::FileSnapshot &f, bool include_parts = false, bool detail = false)
 {
@@ -1746,6 +1770,7 @@ void WriteDownloadObject(
 		w.ValueInt(static_cast<int64_t>(f.rating));
 		w.Key("a4af_auto");
 		w.ValueBool(f.download.a4af_auto);
+		WriteMediaIfPresent(w, f);
 	}
 	w.EndObject();
 }
@@ -1905,6 +1930,7 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueString(wxString::FromUTF8(f.comment.c_str()));
 	w.Key("rating");
 	w.ValueInt(static_cast<int64_t>(f.rating));
+	WriteMediaIfPresent(w, f);
 	w.EndObject();
 }
 

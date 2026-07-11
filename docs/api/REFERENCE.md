@@ -550,8 +550,31 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). See the [rating scale](#get-apiv0downloadshashcomments). |
 | `a4af_auto` | bool | Whether automatic A4AF source-swapping is on for this file. See [A4AF](#get-apiv0downloadshasha4af). |
+| `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **Omitted entirely** when the file has no probed metadata. |
 
 **Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
+
+##### Media metadata
+
+The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) carries the audio/video metadata amuled probed for the file. It is **omitted entirely** when the file has not been probed (a non-media file, or one probing hasn't reached yet).
+
+```json
+"media": {
+  "length_s": 5400,
+  "bitrate": 1500,
+  "codec": "h264",
+  "artist": "…",
+  "album": "…",
+  "title": "…"
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `length_s` | int | Duration in seconds. |
+| `bitrate` | int | Bitrate (kbps). |
+| `codec` | string | Codec identifier (e.g. `"h264"`). |
+| `artist` / `album` / `title` | string | Tag metadata; `""` when the file carries none. |
 
 #### `GET /api/v0/downloads/{hash}/comments`
 
@@ -910,6 +933,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `queued_count` | int | Clients waiting on this file's upload queue. |
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). |
+| `media` | object | Audio/video metadata — see [Media metadata](#media-metadata). **Omitted entirely** when the file has no probed metadata. |
 
 **Errors:** `404 not_found` (no shared file with that hash), `503 ec_unavailable`.
 
