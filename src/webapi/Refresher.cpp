@@ -415,8 +415,8 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 	// absent container keeps the prior list).
 	if (const CECTag *cont = pf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
 		std::vector<const CECTag *> kids;
-		for (CECTag::const_iterator cit = cont->begin(); cit != cont->end(); ++cit)
-			kids.push_back(&*cit);
+		for (const CECTag &kid : *cont)
+			kids.push_back(&kid);
 		f.download.source_comments.clear();
 		for (std::size_t i = 0; i + 3 < kids.size(); i += 4) {
 			FileSnapshot::DownloadSide::SourceComment c;
