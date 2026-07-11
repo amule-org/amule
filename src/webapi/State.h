@@ -293,6 +293,32 @@ struct ClientSnapshot
 	std::uint32_t score = 0;        // EC_TAG_CLIENT_SCORE
 	std::string obfuscation_status; // "none" | "supported" | "required"
 	bool friend_slot = false;
+
+	// --- Detail-only fields (issue #422) -----------------------------
+	// Captured from EC tags already on the INC_UPDATE wire but not
+	// surfaced by the /clients list. Serialized only by the
+	// GET /clients/{ecid} detail endpoint; the list object and the SSE
+	// client_* payloads are unchanged.
+	std::uint32_t user_id_hybrid = 0; // EC_TAG_CLIENT_USER_ID (hybrid eD2k id)
+	bool high_id = false;             // derived: !IsLowID(user_id_hybrid)
+	std::string server_ip;            // dotted-quad; "" when unknown/0
+	std::uint16_t server_port = 0;
+	std::string server_name;
+	std::uint16_t kad_port = 0;        // 0 => Kad not connected for this peer
+	std::string source_origin;         // "server" | "kad" | "source_exchange" | "passive" | "link" | ...
+	std::string upload_file_name;      // partfile this peer downloads FROM us; "" unless uploading
+	std::uint32_t available_parts = 0; // count of parts the peer has (EC_TAG_CLIENT_AVAILABLE_PARTS)
+	bool has_available_parts = false;  // false => tag absent, omit the field
+	std::string mod_version;           // EC_TAG_CLIENT_MOD_VERSION
+	bool view_shared_disabled = false; // peer forbids viewing its shared files
+	// Completeness of the linked download for this peer, as a percent
+	// (available_parts / file part count). < 0 => not computable (no
+	// linked file / no part count); populated by the detail handler.
+	double part_progress_percent = -1.0;
+
+	// --- Detail-only fields (issue #423, new EC tags) ----------------
+	bool is_friend = false;      // CUpDownClient::IsFriend(); distinct from friend_slot
+	double dl_up_modifier = 0.0; // CUpDownClient::GetScoreRatio() ("DL/UP modifier")
 };
 
 // One per eD2k server in the configured server list. Identity is

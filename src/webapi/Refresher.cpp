@@ -677,6 +677,32 @@ std::string FormatClientIpv4(std::uint32_t ip_he)
 	return std::string(buf);
 }
 
+// Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable
+// lowercase token, mirroring the GUI's Origin column without leaking
+// the daemon locale. Local/remote server both collapse to "server".
+std::string SourceOriginName(std::uint32_t from)
+{
+	switch (from) {
+	case SF_LOCAL_SERVER:
+	case SF_REMOTE_SERVER:
+		return "server";
+	case SF_KADEMLIA:
+		return "kad";
+	case SF_SOURCE_EXCHANGE:
+		return "source_exchange";
+	case SF_PASSIVE:
+		return "passive";
+	case SF_LINK:
+		return "link";
+	case SF_SOURCE_SEEDS:
+		return "source_seeds";
+	case SF_SEARCH_RESULT:
+		return "search_result";
+	default:
+		return "unknown";
+	}
+}
+
 // Merge a `CEC_UpDownClient_Tag` into an existing ClientSnapshot.
 // On a cache-miss the caller pre-populates ecid + hashes; on a hit
 // the AssignIfExist pattern leaves cached values intact when the
@@ -840,6 +866,65 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		bool v = false;
 		if (c->AssignIfExist(EC_TAG_CLIENT_FRIEND_SLOT, v))
 			cs.friend_slot = v;
+	}
+
+	// --- Detail-only fields (issue #422) -----------------------------
+	// All already on the INC_UPDATE wire (ECSpecialCoreTags.cpp) but not
+	// surfaced by the list; the detail endpoint serializes them.
+	{
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_USER_ID, v)) {
+			cs.user_id_hybrid = v;
+			// A LowID peer has a hybrid id below 0x1000000 (IsLowID(),
+			// NetworkFunctions.h); inline the ed2k-stable ceiling rather
+			// than drag the core header into the webapi decoder.
+			const std::uint32_t kLowIdCeiling = 16777216u;
+			cs.high_id = v >= kLowIdCeiling;
+		}
+	}
+	{
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_SERVER_IP, v))
+			cs.server_ip = FormatClientIpv4(v);
+	}
+	{
+		std::uint16_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_SERVER_PORT, v))
+			cs.server_port = v;
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SERVER_NAME)) {
+		cs.server_name = std::string(t->GetStringData().utf8_str());
+	}
+	{
+		std::uint16_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_KAD_PORT, v))
+			cs.kad_port = v;
+	}
+	{
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_FROM, v))
+			cs.source_origin = SourceOriginName(v);
+	}
+	// PARTFILE_NAME rides inside the client tag only while the peer is
+	// downloading from us (ECSpecialCoreTags.cpp:331); leave the cached
+	// value when absent.
+	if (const CECTag *t = c->GetTagByName(EC_TAG_PARTFILE_NAME)) {
+		cs.upload_file_name = std::string(t->GetStringData().utf8_str());
+	}
+	{
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_AVAILABLE_PARTS, v)) {
+			cs.available_parts = v;
+			cs.has_available_parts = true;
+		}
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_MOD_VERSION)) {
+		cs.mod_version = std::string(t->GetStringData().utf8_str());
+	}
+	{
+		bool v = false;
+		if (c->AssignIfExist(EC_TAG_CLIENT_DISABLE_VIEW_SHARED, v))
+			cs.view_shared_disabled = v;
 	}
 }
 

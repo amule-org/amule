@@ -1200,3 +1200,61 @@ TEST(Refresher, ClientKnownButNoVersionStringFallsBackToSentinel)
 	ASSERT_TRUE(cache.find(9) != cache.end());
 	ASSERT_EQUALS(std::string("unknown"), cache[9].software_version);
 }
+
+// --- #422: detail-only client fields decode --------------------------
+//
+// The section-B fields ride the INC_UPDATE client tag and are captured
+// into ClientSnapshot by MergeClientTag; the detail endpoint serializes
+// them. Verify each decodes, HighID/LowID derives from the hybrid id,
+// and EC_TAG_CLIENT_FROM maps to the stable origin token.
+TEST(Refresher, ClientDetailFieldsDecode)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	std::map<std::uint32_t, std::string> no_files;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	CECTag container(EC_TAG_CLIENT, static_cast<std::uint32_t>(0));
+
+	// A HighID peer carrying the full detail-only set.
+	CECTag hi(EC_TAG_CLIENT, static_cast<std::uint32_t>(50));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_USER_ID, static_cast<std::uint32_t>(0x04030201)));
+	// Host-order IPv4; FormatClientIpv4 renders LSB-first => 127.0.0.1.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_SERVER_IP, static_cast<std::uint32_t>(0x0100007F)));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_SERVER_PORT, static_cast<std::uint16_t>(4242)));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_SERVER_NAME, wxString::FromUTF8("test-server")));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, static_cast<std::uint16_t>(4672)));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_FROM, static_cast<std::uint64_t>(3))); // SF_KADEMLIA
+	hi.AddTag(CECTag(EC_TAG_PARTFILE_NAME, wxString::FromUTF8("upload.iso")));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_AVAILABLE_PARTS, static_cast<std::uint32_t>(7)));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, wxString::FromUTF8("mod-x")));
+	hi.AddTag(CECTag(EC_TAG_CLIENT_DISABLE_VIEW_SHARED, true));
+	container.AddTag(hi);
+
+	// A LowID peer (hybrid id < 0x1000000) with no section-B tags.
+	CECTag lo(EC_TAG_CLIENT, static_cast<std::uint32_t>(51));
+	lo.AddTag(CECTag(EC_TAG_CLIENT_USER_ID, static_cast<std::uint32_t>(1234)));
+	container.AddTag(lo);
+
+	resp.AddTag(container);
+	ApplyGetUpdateToClients(&resp, cache, no_files);
+
+	const auto it = cache.find(50);
+	ASSERT_TRUE(it != cache.end());
+	const ClientSnapshot &cs = it->second;
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0x04030201), cs.user_id_hybrid);
+	ASSERT_TRUE(cs.high_id);
+	ASSERT_EQUALS(std::string("127.0.0.1"), cs.server_ip);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(4242), cs.server_port);
+	ASSERT_EQUALS(std::string("test-server"), cs.server_name);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(4672), cs.kad_port);
+	ASSERT_EQUALS(std::string("kad"), cs.source_origin);
+	ASSERT_EQUALS(std::string("upload.iso"), cs.upload_file_name);
+	ASSERT_TRUE(cs.has_available_parts);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(7), cs.available_parts);
+	ASSERT_EQUALS(std::string("mod-x"), cs.mod_version);
+	ASSERT_TRUE(cs.view_shared_disabled);
+
+	const auto it2 = cache.find(51);
+	ASSERT_TRUE(it2 != cache.end());
+	ASSERT_TRUE(!it2->second.high_id);
+	ASSERT_TRUE(!it2->second.has_available_parts);
+}

@@ -173,6 +173,7 @@ private:
 	CHttpServer::Response HandleSearchStop(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchDownload(const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleClients(const CHttpServer::Request &);
+	CHttpServer::Response HandleClientDetail(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleSharedList(const CHttpServer::Request &);
 	CHttpServer::Response HandleServers(const CHttpServer::Request &);
 	CHttpServer::Response HandleKad(const CHttpServer::Request &);

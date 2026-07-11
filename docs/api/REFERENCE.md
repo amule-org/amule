@@ -39,6 +39,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 
 **Clients (peers)**
 - [`GET /api/v0/clients`](#get-apiv0clients) — list peers, optional filter
+- [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) — full detail for one peer
 
 **Shared files**
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
@@ -862,13 +863,71 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-`client_ecid` identifies the remote *peer*, not a file — it's the URL key reserved for any future `/clients/{client_ecid}` mutation and the identity carried in `client_removed` SSE payloads. `user_hash` is the peer's stable identity *when published* (peers without SecIdent or in their first session don't have one), so `client_ecid` is the always-populated handle.
+`client_ecid` identifies the remote *peer*, not a file — it's the URL key for [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) and the identity carried in `client_removed` SSE payloads. `user_hash` is the peer's stable identity *when published* (peers without SecIdent or in their first session don't have one), so `client_ecid` is the always-populated handle.
 
 `upload_file_hash` / `download_file_hash` are the 32-char MD4 hex hashes of the partfile or shared file the peer is currently transferring with — directly resolvable against [`/api/v0/downloads/{hash}`](#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them.
 
 `software` and `software_version` are locale-independent, per the API's English-only contract. A peer the daemon could not identify reports `"software": "unknown"` and `"software_version": "unknown"` — a lowercase sentinel, never a daemon-localized string (the daemon's own version formatting is gettext-translated and is deliberately not surfaced here). `os_info` is the peer's *own* self-reported OS string (raw external data, not normalized by amuled) and is frequently empty, since most clients don't send it.
 
 **Errors:** `400 bad_request` (unknown filter token), `503 ec_unavailable`.
+
+---
+
+#### `GET /api/v0/clients/{ecid}`
+
+**Auth:** `GUEST`
+
+Returns the full detail object for a single peer — every field [`GET /clients`](#get-apiv0clients) returns for that peer, **plus** the detail-only fields below. `{ecid}` is the peer's `client_ecid` (the EC connection id). Bare object, no list envelope.
+
+`ecid`, not `user_hash`, is the resource key: not every peer has a hash (unidentified / some LowID / eDonkey peers expose an empty one), a hash is not unique among a peer's simultaneous connections, and it is unauthenticated unless the peer uses Secure Identification. `ecid` is always present and unique per live connection. Trade-off: `ecid` is reassigned when amuled restarts, so a detail URL is **not** stable across restarts — use the `user_hash` field for a durable reference.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/clients/4382"
+```
+
+```json
+{
+  "client_ecid": 4382,
+  "client_name": "AnonymousPeer",
+  "user_hash": "1f2e3a...",
+  "ip": "203.0.113.42",
+  "port": 4662,
+  "software": "eMule",
+  "software_version": "0.50a",
+  "os_info": "Linux",
+  "upload_state": "uploading",
+  "download_state": "idle",
+  "ident_state": "verified",
+  "download_file_name": "",
+  "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
+  "download_file_hash": "",
+  "xfer": { "up_session": 22000000, "down_session": 0, "up_total": 452000000, "down_total": 189000000 },
+  "upload_speed_bps": 22000,
+  "download_speed_bps": 0,
+  "queue_waiting_position": 0,
+  "remote_queue_rank": 0,
+  "score": 150,
+  "obfuscation_status": "obfuscated",
+  "friend_slot": false,
+  "user_id_hybrid": 3232238090,
+  "high_id": true,
+  "server_ip": "203.0.113.9",
+  "server_port": 4242,
+  "server_name": "eD2K Test Server",
+  "kad_port": 4672,
+  "source_origin": "kad",
+  "upload_file_name": "example-distribution.iso",
+  "available_parts": 42,
+  "mod_version": "",
+  "view_shared_disabled": false,
+  "part_progress_percent": 87.5
+}
+```
+
+The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `0x1000000`) and `false` for LowID. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered — `"server"` / `"kad"` / `"source_exchange"` / `"passive"` / `"link"` / `"source_seeds"` / `"search_result"`. `upload_file_name` is the partfile the peer is downloading **from us** — present only while we're uploading to them. `available_parts` is the count of parts the peer holds of the linked file; `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
+
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `404 not_found` (no peer with that ecid in the current snapshot), `405 method_not_allowed` (non-GET), `503 ec_unavailable`.
 
 ---
 

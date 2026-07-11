@@ -738,6 +738,20 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleClients(req);
 	}
 
+	// /clients/{ecid} — single-peer detail (issue #422). GET/HEAD only;
+	// {ecid} is the EC connection id (unique per live connection).
+	{
+		static const auto client_detail = web_api_path::ParsePattern("/api/v0/clients/{ecid}");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(client_detail, path_segs, caps)) {
+			if (req.method == "GET" || req.method == "HEAD") {
+				return HandleClientDetail(req, caps["ecid"]);
+			}
+			return ErrorResponse(405, "method_not_allowed", "only GET / HEAD on /clients/{ecid}");
+		}
+	}
+
 	if (path == "/api/v0/shared") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSharedList(req);
@@ -1775,9 +1789,11 @@ void WriteDownloadObject(
 	w.EndObject();
 }
 
-void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
+// Base (list-level) client fields. Emits keys into an already-open
+// object (no Begin/End) so both the list writer and the detail writer
+// share one definition of the A-field set.
+void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
-	w.BeginObject();
 	w.Key("client_ecid");
 	w.ValueInt(static_cast<int64_t>(c.ecid));
 	w.Key("client_name");
@@ -1831,6 +1847,51 @@ void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.obfuscation_status.c_str()));
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
+}
+
+// List-level client object (GET /clients). Unchanged A-field set.
+void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
+{
+	w.BeginObject();
+	WriteClientBaseFields(w, c);
+	w.EndObject();
+}
+
+// Single-client detail object (GET /clients/{ecid}, issue #422): the
+// full A-field set plus the detail-only B fields. A superset of the
+// list object, so the list schema is unaffected.
+void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
+{
+	w.BeginObject();
+	WriteClientBaseFields(w, c);
+	w.Key("user_id_hybrid");
+	w.ValueUInt(static_cast<uint64_t>(c.user_id_hybrid));
+	w.Key("high_id");
+	w.ValueBool(c.high_id);
+	w.Key("server_ip");
+	w.ValueString(wxString::FromUTF8(c.server_ip.c_str()));
+	w.Key("server_port");
+	w.ValueInt(static_cast<int64_t>(c.server_port));
+	w.Key("server_name");
+	w.ValueString(wxString::FromUTF8(c.server_name.c_str()));
+	w.Key("kad_port");
+	w.ValueInt(static_cast<int64_t>(c.kad_port));
+	w.Key("source_origin");
+	w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
+	w.Key("upload_file_name");
+	w.ValueString(wxString::FromUTF8(c.upload_file_name.c_str()));
+	w.Key("available_parts");
+	w.ValueInt(static_cast<int64_t>(c.available_parts));
+	w.Key("mod_version");
+	w.ValueString(wxString::FromUTF8(c.mod_version.c_str()));
+	w.Key("view_shared_disabled");
+	w.ValueBool(c.view_shared_disabled);
+	// Completeness of the linked download for this peer; omitted when
+	// not computable (no linked file / unknown part count).
+	if (c.part_progress_percent >= 0.0) {
+		w.Key("part_progress_percent");
+		w.ValueDouble(c.part_progress_percent);
+	}
 	w.EndObject();
 }
 
@@ -3670,7 +3731,73 @@ bool FindServerByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::S
 	return false;
 }
 
+// Look up a client in the State cache by ECID (issue #422). Mirrors
+// FindServerByEcid; the handler 404s on false.
+bool FindClientByEcid(const webapi::CState &state, std::uint32_t ecid, webapi::ClientSnapshot &out)
+{
+	const auto all = state.Clients();
+	for (const auto &c : all) {
+		if (c.ecid == ecid) {
+			out = c;
+			return true;
+		}
+	}
+	return false;
+}
+
 } // namespace
+
+// GET /api/v0/clients/{ecid} (issue #422) — the full detail object for
+// one peer: every list field plus the detail-only B fields. Bare
+// object (no list envelope), mirroring HandleDownloadDetail. 404 when
+// the ecid isn't in the current snapshot.
+CHttpServer::Response CApiDispatcher::HandleClientDetail(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+	webapi::ClientSnapshot cli;
+	if (!FindClientByEcid(m_state, ecid, cli)) {
+		return ErrorResponse(404, "not_found", "no client with that ECID in the current snapshot");
+	}
+
+	// Completeness of the file we download FROM this peer = parts the
+	// peer has (available_parts) over that file's part count. Only the
+	// download link carries a meaningful denominator; a peer that is
+	// only downloading from us has no percent (available_parts stays).
+	if (cli.has_available_parts && !cli.download_file_hash.empty()) {
+		webapi::FileSnapshot f;
+		if (m_state.FindDownload(cli.download_file_hash, f) && f.size > 0) {
+			const std::uint64_t part_count = (f.size + kPartSize - 1) / kPartSize;
+			if (part_count > 0) {
+				double pct = 100.0 * static_cast<double>(cli.available_parts) /
+					     static_cast<double>(part_count);
+				if (pct > 100.0)
+					pct = 100.0;
+				cli.part_progress_percent = pct;
+			}
+		}
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	WriteClientDetailObject(w, cli);
+	FinalizeJsonBody(w, r);
+	return r;
+}
 
 CHttpServer::Response CApiDispatcher::HandleServerAdd(const CHttpServer::Request &req)
 {

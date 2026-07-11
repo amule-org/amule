@@ -342,6 +342,51 @@ else
 	_fail "clients bogus filter" "expected 400, got $RC"
 fi
 
+# --- 9b. /clients/{ecid} detail (issue #422). --------------------
+# A superset of the list object: every list field plus the detail-only
+# B fields. Guarded on a live peer; the negative cases run regardless.
+FIRST_ECID=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" \
+	| jq -r '.clients[0].client_ecid // empty')
+if [ -n "$FIRST_ECID" ]; then
+	DETAIL=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients/$FIRST_ECID")
+	OK=$(echo "$DETAIL" | jq -r --argjson e "$FIRST_ECID" '
+		(.client_ecid == $e)
+		and has("user_hash")
+		and has("user_id_hybrid") and has("high_id")
+		and has("server_ip") and has("server_port") and has("server_name")
+		and has("kad_port") and has("source_origin")
+		and has("available_parts") and has("mod_version")
+		and has("view_shared_disabled")')
+	if [ "$OK" = "true" ]; then
+		_pass "/clients/{ecid} returns detail superset (ecid=$FIRST_ECID)"
+	else
+		_fail "clients detail shape" "missing detail fields: $DETAIL"
+	fi
+else
+	_pass "/clients/{ecid} detail 200 skipped (no peers connected)"
+fi
+# Unknown ecid → 404 (0xFFFFFFFF is effectively never a live ECID)
+RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$HOST/api/v0/clients/4294967295")
+if [ "$RC" = "404" ]; then
+	_pass "/clients/{unknown-ecid} → 404"
+else
+	_fail "clients detail 404" "expected 404, got $RC"
+fi
+# Non-numeric ecid path → 400
+RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$HOST/api/v0/clients/not-a-number")
+if [ "$RC" = "400" ]; then
+	_pass "/clients/{non-numeric} → 400"
+else
+	_fail "clients detail 400" "expected 400, got $RC"
+fi
+# Non-GET → 405
+RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" "$HOST/api/v0/clients/1")
+if [ "$RC" = "405" ]; then
+	_pass "POST /clients/{ecid} → 405"
+else
+	_fail "clients detail 405" "expected 405, got $RC"
+fi
+
 # --- 10. /events ?channels= filter. ------------------------------
 # Test 8 left the daemon disconnected; reconnect so download_* /
 # status_* events have a reason to fire.
