@@ -582,6 +582,60 @@ TEST(Refresher, CommentRatingAndSourceCommentsDecode)
 	ASSERT_EQUALS(std::string("no rating here"), it->second.download.source_comments[1].comment);
 }
 
+// Source-reported filenames (issue #420) are delta-encoded by amuled and
+// accumulated across ticks: tick 1 adds two names; tick 2 removes one
+// (COUNTS=0) and updates the other's count (COUNTS-only child).
+TEST(Refresher, SourceNamesDeltaAccumulate)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(404));
+		CECEmptyTag names(EC_TAG_PARTFILE_SOURCE_NAMES);
+		CECTag c1(EC_TAG_PARTFILE_SOURCE_NAMES, static_cast<std::uint32_t>(1));
+		c1.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_NAMES, std::string("Movie.mkv")));
+		c1.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_NAMES_COUNTS, static_cast<std::uint32_t>(7)));
+		names.AddTag(c1);
+		CECTag c2(EC_TAG_PARTFILE_SOURCE_NAMES, static_cast<std::uint32_t>(2));
+		c2.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_NAMES, std::string("movie.avi")));
+		c2.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_NAMES_COUNTS, static_cast<std::uint32_t>(2)));
+		names.AddTag(c2);
+		pf.AddTag(names);
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	{
+		const auto it = cache.find(404);
+		ASSERT_TRUE(it != cache.end());
+		ASSERT_EQUALS(static_cast<size_t>(2), it->second.download.source_names.size());
+		ASSERT_EQUALS(std::string("Movie.mkv"), it->second.download.source_names[1].name);
+		ASSERT_EQUALS(static_cast<std::uint32_t>(7), it->second.download.source_names[1].count);
+	}
+
+	// Tick 2: remove id 2 (count 0), bump id 1's count to 9 (no name).
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(404));
+		CECEmptyTag names(EC_TAG_PARTFILE_SOURCE_NAMES);
+		CECTag rem(EC_TAG_PARTFILE_SOURCE_NAMES, static_cast<std::uint32_t>(2));
+		rem.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_NAMES_COUNTS, static_cast<std::uint32_t>(0)));
+		names.AddTag(rem);
+		CECTag upd(EC_TAG_PARTFILE_SOURCE_NAMES, static_cast<std::uint32_t>(1));
+		upd.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_NAMES_COUNTS, static_cast<std::uint32_t>(9)));
+		names.AddTag(upd);
+		pf.AddTag(names);
+		resp.AddTag(pf);
+		ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+	}
+	const auto it = cache.find(404);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_EQUALS(static_cast<size_t>(1), it->second.download.source_names.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(9), it->second.download.source_names[1].count);
+	ASSERT_TRUE(it->second.download.source_names.find(2) == it->second.download.source_names.end());
+}
+
 // ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and

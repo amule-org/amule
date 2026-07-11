@@ -996,6 +996,23 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// /downloads/{hash}/filenames — source-reported filenames + counts
+	// (issue #420). Downloads-only.
+	{
+		static const auto dl_filenames =
+			web_api_path::ParsePattern("/api/v0/downloads/{hash}/filenames");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(dl_filenames, path_segs, caps)) {
+			if (req.method != "GET" && req.method != "HEAD") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only GET / HEAD on /downloads/{hash}/filenames");
+			}
+			return HandleDownloadFilenames(req, caps["hash"]);
+		}
+	}
+
 	// /downloads/{hash} — single-resource detail (GET / HEAD) and the
 	// mutation surface (PATCH for status/priority/category, DELETE for
 	// clear-completed single). `{hash}` is the lowercase 32-char hex
@@ -2460,6 +2477,49 @@ CHttpServer::Response CApiDispatcher::HandleDownloadComments(
 	return r;
 }
 
+CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	webapi::FileSnapshot d;
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+	if (!m_state.FindDownload(needle, d)) {
+		return ErrorResponse(404, "not_found", "no download with that hash");
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("filenames");
+	w.BeginArray();
+	for (const auto &kv : d.download.source_names) {
+		w.BeginObject();
+		w.Key("name");
+		w.ValueString(wxString::FromUTF8(kv.second.name.c_str()));
+		w.Key("count");
+		w.ValueInt(static_cast<int64_t>(kv.second.count));
+		w.EndObject();
+	}
+	w.EndArray();
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
 namespace
 {
 
@@ -2835,6 +2895,60 @@ bool TrySetCommentRating(CamuleapiApp &app,
 	applied = true;
 	return true;
 }
+
+// Handle the optional `name` (rename) field shared by PATCH
+// /downloads/{hash} and PATCH /shared/{hash} (issue #420). Maps to
+// EC_OP_RENAME_FILE. Rejects empty names and names containing path
+// separators — amuled's RenameFile JoinPaths()es the value, so a
+// separator would let the rename escape the file's directory. Returns
+// false + fills `err` on a problem; sets `applied` when a rename was
+// sent. Absent `name` is a no-op (returns true, applied=false).
+bool TryRename(CamuleapiApp &app,
+	const picojson::object &obj,
+	const webapi::FileSnapshot &f,
+	bool &applied,
+	CHttpServer::Response &err)
+{
+	applied = false;
+	const auto nit = obj.find("name");
+	if (nit == obj.end())
+		return true;
+	if (!nit->second.is<std::string>()) {
+		err = ErrorResponse(400, "bad_request", "`name` must be a string");
+		return false;
+	}
+	const std::string name = nit->second.get<std::string>();
+	if (name.empty()) {
+		err = ErrorResponse(400, "bad_request", "`name` must not be empty");
+		return false;
+	}
+	if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos) {
+		err = ErrorResponse(400, "bad_request", "`name` must not contain path separators");
+		return false;
+	}
+	CMD4Hash file_hash;
+	if (!HashFromHex(f.hash, file_hash)) {
+		err = ErrorResponse(500, "internal_error", "failed to decode file hash");
+		return false;
+	}
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_RENAME_FILE));
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
+	ec_req->AddTag(CECTag(EC_TAG_PARTFILE_NAME, name));
+	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		err = ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for RENAME_FILE");
+		return false;
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		err = ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+		return false;
+	}
+	delete ec_resp;
+	applied = true;
+	return true;
+}
 } // namespace
 
 CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
@@ -2991,11 +3105,21 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			any_change = true;
 	}
 
+	// name (rename; issue #420).
+	{
+		bool applied = false;
+		CHttpServer::Response rn_err;
+		if (!TryRename(m_app, obj, d, applied, rn_err))
+			return rn_err;
+		if (applied)
+			any_change = true;
+	}
+
 	if (!any_change) {
 		return ErrorResponse(400,
 			"bad_request",
 			"request body must include at least one of "
-			"`status`, `priority`, `category`, or `comment`+`rating`");
+			"`status`, `priority`, `category`, `comment`+`rating`, or `name`");
 	}
 
 	// Inline refresh so the response below sees post-mutation state.
@@ -5141,9 +5265,20 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 			any_change = true;
 	}
 
+	// name (rename; issue #420).
+	{
+		bool applied = false;
+		CHttpServer::Response rn_err;
+		if (!TryRename(m_app, obj, s, applied, rn_err))
+			return rn_err;
+		if (applied)
+			any_change = true;
+	}
+
 	if (!any_change) {
-		return ErrorResponse(
-			400, "bad_request", "request body must include `priority` or `comment`+`rating`");
+		return ErrorResponse(400,
+			"bad_request",
+			"request body must include `priority`, `comment`+`rating`, or `name`");
 	}
 
 	(void)RefresherTick(m_app, m_state);

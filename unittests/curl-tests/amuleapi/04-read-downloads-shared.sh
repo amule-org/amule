@@ -166,6 +166,12 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.comments | type' array \
 		'/downloads/{hash}/comments.comments is an array'
 
+	# Source-reported filenames sub-resource (issue #420).
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/filenames"
+	_assert_status 200 "GET /downloads/{hash}/filenames → 200"
+	_assert_json_eq '.filenames | type' array \
+		'/downloads/{hash}/filenames.filenames is an array'
+
 	# Uppercase hash → same hit (case-insensitive route).
 	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH_UPPER"

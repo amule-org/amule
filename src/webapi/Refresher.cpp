@@ -428,6 +428,33 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 			f.download.source_comments.push_back(std::move(c));
 		}
 	}
+	// Source-reported filenames (issue #420). amuled delta-encodes the
+	// container keyed by a stable per-name id: a child carrying a name
+	// subtag is a new/updated entry; a child with COUNTS==0 and no name
+	// is a removal; otherwise it's a count update. The container is only
+	// sent when something changed (HasChildTags gate on the daemon), so
+	// an absent container keeps the accumulated map.
+	if (const CECTag *names = pf->GetTagByName(EC_TAG_PARTFILE_SOURCE_NAMES)) {
+		for (const CECTag &child : *names) {
+			const std::uint32_t id = static_cast<std::uint32_t>(child.GetInt());
+			const CECTag *name_tag = child.GetTagByName(EC_TAG_PARTFILE_SOURCE_NAMES);
+			const CECTag *count_tag = child.GetTagByName(EC_TAG_PARTFILE_SOURCE_NAMES_COUNTS);
+			const std::uint32_t count =
+				count_tag ? static_cast<std::uint32_t>(count_tag->GetInt()) : 0;
+			if (name_tag) {
+				FileSnapshot::DownloadSide::SourceName sn;
+				sn.name = std::string(name_tag->GetStringData().utf8_str());
+				sn.count = count;
+				f.download.source_names[id] = std::move(sn);
+			} else if (count == 0) {
+				f.download.source_names.erase(id);
+			} else {
+				auto mit = f.download.source_names.find(id);
+				if (mit != f.download.source_names.end())
+					mit->second.count = count;
+			}
+		}
+	}
 	// Base CKnownFile detail tags (aich_hash, queued_count, met_file).
 	MergeKnownFileDetail(pf, f);
 	// Recompute percent unconditionally — both inputs may have moved.

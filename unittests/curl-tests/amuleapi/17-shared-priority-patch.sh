@@ -209,6 +209,24 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"comment":"x","rating":9}' "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 400 "PATCH rating out of range → 400"
 
+# --- 3d. PATCH name (rename; issue #420). -------------------------
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"name":"renamed-by-test.dat"}' "$HOST/api/v0/shared/$TEST_HASH"
+_assert_status 200 "PATCH name (rename) → 200"
+
+# Path separators rejected (directory-traversal guard).
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"name":"../evil.dat"}' "$HOST/api/v0/shared/$TEST_HASH"
+_assert_status 400 "PATCH name with path separator → 400"
+
+# Empty name rejected.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"name":""}' "$HOST/api/v0/shared/$TEST_HASH"
+_assert_status 400 "PATCH empty name → 400"
+
 # --- 4. Error paths. ----------------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \

@@ -105,6 +105,8 @@ private:
 	CHttpServer::Response HandleDownloadDetail(const CHttpServer::Request &, const std::string &key);
 	// per-source comments/ratings list. `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleDownloadComments(const CHttpServer::Request &, const std::string &key);
+	// source-reported filenames + counts. `key` = 32-char MD4 hash.
+	CHttpServer::Response HandleDownloadFilenames(const CHttpServer::Request &, const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd(const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloadPatch(const CHttpServer::Request &, const std::string &key);

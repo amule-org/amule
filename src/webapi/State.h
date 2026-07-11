@@ -149,6 +149,18 @@ struct FileSnapshot
 		};
 		std::vector<SourceComment> source_comments;
 
+		// Source-reported filenames (GET /downloads/{hash}/filenames,
+		// issue #420). amuled delta-encodes these keyed by a stable id
+		// (new = name+count, count 0 = removed, else count update); the
+		// refresher accumulates into this map across ticks. Reset with
+		// the rest of DownloadSide when the download role drops.
+		struct SourceName
+		{
+			std::string name;
+			std::uint32_t count = 0;
+		};
+		std::map<std::uint32_t, SourceName> source_names;
+
 		// Decoded per-part state, populated by the refresher's RLE
 		// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +
 		// EC_TAG_PARTFILE_PART_STATUS. Both arrays are sized to

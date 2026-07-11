@@ -27,6 +27,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
 - [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view; `{hash}` is the 32-char MD4 hex hash
 - [`GET /api/v0/downloads/{hash}/comments`](#get-apiv0downloadshashcomments) — per-source comments/ratings list
+- [`GET /api/v0/downloads/{hash}/filenames`](#get-apiv0downloadshashfilenames) — source-reported filenames + counts
 - [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
 - [`PATCH /api/v0/downloads`](#patch-apiv0downloads) — bulk pause / resume / priority / category
 - [`DELETE /api/v0/downloads`](#delete-apiv0downloads) — bulk cancel + remove
@@ -583,6 +584,28 @@ A per-source `rating` of `-1` means the source left a comment but no rating. Rat
 
 **Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
 
+#### `GET /api/v0/downloads/{hash}/filenames`
+
+**Auth:** `GUEST`
+
+The distinct filenames this download's **sources** report for it, each with how many sources use that name (the desktop "File Names" list). Downloads-only — needs a live source list. Pair it with `PATCH /downloads/{hash}` `{ "name": … }` to implement the desktop "Takeover" flow (pick a source name, then rename).
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/downloads/8b54a3c2…/filenames"
+```
+
+```json
+{
+  "filenames": [
+    { "name": "Some.Movie.2024.mkv", "count": 7 },
+    { "name": "some_movie.mkv", "count": 2 }
+  ]
+}
+```
+
+**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
+
 #### `POST /api/v0/downloads`
 
 **Auth:** `ADMIN`
@@ -663,6 +686,7 @@ Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex
 - `priority` — `"low"` / `"normal"` / `"high"` / `"auto"`. Downloads support only these levels; the daemon clamps any other value to `normal`. (Shared files support the wider `very_low` … `release` set — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).)
 - `category` — uint8
 - `comment` + `rating` — set the file's comment (string, ≤ 50 chars) and rating (integer `0`–`5`). Must be sent **together**; only settable when the partfile is also shared (≥ 1 complete chunk), else `409 not_shared`. Primarily a shared-file action — see [`PATCH /shared/{hash}`](#patch-apiv0sharedhash).
+- `name` — rename the file (string). Must be non-empty and contain no path separators (`/` or `\`). See the [Takeover flow](#get-apiv0downloadshashfilenames).
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
@@ -900,7 +924,9 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 
 `comment` and `rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `comment` is capped at 50 characters; `rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash) for a downloading file that is also shared.
 
-**Errors:** `400 bad_request` (missing/invalid fields, or `comment`/`rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
+`name` renames the file — a non-empty string with no path separators (`/` or `\`, rejected to prevent the rename escaping the file's directory). Rename works on any known file, so it is accepted on both this endpoint and [`PATCH /downloads/{hash}`](#patch-apiv0downloadshash).
+
+**Errors:** `400 bad_request` (missing/invalid fields, `comment`/`rating` sent alone, or a `name` that is empty or contains a path separator), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
