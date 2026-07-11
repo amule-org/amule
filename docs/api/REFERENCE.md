@@ -62,8 +62,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`DELETE /api/v0/categories/{index}`](#delete-apiv0categoriesindex) — remove
 
 **Preferences**
-- [`GET /api/v0/preferences`](#get-apiv0preferences) — read connection + general prefs
-- [`PATCH /api/v0/preferences`](#patch-apiv0preferences) — update subset of prefs
+- [`GET /api/v0/preferences`](#get-apiv0preferences) — read all EC-carried preference categories
+- [`PATCH /api/v0/preferences`](#patch-apiv0preferences) — update any subset of prefs
 
 **Network control**
 - [`POST /api/v0/networks/connect`](#post-apiv0networksconnect) — connect ed2k / kad / both
@@ -1221,6 +1221,8 @@ Deleting `index 0` is rejected by amuled (`400 amuled_rejected`).
 
 **Auth:** `GUEST`
 
+Returns every preference category amuled carries over EC. The `general` and `connection` sub-objects are the original common-case set; the remaining nine categories (issue #437) map 1:1 to the daemon's own settings and mirror the desktop "Preferences" tabs.
+
 ```json
 {
   "general": {
@@ -1232,6 +1234,8 @@ Deleting `index 0` is rejected by amuled (`400 amuled_rejected`).
   "connection": {
     "max_upload_kbps":   50,
     "max_download_kbps": 0,
+    "max_upload_cap_kbps":   0,
+    "max_download_cap_kbps": 0,
     "slot_allocation":   3,
     "tcp_port":          4662,
     "udp_port":          4672,
@@ -1242,9 +1246,60 @@ Deleting `index 0` is rejected by amuled (`400 amuled_rejected`).
     "reconnect":   true,
     "network_ed2k": true,
     "network_kad":  true
-  }
+  },
+  "directories": {
+    "incoming": "/home/me/.aMule/Incoming",
+    "temp":     "/home/me/.aMule/Temp",
+    "shared":   ["/home/me/media"],
+    "share_hidden":    false,
+    "auto_rescan":     true,
+    "follow_symlinks": false,
+    "exclude_patterns": "",
+    "exclude_regex":    false
+  },
+  "files": {
+    "ich_enabled": true, "aich_trust": false,
+    "new_paused": false, "new_auto_dl_prio": false, "new_auto_ul_prio": false,
+    "preview_prio": false, "start_next_paused": false, "resume_same_cat": false,
+    "save_sources": true, "extract_metadata": false, "alloc_full_size": false,
+    "check_free_space": true, "min_free_space_mb": 1, "create_normal": false
+  },
+  "servers": {
+    "remove_dead": true, "dead_server_retries": 3, "auto_update": false,
+    "add_from_server": true, "add_from_client": true, "use_score_system": true,
+    "smart_id_check": true, "safe_server_connect": false,
+    "autoconn_static_only": false, "manual_high_prio": false,
+    "update_url": "http://upd.emule-security.org/server.met"
+  },
+  "security": {
+    "can_see_shares": false,
+    "ipfilter_clients": true, "ipfilter_servers": true,
+    "ipfilter_auto_update": false, "ipfilter_update_url": "",
+    "ipfilter_level": 127, "ipfilter_filter_lan": true,
+    "use_secident": true,
+    "obfuscation_supported": true, "obfuscation_requested": true, "obfuscation_required": false
+  },
+  "message_filter": {
+    "enabled": false, "all": false, "friends": false,
+    "secure": false, "by_keyword": false, "keywords": ""
+  },
+  "remote_controls": {
+    "webserver_enabled": false, "webserver_port": 4711, "webserver_use_gzip": true,
+    "webserver_refresh": 120, "webserver_template": "",
+    "webserver_guest_enabled": false,
+    "amuleapi_enabled": true, "amuleapi_port": 4713, "amuleapi_bind": "0.0.0.0"
+  },
+  "online_signature": { "enabled": false },
+  "core_tweaks": {
+    "max_conn_per_five": 200, "verbose": false, "filebuffer": 240000,
+    "ul_queue": 5000, "srv_keepalive_timeout": 0, "kad_max_searches": 50,
+    "kad_reask_ms": 1800000, "source_reask_ms": 900000
+  },
+  "kademlia": { "update_url": "http://upd.emule-security.org/nodes.dat" }
 }
 ```
+
+Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on the wire. **Passwords are never returned** — the webserver admin/guest and amuleapi passwords are write-only (see PATCH). `general.user_hash` is the node's own identity hash, not a password.
 
 **Errors:** `503 ec_unavailable`.
 
@@ -1252,15 +1307,19 @@ Deleting `index 0` is rejected by amuled (`400 amuled_rejected`).
 
 **Auth:** `ADMIN`
 
-Body shape mirrors the GET; every field is optional. Fields not present are left unchanged. Subset example:
+Body shape mirrors the GET; every sub-object and every field is optional, and fields not present are left unchanged. Subset example:
 
 ```json
-{ "connection": { "max_upload_kbps": 100 } }
+{ "files": { "new_paused": true }, "servers": { "dead_server_retries": 5 } }
 ```
 
-**Response:** `200 OK` — full preferences object (post-mutation).
+**Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls`: `webserver_password`, `webserver_guest_password`, `amuleapi_password`. Send the plaintext — amuled stores the hash. `webserver_guest_password` requires that guest access be enabled (pass `webserver_guest_enabled: true` in the same request, or leave it already enabled).
 
-**Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
+> **Note:** these are the daemon's live settings — the same ones the desktop GUI edits. Some are self-affecting: changing `remote_controls.amuleapi_port` / `amuleapi_bind`, or `directories.incoming` / `temp`, alters the very daemon you are talking to. A port/bind change only takes effect on the next amuled restart, so it will not drop your current connection mid-request.
+
+**Response:** `200 OK` — full preferences object (post-mutation), so a read-modify-write client can confirm what landed without a follow-up GET.
+
+**Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 

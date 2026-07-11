@@ -1266,3 +1266,78 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_TRUE(!it2->second.is_friend);
 	ASSERT_TRUE(it2->second.dl_up_modifier == 0.0);
 }
+
+// --- #437: extended EC preference categories decode ------------------
+//
+// Covers both boolean encodings the core serializer uses: value tags
+// (share_hidden/exclude_regex/can_see_shares -> GetInt()!=0) and bare
+// presence tags (ich_enabled/use_secident -> tag present == true), plus
+// ints, strings, and the directories.shared string array.
+TEST(Refresher, PreferencesExtendedCategoriesDecode)
+{
+	CECPacket resp(EC_OP_SET_PREFERENCES);
+
+	CECEmptyTag dir(EC_TAG_PREFS_DIRECTORIES);
+	dir.AddTag(CECTag(EC_TAG_DIRECTORIES_INCOMING, wxString::FromUTF8("/inc")));
+	dir.AddTag(CECTag(EC_TAG_DIRECTORIES_TEMP, wxString::FromUTF8("/tmp")));
+	CECTag shared(EC_TAG_DIRECTORIES_SHARED, static_cast<std::uint32_t>(2));
+	shared.AddTag(CECTag(EC_TAG_STRING, wxString::FromUTF8("/a")));
+	shared.AddTag(CECTag(EC_TAG_STRING, wxString::FromUTF8("/b")));
+	dir.AddTag(shared);
+	dir.AddTag(CECTag(EC_TAG_DIRECTORIES_SHARE_HIDDEN, true)); // value-encoded bool
+	dir.AddTag(CECTag(EC_TAG_DIRECTORIES_EXCLUDE_REGEX, true));
+	resp.AddTag(dir);
+
+	CECEmptyTag files(EC_TAG_PREFS_FILES);
+	files.AddTag(CECEmptyTag(EC_TAG_FILES_ICH_ENABLED)); // presence == true
+	files.AddTag(CECTag(EC_TAG_FILES_MIN_FREE_SPACE, static_cast<std::uint32_t>(512)));
+	resp.AddTag(files);
+
+	CECEmptyTag srv(EC_TAG_PREFS_SERVERS);
+	srv.AddTag(CECTag(EC_TAG_SERVERS_DEAD_SERVER_RETRIES, static_cast<std::uint16_t>(5)));
+	srv.AddTag(CECTag(EC_TAG_SERVERS_UPDATE_URL, wxString::FromUTF8("http://srv")));
+	resp.AddTag(srv);
+
+	CECEmptyTag sec(EC_TAG_PREFS_SECURITY);
+	sec.AddTag(CECTag(EC_TAG_SECURITY_CAN_SEE_SHARES, true)); // value-encoded bool
+	sec.AddTag(CECTag(EC_TAG_IPFILTER_LEVEL, static_cast<std::uint32_t>(100)));
+	sec.AddTag(CECEmptyTag(EC_TAG_SECURITY_USE_SECIDENT)); // presence == true
+	resp.AddTag(sec);
+
+	CECEmptyTag cw(EC_TAG_PREFS_CORETWEAKS);
+	cw.AddTag(CECTag(EC_TAG_CORETW_MAX_CONN_PER_FIVE, static_cast<std::uint32_t>(200)));
+	cw.AddTag(CECTag(EC_TAG_CORETW_KAD_REASK_MS, static_cast<std::uint32_t>(1800000)));
+	resp.AddTag(cw);
+
+	CECEmptyTag kad(EC_TAG_PREFS_KADEMLIA);
+	kad.AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, wxString::FromUTF8("http://nodes")));
+	resp.AddTag(kad);
+
+	PreferencesSnapshot p;
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&resp, p, cats);
+
+	ASSERT_EQUALS(std::string("/inc"), p.directories.incoming);
+	ASSERT_EQUALS(std::string("/tmp"), p.directories.temp);
+	ASSERT_EQUALS(static_cast<size_t>(2), p.directories.shared.size());
+	ASSERT_EQUALS(std::string("/a"), p.directories.shared[0]);
+	ASSERT_TRUE(p.directories.share_hidden);
+	ASSERT_TRUE(p.directories.exclude_regex);
+	ASSERT_TRUE(!p.directories.auto_rescan); // absent -> false
+
+	ASSERT_TRUE(p.files.ich_enabled);
+	ASSERT_TRUE(!p.files.aich_trust); // absent presence tag -> false
+	ASSERT_EQUALS(static_cast<std::uint32_t>(512), p.files.min_free_space_mb);
+
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5), p.servers.dead_server_retries);
+	ASSERT_EQUALS(std::string("http://srv"), p.servers.update_url);
+
+	ASSERT_TRUE(p.security.can_see_shares);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_level);
+	ASSERT_TRUE(p.security.use_secident);
+	ASSERT_TRUE(!p.security.obfuscation_required); // absent -> false
+
+	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_conn_per_five);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1800000), p.core_tweaks.kad_reask_ms);
+	ASSERT_EQUALS(std::string("http://nodes"), p.kademlia.update_url);
+}

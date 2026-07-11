@@ -4,7 +4,9 @@
 #
 # Endpoint:
 #   PATCH /api/v0/preferences
-#       body: { general?: {...}, connection?: {...} }
+#       body: { general?, connection?, directories?, files?, servers?,
+#               security?, message_filter?, remote_controls?,
+#               online_signature?, core_tweaks?, kademlia? }  (issue #437)
 #
 # Wire shape mirrors the /preferences GET response. Both sub-objects
 # optional; all fields within optional. Only fields present are
@@ -186,6 +188,49 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d 'not json' "$HOST/api/v0/preferences"
 _assert_status 400 "PATCH malformed JSON → 400"
+
+# --- 5b. Extended EC categories: presence + round-trip (issue #437). -
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '(.directories|type)' object '/preferences has directories object'
+_assert_json_eq '(.files|type)' object '/preferences has files object'
+_assert_json_eq '(.servers|type)' object '/preferences has servers object'
+_assert_json_eq '(.security|type)' object '/preferences has security object'
+_assert_json_eq '(.message_filter|type)' object '/preferences has message_filter object'
+_assert_json_eq '(.remote_controls|type)' object '/preferences has remote_controls object'
+_assert_json_eq '(.online_signature|type)' object '/preferences has online_signature object'
+_assert_json_eq '(.core_tweaks|type)' object '/preferences has core_tweaks object'
+_assert_json_eq '(.kademlia|type)' object '/preferences has kademlia object'
+_assert_json_eq '(.directories.shared|type)' array 'directories.shared is an array'
+_assert_json_eq '(.files.min_free_space_mb|type)' number 'files.min_free_space_mb is numeric'
+# Passwords are write-only — no password key ever appears on GET
+# (user_hash is the identity hash, deliberately not matched here).
+_assert_json_eq '[paths(scalars) as $p | select($p[-1]|tostring|test("password";"i"))] | length' \
+	0 'no password key present in GET /preferences'
+SAVED_NEW_PAUSED=$(printf '%s' "$CURL_BODY" | jq -r '.files.new_paused')
+SAVED_RETRIES=$(printf '%s' "$CURL_BODY" | jq -r '.servers.dead_server_retries')
+
+# Round-trip a bool (files) + int (servers) and confirm no stale GET.
+NEW_PAUSED_TOGGLE=$([ "$SAVED_NEW_PAUSED" = "true" ] && echo false || echo true)
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"files\":{\"new_paused\":$NEW_PAUSED_TOGGLE},\"servers\":{\"dead_server_retries\":9}}" \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH files+servers categories → 200"
+_assert_json_eq '.files.new_paused' "$NEW_PAUSED_TOGGLE" 'files.new_paused toggled in response'
+_assert_json_eq '.servers.dead_server_retries' 9 'servers.dead_server_retries=9 in response'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '.files.new_paused' "$NEW_PAUSED_TOGGLE" 'files.new_paused persisted (no stale GET)'
+_assert_json_eq '.servers.dead_server_retries' 9 'servers.dead_server_retries persisted'
+
+# Wrong type on a new-category field → 400.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"files":{"min_free_space_mb":"lots"}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH files.min_free_space_mb as string → 400"
+
+# Restore the #437 fields we touched.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"files\":{\"new_paused\":$SAVED_NEW_PAUSED},\"servers\":{\"dead_server_retries\":$SAVED_RETRIES}}" \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH (restore #437 fields) → 200"
 
 # --- 6. Restore pre-mutation state. --------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \

@@ -593,6 +593,127 @@ struct PreferencesSnapshot
 	bool reconnect = false;
 	bool network_ed2k = false;
 	bool network_kad = false;
+
+	// --- Extended EC-carried categories (issue #437) -----------------
+	// Every field below maps 1:1 to an EC tag the daemon already
+	// serializes in CEC_Prefs_Packet and applies in Apply(); the webapi
+	// just requests the wider selection bitmask and plumbs them through.
+	// Nested sub-structs mirror the nested JSON the endpoint emits.
+
+	// [Directories] EC_TAG_PREFS_DIRECTORIES
+	struct DirectoriesPrefs
+	{
+		std::string incoming;
+		std::string temp;
+		std::vector<std::string> shared;
+		bool share_hidden = false;
+		bool auto_rescan = false;
+		bool follow_symlinks = false;
+		std::string exclude_patterns;
+		bool exclude_regex = false;
+	} directories;
+
+	// [Files] EC_TAG_PREFS_FILES
+	struct FilesPrefs
+	{
+		bool ich_enabled = false;
+		bool aich_trust = false;
+		bool new_paused = false;
+		bool new_auto_dl_prio = false;
+		bool new_auto_ul_prio = false;
+		bool preview_prio = false;
+		bool start_next_paused = false;
+		bool resume_same_cat = false;
+		bool save_sources = false;
+		bool extract_metadata = false;
+		bool alloc_full_size = false;
+		bool check_free_space = false;
+		std::uint32_t min_free_space_mb = 0;
+		bool create_normal = false;
+	} files;
+
+	// [Servers] EC_TAG_PREFS_SERVERS
+	struct ServersPrefs
+	{
+		bool remove_dead = false;
+		std::uint32_t dead_server_retries = 0;
+		bool auto_update = false;
+		bool add_from_server = false;
+		bool add_from_client = false;
+		bool use_score_system = false;
+		bool smart_id_check = false;
+		bool safe_server_connect = false;
+		bool autoconn_static_only = false;
+		bool manual_high_prio = false;
+		std::string update_url;
+	} servers;
+
+	// [Security] EC_TAG_PREFS_SECURITY
+	struct SecurityPrefs
+	{
+		bool can_see_shares = false;
+		bool ipfilter_clients = false;
+		bool ipfilter_servers = false;
+		bool ipfilter_auto_update = false;
+		std::string ipfilter_update_url;
+		std::uint32_t ipfilter_level = 0;
+		bool ipfilter_filter_lan = false;
+		bool use_secident = false;
+		bool obfuscation_supported = false;
+		bool obfuscation_requested = false;
+		bool obfuscation_required = false;
+	} security;
+
+	// [MessageFilter] EC_TAG_PREFS_MESSAGEFILTER
+	struct MessageFilterPrefs
+	{
+		bool enabled = false;
+		bool all = false;
+		bool friends = false;
+		bool secure = false;
+		bool by_keyword = false;
+		std::string keywords;
+	} message_filter;
+
+	// [RemoteControls] EC_TAG_PREFS_REMOTECTRL. Passwords are
+	// write-only (set via PATCH, never serialized here).
+	struct RemoteControlsPrefs
+	{
+		bool webserver_enabled = false;
+		std::uint32_t webserver_port = 0;
+		bool webserver_use_gzip = false;
+		std::uint32_t webserver_refresh = 0;
+		std::string webserver_template;
+		bool webserver_guest_enabled = false;
+		bool amuleapi_enabled = false;
+		std::uint32_t amuleapi_port = 0;
+		std::string amuleapi_bind;
+	} remote_controls;
+
+	// [OnlineSignature] EC_TAG_PREFS_ONLINESIG
+	struct OnlineSignaturePrefs
+	{
+		bool enabled = false;
+	} online_signature;
+
+	// [CoreTweaks] EC_TAG_PREFS_CORETWEAKS
+	struct CoreTweaksPrefs
+	{
+		std::uint32_t max_conn_per_five = 0;
+		bool verbose = false;
+		std::uint32_t filebuffer = 0;
+		std::uint32_t ul_queue = 0;
+		std::uint32_t srv_keepalive_timeout = 0;
+		std::uint32_t kad_max_searches = 0;
+		std::uint32_t kad_reask_ms = 0;
+		std::uint32_t source_reask_ms = 0;
+	} core_tweaks;
+
+	// [Kademlia] EC_TAG_PREFS_KADEMLIA
+	struct KademliaPrefs
+	{
+		std::string update_url;
+	} kademlia;
 };
 
 struct StatusSnapshot

@@ -2032,6 +2032,178 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 	}
 }
 
+// --- Extended EC-carried preference categories (issue #437) ----------
+//
+// Boolean encoding follows the core serializer (ECSpecialMuleTags.cpp):
+// most bools are emitted as a bare CECEmptyTag only when true, so
+// presence == true; a few (directories.share_hidden/auto_rescan/
+// follow_symlinks/exclude_regex, security.can_see_shares) are emitted
+// as a value tag every time, so they read GetInt() != 0.
+
+void ParseDirectoriesPrefs(const CECTag *d, PreferencesSnapshot &out)
+{
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_INCOMING)) {
+		out.directories.incoming = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_TEMP)) {
+		out.directories.temp = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *shared = d->GetTagByName(EC_TAG_DIRECTORIES_SHARED)) {
+		out.directories.shared.clear();
+		for (const CECTag &child : *shared) {
+			if (child.GetTagName() == EC_TAG_STRING)
+				out.directories.shared.emplace_back(child.GetStringData().utf8_str());
+		}
+	}
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_SHARE_HIDDEN))
+		out.directories.share_hidden = t->GetInt() != 0;
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_AUTO_RESCAN))
+		out.directories.auto_rescan = t->GetInt() != 0;
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS))
+		out.directories.follow_symlinks = t->GetInt() != 0;
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS)) {
+		out.directories.exclude_patterns = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_REGEX))
+		out.directories.exclude_regex = t->GetInt() != 0;
+}
+
+void ParseFilesPrefs(const CECTag *f, PreferencesSnapshot &out)
+{
+	out.files.ich_enabled = f->GetTagByName(EC_TAG_FILES_ICH_ENABLED) != nullptr;
+	out.files.aich_trust = f->GetTagByName(EC_TAG_FILES_AICH_TRUST) != nullptr;
+	out.files.new_paused = f->GetTagByName(EC_TAG_FILES_NEW_PAUSED) != nullptr;
+	out.files.new_auto_dl_prio = f->GetTagByName(EC_TAG_FILES_NEW_AUTO_DL_PRIO) != nullptr;
+	out.files.new_auto_ul_prio = f->GetTagByName(EC_TAG_FILES_NEW_AUTO_UL_PRIO) != nullptr;
+	out.files.preview_prio = f->GetTagByName(EC_TAG_FILES_PREVIEW_PRIO) != nullptr;
+	out.files.start_next_paused = f->GetTagByName(EC_TAG_FILES_START_NEXT_PAUSED) != nullptr;
+	out.files.resume_same_cat = f->GetTagByName(EC_TAG_FILES_RESUME_SAME_CAT) != nullptr;
+	out.files.save_sources = f->GetTagByName(EC_TAG_FILES_SAVE_SOURCES) != nullptr;
+	out.files.extract_metadata = f->GetTagByName(EC_TAG_FILES_EXTRACT_METADATA) != nullptr;
+	out.files.alloc_full_size = f->GetTagByName(EC_TAG_FILES_ALLOC_FULL_SIZE) != nullptr;
+	out.files.check_free_space = f->GetTagByName(EC_TAG_FILES_CHECK_FREE_SPACE) != nullptr;
+	if (const CECTag *t = f->GetTagByName(EC_TAG_FILES_MIN_FREE_SPACE)) {
+		out.files.min_free_space_mb = static_cast<std::uint32_t>(t->GetInt());
+	}
+	out.files.create_normal = f->GetTagByName(EC_TAG_FILES_CREATE_NORMAL) != nullptr;
+}
+
+void ParseServersPrefs(const CECTag *s, PreferencesSnapshot &out)
+{
+	out.servers.remove_dead = s->GetTagByName(EC_TAG_SERVERS_REMOVE_DEAD) != nullptr;
+	if (const CECTag *t = s->GetTagByName(EC_TAG_SERVERS_DEAD_SERVER_RETRIES)) {
+		out.servers.dead_server_retries = static_cast<std::uint32_t>(t->GetInt());
+	}
+	out.servers.auto_update = s->GetTagByName(EC_TAG_SERVERS_AUTO_UPDATE) != nullptr;
+	out.servers.add_from_server = s->GetTagByName(EC_TAG_SERVERS_ADD_FROM_SERVER) != nullptr;
+	out.servers.add_from_client = s->GetTagByName(EC_TAG_SERVERS_ADD_FROM_CLIENT) != nullptr;
+	out.servers.use_score_system = s->GetTagByName(EC_TAG_SERVERS_USE_SCORE_SYSTEM) != nullptr;
+	out.servers.smart_id_check = s->GetTagByName(EC_TAG_SERVERS_SMART_ID_CHECK) != nullptr;
+	out.servers.safe_server_connect = s->GetTagByName(EC_TAG_SERVERS_SAFE_SERVER_CONNECT) != nullptr;
+	out.servers.autoconn_static_only = s->GetTagByName(EC_TAG_SERVERS_AUTOCONN_STATIC_ONLY) != nullptr;
+	out.servers.manual_high_prio = s->GetTagByName(EC_TAG_SERVERS_MANUAL_HIGH_PRIO) != nullptr;
+	if (const CECTag *t = s->GetTagByName(EC_TAG_SERVERS_UPDATE_URL)) {
+		out.servers.update_url = std::string(t->GetStringData().utf8_str());
+	}
+}
+
+void ParseSecurityPrefs(const CECTag *s, PreferencesSnapshot &out)
+{
+	if (const CECTag *t = s->GetTagByName(EC_TAG_SECURITY_CAN_SEE_SHARES))
+		out.security.can_see_shares = t->GetInt() != 0;
+	out.security.ipfilter_clients = s->GetTagByName(EC_TAG_IPFILTER_CLIENTS) != nullptr;
+	out.security.ipfilter_servers = s->GetTagByName(EC_TAG_IPFILTER_SERVERS) != nullptr;
+	out.security.ipfilter_auto_update = s->GetTagByName(EC_TAG_IPFILTER_AUTO_UPDATE) != nullptr;
+	if (const CECTag *t = s->GetTagByName(EC_TAG_IPFILTER_UPDATE_URL)) {
+		out.security.ipfilter_update_url = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = s->GetTagByName(EC_TAG_IPFILTER_LEVEL)) {
+		out.security.ipfilter_level = static_cast<std::uint32_t>(t->GetInt());
+	}
+	out.security.ipfilter_filter_lan = s->GetTagByName(EC_TAG_IPFILTER_FILTER_LAN) != nullptr;
+	out.security.use_secident = s->GetTagByName(EC_TAG_SECURITY_USE_SECIDENT) != nullptr;
+	out.security.obfuscation_supported =
+		s->GetTagByName(EC_TAG_SECURITY_OBFUSCATION_SUPPORTED) != nullptr;
+	out.security.obfuscation_requested =
+		s->GetTagByName(EC_TAG_SECURITY_OBFUSCATION_REQUESTED) != nullptr;
+	out.security.obfuscation_required = s->GetTagByName(EC_TAG_SECURITY_OBFUSCATION_REQUIRED) != nullptr;
+}
+
+void ParseMessageFilterPrefs(const CECTag *m, PreferencesSnapshot &out)
+{
+	out.message_filter.enabled = m->GetTagByName(EC_TAG_MSGFILTER_ENABLED) != nullptr;
+	out.message_filter.all = m->GetTagByName(EC_TAG_MSGFILTER_ALL) != nullptr;
+	out.message_filter.friends = m->GetTagByName(EC_TAG_MSGFILTER_FRIENDS) != nullptr;
+	out.message_filter.secure = m->GetTagByName(EC_TAG_MSGFILTER_SECURE) != nullptr;
+	out.message_filter.by_keyword = m->GetTagByName(EC_TAG_MSGFILTER_BY_KEYWORD) != nullptr;
+	if (const CECTag *t = m->GetTagByName(EC_TAG_MSGFILTER_KEYWORDS)) {
+		out.message_filter.keywords = std::string(t->GetStringData().utf8_str());
+	}
+}
+
+void ParseRemoteControlsPrefs(const CECTag *rc, PreferencesSnapshot &out)
+{
+	out.remote_controls.webserver_enabled = rc->GetTagByName(EC_TAG_WEBSERVER_AUTORUN) != nullptr;
+	if (const CECTag *t = rc->GetTagByName(EC_TAG_WEBSERVER_PORT)) {
+		out.remote_controls.webserver_port = static_cast<std::uint32_t>(t->GetInt());
+	}
+	out.remote_controls.webserver_use_gzip = rc->GetTagByName(EC_TAG_WEBSERVER_USEGZIP) != nullptr;
+	if (const CECTag *t = rc->GetTagByName(EC_TAG_WEBSERVER_REFRESH)) {
+		out.remote_controls.webserver_refresh = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = rc->GetTagByName(EC_TAG_WEBSERVER_TEMPLATE)) {
+		out.remote_controls.webserver_template = std::string(t->GetStringData().utf8_str());
+	}
+	out.remote_controls.webserver_guest_enabled = rc->GetTagByName(EC_TAG_WEBSERVER_GUEST) != nullptr;
+	out.remote_controls.amuleapi_enabled = rc->GetTagByName(EC_TAG_AMULEAPI_AUTORUN) != nullptr;
+	if (const CECTag *t = rc->GetTagByName(EC_TAG_AMULEAPI_PORT)) {
+		out.remote_controls.amuleapi_port = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = rc->GetTagByName(EC_TAG_AMULEAPI_BIND)) {
+		out.remote_controls.amuleapi_bind = std::string(t->GetStringData().utf8_str());
+	}
+	// Passwords (EC_TAG_PASSWD_HASH / EC_TAG_AMULEAPI_PASSWD) are
+	// deliberately NOT read — write-only, never surfaced on GET.
+}
+
+void ParseOnlineSigPrefs(const CECTag *o, PreferencesSnapshot &out)
+{
+	out.online_signature.enabled = o->GetTagByName(EC_TAG_ONLINESIG_ENABLED) != nullptr;
+}
+
+void ParseCoreTweaksPrefs(const CECTag *c, PreferencesSnapshot &out)
+{
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_MAX_CONN_PER_FIVE)) {
+		out.core_tweaks.max_conn_per_five = static_cast<std::uint32_t>(t->GetInt());
+	}
+	out.core_tweaks.verbose = c->GetTagByName(EC_TAG_CORETW_VERBOSE) != nullptr;
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_FILEBUFFER)) {
+		out.core_tweaks.filebuffer = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_UL_QUEUE)) {
+		out.core_tweaks.ul_queue = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT)) {
+		out.core_tweaks.srv_keepalive_timeout = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_KAD_MAX_SEARCHES)) {
+		out.core_tweaks.kad_max_searches = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_KAD_REASK_MS)) {
+		out.core_tweaks.kad_reask_ms = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CORETW_SOURCE_REASK_MS)) {
+		out.core_tweaks.source_reask_ms = static_cast<std::uint32_t>(t->GetInt());
+	}
+}
+
+void ParseKademliaPrefs(const CECTag *k, PreferencesSnapshot &out)
+{
+	if (const CECTag *t = k->GetTagByName(EC_TAG_KADEMLIA_UPDATE_URL)) {
+		out.kademlia.update_url = std::string(t->GetStringData().utf8_str());
+	}
+}
+
 } // namespace
 
 void ParsePreferencesFromPacket(
@@ -2049,6 +2221,33 @@ void ParsePreferencesFromPacket(
 	}
 	if (const CECTag *conn = resp->GetTagByName(EC_TAG_PREFS_CONNECTIONS)) {
 		ParseConnectionPrefs(conn, out_prefs);
+	}
+	if (const CECTag *d = resp->GetTagByName(EC_TAG_PREFS_DIRECTORIES)) {
+		ParseDirectoriesPrefs(d, out_prefs);
+	}
+	if (const CECTag *f = resp->GetTagByName(EC_TAG_PREFS_FILES)) {
+		ParseFilesPrefs(f, out_prefs);
+	}
+	if (const CECTag *s = resp->GetTagByName(EC_TAG_PREFS_SERVERS)) {
+		ParseServersPrefs(s, out_prefs);
+	}
+	if (const CECTag *s = resp->GetTagByName(EC_TAG_PREFS_SECURITY)) {
+		ParseSecurityPrefs(s, out_prefs);
+	}
+	if (const CECTag *m = resp->GetTagByName(EC_TAG_PREFS_MESSAGEFILTER)) {
+		ParseMessageFilterPrefs(m, out_prefs);
+	}
+	if (const CECTag *rc = resp->GetTagByName(EC_TAG_PREFS_REMOTECTRL)) {
+		ParseRemoteControlsPrefs(rc, out_prefs);
+	}
+	if (const CECTag *o = resp->GetTagByName(EC_TAG_PREFS_ONLINESIG)) {
+		ParseOnlineSigPrefs(o, out_prefs);
+	}
+	if (const CECTag *c = resp->GetTagByName(EC_TAG_PREFS_CORETWEAKS)) {
+		ParseCoreTweaksPrefs(c, out_prefs);
+	}
+	if (const CECTag *k = resp->GetTagByName(EC_TAG_PREFS_KADEMLIA)) {
+		ParseKademliaPrefs(k, out_prefs);
 	}
 	if (const CECTag *cats = resp->GetTagByName(EC_TAG_PREFS_CATEGORIES)) {
 		for (CECTag::const_iterator it = cats->begin(); it != cats->end(); ++it) {
