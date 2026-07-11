@@ -28,6 +28,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view; `{hash}` is the 32-char MD4 hex hash
 - [`GET /api/v0/downloads/{hash}/comments`](#get-apiv0downloadshashcomments) — per-source comments/ratings list
 - [`GET /api/v0/downloads/{hash}/filenames`](#get-apiv0downloadshashfilenames) — source-reported filenames + counts
+- [`GET /api/v0/downloads/{hash}/a4af`](#get-apiv0downloadshasha4af) — A4AF source list + auto flag
+- [`POST /api/v0/downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) — force A4AF source-swapping
 - [`POST /api/v0/downloads`](#post-apiv0downloads) — add ed2k link(s)
 - [`PATCH /api/v0/downloads`](#patch-apiv0downloads) — bulk pause / resume / priority / category
 - [`DELETE /api/v0/downloads`](#delete-apiv0downloads) — bulk cancel + remove
@@ -547,6 +549,7 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `queued_count` | int | Clients waiting on this file's upload queue. |
 | `comment` | string | The user's own comment on this file (`""` if none). |
 | `rating` | int | The user's own rating, `0`–`5` (`0` = unrated). See the [rating scale](#get-apiv0downloadshashcomments). |
+| `a4af_auto` | bool | Whether automatic A4AF source-swapping is on for this file. See [A4AF](#get-apiv0downloadshasha4af). |
 
 **Errors:** `404 not_found` (no partfile with that hash), `503 ec_unavailable`.
 
@@ -605,6 +608,43 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 ```
 
 **Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
+
+#### `GET /api/v0/downloads/{hash}/a4af`
+
+**Auth:** `GUEST`
+
+The download's **A4AF** (asked-for-another-file) sources — peers that hold this file but are currently serving another. Downloads-only.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/downloads/8b54a3c2…/a4af"
+```
+
+```json
+{ "a4af_auto": false, "sources": [ 1234, 5678 ] }
+```
+
+`sources` are client ECIDs, joinable against [`GET /clients`](#get-apiv0clients)'s `client_ecid`. The scalar `sources.a4af` count on the download object is unchanged.
+
+**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
+
+#### `POST /api/v0/downloads/{hash}/a4af`
+
+**Auth:** `ADMIN`
+
+Force A4AF source-swapping for this download. Downloads-only.
+
+**Body:** `{ "action": "<action>" }`
+
+| action | Effect |
+|---|---|
+| `swap_this` | Make other files' A4AF sources take over **this** file. |
+| `swap_this_auto` | Toggle automatic A4AF swapping for this file. |
+| `swap_others` | Release this file's sources to the other files that want them. |
+
+**Response:** `200 OK` — the post-action A4AF view (same shape as the `GET`).
+
+**Errors:** `400 bad_request` (missing or unknown `action`), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `POST /api/v0/downloads`
 

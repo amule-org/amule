@@ -455,6 +455,19 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 			}
 		}
 	}
+	// A4AF (issue #421): the auto flag + the full source-ECID list.
+	{
+		bool v = false;
+		if (pf->AssignIfExist(EC_TAG_PARTFILE_A4AFAUTO, v))
+			f.download.a4af_auto = v;
+	}
+	// amuled rebuilds the whole A4AF-source container when it changes, so
+	// replace the list wholesale when present (absent = unchanged, keep).
+	if (const CECTag *a4af = pf->GetTagByName(EC_TAG_PARTFILE_A4AF_SOURCES)) {
+		f.download.a4af_sources.clear();
+		for (const CECTag &src : *a4af)
+			f.download.a4af_sources.push_back(static_cast<std::uint32_t>(src.GetInt()));
+	}
 	// Base CKnownFile detail tags (aich_hash, queued_count, met_file).
 	MergeKnownFileDetail(pf, f);
 	// Recompute percent unconditionally — both inputs may have moved.

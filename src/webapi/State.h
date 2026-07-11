@@ -161,6 +161,13 @@ struct FileSnapshot
 		};
 		std::map<std::uint32_t, SourceName> source_names;
 
+		// A4AF (asked-for-another-file) source scheduling (issue #421).
+		// `a4af_auto` is the auto-swap flag; `a4af_sources` are the client
+		// ECIDs currently parked as A4AF sources for this download (full
+		// list re-sent by amuled when it changes).
+		bool a4af_auto = false;
+		std::vector<std::uint32_t> a4af_sources;
+
 		// Decoded per-part state, populated by the refresher's RLE
 		// decoder pass on EC_TAG_PARTFILE_GAP_STATUS +
 		// EC_TAG_PARTFILE_PART_STATUS. Both arrays are sized to

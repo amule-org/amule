@@ -636,6 +636,32 @@ TEST(Refresher, SourceNamesDeltaAccumulate)
 	ASSERT_TRUE(it->second.download.source_names.find(2) == it->second.download.source_names.end());
 }
 
+// A4AF (issue #421): the auto flag decodes into download.a4af_auto and
+// the EC_TAG_PARTFILE_A4AF_SOURCES container's EC_TAG_ECID children into
+// the a4af_sources list (full replace when present).
+TEST(Refresher, A4afAutoAndSourcesDecode)
+{
+	FileMap cache;
+	std::map<std::uint32_t, PartFileEncoderData> rle_state;
+	CECPacket resp(EC_OP_SHARED_FILES);
+	CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(505));
+	pf.AddTag(CECTag(EC_TAG_PARTFILE_A4AFAUTO, true));
+	CECEmptyTag a4af(EC_TAG_PARTFILE_A4AF_SOURCES);
+	a4af.AddTag(CECTag(EC_TAG_ECID, static_cast<std::uint32_t>(1234)));
+	a4af.AddTag(CECTag(EC_TAG_ECID, static_cast<std::uint32_t>(5678)));
+	pf.AddTag(a4af);
+	resp.AddTag(pf);
+
+	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
+
+	const auto it = cache.find(505);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(it->second.download.a4af_auto);
+	ASSERT_EQUALS(static_cast<size_t>(2), it->second.download.a4af_sources.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1234), it->second.download.a4af_sources[0]);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(5678), it->second.download.a4af_sources[1]);
+}
+
 // ----------------------------------------------------------------------
 // /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
 // container at top level. Walker iterates INTO the container and

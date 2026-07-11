@@ -157,6 +157,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} carries comment'
 	_assert_json_eq '.rating | type' number \
 		'/downloads/{hash} carries rating'
+	_assert_json_eq '.a4af_auto | type' boolean \
+		'/downloads/{hash} carries a4af_auto'
 
 	# Per-source comments sub-resource (issue #419).
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/comments"
@@ -171,6 +173,29 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_status 200 "GET /downloads/{hash}/filenames → 200"
 	_assert_json_eq '.filenames | type' array \
 		'/downloads/{hash}/filenames.filenames is an array'
+
+	# A4AF source list sub-resource (issue #421).
+	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 200 "GET /downloads/{hash}/a4af → 200"
+	_assert_json_eq '.a4af_auto | type' boolean \
+		'/downloads/{hash}/a4af carries a4af_auto'
+	_assert_json_eq '.sources | type' array \
+		'/downloads/{hash}/a4af.sources is an array'
+
+	# Unknown action → 400 (mutation validation; admin token).
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"bogus"}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 400 "POST /downloads/{hash}/a4af unknown action → 400"
+
+	# Valid action → 200 (no-op on a download with no A4AF sources, but
+	# exercises the EC op path). Response echoes the A4AF view.
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"action":"swap_others"}' "$HOST/api/v0/downloads/$HASH/a4af"
+	_assert_status 200 "POST /downloads/{hash}/a4af swap_others → 200"
+	_assert_json_eq '.sources | type' array \
+		'POST /a4af response carries sources array'
 
 	# Uppercase hash → same hit (case-insensitive route).
 	HASH_UPPER=$(echo "$HASH" | tr '[:lower:]' '[:upper:]')

@@ -107,6 +107,9 @@ private:
 	CHttpServer::Response HandleDownloadComments(const CHttpServer::Request &, const std::string &key);
 	// source-reported filenames + counts. `key` = 32-char MD4 hash.
 	CHttpServer::Response HandleDownloadFilenames(const CHttpServer::Request &, const std::string &key);
+	// A4AF source list (GET) + swap actions (POST). `key` = 32-char MD4 hash.
+	CHttpServer::Response HandleDownloadA4af(const CHttpServer::Request &, const std::string &key);
+	CHttpServer::Response HandleDownloadA4afAction(const CHttpServer::Request &, const std::string &key);
 	// download lifecycle mutations.
 	CHttpServer::Response HandleDownloadAdd(const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloadPatch(const CHttpServer::Request &, const std::string &key);

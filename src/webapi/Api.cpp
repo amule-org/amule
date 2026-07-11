@@ -1013,6 +1013,25 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// /downloads/{hash}/a4af — A4AF source list (GET) + swap actions
+	// (POST). Downloads-only (issue #421).
+	{
+		static const auto dl_a4af = web_api_path::ParsePattern("/api/v0/downloads/{hash}/a4af");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(dl_a4af, path_segs, caps)) {
+			if (req.method == "GET" || req.method == "HEAD") {
+				return HandleDownloadA4af(req, caps["hash"]);
+			}
+			if (req.method == "POST") {
+				return HandleDownloadA4afAction(req, caps["hash"]);
+			}
+			return ErrorResponse(405,
+				"method_not_allowed",
+				"only GET / HEAD / POST on /downloads/{hash}/a4af");
+		}
+	}
+
 	// /downloads/{hash} — single-resource detail (GET / HEAD) and the
 	// mutation surface (PATCH for status/priority/category, DELETE for
 	// clear-completed single). `{hash}` is the lowercase 32-char hex
@@ -1725,6 +1744,8 @@ void WriteDownloadObject(
 		w.ValueString(wxString::FromUTF8(f.comment.c_str()));
 		w.Key("rating");
 		w.ValueInt(static_cast<int64_t>(f.rating));
+		w.Key("a4af_auto");
+		w.ValueBool(f.download.a4af_auto);
 	}
 	w.EndObject();
 }
@@ -2516,6 +2537,133 @@ CHttpServer::Response CApiDispatcher::HandleDownloadFilenames(
 	}
 	w.EndArray();
 	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// Serialize the A4AF view (auto flag + source client ECIDs) for a
+// resolved download snapshot.
+namespace
+{
+void WriteA4afObject(CJsonWriter &w, const webapi::FileSnapshot &d)
+{
+	w.BeginObject();
+	w.Key("a4af_auto");
+	w.ValueBool(d.download.a4af_auto);
+	w.Key("sources");
+	w.BeginArray();
+	for (const std::uint32_t ecid : d.download.a4af_sources) {
+		w.ValueInt(static_cast<int64_t>(ecid));
+	}
+	w.EndArray();
+	w.EndObject();
+}
+} // namespace
+
+CHttpServer::Response CApiDispatcher::HandleDownloadA4af(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	webapi::FileSnapshot d;
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+	if (!m_state.FindDownload(needle, d)) {
+		return ErrorResponse(404, "not_found", "no download with that hash");
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	WriteA4afObject(w, d);
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	webapi::FileSnapshot d;
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+	if (!m_state.FindDownload(needle, d)) {
+		return ErrorResponse(404, "not_found", "no download with that hash");
+	}
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto ait = obj.find("action");
+	if (ait == obj.end() || !ait->second.is<std::string>()) {
+		return ErrorResponse(400, "bad_request", "request body must include a string `action`");
+	}
+	const std::string &action = ait->second.get<std::string>();
+	ec_opcode_t op;
+	if (action == "swap_this")
+		op = EC_OP_PARTFILE_SWAP_A4AF_THIS;
+	else if (action == "swap_this_auto")
+		op = EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO;
+	else if (action == "swap_others")
+		op = EC_OP_PARTFILE_SWAP_A4AF_OTHERS;
+	else {
+		return ErrorResponse(
+			400, "bad_request", "`action` must be one of swap_this, swap_this_auto, swap_others");
+	}
+
+	CMD4Hash file_hash;
+	if (!HashFromHex(d.hash, file_hash)) {
+		return ErrorResponse(500, "internal_error", "failed to decode partfile hash");
+	}
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(op));
+	ec_req->AddTag(CECTag(EC_TAG_PARTFILE, file_hash));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for A4AF swap");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	(void)RefresherTick(m_app, m_state);
+	webapi::FileSnapshot d_after = d;
+	(void)m_state.FindDownload(d.hash, d_after);
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	WriteA4afObject(w, d_after);
 	FinalizeJsonBody(w, r);
 	return r;
 }
