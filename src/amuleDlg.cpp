@@ -757,16 +757,28 @@ void CamuleDlg::AddLogLine(const wxString &line)
 	// Add the message to the log-view
 	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
 	if (ct) {
-		// Bold critical log-lines
-		// Works in Windows too thanks to wxTE_RICH2 style in muuli
-		wxTextAttr style = ct->GetDefaultStyle();
-		wxFont font = style.GetFont();
-		font.SetWeight(addtostatusbar ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
-		style.SetFont(font);
-		style.SetFontSize(8);
-		ct->SetDefaultStyle(style);
+		// Bold critical log-lines (works on Windows too thanks to the
+		// wxTE_RICH2 style in muuli). SetDefaultStyle() is expensive on the
+		// RichEdit control, so only touch it when the weight actually
+		// changes rather than on every line -- a remote-GUI first-sync
+		// backlog is thousands of lines (issue #445).
+		int critical = addtostatusbar ? 1 : 0;
+		if (critical != m_logLastCritical) {
+			wxTextAttr style = ct->GetDefaultStyle();
+			wxFont font = style.GetFont();
+			font.SetWeight(addtostatusbar ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
+			style.SetFont(font);
+			style.SetFontSize(8);
+			ct->SetDefaultStyle(style);
+			m_logLastCritical = critical;
+		}
 		ct->AppendText(bufferline);
-		ct->ShowPosition(ct->GetLastPosition() - 1);
+		// During a batch (BeginLogBatch/EndLogBatch) the caller scrolls once
+		// at the end; a per-line ShowPosition on a large backlog forces an
+		// O(n) RichEdit reflow on every line.
+		if (!m_logBatching) {
+			ct->ShowPosition(ct->GetLastPosition() - 1);
+		}
 	}
 
 	// Set the status-bar if the event warrents it
@@ -778,6 +790,28 @@ void CamuleDlg::AddLogLine(const wxString &line)
 		text->SetLabel(bufferline.BeforeFirst('\n'));
 		text->SetToolTip(bufferline);
 		text->GetParent()->Layout();
+	}
+}
+
+void CamuleDlg::BeginLogBatch()
+{
+	// Coalesce a burst of log lines (a stats poll delivers up to
+	// EC_LOG_LINES_PER_MESSAGE at once on a first-sync backlog) into a
+	// single repaint plus one final scroll instead of per-line reflow.
+	m_logBatching = true;
+	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
+	if (ct) {
+		ct->Freeze();
+	}
+}
+
+void CamuleDlg::EndLogBatch()
+{
+	m_logBatching = false;
+	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
+	if (ct) {
+		ct->ShowPosition(ct->GetLastPosition() - 1);
+		ct->Thaw();
 	}
 }
 

@@ -139,6 +139,12 @@ public:
 	void AddServerMessageLine(wxString &message);
 	void ResetLog(int id);
 
+	// Bracket a burst of AddLogLine() calls so the log view is repainted
+	// and scrolled once for the whole batch instead of per line (issue
+	// #445 — a remote-GUI first-sync backlog is thousands of lines).
+	void BeginLogBatch();
+	void EndLogBatch();
+
 	void ShowUserCount(const wxString &info = "");
 	void ShowConnectionState(bool skinChanged = false);
 	void ShowTransferRate();
@@ -254,6 +260,13 @@ private:
 	DialogType m_nActiveDialog;
 	bool m_is_safe_state;
 	bool m_BlinkMessages;
+	//! True while a BeginLogBatch()/EndLogBatch() bracket is open, so
+	//! AddLogLine() defers the per-line scroll to the end of the batch.
+	bool m_logBatching = false;
+	//! Last log-line weight applied to the view's default style (1 = bold,
+	//! 0 = normal, -1 = not yet set) so SetDefaultStyle() is only touched
+	//! when the weight actually changes.
+	int m_logLastCritical = -1;
 	int m_CurrentBlinkBitmap;
 	uint32 m_last_iconizing;
 	// The "new version available" popup is shown at most once per session;

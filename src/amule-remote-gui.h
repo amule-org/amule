@@ -827,6 +827,10 @@ public:
 
 	void AddServerMessageLine(wxString &msg);
 	void AddRemoteLogLine(const wxString &line);
+	// Bracket a stats poll's worth of AddRemoteLogLine() calls so the log
+	// view repaints/scrolls once for the batch, not per line (issue #445).
+	void BeginRemoteLogBatch();
+	void EndRemoteLogBatch();
 
 	void SetOSFiles(wxString) { /* onlinesig is created on remote side */ }
 

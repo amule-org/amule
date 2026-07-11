@@ -1285,9 +1285,14 @@ void CStatistics::UpdateStats(const CECPacket *stats)
 
 	const CECTag *LoggerTag = stats->GetTagByName(EC_TAG_STATS_LOGGER_MESSAGE);
 	if (LoggerTag) {
-		for (CECTag::const_iterator it = LoggerTag->begin(); it != LoggerTag->end(); ++it) {
-			theApp->AddRemoteLogLine(it->GetStringData());
+		// Coalesce the whole poll's log lines into a single repaint + one
+		// scroll: a remote-GUI first-sync backlog can be thousands of lines
+		// and per-line rendering froze the GUI for minutes (issue #445).
+		theApp->BeginRemoteLogBatch();
+		for (const auto &tag : *LoggerTag) {
+			theApp->AddRemoteLogLine(tag.GetStringData());
 		}
+		theApp->EndRemoteLogBatch();
 	}
 }
 

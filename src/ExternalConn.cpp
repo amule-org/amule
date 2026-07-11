@@ -719,15 +719,23 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 }
 
 // Make a Logger tag (if there are any logging messages) and add it to the response
+// Max log lines packed into a single EC stats response. Kept bounded so a
+// large first-sync backlog (a remote GUI attaching to a daemon with a big
+// accumulated logfile — issue #445) drains in a handful of polls without any
+// one poll hauling multiple MB: the log rides on the same response as the
+// live stats, and the client renders each poll's batch in one go. The wire
+// format itself imposes no such limit (ec_taglen_t is uint32 and the tag
+// count is uint32-extensible) — this is purely a per-poll responsiveness cap.
+static const int EC_LOG_LINES_PER_MESSAGE = 5000;
+
 static void AddLoggerTag(CECPacket *response, CLoggerAccess &LoggerAccess)
 {
 	if (LoggerAccess.HasString()) {
 		CECEmptyTag tag(EC_TAG_STATS_LOGGER_MESSAGE);
-		// Tag structure is fix: tag carries nothing, inside are the strings
-		// maximum of 200 log lines per message
+		// Tag structure is fix: tag carries nothing, inside are the strings.
 		int entries = 0;
 		wxString line;
-		while (entries < 200 && LoggerAccess.GetString(line)) {
+		while (entries < EC_LOG_LINES_PER_MESSAGE && LoggerAccess.GetString(line)) {
 			tag.AddTag(CECTag(EC_TAG_STRING, line));
 			entries++;
 		}

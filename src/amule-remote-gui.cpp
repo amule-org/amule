@@ -684,6 +684,16 @@ void CamuleRemoteGuiApp::AddRemoteLogLine(const wxString &line)
 	amuledlg->AddLogLine(line);
 }
 
+void CamuleRemoteGuiApp::BeginRemoteLogBatch()
+{
+	amuledlg->BeginLogBatch();
+}
+
+void CamuleRemoteGuiApp::EndRemoteLogBatch()
+{
+	amuledlg->EndLogBatch();
+}
+
 int CamuleRemoteGuiApp::InitGui(bool geometry_enabled, wxString &geom_string)
 {
 	CamuleGuiBase::InitGui(geometry_enabled, geom_string);
