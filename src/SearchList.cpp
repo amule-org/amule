@@ -767,6 +767,29 @@ void CSearchList::AddFileToDownloadByHash(const CMD4Hash &hash, uint8 cat)
 	}
 }
 
+void CSearchList::AddFileToDownloadByEcid(uint32 ecid, uint8 cat)
+{
+	// Match against parents and their same-hash/different-name children
+	// (issue #431 grouping); downloading the specific CSearchFile lands
+	// the partfile under that result's own filename.
+	for (auto &entry : m_results) {
+		for (CSearchFile *sf : entry.second) {
+			if (sf->ECID() == ecid) {
+				CoreNotify_Search_Add_Download(sf, cat);
+				return;
+			}
+			if (sf->HasChildren()) {
+				for (CSearchFile *child : sf->GetChildren()) {
+					if (child->ECID() == ecid) {
+						CoreNotify_Search_Add_Download(child, cat);
+						return;
+					}
+				}
+			}
+		}
+	}
+}
+
 bool CSearchList::IsKadSearch(uint32_t searchID) const
 {
 	return Kademlia::CSearchManager::IsKadSearch(searchID);

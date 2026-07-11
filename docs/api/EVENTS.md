@@ -413,11 +413,12 @@ Emitted per new result that appears in the results map between refresher ticks.
   "rating": 0,
   "status": "new",
   "type": "videos",
-  "media": { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
+  "media": { "length_s": 5400, "bitrate": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
+  "children": []
 }
 ```
 
-Key results by `hash`. The payload is byte-for-byte identical to a `/search/results` array entry (including `status` and `type` — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)); `sources` is the nested `{total, complete}` object, and `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, same as the REST endpoint. amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
+Key results by `hash`. The payload is byte-for-byte identical to a `/search/results` array entry (including `status`, `type`, and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire this event — children are folded into their parent's `children[]`, never emitted as their own `search_result_added`. amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
 
 #### `search_progress`
 

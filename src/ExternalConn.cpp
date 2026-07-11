@@ -1485,6 +1485,15 @@ static CECPacket *Get_EC_Response_Search_Results(
 	const bool tombstone_path =
 		partial_update_active && detail_level == EC_DETAIL_UPDATE && queryitems.empty();
 
+	// Result grouping (issue #431): a caller that wants the same-hash/
+	// same-size-but-different-filename children (the expandable tree the
+	// GUI shows) opts in by adding an empty `EC_TAG_SEARCH_PARENT` flag
+	// to the request. Without it this path stays parents-only, so
+	// amulecmd `search` and amuleweb are unchanged. Children carry their
+	// parent's ECID via `EC_TAG_SEARCH_PARENT` in CEC_SearchFile_Tag, so
+	// the client can rebuild the tree.
+	const bool want_children = request->GetTagByName(EC_TAG_SEARCH_PARENT) != nullptr;
+
 	std::set<uint32> current_ids;
 
 	const CSearchResultList &list = theApp->searchlist->GetSearchResults(0xffffffff);
@@ -1498,6 +1507,14 @@ static CECPacket *Get_EC_Response_Search_Results(
 			current_ids.insert(sf->ECID());
 		}
 		response->AddTag(CEC_SearchFile_Tag(sf, detail_level));
+		if (want_children && sf->HasChildren()) {
+			for (CSearchFile *sfc : sf->GetChildren()) {
+				if (tombstone_path) {
+					current_ids.insert(sfc->ECID());
+				}
+				response->AddTag(CEC_SearchFile_Tag(sfc, detail_level));
+			}
+		}
 	}
 
 	if (tombstone_path) {
@@ -1550,9 +1567,23 @@ static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *reque
 	CECPacket *response = new CECPacket(EC_OP_STRINGS);
 	for (CECPacket::const_iterator it = request->begin(); it != request->end(); ++it) {
 		const CECTag &tag = *it;
-		CMD4Hash hash = tag.GetMD4Data();
-		uint8 category = tag.GetFirstTagSafe()->GetInt();
-		theApp->searchlist->AddFileToDownloadByHash(hash, category);
+		// Read the category by name (both amulegui and amuleapi send it as
+		// EC_TAG_PARTFILE_CAT) rather than "first child", so an optional
+		// EC_TAG_SEARCHFILE selector below can ride alongside it.
+		uint8 category = 0;
+		if (const CECTag *catTag = tag.GetTagByName(EC_TAG_PARTFILE_CAT)) {
+			category = catTag->GetInt();
+		}
+		// Issue #431: an optional EC_TAG_SEARCHFILE child carries a search
+		// result's ECID, selecting one specific same-hash/different-name
+		// grouped result so it downloads under that chosen filename.
+		// Without it, download the first result matching the hash (the
+		// parent) — the unchanged behaviour.
+		if (const CECTag *ecidTag = tag.GetTagByName(EC_TAG_SEARCHFILE)) {
+			theApp->searchlist->AddFileToDownloadByEcid(ecidTag->GetInt(), category);
+		} else {
+			theApp->searchlist->AddFileToDownloadByHash(tag.GetMD4Data(), category);
+		}
 	}
 	return response;
 }

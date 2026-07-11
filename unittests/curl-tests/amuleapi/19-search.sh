@@ -201,6 +201,15 @@ if [ -n "$RESULT_HASH" ]; then
 	# known/probed, absent otherwise — both are valid.
 	_assert_json_eq '.results[0].media | type | test("^(object|null)$")' \
 		true '/search/results[0].media is an object or absent'
+	# Result grouping (issue #431): every result carries a children[]
+	# array (empty when the hit was seen under a single name). No result
+	# is itself a child (children are folded into their parent), and each
+	# child object has ecid + name + hash + sources.
+	_assert_json_eq '.results[0].children | type' array '/search/results[0].children is an array'
+	_assert_json_eq '[.results[].children[]?] | all(has("ecid") and has("name") and has("hash") and has("sources"))' \
+		true 'every child has ecid/name/hash/sources'
+	_assert_json_eq '[.results[].children[]?.hash | length] | all(. == 32)' \
+		true 'every child hash is 32-char hex (shared with its parent)'
 
 	# progress envelope. `progress` exists on every GET /search/results
 	# response (even before any POST /search). `state` is canonical
@@ -259,6 +268,14 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{"category":300}' \
 	"$HOST/api/v0/search/results/baadbaadbaadbaadbaadbaadbaadbaad/download"
 _assert_status 400 "POST download (category out of range) → 400"
+
+# Download-under-name selector (issue #431): `ecid` must be a
+# non-negative integer.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"ecid":"notnum"}' \
+	"$HOST/api/v0/search/results/baadbaadbaadbaadbaadbaadbaadbaad/download"
+_assert_status 400 "POST download (ecid wrong type) → 400"
 
 # Unknown hash that's well-formed (32 hex chars) → amuled rejection.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \

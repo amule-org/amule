@@ -507,6 +507,24 @@ struct SearchResult
 		std::string album;
 		std::string title;
 	} media;
+
+	// Result grouping (issue #431): same-hash/same-size hits advertised
+	// under different filenames. `parent_ecid`/`has_parent` are set on a
+	// child during decode; the refresher then folds children into their
+	// parent's `children` list and drops them from the top-level set, so
+	// the API emits one parent row per hash+size with the alternative
+	// names nested. `children` is empty for a hit seen under one name.
+	std::uint32_t parent_ecid = 0;
+	bool has_parent = false;
+	struct Child
+	{
+		std::uint32_t ecid = 0;
+		std::string name;
+		std::string hash; // same as the parent's (that's why they group)
+		std::uint32_t source_count = 0;
+		std::uint32_t complete_source_count = 0;
+	};
+	std::vector<Child> children;
 };
 
 // Refresher-tracked lifecycle of the currently-active (or last-finished)

@@ -1140,6 +1140,50 @@ TEST(Refresher, SearchResultMediaDecode)
 	ASSERT_TRUE(!it2->second.has_media);
 }
 
+// --- #431: result grouping folds same-hash/diff-name children --------
+//
+// A parent plus two children (each carrying EC_TAG_SEARCH_PARENT) must
+// collapse to a single top-level result with the two alternative names
+// nested in children[]; the child ECIDs must not remain top-level.
+TEST(Refresher, SearchResultGroupingFoldsChildren)
+{
+	std::map<std::uint32_t, SearchResult> cache;
+	CECPacket resp(EC_OP_SEARCH_RESULTS);
+
+	CECTag parent(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(100));
+	parent.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("best.mkv")));
+	parent.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(123)));
+	parent.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT, static_cast<std::uint32_t>(30)));
+	resp.AddTag(parent);
+
+	CECTag c1(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(101));
+	c1.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("alt.name.mkv")));
+	c1.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(123)));
+	c1.AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT, static_cast<std::uint32_t>(10)));
+	c1.AddTag(CECTag(EC_TAG_SEARCH_PARENT, static_cast<std::uint32_t>(100)));
+	resp.AddTag(c1);
+
+	CECTag c2(EC_TAG_SEARCHFILE, static_cast<std::uint32_t>(102));
+	c2.AddTag(CECTag(EC_TAG_PARTFILE_NAME, std::string("third.mkv")));
+	c2.AddTag(CECTag(EC_TAG_PARTFILE_SIZE_FULL, static_cast<std::uint64_t>(123)));
+	c2.AddTag(CECTag(EC_TAG_SEARCH_PARENT, static_cast<std::uint32_t>(100)));
+	resp.AddTag(c2);
+
+	ApplySearchFull(&resp, cache);
+
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	const auto it = cache.find(100);
+	ASSERT_TRUE(it != cache.end());
+	ASSERT_TRUE(cache.find(101) == cache.end());
+	ASSERT_TRUE(cache.find(102) == cache.end());
+	ASSERT_EQUALS(static_cast<size_t>(2), it->second.children.size());
+	// map iterates ecid-ascending, so 101 folds before 102.
+	ASSERT_EQUALS(std::string("alt.name.mkv"), it->second.children[0].name);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(101), it->second.children[0].ecid);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(10), it->second.children[0].source_count);
+	ASSERT_EQUALS(std::string("third.mkv"), it->second.children[1].name);
+}
+
 // --- #359: peer software_version must be locale-independent ----------
 //
 // The daemon formats the version string with gettext, so an unidentified

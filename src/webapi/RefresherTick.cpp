@@ -173,6 +173,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		std::uint32_t lifecycle_state = 0;
 		{
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
+			// Opt into result grouping (issue #431): the empty
+			// EC_TAG_SEARCH_PARENT flag tells the FULL responder to also
+			// emit each same-hash/different-name child so /search/results
+			// can nest them. Other EC clients that don't send it keep the
+			// flat parents-only list.
+			req->AddTag(CECEmptyTag(EC_TAG_SEARCH_PARENT));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
 			if (!resp)
 				return false;

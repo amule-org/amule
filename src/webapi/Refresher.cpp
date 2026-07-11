@@ -1868,6 +1868,16 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 				r.complete_source_count = v;
 		}
 		r.already_have = sf->AlreadyHave();
+		// Grouping (issue #431): a child hit carries its parent's ECID in
+		// EC_TAG_SEARCH_PARENT. Recorded here; folded into the parent's
+		// children[] in the second pass below.
+		{
+			std::uint32_t v = 0;
+			if (sf->AssignIfExist(EC_TAG_SEARCH_PARENT, v)) {
+				r.parent_ecid = v;
+				r.has_parent = true;
+			}
+		}
 		{
 			std::uint8_t v = 0;
 			if (sf->AssignIfExist(EC_TAG_KNOWNFILE_RATING, v))
@@ -1912,6 +1922,33 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 			r.has_media = true;
 		}
 		cache.emplace(r.ecid, std::move(r));
+	}
+
+	// Second pass (issue #431): fold each child into its parent's
+	// children[] and drop it from the top-level set, so the API serves
+	// one parent row per hash+size with the alternative filenames nested.
+	// A child whose parent isn't in the set (shouldn't happen — the core
+	// emits the parent before its children) is left as a top-level row so
+	// nothing is silently lost.
+	std::vector<std::uint32_t> folded;
+	for (auto &kv : cache) {
+		SearchResult &child = kv.second;
+		if (!child.has_parent)
+			continue;
+		auto pit = cache.find(child.parent_ecid);
+		if (pit == cache.end())
+			continue;
+		SearchResult::Child c;
+		c.ecid = child.ecid;
+		c.name = child.name;
+		c.hash = child.hash;
+		c.source_count = child.source_count;
+		c.complete_source_count = child.complete_source_count;
+		pit->second.children.push_back(std::move(c));
+		folded.push_back(kv.first);
+	}
+	for (std::uint32_t ecid : folded) {
+		cache.erase(ecid);
 	}
 }
 

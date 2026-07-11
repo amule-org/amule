@@ -147,6 +147,14 @@ public:
 	void AddFileToDownloadByHash(const CMD4Hash &hash, uint8 category = 0);
 
 	/**
+	 * Start downloading the specific search result identified by its EC
+	 * ECID — used to pick one same-hash/different-name grouped child so
+	 * the partfile lands under that chosen filename (issue #431).
+	 * Searches parents and their children; a no-op if the ecid is gone.
+	 */
+	void AddFileToDownloadByEcid(uint32 ecid, uint8 category = 0);
+
+	/**
 	 * Processes a list of shared files from a client.
 	 *
 	 * @param packet The raw packet received from the client.

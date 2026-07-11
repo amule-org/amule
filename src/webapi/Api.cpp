@@ -4458,6 +4458,32 @@ void WriteSearchObject(CJsonWriter &w, const webapi::SearchResult &r)
 		w.ValueString(wxString::FromUTF8(r.media.title.c_str()));
 		w.EndObject();
 	}
+	// Result grouping (issue #431): the same-hash/same-size hit's
+	// alternative filenames. Always emitted (empty array when the hit was
+	// seen under a single name) so clients can render the expandable tree
+	// without a presence check. Each child shares the parent's `hash`; the
+	// distinct `ecid` selects it for download-under-that-name (see
+	// POST /search/results/{hash}/download).
+	w.Key("children");
+	w.BeginArray();
+	for (const auto &c : r.children) {
+		w.BeginObject();
+		w.Key("ecid");
+		w.ValueInt(static_cast<int64_t>(c.ecid));
+		w.Key("name");
+		w.ValueString(wxString::FromUTF8(c.name.c_str()));
+		w.Key("hash");
+		w.ValueString(wxString::FromUTF8(c.hash.c_str()));
+		w.Key("sources");
+		w.BeginObject();
+		w.Key("total");
+		w.ValueInt(static_cast<int64_t>(c.source_count));
+		w.Key("complete");
+		w.ValueInt(static_cast<int64_t>(c.complete_source_count));
+		w.EndObject();
+		w.EndObject();
+	}
+	w.EndArray();
 	w.EndObject();
 }
 
@@ -7364,12 +7390,17 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
 	}
 
-	// Optional body: {"category": uint8}. amulegui's
+	// Optional body: {"category": uint8, "ecid": uint32}. amulegui's
 	// CDownQueueRem::AddSearchToDownload defaults to category 0
 	// when none is supplied; we mirror that. The body itself is
 	// optional — clients that don't care about category POST with
-	// no body and get the default download path.
+	// no body and get the default download path. `ecid` (issue #431)
+	// selects one same-hash/different-name grouped child (from a result's
+	// `children[].ecid`) so it downloads under that chosen filename;
+	// omitted => the parent (first result matching the hash).
 	std::uint8_t category = 0;
+	bool has_ecid = false;
+	std::uint32_t ecid = 0;
 	if (!req.body.empty()) {
 		picojson::value root;
 		std::string parse_err;
@@ -7389,14 +7420,32 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 			}
 			category = static_cast<std::uint8_t>(v);
 		}
+		const auto eit = obj.find("ecid");
+		if (eit != obj.end()) {
+			if (!eit->second.is<double>()) {
+				return ErrorResponse(
+					400, "bad_request", "`ecid` must be a non-negative integer");
+			}
+			const double v = eit->second.get<double>();
+			if (v < 0 || v > 4294967295.0) {
+				return ErrorResponse(400, "bad_request", "`ecid` out of range");
+			}
+			ecid = static_cast<std::uint32_t>(v);
+			has_ecid = true;
+		}
 	}
 
 	// amuled accepts the result hash as the partfile-tag's int
 	// payload (matches amule-remote-gui.cpp:2230). amuled looks up
-	// the hash in its searchlist; if not present, returns FAILED.
+	// the hash in its searchlist; if not present, returns FAILED. When
+	// an `ecid` selector is supplied, it rides as an EC_TAG_SEARCHFILE
+	// child and amuled downloads that specific grouped result instead.
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_DOWNLOAD_SEARCH_RESULT));
 	CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
 	hash_tag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, category));
+	if (has_ecid) {
+		hash_tag.AddTag(CECTag(EC_TAG_SEARCHFILE, ecid));
+	}
 	ec_req->AddTag(hash_tag);
 
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());

@@ -550,6 +550,26 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 							<< EscJson(m.album) << "\",\"title\":\""
 							<< EscJson(m.title) << "\"}";
 					}
+					// Result grouping (issue #431) — same shape as
+					// WriteSearchObject's children[]; always present
+					// (empty array when the hit had a single name).
+					payload << ",\"children\":[";
+					{
+						bool first = true;
+						for (const auto &c : kv.second.children) {
+							if (!first)
+								payload << ",";
+							first = false;
+							payload << "{\"ecid\":" << c.ecid << ",\"name\":\""
+								<< EscJson(c.name) << "\",\"hash\":\""
+								<< EscJson(c.hash)
+								<< "\",\"sources\":{\"total\":"
+								<< c.source_count
+								<< ",\"complete\":" << c.complete_source_count
+								<< "}}";
+						}
+					}
+					payload << "]";
 					payload << "}";
 					bus.Publish("search_result_added", payload.str());
 				}
