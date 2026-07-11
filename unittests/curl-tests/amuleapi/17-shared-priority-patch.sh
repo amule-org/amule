@@ -122,7 +122,8 @@ fi
 TEST_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')
 SAVED_PRIORITY=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].priority')
 SAVED_AUTO=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].priority_auto')
-echo "    info: saved hash=$TEST_HASH priority=$SAVED_PRIORITY priority_auto=$SAVED_AUTO"
+SAVED_NAME=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].name')
+echo "    info: saved hash=$TEST_HASH priority=$SAVED_PRIORITY priority_auto=$SAVED_AUTO name=$SAVED_NAME"
 
 # --- 1. Auth + admin gate. -----------------------------------------
 _curl -X PATCH -H "Content-Type: application/json" \
@@ -210,10 +211,24 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 400 "PATCH rating out of range → 400"
 
 # --- 3d. PATCH name (rename; issue #420). -------------------------
+# Rename to a name guaranteed different from the current one (renaming a
+# file to its existing name is a no-op amuled rejects with non-200),
+# verify it lands, then restore the original. This suite runs against a
+# PERSISTENT daemon, so it must leave the real shared file exactly as it
+# found it — an earlier version renamed to a fixed name and never
+# restored, which both clobbered a real share and made the next run fail
+# on the no-op rename. `jq` builds the body so odd characters in the
+# real filename are escaped correctly.
+RENAME_TO="amuleapi-test-rename.dat"
+if [ "$SAVED_NAME" = "$RENAME_TO" ]; then
+	RENAME_TO="amuleapi-test-rename-b.dat"
+fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"name":"renamed-by-test.dat"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d "$(jq -nc --arg n "$RENAME_TO" '{name: $n}')" "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 200 "PATCH name (rename) → 200"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/$TEST_HASH"
+_assert_json_eq '.name' "$RENAME_TO" 'IMMEDIATE GET /shared/{hash} shows the renamed file (no stale)'
 
 # Path separators rejected (directory-traversal guard).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -226,6 +241,12 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"name":""}' "$HOST/api/v0/shared/$TEST_HASH"
 _assert_status 400 "PATCH empty name → 400"
+
+# Restore the original name so the real shared file is left untouched.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "$(jq -nc --arg n "$SAVED_NAME" '{name: $n}')" "$HOST/api/v0/shared/$TEST_HASH"
+_assert_status 200 "PATCH name (restore original) → 200"
 
 # --- 4. Error paths. ----------------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
