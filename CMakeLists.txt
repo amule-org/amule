@@ -297,15 +297,21 @@ endif()
 # require libatomic unconditionally on 32-bit builds.
 set (LIBATOMIC "")
 if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-	# Accept either the unversioned `libatomic.so` (Debian / Fedora /
-	# Arch ship it via the -dev / -devel package) or the versioned-only
-	# `libatomic.so.1` (openSUSE ships only the latter -- there's no
-	# separate -devel package). Listing the unversioned name first keeps
-	# the canonical path preferred when both are present.
-	find_library (LIBATOMIC_LIBRARY NAMES atomic libatomic.so.1)
-	if (LIBATOMIC_LIBRARY)
+	# Probe with a compiler-driven LINK test, not find_library. With GCC,
+	# libatomic ships inside the compiler's own runtime dir (e.g.
+	# .../lib/gcc14/) which is not on find_library's filesystem search
+	# path, so find_library false-fails even though `-latomic` links fine
+	# -- the GCC driver resolves its internal libatomic (MacPorts, #453).
+	# check_library_exists links a probe with `-latomic` through the
+	# compiler driver, so it succeeds wherever the flag actually links:
+	# GCC's internal copy, or a system libatomic (Clang / distro -dev
+	# packages, versioned or not). This replaces the earlier find_library
+	# lookup that only searched standard library paths.
+	include (CheckLibraryExists)
+	check_library_exists (atomic __atomic_load_8 "" HAVE_LIBATOMIC)
+	if (HAVE_LIBATOMIC)
 		set (LIBATOMIC atomic)
-		message (STATUS "32-bit target: linking libatomic for std::atomic<int64_t> (${LIBATOMIC_LIBRARY})")
+		message (STATUS "32-bit target: linking libatomic for std::atomic<int64_t>")
 	else()
 		message (FATAL_ERROR
 			"32-bit target detected (sizeof(void*) == 4). aMule's "
