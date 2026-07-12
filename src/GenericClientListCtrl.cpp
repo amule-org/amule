@@ -38,14 +38,24 @@
 #include "FileDetailDialog.h"   // Needed for CFileDetailDialog
 #include "GetTickCount.h"       // Needed for GetTickCount64
 #include "GuiEvents.h"          // Needed for CoreNotify_*
-#ifdef ENABLE_IP2COUNTRY
-#include "IP2Country.h" // Needed for IP2Country
+#ifdef GEOIP_GUI
+#include "IP2Country.h"   // Needed for CIP2Country
+#include "CountryFlags.h" // Needed for CCountryFlags (flag bitmaps)
 #endif
 #include "muuli_wdr.h" // Needed for ID_DLOADLIST
 #include "PartFile.h"  // Needed for CPartFile
 #include "Preferences.h"
 #include "SharedFileList.h" // Needed for CSharedFileList
-#include "ClientRef.h"      // Needed for CClientRef
+#include "ClientRef.h" // Needed for CClientRef
+// CUpDownClient (country accessors, #439). MUST match the build's client class:
+// the reduced EC client for amulegui, the full one for monolithic. Including the
+// wrong header gives this TU a different CUpDownClient layout than the rest of
+// the (remote) GUI, so member reads land at the wrong offset (garbage country).
+#ifdef CLIENT_GUI
+#include "UpDownClientEC.h"
+#else
+#include "updownclient.h"
+#endif
 #include "FriendList.h"
 
 struct ClientCtrlItem_Struct
@@ -898,24 +908,37 @@ void CGenericClientListCtrl::DrawClientItem(wxDC *dc,
 		point.x += iBitmapXSize;
 
 		wxString userName;
-#ifdef ENABLE_IP2COUNTRY
-		if (theApp->amuledlg->m_IP2Country->IsEnabled() && thePrefs::IsGeoIPEnabled()) {
-			// Draw the flag. Size can't be precached.
-			const CountryData &countrydata =
-				theApp->amuledlg->m_IP2Country->GetCountryData(client.GetFullIP());
-
-			realY = point.y + (rect.GetHeight() - countrydata.Flag.GetHeight()) / 2 +
-				1 /* floor() */;
-
-			dc->DrawBitmap(countrydata.Flag, point.x, realY, true);
-
-			userName << countrydata.Name;
-
-			userName << " - ";
-
-			point.x += countrydata.Flag.GetWidth() + 2 /*Padding*/;
+#ifdef GEOIP_GUI
+		// Country flag. Prefer the code the core resolved and sent over EC
+		// (#439): it is authoritative, so amulegui renders it regardless of its
+		// own (synced) GeoIP-enabled pref — the core only emits a code when its
+		// GeoIP is on. Monolithic amule has no EC feed and resolves locally,
+		// gated on its own IsGeoIPEnabled. The flag cache turns code -> bitmap.
+		wxString code;
+		bool haveCountry = false;
+		if (client.GetClient()->IsCountryFromCore()) {
+			code = client.GetClient()->GetCountryCode();
+			haveCountry = true;
 		}
-#endif // ENABLE_IP2COUNTRY
+#ifndef CLIENT_GUI
+		// Monolithic-only local lookup (keeps amulegui free of CIP2Country link
+		// symbols; amulegui only ever takes the EC-provided path above).
+		else if (thePrefs::IsGeoIPEnabled() && theApp->GetIP2Country() &&
+			 theApp->GetIP2Country()->IsEnabled()) {
+			code = theApp->GetIP2Country()->GetCountryCode(client.GetFullIP());
+			haveCountry = true;
+		}
+#endif
+		// Draw the country flag only — no textual code. An unknown / unresolved
+		// peer (empty code) gets neither flag nor prefix.
+		if (haveCountry && !code.IsEmpty()) {
+			// Size can't be precached.
+			const wxImage &flag = theApp->GetCountryFlags()->GetFlag(code);
+			realY = point.y + (rect.GetHeight() - flag.GetHeight()) / 2 + 1 /* floor() */;
+			dc->DrawBitmap(flag, point.x, realY, true);
+			point.x += flag.GetWidth() + 2 /*Padding*/;
+		}
+#endif // GEOIP_GUI
 		if (client.GetUserName().IsEmpty()) {
 			userName << "?";
 		} else {

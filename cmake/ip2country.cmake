@@ -4,6 +4,12 @@ find_library (MAXMINDDB_LIB maxminddb)
 if (MAXMINDDB_INCLUDE_DIR AND MAXMINDDB_LIB)
 	message (STATUS "libmaxminddb found, IP2Country support enabled")
 
+	# ENABLE_IP2COUNTRY marks the *resolver* (libmaxminddb) and rides on this
+	# imported target's INTERFACE, so only what links libmaxminddb sees it
+	# (muleappcore → daemon / monolithic core). The GeoIP *display* and remote
+	# *config* UI are gated separately by GEOIP_GUI (= ENABLE_IP2COUNTRY ||
+	# CLIENT_GUI, see amule.h): amulegui shows flags from EC codes and edits the
+	# daemon's GeoIP without linking any library.
 	add_library (MaxMindDB::Shared UNKNOWN IMPORTED)
 	set_target_properties (MaxMindDB::Shared PROPERTIES
 		INTERFACE_COMPILE_DEFINITIONS "ENABLE_IP2COUNTRY"

@@ -52,7 +52,7 @@
 #include "amuleDlg.h"
 #include "AutostartManager.h"       // Autostart-on-login toggle backend
 #include "ProtocolHandlerManager.h" // ed2k:// + magnet: scheme-handler toggle backend
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 #include "IP2Country.h"  // CIP2Country::Update / GetDatabasePath
 #include <wx/artprov.h>  // wxArtProvider::GetBitmap for the IP2Country tab icon
 #include <wx/filename.h> // wxFileName for status-line size lookup
@@ -212,7 +212,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_BUTTON(IDC_IPFRELOAD, PrefsUnifiedDlg::OnButtonIPFilterReload)
 	EVT_BUTTON(IDC_COLOR_BUTTON, PrefsUnifiedDlg::OnButtonColorChange)
 	EVT_BUTTON(IDC_IPFILTERUPDATE, PrefsUnifiedDlg::OnButtonIPFilterUpdate)
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 	EVT_CHOICE(IDC_GEOIP_SOURCE, PrefsUnifiedDlg::OnGeoIPSourceChange)
 	EVT_BUTTON(IDC_GEOIP_UPDATE_NOW, PrefsUnifiedDlg::OnGeoIPUpdateNow)
 	EVT_CHECKBOX(IDC_SHOW_COUNTRY_FLAGS, PrefsUnifiedDlg::OnGeoIPMasterToggle)
@@ -280,7 +280,7 @@ PrefsPage pages[] = { { wxTRANSLATE("General"), PreferencesGeneralTab, 13 },
 	{ wxTRANSLATE("Files"), PreferencesFilesTab, 16 },
 	{ wxTRANSLATE("Security"), PreferencesSecurityTab, 22 },
 	{ wxTRANSLATE("Interface"), PreferencesGuiTweaksTab, 19 },
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 	// Inserted between Interface and Statistics so the GeoIP / country-flag
 	// settings sit next to the related display option (the master
 	// IDC_SHOW_COUNTRY_FLAGS checkbox lives in this new tab too). Hidden
@@ -309,7 +309,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	  wxDefaultSize,
 	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 	s_activeInstance = this;
 #endif
 	preferencesDlgTop(this, false);
@@ -348,7 +348,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		// than the hardcoded amuleSpecial XPM data the other tabs use.
 		// Existing tabs are kept on amuleSpecial to avoid a wholesale
 		// migration; new tabs should prefer the PNG path.
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 		if (pages[i].m_function == PreferencesIP2CountryTab) {
 			iconBundles.push_back(makeIcon(wxArtProvider::GetBitmap(
 				"amule:prefs_ip2country", wxART_OTHER, wxSize(kPrefsIconW, kPrefsIconH))));
@@ -488,7 +488,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		} else if (pages[i].m_function == PreferencesServerTab) {
 			m_IndexServerTab = i;
 			m_ServerWidget = Widget;
+#ifdef GEOIP_GUI
+		} else if (pages[i].m_function == PreferencesIP2CountryTab) {
+			m_IndexIP2CountryTab = static_cast<int>(i);
+#endif
 		} else if (pages[i].m_function == PreferencesaMuleTweaksTab) {
+			m_aMuleTweaksWidget = Widget;
 			wxStaticText *txt = CastChild(IDC_AMULE_TWEAKS_WARNING, wxStaticText);
 			// Do not wrap this line, Windows _() can't handle wrapped strings
 			txt->SetLabel(_("Do not change these setting unless you know\nwhat you are doing, "
@@ -558,6 +563,20 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 	// We now have the needed minimum height and width
 	prefs_sizer->SetMinSize(width, height);
+
+#ifdef CLIENT_GUI
+	// amulegui: drop the IP2Country page from the menu when the connected core
+	// has no GeoIP support — a 3.1+ core built without ENABLE_IP2COUNTRY, or a
+	// pre-3.1 core that doesn't know the capability at all (both leave
+	// IsGeoIPSupported() false, see CPreferencesRem::LoadRemote). Mirrors how
+	// monolithic amule omits the page at compile time. Must run before
+	// EnableServerTab, which may delete the earlier server tab and shift this
+	// index; the page widget stays built but becomes unreachable.
+	if (!thePrefs::IsGeoIPSupported() && m_IndexIP2CountryTab >= 0) {
+		m_PrefsIcons->DeleteItem(m_IndexIP2CountryTab);
+		m_IndexIP2CountryTab = -1;
+	}
+#endif
 
 	// Don't show server prefs if ED2K is disabled
 	m_ServerTabVisible = true;
@@ -677,7 +696,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 #endif
 	}
 
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 	// Sync the GeoIP source dropdown to the persisted source; the
 	// Cfg_ system above handles the credential / URL / auto-update
 	// fields, but the dropdown is driven through a custom handler so
@@ -836,10 +855,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	::SendCheckBoxEvent(this, IDC_ENABLE_PO_OUTGOING);
 	::SendCheckBoxEvent(this, IDC_ENFORCE_PO_INCOMING);
 
-#ifndef ENABLE_IP2COUNTRY
+#ifndef GEOIP_GUI
 	// The country-flags checkbox + the rest of the IP2Country controls
 	// only live in the dedicated PreferencesIP2CountryTab, which is
-	// `#ifdef ENABLE_IP2COUNTRY`-gated in the pages[] table. With
+	// `#ifdef GEOIP_GUI`-gated in the pages[] table. With
 	// libmaxminddb missing, neither the tab nor any of its widgets
 	// exists, so there's nothing to disable here -- the *.NewCfgItem
 	// bindings below are gated the same way, and SetGeoIPEnabled stays
@@ -938,8 +957,35 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 			: 0);
 
 #ifdef CLIENT_GUI
+#ifdef GEOIP_GUI
+	// Parity with monolithic's auto-download-on-OK: if the GeoIP source or the
+	// active source's credential changed since the panel opened, ask the daemon
+	// to re-download from the new source by piggy-backing a one-shot UPDATE_NOW
+	// on the prefs packet. Commit the credential fields to the statics first —
+	// SendToRemote serialises from there, not from the live widgets.
+	thePrefs::SetGeoIPMaxMindLicense(CastChild(IDC_GEOIP_MAXMIND_LIC, wxTextCtrl)->GetValue());
+	thePrefs::SetGeoIPCustomUrl(CastChild(IDC_GEOIP_CUSTOM_URL, wxTextCtrl)->GetValue());
+	const bool geoipSourceChanged =
+		static_cast<int>(thePrefs::GetGeoIPSource()) != m_GeoIPSourceAtOpen;
+	bool geoipCredChanged = false;
+	switch (thePrefs::GetGeoIPSource()) {
+	case CPreferences::GeoIPSourceMaxMind:
+		geoipCredChanged = thePrefs::GetGeoIPMaxMindLicense() != m_GeoIPMaxMindLicenseAtOpen;
+		break;
+	case CPreferences::GeoIPSourceCustom:
+		geoipCredChanged = thePrefs::GetGeoIPCustomUrl() != m_GeoIPCustomUrlAtOpen;
+		break;
+	default:
+		break;
+	}
+	thePrefs::SetGeoIPUpdateRequested(
+		thePrefs::IsGeoIPEnabled() && (geoipSourceChanged || geoipCredChanged));
+#endif
 	// Send preferences to core.
 	theApp->glob_prefs->SendToRemote();
+#ifdef GEOIP_GUI
+	thePrefs::SetGeoIPUpdateRequested(false);
+#endif
 #endif
 
 	return true;
@@ -1205,10 +1251,11 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	}
 
 	if (CfgChanged(IDC_SHOW_COUNTRY_FLAGS)) {
-		theApp->amuledlg->EnableIP2Country();
+		// Local enable/disable toggle — treat as startup so enabling refreshes.
+		theApp->EnableIP2Country(true);
 	}
 
-#ifdef ENABLE_IP2COUNTRY
+#if defined(ENABLE_IP2COUNTRY) && !defined(CLIENT_GUI)
 	// Auto-download on OK when the user changed anything that affects
 	// *which* file should be on disk. Without this, switching source
 	// DB-IP→MaxMind (or pasting a new license) leaves the old file
@@ -1219,8 +1266,10 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	//     above already handles missing-file → Update() in that case.
 	// Triggered as a manual update so the user sees a popup if their
 	// new credentials are bad, rather than a silent log line.
+	// Monolithic only: amulegui has no local resolver — its OK send
+	// (SendToRemote) carries the new settings and the daemon re-downloads.
 	if (thePrefs::IsGeoIPEnabled() && !CfgChanged(IDC_SHOW_COUNTRY_FLAGS) && theApp->amuledlg &&
-		theApp->amuledlg->m_IP2Country) {
+		theApp->GetIP2Country()) {
 		const bool sourceChanged =
 			static_cast<int>(thePrefs::GetGeoIPSource()) != m_GeoIPSourceAtOpen;
 		const bool licenseChanged = thePrefs::GetGeoIPMaxMindLicense() != m_GeoIPMaxMindLicenseAtOpen;
@@ -1240,7 +1289,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 			break;
 		}
 		if (sourceChanged || credentialChangedForActive) {
-			theApp->amuledlg->m_IP2Country->Update(true);
+			theApp->GetIP2Country()->Update(true);
 		}
 	}
 #endif
@@ -1790,7 +1839,7 @@ void PrefsUnifiedDlg::OnButtonIPFilterUpdate(wxCommandEvent &WXUNUSED(event))
 	theApp->ipfilter->Update(CastChild(IDC_IPFILTERURL, wxTextCtrl)->GetValue());
 }
 
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 PrefsUnifiedDlg *PrefsUnifiedDlg::s_activeInstance = NULL;
 
 PrefsUnifiedDlg::~PrefsUnifiedDlg()
@@ -1845,13 +1894,24 @@ void PrefsUnifiedDlg::OnGeoIPUpdateNow(wxCommandEvent &WXUNUSED(event))
 	thePrefs::SetGeoIPMaxMindLicense(CastChild(IDC_GEOIP_MAXMIND_LIC, wxTextCtrl)->GetValue());
 	thePrefs::SetGeoIPCustomUrl(CastChild(IDC_GEOIP_CUSTOM_URL, wxTextCtrl)->GetValue());
 
-	// Kick off the download. CIP2Country::DownloadFinished will swap
-	// the new file in and re-open the database asynchronously; the
-	// status line refreshes next time the panel is shown (the running
-	// download isn't blocking, so polling would just show "...").
-	if (theApp->amuledlg && theApp->amuledlg->m_IP2Country) {
-		theApp->amuledlg->m_IP2Country->Update(true);
+#ifdef CLIENT_GUI
+	// amulegui has no local resolver; the daemon owns the GeoIP DB (#440).
+	// Ask it to refresh by sending the current prefs with a one-shot
+	// UPDATE_NOW trigger piggy-backed on the normal prefs packet. SendToRemote
+	// serializes from the statics we just wrote, so the license / custom URL
+	// the user typed reach the daemon before it resolves the download URL.
+	thePrefs::SetGeoIPUpdateRequested(true);
+	theApp->glob_prefs->SendToRemote();
+	thePrefs::SetGeoIPUpdateRequested(false);
+#else
+	// Monolithic amule: kick off the download locally. DownloadFinished swaps
+	// the new file in and re-opens the database asynchronously; the status
+	// line refreshes next time the panel is shown (the running download isn't
+	// blocking, so polling would just show "...").
+	if (theApp->GetIP2Country()) {
+		theApp->GetIP2Country()->Update(true);
 	}
+#endif
 }
 
 void PrefsUnifiedDlg::UpdateGeoIPSourcePanel()
@@ -1901,11 +1961,13 @@ void PrefsUnifiedDlg::OnGeoIPMasterToggle(wxCommandEvent &event)
 
 void PrefsUnifiedDlg::UpdateGeoIPControlsEnabled()
 {
-	// Master "Show country flags for clients" gates every downstream
-	// control: source selector, all three sub-panel fields, the Update
-	// Now button, auto-update checkbox, and the status line. Each
-	// control is looked up by ID so missing widgets (e.g. earlier
-	// init failure) don't crash.
+	// Master "Show country flags for clients" gates every downstream control:
+	// source selector, all three sub-panel fields, the Update Now button,
+	// auto-update checkbox, and the status line. Each control is looked up by
+	// ID so missing widgets (e.g. earlier init failure) don't crash. When the
+	// connected core has no GeoIP support the whole page is dropped from the
+	// menu (see the constructor / CPreferencesRem::LoadRemote), so we never
+	// reach here unsupported.
 	wxCheckBox *master = CastChild(IDC_SHOW_COUNTRY_FLAGS, wxCheckBox);
 	if (!master) {
 		return;
@@ -1933,15 +1995,49 @@ void PrefsUnifiedDlg::UpdateGeoIPControlsEnabled()
 
 void PrefsUnifiedDlg::UpdateGeoIPStatus()
 {
-	if (!theApp->amuledlg || !theApp->amuledlg->m_IP2Country) {
+	if (!theApp->amuledlg) {
 		return;
 	}
-	CIP2Country *ip2c = theApp->amuledlg->m_IP2Country;
 	wxStaticText *st = CastChild(IDC_GEOIP_STATUS, wxStaticText);
 	if (!st) {
 		return;
 	}
+	CIP2Country *ip2c = theApp->GetIP2Country();
+	if (!ip2c) {
+		// amulegui has no local resolver — render the status mirrored from the
+		// daemon over EC (#440). The "unavailable" case is handled by
+		// UpdateGeoIPControlsEnabled(); here we show the loaded-source
+		// attribution and the last update result (reusing existing strings).
+		if (!thePrefs::IsGeoIPSupported()) {
+			return;
+		}
+		wxString line;
+		const wxString &src = thePrefs::GetGeoIPStatusLoadedSource();
+		if (thePrefs::IsGeoIPStatusLoaded()) {
+			if (src == "maxmind") {
+				line = _("Data by MaxMind GeoLite2");
+			} else if (src == "custom") {
+				line = _("Custom source");
+			} else if (src == "dbip") {
+				line = _("Data by DB-IP.com");
+			}
+		}
+		const wxString &last = thePrefs::GetGeoIPStatusLastResult();
+		if (!last.IsEmpty()) {
+			if (!line.IsEmpty()) {
+				line += " — ";
+			}
+			line += last;
+		}
+		st->SetLabel(line);
+		return;
+	}
 
+#ifndef CLIENT_GUI
+	// Local-resolver status (monolithic amule). amulegui has no CIP2Country
+	// and already returned above via the !ip2c branch, so guarding this out
+	// keeps it free of CIP2Country link symbols.
+	//
 	// Attribution for the *loaded* file (the source that actually wrote
 	// it) — not the currently-selected dropdown source. If the file was
 	// hand-installed (LoadedSource is empty), no attribution is shown:
@@ -1984,8 +2080,9 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 	} else {
 		st->SetLabel(_("Status: Not found - click 'Update now' to download."));
 	}
+#endif // !CLIENT_GUI
 }
-#endif // ENABLE_IP2COUNTRY
+#endif // GEOIP_GUI
 
 void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent &event)
 {
@@ -2000,7 +2097,9 @@ void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent &event)
 	// The reset-to-defaults button applies to the current page's controls; keep
 	// it to the Advanced page, whose expert tuning knobs it is meant to undo.
 	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
-		resetBtn->Show(pages[event.GetIndex()].m_function == PreferencesaMuleTweaksTab);
+		// Identify the page by widget, not list index: hiding the server /
+		// IP2Country tab shifts the list index away from the pages[] index.
+		resetBtn->Show(m_CurrentPanel == m_aMuleTweaksWidget);
 	}
 
 	prefs_sizer->Add(m_CurrentPanel, wxSizerFlags().Expand().Expand());

@@ -1804,6 +1804,9 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.ip.c_str()));
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(c.port));
+	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#439).
+	w.Key("country_code");
+	w.ValueString(wxString::FromUTF8(c.country_code.c_str()));
 	w.Key("software");
 	w.ValueString(wxString::FromUTF8(c.software.c_str()));
 	w.Key("software_version");
@@ -3627,6 +3630,9 @@ void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 	w.ValueString(wxString::FromUTF8(s.address.c_str()));
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(s.port));
+	// ISO 3166-1 alpha-2 (lowercase); "" when GeoIP is off/unresolved (#440).
+	w.Key("country_code");
+	w.ValueString(wxString::FromUTF8(s.country_code.c_str()));
 	w.Key("users");
 	w.ValueInt(static_cast<int64_t>(s.users));
 	w.Key("max_users");
@@ -5136,6 +5142,37 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueString(wxString::FromUTF8(p.kademlia.update_url.c_str()));
 	w.EndObject();
 
+	// [IP2Country] (#440). `supported` is a capability flag — false when
+	// the daemon is built without GeoIP (the category is then absent and
+	// every field keeps its default). `maxmind_license` round-trips plainly
+	// (a config string, not a masked password). The loaded_source / db_* /
+	// downloading / last_result group is read-only daemon status.
+	w.Key("ip2country");
+	w.BeginObject();
+	w.Key("supported");
+	w.ValueBool(p.ip2country.supported);
+	w.Key("enabled");
+	w.ValueBool(p.ip2country.enabled);
+	w.Key("source");
+	w.ValueString(wxString::FromUTF8(p.ip2country.source.c_str()));
+	w.Key("custom_url");
+	w.ValueString(wxString::FromUTF8(p.ip2country.custom_url.c_str()));
+	w.Key("maxmind_license");
+	w.ValueString(wxString::FromUTF8(p.ip2country.maxmind_license.c_str()));
+	w.Key("auto_update");
+	w.ValueBool(p.ip2country.auto_update);
+	w.Key("loaded_source");
+	w.ValueString(wxString::FromUTF8(p.ip2country.loaded_source.c_str()));
+	w.Key("db_path");
+	w.ValueString(wxString::FromUTF8(p.ip2country.db_path.c_str()));
+	w.Key("db_loaded");
+	w.ValueBool(p.ip2country.db_loaded);
+	w.Key("downloading");
+	w.ValueBool(p.ip2country.downloading);
+	w.Key("last_result");
+	w.ValueString(wxString::FromUTF8(p.ip2country.last_result.c_str()));
+	w.EndObject();
+
 	w.EndObject();
 }
 
@@ -5536,6 +5573,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	const picojson::object *online_signature_obj = nullptr;
 	const picojson::object *core_tweaks_obj = nullptr;
 	const picojson::object *kademlia_obj = nullptr;
+	const picojson::object *ip2country_obj = nullptr;
 	if (!PrefFindSubObject(obj, "directories", directories_obj, perr) ||
 		!PrefFindSubObject(obj, "files", files_obj, perr) ||
 		!PrefFindSubObject(obj, "servers", servers_obj, perr) ||
@@ -5544,7 +5582,8 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		!PrefFindSubObject(obj, "remote_controls", remote_controls_obj, perr) ||
 		!PrefFindSubObject(obj, "online_signature", online_signature_obj, perr) ||
 		!PrefFindSubObject(obj, "core_tweaks", core_tweaks_obj, perr) ||
-		!PrefFindSubObject(obj, "kademlia", kademlia_obj, perr)) {
+		!PrefFindSubObject(obj, "kademlia", kademlia_obj, perr) ||
+		!PrefFindSubObject(obj, "ip2country", ip2country_obj, perr)) {
 		return ErrorResponse(400, "bad_request", perr.c_str());
 	}
 
@@ -5985,6 +6024,63 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		CECTag g(EC_TAG_PREFS_KADEMLIA, static_cast<std::uint32_t>(0));
 		bool any = false;
 		if (!PrefTakeString(*kademlia_obj, g, "update_url", EC_TAG_KADEMLIA_UPDATE_URL, any, perr)) {
+			return ErrorResponse(400, "bad_request", perr.c_str());
+		}
+		if (any) {
+			ec_req->AddTag(g);
+			any_change = true;
+		}
+	}
+
+	// [IP2Country] (#440). `supported` and the status fields are read-only
+	// (silently ignored if sent, like other read-only prefs). `source` is
+	// an enum string, validated + mapped to the uint8 the daemon's Apply()
+	// casts back to CPreferences::GeoIPSource. `update_now` is a write-only
+	// trigger (never echoed on GET) that kicks a manual DB refresh.
+	if (ip2country_obj) {
+		CECTag g(EC_TAG_PREFS_IP2COUNTRY, static_cast<std::uint32_t>(0));
+		bool any = false;
+		{
+			const auto it = ip2country_obj->find("source");
+			if (it != ip2country_obj->end()) {
+				if (!it->second.is<std::string>()) {
+					return ErrorResponse(
+						400, "bad_request", "ip2country.source must be a string");
+				}
+				const std::string &v = it->second.get<std::string>();
+				std::uint8_t src = 0;
+				if (v == "dbip") {
+					src = 0;
+				} else if (v == "maxmind") {
+					src = 1;
+				} else if (v == "custom") {
+					src = 2;
+				} else {
+					return ErrorResponse(400,
+						"bad_request",
+						"ip2country.source must be one of dbip, maxmind, custom");
+				}
+				g.AddTag(CECTag(EC_TAG_IP2COUNTRY_SOURCE, src));
+				any = true;
+			}
+		}
+		if (!PrefTakeBool(*ip2country_obj, g, "enabled", EC_TAG_IP2COUNTRY_ENABLED, any, perr) ||
+			!PrefTakeString(
+				*ip2country_obj, g, "custom_url", EC_TAG_IP2COUNTRY_CUSTOM_URL, any, perr) ||
+			!PrefTakeString(*ip2country_obj,
+				g,
+				"maxmind_license",
+				EC_TAG_IP2COUNTRY_MAXMIND_LICENSE,
+				any,
+				perr) ||
+			!PrefTakeBool(*ip2country_obj,
+				g,
+				"auto_update",
+				EC_TAG_IP2COUNTRY_AUTO_UPDATE,
+				any,
+				perr) ||
+			!PrefTakeBool(
+				*ip2country_obj, g, "update_now", EC_TAG_IP2COUNTRY_UPDATE_NOW, any, perr)) {
 			return ErrorResponse(400, "bad_request", perr.c_str());
 		}
 		if (any) {

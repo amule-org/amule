@@ -36,7 +36,7 @@
 
 #include "amule.h"         // Needed for theApp
 #include "DownloadQueue.h" // Needed for CDownloadQueue
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 #include "IP2Country.h" // Needed for IP2Country
 #include "amuleDlg.h"   // Needed for IP2Country
 #endif
@@ -200,15 +200,32 @@ void CServerListCtrl::RefreshServer(CServer *server)
 	}
 
 	wxString serverName;
-#ifdef ENABLE_IP2COUNTRY
-	// Get the country name
-	if (theApp->amuledlg->m_IP2Country->IsEnabled() && thePrefs::IsGeoIPEnabled()) {
-		const CountryData &countrydata =
-			theApp->amuledlg->m_IP2Country->GetCountryData(server->GetFullIP());
-		serverName << countrydata.Name;
-		serverName << " - ";
+#ifdef GEOIP_GUI
+	// Prepend the ISO country code. Prefer the code the daemon resolved and
+	// sent over EC (remote GUI, #440) — authoritative even when empty; only
+	// fall back to a local lookup for monolithic amule / an old daemon. The
+	// server list is a plain text wxListCtrl, so — unlike the client list — it
+	// shows the code as text rather than a flag bitmap.
+	if (thePrefs::IsGeoIPEnabled()) {
+		wxString code;
+		bool haveCountry = false;
+		if (server->IsCountryFromCore()) {
+			code = server->GetCountryCode();
+			haveCountry = true;
+		}
+#ifndef CLIENT_GUI
+		// Monolithic amule resolves locally; amulegui takes only the EC path
+		// above (guarding the local branch out keeps amulegui link-clean).
+		else if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
+			code = theApp->GetIP2Country()->GetCountryCode(server->GetFullIP());
+			haveCountry = true;
+		}
+#endif
+		if (haveCountry) {
+			serverName << (code.IsEmpty() ? wxString("?") : code) << " - ";
+		}
 	}
-#endif // ENABLE_IP2COUNTRY
+#endif // GEOIP_GUI
 	serverName << server->GetListName();
 	SetItem(itemnr, COLUMN_SERVER_NAME, serverName);
 	SetItem(itemnr, COLUMN_SERVER_ADDR, server->GetAddress());

@@ -728,6 +728,11 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c,
 		if (c->AssignIfExist(EC_TAG_CLIENT_USER_PORT, v))
 			cs.port = v;
 	}
+	// Peer country ISO code (#439). Tag-present (even empty) is the daemon's
+	// authoritative answer; tag-absent leaves the cached value intact.
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_COUNTRY)) {
+		cs.country_code = std::string(t->GetStringData().utf8_str());
+	}
 	std::uint32_t soft_code = static_cast<std::uint32_t>(SO_UNKNOWN);
 	if (c->AssignIfExist(EC_TAG_CLIENT_SOFTWARE, soft_code))
 		cs.software = ClientSoftwareName(soft_code);
@@ -1432,6 +1437,11 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 		const std::string v = std::string(st->ServerVersion(&tmp).utf8_str());
 		if (is_new || !v.empty())
 			s.version = v;
+	}
+	// Server host country ISO code (#440). Tag-present (even empty) is the
+	// daemon's authoritative answer; tag-absent leaves the cached value intact.
+	if (const CECTag *t = st->GetTagByName(EC_TAG_SERVER_COUNTRY)) {
+		s.country_code = std::string(t->GetStringData().utf8_str());
 	}
 	// IP + port shipping shape varies by EC detail level:
 	//  * FULL/WEB/UPDATE (webserver, amulecmd) pack them into the
@@ -2241,6 +2251,60 @@ void ParseKademliaPrefs(const CECTag *k, PreferencesSnapshot &out)
 	}
 }
 
+void ParseIP2CountryPrefs(const CECTag *ip, PreferencesSnapshot &out)
+{
+	// SUPPORTED is a value-encoded bool the daemon sets from its compile-
+	// time capability (true only on a GeoIP-capable build); the whole
+	// category is absent otherwise, leaving every field at its default.
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_SUPPORTED)) {
+		out.ip2country.supported = t->GetInt() != 0;
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_ENABLED)) {
+		out.ip2country.enabled = t->GetInt() != 0;
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_SOURCE)) {
+		// uint8 enum: CPreferences::GeoIPSource — DBIP=0, MaxMind=1,
+		// Custom=2. Anything else falls back to "dbip" (the enum's
+		// zero value) rather than surfacing a raw number.
+		switch (t->GetInt()) {
+		case 1:
+			out.ip2country.source = "maxmind";
+			break;
+		case 2:
+			out.ip2country.source = "custom";
+			break;
+		default:
+			out.ip2country.source = "dbip";
+			break;
+		}
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_CUSTOM_URL)) {
+		out.ip2country.custom_url = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE)) {
+		out.ip2country.maxmind_license = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_AUTO_UPDATE)) {
+		out.ip2country.auto_update = t->GetInt() != 0;
+	}
+	// Read-only live status — only filled by resolver-owning daemons.
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_LOADED_SOURCE)) {
+		out.ip2country.loaded_source = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_DB_PATH)) {
+		out.ip2country.db_path = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_DB_LOADED)) {
+		out.ip2country.db_loaded = t->GetInt() != 0;
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_DOWNLOADING)) {
+		out.ip2country.downloading = t->GetInt() != 0;
+	}
+	if (const CECTag *t = ip->GetTagByName(EC_TAG_IP2COUNTRY_LAST_RESULT)) {
+		out.ip2country.last_result = std::string(t->GetStringData().utf8_str());
+	}
+}
+
 } // namespace
 
 void ParsePreferencesFromPacket(
@@ -2285,6 +2349,9 @@ void ParsePreferencesFromPacket(
 	}
 	if (const CECTag *k = resp->GetTagByName(EC_TAG_PREFS_KADEMLIA)) {
 		ParseKademliaPrefs(k, out_prefs);
+	}
+	if (const CECTag *ip = resp->GetTagByName(EC_TAG_PREFS_IP2COUNTRY)) {
+		ParseIP2CountryPrefs(ip, out_prefs);
 	}
 	if (const CECTag *cats = resp->GetTagByName(EC_TAG_PREFS_CATEGORIES)) {
 		for (CECTag::const_iterator it = cats->begin(); it != cats->end(); ++it) {

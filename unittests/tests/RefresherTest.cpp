@@ -729,6 +729,8 @@ TEST(Refresher, ServersFromContainerMergesByEcid)
 		// the snapshot.
 		CECTag srv(EC_TAG_SERVER, static_cast<std::uint32_t>(42));
 		srv.AddTag(CECTag(EC_TAG_SERVER_USERS, static_cast<std::uint32_t>(1234)));
+		// #440 server host country ISO code resolved daemon-side.
+		srv.AddTag(CECTag(EC_TAG_SERVER_COUNTRY, wxString::FromUTF8("de")));
 		container.AddTag(srv);
 		resp.AddTag(container);
 	}
@@ -739,6 +741,7 @@ TEST(Refresher, ServersFromContainerMergesByEcid)
 	ASSERT_TRUE(cache.find(42) != cache.end());
 	ASSERT_TRUE(cache.find(9999) == cache.end()); // evicted
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1234), cache[42].users);
+	ASSERT_EQUALS(std::string("de"), cache[42].country_code);
 }
 
 TEST(Refresher, ServersEmptyContainerEmptiesCache)
@@ -1274,6 +1277,8 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	// #423 friend status + DL/UP modifier.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_IS_FRIEND, true));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, static_cast<double>(2.5)));
+	// #439 peer country ISO code resolved daemon-side.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_COUNTRY, wxString::FromUTF8("de")));
 	container.AddTag(hi);
 
 	// A LowID peer (hybrid id < 0x1000000) with no section-B tags.
@@ -1292,6 +1297,7 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(std::string("127.0.0.1"), cs.server_ip);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4242), cs.server_port);
 	ASSERT_EQUALS(std::string("test-server"), cs.server_name);
+	ASSERT_EQUALS(std::string("de"), cs.country_code);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4672), cs.kad_port);
 	ASSERT_EQUALS(std::string("kad"), cs.source_origin);
 	ASSERT_EQUALS(std::string("upload.iso"), cs.upload_file_name);
@@ -1357,6 +1363,16 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	kad.AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, wxString::FromUTF8("http://nodes")));
 	resp.AddTag(kad);
 
+	CECEmptyTag ip2c(EC_TAG_PREFS_IP2COUNTRY);
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_SUPPORTED, true));       // value-encoded bool
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_ENABLED, true));         // value-encoded bool
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_SOURCE, (uint8)1));      // MaxMind
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_CUSTOM_URL, wxString::FromUTF8("http://geo")));
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, wxString::FromUTF8("LICKEY")));
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_LOADED, true));       // value-encoded bool
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_LOADED_SOURCE, wxString::FromUTF8("maxmind")));
+	resp.AddTag(ip2c);
+
 	PreferencesSnapshot p;
 	std::vector<CategorySnapshot> cats;
 	ParsePreferencesFromPacket(&resp, p, cats);
@@ -1384,4 +1400,14 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_conn_per_five);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1800000), p.core_tweaks.kad_reask_ms);
 	ASSERT_EQUALS(std::string("http://nodes"), p.kademlia.update_url);
+
+	ASSERT_TRUE(p.ip2country.supported);
+	ASSERT_TRUE(p.ip2country.enabled);
+	ASSERT_EQUALS(std::string("maxmind"), p.ip2country.source); // uint8 1 -> "maxmind"
+	ASSERT_EQUALS(std::string("http://geo"), p.ip2country.custom_url);
+	ASSERT_EQUALS(std::string("LICKEY"), p.ip2country.maxmind_license);
+	ASSERT_TRUE(!p.ip2country.auto_update); // absent -> false
+	ASSERT_TRUE(p.ip2country.db_loaded);
+	ASSERT_EQUALS(std::string("maxmind"), p.ip2country.loaded_source);
+	ASSERT_TRUE(!p.ip2country.downloading); // absent -> false
 }

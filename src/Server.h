@@ -58,6 +58,18 @@ public:
 	void AddTag(CTag *in_tag) { m_taglist.push_back(in_tag); }
 	const wxString &GetListName() const { return listname; }
 	const wxString &GetFullIP() const { return ipfull; }
+	// Server host country ISO code accessors (#440). Unconditional
+	// (libmaxminddb-free). m_countryFromCore records whether the tag was
+	// present, so an empty authoritative code ("unknown") is told apart from an
+	// absent tag. Unused by monolithic amule, which resolves country locally;
+	// populated over EC on the remote GUI.
+	const wxString &GetCountryCode() const { return m_countryCode; }
+	bool IsCountryFromCore() const { return m_countryFromCore; }
+	void SetCountryCode(const wxString &code)
+	{
+		m_countryCode = code;
+		m_countryFromCore = true;
+	}
 
 	const wxString &GetAddress() const
 	{
@@ -181,6 +193,9 @@ private:
 	uint32 ping;
 	wxString description;
 	wxString listname;
+	// EC-delivered host country (remote GUI only; #440). See the accessors.
+	wxString m_countryCode;
+	bool m_countryFromCore = false;
 	wxString dynip;
 	uint32 tagcount;
 	wxString ipfull;

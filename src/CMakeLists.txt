@@ -742,6 +742,7 @@ if (NEED_LIB_MULEAPPCORE)
 		${IPFILTERSCANNER}
 		${PARSER}
 		${SCANNER}
+		${IP2COUNTRY}
 		kademlia/kademlia/Entry.cpp
 		kademlia/kademlia/Indexed.cpp
 		kademlia/kademlia/SearchManager.cpp
@@ -786,6 +787,13 @@ if (NEED_LIB_MULEAPPCORE)
 		PRIVATE CRYPTOPP::CRYPTOPP
 	)
 
+	# The GeoIP resolver (IP2Country.cpp + geoip/MaxMindDBDatabase.cpp) now
+	# lives in the core library so the daemon can resolve country codes for
+	# the EC tag (#439 / #440), not just the GUI. It needs libmaxminddb.
+	if (ENABLE_IP2COUNTRY)
+		target_link_libraries (muleappcore PUBLIC MaxMindDB::Shared)
+	endif()
+
 	# DownloadBandwidthThrottler's std::atomic<int64_t> byte budget
 	# needs libatomic on 32-bit targets without a hardware 8-byte
 	# CAS (PPC32, ARMv5/v6, MIPS32). LIBATOMIC is set at the top
@@ -816,7 +824,7 @@ endif()
 
 if (NEED_LIB_MULEAPPGUI)
 	add_library (muleappgui STATIC
-		${IP2COUNTRY}
+		CountryFlags.cpp
 		extern/wxWidgets/listctrl.cpp
 		BarShader.cpp
 		ColorFrameCtrl.cpp
@@ -831,11 +839,6 @@ if (NEED_LIB_MULEAPPGUI)
 		muuli_wdr.cpp
 	)
 
-	if (ENABLE_IP2COUNTRY)
-		target_link_libraries (muleappgui
-			PUBLIC MaxMindDB::Shared
-		)
-	endif()
 
 	target_compile_definitions (muleappgui
 		PRIVATE WXUSINGDLL

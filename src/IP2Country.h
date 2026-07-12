@@ -44,36 +44,44 @@
 
 #include "Types.h" // Needed for uint8, uint16 and uint32
 
-#include <map>
+#include <functional>
 
-#include <wx/image.h>
 #include <wx/string.h>
 
 class CMaxMindDBDatabase;
 
-typedef struct
-{
-	wxString Name;
-	wxImage Flag;
-} CountryData;
-
-typedef std::map<wxString, CountryData> CountryDataMap;
-
+// Headless GeoIP resolver. Maps an IP to an ISO 3166-1 alpha-2 country code
+// via the on-disk MaxMind DB and manages downloading/updating that DB from the
+// user-configured source (thePrefs). Deliberately free of any GUI dependency
+// (no wxImage / flags / prefs-dialog) so it can live in the core (CamuleApp)
+// and run headless in amuled — the flag presentation is a separate GUI concern
+// (see CCountryFlags), and manual-update failure popups are delegated to the
+// GUI via SetUpdateFailedNotifier().
 class CIP2Country
 {
 public:
 	CIP2Country(const wxString &configDir);
 	~CIP2Country();
-	const CountryData &GetCountryData(const wxString &ip);
+
+	// Resolve an IP to its ISO 3166-1 alpha-2 country code (lowercase).
+	// Empty when GeoIP is disabled, unsupported by the build, or the IP
+	// does not resolve.
+	wxString GetCountryCode(const wxString &ip);
+
 	void Enable();
 	void Disable();
 	// Refresh the on-disk MMDB from the configured source.
 	// manualUpdate=true is set by the prefs "Update now" button so that
-	// failures (no credential, bad URL, HTTP error) surface as a popup
-	// in addition to the network log; auto-update (startup) stays
-	// silent so users don't get a popup every cold boot if their
-	// chosen source is briefly down.
-	void Update(bool manualUpdate = false);
+	// failures (no credential, bad URL, HTTP error) surface via the
+	// update-failed notifier (a GUI popup) in addition to the network log;
+	// auto-update (startup) stays silent so users don't get a popup every
+	// cold boot if their chosen source is briefly down.
+	// showProgress=true renders the HTTP progress dialog — appropriate for a
+	// LOCAL monolithic "Update now". It is false for a REMOTE (amulegui, over
+	// EC) trigger: EC carries no download progress, so the dialog would be
+	// blank/unhelpful, and on a monolithic-app-as-backend it would pop on the
+	// core rather than the remote GUI. (No-op on a headless daemon either way.)
+	void Update(bool manualUpdate = false, bool showProgress = true);
 	bool IsEnabled();
 	void DownloadFinished(uint32 result);
 
@@ -82,9 +90,23 @@ public:
 	// without re-deriving the config-dir + filename convention.
 	const wxString &GetDatabasePath() const { return m_DataBasePath; }
 
+	// Live status for the prefs panel (local, and carried to amulegui over EC,
+	// #440 remote config). IsDownloading() is true while a refresh is in
+	// flight; GetLastResult() is a short human string describing the outcome
+	// of the last completed update (empty until the first one runs).
+	bool IsDownloading() const { return m_downloading; }
+	const wxString &GetLastResult() const { return m_lastResult; }
+
+	// Optional hook so a GUI front-end can surface a *manual* update
+	// failure (the "Update now" button) as a popup. Left unset in headless
+	// builds (amuled), where the failure only reaches the network log.
+	void SetUpdateFailedNotifier(std::function<void(const wxString &)> notifier)
+	{
+		m_updateFailedNotifier = std::move(notifier);
+	}
+
 private:
 	CMaxMindDBDatabase *m_db;
-	CountryDataMap m_CountryDataMap;
 	wxString m_DataBaseName;
 	wxString m_DataBasePath;
 
@@ -100,8 +122,19 @@ private:
 	// popup, not just a log line.
 	bool m_ManualUpdate;
 
-	void LoadFlags();
+	// GUI-supplied popup hook for manual-update failures; unset = headless.
+	std::function<void(const wxString &)> m_updateFailedNotifier;
+
+	// Live status (see IsDownloading / GetLastResult).
+	bool m_downloading = false;
+	wxString m_lastResult;
+
+	// Whether the in-flight download should render an HTTP progress dialog.
+	// Carried across the DB-IP previous-month retry in StartDownload. See Update().
+	bool m_showProgress = true;
+
 	void StartDownload(int monthOffset);
+	void NotifyUpdateFailed(const wxString &msg);
 };
 
 #endif // IP2COUNTRY_H

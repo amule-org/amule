@@ -53,7 +53,7 @@
 #include "Friend.h"
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "GuiEvents.h"
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 #include "IP2Country.h" // Needed for IP2Country
 #endif
 #include "InternalEvents.h" // Needed for wxEVT_CORE_FINISHED_HTTP_DOWNLOAD
@@ -193,7 +193,7 @@ wxBEGIN_EVENT_TABLE(CamuleRemoteGuiApp, wxApp)
 
 	EVT_MULE_NOTIFY(CamuleRemoteGuiApp::OnNotifyEvent)
 
-#ifdef ENABLE_IP2COUNTRY
+#ifdef GEOIP_GUI
 	// HTTPDownload finished
 	EVT_MULE_INTERNAL(wxEVT_CORE_FINISHED_HTTP_DOWNLOAD, -1, CamuleRemoteGuiApp::OnFinishedHTTPDownload)
 #endif
@@ -361,13 +361,11 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 	}
 }
 
-void CamuleRemoteGuiApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
+void CamuleRemoteGuiApp::OnFinishedHTTPDownload(CMuleInternalEvent &WXUNUSED(event))
 {
-	if (event.GetInt() == HTTP_GeoIP) {
-		amuledlg->IP2CountryDownloadFinished(event.GetExtraInt64());
-		// If we updated, the dialog is already up. Redraw it to show the flags.
-		amuledlg->Refresh();
-	}
+	// amulegui has no local GeoIP resolver — country codes arrive over EC from
+	// the daemon (#439 / #440) — so it never starts a GeoIP download and there
+	// is nothing to finish here.
 }
 
 void CamuleRemoteGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
@@ -879,12 +877,9 @@ void CamuleRemoteGuiApp::Startup()
 	// a ~1 s wait for OnPollTimer to notice the file. No-op if empty.
 	AddLinksFromFile();
 
-	// Now activate GeoIP, so that the download dialog doesn't get destroyed immediately
-#ifdef ENABLE_IP2COUNTRY
-	if (thePrefs::IsGeoIPEnabled()) {
-		amuledlg->m_IP2Country->Enable();
-	}
-#endif
+	// amulegui does no local GeoIP resolution: the daemon resolves country
+	// codes and sends them over EC (#439 / #440), and amulegui only renders the
+	// flags. GeoIP settings are managed against the daemon, not locally.
 }
 
 int CamuleRemoteGuiApp::ShowAlert(wxString msg, wxString title, int flags)
@@ -1102,7 +1097,7 @@ CPreferencesRem::CPreferencesRem(CRemoteConnect *conn)
 	m_exchange_send_selected_prefs = EC_PREFS_GENERAL | EC_PREFS_CONNECTIONS | EC_PREFS_MESSAGEFILTER |
 					 EC_PREFS_ONLINESIG | EC_PREFS_SERVERS | EC_PREFS_FILES |
 					 EC_PREFS_DIRECTORIES | EC_PREFS_SECURITY | EC_PREFS_CORETWEAKS |
-					 EC_PREFS_REMOTECONTROLS | EC_PREFS_KADEMLIA;
+					 EC_PREFS_REMOTECONTROLS | EC_PREFS_KADEMLIA | EC_PREFS_IP2COUNTRY;
 	m_exchange_recv_selected_prefs = m_exchange_send_selected_prefs | EC_PREFS_CATEGORIES;
 }
 
@@ -1135,6 +1130,14 @@ void CPreferencesRem::HandlePacket(const CECPacket *packet)
 
 bool CPreferencesRem::LoadRemote()
 {
+#ifdef GEOIP_GUI
+	// Assume the core has NO GeoIP support until it says otherwise. A 3.1+ core
+	// built with ENABLE_IP2COUNTRY answers with EC_TAG_IP2COUNTRY_SUPPORTED (see
+	// CEC_Prefs_Packet::Apply); a pre-3.1 core (e.g. 3.0.1) omits the whole
+	// category, so leaving this default false correctly hides the IP2Country
+	// page rather than offering settings the core can't honour.
+	thePrefs::SetGeoIPSupported(false);
+#endif
 	//
 	// override local settings with remote
 	CECPacket req(EC_OP_GET_PREFERENCES, EC_DETAIL_UPDATE);
@@ -1443,6 +1446,13 @@ void CServerListRem::ProcessItemUpdate(const CEC_Server_Tag *tag, CServer *serve
 	tag->ServerName(&server->listname);
 	tag->ServerDesc(&server->description);
 	tag->ServerVersion(&server->m_strVersion);
+#ifdef GEOIP_GUI
+	// Server host country from the daemon's GeoIP (#440); check tag presence
+	// so an authoritative empty code isn't mistaken for an absent tag.
+	if (tag->GetTagByName(EC_TAG_SERVER_COUNTRY)) {
+		server->SetCountryCode(tag->Country());
+	}
+#endif
 	tag->GetMaxUsers(&server->maxusers);
 
 	tag->GetFiles(&server->files);
@@ -2031,6 +2041,15 @@ void CUpDownClientListRem::ProcessItemUpdate(const CEC_UpDownClient_Tag *tag, CC
 
 	tag->UserID(&client->m_nUserIDHybrid);
 	tag->ClientName(&client->m_Username);
+#ifdef GEOIP_GUI
+	// Peer country from the daemon's GeoIP (#439). Check tag *presence*, not
+	// its value: a present-but-empty tag is an authoritative "unknown" and
+	// must still mark the code as core-provided so the client list doesn't
+	// try a (non-existent) local fallback.
+	if (tag->GetTagByName(EC_TAG_CLIENT_COUNTRY)) {
+		client->SetCountryCode(tag->Country());
+	}
+#endif
 	// Client Software
 	bool sw_updated = false;
 	if (tag->ClientSoftware(client->m_clientSoft)) {

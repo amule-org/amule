@@ -251,6 +251,12 @@ uint8 CPreferences::s_byCryptTCPPaddingLength;
 wxString CPreferences::s_Ed2kURL;
 wxString CPreferences::s_KadURL;
 bool CPreferences::s_GeoIPEnabled;
+bool CPreferences::s_GeoIPSupported = true;
+bool CPreferences::s_GeoIPStatusLoaded = false;
+bool CPreferences::s_GeoIPStatusDownloading = false;
+wxString CPreferences::s_GeoIPStatusLastResult;
+wxString CPreferences::s_GeoIPStatusLoadedSource;
+bool CPreferences::s_GeoIPUpdateRequested = false;
 wxString CPreferences::s_GeoIPSource;
 wxString CPreferences::s_GeoIPLoadedSource;
 wxString CPreferences::s_GeoIPMaxMindLicense;
@@ -1427,14 +1433,14 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_PERCENT, (new Cfg_Bool("/ExternalConnect/ShowPercent", s_Percent, true)));
 	NewCfgItem(IDC_SKIN, (new Cfg_Skin("/SkinGUIOptions/Skin", s_Skin, "")));
 	NewCfgItem(IDC_VERTTOOLBAR, (new Cfg_Bool("/eMule/VerticalToolbar", s_ToolbarOrientation, false)));
-#ifdef ENABLE_IP2COUNTRY
-	// The IP2Country tab and its widgets only exist when libmaxminddb is
-	// present at compile time (PreferencesIP2CountryTab in muuli_wdr.cpp
-	// is the only place IDC_SHOW_COUNTRY_FLAGS / IDC_GEOIP_* are created).
-	// The Cfg_* bindings must live under the same gate -- binding them
-	// when the widgets don't exist would surface "Failed to connect Cfg
-	// to widget" log spam in TransferToWindow plus null-pointer crashes
-	// on any later FindWindow access.
+#ifdef GEOIP_GUI
+	// The IP2Country tab and its widgets only exist where the GeoIP GUI is built
+	// (PreferencesIP2CountryTab in muuli_wdr.cpp is the only place
+	// IDC_SHOW_COUNTRY_FLAGS / IDC_GEOIP_* are created) — i.e. a resolver-owning
+	// build or amulegui. The Cfg_* bindings must live under the same gate:
+	// binding them when the widgets don't exist would surface "Failed to connect
+	// Cfg to widget" log spam in TransferToWindow plus null-pointer crashes on
+	// any later FindWindow access.
 	NewCfgItem(IDC_SHOW_COUNTRY_FLAGS, (new Cfg_Bool("/eMule/GeoIPEnabled", s_GeoIPEnabled, true)));
 	NewCfgItem(IDC_GEOIP_MAXMIND_LIC,
 		(new Cfg_Str("/eMule/GeoIPMaxMindLicense", s_GeoIPMaxMindLicense, "")));

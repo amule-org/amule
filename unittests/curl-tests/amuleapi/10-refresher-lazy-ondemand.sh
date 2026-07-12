@@ -121,6 +121,9 @@ if [ "$CCOUNT" -gt 0 ]; then
 	_assert_json_eq '.clients[0].download_state | type' string   '/clients[0].download_state is string'
 	_assert_json_eq '.clients[0].ident_state | type'    string   '/clients[0].ident_state is string'
 	_assert_json_eq '.clients[0].software | type'       string   '/clients[0].software is string'
+	# #439 peer country: always-present ISO 3166-1 alpha-2 string,
+	# empty when GeoIP is off/unresolved (never absent/null).
+	_assert_json_eq '.clients[0].country_code | type'   string   '/clients[0].country_code is string (#439)'
 	_assert_json_eq '.clients[0].xfer | type'           object   '/clients[0].xfer is object'
 	_assert_json_eq '.clients[0].xfer.up_session | type'   number '/clients[0].xfer.up_session is numeric'
 	_assert_json_eq '.clients[0].xfer.down_session | type' number '/clients[0].xfer.down_session is numeric'

@@ -29,6 +29,7 @@
 #include "config.h" // Needed for ENABLE_VERSION_CHECK
 #include "Preferences.h"
 #include "amule.h"
+#include "IP2Country.h"     // For CIP2Country status (#440 remote GeoIP config)
 #include "SharedFileList.h" // for EnableDirectoryWatcher on the apply path
 
 CEC_Category_Tag::CEC_Category_Tag(uint32 cat_index, EC_DETAIL_LEVEL detail_level)
@@ -382,6 +383,53 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		kadPrefs.AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, thePrefs::GetKadNodesUrl()));
 		AddTag(kadPrefs);
 	}
+
+	if (selection & EC_PREFS_IP2COUNTRY) {
+		CECEmptyTag ip2cPrefs(EC_TAG_PREFS_IP2COUNTRY);
+		// SUPPORTED tells a remote GUI whether *this* build has GeoIP compiled
+		// in at all (the daemon may be built without libmaxminddb). amulegui
+		// gates its whole GeoIP config panel on this. The settings below are
+		// plain prefs and always sent so the panel can populate; ignored by a
+		// GeoIP-less daemon on apply.
+#ifdef GEOIP_GUI
+		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_SUPPORTED, true));
+#else
+		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_SUPPORTED, false));
+#endif
+		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_ENABLED, thePrefs::IsGeoIPEnabled()));
+		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_SOURCE, (uint8)thePrefs::GetGeoIPSource()));
+		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_CUSTOM_URL, thePrefs::GetGeoIPCustomUrl()));
+		ip2cPrefs.AddTag(
+			CECTag(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, thePrefs::GetGeoIPMaxMindLicense()));
+		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_AUTO_UPDATE, thePrefs::IsGeoIPAutoUpdate()));
+		// Read-only live status, filled only where a resolver exists (the
+		// daemon / monolithic amule) so a remote GUI can render the status line
+		// and disable buttons while a refresh runs (#440 remote config). NULL
+		// on amulegui, which has no local resolver and only receives these.
+#ifndef CLIENT_GUI
+		// Resolver-owning builds (daemon / monolithic) only. amulegui has no
+		// CIP2Country instance (GetIP2Country() is always NULL there) and doesn't
+		// link the resolver, so referencing its out-of-line methods here would
+		// break the amulegui link. The live status flows the other way for
+		// amulegui — it *receives* these tags in Apply().
+		if (CIP2Country *ip2c = theApp->GetIP2Country()) {
+			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_PATH, ip2c->GetDatabasePath()));
+			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_LOADED, ip2c->IsEnabled()));
+			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_DOWNLOADING, ip2c->IsDownloading()));
+			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_LAST_RESULT, ip2c->GetLastResult()));
+			ip2cPrefs.AddTag(
+				CECTag(EC_TAG_IP2COUNTRY_LOADED_SOURCE, thePrefs::GetGeoIPLoadedSource()));
+		}
+#endif
+		// Transient "Update now" trigger set by amulegui's prefs panel (which has
+		// no local resolver). Carried on the outgoing prefs packet so the daemon's
+		// Apply() kicks off a manual refresh. Only ever set on amulegui; the
+		// daemon never requests it, so its own outbound prefs never emit the tag.
+		if (thePrefs::IsGeoIPUpdateRequested()) {
+			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_UPDATE_NOW, true));
+		}
+		AddTag(ip2cPrefs);
+	}
 }
 
 /**
@@ -703,6 +751,70 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_KADEMLIA_UPDATE_URL)) != NULL) {
 			thePrefs::SetKadNodesUrl(oneTag->GetStringData());
 		}
+	}
+
+	if ((thisTab = GetTagByName(EC_TAG_PREFS_IP2COUNTRY)) != nullptr) {
+		// SUPPORTED is the core's capability flag, flowing daemon → GUI only:
+		// amulegui records it to show/hide its GeoIP page. The daemon must NOT
+		// apply an incoming SUPPORTED (an amulegui SET carries the GUI's own
+		// value, which would clobber the daemon's real capability), so this is
+		// CLIENT_GUI-only.
+#ifdef CLIENT_GUI
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_SUPPORTED)) != nullptr) {
+			thePrefs::SetGeoIPSupported(oneTag->GetInt() != 0);
+		}
+#endif
+		// Read-only live status mirrored for amulegui's panel (the daemon fills
+		// these; it sets-but-ignores its own copy — it reads its live resolver).
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_DB_LOADED)) != nullptr) {
+			thePrefs::SetGeoIPStatusLoaded(oneTag->GetInt() != 0);
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_DOWNLOADING)) != nullptr) {
+			thePrefs::SetGeoIPStatusDownloading(oneTag->GetInt() != 0);
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_LAST_RESULT)) != nullptr) {
+			thePrefs::SetGeoIPStatusLastResult(oneTag->GetStringData());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_LOADED_SOURCE)) != nullptr) {
+			thePrefs::SetGeoIPStatusLoadedSource(oneTag->GetStringData());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_ENABLED)) != nullptr) {
+			thePrefs::SetGeoIPEnabled(oneTag->GetInt() != 0);
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_SOURCE)) != nullptr) {
+			thePrefs::SetGeoIPSource((CPreferences::GeoIPSource)oneTag->GetInt());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_CUSTOM_URL)) != nullptr) {
+			thePrefs::SetGeoIPCustomUrl(oneTag->GetStringData());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE)) != nullptr) {
+			thePrefs::SetGeoIPMaxMindLicense(oneTag->GetStringData());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_AUTO_UPDATE)) != nullptr) {
+			thePrefs::SetGeoIPAutoUpdate(oneTag->GetInt() != 0);
+		}
+		// Apply live: on the daemon this (re)creates / enables / disables the
+		// resolver for the new settings. No-op on amulegui (no local resolver),
+		// which merely absorbs the daemon's settings into its prefs for display.
+		// Remote prefs-apply: do NOT auto-download here. An explicit "Update now"
+		// (UPDATE_NOW below) carries that intent; otherwise every amulegui OK
+		// would fetch, and together with UPDATE_NOW it fires twice.
+		theApp->EnableIP2Country(false);
+#ifndef CLIENT_GUI
+		// Explicit "Update now" trigger from a remote GUI (#440): re-download the
+		// DB from the (just-applied) source. Daemon / monolithic only — amulegui
+		// sends this tag but never receives it, and doesn't link the resolver, so
+		// the CIP2Country::Update reference is guarded out of the amulegui build.
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_UPDATE_NOW)) != nullptr &&
+			oneTag->GetInt() != 0) {
+			if (theApp->GetIP2Country()) {
+				// Remote trigger: no progress dialog (showProgress=false) — the
+				// requesting amulegui can't render EC download progress, and on a
+				// monolithic-app-as-backend the dialog would pop on the core.
+				theApp->GetIP2Country()->Update(true, false);
+			}
+		}
+#endif
 	}
 
 	theApp->glob_prefs->Save();

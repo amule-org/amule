@@ -40,6 +40,11 @@
 
 #include "muuli_wdr.h" // Needed for IDs
 #include "amuleDlg.h"  // Needed for CamuleDlg
+#ifdef GEOIP_GUI
+#include "CountryFlags.h"    // Needed for CCountryFlags
+#include "IP2Country.h"      // Needed for CIP2Country
+#include "PrefsUnifiedDlg.h" // Needed for NotifyIP2CountryUpdateFailedIfOpen
+#endif
 #include "PartFileConvert.h"
 #include "ThreadTasks.h"
 #include "Logger.h"    // Needed for EVT_MULE_LOGGING
@@ -109,12 +114,24 @@ CamuleGuiBase::CamuleGuiBase()
 	wxSizerFlags::DisableConsistencyChecks();
 
 	amuledlg = NULL;
+
+#ifdef GEOIP_GUI
+	// Country flag images, shared by both GUIs. Codes come from the core
+	// resolver (monolithic) or the EC tag (amulegui); this maps them to flags.
+	// The resolver's manual-update failure popup is wired later, once the
+	// core has created the resolver in OnInit (see CamuleApp::OnInit).
+	m_countryFlags = new CCountryFlags();
+#endif
 }
 
 CamuleGuiBase::~CamuleGuiBase()
 {
 #ifndef CLIENT_GUI
 	CPartFileConvert::StopThread();
+#endif
+#ifdef GEOIP_GUI
+	delete m_countryFlags;
+	m_countryFlags = nullptr;
 #endif
 }
 

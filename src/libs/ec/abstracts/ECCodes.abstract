@@ -287,6 +287,7 @@ EC_TAG_SERVER                             0x0500
 	EC_TAG_SERVER_VERSION                     0x050B
 	EC_TAG_SERVER_IP                          0x050C
 	EC_TAG_SERVER_PORT                        0x050D
+	EC_TAG_SERVER_COUNTRY                     0x050E
 
 EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_SOFTWARE                    0x0601
@@ -334,6 +335,7 @@ EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_UPLOAD_PART_STATUS          0x062B
 	EC_TAG_CLIENT_IS_FRIEND                   0x062C
 	EC_TAG_CLIENT_SCORE_RATIO                 0x062D
+	EC_TAG_CLIENT_COUNTRY                     0x062E
 
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
@@ -515,6 +517,20 @@ EC_TAG_SELECT_PREFS                       0x1000
 
 	EC_TAG_PREFS_KADEMLIA                     0x1E00
 		EC_TAG_KADEMLIA_UPDATE_URL                0x1E01
+
+	EC_TAG_PREFS_IP2COUNTRY                   0x1F00
+		EC_TAG_IP2COUNTRY_SUPPORTED               0x1F01
+		EC_TAG_IP2COUNTRY_ENABLED                 0x1F02
+		EC_TAG_IP2COUNTRY_SOURCE                  0x1F03
+		EC_TAG_IP2COUNTRY_CUSTOM_URL              0x1F04
+		EC_TAG_IP2COUNTRY_MAXMIND_LICENSE         0x1F05
+		EC_TAG_IP2COUNTRY_AUTO_UPDATE             0x1F06
+		EC_TAG_IP2COUNTRY_LOADED_SOURCE           0x1F07
+		EC_TAG_IP2COUNTRY_DB_PATH                 0x1F08
+		EC_TAG_IP2COUNTRY_DB_LOADED               0x1F09
+		EC_TAG_IP2COUNTRY_DOWNLOADING             0x1F0A
+		EC_TAG_IP2COUNTRY_LAST_RESULT             0x1F0B
+		EC_TAG_IP2COUNTRY_UPDATE_NOW              0x1F0C
 [/Section]
 
 [Section Content]
@@ -570,4 +586,5 @@ EC_PREFS_STATISTICS     0x00000400
 EC_PREFS_SECURITY       0x00000800
 EC_PREFS_CORETWEAKS     0x00001000
 EC_PREFS_KADEMLIA       0x00002000
+EC_PREFS_IP2COUNTRY     0x00004000
 [/Section]

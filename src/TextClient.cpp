@@ -976,10 +976,17 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		for (CECPacket::const_iterator it = response->begin(); it != response->end(); ++it) {
 			const CECTag &tag = *it;
 			const CECTag *serverName = tag.GetTagByName(EC_TAG_SERVER_NAME);
+			// Server host country ISO code from the daemon's GeoIP (#440),
+			// appended so existing "<ip> <name>" parsing keeps working.
+			const CECTag *country = tag.GetTagByName(EC_TAG_SERVER_COUNTRY);
 			if (serverName) {
 				wxString ip = tag.GetIPv4Data().StringIP();
 				ip.Append(' ', 24 - ip.Length());
-				s << ip << serverName->GetStringData() << "\n";
+				s << ip << serverName->GetStringData();
+				if (country && !country->GetStringData().IsEmpty()) {
+					s << " [" << country->GetStringData() << "]";
+				}
+				s << "\n";
 			}
 		}
 		break;

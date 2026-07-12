@@ -187,6 +187,17 @@ public:
 	uint32 GetIP() const { return m_dwUserIP; }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
+	// Country ISO code accessors (#439). Unconditional (libmaxminddb-free) so the
+	// shared client-list drawing code compiles regardless of the resolver gate.
+	// Unused by monolithic amule, which resolves country locally via
+	// theApp->GetIP2Country(); populated over EC on the remote-GUI client.
+	const wxString &GetCountryCode() const { return m_countryCode; }
+	bool IsCountryFromCore() const { return m_countryFromCore; }
+	void SetCountryCode(const wxString &code)
+	{
+		m_countryCode = code;
+		m_countryFromCore = true;
+	}
 	uint32 GetConnectIP() const { return m_nConnectIP; }
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	void SetUserIDHybrid(uint32 val);
@@ -709,6 +720,9 @@ private:
 	bool m_bEmuleProtocol;
 	wxString m_Username;
 	uint32 m_FullUserIP;
+	// EC-delivered peer country (remote GUI only; #439). See the accessors.
+	wxString m_countryCode;
+	bool m_countryFromCore = false;
 	CMD4Hash m_UserHash;
 	bool m_HasValidHash;
 	uint16 m_nUDPPort;

@@ -37,10 +37,22 @@
 
 #include "config.h" // Needed for ENABLE_UPNP
 
+// GeoIP country DISPLAY + remote-config capability, as opposed to the resolver.
+// True for a resolver-owning build (ENABLE_IP2COUNTRY, needs libmaxminddb) OR
+// any remote GUI (amulegui / CLIENT_GUI, which receives country codes over EC
+// and links no library). Use GEOIP_GUI to gate flag rendering, the country
+// columns and the IP2Country preferences page; keep ENABLE_IP2COUNTRY for the
+// resolver itself (CIP2Country) and the monolithic local IP→code lookup.
+#if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
+#define GEOIP_GUI 1
+#endif
+
 class CAbstractFile;
 class CKnownFile;
 class ExternalConn;
 class CamuleDlg;
+class CIP2Country;
+class CCountryFlags;
 class CPreferences;
 class CDownloadQueue;
 class CUploadQueue;
@@ -149,6 +161,24 @@ public:
 
 	CamuleAppCommon();
 	~CamuleAppCommon();
+
+	// GeoIP country resolver (headless: DB + download + ISO-code lookup).
+	// The resolver lives on CamuleApp (amuled + monolithic amule); amulegui
+	// has none and receives country codes over EC, so the base returns
+	// nullptr. This lets shared model code (CServer / CUpDownClient::
+	// GetCountryCode) resolve locally where a resolver exists and use the
+	// EC-provided value where it doesn't.
+	virtual class CIP2Country *GetIP2Country() { return nullptr; }
+
+	// Apply the current GeoIP preference at runtime (creating the resolver on
+	// first enable, disabling it when turned off). No-op on amulegui, which has
+	// no local resolver and configures the daemon's GeoIP over EC. startup=true
+	// (OnInit / a local enable toggle) also kicks the auto-update refresh; it is
+	// false on a remote prefs-apply so an amulegui OK doesn't trigger a download
+	// on every save — an explicit "Update now" (EC_TAG_IP2COUNTRY_UPDATE_NOW)
+	// carries that intent instead (otherwise both fire → duplicate download).
+	virtual void EnableIP2Country(bool startup) {}
+
 	void AddLinksFromFile();
 	// URL functions
 	wxString CreateMagnetLink(const CAbstractFile *f);
@@ -218,6 +248,12 @@ public:
 	void OnFatalException();
 #endif
 	bool ReinitializeNetwork(wxString *msg);
+
+	// The core owns the GeoIP resolver (created in OnInit, guarded by
+	// ENABLE_IP2COUNTRY + thePrefs::IsGeoIPEnabled). Serves the daemon
+	// (serialising the country EC tag) and monolithic amule (local display).
+	CIP2Country *GetIP2Country() override { return m_IP2Country; }
+	void EnableIP2Country(bool startup) override;
 
 	// derived classes may override those
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
@@ -382,6 +418,10 @@ protected:
 
 	APPState m_app_state;
 
+	// Headless GeoIP resolver, owned by the core (created in OnInit under
+	// ENABLE_IP2COUNTRY). NULL when GeoIP is disabled/unsupported.
+	CIP2Country *m_IP2Country;
+
 	wxString m_emulesig_path;
 	wxString m_amulesig_path;
 
@@ -449,6 +489,14 @@ public:
 	wxString m_FrameTitle;
 	CamuleDlg *amuledlg;
 
+#ifdef GEOIP_GUI
+	// Country flag images (ISO code -> wxImage), shared by the monolithic
+	// and remote GUIs. The country *code* comes from the core resolver
+	// (monolithic) or the EC tag (amulegui); this turns it into a flag.
+	// Held by pointer so the core header stays free of <wx/image.h>.
+	CCountryFlags *GetCountryFlags() { return m_countryFlags; }
+#endif
+
 	bool CopyTextToClipboard(wxString strText);
 	void ResetTitle();
 
@@ -464,6 +512,10 @@ protected:
 	 * to allows us to queue messages till after the dialog has been created.
 	 */
 	std::list<wxString> m_logLines;
+
+#ifdef GEOIP_GUI
+	CCountryFlags *m_countryFlags;
+#endif
 };
 
 #ifndef CLIENT_GUI

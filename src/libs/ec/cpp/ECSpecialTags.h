@@ -185,6 +185,14 @@ public:
 	{
 		return AssignIfExist(EC_TAG_SERVER_VERSION, target);
 	}
+	// Server host country ISO 3166-1 alpha-2 code (lowercase), resolved
+	// core-side (#440). Empty for an unresolved IP; the tag is absent when the
+	// daemon has no GeoIP. Check tag presence (GetTagByName) to tell the two
+	// apart, since AssignIfExist returns empty for both.
+	wxString Country(wxString *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_SERVER_COUNTRY, target);
+	}
 
 	uint32 GetPrio(uint32 *target = 0) const { return AssignIfExist(EC_TAG_SERVER_PRIO, target); }
 	bool GetStatic(bool *target = 0) const { return AssignIfExist(EC_TAG_SERVER_STATIC, target); }
@@ -384,6 +392,14 @@ public:
 	uint32 UserID(uint32 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_USER_ID, target); }
 
 	wxString ClientName(wxString *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_NAME, target); }
+	// Peer country ISO 3166-1 alpha-2 code (lowercase), resolved core-side (#439).
+	// Empty for an unresolved IP; the tag is absent when the daemon has no GeoIP.
+	// Callers wanting to distinguish "absent" from "empty" must check the tag's
+	// presence (GetTagByName), since AssignIfExist returns empty for both.
+	wxString Country(wxString *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_CLIENT_COUNTRY, target);
+	}
 	uint32 SpeedUp(uint32 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_UP_SPEED, target); }
 	float SpeedDown(float *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_DOWN_SPEED, target); }
 

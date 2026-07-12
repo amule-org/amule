@@ -23,22 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
-// Country flags are from FAMFAMFAM (http://www.famfamfam.com)
-//
-// Flag icons - http://www.famfamfam.com
-//
-// These icons are public domain, and as such are free for any use (attribution appreciated but not required).
-//
-// Note that these flags are named using the ISO3166-1 alpha-2 country codes where appropriate.
-// A list of codes can be found at http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-//
-// If you find these icons useful, please donate via paypal to mjames@gmail.com
-// (or click the donate button available at http://www.famfamfam.com/lab/icons/silk)
-//
-// Contact: mjames@gmail.com
-//
-
 #include "config.h" // Needed for ENABLE_IP2COUNTRY
 
 #ifdef ENABLE_IP2COUNTRY
@@ -46,21 +30,14 @@
 #include "Preferences.h" // For thePrefs
 #include "CFile.h"       // For CPath
 #include "HTTPDownload.h"
-#include "Logger.h"                 // For AddLogLineM()
-#include <common/Format.h>          // For CFormat()
-#include "common/FileFunctions.h"   // For UnpackArchive
-#include <common/StringFunctions.h> // For unicode2char()
-#include "icons/icon_data.h"        // For amule_get_all_icons()
+#include "Logger.h"               // For AddLogLineM()
+#include <common/Format.h>        // For CFormat()
+#include "common/FileFunctions.h" // For UnpackArchive
 
-#include <wx/artprov.h> // For wxArtProvider::GetBitmap
 #include <wx/intl.h>
-#include <wx/image.h>
-
-#include <cstring> // For strncmp
 
 #include "IP2Country.h"
 #include "geoip/MaxMindDBDatabase.h"
-#include "PrefsUnifiedDlg.h" // For NotifyIP2CountryUpdateFailedIfOpen
 
 CIP2Country::CIP2Country(const wxString &configDir)
 : m_db(new CMaxMindDBDatabase())
@@ -93,10 +70,6 @@ void CIP2Country::Enable()
 {
 	Disable();
 
-	if (m_CountryDataMap.empty()) {
-		LoadFlags();
-	}
-
 	if (!CPath::FileExists(m_DataBasePath)) {
 		Update();
 		return;
@@ -115,10 +88,11 @@ void CIP2Country::Enable()
 	}
 }
 
-void CIP2Country::Update(bool manualUpdate)
+void CIP2Country::Update(bool manualUpdate, bool showProgress)
 {
 	m_TriedPreviousMonth = false;
 	m_ManualUpdate = manualUpdate;
+	m_showProgress = showProgress;
 	StartDownload(0);
 }
 
@@ -144,15 +118,22 @@ void CIP2Country::StartDownload(int monthOffset)
 		}
 		AddLogLineC(msg);
 		if (m_ManualUpdate) {
-			PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+			NotifyUpdateFailed(msg);
 		}
 		m_ManualUpdate = false;
+		m_downloading = false;
+		m_lastResult = msg;
 		thePrefs::SetGeoIPEnabled(false);
 		return;
 	}
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
+	m_downloading = true;
+	// showDialog = m_showProgress: shown for a local monolithic "Update now",
+	// suppressed for a remote (amulegui/EC) trigger — EC carries no progress and
+	// on a monolithic-app-as-backend it would pop on the core (#440). No-op on a
+	// headless daemon. checkDownloadNewer stays true (honour If-Modified).
 	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
-		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, true, true);
+		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, m_showProgress, true);
 	downloader->Create();
 	downloader->Run();
 }
@@ -171,6 +152,8 @@ void CIP2Country::DownloadFinished(uint32 result)
 	// subsequent auto-update would inherit the popup behaviour).
 	const bool manual = m_ManualUpdate;
 	m_ManualUpdate = false;
+	// The download finished; the DB-IP early-month retry below re-arms this.
+	m_downloading = false;
 
 	if (result == HTTP_Success) {
 		Disable();
@@ -186,7 +169,7 @@ void CIP2Country::DownloadFinished(uint32 result)
 				CFormat(_("Download of %s file failed, aborting update.")) % m_DataBaseName;
 			AddLogLineC(msg);
 			if (manual) {
-				PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+				NotifyUpdateFailed(msg);
 			}
 			return;
 		}
@@ -198,7 +181,7 @@ void CIP2Country::DownloadFinished(uint32 result)
 					m_DataBaseName;
 				AddLogLineC(msg);
 				if (manual) {
-					PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+					NotifyUpdateFailed(msg);
 				}
 				return;
 			}
@@ -209,14 +192,16 @@ void CIP2Country::DownloadFinished(uint32 result)
 				CFormat(_("Failed to rename %s file, aborting update.")) % m_DataBaseName;
 			AddLogLineC(msg);
 			if (manual) {
-				PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+				NotifyUpdateFailed(msg);
 			}
 			return;
 		}
 
 		Enable();
 		if (IsEnabled()) {
-			AddLogLineN(CFormat(_("Successfully updated %s")) % m_DataBaseName);
+			const wxString msg = CFormat(_("Successfully updated %s")) % m_DataBaseName;
+			AddLogLineN(msg);
+			m_lastResult = msg;
 			// Record which source actually wrote the file so the prefs
 			// status line can attribute it correctly even after the
 			// user flips the source dropdown to a different provider
@@ -225,13 +210,17 @@ void CIP2Country::DownloadFinished(uint32 result)
 		} else {
 			const wxString msg = CFormat(_("Error updating %s")) % m_DataBaseName;
 			AddLogLineC(msg);
+			m_lastResult = msg;
 			if (manual) {
-				PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+				NotifyUpdateFailed(msg);
 			}
 		}
 	} else if (result == HTTP_Skipped) {
-		AddLogLineN(CFormat(_("Skipped download of %s, because requested file is not newer.")) %
-			    m_DataBaseName);
+		const wxString msg =
+			CFormat(_("Skipped download of %s, because requested file is not newer.")) %
+			m_DataBaseName;
+		AddLogLineN(msg);
+		m_lastResult = msg;
 	} else {
 		// DB-IP early-month fallback: the new month's file frequently
 		// 404s for the first few days while DB-IP publishes it. Retry
@@ -251,8 +240,9 @@ void CIP2Country::DownloadFinished(uint32 result)
 		const wxString msg = CFormat(_("Failed to download %s from %s")) % m_DataBaseName %
 				     thePrefs::GetGeoIPResolvedDownloadUrl(m_TriedPreviousMonth ? -1 : 0);
 		AddLogLineC(msg);
+		m_lastResult = msg;
 		if (manual) {
-			PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+			NotifyUpdateFailed(msg);
 		}
 		// if it failed and there is no database, turn it off
 		if (!wxFileExists(m_DataBasePath)) {
@@ -261,77 +251,25 @@ void CIP2Country::DownloadFinished(uint32 result)
 	}
 }
 
-void CIP2Country::LoadFlags()
-{
-	// Walk the embedded icon table and pick out anything named
-	// "flag_<code>". The table is built by src/icons/embed_icons.py
-	// from src/icons/flags/<code>.png at compile time; CamuleArtProvider
-	// (registered in CamuleGuiApp::OnInit) hands us back a decoded
-	// wxBitmap for each.
-	int icon_count = 0;
-	const struct AMuleIconEntry *icons = amule_get_all_icons(&icon_count);
-	const char flag_prefix[] = "flag_";
-	const size_t flag_prefix_len = sizeof(flag_prefix) - 1;
-
-	for (int i = 0; i < icon_count; ++i) {
-		const char *name = icons[i].name;
-		if (strncmp(name, flag_prefix, flag_prefix_len) != 0) {
-			continue;
-		}
-		const char *code = name + flag_prefix_len;
-
-		CountryData countrydata;
-		countrydata.Name = wxString(code, wxConvISO8859_1);
-
-		const wxString art_id = wxString::Format("amule:%s", name);
-		countrydata.Flag = wxArtProvider::GetBitmap(art_id).ConvertToImage();
-
-		if (countrydata.Flag.IsOk()) {
-			m_CountryDataMap[countrydata.Name] = countrydata;
-		} else {
-			AddLogLineC(CFormat(_("Failed to load country data for '%s'.")) % countrydata.Name);
-			continue;
-		}
-	}
-
-	AddDebugLogLineN(logGeneral,
-		CFormat("Loaded %d flag bitmaps.") %
-			m_CountryDataMap.size()); // there's never just one - no plural needed
-}
-
 CIP2Country::~CIP2Country()
 {
 	Disable();
 	delete m_db;
 }
 
-const CountryData &CIP2Country::GetCountryData(const wxString &ip)
+wxString CIP2Country::GetCountryCode(const wxString &ip)
 {
-	// Should prevent the crash if the database does not exist
 	if (!IsEnabled()) {
-		CountryDataMap::iterator it = m_CountryDataMap.find(wxString("unknown"));
-		it->second.Name = "?";
-		return it->second;
+		return wxEmptyString;
 	}
+	return m_db->GetCountryCode(ip);
+}
 
-	wxString CCode = m_db->GetCountryCode(ip);
-	if (CCode.IsEmpty()) {
-		CCode = "unknown";
+void CIP2Country::NotifyUpdateFailed(const wxString &msg)
+{
+	if (m_updateFailedNotifier) {
+		m_updateFailedNotifier(msg);
 	}
-
-	CountryDataMap::iterator it = m_CountryDataMap.find(CCode);
-	if (it == m_CountryDataMap.end()) {
-		// Show the code and ?? flag
-		it = m_CountryDataMap.find(wxString("unknown"));
-		wxASSERT(it != m_CountryDataMap.end());
-		if (CCode.IsEmpty()) {
-			it->second.Name = "?";
-		} else {
-			it->second.Name = CCode;
-		}
-	}
-
-	return it->second;
 }
 
 #else
@@ -345,16 +283,19 @@ CIP2Country::CIP2Country(const wxString &)
 
 CIP2Country::~CIP2Country() {}
 void CIP2Country::Enable() {}
+void CIP2Country::Disable() {}
+void CIP2Country::Update(bool, bool) {}
 void CIP2Country::DownloadFinished(uint32) {}
+void CIP2Country::StartDownload(int) {}
+void CIP2Country::NotifyUpdateFailed(const wxString &) {}
 bool CIP2Country::IsEnabled()
 {
 	return false;
 }
 
-const CountryData &CIP2Country::GetCountryData(const wxString &)
+wxString CIP2Country::GetCountryCode(const wxString &)
 {
-	static CountryData dummy;
-	return dummy;
+	return wxEmptyString;
 }
 
 #endif // ENABLE_IP2COUNTRY

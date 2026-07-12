@@ -109,6 +109,10 @@
 #include <wx/sysopt.h> // Do_not_auto_remove
 #endif
 
+// Core GeoIP resolver — headless, now compiled into the daemon too (#439/#440),
+// so its header must be visible outside the GUI-only include block below.
+#include "IP2Country.h"
+
 #ifndef AMULE_DAEMON
 #ifdef __WXMAC__
 #include <CoreFoundation/CFBundle.h> // Do_not_auto_remove
@@ -117,7 +121,8 @@
 #include <wx/msgdlg.h>
 
 #include "amuleDlg.h"
-#include "FirstRunWizard.h" // Needed for the first-run setup wizard (GUI-only)
+#include "PrefsUnifiedDlg.h" // For NotifyIP2CountryUpdateFailedIfOpen (GUI popup)
+#include "FirstRunWizard.h"  // Needed for the first-run setup wizard (GUI-only)
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -198,6 +203,7 @@ CamuleApp::CamuleApp()
 	canceledfiles = NULL;
 	serverlist = NULL;
 	serverconnect = NULL;
+	m_IP2Country = nullptr;
 	sharedfiles = NULL;
 	listensocket = NULL;
 	clientudp = NULL;
@@ -236,10 +242,47 @@ CamuleApp::CamuleApp()
 
 CamuleApp::~CamuleApp()
 {
+	// Headless GeoIP resolver (owned by the core; NULL when GeoIP is
+	// disabled/unsupported). Frees the mmap'd MaxMind DB handle.
+	delete m_IP2Country;
+	m_IP2Country = nullptr;
+
 	// Closing the log-file as the very last thing, since
 	// wxWidgets log-events are saved in it as well.
 	theLogger.CloseLogfile();
 }
+
+#ifdef ENABLE_IP2COUNTRY
+void CamuleApp::EnableIP2Country(bool startup)
+{
+	if (thePrefs::IsGeoIPEnabled()) {
+		if (!m_IP2Country) {
+			m_IP2Country = new CIP2Country(thePrefs::GetConfigDir());
+#ifndef AMULE_DAEMON
+			// Monolithic amule surfaces manual-update ("Update now") failures
+			// as a prefs-dialog popup; the daemon has no dialog and only logs.
+			m_IP2Country->SetUpdateFailedNotifier([](const wxString &msg) {
+				PrefsUnifiedDlg::NotifyIP2CountryUpdateFailedIfOpen(msg);
+			});
+#endif
+		}
+		m_IP2Country->Enable();
+		// Auto-update refresh from the selected source so the user sees current
+		// data without opening Preferences. Fires only at startup / a local
+		// enable toggle (startup=true) — NOT on every remote prefs-apply, which
+		// would download on each amulegui OK and, alongside an explicit "Update
+		// now", double the request. First-run / missing-file is handled inside
+		// Enable() regardless.
+		if (startup && thePrefs::IsGeoIPAutoUpdate() && m_IP2Country->IsEnabled()) {
+			m_IP2Country->Update();
+		}
+	} else if (m_IP2Country) {
+		m_IP2Country->Disable();
+	}
+}
+#else
+void CamuleApp::EnableIP2Country(bool) {}
+#endif
 
 int CamuleApp::OnExit()
 {
@@ -1007,10 +1050,11 @@ bool CamuleApp::OnInit()
 		}
 	}
 
-	// Enable GeoIP
-#ifdef ENABLE_IP2COUNTRY
-	theApp->amuledlg->EnableIP2Country();
-#endif
+	// Enable GeoIP. The resolver is headless and core-owned so the daemon
+	// resolves country codes for the EC tag exactly as monolithic amule does
+	// for local display (issues #439 / #440). The flag *images* are a GUI
+	// concern layered on top (CCountryFlags / CamuleGuiBase).
+	EnableIP2Country(true); // startup: allow the auto-update refresh
 
 	// Run webserver?
 	if (thePrefs::GetWSIsEnabled()) {
@@ -2190,9 +2234,20 @@ void CamuleApp::OnFinishedHTTPDownload(CMuleInternalEvent &event)
 		break;
 #ifdef ENABLE_IP2COUNTRY
 	case HTTP_GeoIP:
-		theApp->amuledlg->IP2CountryDownloadFinished(event.GetExtraInt64());
-		// If we updated, the dialog is already up. Redraw it to show the flags.
-		theApp->amuledlg->Refresh();
+		// Core resolver handles the swap-in of the freshly downloaded DB
+		// (daemon + monolithic). GetIP2Country() is NULL on amulegui, which
+		// has no local resolver — it never starts a GeoIP download.
+		if (theApp->GetIP2Country()) {
+			theApp->GetIP2Country()->DownloadFinished(event.GetExtraInt64());
+		}
+#ifndef AMULE_DAEMON
+		// Refresh the prefs IP2Country status block if the user is watching it,
+		// and redraw the main dialog so refreshed flags show up.
+		PrefsUnifiedDlg::RefreshIP2CountryStatusIfOpen();
+		if (theApp->amuledlg) {
+			theApp->amuledlg->Refresh();
+		}
+#endif
 		break;
 #endif
 	}

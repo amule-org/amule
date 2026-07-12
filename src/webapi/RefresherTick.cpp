@@ -218,11 +218,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// STATISTICS is intentionally omitted (its serialize block is empty
 	// — the 0x1B* tags carry live graph data, not stored prefs).
 	{
-		const std::uint32_t selection = EC_PREFS_CATEGORIES | EC_PREFS_GENERAL |
-						EC_PREFS_CONNECTIONS | EC_PREFS_DIRECTORIES | EC_PREFS_FILES |
-						EC_PREFS_SERVERS | EC_PREFS_SECURITY |
-						EC_PREFS_MESSAGEFILTER | EC_PREFS_REMOTECONTROLS |
-						EC_PREFS_ONLINESIG | EC_PREFS_CORETWEAKS | EC_PREFS_KADEMLIA;
+		const std::uint32_t selection =
+			EC_PREFS_CATEGORIES | EC_PREFS_GENERAL | EC_PREFS_CONNECTIONS | EC_PREFS_DIRECTORIES |
+			EC_PREFS_FILES | EC_PREFS_SERVERS | EC_PREFS_SECURITY | EC_PREFS_MESSAGEFILTER |
+			EC_PREFS_REMOTECONTROLS | EC_PREFS_ONLINESIG | EC_PREFS_CORETWEAKS |
+			EC_PREFS_KADEMLIA | EC_PREFS_IP2COUNTRY;
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_PREFERENCES));
 		req->AddTag(CECTag(EC_TAG_SELECT_PREFS, selection));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());

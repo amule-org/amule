@@ -122,6 +122,19 @@ public:
 	const CMD4Hash &GetUserHash() const { return m_UserHash; }
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	const wxString &GetUserName() const { return m_Username; }
+	// Peer country ISO code delivered by the core over EC (#439). Unconditional
+	// (libmaxminddb-free) so the shared client-list drawing code compiles against
+	// the remote GUI's EC client whether or not this build has the resolver.
+	// m_countryFromCore marks that the tag was present, so an empty code
+	// ("unknown") is distinguished from the no-tag case (the remote GUI never
+	// resolves locally regardless).
+	const wxString &GetCountryCode() const { return m_countryCode; }
+	bool IsCountryFromCore() const { return m_countryFromCore; }
+	void SetCountryCode(const wxString &code)
+	{
+		m_countryCode = code;
+		m_countryFromCore = true;
+	}
 	uint16 GetUserPort() const { return m_nUserPort; }
 	uint32 GetVersion() const { return m_nClientVersion; }
 	bool HasDisabledSharedFiles() const { return m_fNoViewSharedFiles; }
@@ -188,6 +201,8 @@ private:
 	bool m_fNoViewSharedFiles;
 	EIdentState m_identState;
 	bool m_bRemoteQueueFull;
+	wxString m_countryCode;      // EC-provided peer country (#439); see accessors
+	bool m_countryFromCore = false;
 
 	// other stuff
 	CClientCredits *credits;

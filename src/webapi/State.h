@@ -242,6 +242,10 @@ struct ClientSnapshot
 	std::string user_hash; // peer's user hash (32-char lowercase hex MD4)
 	std::string ip;        // dotted-quad
 	std::uint16_t port = 0;
+	// ISO 3166-1 alpha-2 country code (lowercase), resolved by the daemon's
+	// GeoIP from the peer IP (#439). "" when GeoIP is disabled/unsupported or
+	// the IP does not resolve.
+	std::string country_code;
 
 	// Software identity. EC_TAG_CLIENT_SOFTWARE ships a numeric code
 	// (SO_AMULE / SO_EMULE / etc); we decode it server-side into a
@@ -335,6 +339,9 @@ struct ServerSnapshot
 	std::string address;  // host:port form (canonical)
 	std::uint32_t ip = 0; // host-byte-order IPv4
 	std::uint16_t port = 0;
+	// ISO 3166-1 alpha-2 country code (lowercase) of the server host,
+	// resolved by the daemon's GeoIP (#440). "" when GeoIP is off/unresolved.
+	std::string country_code;
 	std::uint32_t ping_ms = 0;
 	std::uint32_t failed = 0;
 	std::uint32_t users = 0;
@@ -732,6 +739,30 @@ struct PreferencesSnapshot
 	{
 		std::string update_url;
 	} kademlia;
+
+	// [IP2Country] EC_TAG_PREFS_IP2COUNTRY (#440). The daemon only emits
+	// this category on a GeoIP-capable build, so an absent category leaves
+	// `supported` false (mirrors version_check_available: a capability the
+	// connected daemon advertises, not a stored setting). `source` is the
+	// serialized enum "dbip" / "maxmind" / "custom" (next-download
+	// selector). The trailing status fields are read-only daemon state.
+	// `maxmind_license` round-trips plainly — it is a config string the
+	// core already serializes and the desktop GeoIP panel shows, not a
+	// masked password like the [RemoteControls] ones.
+	struct Ip2CountryPrefs
+	{
+		bool supported = false;
+		bool enabled = false;
+		std::string source; // "dbip" / "maxmind" / "custom"
+		std::string custom_url;
+		std::string maxmind_license;
+		bool auto_update = false;
+		std::string loaded_source;
+		std::string db_path;
+		bool db_loaded = false;
+		bool downloading = false;
+		std::string last_result;
+	} ip2country;
 };
 
 struct StatusSnapshot

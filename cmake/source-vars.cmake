@@ -128,11 +128,15 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 	)
 endif()
 
+# IP2Country.cpp compiles unconditionally: when ENABLE_IP2COUNTRY is off its
+# #else branch provides no-op stubs, so core code (CamuleApp owns the resolver
+# for the #439/#440 EC tags) can reference CIP2Country without sprinkling
+# ENABLE_IP2COUNTRY guards over every call site + the dtor. Only the MaxMind DB
+# reader — and its libmaxminddb link (see src/CMakeLists.txt) — is gated on the
+# feature; the stub needs neither.
+set (IP2COUNTRY IP2Country.cpp)
 if (ENABLE_IP2COUNTRY)
-	set (IP2COUNTRY
-		IP2Country.cpp
-		geoip/MaxMindDBDatabase.cpp
-	)
+	list (APPEND IP2COUNTRY geoip/MaxMindDBDatabase.cpp)
 endif()
 
 if (ENABLE_UPNP)

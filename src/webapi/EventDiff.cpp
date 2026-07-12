@@ -147,6 +147,7 @@ std::string ToJson(const ServerSnapshot &s)
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
 	  << ",\"version\":\"" << EscJson(s.version) << "\""
 	  << ",\"address\":\"" << EscJson(s.address) << "\""
+	  << ",\"country_code\":\"" << EscJson(s.country_code) << "\""
 	  << ",\"port\":" << s.port << ",\"users\":" << s.users << ",\"max_users\":" << s.max_users
 	  << ",\"files\":" << s.files << ",\"priority\":\"" << EscJson(s.priority) << "\""
 	  << ",\"ping_ms\":" << s.ping_ms << ",\"failed\":" << s.failed
@@ -161,6 +162,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << "\"client_ecid\":" << c.ecid << ",\"client_name\":\"" << EscJson(c.client_name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash) << "\""
 	  << ",\"ip\":\"" << EscJson(c.ip) << "\""
+	  << ",\"country_code\":\"" << EscJson(c.country_code) << "\""
 	  << ",\"port\":" << c.port << ",\"software\":\"" << EscJson(c.software) << "\""
 	  << ",\"software_version\":\"" << EscJson(c.software_version) << "\""
 	  << ",\"os_info\":\"" << EscJson(c.os_info) << "\""
@@ -258,21 +260,22 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 {
 	return a.name == b.name && a.description == b.description && a.version == b.version &&
-	       a.address == b.address && a.port == b.port && a.users == b.users &&
-	       a.max_users == b.max_users && a.files == b.files && a.priority == b.priority &&
-	       a.ping_ms == b.ping_ms && a.failed == b.failed && a.is_static == b.is_static;
+	       a.address == b.address && a.country_code == b.country_code && a.port == b.port &&
+	       a.users == b.users && a.max_users == b.max_users && a.files == b.files &&
+	       a.priority == b.priority && a.ping_ms == b.ping_ms && a.failed == b.failed &&
+	       a.is_static == b.is_static;
 }
 bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
 	return a.client_name == b.client_name && a.user_hash == b.user_hash && a.ip == b.ip &&
-	       a.port == b.port && a.software == b.software && a.software_version == b.software_version &&
-	       a.os_info == b.os_info && a.upload_state == b.upload_state &&
-	       a.download_state == b.download_state && a.ident_state == b.ident_state &&
-	       a.download_file_name == b.download_file_name && a.upload_file_hash == b.upload_file_hash &&
-	       a.download_file_hash == b.download_file_hash && a.xfer_up_session == b.xfer_up_session &&
-	       a.xfer_down_session == b.xfer_down_session && a.xfer_up_total == b.xfer_up_total &&
-	       a.xfer_down_total == b.xfer_down_total && a.upload_speed_bps == b.upload_speed_bps &&
-	       a.download_speed_bps == b.download_speed_bps &&
+	       a.country_code == b.country_code && a.port == b.port && a.software == b.software &&
+	       a.software_version == b.software_version && a.os_info == b.os_info &&
+	       a.upload_state == b.upload_state && a.download_state == b.download_state &&
+	       a.ident_state == b.ident_state && a.download_file_name == b.download_file_name &&
+	       a.upload_file_hash == b.upload_file_hash && a.download_file_hash == b.download_file_hash &&
+	       a.xfer_up_session == b.xfer_up_session && a.xfer_down_session == b.xfer_down_session &&
+	       a.xfer_up_total == b.xfer_up_total && a.xfer_down_total == b.xfer_down_total &&
+	       a.upload_speed_bps == b.upload_speed_bps && a.download_speed_bps == b.download_speed_bps &&
 	       a.queue_waiting_position == b.queue_waiting_position &&
 	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
 	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot;

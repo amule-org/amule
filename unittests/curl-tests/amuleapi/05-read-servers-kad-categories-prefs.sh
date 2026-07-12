@@ -100,6 +100,9 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.servers[0].priority | test("^(low|normal|high)$")' \
 		true '/servers[0].priority is a known enum value'
 	_assert_json_eq '.servers[0].static   | type' boolean '/servers[0].static is boolean'
+	# #440 server country: always-present ISO 3166-1 alpha-2 string,
+	# empty when GeoIP is off/unresolved (never absent/null).
+	_assert_json_eq '.servers[0].country_code | type' string '/servers[0].country_code is string (#440)'
 fi
 
 # --- 2. /kad -------------------------------------------------------
@@ -158,6 +161,22 @@ _assert_json_eq '.connection.network_ed2k      | type' boolean '/preferences.con
 _assert_json_eq '.connection.network_kad       | type' boolean '/preferences.connection.network_kad is boolean'
 _assert_json_eq '.connection.autoconnect       | type' boolean '/preferences.connection.autoconnect is boolean'
 _assert_json_eq '.connection.max_sources_per_file | type' number '/preferences.connection.max_sources_per_file is numeric'
+
+# ip2country config category (#440). Field types are always present even
+# on a GeoIP-less daemon (supported=false, strings empty); source is one
+# of the known enum values.
+_assert_json_eq '.ip2country.supported       | type' boolean '/preferences.ip2country.supported is boolean'
+_assert_json_eq '.ip2country.enabled         | type' boolean '/preferences.ip2country.enabled is boolean'
+_assert_json_eq '.ip2country.source | test("^(dbip|maxmind|custom)$")' \
+	true '/preferences.ip2country.source is a known enum value'
+_assert_json_eq '.ip2country.custom_url      | type' string  '/preferences.ip2country.custom_url is string'
+_assert_json_eq '.ip2country.maxmind_license | type' string  '/preferences.ip2country.maxmind_license is string'
+_assert_json_eq '.ip2country.auto_update     | type' boolean '/preferences.ip2country.auto_update is boolean'
+_assert_json_eq '.ip2country.loaded_source   | type' string  '/preferences.ip2country.loaded_source is string'
+_assert_json_eq '.ip2country.db_path         | type' string  '/preferences.ip2country.db_path is string'
+_assert_json_eq '.ip2country.db_loaded       | type' boolean '/preferences.ip2country.db_loaded is boolean'
+_assert_json_eq '.ip2country.downloading     | type' boolean '/preferences.ip2country.downloading is boolean'
+_assert_json_eq '.ip2country.last_result     | type' string  '/preferences.ip2country.last_result is string'
 
 # --- Method gate. ----------------------------------------------
 for ep in servers kad categories preferences; do

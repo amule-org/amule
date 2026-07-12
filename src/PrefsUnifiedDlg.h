@@ -62,7 +62,7 @@ public:
 	 * created at one time.
 	 */
 	PrefsUnifiedDlg(wxWindow *parent);
-#ifdef ENABLE_IP2COUNTRY
+#if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
 	~PrefsUnifiedDlg();
 
 	// Public module hook: CamuleDlg::IP2CountryDownloadFinished calls
@@ -114,6 +114,15 @@ protected:
 	int m_IndexServerTab;
 	bool m_ServerTabVisible;
 	wxPanel *m_ServerWidget;
+#if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
+	//! List index of the IP2Country tab, so amulegui can drop it from the menu
+	//! when the connected core has no GeoIP support (#440). -1 if not built.
+	int m_IndexIP2CountryTab = -1;
+#endif
+	//! The Advanced (aMule tweaks) page widget. Kept so OnPrefsPageChange can
+	//! identify the current page by widget rather than list index, which shifts
+	//! when a tab (server / IP2Country) is hidden.
+	wxPanel *m_aMuleTweaksWidget = nullptr;
 	wxListCtrl *m_PrefsIcons;
 	void EnableServerTab(bool enable);
 
@@ -134,7 +143,7 @@ protected:
 	void OnButtonColorChange(wxCommandEvent &event);
 	void OnButtonIPFilterReload(wxCommandEvent &event);
 	void OnButtonIPFilterUpdate(wxCommandEvent &event);
-#ifdef ENABLE_IP2COUNTRY
+#if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
 	void OnGeoIPSourceChange(wxCommandEvent &event);
 	void OnGeoIPUpdateNow(wxCommandEvent &event);
 	void OnGeoIPMasterToggle(wxCommandEvent &event);

@@ -90,42 +90,6 @@
 #include "MacAppHelper.h" // mac_set_accessory_mode
 #endif
 
-#ifdef ENABLE_IP2COUNTRY // That's no bug. MSVC has ENABLE_IP2COUNTRY always on,
-			 // but dummy GeoIP.h turns ENABLE_IP2COUNTRY off again.
-void CamuleDlg::IP2CountryDownloadFinished(uint32 result)
-{
-	m_IP2Country->DownloadFinished(result);
-
-	// Refresh the IP2Country status block in the Preferences dialog if
-	// the user happens to have it open right now (e.g. they clicked
-	// "Update now" and have been watching the panel). No-op otherwise.
-	PrefsUnifiedDlg::RefreshIP2CountryStatusIfOpen();
-}
-
-void CamuleDlg::EnableIP2Country()
-{
-	if (thePrefs::IsGeoIPEnabled()) {
-		m_IP2Country->Enable();
-		// Auto-update on startup: refresh the database from the
-		// selected source so the user sees current data without
-		// having to open Preferences and click "Update now". Only
-		// fires when both the master enable AND the per-source
-		// auto-update toggle are on, and a database is already
-		// loaded (the first-run / missing-file path is handled
-		// inside Enable() above via its own Update() call).
-		if (thePrefs::IsGeoIPAutoUpdate() && m_IP2Country->IsEnabled()) {
-			m_IP2Country->Update();
-		}
-	}
-}
-
-#else
-
-void CamuleDlg::IP2CountryDownloadFinished(uint32) {}
-void CamuleDlg::EnableIP2Country() {}
-
-#endif
-
 wxBEGIN_EVENT_TABLE(CamuleDlg, wxFrame)
 
 	EVT_TOOL(ID_BUTTONNETWORKS, CamuleDlg::OnToolBarButton)
@@ -274,8 +238,9 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	AddLogLineN("");
 
 #ifdef ENABLE_IP2COUNTRY
+	// The GeoIP resolver itself is core-owned (CamuleApp); the dialog only
+	// records that the build supports it, for the prefs panel.
 	m_GeoIPavailable = true;
-	m_IP2Country = new CIP2Country(thePrefs::GetConfigDir());
 #else
 	m_GeoIPavailable = false;
 #endif
@@ -682,10 +647,6 @@ CamuleDlg::~CamuleDlg()
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
 	delete m_startupVersionCheck;
 	m_startupVersionCheck = NULL;
-#endif
-
-#ifdef ENABLE_IP2COUNTRY
-	delete m_IP2Country;
 #endif
 
 	AddLogLineN(_("aMule dialog destroyed"));
