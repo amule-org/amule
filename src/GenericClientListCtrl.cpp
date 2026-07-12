@@ -46,7 +46,7 @@
 #include "PartFile.h"  // Needed for CPartFile
 #include "Preferences.h"
 #include "SharedFileList.h" // Needed for CSharedFileList
-#include "ClientRef.h" // Needed for CClientRef
+#include "ClientRef.h"      // Needed for CClientRef
 // CUpDownClient (country accessors, #439). MUST match the build's client class:
 // the reduced EC client for amulegui, the full one for monolithic. Including the
 // wrong header gives this TU a different CUpDownClient layout than the rest of

@@ -1364,12 +1364,12 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	resp.AddTag(kad);
 
 	CECEmptyTag ip2c(EC_TAG_PREFS_IP2COUNTRY);
-	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_SUPPORTED, true));       // value-encoded bool
-	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_ENABLED, true));         // value-encoded bool
-	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_SOURCE, (uint8)1));      // MaxMind
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_SUPPORTED, true));  // value-encoded bool
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_ENABLED, true));    // value-encoded bool
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_SOURCE, (uint8)1)); // MaxMind
 	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_CUSTOM_URL, wxString::FromUTF8("http://geo")));
 	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, wxString::FromUTF8("LICKEY")));
-	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_LOADED, true));       // value-encoded bool
+	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_LOADED, true)); // value-encoded bool
 	ip2c.AddTag(CECTag(EC_TAG_IP2COUNTRY_LOADED_SOURCE, wxString::FromUTF8("maxmind")));
 	resp.AddTag(ip2c);
 

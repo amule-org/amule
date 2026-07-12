@@ -965,8 +965,7 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	// SendToRemote serialises from there, not from the live widgets.
 	thePrefs::SetGeoIPMaxMindLicense(CastChild(IDC_GEOIP_MAXMIND_LIC, wxTextCtrl)->GetValue());
 	thePrefs::SetGeoIPCustomUrl(CastChild(IDC_GEOIP_CUSTOM_URL, wxTextCtrl)->GetValue());
-	const bool geoipSourceChanged =
-		static_cast<int>(thePrefs::GetGeoIPSource()) != m_GeoIPSourceAtOpen;
+	const bool geoipSourceChanged = static_cast<int>(thePrefs::GetGeoIPSource()) != m_GeoIPSourceAtOpen;
 	bool geoipCredChanged = false;
 	switch (thePrefs::GetGeoIPSource()) {
 	case CPreferences::GeoIPSourceMaxMind:

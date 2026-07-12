@@ -201,7 +201,7 @@ private:
 	bool m_fNoViewSharedFiles;
 	EIdentState m_identState;
 	bool m_bRemoteQueueFull;
-	wxString m_countryCode;      // EC-provided peer country (#439); see accessors
+	wxString m_countryCode; // EC-provided peer country (#439); see accessors
 	bool m_countryFromCore = false;
 
 	// other stuff
