@@ -114,7 +114,28 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << ",\"transferring\":" << f.download.sources_transferring
 	  << ",\"a4af\":" << f.download.sources_a4af << "}"
 	  << ",\"progress\":{\"percent\":" << f.download.percent << "}"
-	  << "}";
+	  << ",\"kad_search_running\":" << (f.download.kad_comment_searching ? "true" : "false") << "}";
+	return o.str();
+}
+
+// comments_updated event payload — the file's full comment/rating list, matching
+// the GET /downloads/{hash}/comments body. Covers both retrieved Kad notes and
+// comments reported by connected ed2k sources (they share source_comments).
+std::string ToJsonCommentsEvent(const FileSnapshot &f)
+{
+	std::ostringstream o;
+	o << "{\"hash\":\"" << EscJson(f.hash) << "\""
+	  << ",\"count\":" << f.download.source_comments.size() << ",\"comments\":[";
+	bool first = true;
+	for (const auto &c : f.download.source_comments) {
+		if (!first)
+			o << ",";
+		first = false;
+		o << "{\"username\":\"" << EscJson(c.username) << "\""
+		  << ",\"filename\":\"" << EscJson(c.filename) << "\""
+		  << ",\"rating\":" << c.rating << ",\"comment\":\"" << EscJson(c.comment) << "\"}";
+	}
+	o << "]}";
 	return o.str();
 }
 
@@ -243,7 +264,25 @@ bool EqualDownload(const FileSnapshot &a, const FileSnapshot &b)
 	       a.download.sources_total == b.download.sources_total &&
 	       a.download.sources_not_current == b.download.sources_not_current &&
 	       a.download.sources_transferring == b.download.sources_transferring &&
-	       a.download.sources_a4af == b.download.sources_a4af && a.download.percent == b.download.percent;
+	       a.download.sources_a4af == b.download.sources_a4af &&
+	       a.download.percent == b.download.percent &&
+	       a.download.kad_comment_searching == b.download.kad_comment_searching;
+}
+
+// Comment list equality (deliberately NOT part of EqualDownload — a comment
+// change drives the separate comments_updated event, not download_updated).
+bool EqualComments(const FileSnapshot &a, const FileSnapshot &b)
+{
+	const auto &ca = a.download.source_comments;
+	const auto &cb = b.download.source_comments;
+	if (ca.size() != cb.size())
+		return false;
+	for (std::size_t i = 0; i < ca.size(); ++i) {
+		if (ca[i].username != cb[i].username || ca[i].filename != cb[i].filename ||
+			ca[i].rating != cb[i].rating || ca[i].comment != cb[i].comment)
+			return false;
+	}
+	return true;
 }
 bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 {
@@ -463,8 +502,18 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			if (kv.second.is_downloading) {
 				if (!was_downloading) {
 					push("download_added", ToJsonDownloadEvent(kv.second));
-				} else if (!EqualDownload(it->second, kv.second)) {
-					push("download_updated", ToJsonDownloadEvent(kv.second));
+					if (!kv.second.download.source_comments.empty()) {
+						push("comments_updated", ToJsonCommentsEvent(kv.second));
+					}
+				} else {
+					if (!EqualDownload(it->second, kv.second)) {
+						push("download_updated", ToJsonDownloadEvent(kv.second));
+					}
+					// Independent of download_updated: fires for Kad notes AND
+					// comments reported by connected sources (issue #434 / #419).
+					if (!EqualComments(it->second, kv.second)) {
+						push("comments_updated", ToJsonCommentsEvent(kv.second));
+					}
 				}
 			}
 			if (kv.second.is_shared) {

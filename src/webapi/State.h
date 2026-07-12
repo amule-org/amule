@@ -164,6 +164,11 @@ struct FileSnapshot
 		};
 		std::vector<SourceComment> source_comments;
 
+		// True while an on-demand Kad notes lookup is in flight on amuled for
+		// this file (POST /downloads/{hash}/comments starts one; issue #434).
+		// Lets clients poll GET .../comments until the search finishes.
+		bool kad_comment_searching = false;
+
 		// Source-reported filenames (GET /downloads/{hash}/filenames,
 		// issue #420). amuled delta-encodes these keyed by a stable id
 		// (new = name+count, count 0 = removed, else count update); the

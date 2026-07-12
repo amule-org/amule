@@ -120,6 +120,26 @@ CSearch::~CSearch()
 		temp->SetKadFileSearchID(0);
 	}
 
+	// If this was an on-demand notes lookup, clear the running flag on the target
+	// file so a fresh lookup can be requested later.
+	if (m_type == NOTES) {
+		uint8_t fileid[16];
+		m_target.ToByteArray(fileid);
+		const CMD4Hash fileHash(fileid);
+		CKnownFile *noteFile = theApp->sharedfiles->GetFileByID(fileHash);
+		if (!noteFile) {
+			noteFile = theApp->downloadqueue->GetFileByID(fileHash);
+		}
+		if (noteFile) {
+			noteFile->SetKadCommentSearchRunning(false);
+			// Bump the file's EC generation so the next incremental update
+			// re-serializes it: this is how amulegui / amuleapi learn the
+			// notes lookup finished (they poll GET_UPDATE, which otherwise
+			// skips an unchanged partfile).
+			noteFile->MarkECChanged();
+		}
+	}
+
 	// Decrease the use count for any contacts that are in our contact list.
 	for (ContactMap::iterator it = m_inUse.begin(); it != m_inUse.end(); ++it) {
 		it->second->DecUse();
@@ -1109,6 +1129,10 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	if (file) {
 		file->AddNote(entry);
 		m_answers++;
+		// Re-emit the partfile so amulegui / amuleapi see notes stream in live
+		// (matching the monolithic dialog), instead of all at once when the
+		// search ends. AddNote dedups, so a repeat is cheap.
+		file->MarkECChanged();
 	} else {
 		AddDebugLogLineN(logKadSearch, "Comment received for unknown file");
 		delete entry;

@@ -129,6 +129,7 @@ wxSizer *messagePage(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TR
 #define IDC_FD_MEDIA_ARTIST 10457
 #define IDC_FD_MEDIA_ALBUM 10458
 #define IDC_FD_MEDIA_TITLE 10459
+#define IDC_CMSEARCHKAD 10460
 #define IDC_LISTCTRLFILENAMES 10051
 #define IDC_TAKEOVER 10052
 #define IDC_CMTBT 10053

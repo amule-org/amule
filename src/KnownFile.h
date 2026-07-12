@@ -126,6 +126,11 @@ public:
 	void AddNote(Kademlia::CEntry *pEntry);
 	const CKadEntryPtrList &getNotes() const { return m_kadNotes; }
 
+	// True while an on-demand Kad NOTES lookup for this file's comments/ratings
+	// is in flight. Set by RequestKadNoteSearch, cleared when the CSearch ends.
+	void SetKadCommentSearchRunning(bool running) { m_kadCommentSearchRunning = running; }
+	bool IsKadCommentSearchRunning() const { return m_kadCommentSearchRunning; }
+
 	/* Comment and rating */
 	virtual const wxString &GetFileComment() const { return m_strComment; }
 	virtual int8 GetFileRating() const { return m_iRating; }
@@ -147,6 +152,7 @@ protected:
 	int8 m_iUserRating;
 	ArrayOfCTag m_taglist;
 	CKadEntryPtrList m_kadNotes;
+	bool m_kadCommentSearchRunning;
 
 private:
 	uint64 m_nFileSize;
@@ -277,6 +283,13 @@ public:
 
 	bool PublishSrc();
 	bool PublishNotes();
+
+	// Start an on-demand Kad NOTES lookup to retrieve community ratings/comments
+	// for this file. Only meaningful for a file present in the shared list or the
+	// download queue (the request builder reads the file size from there). Returns
+	// false if Kad is unavailable, a lookup is already running, or the file is not
+	// eligible. On amulegui this is a no-op stub — the GUI triggers it over EC.
+	bool RequestKadNoteSearch();
 
 	// Nonzero when this file has verified media metadata attached
 	// (probed by MediaProbe at share-add time). Derived from tag

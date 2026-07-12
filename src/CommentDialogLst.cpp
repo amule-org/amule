@@ -33,9 +33,14 @@
 
 #include <set>
 
+// Timer id for the Kad-notes auto-refresh (routed to this dialog only).
+static const int ID_KADREFRESH_TIMER = wxID_HIGHEST + 501;
+
 wxBEGIN_EVENT_TABLE(CCommentDialogLst, wxDialog)
 	EVT_BUTTON(IDCOK, CCommentDialogLst::OnBnClickedApply)
 	EVT_BUTTON(IDCREF, CCommentDialogLst::OnBnClickedRefresh)
+	EVT_BUTTON(IDC_CMSEARCHKAD, CCommentDialogLst::OnBnClickedSearchKad)
+	EVT_TIMER(ID_KADREFRESH_TIMER, CCommentDialogLst::OnKadRefreshTimer)
 wxEND_EVENT_TABLE()
 
 namespace
@@ -62,6 +67,8 @@ CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CPartFile *file)
 	  wxDefaultSize,
 	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 , m_file(file)
+, m_kadRefreshTimer(this, ID_KADREFRESH_TIMER)
+, m_kadRefreshTicks(0)
 {
 	wxSizer *content = commentLstDlg(this, true);
 	content->Show(this, true);
@@ -79,6 +86,7 @@ CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CPartFile *file)
 
 CCommentDialogLst::~CCommentDialogLst()
 {
+	m_kadRefreshTimer.Stop();
 	OpenInstances().erase(this);
 	ClearList();
 }
@@ -102,6 +110,72 @@ void CCommentDialogLst::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 void CCommentDialogLst::OnBnClickedRefresh(wxCommandEvent &WXUNUSED(evt))
 {
 	UpdateList();
+}
+
+void CCommentDialogLst::OnBnClickedSearchKad(wxCommandEvent &WXUNUSED(evt))
+{
+	if (!m_file) {
+		return;
+	}
+
+#ifdef CLIENT_GUI
+	// amulegui has no local Kad; ask the daemon to run the lookup. Retrieved notes
+	// arrive through the normal partfile-comments update. Mark the search running
+	// optimistically — the daemon's real state overwrites this on the next update.
+	theApp->sharedfiles->SearchKadNotes(m_file);
+	m_file->SetKadCommentSearchRunning(true);
+#else
+	if (!m_file->RequestKadNoteSearch()) {
+		// Kad down, or a search (often the file's own source search) is already
+		// using this hash. The daemon log (logKadSearch) records the exact reason;
+		// reuse existing strings here to avoid new catalog entries.
+		FindWindow(IDC_CMSTATUS)
+			->SetLabel(theApp->IsConnectedKad()
+					   ? _("Could not start a Kad search")
+					   : _("Kad search can't be done if Kad is not running"));
+		FindWindow(IDC_CMSTATUS)->GetParent()->Layout();
+		return;
+	}
+#endif
+
+	// The lookup is asynchronous (up to ~45s). Disable the button, show progress,
+	// and poll: the timer refreshes the list as notes arrive and stops when done.
+	FindWindow(IDC_CMSEARCHKAD)->Disable();
+	FindWindow(IDC_CMSTATUS)->SetLabel(_("Searching Kad for comments..."));
+	FindWindow(IDC_CMSTATUS)->GetParent()->Layout();
+	m_kadRefreshTicks = 0;
+	m_kadRefreshTimer.Start(2000);
+}
+
+void CCommentDialogLst::OnKadRefreshTimer(wxTimerEvent &WXUNUSED(evt))
+{
+	// A Kad notes lookup lives at most SEARCHNOTES_LIFETIME (45s); cap at 60s so the
+	// timer can never hang even if the "running" flag is never observed to clear.
+	const bool timedOut = ++m_kadRefreshTicks > 30;
+
+	if (!m_file || timedOut || !m_file->IsKadCommentSearchRunning()) {
+		// Search finished (or the file went away): final refresh + restore the UI.
+		m_kadRefreshTimer.Stop();
+		if (FindWindow(IDC_CMSEARCHKAD)) {
+			FindWindow(IDC_CMSEARCHKAD)->Enable();
+		}
+		if (m_file) {
+#ifdef CLIENT_GUI
+			// If we bailed on the safety timeout, clear the optimistic flag so a
+			// later search can start (the daemon is authoritative otherwise).
+			if (timedOut) {
+				m_file->SetKadCommentSearchRunning(false);
+			}
+#endif
+			UpdateList();
+		}
+		return;
+	}
+
+	// Still running: show whatever notes have arrived so far, keep the label.
+	UpdateList();
+	FindWindow(IDC_CMSTATUS)->SetLabel(_("Searching Kad for comments..."));
+	FindWindow(IDC_CMSTATUS)->GetParent()->Layout();
 }
 
 void CCommentDialogLst::UpdateList()

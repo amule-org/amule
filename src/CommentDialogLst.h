@@ -28,6 +28,7 @@
 
 #include <wx/dialog.h> // Needed for wxDialog	// Do_not_auto_remove
 #include <wx/sizer.h>
+#include <wx/timer.h> // Needed for wxTimer
 
 class CMuleListCtrl;
 class wxCommandEvent;
@@ -59,6 +60,11 @@ public:
 private:
 	void OnBnClickedApply(wxCommandEvent &evt);
 	void OnBnClickedRefresh(wxCommandEvent &evt);
+	void OnBnClickedSearchKad(wxCommandEvent &evt);
+
+	//! While a Kad notes lookup runs, periodically refresh the list and stop
+	//! once the daemon reports the search finished.
+	void OnKadRefreshTimer(wxTimerEvent &evt);
 
 	/**
 	 * Updates the contents of the comments/ratings list.
@@ -75,6 +81,13 @@ private:
 
 	//! The list containing comments/ratings.
 	CMuleListCtrl *m_list;
+
+	//! Drives auto-refresh while a Kad notes lookup is in flight.
+	wxTimer m_kadRefreshTimer;
+
+	//! Safety bound on auto-refresh ticks, so the timer can never hang if the
+	//! "running" state is never observed to clear (e.g. daemon rejected it).
+	int m_kadRefreshTicks;
 
 	wxDECLARE_EVENT_TABLE();
 };

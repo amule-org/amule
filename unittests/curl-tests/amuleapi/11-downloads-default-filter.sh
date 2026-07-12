@@ -132,7 +132,7 @@ fi
 # rails for some PS_* code).
 if [ "$OPT_IN_COUNT" -gt 0 ]; then
 	BOGUS=$(printf '%s' "$CURL_BODY" | jq \
-		'[.downloads[].status | select(. != "downloading" and . != "paused" and . != "completed" and . != "completing" and . != "hashing" and . != "erroneous" and . != "allocating" and . != "waiting" and . != "insufficient_disk" and . != "unknown")] | length')
+		'[.downloads[].status | select(. != "downloading" and . != "paused" and . != "stopped" and . != "completed" and . != "completing" and . != "hashing" and . != "erroneous" and . != "allocating" and . != "waiting" and . != "insufficient_disk" and . != "unknown")] | length')
 	if [ "$BOGUS" = "0" ]; then
 		_pass "/downloads?include_completed=1 all status values from known enum"
 	else

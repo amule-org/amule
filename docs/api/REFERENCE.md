@@ -26,7 +26,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Downloads**
 - [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
 - [`GET /api/v0/downloads/{hash}`](#get-apiv0downloadshash) — detail view; `{hash}` is the 32-char MD4 hex hash
-- [`GET /api/v0/downloads/{hash}/comments`](#get-apiv0downloadshashcomments) — per-source comments/ratings list
+- [`GET /api/v0/downloads/{hash}/comments`](#get-apiv0downloadshashcomments) — per-source comments/ratings list (incl. retrieved Kad notes)
+- [`POST /api/v0/downloads/{hash}/comments`](#post-apiv0downloadshashcomments) — trigger an on-demand Kad notes lookup
 - [`GET /api/v0/downloads/{hash}/filenames`](#get-apiv0downloadshashfilenames) — source-reported filenames + counts
 - [`GET /api/v0/downloads/{hash}/a4af`](#get-apiv0downloadshasha4af) — A4AF source list + auto flag
 - [`POST /api/v0/downloads/{hash}/a4af`](#post-apiv0downloadshasha4af) — force A4AF source-swapping
@@ -502,7 +503,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
       "priority_auto": true,
       "category":      0,
       "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
-      "progress": { "percent": 29.85 }
+      "progress": { "percent": 29.85 },
+      "kad_search_running": false
     }
   ]
 }
@@ -513,6 +515,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 `priority` is the download priority — one of `"low"`, `"normal"` or `"high"` — and `priority_auto` is `true` when amuled is deriving that level automatically. Downloads never report `very_low` or `release`; those are shared/upload-side levels only. A file that is simultaneously downloading and shared carries two independent priorities: this download priority, and the upload priority reported by [`GET /api/v0/shared`](#get-apiv0shared). Changing one does not affect the other.
 
 The list shape omits `progress.parts` to keep large libraries compact. Use the detail endpoint for per-part state.
+
+`kad_search_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
 
 The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
 
@@ -583,6 +587,8 @@ The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) ca
 
 The comments and ratings this download's **sources** report for the file (the desktop "Show all comments" list). Downloads-only — a completed/shared file has no live source list.
 
+The list also includes any **Kad community notes** retrieved on demand via `POST` on this same path (see below). A Kad note's `username` is the responding node's IP address when the note carries one, otherwise the placeholder `Kad user`.
+
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/downloads/8b54a3c2…/comments"
@@ -591,12 +597,15 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 ```json
 {
   "count": 2,
+  "kad_search_running": false,
   "comments": [
-    { "username": "alice", "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
-    { "username": "bob",   "filename": "some_movie.avi", "rating": -1, "comment": "no rating here" }
+    { "username": "alice",    "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
+    { "username": "Kad user", "filename": "some_movie.avi", "rating": 4, "comment": "" }
   ]
 }
 ```
+
+`kad_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. Kad notes appear as ordinary entries whose `username` is the responding node's IP (or `Kad user` when the note carries no IP).
 
 A per-source `rating` of `-1` means the source left a comment but no rating. Rating scale (from the desktop `GetRateString()`):
 
@@ -610,6 +619,23 @@ A per-source `rating` of `-1` means the source left a comment but no rating. Rat
 | 5 | Excellent |
 
 **Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`.
+
+#### `POST /api/v0/downloads/{hash}/comments`
+
+**Auth:** `USER`
+
+Trigger an on-demand **Kad notes** lookup for this download (the desktop "Get from Kad" button). aMule asks the Kad network for community ratings/comments keyed on the file hash. The lookup is **asynchronous** on the daemon (it can take up to ~45 s); this call returns immediately with `202 Accepted`, and the retrieved notes then show up in the `GET` list above. Poll the `GET` endpoint to observe them arrive.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/downloads/8b54a3c2…/comments"
+```
+
+```json
+{ "status": "kad_search_started" }
+```
+
+**Errors:** `404 not_found` (no download with that hash), `503 ec_unavailable`, `400 amuled_rejected` (daemon refused, e.g. Kad not connected).
 
 #### `GET /api/v0/downloads/{hash}/filenames`
 

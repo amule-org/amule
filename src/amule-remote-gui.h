@@ -526,6 +526,7 @@ public:
 	void Reload(bool sendtoserver = true, bool firstload = false);
 	bool RenameFile(CKnownFile *file, const CPath &newName);
 	void SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating);
+	void SearchKadNotes(CKnownFile *file);
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 
 	// Remote-side shim for the daemon's cancellable-progress Reload

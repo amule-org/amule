@@ -789,7 +789,10 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 
 	FileRatingList ratingList;
 	item->GetFile()->GetRatingAndComments(ratingList);
-	m_menu->Enable(MP_VIEWFILECOMMENTS, !ratingList.empty());
+	// Enable when there are source comments to show, or when Kad is connected so
+	// the dialog's "Get from Kad" lookup can retrieve community notes (#434) even
+	// for a file that has no per-source comments yet.
+	m_menu->Enable(MP_VIEWFILECOMMENTS, !ratingList.empty() || theApp->IsConnectedKad());
 
 	m_menu->Check(MP_SWAP_A4AF_TO_THIS_AUTO, file->IsA4AFAuto());
 

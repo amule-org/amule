@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-12 21:26+0200\n"
+"POT-Creation-Date: 2026-07-13 11:45+0200\n"
 "PO-Revision-Date: 2026-07-12 11:57+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -648,9 +648,9 @@ msgstr "Kad: вимкнена"
 
 #: src/amuleDlg.cpp:949 src/DownloadListCtrl.cpp:471
 #: src/DownloadListCtrl.cpp:710 src/FriendListCtrl.cpp:177
-#: src/muuli_wdr.cpp:741 src/muuli_wdr.cpp:792 src/muuli_wdr.cpp:854
-#: src/muuli_wdr.cpp:906 src/muuli_wdr.cpp:2163 src/muuli_wdr.cpp:2248
-#: src/muuli_wdr.cpp:2968 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:585
+#: src/muuli_wdr.cpp:741 src/muuli_wdr.cpp:792 src/muuli_wdr.cpp:856
+#: src/muuli_wdr.cpp:908 src/muuli_wdr.cpp:2165 src/muuli_wdr.cpp:2250
+#: src/muuli_wdr.cpp:2970 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:585
 #: src/ServerListCtrl.cpp:606 src/TransferWnd.cpp:373
 #: src/utils/wxCas/src/wxcasprefs.cpp:235
 msgid "Cancel"
@@ -661,7 +661,7 @@ msgid "Stop the current connection attempts"
 msgstr "Зупинити поточні спроби з'єднань"
 
 #: src/amuleDlg.cpp:955 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
-#: src/muuli_wdr.cpp:2364
+#: src/muuli_wdr.cpp:2366
 msgid "Disconnect"
 msgstr "Від'єднатися"
 
@@ -670,7 +670,7 @@ msgid "Disconnect from the currently connected networks"
 msgstr "Від'єднатися від з'єднаних мереж"
 
 #: src/amuleDlg.cpp:961 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
-#: src/muuli_wdr.cpp:2515 src/muuli_wdr.cpp:2965 src/muuli_wdr.cpp:3304
+#: src/muuli_wdr.cpp:2517 src/muuli_wdr.cpp:2967 src/muuli_wdr.cpp:3306
 msgid "Connect"
 msgstr "З'єднатися"
 
@@ -725,7 +725,7 @@ msgstr "Підтвердження виходу"
 msgid "Launch Command: "
 msgstr "Команда для запуску: "
 
-#: src/amuleDlg.cpp:1477 src/muuli_wdr.cpp:1929 src/Preferences.cpp:946
+#: src/amuleDlg.cpp:1477 src/muuli_wdr.cpp:1931 src/Preferences.cpp:946
 msgid "- default -"
 msgstr "- за замовчуванням -"
 
@@ -739,82 +739,82 @@ msgstr "Тека з шкірами '%s' не існує"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "ЗАСТЕРЕЖЕННЯ: Неможливо відкрити файл шкіри '%s' для читання"
 
-#: src/amuleDlg.cpp:1612 src/amuleDlg.cpp:1831 src/muuli_wdr.cpp:1479
-#: src/muuli_wdr.cpp:3306
+#: src/amuleDlg.cpp:1612 src/amuleDlg.cpp:1831 src/muuli_wdr.cpp:1481
+#: src/muuli_wdr.cpp:3308
 msgid "Networks"
 msgstr "Мережі"
 
-#: src/amuleDlg.cpp:1616 src/muuli_wdr.cpp:3306
+#: src/amuleDlg.cpp:1616 src/muuli_wdr.cpp:3308
 msgid "Networks Window"
 msgstr "Вікно мереж"
 
-#: src/amuleDlg.cpp:1618 src/muuli_wdr.cpp:3307
+#: src/amuleDlg.cpp:1618 src/muuli_wdr.cpp:3309
 msgid "Searches"
 msgstr "Пошук"
 
-#: src/amuleDlg.cpp:1622 src/muuli_wdr.cpp:3307
+#: src/amuleDlg.cpp:1622 src/muuli_wdr.cpp:3309
 msgid "Searches Window"
 msgstr "Вікно пошуку"
 
 #: src/amuleDlg.cpp:1624 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:382
-#: src/muuli_wdr.cpp:1581 src/muuli_wdr.cpp:3308 src/Statistics.cpp:829
+#: src/muuli_wdr.cpp:1583 src/muuli_wdr.cpp:3310 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Звантаження"
 
-#: src/amuleDlg.cpp:1628 src/muuli_wdr.cpp:3308
+#: src/amuleDlg.cpp:1628 src/muuli_wdr.cpp:3310
 #, fuzzy
 msgid "Downloads Window"
 msgstr "Звантажується"
 
-#: src/amuleDlg.cpp:1630 src/muuli_wdr.cpp:3192
+#: src/amuleDlg.cpp:1630 src/muuli_wdr.cpp:3194
 msgid "Shared files"
 msgstr "Спільні файли"
 
-#: src/amuleDlg.cpp:1634 src/muuli_wdr.cpp:3310
+#: src/amuleDlg.cpp:1634 src/muuli_wdr.cpp:3312
 msgid "Shared Files Window"
 msgstr "Вікно спільних файлів"
 
-#: src/amuleDlg.cpp:1636 src/muuli_wdr.cpp:2832 src/muuli_wdr.cpp:3264
-#: src/muuli_wdr.cpp:3311
+#: src/amuleDlg.cpp:1636 src/muuli_wdr.cpp:2834 src/muuli_wdr.cpp:3266
+#: src/muuli_wdr.cpp:3313
 msgid "Messages"
 msgstr "Повідомлення"
 
-#: src/amuleDlg.cpp:1640 src/muuli_wdr.cpp:3311
+#: src/amuleDlg.cpp:1640 src/muuli_wdr.cpp:3313
 msgid "Messages Window"
 msgstr "Вікно повідомлень"
 
-#: src/amuleDlg.cpp:1642 src/muuli_wdr.cpp:3312 src/PrefsUnifiedDlg.cpp:291
+#: src/amuleDlg.cpp:1642 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Статистика"
 
-#: src/amuleDlg.cpp:1646 src/muuli_wdr.cpp:3312
+#: src/amuleDlg.cpp:1646 src/muuli_wdr.cpp:3314
 msgid "Statistics Graph Window"
 msgstr "Вікно статистики"
 
-#: src/amuleDlg.cpp:1649 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:307
+#: src/amuleDlg.cpp:1649 src/muuli_wdr.cpp:3316 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Налаштування"
 
-#: src/amuleDlg.cpp:1653 src/muuli_wdr.cpp:3314
+#: src/amuleDlg.cpp:1653 src/muuli_wdr.cpp:3316
 msgid "Preferences Settings Window"
 msgstr "Вікно налаштувань"
 
-#: src/amuleDlg.cpp:1656 src/muuli_wdr.cpp:3315
+#: src/amuleDlg.cpp:1656 src/muuli_wdr.cpp:3317
 msgid "Import"
 msgstr "Зовн. внесення"
 
-#: src/amuleDlg.cpp:1660 src/muuli_wdr.cpp:3315
+#: src/amuleDlg.cpp:1660 src/muuli_wdr.cpp:3317
 msgid "The partfile importer tool"
 msgstr "Засіб зовнішнього внесення частково звантажених файлів"
 
-#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3316
+#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3318
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Про програму"
 
-#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3316
+#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3318
 msgid "About/Help"
 msgstr "Про/Допомога"
 
@@ -950,19 +950,19 @@ msgstr "Недопустиме посилання або вже в перелі�
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:2060 src/BaseClient.cpp:1835
+#: src/amule-remote-gui.cpp:2070 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
 #: src/ClientDetailDialog.cpp:123 src/DataToText.cpp:61 src/DataToText.cpp:86
 #: src/DataToText.cpp:101 src/DataToText.cpp:136 src/DataToText.cpp:165
-#: src/DownloadListCtrl.cpp:1133 src/DownloadListCtrl.cpp:1146
-#: src/DownloadListCtrl.cpp:1157 src/ExternalConn.cpp:550
+#: src/DownloadListCtrl.cpp:1136 src/DownloadListCtrl.cpp:1149
+#: src/DownloadListCtrl.cpp:1160 src/ExternalConn.cpp:550
 #: src/FileDetailDialog.cpp:187 src/GenericClientListCtrl.cpp:1159
 #: src/GenericClientListCtrl.cpp:1170 src/GenericClientListCtrl.cpp:1180
-#: src/HTTPDownload.cpp:89 src/KnownFile.cpp:969 src/KnownFile.cpp:975
-#: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2829
-#: src/PartFile.cpp:2835 src/Server.cpp:134 src/Server.cpp:210
+#: src/HTTPDownload.cpp:89 src/KnownFile.cpp:978 src/KnownFile.cpp:984
+#: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2831
+#: src/PartFile.cpp:2837 src/Server.cpp:134 src/Server.cpp:210
 #: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Невідомо"
@@ -1194,7 +1194,7 @@ msgid "Disconnected"
 msgstr "Від'єднана"
 
 #: src/ClientDetailDialog.cpp:151 src/ClientDetailDialog.cpp:155
-#: src/DownloadListCtrl.cpp:1010 src/GenericClientListCtrl.cpp:968
+#: src/DownloadListCtrl.cpp:1013 src/GenericClientListCtrl.cpp:968
 #: src/GenericClientListCtrl.cpp:979
 #, c-format
 msgid "%.1f kB/s"
@@ -1276,33 +1276,46 @@ msgstr "Користувач %s (%u) надіслав небажаний пер�
 msgid "User %s (%u) denied access to shared directories/files list"
 msgstr "Користувач %s (%u) заборонив доступ до переліку спільних тек/файлів"
 
-#: src/CommentDialog.cpp:53 src/CommentDialogLst.cpp:60
+#: src/CommentDialog.cpp:53 src/CommentDialogLst.cpp:65
 msgid "File Comments"
 msgstr "Коментарі файлу"
 
-#: src/CommentDialogLst.cpp:70 src/FriendListCtrl.cpp:62
+#: src/CommentDialogLst.cpp:77 src/FriendListCtrl.cpp:62
 msgid "Username"
 msgstr "Ім'я користувача"
 
-#: src/CommentDialogLst.cpp:71 src/DownloadListCtrl.cpp:158
+#: src/CommentDialogLst.cpp:78 src/DownloadListCtrl.cpp:158
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
 #: src/SharedFilesCtrl.cpp:101
 msgid "File Name"
 msgstr "Назва файлу"
 
-#: src/CommentDialogLst.cpp:72
+#: src/CommentDialogLst.cpp:79
 msgid "Rating"
 msgstr "Рейтинг"
 
-#: src/CommentDialogLst.cpp:73
+#: src/CommentDialogLst.cpp:80
 msgid "Comment"
 msgstr "Коментар"
 
-#: src/CommentDialogLst.cpp:128 src/muuli_wdr.cpp:816
+#: src/CommentDialogLst.cpp:134
+msgid "Could not start a Kad search"
+msgstr ""
+
+#: src/CommentDialogLst.cpp:135 src/SearchList.cpp:310
+msgid "Kad search can't be done if Kad is not running"
+msgstr "Пошук у Kad неможливо виконати коли Kad не працює"
+
+#: src/CommentDialogLst.cpp:144 src/CommentDialogLst.cpp:177
+#, fuzzy
+msgid "Searching Kad for comments..."
+msgstr "Шукається друг для lowid-з'єднання"
+
+#: src/CommentDialogLst.cpp:202 src/muuli_wdr.cpp:816
 msgid "No comments"
 msgstr "Немає коментарів"
 
-#: src/CommentDialogLst.cpp:130
+#: src/CommentDialogLst.cpp:204
 #, c-format
 msgid "%u comment"
 msgid_plural "%u comments"
@@ -1339,19 +1352,19 @@ msgstr "Авто [висока]"
 msgid "Very low"
 msgstr "Дуже низька"
 
-#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:704 src/muuli_wdr.cpp:2214
+#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:704 src/muuli_wdr.cpp:2216
 #: src/ServerListCtrl.cpp:263 src/ServerListCtrl.cpp:456
 #: src/SharedFilesCtrl.cpp:132
 msgid "Low"
 msgstr "Низька"
 
-#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:705 src/muuli_wdr.cpp:2215
+#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:705 src/muuli_wdr.cpp:2217
 #: src/ServerListCtrl.cpp:266 src/ServerListCtrl.cpp:457
 #: src/SharedFilesCtrl.cpp:133
 msgid "Normal"
 msgstr "Звичайна"
 
-#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:706 src/muuli_wdr.cpp:2216
+#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:706 src/muuli_wdr.cpp:2218
 #: src/ServerListCtrl.cpp:269 src/ServerListCtrl.cpp:458
 #: src/SharedFilesCtrl.cpp:134
 msgid "High"
@@ -1378,12 +1391,12 @@ msgid "Queue Full"
 msgstr "Черга заповнена"
 
 #: src/DataToText.cpp:74 src/GenericClientListCtrl.cpp:1107
-#: src/KnownFile.cpp:1698
+#: src/KnownFile.cpp:1779
 msgid "On Queue"
 msgstr "В черзі"
 
 #: src/DataToText.cpp:76 src/libs/ec/cpp/ECSpecialTags.cpp:52
-#: src/OtherFunctions.cpp:697 src/PartFile.cpp:4371 src/TransferWnd.cpp:346
+#: src/OtherFunctions.cpp:697 src/PartFile.cpp:4387 src/TransferWnd.cpp:346
 msgid "Downloading"
 msgstr "Звантажується"
 
@@ -1444,7 +1457,7 @@ msgstr "Місцевий сервер"
 msgid "Remote Server"
 msgstr "Віддалений сервер"
 
-#: src/DataToText.cpp:152 src/muuli_wdr.cpp:207 src/muuli_wdr.cpp:3085
+#: src/DataToText.cpp:152 src/muuli_wdr.cpp:207 src/muuli_wdr.cpp:3087
 #: src/SearchDlg.cpp:108 src/TextClient.cpp:890
 msgid "Kad"
 msgstr "Kad"
@@ -1516,7 +1529,7 @@ msgstr "Частина"
 msgid "Size"
 msgstr "Розмір"
 
-#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3152
+#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3154
 msgid "Transferred"
 msgstr "Переданих"
 
@@ -1529,7 +1542,7 @@ msgid "Progress"
 msgstr "Перебіг"
 
 #: src/DownloadListCtrl.cpp:164 src/FileDetailListCtrl.cpp:44
-#: src/PartFile.cpp:4417 src/SearchListCtrl.cpp:92
+#: src/PartFile.cpp:4433 src/SearchListCtrl.cpp:92
 msgid "Sources"
 msgstr "Джерела"
 
@@ -1539,7 +1552,7 @@ msgstr "Джерела"
 msgid "Priority"
 msgstr "Перевага"
 
-#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4420 src/SearchListCtrl.cpp:95
+#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4436 src/SearchListCtrl.cpp:95
 msgid "Status"
 msgstr "Стан"
 
@@ -1572,7 +1585,7 @@ msgstr ""
 "Відгук від: %s (%s)\n"
 "\n"
 
-#: src/DownloadListCtrl.cpp:707 src/muuli_wdr.cpp:2217
+#: src/DownloadListCtrl.cpp:707 src/muuli_wdr.cpp:2219
 #: src/SharedFilesCtrl.cpp:137
 msgid "Auto"
 msgstr "Автоматично"
@@ -1610,7 +1623,7 @@ msgid "Extended Options"
 msgstr "Розширені налаштування"
 
 #: src/DownloadListCtrl.cpp:731 src/DownloadListCtrl.cpp:783
-#: src/muuli_wdr.cpp:1750
+#: src/muuli_wdr.cpp:1752
 msgid "Preview"
 msgstr "Попередній перегляд"
 
@@ -1646,34 +1659,34 @@ msgstr "Призначити категорію"
 msgid "&Open the file"
 msgstr "Відкрити файл"
 
-#: src/DownloadListCtrl.cpp:853 src/SharedFilesCtrl.cpp:758
+#: src/DownloadListCtrl.cpp:856 src/SharedFilesCtrl.cpp:758
 msgid "Enter new name for this file:"
 msgstr "Введіть нову назву для цього файлу:"
 
-#: src/DownloadListCtrl.cpp:854 src/SharedFilesCtrl.cpp:759
+#: src/DownloadListCtrl.cpp:857 src/SharedFilesCtrl.cpp:759
 msgid "File rename"
 msgstr "Змінити назву файлу"
 
-#: src/DownloadListCtrl.cpp:1008 src/GenericClientListCtrl.cpp:966
+#: src/DownloadListCtrl.cpp:1011 src/GenericClientListCtrl.cpp:966
 #: src/GenericClientListCtrl.cpp:977
 #, fuzzy, c-format
 msgid "%.1f MB/s"
 msgstr "%.1f кбайт/с"
 
-#: src/DownloadListCtrl.cpp:1144 src/DownloadListCtrl.cpp:1155
+#: src/DownloadListCtrl.cpp:1147 src/DownloadListCtrl.cpp:1158
 msgid "%y/%m/%d %H:%M:%S"
 msgstr "%y.%m.%d %H:%M:%S"
 
-#: src/DownloadListCtrl.cpp:1300
+#: src/DownloadListCtrl.cpp:1303
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Звантаження (%i)"
 
-#: src/DownloadListCtrl.cpp:1465
+#: src/DownloadListCtrl.cpp:1468
 msgid "the default Windows shell handler"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp:1471
+#: src/DownloadListCtrl.cpp:1474
 #, c-format
 msgid ""
 "To prevent this warning to show up in every preview,\n"
@@ -1682,11 +1695,11 @@ msgstr ""
 "Щоб попередити показ цього застереження під час кожного попереднього перегляду,\n"
 "оберіть відеопрогравач в налаштуваннях (за замовчуванням %s)."
 
-#: src/DownloadListCtrl.cpp:1474
+#: src/DownloadListCtrl.cpp:1477
 msgid "File preview"
 msgstr "Попередній перегляд файлу"
 
-#: src/DownloadListCtrl.cpp:1529
+#: src/DownloadListCtrl.cpp:1532
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "ПОМИЛКА: не вдалося виконати зовнішній медіа-програвач! Команда: '%s'"
@@ -1974,44 +1987,44 @@ msgstr "Недопустима назва файлу."
 msgid "Unable to rename file."
 msgstr "Неможливо змінити назву файлу."
 
-#: src/ExternalConn.cpp:2432 src/ExternalConn.cpp:2460
+#: src/ExternalConn.cpp:2446 src/ExternalConn.cpp:2474
 msgid "Kad is disabled in preferences."
 msgstr "Kad вимкнена в налаштуваннях."
 
-#: src/ExternalConn.cpp:2473
+#: src/ExternalConn.cpp:2487
 msgid "Already connected to eD2k."
 msgstr "Вже з'єднано з eD2k"
 
-#: src/ExternalConn.cpp:2476
+#: src/ExternalConn.cpp:2490
 msgid "Connecting to eD2k..."
 msgstr "З'єднується з eD2k..."
 
-#: src/ExternalConn.cpp:2485
+#: src/ExternalConn.cpp:2499
 msgid "Already connected to Kad."
 msgstr "Вже з'єднано з Kad."
 
-#: src/ExternalConn.cpp:2488
+#: src/ExternalConn.cpp:2502
 msgid "Connecting to Kad..."
 msgstr "З'єднується з Kad"
 
-#: src/ExternalConn.cpp:2495
+#: src/ExternalConn.cpp:2509
 msgid "All networks are disabled."
 msgstr "Всі мережі вимкнені."
 
-#: src/ExternalConn.cpp:2504
+#: src/ExternalConn.cpp:2518
 msgid "Disconnected from eD2k."
 msgstr "Від'єднується від eD2k."
 
-#: src/ExternalConn.cpp:2509
+#: src/ExternalConn.cpp:2523
 msgid "Disconnected from Kad."
 msgstr "Від'єднується від Kad."
 
-#: src/ExternalConn.cpp:2518
+#: src/ExternalConn.cpp:2532
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr "Зовнішнє з'єднання: отримано недопустимий opcode: %#x"
 
-#: src/ExternalConn.cpp:2523
+#: src/ExternalConn.cpp:2537
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "Недопустимий opcode (невірна версія протоколу?)"
 
@@ -2245,7 +2258,7 @@ msgstr "Неможливо відкрити перелік друзів 'emfrien
 msgid "CRITICAL - no client on StartChatSession"
 msgstr "КРИТИЧНО - немає клієнта на StartChatSession"
 
-#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2581 src/muuli_wdr.cpp:3240
+#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2583 src/muuli_wdr.cpp:3242
 msgid "Friends"
 msgstr "Друзі"
 
@@ -2531,7 +2544,7 @@ msgstr "Недопустимий порт для початкового запу
 msgid "Please fill all fields required"
 msgstr "Будь ласка, заповніть потрібні поля"
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1029 src/PrefsUnifiedDlg.cpp:1081
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1031 src/PrefsUnifiedDlg.cpp:1081
 #: src/PrefsUnifiedDlg.cpp:1243 src/PrefsUnifiedDlg.cpp:1471
 #: src/PrefsUnifiedDlg.cpp:1478 src/PrefsUnifiedDlg.cpp:1492
 #: src/PrefsUnifiedDlg.cpp:1533
@@ -2592,32 +2605,57 @@ msgstr[0] "Записано %d контакт Kad"
 msgstr[1] "Записано %d контакти Kad"
 msgstr[2] "Записано %d контактів Kad"
 
-#: src/KnownFile.cpp:1689 src/PartFileConvertDlg.cpp:96
+#: src/KnownFile.cpp:1433
+#, c-format
+msgid "Kad note search for '%s' not started: Kad is not connected"
+msgstr ""
+
+#: src/KnownFile.cpp:1441
+#, c-format
+msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
+msgstr ""
+
+#: src/KnownFile.cpp:1453
+#, c-format
+msgid "Kad note search for '%s' not started: file is not in the shared list or download queue"
+msgstr ""
+
+#: src/KnownFile.cpp:1467
+#, c-format
+msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
+msgstr ""
+
+#: src/KnownFile.cpp:1476
+#, c-format
+msgid "Kad note search for '%s' not started: PrepareLookup failed"
+msgstr ""
+
+#: src/KnownFile.cpp:1770 src/PartFileConvertDlg.cpp:96
 msgid "File name"
 msgstr "Назва файлу"
 
-#: src/KnownFile.cpp:1689
+#: src/KnownFile.cpp:1770
 msgid "File size"
 msgstr "Розмір файлу"
 
-#: src/KnownFile.cpp:1690
+#: src/KnownFile.cpp:1771
 msgid "Share ratio"
 msgstr "Відношення передачі"
 
-#: src/KnownFile.cpp:1693 src/SharedFilePeersListCtrl.cpp:31
+#: src/KnownFile.cpp:1774 src/SharedFilePeersListCtrl.cpp:31
 #: src/SourceListCtrl.cpp:31
 msgid "Uploaded"
 msgstr "Вивантажено"
 
-#: src/KnownFile.cpp:1694 src/muuli_wdr.cpp:3136
+#: src/KnownFile.cpp:1775 src/muuli_wdr.cpp:3138
 msgid "Requested"
 msgstr "Запитано"
 
-#: src/KnownFile.cpp:1696
+#: src/KnownFile.cpp:1777
 msgid "Accepted"
 msgstr "Дозволено"
 
-#: src/KnownFile.cpp:1698
+#: src/KnownFile.cpp:1779
 msgid "Complete sources"
 msgstr "Завершених джерел"
 
@@ -2643,31 +2681,31 @@ msgstr "Невідома версія"
 msgid "Unable to get error description for error %d"
 msgstr "Тека призначення для звантажень"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4349
+#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4365
 msgid "Hashing"
 msgstr "Обчислюється хеш"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4355
+#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4371
 msgid "Completing"
 msgstr "Завершується"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4358
+#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4374
 msgid "Complete"
 msgstr "Завершений"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:47 src/OtherFunctions.cpp:701
-#: src/PartFile.cpp:4361 src/TransferWnd.cpp:348
+#: src/PartFile.cpp:4377 src/TransferWnd.cpp:348
 msgid "Paused"
 msgstr "Призупинений"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:49 src/OtherFunctions.cpp:699
-#: src/PartFile.cpp:4364 src/TransferWnd.cpp:347
+#: src/PartFile.cpp:4380 src/TransferWnd.cpp:347
 msgid "Erroneous"
 msgstr "Помилковий"
 
 # файл
 #: src/libs/ec/cpp/ECSpecialTags.cpp:54 src/OtherFunctions.cpp:695
-#: src/PartFile.cpp:4373 src/TransferWnd.cpp:345
+#: src/PartFile.cpp:4389 src/TransferWnd.cpp:345
 msgid "Waiting"
 msgstr "Очікує"
 
@@ -2735,8 +2773,8 @@ msgstr "ПОМИЛКА: "
 msgid "WARNING: "
 msgstr "ЗАСТЕРЕЖЕННЯ: "
 
-#: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:825 src/muuli_wdr.cpp:1237
-#: src/muuli_wdr.cpp:3040 src/muuli_wdr.cpp:3280
+#: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:827 src/muuli_wdr.cpp:1239
+#: src/muuli_wdr.cpp:3042 src/muuli_wdr.cpp:3282
 msgid "Close"
 msgstr "Закрити"
 
@@ -2754,7 +2792,7 @@ msgid "Paste"
 msgstr "Вставити"
 
 #: src/MuleTextCtrl.cpp:89 src/muuli_wdr.cpp:348 src/muuli_wdr.cpp:767
-#: src/muuli_wdr.cpp:2291 src/muuli_wdr.cpp:2310
+#: src/muuli_wdr.cpp:2293 src/muuli_wdr.cpp:2312
 #: src/utils/aLinkCreator/src/alcframe.cpp:142
 msgid "Clear"
 msgstr "Очистити"
@@ -2852,8 +2890,8 @@ msgid "Exit"
 msgstr "Вийти"
 
 #: src/MuleTrayIcon.cpp:579 src/MuleTrayIcon.cpp:945 src/MuleTrayIcon.cpp:965
-#: src/muuli_wdr.cpp:1392 src/muuli_wdr.cpp:1400 src/muuli_wdr.cpp:1407
-#: src/muuli_wdr.cpp:1796 src/muuli_wdr.cpp:1802 src/OtherFunctions.cpp:91
+#: src/muuli_wdr.cpp:1394 src/muuli_wdr.cpp:1402 src/muuli_wdr.cpp:1409
+#: src/muuli_wdr.cpp:1798 src/muuli_wdr.cpp:1804 src/OtherFunctions.cpp:91
 #: src/StatisticsDlg.cpp:93 src/StatisticsDlg.cpp:95
 msgid "kB/s"
 msgstr "кбайт/с"
@@ -3095,7 +3133,7 @@ msgstr "байт"
 msgid "KB"
 msgstr "кбайт"
 
-#: src/muuli_wdr.cpp:264 src/muuli_wdr.cpp:283 src/muuli_wdr.cpp:1617
+#: src/muuli_wdr.cpp:264 src/muuli_wdr.cpp:283 src/muuli_wdr.cpp:1619
 #: src/OtherFunctions.cpp:64
 msgid "MB"
 msgstr "Мбайт"
@@ -3144,7 +3182,7 @@ msgstr ""
 msgid "Stop"
 msgstr "Зупинити"
 
-#: src/muuli_wdr.cpp:338 src/muuli_wdr.cpp:1386 src/SearchListCtrl.cpp:688
+#: src/muuli_wdr.cpp:338 src/muuli_wdr.cpp:1388 src/SearchListCtrl.cpp:688
 msgid "Download"
 msgstr "Звантаження"
 
@@ -3165,7 +3203,7 @@ msgstr "Очистити завершені звантаження"
 msgid "File sources:"
 msgstr "Завершених джерел"
 
-#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1073 src/PrefsUnifiedDlg.cpp:276
+#: src/muuli_wdr.cpp:469 src/muuli_wdr.cpp:1075 src/PrefsUnifiedDlg.cpp:276
 msgid "General"
 msgstr "Загальні"
 
@@ -3181,14 +3219,14 @@ msgstr "Повна назва:"
 #: src/muuli_wdr.cpp:625 src/muuli_wdr.cpp:633 src/muuli_wdr.cpp:641
 #: src/muuli_wdr.cpp:661 src/muuli_wdr.cpp:668 src/muuli_wdr.cpp:675
 #: src/muuli_wdr.cpp:682 src/muuli_wdr.cpp:689 src/muuli_wdr.cpp:696
-#: src/muuli_wdr.cpp:1088 src/muuli_wdr.cpp:1091 src/muuli_wdr.cpp:1103
-#: src/muuli_wdr.cpp:1110 src/muuli_wdr.cpp:1115 src/muuli_wdr.cpp:1122
-#: src/muuli_wdr.cpp:1127 src/muuli_wdr.cpp:1134 src/muuli_wdr.cpp:1139
-#: src/muuli_wdr.cpp:1146 src/muuli_wdr.cpp:1158 src/muuli_wdr.cpp:1168
-#: src/muuli_wdr.cpp:1175 src/muuli_wdr.cpp:1180 src/muuli_wdr.cpp:1187
-#: src/muuli_wdr.cpp:1192 src/muuli_wdr.cpp:1199 src/muuli_wdr.cpp:1213
-#: src/muuli_wdr.cpp:1220 src/muuli_wdr.cpp:1225 src/muuli_wdr.cpp:1232
-#: src/muuli_wdr.cpp:3138 src/muuli_wdr.cpp:3146 src/muuli_wdr.cpp:3154
+#: src/muuli_wdr.cpp:1090 src/muuli_wdr.cpp:1093 src/muuli_wdr.cpp:1105
+#: src/muuli_wdr.cpp:1112 src/muuli_wdr.cpp:1117 src/muuli_wdr.cpp:1124
+#: src/muuli_wdr.cpp:1129 src/muuli_wdr.cpp:1136 src/muuli_wdr.cpp:1141
+#: src/muuli_wdr.cpp:1148 src/muuli_wdr.cpp:1160 src/muuli_wdr.cpp:1170
+#: src/muuli_wdr.cpp:1177 src/muuli_wdr.cpp:1182 src/muuli_wdr.cpp:1189
+#: src/muuli_wdr.cpp:1194 src/muuli_wdr.cpp:1201 src/muuli_wdr.cpp:1215
+#: src/muuli_wdr.cpp:1222 src/muuli_wdr.cpp:1227 src/muuli_wdr.cpp:1234
+#: src/muuli_wdr.cpp:3140 src/muuli_wdr.cpp:3148 src/muuli_wdr.cpp:3156
 msgid "N/A"
 msgstr "недоступні"
 
@@ -3290,7 +3328,7 @@ msgstr ""
 msgid "Album :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2186
+#: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2188
 msgid "Title :"
 msgstr "Назва:"
 
@@ -3359,1220 +3397,1225 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "Змінити оцінку файлу або повідомити користувачів, якщо файл невірний..."
 
 #: src/muuli_wdr.cpp:823
+#, fuzzy
+msgid "Get from Kad"
+msgstr "Від'єднано від Kad"
+
+#: src/muuli_wdr.cpp:825
 msgid "Refresh"
 msgstr "Оновити"
 
-#: src/muuli_wdr.cpp:846
+#: src/muuli_wdr.cpp:848
 msgid "Downloading, please wait ..."
 msgstr "Звантажується, будь ласка, зачекайте..."
 
-#: src/muuli_wdr.cpp:850
+#: src/muuli_wdr.cpp:852
 msgid "Unknown size"
 msgstr "Невідомий розмір"
 
-#: src/muuli_wdr.cpp:871
+#: src/muuli_wdr.cpp:873
 msgid "Required Information"
 msgstr "Потрібна інформація"
 
-#: src/muuli_wdr.cpp:876
+#: src/muuli_wdr.cpp:878
 msgid "IP Address :"
 msgstr "IP-адреса:"
 
-#: src/muuli_wdr.cpp:880
+#: src/muuli_wdr.cpp:882
 msgid "Port :"
 msgstr "Порт:"
 
-#: src/muuli_wdr.cpp:886
+#: src/muuli_wdr.cpp:888
 msgid "Additional Information"
 msgstr "Додаткова інформація"
 
-#: src/muuli_wdr.cpp:891
+#: src/muuli_wdr.cpp:893
 msgid "Username :"
 msgstr "Ім'я користувача:"
 
-#: src/muuli_wdr.cpp:895
+#: src/muuli_wdr.cpp:897
 msgid "Userhash :"
 msgstr "Хеш користувача:"
 
-#: src/muuli_wdr.cpp:903 src/muuli_wdr.cpp:2359
+#: src/muuli_wdr.cpp:905 src/muuli_wdr.cpp:2361
 #: src/utils/aLinkCreator/src/alcframe.cpp:137
 msgid "Add"
 msgstr "Додати"
 
-#: src/muuli_wdr.cpp:946
+#: src/muuli_wdr.cpp:948
 msgid "Download-Speed"
 msgstr "Швидкість звантаження"
 
-#: src/muuli_wdr.cpp:962 src/muuli_wdr.cpp:997 src/muuli_wdr.cpp:2459
+#: src/muuli_wdr.cpp:964 src/muuli_wdr.cpp:999 src/muuli_wdr.cpp:2461
 msgid "Current"
 msgstr "Поточна"
 
-#: src/muuli_wdr.cpp:970 src/muuli_wdr.cpp:1005 src/muuli_wdr.cpp:2467
+#: src/muuli_wdr.cpp:972 src/muuli_wdr.cpp:1007 src/muuli_wdr.cpp:2469
 msgid "Running average"
 msgstr "Середня"
 
-#: src/muuli_wdr.cpp:978 src/muuli_wdr.cpp:1013 src/muuli_wdr.cpp:2475
+#: src/muuli_wdr.cpp:980 src/muuli_wdr.cpp:1015 src/muuli_wdr.cpp:2477
 msgid "Session average"
 msgstr "Середня за сесію"
 
-#: src/muuli_wdr.cpp:983
+#: src/muuli_wdr.cpp:985
 msgid "Upload-Speed"
 msgstr "Швидкість вивантаження"
 
-#: src/muuli_wdr.cpp:1018
+#: src/muuli_wdr.cpp:1020
 msgid "Connections"
 msgstr "З'єднання"
 
-#: src/muuli_wdr.cpp:1032 src/muuli_wdr.cpp:1821
+#: src/muuli_wdr.cpp:1034 src/muuli_wdr.cpp:1823
 msgid "Active downloads"
 msgstr "Чинні звантаження"
 
-#: src/muuli_wdr.cpp:1040
+#: src/muuli_wdr.cpp:1042
 msgid "Active connections (1:1)"
 msgstr "Чинні з'єднання (1:1)"
 
-#: src/muuli_wdr.cpp:1048 src/muuli_wdr.cpp:1822
+#: src/muuli_wdr.cpp:1050 src/muuli_wdr.cpp:1824
 msgid "Active uploads"
 msgstr "Чинні вивантаження"
 
-#: src/muuli_wdr.cpp:1053
+#: src/muuli_wdr.cpp:1055
 msgid "Statistics Tree"
 msgstr "Дерево статистики"
 
-#: src/muuli_wdr.cpp:1080
+#: src/muuli_wdr.cpp:1082
 msgid "Username:"
 msgstr "Ім'я користувача:"
 
-#: src/muuli_wdr.cpp:1082
+#: src/muuli_wdr.cpp:1084
 msgid "Userhash:"
 msgstr "Хеш користувача:"
 
-#: src/muuli_wdr.cpp:1101
+#: src/muuli_wdr.cpp:1103
 msgid "Client software:"
 msgstr "Програма клієнта:"
 
-#: src/muuli_wdr.cpp:1108
+#: src/muuli_wdr.cpp:1110
 msgid "Client version:"
 msgstr "Версія клієнта:"
 
-#: src/muuli_wdr.cpp:1113 src/ServerWnd.cpp:268
+#: src/muuli_wdr.cpp:1115 src/ServerWnd.cpp:268
 msgid "IP address:"
 msgstr "IP-адреса:"
 
-#: src/muuli_wdr.cpp:1120
+#: src/muuli_wdr.cpp:1122
 msgid "User ID:"
 msgstr "ID користувача:"
 
-#: src/muuli_wdr.cpp:1125
+#: src/muuli_wdr.cpp:1127
 msgid "Server IP:"
 msgstr "Адреса сервера:"
 
-#: src/muuli_wdr.cpp:1132
+#: src/muuli_wdr.cpp:1134
 msgid "Server name:"
 msgstr "Назва сервера:"
 
-#: src/muuli_wdr.cpp:1137
+#: src/muuli_wdr.cpp:1139
 msgid "Obfuscation:"
 msgstr "Приховування:"
 
-#: src/muuli_wdr.cpp:1144
+#: src/muuli_wdr.cpp:1146
 msgid "Kad:"
 msgstr "Kad:"
 
-#: src/muuli_wdr.cpp:1151
+#: src/muuli_wdr.cpp:1153
 msgid "Transfers to client"
 msgstr "Передано клієнту"
 
-#: src/muuli_wdr.cpp:1156
+#: src/muuli_wdr.cpp:1158
 msgid "Current request:"
 msgstr "Поточні запити:"
 
-#: src/muuli_wdr.cpp:1166
+#: src/muuli_wdr.cpp:1168
 msgid "Average upload rate:"
 msgstr "Середня швидкість вивантаження:"
 
-#: src/muuli_wdr.cpp:1173
+#: src/muuli_wdr.cpp:1175
 msgid "Average download rate:"
 msgstr "Середня швидкість звантаження:"
 
-#: src/muuli_wdr.cpp:1178
+#: src/muuli_wdr.cpp:1180
 msgid "Uploaded (session):"
 msgstr "Вивантажено (сесія):"
 
-#: src/muuli_wdr.cpp:1185
+#: src/muuli_wdr.cpp:1187
 msgid "Downloaded (session):"
 msgstr "Звантажено (сесія):"
 
-#: src/muuli_wdr.cpp:1190
+#: src/muuli_wdr.cpp:1192
 msgid "Uploaded (total):"
 msgstr "Вивантажено (всього):"
 
-#: src/muuli_wdr.cpp:1197
+#: src/muuli_wdr.cpp:1199
 msgid "Downloaded (total):"
 msgstr "Звантажено (всього):"
 
-#: src/muuli_wdr.cpp:1204
+#: src/muuli_wdr.cpp:1206
 msgid "Scores"
 msgstr "Рахунок"
 
-#: src/muuli_wdr.cpp:1211
+#: src/muuli_wdr.cpp:1213
 msgid "DL/UP modifier:"
 msgstr "Модифікатор звантаження/вивантаження:"
 
-#: src/muuli_wdr.cpp:1218
+#: src/muuli_wdr.cpp:1220
 msgid "Secure ident:"
 msgstr "Безпечна ідентифікація:"
 
-#: src/muuli_wdr.cpp:1223
+#: src/muuli_wdr.cpp:1225
 #, fuzzy
 msgid "Queue rank:"
 msgstr "В черзі"
 
-#: src/muuli_wdr.cpp:1230
+#: src/muuli_wdr.cpp:1232
 msgid "Queue score:"
 msgstr "Рахунок черги:"
 
-#: src/muuli_wdr.cpp:1254
+#: src/muuli_wdr.cpp:1256
 msgid "Nick"
 msgstr "Прізвисько"
 
-#: src/muuli_wdr.cpp:1257
+#: src/muuli_wdr.cpp:1259
 msgid "https://amule-org.github.io - the multi-platform Mule"
 msgstr "https://amule-org.github.io - багатоплатформений Mule"
 
-#: src/muuli_wdr.cpp:1258
+#: src/muuli_wdr.cpp:1260
 msgid "This is the name that other users will see when connecting to you."
 msgstr "Це ім'я, яке бачать інші користувачі, коли під'єднуються до вас."
 
-#: src/muuli_wdr.cpp:1264
+#: src/muuli_wdr.cpp:1266
 msgid "Language: "
 msgstr "Мова: "
 
-#: src/muuli_wdr.cpp:1265 src/muuli_wdr.cpp:1324 src/muuli_wdr.cpp:1328
-#: src/muuli_wdr.cpp:1331
+#: src/muuli_wdr.cpp:1267 src/muuli_wdr.cpp:1326 src/muuli_wdr.cpp:1330
+#: src/muuli_wdr.cpp:1333
 msgid "The delay before showing tool-tips."
 msgstr "Затримка перед показом підказок."
 
-#: src/muuli_wdr.cpp:1270
+#: src/muuli_wdr.cpp:1272
 msgid "This specifies the language used on controls."
 msgstr "Це визначає мову"
 
-#: src/muuli_wdr.cpp:1273
+#: src/muuli_wdr.cpp:1275
 #, fuzzy
 msgid "Periodically check for a new version"
 msgstr "Перевірити наявність нової версії під час запуску"
 
-#: src/muuli_wdr.cpp:1274
+#: src/muuli_wdr.cpp:1276
 #, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
 msgstr "Перевірка нової версії після запуску"
 
-#: src/muuli_wdr.cpp:1281
+#: src/muuli_wdr.cpp:1283
 msgid "Start aMule automatically when I log in"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1282
+#: src/muuli_wdr.cpp:1284
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1289
+#: src/muuli_wdr.cpp:1291
 msgid "Register aMule for ed2k:// links"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1290
+#: src/muuli_wdr.cpp:1292
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1293
+#: src/muuli_wdr.cpp:1295
 msgid "Register aMule for magnet: links"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1294
+#: src/muuli_wdr.cpp:1296
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1297
+#: src/muuli_wdr.cpp:1299
 msgid "Start minimized"
 msgstr "Розпочати зменшеним"
 
-#: src/muuli_wdr.cpp:1298
+#: src/muuli_wdr.cpp:1300
 msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "Зменшитись після запуску"
 
-#: src/muuli_wdr.cpp:1301
+#: src/muuli_wdr.cpp:1303
 msgid "Prompt on exit"
 msgstr "Запит на вихід"
 
-#: src/muuli_wdr.cpp:1303
+#: src/muuli_wdr.cpp:1305
 msgid "Makes aMule prompt before exiting."
 msgstr "Питає перед виходом."
 
-#: src/muuli_wdr.cpp:1306
+#: src/muuli_wdr.cpp:1308
 msgid "Enable Tray Icon"
 msgstr "Увімкнути знак у системному лотку"
 
-#: src/muuli_wdr.cpp:1307
+#: src/muuli_wdr.cpp:1309
 msgid "This Enables/Disables the system tray (or taskbar) icon."
 msgstr "Ввімкнути/вимкнути знак в системному лотку або панелі."
 
-#: src/muuli_wdr.cpp:1310
+#: src/muuli_wdr.cpp:1312
 msgid "Hide application window when close button is pressed"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1313
+#: src/muuli_wdr.cpp:1315
 msgid "Minimize to Tray Icon"
 msgstr "Зменшитись в знак"
 
-#: src/muuli_wdr.cpp:1314
+#: src/muuli_wdr.cpp:1316
 msgid "Enabling this will make aMule minimize to the System Tray, rather than the taskbar."
 msgstr "Зменшуватись в системний лоток, а не в смужку програм."
 
-#: src/muuli_wdr.cpp:1317
+#: src/muuli_wdr.cpp:1319
 msgid "Show notifications when finished downloading"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1318
+#: src/muuli_wdr.cpp:1320
 msgid "Enabling this will make aMule to show notifications when finished downloading."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1323
+#: src/muuli_wdr.cpp:1325
 msgid "Tooltip delay time: "
 msgstr "Затримка показу порад: "
 
-#: src/muuli_wdr.cpp:1330
+#: src/muuli_wdr.cpp:1332
 msgid "seconds"
 msgstr "с"
 
-#: src/muuli_wdr.cpp:1334
+#: src/muuli_wdr.cpp:1336
 msgid "Browser Selection"
 msgstr "Обрати переглядач тенет"
 
-#: src/muuli_wdr.cpp:1340
+#: src/muuli_wdr.cpp:1342
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
 msgstr "Введіть тут назву вашого переглядача тенет. Залиште це поле порожнім, щоб використовувати переглядач встановлений за замовчуванням."
 
-#: src/muuli_wdr.cpp:1343 src/muuli_wdr.cpp:1360 src/muuli_wdr.cpp:1660
-#: src/muuli_wdr.cpp:1691 src/muuli_wdr.cpp:1703 src/muuli_wdr.cpp:2675
+#: src/muuli_wdr.cpp:1345 src/muuli_wdr.cpp:1362 src/muuli_wdr.cpp:1662
+#: src/muuli_wdr.cpp:1693 src/muuli_wdr.cpp:1705 src/muuli_wdr.cpp:2677
 #: src/utils/aLinkCreator/src/alcframe.cpp:135
 #: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
 msgid "Browse"
 msgstr "Переглянути"
 
-#: src/muuli_wdr.cpp:1347
+#: src/muuli_wdr.cpp:1349
 msgid "Open in new tab if possible"
 msgstr "Відкрити в новій вкладці, якщо можливо"
 
-#: src/muuli_wdr.cpp:1349
+#: src/muuli_wdr.cpp:1351
 msgid "Open the web page in a new tab instead of in a new window when possible"
 msgstr "Відкрити сторінку тенет в новій вкладці замість нового вікна, якщо можливо"
 
-#: src/muuli_wdr.cpp:1353
+#: src/muuli_wdr.cpp:1355
 msgid "Video Player"
 msgstr "Відеопрогравач"
 
-#: src/muuli_wdr.cpp:1380
+#: src/muuli_wdr.cpp:1382
 msgid "Bandwidth limits"
 msgstr "Обмеження ширини смуги"
 
-#: src/muuli_wdr.cpp:1394
+#: src/muuli_wdr.cpp:1396
 msgid "Upload"
 msgstr "Вивантаження"
 
-#: src/muuli_wdr.cpp:1402
+#: src/muuli_wdr.cpp:1404
 msgid "Slot Allocation"
 msgstr "Виділення шматків"
 
-#: src/muuli_wdr.cpp:1411
+#: src/muuli_wdr.cpp:1413
 msgid "Ports"
 msgstr "Порти"
 
-#: src/muuli_wdr.cpp:1417
+#: src/muuli_wdr.cpp:1419
 msgid "Standard TCP Port "
 msgstr "Зразковий TCP-порт "
 
-#: src/muuli_wdr.cpp:1421
+#: src/muuli_wdr.cpp:1423
 msgid "This is the standard eD2k port and cannot be disabled."
 msgstr "Це звичайний порт eD2k і не може бути вимкненим."
 
-#: src/muuli_wdr.cpp:1424
+#: src/muuli_wdr.cpp:1426
 msgid "UDP port for server requests (TCP+3):"
 msgstr "Порт UDP для запитів сервера (TCP+3):"
 
-#: src/muuli_wdr.cpp:1426
+#: src/muuli_wdr.cpp:1428
 msgid "4665"
 msgstr "4665"
 
-#: src/muuli_wdr.cpp:1429
+#: src/muuli_wdr.cpp:1431
 msgid "Extended UDP port (Kad / global search) "
 msgstr "Розширений порт UDP (Kad / глобальний пошук) "
 
-#: src/muuli_wdr.cpp:1433
+#: src/muuli_wdr.cpp:1435
 msgid "This UDP port is used for extended eD2k requests and Kad network"
 msgstr "Цей порт використовується для зовнішній запитів eD2k та для мережі Kad"
 
-#: src/muuli_wdr.cpp:1436
+#: src/muuli_wdr.cpp:1438
 msgid "Enable UPnP for router port forwarding"
 msgstr "Ввімкнути UPnP для перенаправлення портів"
 
-#: src/muuli_wdr.cpp:1440
+#: src/muuli_wdr.cpp:1442
 msgid "UPnP TCP Port (Optional):"
 msgstr "UPnP TCP порт (не обов'язково):"
 
-#: src/muuli_wdr.cpp:1450
+#: src/muuli_wdr.cpp:1452
 msgid "Bind local address to IP (empty for any):"
 msgstr "Використовувати IP-адресу (пусто для будь-якої):"
 
-#: src/muuli_wdr.cpp:1453
+#: src/muuli_wdr.cpp:1455
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
 msgstr "Тільки досвідченим користувачам: якщо ви маєте багато мережевих інтерфейсів, введіть адресу інтерфейсу до якого слід прив'язатися aMule."
 
-#: src/muuli_wdr.cpp:1456
+#: src/muuli_wdr.cpp:1458
 #, fuzzy
 msgid "Bind to network interface (empty for any):"
 msgstr "Використовувати IP-адресу (пусто для будь-якої):"
 
-#: src/muuli_wdr.cpp:1462
+#: src/muuli_wdr.cpp:1464
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1468
+#: src/muuli_wdr.cpp:1470
 msgid "Max sources per downloading file:"
 msgstr "Найбільше джерел на звантажуваний файл:"
 
-#: src/muuli_wdr.cpp:1472
+#: src/muuli_wdr.cpp:1474
 msgid "Max simultaneous connections:"
 msgstr "Найбільше одночасних з'єднань:"
 
-#: src/muuli_wdr.cpp:1482
+#: src/muuli_wdr.cpp:1484
 msgid "Kademlia"
 msgstr "Kademlia"
 
-#: src/muuli_wdr.cpp:1485 src/muuli_wdr.cpp:3080
+#: src/muuli_wdr.cpp:1487 src/muuli_wdr.cpp:3082
 msgid "ED2K"
 msgstr "eD2k"
 
-#: src/muuli_wdr.cpp:1492
+#: src/muuli_wdr.cpp:1494
 msgid "Autoconnect on startup"
 msgstr "Автоматичне з'єднання після запуску"
 
-#: src/muuli_wdr.cpp:1495
+#: src/muuli_wdr.cpp:1497
 msgid "Reconnect on loss"
 msgstr "Перез'єднатись при втраті з'єднання"
 
-#: src/muuli_wdr.cpp:1517
+#: src/muuli_wdr.cpp:1519
 msgid "Remove dead server after"
 msgstr "Вилучити мертвий сервер після"
 
-#: src/muuli_wdr.cpp:1521
+#: src/muuli_wdr.cpp:1523
 msgid "retries"
 msgstr "спроб"
 
-#: src/muuli_wdr.cpp:1526
+#: src/muuli_wdr.cpp:1528
 msgid "Auto-update server list at startup"
 msgstr "Автоматичне оновлення переліку серверів після запуску"
 
-#: src/muuli_wdr.cpp:1529
+#: src/muuli_wdr.cpp:1531
 msgid "List"
 msgstr "Перелік"
 
-#: src/muuli_wdr.cpp:1532
+#: src/muuli_wdr.cpp:1534
 msgid "Update server list when connecting to a server"
 msgstr "Оновити перелік серверів після з'єднання з сервером"
 
-#: src/muuli_wdr.cpp:1535
+#: src/muuli_wdr.cpp:1537
 msgid "Update server list when a client connects"
 msgstr "Оновити перелік серверів після з'єднання з клієнтами"
 
-#: src/muuli_wdr.cpp:1538
+#: src/muuli_wdr.cpp:1540
 msgid "Use priority system"
 msgstr "Використовувати систему переваг"
 
-#: src/muuli_wdr.cpp:1542
+#: src/muuli_wdr.cpp:1544
 msgid "Use smart LowID check on connect"
 msgstr "Використовувати розумну перевірку LowID під час з'єднання"
 
-#: src/muuli_wdr.cpp:1546
+#: src/muuli_wdr.cpp:1548
 msgid "Safe connect"
 msgstr "Безпечне з'єднання"
 
-#: src/muuli_wdr.cpp:1550
+#: src/muuli_wdr.cpp:1552
 msgid "Autoconnect to servers in static list only"
 msgstr "Автоматично з'єднуватись тільки з серверами з переліку постійних"
 
-#: src/muuli_wdr.cpp:1553
+#: src/muuli_wdr.cpp:1555
 msgid "Set manually added servers to High Priority"
 msgstr "Встановити високу перевагу доданим вручну серверам"
 
-#: src/muuli_wdr.cpp:1571
+#: src/muuli_wdr.cpp:1573
 msgid "Intelligent Corruption Handling (I.C.H.)"
 msgstr "Розумна обробка пошкоджень (Р.О.П.)"
 
-#: src/muuli_wdr.cpp:1574
+#: src/muuli_wdr.cpp:1576
 msgid "Enable"
 msgstr "Ввімкнено"
 
-#: src/muuli_wdr.cpp:1577
+#: src/muuli_wdr.cpp:1579
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
 msgstr "Вдосконалена Р.О.П. довіряє всім хешам (не радимо)"
 
-#: src/muuli_wdr.cpp:1584
+#: src/muuli_wdr.cpp:1586
 msgid "Add files to download in pause mode"
 msgstr "Додати файли для звантаження призупиненими"
 
-#: src/muuli_wdr.cpp:1586
+#: src/muuli_wdr.cpp:1588
 msgid "Add files to download with auto priority"
 msgstr "Додати файли для звантаження з автоматичною перевагою"
 
-#: src/muuli_wdr.cpp:1589
+#: src/muuli_wdr.cpp:1591
 msgid "Try to download first and last chunks first"
 msgstr "Спробувати спершу звантажити перший та останній шматки"
 
-#: src/muuli_wdr.cpp:1593
+#: src/muuli_wdr.cpp:1595
 msgid "Endgame mode: rotate to faster sources for the final blocks"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1596
+#: src/muuli_wdr.cpp:1598
 msgid "Start next paused file when a file completes"
 msgstr "Запустити наступний призупинений файл, коли файл завершиться"
 
-#: src/muuli_wdr.cpp:1599
+#: src/muuli_wdr.cpp:1601
 msgid "From the same category"
 msgstr "З тієї самої категорії"
 
-#: src/muuli_wdr.cpp:1601
+#: src/muuli_wdr.cpp:1603
 msgid "In alphabetic order"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1603
+#: src/muuli_wdr.cpp:1605
 msgid "Preallocate disk space for new files"
 msgstr "Попереднє виділення місця на диску для нових файлів"
 
-#: src/muuli_wdr.cpp:1604
+#: src/muuli_wdr.cpp:1606
 msgid "For new files preallocates disk space for the whole file, thus reduces fragmentation"
 msgstr "Повністю виділяти місце для всього нового файлу, це зменшить фрагментування"
 
-#: src/muuli_wdr.cpp:1609
+#: src/muuli_wdr.cpp:1611
 msgid "Stop downloads when free disk space reaches "
 msgstr "Припинити звантаження коли вільне місце на диску досягнуло "
 
-#: src/muuli_wdr.cpp:1610
+#: src/muuli_wdr.cpp:1612
 msgid "Select this if you want aMule to check your disk space"
 msgstr "Виберіть це якщо хочете, щоб aMule перевіряв ваше місце на диску"
 
-#: src/muuli_wdr.cpp:1614
+#: src/muuli_wdr.cpp:1616
 msgid "Enter here the min disk space desired."
 msgstr "Введіть найменше бажане місце на диску"
 
-#: src/muuli_wdr.cpp:1620
+#: src/muuli_wdr.cpp:1622
 msgid "Save 10 sources on rare files (< 20 sources)"
 msgstr "Зберегти 10 джерел рідкісних файлів (менше ніж 20 джерел)"
 
-#: src/muuli_wdr.cpp:1624 src/Statistics.cpp:790
+#: src/muuli_wdr.cpp:1626 src/Statistics.cpp:790
 msgid "Uploads"
 msgstr "Вивантаження"
 
-#: src/muuli_wdr.cpp:1627
+#: src/muuli_wdr.cpp:1629
 msgid "Add new shared files with auto priority"
 msgstr "Додати нові спільні файли з автоматичною перевагою"
 
-#: src/muuli_wdr.cpp:1638 src/PrefsUnifiedDlg.cpp:1785
+#: src/muuli_wdr.cpp:1640 src/PrefsUnifiedDlg.cpp:1785
 msgid "Media metadata extraction"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1642
+#: src/muuli_wdr.cpp:1644
 msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1644
+#: src/muuli_wdr.cpp:1646
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1651
+#: src/muuli_wdr.cpp:1653
 msgid "Path to ffprobe:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1656
+#: src/muuli_wdr.cpp:1658
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1664
+#: src/muuli_wdr.cpp:1666
 msgid "Detect"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1665
+#: src/muuli_wdr.cpp:1667
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1685
+#: src/muuli_wdr.cpp:1687
 msgid "Destination folder for downloads"
 msgstr "Тека призначення для звантажень"
 
-#: src/muuli_wdr.cpp:1689
+#: src/muuli_wdr.cpp:1691
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1692
+#: src/muuli_wdr.cpp:1694
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1696
+#: src/muuli_wdr.cpp:1698
 msgid "(All files in this folder are shared with other peers)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1698
+#: src/muuli_wdr.cpp:1700
 msgid "Folder for temporary download files"
 msgstr "Тека для тимчасових звантажуваних файлів"
 
-#: src/muuli_wdr.cpp:1706
+#: src/muuli_wdr.cpp:1708
 msgid "Shared folders"
 msgstr "Спільні теки"
 
-#: src/muuli_wdr.cpp:1709
+#: src/muuli_wdr.cpp:1711
 msgid "(Right click on folder icon for recursive share)"
 msgstr "(Праве клацання по значку теки для рекурсивного додавання)"
 
-#: src/muuli_wdr.cpp:1715
+#: src/muuli_wdr.cpp:1717
 msgid "Share hidden files"
 msgstr "Робити спільними приховані файли"
 
-#: src/muuli_wdr.cpp:1721
+#: src/muuli_wdr.cpp:1723
 msgid "Automatically rescan shared folders for changes"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1727
+#: src/muuli_wdr.cpp:1729
 msgid "Follow symbolic links in shared folders"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1733
+#: src/muuli_wdr.cpp:1735
 msgid "Exclude files matching:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1736
+#: src/muuli_wdr.cpp:1738
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1740
+#: src/muuli_wdr.cpp:1742
 msgid "Patterns are regular expressions"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1741
+#: src/muuli_wdr.cpp:1743
 msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1751
+#: src/muuli_wdr.cpp:1753
 msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1772
+#: src/muuli_wdr.cpp:1774
 msgid "Graphs"
 msgstr "Графіки"
 
-#: src/muuli_wdr.cpp:1775 src/muuli_wdr.cpp:1837
+#: src/muuli_wdr.cpp:1777 src/muuli_wdr.cpp:1839
 msgid "Update delay : 5 secs"
 msgstr "Час оновлення: 5 с"
 
-#: src/muuli_wdr.cpp:1779
+#: src/muuli_wdr.cpp:1781
 msgid "Time for average graph: 100 mins"
 msgstr "Час для середніх графіків: 100 хв"
 
-#: src/muuli_wdr.cpp:1783
+#: src/muuli_wdr.cpp:1785
 msgid "Connections Graph Scale: 100 "
 msgstr "Шкала графіку з'єднань: 100"
 
-#: src/muuli_wdr.cpp:1790
+#: src/muuli_wdr.cpp:1792
 msgid "Download graph scale:"
 msgstr "Шкала графіку звантаження"
 
-#: src/muuli_wdr.cpp:1798
+#: src/muuli_wdr.cpp:1800
 msgid "Upload graph scale:"
 msgstr "Шкала графіку вивантаження"
 
-#: src/muuli_wdr.cpp:1808
+#: src/muuli_wdr.cpp:1810
 #, fuzzy
 msgid "Colors: "
 msgstr "Кольори: "
 
-#: src/muuli_wdr.cpp:1812
+#: src/muuli_wdr.cpp:1814
 msgid "Background"
 msgstr "Фон"
 
-#: src/muuli_wdr.cpp:1813
+#: src/muuli_wdr.cpp:1815
 msgid "Grid"
 msgstr "Сітка"
 
-#: src/muuli_wdr.cpp:1814
+#: src/muuli_wdr.cpp:1816
 msgid "Download current"
 msgstr "Звантаження зараз"
 
-#: src/muuli_wdr.cpp:1815
+#: src/muuli_wdr.cpp:1817
 msgid "Download running average"
 msgstr "Звантаження середні за роботу"
 
-#: src/muuli_wdr.cpp:1816
+#: src/muuli_wdr.cpp:1818
 msgid "Download session average"
 msgstr "Звантаження середні за сесію"
 
-#: src/muuli_wdr.cpp:1817
+#: src/muuli_wdr.cpp:1819
 msgid "Upload current"
 msgstr "Вивантаження поточні"
 
-#: src/muuli_wdr.cpp:1818
+#: src/muuli_wdr.cpp:1820
 msgid "Upload running average"
 msgstr "Вивантаження середні за роботу"
 
-#: src/muuli_wdr.cpp:1819
+#: src/muuli_wdr.cpp:1821
 msgid "Upload session average"
 msgstr "Вивантаження середні за сесію"
 
-#: src/muuli_wdr.cpp:1820
+#: src/muuli_wdr.cpp:1822
 msgid "Active connections"
 msgstr "Чинні з'єднання"
 
-#: src/muuli_wdr.cpp:1823
+#: src/muuli_wdr.cpp:1825
 #, fuzzy
 msgid "Systray Icon Speed Bar"
 msgstr "Показувати стовпчик швидкості в системному лотку"
 
-#: src/muuli_wdr.cpp:1824
+#: src/muuli_wdr.cpp:1826
 msgid "Kad-nodes current"
 msgstr "Вузлів Kad зараз"
 
-#: src/muuli_wdr.cpp:1825
+#: src/muuli_wdr.cpp:1827
 msgid "Kad-nodes running"
 msgstr "Вузлів Kad запущено"
 
-#: src/muuli_wdr.cpp:1826
+#: src/muuli_wdr.cpp:1828
 msgid "Kad-nodes session"
 msgstr "Вузлів Kad за сесію"
 
-#: src/muuli_wdr.cpp:1830 src/muuli_wdr.cpp:2235
+#: src/muuli_wdr.cpp:1832 src/muuli_wdr.cpp:2237
 msgid "Select"
 msgstr "Вибрати"
 
-#: src/muuli_wdr.cpp:1834
+#: src/muuli_wdr.cpp:1836
 msgid "Tree"
 msgstr "Дерево"
 
-#: src/muuli_wdr.cpp:1844
+#: src/muuli_wdr.cpp:1846
 msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Кількість відображуваних версій клієнтів (0=необмежено)"
 
-#: src/muuli_wdr.cpp:1869
+#: src/muuli_wdr.cpp:1871
 msgid "!!! WARNING !!!"
 msgstr "!!! ЗАСТЕРЕЖЕННЯ !!!"
 
-#: src/muuli_wdr.cpp:1884
+#: src/muuli_wdr.cpp:1886
 msgid "Max new connections / 5 secs"
 msgstr "Найбільше зовнішніх з'єднань за 5 с"
 
-#: src/muuli_wdr.cpp:1886
+#: src/muuli_wdr.cpp:1888
 msgid "Concurrent Kad source lookups"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1888
+#: src/muuli_wdr.cpp:1890
 #, fuzzy
 msgid "Kad source re-search interval (minutes)"
 msgstr "Час оновлення FTP в хвилинах"
 
-#: src/muuli_wdr.cpp:1890
+#: src/muuli_wdr.cpp:1892
 #, fuzzy
 msgid "Source re-ask interval (minutes)"
 msgstr "Час оновлення FTP в хвилинах"
 
-#: src/muuli_wdr.cpp:1894
+#: src/muuli_wdr.cpp:1896
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Розмір файлу буфера: 240000 байт"
 
-#: src/muuli_wdr.cpp:1898
+#: src/muuli_wdr.cpp:1900
 msgid "Upload Queue Size: 5000 clients"
 msgstr "Розмір черги вивантаження: 5000 клієнтів"
 
-#: src/muuli_wdr.cpp:1902
+#: src/muuli_wdr.cpp:1904
 msgid "Server connection refresh interval: Disable"
 msgstr "Час оновлення з'єднання з сервером: вимкнено"
 
-#: src/muuli_wdr.cpp:1906
+#: src/muuli_wdr.cpp:1908
 msgid "Disable computer's timed standby mode"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1925
+#: src/muuli_wdr.cpp:1927
 msgid "Skin to use: "
 msgstr "Використати шкіру: "
 
-#: src/muuli_wdr.cpp:1934
+#: src/muuli_wdr.cpp:1936
 msgid "Show \"Fast eD2k Links Handler\" in every window."
 msgstr "Показати \"Швидкий оброблювач eD2k-посилань\" в кожному вікні."
 
-#: src/muuli_wdr.cpp:1937
+#: src/muuli_wdr.cpp:1939
 msgid "Show extended info on categories tabs"
 msgstr "Показати розширену інформацію на вкладках категорій"
 
-#: src/muuli_wdr.cpp:1940
+#: src/muuli_wdr.cpp:1942
 #, fuzzy
 msgid "Show application version on title"
 msgstr "Показувати швидкість передавання в заголовку"
 
-#: src/muuli_wdr.cpp:1942
+#: src/muuli_wdr.cpp:1944
 msgid "Show transfer rates on title"
 msgstr "Показувати швидкість передавання в заголовку"
 
-#: src/muuli_wdr.cpp:1944
+#: src/muuli_wdr.cpp:1946
 msgid "Before application name"
 msgstr "Перед назвою програми"
 
-#: src/muuli_wdr.cpp:1946
+#: src/muuli_wdr.cpp:1948
 msgid "After application name"
 msgstr "Після назви програми"
 
-#: src/muuli_wdr.cpp:1949
+#: src/muuli_wdr.cpp:1951
 msgid "Show overhead bandwidth"
 msgstr "Показати ширину смуги службового трафіку"
 
-#: src/muuli_wdr.cpp:1953
+#: src/muuli_wdr.cpp:1955
 msgid "Vertical toolbar orientation"
 msgstr "Вертикальне розміщення панелі інструментів"
 
-#: src/muuli_wdr.cpp:1959
+#: src/muuli_wdr.cpp:1961
 msgid "Download Queue Files"
 msgstr "Звантажити файли в черзі"
 
-#: src/muuli_wdr.cpp:1962
+#: src/muuli_wdr.cpp:1964
 msgid "Show progress percentage"
 msgstr "Показувати поступ у відсотках"
 
-#: src/muuli_wdr.cpp:1968
+#: src/muuli_wdr.cpp:1970
 msgid "Show progress bar"
 msgstr "Показувати панель поступу"
 
-#: src/muuli_wdr.cpp:1971
+#: src/muuli_wdr.cpp:1973
 msgid "Flat"
 msgstr "Плаский"
 
-#: src/muuli_wdr.cpp:1975
+#: src/muuli_wdr.cpp:1977
 msgid "Round"
 msgstr "Круглий"
 
-#: src/muuli_wdr.cpp:1978
+#: src/muuli_wdr.cpp:1980
 msgid "Auto-sort files (high CPU)"
 msgstr "Автоматично впорядковувати файли (багато ресурсів CPU)"
 
-#: src/muuli_wdr.cpp:1980
+#: src/muuli_wdr.cpp:1982
 msgid "aMule will sort the columns in your download list automatically"
 msgstr "aMule буде автоматично впорядковувати стовпці в переліку звантажень"
 
-#: src/muuli_wdr.cpp:1997
+#: src/muuli_wdr.cpp:1999
 msgid "External Connection Parameters"
 msgstr "Параметри зовнішніх з'єднань"
 
-#: src/muuli_wdr.cpp:2000
+#: src/muuli_wdr.cpp:2002
 msgid "Accept external connections"
 msgstr "Дозволити зовнішні з'єднання"
 
-#: src/muuli_wdr.cpp:2007 src/muuli_wdr.cpp:2051
+#: src/muuli_wdr.cpp:2009 src/muuli_wdr.cpp:2053
 msgid "IP of the listening interface:"
 msgstr "IP-адреса інтерфейса:"
 
-#: src/muuli_wdr.cpp:2010
+#: src/muuli_wdr.cpp:2012
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
 msgstr "Введіть IP-адресу в вірному форматі a.b.c.d для прослуховування EC-інтерфейсу. Порожнє поле або 0.0.0.0 означатиме всі."
 
-#: src/muuli_wdr.cpp:2016 src/muuli_wdr.cpp:2095
+#: src/muuli_wdr.cpp:2018 src/muuli_wdr.cpp:2097
 msgid "TCP port:"
 msgstr "Порт TCP:"
 
-#: src/muuli_wdr.cpp:2022
+#: src/muuli_wdr.cpp:2024
 msgid "Enable UPnP port forwarding on the EC port"
 msgstr "Ввімкнути UPnP перенаправлення для EC-порту"
 
-#: src/muuli_wdr.cpp:2026 src/muuli_wdr.cpp:2952
+#: src/muuli_wdr.cpp:2028 src/muuli_wdr.cpp:2954
 #: src/utils/wxCas/src/wxcasprefs.cpp:167
 msgid "Password"
 msgstr "Пароль"
 
-#: src/muuli_wdr.cpp:2032
+#: src/muuli_wdr.cpp:2034
 #, fuzzy
 msgid "aMule API server parameters"
 msgstr "Налаштування веб-сервера"
 
-#: src/muuli_wdr.cpp:2035
+#: src/muuli_wdr.cpp:2037
 msgid "Run amuleapi (REST API) on startup"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2040
+#: src/muuli_wdr.cpp:2042
 #, fuzzy
 msgid "HTTP port:"
 msgstr "Порт TCP:"
 
-#: src/muuli_wdr.cpp:2054
+#: src/muuli_wdr.cpp:2056
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2057
+#: src/muuli_wdr.cpp:2059
 #, fuzzy
 msgid "Admin password"
 msgstr "Перевіряється пароль\n"
 
-#: src/muuli_wdr.cpp:2065
+#: src/muuli_wdr.cpp:2067
 msgid "Web server parameters"
 msgstr "Налаштування веб-сервера"
 
-#: src/muuli_wdr.cpp:2068
+#: src/muuli_wdr.cpp:2070
 #, fuzzy
 msgid "Run webserver on startup (deprecated)"
 msgstr "Запустити веб-сервер під час запуску"
 
-#: src/muuli_wdr.cpp:2074
+#: src/muuli_wdr.cpp:2076
 msgid "Web template"
 msgstr "Веб шаблон"
 
-#: src/muuli_wdr.cpp:2079
+#: src/muuli_wdr.cpp:2081
 msgid "Full rights password"
 msgstr "Пароль повних прав"
 
-#: src/muuli_wdr.cpp:2083
+#: src/muuli_wdr.cpp:2085
 msgid "Enable Low rights User"
 msgstr "Ввімкнути користувача з низькими правами"
 
-#: src/muuli_wdr.cpp:2088
+#: src/muuli_wdr.cpp:2090
 msgid "Low rights password"
 msgstr "Пароль низьких прав"
 
-#: src/muuli_wdr.cpp:2102
+#: src/muuli_wdr.cpp:2104
 msgid "Enable UPnP port forwarding of the web server port"
 msgstr "Ввімкнути UPnP перенаправлення портів для порту веб-сервера"
 
-#: src/muuli_wdr.cpp:2107
+#: src/muuli_wdr.cpp:2109
 msgid "Web server UPnP TCP port (Optional)"
 msgstr "UPnP TCP-порт веб-сервера (не обов'язково)"
 
-#: src/muuli_wdr.cpp:2115
+#: src/muuli_wdr.cpp:2117
 msgid "Page Refresh Time (in secs)"
 msgstr "Час оновлення сторінки (с)"
 
-#: src/muuli_wdr.cpp:2122
+#: src/muuli_wdr.cpp:2124
 msgid "Enable Gzip compression"
 msgstr "Дозволити Gzip-стиснення"
 
-#: src/muuli_wdr.cpp:2156
+#: src/muuli_wdr.cpp:2158
 #, fuzzy
 msgid "Reset page to defaults"
 msgstr "Мова системи"
 
-#: src/muuli_wdr.cpp:2157
+#: src/muuli_wdr.cpp:2159
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2159 src/muuli_wdr.cpp:2245 src/ServerWnd.cpp:233
+#: src/muuli_wdr.cpp:2161 src/muuli_wdr.cpp:2247 src/ServerWnd.cpp:233
 #: src/ServerWnd.cpp:241
 msgid "OK"
 msgstr "Гаразд"
 
-#: src/muuli_wdr.cpp:2161
+#: src/muuli_wdr.cpp:2163
 msgid "Click here to apply any changes made to the preferences."
 msgstr "Натисніть тут щоб застосувати зміни зроблені в налаштуваннях."
 
-#: src/muuli_wdr.cpp:2164
+#: src/muuli_wdr.cpp:2166
 msgid "Reset any changes made to the preferences."
 msgstr "Скинути всі зміни внесені в налаштування."
 
-#: src/muuli_wdr.cpp:2193
+#: src/muuli_wdr.cpp:2195
 msgid "Comment :"
 msgstr "Коментар:"
 
-#: src/muuli_wdr.cpp:2200
+#: src/muuli_wdr.cpp:2202
 msgid "Incoming Dir :"
 msgstr "Вхідна тека:"
 
-#: src/muuli_wdr.cpp:2209
+#: src/muuli_wdr.cpp:2211
 msgid "Change priority for new assigned files :"
 msgstr "Змінити перевагу для нового призначеного файлу:"
 
-#: src/muuli_wdr.cpp:2213
+#: src/muuli_wdr.cpp:2215
 #, fuzzy
 msgid "Don't change"
 msgstr "Не змінювати"
 
-#: src/muuli_wdr.cpp:2225
+#: src/muuli_wdr.cpp:2227
 msgid "Select color for this Category (currently selected) :"
 msgstr "Виберіть колір для цієї категорії (зараз вибрано):"
 
-#: src/muuli_wdr.cpp:2292 src/muuli_wdr.cpp:2311
+#: src/muuli_wdr.cpp:2294 src/muuli_wdr.cpp:2313
 msgid "Click this button to reset the log."
 msgstr "Натисніть цю кнопку, щоб очистити часопис."
 
-#: src/muuli_wdr.cpp:2330
+#: src/muuli_wdr.cpp:2332
 msgid "Click on this button to update the servers list from URL ..."
 msgstr "Натисніть на кнопку щоб оновити перелік серверів з адреси..."
 
-#: src/muuli_wdr.cpp:2334
+#: src/muuli_wdr.cpp:2336
 msgid "Server list"
 msgstr "Перелік серверів"
 
-#: src/muuli_wdr.cpp:2338
+#: src/muuli_wdr.cpp:2340
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 msgstr "Введіть адресу файлу server.met та натисніть кнопку ліворуч щоб оновити перелік відомих серверів."
 
-#: src/muuli_wdr.cpp:2343
+#: src/muuli_wdr.cpp:2345
 msgid "Add server manually: Name"
 msgstr "Додати сервер вручну: Назва"
 
-#: src/muuli_wdr.cpp:2346
+#: src/muuli_wdr.cpp:2348
 msgid "Enter the name of the new server here"
 msgstr "Введіть тут назву нового сервера"
 
-#: src/muuli_wdr.cpp:2348 src/ServerWnd.cpp:180
+#: src/muuli_wdr.cpp:2350 src/ServerWnd.cpp:180
 msgid "IP:Port"
 msgstr "IP:Порт"
 
-#: src/muuli_wdr.cpp:2351
+#: src/muuli_wdr.cpp:2353
 msgid "Enter the IP of the server here, using the x.x.x.x format."
 msgstr "Тут введіть IP-адресу сервера, використовуючи формат x.x.x.x."
 
-#: src/muuli_wdr.cpp:2357
+#: src/muuli_wdr.cpp:2359
 msgid "Enter the port of the server here."
 msgstr "Введіть тут порт сервера."
 
-#: src/muuli_wdr.cpp:2360
+#: src/muuli_wdr.cpp:2362
 msgid "Add manually a server (fill fields to the left before) ..."
 msgstr "Додати сервер вручну (заповніть поля ліворуч)..."
 
-#: src/muuli_wdr.cpp:2389
+#: src/muuli_wdr.cpp:2391
 msgid "aMule Log"
 msgstr "Часопис aMule"
 
-#: src/muuli_wdr.cpp:2393
+#: src/muuli_wdr.cpp:2395
 msgid "Server Info"
 msgstr "Інфо сервера"
 
-#: src/muuli_wdr.cpp:2397
+#: src/muuli_wdr.cpp:2399
 msgid "ED2K Info"
 msgstr "Інфо eD2k"
 
-#: src/muuli_wdr.cpp:2401
+#: src/muuli_wdr.cpp:2403
 msgid "Kad Info"
 msgstr "Інфо Kad"
 
-#: src/muuli_wdr.cpp:2429
+#: src/muuli_wdr.cpp:2431
 msgid "Click on this button to update the nodes list from URL ..."
 msgstr "Натисніть на цю кнопку щоб оновити перелік вузлів з URL..."
 
-#: src/muuli_wdr.cpp:2433
+#: src/muuli_wdr.cpp:2435
 msgid "Nodes (0)"
 msgstr "Вузли (0)"
 
-#: src/muuli_wdr.cpp:2437
+#: src/muuli_wdr.cpp:2439
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
 msgstr "Введіть адресу файлу nodes.dat та натисніть кнопку ліворуч щоб оновити перелік відомих вузлів. "
 
-#: src/muuli_wdr.cpp:2440
+#: src/muuli_wdr.cpp:2442
 msgid "Nodes stats"
 msgstr "Статистика вузлів"
 
-#: src/muuli_wdr.cpp:2482
+#: src/muuli_wdr.cpp:2484
 msgid "Bootstrap"
 msgstr "Початковий запуск"
 
-#: src/muuli_wdr.cpp:2485
+#: src/muuli_wdr.cpp:2487
 msgid "New node"
 msgstr "Новий вузол"
 
-#: src/muuli_wdr.cpp:2490
+#: src/muuli_wdr.cpp:2492
 msgid "IP:"
 msgstr "IP:"
 
-#: src/muuli_wdr.cpp:2510
+#: src/muuli_wdr.cpp:2512
 msgid "Port:"
 msgstr "Порт:"
 
-#: src/muuli_wdr.cpp:2523
+#: src/muuli_wdr.cpp:2525
 #, fuzzy
 msgid "Bootstrap from known clients"
 msgstr ""
 "Початковий запуск\n"
 "відомого клієнта"
 
-#: src/muuli_wdr.cpp:2525
+#: src/muuli_wdr.cpp:2527
 msgid "Disconnect Kad"
 msgstr "Від'єднатися від Kad"
 
-#: src/muuli_wdr.cpp:2559
+#: src/muuli_wdr.cpp:2561
 msgid "Use Secure User Identification"
 msgstr "Використовувати безпечну ідентифікацію користувача"
 
-#: src/muuli_wdr.cpp:2561
+#: src/muuli_wdr.cpp:2563
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
 msgstr "Рекомендовано ввімкнути цю опцію. Ви не отримаєте довіру якщо безпечна ідентифікація вимкнена."
 
-#: src/muuli_wdr.cpp:2563
+#: src/muuli_wdr.cpp:2565
 msgid "Protocol Obfuscation"
 msgstr "Приховування протоколу"
 
-#: src/muuli_wdr.cpp:2566
+#: src/muuli_wdr.cpp:2568
 msgid "Support Protocol Obfuscation"
 msgstr "Підтримка приховування протоколу"
 
-#: src/muuli_wdr.cpp:2568
+#: src/muuli_wdr.cpp:2570
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
 msgstr "Ця опція вмикає приховування протоколу та дозволяє aMule приймати приховані з'єднання від інших клієнтів."
 
-#: src/muuli_wdr.cpp:2570
+#: src/muuli_wdr.cpp:2572
 msgid "Use obfuscation for outgoing connections"
 msgstr "Використовувати приховування для вихідних з'єднань"
 
-#: src/muuli_wdr.cpp:2572
+#: src/muuli_wdr.cpp:2574
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
 msgstr "Ця опція вмикає приховування протоколу під час з'єдання з іншими клієнтами/серверами."
 
-#: src/muuli_wdr.cpp:2574
+#: src/muuli_wdr.cpp:2576
 msgid "Accept only obfuscated connections"
 msgstr "Приймати тільки приховані з'єднання"
 
-#: src/muuli_wdr.cpp:2575
+#: src/muuli_wdr.cpp:2577
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
 msgstr "Приймати приховані з'єднання. Будете мати менше джерел, але весь ваш трафік буде приховано"
 
-#: src/muuli_wdr.cpp:2580
+#: src/muuli_wdr.cpp:2582
 msgid "Everybody"
 msgstr "Кожен"
 
-#: src/muuli_wdr.cpp:2582
+#: src/muuli_wdr.cpp:2584
 msgid "No one"
 msgstr "Жоден"
 
-#: src/muuli_wdr.cpp:2584
+#: src/muuli_wdr.cpp:2586
 msgid "Who can see my shared files:"
 msgstr "Хто може бачити мої спільні файли:"
 
-#: src/muuli_wdr.cpp:2585
+#: src/muuli_wdr.cpp:2587
 msgid "Select who can request to view a list of your shared files."
 msgstr "Оберіть тих, хто може запитати перелік ваших спільних файлів."
 
-#: src/muuli_wdr.cpp:2587
+#: src/muuli_wdr.cpp:2589
 msgid "IP-Filtering"
 msgstr "IP-фільтрування"
 
-#: src/muuli_wdr.cpp:2594
+#: src/muuli_wdr.cpp:2596
 msgid "Filter clients"
 msgstr "Фільтрувати клієнтів"
 
-#: src/muuli_wdr.cpp:2596
+#: src/muuli_wdr.cpp:2598
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "Ввімкнено фільтрування IP-адрес клієнтів, що визначені в файлі ~/.aMule/ipfilter.dat."
 
-#: src/muuli_wdr.cpp:2598
+#: src/muuli_wdr.cpp:2600
 msgid "Filter servers"
 msgstr "Фільтрувати сервери"
 
-#: src/muuli_wdr.cpp:2600
+#: src/muuli_wdr.cpp:2602
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "Ввімкнено фільтрування IP-адрес серверів, що визначені в файлі ~/.aMule/ipfilter.dat."
 
-#: src/muuli_wdr.cpp:2604
+#: src/muuli_wdr.cpp:2606
 msgid "Reload List"
 msgstr "Перезавантажити перелік"
 
-#: src/muuli_wdr.cpp:2605
+#: src/muuli_wdr.cpp:2607
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
 msgstr "Перезавантажити перелік IP-адрес для фільтрування з файлу ~/.aMule/ipfilter.dat"
 
-#: src/muuli_wdr.cpp:2611
+#: src/muuli_wdr.cpp:2613
 msgid "URL:"
 msgstr "URL:"
 
-#: src/muuli_wdr.cpp:2615 src/muuli_wdr.cpp:2808
+#: src/muuli_wdr.cpp:2617 src/muuli_wdr.cpp:2810
 msgid "Update now"
 msgstr "Оновити зараз"
 
-#: src/muuli_wdr.cpp:2618
+#: src/muuli_wdr.cpp:2620
 msgid "Auto-update ipfilter at startup"
 msgstr "Автоматичне оновлення IP-фільтру після запуску"
 
-#: src/muuli_wdr.cpp:2622
+#: src/muuli_wdr.cpp:2624
 msgid "Filtering Level:"
 msgstr "Рівень фільтра:"
 
-#: src/muuli_wdr.cpp:2628
+#: src/muuli_wdr.cpp:2630
 msgid "Always filter LAN IPs"
 msgstr "Завжди відфільтровувати IP-адреси локальних мереж"
 
-#: src/muuli_wdr.cpp:2631
+#: src/muuli_wdr.cpp:2633
 msgid "Paranoid handling of non-matching IPs"
 msgstr "Параноїдальна обробка IP-адрес, що не співпали"
 
-#: src/muuli_wdr.cpp:2633
+#: src/muuli_wdr.cpp:2635
 msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 msgstr "Відкинути пакет якщо IP-адреса клієнта відрізняється від IP-адреси з якої прийшов пакет. Використовуйте обережно."
 
-#: src/muuli_wdr.cpp:2635
+#: src/muuli_wdr.cpp:2637
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Використовувати системний ipfilter.dat якщо наявний"
 
-#: src/muuli_wdr.cpp:2636
+#: src/muuli_wdr.cpp:2638
 #, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
 msgstr "Якщо не знайдено місцевий ipfilter.dat, дозволити використання системного."
 
-#: src/muuli_wdr.cpp:2653
+#: src/muuli_wdr.cpp:2655
 msgid "Enable Online-Signature"
 msgstr "Ввімкнути онлайн-підпис"
 
-#: src/muuli_wdr.cpp:2655
+#: src/muuli_wdr.cpp:2657
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
 msgstr "Ввімкнути запис файлу ОС, який може бути використано зовнішніми програмами для створення підписів та подібного."
 
-#: src/muuli_wdr.cpp:2659
+#: src/muuli_wdr.cpp:2661
 msgid "Update Frequency (Secs):"
 msgstr "Частота оновлення (с)"
 
-#: src/muuli_wdr.cpp:2662
+#: src/muuli_wdr.cpp:2664
 msgid "Change the frequency (in seconds) of Online Signature updates."
 msgstr "Змінити частоту (в секундах) оновлень онлайн-підписів."
 
-#: src/muuli_wdr.cpp:2670
+#: src/muuli_wdr.cpp:2672
 msgid "Save online signature file in: "
 msgstr "Зберегти файл онлайн-підпису в: "
 
-#: src/muuli_wdr.cpp:2676
+#: src/muuli_wdr.cpp:2678
 msgid "Click here to select the directory containing the the Online Signature files."
 msgstr "Натисніть тут, щоб вибрати теку, що містить файли з онлайн-підписами."
 
-#: src/muuli_wdr.cpp:2709
+#: src/muuli_wdr.cpp:2711
 msgid "Show country flags for clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2710
+#: src/muuli_wdr.cpp:2712
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2715
+#: src/muuli_wdr.cpp:2717
 #, fuzzy
 msgid "Database"
 msgstr "Швидкість передачі:"
 
-#: src/muuli_wdr.cpp:2731
+#: src/muuli_wdr.cpp:2733
 #, fuzzy
 msgid "Source:"
 msgstr "Джерела"
 
-#: src/muuli_wdr.cpp:2734
+#: src/muuli_wdr.cpp:2736
 msgid "DB-IP (free, no account)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2735
+#: src/muuli_wdr.cpp:2737
 msgid "MaxMind GeoLite2 (free, account required)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2736
+#: src/muuli_wdr.cpp:2738
 msgid "Custom URL"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2739
+#: src/muuli_wdr.cpp:2741
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2756
+#: src/muuli_wdr.cpp:2758
 msgid ""
 "No configuration required.\n"
 "\n"
@@ -4580,11 +4623,11 @@ msgid ""
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2769
+#: src/muuli_wdr.cpp:2771
 msgid "License key:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2775
+#: src/muuli_wdr.cpp:2777
 msgid ""
 "Sign up for a free MaxMind account, then generate a License Key:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
@@ -4594,232 +4637,232 @@ msgid ""
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2790
+#: src/muuli_wdr.cpp:2792
 #, fuzzy
 msgid "Download URL:"
 msgstr "Звантаження: "
 
-#: src/muuli_wdr.cpp:2796
+#: src/muuli_wdr.cpp:2798
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2809
+#: src/muuli_wdr.cpp:2811
 msgid "Download the GeoIP database from the selected source."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2811
+#: src/muuli_wdr.cpp:2813
 #, fuzzy
 msgid "Auto-update on startup"
 msgstr "Автоматичне оновлення IP-фільтру після запуску"
 
-#: src/muuli_wdr.cpp:2812
+#: src/muuli_wdr.cpp:2814
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2835
+#: src/muuli_wdr.cpp:2837
 msgid "Filter incoming messages (except current chat):"
 msgstr "Фільтрувати вхідні повідомлення (окрім поточної розмови):"
 
-#: src/muuli_wdr.cpp:2837
+#: src/muuli_wdr.cpp:2839
 msgid "Filter all messages"
 msgstr "Фільтрувати всі повідомлення"
 
-#: src/muuli_wdr.cpp:2839
+#: src/muuli_wdr.cpp:2841
 msgid "Filter messages from people not on your friend list"
 msgstr "Фільтрувати повідомлення від людей, що не в вашому переліку друзів"
 
-#: src/muuli_wdr.cpp:2841
+#: src/muuli_wdr.cpp:2843
 msgid "Filter messages from unknown clients"
 msgstr "Фільтрувати повідомлення від невідомих клієнтів"
 
-#: src/muuli_wdr.cpp:2843
+#: src/muuli_wdr.cpp:2845
 msgid "Filter messages containing (use ',' as separator):"
 msgstr "Фільтрувати повідомлення, що містять (використовуйте ',' для переліку):"
 
-#: src/muuli_wdr.cpp:2846 src/muuli_wdr.cpp:2857
+#: src/muuli_wdr.cpp:2848 src/muuli_wdr.cpp:2859
 msgid "add here the words amule should filter and block messages including it"
 msgstr "додати слова, які aMule буде фільтрувати, та забороняти повідомлення, що їх містять"
 
-#: src/muuli_wdr.cpp:2848
+#: src/muuli_wdr.cpp:2850
 msgid "Show received messages in the log"
 msgstr "Показувати отримані повідомлення в часописі"
 
-#: src/muuli_wdr.cpp:2851
+#: src/muuli_wdr.cpp:2853
 msgid "Comments"
 msgstr "Коментарі"
 
-#: src/muuli_wdr.cpp:2854
+#: src/muuli_wdr.cpp:2856
 msgid "Filter comments containing (use ',' as separator):"
 msgstr "Фільтрувати коментарі, що містять (використовуйте ',' для переліку):"
 
-#: src/muuli_wdr.cpp:2877
+#: src/muuli_wdr.cpp:2879
 msgid "Enable authentication"
 msgstr "Включити авторизацію"
 
-#: src/muuli_wdr.cpp:2878
+#: src/muuli_wdr.cpp:2880
 msgid "Enable/disable username/password authentication"
 msgstr "Ввімкнути/вимкнути аутентифікацію з ім'ям/паролем"
 
-#: src/muuli_wdr.cpp:2881
+#: src/muuli_wdr.cpp:2883
 msgid "Username: "
 msgstr "Ім'я користувача: "
 
-#: src/muuli_wdr.cpp:2884
+#: src/muuli_wdr.cpp:2886
 msgid "The username to use to connect to the proxy"
 msgstr "Ім'я користувача для з'єднання з проксі"
 
-#: src/muuli_wdr.cpp:2886
+#: src/muuli_wdr.cpp:2888
 msgid "Password:"
 msgstr "Пароль:"
 
-#: src/muuli_wdr.cpp:2889
+#: src/muuli_wdr.cpp:2891
 msgid "The password to use to connect to the proxy"
 msgstr "Пароль для з'єднання з проксі"
 
-#: src/muuli_wdr.cpp:2891
+#: src/muuli_wdr.cpp:2893
 msgid "Enable Proxy"
 msgstr "Ввімкнути проксі"
 
-#: src/muuli_wdr.cpp:2892
+#: src/muuli_wdr.cpp:2894
 msgid "Enable/disable proxy support"
 msgstr "Ввімкнути/вимкнути підтримку проксі"
 
-#: src/muuli_wdr.cpp:2895
+#: src/muuli_wdr.cpp:2897
 msgid "Proxy type:"
 msgstr "Тип проксі:"
 
-#: src/muuli_wdr.cpp:2906
+#: src/muuli_wdr.cpp:2908
 msgid "Proxy host:"
 msgstr "Хост проксі:"
 
-#: src/muuli_wdr.cpp:2909
+#: src/muuli_wdr.cpp:2911
 msgid "The proxy host name"
 msgstr "Ім'я хосту проксі"
 
-#: src/muuli_wdr.cpp:2911
+#: src/muuli_wdr.cpp:2913
 msgid "Proxy port:"
 msgstr "Порт проксі:"
 
-#: src/muuli_wdr.cpp:2914
+#: src/muuli_wdr.cpp:2916
 msgid "The proxy port"
 msgstr "Порт проксі"
 
-#: src/muuli_wdr.cpp:2933
+#: src/muuli_wdr.cpp:2935
 msgid "Connect to:"
 msgstr "З'єднатись з:"
 
-#: src/muuli_wdr.cpp:2942
+#: src/muuli_wdr.cpp:2944
 msgid "Login to remote amule"
 msgstr "Вхід до віддаленого aMule"
 
-#: src/muuli_wdr.cpp:2947
+#: src/muuli_wdr.cpp:2949
 msgid "User name"
 msgstr "Ім'я користувача"
 
-#: src/muuli_wdr.cpp:2958
+#: src/muuli_wdr.cpp:2960
 msgid "Remember those settings"
 msgstr "Запам'ятати ці налаштування"
 
-#: src/muuli_wdr.cpp:2961
+#: src/muuli_wdr.cpp:2963
 #, fuzzy
 msgid "Force ZLIB compression"
 msgstr "Використовувати gzip-стиснення"
 
-#: src/muuli_wdr.cpp:2985
+#: src/muuli_wdr.cpp:2987
 msgid "Enable Verbose Debug-Logging."
 msgstr "Ввімкнути докладне ведення часопису."
 
-#: src/muuli_wdr.cpp:2987
+#: src/muuli_wdr.cpp:2989
 #, fuzzy
 msgid "Only to Logfile"
 msgstr "Відкрити файл"
 
-#: src/muuli_wdr.cpp:2989
+#: src/muuli_wdr.cpp:2991
 msgid "Message Categories:"
 msgstr "Категорія повідомлення:"
 
-#: src/muuli_wdr.cpp:3013 src/PartFileConvertDlg.cpp:160
+#: src/muuli_wdr.cpp:3015 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
 msgstr "Очікується..."
 
-#: src/muuli_wdr.cpp:3033
+#: src/muuli_wdr.cpp:3035
 msgid "Add imports"
 msgstr "Додати зовнішні внесення"
 
-#: src/muuli_wdr.cpp:3036
+#: src/muuli_wdr.cpp:3038
 msgid "Retry selected"
 msgstr "Повторити вибрані"
 
-#: src/muuli_wdr.cpp:3038
+#: src/muuli_wdr.cpp:3040
 msgid "Remove selected"
 msgstr "Вилучити вибрані"
 
-#: src/muuli_wdr.cpp:3101
+#: src/muuli_wdr.cpp:3103
 msgid "Event Types"
 msgstr "Типи подій"
 
-#: src/muuli_wdr.cpp:3120
+#: src/muuli_wdr.cpp:3122
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3144
+#: src/muuli_wdr.cpp:3146
 #, fuzzy
 msgid "Active Uploads"
 msgstr "Чинні вивантаження:"
 
-#: src/muuli_wdr.cpp:3158
+#: src/muuli_wdr.cpp:3160
 msgid "Percent of total files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3198
+#: src/muuli_wdr.cpp:3200
 #, fuzzy
 msgid "Show Clients for"
 msgstr "Показати клієнтів"
 
-#: src/muuli_wdr.cpp:3200
+#: src/muuli_wdr.cpp:3202
 #, fuzzy
 msgid "All files"
 msgstr "Сховати спільні файли"
 
-#: src/muuli_wdr.cpp:3203
+#: src/muuli_wdr.cpp:3205
 #, fuzzy
 msgid "Selected files"
 msgstr "Вибрати фільтр перегляду"
 
-#: src/muuli_wdr.cpp:3206
+#: src/muuli_wdr.cpp:3208
 #, fuzzy
 msgid "Active uploads only"
 msgstr "Чинні вивантаження"
 
-#: src/muuli_wdr.cpp:3210
+#: src/muuli_wdr.cpp:3212
 #, fuzzy
 msgid "Reload:"
 msgstr "Перезавантажити перелік"
 
-#: src/muuli_wdr.cpp:3214
+#: src/muuli_wdr.cpp:3216
 msgid "Reload your shared files"
 msgstr "Перезавантажити ваші спільні файли"
 
-#: src/muuli_wdr.cpp:3276
+#: src/muuli_wdr.cpp:3278
 msgid "Send"
 msgstr "Надіслати"
 
-#: src/muuli_wdr.cpp:3277
+#: src/muuli_wdr.cpp:3279
 msgid "Sends the specified message."
 msgstr "Надіслати вказане повідомлення."
 
-#: src/muuli_wdr.cpp:3281
+#: src/muuli_wdr.cpp:3283
 msgid "Close this chat-session."
 msgstr "Закрити цю розмову."
 
-#: src/muuli_wdr.cpp:3304
+#: src/muuli_wdr.cpp:3306
 msgid "Connect to any server and/or Kad"
 msgstr "З'єднатися з будь-яким сервером та/чи Kad"
 
-#: src/muuli_wdr.cpp:3310 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3312 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "Спільні файли"
 
@@ -4898,7 +4941,7 @@ msgstr "всі інші"
 msgid "Incomplete"
 msgstr "Незавершені"
 
-#: src/OtherFunctions.cpp:703 src/PartFile.cpp:4378 src/TransferWnd.cpp:349
+#: src/OtherFunctions.cpp:703 src/PartFile.cpp:4394 src/TransferWnd.cpp:349
 msgid "Stopped"
 msgstr "Зупинені"
 
@@ -4992,87 +5035,87 @@ msgstr "Ви хочете, щоб джерела успішно внесених
 msgid "Remove sources?"
 msgstr "Видалити джерела?"
 
-#: src/PartFile.cpp:365
+#: src/PartFile.cpp:367
 #, fuzzy
 msgid "ERROR: Failed to create partfile"
 msgstr "ПОМИЛКА: Не вдалося створити частковий файл"
 
-#: src/PartFile.cpp:404
+#: src/PartFile.cpp:406
 #, c-format
 msgid "Trying to load backup of met-file from %s"
 msgstr "Спроба завантажити резервну копію met-файлу з %s"
 
-#: src/PartFile.cpp:410
+#: src/PartFile.cpp:412
 #, c-format
 msgid "ERROR: Failed to open part.met file: %s ==> %s"
 msgstr "ПОМИЛКА: Не вдалося відкрити файл part.met: %s ==> %s"
 
-#: src/PartFile.cpp:415
+#: src/PartFile.cpp:417
 #, c-format
 msgid "ERROR: part.met file is 0 size: %s ==> %s"
 msgstr "ПОМИЛКА: файл part.met має розмір 0: %s ==> %s"
 
-#: src/PartFile.cpp:426
+#: src/PartFile.cpp:428
 #, c-format
 msgid "ERROR: Invalid part.met file version: %s ==> %s"
 msgstr "ПОМИЛКА: Невірна версія файлу part.met: %s ==> %s"
 
-#: src/PartFile.cpp:666
+#: src/PartFile.cpp:668
 #, fuzzy, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
 msgstr "ПОМИЛКА: %s (%s) зіпсований (невірна кількість міток), неможливо завантажити файл."
 
-#: src/PartFile.cpp:674
+#: src/PartFile.cpp:676
 #, c-format
 msgid "ERROR: %s (%s) is corrupt (wrong tagcount), unable to load file."
 msgstr "ПОМИЛКА: %s (%s) зіпсований (невірна кількість міток), неможливо завантажити файл."
 
-#: src/PartFile.cpp:676
+#: src/PartFile.cpp:678
 msgid "Trying to recover file info..."
 msgstr "Намагання відтворити інформацію файлу..."
 
-#: src/PartFile.cpp:690
+#: src/PartFile.cpp:692
 msgid "Recovering no-named file - will try to recover it as RecoveredFile.dat"
 msgstr "Відновлюється файл без назви - спроба відновити як RecoveredFile.dat"
 
-#: src/PartFile.cpp:695
+#: src/PartFile.cpp:697
 msgid "Recovered all available file info :D - Trying to use it..."
 msgstr "Відновлена вся доступна інформація файлу :D - спроба використати її..."
 
-#: src/PartFile.cpp:697
+#: src/PartFile.cpp:699
 msgid "Unable to recover file info :("
 msgstr "Неможливо відтворити інформацію файлу"
 
-#: src/PartFile.cpp:730
+#: src/PartFile.cpp:732
 #, c-format
 msgid "Failed to open %s (%s)"
 msgstr "Не вдалося відкрити %s (%s)"
 
-#: src/PartFile.cpp:784
+#: src/PartFile.cpp:786
 #, c-format
 msgid "WARNING: %s might be corrupted (%i)"
 msgstr "ЗАСТЕРЕЖЕННЯ: %s може бути зіпсований (%i)"
 
-#: src/PartFile.cpp:1005
+#: src/PartFile.cpp:1007
 #, c-format
 msgid "ERROR while saving partfile: %s (%s ==> %s)"
 msgstr "ПОМИЛКА під час збереження часткового файлу: %s (%s ==> %s)"
 
-#: src/PartFile.cpp:1012
+#: src/PartFile.cpp:1014
 msgid "IO failure while saving partfile: "
 msgstr "Помилка введення-виведення під час збереження часткового файлу: "
 
-#: src/PartFile.cpp:1027
+#: src/PartFile.cpp:1029
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
 msgstr ""
 
-#: src/PartFile.cpp:1107
+#: src/PartFile.cpp:1109
 #, c-format
 msgid "Failed to save part.met.seeds file for %s"
 msgstr "Не вдалося зберегти файл part.met.seeds для %s"
 
-#: src/PartFile.cpp:1138
+#: src/PartFile.cpp:1140
 #, c-format
 msgid "Saved %i source seed for partfile: %s (%s)"
 msgid_plural "Saved %i source seeds for partfile: %s (%s)"
@@ -5080,17 +5123,17 @@ msgstr[0] "Збережено %i джерело для часткового фа
 msgstr[1] "Збережено %i джерела для часткового файлу: %s (%s)"
 msgstr[2] "Збережено %i джерел для часткового файлу: %s (%s)"
 
-#: src/PartFile.cpp:1168
+#: src/PartFile.cpp:1170
 #, fuzzy, c-format
 msgid "Can't read seeds file for Partfile %s (%s)"
 msgstr "Збережено %i джерело для часткового файлу: %s (%s)"
 
-#: src/PartFile.cpp:1226
+#: src/PartFile.cpp:1228
 #, c-format
 msgid "Error reading partfile's seeds file (%s - %s): %s"
 msgstr "Помилка читання файлу-джерела часткового файлу (%s - %s): %s"
 
-#: src/PartFile.cpp:1252 src/PartFile.cpp:1276
+#: src/PartFile.cpp:1254 src/PartFile.cpp:1278
 #, c-format
 msgid "Found corrupted part (%d) in %d part file %s - FileResultHash |%s| FileHash |%s|"
 msgid_plural "Found corrupted part (%d) in %d parts file %s - FileResultHash |%s| FileHash |%s|"
@@ -5098,87 +5141,92 @@ msgstr[0] "Знайдена підробна частина (%d) в (%d) час�
 msgstr[1] "Знайдена підробна частина (%d) в (%d) часткових файлах %s - FileResultHash |%s| FileHash |%s|"
 msgstr[2] "Знайдена підробна частина (%d) в (%d) часткових файлах %s - FileResultHash |%s| FileHash |%s|"
 
-#: src/PartFile.cpp:1301
+#: src/PartFile.cpp:1303
 #, c-format
 msgid "Found completed part (%i) in %s"
 msgstr "Знайдено завершену частину (%i) в %s"
 
-#: src/PartFile.cpp:1330
+#: src/PartFile.cpp:1332
 #, c-format
 msgid "Finished rehashing %s"
 msgstr "Завершене повторне обчислення хешу: %s"
 
-#: src/PartFile.cpp:2347
+#: src/PartFile.cpp:2349
 #, c-format
 msgid "Unexpected error while completing %s. File paused"
 msgstr "Неочікувана помилка під час завершення %s. Файл призупинено"
 
-#: src/PartFile.cpp:2384
+#: src/PartFile.cpp:2386
 #, c-format
 msgid "Finished downloading: %s"
 msgstr "Завершене звантаження: %s"
 
-#: src/PartFile.cpp:2389
+#: src/PartFile.cpp:2391
 #, fuzzy, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
 msgstr "Завершене звантаження: %s"
 
-#: src/PartFile.cpp:2448
+#: src/PartFile.cpp:2450
 #, c-format
 msgid "Deleting file: %s"
 msgstr "Видаляється файл: %s"
 
-#: src/PartFile.cpp:2527
+#: src/PartFile.cpp:2529
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
 msgstr "ЗАСТЕРЕЖЕННЯ: неможливо обчислити хеш звантаженого файлу - набір хешів неповний для '%s'"
 
-#: src/PartFile.cpp:2532
+#: src/PartFile.cpp:2534
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
 msgstr "ПОМИЛКА: неможливо обчислити хеш звантаженого файлу - набір хешів неповний (%s). Такого ніколи не повинно бути"
 
-#: src/PartFile.cpp:2555
+#: src/PartFile.cpp:2557
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
 msgstr ""
 
-#: src/PartFile.cpp:2567 src/PartFile.cpp:2574
+#: src/PartFile.cpp:2569 src/PartFile.cpp:2576
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
 msgstr ""
 
-#: src/PartFile.cpp:3333
+#: src/PartFile.cpp:3335
 #, c-format
 msgid "WARNING: Not enough free disk-space! Pausing file: %s"
 msgstr "ЗАСТЕРЕЖЕННЯ: недостатньо вільного місця на диску! Призупиняється файл: %s"
 
-#: src/PartFile.cpp:3667
+#: src/PartFile.cpp:3669
 #, c-format
 msgid "Downloaded part %i is corrupt in file: %s"
 msgstr "Звантажена частина %i зіпсована в файлі: %s"
 
-#: src/PartFile.cpp:3715
+#: src/PartFile.cpp:3717
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "Р.О.П.: відновлено зіпсовану частину %i для %s -> Збережено байт: %s"
 
-#: src/PartFile.cpp:4351
+#: src/PartFile.cpp:4227
+#, fuzzy
+msgid "Kad user"
+msgstr "Мережа Kad"
+
+#: src/PartFile.cpp:4367
 msgid "Allocating"
 msgstr "Виділяється"
 
-#: src/PartFile.cpp:4367
+#: src/PartFile.cpp:4383
 msgid "Insufficient disk space"
 msgstr "Не вистачає місця на диску"
 
-#: src/PartFile.cpp:4416 src/SearchListCtrl.cpp:1078
+#: src/PartFile.cpp:4432 src/SearchListCtrl.cpp:1078
 #: src/SharedFilePeersListCtrl.cpp:29 src/SourceListCtrl.cpp:29
 msgid "Downloaded"
 msgstr "Звантажені"
 
-#: src/PartFile.cpp:4681
+#: src/PartFile.cpp:4697
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ПОМИЛКА: не вдалося відкрити частковий файл '%s'"
@@ -5891,10 +5939,6 @@ msgstr "Очікування пошуку"
 #: src/SearchDlg.cpp:649 src/SearchListCtrl.cpp:691
 msgid "Main"
 msgstr "Головна"
-
-#: src/SearchList.cpp:310
-msgid "Kad search can't be done if Kad is not running"
-msgstr "Пошук у Kad неможливо виконати коли Kad не працює"
 
 #: src/SearchList.cpp:312
 msgid "eD2k search can't be done if eD2k is not connected"

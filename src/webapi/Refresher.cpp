@@ -460,6 +460,10 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 			f.download.source_comments.push_back(std::move(c));
 		}
 	}
+	// Whether an on-demand Kad notes lookup is currently running (issue #434).
+	if (const CECTag *ks = pf->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
+		f.download.kad_comment_searching = ks->GetInt() != 0;
+	}
 	// Source-reported filenames (issue #420). amuled delta-encodes the
 	// container keyed by a stable per-name id: a child carrying a name
 	// subtag is a new/updated entry; a child with COUNTS==0 and no name

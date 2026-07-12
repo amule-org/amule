@@ -2154,6 +2154,20 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	}
+	case EC_OP_SHARED_FILE_SEARCH_KAD_NOTES: {
+		CMD4Hash hash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
+		// Notes are requested from the download-comments dialog, so try the download
+		// queue first, then the shared list.
+		CKnownFile *file = theApp->downloadqueue->GetFileByID(hash);
+		if (!file) {
+			file = theApp->sharedfiles->GetFileByID(hash);
+		}
+		if (file) {
+			file->RequestKadNoteSearch();
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
 
 	//
 	// Server commands

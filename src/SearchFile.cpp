@@ -80,7 +80,15 @@ CSearchFile::CSearchFile(const CMemFile &data,
 			SetFileSize((((uint64)tag.GetInt()) << 32) + GetFileSize());
 			break;
 		case FT_FILERATING:
-			m_iUserRating = (tag.GetInt() & 0xF) / 3;
+			if (kademlia) {
+				// Kad results carry the publisher's rating raw (0-5); there is no
+				// server-side packing. Clamp defensively against malformed values.
+				m_iUserRating = static_cast<int8>(std::min<uint64>(tag.GetInt(), 5));
+			} else {
+				// ed2k servers relay the rating packed (low byte = rating * 51); the
+				// low nibble recovers rating * 3, hence the /3.
+				m_iUserRating = (tag.GetInt() & 0xF) / 3;
+			}
 			break;
 		case FT_SOURCES:
 			m_sourceCount = tag.GetInt();

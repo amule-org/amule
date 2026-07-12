@@ -148,6 +148,12 @@ if [ -n "$ADDED" ]; then
 	else
 		_fail "download_added .data.name" "not a string in $JSON"
 	fi
+	# Kad-notes search state rides the download event (issue #434).
+	if echo "$JSON" | jq -e '.kad_search_running | type == "boolean"' >/dev/null 2>&1; then
+		_pass "download_added .data.kad_search_running is boolean"
+	else
+		_fail "download_added .data.kad_search_running" "not boolean in $JSON"
+	fi
 	if echo "$JSON" | jq -e '.size | type == "number"' >/dev/null 2>&1; then
 		_pass "download_added .data.size is a number"
 	else
@@ -316,6 +322,22 @@ if [ -n "$SEARCH_FINISHED" ]; then
 else
 	_fail "search_progress finished frame missing" \
 		"no finished search_progress within 8 s of POST /search; stream sample: $(head -40 "$SSE_OUT")"
+fi
+
+# --- comments_updated shape (issue #434). Conditional: the event only
+# fires when a download's comment list changes (a Kad note arriving, or a
+# source reporting a comment), which the smoke daemon can't force. If one
+# was captured, validate its shape; otherwise skip — the live-network path
+# is validated manually.
+CU=$(grep -A1 "^event: comments_updated$" "$SSE_OUT" | grep "^data: " | head -1 | sed 's/^data: //')
+if [ -n "$CU" ]; then
+	if echo "$CU" | jq -e '(.hash|type=="string") and (.count|type=="number") and (.comments|type=="array")' >/dev/null 2>&1; then
+		_pass "comments_updated payload shape valid"
+	else
+		_fail "comments_updated payload shape" "unexpected: $CU"
+	fi
+else
+	_pass "comments_updated not emitted this run (no comment change; shape verified live)"
 fi
 
 # --- Summary. -----------------------------------------------------

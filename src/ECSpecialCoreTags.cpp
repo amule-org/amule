@@ -216,6 +216,10 @@ CEC_PartFile_Tag::CEC_PartFile_Tag(const CPartFile *file, EC_DETAIL_LEVEL detail
 	}
 	AddTag(sc, valuemap);
 
+	// Whether an on-demand Kad notes lookup is currently in flight for this file.
+	// Sent on updates too, so the remote GUI/REST can reflect start -> finish.
+	AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, file->IsKadCommentSearchRunning(), valuemap);
+
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;
 	}

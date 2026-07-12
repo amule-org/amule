@@ -120,7 +120,7 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0].name is string'
 	_assert_json_eq '.downloads[0].size | type' number \
 		'/downloads[0].size is numeric'
-	_assert_json_eq '.downloads[0].status | test("^(downloading|paused|completed|hashing|erroneous|completing|allocating|waiting|insufficient_disk|unknown)$")' \
+	_assert_json_eq '.downloads[0].status | test("^(downloading|paused|stopped|completed|hashing|erroneous|completing|allocating|waiting|insufficient_disk|unknown)$")' \
 		true '/downloads[0].status is a known enum value'
 	_assert_json_eq '.downloads[0].priority | test("^(very_low|low|normal|high|release|auto)$")' \
 		true '/downloads[0].priority is a known enum value'
@@ -130,6 +130,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0].sources is object'
 	_assert_json_eq '.downloads[0].sources.total | type' number \
 		'/downloads[0].sources.total is numeric'
+	_assert_json_eq '.downloads[0].kad_search_running | type' boolean \
+		'/downloads[0].kad_search_running is boolean (issue #434)'
 
 	# --- 4. /downloads/{hash} bare-object detail. -----------------
 	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
@@ -167,6 +169,21 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash}/comments carries numeric count'
 	_assert_json_eq '.comments | type' array \
 		'/downloads/{hash}/comments.comments is an array'
+	_assert_json_eq '.kad_search_running | type' boolean \
+		'/downloads/{hash}/comments carries kad_search_running flag'
+
+	# Trigger an on-demand Kad notes lookup (issue #434). Async on the daemon;
+	# 202 Accepted (or 400 amuled_rejected if Kad is not connected in the smoke
+	# environment — accept either as a valid handled response, but not 404/405).
+	_curl -X POST -H "Authorization: Bearer $TOKEN" \
+		"$HOST/api/v0/downloads/$HASH/comments"
+	if [ "$CURL_STATUS" = "202" ] || [ "$CURL_STATUS" = "400" ]; then
+		_pass "POST /downloads/{hash}/comments (Kad search) → $CURL_STATUS (accepted/handled)"
+	else
+		_fail "POST /downloads/{hash}/comments (Kad search)" \
+			"expected 202 or 400, got $CURL_STATUS" \
+			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
 
 	# Source-reported filenames sub-resource (issue #420).
 	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$HASH/filenames"

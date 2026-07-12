@@ -820,6 +820,8 @@ wxSizer *commentLstDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticText *item5 = new wxStaticText( parent, -1, ")", wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item5, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
+    wxButton *itemKad = new wxButton( parent, IDC_CMSEARCHKAD, _("Get from Kad"), wxDefaultPosition, wxDefaultSize, 0 );
+    item2->Add( itemKad, wxSizerFlags().CenterVertical().Right().Border(wxALL, 5) );
     wxButton *item6 = new wxButton( parent, IDCREF, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item6, wxSizerFlags().CenterVertical().Right().Border(wxALL, 5) );
     wxButton *item7 = new wxButton( parent, IDCOK, _("Close"), wxDefaultPosition, wxDefaultSize, 0 );

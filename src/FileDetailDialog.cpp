@@ -209,10 +209,11 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 
 	setEnableForApplyButton();
-	// disable "Show all comments" button if there are no comments
+	// Enable "Show all comments" when there are source comments, or when Kad is
+	// connected so the dialog's "Get from Kad" lookup can still be used (#434).
 	FileRatingList list;
 	m_file->GetRatingAndComments(list);
-	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty());
+	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
 	FillSourcenameList();
 	Layout();
 }

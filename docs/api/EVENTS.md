@@ -39,6 +39,7 @@ const EVENT_TYPES = [
   "server_added",   "server_updated",   "server_removed",
   "status_changed", "log_appended",
   "search_result_added", "search_progress",
+  "comments_updated",
 ];
 const es = new EventSource("/api/v0/events", { withCredentials: true });
 for (const t of EVENT_TYPES) es.addEventListener(t, onEvent);
@@ -88,6 +89,7 @@ const es = new EventSource("/api/v0/events", { withCredentials: true });
 es.addEventListener("download_added",   (e) => { /* JSON.parse(e.data) */ });
 es.addEventListener("download_updated", (e) => { /* ... */ });
 es.addEventListener("download_removed", (e) => { /* ... */ });
+es.addEventListener("comments_updated", (e) => { /* refresh the file's comments view */ });
 es.addEventListener("resync",           (e) => { /* re-GET REST collections */ });
 es.addEventListener("error",            ()  => {
   // EventSource auto-reconnects with backoff; only surface to UI on terminal failure.
@@ -222,7 +224,7 @@ Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR
 
 #### `download_added` / `download_updated`
 
-Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, and the source counters — clients see live progress without polling.
+Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, the source counters, and `kad_search_running` — clients see live progress (and the Kad-notes lookup start → finish edge) without polling.
 
 ```json
 {
@@ -238,9 +240,12 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
   "priority_auto": true,
   "category":      0,
   "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
-  "progress": { "percent": 29.85 }
+  "progress": { "percent": 29.85 },
+  "kad_search_running": false
 }
 ```
+
+A `POST /downloads/{hash}/comments` flips `kad_search_running` to `true`, producing a `download_updated`; when the Kad lookup finishes (typically ~45 s, or sooner) it flips back to `false`, producing another. Retrieved notes are then read via `GET /downloads/{hash}/comments`.
 
 #### `download_removed`
 
@@ -249,6 +254,23 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
 ```
 
 Only the hash; clients look up and drop the cache entry by hash.
+
+#### `comments_updated`
+
+Fires whenever a download's comment/rating list changes — a Kad note arriving during a `POST /downloads/{hash}/comments` lookup, **or** a connected ed2k source reporting its comment. Payload is byte-for-byte the `GET /downloads/{hash}/comments` body, so a client can update its comments view directly from the event without re-fetching:
+
+```json
+{
+  "hash": "8b54a3c2...",
+  "count": 2,
+  "comments": [
+    { "username": "alice",    "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
+    { "username": "Kad user", "filename": "some_movie.avi", "rating": 4, "comment": "" }
+  ]
+}
+```
+
+Downloads only (issue #434). It's kept separate from `download_updated` so the per-tick download frame stays lean — comments ride their own event and only when they actually change.
 
 ### `shared` channel
 

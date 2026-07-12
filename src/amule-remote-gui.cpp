@@ -1538,6 +1538,16 @@ void CSharedFilesRem::SetFileCommentRating(CKnownFile *file, const wxString &new
 	m_conn->SendPacket(&request);
 }
 
+void CSharedFilesRem::SearchKadNotes(CKnownFile *file)
+{
+	// The daemon owns Kad; ask it to run the on-demand NOTES lookup for this file.
+	// Retrieved notes flow back through the normal partfile-comments channel.
+	CECPacket request(EC_OP_SHARED_FILE_SEARCH_KAD_NOTES);
+	request.AddTag(CECTag(EC_TAG_KNOWNFILE, file->GetFileHash()));
+
+	m_conn->SendPacket(&request);
+}
+
 void CSharedFilesRem::CopyFileList(std::vector<CKnownFile *> &out_list) const
 {
 	out_list.reserve(size());
@@ -2414,6 +2424,12 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 			file->AddFileRatingList(u, f, r, c);
 		}
 		file->UpdateFileRatingCommentAvail();
+	}
+
+	// Reflect whether an on-demand Kad notes lookup is running on the daemon, so
+	// the comments dialog can auto-refresh while it is in flight and stop when done.
+	if (const CECTag *kadSearchTag = tag->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
+		file->SetKadCommentSearchRunning(kadSearchTag->GetInt() != 0);
 	}
 
 	// Update A4AF sources

@@ -60,6 +60,13 @@
 
 #include <common/Format.h>
 
+#ifndef CLIENT_GUI
+#include "kademlia/kademlia/Kademlia.h"      // Needed for CKademlia (Kad state)
+#include "kademlia/kademlia/Search.h"        // Needed for CSearch::NOTES
+#include "kademlia/kademlia/SearchManager.h" // Needed for CSearchManager::PrepareLookup
+#include "DownloadQueue.h"                   // Needed for downloadqueue lookup
+#endif
+
 CFileStatistic::CFileStatistic(CKnownFile *parent)
 : fileParent(parent)
 , requested(0)
@@ -147,6 +154,7 @@ CAbstractFile::CAbstractFile()
 : m_iRating(0)
 , m_hasComment(false)
 , m_iUserRating(0)
+, m_kadCommentSearchRunning(false)
 , m_nFileSize(0)
 {
 }
@@ -159,6 +167,7 @@ CAbstractFile::CAbstractFile(const CAbstractFile &other)
 , m_iUserRating(other.m_iUserRating)
 , m_taglist(other.m_taglist)
 , m_kadNotes()
+, m_kadCommentSearchRunning(false)
 , m_nFileSize(other.m_nFileSize)
 , m_fileName(other.m_fileName)
 {
@@ -1224,8 +1233,15 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 	}
 
 	if (GetFileRating()) {
+		uint32 ratingValue = GetFileRating();
+		if (pClient) {
+			// Servers relay the rating in a packed format (low byte = rating * 51). When we
+			// build a source-exchange packet for another client we must use that same format,
+			// otherwise remote clients decode it as 0. Servers themselves want the raw 0-5.
+			ratingValue *= (255 / 5);
+		}
 		tags.push_back(new CTagVarInt(
-			FT_FILERATING, GetFileRating(), (pClient && pClient->GetVBTTags()) ? 0 : 32));
+			FT_FILERATING, ratingValue, (pClient && pClient->GetVBTTags()) ? 0 : 32));
 	}
 
 	// NOTE: Archives and CD-Images are published+searched with file type "Pro"
@@ -1407,6 +1423,71 @@ bool CKnownFile::PublishNotes()
 	}
 
 	return false;
+}
+
+bool CKnownFile::RequestKadNoteSearch()
+{
+#ifndef CLIENT_GUI
+	// Kad must be up; the notes lookup runs against the DHT.
+	if (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected()) {
+		AddLogLineN(CFormat(_("Kad note search for '%s' not started: Kad is not connected")) %
+			    GetFileName());
+		return false;
+	}
+
+	// One in-flight lookup per file at a time.
+	if (IsKadCommentSearchRunning()) {
+		AddLogLineN(
+			CFormat(_("Kad note search for '%s' not started: a note lookup is already running "
+				  "for this file")) %
+			GetFileName());
+		return false;
+	}
+
+	// The NOTES request builder reads the file size from the local shared list or
+	// download queue (mirroring eMule); a file that is in neither can't be looked
+	// up, so don't spawn a search that would immediately self-terminate.
+	if (!theApp->sharedfiles->GetFileByID(GetFileHash()) &&
+		!theApp->downloadqueue->GetFileByID(GetFileHash())) {
+		AddLogLineN(
+			CFormat(_("Kad note search for '%s' not started: file is not in the shared list or "
+				  "download queue")) %
+			GetFileName());
+		return false;
+	}
+
+	Kademlia::CUInt128 kadFileID;
+	kadFileID.SetValueBE(GetFileHash().GetHash());
+	// A Kad search is keyed by its target hash, and a downloading file already runs
+	// a source search on that same hash (CSearch::FILE) - so a notes lookup can't
+	// start until it ends (<=45s). This is the common transient failure; tell the
+	// user to retry rather than fail opaquely.
+	if (Kademlia::CSearchManager::AlreadySearchingFor(kadFileID)) {
+		AddLogLineN(
+			CFormat(_("Kad note search for '%s' not started: another Kad search (e.g. a source "
+				  "search) is already using this file's hash - try again shortly")) %
+			GetFileName());
+		return false;
+	}
+
+	// Incoming notes are merged by CAbstractFile::AddNote, which dedups by source
+	// IP / ID, so refreshing does not accumulate duplicates.
+	if (!Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::NOTES, true, kadFileID)) {
+		AddLogLineN(CFormat(_("Kad note search for '%s' not started: PrepareLookup failed")) %
+			    GetFileName());
+		return false;
+	}
+
+	SetKadCommentSearchRunning(true);
+	// Bump the EC generation so the next incremental update re-serializes this
+	// file with the running flag set; that is how amulegui / amuleapi observe
+	// the lookup starting (the cleared flag is emitted the same way in ~CSearch).
+	MarkECChanged();
+	return true;
+#else
+	// amulegui has no local Kad; the GUI triggers the lookup over EC instead.
+	return false;
+#endif
 }
 
 bool CKnownFile::PublishSrc()
