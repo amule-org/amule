@@ -467,8 +467,20 @@ bool CSharedDirWatcher::HandleDirRemoved(const wxString &path)
 
 #ifndef __WXOSX__
 	// Remove its per-subdir watch (macOS covers the whole tree via FSEvents).
+	// Only if wx still tracks it: when a directory vanishes the OS drops the
+	// inotify watch on its own (a cross-filesystem move is a delete, firing
+	// IN_IGNORED), so the path is no longer in the watcher's map. Calling
+	// Remove() on an untracked path trips wx's `it != m_watches.end()`
+	// assertion and aborts amuled (issue #458). A same-filesystem rename keeps
+	// the inode watch under the old key, so the guarded Remove() still cleans
+	// that up. GetWatchedPaths() reports the exact key Remove() looks up.
 	if (removed && m_watcher) {
-		m_watcher->Remove(wxFileName::DirName(path));
+		const wxFileName dir = wxFileName::DirName(path);
+		wxArrayString watched;
+		m_watcher->GetWatchedPaths(&watched);
+		if (watched.Index(dir.GetFullPath()) != wxNOT_FOUND) {
+			m_watcher->Remove(dir);
+		}
 	}
 #endif
 
