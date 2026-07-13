@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-07-12 11:59+0000\n"
+"PO-Revision-Date: 2026-07-13 11:37+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -64,7 +64,7 @@ msgstr "aMule - daudzplatformu eMule P2P klients"
 #: ../../src/utils/cas/docs/cas.1.in:6 ../../src/utils/wxCas/docs/wxcas.1.in:5
 #, no-wrap
 msgid "SYNOPSIS"
-msgstr ""
+msgstr "SINTAKSE"
 
 #. type: Plain text
 #: amule.1.in:10 amulegui.1.in:10
@@ -584,7 +584,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:144
 msgid "A synonym of the B<exit> command."
-msgstr ""
+msgstr "Tas pats, kas B<exit> jeb B<exit> komandas sinonīms."
 
 #. type: Plain text
 #: amulecmd.1.in:146

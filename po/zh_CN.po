@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-12 11:57+0000\n"
+"PO-Revision-Date: 2026-07-13 11:35+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -90,7 +90,7 @@ msgstr "检查更新"
 
 #: src/AboutDialog.cpp:162
 msgid "Checking for updates..."
-msgstr "正在检查更新..."
+msgstr "正在检查更新…"
 
 #: src/AboutDialog.cpp:172
 msgid "You are running the latest version."
@@ -878,6 +878,10 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"到 %s 的连接丢失。\n"
+"%s\n"
+"\n"
+"连接恢复前将暂停该接口。"
 
 #: src/amule-remote-gui.cpp:452
 msgid "Fatal Error: Failed to create Poll Timer"
@@ -8256,7 +8260,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."
-msgstr "正在删除之前 $0 位置的 aMule 安装..."
+msgstr "正在删除之前 $0 位置的 aMule 安装…"
 
 #: packaging/windows/installer_strings.c:56
 msgid ""

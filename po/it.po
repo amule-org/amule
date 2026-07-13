@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-12 11:50+0000\n"
+"PO-Revision-Date: 2026-07-13 11:28+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -864,9 +864,8 @@ msgid "Connection lost"
 msgstr "Connessione persa"
 
 #: src/amule-remote-gui.cpp:149
-#, fuzzy
 msgid "Abort and exit"
-msgstr "Chiedi conferma prima di uscire"
+msgstr "Interrompi ed esci"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
@@ -886,6 +885,10 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"Connessione a %s persa.\n"
+"%s\n"
+"\n"
+"L'interfaccia è in pausa fino al ripristino della connessione."
 
 #: src/amule-remote-gui.cpp:452
 msgid "Fatal Error: Failed to create Poll Timer"
@@ -917,9 +920,8 @@ msgid "Going down"
 msgstr "Qualcosa è andato storto"
 
 #: src/amule-remote-gui.cpp:656
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "Connessione a %s (%s:%i) non riuscita per timeout."
+msgstr "Tentativo di riconnessione scaduto; nuovo tentativo in corso."
 
 #: src/amule-remote-gui.cpp:665
 #, c-format
@@ -935,18 +937,17 @@ msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:722
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "Connettiti alla rete."
+msgstr "Riconnesso al core remoto."
 
 #: src/amule-remote-gui.cpp:752
-#, fuzzy, c-format
+#, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr "Connessione fallita. Impossibile connettersi a %s:%d\n"
+msgstr "Tentativo di riconnessione %d: connessione a %s:%d"
 
 #: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "Impossibile avviare la riconnessione; nuovo tentativo a breve."
 
 #: src/amule-remote-gui.cpp:915
 msgid "Ready"
@@ -3275,32 +3276,28 @@ msgid "Packages saved by I.C.H. :"
 msgstr "Pacchetti recuperati da ICH:"
 
 #: src/muuli_wdr.cpp:653
-#, fuzzy
 msgid "Media Info"
-msgstr "Informazioni Kad"
+msgstr "Media Info"
 
 #: src/muuli_wdr.cpp:660
-#, fuzzy
 msgid "Length :"
-msgstr "Durata"
+msgstr "Durata :"
 
 #: src/muuli_wdr.cpp:667
-#, fuzzy
 msgid "Bitrate :"
-msgstr "Bitrate"
+msgstr "Bitrate :"
 
 #: src/muuli_wdr.cpp:674
-#, fuzzy
 msgid "Codec :"
-msgstr "Codec"
+msgstr "Codec :"
 
 #: src/muuli_wdr.cpp:681
 msgid "Artist :"
-msgstr ""
+msgstr "Artista :"
 
 #: src/muuli_wdr.cpp:688
 msgid "Album :"
-msgstr ""
+msgstr "Album :"
 
 #: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2188
 msgid "Title :"

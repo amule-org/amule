@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-12 11:56+0000\n"
+"PO-Revision-Date: 2026-07-13 11:35+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -225,17 +225,17 @@ msgstr "UYARI: DüşükID olduğunuz sürece kendinizi bir kaynak olarak eD2k ba
 
 #: src/amule.cpp:300
 msgid "Now, exiting main app..."
-msgstr "Ana uygulamadan çıkılıyor..."
+msgstr "Ana uygulamadan çıkılıyor…"
 
 #: src/amule.cpp:330
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor... "
+msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor… "
 
 #: src/amule.cpp:334
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor... "
+msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor… "
 
 #: src/amule.cpp:336 src/amule.cpp:349 src/ClientRef.cpp:180
 #: src/ServerListCtrl.cpp:98
@@ -291,7 +291,7 @@ msgstr ""
 
 #: src/amule.cpp:727
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
-msgstr "Bir yapılandırma değişikliği nedeniyle dil ayarınız 'Sistem Varsayılanı'na çevrildi. Üzgünüm. Vallahi..."
+msgstr "Bir yapılandırma değişikliği nedeniyle dil ayarınız 'Sistem Varsayılanı'na çevrildi. Üzgünüm. Vallahi…"
 
 #: src/amule.cpp:729 src/amule.cpp:1576 src/CatDialog.cpp:128
 #: src/CatDialog.cpp:136 src/CatDialog.cpp:149 src/ServerList.cpp:366
@@ -881,11 +881,11 @@ msgstr "Önemli Hata: Havuz Zamanlayıcı oluşturulamadı"
 
 #: src/amule-remote-gui.cpp:475
 msgid "Going to event loop..."
-msgstr "Olay döngüsüne gidiliyor..."
+msgstr "Olay döngüsüne gidiliyor…"
 
 #: src/amule-remote-gui.cpp:530
 msgid "Connecting..."
-msgstr "Bağlanıyor..."
+msgstr "Bağlanıyor…"
 
 #: src/amule-remote-gui.cpp:563
 msgid "Connection failed. Please check the host, port, and password."
@@ -1149,7 +1149,7 @@ msgstr[1] " - %u adet kullanıcı için krediler bitti!"
 
 #: src/ClientCreditsList.cpp:301
 msgid "No 'cryptkey.dat' file found, creating."
-msgstr "'cryptkey.dat' dosyası bulunamadı. Oluşturuluyor..."
+msgstr "'cryptkey.dat' dosyası bulunamadı. Oluşturuluyor…"
 
 #: src/ClientDetailDialog.cpp:42
 msgid "Client Details"
@@ -1980,7 +1980,7 @@ msgstr "eD2k ağına zaten bağlandı."
 
 #: src/ExternalConn.cpp:2490
 msgid "Connecting to eD2k..."
-msgstr "eD2k ağına bağlanıyor..."
+msgstr "eD2k ağına bağlanıyor…"
 
 #: src/ExternalConn.cpp:2499
 msgid "Already connected to Kad."
@@ -1988,7 +1988,7 @@ msgstr "Kad zaten bağlı."
 
 #: src/ExternalConn.cpp:2502
 msgid "Connecting to Kad..."
-msgstr "Kad ağına bağlanıyor..."
+msgstr "Kad ağına bağlanıyor…"
 
 #: src/ExternalConn.cpp:2509
 msgid "All networks are disabled."
@@ -2142,7 +2142,7 @@ msgid ""
 "Creating client...\n"
 msgstr ""
 "\n"
-"Yazılım oluşturuluyor...\n"
+"Yazılım oluşturuluyor…\n"
 
 #: src/ExternalConnector.cpp:483
 #, c-format
@@ -2151,7 +2151,7 @@ msgid ""
 "Ok, exiting %s...\n"
 msgstr ""
 "\n"
-"Tamam, çıkılıyor %s...\n"
+"Tamam, çıkılıyor %s…\n"
 
 #: src/ExternalConnector.cpp:489
 msgid ""
@@ -2165,7 +2165,7 @@ msgstr ""
 "Ya yapılandırma dosyasında ya da komut\n"
 "satırında bir şifre olmalı veyahut da istendiğinde girmelisiniz\n"
 "\n"
-"Çıkılıyor...\n"
+"Çıkılıyor…\n"
 
 #: src/ExternalConnector.cpp:498
 msgid "Show this help text."
@@ -2358,7 +2358,7 @@ msgstr "Evet"
 
 #: src/HTTPDownload.cpp:59
 msgid "Downloading..."
-msgstr "Aktarılıyor..."
+msgstr "Aktarılıyor…"
 
 #: src/HTTPDownload.cpp:126
 msgid "HTTP download cancelled"
@@ -2980,11 +2980,11 @@ msgstr "Olaylar burada gösterilir. Olayların tam listesi için Sunucu sekmesin
 
 #: src/muuli_wdr.cpp:115
 msgid "Loading ..."
-msgstr "Yükleniyor..."
+msgstr "Yükleniyor…"
 
 #: src/muuli_wdr.cpp:122
 msgid "Number of users on the server you are connected to ..."
-msgstr "Sunucu üzerinden bağlandığınız kullanıcı sayısı..."
+msgstr "Sunucu üzerinden bağlandığınız kullanıcı sayısı…"
 
 #: src/muuli_wdr.cpp:125
 msgid "Users: 0"
@@ -3008,7 +3008,7 @@ msgstr "Bağlantı durumu ve aktif aktarımları gösterir. Kırmızı ok henüz
 
 #: src/muuli_wdr.cpp:145
 msgid "Not Connected ..."
-msgstr "Bağlanmadı ..."
+msgstr "Bağlanmadı …"
 
 #: src/muuli_wdr.cpp:146
 msgid "Currently connected server."
@@ -3326,7 +3326,7 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
-"Bir film için süresini, öyküsünü, dilini belirtebilir ...\n"
+"Bir film için süresini, öyküsünü, dilini belirtebilir …\n"
 "ve sahte bir dosya ise bunu diğer aMule kullanıcılarına bildirebilirsiniz."
 
 #: src/muuli_wdr.cpp:773
@@ -3372,7 +3372,7 @@ msgstr "Yenile"
 
 #: src/muuli_wdr.cpp:848
 msgid "Downloading, please wait ..."
-msgstr "Aktarılıyor, lütfen bekleyiniz ..."
+msgstr "Aktarılıyor, lütfen bekleyiniz …"
 
 #: src/muuli_wdr.cpp:852
 msgid "Unknown size"
@@ -4309,7 +4309,7 @@ msgstr "Günlük kayıtlarını silmek için bu düğmeye basınız."
 
 #: src/muuli_wdr.cpp:2332
 msgid "Click on this button to update the servers list from URL ..."
-msgstr "Sunucu listesini İnternet'den güncellemek için bu düğmeye basınız..."
+msgstr "Sunucu listesini İnternet'den güncellemek için bu düğmeye basınız…"
 
 #: src/muuli_wdr.cpp:2336
 msgid "Server list"
@@ -4341,7 +4341,7 @@ msgstr "Sunucunu portunu buraya giriniz."
 
 #: src/muuli_wdr.cpp:2362
 msgid "Add manually a server (fill fields to the left before) ..."
-msgstr "Sunucuyu elle ekle (önce soldaki alanları doldurunuz) ..."
+msgstr "Sunucuyu elle ekle (önce soldaki alanları doldurunuz) …"
 
 #: src/muuli_wdr.cpp:2391
 msgid "aMule Log"
@@ -4614,7 +4614,7 @@ msgid ""
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
 "Bir .mmdb dosyasına veya onu içeren bir .gz / .tar.gz dosyasına işaret etmelidir.\n"
-"Bağlantı kimlik doğrulama bilgileri içerebilir (https://kullanıcı:parola@makine/...)\n"
+"Bağlantı kimlik doğrulama bilgileri içerebilir (https://kullanıcı:parola@makine/…)\n"
 "Lisans ve atıf koşulları kaynak URL tarafından belirlenir - bunlardan siz sorumlu olursunuz."
 
 #: src/muuli_wdr.cpp:2811
@@ -4751,7 +4751,7 @@ msgstr "İleti Sınıfları:"
 
 #: src/muuli_wdr.cpp:3015 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
-msgstr "Bekliyor..."
+msgstr "Bekliyor…"
 
 #: src/muuli_wdr.cpp:3035
 msgid "Add imports"
@@ -4925,7 +4925,7 @@ msgstr "Kullanılan yapılandırma dizini: %s"
 
 #: src/PartFileConvert.cpp:165
 msgid "Waiting for partfile convert thread to die..."
-msgstr "Parçadosyası dönüşümünün bitmesi bekleniyor..."
+msgstr "Parçadosyası dönüşümünün bitmesi bekleniyor…"
 
 #: src/PartFileConvert.cpp:209
 #, c-format
@@ -5027,7 +5027,7 @@ msgstr "HATA: %s (%s) bozuk (hatalı başlık sayısı), dosya yüklenemez."
 
 #: src/PartFile.cpp:678
 msgid "Trying to recover file info..."
-msgstr "Dosya bilgisi kurtarılmaya çalışılıyor..."
+msgstr "Dosya bilgisi kurtarılmaya çalışılıyor…"
 
 #: src/PartFile.cpp:692
 msgid "Recovering no-named file - will try to recover it as RecoveredFile.dat"
@@ -5035,7 +5035,7 @@ msgstr "İsimsiz dosya kurtarılmaya çalışılıyor-RecoveredFile.dat olarak k
 
 #: src/PartFile.cpp:697
 msgid "Recovered all available file info :D - Trying to use it..."
-msgstr "Uygun olan tüm bilgiler kurtarıldı. :-D - bunlar kullanılacak..."
+msgstr "Uygun olan tüm bilgiler kurtarıldı. :-D - bunlar kullanılacak…"
 
 #: src/PartFile.cpp:699
 msgid "Unable to recover file info :("
@@ -7163,8 +7163,8 @@ msgid ""
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
 "Eklenecek eD2k bağlantısı şunlar olabilir:\n"
-"*) bir dosya, (ed2k://|file|...), indirme sırasına eklenecektir.\n"
-"*) bir sunucu, (ed2k://|server|...), sunucu listesine eklenecektir.\n"
+"*) bir dosya, (ed2k://|file|…), indirme sırasına eklenecektir.\n"
+"*) bir sunucu, (ed2k://|server|…), sunucu listesine eklenecektir.\n"
 "*) veya bir sunucu listesi, listedeki tüm sunucular, sunucu listesine\n"
 "   eklenecektir.\n"
 "\n"
@@ -7716,7 +7716,7 @@ msgstr ""
 #: src/utils/aLinkCreator/src/alcframe.cpp:482
 #: src/utils/aLinkCreator/src/alcframe.cpp:491
 msgid "Hashing..."
-msgstr "Adresleniyor..."
+msgstr "Adresleniyor…"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:486
 #: src/utils/aLinkCreator/src/alcframe.cpp:504
@@ -7725,11 +7725,11 @@ msgstr "aLinkCreator sizin için çalışıyor"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:487
 msgid "Computing MD4 Hash..."
-msgstr "MD4 Adreslemesi hesaplanıyor..."
+msgstr "MD4 Adreslemesi hesaplanıyor…"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:505
 msgid "Computing eD2k Hashes..."
-msgstr "eD2k Adreslemeleri hesaplanıyor..."
+msgstr "eD2k Adreslemeleri hesaplanıyor…"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:538
 #: src/utils/aLinkCreator/src/alcframe.cpp:539
@@ -7904,7 +7904,7 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp:541
 msgid "Oh Oh, aMule is not running..."
-msgstr "Aman aman, aMule çalışmıyor..."
+msgstr "Aman aman, aMule çalışmıyor…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:618
 #: src/utils/wxCas/src/wxcasframe.cpp:689
@@ -7918,11 +7918,11 @@ msgstr "aMule çalışıyor ama bağlı değil."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:898
 msgid "aMule is connecting..."
-msgstr "aMule bağlanıyor..."
+msgstr "aMule bağlanıyor…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:902
 msgid "Oh Oh, aMule status is unknown..."
-msgstr "Aman aman, aMule'nin durumu bilinmiyor..."
+msgstr "Aman aman, aMule'nin durumu bilinmiyor…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:970
 #: src/utils/wxCas/src/wxcasframe.cpp:973
@@ -7947,7 +7947,7 @@ msgstr " bağlı değil !"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:977
 msgid " is connecting..."
-msgstr " bağlanıyor..."
+msgstr " bağlanıyor…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:980
 msgid " is doing something strange, check it !"
@@ -8281,7 +8281,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."
-msgstr "$0 konumundaki önceki aMule kurulumu kaldırılıyor..."
+msgstr "$0 konumundaki önceki aMule kurulumu kaldırılıyor…"
 
 #: packaging/windows/installer_strings.c:56
 msgid ""
@@ -8297,7 +8297,7 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor..."
+msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
 
 #~ msgid "Connection closed - aMule has terminated probably."
 #~ msgstr "Bağlantı kesildi - Muhtemelen aMule sonlandırıldı."

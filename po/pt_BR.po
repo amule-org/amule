@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-12 11:53+0000\n"
+"PO-Revision-Date: 2026-07-13 11:31+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -860,9 +860,8 @@ msgid "Connection lost"
 msgstr "Conexão perdida"
 
 #: src/amule-remote-gui.cpp:149
-#, fuzzy
 msgid "Abort and exit"
-msgstr "Perguntar ao sair"
+msgstr "Abortar a edição e sair"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
@@ -882,6 +881,10 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"A conexão com %s foi perdida.\n"
+"%s\n"
+"\n"
+"A interface foi pausada até que a conexão seja reestabelecida."
 
 #: src/amule-remote-gui.cpp:452
 msgid "Fatal Error: Failed to create Poll Timer"
@@ -913,9 +916,8 @@ msgid "Going down"
 msgstr "Desligando"
 
 #: src/amule-remote-gui.cpp:656
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "Expirado tempo de espera para conectar a %s (%s:%i)."
+msgstr "O tempo para a tentativa de reconectar foi expirado; tentando novamente."
 
 #: src/amule-remote-gui.cpp:665
 #, c-format
@@ -931,18 +933,17 @@ msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:722
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "Conectar à rede."
+msgstr "Reconectado ao núcleo remoto."
 
 #: src/amule-remote-gui.cpp:752
-#, fuzzy, c-format
+#, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr "Falha na conexão. Incapaz de conectar em %s:%d\n"
+msgstr "Tentativa de reconexão %d: conectando-se a %s:%d"
 
 #: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "A reconexão não pode ser iniciada; tentando novamente em breve."
 
 #: src/amule-remote-gui.cpp:915
 msgid "Ready"
@@ -3271,32 +3272,28 @@ msgid "Packages saved by I.C.H. :"
 msgstr "Pacotes recuperados pelo I.C.H.:"
 
 #: src/muuli_wdr.cpp:653
-#, fuzzy
 msgid "Media Info"
-msgstr "Informação de Kad"
+msgstr "Informação da Mídia"
 
 #: src/muuli_wdr.cpp:660
-#, fuzzy
 msgid "Length :"
-msgstr "Comprimento"
+msgstr "Comprimento:"
 
 #: src/muuli_wdr.cpp:667
-#, fuzzy
 msgid "Bitrate :"
-msgstr "Taxa de Bits"
+msgstr "Taxa de Bits:"
 
 #: src/muuli_wdr.cpp:674
-#, fuzzy
 msgid "Codec :"
-msgstr "Codec"
+msgstr "Codec:"
 
 #: src/muuli_wdr.cpp:681
 msgid "Artist :"
-msgstr ""
+msgstr "Artista:"
 
 #: src/muuli_wdr.cpp:688
 msgid "Album :"
-msgstr ""
+msgstr "Album:"
 
 #: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2188
 msgid "Title :"
@@ -3570,14 +3567,12 @@ msgid "This specifies the language used on controls."
 msgstr "Especifica o idioma que será usado no aMule."
 
 #: src/muuli_wdr.cpp:1275
-#, fuzzy
 msgid "Periodically check for a new version"
-msgstr "Clique para conferir se existe uma versão nova ao iniciar."
+msgstr "Conferir a existência de uma versão nova periodicamente"
 
 #: src/muuli_wdr.cpp:1276
-#, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr "Ativar faz com que o aMule verifique por nova versão ao iniciar"
+msgstr "Ativar isto faz com que o aMule verifique por nova versão ao iniciar e uma vez por dia enquanto roda"
 
 #: src/muuli_wdr.cpp:1283
 msgid "Start aMule automatically when I log in"

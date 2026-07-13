@@ -12,7 +12,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-12 11:55+0000\n"
+"PO-Revision-Date: 2026-07-13 11:33+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
 "Language: sl\n"
@@ -223,7 +223,7 @@ msgstr "OPOZORILO: če imete nizek ID, sebe ne morete dodati kot vira za povezav
 
 #: src/amule.cpp:300
 msgid "Now, exiting main app..."
-msgstr "Sedaj, zapuščanje glavnega programa ..."
+msgstr "Sedaj, zapuščanje glavnega programa …"
 
 #: src/amule.cpp:330
 #, c-format
@@ -884,11 +884,11 @@ msgstr "Usodna napaka: ni bilo mogoče ustvariti časomerilnika za povpraševanj
 
 #: src/amule-remote-gui.cpp:475
 msgid "Going to event loop..."
-msgstr "Prehod v dogodkovno zanko ..."
+msgstr "Prehod v dogodkovno zanko …"
 
 #: src/amule-remote-gui.cpp:530
 msgid "Connecting..."
-msgstr "Povezovanje ..."
+msgstr "Povezovanje …"
 
 #: src/amule-remote-gui.cpp:563
 msgid "Connection failed. Please check the host, port, and password."
@@ -1999,7 +1999,7 @@ msgstr "Povezava z eD2k že obstaja."
 
 #: src/ExternalConn.cpp:2490
 msgid "Connecting to eD2k..."
-msgstr "Povezovanje z eD2k ..."
+msgstr "Povezovanje z eD2k …"
 
 #: src/ExternalConn.cpp:2499
 msgid "Already connected to Kad."
@@ -2007,7 +2007,7 @@ msgstr "Povezava s Kad že obstaja."
 
 #: src/ExternalConn.cpp:2502
 msgid "Connecting to Kad..."
-msgstr "Povezovanje s Kad ..."
+msgstr "Povezovanje s Kad …"
 
 #: src/ExternalConn.cpp:2509
 msgid "All networks are disabled."
@@ -2161,7 +2161,7 @@ msgid ""
 "Creating client...\n"
 msgstr ""
 "\n"
-"Ustvarjanje odjemalca ...\n"
+"Ustvarjanje odjemalca …\n"
 
 #: src/ExternalConnector.cpp:483
 #, c-format
@@ -2170,7 +2170,7 @@ msgid ""
 "Ok, exiting %s...\n"
 msgstr ""
 "\n"
-"V redu, končevanje %s ...\n"
+"V redu, končevanje %s …\n"
 
 #: src/ExternalConnector.cpp:489
 msgid ""
@@ -2184,7 +2184,7 @@ msgstr ""
 "Vnesti morate geslo v nastavitveni datoteki,\n"
 "ukazni vrstici ali pa ko boste vprašani za geslo.\n"
 "\n"
-"Končevanje ...\n"
+"Končevanje …\n"
 
 #: src/ExternalConnector.cpp:498
 msgid "Show this help text."
@@ -2378,7 +2378,7 @@ msgstr "Da"
 
 #: src/HTTPDownload.cpp:59
 msgid "Downloading..."
-msgstr "Prejemanje ..."
+msgstr "Prejemanje …"
 
 #: src/HTTPDownload.cpp:126
 msgid "HTTP download cancelled"
@@ -3017,11 +3017,11 @@ msgstr "Dogodki so prikazani tukaj. Za celoten seznam dogodkov, poglejte v zapis
 
 #: src/muuli_wdr.cpp:115
 msgid "Loading ..."
-msgstr "Nalaganje ..."
+msgstr "Nalaganje …"
 
 #: src/muuli_wdr.cpp:122
 msgid "Number of users on the server you are connected to ..."
-msgstr "Število uporabnikov na strežniku na katerega ste povezani ..."
+msgstr "Število uporabnikov na strežniku na katerega ste povezani …"
 
 #: src/muuli_wdr.cpp:125
 msgid "Users: 0"
@@ -3045,7 +3045,7 @@ msgstr "Prikazuje stanje povezave in dejavne prenose. Rdeče puščice pomenijo,
 
 #: src/muuli_wdr.cpp:145
 msgid "Not Connected ..."
-msgstr "Ni povezave ..."
+msgstr "Ni povezave …"
 
 #: src/muuli_wdr.cpp:146
 msgid "Currently connected server."
@@ -3394,7 +3394,7 @@ msgstr "Odlična"
 
 #: src/muuli_wdr.cpp:786
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr "Izberite oceno datoteke ali sporočite uporabnikom, če datoteka ni veljavna ..."
+msgstr "Izberite oceno datoteke ali sporočite uporabnikom, če datoteka ni veljavna …"
 
 #: src/muuli_wdr.cpp:823
 #, fuzzy
@@ -3407,7 +3407,7 @@ msgstr "Osveži"
 
 #: src/muuli_wdr.cpp:848
 msgid "Downloading, please wait ..."
-msgstr "Prejemanje, prosimo počakajte ..."
+msgstr "Prejemanje, prosimo počakajte …"
 
 #: src/muuli_wdr.cpp:852
 msgid "Unknown size"
@@ -4377,7 +4377,7 @@ msgstr "Sem vnesite vrata strežnika."
 
 #: src/muuli_wdr.cpp:2362
 msgid "Add manually a server (fill fields to the left before) ..."
-msgstr "Ročno dodaj strežnik (najprej izpolnite vsa polja) ..."
+msgstr "Ročno dodaj strežnik (najprej izpolnite vsa polja) …"
 
 #: src/muuli_wdr.cpp:2391
 msgid "aMule Log"
@@ -4782,7 +4782,7 @@ msgstr "Kategorije sporočil:"
 
 #: src/muuli_wdr.cpp:3015 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
-msgstr "Čakanje ..."
+msgstr "Čakanje …"
 
 #: src/muuli_wdr.cpp:3035
 msgid "Add imports"
@@ -4960,7 +4960,7 @@ msgstr "Uporaba mape z nastavitvami: %s"
 
 #: src/PartFileConvert.cpp:165
 msgid "Waiting for partfile convert thread to die..."
-msgstr "Čakanje na zamrtje niti za pretvarjanje delnih datotek ..."
+msgstr "Čakanje na zamrtje niti za pretvarjanje delnih datotek …"
 
 #: src/PartFileConvert.cpp:209
 #, c-format
@@ -5063,7 +5063,7 @@ msgstr "NAPAKA: %s (%s) je pokvarjena (napačno število oznak), ni mogoče nalo
 
 #: src/PartFile.cpp:678
 msgid "Trying to recover file info..."
-msgstr "Poskus reševanja podatkov o datoteki ..."
+msgstr "Poskus reševanja podatkov o datoteki …"
 
 #: src/PartFile.cpp:692
 msgid "Recovering no-named file - will try to recover it as RecoveredFile.dat"
@@ -5071,7 +5071,7 @@ msgstr "Reševanje neimenovane datoteke – rešena bo kot RecoveredFile.dat"
 
 #: src/PartFile.cpp:697
 msgid "Recovered all available file info :D - Trying to use it..."
-msgstr "Rešeni vsi podatki o datoteki, ki so na voljo :D – Poskus njihove uporabe ..."
+msgstr "Rešeni vsi podatki o datoteki, ki so na voljo :D – Poskus njihove uporabe …"
 
 #: src/PartFile.cpp:699
 msgid "Unable to recover file info :("
@@ -7236,8 +7236,8 @@ msgid ""
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
 "Povezava eD2k za dodajanje je lahko:\n"
-"• povezava za datoteko (ed2k://|file|...), dodana bo na v vrsto prejemanj\n"
-"• povezava za strežnik (ed2k://|server|...), dodan bo na seznam strežnikov\n"
+"• povezava za datoteko (ed2k://|file|…), dodana bo na v vrsto prejemanj\n"
+"• povezava za strežnik (ed2k://|server|…), dodan bo na seznam strežnikov\n"
 "• povezava do seznama strežnikov, vsi strežniki bodo dodani na seznam strežnikov\n"
 "\n"
 "Povezava magnet mora vsebovati kodo eD2k in dolžino datoteke.\n"
@@ -7771,7 +7771,7 @@ msgstr ""
 #: src/utils/aLinkCreator/src/alcframe.cpp:482
 #: src/utils/aLinkCreator/src/alcframe.cpp:491
 msgid "Hashing..."
-msgstr "Ustvarjanje kode ..."
+msgstr "Ustvarjanje kode …"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:486
 #: src/utils/aLinkCreator/src/alcframe.cpp:504
@@ -7780,11 +7780,11 @@ msgstr "aLinkCreator dela za vas"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:487
 msgid "Computing MD4 Hash..."
-msgstr "Izračunavanje kode MD4 ..."
+msgstr "Izračunavanje kode MD4 …"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:505
 msgid "Computing eD2k Hashes..."
-msgstr "Izračunavanje kode eD2k ..."
+msgstr "Izračunavanje kode eD2k …"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:538
 #: src/utils/aLinkCreator/src/alcframe.cpp:539
@@ -7973,7 +7973,7 @@ msgstr "aMule teče, vendar ni povezave."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:898
 msgid "aMule is connecting..."
-msgstr "aMule se povezuje ..."
+msgstr "aMule se povezuje …"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:902
 msgid "Oh Oh, aMule status is unknown..."
@@ -8002,7 +8002,7 @@ msgstr " ni povezan."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:977
 msgid " is connecting..."
-msgstr " se povezuje ..."
+msgstr " se povezuje …"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:980
 msgid " is doing something strange, check it !"

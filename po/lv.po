@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-12 11:59+0000\n"
+"PO-Revision-Date: 2026-07-13 11:37+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -81,7 +81,7 @@ msgstr "Pārbaudīt atjauninājumus"
 
 #: src/AboutDialog.cpp:162
 msgid "Checking for updates..."
-msgstr "Pārbauda atjauninājumus..."
+msgstr "Pārbauda atjauninājumus…"
 
 #: src/AboutDialog.cpp:172
 msgid "You are running the latest version."
@@ -207,17 +207,17 @@ msgstr ""
 
 #: src/amule.cpp:300
 msgid "Now, exiting main app..."
-msgstr "Pašlaik aizver galveno programmu..."
+msgstr "Pašlaik aizver galveno programmu…"
 
 #: src/amule.cpp:330
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Pārtrauc amuleweb procesu ar pid '%d' ... "
+msgstr "Pārtrauc amuleweb procesu ar pid '%d' … "
 
 #: src/amule.cpp:334
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Iznīcina amuleweb procesu ar pid '%d' ... "
+msgstr "Iznīcina amuleweb procesu ar pid '%d' … "
 
 #: src/amule.cpp:336 src/amule.cpp:349 src/ClientRef.cpp:180
 #: src/ServerListCtrl.cpp:98
@@ -232,7 +232,7 @@ msgstr "Pārtrauc amuleweb procesu ar pid '%d' ... "
 #: src/amule.cpp:347
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "Iznīcina amuleapi procesu ar pid '%d' ... "
+msgstr "Iznīcina amuleapi procesu ar pid '%d' … "
 
 #: src/amule.cpp:355
 msgid "aMule OnExit: Terminating core."
@@ -694,7 +694,7 @@ msgstr "aMule (%s | Atslēgts)"
 #: src/amuleDlg.cpp:1121
 #, c-format
 msgid "Do you really want to exit %s?"
-msgstr ""
+msgstr "Vai tiešām vēlaties aizvērt %s?"
 
 #: src/amuleDlg.cpp:1123
 msgid "Exit confirmation"
@@ -861,7 +861,7 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp:530
 msgid "Connecting..."
-msgstr "Pieslēdzas..."
+msgstr "Pieslēdzas…"
 
 #: src/amule-remote-gui.cpp:563
 msgid "Connection failed. Please check the host, port, and password."
@@ -901,9 +901,9 @@ msgid "Reconnected to the remote core."
 msgstr "Pieslēgties tīklam."
 
 #: src/amule-remote-gui.cpp:752
-#, fuzzy, c-format
+#, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr "Neizdevās pieslēgties. Nevar izveidot savienojumu ar %s:%d\n"
+msgstr "Jau %d. mēģinājums atjaunot savienojumu: pieslēdzas %s:%d"
 
 #: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
@@ -1006,7 +1006,7 @@ msgstr ""
 #: src/BaseClient.cpp:2914
 #, c-format
 msgid "New message from '%s' (IP:%s)"
-msgstr ""
+msgstr "Jauns ziņojums no '%s' (IP:%s)"
 
 #: src/BaseClient.cpp:3006
 #, c-format
@@ -1949,7 +1949,7 @@ msgstr "Jau pieslēgts eD2k tīklam."
 
 #: src/ExternalConn.cpp:2490
 msgid "Connecting to eD2k..."
-msgstr "Pieslēdzas eD2k..."
+msgstr "Pieslēdzas eD2k…"
 
 #: src/ExternalConn.cpp:2499
 msgid "Already connected to Kad."
@@ -1957,7 +1957,7 @@ msgstr "Jau pieslēgts Kad tīklam."
 
 #: src/ExternalConn.cpp:2502
 msgid "Connecting to Kad..."
-msgstr "Pieslēdzas Kad..."
+msgstr "Pieslēdzas Kad…"
 
 #: src/ExternalConn.cpp:2509
 msgid "All networks are disabled."
@@ -2298,7 +2298,7 @@ msgstr "Jā"
 
 #: src/HTTPDownload.cpp:59
 msgid "Downloading..."
-msgstr "Lejupielādē..."
+msgstr "Lejupielādē…"
 
 #: src/HTTPDownload.cpp:126
 msgid "HTTP download cancelled"
@@ -2915,11 +2915,11 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:115
 msgid "Loading ..."
-msgstr "Ielādē..."
+msgstr "Ielādē…"
 
 #: src/muuli_wdr.cpp:122
 msgid "Number of users on the server you are connected to ..."
-msgstr "Lietotāju skaits serverī, kam esiet pieslēdzies ..."
+msgstr "Lietotāju skaits serverī, kam esiet pieslēdzies …"
 
 #: src/muuli_wdr.cpp:125
 msgid "Users: 0"
@@ -3205,31 +3205,28 @@ msgid "Media Info"
 msgstr ""
 
 #: src/muuli_wdr.cpp:660
-#, fuzzy
 msgid "Length :"
-msgstr "Ilgums"
+msgstr "Ilgums :"
 
 #: src/muuli_wdr.cpp:667
-#, fuzzy
 msgid "Bitrate :"
-msgstr "Bitu pārraides ātrums"
+msgstr "Bitu pārraides ātrums :"
 
 #: src/muuli_wdr.cpp:674
-#, fuzzy
 msgid "Codec :"
-msgstr "Kodeks"
+msgstr "Kodeks :"
 
 #: src/muuli_wdr.cpp:681
 msgid "Artist :"
-msgstr ""
+msgstr "Izpildītājs :"
 
 #: src/muuli_wdr.cpp:688
 msgid "Album :"
-msgstr ""
+msgstr "Albums :"
 
 #: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2188
 msgid "Title :"
-msgstr ""
+msgstr "Nosaukums :"
 
 #: src/muuli_wdr.cpp:704
 msgid "File Names"
@@ -3291,7 +3288,7 @@ msgstr "Izcila"
 
 #: src/muuli_wdr.cpp:786
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr "Novērtēt datni vai dot citiem lietotājiem mājienu, ka datnes nosaukums ir maldinošs un tā saturs neatbilst nosaukumam ..."
+msgstr "Novērtēt datni vai dot citiem lietotājiem mājienu, ka datnes nosaukums ir maldinošs un tā saturs neatbilst nosaukumam …"
 
 #: src/muuli_wdr.cpp:823
 #, fuzzy
@@ -3304,7 +3301,7 @@ msgstr "Atsvaidzināt"
 
 #: src/muuli_wdr.cpp:848
 msgid "Downloading, please wait ..."
-msgstr "Lejupielādē, lūdzu, uzgaidiet ..."
+msgstr "Lejupielādē, lūdzu, uzgaidiet …"
 
 #: src/muuli_wdr.cpp:852
 msgid "Unknown size"
@@ -4663,7 +4660,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp:3015 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
-msgstr "Gaida..."
+msgstr "Gaida…"
 
 #: src/muuli_wdr.cpp:3035
 msgid "Add imports"
@@ -7537,7 +7534,7 @@ msgstr ""
 #: src/utils/aLinkCreator/src/alcframe.cpp:482
 #: src/utils/aLinkCreator/src/alcframe.cpp:491
 msgid "Hashing..."
-msgstr "Skaitļo kontrolsummu..."
+msgstr "Skaitļo kontrolsummu…"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:486
 #: src/utils/aLinkCreator/src/alcframe.cpp:504
@@ -7730,7 +7727,7 @@ msgstr "aMule darbojas, bet atslēgta no tīkla"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:898
 msgid "aMule is connecting..."
-msgstr "aMule pieslēdzas..."
+msgstr "aMule pieslēdzas…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:902
 msgid "Oh Oh, aMule status is unknown..."
@@ -7759,7 +7756,7 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp:977
 msgid " is connecting..."
-msgstr " pieslēdzas..."
+msgstr " pieslēdzas…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:980
 msgid " is doing something strange, check it !"
@@ -8093,7 +8090,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."
-msgstr "Noņem iepriekš uzstādīto aMule versiju $0 mapē..."
+msgstr "Noņem iepriekš uzstādīto aMule versiju $0 mapē…"
 
 #: packaging/windows/installer_strings.c:56
 msgid ""
@@ -8109,7 +8106,7 @@ msgstr "Izskatās, ka aMule darbojas. Lūdzu, aizveriet to un vēlreiz palaidiet
 
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr "Dzēš lietotāja datus, kas atrodas $APPDATA\\aMule mapē..."
+msgstr "Dzēš lietotāja datus, kas atrodas $APPDATA\\aMule mapē…"
 
 #~ msgid "Check for new version at startup"
 #~ msgstr "Kad palaiž, pārbaudīt, vai nav pieejama jauna versija"
