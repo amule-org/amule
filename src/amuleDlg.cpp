@@ -756,14 +756,18 @@ void CamuleDlg::AddLogLine(const wxString &line)
 
 void CamuleDlg::BeginLogBatch()
 {
-	// Coalesce a burst of log lines (a stats poll delivers up to
-	// EC_LOG_LINES_PER_MESSAGE at once on a first-sync backlog) into a
-	// single repaint plus one final scroll instead of per-line reflow.
+	// Coalesce a poll's worth of log lines into a single scroll-to-end
+	// (EndLogBatch) instead of one per line, which forced an O(n) RichEdit
+	// reflow on every line of a first-sync backlog (issue #445).
+	//
+	// Deliberately NO Freeze()/Thaw() here: appending to a *frozen*
+	// wxTE_RICH2 control on Windows leaves its line/scroll metrics stale, so
+	// after Thaw the view renders blank with the newest line pinned to the top
+	// until a manual scroll forces a recompute. That's the regression #451
+	// introduced and #471's Thaw-before-scroll tweak didn't cure (the append
+	// itself happened while frozen). Appending live keeps the metrics correct;
+	// suppressing only the per-line ShowPosition still removes the reflow cost.
 	m_logBatching = true;
-	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
-	if (ct) {
-		ct->Freeze();
-	}
 }
 
 void CamuleDlg::EndLogBatch()
@@ -771,12 +775,6 @@ void CamuleDlg::EndLogBatch()
 	m_logBatching = false;
 	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
 	if (ct) {
-		// Thaw first, THEN scroll: on Windows, ShowPosition() on a still-frozen
-		// wxTE_RICH2 control doesn't lay out the visible region, so after Thaw
-		// the log view comes back blank (only the last line pinned at the top)
-		// until a manual scroll forces a repaint (issue #445). Scrolling the
-		// live control avoids that; macOS/GTK are unaffected either way.
-		ct->Thaw();
 		ct->ShowPosition(ct->GetLastPosition() - 1);
 	}
 }
