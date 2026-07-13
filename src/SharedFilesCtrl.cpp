@@ -207,8 +207,9 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 	while (index != -1) {
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
 		if (file->IsPartFile())
-			AddLogLineN(CFormat("Verify Local Data on PartFile is currently not supported: %s") %
-				    file->GetFileName());
+			AddLogLineN(
+				CFormat(_("Verify Local Data on PartFile is currently not supported: %s")) %
+				file->GetFileName());
 		else
 			CThreadScheduler::AddTask(new CVerifyLocalDataTask(file->GetFileHash()));
 		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);

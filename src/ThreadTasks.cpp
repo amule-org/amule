@@ -554,30 +554,44 @@ void CVerifyLocalDataTask::PrintReport(const CPath &fullPath, const bool checked
 
 void CVerifyLocalDataTask::Entry()
 {
-	CKnownFile *knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
-	if (knownFile == nullptr) {
-		AddDebugLogLineC(logVerifyLocalData,
-			CFormat("Warning, file was removed before verifying it: %s") % GetDesc());
-		return;
-	}
-
-	if (knownFile->IsPartFile()) {
-		AddDebugLogLineC(
-			logVerifyLocalData, CFormat("Warning, file is a part file, skipping %s") % GetDesc());
-		return;
-	}
 
 	CFileAutoClose file;
-	CPath filepath = knownFile->GetFilePath();
-	CPath filename = knownFile->GetFileName();
-	CPath fullPath = filepath.JoinPaths(filename);
+	uint64 fileLength = 0;
+	uint64 fileSize = 0;
+	std::vector<CMD4Hash> storedMD4Hashes;
+	CAICHHash aichRootHash;
+	EAICHStatus aichStatus;
+	CPath fullPath;
+	{
+		CKnownFile *knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
+		if (knownFile == nullptr) {
+			AddDebugLogLineC(logVerifyLocalData,
+				CFormat("Warning, file was removed before verifying it: %s") % GetDesc());
+			return;
+		}
+
+		if (knownFile->IsPartFile()) {
+			AddDebugLogLineC(logVerifyLocalData,
+				CFormat("Warning, file is a part file, skipping %s") % GetDesc());
+			return;
+		}
+		CPath filepath = knownFile->GetFilePath();
+		CPath filename = knownFile->GetFileName();
+		fullPath = filepath.JoinPaths(filename);
+		storedMD4Hashes.reserve(knownFile->GetHashCount());
+		for (size_t i = 0; i < knownFile->GetHashCount(); ++i)
+			storedMD4Hashes.push_back(knownFile->GetPartHash(i));
+		aichRootHash = knownFile->GetAICHHashset()->GetMasterHash();
+		aichStatus = knownFile->GetAICHHashset()->GetStatus();
+		fileSize = knownFile->GetFileSize();
+	} // no more knownFile after this point
+
 	if (!file.Open(fullPath, CFile::read)) {
 		AddDebugLogLineC(
 			logVerifyLocalData, CFormat("Warning, failed to open file, skipping: %s") % fullPath);
 		return;
 	}
 
-	uint64 fileLength = 0;
 	try {
 		fileLength = file.GetLength();
 	} catch (const CIOFailureException &) {
@@ -586,7 +600,13 @@ void CVerifyLocalDataTask::Entry()
 		return;
 	}
 
-	if (fileLength > MAX_FILE_SIZE) {
+	if (fileLength != fileSize) {
+		AddDebugLogLineC(logVerifyLocalData,
+			CFormat("Warning, size mismatch between stored value and underlying file, skipping: "
+				"%s") %
+				fullPath);
+		return;
+	} else if (fileLength > MAX_FILE_SIZE) {
 		AddDebugLogLineC(logVerifyLocalData,
 			CFormat("Warning, file is larger than supported size, skipping: %s") % fullPath);
 		return;
@@ -603,33 +623,31 @@ void CVerifyLocalDataTask::Entry()
 	// file which will call LoadHashSet() and FreeHashSet() on the same working set...
 	// Create our own working copy here
 	CKnownFile storedFile;
-	storedFile.SetFileSize(knownFile->GetFileSize());
-	storedFile.GetAICHHashset()->SetMasterHash(
-		knownFile->GetAICHHashset()->GetMasterHash(), knownFile->GetAICHHashset()->GetStatus());
+	storedFile.SetFileSize(fileSize);
+	storedFile.GetAICHHashset()->SetMasterHash(aichRootHash, aichStatus);
 	bool isAICHloaded = storedFile.GetAICHHashset()->LoadHashSet();
 
 	if (!isAICHloaded) {
 		AddDebugLogLineN(logVerifyLocalData,
-			CFormat("Verify Local Data error: failed to load hashset. File: %s") %
-				knownFile->GetFileName());
+			CFormat("Verify Local Data error: failed to load hashset. File: %s") % fullPath);
 	}
 
 	try {
-		for (uint16 part = 0; part < knownFile->GetPartCount() && !TestDestroy(); part++) {
+		for (uint16 part = 0; part < storedFile.GetPartCount() && !TestDestroy(); part++) {
 
 			const uint64 offset = part * PARTSIZE; // We'll read at most PARTSIZE bytes per cycle
-			const uint64 partLength = knownFile->GetPartSize(part);
+			const uint64 partLength = storedFile.GetPartSize(part);
 
 			CMD4Hash md4Hash;
 			CKnownFile calculatedCAICHOwner;
 			CAICHHashTree *aichHash = nullptr;
 			if (isAICHloaded) {
-				calculatedCAICHOwner.SetFileSize(knownFile->GetFileSize());
+				calculatedCAICHOwner.SetFileSize(storedFile.GetFileSize());
 				aichHash = calculatedCAICHOwner.GetAICHHashset()->m_pHashTree.FindHash(
 					offset, partLength);
 			}
 
-			knownFile->CreateHashFromFile(file, offset, partLength, &md4Hash, aichHash);
+			CKnownFile::CreateHashFromFile(file, offset, partLength, &md4Hash, aichHash);
 			if (isAICHloaded) {
 				std::vector<uint8> corruptedAICHinThisPart;
 				uint8 block = 0;
@@ -649,7 +667,7 @@ void CVerifyLocalDataTask::Entry()
 						AddDebugLogLineN(logVerifyLocalData,
 							CFormat("Verify Local Data error: Invalid/NULL AICH "
 								"block. File: %s, part %d, block %d") %
-								knownFile->GetFileName() % part % block);
+								fullPath % part % block);
 						continue;
 					}
 					if (pOurBlock->GetHash() != pVerifiedBlock->GetHash())
@@ -662,13 +680,13 @@ void CVerifyLocalDataTask::Entry()
 			// For files smaller than PARTSIZE, GetPartHash is empty, and the MD4 of the part
 			// is the same as the MD4 of the file, no ID=MD4(concatenation of parts' MD4) is done
 			// Check comment in CKnownFile::SetFileSize() for further info
-			if (knownFile->GetHashCount() == 0) {
+			if (storedMD4Hashes.empty()) {
 				if (md4Hash != m_fileID)
 					m_corruptedMD4.push_back(part);
 				break;
 			}
 
-			if (knownFile->GetPartHash(part) != md4Hash)
+			if (storedMD4Hashes[part] != md4Hash)
 				m_corruptedMD4.push_back(part);
 		}
 
