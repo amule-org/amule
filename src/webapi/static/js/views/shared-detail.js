@@ -8,9 +8,8 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, toast, Section, statRow, magnetLink, copyText, Tabs, CommentEditor } from "../components.js";
+import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor } from "../components.js";
 import { formatBytes, formatInt, formatDuration, twin } from "../format.js";
-import { Icon } from "../icons.js";
 import { t } from "../i18n.js";
 
 const PRIORITIES = ["very_low", "low", "normal", "high", "release"];
@@ -79,7 +78,7 @@ export function SharedDetail({ hash }) {
         </div>
       ` : html`
       <div class="detail-sections">
-        ${Section("shared_detail_sec_sharing", [
+        ${Section([
           statRow("shared_size", formatBytes(s.size), "shared_detail_tip_size"),
           statRow("shared_detail_uploaded", twin(s.xfer, "session", "total", formatBytes), "shared_detail_tip_uploaded"),
           statRow("shared_detail_requested", twin(s.requests, "session", "total", formatInt), "shared_detail_tip_requested"),
@@ -87,12 +86,12 @@ export function SharedDetail({ hash }) {
           statRow("shared_detail_share_ratio", (Number(s.share_ratio) || 0).toFixed(2), "shared_detail_tip_share_ratio"),
           statRow("shared_detail_complete_src", completeSources(s), "shared_detail_tip_complete_src"),
         ])}
-        ${Section("downloads_detail_sec_activity", [
+        ${Section([
           statRow("shared_priority", prioLabel(s), "shared_detail_tip_priority"),
           statRow("downloads_detail_queued", formatInt(s.queued_count), "downloads_detail_tip_queued"),
           statRow("shared_detail_file_type", s.file_type || "—", "shared_detail_tip_file_type"),
         ])}
-        ${media ? Section("downloads_detail_sec_media", [
+        ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
           media.album ? statRow("downloads_detail_media_album", media.album, "downloads_detail_tip_media_album") : null,
@@ -100,22 +99,10 @@ export function SharedDetail({ hash }) {
           media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean)) : null}
-        ${Section("downloads_detail_sec_identity", [
-          statRow("downloads_detail_hash", html`
-            <div class="hash-cell">
-              <span class="mono">${(s.hash || "").toUpperCase()}</span>
-              <span class="detail-actions">
-                <button class="btn btn-sm" type="button" onClick=${() => copy(s.ed2k_link)}>
-                  <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
-                </button>
-                <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(s))}>
-                  <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
-                </button>
-              </span>
-            </div>`, "downloads_detail_tip_hash"),
+        ${IdentityLine({ file: s, copy, extra: [
           statRow("shared_detail_path", s.path || "—", "shared_detail_tip_path"),
           statRow("shared_detail_parts", formatInt(s.part_count), "shared_detail_tip_parts"),
-        ])}
+        ] })}
       </div>`}
       </div>
     </div>`;

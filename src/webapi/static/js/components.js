@@ -6,6 +6,7 @@ import { html, render, useState } from "./dom.js";
 import { formatPercent } from "./format.js";
 import { t, terr } from "./i18n.js";
 import { api } from "./api.js";
+import { Icon } from "./icons.js";
 
 // --- presentational components -----------------------------------------
 
@@ -38,21 +39,38 @@ export function Placeholder({ kind, children }) {
 // from i18n keys. Consumed by Section() below.
 export const statRow = (labelKey, value, tipKey) => [t(labelKey), value, t(tipKey)];
 
-// A titled block of label/value stat cells (reuses the kad stat-grid look).
-// Each cell carries an explanatory tooltip. `rows` is a list of statRow tuples.
-export function Section(titleKey, rows) {
+// A group of label/value stat cells (reuses the kad stat-grid look). Each cell
+// carries an explanatory tooltip. `rows` is a list of statRow tuples. The detail
+// panels stack several of these (separated by the .detail-sections gap) to form
+// their compact, title-less grid.
+export function Section(rows) {
   if (!rows.length) return null;
   return html`
-    <div class="detail-section">
-      <div class="detail-section-title">${t(titleKey)}</div>
-      <div class="kad-grid">
-        ${rows.map(([label, value, tip]) => html`
-          <div title=${tip || null}>
-            <div class="kad-stat-label">${label}</div>
-            <div class="kad-stat-value">${value}</div>
-          </div>`)}
-      </div>
+    <div class="kad-grid">
+      ${rows.map(([label, value, tip]) => html`
+        <div title=${tip || null}>
+          <div class="kad-stat-label">${label}</div>
+          <div class="kad-stat-value">${value}</div>
+        </div>`)}
     </div>`;
+}
+
+// The identity group shared by both detail panels: the hash (with its two copy
+// buttons stacked below it) plus extra fields (path, met_file / parts). Just a
+// normal Section, so it lays out like every other group. `extra` is a list of
+// statRow tuples.
+export function IdentityLine({ file, copy, extra }) {
+  const hash = statRow("downloads_detail_hash", html`
+    <span class="mono">${(file.hash || "").toUpperCase()}</span>
+    <div class="detail-actions">
+      <button class="btn btn-sm" type="button" onClick=${() => copy(file.ed2k_link)}>
+        <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
+      </button>
+      <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(file))}>
+        <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
+      </button>
+    </div>`, "downloads_detail_tip_hash");
+  return Section([hash, ...extra]);
 }
 
 // Flat notebook-style tab strip (aMule CMuleNotebook look). `tabs` is a list

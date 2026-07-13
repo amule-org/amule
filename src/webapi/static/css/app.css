@@ -599,7 +599,8 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   margin: 0; font-size: 15px; flex: 1 1 auto; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
+/* The hash's copy buttons: their own row (below the hash text in the identity group). */
+.detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; margin-top: 6px; }
 .detail-progress .progress { height: 22px; margin-bottom: 10px; }
 .pieces-bar {
   width: 100%; height: 24px; border-radius: 3px; overflow: hidden;
@@ -621,16 +622,10 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   background: linear-gradient(90deg, var(--piece-avail-lo), var(--piece-avail));
 }
 .detail-sections { display: flex; flex-direction: column; gap: 16px; }
-.detail-section-title {
-  font-size: 13px; font-weight: 600; color: var(--text-dim);
-  margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
-}
-.detail-panel .kad-stat-value { word-break: break-word; }
-.detail-panel .mono { font-family: var(--mono); font-size: 12.5px; }
-/* Hash row: hash on the left, the Copy ED2K / magnet buttons on the right.
-   Span the full grid width so the buttons have room and sit at the far edge. */
-.kad-grid > div:has(.hash-cell) { grid-column: 1 / -1; }
-.hash-cell { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+/* Field values: kept bold (from .kad-stat-value) but a touch smaller than the
+   Kad stat grid to pack the (title-less) detail grid tighter. */
+.detail-panel .kad-stat-value { font-size: 13px; word-break: break-word; }
+.detail-panel .mono { font-family: var(--mono); font-size: 13px; }
 /* Tabs hang off the content box's top edge (no gap), notebook-style. */
 .detail-panel .tabs { margin-top: 0; margin-bottom: 0; flex: none; }
 .detail-body {

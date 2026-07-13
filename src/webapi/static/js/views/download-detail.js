@@ -7,7 +7,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast, Section, statRow, magnetLink, copyText, Tabs, CommentEditor, ratingLabel } from "../components.js";
+import { ProgressBar, Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, ratingLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -95,7 +95,7 @@ export function DownloadDetail({ hash }) {
           <${PiecesBar} parts=${(d.progress && d.progress.parts) || []} />
           <${PiecesLegend} parts=${(d.progress && d.progress.parts) || []} />
         </div>
-        ${Section("downloads_detail_sec_transfer", [
+        ${Section([
           statRow("downloads_status_label", t("downloads_status_" + d.status), "downloads_detail_tip_status"),
           statRow("downloads_detail_completed", formatBytes(d.size_done) + " (" + formatPercent(d.progress && d.progress.percent) + ")", "downloads_detail_tip_completed"),
           statRow("downloads_speed", formatSpeed(d.speed_bps), "downloads_detail_tip_speed"),
@@ -104,13 +104,13 @@ export function DownloadDetail({ hash }) {
           statRow("downloads_size", formatBytes(d.size), "downloads_detail_tip_size"),
           statRow("downloads_detail_transferred", formatBytes(d.size_xfer), "downloads_detail_tip_transferred"),
         ])}
-        ${Section("downloads_detail_sec_activity", [
+        ${Section([
           statRow("downloads_detail_active_time", formatDuration(d.download_active_time), "downloads_detail_tip_active_time"),
           statRow("downloads_detail_last_changed", fmtTs(d.last_changed), "downloads_detail_tip_last_changed"),
           statRow("downloads_detail_last_seen_complete", fmtTs(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
           statRow("downloads_detail_queued", formatInt(d.queued_count), "downloads_detail_tip_queued"),
         ])}
-        ${media ? Section("downloads_detail_sec_media", [
+        ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
           media.album ? statRow("downloads_detail_media_album", media.album, "downloads_detail_tip_media_album") : null,
@@ -118,27 +118,16 @@ export function DownloadDetail({ hash }) {
           media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean)) : null}
-        ${Section("downloads_detail_sec_parts", [
+        ${Section([
           statRow("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.part_count), "downloads_detail_tip_available_parts"),
           statRow("downloads_detail_saved_ich", formatInt(d.saved_by_ich) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
           statRow("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption), "downloads_detail_tip_lost_corruption"),
           statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression), "downloads_detail_tip_gained_compression"),
         ])}
-        ${Section("downloads_detail_sec_identity", [
-          statRow("downloads_detail_hash", html`
-            <div class="hash-cell">
-              <span class="mono">${(d.hash || "").toUpperCase()}</span>
-              <span class="detail-actions">
-                <button class="btn btn-sm" type="button" onClick=${() => copy(d.ed2k_link)}>
-                  <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
-                </button>
-                <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(d))}>
-                  <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
-                </button>
-              </span>
-            </div>`, "downloads_detail_tip_hash"),
+        ${IdentityLine({ file: d, copy, extra: [
+          statRow("downloads_detail_path", d.path || "—", "downloads_detail_tip_path"),
           statRow("downloads_detail_met_file", d.met_file || "—", "downloads_detail_tip_met_file"),
-        ])}
+        ] })}
       </div>`}
       </div>
     </div>`;
