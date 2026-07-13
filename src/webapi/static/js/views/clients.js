@@ -1,4 +1,4 @@
-// Peers panel: every connected peer (both directions) in one table with a
+// Clients view: every connected peer (both directions) in one table with a
 // Todos / Descargas / Subidas selector. Data comes from the live `clients`
 // store (api.get("clients") + SSE client_added/updated/removed) which already
 // carries all peers regardless of transfer direction, so filtering is purely
@@ -67,7 +67,7 @@ const COLS = [
 
 const IDENT_FILTERS = ["all", "identified", "not_identified"].map((v) => [v, t("downloads_peer_ident_" + v)]);
 
-export function PeersPanel() {
+export default function ClientsPanel() {
   const clients = useStore("clients") || [];
   const [filter, setFilter] = useState("all"); // direction tab: all / downloads / uploads
   const [ident, setIdent] = useState("identified");
@@ -116,7 +116,9 @@ export function PeersPanel() {
   }
 
   return html`
-    <h3 class="section-title">${t("downloads_peer_title")}</h3>
+    <div class="view-header">
+      <h3 class="section-title">${t("app_nav_clients")}</h3>
+    </div>
     <section class="net-pane">
       <${Tabs} tabs=${tabs} active=${filter} onSelect=${setFilter} />
       <div class="net-pane-body">

@@ -1,8 +1,7 @@
-// Downloads view: downloads queue (with actions) + bottom Peers panel.
+// Downloads view: downloads queue (with actions).
 // Mirrors the aMule desktop "Downloads" page: category tabs, status filter,
 // multi-select, column sorting, per-row pause/resume/priority/category/cancel,
-// bulk actions, clear-completed, live totals, an ed2k adder for mobile, and a
-// bottom Peers panel (see peers.js).
+// bulk actions, clear-completed, live totals, and an ed2k adder for mobile.
 
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
@@ -13,7 +12,6 @@ import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
 import { CategoriesPanel } from "./categories.js";
-import { PeersPanel } from "./peers.js";
 
 const PRIORITIES = ["auto", "low", "normal", "high"]
   .map((v) => [v, t("downloads_prio_" + v)]);
@@ -265,9 +263,7 @@ export default function Downloads({ isGuest }) {
         <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
       </div>
       </div>
-    </section>`}
-
-    <${PeersPanel} />`;
+    </section>`}`;
 }
 
 // --- helpers ------------------------------------------------------------

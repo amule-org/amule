@@ -23,6 +23,7 @@ const ROUTES = [
   { key: "networks", label: t("app_nav_networks") },
   { key: "search", label: t("app_nav_search") },
   { key: "downloads", label: t("app_nav_downloads") },
+  { key: "clients", label: t("app_nav_clients") },
   { key: "shared", label: t("app_nav_shared") },
   { key: "stats", label: t("app_nav_stats") },
   { key: "preferences", label: t("app_nav_preferences") },
