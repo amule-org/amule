@@ -777,6 +777,25 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	msg << "bound to " << ipAddress << ":" << port << ".";
 	AddDebugLogLineN(logUPnP, msg);
 	msg.str("");
+
+	// Raise the SDK's incoming content-length ceiling above libupnp's
+	// 16 KB default (DEFAULT_SOAP_CONTENT_LENGTH). Some gateways serve an
+	// SCPD/description XML slightly larger than that, which makes the
+	// blocking UpnpDownloadXmlDoc in Subscribe() fail with
+	// UPNP_E_OUTOF_BOUNDS ("Error getting SCPD Document") — the service
+	// never registers, so no port mapping happens and the user is stuck on
+	// a LowID (observed on ZTE and Sagemcom routers). 1 MB clears any real
+	// router descriptor while still bounding what a hostile LAN device can
+	// push into a blocking fetch. Must run after UpnpInit2 succeeds: the
+	// call is a no-op (UPNP_E_FINISH) until the SDK is initialised.
+	ret = UpnpSetMaxContentLength(1024 * 1024);
+	if (ret != UPNP_E_SUCCESS) {
+		msg << "warning(UpnpSetMaxContentLength): could not raise content-length limit, error code "
+		    << ret << "; keeping libupnp default.";
+		AddDebugLogLineN(logUPnP, msg);
+		msg.str("");
+	}
+
 	ret = UpnpRegisterClient(static_cast<Upnp_FunPtr>(&CUPnPControlPoint::Callback),
 		&m_UPnPClientHandle,
 		&m_UPnPClientHandle);
