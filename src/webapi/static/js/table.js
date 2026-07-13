@@ -46,7 +46,7 @@ export function textMatcher(query) {
 const colClass = (c) => [c.num ? "num" : "", c.cls || ""].filter(Boolean).join(" ");
 
 export function VirtualTable({
-  columns, rows, rowKey, rowClass, sortKey, sortDir, onSort, empty,
+  columns, rows, rowKey, rowClass, sortKey, sortDir, onSort, empty, onRowClick,
   rowHeight = ROW_HEIGHT, maxHeight = "70vh",
 }) {
   const ref = useRef(null);
@@ -86,6 +86,7 @@ export function VirtualTable({
   const rowTr = (r, i) => html`
     <tr key=${rowKey(r)}
         class=${((start + i) % 2 ? "stripe " : "") + (rowClass ? rowClass(r) : "")}
+        onClick=${onRowClick ? (e) => onRowClick(r, e) : null}
         style=${{ height: rowHeight + "px" }}>
       ${columns.map((c) => html`<td class=${colClass(c)}>${c.cell(r)}</td>`)}
     </tr>`;

@@ -23,6 +23,11 @@
   --warn: #d68a0c;
   --bad: #cf3b3b;
   --low: #d68a0c;
+  /* download pieces bar: available-but-not-downloaded parts (aMule's blue).
+     The graph fades --piece-avail-lo (few sources) -> --piece-avail (many)
+     to show availability, like the desktop GUI's blue gradient. */
+  --piece-avail: #2f8fd0;
+  --piece-avail-lo: #a6d4ee;
   --sel: rgba(22, 100, 192, .2);
   --stripe: rgba(0, 0, 0, .025);
   --radius: 7px;
@@ -48,6 +53,8 @@
     --warn: #e0a13a;
     --bad: #f0625f;
     --low: #e0a13a;
+    --piece-avail: #4bb4e6;
+    --piece-avail-lo: #2d6f96;
     --sel: rgba(75, 155, 255, .16);
     --stripe: rgba(255, 255, 255, .03);
     --shadow: 0 1px 3px rgba(0, 0, 0, .4);
@@ -69,6 +76,8 @@
   --warn: #e0a13a;
   --bad: #f0625f;
   --low: #e0a13a;
+  --piece-avail: #4bb4e6;
+  --piece-avail-lo: #2d6f96;
   --sel: rgba(75, 155, 255, .16);
   --stripe: rgba(255, 255, 255, .03);
   --shadow: 0 1px 3px rgba(0, 0, 0, .4);
@@ -193,7 +202,7 @@ b { font-weight: 600; }
 
 /* --- view container --- */
 .view { flex: 1 1 auto; overflow: auto; padding: 16px; }
-.view > * { max-width: 1400px; margin-left: auto; margin-right: auto; }
+.view > * { max-width: 1760px; margin-left: auto; margin-right: auto; }
 .view-header {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   margin-bottom: 12px;
@@ -537,6 +546,72 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   border-radius: 0 0 var(--radius) var(--radius); padding: 12px;
 }
 
+/* --- Downloads: full-height split (table on top, detail panel below) --- */
+/* The Downloads page fills the viewport and scrolls its regions internally
+   (app-like) instead of scrolling the whole page. */
+.dl-view { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.dl-view .net-pane { flex: 1 1 auto; min-height: 0; }
+.dl-view .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* fill the region and scroll rows internally (overrides the default 70vh cap) */
+.dl-view .table-wrap.virtual { flex: 1 1 auto; min-height: 0; }
+.dl-view table.data.virtual tbody tr:not(.spacer) { cursor: pointer; }
+
+.dl-split { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.dl-split-top { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.dl-splitter {
+  flex: none; height: 7px; margin: 2px 0; cursor: row-resize;
+  background: var(--border); border-radius: 3px; touch-action: none;
+}
+.dl-splitter:hover { background: var(--accent); }
+.dl-split-bottom {
+  flex: none; position: relative; overflow: auto;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+/* selected-for-detail row: accent left edge (mirrors .connected) */
+.row-active td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.row-active, .row-active:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+
+/* --- detail panel content --- */
+.dl-detail { padding: 12px; }
+.dl-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; }
+/* title row: file name (ellipsised) on the left, copy buttons on the right;
+   padding-right leaves room for the absolute close button */
+.dl-detail-titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-right: 34px; }
+.dl-detail-name {
+  margin: 0; font-size: 15px; flex: 1 1 auto; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dl-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
+.dl-detail-head .progress { height: 22px; margin-bottom: 10px; }
+.pieces-bar {
+  width: 100%; height: 24px; border-radius: 3px; overflow: hidden;
+  border: 1px solid var(--border);
+  /* track shows through the 1px gaps drawn between pieces (when wide enough) */
+  background: var(--surface-2);
+}
+.pieces-bar canvas { display: block; width: 100%; height: 100%; }
+.pieces-legend { margin-top: 8px; align-items: center; }
+.pieces-legend b { color: var(--text); font-variant-numeric: tabular-nums; }
+.pieces-total { margin-left: auto; color: var(--text-dim); font-weight: 600; }
+/* Availability scale, inline right after "Available": the blue's shade encodes
+   how many sources have each part. Flanked by "fewer"/"more" so the mapping is
+   explicit and theme-independent (full meaning in the item's tooltip). */
+.pieces-scale { display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; }
+.pieces-scale small { color: var(--text-dim); font-size: 11px; }
+.pieces-scale-bar {
+  width: 64px; height: 10px; border-radius: 2px; border: 1px solid var(--border);
+  background: linear-gradient(90deg, var(--piece-avail-lo), var(--piece-avail));
+}
+.dl-detail-sections { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+.dl-detail-section-title {
+  font-size: 13px; font-weight: 600; color: var(--text-dim);
+  margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
+}
+.dl-detail .kad-stat-value { word-break: break-word; }
+.dl-detail .mono { font-family: var(--mono); font-size: 12.5px; }
+
 /* --- responsive --- */
 @media (max-width: 860px) {
   /* header shrinks to: hamburger + logo + section name (tools move into the drawer) */
@@ -547,6 +622,32 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   /* notebook tab strips: single scrolling row instead of wrapping to 2 lines */
   .net-pane .tabs { flex-wrap: nowrap; overflow-x: auto; }
   .net-pane .tab { flex: 0 0 auto; }
+
+  /* Downloads on phones: no viewport-fit/splitter. The table stacks and the
+     page scrolls; the detail opens as a full-screen drill-down sheet over the
+     list (below the top bar) so the tap clearly changes the screen and the
+     info is reachable without scrolling past a tall table. */
+  .dl-view { height: auto; }
+  .dl-view .net-pane, .dl-view .net-pane-body { flex: 0 0 auto; }
+  .dl-splitter { display: none; }
+  .dl-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
+  .dl-split-bottom {
+    position: fixed; inset: var(--toolbar-h) 0 0 0; z-index: 60;
+    height: auto !important; overflow: auto;
+    border: none; border-radius: 0; background: var(--surface);
+    animation: dl-sheet-in .18s ease-out;
+  }
+  /* pin the close control to the sheet's top-right so it never scrolls away */
+  .dl-detail-close {
+    position: fixed; top: calc(var(--toolbar-h) + 8px); right: 12px; z-index: 61;
+    background: var(--surface-2); padding: 8px;
+  }
+  .dl-detail-close .icon { width: 18px; height: 18px; }
+  .dl-detail { padding: 16px; }
+  /* stack the name (full width) above the copy buttons; clear the fixed close */
+  .dl-detail-titlebar { flex-wrap: wrap; padding-right: 40px; }
+  .dl-detail-name { flex-basis: 100%; white-space: normal; }
+  @keyframes dl-sheet-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 
   /* nav collapses into a hamburger-driven side drawer */
   .app-toolbar .nav-toggle { display: inline-flex; padding: 10px; }
