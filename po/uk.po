@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-13 12:24+0200\n"
+"POT-Creation-Date: 2026-07-13 19:22+0200\n"
 "PO-Revision-Date: 2026-07-13 13:12+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -307,7 +307,7 @@ msgid "Password set and external connections enabled."
 msgstr "Пароль встановлений та дозволені зовнішні з'єднання."
 
 #: src/amule.cpp:749 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1299 src/SharedFilesCtrl.cpp:334
+#: src/PrefsUnifiedDlg.cpp:1299 src/SharedFilesCtrl.cpp:362
 msgid "WARNING"
 msgstr "ЗАСТЕРЕЖЕННЯ"
 
@@ -622,31 +622,31 @@ msgstr "Діалог aMule знищений"
 msgid "Connecting"
 msgstr "З'єднується"
 
-#: src/amuleDlg.cpp:878
+#: src/amuleDlg.cpp:883
 msgid "eD2k: Connecting"
 msgstr "eD2k: з'єднання"
 
-#: src/amuleDlg.cpp:882
+#: src/amuleDlg.cpp:887
 msgid "eD2k: Disconnected"
 msgstr "eD2k: від'єднаний"
 
-#: src/amuleDlg.cpp:888
+#: src/amuleDlg.cpp:893
 msgid "Kad: Firewalled"
 msgstr "Kad: за фаєрволом"
 
-#: src/amuleDlg.cpp:892
+#: src/amuleDlg.cpp:897
 msgid "Kad: Connected"
 msgstr "Kad: з'єднаний"
 
-#: src/amuleDlg.cpp:897
+#: src/amuleDlg.cpp:902
 msgid "Kad: Connecting"
 msgstr "Kad: з'єднуюсь"
 
-#: src/amuleDlg.cpp:901
+#: src/amuleDlg.cpp:906
 msgid "Kad: Off"
 msgstr "Kad: вимкнена"
 
-#: src/amuleDlg.cpp:949 src/DownloadListCtrl.cpp:471
+#: src/amuleDlg.cpp:954 src/DownloadListCtrl.cpp:471
 #: src/DownloadListCtrl.cpp:710 src/FriendListCtrl.cpp:177
 #: src/muuli_wdr.cpp:741 src/muuli_wdr.cpp:792 src/muuli_wdr.cpp:856
 #: src/muuli_wdr.cpp:908 src/muuli_wdr.cpp:2165 src/muuli_wdr.cpp:2250
@@ -656,177 +656,177 @@ msgstr "Kad: вимкнена"
 msgid "Cancel"
 msgstr "Скасувати"
 
-#: src/amuleDlg.cpp:950
+#: src/amuleDlg.cpp:955
 msgid "Stop the current connection attempts"
 msgstr "Зупинити поточні спроби з'єднань"
 
-#: src/amuleDlg.cpp:955 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
+#: src/amuleDlg.cpp:960 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
 #: src/muuli_wdr.cpp:2366
 msgid "Disconnect"
 msgstr "Від'єднатися"
 
-#: src/amuleDlg.cpp:956
+#: src/amuleDlg.cpp:961
 msgid "Disconnect from the currently connected networks"
 msgstr "Від'єднатися від з'єднаних мереж"
 
-#: src/amuleDlg.cpp:961 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
+#: src/amuleDlg.cpp:966 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
 #: src/muuli_wdr.cpp:2517 src/muuli_wdr.cpp:2967 src/muuli_wdr.cpp:3306
 msgid "Connect"
 msgstr "З'єднатися"
 
-#: src/amuleDlg.cpp:962
+#: src/amuleDlg.cpp:967
 msgid "Connect to the currently enabled networks"
 msgstr "З'єднатися з дозволеними мережами"
 
-#: src/amuleDlg.cpp:1032
+#: src/amuleDlg.cpp:1037
 #, fuzzy, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Вивантаження: %.1f(%.1f) | Звантаження: %.1f(%.1f)"
 
-#: src/amuleDlg.cpp:1034 src/amuleDlg.cpp:1036 src/amuleDlg.cpp:1040
-#: src/amuleDlg.cpp:1042 src/amuleDlg.cpp:1053 src/amuleDlg.cpp:1055
+#: src/amuleDlg.cpp:1039 src/amuleDlg.cpp:1041 src/amuleDlg.cpp:1045
+#: src/amuleDlg.cpp:1047 src/amuleDlg.cpp:1058 src/amuleDlg.cpp:1060
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #, fuzzy
 msgid " MB/s"
 msgstr "Мбайт/с"
 
-#: src/amuleDlg.cpp:1034 src/amuleDlg.cpp:1036 src/amuleDlg.cpp:1040
-#: src/amuleDlg.cpp:1042 src/amuleDlg.cpp:1053 src/amuleDlg.cpp:1055
+#: src/amuleDlg.cpp:1039 src/amuleDlg.cpp:1041 src/amuleDlg.cpp:1045
+#: src/amuleDlg.cpp:1047 src/amuleDlg.cpp:1058 src/amuleDlg.cpp:1060
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #: src/utils/wxCas/src/wxcasframe.cpp:1041
 msgid " kB/s"
 msgstr " кбайт/с"
 
-#: src/amuleDlg.cpp:1039
+#: src/amuleDlg.cpp:1044
 #, fuzzy, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
 msgstr "Вивантаження: %.1f | Звантаження: %.1f"
 
-#: src/amuleDlg.cpp:1071
+#: src/amuleDlg.cpp:1076
 #, c-format
 msgid "aMule (%s | Connected)"
 msgstr "aMule (%s | З'єднано)"
 
-#: src/amuleDlg.cpp:1073
+#: src/amuleDlg.cpp:1078
 #, c-format
 msgid "aMule (%s | Disconnected)"
 msgstr "aMule (%s | Від'єднано)"
 
-#: src/amuleDlg.cpp:1121
+#: src/amuleDlg.cpp:1126
 #, fuzzy, c-format
 msgid "Do you really want to exit %s?"
 msgstr "Ви справді хочете вийти з aMule?"
 
-#: src/amuleDlg.cpp:1123
+#: src/amuleDlg.cpp:1128
 msgid "Exit confirmation"
 msgstr "Підтвердження виходу"
 
-#: src/amuleDlg.cpp:1458
+#: src/amuleDlg.cpp:1463
 msgid "Launch Command: "
 msgstr "Команда для запуску: "
 
-#: src/amuleDlg.cpp:1477 src/muuli_wdr.cpp:1931 src/Preferences.cpp:946
+#: src/amuleDlg.cpp:1482 src/muuli_wdr.cpp:1931 src/Preferences.cpp:946
 msgid "- default -"
 msgstr "- за замовчуванням -"
 
-#: src/amuleDlg.cpp:1505
+#: src/amuleDlg.cpp:1510
 #, c-format
 msgid "Skin directory '%s' does not exist"
 msgstr "Тека з шкірами '%s' не існує"
 
-#: src/amuleDlg.cpp:1508
+#: src/amuleDlg.cpp:1513
 #, c-format
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "ЗАСТЕРЕЖЕННЯ: Неможливо відкрити файл шкіри '%s' для читання"
 
-#: src/amuleDlg.cpp:1612 src/amuleDlg.cpp:1831 src/muuli_wdr.cpp:1481
+#: src/amuleDlg.cpp:1617 src/amuleDlg.cpp:1836 src/muuli_wdr.cpp:1481
 #: src/muuli_wdr.cpp:3308
 msgid "Networks"
 msgstr "Мережі"
 
-#: src/amuleDlg.cpp:1616 src/muuli_wdr.cpp:3308
+#: src/amuleDlg.cpp:1621 src/muuli_wdr.cpp:3308
 msgid "Networks Window"
 msgstr "Вікно мереж"
 
-#: src/amuleDlg.cpp:1618 src/muuli_wdr.cpp:3309
+#: src/amuleDlg.cpp:1623 src/muuli_wdr.cpp:3309
 msgid "Searches"
 msgstr "Пошук"
 
-#: src/amuleDlg.cpp:1622 src/muuli_wdr.cpp:3309
+#: src/amuleDlg.cpp:1627 src/muuli_wdr.cpp:3309
 msgid "Searches Window"
 msgstr "Вікно пошуку"
 
-#: src/amuleDlg.cpp:1624 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:382
+#: src/amuleDlg.cpp:1629 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:382
 #: src/muuli_wdr.cpp:1583 src/muuli_wdr.cpp:3310 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Звантаження"
 
-#: src/amuleDlg.cpp:1628 src/muuli_wdr.cpp:3310
+#: src/amuleDlg.cpp:1633 src/muuli_wdr.cpp:3310
 #, fuzzy
 msgid "Downloads Window"
 msgstr "Звантажується"
 
-#: src/amuleDlg.cpp:1630 src/muuli_wdr.cpp:3194
+#: src/amuleDlg.cpp:1635 src/muuli_wdr.cpp:3194
 msgid "Shared files"
 msgstr "Спільні файли"
 
-#: src/amuleDlg.cpp:1634 src/muuli_wdr.cpp:3312
+#: src/amuleDlg.cpp:1639 src/muuli_wdr.cpp:3312
 msgid "Shared Files Window"
 msgstr "Вікно спільних файлів"
 
-#: src/amuleDlg.cpp:1636 src/muuli_wdr.cpp:2834 src/muuli_wdr.cpp:3266
+#: src/amuleDlg.cpp:1641 src/muuli_wdr.cpp:2834 src/muuli_wdr.cpp:3266
 #: src/muuli_wdr.cpp:3313
 msgid "Messages"
 msgstr "Повідомлення"
 
-#: src/amuleDlg.cpp:1640 src/muuli_wdr.cpp:3313
+#: src/amuleDlg.cpp:1645 src/muuli_wdr.cpp:3313
 msgid "Messages Window"
 msgstr "Вікно повідомлень"
 
-#: src/amuleDlg.cpp:1642 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:291
+#: src/amuleDlg.cpp:1647 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Статистика"
 
-#: src/amuleDlg.cpp:1646 src/muuli_wdr.cpp:3314
+#: src/amuleDlg.cpp:1651 src/muuli_wdr.cpp:3314
 msgid "Statistics Graph Window"
 msgstr "Вікно статистики"
 
-#: src/amuleDlg.cpp:1649 src/muuli_wdr.cpp:3316 src/PrefsUnifiedDlg.cpp:307
+#: src/amuleDlg.cpp:1654 src/muuli_wdr.cpp:3316 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Налаштування"
 
-#: src/amuleDlg.cpp:1653 src/muuli_wdr.cpp:3316
+#: src/amuleDlg.cpp:1658 src/muuli_wdr.cpp:3316
 msgid "Preferences Settings Window"
 msgstr "Вікно налаштувань"
 
-#: src/amuleDlg.cpp:1656 src/muuli_wdr.cpp:3317
+#: src/amuleDlg.cpp:1661 src/muuli_wdr.cpp:3317
 msgid "Import"
 msgstr "Зовн. внесення"
 
-#: src/amuleDlg.cpp:1660 src/muuli_wdr.cpp:3317
+#: src/amuleDlg.cpp:1665 src/muuli_wdr.cpp:3317
 msgid "The partfile importer tool"
 msgstr "Засіб зовнішнього внесення частково звантажених файлів"
 
-#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3318
+#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3318
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Про програму"
 
-#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3318
+#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3318
 msgid "About/Help"
 msgstr "Про/Допомога"
 
-#: src/amuleDlg.cpp:1834
+#: src/amuleDlg.cpp:1839
 msgid "eD2k network"
 msgstr "Мережа eD2k"
 
-#: src/amuleDlg.cpp:1837
+#: src/amuleDlg.cpp:1842
 msgid "Kad network"
 msgstr "Мережа Kad"
 
-#: src/amuleDlg.cpp:1837
+#: src/amuleDlg.cpp:1842
 msgid "No network"
 msgstr "Немає мережі"
 
@@ -960,9 +960,9 @@ msgstr ""
 #: src/DownloadListCtrl.cpp:1160 src/ExternalConn.cpp:550
 #: src/FileDetailDialog.cpp:187 src/GenericClientListCtrl.cpp:1159
 #: src/GenericClientListCtrl.cpp:1170 src/GenericClientListCtrl.cpp:1180
-#: src/HTTPDownload.cpp:89 src/KnownFile.cpp:978 src/KnownFile.cpp:984
-#: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2831
-#: src/PartFile.cpp:2837 src/Server.cpp:134 src/Server.cpp:210
+#: src/HTTPDownload.cpp:89 src/KnownFile.cpp:1041 src/KnownFile.cpp:1047
+#: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2838
+#: src/PartFile.cpp:2844 src/Server.cpp:134 src/Server.cpp:210
 #: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Невідомо"
@@ -1286,7 +1286,7 @@ msgstr "Ім'я користувача"
 
 #: src/CommentDialogLst.cpp:78 src/DownloadListCtrl.cpp:158
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:101
+#: src/SharedFilesCtrl.cpp:107
 msgid "File Name"
 msgstr "Назва файлу"
 
@@ -1348,33 +1348,33 @@ msgstr "Авто [звичайна]"
 msgid "Auto [Hi]"
 msgstr "Авто [висока]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:131
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:137
 msgid "Very low"
 msgstr "Дуже низька"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:704 src/muuli_wdr.cpp:2216
 #: src/ServerListCtrl.cpp:263 src/ServerListCtrl.cpp:456
-#: src/SharedFilesCtrl.cpp:132
+#: src/SharedFilesCtrl.cpp:138
 msgid "Low"
 msgstr "Низька"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:705 src/muuli_wdr.cpp:2217
 #: src/ServerListCtrl.cpp:266 src/ServerListCtrl.cpp:457
-#: src/SharedFilesCtrl.cpp:133
+#: src/SharedFilesCtrl.cpp:139
 msgid "Normal"
 msgstr "Звичайна"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:706 src/muuli_wdr.cpp:2218
 #: src/ServerListCtrl.cpp:269 src/ServerListCtrl.cpp:458
-#: src/SharedFilesCtrl.cpp:134
+#: src/SharedFilesCtrl.cpp:140
 msgid "High"
 msgstr "Висока"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:135
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:141
 msgid "Very High"
 msgstr "Дуже висока"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:136
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:142
 msgid "Release"
 msgstr "Випуск"
 
@@ -1391,12 +1391,12 @@ msgid "Queue Full"
 msgstr "Черга заповнена"
 
 #: src/DataToText.cpp:74 src/GenericClientListCtrl.cpp:1107
-#: src/KnownFile.cpp:1779
+#: src/KnownFile.cpp:1842
 msgid "On Queue"
 msgstr "В черзі"
 
 #: src/DataToText.cpp:76 src/libs/ec/cpp/ECSpecialTags.cpp:52
-#: src/OtherFunctions.cpp:697 src/PartFile.cpp:4387 src/TransferWnd.cpp:346
+#: src/OtherFunctions.cpp:697 src/PartFile.cpp:4394 src/TransferWnd.cpp:346
 msgid "Downloading"
 msgstr "Звантажується"
 
@@ -1525,7 +1525,7 @@ msgid "Part"
 msgstr "Частина"
 
 #: src/DownloadListCtrl.cpp:159 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:102
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:108
 msgid "Size"
 msgstr "Розмір"
 
@@ -1542,17 +1542,17 @@ msgid "Progress"
 msgstr "Перебіг"
 
 #: src/DownloadListCtrl.cpp:164 src/FileDetailListCtrl.cpp:44
-#: src/PartFile.cpp:4433 src/SearchListCtrl.cpp:92
+#: src/PartFile.cpp:4440 src/SearchListCtrl.cpp:92
 msgid "Sources"
 msgstr "Джерела"
 
 #: src/DownloadListCtrl.cpp:165 src/DownloadListCtrl.cpp:709
 #: src/ServerListCtrl.cpp:97 src/ServerListCtrl.cpp:460
-#: src/SharedFilesCtrl.cpp:104 src/SharedFilesCtrl.cpp:139
+#: src/SharedFilesCtrl.cpp:110 src/SharedFilesCtrl.cpp:145
 msgid "Priority"
 msgstr "Перевага"
 
-#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4436 src/SearchListCtrl.cpp:95
+#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4443 src/SearchListCtrl.cpp:95
 msgid "Status"
 msgstr "Стан"
 
@@ -1576,7 +1576,7 @@ msgstr "Ви впевнені, що хочете видалити вибрани
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Ви впевнені, що хочете видалити вибрані файли?"
 
-#: src/DownloadListCtrl.cpp:612 src/SharedFilesCtrl.cpp:198
+#: src/DownloadListCtrl.cpp:612 src/SharedFilesCtrl.cpp:226
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1586,7 +1586,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:707 src/muuli_wdr.cpp:2219
-#: src/SharedFilesCtrl.cpp:137
+#: src/SharedFilesCtrl.cpp:143
 msgid "Auto"
 msgstr "Автоматично"
 
@@ -1639,11 +1639,11 @@ msgstr "Показати всі коментарі"
 msgid "Copy magnet URI to clipboard"
 msgstr "Скопіювати magnet-посилання в буфер обміну"
 
-#: src/DownloadListCtrl.cpp:738 src/SharedFilesCtrl.cpp:158
+#: src/DownloadListCtrl.cpp:738 src/SharedFilesCtrl.cpp:168
 msgid "Copy eD2k &link to clipboard"
 msgstr "Скопіювати eD2k-посилання до буферу обміну"
 
-#: src/DownloadListCtrl.cpp:739 src/SharedFilesCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:739 src/SharedFilesCtrl.cpp:177
 msgid "Copy feedback to clipboard"
 msgstr "Скопіювати інформацію відгуку до буферу обміну"
 
@@ -1659,11 +1659,11 @@ msgstr "Призначити категорію"
 msgid "&Open the file"
 msgstr "Відкрити файл"
 
-#: src/DownloadListCtrl.cpp:856 src/SharedFilesCtrl.cpp:758
+#: src/DownloadListCtrl.cpp:856 src/SharedFilesCtrl.cpp:786
 msgid "Enter new name for this file:"
 msgstr "Введіть нову назву для цього файлу:"
 
-#: src/DownloadListCtrl.cpp:857 src/SharedFilesCtrl.cpp:759
+#: src/DownloadListCtrl.cpp:857 src/SharedFilesCtrl.cpp:787
 msgid "File rename"
 msgstr "Змінити назву файлу"
 
@@ -2605,57 +2605,57 @@ msgstr[0] "Записано %d контакт Kad"
 msgstr[1] "Записано %d контакти Kad"
 msgstr[2] "Записано %d контактів Kad"
 
-#: src/KnownFile.cpp:1433
+#: src/KnownFile.cpp:1496
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr ""
 
-#: src/KnownFile.cpp:1441
+#: src/KnownFile.cpp:1504
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
 msgstr ""
 
-#: src/KnownFile.cpp:1453
+#: src/KnownFile.cpp:1516
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list or download queue"
 msgstr ""
 
-#: src/KnownFile.cpp:1467
+#: src/KnownFile.cpp:1530
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
 msgstr ""
 
-#: src/KnownFile.cpp:1476
+#: src/KnownFile.cpp:1539
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
 msgstr ""
 
-#: src/KnownFile.cpp:1770 src/PartFileConvertDlg.cpp:96
+#: src/KnownFile.cpp:1833 src/PartFileConvertDlg.cpp:96
 msgid "File name"
 msgstr "Назва файлу"
 
-#: src/KnownFile.cpp:1770
+#: src/KnownFile.cpp:1833
 msgid "File size"
 msgstr "Розмір файлу"
 
-#: src/KnownFile.cpp:1771
+#: src/KnownFile.cpp:1834
 msgid "Share ratio"
 msgstr "Відношення передачі"
 
-#: src/KnownFile.cpp:1774 src/SharedFilePeersListCtrl.cpp:31
+#: src/KnownFile.cpp:1837 src/SharedFilePeersListCtrl.cpp:31
 #: src/SourceListCtrl.cpp:31
 msgid "Uploaded"
 msgstr "Вивантажено"
 
-#: src/KnownFile.cpp:1775 src/muuli_wdr.cpp:3138
+#: src/KnownFile.cpp:1838 src/muuli_wdr.cpp:3138
 msgid "Requested"
 msgstr "Запитано"
 
-#: src/KnownFile.cpp:1777
+#: src/KnownFile.cpp:1840
 msgid "Accepted"
 msgstr "Дозволено"
 
-#: src/KnownFile.cpp:1779
+#: src/KnownFile.cpp:1842
 msgid "Complete sources"
 msgstr "Завершених джерел"
 
@@ -2681,31 +2681,31 @@ msgstr "Невідома версія"
 msgid "Unable to get error description for error %d"
 msgstr "Тека призначення для звантажень"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4365
+#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4372
 msgid "Hashing"
 msgstr "Обчислюється хеш"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4371
+#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4378
 msgid "Completing"
 msgstr "Завершується"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4374
+#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4381
 msgid "Complete"
 msgstr "Завершений"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:47 src/OtherFunctions.cpp:701
-#: src/PartFile.cpp:4377 src/TransferWnd.cpp:348
+#: src/PartFile.cpp:4384 src/TransferWnd.cpp:348
 msgid "Paused"
 msgstr "Призупинений"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:49 src/OtherFunctions.cpp:699
-#: src/PartFile.cpp:4380 src/TransferWnd.cpp:347
+#: src/PartFile.cpp:4387 src/TransferWnd.cpp:347
 msgid "Erroneous"
 msgstr "Помилковий"
 
 # файл
 #: src/libs/ec/cpp/ECSpecialTags.cpp:54 src/OtherFunctions.cpp:695
-#: src/PartFile.cpp:4389 src/TransferWnd.cpp:345
+#: src/PartFile.cpp:4396 src/TransferWnd.cpp:345
 msgid "Waiting"
 msgstr "Очікує"
 
@@ -2765,11 +2765,11 @@ msgstr "ListenSocket: Гаразд."
 msgid "ERROR: Could not listen to TCP port."
 msgstr "ПОМИЛКА: неможливо відкрити TCP-порт"
 
-#: src/Logger.cpp:317
+#: src/Logger.cpp:318
 msgid "ERROR: "
 msgstr "ПОМИЛКА: "
 
-#: src/Logger.cpp:317
+#: src/Logger.cpp:318
 msgid "WARNING: "
 msgstr "ЗАСТЕРЕЖЕННЯ: "
 
@@ -3058,7 +3058,7 @@ msgstr "Пошук"
 msgid "Name:"
 msgstr "Назва:"
 
-#: src/muuli_wdr.cpp:201 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:103
+#: src/muuli_wdr.cpp:201 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:109
 msgid "Type"
 msgstr "Тип"
 
@@ -4862,7 +4862,7 @@ msgstr "Закрити цю розмову."
 msgid "Connect to any server and/or Kad"
 msgstr "З'єднатися з будь-яким сервером та/чи Kad"
 
-#: src/muuli_wdr.cpp:3312 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3312 src/SharedFilesCtrl.cpp:135 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "Спільні файли"
 
@@ -4941,7 +4941,7 @@ msgstr "всі інші"
 msgid "Incomplete"
 msgstr "Незавершені"
 
-#: src/OtherFunctions.cpp:703 src/PartFile.cpp:4394 src/TransferWnd.cpp:349
+#: src/OtherFunctions.cpp:703 src/PartFile.cpp:4401 src/TransferWnd.cpp:349
 msgid "Stopped"
 msgstr "Зупинені"
 
@@ -5156,77 +5156,77 @@ msgstr "Завершене повторне обчислення хешу: %s"
 msgid "Unexpected error while completing %s. File paused"
 msgstr "Неочікувана помилка під час завершення %s. Файл призупинено"
 
-#: src/PartFile.cpp:2386
+#: src/PartFile.cpp:2393
 #, c-format
 msgid "Finished downloading: %s"
 msgstr "Завершене звантаження: %s"
 
-#: src/PartFile.cpp:2391
+#: src/PartFile.cpp:2398
 #, fuzzy, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
 msgstr "Завершене звантаження: %s"
 
-#: src/PartFile.cpp:2450
+#: src/PartFile.cpp:2457
 #, c-format
 msgid "Deleting file: %s"
 msgstr "Видаляється файл: %s"
 
-#: src/PartFile.cpp:2529
+#: src/PartFile.cpp:2536
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
 msgstr "ЗАСТЕРЕЖЕННЯ: неможливо обчислити хеш звантаженого файлу - набір хешів неповний для '%s'"
 
-#: src/PartFile.cpp:2534
+#: src/PartFile.cpp:2541
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
 msgstr "ПОМИЛКА: неможливо обчислити хеш звантаженого файлу - набір хешів неповний (%s). Такого ніколи не повинно бути"
 
-#: src/PartFile.cpp:2557
+#: src/PartFile.cpp:2564
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
 msgstr ""
 
-#: src/PartFile.cpp:2569 src/PartFile.cpp:2576
+#: src/PartFile.cpp:2576 src/PartFile.cpp:2583
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
 msgstr ""
 
-#: src/PartFile.cpp:3335
+#: src/PartFile.cpp:3342
 #, c-format
 msgid "WARNING: Not enough free disk-space! Pausing file: %s"
 msgstr "ЗАСТЕРЕЖЕННЯ: недостатньо вільного місця на диску! Призупиняється файл: %s"
 
-#: src/PartFile.cpp:3669
+#: src/PartFile.cpp:3676
 #, c-format
 msgid "Downloaded part %i is corrupt in file: %s"
 msgstr "Звантажена частина %i зіпсована в файлі: %s"
 
-#: src/PartFile.cpp:3717
+#: src/PartFile.cpp:3724
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "Р.О.П.: відновлено зіпсовану частину %i для %s -> Збережено байт: %s"
 
-#: src/PartFile.cpp:4227
+#: src/PartFile.cpp:4234
 #, fuzzy
 msgid "Kad user"
 msgstr "Мережа Kad"
 
-#: src/PartFile.cpp:4367
+#: src/PartFile.cpp:4374
 msgid "Allocating"
 msgstr "Виділяється"
 
-#: src/PartFile.cpp:4383
+#: src/PartFile.cpp:4390
 msgid "Insufficient disk space"
 msgstr "Не вистачає місця на диску"
 
-#: src/PartFile.cpp:4432 src/SearchListCtrl.cpp:1078
+#: src/PartFile.cpp:4439 src/SearchListCtrl.cpp:1078
 #: src/SharedFilePeersListCtrl.cpp:29 src/SourceListCtrl.cpp:29
 msgid "Downloaded"
 msgstr "Звантажені"
 
-#: src/PartFile.cpp:4697
+#: src/PartFile.cpp:4704
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "ПОМИЛКА: не вдалося відкрити частковий файл '%s'"
@@ -5887,7 +5887,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Спільні теки"
 
-#: src/PrefsUnifiedDlg.cpp:2517
+#: src/PrefsUnifiedDlg.cpp:2516
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Перезавантажити ваші спільні файли"
@@ -5953,7 +5953,7 @@ msgstr "Ключове слово для пошуку: %s"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Неочікувана помилка, коли намагаюсь шукати в Kad:"
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:105
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:111
 msgid "FileID"
 msgstr "ID файлу"
 
@@ -6596,89 +6596,98 @@ msgstr "Назва файлу"
 msgid "Shares File List"
 msgstr "Спільні файли"
 
-#: src/SharedFilesCtrl.cpp:106
+#: src/SharedFilesCtrl.cpp:112
 msgid "Requests"
 msgstr "Запитів"
 
-#: src/SharedFilesCtrl.cpp:107
+#: src/SharedFilesCtrl.cpp:113
 msgid "Accepted Requests"
 msgstr "Прийняті запити"
 
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:114
 msgid "Transferred Data"
 msgstr "Передані дані"
 
-#: src/SharedFilesCtrl.cpp:109
+#: src/SharedFilesCtrl.cpp:115
 msgid "Share Ratio"
 msgstr "Відношення поширення"
 
-#: src/SharedFilesCtrl.cpp:110
+#: src/SharedFilesCtrl.cpp:116
 msgid "Obtained Parts"
 msgstr "Отримані частини"
 
-#: src/SharedFilesCtrl.cpp:111
+#: src/SharedFilesCtrl.cpp:117
 msgid "Complete Sources"
 msgstr "Повних джерел"
 
-#: src/SharedFilesCtrl.cpp:112
+#: src/SharedFilesCtrl.cpp:118
 msgid "Directory Path"
 msgstr "Шлях до теки"
 
-#: src/SharedFilesCtrl.cpp:144
+#: src/SharedFilesCtrl.cpp:150
 msgid "Add Comment/Rating"
 msgstr "Додати коментар/рейтинг"
 
-#: src/SharedFilesCtrl.cpp:146
+#: src/SharedFilesCtrl.cpp:152
 msgid "Edit Comment/Rating"
 msgstr "Редагувати коментар/рейтинг"
 
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:156
 msgid "Rename"
 msgstr "Змінити назву"
 
-#: src/SharedFilesCtrl.cpp:154
+#: src/SharedFilesCtrl.cpp:159
+msgid "Verify Local Data"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:164
 msgid "Add files in collection to transfer list"
 msgstr "Додати файли зі збірки до переліку передач"
 
-#: src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:167
 msgid "Copy magnet &URI to clipboard"
 msgstr "Скопіювати magnet-посилання до буферу обміну"
 
-#: src/SharedFilesCtrl.cpp:159
+#: src/SharedFilesCtrl.cpp:169
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Скопіювати eD2k-посилання до буферу обміну (джерело)"
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:171
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Скопіювати eD2k-посилання до буферу обміну (джерело з шифруванням)"
 
-#: src/SharedFilesCtrl.cpp:162
+#: src/SharedFilesCtrl.cpp:172
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Скопіювати eD2k-посилання до буферу обміну (назва хосту)"
 
-#: src/SharedFilesCtrl.cpp:164
+#: src/SharedFilesCtrl.cpp:174
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Скопіювати eD2k-посилання до буферу обміну (назва хосту з шифруванням)"
 
-#: src/SharedFilesCtrl.cpp:165
+#: src/SharedFilesCtrl.cpp:175
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Скопіювати eD2k-посилання до буферу обміну (інформація AICH)"
 
-#: src/SharedFilesCtrl.cpp:166
+#: src/SharedFilesCtrl.cpp:176
 #, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Скопіювати eD2k-посилання до буферу обміну (інформація AICH)"
 
-#: src/SharedFilesCtrl.cpp:333
+#: src/SharedFilesCtrl.cpp:211
+#, c-format
+msgid "Verify Local Data on PartFile is currently not supported: %s"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:361
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Вам потрібно мати HighID щоб створити посилання на джерело"
 
-#: src/SharedFilesCtrl.cpp:525
+#: src/SharedFilesCtrl.cpp:553
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Спільні файли (%i)"
 
-#: src/SharedFilesCtrl.cpp:671 src/TextClient.cpp:1011
+#: src/SharedFilesCtrl.cpp:699 src/TextClient.cpp:1011
 msgid "[PartFile]"
 msgstr "[частковий файл]"
 
@@ -7544,12 +7553,22 @@ msgstr "Текстовий клієнт aMule"
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Перетворюється старий набір хешів AICH в '%s' до 64b в '%s'."
 
-#: src/ThreadTasks.cpp:547
+#: src/ThreadTasks.cpp:518
+#, c-format
+msgid "Verify Local Data (%s): Result OK for %s"
+msgstr ""
+
+#: src/ThreadTasks.cpp:550
+#, c-format
+msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
+msgstr ""
+
+#: src/ThreadTasks.cpp:745
 #, c-format
 msgid "WARNING: The filename '%s' is invalid and has been renamed to '%s'."
 msgstr "ЗАСТЕРЕЖЕННЯ: назва файлу '%s' невірна і буде змінена на '%s'."
 
-#: src/ThreadTasks.cpp:560
+#: src/ThreadTasks.cpp:758
 #, c-format
 msgid "WARNING: The file '%s' already exists, new file renamed to '%s'."
 msgstr "ЗАСТЕРЕЖЕННЯ: файл '%s' вже існує, новий файл буде перейменований у '%s'."
@@ -7591,7 +7610,7 @@ msgstr "Редагувати категорію"
 msgid "Remove category"
 msgstr "Видалити категорію"
 
-#: src/UploadClient.cpp:537
+#: src/UploadClient.cpp:545
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Запитано набір хешів для невідомого файлу: %s"

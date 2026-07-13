@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-13 12:24+0200\n"
+"POT-Creation-Date: 2026-07-13 19:22+0200\n"
 "PO-Revision-Date: 2026-07-13 13:11+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -306,7 +306,7 @@ msgid "Password set and external connections enabled."
 msgstr "Lösenord sparad och extern anslutning aktiverad."
 
 #: src/amule.cpp:749 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1299 src/SharedFilesCtrl.cpp:334
+#: src/PrefsUnifiedDlg.cpp:1299 src/SharedFilesCtrl.cpp:362
 msgid "WARNING"
 msgstr "VARNING"
 
@@ -621,31 +621,31 @@ msgstr "aMule-dialog avslutad"
 msgid "Connecting"
 msgstr "Ansluter"
 
-#: src/amuleDlg.cpp:878
+#: src/amuleDlg.cpp:883
 msgid "eD2k: Connecting"
 msgstr "eD2k: Ansluter"
 
-#: src/amuleDlg.cpp:882
+#: src/amuleDlg.cpp:887
 msgid "eD2k: Disconnected"
 msgstr "eD2k: Frånkopplad"
 
-#: src/amuleDlg.cpp:888
+#: src/amuleDlg.cpp:893
 msgid "Kad: Firewalled"
 msgstr "Kad: Via brandvägg"
 
-#: src/amuleDlg.cpp:892
+#: src/amuleDlg.cpp:897
 msgid "Kad: Connected"
 msgstr "Kad: Ansluten"
 
-#: src/amuleDlg.cpp:897
+#: src/amuleDlg.cpp:902
 msgid "Kad: Connecting"
 msgstr "Kad: Ansluter"
 
-#: src/amuleDlg.cpp:901
+#: src/amuleDlg.cpp:906
 msgid "Kad: Off"
 msgstr "Kad: Av"
 
-#: src/amuleDlg.cpp:949 src/DownloadListCtrl.cpp:471
+#: src/amuleDlg.cpp:954 src/DownloadListCtrl.cpp:471
 #: src/DownloadListCtrl.cpp:710 src/FriendListCtrl.cpp:177
 #: src/muuli_wdr.cpp:741 src/muuli_wdr.cpp:792 src/muuli_wdr.cpp:856
 #: src/muuli_wdr.cpp:908 src/muuli_wdr.cpp:2165 src/muuli_wdr.cpp:2250
@@ -655,176 +655,176 @@ msgstr "Kad: Av"
 msgid "Cancel"
 msgstr "Avbryt"
 
-#: src/amuleDlg.cpp:950
+#: src/amuleDlg.cpp:955
 msgid "Stop the current connection attempts"
 msgstr "Stoppa de nuvarande anslutningsförsöken"
 
-#: src/amuleDlg.cpp:955 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
+#: src/amuleDlg.cpp:960 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
 #: src/muuli_wdr.cpp:2366
 msgid "Disconnect"
 msgstr "Koppla från"
 
-#: src/amuleDlg.cpp:956
+#: src/amuleDlg.cpp:961
 msgid "Disconnect from the currently connected networks"
 msgstr "Koppla från de nätverk som nu är anslutna."
 
-#: src/amuleDlg.cpp:961 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
+#: src/amuleDlg.cpp:966 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
 #: src/muuli_wdr.cpp:2517 src/muuli_wdr.cpp:2967 src/muuli_wdr.cpp:3306
 msgid "Connect"
 msgstr "Anslut"
 
-#: src/amuleDlg.cpp:962
+#: src/amuleDlg.cpp:967
 msgid "Connect to the currently enabled networks"
 msgstr "Anslut till de nätverk som är aktiverade."
 
-#: src/amuleDlg.cpp:1032
+#: src/amuleDlg.cpp:1037
 #, fuzzy, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Upp: %.1f(%.1f) | Ner: %.1f(%.1f)"
 
-#: src/amuleDlg.cpp:1034 src/amuleDlg.cpp:1036 src/amuleDlg.cpp:1040
-#: src/amuleDlg.cpp:1042 src/amuleDlg.cpp:1053 src/amuleDlg.cpp:1055
+#: src/amuleDlg.cpp:1039 src/amuleDlg.cpp:1041 src/amuleDlg.cpp:1045
+#: src/amuleDlg.cpp:1047 src/amuleDlg.cpp:1058 src/amuleDlg.cpp:1060
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #, fuzzy
 msgid " MB/s"
 msgstr "MB/s"
 
-#: src/amuleDlg.cpp:1034 src/amuleDlg.cpp:1036 src/amuleDlg.cpp:1040
-#: src/amuleDlg.cpp:1042 src/amuleDlg.cpp:1053 src/amuleDlg.cpp:1055
+#: src/amuleDlg.cpp:1039 src/amuleDlg.cpp:1041 src/amuleDlg.cpp:1045
+#: src/amuleDlg.cpp:1047 src/amuleDlg.cpp:1058 src/amuleDlg.cpp:1060
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #: src/utils/wxCas/src/wxcasframe.cpp:1041
 msgid " kB/s"
 msgstr " kB/s"
 
-#: src/amuleDlg.cpp:1039
+#: src/amuleDlg.cpp:1044
 #, fuzzy, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
 msgstr "Upp: %.1f | Ner: %.1f"
 
-#: src/amuleDlg.cpp:1071
+#: src/amuleDlg.cpp:1076
 #, c-format
 msgid "aMule (%s | Connected)"
 msgstr "aMule (%s | Ansluten)"
 
-#: src/amuleDlg.cpp:1073
+#: src/amuleDlg.cpp:1078
 #, c-format
 msgid "aMule (%s | Disconnected)"
 msgstr "aMule (%s | Frånkopplad)"
 
-#: src/amuleDlg.cpp:1121
+#: src/amuleDlg.cpp:1126
 #, c-format
 msgid "Do you really want to exit %s?"
 msgstr "Vill du verkligen avsluta %s?"
 
-#: src/amuleDlg.cpp:1123
+#: src/amuleDlg.cpp:1128
 msgid "Exit confirmation"
 msgstr "Bekräfta avslutning"
 
-#: src/amuleDlg.cpp:1458
+#: src/amuleDlg.cpp:1463
 msgid "Launch Command: "
 msgstr "Kör kommando:"
 
-#: src/amuleDlg.cpp:1477 src/muuli_wdr.cpp:1931 src/Preferences.cpp:946
+#: src/amuleDlg.cpp:1482 src/muuli_wdr.cpp:1931 src/Preferences.cpp:946
 msgid "- default -"
 msgstr "- standard -"
 
-#: src/amuleDlg.cpp:1505
+#: src/amuleDlg.cpp:1510
 #, c-format
 msgid "Skin directory '%s' does not exist"
 msgstr "Skin-mappen '%s' finns inte"
 
-#: src/amuleDlg.cpp:1508
+#: src/amuleDlg.cpp:1513
 #, c-format
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "Varning: Kan inte öppna skin-filen '%s' för läsning"
 
-#: src/amuleDlg.cpp:1612 src/amuleDlg.cpp:1831 src/muuli_wdr.cpp:1481
+#: src/amuleDlg.cpp:1617 src/amuleDlg.cpp:1836 src/muuli_wdr.cpp:1481
 #: src/muuli_wdr.cpp:3308
 msgid "Networks"
 msgstr "Nätverk"
 
-#: src/amuleDlg.cpp:1616 src/muuli_wdr.cpp:3308
+#: src/amuleDlg.cpp:1621 src/muuli_wdr.cpp:3308
 msgid "Networks Window"
 msgstr "Nätverksfönster"
 
-#: src/amuleDlg.cpp:1618 src/muuli_wdr.cpp:3309
+#: src/amuleDlg.cpp:1623 src/muuli_wdr.cpp:3309
 msgid "Searches"
 msgstr "Sökningar"
 
-#: src/amuleDlg.cpp:1622 src/muuli_wdr.cpp:3309
+#: src/amuleDlg.cpp:1627 src/muuli_wdr.cpp:3309
 msgid "Searches Window"
 msgstr "Sökfönster"
 
-#: src/amuleDlg.cpp:1624 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:382
+#: src/amuleDlg.cpp:1629 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:382
 #: src/muuli_wdr.cpp:1583 src/muuli_wdr.cpp:3310 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Hämtningar"
 
-#: src/amuleDlg.cpp:1628 src/muuli_wdr.cpp:3310
+#: src/amuleDlg.cpp:1633 src/muuli_wdr.cpp:3310
 msgid "Downloads Window"
 msgstr "Hämtningsfönster"
 
-#: src/amuleDlg.cpp:1630 src/muuli_wdr.cpp:3194
+#: src/amuleDlg.cpp:1635 src/muuli_wdr.cpp:3194
 msgid "Shared files"
 msgstr "Delade filer"
 
-#: src/amuleDlg.cpp:1634 src/muuli_wdr.cpp:3312
+#: src/amuleDlg.cpp:1639 src/muuli_wdr.cpp:3312
 msgid "Shared Files Window"
 msgstr "Delade filer-fönster"
 
-#: src/amuleDlg.cpp:1636 src/muuli_wdr.cpp:2834 src/muuli_wdr.cpp:3266
+#: src/amuleDlg.cpp:1641 src/muuli_wdr.cpp:2834 src/muuli_wdr.cpp:3266
 #: src/muuli_wdr.cpp:3313
 msgid "Messages"
 msgstr "Meddelanden"
 
-#: src/amuleDlg.cpp:1640 src/muuli_wdr.cpp:3313
+#: src/amuleDlg.cpp:1645 src/muuli_wdr.cpp:3313
 msgid "Messages Window"
 msgstr "Meddelandefönster"
 
-#: src/amuleDlg.cpp:1642 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:291
+#: src/amuleDlg.cpp:1647 src/muuli_wdr.cpp:3314 src/PrefsUnifiedDlg.cpp:291
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statistik"
 
-#: src/amuleDlg.cpp:1646 src/muuli_wdr.cpp:3314
+#: src/amuleDlg.cpp:1651 src/muuli_wdr.cpp:3314
 msgid "Statistics Graph Window"
 msgstr "Statistiksgrafsfönster"
 
-#: src/amuleDlg.cpp:1649 src/muuli_wdr.cpp:3316 src/PrefsUnifiedDlg.cpp:307
+#: src/amuleDlg.cpp:1654 src/muuli_wdr.cpp:3316 src/PrefsUnifiedDlg.cpp:307
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Inställningar"
 
-#: src/amuleDlg.cpp:1653 src/muuli_wdr.cpp:3316
+#: src/amuleDlg.cpp:1658 src/muuli_wdr.cpp:3316
 msgid "Preferences Settings Window"
 msgstr "Inställningsfönster"
 
-#: src/amuleDlg.cpp:1656 src/muuli_wdr.cpp:3317
+#: src/amuleDlg.cpp:1661 src/muuli_wdr.cpp:3317
 msgid "Import"
 msgstr "Importera"
 
-#: src/amuleDlg.cpp:1660 src/muuli_wdr.cpp:3317
+#: src/amuleDlg.cpp:1665 src/muuli_wdr.cpp:3317
 msgid "The partfile importer tool"
 msgstr "Partfile-importerings-verktyget"
 
-#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3318
+#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3318
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Om"
 
-#: src/amuleDlg.cpp:1663 src/muuli_wdr.cpp:3318
+#: src/amuleDlg.cpp:1668 src/muuli_wdr.cpp:3318
 msgid "About/Help"
 msgstr "Om/Hjälp"
 
-#: src/amuleDlg.cpp:1834
+#: src/amuleDlg.cpp:1839
 msgid "eD2k network"
 msgstr "eD2k-nätverk"
 
-#: src/amuleDlg.cpp:1837
+#: src/amuleDlg.cpp:1842
 msgid "Kad network"
 msgstr "Kad-nätverk"
 
-#: src/amuleDlg.cpp:1837
+#: src/amuleDlg.cpp:1842
 msgid "No network"
 msgstr "Inget nätverk"
 
@@ -958,9 +958,9 @@ msgstr "Kan inte skapa mappen '%s' för kategori '%s', behåller mappen '%s'."
 #: src/DownloadListCtrl.cpp:1160 src/ExternalConn.cpp:550
 #: src/FileDetailDialog.cpp:187 src/GenericClientListCtrl.cpp:1159
 #: src/GenericClientListCtrl.cpp:1170 src/GenericClientListCtrl.cpp:1180
-#: src/HTTPDownload.cpp:89 src/KnownFile.cpp:978 src/KnownFile.cpp:984
-#: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2831
-#: src/PartFile.cpp:2837 src/Server.cpp:134 src/Server.cpp:210
+#: src/HTTPDownload.cpp:89 src/KnownFile.cpp:1041 src/KnownFile.cpp:1047
+#: src/MuleTrayIcon.cpp:422 src/MuleTrayIcon.cpp:848 src/PartFile.cpp:2838
+#: src/PartFile.cpp:2844 src/Server.cpp:134 src/Server.cpp:210
 #: src/Statistics.cpp:1161
 msgid "Unknown"
 msgstr "Okänd"
@@ -1279,7 +1279,7 @@ msgstr "Användarnamn"
 
 #: src/CommentDialogLst.cpp:78 src/DownloadListCtrl.cpp:158
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:90
-#: src/SharedFilesCtrl.cpp:101
+#: src/SharedFilesCtrl.cpp:107
 msgid "File Name"
 msgstr "Filnamn"
 
@@ -1337,33 +1337,33 @@ msgstr "Auto [Nej]"
 msgid "Auto [Hi]"
 msgstr "Auto [Hö]"
 
-#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:131
+#: src/DataToText.cpp:45 src/SharedFilesCtrl.cpp:137
 msgid "Very low"
 msgstr "Mycket låg"
 
 #: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:704 src/muuli_wdr.cpp:2216
 #: src/ServerListCtrl.cpp:263 src/ServerListCtrl.cpp:456
-#: src/SharedFilesCtrl.cpp:132
+#: src/SharedFilesCtrl.cpp:138
 msgid "Low"
 msgstr "Låg"
 
 #: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:705 src/muuli_wdr.cpp:2217
 #: src/ServerListCtrl.cpp:266 src/ServerListCtrl.cpp:457
-#: src/SharedFilesCtrl.cpp:133
+#: src/SharedFilesCtrl.cpp:139
 msgid "Normal"
 msgstr "Normal"
 
 #: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:706 src/muuli_wdr.cpp:2218
 #: src/ServerListCtrl.cpp:269 src/ServerListCtrl.cpp:458
-#: src/SharedFilesCtrl.cpp:134
+#: src/SharedFilesCtrl.cpp:140
 msgid "High"
 msgstr "Hög"
 
-#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:135
+#: src/DataToText.cpp:53 src/SharedFilesCtrl.cpp:141
 msgid "Very High"
 msgstr "Mycket hög"
 
-#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:136
+#: src/DataToText.cpp:55 src/SharedFilesCtrl.cpp:142
 msgid "Release"
 msgstr "Version"
 
@@ -1380,12 +1380,12 @@ msgid "Queue Full"
 msgstr "Kö full"
 
 #: src/DataToText.cpp:74 src/GenericClientListCtrl.cpp:1107
-#: src/KnownFile.cpp:1779
+#: src/KnownFile.cpp:1842
 msgid "On Queue"
 msgstr "I kö"
 
 #: src/DataToText.cpp:76 src/libs/ec/cpp/ECSpecialTags.cpp:52
-#: src/OtherFunctions.cpp:697 src/PartFile.cpp:4387 src/TransferWnd.cpp:346
+#: src/OtherFunctions.cpp:697 src/PartFile.cpp:4394 src/TransferWnd.cpp:346
 msgid "Downloading"
 msgstr "Hämtar"
 
@@ -1513,7 +1513,7 @@ msgid "Part"
 msgstr "Del"
 
 #: src/DownloadListCtrl.cpp:159 src/PartFileConvertDlg.cpp:98
-#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:102
+#: src/SearchListCtrl.cpp:91 src/SharedFilesCtrl.cpp:108
 msgid "Size"
 msgstr "Storlek"
 
@@ -1530,17 +1530,17 @@ msgid "Progress"
 msgstr "Förlopp"
 
 #: src/DownloadListCtrl.cpp:164 src/FileDetailListCtrl.cpp:44
-#: src/PartFile.cpp:4433 src/SearchListCtrl.cpp:92
+#: src/PartFile.cpp:4440 src/SearchListCtrl.cpp:92
 msgid "Sources"
 msgstr "Källor"
 
 #: src/DownloadListCtrl.cpp:165 src/DownloadListCtrl.cpp:709
 #: src/ServerListCtrl.cpp:97 src/ServerListCtrl.cpp:460
-#: src/SharedFilesCtrl.cpp:104 src/SharedFilesCtrl.cpp:139
+#: src/SharedFilesCtrl.cpp:110 src/SharedFilesCtrl.cpp:145
 msgid "Priority"
 msgstr "Prioritet"
 
-#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4436 src/SearchListCtrl.cpp:95
+#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4443 src/SearchListCtrl.cpp:95
 msgid "Status"
 msgstr "Status"
 
@@ -1564,7 +1564,7 @@ msgstr "Är du säker på att du vill ta bort vald fil?"
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Är du säker på att du vill ta bort alla valda filer?"
 
-#: src/DownloadListCtrl.cpp:612 src/SharedFilesCtrl.cpp:198
+#: src/DownloadListCtrl.cpp:612 src/SharedFilesCtrl.cpp:226
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1574,7 +1574,7 @@ msgstr ""
 "\n"
 
 #: src/DownloadListCtrl.cpp:707 src/muuli_wdr.cpp:2219
-#: src/SharedFilesCtrl.cpp:137
+#: src/SharedFilesCtrl.cpp:143
 msgid "Auto"
 msgstr "Auto"
 
@@ -1627,11 +1627,11 @@ msgstr "Visa alla kommentarer"
 msgid "Copy magnet URI to clipboard"
 msgstr "Kopiera magnet URI till urklipp"
 
-#: src/DownloadListCtrl.cpp:738 src/SharedFilesCtrl.cpp:158
+#: src/DownloadListCtrl.cpp:738 src/SharedFilesCtrl.cpp:168
 msgid "Copy eD2k &link to clipboard"
 msgstr "Kopiera eD2k &link till urklipp"
 
-#: src/DownloadListCtrl.cpp:739 src/SharedFilesCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:739 src/SharedFilesCtrl.cpp:177
 msgid "Copy feedback to clipboard"
 msgstr "Kopiera återkoppling till urklipp"
 
@@ -1647,11 +1647,11 @@ msgstr "Koppla till kategori"
 msgid "&Open the file"
 msgstr "&Öppna filen"
 
-#: src/DownloadListCtrl.cpp:856 src/SharedFilesCtrl.cpp:758
+#: src/DownloadListCtrl.cpp:856 src/SharedFilesCtrl.cpp:786
 msgid "Enter new name for this file:"
 msgstr "Ange nytt namn för den här filen:"
 
-#: src/DownloadListCtrl.cpp:857 src/SharedFilesCtrl.cpp:759
+#: src/DownloadListCtrl.cpp:857 src/SharedFilesCtrl.cpp:787
 msgid "File rename"
 msgstr "Byt namn på fil"
 
@@ -2578,57 +2578,57 @@ msgid_plural "Wrote %d Kad contacts"
 msgstr[0] "Skrev %d Kad kontakt"
 msgstr[1] "Skrev %d Kad kontakter"
 
-#: src/KnownFile.cpp:1433
+#: src/KnownFile.cpp:1496
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr ""
 
-#: src/KnownFile.cpp:1441
+#: src/KnownFile.cpp:1504
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
 msgstr ""
 
-#: src/KnownFile.cpp:1453
+#: src/KnownFile.cpp:1516
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list or download queue"
 msgstr ""
 
-#: src/KnownFile.cpp:1467
+#: src/KnownFile.cpp:1530
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
 msgstr ""
 
-#: src/KnownFile.cpp:1476
+#: src/KnownFile.cpp:1539
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
 msgstr ""
 
-#: src/KnownFile.cpp:1770 src/PartFileConvertDlg.cpp:96
+#: src/KnownFile.cpp:1833 src/PartFileConvertDlg.cpp:96
 msgid "File name"
 msgstr "Filnamn"
 
-#: src/KnownFile.cpp:1770
+#: src/KnownFile.cpp:1833
 msgid "File size"
 msgstr "Filstorlek"
 
-#: src/KnownFile.cpp:1771
+#: src/KnownFile.cpp:1834
 msgid "Share ratio"
 msgstr "Dela-förhållande"
 
-#: src/KnownFile.cpp:1774 src/SharedFilePeersListCtrl.cpp:31
+#: src/KnownFile.cpp:1837 src/SharedFilePeersListCtrl.cpp:31
 #: src/SourceListCtrl.cpp:31
 msgid "Uploaded"
 msgstr "Uppladdad"
 
-#: src/KnownFile.cpp:1775 src/muuli_wdr.cpp:3138
+#: src/KnownFile.cpp:1838 src/muuli_wdr.cpp:3138
 msgid "Requested"
 msgstr "Begärda"
 
-#: src/KnownFile.cpp:1777
+#: src/KnownFile.cpp:1840
 msgid "Accepted"
 msgstr "Accepterad"
 
-#: src/KnownFile.cpp:1779
+#: src/KnownFile.cpp:1842
 msgid "Complete sources"
 msgstr "Kompletta källor"
 
@@ -2654,30 +2654,30 @@ msgstr "Okänd version %d"
 msgid "Unable to get error description for error %d"
 msgstr "Det går inte att få felbeskrivning för fel %d"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4365
+#: src/libs/ec/cpp/ECSpecialTags.cpp:39 src/PartFile.cpp:4372
 msgid "Hashing"
 msgstr "Hashing"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4371
+#: src/libs/ec/cpp/ECSpecialTags.cpp:43 src/PartFile.cpp:4378
 msgid "Completing"
 msgstr "Färdigställer"
 
-#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4374
+#: src/libs/ec/cpp/ECSpecialTags.cpp:45 src/PartFile.cpp:4381
 msgid "Complete"
 msgstr "Färdig"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:47 src/OtherFunctions.cpp:701
-#: src/PartFile.cpp:4377 src/TransferWnd.cpp:348
+#: src/PartFile.cpp:4384 src/TransferWnd.cpp:348
 msgid "Paused"
 msgstr "Pausad"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:49 src/OtherFunctions.cpp:699
-#: src/PartFile.cpp:4380 src/TransferWnd.cpp:347
+#: src/PartFile.cpp:4387 src/TransferWnd.cpp:347
 msgid "Erroneous"
 msgstr "Felaktig"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp:54 src/OtherFunctions.cpp:695
-#: src/PartFile.cpp:4389 src/TransferWnd.cpp:345
+#: src/PartFile.cpp:4396 src/TransferWnd.cpp:345
 msgid "Waiting"
 msgstr "Väntar"
 
@@ -2735,11 +2735,11 @@ msgstr "ListenSocket: Ok."
 msgid "ERROR: Could not listen to TCP port."
 msgstr "FEL: Det gick inte att lyssna på TCP-port."
 
-#: src/Logger.cpp:317
+#: src/Logger.cpp:318
 msgid "ERROR: "
 msgstr "FEL: "
 
-#: src/Logger.cpp:317
+#: src/Logger.cpp:318
 msgid "WARNING: "
 msgstr "VARNING: "
 
@@ -3028,7 +3028,7 @@ msgstr "Sök"
 msgid "Name:"
 msgstr "Namn:"
 
-#: src/muuli_wdr.cpp:201 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:103
+#: src/muuli_wdr.cpp:201 src/SearchListCtrl.cpp:93 src/SharedFilesCtrl.cpp:109
 msgid "Type"
 msgstr "Typ"
 
@@ -4818,7 +4818,7 @@ msgstr "Stäng denna chat-session."
 msgid "Connect to any server and/or Kad"
 msgstr "Anslut till någon server och/eller Kad"
 
-#: src/muuli_wdr.cpp:3312 src/SharedFilesCtrl.cpp:129 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3312 src/SharedFilesCtrl.cpp:135 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "Utdelade filer"
 
@@ -4895,7 +4895,7 @@ msgstr "alla andra"
 msgid "Incomplete"
 msgstr "Ofullständig"
 
-#: src/OtherFunctions.cpp:703 src/PartFile.cpp:4394 src/TransferWnd.cpp:349
+#: src/OtherFunctions.cpp:703 src/PartFile.cpp:4401 src/TransferWnd.cpp:349
 msgid "Stopped"
 msgstr "Stoppad"
 
@@ -5107,77 +5107,77 @@ msgstr "Klar med återhashning av %s"
 msgid "Unexpected error while completing %s. File paused"
 msgstr "Oväntat fel vid färdigställande %s . Fil pausad"
 
-#: src/PartFile.cpp:2386
+#: src/PartFile.cpp:2393
 #, c-format
 msgid "Finished downloading: %s"
 msgstr "Hämtat färdigt: %s"
 
-#: src/PartFile.cpp:2391
+#: src/PartFile.cpp:2398
 #, fuzzy, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
 msgstr "Hämtat färdigt: %s"
 
-#: src/PartFile.cpp:2450
+#: src/PartFile.cpp:2457
 #, c-format
 msgid "Deleting file: %s"
 msgstr "Tar bort fil: %s"
 
-#: src/PartFile.cpp:2529
+#: src/PartFile.cpp:2536
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
 msgstr "VARNING: Det går inte att hasha nedladdade delen - hashset ofullständig för '%s'"
 
-#: src/PartFile.cpp:2534
+#: src/PartFile.cpp:2541
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
 msgstr "FEL: Det går inte att hasha nedladdade delen - hashset ofullständig (%s). Detta bör aldrig hända"
 
-#: src/PartFile.cpp:2557
+#: src/PartFile.cpp:2564
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
 msgstr ""
 
-#: src/PartFile.cpp:2569 src/PartFile.cpp:2576
+#: src/PartFile.cpp:2576 src/PartFile.cpp:2583
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
 msgstr "EOF medan hashning av hämtade del %u med längd %u (max %u) av partfile %s med längd %u: %s"
 
-#: src/PartFile.cpp:3335
+#: src/PartFile.cpp:3342
 #, c-format
 msgid "WARNING: Not enough free disk-space! Pausing file: %s"
 msgstr "VARNING: Inte tillräckligt med ledigt diskutrymme! Pausa fil: %s"
 
-#: src/PartFile.cpp:3669
+#: src/PartFile.cpp:3676
 #, c-format
 msgid "Downloaded part %i is corrupt in file: %s"
 msgstr "Nedladdade del %i är skadad i fil: %s"
 
-#: src/PartFile.cpp:3717
+#: src/PartFile.cpp:3724
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "ICH: Återvunnen skadad del %i för %s -> Sparade bytes: %s"
 
-#: src/PartFile.cpp:4227
+#: src/PartFile.cpp:4234
 #, fuzzy
 msgid "Kad user"
 msgstr "Kad-nätverk"
 
-#: src/PartFile.cpp:4367
+#: src/PartFile.cpp:4374
 msgid "Allocating"
 msgstr "Allokera"
 
-#: src/PartFile.cpp:4383
+#: src/PartFile.cpp:4390
 msgid "Insufficient disk space"
 msgstr "Otillräckligt diskutrymme"
 
-#: src/PartFile.cpp:4432 src/SearchListCtrl.cpp:1078
+#: src/PartFile.cpp:4439 src/SearchListCtrl.cpp:1078
 #: src/SharedFilePeersListCtrl.cpp:29 src/SourceListCtrl.cpp:29
 msgid "Downloaded"
 msgstr "Nedladdad"
 
-#: src/PartFile.cpp:4697
+#: src/PartFile.cpp:4704
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
 msgstr "FEL: Det gick inte att öppna partfile ' %s '"
@@ -5826,7 +5826,7 @@ msgstr ""
 msgid "Confirm shared folders"
 msgstr "Delade mappar"
 
-#: src/PrefsUnifiedDlg.cpp:2517
+#: src/PrefsUnifiedDlg.cpp:2516
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Återladda dina delade filer"
@@ -5892,7 +5892,7 @@ msgstr "Sökord för sökning: %s"
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Oväntat fel vid försöket med Kadsökningen: "
 
-#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:105
+#: src/SearchListCtrl.cpp:94 src/SharedFilesCtrl.cpp:111
 msgid "FileID"
 msgstr "FileID"
 
@@ -6517,88 +6517,97 @@ msgstr "Lokalt filnamn"
 msgid "Shares File List"
 msgstr "Lista på delade filer"
 
-#: src/SharedFilesCtrl.cpp:106
+#: src/SharedFilesCtrl.cpp:112
 msgid "Requests"
 msgstr "Förfrågningar"
 
-#: src/SharedFilesCtrl.cpp:107
+#: src/SharedFilesCtrl.cpp:113
 msgid "Accepted Requests"
 msgstr "Godkända förfrågningar"
 
-#: src/SharedFilesCtrl.cpp:108
+#: src/SharedFilesCtrl.cpp:114
 msgid "Transferred Data"
 msgstr "Överförd data"
 
-#: src/SharedFilesCtrl.cpp:109
+#: src/SharedFilesCtrl.cpp:115
 msgid "Share Ratio"
 msgstr "Delningsförhållande"
 
-#: src/SharedFilesCtrl.cpp:110
+#: src/SharedFilesCtrl.cpp:116
 msgid "Obtained Parts"
 msgstr "Erhållna delar"
 
-#: src/SharedFilesCtrl.cpp:111
+#: src/SharedFilesCtrl.cpp:117
 msgid "Complete Sources"
 msgstr "kompletta Källor"
 
-#: src/SharedFilesCtrl.cpp:112
+#: src/SharedFilesCtrl.cpp:118
 msgid "Directory Path"
 msgstr "Mappsökväg"
 
-#: src/SharedFilesCtrl.cpp:144
+#: src/SharedFilesCtrl.cpp:150
 msgid "Add Comment/Rating"
 msgstr "Lägg till Kommentar/Betyg"
 
-#: src/SharedFilesCtrl.cpp:146
+#: src/SharedFilesCtrl.cpp:152
 msgid "Edit Comment/Rating"
 msgstr "Redigera Kommentar/Betyg"
 
-#: src/SharedFilesCtrl.cpp:150
+#: src/SharedFilesCtrl.cpp:156
 msgid "Rename"
 msgstr "Byt namn"
 
-#: src/SharedFilesCtrl.cpp:154
+#: src/SharedFilesCtrl.cpp:159
+msgid "Verify Local Data"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:164
 msgid "Add files in collection to transfer list"
 msgstr "Lägg till filer i samlingen för att överföringslistan"
 
-#: src/SharedFilesCtrl.cpp:157
+#: src/SharedFilesCtrl.cpp:167
 msgid "Copy magnet &URI to clipboard"
 msgstr "Kopiera magnet &URI till urklipp"
 
-#: src/SharedFilesCtrl.cpp:159
+#: src/SharedFilesCtrl.cpp:169
 msgid "Copy eD2k link to clipboard (&Source)"
 msgstr "Kopiera eD2k-länk till urklipp (&Source)"
 
-#: src/SharedFilesCtrl.cpp:161
+#: src/SharedFilesCtrl.cpp:171
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
 msgstr "Kopiera eD2k-länk till urklipp (Source) (&With Crypt alternativ)"
 
-#: src/SharedFilesCtrl.cpp:162
+#: src/SharedFilesCtrl.cpp:172
 msgid "Copy eD2k link to clipboard (&Hostname)"
 msgstr "Kopiera eD2k-länk till urklipp (&Hostname)"
 
-#: src/SharedFilesCtrl.cpp:164
+#: src/SharedFilesCtrl.cpp:174
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
 msgstr "Kopiera eD2k-länk till Urklipp (värdnamn) (Med &Crypt alternativ)"
 
-#: src/SharedFilesCtrl.cpp:165
+#: src/SharedFilesCtrl.cpp:175
 msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Kopiera eD2k-länken till urklipp (&AICH info)"
 
-#: src/SharedFilesCtrl.cpp:166
+#: src/SharedFilesCtrl.cpp:176
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopiera eD2k-länk till urklipp (&AICH info + källa)"
 
-#: src/SharedFilesCtrl.cpp:333
+#: src/SharedFilesCtrl.cpp:211
+#, c-format
+msgid "Verify Local Data on PartFile is currently not supported: %s"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp:361
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Du behöver en HighID att skapa en giltig sourcelink"
 
-#: src/SharedFilesCtrl.cpp:525
+#: src/SharedFilesCtrl.cpp:553
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Utdelade filer (%i)"
 
-#: src/SharedFilesCtrl.cpp:671 src/TextClient.cpp:1011
+#: src/SharedFilesCtrl.cpp:699 src/TextClient.cpp:1011
 msgid "[PartFile]"
 msgstr "[PartFile]"
 
@@ -7443,12 +7452,22 @@ msgstr "aMule textklient"
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Konvertera gamla AICH-hashsets i '%s' till 64b i '%s'."
 
-#: src/ThreadTasks.cpp:547
+#: src/ThreadTasks.cpp:518
+#, c-format
+msgid "Verify Local Data (%s): Result OK for %s"
+msgstr ""
+
+#: src/ThreadTasks.cpp:550
+#, c-format
+msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
+msgstr ""
+
+#: src/ThreadTasks.cpp:745
 #, c-format
 msgid "WARNING: The filename '%s' is invalid and has been renamed to '%s'."
 msgstr "VARNING: filnamn '%s' är ogiltig och har döpts om till '%s'."
 
-#: src/ThreadTasks.cpp:560
+#: src/ThreadTasks.cpp:758
 #, c-format
 msgid "WARNING: The file '%s' already exists, new file renamed to '%s'."
 msgstr "VARNING: Filen '%s' finns redan, ny fil omdöpt till '%s'."
@@ -7489,7 +7508,7 @@ msgstr "Redigera kategori"
 msgid "Remove category"
 msgstr "Ta bort kategori"
 
-#: src/UploadClient.cpp:537
+#: src/UploadClient.cpp:545
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "HashSet begärd för okänd fil: %s"
