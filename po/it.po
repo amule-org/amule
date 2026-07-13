@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 12:24+0200\n"
-"PO-Revision-Date: 2026-07-13 11:28+0000\n"
+"PO-Revision-Date: 2026-07-13 13:04+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -870,12 +870,12 @@ msgstr "Interrompi ed esci"
 #: src/amule-remote-gui.cpp:159
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "Riconnessione... (tentativo %d)"
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "Prossimo tentativo tra %d s..."
 
 #: src/amule-remote-gui.cpp:169
 #, c-format
@@ -934,7 +934,7 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp:689
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "Connessione al core remoto persa. Tentativo di riconnessione..."
 
 #: src/amule-remote-gui.cpp:722
 msgid "Reconnected to the remote core."
@@ -1311,16 +1311,15 @@ msgstr "Commento"
 
 #: src/CommentDialogLst.cpp:134
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "Impossibile avviare una ricerca Kad"
 
 #: src/CommentDialogLst.cpp:135 src/SearchList.cpp:310
 msgid "Kad search can't be done if Kad is not running"
 msgstr "Impossibile effettuare una ricerca sulla rete Kad senza esserci connessi"
 
 #: src/CommentDialogLst.cpp:144 src/CommentDialogLst.cpp:177
-#, fuzzy
 msgid "Searching Kad for comments..."
-msgstr "Ricerca amico per connessione con ID basso"
+msgstr "Ricerca di commenti su Kad in corso..."
 
 #: src/CommentDialogLst.cpp:202 src/muuli_wdr.cpp:816
 msgid "No comments"
@@ -2595,27 +2594,27 @@ msgstr[1] "Scritti %d contatti Kad"
 #: src/KnownFile.cpp:1433
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "Ricerca note Kad per '%s' non avviata: Kad non è connesso"
 
 #: src/KnownFile.cpp:1441
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "Ricerca note Kad per '%s' non avviata: una ricerca note è già in corso per questo file"
 
 #: src/KnownFile.cpp:1453
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list or download queue"
-msgstr ""
+msgstr "Ricerca note Kad per '%s' non avviata: il file non è nella lista dei condivisi né nella coda di download"
 
 #: src/KnownFile.cpp:1467
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "Ricerca note Kad per '%s' non avviata: un'altra ricerca Kad (es. una ricerca di fonti) sta già usando l'hash di questo file - riprovare tra poco"
 
 #: src/KnownFile.cpp:1476
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "Ricerca note Kad per '%s' non avviata: PrepareLookup non riuscito"
 
 #: src/KnownFile.cpp:1770 src/PartFileConvertDlg.cpp:96
 msgid "File name"
@@ -3368,9 +3367,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "Giudica il file o avvisa gli altri utenti se il file non è quello corretto..."
 
 #: src/muuli_wdr.cpp:823
-#, fuzzy
 msgid "Get from Kad"
-msgstr "Disconnesso dalla rete Kad"
+msgstr "Ottieni da Kad"
 
 #: src/muuli_wdr.cpp:825
 msgid "Refresh"
@@ -5160,9 +5158,8 @@ msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "ICH: recuperata parte danneggiata %i in %s -> risparmiati byte: %s"
 
 #: src/PartFile.cpp:4227
-#, fuzzy
 msgid "Kad user"
-msgstr "Rete Kad"
+msgstr "Utente Kad"
 
 #: src/PartFile.cpp:4367
 msgid "Allocating"
