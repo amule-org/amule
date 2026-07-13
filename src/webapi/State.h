@@ -640,6 +640,27 @@ struct PreferencesSnapshot
 	bool reconnect = false;
 	bool network_ed2k = false;
 	bool network_kad = false;
+	// Bind the daemon's listening sockets to this local IP (empty = any).
+	// Applied on next daemon start, same as the desktop control.
+	std::string bind_address;
+	// Bind to a named network interface (empty = any); daemon-side name.
+	std::string bind_interface;
+	// Proxy the daemon routes P2P + HTTP through. proxy_password is
+	// write-only (accepted on PATCH, never surfaced here / on GET).
+	bool proxy_enabled = false;
+	std::int32_t proxy_type = -1; // 0 SOCKS5, 1 SOCKS4, 2 HTTP, 3 SOCKS4a
+	std::string proxy_host;
+	std::uint16_t proxy_port = 0;
+	bool proxy_auth = false;
+	std::string proxy_user;
+	// UPnP. upnp_enabled toggles router forwarding of the P2P ports (which
+	// are tcp_port / udp_port themselves); upnp_tcp_port is the UPnP control
+	// point's own local port (0 = auto), not a forwarded port. upnp_available
+	// is a read-only capability: the daemon advertises whether it was built
+	// with UPnP (false on a core built -DENABLE_UPNP=OFF).
+	bool upnp_available = false;
+	bool upnp_enabled = false;
+	std::uint16_t upnp_tcp_port = 0;
 
 	// --- Extended EC-carried categories (issue #437) -----------------
 	// Every field below maps 1:1 to an EC tag the daemon already
@@ -677,6 +698,11 @@ struct PreferencesSnapshot
 		bool check_free_space = false;
 		std::uint32_t min_free_space_mb = 0;
 		bool create_normal = false;
+		bool start_next_alphabetical = false;
+		// Media metadata (issue #140): probe shared files with ffprobe to
+		// advertise length/bitrate/codec. Empty path = daemon auto-detect.
+		bool media_metadata_enabled = false;
+		std::string ffprobe_path;
 	} files;
 
 	// [Servers] EC_TAG_PREFS_SERVERS
@@ -709,6 +735,8 @@ struct PreferencesSnapshot
 		bool obfuscation_supported = false;
 		bool obfuscation_requested = false;
 		bool obfuscation_required = false;
+		bool paranoid_filtering = false;
+		bool use_system_ipfilter = false;
 	} security;
 
 	// [MessageFilter] EC_TAG_PREFS_MESSAGEFILTER
@@ -741,6 +769,8 @@ struct PreferencesSnapshot
 	struct OnlineSignaturePrefs
 	{
 		bool enabled = false;
+		std::string directory;
+		std::uint32_t update_frequency = 0;
 	} online_signature;
 
 	// [CoreTweaks] EC_TAG_PREFS_CORETWEAKS

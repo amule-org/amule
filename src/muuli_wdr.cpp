@@ -1457,10 +1457,17 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
 
     wxStaticText *item26b = new wxStaticText( parent, IDC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, 0 );
     item25->Add( item26b, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+#ifdef CLIENT_GUI
+    // Remote GUI: a plain text field. amulegui runs on a different host than the
+    // daemon, so a drop-down of *this* machine's interfaces would be misleading;
+    // the operator types the daemon-side interface name (synced over EC).
+    wxTextCtrl *item27b = new wxTextCtrl( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0 );
+#else
     // Editable combo: the drop-down is filled at runtime with the machine's
     // interfaces (PrefsUnifiedDlg), but it stays editable so an interface that
     // is down when the dialog opens (e.g. a VPN tunnel) can still be typed in.
     wxComboBox *item27b = new wxComboBox( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0, NULL, wxCB_DROPDOWN );
+#endif
     item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges.") );
     item25->Add( item27b, wxSizerFlags().Expand().CenterHorizontal() );
     item0->Add( item25, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );

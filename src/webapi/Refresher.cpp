@@ -2066,6 +2066,9 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 	if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE)) {
 		out.version_check_available = t->GetInt() != 0;
 	}
+	if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_UPNP_AVAILABLE)) {
+		out.upnp_available = t->GetInt() != 0;
+	}
 }
 
 void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
@@ -2097,6 +2100,37 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 	out.reconnect = conn->GetTagByName(EC_TAG_CONN_RECONNECT) != nullptr;
 	out.network_ed2k = conn->GetTagByName(EC_TAG_NETWORK_ED2K) != nullptr;
 	out.network_kad = conn->GetTagByName(EC_TAG_NETWORK_KADEMLIA) != nullptr;
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_BIND_ADDRESS)) {
+		out.bind_address = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_BIND_INTERFACE)) {
+		out.bind_interface = std::string(t->GetStringData().utf8_str());
+	}
+	// Proxy (password is write-only: deliberately not read here).
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_ENABLE)) {
+		out.proxy_enabled = t->GetInt() != 0;
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_TYPE)) {
+		out.proxy_type = static_cast<std::int32_t>(t->GetInt());
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_HOST)) {
+		out.proxy_host = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_PORT)) {
+		out.proxy_port = static_cast<std::uint16_t>(t->GetInt());
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_AUTH)) {
+		out.proxy_auth = t->GetInt() != 0;
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_PROXY_USER)) {
+		out.proxy_user = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_UPNP_ENABLED)) {
+		out.upnp_enabled = t->GetInt() != 0;
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_UPNP_TCP_PORT)) {
+		out.upnp_tcp_port = static_cast<std::uint16_t>(t->GetInt());
+	}
 
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_MAX_FILE_SOURCES)) {
 		out.max_sources_per_file = static_cast<std::uint32_t>(t->GetInt());
@@ -2160,6 +2194,11 @@ void ParseFilesPrefs(const CECTag *f, PreferencesSnapshot &out)
 		out.files.min_free_space_mb = static_cast<std::uint32_t>(t->GetInt());
 	}
 	out.files.create_normal = f->GetTagByName(EC_TAG_FILES_CREATE_NORMAL) != nullptr;
+	out.files.start_next_alphabetical = f->GetTagByName(EC_TAG_FILES_START_NEXT_ALPHA) != nullptr;
+	out.files.media_metadata_enabled = f->GetTagByName(EC_TAG_FILES_MEDIA_METADATA_ENABLED) != nullptr;
+	if (const CECTag *t = f->GetTagByName(EC_TAG_FILES_MEDIA_FFPROBE_PATH)) {
+		out.files.ffprobe_path = std::string(t->GetStringData().utf8_str());
+	}
 }
 
 void ParseServersPrefs(const CECTag *s, PreferencesSnapshot &out)
@@ -2201,6 +2240,8 @@ void ParseSecurityPrefs(const CECTag *s, PreferencesSnapshot &out)
 	out.security.obfuscation_requested =
 		s->GetTagByName(EC_TAG_SECURITY_OBFUSCATION_REQUESTED) != nullptr;
 	out.security.obfuscation_required = s->GetTagByName(EC_TAG_SECURITY_OBFUSCATION_REQUIRED) != nullptr;
+	out.security.paranoid_filtering = s->GetTagByName(EC_TAG_IPFILTER_PARANOID) != nullptr;
+	out.security.use_system_ipfilter = s->GetTagByName(EC_TAG_IPFILTER_SYSTEM) != nullptr;
 }
 
 void ParseMessageFilterPrefs(const CECTag *m, PreferencesSnapshot &out)
@@ -2243,6 +2284,12 @@ void ParseRemoteControlsPrefs(const CECTag *rc, PreferencesSnapshot &out)
 void ParseOnlineSigPrefs(const CECTag *o, PreferencesSnapshot &out)
 {
 	out.online_signature.enabled = o->GetTagByName(EC_TAG_ONLINESIG_ENABLED) != nullptr;
+	if (const CECTag *t = o->GetTagByName(EC_TAG_ONLINESIG_DIRECTORY)) {
+		out.online_signature.directory = std::string(t->GetStringData().utf8_str());
+	}
+	if (const CECTag *t = o->GetTagByName(EC_TAG_ONLINESIG_UPDATE)) {
+		out.online_signature.update_frequency = static_cast<std::uint32_t>(t->GetInt());
+	}
 }
 
 void ParseCoreTweaksPrefs(const CECTag *c, PreferencesSnapshot &out)

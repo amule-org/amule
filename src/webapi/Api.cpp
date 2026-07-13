@@ -5054,6 +5054,30 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.network_ed2k);
 	w.Key("network_kad");
 	w.ValueBool(p.network_kad);
+	w.Key("bind_address");
+	w.ValueString(wxString::FromUTF8(p.bind_address.c_str()));
+	w.Key("bind_interface");
+	w.ValueString(wxString::FromUTF8(p.bind_interface.c_str()));
+	// Proxy (proxy_password is write-only: never emitted here).
+	w.Key("proxy_enabled");
+	w.ValueBool(p.proxy_enabled);
+	w.Key("proxy_type");
+	w.ValueInt(static_cast<int64_t>(p.proxy_type));
+	w.Key("proxy_host");
+	w.ValueString(wxString::FromUTF8(p.proxy_host.c_str()));
+	w.Key("proxy_port");
+	w.ValueInt(static_cast<int64_t>(p.proxy_port));
+	w.Key("proxy_auth");
+	w.ValueBool(p.proxy_auth);
+	w.Key("proxy_user");
+	w.ValueString(wxString::FromUTF8(p.proxy_user.c_str()));
+	// P2P-router UPnP. upnp_available is read-only (daemon capability).
+	w.Key("upnp_available");
+	w.ValueBool(p.upnp_available);
+	w.Key("upnp_enabled");
+	w.ValueBool(p.upnp_enabled);
+	w.Key("upnp_tcp_port");
+	w.ValueInt(static_cast<int64_t>(p.upnp_tcp_port));
 	w.EndObject();
 
 	w.Key("directories");
@@ -5110,6 +5134,12 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueInt(static_cast<int64_t>(p.files.min_free_space_mb));
 	w.Key("create_normal");
 	w.ValueBool(p.files.create_normal);
+	w.Key("start_next_alphabetical");
+	w.ValueBool(p.files.start_next_alphabetical);
+	w.Key("media_metadata_enabled");
+	w.ValueBool(p.files.media_metadata_enabled);
+	w.Key("ffprobe_path");
+	w.ValueString(wxString::FromUTF8(p.files.ffprobe_path.c_str()));
 	w.EndObject();
 
 	w.Key("servers");
@@ -5162,6 +5192,10 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.security.obfuscation_requested);
 	w.Key("obfuscation_required");
 	w.ValueBool(p.security.obfuscation_required);
+	w.Key("paranoid_filtering");
+	w.ValueBool(p.security.paranoid_filtering);
+	w.Key("use_system_ipfilter");
+	w.ValueBool(p.security.use_system_ipfilter);
 	w.EndObject();
 
 	w.Key("message_filter");
@@ -5206,6 +5240,10 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.BeginObject();
 	w.Key("enabled");
 	w.ValueBool(p.online_signature.enabled);
+	w.Key("directory");
+	w.ValueString(wxString::FromUTF8(p.online_signature.directory.c_str()));
+	w.Key("update_frequency");
+	w.ValueInt(static_cast<int64_t>(p.online_signature.update_frequency));
 	w.EndObject();
 
 	w.Key("core_tweaks");
@@ -5594,6 +5632,23 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			ok.status = 200;
 			return ok;
 		};
+		auto take_string = [&](const char *key, ec_tagname_t name) -> CHttpServer::Response {
+			const auto it = connection_obj->find(key);
+			if (it == connection_obj->end()) {
+				CHttpServer::Response ok;
+				ok.status = 0;
+				return ok;
+			}
+			if (!it->second.is<std::string>()) {
+				return ErrorResponse(400, "bad_request", "connection field must be a string");
+			}
+			connection.AddTag(
+				CECTag(name, wxString::FromUTF8(it->second.get<std::string>().c_str())));
+			any_conn = true;
+			CHttpServer::Response ok;
+			ok.status = 200;
+			return ok;
+		};
 
 		// Uints — kbps caps in [0, 1_000_000_000], ports in [0, 65535].
 		const std::uint32_t kbps_max = 1000000000u;
@@ -5641,6 +5696,47 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		auto rb5 = take_bool("network_kad", EC_TAG_NETWORK_KADEMLIA);
 		if (rb5.status >= 400)
 			return rb5;
+
+		// Bind-to-IP address (empty string = bind to any).
+		auto rs1 = take_string("bind_address", EC_TAG_CONN_BIND_ADDRESS);
+		if (rs1.status >= 400)
+			return rs1;
+		// Bind-to-interface (daemon-side interface name; empty = any).
+		auto rs2 = take_string("bind_interface", EC_TAG_CONN_BIND_INTERFACE);
+		if (rs2.status >= 400)
+			return rs2;
+
+		// Proxy. proxy_type: 0 SOCKS5 / 1 SOCKS4 / 2 HTTP / 3 SOCKS4a.
+		// proxy_password is write-only (accepted here, never echoed on GET).
+		auto rp1 = take_bool("proxy_enabled", EC_TAG_PROXY_ENABLE);
+		if (rp1.status >= 400)
+			return rp1;
+		auto rp2 = take_uint("proxy_type", EC_TAG_PROXY_TYPE, 3);
+		if (rp2.status >= 400)
+			return rp2;
+		auto rp3 = take_string("proxy_host", EC_TAG_PROXY_HOST);
+		if (rp3.status >= 400)
+			return rp3;
+		auto rp4 = take_uint("proxy_port", EC_TAG_PROXY_PORT, 65535);
+		if (rp4.status >= 400)
+			return rp4;
+		auto rp5 = take_bool("proxy_auth", EC_TAG_PROXY_AUTH);
+		if (rp5.status >= 400)
+			return rp5;
+		auto rp6 = take_string("proxy_user", EC_TAG_PROXY_USER);
+		if (rp6.status >= 400)
+			return rp6;
+		auto rp7 = take_string("proxy_password", EC_TAG_PROXY_PASSWORD);
+		if (rp7.status >= 400)
+			return rp7;
+
+		// P2P-router UPnP (upnp_available is read-only, not accepted here).
+		auto ru1 = take_bool("upnp_enabled", EC_TAG_CONN_UPNP_ENABLED);
+		if (ru1.status >= 400)
+			return ru1;
+		auto ru2 = take_uint("upnp_tcp_port", EC_TAG_CONN_UPNP_TCP_PORT, 65535);
+		if (ru2.status >= 400)
+			return ru2;
 
 		if (any_conn) {
 			ec_req->AddTag(connection);
@@ -5775,7 +5871,21 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				any,
 				perr) ||
 			!PrefTakeBool(
-				*files_obj, g, "create_normal", EC_TAG_FILES_CREATE_NORMAL, any, perr)) {
+				*files_obj, g, "create_normal", EC_TAG_FILES_CREATE_NORMAL, any, perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"start_next_alphabetical",
+				EC_TAG_FILES_START_NEXT_ALPHA,
+				any,
+				perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"media_metadata_enabled",
+				EC_TAG_FILES_MEDIA_METADATA_ENABLED,
+				any,
+				perr) ||
+			!PrefTakeString(
+				*files_obj, g, "ffprobe_path", EC_TAG_FILES_MEDIA_FFPROBE_PATH, any, perr)) {
 			return ErrorResponse(400, "bad_request", perr.c_str());
 		}
 		if (any) {
@@ -5897,7 +6007,15 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				"obfuscation_required",
 				EC_TAG_SECURITY_OBFUSCATION_REQUIRED,
 				any,
-				perr)) {
+				perr) ||
+			!PrefTakeBool(*security_obj,
+				g,
+				"paranoid_filtering",
+				EC_TAG_IPFILTER_PARANOID,
+				any,
+				perr) ||
+			!PrefTakeBool(
+				*security_obj, g, "use_system_ipfilter", EC_TAG_IPFILTER_SYSTEM, any, perr)) {
 			return ErrorResponse(400, "bad_request", perr.c_str());
 		}
 		if (any) {
@@ -6042,7 +6160,20 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	if (online_signature_obj) {
 		CECTag g(EC_TAG_PREFS_ONLINESIG, static_cast<std::uint32_t>(0));
 		bool any = false;
-		if (!PrefTakeBool(*online_signature_obj, g, "enabled", EC_TAG_ONLINESIG_ENABLED, any, perr)) {
+		if (!PrefTakeBool(*online_signature_obj, g, "enabled", EC_TAG_ONLINESIG_ENABLED, any, perr) ||
+			!PrefTakeString(*online_signature_obj,
+				g,
+				"directory",
+				EC_TAG_ONLINESIG_DIRECTORY,
+				any,
+				perr) ||
+			!PrefTakeUint(*online_signature_obj,
+				g,
+				"update_frequency",
+				EC_TAG_ONLINESIG_UPDATE,
+				kU32Max,
+				any,
+				perr)) {
 			return ErrorResponse(400, "bad_request", perr.c_str());
 		}
 		if (any) {

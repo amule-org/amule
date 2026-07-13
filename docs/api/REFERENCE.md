@@ -1285,7 +1285,18 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "autoconnect": true,
     "reconnect":   true,
     "network_ed2k": true,
-    "network_kad":  true
+    "network_kad":  true,
+    "bind_address": "",
+    "bind_interface": "",
+    "proxy_enabled": false,
+    "proxy_type": 0,
+    "proxy_host": "",
+    "proxy_port": 1080,
+    "proxy_auth": false,
+    "proxy_user": "",
+    "upnp_available": true,
+    "upnp_enabled": false,
+    "upnp_tcp_port": 50000
   },
   "directories": {
     "incoming": "/home/me/.aMule/Incoming",
@@ -1302,7 +1313,9 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "new_paused": false, "new_auto_dl_prio": false, "new_auto_ul_prio": false,
     "preview_prio": false, "start_next_paused": false, "resume_same_cat": false,
     "save_sources": true, "extract_metadata": false, "alloc_full_size": false,
-    "check_free_space": true, "min_free_space_mb": 1, "create_normal": false
+    "check_free_space": true, "min_free_space_mb": 1, "create_normal": false,
+    "start_next_alphabetical": false,
+    "media_metadata_enabled": false, "ffprobe_path": ""
   },
   "servers": {
     "remove_dead": true, "dead_server_retries": 3, "auto_update": false,
@@ -1317,7 +1330,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "ipfilter_auto_update": false, "ipfilter_update_url": "",
     "ipfilter_level": 127, "ipfilter_filter_lan": true,
     "use_secident": true,
-    "obfuscation_supported": true, "obfuscation_requested": true, "obfuscation_required": false
+    "obfuscation_supported": true, "obfuscation_requested": true, "obfuscation_required": false,
+    "paranoid_filtering": true, "use_system_ipfilter": false
   },
   "message_filter": {
     "enabled": false, "all": false, "friends": false,
@@ -1329,7 +1343,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "webserver_guest_enabled": false,
     "amuleapi_enabled": true, "amuleapi_port": 4713, "amuleapi_bind": "0.0.0.0"
   },
-  "online_signature": { "enabled": false },
+  "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency": 5 },
   "core_tweaks": {
     "max_conn_per_five": 200, "verbose": false, "filebuffer": 240000,
     "ul_queue": 5000, "srv_keepalive_timeout": 0, "kad_max_searches": 50,
@@ -1348,6 +1362,12 @@ Returns every preference category amuled carries over EC. The `general` and `con
 Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on the wire. **Passwords are never returned** — the webserver admin/guest and amuleapi passwords are write-only (see PATCH). `general.user_hash` is the node's own identity hash, not a password.
 
 `ip2country` is the GeoIP (IP-to-country) config category (issue #440). `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly (it is a config string the daemon already round-trips, not a masked password). `loaded_source`, `db_path`, `db_loaded`, `downloading`, and `last_result` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
+
+`files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length/bitrate/codec. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary. `connection.bind_address` (empty = bind to any local IP), `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any), and `online_signature.directory` are likewise daemon-side paths/addresses. These, together with `files.start_next_alphabetical`, `security.paranoid_filtering`, `security.use_system_ipfilter`, and `online_signature.update_frequency`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart.
+
+`connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_tcp_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_available` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server and EC-port UPnP are intentionally not exposed — amuleweb is deprecated and the EC port is not a P2P port.)
+
+The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is `0` SOCKS5 / `1` SOCKS4 / `2` HTTP / `3` SOCKS4a; `proxy_auth` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET (same as the `remote_controls` passwords); PATCH the other proxy fields without it to leave the stored password unchanged.
 
 **Errors:** `503 ec_unavailable`.
 

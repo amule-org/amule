@@ -290,7 +290,9 @@ public:
 	static Cfg_Lang_Base *GetCfgLang() { return s_cfgLang; }
 
 	static const wxString &GetAddress() { return s_Addr; }
+	static void SetAddress(const wxString &val) { s_Addr = val; }
 	static const wxString &GetNetworkInterface() { return s_NetworkInterface; }
+	static void SetNetworkInterface(const wxString &val) { s_NetworkInterface = val; }
 	static uint16 GetPort() { return s_port; }
 	static void SetPort(uint16 val);
 	static uint16 GetUDPPort() { return s_udpport; }
@@ -493,6 +495,13 @@ public:
 	static void SetUPnPWebServerEnabled(bool val) { s_UPnPWebServerEnabled = val; }
 	static uint16 GetUPnPTCPPort() { return s_UPnPTCPPort; }
 	static void SetUPnPTCPPort(uint16 val) { s_UPnPTCPPort = val; }
+	// Runtime capability (not persisted): whether the connected daemon is
+	// built with UPnP (ENABLE_UPNP), advertised over EC. amulegui greys the
+	// P2P-UPnP controls when the core can't forward. Set from the EC prefs
+	// apply; false by default so a pre-3.1 daemon (which never sends the tag)
+	// keeps the controls disabled instead of showing a dead toggle.
+	static bool GetUPnPAvailable() { return s_UPnPAvailable; }
+	static void SetUPnPAvailable(bool val) { s_UPnPAvailable = val; }
 	static bool IsManualHighPrio() { return s_bmanualhighprio; }
 	static void SetManualHighPrio(bool val) { s_bmanualhighprio = val; }
 	void LoadCats();
@@ -618,7 +627,9 @@ public:
 	static bool VerticalToolbar() { return s_ToolbarOrientation; }
 
 	static const CPath &GetOSDir() { return s_OSDirectory; }
+	static void SetOSDir(const CPath &val) { s_OSDirectory = val; }
 	static uint16 GetOSUpdate() { return s_OSUpdate; }
+	static void SetOSUpdate(uint16 val) { s_OSUpdate = val; }
 
 	static uint8 GetToolTipDelay() { return s_iToolDelayTime; }
 
@@ -666,6 +677,7 @@ public:
 
 	// Can't have it return a reference, will need a pointer later.
 	static const CProxyData *GetProxyData() { return &s_ProxyData; }
+	static void SetProxyData(const CProxyData &val) { s_ProxyData = val; }
 
 	// Hidden files
 
@@ -919,6 +931,7 @@ protected:
 	static bool s_UPnPECEnabled;
 	static bool s_UPnPWebServerEnabled;
 	static uint16 s_UPnPTCPPort;
+	static bool s_UPnPAvailable;
 
 	////////////// PROXY
 	static CProxyData s_ProxyData;

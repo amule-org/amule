@@ -120,6 +120,15 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		const bool versionCheckAvailable = false;
 #endif
 		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE, versionCheckAvailable));
+		// Capability signal: whether this build can do UPnP port forwarding
+		// (ENABLE_UPNP). The remote GUI greys the P2P-UPnP controls when the
+		// core can't forward, instead of offering a dead toggle.
+#ifdef ENABLE_UPNP
+		const bool upnpAvailable = true;
+#else
+		const bool upnpAvailable = false;
+#endif
+		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_UPNP_AVAILABLE, upnpAvailable));
 		AddTag(user_prefs);
 	}
 
@@ -149,6 +158,27 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetNetworkKademlia()) {
 			connPrefs.AddTag(CECEmptyTag(EC_TAG_NETWORK_KADEMLIA));
 		}
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_BIND_ADDRESS, thePrefs::GetAddress()));
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_BIND_INTERFACE, thePrefs::GetNetworkInterface()));
+		// Proxy: the daemon routes P2P + its HTTP fetches through this; the
+		// remote GUI must be able to read + set it. The password rides plainly
+		// (it is a plaintext auth credential, not a hash) so amulegui can show
+		// it -- the amuleapi surface keeps it write-only.
+		const CProxyData *proxy = thePrefs::GetProxyData();
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_ENABLE, proxy->m_proxyEnable));
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_TYPE, static_cast<uint32>(proxy->m_proxyType)));
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_HOST, proxy->m_proxyHostName));
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_PORT, static_cast<uint16>(proxy->m_proxyPort)));
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_AUTH, proxy->m_enablePassword));
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_USER, proxy->m_userName));
+		connPrefs.AddTag(CECTag(EC_TAG_PROXY_PASSWORD, proxy->m_password));
+		// UPnP: the enable toggle forwards the P2P ports (which are the
+		// tcp_port/udp_port tags above); UPnPTCPPort is the control point's own
+		// local port (libupnp), not a forwarded port. Web-server and EC-port
+		// UPnP are intentionally not carried (amuleweb is deprecated; the EC
+		// port is not a P2P port).
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_UPNP_ENABLED, thePrefs::GetUPnPEnabled()));
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_UPNP_TCP_PORT, thePrefs::GetUPnPTCPPort()));
 		AddTag(connPrefs);
 	}
 
@@ -216,6 +246,8 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::IsOnlineSignatureEnabled()) {
 			online_sig.AddTag(CECEmptyTag(EC_TAG_ONLINESIG_ENABLED));
 		}
+		online_sig.AddTag(CECTag(EC_TAG_ONLINESIG_DIRECTORY, thePrefs::GetOSDir().GetRaw()));
+		online_sig.AddTag(CECTag(EC_TAG_ONLINESIG_UPDATE, thePrefs::GetOSUpdate()));
 		AddTag(online_sig);
 	}
 
@@ -300,6 +332,14 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (!thePrefs::CreateFilesSparse()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_CREATE_NORMAL));
 		}
+		if (thePrefs::GetMediaMetadataEnabled()) {
+			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_MEDIA_METADATA_ENABLED));
+		}
+		filePrefs.AddTag(
+			CECTag(EC_TAG_FILES_MEDIA_FFPROBE_PATH, thePrefs::GetMediaMetadataFFProbePath()));
+		if (thePrefs::StartNextFileAlpha()) {
+			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_START_NEXT_ALPHA));
+		}
 		AddTag(filePrefs);
 	}
 
@@ -357,6 +397,12 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 		if (thePrefs::IsClientCryptLayerRequired()) {
 			secPrefs.AddTag(CECEmptyTag(EC_TAG_SECURITY_OBFUSCATION_REQUIRED));
+		}
+		if (thePrefs::ParanoidFilter()) {
+			secPrefs.AddTag(CECEmptyTag(EC_TAG_IPFILTER_PARANOID));
+		}
+		if (thePrefs::UseIPFilterSystem()) {
+			secPrefs.AddTag(CECEmptyTag(EC_TAG_IPFILTER_SYSTEM));
 		}
 
 		AddTag(secPrefs);
@@ -487,6 +533,13 @@ void CEC_Prefs_Packet::Apply() const
 		} else {
 			thePrefs::SetVersionCheckAvailable(true);
 		}
+		// A pre-3.1 daemon omits this tag; treat "absent" as no UPnP so the
+		// controls stay disabled rather than dead (only explicit true enables).
+		if (const CECTag *up = thisTab->GetTagByName(EC_TAG_GENERAL_UPNP_AVAILABLE)) {
+			thePrefs::SetUPnPAvailable(up->GetInt() != 0);
+		} else {
+			thePrefs::SetUPnPAvailable(false);
+		}
 #endif
 	}
 
@@ -528,6 +581,54 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetReconnect, EC_TAG_CONN_RECONNECT);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetNetworkED2K, EC_TAG_NETWORK_ED2K);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetNetworkKademlia, EC_TAG_NETWORK_KADEMLIA);
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_BIND_ADDRESS)) != nullptr) {
+			thePrefs::SetAddress(oneTag->GetStringData());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_BIND_INTERFACE)) != nullptr) {
+			thePrefs::SetNetworkInterface(oneTag->GetStringData());
+		}
+		// Proxy is a compound value; start from the current config and overwrite
+		// only the fields the packet actually carried (a partial PATCH leaves the
+		// rest -- notably the write-only password -- untouched).
+		CProxyData proxy = *thePrefs::GetProxyData();
+		bool proxySet = false;
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_ENABLE)) != nullptr) {
+			proxy.m_proxyEnable = oneTag->GetInt() != 0;
+			proxySet = true;
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_TYPE)) != nullptr) {
+			proxy.m_proxyType = static_cast<CProxyType>(oneTag->GetInt());
+			proxySet = true;
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_HOST)) != nullptr) {
+			proxy.m_proxyHostName = oneTag->GetStringData();
+			proxySet = true;
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_PORT)) != nullptr) {
+			proxy.m_proxyPort = static_cast<unsigned short>(oneTag->GetInt());
+			proxySet = true;
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_AUTH)) != nullptr) {
+			proxy.m_enablePassword = oneTag->GetInt() != 0;
+			proxySet = true;
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_USER)) != nullptr) {
+			proxy.m_userName = oneTag->GetStringData();
+			proxySet = true;
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_PASSWORD)) != nullptr) {
+			proxy.m_password = oneTag->GetStringData();
+			proxySet = true;
+		}
+		if (proxySet) {
+			thePrefs::SetProxyData(proxy);
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_UPNP_ENABLED)) != nullptr) {
+			thePrefs::SetUPnPEnabled(oneTag->GetInt() != 0);
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_UPNP_TCP_PORT)) != nullptr) {
+			thePrefs::SetUPnPTCPPort(static_cast<uint16>(oneTag->GetInt()));
+		}
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_MESSAGEFILTER)) != NULL) {
@@ -577,6 +678,12 @@ void CEC_Prefs_Packet::Apply() const
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_ONLINESIG)) != NULL) {
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetOnlineSignatureEnabled, EC_TAG_ONLINESIG_ENABLED);
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_ONLINESIG_DIRECTORY)) != nullptr) {
+			thePrefs::SetOSDir(CPath(oneTag->GetStringData()));
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_ONLINESIG_UPDATE)) != nullptr) {
+			thePrefs::SetOSUpdate(oneTag->GetInt());
+		}
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_SERVERS)) != NULL) {
@@ -625,6 +732,15 @@ void CEC_Prefs_Packet::Apply() const
 			thePrefs::SetMinFreeDiskSpaceMB(oneTag->GetInt());
 		}
 		ApplyBoolean(use_tag, thisTab, thePrefs::CreateFilesNormal, EC_TAG_FILES_CREATE_NORMAL);
+		ApplyBoolean(use_tag,
+			thisTab,
+			thePrefs::SetMediaMetadataEnabled,
+			EC_TAG_FILES_MEDIA_METADATA_ENABLED);
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_FILES_MEDIA_FFPROBE_PATH)) != nullptr) {
+			thePrefs::SetMediaMetadataFFProbePath(oneTag->GetStringData());
+		}
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetStartNextFileAlpha, EC_TAG_FILES_START_NEXT_ALPHA);
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_DIRECTORIES)) != NULL) {
@@ -720,6 +836,8 @@ void CEC_Prefs_Packet::Apply() const
 			thisTab,
 			thePrefs::SetClientCryptLayerRequired,
 			EC_TAG_SECURITY_OBFUSCATION_REQUIRED);
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetParanoidFilter, EC_TAG_IPFILTER_PARANOID);
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetIPFilterSystem, EC_TAG_IPFILTER_SYSTEM);
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_CORETWEAKS)) != NULL) {

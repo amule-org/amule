@@ -590,9 +590,13 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// Fill the "Bind to interface" drop-down with the detected interfaces.
 	// Done before the Cfg->widget transfer below so the stored value (which
 	// may be an interface that is currently down) is preserved as typed text.
+	// In CLIENT_GUI the control is a plain wxTextCtrl (the daemon's interfaces
+	// are not this machine's), so there is nothing to enumerate.
+#ifndef CLIENT_GUI
 	if (wxComboBox *ifaceBox = CastChild(IDC_INTERFACE, wxComboBox)) {
 		ifaceBox->Append(DetectNetworkInterfaces());
 	}
+#endif
 
 	// Connect the Cfgs with their widgets
 	thePrefs::CFGMap::iterator it = thePrefs::s_CfgList.begin();
@@ -804,27 +808,25 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// the daemon side. Same gap holds whether amulegui is on a
 	// loopback or remote connection: amuled never reads remote.conf,
 	// so the control is dead in both cases. Hide unconditionally for
-	// CLIENT_GUI. Proxy settings (ID_PROXY_*) are deliberately *not*
-	// in this list -- they're consumed by amulegui's own HTTP client
-	// in ApplyProxyToDefaultSession() for the GeoIP database fetch,
-	// so they remain meaningful in CLIENT_GUI builds.
+	// CLIENT_GUI. Proxy settings (ID_PROXY_*) are *not* in this list.
+	// They are packed by CEC_Prefs_Packet (EC_TAG_PROXY_*), so the remote
+	// GUI configures the daemon's proxy -- amuled routes its P2P and HTTP
+	// (server list, nodes.dat, GeoIP, version check) through it. amulegui
+	// also uses the value locally for its own version-check HTTP (the
+	// shared curl session in CVersionCheck). GeoIP, by contrast, is
+	// daemon-only -- amulegui has no local resolver, country codes arrive
+	// over EC -- so this control is meaningful either way.
 	const int amuledOnlyPrefs[] = {
-		IDC_ADDRESS,
-		IDC_ADDRESSTEXT,
-		IDC_INTERFACE,
-		IDC_INTERFACETEXT,
-		IDC_UPNP_ENABLED,
-		IDC_UPNPTCPPORT,
-		IDC_UPNPTCPPORTTEXT,
+		// Web-server UPnP (amuleweb is deprecated) and EC-port UPnP (the EC
+		// port is not a P2P port) stay hidden; only the P2P-router UPnP is
+		// wired over EC, and it is capability-gated in the UPNP block below.
 		IDC_UPNP_WEBSERVER_ENABLED,
 		IDC_WEBUPNPTCPPORT,
 		IDC_WEBUPNPTCPPORTTEXT,
 		IDC_UPNP_EC_ENABLED,
-		IDC_OSDIR,
-		IDC_OSDIRTEXT,
+		// Online-signature "Browse" is a local file picker; the directory field
+		// + update frequency beside it are EC-wired and stay visible.
 		IDC_SELOSDIR,
-		IDC_OSUPDATE,
-		IDC_OSUPDATETEXT,
 		IDC_EXT_CONN_PARAMS_BOX,
 		IDC_EXT_CONN_ACCEPT,
 		IDC_EXT_CONN_IP,
@@ -833,13 +835,9 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		IDC_EXT_CONN_TCPPORTTEXT,
 		IDC_EXT_CONN_PASSWD,
 		IDC_EXT_CONN_PASSWDTEXT,
-		IDC_PARANOID,
-		IDC_IPFILTERSYS,
-		IDC_STARTNEXTFILE_ALPHA,
-		// Media metadata (issue #140) — probing runs daemon-side.
-		IDC_MEDIAMETA_ENABLED,
-		IDC_MEDIAMETA_FFPROBEPATH,
-		IDC_MEDIAMETA_FFPROBEPATHTEXT,
+		// ffprobe "Browse" (local file picker) and "Detect" (auto-detects on the
+		// GUI host, not the daemon) cannot target the daemon filesystem. The
+		// enable toggle + path field are EC-wired and stay visible.
 		IDC_MEDIAMETA_FFPROBEBROWSE,
 		IDC_MEDIAMETA_FFPROBEDETECT,
 	};
@@ -879,6 +877,20 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	CastChild(IDC_RATESAFTERTITLE, wxRadioButton)->SetValue(thePrefs::GetShowRatesOnTitle() != 2);
 
 	// UPNP
+#ifdef CLIENT_GUI
+	// Gate the P2P-router UPnP controls on the daemon's advertised capability
+	// (EC_TAG_GENERAL_UPNP_AVAILABLE), not amulegui's own ENABLE_UPNP -- the
+	// daemon is what forwards. Do NOT clobber the pref when unavailable (the
+	// value belongs to the daemon). Web-server + EC-port UPnP are hidden.
+	if (thePrefs::GetUPnPAvailable()) {
+		FindWindow(IDC_UPNPTCPPORT)->Enable(thePrefs::GetUPnPEnabled());
+		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
+	} else {
+		FindWindow(IDC_UPNP_ENABLED)->Enable(false);
+		FindWindow(IDC_UPNPTCPPORT)->Enable(false);
+		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(false);
+	}
+#else
 #ifndef ENABLE_UPNP
 	FindWindow(IDC_UPNP_ENABLED)->Enable(false);
 	FindWindow(IDC_UPNPTCPPORT)->Enable(false);
@@ -895,6 +907,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
 	FindWindow(IDC_WEBUPNPTCPPORT)->Enable(thePrefs::GetUPnPWebServerEnabled());
 	FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPWebServerEnabled());
+#endif
 #endif
 
 #ifdef __DEBUG__
