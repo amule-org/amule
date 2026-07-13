@@ -156,7 +156,9 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	  << ",\"total\":" << f.shared.requests_total << "}"
 	  << ",\"accepts\":{\"session\":" << f.shared.accepts_session
 	  << ",\"total\":" << f.shared.accepts_total << "}"
-	  << "}";
+	  << ",\"upload_speed_bps\":" << f.shared.upload_speed_bps
+	  << ",\"uploading\":" << f.shared.uploading_count << ",\"last_upload\":" << f.shared.last_upload
+	  << ",\"shared_since\":" << f.shared.shared_since << "}";
 	return o.str();
 }
 
@@ -294,7 +296,10 @@ bool EqualShared(const FileSnapshot &a, const FileSnapshot &b)
 	       a.shared.requests_session == b.shared.requests_session &&
 	       a.shared.requests_total == b.shared.requests_total &&
 	       a.shared.accepts_session == b.shared.accepts_session &&
-	       a.shared.accepts_total == b.shared.accepts_total;
+	       a.shared.accepts_total == b.shared.accepts_total &&
+	       a.shared.upload_speed_bps == b.shared.upload_speed_bps &&
+	       a.shared.uploading_count == b.shared.uploading_count &&
+	       a.shared.last_upload == b.shared.last_upload && a.shared.shared_since == b.shared.shared_since;
 }
 bool Equal(const ServerSnapshot &a, const ServerSnapshot &b)
 {

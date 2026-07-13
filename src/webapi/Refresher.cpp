@@ -1017,6 +1017,27 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 			f.shared.priority_auto = sh_auto;
 		}
 	}
+	// Live upload activity + timestamps (issue #466).
+	{
+		std::uint32_t v = f.shared.upload_speed_bps;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_UPLOAD_SPEED, v))
+			f.shared.upload_speed_bps = v;
+	}
+	{
+		std::uint16_t v = f.shared.uploading_count;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_UPLOADING_COUNT, v))
+			f.shared.uploading_count = v;
+	}
+	{
+		std::uint32_t v = f.shared.last_upload;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_LAST_UPLOAD, v))
+			f.shared.last_upload = v;
+	}
+	{
+		std::uint32_t v = f.shared.shared_since;
+		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_SHARED_SINCE, v))
+			f.shared.shared_since = v;
+	}
 	// Base CKnownFile detail tags (aich_hash, queued_count, path source).
 	MergeKnownFileDetail(sf, f);
 }

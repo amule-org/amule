@@ -2358,6 +2358,13 @@ void CPartFile::CompleteFileEnded(bool errorOccured, const CPath &newname)
 		m_paused = false;
 		ClearPriority();
 
+		// Shared-since (issue #466): a just-completed download becomes
+		// available now. Stamp only if unset so a re-complete / re-add
+		// doesn't move the date.
+		if (GetDateShared() == 0) {
+			SetDateShared(time(nullptr));
+		}
+
 		// Remove from list of canceled files in case it was canceled once upon a time
 		if (theApp->canceledfiles->Remove(GetFileHash())) {
 			theApp->canceledfiles->Save();

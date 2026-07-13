@@ -1963,6 +1963,17 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.Key("total");
 	w.ValueInt(static_cast<int64_t>(f.shared.accepts_total));
 	w.EndObject();
+	// Live upload activity (issue #466). `upload_speed_bps` + `uploading`
+	// refresh every tick; `last_upload` / `shared_since` are unix seconds,
+	// 0 = unknown (never uploaded / pre-feature known.met entry).
+	w.Key("upload_speed_bps");
+	w.ValueInt(static_cast<int64_t>(f.shared.upload_speed_bps));
+	w.Key("uploading");
+	w.ValueInt(static_cast<int64_t>(f.shared.uploading_count));
+	w.Key("last_upload");
+	w.ValueInt(static_cast<int64_t>(f.shared.last_upload));
+	w.Key("shared_since");
+	w.ValueInt(static_cast<int64_t>(f.shared.shared_since));
 }
 
 void WriteSharedObject(CJsonWriter &w, const webapi::FileSnapshot &f)

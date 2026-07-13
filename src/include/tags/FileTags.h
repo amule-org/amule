@@ -69,6 +69,8 @@
 #define FT_ATACCEPTED 0x52      // <uint32>
 #define FT_CATEGORY 0x53        // <uint32>
 #define FT_ATTRANSFERREDHI 0x54 // <uint32>
+#define FT_LASTUPLOADED 0x55    // <uint32> last time data was uploaded for this file (issue #466)
+#define FT_SHAREDSINCE 0x56     // <uint32> when the file was completed / first shared (issue #466)
 #define FT_MEDIA_ARTIST 0xD0    // <string>
 #define FT_MEDIA_ALBUM 0xD1     // <string>
 #define FT_MEDIA_TITLE 0xD2     // <string>

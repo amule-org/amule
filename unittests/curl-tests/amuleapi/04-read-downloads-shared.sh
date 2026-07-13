@@ -252,6 +252,15 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].priority is string'
 	_assert_json_eq '.shared[0].priority_auto | type' boolean \
 		'/shared[0].priority_auto is boolean'
+	# Live upload activity (issue #466).
+	_assert_json_eq '.shared[0].upload_speed_bps | type' number \
+		'/shared[0].upload_speed_bps is numeric (#466)'
+	_assert_json_eq '.shared[0].uploading | type' number \
+		'/shared[0].uploading is numeric (#466)'
+	_assert_json_eq '.shared[0].last_upload | type' number \
+		'/shared[0].last_upload is numeric (#466)'
+	_assert_json_eq '.shared[0].shared_since | type' number \
+		'/shared[0].shared_since is numeric (#466)'
 
 	# --- 6b. GET /shared/{hash} detail endpoint (issue #417 Part B). ---
 	SHASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared[0].hash')

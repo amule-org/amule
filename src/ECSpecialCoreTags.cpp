@@ -259,6 +259,16 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 
 	AddTag(EC_TAG_KNOWNFILE_ON_QUEUE, file->GetQueuedCount(), valuemap);
 
+	// Live upload activity (issue #466). Emitted before the UPDATE
+	// early-return so they refresh every tick like the download-side
+	// speed/source counts. The speed + uploading count are computed from
+	// m_ClientUploadList (core-only); amulegui receives them over EC.
+#ifndef CLIENT_GUI
+	AddTag(EC_TAG_KNOWNFILE_UPLOAD_SPEED, file->GetUploadDatarate(), valuemap);
+	AddTag(EC_TAG_KNOWNFILE_UPLOADING_COUNT, file->GetTransferringClientCount(), valuemap);
+#endif
+	AddTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, (uint32)file->GetLastUpload(), valuemap);
+
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;
 	}
@@ -277,6 +287,10 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	// across the completed transition, so the REST API can expose an
 	// unambiguous `path` on /downloads and /shared (issue #417).
 	AddTag(EC_TAG_KNOWNFILE_PATH, file->GetFilePath().GetPrintable(), valuemap);
+
+	// When the file was completed / first shared (issue #466). Static once
+	// set, so it rides in the full-detail section rather than every tick.
+	AddTag(EC_TAG_KNOWNFILE_SHARED_SINCE, (uint32)file->GetDateShared(), valuemap);
 
 	AddTag(EC_TAG_PARTFILE_SIZE_FULL, file->GetFileSize(), valuemap);
 

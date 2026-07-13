@@ -117,6 +117,10 @@ void CFileStatistic::AddTransferred(uint64 bytes)
 		static_cast<CPartFile *>(fileParent)->MarkStatsDirty();
 	}
 	if (fileParent) {
+		// Upload-activity stamp (issue #466): the upload-side analogue of
+		// the download's m_lastDateChanged, stamped here because this is
+		// the single point where sent bytes are attributed to the file.
+		fileParent->SetLastUpload(time(nullptr));
 		fileParent->MarkECChanged();
 	}
 	theApp->sharedfiles->UpdateItem(fileParent);
@@ -373,6 +377,8 @@ void CKnownFile::Init()
 	m_lastPublishTimeKadNotes = 0;
 	m_lastBuddyIP = 0;
 	m_lastDateChanged = 0;
+	m_lastUploadDatetime = 0;
+	m_dateShared = 0;
 	// Sentinel "unknown": LoadFromFile fills this in from FT_LASTSEEN
 	// when present, else falls back to the file's own mtime
 	// (m_lastDateChanged) for migration -- so a known.met that
@@ -514,6 +520,33 @@ void CKnownFile::RemoveUploadingClient(CUpDownClient *client)
 		MarkECChanged();
 	}
 }
+
+#ifndef CLIENT_GUI
+// Live upload activity summarised from m_ClientUploadList (issue #466).
+// Core-only: the list is populated on the daemon; amulegui receives the
+// results over EC. m_ClientUploadList holds both uploading and queued
+// clients, so queued clients (datarate 0, state != US_UPLOADING) simply
+// don't contribute.
+uint32 CKnownFile::GetUploadDatarate() const
+{
+	uint32 total = 0;
+	for (const CClientRef &ref : m_ClientUploadList) {
+		total += ref.GetUploadDatarate();
+	}
+	return total;
+}
+
+uint16 CKnownFile::GetTransferringClientCount() const
+{
+	uint16 count = 0;
+	for (const CClientRef &ref : m_ClientUploadList) {
+		if (ref.GetUploadState() == US_UPLOADING) {
+			++count;
+		}
+	}
+	return count;
+}
+#endif // ! CLIENT_GUI
 
 #ifdef CLIENT_GUI
 
@@ -696,6 +729,16 @@ bool CKnownFile::LoadTagsFromFile(const CFileDataIO *file)
 			m_lastSeen = newtag.GetInt();
 			break;
 
+		case FT_LASTUPLOADED:
+			// Live upload-activity timestamp (issue #466). Absent on a
+			// known.met that predates the feature -> stays 0 (unknown).
+			m_lastUploadDatetime = static_cast<time_t>(newtag.GetInt());
+			break;
+
+		case FT_SHAREDSINCE:
+			m_dateShared = static_cast<time_t>(newtag.GetInt());
+			break;
+
 		default:
 			// Store them here and write them back on saving.
 			m_taglist.push_back(newtag);
@@ -777,6 +820,15 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 		++tagcount;
 	}
 
+	// Upload-activity tags (issue #466) — only persisted once set.
+	if (m_lastUploadDatetime) {
+		++tagcount;
+	}
+
+	if (m_dateShared) {
+		++tagcount;
+	}
+
 	// standard tags
 
 	file->WriteUInt32(tagcount);
@@ -837,6 +889,17 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	if (m_lastPublishTimeKadNotes) {
 		CTagInt32 kadLastPubNotes(FT_KADLASTPUBLISHNOTES, m_lastPublishTimeKadNotes);
 		kadLastPubNotes.WriteTagToFile(file);
+	}
+
+	// Upload activity (issue #466)
+	if (m_lastUploadDatetime) {
+		CTagInt32 lastUpTag(FT_LASTUPLOADED, (uint32)m_lastUploadDatetime);
+		lastUpTag.WriteTagToFile(file);
+	}
+
+	if (m_dateShared) {
+		CTagInt32 sharedSinceTag(FT_SHAREDSINCE, (uint32)m_dateShared);
+		sharedSinceTag.WriteTagToFile(file);
 	}
 
 	// other tags

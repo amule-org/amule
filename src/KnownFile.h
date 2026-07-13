@@ -237,7 +237,22 @@ public:
 	uint16 GetQueuedCount() const { return m_queuedCount; }
 #else
 	uint16 GetQueuedCount() const { return (uint16)m_ClientUploadList.size(); }
+	// Live upload activity for this shared file (issue #466), summarised
+	// from m_ClientUploadList — the upload-side analogue of the download
+	// speed / transferring-source counts. Core-only: amulegui receives
+	// these over EC rather than computing them.
+	uint32 GetUploadDatarate() const;          // sum of per-client upload speed (B/s)
+	uint16 GetTransferringClientCount() const; // clients currently US_UPLOADING
 #endif
+
+	// Timestamp of the last time data was uploaded for this file, and when
+	// the file was completed / first shared (issue #466). Both persisted in
+	// known.met (FT_LASTUPLOADED / FT_SHAREDSINCE); 0 = unknown. Available
+	// in both builds so the EC round-trip carries them to amulegui.
+	time_t GetLastUpload() const { return m_lastUploadDatetime; }
+	void SetLastUpload(time_t t) { m_lastUploadDatetime = t; }
+	time_t GetDateShared() const { return m_dateShared; }
+	void SetDateShared(time_t t) { m_dateShared = t; }
 
 	bool LoadHashsetFromFile(const CFileDataIO *file, bool checkhash);
 	void AddUploadingClient(CUpDownClient *client);
@@ -343,6 +358,13 @@ public:
 	void ClearPriority();
 
 	time_t m_lastDateChanged;
+
+	// Live upload activity (issue #466), persisted in known.met so it
+	// survives restarts. m_lastUploadDatetime is stamped whenever data is
+	// sent for this file (CFileStatistic::AddTransferred); m_dateShared is
+	// stamped once when the file is completed or first shared. 0 = unknown.
+	time_t m_lastUploadDatetime;
+	time_t m_dateShared;
 
 	// "Last time aMule saw this exact (name, date, size) match a real
 	// file." Refreshed by CKnownFileList::FindKnownFile and the

@@ -53,6 +53,14 @@
 void CUpDownClient::SetUploadState(uint8 eNewState)
 {
 	if (eNewState != m_nUploadState) {
+		// Entering or leaving US_UPLOADING changes this file's live
+		// upload speed and uploading-client count (issue #466). Mark it
+		// EC-dirty so the delta protocol re-sends those tags — otherwise
+		// a file that just stopped uploading keeps a stale non-zero speed
+		// in remote clients until some other change happens to touch it.
+		if ((m_nUploadState == US_UPLOADING || eNewState == US_UPLOADING) && m_uploadingfile) {
+			m_uploadingfile->MarkECChanged();
+		}
 		if (m_nUploadState == US_UPLOADING) {
 			// Reset upload data rate computation
 			m_nUpDatarate = 0;

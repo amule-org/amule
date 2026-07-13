@@ -439,6 +439,15 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 			// is exactly what bit ngosang on the first PR test).
 			if (afterHashing) {
 				Record->SetLastSeen(now);
+				// Shared-since (issue #466): stamp once, only for a
+				// genuinely new file (freshly hashed from disk). Same
+				// afterHashing guard as lastSeen so a known.met load
+				// (afterHashing=false) never re-stamps — a file that
+				// predates the feature keeps 0 (unknown) rather than
+				// looking "shared just now" on first startup.
+				if (Record->GetDateShared() == 0) {
+					Record->SetDateShared(now);
+				}
 			}
 			m_knownFileMap[tkey] = Record;
 			if (m_knownSizeMap) {

@@ -531,6 +531,11 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_AICH_MASTERHASH, std::string("FEDCBA9876")));
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("/home/me/Incoming")));
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_PATH, std::string("/home/me/Incoming")));
+	// Live upload activity (issue #466).
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_UPLOAD_SPEED, static_cast<std::uint32_t>(51200)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_UPLOADING_COUNT, static_cast<std::uint16_t>(3)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, static_cast<std::uint32_t>(1700000500)));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_SHARED_SINCE, static_cast<std::uint32_t>(1699000000)));
 	resp.AddTag(kf);
 
 	ApplyGetUpdateToShared(&resp, cache);
@@ -545,6 +550,11 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	// Completed known file → the directory path arrives on its own tag
 	// (the write layer maps an incomplete shared partfile to "[PartFile]").
 	ASSERT_EQUALS(std::string("/home/me/Incoming"), s.on_disk_dir);
+	// Upload activity (issue #466) decodes into the shared sub-block.
+	ASSERT_EQUALS(static_cast<std::uint32_t>(51200), s.shared.upload_speed_bps);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(3), s.shared.uploading_count);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1700000500), s.shared.last_upload);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1699000000), s.shared.shared_since);
 }
 
 // Comment/rating (issue #419): the user's own comment+rating land at the

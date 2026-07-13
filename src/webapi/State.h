@@ -231,6 +231,16 @@ struct FileSnapshot
 		// `complete_sources` above stays as-is.
 		std::uint16_t complete_sources_low = 0;
 		std::uint16_t complete_sources_high = 0;
+
+		// Live upload activity (issue #466), the upload-side analogue of
+		// the download stats. `upload_speed_bps` + `uploading_count` are
+		// live (refresh every tick); `last_upload` / `shared_since` are
+		// unix timestamps, 0 = unknown (a file that has never uploaded, or
+		// a known.met entry that predates the feature).
+		std::uint32_t upload_speed_bps = 0;
+		std::uint16_t uploading_count = 0;
+		std::uint32_t last_upload = 0;
+		std::uint32_t shared_since = 0;
 	} shared;
 };
 
