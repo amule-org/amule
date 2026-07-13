@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-13 11:45+0200\n"
+"POT-Creation-Date: 2026-07-13 12:24+0200\n"
 "PO-Revision-Date: 2026-07-12 11:55+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -92,7 +92,7 @@ msgstr ""
 #: src/AboutDialog.cpp:162
 #, fuzzy
 msgid "Checking for updates..."
-msgstr "Povezovanje s Kad …"
+msgstr "Povezovanje s Kad ..."
 
 #: src/AboutDialog.cpp:172
 #, fuzzy
@@ -208,7 +208,7 @@ msgstr[3] ""
 #: src/amuleAppCommon.cpp:181 src/amule.cpp:1115 src/amule.cpp:1172
 #: src/amule.cpp:1286 src/amule.cpp:1588 src/amule-remote-gui.cpp:564
 #: src/amule-remote-gui.cpp:630 src/amule-remote-gui.cpp:668
-#: src/amule-remote-gui.cpp:1190 src/amule-remote-gui.cpp:1217
+#: src/amule-remote-gui.cpp:1195 src/amule-remote-gui.cpp:1222
 #: src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "NAPAKA"
@@ -223,17 +223,17 @@ msgstr "OPOZORILO: če imete nizek ID, sebe ne morete dodati kot vira za povezav
 
 #: src/amule.cpp:300
 msgid "Now, exiting main app..."
-msgstr "Sedaj, zapuščanje glavnega programa …"
+msgstr "Sedaj, zapuščanje glavnega programa ..."
 
 #: src/amule.cpp:330
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Končanje izvoda amuleweb s PID »%d« … "
+msgstr "Končanje izvoda amuleweb s PID »%d« ... "
 
 #: src/amule.cpp:334
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Ubijanje izvoda amuleweb s PID »%d« … "
+msgstr "Ubijanje izvoda amuleweb s PID »%d« ... "
 
 #: src/amule.cpp:336 src/amule.cpp:349 src/ClientRef.cpp:180
 #: src/ServerListCtrl.cpp:98
@@ -243,12 +243,12 @@ msgstr "Neuspeh"
 #: src/amule.cpp:343
 #, fuzzy, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Končanje izvoda amuleweb s PID »%d« … "
+msgstr "Končanje izvoda amuleweb s PID »%d« ... "
 
 #: src/amule.cpp:347
 #, fuzzy, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "Ubijanje izvoda amuleweb s PID »%d« … "
+msgstr "Ubijanje izvoda amuleweb s PID »%d« ... "
 
 #: src/amule.cpp:355
 msgid "aMule OnExit: Terminating core."
@@ -500,17 +500,17 @@ msgstr "Uporabljate najnovejšo različico aMule."
 msgid "Failed to download the version check file"
 msgstr "Ni bilo mogoče prejeti datoteke za preverjanje različice"
 
-#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1064
+#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1069
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr "Uporabniki: %s | Datoteke: %s"
 
-#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1065
+#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1070
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr "Uporabniki: E: %s K: %s | Datoteke: E: %s K: %s"
 
-#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1078
+#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1083
 msgid "No networks selected"
 msgstr "Izbranega ni nobenega omrežja"
 
@@ -861,12 +861,12 @@ msgstr "Opozori ob končanju"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
-msgid "Reconnecting… (attempt %d)"
+msgid "Reconnecting... (attempt %d)"
 msgstr ""
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
-msgid "Next attempt in %d s…"
+msgid "Next attempt in %d s..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:169
@@ -884,11 +884,11 @@ msgstr "Usodna napaka: ni bilo mogoče ustvariti časomerilnika za povpraševanj
 
 #: src/amule-remote-gui.cpp:475
 msgid "Going to event loop..."
-msgstr "Prehod v dogodkovno zanko …"
+msgstr "Prehod v dogodkovno zanko ..."
 
 #: src/amule-remote-gui.cpp:530
 msgid "Connecting..."
-msgstr "Povezovanje …"
+msgstr "Povezovanje ..."
 
 #: src/amule-remote-gui.cpp:563
 msgid "Connection failed. Please check the host, port, and password."
@@ -920,7 +920,7 @@ msgid ""
 msgstr ""
 
 #: src/amule-remote-gui.cpp:689
-msgid "Connection to the remote core was lost. Trying to reconnect…"
+msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:722
@@ -933,28 +933,28 @@ msgstr "Poveži se z omrežjem."
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr "Povezava ni uspela. Ni se moč povezati z %s: %d\n"
 
-#: src/amule-remote-gui.cpp:775
+#: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:910
+#: src/amule-remote-gui.cpp:915
 msgid "Ready"
 msgstr "Pripravljen"
 
-#: src/amule-remote-gui.cpp:1122 src/TransferWnd.cpp:338
+#: src/amule-remote-gui.cpp:1127 src/TransferWnd.cpp:338
 msgid "All"
 msgstr "Vse"
 
-#: src/amule-remote-gui.cpp:1181 src/ExternalConn.cpp:1947
+#: src/amule-remote-gui.cpp:1186 src/ExternalConn.cpp:1947
 msgid "Invalid link or already on list."
 msgstr "Neveljavna povezava oz. je že na seznamu."
 
-#: src/amule-remote-gui.cpp:1208
+#: src/amule-remote-gui.cpp:1213
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "Ni moč ustvariti mape »%s« za kategorijo »%s«, obdržana bo mapa »%s«."
 
-#: src/amule-remote-gui.cpp:2070 src/BaseClient.cpp:1835
+#: src/amule-remote-gui.cpp:2092 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -1999,7 +1999,7 @@ msgstr "Povezava z eD2k že obstaja."
 
 #: src/ExternalConn.cpp:2490
 msgid "Connecting to eD2k..."
-msgstr "Povezovanje z eD2k …"
+msgstr "Povezovanje z eD2k ..."
 
 #: src/ExternalConn.cpp:2499
 msgid "Already connected to Kad."
@@ -2007,7 +2007,7 @@ msgstr "Povezava s Kad že obstaja."
 
 #: src/ExternalConn.cpp:2502
 msgid "Connecting to Kad..."
-msgstr "Povezovanje s Kad …"
+msgstr "Povezovanje s Kad ..."
 
 #: src/ExternalConn.cpp:2509
 msgid "All networks are disabled."
@@ -2161,7 +2161,7 @@ msgid ""
 "Creating client...\n"
 msgstr ""
 "\n"
-"Ustvarjanje odjemalca …\n"
+"Ustvarjanje odjemalca ...\n"
 
 #: src/ExternalConnector.cpp:483
 #, c-format
@@ -2170,7 +2170,7 @@ msgid ""
 "Ok, exiting %s...\n"
 msgstr ""
 "\n"
-"V redu, končevanje %s …\n"
+"V redu, končevanje %s ...\n"
 
 #: src/ExternalConnector.cpp:489
 msgid ""
@@ -2184,7 +2184,7 @@ msgstr ""
 "Vnesti morate geslo v nastavitveni datoteki,\n"
 "ukazni vrstici ali pa ko boste vprašani za geslo.\n"
 "\n"
-"Končevanje …\n"
+"Končevanje ...\n"
 
 #: src/ExternalConnector.cpp:498
 msgid "Show this help text."
@@ -2378,7 +2378,7 @@ msgstr "Da"
 
 #: src/HTTPDownload.cpp:59
 msgid "Downloading..."
-msgstr "Prejemanje …"
+msgstr "Prejemanje ..."
 
 #: src/HTTPDownload.cpp:126
 msgid "HTTP download cancelled"
@@ -2729,27 +2729,27 @@ msgstr "Napaka med povezovanjem"
 msgid "External Connection lost - exiting."
 msgstr "Zunanja povezava se je zaprla."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:340
+#: src/libs/ec/cpp/RemoteConnect.cpp:357
 msgid "EC connection failed. Empty reply."
 msgstr "Zunanja povezava ni uspela. Prazen odgovor."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:369
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Zunanja povezava: slab odgovor, rokovanje ni uspelo. Povezava prekinjena."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:363
+#: src/libs/ec/cpp/RemoteConnect.cpp:380
 msgid "Succeeded! Connection established to aMule "
 msgstr "Uspeh! Vzpostavljena povezava z aMule "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:365
+#: src/libs/ec/cpp/RemoteConnect.cpp:382
 msgid "Succeeded! Connection established."
 msgstr "Uspeh! Povezava vzpostavljena."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:393
+#: src/libs/ec/cpp/RemoteConnect.cpp:410
 msgid "External Connection: Access denied because: "
 msgstr "Zunanja povezava: dostop je bil zavrnjen. Razlog: "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:396
+#: src/libs/ec/cpp/RemoteConnect.cpp:413
 msgid "External Connection: Handshake failed."
 msgstr "Zunanja povezava: rokovanje ni uspelo."
 
@@ -3017,11 +3017,11 @@ msgstr "Dogodki so prikazani tukaj. Za celoten seznam dogodkov, poglejte v zapis
 
 #: src/muuli_wdr.cpp:115
 msgid "Loading ..."
-msgstr "Nalaganje …"
+msgstr "Nalaganje ..."
 
 #: src/muuli_wdr.cpp:122
 msgid "Number of users on the server you are connected to ..."
-msgstr "Število uporabnikov na strežniku na katerega ste povezani …"
+msgstr "Število uporabnikov na strežniku na katerega ste povezani ..."
 
 #: src/muuli_wdr.cpp:125
 msgid "Users: 0"
@@ -3045,7 +3045,7 @@ msgstr "Prikazuje stanje povezave in dejavne prenose. Rdeče puščice pomenijo,
 
 #: src/muuli_wdr.cpp:145
 msgid "Not Connected ..."
-msgstr "Ni povezave …"
+msgstr "Ni povezave ..."
 
 #: src/muuli_wdr.cpp:146
 msgid "Currently connected server."
@@ -3361,7 +3361,7 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
-"Za film lahko poveste njegovo dolžino, zgodbo, jezik …\n"
+"Za film lahko poveste njegovo dolžino, zgodbo, jezik ...\n"
 "in če je lažna, lahko to sporočite drugim uporabnikom."
 
 #: src/muuli_wdr.cpp:773
@@ -3394,7 +3394,7 @@ msgstr "Odlična"
 
 #: src/muuli_wdr.cpp:786
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr "Izberite oceno datoteke ali sporočite uporabnikom, če datoteka ni veljavna …"
+msgstr "Izberite oceno datoteke ali sporočite uporabnikom, če datoteka ni veljavna ..."
 
 #: src/muuli_wdr.cpp:823
 #, fuzzy
@@ -3407,7 +3407,7 @@ msgstr "Osveži"
 
 #: src/muuli_wdr.cpp:848
 msgid "Downloading, please wait ..."
-msgstr "Prejemanje, prosimo počakajte …"
+msgstr "Prejemanje, prosimo počakajte ..."
 
 #: src/muuli_wdr.cpp:852
 msgid "Unknown size"
@@ -4377,7 +4377,7 @@ msgstr "Sem vnesite vrata strežnika."
 
 #: src/muuli_wdr.cpp:2362
 msgid "Add manually a server (fill fields to the left before) ..."
-msgstr "Ročno dodaj strežnik (najprej izpolnite vsa polja) …"
+msgstr "Ročno dodaj strežnik (najprej izpolnite vsa polja) ..."
 
 #: src/muuli_wdr.cpp:2391
 msgid "aMule Log"
@@ -4782,7 +4782,7 @@ msgstr "Kategorije sporočil:"
 
 #: src/muuli_wdr.cpp:3015 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
-msgstr "Čakanje …"
+msgstr "Čakanje ..."
 
 #: src/muuli_wdr.cpp:3035
 msgid "Add imports"
@@ -4960,7 +4960,7 @@ msgstr "Uporaba mape z nastavitvami: %s"
 
 #: src/PartFileConvert.cpp:165
 msgid "Waiting for partfile convert thread to die..."
-msgstr "Čakanje na zamrtje niti za pretvarjanje delnih datotek …"
+msgstr "Čakanje na zamrtje niti za pretvarjanje delnih datotek ..."
 
 #: src/PartFileConvert.cpp:209
 #, c-format
@@ -5063,7 +5063,7 @@ msgstr "NAPAKA: %s (%s) je pokvarjena (napačno število oznak), ni mogoče nalo
 
 #: src/PartFile.cpp:678
 msgid "Trying to recover file info..."
-msgstr "Poskus reševanja podatkov o datoteki …"
+msgstr "Poskus reševanja podatkov o datoteki ..."
 
 #: src/PartFile.cpp:692
 msgid "Recovering no-named file - will try to recover it as RecoveredFile.dat"
@@ -5071,7 +5071,7 @@ msgstr "Reševanje neimenovane datoteke – rešena bo kot RecoveredFile.dat"
 
 #: src/PartFile.cpp:697
 msgid "Recovered all available file info :D - Trying to use it..."
-msgstr "Rešeni vsi podatki o datoteki, ki so na voljo :D – Poskus njihove uporabe …"
+msgstr "Rešeni vsi podatki o datoteki, ki so na voljo :D – Poskus njihove uporabe ..."
 
 #: src/PartFile.cpp:699
 msgid "Unable to recover file info :("
@@ -5884,11 +5884,11 @@ msgstr "Deljene mape"
 
 #: src/PrefsUnifiedDlg.cpp:2517
 #, fuzzy
-msgid "Reloading shared files…"
+msgid "Reloading shared files..."
 msgstr "Ponovno naloži deljene datoteke"
 
 #: src/PrefsUnifiedDlg.cpp:2517
-msgid "Scanning for subdirectories…"
+msgid "Scanning for subdirectories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:2518
@@ -5898,7 +5898,7 @@ msgstr "Deljene mape"
 
 #: src/PrefsUnifiedDlg.cpp:2545
 #, c-format
-msgid "Scanned %u directories…"
+msgid "Scanned %u directories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:2595
@@ -7236,8 +7236,8 @@ msgid ""
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
 "Povezava eD2k za dodajanje je lahko:\n"
-"• povezava za datoteko (ed2k://|file|…), dodana bo na v vrsto prejemanj\n"
-"• povezava za strežnik (ed2k://|server|…), dodan bo na seznam strežnikov\n"
+"• povezava za datoteko (ed2k://|file|...), dodana bo na v vrsto prejemanj\n"
+"• povezava za strežnik (ed2k://|server|...), dodan bo na seznam strežnikov\n"
 "• povezava do seznama strežnikov, vsi strežniki bodo dodani na seznam strežnikov\n"
 "\n"
 "Povezava magnet mora vsebovati kodo eD2k in dolžino datoteke.\n"
@@ -7771,7 +7771,7 @@ msgstr ""
 #: src/utils/aLinkCreator/src/alcframe.cpp:482
 #: src/utils/aLinkCreator/src/alcframe.cpp:491
 msgid "Hashing..."
-msgstr "Ustvarjanje kode …"
+msgstr "Ustvarjanje kode ..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:486
 #: src/utils/aLinkCreator/src/alcframe.cpp:504
@@ -7780,11 +7780,11 @@ msgstr "aLinkCreator dela za vas"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:487
 msgid "Computing MD4 Hash..."
-msgstr "Izračunavanje kode MD4 …"
+msgstr "Izračunavanje kode MD4 ..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:505
 msgid "Computing eD2k Hashes..."
-msgstr "Izračunavanje kode eD2k …"
+msgstr "Izračunavanje kode eD2k ..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:538
 #: src/utils/aLinkCreator/src/alcframe.cpp:539
@@ -7973,7 +7973,7 @@ msgstr "aMule teče, vendar ni povezave."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:898
 msgid "aMule is connecting..."
-msgstr "aMule se povezuje …"
+msgstr "aMule se povezuje ..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:902
 msgid "Oh Oh, aMule status is unknown..."
@@ -8002,7 +8002,7 @@ msgstr " ni povezan."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:977
 msgid " is connecting..."
-msgstr " se povezuje …"
+msgstr " se povezuje ..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:980
 msgid " is doing something strange, check it !"

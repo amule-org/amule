@@ -199,6 +199,12 @@ public:
 
 	virtual ~CRemoteContainer() {}
 
+	// A reconnect flushed the request FIFO (CRemoteConnect::DiscardRequestQueue):
+	// the status/full reply this container was waiting for is gone, so rewind
+	// the request SM to IDLE. Otherwise DoRequery()/FullReload() see a non-IDLE
+	// state and refuse to re-request, leaving the list frozen after reconnect.
+	virtual void AbortPendingRequest() { m_state = IDLE; }
+
 	typedef typename std::list<T *>::iterator iterator;
 	iterator begin() { return m_items.begin(); }
 	iterator end() { return m_items.end(); }

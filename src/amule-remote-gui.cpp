@@ -156,10 +156,10 @@ public:
 	}
 
 	// Shown while a connect attempt is in flight.
-	void SetAttempt(int n) { SetStatus(CFormat(_("Reconnecting… (attempt %d)")) % n); }
+	void SetAttempt(int n) { SetStatus(CFormat(_("Reconnecting... (attempt %d)")) % n); }
 
 	// Shown counting down to the next attempt after a failure.
-	void SetCountdown(int seconds) { SetStatus(CFormat(_("Next attempt in %d s…")) % seconds); }
+	void SetCountdown(int seconds) { SetStatus(CFormat(_("Next attempt in %d s...")) % seconds); }
 
 private:
 	// Only the middle line changes; the (widest) "paused" line is constant,
@@ -686,7 +686,7 @@ void CamuleRemoteGuiApp::BeginReconnect()
 	m_reconnecting = true;
 	m_reconnectAttempt = 0;
 
-	AddLogLineCS(_("Connection to the remote core was lost. Trying to reconnect…"));
+	AddLogLineCS(_("Connection to the remote core was lost. Trying to reconnect..."));
 
 	// Freeze polling while disconnected: the poll timer would fire
 	// GET_UPDATE at a dead socket, and the GUI timer animates stale data.
@@ -752,12 +752,17 @@ void CamuleRemoteGuiApp::AttemptReconnect()
 	AddLogLineCS(CFormat(_("Reconnect attempt %d: connecting to %s:%d")) % m_reconnectAttempt % m_ecHost %
 		     m_ecPort);
 
-	// Reset BOTH layers of the reused connection: the EC packet-reassembly
-	// state (a stale mid-packet read left over from the drop would otherwise
-	// misparse the new session's first bytes and the login would fail) and a
-	// fresh asio socket on the SAME CRemoteConnect object (keeps every remote
-	// container's m_conn pointer valid). Capability flags persist on the
-	// object, so ConnectToCore re-runs the login handshake as on first connect.
+	// Reset ALL layers of the reused connection: the pending-request FIFO
+	// (orphaned handlers from requests the dropped socket left unanswered
+	// would otherwise mis-pair with the new session's replies — a stats reply
+	// routed to the file-list handler wipes the download / shared lists, #444),
+	// the EC packet-reassembly state (a stale mid-packet read left over from
+	// the drop would otherwise misparse the new session's first bytes and the
+	// login would fail) and a fresh asio socket on the SAME CRemoteConnect
+	// object (keeps every remote container's m_conn pointer valid). Capability
+	// flags persist on the object, so ConnectToCore re-runs the login handshake
+	// as on first connect.
+	m_connect->DiscardRequestQueue();
 	m_connect->ResetProtocolState();
 	m_connect->ResetForReconnect();
 
@@ -1714,6 +1719,9 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->BeginBatchUpdate();
 	}
+	// Set below if the reconnect reconcile reply is too empty to trust as a
+	// full snapshot: keep the one-shot armed instead of pruning (see #444).
+	bool deferReconcile = false;
 
 	// Partial-update protocol negotiated at auth time (see
 	// CRemoteConnect::ServerSupportsPartialUpdate). When true, the server
@@ -1852,6 +1860,17 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 				}
 			}
 		}
+	} else if (reconcile && core_files.empty() && GetCount() != 0) {
+		// Defensive guard (#444): the first poll after a reconnect should
+		// carry the full library snapshot. If it came back with no file tags
+		// at all while we still hold a populated list, that reply is not a
+		// trustworthy baseline — pruning by absence here would wipe every
+		// download and shared file. Skip the prune and leave the one-shot
+		// armed so the next poll reconciles against a real snapshot instead.
+		AddDebugLogLineN(logEC,
+			wxT("EC: post-reconnect reconcile reply carried no files; "
+			    "deferring the absence-prune to the next poll."));
+		deferReconcile = true;
 	} else {
 		// Legacy server (alive-marker protocol), OR the first poll after a
 		// reconnect (m_reconnectReconcile): anything missing from the
@@ -1871,8 +1890,11 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate();
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate();
 	}
-	// One-shot: consumed by the first post-reconnect poll above.
-	m_reconnectReconcile = false;
+	// One-shot: consumed by the first post-reconnect poll above, unless the
+	// reply was too empty to trust and we left the flag armed for the next.
+	if (!deferReconcile) {
+		m_reconnectReconcile = false;
+	}
 }
 
 CKnownFilesRem::CKnownFilesRem(CRemoteConnect *conn)

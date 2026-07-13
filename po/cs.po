@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-13 11:45+0200\n"
+"POT-Creation-Date: 2026-07-13 12:24+0200\n"
 "PO-Revision-Date: 2026-07-12 11:45+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -206,7 +206,7 @@ msgstr[2] ""
 #: src/amuleAppCommon.cpp:181 src/amule.cpp:1115 src/amule.cpp:1172
 #: src/amule.cpp:1286 src/amule.cpp:1588 src/amule-remote-gui.cpp:564
 #: src/amule-remote-gui.cpp:630 src/amule-remote-gui.cpp:668
-#: src/amule-remote-gui.cpp:1190 src/amule-remote-gui.cpp:1217
+#: src/amule-remote-gui.cpp:1195 src/amule-remote-gui.cpp:1222
 #: src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "CHYBA"
@@ -491,17 +491,17 @@ msgstr "Vaše verze aMule je aktuální."
 msgid "Failed to download the version check file"
 msgstr "Selhalo stahování kontrolního souboru s verzí"
 
-#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1064
+#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1069
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr "Uživatelů: %s | Souborů: %s"
 
-#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1065
+#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1070
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr "Uživatelů: E: %s K: %s | Souborů: E: %s K: %s"
 
-#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1078
+#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1083
 msgid "No networks selected"
 msgstr "Nezvoleny žádné sítě"
 
@@ -852,12 +852,12 @@ msgstr "Ptát se na ukončení programu"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
-msgid "Reconnecting… (attempt %d)"
+msgid "Reconnecting... (attempt %d)"
 msgstr ""
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
-msgid "Next attempt in %d s…"
+msgid "Next attempt in %d s..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:169
@@ -911,7 +911,7 @@ msgid ""
 msgstr ""
 
 #: src/amule-remote-gui.cpp:689
-msgid "Connection to the remote core was lost. Trying to reconnect…"
+msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:722
@@ -924,28 +924,28 @@ msgstr "Připojit se k síti."
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:775
+#: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:910
+#: src/amule-remote-gui.cpp:915
 msgid "Ready"
 msgstr "Připraven"
 
-#: src/amule-remote-gui.cpp:1122 src/TransferWnd.cpp:338
+#: src/amule-remote-gui.cpp:1127 src/TransferWnd.cpp:338
 msgid "All"
 msgstr "Vše"
 
-#: src/amule-remote-gui.cpp:1181 src/ExternalConn.cpp:1947
+#: src/amule-remote-gui.cpp:1186 src/ExternalConn.cpp:1947
 msgid "Invalid link or already on list."
 msgstr "Neplatný odkaz, nebo je již v seznamu."
 
-#: src/amule-remote-gui.cpp:1208
+#: src/amule-remote-gui.cpp:1213
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:2070 src/BaseClient.cpp:1835
+#: src/amule-remote-gui.cpp:2092 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -2691,28 +2691,28 @@ msgstr "Chyba při připojování"
 msgid "External Connection lost - exiting."
 msgstr "Externí připojení uzavřeno."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:340
+#: src/libs/ec/cpp/RemoteConnect.cpp:357
 msgid "EC connection failed. Empty reply."
 msgstr ""
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:369
 #, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Špatná odpověď od serveru. Spojení uzavřeno."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:363
+#: src/libs/ec/cpp/RemoteConnect.cpp:380
 msgid "Succeeded! Connection established to aMule "
 msgstr "Připojení k aMule uspělo"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:365
+#: src/libs/ec/cpp/RemoteConnect.cpp:382
 msgid "Succeeded! Connection established."
 msgstr "Připojení uspělo."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:393
+#: src/libs/ec/cpp/RemoteConnect.cpp:410
 msgid "External Connection: Access denied because: "
 msgstr ""
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:396
+#: src/libs/ec/cpp/RemoteConnect.cpp:413
 #, fuzzy
 msgid "External Connection: Handshake failed."
 msgstr "Heslo pro externí připojení."
@@ -5831,11 +5831,11 @@ msgstr "Sdílené adresáře"
 
 #: src/PrefsUnifiedDlg.cpp:2517
 #, fuzzy
-msgid "Reloading shared files…"
+msgid "Reloading shared files..."
 msgstr "Znovu načíst vaše sdílené soubory"
 
 #: src/PrefsUnifiedDlg.cpp:2517
-msgid "Scanning for subdirectories…"
+msgid "Scanning for subdirectories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:2518
@@ -5845,7 +5845,7 @@ msgstr "Sdílené adresáře"
 
 #: src/PrefsUnifiedDlg.cpp:2545
 #, c-format
-msgid "Scanned %u directories…"
+msgid "Scanned %u directories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:2595

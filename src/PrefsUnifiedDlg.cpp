@@ -2513,8 +2513,8 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	// The initial body text reflects which phase will run first: if
 	// there is a recursive intent we start in the expansion walk, if
 	// not we go straight into the file-list Reload.
-	const wxString initialBody =
-		recursiveIntents.empty() ? _("Reloading shared files…") : _("Scanning for subdirectories…");
+	const wxString initialBody = recursiveIntents.empty() ? _("Reloading shared files...")
+							      : _("Scanning for subdirectories...");
 	wxProgressDialog progress(_("Updating shared folders"),
 		initialBody,
 		/*maximum=*/100,
@@ -2542,7 +2542,7 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 			bool done = false;
 			bool userCancelled = false;
 			auto onProgress = [&](wxThreadEvent &ev) {
-				const wxString status = CFormat(_("Scanned %u directories…")) %
+				const wxString status = CFormat(_("Scanned %u directories...")) %
 							static_cast<unsigned>(ev.GetInt());
 				if (!progress.Pulse(status)) {
 					task.Cancel(); // wxThread::Delete joins the worker

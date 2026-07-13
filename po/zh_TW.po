@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-13 11:45+0200\n"
+"POT-Creation-Date: 2026-07-13 12:24+0200\n"
 "PO-Revision-Date: 2026-07-12 11:58+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -209,7 +209,7 @@ msgstr[0] ""
 #: src/amuleAppCommon.cpp:181 src/amule.cpp:1115 src/amule.cpp:1172
 #: src/amule.cpp:1286 src/amule.cpp:1588 src/amule-remote-gui.cpp:564
 #: src/amule-remote-gui.cpp:630 src/amule-remote-gui.cpp:668
-#: src/amule-remote-gui.cpp:1190 src/amule-remote-gui.cpp:1217
+#: src/amule-remote-gui.cpp:1195 src/amule-remote-gui.cpp:1222
 #: src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "錯誤"
@@ -499,17 +499,17 @@ msgstr "您的 aMule 是最新版本。"
 msgid "Failed to download the version check file"
 msgstr "無法下載版本檢查檔"
 
-#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1064
+#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1069
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr "使用者：%s | 檔案：%s"
 
-#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1065
+#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1070
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr "使用者：E:%s K:%s | 檔案：E:%s K:%s"
 
-#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1078
+#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1083
 msgid "No networks selected"
 msgstr "未選取網路"
 
@@ -860,12 +860,12 @@ msgstr "離開前先確認"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
-msgid "Reconnecting… (attempt %d)"
+msgid "Reconnecting... (attempt %d)"
 msgstr ""
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
-msgid "Next attempt in %d s…"
+msgid "Next attempt in %d s..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:169
@@ -919,7 +919,7 @@ msgid ""
 msgstr ""
 
 #: src/amule-remote-gui.cpp:689
-msgid "Connection to the remote core was lost. Trying to reconnect…"
+msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:722
@@ -932,28 +932,28 @@ msgstr "連線到網路。"
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr "無法連線到 %s:%d\n"
 
-#: src/amule-remote-gui.cpp:775
+#: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:910
+#: src/amule-remote-gui.cpp:915
 msgid "Ready"
 msgstr "就緒"
 
-#: src/amule-remote-gui.cpp:1122 src/TransferWnd.cpp:338
+#: src/amule-remote-gui.cpp:1127 src/TransferWnd.cpp:338
 msgid "All"
 msgstr "全部"
 
-#: src/amule-remote-gui.cpp:1181 src/ExternalConn.cpp:1947
+#: src/amule-remote-gui.cpp:1186 src/ExternalConn.cpp:1947
 msgid "Invalid link or already on list."
 msgstr "無效連結或已在清單中。"
 
-#: src/amule-remote-gui.cpp:1208
+#: src/amule-remote-gui.cpp:1213
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "無法建立 %s 目錄 ( %s 分類用)，繼續使用 %s 目錄。"
 
-#: src/amule-remote-gui.cpp:2070 src/BaseClient.cpp:1835
+#: src/amule-remote-gui.cpp:2092 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -2689,27 +2689,27 @@ msgstr "無法連線"
 msgid "External Connection lost - exiting."
 msgstr "已關閉外部連線。"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:340
+#: src/libs/ec/cpp/RemoteConnect.cpp:357
 msgid "EC connection failed. Empty reply."
 msgstr "無法外部連線，無回應。"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:369
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "外部連線：回應不正確、訊號交換失敗，已關閉連線。"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:363
+#: src/libs/ec/cpp/RemoteConnect.cpp:380
 msgid "Succeeded! Connection established to aMule "
 msgstr "已成功連線到 aMule "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:365
+#: src/libs/ec/cpp/RemoteConnect.cpp:382
 msgid "Succeeded! Connection established."
 msgstr "連線成功。"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:393
+#: src/libs/ec/cpp/RemoteConnect.cpp:410
 msgid "External Connection: Access denied because: "
 msgstr "外部連線：拒絕存取，原因： "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:396
+#: src/libs/ec/cpp/RemoteConnect.cpp:413
 msgid "External Connection: Handshake failed."
 msgstr "外部連線：訊號交換失敗"
 
@@ -5812,11 +5812,11 @@ msgstr "分享資料夾"
 
 #: src/PrefsUnifiedDlg.cpp:2517
 #, fuzzy
-msgid "Reloading shared files…"
+msgid "Reloading shared files..."
 msgstr "重新載入分享的檔案"
 
 #: src/PrefsUnifiedDlg.cpp:2517
-msgid "Scanning for subdirectories…"
+msgid "Scanning for subdirectories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:2518
@@ -5826,7 +5826,7 @@ msgstr "分享資料夾"
 
 #: src/PrefsUnifiedDlg.cpp:2545
 #, c-format
-msgid "Scanned %u directories…"
+msgid "Scanned %u directories..."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp:2595

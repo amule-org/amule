@@ -332,6 +332,23 @@ void CRemoteConnect::SendPacket(const CECPacket *request)
 	SendRequest(0, request);
 }
 
+void CRemoteConnect::DiscardRequestQueue()
+{
+	// The core never replies to requests that were on the air when the
+	// socket died, so their handlers would linger and every reply on the
+	// reconnected session would pop the wrong (stale) handler off the FIFO.
+	// Rewind each orphaned handler's request state so it re-requests, then
+	// clear the queue and the in-flight counter (see header for the #444
+	// wiped-list symptom this prevents).
+	for (CECPacketHandlerBase *handler : m_req_fifo) {
+		if (handler) {
+			handler->AbortPendingRequest();
+		}
+	}
+	m_req_fifo.clear();
+	m_req_count = 0;
+}
+
 bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 {
 	bool result = false;

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-13 11:45+0200\n"
+"POT-Creation-Date: 2026-07-13 12:24+0200\n"
 "PO-Revision-Date: 2026-07-12 11:48+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -95,7 +95,7 @@ msgstr ""
 #: src/AboutDialog.cpp:162
 #, fuzzy
 msgid "Checking for updates..."
-msgstr "Connexion à Kad…"
+msgstr "Connexion à Kad..."
 
 #: src/AboutDialog.cpp:172
 #, fuzzy
@@ -216,7 +216,7 @@ msgstr[1] "Impossible d'ajouter %u liens depuis le fichier ED2KLinks (cf. le jou
 #: src/amuleAppCommon.cpp:181 src/amule.cpp:1115 src/amule.cpp:1172
 #: src/amule.cpp:1286 src/amule.cpp:1588 src/amule-remote-gui.cpp:564
 #: src/amule-remote-gui.cpp:630 src/amule-remote-gui.cpp:668
-#: src/amule-remote-gui.cpp:1190 src/amule-remote-gui.cpp:1217
+#: src/amule-remote-gui.cpp:1195 src/amule-remote-gui.cpp:1222
 #: src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr "ERREUR"
@@ -231,17 +231,17 @@ msgstr "AVERTISSEMENT : Vous ne pouvez pas vous ajouter vous-même en tant que 
 
 #: src/amule.cpp:300
 msgid "Now, exiting main app..."
-msgstr "Et maintenant on quitte l'application principale…"
+msgstr "Et maintenant on quitte l'application principale..."
 
 #: src/amule.cpp:330
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Interruption de l'instance amuleweb avec le pid '%d' … "
+msgstr "Interruption de l'instance amuleweb avec le pid '%d' ... "
 
 #: src/amule.cpp:334
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Mise à mort de l'instance amuleweb avec le pid '%d' … "
+msgstr "Mise à mort de l'instance amuleweb avec le pid '%d' ... "
 
 #: src/amule.cpp:336 src/amule.cpp:349 src/ClientRef.cpp:180
 #: src/ServerListCtrl.cpp:98
@@ -251,12 +251,12 @@ msgstr "Échec"
 #: src/amule.cpp:343
 #, fuzzy, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Interruption de l'instance amuleweb avec le pid '%d' … "
+msgstr "Interruption de l'instance amuleweb avec le pid '%d' ... "
 
 #: src/amule.cpp:347
 #, fuzzy, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "Mise à mort de l'instance amuleweb avec le pid '%d' … "
+msgstr "Mise à mort de l'instance amuleweb avec le pid '%d' ... "
 
 #: src/amule.cpp:355
 msgid "aMule OnExit: Terminating core."
@@ -506,17 +506,17 @@ msgstr "Votre version d'aMule est à jour."
 msgid "Failed to download the version check file"
 msgstr "Échec du téléchargement du fichier de vérification de version"
 
-#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1064
+#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1069
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr "Utilisateurs : %s | Fichiers : %s"
 
-#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1065
+#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1070
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr "Utilisateurs : E : %s K : %s | Fichiers : E : %s K : %s"
 
-#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1078
+#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1083
 msgid "No networks selected"
 msgstr "Aucun réseau sélectionné"
 
@@ -865,12 +865,12 @@ msgstr "Confirmation en quittant"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
-msgid "Reconnecting… (attempt %d)"
+msgid "Reconnecting... (attempt %d)"
 msgstr ""
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
-msgid "Next attempt in %d s…"
+msgid "Next attempt in %d s..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:169
@@ -888,11 +888,11 @@ msgstr "Erreur Fatale : Échec de la création du minuteur d'interrogation"
 
 #: src/amule-remote-gui.cpp:475
 msgid "Going to event loop..."
-msgstr "Départ vers la boucle d'événement…"
+msgstr "Départ vers la boucle d'événement..."
 
 #: src/amule-remote-gui.cpp:530
 msgid "Connecting..."
-msgstr "Connexion…"
+msgstr "Connexion..."
 
 #: src/amule-remote-gui.cpp:563
 msgid "Connection failed. Please check the host, port, and password."
@@ -926,7 +926,7 @@ msgstr ""
 "Vérifiez l'hôte, le port et qu'aMule est en cours d'exécution avec les Connexions Externes activées."
 
 #: src/amule-remote-gui.cpp:689
-msgid "Connection to the remote core was lost. Trying to reconnect…"
+msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp:722
@@ -939,28 +939,28 @@ msgstr "Se connecter au réseau."
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr "Connexion échouée. Impossible de se connecter à %s : %d\n"
 
-#: src/amule-remote-gui.cpp:775
+#: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:910
+#: src/amule-remote-gui.cpp:915
 msgid "Ready"
 msgstr "Prêt"
 
-#: src/amule-remote-gui.cpp:1122 src/TransferWnd.cpp:338
+#: src/amule-remote-gui.cpp:1127 src/TransferWnd.cpp:338
 msgid "All"
 msgstr "Tous"
 
-#: src/amule-remote-gui.cpp:1181 src/ExternalConn.cpp:1947
+#: src/amule-remote-gui.cpp:1186 src/ExternalConn.cpp:1947
 msgid "Invalid link or already on list."
 msgstr "Lien invalide ou déjà dans la liste."
 
-#: src/amule-remote-gui.cpp:1208
+#: src/amule-remote-gui.cpp:1213
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "Impossible de créer le répertoire '%s' pour la catégorie '%s', on garde le répertoire '%s'."
 
-#: src/amule-remote-gui.cpp:2070 src/BaseClient.cpp:1835
+#: src/amule-remote-gui.cpp:2092 src/BaseClient.cpp:1835
 #: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -1987,7 +1987,7 @@ msgstr "Déjà connecté à eD2k."
 
 #: src/ExternalConn.cpp:2490
 msgid "Connecting to eD2k..."
-msgstr "Connexion à eD2k…"
+msgstr "Connexion à eD2k..."
 
 #: src/ExternalConn.cpp:2499
 msgid "Already connected to Kad."
@@ -1995,7 +1995,7 @@ msgstr "Déjà connecté à Kad."
 
 #: src/ExternalConn.cpp:2502
 msgid "Connecting to Kad..."
-msgstr "Connexion à Kad…"
+msgstr "Connexion à Kad..."
 
 #: src/ExternalConn.cpp:2509
 msgid "All networks are disabled."
@@ -2149,7 +2149,7 @@ msgid ""
 "Creating client...\n"
 msgstr ""
 "\n"
-"Création du client en cours…\n"
+"Création du client en cours...\n"
 
 #: src/ExternalConnector.cpp:483
 #, c-format
@@ -2158,7 +2158,7 @@ msgid ""
 "Ok, exiting %s...\n"
 msgstr ""
 "\n"
-"OK, fin de %s…\n"
+"OK, fin de %s...\n"
 
 #: src/ExternalConnector.cpp:489
 msgid ""
@@ -2172,7 +2172,7 @@ msgstr ""
 "Vous devez spécifier un mot de passe, soit dans le fichier de\n"
 "configuration, soit sur la ligne de commande ; ou l'entrer lorsque l'on vous le demande.\n"
 "\n"
-"Fin d'exécution…\n"
+"Fin d'exécution...\n"
 
 #: src/ExternalConnector.cpp:498
 msgid "Show this help text."
@@ -2365,7 +2365,7 @@ msgstr "Oui"
 
 #: src/HTTPDownload.cpp:59
 msgid "Downloading..."
-msgstr "Téléchargement…"
+msgstr "Téléchargement..."
 
 #: src/HTTPDownload.cpp:126
 msgid "HTTP download cancelled"
@@ -2706,27 +2706,27 @@ msgstr "Erreur de connexion"
 msgid "External Connection lost - exiting."
 msgstr "Connexion externe perdue — fermeture du programme."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:340
+#: src/libs/ec/cpp/RemoteConnect.cpp:357
 msgid "EC connection failed. Empty reply."
 msgstr "La connexion EC a échoué. Réponse vide."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:352
+#: src/libs/ec/cpp/RemoteConnect.cpp:369
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Connexion externe : Mauvaise réponse, échange raté. Connexion fermée."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:363
+#: src/libs/ec/cpp/RemoteConnect.cpp:380
 msgid "Succeeded! Connection established to aMule "
 msgstr "Succès ! Connexion établie à aMule "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:365
+#: src/libs/ec/cpp/RemoteConnect.cpp:382
 msgid "Succeeded! Connection established."
 msgstr "Succès ! Connexion établie."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:393
+#: src/libs/ec/cpp/RemoteConnect.cpp:410
 msgid "External Connection: Access denied because: "
 msgstr "Connexion externe : accès refusé car : "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:396
+#: src/libs/ec/cpp/RemoteConnect.cpp:413
 msgid "External Connection: Handshake failed."
 msgstr "Connexion externe : Échange raté."
 
@@ -2987,11 +2987,11 @@ msgstr "Les événements sont affichés ici. Pour une liste complète des évèn
 
 #: src/muuli_wdr.cpp:115
 msgid "Loading ..."
-msgstr "Chargement…"
+msgstr "Chargement..."
 
 #: src/muuli_wdr.cpp:122
 msgid "Number of users on the server you are connected to ..."
-msgstr "Nombre d'utilisateurs du serveur auquel vous êtes connecté…"
+msgstr "Nombre d'utilisateurs du serveur auquel vous êtes connecté..."
 
 #: src/muuli_wdr.cpp:125
 msgid "Users: 0"
@@ -3015,7 +3015,7 @@ msgstr "Affiche l'état de connexion et les transferts actifs. Des flèches roug
 
 #: src/muuli_wdr.cpp:145
 msgid "Not Connected ..."
-msgstr "Non connecté…"
+msgstr "Non connecté..."
 
 #: src/muuli_wdr.cpp:146
 msgid "Currently connected server."
@@ -3333,7 +3333,7 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
-"Pour un film vous pouvez indiquer sa durée, l'histoire, la langue…\n"
+"Pour un film vous pouvez indiquer sa durée, l'histoire, la langue...\n"
 "et s'il s'agit d'un faux, vous pouvez prévenir les autres utilisateurs d'aMule."
 
 #: src/muuli_wdr.cpp:773
@@ -3366,7 +3366,7 @@ msgstr "Excellent"
 
 #: src/muuli_wdr.cpp:786
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr "Choisissez une évaluation pour le fichier ou avertissez les autres utilisateurs qu'il est invalide…"
+msgstr "Choisissez une évaluation pour le fichier ou avertissez les autres utilisateurs qu'il est invalide..."
 
 #: src/muuli_wdr.cpp:823
 #, fuzzy
@@ -3379,7 +3379,7 @@ msgstr "Rafraîchir"
 
 #: src/muuli_wdr.cpp:848
 msgid "Downloading, please wait ..."
-msgstr "En téléchargement, veuillez patienter…"
+msgstr "En téléchargement, veuillez patienter..."
 
 #: src/muuli_wdr.cpp:852
 msgid "Unknown size"
@@ -4316,7 +4316,7 @@ msgstr "Cliquer ici pour effacer le journal."
 
 #: src/muuli_wdr.cpp:2332
 msgid "Click on this button to update the servers list from URL ..."
-msgstr "Cliquer ici pour mettre à jour la liste des serveurs à partir de l'URL…"
+msgstr "Cliquer ici pour mettre à jour la liste des serveurs à partir de l'URL..."
 
 #: src/muuli_wdr.cpp:2336
 msgid "Server list"
@@ -4348,7 +4348,7 @@ msgstr "Entrer ici le port du serveur."
 
 #: src/muuli_wdr.cpp:2362
 msgid "Add manually a server (fill fields to the left before) ..."
-msgstr "Ajouter manuellement un serveur (remplir les champs à gauche avant)…"
+msgstr "Ajouter manuellement un serveur (remplir les champs à gauche avant)..."
 
 #: src/muuli_wdr.cpp:2391
 msgid "aMule Log"
@@ -4368,7 +4368,7 @@ msgstr "Infos Kad"
 
 #: src/muuli_wdr.cpp:2431
 msgid "Click on this button to update the nodes list from URL ..."
-msgstr "Cliquer sur le bouton pour mettre à jour la liste des nœuds depuis l'URL…"
+msgstr "Cliquer sur le bouton pour mettre à jour la liste des nœuds depuis l'URL..."
 
 #: src/muuli_wdr.cpp:2435
 msgid "Nodes (0)"
@@ -4758,7 +4758,7 @@ msgstr "Catégories des messages :"
 
 #: src/muuli_wdr.cpp:3015 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
-msgstr "En attente…"
+msgstr "En attente..."
 
 #: src/muuli_wdr.cpp:3035
 msgid "Add imports"
@@ -4932,7 +4932,7 @@ msgstr "Utilisation du répertoire de config : %s"
 
 #: src/PartFileConvert.cpp:165
 msgid "Waiting for partfile convert thread to die..."
-msgstr "Attente de la mort du processus de conversion du fichier .part…"
+msgstr "Attente de la mort du processus de conversion du fichier .part..."
 
 #: src/PartFileConvert.cpp:209
 #, c-format
@@ -5034,7 +5034,7 @@ msgstr "ERREUR : %s (%s) est corrompue (tagcount erroné), impossible de charge
 
 #: src/PartFile.cpp:678
 msgid "Trying to recover file info..."
-msgstr "Tentative de récupération des infos du fichier…"
+msgstr "Tentative de récupération des infos du fichier..."
 
 #: src/PartFile.cpp:692
 msgid "Recovering no-named file - will try to recover it as RecoveredFile.dat"
@@ -5042,7 +5042,7 @@ msgstr "Récupération du fichier anonyme - Essai de récupération sous le nom 
 
 #: src/PartFile.cpp:697
 msgid "Recovered all available file info :D - Trying to use it..."
-msgstr "Récupération de toutes les infos du fichier :D - Essayons de les utiliser…"
+msgstr "Récupération de toutes les infos du fichier :D - Essayons de les utiliser..."
 
 #: src/PartFile.cpp:699
 msgid "Unable to recover file info :("
@@ -5838,12 +5838,12 @@ msgid "Confirm shared folders"
 msgstr "Confirmer les dossiers partagés"
 
 #: src/PrefsUnifiedDlg.cpp:2517
-msgid "Reloading shared files…"
-msgstr "Rechargement des fichiers partagés…"
+msgid "Reloading shared files..."
+msgstr "Rechargement des fichiers partagés..."
 
 #: src/PrefsUnifiedDlg.cpp:2517
-msgid "Scanning for subdirectories…"
-msgstr "Analyse des sous-répertoires…"
+msgid "Scanning for subdirectories..."
+msgstr "Analyse des sous-répertoires..."
 
 #: src/PrefsUnifiedDlg.cpp:2518
 msgid "Updating shared folders"
@@ -5851,8 +5851,8 @@ msgstr "Mise à jour des dossiers partagés"
 
 #: src/PrefsUnifiedDlg.cpp:2545
 #, c-format
-msgid "Scanned %u directories…"
-msgstr "%u répertoires analysés…"
+msgid "Scanned %u directories..."
+msgstr "%u répertoires analysés..."
 
 #: src/PrefsUnifiedDlg.cpp:2595
 #, c-format
@@ -7170,8 +7170,8 @@ msgid ""
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
 "Le lien eD2k à ajouter peut être :\n"
-"*) un lien fichier (ed2k://|fichier|…), il sera ajouté à la file de téléchargement,\n"
-"*) un lien serveur (ed2k://|serveur|…), il sera ajouté à la liste des serveurs,\n"
+"*) un lien fichier (ed2k://|fichier|...), il sera ajouté à la file de téléchargement,\n"
+"*) un lien serveur (ed2k://|serveur|...), il sera ajouté à la liste des serveurs,\n"
 "*) ou un lien de liste de serveurs, dans ce cas tous les serveurs dans la liste\n"
 "   seront ajoutés à la liste des serveurs.\n"
 "\n"
@@ -7723,7 +7723,7 @@ msgstr ""
 #: src/utils/aLinkCreator/src/alcframe.cpp:482
 #: src/utils/aLinkCreator/src/alcframe.cpp:491
 msgid "Hashing..."
-msgstr "Hachage en cours…"
+msgstr "Hachage en cours..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:486
 #: src/utils/aLinkCreator/src/alcframe.cpp:504
@@ -7732,11 +7732,11 @@ msgstr "aLinkCreator fonctionne pour vous"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:487
 msgid "Computing MD4 Hash..."
-msgstr "Calcul du hachage MD4…"
+msgstr "Calcul du hachage MD4..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:505
 msgid "Computing eD2k Hashes..."
-msgstr "Calcul des hachages eD2k…"
+msgstr "Calcul des hachages eD2k..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:538
 #: src/utils/aLinkCreator/src/alcframe.cpp:539
@@ -7911,7 +7911,7 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasframe.cpp:541
 msgid "Oh Oh, aMule is not running..."
-msgstr "Oh Oh, aMule n'est pas lancé…"
+msgstr "Oh Oh, aMule n'est pas lancé..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:618
 #: src/utils/wxCas/src/wxcasframe.cpp:689
@@ -7925,11 +7925,11 @@ msgstr "aMule est lancé, mais est déconnecté"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:898
 msgid "aMule is connecting..."
-msgstr "aMule se connecte…"
+msgstr "aMule se connecte..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:902
 msgid "Oh Oh, aMule status is unknown..."
-msgstr "Oh Oh, l'état d'aMule est inconnu…"
+msgstr "Oh Oh, l'état d'aMule est inconnu..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:970
 #: src/utils/wxCas/src/wxcasframe.cpp:973
@@ -7954,7 +7954,7 @@ msgstr " n'est pas connecté !"
 
 #: src/utils/wxCas/src/wxcasframe.cpp:977
 msgid " is connecting..."
-msgstr " se connecte…"
+msgstr " se connecte..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp:980
 msgid " is doing something strange, check it !"
@@ -8288,7 +8288,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c:55
 msgid "Removing previous aMule installation at $0..."
-msgstr "Suppression de l'installation précédente d'aMule sur $0…"
+msgstr "Suppression de l'installation précédente d'aMule sur $0..."
 
 #: packaging/windows/installer_strings.c:56
 msgid ""
@@ -8304,7 +8304,7 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
+msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule..."
 
 #~ msgid "Connection closed - aMule has terminated probably."
 #~ msgstr "Connexion fermée - aMule s'est probablement arrêté."

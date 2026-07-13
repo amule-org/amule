@@ -36,6 +36,14 @@ class CECPacketHandlerBase
 public:
 	virtual ~CECPacketHandlerBase() {}
 	virtual void HandlePacket(const CECPacket *) = 0;
+
+	// Called when a reconnect discards the pending-request FIFO
+	// (CRemoteConnect::DiscardRequestQueue): the reply this handler was
+	// waiting for died with the dropped socket and will never arrive, so
+	// any "request in flight" state must be rewound or the handler would
+	// refuse to re-request on the fresh session. Default no-op for
+	// stateless handlers; CRemoteContainer rewinds its request SM.
+	virtual void AbortPendingRequest() {}
 };
 
 class CECLoginPacket : public CECPacket
@@ -150,6 +158,16 @@ public:
 
 	void SendRequest(CECPacketHandlerBase *handler, const CECPacket *request);
 	void SendPacket(const CECPacket *request);
+
+	// Drop every handler still queued for an in-flight reply. The EC FIFO
+	// assumes the core answers every request in order (see SendRequest), but
+	// a dropped socket leaves the requests that were on the air unanswered;
+	// their handlers would otherwise stay in m_req_fifo and mis-pair with the
+	// reconnected session's replies (a stats reply routed to the file-list
+	// handler wipes the download / shared lists — aMule #444). Rewinds each
+	// orphaned handler's request state and zeroes the in-flight counter so the
+	// fresh session starts from a clean FCFS baseline.
+	void DiscardRequestQueue();
 
 	/********************* EC API ********************/
 
