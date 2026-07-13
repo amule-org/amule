@@ -8,7 +8,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, toast, Section, statRow, magnetLink, copyText } from "../components.js";
+import { Placeholder, toast, Section, statRow, magnetLink, copyText, Tabs, CommentEditor } from "../components.js";
 import { formatBytes, formatInt, formatDuration, twin } from "../format.js";
 import { Icon } from "../icons.js";
 import { t } from "../i18n.js";
@@ -37,6 +37,7 @@ export function SharedDetail({ hash }) {
   const shared = useStore("shared") || []; // live tick source (SSE)
   const [detail, setDetail] = useState(null);
   const [gone, setGone] = useState(false);
+  const [tab, setTab] = useState("details");
 
   useEffect(() => {
     if (!hash) { setDetail(null); return; }
@@ -63,17 +64,20 @@ export function SharedDetail({ hash }) {
       <div class="detail-head">
         <div class="detail-titlebar">
           <h4 class="detail-name" title=${s.name}>${s.name}</h4>
-          <div class="detail-actions">
-            <button class="btn btn-sm" type="button" onClick=${() => copy(s.ed2k_link)}>
-              <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
-            </button>
-            <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(s))}>
-              <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
-            </button>
-          </div>
         </div>
       </div>
 
+      <${Tabs} tabs=${[
+        { key: "details", label: t("detail_tab_details") },
+        { key: "comments", label: t("detail_tab_comments") },
+      ]} active=${tab} onSelect=${setTab} />
+
+      <div class="detail-body">
+      ${tab === "comments" ? html`
+        <div class="detail-comments">
+          <${CommentEditor} key=${s.hash} hash=${s.hash} kind="shared" comment=${s.comment} rating=${s.rating} />
+        </div>
+      ` : html`
       <div class="detail-sections">
         ${Section("shared_detail_sec_sharing", [
           statRow("shared_size", formatBytes(s.size), "shared_detail_tip_size"),
@@ -96,15 +100,23 @@ export function SharedDetail({ hash }) {
           media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean)) : null}
-        ${s.comment ? Section("downloads_detail_sec_comment", [
-          statRow("downloads_detail_comment", s.comment, "downloads_detail_tip_comment"),
-          s.rating ? statRow("downloads_detail_rating", formatInt(s.rating), "downloads_detail_tip_rating") : null,
-        ].filter(Boolean)) : null}
         ${Section("downloads_detail_sec_identity", [
-          statRow("downloads_detail_hash", html`<span class="mono">${(s.hash || "").toUpperCase()}</span>`, "downloads_detail_tip_hash"),
+          statRow("downloads_detail_hash", html`
+            <div class="hash-cell">
+              <span class="mono">${(s.hash || "").toUpperCase()}</span>
+              <span class="detail-actions">
+                <button class="btn btn-sm" type="button" onClick=${() => copy(s.ed2k_link)}>
+                  <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
+                </button>
+                <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(s))}>
+                  <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
+                </button>
+              </span>
+            </div>`, "downloads_detail_tip_hash"),
           statRow("shared_detail_path", s.path || "—", "shared_detail_tip_path"),
           statRow("shared_detail_parts", formatInt(s.part_count), "shared_detail_tip_parts"),
         ])}
+      </div>`}
       </div>
     </div>`;
 }

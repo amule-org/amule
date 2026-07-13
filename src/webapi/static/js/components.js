@@ -2,9 +2,10 @@
 // the two imperative helpers (toast, confirmDialog) reused across views.
 // Class names match app.css.
 
-import { html, render } from "./dom.js";
+import { html, render, useState } from "./dom.js";
 import { formatPercent } from "./format.js";
-import { t } from "./i18n.js";
+import { t, terr } from "./i18n.js";
+import { api } from "./api.js";
 
 // --- presentational components -----------------------------------------
 
@@ -69,6 +70,60 @@ export function Tabs({ tabs, active, onSelect }) {
           ${tab.badge != null ? html`<span class="tab-badge">${tab.badge}</span>` : null}
         </button>`)}
     </div>`;
+}
+
+// --- file comments / ratings -------------------------------------------
+// Shared by both detail panels. Rating is a 0-5 integer (0 = not rated),
+// with -1 in a per-source entry meaning "comment but no rating". The labels
+// mirror the desktop GetRateString() (src/OtherFunctions.cpp).
+
+const RATING_OPTIONS = [0, 1, 2, 3, 4, 5];
+
+// i18n label for a rating value; -1 -> "comment only".
+export function ratingLabel(r) {
+  return r === -1 ? t("rating_none") : t("rating_" + r);
+}
+
+// Edit-your-own comment + rating form. `kind` is "downloads" or "shared";
+// both PATCH endpoints accept {comment, rating} together (ADMIN, comment <= 50
+// chars). Keyed on hash by the caller so switching files re-seeds the inputs.
+// Wrapped in .admin-only so guests never see it (matches the app-wide gate).
+// `disabled` greys the whole form out with an explanatory `disabledHint` — used
+// by Downloads for a file that isn't shared yet (0 complete parts), which the
+// daemon would reject with 409 not_shared.
+export function CommentEditor({ hash, kind, comment, rating, onSaved, disabled = false, disabledHint }) {
+  const [text, setText] = useState(comment || "");
+  const [rate, setRate] = useState(Number(rating) || 0);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.patch(kind + "/" + hash, { comment: text, rating: Number(rate) });
+      toast(t("comments_saved"), "success");
+      if (onSaved) onSaved();
+    } catch (e) {
+      toast(e.code === "not_shared" ? t("comments_not_shared") : terr(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return html`
+    <form class="comment-editor admin-only" onSubmit=${(e) => { e.preventDefault(); save(); }}>
+      <label class="comment-editor-label">${t("comments_your_comment")}</label>
+      <textarea class="input comment-editor-text" maxlength="50" rows="2"
+                placeholder=${t("comments_placeholder")} disabled=${disabled}
+                value=${text} onInput=${(e) => setText(e.target.value)}></textarea>
+      <div class="comment-editor-row">
+        <select class="input input-sm" value=${rate} disabled=${disabled}
+                onChange=${(e) => setRate(e.target.value)}>
+          ${RATING_OPTIONS.map((r) => html`<option value=${r}>${ratingLabel(r)}</option>`)}
+        </select>
+        <button class="btn btn-primary btn-sm" type="submit" disabled=${busy || disabled}>${t("comments_save")}</button>
+      </div>
+      ${disabled && disabledHint ? html`<p class="comment-editor-hint">${disabledHint}</p>` : null}
+    </form>`;
 }
 
 // --- toast --------------------------------------------------------------

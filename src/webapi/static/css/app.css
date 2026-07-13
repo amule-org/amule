@@ -551,10 +551,16 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
    page fills the viewport and scrolls its regions internally (app-like)
    instead of scrolling the whole page. */
 .split-view { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+/* The table region (net-pane on Downloads, card on Shared) fills the top pane;
+   the detail (.split-bottom) is a sibling below the splitter, no longer nested
+   in the table's box (it draws no box of its own — see .split-bottom below). */
 .split-view .net-pane { flex: 1 1 auto; min-height: 0; }
 .split-view .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-/* Shared Files has no tabs/net-pane; its .card is the fill region instead. */
-.split-view > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
+/* Shared Files' top region is a plain .card (no category-tab net-pane like
+   Downloads), and it's the fill region — now nested in .split-top. The
+   direct-child form also covers the Categories panel card shown in Downloads'
+   manage-categories mode. */
+.split-top > .card, .split-view > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
 /* fill the region and scroll rows internally (overrides the default 70vh cap) */
 .split-view .table-wrap.virtual { flex: 1 1 auto; min-height: 0; }
 .split-view table.data.virtual tbody tr:not(.spacer) { cursor: pointer; }
@@ -566,10 +572,13 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   background: var(--border); border-radius: 3px; touch-action: none;
 }
 .splitter:hover { background: var(--accent); }
+/* No outer box: the detail's title + tabs sit free; only the tab content
+   (.detail-body) is boxed (notebook look, like .net-pane / .net-pane-body).
+   The panel itself never scrolls — the head + tabs stay fixed and only
+   .detail-body scrolls, so the tab strip is always reachable. */
 .split-bottom {
-  flex: none; position: relative; overflow: auto;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--surface-2);
+  flex: none; position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
 }
 
 /* selected-for-detail row: accent left edge (mirrors .connected) */
@@ -577,17 +586,21 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .row-active, .row-active:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
 
 /* --- detail panel content --- */
-.detail-panel { padding: 12px; }
+/* No side padding: the head, tabs and content box span the panel's full width,
+   flush with the table container above (the mobile sheet re-adds padding).
+   Flex column so the head + tabs stay fixed and .detail-body takes the rest. */
+.detail-panel { padding: 10px 0 4px; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.detail-head { flex: none; }
 .detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; }
-/* title row: file name (ellipsised) on the left, copy buttons on the right;
-   padding-right leaves room for the absolute close button */
-.detail-titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-right: 34px; }
+/* title row: just the file name (ellipsised); padding-right leaves room for the
+   absolute close button, which centres on this row. */
+.detail-titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding-right: 34px; }
 .detail-name {
   margin: 0; font-size: 15px; flex: 1 1 auto; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
-.detail-head .progress { height: 22px; margin-bottom: 10px; }
+.detail-progress .progress { height: 22px; margin-bottom: 10px; }
 .pieces-bar {
   width: 100%; height: 24px; border-radius: 3px; overflow: hidden;
   border: 1px solid var(--border);
@@ -607,13 +620,54 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   width: 64px; height: 10px; border-radius: 2px; border: 1px solid var(--border);
   background: linear-gradient(90deg, var(--piece-avail-lo), var(--piece-avail));
 }
-.detail-sections { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+.detail-sections { display: flex; flex-direction: column; gap: 16px; }
 .detail-section-title {
   font-size: 13px; font-weight: 600; color: var(--text-dim);
   margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
 }
 .detail-panel .kad-stat-value { word-break: break-word; }
 .detail-panel .mono { font-family: var(--mono); font-size: 12.5px; }
+/* Hash row: hash on the left, the Copy ED2K / magnet buttons on the right.
+   Span the full grid width so the buttons have room and sit at the far edge. */
+.kad-grid > div:has(.hash-cell) { grid-column: 1 / -1; }
+.hash-cell { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+/* Tabs hang off the content box's top edge (no gap), notebook-style. */
+.detail-panel .tabs { margin-top: 0; margin-bottom: 0; flex: none; }
+.detail-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius); padding: 12px;
+}
+
+/* --- comments / ratings tab --- */
+.detail-comments { display: flex; flex-direction: column; gap: 16px; }
+.comment-editor { display: flex; flex-direction: column; gap: 8px; }
+.comment-editor-label {
+  font-size: 13px; font-weight: 600; color: var(--text-dim);
+}
+.comment-editor-text { resize: vertical; font-family: inherit; min-height: 44px; }
+.comment-editor-row { display: flex; gap: 8px; align-items: center; }
+.comment-editor-hint { margin: 0; font-size: 12px; color: var(--text-dim); }
+.comments-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.comments-count { font-size: 13px; color: var(--text-dim); }
+.comments-list { width: 100%; border-collapse: collapse; font-size: 13px; }
+.comments-list th {
+  text-align: left; font-weight: 600; color: var(--text-dim);
+  padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.comments-list td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.comments-fname { color: var(--text-dim); word-break: break-all; }
+.comments-list td:last-child { word-break: break-word; }
+/* Rating text badge, coloured by meaning (mirrors the desktop smiley scale:
+   1 = fake warning, not a low star score). */
+.rating-badge { white-space: nowrap; font-weight: 600; }
+.rating--1, .rating-0 { color: var(--text-dim); font-weight: 400; }
+.rating-1 { color: var(--bad); }
+.rating-2 { color: var(--warn); }
+.rating-3 { color: var(--text-dim); }
+.rating-4 { color: var(--accent); }
+.rating-5 { color: var(--ok); }
 
 /* --- responsive --- */
 @media (max-width: 860px) {
@@ -631,7 +685,7 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
      list (below the top bar) so the tap clearly changes the screen and the
      info is reachable without scrolling past a tall table. */
   .split-view { height: auto; }
-  .split-view .net-pane, .split-view .net-pane-body, .split-view > .card { flex: 0 0 auto; }
+  .split-view .net-pane, .split-view .net-pane-body, .split-top > .card, .split-view > .card { flex: 0 0 auto; }
   .splitter { display: none; }
   .split-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
   .split-bottom {
@@ -647,7 +701,7 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   }
   .detail-close .icon { width: 18px; height: 18px; }
   .detail-panel { padding: 16px; }
-  /* stack the name (full width) above the copy buttons; clear the fixed close */
+  /* let the name wrap to full width; clear the fixed close button */
   .detail-titlebar { flex-wrap: wrap; padding-right: 40px; }
   .detail-name { flex-basis: 100%; white-space: normal; }
   @keyframes sheet-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }

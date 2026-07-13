@@ -238,7 +238,10 @@ export default function Downloads({ isGuest }) {
 
     ${manageCats
       ? html`<${CategoriesPanel} isGuest=${isGuest} />`
-      : html`<section class="net-pane">
+      : html`<${SplitDetail} storageKey="dl_detail_height" open=${!!detailHash}
+                      onClose=${() => setDetailHash(null)}
+                      top=${html`
+      <section class="net-pane">
       <${Tabs} tabs=${categoryTabs} active=${filterCategory}
                onSelect=${(k) => setFilterCategory(k)} />
       <div class="net-pane-body">
@@ -272,20 +275,17 @@ export default function Downloads({ isGuest }) {
         </div>
       </div>
 
-      <${SplitDetail} storageKey="dl_detail_height" open=${!!detailHash}
-                      onClose=${() => setDetailHash(null)}
-                      top=${html`
         <${VirtualTable} columns=${columns} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
         <div class="totals-line">
           <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
-        </div>`}>
-        <${DownloadDetail} hash=${detailHash} />
-      <//>
+        </div>
       </div>
-    </section>`}
+    </section>`}>
+        <${DownloadDetail} hash=${detailHash} />
+      <//>`}
     </div>`;
 }
 

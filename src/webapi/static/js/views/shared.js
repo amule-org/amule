@@ -139,6 +139,9 @@ export default function Shared({ isGuest }) {
       <button class="btn btn-sm admin-only" onClick=${reload}>${t("shared_refresh_shares")}</button>
     </div>
 
+    <${SplitDetail} storageKey="shared_detail_height" open=${!!detailHash}
+                    onClose=${() => setDetailHash(null)}
+                    top=${html`
     <section class="card">
       <div class="view-header">
         <div class="toolbar admin-only">
@@ -155,20 +158,16 @@ export default function Shared({ isGuest }) {
           <input class="input input-sm" type="text" value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
         </div>
       </div>
-
-      <${SplitDetail} storageKey="shared_detail_height" open=${!!detailHash}
-                      onClose=${() => setDetailHash(null)}
-                      top=${html`
         <${VirtualTable} columns=${columns} rows=${list} rowKey=${(s) => s.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
         <div class="totals-line">
           <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>
-        </div>`}>
+        </div>
+    </section>`}>
         <${SharedDetail} hash=${detailHash} />
       <//>
-    </section>
     </div>`;
 }
 

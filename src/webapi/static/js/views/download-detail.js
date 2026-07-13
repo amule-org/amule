@@ -7,10 +7,10 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast, Section, statRow, magnetLink, copyText } from "../components.js";
+import { ProgressBar, Placeholder, toast, Section, statRow, magnetLink, copyText, Tabs, CommentEditor, ratingLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
-import { t, tn } from "../i18n.js";
+import { t, tn, terr } from "../i18n.js";
 
 // The pieces bar mirrors the aMule GUI download bar, theme-tuned via CSS vars:
 // green (--ok) = have it, blue (--piece-avail-lo -> --piece-avail, faded by
@@ -42,7 +42,12 @@ export function DownloadDetail({ hash }) {
   const downloads = useStore("downloads") || []; // live tick source (SSE ~500ms)
   const [detail, setDetail] = useState(null);
   const [gone, setGone] = useState(false);
+  const [tab, setTab] = useState("details");
 
+  // The live re-fetch feeds the Details tab (%, speed, ETA, pieces). The
+  // Comments tab needs none of that, so only tick there — elsewhere the detail
+  // loads once per file (and once more when returning to Details).
+  const liveTick = tab === "details" ? downloads : 0;
   useEffect(() => {
     if (!hash) { setDetail(null); return; }
     let alive = true;
@@ -50,7 +55,7 @@ export function DownloadDetail({ hash }) {
       .then((d) => { if (alive) { setDetail(d); setGone(false); } })
       .catch(() => { if (alive) setGone(true); });
     return () => { alive = false; };
-  }, [hash, downloads]);
+  }, [hash, liveTick]);
 
   if (!hash) return null;
   if (gone) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("downloads_detail_gone")}<//></div>`;
@@ -71,21 +76,25 @@ export function DownloadDetail({ hash }) {
       <div class="detail-head">
         <div class="detail-titlebar">
           <h4 class="detail-name" title=${d.name}>${d.name}</h4>
-          <div class="detail-actions">
-            <button class="btn btn-sm" type="button" onClick=${() => copy(d.ed2k_link)}>
-              <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
-            </button>
-            <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(d))}>
-              <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
-            </button>
-          </div>
         </div>
-        <${ProgressBar} percent=${d.progress && d.progress.percent} />
-        <${PiecesBar} parts=${(d.progress && d.progress.parts) || []} />
-        <${PiecesLegend} parts=${(d.progress && d.progress.parts) || []} />
       </div>
 
+      <${Tabs} tabs=${[
+        { key: "details", label: t("detail_tab_details") },
+        { key: "comments", label: t("detail_tab_comments") },
+      ]} active=${tab} onSelect=${setTab} />
+
+      <div class="detail-body">
+      ${tab === "comments" ? html`
+        <${DownloadComments} hash=${d.hash} comment=${d.comment} rating=${d.rating}
+                             tick=${downloads} parts=${(d.progress && d.progress.parts) || []} />
+      ` : html`
       <div class="detail-sections">
+        <div class="detail-progress">
+          <${ProgressBar} percent=${d.progress && d.progress.percent} />
+          <${PiecesBar} parts=${(d.progress && d.progress.parts) || []} />
+          <${PiecesLegend} parts=${(d.progress && d.progress.parts) || []} />
+        </div>
         ${Section("downloads_detail_sec_transfer", [
           statRow("downloads_status_label", t("downloads_status_" + d.status), "downloads_detail_tip_status"),
           statRow("downloads_detail_completed", formatBytes(d.size_done) + " (" + formatPercent(d.progress && d.progress.percent) + ")", "downloads_detail_tip_completed"),
@@ -109,10 +118,6 @@ export function DownloadDetail({ hash }) {
           media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean)) : null}
-        ${d.comment ? Section("downloads_detail_sec_comment", [
-          statRow("downloads_detail_comment", d.comment, "downloads_detail_tip_comment"),
-          d.rating ? statRow("downloads_detail_rating", formatInt(d.rating), "downloads_detail_tip_rating") : null,
-        ].filter(Boolean)) : null}
         ${Section("downloads_detail_sec_parts", [
           statRow("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.part_count), "downloads_detail_tip_available_parts"),
           statRow("downloads_detail_saved_ich", formatInt(d.saved_by_ich) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
@@ -120,10 +125,80 @@ export function DownloadDetail({ hash }) {
           statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression), "downloads_detail_tip_gained_compression"),
         ])}
         ${Section("downloads_detail_sec_identity", [
-          statRow("downloads_detail_hash", html`<span class="mono">${(d.hash || "").toUpperCase()}</span>`, "downloads_detail_tip_hash"),
+          statRow("downloads_detail_hash", html`
+            <div class="hash-cell">
+              <span class="mono">${(d.hash || "").toUpperCase()}</span>
+              <span class="detail-actions">
+                <button class="btn btn-sm" type="button" onClick=${() => copy(d.ed2k_link)}>
+                  <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
+                </button>
+                <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(d))}>
+                  <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
+                </button>
+              </span>
+            </div>`, "downloads_detail_tip_hash"),
           statRow("downloads_detail_met_file", d.met_file || "—", "downloads_detail_tip_met_file"),
         ])}
+      </div>`}
       </div>
+    </div>`;
+}
+
+// The Comments tab body: your own comment/rating editor, a "Get from Kad"
+// trigger, and the per-source comments list (GET downloads/{hash}/comments —
+// includes any retrieved Kad notes). Re-fetches on each downloads store tick so
+// Kad notes arriving mid-search surface without a bespoke polling timer.
+function DownloadComments({ hash, comment, rating, tick, parts }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.get("downloads/" + hash + "/comments")
+      .then((d) => { if (alive) setData(d); })
+      .catch(() => { if (alive) setData({ count: 0, comments: [] }); });
+    return () => { alive = false; };
+  }, [hash, tick]);
+
+  const running = !!(data && data.kad_search_running);
+  const list = (data && data.comments) || [];
+  // The daemon only accepts a comment/rating on a *shared* file, i.e. a
+  // partfile with >= 1 complete part; otherwise PATCH returns 409 not_shared.
+  // Gate the editor on the same condition instead of letting the save fail.
+  const canComment = (parts || []).some((p) => p.state === "complete");
+
+  const getKad = () => api.post("downloads/" + hash + "/comments")
+    .then(() => toast(t("comments_kad_started"), "info"))
+    .catch((e) => toast(e.code === "amuled_rejected" ? t("comments_kad_error") : terr(e), "error"));
+
+  return html`
+    <div class="detail-comments">
+      <${CommentEditor} key=${hash} hash=${hash} kind="downloads" comment=${comment} rating=${rating}
+                        disabled=${!canComment} disabledHint=${t("comments_disabled_hint")} />
+      <div class="comments-head">
+        <span class="comments-count">${tn("comments_count", list.length)}</span>
+        <button class="btn btn-sm admin-only" type="button" onClick=${getKad} disabled=${running}>
+          <${Icon} name=${running ? "polling" : "kad"} />
+          ${running ? t("comments_kad_searching") : t("comments_get_kad")}
+        </button>
+      </div>
+      ${list.length ? html`
+        <table class="comments-list">
+          <thead><tr>
+            <th>${t("comments_col_username")}</th>
+            <th>${t("comments_col_rating")}</th>
+            <th>${t("comments_col_filename")}</th>
+            <th>${t("comments_col_comment")}</th>
+          </tr></thead>
+          <tbody>
+            ${list.map((c, i) => html`
+              <tr key=${i}>
+                <td>${c.username}</td>
+                <td><span class=${"rating-badge rating-" + c.rating}>${ratingLabel(c.rating)}</span></td>
+                <td class="comments-fname" title=${c.filename}>${c.filename}</td>
+                <td>${c.comment}</td>
+              </tr>`)}
+          </tbody>
+        </table>` : html`<${Placeholder} kind="info">${t("comments_none")}<//>`}
     </div>`;
 }
 
