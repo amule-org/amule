@@ -7,7 +7,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast } from "../components.js";
+import { ProgressBar, Placeholder, toast, Section, statRow, magnetLink, copyText } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn } from "../i18n.js";
@@ -38,39 +38,6 @@ function mix(a, b, f) {
     Math.round(a[2] + (b[2] - a[2]) * f) + ")";
 }
 
-// Build the ed2k-compatible magnet URI exactly like the desktop GUI's
-// CamuleAppCommon::CreateMagnetLink (src/amuleAppCommon.cpp): field order
-// dn, xt:urn:ed2k, xt:urn:ed2khash, xl; hash lower-cased; the name only has
-// spaces -> %20 and '/' stripped (CPath::Cleanup(false)), not full URL-encode.
-function magnetLink(d) {
-  let dn = "";
-  for (const ch of d.name || "") {
-    if (ch === "/") continue;
-    if (ch === " ") dn += "%20";
-    else if (ch.codePointAt(0) >= 32) dn += ch;
-  }
-  const h = (d.hash || "").toLowerCase();
-  return "magnet:?dn=" + dn +
-    "&xt=urn:ed2k:" + h + "&xt=urn:ed2khash:" + h +
-    "&xl=" + (d.size || 0);
-}
-
-// Copy to clipboard with a plain fallback for non-secure contexts (the web UI
-// may be reached over http on a LAN IP, where navigator.clipboard is absent).
-async function copyText(text) {
-  if (navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand("copy"); } finally { ta.remove(); }
-}
-
 export function DownloadDetail({ hash }) {
   const downloads = useStore("downloads") || []; // live tick source (SSE ~500ms)
   const [detail, setDetail] = useState(null);
@@ -86,8 +53,8 @@ export function DownloadDetail({ hash }) {
   }, [hash, downloads]);
 
   if (!hash) return null;
-  if (gone) return html`<div class="dl-detail"><${Placeholder} kind="info">${t("downloads_detail_gone")}<//></div>`;
-  if (!detail) return html`<div class="dl-detail"><${Placeholder} kind="info">${t("downloads_detail_loading")}<//></div>`;
+  if (gone) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("downloads_detail_gone")}<//></div>`;
+  if (!detail) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("downloads_detail_loading")}<//></div>`;
 
   const d = detail;
   const src = d.sources || {};
@@ -100,11 +67,11 @@ export function DownloadDetail({ hash }) {
     .catch(() => toast(t("downloads_detail_copy_failed"), "error"));
 
   return html`
-    <div class="dl-detail">
-      <div class="dl-detail-head">
-        <div class="dl-detail-titlebar">
-          <h4 class="dl-detail-name" title=${d.name}>${d.name}</h4>
-          <div class="dl-detail-actions">
+    <div class="detail-panel">
+      <div class="detail-head">
+        <div class="detail-titlebar">
+          <h4 class="detail-name" title=${d.name}>${d.name}</h4>
+          <div class="detail-actions">
             <button class="btn btn-sm" type="button" onClick=${() => copy(d.ed2k_link)}>
               <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
             </button>
@@ -118,64 +85,44 @@ export function DownloadDetail({ hash }) {
         <${PiecesLegend} parts=${(d.progress && d.progress.parts) || []} />
       </div>
 
-      <div class="dl-detail-sections">
+      <div class="detail-sections">
         ${Section("downloads_detail_sec_transfer", [
-          f("downloads_status_label", t("downloads_status_" + d.status), "downloads_detail_tip_status"),
-          f("downloads_detail_completed", formatBytes(d.size_done) + " (" + formatPercent(d.progress && d.progress.percent) + ")", "downloads_detail_tip_completed"),
-          f("downloads_speed", formatSpeed(d.speed_bps), "downloads_detail_tip_speed"),
-          f("downloads_detail_eta", eta, "downloads_detail_tip_eta"),
-          f("downloads_sources", (src.transferring || 0) + " / " + (src.total || 0), "downloads_detail_tip_sources"),
-          f("downloads_size", formatBytes(d.size), "downloads_detail_tip_size"),
-          f("downloads_detail_transferred", formatBytes(d.size_xfer), "downloads_detail_tip_transferred"),
+          statRow("downloads_status_label", t("downloads_status_" + d.status), "downloads_detail_tip_status"),
+          statRow("downloads_detail_completed", formatBytes(d.size_done) + " (" + formatPercent(d.progress && d.progress.percent) + ")", "downloads_detail_tip_completed"),
+          statRow("downloads_speed", formatSpeed(d.speed_bps), "downloads_detail_tip_speed"),
+          statRow("downloads_detail_eta", eta, "downloads_detail_tip_eta"),
+          statRow("downloads_sources", (src.transferring || 0) + " / " + (src.total || 0), "downloads_detail_tip_sources"),
+          statRow("downloads_size", formatBytes(d.size), "downloads_detail_tip_size"),
+          statRow("downloads_detail_transferred", formatBytes(d.size_xfer), "downloads_detail_tip_transferred"),
         ])}
         ${Section("downloads_detail_sec_activity", [
-          f("downloads_detail_active_time", formatDuration(d.download_active_time), "downloads_detail_tip_active_time"),
-          f("downloads_detail_last_changed", fmtTs(d.last_changed), "downloads_detail_tip_last_changed"),
-          f("downloads_detail_last_seen_complete", fmtTs(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
-          f("downloads_detail_queued", formatInt(d.queued_count), "downloads_detail_tip_queued"),
+          statRow("downloads_detail_active_time", formatDuration(d.download_active_time), "downloads_detail_tip_active_time"),
+          statRow("downloads_detail_last_changed", fmtTs(d.last_changed), "downloads_detail_tip_last_changed"),
+          statRow("downloads_detail_last_seen_complete", fmtTs(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
+          statRow("downloads_detail_queued", formatInt(d.queued_count), "downloads_detail_tip_queued"),
         ])}
         ${media ? Section("downloads_detail_sec_media", [
-          media.title ? f("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
-          media.artist ? f("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
-          media.album ? f("downloads_detail_media_album", media.album, "downloads_detail_tip_media_album") : null,
-          media.length_s ? f("downloads_detail_media_length", formatDuration(media.length_s), "downloads_detail_tip_media_length") : null,
-          media.bitrate ? f("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
-          media.codec ? f("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
+          media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
+          media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
+          media.album ? statRow("downloads_detail_media_album", media.album, "downloads_detail_tip_media_album") : null,
+          media.length_s ? statRow("downloads_detail_media_length", formatDuration(media.length_s), "downloads_detail_tip_media_length") : null,
+          media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
+          media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
         ].filter(Boolean)) : null}
         ${d.comment ? Section("downloads_detail_sec_comment", [
-          f("downloads_detail_comment", d.comment, "downloads_detail_tip_comment"),
-          d.rating ? f("downloads_detail_rating", formatInt(d.rating), "downloads_detail_tip_rating") : null,
+          statRow("downloads_detail_comment", d.comment, "downloads_detail_tip_comment"),
+          d.rating ? statRow("downloads_detail_rating", formatInt(d.rating), "downloads_detail_tip_rating") : null,
         ].filter(Boolean)) : null}
         ${Section("downloads_detail_sec_parts", [
-          f("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.part_count), "downloads_detail_tip_available_parts"),
-          f("downloads_detail_saved_ich", formatInt(d.saved_by_ich) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
-          f("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption), "downloads_detail_tip_lost_corruption"),
-          f("downloads_detail_gained_compression", formatBytes(d.gained_by_compression), "downloads_detail_tip_gained_compression"),
+          statRow("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.part_count), "downloads_detail_tip_available_parts"),
+          statRow("downloads_detail_saved_ich", formatInt(d.saved_by_ich) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
+          statRow("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption), "downloads_detail_tip_lost_corruption"),
+          statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression), "downloads_detail_tip_gained_compression"),
         ])}
         ${Section("downloads_detail_sec_identity", [
-          f("downloads_detail_hash", html`<span class="mono">${(d.hash || "").toUpperCase()}</span>`, "downloads_detail_tip_hash"),
-          f("downloads_detail_met_file", d.met_file || "—", "downloads_detail_tip_met_file"),
+          statRow("downloads_detail_hash", html`<span class="mono">${(d.hash || "").toUpperCase()}</span>`, "downloads_detail_tip_hash"),
+          statRow("downloads_detail_met_file", d.met_file || "—", "downloads_detail_tip_met_file"),
         ])}
-      </div>
-    </div>`;
-}
-
-// Build a stat row: [label, value, tooltip] with label/tooltip from i18n keys.
-const f = (labelKey, value, tipKey) => [t(labelKey), value, t(tipKey)];
-
-// A titled block of label/value stat cells (reuses the kad stat-grid look).
-// Each cell carries an explanatory tooltip.
-function Section(titleKey, rows) {
-  if (!rows.length) return null;
-  return html`
-    <div class="dl-detail-section">
-      <div class="dl-detail-section-title">${t(titleKey)}</div>
-      <div class="kad-grid">
-        ${rows.map(([label, value, tip]) => html`
-          <div title=${tip || null}>
-            <div class="kad-stat-label">${label}</div>
-            <div class="kad-stat-value">${value}</div>
-          </div>`)}
       </div>
     </div>`;
 }

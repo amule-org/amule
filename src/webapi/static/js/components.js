@@ -30,6 +30,30 @@ export function Placeholder({ kind, children }) {
   return html`<div class=${"placeholder placeholder-" + kind}>${children}</div>`;
 }
 
+// --- detail-panel building blocks --------------------------------------
+// Shared by the Downloads and Shared Files detail panels (see split-detail.js).
+
+// Build a stat row tuple: [label, value, tooltip] with label/tooltip resolved
+// from i18n keys. Consumed by Section() below.
+export const statRow = (labelKey, value, tipKey) => [t(labelKey), value, t(tipKey)];
+
+// A titled block of label/value stat cells (reuses the kad stat-grid look).
+// Each cell carries an explanatory tooltip. `rows` is a list of statRow tuples.
+export function Section(titleKey, rows) {
+  if (!rows.length) return null;
+  return html`
+    <div class="detail-section">
+      <div class="detail-section-title">${t(titleKey)}</div>
+      <div class="kad-grid">
+        ${rows.map(([label, value, tip]) => html`
+          <div title=${tip || null}>
+            <div class="kad-stat-label">${label}</div>
+            <div class="kad-stat-value">${value}</div>
+          </div>`)}
+      </div>
+    </div>`;
+}
+
 // Flat notebook-style tab strip (aMule CMuleNotebook look). `tabs` is a list
 // of { key, label, badge? }; `active` is the selected key; `onSelect(key)` is
 // called on click.
@@ -88,4 +112,40 @@ export function confirmDialog(message, { okLabel = t("common_yes"), cancelLabel 
         </div>
       </div>`, host);
   });
+}
+
+// --- ed2k link + clipboard helpers -------------------------------------
+// Shared by the detail panels' Copy ED2K / Copy magnet buttons.
+
+// Build the ed2k-compatible magnet URI exactly like the desktop GUI's
+// CamuleAppCommon::CreateMagnetLink (src/amuleAppCommon.cpp): field order
+// dn, xt:urn:ed2k, xt:urn:ed2khash, xl; hash lower-cased; the name only has
+// spaces -> %20 and '/' stripped (CPath::Cleanup(false)), not full URL-encode.
+export function magnetLink(d) {
+  let dn = "";
+  for (const ch of d.name || "") {
+    if (ch === "/") continue;
+    if (ch === " ") dn += "%20";
+    else if (ch.codePointAt(0) >= 32) dn += ch;
+  }
+  const h = (d.hash || "").toLowerCase();
+  return "magnet:?dn=" + dn +
+    "&xt=urn:ed2k:" + h + "&xt=urn:ed2khash:" + h +
+    "&xl=" + (d.size || 0);
+}
+
+// Copy to clipboard with a plain fallback for non-secure contexts (the web UI
+// may be reached over http on a LAN IP, where navigator.clipboard is absent).
+export async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } finally { ta.remove(); }
 }

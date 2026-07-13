@@ -28,6 +28,12 @@ export function formatInt(n) {
   return (Number(n) || 0).toLocaleString();
 }
 
+// "session / total" pair from an object's two counter fields (e.g. xfer,
+// requests, accepts). Shared by the Shared table and its detail panel.
+export function twin(o, a, b, fmt) {
+  return fmt((o && o[a]) || 0) + " / " + fmt((o && o[b]) || 0);
+}
+
 // Seconds -> human duration, mirroring CastSecondsToHM (src/OtherFunctions.cpp).
 export function formatDuration(s) {
   s = Math.floor(Number(s) || 0);

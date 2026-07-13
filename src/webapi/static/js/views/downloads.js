@@ -5,7 +5,7 @@
 
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
-import { html, useState, useEffect, useRef, useStore } from "../dom.js";
+import { html, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog } from "../components.js";
 import { VirtualTable, sortRows, textMatcher } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
@@ -13,8 +13,7 @@ import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
 import { CategoriesPanel } from "./categories.js";
 import { DownloadDetail } from "./download-detail.js";
-
-const SPLIT_KEY = "dl_detail_height"; // px height of the detail panel (persisted)
+import { SplitDetail } from "./split-detail.js";
 
 const PRIORITIES = ["auto", "low", "normal", "high"]
   .map((v) => [v, t("downloads_prio_" + v)]);
@@ -32,41 +31,12 @@ export default function Downloads({ isGuest }) {
   const [filterText, setFilterText] = useState("");
   const [manageCats, setManageCats] = useState(false);
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
-  const [splitH, setSplitH] = useState(() => {
-    const v = Number(localStorage.getItem(SPLIT_KEY));
-    return v > 0 ? v : 340;
-  });
-  const splitRef = useRef(null);
-  const dragRef = useRef(null);
 
   // Open (or toggle closed) the detail panel; ignore clicks landing on a row's
   // own controls (checkbox / priority / category / action buttons).
   const onRowClick = (d, e) => {
     if (e.target.closest("input,select,button,a")) return;
     setDetailHash((h) => (h === d.hash ? null : d.hash));
-  };
-
-  // Drag the splitter to resize the detail panel (bottom-anchored: moving up
-  // grows it). Clamp so neither region collapses; persist the final height.
-  const onSplitDown = (e) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { startY: e.clientY, startH: splitH, id: e.pointerId, el: e.currentTarget };
-  };
-  const onSplitMove = (e) => {
-    const g = dragRef.current;
-    if (!g) return;
-    const total = splitRef.current ? splitRef.current.clientHeight : window.innerHeight;
-    const h = Math.max(160, Math.min(total - 160, g.startH + (g.startY - e.clientY)));
-    g.lastH = h;
-    setSplitH(h);
-  };
-  const onSplitUp = () => {
-    const g = dragRef.current;
-    if (!g) return;
-    try { g.el.releasePointerCapture(g.id); } catch (_) {}
-    if (g.lastH != null) localStorage.setItem(SPLIT_KEY, String(g.lastH));
-    dragRef.current = null;
   };
 
   const loadCategories = () =>
@@ -252,7 +222,7 @@ export default function Downloads({ isGuest }) {
   ];
 
   return html`
-    <div class="dl-view">
+    <div class="split-view">
     <div class="view-header">
       <h3 class="section-title">${t("downloads_download")}</h3>
       <div class="spacer"></div>
@@ -302,25 +272,18 @@ export default function Downloads({ isGuest }) {
         </div>
       </div>
 
-      <div class="dl-split" ref=${splitRef}>
-        <div class="dl-split-top">
-          <${VirtualTable} columns=${columns} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
-                           sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
-                           maxHeight="none"
-                           empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
-          <div class="totals-line">
-            <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
-          </div>
-        </div>
-        ${detailHash ? html`
-          <div class="dl-splitter" onPointerDown=${onSplitDown} onPointerMove=${onSplitMove}
-               onPointerUp=${onSplitUp} onPointerCancel=${onSplitUp}></div>
-          <div class="dl-split-bottom" style=${{ height: splitH + "px" }}>
-            <button class="btn btn-icon btn-sm dl-detail-close" title=${t("downloads_detail_close")}
-                    onClick=${() => setDetailHash(null)}><${Icon} name="cancel" /></button>
-            <${DownloadDetail} hash=${detailHash} />
-          </div>` : null}
-      </div>
+      <${SplitDetail} storageKey="dl_detail_height" open=${!!detailHash}
+                      onClose=${() => setDetailHash(null)}
+                      top=${html`
+        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
+                         sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
+                         maxHeight="none"
+                         empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
+        <div class="totals-line">
+          <span>${tn("downloads_files_count", list.length)}</span>${" · "}<span>${t("downloads_size")} ${formatBytes(size)}</span>${" · "}<span>${t("downloads_col_done")} ${formatBytes(done)}</span>${" · "}<span>${t("downloads_speed")} ${formatSpeed(speed)}</span>
+        </div>`}>
+        <${DownloadDetail} hash=${detailHash} />
+      <//>
       </div>
     </section>`}
     </div>`;

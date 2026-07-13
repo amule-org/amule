@@ -546,24 +546,27 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   border-radius: 0 0 var(--radius) var(--radius); padding: 12px;
 }
 
-/* --- Downloads: full-height split (table on top, detail panel below) --- */
-/* The Downloads page fills the viewport and scrolls its regions internally
-   (app-like) instead of scrolling the whole page. */
-.dl-view { height: 100%; display: flex; flex-direction: column; min-height: 0; }
-.dl-view .net-pane { flex: 1 1 auto; min-height: 0; }
-.dl-view .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* --- Full-height split (table on top, detail panel below) --- */
+/* Shared by the Downloads and Shared Files pages (see split-detail.js): the
+   page fills the viewport and scrolls its regions internally (app-like)
+   instead of scrolling the whole page. */
+.split-view { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.split-view .net-pane { flex: 1 1 auto; min-height: 0; }
+.split-view .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* Shared Files has no tabs/net-pane; its .card is the fill region instead. */
+.split-view > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
 /* fill the region and scroll rows internally (overrides the default 70vh cap) */
-.dl-view .table-wrap.virtual { flex: 1 1 auto; min-height: 0; }
-.dl-view table.data.virtual tbody tr:not(.spacer) { cursor: pointer; }
+.split-view .table-wrap.virtual { flex: 1 1 auto; min-height: 0; }
+.split-view table.data.virtual tbody tr:not(.spacer) { cursor: pointer; }
 
-.dl-split { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.dl-split-top { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.dl-splitter {
+.split { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.split-top { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.splitter {
   flex: none; height: 7px; margin: 2px 0; cursor: row-resize;
   background: var(--border); border-radius: 3px; touch-action: none;
 }
-.dl-splitter:hover { background: var(--accent); }
-.dl-split-bottom {
+.splitter:hover { background: var(--accent); }
+.split-bottom {
   flex: none; position: relative; overflow: auto;
   border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--surface-2);
@@ -574,17 +577,17 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .row-active, .row-active:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
 
 /* --- detail panel content --- */
-.dl-detail { padding: 12px; }
-.dl-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; }
+.detail-panel { padding: 12px; }
+.detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; }
 /* title row: file name (ellipsised) on the left, copy buttons on the right;
    padding-right leaves room for the absolute close button */
-.dl-detail-titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-right: 34px; }
-.dl-detail-name {
+.detail-titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-right: 34px; }
+.detail-name {
   margin: 0; font-size: 15px; flex: 1 1 auto; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dl-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
-.dl-detail-head .progress { height: 22px; margin-bottom: 10px; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
+.detail-head .progress { height: 22px; margin-bottom: 10px; }
 .pieces-bar {
   width: 100%; height: 24px; border-radius: 3px; overflow: hidden;
   border: 1px solid var(--border);
@@ -604,13 +607,13 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   width: 64px; height: 10px; border-radius: 2px; border: 1px solid var(--border);
   background: linear-gradient(90deg, var(--piece-avail-lo), var(--piece-avail));
 }
-.dl-detail-sections { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
-.dl-detail-section-title {
+.detail-sections { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+.detail-section-title {
   font-size: 13px; font-weight: 600; color: var(--text-dim);
   margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
 }
-.dl-detail .kad-stat-value { word-break: break-word; }
-.dl-detail .mono { font-family: var(--mono); font-size: 12.5px; }
+.detail-panel .kad-stat-value { word-break: break-word; }
+.detail-panel .mono { font-family: var(--mono); font-size: 12.5px; }
 
 /* --- responsive --- */
 @media (max-width: 860px) {
@@ -627,27 +630,27 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
      page scrolls; the detail opens as a full-screen drill-down sheet over the
      list (below the top bar) so the tap clearly changes the screen and the
      info is reachable without scrolling past a tall table. */
-  .dl-view { height: auto; }
-  .dl-view .net-pane, .dl-view .net-pane-body { flex: 0 0 auto; }
-  .dl-splitter { display: none; }
-  .dl-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
-  .dl-split-bottom {
+  .split-view { height: auto; }
+  .split-view .net-pane, .split-view .net-pane-body, .split-view > .card { flex: 0 0 auto; }
+  .splitter { display: none; }
+  .split-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
+  .split-bottom {
     position: fixed; inset: var(--toolbar-h) 0 0 0; z-index: 60;
     height: auto !important; overflow: auto;
     border: none; border-radius: 0; background: var(--surface);
-    animation: dl-sheet-in .18s ease-out;
+    animation: sheet-in .18s ease-out;
   }
   /* pin the close control to the sheet's top-right so it never scrolls away */
-  .dl-detail-close {
+  .detail-close {
     position: fixed; top: calc(var(--toolbar-h) + 8px); right: 12px; z-index: 61;
     background: var(--surface-2); padding: 8px;
   }
-  .dl-detail-close .icon { width: 18px; height: 18px; }
-  .dl-detail { padding: 16px; }
+  .detail-close .icon { width: 18px; height: 18px; }
+  .detail-panel { padding: 16px; }
   /* stack the name (full width) above the copy buttons; clear the fixed close */
-  .dl-detail-titlebar { flex-wrap: wrap; padding-right: 40px; }
-  .dl-detail-name { flex-basis: 100%; white-space: normal; }
-  @keyframes dl-sheet-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .detail-titlebar { flex-wrap: wrap; padding-right: 40px; }
+  .detail-name { flex-basis: 100%; white-space: normal; }
+  @keyframes sheet-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 
   /* nav collapses into a hamburger-driven side drawer */
   .app-toolbar .nav-toggle { display: inline-flex; padding: 10px; }

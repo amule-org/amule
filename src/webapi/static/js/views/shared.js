@@ -8,8 +8,10 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher } from "../table.js";
-import { formatBytes, formatInt } from "../format.js";
+import { formatBytes, formatInt, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
+import { SharedDetail } from "./shared-detail.js";
+import { SplitDetail } from "./split-detail.js";
 
 const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
   .map((v) => [v, t("shared_prio_" + v)]);
@@ -20,12 +22,25 @@ export default function Shared({ isGuest }) {
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState(1);
   const [filterText, setFilterText] = useState("");
+  const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
+
+  // Open (or toggle closed) the detail panel; ignore clicks on a row's own
+  // controls (the select-all/select checkbox and the priority dropdown).
+  const onRowClick = (s, e) => {
+    if (e.target.closest("input,select,button,a")) return;
+    setDetailHash((h) => (h === s.hash ? null : s.hash));
+  };
 
   useEffect(() => {
     data.register({ key: "shared", eventPrefix: "shared", id: "hash",
       list: () => api.get("shared").then((r) => r.shared || []) });
     data.ensure("shared");
   }, []);
+
+  // Close the detail panel if its file is no longer shared (unshared/removed).
+  useEffect(() => {
+    if (detailHash && !shared.some((s) => s.hash === detailHash)) setDetailHash(null);
+  }, [shared]);
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir(-sortDir);
@@ -106,7 +121,8 @@ export default function Shared({ isGuest }) {
   ];
 
   list = sortRows(list, columns, sortKey, sortDir);
-  const rowClass = (s) => selection.has(s.hash) ? "row-selected" : "";
+  const rowClass = (s) =>
+    (selection.has(s.hash) ? "row-selected " : "") + (s.hash === detailHash ? "row-active" : "");
 
   let size = 0, xs = 0, xt = 0;
   for (const s of list) {
@@ -116,6 +132,7 @@ export default function Shared({ isGuest }) {
   }
 
   return html`
+    <div class="split-view">
     <div class="view-header">
       <h3 class="section-title">${t("shared_title")}</h3>
       <div class="spacer"></div>
@@ -139,17 +156,22 @@ export default function Shared({ isGuest }) {
         </div>
       </div>
 
-      <${VirtualTable} columns=${columns} rows=${list} rowKey=${(s) => s.hash} rowClass=${rowClass}
-                       sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
-                       empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
-
-      <div class="totals-line">
-        <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>
-      </div>
-    </section>`;
+      <${SplitDetail} storageKey="shared_detail_height" open=${!!detailHash}
+                      onClose=${() => setDetailHash(null)}
+                      top=${html`
+        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(s) => s.hash} rowClass=${rowClass}
+                         sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
+                         maxHeight="none"
+                         empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
+        <div class="totals-line">
+          <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>
+        </div>`}>
+        <${SharedDetail} hash=${detailHash} />
+      <//>
+    </section>
+    </div>`;
 }
 
-function twin(o, a, b, fmt) { return fmt((o && o[a]) || 0) + " / " + fmt((o && o[b]) || 0); }
 function prioValue(s) { return s.priority_auto ? "auto" : s.priority; }
 function prioLabel(s) {
   const found = PRIORITIES.find(([v]) => v === s.priority);
