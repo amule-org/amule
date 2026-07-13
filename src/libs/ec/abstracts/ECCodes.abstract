@@ -275,6 +275,7 @@ EC_TAG_KNOWNFILE                          0x0400
 	EC_TAG_KNOWNFILE_MEDIA_ARTIST             0x0413
 	EC_TAG_KNOWNFILE_MEDIA_ALBUM              0x0414
 	EC_TAG_KNOWNFILE_MEDIA_TITLE              0x0415
+	EC_TAG_KNOWNFILE_PATH                     0x0416
 
 EC_TAG_SERVER                             0x0500
 	EC_TAG_SERVER_NAME                        0x0501

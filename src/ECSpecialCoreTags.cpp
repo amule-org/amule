@@ -271,6 +271,12 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 		file->IsPartFile() ? static_cast<const CPartFile *>(file)->GetCachedPartMetBasename()
 				   : file->GetFilePath().GetPrintable(),
 		valuemap);
+	// The on-disk directory, always — the Temp dir for a partfile, the
+	// destination dir once completed. Unlike _FILENAME (which doubles as
+	// the ".part" basename for partfiles), this never changes meaning
+	// across the completed transition, so the REST API can expose an
+	// unambiguous `path` on /downloads and /shared (issue #417).
+	AddTag(EC_TAG_KNOWNFILE_PATH, file->GetFilePath().GetPrintable(), valuemap);
 
 	AddTag(EC_TAG_PARTFILE_SIZE_FULL, file->GetFileSize(), valuemap);
 

@@ -291,7 +291,9 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 	if (t->AssignIfExist(EC_TAG_KNOWNFILE_ON_QUEUE, q))
 		f.queued_count = q;
 	if (const CECTag *fn = t->GetTagByName(EC_TAG_KNOWNFILE_FILENAME))
-		f.knownfile_filename = std::string(fn->GetStringData().utf8_str());
+		f.part_met_basename = std::string(fn->GetStringData().utf8_str());
+	if (const CECTag *pathTag = t->GetTagByName(EC_TAG_KNOWNFILE_PATH))
+		f.on_disk_dir = std::string(pathTag->GetStringData().utf8_str());
 	// The user's own comment + rating (issue #419).
 	if (const CECTag *cm = t->GetTagByName(EC_TAG_KNOWNFILE_COMMENT))
 		f.comment = std::string(cm->GetStringData().utf8_str());

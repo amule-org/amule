@@ -112,11 +112,18 @@ struct FileSnapshot
 		std::string title;
 	} media;
 
-	// EC_TAG_KNOWNFILE_FILENAME: a partfile's on-disk basename (e.g.
-	// `001.part`), or a completed known file's directory path.
-	// Interpreted per endpoint — `met_file` on /downloads/{hash},
-	// `path` on /shared/{hash}.
-	std::string knownfile_filename;
+	// The partfile's control-file basename (e.g. `001.part`), from
+	// EC_TAG_KNOWNFILE_FILENAME. Meaningful only while the file is still
+	// an incomplete partfile — once it completes, the daemon reuses that
+	// EC tag to carry the directory path, so `met_file` on /downloads is
+	// gated on the download status (empty once completed). See #417.
+	std::string part_met_basename;
+
+	// The file's on-disk directory, from EC_TAG_KNOWNFILE_PATH — the Temp
+	// dir while downloading, the destination dir once completed. Always a
+	// directory (never the `.part` basename), so it feeds an unambiguous
+	// `path` on both /downloads/{hash} and /shared/{hash} (#417).
+	std::string on_disk_dir;
 
 	// Download-side state — meaningful when `is_downloading` is true,
 	// reset to default on the true→false transition (and never read

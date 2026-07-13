@@ -495,7 +495,8 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	// Base CKnownFile tags carried on the partfile tag too.
 	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(5)));
 	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_AICH_MASTERHASH, std::string("ABCDEF0123")));
-	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("042.part.met")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("042.part")));
+	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_PATH, std::string("/home/me/.aMule/Temp")));
 	resp.AddTag(pf);
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
@@ -514,7 +515,8 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(42), d.download.partmet_id);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5), d.queued_count);
 	ASSERT_EQUALS(std::string("ABCDEF0123"), d.aich_hash);
-	ASSERT_EQUALS(std::string("042.part.met"), d.knownfile_filename);
+	ASSERT_EQUALS(std::string("042.part"), d.part_met_basename);
+	ASSERT_EQUALS(std::string("/home/me/.aMule/Temp"), d.on_disk_dir);
 }
 
 TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
@@ -527,7 +529,8 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_HIGH, static_cast<std::uint16_t>(11)));
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(9)));
 	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_AICH_MASTERHASH, std::string("FEDCBA9876")));
-	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("/home/kizar/Incoming")));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_FILENAME, std::string("/home/me/Incoming")));
+	kf.AddTag(CECTag(EC_TAG_KNOWNFILE_PATH, std::string("/home/me/Incoming")));
 	resp.AddTag(kf);
 
 	ApplyGetUpdateToShared(&resp, cache);
@@ -539,9 +542,9 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint16_t>(11), s.shared.complete_sources_high);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(9), s.queued_count);
 	ASSERT_EQUALS(std::string("FEDCBA9876"), s.aich_hash);
-	// Completed known file → the tag is the directory path (the write
-	// layer maps a shared partfile to "[PartFile]" instead).
-	ASSERT_EQUALS(std::string("/home/kizar/Incoming"), s.knownfile_filename);
+	// Completed known file → the directory path arrives on its own tag
+	// (the write layer maps an incomplete shared partfile to "[PartFile]").
+	ASSERT_EQUALS(std::string("/home/me/Incoming"), s.on_disk_dir);
 }
 
 // Comment/rating (issue #419): the user's own comment+rating land at the

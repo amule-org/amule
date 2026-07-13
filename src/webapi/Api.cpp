@@ -1783,7 +1783,16 @@ void WriteDownloadObject(
 		w.Key("aich_hash");
 		w.ValueString(wxString::FromUTF8(f.aich_hash.c_str()));
 		w.Key("met_file");
-		w.ValueString(wxString::FromUTF8(f.knownfile_filename.c_str()));
+		// The ".part" control-file basename. Empty once the download
+		// completes: the daemon then reuses the _FILENAME tag to carry the
+		// directory path, so only surface it while still a partfile (#417).
+		w.ValueString(f.download.status == "completed"
+				      ? wxString()
+				      : wxString::FromUTF8(f.part_met_basename.c_str()));
+		w.Key("path");
+		// The on-disk directory (Temp while downloading, destination once
+		// completed) — mirrors the `path` field on /shared/{hash} (#417).
+		w.ValueString(wxString::FromUTF8(f.on_disk_dir.c_str()));
 		w.Key("partmet_id");
 		w.ValueInt(static_cast<int64_t>(f.download.partmet_id));
 		w.Key("queued_count");
@@ -1990,10 +1999,12 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.ValueDouble(
 		f.size > 0 ? static_cast<double>(f.shared.xfer_total) / static_cast<double>(f.size) : 0.0);
 	w.Key("path");
-	// A shared partfile has no real directory path (its EC_TAG_KNOWNFILE
-	// _FILENAME is the .part.met basename); the desktop shows "[PartFile]".
-	w.ValueString(f.is_downloading ? wxString::FromAscii("[PartFile]")
-				       : wxString::FromUTF8(f.knownfile_filename.c_str()));
+	// "[PartFile]" only while genuinely an incomplete partfile; once the
+	// download completes (even if still listed under downloads, not yet
+	// cleared) the real destination directory is available (#417).
+	const bool incomplete_partfile = f.is_downloading && f.download.status != "completed";
+	w.ValueString(incomplete_partfile ? wxString::FromAscii("[PartFile]")
+					  : wxString::FromUTF8(f.on_disk_dir.c_str()));
 	w.Key("complete_sources_range");
 	w.BeginObject();
 	w.Key("low");

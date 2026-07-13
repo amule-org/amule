@@ -153,6 +153,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} carries aich_hash'
 	_assert_json_eq '.met_file | type' string \
 		'/downloads/{hash} carries met_file'
+	_assert_json_eq '.path | type' string \
+		'/downloads/{hash} carries path (#417)'
 	_assert_json_eq '.queued_count | type' number \
 		'/downloads/{hash} carries queued_count'
 	_assert_json_eq '.comment | type' string \

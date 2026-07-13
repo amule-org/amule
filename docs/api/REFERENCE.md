@@ -549,7 +549,8 @@ Same envelope as the list item, plus the detail-only fields below (all omitted f
 | `gained_by_compression` | int | Bytes saved by on-the-wire compression. |
 | `saved_by_ich` | int | Packets recovered by Intelligent Corruption Handling. |
 | `aich_hash` | string | AICH master hash (hex); `""` if not yet computed. |
-| `met_file` | string | The partfile's on-disk basename (e.g. `001.part`). |
+| `met_file` | string | The partfile's `.part` control-file basename (e.g. `001.part`). `""` once the download has completed (status `completed`, before `clear_completed`). |
+| `path` | string | Directory the file lives in on disk — the Temp directory while downloading, the destination directory once completed. |
 | `partmet_id` | int | Numeric partfile id. |
 | `queued_count` | int | Clients waiting on this file's upload queue. |
 | `comment` | string | The user's own comment on this file (`""` if none). |
