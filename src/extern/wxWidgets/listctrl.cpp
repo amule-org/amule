@@ -583,6 +583,12 @@ public:
 	// bring the selected item into view, scrolling to it if necessary
 	void MoveToItem(size_t item);
 
+	// Scroll to a view-start position (in scroll units; pass -1 to keep an
+	// axis unchanged) and refresh the cached visible-line range, so the newly
+	// exposed rows repaint instead of coming up blank on wxMSW (aMule #478).
+	// Shared by OnScroll() (scrollbar/wheel) and MoveToItem() (keyboard nav).
+	void ScrollListTo(int x, int y);
+
 	// bring the current item into view
 	void MoveToFocus() { MoveToItem(m_current); }
 
@@ -3124,6 +3130,20 @@ void wxListMainWindow::OnMouse(wxMouseEvent &event)
 	}
 }
 
+void wxListMainWindow::ScrollListTo(int x, int y)
+{
+	// Flush pending repaints before scrolling so ScrollWindow() blits
+	// already-valid content (matches wxScrollHelperBase::HandleOnScroll's
+	// pre-scroll Update()), then scroll and reset the cached visible-line
+	// range. Scroll() computes that range against the pre-scroll position, so
+	// without the reset the newly exposed rows come up blank on wxMSW until a
+	// redraw is forced (aMule #478) -- this reset used to be a __WXMAC__-only
+	// workaround inside MoveToItem.
+	Update();
+	Scroll(x, y);
+	ResetVisibleLinesRange();
+}
+
 void wxListMainWindow::MoveToItem(size_t item)
 {
 	if (item == (size_t)-1)
@@ -3145,26 +3165,15 @@ void wxListMainWindow::MoveToItem(size_t item)
 		ResetVisibleLinesRange();
 
 		if (rect.y < view_y)
-			Scroll(-1, rect.y / hLine);
+			ScrollListTo(-1, rect.y / hLine);
 		if (rect.y + rect.height + 5 > view_y + client_h)
-			Scroll(-1, (rect.y + rect.height - client_h + hLine) / hLine);
-
-#ifdef __WXMAC__
-		// At least on Mac the visible lines value will get reset inside of
-		// Scroll *before* it actually scrolls the window because of the
-		// Update() that happens there, so it will still have the wrong value.
-		// So let's reset it again and wait for it to be recalculated in the
-		// next paint event.  I would expect this problem to show up in wxGTK
-		// too but couldn't duplicate it there.  Perhaps the order of events
-		// is different...  --Robin
-		ResetVisibleLinesRange();
-#endif
+			ScrollListTo(-1, (rect.y + rect.height - client_h + hLine) / hLine);
 	} else // !report
 	{
 		if (rect.x - view_x < 5)
-			Scroll((rect.x - 5) / SCROLL_UNIT_X, -1);
+			ScrollListTo((rect.x - 5) / SCROLL_UNIT_X, -1);
 		if (rect.x + rect.width - 5 > view_x + client_w)
-			Scroll((rect.x + rect.width - client_w + SCROLL_UNIT_X) / SCROLL_UNIT_X, -1);
+			ScrollListTo((rect.x + rect.width - client_w + SCROLL_UNIT_X) / SCROLL_UNIT_X, -1);
 	}
 }
 
@@ -4579,18 +4588,62 @@ void wxListMainWindow::SortItems(MuleListCtrlCompare fn, wxIntPtr data)
 
 void wxListMainWindow::OnScroll(wxScrollWinEvent &event)
 {
-	// Let the base wxScrolledWindow perform the actual scroll. Older wx let
-	// us drive it directly via HandleOnScroll(), but 3.3.3 made that a
-	// private member, so we hand the event back with Skip() instead: the
-	// base class then does the scroll through its own (private) handler.
-	// This works unchanged across every supported version (min wx 3.2.0).
-	event.Skip();
+	// Drive the scroll synchronously here. Before #348 we called the base
+	// wxScrollHelperBase::HandleOnScroll(event) directly, but wx 3.3.3 made
+	// that a private member, so #348 switched to event.Skip() and let the
+	// base scroll the window afterwards. On wxMSW that deferred path leaves
+	// the newly exposed rows unpainted -- lists go blank on scroll until a
+	// redraw is forced (aMule #478). Reimplement the scroll with only the
+	// public wxScrollHelper API so it stays synchronous like the pre-#348
+	// behaviour, works on every supported wx (>= 3.2.0) with no dependency on
+	// the now-private HandleOnScroll, and needs no version or platform guard.
+	//
+	// Mirrors HandleOnScroll()/CalcScrollInc(): translate the scroll event
+	// into a target position (in scroll units) and scroll to it. Scroll()
+	// clamps to the valid range and performs the actual ScrollWindow + repaint.
+	const int orient = event.GetOrientation();
 
-	// update our idea of which lines are shown when we redraw the window the
-	// next time
-	ResetVisibleLinesRange();
+	int xStart = 0, yStart = 0;
+	GetViewStart(&xStart, &yStart);
+	const int current = (orient == wxHORIZONTAL) ? xStart : yStart;
 
-	if (event.GetOrientation() == wxHORIZONTAL && HasHeader()) {
+	// wxEVT_SCROLLWIN_* are runtime event-type tags, not compile-time
+	// constants, so this can't be a switch.
+	int target = current;
+	const wxEventType type = event.GetEventType();
+	if (type == wxEVT_SCROLLWIN_TOP) {
+		target = 0;
+	} else if (type == wxEVT_SCROLLWIN_BOTTOM) {
+		target = GetScrollLines(orient); // Scroll() clamps to the last page
+	} else if (type == wxEVT_SCROLLWIN_LINEUP) {
+		target = current - 1;
+	} else if (type == wxEVT_SCROLLWIN_LINEDOWN) {
+		target = current + 1;
+	} else if (type == wxEVT_SCROLLWIN_PAGEUP) {
+		target = current - GetScrollPageSize(orient);
+	} else if (type == wxEVT_SCROLLWIN_PAGEDOWN) {
+		target = current + GetScrollPageSize(orient);
+	} else if (type == wxEVT_SCROLLWIN_THUMBTRACK || type == wxEVT_SCROLLWIN_THUMBRELEASE) {
+		target = event.GetPosition();
+	} else {
+		// Unknown scroll type: let the base class handle it.
+		event.Skip();
+		return;
+	}
+
+	if (target < 0) {
+		target = 0;
+	}
+
+	// Scroll synchronously to the target and repaint the exposed rows (see
+	// ScrollListTo). Keep the other axis where it is.
+	if (orient == wxHORIZONTAL) {
+		ScrollListTo(target, yStart);
+	} else {
+		ScrollListTo(xStart, target);
+	}
+
+	if (orient == wxHORIZONTAL && HasHeader()) {
 		wxGenericListCtrl *lc = GetListCtrl();
 		wxCHECK_RET(lc, _T("no listctrl window?"));
 
