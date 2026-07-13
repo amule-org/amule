@@ -144,6 +144,44 @@ export function CommentEditor({ hash, kind, comment, rating, onSaved, disabled =
     </form>`;
 }
 
+// --- rename file --------------------------------------------------------
+// Rename form shared by both detail panels. `kind` is "downloads" or
+// "shared"; both PATCH endpoints accept {name} (ADMIN, mapped to
+// EC_OP_RENAME_FILE). The daemon rejects empty names and names with path
+// separators, so we mirror that client-side before sending. Keyed on hash by
+// the caller so switching files re-seeds the input. Wrapped in .admin-only.
+export function RenameForm({ hash, kind, name, onSaved, disabled = false }) {
+  const [val, setVal] = useState(name || "");
+  const [busy, setBusy] = useState(false);
+  const clean = val.trim();
+  const invalid = !clean || clean.includes("/") || clean.includes("\\");
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.patch(kind + "/" + hash, { name: clean });
+      toast(t("rename_saved"), "success");
+      if (onSaved) onSaved();
+    } catch (e) {
+      toast(terr(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return html`
+    <form class="rename-form admin-only" onSubmit=${(e) => { e.preventDefault(); save(); }}>
+      <label class="rename-label">${t("filename_rename_label")}</label>
+      <div class="rename-row">
+        <input class="input input-sm" type="text" disabled=${disabled}
+               placeholder=${t("filename_rename_placeholder")}
+               value=${val} onInput=${(e) => setVal(e.target.value)} />
+        <button class="btn btn-primary btn-sm" type="submit"
+                disabled=${busy || disabled || invalid}>${t("comments_save")}</button>
+      </div>
+    </form>`;
+}
+
 // --- toast --------------------------------------------------------------
 // Lightweight imperative notifications. A single host div is lazily created
 // and reused; toasts auto-dismiss (errors linger a bit longer).

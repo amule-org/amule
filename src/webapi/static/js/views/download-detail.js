@@ -7,7 +7,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, ratingLabel } from "../components.js";
+import { ProgressBar, Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -43,6 +43,7 @@ export function DownloadDetail({ hash }) {
   const [detail, setDetail] = useState(null);
   const [gone, setGone] = useState(false);
   const [tab, setTab] = useState("details");
+  const [reload, setReload] = useState(0); // bumped after a rename to refresh the name
 
   // The live re-fetch feeds the Details tab (%, speed, ETA, pieces). The
   // Comments tab needs none of that, so only tick there — elsewhere the detail
@@ -55,7 +56,7 @@ export function DownloadDetail({ hash }) {
       .then((d) => { if (alive) { setDetail(d); setGone(false); } })
       .catch(() => { if (alive) setGone(true); });
     return () => { alive = false; };
-  }, [hash, liveTick]);
+  }, [hash, liveTick, reload]);
 
   if (!hash) return null;
   if (gone) return html`<div class="detail-panel"><${Placeholder} kind="info">${t("downloads_detail_gone")}<//></div>`;
@@ -81,6 +82,7 @@ export function DownloadDetail({ hash }) {
 
       <${Tabs} tabs=${[
         { key: "details", label: t("detail_tab_details") },
+        { key: "filename", label: t("detail_tab_filename") },
         { key: "comments", label: t("detail_tab_comments") },
       ]} active=${tab} onSelect=${setTab} />
 
@@ -88,6 +90,9 @@ export function DownloadDetail({ hash }) {
       ${tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.comment} rating=${d.rating}
                              tick=${downloads} parts=${(d.progress && d.progress.parts) || []} />
+      ` : tab === "filename" ? html`
+        <${DownloadFilenames} hash=${d.hash} name=${d.name}
+                              onRenamed=${() => setReload((n) => n + 1)} />
       ` : html`
       <div class="detail-sections">
         <div class="detail-progress">
@@ -188,6 +193,57 @@ function DownloadComments({ hash, comment, rating, tick, parts }) {
               </tr>`)}
           </tbody>
         </table>` : html`<${Placeholder} kind="info">${t("comments_none")}<//>`}
+    </div>`;
+}
+
+// The File names tab: the distinct names this download's sources report for it
+// (GET downloads/{hash}/filenames), plus a rename form. Admins can rename the
+// file to an arbitrary name or "take over" any source-reported name (the
+// desktop Takeover flow). Loads once per file — the source-name list doesn't
+// change on every SSE tick.
+function DownloadFilenames({ hash, name, onRenamed }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.get("downloads/" + hash + "/filenames")
+      .then((d) => { if (alive) setData(d); })
+      .catch(() => { if (alive) setData({ filenames: [] }); });
+    return () => { alive = false; };
+  }, [hash]);
+
+  // Server returns map-iteration order; sort by popularity then name.
+  const list = ((data && data.filenames) || [])
+    .slice()
+    .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name));
+
+  const takeover = (n) => api.patch("downloads/" + hash, { name: n })
+    .then(() => { toast(t("rename_saved"), "success"); if (onRenamed) onRenamed(); })
+    .catch((e) => toast(terr(e), "error"));
+
+  return html`
+    <div class="detail-comments">
+      <${RenameForm} key=${hash} hash=${hash} kind="downloads" name=${name} onSaved=${onRenamed} />
+      ${list.length ? html`
+        <table class="comments-list">
+          <thead><tr>
+            <th>${t("comments_col_filename")}</th>
+            <th>${t("filename_col_count")}</th>
+            <th class="admin-only"></th>
+          </tr></thead>
+          <tbody>
+            ${list.map((f, i) => html`
+              <tr key=${i}>
+                <td class="comments-fname" title=${f.name}>${f.name}</td>
+                <td>${f.count}</td>
+                <td class="admin-only">
+                  <button class="btn btn-sm" type="button" onClick=${() => takeover(f.name)}>
+                    ${t("filename_takeover")}
+                  </button>
+                </td>
+              </tr>`)}
+          </tbody>
+        </table>` : html`<${Placeholder} kind="info">${t("filename_none")}<//>`}
     </div>`;
 }
 

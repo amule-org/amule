@@ -8,7 +8,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor } from "../components.js";
+import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
 import { formatBytes, formatInt, formatDuration, twin } from "../format.js";
 import { t } from "../i18n.js";
 
@@ -68,6 +68,7 @@ export function SharedDetail({ hash }) {
 
       <${Tabs} tabs=${[
         { key: "details", label: t("detail_tab_details") },
+        { key: "filename", label: t("detail_tab_filename") },
         { key: "comments", label: t("detail_tab_comments") },
       ]} active=${tab} onSelect=${setTab} />
 
@@ -75,6 +76,10 @@ export function SharedDetail({ hash }) {
       ${tab === "comments" ? html`
         <div class="detail-comments">
           <${CommentEditor} key=${s.hash} hash=${s.hash} kind="shared" comment=${s.comment} rating=${s.rating} />
+        </div>
+      ` : tab === "filename" ? html`
+        <div class="detail-comments">
+          <${RenameForm} key=${s.hash} hash=${s.hash} kind="shared" name=${s.name} />
         </div>
       ` : html`
       <div class="detail-sections">
