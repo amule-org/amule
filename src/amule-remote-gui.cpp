@@ -1533,6 +1533,13 @@ bool CSharedFilesRem::RenameFile(CKnownFile *file, const CPath &newName)
 	return true;
 }
 
+void CSharedFilesRem::VerifyLocalData(const CKnownFile *file) const
+{
+	CECPacket request(EC_OP_VERIFY_LOCAL_DATA);
+	request.AddTag(CECTag(EC_TAG_KNOWNFILE, file->GetFileHash()));
+	m_conn->SendPacket(&request);
+}
+
 void CSharedFilesRem::SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating)
 {
 	CECPacket request(EC_OP_SHARED_FILE_SET_COMMENT);

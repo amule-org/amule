@@ -96,6 +96,7 @@ public:
 	void Process();
 	void PublishNextTurn() { m_lastPublishED2KFlag = true; }
 	bool RenameFile(CKnownFile *pFile, const CPath &newName);
+	void VerifyLocalData(const CKnownFile *file) const;
 
 	/**
 	 * Returns the name of a folder visible to the public.

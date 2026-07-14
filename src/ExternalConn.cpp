@@ -2154,6 +2154,15 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	}
+	case EC_OP_VERIFY_LOCAL_DATA: {
+		CMD4Hash hash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
+		CKnownFile *file = theApp->sharedfiles->GetFileByID(hash);
+		if (file) {
+			theApp->sharedfiles->VerifyLocalData(file);
+		}
+		response = new CECPacket(EC_OP_NOOP);
+		break;
+	}
 	case EC_OP_SHARED_FILE_SEARCH_KAD_NOTES: {
 		CMD4Hash hash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
 		// Notes are requested from the download-comments dialog, so try the download

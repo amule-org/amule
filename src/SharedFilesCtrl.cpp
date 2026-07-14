@@ -42,10 +42,7 @@
 #include "MuleCollection.h" // Needed for CMuleCollection
 #include "DownloadQueue.h"  // Needed for CDownloadQueue
 #include "TransferWnd.h"    // Needed for CTransferWnd
-#ifndef CLIENT_GUI
-#include "ThreadTasks.h" // Needed for CVerifyLocalDataTask
-#include "Logger.h"      // Needed for AddLogLine
-#endif
+#include "Logger.h"         // Needed for AddLogLine
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
@@ -70,9 +67,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_MENU(MP_GETAICHED2KLINKSRC, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_RENAME, CSharedFilesCtrl::OnRename)
 	EVT_MENU(MP_WS, CSharedFilesCtrl::OnGetFeedback)
-#ifndef CLIENT_GUI
 	EVT_MENU(MP_VERIFY, CSharedFilesCtrl::OnVerifyLocalData)
-#endif
 	EVT_CHAR(CSharedFilesCtrl::OnKeyPressed)
 wxEND_EVENT_TABLE()
 
@@ -155,10 +150,9 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->AppendSeparator();
 		m_menu->Append(MP_RENAME, _("Rename"));
 		m_menu->AppendSeparator();
-#ifndef CLIENT_GUI
+
 		m_menu->Append(MP_VERIFY, _("Verify Local Data"));
 		m_menu->AppendSeparator();
-#endif
 
 		if (file->GetFileName().GetExt() == "emulecollection") {
 			m_menu->Append(MP_ADDCOLLECTION, _("Add files in collection to transfer list"));
@@ -199,7 +193,6 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 	}
 }
 
-#ifndef CLIENT_GUI
 void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 {
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
@@ -211,11 +204,10 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 				CFormat(_("Verify Local Data on PartFile is currently not supported: %s")) %
 				file->GetFileName());
 		else
-			CThreadScheduler::AddTask(new CVerifyLocalDataTask(file->GetFileHash()));
+			theApp->sharedfiles->VerifyLocalData(file);
 		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 }
-#endif
 
 void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))
 {

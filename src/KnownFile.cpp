@@ -65,6 +65,7 @@
 #include "kademlia/kademlia/Search.h"        // Needed for CSearch::NOTES
 #include "kademlia/kademlia/SearchManager.h" // Needed for CSearchManager::PrepareLookup
 #include "DownloadQueue.h"                   // Needed for downloadqueue lookup
+#include "ThreadTasks.h"                     // Needed for CThreadScheduler and CVerifyLocalDataTask
 #endif
 
 CFileStatistic::CFileStatistic(CKnownFile *parent)
@@ -522,6 +523,11 @@ void CKnownFile::RemoveUploadingClient(CUpDownClient *client)
 }
 
 #ifndef CLIENT_GUI
+void CKnownFile::VerifyLocalData() const
+{
+	CThreadScheduler::AddTask(new CVerifyLocalDataTask(GetFileHash()));
+}
+
 // Live upload activity summarised from m_ClientUploadList (issue #466).
 // Core-only: the list is populated on the daemon; amulegui receives the
 // results over EC. m_ClientUploadList holds both uploading and queued

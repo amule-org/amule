@@ -1511,6 +1511,12 @@ void CSharedFileList::RemoveKeywords(CKnownFile *pFile)
 	m_keywords->RemoveKeywords(pFile);
 }
 
+void CSharedFileList::VerifyLocalData(const CKnownFile *file) const
+{
+	if (file)
+		file->VerifyLocalData();
+}
+
 bool CSharedFileList::RenameFile(CKnownFile *file, const CPath &newName)
 {
 	if (file->IsPartFile()) {

@@ -532,6 +532,7 @@ public:
 	void Reload(bool sendtoserver = true, bool firstload = false);
 	bool RenameFile(CKnownFile *file, const CPath &newName);
 	void SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating);
+	void VerifyLocalData(const CKnownFile *file) const;
 	void SearchKadNotes(CKnownFile *file);
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 

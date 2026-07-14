@@ -153,6 +153,8 @@ EC_OP_VERSION_CHECK                 0x58
 
 EC_OP_SHARED_FILE_SEARCH_KAD_NOTES  0x59
 
+EC_OP_VERIFY_LOCAL_DATA             0x5A
+
 [/Section]
 
 [Section Content]

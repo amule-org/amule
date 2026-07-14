@@ -244,6 +244,7 @@ public:
 	// these over EC rather than computing them.
 	uint32 GetUploadDatarate() const;          // sum of per-client upload speed (B/s)
 	uint16 GetTransferringClientCount() const; // clients currently US_UPLOADING
+	void VerifyLocalData() const;
 #endif
 
 	// Timestamp of the last time data was uploaded for this file, and when
