@@ -143,4 +143,22 @@ if (HAVE_STDIO_H)
 	endif()
 endif()
 
+# A usable readline needs BOTH the library and a header. The function check
+# above can be satisfied by a bare runtime library with no -dev headers
+# installed, or by libedit's readline() compatibility symbol (whose header is
+# <editline/readline.h>, not the <readline.h> / <readline/readline.h> the code
+# includes). In that case config.h would carry HAVE_LIBREADLINE without a
+# header macro, and ExternalConnector.cpp -- which gates its rl_* code on
+# HAVE_LIBREADLINE alone -- would use the readline symbols undeclared and fail
+# deep in the build with a confusing "rl_* undeclared" error. Fail early and
+# loudly instead, pointing at the missing development headers.
+if (HAVE_LIBREADLINE AND NOT HAVE_READLINE_H AND NOT HAVE_READLINE_READLINE_H)
+	message (FATAL_ERROR
+		"The readline library was found but its development headers were not "
+		"(neither <readline/readline.h> nor <readline.h>). Install the readline "
+		"development package and re-run cmake -- e.g. Alpine: 'apk add "
+		"readline-dev'; Debian/Ubuntu: 'apt install libreadline-dev'; Fedora: "
+		"'dnf install readline-devel'; macOS (Homebrew): 'brew install readline'.")
+endif()
+
 find_package_handle_standard_args (readline DEFAULT_MSG READLINE_LIBRARIES)
