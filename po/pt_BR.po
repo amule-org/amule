@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 19:22+0200\n"
-"PO-Revision-Date: 2026-07-13 18:51+0000\n"
+"PO-Revision-Date: 2026-07-14 23:02+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -866,12 +866,12 @@ msgstr "Abortar a edição e sair"
 #: src/amule-remote-gui.cpp:159
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "Reconectando... (tentativa %d)"
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "Próxima tentativa em %d s..."
 
 #: src/amule-remote-gui.cpp:169
 #, c-format
@@ -930,7 +930,7 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp:689
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "A conexão com o núcleo remoto foi perdida. Tentando reconectar..."
 
 #: src/amule-remote-gui.cpp:722
 msgid "Reconnected to the remote core."
@@ -1307,16 +1307,15 @@ msgstr "Comentário"
 
 #: src/CommentDialogLst.cpp:134
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "Não foi possível começar uma busca Kad"
 
 #: src/CommentDialogLst.cpp:135 src/SearchList.cpp:310
 msgid "Kad search can't be done if Kad is not running"
 msgstr "A busca do Kad não pode ser feita se o Kad não estiver rodando"
 
 #: src/CommentDialogLst.cpp:144 src/CommentDialogLst.cpp:177
-#, fuzzy
 msgid "Searching Kad for comments..."
-msgstr "Procurando amigo para conexão lowid"
+msgstr "Procurando por comentários em Kad..."
 
 #: src/CommentDialogLst.cpp:202 src/muuli_wdr.cpp:816
 msgid "No comments"
@@ -2591,27 +2590,27 @@ msgstr[1] "Gravados %d contatos Kad"
 #: src/KnownFile.cpp:1496
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "A busca de nota em Kad por '%s' não foi iniciada: Kad não está conectada"
 
 #: src/KnownFile.cpp:1504
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "A busca de nota em Kad por '%s' não foi iniciada: uma busca de nota já está rodando para este arquivo"
 
 #: src/KnownFile.cpp:1516
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list or download queue"
-msgstr ""
+msgstr "A busca de nota por '%s' não foi iniciada: o arquivo não está na lista de compartilhamento ou na fila de download"
 
 #: src/KnownFile.cpp:1530
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "A busca por nota em Kad por '%s' não foi iniciada: outra busca Kad (e.g. uma busca por fontes) já está usando o hash deste arquivo - tente novamente em breve"
 
 #: src/KnownFile.cpp:1539
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "A busca por nota em Kad por '%s' não foi iniciada: falha na preparação de busca (PrepareLookup)"
 
 #: src/KnownFile.cpp:1833 src/PartFileConvertDlg.cpp:96
 msgid "File name"
@@ -3364,9 +3363,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "Escolha uma classe ou avise os demais usuários se o arquivo é inválido..."
 
 #: src/muuli_wdr.cpp:823
-#, fuzzy
 msgid "Get from Kad"
-msgstr "Desconectado da rede Kad"
+msgstr "Pegar da rede Kad"
 
 #: src/muuli_wdr.cpp:825
 msgid "Refresh"
@@ -5156,9 +5154,8 @@ msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "ICH: Recuperada parte corrompida %i para %s -> Bytes salvos: %s"
 
 #: src/PartFile.cpp:4234
-#, fuzzy
 msgid "Kad user"
-msgstr "rede Kad"
+msgstr "Usuário Kad"
 
 #: src/PartFile.cpp:4374
 msgid "Allocating"
@@ -6540,7 +6537,7 @@ msgstr "Renomear"
 
 #: src/SharedFilesCtrl.cpp:159
 msgid "Verify Local Data"
-msgstr ""
+msgstr "Verificar Dados Locais"
 
 #: src/SharedFilesCtrl.cpp:164
 msgid "Add files in collection to transfer list"
@@ -6577,7 +6574,7 @@ msgstr "Copiar &link eD2k para área de transferência (&Info AICH + Fonte)"
 #: src/SharedFilesCtrl.cpp:211
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "Verificar Dados Locais em PartFile não é atualmente suportado: %s"
 
 #: src/SharedFilesCtrl.cpp:361
 msgid "You need a HighID to create a valid sourcelink"
@@ -7447,12 +7444,12 @@ msgstr "Convertendo hashsets AICH antigos de '%s' para 64b em '%s'."
 #: src/ThreadTasks.cpp:518
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "Verificar Dados Locais (%s): Resultado OK para %s"
 
 #: src/ThreadTasks.cpp:550
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "Verificar Dados Locais (%s): ERROS ENCONTRADOS! %s Blocos falhos: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp:745
 #, c-format

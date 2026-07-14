@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 19:22+0200\n"
-"PO-Revision-Date: 2026-07-13 18:55+0000\n"
+"PO-Revision-Date: 2026-07-14 23:02+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -863,12 +863,12 @@ msgstr "退出时确认"
 #: src/amule-remote-gui.cpp:159
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "正在重连…（第 %d 次尝试）"
 
 #: src/amule-remote-gui.cpp:162
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "%d 秒后进行下一次重试…"
 
 #: src/amule-remote-gui.cpp:169
 #, c-format
@@ -913,9 +913,8 @@ msgid "Going down"
 msgstr "下降"
 
 #: src/amule-remote-gui.cpp:656
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "连接超时 %s（%s：%i）"
+msgstr "重连尝试超时；重试中。"
 
 #: src/amule-remote-gui.cpp:665
 #, c-format
@@ -928,17 +927,16 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp:689
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "到远程核心的连接丢失。正尝试重新连接…"
 
 #: src/amule-remote-gui.cpp:722
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "连接至网络。"
+msgstr "已重新连接到远程核心。"
 
 #: src/amule-remote-gui.cpp:752
-#, fuzzy, c-format
+#, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr "连接失败。不能连接到 %s:%d\n"
+msgstr "重新连接尝试 %d：正在连接到 %s:%d"
 
 #: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
@@ -1306,16 +1304,15 @@ msgstr "评论"
 
 #: src/CommentDialogLst.cpp:134
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "无法启动 Kad 搜索"
 
 #: src/CommentDialogLst.cpp:135 src/SearchList.cpp:310
 msgid "Kad search can't be done if Kad is not running"
 msgstr "Kad搜索不能使用，因为Kad没有连接"
 
 #: src/CommentDialogLst.cpp:144 src/CommentDialogLst.cpp:177
-#, fuzzy
 msgid "Searching Kad for comments..."
-msgstr "正在搜索好友进行 Low ID 连接"
+msgstr "正在搜索 Kad 获取评论…"
 
 #: src/CommentDialogLst.cpp:202 src/muuli_wdr.cpp:816
 msgid "No comments"
@@ -2588,27 +2585,27 @@ msgstr[1] "已写入%d个Kad联系人"
 #: src/KnownFile.cpp:1496
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "“%s” 的 Kad 笔记搜索未启动：Kad 未连接"
 
 #: src/KnownFile.cpp:1504
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "“%s” 的 Kad 笔记搜索未启动：已经有一个该文件的笔记查询在运行"
 
 #: src/KnownFile.cpp:1516
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list or download queue"
-msgstr ""
+msgstr "“%s” 的 Kad 笔记搜索未启动：文件不在共享列表或下载队列中"
 
 #: src/KnownFile.cpp:1530
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "“%s” 的 Kad 笔记搜索未启动：另一个 Kad 搜索（比如来源搜索）已经在使用此文件的哈希值 —— 请稍后重试"
 
 #: src/KnownFile.cpp:1539
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "“%s” 的 Kad 笔记搜索未启动：PrepareLookup 失败"
 
 #: src/KnownFile.cpp:1833 src/PartFileConvertDlg.cpp:96
 msgid "File name"
@@ -3274,27 +3271,24 @@ msgid "Media Info"
 msgstr "Kad 信息"
 
 #: src/muuli_wdr.cpp:660
-#, fuzzy
 msgid "Length :"
-msgstr "长度"
+msgstr "长度："
 
 #: src/muuli_wdr.cpp:667
-#, fuzzy
 msgid "Bitrate :"
-msgstr "比特率"
+msgstr "比特率："
 
 #: src/muuli_wdr.cpp:674
-#, fuzzy
 msgid "Codec :"
-msgstr "编解码器"
+msgstr "编解码器："
 
 #: src/muuli_wdr.cpp:681
 msgid "Artist :"
-msgstr ""
+msgstr "艺术家："
 
 #: src/muuli_wdr.cpp:688
 msgid "Album :"
-msgstr ""
+msgstr "专辑："
 
 #: src/muuli_wdr.cpp:695 src/muuli_wdr.cpp:2188
 msgid "Title :"
@@ -3365,9 +3359,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "选择文件评价或者提醒其它用户该文件是无效的..."
 
 #: src/muuli_wdr.cpp:823
-#, fuzzy
 msgid "Get from Kad"
-msgstr "已断开 Kad 连接"
+msgstr "从 Kad 获取"
 
 #: src/muuli_wdr.cpp:825
 msgid "Refresh"
@@ -5157,9 +5150,8 @@ msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
 msgstr "ICH：修复了损坏的数据段 %i（%s），挽救数据（字节）： %s"
 
 #: src/PartFile.cpp:4234
-#, fuzzy
 msgid "Kad user"
-msgstr "Kad 网络"
+msgstr "Kad 用户"
 
 #: src/PartFile.cpp:4374
 msgid "Allocating"
@@ -6578,7 +6570,7 @@ msgstr "复制 eD2k 链接到剪贴板 (含 &AICH 信息、源)"
 #: src/SharedFilesCtrl.cpp:211
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "目前不支持验证 Part 文件的本地数据：%s"
 
 #: src/SharedFilesCtrl.cpp:361
 msgid "You need a HighID to create a valid sourcelink"
@@ -7445,12 +7437,12 @@ msgstr "正把 “%s” 中旧的 AICH 校验和集转换为 “%s” 中的 64b
 #: src/ThreadTasks.cpp:518
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "验证本地数据（%s）：%s 的结果没问题"
 
 #: src/ThreadTasks.cpp:550
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "验证本地数据（%s）：发现错误！%s 个失败的文件块：MD4: %s。%s %s"
 
 #: src/ThreadTasks.cpp:745
 #, c-format

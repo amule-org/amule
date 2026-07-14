@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-13 19:22+0200\n"
-"PO-Revision-Date: 2026-07-13 18:48+0000\n"
+"PO-Revision-Date: 2026-07-14 23:02+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -6540,7 +6540,7 @@ msgstr "Rinomina"
 
 #: src/SharedFilesCtrl.cpp:159
 msgid "Verify Local Data"
-msgstr ""
+msgstr "Verifica Dati Locali"
 
 #: src/SharedFilesCtrl.cpp:164
 msgid "Add files in collection to transfer list"
@@ -6577,7 +6577,7 @@ msgstr "Copia il collegamento eD2k negli appunti (&AICH info + Fonte)"
 #: src/SharedFilesCtrl.cpp:211
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "Verifica Dati Locali su PartFile non è supportato al momento: %s"
 
 #: src/SharedFilesCtrl.cpp:361
 msgid "You need a HighID to create a valid sourcelink"
@@ -7446,12 +7446,12 @@ msgstr "Conversione dei vecchi hashset AICH in '%s' a 64b: '%s'."
 #: src/ThreadTasks.cpp:518
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "Verifica Dati Locali (%s): Risultato OK per %s"
 
 #: src/ThreadTasks.cpp:550
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "Verifica Dati Locali (%s): ERRORI RILEVATI! %s Blocchi con errori: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp:745
 #, c-format
