@@ -44,6 +44,10 @@
 #include <chrono>
 #include <vector> // GetAdaptersAddresses buffer (Windows interface resolution)
 
+#ifndef _WIN32
+#include <poll.h> // Bounded readability wait for the sync-read no-progress timeout
+#endif
+
 // Trip the compile if we accidentally pull a deprecated Asio API back in.
 #define BOOST_ASIO_NO_DEPRECATED
 #include <boost/asio.hpp>
@@ -466,6 +470,12 @@ public:
 		m_IP = L"?";
 		m_IPint = 0;
 		m_connectTimeoutMs = 0;
+		// No-progress bound for synchronous EC reads. amuled's control
+		// channel never legitimately goes 30 s without a byte mid-reply,
+		// so this only ever trips on a genuinely stalled / desynced peer
+		// (see ReadSync). Kept generous so slow-but-progressing large
+		// transfers can't false-trip it.
+		m_syncReadTimeoutMs = 30000;
 		m_socket = new ip::tcp::socket(s_io_service);
 
 		// Set socket to non blocking
@@ -491,6 +501,11 @@ public:
 	// Bound the synchronous connect (0 = no bound, the default). Only
 	// honoured on the sync connect path — see Connect().
 	void SetConnectTimeout(int ms) { m_connectTimeoutMs = ms; }
+
+	// Bound how long a synchronous read may make no progress (0 = no
+	// bound). Applies to ReadSync; see there for why this can't be an
+	// SO_RCVTIMEO.
+	void SetSyncReadTimeout(int ms) { m_syncReadTimeoutMs = ms; }
 
 	bool Connect(const amuleIPV4Address &adr, bool wait)
 	{
@@ -992,11 +1007,114 @@ private:
 	//
 	uint32 ReadSync(char *buf, uint32 bytesToRead)
 	{
-		error_code ec;
-		uint32 received = read(*m_socket, buffer(buf, bytesToRead), ec);
-		SetError(ec);
-		if (ec) {
-			DispatchSyncLost();
+		if (m_syncReadTimeoutMs <= 0) {
+			// Timeout disabled — legacy unbounded blocking read.
+			error_code ec;
+			uint32 received = read(*m_socket, buffer(buf, bytesToRead), ec);
+			SetError(ec);
+			if (ec) {
+				DispatchSyncLost();
+			}
+			return received;
+		}
+
+		// No-progress bounded read. Asio's synchronous read() falls back to
+		// an *unbounded* internal poll_read(-1) on EAGAIN, so SO_RCVTIMEO
+		// can't bound it (the wedge backtrace showed exactly that poll).
+		// Instead we gate each read_some behind a poll() carrying the
+		// remaining no-progress budget, which resets whenever bytes arrive:
+		// a slow-but-progressing large transfer never trips it, but a
+		// genuinely stalled / desynced peer (a reply that never completes)
+		// does — and is then reported as a lost peer (DispatchSyncLost),
+		// so the EC layer's reconnect / fail-fast path takes over instead
+		// of hanging forever holding the caller's EC mutex.
+		const auto fd = m_socket->native_handle();
+		uint32 received = 0;
+		while (received < bytesToRead) {
+			// Wait up to the remaining no-progress budget for readability.
+			// POSIX uses poll() (no FD_SETSIZE cap — the EC socket can get a
+			// high fd after a reconnect under load); Windows uses select()
+			// because WSAPoll needs _WIN32_WINNT >= 0x0600 and this build
+			// targets 0x0501 (see top of file), and on Winsock fd_set is
+			// count-indexed so a single socket is always in range.
+			bool timed_out = false;
+			bool poll_failed = false;
+			int poll_errno = 0;
+#ifdef __WINDOWS__
+			fd_set rfds;
+			FD_ZERO(&rfds);
+			FD_SET(fd, &rfds);
+			struct timeval tv;
+			tv.tv_sec = m_syncReadTimeoutMs / 1000;
+			tv.tv_usec = (m_syncReadTimeoutMs % 1000) * 1000;
+			const int pr = ::select(0, &rfds, NULL, NULL, &tv);
+			timed_out = (pr == 0);
+			poll_failed = (pr == SOCKET_ERROR);
+			if (poll_failed) {
+				poll_errno = ::WSAGetLastError();
+			}
+#else
+			struct pollfd pfd;
+			pfd.fd = fd;
+			pfd.events = POLLIN;
+			pfd.revents = 0;
+			const int pr = ::poll(&pfd, 1, m_syncReadTimeoutMs);
+			timed_out = (pr == 0);
+			if (pr < 0) {
+				if (errno == EINTR) {
+					continue; // signal — re-arm the budget
+				}
+				poll_failed = true;
+				poll_errno = errno;
+			}
+#endif
+			if (timed_out) {
+				// No data for the whole budget — treat as a stalled peer so
+				// the EC layer reconnects / fails fast instead of hanging.
+				// This is fatal for the synchronous EC clients (amuleapi,
+				// amulecmd, amuleweb): the caller reports the peer lost and
+				// exits. Emit it unconditionally on stderr — NOT the
+				// debug-gated logAsio category — so it is visible in release
+				// builds, right before the "External Connection lost -
+				// exiting." the EC layer prints next.
+				wxString msg =
+					CFormat(wxT("amule: synchronous socket read made no progress for %d "
+						    "ms (peer %s) — stalled or desynced peer; dropping the "
+						    "connection.")) %
+					m_syncReadTimeoutMs % m_IP;
+				fprintf(stderr, "%s\n", (const char *)unicode2char(msg));
+				fflush(stderr);
+				error_code ec = boost::asio::error::timed_out;
+				SetError(ec);
+				DispatchSyncLost();
+				return received;
+			}
+			if (poll_failed) {
+				error_code ec(poll_errno, system_category());
+				SetError(ec);
+				DispatchSyncLost();
+				return received;
+			}
+			// Readable: a blocking read_some now returns promptly (data or
+			// EOF), so it cannot re-introduce an unbounded wait.
+			error_code ec;
+			size_t n = m_socket->read_some(buffer(buf + received, bytesToRead - received), ec);
+			if (ec == boost::asio::error::would_block || ec == boost::asio::error::try_again) {
+				continue; // spurious readiness — re-arm the budget
+			}
+			if (ec) {
+				SetError(ec);
+				DispatchSyncLost();
+				return received;
+			}
+			if (n == 0) {
+				// Orderly EOF from the peer.
+				error_code eof_ec = boost::asio::error::eof;
+				SetError(eof_ec);
+				DispatchSyncLost();
+				return received;
+			}
+			received += static_cast<uint32>(n); // progress — budget re-arms
 		}
 		return received;
 	}
@@ -1073,9 +1191,10 @@ private:
 	bool m_closed;
 	std::atomic<bool> m_destroying; // set once Destroy() has been called
 	bool m_proxyState;
-	bool m_notify;          // set by Notify()
-	bool m_sync;            // copied from !m_notify on Connect()
-	int m_connectTimeoutMs; // 0 = no bound; honoured on the sync connect path
+	bool m_notify;           // set by Notify()
+	bool m_sync;             // copied from !m_notify on Connect()
+	int m_connectTimeoutMs;  // 0 = no bound; honoured on the sync connect path
+	int m_syncReadTimeoutMs; // no-progress bound for ReadSync (0 = unbounded)
 };
 
 /**
