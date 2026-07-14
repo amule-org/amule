@@ -423,6 +423,12 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		return dispatcher->PreflightEvents(req);
 	};
 
+	// Start the EC worker before the HTTP server accepts and before the
+	// refresher loop below — both are producers into it. The EC connection
+	// is already up (ConnectAndRun logged in before calling TextShell), so
+	// from here the worker thread is the sole user of the socket.
+	m_ec_service.Start([this](const CECPacket *r) { return SendRecvMsg_v2(r); });
+
 	m_http = std::unique_ptr<CHttpServer>(new CHttpServer());
 	if (!m_http->Start(bind, port, handler, streaming_resolver, streaming_handler, streaming_preflight)) {
 		Show(CFormat("amuleapi: HTTP server failed to start: %s\n") %
@@ -537,8 +543,12 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 
 const CECPacket *CamuleapiApp::SendRecvSerialized(const CECPacket *request)
 {
-	std::lock_guard<std::mutex> lock(m_ec_mtx);
-	return SendRecvMsg_v2(request);
+	// Route every roundtrip through the EC worker (sole socket owner,
+	// bounded FIFO queue). Block for the reply; the worker fulfils the
+	// future, or returns nullptr on backpressure (queue full while a
+	// roundtrip is stalled) or EC failure — both of which every caller
+	// already maps to 503. The wait is bounded by the EC read timeout.
+	return m_ec_service.Submit(request).get();
 }
 
 bool CamuleapiApp::IsServerPartialUpdateActive()
@@ -573,6 +583,12 @@ int CamuleapiApp::OnExit()
 		m_http->Stop();
 		m_http.reset();
 	}
+	// HTTP is fully stopped, so no handler can submit anymore. Stop the EC
+	// worker (joins — bounded by the read timeout if a roundtrip is in
+	// flight) before the base tears down m_ECClient, which the worker uses.
+	// Any refresher-loop submit already returned: TextShell's loop exited
+	// before OnExit runs.
+	m_ec_service.Stop();
 	m_dispatcher.reset();
 	m_jwt.reset();
 	return CaMuleExternalConnector::OnExit();

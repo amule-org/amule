@@ -30,6 +30,7 @@
 #include "ExternalConnector.h"
 
 #include "AmuleApiConfig.h"
+#include "EcService.h"
 #include "EventBus.h"
 #include "EventDiff.h"
 #include "State.h"
@@ -154,6 +155,11 @@ private:
 
 	CAmuleApiConfig m_apiConfig;
 	webapi::CState m_state;
+	// All EC roundtrips run on this service's single worker thread (bounded
+	// FIFO queue). Sole owner of the EC socket after login, so it also
+	// serialises m_ECClient — the reason m_ec_mtx below is now only needed
+	// for the immutable-after-login version accessor.
+	webapi::CEcService m_ec_service;
 	std::mutex m_ec_mtx; // serializes m_ECClient
 	std::unique_ptr<CJwt> m_jwt;
 	std::unique_ptr<CApiDispatcher> m_dispatcher;
