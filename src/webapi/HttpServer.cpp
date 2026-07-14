@@ -30,7 +30,9 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -75,6 +77,14 @@ namespace
 // `503 Service Unavailable` + a `Retry-After` hint inside the
 // streaming dispatch path before the worker thread is created.
 constexpr int kMaxConcurrentStreamingSessions = 32;
+
+// Size of the handler worker pool. Non-streaming request handlers run here
+// instead of on the single io_context thread, so a handler that blocks — a
+// synchronous EC roundtrip stalled up to the EC read timeout — can never
+// freeze accept or other connections. Sized with headroom over amuleapi's
+// typical concurrency (a handful of clients) so non-EC requests keep a free
+// worker even while several handlers are parked on a stalled EC roundtrip.
+constexpr int kHandlerPoolThreads = 16;
 std::atomic<int> g_streaming_session_count{ 0 };
 
 // Bodies smaller than this are sent uncompressed. Below ~250 bytes the
@@ -262,11 +272,13 @@ class Session : public std::enable_shared_from_this<Session>
 {
 public:
 	Session(tcp::socket socket,
+		std::shared_ptr<asio::thread_pool> handler_pool,
 		CHttpServer::Handler handler,
 		CHttpServer::StreamingResolver streaming_resolver,
 		CHttpServer::StreamingHandler streaming_handler,
 		CHttpServer::StreamingPreflight streaming_preflight)
 	: m_stream(std::move(socket))
+	, m_handler_pool(std::move(handler_pool))
 	, m_handler(std::move(handler))
 	, m_streaming_resolver(std::move(streaming_resolver))
 	, m_streaming_handler(std::move(streaming_handler))
@@ -409,26 +421,40 @@ private:
 			return;
 		}
 
-		CHttpServer::Response resp;
-		try {
-			resp = m_handler(r);
-		} catch (const std::exception &e) {
-			// Handler exceptions become 500s; body shape matches the
-			// rest of the error contract.
-			//
-			// Info-disclosure: e.what() can carry caller-supplied
-			// bytes (picojson echoes the offending input character;
-			// a future header-driven throw could reflect
-			// Authorization or Cookie fragments). Keep the body
-			// generic; log detail to stderr.
-			std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
-			resp.status = 500;
-			resp.content_type = "application/json";
-			resp.body = "{\"error\":{\"code\":\"internal\","
-				    "\"message\":\"internal server error\"}}";
-		}
-
-		WriteResponse(std::move(resp));
+		// Run the handler on the worker pool, NOT the io_context thread, so
+		// a handler that blocks (a synchronous EC roundtrip stalled up to
+		// the EC read timeout) can never freeze accept or other sessions.
+		// Disarm the read timeout first: the handler may legitimately take
+		// up to the EC read-timeout budget, and the 10 s read timer would
+		// otherwise close the socket out from under it. The response is
+		// posted back to the session strand (m_stream's executor) so all
+		// socket I/O stays on the io_context thread.
+		m_stream.expires_never();
+		auto self = shared_from_this();
+		auto reqp = std::make_shared<CHttpServer::Request>(std::move(r));
+		boost::asio::post(m_handler_pool->get_executor(), [self, reqp]() {
+			CHttpServer::Response resp;
+			try {
+				resp = self->m_handler(*reqp);
+			} catch (const std::exception &e) {
+				// Handler exceptions become 500s; body shape matches the
+				// rest of the error contract.
+				//
+				// Info-disclosure: e.what() can carry caller-supplied
+				// bytes (picojson echoes the offending input character;
+				// a future header-driven throw could reflect
+				// Authorization or Cookie fragments). Keep the body
+				// generic; log detail to stderr.
+				std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
+				resp.status = 500;
+				resp.content_type = "application/json";
+				resp.body = "{\"error\":{\"code\":\"internal\","
+					    "\"message\":\"internal server error\"}}";
+			}
+			auto out = std::make_shared<CHttpServer::Response>(std::move(resp));
+			boost::asio::post(self->m_stream.get_executor(),
+				[self, out]() { self->WriteResponse(std::move(*out)); });
+		});
 	}
 
 	// Streaming path. Writes the response head, then spawns a worker
@@ -840,6 +866,10 @@ private:
 	}
 
 	beast::tcp_stream m_stream;
+	// Worker pool that runs the (non-streaming) request handler off the
+	// io_context thread. Shared with the server; declared before m_handler
+	// so the init list stays in declaration order.
+	std::shared_ptr<asio::thread_pool> m_handler_pool;
 	beast::flat_buffer m_buffer{ 8192 };
 	boost::optional<http::request_parser<http::string_body>> m_parser;
 	boost::optional<http::response<http::string_body>> m_response;
@@ -878,6 +908,7 @@ class Listener : public std::enable_shared_from_this<Listener>
 {
 public:
 	Listener(asio::io_context &ioc,
+		std::shared_ptr<asio::thread_pool> handler_pool,
 		tcp::endpoint endpoint,
 		CHttpServer::Handler handler,
 		CHttpServer::StreamingResolver streaming_resolver,
@@ -885,6 +916,7 @@ public:
 		CHttpServer::StreamingPreflight streaming_preflight)
 	: m_ioc(ioc)
 	, m_acceptor(asio::make_strand(ioc))
+	, m_handler_pool(std::move(handler_pool))
 	, m_handler(std::move(handler))
 	, m_streaming_resolver(std::move(streaming_resolver))
 	, m_streaming_handler(std::move(streaming_handler))
@@ -949,6 +981,7 @@ private:
 			asio::make_strand(m_ioc), [self](beast::error_code ec, tcp::socket socket) {
 				if (!ec) {
 					std::make_shared<Session>(std::move(socket),
+						self->m_handler_pool,
 						self->m_handler,
 						self->m_streaming_resolver,
 						self->m_streaming_handler,
@@ -965,6 +998,7 @@ private:
 
 	asio::io_context &m_ioc;
 	tcp::acceptor m_acceptor;
+	std::shared_ptr<asio::thread_pool> m_handler_pool;
 	CHttpServer::Handler m_handler;
 	CHttpServer::StreamingResolver m_streaming_resolver;
 	CHttpServer::StreamingHandler m_streaming_handler;
@@ -977,6 +1011,10 @@ private:
 struct CHttpServer::Impl
 {
 	asio::io_context ioc{ 1 };
+	// Handlers run here, off the single io_context thread — see
+	// kHandlerPoolThreads. shared_ptr so Sessions can keep it alive for an
+	// in-flight handler; joined explicitly in Stop().
+	std::shared_ptr<asio::thread_pool> handler_pool;
 	std::shared_ptr<Listener> listener;
 	std::thread thread;
 	std::atomic<bool> running{ false };
@@ -1030,7 +1068,9 @@ bool CHttpServer::Start(const std::string &bind_address,
 			     "access.\n";
 	}
 
+	m_impl->handler_pool = std::make_shared<asio::thread_pool>(kHandlerPoolThreads);
 	m_impl->listener = std::make_shared<Listener>(m_impl->ioc,
+		m_impl->handler_pool,
 		endpoint,
 		std::move(handler),
 		std::move(streaming_resolver),
@@ -1069,5 +1109,15 @@ void CHttpServer::Stop()
 	m_impl->ioc.stop();
 	if (m_impl->thread.joinable())
 		m_impl->thread.join();
+	// Drain the handler pool after the io_context thread is gone. stop()
+	// abandons not-yet-started handler tasks; join() lets any in-flight
+	// handler finish (bounded by the EC read timeout). Their response
+	// trampolines were posted to the now-stopped io_context and are simply
+	// discarded when it is destroyed in m_impl.reset() below — each Session
+	// stays alive via the captured shared_ptr until then.
+	if (m_impl->handler_pool) {
+		m_impl->handler_pool->stop();
+		m_impl->handler_pool->join();
+	}
 	m_impl.reset();
 }

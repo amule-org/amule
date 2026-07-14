@@ -209,7 +209,7 @@ private:
 	// daemon's lifetime — operators editing the conf at runtime are
 	// expected to restart amuleapi.
 	mutable std::string m_static_root_cache;
-	mutable bool m_static_root_resolved = false;
+	mutable std::once_flag m_static_root_once;
 
 	// ETag memoization keyed on (request target, snapshot version).
 	// Every 200 GET/HEAD runs MD5 over the whole body for ETag — on a

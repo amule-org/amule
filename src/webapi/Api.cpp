@@ -1093,17 +1093,17 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 	const CHttpServer::Request &req, const std::string &url_path)
 {
 	// Resolve once per process. Conf override wins; otherwise we walk
-	// the install-path discovery chain. `m_static_root_resolved`
-	// guards against re-walking on every request (the answer is
-	// stable for the daemon's lifetime — operators editing
+	// the install-path discovery chain. std::call_once because handlers
+	// now run concurrently on the HTTP worker pool — a plain lazy bool
+	// would race the string assignment on the first concurrent requests.
+	// The answer is stable for the daemon's lifetime (operators editing
 	// amuleapi.conf at runtime restart the daemon).
-	if (!m_static_root_resolved) {
+	std::call_once(m_static_root_once, [this]() {
 		m_static_root_cache = m_config.ServerCfg().static_root;
 		if (m_static_root_cache.empty()) {
 			m_static_root_cache = ResolveDefaultStaticDir();
 		}
-		m_static_root_resolved = true;
-	}
+	});
 	const std::string &root = m_static_root_cache;
 	if (root.empty()) {
 		// API-only deployment AND nothing on disk to fall back to.
