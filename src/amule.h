@@ -242,10 +242,10 @@ public:
 	CamuleApp();
 	virtual ~CamuleApp();
 
-	virtual bool OnInit();
-	int OnExit();
+	bool OnInit() override;
+	int OnExit() override;
 #if wxUSE_ON_FATAL_EXCEPTION
-	void OnFatalException();
+	void OnFatalException() override;
 #endif
 	bool ReinitializeNetwork(wxString *msg);
 
@@ -391,8 +391,11 @@ protected:
 	 * release builds and otherwise routes here through wxApp's
 	 * default dialog.
 	 */
-	virtual void OnAssertFailure(
-		const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg);
+	void OnAssertFailure(const wxChar *file,
+		int line,
+		const wxChar *func,
+		const wxChar *cond,
+		const wxChar *msg) override;
 
 	void OnUDPDnsDone(CMuleInternalEvent &evt);
 	void OnSourceDnsDone(CMuleInternalEvent &evt);
@@ -460,7 +463,7 @@ public:
 #endif
 
 private:
-	virtual void OnUnhandledException();
+	void OnUnhandledException() override;
 
 #ifdef ENABLE_VERSION_CHECK
 	void CheckNewVersion(uint32 result);
