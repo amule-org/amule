@@ -29,6 +29,19 @@ add_compile_options (
 	-Werror=deprecated-copy
 )
 
+# Clang-only: promote -Winconsistent-missing-override to an error so a class
+# that marks some of its virtual overrides `override` but not others fails the
+# build at the PR that introduces the mismatch -- instead of emitting hundreds
+# of warnings across every TU that includes the header (a single header,
+# amule.h, produced 800+; issue #488). GCC has no equivalent for the
+# "some marked, some not" case (only the whole-tree -Wsuggest-override), so this
+# is gated to Clang/AppleClang; the Clang-based CI jobs (macOS, mingw-w64) catch
+# any regression. The warning is on by default under Clang, so only the
+# promotion to error is needed here.
+add_compile_options (
+	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Werror=inconsistent-missing-override>
+)
+
 # Embed every PNG under src/icons/ as a static byte-array table in a
 # generated C TU (see src/icons/embed_icons.py for the format).
 # CamuleArtProvider then exposes the entries to wxArtProvider at
