@@ -148,7 +148,7 @@ public:
 		top->Add(m_label, 0, wxALL, 15);
 		top->Add(new wxButton(this, wxID_CANCEL, _("Abort and exit")),
 			0,
-			wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM,
+			static_cast<int>(wxALIGN_CENTER) | wxLEFT | wxRIGHT | wxBOTTOM,
 			15);
 		SetAttempt(1);
 		SetSizerAndFit(top);
