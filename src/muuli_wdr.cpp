@@ -146,7 +146,15 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item17->SetToolTip( _("Currently connected server.") );
     item17->SetName( "connLabel" );
     item6->Add( item17, wxSizerFlags().Center().Border(wxRIGHT, 5) );
+#if defined(__WXMAC__)
+    // macOS rounds the frame's bottom corners, clipping content that sits flush
+    // against the edge. Inset the status row -- a wider left margin for the
+    // leading icon, a slimmer bottom margin -- so nothing is cut off.
+    item6->PrependSpacer(16);
+    item0->Add( item6, wxSizerFlags().Expand().CenterVertical().Border(wxRIGHT|wxBOTTOM, 6) );
+#else
     item0->Add( item6, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+#endif
     if (set_sizer)
     {
         parent->SetSizer( item0 );
