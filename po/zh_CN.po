@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-16 19:04+0200\n"
-"PO-Revision-Date: 2026-07-16 11:12+0000\n"
+"PO-Revision-Date: 2026-07-16 19:26+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -856,9 +856,8 @@ msgid "Connection lost"
 msgstr "连接已断"
 
 #: src/amule-remote-gui.cpp:149
-#, fuzzy
 msgid "Abort and exit"
-msgstr "退出时确认"
+msgstr "终止并退出"
 
 #: src/amule-remote-gui.cpp:159
 #, c-format
@@ -940,11 +939,11 @@ msgstr "重新连接尝试 %d：正在连接到 %s:%d"
 
 #: src/amule-remote-gui.cpp:780
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "重新连接无法开始；即将重试。"
 
 #: src/amule-remote-gui.cpp:915
 msgid "Ready"
-msgstr "准备"
+msgstr "就绪"
 
 #: src/amule-remote-gui.cpp:1127 src/TransferWnd.cpp:338
 msgid "All"
@@ -3271,9 +3270,8 @@ msgid "Packages saved by I.C.H. :"
 msgstr "由 I.C.H. 挽救的数据包 :"
 
 #: src/muuli_wdr.cpp:601
-#, fuzzy
 msgid "Sharing"
-msgstr "共享: "
+msgstr "共享:"
 
 #: src/muuli_wdr.cpp:608 src/SharedFilesCtrl.cpp:112
 msgid "Requests"
@@ -3296,19 +3294,16 @@ msgid "Complete Sources"
 msgstr "完成的源"
 
 #: src/muuli_wdr.cpp:617 src/SharedFilesCtrl.cpp:122
-#, fuzzy
 msgid "Shared since"
-msgstr "共享文件"
+msgstr "共享始于"
 
 #: src/muuli_wdr.cpp:618 src/SharedFilesCtrl.cpp:123
-#, fuzzy
 msgid "Last upload"
-msgstr ", 上传: "
+msgstr "最后上传"
 
 #: src/muuli_wdr.cpp:629
-#, fuzzy
 msgid "Media Info"
-msgstr "Kad 信息"
+msgstr "媒体信息"
 
 #: src/muuli_wdr.cpp:636
 msgid "Length :"
@@ -6549,7 +6544,7 @@ msgstr "重命名"
 
 #: src/SharedFilesCtrl.cpp:168
 msgid "Verify Local Data"
-msgstr ""
+msgstr "验证本地数据"
 
 #: src/SharedFilesCtrl.cpp:172
 msgid "Add files in collection to transfer list"
