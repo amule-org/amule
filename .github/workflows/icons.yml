@@ -1,0 +1,35 @@
+name: Icons CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
+
+jobs:
+  icon-data-sync:
+    name: Icon data in sync with source
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # src/icons/icon_data.c is regenerated from src/icons/*.png at configure
+      # time when Python3 is present, so the checked-in copy is only ever
+      # compiled on a Python3-less build. Nothing otherwise re-derives it, so it
+      # can silently drift from the icon set (a missing/renamed icon goes
+      # unnoticed until such a build). Regenerate and fail on any difference.
+      - name: Regenerate icon_data.c from the icon set
+        run: python3 src/icons/embed_icons.py src/icons src/icons/icon_data.c
+
+      - name: Verify no drift
+        run: |
+          if ! git diff --quiet -- src/icons/icon_data.c; then
+            echo "::error file=src/icons/icon_data.c::checked-in icon_data.c is out of sync with src/icons/"
+            echo "Run: python3 src/icons/embed_icons.py src/icons src/icons/icon_data.c  and commit the result."
+            git --no-pager diff -- src/icons/icon_data.c | head -60
+            exit 1
+          fi
