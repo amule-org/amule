@@ -460,6 +460,31 @@ wxSizer *messagePage( wxWindow *parent, bool call_fit, bool set_sizer )
     return item0;
 }
 
+namespace
+{
+// File-details helper: append a "label" + HOTLIGHT-coloured value pair (the
+// value control carrying `valueId`, initialised to "N/A") to `grid` as one
+// horizontal row. Mirrors the label/value styling used throughout
+// fileDetails(), so the relocated download rows and the Sharing box stay
+// visually consistent with the hand-written rows.
+//
+// `appendColon` tacks a literal " :" onto the label at display time. The
+// Sharing rows use it so they can reuse existing bare translations (e.g.
+// "Requests") and still read "Requests :" without minting new catalog strings.
+void AddFileDetailRow(
+    wxWindow *rowParent, wxSizer *grid, const wxString &label, int valueId, bool appendColon = false )
+{
+    wxBoxSizer *row = new wxBoxSizer( wxHORIZONTAL );
+    row->Add( new wxStaticText( rowParent, -1, appendColon ? label + wxT(" :") : label,
+                  wxDefaultPosition, wxDefaultSize, 0 ),
+        wxSizerFlags().Expand().CenterVertical() );
+    wxStaticText *val = new wxStaticText( rowParent, valueId, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    val->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
+    row->Add( val, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    grid->Add( row, wxSizerFlags().Expand().CenterVertical() );
+}
+} // namespace
+
 wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxFlexGridSizer *item0 = new wxFlexGridSizer( 1, 0, 0 );
@@ -506,144 +531,95 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item15->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item13->Add( item15, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item12->Add( item13, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item16 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Partfilestatus :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item16->Add( item17, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item18 = new wxStaticText( parent, IDC_PFSTATUS, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item18->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item16->Add( item18, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item12->Add( item16, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item19 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item20 = new wxStaticText( parent, -1, _("Last seen complete :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item19->Add( item20, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item21 = new wxStaticText( parent, IDC_LASTSEENCOMPL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item21->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item19->Add( item21, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item12->Add( item19, wxSizerFlags().Expand().CenterVertical() );
+    // Partfilestatus + Last seen complete are download-only; they now live in
+    // the Download panel below so the whole panel can be hidden for a shared,
+    // non-downloading file.
     item1->Add( item12, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxALL, 5) );
-    wxStaticBox *item23 = new wxStaticBox( parent, -1, _("Transfer") );
+    // ---- Download-only sections, wrapped in a panel the dialog hides for a
+    //      shared file that is not (or no longer) downloading. Controls are
+    //      parented to the panel so Show(false) collapses the whole group. ----
+    wxPanel *dlPanel = new wxPanel( parent, IDC_FD_DOWNLOAD_PANEL );
+    wxBoxSizer *dlPanelSizer = new wxBoxSizer( wxVERTICAL );
+
+    wxStaticBox *item23 = new wxStaticBox( dlPanel, -1, _("Transfer") );
     wxStaticBoxSizer *item22 = new wxStaticBoxSizer( item23, wxVERTICAL );
 
     wxFlexGridSizer *item24 = new wxFlexGridSizer( 2, 0, 0 );
     item24->AddGrowableCol( 0 );
     item24->AddGrowableCol( 1 );
 
-    wxBoxSizer *item25 = new wxBoxSizer( wxHORIZONTAL );
+    // Partfile status + last seen complete (download-only; relocated here from
+    // the General box).
+    AddFileDetailRow( dlPanel, item24, _("Partfilestatus :"), IDC_PFSTATUS );
+    AddFileDetailRow( dlPanel, item24, _("Last seen complete :"), IDC_LASTSEENCOMPL );
+    AddFileDetailRow( dlPanel, item24, _("Found Sources :"), IDC_SOURCECOUNT );
+    AddFileDetailRow( dlPanel, item24, _("Transferring Sources :"), IDC_SOURCECOUNT2 );
+    AddFileDetailRow( dlPanel, item24, _("Filepart-Count :"), IDC_PARTCOUNT );
+    AddFileDetailRow( dlPanel, item24, _("Available :"), IDC_PARTAVAILABLE );
+    AddFileDetailRow( dlPanel, item24, _("Datarate :"), IDC_DATARATE );
+    AddFileDetailRow( dlPanel, item24, _("Download Active Time: "), IDC_DLACTIVETIME );
+    AddFileDetailRow( dlPanel, item24, _("Transferred :"), IDC_TRANSFERRED );
 
-    wxStaticText *item26 = new wxStaticText( parent, -1, _("Found Sources :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item25->Add( item26, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item27 = new wxStaticText( parent, IDC_SOURCECOUNT, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item27->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item25->Add( item27, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item25, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
-    wxBoxSizer *item28 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item29 = new wxStaticText( parent, -1, _("Transferring Sources :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item28->Add( item29, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
-    wxStaticText *item30 = new wxStaticText( parent, IDC_SOURCECOUNT2, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item30->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item28->Add( item30, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item28, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
-    wxBoxSizer *item31 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item32 = new wxStaticText( parent, -1, _("Filepart-Count :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item31->Add( item32, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item33 = new wxStaticText( parent, IDC_PARTCOUNT, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item33->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item31->Add( item33, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item31, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
-    wxBoxSizer *item34 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item35 = new wxStaticText( parent, -1, _("Available :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item34->Add( item35, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
-    wxStaticText *item36 = new wxStaticText( parent, IDC_PARTAVAILABLE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item36->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item34->Add( item36, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item34, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
-    wxBoxSizer *item37 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item38 = new wxStaticText( parent, -1, _("Datarate :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item37->Add( item38, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item39 = new wxStaticText( parent, IDC_DATARATE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item39->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item37->Add( item39, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item37, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item40 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item41 = new wxStaticText( parent, -1, _("Download Active Time: "), wxDefaultPosition, wxDefaultSize, 0 );
-    item40->Add( item41, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
-    wxStaticText *item42 = new wxStaticText( parent, IDC_DLACTIVETIME, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item42->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item40->Add( item42, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item40, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item43 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item44 = new wxStaticText( parent, -1, _("Transferred :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item43->Add( item44, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item45 = new wxStaticText( parent, IDC_TRANSFERRED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item45->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item43->Add( item45, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item24->Add( item43, wxSizerFlags().Expand().CenterVertical() );
+    // Completed Size keeps its composite "value / (percent)" display.
     wxBoxSizer *item46 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item47 = new wxStaticText( parent, -1, _("Completed Size :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item46->Add( item47, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+    item46->Add( new wxStaticText( dlPanel, -1, _("Completed Size :"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
     wxBoxSizer *item48 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item49 = new wxStaticText( parent, IDC_COMPLSIZE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item49 = new wxStaticText( dlPanel, IDC_COMPLSIZE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item49->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item48->Add( item49, 0, wxALIGN_CENTER_VERTICAL, 5 );
-
-    wxStaticText *item50 = new wxStaticText( parent, -1, " / (", wxDefaultPosition, wxDefaultSize, 0 );
-    item48->Add( item50, 0, wxALIGN_CENTER_VERTICAL, 5 );
-
-    wxStaticText *item51 = new wxStaticText( parent, IDC_PROCCOMPL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    item48->Add( new wxStaticText( dlPanel, -1, " / (", wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL, 5 );
+    wxStaticText *item51 = new wxStaticText( dlPanel, IDC_PROCCOMPL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item51->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item48->Add( item51, 0, wxALIGN_CENTER_VERTICAL, 5 );
-
-    wxStaticText *item52 = new wxStaticText( parent, -1, ")", wxDefaultPosition, wxDefaultSize, 0 );
-    item48->Add( item52, 0, wxALIGN_CENTER_VERTICAL, 0 );
-
+    item48->Add( new wxStaticText( dlPanel, -1, ")", wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL, 0 );
     item46->Add( item48, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item24->Add( item46, wxSizerFlags().Expand().CenterVertical() );
-    item22->Add( item24, wxSizerFlags().Expand().CenterVertical() );
-    item0->Add( item22, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
-    wxStaticBox *item54 = new wxStaticBox( parent, -1, _("Intelligent Corruption Handling") );
-    wxStaticBoxSizer *item53 = new wxStaticBoxSizer( item54, wxVERTICAL );
 
+    item22->Add( item24, wxSizerFlags().Expand().CenterVertical() );
+    dlPanelSizer->Add( item22, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
+    wxStaticBox *item54 = new wxStaticBox( dlPanel, -1, _("Intelligent Corruption Handling") );
+    wxStaticBoxSizer *item53 = new wxStaticBoxSizer( item54, wxVERTICAL );
     wxFlexGridSizer *item55 = new wxFlexGridSizer( 2, 0, 0 );
     item55->AddGrowableCol( 0 );
     item55->AddGrowableCol( 1 );
-
-    wxBoxSizer *item56 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item57 = new wxStaticText( parent, -1, _("Lost to corruption :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item56->Add( item57, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item58 = new wxStaticText( parent, IDC_FD_STATS1, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item58->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item56->Add( item58, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item55->Add( item56, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item59 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item60 = new wxStaticText( parent, -1, _("Gained by compression :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item59->Add( item60, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
-    wxStaticText *item61 = new wxStaticText( parent, IDC_FD_STATS2, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item61->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item59->Add( item61, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item55->Add( item59, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item62 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item63 = new wxStaticText( parent, -1, _("Packages saved by I.C.H. :"), wxDefaultPosition, wxDefaultSize, 0 );
-    item62->Add( item63, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticText *item64 = new wxStaticText( parent, IDC_FD_STATS3, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
-    item64->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
-    item62->Add( item64, wxSizerFlags().Center().Border(wxLEFT, 5) );
-    item55->Add( item62, wxSizerFlags().Expand().CenterVertical() );
+    AddFileDetailRow( dlPanel, item55, _("Lost to corruption :"), IDC_FD_STATS1 );
+    AddFileDetailRow( dlPanel, item55, _("Gained by compression :"), IDC_FD_STATS2 );
+    AddFileDetailRow( dlPanel, item55, _("Packages saved by I.C.H. :"), IDC_FD_STATS3 );
     item53->Add( item55, wxSizerFlags().Expand().CenterVertical() );
-    item0->Add( item53, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+    dlPanelSizer->Add( item53, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
+    dlPanel->SetSizer( dlPanelSizer );
+    item0->Add( dlPanel, wxSizerFlags().Expand().CenterVertical() );
+
+    // ---- Sharing box, wrapped in a panel the dialog hides for a file with no
+    //      sharing role. Upload counters, live upload activity and the share
+    //      timestamps; populated in both the monolithic and remote builds. ----
+    wxPanel *shPanel = new wxPanel( parent, IDC_FD_SHARING_PANEL );
+    wxBoxSizer *shPanelSizer = new wxBoxSizer( wxVERTICAL );
+    wxStaticBox *shBox = new wxStaticBox( shPanel, -1, _("Sharing") );
+    wxStaticBoxSizer *shBoxSizer = new wxStaticBoxSizer( shBox, wxVERTICAL );
+    wxFlexGridSizer *shGrid = new wxFlexGridSizer( 2, 0, 0 );
+    shGrid->AddGrowableCol( 0 );
+    shGrid->AddGrowableCol( 1 );
+    // Labels reuse existing bare translations; " :" is appended at display time
+    // (appendColon) so no new catalog strings are needed for the reused ones.
+    AddFileDetailRow( shPanel, shGrid, _("Requests"), IDC_FD_SHARE_REQ, true );
+    AddFileDetailRow( shPanel, shGrid, _("Accepted Requests"), IDC_FD_SHARE_ACC, true );
+    AddFileDetailRow( shPanel, shGrid, _("Transferred Data"), IDC_FD_SHARE_XFER, true );
+    AddFileDetailRow( shPanel, shGrid, _("Share Ratio"), IDC_FD_SHARE_RATIO, true );
+    AddFileDetailRow( shPanel, shGrid, _("Complete Sources"), IDC_FD_SHARE_COMPLSRC, true );
+    AddFileDetailRow( shPanel, shGrid, _("On Queue"), IDC_FD_SHARE_ONQUEUE, true );
+    AddFileDetailRow( shPanel, shGrid, _("Priority"), IDC_FD_SHARE_UPPRIO, true );
+    AddFileDetailRow( shPanel, shGrid, _("Speed"), IDC_FD_SHARE_UPSPEED, true );
+    AddFileDetailRow( shPanel, shGrid, _("Uploading"), IDC_FD_SHARE_UPCOUNT, true );
+    AddFileDetailRow( shPanel, shGrid, _("Shared since"), IDC_FD_SHARE_SINCE, true );
+    AddFileDetailRow( shPanel, shGrid, _("Last upload"), IDC_FD_SHARE_LASTUP, true );
+    shBoxSizer->Add( shGrid, wxSizerFlags().Expand().CenterVertical() );
+    shPanelSizer->Add( shBoxSizer, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+    shPanel->SetSizer( shPanelSizer );
+    item0->Add( shPanel, wxSizerFlags().Expand().CenterVertical() );
 
     // Media Info (issue #418) — populated from FT_MEDIA_* when the file
     // has probed metadata; the six labels show "N/A" otherwise. Layout +

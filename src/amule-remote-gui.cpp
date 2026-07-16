@@ -1632,7 +1632,11 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	if (tag->FileName(fileName)) {
 		file->SetFileName(CPath(fileName));
 	}
-	if (tag->FilePath(fileName)) {
+	// The status-agnostic directory (EC_TAG_KNOWNFILE_PATH): the Temp dir for a
+	// partfile, the destination once completed. FilePath()/_FILENAME carries the
+	// .part basename for partfiles, so decode the dedicated PATH tag here to keep
+	// GetFilePath() meaning "the folder" in amulegui, as it does in the daemon.
+	if (tag->DirectoryPath(fileName)) {
 		file->m_filePath = CPath(fileName);
 	}
 	tag->UpPrio(&file->m_iUpPriorityEC);
@@ -1657,6 +1661,25 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	tag->GetCompleteSources(&file->m_nCompleteSourcesCount);
 
 	tag->GetOnQueue(&file->m_queuedCount);
+
+	// Live upload activity (issue #466): the daemon summarises these from its
+	// m_ClientUploadList and ships them every update tick. Decoded into the EC
+	// mirror members so GetUploadDatarate()/GetTransferringClientCount() work
+	// in amulegui (e.g. the file-details Sharing box).
+	tag->GetUploadSpeed(&file->m_uploadDatarateEC);
+	tag->GetUploadingCount(&file->m_transferringClientCountEC);
+	// Share timestamps ride only in the full-detail section, not every tick, so
+	// guard on a real (non-zero) value to avoid a bare update tick zeroing them.
+	time_t sharedSince = 0;
+	tag->GetSharedSince(&sharedSince);
+	if (sharedSince) {
+		file->SetDateShared(sharedSince);
+	}
+	time_t lastUpload = 0;
+	tag->GetLastUpload(&lastUpload);
+	if (lastUpload) {
+		file->SetLastUpload(lastUpload);
+	}
 
 	tag->GetComment(file->m_strComment);
 	tag->GetRating(file->m_iRating);

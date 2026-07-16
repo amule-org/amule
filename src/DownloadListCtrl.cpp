@@ -824,8 +824,9 @@ void CDownloadListCtrl::OnMouseMiddleClick(wxListEvent &evt)
 
 void CDownloadListCtrl::ShowFileDetailDialog(long index)
 {
-	// Make list of part files in control
-	std::vector<CPartFile *> files;
+	// Make list of part files in control (CFileDetailDialog takes CKnownFile*;
+	// a CPartFile upcasts, and the dialog shows download rows from its state).
+	std::vector<CKnownFile *> files;
 	int nrItems = GetItemCount();
 	files.reserve(nrItems);
 	for (int i = 0; i < nrItems; i++) {

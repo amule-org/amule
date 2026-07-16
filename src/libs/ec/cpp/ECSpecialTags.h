@@ -245,6 +245,10 @@ public:
 	bool FileName(wxString &target) const { return AssignIfExist(EC_TAG_PARTFILE_NAME, target); }
 	wxString FilePath() const { return GetTagByNameSafe(EC_TAG_KNOWNFILE_FILENAME)->GetStringData(); }
 	bool FilePath(wxString &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_FILENAME, target); }
+	// The on-disk directory, status-agnostic (the Temp dir for a partfile, the
+	// destination once completed). Unlike FilePath()/_FILENAME — which carries
+	// the .part basename for partfiles — this always means "the folder".
+	bool DirectoryPath(wxString &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_PATH, target); }
 	uint64 SizeFull() const { return GetTagByNameSafe(EC_TAG_PARTFILE_SIZE_FULL)->GetInt(); }
 	wxString FileEd2kLink() const { return GetTagByNameSafe(EC_TAG_PARTFILE_ED2K_LINK)->GetStringData(); }
 
@@ -292,6 +296,29 @@ public:
 	uint16 GetOnQueue(uint16 *target = 0) const
 	{
 		return AssignIfExist(EC_TAG_KNOWNFILE_ON_QUEUE, target);
+	}
+
+	// Live upload activity + share timestamps (issue #466). The daemon emits
+	// these; amulegui has no m_ClientUploadList to compute them from, so it
+	// relies on these getters to carry the values across EC.
+	uint32 GetUploadSpeed(uint32 *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_UPLOAD_SPEED, target);
+	}
+
+	uint16 GetUploadingCount(uint16 *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_UPLOADING_COUNT, target);
+	}
+
+	time_t GetSharedSince(time_t *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_SHARED_SINCE, target);
+	}
+
+	time_t GetLastUpload(time_t *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_LAST_UPLOAD, target);
 	}
 
 	bool GetComment(wxString &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_COMMENT, target); }

@@ -27,25 +27,29 @@
 
 #include <common/MenuIDs.h>
 
-#include "muuli_wdr.h"      // Needed for ID_SHFILELIST
-#include "SharedFilesWnd.h" // Needed for CSharedFilesWnd
-#include "amuleDlg.h"       // Needed for CamuleDlg
-#include "CommentDialog.h"  // Needed for CCommentDialog
-#include "PartFile.h"       // Needed for CPartFile
-#include "SharedFileList.h" // Needed for CKnownFileMap
-#include "amule.h"          // Needed for theApp
-#include "ServerConnect.h"  // Needed for CServerConnect
-#include "Preferences.h"    // Needed for thePrefs
-#include "BarShader.h"      // Needed for CBarShader
-#include "DataToText.h"     // Needed for PriorityToStr
-#include "GuiEvents.h"      // Needed for CoreNotify_*
-#include "MuleCollection.h" // Needed for CMuleCollection
-#include "DownloadQueue.h"  // Needed for CDownloadQueue
-#include "TransferWnd.h"    // Needed for CTransferWnd
-#include "Logger.h"         // Needed for AddLogLine
+#include "muuli_wdr.h"        // Needed for ID_SHFILELIST
+#include "SharedFilesWnd.h"   // Needed for CSharedFilesWnd
+#include "amuleDlg.h"         // Needed for CamuleDlg
+#include "CommentDialog.h"    // Needed for CCommentDialog
+#include "FileDetailDialog.h" // Needed for CFileDetailDialog
+#include "PartFile.h"         // Needed for CPartFile
+#include "SharedFileList.h"   // Needed for CKnownFileMap
+#include "amule.h"            // Needed for theApp
+#include "ServerConnect.h"    // Needed for CServerConnect
+#include "Preferences.h"      // Needed for thePrefs
+#include "BarShader.h"        // Needed for CBarShader
+#include "DataToText.h"       // Needed for PriorityToStr
+#include "GuiEvents.h"        // Needed for CoreNotify_*
+#include "MuleCollection.h"   // Needed for CMuleCollection
+#include "DownloadQueue.h"    // Needed for CDownloadQueue
+#include "TransferWnd.h"      // Needed for CTransferWnd
+#include "Logger.h"           // Needed for AddLogLine
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
+	EVT_LIST_ITEM_ACTIVATED(-1, CSharedFilesCtrl::OnItemActivated)
+
+	EVT_MENU(MP_METINFO, CSharedFilesCtrl::OnViewFileDetails)
 
 	EVT_MENU(MP_PRIOVERYLOW, CSharedFilesCtrl::OnSetPriority)
 	EVT_MENU(MP_PRIOLOW, CSharedFilesCtrl::OnSetPriority)
@@ -77,13 +81,15 @@ enum SharedFilesListColumns
 	ID_SHARED_COL_SIZE,
 	ID_SHARED_COL_TYPE,
 	ID_SHARED_COL_PRIO,
-	ID_SHARED_COL_ID,
 	ID_SHARED_COL_REQ,
 	ID_SHARED_COL_AREQ,
 	ID_SHARED_COL_TRA,
 	ID_SHARED_COL_RTIO,
 	ID_SHARED_COL_PART,
 	ID_SHARED_COL_CMPL,
+	ID_SHARED_COL_SPEED,
+	ID_SHARED_COL_SINCE,
+	ID_SHARED_COL_LASTUP,
 	ID_SHARED_COL_PATH
 };
 
@@ -103,13 +109,18 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	InsertColumn(ID_SHARED_COL_SIZE, _("Size"), wxLIST_FORMAT_LEFT, 100, "Z");
 	InsertColumn(ID_SHARED_COL_TYPE, _("Type"), wxLIST_FORMAT_LEFT, 50, "Y");
 	InsertColumn(ID_SHARED_COL_PRIO, _("Priority"), wxLIST_FORMAT_LEFT, 70, "p");
-	InsertColumn(ID_SHARED_COL_ID, _("FileID"), wxLIST_FORMAT_LEFT, 220, "I");
 	InsertColumn(ID_SHARED_COL_REQ, _("Requests"), wxLIST_FORMAT_LEFT, 100, "Q");
 	InsertColumn(ID_SHARED_COL_AREQ, _("Accepted Requests"), wxLIST_FORMAT_LEFT, 100, "A");
 	InsertColumn(ID_SHARED_COL_TRA, _("Transferred Data"), wxLIST_FORMAT_LEFT, 120, "T");
 	InsertColumn(ID_SHARED_COL_RTIO, _("Share Ratio"), wxLIST_FORMAT_LEFT, 100, "R");
 	InsertColumn(ID_SHARED_COL_PART, _("Obtained Parts"), wxLIST_FORMAT_LEFT, 120, "P");
 	InsertColumn(ID_SHARED_COL_CMPL, _("Complete Sources"), wxLIST_FORMAT_LEFT, 120, "C");
+	// FileID (== file hash) was dropped — the hash is on the details modal. The
+	// three new columns reuse existing translations ("Speed", "Shared since",
+	// "Last upload"); Directory Path stays but moves to the end.
+	InsertColumn(ID_SHARED_COL_SPEED, _("Speed"), wxLIST_FORMAT_LEFT, 90, "U");
+	InsertColumn(ID_SHARED_COL_SINCE, _("Shared since"), wxLIST_FORMAT_LEFT, 130, "H");
+	InsertColumn(ID_SHARED_COL_LASTUP, _("Last upload"), wxLIST_FORMAT_LEFT, 130, "L");
 	InsertColumn(ID_SHARED_COL_PATH, _("Directory Path"), wxLIST_FORMAT_LEFT, 220, "D");
 
 	LoadSettings();
@@ -117,7 +128,7 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 
 wxString CSharedFilesCtrl::GetOldColumnOrder() const
 {
-	return "N,Z,Y,p,I,Q,A,T,R,P,C,D";
+	return "N,Z,Y,p,Q,A,T,R,P,C,U,H,L,D";
 }
 
 CSharedFilesCtrl::~CSharedFilesCtrl() {}
@@ -138,6 +149,9 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		prioMenu->AppendCheckItem(MP_PRIOAUTO, _("Auto"));
 
 		m_menu->Append(0, _("Priority"), prioMenu);
+		m_menu->AppendSeparator();
+
+		m_menu->Append(MP_METINFO, _("Show file &details"));
 		m_menu->AppendSeparator();
 
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item_hit));
@@ -191,6 +205,37 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 
 		m_menu = NULL;
 	}
+}
+
+void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
+{
+	if (focused == -1) {
+		return;
+	}
+	// Pass every listed file so the dialog's Next/Prev can walk the shared
+	// list, anchored on the clicked row. Reuses the same CFileDetailDialog as
+	// the downloads list; per-file state decides which sections it shows.
+	std::vector<CKnownFile *> files;
+	int nrItems = GetItemCount();
+	files.reserve(nrItems);
+	int index = 0;
+	for (int i = 0; i < nrItems; i++) {
+		if (i == focused) {
+			index = static_cast<int>(files.size());
+		}
+		files.push_back(reinterpret_cast<CKnownFile *>(GetItemData(i)));
+	}
+	CFileDetailDialog(this, files, index).ShowModal();
+}
+
+void CSharedFilesCtrl::OnViewFileDetails(wxCommandEvent &WXUNUSED(event))
+{
+	ShowFileDetailDialog(GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
+}
+
+void CSharedFilesCtrl::OnItemActivated(wxListEvent &event)
+{
+	ShowFileDetailDialog(event.GetIndex());
 }
 
 void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
@@ -442,10 +487,6 @@ int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDa
 		return mod * CmpAny((prioB != PR_VERY_LOW ? prioB : -1), (prioA != PR_VERY_LOW ? prioA : -1));
 	}
 
-	// Sort by fileID.
-	case ID_SHARED_COL_ID:
-		return mod * file1->GetFileHash().Encode().Cmp(file2->GetFileHash().Encode());
-
 	// Sort by Requests this session.
 	case ID_SHARED_COL_REQ:
 		if (altSorting) {
@@ -483,17 +524,21 @@ int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDa
 	case ID_SHARED_COL_CMPL:
 		return mod * CmpAny(file1->m_nCompleteSourcesCount, file2->m_nCompleteSourcesCount);
 
-	// Folders ascending
-	case ID_SHARED_COL_PATH: {
-		if (file1->IsPartFile() && file2->IsPartFile())
-			return mod * 0;
-		if (file1->IsPartFile())
-			return mod * -1;
-		if (file2->IsPartFile())
-			return mod * 1;
+	// Live upload speed asc
+	case ID_SHARED_COL_SPEED:
+		return mod * CmpAny(file1->GetUploadDatarate(), file2->GetUploadDatarate());
 
+	// Shared-since date asc
+	case ID_SHARED_COL_SINCE:
+		return mod * CmpAny(file1->GetDateShared(), file2->GetDateShared());
+
+	// Last-upload date asc
+	case ID_SHARED_COL_LASTUP:
+		return mod * CmpAny(file1->GetLastUpload(), file2->GetLastUpload());
+
+	// Directory path asc (status-agnostic: the Temp dir for a partfile)
+	case ID_SHARED_COL_PATH:
 		return mod * CmpAny(file1->GetFilePath(), file2->GetFilePath());
-	}
 
 	default:
 		return 0;
@@ -632,10 +677,6 @@ void CSharedFilesCtrl::OnDrawItem(
 				textBuffer = PriorityToStr(file->GetUpPriority(), file->IsAutoUpPriority());
 				break;
 
-			case ID_SHARED_COL_ID:
-				textBuffer = file->GetFileHash().Encode();
-				break;
-
 			case ID_SHARED_COL_REQ:
 				textBuffer = CFormat("%u (%u)") % file->statistic.GetRequests() %
 					     file->statistic.GetAllTimeRequests();
@@ -686,12 +727,40 @@ void CSharedFilesCtrl::OnDrawItem(
 
 				break;
 
-			case ID_SHARED_COL_PATH:
-				if (file->IsPartFile()) {
-					textBuffer = _("[PartFile]");
-				} else {
-					textBuffer = file->GetFilePath().GetPrintable();
+			case ID_SHARED_COL_SPEED:
+				// Live upload speed, adaptive kB/s / MB/s and blank below
+				// 1 kB/s — same formatting as the peers (client) list. Sorting
+				// uses the raw byte/s value (see SortProc), not this string.
+				if (file->GetUploadDatarate() >= 1024) {
+					if (file->GetUploadDatarate() >= 1048576) {
+						textBuffer = CFormat(_("%.1f MB/s")) %
+							     (file->GetUploadDatarate() / 1048576.0);
+					} else {
+						textBuffer = CFormat(_("%.1f kB/s")) %
+							     (file->GetUploadDatarate() / 1024.0);
+					}
 				}
+				break;
+
+			case ID_SHARED_COL_SINCE:
+				if (file->GetDateShared()) {
+					wxDateTime ds(file->GetDateShared());
+					textBuffer = ds.FormatISODate() + " " + ds.FormatISOTime();
+				}
+				break;
+
+			case ID_SHARED_COL_LASTUP:
+				if (file->GetLastUpload()) {
+					wxDateTime lu(file->GetLastUpload());
+					textBuffer = lu.FormatISODate() + " " + lu.FormatISOTime();
+				}
+				break;
+
+			case ID_SHARED_COL_PATH:
+				// Status-agnostic: the Temp dir for a partfile, the
+				// destination once completed (EC_TAG_KNOWNFILE_PATH in
+				// the remote GUI).
+				textBuffer = file->GetFilePath().GetPrintable();
 			}
 
 			if (!textBuffer.IsEmpty()) {

@@ -41,7 +41,10 @@ class CKnownFile;
 class CFileDetailDialog : public wxDialog
 {
 public:
-	CFileDetailDialog(wxWindow *parent, std::vector<CPartFile *> &files, int index);
+	// `files` may hold plain shared CKnownFiles, in-progress CPartFiles, or a
+	// mix (a partfile is also a shared file). Which rows the dialog shows is
+	// decided per file from its state, not from which list opened it.
+	CFileDetailDialog(wxWindow *parent, std::vector<CKnownFile *> &files, int index);
 	virtual ~CFileDetailDialog();
 
 	/**
@@ -61,8 +64,8 @@ protected:
 
 private:
 	void UpdateData(bool resetFilename);
-	std::vector<CPartFile *> &m_files;
-	CPartFile *m_file;
+	std::vector<CKnownFile *> &m_files;
+	CKnownFile *m_file;
 	int m_index;
 	wxTimer m_timer;
 	bool m_filenameChanged;

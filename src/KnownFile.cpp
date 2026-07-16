@@ -566,6 +566,8 @@ CKnownFile::CKnownFile(const CEC_SharedFile_Tag *tag)
 	SetFileSize(tag->SizeFull());
 	m_AvailPartFrequency.insert(m_AvailPartFrequency.end(), m_iPartCount, 0);
 	m_queuedCount = 0;
+	m_uploadDatarateEC = 0;
+	m_transferringClientCountEC = 0;
 }
 
 CKnownFile::~CKnownFile() {}

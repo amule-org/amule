@@ -35,6 +35,7 @@
 #include "amule.h"              // Needed for theApp
 #include "SharedFileList.h"     // Needed for CSharedFileList
 #include "OtherFunctions.h"
+#include "DataToText.h" // Needed for PriorityToStr
 #include "MuleColour.h"
 #include <tags/FileTags.h> // Needed for FT_MEDIA_* metadata tag names
 
@@ -71,7 +72,7 @@ std::set<CFileDetailDialog *> &OpenInstances()
 }
 } // namespace
 
-CFileDetailDialog::CFileDetailDialog(wxWindow *parent, std::vector<CPartFile *> &files, int index)
+CFileDetailDialog::CFileDetailDialog(wxWindow *parent, std::vector<CKnownFile *> &files, int index)
 : wxDialog(parent,
 	  -1,
 	  _("File Details"),
@@ -108,9 +109,9 @@ void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
 		// state too — that's fine; the caller holds it only for the
 		// duration of the modal dialog and the dialog is what owns
 		// the visible UI sourcing from it.
-		for (std::vector<CPartFile *>::iterator it = d->m_files.begin(); it != d->m_files.end();
+		for (std::vector<CKnownFile *>::iterator it = d->m_files.begin(); it != d->m_files.end();
 			/* manual ++ */) {
-			if (static_cast<const CKnownFile *>(*it) == file) {
+			if (*it == file) {
 				ptrdiff_t offset = it - d->m_files.begin();
 				it = d->m_files.erase(it);
 				if (d->m_index > offset) {
@@ -128,7 +129,7 @@ void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
 		// Dismiss if the active file vanished. Stop the update
 		// timer first so the next tick doesn't try to deref
 		// m_file before EndModal unwinds.
-		if (static_cast<const CKnownFile *>(d->m_file) == file) {
+		if (d->m_file == file) {
 			d->m_file = NULL;
 			d->m_timer.Stop();
 			d->EndModal(0);
@@ -149,10 +150,20 @@ void CFileDetailDialog::OnClosewnd(wxCommandEvent &WXUNUSED(evt))
 void CFileDetailDialog::UpdateData(bool resetFilename)
 {
 	wxString bufferS;
+
+	// A file is "downloading" only while it is an incomplete partfile.
+	// CPartFile::IsPartFile() already returns false once complete (the object
+	// itself may linger as a CPartFile until the next restart), so this is the
+	// authoritative test — not the concrete type. Works in amulegui too, where
+	// the proxy CPartFile overrides IsPartFile() identically.
+	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
+
+	// --- Common fields (present on every CKnownFile) ---
 	CastChild(IDC_FNAME, wxStaticText)
 		->SetLabel(MakeStringEscaped(m_file->GetFileName().TruncatePath(60)));
-	CastChild(IDC_METFILE, wxStaticText)
-		->SetLabel(MakeStringEscaped(m_file->GetFullName().TruncatePath(60, true)));
+	// "met-File": the .part.met path for a partfile, else the on-disk full path.
+	CPath metPath = part ? part->GetFullName() : m_file->GetFilePath().JoinPaths(m_file->GetFileName());
+	CastChild(IDC_METFILE, wxStaticText)->SetLabel(MakeStringEscaped(metPath.TruncatePath(60, true)));
 
 	if (resetFilename) {
 		resetValueForFilenameTextEdit();
@@ -161,36 +172,79 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	CastChild(IDC_FHASH, wxStaticText)->SetLabel(m_file->GetFileHash().Encode());
 	bufferS = CFormat("%u bytes (%s)") % m_file->GetFileSize() % CastItoXBytes(m_file->GetFileSize());
 	CastChild(IDC_FSIZE, wxControl)->SetLabel(bufferS);
-	CastChild(IDC_PFSTATUS, wxControl)->SetLabel(m_file->getPartfileStatus());
-	bufferS = CFormat("%i (%i)") % m_file->GetPartCount() % m_file->GetHashCount();
-	CastChild(IDC_PARTCOUNT, wxControl)->SetLabel(bufferS);
-	CastChild(IDC_TRANSFERRED, wxControl)->SetLabel(CastItoXBytes(m_file->GetTransferred()));
-	CastChild(IDC_FD_STATS1, wxControl)->SetLabel(CastItoXBytes(m_file->GetLostDueToCorruption()));
-	CastChild(IDC_FD_STATS2, wxControl)->SetLabel(CastItoXBytes(m_file->GetGainDueToCompression()));
-	CastChild(IDC_FD_STATS3, wxControl)->SetLabel(CastItoIShort(m_file->TotalPacketsSavedDueToICH()));
-	CastChild(IDC_COMPLSIZE, wxControl)->SetLabel(CastItoXBytes(m_file->GetCompletedSize()));
-	bufferS = CFormat(_("%.1f%% done")) % m_file->GetPercentCompleted();
-	CastChild(IDC_PROCCOMPL, wxControl)->SetLabel(bufferS);
-	bufferS = CFormat(_("%.2f kB/s")) % m_file->GetKBpsDown();
-	CastChild(IDC_DATARATE, wxControl)->SetLabel(bufferS);
-	bufferS = CFormat("%i") % m_file->GetSourceCount();
-	CastChild(IDC_SOURCECOUNT, wxControl)->SetLabel(bufferS);
-	bufferS = CFormat("%i") % m_file->GetTransferingSrcCount();
-	CastChild(IDC_SOURCECOUNT2, wxControl)->SetLabel(bufferS);
-	bufferS = CFormat("%i (%.1f%%)") % m_file->GetAvailablePartCount() %
-		  ((m_file->GetAvailablePartCount() * 100.0) / m_file->GetPartCount());
-	CastChild(IDC_PARTAVAILABLE, wxControl)->SetLabel(bufferS);
-	bufferS = CastSecondsToHM(m_file->GetDlActiveTime());
-	CastChild(IDC_DLACTIVETIME, wxControl)->SetLabel(bufferS);
 
-	if (m_file->lastseencomplete == 0) {
-		bufferS = wxString(_("Unknown")).MakeLower();
-	} else {
-		wxDateTime last_seen(m_file->lastseencomplete);
-		bufferS = last_seen.FormatISODate() + " " + last_seen.FormatISOTime();
+	// --- Download section (only an in-progress partfile; the panel is hidden
+	//     otherwise, so these getters are never called on a plain CKnownFile) ---
+	if (part) {
+		CastChild(IDC_PFSTATUS, wxControl)->SetLabel(part->getPartfileStatus());
+		bufferS = CFormat("%i (%i)") % part->GetPartCount() % part->GetHashCount();
+		CastChild(IDC_PARTCOUNT, wxControl)->SetLabel(bufferS);
+		CastChild(IDC_TRANSFERRED, wxControl)->SetLabel(CastItoXBytes(part->GetTransferred()));
+		CastChild(IDC_FD_STATS1, wxControl)->SetLabel(CastItoXBytes(part->GetLostDueToCorruption()));
+		CastChild(IDC_FD_STATS2, wxControl)->SetLabel(CastItoXBytes(part->GetGainDueToCompression()));
+		CastChild(IDC_FD_STATS3, wxControl)
+			->SetLabel(CastItoIShort(part->TotalPacketsSavedDueToICH()));
+		CastChild(IDC_COMPLSIZE, wxControl)->SetLabel(CastItoXBytes(part->GetCompletedSize()));
+		bufferS = CFormat(_("%.1f%% done")) % part->GetPercentCompleted();
+		CastChild(IDC_PROCCOMPL, wxControl)->SetLabel(bufferS);
+		bufferS = CFormat(_("%.2f kB/s")) % part->GetKBpsDown();
+		CastChild(IDC_DATARATE, wxControl)->SetLabel(bufferS);
+		bufferS = CFormat("%i") % part->GetSourceCount();
+		CastChild(IDC_SOURCECOUNT, wxControl)->SetLabel(bufferS);
+		bufferS = CFormat("%i") % part->GetTransferingSrcCount();
+		CastChild(IDC_SOURCECOUNT2, wxControl)->SetLabel(bufferS);
+		bufferS = CFormat("%i (%.1f%%)") % part->GetAvailablePartCount() %
+			  ((part->GetAvailablePartCount() * 100.0) / part->GetPartCount());
+		CastChild(IDC_PARTAVAILABLE, wxControl)->SetLabel(bufferS);
+		bufferS = CastSecondsToHM(part->GetDlActiveTime());
+		CastChild(IDC_DLACTIVETIME, wxControl)->SetLabel(bufferS);
+
+		if (part->lastseencomplete == 0) {
+			bufferS = wxString(_("Unknown")).MakeLower();
+		} else {
+			wxDateTime last_seen(part->lastseencomplete);
+			bufferS = last_seen.FormatISODate() + " " + last_seen.FormatISOTime();
+		}
+		CastChild(IDC_LASTSEENCOMPL, wxControl)->SetLabel(bufferS);
 	}
 
-	CastChild(IDC_LASTSEENCOMPL, wxControl)->SetLabel(bufferS);
+	// --- Sharing section (present on every CKnownFile; the counters and share
+	//     timestamps ride over EC, so this populates in amulegui too) ---
+	bufferS =
+		CFormat("%u (%u)") % m_file->statistic.GetRequests() % m_file->statistic.GetAllTimeRequests();
+	CastChild(IDC_FD_SHARE_REQ, wxControl)->SetLabel(bufferS);
+	bufferS = CFormat("%u (%u)") % m_file->statistic.GetAccepts() % m_file->statistic.GetAllTimeAccepts();
+	CastChild(IDC_FD_SHARE_ACC, wxControl)->SetLabel(bufferS);
+	bufferS = CFormat("%s (%s)") % CastItoXBytes(m_file->statistic.GetTransferred()) %
+		  CastItoXBytes(m_file->statistic.GetAllTimeTransferred());
+	CastChild(IDC_FD_SHARE_XFER, wxControl)->SetLabel(bufferS);
+	double ratio = m_file->GetFileSize() ? (double)m_file->statistic.GetAllTimeTransferred() /
+						       (double)m_file->GetFileSize()
+					     : 0.0;
+	CastChild(IDC_FD_SHARE_RATIO, wxControl)->SetLabel(CFormat("%.2f") % ratio);
+	CastChild(IDC_FD_SHARE_COMPLSRC, wxControl)
+		->SetLabel(CFormat("%u") % m_file->m_nCompleteSourcesCount);
+	CastChild(IDC_FD_SHARE_ONQUEUE, wxControl)->SetLabel(CFormat("%u") % m_file->GetQueuedCount());
+	CastChild(IDC_FD_SHARE_UPPRIO, wxControl)
+		->SetLabel(PriorityToStr(m_file->GetUpPriority(), m_file->IsAutoUpPriority()));
+	bufferS = CFormat(_("%.2f kB/s")) % (m_file->GetUploadDatarate() / 1024.0);
+	CastChild(IDC_FD_SHARE_UPSPEED, wxControl)->SetLabel(bufferS);
+	CastChild(IDC_FD_SHARE_UPCOUNT, wxControl)
+		->SetLabel(CFormat("%u") % m_file->GetTransferringClientCount());
+	if (m_file->GetDateShared() == 0) {
+		bufferS = wxString(_("Unknown")).MakeLower();
+	} else {
+		wxDateTime ds(m_file->GetDateShared());
+		bufferS = ds.FormatISODate() + " " + ds.FormatISOTime();
+	}
+	CastChild(IDC_FD_SHARE_SINCE, wxControl)->SetLabel(bufferS);
+	if (m_file->GetLastUpload() == 0) {
+		bufferS = wxString(_("Unknown")).MakeLower();
+	} else {
+		wxDateTime lu(m_file->GetLastUpload());
+		bufferS = lu.FormatISODate() + " " + lu.FormatISOTime();
+	}
+	CastChild(IDC_FD_SHARE_LASTUP, wxControl)->SetLabel(bufferS);
 
 	// Media Info (issue #418): populate from FT_MEDIA_* when the file has
 	// probed metadata; the labels stay at their "N/A" default otherwise.
@@ -208,12 +262,37 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		CastChild(IDC_FD_MEDIA_TITLE, wxControl)->SetLabel(m_file->GetStrTagValue(FT_MEDIA_TITLE));
 	}
 
+	// --- Section visibility, driven by the file's own state (not by which list
+	//     opened the dialog). Download rows show only for an in-progress
+	//     partfile; sharing rows show for any file that actually shares data
+	//     (every completed file, or a partfile with at least one complete part). ---
+	bool showDownload = (part != nullptr);
+	bool showSharing = (part == nullptr) || (part->GetCompletedSize() > 0);
+	bool relayout = false;
+	wxWindow *dlPanel = FindWindow(IDC_FD_DOWNLOAD_PANEL);
+	if (dlPanel && dlPanel->IsShown() != showDownload) {
+		dlPanel->Show(showDownload);
+		relayout = true;
+	}
+	wxWindow *shPanel = FindWindow(IDC_FD_SHARING_PANEL);
+	if (shPanel && shPanel->IsShown() != showSharing) {
+		shPanel->Show(showSharing);
+		relayout = true;
+	}
+	if (relayout && GetSizer()) {
+		GetSizer()->Layout();
+		Fit();
+	}
+
 	setEnableForApplyButton();
-	// Enable "Show all comments" when there are source comments, or when Kad is
-	// connected so the dialog's "Get from Kad" lookup can still be used (#434).
+	// "Show all comments" lists source comments (a download concept) and the
+	// dialog it opens takes a CPartFile — so enable it only for an in-progress
+	// partfile, when there are comments or Kad can still be queried (#434).
 	FileRatingList list;
-	m_file->GetRatingAndComments(list);
-	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
+	if (part) {
+		part->GetRatingAndComments(list);
+	}
+	CastChild(IDC_CMTBT, wxControl)->Enable(part && (!list.empty() || theApp->IsConnectedKad()));
 	FillSourcenameList();
 	Layout();
 }
@@ -227,6 +306,19 @@ void CFileDetailDialog::FillSourcenameList()
 	int inserted = 0;
 	pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
 
+	// The source-name list is a download-only view (how sources name the file).
+	// A plain shared file has none, so clear any rows a prior file left behind
+	// (Next/Prev) — freeing their item data — and bail before the partfile-only
+	// source accessors below.
+	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
+	if (!part) {
+		for (int i = 0; i < pmyListCtrl->GetItemCount(); ++i) {
+			delete reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(i));
+		}
+		pmyListCtrl->DeleteAllItems();
+		return;
+	}
+
 	// reset
 	for (int i = 0; i < pmyListCtrl->GetItemCount(); i++) {
 		SourcenameItem *item = reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(i));
@@ -235,7 +327,7 @@ void CFileDetailDialog::FillSourcenameList()
 
 	// update
 #ifdef CLIENT_GUI
-	const SourcenameItemMap &sources = m_file->GetSourcenameItemMap();
+	const SourcenameItemMap &sources = part->GetSourcenameItemMap();
 	for (SourcenameItemMap::const_iterator it = sources.begin(); it != sources.end(); ++it) {
 		const SourcenameItem &cur_src = it->second;
 		itempos = pmyListCtrl->FindItem(-1, cur_src.name);
@@ -256,11 +348,11 @@ void CFileDetailDialog::FillSourcenameList()
 		}
 	}
 #else  // CLIENT_GUI
-	const CKnownFile::SourceSet &sources = m_file->GetSourceList();
+	const CKnownFile::SourceSet &sources = part->GetSourceList();
 	CKnownFile::SourceSet::const_iterator it = sources.begin();
 	for (; it != sources.end(); ++it) {
 		const CClientRef &cur_src = *it;
-		if (cur_src.GetRequestFile() != m_file || cur_src.GetClientFilename().Length() == 0) {
+		if (cur_src.GetRequestFile() != part || cur_src.GetClientFilename().Length() == 0) {
 			continue;
 		}
 
@@ -303,7 +395,11 @@ void CFileDetailDialog::FillSourcenameList()
 
 void CFileDetailDialog::OnBnClickedShowComment(wxCommandEvent &WXUNUSED(evt))
 {
-	CCommentDialogLst(this, m_file).ShowModal();
+	// The source-comment list dialog is partfile-scoped; the button is only
+	// enabled for an in-progress partfile (see UpdateData), but guard anyway.
+	if (m_file->IsPartFile()) {
+		CCommentDialogLst(this, static_cast<CPartFile *>(m_file)).ShowModal();
+	}
 }
 
 void CFileDetailDialog::resetValueForFilenameTextEdit()
@@ -349,7 +445,10 @@ void CFileDetailDialog::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 		if (theApp->sharedfiles->RenameFile(m_file, fileName)) {
 			FindWindow(IDC_FNAME)->SetLabel(
 				MakeStringEscaped(m_file->GetFileName().GetPrintable()));
-			FindWindow(IDC_METFILE)->SetLabel(m_file->GetFullName().GetPrintable());
+			CPath metPath = m_file->IsPartFile()
+						? static_cast<CPartFile *>(m_file)->GetFullName()
+						: m_file->GetFilePath().JoinPaths(m_file->GetFileName());
+			FindWindow(IDC_METFILE)->SetLabel(metPath.GetPrintable());
 
 			resetValueForFilenameTextEdit();
 
