@@ -17,16 +17,20 @@ set (EC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/ec/cpp")
 #   -Wdeprecated               -> broad umbrella (C++17 constexpr
 #                                 static-member redecl, throw() spec)
 #
+# -Wdeprecated-copy is a C++-only concept (copy special members), so it's
+# gated to COMPILE_LANGUAGE:CXX; passing it to the C compiler just produces
+# "not valid for C" noise on every C translation unit.
+#
 # The pragma-wraps landed in #341 keep cryptopp and vendored wx quiet
 # under -isystem-less discovery; without those wraps this gate would
 # fire on ~230 cryptopp header hits on macOS.
 add_compile_options (
 	-Wdeprecated
 	-Wdeprecated-declarations
-	-Wdeprecated-copy
 	-Werror=deprecated
 	-Werror=deprecated-declarations
-	-Werror=deprecated-copy
+	$<$<COMPILE_LANGUAGE:CXX>:-Wdeprecated-copy>
+	$<$<COMPILE_LANGUAGE:CXX>:-Werror=deprecated-copy>
 )
 
 # Clang-only: promote -Winconsistent-missing-override to an error so a class
