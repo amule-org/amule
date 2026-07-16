@@ -1994,6 +1994,21 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     CMuleTextCtrl *item6 = new CMuleTextCtrl( parent, IDC_EXT_CONN_IP, "", wxDefaultPosition, wxDefaultSize, 0 );
     item6->SetToolTip( _("Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface.") );
     item4->Add( item6, wxSizerFlags(1).Expand().CenterVertical().Border(wxLEFT, 5) );
+
+    wxStaticText *item6b = new wxStaticText( parent, IDC_EC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+    item4->Add( item6b, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
+#ifdef CLIENT_GUI
+    // Hidden in the remote GUI (the whole EC-listener config group is), so a
+    // plain text field is enough — no point populating a drop-down of the
+    // wrong host's interfaces. See PrefsUnifiedDlg amuledOnlyPrefs[].
+    wxTextCtrl *item6c = new wxTextCtrl( parent, IDC_EC_INTERFACE, "", wxDefaultPosition, wxDefaultSize, 0 );
+#else
+    // Editable combo filled at runtime with the machine's interfaces
+    // (PrefsUnifiedDlg); stays editable so a currently-down interface can be
+    // typed in. Binds only aMule's external-connection (EC) socket.
+    wxComboBox *item6c = new wxComboBox( parent, IDC_EC_INTERFACE, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN );
+#endif
+    item4->Add( item6c, wxSizerFlags(1).Expand().CenterVertical().Border(wxLEFT, 5) );
     item1->Add( item4, wxSizerFlags().Expand().CenterVertical() );
     wxFlexGridSizer *item7 = new wxFlexGridSizer( 2, 0, 0 );
     item7->AddGrowableCol( 0 );

@@ -81,11 +81,10 @@ class ExternalConn;
 class CExternalConnListener : public CLibSocketServer
 {
 public:
-	CExternalConnListener(const amuleIPV4Address &adr, int flags, ExternalConn *conn)
-	: CLibSocketServer(adr, flags)
-	, m_conn(conn)
-	{
-	}
+	// Defined in ExternalConn.cpp: the EC listener binds to its own
+	// interface (thePrefs::GetECNetworkInterface(), empty = any), decoupled
+	// from the global P2P interface pin — see issue #330.
+	CExternalConnListener(const amuleIPV4Address &adr, int flags, ExternalConn *conn);
 	void OnAccept();
 
 private:

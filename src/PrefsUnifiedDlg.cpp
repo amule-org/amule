@@ -596,6 +596,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	if (wxComboBox *ifaceBox = CastChild(IDC_INTERFACE, wxComboBox)) {
 		ifaceBox->Append(DetectNetworkInterfaces());
 	}
+	// Same for the EC-listener's own interface selector (Remote Controls tab).
+	if (wxComboBox *ecIfaceBox = CastChild(IDC_EC_INTERFACE, wxComboBox)) {
+		ecIfaceBox->Append(DetectNetworkInterfaces());
+	}
 #endif
 
 	// Connect the Cfgs with their widgets
@@ -831,6 +835,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		IDC_EXT_CONN_ACCEPT,
 		IDC_EXT_CONN_IP,
 		IDC_EXT_CONN_IPTEXT,
+		IDC_EC_INTERFACE,
+		IDC_EC_INTERFACETEXT,
 		IDC_EXT_CONN_TCP_PORT,
 		IDC_EXT_CONN_TCPPORTTEXT,
 		IDC_EXT_CONN_PASSWD,
@@ -1061,7 +1067,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed = true;
 		restart_needed_msg += _("- External connect acceptance changed.\n");
 	}
-	if (CfgChanged(IDC_EXT_CONN_IP)) {
+	if (CfgChanged(IDC_EXT_CONN_IP) || CfgChanged(IDC_EC_INTERFACE)) {
 		restart_needed = true;
 		restart_needed_msg += _("- External connect interface changed.\n");
 	}

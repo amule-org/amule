@@ -194,6 +194,7 @@ bool CPreferences::s_showCatTabInfos;
 AllCategoryFilter CPreferences::s_allcatFilter;
 bool CPreferences::s_AcceptExternalConnections;
 wxString CPreferences::s_ECAddr;
+wxString CPreferences::s_ECNetworkInterface;
 uint32 CPreferences::s_ECPort;
 wxString CPreferences::s_ECPassword;
 bool CPreferences::s_TransmitOnlyUploadingClients;
@@ -1405,6 +1406,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Bool(
 			"/ExternalConnect/AcceptExternalConnections", s_AcceptExternalConnections, false)));
 	NewCfgItem(IDC_EXT_CONN_IP, (new Cfg_Str("/ExternalConnect/ECAddress", s_ECAddr, "")));
+	NewCfgItem(IDC_EC_INTERFACE,
+		(new Cfg_Str("/ExternalConnect/ECNetworkInterface", s_ECNetworkInterface, "")));
 	NewCfgItem(IDC_EXT_CONN_TCP_PORT, (MkCfg_Int("/ExternalConnect/ECPort", s_ECPort, 4712)));
 	NewCfgItem(IDC_EXT_CONN_PASSWD,
 		(new Cfg_Str_Encrypted("/ExternalConnect/ECPassword", s_ECPassword, "")));

@@ -498,6 +498,12 @@ void ExternalConn::ResetAllLogs()
 	}
 }
 
+CExternalConnListener::CExternalConnListener(const amuleIPV4Address &adr, int flags, ExternalConn *conn)
+: CLibSocketServer(adr, flags, thePrefs::GetECNetworkInterface())
+, m_conn(conn)
+{
+}
+
 void CExternalConnListener::OnAccept()
 {
 	CECServerSocket *sock = new CECServerSocket(m_conn->m_ec_notifier);

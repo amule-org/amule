@@ -1361,11 +1361,16 @@ class CAsioSocketServerImpl : public ip::tcp::acceptor,
 			      public std::enable_shared_from_this<CAsioSocketServerImpl>
 {
 public:
-	CAsioSocketServerImpl(const amuleIPV4Address &adr, CLibSocketServer *libSocketServer)
+	CAsioSocketServerImpl(const amuleIPV4Address &adr,
+		CLibSocketServer *libSocketServer,
+		bool bindInterfaceOverride = false,
+		const wxString &bindInterface = wxEmptyString)
 	: ip::tcp::acceptor(s_io_service)
 	, m_libSocketServer(libSocketServer)
 	, m_strand(s_io_service)
 	, m_address(adr)
+	, m_bindInterfaceOverride(bindInterfaceOverride)
+	, m_bindInterface(bindInterface)
 	{
 		m_ok = false;
 		m_socketAvailable = false;
@@ -1381,7 +1386,12 @@ public:
 		try {
 			open(m_address.GetEndpoint().protocol());
 			SetCloexecOnSocket(native_handle());
-			SetBoundInterface(native_handle(), s_bindToInterface, false);
+			// When an explicit per-server interface is set (EC listener), use
+			// it verbatim — empty means "any", NOT a fall-back to the global
+			// P2P pin. Otherwise inherit the global bind-to-interface setting.
+			SetBoundInterface(native_handle(),
+				m_bindInterfaceOverride ? m_bindInterface : s_bindToInterface,
+				false);
 			set_option(ip::tcp::acceptor::reuse_address(true));
 			bind(m_address.GetEndpoint());
 			listen();
@@ -1498,6 +1508,12 @@ private:
 	// shared-from-this contract needs make_shared to complete before any
 	// async ops start).
 	amuleIPV4Address m_address;
+	// Per-server egress interface override. When m_bindInterfaceOverride is
+	// true, m_bindInterface is used verbatim (empty = any) instead of the
+	// process-global s_bindToInterface. Lets the EC listener bind to a
+	// different interface than ed2k/Kad.
+	bool m_bindInterfaceOverride;
+	wxString m_bindInterface;
 };
 
 CLibSocketServer::CLibSocketServer(const amuleIPV4Address &adr, int /* flags */)
@@ -1506,6 +1522,15 @@ CLibSocketServer::CLibSocketServer(const amuleIPV4Address &adr, int /* flags */)
 	// async_accept callbacks. Init() runs the bind/listen/StartAccept
 	// sequence after the managing shared_ptr is in place.
 	m_aServer = std::make_shared<CAsioSocketServerImpl>(adr, this);
+	m_aServer->Init();
+}
+
+CLibSocketServer::CLibSocketServer(
+	const amuleIPV4Address &adr, int /* flags */, const wxString &bindInterface)
+{
+	// As above, but with an explicit per-server egress interface (empty = any)
+	// that overrides the process-global bind-to-interface pin.
+	m_aServer = std::make_shared<CAsioSocketServerImpl>(adr, this, true, bindInterface);
 	m_aServer->Init();
 }
 

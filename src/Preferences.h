@@ -576,6 +576,8 @@ public:
 	static bool AcceptExternalConnections() { return s_AcceptExternalConnections; }
 	static void EnableExternalConnections(bool val) { s_AcceptExternalConnections = val; }
 	static const wxString &GetECAddress() { return s_ECAddr; }
+	static const wxString &GetECNetworkInterface() { return s_ECNetworkInterface; }
+	static void SetECNetworkInterface(const wxString &val) { s_ECNetworkInterface = val; }
 	static uint32 ECPort() { return s_ECPort; }
 	static void SetECPort(uint32 val) { s_ECPort = val; }
 	static const wxString &ECPassword() { return s_ECPassword; }
@@ -1048,6 +1050,7 @@ protected:
 	// Kry - external connections
 	static bool s_AcceptExternalConnections;
 	static wxString s_ECAddr;
+	static wxString s_ECNetworkInterface;
 	static uint32 s_ECPort;
 	static wxString s_ECPassword;
 	static bool s_TransmitOnlyUploadingClients;

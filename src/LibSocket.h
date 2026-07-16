@@ -173,6 +173,11 @@ class CLibSocketServer
 {
 public:
 	CLibSocketServer(const amuleIPV4Address &adr, int flags);
+	// Bind the acceptor to a specific network interface (empty = any),
+	// independent of the global bind-to-interface pin set via
+	// SetSocketBindInterface(). Used by the EC listener so external-control
+	// traffic can live on a different interface than ed2k/Kad.
+	CLibSocketServer(const amuleIPV4Address &adr, int flags, const wxString &bindInterface);
 	virtual ~CLibSocketServer();
 	// Accepts an incoming connection request, and creates a new CLibSocket object which represents the
 	// server-side of the connection.

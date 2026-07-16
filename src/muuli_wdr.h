@@ -263,6 +263,11 @@ wxSizer *PreferencesGeneralTab(wxWindow *parent, bool call_fit = TRUE, bool set_
 // of the current range). Its label IDC_INTERFACETEXT lives in the 10355+
 // orphan-label band below.
 #define IDC_INTERFACE 10410
+// EC-listener bind-to-interface control + its label (Remote Controls tab).
+// Separate from the P2P IDC_INTERFACE above so external-connection traffic can
+// bind to its own interface (issue #330).
+#define IDC_EC_INTERFACE 10474
+#define IDC_EC_INTERFACETEXT 10475
 #define ID_TEXT 10140
 #define IDC_MAXSOURCEPERFILE 10141
 #define IDC_MAXCON 10142
