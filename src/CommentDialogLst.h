@@ -32,16 +32,17 @@
 
 class CMuleListCtrl;
 class wxCommandEvent;
-class CPartFile;
-class CKnownFile;
+class CAbstractFile;
 
 /**
- * This dialog is used to display file-comments received from other clients.
+ * This dialog is used to display file-comments received from other clients, or
+ * community ratings/comments fetched from Kad — for a download, a shared file,
+ * or a search result.
  */
 class CCommentDialogLst : public wxDialog
 {
 public:
-	CCommentDialogLst(wxWindow *pParent, CPartFile *file);
+	CCommentDialogLst(wxWindow *pParent, CAbstractFile *file);
 	~CCommentDialogLst();
 
 	/**
@@ -50,12 +51,13 @@ public:
 	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
 
 	/**
-	 * Drop every reference to `file` from any open instance of this
-	 * dialog before the CKnownFile / CPartFile is destroyed.
-	 * Pointer-value comparison only — `file` may already be freed.
-	 * Wired via MuleNotify::KnownFileBeingDestroyed (GuiEvents.cpp).
+	 * Drop every reference to `file` from any open instance of this dialog
+	 * before it is destroyed. Pointer-value comparison only — `file` may
+	 * already be freed. Wired via MuleNotify::KnownFileBeingDestroyed (for
+	 * downloads/shared files) and MuleNotify::SearchFileBeingDestroyed (for
+	 * search results) in GuiEvents.cpp.
 	 */
-	static void DropReferencesTo(const CKnownFile *file);
+	static void DropReferencesTo(const CAbstractFile *file);
 
 private:
 	void OnBnClickedApply(wxCommandEvent &evt);
@@ -76,8 +78,8 @@ private:
 	 */
 	void ClearList();
 
-	//! The file to display comments for.
-	CPartFile *m_file;
+	//! The file to display comments for (download, shared file, or search result).
+	CAbstractFile *m_file;
 
 	//! The list containing comments/ratings.
 	CMuleListCtrl *m_list;

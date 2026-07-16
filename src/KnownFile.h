@@ -35,6 +35,7 @@
 #include "kademlia/kademlia/Indexed.h"
 #include <ec/cpp/ECID.h> // Needed for CECID
 #include <atomic>        // Needed for std::atomic (m_ecGen)
+#include <list>          // Needed for FileRatingList
 
 #ifdef CLIENT_GUI
 #include <ec/cpp/ECSpecialTags.h>
@@ -47,6 +48,7 @@
 class CFileDataIO;
 class CPacket;
 class CTag;
+class CUpDownClient;
 
 namespace Kademlia
 {
@@ -56,6 +58,24 @@ class CEntry;
 typedef vector<CMD4Hash> ArrayOfCMD4Hash;
 
 typedef vector<CTag> ArrayOfCTag;
+
+// A single community rating/comment entry, sourced either from a connected
+// client (ed2k) or from a Kad NOTES lookup. Lives on CAbstractFile so it is
+// shared by downloads (CPartFile) and search results (CSearchFile).
+class SFileRating
+{
+public:
+	wxString UserName;
+	wxString FileName;
+	sint16 Rating;
+	wxString Comment;
+
+public:
+	SFileRating(const wxString &u, const wxString &f, sint16 r, const wxString &c);
+	SFileRating(const CUpDownClient &client);
+};
+
+typedef std::list<SFileRating> FileRatingList;
 
 class CFileStatistic
 {
@@ -126,6 +146,42 @@ public:
 	void AddNote(Kademlia::CEntry *pEntry);
 	const CKadEntryPtrList &getNotes() const { return m_kadNotes; }
 
+	// Append the community ratings/comments retrieved on demand from Kad (one
+	// entry per responding node, stored by CSearch::ProcessResultNotes ->
+	// AddNote) to `list`. Shared by downloads and search results; the source-
+	// client half of a download's comments is added separately by CPartFile.
+	// Core-only: on amulegui the notes ride the EC channel as a prebuilt list.
+	void GetKadNotesComments(FileRatingList &list) const;
+
+	// Collect the ratings/comments to display for this file. On the daemon the
+	// base version returns just the Kad notes (correct for a search result or a
+	// shared file), and CPartFile overrides it to prepend its connected-source
+	// comments. On amulegui every file type returns the same EC-streamed cache
+	// (m_FileRatingList) via the base, so no per-class override is needed there.
+	virtual void GetRatingAndComments(FileRatingList &list) const;
+
+#ifdef CLIENT_GUI
+	// amulegui cache of the ratings/comments the daemon streams over EC. One
+	// implementation for downloads, shared files and search results — the
+	// remote containers (CKnownFilesRem / CSearchListRem) fill it from the
+	// EC_TAG_PARTFILE_COMMENTS container, and the base GetRatingAndComments
+	// above hands it back.
+	const FileRatingList &GetFileRatingList() const { return m_FileRatingList; }
+	void ClearFileRatingList() { m_FileRatingList.clear(); }
+	void AddFileRatingList(const wxString &u, const wxString &f, sint16 r, const wxString &c)
+	{
+		m_FileRatingList.push_back(SFileRating(u, f, r, c));
+	}
+#endif
+
+	// Start an on-demand Kad NOTES lookup to retrieve community ratings/comments
+	// for this file. Works for any file the daemon can size locally: the shared
+	// list, the download queue, or the current search results (the request
+	// builder reads the file size from there). Returns false if Kad is
+	// unavailable, a lookup is already running, or the file is not eligible. On
+	// amulegui this is a no-op stub — the GUI triggers it over EC.
+	bool RequestKadNoteSearch();
+
 	// True while an on-demand Kad NOTES lookup for this file's comments/ratings
 	// is in flight. Set by RequestKadNoteSearch, cleared when the CSearch ends.
 	void SetKadCommentSearchRunning(bool running) { m_kadCommentSearchRunning = running; }
@@ -138,6 +194,11 @@ public:
 	bool HasComment() const { return m_hasComment; }
 	bool HasRating() const { return (m_iUserRating != 0); }
 	int8 UserRating() const { return m_iUserRating; }
+
+	// Recompute the cached "has rating/comment" markers from the current
+	// sources. No-op for a search result (it has none); CPartFile overrides to
+	// refresh its download-list indicator.
+	virtual void UpdateFileRatingCommentAvail() {}
 
 protected:
 	//! CAbstractFile is not assignable.
@@ -153,6 +214,11 @@ protected:
 	ArrayOfCTag m_taglist;
 	CKadEntryPtrList m_kadNotes;
 	bool m_kadCommentSearchRunning;
+
+#ifdef CLIENT_GUI
+	//! amulegui cache of the ratings/comments streamed from the daemon over EC.
+	FileRatingList m_FileRatingList;
+#endif
 
 private:
 	uint64 m_nFileSize;
@@ -305,13 +371,6 @@ public:
 
 	bool PublishSrc();
 	bool PublishNotes();
-
-	// Start an on-demand Kad NOTES lookup to retrieve community ratings/comments
-	// for this file. Only meaningful for a file present in the shared list or the
-	// download queue (the request builder reads the file size from there). Returns
-	// false if Kad is unavailable, a lookup is already running, or the file is not
-	// eligible. On amulegui this is a no-op stub — the GUI triggers it over EC.
-	bool RequestKadNoteSearch();
 
 	// Nonzero when this file has verified media metadata attached
 	// (probed by MediaProbe at share-add time). Derived from tag

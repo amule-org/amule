@@ -224,7 +224,7 @@ Every event the bus publishes. The `_added` and `_updated` payloads are BYTE-FOR
 
 #### `download_added` / `download_updated`
 
-Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, the source counters, and `kad_search_running` — clients see live progress (and the Kad-notes lookup start → finish edge) without polling.
+Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) list-item shape. `_updated` fires on any field-level change including `size_done`, `size_xfer`, `speed_bps`, the source counters, and `kad_comment_search_running` — clients see live progress (and the Kad-notes lookup start → finish edge) without polling.
 
 ```json
 {
@@ -241,11 +241,11 @@ Identical to the REST [`/api/v0/downloads`](REFERENCE.md#get-apiv0downloads) lis
   "category":      0,
   "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
   "progress": { "percent": 29.85 },
-  "kad_search_running": false
+  "kad_comment_search_running": false
 }
 ```
 
-A `POST /downloads/{hash}/comments` flips `kad_search_running` to `true`, producing a `download_updated`; when the Kad lookup finishes (typically ~45 s, or sooner) it flips back to `false`, producing another. Retrieved notes are then read via `GET /downloads/{hash}/comments`.
+A `POST /downloads/{hash}/comments` flips `kad_comment_search_running` to `true`, producing a `download_updated`; when the Kad lookup finishes (typically ~45 s, or sooner) it flips back to `false`, producing another. Retrieved notes are then read via `GET /downloads/{hash}/comments`.
 
 #### `download_removed`
 

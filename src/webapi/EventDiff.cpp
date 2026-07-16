@@ -114,7 +114,8 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 	  << ",\"transferring\":" << f.download.sources_transferring
 	  << ",\"a4af\":" << f.download.sources_a4af << "}"
 	  << ",\"progress\":{\"percent\":" << f.download.percent << "}"
-	  << ",\"kad_search_running\":" << (f.download.kad_comment_searching ? "true" : "false") << "}";
+	  << ",\"kad_comment_search_running\":" << (f.download.kad_comment_searching ? "true" : "false")
+	  << "}";
 	return o.str();
 }
 

@@ -185,6 +185,13 @@ public:
 
 	const wxString &GetDirectory() const noexcept { return m_directory; }
 
+#ifndef CLIENT_GUI
+	// Daemon override: a search result's comments are its on-demand Kad notes.
+	// On amulegui the inherited CAbstractFile version returns the EC-streamed
+	// cache, so no override is needed there.
+	void GetRatingAndComments(FileRatingList &list) const;
+#endif
+
 private:
 	//! CSearchFile is not assignable.
 	CSearchFile &operator=(const CSearchFile &other);

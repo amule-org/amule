@@ -554,6 +554,22 @@ struct SearchResult
 		std::uint32_t complete_source_count = 0;
 	};
 	std::vector<Child> children;
+
+	// On-demand Kad community ratings/comments for this result (issue #434),
+	// same shape as a download's `comments`. A search hit has no connected
+	// sources, so these are purely the Kad notes. `kad_comment_searching` stays
+	// true while a lookup started via POST /search/results/{hash}/comments is in
+	// flight, so clients can poll until it finishes. `rating` -1 means a comment
+	// with no rating.
+	struct Comment
+	{
+		std::string username;
+		std::string filename;
+		std::int32_t rating = 0;
+		std::string comment;
+	};
+	std::vector<Comment> comments;
+	bool kad_comment_searching = false;
 };
 
 // Refresher-tracked lifecycle of the currently-active (or last-finished)

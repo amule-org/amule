@@ -130,8 +130,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0].sources is object'
 	_assert_json_eq '.downloads[0].sources.total | type' number \
 		'/downloads[0].sources.total is numeric'
-	_assert_json_eq '.downloads[0].kad_search_running | type' boolean \
-		'/downloads[0].kad_search_running is boolean (issue #434)'
+	_assert_json_eq '.downloads[0].kad_comment_search_running | type' boolean \
+		'/downloads[0].kad_comment_search_running is boolean (issue #434)'
 
 	# --- 4. /downloads/{hash} bare-object detail. -----------------
 	HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
@@ -171,8 +171,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash}/comments carries numeric count'
 	_assert_json_eq '.comments | type' array \
 		'/downloads/{hash}/comments.comments is an array'
-	_assert_json_eq '.kad_search_running | type' boolean \
-		'/downloads/{hash}/comments carries kad_search_running flag'
+	_assert_json_eq '.kad_comment_search_running | type' boolean \
+		'/downloads/{hash}/comments carries kad_comment_search_running flag'
 
 	# Trigger an on-demand Kad notes lookup (issue #434). Async on the daemon;
 	# 202 Accepted (or 400 amuled_rejected if Kad is not connected in the smoke

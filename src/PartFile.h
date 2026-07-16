@@ -59,21 +59,6 @@ enum EPartFileFormat
 	PMT_BADFORMAT
 };
 
-class SFileRating
-{
-public:
-	wxString UserName;
-	wxString FileName;
-	sint16 Rating;
-	wxString Comment;
-
-public:
-	SFileRating(const wxString &u, const wxString &f, sint16 r, const wxString &c);
-	SFileRating(const CUpDownClient &client);
-};
-
-typedef std::list<SFileRating> FileRatingList;
-
 class SourcenameItem
 {
 public:
@@ -386,7 +371,12 @@ public:
 	uint16 GetMaxSourcePerFileSoft() const;
 	uint16 GetMaxSourcePerFileUDP() const;
 
+#ifndef CLIENT_GUI
+	// Daemon override: prepend the connected-source comments to the Kad notes.
+	// On amulegui the inherited CAbstractFile version returns the EC-streamed
+	// cache, so no override is needed there.
 	void GetRatingAndComments(FileRatingList &list) const;
+#endif
 
 	void AllocationFinished();
 
@@ -539,13 +529,8 @@ private:
 	bool m_localSrcReqQueued;
 
 #ifdef CLIENT_GUI
-	FileRatingList m_FileRatingList;
-	const FileRatingList &GetFileRatingList() { return m_FileRatingList; }
-	void ClearFileRatingList() { m_FileRatingList.clear(); }
-	void AddFileRatingList(const wxString &u, const wxString &f, sint16 r, const wxString &c)
-	{
-		m_FileRatingList.push_back(SFileRating(u, f, r, c));
-	}
+	// Ratings/comments cache + accessors live on CAbstractFile now (shared with
+	// shared files and search results).
 
 	uint32 m_kbpsDown;
 	uint8 m_iDownPriorityEC;

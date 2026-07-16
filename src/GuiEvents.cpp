@@ -975,5 +975,18 @@ void KnownFileBeingDestroyed(CKnownFile *file)
 #endif
 }
 
+void SearchFileBeingDestroyed(CSearchFile *file)
+{
+#ifndef AMULE_DAEMON
+	// GUI subscribers (linked into `amule` and `amulegui`): a comments dialog
+	// opened on a search result must drop the pointer before the result is
+	// freed (a new search or result-list rebuild deletes CSearchFile objects
+	// while a modal Kad-notes lookup may still be open on one).
+	CCommentDialogLst::DropReferencesTo(file);
+#else
+	(void)file;
+#endif
+}
+
 } // namespace MuleNotify
 // File_checked_for_headers

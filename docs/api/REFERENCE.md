@@ -87,6 +87,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/search/results`](#get-apiv0searchresults) — current results + progress envelope
 - [`POST /api/v0/search/stop`](#post-apiv0searchstop) — cancel in-flight search
 - [`POST /api/v0/search/results/{hash}/download`](#post-apiv0searchresultshashdownload) — promote a result into the download queue
+- [`GET /api/v0/search/results/{hash}/comments`](#get-apiv0searchresultshashcomments) — Kad ratings/comments for a result
+- [`POST /api/v0/search/results/{hash}/comments`](#post-apiv0searchresultshashcomments) — trigger a Kad notes lookup for a result
 
 ## Base URL and transport
 
@@ -504,7 +506,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
       "category":      0,
       "sources":  { "total": 217, "not_current": 23, "transferring": 8, "a4af": 4 },
       "progress": { "percent": 29.85 },
-      "kad_search_running": false
+      "kad_comment_search_running": false
     }
   ]
 }
@@ -516,7 +518,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v0/downloads"
 
 The list shape omits `progress.parts` to keep large libraries compact. Use the detail endpoint for per-part state.
 
-`kad_search_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
+`kad_comment_search_running` is `true` while an on-demand Kad notes lookup is in flight for the file (started by [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments)); it flips back to `false` when the lookup finishes. Because it lives on the download object, a client can watch the `download_updated` SSE event for the start → finish transition instead of polling.
 
 The SSE `download_added` / `download_updated` event payload matches this object byte-for-byte.
 
@@ -598,7 +600,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 ```json
 {
   "count": 2,
-  "kad_search_running": false,
+  "kad_comment_search_running": false,
   "comments": [
     { "username": "alice",    "filename": "Some.Movie.mkv", "rating": 5, "comment": "great quality" },
     { "username": "Kad user", "filename": "some_movie.avi", "rating": 4, "comment": "" }
@@ -606,7 +608,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-`kad_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. Kad notes appear as ordinary entries whose `username` is the responding node's IP (or `Kad user` when the note carries no IP).
+`kad_comment_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. Kad notes appear as ordinary entries whose `username` is the responding node's IP (or `Kad user` when the note carries no IP).
 
 A per-source `rating` of `-1` means the source left a comment but no rating. Rating scale (from the desktop `GetRateString()`):
 
@@ -1677,7 +1679,9 @@ This endpoint does NOT busy-wait — it returns whatever amuled has in its resul
       "children": [
         { "ecid": 621, "name": "example-distribution-26.04.iso", "hash": "8b54a3c2...", "sources": { "total": 40, "complete": 22 } },
         { "ecid": 622, "name": "example_distro_2604_amd64.iso",  "hash": "8b54a3c2...", "sources": { "total": 10, "complete":  3 } }
-      ]
+      ],
+      "kad_comment_search_running": false,
+      "comments": []
     }
   ],
   "progress": {
@@ -1691,6 +1695,8 @@ This endpoint does NOT busy-wait — it returns whatever amuled has in its resul
 Each result carries `sources` as a nested `{total, complete}` object — `total` is the swarm size amuled reports and `complete` is how many of those hold the file complete. `already_have` is `true` when you are currently downloading the file or already have it completed/shared; it is `false` for a fresh result and for one you have canceled/removed (a canceled result is re-downloadable, so it does not read as held). `rating` is amuled's aggregated quality rating (`0` when unrated). `status` is this result's download status on your node — `"new"` / `"downloaded"` / `"queued"` / `"canceled"` / `"queued_canceled"`. `type` is the file-type token derived from the filename extension (same tokens as the shared-detail [`file_type`](#get-apiv0sharedhash), e.g. `"videos"` / `"audio"`; `""` when the name has no extension). `media` is the audio/video [media metadata](#media-metadata) object (same shape as the file-detail endpoints) — **present only** for a hit that is already known/probed locally, and **omitted entirely** for remote hits with no metadata (most global/Kad results), matching the blank Length/Bitrate/Codec columns in the desktop search list.
 
 `children` (issue #431) is the result-grouping tree: amuled collapses hits that are the **same file** (same ed2k hash **and** size) but advertised under **different filenames** into one parent row, and `children[]` holds the alternative names. Each child carries the parent's `hash` (that's why they group), its own `sources`, and a distinct `ecid` — pass that `ecid` to [`POST /search/results/{hash}/download`](#post-apiv0searchresultshashdownload) to download the file **under that chosen filename**. `children` is always present and is an empty array for a hit seen under a single name. The top-level `results[]` contains parents only — a child never appears as its own top-level entry.
+
+`kad_comment_search_running` and `comments` carry the file's community ratings/comments fetched from Kad (issue #434). Unlike a download — whose comments come from connected sources — a search result has no sources, so `comments` is populated purely by an on-demand Kad notes lookup you start with [`POST /search/results/{hash}/comments`](#post-apiv0searchresultshashcomments). `kad_comment_search_running` is `true` while that lookup is in flight and flips back to `false` when it finishes; `comments` is an empty array until notes arrive, each entry shaped like a download comment (`username` / `filename` / `rating` / `comment`, with `username` the responding node's IP or `Kad user`). Both fields are always present.
 
 The `progress` object carries the same `state` / `kind` / `percent` fields as the [`search_progress`](EVENTS.md#search_progress) SSE event, so REST pollers and stream consumers interpret progress identically. (The event additionally carries a `results` count, since — unlike this response — it has no `results` array beside it.)
 
@@ -1721,6 +1727,37 @@ Promote a search result into the transfer queue. Equivalent to clicking "Downloa
 **Body:** `{ "category": 0, "ecid": 621 }` — both optional. `category` is the download category (default `0`). `ecid` (issue #431) selects one grouped **child** by its `results[].children[].ecid`, so the file downloads **under that child's filename**; omit it to download the parent (the aggregated/highest-source name). Since grouped children share the parent's hash, `{hash}` alone can't disambiguate them — `ecid` is how you pick a specific advertised name.
 
 **Response:** `202 Accepted` → `{ "ok": true, "hash": "...", "category": 0 }`.
+
+#### `GET /api/v0/search/results/{hash}/comments`
+
+**Auth:** `GUEST`
+
+Community ratings/comments for a single search result — the Kad notes retrieved so far plus the running flag. The same data rides each result on [`GET /search/results`](#get-apiv0searchresults); this per-hash endpoint mirrors [`GET /downloads/{hash}/comments`](#get-apiv0downloadshashcomments) for polling one result after starting a lookup.
+
+```json
+{
+  "count": 2,
+  "kad_comment_search_running": false,
+  "comments": [
+    { "username": "203.0.113.7", "filename": "example-distribution-26.04-amd64.iso", "rating": 5, "comment": "Verified good, fast sources." },
+    { "username": "Kad user",    "filename": "example-distribution-26.04-amd64.iso", "rating": 4, "comment": "Works." }
+  ]
+}
+```
+
+`kad_comment_search_running` is `true` while an on-demand Kad notes lookup (triggered by the `POST` below) is in flight; poll until it returns to `false` to know the lookup finished. `username` is the responding Kad node's IP, or `Kad user` when the note carries no IP.
+
+**Errors:** `404 not_found` (no current search result with that hash), `503 ec_unavailable`.
+
+#### `POST /api/v0/search/results/{hash}/comments`
+
+**Auth:** `GUEST`
+
+Trigger an on-demand Kad notes lookup for a search result you have not downloaded. This is the search-side equivalent of [`POST /downloads/{hash}/comments`](#post-apiv0downloadshashcomments): the lookup is asynchronous on amuled (up to ~45 s), and retrieved ratings/comments then appear via the `GET` above and on the result's `comments` in the search list.
+
+**Response:** `202 Accepted` → `{ "status": "kad_search_started" }`.
+
+**Errors:** `400 bad_request` (malformed hash), `404 not_found` (no current search result with that hash), `400 amuled_rejected` (Kad down, or a search is already using this hash — retry shortly), `503 ec_unavailable`.
 
 ---
 

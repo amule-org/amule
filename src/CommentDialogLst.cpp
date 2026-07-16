@@ -25,7 +25,7 @@
 
 #include "CommentDialogLst.h" // Interface declarations
 #include "muuli_wdr.h"        // Needed for commentLstDlg
-#include "PartFile.h"         // Needed for CPartFile
+#include "PartFile.h"         // Needed for CAbstractFile / CPartFile
 #include <common/Format.h>    // Needed for CFormat
 #include "MuleListCtrl.h"     // Needed for CMuleListCtrl
 #include "Preferences.h"
@@ -59,7 +59,7 @@ std::set<CCommentDialogLst *> &OpenInstances()
 /*
  * Constructor
  */
-CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CPartFile *file)
+CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CAbstractFile *file)
 : wxDialog(parent,
 	  -1,
 	  wxString(_("File Comments")),
@@ -91,11 +91,10 @@ CCommentDialogLst::~CCommentDialogLst()
 	ClearList();
 }
 
-void CCommentDialogLst::DropReferencesTo(const CKnownFile *file)
+void CCommentDialogLst::DropReferencesTo(const CAbstractFile *file)
 {
 	for (CCommentDialogLst *d : OpenInstances()) {
-		// m_file is a CPartFile* — compare against the up-cast.
-		if (static_cast<const CKnownFile *>(d->m_file) == file) {
+		if (d->m_file == file) {
 			d->m_file = NULL;
 			d->EndModal(0);
 		}

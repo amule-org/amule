@@ -126,17 +126,29 @@ CSearch::~CSearch()
 		uint8_t fileid[16];
 		m_target.ToByteArray(fileid);
 		const CMD4Hash fileHash(fileid);
-		CKnownFile *noteFile = theApp->sharedfiles->GetFileByID(fileHash);
-		if (!noteFile) {
-			noteFile = theApp->downloadqueue->GetFileByID(fileHash);
+		// Clear the running flag on EVERY local object that shares this hash. The
+		// lookup may have been triggered from a search result while the same file
+		// is also downloading/shared (two objects, one hash), and the flag was
+		// set on whichever one the user used. Clearing only the first match left
+		// the other stuck reporting "a note lookup is already running", so it
+		// could never be searched again — hence two independent `if`s, not an
+		// `else if`.
+		CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(fileHash);
+		if (!knownFile) {
+			knownFile = theApp->downloadqueue->GetFileByID(fileHash);
 		}
-		if (noteFile) {
-			noteFile->SetKadCommentSearchRunning(false);
+		if (knownFile) {
+			knownFile->SetKadCommentSearchRunning(false);
 			// Bump the file's EC generation so the next incremental update
 			// re-serializes it: this is how amulegui / amuleapi learn the
 			// notes lookup finished (they poll GET_UPDATE, which otherwise
 			// skips an unchanged partfile).
-			noteFile->MarkECChanged();
+			knownFile->MarkECChanged();
+		}
+		if (CSearchFile *searchFile = theApp->searchlist->GetSearchFileByID(fileHash)) {
+			// Search files carry no EC change-generation, so the cleared flag
+			// simply rides the next periodic search-results poll.
+			searchFile->SetKadCommentSearchRunning(false);
 		}
 	}
 
@@ -618,10 +630,20 @@ void CSearch::StorePacket()
 		CMemFile searchTerms;
 		searchTerms.WriteUInt128(m_target);
 		if (from->GetVersion() >= 3) {
-			// Find file we are storing info about.
+			// Find file we are storing info about. The NOTES request carries
+			// the file size, which we read from whichever local list holds the
+			// hash: shared files, the download queue, or (for an on-demand
+			// lookup on a result the user has not downloaded) the search list.
 			uint8_t fileid[16];
 			m_target.ToByteArray(fileid);
-			CKnownFile *file = theApp->sharedfiles->GetFileByID(CMD4Hash(fileid));
+			const CMD4Hash fileHash(fileid);
+			CAbstractFile *file = theApp->sharedfiles->GetFileByID(fileHash);
+			if (!file) {
+				file = theApp->downloadqueue->GetFileByID(fileHash);
+			}
+			if (!file) {
+				file = theApp->searchlist->GetSearchFileByID(fileHash);
+			}
 			if (file) {
 				// Start position range (0x0 to 0x7FFF)
 				searchTerms.WriteUInt64(file->GetFileSize());
@@ -1117,25 +1139,38 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	m_target.ToByteArray(fileid);
 	const CMD4Hash fileHash(fileid);
 
-	// Check if this hash is in our shared files..
-	CKnownFile *file = theApp->sharedfiles->GetFileByID(fileHash);
+	// The same file can exist locally as more than one object sharing this hash:
+	// a downloading/shared CKnownFile and a CSearchFile result. The user may have
+	// triggered the lookup from either, and each keeps its own note list, so
+	// deliver the note to every match. AddNote takes ownership and dedups per
+	// list, so the second target gets an independent Copy().
+	CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(fileHash);
+	if (!knownFile) {
+		knownFile = theApp->downloadqueue->GetFileByID(fileHash);
+	}
+	CSearchFile *searchFile = theApp->searchlist->GetSearchFileByID(fileHash);
 
-	if (!file) {
-		// If we didn't find anything check if it's in our download queue.
-		file = theApp->downloadqueue->GetFileByID(fileHash);
+	if (!knownFile && !searchFile) {
+		AddDebugLogLineN(logKadSearch, "Comment received for unknown file");
+		delete entry;
+		return;
 	}
 
-	// If we found a file try to add the note to the file.
-	if (file) {
-		file->AddNote(entry);
-		m_answers++;
+	m_answers++;
+	if (knownFile) {
+		if (searchFile) {
+			searchFile->AddNote(entry->Copy());
+		}
+		knownFile->AddNote(entry);
 		// Re-emit the partfile so amulegui / amuleapi see notes stream in live
 		// (matching the monolithic dialog), instead of all at once when the
 		// search ends. AddNote dedups, so a repeat is cheap.
-		file->MarkECChanged();
+		knownFile->MarkECChanged();
 	} else {
-		AddDebugLogLineN(logKadSearch, "Comment received for unknown file");
-		delete entry;
+		// On-demand lookup on a search result the user has not downloaded; the
+		// note rides the next search-results poll (search files carry no EC
+		// change-generation).
+		searchFile->AddNote(entry);
 	}
 }
 

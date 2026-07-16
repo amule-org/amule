@@ -137,9 +137,25 @@ CSearchFile::CSearchFile(const CSearchFile &other) // NOLINT(bugprone-copy-const
 
 CSearchFile::~CSearchFile()
 {
+	// Let any open comments dialog drop its pointer before we free the object
+	// (a Kad-notes lookup can still be showing this result). Fired for children
+	// too — they are deleted just below.
+	Notify_SearchFileBeingDestroyed(this);
+
 	for (size_t i = 0; i < m_children.size(); ++i) {
 		delete m_children.at(i);
 	}
+}
+
+// SearchFile.cpp is core-only (CORE_SOURCES); the amulegui build compiles its
+// CSearchFile methods in amule-remote-gui.cpp, where the CLIENT_GUI version of
+// GetRatingAndComments (returning the EC-streamed list) also lives.
+void CSearchFile::GetRatingAndComments(FileRatingList &list) const
+{
+	// A search result has no connected sources, so its comments are exactly the
+	// on-demand Kad notes gathered by the CAbstractFile helper.
+	list.clear();
+	GetKadNotesComments(list);
 }
 
 void CSearchFile::AddClient(const ClientStruct &client)

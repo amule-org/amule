@@ -153,7 +153,7 @@ function DownloadComments({ hash, comment, rating, tick, parts }) {
     return () => { alive = false; };
   }, [hash, tick]);
 
-  const running = !!(data && data.kad_search_running);
+  const running = !!(data && data.kad_comment_search_running);
   const list = (data && data.comments) || [];
   // The daemon only accepts a comment/rating on a *shared* file, i.e. a
   // partfile with >= 1 complete part; otherwise PATCH returns 409 not_shared.

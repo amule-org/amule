@@ -284,6 +284,13 @@ protected:
 	void OnRelatedSearch(wxCommandEvent &event);
 
 	/**
+	 * Event handler for the "Show all comments" context-menu item: opens the
+	 * comments/ratings dialog for the selected result, from which the user can
+	 * fetch community notes from Kad.
+	 */
+	void OnGetComments(wxCommandEvent &event);
+
+	/**
 	 * Event handler for "mark as known".
 	 */
 	void OnMarkAsKnown(wxCommandEvent &event);

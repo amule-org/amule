@@ -147,6 +147,14 @@ public:
 	void AddFileToDownloadByHash(const CMD4Hash &hash, uint8 category = 0);
 
 	/**
+	 * Returns the first search-result (across every search, parents and their
+	 * children) matching the given file hash, or NULL if none. Used by the Kad
+	 * NOTES machinery to size and attach on-demand community comments to a
+	 * result the user has not downloaded.
+	 */
+	CSearchFile *GetSearchFileByID(const CMD4Hash &hash) const;
+
+	/**
 	 * Start downloading the specific search result identified by its EC
 	 * ECID — used to pick one same-hash/different-name grouped child so
 	 * the partfile lands under that chosen filename (issue #431).

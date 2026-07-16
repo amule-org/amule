@@ -10,6 +10,8 @@
 #   GET  /api/v0/search/results                            — read accumulated
 #   POST /api/v0/search/results/{hash}/download           — EC_OP_DOWNLOAD_SEARCH_RESULT
 #       body: {category?: uint8} (optional)
+#   GET  /api/v0/search/results/{hash}/comments           — Kad ratings/comments for a result
+#   POST /api/v0/search/results/{hash}/comments           — EC_OP_SHARED_FILE_SEARCH_KAD_NOTES
 #
 # /search/results is no longer a per-GET fetch — POST /search marks
 # the search active in state and the refresher polls amuled every
@@ -365,6 +367,76 @@ else
 fi
 
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop" > /dev/null 2>&1
+
+# --- 10. Search-result Kad comments/ratings (issue #434). ---------
+# GET/POST /search/results/{hash}/comments mirror the download-comments
+# endpoints for a result the user has not downloaded. Auth + error gates
+# need no connectivity; the happy path needs a live result.
+BOGUS=baadbaadbaadbaadbaadbaadbaadbaad
+
+_curl -X POST "$HOST/api/v0/search/results/$BOGUS/comments"
+_assert_status 401 "POST /search/results/{hash}/comments (no token) → 401"
+
+_curl "$HOST/api/v0/search/results/$BOGUS/comments"
+_assert_status 401 "GET /search/results/{hash}/comments (no token) → 401"
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/search/results/not-32-hex-chars/comments"
+_assert_status 400 "POST search comments (bad hash format) → 400"
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/search/results/$BOGUS/comments"
+_assert_status 404 "POST search comments (well-formed unknown hash) → 404"
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/search/results/$BOGUS/comments"
+_assert_status 404 "GET search comments (unknown hash) → 404"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/search/results/$BOGUS/comments"
+_assert_status 405 "PATCH search comments → 405"
+
+# Happy path: needs a live result. Start a fresh global search and poll.
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search"
+CMT_HASH=""
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+	N=$(printf '%s' "$CURL_BODY" | jq '.results | length')
+	if [ "$N" -gt 0 ]; then
+		CMT_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.results[0].hash')
+		break
+	fi
+	sleep 0.25
+done
+
+if [ -n "$CMT_HASH" ]; then
+	# Every result carries the comment fields on the list itself.
+	_assert_json_eq '.results[0].kad_comment_search_running | type' boolean \
+		'/search/results[0].kad_comment_search_running is boolean (issue #434)'
+	_assert_json_eq '.results[0].comments | type' array \
+		'/search/results[0].comments is an array'
+
+	# Trigger an on-demand Kad notes lookup for the result.
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/results/$CMT_HASH/comments"
+	_assert_status 202 "POST /search/results/{hash}/comments → 202"
+	_assert_json_eq '.status' kad_search_started 'search comments POST status==kad_search_started'
+
+	# Per-result comments view.
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+		"$HOST/api/v0/search/results/$CMT_HASH/comments"
+	_assert_status 200 "GET /search/results/{hash}/comments → 200"
+	_assert_json_eq '.count | type' number 'search comments.count is numeric'
+	_assert_json_eq '.kad_comment_search_running | type' boolean \
+		'search comments carries kad_comment_search_running flag'
+	_assert_json_eq '.comments | type' array 'search comments.comments is an array'
+
+	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop" > /dev/null 2>&1
+else
+	echo "    info: 0 results — skipping search-comments happy path (daemon not connected)"
+fi
 
 # --- Summary. -----------------------------------------------------
 echo

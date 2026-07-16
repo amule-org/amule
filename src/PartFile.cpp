@@ -4221,19 +4221,10 @@ void CPartFile::GetRatingAndComments(FileRatingList &list) const
 		}
 	}
 
-	// Append community ratings/comments retrieved on demand from Kad (one entry per
-	// responding node). These are stored by CSearch::ProcessResultNotes -> AddNote.
-	const CKadEntryPtrList &notes = getNotes();
-	for (Kademlia::CEntry *entry : notes) {
-		uint64_t rating = 0;
-		entry->GetIntTagValue(TAG_FILERATING, rating);
-		wxString comment = entry->GetStrTagValue(TAG_DESCRIPTION);
-		if (comment.IsEmpty() && rating == 0) {
-			continue;
-		}
-		wxString userName = entry->m_uIP ? Uint32toStringIP(entry->m_uIP) : wxString(_("Kad user"));
-		list.emplace_back(userName, entry->GetCommonFileName(), (sint16)rating, comment);
-	}
+	// Append community ratings/comments retrieved on demand from Kad. Shared
+	// with search results via the CAbstractFile helper (one entry per
+	// responding node, stored by CSearch::ProcessResultNotes -> AddNote).
+	GetKadNotesComments(list);
 }
 
 #else // CLIENT_GUI
@@ -4266,10 +4257,8 @@ CPartFile::CPartFile(const CEC_PartFile_Tag *tag)
  */
 CPartFile::~CPartFile() {}
 
-void CPartFile::GetRatingAndComments(FileRatingList &list) const
-{
-	list = m_FileRatingList;
-}
+// GetRatingAndComments on amulegui is inherited from CAbstractFile (returns the
+// EC-streamed m_FileRatingList) — no CPartFile override needed here.
 
 void CPartFile::SetCategory(uint8 cat)
 {

@@ -120,6 +120,12 @@ void SharedCtrlRemoveClient(uint32 client, const CKnownFile *owner);
 // in the amulegui build.
 void KnownFileBeingDestroyed(CKnownFile *file);
 
+// Analogue of KnownFileBeingDestroyed for search results: fired from
+// ~CSearchFile before the object is freed, so an open comments dialog holding
+// the result (a Kad-notes lookup can outlive the search that produced it) drops
+// its pointer instead of dangling. See CCommentDialogLst::DropReferencesTo.
+void SearchFileBeingDestroyed(CSearchFile *file);
+
 void ServerAdd(CServer *server);
 void ServerRemove(CServer *server);
 void ServerRemoveDead();
@@ -499,6 +505,11 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 // CKnownFile/CPartFile destruction broadcast — see MuleNotify::
 // KnownFileBeingDestroyed doc-comment in this header.
 #define Notify_KnownFileBeingDestroyed(file) MuleNotify::DoNotify(&MuleNotify::KnownFileBeingDestroyed, file)
+
+// CSearchFile destruction broadcast — see MuleNotify::SearchFileBeingDestroyed
+// doc-comment in this header.
+#define Notify_SearchFileBeingDestroyed(file) \
+	MuleNotify::DoNotify(&MuleNotify::SearchFileBeingDestroyed, file)
 
 // server
 #define Notify_ServerAdd(ptr) MuleNotify::DoNotify(&MuleNotify::ServerAdd, ptr)

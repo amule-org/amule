@@ -64,7 +64,11 @@
 #include "kademlia/kademlia/Kademlia.h"      // Needed for CKademlia (Kad state)
 #include "kademlia/kademlia/Search.h"        // Needed for CSearch::NOTES
 #include "kademlia/kademlia/SearchManager.h" // Needed for CSearchManager::PrepareLookup
+#include "kademlia/kademlia/Entry.h"         // Needed for Kademlia::CEntry (Kad notes)
 #include "DownloadQueue.h"                   // Needed for downloadqueue lookup
+#include "SearchList.h"                      // Needed for searchlist lookup
+#include "NetworkFunctions.h"                // Needed for Uint32toStringIP (Kad note author)
+#include <tags/FileTags.h>                   // Needed for TAG_FILERATING / TAG_DESCRIPTION
 #include "ThreadTasks.h"                     // Needed for CThreadScheduler and CVerifyLocalDataTask
 #endif
 
@@ -318,8 +322,42 @@ void CAbstractFile::AddNote(Kademlia::CEntry *pEntry)
 	}
 	m_kadNotes.push_front(pEntry);
 }
+
+void CAbstractFile::GetKadNotesComments(FileRatingList &list) const
+{
+	// One entry per responding Kad node (stored by CSearch::ProcessResultNotes).
+	for (Kademlia::CEntry *entry : getNotes()) {
+		uint64_t rating = 0;
+		entry->GetIntTagValue(TAG_FILERATING, rating);
+		wxString comment = entry->GetStrTagValue(TAG_DESCRIPTION);
+		if (comment.IsEmpty() && rating == 0) {
+			continue;
+		}
+		wxString userName = entry->m_uIP ? Uint32toStringIP(entry->m_uIP) : wxString(_("Kad user"));
+		list.emplace_back(userName, entry->GetCommonFileName(), (sint16)rating, comment);
+	}
+}
+
+void CAbstractFile::GetRatingAndComments(FileRatingList &list) const
+{
+	// Base version: just the on-demand Kad notes. This is exactly what a search
+	// result carries; CPartFile overrides to prepend its connected-source
+	// comments.
+	list.clear();
+	GetKadNotesComments(list);
+}
 #else
 void CAbstractFile::AddNote(Kademlia::CEntry *) {}
+
+void CAbstractFile::GetKadNotesComments(FileRatingList &) const {}
+
+void CAbstractFile::GetRatingAndComments(FileRatingList &list) const
+{
+	// amulegui receives the ratings/comments prebuilt over EC and cached in
+	// m_FileRatingList by the remote containers. One implementation serves
+	// downloads, shared files and search results, so no subclass overrides this.
+	list = m_FileRatingList;
+}
 #endif
 
 /* Known File */
@@ -1496,7 +1534,7 @@ bool CKnownFile::PublishNotes()
 	return false;
 }
 
-bool CKnownFile::RequestKadNoteSearch()
+bool CAbstractFile::RequestKadNoteSearch()
 {
 #ifndef CLIENT_GUI
 	// Kad must be up; the notes lookup runs against the DHT.
@@ -1515,15 +1553,16 @@ bool CKnownFile::RequestKadNoteSearch()
 		return false;
 	}
 
-	// The NOTES request builder reads the file size from the local shared list or
-	// download queue (mirroring eMule); a file that is in neither can't be looked
-	// up, so don't spawn a search that would immediately self-terminate.
+	// The NOTES request builder reads the file size from the local shared list,
+	// download queue, or current search results (mirroring eMule); a file in
+	// none of those can't be looked up, so don't spawn a search that would
+	// immediately self-terminate.
 	if (!theApp->sharedfiles->GetFileByID(GetFileHash()) &&
-		!theApp->downloadqueue->GetFileByID(GetFileHash())) {
-		AddLogLineN(
-			CFormat(_("Kad note search for '%s' not started: file is not in the shared list or "
-				  "download queue")) %
-			GetFileName());
+		!theApp->downloadqueue->GetFileByID(GetFileHash()) &&
+		!theApp->searchlist->GetSearchFileByID(GetFileHash())) {
+		AddLogLineN(CFormat(_("Kad note search for '%s' not started: file is not in the shared list, "
+				      "download queue or search results")) %
+			    GetFileName());
 		return false;
 	}
 
@@ -1550,10 +1589,18 @@ bool CKnownFile::RequestKadNoteSearch()
 	}
 
 	SetKadCommentSearchRunning(true);
-	// Bump the EC generation so the next incremental update re-serializes this
-	// file with the running flag set; that is how amulegui / amuleapi observe
-	// the lookup starting (the cleared flag is emitted the same way in ~CSearch).
-	MarkECChanged();
+	// For a shared/download file, bump its EC generation so the next incremental
+	// update re-serializes it with the running flag set — that is how amulegui /
+	// amuleapi observe the lookup starting (the cleared flag is emitted the same
+	// way in ~CSearch). A search result carries no EC generation; its flag rides
+	// the periodic search-results poll instead, so nothing to mark here.
+	CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(GetFileHash());
+	if (!knownFile) {
+		knownFile = theApp->downloadqueue->GetFileByID(GetFileHash());
+	}
+	if (knownFile) {
+		knownFile->MarkECChanged();
+	}
 	return true;
 #else
 	// amulegui has no local Kad; the GUI triggers the lookup over EC instead.

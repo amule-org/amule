@@ -202,23 +202,8 @@ CEC_PartFile_Tag::CEC_PartFile_Tag(const CPartFile *file, EC_DETAIL_LEVEL detail
 	AddTag(EC_TAG_PARTFILE_SAVED_ICH, file->TotalPacketsSavedDueToICH(), valuemap);
 	AddTag(EC_TAG_PARTFILE_A4AFAUTO, file->IsA4AFAuto(), valuemap);
 
-	// Tag for comments
-	CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
-
-	FileRatingList list;
-	file->GetRatingAndComments(list);
-	for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
-		// Tag children are evaluated by index, not by name
-		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->UserName));
-		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->FileName));
-		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, (uint64)it->Rating));
-		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->Comment));
-	}
-	AddTag(sc, valuemap);
-
-	// Whether an on-demand Kad notes lookup is currently in flight for this file.
-	// Sent on updates too, so the remote GUI/REST can reflect start -> finish.
-	AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, file->IsKadCommentSearchRunning(), valuemap);
+	// Community ratings/comments + the Kad-notes running flag are serialized by
+	// the CEC_SharedFile_Tag base constructor (shared with plain shared files).
 
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;
@@ -268,6 +253,26 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	AddTag(EC_TAG_KNOWNFILE_UPLOADING_COUNT, file->GetTransferringClientCount(), valuemap);
 #endif
 	AddTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, (uint32)file->GetLastUpload(), valuemap);
+
+	// Community ratings/comments + the on-demand Kad-notes running flag, shared
+	// by downloads AND shared files via the virtual GetRatingAndComments (a
+	// partfile prepends its connected-source comments; a plain shared file
+	// carries just its Kad notes). Emitted before the UPDATE early-return so the
+	// flag's start -> finish and notes streaming in are visible on every poll;
+	// the valuemap suppresses unchanged values, so idle files cost nothing after
+	// the first send.
+	CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
+	FileRatingList list;
+	file->GetRatingAndComments(list);
+	for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
+		// Tag children are evaluated by index, not by name.
+		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->UserName));
+		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->FileName));
+		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, (uint64)it->Rating));
+		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->Comment));
+	}
+	AddTag(sc, valuemap);
+	AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, file->IsKadCommentSearchRunning(), valuemap);
 
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;
@@ -442,6 +447,39 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT, file->GetSourceCount()), valuemap);
 	AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, file->GetCompleteSourceCount()), valuemap);
 	AddTag(CECTag(EC_TAG_PARTFILE_STATUS, (uint32)file->GetDownloadStatus()), valuemap);
+
+	// On-demand Kad community ratings/comments for this result, reusing the
+	// partfile tags (CSearchFile borrows EC_TAG_PARTFILE_* above). Emitted before
+	// the UPDATE early-return so the flag's start -> finish and the notes
+	// streaming in are visible on every poll.
+	//
+	// Deliberately WITHOUT the valuemap: unlike a download, a search result has
+	// no EC change-generation and its reply builder
+	// (Get_EC_Response_Search_Results) never resets the per-connection valuemap
+	// when amulegui (re)creates the result object. Diffing here would send the
+	// comments container exactly once per ECID for the connection's lifetime, so
+	// a result object created before the notes arrived — the common case, since
+	// the user opens the dialog on an existing result — would be deduped out and
+	// the comments dialog would stay empty. Sending them raw keeps delivery
+	// reliable; the block is gated on the built list so idle results cost nothing
+	// and an empty container never clears the remote list.
+	FileRatingList list;
+	file->GetRatingAndComments(list);
+	if (file->IsKadCommentSearchRunning() || !list.empty()) {
+		AddTag(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING,
+			(uint64)(file->IsKadCommentSearchRunning() ? 1 : 0));
+		if (!list.empty()) {
+			CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
+			for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
+				// Tag children are evaluated by index, not by name.
+				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->UserName));
+				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->FileName));
+				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, (uint64)it->Rating));
+				sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->Comment));
+			}
+			AddTag(sc);
+		}
+	}
 
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;

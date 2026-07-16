@@ -29,16 +29,17 @@
 #include <common/Format.h> // Needed for CFormat
 #include <tags/FileTags.h> // Needed for FT_MEDIA_LENGTH / _BITRATE / _CODEC
 
-#include "amule.h"         // Needed for theApp
-#include "Server.h"        // Needed for CServer
-#include "ServerConnect.h" // Needed for CServerConnect
-#include "KnownFileList.h" // Needed for CKnownFileList
-#include "SearchList.h"    // Needed for CSearchFile
-#include "SearchDlg.h"     // Needed for CSearchDlg
-#include "amuleDlg.h"      // Needed for CamuleDlg
-#include "muuli_wdr.h"     // Needed for clientImages
-#include "Preferences.h"   // Needed for thePrefs
-#include "GuiEvents.h"     // Needed for CoreNotify_Search_Add_Download
+#include "amule.h"            // Needed for theApp
+#include "Server.h"           // Needed for CServer
+#include "ServerConnect.h"    // Needed for CServerConnect
+#include "KnownFileList.h"    // Needed for CKnownFileList
+#include "SearchList.h"       // Needed for CSearchFile
+#include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
+#include "SearchDlg.h"        // Needed for CSearchDlg
+#include "amuleDlg.h"         // Needed for CamuleDlg
+#include "muuli_wdr.h"        // Needed for clientImages
+#include "Preferences.h"      // Needed for thePrefs
+#include "GuiEvents.h"        // Needed for CoreNotify_Search_Add_Download
 #include "MuleColour.h"
 
 wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleListCtrl)
@@ -49,6 +50,7 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleListCtrl)
 	EVT_MENU(MP_GETED2KLINK, CSearchListCtrl::OnPopupGetUrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
 	EVT_MENU(MP_SEARCHRELATED, CSearchListCtrl::OnRelatedSearch)
+	EVT_MENU(MP_GETCOMMENTS, CSearchListCtrl::OnGetComments)
 	EVT_MENU(MP_MARK_AS_KNOWN, CSearchListCtrl::OnMarkAsKnown)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
@@ -703,6 +705,7 @@ void CSearchListCtrl::OnRightClick(wxListEvent &event)
 		}
 
 		menu.Append(MP_SEARCHRELATED, _("Search related files (eD2k, local server)"));
+		menu.Append(MP_GETCOMMENTS, _("Show all comments"));
 		menu.AppendSeparator();
 
 // #warning Uncomment this here to test the MP_MARK_AS_KNOWN feature. Beware! You are on your own here, this
@@ -717,6 +720,7 @@ void CSearchListCtrl::OnRightClick(wxListEvent &event)
 		// These should only be enabled for single-selections
 		bool enable = (GetSelectedItemCount() == 1);
 		menu.Enable(MP_GETED2KLINK, enable);
+		menu.Enable(MP_GETCOMMENTS, enable);
 		menu.Enable(MP_MENU_CATS, (theApp->glob_prefs->GetCatCount() > 1));
 
 		PopupMenu(&menu, event.GetPoint());
@@ -754,6 +758,22 @@ void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 
 	if (!URIs.IsEmpty()) {
 		theApp->CopyTextToClipboard(URIs.RemoveLast());
+	}
+}
+
+void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
+{
+	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (index == -1) {
+		return;
+	}
+
+	CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(index));
+	if (file) {
+		// Same dialog the download list uses; its "Get from Kad" button drives
+		// the on-demand community ratings/comments lookup for this result.
+		CCommentDialogLst dialog(this, file);
+		dialog.ShowModal();
 	}
 }
 

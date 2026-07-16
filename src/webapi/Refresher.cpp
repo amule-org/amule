@@ -1958,6 +1958,29 @@ void ApplySearchFull(const CECPacket *resp, std::map<std::uint32_t, SearchResult
 			r.media.title = std::string(x->GetStringData().utf8_str());
 			r.has_media = true;
 		}
+		// On-demand Kad community ratings/comments (issue #434). Same
+		// 4-children-per-entry positional container the download side uses
+		// (username, filename, rating, comment); a search hit's comments are
+		// purely Kad notes.
+		if (const CECTag *cont = sf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
+			std::vector<const CECTag *> kids;
+			for (const CECTag &kid : *cont)
+				kids.push_back(&kid);
+			for (std::size_t i = 0; i + 3 < kids.size(); i += 4) {
+				SearchResult::Comment c;
+				c.username = std::string(kids[i]->GetStringData().utf8_str());
+				c.filename = std::string(kids[i + 1]->GetStringData().utf8_str());
+				c.rating = static_cast<std::int32_t>(
+					static_cast<std::int64_t>(kids[i + 2]->GetInt()));
+				c.comment = std::string(kids[i + 3]->GetStringData().utf8_str());
+				r.comments.push_back(std::move(c));
+			}
+		}
+		{
+			std::uint32_t v = 0;
+			if (sf->AssignIfExist(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, v))
+				r.kad_comment_searching = v != 0;
+		}
 		cache.emplace(r.ecid, std::move(r));
 	}
 

@@ -149,10 +149,10 @@ if [ -n "$ADDED" ]; then
 		_fail "download_added .data.name" "not a string in $JSON"
 	fi
 	# Kad-notes search state rides the download event (issue #434).
-	if echo "$JSON" | jq -e '.kad_search_running | type == "boolean"' >/dev/null 2>&1; then
-		_pass "download_added .data.kad_search_running is boolean"
+	if echo "$JSON" | jq -e '.kad_comment_search_running | type == "boolean"' >/dev/null 2>&1; then
+		_pass "download_added .data.kad_comment_search_running is boolean"
 	else
-		_fail "download_added .data.kad_search_running" "not boolean in $JSON"
+		_fail "download_added .data.kad_comment_search_running" "not boolean in $JSON"
 	fi
 	if echo "$JSON" | jq -e '.size | type == "number"' >/dev/null 2>&1; then
 		_pass "download_added .data.size is a number"

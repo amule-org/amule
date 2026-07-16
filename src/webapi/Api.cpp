@@ -977,6 +977,30 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// /search/results/{hash}/comments — community ratings/comments for a search
+	// result (issue #434). POST triggers an on-demand Kad NOTES lookup; GET
+	// returns the notes retrieved so far plus the running flag. The result's
+	// `comments` also ride the /search/results list, but this per-result path
+	// mirrors /downloads/{hash}/comments for polling a single hash. Matched
+	// before /search/results/{hash}/download (distinct trailing segment).
+	{
+		static const auto search_comments =
+			web_api_path::ParsePattern("/api/v0/search/results/{hash}/comments");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(search_comments, path_segs, caps)) {
+			if (req.method == "POST") {
+				return HandleSearchCommentsKadSearch(req, caps["hash"]);
+			}
+			if (req.method != "GET" && req.method != "HEAD") {
+				return ErrorResponse(405,
+					"method_not_allowed",
+					"only GET / HEAD / POST on /search/results/{hash}/comments");
+			}
+			return HandleSearchComments(req, caps["hash"]);
+		}
+	}
+
 	// /stats/graphs/{graph} — path-pattern matches the four allowed
 	// graph names ("download" / "upload" / "connections" / "kad").
 	{
@@ -1743,7 +1767,7 @@ void WriteDownloadObject(
 	// True while an on-demand Kad notes lookup is in flight (issue #434). Kept in
 	// the shared object so list, detail and the SSE download event stay identical;
 	// clients can watch download_updated for the start -> finish transition.
-	w.Key("kad_search_running");
+	w.Key("kad_comment_search_running");
 	w.ValueBool(f.download.kad_comment_searching);
 	if (detail) {
 		// Detail-only fields (GET /downloads/{hash}); omitted from the
@@ -2609,7 +2633,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadComments(
 	w.ValueInt(static_cast<int64_t>(d.download.source_comments.size()));
 	// True while an on-demand Kad notes lookup is in flight (issue #434); poll
 	// this endpoint until it flips back to false to observe retrieved notes.
-	w.Key("kad_search_running");
+	w.Key("kad_comment_search_running");
 	w.ValueBool(d.download.kad_comment_searching);
 	w.Key("comments");
 	w.BeginArray();
@@ -4579,6 +4603,27 @@ void WriteSearchObject(CJsonWriter &w, const webapi::SearchResult &r)
 		w.Key("complete");
 		w.ValueInt(static_cast<int64_t>(c.complete_source_count));
 		w.EndObject();
+		w.EndObject();
+	}
+	w.EndArray();
+	// On-demand Kad community ratings/comments (issue #434). `kad_comment_search_running`
+	// is true while a lookup started via POST /search/results/{hash}/comments is
+	// in flight; `comments` carries the Kad notes retrieved so far (empty until
+	// then). Both are always present so clients need no presence check.
+	w.Key("kad_comment_search_running");
+	w.ValueBool(r.kad_comment_searching);
+	w.Key("comments");
+	w.BeginArray();
+	for (const auto &c : r.comments) {
+		w.BeginObject();
+		w.Key("username");
+		w.ValueString(wxString::FromUTF8(c.username.c_str()));
+		w.Key("filename");
+		w.ValueString(wxString::FromUTF8(c.filename.c_str()));
+		w.Key("rating");
+		w.ValueInt(static_cast<int64_t>(c.rating));
+		w.Key("comment");
+		w.ValueString(wxString::FromUTF8(c.comment.c_str()));
 		w.EndObject();
 	}
 	w.EndArray();
@@ -7794,6 +7839,131 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 	w.ValueString(wxString::FromUTF8(needle.c_str()));
 	w.Key("category");
 	w.ValueInt(static_cast<int64_t>(category));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// GET /search/results/{hash}/comments — community ratings/comments for one
+// search result (issue #434): the Kad notes retrieved so far plus the running
+// flag. Mirrors GET /downloads/{hash}/comments for single-hash polling.
+CHttpServer::Response CApiDispatcher::HandleSearchComments(
+	const CHttpServer::Request &req, const std::string &hash)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	std::string needle = hash;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+
+	// Locate the result carrying this hash. Grouped children share the parent's
+	// hash, so the parent (which owns any fetched notes) matches first.
+	const std::vector<webapi::SearchResult> results = m_state.Search();
+	const webapi::SearchResult *hit = nullptr;
+	for (const auto &res : results) {
+		if (res.hash == needle) {
+			hit = &res;
+			break;
+		}
+	}
+	if (!hit) {
+		return ErrorResponse(404, "not_found", "no search result with that hash");
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("count");
+	w.ValueInt(static_cast<int64_t>(hit->comments.size()));
+	w.Key("kad_comment_search_running");
+	w.ValueBool(hit->kad_comment_searching);
+	w.Key("comments");
+	w.BeginArray();
+	for (const auto &c : hit->comments) {
+		w.BeginObject();
+		w.Key("username");
+		w.ValueString(wxString::FromUTF8(c.username.c_str()));
+		w.Key("filename");
+		w.ValueString(wxString::FromUTF8(c.filename.c_str()));
+		w.Key("rating");
+		w.ValueInt(static_cast<int64_t>(c.rating));
+		w.Key("comment");
+		w.ValueString(wxString::FromUTF8(c.comment.c_str()));
+		w.EndObject();
+	}
+	w.EndArray();
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// POST /search/results/{hash}/comments — trigger an on-demand Kad NOTES lookup
+// for a search result the user has not downloaded (issue #434). Asynchronous on
+// amuled (up to ~45s); retrieved notes then appear via GET here and on the
+// /search/results list. Returns 202 Accepted.
+CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
+	const CHttpServer::Request &req, const std::string &hash)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	std::string needle = hash;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+
+	CMD4Hash file_hash;
+	if (!HashFromHex(needle, file_hash)) {
+		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
+	}
+
+	// Must be a current search result (mirrors the download endpoint's 404).
+	const std::vector<webapi::SearchResult> results = m_state.Search();
+	const bool known = std::any_of(results.begin(), results.end(), [&](const webapi::SearchResult &res) {
+		return res.hash == needle;
+	});
+	if (!known) {
+		return ErrorResponse(404, "not_found", "no search result with that hash");
+	}
+
+	auto ec_req = std::make_unique<CECPacket>(EC_OP_SHARED_FILE_SEARCH_KAD_NOTES);
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SEARCH_KAD_NOTES");
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+	}
+	delete ec_resp;
+
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("status");
+	w.ValueString("kad_search_started");
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;

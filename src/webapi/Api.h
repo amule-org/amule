@@ -174,6 +174,9 @@ private:
 	CHttpServer::Response HandleSearchStart(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStop(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchDownload(const CHttpServer::Request &, const std::string &hash);
+	CHttpServer::Response HandleSearchComments(const CHttpServer::Request &, const std::string &hash);
+	CHttpServer::Response HandleSearchCommentsKadSearch(
+		const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleClients(const CHttpServer::Request &);
 	CHttpServer::Response HandleClientDetail(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleSharedList(const CHttpServer::Request &);

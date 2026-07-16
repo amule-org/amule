@@ -767,6 +767,23 @@ void CSearchList::AddFileToDownloadByHash(const CMD4Hash &hash, uint8 cat)
 	}
 }
 
+CSearchFile *CSearchList::GetSearchFileByID(const CMD4Hash &hash) const
+{
+	for (const auto &entry : m_results) {
+		for (CSearchFile *sf : entry.second) {
+			if (sf->GetFileHash() == hash) {
+				return sf;
+			}
+			for (CSearchFile *child : sf->GetChildren()) {
+				if (child->GetFileHash() == hash) {
+					return child;
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
 void CSearchList::AddFileToDownloadByEcid(uint32 ecid, uint8 cat)
 {
 	// Match against parents and their same-hash/different-name children

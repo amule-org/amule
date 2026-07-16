@@ -1550,10 +1550,11 @@ void CSharedFilesRem::SetFileCommentRating(CKnownFile *file, const wxString &new
 	m_conn->SendPacket(&request);
 }
 
-void CSharedFilesRem::SearchKadNotes(CKnownFile *file)
+void CSharedFilesRem::SearchKadNotes(CAbstractFile *file)
 {
-	// The daemon owns Kad; ask it to run the on-demand NOTES lookup for this file.
-	// Retrieved notes flow back through the normal partfile-comments channel.
+	// The daemon owns Kad; ask it to run the on-demand NOTES lookup for this
+	// file (a download, a shared file, or a search result — the request is keyed
+	// purely by hash). Retrieved notes flow back through the comments channel.
 	CECPacket request(EC_OP_SHARED_FILE_SEARCH_KAD_NOTES);
 	request.AddTag(CECTag(EC_TAG_KNOWNFILE, file->GetFileHash()));
 
@@ -1683,6 +1684,27 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 
 	tag->GetComment(file->m_strComment);
 	tag->GetRating(file->m_iRating);
+
+	// Community ratings/comments + the on-demand Kad-notes running flag. The
+	// daemon serializes these on the CEC_SharedFile_Tag base, so this one decode
+	// serves both shared files and downloads (it runs for every known file
+	// before the partfile-specific pass). The container is present only when it
+	// changed (valuemap-suppressed), so an absent tag keeps the prior list.
+	const CECTag *commenttag = tag->GetTagByName(EC_TAG_PARTFILE_COMMENTS);
+	if (commenttag) {
+		file->ClearFileRatingList();
+		for (CECTag::const_iterator it = commenttag->begin(); it != commenttag->end();) {
+			wxString u = (it++)->GetStringData();
+			wxString f = (it++)->GetStringData();
+			sint16 r = static_cast<sint16>(static_cast<sint64>((it++)->GetInt()));
+			wxString c = (it++)->GetStringData();
+			file->AddFileRatingList(u, f, r, c);
+		}
+		file->UpdateFileRatingCommentAvail();
+	}
+	if (const CECTag *kadSearchTag = tag->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
+		file->SetKadCommentSearchRunning(kadSearchTag->GetInt() != 0);
+	}
 
 	requested += file->statistic.requested;
 	transferred += file->statistic.transferred;
@@ -2464,25 +2486,9 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 		file->AddTagUnique(CTagString(FT_MEDIA_TITLE, m->GetStringData()));
 	}
 
-	// Get comments
-	const CECTag *commenttag = tag->GetTagByName(EC_TAG_PARTFILE_COMMENTS);
-	if (commenttag) {
-		file->ClearFileRatingList();
-		for (CECTag::const_iterator it = commenttag->begin(); it != commenttag->end();) {
-			wxString u = (it++)->GetStringData();
-			wxString f = (it++)->GetStringData();
-			int r = (it++)->GetInt();
-			wxString c = (it++)->GetStringData();
-			file->AddFileRatingList(u, f, r, c);
-		}
-		file->UpdateFileRatingCommentAvail();
-	}
-
-	// Reflect whether an on-demand Kad notes lookup is running on the daemon, so
-	// the comments dialog can auto-refresh while it is in flight and stop when done.
-	if (const CECTag *kadSearchTag = tag->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
-		file->SetKadCommentSearchRunning(kadSearchTag->GetInt() != 0);
-	}
+	// Comments/ratings + the Kad-notes running flag are decoded once for every
+	// known file in CKnownFilesRem::ProcessItemUpdate (they ride the shared-file
+	// base tag now), so there is nothing partfile-specific to do here.
 
 	// Update A4AF sources
 	ListOfUInts32 &clientIDs = file->GetA4AFClientIDs();
@@ -2814,7 +2820,14 @@ void CSearchFile::AddChild(CSearchFile *file)
 }
 
 // dtor is virtual - must be implemented
-CSearchFile::~CSearchFile() {}
+CSearchFile::~CSearchFile()
+{
+	// Mirror the core dtor: let an open comments dialog drop this result before
+	// it is freed (the remote container can remove/recreate a result while the
+	// modal is up). The core ~CSearchFile lives in SearchFile.cpp, which the
+	// remote GUI does not compile, so the notify has to be fired here too.
+	Notify_SearchFileBeingDestroyed(this);
+}
 
 CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 {
@@ -2844,6 +2857,24 @@ void CSearchListRem::ProcessItemUpdate(const CEC_SearchFile_Tag *tag, CSearchFil
 	tag->SourceCount(&file->m_sourceCount);
 	tag->CompleteSourceCount(&file->m_completeSourceCount);
 	tag->DownloadStatus((uint32 *)&file->m_downloadStatus);
+
+	// On-demand Kad community ratings/comments (same positional encoding as a
+	// partfile's; see CEC_SearchFile_Tag). The comments dialog polls the running
+	// flag + rating list directly, so no explicit UpdateResult is needed here.
+	const CECTag *commenttag = tag->GetTagByName(EC_TAG_PARTFILE_COMMENTS);
+	if (commenttag) {
+		file->ClearFileRatingList();
+		for (CECTag::const_iterator it = commenttag->begin(); it != commenttag->end();) {
+			wxString u = (it++)->GetStringData();
+			wxString f = (it++)->GetStringData();
+			sint16 r = static_cast<sint16>(static_cast<sint64>((it++)->GetInt()));
+			wxString c = (it++)->GetStringData();
+			file->AddFileRatingList(u, f, r, c);
+		}
+	}
+	if (const CECTag *kadSearchTag = tag->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
+		file->SetKadCommentSearchRunning(kadSearchTag->GetInt() != 0);
+	}
 
 	if (file->m_sourceCount != sourceCount || file->m_completeSourceCount != completeSourceCount ||
 		file->m_downloadStatus != status) {

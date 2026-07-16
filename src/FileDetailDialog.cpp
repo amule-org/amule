@@ -285,14 +285,13 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 
 	setEnableForApplyButton();
-	// "Show all comments" lists source comments (a download concept) and the
-	// dialog it opens takes a CPartFile — so enable it only for an in-progress
-	// partfile, when there are comments or Kad can still be queried (#434).
+	// "Show all comments" opens the ratings/comments dialog for this file —
+	// works for a shared file as well as an in-progress download, since a Kad
+	// notes lookup only needs the file's hash+size. Enable it whenever there are
+	// comments already or Kad is connected (so it can still be queried) (#434).
 	FileRatingList list;
-	if (part) {
-		part->GetRatingAndComments(list);
-	}
-	CastChild(IDC_CMTBT, wxControl)->Enable(part && (!list.empty() || theApp->IsConnectedKad()));
+	m_file->GetRatingAndComments(list);
+	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
 	FillSourcenameList();
 	Layout();
 }
@@ -395,10 +394,11 @@ void CFileDetailDialog::FillSourcenameList()
 
 void CFileDetailDialog::OnBnClickedShowComment(wxCommandEvent &WXUNUSED(evt))
 {
-	// The source-comment list dialog is partfile-scoped; the button is only
-	// enabled for an in-progress partfile (see UpdateData), but guard anyway.
-	if (m_file->IsPartFile()) {
-		CCommentDialogLst(this, static_cast<CPartFile *>(m_file)).ShowModal();
+	// The dialog takes a CAbstractFile, so it works for a shared file as well as
+	// an in-progress download; the "Get from Kad" button inside it drives the
+	// on-demand community ratings/comments lookup.
+	if (m_file) {
+		CCommentDialogLst(this, m_file).ShowModal();
 	}
 }
 
