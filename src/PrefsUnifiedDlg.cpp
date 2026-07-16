@@ -1110,16 +1110,23 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 			"connections cannot be enabled unless a valid password is specified."));
 	}
 
+#ifndef CLIENT_GUI
 	// The web server and amuleapi are EC clients of the core; without external
 	// connections (which the check above may itself have just turned off for a
 	// missing password) they can never connect. OnCheckBoxChange already warns
 	// live and reverts the toggles, so this is a silent backstop that keeps the
 	// saved prefs consistent for a config loaded in a mismatched state.
+	//
+	// amulegui (CLIENT_GUI) is itself a connected EC client, so external
+	// connections are necessarily enabled on the daemon; the local
+	// AcceptExternalConnections pref only mirrors amulegui's own remote.conf and
+	// never the daemon's real state, so this backstop must not run there.
 	if ((thePrefs::GetWSIsEnabled() || thePrefs::GetAmuleApiIsEnabled()) &&
 		!thePrefs::AcceptExternalConnections()) {
 		thePrefs::SetWSIsEnabled(false);
 		thePrefs::SetAmuleApiIsEnabled(false);
 	}
+#endif
 
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
@@ -1482,15 +1489,25 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 	// The web server and amuleapi are EC clients of the core: they can only
 	// run when external connections are enabled. Warn live and refuse the
 	// invalid combination instead of waiting for OK.
+	//
+	// amulegui (CLIENT_GUI) is itself a connected EC client, so external
+	// connections are necessarily enabled on the daemon and the precondition is
+	// always met. The IDC_EXT_CONN_ACCEPT checkbox is hidden there and only
+	// mirrors amulegui's local remote.conf, so reading it would wrongly block
+	// the toggle -- skip the EC guard and keep just the deprecation nudge.
 	case IDC_ENABLE_WEB:
 	case IDC_ENABLE_AMULEAPI:
+#ifndef CLIENT_GUI
 		if (value && !CastChild(IDC_EXT_CONN_ACCEPT, wxCheckBox)->IsChecked()) {
 			wxMessageBox(_("The web server and aMule API require external connections "
 				       "to be enabled."),
 				_("Message"),
 				wxOK | wxICON_INFORMATION);
 			CastChild(id, wxCheckBox)->SetValue(false);
-		} else if (value && id == IDC_ENABLE_WEB) {
+			break;
+		}
+#endif
+		if (value && id == IDC_ENABLE_WEB) {
 			// Enabled and allowed: nudge toward the actively-developed API.
 			wxMessageBox(_("The aMule web server is deprecated. Consider running the aMule "
 				       "API instead."),
@@ -1499,8 +1516,11 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		}
 		break;
 
+#ifndef CLIENT_GUI
 	case IDC_EXT_CONN_ACCEPT: {
 		// Turning external connections off strands both EC-client services.
+		// (amulegui hides this checkbox and always runs over EC, so the case is
+		// core-only.)
 		wxCheckBox *web = CastChild(IDC_ENABLE_WEB, wxCheckBox);
 		wxCheckBox *api = CastChild(IDC_ENABLE_AMULEAPI, wxCheckBox);
 		if (!value && (web->IsChecked() || api->IsChecked())) {
@@ -1513,6 +1533,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		}
 		break;
 	}
+#endif
 
 	case IDC_NETWORKKAD: {
 		wxCheckBox *udpPort = (wxCheckBox *)FindWindow(IDC_UDPENABLE);
