@@ -26,9 +26,10 @@
 #include <algorithm> // Needed for std::max
 #include <vector>    // Needed for std::vector
 
-#include <wx/clipbrd.h> // Needed for wxTheClipboard
-#include <wx/dataobj.h> // Needed for wxTextDataObject
-#include <wx/menu.h>    // Needed for wxMenu (context-menu)
+#include <wx/clipbrd.h>  // Needed for wxTheClipboard
+#include <wx/dataobj.h>  // Needed for wxTextDataObject
+#include <wx/menu.h>     // Needed for wxMenu (context-menu)
+#include <wx/notebook.h> // Needed for wxNotebook (log-tab insertion, CLIENT_GUI)
 
 #include "muuli_wdr.h"      // Needed for ID_ADDTOLIST
 #include "ServerWnd.h"      // Interface declarations.
@@ -51,6 +52,9 @@ wxBEGIN_EVENT_TABLE(CServerWnd, wxPanel)
 	EVT_TEXT_ENTER(IDC_SERVERLISTURL, CServerWnd::OnBnClickedUpdateservermetfromurl)
 	EVT_BUTTON(ID_BTN_RESET, CServerWnd::OnBnClickedResetLog)
 	EVT_BUTTON(ID_BTN_RESET_SERVER, CServerWnd::OnBnClickedResetServerLog)
+#ifdef CLIENT_GUI
+	EVT_BUTTON(ID_BTN_RESET_GUILOG, CServerWnd::OnBnClickedResetGuiLog)
+#endif
 	EVT_SPLITTER_SASH_POS_CHANGING(ID_SRV_SPLITTER, CServerWnd::OnSashPositionChanging)
 	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER, CServerWnd::OnSashPositionChanged)
 wxEND_EVENT_TABLE()
@@ -59,6 +63,19 @@ CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 : wxPanel(pParent, -1)
 {
 	wxSizer *sizer = serverListDlg(this, TRUE);
+
+#ifdef CLIENT_GUI
+	// amulegui only: "aMule Log" carries the daemon/core log forwarded over EC,
+	// so give the GUI client's own messages a second tab. Inserted here rather
+	// than in serverListDlg() because muuli_wdr is compiled into a shared
+	// library without CLIENT_GUI and cannot tell the two builds apart.
+	wxNotebook *srvLogNotebook = CastChild(ID_SRVLOG_NOTEBOOK, wxNotebook);
+	if (srvLogNotebook) {
+		wxPanel *guiLogPanel = new wxPanel(srvLogNotebook, -1);
+		aMuleGuiLog(guiLogPanel, FALSE);
+		srvLogNotebook->InsertPage(1, guiLogPanel, _("aMuleGUI Log"));
+	}
+#endif
 
 	// init serverlist
 	// no use now. too early.
@@ -165,6 +182,15 @@ void CServerWnd::OnBnClickedResetServerLog(wxCommandEvent &WXUNUSED(evt))
 {
 	theApp->GetServerLog(true); // Reset it
 }
+
+#ifdef CLIENT_GUI
+void CServerWnd::OnBnClickedResetGuiLog(wxCommandEvent &WXUNUSED(evt))
+{
+	// Local-only clear of the "aMuleGUI Log" tab. Unlike the "aMule Log" reset,
+	// there is nothing to reset on the daemon -- this log is generated here.
+	theApp->amuledlg->ResetLog(ID_GUILOGVIEW);
+}
+#endif
 
 void CServerWnd::UpdateED2KInfo()
 {

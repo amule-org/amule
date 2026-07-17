@@ -62,6 +62,9 @@ private:
 	void OnBnClickedUpdateservermetfromurl(wxCommandEvent &evt);
 	void OnBnClickedResetLog(wxCommandEvent &evt);
 	void OnBnClickedResetServerLog(wxCommandEvent &evt);
+#ifdef CLIENT_GUI
+	void OnBnClickedResetGuiLog(wxCommandEvent &evt);
+#endif
 
 	// Copy handlers for ED2K Info / Kad Info notebook tabs (#814).
 	// Routed through wxEvtHandler bindings rather than the static

@@ -712,11 +712,30 @@ void CamuleDlg::ResetLog(int id)
 
 void CamuleDlg::AddLogLine(const wxString &line)
 {
+	// The "aMule Log" tab: the daemon/core log (over EC in amulegui, or this
+	// process's own log in the monolithic build).
+	AddLogLineToView(line, ID_LOGVIEW, m_logLastCritical);
+}
+
+void CamuleDlg::AddGuiLogLine(const wxString &line)
+{
+#ifdef CLIENT_GUI
+	// amulegui: the GUI client's own messages go to the separate "aMuleGUI Log"
+	// tab, keeping "aMule Log" for the daemon log.
+	AddLogLineToView(line, ID_GUILOGVIEW, m_guiLogLastCritical);
+#else
+	// Monolithic: there is a single log tab.
+	AddLogLine(line);
+#endif
+}
+
+void CamuleDlg::AddLogLineToView(const wxString &line, int viewId, int &lastCritical)
+{
 	bool addtostatusbar = line[0] == '!';
 	wxString bufferline = line.Mid(1);
 
 	// Add the message to the log-view
-	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
+	wxTextCtrl *ct = CastByID(viewId, m_serverwnd, wxTextCtrl);
 	if (ct) {
 		// Bold critical log-lines (works on Windows too thanks to the
 		// wxTE_RICH2 style in muuli). SetDefaultStyle() is expensive on the
@@ -724,14 +743,14 @@ void CamuleDlg::AddLogLine(const wxString &line)
 		// changes rather than on every line -- a remote-GUI first-sync
 		// backlog is thousands of lines (issue #445).
 		int critical = addtostatusbar ? 1 : 0;
-		if (critical != m_logLastCritical) {
+		if (critical != lastCritical) {
 			wxTextAttr style = ct->GetDefaultStyle();
 			wxFont font = style.GetFont();
 			font.SetWeight(addtostatusbar ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
 			style.SetFont(font);
 			style.SetFontSize(8);
 			ct->SetDefaultStyle(style);
-			m_logLastCritical = critical;
+			lastCritical = critical;
 		}
 		ct->AppendText(bufferline);
 		// During a batch (BeginLogBatch/EndLogBatch) the caller scrolls once

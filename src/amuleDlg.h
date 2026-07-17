@@ -136,6 +136,9 @@ public:
 	~CamuleDlg();
 
 	void AddLogLine(const wxString &line);
+	// The GUI client's own log. In amulegui this is a separate "aMuleGUI Log"
+	// tab; in the monolithic build it is the same tab as AddLogLine().
+	void AddGuiLogLine(const wxString &line);
 	void AddServerMessageLine(wxString &message);
 	void ResetLog(int id);
 
@@ -263,6 +266,12 @@ private:
 	//! 0 = normal, -1 = not yet set) so SetDefaultStyle() is only touched
 	//! when the weight actually changes.
 	int m_logLastCritical = -1;
+	//! Same, tracked separately for the amulegui-only "aMuleGUI Log" view.
+	int m_guiLogLastCritical = -1;
+
+	//! Shared append logic for both log views. viewId is the text-control ID
+	//! and lastCritical the matching per-view bold-state cache.
+	void AddLogLineToView(const wxString &line, int viewId, int &lastCritical);
 	int m_CurrentBlinkBitmap;
 	uint32 m_last_iconizing;
 	// The "new version available" popup is shown at most once per session;

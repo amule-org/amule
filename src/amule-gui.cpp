@@ -263,10 +263,10 @@ void CamuleGuiBase::AddGuiLogLine(const wxString &line)
 {
 	if (amuledlg) {
 		while (!m_logLines.empty()) {
-			amuledlg->AddLogLine(m_logLines.front());
+			amuledlg->AddGuiLogLine(m_logLines.front());
 			m_logLines.pop_front();
 		}
-		amuledlg->AddLogLine(line);
+		amuledlg->AddGuiLogLine(line);
 	} else {
 		m_logLines.push_back(line);
 	}

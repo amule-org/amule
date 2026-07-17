@@ -2324,7 +2324,29 @@ wxSizer *aMuleLog( wxWindow *parent, bool call_fit, bool set_sizer )
         if (call_fit)
             item0->SetSizeHints( parent );
     }
-    
+
+    return item0;
+}
+
+// amulegui only: the GUI client's own log (mirrors aMuleLog but its own
+// text control + Clear button). Added as a separate tab so "aMule Log" carries
+// only the daemon/core log received over EC.
+wxSizer *aMuleGuiLog( wxWindow *parent, bool call_fit, bool set_sizer )
+{
+    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
+
+    CMuleTextCtrl *item2 = new CMuleTextCtrl( parent, ID_GUILOGVIEW, "", wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL|wxTE_RICH2 );
+    item0->Add( item2, wxSizerFlags(1).Expand().Border(wxALL, 5) );
+    wxButton *item3 = new wxButton( parent, ID_BTN_RESET_GUILOG, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
+    item3->SetToolTip( _("Click this button to reset the log.") );
+    item0->Add( item3, wxSizerFlags().Right().Border(wxRIGHT|wxBOTTOM, 5) );
+    if (set_sizer)
+    {
+        parent->SetSizer( item0 );
+        if (call_fit)
+            item0->SetSizeHints( parent );
+    }
+
     return item0;
 }
 
@@ -2395,6 +2417,10 @@ wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit, bool set_sizer )
     wxPanel *item4 = new wxPanel( item3, -1 );
     aMuleLog( item4, FALSE );
     item3->AddPage( item4, _("aMule Log") );
+
+    // NB: the amulegui-only "aMuleGUI Log" page is inserted here at runtime by
+    // CServerWnd -- this file (muuli_wdr) is compiled into a shared library
+    // without CLIENT_GUI, so it cannot make the distinction itself.
 
     wxPanel *item5 = new wxPanel( item3, -1 );
     ServerInfoLog( item5, FALSE );

@@ -460,6 +460,12 @@ wxSizer *ServerInfoLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = 
 #define ID_BTN_RESET 10243
 wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
+// amulegui only: a second log tab for the GUI client's own messages, so the
+// "aMule Log" tab shows just the daemon/core log forwarded over EC.
+#define ID_GUILOGVIEW 10476
+#define ID_BTN_RESET_GUILOG 10477
+wxSizer *aMuleGuiLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
+
 #define ID_UPDATELIST 10244
 #define IDC_SERVERLISTURL 10245
 #define IDC_SERVERNAME 10246
