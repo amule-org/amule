@@ -44,6 +44,7 @@
 
 class wxTimerEvent;
 class wxTextCtrl;
+class wxNotebook;
 class CVersionCheck;
 
 class CIP2Country;
@@ -318,8 +319,21 @@ private:
 	WX_DECLARE_STRING_HASH_MAP(wxZipEntry *, ZipCatalog);
 	ZipCatalog cat;
 
-	PageType m_logpages[4];
+	// Network-conditional log tabs (Server Info / ED2K Info / Kad Info),
+	// captured by the control each page hosts rather than by notebook index:
+	// the tab layout differs between the monolithic build and amulegui (which
+	// adds an "aMuleGUI Log" tab), and index-based tracking silently broke Kad
+	// Info when that tab was inserted. DoNetworkRearrange() shows/hides these by
+	// identity; the always-on tabs (aMule Log, aMuleGUI Log) are left alone.
+	PageType m_logServerInfo;
+	PageType m_logED2KInfo;
+	PageType m_logKadInfo;
 	PageType m_networkpages[2];
+
+	// Finds the notebook page hosting the control ctrlId and captures its
+	// window + tab label. Used to track the network-conditional log tabs by
+	// identity instead of position.
+	PageType CaptureLogPage(wxNotebook *notebook, wxWindowID ctrlId);
 
 	bool LoadGUIPrefs(bool override_pos, bool override_size);
 	bool SaveGUIPrefs();

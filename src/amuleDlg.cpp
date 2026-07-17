@@ -332,13 +332,15 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	wxNotebook *logs_notebook = CastChild(ID_SRVLOG_NOTEBOOK, wxNotebook);
 	wxNotebook *networks_notebook = CastChild(ID_NETNOTEBOOK, wxNotebook);
 
-	wxASSERT(logs_notebook->GetPageCount() == 4);
 	wxASSERT(networks_notebook->GetPageCount() == 2);
 
-	for (uint32 i = 0; i < logs_notebook->GetPageCount(); ++i) {
-		m_logpages[i].page = logs_notebook->GetPage(i);
-		m_logpages[i].name = logs_notebook->GetPageText(i);
-	}
+	// Capture the network-conditional log tabs by the control each hosts, not
+	// by index -- amulegui's tab layout differs from the monolithic build, and
+	// an index-based scheme silently dropped Kad Info when the "aMuleGUI Log"
+	// tab was added. DoNetworkRearrange() shows/hides these by identity.
+	m_logServerInfo = CaptureLogPage(logs_notebook, ID_SERVERINFO);
+	m_logED2KInfo = CaptureLogPage(logs_notebook, ID_ED2KINFO);
+	m_logKadInfo = CaptureLogPage(logs_notebook, ID_KADINFO);
 
 	for (uint32 i = 0; i < networks_notebook->GetPageCount(); ++i) {
 		m_networkpages[i].page = networks_notebook->GetPage(i);
@@ -1806,6 +1808,27 @@ void CamuleDlg::OnExit(wxCommandEvent &WXUNUSED(evt))
 	Close(true);
 }
 
+PageType CamuleDlg::CaptureLogPage(wxNotebook *notebook, wxWindowID ctrlId)
+{
+	PageType result{ nullptr, wxString() };
+	// The control lives inside its notebook page (a direct child of the
+	// notebook); walk up from the control to that page.
+	wxWindow *win = notebook->FindWindow(ctrlId);
+	wxASSERT(win);
+	if (!win) {
+		return result;
+	}
+	while (win->GetParent() && win->GetParent() != notebook) {
+		win = win->GetParent();
+	}
+	result.page = win;
+	const int idx = notebook->FindPage(win);
+	if (idx != wxNOT_FOUND) {
+		result.name = notebook->GetPageText(idx);
+	}
+	return result;
+}
+
 void CamuleDlg::DoNetworkRearrange()
 {
 #if !defined(__WXOSX_COCOA__)
@@ -1819,8 +1842,14 @@ void CamuleDlg::DoNetworkRearrange()
 	// set the log windows
 	wxNotebook *logs_notebook = CastChild(ID_SRVLOG_NOTEBOOK, wxNotebook);
 
-	while (logs_notebook->GetPageCount() > 1) {
-		logs_notebook->RemovePage(logs_notebook->GetPageCount() - 1);
+	// Detach the network-conditional tabs by identity (never by index -- the
+	// always-on tabs "aMule Log" and, in amulegui, "aMuleGUI Log" must be left
+	// in place), then re-add the ones whose network is enabled.
+	for (const PageType *p : { &m_logServerInfo, &m_logED2KInfo, &m_logKadInfo }) {
+		const int idx = logs_notebook->FindPage(p->page);
+		if (idx != wxNOT_FOUND) {
+			logs_notebook->RemovePage(idx);
+		}
 	}
 
 	if (thePrefs::GetNetworkED2K()) {
@@ -1829,12 +1858,12 @@ void CamuleDlg::DoNetworkRearrange()
 		// the EC_OP_GET_SERVERINFO / EC_OP_CLEAR_SERVERINFO polling
 		// in CamuleRemoteGuiApp now mirrors the server_msg buffer, so
 		// the tab is shown unconditionally as in the monolithic build.
-		logs_notebook->AddPage(m_logpages[1].page, m_logpages[1].name);
-		logs_notebook->AddPage(m_logpages[2].page, m_logpages[2].name);
+		logs_notebook->AddPage(m_logServerInfo.page, m_logServerInfo.name);
+		logs_notebook->AddPage(m_logED2KInfo.page, m_logED2KInfo.name);
 	}
 
 	if (thePrefs::GetNetworkKademlia()) {
-		logs_notebook->AddPage(m_logpages[3].page, m_logpages[3].name);
+		logs_notebook->AddPage(m_logKadInfo.page, m_logKadInfo.name);
 	}
 
 	// Set the main window.
