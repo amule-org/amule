@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-17 16:55+0200\n"
-"PO-Revision-Date: 2026-07-17 10:57+0000\n"
+"PO-Revision-Date: 2026-07-17 16:41+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -2228,11 +2228,11 @@ msgstr "Força a compressão ZLIB independente da localidade IP discado (útil q
 
 #: src/ExternalConnector.cpp:549
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "Acrescenta uma cópia de toda saída do console a este arquivo de log (padrão: <config-dir>/amuleapi.log)."
 
 #: src/ExternalConnector.cpp:555
 msgid "Do not write a log file; print to the console only."
-msgstr ""
+msgstr "Não escrever um arquivo de log; imprimir apenas no console."
 
 #: src/FileDetailDialog.cpp:78
 msgid "File Details"
@@ -6349,9 +6349,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "Não foi possível resolver o DNS para %s: Impossível conectar!"
 
 #: src/ServerWnd.cpp:76
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "Log do aMule"
+msgstr "Log do aMuleGUI"
 
 #: src/ServerWnd.cpp:136
 msgid "Server not added: No IP or hostname specified."
