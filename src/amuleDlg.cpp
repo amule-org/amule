@@ -405,6 +405,20 @@ void CamuleDlg::SetActiveDialog(DialogType type, wxWindow *dlg)
 	}
 }
 
+void CamuleDlg::ShowSearchWindow()
+{
+	if (!m_is_safe_state || m_nActiveDialog == DT_SEARCH_WND) {
+		return;
+	}
+	// A real toolbar click lets wx toggle the pressed button on, then
+	// OnToolBarButton switches the panel and untoggles the previous button.
+	// Reproduce that: pre-toggle Search, then run the handler so the panel, the
+	// ED2K-links handler, the untoggle, and its lastbutton bookkeeping all match.
+	m_wndToolbar->ToggleTool(ID_BUTTONSEARCH, true);
+	wxCommandEvent evt(wxEVT_COMMAND_TOOL_CLICKED, ID_BUTTONSEARCH);
+	OnToolBarButton(evt);
+}
+
 void CamuleDlg::UpdateTrayIcon(int percent)
 {
 	// set trayicon-icon

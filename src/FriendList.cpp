@@ -200,7 +200,7 @@ void CFriendList::RemoveAllFriendSlots()
 	}
 }
 
-void CFriendList::RequestSharedFileList(CFriend *cur_friend)
+void CFriendList::RequestSharedFileList(CFriend *cur_friend, uint32 browseSearchId)
 {
 	if (cur_friend) {
 		CUpDownClient *client = cur_friend->GetLinkedClient().GetClient();
@@ -211,6 +211,9 @@ void CFriendList::RequestSharedFileList(CFriend *cur_friend)
 			theApp->clientlist->AddClient(client);
 			cur_friend->LinkClient(CCLIENTREF(client, "CFriendList::RequestSharedFileList"));
 		}
+		// Pin the EC-allocated browse ID (0 for a monolithic local browse) before
+		// firing the request so ProcessSharedFileList files the listing under it.
+		client->SetBrowseSearchId(browseSearchId);
 		client->RequestSharedFileList();
 	}
 }

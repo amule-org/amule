@@ -173,6 +173,12 @@ public:
 	 */
 	CUpDownClient *FindClientByECID(uint32 ecid) const;
 
+	/**
+	 * Finds the client a browse ("View Files") search ID was pinned on, or NULL.
+	 * Used by the EC SEARCH_PROGRESS poll to report the browse's lifecycle.
+	 */
+	CUpDownClient *FindClientByBrowseSearchId(uint32 browseSearchId) const;
+
 	//! The list-type used to store clients IPs and ban time information
 	typedef std::map<uint32, uint64> ClientMap;
 

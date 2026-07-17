@@ -172,6 +172,9 @@ void CUpDownClient::Init()
 	bytesReceivedCycle = 0;
 	m_nServerPort = 0;
 	m_iFileListRequested = 0;
+	m_browseSearchId = 0;
+	m_browseTotalDirs = 0;
+	m_browseStatus = BROWSE_NONE;
 	m_dwLastUpRequest = 0;
 	m_bEmuleProtocol = false;
 	m_bCompleteSource = false;
@@ -1380,6 +1383,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	if (m_iFileListRequested) {
 		AddLogLineC(CFormat(_("Failed to retrieve shared files from user '%s'")) % GetUserName());
 		m_iFileListRequested = 0;
+		MarkBrowse(BROWSE_FAILED);
 	}
 
 	if (bDelete) {
@@ -2033,11 +2037,53 @@ void CUpDownClient::ReGetClientSoft()
 	UpdateStats();
 }
 
+uint16 CUpDownClient::GetBrowseBarValue() const
+{
+	if (m_browseStatus == BROWSE_FINISHED || m_browseStatus == BROWSE_FAILED) {
+		// Clear the bar (search "finished" sentinel; browse is not Kad).
+		return 0xffff;
+	}
+	if (m_browseTotalDirs > 0) {
+		int done = m_browseTotalDirs - m_iFileListRequested;
+		if (done < 0) {
+			done = 0;
+		} else if (done > m_browseTotalDirs) {
+			done = m_browseTotalDirs;
+		}
+		return static_cast<uint16>(done * 100 / m_browseTotalDirs);
+	}
+	// Connecting, or a flat share with no directory list: no meaningful percent.
+	return 0;
+}
+
+void CUpDownClient::UpdateBrowseBar()
+{
+	theApp->searchlist->SetBrowseBar(GetBrowseRoutingId(), GetBrowseBarValue());
+}
+
+void CUpDownClient::MarkBrowse(EBrowseStatus s)
+{
+	m_browseStatus = s;
+	UpdateBrowseBar();
+	// Route by the tab's result-routing key (the EC-allocated browse ID on the
+	// daemon, or this client's pointer for a monolithic local browse). The
+	// notify is a no-op on the daemon; amuleGUI learns the status over EC.
+	Notify_Browse_Status((uint64)GetBrowseRoutingId(), s);
+}
+
 void CUpDownClient::RequestSharedFileList()
 {
 	if (m_iFileListRequested == 0) {
 		AddDebugLogLineN(logClient, wxString("Requesting shared files from ") + GetUserName());
 		m_iFileListRequested = 1;
+		m_browseTotalDirs = 0;
+		// Open the "View Files" tab up front (monolithic) so a peer that denies
+		// or never answers still shows a tab that can flip to "failed", rather
+		// than nothing. The daemon uses the EC-allocated browse ID as the
+		// routing key; a monolithic local browse uses this client's pointer.
+		m_browseStatus = BROWSE_IN_PROGRESS;
+		UpdateBrowseBar();
+		Notify_Browse_Started(ECID(), GetUserName(), (uint64)GetBrowseRoutingId());
 		TryToConnect(true);
 	} else {
 		AddDebugLogLineN(logClient,
@@ -2051,6 +2097,8 @@ void CUpDownClient::ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSiz
 	if (m_iFileListRequested > 0) {
 		m_iFileListRequested--;
 		theApp->searchlist->ProcessSharedFileList(pachPacket, nSize, this, NULL, pszDirectory);
+		// One directory's worth of files arrived; advance the browse bar.
+		UpdateBrowseBar();
 	}
 }
 

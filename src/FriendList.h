@@ -55,7 +55,9 @@ public:
 		uint32 lastSeen = 0,
 		uint32 lastChatted = 0);
 	void RemoveFriend(CFriend *toremove);
-	void RequestSharedFileList(CFriend *Friend);
+	// browseSearchId != 0 pins an EC-allocated browse ("View Files") search ID on
+	// the friend's client so ProcessSharedFileList files the listing under it.
+	void RequestSharedFileList(CFriend *Friend, uint32 browseSearchId = 0);
 
 	void SetFriendSlot(CFriend *Friend, bool new_state);
 	void StartChatSession(CFriend *Friend);

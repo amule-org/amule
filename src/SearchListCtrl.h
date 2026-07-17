@@ -126,6 +126,25 @@ public:
 	void SetSearchId(wxUIntPtr id) { m_nResultsID = id; }
 
 	/**
+	 * "View Files" (browse) tabs are keyed by the browsed peer's ECID (stable
+	 * across a re-browse and across a search-ID rekey), so a second browse of
+	 * the same peer refreshes this tab instead of opening a duplicate. 0 for an
+	 * ordinary search tab.
+	 */
+	uint32 GetBrowseEcid() const { return m_browseEcid; }
+	void SetBrowseEcid(uint32 ecid) { m_browseEcid = ecid; }
+	bool IsBrowse() const { return m_browseEcid != 0; }
+
+	// Peer display name and lifecycle (EBrowseStatus) for a browse tab. Held on
+	// the control so CSearchDlg::UpdateHitCount can recompose the tab label
+	// ("<peer> (N…)" while receiving, "(N)" done, "(failed)") on every result
+	// or status change without re-parsing the label text.
+	const wxString &GetBrowseName() const { return m_browseName; }
+	void SetBrowseName(const wxString &name) { m_browseName = name; }
+	uint32 GetBrowseStatus() const { return m_browseStatus; }
+	void SetBrowseStatus(uint32 status) { m_browseStatus = status; }
+
+	/**
 	 * Sets the filter which decides which results should be shown.
 	 *
 	 * @param regExp A regular expression targeting the filenames.
@@ -242,6 +261,12 @@ protected:
 
 	//! The ID of the search-results which the list is displaying or zero if unset.
 	wxUIntPtr m_nResultsID;
+
+	//! ECID of the browsed peer for a "View Files" tab, or 0 for a search tab.
+	uint32 m_browseEcid;
+	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
+	wxString m_browseName;
+	uint32 m_browseStatus;
 
 	//! Custom drawing, needed to display children of search-results.
 	void OnDrawItem(int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);

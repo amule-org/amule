@@ -498,6 +498,17 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	if (file->GetParent()) {
 		AddTag(EC_TAG_SEARCH_PARENT, file->GetParent()->ECID(), valuemap);
 	}
+	// Browse ("View Files") source info: the peer this listing came from and the
+	// shared folder the file lives in. Set only on results filed from a peer's
+	// shared-file list (CSearchList::ProcessSharedFileList), so ordinary
+	// server/Kad hits — which never set these — emit nothing here.
+	if (file->GetClientID()) {
+		AddTag(CECTag(EC_TAG_SEARCHFILE_CLIENT_ID, file->GetClientID()), valuemap);
+		AddTag(CECTag(EC_TAG_SEARCHFILE_CLIENT_PORT, file->GetClientPort()), valuemap);
+	}
+	if (!file->GetDirectory().IsEmpty()) {
+		AddTag(CECTag(EC_TAG_SEARCHFILE_DIRECTORY, file->GetDirectory()), valuemap);
+	}
 	if (file->HasRating()) {
 		AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, (uint8)file->UserRating()), valuemap);
 	}

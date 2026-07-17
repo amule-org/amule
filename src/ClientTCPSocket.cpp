@@ -969,6 +969,8 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 						m_client->GetFullIP());
 			}
 			m_client->SetFileListRequested(uDirs);
+			// Total directory count drives the browse progress bar percent.
+			m_client->SetBrowseTotalDirs(static_cast<int>(uDirs));
 		} else {
 			AddLogLineC(CFormat(_("User %s (%u) sent unrequested shared dirs.")) %
 				    m_client->GetUserName() % m_client->GetUserIDHybrid());
@@ -993,6 +995,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			if (m_client->GetFileListRequested() == 0) {
 				AddLogLineC(CFormat(_("User %s (%u) finished sending sharedfiles-list")) %
 					    m_client->GetUserName() % m_client->GetUserIDHybrid());
+				m_client->MarkBrowse(BROWSE_FINISHED);
 			}
 		} else {
 			AddLogLineC(CFormat(_("User %s (%u) sent unwanted sharedfiles-list")) %
@@ -1011,6 +1014,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			    m_client->GetUserName() % m_client->GetUserIDHybrid());
 
 		m_client->SetFileListRequested(0);
+		m_client->MarkBrowse(BROWSE_FAILED);
 		break;
 
 	default:

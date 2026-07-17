@@ -580,6 +580,17 @@ public:
 	}
 	bool GetRating(uint8 &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_RATING, target); }
 
+	// Browse ("View Files") source info: the peer's id/port and the shared
+	// folder this result lives in. The daemon emits these only for browse
+	// results; for ordinary server/Kad results the tags are absent and the
+	// out-params are left untouched (callers keep their defaults).
+	void GetBrowseSource(uint32_t &clientID, uint16_t &clientPort, wxString &directory) const
+	{
+		AssignIfExist(EC_TAG_SEARCHFILE_CLIENT_ID, &clientID);
+		AssignIfExist(EC_TAG_SEARCHFILE_CLIENT_PORT, &clientPort);
+		AssignIfExist(EC_TAG_SEARCHFILE_DIRECTORY, &directory);
+	}
+
 private:
 	CMD4Hash GetMD4Data(); // Block it, because it doesn't work anymore!
 };

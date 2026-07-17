@@ -1418,7 +1418,33 @@ static CECPacket *Get_EC_Response_Server(const CECPacket *request)
 	return response;
 }
 
-static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
+// Allocate + register a browse ("View Files") search ID in the shared EC search
+// ring (defined below, after the registry). Reuses the ed2k bottom-half
+// allocator: a browse is just another addressable result set, so it draws from
+// the same disjoint id space and LRU eviction as a normal search — no separate
+// range needed. Defined after s_ecSearches.
+static uint32 AllocateBrowseSearchId();
+
+// Reply to a browse request. Multi-search clients get the allocated search ID
+// (and the echoed optimistic ref) so amuleGUI can rekey its tab; legacy clients
+// get the historical empty acknowledgement.
+static CECPacket *BuildBrowseReply(uint32 browseId, const CECTag *reftag)
+{
+	if (browseId == 0) {
+		return new CECPacket(EC_OP_NOOP);
+	}
+	// EC_OP_STRINGS with both SEARCH_ID + SEARCH_REF is exactly what the search
+	// START reply sends, so amuleGUI's CSearchListRem::HandlePacket rekeys the
+	// optimistic browse tab and starts polling its progress via the same path.
+	CECPacket *reply = new CECPacket(EC_OP_STRINGS);
+	reply->AddTag(CECTag(EC_TAG_SEARCH_ID, browseId));
+	if (reftag) {
+		reply->AddTag(CECTag(EC_TAG_SEARCH_REF, static_cast<uint32>(reftag->GetInt())));
+	}
+	return reply;
+}
+
+static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSearch)
 {
 	CECPacket *response = NULL;
 	const CECTag *tag = request->GetTagByName(EC_TAG_FRIEND_ADD);
@@ -1469,12 +1495,21 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 			}
 		}
 	} else if ((tag = request->GetTagByName(EC_TAG_FRIEND_SHARED))) {
+		// Browse ("View Files") over EC. For a multi-search-capable client the
+		// daemon allocates a real, wire-safe search ID, registers it in the ring
+		// and pins it on the target client so ProcessSharedFileList files the
+		// returned listing under it; the reply carries that ID (echoing the
+		// GUI's optimistic EC_TAG_SEARCH_REF) so amuleGUI rekeys its browse tab.
+		// Legacy clients keep the old fire-and-forget EC_OP_NOOP (they can't
+		// display a browse anyway).
+		const uint32 browseId = multiSearch ? AllocateBrowseSearchId() : 0;
+		const CECTag *reftag = tag->GetTagByName(EC_TAG_SEARCH_REF);
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_FRIEND);
 		if (subtag) {
 			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
-				theApp->friendlist->RequestSharedFileList(Friend);
-				response = new CECPacket(EC_OP_NOOP);
+				theApp->friendlist->RequestSharedFileList(Friend, browseId);
+				response = BuildBrowseReply(browseId, reftag);
 			} else {
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Friend not found.")));
@@ -1482,8 +1517,9 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 		} else if ((subtag = tag->GetTagByName(EC_TAG_CLIENT))) {
 			CUpDownClient *client = theApp->clientlist->FindClientByECID(subtag->GetInt());
 			if (client) {
+				client->SetBrowseSearchId(browseId);
 				client->RequestSharedFileList();
-				response = new CECPacket(EC_OP_NOOP);
+				response = BuildBrowseReply(browseId, reftag);
 			} else {
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Client not found.")));
@@ -1584,6 +1620,13 @@ private:
 
 CEcSearchRegistry s_ecSearches;
 } // namespace
+
+static uint32 AllocateBrowseSearchId()
+{
+	uint32 id = s_ecSearches.AllocateEd2kId();
+	s_ecSearches.Register(id);
+	return id;
+}
 
 static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	bool partial_update_active,
@@ -2443,7 +2486,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	// Friends
 	//
 	case EC_OP_FRIEND:
-		response = Get_EC_Response_Friend(request);
+		response = Get_EC_Response_Friend(request, m_multiSearchActive);
 		break;
 
 	//
@@ -2520,6 +2563,27 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			}
 			s_ecSearches.Touch(want);
 			sid = want;
+			// A browse ("View Files") ID is not a CSearchList search: report its
+			// lifecycle from the peer's client (browsing / finished / failed)
+			// plus the running result count, so amuleGUI's tab marker and hit
+			// count update. EC_TAG_SEARCH_BROWSE_STATUS is the discriminator the
+			// GUI branches on before the normal progress decode.
+			if (CUpDownClient *browseClient =
+					theApp->clientlist->FindClientByBrowseSearchId(sid)) {
+				// Bar value (0..100 running, 0xffff done/failed) so amuleGUI
+				// drives the browse tab's gauge via the same UpdateSearchProgress
+				// path as a search. Kept first for consistency with the search
+				// reply (GetFirstTagSafe).
+				response->AddTag(CECTag(EC_TAG_SEARCH_STATUS,
+					theApp->searchlist->GetSearchBarStatusById(sid)));
+				response->AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS,
+					static_cast<uint8>(browseClient->GetBrowseStatus())));
+				response->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+				response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
+					static_cast<uint32>(
+						theApp->searchlist->GetSearchResults(sid).size())));
+				break;
+			}
 			// Per-ID lifecycle. STATE / PERCENT / RESULT_COUNT are addressed
 			// by the search ID; KIND reflects the most-recently-started
 			// search's type (the scalar), which is exact for the common case

@@ -2707,26 +2707,41 @@ void CFriendListRem::SetFriendSlot(CFriend *Friend, bool new_state)
 	m_conn->SendPacket(&req);
 }
 
-void CFriendListRem::RequestSharedFileList(CFriend *Friend)
+// "View Files" (browse) over EC. On a multi-search daemon, open an optimistic
+// browse tab and correlate it via EC_TAG_SEARCH_REF: the daemon allocates the
+// browse's search id, echoes the ref, and CSearchListRem::HandlePacket rekeys
+// the tab (and starts polling its progress) exactly like a search START reply.
+// On a legacy daemon (no multi-search) fall back to the old fire-and-forget
+// request with no tab — the daemon can't surface browse results over EC there,
+// so opening a tab would just leave a phantom empty page. Behaviour unchanged.
+static void SendBrowseRequest(
+	CRemoteConnect *conn, CECEmptyTag &sharedtag, uint32 peerEcid, const wxString &peerName)
 {
 	CECPacket req(EC_OP_FRIEND);
+	if (conn->ServerSupportsMultiSearch() && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		wxUIntPtr localID = theApp->amuledlg->m_searchwnd->AllocateOptimisticId();
+		theApp->amuledlg->m_searchwnd->EnsureBrowseTab(peerEcid, peerName, localID);
+		sharedtag.AddTag(CECTag(EC_TAG_SEARCH_REF, (uint32)localID));
+		req.AddTag(sharedtag);
+		conn->SendRequest(theApp->searchlist, &req);
+	} else {
+		req.AddTag(sharedtag);
+		conn->SendPacket(&req);
+	}
+}
 
+void CFriendListRem::RequestSharedFileList(CFriend *Friend)
+{
 	CECEmptyTag sharedtag(EC_TAG_FRIEND_SHARED);
 	sharedtag.AddTag(CECTag(EC_TAG_FRIEND, Friend->ECID()));
-	req.AddTag(sharedtag);
-
-	m_conn->SendPacket(&req);
+	SendBrowseRequest(m_conn, sharedtag, Friend->ECID(), Friend->GetName());
 }
 
 void CFriendListRem::RequestSharedFileList(CClientRef &client)
 {
-	CECPacket req(EC_OP_FRIEND);
-
 	CECEmptyTag sharedtag(EC_TAG_FRIEND_SHARED);
 	sharedtag.AddTag(CECTag(EC_TAG_CLIENT, client.ECID()));
-	req.AddTag(sharedtag);
-
-	m_conn->SendPacket(&req);
+	SendBrowseRequest(m_conn, sharedtag, client.ECID(), client.GetUserName());
 }
 
 /*
@@ -2847,11 +2862,27 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 			// echoed so we can update this specific tab's lifecycle. An expired
 			// search (evicted on the daemon) reports done so its "!" clears.
 			const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
+			const CECTag *browseTag = packet->GetTagByName(EC_TAG_SEARCH_BROWSE_STATUS);
 			if (idTag && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
-				uint32 status = packet->GetTagByName(EC_TAG_SEARCH_EXPIRED)
-							? 0xfffe
-							: (uint32)packet->GetFirstTagSafe()->GetInt();
-				theApp->amuledlg->m_searchwnd->UpdateSearchProgress(idTag->GetInt(), status);
+				if (browseTag) {
+					// A browse ("View Files") tab: update its lifecycle marker
+					// (browsing / finished / failed) AND drive the gauge from the
+					// bar value (EC_TAG_SEARCH_STATUS) via the same per-tab path a
+					// search uses.
+					theApp->amuledlg->m_searchwnd->SetBrowseStatus(
+						idTag->GetInt(), (uint32)browseTag->GetInt());
+					if (const CECTag *barTag =
+							packet->GetTagByName(EC_TAG_SEARCH_STATUS)) {
+						theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
+							idTag->GetInt(), (uint32)barTag->GetInt());
+					}
+				} else {
+					uint32 status = packet->GetTagByName(EC_TAG_SEARCH_EXPIRED)
+								? 0xfffe
+								: (uint32)packet->GetFirstTagSafe()->GetInt();
+					theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
+						idTag->GetInt(), status);
+				}
 			}
 		} else {
 			CoreNotify_Search_Update_Progress(packet->GetFirstTagSafe()->GetInt());
@@ -2890,6 +2921,11 @@ CSearchFile::CSearchFile(const CEC_SearchFile_Tag *tag)
 	if (tag->GetRating(rating)) {
 		m_iUserRating = rating;
 	}
+
+	// Browse ("View Files") results carry their source peer's id/port and the
+	// shared folder they live in — the daemon emits these only for browse
+	// results, so a remote GUI can render per-source info and folder grouping.
+	tag->GetBrowseSource(m_clientID, m_clientPort, m_directory);
 
 	// Multi-search: the daemon's union poll tags every result with its owning
 	// search ID, so route by that. 0 => legacy single-search reply, fall back

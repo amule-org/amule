@@ -142,6 +142,15 @@ void SearchLocalEnd();
 void KadSearchEnd(uint32 id);
 void Search_Update_Sources(CSearchFile *result);
 void Search_Add_Result(CSearchFile *result);
+// Browse ("View Files") lifecycle marker for a peer's shared-file tab, keyed by
+// the tab's result-routing search ID. status carries an EBrowseStatus value.
+// Monolithic renders it directly; on the daemon it is a no-op (amuleGUI reads
+// the status over EC).
+void Browse_Status(uint64 searchID, uint32 status);
+// Open (or refresh) a browse tab for a peer up front, before any result arrives,
+// so a denied/offline peer still shows a tab that can flip to "failed". Keyed by
+// the peer's ECID; searchID is the result-routing key. Monolithic only.
+void Browse_Started(uint32 ecid, wxString name, uint64 searchID);
 
 void ChatUpdateFriend(CFriend *Friend);
 void ChatRemoveFriend(CFriend *Friend);
@@ -529,6 +538,9 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_KadSearchEnd(val) MuleNotify::DoNotify(&MuleNotify::KadSearchEnd, val)
 #define Notify_Search_Update_Sources(ptr) MuleNotify::DoNotify(&MuleNotify::Search_Update_Sources, ptr)
 #define Notify_Search_Add_Result(s) MuleNotify::DoNotify(&MuleNotify::Search_Add_Result, s)
+#define Notify_Browse_Status(ecid, status) MuleNotify::DoNotify(&MuleNotify::Browse_Status, ecid, status)
+#define Notify_Browse_Started(ecid, name, sid) \
+	MuleNotify::DoNotify(&MuleNotify::Browse_Started, ecid, name, sid)
 
 // chat
 #define Notify_ChatUpdateFriend(ptr) MuleNotify::DoNotify(&MuleNotify::ChatUpdateFriend, ptr)

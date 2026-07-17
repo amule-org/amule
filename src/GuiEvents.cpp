@@ -685,6 +685,29 @@ void Search_Add_Result(CSearchFile *NOT_ON_DAEMON(result))
 #endif
 }
 
+void Browse_Status(uint64 NOT_ON_DAEMON(searchID), uint32 NOT_ON_DAEMON(status))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		theApp->amuledlg->m_searchwnd->SetBrowseStatus((wxUIntPtr)searchID, status);
+	}
+#endif
+}
+
+// `name` is intentionally taken by value: the notify functor (CMuleNotifier3)
+// stores each argument by the handler's parameter type and deep-copies into it,
+// so a const-ref parameter would dangle. This mirrors every other wxString
+// notify handler here.
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
+void Browse_Started(uint32 NOT_ON_DAEMON(ecid), wxString NOT_ON_DAEMON(name), uint64 NOT_ON_DAEMON(searchID))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		theApp->amuledlg->m_searchwnd->EnsureBrowseTab(ecid, name, (wxUIntPtr)searchID);
+	}
+#endif
+}
+
 void ChatConnResult(bool NOT_ON_DAEMON(success), uint64 NOT_ON_DAEMON(id), wxString NOT_ON_DAEMON(message))
 {
 #ifndef AMULE_DAEMON

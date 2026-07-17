@@ -90,6 +90,18 @@ enum EKadState
 	KS_CONNECTING_FWCHECK_UDP
 };
 
+// Lifecycle of a "View Files" (browse peer shared files) request. The values
+// are a wire contract: they are sent verbatim in EC_TAG_SEARCH_BROWSE_STATUS
+// (uint8) so a remote GUI can render the browse tab's marker. Both the
+// monolithic client and amuleGUI read the same enum.
+enum EBrowseStatus
+{
+	BROWSE_NONE = 0,    // no browse in flight for this client
+	BROWSE_IN_PROGRESS, // request sent / results still arriving
+	BROWSE_FINISHED,    // peer finished sending its shared-file list
+	BROWSE_FAILED       // denied, connect failed, or disconnected mid-list
+};
+
 //! Used to keep track of the state of the client
 enum ClientState
 {
@@ -448,6 +460,38 @@ public:
 	int GetFileListRequested() const { return m_iFileListRequested; }
 	void SetFileListRequested(int iFileListRequested) { m_iFileListRequested = iFileListRequested; }
 
+	// "View Files" (browse) over EC: the daemon allocates a search ID for a
+	// browse initiated by a remote GUI and pins it here so ProcessSharedFileList
+	// files the results under it (instead of the raw client pointer) and the
+	// terminal paths can stamp m_browseStatus. 0 = not an EC-initiated browse
+	// (monolithic local browse keeps the pointer-keyed path).
+	uint32 GetBrowseSearchId() const { return m_browseSearchId; }
+	void SetBrowseSearchId(uint32 id) { m_browseSearchId = id; }
+	EBrowseStatus GetBrowseStatus() const { return m_browseStatus; }
+	void SetBrowseStatus(EBrowseStatus s) { m_browseStatus = s; }
+	// Total shared directories the peer advertised (captured at
+	// OP_ASKSHAREDDIRSANS); drives the browse progress percent as m_iFileListRequested
+	// counts down. 0 = not yet known / flat share with no directory list.
+	void SetBrowseTotalDirs(int n) { m_browseTotalDirs = n; }
+	// The tab's result-routing key: the EC-allocated browse ID (remote GUI) or
+	// this client's pointer (monolithic local browse). Shared by the bar cache.
+	wxUIntPtr GetBrowseRoutingId() const
+	{
+		return m_browseSearchId ? static_cast<wxUIntPtr>(m_browseSearchId)
+					: reinterpret_cast<wxUIntPtr>(this);
+	}
+	// Progress-bar sentinel for this browse: 0..100 running percent while the
+	// listing streams in, or 0xffff (finished/failed) to clear the bar — the
+	// same value space GetSearchBarStatusById returns for a search.
+	uint16 GetBrowseBarValue() const;
+	// Record a browse lifecycle transition: update the shared bar cache and
+	// notify the GUI (monolithic renders the tab marker; on the daemon the
+	// notify is a no-op and amuleGUI reads the status over EC via SEARCH_PROGRESS).
+	void MarkBrowse(EBrowseStatus s);
+	// Push the current bar value into CSearchList's browse-bar cache (keyed by
+	// GetBrowseRoutingId), so both the monolithic bar and the EC reply see it.
+	void UpdateBrowseBar();
+
 	void ResetFileStatusInfo();
 
 	bool CheckHandshakeFinished() const;
@@ -735,6 +779,9 @@ private:
 	uint64 m_dwLastSourceAnswer;
 	uint64 m_dwLastAskedForSources;
 	int m_iFileListRequested;
+	uint32 m_browseSearchId;
+	int m_browseTotalDirs;
+	EBrowseStatus m_browseStatus;
 	bool m_bFriendSlot;
 	bool m_bCommentDirty;
 	bool m_bIsHybrid;

@@ -36,8 +36,9 @@
 #include "MuleNotebook.h"
 #include "GetTickCount.h"
 #include "Preferences.h"
-#include "amule.h"      // Needed for theApp
-#include "SearchList.h" // Needed for CSearchList
+#include "amule.h"        // Needed for theApp
+#include "SearchList.h"   // Needed for CSearchList
+#include "updownclient.h" // Needed for EBrowseStatus (browse tab lifecycle)
 #include <common/Format.h>
 #include "Logger.h"
 
@@ -468,6 +469,64 @@ void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID)
 	FindWindow(IDC_SEARCHMORE)->Enable(theApp->searchlist->IsKadSearch((uint32_t)nSearchID));
 }
 
+uint32 CSearchDlg::s_optimisticIdCounter = 0;
+
+wxUIntPtr CSearchDlg::AllocateOptimisticId()
+{
+	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;
+	return 0x40000000u | (s_optimisticIdCounter & 0x3fffffffu);
+}
+
+CSearchListCtrl *CSearchDlg::GetBrowseList(uint32 ecid)
+{
+	for (size_t i = 0; i < m_notebook->GetPageCount(); ++i) {
+		CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(i));
+		if (page && page->GetBrowseEcid() == ecid) {
+			return page;
+		}
+	}
+	return nullptr;
+}
+
+void CSearchDlg::EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUIntPtr searchID)
+{
+	// A re-browse of the same peer refreshes the existing tab: rekey its
+	// result-routing ID to the new one (the daemon may allocate a fresh ID) and
+	// mark it browsing again, rather than opening a duplicate.
+	if (CSearchListCtrl *page = GetBrowseList(peerEcid)) {
+		page->SetSearchId(searchID);
+		page->SetBrowseName(userName);
+		page->SetBrowseStatus(BROWSE_IN_PROGRESS);
+		UpdateHitCount(page);
+		return;
+	}
+
+	CreateNewTab(userName, searchID);
+	if (CSearchListCtrl *page = GetSearchList(searchID)) {
+		page->SetBrowseEcid(peerEcid);
+		page->SetBrowseName(userName);
+		page->SetBrowseStatus(BROWSE_IN_PROGRESS);
+		UpdateHitCount(page);
+	}
+	// A freshly-started browse comes from another panel (Friends / Transfers),
+	// so bring the Search panel forward to reveal the new tab — including the
+	// toolbar button state, not just the panel content. Only on tab creation,
+	// never on a refresh or a streaming result, which would yank the panel out
+	// from under the user.
+	if (theApp->amuledlg) {
+		theApp->amuledlg->ShowSearchWindow();
+	}
+}
+
+void CSearchDlg::SetBrowseStatus(wxUIntPtr searchID, uint32 status)
+{
+	CSearchListCtrl *page = GetSearchList(searchID);
+	if (page && page->IsBrowse()) {
+		page->SetBrowseStatus(status);
+		UpdateHitCount(page);
+	}
+}
+
 void CSearchDlg::OnBnClickedStop(wxCommandEvent &WXUNUSED(evt))
 {
 	theApp->searchlist->StopSearch();
@@ -574,9 +633,11 @@ void CSearchDlg::StartNewSearch()
 {
 	// Stay in the bottom half of the uint32 search-ID space so the
 	// ed2k-allocated IDs here can never collide with Kad-allocated IDs
-	// from CSearchManager::m_nextID, which starts at 0x80000000
-	static uint32 m_nSearchID = 0;
-	m_nSearchID = (m_nSearchID + 1) & 0x7fffffff;
+	// from CSearchManager::m_nextID, which starts at 0x80000000. Shared with
+	// browse tabs (AllocateOptimisticId) so search + browse placeholders draw
+	// from one counter and can never numerically collide before the rekey.
+	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;
+	const uint32 m_nSearchID = s_optimisticIdCounter;
 
 	FindWindow(IDC_STARTS)->Disable();
 	FindWindow(IDC_SDOWNLOAD)->Disable();
@@ -710,12 +771,37 @@ void CSearchDlg::UpdateHitCount(CSearchListCtrl *page)
 {
 	for (uint32 i = 0; i < (uint32)m_notebook->GetPageCount(); ++i) {
 		if (m_notebook->GetPage(i) == page) {
+			size_t shown = page->GetItemCount();
+			size_t hidden = page->GetHiddenItemCount();
+
+			// A "View Files" tab composes its label from the stored peer name +
+			// lifecycle marker (kept on the control), so the base name survives
+			// re-labelling and never gets mangled by the BeforeLast(' ') strip
+			// used for ordinary search tabs.
+			if (page->IsBrowse()) {
+				wxString count = hidden ? (CFormat(wxT("%u/%u")) % shown % (shown + hidden))
+								  .GetString()
+							: (CFormat(wxT("%u")) % shown).GetString();
+				wxString label;
+				switch (page->GetBrowseStatus()) {
+				case BROWSE_FAILED:
+					// Peer denied, went offline, or dropped mid-list. Reuse the
+					// existing "Failed" catalog string (no new translatable string).
+					label = CFormat(wxT("%s (%s)")) % page->GetBrowseName() % _("Failed");
+					break;
+				case BROWSE_FINISHED:
+					label = CFormat(wxT("%s (%s)")) % page->GetBrowseName() % count;
+					break;
+				default: // BROWSE_IN_PROGRESS: trailing dots = still arriving.
+					label = CFormat(wxT("%s (%s...)")) % page->GetBrowseName() % count;
+					break;
+				}
+				m_notebook->SetPageText(i, label);
+				break;
+			}
+
 			wxString searchtxt = m_notebook->GetPageText(i).BeforeLast(' ');
-
 			if (!searchtxt.IsEmpty()) {
-				size_t shown = page->GetItemCount();
-				size_t hidden = page->GetHiddenItemCount();
-
 				if (hidden) {
 					searchtxt += CFormat(" (%u/%u)") % shown % (shown + hidden);
 				} else {

@@ -157,6 +157,12 @@ public:
 	// percent. Single source of truth for the bottom bar, shared by the EC
 	// PROGRESS reply (remote GUI / amuleapi) and the monolithic search dialog.
 	uint32 GetSearchBarStatusById(wxUIntPtr searchID) const;
+	// "View Files" browse tabs are not CSearchList searches, so their bar value
+	// is supplied by the browsing client (CUpDownClient::UpdateBrowseBar): 0..100
+	// running percent while the listing streams in, 0xffff when done/failed.
+	// GetSearchBarStatusById consults this first, so both the monolithic bar and
+	// the EC PROGRESS reply render the browse percent through the same path.
+	void SetBrowseBar(wxUIntPtr searchID, uint16 value) { m_browseBar[searchID] = value; }
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
@@ -343,6 +349,11 @@ private:
 	//! progress ramp is computed from its own age rather than the single
 	//! m_searchStart of the most-recently-started search. Pruned in RemoveResults.
 	std::map<uint32_t, time_t> m_searchStartTimes;
+
+	//! Bar value for "View Files" browse tabs, keyed by routing ID and set by
+	//! the browsing client (0..100 percent, or 0xffff finished/failed). Read by
+	//! GetSearchBarStatusById. Pruned in RemoveResults.
+	std::map<wxUIntPtr, uint16> m_browseBar;
 
 	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
 	//! and global searches. Cleared to false in StartNewSearch when an

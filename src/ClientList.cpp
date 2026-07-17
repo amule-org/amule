@@ -443,6 +443,24 @@ CUpDownClient *CClientList::FindClientByECID(uint32 ecid) const
 	return NULL;
 }
 
+CUpDownClient *CClientList::FindClientByBrowseSearchId(uint32 browseSearchId) const
+{
+	// Reverse map from an EC-allocated browse ("View Files") search ID to the
+	// client it was pinned on, so the SEARCH_PROGRESS poll can report the
+	// browse's lifecycle. Browses are rare and few, so a linear scan is cheap.
+	if (browseSearchId == 0) {
+		return nullptr;
+	}
+	for (const auto &entry : m_clientList) {
+		CUpDownClient *client = entry.second.GetClient();
+		if (client && client->GetBrowseSearchId() == browseSearchId) {
+			return client;
+		}
+	}
+
+	return nullptr;
+}
+
 bool CClientList::IsIPAlreadyKnown(uint32_t ip)
 {
 	// Find all items with the specified ip

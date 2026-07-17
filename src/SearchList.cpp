@@ -294,6 +294,7 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	// Drop any per-search tracking for this ID (bounded growth).
 	m_finishedKadSearches.erase(static_cast<uint32_t>(searchID));
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
+	m_browseBar.erase(searchID);
 
 	ResultMap::iterator it = m_results.find(searchID);
 	if (it != m_results.end()) {
@@ -643,12 +644,20 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 {
 	wxCHECK_RET(sender, "No sender in search-results from client.");
 
-	wxUIntPtr searchID = reinterpret_cast<wxUIntPtr>(sender);
+	// Route the browsed listing to a result bucket. For an EC-initiated browse
+	// (remote GUI) the daemon has pinned a real, wire-safe search ID on the
+	// client; use it so the union/per-ID poll and the LRU ring can address these
+	// results. A monolithic local browse leaves it 0 and keeps the historical
+	// per-client-pointer key.
+	wxUIntPtr searchID = sender->GetBrowseSearchId() ? static_cast<wxUIntPtr>(sender->GetBrowseSearchId())
+							 : reinterpret_cast<wxUIntPtr>(sender);
 
 #ifndef AMULE_DAEMON
-	if (!theApp->amuledlg->m_searchwnd->CheckTabNameExists(sender->GetUserName())) {
-		theApp->amuledlg->m_searchwnd->CreateNewTab(sender->GetUserName() + " (0)", searchID);
-	}
+	// Find-or-create the peer's "View Files" tab, keyed by ECID (so two peers
+	// sharing a nick don't collapse into one tab, and a re-browse refreshes the
+	// same tab). Marks the tab as browsing; the terminal paths flip it to
+	// finished/failed via Notify_Browse_Status.
+	theApp->amuledlg->m_searchwnd->EnsureBrowseTab(sender->ECID(), sender->GetUserName(), searchID);
 #endif
 
 	const CMemFile packet(in_packet, size);
@@ -968,6 +977,14 @@ uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
 
 uint32 CSearchList::GetSearchBarStatusById(wxUIntPtr searchID) const
 {
+	// A "View Files" browse tab isn't a CSearchList search: its bar value is
+	// pushed by the browsing client. Return it directly when present.
+	if (!m_browseBar.empty()) {
+		std::map<wxUIntPtr, uint16>::const_iterator it = m_browseBar.find(searchID);
+		if (it != m_browseBar.end()) {
+			return it->second;
+		}
+	}
 	if (GetSearchLifecycleStateById(searchID) == SEARCH_LIFECYCLE_FINISHED) {
 		return IsOrWasKadSearch(static_cast<uint32_t>(searchID)) ? 0xfffe : 0xffff;
 	}

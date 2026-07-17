@@ -169,6 +169,12 @@ public:
 	DialogType GetActiveDialog() { return m_nActiveDialog; }
 	void SetActiveDialog(DialogType type, wxWindow *dlg);
 
+	// Programmatically switch to the Search panel exactly as clicking the Search
+	// toolbar button would — panel, toolbar button state, ED2K-links handler and
+	// the handler's bookkeeping all stay consistent. Used when a "View Files"
+	// browse opens a tab from another panel.
+	void ShowSearchWindow();
+
 	/**
 	 * Helper function for deciding if a certain dlg is visible.
 	 *

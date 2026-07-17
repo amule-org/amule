@@ -366,6 +366,10 @@ EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_REF                         0x070F
 	EC_TAG_SEARCH_EXPIRED                     0x0710
 	EC_TAG_SEARCH_CLOSE                       0x0711
+	EC_TAG_SEARCHFILE_CLIENT_ID               0x0712
+	EC_TAG_SEARCHFILE_CLIENT_PORT             0x0713
+	EC_TAG_SEARCHFILE_DIRECTORY               0x0714
+	EC_TAG_SEARCH_BROWSE_STATUS               0x0715
 
 EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_NAME                        0x0801

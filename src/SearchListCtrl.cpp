@@ -112,6 +112,8 @@ CSearchListCtrl::CSearchListCtrl(wxWindow *parent,
 		"D"); // I would have preferred "Directory" but this is already translated
 
 	m_nResultsID = 0;
+	m_browseEcid = 0;
+	m_browseStatus = 0;
 
 	// Only load settings for first list, otherwise sync with current lists
 	if (s_lists.empty()) {
