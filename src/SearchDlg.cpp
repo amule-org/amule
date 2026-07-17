@@ -163,6 +163,64 @@ CSearchListCtrl *CSearchDlg::GetSearchList(wxUIntPtr id)
 	return NULL;
 }
 
+void CSearchDlg::RekeySearch(wxUIntPtr oldID, wxUIntPtr newID)
+{
+	if (oldID == newID) {
+		return;
+	}
+	if (CSearchListCtrl *page = GetSearchList(oldID)) {
+		page->SetSearchId(newID);
+	}
+}
+
+wxUIntPtr CSearchDlg::GetVisibleSearchId()
+{
+	int sel = m_notebook->GetSelection();
+	if (sel == -1) {
+		return 0;
+	}
+	CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(sel));
+	return page ? page->GetSearchId() : 0;
+}
+
+void CSearchDlg::ApplyProgressToBar(uint32 status)
+{
+	if (status == 0xffff || status == 0xfffe) {
+		// Finished (ed2k or Kad): reset the bar.
+		m_progressbar->SetValue(0);
+	} else {
+		// Running: real global percent, or the Kad cosmetic ramp.
+		UpdateProgress(status);
+	}
+}
+
+#ifndef CLIENT_GUI
+void CSearchDlg::RefreshVisibleTabProgress()
+{
+	wxUIntPtr sid = GetVisibleSearchId();
+	// No tab => empty bar; otherwise reuse the same sentinel the EC PROGRESS
+	// reply builds, so monolithic and the remote GUI stay in lockstep.
+	ApplyProgressToBar(sid ? theApp->searchlist->GetSearchBarStatusById(sid) : 0xffff);
+}
+#endif
+
+void CSearchDlg::UpdateSearchProgress(uint32 searchID, uint32 status)
+{
+	// Cache per-tab so a tab switch can refresh the bar instantly.
+	m_searchProgress[searchID] = status;
+
+	if (status == 0xffff || status == 0xfffe) {
+		// Search finished: clear this tab's Kad "!" marker (a no-op for an ed2k
+		// tab, which has none) regardless of which tab is visible, so each tab
+		// clears independently as its own search completes.
+		KadSearchEnd(searchID);
+	}
+	// The single bottom bar tracks the visible tab only.
+	if (searchID == GetVisibleSearchId()) {
+		ApplyProgressToBar(status);
+	}
+}
+
 void CSearchDlg::AddResult(CSearchFile *toadd)
 {
 	CSearchListCtrl *outputwnd = GetSearchList(toadd->GetSearchID());
@@ -218,15 +276,24 @@ void CSearchDlg::OnFilterCheckChange(wxCommandEvent &event)
 
 void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 {
-	// Abort global search if it was last tab that was closed.
-	if (evt.GetSelection() == ((int)m_notebook->GetPageCount() - 1)) {
-		OnBnClickedStop(nullEvent);
-	}
-
 	CSearchListCtrl *ctrl = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(evt.GetSelection()));
 	wxASSERT(ctrl);
 	// Zero to avoid results added while destructing.
 	ctrl->ShowResults(0);
+	m_searchProgress.erase(ctrl->GetSearchId());
+#ifdef CLIENT_GUI
+	// Remote multi-search: closing a tab stops *and* frees that specific
+	// search on the daemon (leaving other tabs' searches running). On a
+	// legacy daemon this degrades to a parameterless stop of the single
+	// search — which is the same "abort on close" behaviour as before.
+	theApp->searchlist->StopSearchById(ctrl->GetSearchId(), true);
+#else
+	// Monolithic: abort the global search if it was the last tab closed;
+	// RemoveResults below stops any Kad search and frees the bucket in-process.
+	if (evt.GetSelection() == ((int)m_notebook->GetPageCount() - 1)) {
+		OnBnClickedStop(nullEvent);
+	}
+#endif
 	theApp->searchlist->RemoveResults(ctrl->GetSearchId());
 
 	// Do cleanups if this was the last tab
@@ -254,6 +321,27 @@ void CSearchDlg::OnSearchPageChanged(wxBookCtrlEvent &WXUNUSED(evt))
 		bool enable = (ctrl->GetSelectedItemCount() > 0);
 		FindWindow(IDC_SDOWNLOAD)->Enable(enable);
 
+		// Refresh the bottom bar instantly for the newly-visible tab so it
+		// tracks the selected search rather than the last one that updated it.
+#ifdef CLIENT_GUI
+		// Remote GUI: from the per-search EC progress cache. If this tab has no
+		// cached status yet (progress not polled, or daemon-side state lost
+		// across an EC reconnect), clear the bar rather than leaving it frozen
+		// on the previous tab's value — the next poll fills in the real state.
+		if (!m_searchProgress.empty()) {
+			std::map<wxUIntPtr, uint32>::const_iterator it =
+				m_searchProgress.find(ctrl->GetSearchId());
+			if (it != m_searchProgress.end()) {
+				ApplyProgressToBar(it->second);
+			} else {
+				m_progressbar->SetValue(0);
+			}
+		}
+#else
+		// Monolithic: from the local core's per-search lifecycle.
+		RefreshVisibleTabProgress();
+#endif
+
 		// "More" is Kad-only — enable when this tab's searchID still
 		// corresponds to an active Kad search.
 		FindWindow(IDC_SEARCHMORE)
@@ -272,9 +360,10 @@ void CSearchDlg::OnBnClickedStart(wxCommandEvent &WXUNUSED(evt))
 		return;
 	}
 
-	// We mustn't search more often than once every 2 secs
+	// Debounce accidental double-clicks, but keep it short so multi-search
+	// users can fire several searches (e.g. global + Kad) back-to-back.
 	uint64 now = GetTickCount64();
-	if ((now - m_last_search_time) > 2000) {
+	if ((now - m_last_search_time) > 500) {
 		m_last_search_time = now;
 		// Stop previous ED2K search state only (the server has a
 		// single in-flight search packet per session and m_searchPacket

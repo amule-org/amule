@@ -113,43 +113,138 @@ StatsGraphs CState::Graphs() const
 	return m_graphs;
 }
 
-std::vector<SearchResult> CState::Search() const
+std::vector<SearchResult> CState::Search(std::uint32_t search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
 	std::vector<SearchResult> out;
-	out.reserve(m_search.size());
-	for (const auto &kv : m_search)
+	auto it = m_searches.find(ResolveSearchId(search_id));
+	if (it == m_searches.end())
+		return out;
+	out.reserve(it->second.results.size());
+	for (const auto &kv : it->second.results)
 		out.push_back(kv.second);
 	return out;
 }
 
-void CState::MutateSearch(const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn)
+void CState::MutateSearch(
+	std::uint32_t search_id, const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	fn(m_search);
+	auto it = m_searches.find(ResolveSearchId(search_id));
+	if (it != m_searches.end())
+		fn(it->second.results);
 }
 
-SearchProgressSnapshot CState::SearchProgress() const
+SearchProgressSnapshot CState::SearchProgress(std::uint32_t search_id) const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
-	return m_search_progress;
+	auto it = m_searches.find(ResolveSearchId(search_id));
+	if (it == m_searches.end())
+		return SearchProgressSnapshot{};
+	return it->second.progress;
 }
 
-void CState::MarkSearchStarted(const std::string &kind)
+bool CState::HasSearch(std::uint32_t search_id) const
 {
-	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	m_search.clear();
-	const auto next_generation = m_search_progress.generation + 1;
-	m_search_progress = SearchProgressSnapshot{};
-	m_search_progress.active = true;
-	m_search_progress.kind = kind;
-	m_search_progress.generation = next_generation;
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_searches.count(ResolveSearchId(search_id)) != 0;
 }
 
-void CState::WriteSearchProgress(SearchProgressSnapshot s)
+std::uint32_t CState::CurrentSearchId() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_current_search_id;
+}
+
+std::vector<std::uint32_t> CState::ActiveSearchIds() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<std::uint32_t> out;
+	for (const auto &kv : m_searches)
+		if (kv.second.progress.active)
+			out.push_back(kv.first);
+	return out;
+}
+
+std::vector<std::uint32_t> CState::AllSearchIds() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	std::vector<std::uint32_t> out;
+	out.reserve(m_searches.size());
+	for (const auto &kv : m_searches)
+		out.push_back(kv.first);
+	return out;
+}
+
+bool CState::FindSearchResultByHash(const std::string &hash_hex, SearchResult &out) const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	for (const auto &skv : m_searches) {
+		for (const auto &rkv : skv.second.results) {
+			if (rkv.second.hash == hash_hex) {
+				out = rkv.second;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
-	m_search_progress = std::move(s);
+	SearchSlot &slot = m_searches[search_id];
+	// generation is per-slot and monotonic: a restart of the same id (rare —
+	// the daemon allocates fresh ids) keeps it climbing so EventDiff still fires.
+	const auto next_generation = slot.progress.generation + 1;
+	slot.results.clear();
+	slot.progress = SearchProgressSnapshot{};
+	slot.progress.active = true;
+	slot.progress.kind = kind;
+	slot.progress.generation = next_generation;
+	slot.seq = ++m_search_seq;
+	m_current_search_id = search_id;
+
+	// Bound the retained slots: a client that never closes its searches would
+	// otherwise accumulate one slot (with its result vector) per search for the
+	// whole process lifetime. Evict oldest-first, but never the current search
+	// or an active (still-polling) one — the surplus is always finished slots.
+	while (m_searches.size() > kMaxSearchSlots) {
+		auto victim = m_searches.end();
+		for (auto it = m_searches.begin(); it != m_searches.end(); ++it) {
+			if (it->first == m_current_search_id || it->second.progress.active) {
+				continue;
+			}
+			if (victim == m_searches.end() || it->second.seq < victim->second.seq) {
+				victim = it;
+			}
+		}
+		if (victim == m_searches.end()) {
+			break; // all remaining slots are active/current — nothing to evict
+		}
+		m_searches.erase(victim);
+	}
+}
+
+void CState::WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	auto it = m_searches.find(ResolveSearchId(search_id));
+	if (it != m_searches.end())
+		it->second.progress = std::move(s);
+}
+
+void CState::CloseSearch(std::uint32_t search_id)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	const auto id = ResolveSearchId(search_id);
+	m_searches.erase(id);
+	if (m_current_search_id == id) {
+		// No reliable "next most-recent" once the current search is gone (Kad
+		// ids sort above ed2k ids, so highest-key is not newest); fall back to
+		// no current until the next POST /search.
+		m_current_search_id = 0;
+	}
 }
 
 void CState::WriteStatsTree(StatsTreeNode t)
@@ -348,14 +443,13 @@ void CState::ResetLists()
 	m_clients.clear();
 	m_servers.clear();
 	m_categories.clear();
-	m_search.clear();
-	// Preserve `generation` across the struct reset. It's the diff-
-	// emit trigger for EventDiff; letting it walk backwards on an EC
-	// reconnect would confuse consumers that persist their last-seen
-	// value across the reconnect blip.
-	const auto keep_generation = m_search_progress.generation;
-	m_search_progress = SearchProgressSnapshot{};
-	m_search_progress.generation = keep_generation;
+	// Drop all search slots on an EC reconnect: the daemon's per-connection
+	// search registry is gone with the old connection, so every cached
+	// search_id is stale. current falls back to none; the next POST /search
+	// re-seeds. (EventDiff re-baselines its per-search state when a slot it was
+	// tracking disappears, so no generation carry-over is needed here.)
+	m_searches.clear();
+	m_current_search_id = 0;
 	// Logs + stats_tree + graphs survive EC reconnects on purpose —
 	// operator can see "EC disconnected at HH:MM" alongside earlier
 	// graph traffic; stats_tree's counters are amuled-uptime not

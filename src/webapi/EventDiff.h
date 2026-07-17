@@ -68,19 +68,24 @@ struct LastSeenState
 	std::size_t amule_log_count = 0;
 	bool amule_log_initialised = false;
 
-	// Search-events baseline. Diffed against state.Search() +
-	// state.SearchProgress() each tick. New ECIDs → search_result_added;
-	// a percent change or the running→finished edge → search_progress
-	// (the terminal frame, state="finished", supersedes the old
-	// standalone search_finished event).
-	std::map<std::uint32_t, SearchResult> search;
-	bool search_complete = false;
-	std::uint32_t search_percent = 0;
-	// Baseline `generation` from the previous tick. Any bump between
-	// ticks (POST /search → MarkSearchStarted) forces a search_progress
-	// emit, so back-to-back searches that start and finish inside one
-	// refresher interval still deliver a terminal frame to SSE clients.
-	std::uint64_t search_generation = 0;
+	// Per-search event baseline (multi-search). One entry per open search_id,
+	// diffed against that search's state each tick: new result ECIDs →
+	// search_result_added; a percent change, the running→finished edge, or a
+	// generation bump → search_progress (the terminal frame, state="finished",
+	// supersedes the old standalone search_finished event). Every emitted event
+	// carries its `search_id`. Entries for searches no longer present (closed /
+	// reset) are pruned each tick.
+	struct SearchDiffState
+	{
+		std::map<std::uint32_t, SearchResult> results;
+		bool complete = false;
+		std::uint32_t percent = 0;
+		// Baseline `generation` from the previous tick. Any bump forces a
+		// search_progress emit, so back-to-back searches that start and finish
+		// inside one refresher interval still deliver a terminal frame.
+		std::uint64_t generation = 0;
+	};
+	std::map<std::uint32_t, SearchDiffState> searches;
 	bool search_initialised = false;
 };
 

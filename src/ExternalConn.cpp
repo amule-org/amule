@@ -26,7 +26,9 @@
 
 #include "config.h" // Needed for VERSION
 
-#include <set> // Needed for std::set (m_lastSentFileIds)
+#include <set>       // Needed for std::set (m_lastSentFileIds)
+#include <list>      // Needed for std::list (multi-search LRU ring)
+#include <algorithm> // Needed for std::find (multi-search LRU ring)
 
 #include <ec/cpp/ECMuleSocket.h> // Needed for CECSocket
 
@@ -276,6 +278,14 @@ private:
 	// unchanged files so old clients (which infer deletion from absence)
 	// keep working unchanged — see `Get_EC_Response_GetUpdate`.
 	bool m_partialUpdateActive;
+	// Client opted in to the multi-search protocol at auth time (advertised
+	// `EC_TAG_CAN_MULTI_SEARCH`). When set, the EC search handlers allocate a
+	// distinct daemon-side search ID per `EC_OP_SEARCH_START` (returned via
+	// `EC_TAG_SEARCH_ID`) and address results/progress/stop by that ID, so the
+	// client can run several concurrent searches. When *not* set, the legacy
+	// single-search path runs verbatim (the `0xffffffff` sentinel bucket,
+	// wipe-on-start, parameterless stop) so old clients keep working.
+	bool m_multiSearchActive;
 	// Set of file ECIDs sent in the previous response for each EC
 	// request path. Diffed against the current snapshot to compute the
 	// removal list emitted to partial-update-capable clients. Tracked
@@ -317,6 +327,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 , m_lastEcGenSeenShared(0)
 , m_lastEcGenSeenPart(0)
 , m_partialUpdateActive(false)
+, m_multiSearchActive(false)
 {
 	wxASSERT(theApp->ECServerHandler);
 	theApp->ECServerHandler->AddSocket(this);
@@ -629,6 +640,15 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// them — see `Get_EC_Response_GetUpdate`.
 					m_partialUpdateActive = true;
 				}
+				if (request->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
+					// Client understands the multi-search protocol: EC
+					// searches are addressed by a daemon-allocated
+					// `EC_TAG_SEARCH_ID` (returned on start) instead of the
+					// single `0xffffffff` sentinel, so several can run at
+					// once. Old clients omit this tag and keep the legacy
+					// single-search sentinel path — see the search handlers.
+					m_multiSearchActive = true;
+				}
 				m_haveNotificationSupport = request->GetTagByName(EC_TAG_CAN_NOTIFY) != NULL;
 				AddDebugLogLineN(logEC,
 					CFormat("Client capabilities: ZLIB: %s  UTF8 numbers: %s  Push "
@@ -682,6 +702,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// off its bulk "missing == deleted" fallback and
 					// expects explicit `EC_TAG_FILE_REMOVED` markers.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
+				}
+				if (m_multiSearchActive) {
+					// Confirm multi-search mode so the client addresses
+					// searches by `EC_TAG_SEARCH_ID` rather than the
+					// legacy single-search sentinel.
+					response->AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
 				}
 			} else {
 				wxString err;
@@ -1477,8 +1503,85 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request)
 	return response;
 }
 
-static CECPacket *Get_EC_Response_Search_Results(
-	const CECPacket *request, bool partial_update_active, std::set<uint32> &io_lastSentSearchIds)
+namespace
+{
+// Global multi-search registry, shared across all EC connections (EC runs
+// synchronously on the main thread, so no locking is needed). Bounds the
+// daemon's retained EC searches to kMaxEcSearches, evicting the
+// least-recently-touched — which also stops a still-running Kad search via
+// RemoveResults. Legacy (non-multi) clients bypass this entirely and keep
+// using the single 0xffffffff sentinel bucket.
+constexpr std::size_t kMaxEcSearches = 20;
+
+class CEcSearchRegistry
+{
+public:
+	// Allocate a fresh bottom-half ed2k search ID (& 0x7fffffff), disjoint
+	// from Kad's top-half IDs (>= 0x80000000) and never 0 (our "none").
+	uint32 AllocateEd2kId()
+	{
+		do {
+			m_nextEd2kId = (m_nextEd2kId + 1) & 0x7fffffff;
+		} while (m_nextEd2kId == 0);
+		return m_nextEd2kId;
+	}
+
+	// Register a just-started search as most-recently-used and current,
+	// evicting the least-recently-used if over capacity.
+	void Register(uint32 id)
+	{
+		Touch(id);
+		m_current = id;
+		while (m_lru.size() > kMaxEcSearches) {
+			uint32 victim = m_lru.back();
+			m_lru.pop_back();
+			// Frees the result bucket and stops a still-running Kad search.
+			theApp->searchlist->RemoveResults(victim);
+			if (m_current == victim) {
+				m_current = 0;
+			}
+		}
+	}
+
+	// Move an accessed search to most-recently-used.
+	void Touch(uint32 id)
+	{
+		m_lru.remove(id);
+		m_lru.push_front(id);
+	}
+
+	bool Has(uint32 id) const { return std::find(m_lru.begin(), m_lru.end(), id) != m_lru.end(); }
+
+	// Explicit close (tab close): stop activity, free results, drop from ring.
+	void Close(uint32 id)
+	{
+		m_lru.remove(id);
+		theApp->searchlist->RemoveResults(id);
+		if (m_current == id) {
+			m_current = 0;
+		}
+	}
+
+	// Most-recently-started search (0 = none); the no-arg default target.
+	uint32 Current() const { return m_current; }
+
+	// All active search IDs (MRU order). Used by the INC_UPDATE union poll
+	// so amulegui's single result container holds every open search at once.
+	const std::list<uint32> &ActiveIds() const { return m_lru; }
+
+private:
+	std::list<uint32> m_lru; // front = most-recently-used
+	uint32 m_nextEd2kId = 0;
+	uint32 m_current = 0;
+};
+
+CEcSearchRegistry s_ecSearches;
+} // namespace
+
+static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
+	bool partial_update_active,
+	std::set<uint32> &io_lastSentSearchIds,
+	wxUIntPtr searchID)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
 
@@ -1510,7 +1613,7 @@ static CECPacket *Get_EC_Response_Search_Results(
 
 	std::set<uint32> current_ids;
 
-	const CSearchResultList &list = theApp->searchlist->GetSearchResults(0xffffffff);
+	const CSearchResultList &list = theApp->searchlist->GetSearchResults(searchID);
 	CSearchResultList::const_iterator it = list.begin();
 	while (it != list.end()) {
 		CSearchFile *sf = *it++;
@@ -1553,11 +1656,11 @@ static CECPacket *Get_EC_Response_Search_Results(
 	return response;
 }
 
-static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap)
+static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr searchID)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
 
-	const CSearchResultList &list = theApp->searchlist->GetSearchResults(0xffffffff);
+	const CSearchResultList &list = theApp->searchlist->GetSearchResults(searchID);
 	CSearchResultList::const_iterator it = list.begin();
 	while (it != list.end()) {
 		CSearchFile *sf = *it++;
@@ -1570,6 +1673,37 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap)
 				CSearchFile *sfc = children.at(i);
 				CValueMap &valuemap1 = tagmap.GetValueMap(sfc->ECID());
 				response->AddTag(CEC_SearchFile_Tag(sfc, EC_DETAIL_INC_UPDATE, &valuemap1));
+			}
+		}
+	}
+	return response;
+}
+
+// Multi-search INC_UPDATE union poll (amulegui): amulegui runs every open
+// search through a single result container, so emit the results of *all* active
+// searches in one reply, tagging each with its EC_TAG_SEARCH_ID. The client
+// routes each result to the right tab by that ID (mirrors the monolithic GUI,
+// which demuxes by search ID), and its container's bulk-delete-on-poll works
+// correctly across the union. Only reached for m_multiSearchActive clients.
+static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
+{
+	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
+	// Incremental: unchanged fields are diffed out via the per-connection
+	// valuemap (keyed by the globally-unique ECID). Safe now that amulegui's
+	// container retains its items across searches (it no longer flushes on a
+	// new search), so a result is never re-created from a diffed tag — no
+	// ghosts — while re-sending unchanged results every poll stays cheap.
+	for (uint32 sid : s_ecSearches.ActiveIds()) {
+		const CSearchResultList &list = theApp->searchlist->GetSearchResults(sid);
+		for (CSearchFile *sf : list) {
+			CValueMap &valuemap = tagmap.GetValueMap(sf->ECID());
+			response->AddTag(CEC_SearchFile_Tag(sf, EC_DETAIL_INC_UPDATE, &valuemap, sid));
+			if (sf->HasChildren()) {
+				for (CSearchFile *sfc : sf->GetChildren()) {
+					CValueMap &valuemap1 = tagmap.GetValueMap(sfc->ECID());
+					response->AddTag(CEC_SearchFile_Tag(
+						sfc, EC_DETAIL_INC_UPDATE, &valuemap1, sid));
+				}
 			}
 		}
 	}
@@ -1602,20 +1736,34 @@ static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *reque
 	return response;
 }
 
-static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *WXUNUSED(request))
+static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool multiSearch)
 {
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
-	theApp->searchlist->StopSearch();
+	if (multiSearch) {
+		// Per-ID stop. No ID => the most-recently-started search.
+		const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
+		uint32 sid = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
+		if (sid != 0 && s_ecSearches.Has(sid)) {
+			if (request->GetTagByName(EC_TAG_SEARCH_CLOSE)) {
+				// Tab close: stop activity, free results, drop from the ring.
+				s_ecSearches.Close(sid);
+			} else {
+				// Stop button: halt activity but keep the results.
+				theApp->searchlist->StopSearchById(sid);
+			}
+		}
+	} else {
+		theApp->searchlist->StopSearch();
+	}
 	return reply;
 }
 
-static CECPacket *Get_EC_Response_Search(const CECPacket *request)
+static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSearch)
 {
 	wxString response;
 
 	const CEC_Search_Tag *search_request =
 		static_cast<const CEC_Search_Tag *>(request->GetFirstTagSafe());
-	theApp->searchlist->RemoveResults(0xffffffff);
 
 	CSearchList::CSearchParams params;
 	params.searchString = search_request->SearchText();
@@ -1626,36 +1774,71 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request)
 	params.availability = search_request->Avail();
 
 	EC_SEARCH_TYPE search_type = search_request->SearchType();
-	SearchType core_search_type = LocalSearch;
 	uint32 op = EC_OP_FAILED;
-	switch (search_type) {
-	case EC_SEARCH_GLOBAL:
-		core_search_type = GlobalSearch;
-	/* fall through */
-	case EC_SEARCH_KAD:
-		if (core_search_type != GlobalSearch) { // Not a global search obviously
-			core_search_type = KadSearch;
+	uint32 search_id = 0xffffffff;
+	bool started = false;
+
+	if (search_type == EC_SEARCH_WEB) {
+		response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
+	} else {
+		SearchType core_search_type = (search_type == EC_SEARCH_GLOBAL) ? GlobalSearch
+					      : (search_type == EC_SEARCH_KAD)  ? KadSearch
+										: LocalSearch;
+
+		if (multiSearch) {
+			// START is additive — it does not stop sibling searches. But
+			// ed2k (local/global) share a single in-flight slot and file
+			// their results under the scalar m_currentSearch, so starting a
+			// NEW ed2k search must finalize any in-flight ed2k search first;
+			// otherwise its late UDP results would land in the new search's
+			// bucket. A Kad search uses its own ID and its own machinery, so
+			// it must NOT disturb a running ed2k search — the two coexist
+			// (starting a Kad search here used to kill an in-flight global
+			// search, which then returned zero results).
+			if (core_search_type != KadSearch) {
+				theApp->searchlist->StopInFlightEd2kSearch();
+			}
+			// The daemon allocates the ID (no sentinel): ed2k gets a
+			// bottom-half ID; a Kad search self-allocates a top-half ID
+			// inside StartNewSearch, which overwrites this seed and we read
+			// the real ID back.
+			search_id = s_ecSearches.AllocateEd2kId();
+		} else {
+			// Legacy single-search sentinel path (unchanged): wipe the one
+			// bucket and reuse 0xffffffff.
+			theApp->searchlist->RemoveResults(0xffffffff);
+			search_id = 0xffffffff;
 		}
-	/* fall through */
-	case EC_SEARCH_LOCAL: {
-		uint32 search_id = 0xffffffff;
+
 		wxString error = theApp->searchlist->StartNewSearch(&search_id, core_search_type, params);
 		if (!error.IsEmpty()) {
 			response = error;
 		} else {
 			response = wxTRANSLATE("Search in progress. Refetch results in a moment!");
 			op = EC_OP_STRINGS;
+			started = true;
+			if (multiSearch) {
+				// Register whatever ID the core settled on (the Kad ID for a
+				// Kad search) as most-recently-used + current, evicting the
+				// least-recently-used search if over the ring's cap.
+				s_ecSearches.Register(search_id);
+			}
 		}
-		break;
-	}
-	case EC_SEARCH_WEB:
-		response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
-		break;
 	}
 
 	CECPacket *reply = new CECPacket(op);
 	// error or search in progress
 	reply->AddTag(CECTag(EC_TAG_STRING, response));
+	if (multiSearch && started) {
+		// Hand the daemon-allocated ID back so the client can address this
+		// search, and echo the client's correlation token (if any) so it can
+		// match this reply to the tab it created before the reply arrived.
+		reply->AddTag(CECTag(EC_TAG_SEARCH_ID, search_id));
+		const CECTag *ref = request->GetTagByName(EC_TAG_SEARCH_REF);
+		if (ref) {
+			reply->AddTag(CECTag(EC_TAG_SEARCH_REF, static_cast<uint32>(ref->GetInt())));
+		}
+	}
 
 	return reply;
 }
@@ -2181,8 +2364,18 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (!file) {
 			file = theApp->searchlist->GetSearchFileByID(hash);
 		}
-		if (file) {
-			file->RequestKadNoteSearch();
+		if (file && file->RequestKadNoteSearch()) {
+			// One Kad NOTES lookup runs per hash, but the same file can be shown
+			// in several open search tabs (one CSearchFile each).
+			// RequestKadNoteSearch set the running flag only on the object it ran
+			// on; mirror it onto every same-hash search result so each tab shows
+			// the in-flight lookup. The flag is cleared on all of them when the
+			// CSearch ends, and the retrieved notes fan out the same way.
+			std::vector<CSearchFile *> searchFiles;
+			theApp->searchlist->GetAllSearchFilesByID(hash, searchFiles);
+			for (CSearchFile *sf : searchFiles) {
+				sf->SetKadCommentSearchRunning(true);
+			}
 		}
 		response = new CECPacket(EC_OP_NOOP);
 		break;
@@ -2267,24 +2460,84 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	// Search
 	//
 	case EC_OP_SEARCH_START:
-		response = Get_EC_Response_Search(request);
+		response = Get_EC_Response_Search(request, m_multiSearchActive);
 		break;
 
 	case EC_OP_SEARCH_STOP:
-		response = Get_EC_Response_Search_Stop(request);
+		response = Get_EC_Response_Search_Stop(request, m_multiSearchActive);
 		break;
 
-	case EC_OP_SEARCH_RESULTS:
-		if (request->GetDetailLevel() == EC_DETAIL_INC_UPDATE) {
-			response = Get_EC_Response_Search_Results(m_obj_tagmap);
+	case EC_OP_SEARCH_RESULTS: {
+		const bool incUpdate = (request->GetDetailLevel() == EC_DETAIL_INC_UPDATE);
+		// amulegui (multi + INC_UPDATE) polls all its searches at once: return
+		// the union, each result tagged with its search ID (see the handler).
+		if (m_multiSearchActive && incUpdate) {
+			response = Get_EC_Response_Search_Results_Union(m_obj_tagmap);
+			break;
+		}
+		// Otherwise address a specific search by EC_TAG_SEARCH_ID (no ID =>
+		// the most-recently-started search) — amulecmd / amuleapi use FULL.
+		// Legacy (non-multi) clients keep the single 0xffffffff sentinel.
+		wxUIntPtr sid = 0xffffffff;
+		if (m_multiSearchActive) {
+			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
+			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
+			if (want == 0 || !s_ecSearches.Has(want)) {
+				// Evicted or never-known: tell the client it expired rather
+				// than returning a misleading empty result set.
+				response = new CECPacket(EC_OP_SEARCH_RESULTS);
+				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
+				break;
+			}
+			s_ecSearches.Touch(want);
+			sid = want;
+		}
+		if (incUpdate) {
+			response = Get_EC_Response_Search_Results(m_obj_tagmap, sid);
 		} else {
 			response = Get_EC_Response_Search_Results(
-				request, m_partialUpdateActive, m_lastSentSearchIds);
+				request, m_partialUpdateActive, m_lastSentSearchIds, sid);
 		}
 		break;
+	}
 
-	case EC_OP_SEARCH_PROGRESS:
+	case EC_OP_SEARCH_PROGRESS: {
 		response = new CECPacket(EC_OP_SEARCH_PROGRESS);
+		wxUIntPtr sid = 0xffffffff;
+		if (m_multiSearchActive) {
+			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
+			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
+			if (want == 0 || !s_ecSearches.Has(want)) {
+				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
+				break;
+			}
+			s_ecSearches.Touch(want);
+			sid = want;
+			// Per-ID lifecycle. STATE / PERCENT / RESULT_COUNT are addressed
+			// by the search ID; KIND reflects the most-recently-started
+			// search's type (the scalar), which is exact for the common case
+			// and cosmetic for older searches.
+			CSearchList::SearchLifecycleState st =
+				theApp->searchlist->GetSearchLifecycleStateById(sid);
+			uint8 pct = theApp->searchlist->GetSearchLifecyclePercentById(sid);
+			// EC_TAG_SEARCH_STATUS: the overloaded sentinel the GUI decodes in
+			// Search_Update_Progress — a finished Kad search reports 0xfffe
+			// (clears the "!" marker + resets the bar), a finished ed2k search
+			// 0xffff, otherwise the running percent. Shared with the monolithic
+			// bar via GetSearchBarStatusById. This MUST be the first tag: the
+			// GUI reads the reply's first tag (GetFirstTagSafe).
+			response->AddTag(CECTag(
+				EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchBarStatusById(sid)));
+			// Echo the ID so the client can confirm which search this is for.
+			response->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(st)));
+			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
+				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKind())));
+			response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
+				static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
+			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, pct));
+			break;
+		}
 		// EC_TAG_SEARCH_STATUS: unchanged overloaded sentinel for pre-3.1
 		// consumers (amulegui / amuleweb / amulecmd).
 		response->AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchProgress()));
@@ -2301,6 +2554,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT,
 			static_cast<uint8>(theApp->searchlist->GetSearchLifecyclePercent())));
 		break;
+	}
 
 	case EC_OP_DOWNLOAD_SEARCH_RESULT:
 		response = Get_EC_Response_Search_Results_Download(request);

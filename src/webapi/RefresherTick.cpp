@@ -163,49 +163,74 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// Api.cpp drive their own EC roundtrips under m_ec_mtx. Per-tick
 	// refresh would have been pure waste when nothing is listening.
 
-	// /search/results — polled per-tick only WHILE a search is active.
-	// POST /search flips state.SearchProgress().active = true; the
-	// daemon's EC_TAG_SEARCH_LIFECYCLE_STATE tells us when to flip it
-	// back. amuleapi pins a daemon version carrying the new lifecycle
-	// tags, so we read them directly with no sentinel-decode fallback.
-	if (state.SearchProgress().active) {
+	// /search/results — poll each ACTIVE search independently (amuleapi runs
+	// several at once). POST /search seeds a slot with active=true; the
+	// daemon's per-id EC_TAG_SEARCH_LIFECYCLE_STATE tells us when to flip it
+	// back. amuleapi pins a daemon carrying the lifecycle tags, so we read them
+	// directly with no sentinel-decode fallback. Each request addresses its
+	// search by EC_TAG_SEARCH_ID; a search evicted from the daemon's ring comes
+	// back as EC_TAG_SEARCH_EXPIRED, which we resolve to a terminal snapshot.
+	for (std::uint32_t sid : state.ActiveSearchIds()) {
 		std::uint32_t percent = 0;
 		std::uint32_t lifecycle_state = 0;
+		bool expired = false;
 		{
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
 			// Opt into result grouping (issue #431): the empty
 			// EC_TAG_SEARCH_PARENT flag tells the FULL responder to also
 			// emit each same-hash/different-name child so /search/results
-			// can nest them. Other EC clients that don't send it keep the
-			// flat parents-only list.
+			// can nest them.
 			req->AddTag(CECEmptyTag(EC_TAG_SEARCH_PARENT));
+			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
 			if (!resp)
 				return false;
-			state.MutateSearch([&](std::map<std::uint32_t, SearchResult> &cache) {
-				ApplySearchFull(resp, cache);
-			});
+			if (resp->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
+				expired = true;
+			} else {
+				state.MutateSearch(sid, [&](std::map<std::uint32_t, SearchResult> &cache) {
+					ApplySearchFull(resp, cache);
+				});
+			}
 			delete resp;
 		}
-		{
+		if (!expired) {
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
+			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
 			if (resp) {
-				// Unified 0..100 the daemon computes for every search kind
-				// (global = real, Kad = cosmetic ramp, finished = 100).
-				// No longer decoding EC_TAG_SEARCH_STATUS's overloaded sentinels.
-				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT)) {
-					percent = static_cast<std::uint32_t>(t->GetInt());
-				}
-				if (const CECTag *t = resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE)) {
-					lifecycle_state = static_cast<std::uint32_t>(t->GetInt());
+				if (resp->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
+					expired = true;
+				} else {
+					// Unified 0..100 the daemon computes for every kind
+					// (global = real, Kad = cosmetic ramp, finished = 100).
+					if (const CECTag *t =
+							resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT)) {
+						percent = static_cast<std::uint32_t>(t->GetInt());
+					}
+					if (const CECTag *t =
+							resp->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE)) {
+						lifecycle_state = static_cast<std::uint32_t>(t->GetInt());
+					}
 				}
 				delete resp;
 			}
 		}
+		if (expired) {
+			// The daemon evicted this search (its ring is capped). Retire the
+			// slot as finished + inactive so we stop polling it but keep the
+			// last-known results for late reads; the terminal state also drives
+			// a final search_progress SSE frame for subscribers.
+			SearchProgressSnapshot fin = state.SearchProgress(sid);
+			fin.active = false;
+			fin.complete = true;
+			fin.percent = 100;
+			state.WriteSearchProgress(sid, fin);
+			continue;
+		}
 		const SearchProgressSnapshot next =
-			AdvanceSearchProgress(state.SearchProgress(), lifecycle_state, percent);
-		state.WriteSearchProgress(next);
+			AdvanceSearchProgress(state.SearchProgress(sid), lifecycle_state, percent);
+		state.WriteSearchProgress(sid, next);
 	}
 
 	// /preferences + /categories — one EC roundtrip populates both.

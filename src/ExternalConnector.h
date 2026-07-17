@@ -216,6 +216,11 @@ protected:
 	// check would otherwise strip ZLIB and the user loses the perf
 	// they actually want.
 	bool m_forceZLIB;
+	// Advertise the multi-search EC capability (EC_TAG_CAN_MULTI_SEARCH) so
+	// the daemon addresses searches by ID and several can run at once. Off by
+	// default; only a connector that reads EC_TAG_SEARCH_ID back and handles
+	// per-ID results (amulecmd) sets it true. amuleweb stays single-search.
+	bool m_canMultiSearch;
 	bool m_KeepQuiet;
 	bool m_Verbose;
 	// --log-file / --no-log-file. Parsed for every connector; only amuleapi

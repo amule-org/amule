@@ -1448,6 +1448,16 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 				SetMessagesTool();
 			}
 		}
+#ifndef CLIENT_GUI
+		// Animate the search progress bar for the visible tab while the search
+		// window is up. This is the periodic tick the cosmetic Kad ramp needs
+		// (a Kad search has no per-result notify to drive it) and refreshes a
+		// running ed2k percent too. amulegui drives the same bar from its EC
+		// progress poll instead, so it is excluded here.
+		if (m_searchwnd && m_searchwnd->IsShown()) {
+			m_searchwnd->RefreshVisibleTabProgress();
+		}
+#endif
 	}
 }
 

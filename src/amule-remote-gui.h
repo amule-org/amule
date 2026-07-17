@@ -620,7 +620,14 @@ class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFi
 public:
 	CSearchListRem(CRemoteConnect *);
 
-	int m_curr_search;
+	// Most-recently-started search ID (0 = none). uint32 so it correctly
+	// holds a daemon-allocated Kad ID (top half of the range); as a signed
+	// int those wrapped negative and corrupted the STOP/remap round-trip.
+	uint32 m_curr_search;
+	// Daemon IDs of the currently open searches (one per tab). Polled
+	// individually for progress so each tab's lifecycle ("!", progress bar) is
+	// tracked independently. Populated on remap, removed on tab close.
+	std::set<uint32> m_activeSearches;
 	typedef std::map<wxUIntPtr, CSearchResultList> ResultMap;
 	ResultMap m_results;
 
@@ -635,6 +642,15 @@ public:
 		uint32 *nSearchID, SearchType search_type, const CSearchList::CSearchParams &params);
 
 	void StopSearch(bool globalOnly = false);
+
+	// Multi-search: stop one search by ID; andClose also frees its results
+	// on the daemon (tab close). Falls back to a parameterless stop on a
+	// legacy daemon.
+	void StopSearchById(wxUIntPtr searchID, bool andClose);
+
+	// Multi-search: remap the optimistic local tab ID to the daemon-allocated
+	// ID once the START reply echoes the correlation token.
+	void RemapSearch(uint32 localID, uint32 daemonID);
 
 	// Stub for monolithic CSearchList API parity.  amulegui has no
 	// direct Kad layer access; an EC opcode for "search-more" is a

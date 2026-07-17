@@ -538,11 +538,18 @@ private:
 class CEC_SearchFile_Tag : public CECTag
 {
 public:
-	CEC_SearchFile_Tag(const CSearchFile *file, EC_DETAIL_LEVEL detail_level, CValueMap *valuemap = NULL);
+	CEC_SearchFile_Tag(const CSearchFile *file,
+		EC_DETAIL_LEVEL detail_level,
+		CValueMap *valuemap = nullptr,
+		uint32 searchID = 0);
 
 	// template needs it
 	uint32 ID() const { return GetInt(); }
 	uint32 ParentID() const { return GetTagByNameSafe(EC_TAG_SEARCH_PARENT)->GetInt(); }
+	// Multi-search: the owning search's ID, present only in the daemon's
+	// union-poll reply (amulegui). 0 when absent (legacy single-search) —
+	// callers fall back to the single current-search ID.
+	uint32 SearchID() const { return GetTagByNameSafe(EC_TAG_SEARCH_ID)->GetInt(); }
 
 	CMD4Hash FileHash() const { return GetTagByNameSafe(EC_TAG_PARTFILE_HASH)->GetMD4Data(); }
 	wxString FileHashString() const { return FileHash().Encode(); }

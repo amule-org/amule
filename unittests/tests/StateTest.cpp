@@ -422,7 +422,11 @@ TEST(State, WriteGraphsRoundtripAllSeries)
 TEST(State, SearchResultsRoundtripAndOrderByEcid)
 {
 	CState s;
-	s.MutateSearch([](std::map<std::uint32_t, SearchResult> &cache) {
+	// Multi-search: a slot must exist before it can be mutated/read. Seed one
+	// (its id becomes the current search) and populate it.
+	const std::uint32_t sid = 1;
+	s.MarkSearchStarted(sid, "global");
+	s.MutateSearch(sid, [](std::map<std::uint32_t, SearchResult> &cache) {
 		SearchResult a;
 		a.ecid = 50;
 		a.hash = "aaaa0000aaaa0000aaaa0000aaaa0000";
@@ -441,13 +445,67 @@ TEST(State, SearchResultsRoundtripAndOrderByEcid)
 		cache.emplace(b.ecid, b);
 	});
 
-	// std::map iterates ECID-ascending → Search() vector is sorted.
-	const auto out = s.Search();
-	ASSERT_EQUALS(static_cast<size_t>(2), out.size());
-	ASSERT_EQUALS(std::string("first-by-ecid.iso"), out[0].name);
-	ASSERT_EQUALS(std::string("ascii-name.iso"), out[1].name);
-	ASSERT_TRUE(out[0].already_have);
-	ASSERT_FALSE(out[1].already_have);
+	// std::map iterates ECID-ascending → Search() vector is sorted. Read by
+	// explicit id and via the no-id default (0 == current search) — both hit
+	// the same slot.
+	for (std::uint32_t query : { sid, std::uint32_t{ 0 } }) {
+		const auto out = s.Search(query);
+		ASSERT_EQUALS(static_cast<size_t>(2), out.size());
+		ASSERT_EQUALS(std::string("first-by-ecid.iso"), out[0].name);
+		ASSERT_EQUALS(std::string("ascii-name.iso"), out[1].name);
+		ASSERT_TRUE(out[0].already_have);
+		ASSERT_FALSE(out[1].already_have);
+	}
+}
+
+TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
+{
+	CState s;
+	// No search yet: current is 0, nothing is known, reads are empty.
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.CurrentSearchId());
+	ASSERT_FALSE(s.HasSearch(42));
+	ASSERT_TRUE(s.Search(0).empty());
+
+	// Two concurrent searches, each with its own result.
+	s.MarkSearchStarted(10, "global");
+	s.MutateSearch(10, [](std::map<std::uint32_t, SearchResult> &cache) {
+		SearchResult r;
+		r.ecid = 1;
+		r.name = "in-ten.iso";
+		cache.emplace(r.ecid, r);
+	});
+	s.MarkSearchStarted(20, "kad");
+	s.MutateSearch(20, [](std::map<std::uint32_t, SearchResult> &cache) {
+		SearchResult r;
+		r.ecid = 2;
+		r.name = "in-twenty.iso";
+		cache.emplace(r.ecid, r);
+	});
+
+	// Most-recently-started search is current; no-id resolves to it.
+	ASSERT_EQUALS(static_cast<std::uint32_t>(20), s.CurrentSearchId());
+	ASSERT_EQUALS(std::string("in-twenty.iso"), s.Search(0).at(0).name);
+
+	// Each id addresses only its own results — no cross-contamination.
+	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(10).size());
+	ASSERT_EQUALS(std::string("in-ten.iso"), s.Search(10).at(0).name);
+	ASSERT_EQUALS(std::string("in-twenty.iso"), s.Search(20).at(0).name);
+	ASSERT_TRUE(s.HasSearch(10));
+	ASSERT_TRUE(s.HasSearch(20));
+	ASSERT_FALSE(s.HasSearch(30));
+
+	// Progress kind is per-slot.
+	ASSERT_EQUALS(std::string("global"), s.SearchProgress(10).kind);
+	ASSERT_EQUALS(std::string("kad"), s.SearchProgress(20).kind);
+
+	// Closing the current search drops its slot and clears current (no reliable
+	// "next newest" once it is gone).
+	s.CloseSearch(20);
+	ASSERT_FALSE(s.HasSearch(20));
+	ASSERT_TRUE(s.HasSearch(10));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), s.CurrentSearchId());
+	ASSERT_TRUE(s.Search(20).empty());
+	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(10).size());
 }
 
 TEST(State, ResetListsLeavesLogsAlone)

@@ -30,6 +30,9 @@
 #include "ObservableQueue.h" // Needed for CQueueObserver
 #include "SearchFile.h"      // Needed for CSearchFile
 #include <common/SmartPtr.h> // Needed for CSmartPtr
+#include <set>               // Needed for std::set (per-search Kad completion)
+#include <map>               // Needed for std::map (per-search start times)
+#include <vector>            // Needed for std::vector (same-hash result fan-out)
 
 class CMemFile;
 class CMD4Hash;
@@ -95,8 +98,30 @@ public:
 	/** Stops the current search (global or Kad), if any is in progress. */
 	void StopSearch(bool globalOnly = false);
 
+	/**
+	 * Stops network activity for one specific search by ID, keeping its
+	 * results (the multi-search EC "stop" — as opposed to RemoveResults,
+	 * which also frees the results). Stops the matching Kad keyword search
+	 * if this ID is one, and finalizes the ed2k global sweep if this ID is
+	 * the in-flight one. A no-op for an already-finished / unknown ID.
+	 */
+	void StopSearchById(wxUIntPtr searchID);
+
+	/**
+	 * Finalizes any in-flight ed2k (local/global) search, keeping its
+	 * results. ed2k searches share a single in-flight slot and file their
+	 * results under the scalar m_currentSearch, so the multi-search EC layer
+	 * calls this before starting a new search to stop the old sweep's late
+	 * UDP results from leaking into the new search's bucket. Running Kad
+	 * searches are attributed by their own ID and are left untouched.
+	 */
+	void StopInFlightEd2kSearch();
+
 	/** True if the given searchID corresponds to an active Kad search. */
 	bool IsKadSearch(uint32_t searchID) const;
+
+	/** True if the given searchID is a Kad search, active or already finished. */
+	bool IsOrWasKadSearch(uint32_t searchID) const;
 
 	/**
 	 * Ask the Kad search identified by searchID to widen its frontier
@@ -118,6 +143,20 @@ public:
 		SEARCH_LIFECYCLE_FINISHED = 2 // last search completed; results retained
 	};
 	SearchLifecycleState GetSearchLifecycleState() const;
+
+	// Per-search-ID lifecycle accessors for the multi-search EC path. For
+	// the most-recently-started search (== m_currentSearch) these delegate
+	// to the scalar accessors above (accurate live state); for older searches
+	// they infer state from the Kad manager (a still-active keyword search is
+	// RUNNING) and the retained result bucket (present => FINISHED).
+	SearchLifecycleState GetSearchLifecycleStateById(wxUIntPtr searchID) const;
+	uint8 GetSearchLifecyclePercentById(wxUIntPtr searchID) const;
+	// The overloaded progress-bar sentinel for a search: 0xffff when a finished
+	// ed2k search, 0xfffe when a finished Kad search (each resets the bar and,
+	// for Kad, clears the "!" marker on the client), otherwise the running
+	// percent. Single source of truth for the bottom bar, shared by the EC
+	// PROGRESS reply (remote GUI / amuleapi) and the monolithic search dialog.
+	uint32 GetSearchBarStatusById(wxUIntPtr searchID) const;
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
@@ -153,6 +192,15 @@ public:
 	 * result the user has not downloaded.
 	 */
 	CSearchFile *GetSearchFileByID(const CMD4Hash &hash) const;
+
+	/**
+	 * Collect EVERY search result (parents and children) matching the given
+	 * file hash, across all concurrent searches. On-demand Kad notes and the
+	 * running flag fan out to all of them so the same file shown in more than
+	 * one open search tab gets its community comments everywhere, not just in
+	 * the first tab that happens to hold it.
+	 */
+	void GetAllSearchFilesByID(const CMD4Hash &hash, std::vector<CSearchFile *> &out) const;
 
 	/**
 	 * Start downloading the specific search result identified by its EC
@@ -221,8 +269,14 @@ public:
 	/** Update a certain search result in all lists */
 	void UpdateSearchFileByHash(const CMD4Hash &hash);
 
-	/** Mark current KAD search as finished */
-	void SetKadSearchFinished() { m_KadSearchFinished = true; }
+	/**
+	 * Mark a specific Kad search (by ID) as finished. Records it per-search
+	 * (m_finishedKadSearches) so multi-search progress is precise — one search
+	 * ending must not report a *different* running search as finished. Also
+	 * sets the legacy scalar m_KadSearchFinished for the single-search
+	 * (parameterless GetSearchProgress / GetSearchLifecycleState) path.
+	 */
+	void SetKadSearchFinished(uint32_t searchID);
 
 private:
 	/** Event-handler for global searches. */
@@ -277,6 +331,18 @@ private:
 
 	//! If the current search is a KAD search this signals if it is finished.
 	bool m_KadSearchFinished;
+
+	//! Per-search Kad completion (multi-search): the IDs of Kad searches that
+	//! have ended (their CSearch was destroyed on the result cap or the 45s
+	//! lifetime). Lets GetSearchLifecycleStateById report each search
+	//! independently, so one search finishing does not mark a different
+	//! still-running search as finished. Pruned in RemoveResults.
+	std::set<uint32_t> m_finishedKadSearches;
+
+	//! Per-search start time (multi-search), so each search's cosmetic Kad
+	//! progress ramp is computed from its own age rather than the single
+	//! m_searchStart of the most-recently-started search. Pruned in RemoveResults.
+	std::map<uint32_t, time_t> m_searchStartTimes;
 
 	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
 	//! and global searches. Cleared to false in StartNewSearch when an

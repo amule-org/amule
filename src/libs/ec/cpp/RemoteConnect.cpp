@@ -57,7 +57,8 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool canZLIB,
 	bool canUTF8numbers,
 	bool canNotify,
-	bool preferNoZlib)
+	bool preferNoZlib,
+	bool canMultiSearch)
 : CECPacket(EC_OP_AUTH_REQ)
 {
 	AddTag(CECTag(EC_TAG_CLIENT_NAME, client));
@@ -101,6 +102,12 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// Old servers ignore the unknown tag and fall back to always-zlib.
 	if (preferNoZlib)
 		AddTag(CECEmptyTag(EC_TAG_PREFER_NO_ZLIB));
+	// Client implements the multi-search protocol — addresses EC searches
+	// by a daemon-allocated `EC_TAG_SEARCH_ID` so several run at once. Only
+	// advertised by clients that read the ID back; old servers ignore the
+	// unknown tag and the client stays single-search.
+	if (canMultiSearch)
+		AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
 }
 
 CECAuthPacket::CECAuthPacket(const wxString &pass)
@@ -136,6 +143,8 @@ m_req_fifo_thr(20)
 , m_preferNoZlib(false)
 , m_forceZlib(false)
 , m_serverPartialUpdate(false)
+, m_canMultiSearch(false)
+, m_serverMultiSearch(false)
 {
 }
 
@@ -204,8 +213,13 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 	if (ConnectSocket(addr)) {
 		// We get here only in case of synchronous connect.
 		// Otherwise we continue in OnConnect.
-		CECLoginPacket login_req(
-			m_client, m_version, m_canZLIB, m_canUTF8numbers, m_canNotify, m_preferNoZlib);
+		CECLoginPacket login_req(m_client,
+			m_version,
+			m_canZLIB,
+			m_canUTF8numbers,
+			m_canNotify,
+			m_preferNoZlib,
+			m_canMultiSearch);
 
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
@@ -246,8 +260,13 @@ void CRemoteConnect::OnConnect()
 
 	if (m_notifier) {
 		wxASSERT(m_ec_state == EC_CONNECT_SENT);
-		CECLoginPacket login_req(
-			m_client, m_version, m_canZLIB, m_canUTF8numbers, m_canNotify, m_preferNoZlib);
+		CECLoginPacket login_req(m_client,
+			m_version,
+			m_canZLIB,
+			m_canUTF8numbers,
+			m_canNotify,
+			m_preferNoZlib,
+			m_canMultiSearch);
 		CECSocket::SendPacket(&login_req);
 
 		m_ec_state = EC_REQ_SENT;
@@ -423,6 +442,12 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// tags for unchanged files (#713).
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 				m_serverPartialUpdate = true;
+			}
+			// Server confirmed multi-search: it will allocate a distinct
+			// `EC_TAG_SEARCH_ID` per search. Old daemons omit the echo and
+			// the client stays on the single-search sentinel path.
+			if (reply->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
+				m_serverMultiSearch = true;
 			}
 		} else {
 			m_ec_state = EC_FAIL;

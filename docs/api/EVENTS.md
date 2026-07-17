@@ -429,6 +429,7 @@ Emitted per new result that appears in the results map between refresher ticks.
 
 ```json
 {
+  "search_id": 42,
   "hash": "0123456789abcdef0123456789abcdef",
   "name": "ubuntu-24.04-desktop-amd64.iso",
   "size": 5765873664,
@@ -442,20 +443,21 @@ Emitted per new result that appears in the results map between refresher ticks.
 }
 ```
 
-Key results by `hash`. The payload is byte-for-byte identical to a `/search/results` array entry (including `status`, `type`, and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire this event — children are folded into their parent's `children[]`, never emitted as their own `search_result_added`. amuled wipes its searchlist on every new `POST /search`, so subscribers must treat each search as a fresh result space — clear prior results when you start a new query.
+`search_id` routes the result to the search that produced it — amuleapi runs several searches at once (see [REFERENCE.md](REFERENCE.md#post-apiv0search)), so demux on it. Key results by `(search_id, hash)`. Aside from the leading `search_id`, the payload is byte-for-byte identical to a `/search/results` array entry (including `status`, `type`, and the `children[]` grouping array — see [REFERENCE.md](REFERENCE.md#get-apiv0searchresults)); `sources` is the nested `{total, complete}` object, `media` — the audio/video metadata object — is present only for locally-known/probed hits and omitted otherwise, and `children` holds the same-hash/different-name alternatives (empty for a single-name hit), same as the REST endpoint. Only parent results fire this event — children are folded into their parent's `children[]`, never emitted as their own `search_result_added`. Each `search_id` is an independent result space — a new `POST /search` starts a fresh one without disturbing the others.
 
 #### `search_progress`
 
-Emitted whenever the current search's completion advances and once more on completion. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#search-results)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping to finished (the `state` `running` → `finished` edge). The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
+Emitted whenever a search's completion advances and once more on its completion; every frame carries the `search_id` it refers to. Two triggers, both off the daemon's unambiguous `EC_TAG_SEARCH_LIFECYCLE_*` tags (see [REFERENCE.md](REFERENCE.md#search-results)): the `percent` changing between refresher ticks while the search runs, and the lifecycle flipping to finished (the `state` `running` → `finished` edge). A newly-started search also emits its initial `running` frame. The completion frame is just the terminal `search_progress` with `"state": "finished"` — there is **no** separate `search_finished` event.
 
 ```json
-{ "state": "running", "percent": 47, "results": 88, "kind": "kad" }
+{ "search_id": 42, "state": "running", "percent": 47, "results": 88, "kind": "kad" }
 ```
 
 ```json
-{ "state": "finished", "percent": 100, "results": 153, "kind": "local" }
+{ "search_id": 42, "state": "finished", "percent": 100, "results": 153, "kind": "local" }
 ```
 
+- `search_id` — which search this frame is about.
 - `state` — `"running"` while the search is in flight, `"finished"` on the terminal frame.
 - `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#search-results). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
 - `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"`).

@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: po 4a\n"
-"POT-Creation-Date: 2026-07-09 14:20+0200\n"
+"POT-Creation-Date: 2026-07-17 16:56+0200\n"
 "PO-Revision-Date: 2026-07-17 11:00+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: none\n"
@@ -212,24 +212,24 @@ msgid "a magnet link."
 msgstr "egy magnet hivatkozás."
 
 #. type: SH
-#: amule.1.in:77 amulecmd.1.in:233 amuleweb.1.in:140
+#: amule.1.in:77 amulecmd.1.in:238 amuleweb.1.in:140
 #, no-wrap
 msgid "NOTES"
 msgstr "MEGJEGYZÉSEK"
 
 #. type: SS
-#: amule.1.in:78 amulecmd.1.in:234 amuleweb.1.in:141
+#: amule.1.in:78 amulecmd.1.in:239 amuleweb.1.in:141
 #, no-wrap
 msgid "Paths"
 msgstr "Elérési utak"
 
 #. type: Plain text
-#: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:145
+#: amule.1.in:82 amulecmd.1.in:243 amuleweb.1.in:145
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "Minden olyan opciónál amely I<E<lt>fájlE<gt>> paramétert kér, ha a megadott I<fájl> nem tartalmaz könyvtár komponenst (vagyis tisztán csak egy fájlnév), akkor azt az aMule konfigurációs könyvtárában (I<~/.aMule>) fogja keresni."
 
 #. type: SH
-#: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:179
+#: amule.1.in:82 amulecmd.1.in:271 amuled.1.in:85 amuleweb.1.in:179
 #: ed2k.1.in:61 ../../src/utils/cas/docs/cas.1.in:37
 #, no-wrap
 msgid "FILES"
@@ -241,7 +241,7 @@ msgid "~/.aMule/*"
 msgstr "~/.aMule/*"
 
 #. type: SH
-#: amule.1.in:84 amulecmd.1.in:282 amuled.1.in:87 amulegui.1.in:63
+#: amule.1.in:84 amulecmd.1.in:287 amuled.1.in:87 amulegui.1.in:63
 #: amuleweb.1.in:199 ed2k.1.in:63 ../../src/utils/aLinkCreator/docs/alc.1.in:11
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:26
 #: ../../src/utils/cas/docs/cas.1.in:43
@@ -251,7 +251,7 @@ msgid "REPORTING BUGS"
 msgstr "HIBÁK JELENTÉSE"
 
 #. type: Plain text
-#: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
+#: amule.1.in:87 amulecmd.1.in:290 amuled.1.in:90 amulegui.1.in:66
 #: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
@@ -260,7 +260,7 @@ msgid "Please report bugs either on our forum (I<https://github.com/amule-org/am
 msgstr "A hibákat kérjük vagy a fórumon (I<https://github.com/amule-org/amule/discussions>), vagy a hibakövetőben (I<https://github.com/amule-org/amule/issues>) jelentsék. Hibákról kérjük ne írjanak levelet (e-mail-t) se a levelezési listára, se közvetlenül valamelyik fejlesztőnek."
 
 #. type: SH
-#: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
+#: amule.1.in:87 amulecmd.1.in:290 amuled.1.in:90 amulegui.1.in:66
 #: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
@@ -270,7 +270,7 @@ msgid "COPYRIGHT"
 msgstr "COPYRIGHT"
 
 #. type: Plain text
-#: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
+#: amule.1.in:89 amulecmd.1.in:292 amuled.1.in:92 amulegui.1.in:68
 #: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
@@ -279,7 +279,7 @@ msgid "aMule and all of its related utilities are distributed under the GNU Gene
 msgstr "Az aMule és az összes hozzá tartozó segédprogram a GNU General Public License védelme alatt áll."
 
 #. type: SH
-#: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
+#: amule.1.in:89 amulecmd.1.in:292 amuled.1.in:92 amulegui.1.in:68
 #: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
@@ -289,7 +289,7 @@ msgid "SEE ALSO"
 msgstr "LÁSD MÉG"
 
 #. type: SH
-#: amule.1.in:91 amulecmd.1.in:289 amuled.1.in:94 amulegui.1.in:70
+#: amule.1.in:91 amulecmd.1.in:294 amuled.1.in:94 amulegui.1.in:70
 #: amuleweb.1.in:206 ed2k.1.in:70 ../../src/utils/aLinkCreator/docs/alc.1.in:18
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:33
 #: ../../src/utils/cas/docs/cas.1.in:50
@@ -299,7 +299,7 @@ msgid "AUTHOR"
 msgstr "SZERZŐ"
 
 #. type: Plain text
-#: amule.1.in:92 amulecmd.1.in:290 amuled.1.in:95 amuleweb.1.in:207
+#: amule.1.in:92 amulecmd.1.in:295 amuled.1.in:95 amuleweb.1.in:207
 #: ed2k.1.in:71 ../../src/utils/aLinkCreator/docs/alc.1.in:19
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:34
 #: ../../src/utils/cas/docs/cas.1.in:51
@@ -522,7 +522,7 @@ msgid "Get and display a preference value."
 msgstr "Megmutat egy beállítás értéket."
 
 #. type: Plain text
-#: amulecmd.1.in:114 amulecmd.1.in:148 amulecmd.1.in:197 amulecmd.1.in:207
+#: amulecmd.1.in:114 amulecmd.1.in:149 amulecmd.1.in:202 amulecmd.1.in:212
 msgid "Available values for I<E<lt>whatE<gt>>:"
 msgstr "A I<E<lt>mitE<gt>> lehetséges értékei:"
 
@@ -577,248 +577,250 @@ msgid "Normal priority."
 msgstr "Normál prioritás."
 
 #. type: Plain text
-#: amulecmd.1.in:142
-msgid "Shows the progress of an on-going search."
-msgstr "Egy folymatban lévő keresés állapotát jeleníti meg."
+#: amulecmd.1.in:143
+msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
+msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:144
+#: amulecmd.1.in:145
 #, fuzzy
 #| msgid "A synonim of the B<exit> command."
 msgid "A synonym of the B<exit> command."
 msgstr "Az B<exit> parancs szinonímája."
 
 #. type: Plain text
-#: amulecmd.1.in:146
+#: amulecmd.1.in:147
 msgid "Reloads a given object."
 msgstr "A megadott objektum újratöltése."
 
 #. type: Plain text
-#: amulecmd.1.in:151
+#: amulecmd.1.in:152
 msgid "Reload shared files list."
 msgstr "A megosztott fájlok listájt tölti újra."
 
 #. type: Plain text
-#: amulecmd.1.in:153
+#: amulecmd.1.in:154
 msgid "Reload IP filter tables."
 msgstr "Az IP szűrő újratöltése."
 
 #. type: Plain text
-#: amulecmd.1.in:156
+#: amulecmd.1.in:157
 msgid "Reset the log."
 msgstr "Napló újrakezdése."
 
 #. type: Plain text
-#: amulecmd.1.in:158
-msgid "Shows you the results of the last search."
-msgstr "Az utolsó keresés eredményeinek megjelenítése."
+#: amulecmd.1.in:161
+msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
+msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:160
+#: amulecmd.1.in:163
 msgid "Resumes the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
 msgstr "Folytatja a I<E<lt>hashE<gt>> vagy I<E<lt>számE<gt>> által azonosított letöltést. Az értékek megszerzéséhez használd a B<show> parancsot."
 
 #. type: Plain text
-#: amulecmd.1.in:164
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
+#: amulecmd.1.in:169
+#, fuzzy
+#| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "Elindít egy keresést a megadott I<E<lt>kulcsszóE<gt>>-ra. Kötelező megadni a keresés típusát és a kulcsszót. Példa: a \\(Bqsearch kad amule\\(rq parancs egy Kademlia keresést indít az \\(Bqamule\\(rq kulcsszóra."
 
 #. type: Plain text
-#: amulecmd.1.in:166
+#: amulecmd.1.in:171
 msgid "Available search types:"
 msgstr "Elérhető keresés típusok:"
 
 #. type: Plain text
-#: amulecmd.1.in:169
+#: amulecmd.1.in:174
 msgid "Performs a global search."
 msgstr "Globális keresést hajt végre."
 
 #. type: Plain text
-#: amulecmd.1.in:171
+#: amulecmd.1.in:176
 msgid "Performs a search on the Kademlia network."
 msgstr "A Kademlia hálózaton keres."
 
 #. type: Plain text
-#: amulecmd.1.in:173
+#: amulecmd.1.in:178
 msgid "Performs a local search."
 msgstr "Lokális keresés."
 
 #. type: Plain text
-#: amulecmd.1.in:177
+#: amulecmd.1.in:182
 msgid "Optional filters can be placed before, after, or interleaved with the search keyword(s):"
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:180
+#: amulecmd.1.in:185
 msgid "Restrict results to the given file type."
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:182
+#: amulecmd.1.in:187
 msgid "Restrict results to a specific file extension (e.g.\\ I<iso>, I<mp3>)."
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:184
+#: amulecmd.1.in:189
 msgid "Minimum number of sources a result must report."
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:187
+#: amulecmd.1.in:192
 msgid "Smallest file size to return. Suffixes use binary multipliers (K = 1024, M = K\\(mu1024, G = M\\(mu1024); no suffix means bytes."
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:189
+#: amulecmd.1.in:194
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:193
+#: amulecmd.1.in:198
 msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
 msgstr ""
 
 #. type: Plain text
-#: amulecmd.1.in:195
+#: amulecmd.1.in:200
 msgid "Sets a given preferences value."
 msgstr "Egy beállítás érték megváltoztatása."
 
 #. type: Plain text
-#: amulecmd.1.in:200
+#: amulecmd.1.in:205
 msgid "Set bandwidth limits."
 msgstr "Sávszélesség határok beállítása."
 
 #. type: Plain text
-#: amulecmd.1.in:202
+#: amulecmd.1.in:207
 msgid "Set IPFilter preferences."
 msgstr "IP-szűrő beállításainak módosítása."
 
 #. type: Plain text
-#: amulecmd.1.in:205
+#: amulecmd.1.in:210
 msgid "Shows upload/download queue, servers list or shared files list."
 msgstr "Megmutatja a fel- és letöltési sort, a kiszolgáló- és megosztott fájlok listáját."
 
 #. type: Plain text
-#: amulecmd.1.in:210
+#: amulecmd.1.in:215
 msgid "Show download queue."
 msgstr "Letöltési lista megjelenítése."
 
 #. type: Plain text
-#: amulecmd.1.in:212
+#: amulecmd.1.in:217
 msgid "Show log."
 msgstr "Napló megjelenítése."
 
 #. type: Plain text
-#: amulecmd.1.in:214
+#: amulecmd.1.in:219
 msgid "Show servers list."
 msgstr "Kiszolgálók listájának megjelenítése."
 
 #. type: Plain text
-#: amulecmd.1.in:216
+#: amulecmd.1.in:221
 #, fuzzy
 #| msgid "Reload shared files list."
 msgid "Show shared files list."
 msgstr "A megosztott fájlok listájt tölti újra."
 
 #. type: Plain text
-#: amulecmd.1.in:218
+#: amulecmd.1.in:223
 msgid "Show upload queue."
 msgstr "Feltöltési lista megjelenítése."
 
 #. type: Plain text
-#: amulecmd.1.in:222
+#: amulecmd.1.in:227
 msgid "Shutdown the remote running core (amule/amuled).  This will also shut down the text client, since it is unusable without a running core."
 msgstr "Leállítja a távoli magot (amule/amuled). Ez egyszersmind a szöveges klienst is leállítja, mivel az nemigen használható futó mag nélkül."
 
 #. type: Plain text
-#: amulecmd.1.in:224
+#: amulecmd.1.in:229
 msgid "Show statistics tree."
 msgstr "A statisztika fa megjelenítése."
 
 #. type: Plain text
-#: amulecmd.1.in:228
+#: amulecmd.1.in:233
 msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
 msgstr "Lehetséges megadni egy számot a 0-255 tartományban, amely megadja az ügyfél-verziók al-fák maximális nagyságát. Nulla megadása vagy a szám teljes elhagyása nem korlátoz."
 
 #. type: Plain text
-#: amulecmd.1.in:231
+#: amulecmd.1.in:236
 msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
 msgstr "Példa: a \\(Bqstatistics 5\\(rq parancs csak az 5 leggyakoribb ügyfél változatot mutatja minden ügyfél típusra."
 
 #. type: Plain text
-#: amulecmd.1.in:233
+#: amulecmd.1.in:238
 msgid "Show connection status, current up/download speeds, etc."
 msgstr "Megjeleníti a kapcsolat állapotát, pillanatnyi fel-/letöltési sebességet, stb."
 
 #. type: SS
-#: amulecmd.1.in:238 amuleweb.1.in:145
+#: amulecmd.1.in:243 amuleweb.1.in:145
 #, no-wrap
 msgid "Languages"
 msgstr "Nyelvek"
 
 #. type: Plain text
-#: amulecmd.1.in:244 amuleweb.1.in:151
+#: amulecmd.1.in:249 amuleweb.1.in:151
 msgid "The I<E<lt>langE<gt>> parameter for the B<-l> option has the following form: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] where I<lang> is the primary language, I<LANG> is a sublanguage/territory, I<encoding> is the character set to use and I<modifier> allows the user to select a specific instance of localization data within a single category."
 msgstr "A B<-l> opció I<E<lt>nyelvE<gt>> paramétere a következőképpen adható meg: I<nyelv>[B<_>I<TERÜLET>][B<.>I<kódolás>][B<@>I<módosító>], ahol I<nyelv> az elsődleges nyelv, I<TERÜLET> egy nyelvváltozat/terület kódja, I<kódolás> a karakterkészlet kódja és a I<módosító> \\(Bqlehetővé teszi, hogy a felhasználó kiválasszon egy meghatározott esetet a helyi jellemzők adataiból egyetlen kategórián belül\\(rq."
 
 #. type: Plain text
-#: amulecmd.1.in:246 amuleweb.1.in:153
+#: amulecmd.1.in:251 amuleweb.1.in:153
 msgid "For example, the following strings are valid:"
 msgstr "Például a következő értékek mind érvényesek:"
 
 #. type: Plain text
-#: amulecmd.1.in:260 amuleweb.1.in:167
+#: amulecmd.1.in:265 amuleweb.1.in:167
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
 msgstr "Habár a fentieket mind elfogadja a program, mint érvényes nyelvmeghatározást, a I<kódolás> és I<módosító> még nem használt."
 
 #. type: Plain text
-#: amulecmd.1.in:263 amuleweb.1.in:170
+#: amulecmd.1.in:268 amuleweb.1.in:170
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
 msgstr "Ráadásként a fenti formátumhoz, megadható akár egy nyelv teljes angol megnevezése is, így például a B<-l german> szintén érvényes és egyenértékű a B<-l de_DE> megadással."
 
 #. type: Plain text
-#: amulecmd.1.in:266 amuleweb.1.in:173
+#: amulecmd.1.in:271 amuleweb.1.in:173
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
 msgstr "Ha sem a konfigurációs fájlban, sem a parancssorban nincs megadva a nyelv, akkor a rendszer alapértelmezett nyelvét fogja használni."
 
 #. type: Plain text
-#: amulecmd.1.in:268 amuleweb.1.in:181
+#: amulecmd.1.in:273 amuleweb.1.in:181
 msgid "~/.aMule/remote.conf"
 msgstr "~/.aMule/remote.conf"
 
 #. type: SH
-#: amulecmd.1.in:268 amuleweb.1.in:185
+#: amulecmd.1.in:273 amuleweb.1.in:185
 #, no-wrap
 msgid "EXAMPLE"
 msgstr "PÉLDA"
 
 #. type: Plain text
-#: amulecmd.1.in:270
+#: amulecmd.1.in:275
 msgid "Typically amulecmd will be first run as:"
 msgstr "Tipikusan az amulecmd-t először a következőképpen indítjuk:"
 
 #. type: Plain text
-#: amulecmd.1.in:272
+#: amulecmd.1.in:277
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgstr "B<amulecmd> B<-h> I<gépnév> B<-p> I<EC-port> B<-P> I<EC-jelszó> B<-w>"
 
 #. type: Plain text
-#: amulecmd.1.in:274 amuleweb.1.in:191
+#: amulecmd.1.in:279 amuleweb.1.in:191
 msgid "or"
 msgstr "vagy"
 
 #. type: Plain text
-#: amulecmd.1.in:276
+#: amulecmd.1.in:281
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amulecmd> B<--create-config-from>=I</home/felhasználónév/.aMule/amule.conf>"
 
 #. type: Plain text
-#: amulecmd.1.in:278 amuleweb.1.in:195
+#: amulecmd.1.in:283 amuleweb.1.in:195
 msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "Ez elmenti a beállításokat a I<$HOME/.aMule/remote.conf> fájlba, hogy később már csak ezt kelljen írni:"
 
 #. type: Plain text
-#: amulecmd.1.in:282
+#: amulecmd.1.in:287
 msgid "Of course, you don't have to follow this example."
 msgstr "Természetesen nem kötelező ezt a példát követni."
 
@@ -1372,6 +1374,12 @@ msgstr "A B<wxcas> az aMule online-aláírás fájljának tartalmát jeleníti m
 #: ../../src/utils/wxCas/docs/wxcas.1.in:14
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Készült a Pedro de Oliveira írta B<cas>(1) alapján.  A B<wxcas>-t ThePolish E<lt>thepolish@vipmail.ruE<gt> írta."
+
+#~ msgid "Shows the progress of an on-going search."
+#~ msgstr "Egy folymatban lévő keresés állapotát jeleníti meg."
+
+#~ msgid "Shows you the results of the last search."
+#~ msgstr "Az utolsó keresés eredményeinek megjelenítése."
 
 #~ msgid "Writes the online signature picture.  You can optionally append I<=E<lt>PATHE<gt>> to this option, to specify the location it should be written to."
 #~ msgstr "Az online-aláírás képet generálja. Lehetséges I<=E<lt>fájlE<gt>> hozzácsatolásával megmondani, hová írja."

@@ -146,13 +146,12 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d 'not json' "$HOST/api/v0/search"
 _assert_status 400 "POST /search (malformed JSON) → 400"
 
-# --- 3. POST /search happy + results-reset observable. ---------
+# --- 3. POST /search happy + per-search_id addressing. ---------
 #
-# amuled wipes its searchlist on SEARCH_START (ExternalConn.cpp:1437),
-# and amuleapi's MarkSearchStarted wipes m_search alongside it so the
-# pre-POST results don't bleed into the new query. Step 4 below proves
-# the reset is observable: the polling loop must see the new query's
-# results fill up rather than the prior query's tail.
+# Multi-search: each POST /search gets its own daemon-allocated search_id
+# and its own result slot; a new search does NOT wipe the others. The
+# no-id GET /search/results resolves to the CURRENT (most-recently-started)
+# search, so the polling loop below sees the new query's results fill up.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
 _assert_status 200 "GET /search/results (baseline before POST) → 200"
 
@@ -162,6 +161,10 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 202 "POST /search (query=$TEST_QUERY, type=global) → 202"
 _assert_json_eq '.ok'    true         'POST /search response.ok==true'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
+_assert_json_eq '.search_id | type' number 'POST /search returns a numeric search_id'
+FIRST_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+_assert_json_eq '.search_id' "$FIRST_SID" 'GET /search/results (no id) echoes the current search_id'
 
 # --- 3.5 Regression: progress shouldn't claim finished right after POST. -
 # amuled briefly reports raw=100 in the "queue-empty-at-start" window
@@ -436,6 +439,92 @@ if [ -n "$CMT_HASH" ]; then
 	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop" > /dev/null 2>&1
 else
 	echo "    info: 0 results — skipping search-comments happy path (daemon not connected)"
+fi
+
+# --- 11. Multi-search: concurrent searches, per-id addressing. ----
+# amuleapi runs several searches at once, each with its own daemon-
+# allocated search_id and its own result slot. Start an ed2k (global)
+# AND a Kad search back-to-back and verify they coexist: distinct ids,
+# per-id results, no-id => current, unknown id => 404, and stop+close
+# frees one while the sibling survives.
+#
+# Regression guard (daemon fix): a Kad search started while an ed2k
+# search is still in-flight must NOT stop/steal the ed2k search — its
+# results are attributed via a scalar the Kad start used to clobber, so
+# the global bucket would come back empty. Here we assert the global
+# search still harvests while the Kad search runs alongside it.
+G=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" "$HOST/api/v0/search")
+SID_G=$(printf '%s' "$G" | jq -r '.search_id')
+K=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"query\":\"$TEST_QUERY\",\"type\":\"kad\"}" "$HOST/api/v0/search")
+SID_K=$(printf '%s' "$K" | jq -r '.search_id')
+
+if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" != "null" ]; then
+	if [ "$SID_G" != "$SID_K" ]; then
+		_pass "Two concurrent searches get distinct search_ids ($SID_G, $SID_K)"
+	else
+		_fail "Concurrent search_ids" "both searches got the same id $SID_G"
+	fi
+
+	# Per-id progress kind reflects each search's own type.
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_G"
+	_assert_status 200 "GET /search/results?search_id=<global> → 200"
+	_assert_json_eq '.search_id'      "$SID_G" 'global search echoes its search_id'
+	_assert_json_eq '.progress.kind'  global   'global search progress.kind==global'
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_K"
+	_assert_status 200 "GET /search/results?search_id=<kad> → 200"
+	_assert_json_eq '.search_id'      "$SID_K" 'kad search echoes its search_id'
+	_assert_json_eq '.progress.kind'  kad      'kad search progress.kind==kad'
+
+	# no-id resolves to the current (most-recently-started == the Kad) search.
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
+	_assert_json_eq '.search_id' "$SID_K" 'no-id GET resolves to the current (latest) search'
+
+	# Unknown / never-started id → 404 (distinct from known-but-empty).
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=4293000111"
+	_assert_status 404 "GET /search/results?search_id=<unknown> → 404"
+
+	# Regression: the in-flight global search still harvests despite the
+	# concurrent Kad search. Poll briefly; skip the assertion (don't fail)
+	# if the daemon simply has no ed2k hits for the query.
+	GN=0
+	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_G"
+		GN=$(printf '%s' "$CURL_BODY" | jq '.results | length')
+		[ "$GN" -gt 0 ] && break
+		sleep 0.25
+	done
+	if [ "$GN" -gt 0 ]; then
+		_pass "In-flight global search still harvests alongside a Kad search ($GN hits)"
+	else
+		echo "    info: global search returned 0 alongside Kad — daemon may lack ed2k hits for '$TEST_QUERY'"
+	fi
+
+	# stop + close the global search: its slot is freed (404), the Kad
+	# search is untouched (still 200).
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"search_id\":$SID_G,\"close\":true}" "$HOST/api/v0/search/stop"
+	_assert_status 200 "POST /search/stop {search_id:<global>, close:true} → 200"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_G"
+	_assert_status 404 "GET closed global search → 404"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results?search_id=$SID_K"
+	_assert_status 200 "sibling Kad search survives the close → 200"
+
+	# stop with an explicit unknown id → 404.
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"search_id":4293000111}' "$HOST/api/v0/search/stop"
+	_assert_status 404 "POST /search/stop {search_id:<unknown>} → 404"
+
+	curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"search_id\":$SID_K,\"close\":true}" "$HOST/api/v0/search/stop" >/dev/null 2>&1
+else
+	_fail "Multi-search setup" "POST /search did not return search_ids (G=$SID_G K=$SID_K)"
 fi
 
 # --- Summary. -----------------------------------------------------

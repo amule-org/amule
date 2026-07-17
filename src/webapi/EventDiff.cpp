@@ -571,23 +571,39 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// percent, or flip complete. First tick after MarkSearchStarted
 	// bootstraps the baseline so we don't double-emit on first observation.
 	{
-		const auto search_now = ByEcid(state.Search());
-		const auto progress_now = state.SearchProgress();
-		if (!prev.search_initialised) {
-			prev.search = search_now;
-			prev.search_complete = progress_now.complete;
-			prev.search_percent = progress_now.percent;
-			prev.search_generation = progress_now.generation;
-			prev.search_initialised = true;
-		} else {
-			// New result entries.
+		// Multi-search: diff every open search independently, keyed by
+		// search_id, and stamp that id on each event so subscribers demux.
+		const auto ids = state.AllSearchIds();
+		for (std::uint32_t sid : ids) {
+			const auto search_now = ByEcid(state.Search(sid));
+			const auto progress_now = state.SearchProgress(sid);
+
+			// Cold start (first tick ever): baseline every pre-existing
+			// search silently so history isn't replayed as events. A
+			// search that appears LATER has no prev entry, so its
+			// generation (0) differs from the live one — the progress
+			// edge below fires its initial "running" frame, and its
+			// results stream in as ordinary additions.
+			if (!prev.search_initialised) {
+				auto &b = prev.searches[sid];
+				b.results = search_now;
+				b.complete = progress_now.complete;
+				b.percent = progress_now.percent;
+				b.generation = progress_now.generation;
+				continue;
+			}
+
+			auto &pstate = prev.searches[sid];
+			// New result entries for this search.
 			for (const auto &kv : search_now) {
-				if (prev.search.find(kv.first) == prev.search.end()) {
+				if (pstate.results.find(kv.first) == pstate.results.end()) {
 					std::ostringstream payload;
-					// Byte-for-byte identical to WriteSearchObject (Api.cpp):
-					// sources is a nested {total, complete} object, matching
-					// the /search/results[] entry rather than flattening it.
-					payload << "{\"hash\":\"" << EscJson(kv.second.hash) << "\""
+					// The search_id routes the event to a tab/view; the
+					// remaining fields are byte-for-byte identical to
+					// WriteSearchObject (Api.cpp) — sources is a nested
+					// {total, complete} object, matching /search/results[].
+					payload << "{\"search_id\":" << sid << ",\"hash\":\""
+						<< EscJson(kv.second.hash) << "\""
 						<< ",\"name\":\"" << EscJson(kv.second.name) << "\""
 						<< ",\"size\":" << kv.second.size
 						<< ",\"sources\":{\"total\":" << kv.second.source_count
@@ -634,30 +650,38 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			}
 			// search_progress: a percent change while running, the
 			// running→finished edge (complete false→true), or a
-			// generation bump from a new POST /search. The generation
-			// trigger is what catches back-to-back searches whose
-			// entire lifecycle fits inside one refresher tick — the
-			// percent+complete comparison would see 100→100 / true→true
-			// on such runs and emit nothing. MarkSearchStarted also
-			// resets complete=false + percent=0 so ordinary runs still
-			// get fresh edges too.
-			const bool generation_bumped = progress_now.generation != prev.search_generation;
-			const bool finished_edge = progress_now.complete && !prev.search_complete;
-			const bool percent_moved = progress_now.percent != prev.search_percent;
+			// generation bump (new POST /search, or the first observation
+			// of this search_id). The generation trigger catches
+			// back-to-back searches whose whole lifecycle fits inside one
+			// refresher tick — the percent+complete comparison would see
+			// 100→100 / true→true and emit nothing.
+			const bool generation_bumped = progress_now.generation != pstate.generation;
+			const bool finished_edge = progress_now.complete && !pstate.complete;
+			const bool percent_moved = progress_now.percent != pstate.percent;
 			if (generation_bumped || finished_edge || percent_moved) {
 				std::ostringstream payload;
-				payload << "{\"state\":\"" << (progress_now.complete ? "finished" : "running")
-					<< "\""
+				payload << "{\"search_id\":" << sid << ",\"state\":\""
+					<< (progress_now.complete ? "finished" : "running") << "\""
 					<< ",\"percent\":" << progress_now.percent
 					<< ",\"results\":" << search_now.size() << ",\"kind\":\""
 					<< EscJson(progress_now.kind) << "\""
 					<< "}";
 				bus.Publish("search_progress", payload.str());
 			}
-			prev.search = search_now;
-			prev.search_complete = progress_now.complete;
-			prev.search_percent = progress_now.percent;
-			prev.search_generation = progress_now.generation;
+			pstate.results = search_now;
+			pstate.complete = progress_now.complete;
+			pstate.percent = progress_now.percent;
+			pstate.generation = progress_now.generation;
+		}
+		prev.search_initialised = true;
+		// Prune baselines for searches that vanished (closed / EC reset) so
+		// prev.searches can't grow without bound.
+		for (auto it = prev.searches.begin(); it != prev.searches.end();) {
+			if (std::find(ids.begin(), ids.end(), it->first) == ids.end()) {
+				it = prev.searches.erase(it);
+			} else {
+				++it;
+			}
 		}
 	}
 

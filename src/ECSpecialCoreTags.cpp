@@ -441,9 +441,16 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 // Search reply
 //
 CEC_SearchFile_Tag::CEC_SearchFile_Tag(
-	const CSearchFile *file, EC_DETAIL_LEVEL detail_level, CValueMap *valuemap)
+	const CSearchFile *file, EC_DETAIL_LEVEL detail_level, CValueMap *valuemap, uint32 searchID)
 : CECTag(EC_TAG_SEARCHFILE, file->ECID())
 {
+	// Multi-search union poll (amulegui): the owning search's ID so the client
+	// routes this result to the right tab. Emitted unconditionally (no
+	// valuemap, before the UPDATE early-return) so a result object (re)created
+	// on any poll can always be attributed. 0 => omitted (legacy / non-union).
+	if (searchID) {
+		AddTag(CECTag(EC_TAG_SEARCH_ID, searchID));
+	}
 	AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT, file->GetSourceCount()), valuemap);
 	AddTag(CECTag(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, file->GetCompleteSourceCount()), valuemap);
 	AddTag(CECTag(EC_TAG_PARTFILE_STATUS, (uint32)file->GetDownloadStatus()), valuemap);

@@ -401,6 +401,16 @@ int CamuleapiApp::OnRun()
 	// covered too.
 	SetEcConnectionLostHandler(&HandleEcConnectionLost);
 
+	// amuleapi addresses searches by daemon-allocated ID (several concurrent
+	// searches, one REST search_id each), so advertise the multi-search
+	// capability at EC login. ConnectAndRun forwards this to the EC client
+	// before it sends the login packet, which puts the daemon connection into
+	// multi-search mode (it allocates and returns an EC_TAG_SEARCH_ID per
+	// start, and addresses results/progress/stop by that ID). amuleapi is new
+	// in 3.1.0 and always pairs with a matching daemon, so there is no
+	// single-search fallback to maintain.
+	m_canMultiSearch = true;
+
 	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore)
 	// and then calls TextShell — which we've overridden so the daemon's
 	// main loop runs there. On EC failure ConnectAndRun returns without

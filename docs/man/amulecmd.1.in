@@ -137,8 +137,9 @@ Low priority.
 .IP Normal 10
 Normal priority.
 .RE
-.SS_untranslated Progress
-Shows the progress of an on\-going search.
+.SS_untranslated Progress \fI[<id>]\fP
+Shows the progress of an on\-going search. Optionally takes a search \fI<id>\fR
+(as printed by \fBsearch\fR); with no id, shows the most recently started search.
 .SS_untranslated Quit
 A synonym of the \fBexit\fR command.
 .SS_untranslated Reload \fI<what>\fP
@@ -153,14 +154,18 @@ Reload IP filter tables.
 .RE
 .SS_untranslated Reset
 Reset the log.
-.SS_untranslated Results
-Shows you the results of the last search.
+.SS_untranslated Results \fI[<id>]\fP
+Shows you the results of a search. Optionally takes a search \fI<id>\fR (as
+printed by \fBsearch\fR); with no id, shows the most recently started search.
+Several searches can be kept on the daemon at once and addressed by id.
 .SS_untranslated Resume \fI<hash>\fP | \fI<number>\fP
 Resumes the download specified by \fI<hash>\fR or \fI<number>\fR. To get the value use \fBshow\fR.
 .SS_untranslated Search \fI<type>\fP [\fI<filters>\fP] \fI<keyword>\fR
 Makes a search for the given \fI<keyword>\fR. A search type and a keyword
 to search is mandatory to do this.
 Example: `search kad amule' performs a kad search for `amule'.
+Prints a search id; pass it to \fBresults\fR or \fBprogress\fR to address this
+search. Several searches can run at once, each with its own id.
 
 Available search types:
 .RS

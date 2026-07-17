@@ -320,7 +320,7 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			// update both downloads and shared files
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 		} else if (amuledlg->m_searchwnd->IsShown()) {
-			if (searchlist->m_curr_search != -1) {
+			if (searchlist->m_curr_search != 0) {
 				searchlist->DoRequery(EC_OP_SEARCH_RESULTS, EC_TAG_SEARCHFILE);
 			}
 		}
@@ -461,6 +461,10 @@ bool CamuleRemoteGuiApp::OnInit()
 	long enableZLIB;
 	wxConfig::Get()->Read("/EC/ZLIB", &enableZLIB, 1);
 	m_connect->SetCapabilities(enableZLIB != 0, true, false); // ZLIB, UTF8 numbers, notification
+	// amulegui addresses searches by daemon-allocated ID (per-tab, several at
+	// once); advertise the multi-search capability. An old daemon won't echo
+	// it and amulegui stays single-search (ServerSupportsMultiSearch()).
+	m_connect->SetCanMultiSearch(true);
 	// The ForceZLIB override is read from the connection dialog
 	// (see ShowConnectionDialog) so the user's checkbox choice in this
 	// session overrides the persisted /EC/ForceZLIB value.
@@ -586,6 +590,7 @@ void CamuleRemoteGuiApp::ResetEcConnect()
 	long enableZLIB;
 	wxConfig::Get()->Read("/EC/ZLIB", &enableZLIB, 1);
 	m_connect->SetCapabilities(enableZLIB != 0, true, false);
+	m_connect->SetCanMultiSearch(true);
 }
 
 void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
@@ -2730,7 +2735,7 @@ void CFriendListRem::RequestSharedFileList(CClientRef &client)
 CSearchListRem::CSearchListRem(CRemoteConnect *conn)
 : CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>(conn, true)
 {
-	m_curr_search = -1;
+	m_curr_search = 0;
 }
 
 wxString CSearchListRem::StartNewSearch(
@@ -2757,26 +2762,109 @@ wxString CSearchListRem::StartNewSearch(
 		params.minSize,
 		params.maxSize));
 
-	m_conn->SendPacket(&search_req);
-	m_curr_search = *(nSearchID); // No kad remote search yet.
+	if (m_conn->ServerSupportsMultiSearch()) {
+		// Multi-search: the daemon allocates the real search ID. Send the
+		// optimistic local tab ID as a correlation token (EC_TAG_SEARCH_REF);
+		// the daemon echoes it alongside the allocated EC_TAG_SEARCH_ID, and
+		// HandlePacket remaps the tab. Sent via SendRequest so the reply is
+		// routed back to this handler.
+		search_req.AddTag(CECTag(EC_TAG_SEARCH_REF, *nSearchID));
+		m_conn->SendRequest(this, &search_req);
+	} else {
+		// Legacy single-search daemon: no ID negotiation, sentinel bucket.
+		m_conn->SendPacket(&search_req);
+	}
+	m_curr_search = *(nSearchID);
 
-	Flush();
+	// Legacy single-search wipes the one result set on the daemon at each new
+	// search, so flush the container to match. Multi-search must NOT flush: the
+	// container holds every open search's results, and clearing its item hash
+	// (without clearing the displayed rows) makes the next poll re-create every
+	// result — producing ghost rows (INC_UPDATE) or duplicate rows (FULL).
+	if (!m_conn->ServerSupportsMultiSearch()) {
+		Flush();
+	}
 
 	return ""; // EC reply will have the error mesg is needed.
 }
 
-void CSearchListRem::StopSearch(bool)
+void CSearchListRem::StopSearch(bool globalOnly)
 {
-	if (m_curr_search != -1) {
-		CECPacket search_req(EC_OP_SEARCH_STOP);
-		m_conn->SendPacket(&search_req);
+	// globalOnly is the new-search path (OnBnClickedStart): monolithic uses it
+	// to reset only the single in-flight ed2k slot while sparing running Kad
+	// searches. In multi-search each search is independent and the daemon
+	// finalizes any in-flight ed2k search itself, so starting a new search must
+	// NOT stop the previous one — otherwise a second Kad search cancels the
+	// first. On a legacy single-search daemon, fall through (the daemon replaces
+	// the one search anyway). globalOnly == false is the explicit Stop button.
+	if (globalOnly && m_conn->ServerSupportsMultiSearch()) {
+		return;
 	}
+	StopSearchById(m_curr_search, false);
+}
+
+void CSearchListRem::StopSearchById(wxUIntPtr searchID, bool andClose)
+{
+	if (searchID == 0) {
+		return;
+	}
+	CECPacket search_req(EC_OP_SEARCH_STOP);
+	if (m_conn->ServerSupportsMultiSearch()) {
+		// Per-ID stop; the close flag also frees the results (tab close).
+		search_req.AddTag(CECTag(EC_TAG_SEARCH_ID, (uint32)searchID));
+		if (andClose) {
+			search_req.AddTag(CECEmptyTag(EC_TAG_SEARCH_CLOSE));
+			// Tab closed: stop tracking this search's lifecycle.
+			m_activeSearches.erase((uint32)searchID);
+		}
+	}
+	// Legacy: parameterless stop of the single current search.
+	m_conn->SendPacket(&search_req);
+}
+
+void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID)
+{
+	if (localID == daemonID) {
+		return;
+	}
+	// Rekey the optimistic tab (created with the local ID) to the daemon's
+	// ID so the union-poll results (tagged with the daemon ID) route to it.
+	// The START reply arrives well before any network results, so no result
+	// is misrouted in the interim.
+	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		theApp->amuledlg->m_searchwnd->RekeySearch(localID, daemonID);
+	}
+	m_curr_search = daemonID;
+	// Track this search for per-tab progress polling.
+	m_activeSearches.insert(daemonID);
 }
 
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
 	if (packet->GetOpCode() == EC_OP_SEARCH_PROGRESS) {
-		CoreNotify_Search_Update_Progress(packet->GetFirstTagSafe()->GetInt());
+		if (m_conn->ServerSupportsMultiSearch()) {
+			// Per-search progress: STATUS is the first tag; EC_TAG_SEARCH_ID is
+			// echoed so we can update this specific tab's lifecycle. An expired
+			// search (evicted on the daemon) reports done so its "!" clears.
+			const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
+			if (idTag && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+				uint32 status = packet->GetTagByName(EC_TAG_SEARCH_EXPIRED)
+							? 0xfffe
+							: (uint32)packet->GetFirstTagSafe()->GetInt();
+				theApp->amuledlg->m_searchwnd->UpdateSearchProgress(idTag->GetInt(), status);
+			}
+		} else {
+			CoreNotify_Search_Update_Progress(packet->GetFirstTagSafe()->GetInt());
+		}
+	} else if (packet->GetOpCode() == EC_OP_STRINGS) {
+		// Multi-search START reply: remap the optimistic local tab ID to the
+		// daemon-allocated ID. Guarded by both tags so non-search string
+		// replies are ignored.
+		const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
+		const CECTag *refTag = packet->GetTagByName(EC_TAG_SEARCH_REF);
+		if (idTag && refTag) {
+			RemapSearch(refTag->GetInt(), idTag->GetInt());
+		}
 	} else {
 		CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>::HandlePacket(packet);
 	}
@@ -2803,7 +2891,11 @@ CSearchFile::CSearchFile(const CEC_SearchFile_Tag *tag)
 		m_iUserRating = rating;
 	}
 
-	m_searchID = theApp->searchlist->m_curr_search;
+	// Multi-search: the daemon's union poll tags every result with its owning
+	// search ID, so route by that. 0 => legacy single-search reply, fall back
+	// to the one current-search ID (old daemon / old behaviour).
+	uint32 tagSearchID = tag->SearchID();
+	m_searchID = tagSearchID ? tagSearchID : theApp->searchlist->m_curr_search;
 	uint32 parentID = tag->ParentID();
 	if (parentID) {
 		CSearchFile *parent = theApp->searchlist->GetByID(parentID);
@@ -2886,8 +2978,20 @@ void CSearchListRem::ProcessItemUpdate(const CEC_SearchFile_Tag *tag, CSearchFil
 
 bool CSearchListRem::Phase1Done(const CECPacket *WXUNUSED(reply))
 {
-	CECPacket progress_req(EC_OP_SEARCH_PROGRESS);
-	m_conn->SendRequest(this, &progress_req);
+	if (m_conn->ServerSupportsMultiSearch()) {
+		// Poll progress for each open search so every tab's lifecycle ("!",
+		// progress bar) is tracked independently. Snapshot the set: an expired
+		// reply may erase from m_activeSearches while iterating.
+		std::set<uint32> ids = m_activeSearches;
+		for (uint32 id : ids) {
+			CECPacket progress_req(EC_OP_SEARCH_PROGRESS);
+			progress_req.AddTag(CECTag(EC_TAG_SEARCH_ID, id));
+			m_conn->SendRequest(this, &progress_req);
+		}
+	} else {
+		CECPacket progress_req(EC_OP_SEARCH_PROGRESS);
+		m_conn->SendRequest(this, &progress_req);
+	}
 
 	return true;
 }

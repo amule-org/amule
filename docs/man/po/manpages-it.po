@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
-"POT-Creation-Date: 2026-07-09 14:20+0200\n"
+"POT-Creation-Date: 2026-07-17 16:56+0200\n"
 "PO-Revision-Date: 2026-07-17 11:00+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
@@ -246,27 +246,27 @@ msgstr "un collegamento magnet."
 
 # type: SH
 #. type: SH
-#: amule.1.in:77 amulecmd.1.in:233 amuleweb.1.in:140
+#: amule.1.in:77 amulecmd.1.in:238 amuleweb.1.in:140
 #, no-wrap
 msgid "NOTES"
 msgstr "NOTE"
 
 # type: SS
 #. type: SS
-#: amule.1.in:78 amulecmd.1.in:234 amuleweb.1.in:141
+#: amule.1.in:78 amulecmd.1.in:239 amuleweb.1.in:141
 #, no-wrap
 msgid "Paths"
 msgstr "Percorsi"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:145
+#: amule.1.in:82 amulecmd.1.in:243 amuleweb.1.in:145
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "Per tutte le opzioni che accettano un I<E<lt>percorsoE<gt>>, se il I<percorso> non contiene una directory (ossia è solo un nome di file), allora si assume che esso sia presente nella directory di configurazione di aMule, I<~/.aMule>."
 
 # type: SH
 #. type: SH
-#: amule.1.in:82 amulecmd.1.in:266 amuled.1.in:85 amuleweb.1.in:179
+#: amule.1.in:82 amulecmd.1.in:271 amuled.1.in:85 amuleweb.1.in:179
 #: ed2k.1.in:61 ../../src/utils/cas/docs/cas.1.in:37
 #, no-wrap
 msgid "FILES"
@@ -280,7 +280,7 @@ msgstr "~/.aMule/*"
 
 # type: SH
 #. type: SH
-#: amule.1.in:84 amulecmd.1.in:282 amuled.1.in:87 amulegui.1.in:63
+#: amule.1.in:84 amulecmd.1.in:287 amuled.1.in:87 amulegui.1.in:63
 #: amuleweb.1.in:199 ed2k.1.in:63 ../../src/utils/aLinkCreator/docs/alc.1.in:11
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:26
 #: ../../src/utils/cas/docs/cas.1.in:43
@@ -291,7 +291,7 @@ msgstr "SEGNALARE I BUG"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
+#: amule.1.in:87 amulecmd.1.in:290 amuled.1.in:90 amulegui.1.in:66
 #: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
@@ -301,7 +301,7 @@ msgstr "Per favore segnalare i bug nel nostro forum (I<https://github.com/amule-
 
 # type: SH
 #. type: SH
-#: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
+#: amule.1.in:87 amulecmd.1.in:290 amuled.1.in:90 amulegui.1.in:66
 #: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
@@ -312,7 +312,7 @@ msgstr "COPYRIGHT"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
+#: amule.1.in:89 amulecmd.1.in:292 amuled.1.in:92 amulegui.1.in:68
 #: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
@@ -322,7 +322,7 @@ msgstr "aMule e tutti i programmi di utilità correlati sono distribuiti in acco
 
 # type: SH
 #. type: SH
-#: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:68
+#: amule.1.in:89 amulecmd.1.in:292 amuled.1.in:92 amulegui.1.in:68
 #: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
@@ -333,7 +333,7 @@ msgstr "VEDI ANCHE"
 
 # type: SH
 #. type: SH
-#: amule.1.in:91 amulecmd.1.in:289 amuled.1.in:94 amulegui.1.in:70
+#: amule.1.in:91 amulecmd.1.in:294 amuled.1.in:94 amulegui.1.in:70
 #: amuleweb.1.in:206 ed2k.1.in:70 ../../src/utils/aLinkCreator/docs/alc.1.in:18
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:33
 #: ../../src/utils/cas/docs/cas.1.in:50
@@ -344,7 +344,7 @@ msgstr "AUTORE"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in:92 amulecmd.1.in:290 amuled.1.in:95 amuleweb.1.in:207
+#: amule.1.in:92 amulecmd.1.in:295 amuled.1.in:95 amuleweb.1.in:207
 #: ed2k.1.in:71 ../../src/utils/aLinkCreator/docs/alc.1.in:19
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:34
 #: ../../src/utils/cas/docs/cas.1.in:51
@@ -606,7 +606,7 @@ msgstr "Legge e visualizza un valore delle preferenze."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:114 amulecmd.1.in:148 amulecmd.1.in:197 amulecmd.1.in:207
+#: amulecmd.1.in:114 amulecmd.1.in:149 amulecmd.1.in:202 amulecmd.1.in:212
 msgid "Available values for I<E<lt>whatE<gt>>:"
 msgstr "I valori disponibili per l'I<E<lt>oggettoE<gt>> sono:"
 
@@ -670,294 +670,294 @@ msgstr "Priorità bassa."
 msgid "Normal priority."
 msgstr "Priorità normale."
 
-# type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:142
-msgid "Shows the progress of an on-going search."
-msgstr "Mostra i progressi di una ricerca in corso."
+#: amulecmd.1.in:143
+msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
+msgstr ""
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:144
+#: amulecmd.1.in:145
 msgid "A synonym of the B<exit> command."
 msgstr "Un sinonimo del comando B<exit>."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:146
+#: amulecmd.1.in:147
 msgid "Reloads a given object."
 msgstr "Ricarica un dato oggetto."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:151
+#: amulecmd.1.in:152
 msgid "Reload shared files list."
 msgstr "Ricarica la lista dei file condivisi."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:153
+#: amulecmd.1.in:154
 msgid "Reload IP filter tables."
 msgstr "Ricarica la tabella dei filtri IP."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:156
+#: amulecmd.1.in:157
 msgid "Reset the log."
 msgstr "Cancella il log."
 
-# type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:158
-msgid "Shows you the results of the last search."
-msgstr "Mostra i risultati dell'ultima ricerca."
+#: amulecmd.1.in:161
+msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
+msgstr ""
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:160
+#: amulecmd.1.in:163
 msgid "Resumes the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
 msgstr "Riprende il download specificato da I<E<lt>hashE<gt>> o I<E<lt>numeroE<gt>>. Per ottenere il valore utilizzare B<show>."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:164
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
+#: amulecmd.1.in:169
+#, fuzzy
+#| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "Esegue una ricerca per la data I<E<lt>parola-chiaveE<gt>>. Il tipo della ricerca e una parola chiave da cercare sono obbligatori. Esempio: `search kad amule' esegue una ricerca sulla rete kad per `amule'."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:166
+#: amulecmd.1.in:171
 msgid "Available search types:"
 msgstr "Tipi di ricerca disponibili:"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:169
+#: amulecmd.1.in:174
 msgid "Performs a global search."
 msgstr "Esegue una ricerca globale."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:171
+#: amulecmd.1.in:176
 msgid "Performs a search on the Kademlia network."
 msgstr "Esegue una ricerca sulla rete Kademlia."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:173
+#: amulecmd.1.in:178
 msgid "Performs a local search."
 msgstr "Esegue una ricerca locale."
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:177
+#: amulecmd.1.in:182
 msgid "Optional filters can be placed before, after, or interleaved with the search keyword(s):"
 msgstr "È possibile inserire filtri opzionali prima, dopo o intervallati alla/e parola/e chiave di ricerca:"
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:180
+#: amulecmd.1.in:185
 msgid "Restrict results to the given file type."
 msgstr "Limita i risultati al tipo di file indicato."
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:182
+#: amulecmd.1.in:187
 msgid "Restrict results to a specific file extension (e.g.\\ I<iso>, I<mp3>)."
 msgstr "Limita i risultati a un'estensione di file specifica (ad es.\\ I<iso>, I<mp3>)."
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:184
+#: amulecmd.1.in:189
 msgid "Minimum number of sources a result must report."
 msgstr "Numero minimo di fonti che un risultato deve dichiarare."
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:187
+#: amulecmd.1.in:192
 msgid "Smallest file size to return. Suffixes use binary multipliers (K = 1024, M = K\\(mu1024, G = M\\(mu1024); no suffix means bytes."
 msgstr "Dimensione minima del file da restituire. I suffissi usano moltiplicatori binari (K = 1024, M = K\\(mu1024, G = M\\(mu1024); senza suffisso indica byte."
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:189
+#: amulecmd.1.in:194
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
 msgstr "Dimensione massima del file da restituire. Stessi suffissi di B<--min-size>."
 
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:193
+#: amulecmd.1.in:198
 msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
 msgstr "Esempio: `search global linux iso --type Iso --min-size 100M' restituisce risultati per \\(lqlinux iso\\(rq di tipo file Iso di almeno 100 MiB."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:195
+#: amulecmd.1.in:200
 msgid "Sets a given preferences value."
 msgstr "Imposta un dato valore di preferenza."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:200
+#: amulecmd.1.in:205
 msgid "Set bandwidth limits."
 msgstr "Imposta i limiti di banda."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:202
+#: amulecmd.1.in:207
 msgid "Set IPFilter preferences."
 msgstr "Imposta le preferenze del filtro IP."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:205
+#: amulecmd.1.in:210
 msgid "Shows upload/download queue, servers list or shared files list."
 msgstr "Mostra la coda di upload/download, la lista dei server o la lista dei file condivisi."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:210
+#: amulecmd.1.in:215
 msgid "Show download queue."
 msgstr "Mostra la coda di download."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:212
+#: amulecmd.1.in:217
 msgid "Show log."
 msgstr "Mostra il log."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:214
+#: amulecmd.1.in:219
 msgid "Show servers list."
 msgstr "Mostra la lista dei server."
 
 # type: Plain text
 # AI-GENERATED — please review.
 #. type: Plain text
-#: amulecmd.1.in:216
+#: amulecmd.1.in:221
 msgid "Show shared files list."
 msgstr "Mostra la lista dei file condivisi."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:218
+#: amulecmd.1.in:223
 msgid "Show upload queue."
 msgstr "Mostra la coda di upload."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:222
+#: amulecmd.1.in:227
 msgid "Shutdown the remote running core (amule/amuled).  This will also shut down the text client, since it is unusable without a running core."
 msgstr "Chiude il motore remoto in esecuzione (amule/amuled). Questo chiuderà anche il cliente in formato testo, siccome è inutile senza un motore in esecuzione."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:224
+#: amulecmd.1.in:229
 msgid "Show statistics tree."
 msgstr "Mostra l'albero delle statistiche."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:228
+#: amulecmd.1.in:233
 msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
 msgstr "Il I<E<lt>numeroE<gt>> opzionale, nell'intervallo 0-255, può essere passato come argomento a questo comando per indicare quante righe del ramo delle versioni dei client devono essere mostrate. Indicando 0, o omettendo il parametro significa `illimitato'."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:231
+#: amulecmd.1.in:236
 msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
 msgstr "Esempio: `statistics 5' mostrerà solo le prime 5 versioni per ogni tipo di client."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:233
+#: amulecmd.1.in:238
 msgid "Show connection status, current up/download speeds, etc."
 msgstr "Mostra lo stato della connessione, le velocità correnti di up/download, ecc."
 
 # type: SS
 #. type: SS
-#: amulecmd.1.in:238 amuleweb.1.in:145
+#: amulecmd.1.in:243 amuleweb.1.in:145
 #, no-wrap
 msgid "Languages"
 msgstr "Linguaggi"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:244 amuleweb.1.in:151
+#: amulecmd.1.in:249 amuleweb.1.in:151
 msgid "The I<E<lt>langE<gt>> parameter for the B<-l> option has the following form: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] where I<lang> is the primary language, I<LANG> is a sublanguage/territory, I<encoding> is the character set to use and I<modifier> allows the user to select a specific instance of localization data within a single category."
 msgstr "Il parametro I<E<lt>linguaggioE<gt>> per l'opzione B<-l> ha la forma seguente: I<linguaggio>[B<_>I<LINGUAGGIO>][B<.>I<codifica>][B<@>I<modificatore>] dove I<linguaggio> è il linguaggio primario, I<LINGUAGGIO> è il sottotipo/territorio, I<codifica> è l'insieme di caratteri usato e I<modificatore> consente all'utente di selezionare una specifica istanza dei dati di localizzazione all'interno di una singola categoria."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:246 amuleweb.1.in:153
+#: amulecmd.1.in:251 amuleweb.1.in:153
 msgid "For example, the following strings are valid:"
 msgstr "Per esempio, le stringhe seguenti sono valide:"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:260 amuleweb.1.in:167
+#: amulecmd.1.in:265 amuleweb.1.in:167
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
 msgstr "Sebbene tutte le stringhe sopra elencate sono accettate come definizioni di linguaggio valide, I<codifica> e I<modificatore> sono ancora inutilizzati."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:263 amuleweb.1.in:170
+#: amulecmd.1.in:268 amuleweb.1.in:170
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
 msgstr "In aggiunta al formato di cui sopra, si può anche specificare il nome completo del linguaggio in inglese, e quindi B<-l german> è valido ed equivalente a B<-l de_DE>."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:266 amuleweb.1.in:173
+#: amulecmd.1.in:271 amuleweb.1.in:173
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
 msgstr "Quando nessun linguaggio è definito in riga di comando o nel file di configurazione, verrà usato il linguaggio di default del sistema."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:268 amuleweb.1.in:181
+#: amulecmd.1.in:273 amuleweb.1.in:181
 msgid "~/.aMule/remote.conf"
 msgstr "~/.aMule/remote.conf"
 
 # type: SH
 #. type: SH
-#: amulecmd.1.in:268 amuleweb.1.in:185
+#: amulecmd.1.in:273 amuleweb.1.in:185
 #, no-wrap
 msgid "EXAMPLE"
 msgstr "ESEMPIO"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:270
+#: amulecmd.1.in:275
 msgid "Typically amulecmd will be first run as:"
 msgstr "Di norma amulecmd sarà inizialmente eseguito come:"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:272
+#: amulecmd.1.in:277
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgstr "B<amulecmd> B<-h> I<nomehost> B<-p> I<portaEC> B<-P> I<passwordEC> B<-w>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:274 amuleweb.1.in:191
+#: amulecmd.1.in:279 amuleweb.1.in:191
 msgid "or"
 msgstr "o"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:276
+#: amulecmd.1.in:281
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:278 amuleweb.1.in:195
+#: amulecmd.1.in:283 amuleweb.1.in:195
 msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "In questo modo la configurazione verrà salvata in I<$HOME/.aMule/remote.conf>, e le volte successive si dovrà solo digitare:"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in:282
+#: amulecmd.1.in:287
 msgid "Of course, you don't have to follow this example."
 msgstr "Ma non è necessario seguire questo esempio."
 
@@ -1599,6 +1599,14 @@ msgstr "B<wxcas> è un programma per visualizzare i contenuti del file di firma 
 #: ../../src/utils/wxCas/docs/wxcas.1.in:14
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basato su B<cas>(1) di Pedro de Oliveira.  B<wxcas> è stato scritto da ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+# type: Plain text
+#~ msgid "Shows the progress of an on-going search."
+#~ msgstr "Mostra i progressi di una ricerca in corso."
+
+# type: Plain text
+#~ msgid "Shows you the results of the last search."
+#~ msgstr "Mostra i risultati dell'ultima ricerca."
 
 # type: Plain text
 #~ msgid "Writes the online signature picture.  You can optionally append I<=E<lt>PATHE<gt>> to this option, to specify the location it should be written to."

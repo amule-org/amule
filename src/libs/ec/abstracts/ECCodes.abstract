@@ -183,6 +183,7 @@ EC_TAG_CAN_LARGE_TAG_COUNT                0x0011
 EC_TAG_CAN_PARTIAL_UPDATE                 0x0012
 EC_TAG_FILE_REMOVED                       0x0013
 EC_TAG_PREFER_NO_ZLIB                     0x0014
+EC_TAG_CAN_MULTI_SEARCH                   0x0015
 
 
 EC_TAG_CLIENT_NAME                        0x0100
@@ -361,6 +362,10 @@ EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_LIFECYCLE_KIND              0x070B
 	EC_TAG_SEARCH_RESULT_COUNT                0x070C
 	EC_TAG_SEARCH_LIFECYCLE_PERCENT           0x070D
+	EC_TAG_SEARCH_ID                          0x070E
+	EC_TAG_SEARCH_REF                         0x070F
+	EC_TAG_SEARCH_EXPIRED                     0x0710
+	EC_TAG_SEARCH_CLOSE                       0x0711
 
 EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_NAME                        0x0801

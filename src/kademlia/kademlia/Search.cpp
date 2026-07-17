@@ -145,9 +145,14 @@ CSearch::~CSearch()
 			// skips an unchanged partfile).
 			knownFile->MarkECChanged();
 		}
-		if (CSearchFile *searchFile = theApp->searchlist->GetSearchFileByID(fileHash)) {
-			// Search files carry no EC change-generation, so the cleared flag
-			// simply rides the next periodic search-results poll.
+		// Clear the flag on EVERY search result sharing this hash, not just the
+		// first: the same file can be shown in several open searches at once
+		// (one CSearchFile each), and all were marked running when the lookup
+		// started. Search files carry no EC change-generation, so the cleared
+		// flag simply rides the next periodic search-results poll.
+		std::vector<CSearchFile *> searchFiles;
+		theApp->searchlist->GetAllSearchFilesByID(fileHash, searchFiles);
+		for (CSearchFile *searchFile : searchFiles) {
 			searchFile->SetKadCommentSearchRunning(false);
 		}
 	}
@@ -1140,37 +1145,41 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	const CMD4Hash fileHash(fileid);
 
 	// The same file can exist locally as more than one object sharing this hash:
-	// a downloading/shared CKnownFile and a CSearchFile result. The user may have
-	// triggered the lookup from either, and each keeps its own note list, so
-	// deliver the note to every match. AddNote takes ownership and dedups per
-	// list, so the second target gets an independent Copy().
+	// a downloading/shared CKnownFile and one CSearchFile per open search that
+	// returned it. The user may have triggered the lookup from any of them, and
+	// each keeps its own note list, so deliver the note to EVERY match. AddNote
+	// takes ownership and dedups per list, so each extra target gets an
+	// independent Copy() and the single original is consumed exactly once.
 	CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(fileHash);
 	if (!knownFile) {
 		knownFile = theApp->downloadqueue->GetFileByID(fileHash);
 	}
-	CSearchFile *searchFile = theApp->searchlist->GetSearchFileByID(fileHash);
+	std::vector<CSearchFile *> searchFiles;
+	theApp->searchlist->GetAllSearchFilesByID(fileHash, searchFiles);
 
-	if (!knownFile && !searchFile) {
+	if (!knownFile && searchFiles.empty()) {
 		AddDebugLogLineN(logKadSearch, "Comment received for unknown file");
 		delete entry;
 		return;
 	}
 
 	m_answers++;
+	// Every search result sharing this hash (one per open search tab) gets its
+	// own copy; the note rides the next search-results poll (search files carry
+	// no EC change-generation).
+	for (CSearchFile *searchFile : searchFiles) {
+		searchFile->AddNote(entry->Copy());
+	}
 	if (knownFile) {
-		if (searchFile) {
-			searchFile->AddNote(entry->Copy());
-		}
 		knownFile->AddNote(entry);
 		// Re-emit the partfile so amulegui / amuleapi see notes stream in live
 		// (matching the monolithic dialog), instead of all at once when the
 		// search ends. AddNote dedups, so a repeat is cheap.
 		knownFile->MarkECChanged();
 	} else {
-		// On-demand lookup on a search result the user has not downloaded; the
-		// note rides the next search-results poll (search files carry no EC
-		// change-generation).
-		searchFile->AddNote(entry);
+		// No known file to take ownership of the original; the search results
+		// all received copies above.
+		delete entry;
 	}
 }
 

@@ -254,6 +254,7 @@ CaMuleExternalConnector::CaMuleExternalConnector()
 , m_port(-1)
 , m_ZLIB(false)
 , m_forceZLIB(false)
+, m_canMultiSearch(false)
 , m_KeepQuiet(false)
 , m_Verbose(false)
 , m_noLogFile(false)
@@ -453,6 +454,7 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		m_ECClient = new CRemoteConnect(NULL);
 		m_ECClient->SetCapabilities(m_ZLIB, true, false); // ZLIB, UTF8 numbers, notification
 		m_ECClient->SetForceZlib(m_forceZLIB);
+		m_ECClient->SetCanMultiSearch(m_canMultiSearch);
 		// Bound the blocking EC connect so a wrong or unreachable host
 		// fails fast instead of hanging on the OS TCP connect timeout
 		// (which can be minutes). The GUI clients have their own async

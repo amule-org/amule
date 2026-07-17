@@ -63,7 +63,8 @@ public:
 		bool canZLIB = true,
 		bool canUTF8numbers = true,
 		bool canNotify = false,
-		bool preferNoZlib = false);
+		bool preferNoZlib = false,
+		bool canMultiSearch = false);
 };
 
 class CECAuthPacket : public CECPacket
@@ -130,6 +131,16 @@ private:
 	// path (server emits alive-marker tags so it still works).
 	bool m_serverPartialUpdate;
 
+	// Client opts into the multi-search protocol (advertise
+	// `EC_TAG_CAN_MULTI_SEARCH`). Off by default; a client sets it via
+	// SetCanMultiSearch() only once it addresses searches by
+	// `EC_TAG_SEARCH_ID`. Read when building the login packet.
+	bool m_canMultiSearch;
+	// Set when the server echoed `EC_TAG_CAN_MULTI_SEARCH` in AUTH_OK,
+	// confirming it can run several EC searches at once addressed by ID.
+	// Old daemons don't echo it; the client then stays single-search.
+	bool m_serverMultiSearch;
+
 	void WriteDoneAndQueueEmpty();
 
 public:
@@ -144,7 +155,14 @@ public:
 	// during connect.
 	void SetForceZlib(bool force) noexcept { m_forceZlib = force; }
 
+	// Opt into the multi-search protocol. Call BEFORE ConnectToCore(). Only
+	// a client that reads `EC_TAG_SEARCH_ID` and addresses searches by it
+	// should set this; otherwise it stays single-search.
+	void SetCanMultiSearch(bool can) noexcept { m_canMultiSearch = can; }
+
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
+
+	bool ServerSupportsMultiSearch() const { return m_serverMultiSearch; }
 
 	bool ConnectToCore(const wxString &host,
 		int port,

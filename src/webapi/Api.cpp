@@ -4389,6 +4389,27 @@ std::size_t ParseTailParam(const std::string &query)
 	return static_cast<std::size_t>(capped);
 }
 
+// Parse an optional `?search_id=N` query param. `provided` is false when the
+// param is absent; `value` is the parsed id (0 on a malformed value). Callers
+// treat value 0 as "the current search". Multi-search only — every search on
+// the amuleapi surface is addressed by its daemon-allocated id.
+struct SearchIdParam
+{
+	bool provided = false;
+	std::uint32_t value = 0;
+};
+SearchIdParam ParseSearchIdParam(const std::string &query)
+{
+	SearchIdParam out;
+	const auto qmap = web_api_path::ParseQuery(query);
+	const auto it = qmap.find("search_id");
+	if (it == qmap.end())
+		return out;
+	out.provided = true;
+	out.value = static_cast<std::uint32_t>(std::strtoul(it->second.c_str(), nullptr, 10));
+	return out;
+}
+
 // Return a copy of `all` containing at most `tail` trailing lines.
 // `tail == 0` means "all lines" (no tailing).
 std::vector<std::string> SliceTail(const std::vector<std::string> &all, std::size_t tail)
@@ -4814,8 +4835,18 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	// same state/kind/percent as the `search_progress` SSE event (the
 	// event additionally ships a results count, since it has no results
 	// array beside it).
-	const std::vector<webapi::SearchResult> results_vec = m_state.Search();
-	const webapi::SearchProgressSnapshot progress = m_state.SearchProgress();
+	// Address one search by `?search_id=N` (multi-search). No id => the current
+	// (most-recently-started) search. An explicit id that names no live slot
+	// (never started, or evicted from the daemon's ring) is a 404 — distinct
+	// from a known-but-empty search, which returns an idle/empty envelope.
+	const SearchIdParam sidp = ParseSearchIdParam(QueryOf(req));
+	if (sidp.provided && sidp.value != 0 && !m_state.HasSearch(sidp.value)) {
+		return ErrorResponse(
+			404, "not_found", "no search with that search_id (never started or expired)");
+	}
+	const std::uint32_t report_id = sidp.value != 0 ? sidp.value : m_state.CurrentSearchId();
+	const std::vector<webapi::SearchResult> results_vec = m_state.Search(sidp.value);
+	const webapi::SearchProgressSnapshot progress = m_state.SearchProgress(sidp.value);
 
 	// #357 pagination/sort. This endpoint keeps its own envelope (the
 	// `progress` object rides alongside `results`), so it can't call
@@ -4857,6 +4888,12 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 		WriteSearchObject(w, *item);
 	w.EndArray();
 	WritePageMeta(w, total, params, window.size());
+	// The search these results belong to. Echoes the resolved id (the one
+	// requested, or the current search when none was given), so a consumer
+	// polling without an explicit id learns which search it is watching and
+	// can pin it on later calls. 0 only when no search has run this session.
+	w.Key("search_id");
+	w.ValueInt(static_cast<int64_t>(report_id));
 	// Mirrors the `search_progress` SSE event field-for-field. `state`
 	// is canonical and encodes the full lifecycle (running / finished /
 	// idle), so we don't also emit redundant `active` / `complete`
@@ -7670,16 +7707,27 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 		delete ec_resp;
 		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
 	}
+	// The daemon (in multi-search mode) allocates a globally-unique search_id
+	// and echoes it in the START reply; every subsequent results/progress/stop
+	// call for this search is addressed by that id. amuleapi always runs
+	// multi-search, so the tag is expected — a 0 fallback would collide with
+	// the "current search" sentinel, so guard it.
+	std::uint32_t search_id = 0;
+	if (const CECTag *t = ec_resp->GetTagByName(EC_TAG_SEARCH_ID)) {
+		search_id = static_cast<std::uint32_t>(t->GetInt());
+	}
 	delete ec_resp;
+	if (search_id == 0) {
+		return ErrorResponse(
+			502, "amuled_rejected", "daemon did not return a search_id for SEARCH_START");
+	}
 
-	// Hand the lifecycle off to the refresher: it wipes the results
-	// cache, marks active=true, captures the kind, and starts polling
-	// EC_OP_SEARCH_RESULTS + _PROGRESS every tick until the state
-	// machine in RefresherTick infers completion. Drops the prior
-	// per-GET TtlCache fetch (the refresher is the single fetcher
-	// now — needed so SSE search_result_added / search_progress fire
-	// on the same delta the polling consumer would observe).
-	m_state.MarkSearchStarted(search_kind);
+	// Seed this search's slot and make it current: the refresher polls
+	// EC_OP_SEARCH_RESULTS + _PROGRESS for it (addressed by search_id) each
+	// tick until the daemon reports completion. This is the single fetcher, so
+	// SSE search_result_added / search_progress fire on the same delta a
+	// polling consumer would observe.
+	m_state.MarkSearchStarted(search_id, search_kind);
 
 	CHttpServer::Response r;
 	r.status = 202;
@@ -7688,6 +7736,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	w.BeginObject();
 	w.Key("ok");
 	w.ValueBool(true);
+	w.Key("search_id");
+	w.ValueInt(static_cast<int64_t>(search_id));
 	w.Key("query");
 	w.ValueString(wxString::FromUTF8(query.c_str()));
 	w.EndObject();
@@ -7704,7 +7754,54 @@ CHttpServer::Response CApiDispatcher::HandleSearchStop(const CHttpServer::Reques
 	if (auto rej = RequireAdmin(a))
 		return *rej;
 
+	// Optional JSON body: { "search_id": N, "close": bool }. Both optional so
+	// an empty body keeps the "stop the current search" behavior. `close` frees
+	// the search on the daemon (drops its result ring slot) and locally — use
+	// it when a consumer is done with a search rather than just pausing it.
+	std::uint32_t body_search_id = 0;
+	bool close = false;
+	if (!req.body.empty()) {
+		picojson::value root;
+		std::string parse_err;
+		if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+			return ErrorResponse(400, "bad_request", parse_err.c_str());
+		}
+		const auto &obj = root.get<picojson::object>();
+		const auto sit = obj.find("search_id");
+		if (sit != obj.end()) {
+			if (!sit->second.is<double>() || sit->second.get<double>() < 0) {
+				return ErrorResponse(
+					400, "bad_request", "`search_id` must be a non-negative integer");
+			}
+			body_search_id = static_cast<std::uint32_t>(sit->second.get<double>());
+		}
+		const auto cit = obj.find("close");
+		if (cit != obj.end()) {
+			if (!cit->second.is<bool>()) {
+				return ErrorResponse(400, "bad_request", "`close` must be a boolean");
+			}
+			close = cit->second.get<bool>();
+		}
+	}
+
+	// Resolve to a concrete id: an explicit body id, else the current search.
+	// An explicit id that names no live slot is a 404 (mirrors GET results).
+	if (body_search_id != 0 && !m_state.HasSearch(body_search_id)) {
+		return ErrorResponse(
+			404, "not_found", "no search with that search_id (never started or expired)");
+	}
+	const std::uint32_t target_id = body_search_id != 0 ? body_search_id : m_state.CurrentSearchId();
+
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SEARCH_STOP));
+	// Address the specific search; a concrete id is required for the daemon to
+	// stop the right one when several are running. close asks it to also free
+	// the search (EC_TAG_SEARCH_CLOSE), leaving siblings untouched.
+	if (target_id != 0) {
+		ec_req->AddTag(CECTag(EC_TAG_SEARCH_ID, target_id));
+	}
+	if (close) {
+		ec_req->AddTag(CECEmptyTag(EC_TAG_SEARCH_CLOSE));
+	}
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
 		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SEARCH_STOP");
@@ -7716,10 +7813,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchStop(const CHttpServer::Reques
 	}
 	delete ec_resp;
 
-	// /search/results stays valid after stop — amuled keeps the
-	// accumulated results until the next SEARCH_START. No cache
-	// invalidation needed; consumers polling /search/results see
-	// the same set they were just looking at.
+	// On close, drop the local slot too (its refresher polling stops and
+	// /search/results?search_id= now 404s). On a plain stop the results stay
+	// valid — amuled keeps them until the search is closed or evicted — so a
+	// consumer polling /search/results sees the same set it was just viewing.
+	if (close && target_id != 0) {
+		m_state.CloseSearch(target_id);
+	}
 
 	CHttpServer::Response r;
 	r.status = 200;
@@ -7865,17 +7965,12 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 		return std::tolower(c);
 	});
 
-	// Locate the result carrying this hash. Grouped children share the parent's
-	// hash, so the parent (which owns any fetched notes) matches first.
-	const std::vector<webapi::SearchResult> results = m_state.Search();
-	const webapi::SearchResult *hit = nullptr;
-	for (const auto &res : results) {
-		if (res.hash == needle) {
-			hit = &res;
-			break;
-		}
-	}
-	if (!hit) {
+	// Locate the result carrying this hash across ALL open searches — the
+	// comments endpoints are search-agnostic (the same file may appear in
+	// several searches). Grouped children share the parent's hash, so the
+	// parent, which owns any fetched notes, matches first.
+	webapi::SearchResult hit;
+	if (!m_state.FindSearchResultByHash(needle, hit)) {
 		return ErrorResponse(404, "not_found", "no search result with that hash");
 	}
 
@@ -7885,12 +7980,12 @@ CHttpServer::Response CApiDispatcher::HandleSearchComments(
 	CJsonWriter w;
 	w.BeginObject();
 	w.Key("count");
-	w.ValueInt(static_cast<int64_t>(hit->comments.size()));
+	w.ValueInt(static_cast<int64_t>(hit.comments.size()));
 	w.Key("kad_comment_search_running");
-	w.ValueBool(hit->kad_comment_searching);
+	w.ValueBool(hit.kad_comment_searching);
 	w.Key("comments");
 	w.BeginArray();
-	for (const auto &c : hit->comments) {
+	for (const auto &c : hit.comments) {
 		w.BeginObject();
 		w.Key("username");
 		w.ValueString(wxString::FromUTF8(c.username.c_str()));
@@ -7935,12 +8030,12 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 		return ErrorResponse(400, "bad_request", "`{hash}` must be a 32-char hex MD4");
 	}
 
-	// Must be a current search result (mirrors the download endpoint's 404).
-	const std::vector<webapi::SearchResult> results = m_state.Search();
-	const bool known = std::any_of(results.begin(), results.end(), [&](const webapi::SearchResult &res) {
-		return res.hash == needle;
-	});
-	if (!known) {
+	// Must be a live search result in some open search (mirrors the download
+	// endpoint's 404). The daemon runs one Kad NOTES lookup per hash and fans
+	// the notes out to every same-hash result, so the specific search doesn't
+	// matter here.
+	webapi::SearchResult known_hit;
+	if (!m_state.FindSearchResultByHash(needle, known_hit)) {
 		return ErrorResponse(404, "not_found", "no search result with that hash");
 	}
 

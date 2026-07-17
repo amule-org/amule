@@ -291,6 +291,10 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	// A non-existent search id will just be ignored
 	Kademlia::CSearchManager::StopSearch(searchID, true);
 
+	// Drop any per-search tracking for this ID (bounded growth).
+	m_finishedKadSearches.erase(static_cast<uint32_t>(searchID));
+	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
+
 	ResultMap::iterator it = m_results.find(searchID);
 	if (it != m_results.end()) {
 		CSearchResultList &list = it->second;
@@ -355,7 +359,21 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 		return error;
 	}
 
-	m_searchType = type;
+	// The scalar m_searchType / m_currentSearch are the anchor for the single
+	// in-flight ed2k (local/global) search: its results arrive asynchronously
+	// for several seconds and are attributed via these scalars (see
+	// ProcessSearchAnswer / LocalSearchEnd). A Kad search started ALONGSIDE an
+	// in-flight ed2k search has its own per-ID machinery (results carry the Kad
+	// search ID explicitly; lifecycle is IsKadSearch/m_finishedKadSearches) and
+	// needs neither scalar — so it must not repoint them, or the ed2k search's
+	// late hits get dropped (wrong type) or misfiled (wrong bucket). Preserve
+	// the ed2k anchor in exactly that case; every other start updates it as
+	// before (a new ed2k search first finalizes the old one via
+	// StopInFlightEd2kSearch, and a lone Kad search has no ed2k in flight).
+	const bool preserveEd2kAnchor = (type == KadSearch) && m_searchInProgress;
+	if (!preserveEd2kAnchor) {
+		m_searchType = type;
+	}
 	m_searchStart = time(NULL);
 
 	// EC clients reuse the sentinel `0xffffffff` for every search regardless
@@ -382,7 +400,13 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 				params.strKeyword, data->GetLength(), data->GetRawBuffer(), *searchID);
 
 			*searchID = search->GetSearchID();
-			m_currentSearch = *searchID;
+			// Don't repoint the ed2k result-attribution scalar when a Kad
+			// search runs alongside an in-flight ed2k search (see the
+			// preserveEd2kAnchor note above); the Kad search is tracked by its
+			// own ID regardless.
+			if (!preserveEd2kAnchor) {
+				m_currentSearch = *searchID;
+			}
 			m_KadSearchFinished = false;
 		} catch (const wxString &what) {
 			AddLogLineC(what);
@@ -407,6 +431,12 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 				OP_GLOBSEARCHREQ); // will be changed later when actually sending the packet!!
 		}
 	}
+
+	// Record this search's own start time so its (cosmetic Kad) progress ramp
+	// is computed from *its* age even after it is no longer the most-recently-
+	// started search — otherwise a Kad search running in parallel with a later
+	// ed2k search would report a fixed near-full percent.
+	m_searchStartTimes[static_cast<uint32_t>(*searchID)] = m_searchStart;
 
 	return "";
 }
@@ -784,6 +814,28 @@ CSearchFile *CSearchList::GetSearchFileByID(const CMD4Hash &hash) const
 	return nullptr;
 }
 
+void CSearchList::GetAllSearchFilesByID(const CMD4Hash &hash, std::vector<CSearchFile *> &out) const
+{
+	// Unlike GetSearchFileByID (first match only), collect EVERY result object
+	// that shares this hash. The same file can appear in more than one open
+	// search (an EC client such as amulegui runs several at once), and each
+	// search keeps its own CSearchFile with its own note list. On-demand Kad
+	// notes and the running flag must reach all of them, or only the first tab
+	// would show the comments.
+	for (const auto &entry : m_results) {
+		for (CSearchFile *sf : entry.second) {
+			if (sf->GetFileHash() == hash) {
+				out.push_back(sf);
+			}
+			for (CSearchFile *child : sf->GetChildren()) {
+				if (child->GetFileHash() == hash) {
+					out.push_back(child);
+				}
+			}
+		}
+	}
+}
+
 void CSearchList::AddFileToDownloadByEcid(uint32 ecid, uint8 cat)
 {
 	// Match against parents and their same-hash/different-name children
@@ -812,6 +864,15 @@ bool CSearchList::IsKadSearch(uint32_t searchID) const
 	return Kademlia::CSearchManager::IsKadSearch(searchID);
 }
 
+bool CSearchList::IsOrWasKadSearch(uint32_t searchID) const
+{
+	// True if this ID is a Kad keyword search — still active in the manager, or
+	// already finished (recorded on completion). Lets the per-search progress
+	// sentinel pick 0xfffe (Kad done, clears the "!") vs 0xffff (ed2k done) for
+	// an arbitrary search, not just the current one.
+	return IsKadSearch(searchID) || m_finishedKadSearches.count(searchID) != 0;
+}
+
 bool CSearchList::RequestMoreResults(uint32_t searchID)
 {
 	return Kademlia::CSearchManager::RequestMoreResults(searchID);
@@ -825,6 +886,105 @@ void CSearchList::StopSearch(bool globalOnly)
 	} else if (m_searchType == KadSearch && !globalOnly) {
 		Kademlia::CSearchManager::StopSearch(m_currentSearch, false);
 		m_currentSearch = -1;
+	}
+}
+
+void CSearchList::StopSearchById(wxUIntPtr searchID)
+{
+	// Stop the Kad keyword search for this ID, if it is one. Harmless no-op
+	// when the ID is not an active Kad search (ed2k, or already finished).
+	Kademlia::CSearchManager::StopSearch(searchID, false);
+	// If this is the in-flight ed2k global sweep, finalize it. ed2k is
+	// single-in-flight, so only the current search can be running.
+	if (searchID == m_currentSearch && m_searchInProgress) {
+		FinalizeGlobalSearch();
+	}
+	// Results are intentionally retained — the multi-search EC "stop" halts
+	// activity but keeps the bucket; RemoveResults() is the free path.
+}
+
+void CSearchList::SetKadSearchFinished(uint32_t searchID)
+{
+	m_finishedKadSearches.insert(searchID);
+	// Legacy scalar for the single-search (parameterless GetSearchProgress /
+	// GetSearchLifecycleState) path.
+	m_KadSearchFinished = true;
+}
+
+CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIntPtr searchID) const
+{
+	uint32_t sid = static_cast<uint32_t>(searchID);
+	// Kad searches are tracked per-ID: still registered in the manager =>
+	// running; recorded as finished (its CSearch was destroyed on the result
+	// cap or the 45s lifetime) => finished. Independent of any other search, so
+	// one search ending never reports a different running search as finished.
+	if (IsKadSearch(sid)) {
+		return SEARCH_LIFECYCLE_RUNNING;
+	}
+	if (m_finishedKadSearches.count(sid)) {
+		return SEARCH_LIFECYCLE_FINISHED;
+	}
+	// ed2k / non-Kad: the most-recently-started search owns the scalar state.
+	if (searchID == m_currentSearch) {
+		return GetSearchLifecycleState();
+	}
+	// Otherwise: results retained => finished; nothing => idle/unknown.
+	return (m_results.find(searchID) != m_results.end()) ? SEARCH_LIFECYCLE_FINISHED
+							     : SEARCH_LIFECYCLE_IDLE;
+}
+
+uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
+{
+	switch (GetSearchLifecycleStateById(searchID)) {
+	case SEARCH_LIFECYCLE_FINISHED:
+		return 100;
+	case SEARCH_LIFECYCLE_IDLE:
+		return 0;
+	case SEARCH_LIFECYCLE_RUNNING:
+		break;
+	}
+	// RUNNING. A Kad search gets a cosmetic time-ramp from *its own* start time
+	// (looked up per-search), so a Kad search still running while a later ed2k
+	// search is the current one ramps correctly instead of sticking near full.
+	// An in-flight ed2k global uses its real server-queue percent — that state
+	// is single-slot, so it only applies to the current search.
+	const uint32_t sid = static_cast<uint32_t>(searchID);
+	if (IsOrWasKadSearch(sid)) {
+		std::map<uint32_t, time_t>::const_iterator it = m_searchStartTimes.find(sid);
+		time_t start = (it != m_searchStartTimes.end()) ? it->second : m_searchStart;
+		time_t elapsed = time(nullptr) - start;
+		if (elapsed <= 0) {
+			return 0;
+		}
+		uint32 pct = (uint32)((elapsed * 100) / SEARCHKEYWORD_LIFETIME);
+		return (pct > 99) ? 99 : (uint8)pct;
+	}
+	if (searchID == m_currentSearch && m_searchType == GlobalSearch) {
+		uint32 pct = GetSearchProgress();
+		return (pct > 100) ? 100 : (uint8)pct;
+	}
+	return 0;
+}
+
+uint32 CSearchList::GetSearchBarStatusById(wxUIntPtr searchID) const
+{
+	if (GetSearchLifecycleStateById(searchID) == SEARCH_LIFECYCLE_FINISHED) {
+		return IsOrWasKadSearch(static_cast<uint32_t>(searchID)) ? 0xfffe : 0xffff;
+	}
+	// RUNNING or IDLE both map to the running percent (0 when idle).
+	return GetSearchLifecyclePercentById(searchID);
+}
+
+void CSearchList::StopInFlightEd2kSearch()
+{
+	// m_searchInProgress is true only while an ed2k (local/global) search is
+	// in flight. A local search finishes synchronously (LocalSearchEnd on the
+	// server reply), so in practice this finalizes an in-progress global sweep
+	// — halting the timer and dropping the packet so no further UDP results
+	// are filed under the outgoing m_currentSearch. The results already
+	// collected are retained; the caller starts a fresh search next.
+	if (m_searchInProgress) {
+		FinalizeGlobalSearch();
 	}
 }
 

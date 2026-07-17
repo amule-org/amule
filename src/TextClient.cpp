@@ -702,13 +702,27 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		Show(_("No search type defined.\nType 'help search' to get more help.\n"));
 		break;
 
-	case CMD_ID_SEARCH_RESULTS:
-		request_list.push_back(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL));
+	case CMD_ID_SEARCH_RESULTS: {
+		CECPacket *req = new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL);
+		// Optional search ID (multi-search). No ID => the daemon's most
+		// recently started search.
+		unsigned long sid = 0;
+		if (!args.Trim().IsEmpty() && args.Trim().ToULong(&sid)) {
+			req->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+		}
+		request_list.push_back(req);
 		break;
+	}
 
-	case CMD_ID_SEARCH_PROGRESS:
-		request_list.push_back(new CECPacket(EC_OP_SEARCH_PROGRESS));
+	case CMD_ID_SEARCH_PROGRESS: {
+		CECPacket *req = new CECPacket(EC_OP_SEARCH_PROGRESS);
+		unsigned long sid = 0;
+		if (!args.Trim().IsEmpty() && args.Trim().ToULong(&sid)) {
+			req->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+		}
+		request_list.push_back(req);
 		break;
+	}
 
 	case CMD_ID_DOWNLOAD:
 		if (!args.IsEmpty()) {
@@ -863,7 +877,14 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 	case EC_OP_STRINGS:
 		for (CECPacket::const_iterator it = response->begin(); it != response->end(); ++it) {
 			const CECTag &tag = *it;
-			s << tag.GetStringData() << "\n";
+			if (tag.GetTagName() == EC_TAG_SEARCH_ID) {
+				// Multi-search: the daemon-allocated search ID. Pass it to
+				// 'results <id>' / 'progress <id>' to address this search;
+				// no-arg acts on the most recent one.
+				s << CFormat(_("Search started (id %u).\n")) % tag.GetInt();
+			} else if (tag.IsString()) {
+				s << tag.GetStringData() << "\n";
+			}
 		}
 		break;
 	case EC_OP_STATS: {
@@ -1035,6 +1056,10 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		break;
 
 	case EC_OP_SEARCH_RESULTS: {
+		if (response->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
+			s += _("Search expired or unknown ID. Start a new search.\n");
+			break;
+		}
 		int i = 0;
 		m_Results_map.clear();
 		s += CFormat(_("Number of search results: %i\n")) % response->GetTagCount();
@@ -1047,6 +1072,10 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		break;
 	}
 	case EC_OP_SEARCH_PROGRESS: {
+		if (response->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
+			s += _("Search expired or unknown ID. Start a new search.\n");
+			break;
+		}
 		const CECTag *tab = response->GetTagByNameSafe(EC_TAG_SEARCH_STATUS);
 		uint32 progress = tab->GetInt();
 		if (progress <= 100) {
@@ -1297,15 +1326,19 @@ void CamulecmdApp::OnInitCommandSet()
 
 	m_commands.AddCommand("Results",
 		CMD_ID_SEARCH_RESULTS,
-		wxTRANSLATE("Show the results of the last search."),
-		wxTRANSLATE("Return the results of the previous search.\n"),
-		CMD_PARAM_NEVER);
+		wxTRANSLATE("Show the results of a search."),
+		wxTRANSLATE("Return the results of a search.\n"
+			    "Optionally takes a search id (from 'search ...'); with no id, "
+			    "returns the results of the most recently started search.\n"),
+		CMD_PARAM_OPTIONAL);
 
 	m_commands.AddCommand("Progress",
 		CMD_ID_SEARCH_PROGRESS,
 		wxTRANSLATE("Show the progress of a search."),
-		wxTRANSLATE("Show the progress of a search.\n"),
-		CMD_PARAM_NEVER);
+		wxTRANSLATE("Show the progress of a search.\n"
+			    "Optionally takes a search id; with no id, shows the progress of "
+			    "the most recently started search.\n"),
+		CMD_PARAM_OPTIONAL);
 
 	m_commands.AddCommand("Download",
 		CMD_ID_DOWNLOAD,
@@ -1383,6 +1416,11 @@ void CamulecmdApp::OnInitCommandSet()
 
 int CamulecmdApp::OnRun()
 {
+	// amulecmd reads EC_TAG_SEARCH_ID back and addresses results/progress by
+	// it, so opt into the multi-search protocol: several searches can be kept
+	// on the daemon at once and referenced by ID (no-arg commands act on the
+	// most-recently-started one).
+	m_canMultiSearch = true;
 	ConnectAndRun("aMulecmd", VERSION);
 	return 0;
 }

@@ -83,9 +83,9 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/stats/graphs/{graph}`](#get-apiv0statsgraphsgraph) — time-series points (`download`, `upload`, `connections`, `kad`)
 
 **Search**
-- [`POST /api/v0/search`](#post-apiv0search) — start a search (global / local / kad)
-- [`GET /api/v0/search/results`](#get-apiv0searchresults) — current results + progress envelope
-- [`POST /api/v0/search/stop`](#post-apiv0searchstop) — cancel in-flight search
+- [`POST /api/v0/search`](#post-apiv0search) — start a search (global / local / kad), returns its `search_id`
+- [`GET /api/v0/search/results`](#get-apiv0searchresults) — one search's results + progress envelope (`?search_id=`)
+- [`POST /api/v0/search/stop`](#post-apiv0searchstop) — stop (and optionally free) a search by id
 - [`POST /api/v0/search/results/{hash}/download`](#post-apiv0searchresultshashdownload) — promote a result into the download queue
 - [`GET /api/v0/search/results/{hash}/comments`](#get-apiv0searchresultshashcomments) — Kad ratings/comments for a result
 - [`POST /api/v0/search/results/{hash}/comments`](#post-apiv0searchresultshashcomments) — trigger a Kad notes lookup for a result
@@ -1635,7 +1635,7 @@ The search surface is admin-only because firing a global ed2k search has real ne
 
 **Auth:** `ADMIN`
 
-Kicks off a new search; the prior search results are wiped.
+Kicks off a new search. amuleapi supports **several concurrent searches** — a new search does NOT stop or wipe the others. amuled allocates a globally-unique `search_id` for each start and returns it; every subsequent results/progress/stop call addresses one search by that id. The search you just started becomes the *current* search (the default target when a call omits `search_id`).
 
 **Body:**
 
@@ -1651,17 +1651,23 @@ Kicks off a new search; the prior search results are wiped.
 }
 ```
 
-Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`.
+Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
 
-**Response:** `202 Accepted` → `{ "ok": true, "query": "..." }`.
+**Response:** `202 Accepted` → `{ "ok": true, "search_id": 42, "query": "..." }`. Keep the `search_id` to read this search's results/progress or to stop it.
+
+**Errors:** `502 amuled_rejected` (daemon returned no search_id), `503 ec_unavailable`.
 
 #### `GET /api/v0/search/results`
 
 **Auth:** `GUEST`
 
-Returns the current search-results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "no search running", "search in flight with no hits yet", and "search finished with zero hits".
+**Query:** `?search_id=N` (optional) — which search to read. Omit it to read the **current** (most-recently-started) search. An explicit `search_id` that names no live search (never started, or evicted — see below) returns `404 not_found`, distinct from a known-but-empty search which returns an idle/empty envelope.
 
-This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. There is no per-GET TTL cache: `POST /search` marks the search active and the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`) every tick while it stays active, so this GET reads straight from that refresher-maintained snapshot — successive polls see the growing result set with no extra EC roundtrip, and `POST /search/stop` simply clears the active flag.
+Returns one search's results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "no search running", "search in flight with no hits yet", and "search finished with zero hits". The envelope's top-level `search_id` echoes the resolved search (the one requested, or the current one) so a client polling without an id learns which search it is watching and can pin it on later calls.
+
+This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. There is no per-GET TTL cache: `POST /search` seeds the search and the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`, addressed by `search_id`) every tick for each active search, so this GET reads straight from that refresher-maintained snapshot — successive polls see the growing result set with no extra EC roundtrip.
+
+amuled keeps a bounded ring of recent searches (20). A search evicted from that ring (because 20 newer searches were started) is reported to amuleapi as expired: its slot is retired as `finished` and reads with its `search_id` then return `404`.
 
 ```json
 {
@@ -1684,6 +1690,7 @@ This endpoint does NOT busy-wait — it returns whatever amuled has in its resul
       "comments": []
     }
   ],
+  "search_id": 42,
   "progress": {
     "state":    "running",
     "kind":     "kad",
@@ -1712,11 +1719,20 @@ A client that wants to wait for completion polls while `state == "running"`. Bec
 
 **Auth:** `ADMIN`
 
-Cancels the in-flight search; cached results stay.
+Stops a search. With no body it stops the **current** (most-recently-started) search; its cached results stay readable until it is closed or evicted.
+
+**Body (optional):**
 
 ```json
-{ "ok": true }
+{ "search_id": 42, "close": false }
 ```
+
+- `search_id` — which search to stop. Omit to target the current search. An explicit id that names no live search returns `404 not_found`.
+- `close` — when `true`, also **frees** the search: amuled drops it from its result ring and amuleapi drops its slot, so `GET /search/results?search_id=` for it then returns `404`. Sibling searches are untouched. Use `close` when a consumer is done with a search rather than just pausing it; omit it (or `false`) to stop the in-flight query but keep the results.
+
+**Response:** `200 OK` → `{ "ok": true }`.
+
+**Errors:** `404 not_found` (explicit unknown `search_id`), `400 bad_request` (malformed body), `503 ec_unavailable`.
 
 #### `POST /api/v0/search/results/{hash}/download`
 

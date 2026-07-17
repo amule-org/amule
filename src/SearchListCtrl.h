@@ -119,6 +119,13 @@ public:
 	wxUIntPtr GetSearchId();
 
 	/**
+	 * Re-key this control's search ID. Used by the multi-search remote GUI to
+	 * remap an optimistically-created tab from its local ID to the
+	 * daemon-allocated one once the START reply arrives.
+	 */
+	void SetSearchId(wxUIntPtr id) { m_nResultsID = id; }
+
+	/**
 	 * Sets the filter which decides which results should be shown.
 	 *
 	 * @param regExp A regular expression targeting the filenames.

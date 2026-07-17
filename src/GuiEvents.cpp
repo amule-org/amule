@@ -151,7 +151,16 @@ void Search_Update_Progress(uint32 NOT_ON_DAEMON(val))
 			// Kad search ended
 			theApp->amuledlg->m_searchwnd->KadSearchEnd(0);
 		} else {
+#ifdef CLIENT_GUI
+			// Remote GUI single-search fallback (old daemon without
+			// multi-search): drive the bar from the scalar value.
 			theApp->amuledlg->m_searchwnd->UpdateProgress(val);
+#else
+			// Monolithic: re-derive the bar from the VISIBLE tab's core
+			// lifecycle so a background search's progress never bleeds onto
+			// another tab's bar (val is the current search's scalar).
+			theApp->amuledlg->m_searchwnd->RefreshVisibleTabProgress();
+#endif
 		}
 	}
 #endif
@@ -645,14 +654,16 @@ void SearchLocalEnd()
 #endif
 }
 
-void KadSearchEnd(uint32 NOT_ON_DAEMON(id))
+void KadSearchEnd(uint32 id)
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_searchwnd) {
 		theApp->amuledlg->m_searchwnd->KadSearchEnd(id);
 	}
 #endif
-	theApp->searchlist->SetKadSearchFinished();
+	// Record this specific Kad search as finished (per-search completion for
+	// multi-search progress). Used on the daemon and monolithic builds.
+	theApp->searchlist->SetKadSearchFinished(id);
 }
 
 void Search_Update_Sources(CSearchFile *result)

@@ -601,6 +601,19 @@ struct SearchProgressSnapshot
 	std::uint64_t generation = 0;
 };
 
+// One concurrent search's cached state: its results (keyed by result ECID)
+// and its lifecycle progress. CState holds a map of these keyed by the
+// daemon-allocated search_id (see m_searches).
+struct SearchSlot
+{
+	std::map<std::uint32_t, SearchResult> results;
+	SearchProgressSnapshot progress;
+	// Monotonic insertion order, used to evict the oldest slots when the map
+	// exceeds its cap (a client that starts many searches without closing them
+	// would otherwise accumulate slots for the whole process lifetime).
+	std::uint64_t seq = 0;
+};
+
 // `m_amule_log_lines` in CState caches /logs/amule. amule's EC
 // server piggybacks new lines on STAT_REQ at `EC_DETAIL_FULL` (see
 // `AddLoggerTag` in ExternalConn.cpp:700-715) via a per-EC-connection
@@ -1033,8 +1046,25 @@ public:
 	std::vector<ClientSnapshot> Clients() const;
 
 	std::vector<ServerSnapshot> Servers() const;
-	std::vector<SearchResult> Search() const;
-	SearchProgressSnapshot SearchProgress() const;
+	// Results / progress for one search. search_id == 0 resolves to the
+	// current (most-recently-started) search; an unknown id yields an empty
+	// list / idle progress. HasSearch distinguishes "unknown id" (404) from
+	// "known but empty".
+	std::vector<SearchResult> Search(std::uint32_t search_id) const;
+	SearchProgressSnapshot SearchProgress(std::uint32_t search_id) const;
+	// True if the resolved search_id names a live slot. Used for the 404 on an
+	// explicit but expired/never-known id.
+	bool HasSearch(std::uint32_t search_id) const;
+	// The no-id default target (0 when no search this session).
+	std::uint32_t CurrentSearchId() const;
+	// Slots the refresher must still poll (progress.active).
+	std::vector<std::uint32_t> ActiveSearchIds() const;
+	// Every live slot id, for the SSE per-search diff.
+	std::vector<std::uint32_t> AllSearchIds() const;
+	// Find a result carrying this (already-lowercased) hash across ALL open
+	// searches — the hash-keyed comments endpoints are search-agnostic. The
+	// parent owns any fetched Kad notes, so it matches ahead of its children.
+	bool FindSearchResultByHash(const std::string &hash_hex, SearchResult &out) const;
 
 	// Categories aren't ECID-keyed (they come in via the
 	// preferences packet as an indexed array); keep them as a plain
@@ -1074,7 +1104,10 @@ public:
 	void MutateShared(const std::function<void(FileMap &)> &fn);
 	void MutateClients(const std::function<void(std::map<std::uint32_t, ClientSnapshot> &)> &fn);
 	void MutateServers(const std::function<void(std::map<std::uint32_t, ServerSnapshot> &)> &fn);
-	void MutateSearch(const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn);
+	// Mutate one search's result map (the refresher's per-tick full-fetch
+	// overwrite). No-op if the id names no live slot.
+	void MutateSearch(std::uint32_t search_id,
+		const std::function<void(std::map<std::uint32_t, SearchResult> &)> &fn);
 
 	// Wholesale reset paths. Called by the refresher after a
 	// MarkTickFailure → MarkTickSuccess transition (the server's
@@ -1100,13 +1133,18 @@ public:
 	// resumes appending from amuled's now-empty buffer.
 	void ClearAmuleLog();
 	void WriteServerInfo(ServerInfoLog s);
-	// Called by POST /search. Wipes m_search, sets m_search_progress
-	// to active=true with the requested `kind`. The refresher takes
-	// over from there, mapping EC_TAG_SEARCH_LIFECYCLE_STATE into
-	// `complete` / `active` on each tick.
-	void MarkSearchStarted(const std::string &kind);
-	// Refresher-side write path for the search progress snapshot.
-	void WriteSearchProgress(SearchProgressSnapshot s);
+	// Called by POST /search with the daemon-allocated search_id. Creates (or
+	// resets) that search's slot: clears its results, marks it active=true with
+	// the requested `kind`, and makes it the current search. The refresher then
+	// polls EC_OP_SEARCH_RESULTS / _PROGRESS for it each tick, mapping
+	// EC_TAG_SEARCH_LIFECYCLE_STATE into `complete` / `active`.
+	void MarkSearchStarted(std::uint32_t search_id, const std::string &kind);
+	// Refresher-side write path for one search's progress snapshot.
+	void WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s);
+	// Drop a search's slot entirely: POST /search/stop with close=true, or the
+	// refresher observing the daemon evicted it (EC_TAG_SEARCH_EXPIRED). If it
+	// was the current search, current falls back to none (0).
+	void CloseSearch(std::uint32_t search_id);
 	void WriteStatsTree(StatsTreeNode t);
 	void WriteGraphs(StatsGraphs g);
 	void MarkTickSuccess();
@@ -1137,8 +1175,25 @@ private:
 	ServerInfoLog m_server_info;
 	StatsTreeNode m_stats_tree;
 	StatsGraphs m_graphs;
-	std::map<std::uint32_t, SearchResult> m_search;
-	SearchProgressSnapshot m_search_progress;
+	// Multi-search: amuleapi runs several searches at once, each addressed on
+	// the REST surface by its daemon-allocated search_id. One slot per search
+	// holds that search's results (by result ECID) and its lifecycle progress.
+	std::map<std::uint32_t, SearchSlot> m_searches;
+	// The no-id default target for reads/stop: the most-recently-started
+	// search. 0 when no search has run this session (or the current one was
+	// closed) — reads then resolve to no slot and report an idle envelope.
+	std::uint32_t m_current_search_id = 0;
+	// Ever-increasing sequence stamped on each new slot for oldest-first
+	// eviction. Never wraps in practice (one bump per POST /search).
+	std::uint64_t m_search_seq = 0;
+	// Hard cap on retained slots. Comfortably above the daemon's 20-search
+	// ring so every live search always fits; excess is finished slots a
+	// client never closed, evicted oldest-first in MarkSearchStarted.
+	static constexpr std::size_t kMaxSearchSlots = 64;
+
+	// Resolve a caller-supplied id to a concrete slot key: 0 means "the
+	// current search". MUST be called with m_mu held.
+	std::uint32_t ResolveSearchId(std::uint32_t id) const { return id != 0 ? id : m_current_search_id; }
 };
 
 } // namespace webapi

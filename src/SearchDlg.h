@@ -31,6 +31,8 @@
 
 #include "Types.h" // Needed for uint16 and uint32
 
+#include <map> // Needed for std::map (per-tab progress cache)
+
 class CMuleNotebook;
 class CSearchListCtrl;
 class CMuleNotebookEvent;
@@ -125,7 +127,28 @@ public:
 
 	CSearchListCtrl *GetSearchList(wxUIntPtr id);
 
+	// Multi-search (remote GUI): remap a tab's search ID from the optimistic
+	// local ID to the daemon-allocated one once the START reply arrives.
+	void RekeySearch(wxUIntPtr oldID, wxUIntPtr newID);
+
+	// Search ID of the currently visible tab (0 if none). The single bottom
+	// progress bar tracks this tab.
+	wxUIntPtr GetVisibleSearchId();
+
+	// Multi-search (remote GUI): apply a per-search progress update. Clears the
+	// tab's "!" marker on completion and drives the bottom bar for the visible
+	// tab only, so each search's lifecycle is tracked independently.
+	void UpdateSearchProgress(uint32 searchID, uint32 status);
+
 	void UpdateProgress(uint32 new_value);
+
+#ifndef CLIENT_GUI
+	// Monolithic: drive the bottom bar from the visible tab's core search
+	// lifecycle (CSearchList::GetSearchBarStatusById), so the bar follows tab
+	// switches and shows the right search's progress — the local-core analogue
+	// of the remote GUI's per-search EC progress cache.
+	void RefreshVisibleTabProgress();
+#endif
 
 	void StartNewSearch();
 
@@ -152,6 +175,15 @@ private:
 	 * Event-handler for page-chages which takes care of enabling/disabling the download button.
 	 */
 	void OnSearchPageChanged(wxBookCtrlEvent &evt);
+
+	// Multi-search (remote GUI): last progress status per search ID, so the
+	// bottom bar can be refreshed instantly when the visible tab changes
+	// (rather than waiting for the next poll). Empty on monolithic.
+	std::map<wxUIntPtr, uint32> m_searchProgress;
+
+	// Set the bottom progress bar from a per-search status sentinel: a finished
+	// search (0xffff/0xfffe) resets it, otherwise it shows the running percent.
+	void ApplyProgressToBar(uint32 status);
 
 	uint64 m_last_search_time;
 
