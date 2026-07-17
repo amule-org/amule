@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-17 11:33+0200\n"
-"PO-Revision-Date: 2026-07-16 19:22+0000\n"
+"PO-Revision-Date: 2026-07-17 10:57+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -2614,9 +2614,9 @@ msgid "Kad note search for '%s' not started: a note lookup is already running fo
 msgstr "A busca de nota em Kad por '%s' não foi iniciada: uma busca de nota já está rodando para este arquivo"
 
 #: src/KnownFile.cpp:1563
-#, fuzzy, c-format
+#, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr "A busca de nota por '%s' não foi iniciada: o arquivo não está na lista de compartilhamento ou na fila de download"
+msgstr "A busca de nota por '%s' não foi iniciada: o arquivo não está na lista de compartilhamento, na fila de downloads ou nos resultados da busca"
 
 #: src/KnownFile.cpp:1577
 #, c-format
@@ -3284,9 +3284,8 @@ msgid "Packages saved by I.C.H. :"
 msgstr "Pacotes recuperados pelo I.C.H.:"
 
 #: src/muuli_wdr.cpp:609
-#, fuzzy
 msgid "Sharing"
-msgstr "Compartilhando: "
+msgstr "Compartilhando"
 
 #: src/muuli_wdr.cpp:616 src/SharedFilesCtrl.cpp:112
 msgid "Requests"
@@ -3309,14 +3308,12 @@ msgid "Complete Sources"
 msgstr "Fontes Completas"
 
 #: src/muuli_wdr.cpp:625 src/SharedFilesCtrl.cpp:122
-#, fuzzy
 msgid "Shared since"
-msgstr "Arquivos compartilhados"
+msgstr "Compartilhado desde"
 
 #: src/muuli_wdr.cpp:626 src/SharedFilesCtrl.cpp:123
-#, fuzzy
 msgid "Last upload"
-msgstr ", Upload: "
+msgstr "Ultimo upload"
 
 #: src/muuli_wdr.cpp:637
 msgid "Media Info"

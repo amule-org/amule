@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-17 11:33+0200\n"
-"PO-Revision-Date: 2026-07-16 19:26+0000\n"
+"PO-Revision-Date: 2026-07-17 10:59+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -2608,9 +2608,9 @@ msgid "Kad note search for '%s' not started: a note lookup is already running fo
 msgstr "“%s” 的 Kad 笔记搜索未启动：已经有一个该文件的笔记查询在运行"
 
 #: src/KnownFile.cpp:1563
-#, fuzzy, c-format
+#, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr "“%s” 的 Kad 笔记搜索未启动：文件不在共享列表或下载队列中"
+msgstr "“%s” 的 Kad 笔记搜索未启动：文件不在共享列表、下载队列或搜索结果中"
 
 #: src/KnownFile.cpp:1577
 #, c-format
