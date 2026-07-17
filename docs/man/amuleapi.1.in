@@ -12,6 +12,8 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .RB_untranslated [ \-\-http\-port " " \fI<num> ]
 .RB_untranslated [ \-\-config\-dir " " \fI<path> ]
 .RB_untranslated [ \-\-amule\-config\-file " " \fI<path> ]
+.RB_untranslated [ \-\-log\-file " " \fI<path> ]
+.RB_untranslated [ \-\-no\-log\-file ]
 .RB_untranslated [ \-\-foreground ]
 
 .B_untranslated amuleapi
@@ -85,6 +87,18 @@ Hash \fI<plain>\fR with MD5 and store it as the guest password in
 Stay in the foreground (default). aMule does not ship init\-system
 units; if you need a system service wrapper, write a downstream unit
 that wraps the foreground command.
+.TP
+\fB[ \-\-log\-file\fR=\fI<path>\fR \fB]\fR
+Append a copy of all console output (both stdout and stderr) to
+\fI<path>\fR while still printing to the console. Enabled by default at
+\fI<config\-dir>/amuleapi.log\fR, so a log is always available to attach to
+a bug report; pass this to use a different path. The file is opened in
+append mode and capped at 10 MiB: when a write would exceed the cap it is
+rotated to \fI<path>.1\fR (replacing any previous one) and a fresh file is
+started, so on\-disk usage stays bounded.
+.TP
+\fB[ \-\-no\-log\-file ]\fR
+Disable the log file entirely and print to the console only.
 .TP
 \fB[ \-\-version ]\fR
 Print version information and exit.

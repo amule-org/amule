@@ -15,6 +15,7 @@ add_executable (amuleapi
 	EventBus.cpp
 	EventDiff.cpp
 	HttpServer.cpp
+	LogTee.cpp
 	Refresher.cpp
 	RefresherTick.cpp
 	StaticFs.cpp

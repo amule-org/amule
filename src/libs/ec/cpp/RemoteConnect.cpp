@@ -40,6 +40,18 @@
 #endif
 
 wxDEFINE_EVENT(wxEVT_EC_CONNECTION, wxEvent);
+
+namespace
+{
+// Optional graceful-shutdown handler for OnLost(); see SetEcConnectionLostHandler.
+void (*s_connectionLostHandler)() = nullptr;
+} // namespace
+
+void SetEcConnectionLostHandler(void (*handler)())
+{
+	s_connectionLostHandler = handler;
+}
+
 CECLoginPacket::CECLoginPacket(const wxString &client,
 	const wxString &version,
 	bool canZLIB,
@@ -274,6 +286,15 @@ void CRemoteConnect::OnLost()
 	// shell loop) is the recovery layer and decides whether to restart.
 	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost - exiting.")));
 	fflush(stderr);
+	if (s_connectionLostHandler) {
+		// A client (amuleapi) opted into a graceful shutdown: hand off to it
+		// and return, so the orderly teardown runs on the client's own thread
+		// instead of racing static destructors from this asio callback. The
+		// client is responsible for actually stopping (it requests its normal
+		// shutdown path, e.g. flipping the main-loop's shutdown flag).
+		s_connectionLostHandler();
+		return;
+	}
 	// _exit instead of exit() because the asio worker thread that
 	// just fired this is mid-callback; racing static destructors
 	// against it risks the kind of use-after-free #748 was about.

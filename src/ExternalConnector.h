@@ -218,6 +218,10 @@ protected:
 	bool m_forceZLIB;
 	bool m_KeepQuiet;
 	bool m_Verbose;
+	// --log-file / --no-log-file. Parsed for every connector; only amuleapi
+	// acts on them (installs a stdout/stderr tee into the file).
+	wxString m_logFile;
+	bool m_noLogFile;
 	bool m_interactive;
 	CCommandTree m_commands;
 	const char *m_appname;

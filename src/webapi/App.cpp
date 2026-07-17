@@ -32,13 +32,15 @@
 #include "MD4Hash.h"
 #include "config.h" // VERSION
 
-#include <ec/cpp/ECFileConfig.h> // CECFileConfig, for --amule-config-file
-#include <wx/filename.h>         // wxFileName::FileExists
+#include <ec/cpp/ECFileConfig.h>  // CECFileConfig, for --amule-config-file
+#include <ec/cpp/RemoteConnect.h> // SetEcConnectionLostHandler
+#include <wx/filename.h>          // wxFileName::FileExists
 
 #include <common/Format.h>
 #include <common/MD5Sum.h>
 
 #include <wx/cmdline.h>
+#include <wx/log.h>
 
 #include <atomic>
 #include <chrono>
@@ -53,6 +55,11 @@ IMPLEMENT_APP(CamuleapiApp)
 namespace
 {
 
+// Rotation cap for the --log-file tee. amuleapi's normal output is low volume
+// (startup + warnings/errors, no per-request access log), so this is a runaway
+// guard rather than a routine limit; on-disk usage stays under ~2x this.
+constexpr std::size_t kLogMaxBytes = 10 * 1024 * 1024; // 10 MiB
+
 // Signal-safe shutdown gate. SIGINT/SIGTERM flip the flag; the wxApp
 // main loop polls it every 250 ms. A signalfd-driven path would be
 // cleaner, but the polling cost is one atomic-load per tick and the
@@ -60,8 +67,25 @@ namespace
 // signalfd).
 std::atomic<bool> g_shutdownRequested{ false };
 
+// Set when the daemon is shutting down because the EC connection to amuled
+// died (a socket drop, or sustained refresher failure), as opposed to an
+// operator SIGINT/SIGTERM. Drives a non-zero exit code so a process supervisor
+// treats it as a failure and restarts the pair.
+std::atomic<bool> g_ecConnectionLost{ false };
+
 void RequestShutdown(int)
 {
+	g_shutdownRequested.store(true, std::memory_order_release);
+}
+
+// Registered with the EC layer (SetEcConnectionLostHandler) so a dropped EC
+// socket requests this daemon's normal, orderly shutdown instead of the hard
+// _exit() the EC client does by default. Runs on the asio worker thread, so it
+// only flips atomics -- the main loop notices and tears down (HTTP, EC, log
+// tee) on its own thread, avoiding the static-destructor race _exit() dodges.
+void HandleEcConnectionLost()
+{
+	g_ecConnectionLost.store(true, std::memory_order_release);
 	g_shutdownRequested.store(true, std::memory_order_release);
 }
 
@@ -167,6 +191,34 @@ bool CamuleapiApp::OnInit()
 	if (config_dir.IsEmpty()) {
 		config_dir = DefaultConfigDir();
 	}
+
+	// Tee stdout/stderr into a log file (unless --no-log-file), as early as
+	// possible so config-load errors, EC warnings and a crash backtrace are all
+	// captured. Default path is in the resolved config dir; create that dir
+	// first so the very first run can open the file.
+	if (!m_noLogFile) {
+		if (!wxDirExists(config_dir)) {
+			wxFileName::Mkdir(config_dir, 0700, wxPATH_MKDIR_FULL);
+		}
+		const wxString logPath = m_logFile.IsEmpty()
+						 ? wxFileName(config_dir, "amuleapi.log").GetFullPath()
+						 : m_logFile;
+		m_logTee = std::make_unique<webapi::CLogTee>();
+		if (m_logTee->Install(std::string(logPath.utf8_str()), kLogMaxBytes)) {
+			Show(CFormat(_("amuleapi: logging to %s\n")) % logPath);
+		} else {
+			m_logTee.reset();
+			std::cerr << "amuleapi: WARN could not open log file '"
+				  << (const char *)logPath.utf8_str() << "', continuing without it\n";
+		}
+	}
+
+	// Route wxWidgets' own log channel (wxLogError/wxLogWarning, emitted by wx
+	// internals) to stderr. amuleapi is a wxApp with the GUI core linked, so the
+	// default target is wxLogGui -- message boxes, which are useless on a
+	// headless daemon and never reach the log. wxLogStderr sends them to stderr,
+	// where the tee above picks them up (and no dialog is ever attempted).
+	delete wxLog::SetActiveTarget(new wxLogStderr);
 
 	if (!LoadAmuleapiConfig()) {
 		// Error already printed via Show(...).
@@ -342,13 +394,22 @@ int CamuleapiApp::OnRun()
 	std::signal(SIGTERM, RequestShutdown);
 #endif
 
+	// Turn a dropped EC connection into this daemon's orderly shutdown rather
+	// than the hard _exit() the EC client does by default: the handler flips the
+	// main-loop shutdown flag so OnExit runs (HTTP/EC/log-tee all torn down
+	// cleanly). Registered before ConnectAndRun so a drop during bring-up is
+	// covered too.
+	SetEcConnectionLostHandler(&HandleEcConnectionLost);
+
 	// ConnectAndRun does the EC bring-up (CRemoteConnect, ConnectToCore)
 	// and then calls TextShell — which we've overridden so the daemon's
 	// main loop runs there. On EC failure ConnectAndRun returns without
 	// ever entering TextShell, which is the correct outcome for a
 	// daemon that has nothing to do without amuled.
 	ConnectAndRun(wxT("amuleapi"), wxString::FromAscii(VERSION));
-	return 0;
+
+	// Non-zero when we stopped because EC died, so a supervisor restarts us.
+	return g_ecConnectionLost.load(std::memory_order_acquire) ? 1 : 0;
 }
 
 void CamuleapiApp::TextShell(const wxString & /*prompt*/)
@@ -508,6 +569,9 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 				std::cerr << "amuleapi: FATAL EC has been silent "
 					     "for "
 					  << ec_consecutive_failures << " consecutive ticks. Exiting.\n";
+				// EC is gone: exit non-zero so the supervisor restarts the pair,
+				// matching the OnLost handler above.
+				g_ecConnectionLost.store(true, std::memory_order_release);
 				g_shutdownRequested.store(true, std::memory_order_release);
 			}
 		}
@@ -591,8 +655,28 @@ int CamuleapiApp::OnExit()
 	m_ec_service.Stop();
 	m_dispatcher.reset();
 	m_jwt.reset();
-	return CaMuleExternalConnector::OnExit();
+	const int rc = CaMuleExternalConnector::OnExit();
+	// Tear the log tee down last so the shutdown output above is captured.
+	if (m_logTee) {
+		m_logTee->Uninstall();
+		m_logTee.reset();
+	}
+	return rc;
 }
+
+#if wxUSE_ON_FATAL_EXCEPTION
+void CamuleapiApp::OnFatalException()
+{
+	// Point stderr straight at the log file so the base's backtrace is written
+	// synchronously to the file, even if the tee's forwarding thread is never
+	// scheduled again before the process dies. The console loses the backtrace
+	// on a crash, but the file -- the thing we ask users to send -- keeps it.
+	if (m_logTee) {
+		m_logTee->RedirectStderrToFileForCrash();
+	}
+	CaMuleExternalConnector::OnFatalException();
+}
+#endif
 
 // Stub functions needed by the linker because ExternalConnector.cpp
 // transitively references MuleNotify (via the EC tag handlers); the

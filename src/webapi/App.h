@@ -36,6 +36,7 @@
 #include "State.h"
 
 #include "Jwt.h"
+#include "LogTee.h"
 #include "RLE.h" // PartFileEncoderData
 
 #include <cstdint>
@@ -73,6 +74,11 @@ public:
 	bool OnInit() override;
 	int OnRun() override;
 	int OnExit() override;
+#if wxUSE_ON_FATAL_EXCEPTION
+	// Point stderr at the log file before the base prints the backtrace, so a
+	// crash is recorded in the file even if the tee thread never runs again.
+	void OnFatalException() override;
+#endif
 
 	// Serialized EC roundtrip. Takes the EC lock, calls
 	// SendRecvMsg_v2, releases. Callable from any thread; the
@@ -164,6 +170,9 @@ private:
 	std::unique_ptr<CJwt> m_jwt;
 	std::unique_ptr<CApiDispatcher> m_dispatcher;
 	std::unique_ptr<CHttpServer> m_http;
+	// stdout/stderr tee into the log file; empty when --no-log-file or the file
+	// could not be opened. Installed early in OnInit, torn down in OnExit.
+	std::unique_ptr<webapi::CLogTee> m_logTee;
 	std::map<std::uint32_t, PartFileEncoderData> m_partfile_rle;
 	std::unique_ptr<webapi::CEventBus> m_event_bus;
 	webapi::LastSeenState m_last_seen;

@@ -256,6 +256,7 @@ CaMuleExternalConnector::CaMuleExternalConnector()
 , m_forceZLIB(false)
 , m_KeepQuiet(false)
 , m_Verbose(false)
+, m_noLogFile(false)
 , m_interactive(false)
 , m_commands(*this)
 , m_appname(NULL)
@@ -539,6 +540,18 @@ void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char 
 		_("Force ZLIB compression regardless of dialed-IP locality (useful when the server is "
 		  "reachable over a VPN tunnel that resolves to a LAN IP)."),
 		wxCMD_LINE_PARAM_OPTIONAL);
+	// Parsed here so every connector shares one definition; only amuleapi wires
+	// the actual log tee (see CamuleapiApp::OnInit).
+	parser.AddOption("",
+		"log-file",
+		_("Append a copy of all console output to this log file "
+		  "(default: <config-dir>/amuleapi.log)."),
+		wxCMD_LINE_VAL_STRING,
+		wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddSwitch("",
+		"no-log-file",
+		_("Do not write a log file; print to the console only."),
+		wxCMD_LINE_PARAM_OPTIONAL);
 }
 
 bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
@@ -611,6 +624,8 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 
 	m_KeepQuiet = parser.Found("quiet");
 	m_Verbose = parser.Found("verbose");
+	parser.Found("log-file", &m_logFile);
+	m_noLogFile = parser.Found("no-log-file");
 
 	// Wire --verbose to the console logger gate so AddDebugLogLine* output
 	// from this binary obeys the CLI flag the same way amuled obeys its

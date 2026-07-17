@@ -31,6 +31,15 @@
 
 #include <wx/event.h>
 
+// Installed by a headless EC client (amuleapi) to replace the hard _exit() that
+// CRemoteConnect::OnLost() performs when the EC connection drops with a NULL
+// notifier. When set, OnLost invokes the handler and returns instead of calling
+// _exit(), letting the client tear down on its own (main) thread -- draining a
+// redirected stdout/stderr log, stopping the HTTP server, etc. -- rather than
+// racing static destructors from the asio callback. Clients that do not set it
+// (amulecmd, amuleweb) keep the fail-fast _exit(). Pass nullptr to clear.
+void SetEcConnectionLostHandler(void (*handler)());
+
 class CECPacketHandlerBase
 {
 public:

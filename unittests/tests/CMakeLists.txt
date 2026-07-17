@@ -339,6 +339,22 @@ target_link_libraries (EventBusTest
 	mulecommon
 )
 
+# amuleapi log-file tee: exercises CRotatingLog's append + two-file size cap.
+# LogTee.cpp is plain POSIX/std (no wx), so only muleunit + mulecommon are
+# needed for the harness.
+add_executable (LogTeeTest
+	LogTeeTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/LogTee.cpp
+)
+target_include_directories (LogTeeTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+)
+add_test (NAME LogTeeTest COMMAND LogTeeTest)
+target_link_libraries (LogTeeTest
+	muleunit
+	mulecommon
+)
+
 # Tests for EmitDiffsAndUpdate's log_appended path and cold-start
 # gating. Pulls EventBus + State along with EventDiff itself — none
 # touch wxWidgets or EC, so the exe is pure stdlib + muleunit.
