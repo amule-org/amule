@@ -26,6 +26,7 @@
 
 #include "EventBus.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstdlib>
 #include <iostream>
