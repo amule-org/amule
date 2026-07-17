@@ -679,6 +679,21 @@ void CSearchDlg::StartNewSearch()
 	}
 
 	uint32 real_id = m_nSearchID;
+#ifdef CLIENT_GUI
+	// Remote GUI only: real_id here is an OPTIMISTIC placeholder tab id. The tab
+	// is created immediately (for instant feedback) and rekeyed to the daemon's
+	// real search id when the START reply arrives (RemapSearch). The daemon
+	// allocates ed2k ids sequentially from the low end and Kad ids from the top
+	// half (0x80000000+), so a plain low placeholder can numerically equal an
+	// earlier tab's daemon id once the two counters drift apart — and then
+	// RekeySearch would match (and rekey) the WRONG tab, routing results to the
+	// wrong tab and eventually corrupting the tab map (searches stop working).
+	// Reserve a high sub-range (bit 30) that the daemon's allocators never
+	// produce, so the placeholder can never collide with any daemon id. This
+	// applies to every search type — the placeholder is what collides, not the
+	// eventual (ed2k or Kad) daemon id. Still bottom-half, so clear of Kad ids.
+	real_id = 0x40000000u | (m_nSearchID & 0x3fffffffu);
+#endif
 	wxString error = theApp->searchlist->StartNewSearch(&real_id, search_type, params);
 	if (!error.IsEmpty()) {
 		// Search failed / Remote in progress

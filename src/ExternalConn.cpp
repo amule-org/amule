@@ -1516,12 +1516,19 @@ constexpr std::size_t kMaxEcSearches = 20;
 class CEcSearchRegistry
 {
 public:
-	// Allocate a fresh bottom-half ed2k search ID (& 0x7fffffff), disjoint
-	// from Kad's top-half IDs (>= 0x80000000) and never 0 (our "none").
+	// Allocate a fresh ed2k search ID in the LOW quarter (& 0x3fffffff), never 0
+	// (our "none"). This keeps ed2k IDs provably disjoint from the two other id
+	// spaces they share the wire with: Kad's top-half IDs (>= 0x80000000) and
+	// the remote GUI's optimistic placeholder tab IDs, which reserve the
+	// 0x40000000-0x7fffffff sub-range (see CSearchDlg::StartNewSearch). Without
+	// that separation a placeholder could numerically equal a live ed2k ID and
+	// the GUI's tab-rekey would hit the wrong tab. IDs are ephemeral (a 20-entry
+	// LRU ring), so the wrap back to 1 after ~1.07e9 searches only ever reuses
+	// IDs whose search was evicted long before — no live collision.
 	uint32 AllocateEd2kId()
 	{
 		do {
-			m_nextEd2kId = (m_nextEd2kId + 1) & 0x7fffffff;
+			m_nextEd2kId = (m_nextEd2kId + 1) & 0x3fffffff;
 		} while (m_nextEd2kId == 0);
 		return m_nextEd2kId;
 	}
