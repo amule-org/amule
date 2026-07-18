@@ -2688,7 +2688,33 @@ bool CUpDownClient::ShouldReceiveCryptUDPPackets() const
 
 void CUpDownClient::ProcessCaptchaRequest(CMemFile *WXUNUSED(data)) {}
 void CUpDownClient::ProcessCaptchaReqRes(uint8 WXUNUSED(nStatus)) {}
-void CUpDownClient::ProcessChatMessage(const wxString WXUNUSED(message)) {}
+
+// On a headless daemon this was historically a no-op (chat was a GUI-only
+// feature). To relay incoming friend/chat messages to a connected amulegui
+// (read-only), run the non-interactive part here: apply the message filter,
+// then fire the notify — which on the daemon routes to the EC chat relay
+// (MuleNotify::ChatProcessMsg -> ExternalConn::QueueChatMessage). The advanced
+// spam-filter captcha is an interactive flow (captcha image + chat-window
+// session state) a headless core can't drive, so it's intentionally skipped;
+// the message filter above still applies.
+//
+// By-value to match the single header signature — the non-daemon impl
+// reassigns `message` (captcha path), so the parameter can't be const-ref.
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
+void CUpDownClient::ProcessChatMessage(wxString message)
+{
+	if (IsMessageFiltered(message)) {
+		AddLogLineC(CFormat(_("Message filtered from '%s' (IP:%s)")) % GetUserName() % GetFullIP());
+		return;
+	}
+	wxString logMsg = CFormat(_("New message from '%s' (IP:%s)")) % GetUserName() % GetFullIP();
+	if (thePrefs::ShowMessagesInLog()) {
+		logMsg += ": " + message;
+	}
+	AddLogLineC(logMsg);
+	IncMessagesReceived();
+	Notify_ChatProcessMsg(GUI_ID(GetIP(), GetUserPort()), GetUserName() + "|" + message);
+}
 
 #else
 
@@ -2921,6 +2947,10 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 	Notify_ChatProcessMsg(GUI_ID(GetIP(), GetUserPort()), GetUserName() + "|" + message);
 }
 
+#endif // AMULE_DAEMON
+
+// Prefs-based and GUI-free, so it's shared by both builds — the daemon's
+// read-only chat relay applies the same message filter the monolithic GUI does.
 bool CUpDownClient::IsMessageFiltered(const wxString &message)
 {
 	bool filtered = false;
@@ -2939,8 +2969,6 @@ bool CUpDownClient::IsMessageFiltered(const wxString &message)
 	}
 	return filtered;
 }
-
-#endif
 
 void CUpDownClient::SendSharedDirectories()
 {

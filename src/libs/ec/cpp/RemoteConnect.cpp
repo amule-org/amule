@@ -58,7 +58,8 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool canUTF8numbers,
 	bool canNotify,
 	bool preferNoZlib,
-	bool canMultiSearch)
+	bool canMultiSearch,
+	bool canChat)
 : CECPacket(EC_OP_AUTH_REQ)
 {
 	AddTag(CECTag(EC_TAG_CLIENT_NAME, client));
@@ -108,6 +109,11 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// unknown tag and the client stays single-search.
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
+	// Client wants incoming peer chat messages relayed over EC (amulegui
+	// surfaces them read-only). Only advertised by clients with a chat
+	// window; old servers ignore the unknown tag and never relay.
+	if (canChat)
+		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
 }
 
 CECAuthPacket::CECAuthPacket(const wxString &pass)
@@ -145,6 +151,8 @@ m_req_fifo_thr(20)
 , m_serverPartialUpdate(false)
 , m_canMultiSearch(false)
 , m_serverMultiSearch(false)
+, m_canChat(false)
+, m_serverChat(false)
 {
 }
 
@@ -219,7 +227,8 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 			m_canUTF8numbers,
 			m_canNotify,
 			m_preferNoZlib,
-			m_canMultiSearch);
+			m_canMultiSearch,
+			m_canChat);
 
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
@@ -266,7 +275,8 @@ void CRemoteConnect::OnConnect()
 			m_canUTF8numbers,
 			m_canNotify,
 			m_preferNoZlib,
-			m_canMultiSearch);
+			m_canMultiSearch,
+			m_canChat);
 		CECSocket::SendPacket(&login_req);
 
 		m_ec_state = EC_REQ_SENT;
@@ -448,6 +458,12 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// the client stays on the single-search sentinel path.
 			if (reply->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
 				m_serverMultiSearch = true;
+			}
+			// Server confirmed chat relay: it will buffer incoming peer
+			// messages and hand them out via EC_OP_GET_CHAT_MESSAGES. Old
+			// daemons omit the echo and the client never polls for chat.
+			if (reply->GetTagByName(EC_TAG_CAN_CHAT)) {
+				m_serverChat = true;
 			}
 		} else {
 			m_ec_state = EC_FAIL;

@@ -694,8 +694,20 @@ void ChatConnResult(bool NOT_ON_DAEMON(success), uint64 NOT_ON_DAEMON(id), wxStr
 #endif
 }
 
-void ChatProcessMsg(uint64 NOT_ON_DAEMON(sender), wxString NOT_ON_DAEMON(message))
+// MuleNotify stores the notify args by value (CMuleNotifier DeepCopy), so a
+// `const wxString &` param would dangle — keep it by value like every other
+// notify handler. (NOLINT must sit on the line directly above the signature.)
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
+void ChatProcessMsg(uint64 sender, wxString message)
 {
+	// Relay the incoming peer message to any polling EC client (amulegui):
+	// the daemon has no chat window of its own, and even a monolithic aMule
+	// with EC enabled should surface friend messages on a connected remote
+	// GUI. Buffered here and drained via EC_OP_GET_CHAT_MESSAGES; the
+	// built-in GUI below still handles its own local display.
+	if (theApp->ECServerHandler) {
+		theApp->ECServerHandler->QueueChatMessage(sender, message);
+	}
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_chatwnd) {
 		theApp->amuledlg->m_chatwnd->ProcessMessage(sender, message);

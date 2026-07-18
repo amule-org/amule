@@ -216,6 +216,16 @@ void CChatWnd::SendMessage(const wxString &message, const wxString &client_name,
 
 void CChatWnd::CheckNewButtonsState()
 {
+#ifdef CLIENT_GUI
+	// amulegui is receive-only: sending a chat message isn't wired over EC
+	// (CChatSelector::SendMessage is compiled out under CLIENT_GUI), so the
+	// compose box and Send button stay permanently disabled. Close still
+	// tracks whether there's an open session to close.
+	const bool hasSession = chatselector->GetPageCount() > 0;
+	GetParent()->FindWindow(IDC_CSEND)->Enable(false);
+	GetParent()->FindWindow(IDC_CMESSAGE)->Enable(false);
+	GetParent()->FindWindow(IDC_CCLOSE)->Enable(hasSession);
+#else
 	switch (chatselector->GetPageCount()) {
 	case 0:
 		GetParent()->FindWindow(IDC_CSEND)->Enable(false);
@@ -234,6 +244,7 @@ void CChatWnd::CheckNewButtonsState()
 		wxASSERT(GetParent()->FindWindow(IDC_CMESSAGE)->IsEnabled());
 		break;
 	}
+#endif
 }
 
 bool CChatWnd::IsIdValid(uint64 id)

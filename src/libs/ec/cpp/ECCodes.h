@@ -128,7 +128,9 @@ enum ECOpCodes
 	EC_OP_FRIEND = 0x57,
 	EC_OP_VERSION_CHECK = 0x58,
 	EC_OP_SHARED_FILE_SEARCH_KAD_NOTES = 0x59,
-	EC_OP_VERIFY_LOCAL_DATA = 0x5A
+	EC_OP_VERIFY_LOCAL_DATA = 0x5A,
+	EC_OP_GET_CHAT_MESSAGES = 0x5B,
+	EC_OP_CHAT_MESSAGES = 0x5C
 };
 
 enum ECTagNames
@@ -155,6 +157,7 @@ enum ECTagNames
 	EC_TAG_FILE_REMOVED = 0x0013,
 	EC_TAG_PREFER_NO_ZLIB = 0x0014,
 	EC_TAG_CAN_MULTI_SEARCH = 0x0015,
+	EC_TAG_CAN_CHAT = 0x0016,
 	EC_TAG_CLIENT_NAME = 0x0100,
 	EC_TAG_CLIENT_VERSION = 0x0101,
 	EC_TAG_CLIENT_MOD = 0x0102,
@@ -339,6 +342,8 @@ enum ECTagNames
 	EC_TAG_FRIEND_REMOVE = 0x0807,
 	EC_TAG_FRIEND_FRIENDSLOT = 0x0808,
 	EC_TAG_FRIEND_SHARED = 0x0809,
+	EC_TAG_CHAT = 0x0900,
+	EC_TAG_CHAT_CLIENT_ID = 0x0901,
 	EC_TAG_SELECT_PREFS = 0x1000,
 	EC_TAG_PREFS_CATEGORIES = 0x1100,
 	EC_TAG_CATEGORY = 0x1101,
@@ -771,6 +776,12 @@ wxString GetDebugNameECOpCodes(uint8 arg)
 		return "EC_OP_VERSION_CHECK";
 	case 0x59:
 		return "EC_OP_SHARED_FILE_SEARCH_KAD_NOTES";
+	case 0x5A:
+		return "EC_OP_VERIFY_LOCAL_DATA";
+	case 0x5B:
+		return "EC_OP_GET_CHAT_MESSAGES";
+	case 0x5C:
+		return "EC_OP_CHAT_MESSAGES";
 	default:
 		return CFormat("unknown %d 0x%x") % arg % arg;
 	}
@@ -823,6 +834,8 @@ wxString GetDebugNameECTagNames(uint16 arg)
 		return "EC_TAG_PREFER_NO_ZLIB";
 	case 0x0015:
 		return "EC_TAG_CAN_MULTI_SEARCH";
+	case 0x0016:
+		return "EC_TAG_CAN_CHAT";
 	case 0x0100:
 		return "EC_TAG_CLIENT_NAME";
 	case 0x0101:
@@ -1191,6 +1204,10 @@ wxString GetDebugNameECTagNames(uint16 arg)
 		return "EC_TAG_FRIEND_FRIENDSLOT";
 	case 0x0809:
 		return "EC_TAG_FRIEND_SHARED";
+	case 0x0900:
+		return "EC_TAG_CHAT";
+	case 0x0901:
+		return "EC_TAG_CHAT_CLIENT_ID";
 	case 0x1000:
 		return "EC_TAG_SELECT_PREFS";
 	case 0x1100:

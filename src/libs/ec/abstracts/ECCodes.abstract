@@ -155,6 +155,10 @@ EC_OP_SHARED_FILE_SEARCH_KAD_NOTES  0x59
 
 EC_OP_VERIFY_LOCAL_DATA             0x5A
 
+EC_OP_GET_CHAT_MESSAGES             0x5B
+
+EC_OP_CHAT_MESSAGES                 0x5C
+
 [/Section]
 
 [Section Content]
@@ -184,6 +188,7 @@ EC_TAG_CAN_PARTIAL_UPDATE                 0x0012
 EC_TAG_FILE_REMOVED                       0x0013
 EC_TAG_PREFER_NO_ZLIB                     0x0014
 EC_TAG_CAN_MULTI_SEARCH                   0x0015
+EC_TAG_CAN_CHAT                           0x0016
 
 
 EC_TAG_CLIENT_NAME                        0x0100
@@ -377,6 +382,9 @@ EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_REMOVE                      0x0807
 	EC_TAG_FRIEND_FRIENDSLOT                  0x0808
 	EC_TAG_FRIEND_SHARED                      0x0809
+
+EC_TAG_CHAT                               0x0900
+	EC_TAG_CHAT_CLIENT_ID                     0x0901
 
 EC_TAG_SELECT_PREFS                       0x1000
 

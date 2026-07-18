@@ -64,7 +64,8 @@ public:
 		bool canUTF8numbers = true,
 		bool canNotify = false,
 		bool preferNoZlib = false,
-		bool canMultiSearch = false);
+		bool canMultiSearch = false,
+		bool canChat = false);
 };
 
 class CECAuthPacket : public CECPacket
@@ -141,6 +142,15 @@ private:
 	// Old daemons don't echo it; the client then stays single-search.
 	bool m_serverMultiSearch;
 
+	// Client opts into chat relay (advertise `EC_TAG_CAN_CHAT`). Off by
+	// default; a client with a chat window sets it via SetCanChat(). Read
+	// when building the login packet.
+	bool m_canChat;
+	// Set when the server echoed `EC_TAG_CAN_CHAT` in AUTH_OK, confirming it
+	// buffers incoming peer messages for polling via EC_OP_GET_CHAT_MESSAGES.
+	// Old daemons don't echo it; the client then never polls for chat.
+	bool m_serverChat;
+
 	void WriteDoneAndQueueEmpty();
 
 public:
@@ -160,9 +170,15 @@ public:
 	// should set this; otherwise it stays single-search.
 	void SetCanMultiSearch(bool can) noexcept { m_canMultiSearch = can; }
 
+	// Opt into chat relay. Call BEFORE ConnectToCore(). Only a client with a
+	// chat window (amulegui) should set this; others never poll for messages.
+	void SetCanChat(bool can) noexcept { m_canChat = can; }
+
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
 
 	bool ServerSupportsMultiSearch() const { return m_serverMultiSearch; }
+
+	bool ServerSupportsChat() const { return m_serverChat; }
 
 	bool ConnectToCore(const wxString &host,
 		int port,

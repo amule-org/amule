@@ -29,6 +29,9 @@
 
 #include <ec/cpp/ECSpecialTags.h>
 
+#include <list>    // for std::list (chat message buffer)
+#include <utility> // for std::pair (chat message buffer)
+
 #include "amuleIPV4Address.h" // for amuleIPV4Address
 #include "RLE.h"              // for RLE
 #include "DownloadQueue.h"
@@ -108,6 +111,15 @@ public:
 	void RemoveSocket(CECServerSocket *s);
 	void KillAllSockets();
 	void ResetAllLogs();
+
+	// Read-only chat bridge for EC clients (amulegui): incoming peer chat
+	// messages are dropped on a headless daemon (no chat window), so relay
+	// them to any connected EC client that asked for the chat feed. Fans the
+	// message out to each chat-capable CECServerSocket's own per-client queue,
+	// which the client drains via EC_OP_GET_CHAT_MESSAGES. The pair carried is
+	// <sender GUI_ID, "name|message"> — the same encoding the built-in GUI's
+	// CChatWnd::ProcessMessage already parses.
+	void QueueChatMessage(uint64 sender_id, const wxString &message);
 };
 
 class ECUpdateMsgSource

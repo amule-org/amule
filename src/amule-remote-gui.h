@@ -715,6 +715,18 @@ public:
 	virtual void HandlePacket(const CECPacket *);
 };
 
+// Polls the daemon for incoming peer chat/friend messages relayed over EC
+// (EC_OP_GET_CHAT_MESSAGES -> EC_OP_CHAT_MESSAGES). amulegui can't send
+// chat (the compose box and Send button are disabled), but surfaces received
+// messages read-only through the same CChatWnd::ProcessMessage path the
+// monolithic GUI uses. Each EC_TAG_CHAT tag carries the "name|message" text
+// with the sender GUI_ID in an EC_TAG_CHAT_CLIENT_ID child.
+class CChatMsgHandlerRem : public CECPacketHandlerBase
+{
+public:
+	virtual void HandlePacket(const CECPacket *);
+};
+
 class CStatTreeRem : public CECPacketHandlerBase
 {
 	virtual void HandlePacket(const CECPacket *);
@@ -830,6 +842,7 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 
 	CStatsUpdaterRem m_stats_updater;
 	CServerInfoHandlerRem m_serverinfo_handler;
+	CChatMsgHandlerRem m_chatmsg_handler;
 
 public:
 	void Startup();

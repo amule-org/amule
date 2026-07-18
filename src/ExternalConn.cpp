@@ -230,6 +230,23 @@ public:
 
 	void ResetLog() { m_LoggerAccess.Reset(); }
 
+	// True once this connection advertised EC_TAG_CAN_CHAT — used by
+	// ExternalConn::QueueChatMessage to fan an incoming peer message out only
+	// to clients that asked for the chat relay.
+	bool ChatActive() const { return m_chatActive; }
+
+	// Append one incoming peer chat message to THIS connection's own queue
+	// (per-client, like the partial-update valuemaps — each EC client drains
+	// its own copy). Bounded so a slow-polling client can't grow it without
+	// limit; oldest dropped first.
+	void QueueChatMessage(uint64 sender_id, const wxString &message)
+	{
+		m_chatQueue.emplace_back(sender_id, message);
+		while (m_chatQueue.size() > MAX_CHAT_MESSAGES) {
+			m_chatQueue.pop_front();
+		}
+	}
+
 private:
 	ECNotifier *m_ec_notifier;
 
@@ -286,6 +303,16 @@ private:
 	// single-search path runs verbatim (the `0xffffffff` sentinel bucket,
 	// wipe-on-start, parameterless stop) so old clients keep working.
 	bool m_multiSearchActive;
+	// Set when the client advertised EC_TAG_CAN_CHAT: it wants incoming peer
+	// chat messages relayed over EC and polls EC_OP_GET_CHAT_MESSAGES. The
+	// daemon always supports this, so the flag just mirrors the client tag.
+	bool m_chatActive;
+	// This connection's own queue of incoming peer chat messages, drained on
+	// EC_OP_GET_CHAT_MESSAGES. Per-client (not global) so several GUIs each
+	// get their own independent copy — like the partial-update valuemaps.
+	// <sender GUI_ID, "name|message">.
+	std::list<std::pair<uint64, wxString>> m_chatQueue;
+	static const size_t MAX_CHAT_MESSAGES = 100;
 	// Set of file ECIDs sent in the previous response for each EC
 	// request path. Diffed against the current snapshot to compute the
 	// removal list emitted to partial-update-capable clients. Tracked
@@ -328,6 +355,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 , m_lastEcGenSeenPart(0)
 , m_partialUpdateActive(false)
 , m_multiSearchActive(false)
+, m_chatActive(false)
 {
 	wxASSERT(theApp->ECServerHandler);
 	theApp->ECServerHandler->AddSocket(this);
@@ -509,6 +537,19 @@ void ExternalConn::ResetAllLogs()
 	}
 }
 
+void ExternalConn::QueueChatMessage(uint64 sender_id, const wxString &message)
+{
+	// Fan the incoming peer message out to every connected EC client that
+	// asked for the chat relay. Each keeps its own queue (per-client, like
+	// the partial-update valuemaps), so multiple GUIs get independent copies
+	// and one draining its queue doesn't steal messages from another.
+	for (CECServerSocket *s : socket_list) {
+		if (s->ChatActive()) {
+			s->QueueChatMessage(sender_id, message);
+		}
+	}
+}
+
 CExternalConnListener::CExternalConnListener(const amuleIPV4Address &adr, int flags, ExternalConn *conn)
 : CLibSocketServer(adr, flags, thePrefs::GetECNetworkInterface())
 , m_conn(conn)
@@ -649,6 +690,14 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// single-search sentinel path — see the search handlers.
 					m_multiSearchActive = true;
 				}
+				if (request->GetTagByName(EC_TAG_CAN_CHAT)) {
+					// Client (amulegui) wants incoming peer chat messages
+					// relayed over EC. The daemon always supports this, so
+					// echo the capability in AUTH_OK; the client then polls
+					// EC_OP_GET_CHAT_MESSAGES. Old clients omit the tag and
+					// simply never poll — see the client-side login packet.
+					m_chatActive = true;
+				}
 				m_haveNotificationSupport = request->GetTagByName(EC_TAG_CAN_NOTIFY) != NULL;
 				AddDebugLogLineN(logEC,
 					CFormat("Client capabilities: ZLIB: %s  UTF8 numbers: %s  Push "
@@ -702,6 +751,11 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// off its bulk "missing == deleted" fallback and
 					// expects explicit `EC_TAG_FILE_REMOVED` markers.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
+				}
+				if (m_chatActive) {
+					// Confirm chat relay so the client starts polling
+					// EC_OP_GET_CHAT_MESSAGES for incoming peer messages.
+					response->AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
 				}
 				if (m_multiSearchActive) {
 					// Confirm multi-search mode so the client addresses
@@ -2688,6 +2742,20 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		theApp->GetServerLog(true);
 		response = new CECPacket(EC_OP_NOOP);
 		break;
+	case EC_OP_GET_CHAT_MESSAGES: {
+		// Drain buffered incoming peer chat messages for a polling EC
+		// client (amulegui). Each EC_TAG_CHAT carries the "name|message"
+		// string, with the sender's GUI_ID as an EC_TAG_CHAT_CLIENT_ID
+		// child — the format CChatWnd::ProcessMessage already expects.
+		response = new CECPacket(EC_OP_CHAT_MESSAGES);
+		for (const auto &msg : m_chatQueue) {
+			CECTag chatTag(EC_TAG_CHAT, msg.second);
+			chatTag.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, msg.first));
+			response->AddTag(chatTag);
+		}
+		m_chatQueue.clear();
+		break;
+	}
 	//
 	// Statistics
 	//

@@ -344,6 +344,17 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			}
 			statgraphs->DoRequery();
 		}
+		// Incoming friend/chat messages are relayed by the daemon over EC
+		// (amulegui is receive-only). Poll unconditionally — like stats
+		// above, and unlike the per-tab data — so a message that arrives
+		// while the user is on another tab still triggers the new-message
+		// blink in CChatWnd::ProcessMessage. Cheap: an empty reply when
+		// nothing is pending. Gated on the daemon supporting the relay;
+		// old daemons never echo EC_TAG_CAN_CHAT and we never poll.
+		if (m_connect->ServerSupportsChat()) {
+			CECPacket chat_req(EC_OP_GET_CHAT_MESSAGES);
+			m_connect->SendRequest(&m_chatmsg_handler, &chat_req);
+		}
 		// Back to the roots
 		request_step = 0;
 		break;
@@ -465,6 +476,10 @@ bool CamuleRemoteGuiApp::OnInit()
 	// once); advertise the multi-search capability. An old daemon won't echo
 	// it and amulegui stays single-search (ServerSupportsMultiSearch()).
 	m_connect->SetCanMultiSearch(true);
+	// amulegui shows incoming friend/chat messages read-only; ask the daemon
+	// to relay them (polled via EC_OP_GET_CHAT_MESSAGES). An old daemon won't
+	// echo the capability and amulegui simply never polls (ServerSupportsChat()).
+	m_connect->SetCanChat(true);
 	// The ForceZLIB override is read from the connection dialog
 	// (see ShowConnectionDialog) so the user's checkbox choice in this
 	// session overrides the persisted /EC/ForceZLIB value.
@@ -591,6 +606,7 @@ void CamuleRemoteGuiApp::ResetEcConnect()
 	wxConfig::Get()->Read("/EC/ZLIB", &enableZLIB, 1);
 	m_connect->SetCapabilities(enableZLIB != 0, true, false);
 	m_connect->SetCanMultiSearch(true);
+	m_connect->SetCanChat(true);
 }
 
 void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
@@ -995,6 +1011,29 @@ void CServerInfoHandlerRem::HandlePacket(const CECPacket *packet)
 		if (!line.IsEmpty()) {
 			theApp->AddServerMessageLine(line);
 		}
+	}
+}
+
+void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
+{
+	// amuled answers EC_OP_GET_CHAT_MESSAGES with one EC_TAG_CHAT tag per
+	// buffered incoming message (empty reply if none). Feed each through the
+	// same CChatWnd::ProcessMessage the monolithic GUI uses — that both opens
+	// / updates the sender's chat tab and fires the new-message blink when the
+	// chat window isn't the visible one.
+	if (!theApp->amuledlg || !theApp->amuledlg->m_chatwnd) {
+		return;
+	}
+	for (const CECTag &tag : *packet) {
+		if (tag.GetTagName() != EC_TAG_CHAT) {
+			continue;
+		}
+		uint64 sender = 0;
+		const CECTag *idTag = tag.GetTagByName(EC_TAG_CHAT_CLIENT_ID);
+		if (idTag) {
+			sender = idTag->GetInt();
+		}
+		theApp->amuledlg->m_chatwnd->ProcessMessage(sender, tag.GetStringData());
 	}
 }
 
