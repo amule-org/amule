@@ -25,6 +25,8 @@
 
 #include "FriendListCtrl.h" // Interface declarations
 
+#include <vector> // Needed for std::vector (snapshot of selected friends)
+
 #include <common/MenuIDs.h>
 #include <common/MacrosProgramSpecific.h>
 
@@ -175,13 +177,23 @@ void CFriendListCtrl::OnRemoveFriend(wxCommandEvent &WXUNUSED(event))
 	}
 
 	if (wxMessageBox(question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) == wxYES) {
-		long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+		// Collect the selected friends first, then remove them. On amuleGUI
+		// RemoveFriend() is asynchronous (it only sends an EC request; the row is
+		// dropped later, when the daemon pushes the updated friend list), so the
+		// removed friend stays selected in the list when RemoveFriend() returns.
+		// Re-querying the first selected item from -1 in the loop would then keep
+		// finding the same friend and resend the request forever, pegging the CPU
+		// (the tight loop never yields to process the daemon's update). Snapshot
+		// the selection up front so removal is correct whether it is synchronous
+		// (monolithic) or asynchronous (remote GUI).
+		std::vector<CFriend *> selected;
+		for (long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); index != -1;
+			index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) {
+			selected.push_back(reinterpret_cast<CFriend *>(GetItemData(index)));
+		}
 
-		while (index != -1) {
-			CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(index));
+		for (CFriend *cur_friend : selected) {
 			theApp->friendlist->RemoveFriend(cur_friend);
-			// -1 because we changed the list and removed that item.
-			index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 		}
 	}
 }
