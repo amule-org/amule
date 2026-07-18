@@ -295,6 +295,7 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	m_finishedKadSearches.erase(static_cast<uint32_t>(searchID));
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
 	m_browseBar.erase(searchID);
+	m_browseStatus.erase(searchID);
 
 	ResultMap::iterator it = m_results.find(searchID);
 	if (it != m_results.end()) {

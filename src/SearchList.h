@@ -163,6 +163,22 @@ public:
 	// GetSearchBarStatusById consults this first, so both the monolithic bar and
 	// the EC PROGRESS reply render the browse percent through the same path.
 	void SetBrowseBar(wxUIntPtr searchID, uint16 value) { m_browseBar[searchID] = value; }
+	// The browse lifecycle (EBrowseStatus: browsing / finished / failed) recorded
+	// by search ID alongside the bar, so the EC PROGRESS reply can report a
+	// browse's terminal state even after the browsing client has been reaped
+	// (0xffff in m_browseBar can't tell "finished" from "failed"). Set from
+	// CUpDownClient::UpdateBrowseBar; pruned in RemoveResults, so it's bounded by
+	// the same LRU ring that caps m_browseBar and every ed2k/Kad search bucket.
+	void SetBrowseStatusById(wxUIntPtr searchID, uint8 status) { m_browseStatus[searchID] = status; }
+	bool HasBrowseStatus(wxUIntPtr searchID) const
+	{
+		return m_browseStatus.find(searchID) != m_browseStatus.end();
+	}
+	uint8 GetBrowseStatusById(wxUIntPtr searchID) const
+	{
+		std::map<wxUIntPtr, uint8>::const_iterator it = m_browseStatus.find(searchID);
+		return it != m_browseStatus.end() ? it->second : 0 /* BROWSE_NONE */;
+	}
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
@@ -354,6 +370,10 @@ private:
 	//! the browsing client (0..100 percent, or 0xffff finished/failed). Read by
 	//! GetSearchBarStatusById. Pruned in RemoveResults.
 	std::map<wxUIntPtr, uint16> m_browseBar;
+	//! Browse lifecycle (EBrowseStatus) by search ID, kept in lockstep with
+	//! m_browseBar so a browse's terminal state survives the client's teardown.
+	//! Pruned in RemoveResults.
+	std::map<wxUIntPtr, uint8> m_browseStatus;
 
 	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
 	//! and global searches. Cleared to false in StartNewSearch when an

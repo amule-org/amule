@@ -2618,20 +2618,25 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			s_ecSearches.Touch(want);
 			sid = want;
 			// A browse ("View Files") ID is not a CSearchList search: report its
-			// lifecycle from the peer's client (browsing / finished / failed)
-			// plus the running result count, so amuleGUI's tab marker and hit
-			// count update. EC_TAG_SEARCH_BROWSE_STATUS is the discriminator the
-			// GUI branches on before the normal progress decode.
-			if (CUpDownClient *browseClient =
-					theApp->clientlist->FindClientByBrowseSearchId(sid)) {
-				// Bar value (0..100 running, 0xffff done/failed) so amuleGUI
-				// drives the browse tab's gauge via the same UpdateSearchProgress
-				// path as a search. Kept first for consistency with the search
-				// reply (GetFirstTagSafe).
-				response->AddTag(CECTag(EC_TAG_SEARCH_STATUS,
-					theApp->searchlist->GetSearchBarStatusById(sid)));
-				response->AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS,
-					static_cast<uint8>(browseClient->GetBrowseStatus())));
+			// lifecycle from the persisted browse state (browsing / finished /
+			// failed) + bar, keyed by search ID, plus the running result count so
+			// amuleGUI's tab marker and hit count update. Reading the persisted
+			// state — rather than the browsing client, which is transient and, for
+			// a browse that fails on disconnect, reaped before the next poll —
+			// means the terminal "failed" still reaches amuleGUI so its tab marker
+			// flips instead of sticking at "browsing".
+			// EC_TAG_SEARCH_BROWSE_STATUS is the discriminator the GUI branches on
+			// before the normal progress decode.
+			if (theApp->searchlist->HasBrowseStatus(sid)) {
+				const uint8 browseStatus = theApp->searchlist->GetBrowseStatusById(sid);
+				// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives
+				// the browse tab's gauge via the same UpdateSearchProgress path as
+				// a search. Kept first for consistency with the search reply
+				// (GetFirstTagSafe).
+				const uint16 bar =
+					static_cast<uint16>(theApp->searchlist->GetSearchBarStatusById(sid));
+				response->AddTag(CECTag(EC_TAG_SEARCH_STATUS, bar));
+				response->AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS, browseStatus));
 				response->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
 				response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 					static_cast<uint32>(
@@ -2641,8 +2646,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				// existing SEARCH_PROGRESS handling with no special-casing:
 				// browsing -> RUNNING, finished/failed -> FINISHED. Percent is the
 				// dir-based bar value (0..100), snapped to 100 once terminal.
-				const bool browsing = browseClient->GetBrowseStatus() == BROWSE_IN_PROGRESS;
-				const uint16 bar = browseClient->GetBrowseBarValue();
+				const bool browsing = browseStatus == BROWSE_IN_PROGRESS;
 				response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
 					static_cast<uint8>(
 						browsing ? CSearchList::SEARCH_LIFECYCLE_RUNNING

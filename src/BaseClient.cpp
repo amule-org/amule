@@ -2058,7 +2058,12 @@ uint16 CUpDownClient::GetBrowseBarValue() const
 
 void CUpDownClient::UpdateBrowseBar()
 {
+	// Mirror both the bar value and the lifecycle status into the search list,
+	// keyed by the routing ID. The status is what lets the EC PROGRESS reply
+	// report a terminal "failed" (vs "finished") after this client — which is
+	// transient, especially a browse that fails on disconnect — has been reaped.
 	theApp->searchlist->SetBrowseBar(GetBrowseRoutingId(), GetBrowseBarValue());
+	theApp->searchlist->SetBrowseStatusById(GetBrowseRoutingId(), static_cast<uint8>(m_browseStatus));
 }
 
 void CUpDownClient::MarkBrowse(EBrowseStatus s)
