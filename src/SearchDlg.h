@@ -205,9 +205,11 @@ private:
 	// Find an open "View Files" tab by the browsed peer's ECID (NULL if none).
 	CSearchListCtrl *GetBrowseList(uint32 ecid);
 
-	// Remote GUI: monotonic counter behind the optimistic placeholder tab IDs,
-	// shared by search (StartNewSearch) and browse (AllocateOptimisticId) so
-	// their placeholders never collide before the daemon rekeys them.
+	// Monotonic counter behind search/browse tab IDs. On the remote GUI both a
+	// new search and a browse draw their optimistic placeholder from it via
+	// AllocateOptimisticId, so their placeholders never collide before the daemon
+	// rekeys them; the monolithic build reuses the same counter directly for its
+	// (non-remapped) search IDs.
 	static uint32 s_optimisticIdCounter;
 
 	uint64 m_last_search_time;

@@ -471,6 +471,18 @@ void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID)
 
 uint32 CSearchDlg::s_optimisticIdCounter = 0;
 
+// Single source of the remote-GUI OPTIMISTIC placeholder tab id, used by both a
+// new search (StartNewSearch) and a browse. A placeholder tab is created the
+// instant the user acts, then rekeyed to the daemon's real search id when the
+// START reply arrives (RemapSearch). The daemon allocates ed2k ids from the low
+// quarter [1, 0x3fffffff] and Kad ids from the top half (>= 0x80000000), so a
+// plain low placeholder could numerically equal an earlier tab's daemon id once
+// the counters drift apart — RekeySearch would then match the WRONG tab and
+// corrupt the tab map (searches silently stop). Reserving bit 30 puts every
+// placeholder in [0x40000000, 0x7fffffff], a range no daemon allocator ever
+// produces, so a placeholder can never collide with a daemon id — while staying
+// bottom-half, clear of Kad. Search and browse share the one counter, so their
+// placeholders never collide with each other either.
 wxUIntPtr CSearchDlg::AllocateOptimisticId()
 {
 	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;
@@ -631,14 +643,6 @@ void CSearchDlg::OnBnClickedClear(wxCommandEvent &WXUNUSED(ev))
 
 void CSearchDlg::StartNewSearch()
 {
-	// Stay in the bottom half of the uint32 search-ID space so the
-	// ed2k-allocated IDs here can never collide with Kad-allocated IDs
-	// from CSearchManager::m_nextID, which starts at 0x80000000. Shared with
-	// browse tabs (AllocateOptimisticId) so search + browse placeholders draw
-	// from one counter and can never numerically collide before the rekey.
-	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;
-	const uint32 m_nSearchID = s_optimisticIdCounter;
-
 	FindWindow(IDC_STARTS)->Disable();
 	FindWindow(IDC_SDOWNLOAD)->Disable();
 	FindWindow(IDC_CANCELS)->Enable();
@@ -739,21 +743,20 @@ void CSearchDlg::StartNewSearch()
 		break;
 	}
 
-	uint32 real_id = m_nSearchID;
 #ifdef CLIENT_GUI
-	// Remote GUI only: real_id here is an OPTIMISTIC placeholder tab id. The tab
-	// is created immediately (for instant feedback) and rekeyed to the daemon's
-	// real search id when the START reply arrives (RemapSearch). The daemon
-	// allocates ed2k ids sequentially from the low end and Kad ids from the top
-	// half (0x80000000+), so a plain low placeholder can numerically equal an
-	// earlier tab's daemon id once the two counters drift apart — and then
-	// RekeySearch would match (and rekey) the WRONG tab, routing results to the
-	// wrong tab and eventually corrupting the tab map (searches stop working).
-	// Reserve a high sub-range (bit 30) that the daemon's allocators never
-	// produce, so the placeholder can never collide with any daemon id. This
-	// applies to every search type — the placeholder is what collides, not the
-	// eventual (ed2k or Kad) daemon id. Still bottom-half, so clear of Kad ids.
-	real_id = 0x40000000u | (m_nSearchID & 0x3fffffffu);
+	// Remote GUI: real_id is an OPTIMISTIC placeholder tab id. The tab is created
+	// immediately (for instant feedback) and rekeyed to the daemon's real search
+	// id when the START reply arrives (RemapSearch). AllocateOptimisticId is the
+	// single source of both the value and its collision-free range — shared with
+	// browse tabs so search + browse placeholders draw from one counter and never
+	// collide with each other or with a daemon id before the rekey. See its
+	// definition for why the range (bit 30) matters.
+	uint32 real_id = static_cast<uint32>(AllocateOptimisticId());
+#else
+	// Monolithic: the id is used directly (no remap). Stay in the bottom half of
+	// the uint32 space so it can never collide with Kad ids (>= 0x80000000).
+	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;
+	uint32 real_id = s_optimisticIdCounter;
 #endif
 	wxString error = theApp->searchlist->StartNewSearch(&real_id, search_type, params);
 	if (!error.IsEmpty()) {
