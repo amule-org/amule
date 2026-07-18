@@ -1425,8 +1425,12 @@ int CamulecmdApp::OnRun()
 	return 0;
 }
 
+// Stub functions needed by the linker in ASIO builds
 namespace MuleNotify
 {
+void HandleNotification(const class CMuleNotiferBase &);
+void HandleNotificationAlways(const class CMuleNotiferBase &);
+
 void HandleNotification(const class CMuleNotiferBase &) {}
 void HandleNotificationAlways(const class CMuleNotiferBase &) {}
 } // namespace MuleNotify
