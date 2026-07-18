@@ -21,15 +21,21 @@ usage() {
 	echo "  --help       Display this help message"
 	echo "  -j<n>"
 	echo "  --jobs<n>    Run <n> jobs in parallel"
+	echo "  -c"
+	echo "  --measure-cache"
+	echo "               Build against an empty, isolated ccache directory"
+	echo "               and print its size at the end, to measure this"
+	echo "               project's own ccache footprint. Skips running tests."
 }
 
 OPT_DEBUG=Release
 OPT_J=1
+OPT_MEASURE_CACHE=0
 
 # Setup parse options
 # -o "j:" means short flag 'j' requires an argument
 # --long "jobs:" means long flag 'jobs' requires an argument
-if ! PARAMS=$(getopt -o "dhj:" -l "debug,jobs:,help" -n "$0" -- "$@"); then
+if ! PARAMS=$(getopt -o "dhj:c" -l "debug,jobs:,help,measure-cache" -n "$0" -- "$@"); then
 	# If getopt fails (invalid flag), exit
 	usage
 	false; die 10
@@ -58,6 +64,10 @@ while true; do
 			usage
 			false; die 12
 		fi
+		;;
+	-c | --measure-cache )
+		OPT_MEASURE_CACHE=1
+		shift
 		;;
 	-- )
 		shift
@@ -133,8 +143,22 @@ die 12 \
 	$'\n' \
 	"This script must be run in '${GIT_ROOT}'"
 
+if [[ ${OPT_MEASURE_CACHE} == 1 ]]; then
+	CCACHE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/amule-ccache-measure.XXXXXX")
+	die 23 "Error creating scratch ccache directory"
+	export CCACHE_DIR
+	trap 'rm -rf "${CCACHE_DIR}"' EXIT
+fi
+
 cmake_configure
 cmake_build "$@"
-cmake_test
+
+if [[ ${OPT_MEASURE_CACHE} == 1 ]]; then
+	echo
+	echo "This project's ccache footprint (empty cache, full build):"
+	du -sh "${CCACHE_DIR}"
+else
+	cmake_test
+fi
 
 exit 0
