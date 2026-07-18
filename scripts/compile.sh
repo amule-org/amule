@@ -97,8 +97,23 @@ cmake_configure () {
 
 cmake_build() {
 	echo Running the CMake build with "${OPT_J} parallel jobs"
-	cmake --build build -j"${OPT_J}" "$@"
 
+	local HAVE_CCACHE=0
+	if command -v ccache > /dev/null 2>&1; then
+		HAVE_CCACHE=1
+		ccache -z > /dev/null
+	fi
+
+	cmake --build build -j"${OPT_J}" "$@"
+	local BUILD_STATUS=$?
+
+	if [[ ${HAVE_CCACHE} == 1 ]]; then
+		echo
+		echo "ccache statistics for this build:"
+		ccache -s
+	fi
+
+	(exit "${BUILD_STATUS}")
 	die 3 "CMake build failed"
 }
 
