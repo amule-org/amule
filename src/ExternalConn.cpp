@@ -2582,6 +2582,19 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 					static_cast<uint32>(
 						theApp->searchlist->GetSearchResults(sid).size())));
+				// Also emit the standard lifecycle tags (mapped from the browse
+				// status) so amuleapi / amuleweb consume a browse through their
+				// existing SEARCH_PROGRESS handling with no special-casing:
+				// browsing -> RUNNING, finished/failed -> FINISHED. Percent is the
+				// dir-based bar value (0..100), snapped to 100 once terminal.
+				const bool browsing = browseClient->GetBrowseStatus() == BROWSE_IN_PROGRESS;
+				const uint16 bar = browseClient->GetBrowseBarValue();
+				response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
+					static_cast<uint8>(
+						browsing ? CSearchList::SEARCH_LIFECYCLE_RUNNING
+							 : CSearchList::SEARCH_LIFECYCLE_FINISHED)));
+				response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT,
+					static_cast<uint8>(bar == 0xffff ? 100 : bar)));
 				break;
 			}
 			// Per-ID lifecycle. STATE / PERCENT / RESULT_COUNT are addressed

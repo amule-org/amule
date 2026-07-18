@@ -12,6 +12,7 @@
 #       body: {category?: uint8} (optional)
 #   GET  /api/v0/search/results/{hash}/comments           — Kad ratings/comments for a result
 #   POST /api/v0/search/results/{hash}/comments           — EC_OP_SHARED_FILE_SEARCH_KAD_NOTES
+#   POST /api/v0/clients/{ecid}/shared_files              — browse a peer ("View Files"), returns a search_id
 #
 # /search/results is no longer a per-GET fetch — POST /search marks
 # the search active in state and the refresher polls amuled every
@@ -526,6 +527,35 @@ if [ -n "$SID_G" ] && [ -n "$SID_K" ] && [ "$SID_G" != "null" ] && [ "$SID_K" !=
 else
 	_fail "Multi-search setup" "POST /search did not return search_ids (G=$SID_G K=$SID_K)"
 fi
+
+# --- Browse ("View Files") contract. -------------------------------
+# POST /clients/{ecid}/shared_files starts a browse and returns a
+# search_id; the files themselves arrive over the network from the peer,
+# so a green happy-path needs a specific reachable peer with shares —
+# not something a smoke test can stage. We cover the deterministic
+# contract: auth, admin gate, method, and the ecid error paths.
+BROWSE_UNKNOWN_ECID=4293000111
+
+_curl -X POST "$HOST/api/v0/clients/$BROWSE_UNKNOWN_ECID/shared_files"
+_assert_status 401 "POST /clients/{ecid}/shared_files (no token) → 401"
+
+if [ "$HAVE_GUEST" = "1" ]; then
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
+		"$HOST/api/v0/clients/$BROWSE_UNKNOWN_ECID/shared_files"
+	_assert_status 403 "POST /clients/{ecid}/shared_files (guest) → 403"
+fi
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/clients/notanumber/shared_files"
+_assert_status 400 "POST /clients/{ecid}/shared_files (non-numeric ecid) → 400"
+
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/clients/$BROWSE_UNKNOWN_ECID/shared_files"
+_assert_status 404 "POST /clients/{ecid}/shared_files (unknown ecid) → 404"
+
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+	"$HOST/api/v0/clients/$BROWSE_UNKNOWN_ECID/shared_files"
+_assert_status 405 "GET /clients/{ecid}/shared_files (wrong method) → 405"
 
 # --- Summary. -----------------------------------------------------
 echo

@@ -179,6 +179,11 @@ private:
 		const CHttpServer::Request &, const std::string &hash);
 	CHttpServer::Response HandleClients(const CHttpServer::Request &);
 	CHttpServer::Response HandleClientDetail(const CHttpServer::Request &, const std::string &ecid_str);
+	// POST /clients/{ecid}/shared_files — browse a peer's shared file list
+	// ("View Files", #399). Returns a search_id addressed like any search:
+	// results via GET /search/results?search_id=, progress + SSE via the
+	// standard search machinery.
+	CHttpServer::Response HandleClientBrowse(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleSharedList(const CHttpServer::Request &);
 	CHttpServer::Response HandleServers(const CHttpServer::Request &);
 	CHttpServer::Response HandleKad(const CHttpServer::Request &);

@@ -752,6 +752,22 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
+	// /clients/{ecid}/shared_files — browse ("View Files") the peer's shared
+	// file list (#399). POST starts the browse and returns a search_id.
+	{
+		static const auto client_browse =
+			web_api_path::ParsePattern("/api/v0/clients/{ecid}/shared_files");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(client_browse, path_segs, caps)) {
+			if (req.method == "POST") {
+				return HandleClientBrowse(req, caps["ecid"]);
+			}
+			return ErrorResponse(
+				405, "method_not_allowed", "only POST on /clients/{ecid}/shared_files");
+		}
+	}
+
 	if (path == "/api/v0/shared") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSharedList(req);
@@ -7567,6 +7583,66 @@ bool SearchTypeFromString(const std::string &s, std::uint8_t &out)
 }
 
 } // namespace
+
+CHttpServer::Response CApiDispatcher::HandleClientBrowse(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+
+	// Ask amuled to browse this peer's shared file list. In multi-search mode
+	// (amuleapi always is) the daemon allocates a browse search_id, echoes it in
+	// the reply, and files the returned listing under it — so results, progress
+	// and SSE all address the browse exactly like a search. MarkSearchStarted
+	// then drives the refresher's per-id polling.
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_FRIEND));
+	CECEmptyTag sharedtag(EC_TAG_FRIEND_SHARED);
+	sharedtag.AddTag(CECTag(EC_TAG_CLIENT, ecid));
+	ec_req->AddTag(sharedtag);
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for browse");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		// The daemon replies FAILED "Client not found." for a stale/unknown ECID.
+		return ErrorResponse(404, "not_found", ec_err_msg.c_str());
+	}
+	std::uint32_t search_id = 0;
+	if (const CECTag *t = ec_resp->GetTagByName(EC_TAG_SEARCH_ID)) {
+		search_id = static_cast<std::uint32_t>(t->GetInt());
+	}
+	delete ec_resp;
+	if (search_id == 0) {
+		return ErrorResponse(502, "amuled_rejected", "daemon did not return a search_id for browse");
+	}
+
+	m_state.MarkSearchStarted(search_id, "browse");
+
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("search_id");
+	w.ValueInt(static_cast<int64_t>(search_id));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
 
 CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Request &req)
 {

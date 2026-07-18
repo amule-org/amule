@@ -460,10 +460,12 @@ Emitted whenever a search's completion advances and once more on its completion;
 - `search_id` — which search this frame is about.
 - `state` — `"running"` while the search is in flight, `"finished"` on the terminal frame.
 - `percent` — `0..100`, daemon-computed for every search kind. For **global** it is the real server-queue progress. For **Kad**, which has no measurable progress, it is a cosmetic time-ramp derived from the fixed 45 s keyword-search lifetime (capped at 99 until the daemon authoritatively reports completion, then 100); see [REFERENCE.md](REFERENCE.md#search-results). Treat the Kad value as a liveliness indicator, not an accurate completion estimate.
-- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"`).
+- `kind` — the originally-requested search type (`"local"` | `"global"` | `"kad"` | `"browse"`).
 - `results` — the current results-map size; subscribers can reconcile against any `search_result_added` they may have missed via `GET /search/results`.
 
 A Kad search hitting its result cap (`SEARCHKEYWORD_TOTAL`, 300) before the 45 s deadline finishes early — the lifecycle flips to `finished` and `percent` jumps straight to 100 ahead of the ramp.
+
+A **browse** started via [`POST /clients/{ecid}/shared_files`](REFERENCE.md#post-apiv0clientsecidshared_files) rides this same channel: its `search_id` fires `search_result_added` per file the peer returns and `search_progress` frames with `"kind": "browse"`, where `percent` tracks the directories received so far. A denied / unreachable / lost browse flips to `finished` with the results it managed to collect (often zero) — same terminal frame as a completed one, no distinct failure event.
 
 ### Filter-bypass: `resync`
 

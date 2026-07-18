@@ -508,6 +508,27 @@ TEST(State, MultiSearchSlotsAreIndependentAndAddressable)
 	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(10).size());
 }
 
+TEST(State, BrowseRidesSearchMachinery)
+{
+	// A "View Files" browse (POST /clients/{ecid}/shared_files) is filed
+	// under a search_id with kind "browse" and its files land in the same
+	// per-slot result cache as a query search — the refresher, /search/results
+	// and the SSE search channel all treat it identically. Lock that in: the
+	// browse kind is preserved per-slot and its results address only its own id.
+	CState s;
+	s.MarkSearchStarted(17, "browse");
+	s.MutateSearch(17, [](std::map<std::uint32_t, SearchResult> &cache) {
+		SearchResult r;
+		r.ecid = 1;
+		r.name = "peer-shared.iso";
+		cache.emplace(r.ecid, r);
+	});
+	ASSERT_TRUE(s.HasSearch(17));
+	ASSERT_EQUALS(std::string("browse"), s.SearchProgress(17).kind);
+	ASSERT_EQUALS(static_cast<size_t>(1), s.Search(17).size());
+	ASSERT_EQUALS(std::string("peer-shared.iso"), s.Search(17).at(0).name);
+}
+
 TEST(State, ResetListsLeavesLogsAlone)
 {
 	// Logs survive an EC reconnect on purpose — the operator can see

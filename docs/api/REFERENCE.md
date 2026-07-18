@@ -41,6 +41,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 **Clients (peers)**
 - [`GET /api/v0/clients`](#get-apiv0clients) — list peers, optional filter
 - [`GET /api/v0/clients/{ecid}`](#get-apiv0clientsecid) — full detail for one peer
+- [`POST /api/v0/clients/{ecid}/shared_files`](#post-apiv0clientsecidshared_files) — browse a peer's shared files ("View Files"), returns a `search_id`
 
 **Shared files**
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
@@ -965,6 +966,39 @@ The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is
 > `is_friend` and `dl_up_modifier` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `is_friend` reads `false` and `dl_up_modifier` reads `0`.
 
 **Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `404 not_found` (no peer with that ecid in the current snapshot), `405 method_not_allowed` (non-GET), `503 ec_unavailable`.
+
+---
+
+#### `POST /api/v0/clients/{ecid}/shared_files`
+
+**Auth:** `ADMIN`
+
+Browse a peer's shared file list — the API equivalent of "View Files" in the GUI. `{ecid}` is the peer's `client_ecid`. amuled opens (or reuses) a direct client-to-client connection to that peer and asks it to enumerate its shared directories and files.
+
+The browse runs **asynchronously**: the peer answers over the network, one directory at a time, and a HighID/reachable peer may take seconds while a LowID peer needs a server callback or Kad first. So this endpoint does **not** return the files — it returns a `search_id` and the results flow through the **search machinery**, exactly like a query search:
+
+- `GET /api/v0/search/results?search_id={id}` reads the accumulated files as they arrive (standard search-result fields).
+- The refresher advances `search_progress` for this `search_id` while the browse is live, and emits a `search_finished` SSE event when the peer's list is complete or the browse fails (denied / peer unreachable / connection lost). A denied or failed browse finishes with zero results — there is no distinct error event.
+
+Reusing the search id-space means one poll loop and one SSE stream cover both queries and browses; a client tells them apart by remembering which `search_id` it started with which verb.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/clients/4382/shared_files"
+```
+
+```json
+{ "ok": true, "search_id": 17 }
+```
+
+Status `202 Accepted` — the browse was started, not completed. Then poll:
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/search/results?search_id=17"
+```
+
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `403 forbidden` (guest token — browsing is `ADMIN`-only), `404 not_found` (no peer with that ecid), `405 method_not_allowed` (non-POST), `502 bad_gateway` (core accepted the request but returned no `search_id`), `503 ec_unavailable`.
 
 ---
 
