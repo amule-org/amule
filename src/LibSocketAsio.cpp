@@ -432,6 +432,26 @@ public:
 	}
 };
 
+// shared_from_this() throws std::bad_weak_ptr when no shared_ptr currently owns
+// the impl — e.g. it was detached from its wrapper (OnWrapperGone / a reconnect
+// swap) and its last in-flight async ref has just dropped, leaving the object
+// alive but unowned. Close()/Destroy() are reachable from a noexcept socket-
+// teardown path (CUpDownClient::~CUpDownClient -> Safe_Delete), where a throw
+// escapes into std::terminate — observed in the field as a bad_weak_ptr abort on
+// the daemon when a client with an in-flight connection is destroyed (e.g. a Kad
+// firewalled-callback relinks a friend to a fresh client and tears the old one
+// down). Returning null lets the caller tear down synchronously (the object is
+// still valid) instead of posting a self-owning strand task it has no live
+// shared_ptr to keep alive.
+template <class Impl> static std::shared_ptr<Impl> SelfOrNull(Impl *impl)
+{
+	try {
+		return impl->shared_from_this();
+	} catch (const std::bad_weak_ptr &) {
+		return nullptr;
+	}
+}
+
 // See the comment above CAsioUDPSocketImpl for the rationale on enable_shared_from_this:
 // pending asio completion handlers must keep the impl alive past the wrapper's
 // death (and past the old 1-second-timer guard that did not survive the time
@@ -695,11 +715,16 @@ public:
 		if (!m_closed) {
 			m_closed = true;
 			m_connected = false;
-			if (m_sync || s_io_service.stopped()) {
-				DispatchClose();
-			} else {
-				auto self = shared_from_this();
+			std::shared_ptr<CAsioSocketImpl> self;
+			if (!m_sync && !s_io_service.stopped()) {
+				self = SelfOrNull(this);
+			}
+			if (self) {
 				dispatch(m_strand, [self]() { self->DispatchClose(); });
+			} else {
+				// Sync mode, service stopped, or no live owner to keep us
+				// alive across the strand post: close inline (this is valid).
+				DispatchClose();
 			}
 		}
 	}
@@ -724,20 +749,24 @@ public:
 		AddDebugLogLineF(logAsio, CFormat("Destroy() %p %p %s") % wrapper % this % m_IP);
 		Close();
 
-		auto self = shared_from_this();
-		auto teardown = [self]() {
-			// Null the back-pointer before notifying so any callback that
-			// fires after this point sees null and skips its CoreNotify_*.
-			CLibSocket *w = self->m_libSocket.exchange(nullptr, std::memory_order_acq_rel);
+		// Null the back-pointer before notifying so any callback that fires
+		// after this point sees null and skips its CoreNotify_*.
+		auto self = SelfOrNull(this);
+		if (m_sync || s_io_service.stopped() || !self) {
+			// Sync mode, service stopped, or no live owner: run inline. 'this'
+			// is valid here; there is no pending strand task to outlive us.
+			CLibSocket *w = m_libSocket.exchange(nullptr, std::memory_order_acq_rel);
 			if (w) {
 				CoreNotify_LibSocketDestroy(w);
 			}
-		};
-
-		if (m_sync || s_io_service.stopped()) {
-			teardown();
 		} else {
-			post(m_strand, teardown);
+			post(m_strand, [self]() {
+				CLibSocket *w =
+					self->m_libSocket.exchange(nullptr, std::memory_order_acq_rel);
+				if (w) {
+					CoreNotify_LibSocketDestroy(w);
+				}
+			});
 		}
 	}
 
@@ -1690,11 +1719,12 @@ public:
 
 	void Close()
 	{
-		if (s_io_service.stopped()) {
-			DispatchClose();
-		} else {
-			auto self = shared_from_this();
+		auto self = s_io_service.stopped() ? nullptr : SelfOrNull(this);
+		if (self) {
 			dispatch(m_strand, [self]() { self->DispatchClose(); });
+		} else {
+			// Service stopped or no live owner: close inline (this is valid).
+			DispatchClose();
 		}
 	}
 
@@ -1718,30 +1748,30 @@ public:
 		CLibUDPSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
 		AddDebugLogLineF(logAsio, CFormat("Destroy() %p %p") % wrapper % this);
 
-		auto self = shared_from_this();
-		auto teardown = [self]() {
-			// Null the back-pointer before deleting the wrapper so any
-			// callback that fires after this point sees null and skips
-			// its notify branch.
-			CLibUDPSocket *w = self->m_libSocket.exchange(nullptr, std::memory_order_acq_rel);
-			if (self->m_socket) {
+		// Null the back-pointer before deleting the wrapper so any callback that
+		// fires after this point sees null and skips its notify branch.
+		auto self = SelfOrNull(this);
+		if (s_io_service.stopped() || !self) {
+			// Service stopped (shutdown) or no live owner: run inline. 'this'
+			// is valid; there are no pending callbacks to outlive us.
+			CLibUDPSocket *w = m_libSocket.exchange(nullptr, std::memory_order_acq_rel);
+			if (m_socket) {
 				error_code ec;
-				self->m_socket->close(ec);
+				m_socket->close(ec);
 			}
-			if (w) {
-				// Wrapper dtor drops its shared_ptr<impl>; we still hold
-				// 'self' here so the impl stays alive until all queued
-				// callbacks drain.
-				delete w;
-			}
-		};
-
-		if (s_io_service.stopped()) {
-			// Service stopped (shutdown): run the teardown inline; no
-			// pending callbacks to wait for.
-			teardown();
+			delete w; // deleting a null pointer is a no-op
 		} else {
-			post(m_strand, teardown);
+			post(m_strand, [self]() {
+				CLibUDPSocket *w =
+					self->m_libSocket.exchange(nullptr, std::memory_order_acq_rel);
+				if (self->m_socket) {
+					error_code ec;
+					self->m_socket->close(ec);
+				}
+				// Wrapper dtor drops its shared_ptr<impl>; we still hold 'self'
+				// here so the impl stays alive until all queued callbacks drain.
+				delete w; // deleting a null pointer is a no-op
+			});
 		}
 	}
 
