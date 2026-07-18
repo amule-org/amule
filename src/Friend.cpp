@@ -90,9 +90,19 @@ void CFriend::LinkClient(CClientRef client)
 	} else if (m_strName.IsEmpty()) {
 		m_strName = "?";
 	}
-	m_UserHash = client.GetUserHash();
-	m_dwLastUsedIP = client.GetIP();
-	m_nLastUsedPort = client.GetUserPort();
+	// A client can be linked before it has connected (a browse/chat request
+	// builds one from the stored IP+port, and its identity is only negotiated
+	// during the handshake). Such a client reports an empty hash and a zero IP,
+	// so only copy fields that carry a real value — otherwise we'd overwrite the
+	// friend's persisted IP/hash with placeholders and lose the ability to reach
+	// or identify them after a restart.
+	if (!client.GetUserHash().IsEmpty()) {
+		m_UserHash = client.GetUserHash();
+	}
+	if (client.GetIP() != 0) {
+		m_dwLastUsedIP = client.GetIP();
+		m_nLastUsedPort = client.GetUserPort();
+	}
 	m_dwLastSeen = time(NULL);
 	// This will update the Link status also on GUI.
 	Notify_ChatUpdateFriend(this);
