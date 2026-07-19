@@ -2011,6 +2011,11 @@ private:
  */
 CAsioService::CAsioService()
 {
+	// Synchronous users such as amuleweb connect to the EC server before
+	// starting their long-lived Asio worker pool. A completed run()/run_one()
+	// leaves the process-global io_context stopped, in which state new work is
+	// ignored until restart() is called.
+	s_io_service.restart();
 	m_threads = new CAsioServiceThread[m_numberOfThreads];
 }
 
