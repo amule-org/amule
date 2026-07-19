@@ -452,8 +452,12 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 				"Found %i known shared file", "Found %i known shared files", GetCount())) %
 			GetCount());
 
-		// Make sure the AICH-hashes are up to date.
-		CThreadScheduler::AddTask(new CAICHSyncTask());
+		// Make sure the AICH-hashes are up to date. This is the startup sync
+		// run once the shared/known list is authoritative, so it opts into the
+		// orphan-prune (drop known2_64.met entries no longer owned by any known
+		// file). Post-hashing syncs deliberately do not prune -- see
+		// CAICHSyncTask's ctor doc.
+		CThreadScheduler::AddTask(new CAICHSyncTask(true));
 	} else {
 		// New files, AICH thread will be run at the end of the hashing thread.
 		AddLogLineN(CFormat(wxPLURAL("Found %i known shared file, %i unknown",

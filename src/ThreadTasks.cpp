@@ -250,7 +250,11 @@ void CHashingTask::OnLastTask()
 		// explicitly save the list of hashed files here.
 		theApp->knownfiles->Save();
 
-		// Make sure the AICH-hashes are up to date.
+		// Make sure the AICH-hashes are up to date. No orphan-prune here: this
+		// runs right after hashing (including a just-completed download) and
+		// races the main-thread SafeAddKFile that registers those files, so
+		// pruning could delete a hashset we just wrote. Only the startup sync
+		// prunes -- see CAICHSyncTask's ctor doc.
 		CThreadScheduler::AddTask(new CAICHSyncTask());
 	}
 }
@@ -258,8 +262,9 @@ void CHashingTask::OnLastTask()
 ////////////////////////////////////////////////////////////
 // CAICHSyncTask
 
-CAICHSyncTask::CAICHSyncTask()
+CAICHSyncTask::CAICHSyncTask(bool pruneOrphans)
 : CThreadTask("AICH Synchronizing", "", ETP_Low)
+, m_pruneOrphans(pruneOrphans)
 {
 }
 
@@ -278,8 +283,17 @@ void CAICHSyncTask::Entry()
 	// record was TTL-evicted by CKnownFileList::PruneDuplicates) from
 	// known2_64.met during the read walk. Empty set disables the prune
 	// (defensive: never wipe everything before knownfiles is loaded).
+	//
+	// Only the startup sync collects it: a post-hashing sync (scheduled by
+	// CHashingTask::OnLastTask) runs on a worker thread that can outrun the
+	// main-thread CamuleApp::OnFinishedHashing -> CKnownFileList::SafeAddKFile
+	// that registers the file it just hashed. That file's freshly-written
+	// hashset would then be absent from liveRoots and pruned as an orphan,
+	// leaving a newly completed download unable to load its AICH set until the
+	// next restart re-hashes it. Leaving liveRoots empty keeps the prune off on
+	// those runs; startup only prunes once the known-file list is authoritative.
 	std::unordered_set<CAICHHash> liveRoots;
-	if (theApp->knownfiles) {
+	if (m_pruneOrphans && theApp->knownfiles) {
 		theApp->knownfiles->CollectLiveAICHRoots(liveRoots);
 	}
 

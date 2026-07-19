@@ -133,7 +133,15 @@ private:
 class CAICHSyncTask : public CThreadTask
 {
 public:
-	CAICHSyncTask();
+	/**
+	 * @param pruneOrphans  Rewrite known2_64.met dropping hashsets no longer
+	 *   referenced by any known file. Only safe when the known-file list is
+	 *   authoritative (startup); a post-hashing sync races the main-thread
+	 *   registration of the file it just hashed and would prune its own
+	 *   freshly-written hashset. Defaults to false so only the startup sync
+	 *   opts in.
+	 */
+	explicit CAICHSyncTask(bool pruneOrphans = false);
 
 protected:
 	/** See CThreadTask::Entry */
@@ -141,6 +149,9 @@ protected:
 
 	/** Converts old known2.met files to known2_64.met files. */
 	bool ConvertToKnown2ToKnown264();
+
+private:
+	bool m_pruneOrphans;
 };
 
 /**
