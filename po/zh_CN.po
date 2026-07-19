@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-17 16:55+0200\n"
-"PO-Revision-Date: 2026-07-17 16:45+0000\n"
+"PO-Revision-Date: 2026-07-19 01:10+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -6974,7 +6974,7 @@ msgstr "Endgame 源轮替状态为 %s。\n"
 #: src/TextClient.cpp:884
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "已启动搜索（id %u）。\n"
 
 #: src/TextClient.cpp:894
 msgid "eD2k"
@@ -7041,7 +7041,7 @@ msgstr "[part 文件]"
 
 #: src/TextClient.cpp:1060 src/TextClient.cpp:1076
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "搜索已过期或未知的ID。开始新的搜索。\n"
 
 #: src/TextClient.cpp:1065
 #, c-format
@@ -7350,15 +7350,16 @@ msgid "Execute a kad search"
 msgstr "执行 Kad 搜索"
 
 #: src/TextClient.cpp:1329
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "显示上次搜索的结果。"
+msgstr "显示搜索结果。"
 
 #: src/TextClient.cpp:1330
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"返回搜索结果。\n"
+"可使用搜索 ID（从“搜索 ...”）；若没有 ID，返回最近启动的搜索的结果。\n"
 
 #: src/TextClient.cpp:1337
 msgid "Show the progress of a search."
@@ -7369,6 +7370,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"显示搜索进度。\n"
+"可使用搜索 id; 如不使用 id 则显示最近启动的搜索的进度。\n"
 
 #: src/TextClient.cpp:1345
 msgid "Start downloading a file"

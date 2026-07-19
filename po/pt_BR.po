@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-17 16:55+0200\n"
-"PO-Revision-Date: 2026-07-17 16:41+0000\n"
+"PO-Revision-Date: 2026-07-19 01:10+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -6980,7 +6980,7 @@ msgstr "Rotação de fontes \"Endgame\" é %s.\n"
 #: src/TextClient.cpp:884
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "Busca iniciada (id %u).\n"
 
 #: src/TextClient.cpp:894
 msgid "eD2k"
@@ -7047,7 +7047,7 @@ msgstr "[PartFile]"
 
 #: src/TextClient.cpp:1060 src/TextClient.cpp:1076
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "Busca expirada ou ID desconhecido. Comece uma nova busca.\n"
 
 #: src/TextClient.cpp:1065
 #, c-format
@@ -7357,15 +7357,16 @@ msgid "Execute a kad search"
 msgstr "Faça uma pesquisa no kad"
 
 #: src/TextClient.cpp:1329
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "Mostra resultados da última pesquisa."
+msgstr "Mostra resultados de uma busca."
 
 #: src/TextClient.cpp:1330
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"Retorna os resultados de uma busca.\n"
+"Opcionalmente recebe uma id (de 'search ...'); sem o id, retorna os resultados da busca mais recentemente começada.\n"
 
 #: src/TextClient.cpp:1337
 msgid "Show the progress of a search."
@@ -7376,6 +7377,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"Mostra o progresso de uma busca.\n"
+"Opcionalmente recebe uma id de busca; sem a id, mostra o progresso da busca mais recentemente começada.\n"
 
 #: src/TextClient.cpp:1345
 msgid "Start downloading a file"
