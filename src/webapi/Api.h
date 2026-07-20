@@ -149,6 +149,10 @@ private:
 	CHttpServer::Response HandleSharedPatch(const CHttpServer::Request &, const std::string &key);
 	// bulk shared-priority PATCH over a `hashes` array (#358).
 	CHttpServer::Response HandleSharedBulkPatch(const CHttpServer::Request &);
+	// re-hash a shared file against its on-disk data (EC_OP_VERIFY_LOCAL_DATA).
+	// `key` = 32-char MD4 hash. amuled schedules the hashing task and answers
+	// immediately, so this is accepted rather than completed.
+	CHttpServer::Response HandleSharedVerify(const CHttpServer::Request &, const std::string &key);
 
 	// Static-frontend fallthrough. Resolves `url_path` under
 	// ServerCfg().static_root, returns the file with a content-type

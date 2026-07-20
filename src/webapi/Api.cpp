@@ -873,6 +873,22 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return HandleKadBootstrap(req);
 	}
 
+	// re-hash one shared file against its on-disk data. Matched before the
+	// single-segment `/shared/{hash}` pattern below purely for locality —
+	// the two can't collide, this one carries an extra path segment.
+	{
+		static const auto shared_verify = web_api_path::ParsePattern("/api/v0/shared/{hash}/verify");
+		const auto path_segs = web_api_path::SplitPath(path);
+		std::map<std::string, std::string> caps;
+		if (web_api_path::Match(shared_verify, path_segs, caps)) {
+			if (req.method != "POST") {
+				return ErrorResponse(
+					405, "method_not_allowed", "only POST on /shared/{hash}/verify");
+			}
+			return HandleSharedVerify(req, caps["hash"]);
+		}
+	}
+
 	// shared file priority PATCH. `{hash}` is the lowercase 32-char hex
 	// MD4 hash.
 	{
@@ -7136,6 +7152,79 @@ CHttpServer::Response CApiDispatcher::HandleSharedBulkPatch(const CHttpServer::R
 	}
 	(void)RefresherTick(m_app, m_state);
 	return BulkResultsResponse(results, 200);
+}
+
+CHttpServer::Response CApiDispatcher::HandleSharedVerify(
+	const CHttpServer::Request &req, const std::string &key)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+
+	webapi::FileSnapshot s;
+	std::string needle = key;
+	std::transform(needle.begin(), needle.end(), needle.begin(), [](unsigned char c) {
+		return std::tolower(c);
+	});
+	if (!m_state.FindShared(needle, s)) {
+		return ErrorResponse(404, "not_found", "no shared file with that hash");
+	}
+
+	// Partfiles have no verify implementation: the hashing task bails out on
+	// IsPartFile(), and amuled's EC handler answers NOOP either way, so a
+	// caller would be told the re-hash was accepted and then never see a
+	// report. Reject up front instead. Same "genuinely incomplete" test the
+	// `path` field uses (#417): a download that has completed but is still
+	// listed keeps is_downloading set, yet is a knownfile by then and so is
+	// a legitimate verify target.
+	if (s.is_downloading && s.download.status != "completed") {
+		return ErrorResponse(
+			409, "partfile_unsupported", "verify local data is not supported on a partfile");
+	}
+
+	CMD4Hash file_hash;
+	if (!HashFromHex(s.hash, file_hash)) {
+		return ErrorResponse(500, "internal_error", "failed to decode file hash");
+	}
+
+	auto ec_req = std::make_unique<CECPacket>(EC_OP_VERIFY_LOCAL_DATA);
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for VERIFY_LOCAL_DATA");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	// 202, not 200: amuled queues a CVerifyLocalDataTask and answers NOOP
+	// immediately, so the re-hash is still in flight here. The verdict is
+	// only ever reported as an amule log line (CVerifyLocalDataTask::
+	// PrintReport -> "Verify Local Data (...): Result OK" / "ERRORS
+	// FOUND!"), which clients read back through /logs/amule or the SSE log
+	// channel. No RefresherTick: nothing observable has changed yet.
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
 }
 
 CHttpServer::Response CApiDispatcher::HandleSharedReload(const CHttpServer::Request &req)

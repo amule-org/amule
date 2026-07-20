@@ -47,6 +47,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
+- [`POST /api/v0/shared/{hash}/verify`](#post-apiv0sharedhashverify) — re-hash a shared file against its on-disk data
 - [`PATCH /api/v0/shared`](#patch-apiv0shared) — bulk change upload priority
 - [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
 
@@ -1092,6 +1093,34 @@ Returns `202 Accepted`.
 
 **Errors:** `503 ec_unavailable`.
 
+#### `POST /api/v0/shared/{hash}/verify`
+
+**Auth:** `ADMIN`
+
+Equivalent to the desktop client's "Verify Local Data" — amuled re-hashes the file's on-disk data against the MD4 (and, where a hashset is available, AICH) hashes it has stored, reporting any blocks that no longer match.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/$HASH/verify"
+```
+
+```json
+{ "ok": true }
+```
+
+Returns `202 Accepted`. amuled queues the hashing task and answers immediately, so the response confirms only that the re-hash was **scheduled** — it never carries the outcome, and a large file may take minutes to finish.
+
+**Reading the result.** The verdict is emitted as an amule log line when the task completes, so read it back from [`GET /api/v0/logs/amule`](#get-apiv0logsamule) or the `log` SSE channel:
+
+- `Verify Local Data (MD4 & AICH): Result OK for <path>`
+- `Verify Local Data (MD4 & AICH): ERRORS FOUND! <path> Failed blocks: MD4: 3,7 AICH: 5: (0,2)`
+
+Like all daemon log output these lines are gettext-translated at the daemon's locale and carry no correlation id tying them to a specific request, so treat them as human-readable output rather than a machine-parseable contract.
+
+**Errors:** `404 not_found` (no shared file with that hash), `409 partfile_unsupported`, `503 ec_unavailable`.
+
+Only completed files can be verified. A file still downloading is rejected with `409 partfile_unsupported`: the hashing task skips partfiles outright, so accepting one would promise a report that never arrives. A download that has *finished* but is still listed under `/downloads` is a valid target.
+
 #### `PATCH /api/v0/shared`
 
 **Auth:** `ADMIN`
@@ -1823,6 +1852,7 @@ Every error code emitted by `/api/v0/*`, sorted by what triggered it. The matchi
 | `invalid_credentials` | 401 | `/auth/login` password didn't match any role. |
 | `forbidden` | 403 | Authenticated as `guest` but the endpoint requires `admin`. |
 | `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name). |
+| `partfile_unsupported` | 409 | Verify Local Data requested on a file that is still an incomplete partfile. |
 | `rate_limited` | 429 | Per-IP failure bucket full. `Retry-After: <seconds>` accompanies the response. |
 | `login_disabled` | 503 | `/auth/login` reached but no admin AND no guest password configured. |
 | `ec_unavailable` | 503 | EC connection not ready yet (cold start, transient amuled restart). |
