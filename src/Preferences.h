@@ -628,6 +628,10 @@ public:
 
 	static bool VerticalToolbar() { return s_ToolbarOrientation; }
 
+	//! Live column sorting: auto-reorder the GUI lists as their values change
+	//! (gates the throttled auto-resort; manual header-click sort is unaffected).
+	static bool LiveListSort() { return s_liveListSort; }
+
 	static const CPath &GetOSDir() { return s_OSDirectory; }
 	static void SetOSDir(const CPath &val) { s_OSDirectory = val; }
 	static uint16 GetOSUpdate() { return s_OSUpdate; }
@@ -1024,6 +1028,7 @@ protected:
 	static wxString s_datetimeformat;
 
 	static bool s_ToolbarOrientation;
+	static bool s_liveListSort;
 
 	// Web Server [kuchin]
 	static wxString s_sWebPassword;

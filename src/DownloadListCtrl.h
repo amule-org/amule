@@ -29,9 +29,9 @@
 #include <map> // Needed for std::multimap
 #include <wx/brush.h>
 
-#include "Types.h"        // Needed for uint8
-#include "Constants.h"    // Needed for DownloadItemType
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl
+#include "Types.h"               // Needed for uint8
+#include "Constants.h"           // Needed for DownloadItemType
+#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl
 
 class CPartFile;
 class wxBitmap;
@@ -48,7 +48,7 @@ struct FileCtrlItem_Struct;
  * users can inspect and manipulate their current downloads.
  *
  */
-class CDownloadListCtrl : public CMuleListCtrl
+class CDownloadListCtrl : public CMuleVirtualListCtrl
 {
 public:
 	/**
@@ -169,6 +169,14 @@ private:
 	 * @see CMuleListCtrl::GetTTSText
 	 */
 	virtual wxString GetTTSText(unsigned item) const;
+
+	/** Live auto-sort: re-order when sorted by a column whose value changes
+	 *  as a download progresses (transferred, completed, speed, progress,
+	 *  sources, time remaining). Static columns don't auto-resort. */
+	virtual bool IsLiveSortColumn() const;
+
+	/** Pause live auto-sort while the context menu is open. */
+	virtual bool IsMenuOpen() const { return m_menu != nullptr; }
 
 	/**
 	 * Overloaded function needed for custom drawing of items.

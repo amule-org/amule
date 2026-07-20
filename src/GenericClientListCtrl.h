@@ -29,10 +29,10 @@
 #include <vector> // Needed for std::vector
 #include <wx/brush.h>
 
-#include "Types.h"        // Needed for uint8
-#include "Constants.h"    // Needed for DownloadItemType
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl
-#include "amuleDlg.h"     // Needed for CamuleDlg::DialogType
+#include "Types.h"               // Needed for uint8
+#include "Constants.h"           // Needed for DownloadItemType
+#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl
+#include "amuleDlg.h"            // Needed for CamuleDlg::DialogType
 
 class CPartFile;
 class CClientRef;
@@ -84,7 +84,7 @@ typedef std::vector<CKnownFile *> CKnownFileVector;
  * This class is responsible for representing clients in a generic way.
  */
 
-class CGenericClientListCtrl : public CMuleListCtrl
+class CGenericClientListCtrl : public CMuleVirtualListCtrl
 {
 public:
 	/**
@@ -222,6 +222,14 @@ private:
 	 * Just a dummy
 	 */
 	virtual wxString GetTTSText(unsigned) const { return ""; }
+
+	/** Live auto-sort: re-order when sorted by a column whose value changes
+	 *  during transfer (speed, progress, up/downloaded, availability, queue
+	 *  rank). Static columns (name, version, filename, ...) don't auto-resort. */
+	virtual bool IsLiveSortColumn() const;
+
+	/** Pause live auto-sort while the context menu is open. */
+	virtual bool IsMenuOpen() const { return m_menu != nullptr; }
 
 	/**
 	 * Set "show sources" or "show peers" flag in Known File

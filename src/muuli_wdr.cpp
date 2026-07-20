@@ -1968,6 +1968,9 @@ wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit, bool set_size
 
     wxCheckBox *item11 = new wxCheckBox( parent, IDC_VERTTOOLBAR, _("Vertical toolbar orientation"), wxDefaultPosition, wxDefaultSize, 0 );
     item0->Add( item11, wxSizerFlags().Expand().CenterVertical() );
+    wxCheckBox *itemLiveSort = new wxCheckBox( parent, IDC_LIVELISTSORT, _("Live column sorting (auto-reorder rows as their values change)"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemLiveSort->SetValue( TRUE );
+    item0->Add( itemLiveSort, wxSizerFlags().Expand().CenterVertical() );
     // The "Show country flags for clients" checkbox lives in the dedicated
     // IP2Country preferences tab (PreferencesIP2CountryTab). The Cfg_Bool
     // binding stays at IDC_SHOW_COUNTRY_FLAGS so amule.conf

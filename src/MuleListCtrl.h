@@ -245,6 +245,11 @@ public:
 	bool IsSorting() const { return m_isSorting; }
 
 protected:
+	// True while sorting. Protected so a virtual-mode subclass that overrides
+	// SortList() (owning its own row storage) can hold the same re-entrancy /
+	// IsSorting() guard the base sort does.
+	bool m_isSorting;
+
 	/**
 	 * Must be overwritten to enable alternate sorting.
 	 *
@@ -378,6 +383,15 @@ protected:
 	 */
 	int GetColumnIndex(const wxString &name) const;
 
+	/**
+	 * Compares two items using the current (multi-column) sort sequence,
+	 * including the equal-items tiebreak. Protected so a virtual-mode
+	 * subclass (which owns its own row storage rather than the control's
+	 * item-data) can drive std::sort / std::lower_bound with the exact
+	 * ordering a column-header click established. Returns <0, 0, >0.
+	 */
+	int CompareItems(wxUIntPtr item1, wxUIntPtr item2);
+
 private:
 	/**
 	 * Resets the current TTS session.
@@ -418,9 +432,6 @@ private:
 	 * relation to child-items.
 	 */
 	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-
-	/** Compares two items in the list, using the current sort sequence. */
-	int CompareItems(wxUIntPtr item1, wxUIntPtr item2);
 
 	//! This pair contains a column number and its sorting order.
 	typedef std::pair<unsigned, unsigned> CColPair;
@@ -504,9 +515,6 @@ private:
 
 	/// Container for column sizes cache.
 	ColSizeVector m_column_sizes;
-
-	// True while sorting.
-	bool m_isSorting;
 
 	wxDECLARE_EVENT_TABLE();
 };

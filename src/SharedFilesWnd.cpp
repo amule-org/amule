@@ -156,8 +156,9 @@ void CSharedFilesWnd::SelectionUpdated()
 		int filter =
 			(m_clientShow == ClientShowSelected) ? wxLIST_STATE_SELECTED : wxLIST_STATE_DONTCARE;
 		while ((index = sharedfilesctrl->GetNextItem(index, wxLIST_NEXT_ALL, filter)) != -1) {
-			CKnownFile *file =
-				reinterpret_cast<CKnownFile *>(sharedfilesctrl->GetItemData(index));
+			// Virtual-list control: rows map to files via the model, not
+			// per-item data.
+			CKnownFile *file = sharedfilesctrl->FileAtRow(index);
 			wxASSERT(file);
 
 			// Bars are always for selected files
@@ -263,7 +264,7 @@ void CSharedFilesWnd::OnItemSelectionChanged(wxListEvent &evt)
 
 void CSharedFilesWnd::RemoveAllSharedFiles()
 {
-	sharedfilesctrl->DeleteAllItems();
+	sharedfilesctrl->ClearList();
 	sharedfilesctrl->ShowFilesCount();
 	SelectionUpdated();
 }

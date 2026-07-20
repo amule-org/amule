@@ -213,6 +213,7 @@ CPath CPreferences::s_OSDirectory;
 wxString CPreferences::s_Skin;
 bool CPreferences::s_FastED2KLinksHandler;
 bool CPreferences::s_ToolbarOrientation;
+bool CPreferences::s_liveListSort;
 bool CPreferences::s_AICHTrustEveryHash;
 wxString CPreferences::s_CommentFilterString;
 bool CPreferences::s_IPFilterAutoLoad;
@@ -1437,6 +1438,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_PERCENT, (new Cfg_Bool("/ExternalConnect/ShowPercent", s_Percent, true)));
 	NewCfgItem(IDC_SKIN, (new Cfg_Skin("/SkinGUIOptions/Skin", s_Skin, "")));
 	NewCfgItem(IDC_VERTTOOLBAR, (new Cfg_Bool("/eMule/VerticalToolbar", s_ToolbarOrientation, false)));
+	NewCfgItem(IDC_LIVELISTSORT, (new Cfg_Bool("/eMule/LiveListSort", s_liveListSort, true)));
 #ifdef GEOIP_GUI
 	// The IP2Country tab and its widgets only exist where the GeoIP GUI is built
 	// (PreferencesIP2CountryTab in muuli_wdr.cpp is the only place

@@ -851,6 +851,7 @@ if (NEED_LIB_MULEAPPGUI)
 		MuleColour.cpp
 		MuleGifCtrl.cpp
 		MuleListCtrl.cpp
+		MuleVirtualListCtrl.cpp
 		MuleNotebook.cpp
 		MuleTextCtrl.cpp
 	)

@@ -91,7 +91,7 @@ enum ColumnEnum
 	ColumnNumberOfColumns
 };
 
-wxBEGIN_EVENT_TABLE(CDownloadListCtrl, CMuleListCtrl)
+wxBEGIN_EVENT_TABLE(CDownloadListCtrl, CMuleVirtualListCtrl)
 	EVT_LIST_ITEM_ACTIVATED(ID_DLOADLIST, CDownloadListCtrl::OnItemActivated)
 	EVT_LIST_ITEM_RIGHT_CLICK(ID_DLOADLIST, CDownloadListCtrl::OnMouseRightClick)
 	EVT_LIST_ITEM_MIDDLE_CLICK(ID_DLOADLIST, CDownloadListCtrl::OnMouseMiddleClick)
@@ -140,7 +140,7 @@ CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 	long style,
 	const wxValidator &validator,
 	const wxString &name)
-: CMuleListCtrl(parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name)
+: CMuleVirtualListCtrl(parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name)
 {
 	// Setting the sorter function.
 	SetSortFunc(SortProc);
@@ -181,6 +181,23 @@ CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 wxString CDownloadListCtrl::GetOldColumnOrder() const
 {
 	return "N,Z,T,C,S,P,u,p,s,r,c,R";
+}
+
+bool CDownloadListCtrl::IsLiveSortColumn() const
+{
+	switch (GetSortColumn()) {
+	case ColumnTransferred:
+	case ColumnCompleted:
+	case ColumnSpeed:
+	case ColumnProgress:
+	case ColumnSources:
+	case ColumnTimeRemaining:
+	case ColumnLastSeenComplete:
+	case ColumnLastReception:
+		return true;
+	default:
+		return false;
+	}
 }
 
 CDownloadListCtrl::~CDownloadListCtrl()
@@ -297,21 +314,10 @@ void CDownloadListCtrl::UpdateItem(const void *toupdate)
 	// Retrieve all entries matching the source
 	ListIteratorPair rangeIt = m_ListItems.equal_range(toupdate);
 
-	// Visible lines, default to all because not all platforms
-	// support the GetVisibleLines function
-	long first = 0, last = GetItemCount();
-
-#ifndef __WINDOWS__
-	// Get visible lines if we need them
-	if (rangeIt.first != rangeIt.second) {
-		GetVisibleLines(&first, &last);
-	}
-#endif
-
 	for (ListItems::iterator it = rangeIt.first; it != rangeIt.second; ++it) {
 		FileCtrlItem_Struct *item = it->second;
 
-		long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(item));
+		const long index = RowOfData(reinterpret_cast<wxUIntPtr>(item));
 
 		// Determine if the file should be shown in the current category
 
@@ -319,14 +325,13 @@ void CDownloadListCtrl::UpdateItem(const void *toupdate)
 
 		bool show = file->CheckShowItemInGivenCat(m_category);
 
-		if (index > -1) {
+		if (index != -1) {
 			if (show) {
 				item->dwUpdated = 0;
 
-				// Only update visible lines
-				if (index >= first && index <= last) {
-					RefreshItem(index);
-				}
+				// Virtual list: repaints only the row if visible; base
+				// also schedules a live re-sort when sorted by a live column.
+				RefreshItemData(reinterpret_cast<wxUIntPtr>(item));
 			} else {
 				// Item should no longer be shown in
 				// the current category
@@ -354,29 +359,18 @@ void CDownloadListCtrl::ShowFile(CPartFile *file, bool show)
 	if (it != m_ListItems.end()) {
 		FileCtrlItem_Struct *item = it->second;
 
+		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(item);
 		if (show) {
-			// Check if the file is already being displayed
-			long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(item));
-			if (index == -1) {
-				long newitem = InsertItem(GetItemCount(), "");
-
-				SetItemPtrData(newitem, reinterpret_cast<wxUIntPtr>(item));
-
-				wxListItem myitem;
-				myitem.m_itemId = newitem;
-				myitem.SetBackgroundColour(GetBackgroundColour());
-
-				SetItem(myitem);
-
-				RefreshItem(newitem);
-
+			// Add the row unless it is already being displayed. Appended at
+			// the end (unsorted); the caller sorts once afterwards.
+			if (RowOfData(data) == -1) {
+				AppendItemDataNow(data);
 				ShowFilesCount(1);
 			}
 		} else {
-			// Try to find the file and remove it
-			long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(item));
-			if (index > -1) {
-				DeleteItem(index);
+			// Remove the row if present.
+			if (RowOfData(data) != -1) {
+				RemoveItemData(data);
 				ShowFilesCount(-1);
 			}
 		}
@@ -435,7 +429,7 @@ static ItemList GetSelectedItems(CDownloadListCtrl *list)
 	long index = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	while (index > -1) {
-		FileCtrlItem_Struct *item = reinterpret_cast<FileCtrlItem_Struct *>(list->GetItemData(index));
+		FileCtrlItem_Struct *item = reinterpret_cast<FileCtrlItem_Struct *>(list->ItemAt(index));
 		results.push_back(item);
 
 		index = list->GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
@@ -652,7 +646,7 @@ void CDownloadListCtrl::OnPreviewFile(wxCommandEvent &WXUNUSED(event))
 
 void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 {
-	CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(evt.GetIndex()))->GetFile();
+	CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(evt.GetIndex()))->GetFile();
 
 	if ((!file->IsPartFile() || file->IsCompleted()) && file->PreviewAvailable()) {
 		PreviewFile(file);
@@ -676,7 +670,7 @@ void CDownloadListCtrl::DoItemSelectionChanged()
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	while (index > -1) {
-		CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(index))->GetFile();
+		CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(index))->GetFile();
 		if (file->IsPartFile()) {
 			filesVector.push_back(file);
 		}
@@ -697,7 +691,7 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 	delete m_menu;
 	m_menu = NULL;
 
-	FileCtrlItem_Struct *item = reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(index));
+	FileCtrlItem_Struct *item = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(index));
 	m_menu = new wxMenu(_("Downloads"));
 
 	wxMenu *priomenu = new wxMenu();
@@ -830,7 +824,7 @@ void CDownloadListCtrl::ShowFileDetailDialog(long index)
 	int nrItems = GetItemCount();
 	files.reserve(nrItems);
 	for (int i = 0; i < nrItems; i++) {
-		files.push_back(reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(i))->GetFile());
+		files.push_back(reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(i))->GetFile());
 	}
 	bool autosort = thePrefs::AutoSortDownload(false);
 	CFileDetailDialog(this, files, index).ShowModal();
@@ -879,7 +873,7 @@ void CDownloadListCtrl::OnDrawItem(
 		return;
 	}
 
-	FileCtrlItem_Struct *content = reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(item));
+	FileCtrlItem_Struct *content = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(item));
 
 	// Define text-color and background
 	// and the border of the drawn area
@@ -1170,10 +1164,7 @@ void CDownloadListCtrl::DrawFileItem(
 
 wxString CDownloadListCtrl::GetTTSText(unsigned item) const
 {
-	return reinterpret_cast<FileCtrlItem_Struct *>(GetItemData(item))
-		->GetFile()
-		->GetFileName()
-		.GetPrintable();
+	return reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(item))->GetFile()->GetFileName().GetPrintable();
 }
 
 int CDownloadListCtrl::SortProc(wxUIntPtr param1, wxUIntPtr param2, wxIntPtr sortData)

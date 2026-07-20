@@ -45,7 +45,7 @@
 #include "TransferWnd.h"      // Needed for CTransferWnd
 #include "Logger.h"           // Needed for AddLogLine
 
-wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleListCtrl)
+wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
 	EVT_LIST_ITEM_ACTIVATED(-1, CSharedFilesCtrl::OnItemActivated)
 
@@ -94,7 +94,7 @@ enum SharedFilesListColumns
 };
 
 CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
-: CMuleListCtrl(parent, id, pos, size, flags | wxLC_OWNERDRAW)
+: CMuleVirtualListCtrl(parent, id, pos, size, flags | wxLC_OWNERDRAW)
 , m_inBulkUpdate(false)
 {
 	// Setting the sorter function.
@@ -154,7 +154,7 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(MP_METINFO, _("Show file &details"));
 		m_menu->AppendSeparator();
 
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item_hit));
+		CKnownFile *file = FileAtRow(item_hit);
 		if (file->GetFileComment().IsEmpty() && !file->GetFileRating()) {
 			m_menu->Append(MP_CMT, _("Add Comment/Rating"));
 		} else {
@@ -223,7 +223,7 @@ void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 		if (i == focused) {
 			index = static_cast<int>(files.size());
 		}
-		files.push_back(reinterpret_cast<CKnownFile *>(GetItemData(i)));
+		files.push_back(FileAtRow(i));
 	}
 	CFileDetailDialog(this, files, index).ShowModal();
 }
@@ -243,7 +243,7 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	while (index != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
+		CKnownFile *file = FileAtRow(index);
 		if (file->IsPartFile())
 			AddLogLineN(
 				CFormat(_("Verify Local Data on PartFile is currently not supported: %s")) %
@@ -265,7 +265,7 @@ void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))
 		} else {
 			feed += "\n";
 		}
-		feed += reinterpret_cast<CKnownFile *>(GetItemData(index))->GetFeedback();
+		feed += FileAtRow(index)->GetFeedback();
 		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 
@@ -274,18 +274,42 @@ void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
+wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, long WXUNUSED(column)) const
+{
+	// Owner-drawn: only used for keyboard type-ahead, so the file name is enough.
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
+	return file ? file->GetFileName().GetPrintable() : wxString();
+}
+
+bool CSharedFilesCtrl::IsLiveSortColumn() const
+{
+	// Columns whose values change while sharing/uploading. Static columns
+	// (name, size, type, priority, shared-since, path) never auto-resort.
+	switch (GetSortColumn()) {
+	case ID_SHARED_COL_REQ:
+	case ID_SHARED_COL_AREQ:
+	case ID_SHARED_COL_TRA:
+	case ID_SHARED_COL_RTIO:
+	case ID_SHARED_COL_CMPL:
+	case ID_SHARED_COL_SPEED:
+	case ID_SHARED_COL_LASTUP:
+		return true;
+	default:
+		return false;
+	}
+}
+
 void CSharedFilesCtrl::ShowFileList()
 {
 	Freeze();
-	DeleteAllItems();
+	ClearItemData();
 
 	std::vector<CKnownFile *> files;
 	theApp->sharedfiles->CopyFileList(files);
-	for (unsigned i = 0; i < files.size(); ++i) {
-		DoShowFile(files[i], true);
+	for (CKnownFile *file : files) {
+		AppendItemData(reinterpret_cast<wxUIntPtr>(file));
 	}
-
-	SortList();
+	FinishBulkLoad();
 	ShowFilesCount();
 
 	Thaw();
@@ -306,13 +330,16 @@ void CSharedFilesCtrl::EndBatchUpdate()
 
 void CSharedFilesCtrl::RemoveFile(CKnownFile *toRemove)
 {
-	long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(toRemove));
-
-	if (index != -1) {
-		DeleteItem(index);
-
-		ShowFilesCount();
+	if (RowOfData(reinterpret_cast<wxUIntPtr>(toRemove)) == -1) {
+		return;
 	}
+	RemoveItemData(reinterpret_cast<wxUIntPtr>(toRemove));
+	ShowFilesCount();
+}
+
+void CSharedFilesCtrl::ClearList()
+{
+	ClearItemData();
 }
 
 void CSharedFilesCtrl::ShowFile(CKnownFile *file)
@@ -322,19 +349,16 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 
 void CSharedFilesCtrl::DoShowFile(CKnownFile *file, bool batch)
 {
-	wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(file);
-	if ((!batch) && (FindItem(-1, ptr) > -1)) {
+	if (batch) {
+		// Bulk (re)load: append unsorted; ShowFileList() sorts + indexes once
+		// at the end. No dedupe/count here, exactly as before.
+		AppendItemData(reinterpret_cast<wxUIntPtr>(file));
 		return;
 	}
 
-	const long insertPos = (batch ? GetItemCount() : GetInsertPos(ptr));
-
-	long newitem = InsertItem(insertPos, "");
-	SetItemPtrData(newitem, ptr);
-
-	if (!batch) {
-		ShowFilesCount();
-	}
+	// AddItemData() dedupes internally.
+	AddItemData(reinterpret_cast<wxUIntPtr>(file));
+	ShowFilesCount();
 }
 
 void CSharedFilesCtrl::OnSetPriority(wxCommandEvent &event)
@@ -365,7 +389,7 @@ void CSharedFilesCtrl::OnSetPriority(wxCommandEvent &event)
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	while (index != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
+		CKnownFile *file = FileAtRow(index);
 		CoreNotify_KnownFile_Up_Prio_Set(file, priority);
 
 		RefreshItem(index);
@@ -379,7 +403,7 @@ void CSharedFilesCtrl::OnSetPriorityAuto(wxCommandEvent &WXUNUSED(event))
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	while (index != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
+		CKnownFile *file = FileAtRow(index);
 		CoreNotify_KnownFile_Up_Prio_Auto(file);
 
 		RefreshItem(index);
@@ -406,7 +430,7 @@ void CSharedFilesCtrl::OnCreateURI(wxCommandEvent &event)
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	while (index != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
+		CKnownFile *file = FileAtRow(index);
 
 		switch (event.GetId()) {
 		case MP_GETMAGNETLINK:
@@ -448,7 +472,7 @@ void CSharedFilesCtrl::OnEditComment(wxCommandEvent &WXUNUSED(event))
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
 	if (index != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(index));
+		CKnownFile *file = FileAtRow(index);
 
 		CCommentDialog dialog(this, file);
 
@@ -555,12 +579,13 @@ void CSharedFilesCtrl::UpdateItem(CKnownFile *toupdate)
 		// files. See #302.
 		return;
 	}
-	long result = FindItem(-1, reinterpret_cast<wxUIntPtr>(toupdate));
+	const long row = RowOfData(reinterpret_cast<wxUIntPtr>(toupdate));
+	if (row != -1) {
+		// Base repaints the row and, if sorted by a live column, schedules the
+		// throttled+idle-gated re-sort.
+		RefreshItemData(reinterpret_cast<wxUIntPtr>(toupdate));
 
-	if (result > -1) {
-		RefreshItem(result);
-
-		if (GetItemState(result, wxLIST_STATE_SELECTED)) {
+		if (GetItemState(row, wxLIST_STATE_SELECTED)) {
 			theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
 		}
 	}
@@ -597,7 +622,7 @@ void CSharedFilesCtrl::ShowFilesCount()
 void CSharedFilesCtrl::OnDrawItem(
 	int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted)
 {
-	CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item));
+	CKnownFile *file = FileAtRow(item);
 	wxASSERT(file);
 
 	if (highlighted) {
@@ -775,7 +800,7 @@ void CSharedFilesCtrl::OnDrawItem(
 
 wxString CSharedFilesCtrl::GetTTSText(unsigned item) const
 {
-	return reinterpret_cast<CKnownFile *>(GetItemData(item))->GetFileName().GetPrintable();
+	return FileAtRow(item)->GetFileName().GetPrintable();
 }
 
 bool CSharedFilesCtrl::AltSortAllowed(unsigned column) const
@@ -842,7 +867,7 @@ void CSharedFilesCtrl::OnRename(wxCommandEvent &WXUNUSED(event))
 {
 	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	if (item != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item));
+		CKnownFile *file = FileAtRow(item);
 
 		wxString strNewName = ::wxGetTextFromUser(_("Enter new name for this file:"),
 			_("File rename"),
@@ -870,7 +895,7 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 {
 	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	if (item != -1) {
-		CKnownFile *file = reinterpret_cast<CKnownFile *>(GetItemData(item));
+		CKnownFile *file = FileAtRow(item);
 		wxString CollectionFile = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
 		CMuleCollection my_collection;
 		if (my_collection.Open((std::string)CollectionFile.mb_str())) {

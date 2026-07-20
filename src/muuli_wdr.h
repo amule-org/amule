@@ -473,6 +473,8 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define IDC_SHAREDDIR_RECURSIVE 10480
 #define IDC_SHAREDDIR_ADD 10481
 #define IDC_SHAREDDIR_REMOVE 10482
+// Interface (GUI Tweaks) tab: toggle live column auto-sorting of the lists.
+#define IDC_LIVELISTSORT 10483
 wxSizer *aMuleGuiLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_UPDATELIST 10244

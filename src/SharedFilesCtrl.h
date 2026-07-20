@@ -26,7 +26,7 @@
 #ifndef SHAREDFILESCTRL_H
 #define SHAREDFILESCTRL_H
 
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl
+#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl
 
 class CSharedFileList;
 class CKnownFile;
@@ -35,7 +35,7 @@ class wxMenu;
 /**
  * This class represents the widget used to list shared files.
  */
-class CSharedFilesCtrl : public CMuleListCtrl
+class CSharedFilesCtrl : public CMuleVirtualListCtrl
 {
 public:
 	/**
@@ -52,6 +52,9 @@ public:
 
 	/** Reloads the list of shared files. */
 	void ShowFileList();
+
+	/** Empties the list (virtual-mode: clears the model + row index). */
+	void ClearList();
 
 	// Bracket a reconnect resync (issue #444) so the list repaints once
 	// (Freeze) and sorts once at the end rather than per updated/added row.
@@ -97,6 +100,9 @@ public:
 	 */
 	void ShowFilesCount();
 
+	/** Map a (virtual) row index to its file, or NULL if out of range. */
+	CKnownFile *FileAtRow(long row) const { return reinterpret_cast<CKnownFile *>(ItemAt(row)); }
+
 protected:
 	/// Return old column order.
 	wxString GetOldColumnOrder() const;
@@ -135,6 +141,19 @@ private:
 	 * @see CMuleListCtrl::GetTTSText
 	 */
 	virtual wxString GetTTSText(unsigned item) const;
+
+	/**
+	 * The list is owner-drawn (OnDrawItem paints every cell from the file), so
+	 * this only feeds the generic control's keyboard type-ahead: the file name.
+	 */
+	virtual wxString GetItemColumnText(wxUIntPtr item, long column) const;
+
+	/** Whether the current primary sort column changes value during operation
+	 *  (drives the base's live auto-sort). */
+	virtual bool IsLiveSortColumn() const;
+
+	/** Pause live auto-sort while the context menu is open. */
+	virtual bool IsMenuOpen() const { return m_menu != nullptr; }
 
 	/**
 	 * Sorter-function.
@@ -219,6 +238,9 @@ private:
 	//! When true, UpdateItem() short-circuits and the bulk caller is
 	//! responsible for issuing a single Refresh() at end-of-bulk.
 	bool m_inBulkUpdate;
+
+	// The virtual-list model, sorting, live auto-sort and selection
+	// preservation all live in CMuleVirtualListCtrl now.
 
 	wxDECLARE_EVENT_TABLE();
 };
