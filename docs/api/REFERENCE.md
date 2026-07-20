@@ -49,6 +49,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
 - [`GET /api/v0/shared/directories`](#get-apiv0shareddirectories) — the configured share roots
 - [`PUT /api/v0/shared/directories`](#put-apiv0shareddirectories) — replace the configured share roots
+- [`POST /api/v0/shared/directories`](#post-apiv0shareddirectories) — add one share root
+- [`DELETE /api/v0/shared/directories`](#delete-apiv0shareddirectories) — remove one share root
 - [`POST /api/v0/shared/{hash}/verify`](#post-apiv0sharedhashverify) — re-hash a shared file against its on-disk data
 - [`PATCH /api/v0/shared`](#patch-apiv0shared) — bulk change upload priority
 - [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
@@ -1169,12 +1171,19 @@ Idempotent: adding a path that is already configured updates its `recursive` fla
 
 Remove a single root. The path is a query parameter rather than a path segment because it is an absolute filesystem path.
 
+Pass the **exact** `path` string returned by `GET /shared/directories`, percent-encoded — the match is byte-for-byte, so a differing separator or drive-letter case will not match. This is what makes Windows roots work: percent-encoding carries the backslashes, the `C:` colon, and any spaces through unchanged.
+
 ```sh
+# POSIX root: /home/user/new
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v0/shared/directories?path=%2Fhome%2Fuser%2Fnew"
+
+# Windows root: C:\Users\bob\My Shares
+curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/directories?path=C%3A%5CUsers%5Cbob%5CMy%20Shares"
 ```
 
-Removing a path that is not configured is a `404` rather than a silent success, so a typo is visible. Same `{ok, rejected}` body as `PUT`.
+Removing a path that is not configured is a `404` rather than a silent success, so a typo — or a path that does not byte-match what `GET` returned — is visible. Same `{ok, rejected}` body as `PUT`.
 
 **Errors:** `400 bad_request` (no `path` parameter), `404 not_found` (path not configured), `502 amuled_rejected`, `503 ec_unavailable`.
 
