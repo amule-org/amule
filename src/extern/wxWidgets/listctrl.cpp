@@ -5643,6 +5643,20 @@ void wxGenericListCtrl::Freeze()
 void wxGenericListCtrl::Thaw()
 {
 	m_mainWin->Thaw();
+
+	// wxMSW leaves rows blank after a Freeze/Thaw-wrapped repopulate: the
+	// cached visible-line range is stale and Thaw's repaint blits it without
+	// recomputing, so the exposed rows stay empty until a scroll or click
+	// forces a recompute (aMule #478, #445 -- same wxMSW blit-without-repaint
+	// family, reached here through a data refresh rather than scrolling). Once
+	// fully thawed (a nested Freeze still suppresses painting), do the work the
+	// idle handler would do when dirty -- RecalculatePositions() resets the
+	// visible-line range -- but now, then repaint. macOS/GTK recompute on their
+	// own and are unaffected.
+	if (!m_mainWin->IsFrozen()) {
+		m_mainWin->RecalculatePositions();
+		m_mainWin->RefreshAll();
+	}
 }
 
 } // namespace MuleExtern
