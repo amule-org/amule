@@ -168,6 +168,10 @@ private:
 	// roots and re-publishes whatever's there. Parameterless EC op
 	// (EC_OP_SHAREDFILES_RELOAD).
 	CHttpServer::Response HandleSharedReload(const CHttpServer::Request &);
+	CHttpServer::Response HandleSharedDirectories(const CHttpServer::Request &);
+	CHttpServer::Response HandleSharedDirectoriesPut(const CHttpServer::Request &);
+	CHttpServer::Response HandleSharedDirectoriesAdd(const CHttpServer::Request &);
+	CHttpServer::Response HandleSharedDirectoriesDelete(const CHttpServer::Request &);
 	// categories CRUD.
 	CHttpServer::Response HandleCategoryCreate(const CHttpServer::Request &);
 	CHttpServer::Response HandleCategoryUpdate(

@@ -47,6 +47,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/shared`](#get-apiv0shared) — list shared files
 - [`GET /api/v0/shared/{hash}`](#get-apiv0sharedhash) — detail view; every list field plus shared-detail fields
 - [`POST /api/v0/shared/reload`](#post-apiv0sharedreload) — re-walk shared directories
+- [`GET /api/v0/shared/directories`](#get-apiv0shareddirectories) — the configured share roots
+- [`PUT /api/v0/shared/directories`](#put-apiv0shareddirectories) — replace the configured share roots
 - [`POST /api/v0/shared/{hash}/verify`](#post-apiv0sharedhashverify) — re-hash a shared file against its on-disk data
 - [`PATCH /api/v0/shared`](#patch-apiv0shared) — bulk change upload priority
 - [`PATCH /api/v0/shared/{hash}`](#patch-apiv0sharedhash) — change upload priority
@@ -1092,6 +1094,91 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 Returns `202 Accepted`.
 
 **Errors:** `503 ec_unavailable`.
+
+#### `GET /api/v0/shared/directories`
+
+**Auth:** `GUEST`
+
+The share roots amuled is configured with — as opposed to [`GET /shared`](#get-apiv0shared), which lists the files those roots produced. This is the *intent*: a recursive root is one entry here however many subdirectories it covers.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/directories"
+```
+
+```json
+{
+  "directories": [
+    { "path": "/home/user/media", "recursive": true },
+    { "path": "/home/user/iso", "recursive": false }
+  ]
+}
+```
+
+`recursive` distinguishes the two lists amuled keeps (`shareddir-recursive.dat` vs `shareddir-explicit.dat`). The runtime union it derives from them — every expanded subdirectory — is deliberately not exposed: it is generated state, not configuration.
+
+**Errors:** `502 amuled_rejected`, `503 ec_unavailable`.
+
+#### `PUT /api/v0/shared/directories`
+
+**Auth:** `ADMIN`
+
+Replace the whole set of roots. A full replace rather than a merge, because that is exactly what amuled's operation does — making it a `PUT` keeps the semantics honest instead of hiding a read-modify-write.
+
+```sh
+curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"directories":[{"path":"/home/user/media","recursive":true}]}' \
+  "http://$HOST/api/v0/shared/directories"
+```
+
+```json
+{ "ok": true, "rejected": [] }
+```
+
+`recursive` is optional and defaults to `false`.
+
+amuled validates every path — a REST client cannot stat the core's filesystem, so a typo would otherwise become a silently dead share. Paths that pass are applied, persisted and rescanned; the rest come back in `rejected`, so **one bad entry does not discard the edit**:
+
+```json
+{ "ok": true, "rejected": [ { "path": "/typo", "reason": "not_found" } ] }
+```
+
+`reason` is `not_found` (missing, or not a directory) or `not_readable`. amuled reports these as codes and the API renders them, so its locale never leaks into your response.
+
+**Errors:** `400 bad_request` (`directories` not an array, an entry without a non-empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
+
+#### `POST /api/v0/shared/directories`
+
+**Auth:** `ADMIN`
+
+Add a single root, leaving the others alone — the convenience path for scripts that would otherwise have to read the list, splice it and write it back.
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"path":"/home/user/new","recursive":true}' \
+  "http://$HOST/api/v0/shared/directories"
+```
+
+Idempotent: adding a path that is already configured updates its `recursive` flag rather than failing, so "ensure this folder is shared" is safe to repeat. Same `{ok, rejected}` body as `PUT`.
+
+**Errors:** `400 bad_request` (missing/empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
+
+#### `DELETE /api/v0/shared/directories`
+
+**Auth:** `ADMIN`
+
+Remove a single root. The path is a query parameter rather than a path segment because it is an absolute filesystem path.
+
+```sh
+curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
+  "http://$HOST/api/v0/shared/directories?path=%2Fhome%2Fuser%2Fnew"
+```
+
+Removing a path that is not configured is a `404` rather than a silent success, so a typo is visible. Same `{ok, rejected}` body as `PUT`.
+
+**Errors:** `400 bad_request` (no `path` parameter), `404 not_found` (path not configured), `502 amuled_rejected`, `503 ec_unavailable`.
+
+> Concurrency: `POST` and `DELETE` are read-modify-write against amuled's whole-list operation, serialised inside amuleapi so two API clients cannot lose each other's change. Nothing can make them atomic against a *simultaneous* edit from amuleGUI — the protocol has no compare-and-set — so that case is last-write-wins.
 
 #### `POST /api/v0/shared/{hash}/verify`
 

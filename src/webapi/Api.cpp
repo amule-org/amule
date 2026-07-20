@@ -31,6 +31,8 @@
 #include "ConstantTime.h"
 #include "Etag.h"
 #include "JsonWriter.h"
+
+#include <mutex> // serialises the shared-directory read-modify-write
 #include "Jwt.h"
 #include "PathPatterns.h"
 #include "Refresher.h" // ParseStatsTreeFromPacket / ParseGraphsFromPacket / ApplySearchFull
@@ -784,6 +786,28 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return ErrorResponse(405, "method_not_allowed", "only POST on /shared/reload");
 		}
 		return HandleSharedReload(req);
+	}
+
+	// /shared/directories — the configured share roots, as opposed to /shared
+	// which lists the files those roots produced. Literal path, so it has to be
+	// matched before the /shared/{hash} patterns below or "directories" would be
+	// captured as a hash.
+	if (path == "/api/v0/shared/directories") {
+		if (req.method == "GET" || req.method == "HEAD") {
+			return HandleSharedDirectories(req);
+		}
+		if (req.method == "PUT") {
+			return HandleSharedDirectoriesPut(req);
+		}
+		if (req.method == "POST") {
+			return HandleSharedDirectoriesAdd(req);
+		}
+		if (req.method == "DELETE") {
+			return HandleSharedDirectoriesDelete(req);
+		}
+		return ErrorResponse(405,
+			"method_not_allowed",
+			"only GET / HEAD / PUT / POST / DELETE on /shared/directories");
 	}
 
 	if (path == "/api/v0/servers") {
@@ -7225,6 +7249,310 @@ CHttpServer::Response CApiDispatcher::HandleSharedVerify(
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
+}
+
+namespace
+{
+struct SharedDirEntry
+{
+	wxString path;
+	bool recursive = false;
+};
+
+// The core's shared-directory op is a whole-list replace, so adding or removing
+// a single root is a read-modify-write. Serialise those here: SendRecvSerialized
+// locks per roundtrip, not across the pair, so two concurrent single-entry calls
+// would otherwise read the same list and the second SET would drop the first's
+// change. (Nothing can make this atomic against a simultaneous amuleGUI edit —
+// the protocol has no compare-and-set — so that stays last-write-wins.)
+std::mutex s_sharedDirsMutex;
+
+// Read the current roots. Returns false and fills `err` when EC is unreachable
+// or refuses; the caller turns that into an HTTP error.
+bool FetchSharedDirs(CamuleapiApp &app, std::vector<SharedDirEntry> &out, std::string &err)
+{
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_GET_SHARED_DIRS));
+	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		err = "no reply from amuled";
+		return false;
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		err = ec_err_msg;
+		return false;
+	}
+	for (const CECTag &tag : *ec_resp) {
+		if (tag.GetTagName() != EC_TAG_SHAREDDIR) {
+			continue;
+		}
+		const CECTag *recursive_tag = tag.GetTagByName(EC_TAG_SHAREDDIR_RECURSIVE);
+		SharedDirEntry entry;
+		entry.path = tag.GetStringData();
+		entry.recursive = recursive_tag != nullptr && recursive_tag->GetInt() != 0;
+		out.push_back(entry);
+	}
+	delete ec_resp;
+	return true;
+}
+// Replace the core's roots with `dirs` and render the outcome. The core applies
+// every path that validates and reports the rest, so a single bad entry does not
+// discard the edit.
+CHttpServer::Response ApplySharedDirs(CamuleapiApp &app, const std::vector<SharedDirEntry> &dirs)
+{
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SET_SHARED_DIRS));
+	for (const SharedDirEntry &entry : dirs) {
+		CECTag dir_tag(EC_TAG_SHAREDDIR, entry.path);
+		if (entry.recursive) {
+			dir_tag.AddTag(CECTag(EC_TAG_SHAREDDIR_RECURSIVE, (uint8)1));
+		}
+		ec_req->AddTag(dir_tag);
+	}
+
+	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "no reply from amuled");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(502, "amuled_rejected", ec_err_msg.c_str());
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	// Paths the core would not take. Empty when everything applied; the reasons
+	// are rendered here rather than shipped as text from a core whose locale is
+	// not the caller's.
+	w.Key("rejected");
+	w.BeginArray();
+	for (const CECTag &tag : *ec_resp) {
+		if (tag.GetTagName() != EC_TAG_SHAREDDIR_REJECTED) {
+			continue;
+		}
+		const CECTag *err_tag = tag.GetTagByName(EC_TAG_SHAREDDIR_ERROR);
+		w.BeginObject();
+		w.Key("path");
+		w.ValueString(tag.GetStringData());
+		w.Key("reason");
+		w.ValueString((err_tag != nullptr && err_tag->GetInt() == 2) ? "not_readable" : "not_found");
+		w.EndObject();
+	}
+	w.EndArray();
+	w.EndObject();
+	delete ec_resp;
+	FinalizeJsonBody(w, r);
+	return r;
+}
+} // namespace
+
+// The core's configured share roots: the explicit ones and the recursive ones,
+// each with the flag that says which. This is the *intent*, not the expansion —
+// a recursive root yields one entry here however many subdirectories it covers,
+// while /shared lists the files that expansion produced.
+CHttpServer::Response CApiDispatcher::HandleSharedDirectories(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_GET_SHARED_DIRS));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "no reply from amuled");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(502, "amuled_rejected", ec_err_msg.c_str());
+	}
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("directories");
+	w.BeginArray();
+	for (const CECTag &tag : *ec_resp) {
+		if (tag.GetTagName() != EC_TAG_SHAREDDIR) {
+			continue;
+		}
+		const CECTag *recursive_tag = tag.GetTagByName(EC_TAG_SHAREDDIR_RECURSIVE);
+		w.BeginObject();
+		w.Key("path");
+		w.ValueString(tag.GetStringData());
+		w.Key("recursive");
+		w.ValueBool(recursive_tag != nullptr && recursive_tag->GetInt() != 0);
+		w.EndObject();
+	}
+	w.EndArray();
+	w.EndObject();
+	delete ec_resp;
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// Replace the whole set of roots. A full replace rather than add/remove verbs
+// because that is exactly what the core's EC op does — expressing it as PUT
+// keeps the API honest and avoids a read-modify-write race between two clients.
+// The core validates each path (a REST client cannot stat the core's
+// filesystem), applies the ones that pass and reports the rest, so a single bad
+// entry does not discard the whole edit.
+CHttpServer::Response CApiDispatcher::HandleSharedDirectoriesPut(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto dirs_it = obj.find("directories");
+	if (dirs_it == obj.end() || !dirs_it->second.is<picojson::array>()) {
+		return ErrorResponse(400, "bad_request", "`directories` must be an array");
+	}
+
+	std::vector<SharedDirEntry> dirs;
+	for (const auto &entry : dirs_it->second.get<picojson::array>()) {
+		if (!entry.is<picojson::object>()) {
+			return ErrorResponse(400, "bad_request", "each directory must be an object");
+		}
+		const auto &dir = entry.get<picojson::object>();
+		const auto path_it = dir.find("path");
+		if (path_it == dir.end() || !path_it->second.is<std::string>() ||
+			path_it->second.get<std::string>().empty()) {
+			return ErrorResponse(400, "bad_request", "each directory needs a non-empty `path`");
+		}
+		SharedDirEntry parsed;
+		parsed.path = wxString::FromUTF8(path_it->second.get<std::string>().c_str());
+		const auto rec_it = dir.find("recursive");
+		if (rec_it != dir.end()) {
+			if (!rec_it->second.is<bool>()) {
+				return ErrorResponse(400, "bad_request", "`recursive` must be a boolean");
+			}
+			parsed.recursive = rec_it->second.get<bool>();
+		}
+		dirs.push_back(parsed);
+	}
+
+	// Whole-list replace: no read-modify-write, so no lock needed beyond the
+	// per-roundtrip one SendRecvSerialized already holds.
+	return ApplySharedDirs(m_app, dirs);
+}
+
+// Add one root, leaving the others alone. Idempotent: re-adding a configured
+// path just updates its recursive flag, which is friendlier to scripts than a
+// conflict. Read-modify-write, so it runs under s_sharedDirsMutex.
+CHttpServer::Response CApiDispatcher::HandleSharedDirectoriesAdd(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto path_it = obj.find("path");
+	if (path_it == obj.end() || !path_it->second.is<std::string>() ||
+		path_it->second.get<std::string>().empty()) {
+		return ErrorResponse(400, "bad_request", "`path` must be a non-empty string");
+	}
+	bool recursive = false;
+	const auto rec_it = obj.find("recursive");
+	if (rec_it != obj.end()) {
+		if (!rec_it->second.is<bool>()) {
+			return ErrorResponse(400, "bad_request", "`recursive` must be a boolean");
+		}
+		recursive = rec_it->second.get<bool>();
+	}
+	const wxString wanted = wxString::FromUTF8(path_it->second.get<std::string>().c_str());
+
+	std::lock_guard<std::mutex> guard(s_sharedDirsMutex);
+	std::vector<SharedDirEntry> dirs;
+	std::string ec_err;
+	if (!FetchSharedDirs(m_app, dirs, ec_err)) {
+		return ErrorResponse(503, "ec_unavailable", ec_err.c_str());
+	}
+	bool found = false;
+	for (SharedDirEntry &entry : dirs) {
+		if (entry.path == wanted) {
+			entry.recursive = recursive;
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		SharedDirEntry added;
+		added.path = wanted;
+		added.recursive = recursive;
+		dirs.push_back(added);
+	}
+	return ApplySharedDirs(m_app, dirs);
+}
+
+// Remove one root. The path arrives as a query parameter rather than a path
+// segment because it is an absolute filesystem path and would otherwise have to
+// survive being spliced into the URL path. Unknown paths are a 404 so a typo is
+// visible instead of silently succeeding.
+CHttpServer::Response CApiDispatcher::HandleSharedDirectoriesDelete(const CHttpServer::Request &req)
+{
+	auto a = AuthenticateRequestRateLimited(
+		req, m_jwt, m_revocations, m_authRateLimiter, kSessionCookieName);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	std::string query;
+	const std::size_t q = req.target.find('?');
+	if (q != std::string::npos) {
+		query = req.target.substr(q + 1);
+	}
+	const auto qmap = web_api_path::ParseQuery(query);
+	const auto path_param = qmap.find("path");
+	if (path_param == qmap.end() || path_param->second.empty()) {
+		return ErrorResponse(400, "bad_request", "`path` query parameter is required");
+	}
+	const std::string wanted_utf8 = path_param->second;
+	const wxString wanted = wxString::FromUTF8(wanted_utf8.c_str());
+
+	std::lock_guard<std::mutex> guard(s_sharedDirsMutex);
+	std::vector<SharedDirEntry> dirs;
+	std::string ec_err;
+	if (!FetchSharedDirs(m_app, dirs, ec_err)) {
+		return ErrorResponse(503, "ec_unavailable", ec_err.c_str());
+	}
+	const size_t before = dirs.size();
+	for (std::vector<SharedDirEntry>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
+		if (it->path == wanted) {
+			dirs.erase(it);
+			break;
+		}
+	}
+	if (dirs.size() == before) {
+		return ErrorResponse(404, "not_found", "no such shared directory");
+	}
+	return ApplySharedDirs(m_app, dirs);
 }
 
 CHttpServer::Response CApiDispatcher::HandleSharedReload(const CHttpServer::Request &req)
