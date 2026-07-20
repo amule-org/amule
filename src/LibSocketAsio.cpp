@@ -537,10 +537,11 @@ public:
 			if (m_connectTimeoutMs > 0) {
 				// Bounded synchronous connect: async_connect raced
 				// against a steady_timer, both driven here on the
-				// io_service. This path is only reached by the
-				// synchronous EC clients (amulecmd), which don't start
-				// the CAsioService thread pool, so the io_service is
-				// otherwise idle and safe to run locally. Portable
+				// io_service. A synchronous EC connection may use the
+				// global s_io_service before the CAsioService thread pool
+				// is started. If the synchronous operation leaves the
+				// io_context stopped, it must be restarted before run()
+				// is called. Portable
 				// across every platform through asio, with no per-OS
 				// socket-timeout handling — a wrong or unreachable host
 				// now fails in m_connectTimeoutMs instead of hanging on
