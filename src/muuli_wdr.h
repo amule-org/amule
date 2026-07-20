@@ -464,6 +464,15 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 // "aMule Log" tab shows just the daemon/core log forwarded over EC.
 #define ID_GUILOGVIEW 10476
 #define ID_BTN_RESET_GUILOG 10477
+
+// Remote-GUI shared-folders editor (CLIENT_GUI only). The directory tree
+// browses *this* machine, which is the wrong filesystem when the daemon is
+// remote, so amulegui edits the daemon's roots as an explicit path list.
+#define IDC_SHAREDDIRS_LIST 10478
+#define IDC_SHAREDDIR_PATH 10479
+#define IDC_SHAREDDIR_RECURSIVE 10480
+#define IDC_SHAREDDIR_ADD 10481
+#define IDC_SHAREDDIR_REMOVE 10482
 wxSizer *aMuleGuiLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_UPDATELIST 10244

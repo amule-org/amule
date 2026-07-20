@@ -763,6 +763,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// legacy single-search sentinel.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
 				}
+				// Confirm we serve EC_OP_GET/SET_SHARED_DIRS, so a remote
+				// GUI can present an editable shared-folders panel instead
+				// of one whose edits it could never deliver. Unconditional:
+				// unlike the flags above this needs no per-connection state,
+				// the ops are always available once authenticated.
+				response->AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
 			} else {
 				wxString err;
 				if (passwd) {
@@ -919,6 +925,88 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 	case EC_DETAIL_UPDATE:
 		break;
 	};
+
+	return response;
+}
+
+// Serialise the daemon's shared-directory configuration: one EC_TAG_SHAREDDIR
+// per configured root, the path as its string value, with an
+// EC_TAG_SHAREDDIR_RECURSIVE subtag on the roots whose entire subtree is
+// shared. Only the two *intent* lists travel — shareddir.dat is the runtime
+// union (explicit + expanded recursive) that the daemon regenerates itself, so
+// sending it would just invite a remote client to edit a derived artefact.
+static CECPacket *Get_EC_Response_GetSharedDirs()
+{
+	CECPacket *response = new CECPacket(EC_OP_GET_SHARED_DIRS);
+
+	for (const CPath &dir : theApp->glob_prefs->shareddir_explicit_list) {
+		response->AddTag(CECTag(EC_TAG_SHAREDDIR, dir.GetRaw()));
+	}
+	for (const CPath &dir : theApp->glob_prefs->shareddir_recursive_list) {
+		CECTag dirTag(EC_TAG_SHAREDDIR, dir.GetRaw());
+		dirTag.AddTag(CECTag(EC_TAG_SHAREDDIR_RECURSIVE, (uint8)1));
+		response->AddTag(dirTag);
+	}
+
+	return response;
+}
+
+// Replace the shared-directory configuration with the client's list, persist
+// both intent files and rescan. Paths are validated here because a remote GUI
+// cannot browse this host's filesystem to check them — a typo would otherwise
+// become a silently dead share. Rejected paths are reported back individually
+// (EC_TAG_SHAREDDIR_REJECTED + a numeric reason the client translates, so the
+// daemon's locale never leaks into the user's UI); every path that *did*
+// validate is still applied, so one bad entry doesn't discard the whole edit.
+static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
+{
+	CECPacket *response = new CECPacket(EC_OP_SET_SHARED_DIRS);
+
+	CPreferences::PathList explicitDirs;
+	CPreferences::PathList recursiveDirs;
+
+	for (const CECTag &tag : *request) {
+		if (tag.GetTagName() != EC_TAG_SHAREDDIR) {
+			continue;
+		}
+		const wxString rawPath = tag.GetStringData();
+		const CPath path(rawPath);
+		// EC_SHAREDDIR_ERR_*: 1 = missing or not a directory, 2 = unreadable.
+		uint8 reason = 0;
+		if (!path.IsOk() || !path.DirExists()) {
+			reason = 1;
+		} else if (!wxFileName::IsDirReadable(path.GetRaw())) {
+			reason = 2;
+		}
+		if (reason != 0) {
+			CECTag rejected(EC_TAG_SHAREDDIR_REJECTED, rawPath);
+			rejected.AddTag(CECTag(EC_TAG_SHAREDDIR_ERROR, reason));
+			response->AddTag(rejected);
+			continue;
+		}
+		const CECTag *recursiveTag = tag.GetTagByName(EC_TAG_SHAREDDIR_RECURSIVE);
+		if (recursiveTag != nullptr && recursiveTag->GetInt() != 0) {
+			recursiveDirs.push_back(path);
+		} else {
+			explicitDirs.push_back(path);
+		}
+	}
+
+	theApp->glob_prefs->shareddir_explicit_list = explicitDirs;
+	theApp->glob_prefs->shareddir_recursive_list = recursiveDirs;
+	// The union (shareddir.dat) has to be refreshed here too, not just the two
+	// intent lists. ReloadSharedFolders reconciles against the union on disk and
+	// drops any explicit root missing from it — that is how it honours external
+	// edits — so leaving a stale union would make it trim the roots we just
+	// added and persist the trimmed result. Seed it with the roots; the reload
+	// re-expands the recursive ones and regenerates the full union.
+	CPreferences::PathList unionDirs = explicitDirs;
+	unionDirs.insert(unionDirs.end(), recursiveDirs.begin(), recursiveDirs.end());
+	theApp->glob_prefs->shareddir_list = unionDirs;
+	// Persist before reloading: FindSharedFiles starts by re-reading the
+	// intent files from disk, so the in-memory lists alone wouldn't stick.
+	theApp->glob_prefs->SaveSharedFolders();
+	theApp->sharedfiles->Reload();
 
 	return response;
 }
@@ -2380,6 +2468,12 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	case EC_OP_SHAREDFILES_RELOAD:
 		theApp->sharedfiles->Reload();
 		response = new CECPacket(EC_OP_NOOP);
+		break;
+	case EC_OP_GET_SHARED_DIRS:
+		response = Get_EC_Response_GetSharedDirs();
+		break;
+	case EC_OP_SET_SHARED_DIRS:
+		response = Get_EC_Response_SetSharedDirs(request);
 		break;
 	case EC_OP_SHARED_SET_PRIO:
 		response = Get_EC_Response_Set_SharedFile_Prio(request);

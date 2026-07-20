@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-17 16:55+0200\n"
+"POT-Creation-Date: 2026-07-20 13:03+0200\n"
 "PO-Revision-Date: 2026-07-17 16:43+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -141,7 +141,7 @@ msgstr ""
 msgid "Not now"
 msgstr ""
 
-#: src/AppImageIntegration.cpp:326 src/amuleDlg.cpp:576
+#: src/AppImageIntegration.cpp:326 src/amuleDlg.cpp:590
 msgid "Don't ask again"
 msgstr ""
 
@@ -199,10 +199,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/amuleAppCommon.cpp:181 src/amule.cpp:1115 src/amule.cpp:1172
-#: src/amule.cpp:1286 src/amule.cpp:1588 src/amule-remote-gui.cpp:568
-#: src/amule-remote-gui.cpp:635 src/amule-remote-gui.cpp:673
-#: src/amule-remote-gui.cpp:1200 src/amule-remote-gui.cpp:1227
-#: src/DownloadQueue.cpp:1481
+#: src/amule.cpp:1286 src/amule.cpp:1588 src/amule-remote-gui.cpp:584
+#: src/amule-remote-gui.cpp:652 src/amule-remote-gui.cpp:690
+#: src/amule-remote-gui.cpp:1262 src/amule-remote-gui.cpp:1325
+#: src/amule-remote-gui.cpp:1352 src/DownloadQueue.cpp:1481
 msgid "ERROR"
 msgstr ""
 
@@ -233,7 +233,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr ""
 
 #: src/amule.cpp:336 src/amule.cpp:349 src/ClientRef.cpp:180
-#: src/ServerListCtrl.cpp:98
+#: src/SearchDlg.cpp:793 src/ServerListCtrl.cpp:98
 msgid "Failed"
 msgstr "E Deshtuar"
 
@@ -308,7 +308,7 @@ msgid "Password set and external connections enabled."
 msgstr "U pranua nje lidhje e jashtme e re"
 
 #: src/amule.cpp:749 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1325 src/SharedFilesCtrl.cpp:399
+#: src/PrefsUnifiedDlg.cpp:1350 src/SharedFilesCtrl.cpp:399
 msgid "WARNING"
 msgstr "KUJDES"
 
@@ -495,17 +495,17 @@ msgstr "Kopja juaj e aMule eshte azhornuar."
 msgid "Failed to download the version check file"
 msgstr "Deshtoi ne shkarkimin e failit per kontrollin e versionit"
 
-#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1074
+#: src/amule.cpp:2531 src/amule-remote-gui.cpp:1114
 #, c-format
 msgid "Users: %s | Files: %s"
 msgstr ""
 
-#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1075
+#: src/amule.cpp:2532 src/amule-remote-gui.cpp:1115
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
 msgstr ""
 
-#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1088
+#: src/amule.cpp:2546 src/amule-remote-gui.cpp:1128
 msgid "No networks selected"
 msgstr ""
 
@@ -599,12 +599,12 @@ msgstr "Vizitoni https://github.com/amule-org/amule/releases/latest per te kontr
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr ""
 
-#: src/amuleDlg.cpp:568
+#: src/amuleDlg.cpp:582
 #, fuzzy
 msgid "New version available"
 msgstr "Nuk eshte ne dispozicion"
 
-#: src/amuleDlg.cpp:572
+#: src/amuleDlg.cpp:586
 #, fuzzy, c-format
 msgid ""
 "A new version of aMule (%s) is available.\n"
@@ -614,219 +614,219 @@ msgid ""
 "Would you like to open the download page?"
 msgstr "Versioni i fundit mund te gjendet gjithmone tek https://github.com/amule-org/amule/releases/latest"
 
-#: src/amuleDlg.cpp:654
+#: src/amuleDlg.cpp:668
 msgid "aMule dialog destroyed"
 msgstr ""
 
-#: src/amuleDlg.cpp:677 src/DataToText.cpp:68 src/IPFilter.cpp:539
+#: src/amuleDlg.cpp:691 src/DataToText.cpp:68 src/IPFilter.cpp:539
 msgid "Connecting"
 msgstr "Duke u lòidhur"
 
-#: src/amuleDlg.cpp:902
+#: src/amuleDlg.cpp:916
 msgid "eD2k: Connecting"
 msgstr ""
 
-#: src/amuleDlg.cpp:906
+#: src/amuleDlg.cpp:920
 msgid "eD2k: Disconnected"
 msgstr ""
 
-#: src/amuleDlg.cpp:912
+#: src/amuleDlg.cpp:926
 msgid "Kad: Firewalled"
 msgstr "Kad: Me Firewall"
 
-#: src/amuleDlg.cpp:916
+#: src/amuleDlg.cpp:930
 msgid "Kad: Connected"
 msgstr "Kad: I lidhur"
 
-#: src/amuleDlg.cpp:921
+#: src/amuleDlg.cpp:935
 msgid "Kad: Connecting"
 msgstr "Kad: Po lidhet"
 
-#: src/amuleDlg.cpp:925
+#: src/amuleDlg.cpp:939
 msgid "Kad: Off"
 msgstr "Kad: Fikur"
 
-#: src/amuleDlg.cpp:973 src/DownloadListCtrl.cpp:471
-#: src/DownloadListCtrl.cpp:710 src/FriendListCtrl.cpp:177
+#: src/amuleDlg.cpp:987 src/DownloadListCtrl.cpp:471
+#: src/DownloadListCtrl.cpp:710 src/FriendListCtrl.cpp:179
 #: src/muuli_wdr.cpp:725 src/muuli_wdr.cpp:776 src/muuli_wdr.cpp:840
-#: src/muuli_wdr.cpp:892 src/muuli_wdr.cpp:2171 src/muuli_wdr.cpp:2256
-#: src/muuli_wdr.cpp:3002 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:585
+#: src/muuli_wdr.cpp:892 src/muuli_wdr.cpp:2194 src/muuli_wdr.cpp:2279
+#: src/muuli_wdr.cpp:3025 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:585
 #: src/ServerListCtrl.cpp:606 src/TransferWnd.cpp:373
 #: src/utils/wxCas/src/wxcasprefs.cpp:235
 msgid "Cancel"
 msgstr "Fshij"
 
-#: src/amuleDlg.cpp:974
+#: src/amuleDlg.cpp:988
 msgid "Stop the current connection attempts"
 msgstr "Ndalo tentativat e lidhjes qe po behen"
 
-#: src/amuleDlg.cpp:979 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
-#: src/muuli_wdr.cpp:2394
+#: src/amuleDlg.cpp:993 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
+#: src/muuli_wdr.cpp:2417
 msgid "Disconnect"
 msgstr "Shkeputu"
 
-#: src/amuleDlg.cpp:980
+#: src/amuleDlg.cpp:994
 msgid "Disconnect from the currently connected networks"
 msgstr "Shkeputu nga rrjetet e lidhura"
 
-#: src/amuleDlg.cpp:985 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
-#: src/muuli_wdr.cpp:2549 src/muuli_wdr.cpp:2999 src/muuli_wdr.cpp:3338
+#: src/amuleDlg.cpp:999 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
+#: src/muuli_wdr.cpp:2572 src/muuli_wdr.cpp:3022 src/muuli_wdr.cpp:3361
 msgid "Connect"
 msgstr "Lidhu"
 
-#: src/amuleDlg.cpp:986
+#: src/amuleDlg.cpp:1000
 msgid "Connect to the currently enabled networks"
 msgstr "Lidhu tek rrjetet"
 
-#: src/amuleDlg.cpp:1056
+#: src/amuleDlg.cpp:1070
 #, fuzzy, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Larte: %.1f(%.1f) | Poshte: %.1f(%.1f)"
 
-#: src/amuleDlg.cpp:1058 src/amuleDlg.cpp:1060 src/amuleDlg.cpp:1064
-#: src/amuleDlg.cpp:1066 src/amuleDlg.cpp:1077 src/amuleDlg.cpp:1079
+#: src/amuleDlg.cpp:1072 src/amuleDlg.cpp:1074 src/amuleDlg.cpp:1078
+#: src/amuleDlg.cpp:1080 src/amuleDlg.cpp:1091 src/amuleDlg.cpp:1093
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #, fuzzy
 msgid " MB/s"
 msgstr "MB/s"
 
-#: src/amuleDlg.cpp:1058 src/amuleDlg.cpp:1060 src/amuleDlg.cpp:1064
-#: src/amuleDlg.cpp:1066 src/amuleDlg.cpp:1077 src/amuleDlg.cpp:1079
+#: src/amuleDlg.cpp:1072 src/amuleDlg.cpp:1074 src/amuleDlg.cpp:1078
+#: src/amuleDlg.cpp:1080 src/amuleDlg.cpp:1091 src/amuleDlg.cpp:1093
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #: src/utils/wxCas/src/wxcasframe.cpp:1041
 msgid " kB/s"
 msgstr " kB/s"
 
-#: src/amuleDlg.cpp:1063
+#: src/amuleDlg.cpp:1077
 #, fuzzy, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
 msgstr "Larte: %.1f | Poshte: %.1f"
 
-#: src/amuleDlg.cpp:1095
+#: src/amuleDlg.cpp:1109
 #, c-format
 msgid "aMule (%s | Connected)"
 msgstr "aMule (%s | e lidhur)"
 
-#: src/amuleDlg.cpp:1097
+#: src/amuleDlg.cpp:1111
 #, c-format
 msgid "aMule (%s | Disconnected)"
 msgstr "aMule (%s | e shkeputur)"
 
-#: src/amuleDlg.cpp:1145
+#: src/amuleDlg.cpp:1159
 #, fuzzy, c-format
 msgid "Do you really want to exit %s?"
 msgstr "Vertet deshironi qe te dilni nga aMule?"
 
-#: src/amuleDlg.cpp:1147
+#: src/amuleDlg.cpp:1161
 msgid "Exit confirmation"
 msgstr "Konfirmimi i daljes"
 
-#: src/amuleDlg.cpp:1482
+#: src/amuleDlg.cpp:1506
 msgid "Launch Command: "
 msgstr ""
 
-#: src/amuleDlg.cpp:1501 src/muuli_wdr.cpp:1922 src/Preferences.cpp:948
+#: src/amuleDlg.cpp:1525 src/muuli_wdr.cpp:1945 src/Preferences.cpp:948
 msgid "- default -"
 msgstr ""
 
-#: src/amuleDlg.cpp:1529
+#: src/amuleDlg.cpp:1553
 #, c-format
 msgid "Skin directory '%s' does not exist"
 msgstr "Direktoria e skin '%s' nuk ekziston"
 
-#: src/amuleDlg.cpp:1532
+#: src/amuleDlg.cpp:1556
 #, c-format
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr ""
 
-#: src/amuleDlg.cpp:1636 src/amuleDlg.cpp:1882 src/muuli_wdr.cpp:1472
-#: src/muuli_wdr.cpp:3340
+#: src/amuleDlg.cpp:1660 src/amuleDlg.cpp:1906 src/muuli_wdr.cpp:1472
+#: src/muuli_wdr.cpp:3363
 msgid "Networks"
 msgstr "Rrjetet"
 
-#: src/amuleDlg.cpp:1640 src/muuli_wdr.cpp:3340
+#: src/amuleDlg.cpp:1664 src/muuli_wdr.cpp:3363
 msgid "Networks Window"
 msgstr "Dritaret e rrjeteve"
 
-#: src/amuleDlg.cpp:1642 src/muuli_wdr.cpp:3341
+#: src/amuleDlg.cpp:1666 src/muuli_wdr.cpp:3364
 msgid "Searches"
 msgstr "Kerkimet"
 
-#: src/amuleDlg.cpp:1646 src/muuli_wdr.cpp:3341
+#: src/amuleDlg.cpp:1670 src/muuli_wdr.cpp:3364
 msgid "Searches Window"
 msgstr "Dritaret e kerkimeve"
 
-#: src/amuleDlg.cpp:1648 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:390
-#: src/muuli_wdr.cpp:1574 src/muuli_wdr.cpp:3342 src/Statistics.cpp:829
+#: src/amuleDlg.cpp:1672 src/DownloadListCtrl.cpp:701 src/muuli_wdr.cpp:390
+#: src/muuli_wdr.cpp:1574 src/muuli_wdr.cpp:3365 src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Shkarkime"
 
-#: src/amuleDlg.cpp:1652 src/muuli_wdr.cpp:3342
+#: src/amuleDlg.cpp:1676 src/muuli_wdr.cpp:3365
 #, fuzzy
 msgid "Downloads Window"
 msgstr "Duke shkarkuar"
 
-#: src/amuleDlg.cpp:1654 src/muuli_wdr.cpp:3226
+#: src/amuleDlg.cpp:1678 src/muuli_wdr.cpp:3249
 msgid "Shared files"
 msgstr ""
 
-#: src/amuleDlg.cpp:1658 src/muuli_wdr.cpp:3344
+#: src/amuleDlg.cpp:1682 src/muuli_wdr.cpp:3367
 msgid "Shared Files Window"
 msgstr "Dritarja e faileve te ndara"
 
-#: src/amuleDlg.cpp:1660 src/muuli_wdr.cpp:2866 src/muuli_wdr.cpp:3298
-#: src/muuli_wdr.cpp:3345
+#: src/amuleDlg.cpp:1684 src/muuli_wdr.cpp:2889 src/muuli_wdr.cpp:3321
+#: src/muuli_wdr.cpp:3368
 msgid "Messages"
 msgstr "Mesazhe"
 
-#: src/amuleDlg.cpp:1664 src/muuli_wdr.cpp:3345
+#: src/amuleDlg.cpp:1688 src/muuli_wdr.cpp:3368
 msgid "Messages Window"
 msgstr "Dritarja e mesazheve"
 
-#: src/amuleDlg.cpp:1666 src/muuli_wdr.cpp:3346 src/PrefsUnifiedDlg.cpp:291
+#: src/amuleDlg.cpp:1690 src/muuli_wdr.cpp:3369 src/PrefsUnifiedDlg.cpp:305
 #: src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statistikat"
 
-#: src/amuleDlg.cpp:1670 src/muuli_wdr.cpp:3346
+#: src/amuleDlg.cpp:1694 src/muuli_wdr.cpp:3369
 msgid "Statistics Graph Window"
 msgstr "Dritarja e grafikut te statistikave"
 
-#: src/amuleDlg.cpp:1673 src/muuli_wdr.cpp:3348 src/PrefsUnifiedDlg.cpp:307
+#: src/amuleDlg.cpp:1697 src/muuli_wdr.cpp:3371 src/PrefsUnifiedDlg.cpp:321
 #: src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Preferencat"
 
-#: src/amuleDlg.cpp:1677 src/muuli_wdr.cpp:3348
+#: src/amuleDlg.cpp:1701 src/muuli_wdr.cpp:3371
 msgid "Preferences Settings Window"
 msgstr "Dritarja e rregullimeve te preferencave"
 
-#: src/amuleDlg.cpp:1680 src/muuli_wdr.cpp:3349
+#: src/amuleDlg.cpp:1704 src/muuli_wdr.cpp:3372
 msgid "Import"
 msgstr "Importimi"
 
-#: src/amuleDlg.cpp:1684 src/muuli_wdr.cpp:3349
+#: src/amuleDlg.cpp:1708 src/muuli_wdr.cpp:3372
 msgid "The partfile importer tool"
 msgstr "Veglat per importimin e pjeseve te faileve"
 
-#: src/amuleDlg.cpp:1687 src/muuli_wdr.cpp:3350
+#: src/amuleDlg.cpp:1711 src/muuli_wdr.cpp:3373
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Rreth"
 
-#: src/amuleDlg.cpp:1687 src/muuli_wdr.cpp:3350
+#: src/amuleDlg.cpp:1711 src/muuli_wdr.cpp:3373
 msgid "About/Help"
 msgstr "Rreth/Ndihme"
 
-#: src/amuleDlg.cpp:1885
+#: src/amuleDlg.cpp:1909
 msgid "eD2k network"
 msgstr ""
 
-#: src/amuleDlg.cpp:1888
+#: src/amuleDlg.cpp:1912
 msgid "Kad network"
 msgstr "Rrjeti Kad"
 
-#: src/amuleDlg.cpp:1888
+#: src/amuleDlg.cpp:1912
 msgid "No network"
 msgstr "Nuk ka rrjet"
 
@@ -843,30 +843,30 @@ msgstr "aMule"
 msgid "Fatal Error: Failed to create Core Timer"
 msgstr "Gabim Fatal: Deshtoi te krijoje Timerin"
 
-#: src/amule-remote-gui.cpp:78
+#: src/amule-remote-gui.cpp:79
 msgid "Connect to remote amule"
 msgstr "Lidhu me Remote te amule"
 
-#: src/amule-remote-gui.cpp:142 src/ServerConnect.cpp:398
+#: src/amule-remote-gui.cpp:143 src/ServerConnect.cpp:398
 msgid "Connection lost"
 msgstr "LIdhja humbi"
 
-#: src/amule-remote-gui.cpp:149
+#: src/amule-remote-gui.cpp:150
 #, fuzzy
 msgid "Abort and exit"
 msgstr "Pyet kur del"
 
-#: src/amule-remote-gui.cpp:159
+#: src/amule-remote-gui.cpp:160
 #, c-format
 msgid "Reconnecting... (attempt %d)"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:162
+#: src/amule-remote-gui.cpp:163
 #, c-format
 msgid "Next attempt in %d s..."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:169
+#: src/amule-remote-gui.cpp:170
 #, c-format
 msgid ""
 "Connection to %s lost.\n"
@@ -875,93 +875,108 @@ msgid ""
 "The interface is paused until the connection is restored."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:452
+#: src/amule-remote-gui.cpp:464
 #, fuzzy
 msgid "Fatal Error: Failed to create Poll Timer"
 msgstr "Gabim Fatal: Deshtoi te krijoje Timerin"
 
-#: src/amule-remote-gui.cpp:479
+#: src/amule-remote-gui.cpp:495
 #, fuzzy
 msgid "Going to event loop..."
 msgstr "Tentative per rekuperimin e informacionit te failit..."
 
-#: src/amule-remote-gui.cpp:534
+#: src/amule-remote-gui.cpp:550
 #, fuzzy
 msgid "Connecting..."
 msgstr "Duke u lòidhur"
 
-#: src/amule-remote-gui.cpp:567
+#: src/amule-remote-gui.cpp:583
 msgid "Connection failed. Please check the host, port, and password."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:605
+#: src/amule-remote-gui.cpp:622
 msgid "Remote GUI EC event handler"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:632 src/ExternalConnector.cpp:472
+#: src/amule-remote-gui.cpp:649 src/ExternalConnector.cpp:472
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:639 src/amule-remote-gui.cpp:743
+#: src/amule-remote-gui.cpp:656 src/amule-remote-gui.cpp:760
 msgid "Going down"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:661
+#: src/amule-remote-gui.cpp:678
 #, fuzzy
 msgid "Reconnect attempt timed out; retrying."
 msgstr "Lidhja tek %s (%s:%i) nuk u vendos per time-out."
 
-#: src/amule-remote-gui.cpp:670
+#: src/amule-remote-gui.cpp:687
 #, c-format
 msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
 "Please check the host, port and that aMule is running with External Connections enabled."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:694
+#: src/amule-remote-gui.cpp:711
 msgid "Connection to the remote core was lost. Trying to reconnect..."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:727
+#: src/amule-remote-gui.cpp:744
 #, fuzzy
 msgid "Reconnected to the remote core."
 msgstr "Lidhu me rrjetin."
 
-#: src/amule-remote-gui.cpp:757
+#: src/amule-remote-gui.cpp:774
 #, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:785
+#: src/amule-remote-gui.cpp:802
 msgid "Reconnect could not start; retrying shortly."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:920
+#: src/amule-remote-gui.cpp:937
 msgid "Ready"
 msgstr ""
 
-#: src/amule-remote-gui.cpp:1132 src/TransferWnd.cpp:338
+#: src/amule-remote-gui.cpp:1172 src/TransferWnd.cpp:338
 msgid "All"
 msgstr "Te gjithe"
 
-#: src/amule-remote-gui.cpp:1191 src/ExternalConn.cpp:2136
+#: src/amule-remote-gui.cpp:1252
+#, fuzzy
+msgid "not readable"
+msgstr "Nuk eshte aktive"
+
+#: src/amule-remote-gui.cpp:1253
+#, fuzzy
+msgid "not found"
+msgstr "Faili nuk u gjete."
+
+#: src/amule-remote-gui.cpp:1258
+#, c-format
+msgid "The core rejected these shared folders:%s"
+msgstr ""
+
+#: src/amule-remote-gui.cpp:1316 src/ExternalConn.cpp:2319
 msgid "Invalid link or already on list."
 msgstr "Link i pavlere ose qe eshte ne liste."
 
-#: src/amule-remote-gui.cpp:1218
+#: src/amule-remote-gui.cpp:1343
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:2149 src/BaseClient.cpp:1835
-#: src/BaseClient.cpp:2390 src/BaseClient.cpp:2401 src/BaseClient.cpp:2674
+#: src/amule-remote-gui.cpp:2274 src/BaseClient.cpp:1839
+#: src/BaseClient.cpp:2443 src/BaseClient.cpp:2454 src/BaseClient.cpp:2727
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
 #: src/ClientDetailDialog.cpp:123 src/DataToText.cpp:61 src/DataToText.cpp:86
 #: src/DataToText.cpp:101 src/DataToText.cpp:136 src/DataToText.cpp:165
 #: src/DownloadListCtrl.cpp:1137 src/DownloadListCtrl.cpp:1150
-#: src/DownloadListCtrl.cpp:1161 src/ExternalConn.cpp:567
+#: src/DownloadListCtrl.cpp:1161 src/ExternalConn.cpp:608
 #: src/FileDetailDialog.cpp:203 src/FileDetailDialog.cpp:235
 #: src/FileDetailDialog.cpp:242 src/GenericClientListCtrl.cpp:1159
 #: src/GenericClientListCtrl.cpp:1170 src/GenericClientListCtrl.cpp:1180
@@ -972,72 +987,72 @@ msgstr ""
 msgid "Unknown"
 msgstr "E panjohur"
 
-#: src/BaseClient.cpp:1381
+#: src/BaseClient.cpp:1384
 #, c-format
 msgid "Failed to retrieve shared files from user '%s'"
 msgstr "Deshtoi te rimarri failet e ndara nga perdoruesi '%s'"
 
-#: src/BaseClient.cpp:1632
+#: src/BaseClient.cpp:1636
 msgid "Searching buddy for lowid connection"
 msgstr ""
 
-#: src/BaseClient.cpp:1852
+#: src/BaseClient.cpp:1856
 #, c-format
 msgid " (Fake eMule version %#x)"
 msgstr " (eMule e falsifikuar versioni %#x)"
 
-#: src/BaseClient.cpp:1860
+#: src/BaseClient.cpp:1864
 msgid " (Fake eMule)"
 msgstr " (eMule e falsifikuar)"
 
-#: src/BaseClient.cpp:1863
+#: src/BaseClient.cpp:1867
 msgid "xMule (Fake eMule)"
 msgstr "xMule (eMule e falsifikuar)"
 
-#: src/BaseClient.cpp:1908
+#: src/BaseClient.cpp:1912
 #, c-format
 msgid "1.x (based on eMule v0.%u)"
 msgstr "1.x (e bazuar ne eMule v0 %u)"
 
-#: src/BaseClient.cpp:2083
+#: src/BaseClient.cpp:2136
 #, c-format
 msgid "NickName: %s ID: %u"
 msgstr "Emri: %s ID: %u"
 
-#: src/BaseClient.cpp:2085
+#: src/BaseClient.cpp:2138
 #, c-format
 msgid "Requested: %s\n"
 msgstr "Kerkuar: %s\n"
 
-#: src/BaseClient.cpp:2087
+#: src/BaseClient.cpp:2140
 #, c-format
 msgid "Filestats for this session: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for this session: Accepted %d of %d requests, %s transferred\n"
 msgstr[0] "Statistikat e failit per kete sesion: U pranua %d nga %d kerkesa, %s te transferuara\n"
 msgstr[1] "Statistikat e failit per kete sesion: U pranuan %d nga %d kerkesat, %s te transferuara\n"
 
-#: src/BaseClient.cpp:2093
+#: src/BaseClient.cpp:2146
 #, c-format
 msgid "Filestats for all sessions: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for all sessions: Accepted %d of %d requests, %s transferred\n"
 msgstr[0] "Statistikat e failit per te gjitha sesionet: U pranua %d nga %d kerkesa, %s te transferuar\n"
 msgstr[1] "Statistikat e faileve per te gjitha sesionet: U pranua %d nga %d kerkesat, %s te transferuara\n"
 
-#: src/BaseClient.cpp:2099
+#: src/BaseClient.cpp:2152
 msgid "Requested unknown file"
 msgstr "Po kerkoni nje faili te panjohur"
 
-#: src/BaseClient.cpp:2768
+#: src/BaseClient.cpp:2829
 #, c-format
 msgid "Message filtered from '%s' (IP:%s)"
 msgstr "Filtrim mesazhi nga '%s' (IP: %s)"
 
-#: src/BaseClient.cpp:2914
+#: src/BaseClient.cpp:2977
 #, c-format
 msgid "New message from '%s' (IP:%s)"
 msgstr "Mesazh i ri nga '%s' (IP:%s)"
 
-#: src/BaseClient.cpp:3006
+#: src/BaseClient.cpp:3069
 #, fuzzy, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Perdoruesi %s (%u) kerkoi listen e faileve tuaja te ndara per kartelen %s -> nuk u lejua"
@@ -1067,7 +1082,7 @@ msgid "Enter Captcha"
 msgstr ""
 
 #: src/CatDialog.cpp:58 src/DownloadListCtrl.cpp:744 src/muuli_wdr.cpp:251
-#: src/SearchListCtrl.cpp:692 src/TransferWnd.cpp:333
+#: src/SearchListCtrl.cpp:694 src/TransferWnd.cpp:333
 msgid "Category"
 msgstr "Kategori"
 
@@ -1252,27 +1267,27 @@ msgstr "Perdoruesi %s (%u) kerkoi listen e faileve tuaja te ndara per kartelen %
 msgid "User %s (%u) shares directory '%s'"
 msgstr "Perdoruesi %s (%u) ndan kartelen %s"
 
-#: src/ClientTCPSocket.cpp:973
+#: src/ClientTCPSocket.cpp:975
 #, c-format
 msgid "User %s (%u) sent unrequested shared dirs."
 msgstr "Perdoruesi %s (%u) dergoi nje liste te kartelave te ndara qe nuk u kerkua."
 
-#: src/ClientTCPSocket.cpp:988
+#: src/ClientTCPSocket.cpp:990
 #, fuzzy, c-format
 msgid "User %s (%u) sent sharedfiles-list for directory '%s'"
 msgstr "Perdoruesi %s (%u) derrgoi listen e faileve te ndara per direktorine %s"
 
-#: src/ClientTCPSocket.cpp:994
+#: src/ClientTCPSocket.cpp:996
 #, c-format
 msgid "User %s (%u) finished sending sharedfiles-list"
 msgstr "Perdoruesi %s (%u) mbaroi dergimin e listes se faileve te ndara"
 
-#: src/ClientTCPSocket.cpp:998
+#: src/ClientTCPSocket.cpp:1001
 #, c-format
 msgid "User %s (%u) sent unwanted sharedfiles-list"
 msgstr "Perdoruesi %s (%u) dergoi listen e faileve te ndara te padeshiruara"
 
-#: src/ClientTCPSocket.cpp:1010
+#: src/ClientTCPSocket.cpp:1013
 #, c-format
 msgid "User %s (%u) denied access to shared directories/files list"
 msgstr "Perdoruesi %s (%u) nuk lejoi hyrjen ne listen e kartelave/faileve te ndara"
@@ -1281,7 +1296,7 @@ msgstr "Perdoruesi %s (%u) nuk lejoi hyrjen ne listen e kartelave/faileve te nda
 msgid "File Comments"
 msgstr "Komentet e faileve"
 
-#: src/CommentDialogLst.cpp:77 src/FriendListCtrl.cpp:62
+#: src/CommentDialogLst.cpp:77 src/FriendListCtrl.cpp:64
 msgid "Username"
 msgstr "Emri i perdorimit"
 
@@ -1303,7 +1318,7 @@ msgstr "Komenti"
 msgid "Could not start a Kad search"
 msgstr ""
 
-#: src/CommentDialogLst.cpp:134 src/SearchList.cpp:314
+#: src/CommentDialogLst.cpp:134 src/SearchList.cpp:316
 msgid "Kad search can't be done if Kad is not running"
 msgstr "Kerkimi i Kad nuk mund te behet nqs Kad nuk eshte duke punuar"
 
@@ -1348,19 +1363,19 @@ msgstr "Automatike [Larte]"
 msgid "Very low"
 msgstr "Shume ngadale"
 
-#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:704 src/muuli_wdr.cpp:2222
+#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:704 src/muuli_wdr.cpp:2245
 #: src/ServerListCtrl.cpp:263 src/ServerListCtrl.cpp:456
 #: src/SharedFilesCtrl.cpp:144
 msgid "Low"
 msgstr "Ngadale"
 
-#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:705 src/muuli_wdr.cpp:2223
+#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:705 src/muuli_wdr.cpp:2246
 #: src/ServerListCtrl.cpp:266 src/ServerListCtrl.cpp:457
 #: src/SharedFilesCtrl.cpp:145
 msgid "Normal"
 msgstr "Normale"
 
-#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:706 src/muuli_wdr.cpp:2224
+#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:706 src/muuli_wdr.cpp:2247
 #: src/ServerListCtrl.cpp:269 src/ServerListCtrl.cpp:458
 #: src/SharedFilesCtrl.cpp:146
 msgid "High"
@@ -1452,8 +1467,8 @@ msgstr "Server Lokal"
 msgid "Remote Server"
 msgstr "Server i larget"
 
-#: src/DataToText.cpp:152 src/muuli_wdr.cpp:215 src/muuli_wdr.cpp:3119
-#: src/SearchDlg.cpp:108 src/TextClient.cpp:911
+#: src/DataToText.cpp:152 src/muuli_wdr.cpp:215 src/muuli_wdr.cpp:3142
+#: src/SearchDlg.cpp:109 src/TextClient.cpp:911
 msgid "Kad"
 msgstr "Kad"
 
@@ -1503,7 +1518,7 @@ msgstr ""
 msgid "ERROR: Failed!"
 msgstr ""
 
-#: src/DataToText.cpp:185 src/SearchListCtrl.cpp:1103
+#: src/DataToText.cpp:185 src/SearchListCtrl.cpp:1105
 msgid "Queued"
 msgstr "Ne radhe"
 
@@ -1524,7 +1539,7 @@ msgstr ""
 msgid "Size"
 msgstr "Madhesia"
 
-#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3186
+#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3209
 msgid "Transferred"
 msgstr "Te transferuara"
 
@@ -1579,7 +1594,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp:707 src/muuli_wdr.cpp:2225
+#: src/DownloadListCtrl.cpp:707 src/muuli_wdr.cpp:2248
 #: src/SharedFilesCtrl.cpp:149
 msgid "Auto"
 msgstr "Automatike"
@@ -1617,7 +1632,7 @@ msgid "Extended Options"
 msgstr "Opsione te Avancuara"
 
 #: src/DownloadListCtrl.cpp:731 src/DownloadListCtrl.cpp:783
-#: src/muuli_wdr.cpp:1743
+#: src/muuli_wdr.cpp:1766
 msgid "Preview"
 msgstr "Parashikim"
 
@@ -1626,7 +1641,7 @@ msgid "Show file &details"
 msgstr "Trego &detajet e faileve"
 
 #: src/DownloadListCtrl.cpp:733 src/muuli_wdr.cpp:700
-#: src/SearchListCtrl.cpp:708
+#: src/SearchListCtrl.cpp:710
 msgid "Show all comments"
 msgstr "Trego te gjithe komentet"
 
@@ -1790,232 +1805,232 @@ msgstr[1] ""
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr ""
 
-#: src/ExternalConn.cpp:351
+#: src/ExternalConn.cpp:379
 #, fuzzy
 msgid "Client sent packet after authentication failed."
 msgstr "Autentifikimi deshtoi."
 
-#: src/ExternalConn.cpp:368
+#: src/ExternalConn.cpp:396
 msgid "External connection closed."
 msgstr "Lidhja e jashtme u mbyll."
 
-#: src/ExternalConn.cpp:445
+#: src/ExternalConn.cpp:473
 msgid "External connections disabled due to empty password!"
 msgstr "LIdhjet e jashtme u c'aktivizuan sepse fjalekalimi ishte bosh|"
 
-#: src/ExternalConn.cpp:466
+#: src/ExternalConn.cpp:494
 msgid "External connections disabled in config file"
 msgstr "Lidhjet e jashtme u c'aktivizuan ne failin e konfigurimeve"
 
-#: src/ExternalConn.cpp:534
+#: src/ExternalConn.cpp:575
 msgid "New external connection accepted"
 msgstr "U pranua nje lidhje e jashtme e re"
 
-#: src/ExternalConn.cpp:537
+#: src/ExternalConn.cpp:578
 msgid "ERROR: couldn't accept a new external connection"
 msgstr ""
 
-#: src/ExternalConn.cpp:554
+#: src/ExternalConn.cpp:595
 msgid "External connection refused due to empty password in preferences!"
 msgstr "Lidhja e jashtme nuk u pranua sepse fjalekalimi tek preferencat ishte bosh!"
 
-#: src/ExternalConn.cpp:566
+#: src/ExternalConn.cpp:607
 #, c-format
 msgid "Connecting client: %s %s"
 msgstr "Duke lidhur klientin: %s %s"
 
-#: src/ExternalConn.cpp:568
+#: src/ExternalConn.cpp:609
 msgid "Unknown version"
 msgstr "Version i panjohur"
 
-#: src/ExternalConn.cpp:581
+#: src/ExternalConn.cpp:622
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
 msgstr "ID-ja i versionit EC jo korrekt,duhet te kete mospershtatje binaresh. Perdor Core dhe Remote nga i njejti Snapshot."
 
-#: src/ExternalConn.cpp:589
+#: src/ExternalConn.cpp:630
 #, fuzzy
 msgid "You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented"
 msgstr "NUk mund te lidheni me nje version SVN tek nje version i perfunduar ne menyre arbitrare| *sigh* crash i mundshem u evitua"
 
-#: src/ExternalConn.cpp:664
+#: src/ExternalConn.cpp:713
 msgid "Invalid protocol version."
 msgstr "Version protokoli jo i rregullt."
 
-#: src/ExternalConn.cpp:670
+#: src/ExternalConn.cpp:719
 msgid "Missing protocol version tag."
 msgstr "Munfon tag-u i versionit te protokolit."
 
-#: src/ExternalConn.cpp:678
+#: src/ExternalConn.cpp:727
 msgid "Authentication failed: invalid hash specified as EC password."
 msgstr ""
 
-#: src/ExternalConn.cpp:715
+#: src/ExternalConn.cpp:775
 #, fuzzy
 msgid "Authentication failed: wrong password."
 msgstr "Autentifikimi deshtoi."
 
-#: src/ExternalConn.cpp:717
+#: src/ExternalConn.cpp:777
 #, fuzzy
 msgid "Authentication failed: missing password."
 msgstr "Autentifikimi deshtoi."
 
-#: src/ExternalConn.cpp:728
+#: src/ExternalConn.cpp:788
 #, fuzzy
 msgid "Invalid request, please authenticate first."
 msgstr "Kerkese jo e rregullt, fillimisht duhet te identifikoheni."
 
-#: src/ExternalConn.cpp:733
+#: src/ExternalConn.cpp:793
 msgid "Access granted."
 msgstr "Hyrja lejohet."
 
-#: src/ExternalConn.cpp:741
+#: src/ExternalConn.cpp:801
 #, fuzzy, c-format
 msgid "Sent error message \"%s\" to client."
 msgstr "Filtron mesazhet nga klienta t èanjohur"
 
-#: src/ExternalConn.cpp:746
+#: src/ExternalConn.cpp:806
 #, fuzzy, c-format
 msgid "Unauthorized access attempt from %s. Connection closed."
 msgstr "Tentative per hyrje e paautorizuar. Lidhja u mbyll."
 
-#: src/ExternalConn.cpp:1277
+#: src/ExternalConn.cpp:1410
 #, c-format
 msgid "Remote PartFile command failed: FileHash not found: %s"
 msgstr "Komanda e Remote per pjeset e faileve deshtoi: Nuk u gjet FileHash: %s"
 
-#: src/ExternalConn.cpp:1281
+#: src/ExternalConn.cpp:1414
 #, c-format
 msgid "FileHash not found: %s"
 msgstr "Nuk u gjet FileHash: %s"
 
-#: src/ExternalConn.cpp:1328 src/ExternalConn.cpp:1416
-#: src/ExternalConn.cpp:1501
+#: src/ExternalConn.cpp:1461 src/ExternalConn.cpp:1549
+#: src/ExternalConn.cpp:1670
 msgid "OOPS! OpCode processing error!"
 msgstr "OOPS! Gabim ne procesimin e OpCode|"
 
-#: src/ExternalConn.cpp:1359
+#: src/ExternalConn.cpp:1492
 msgid "Server not added"
 msgstr "Serveri nuk u shtua"
 
-#: src/ExternalConn.cpp:1378
+#: src/ExternalConn.cpp:1511
 #, c-format
 msgid "server not found: %s"
 msgstr "Serveri nuk u gjend: %s"
 
-#: src/ExternalConn.cpp:1395
+#: src/ExternalConn.cpp:1528
 msgid "need to define server to be removed"
 msgstr "nevojitet percaktimi i serverit qe do te levizet"
 
-#: src/ExternalConn.cpp:1410
+#: src/ExternalConn.cpp:1543
 msgid "eD2k is disabled in preferences."
 msgstr ""
 
-#: src/ExternalConn.cpp:1480
+#: src/ExternalConn.cpp:1648
 #, fuzzy
 msgid "Friend not found."
 msgstr "Faili nuk u gjete."
 
-#: src/ExternalConn.cpp:1489
+#: src/ExternalConn.cpp:1658
 #, fuzzy
 msgid "Client not found."
 msgstr "Faili nuk u gjete."
 
-#: src/ExternalConn.cpp:1495
+#: src/ExternalConn.cpp:1664
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr ""
 
-#: src/ExternalConn.cpp:1782
+#: src/ExternalConn.cpp:1965
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Kerkimi WebSearch nga Remote eshte i kote."
 
-#: src/ExternalConn.cpp:1817
+#: src/ExternalConn.cpp:2000
 msgid "Search in progress. Refetch results in a moment!"
 msgstr "Kerkimi vazhdon. Rezultate ne ardhje!"
 
-#: src/ExternalConn.cpp:2056
+#: src/ExternalConn.cpp:2239
 msgid "No points for graph."
 msgstr "NUk ka pika per grafike."
 
-#: src/ExternalConn.cpp:2066
+#: src/ExternalConn.cpp:2249
 msgid "Your client is not configured for this detail level."
 msgstr "Klienti juaj nuk eshte i konfiguruar per kete nivel detaji."
 
-#: src/ExternalConn.cpp:2093
+#: src/ExternalConn.cpp:2276
 msgid "External Connection: shutdown requested"
 msgstr ""
 
-#: src/ExternalConn.cpp:2105
+#: src/ExternalConn.cpp:2288
 msgid "Already shutting down."
 msgstr "Jam duke dalur."
 
-#: src/ExternalConn.cpp:2123
+#: src/ExternalConn.cpp:2306
 #, c-format
 msgid "ExternalConn: adding link '%s'."
 msgstr "Lidhje e jashtme: Duke shtuar linkun '%s'."
 
-#: src/ExternalConn.cpp:2141
+#: src/ExternalConn.cpp:2324
 #, fuzzy, c-format
 msgid "%d of %d links failed (invalid or already on list)."
 msgstr "Link i pavlere ose qe eshte ne liste."
 
-#: src/ExternalConn.cpp:2164
+#: src/ExternalConn.cpp:2347
 msgid "Version check throttled; try again shortly."
 msgstr ""
 
-#: src/ExternalConn.cpp:2169
+#: src/ExternalConn.cpp:2352
 msgid "Version check is not available on this daemon."
 msgstr ""
 
-#: src/ExternalConn.cpp:2293
+#: src/ExternalConn.cpp:2482
 msgid "File not found."
 msgstr "Faili nuk u gjete."
 
-#: src/ExternalConn.cpp:2298
+#: src/ExternalConn.cpp:2487
 msgid "Invalid file name."
 msgstr "Emri i failit i pavlere."
 
-#: src/ExternalConn.cpp:2306
+#: src/ExternalConn.cpp:2495
 msgid "Unable to rename file."
 msgstr "E pamundur te riemeroje failin."
 
-#: src/ExternalConn.cpp:2733 src/ExternalConn.cpp:2761
+#: src/ExternalConn.cpp:2960 src/ExternalConn.cpp:2988
 msgid "Kad is disabled in preferences."
 msgstr "Kad-i eshte c'aktivizuar tek Preferencat."
 
-#: src/ExternalConn.cpp:2774
+#: src/ExternalConn.cpp:3001
 msgid "Already connected to eD2k."
 msgstr ""
 
-#: src/ExternalConn.cpp:2777
+#: src/ExternalConn.cpp:3004
 msgid "Connecting to eD2k..."
 msgstr ""
 
-#: src/ExternalConn.cpp:2786
+#: src/ExternalConn.cpp:3013
 msgid "Already connected to Kad."
 msgstr "Jam i lidhur ne Kad."
 
-#: src/ExternalConn.cpp:2789
+#: src/ExternalConn.cpp:3016
 msgid "Connecting to Kad..."
 msgstr "Duke u lidhur me Kad..."
 
-#: src/ExternalConn.cpp:2796
+#: src/ExternalConn.cpp:3023
 msgid "All networks are disabled."
 msgstr "Te gjithe rrjetet jane c'aktivizuar."
 
-#: src/ExternalConn.cpp:2805
+#: src/ExternalConn.cpp:3032
 msgid "Disconnected from eD2k."
 msgstr ""
 
-#: src/ExternalConn.cpp:2810
+#: src/ExternalConn.cpp:3037
 msgid "Disconnected from Kad."
 msgstr "I shkeputur nga Kad."
 
-#: src/ExternalConn.cpp:2819
+#: src/ExternalConn.cpp:3046
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr ""
 
-#: src/ExternalConn.cpp:2824
+#: src/ExternalConn.cpp:3051
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "OpCode e pavlere (version protokoli i gabuar?)"
 
@@ -2254,47 +2269,47 @@ msgstr ""
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
 msgstr ""
 
-#: src/FriendList.cpp:256
+#: src/FriendList.cpp:265
 msgid "CRITICAL - no client on StartChatSession"
 msgstr ""
 
-#: src/FriendListCtrl.cpp:125 src/muuli_wdr.cpp:2615 src/muuli_wdr.cpp:3274
+#: src/FriendListCtrl.cpp:127 src/muuli_wdr.cpp:2638 src/muuli_wdr.cpp:3297
 msgid "Friends"
 msgstr "Shkoket"
 
-#: src/FriendListCtrl.cpp:129 src/GenericClientListCtrl.cpp:642
+#: src/FriendListCtrl.cpp:131 src/GenericClientListCtrl.cpp:642
 msgid "Show &Details"
 msgstr "Trego &Detaje"
 
-#: src/FriendListCtrl.cpp:133
+#: src/FriendListCtrl.cpp:135
 msgid "Add a friend"
 msgstr "Shto nje shoke"
 
-#: src/FriendListCtrl.cpp:136
+#: src/FriendListCtrl.cpp:138
 msgid "Remove Friend"
 msgstr "Fshi nje shoke"
 
-#: src/FriendListCtrl.cpp:137
+#: src/FriendListCtrl.cpp:139
 msgid "Send &Message"
 msgstr "Dergo &Mesazh"
 
-#: src/FriendListCtrl.cpp:138 src/GenericClientListCtrl.cpp:653
+#: src/FriendListCtrl.cpp:140 src/GenericClientListCtrl.cpp:653
 msgid "View Files"
 msgstr "Shiko failet"
 
-#: src/FriendListCtrl.cpp:139 src/GenericClientListCtrl.cpp:645
+#: src/FriendListCtrl.cpp:141 src/GenericClientListCtrl.cpp:645
 msgid "Establish Friend Slot"
 msgstr "Vendos slotin per shoket"
 
-#: src/FriendListCtrl.cpp:172
+#: src/FriendListCtrl.cpp:174
 msgid "Are you sure that you wish to delete the selected friend?"
 msgstr "Jeni te sigurt qe deshironi te fshini shokun e zgjedhur?"
 
-#: src/FriendListCtrl.cpp:174
+#: src/FriendListCtrl.cpp:176
 msgid "Are you sure that you wish to delete the selected friends?"
 msgstr "Jeni te sigurt qe deshironi te fshini shoket e zgjedhur?"
 
-#: src/FriendListCtrl.cpp:226
+#: src/FriendListCtrl.cpp:238
 msgid ""
 "You are not allowed to set more than one friendslot.\n"
 " Only one slot was assigned."
@@ -2302,7 +2317,7 @@ msgstr ""
 "Ju nuk lejoheni qe te vendosni me shume se nje slot per shoket.\n"
 " Vetem nje slot i vetem u vendos."
 
-#: src/FriendListCtrl.cpp:228 src/GenericClientListCtrl.cpp:587
+#: src/FriendListCtrl.cpp:240 src/GenericClientListCtrl.cpp:587
 msgid "Multiple selection"
 msgstr "Perzgjedhje e shumte"
 
@@ -2372,7 +2387,8 @@ msgstr "Asnjeri"
 msgid "No"
 msgstr "Jo"
 
-#: src/GenericClientListCtrl.cpp:1204 src/ServerListCtrl.cpp:276
+#: src/GenericClientListCtrl.cpp:1204 src/PrefsUnifiedDlg.cpp:2748
+#: src/PrefsUnifiedDlg.cpp:2798 src/ServerListCtrl.cpp:276
 msgid "Yes"
 msgstr "Po"
 
@@ -2542,10 +2558,10 @@ msgstr "Porte e pavlefshme per bootstrap"
 msgid "Please fill all fields required"
 msgstr "Ju lutem plotesoni te gjitha fushat e kerkuara"
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1031 src/PrefsUnifiedDlg.cpp:1100
-#: src/PrefsUnifiedDlg.cpp:1269 src/PrefsUnifiedDlg.cpp:1504
-#: src/PrefsUnifiedDlg.cpp:1514 src/PrefsUnifiedDlg.cpp:1531
-#: src/PrefsUnifiedDlg.cpp:1573
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1031 src/PrefsUnifiedDlg.cpp:1125
+#: src/PrefsUnifiedDlg.cpp:1294 src/PrefsUnifiedDlg.cpp:1529
+#: src/PrefsUnifiedDlg.cpp:1539 src/PrefsUnifiedDlg.cpp:1556
+#: src/PrefsUnifiedDlg.cpp:1598
 msgid "Message"
 msgstr "Mesazh"
 
@@ -2647,7 +2663,7 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: src/KnownFile.cpp:1893 src/muuli_wdr.cpp:3170
+#: src/KnownFile.cpp:1893 src/muuli_wdr.cpp:3193
 msgid "Requested"
 msgstr ""
 
@@ -2708,45 +2724,45 @@ msgstr "E gabuar"
 msgid "Waiting"
 msgstr "Duke pritur"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:178 src/libs/ec/cpp/RemoteConnect.cpp:186
+#: src/libs/ec/cpp/RemoteConnect.cpp:191 src/libs/ec/cpp/RemoteConnect.cpp:199
 msgid "You must specify a non-empty password."
 msgstr "Ju duhet te specifikoni nje fjalekalim jo bosh "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:183
+#: src/libs/ec/cpp/RemoteConnect.cpp:196
 msgid "Invalid password, not a MD5 hash!"
 msgstr "Fjalekalim i gabuar, nuk eshte nje hash MD5 "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:295
+#: src/libs/ec/cpp/RemoteConnect.cpp:310
 msgid "Connection failure"
 msgstr "Lidhja deshtoi"
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:306
+#: src/libs/ec/cpp/RemoteConnect.cpp:321
 #, fuzzy
 msgid "External Connection lost - exiting."
 msgstr "Lidhja e jashtme u mbyll."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:397
+#: src/libs/ec/cpp/RemoteConnect.cpp:412
 msgid "EC connection failed. Empty reply."
 msgstr ""
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:409
+#: src/libs/ec/cpp/RemoteConnect.cpp:424
 #, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Lidje e jashtme: Pergjigje e keqe nga serveri. Lidhja u mbyll."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:420
+#: src/libs/ec/cpp/RemoteConnect.cpp:435
 msgid "Succeeded! Connection established to aMule "
 msgstr "Sukses! Lidhja u vendos ne aMule "
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:422
+#: src/libs/ec/cpp/RemoteConnect.cpp:437
 msgid "Succeeded! Connection established."
 msgstr "Sukses! Lidhja u vendos."
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:456
+#: src/libs/ec/cpp/RemoteConnect.cpp:483
 msgid "External Connection: Access denied because: "
 msgstr ""
 
-#: src/libs/ec/cpp/RemoteConnect.cpp:459
+#: src/libs/ec/cpp/RemoteConnect.cpp:486
 #, fuzzy
 msgid "External Connection: Handshake failed."
 msgstr "Fjalekalimi per Lidhjet e Jashtme."
@@ -2773,7 +2789,7 @@ msgid "WARNING: "
 msgstr ""
 
 #: src/MuleNotebook.cpp:179 src/muuli_wdr.cpp:811 src/muuli_wdr.cpp:1223
-#: src/muuli_wdr.cpp:3074 src/muuli_wdr.cpp:3314
+#: src/muuli_wdr.cpp:3097 src/muuli_wdr.cpp:3337
 msgid "Close"
 msgstr "Mbylle"
 
@@ -2791,7 +2807,7 @@ msgid "Paste"
 msgstr "Ngjit"
 
 #: src/MuleTextCtrl.cpp:89 src/muuli_wdr.cpp:356 src/muuli_wdr.cpp:751
-#: src/muuli_wdr.cpp:2299 src/muuli_wdr.cpp:2318 src/muuli_wdr.cpp:2340
+#: src/muuli_wdr.cpp:2322 src/muuli_wdr.cpp:2341 src/muuli_wdr.cpp:2363
 #: src/utils/aLinkCreator/src/alcframe.cpp:142
 msgid "Clear"
 msgstr "Pastro"
@@ -2889,7 +2905,7 @@ msgstr "Dlje"
 
 #: src/MuleTrayIcon.cpp:579 src/MuleTrayIcon.cpp:945 src/MuleTrayIcon.cpp:965
 #: src/muuli_wdr.cpp:1378 src/muuli_wdr.cpp:1386 src/muuli_wdr.cpp:1393
-#: src/muuli_wdr.cpp:1789 src/muuli_wdr.cpp:1795 src/OtherFunctions.cpp:91
+#: src/muuli_wdr.cpp:1812 src/muuli_wdr.cpp:1818 src/OtherFunctions.cpp:91
 #: src/StatisticsDlg.cpp:93 src/StatisticsDlg.cpp:95
 msgid "kB/s"
 msgstr "kB/s"
@@ -3060,7 +3076,7 @@ msgstr "Emri:"
 msgid "Type"
 msgstr "Tipi"
 
-#: src/muuli_wdr.cpp:213 src/SearchDlg.cpp:107 src/SearchListCtrl.cpp:811
+#: src/muuli_wdr.cpp:213 src/SearchDlg.cpp:108 src/SearchListCtrl.cpp:813
 msgid "Local"
 msgstr "Lokale"
 
@@ -3180,7 +3196,7 @@ msgstr ""
 msgid "Stop"
 msgstr "Ndalo"
 
-#: src/muuli_wdr.cpp:346 src/muuli_wdr.cpp:1372 src/SearchListCtrl.cpp:690
+#: src/muuli_wdr.cpp:346 src/muuli_wdr.cpp:1372 src/SearchListCtrl.cpp:692
 msgid "Download"
 msgstr "Shkarkime"
 
@@ -3212,12 +3228,12 @@ msgstr "Burime te gjetura :"
 #: src/muuli_wdr.cpp:1154 src/muuli_wdr.cpp:1161 src/muuli_wdr.cpp:1166
 #: src/muuli_wdr.cpp:1173 src/muuli_wdr.cpp:1178 src/muuli_wdr.cpp:1185
 #: src/muuli_wdr.cpp:1199 src/muuli_wdr.cpp:1206 src/muuli_wdr.cpp:1211
-#: src/muuli_wdr.cpp:1218 src/muuli_wdr.cpp:3172 src/muuli_wdr.cpp:3180
-#: src/muuli_wdr.cpp:3188
+#: src/muuli_wdr.cpp:1218 src/muuli_wdr.cpp:3195 src/muuli_wdr.cpp:3203
+#: src/muuli_wdr.cpp:3211
 msgid "N/A"
 msgstr "N/A"
 
-#: src/muuli_wdr.cpp:502 src/muuli_wdr.cpp:1059 src/PrefsUnifiedDlg.cpp:276
+#: src/muuli_wdr.cpp:502 src/muuli_wdr.cpp:1059 src/PrefsUnifiedDlg.cpp:290
 msgid "General"
 msgstr "Te pergjithshme"
 
@@ -3358,7 +3374,7 @@ msgstr ""
 msgid "Album :"
 msgstr ""
 
-#: src/muuli_wdr.cpp:679 src/muuli_wdr.cpp:2194
+#: src/muuli_wdr.cpp:679 src/muuli_wdr.cpp:2217
 msgid "Title :"
 msgstr "Titulli :"
 
@@ -3465,7 +3481,7 @@ msgstr "Emri i Perdoruesit :"
 msgid "Userhash :"
 msgstr "Userhash :"
 
-#: src/muuli_wdr.cpp:889 src/muuli_wdr.cpp:2389
+#: src/muuli_wdr.cpp:889 src/muuli_wdr.cpp:1718 src/muuli_wdr.cpp:2412
 #: src/utils/aLinkCreator/src/alcframe.cpp:137
 msgid "Add"
 msgstr "Shto"
@@ -3474,15 +3490,15 @@ msgstr "Shto"
 msgid "Download-Speed"
 msgstr "Shpejtesia-Shkarkimit"
 
-#: src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:983 src/muuli_wdr.cpp:2493
+#: src/muuli_wdr.cpp:948 src/muuli_wdr.cpp:983 src/muuli_wdr.cpp:2516
 msgid "Current"
 msgstr "Aktualisht"
 
-#: src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:991 src/muuli_wdr.cpp:2501
+#: src/muuli_wdr.cpp:956 src/muuli_wdr.cpp:991 src/muuli_wdr.cpp:2524
 msgid "Running average"
 msgstr "Mesatarja e Punes"
 
-#: src/muuli_wdr.cpp:964 src/muuli_wdr.cpp:999 src/muuli_wdr.cpp:2509
+#: src/muuli_wdr.cpp:964 src/muuli_wdr.cpp:999 src/muuli_wdr.cpp:2532
 msgid "Session average"
 msgstr "Mesatarja e Sesionit"
 
@@ -3494,7 +3510,7 @@ msgstr "Shpejtesia-Ngarkimit"
 msgid "Connections"
 msgstr "Lidhjet"
 
-#: src/muuli_wdr.cpp:1018 src/muuli_wdr.cpp:1814
+#: src/muuli_wdr.cpp:1018 src/muuli_wdr.cpp:1837
 msgid "Active downloads"
 msgstr "Shkarkime Aktive"
 
@@ -3502,7 +3518,7 @@ msgstr "Shkarkime Aktive"
 msgid "Active connections (1:1)"
 msgstr "Lidhje Aktive (1:1)"
 
-#: src/muuli_wdr.cpp:1034 src/muuli_wdr.cpp:1815
+#: src/muuli_wdr.cpp:1034 src/muuli_wdr.cpp:1838
 msgid "Active uploads"
 msgstr "Ngarkime Aktive"
 
@@ -3723,7 +3739,7 @@ msgid "Enter your browser name here. Leave this field empty to use the system de
 msgstr ""
 
 #: src/muuli_wdr.cpp:1329 src/muuli_wdr.cpp:1346 src/muuli_wdr.cpp:1653
-#: src/muuli_wdr.cpp:1684 src/muuli_wdr.cpp:1696 src/muuli_wdr.cpp:2709
+#: src/muuli_wdr.cpp:1684 src/muuli_wdr.cpp:1696 src/muuli_wdr.cpp:2732
 #: src/utils/aLinkCreator/src/alcframe.cpp:135
 #: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
 msgid "Browse"
@@ -3797,7 +3813,7 @@ msgstr ""
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1442 src/muuli_wdr.cpp:2006
+#: src/muuli_wdr.cpp:1442 src/muuli_wdr.cpp:2029
 msgid "Bind to network interface (empty for any):"
 msgstr ""
 
@@ -3817,7 +3833,7 @@ msgstr ""
 msgid "Kademlia"
 msgstr "Kademlia"
 
-#: src/muuli_wdr.cpp:1478 src/muuli_wdr.cpp:3114
+#: src/muuli_wdr.cpp:1478 src/muuli_wdr.cpp:3137
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -3945,7 +3961,7 @@ msgstr "Ngarkimi"
 msgid "Add new shared files with auto priority"
 msgstr "Shto faile te reja te ndara me prioritet automatik"
 
-#: src/muuli_wdr.cpp:1631 src/PrefsUnifiedDlg.cpp:1825
+#: src/muuli_wdr.cpp:1631 src/PrefsUnifiedDlg.cpp:1850
 msgid "Media metadata extraction"
 msgstr ""
 
@@ -3999,647 +4015,667 @@ msgstr ""
 msgid "Shared folders"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1702
+#: src/muuli_wdr.cpp:1705
+msgid "(Folders shared by the core. Enter a path to add one.)"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1713
+msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1715 src/PrefsUnifiedDlg.cpp:2724
+msgid "Recursive"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1716
+msgid "Share every sub-folder underneath this one, including ones created later."
+msgstr ""
+
+#: src/muuli_wdr.cpp:1720 src/utils/aLinkCreator/src/alcframe.cpp:141
+msgid "Remove"
+msgstr "Hiq"
+
+#: src/muuli_wdr.cpp:1724
 msgid "(Right click on folder icon for recursive share)"
 msgstr "( Klikoni me butonin e djathte ne ikonene e karteles per te ndare ne menyre rekursive)"
 
-#: src/muuli_wdr.cpp:1708
+#: src/muuli_wdr.cpp:1731
 msgid "Share hidden files"
 msgstr "Nda failet e fshehur"
 
-#: src/muuli_wdr.cpp:1714
+#: src/muuli_wdr.cpp:1737
 msgid "Automatically rescan shared folders for changes"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1720
+#: src/muuli_wdr.cpp:1743
 msgid "Follow symbolic links in shared folders"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1726
+#: src/muuli_wdr.cpp:1749
 msgid "Exclude files matching:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1729
+#: src/muuli_wdr.cpp:1752
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1733
+#: src/muuli_wdr.cpp:1756
 msgid "Patterns are regular expressions"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1734
+#: src/muuli_wdr.cpp:1757
 msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1744
+#: src/muuli_wdr.cpp:1767
 msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1765
+#: src/muuli_wdr.cpp:1788
 msgid "Graphs"
 msgstr "Grafiket"
 
-#: src/muuli_wdr.cpp:1768 src/muuli_wdr.cpp:1830
+#: src/muuli_wdr.cpp:1791 src/muuli_wdr.cpp:1853
 msgid "Update delay : 5 secs"
 msgstr "Intervali i azhornimit : 5 sek"
 
-#: src/muuli_wdr.cpp:1772
+#: src/muuli_wdr.cpp:1795
 msgid "Time for average graph: 100 mins"
 msgstr "Intervali grafik i vlerave mesatare: 100 minuta"
 
-#: src/muuli_wdr.cpp:1776
+#: src/muuli_wdr.cpp:1799
 msgid "Connections Graph Scale: 100 "
 msgstr "Shkalla grafike e lidhjeve: 100 "
 
-#: src/muuli_wdr.cpp:1783
+#: src/muuli_wdr.cpp:1806
 msgid "Download graph scale:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1791
+#: src/muuli_wdr.cpp:1814
 msgid "Upload graph scale:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1801
+#: src/muuli_wdr.cpp:1824
 msgid "Colors: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:1805
+#: src/muuli_wdr.cpp:1828
 msgid "Background"
 msgstr "Sfondi"
 
-#: src/muuli_wdr.cpp:1806
+#: src/muuli_wdr.cpp:1829
 msgid "Grid"
 msgstr "Zgara"
 
-#: src/muuli_wdr.cpp:1807
+#: src/muuli_wdr.cpp:1830
 msgid "Download current"
 msgstr "Shkarkimi aktual"
 
-#: src/muuli_wdr.cpp:1808
+#: src/muuli_wdr.cpp:1831
 msgid "Download running average"
 msgstr "Mesatarja e shkarkimeve ne punim"
 
-#: src/muuli_wdr.cpp:1809
+#: src/muuli_wdr.cpp:1832
 msgid "Download session average"
 msgstr "Mesatarja e sesioneve te shkarkimit"
 
-#: src/muuli_wdr.cpp:1810
+#: src/muuli_wdr.cpp:1833
 msgid "Upload current"
 msgstr "Ngarkimi aktual"
 
-#: src/muuli_wdr.cpp:1811
+#: src/muuli_wdr.cpp:1834
 msgid "Upload running average"
 msgstr "Mesatarja e ngarkimit ne punim"
 
-#: src/muuli_wdr.cpp:1812
+#: src/muuli_wdr.cpp:1835
 msgid "Upload session average"
 msgstr "Mesatarja e sesionit te ngarkimeve"
 
-#: src/muuli_wdr.cpp:1813
+#: src/muuli_wdr.cpp:1836
 msgid "Active connections"
 msgstr "Lidhjet aktive"
 
-#: src/muuli_wdr.cpp:1816
+#: src/muuli_wdr.cpp:1839
 #, fuzzy
 msgid "Systray Icon Speed Bar"
 msgstr "Ikona e Speedbar-it ne Systray"
 
-#: src/muuli_wdr.cpp:1817
+#: src/muuli_wdr.cpp:1840
 msgid "Kad-nodes current"
 msgstr "Nyjet e Kad aktuale"
 
-#: src/muuli_wdr.cpp:1818
+#: src/muuli_wdr.cpp:1841
 msgid "Kad-nodes running"
 msgstr "Nyjet e Kad jane duke punuar"
 
-#: src/muuli_wdr.cpp:1819
+#: src/muuli_wdr.cpp:1842
 msgid "Kad-nodes session"
 msgstr "Sesioni i Nyjeve te Kad"
 
-#: src/muuli_wdr.cpp:1823 src/muuli_wdr.cpp:2243
+#: src/muuli_wdr.cpp:1846 src/muuli_wdr.cpp:2266
 msgid "Select"
 msgstr "Zgjidh"
 
-#: src/muuli_wdr.cpp:1827
+#: src/muuli_wdr.cpp:1850
 msgid "Tree"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1837
+#: src/muuli_wdr.cpp:1860
 msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Numera te treguar te versioneve te klienteve (0= pa kufij)"
 
-#: src/muuli_wdr.cpp:1862
+#: src/muuli_wdr.cpp:1885
 msgid "!!! WARNING !!!"
 msgstr "!!! KUJDES !!!"
 
-#: src/muuli_wdr.cpp:1877
+#: src/muuli_wdr.cpp:1900
 msgid "Max new connections / 5 secs"
 msgstr "Lidhe maksimale te reja / 5 sek"
 
-#: src/muuli_wdr.cpp:1879
+#: src/muuli_wdr.cpp:1902
 msgid "Concurrent Kad source lookups"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1881
+#: src/muuli_wdr.cpp:1904
 #, fuzzy
 msgid "Kad source re-search interval (minutes)"
 msgstr "Intervali i rifreskimit te FTP-se ne minuta"
 
-#: src/muuli_wdr.cpp:1883
+#: src/muuli_wdr.cpp:1906
 #, fuzzy
 msgid "Source re-ask interval (minutes)"
 msgstr "Intervali i rifreskimit te FTP-se ne minuta"
 
-#: src/muuli_wdr.cpp:1887
+#: src/muuli_wdr.cpp:1910
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Madhesia e Buffer-it te failit: 240000 bytes"
 
-#: src/muuli_wdr.cpp:1891
+#: src/muuli_wdr.cpp:1914
 msgid "Upload Queue Size: 5000 clients"
 msgstr "Madhesia e Radhes ne Ngarkim: 5000 klienta"
 
-#: src/muuli_wdr.cpp:1895
+#: src/muuli_wdr.cpp:1918
 msgid "Server connection refresh interval: Disable"
 msgstr "Interval i azhornimit te lidhjes se serverit: C'aktivizuar"
 
-#: src/muuli_wdr.cpp:1899
+#: src/muuli_wdr.cpp:1922
 msgid "Disable computer's timed standby mode"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1918
+#: src/muuli_wdr.cpp:1941
 msgid "Skin to use: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:1927
+#: src/muuli_wdr.cpp:1950
 msgid "Show \"Fast eD2k Links Handler\" in every window."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1930
+#: src/muuli_wdr.cpp:1953
 msgid "Show extended info on categories tabs"
 msgstr "Trego informacion te zgjeruar ne tabelat e kategorive"
 
-#: src/muuli_wdr.cpp:1933
+#: src/muuli_wdr.cpp:1956
 #, fuzzy
 msgid "Show application version on title"
 msgstr "Trego shpejtesine e transferimit ne titull"
 
-#: src/muuli_wdr.cpp:1935
+#: src/muuli_wdr.cpp:1958
 msgid "Show transfer rates on title"
 msgstr "Trego shpejtesine e transferimit ne titull"
 
-#: src/muuli_wdr.cpp:1937
+#: src/muuli_wdr.cpp:1960
 msgid "Before application name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1939
+#: src/muuli_wdr.cpp:1962
 msgid "After application name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1942
+#: src/muuli_wdr.cpp:1965
 msgid "Show overhead bandwidth"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1946
+#: src/muuli_wdr.cpp:1969
 msgid "Vertical toolbar orientation"
 msgstr "Orientim Vertikal i toolbar-it"
 
-#: src/muuli_wdr.cpp:1952
+#: src/muuli_wdr.cpp:1975
 msgid "Download Queue Files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1955
+#: src/muuli_wdr.cpp:1978
 msgid "Show progress percentage"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1961
+#: src/muuli_wdr.cpp:1984
 msgid "Show progress bar"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1964
+#: src/muuli_wdr.cpp:1987
 msgid "Flat"
 msgstr "E sheshte"
 
-#: src/muuli_wdr.cpp:1968
+#: src/muuli_wdr.cpp:1991
 msgid "Round"
 msgstr "E rrumbullakosur"
 
-#: src/muuli_wdr.cpp:1971
+#: src/muuli_wdr.cpp:1994
 msgid "Auto-sort files (high CPU)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1973
+#: src/muuli_wdr.cpp:1996
 msgid "aMule will sort the columns in your download list automatically"
 msgstr "aMule do te rreshtoje automatikisht kollonat ne listen tuaj te shkarkimeve"
 
-#: src/muuli_wdr.cpp:1990
+#: src/muuli_wdr.cpp:2013
 msgid "External Connection Parameters"
 msgstr "Parametrat e Lidhjeve te Jashtme"
 
-#: src/muuli_wdr.cpp:1993
+#: src/muuli_wdr.cpp:2016
 msgid "Accept external connections"
 msgstr "Prano lidhje te jashtme"
 
-#: src/muuli_wdr.cpp:2000 src/muuli_wdr.cpp:2059
+#: src/muuli_wdr.cpp:2023 src/muuli_wdr.cpp:2082
 msgid "IP of the listening interface:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2003
+#: src/muuli_wdr.cpp:2026
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
 msgstr "Futni ketu nje ip te vlefshem ne formatin a.b.c.d per te degjuar nderfaqesin EC. Nje fushe boshe ose 0.0.0.0 do te nenkuptoje cdo nderfaqe."
 
-#: src/muuli_wdr.cpp:2024 src/muuli_wdr.cpp:2103
+#: src/muuli_wdr.cpp:2047 src/muuli_wdr.cpp:2126
 msgid "TCP port:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2030
+#: src/muuli_wdr.cpp:2053
 msgid "Enable UPnP port forwarding on the EC port"
 msgstr "Aktivizo port forwarding UPnP tek porta EC"
 
-#: src/muuli_wdr.cpp:2034 src/muuli_wdr.cpp:2986
+#: src/muuli_wdr.cpp:2057 src/muuli_wdr.cpp:3009
 #: src/utils/wxCas/src/wxcasprefs.cpp:167
 msgid "Password"
 msgstr "Fjalekalim"
 
-#: src/muuli_wdr.cpp:2040
+#: src/muuli_wdr.cpp:2063
 msgid "aMule API server parameters"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2043
+#: src/muuli_wdr.cpp:2066
 msgid "Run amuleapi (REST API) on startup"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2048
+#: src/muuli_wdr.cpp:2071
 #, fuzzy
 msgid "HTTP port:"
 msgstr "Porta e Proksit:"
 
-#: src/muuli_wdr.cpp:2062
+#: src/muuli_wdr.cpp:2085
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2065
+#: src/muuli_wdr.cpp:2088
 #, fuzzy
 msgid "Admin password"
 msgstr "Duke kerkuar fjalekalimin\n"
 
-#: src/muuli_wdr.cpp:2073
+#: src/muuli_wdr.cpp:2096
 msgid "Web server parameters"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2076
+#: src/muuli_wdr.cpp:2099
 msgid "Run webserver on startup (deprecated)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2082
+#: src/muuli_wdr.cpp:2105
 msgid "Web template"
 msgstr "Modeli Web"
 
-#: src/muuli_wdr.cpp:2087
+#: src/muuli_wdr.cpp:2110
 msgid "Full rights password"
 msgstr "Fjalekalim per te drejta komplete"
 
-#: src/muuli_wdr.cpp:2091
+#: src/muuli_wdr.cpp:2114
 msgid "Enable Low rights User"
 msgstr "Aktivizo Perdorues me te drejta te kufizuara"
 
-#: src/muuli_wdr.cpp:2096
+#: src/muuli_wdr.cpp:2119
 msgid "Low rights password"
 msgstr "Fjalekalim per te drejta te kufizuara"
 
-#: src/muuli_wdr.cpp:2110
+#: src/muuli_wdr.cpp:2133
 msgid "Enable UPnP port forwarding of the web server port"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2115
+#: src/muuli_wdr.cpp:2138
 msgid "Web server UPnP TCP port (Optional)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2123
+#: src/muuli_wdr.cpp:2146
 msgid "Page Refresh Time (in secs)"
 msgstr "Koha e Rifreskimit te Faqes (ne sek)"
 
-#: src/muuli_wdr.cpp:2130
+#: src/muuli_wdr.cpp:2153
 msgid "Enable Gzip compression"
 msgstr "Aktivizo kompresimin Gzip"
 
-#: src/muuli_wdr.cpp:2164
+#: src/muuli_wdr.cpp:2187
 #, fuzzy
 msgid "Reset page to defaults"
 msgstr "E vendosur nga sistemi"
 
-#: src/muuli_wdr.cpp:2165
+#: src/muuli_wdr.cpp:2188
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2167 src/muuli_wdr.cpp:2253 src/ServerWnd.cpp:259
+#: src/muuli_wdr.cpp:2190 src/muuli_wdr.cpp:2276 src/ServerWnd.cpp:259
 #: src/ServerWnd.cpp:267
 msgid "OK"
 msgstr "Ne rregull"
 
-#: src/muuli_wdr.cpp:2169
+#: src/muuli_wdr.cpp:2192
 msgid "Click here to apply any changes made to the preferences."
 msgstr "Kliko ketu per te bere aktive ndryshimet qe u bene tek Preferencat."
 
-#: src/muuli_wdr.cpp:2172
+#: src/muuli_wdr.cpp:2195
 msgid "Reset any changes made to the preferences."
 msgstr "Rikthe ne gjendjen e meparshme ndryshimet te bera tek Preferencat."
 
-#: src/muuli_wdr.cpp:2201
+#: src/muuli_wdr.cpp:2224
 msgid "Comment :"
 msgstr "Komente :"
 
-#: src/muuli_wdr.cpp:2208
+#: src/muuli_wdr.cpp:2231
 msgid "Incoming Dir :"
 msgstr "Direktoria e Hyrjeve :"
 
-#: src/muuli_wdr.cpp:2217
+#: src/muuli_wdr.cpp:2240
 msgid "Change priority for new assigned files :"
 msgstr "Nderro perparesine per failet e reja te caktuara :"
 
-#: src/muuli_wdr.cpp:2221
+#: src/muuli_wdr.cpp:2244
 #, fuzzy
 msgid "Don't change"
 msgstr "Mos nderro"
 
-#: src/muuli_wdr.cpp:2233
+#: src/muuli_wdr.cpp:2256
 msgid "Select color for this Category (currently selected) :"
 msgstr "Zgjidh ngjyren per kete kategori (e zgjedhur aktualisht) :"
 
-#: src/muuli_wdr.cpp:2300 src/muuli_wdr.cpp:2319 src/muuli_wdr.cpp:2341
+#: src/muuli_wdr.cpp:2323 src/muuli_wdr.cpp:2342 src/muuli_wdr.cpp:2364
 msgid "Click this button to reset the log."
 msgstr "Kliko ne kete buton per te resetuar log-un."
 
-#: src/muuli_wdr.cpp:2360
+#: src/muuli_wdr.cpp:2383
 msgid "Click on this button to update the servers list from URL ..."
 msgstr "Kliko ne kete buton per te azhornuar listen e serverave nga URL ..."
 
-#: src/muuli_wdr.cpp:2364
+#: src/muuli_wdr.cpp:2387
 msgid "Server list"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2368
+#: src/muuli_wdr.cpp:2391
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 msgstr "Futni url tek nje fail server.met dhe shtypni butonin ne te majte per te azhornuar listen e serverave te njohur."
 
-#: src/muuli_wdr.cpp:2373
+#: src/muuli_wdr.cpp:2396
 msgid "Add server manually: Name"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2376
+#: src/muuli_wdr.cpp:2399
 msgid "Enter the name of the new server here"
 msgstr "Futni emrin e serverit te ri ketu"
 
-#: src/muuli_wdr.cpp:2378 src/ServerWnd.cpp:206
+#: src/muuli_wdr.cpp:2401 src/ServerWnd.cpp:206
 msgid "IP:Port"
 msgstr "IP:Porta"
 
-#: src/muuli_wdr.cpp:2381
+#: src/muuli_wdr.cpp:2404
 msgid "Enter the IP of the server here, using the x.x.x.x format."
 msgstr "Futni IP-ne e serverit ketu. duke perdorur formatin x.x.x.x."
 
-#: src/muuli_wdr.cpp:2387
+#: src/muuli_wdr.cpp:2410
 msgid "Enter the port of the server here."
 msgstr "Futni porten e serverit ketu."
 
-#: src/muuli_wdr.cpp:2390
+#: src/muuli_wdr.cpp:2413
 msgid "Add manually a server (fill fields to the left before) ..."
 msgstr "Shto ne menyre manuale nje server (mbushni fushen ne te majte me pare) ..."
 
-#: src/muuli_wdr.cpp:2419
+#: src/muuli_wdr.cpp:2442
 msgid "aMule Log"
 msgstr "Log i aMule"
 
-#: src/muuli_wdr.cpp:2427
+#: src/muuli_wdr.cpp:2450
 msgid "Server Info"
 msgstr "Informacion mbi serverin"
 
-#: src/muuli_wdr.cpp:2431
+#: src/muuli_wdr.cpp:2454
 msgid "ED2K Info"
 msgstr "Informacioni i ED2K"
 
-#: src/muuli_wdr.cpp:2435
+#: src/muuli_wdr.cpp:2458
 msgid "Kad Info"
 msgstr "Informacioni i Kad"
 
-#: src/muuli_wdr.cpp:2463
+#: src/muuli_wdr.cpp:2486
 msgid "Click on this button to update the nodes list from URL ..."
 msgstr "Kliko ne kete buton per te azhornuar listen e nyjeve nga URL ..."
 
-#: src/muuli_wdr.cpp:2467
+#: src/muuli_wdr.cpp:2490
 msgid "Nodes (0)"
 msgstr "Nyjet (0)"
 
-#: src/muuli_wdr.cpp:2471
+#: src/muuli_wdr.cpp:2494
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
 msgstr "Fut url e nje faili nodes.dat dhe shtyp butonin ne te majte per te azhornuar listen e nyjeve te njohura."
 
-#: src/muuli_wdr.cpp:2474
+#: src/muuli_wdr.cpp:2497
 msgid "Nodes stats"
 msgstr "Statistikat e Nyjeve"
 
-#: src/muuli_wdr.cpp:2516
+#: src/muuli_wdr.cpp:2539
 msgid "Bootstrap"
 msgstr "Bootstrap"
 
-#: src/muuli_wdr.cpp:2519
+#: src/muuli_wdr.cpp:2542
 msgid "New node"
 msgstr "Nyje e re"
 
-#: src/muuli_wdr.cpp:2524
+#: src/muuli_wdr.cpp:2547
 msgid "IP:"
 msgstr "IP:"
 
-#: src/muuli_wdr.cpp:2544
+#: src/muuli_wdr.cpp:2567
 msgid "Port:"
 msgstr "Porta:"
 
-#: src/muuli_wdr.cpp:2557
+#: src/muuli_wdr.cpp:2580
 #, fuzzy
 msgid "Bootstrap from known clients"
 msgstr ""
 "Bootstrap nga \n"
 "kliente te njohur"
 
-#: src/muuli_wdr.cpp:2559
+#: src/muuli_wdr.cpp:2582
 msgid "Disconnect Kad"
 msgstr "Shkeput Kad"
 
-#: src/muuli_wdr.cpp:2593
+#: src/muuli_wdr.cpp:2616
 msgid "Use Secure User Identification"
 msgstr "Perdor Identifikimin e Sigurte te Perdoruesve"
 
-#: src/muuli_wdr.cpp:2595
+#: src/muuli_wdr.cpp:2618
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
 msgstr "Eshte e rekomandueshme qe ta lejoni kete opsion. Ju nuk mund te merrni kredite nqs SUI nuk eshte i aktivizuar."
 
-#: src/muuli_wdr.cpp:2597
+#: src/muuli_wdr.cpp:2620
 msgid "Protocol Obfuscation"
 msgstr "Protokolli i Turbullimit"
 
-#: src/muuli_wdr.cpp:2600
+#: src/muuli_wdr.cpp:2623
 msgid "Support Protocol Obfuscation"
 msgstr "Mbeshtet Protokollin e Turbullimit"
 
-#: src/muuli_wdr.cpp:2602
+#: src/muuli_wdr.cpp:2625
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
 msgstr "Ky opsion lejon Protokollin e Turbullimit, dhe ben qe aMule te pranoje lidhje te turbulluara nga kliente te tjere."
 
-#: src/muuli_wdr.cpp:2604
+#: src/muuli_wdr.cpp:2627
 msgid "Use obfuscation for outgoing connections"
 msgstr "Perdor turbullimin per lidhjet ne dalje"
 
-#: src/muuli_wdr.cpp:2606
+#: src/muuli_wdr.cpp:2629
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
 msgstr "Ky opsion lejon aMule-n qe te perdori protokollin e turbullimit kur lidhet me klientet/serverat e tjere."
 
-#: src/muuli_wdr.cpp:2608
+#: src/muuli_wdr.cpp:2631
 msgid "Accept only obfuscated connections"
 msgstr "Prano vetem lidhje te turbulluara"
 
-#: src/muuli_wdr.cpp:2609
+#: src/muuli_wdr.cpp:2632
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
 msgstr "Ky opsion e ben aMule-n qe te lejoje lidhje te turbulluara. Ju do te keni me pak burime, por i gjithe trafiku juaj do te turbullohet"
 
-#: src/muuli_wdr.cpp:2614
+#: src/muuli_wdr.cpp:2637
 msgid "Everybody"
 msgstr "Te gjithe"
 
-#: src/muuli_wdr.cpp:2616
+#: src/muuli_wdr.cpp:2639
 msgid "No one"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2618
+#: src/muuli_wdr.cpp:2641
 msgid "Who can see my shared files:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2619
+#: src/muuli_wdr.cpp:2642
 msgid "Select who can request to view a list of your shared files."
 msgstr "Zgjidh se kush ka kerkuar te shikoje listene faileve qe ju keni ndare."
 
-#: src/muuli_wdr.cpp:2621
+#: src/muuli_wdr.cpp:2644
 msgid "IP-Filtering"
 msgstr "Filtrimi-IP"
 
-#: src/muuli_wdr.cpp:2628
+#: src/muuli_wdr.cpp:2651
 msgid "Filter clients"
 msgstr "Filtro klientet"
 
-#: src/muuli_wdr.cpp:2630
+#: src/muuli_wdr.cpp:2653
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "Lejo filtrimin e IP-ve te klientave te percaktuar ne failin ~/.aMule/ipfilter.dat."
 
-#: src/muuli_wdr.cpp:2632
+#: src/muuli_wdr.cpp:2655
 msgid "Filter servers"
 msgstr "Filtron Serverat"
 
-#: src/muuli_wdr.cpp:2634
+#: src/muuli_wdr.cpp:2657
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
 msgstr "Lejo filtrimin e IP-ve te serverave te percaktuara ne failin ~/.aMule/ipfilter.dat."
 
-#: src/muuli_wdr.cpp:2638
+#: src/muuli_wdr.cpp:2661
 msgid "Reload List"
 msgstr "Lista e Ringarkimeve"
 
-#: src/muuli_wdr.cpp:2639
+#: src/muuli_wdr.cpp:2662
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
 msgstr "Ringarko listen e IP-ve per te filtruar nga faili ~/.aMule/ipfilter.dat"
 
-#: src/muuli_wdr.cpp:2645
+#: src/muuli_wdr.cpp:2668
 msgid "URL:"
 msgstr "URL:"
 
-#: src/muuli_wdr.cpp:2649 src/muuli_wdr.cpp:2842
+#: src/muuli_wdr.cpp:2672 src/muuli_wdr.cpp:2865
 msgid "Update now"
 msgstr "Azhorno tani"
 
-#: src/muuli_wdr.cpp:2652
+#: src/muuli_wdr.cpp:2675
 msgid "Auto-update ipfilter at startup"
 msgstr "Azhornim-Automatik i ipfilter sapo te ndizet"
 
-#: src/muuli_wdr.cpp:2656
+#: src/muuli_wdr.cpp:2679
 msgid "Filtering Level:"
 msgstr "Niveli i Filtrimit:"
 
-#: src/muuli_wdr.cpp:2662
+#: src/muuli_wdr.cpp:2685
 msgid "Always filter LAN IPs"
 msgstr "Gjithmone filtro IP-te LAN"
 
-#: src/muuli_wdr.cpp:2665
+#: src/muuli_wdr.cpp:2688
 msgid "Paranoid handling of non-matching IPs"
 msgstr "Perdorim Paranoik te IP-ve qe nuk korrespondojne"
 
-#: src/muuli_wdr.cpp:2667
+#: src/muuli_wdr.cpp:2690
 msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 msgstr "Refuzo paketat nqs IP e klientit eshte e ndryshme nga IP se ku paketat kane ardhur. Perdore me kujdes."
 
-#: src/muuli_wdr.cpp:2669
+#: src/muuli_wdr.cpp:2692
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Perdor ipfilter.dat te sistemit nqs eshte i disponueshem"
 
-#: src/muuli_wdr.cpp:2670
+#: src/muuli_wdr.cpp:2693
 #, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
 msgstr "Nese nuk eshte gjetur ndonje ipfilter.dat lokal, lejo perdorimin e failit ipfilter te sistemit."
 
-#: src/muuli_wdr.cpp:2687
+#: src/muuli_wdr.cpp:2710
 msgid "Enable Online-Signature"
 msgstr "Lejo Firmen-Online"
 
-#: src/muuli_wdr.cpp:2689
+#: src/muuli_wdr.cpp:2712
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
 msgstr "Lejon shkrimin e faileve OS, qe mund te perdorren nga aplikacione te jashtme per te krijuar firma dhe te ngjashme."
 
-#: src/muuli_wdr.cpp:2693
+#: src/muuli_wdr.cpp:2716
 msgid "Update Frequency (Secs):"
 msgstr "Frekuenca e azhornimeve (sek):"
 
-#: src/muuli_wdr.cpp:2696
+#: src/muuli_wdr.cpp:2719
 msgid "Change the frequency (in seconds) of Online Signature updates."
 msgstr "Nderron frekuqncen (ne sekonda) te azhornimit te Firmes Online."
 
-#: src/muuli_wdr.cpp:2704
+#: src/muuli_wdr.cpp:2727
 msgid "Save online signature file in: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:2710
+#: src/muuli_wdr.cpp:2733
 msgid "Click here to select the directory containing the the Online Signature files."
 msgstr "Shtypni ketu per te zgjedhur direktorine qe permban failet e Firmes Online."
 
-#: src/muuli_wdr.cpp:2743
+#: src/muuli_wdr.cpp:2766
 msgid "Show country flags for clients"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2744
+#: src/muuli_wdr.cpp:2767
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2749
+#: src/muuli_wdr.cpp:2772
 #, fuzzy
 msgid "Database"
 msgstr "Shpejtesia :"
 
-#: src/muuli_wdr.cpp:2765
+#: src/muuli_wdr.cpp:2788
 #, fuzzy
 msgid "Source:"
 msgstr "Burime"
 
-#: src/muuli_wdr.cpp:2768
+#: src/muuli_wdr.cpp:2791
 msgid "DB-IP (free, no account)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2769
+#: src/muuli_wdr.cpp:2792
 msgid "MaxMind GeoLite2 (free, account required)"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2770
+#: src/muuli_wdr.cpp:2793
 msgid "Custom URL"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2773
+#: src/muuli_wdr.cpp:2796
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2790
+#: src/muuli_wdr.cpp:2813
 msgid ""
 "No configuration required.\n"
 "\n"
@@ -4647,11 +4683,11 @@ msgid ""
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2803
+#: src/muuli_wdr.cpp:2826
 msgid "License key:"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2809
+#: src/muuli_wdr.cpp:2832
 msgid ""
 "Sign up for a free MaxMind account, then generate a License Key:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
@@ -4661,232 +4697,232 @@ msgid ""
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2824
+#: src/muuli_wdr.cpp:2847
 #, fuzzy
 msgid "Download URL:"
 msgstr "Shkarkim: "
 
-#: src/muuli_wdr.cpp:2830
+#: src/muuli_wdr.cpp:2853
 msgid ""
 "Must point to an .mmdb file or a .gz / .tar.gz containing one.\n"
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2843
+#: src/muuli_wdr.cpp:2866
 msgid "Download the GeoIP database from the selected source."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2845
+#: src/muuli_wdr.cpp:2868
 #, fuzzy
 msgid "Auto-update on startup"
 msgstr "Azhornim-Automatik i ipfilter sapo te ndizet"
 
-#: src/muuli_wdr.cpp:2846
+#: src/muuli_wdr.cpp:2869
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2869
+#: src/muuli_wdr.cpp:2892
 msgid "Filter incoming messages (except current chat):"
 msgstr "Filtron mesazhet ne hyrje (pervec chatit qe po zhvilloni):"
 
-#: src/muuli_wdr.cpp:2871
+#: src/muuli_wdr.cpp:2894
 msgid "Filter all messages"
 msgstr "Filtron te gjithe mesazhet"
 
-#: src/muuli_wdr.cpp:2873
+#: src/muuli_wdr.cpp:2896
 msgid "Filter messages from people not on your friend list"
 msgstr "Filtron mesazhet nga njerezit qe nuk ndohen ne listen e miqve tuaj"
 
-#: src/muuli_wdr.cpp:2875
+#: src/muuli_wdr.cpp:2898
 msgid "Filter messages from unknown clients"
 msgstr "Filtron mesazhet nga klienta t èanjohur"
 
-#: src/muuli_wdr.cpp:2877
+#: src/muuli_wdr.cpp:2900
 msgid "Filter messages containing (use ',' as separator):"
 msgstr "Filtron mesazhet qe permbajne (perdor ',' si nje ndarese):"
 
-#: src/muuli_wdr.cpp:2880 src/muuli_wdr.cpp:2891
+#: src/muuli_wdr.cpp:2903 src/muuli_wdr.cpp:2914
 msgid "add here the words amule should filter and block messages including it"
 msgstr "shto ketu fjalet qe aMule do te filtroje duke bllokuar mesazhet qe ato mbajne"
 
-#: src/muuli_wdr.cpp:2882
+#: src/muuli_wdr.cpp:2905
 msgid "Show received messages in the log"
 msgstr ""
 
-#: src/muuli_wdr.cpp:2885
+#: src/muuli_wdr.cpp:2908
 msgid "Comments"
 msgstr "Komente"
 
-#: src/muuli_wdr.cpp:2888
+#: src/muuli_wdr.cpp:2911
 msgid "Filter comments containing (use ',' as separator):"
 msgstr "Komente e filtrave permbajne (perdor ',' si nje ndarese):"
 
-#: src/muuli_wdr.cpp:2911
+#: src/muuli_wdr.cpp:2934
 msgid "Enable authentication"
 msgstr "Aktivizo njohjen"
 
-#: src/muuli_wdr.cpp:2912
+#: src/muuli_wdr.cpp:2935
 msgid "Enable/disable username/password authentication"
 msgstr "Aktivizo/C'aktivizo emri i perdoruesit/njohja e fjalekalimit"
 
-#: src/muuli_wdr.cpp:2915
+#: src/muuli_wdr.cpp:2938
 msgid "Username: "
 msgstr ""
 
-#: src/muuli_wdr.cpp:2918
+#: src/muuli_wdr.cpp:2941
 msgid "The username to use to connect to the proxy"
 msgstr "Emri i perdorimit qe do perdoret per tu lidhur tek Proksi(Proxy)"
 
-#: src/muuli_wdr.cpp:2920
+#: src/muuli_wdr.cpp:2943
 msgid "Password:"
 msgstr "Fjalekalimi:"
 
-#: src/muuli_wdr.cpp:2923
+#: src/muuli_wdr.cpp:2946
 msgid "The password to use to connect to the proxy"
 msgstr "Fjalekalimi per te perdorur per tu lidhur tek Proksi(Proxy)"
 
-#: src/muuli_wdr.cpp:2925
+#: src/muuli_wdr.cpp:2948
 msgid "Enable Proxy"
 msgstr "Aktivizo Proksin(Proxy)"
 
-#: src/muuli_wdr.cpp:2926
+#: src/muuli_wdr.cpp:2949
 msgid "Enable/disable proxy support"
 msgstr "Aktivizo/C'aktivizo mbeshtetjen e Proksit(Proxy)"
 
-#: src/muuli_wdr.cpp:2929
+#: src/muuli_wdr.cpp:2952
 msgid "Proxy type:"
 msgstr "Lloji i Proksit(Proxy):"
 
-#: src/muuli_wdr.cpp:2940
+#: src/muuli_wdr.cpp:2963
 msgid "Proxy host:"
 msgstr "Hosti i Proksit(Proxy)"
 
-#: src/muuli_wdr.cpp:2943
+#: src/muuli_wdr.cpp:2966
 msgid "The proxy host name"
 msgstr "Host Name i Proksit(Proxy)"
 
-#: src/muuli_wdr.cpp:2945
+#: src/muuli_wdr.cpp:2968
 msgid "Proxy port:"
 msgstr "Porta e Proksit:"
 
-#: src/muuli_wdr.cpp:2948
+#: src/muuli_wdr.cpp:2971
 msgid "The proxy port"
 msgstr "Porta e Proksit(Proxy)"
 
-#: src/muuli_wdr.cpp:2967
+#: src/muuli_wdr.cpp:2990
 msgid "Connect to:"
 msgstr "Lidhu me:"
 
-#: src/muuli_wdr.cpp:2976
+#: src/muuli_wdr.cpp:2999
 msgid "Login to remote amule"
 msgstr "Futu tek Remote i aMule"
 
-#: src/muuli_wdr.cpp:2981
+#: src/muuli_wdr.cpp:3004
 msgid "User name"
 msgstr "Emri i Perdoruesit"
 
-#: src/muuli_wdr.cpp:2992
+#: src/muuli_wdr.cpp:3015
 msgid "Remember those settings"
 msgstr "Mbaji mend keto rregullime"
 
-#: src/muuli_wdr.cpp:2995
+#: src/muuli_wdr.cpp:3018
 #, fuzzy
 msgid "Force ZLIB compression"
 msgstr "Perdor kompresimin gzip"
 
-#: src/muuli_wdr.cpp:3019
+#: src/muuli_wdr.cpp:3042
 msgid "Enable Verbose Debug-Logging."
 msgstr "Aktivizon logging-un e detajuar te mesazheve te debug-ut."
 
-#: src/muuli_wdr.cpp:3021
+#: src/muuli_wdr.cpp:3044
 #, fuzzy
 msgid "Only to Logfile"
 msgstr "&Hap failin"
 
-#: src/muuli_wdr.cpp:3023
+#: src/muuli_wdr.cpp:3046
 msgid "Message Categories:"
 msgstr "Kategorite e Mesazheve:"
 
-#: src/muuli_wdr.cpp:3047 src/PartFileConvertDlg.cpp:160
+#: src/muuli_wdr.cpp:3070 src/PartFileConvertDlg.cpp:160
 msgid "Waiting..."
 msgstr "Ne pritje..."
 
-#: src/muuli_wdr.cpp:3067
+#: src/muuli_wdr.cpp:3090
 msgid "Add imports"
 msgstr "Shton importimet"
 
-#: src/muuli_wdr.cpp:3070
+#: src/muuli_wdr.cpp:3093
 msgid "Retry selected"
 msgstr "Provoji perseri te perzgjedhurit"
 
-#: src/muuli_wdr.cpp:3072
+#: src/muuli_wdr.cpp:3095
 msgid "Remove selected"
 msgstr "Zhvendos te perzgjedhurat"
 
-#: src/muuli_wdr.cpp:3135
+#: src/muuli_wdr.cpp:3158
 msgid "Event Types"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3154
+#: src/muuli_wdr.cpp:3177
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3178
+#: src/muuli_wdr.cpp:3201
 #, fuzzy
 msgid "Active Uploads"
 msgstr "Ngarkime Aktive :"
 
-#: src/muuli_wdr.cpp:3192
+#: src/muuli_wdr.cpp:3215
 msgid "Percent of total files"
 msgstr ""
 
-#: src/muuli_wdr.cpp:3232
+#: src/muuli_wdr.cpp:3255
 #, fuzzy
 msgid "Show Clients for"
 msgstr "Trego klientet"
 
-#: src/muuli_wdr.cpp:3234
+#: src/muuli_wdr.cpp:3257
 #, fuzzy
 msgid "All files"
 msgstr "Fshih failet e ndara"
 
-#: src/muuli_wdr.cpp:3237
+#: src/muuli_wdr.cpp:3260
 #, fuzzy
 msgid "Selected files"
 msgstr "Zgjidh filtrin e shikimit"
 
-#: src/muuli_wdr.cpp:3240
+#: src/muuli_wdr.cpp:3263
 #, fuzzy
 msgid "Active uploads only"
 msgstr "Ngarkime Aktive"
 
-#: src/muuli_wdr.cpp:3244
+#: src/muuli_wdr.cpp:3267
 #, fuzzy
 msgid "Reload:"
 msgstr "Lista e Ringarkimeve"
 
-#: src/muuli_wdr.cpp:3248
+#: src/muuli_wdr.cpp:3271
 msgid "Reload your shared files"
 msgstr "Ringarko failet e ndara"
 
-#: src/muuli_wdr.cpp:3310
+#: src/muuli_wdr.cpp:3333
 msgid "Send"
 msgstr "Dergo"
 
-#: src/muuli_wdr.cpp:3311
+#: src/muuli_wdr.cpp:3334
 msgid "Sends the specified message."
 msgstr "Dergo mesazhin e specifikuar."
 
-#: src/muuli_wdr.cpp:3315
+#: src/muuli_wdr.cpp:3338
 msgid "Close this chat-session."
 msgstr "Mbylle kete sesion chati."
 
-#: src/muuli_wdr.cpp:3338
+#: src/muuli_wdr.cpp:3361
 msgid "Connect to any server and/or Kad"
 msgstr "Lidhu me ndonje server dhe/ose Kad"
 
-#: src/muuli_wdr.cpp:3344 src/SharedFilesCtrl.cpp:141 src/Statistics.cpp:941
+#: src/muuli_wdr.cpp:3367 src/SharedFilesCtrl.cpp:141 src/Statistics.cpp:941
 msgid "Shared Files"
 msgstr "File te ndara"
 
@@ -5237,7 +5273,7 @@ msgstr ""
 msgid "Insufficient disk space"
 msgstr ""
 
-#: src/PartFile.cpp:4428 src/SearchListCtrl.cpp:1098
+#: src/PartFile.cpp:4428 src/SearchListCtrl.cpp:1100
 #: src/SharedFilePeersListCtrl.cpp:29 src/SourceListCtrl.cpp:29
 msgid "Downloaded"
 msgstr ""
@@ -5437,78 +5473,78 @@ msgstr "Porta TCP nuk mund te jene me te medha se 65532  sepse socket i UDP esht
 msgid "Default port will be used (%d)"
 msgstr "Do te perdoret porta e vendosur (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:277 src/Statistics.cpp:866
+#: src/PrefsUnifiedDlg.cpp:291 src/Statistics.cpp:866
 msgid "Connection"
 msgstr "Lidhje"
 
-#: src/PrefsUnifiedDlg.cpp:278 src/SearchListCtrl.cpp:109
+#: src/PrefsUnifiedDlg.cpp:292 src/SearchListCtrl.cpp:109
 msgid "Directories"
 msgstr "Direktorite"
 
-#: src/PrefsUnifiedDlg.cpp:279 src/Statistics.cpp:917
+#: src/PrefsUnifiedDlg.cpp:293 src/Statistics.cpp:917
 msgid "Servers"
 msgstr "Servera"
 
-#: src/PrefsUnifiedDlg.cpp:280 src/ServerListCtrl.cpp:96
+#: src/PrefsUnifiedDlg.cpp:294 src/ServerListCtrl.cpp:96
 msgid "Files"
 msgstr "Failet"
 
-#: src/PrefsUnifiedDlg.cpp:281
+#: src/PrefsUnifiedDlg.cpp:295
 msgid "Security"
 msgstr "Sigurimi"
 
-#: src/PrefsUnifiedDlg.cpp:282
+#: src/PrefsUnifiedDlg.cpp:296
 msgid "Interface"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:289
+#: src/PrefsUnifiedDlg.cpp:303
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:292
+#: src/PrefsUnifiedDlg.cpp:306
 msgid "Proxy"
 msgstr "Proksi"
 
-#: src/PrefsUnifiedDlg.cpp:293
+#: src/PrefsUnifiedDlg.cpp:307
 msgid "Filters"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:294
+#: src/PrefsUnifiedDlg.cpp:308
 msgid "Remote Controls"
 msgstr "Kontrollet e remote"
 
-#: src/PrefsUnifiedDlg.cpp:295
+#: src/PrefsUnifiedDlg.cpp:309
 msgid "Online Signature"
 msgstr "Firma online"
 
-#: src/PrefsUnifiedDlg.cpp:296
+#: src/PrefsUnifiedDlg.cpp:310
 msgid "Advanced"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:297
+#: src/PrefsUnifiedDlg.cpp:311
 msgid "Events"
 msgstr "Ngjarje"
 
-#: src/PrefsUnifiedDlg.cpp:300
+#: src/PrefsUnifiedDlg.cpp:314
 msgid "Debugging"
 msgstr "Debug"
 
-#: src/PrefsUnifiedDlg.cpp:416
+#: src/PrefsUnifiedDlg.cpp:433
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:437
+#: src/PrefsUnifiedDlg.cpp:454
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:453
+#: src/PrefsUnifiedDlg.cpp:470
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:499
+#: src/PrefsUnifiedDlg.cpp:516
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5524,26 +5560,26 @@ msgstr ""
 "aMule do te punoje ne rregull pa modifikuarr asnje nga\n"
 "keto rregullime"
 
-#: src/PrefsUnifiedDlg.cpp:610
+#: src/PrefsUnifiedDlg.cpp:627
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:658
+#: src/PrefsUnifiedDlg.cpp:675
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:738
+#: src/PrefsUnifiedDlg.cpp:763
 msgid "The type of proxy you are connecting to"
 msgstr "Lloji i Proksit(Proxy) qe ju po lidheni"
 
-#: src/PrefsUnifiedDlg.cpp:942
+#: src/PrefsUnifiedDlg.cpp:967
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1042
+#: src/PrefsUnifiedDlg.cpp:1067
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5551,51 +5587,51 @@ msgstr ""
 "aMule duhet qe te ristartohet qe keto ndryshime te aplikohen:\n"
 " \n"
 
-#: src/PrefsUnifiedDlg.cpp:1049
+#: src/PrefsUnifiedDlg.cpp:1074
 msgid "- TCP port changed.\n"
 msgstr "Porta TCP eshte ndryshuar.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1054
+#: src/PrefsUnifiedDlg.cpp:1079
 msgid "- UDP port changed.\n"
 msgstr "Porta UDP eshte ndryshuar.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1059
+#: src/PrefsUnifiedDlg.cpp:1084
 #, fuzzy
 msgid "- Network interface binding changed.\n"
 msgstr "Lidhja e jashtme u mbyll."
 
-#: src/PrefsUnifiedDlg.cpp:1064
+#: src/PrefsUnifiedDlg.cpp:1089
 #, fuzzy
 msgid "- External connect port changed.\n"
 msgstr "Lidhja e jashtme u mbyll."
 
-#: src/PrefsUnifiedDlg.cpp:1068
+#: src/PrefsUnifiedDlg.cpp:1093
 #, fuzzy
 msgid "- External connect acceptance changed.\n"
 msgstr "U pranua nje lidhje e jashtme e re"
 
-#: src/PrefsUnifiedDlg.cpp:1072
+#: src/PrefsUnifiedDlg.cpp:1097
 #, fuzzy
 msgid "- External connect interface changed.\n"
 msgstr "Lidhja e jashtme u mbyll."
 
-#: src/PrefsUnifiedDlg.cpp:1076
+#: src/PrefsUnifiedDlg.cpp:1101
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "Protokolli i Turbullimit"
 
-#: src/PrefsUnifiedDlg.cpp:1089
+#: src/PrefsUnifiedDlg.cpp:1114
 #, fuzzy
 msgid "- amuleapi settings changed.\n"
 msgstr "- Gjuha ndryshoi.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1098
+#: src/PrefsUnifiedDlg.cpp:1123
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1109
+#: src/PrefsUnifiedDlg.cpp:1134
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5603,35 +5639,35 @@ msgstr ""
 "Ju keni lejuar lidhjet e jashtme por nuk keni specifikuar nje fjalekalim.\n"
 "Lidhjet e jashtme nuk mund te lejohen derisa te specifikohet nje fjalekalim."
 
-#: src/PrefsUnifiedDlg.cpp:1140
+#: src/PrefsUnifiedDlg.cpp:1165
 msgid "- Language changed.\n"
 msgstr "- Gjuha ndryshoi.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1145
+#: src/PrefsUnifiedDlg.cpp:1170
 msgid "- Temp folder changed.\n"
 msgstr "Kartela Temp ndryshoi.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1150
+#: src/PrefsUnifiedDlg.cpp:1175
 #, fuzzy
 msgid "- ED2K network enabled.\n"
 msgstr "Te gjithe rrjetet jane c'aktivizuar."
 
-#: src/PrefsUnifiedDlg.cpp:1183
+#: src/PrefsUnifiedDlg.cpp:1208
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1185 src/PrefsUnifiedDlg.cpp:1756
+#: src/PrefsUnifiedDlg.cpp:1210 src/PrefsUnifiedDlg.cpp:1781
 #, fuzzy
 msgid "Invalid regular expression"
 msgstr "Version protokoli jo i rregullt."
 
-#: src/PrefsUnifiedDlg.cpp:1262
+#: src/PrefsUnifiedDlg.cpp:1287
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1267
+#: src/PrefsUnifiedDlg.cpp:1292
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5639,7 +5675,7 @@ msgstr ""
 "Kad nuk mund te filloje nqs porta juaj UDP eshte c'aktivizuar.\n"
 "Aktivizoni porten UDP ose c'aktivizoni Kad-in."
 
-#: src/PrefsUnifiedDlg.cpp:1323
+#: src/PrefsUnifiedDlg.cpp:1348
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5649,51 +5685,51 @@ msgstr ""
 "Ju duhet te ristartoni aMule-n tani.\n"
 "Nqs nuk e ristartoni tani mos u anko nqs te ndodh dicka e keqe.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1384
+#: src/PrefsUnifiedDlg.cpp:1409
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1386
+#: src/PrefsUnifiedDlg.cpp:1411
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1387
+#: src/PrefsUnifiedDlg.cpp:1412
 #, fuzzy
 msgid "Autostart"
 msgstr "Rifreskimi Automatik filloi"
 
-#: src/PrefsUnifiedDlg.cpp:1405
+#: src/PrefsUnifiedDlg.cpp:1430
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1410
+#: src/PrefsUnifiedDlg.cpp:1435
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1416 src/PrefsUnifiedDlg.cpp:1437
+#: src/PrefsUnifiedDlg.cpp:1441 src/PrefsUnifiedDlg.cpp:1462
 msgid "Register URL handler"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1434
+#: src/PrefsUnifiedDlg.cpp:1459
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1436
+#: src/PrefsUnifiedDlg.cpp:1461
 msgid "Could not remove the URL handler registration."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1502 src/PrefsUnifiedDlg.cpp:1529
+#: src/PrefsUnifiedDlg.cpp:1527 src/PrefsUnifiedDlg.cpp:1554
 #, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
 msgstr "U pranua nje lidhje e jashtme e re"
 
-#: src/PrefsUnifiedDlg.cpp:1512
+#: src/PrefsUnifiedDlg.cpp:1537
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1570
+#: src/PrefsUnifiedDlg.cpp:1595
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5703,66 +5739,66 @@ msgstr ""
 "Ju lutem mbushni te pakten nje URL te vlefshme ne failin e server.met.\n"
 "Klikoni ne butonin \"List\" per te futur nje URL."
 
-#: src/PrefsUnifiedDlg.cpp:1711
+#: src/PrefsUnifiedDlg.cpp:1736
 msgid "Temporary files"
 msgstr "Failet e perkohshme"
 
-#: src/PrefsUnifiedDlg.cpp:1716
+#: src/PrefsUnifiedDlg.cpp:1741
 msgid "Incoming files"
 msgstr "Failet e shkarkuara"
 
-#: src/PrefsUnifiedDlg.cpp:1721
+#: src/PrefsUnifiedDlg.cpp:1746
 msgid "Online Signatures"
 msgstr "Firma online"
 
-#: src/PrefsUnifiedDlg.cpp:1734
+#: src/PrefsUnifiedDlg.cpp:1759
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "Zgjidhni nje kartele per %s"
 
-#: src/PrefsUnifiedDlg.cpp:1758
+#: src/PrefsUnifiedDlg.cpp:1783
 #, fuzzy, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
 msgstr[0] "U gjend %i fail i njohur i ndare"
 msgstr[1] "U gjenden %i faile te njohura te ndara"
 
-#: src/PrefsUnifiedDlg.cpp:1775
+#: src/PrefsUnifiedDlg.cpp:1800
 msgid "Browse for videoplayer"
 msgstr "Shfletoni per nje videoplayer"
 
-#: src/PrefsUnifiedDlg.cpp:1779
+#: src/PrefsUnifiedDlg.cpp:1804
 msgid "Select browser"
 msgstr "Perzgjidhni shfletuesin"
 
-#: src/PrefsUnifiedDlg.cpp:1783
+#: src/PrefsUnifiedDlg.cpp:1808
 #, fuzzy
 msgid "Select ffprobe binary"
 msgstr "Perzgjidhni shfletuesin"
 
-#: src/PrefsUnifiedDlg.cpp:1789
+#: src/PrefsUnifiedDlg.cpp:1814
 #, c-format
 msgid "Executable%s"
 msgstr "Te ekzekutueshme%s"
 
-#: src/PrefsUnifiedDlg.cpp:1823
+#: src/PrefsUnifiedDlg.cpp:1848
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1835
+#: src/PrefsUnifiedDlg.cpp:1860
 msgid "Reset the settings on this page to their default values?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1836
+#: src/PrefsUnifiedDlg.cpp:1861
 #, fuzzy
 msgid "Reset to defaults"
 msgstr "E vendosur nga sistemi"
 
-#: src/PrefsUnifiedDlg.cpp:1863
+#: src/PrefsUnifiedDlg.cpp:1888
 msgid "Edit server list"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1864
+#: src/PrefsUnifiedDlg.cpp:1889
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -5770,192 +5806,197 @@ msgstr ""
 "Futni ketu URL-te per te shkarkuar failet server.met.\n"
 "Vetem nga nje URL per c'do linje."
 
-#: src/PrefsUnifiedDlg.cpp:1912
+#: src/PrefsUnifiedDlg.cpp:1944
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2057 src/PrefsUnifiedDlg.cpp:2088
+#: src/PrefsUnifiedDlg.cpp:2089 src/PrefsUnifiedDlg.cpp:2120
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2059 src/PrefsUnifiedDlg.cpp:2090
+#: src/PrefsUnifiedDlg.cpp:2091 src/PrefsUnifiedDlg.cpp:2122
 #, fuzzy
 msgid "Custom source"
 msgstr "Burime te kompletuara"
 
-#: src/PrefsUnifiedDlg.cpp:2061 src/PrefsUnifiedDlg.cpp:2092
+#: src/PrefsUnifiedDlg.cpp:2093 src/PrefsUnifiedDlg.cpp:2124
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2112
+#: src/PrefsUnifiedDlg.cpp:2144
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Statusi:"
 
-#: src/PrefsUnifiedDlg.cpp:2114
+#: src/PrefsUnifiedDlg.cpp:2146
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Statusi:"
 
-#: src/PrefsUnifiedDlg.cpp:2118
+#: src/PrefsUnifiedDlg.cpp:2150
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2120
+#: src/PrefsUnifiedDlg.cpp:2152
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2171 src/PrefsUnifiedDlg.cpp:2195
+#: src/PrefsUnifiedDlg.cpp:2203 src/PrefsUnifiedDlg.cpp:2227
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "Intervali i azhornimit: %d sekonde"
 msgstr[1] "Intervali i azhornimit: %d sekonda"
 
-#: src/PrefsUnifiedDlg.cpp:2179
+#: src/PrefsUnifiedDlg.cpp:2211
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "Koha per mesataren grafike: %d minute"
 msgstr[1] "Koha per mesataren grafike: %d minuta"
 
-#: src/PrefsUnifiedDlg.cpp:2188
+#: src/PrefsUnifiedDlg.cpp:2220
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Shkalla grafike e lidhjeve: %d"
 
-#: src/PrefsUnifiedDlg.cpp:2203
+#: src/PrefsUnifiedDlg.cpp:2235
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "Madhesia buffer e failit: %d byte"
 msgstr[1] "Madesia Buffer e failit: %d bytes"
 
-#: src/PrefsUnifiedDlg.cpp:2213
+#: src/PrefsUnifiedDlg.cpp:2245
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "Madhesia e radhes se ngarkimit: %d klienti"
 msgstr[1] "Madhesia e radhes se ngarkimit: %d klientet"
 
-#: src/PrefsUnifiedDlg.cpp:2223
+#: src/PrefsUnifiedDlg.cpp:2255
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "Intervali i rifreskimit te lidhjeve te serverit: %d minute"
 msgstr[1] "Intervali i rifreskimit te lidhjeve te serverit: %d minuta"
 
-#: src/PrefsUnifiedDlg.cpp:2228
+#: src/PrefsUnifiedDlg.cpp:2260
 msgid "Server connection refresh interval: Disabled"
 msgstr "Intervali i rifreskimit te lidhjeve te serverit: I c'aktivizuar"
 
-#: src/PrefsUnifiedDlg.cpp:2272
+#: src/PrefsUnifiedDlg.cpp:2304
 #, fuzzy
 msgid "disabled"
 msgstr "c'aktivizo"
 
-#: src/PrefsUnifiedDlg.cpp:2298
+#: src/PrefsUnifiedDlg.cpp:2330
 #, fuzzy, c-format
 msgid "Execute command on '%s' event"
 msgstr "Ekzekuto komanden ne kete ngjarje `%s' "
 
-#: src/PrefsUnifiedDlg.cpp:2305
+#: src/PrefsUnifiedDlg.cpp:2337
 msgid "Enable command execution on core"
 msgstr "Lejo ekzekutimin e komandes ne core"
 
-#: src/PrefsUnifiedDlg.cpp:2317
+#: src/PrefsUnifiedDlg.cpp:2349
 msgid "Core command:"
 msgstr "KOmanda Core:"
 
-#: src/PrefsUnifiedDlg.cpp:2333
+#: src/PrefsUnifiedDlg.cpp:2365
 msgid "Enable command execution on GUI"
 msgstr "Lejo ekzekutimin e komandes ne GUI"
 
-#: src/PrefsUnifiedDlg.cpp:2345
+#: src/PrefsUnifiedDlg.cpp:2377
 msgid "GUI command:"
 msgstr "Komanda GUI:"
 
-#: src/PrefsUnifiedDlg.cpp:2361
+#: src/PrefsUnifiedDlg.cpp:2393
 msgid "The following variables will be replaced:"
 msgstr "Variacionet qe vijojne do te rivendosen:"
 
-#: src/PrefsUnifiedDlg.cpp:2520
+#: src/PrefsUnifiedDlg.cpp:2560
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2525
+#: src/PrefsUnifiedDlg.cpp:2565
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2528
+#: src/PrefsUnifiedDlg.cpp:2568
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Ringarko failet e ndara"
 
-#: src/PrefsUnifiedDlg.cpp:2556
+#: src/PrefsUnifiedDlg.cpp:2596
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Ringarko failet e ndara"
 
-#: src/PrefsUnifiedDlg.cpp:2557
+#: src/PrefsUnifiedDlg.cpp:2597
 msgid "Scanning for subdirectories..."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2558
+#: src/PrefsUnifiedDlg.cpp:2598
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Duke lexuar kartelen temp"
 
-#: src/PrefsUnifiedDlg.cpp:2585
+#: src/PrefsUnifiedDlg.cpp:2625
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2635
+#: src/PrefsUnifiedDlg.cpp:2675
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "Ringarko listen e faileve te ndara."
 
-#: src/SearchDlg.cpp:344
+#: src/PrefsUnifiedDlg.cpp:2723
+#, fuzzy
+msgid "Shared folder"
+msgstr "File te ndara"
+
+#: src/SearchDlg.cpp:358
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr ""
 
-#: src/SearchDlg.cpp:345 src/SearchListCtrl.cpp:816
+#: src/SearchDlg.cpp:359 src/SearchListCtrl.cpp:818
 #, fuzzy
 msgid "Search error"
 msgstr "Kerkimet"
 
-#: src/SearchDlg.cpp:488
+#: src/SearchDlg.cpp:572
 msgid "Kad search: requested wider results from one more peer."
 msgstr ""
 
-#: src/SearchDlg.cpp:494
+#: src/SearchDlg.cpp:578
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr ""
 
-#: src/SearchDlg.cpp:598
+#: src/SearchDlg.cpp:676
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Masa minimale duhet te jete me e vogel se masa maksimale.Po injoroj Masen Maksimale.."
 
-#: src/SearchDlg.cpp:599 src/SearchDlg.cpp:672
+#: src/SearchDlg.cpp:677 src/SearchDlg.cpp:764
 msgid "Search warning"
 msgstr "PoParalajmerim per kerkim"
 
-#: src/SearchDlg.cpp:725 src/SearchListCtrl.cpp:693
+#: src/SearchDlg.cpp:842 src/SearchListCtrl.cpp:695
 msgid "Main"
 msgstr "Kryesore"
 
-#: src/SearchList.cpp:316
+#: src/SearchList.cpp:318
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr ""
 
-#: src/SearchList.cpp:337
+#: src/SearchList.cpp:339
 msgid "No keyword for Kad search - aborting"
 msgstr ""
 
-#: src/SearchList.cpp:413
+#: src/SearchList.cpp:415
 msgid "Unexpected error while attempting Kad search: "
 msgstr "Gabim i paparashikuar duke kerkuar Kad: "
 
@@ -5976,38 +6017,38 @@ msgstr "E pavotuar"
 msgid "Codec"
 msgstr ""
 
-#: src/SearchListCtrl.cpp:698
+#: src/SearchListCtrl.cpp:700
 msgid "Download in category"
 msgstr "Shkarko ne kategori"
 
-#: src/SearchListCtrl.cpp:703
+#: src/SearchListCtrl.cpp:705
 #, fuzzy, c-format
 msgid "Get %s for this file"
 msgstr "Shtoni URLs opsionale per kete fail"
 
-#: src/SearchListCtrl.cpp:707
+#: src/SearchListCtrl.cpp:709
 msgid "Search related files (eD2k, local server)"
 msgstr ""
 
-#: src/SearchListCtrl.cpp:714
+#: src/SearchListCtrl.cpp:716
 msgid "Mark as known file"
 msgstr "Shenoje si fail te njohur"
 
-#: src/SearchListCtrl.cpp:718 src/ServerListCtrl.cpp:484
+#: src/SearchListCtrl.cpp:720 src/ServerListCtrl.cpp:484
 msgid "Copy eD2k link to clipboard"
 msgstr ""
 
-#: src/SearchListCtrl.cpp:814
+#: src/SearchListCtrl.cpp:816
 #, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
 msgstr "Ju jeni i lidhur tek serveri qe deshironi te fshini. ju lutem ne fillim shkeputuni prej tij."
 
-#: src/SearchListCtrl.cpp:1106
+#: src/SearchListCtrl.cpp:1108
 #, fuzzy
 msgid "Canceled"
 msgstr "Fshij"
 
-#: src/SearchListCtrl.cpp:1109
+#: src/SearchListCtrl.cpp:1111
 msgid "New"
 msgstr ""
 
@@ -6532,31 +6573,31 @@ msgid_plural "Found %i known shared files"
 msgstr[0] "U gjend %i fail i njohur i ndare"
 msgstr[1] "U gjenden %i faile te njohura te ndara"
 
-#: src/SharedFileList.cpp:459
+#: src/SharedFileList.cpp:463
 #, c-format
 msgid "Found %i known shared file, %i unknown"
 msgid_plural "Found %i known shared files, %i unknown"
 msgstr[0] "U gjenden %i faile te njohur te ndare, %i te panjohura"
 msgstr[1] "U gjenden %i faile te njohura te ndara,%i te panjohura"
 
-#: src/SharedFileList.cpp:466
+#: src/SharedFileList.cpp:470
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/SharedFileList.cpp:477
+#: src/SharedFileList.cpp:481
 #, c-format
 msgid "ERROR: Attempted to share %s"
 msgstr ""
 
-#: src/SharedFileList.cpp:506
+#: src/SharedFileList.cpp:510
 #, fuzzy, c-format
 msgid "Shared directory not found, skipping: %s"
 msgstr "Serveri nuk u gjend: %s"
 
-#: src/SharedFileList.cpp:557
+#: src/SharedFileList.cpp:561
 #, c-format
 msgid "No shareable files found in directory: %s"
 msgstr ""
@@ -7533,27 +7574,27 @@ msgstr ""
 msgid "aMule text client"
 msgstr "Teksti i klientit aMule"
 
-#: src/ThreadTasks.cpp:470
+#: src/ThreadTasks.cpp:484
 #, c-format
 msgid "Converting old AICH hashsets in '%s' to 64b in '%s'."
 msgstr "Duke kembyer hashsetet e vjetra AICH ne '%s' 64b ne '%s'."
 
-#: src/ThreadTasks.cpp:518
+#: src/ThreadTasks.cpp:532
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
 msgstr ""
 
-#: src/ThreadTasks.cpp:550
+#: src/ThreadTasks.cpp:564
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
 msgstr ""
 
-#: src/ThreadTasks.cpp:745
+#: src/ThreadTasks.cpp:759
 #, c-format
 msgid "WARNING: The filename '%s' is invalid and has been renamed to '%s'."
 msgstr "KUJDES: Emri i failit '%s' eshte i pavlere dhe eshte riemeruar ne '%s'."
 
-#: src/ThreadTasks.cpp:758
+#: src/ThreadTasks.cpp:772
 #, c-format
 msgid "WARNING: The file '%s' already exists, new file renamed to '%s'."
 msgstr "KUJDES: Faili '%s' ekziston,faili i ri i riemertuar ne '%s'."
@@ -7701,10 +7742,6 @@ msgstr ""
 #: src/utils/aLinkCreator/src/alcframe.cpp:122
 msgid "Enter here the URL you want to add to the eD2k link: Add / at the end to let aLinkCreator append the current file name"
 msgstr ""
-
-#: src/utils/aLinkCreator/src/alcframe.cpp:141
-msgid "Remove"
-msgstr "Hiq"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp:149
 msgid "Create link with part-hashes"
@@ -8405,7 +8442,3 @@ msgstr ""
 #~ "Issues: https://github.com/amule-org/amule/issues \n"
 #~ "\n"
 #~ msgstr "Raportoni cdo gabim tek https://github.com/amule-org/amule/issues"
-
-#, fuzzy
-#~ msgid "Not found"
-#~ msgstr "Faili nuk u gjete."

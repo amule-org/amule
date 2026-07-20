@@ -531,6 +531,12 @@ void CamuleDlg::OnPrefButton(wxCommandEvent &WXUNUSED(ev))
 		}
 
 		m_prefsDialog->TransferToWindow();
+		// The dialog is built once and reused, so the shared-folders editor
+		// would otherwise keep the roots it captured the first time this was
+		// opened — stale as soon as anything else changes them (a remote GUI
+		// over EC, for one). Re-seed it per session; it declines while the
+		// user has edits pending so this can never discard them.
+		m_prefsDialog->PrepareSharedDirsForSession();
 		m_prefsDialog->Show(true);
 		m_prefsDialog->Raise();
 	}

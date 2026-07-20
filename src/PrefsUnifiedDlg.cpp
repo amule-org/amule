@@ -31,6 +31,8 @@
 #include <wx/bmpbndl.h> // wxBitmapBundle for DPI-aware page icons
 #include <wx/colordlg.h>
 #include <wx/combobox.h> // network-interface drop-down (bind-to-interface)
+#include <wx/listctrl.h> // shared-folders editor (remote GUI)
+#include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
 #include <wx/stdpaths.h>
 #include <wx/tooltip.h>
@@ -132,6 +134,15 @@ wxArrayString DetectNetworkInterfaces()
 }
 } // namespace
 
+#ifdef CLIENT_GUI
+namespace
+{
+// The open Preferences dialog, or NULL. Lets a GET_SHARED_DIRS reply repaint
+// the editor without holding a pointer that could outlive the dialog.
+PrefsUnifiedDlg *s_openPrefsDlg = nullptr;
+} // namespace
+#endif
+
 wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 // Events
 #define USEREVENTS_EVENT(ID, NAME, VARS) \
@@ -198,6 +209,10 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_BUTTON(IDC_SELTEMPDIR, PrefsUnifiedDlg::OnButtonDir)
 	EVT_BUTTON(IDC_SELINCDIR, PrefsUnifiedDlg::OnButtonDir)
 	EVT_BUTTON(IDC_SELOSDIR, PrefsUnifiedDlg::OnButtonDir)
+#ifdef CLIENT_GUI
+	EVT_BUTTON(IDC_SHAREDDIR_ADD, PrefsUnifiedDlg::OnSharedDirAdd)
+	EVT_BUTTON(IDC_SHAREDDIR_REMOVE, PrefsUnifiedDlg::OnSharedDirRemove)
+#endif
 	EVT_BUTTON(IDC_SELBROWSER, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEBROWSE, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEDETECT, PrefsUnifiedDlg::OnButtonMediaMetaDetect)
@@ -311,6 +326,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 {
 #ifdef GEOIP_GUI
 	s_activeInstance = this;
+#endif
+#ifdef CLIENT_GUI
+	s_openPrefsDlg = this;
+	m_sharedDirsDirty = false;
 #endif
 	preferencesDlgTop(this, false);
 
@@ -666,8 +685,16 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// is the runtime expansion -- not useful as UI state since it
 	// includes auto-discovered subdirs that shouldn't render as
 	// user-selected.
+#ifdef CLIENT_GUI
+	// Remote GUI: no tree to seed. Show whatever roots we already hold and ask
+	// the core for a fresh copy — the reply repaints us via
+	// RefreshSharedDirsIfOpen, so an edit is never made against a stale list.
+	PopulateSharedDirsList();
+	static_cast<CPreferencesRem *>(theApp->glob_prefs)->LoadSharedDirsRemote();
+#else
 	m_ShareSelector->SetSharedDirectories(&theApp->glob_prefs->shareddir_explicit_list);
 	m_ShareSelector->SetRecursiveSharedDirectories(&theApp->glob_prefs->shareddir_recursive_list);
+#endif
 
 	// Autostart checkbox: state lives in the OS, never aMule.conf, so
 	// read live each time the dialog opens. The thePrefs Cfg machinery
@@ -1327,12 +1354,14 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 			this);
 	}
 
+	EndSharedDirsSession();
 	Show(false);
 }
 
 void PrefsUnifiedDlg::OnClose(wxCloseEvent &event)
 {
 	Show(false);
+	EndSharedDirsSession();
 
 	// Try to keep the window alive when possible
 	if (event.CanVeto()) {
@@ -1356,6 +1385,8 @@ void PrefsUnifiedDlg::OnClose(wxCloseEvent &event)
 void PrefsUnifiedDlg::OnCancel(wxCommandEvent &WXUNUSED(event))
 {
 	Show(false);
+	// The edits are being thrown away, so the next session may refresh freely.
+	EndSharedDirsSession();
 	// restore state of server tab if necessary
 	EnableServerTab(thePrefs::GetNetworkED2K());
 
@@ -1889,6 +1920,13 @@ PrefsUnifiedDlg::~PrefsUnifiedDlg()
 	if (s_activeInstance == this) {
 		s_activeInstance = NULL;
 	}
+#ifdef CLIENT_GUI
+	// Same reasoning for the shared-dirs editor: a GET_SHARED_DIRS reply can
+	// land after the dialog is gone, and must not repaint a freed dialog.
+	if (s_openPrefsDlg == this) {
+		s_openPrefsDlg = nullptr;
+	}
+#endif
 }
 
 void PrefsUnifiedDlg::RefreshIP2CountryStatusIfOpen()
@@ -2130,7 +2168,14 @@ void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent &event)
 
 	m_CurrentPanel = reinterpret_cast<wxPanel *>(m_PrefsIcons->GetItemData(event.GetIndex()));
 	if (pages[event.GetIndex()].m_function == PreferencesDirectoriesTab) {
+#ifdef CLIENT_GUI
+		// Nothing to initialise: there is no tree here, and the roots are
+		// refreshed per editing session (PrepareSharedDirsForSession) rather
+		// than on every page change, which would discard pending edits when
+		// the user navigates away and back.
+#else
 		CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl)->Init();
+#endif
 	}
 
 	// The reset-to-defaults button applies to the current page's controls; keep
@@ -2461,6 +2506,15 @@ bool IsSensitiveSharePath(const CPath &path)
 
 PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithProgress()
 {
+#ifdef CLIENT_GUI
+	// The core owns the shared-folder files; we just hand it the roots. No
+	// local progress dialog or rescan here — the rescan happens daemon-side,
+	// and any path it refuses comes back as a rejection we surface then.
+	HarvestSharedDirsList();
+	static_cast<CPreferencesRem *>(theApp->glob_prefs)->SendSharedDirsToRemote();
+	m_sharedDirsDirty = false;
+	return SharedDirsCommitResult::Committed;
+#else
 	if (!m_ShareSelector || !m_ShareSelector->HasChanged) {
 		return SharedDirsCommitResult::NothingToCommit;
 	}
@@ -2662,5 +2716,150 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	}
 
 	return SharedDirsCommitResult::Committed;
+#endif // CLIENT_GUI
 }
+#ifdef CLIENT_GUI
+
+void PrefsUnifiedDlg::RefreshSharedDirsIfOpen()
+{
+	// Never repaint over uncommitted edits: the reply may land after the user
+	// has already started adding rows.
+	if (s_openPrefsDlg != nullptr && !s_openPrefsDlg->m_sharedDirsDirty) {
+		s_openPrefsDlg->PopulateSharedDirsList();
+	}
+}
+
+void PrefsUnifiedDlg::PopulateSharedDirsList()
+{
+	wxListCtrl *list = CastChild(IDC_SHAREDDIRS_LIST, wxListCtrl);
+	if (list == nullptr) {
+		return;
+	}
+	if (list->GetColumnCount() == 0) {
+		list->InsertColumn(0, _("Shared folder"), wxLIST_FORMAT_LEFT, 320);
+		list->InsertColumn(1, _("Recursive"), wxLIST_FORMAT_LEFT, 90);
+	}
+	list->DeleteAllItems();
+
+	const bool supported =
+		theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsSharedDirsConfig();
+	// An older core can neither report nor accept these, so leave the editor
+	// inert rather than implying an edit here would reach it.
+	FindWindow(IDC_SHAREDDIR_PATH)->Enable(supported);
+	FindWindow(IDC_SHAREDDIR_RECURSIVE)->Enable(supported);
+	FindWindow(IDC_SHAREDDIR_ADD)->Enable(supported);
+	FindWindow(IDC_SHAREDDIR_REMOVE)->Enable(supported);
+	if (!supported) {
+		return;
+	}
+
+	long row = 0;
+	for (const CPath &dir : theApp->glob_prefs->shareddir_explicit_list) {
+		list->InsertItem(row, dir.GetPrintable());
+		list->SetItem(row, 1, wxEmptyString);
+		++row;
+	}
+	for (const CPath &dir : theApp->glob_prefs->shareddir_recursive_list) {
+		list->InsertItem(row, dir.GetPrintable());
+		list->SetItem(row, 1, _("Yes"));
+		++row;
+	}
+}
+
+void PrefsUnifiedDlg::HarvestSharedDirsList()
+{
+	wxListCtrl *list = CastChild(IDC_SHAREDDIRS_LIST, wxListCtrl);
+	if (list == nullptr) {
+		return;
+	}
+	CPreferences::PathList explicitDirs;
+	CPreferences::PathList recursiveDirs;
+	for (long row = 0; row < list->GetItemCount(); ++row) {
+		const CPath path(list->GetItemText(row));
+		wxListItem field;
+		field.SetId(row);
+		field.SetColumn(1);
+		field.SetMask(wxLIST_MASK_TEXT);
+		list->GetItem(field);
+		if (field.GetText().IsEmpty()) {
+			explicitDirs.push_back(path);
+		} else {
+			recursiveDirs.push_back(path);
+		}
+	}
+	theApp->glob_prefs->shareddir_explicit_list = explicitDirs;
+	theApp->glob_prefs->shareddir_recursive_list = recursiveDirs;
+}
+
+void PrefsUnifiedDlg::OnSharedDirAdd(wxCommandEvent &WXUNUSED(evt))
+{
+	wxTextCtrl *pathCtrl = CastChild(IDC_SHAREDDIR_PATH, wxTextCtrl);
+	wxListCtrl *list = CastChild(IDC_SHAREDDIRS_LIST, wxListCtrl);
+	if (pathCtrl == nullptr || list == nullptr) {
+		return;
+	}
+	const wxString path = pathCtrl->GetValue().Strip(wxString::both);
+	if (path.IsEmpty()) {
+		return;
+	}
+	// The path names a folder on the *core's* machine, so it can't be checked
+	// here; the core validates on apply and reports anything it refuses.
+	for (long row = 0; row < list->GetItemCount(); ++row) {
+		if (list->GetItemText(row) == path) {
+			return; // already listed
+		}
+	}
+	const bool recursive = CastChild(IDC_SHAREDDIR_RECURSIVE, wxCheckBox)->GetValue();
+	const long row = list->InsertItem(list->GetItemCount(), path);
+	list->SetItem(row, 1, recursive ? _("Yes") : wxString(wxEmptyString));
+	pathCtrl->Clear();
+	m_sharedDirsDirty = true;
+}
+
+void PrefsUnifiedDlg::OnSharedDirRemove(wxCommandEvent &WXUNUSED(evt))
+{
+	wxListCtrl *list = CastChild(IDC_SHAREDDIRS_LIST, wxListCtrl);
+	if (list == nullptr) {
+		return;
+	}
+	const long sel = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (sel != -1) {
+		list->DeleteItem(sel);
+		m_sharedDirsDirty = true;
+	}
+}
+
+#endif // CLIENT_GUI
+
+void PrefsUnifiedDlg::EndSharedDirsSession()
+{
+#ifdef CLIENT_GUI
+	m_sharedDirsDirty = false;
+#else
+	if (m_ShareSelector != nullptr) {
+		m_ShareSelector->HasChanged = false;
+	}
+#endif
+}
+
+void PrefsUnifiedDlg::PrepareSharedDirsForSession()
+{
+#ifndef CLIENT_GUI
+	// TransferToWindow() has already refreshed the tree's backing maps from
+	// glob_prefs by the time we run, so the model is never the stale part. The
+	// view is: marks below the root's immediate children are applied when a node
+	// is created, so anything already expanded keeps the marks it was built
+	// with. Rebuild only when the roots have actually moved since the paint,
+	// since rebuilding collapses the tree and re-scans the drives.
+	if (m_ShareSelector == nullptr || m_ShareSelector->HasChanged) {
+		// Edits pending in this session; leave them be.
+		return;
+	}
+	if (m_ShareSelector->NeedsRepaintFor(theApp->glob_prefs->shareddir_explicit_list,
+		    theApp->glob_prefs->shareddir_recursive_list)) {
+		m_ShareSelector->Rebuild();
+	}
+#endif
+}
+
 // File_checked_for_headers

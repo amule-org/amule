@@ -142,6 +142,12 @@ private:
 	// Old daemons don't echo it; the client then stays single-search.
 	bool m_serverMultiSearch;
 
+	// Set when the server echoed `EC_TAG_CAN_SHAREDDIRS_CONFIG` in AUTH_OK,
+	// confirming it serves EC_OP_GET/SET_SHARED_DIRS. Old daemons don't echo
+	// it; the GUI then leaves the shared-folders panel read-only, since a
+	// selection there could not reach the daemon.
+	bool m_serverSharedDirsConfig;
+
 	// Client opts into chat relay (advertise `EC_TAG_CAN_CHAT`). Off by
 	// default; a client with a chat window sets it via SetCanChat(). Read
 	// when building the login packet.
@@ -179,6 +185,8 @@ public:
 	bool ServerSupportsMultiSearch() const { return m_serverMultiSearch; }
 
 	bool ServerSupportsChat() const { return m_serverChat; }
+
+	bool ServerSupportsSharedDirsConfig() const { return m_serverSharedDirsConfig; }
 
 	bool ConnectToCore(const wxString &host,
 		int port,

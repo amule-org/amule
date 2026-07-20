@@ -41,6 +41,7 @@
 #include "amule.h"             // Interface declarations.
 #include "CamuleArtProvider.h" // Needed for wxArtProvider::Push() in OnInit
 #include "amuleDlg.h"          // Needed for CamuleDlg
+#include "PrefsUnifiedDlg.h"   // Needed for the shared-dirs editor refresh hook
 
 #include <wx/sizer.h>    // CReconnectDialog layout (issue #444)
 #include <wx/stattext.h> // CReconnectDialog status label
@@ -1203,6 +1204,92 @@ void CPreferencesRem::SendToRemote()
 {
 	CEC_Prefs_Packet pref_packet(m_exchange_send_selected_prefs, EC_DETAIL_UPDATE, EC_DETAIL_FULL);
 	m_conn->SendPacket(&pref_packet);
+}
+
+// Reply handler for the shared-directory ops. Deliberately separate from
+// CPreferencesRem::HandlePacket, which static_casts every packet it is given to
+// CEC_Prefs_Packet — routing a non-prefs reply through it would be undefined
+// behaviour. Results are stored on glob_prefs rather than on the Preferences
+// dialog, so a reply that arrives after the user closed the dialog is harmless.
+class CSharedDirsHandler : public CECPacketHandlerBase
+{
+	void HandlePacket(const CECPacket *packet) override;
+};
+
+void CSharedDirsHandler::HandlePacket(const CECPacket *packet)
+{
+	if (packet->GetOpCode() == EC_OP_GET_SHARED_DIRS) {
+		CPreferences::PathList explicitDirs;
+		CPreferences::PathList recursiveDirs;
+		for (const CECTag &tag : *packet) {
+			if (tag.GetTagName() != EC_TAG_SHAREDDIR) {
+				continue;
+			}
+			const CPath path(tag.GetStringData());
+			const CECTag *recursiveTag = tag.GetTagByName(EC_TAG_SHAREDDIR_RECURSIVE);
+			if (recursiveTag != nullptr && recursiveTag->GetInt() != 0) {
+				recursiveDirs.push_back(path);
+			} else {
+				explicitDirs.push_back(path);
+			}
+		}
+		theApp->glob_prefs->shareddir_explicit_list = explicitDirs;
+		theApp->glob_prefs->shareddir_recursive_list = recursiveDirs;
+		// Refresh the editor if Preferences is open; a no-op otherwise.
+		wxTheApp->CallAfter([]() { PrefsUnifiedDlg::RefreshSharedDirsIfOpen(); });
+	} else if (packet->GetOpCode() == EC_OP_SET_SHARED_DIRS) {
+		// The daemon applied every path that validated and listed the rest.
+		// Report them so a typo'd path can't become a silently dead share —
+		// the remote user has no way to browse and check it themselves.
+		wxString rejected;
+		for (const CECTag &tag : *packet) {
+			if (tag.GetTagName() != EC_TAG_SHAREDDIR_REJECTED) {
+				continue;
+			}
+			const CECTag *errTag = tag.GetTagByName(EC_TAG_SHAREDDIR_ERROR);
+			// Reason codes are translated here, in the user's locale, rather
+			// than shipped as text from a daemon with a different one.
+			const wxString reason = (errTag != nullptr && errTag->GetInt() == 2)
+							? _("not readable")
+							: _("not found");
+			rejected += CFormat("\n%s (%s)") % tag.GetStringData() % reason;
+		}
+		if (!rejected.IsEmpty()) {
+			const wxString msg =
+				CFormat(_("The core rejected these shared folders:%s")) % rejected;
+			// Deferred: a modal opened straight from a packet handler spins a
+			// nested event loop that re-enters the EC socket and corrupts its
+			// receive state (see CAddLinkHandler).
+			wxTheApp->CallAfter([msg]() { wxMessageBox(msg, _("ERROR"), wxOK | wxICON_ERROR); });
+		}
+	}
+	delete this;
+}
+
+void CPreferencesRem::LoadSharedDirsRemote()
+{
+	if (!m_conn->ServerSupportsSharedDirsConfig()) {
+		return;
+	}
+	CECPacket req(EC_OP_GET_SHARED_DIRS);
+	m_conn->SendRequest(new CSharedDirsHandler(), &req);
+}
+
+void CPreferencesRem::SendSharedDirsToRemote()
+{
+	if (!m_conn->ServerSupportsSharedDirsConfig()) {
+		return;
+	}
+	CECPacket req(EC_OP_SET_SHARED_DIRS);
+	for (const CPath &dir : shareddir_explicit_list) {
+		req.AddTag(CECTag(EC_TAG_SHAREDDIR, dir.GetRaw()));
+	}
+	for (const CPath &dir : shareddir_recursive_list) {
+		CECTag dirTag(EC_TAG_SHAREDDIR, dir.GetRaw());
+		dirTag.AddTag(CECTag(EC_TAG_SHAREDDIR_RECURSIVE, (uint8)1));
+		req.AddTag(dirTag);
+	}
+	m_conn->SendRequest(new CSharedDirsHandler(), &req);
 }
 
 // Surfaces the EC_OP_FAILED reply from amuled's EC_OP_ADD_LINK handler

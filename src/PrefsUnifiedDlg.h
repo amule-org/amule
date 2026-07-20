@@ -98,9 +98,50 @@ protected:
 	 */
 	Cfg_Base *GetCfg(int id);
 
-	//! Pointer to the shared-files list
+	//! Pointer to the shared-files list. NULL under CLIENT_GUI: the remote
+	//! GUI has no business browsing *this* machine's filesystem, so the
+	//! Directories tab builds a path list editor instead of the tree.
 	CDirectoryTreeCtrl *m_ShareSelector;
 
+#ifdef CLIENT_GUI
+	//! Set once the user adds/removes a row and cleared when the session ends.
+	//! Guards the editor against being repainted out from under uncommitted
+	//! edits, either by a session refresh or by a late GET_SHARED_DIRS reply.
+	bool m_sharedDirsDirty;
+
+	//! Fill the shared-folders list widget from glob_prefs' roots.
+	void PopulateSharedDirsList();
+	//! Copy the list widget's rows back into glob_prefs' roots.
+	void HarvestSharedDirsList();
+	void OnSharedDirAdd(wxCommandEvent &evt);
+	void OnSharedDirRemove(wxCommandEvent &evt);
+
+public:
+	//! Repaint the editor when a GET_SHARED_DIRS reply lands while the
+	//! dialog is open. A no-op when it isn't, so the reply handler never
+	//! needs to know whether the dialog still exists.
+	static void RefreshSharedDirsIfOpen();
+
+private:
+#endif
+
+public:
+	//! Re-seed the shared-folders editor at the start of an editing session.
+	//! The dialog is constructed once and reused, so without this it keeps
+	//! whatever it captured the first time Preferences was opened — stale the
+	//! moment anything else (amuleGUI over EC, say) changes the roots. Called
+	//! on show rather than on page change so it cannot discard edits the user
+	//! is part-way through, and skipped outright while edits are pending.
+	void PrepareSharedDirsForSession();
+
+	//! Mark the end of an editing session: the pending-edit flags exist to stop
+	//! a refresh clobbering work in progress, so they have to be cleared when
+	//! that work is either applied or discarded. Without this they latch on the
+	//! first edit and suppress every later refresh for the dialog's lifetime —
+	//! and the dialog is never destroyed (OnClose vetoes).
+	void EndSharedDirsSession();
+
+private:
 	//! Pointer to the color-selector
 	wxChoice *m_choiceColor;
 

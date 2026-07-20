@@ -108,6 +108,18 @@ enum
 	IMAGE_FOLDER_SUB_SHARED
 };
 
+void CDirectoryTreeCtrl::Rebuild()
+{
+	if (!m_IsInit) {
+		// Never built: leave it to the first Init(), which starts from the
+		// current state anyway. Keeps the initial drive scan lazy.
+		return;
+	}
+	DeleteAllItems();
+	m_IsInit = false;
+	Init();
+}
+
 void CDirectoryTreeCtrl::Init()
 {
 	// already done ?
@@ -157,6 +169,32 @@ void CDirectoryTreeCtrl::Init()
 	HasChanged = false;
 
 	UpdateSharedDirectories();
+
+	// Remember what this paint was based on (see NeedsRepaintFor).
+	m_paintedRoots.clear();
+	for (SharedMap::const_iterator it = m_lstShared.begin(); it != m_lstShared.end(); ++it) {
+		m_paintedRoots.insert(it->second.GetRaw());
+	}
+	for (SharedMap::const_iterator it = m_lstSharedRecursive.begin(); it != m_lstSharedRecursive.end();
+		++it) {
+		m_paintedRoots.insert("R:" + it->second.GetRaw());
+	}
+}
+
+bool CDirectoryTreeCtrl::NeedsRepaintFor(const PathList &explicitDirs, const PathList &recursiveDirs) const
+{
+	if (!m_IsInit) {
+		// Nothing painted yet; the first Init() will use current state.
+		return false;
+	}
+	std::set<wxString> wanted;
+	for (const CPath &path : explicitDirs) {
+		wanted.insert(path.GetRaw());
+	}
+	for (const CPath &path : recursiveDirs) {
+		wanted.insert("R:" + path.GetRaw());
+	}
+	return wanted != m_paintedRoots;
 }
 
 void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent &evt)

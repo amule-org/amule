@@ -93,6 +93,10 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// the unknown tag and the server falls back to emitting alive-
 	// marker tags for unchanged files (still backward-compatible).
 	AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
+	// Client can read and write the daemon's shared-directory configuration
+	// over EC (EC_OP_GET/SET_SHARED_DIRS). Always advertised; old daemons
+	// ignore the unknown tag and simply never echo it back.
+	AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
 	// Client tells the server "we believe transit between us is fast
 	// (loopback / LAN), so skip per-packet ZLIB up to the receiver
 	// gate". The server honours this hint at WritePacket time; see
@@ -153,6 +157,7 @@ m_req_fifo_thr(20)
 , m_serverMultiSearch(false)
 , m_canChat(false)
 , m_serverChat(false)
+, m_serverSharedDirsConfig(false)
 {
 }
 
@@ -464,6 +469,12 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// daemons omit the echo and the client never polls for chat.
 			if (reply->GetTagByName(EC_TAG_CAN_CHAT)) {
 				m_serverChat = true;
+			}
+			// Server confirmed it serves the shared-directory configuration
+			// ops. Old daemons omit the echo and the GUI keeps the shared
+			// folders panel read-only rather than silently discarding edits.
+			if (reply->GetTagByName(EC_TAG_CAN_SHAREDDIRS_CONFIG)) {
+				m_serverSharedDirsConfig = true;
 			}
 		} else {
 			m_ec_state = EC_FAIL;

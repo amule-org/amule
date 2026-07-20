@@ -853,7 +853,6 @@ if (NEED_LIB_MULEAPPGUI)
 		MuleListCtrl.cpp
 		MuleNotebook.cpp
 		MuleTextCtrl.cpp
-		muuli_wdr.cpp
 	)
 
 

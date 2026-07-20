@@ -1699,12 +1699,35 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     wxStaticBox *item10 = new wxStaticBox( parent, -1, _("Shared folders") );
     wxStaticBoxSizer *item9 = new wxStaticBoxSizer( item10, wxVERTICAL );
 
+#ifdef CLIENT_GUI
+    // Remote GUI: the daemon's filesystem isn't ours to browse, so the roots
+    // are edited as an explicit path list synced over EC instead of a tree.
+    wxStaticText *itemSDHint = new wxStaticText( parent, -1, _("(Folders shared by the core. Enter a path to add one.)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+    item9->Add( itemSDHint, 0, wxALIGN_CENTER, 0 );
+
+    wxListCtrl *itemSDList = new wxListCtrl( parent, IDC_SHAREDDIRS_LIST, wxDefaultPosition, wxSize(100,100), wxLC_REPORT|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
+    item9->Add( itemSDList, wxSizerFlags(1).Expand().CenterVertical() );
+
+    wxBoxSizer *itemSDAddRow = new wxBoxSizer( wxHORIZONTAL );
+    CMuleTextCtrl *itemSDPath = new CMuleTextCtrl( parent, IDC_SHAREDDIR_PATH, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    itemSDPath->SetToolTip(_("Absolute path of a folder on the core's machine, e.g. /home/user/shared"));
+    itemSDAddRow->Add( itemSDPath, wxSizerFlags(1).Expand().CenterVertical() );
+    wxCheckBox *itemSDRecursive = new wxCheckBox( parent, IDC_SHAREDDIR_RECURSIVE, _("Recursive"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemSDRecursive->SetToolTip(_("Share every sub-folder underneath this one, including ones created later."));
+    itemSDAddRow->Add( itemSDRecursive, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    wxButton *itemSDAdd = new wxButton( parent, IDC_SHAREDDIR_ADD, _("Add"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemSDAddRow->Add( itemSDAdd, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    wxButton *itemSDRemove = new wxButton( parent, IDC_SHAREDDIR_REMOVE, _("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemSDAddRow->Add( itemSDRemove, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    item9->Add( itemSDAddRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+#else
     wxStaticText *item11 = new wxStaticText( parent, -1, _("(Right click on folder icon for recursive share)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
     item9->Add( item11, 0, wxALIGN_CENTER, 0 );
 
     CDirectoryTreeCtrl *item12 = new CDirectoryTreeCtrl(parent, IDC_SHARESELECTOR, wxPoint(0,0), wxSize(100,100), wxSUNKEN_BORDER|wxTR_DEFAULT_STYLE|wxTR_HIDE_ROOT );
     wxASSERT( item12 );
     item9->Add( item12, wxSizerFlags(1).Expand().CenterVertical() );
+#endif
     wxCheckBox *item13 = new wxCheckBox( parent, IDC_SHAREHIDDENFILES, _("Share hidden files"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetValue( TRUE );
     item9->Add( item13, 0, wxALIGN_CENTER_VERTICAL, 0 );

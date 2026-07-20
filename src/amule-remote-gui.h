@@ -120,6 +120,15 @@ public:
 
 	bool LoadRemote();
 	void SendToRemote();
+
+	// Shared-directory roots. Unlike the rest of the preferences these are a
+	// variable-length list whose apply rewrites files and triggers a rescan,
+	// so they ride their own ops rather than the prefs packet. The replies go
+	// to a dedicated handler (HandlePacket above static_casts everything it
+	// receives to CEC_Prefs_Packet); results land in this object's
+	// shareddir_*_list members, which outlive the Preferences dialog.
+	void LoadSharedDirsRemote();
+	void SendSharedDirsToRemote();
 };
 
 //

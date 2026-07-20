@@ -79,6 +79,10 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		GenericClientListCtrl.cpp
 		KadDlg.cpp
 		MuleTrayIcon.cpp
+		# Compiled per-executable rather than into the shared muleappgui
+		# static lib: its #ifdef CLIENT_GUI branches need the consuming
+		# target's define, which a single shared object cannot provide.
+		muuli_wdr.cpp
 		OScopeCtrl.cpp
 		PrefsUnifiedDlg.cpp
 		SearchDlg.cpp

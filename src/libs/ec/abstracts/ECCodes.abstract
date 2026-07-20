@@ -159,6 +159,12 @@ EC_OP_GET_CHAT_MESSAGES             0x5B
 
 EC_OP_CHAT_MESSAGES                 0x5C
 
+# Shared-directory configuration. GET returns the daemon's explicit and
+# recursive roots; SET replaces both lists, persists them and rescans.
+EC_OP_GET_SHARED_DIRS               0x5D
+
+EC_OP_SET_SHARED_DIRS               0x5E
+
 [/Section]
 
 [Section Content]
@@ -189,6 +195,10 @@ EC_TAG_FILE_REMOVED                       0x0013
 EC_TAG_PREFER_NO_ZLIB                     0x0014
 EC_TAG_CAN_MULTI_SEARCH                   0x0015
 EC_TAG_CAN_CHAT                           0x0016
+
+# Client can read/write the daemon's shared-directory configuration
+# (EC_OP_GET/SET_SHARED_DIRS). Echoed by daemons that implement it.
+EC_TAG_CAN_SHAREDDIRS_CONFIG              0x0017
 
 
 EC_TAG_CLIENT_NAME                        0x0100
@@ -577,6 +587,19 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_IP2COUNTRY_DOWNLOADING             0x1F0A
 		EC_TAG_IP2COUNTRY_LAST_RESULT             0x1F0B
 		EC_TAG_IP2COUNTRY_UPDATE_NOW              0x1F0C
+
+	# Shared-directory configuration (EC_OP_GET/SET_SHARED_DIRS). One
+	# EC_TAG_SHAREDDIR per configured root, its string value being the
+	# path; the RECURSIVE subtag marks a root whose whole subtree is
+	# shared (shareddir-recursive.dat) versus a plain explicit root
+	# (shareddir-explicit.dat). The runtime union (shareddir.dat) is
+	# derived by the daemon and never travels on the wire.
+	EC_TAG_SHAREDDIR                          0x2000
+		EC_TAG_SHAREDDIR_RECURSIVE                0x2001
+	# SET reply: one REJECTED tag per path the daemon refused, its
+	# string value being the path, with the reason in the ERROR subtag.
+	EC_TAG_SHAREDDIR_REJECTED                 0x2002
+		EC_TAG_SHAREDDIR_ERROR                    0x2003
 [/Section]
 
 [Section Content]

@@ -29,6 +29,7 @@
 #include <wx/treectrl.h>
 #include <vector>
 #include <map>
+#include <set> // painted-roots snapshot (stale-view detection)
 
 #include <common/Path.h>
 
@@ -57,6 +58,22 @@ public:
 
 	// User made any changes to list?
 	bool HasChanged;
+
+	//! Re-create an already-built tree from the current shared roots. Needed
+	//! when those roots change underneath us: UpdateSharedDirectories only
+	//! re-marks the root's immediate children, so anything already expanded
+	//! would keep the marks it was built with and show stale state. Rebuilds
+	//! straight away rather than deferring to the next Init(), because the
+	//! dialog can reopen directly on the Directories page, where no page-change
+	//! event fires and a deferred rebuild would leave the tree empty. A tree
+	//! that was never built is left alone, so first use stays lazy.
+	void Rebuild();
+
+	//! True when the tree was painted from roots other than these, i.e. the
+	//! view is stale and needs rebuilding. The shared marks below the root's
+	//! immediate children are applied when a node is created, so refreshing the
+	//! backing maps alone leaves already-expanded nodes showing old state.
+	bool NeedsRepaintFor(const PathList &explicitDirs, const PathList &recursiveDirs) const;
 
 	// initialize control
 	void Init();
@@ -112,6 +129,10 @@ private:
 	// m_lstShared so prefix-matching (IsInsideRecursiveShare) is
 	// consistent across the two maps.
 	SharedMap m_lstSharedRecursive;
+
+	//! Roots the currently-painted tree was built from, so a later open can
+	//! tell whether the view still reflects them.
+	std::set<wxString> m_paintedRoots;
 	// get map key from path (normalized path)
 	wxString GetKey(const CPath &path);
 
