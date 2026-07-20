@@ -510,6 +510,11 @@ int CamuleApp::OnExit()
 	// _Exit bypasses atexit and static destructors, so the buggy wx
 	// dtor never runs and the process terminates cleanly. Remove this
 	// once the upstream wx fix lands in a release we depend on.
+	//
+	// It also bypasses ~CamuleAppCommon, which would otherwise release the
+	// single-instance lock; drop it here so muleLock is unlinked rather than
+	// left dangling for the next run.
+	ReleaseSingleInstance();
 	std::_Exit(0);
 
 	// Return 0 for successful program termination

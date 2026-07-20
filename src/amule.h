@@ -151,6 +151,11 @@ protected:
 
 	bool InitCommon(int argc, wxChar **argv);
 	void RefreshSingleInstanceChecker();
+	// Drop the single-instance lock (and unlink its file). OnExit() calls
+	// std::_Exit() to dodge the wxWebSession teardown crash, which bypasses
+	// ~CamuleAppCommon — so this must be called explicitly before the exit,
+	// or the muleLock / muleLockRGUI file lingers between runs.
+	void ReleaseSingleInstance();
 	bool CheckMuleDirectory(const wxString &desc,
 		const class CPath &directory,
 		const wxString &alternative,

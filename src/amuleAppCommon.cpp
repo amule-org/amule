@@ -134,6 +134,15 @@ void CamuleAppCommon::RefreshSingleInstanceChecker()
 	m_singleInstance->Acquire("muleLock", thePrefs::GetConfigDir());
 }
 
+void CamuleAppCommon::ReleaseSingleInstance()
+{
+	// ~InstanceLock() -> Release() unlinks the lock file and drops the
+	// fcntl lock. Needed because OnExit() terminates via std::_Exit(),
+	// which skips ~CamuleAppCommon and so would leave the file behind.
+	delete m_singleInstance;
+	m_singleInstance = nullptr;
+}
+
 void CamuleAppCommon::AddLinksFromFile()
 {
 	const wxString fullPath = thePrefs::GetConfigDir() + "ED2KLinks";

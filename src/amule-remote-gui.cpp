@@ -227,6 +227,10 @@ int CamuleRemoteGuiApp::OnExit()
 	// crash. By this point our own cleanup (timer, sockets) has run; _Exit
 	// bypasses atexit + static destructors so the buggy wx dtor never runs.
 	// Remove once the upstream wx fix lands in a release we depend on.
+	//
+	// _Exit also skips ~CamuleAppCommon, which would release the
+	// single-instance lock; drop it here so muleLockRGUI is unlinked.
+	ReleaseSingleInstance();
 	std::_Exit(0);
 
 	return wxApp::OnExit();
