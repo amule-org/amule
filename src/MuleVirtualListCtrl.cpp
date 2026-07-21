@@ -114,14 +114,18 @@ void CMuleVirtualListCtrl::RefreshFromRow(long fromRow)
 		top = 0;
 	}
 	long first = fromRow < top ? top : fromRow;
-	long last = top + GetCountPerPage() + 1;
+	// Clamp into range: after an erase, fromRow can equal the old (larger) count
+	// and land past the last row. RefreshAfter() bails out when its start row is
+	// beyond the visible range, so an out-of-range first would skip the repaint.
 	const long maxRow = static_cast<long>(m_items.size()) - 1;
-	if (last > maxRow) {
-		last = maxRow;
+	if (first > maxRow) {
+		first = maxRow;
 	}
-	if (last >= first) {
-		RefreshItems(first, last);
-	}
+	// Repaint from `first` down to the bottom of the client area, not just to the
+	// last item: on an erase the rows freed below the shrunken count must be
+	// cleared too, or stale, non-clickable rows linger at the bottom until a full
+	// repaint (panel switch) forces one (aMule #399).
+	RefreshAfter(first);
 }
 
 long CMuleVirtualListCtrl::InsertPos(wxUIntPtr data)

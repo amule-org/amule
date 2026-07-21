@@ -188,6 +188,9 @@ public:
 	virtual void Thaw();
 	// Force the deferred (idle-time) layout recompute now; see the definition.
 	void EnsureLayout();
+	// Invalidate from itemFrom down to the bottom of the client area (past the
+	// last item), so rows freed by a shrink get erased rather than left stale.
+	void RefreshAfter(long itemFrom);
 	virtual void OnDrawItem(
 		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
 

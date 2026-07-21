@@ -5612,6 +5612,11 @@ void wxGenericListCtrl::RefreshItems(long itemFrom, long itemTo)
 	m_mainWin->RefreshLines(itemFrom, itemTo);
 }
 
+void wxGenericListCtrl::RefreshAfter(long itemFrom)
+{
+	m_mainWin->RefreshAfter(itemFrom);
+}
+
 // Generic wxListCtrl is more or less a container for two other
 // windows which drawings are done upon. These are namely
 // 'm_headerWin' and 'm_mainWin'.
