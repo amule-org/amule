@@ -2428,12 +2428,12 @@ msgid "Migrated existing GeoLite2-Country.mmdb to %s"
 msgstr "Létező GeoLite2-Country.mmdb migrálva %s helyre"
 
 #: src/IP2Country.cpp:106
-msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences → IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr "IP2Country: MaxMind van kiválasztva GeoIP forrásként, de nincs megadva licenckulcs. Nyissa meg a Beállítások → IP2Country pontot, illessze be az ingyenes MaxMind licenckulcsát, és kattintson a „Frissítés most” gombra."
+msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
+msgstr "IP2Country: MaxMind van kiválasztva GeoIP forrásként, de nincs megadva licenckulcs. Nyissa meg a Beállítások -> IP2Country pontot, illessze be az ingyenes MaxMind licenckulcsát, és kattintson a „Frissítés most” gombra."
 
 #: src/IP2Country.cpp:111
-msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences → IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr "IP2Country: Egyéni URL van kiválasztva GeoIP forrásnak, de nincs URL konfigurálva. Nyissa meg a Beállítások → IP2Country pontot, és adjon meg egy URL-t, amely egy .mmdb (vagy egy olyat tartalmazó .gz / .tar.gz) fájlra mutat."
+msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
+msgstr "IP2Country: Egyéni URL van kiválasztva GeoIP forrásnak, de nincs URL konfigurálva. Nyissa meg a Beállítások -> IP2Country pontot, és adjon meg egy URL-t, amely egy .mmdb (vagy egy olyat tartalmazó .gz / .tar.gz) fájlra mutat."
 
 #: src/IP2Country.cpp:116
 msgid "IP2Country: failed to resolve a GeoIP download URL."

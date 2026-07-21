@@ -1080,7 +1080,7 @@ private:
 				// exiting." the EC layer prints next.
 				wxString msg =
 					CFormat(wxT("amule: synchronous socket read made no progress for %d "
-						    "ms (peer %s) — stalled or desynced peer; dropping the "
+						    "ms (peer %s) - stalled or desynced peer; dropping the "
 						    "connection.")) %
 					m_syncReadTimeoutMs % m_IP;
 				fprintf(stderr, "%s\n", (const char *)unicode2char(msg));

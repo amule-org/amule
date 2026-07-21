@@ -104,12 +104,12 @@ void CIP2Country::StartDownload(int monthOffset)
 		switch (thePrefs::GetGeoIPSource()) {
 		case CPreferences::GeoIPSourceMaxMind:
 			msg = _("IP2Country: MaxMind selected as the GeoIP source but no License Key "
-				"configured. Open Preferences → IP2Country, paste your free MaxMind "
+				"configured. Open Preferences -> IP2Country, paste your free MaxMind "
 				"License Key and click 'Update now'.");
 			break;
 		case CPreferences::GeoIPSourceCustom:
 			msg = _("IP2Country: Custom URL selected as the GeoIP source but no URL "
-				"configured. Open Preferences → IP2Country and supply a URL that "
+				"configured. Open Preferences -> IP2Country and supply a URL that "
 				"points to an .mmdb (or .gz / .tar.gz containing one).");
 			break;
 		default:

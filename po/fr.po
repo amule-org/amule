@@ -2444,12 +2444,12 @@ msgid "Migrated existing GeoLite2-Country.mmdb to %s"
 msgstr "Le fichier GeoLite2-Country.mmdb existant a été migré vers %s"
 
 #: src/IP2Country.cpp:106
-msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences → IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr "IP2COuntry : MaxMind a été sélectionné en tant que source de GeoIP mais aucune clef de licence n'a été configurée. Ouvrez Préférences → IP2Country, collez votre clef de licence MaxMind gratuit et cliquez sur « Mettre à jour maintenant »."
+msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
+msgstr "IP2COuntry : MaxMind a été sélectionné en tant que source de GeoIP mais aucune clef de licence n'a été configurée. Ouvrez Préférences -> IP2Country, collez votre clef de licence MaxMind gratuit et cliquez sur « Mettre à jour maintenant »."
 
 #: src/IP2Country.cpp:111
-msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences → IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr "IP2Country : un lien (URL) personnalisé est sélectionné comme source de GeoIP, mais aucun lien n'est configuré. Ouvrez Préférences → IP2Country et fournissez un lien qui pointe vers un mmdb (ou bien un .gz / .tar.gz qui en contiendrait un)."
+msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
+msgstr "IP2Country : un lien (URL) personnalisé est sélectionné comme source de GeoIP, mais aucun lien n'est configuré. Ouvrez Préférences -> IP2Country et fournissez un lien qui pointe vers un mmdb (ou bien un .gz / .tar.gz qui en contiendrait un)."
 
 #: src/IP2Country.cpp:116
 msgid "IP2Country: failed to resolve a GeoIP download URL."

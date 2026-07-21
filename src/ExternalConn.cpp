@@ -657,7 +657,7 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				if (request->GetTagByName(EC_TAG_PREFER_NO_ZLIB)) {
 					SetLocalPeer(true);
 					AddDebugLogLineN(logEC,
-						CFormat("EC peer %s asked to skip ZLIB (loopback/LAN hint) — "
+						CFormat("EC peer %s asked to skip ZLIB (loopback/LAN hint) - "
 							"bypassing for small/medium packets") %
 							GetPeer());
 				}

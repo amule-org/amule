@@ -2102,7 +2102,7 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 		const wxString &last = thePrefs::GetGeoIPStatusLastResult();
 		if (!last.IsEmpty()) {
 			if (!line.IsEmpty()) {
-				line += " — ";
+				line += " - ";
 			}
 			line += last;
 		}

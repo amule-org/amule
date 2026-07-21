@@ -2437,12 +2437,12 @@ msgid "Migrated existing GeoLite2-Country.mmdb to %s"
 msgstr "Mevcut GeoLite2-Country.mmdb dosyası %s unsuruna taşındı"
 
 #: src/IP2Country.cpp:106
-msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences → IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr "IP2Country: MaxMind GeoIP kaynağı olarak seçilmiştir fakat hiçbir Lisans Anahtarı yapılandırılmamıştır. Ayarlar → IP2Country menülerine gidin, ücretsiz MaxMind Lisans Anahtarınızı yapıştırın ve 'Şimdi güncelle' düğmesine tıklayın."
+msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
+msgstr "IP2Country: MaxMind GeoIP kaynağı olarak seçilmiştir fakat hiçbir Lisans Anahtarı yapılandırılmamıştır. Ayarlar -> IP2Country menülerine gidin, ücretsiz MaxMind Lisans Anahtarınızı yapıştırın ve 'Şimdi güncelle' düğmesine tıklayın."
 
 #: src/IP2Country.cpp:111
-msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences → IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr "IP2Country: kişiselleştirilmiş bir URL (bağlantı) GeoIP kaynağı olarak seçilmiştir fakat hiçbir URL yapılandırılmamıştır. Ayarlar → IP2Country menülerine gidin ve bir .mmdb dosyasına (veya onu içeren bir .gz / .tar.gz dosyasına) işaret eden bir URL girin."
+msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
+msgstr "IP2Country: kişiselleştirilmiş bir URL (bağlantı) GeoIP kaynağı olarak seçilmiştir fakat hiçbir URL yapılandırılmamıştır. Ayarlar -> IP2Country menülerine gidin ve bir .mmdb dosyasına (veya onu içeren bir .gz / .tar.gz dosyasına) işaret eden bir URL girin."
 
 #: src/IP2Country.cpp:116
 msgid "IP2Country: failed to resolve a GeoIP download URL."

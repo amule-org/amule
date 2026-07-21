@@ -733,7 +733,7 @@ void CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, bool bForceRepr
 		theApp->mediaProbeThread->QueueProbe(pFile->GetFileHash(), fullPath, ffprobePath);
 	} else {
 		AddDebugLogLineN(logMediaProbe,
-			CFormat(wxT("MediaProbe: dropped %s — probe thread not ready")) %
+			CFormat(wxT("MediaProbe: dropped %s - probe thread not ready")) %
 				pFile->GetFileName());
 	}
 }

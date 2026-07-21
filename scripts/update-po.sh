@@ -87,6 +87,15 @@ sed -e "1,5 s/^# Copyright (C) YEAR /# Copyright (C) ${YEAR} /" po/amule.pot > p
 	&& mv po/amule.pot.tmp po/amule.pot
 die 32 "failed to substitute copyright year in po/amule.pot"
 
+# xgettext stamps "charset=CHARSET" whenever every extracted msgid is ASCII
+# (it only infers UTF-8 once it sees a non-ASCII byte). An all-ASCII template
+# is legitimate, but "CHARSET" is not a portable encoding name -- msgcat and
+# the catalog-sync check reject it. Pin the header to UTF-8, which is correct
+# for ASCII and already matches every .po.
+sed -e "s/charset=CHARSET/charset=UTF-8/" po/amule.pot > po/amule.pot.tmp \
+	&& mv po/amule.pot.tmp po/amule.pot
+die 33 "failed to normalise charset in po/amule.pot"
+
 echo "Merging po/amule.pot into each .po file ..."
 # Write via --output-file + mv rather than --update: msgmerge --update
 # treats the .po as up-to-date when only the pot's wrap differs from

@@ -172,7 +172,7 @@ void ProtocolHandler_QueueSchemeLink(const wxString &url)
 	// the literals CMagnetED2KConverter / the eD2k parser expect.
 	wxString decoded = wxURI::Unescape(url);
 	const wxString &cfgDir = thePrefs::GetConfigDir();
-	AMULE_URL_LOG(wxT("queue: '%s' → '%s'"), url, decoded);
+	AMULE_URL_LOG(wxT("queue: '%s' -> '%s'"), url, decoded);
 
 	wxTextFile ed2kFile(cfgDir + wxT("ED2KLinks"));
 	if (!ed2kFile.Exists()) {
