@@ -489,15 +489,37 @@ wxUIntPtr CSearchDlg::AllocateOptimisticId()
 	return 0x40000000u | (s_optimisticIdCounter & 0x3fffffffu);
 }
 
-CSearchListCtrl *CSearchDlg::GetBrowseList(uint32 ecid)
+CSearchListCtrl *CSearchDlg::GetBrowseList(uint32 ecid, int *outPage)
 {
 	for (size_t i = 0; i < m_notebook->GetPageCount(); ++i) {
 		CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(i));
 		if (page && page->GetBrowseEcid() == ecid) {
+			if (outPage) {
+				*outPage = static_cast<int>(i);
+			}
 			return page;
 		}
 	}
 	return nullptr;
+}
+
+bool CSearchDlg::ActivateBrowseTabIfOpen(uint32 peerEcid)
+{
+	// ecid 0 is "no live client" (e.g. an unlinked friend): nothing to match.
+	if (peerEcid == 0) {
+		return false;
+	}
+	int page = -1;
+	if (GetBrowseList(peerEcid, &page) && page >= 0) {
+		m_notebook->SetSelection(static_cast<size_t>(page));
+		// The request came from another panel (Friends / Transfers); bring the
+		// Search panel forward so the already-open tab is actually revealed.
+		if (theApp->amuledlg) {
+			theApp->amuledlg->ShowSearchWindow();
+		}
+		return true;
+	}
+	return false;
 }
 
 void CSearchDlg::EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUIntPtr searchID)

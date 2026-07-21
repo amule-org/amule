@@ -138,6 +138,14 @@ public:
 	// routing ID is rekeyed to searchID. Shared by monolithic and amuleGUI.
 	void EnsureBrowseTab(uint32 peerEcid, const wxString &userName, wxUIntPtr searchID);
 
+	// "View Files": if a browse tab for this peer's ECID is already open, bring
+	// the Search panel forward, select that tab, and return true. Lets the
+	// request sites skip re-browsing a peer whose listing is still on screen --
+	// which would otherwise fire a redundant request and duplicate the results
+	// in the existing tab. Returns false (and does nothing) for ecid 0 or when
+	// no such tab is open. Shared by monolithic and amuleGUI.
+	bool ActivateBrowseTabIfOpen(uint32 peerEcid);
+
 	// Remote GUI: allocate a fresh optimistic placeholder tab ID in the reserved
 	// high sub-range (bit 30, bottom half) the daemon's allocators never produce.
 	wxUIntPtr AllocateOptimisticId();
@@ -203,7 +211,8 @@ private:
 	void ApplyProgressToBar(uint32 status);
 
 	// Find an open "View Files" tab by the browsed peer's ECID (NULL if none).
-	CSearchListCtrl *GetBrowseList(uint32 ecid);
+	// When found and outPage is non-null, outPage receives the tab's page index.
+	CSearchListCtrl *GetBrowseList(uint32 ecid, int *outPage = nullptr);
 
 	// Monotonic counter behind search/browse tab IDs. On the remote GUI both a
 	// new search and a browse draw their optimistic placeholder from it via

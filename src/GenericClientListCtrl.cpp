@@ -29,6 +29,7 @@
 #include <common/Format.h> // Needed for CFormat
 #include "amule.h"         // Needed for theApp
 #include "amuleDlg.h"      // Needed for CamuleDlg
+#include "SearchDlg.h"     // Needed for CSearchDlg (View Files browse tab)
 #include "BarShader.h"     // Needed for CBarShader
 #include "BitVector.h"
 #include "ClientDetailDialog.h" // Needed for CClientDetailDialog
@@ -552,8 +553,16 @@ void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
 	ItemList sources = ::GetSelectedItems(this);
 
-	if (sources.size() == 1) {
-		sources.front()->GetSource().RequestSharedFileList();
+	// Browse each selected peer, opening one result tab per peer. If a peer's
+	// listing is already open in the Search panel, switch to that tab instead
+	// of re-requesting -- a second request would duplicate the results in the
+	// existing tab. Only once the tab is closed does a fresh request go out.
+	for (ClientCtrlItem_Struct *source : sources) {
+		CClientRef &client = source->GetSource();
+		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&
+			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(client.ECID()))) {
+			client.RequestSharedFileList();
+		}
 	}
 }
 

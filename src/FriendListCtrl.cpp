@@ -36,6 +36,7 @@
 #include "AddFriend.h"          // Needed for CAddFriend
 #include "ChatWnd.h"            // Needed for CChatWnd
 #include "Friend.h"             // Needed for CFriend
+#include "SearchDlg.h"          // Needed for CSearchDlg (View Files browse tab)
 #include "muuli_wdr.h"
 #include "SafeFile.h"
 #include "FriendList.h" // Needed for the friends list
@@ -222,7 +223,16 @@ void CFriendListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 
 	while (index != -1) {
 		CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(index));
-		theApp->friendlist->RequestSharedFileList(cur_friend);
+		// If this friend's listing is already open in the Search panel, switch
+		// to that tab instead of re-requesting -- a second request would
+		// duplicate the results in the existing tab. The browse tab is keyed by
+		// the linked client's ECID (0 when the friend isn't currently linked).
+		const CClientRef &linked = cur_friend->GetLinkedClient();
+		const uint32 ecid = linked.IsLinked() ? linked.ECID() : 0;
+		if (!(theApp->amuledlg && theApp->amuledlg->m_searchwnd &&
+			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(ecid))) {
+			theApp->friendlist->RequestSharedFileList(cur_friend);
+		}
 		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 }
