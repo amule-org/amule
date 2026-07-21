@@ -186,6 +186,8 @@ public:
 
 	virtual void Freeze();
 	virtual void Thaw();
+	// Force the deferred (idle-time) layout recompute now; see the definition.
+	void EnsureLayout();
 	virtual void OnDrawItem(
 		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
 

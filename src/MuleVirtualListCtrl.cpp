@@ -102,6 +102,9 @@ void CMuleVirtualListCtrl::RefreshFromRow(long fromRow)
 	// Rows at/after fromRow shifted (insert/erase); repaint from there to the
 	// bottom of the viewport, leaving rows above untouched (no blink there).
 	SetItemCount(static_cast<long>(m_items.size()));
+	// Recompute the layout now (see AppendItemDataNow) so a single insert/erase
+	// while a popup menu is open doesn't blank the list; no-op while frozen.
+	EnsureLayout();
 	if (m_items.empty()) {
 		Refresh(false);
 		return;
@@ -157,6 +160,11 @@ void CMuleVirtualListCtrl::AppendItemDataNow(wxUIntPtr data)
 	m_items.push_back(data);
 	m_rowOf[data] = static_cast<long>(m_items.size()) - 1;
 	SetItemCount(static_cast<long>(m_items.size()));
+	// Clear the just-set dirty layout now instead of waiting for idle: a single
+	// add while a popup menu is open (AddSource) would otherwise leave the list
+	// blank until the menu closes, since idle events don't run during a modal
+	// loop. No-op inside a Freeze/Thaw batch (Thaw recomputes at its end).
+	EnsureLayout();
 	RefreshItem(static_cast<long>(m_items.size()) - 1);
 }
 

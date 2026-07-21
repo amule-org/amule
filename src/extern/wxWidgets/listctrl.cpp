@@ -607,6 +607,25 @@ public:
 	void Freeze();
 	void Thaw();
 
+	// Do the pending layout work OnInternalIdle would do when m_dirty, but
+	// synchronously -- for when a modal loop (an open popup menu) starves idle
+	// events so the usual OnInternalIdle -> RecalculatePositions never runs and
+	// OnPaint would blit blank rows after a SetItemCount. No-op while a
+	// Freeze/Thaw batch is in effect (Thaw recomputes once at its end) and when
+	// nothing is dirty.
+	//
+	// RecalculatePositions(noRefresh) recomputes the scrollbars and resets the
+	// visible-line range but does NOT clear m_dirty -- only RefreshAll() does,
+	// and we deliberately skip its full repaint because the caller issues a
+	// targeted one -- so clear m_dirty here, else OnPaint keeps blanking.
+	void EnsureLayout()
+	{
+		if (m_dirty && m_freezeCount == 0) {
+			RecalculatePositions(true /* no refresh */);
+			m_dirty = false;
+		}
+	}
+
 	void OnRenameTimer();
 	bool OnRenameAccept(size_t itemEdit, const wxString &value);
 	void OnRenameCancelled(size_t itemEdit);
@@ -5643,6 +5662,25 @@ void wxGenericListCtrl::Freeze()
 void wxGenericListCtrl::Thaw()
 {
 	m_mainWin->Thaw();
+
+	// wxMSW leaves rows blank after a Freeze/Thaw-wrapped repopulate: the
+	// cached visible-line range is stale and Thaw's repaint blits it without
+	// recomputing, so the exposed rows stay empty until a scroll or click
+	// forces a recompute (aMule #478, #445 -- same wxMSW blit-without-repaint
+	// family, reached here through a data refresh rather than scrolling). Once
+	// fully thawed (a nested Freeze still suppresses painting), do the work the
+	// idle handler would do when dirty -- RecalculatePositions() resets the
+	// visible-line range -- but now, then repaint. macOS/GTK recompute on their
+	// own and are unaffected.
+	if (!m_mainWin->IsFrozen()) {
+		m_mainWin->RecalculatePositions();
+		m_mainWin->RefreshAll();
+	}
+}
+
+void wxGenericListCtrl::EnsureLayout()
+{
+	m_mainWin->EnsureLayout();
 }
 
 } // namespace MuleExtern
