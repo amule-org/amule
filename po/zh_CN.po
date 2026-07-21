@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-20 23:50+0200\n"
-"PO-Revision-Date: 2026-07-20 13:10+0000\n"
+"PO-Revision-Date: 2026-07-21 11:48+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -950,19 +950,17 @@ msgid "All"
 msgstr "全部"
 
 #: src/amule-remote-gui.cpp:1257
-#, fuzzy
 msgid "not readable"
-msgstr "不可用"
+msgstr "不可读"
 
 #: src/amule-remote-gui.cpp:1258
-#, fuzzy
 msgid "not found"
-msgstr "文件未找到。"
+msgstr "未找到"
 
 #: src/amule-remote-gui.cpp:1263
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "核心拒绝了这些共享的文件夹：%s"
 
 #: src/amule-remote-gui.cpp:1321 src/ExternalConn.cpp:2328
 msgid "Invalid link or already on list."
@@ -3992,19 +3990,19 @@ msgstr "共享的文件夹"
 
 #: src/muuli_wdr.cpp:1705
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(由核心共享的文件夹。输入路径添加一个。)"
 
 #: src/muuli_wdr.cpp:1713
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "核心机器上文件夹的绝对路径，如 /home/user/shared"
 
 #: src/muuli_wdr.cpp:1715 src/PrefsUnifiedDlg.cpp:2740
 msgid "Recursive"
-msgstr ""
+msgstr "递归"
 
 #: src/muuli_wdr.cpp:1716
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "分享此文件夹下每个子文件夹，包括之后创建的子文件夹。"
 
 #: src/muuli_wdr.cpp:1720 src/utils/aLinkCreator/src/alcframe.cpp:141
 msgid "Remove"
@@ -5909,7 +5907,6 @@ msgid "Reloading shared files: %u files scanned"
 msgstr "正重新加载共享文件：扫描了 %u 个文件"
 
 #: src/PrefsUnifiedDlg.cpp:2739
-#, fuzzy
 msgid "Shared folder"
 msgstr "共享的文件夹"
 

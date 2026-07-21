@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-07-17 16:56+0200\n"
-"PO-Revision-Date: 2026-07-20 13:11+0000\n"
+"PO-Revision-Date: 2026-07-21 11:49+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -673,7 +673,7 @@ msgstr "Priorità normale."
 #. type: Plain text
 #: amulecmd.1.in:143
 msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
-msgstr ""
+msgstr "Mostra i progressi di una ricerca in corso. Accetta facoltativamente un I<E<lt>idE<gt>> di ricerca (come stampato da B<search>); senza id, mostra la ricerca avviata più di recente."
 
 # type: Plain text
 #. type: Plain text
@@ -708,7 +708,7 @@ msgstr "Cancella il log."
 #. type: Plain text
 #: amulecmd.1.in:161
 msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
-msgstr ""
+msgstr "Mostra i risultati di una ricerca. Accetta facoltativamente un I<E<lt>idE<gt>> di ricerca (come stampato da B<search>); senza id, mostra la ricerca avviata più di recente.  È possibile mantenere più ricerche contemporaneamente sul demone, indirizzandole tramite id."
 
 # type: Plain text
 #. type: Plain text
@@ -719,10 +719,8 @@ msgstr "Riprende il download specificato da I<E<lt>hashE<gt>> o I<E<lt>numeroE<g
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in:169
-#, fuzzy
-#| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Esegue una ricerca per la data I<E<lt>parola-chiaveE<gt>>. Il tipo della ricerca e una parola chiave da cercare sono obbligatori. Esempio: `search kad amule' esegue una ricerca sulla rete kad per `amule'."
+msgstr "Esegue una ricerca per la data I<E<lt>parola-chiaveE<gt>>. Il tipo della ricerca e una parola chiave da cercare sono obbligatori. Esempio: ' search kad amule' esegue una ricerca sulla rete kad per ' amule'. Stampa un id di ricerca, da passare a B<results> o B<progress> per indirizzare questa ricerca. È possibile eseguire più ricerche contemporaneamente, ciascuna con il proprio id."
 
 # type: Plain text
 #. type: Plain text

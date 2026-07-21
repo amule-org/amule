@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-20 23:50+0200\n"
-"PO-Revision-Date: 2026-07-20 13:01+0000\n"
+"PO-Revision-Date: 2026-07-21 11:40+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -958,19 +958,17 @@ msgid "All"
 msgstr "Tutto"
 
 #: src/amule-remote-gui.cpp:1257
-#, fuzzy
 msgid "not readable"
-msgstr "Non disponibile"
+msgstr "non leggibile"
 
 #: src/amule-remote-gui.cpp:1258
-#, fuzzy
 msgid "not found"
-msgstr "File non trovato."
+msgstr "non trovato"
 
 #: src/amule-remote-gui.cpp:1263
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "Il core ha rifiutato queste cartelle condivise:%s"
 
 #: src/amule-remote-gui.cpp:1321 src/ExternalConn.cpp:2328
 msgid "Invalid link or already on list."
@@ -2247,11 +2245,11 @@ msgstr "Forza la compressione ZLIB indipendentemente dalla località dell'IP con
 
 #: src/ExternalConnector.cpp:549
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "Accoda una copia di tutto l'output della console a questo file di log (default: <config-dir>/amuleapi.log)."
 
 #: src/ExternalConnector.cpp:555
 msgid "Do not write a log file; print to the console only."
-msgstr ""
+msgstr "Non scrivere alcun file di log; stampa solo sulla console."
 
 #: src/FileDetailDialog.cpp:78
 msgid "File Details"
@@ -2634,9 +2632,9 @@ msgid "Kad note search for '%s' not started: a note lookup is already running fo
 msgstr "Ricerca note Kad per '%s' non avviata: una ricerca note è già in corso per questo file"
 
 #: src/KnownFile.cpp:1563
-#, fuzzy, c-format
+#, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr "Ricerca note Kad per '%s' non avviata: il file non è nella lista dei condivisi né nella coda di download"
+msgstr "Ricerca note Kad per '%s' non avviata: il file non è nella lista dei condivisi, nella coda di download né nei risultati di ricerca"
 
 #: src/KnownFile.cpp:1577
 #, c-format
@@ -3304,9 +3302,8 @@ msgid "Packages saved by I.C.H. :"
 msgstr "Pacchetti recuperati da ICH:"
 
 #: src/muuli_wdr.cpp:609
-#, fuzzy
 msgid "Sharing"
-msgstr "Condivisione: "
+msgstr "Condivisione"
 
 #: src/muuli_wdr.cpp:616 src/SharedFilesCtrl.cpp:112
 msgid "Requests"
@@ -3329,14 +3326,12 @@ msgid "Complete Sources"
 msgstr "Fonti complete"
 
 #: src/muuli_wdr.cpp:625 src/SharedFilesCtrl.cpp:122
-#, fuzzy
 msgid "Shared since"
-msgstr "File condivisi"
+msgstr "Condiviso dal"
 
 #: src/muuli_wdr.cpp:626 src/SharedFilesCtrl.cpp:123
-#, fuzzy
 msgid "Last upload"
-msgstr ", Upload: "
+msgstr "Ultimo upload"
 
 #: src/muuli_wdr.cpp:637
 msgid "Media Info"
@@ -4005,19 +4000,19 @@ msgstr "Cartelle condivise"
 
 #: src/muuli_wdr.cpp:1705
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(Cartelle condivise dal core. Inserisci un percorso per aggiungerne una.)"
 
 #: src/muuli_wdr.cpp:1713
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "Percorso assoluto di una cartella sulla macchina del core, ad es. /home/user/shared"
 
 #: src/muuli_wdr.cpp:1715 src/PrefsUnifiedDlg.cpp:2740
 msgid "Recursive"
-msgstr ""
+msgstr "Ricorsivo"
 
 #: src/muuli_wdr.cpp:1716
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "Condividi tutte le sottocartelle contenute in questa, comprese quelle create in seguito."
 
 #: src/muuli_wdr.cpp:1720 src/utils/aLinkCreator/src/alcframe.cpp:141
 msgid "Remove"
@@ -5921,9 +5916,8 @@ msgid "Reloading shared files: %u files scanned"
 msgstr "Ricarica file condivisi: %u file analizzati"
 
 #: src/PrefsUnifiedDlg.cpp:2739
-#, fuzzy
 msgid "Shared folder"
-msgstr "Cartelle condivise"
+msgstr "Cartella condivisa"
 
 #: src/SearchDlg.cpp:358
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
@@ -6400,9 +6394,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "Non è possibile risolvere il DNS per il server %s: impossibile connettersi!"
 
 #: src/ServerWnd.cpp:76
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "log di aMule"
+msgstr "log di aMuleGUI"
 
 #: src/ServerWnd.cpp:136
 msgid "Server not added: No IP or hostname specified."
@@ -7032,7 +7025,7 @@ msgstr "La rotazione delle fonti in modalità endgame è %s.\n"
 #: src/TextClient.cpp:884
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "Ricerca iniziata (id %u).\n"
 
 #: src/TextClient.cpp:894
 msgid "eD2k"
@@ -7099,7 +7092,7 @@ msgstr "[Partfile]"
 
 #: src/TextClient.cpp:1060 src/TextClient.cpp:1076
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "Ricerca scaduta o ID sconosciuto. Avvia una nuova ricerca.\n"
 
 #: src/TextClient.cpp:1065
 #, c-format
@@ -7408,15 +7401,16 @@ msgid "Execute a kad search"
 msgstr "Effettua una ricerca sulla rete Kad"
 
 #: src/TextClient.cpp:1329
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "Mostra risultati dell'ultima ricerca."
+msgstr "Mostra risultati di una ricerca."
 
 #: src/TextClient.cpp:1330
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"Restituisce i risultati di una ricerca.\n"
+"Accetta facoltativamente un id di ricerca (da 'search ...'); senza id, restituisce i risultati della ricerca avviata più di recente.\n"
 
 #: src/TextClient.cpp:1337
 msgid "Show the progress of a search."
@@ -7427,6 +7421,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"Mostra lo stato d'avanzamento di una ricerca.\n"
+"Accetta facoltativamente un id di ricerca; senza id, mostra lo stato d'avanzamento della ricerca avviata più di recente.\n"
 
 #: src/TextClient.cpp:1345
 msgid "Start downloading a file"

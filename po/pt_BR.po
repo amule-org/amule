@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-20 23:50+0200\n"
-"PO-Revision-Date: 2026-07-20 13:05+0000\n"
+"PO-Revision-Date: 2026-07-21 11:43+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -954,19 +954,17 @@ msgid "All"
 msgstr "Tudo"
 
 #: src/amule-remote-gui.cpp:1257
-#, fuzzy
 msgid "not readable"
-msgstr "Não Disponível"
+msgstr "não é possivel ler"
 
 #: src/amule-remote-gui.cpp:1258
-#, fuzzy
 msgid "not found"
-msgstr "Arquivo não encontrado."
+msgstr "não encontrado"
 
 #: src/amule-remote-gui.cpp:1263
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "O núcleo rejeitou as seguintes pastas compartilhadas: %s"
 
 #: src/amule-remote-gui.cpp:1321 src/ExternalConn.cpp:2328
 msgid "Invalid link or already on list."
@@ -3998,19 +3996,19 @@ msgstr "Pastas compartilhadas"
 
 #: src/muuli_wdr.cpp:1705
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(Pastas compartilhadas pelo núcleo. Digite um caminho para adicionar uma.)"
 
 #: src/muuli_wdr.cpp:1713
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "Caminho absoluto de uma pasta no núcleo da máquina, e.g. /home/user/shared"
 
 #: src/muuli_wdr.cpp:1715 src/PrefsUnifiedDlg.cpp:2740
 msgid "Recursive"
-msgstr ""
+msgstr "Recursivo"
 
 #: src/muuli_wdr.cpp:1716
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "Compartilhar todas as sub-pastas dentro desta, incluindo as criadas posteriormente."
 
 #: src/muuli_wdr.cpp:1720 src/utils/aLinkCreator/src/alcframe.cpp:141
 msgid "Remove"
@@ -5915,9 +5913,8 @@ msgid "Reloading shared files: %u files scanned"
 msgstr "Recarregando arquivos compartilhados: %u arquivos encontrados"
 
 #: src/PrefsUnifiedDlg.cpp:2739
-#, fuzzy
 msgid "Shared folder"
-msgstr "Pastas compartilhadas"
+msgstr "Pasta compartilhada"
 
 #: src/SearchDlg.cpp:358
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
