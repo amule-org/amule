@@ -132,113 +132,127 @@ CSharedFilesWnd::~CSharedFilesWnd()
 	}
 }
 
+// Refresh just the stat bars/labels for the current selection. Cheap
+// (iterates only the selected rows), so it can run on every selection change
+// regardless of the client-show mode -- the client list below is the costly
+// part and only depends on the selection in ClientShowSelected mode.
+void CSharedFilesWnd::UpdateSelectionStats()
+{
+	if (sharedfilesctrl->IsSorting()) {
+		return;
+	}
+
+	// Bars fill with this session's share of the file's all-time activity
+	// (session / all-time -- the same two numbers as each label). Both come
+	// from the per-file EC counters, so it is reliable in the remote GUI --
+	// unlike a library-wide "total", which can't be gotten cheaply here -- and
+	// the per-mille scale keeps TB-scale byte counts inside the gauge's int
+	// range (raw bytes, even /1024, overflow it and blank the bar).
+	m_bar_requests->SetRange(1000);
+	m_bar_accepted->SetRange(1000);
+	m_bar_transfer->SetRange(1000);
+
+	uint32 session_requests = 0;
+	uint32 session_accepted = 0;
+	uint64 session_transferred = 0;
+	uint32 all_requests = 0;
+	uint32 all_accepted = 0;
+	uint64 all_transferred = 0;
+	int selectedCount = 0;
+
+	long index = -1;
+	while ((index = sharedfilesctrl->GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
+		// Virtual-list control: rows map to files via the model, not per-item data.
+		CKnownFile *file = sharedfilesctrl->FileAtRow(index);
+		wxASSERT(file);
+		session_requests += file->statistic.GetRequests();
+		session_accepted += file->statistic.GetAccepts();
+		session_transferred += file->statistic.GetTransferred();
+		all_requests += file->statistic.GetAllTimeRequests();
+		all_accepted += file->statistic.GetAllTimeAccepts();
+		all_transferred += file->statistic.GetAllTimeTransferred();
+		++selectedCount;
+	}
+
+	if (selectedCount == 0) {
+		m_bar_requests->SetValue(0);
+		CastChild(IDC_SREQUESTED, wxStaticText)->SetLabel("- / -");
+		m_bar_accepted->SetValue(0);
+		CastChild(IDC_SACCEPTED, wxStaticText)->SetLabel("- / -");
+		m_bar_transfer->SetValue(0);
+		CastChild(IDC_STRANSFERRED, wxStaticText)->SetLabel("- / -");
+		return;
+	}
+
+	// Store text lengths, and layout() when the texts have grown. The label
+	// always shows the selected file's real value; only the bar is a fraction.
+	static uint32 lReq = 0, lAcc = 0, lTrans = 0;
+	// session / all-time as a per-mille gauge fill; all-time >= session and both
+	// are 64-bit, so this never overflows or exceeds the range.
+	auto sharePerMille = [](uint64 sess, uint64 all) -> int {
+		if (all == 0) {
+			return 0;
+		}
+		uint64 pm = (uint64)1000 * sess / all;
+		return (int)(pm > 1000 ? 1000 : pm);
+	};
+	// Requests
+	m_bar_requests->SetValue(sharePerMille(session_requests, all_requests));
+	wxString labelReq = CFormat("%d / %d") % session_requests % all_requests;
+	CastChild(IDC_SREQUESTED, wxStaticText)->SetLabel(labelReq);
+
+	// Accepted requests
+	m_bar_accepted->SetValue(sharePerMille(session_accepted, all_accepted));
+	wxString labelAcc = CFormat("%d / %d") % session_accepted % all_accepted;
+	CastChild(IDC_SACCEPTED, wxStaticText)->SetLabel(labelAcc);
+
+	// Transferred
+	m_bar_transfer->SetValue(sharePerMille(session_transferred, all_transferred));
+	wxString labelTrans = CastItoXBytes(session_transferred) + " / " + CastItoXBytes(all_transferred);
+	CastChild(IDC_STRANSFERRED, wxStaticText)->SetLabel(labelTrans);
+
+	if (labelReq.Len() > lReq || labelAcc.Len() > lAcc || labelTrans.Len() > lTrans) {
+		lReq = labelReq.Len();
+		lAcc = labelAcc.Len();
+		lTrans = labelTrans.Len();
+		s_sharedfilespeerHeader->Layout();
+	}
+}
+
 void CSharedFilesWnd::SelectionUpdated()
 {
-	if (!sharedfilesctrl->IsSorting()) {
-		uint64 lTransferred = theApp->knownfiles->transferred;
-		uint32 lAccepted = theApp->knownfiles->accepted;
-		uint32 lRequested = theApp->knownfiles->requested;
-		m_bar_requests->SetRange(lRequested);
-		m_bar_accepted->SetRange(lAccepted);
-		m_bar_transfer->SetRange(lTransferred / 1024);
+	if (sharedfilesctrl->IsSorting()) {
+		return;
+	}
 
-		CKnownFileVector fileVector;
+	UpdateSelectionStats();
 
-		// Create a total statistic for the selected item(s)
-		uint32 session_requests = 0;
-		uint32 session_accepted = 0;
-		uint64 session_transferred = 0;
-		uint32 all_requests = 0;
-		uint32 all_accepted = 0;
-		uint64 all_transferred = 0;
-
+	// The client list follows the client-show mode.
+	CKnownFileVector fileVector;
+	if (m_clientShow != ClientShowUploading) {
 		long index = -1;
 		int filter =
 			(m_clientShow == ClientShowSelected) ? wxLIST_STATE_SELECTED : wxLIST_STATE_DONTCARE;
 		while ((index = sharedfilesctrl->GetNextItem(index, wxLIST_NEXT_ALL, filter)) != -1) {
-			// Virtual-list control: rows map to files via the model, not
-			// per-item data.
-			CKnownFile *file = sharedfilesctrl->FileAtRow(index);
-			wxASSERT(file);
-
-			// Bars are always for selected files
-			if (sharedfilesctrl->GetItemState(index, wxLIST_STATE_SELECTED)) {
-				session_requests += file->statistic.GetRequests();
-				session_accepted += file->statistic.GetAccepts();
-				session_transferred += file->statistic.GetTransferred();
-
-				all_requests += file->statistic.GetAllTimeRequests();
-				all_accepted += file->statistic.GetAllTimeAccepts();
-				all_transferred += file->statistic.GetAllTimeTransferred();
-			}
-
-			if (m_clientShow != ClientShowUploading) {
-				fileVector.push_back(file);
-			}
+			fileVector.push_back(sharedfilesctrl->FileAtRow(index));
 		}
-
-		if (fileVector.empty()) {
-			// Requests
-			m_bar_requests->SetValue(0);
-			CastChild(IDC_SREQUESTED, wxStaticText)->SetLabel("- / -");
-
-			// Accepted requests
-			m_bar_accepted->SetValue(0);
-			CastChild(IDC_SACCEPTED, wxStaticText)->SetLabel("- / -");
-
-			// Transferred
-			m_bar_transfer->SetValue(0);
-			CastChild(IDC_STRANSFERRED, wxStaticText)->SetLabel("- / -");
-
-		} else {
-			std::sort(fileVector.begin(), fileVector.end());
-
-			// Store text lengths, and layout() when the texts have grown
-			static uint32 lReq = 0, lAcc = 0, lTrans = 0;
-			// Requests
-			session_requests = session_requests > lRequested ? lRequested : session_requests;
-			m_bar_requests->SetValue(session_requests);
-			wxString labelReq = CFormat("%d / %d") % session_requests % all_requests;
-			CastChild(IDC_SREQUESTED, wxStaticText)->SetLabel(labelReq);
-
-			// Accepted requests
-			session_accepted = session_accepted > lAccepted ? lAccepted : session_accepted;
-			m_bar_accepted->SetValue(session_accepted);
-			wxString labelAcc = CFormat("%d / %d") % session_accepted % all_accepted;
-			CastChild(IDC_SACCEPTED, wxStaticText)->SetLabel(labelAcc);
-
-			// Transferred
-			session_transferred =
-				session_transferred > lTransferred ? lTransferred : session_transferred;
-			m_bar_transfer->SetValue(session_transferred / 1024);
-			wxString labelTrans =
-				CastItoXBytes(session_transferred) + " / " + CastItoXBytes(all_transferred);
-			CastChild(IDC_STRANSFERRED, wxStaticText)->SetLabel(labelTrans);
-
-			if (labelReq.Len() > lReq || labelAcc.Len() > lAcc || labelTrans.Len() > lTrans) {
-				lReq = labelReq.Len();
-				lAcc = labelAcc.Len();
-				lTrans = labelTrans.Len();
-				s_sharedfilespeerHeader->Layout();
-			}
-		}
-
-		if (m_clientShow == ClientShowUploading) {
-			// The GenericClientListCtrl is designed to show clients associated with a KnownFile.
-			// So the uploadqueue carries a special known file with all ongoing uploads in its
-			// upload list. This is a hack, but easier than trying to bend the class into a shape
-			// it was not intended for to show all clients currently uploading.
+		// ShowSources() requires the file vector sorted (see CGenericClientListCtrl).
+		std::sort(fileVector.begin(), fileVector.end());
+	} else {
+		// The GenericClientListCtrl is designed to show clients associated with a KnownFile.
+		// So the uploadqueue carries a special known file with all ongoing uploads in its
+		// upload list. This is a hack, but easier than trying to bend the class into a shape
+		// it was not intended for to show all clients currently uploading.
 #ifdef CLIENT_GUI
-			fileVector.push_back(theApp->m_allUploadingKnownFile);
+		fileVector.push_back(theApp->m_allUploadingKnownFile);
 #else
-			fileVector.push_back(theApp->uploadqueue->GetAllUploadingKnownFile());
+		fileVector.push_back(theApp->uploadqueue->GetAllUploadingKnownFile());
 #endif
-		}
-		peerslistctrl->ShowSources(fileVector);
-
-		Refresh();
-		Layout();
 	}
+	peerslistctrl->ShowSources(fileVector);
+
+	Refresh();
+	Layout();
 }
 
 void CSharedFilesWnd::OnBtnReloadShared(wxCommandEvent &WXUNUSED(evt))
@@ -252,11 +266,14 @@ void CSharedFilesWnd::OnBtnReloadShared(wxCommandEvent &WXUNUSED(evt))
 
 void CSharedFilesWnd::OnItemSelectionChanged(wxListEvent &evt)
 {
-	EClientShow clientShowMode = GetClientShowMode();
-
-	// Only update the list of clients if that list shows clients related to the selected shared files
-	if (clientShowMode == ClientShowSelected) {
+	if (GetClientShowMode() == ClientShowSelected) {
+		// The client list is selection-driven here, so do the full update.
 		SelectionUpdated();
+	} else {
+		// Other modes: the client list shows all / all-uploading clients and is
+		// not selection-driven, so only the stat panel needs refreshing -- and
+		// immediately, instead of waiting for the file's next periodic update.
+		UpdateSelectionStats();
 	}
 
 	evt.Skip();

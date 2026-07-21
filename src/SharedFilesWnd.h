@@ -61,6 +61,15 @@ public:
 	void SelectionUpdated();
 
 	/**
+	 * Refreshes only the stat bars/labels for the current selection.
+	 *
+	 * Cheap (iterates just the selected rows), so it runs on every selection
+	 * change regardless of the client-show mode; SelectionUpdated() calls it
+	 * and additionally rebuilds the client list.
+	 */
+	void UpdateSelectionStats();
+
+	/**
 	 * Deletes all files and updates widget
 	 */
 	void RemoveAllSharedFiles();
