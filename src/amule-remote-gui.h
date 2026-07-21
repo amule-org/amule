@@ -866,7 +866,11 @@ public:
 
 	class CRemoteConnect *m_connect;
 
-	CEConnectDlg *dialog;
+	// Must be null before the first ShowConnectionDialog(), which lazily
+	// creates it (if (!dialog) ...) and reuses it across retries. Left
+	// uninitialized it is read as garbage on the startup path -- harmless on
+	// Clang/ARM (landed null) but a segfault on GCC/x64.
+	CEConnectDlg *dialog = nullptr;
 
 	bool CopyTextToClipboard(wxString strText);
 
