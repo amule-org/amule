@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "POT-Creation-Date: 2026-07-17 16:56+0200\n"
-"PO-Revision-Date: 2026-07-21 11:49+0000\n"
+"PO-Revision-Date: 2026-07-22 19:53+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -583,7 +583,7 @@ msgstr "Priorité normale."
 #. type: Plain text
 #: amulecmd.1.in:143
 msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
-msgstr ""
+msgstr "Affiche la progression d'un recherche en cours. Prend éventuellement un I<E<lt>idE<gt>> de recherche (tel qu'affiché par B<search>) ; sans identifiant, affiche la recherche démarrée le plus récemment."
 
 #. type: Plain text
 #: amulecmd.1.in:145
@@ -613,7 +613,7 @@ msgstr "Réinitialiser le journal."
 #. type: Plain text
 #: amulecmd.1.in:161
 msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
-msgstr ""
+msgstr "Vous affiche les résultats d'une recherche. Prend éventuellement un  I<E<lt>idE<gt>> de recherche (tel qu'affiché par B<search>) ; sans identifiant, affiche la recherche démarrée le plus récemment.  Plusieurs recherches peuvent être conservées sur le démon en même temps et gérées par identifiant."
 
 #. type: Plain text
 #: amulecmd.1.in:163
@@ -622,10 +622,8 @@ msgstr "Reprend le téléchargement spécifié par le I<E<lt>hachageE<gt>> ou le
 
 #. type: Plain text
 #: amulecmd.1.in:169
-#, fuzzy
-#| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Fait une recherche du I<E<lt>mot-clefE<gt>> donné. Un type de recherche et d'un mot-clef de recherche sont obligatoires pour le faire. Exemple : `search kad amule' effectue une recherche kad pour `amule'."
+msgstr "Fait une recherche du I<E<lt>mot-clefE<gt>> donné. Un type de recherche et d'un mot-clef de recherche sont obligatoires pour le faire. Exemple : `search kad amule' effectue une recherche kad pour `amule'.  Affiche un identifiant de recherche ; passez-le à B<results> ou B<progress> pour cibler cette recherche. Plusieurs recherches peuvent être exécutées simultanément, chacune ayant son identifiant."
 
 #. type: Plain text
 #: amulecmd.1.in:171
@@ -987,7 +985,7 @@ msgstr "[B<--amule-config-file>=I<E<lt>cheminE<gt>>]"
 #. type: Plain text
 #: amuleweb.1.in:45
 msgid "B<DEPRECATED:> amuleweb is deprecated and may be removed in aMule 3.2 or later.  It is not being removed yet; consider migrating to amuleapi, the REST/SSE API."
-msgstr ""
+msgstr "B<OBSOLÈTE :> amuleweb est obsolète est peut être enlevé dans aMule 3.2 ou une version ultérieure.  Il n'est pas enlevé pour l'instant ; envisagez de migrer vers amuleapi, l'API REST/SSE."
 
 #. type: Plain text
 #: amuleweb.1.in:50

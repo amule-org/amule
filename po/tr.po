@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-20 23:50+0200\n"
-"PO-Revision-Date: 2026-07-21 11:47+0000\n"
+"PO-Revision-Date: 2026-07-22 19:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -21,9 +21,8 @@ msgstr ""
 "X-Generator: Poedit 3.9\n"
 
 #: src/AboutDialog.cpp:62
-#, fuzzy
 msgid "About aMule"
-msgstr "aMule'yi Göster"
+msgstr "aMule Hakkında"
 
 #: src/AboutDialog.cpp:74
 msgid "aMule remote control "
@@ -78,32 +77,29 @@ msgid "Issues:"
 msgstr "Hata raporları:"
 
 #: src/AboutDialog.cpp:112
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "Yeni sürümü başlangıçta denetle."
+msgstr "Yeni sürümü denetlemek için tıklayın."
 
 #: src/AboutDialog.cpp:113
 msgid "Check for updates"
-msgstr ""
+msgstr "Güncellemeleri kontrol et"
 
 #: src/AboutDialog.cpp:162
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Kad ağına bağlanıyor..."
+msgstr "Güncellemeler kontrol ediliyor…"
 
 #: src/AboutDialog.cpp:172
-#, fuzzy
 msgid "You are running the latest version."
-msgstr "aMule'nin eski bir sürümünü kullanıyorsunuz!"
+msgstr "En yeni sürümü kullanıyorsunuz."
 
 #: src/AboutDialog.cpp:176
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "Devre dışı"
+msgstr "Yeni bir sürüm (%s) mevcuttur:"
 
 #: src/AboutDialog.cpp:180
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "Güncellemeler kontrol edilemedi. Lütfen daha sonra tekrar deneyin."
 
 #: src/AddFriend.cpp:42
 msgid "Add a Friend"
@@ -122,7 +118,6 @@ msgid "The specified userhash is not valid!"
 msgstr "Belirlenen kullanıcı adreslemesi geçersiz!"
 
 #: src/AppImageIntegration.cpp:317
-#, fuzzy
 msgid ""
 "aMule can install desktop launchers, icons, and shell command shortcuts into your home directory so it appears in your application menu like a regularly installed app.\n"
 "\n"
@@ -130,7 +125,9 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
-"aMule, normal olarak kurulmuş bir uygulama gibi görünmesi için ev dizininize bir masaüstü başlatıcısı ve ikonu kurabilir. Bu, geri alınabilir — dosyalar ~/.local/share/applications ile ~/.local/share/icons konumlarında bulunurlar ve ne zaman isterseniz onları kaldırabilirsiniz.\n"
+"aMule, normal olarak kurulmuş bir uygulama gibi görünmesi için ev dizininize bir masaüstü başlatıcısı, ikonlar ve kabuk komut kısayolları kurabilir.\n"
+"\n"
+"Bu, geri alınabilir — dosyalar ~/.local/share/applications,  ~/.local/share/icons ile ~/.local/bin konumlarında bulunurlar ve ne zaman isterseniz onları kaldırabilirsiniz.\n"
 "\n"
 "Masaüstü birleşimi şimdi kurulsun mu?"
 
@@ -170,9 +167,9 @@ msgid "Cannot install desktop integration: failed to write %s. Check that your h
 msgstr "Masaüstü birleşimi kurulamaz: %s yazması başarısız oldu. Ev dizininizin yazılabilir olduğundan emin olun."
 
 #: src/AppImageIntegration.cpp:409
-#, fuzzy, c-format
+#, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr "AppImage birleşimi: aMule uygulama menünüze ilave edildi."
+msgstr "AppImage birleşimi: aMule uygulama menünüze ilave edildi (~/.local/bin konumunda %d kabuk kısayolu)."
 
 #: src/AppImageIntegration.cpp:414
 msgid ""
@@ -243,14 +240,14 @@ msgid "Failed"
 msgstr "Başarısız"
 
 #: src/amule.cpp:343
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor... "
+msgstr "'%d' pid'sine sahip amuleapi oturumu sonlandırılıyor… "
 
 #: src/amule.cpp:347
-#, fuzzy, c-format
+#, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor... "
+msgstr "pid `%d' ile ilişkili amuleapi oturumu sonlandırılıyor… "
 
 #: src/amule.cpp:355
 msgid "aMule OnExit: Terminating core."
@@ -267,7 +264,7 @@ msgstr "aMule çıkışı için hafıza hata raporlama sonuçları:"
 #: src/amule.cpp:651
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "aMule eşten eşe trafiği şu arayüze bağlanıyor: %s (HTTP güncellemeleri varsayılan yolu kullanır)"
 
 #: src/amule.cpp:655
 #, c-format

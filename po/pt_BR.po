@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-20 23:50+0200\n"
-"PO-Revision-Date: 2026-07-21 11:43+0000\n"
+"PO-Revision-Date: 2026-07-22 19:47+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -2444,11 +2444,11 @@ msgstr "Arquivo GeoLite2-Country.mmdb existente migrado para %s"
 
 #: src/IP2Country.cpp:106
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr "IP2Country: MaxMind selecionado como fonte de GeoIP, mas não existe chave de licensa configurada. Abra Preferências -> IP2Country, e cole sua chave de licensa grátis e clique \"Atualizar agora\"."
+msgstr "IP2Country: MaxMind foi selecionado como a fonte de GeoIP, mas não existe chave de licensa configurada. Abra Preferências -> IP2Country, e cole sua chave de licensa grátis da MaxMind e clique 'Atualizar agora'."
 
 #: src/IP2Country.cpp:111
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr "IP2Country: URL Customizada foi selecionada como fonte de GeoIP, mas não existe URL configurada. Abra Preferências -> IP2Country, e forneça uma URL que aponte para um arquivo .nmdb (ou .gz / .tar.gz contendo um)."
+msgstr "IP2Country: Uma URL Customizada foi selecionada como fonte de GeoIP, mas não existe URL configurada. Abra Preferências -> IP2Country, e forneça uma URL que aponte para um arquivo .nmdb (ou .gz / .tar.gz contendo um)."
 
 #: src/IP2Country.cpp:116
 msgid "IP2Country: failed to resolve a GeoIP download URL."
@@ -4216,7 +4216,7 @@ msgstr "Orientação Vertical da Barra de Ferramentas"
 
 #: src/muuli_wdr.cpp:1971
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "Ordenação de coluna ao vivo (reordenamento automático das colunas conforme seus valores mudam)"
 
 #: src/muuli_wdr.cpp:1978
 msgid "Download Queue Files"
