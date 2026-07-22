@@ -47,7 +47,8 @@ The vendored header is unmodified upstream 1.3.0; the
 modification to the header.
 
 The bundled copy is used by default. Distributions may configure with
-`-DUSE_SYSTEM_PICOJSON=ON` to use a system-installed `picojson.h` instead.
+`-DUSE_SYSTEM_PICOJSON=ON` to use a system-installed `picojson.h` version
+1.3.0 or newer instead.
 
 ## muleunit
 

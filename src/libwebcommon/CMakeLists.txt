@@ -37,8 +37,8 @@ if (USE_SYSTEM_PICOJSON)
 		AMULE_PICOJSON_HEADER="${PICOJSON_INCLUDE_DIR}/picojson.h"
 	)
 else()
-	target_include_directories (picojson_header INTERFACE
-		${CMAKE_CURRENT_SOURCE_DIR}
+	target_compile_definitions (picojson_header INTERFACE
+		AMULE_PICOJSON_HEADER="${CMAKE_CURRENT_SOURCE_DIR}/picojson.h"
 	)
 endif()
 
