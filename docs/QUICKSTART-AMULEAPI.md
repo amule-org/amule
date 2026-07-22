@@ -25,11 +25,15 @@ that `amuled` uses.
 
 > **Cohabitation with amuled.** This is the same directory amuled
 > keeps `amule.conf` and `*.met` in — intentionally so. amuleapi's
-> three files (`amuleapi.conf`, `amuleapi-jwt-secret`,
-> `amuleapi-passwords`) sit alongside amuled's without colliding,
-> and operators reading both sets of configs together don't have
-> to context-switch directories. amuleapi never touches amuled's
-> files; amuled never touches amuleapi's.
+> own files (`amuleapi.conf`, `amuleapi-jwt-secret`,
+> `amuleapi-passwords`, and by default the `amuleapi.log` log file)
+> sit alongside amuled's without colliding, and operators reading
+> both sets of configs together don't have to context-switch
+> directories. amuleapi never *writes* amuled's files; the one point
+> of contact is read-only — launched with `--amule-config-file` (as
+> aMule's [auto-start](#auto-starting-from-amule) does), it reads
+> connection and admin-password settings out of `amule.conf`. amuled
+> never touches amuleapi's files.
 
 The default location:
 
@@ -41,14 +45,17 @@ The default location:
 
 Override with `amuleapi --config-dir=/path/to/dir`.
 
-The directory holds three amuleapi-specific files, all written with mode
-`0600`:
+The directory holds three amuleapi-specific config/secret files, each
+written with mode `0600`:
 
 | File                      | Purpose                                                                                                  |
 | ------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `amuleapi.conf`           | INI-style runtime config (HTTP bind/port/CORS, outbound EC connection to amuled, login rate-limit knobs, SSE event-bus ring size). Full reference below. |
 | `amuleapi-jwt-secret`     | 32-byte HMAC signing key for issued tokens. Auto-generated on first launch if absent.                    |
 | `amuleapi-passwords`      | MD5-hashed admin and guest passwords. Plaintext is never persisted.                                      |
+
+By default amuleapi also writes an `amuleapi.log` file here (a copy of
+its console output); see [Logging](#logging) to relocate or disable it.
 
 Set passwords via the dedicated CLI flags. Each invocation writes the
 file and exits — the HTTP server is NOT brought up, no EC connection
@@ -86,6 +93,22 @@ amuleapi --host=127.0.0.1 --port=4712 --password=$EC_PASSWORD
 aMule does not ship init-system units (systemd, launchd, Windows
 service) for any of its daemons. If you want one, write a downstream
 unit that wraps the command above.
+
+### Logging
+
+By default amuleapi tees a copy of everything it prints to the console
+into `amuleapi.log` in its config dir, installed as early as possible so
+config-load errors, EC warnings, and a crash backtrace are all captured.
+The output is low-volume (startup plus warnings/errors — there is no
+per-request access log), and the file is rotated at 10 MiB as a runaway
+guard.
+
+- `--log-file=/path/to/amuleapi.log` — write the log somewhere other
+  than the default `<config-dir>/amuleapi.log`.
+- `--no-log-file` — don't write a log file; print to the console only.
+
+The daemon prints `amuleapi: logging to <path>` on startup so you can see
+where it landed.
 
 ### Auto-starting from aMule
 
@@ -233,33 +256,58 @@ Leave `CorsOriginAllowlist` empty to echo any caller's `Origin` header
 
 ## What ships
 
-- `/api/v0/auth/login` / `logout` / `session` — JWT and session-cookie auth
-- `/api/v0/version`, `/status`, `/preferences`
-- `/api/v0/downloads`, `/shared`, `/servers`, `/kad`,
-  `/clients` (the per-peer view, with optional
-  `?filter=uploads|downloads|active` for the legacy "Uploads" page
-  subset), `/categories`, `/logs/{amule,serverinfo}`,
-  `/stats/{tree,graphs/{graph}}`, `/search`, `/search/results`
-- POST / PATCH / DELETE mutations on each resource (admin role)
-- ETag-on-GET conditional caching (304 Not Modified on `If-None-Match`)
-- `/api/v0/events` — long-lived Server-Sent Events stream with
-  `Last-Event-ID` replay and typed `resync` events for cache invalidation
-- Every runtime tunable lives in `amuleapi.conf`; see the §`amuleapi.conf` reference above for sections, keys, and defaults.
+The daemon serves a versioned REST surface under `/api/v0/`. This is the
+map of what's there; the full per-endpoint contracts — methods, query
+params, request/response bodies, error codes — live in
+[`docs/api/REFERENCE.md`](api/REFERENCE.md), which stays authoritative and
+current.
 
-## Notes on a few responses
+- **Auth** — `auth/login`, `auth/logout`, `auth/session` (JWT and
+  session-cookie).
+- **System** — `version`, `version/check`, `status`, `preferences`.
+- **Downloads** — the transfer queue: list and per-file detail; add,
+  pause/resume, cancel, `clear_completed`; per-file comments,
+  source-reported filenames, and A4AF (alternate sources) listing and
+  swap.
+- **Shared files** — list and detail, `reload`, `verify` (re-hash local
+  data), and the shared-directory roots (`shared/directories`, with
+  GET/PUT/POST/DELETE).
+- **Clients (peers)** — the per-peer view (optional
+  `?filter=uploads|downloads|active` for the legacy "Uploads" subset),
+  per-client detail, and browsing a peer's shared files ("View Files").
+- **Servers** — the ed2k server list: add, connect, remove, and
+  `servers/update` (refresh the list from a URL).
+- **Network control** — `networks/connect` / `disconnect`,
+  `kad/bootstrap`, and the `kad` status view.
+- **Categories** — list plus create / edit / delete.
+- **Search** — `search` (start), `search/results`, `search/stop`,
+  download a result, and per-result comments/ratings.
+- **Logs & stats** — `logs/{amule,serverinfo}`, `stats/tree`,
+  `stats/graphs/{graph}`.
 
-- **`POST /api/v0/downloads` partial success.** The endpoint accepts
-  a single `ed2k_link` or an array of `links`. When some links land
-  cleanly and others fail (already on queue, malformed magnet,
-  category out of range, or EC disconnect mid-batch) the response is
-  `207 Multi-Status` with `ok: false` and four parallel arrays —
-  `accepted_links`, `failed_links`, `disconnected_links`, plus
-  counters and a `first_error`. `207` is borrowed from WebDAV (RFC
-  4918 §13) for "the request was answered in pieces"; clients should
-  treat it as success-with-details, not as a 4xx. `503` is reserved
-  for "every link blocked by an EC disconnect" — nothing landed and
-  the caller can retry once `GET /status` reports `ec_connected:
-  true`.
+Conventions that apply across the surface (all detailed in REFERENCE):
+
+- **List windowing.** `downloads`, `clients`, `shared`, `servers`, and
+  `search/results` take `limit` / `offset` / `sort` / `order` and return
+  `total` / `offset` / `limit` alongside the array. Omitting them all
+  yields the full set.
+- **Bulk mutations** report one entry per input item under a unified
+  `results` array — `200`/`202` when every item succeeded, `207
+  Multi-Status` for a mix (inspect each `results[].ok`), `503` when the
+  whole batch failed on an EC disconnect. So a client submitting N items
+  learns the fate of each rather than an aggregate counter.
+- **ETag-on-GET** conditional caching (`304 Not Modified` on
+  `If-None-Match`).
+- Every runtime tunable lives in `amuleapi.conf`; see the `amuleapi.conf`
+  reference above for sections, keys, and defaults.
+
+### Events
+
+`GET /api/v0/events` is a long-lived Server-Sent Events stream with
+`Last-Event-ID` replay and typed `resync` frames for cache invalidation.
+The channel catalog, frame format, snapshot-then-stream bootstrap, and
+reconnect semantics are documented in
+[`docs/api/EVENTS.md`](api/EVENTS.md).
 
 ## Security notes
 
