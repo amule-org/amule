@@ -61,10 +61,11 @@ public:
 	void BeginBatch();
 	void EndBatch();
 
-	// A tail-scroll requested while the control was hidden (its notebook page or
-	// sub-tab was not selected) cannot be applied reliably, so it is deferred
-	// and performed here on the first idle once the control is actually on
-	// screen. Overriding at this level means every log/info pane inherits it.
+	// Sole scroller for every tail-scroll. ScrollToBottom() only flags one as
+	// pending; this applies it -- waiting until the pane is on screen (a hidden
+	// control cannot be scrolled reliably), and re-applying across idles until
+	// the layout (which Scintilla wraps incrementally) settles at the true
+	// bottom. Overriding at this level means every log/info pane inherits it.
 	void OnInternalIdle() override;
 
 private:
@@ -80,9 +81,13 @@ private:
 
 	bool m_inBatch;
 	bool m_batchTailing;
-	// A tail-scroll was requested while the control was hidden; performed by
-	// NotifyShown() once the page is visible.
+	// A tail-scroll has been requested; OnInternalIdle() applies it (deferring
+	// while the pane is hidden, and re-applying until the layout settles).
 	bool m_scrollPending;
+	// First-visible line left by the last auto-scroll while m_scrollPending is
+	// being resolved, so the idle loop can tell when the (possibly wrapping)
+	// layout has settled and when the user has scrolled away. -1 = none yet.
+	int m_lastAutoScrollLine;
 };
 
 #endif // MULELOGCTRL_H

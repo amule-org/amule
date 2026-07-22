@@ -36,6 +36,7 @@ CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 , m_inBatch(false)
 , m_batchTailing(false)
 , m_scrollPending(false)
+, m_lastAutoScrollLine(-1)
 {
 	// Store text as UTF-8 so AppendText()'s wxString conversion and the byte
 	// positions used for styling agree (GetLength() is a byte count).
@@ -46,14 +47,10 @@ CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 	for (int margin = 0; margin < 3; ++margin) {
 		SetMarginWidth(margin, 0);
 	}
-	// Word-wrap long lines (as the old wxTE_RICH2 pane did) and drop the
-	// horizontal scrollbar entirely. The h-scrollbar is not just cosmetic: on
-	// the macOS and Windows Scintilla backends it is drawn inside the client
-	// area but its height is NOT subtracted from LinesOnScreen(), so
-	// ScrollToEnd() leaves the last line or two hidden behind it -- the log
-	// looked stuck a few lines short of the bottom (issue #547). GTK draws it
-	// outside the client area, which is why Linux was unaffected. With wrapping
-	// on there is no horizontal scrollbar at all.
+	// Word-wrap long lines, as the old wxTE_RICH2 pane did, so nothing is clipped
+	// off the right edge; with wrapping on there is no horizontal scrollbar to
+	// show. (Wrapping is why AtBottom() and the tail-scroll reason in display
+	// lines rather than document lines.)
 	SetWrapMode(wxSTC_WRAP_WORD);
 	SetUseHorizontalScrollBar(false);
 
@@ -84,30 +81,53 @@ bool CMuleLogCtrl::AtBottom()
 
 void CMuleLogCtrl::ScrollToBottom()
 {
+	// Request only -- OnInternalIdle() is the sole scroller. Keeping every scroll
+	// in one place stops the batch/live tail-scroll from racing the idle
+	// re-scroll loop: that loop tells a manual scroll from an append by watching
+	// the first-visible line, and a direct ScrollToEnd() here would move it and
+	// be misread as the user scrolling -- which aborted the catch-up mid-load, so
+	// switching to the log while it was still replaying landed short (issue #547,
+	// @ghysler). Deferring also naturally waits until the pane is on screen.
 	if (!IsShownOnScreen()) {
-		// The control's notebook page is hidden (e.g. the first-sync backlog
-		// arrives while another tab is in front on launch), so it has no
-		// laid-out geometry and ScrollToEnd() lands on a stale extent -- the log
-		// then sits a few lines short once shown. Defer to NotifyShown()
-		// (issue #547).
-		m_scrollPending = true;
-		return;
+		// No reliable first-visible baseline while hidden; let the first scroll
+		// after the pane appears run unconditionally.
+		m_lastAutoScrollLine = -1;
 	}
-	ScrollToEnd();
+	m_scrollPending = true;
 }
 
 void CMuleLogCtrl::OnInternalIdle()
 {
 	wxStyledTextCtrl::OnInternalIdle();
 
-	// Apply a tail-scroll that was deferred while the control was hidden, now
-	// that its page/sub-tab is on screen and has real geometry. IsShownOnScreen()
-	// is only evaluated while a scroll is actually pending, so the common
-	// idle path stays a single bool test.
-	if (m_scrollPending && IsShownOnScreen()) {
-		m_scrollPending = false;
-		ScrollToEnd();
+	// Sole scroller for every tail-scroll (live line, batch, or deferred while
+	// hidden). IsShownOnScreen() is only evaluated while a scroll is pending, so
+	// the common idle path stays a single bool test; a scroll requested while the
+	// pane was hidden simply waits here until it is shown.
+	if (!m_scrollPending || !IsShownOnScreen()) {
+		return;
 	}
+
+	// With word-wrap on, Scintilla lays out wrapped lines incrementally over
+	// several idles, so a single ScrollToEnd() the moment the pane appears (or
+	// while the log is still replaying) lands short -- against a display-line
+	// count that does not yet include the still-unwrapped tail (issue #547,
+	// reported by @ghysler with wrapped lines on a narrow window). Re-scroll each
+	// idle until the position stops moving (wrap has settled at the true bottom).
+	// Appends do not move the first-visible line, so if it has moved away from
+	// where our last auto-scroll left it the user scrolled -- bail and reset, so
+	// a manual scroll is never fought and a later return to the bottom re-tails.
+	if (m_lastAutoScrollLine != -1 && GetFirstVisibleLine() != m_lastAutoScrollLine) {
+		m_scrollPending = false;
+		m_lastAutoScrollLine = -1;
+		return;
+	}
+	ScrollToEnd();
+	const int firstVisible = GetFirstVisibleLine();
+	if (firstVisible == m_lastAutoScrollLine) {
+		m_scrollPending = false; // stable: layout settled at the bottom
+	}
+	m_lastAutoScrollLine = firstVisible;
 }
 
 void CMuleLogCtrl::AppendLogLine(const wxString &line, bool critical)
@@ -143,8 +163,9 @@ void CMuleLogCtrl::ClearLog()
 void CMuleLogCtrl::BeginBatch()
 {
 	// No Freeze()/Thaw(): Scintilla does not auto-scroll on append, so lines
-	// added below the fold cause no repaint until the single ScrollToBottom() in
-	// EndBatch(). Freezing would only leave the scroll extent stale at Thaw.
+	// added below the fold cause no repaint until the tail-scroll (requested by
+	// EndBatch(), applied on the next idle). Freezing would only leave the scroll
+	// extent stale at Thaw.
 	m_batchTailing = AtBottom();
 	m_inBatch = true;
 	SetReadOnly(false);

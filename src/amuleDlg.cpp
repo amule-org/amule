@@ -781,8 +781,8 @@ void CamuleDlg::AddLogLineToView(const wxString &line, int viewId)
 void CamuleDlg::BeginLogBatch()
 {
 	// A stats poll can carry a large first-sync backlog; bracket the burst so
-	// the log view freezes once and tail-scrolls once instead of per line (see
-	// CMuleLogCtrl::BeginBatch/EndBatch).
+	// the log view is written and tail-scrolled once for the whole batch rather
+	// than per line (see CMuleLogCtrl::BeginBatch/EndBatch).
 	CMuleLogCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, CMuleLogCtrl);
 	if (ct) {
 		ct->BeginBatch();
