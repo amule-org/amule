@@ -42,6 +42,7 @@ option (BUILD_WEBSERVER "compile aMule WebServer")
 option (BUILD_AMULEAPI "compile aMule REST API daemon")
 option (BUILD_WXCAS "compile aMule GUI Statistics")
 option (BUILD_TESTING "Build unit tests" OFF)
+option (USE_SYSTEM_PICOJSON "Use system-installed picojson instead of bundled copy" OFF)
 
 if (PREFIX)
 	set (CMAKE_INSTALL_PREFIX "${PREFIX}")

@@ -45,6 +45,7 @@ target_link_libraries (amuleapi
 	PRIVATE mulecommon
 	PRIVATE mulesocket
 	PRIVATE webcommon
+	PRIVATE picojson_header
 	PRIVATE wxWidgets::NET
 	PRIVATE ${Boost_LIBRARIES}
 	# zlib powers the on-the-wire gzip encoder in HttpServer (Content-

@@ -75,7 +75,11 @@
 #endif
 
 #define PICOJSON_USE_INT64
-#include "picojson.h"
+#ifdef AMULE_PICOJSON_HEADER
+#include AMULE_PICOJSON_HEADER
+#else
+#include <picojson.h>
+#endif
 
 #include "config.h" // VERSION
 

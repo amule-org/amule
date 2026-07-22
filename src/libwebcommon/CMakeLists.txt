@@ -16,6 +16,32 @@ add_library (webcommon STATIC
 	PathPatterns.cpp
 )
 
+add_library (picojson_header INTERFACE)
+
+if (USE_SYSTEM_PICOJSON)
+	find_path (PICOJSON_INCLUDE_DIR picojson.h)
+	if (NOT EXISTS "${PICOJSON_INCLUDE_DIR}/picojson.h")
+		message (FATAL_ERROR
+			"USE_SYSTEM_PICOJSON is ON, but picojson.h was not found")
+	endif()
+
+	message (STATUS "Using system picojson: ${PICOJSON_INCLUDE_DIR}/picojson.h")
+	target_include_directories (picojson_header INTERFACE
+		${PICOJSON_INCLUDE_DIR}
+	)
+	# webcommon's public headers expose this source directory to consumers,
+	# which also makes the bundled picojson.h visible. Select the discovered
+	# header by its full path so an implicit system directory such as
+	# /usr/include cannot lose to that transitive include path.
+	target_compile_definitions (picojson_header INTERFACE
+		AMULE_PICOJSON_HEADER="${PICOJSON_INCLUDE_DIR}/picojson.h"
+	)
+else()
+	target_include_directories (picojson_header INTERFACE
+		${CMAKE_CURRENT_SOURCE_DIR}
+	)
+endif()
+
 target_include_directories (webcommon
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -28,4 +54,5 @@ target_include_directories (webcommon
 target_link_libraries (webcommon
 	PUBLIC wxWidgets::BASE
 	PUBLIC CRYPTOPP::CRYPTOPP
+	PRIVATE picojson_header
 )

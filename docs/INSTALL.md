@@ -140,6 +140,7 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `ENABLE_IP2COUNTRY`      | YES     | libmaxminddb country flags ([docs/IP2Country.md](IP2Country.md))         |
 | `ENABLE_CCACHE`          | AUTO    | use ccache as compiler launcher when found (`AUTO`/`ON`/`OFF`); set `OFF` for distro builds that manage ccache themselves, `ON` to hard-fail if ccache is missing |
 | `ENABLE_VERSION_CHECK`   | ON      | compile in the in-app new-version check (startup notification, the "Check for new version at startup" preference, and the About dialog's "Check for updates" button). Packagers shipping aMule via an OS package manager want `OFF`, so nothing contacts GitHub and the distro's package manager owns updates |
+| `USE_SYSTEM_PICOJSON`    | OFF     | use a system-installed `picojson.h` instead of the bundled copy           |
 
 For the full list:
 
