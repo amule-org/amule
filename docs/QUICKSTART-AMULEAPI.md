@@ -90,6 +90,18 @@ amuleapi --host=127.0.0.1 --port=4712 --password=$EC_PASSWORD
 - amuleweb can run concurrently on its own port (default `4711`); the
   two daemons talk to amuled independently as separate EC clients.
 
+> **Keep the EC password out of the command line.** `--password` is
+> only an override — omit it and amuleapi reads the EC password from
+> `amuleapi.conf[EC]/Password` (a `0600` file), which is the way to
+> avoid exposing the secret in the process arguments. Passing
+> `--password=…` puts the value in `argv`, where it is visible to any
+> local user via `ps` / `/proc/<pid>/cmdline`; `--password=$EC_PASSWORD`
+> does not help, since the shell expands the value into `argv` before
+> exec. There is no environment-variable or stdin path for the EC
+> password — the config file is the non-`argv` option. (In the
+> auto-start flow, `--amule-config-file` reads the already-hashed EC
+> password from `amule.conf`, also without touching `argv`.)
+
 aMule does not ship init-system units (systemd, launchd, Windows
 service) for any of its daemons. If you want one, write a downstream
 unit that wraps the command above.
