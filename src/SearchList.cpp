@@ -475,6 +475,15 @@ uint32 CSearchList::GetSearchProgress() const
 		return 0xffff;
 
 	case GlobalSearch:
+		// The sweep is not armed until the connected server answers the local
+		// part (OP_SEARCHRESULT -> LocalSearchEnd) and the first timer tick
+		// attaches the observer. Until then m_serverQueue is detached and empty,
+		// so GetRemaining() is a stale 0 that would read as 100% ("done") the
+		// instant a search starts. IsActive() is true only during the actual
+		// sweep, so report 0 (just-started) before it begins.
+		if (!m_serverQueue.IsActive()) {
+			return 0;
+		}
 		return 100 - (m_serverQueue.GetRemaining() * 100) / theApp->serverlist->GetServerCount();
 
 	default:
