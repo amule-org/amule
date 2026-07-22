@@ -26,12 +26,7 @@
 
 #include "ConstantTime.h"
 
-#define PICOJSON_USE_INT64
-#ifdef AMULE_PICOJSON_HEADER
-#include AMULE_PICOJSON_HEADER
-#else
-#include <picojson.h>
-#endif
+#include "PicoJson_Inc.h"
 
 // cryptopp headers pull in deprecated implicit copy ctors + throw()
 // specs (P0806 + C++17). See CryptoPP_Inc.h for the full rationale.
