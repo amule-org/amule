@@ -73,7 +73,6 @@ LOCALE_TO_NSIS_LANG = {
     "hr":    "CROATIAN",
     "hu":    "HUNGARIAN",
     "it":    "ITALIAN",
-    "it_CH": "ITALIAN",        # NSIS has no Swiss-Italian dialect
     "ja":    "JAPANESE",
     "ko_KR": "KOREAN",
     "lt":    "LITHUANIAN",
@@ -93,10 +92,10 @@ LOCALE_TO_NSIS_LANG = {
     "zh_TW": "TRADCHINESE",
 }
 
-# Reverse map: NSIS language name -> preferred po locale. When two po
-# locales map to the same NSIS language (it / it_CH both -> ITALIAN),
-# the earlier one wins -- so "it" beats "it_CH". Translations under
-# the less-preferred locale are unused on the installer side.
+# Reverse map: NSIS language name -> preferred po locale. If two po
+# locales ever map to the same NSIS language, the first one iterated
+# wins (setdefault keeps the earliest); translations under the later
+# locale would be unused on the installer side.
 NSIS_LANG_TO_LOCALE = {}
 for _loc, _nsis in LOCALE_TO_NSIS_LANG.items():
     NSIS_LANG_TO_LOCALE.setdefault(_nsis, _loc)
