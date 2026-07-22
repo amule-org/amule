@@ -854,6 +854,7 @@ if (NEED_LIB_MULEAPPGUI)
 		MuleVirtualListCtrl.cpp
 		MuleNotebook.cpp
 		MuleTextCtrl.cpp
+		MuleLogCtrl.cpp
 	)
 
 

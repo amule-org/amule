@@ -67,6 +67,7 @@
 #include "FriendListCtrl.h"
 #include "FileDetailListCtrl.h"
 #include "MuleGifCtrl.h"
+#include "MuleLogCtrl.h"
 #include "ChatSelector.h"
 #include "DirectoryTreeCtrl.h"	// Needed for CDirectoryTreeCtrl
 #include "KadDlg.h"
@@ -2320,7 +2321,7 @@ wxSizer *ServerInfoLog( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    CMuleTextCtrl *item2 = new CMuleTextCtrl( parent, ID_SERVERINFO, "", wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL );
+    CMuleLogCtrl *item2 = new CMuleLogCtrl( parent, ID_SERVERINFO, wxDefaultPosition, wxSize(200, 100) );
     item0->Add( item2, wxSizerFlags(1).Expand().Border(wxALL, 5) );
     wxButton *item3 = new wxButton( parent, ID_BTN_RESET_SERVER, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->SetToolTip( _("Click this button to reset the log.") );
@@ -2339,7 +2340,7 @@ wxSizer *aMuleLog( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    CMuleTextCtrl *item2 = new CMuleTextCtrl( parent, ID_LOGVIEW, "", wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL|wxTE_RICH2 );
+    CMuleLogCtrl *item2 = new CMuleLogCtrl( parent, ID_LOGVIEW, wxDefaultPosition, wxSize(200, 100) );
     item0->Add( item2, wxSizerFlags(1).Expand().Border(wxALL, 5) );
     wxButton *item3 = new wxButton( parent, ID_BTN_RESET, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->SetToolTip( _("Click this button to reset the log.") );
@@ -2361,7 +2362,7 @@ wxSizer *aMuleGuiLog( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    CMuleTextCtrl *item2 = new CMuleTextCtrl( parent, ID_GUILOGVIEW, "", wxDefaultPosition, wxSize(200, 100), wxTE_MULTILINE|wxTE_READONLY|wxVSCROLL|wxTE_RICH2 );
+    CMuleLogCtrl *item2 = new CMuleLogCtrl( parent, ID_GUILOGVIEW, wxDefaultPosition, wxSize(200, 100) );
     item0->Add( item2, wxSizerFlags(1).Expand().Border(wxALL, 5) );
     wxButton *item3 = new wxButton( parent, ID_BTN_RESET_GUILOG, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->SetToolTip( _("Click this button to reset the log.") );

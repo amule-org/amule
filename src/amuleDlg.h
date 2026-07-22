@@ -266,19 +266,10 @@ private:
 	DialogType m_nActiveDialog;
 	bool m_is_safe_state;
 	bool m_BlinkMessages;
-	//! True while a BeginLogBatch()/EndLogBatch() bracket is open, so
-	//! AddLogLine() defers the per-line scroll to the end of the batch.
-	bool m_logBatching = false;
-	//! Last log-line weight applied to the view's default style (1 = bold,
-	//! 0 = normal, -1 = not yet set) so SetDefaultStyle() is only touched
-	//! when the weight actually changes.
-	int m_logLastCritical = -1;
-	//! Same, tracked separately for the amulegui-only "aMuleGUI Log" view.
-	int m_guiLogLastCritical = -1;
 
-	//! Shared append logic for both log views. viewId is the text-control ID
-	//! and lastCritical the matching per-view bold-state cache.
-	void AddLogLineToView(const wxString &line, int viewId, int &lastCritical);
+	//! Shared append logic for both log views (ID_LOGVIEW / ID_GUILOGVIEW).
+	//! Lines starting with '!' are critical (bold + status bar).
+	void AddLogLineToView(const wxString &line, int viewId);
 	int m_CurrentBlinkBitmap;
 	uint32 m_last_iconizing;
 	// The "new version available" popup is shown at most once per session;

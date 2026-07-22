@@ -220,6 +220,9 @@ endif()
 
 if (NEED_LIB_MULEAPPGUI)
 	set (wx_NEED_GUI TRUE)
+	# The log/server-info panes use wxStyledTextCtrl (Scintilla) for fast,
+	# full-history scrolling; only the GUI lib pulls it in.
+	set (wx_NEED_STC TRUE)
 endif()
 
 if (NEED_LIB_MULESOCKET)

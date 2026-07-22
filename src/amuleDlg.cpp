@@ -58,6 +58,7 @@
 #include "KadDlg.h"           // Needed for CKadDlg
 #include "Logger.h"
 #include "MuleTextCtrl.h" // Needed for CMuleTextCtrl (fast-links placeholder)
+#include "MuleLogCtrl.h"  // Needed for CMuleLogCtrl (the log/server-info panes)
 #include "MuleTrayIcon.h"
 #include "muuli_wdr.h"   // Needed for ID_BUTTON*
 #include "Preferences.h" // Needed for CPreferences
@@ -719,10 +720,10 @@ void CamuleDlg::OnBnConnect(wxCommandEvent &WXUNUSED(evt))
 
 void CamuleDlg::ResetLog(int id)
 {
-	wxTextCtrl *ct = CastByID(id, m_serverwnd, wxTextCtrl);
+	CMuleLogCtrl *ct = CastByID(id, m_serverwnd, CMuleLogCtrl);
 	wxCHECK_RET(ct, "Resetting unknown log");
 
-	ct->Clear();
+	ct->ClearLog();
 
 	if (id == ID_LOGVIEW) {
 		// Also clear the log line
@@ -736,7 +737,7 @@ void CamuleDlg::AddLogLine(const wxString &line)
 {
 	// The "aMule Log" tab: the daemon/core log (over EC in amulegui, or this
 	// process's own log in the monolithic build).
-	AddLogLineToView(line, ID_LOGVIEW, m_logLastCritical);
+	AddLogLineToView(line, ID_LOGVIEW);
 }
 
 void CamuleDlg::AddGuiLogLine(const wxString &line)
@@ -744,43 +745,25 @@ void CamuleDlg::AddGuiLogLine(const wxString &line)
 #ifdef CLIENT_GUI
 	// amulegui: the GUI client's own messages go to the separate "aMuleGUI Log"
 	// tab, keeping "aMule Log" for the daemon log.
-	AddLogLineToView(line, ID_GUILOGVIEW, m_guiLogLastCritical);
+	AddLogLineToView(line, ID_GUILOGVIEW);
 #else
 	// Monolithic: there is a single log tab.
 	AddLogLine(line);
 #endif
 }
 
-void CamuleDlg::AddLogLineToView(const wxString &line, int viewId, int &lastCritical)
+void CamuleDlg::AddLogLineToView(const wxString &line, int viewId)
 {
 	bool addtostatusbar = line[0] == '!';
 	wxString bufferline = line.Mid(1);
 
-	// Add the message to the log-view
-	wxTextCtrl *ct = CastByID(viewId, m_serverwnd, wxTextCtrl);
+	// Add the message to the log-view. CMuleLogCtrl (Scintilla) renders only the
+	// visible lines, so a large first-sync backlog no longer reflows per line or
+	// mispaints the tail the way the old wxTE_RICH2 control did (issues #445,
+	// #547). Critical lines are shown bold.
+	CMuleLogCtrl *ct = CastByID(viewId, m_serverwnd, CMuleLogCtrl);
 	if (ct) {
-		// Bold critical log-lines (works on Windows too thanks to the
-		// wxTE_RICH2 style in muuli). SetDefaultStyle() is expensive on the
-		// RichEdit control, so only touch it when the weight actually
-		// changes rather than on every line -- a remote-GUI first-sync
-		// backlog is thousands of lines (issue #445).
-		int critical = addtostatusbar ? 1 : 0;
-		if (critical != lastCritical) {
-			wxTextAttr style = ct->GetDefaultStyle();
-			wxFont font = style.GetFont();
-			font.SetWeight(addtostatusbar ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
-			style.SetFont(font);
-			style.SetFontSize(8);
-			ct->SetDefaultStyle(style);
-			lastCritical = critical;
-		}
-		ct->AppendText(bufferline);
-		// During a batch (BeginLogBatch/EndLogBatch) the caller scrolls once
-		// at the end; a per-line ShowPosition on a large backlog forces an
-		// O(n) RichEdit reflow on every line.
-		if (!m_logBatching) {
-			ct->ShowPosition(ct->GetLastPosition() - 1);
-		}
+		ct->AppendLogLine(bufferline, addtostatusbar);
 	}
 
 	// Set the status-bar if the event warrents it
@@ -797,39 +780,32 @@ void CamuleDlg::AddLogLineToView(const wxString &line, int viewId, int &lastCrit
 
 void CamuleDlg::BeginLogBatch()
 {
-	// Coalesce a poll's worth of log lines into a single scroll-to-end
-	// (EndLogBatch) instead of one per line, which forced an O(n) RichEdit
-	// reflow on every line of a first-sync backlog (issue #445).
-	//
-	// Deliberately NO Freeze()/Thaw() here: appending to a *frozen*
-	// wxTE_RICH2 control on Windows leaves its line/scroll metrics stale, so
-	// after Thaw the view renders blank with the newest line pinned to the top
-	// until a manual scroll forces a recompute. That's the regression #451
-	// introduced and #471's Thaw-before-scroll tweak didn't cure (the append
-	// itself happened while frozen). Appending live keeps the metrics correct;
-	// suppressing only the per-line ShowPosition still removes the reflow cost.
-	m_logBatching = true;
+	// A stats poll can carry a large first-sync backlog; bracket the burst so
+	// the log view freezes once and tail-scrolls once instead of per line (see
+	// CMuleLogCtrl::BeginBatch/EndBatch).
+	CMuleLogCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, CMuleLogCtrl);
+	if (ct) {
+		ct->BeginBatch();
+	}
 }
 
 void CamuleDlg::EndLogBatch()
 {
-	m_logBatching = false;
-	wxTextCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, wxTextCtrl);
+	CMuleLogCtrl *ct = CastByID(ID_LOGVIEW, m_serverwnd, CMuleLogCtrl);
 	if (ct) {
-		ct->ShowPosition(ct->GetLastPosition() - 1);
+		ct->EndBatch();
 	}
 }
 
 void CamuleDlg::AddServerMessageLine(wxString &message)
 {
-	wxTextCtrl *cv = CastByID(ID_SERVERINFO, m_serverwnd, wxTextCtrl);
+	CMuleLogCtrl *cv = CastByID(ID_SERVERINFO, m_serverwnd, CMuleLogCtrl);
 	if (cv) {
 		if (message.Length() > 500) {
-			cv->AppendText(message.Left(500) + "\n");
+			cv->AppendLogLine(message.Left(500) + "\n");
 		} else {
-			cv->AppendText(message + "\n");
+			cv->AppendLogLine(message + "\n");
 		}
-		cv->ShowPosition(cv->GetLastPosition() - 1);
 	}
 }
 

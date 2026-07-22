@@ -50,6 +50,11 @@ if (wx_NEED_NET)
 	list (APPEND _amule_wx_targets NET)
 endif()
 
+if (wx_NEED_STC)
+	list (APPEND _amule_wx_components stc)
+	list (APPEND _amule_wx_targets STC)
+endif()
+
 if (wx_NEED_ADV)
 	list (APPEND _amule_wx_targets ADV)
 endif()
