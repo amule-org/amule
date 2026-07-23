@@ -39,7 +39,8 @@
 #include <wx/utils.h> // Needed for wxBusyCursor
 
 #include "amule.h"
-#include "config.h" // Needed for PACKAGE_STRING
+#include "FileArea.h" // Needed to push MMapEnabled into CFileArea
+#include "config.h"   // Needed for PACKAGE_STRING
 
 #include "CFile.h"
 #include <common/FileFunctions.h> // CDirIterator for recursive-root walk
@@ -206,6 +207,8 @@ bool CPreferences::s_Percent;
 bool CPreferences::s_SecIdent;
 bool CPreferences::s_ExtractMetaData;
 bool CPreferences::s_allocFullFile;
+bool CPreferences::s_mmapEnabled;
+bool CPreferences::s_mmapSupported;
 bool CPreferences::s_createFilesSparse;
 wxString CPreferences::s_CustomBrowser;
 bool CPreferences::s_BrowserTab;
@@ -1374,6 +1377,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_DAP, (new Cfg_Bool("/eMule/DAPPref", s_bDAP, true)));
 	NewCfgItem(IDC_UAP, (new Cfg_Bool("/eMule/UAPPref", s_bUAP, true)));
 	NewCfgItem(IDC_ALLOCFULLFILE, (new Cfg_Bool("/eMule/AllocateFullFile", s_allocFullFile, false)));
+	NewCfgItem(IDC_MMAP_ENABLE, (new Cfg_Bool("/eMule/MMapEnabled", s_mmapEnabled, false)));
 
 	/**
 	 * Web Server
@@ -1936,6 +1940,14 @@ void CPreferences::Save()
 	SavePreferences();
 
 	SaveSharedFolders();
+
+	// Apply a possibly-changed MMapEnabled immediately (local prefs dialog or
+	// a remote EC set that routes through Save()); safe to flip with active
+	// transfers -- see CFileArea::SetMMapEnabled. Core/daemon only; the remote
+	// GUI does not link CFileArea.
+#ifndef CLIENT_GUI
+	CFileArea::SetMMapEnabled(s_mmapEnabled);
+#endif
 }
 
 void CPreferences::SaveSharedFolders()
@@ -2044,6 +2056,22 @@ void CPreferences::LoadPreferences()
 		s_GeoIPSource = "custom";
 		s_GeoIPUpdateUrl.clear();
 	}
+
+	// Push the loaded MMapEnabled value into CFileArea (no-op where mmap is
+	// not compiled in). Also happens after every Save(), so preference changes
+	// -- local dialog or remote-set over EC -- take effect on the next block.
+	// Only the core/daemon owns file I/O; the remote GUI (CLIENT_GUI) ships the
+	// preference to the daemon over EC and never links CFileArea. The core also
+	// knows its own mmap capability at compile time; the remote GUI learns it
+	// from the daemon's EC preferences response instead (see CEC_Prefs_Packet).
+#ifndef CLIENT_GUI
+#ifdef MMAP_SUPPORTED
+	s_mmapSupported = true;
+#else
+	s_mmapSupported = false;
+#endif
+	CFileArea::SetMMapEnabled(s_mmapEnabled);
+#endif
 }
 
 CPreferences::GeoIPSource CPreferences::GetGeoIPSource()

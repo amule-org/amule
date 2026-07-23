@@ -201,7 +201,11 @@ endif()
 
 if (NEED_LIB_MULEAPPCOMMON)
 	option (ENABLE_IP2COUNTRY "compile with GeoIP IP2Country library" ON)
-	option (ENABLE_MMAP "enable using mapped memory if supported")
+	# Compile the mmap file-I/O path where the platform supports it (libc
+	# capability, no external dependency). Actual use is a runtime preference
+	# (MMapEnabled, default OFF). Set OFF only to exclude the mmap code and its
+	# SIGSEGV/SIGBUS handler entirely (e.g. sanitizer builds).
+	option (ENABLE_MMAP "compile the mmap file-I/O path where supported" ON)
 	option (ENABLE_NLS "enable national language support" ON)
 	# Backtrace symbol resolution: ON => use libbfd for in-process
 	# address→file:line resolution; OFF => fall back to

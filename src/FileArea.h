@@ -85,6 +85,16 @@ public:
 	 */
 	void CheckError();
 
+	/**
+	 * Runtime switch for the mmap file-I/O path (the MMapEnabled
+	 * preference). Read once per operation at ReadAt()/StartWriteAt() time;
+	 * an area already opened keeps its mode (see m_mmap_buffer), so flipping
+	 * this mid-transfer only affects subsequent operations and is safe with
+	 * active downloads and uploads. No-op on builds without MMAP_SUPPORTED.
+	 */
+	static void SetMMapEnabled(bool enabled);
+	static bool GetMMapEnabled();
+
 private:
 	//! A CFileArea is neither copyable nor assignable.
 	//@{

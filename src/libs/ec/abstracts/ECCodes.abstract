@@ -503,6 +503,8 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_FILES_MEDIA_METADATA_ENABLED       0x1811
 		EC_TAG_FILES_MEDIA_FFPROBE_PATH           0x1812
 		EC_TAG_FILES_START_NEXT_ALPHA             0x1813
+		EC_TAG_FILES_MMAP_SUPPORTED               0x1814
+		EC_TAG_FILES_MMAP_ENABLED                 0x1815
 
 #	EC_TAG_UNUSED                             0x1900
 #		EC_TAG_UNUSED                             0x1901

@@ -4174,6 +4174,14 @@ msgstr "Interval aktualizace FTP v minutách"
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Velikost zásobníku pro soubory: 240000 bytů"
 
+#: src/muuli_wdr.cpp:1601
+msgid "Use MMAP: memory-mapped file access (lower memory use)"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1602
+msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
+msgstr ""
+
 #: src/muuli_wdr.cpp:1914
 msgid "Upload Queue Size: 5000 clients"
 msgstr "Velikost fronty odesílání: 5000 klientů"

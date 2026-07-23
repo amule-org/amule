@@ -67,13 +67,22 @@ if (NEED_LIB_MULEAPPCORE)
 		set (STDC_HEADERS TRUE)
 	endif()
 
+	# mmap is a *platform capability*, not an external dependency: everything
+	# it needs (sys/mman.h, mmap/munmap, sysconf/_SC_PAGESIZE, sigaction/
+	# SA_SIGINFO) lives in libc.  We therefore probe unconditionally and let
+	# MMAP_SUPPORTED reflect what the platform can actually do; the runtime
+	# MMapEnabled preference (default OFF) decides whether to use it.  The
+	# ENABLE_MMAP build switch (default ON) is only an opt-out escape hatch for
+	# builds that want no mmap code at all (e.g. sanitizer/embedded).
 	if (ENABLE_MMAP)
 		check_include_file (sys/mman.h HAVE_SYS_MMAN_H)
 
 		if (HAVE_SYS_MMAN_H)
+			check_function_exists (mmap HAVE_MMAP)
 			check_function_exists (munmap HAVE_MUNMAP)
+			check_function_exists (sigaction HAVE_SIGACTION)
 
-			if (HAVE_MUNMAP)
+			if (HAVE_MMAP AND HAVE_MUNMAP)
 				check_function_exists (sysconf HAVE_SYSCONF)
 
 				if (HAVE_SYSCONF AND STDC_HEADERS)
@@ -93,10 +102,19 @@ if (NEED_LIB_MULEAPPCORE)
 					message (STATUS "sysconf function not found, mmap support is disabled")
 				endif()
 			else()
-				message (STATUS "munmap function not found, mmap support is disabled")
+				message (STATUS "mmap/munmap not found, mmap support is disabled")
 			endif()
 		else()
 			message (STATUS "sys/mman.h wasn't found, mmap support is disabled")
+		endif()
+
+		# Single source of truth for "mmap can be compiled in on this build".
+		# Gates the FileArea code path, the preferences checkbox, and the EC
+		# advertisement.  The SIGSEGV/SIGBUS recovery handler needs sigaction +
+		# SA_SIGINFO, so require it here too.
+		if (HAVE_MMAP AND HAVE_MUNMAP AND HAVE_SYSCONF AND HAVE__SC_PAGESIZE AND HAVE_SIGACTION)
+			set (MMAP_SUPPORTED TRUE)
+			message (STATUS "mmap support available (runtime-toggleable via MMapEnabled)")
 		endif()
 	endif()
 endif()

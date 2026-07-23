@@ -325,6 +325,16 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetAllocFullFile()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_ALLOC_FULL_SIZE));
 		}
+		// mmap capability negotiation: advertise support (tag presence) plus
+		// the current value. Gated on the *runtime* capability flag rather than
+		// #ifdef MMAP_SUPPORTED so a remote GUI on a platform without mmap can
+		// still relay the value to a daemon that has it.
+		if (thePrefs::GetMMapSupported()) {
+			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_MMAP_SUPPORTED));
+			if (thePrefs::GetMMapEnabled()) {
+				filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_MMAP_ENABLED));
+			}
+		}
 		if (thePrefs::IsCheckDiskspaceEnabled()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_CHECK_FREE_SPACE));
 		}
@@ -741,6 +751,12 @@ void CEC_Prefs_Packet::Apply() const
 		}
 		ApplyBoolean(
 			use_tag, thisTab, thePrefs::SetStartNextFileAlpha, EC_TAG_FILES_START_NEXT_ALPHA);
+#ifdef CLIENT_GUI
+		// Remote GUI: mmap capability is whatever the daemon advertised in this
+		// preferences response (tag presence), not the GUI's own build.
+		thePrefs::SetMMapSupported(thisTab->GetTagByName(EC_TAG_FILES_MMAP_SUPPORTED) != nullptr);
+#endif
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetMMapEnabled, EC_TAG_FILES_MMAP_ENABLED);
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_DIRECTORIES)) != NULL) {

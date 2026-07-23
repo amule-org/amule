@@ -78,6 +78,15 @@
 /* Define if you have the `munmap' function. */
 #cmakedefine HAVE_MUNMAP
 
+/* Define if you have the `sigaction' function (needed for the mmap
+   SIGSEGV/SIGBUS recovery handler). */
+#cmakedefine HAVE_SIGACTION
+
+/* Define if the mmap file-I/O path can be compiled in on this platform.
+   Gates the CFileArea code path, the preferences checkbox and the EC tag.
+   Actual use is the runtime MMapEnabled preference (default OFF). */
+#cmakedefine MMAP_SUPPORTED
+
 /* Define if you have the <nl_types.h> header file. */
 #cmakedefine HAVE_NL_TYPES_H
 

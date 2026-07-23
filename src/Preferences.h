@@ -617,6 +617,20 @@ public:
 	static bool GetAllocFullFile() { return s_allocFullFile; };
 	static void SetAllocFullFile(bool val) { s_allocFullFile = val; }
 
+	// Memory-mapped file I/O for part files (see CFileArea). Runtime-
+	// toggleable; the value is pushed into CFileArea::SetMMapEnabled() when it
+	// is loaded or changed. Only meaningful on MMAP_SUPPORTED builds.
+	static bool GetMMapEnabled() { return s_mmapEnabled; }
+	static void SetMMapEnabled(bool val) { s_mmapEnabled = val; }
+
+	// Runtime capability: is mmap compiled into the core we drive? On the
+	// monolithic/daemon this mirrors the local MMAP_SUPPORTED; on the remote
+	// GUI it is what the daemon advertised over EC (EC_TAG_FILES_MMAP_SUPPORTED
+	// presence). Not persisted. The prefs dialog shows the mmap checkbox and EC
+	// ships the value only when this is true.
+	static bool GetMMapSupported() { return s_mmapSupported; }
+	static void SetMMapSupported(bool val) { s_mmapSupported = val; }
+
 	static bool CreateFilesSparse() { return s_createFilesSparse; }
 	// Beware! This function reverts the value it gets, that's why the name is also different!
 	// In EC we send/receive the reverted value, that's the reason for a reverse setter.
@@ -1079,6 +1093,8 @@ protected:
 	static bool s_ExtractMetaData;
 
 	static bool s_allocFullFile;
+	static bool s_mmapEnabled;
+	static bool s_mmapSupported;
 	static bool s_createFilesSparse;
 
 	static wxString s_CustomBrowser;

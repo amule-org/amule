@@ -1913,6 +1913,9 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     item4->Add( item8, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
     wxSlider *item9 = new wxSlider( parent, IDC_FILEBUFFERSIZE, 16, 1, 100, wxDefaultPosition, wxSize(100,-1), wxSL_HORIZONTAL );
     item4->Add( item9, wxSizerFlags().Expand().CenterVertical() );
+    wxCheckBox *itemMMap = new wxCheckBox( parent, IDC_MMAP_ENABLE, _("Use MMAP: memory-mapped file access (lower memory use)"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemMMap->SetToolTip( _("Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts.") );
+    item4->Add( itemMMap, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
     wxStaticText *item10 = new wxStaticText( parent, IDC_QUEUESIZE_STATIC, _("Upload Queue Size: 5000 clients"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->Add( item10, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
     wxSlider *item11 = new wxSlider( parent, IDC_QUEUESIZE, 15, 5, 100, wxDefaultPosition, wxSize(100,-1), wxSL_HORIZONTAL );

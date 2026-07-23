@@ -39,16 +39,32 @@
 #include "FileArea.h"      // Interface declarations.
 #include "FileAutoClose.h" // Needed for CFileAutoClose
 
-#ifndef ENABLE_MMAP
-#define ENABLE_MMAP 0
-#endif
+#include <atomic> // std::atomic<bool> for the cross-thread MMapEnabled toggle
 
-#if ENABLE_MMAP && defined(HAVE_MMAP) && defined(HAVE_SYSCONF) && \
-	(defined(HAVE__SC_PAGESIZE) || defined(HAVE__SC_PAGE_SIZE))
-#define USE_MMAP
-#endif
+// MMAP_SUPPORTED is set by cmake (glib21.cmake) only when the whole mmap
+// file-I/O path is available on this platform: mmap / munmap / sysconf /
+// _SC_PAGESIZE / sigaction all present.  It gates the code below, the
+// preferences checkbox and the EC tag.  Whether mmap is actually *used* is the
+// runtime MMapEnabled preference (s_mmapEnabled), which defaults to off.
 
-#ifdef USE_MMAP
+// Runtime switch for the mmap path (the MMapEnabled preference). Written from
+// the main thread when the preference changes, read from the block-receive and
+// upload-I/O threads at ReadAt()/StartWriteAt() time. A plain atomic bool is
+// sufficient: the decision is captured per CFileArea in m_mmap_buffer, so a
+// concurrent flip only changes the mode of *subsequent* operations.
+//
+// The store uses release / the loads use acquire so that the SIGSEGV/SIGBUS
+// handler installed inside SetMMapEnabled(true) (below, once the handler class
+// is declared) is guaranteed visible to any I/O thread that observes the flag
+// as enabled -- i.e. the handler is always up before the first faultable map.
+static std::atomic<bool> s_mmapEnabled{ false };
+
+bool CFileArea::GetMMapEnabled()
+{
+	return s_mmapEnabled.load(std::memory_order_acquire);
+}
+
+#ifdef MMAP_SUPPORTED
 
 #include <sys/mman.h>
 
@@ -58,9 +74,9 @@ static const long gs_pageSize = sysconf(_SC_PAGESIZE);
 static const long gs_pageSize = sysconf(_SC_PAGE_SIZE);
 #endif
 
-#endif /* USE_MMAP */
+#endif /* MMAP_SUPPORTED */
 
-#if !defined(HAVE_SIGACTION) || !defined(SA_SIGINFO) || !defined(USE_MMAP) || defined(__UCLIBC__)
+#if !defined(HAVE_SIGACTION) || !defined(SA_SIGINFO) || !defined(MMAP_SUPPORTED) || defined(__UCLIBC__)
 
 class CFileAreaSigHandler
 {
@@ -191,6 +207,22 @@ void CFileAreaSigHandler::Remove(CFileArea &area)
 }
 #endif
 
+void CFileArea::SetMMapEnabled(bool enabled)
+{
+	// Install the SIGSEGV/SIGBUS recovery handler once, when mmap is first
+	// turned on, rather than per read/write (which would take a mutex on every
+	// block). Off builds -- and runs that never enable mmap -- never touch the
+	// signal-handler chain, keeping them clear of sanitizers/debuggers/crash
+	// reporters. CFileAreaSigHandler::Init() is idempotent and a no-op where
+	// MMAP_SUPPORTED is not defined. The install happens-before the release
+	// store, so any I/O thread that later sees the flag set (acquire) is
+	// guaranteed the handler is already in place.
+	if (enabled) {
+		CFileAreaSigHandler::Init();
+	}
+	s_mmapEnabled.store(enabled, std::memory_order_release);
+}
+
 CFileArea::CFileArea()
 : m_buffer(NULL)
 , m_mmap_buffer(NULL)
@@ -199,7 +231,11 @@ CFileArea::CFileArea()
 , m_file(NULL)
 , m_error(false)
 {
-	CFileAreaSigHandler::Init();
+	// The SIGSEGV/SIGBUS recovery handler is installed lazily, at the first
+	// actual mmap() (see ReadAt/StartWriteAt), rather than here. That keeps
+	// builds running with MMapEnabled=off (the default) from ever touching the
+	// signal-handler chain, so they don't collide with sanitizers, debuggers
+	// or crash reporters.
 }
 
 CFileArea::~CFileArea()
@@ -214,7 +250,7 @@ bool CFileArea::Close()
 		delete[] m_buffer;
 		m_buffer = NULL;
 	}
-#ifdef USE_MMAP
+#ifdef MMAP_SUPPORTED
 	if (m_mmap_buffer) {
 		munmap(m_mmap_buffer, m_length);
 		// remove from list
@@ -234,9 +270,17 @@ void CFileArea::ReadAt(CFileAutoClose &file, uint64 offset, size_t count)
 {
 	Close();
 
-#ifdef USE_MMAP
+#ifdef MMAP_SUPPORTED
 	uint64 offEnd = offset + count;
-	if (gs_pageSize > 0 && offEnd < 0x100000000ull) {
+	// The 4 GiB cap only matters where off_t (the mmap offset argument) is
+	// 32 bits: there a region ending at/after 4 GiB would truncate the offset
+	// and map the wrong bytes (forum 16444). Where off_t is 64 bits -- every
+	// modern aMule build (_FILE_OFFSET_BITS=64) -- mmap handles large offsets
+	// natively (verified against >4 GiB part files), so the cap is skipped and
+	// large files get mmap for their whole length. sizeof() folds at compile
+	// time, so this is free on 64-bit.
+	if (s_mmapEnabled.load(std::memory_order_acquire) && gs_pageSize > 0 &&
+		(sizeof(off_t) >= 8 || offEnd < 0x100000000ull)) {
 		uint64 offStart = offset & (~((uint64)gs_pageSize - 1));
 		m_length = offEnd - offStart;
 		void *p = mmap(NULL, m_length, PROT_READ, MAP_SHARED, file.fd(), offStart);
@@ -256,13 +300,15 @@ void CFileArea::ReadAt(CFileAutoClose &file, uint64 offset, size_t count)
 	file.ReadAt(m_buffer, offset, count);
 }
 
-#ifdef USE_MMAP
+#ifdef MMAP_SUPPORTED
 void CFileArea::StartWriteAt(CFileAutoClose &file, uint64 offset, size_t count)
 {
 	Close();
 
 	uint64 offEnd = offset + count;
-	if (file.GetLength() >= offEnd && gs_pageSize > 0 && offEnd < 0x100000000ull) {
+	// 4 GiB cap only applies with a 32-bit off_t -- see ReadAt() above.
+	if (s_mmapEnabled.load(std::memory_order_acquire) && file.GetLength() >= offEnd && gs_pageSize > 0 &&
+		(sizeof(off_t) >= 8 || offEnd < 0x100000000ull)) {
 		uint64 offStart = offset & (~((uint64)gs_pageSize - 1));
 		m_length = offEnd - offStart;
 		void *p = mmap(NULL, m_length, PROT_READ | PROT_WRITE, MAP_SHARED, file.fd(), offStart);
@@ -292,7 +338,7 @@ bool CFileArea::FlushAt(CFileAutoClose &file, uint64 offset, size_t count)
 	if (!m_buffer)
 		return false;
 
-#ifdef USE_MMAP
+#ifdef MMAP_SUPPORTED
 	if (m_mmap_buffer) {
 		if (msync(m_mmap_buffer, m_length, MS_SYNC))
 			return false;

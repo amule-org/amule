@@ -4190,6 +4190,14 @@ msgstr "Intervali i rifreskimit te FTP-se ne minuta"
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Madhesia e Buffer-it te failit: 240000 bytes"
 
+#: src/muuli_wdr.cpp:1601
+msgid "Use MMAP: memory-mapped file access (lower memory use)"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1602
+msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
+msgstr ""
+
 #: src/muuli_wdr.cpp:1914
 msgid "Upload Queue Size: 5000 clients"
 msgstr "Madhesia e Radhes ne Ngarkim: 5000 klienta"

@@ -695,6 +695,13 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		}
 	}
 
+	// The memory-mapped-I/O checkbox is only meaningful when the core we drive
+	// supports mmap: the local build on monolithic (MMAP_SUPPORTED), or the
+	// daemon's EC-advertised capability on the remote GUI. Hide it otherwise.
+	if (wxWindow *mmapBox = FindWindow(IDC_MMAP_ENABLE)) {
+		mmapBox->Show(thePrefs::GetMMapSupported());
+	}
+
 	// Load the user's intent (explicit non-recursive vs marked-recursive
 	// roots) into the tree control's two maps. shareddir_list itself
 	// is the runtime expansion -- not useful as UI state since it

@@ -4181,6 +4181,14 @@ msgstr "Interval d'actualització de l'FTP en minuts"
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Mida del buffer de fitxer: 240000 bytes"
 
+#: src/muuli_wdr.cpp:1601
+msgid "Use MMAP: memory-mapped file access (lower memory use)"
+msgstr ""
+
+#: src/muuli_wdr.cpp:1602
+msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
+msgstr ""
+
 #: src/muuli_wdr.cpp:1914
 msgid "Upload Queue Size: 5000 clients"
 msgstr "Mida de la cua de pujades: 5000 clients"
