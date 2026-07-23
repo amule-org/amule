@@ -5413,10 +5413,6 @@ msgstr "Vengrų"
 msgid "Italian"
 msgstr "Italų"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Italų (Šveicarijos)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japonų"

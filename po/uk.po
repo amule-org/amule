@@ -5413,10 +5413,6 @@ msgstr "Угорська"
 msgid "Italian"
 msgstr "Італійська"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Італійська (Швейцарія)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Японська"

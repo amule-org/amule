@@ -5296,10 +5296,6 @@ msgstr "унгарски"
 msgid "Italian"
 msgstr "Италиански"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Италиански (швейцарски)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "японски"

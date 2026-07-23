@@ -5378,10 +5378,6 @@ msgstr "Maghiară"
 msgid "Italian"
 msgstr "Italiană"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Italian (elvețian)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japoneză"

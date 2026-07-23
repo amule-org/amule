@@ -5392,10 +5392,6 @@ msgstr "Węgierski"
 msgid "Italian"
 msgstr "Włoski"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Włoski (Szwajcarski)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japoński"

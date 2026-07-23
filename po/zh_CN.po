@@ -5344,10 +5344,6 @@ msgstr "匈牙利语"
 msgid "Italian"
 msgstr "意大利语"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "意大利语（瑞士）"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "日语"

@@ -5350,10 +5350,6 @@ msgstr "Hungria"
 msgid "Italian"
 msgstr "Italiano"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Italiano (Suíço)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japonês"

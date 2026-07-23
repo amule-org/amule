@@ -5366,10 +5366,6 @@ msgstr "Unkari"
 msgid "Italian"
 msgstr "Italia"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Italia (Sveitsi)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japani"

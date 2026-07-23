@@ -5366,10 +5366,6 @@ msgstr "Hungariera"
 msgid "Italian"
 msgstr "Italiera"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "Italiera (Suitzarra)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japoniera"

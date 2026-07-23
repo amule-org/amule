@@ -5363,10 +5363,6 @@ msgstr "Macarca"
 msgid "Italian"
 msgstr "İtalyanca"
 
-#: src/Preferences.cpp:695
-msgid "Italian (Swiss)"
-msgstr "İtalyanca (İsviçre)"
-
 #: src/Preferences.cpp:696
 msgid "Japanese"
 msgstr "Japonca"
