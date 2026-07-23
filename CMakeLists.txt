@@ -505,6 +505,9 @@ message (STATUS "
 	**** aMule WebServer ****
 	Should aMule WebServer be built?				${BUILD_WEBSERVER}
 
+	**** aMule REST API ****
+	Should aMule REST API be built?					${BUILD_AMULEAPI}
+
 	**** aMule ED2K Links Handler ****
 	Should aMule ED2K Links Handler be built?			${BUILD_ED2K}
 

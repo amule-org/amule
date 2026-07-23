@@ -60,6 +60,7 @@ generally adopted into aMule shortly after.
   EC (External Connection) protocol.
 * `amuleweb` — HTTP interface to a running `amuled`.
 * `amulecmd` — interactive CLI for a running `amuled`.
+* `amuleapi` — REST API for a running `amuled`.
 
 ## Installation
 
