@@ -5352,6 +5352,10 @@ msgstr "日语"
 msgid "Korean"
 msgstr "韩语"
 
+#: src/Preferences.cpp:697
+msgid "Latvian"
+msgstr ""
+
 #: src/Preferences.cpp:698
 msgid "Lithuanian"
 msgstr "立陶宛语"

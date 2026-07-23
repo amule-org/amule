@@ -5373,6 +5373,10 @@ msgstr "Japonès"
 msgid "Korean"
 msgstr "Coreà"
 
+#: src/Preferences.cpp:697
+msgid "Latvian"
+msgstr ""
+
 #: src/Preferences.cpp:698
 msgid "Lithuanian"
 msgstr "Lituà"

@@ -694,6 +694,7 @@ static LangInfo aMuleLanguages[] = {
 	{ wxLANGUAGE_ITALIAN, false, "", wxTRANSLATE("Italian") },
 	{ wxLANGUAGE_JAPANESE, false, "", wxTRANSLATE("Japanese") },
 	{ wxLANGUAGE_KOREAN, false, "", wxTRANSLATE("Korean") },
+	{ wxLANGUAGE_LATVIAN, false, "", wxTRANSLATE("Latvian") },
 	{ wxLANGUAGE_LITHUANIAN, false, "", wxTRANSLATE("Lithuanian") },
 	{ wxLANGUAGE_NORWEGIAN_NYNORSK, false, "", wxTRANSLATE("Norwegian (Nynorsk)") },
 	{ wxLANGUAGE_POLISH, false, "", wxTRANSLATE("Polish") },
