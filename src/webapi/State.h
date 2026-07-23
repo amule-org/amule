@@ -724,6 +724,12 @@ struct PreferencesSnapshot
 		bool save_sources = false;
 		bool extract_metadata = false;
 		bool alloc_full_size = false;
+		// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
+		// capability (mirrors upnp_available): true only when the core was built
+		// with mmap support. mmap_enabled is the runtime preference and is only
+		// accepted on PATCH when mmap_supported is true.
+		bool mmap_supported = false;
+		bool mmap_enabled = false;
 		bool check_free_space = false;
 		std::uint32_t min_free_space_mb = 0;
 		bool create_normal = false;

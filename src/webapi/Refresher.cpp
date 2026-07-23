@@ -2212,6 +2212,11 @@ void ParseFilesPrefs(const CECTag *f, PreferencesSnapshot &out)
 	out.files.save_sources = f->GetTagByName(EC_TAG_FILES_SAVE_SOURCES) != nullptr;
 	out.files.extract_metadata = f->GetTagByName(EC_TAG_FILES_EXTRACT_METADATA) != nullptr;
 	out.files.alloc_full_size = f->GetTagByName(EC_TAG_FILES_ALLOC_FULL_SIZE) != nullptr;
+	// mmap (#565): the daemon advertises support (tag presence) only when built
+	// with MMAP_SUPPORTED, plus the current value; both are absent on a
+	// non-mmap or pre-3.1 daemon, leaving mmap_supported/mmap_enabled false.
+	out.files.mmap_supported = f->GetTagByName(EC_TAG_FILES_MMAP_SUPPORTED) != nullptr;
+	out.files.mmap_enabled = f->GetTagByName(EC_TAG_FILES_MMAP_ENABLED) != nullptr;
 	out.files.check_free_space = f->GetTagByName(EC_TAG_FILES_CHECK_FREE_SPACE) != nullptr;
 	if (const CECTag *t = f->GetTagByName(EC_TAG_FILES_MIN_FREE_SPACE)) {
 		out.files.min_free_space_mb = static_cast<std::uint32_t>(t->GetInt());

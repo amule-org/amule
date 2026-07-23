@@ -271,6 +271,38 @@ _assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path persi
 _assert_json_eq '.online_signature.update_frequency' 123 'online_signature.update_frequency persisted'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface persisted'
 
+# --- 5d. mmap (#565): capability flag + capability-gated round-trip. ------
+# files.mmap_supported is a read-only daemon capability; files.mmap_enabled is
+# only settable when it is true. This branch adapts to whichever daemon runs
+# the smoke: a mmap-capable core exercises the round-trip, a non-mmap core
+# (e.g. Windows, -DENABLE_MMAP=OFF) exercises the 409 capability gate.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '(.files.mmap_supported|type)' boolean 'files.mmap_supported is bool (read-only capability)'
+_assert_json_eq '(.files.mmap_enabled|type)' boolean 'files.mmap_enabled is bool'
+MMAP_SUPPORTED=$(printf '%s' "$CURL_BODY" | jq -r '.files.mmap_supported')
+SAVED_MMAP=$(printf '%s' "$CURL_BODY" | jq -r '.files.mmap_enabled')
+if [ "$MMAP_SUPPORTED" = "true" ]; then
+	MMAP_TOGGLE=$([ "$SAVED_MMAP" = "true" ] && echo false || echo true)
+	# Send the read-only mmap_supported alongside a real toggle: it must be
+	# ignored (not rejected), and GET must still report support = true.
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d "{\"files\":{\"mmap_enabled\":$MMAP_TOGGLE,\"mmap_supported\":false}}" \
+		"$HOST/api/v0/preferences"
+	_assert_status 200 "PATCH files.mmap_enabled (daemon supports mmap) → 200"
+	_assert_json_eq '.files.mmap_enabled' "$MMAP_TOGGLE" 'files.mmap_enabled toggled in response'
+	_assert_json_eq '.files.mmap_supported' true 'files.mmap_supported read-only (ignored on PATCH)'
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+	_assert_json_eq '.files.mmap_enabled' "$MMAP_TOGGLE" 'files.mmap_enabled persisted (no stale GET)'
+	# Restore.
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d "{\"files\":{\"mmap_enabled\":$SAVED_MMAP}}" "$HOST/api/v0/preferences" >/dev/null 2>&1
+else
+	echo "    info: daemon built without mmap — exercising the 409 capability gate"
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"files":{"mmap_enabled":true}}' "$HOST/api/v0/preferences"
+	_assert_status 409 "PATCH files.mmap_enabled on non-mmap daemon → 409 conflict"
+fi
+
 # --- Proxy: readable fields present, round-trip, write-only password. -----
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '(.connection.proxy_enabled|type)' boolean 'connection.proxy_enabled is bool'

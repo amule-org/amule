@@ -5265,6 +5265,13 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.files.extract_metadata);
 	w.Key("alloc_full_size");
 	w.ValueBool(p.files.alloc_full_size);
+	// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
+	// capability (like upnp_available); mmap_enabled is settable via PATCH only
+	// when mmap_supported is true.
+	w.Key("mmap_supported");
+	w.ValueBool(p.files.mmap_supported);
+	w.Key("mmap_enabled");
+	w.ValueBool(p.files.mmap_enabled);
 	w.Key("check_free_space");
 	w.ValueBool(p.files.check_free_space);
 	w.Key("min_free_space_mb");
@@ -5959,6 +5966,15 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	}
 
 	if (files_obj) {
+		// mmap_enabled is capability-gated: reject it up front if the connected
+		// daemon was not built with mmap support (mirrors upnp being read-only).
+		// Without this the tag would be silently dropped by a non-mmap daemon.
+		if (files_obj->find("mmap_enabled") != files_obj->end() &&
+			!m_state.Preferences().files.mmap_supported) {
+			return ErrorResponse(409,
+				"conflict",
+				"`files.mmap_enabled` is not supported by the connected daemon");
+		}
 		CECTag g(EC_TAG_PREFS_FILES, static_cast<std::uint32_t>(0));
 		bool any = false;
 		if (!PrefTakeBool(*files_obj, g, "ich_enabled", EC_TAG_FILES_ICH_ENABLED, any, perr) ||
@@ -5994,6 +6010,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				perr) ||
 			!PrefTakeBool(
 				*files_obj, g, "alloc_full_size", EC_TAG_FILES_ALLOC_FULL_SIZE, any, perr) ||
+			!PrefTakeBool(*files_obj, g, "mmap_enabled", EC_TAG_FILES_MMAP_ENABLED, any, perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
 				"check_free_space",
