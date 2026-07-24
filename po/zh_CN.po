@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-24 13:14+0200\n"
-"PO-Revision-Date: 2026-07-23 19:40+0000\n"
+"PO-Revision-Date: 2026-07-24 13:55+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -4162,11 +4162,11 @@ msgstr "文件缓冲：24000 字节"
 
 #: src/muuli_wdr.cpp:1916
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "使用 MMAP：内存映射文件访问（降低内存占用）"
 
 #: src/muuli_wdr.cpp:1917
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "映射 part 文件到内存而不是在堆栈上缓冲，降低进程内存占用。在一些磁盘上可能降低下载速度；最适合内存紧张或重度上传的主机。"
 
 #: src/muuli_wdr.cpp:1919
 msgid "Upload Queue Size: 5000 clients"
@@ -5362,7 +5362,7 @@ msgstr "韩语"
 
 #: src/Preferences.cpp:700
 msgid "Latvian"
-msgstr ""
+msgstr "拉脱维亚语"
 
 #: src/Preferences.cpp:701
 msgid "Lithuanian"

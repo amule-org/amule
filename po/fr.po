@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-24 13:14+0200\n"
-"PO-Revision-Date: 2026-07-23 19:31+0000\n"
+"PO-Revision-Date: 2026-07-24 13:45+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -4167,11 +4167,11 @@ msgstr "Taille du fichier de tampon : 240000 octets"
 
 #: src/muuli_wdr.cpp:1916
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "Utiliser MMAP : « memory-mapped file access », c'est-à-dire accès aux fichiers mappés dans la mémoire (utilise moins de mémoire)"
 
 #: src/muuli_wdr.cpp:1917
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "Fait correspondre les fichiers partiels dans la mémoire au lieu de les mettre en tampon sur la pile, baissant l'empreinte mémoire du processus. Peut réduire la vitesse de téléchargement sur certains disques ; idéal pour les hôtes disposant de peu de mémoire ou pour ceux qui téléversent beaucoup."
 
 #: src/muuli_wdr.cpp:1919
 msgid "Upload Queue Size: 5000 clients"
