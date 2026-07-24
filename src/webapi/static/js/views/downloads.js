@@ -263,12 +263,10 @@ export default function Downloads({ isGuest }) {
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
-          <label>${t("downloads_status_label")}:</label>
           <select class="input input-sm" value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
             ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
-          <span>${t("downloads_filter")}:</span>
-          <input class="input input-sm" type="text" value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
+          <input class="input input-sm" type="text" placeholder=${t("downloads_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
       </div>

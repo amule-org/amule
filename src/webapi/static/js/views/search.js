@@ -287,8 +287,7 @@ export default function Search({ isGuest }) {
           <span class="selected-count admin-only">${t("search_selected")} ${selectedCount}</span>
           <span class="search-progress">${progress}</span>
           <div class="spacer"></div>
-          <span>${t("search_filter")}:</span>
-          <input class="input input-sm" type="text" value=${filter} onInput=${(e) => setFilter(e.target.value)} />
+          <input class="input input-sm" type="text" placeholder=${t("search_filter")} value=${filter} onInput=${(e) => setFilter(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
 

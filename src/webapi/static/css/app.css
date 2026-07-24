@@ -441,6 +441,10 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 
 /* --- transfers / shared extras --- */
 .input-sm { padding: 3px 6px; font-size: 13px; }
+/* Selects/inputs render taller than buttons (line-height: normal vs 1). Pin the
+   small controls to one height so they line up side by side, e.g. the category
+   select next to the download button in the search results action cells. */
+.input-sm, .btn-sm { height: 28px; }
 .totals-line { padding: 8px 4px; color: var(--text-dim); font-size: 13px; }
 .section-title { margin: 18px auto 8px; font-size: 15px; }
 /* When a title shares its row with controls, drop the auto side margins

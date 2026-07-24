@@ -152,8 +152,7 @@ export default function Shared({ isGuest }) {
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
-          <span>${t("shared_filter")}:</span>
-          <input class="input input-sm" type="text" value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
+          <input class="input input-sm" type="text" placeholder=${t("shared_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
       </div>

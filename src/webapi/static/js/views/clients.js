@@ -121,12 +121,10 @@ export default function ClientsPanel() {
         <${Tabs} tabs=${tabs} active=${filter} onSelect=${setFilter} />
         <div class="net-pane-body">
         <div class="toolbar pane-toolbar">
-          <label>${t("downloads_peer_identity")}:</label>
           <select class="input input-sm" value=${ident} onChange=${(e) => setIdent(e.target.value)}>
             ${IDENT_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
-          <span>${t("downloads_peer_filter")}:</span>
-          <input class="input input-sm" type="text" value=${q} onInput=${(e) => setQ(e.target.value)} />
+          <input class="input input-sm" type="text" placeholder=${t("downloads_peer_filter")} value=${q} onInput=${(e) => setQ(e.target.value)} />
           <div class="spacer"></div>
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
