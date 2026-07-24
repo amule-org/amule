@@ -11,6 +11,8 @@
 
 import { html, useRef, useState, useEffect } from "./dom.js";
 import { Icon } from "./icons.js";
+import { loadPref, savePref } from "./store.js";
+import { t } from "./i18n.js";
 
 // Fixed row height: the scroll math assumes every row is exactly this tall, and
 // each <tr> is pinned to it inline. Must fit the tallest cell content (input-sm
@@ -44,6 +46,58 @@ export function textMatcher(query) {
 }
 
 const colClass = (c) => [c.num ? "num" : "", c.cls || ""].filter(Boolean).join(" ");
+
+// Per-table UI prefs (sort direction + hidden columns) persisted as one object
+// under "amule.table.<storageKey>". `defaults` = { sortKey, sortDir, hidden:[] }.
+// Stored prefs are spread over the defaults so a column added as default-hidden
+// later stays hidden only for users who never opened the picker (their stored
+// object has no entry for it → the default wins), while everyone else keeps
+// their explicit choice. Returns the current sort plus toggles the view wires
+// to VirtualTable.onSort and the ColumnPicker.
+export function useTablePrefs(storageKey, defaults) {
+  const [prefs, setPrefs] = useState(() => ({
+    sortKey: defaults.sortKey,
+    sortDir: defaults.sortDir,
+    hidden: defaults.hidden || [],
+    ...loadPref("table." + storageKey, {}),
+  }));
+  useEffect(() => { savePref("table." + storageKey, prefs); }, [prefs]);
+
+  const toggleSort = (key) =>
+    setPrefs((p) => (p.sortKey === key
+      ? { ...p, sortDir: -p.sortDir }
+      : { ...p, sortKey: key, sortDir: 1 }));
+  const toggleCol = (key) =>
+    setPrefs((p) => {
+      const h = new Set(p.hidden);
+      h.has(key) ? h.delete(key) : h.add(key);
+      return { ...p, hidden: [...h] };
+    });
+
+  return { sortKey: prefs.sortKey, sortDir: prefs.sortDir,
+           hidden: new Set(prefs.hidden), toggleSort, toggleCol };
+}
+
+// Dropdown of checkboxes to show/hide a table's toggleable columns. Native
+// <details> so the browser owns open/close (no outside-click handler). Columns
+// without a `key`, or flagged `always`, are fixed and never listed.
+export function ColumnPicker({ columns, hidden, onToggle }) {
+  const toggleable = columns.filter((c) => c.key && !c.always);
+  return html`
+    <details class="col-picker">
+      <summary class="btn btn-sm btn-icon" title=${t("table_columns")}>
+        <${Icon} name="menu" />
+      </summary>
+      <div class="col-picker-menu">
+        ${toggleable.map((c) => html`
+          <label class="col-picker-item">
+            <input type="checkbox" checked=${!hidden.has(c.key)}
+                   onChange=${() => onToggle(c.key)} />
+            <span>${c.label}</span>
+          </label>`)}
+      </div>
+    </details>`;
+}
 
 export function VirtualTable({
   columns, rows, rowKey, rowClass, sortKey, sortDir, onSort, empty, onRowClick,

@@ -1,6 +1,12 @@
-// Minimal pub/sub state container. Keys are domain names ("downloads",
-// "status", …); values are whatever the data layer or a view puts there.
-// Views subscribe to a key and re-render when it changes.
+// App state, two flavours:
+//   - `store`: a minimal in-memory pub/sub container (lost on reload). Keys are
+//     domain names ("downloads", "status", …); views subscribe to a key and
+//     re-render when it changes.
+//   - loadPref/savePref: persistent prefs backed by localStorage, JSON
+//     round-trip under an "amule."-prefixed key (matching theme.js / i18n.js).
+//     Every access is guarded so a disabled / full / private-mode localStorage
+//     degrades to the caller's fallback instead of throwing.
+//     ponytail: JSON get/set only; no TTL/versioning until something needs it.
 
 const state = new Map();
 const subs = new Map(); // key -> Set<fn>
@@ -23,3 +29,18 @@ export const store = {
     return () => { const s = subs.get(key); if (s) s.delete(fn); };
   },
 };
+
+export function loadPref(key, fallback) {
+  try {
+    const v = localStorage.getItem("amule." + key);
+    return v == null ? fallback : JSON.parse(v);
+  } catch (_) {
+    return fallback;
+  }
+}
+
+export function savePref(key, val) {
+  try {
+    localStorage.setItem("amule." + key, JSON.stringify(val));
+  } catch (_) {}
+}

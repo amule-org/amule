@@ -209,7 +209,7 @@ b { font-weight: 600; }
 }
 .spacer { flex: 1 1 auto; }
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.server-toolbars { --srv-field: 190px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.server-toolbars { --srv-field: 190px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .server-toolbars .input-sm { width: var(--srv-field); max-width: 100%; }
 /* URL input spans the two add-server inputs combined (2 fields + the .toolbar gap). */
 .server-toolbars .input-url { width: calc(var(--srv-field) * 2 + 6px); max-width: 100%; }
@@ -237,6 +237,26 @@ b { font-weight: 600; }
 .btn-icon { padding: 6px; }
 .btn-sm { padding: 4px 8px; font-size: 13px; }
 .btn-sm .icon { width: 15px; height: 15px; }
+
+/* Column picker: a <details> whose summary is a small icon button and whose
+   body is an absolutely-positioned checkbox menu. Native <details> owns
+   open/close so there's no outside-click handler. */
+.col-picker { position: relative; display: inline-flex; }
+.col-picker > summary { list-style: none; cursor: pointer; }
+.col-picker > summary::-webkit-details-marker { display: none; }
+.col-picker-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 20;
+  min-width: 160px; max-height: 60vh; overflow-y: auto; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.col-picker-item {
+  display: flex; align-items: center; gap: 8px; padding: 4px 6px;
+  border-radius: var(--radius); cursor: pointer; white-space: nowrap; font-size: 13px;
+}
+.col-picker-item:hover { background: var(--surface-2); }
+.col-picker-item input { margin: 0; }
 
 /* Language picker: globe icon + native <select>, blended into the ghost toolbar. */
 .lang-select { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
@@ -742,6 +762,8 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
     position: static; width: auto; height: auto; margin: 0;
     clip: auto; overflow: visible;
   }
+  /* roomier tap targets in the column picker on touch screens */
+  .col-picker-item { min-height: 40px; padding: 8px 10px; font-size: 14px; }
 }
 @media (max-width: 600px) {
   .view { padding: 10px; }

@@ -6,12 +6,13 @@
 // app.css).
 
 import { html, useState, useRef } from "../dom.js";
+import { loadPref, savePref } from "../store.js";
 import { Icon } from "../icons.js";
 import { t } from "../i18n.js";
 
 export function SplitDetail({ storageKey, open, onClose, top, children }) {
   const [splitH, setSplitH] = useState(() => {
-    const v = Number(localStorage.getItem(storageKey));
+    const v = loadPref(storageKey, 340);
     return v > 0 ? v : 340;
   });
   const splitRef = useRef(null);
@@ -36,7 +37,7 @@ export function SplitDetail({ storageKey, open, onClose, top, children }) {
     const g = dragRef.current;
     if (!g) return;
     try { g.el.releasePointerCapture(g.id); } catch (_) {}
-    if (g.lastH != null) localStorage.setItem(storageKey, String(g.lastH));
+    if (g.lastH != null) savePref(storageKey, g.lastH);
     dragRef.current = null;
   };
 

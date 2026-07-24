@@ -8,7 +8,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, Placeholder, Tabs } from "../components.js";
-import { VirtualTable, sortRows, textMatcher } from "../table.js";
+import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t } from "../i18n.js";
@@ -31,7 +31,7 @@ const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
 // flags column has no key → stays non-sortable).
 const COLS = [
   { cls: "peer-flags", width: "60px", show: ALL, cell: (c) => peerFlags(c) },
-  { key: "name", th: "downloads_peer_col_name", width: "170px", show: ALL, sortable: true,
+  { key: "name", always: true, th: "downloads_peer_col_name", width: "170px", show: ALL, sortable: true,
     sortVal: (c) => (c.client_name || "").toLowerCase(),
     cell: (c) => html`<span title=${c.client_name}>${c.client_name || "—"}</span>` },
   { key: "software", th: "downloads_peer_col_software", width: "140px", show: ALL, sortable: true,
@@ -72,19 +72,15 @@ export default function ClientsPanel() {
   const [filter, setFilter] = useState("all"); // direction tab: all / downloads / uploads
   const [ident, setIdent] = useState("identified");
   const [q, setQ] = useState("");
-  const [sortKey, setSortKey] = useState(null); // null → default sort (busiest first)
-  const [sortDir, setSortDir] = useState(1);
+  // sortKey null → default sort (busiest first).
+  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+    useTablePrefs("clients", { sortKey: null, sortDir: 1, hidden: [] });
 
   useEffect(() => {
     data.register({ key: "clients", eventPrefix: "client", id: "client_ecid",
       list: () => api.get("clients").then((r) => r.clients || []) });
     data.ensure("clients");
   }, []);
-
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(-sortDir);
-    else { setSortKey(key); setSortDir(1); }
-  };
 
   const nDown = clients.filter(isDown).length;
   const nUp = clients.filter(isUp).length;
@@ -104,6 +100,7 @@ export default function ClientsPanel() {
 
   const columns = COLS.filter((col) => col.show.includes(filter))
     .map((col) => ({ ...col, label: col.th ? t(col.th) : "" }));
+  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
 
   // Sort by the chosen column when set (and visible in this tab); otherwise keep
   // the default "busiest peers first" order (combined dl+ul speed, descending).
@@ -129,8 +126,10 @@ export default function ClientsPanel() {
           </select>
           <span>${t("downloads_peer_filter")}:</span>
           <input class="input input-sm" type="text" value=${q} onInput=${(e) => setQ(e.target.value)} />
+          <div class="spacer"></div>
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
-        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(c) => c.client_ecid}
+        <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.client_ecid}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                          empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />
       </div>

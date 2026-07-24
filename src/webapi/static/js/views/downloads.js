@@ -7,7 +7,7 @@ import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog } from "../components.js";
-import { VirtualTable, sortRows, textMatcher } from "../table.js";
+import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -24,8 +24,8 @@ export default function Downloads({ isGuest }) {
   const downloads = useStore("downloads") || [];
   const [categories, setCategories] = useState([]);
   const [selection, setSelection] = useState(() => new Set());
-  const [sortKey, setSortKey] = useState("name");
-  const [sortDir, setSortDir] = useState(1);
+  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+    useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: [] });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterText, setFilterText] = useState("");
@@ -69,10 +69,6 @@ export default function Downloads({ isGuest }) {
     return c ? c.name : String(idx);
   };
 
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(-sortDir);
-    else { setSortKey(key); setSortDir(1); }
-  };
   const toggleRow = (hash, checked) => {
     const next = new Set(selection);
     if (checked) next.add(hash); else next.delete(hash);
@@ -151,10 +147,10 @@ export default function Downloads({ isGuest }) {
   }, [filterStatus, filterCategory, filterText]);
 
   const columns = [
-    { label: html`<input type="checkbox" title=${t("downloads_select_all")} checked=${allSelected}
+    { always: true, label: html`<input type="checkbox" title=${t("downloads_select_all")} checked=${allSelected}
                          onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
       cell: (d) => html`<input type="checkbox" checked=${selection.has(d.hash)} onChange=${(e) => toggleRow(d.hash, e.target.checked)} />` },
-    { key: "name", label: t("downloads_name"), cls: "name", sortable: true,
+    { key: "name", always: true, label: t("downloads_name"), cls: "name", sortable: true,
       sortVal: (d) => (d.name || "").toLowerCase(),
       cell: (d) => html`<span title=${d.name}>${d.name}</span>` },
     { key: "size", label: t("downloads_size"), num: true, width: "110px", sortable: true,
@@ -189,7 +185,7 @@ export default function Downloads({ isGuest }) {
               <option value=${0}>${t("downloads_category_none")}</option>
               ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
             </select>` },
-    { label: t("downloads_actions"), cls: "row-actions admin-only", width: "130px", cell: (d) => {
+    { key: "actions", label: t("downloads_actions"), cls: "row-actions admin-only", width: "130px", cell: (d) => {
         const inactive = d.status === "paused" || d.status === "stopped";
         const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
         return html`
@@ -207,6 +203,7 @@ export default function Downloads({ isGuest }) {
   ];
 
   list = sortRows(list, columns, sortKey, sortDir);
+  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
   const rowClass = (d) =>
     (selection.has(d.hash) ? "row-selected " : "") + (d.hash === detailHash ? "row-active" : "");
 
@@ -272,10 +269,11 @@ export default function Downloads({ isGuest }) {
           </select>
           <span>${t("downloads_filter")}:</span>
           <input class="input input-sm" type="text" value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
       </div>
 
-        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
+        <${VirtualTable} columns=${shown} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />

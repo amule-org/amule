@@ -7,7 +7,7 @@ import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast } from "../components.js";
-import { VirtualTable, sortRows, textMatcher } from "../table.js";
+import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatInt, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
 import { SharedDetail } from "./shared-detail.js";
@@ -19,8 +19,8 @@ const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
 export default function Shared({ isGuest }) {
   const shared = useStore("shared") || [];
   const [selection, setSelection] = useState(() => new Set());
-  const [sortKey, setSortKey] = useState("name");
-  const [sortDir, setSortDir] = useState(1);
+  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+    useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: [] });
   const [filterText, setFilterText] = useState("");
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
 
@@ -42,10 +42,6 @@ export default function Shared({ isGuest }) {
     if (detailHash && !shared.some((s) => s.hash === detailHash)) setDetailHash(null);
   }, [shared]);
 
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(-sortDir);
-    else { setSortKey(key); setSortDir(1); }
-  };
   const toggleRow = (hash, checked) => {
     const next = new Set(selection);
     if (checked) next.add(hash); else next.delete(hash);
@@ -92,10 +88,10 @@ export default function Shared({ isGuest }) {
   }, [filterText]);
 
   const columns = [
-    { label: html`<input type="checkbox" title=${t("shared_select_all")} checked=${allSelected}
+    { always: true, label: html`<input type="checkbox" title=${t("shared_select_all")} checked=${allSelected}
                          onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
       cell: (s) => html`<input type="checkbox" checked=${selection.has(s.hash)} onChange=${(e) => toggleRow(s.hash, e.target.checked)} />` },
-    { key: "name", label: t("shared_name"), cls: "name", sortable: true,
+    { key: "name", always: true, label: t("shared_name"), cls: "name", sortable: true,
       sortVal: (s) => (s.name || "").toLowerCase(),
       cell: (s) => html`<span title=${s.name}>${s.name}</span>` },
     { key: "size", label: t("shared_size"), num: true, width: "110px", sortable: true,
@@ -111,7 +107,8 @@ export default function Shared({ isGuest }) {
       cell: (s) => twin(s.accepts, "session", "total", formatInt) },
     { key: "sources", label: t("shared_complete_src"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.complete_sources || 0, cell: (s) => formatInt(s.complete_sources) },
-    { label: t("shared_priority"), width: "160px", cell: (s) => isGuest
+    { key: "priority", label: t("shared_priority"), width: "160px", sortable: true,
+      sortVal: (s) => s.priority || "", cell: (s) => isGuest
         ? prioLabel(s)
         : html`
             <select class="input input-sm admin-only" value=${prioValue(s)}
@@ -121,6 +118,7 @@ export default function Shared({ isGuest }) {
   ];
 
   list = sortRows(list, columns, sortKey, sortDir);
+  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
   const rowClass = (s) =>
     (selection.has(s.hash) ? "row-selected " : "") + (s.hash === detailHash ? "row-active" : "");
 
@@ -156,9 +154,10 @@ export default function Shared({ isGuest }) {
         <div class="toolbar">
           <span>${t("shared_filter")}:</span>
           <input class="input input-sm" type="text" value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
       </div>
-        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(s) => s.hash} rowClass=${rowClass}
+        <${VirtualTable} columns=${shown} rows=${list} rowKey=${(s) => s.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />

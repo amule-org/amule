@@ -12,7 +12,7 @@ import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef } from "../dom.js";
 import { Badge, Placeholder, Tabs, toast } from "../components.js";
-import { VirtualTable, sortRows, textMatcher } from "../table.js";
+import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -44,8 +44,10 @@ export default function Search({ isGuest }) {
   const [results, setResults] = useState([]);
   const [filter, setFilter] = useState("");
   const [selection, setSelection] = useState(() => new Set());
-  const [sortKey, setSortKey] = useState("sources");
-  const [sortDir, setSortDir] = useState(-1);
+  // Sort + hidden columns persist per-table via useTablePrefs.
+  const { sortKey, sortDir, hidden, toggleSort, toggleCol } = useTablePrefs("search", {
+    sortKey: "sources", sortDir: -1, hidden: [],
+  });
   const [progress, setProgress] = useState("");
   const [searching, setSearching] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -186,10 +188,6 @@ export default function Search({ isGuest }) {
   };
   const toggleAll = (checked) =>
     setSelection(checked ? new Set(list.map((r) => r.hash)) : new Set());
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(-sortDir);
-    else { setSortKey(key); setSortDir(1); }
-  };
 
   const match = textMatcher(filter);
   const filtered = filter ? results.filter((r) => match(r.name)) : results;
@@ -216,10 +214,10 @@ export default function Search({ isGuest }) {
     </select>`;
 
   const columns = [
-    { label: html`<input type="checkbox" title=${t("search_select_all")} checked=${allSelected}
+    { always: true, label: html`<input type="checkbox" title=${t("search_select_all")} checked=${allSelected}
                          onChange=${(e) => toggleAll(e.target.checked)} />`, width: "40px",
       cell: (r) => html`<input type="checkbox" checked=${selection.has(r.hash)} onChange=${(e) => toggleRow(r.hash, e.target.checked)} />` },
-    { key: "name", label: t("search_name"), cls: "name", sortable: true,
+    { key: "name", always: true, label: t("search_name"), cls: "name", sortable: true,
       sortVal: (r) => (r.name || "").toLowerCase(),
       // flex cell so a long name ellipsizes without hiding the "already have" badge
       cell: (r) => html`<div class="name-cell" title=${r.name}><span class="name-text">${r.name}</span>${r.already_have ? html`<${Badge} title=${t("search_already_have_title")}>${t("search_badge_have")}<//>` : null}</div>` },
@@ -230,7 +228,7 @@ export default function Search({ isGuest }) {
       cell: (r) => { const src = r.sources || {}; return html`<span title=${t("search_title_complete_total")}>${(src.complete || 0) + " / " + (src.total || 0)}</span>`; } },
     { key: "rating", label: t("search_rating"), num: true, width: "90px", sortable: true,
       sortVal: (r) => r.rating || 0, cell: (r) => r.rating || 0 },
-    { label: t("search_actions"), cls: "row-actions admin-only", width: "180px",
+    { key: "actions", label: t("search_actions"), cls: "row-actions admin-only", width: "180px",
       cell: (r) => html`
         <select class="input input-sm" value=${catFor(r.hash)}
                 onChange=${(e) => setRowCat({ ...rowCat, [r.hash]: Number(e.target.value) })}>
@@ -242,6 +240,9 @@ export default function Search({ isGuest }) {
   ];
 
   const list = sortRows(filtered, columns, sortKey, sortDir);
+  // sortRows keeps the full column set (it looks columns up by key); only the
+  // VirtualTable is fed the visible subset.
+  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
   const rowClass = (r) => selection.has(r.hash) ? "row-selected" : "";
 
   return html`
@@ -287,9 +288,10 @@ export default function Search({ isGuest }) {
           <div class="spacer"></div>
           <span>${t("search_filter")}:</span>
           <input class="input input-sm" type="text" value=${filter} onInput=${(e) => setFilter(e.target.value)} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
 
-        <${VirtualTable} columns=${columns} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
+        <${VirtualTable} columns=${shown} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                          empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
       </div>
