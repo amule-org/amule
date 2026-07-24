@@ -176,6 +176,8 @@
   "search_selected": "Seleccionados",
   "search_size": "Tamaño",
   "search_sources": "Fuentes",
+  "search_have_no": "No lo tengo",
+  "search_have_yes": "Ya lo tengo",
   "search_status_downloaded": "Descargado",
   "search_status_queued": "En cola",
   "search_status_canceled": "Cancelado",

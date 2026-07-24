@@ -43,6 +43,7 @@ export default function Search({ isGuest }) {
 
   const [results, setResults] = useState([]);
   const [filter, setFilter] = useState("");
+  const [filterHave, setFilterHave] = useState("all");
   const [selection, setSelection] = useState(() => new Set());
   // Sort + hidden columns persist per-table via useTablePrefs.
   const { sortKey, sortDir, hidden, toggleSort, toggleCol } = useTablePrefs("search", {
@@ -190,7 +191,9 @@ export default function Search({ isGuest }) {
     setSelection(checked ? new Set(list.map((r) => r.hash)) : new Set());
 
   const match = textMatcher(filter);
-  const filtered = filter ? results.filter((r) => match(r.name)) : results;
+  let filtered = filter ? results.filter((r) => match(r.name)) : results;
+  if (filterHave !== "all")
+    filtered = filtered.filter((r) => (filterHave === "have") === !!r.already_have);
   const allSelected = filtered.length > 0 && filtered.every((r) => selection.has(r.hash));
   const selectedCount = filtered.filter((r) => selection.has(r.hash)).length;
 
@@ -202,7 +205,7 @@ export default function Search({ isGuest }) {
       const next = new Set(); prev.forEach((h) => vis.has(h) && next.add(h));
       return next.size === prev.size ? prev : next;
     });
-  }, [filter]);
+  }, [filter, filterHave]);
 
   const catOptions = () => html`
     <option value=${0}>${t("search_category_none")}</option>
@@ -304,6 +307,11 @@ export default function Search({ isGuest }) {
           <span class="selected-count admin-only">${t("search_selected")} ${selectedCount}</span>
           <span class="search-progress">${progress}</span>
           <div class="spacer"></div>
+          <select class="input input-sm" value=${filterHave} onChange=${(e) => setFilterHave(e.target.value)}>
+            <option value="all">${t("downloads_status_all")}</option>
+            <option value="not_have">${t("search_have_no")}</option>
+            <option value="have">${t("search_have_yes")}</option>
+          </select>
           <input class="input input-sm" type="text" placeholder=${t("search_filter")} value=${filter} onInput=${(e) => setFilter(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
         </div>
