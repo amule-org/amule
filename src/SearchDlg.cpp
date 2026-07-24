@@ -209,6 +209,12 @@ void CSearchDlg::RefreshVisibleTabProgress()
 	// No tab => empty bar; otherwise reuse the same sentinel the EC PROGRESS
 	// reply builds, so monolithic and the remote GUI stay in lockstep.
 	ApplyProgressToBar(sid ? theApp->searchlist->GetSearchBarStatusById(sid) : 0xffff);
+	// Keep the Kad-only "More" button in step with the visible tab: enabled only
+	// while it is a running Kad search, greyed once the search completes
+	// (IsKadSearch goes false when the Kad search ends). Refreshing it on the
+	// same tick the bar updates is what makes it grey out on completion instead
+	// of lingering until the next tab switch.
+	FindWindow(IDC_SEARCHMORE)->Enable(sid && theApp->searchlist->IsKadSearch((uint32_t)sid));
 }
 #endif
 
@@ -226,6 +232,13 @@ void CSearchDlg::UpdateSearchProgress(uint32 searchID, uint32 status)
 	// The single bottom bar tracks the visible tab only.
 	if (searchID == GetVisibleSearchId()) {
 		ApplyProgressToBar(status);
+#ifdef CLIENT_GUI
+		// Refresh the Kad-only "More" button from the per-search kind/lifecycle
+		// the daemon just reported: IsKadSearch reads the remote cache that
+		// CSearchListRem::HandlePacket updated immediately before this call.
+		// (Monolithic drives the button from the local Kad layer on tab change.)
+		FindWindow(IDC_SEARCHMORE)->Enable(theApp->searchlist->IsKadSearch((uint32_t)searchID));
+#endif
 	}
 }
 
@@ -606,16 +619,10 @@ void CSearchDlg::OnBnClickedSearchMore(wxCommandEvent &WXUNUSED(evt))
 		return;
 	}
 	const uint32_t searchID = (uint32_t)page->GetSearchId();
-	if (theApp->searchlist->RequestMoreResults(searchID)) {
-		AddLogLineN(_("Kad search: requested wider results from one more peer."));
-	} else {
-		// Either the active tab isn't a Kad search, the per-search cap is
-		// hit, or there is no responded peer left to reask.  Surface that
-		// to the user as a normal log line (not debug) so a click without
-		// effect is at least visible.
-		AddLogLineN(_("Kad search: no peer left to reask for more results (cap reached or no "
-			      "responses yet)."));
-	}
+	// RequestMoreResults logs the outcome itself (single source of truth) — and
+	// on amuleGUI that log is the daemon's, forwarded over EC, so the remote GUI
+	// shows the real result rather than an optimistic guess.
+	theApp->searchlist->RequestMoreResults(searchID);
 }
 
 void CSearchDlg::ResetControls()

@@ -132,7 +132,8 @@ enum ECOpCodes
 	EC_OP_GET_CHAT_MESSAGES = 0x5B,
 	EC_OP_CHAT_MESSAGES = 0x5C,
 	EC_OP_GET_SHARED_DIRS = 0x5D,
-	EC_OP_SET_SHARED_DIRS = 0x5E
+	EC_OP_SET_SHARED_DIRS = 0x5E,
+	EC_OP_SEARCH_REQUEST_MORE = 0x5F
 };
 
 enum ECTagNames
@@ -799,6 +800,8 @@ wxString GetDebugNameECOpCodes(uint8 arg)
 		return "EC_OP_GET_SHARED_DIRS";
 	case EC_OP_SET_SHARED_DIRS:
 		return "EC_OP_SET_SHARED_DIRS";
+	case EC_OP_SEARCH_REQUEST_MORE:
+		return "EC_OP_SEARCH_REQUEST_MORE";
 	default:
 		return CFormat("unknown %d 0x%x") % arg % arg;
 	}

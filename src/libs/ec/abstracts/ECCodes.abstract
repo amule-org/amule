@@ -163,6 +163,8 @@ EC_OP_GET_SHARED_DIRS               0x5D
 
 EC_OP_SET_SHARED_DIRS               0x5E
 
+EC_OP_SEARCH_REQUEST_MORE           0x5F
+
 [/Section]
 
 [Section Content]

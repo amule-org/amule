@@ -182,6 +182,13 @@ public:
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
+	// Per-id search kind: the type recorded for THIS search when it started,
+	// so the EC PROGRESS reply reports the polled tab's kind rather than the
+	// scalar (most-recently-started) one — a remote GUI running several
+	// searches needs each tab's real kind (e.g. to enable the Kad-only "More"
+	// button). Kad is authoritative via IsOrWasKadSearch even if the recorded
+	// entry was pruned; unknown ids fall back to the scalar.
+	SearchType GetSearchLifecycleKindById(wxUIntPtr searchID) const;
 	// Result count for the current search; 0 if idle.
 	std::size_t GetCurrentSearchResultCount() const;
 	// Unified 0..100 completion for the current search, surfaced via
@@ -365,6 +372,12 @@ private:
 	//! progress ramp is computed from its own age rather than the single
 	//! m_searchStart of the most-recently-started search. Pruned in RemoveResults.
 	std::map<uint32_t, time_t> m_searchStartTimes;
+
+	//! Per-search kind (multi-search), recorded at start so the EC PROGRESS
+	//! reply can report each polled tab's real type instead of the scalar
+	//! m_searchType (which only tracks the most-recently-started search).
+	//! Pruned in RemoveResults.
+	std::map<uint32_t, SearchType> m_searchKinds;
 
 	//! Bar value for "View Files" browse tabs, keyed by routing ID and set by
 	//! the browsing client (0..100 percent, or 0xffff finished/failed). Read by

@@ -1950,6 +1950,23 @@ static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool mul
 	return reply;
 }
 
+static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, bool multiSearch)
+{
+	// "More" button (Kad-only): re-ask already-queried peers for a wider result
+	// frontier for one search. RequestMoreResults logs the outcome itself (the
+	// single source of truth shared with the monolithic GUI); that line is
+	// forwarded back to amuleGUI over EC, so the reply here is a plain ack.
+	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
+	// Per-ID. No ID => the most-recently-started search.
+	const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
+	uint32 sid =
+		idTag ? static_cast<uint32>(idTag->GetInt()) : (multiSearch ? s_ecSearches.Current() : 0);
+	if (sid != 0 && (!multiSearch || s_ecSearches.Has(sid))) {
+		theApp->searchlist->RequestMoreResults(sid);
+	}
+	return reply;
+}
+
 static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSearch)
 {
 	wxString response;
@@ -2665,6 +2682,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = Get_EC_Response_Search_Stop(request, m_multiSearchActive);
 		break;
 
+	case EC_OP_SEARCH_REQUEST_MORE:
+		response = Get_EC_Response_Search_Request_More(request, m_multiSearchActive);
+		break;
+
 	case EC_OP_SEARCH_RESULTS: {
 		const bool incUpdate = (request->GetDetailLevel() == EC_DETAIL_INC_UPDATE);
 		// amulegui (multi + INC_UPDATE) polls all its searches at once: return
@@ -2767,8 +2788,11 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			// Echo the ID so the client can confirm which search this is for.
 			response->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
 			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(st)));
+			// Per-id kind (not the scalar): a multi-search client polls each tab
+			// by id and needs THIS search's real type, e.g. to enable the
+			// Kad-only "More" button on the right tab.
 			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
-				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKind())));
+				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
 			response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 				static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
 			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, pct));

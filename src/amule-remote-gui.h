@@ -637,6 +637,12 @@ public:
 	// individually for progress so each tab's lifecycle ("!", progress bar) is
 	// tracked independently. Populated on remap, removed on tab close.
 	std::set<uint32> m_activeSearches;
+	// Per-search "is this a running Kad search?" — the SearchDlg "More" button
+	// gate. Set from LIFECYCLE_KIND + LIFECYCLE_STATE in each progress reply
+	// (kind == KadSearch && state == RUNNING), so "More" is enabled only while
+	// the search runs and greys out once it completes — the progress lifecycle
+	// is the gate, no extra status needed. Pruned on tab close / removal.
+	std::map<uint32, bool> m_kadActive;
 	typedef std::map<wxUIntPtr, CSearchResultList> ResultMap;
 	ResultMap m_results;
 
@@ -663,12 +669,13 @@ public:
 	// ID once the START reply echoes the correlation token.
 	void RemapSearch(uint32 localID, uint32 daemonID);
 
-	// Stub for monolithic CSearchList API parity.  amulegui has no
-	// direct Kad layer access; an EC opcode for "search-more" is a
-	// follow-up PR.  Until then these always return false, which keeps
-	// the SearchDlg "More" button disabled in remote-GUI mode.
-	bool IsKadSearch(uint32_t /*searchID*/) const { return false; }
-	bool RequestMoreResults(uint32_t /*searchID*/) { return false; }
+	// Monolithic CSearchList API parity over EC. IsKadSearch reports whether a
+	// given tab is a *live* Kad search — the SearchDlg "More" button gate —
+	// from m_kadActive, which HandlePacket fills from each search's per-id
+	// LIFECYCLE_KIND + LIFECYCLE_STATE in the progress reply. RequestMoreResults
+	// sends EC_OP_SEARCH_REQUEST_MORE so the daemon widens that Kad search.
+	bool IsKadSearch(uint32_t searchID) const;
+	bool RequestMoreResults(uint32_t searchID);
 
 	//
 	// template

@@ -2961,10 +2961,37 @@ void CSearchListRem::StopSearchById(wxUIntPtr searchID, bool andClose)
 			search_req.AddTag(CECEmptyTag(EC_TAG_SEARCH_CLOSE));
 			// Tab closed: stop tracking this search's lifecycle.
 			m_activeSearches.erase((uint32)searchID);
+			m_kadActive.erase((uint32)searchID);
 		}
 	}
 	// Legacy: parameterless stop of the single current search.
 	m_conn->SendPacket(&search_req);
+}
+
+bool CSearchListRem::IsKadSearch(uint32_t searchID) const
+{
+	// The "More" button applies only to a *running* Kad search (it greys out
+	// once the search completes). The flag is set from each search's per-id
+	// kind + lifecycle state in HandlePacket.
+	std::map<uint32, bool>::const_iterator it = m_kadActive.find(searchID);
+	return it != m_kadActive.end() && it->second;
+}
+
+bool CSearchListRem::RequestMoreResults(uint32_t searchID)
+{
+	if (searchID == 0) {
+		return false;
+	}
+	// Ask the daemon to widen this Kad search (KADEMLIA_FIND_VALUE_MORE). Fire-
+	// and-forget, like StopSearchById: the daemon performs the re-ask; the rare
+	// "no peer left" outcome is not surfaced over EC, so the caller logs the
+	// request optimistically.
+	CECPacket req(EC_OP_SEARCH_REQUEST_MORE);
+	if (m_conn->ServerSupportsMultiSearch()) {
+		req.AddTag(CECTag(EC_TAG_SEARCH_ID, (uint32)searchID));
+	}
+	m_conn->SendPacket(&req);
+	return true;
 }
 
 void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID)
@@ -3007,8 +3034,27 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 							idTag->GetInt(), (uint32)barTag->GetInt());
 					}
 				} else {
-					uint32 status = packet->GetTagByName(EC_TAG_SEARCH_EXPIRED)
-								? 0xfffe
+					const bool expired =
+						packet->GetTagByName(EC_TAG_SEARCH_EXPIRED) != nullptr;
+					// Cache whether this tab is a *running* Kad search so
+					// IsKadSearch can gate the "More" button — enabled only while
+					// the search runs, disabled once it completes (the progress
+					// lifecycle is the gate; no extra status). An expired search
+					// is gone. Update before the progress call, which refreshes
+					// that button for the visible tab.
+					const CECTag *kindTag =
+						packet->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
+					const CECTag *stateTag =
+						packet->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
+					if (expired) {
+						m_kadActive[(uint32)idTag->GetInt()] = false;
+					} else if (kindTag && stateTag) {
+						m_kadActive[(uint32)idTag->GetInt()] =
+							(kindTag->GetInt() == KadSearch) &&
+							(stateTag->GetInt() ==
+								CSearchList::SEARCH_LIFECYCLE_RUNNING);
+					}
+					uint32 status = expired ? 0xfffe
 								: (uint32)packet->GetFirstTagSafe()->GetInt();
 					theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
 						idTag->GetInt(), status);
@@ -3172,6 +3218,7 @@ void CSearchListRem::RemoveResults(wxUIntPtr nSearchID)
 		}
 		m_results.erase(it);
 	}
+	m_kadActive.erase((uint32)nSearchID);
 }
 
 const CSearchResultList &CSearchListRem::GetSearchResults(wxUIntPtr nSearchID)

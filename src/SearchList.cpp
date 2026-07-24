@@ -294,6 +294,7 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	// Drop any per-search tracking for this ID (bounded growth).
 	m_finishedKadSearches.erase(static_cast<uint32_t>(searchID));
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
+	m_searchKinds.erase(static_cast<uint32_t>(searchID));
 	m_browseBar.erase(searchID);
 	m_browseStatus.erase(searchID);
 
@@ -439,6 +440,11 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	// started search — otherwise a Kad search running in parallel with a later
 	// ed2k search would report a fixed near-full percent.
 	m_searchStartTimes[static_cast<uint32_t>(*searchID)] = m_searchStart;
+	// Record this search's kind by id (same reason as the start time above): a
+	// later search of a different type must not make an older tab report the
+	// wrong kind. `type` is this search's real type regardless of the scalar
+	// anchor bookkeeping.
+	m_searchKinds[static_cast<uint32_t>(*searchID)] = type;
 
 	return "";
 }
@@ -892,9 +898,34 @@ bool CSearchList::IsOrWasKadSearch(uint32_t searchID) const
 	return IsKadSearch(searchID) || m_finishedKadSearches.count(searchID) != 0;
 }
 
+SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr searchID) const
+{
+	const uint32_t sid = static_cast<uint32_t>(searchID);
+	// Kad is authoritative from the manager / finished-set even if the recorded
+	// kind was pruned with the results.
+	if (IsOrWasKadSearch(sid)) {
+		return KadSearch;
+	}
+	std::map<uint32_t, SearchType>::const_iterator it = m_searchKinds.find(sid);
+	if (it != m_searchKinds.end()) {
+		return it->second;
+	}
+	// Unknown id (never started here, or evicted): fall back to the scalar.
+	return m_searchType;
+}
+
 bool CSearchList::RequestMoreResults(uint32_t searchID)
 {
-	return Kademlia::CSearchManager::RequestMoreResults(searchID);
+	// Widen this Kad search (KADEMLIA_FIND_VALUE_MORE). The outcome is logged
+	// here so the message has a single home: the monolithic GUI and the daemon
+	// (for a remote-GUI request over EC) both reach this one path, and the
+	// daemon forwards the line to amuleGUI — so the remote GUI shows the real
+	// result rather than an optimistic guess.
+	const bool ok = Kademlia::CSearchManager::RequestMoreResults(searchID);
+	AddLogLineN(ok ? _("Kad search: requested wider results from one more peer.")
+		       : _("Kad search: no peer left to reask for more results (cap reached or no "
+			   "responses yet)."));
+	return ok;
 }
 
 void CSearchList::StopSearch(bool globalOnly)
