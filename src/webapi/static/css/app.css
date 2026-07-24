@@ -319,6 +319,12 @@ table.data.virtual tbody tr:nth-child(even) { background: none; }
 table.data.virtual tbody tr.stripe { background: var(--stripe); }
 table.data.virtual tbody tr.spacer td { border: 0; padding: 0; }
 table.data.virtual tbody tr.spacer:hover { background: transparent; }
+/* search results already in your downloads/shared: same accent look as a
+   connected server row, scoped to beat the .stripe band's specificity. */
+table.data.virtual tbody tr.row-have,
+table.data.virtual tbody tr.row-have.stripe { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+table.data.virtual tbody tr.row-have:hover { background: color-mix(in srgb, var(--accent) 26%, var(--surface)); }
+table.data.virtual tbody tr.row-have td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 /* name cell with a trailing badge: ellipsize the name but keep the badge
    visible — a plain clipped cell would hide the badge behind the ellipsis. */
 table.data.virtual td .name-cell { display: flex; align-items: center; gap: 6px; }

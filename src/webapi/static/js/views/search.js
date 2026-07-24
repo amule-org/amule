@@ -13,7 +13,7 @@ import { store } from "../store.js";
 import { html, useState, useEffect, useRef } from "../dom.js";
 import { Badge, Placeholder, Tabs, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes } from "../format.js";
+import { formatBytes, formatDuration, formatInt } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
 
@@ -46,7 +46,7 @@ export default function Search({ isGuest }) {
   const [selection, setSelection] = useState(() => new Set());
   // Sort + hidden columns persist per-table via useTablePrefs.
   const { sortKey, sortDir, hidden, toggleSort, toggleCol } = useTablePrefs("search", {
-    sortKey: "sources", sortDir: -1, hidden: [],
+    sortKey: "sources", sortDir: -1, hidden: ["length", "bitrate", "codec"],
   });
   const [progress, setProgress] = useState("");
   const [searching, setSearching] = useState(false);
@@ -219,8 +219,8 @@ export default function Search({ isGuest }) {
       cell: (r) => html`<input type="checkbox" checked=${selection.has(r.hash)} onChange=${(e) => toggleRow(r.hash, e.target.checked)} />` },
     { key: "name", always: true, label: t("search_name"), cls: "name", sortable: true,
       sortVal: (r) => (r.name || "").toLowerCase(),
-      // flex cell so a long name ellipsizes without hiding the "already have" badge
-      cell: (r) => html`<div class="name-cell" title=${r.name}><span class="name-text">${r.name}</span>${r.already_have ? html`<${Badge} title=${t("search_already_have_title")}>${t("search_badge_have")}<//>` : null}</div>` },
+      // already_have is signalled by the row background (.row-have), not a badge.
+      cell: (r) => r.name },
     { key: "size", label: t("search_size"), num: true, width: "110px", sortable: true,
       sortVal: (r) => r.size || 0, cell: (r) => formatBytes(r.size) },
     { key: "sources", label: t("search_sources"), num: true, width: "120px", sortable: true,
@@ -228,6 +228,18 @@ export default function Search({ isGuest }) {
       cell: (r) => { const src = r.sources || {}; return html`<span title=${t("search_title_complete_total")}>${(src.complete || 0) + " / " + (src.total || 0)}</span>`; } },
     { key: "rating", label: t("search_rating"), num: true, width: "90px", sortable: true,
       sortVal: (r) => r.rating || 0, cell: (r) => r.rating || 0 },
+    { key: "type", label: t("search_type"), width: "100px", sortable: true,
+      sortVal: (r) => r.type || "", cell: (r) => typeLabel(r.type) },
+    { key: "status", label: t("downloads_status_label"), width: "120px", sortable: true,
+      sortVal: (r) => r.status || "", cell: (r) => searchStatusBadge(r.status) },
+    { key: "length", label: t("downloads_detail_media_length"), num: true, width: "100px", sortable: true,
+      sortVal: (r) => (r.media && r.media.length_s) || 0,
+      cell: (r) => (r.media && r.media.length_s) ? formatDuration(r.media.length_s) : "" },
+    { key: "bitrate", label: t("downloads_detail_media_bitrate"), num: true, width: "90px", sortable: true,
+      sortVal: (r) => (r.media && r.media.bitrate) || 0,
+      cell: (r) => (r.media && r.media.bitrate) ? formatInt(r.media.bitrate) : "" },
+    { key: "codec", label: t("downloads_detail_media_codec"), width: "90px", sortable: true,
+      sortVal: (r) => (r.media && r.media.codec) || "", cell: (r) => (r.media && r.media.codec) || "" },
     { key: "actions", label: t("search_actions"), cls: "row-actions admin-only", width: "180px",
       cell: (r) => html`
         <select class="input input-sm" value=${catFor(r.hash)}
@@ -243,7 +255,12 @@ export default function Search({ isGuest }) {
   // sortRows keeps the full column set (it looks columns up by key); only the
   // VirtualTable is fed the visible subset.
   const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
-  const rowClass = (r) => selection.has(r.hash) ? "row-selected" : "";
+  const rowClass = (r) => {
+    const c = [];
+    if (selection.has(r.hash)) c.push("row-selected");
+    if (r.already_have) c.push("row-have");
+    return c.join(" ");
+  };
 
   return html`
     <div class="fill-view">
@@ -301,4 +318,20 @@ export default function Search({ isGuest }) {
 
 function field(label, control, cls = "") {
   return html`<div class=${"field " + cls}><label>${label}</label>${control}</div>`;
+}
+
+// Lowercase file-type token ("videos"/"audio"/…) -> capitalized label, "—" when
+// the hit has no extension. ponytail: token capitalizado; añadir i18n por valor
+// si se pide traducción por tipo.
+function typeLabel(type) {
+  return type ? type.replace(/^./, (c) => c.toUpperCase()) : "—";
+}
+
+// Search-result download status -> badge, mirroring downloads.js statusBadge.
+// "new" (fresh remote hit) shows nothing to keep the common case clean.
+function searchStatusBadge(s) {
+  if (!s || s === "new") return null;
+  const cls = s === "downloaded" ? "downloading" : s === "queued" ? "waiting"
+    : (s === "canceled" || s === "queued_canceled") ? "stopped" : "";
+  return html`<${Badge} kind=${cls}>${t("search_status_" + s)}<//>`;
 }
