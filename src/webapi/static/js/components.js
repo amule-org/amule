@@ -76,7 +76,7 @@ export function IdentityLine({ file, copy, extra }) {
 // Flat notebook-style tab strip (aMule CMuleNotebook look). `tabs` is a list
 // of { key, label, badge? }; `active` is the selected key; `onSelect(key)` is
 // called on click.
-export function Tabs({ tabs, active, onSelect }) {
+export function Tabs({ tabs, active, onSelect, extra }) {
   return html`
     <div class="tabs" role="tablist">
       ${tabs.map((tab) => html`
@@ -87,6 +87,7 @@ export function Tabs({ tabs, active, onSelect }) {
           ${tab.label}
           ${tab.badge != null ? html`<span class="tab-badge">${tab.badge}</span>` : null}
         </button>`)}
+      ${extra ? html`<div class="tabs-extra">${extra}</div>` : null}
     </div>`;
 }
 

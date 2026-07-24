@@ -126,7 +126,6 @@ b { font-weight: 600; }
 .app-toolbar .nav-toggle { display: none; }
 .route-title { display: none; }    /* current section name, mobile only */
 .nav-tools { display: none; }      /* drawer copies of the header tools, mobile only */
-.nav > .conn-btn { display: none; } /* drawer copy of the connect button, mobile only */
 
 .nav {
   display: flex;
@@ -532,6 +531,16 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .conn-btn.disconnected .icon { color: var(--bad); }  /* red — disconnected */
 .conn-btn.connecting   .icon { color: var(--warn); } /* amber — connecting */
 .conn-btn.connected    .icon { color: var(--ok); }   /* green — connected */
+/* connect button riding the right of a tab strip (Networks): compact,
+   horizontal, and lifted off the bottom border so it sits on the tab line */
+.tabs-extra { margin-left: auto; display: flex; align-items: center; margin-bottom: 4px; }
+.tabs-extra .conn-btn {
+  flex-direction: row; gap: 6px; min-width: 0; padding: 3px 11px; line-height: 1;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); border-radius: var(--radius);
+}
+.tabs-extra .conn-btn .icon { width: 16px; height: 16px; }
+.tabs-extra .conn-btn:hover { background: var(--surface-2); }
 
 /* --- notebook-style tabs (CMuleNotebook look) --- */
 .tabs {
@@ -691,7 +700,7 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 /* --- responsive --- */
 @media (max-width: 860px) {
   /* header shrinks to: hamburger + logo + section name (tools move into the drawer) */
-  .header-tools, .app-toolbar > .conn-btn { display: none; }
+  .header-tools { display: none; }
   .route-title { display: block; font-size: 18px; font-weight: 600; }
   .brand-logo { height: 26px; }
   .stats-grid { grid-template-columns: 1fr; }
@@ -742,7 +751,6 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
     min-height: 44px; padding: 8px 12px; width: 100%;
   }
   .nav .tool-label { font-size: 14px; }
-  .nav > .conn-btn { display: flex; }
   .nav-tools .lang-select { min-height: 44px; width: 100%; border-color: transparent; }
   .nav-tools .lang-select select { flex: 1 1 auto; }
   .nav-backdrop {

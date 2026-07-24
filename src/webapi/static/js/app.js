@@ -10,7 +10,7 @@
 import { api, bulkFailures, setUnauthorizedHandler } from "./api.js";
 import { data } from "./events.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
-import { toast, Placeholder, confirmDialog } from "./components.js";
+import { toast, Placeholder } from "./components.js";
 import { formatSpeed, formatInt } from "./format.js";
 import { t, terr, getLang, setLang, LANGS, langName } from "./i18n.js";
 import { Icon } from "./icons.js";
@@ -134,7 +134,6 @@ function VersionBanner() {
 function Toolbar({ route, onLogout }) {
   const [link, setLink] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const status = useStore("status");
 
   const addEd2k = async () => {
     const value = link.trim();
@@ -183,10 +182,8 @@ function Toolbar({ route, onLogout }) {
         <img class="brand-logo" src="img/logo.png" alt="aMule" />
       </div>
       <span class="route-title">${t("app_nav_" + route)}</span>
-      <${ConnectButton} status=${status} />
       ${menuOpen ? html`<div class="nav-backdrop" onClick=${() => setMenuOpen(false)} />` : null}
       <nav class=${"nav" + (menuOpen ? " open" : "")} id="main-nav">
-        <${ConnectButton} status=${status} />
         ${ROUTES.map((r) => html`
           <a class=${"tool-btn" + (r.key === route ? " active" : "")}
              href=${"#/" + r.key} data-route=${r.key} title=${r.label}
@@ -222,43 +219,6 @@ function Toolbar({ route, onLogout }) {
         </button>
       </div>
     </header>`;
-}
-
-// aMule-style connection button: a coloured plug (red = disconnected, amber =
-// connecting, green = connected) that toggles both networks.
-function ConnectButton({ status }) {
-  const ed2k = (status && status.ed2k) || {};
-  const kad = (status && status.kad) || {};
-  const ed2kConn = ed2k.state === "connected";
-  // "connecting" wins over "connected": switching ed2k servers while Kad
-  // stays up (or vice versa) should still surface as a transition, not get
-  // masked by the other network already being connected.
-  const connecting = ed2k.state === "connecting" || kad.state === "connecting";
-  const connected = !connecting && (ed2kConn || kad.state === "connected");
-
-  // Colour and label follow the actual current state, not the action the
-  // click would perform.
-  const cls = connected ? "connected" : connecting ? "connecting" : "disconnected";
-  const label = t("app_" + cls);
-  const toggle = async () => {
-    try {
-      if (connected) {
-        if (!(await confirmDialog(t("app_confirm_disconnect_both"),
-              { okLabel: t("app_disconnect") }))) return;
-        await api.post("networks/disconnect", { network: "both" });
-        toast(t("app_toast_disconnecting"), "success");
-      } else {
-        await api.post("networks/connect", { network: "both" });
-        toast(t("app_toast_connecting"), "success");
-      }
-    } catch (e) { toast(terr(e) || t("app_error"), "error"); }
-  };
-
-  return html`
-    <button class=${"tool-btn conn-btn admin-only " + cls} title=${label} onClick=${toggle}>
-      <${Icon} name="connect" size=${20} />
-      <span class="tool-label">${label}</span>
-    </button>`;
 }
 
 // Dropdown of every language in LANGS; selecting one reloads the page so
@@ -340,7 +300,7 @@ function ConnectionStatus({ status }) {
   }
 
   const kad = status && status.kad;
-  let kText = t("app_disconnected"), kCls = "off";
+  let kText = t("app_not_connected"), kCls = "off";
   if (kad && kad.state === "connected") {
     kCls = kad.firewalled ? "warn" : "ok";
     kText = t("app_connected") + (kad.firewalled ? " · " + t("app_firewalled") : "");
