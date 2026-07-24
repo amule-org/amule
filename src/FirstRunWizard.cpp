@@ -211,6 +211,7 @@ private:
 #endif
 	wxCheckBox *m_serverMetCtrl = NULL;
 	wxCheckBox *m_nodesDatCtrl = NULL;
+	wxCheckBox *m_autoUpdateServerCtrl = nullptr;
 	wxCheckBox *m_autostartCtrl = nullptr;
 	wxCheckBox *m_registerEd2kCtrl = nullptr;
 	wxCheckBox *m_registerMagnetCtrl = nullptr;
@@ -421,6 +422,17 @@ wxWizardPageSimple *CFirstRunWizard::BuildBootstrapPage()
 				   _("Your peer lists are already in place - nothing to download.")),
 			0);
 	}
+
+	// Recurring refresh, distinct from the one-time download above: keep the
+	// eD2k server list fresh by re-fetching it from the configured URL on every
+	// start (the AutoServerlist pref, off by default and otherwise only reachable
+	// on the Server preferences tab). Shown whether or not a bootstrap download
+	// is offered, and checked so a first-run user gets an up-to-date list without
+	// hunting for the setting. Label reused verbatim from the Server tab so no new
+	// translation is needed.
+	m_autoUpdateServerCtrl = new wxCheckBox(page, wxID_ANY, _("Auto-update server list at startup"));
+	m_autoUpdateServerCtrl->SetValue(true);
+	sizer->Add(m_autoUpdateServerCtrl, 0, wxTOP, 8);
 
 	page->SetSizer(sizer);
 	return page;
@@ -642,6 +654,12 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 #ifdef ENABLE_UPNP
 	thePrefs::SetUPnPEnabled(m_upnpCtrl->GetValue());
 #endif
+
+	// Recurring server-list auto-update (see BuildBootstrapPage). Off by default
+	// in preferences; the wizard offers it opted-in.
+	if (m_autoUpdateServerCtrl) {
+		thePrefs::SetAutoServerlist(m_autoUpdateServerCtrl->GetValue());
+	}
 
 	// Folders — only override the defaults if the user typed something.
 	wxString inc = m_incomingCtrl->GetValue().Trim().Trim(false);
