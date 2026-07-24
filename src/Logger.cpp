@@ -358,16 +358,20 @@ bool CLoggerAccess::HasString()
 			// wxFFileInputStream wraps a stdio FILE* whose EOF flag is
 			// sticky: once GetC() returns wxEOF, subsequent reads keep
 			// returning wxEOF even when amuled has appended more lines
-			// to the logfile in the meantime. Re-seek to the current
-			// position; this calls fseek() which clears the FILE*'s
-			// EOF indicator and resets the wxInputStream error state,
-			// so the next poll picks up newly appended log lines.
-			// Without this, EC clients (amuleGUI, amuleweb) display
-			// the log content captured at connection time and never
-			// see anything emitted afterwards (#215).
+			// to the logfile in the meantime. The amule-project/amule#215
+			// fix re-seeked to the current position to clear it, but wx 3.3
+			// short-circuits a seek to the current offset (no fseek is
+			// issued), so EOF is never cleared and EC clients (amuleGUI,
+			// amuleweb) stop seeing new lines after the batch captured at
+			// connect time. Reopen the stream instead: a fresh
+			// wxFFileInputStream has no EOF set, and seeking back to where we
+			// left off resumes at the first newly appended byte -- independent
+			// of seek-clears-EOF semantics (amule-project/amule#215, wx 3.3).
 			wxFileOffset pos = m_logfile->TellI();
 			if (pos != wxInvalidOffset) {
-				m_logfile->SeekI(pos);
+				delete m_logfile;
+				m_logfile = new wxFFileInputStream(theLogger.GetLogfileName());
+				m_logfile->SeekI(pos, wxFromStart);
 			}
 			break;
 		}
