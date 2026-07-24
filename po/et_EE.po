@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-24 13:14+0200\n"
+"POT-Creation-Date: 2026-07-24 17:10+0200\n"
 "PO-Revision-Date: 2026-07-24 13:43+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -451,7 +451,7 @@ msgstr "Log on nullitud"
 msgid "ServerMessage: %s"
 msgstr "Serveri teade: %s"
 
-#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:506
+#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:514
 #: src/ServerList.cpp:875
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
@@ -618,7 +618,7 @@ msgstr "Uuema aMule versiooni saad alati aadressilt https://github.com/amule-org
 msgid "aMule dialog destroyed"
 msgstr "aMule dialoog hävitatud"
 
-#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:539
+#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:547
 msgid "Connecting"
 msgstr "Ühendun"
 
@@ -1987,44 +1987,44 @@ msgstr "Vigane failinimi."
 msgid "Unable to rename file."
 msgstr "Ei suuda faili ringinimetada."
 
-#: src/ExternalConn.cpp:2993 src/ExternalConn.cpp:3021
+#: src/ExternalConn.cpp:2992 src/ExternalConn.cpp:3020
 msgid "Kad is disabled in preferences."
 msgstr "Kad on seadetes väljalülitatud."
 
-#: src/ExternalConn.cpp:3034
+#: src/ExternalConn.cpp:3033
 msgid "Already connected to eD2k."
 msgstr "Juba ühendatud eD2k võrku."
 
-#: src/ExternalConn.cpp:3037
+#: src/ExternalConn.cpp:3036
 msgid "Connecting to eD2k..."
 msgstr "Ühendun eD2k..."
 
-#: src/ExternalConn.cpp:3046
+#: src/ExternalConn.cpp:3045
 msgid "Already connected to Kad."
 msgstr "Juba ühendatud Kad võrku."
 
-#: src/ExternalConn.cpp:3049
+#: src/ExternalConn.cpp:3048
 msgid "Connecting to Kad..."
 msgstr "Ühendun Kad..."
 
-#: src/ExternalConn.cpp:3056
+#: src/ExternalConn.cpp:3055
 msgid "All networks are disabled."
 msgstr "Kõik võrgud on väljalülitatud."
 
-#: src/ExternalConn.cpp:3065
+#: src/ExternalConn.cpp:3064
 msgid "Disconnected from eD2k."
 msgstr "eD2k ühendus katkestatud."
 
-#: src/ExternalConn.cpp:3070
+#: src/ExternalConn.cpp:3069
 msgid "Disconnected from Kad."
 msgstr "Kad ühendus katkestatud."
 
-#: src/ExternalConn.cpp:3079
+#: src/ExternalConn.cpp:3078
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr "Väline Ühendus: sain vigase opkoodi: %#x"
 
-#: src/ExternalConn.cpp:3084
+#: src/ExternalConn.cpp:3083
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "Vigane opcode (vale protokolli versioon?)"
 
@@ -2458,7 +2458,7 @@ msgstr "Tõmban uut GeoIP.dat faili aadressilt %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "GeoIP.dat faili tõmbamine ebaõnnastus, katkestan uuendamise."
 
-#: src/IP2Country.cpp:180 src/IPFilter.cpp:495
+#: src/IP2Country.cpp:180 src/IPFilter.cpp:503
 #, c-format
 msgid "Failed to remove %s file, aborting update."
 msgstr "Faili %s eemaldamine ebaõnnastus, katkestan uuendamise."
@@ -2468,7 +2468,7 @@ msgstr "Faili %s eemaldamine ebaõnnastus, katkestan uuendamise."
 msgid "Failed to rename %s file, aborting update."
 msgstr "Faili %s ümbernimetamine ebaõnnestus, katkestan uuendamise."
 
-#: src/IP2Country.cpp:202 src/IPFilter.cpp:501
+#: src/IP2Country.cpp:202 src/IPFilter.cpp:509
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s uuendamine õnnestus"
@@ -2482,7 +2482,7 @@ msgstr "GeoIP.dat uuendamise viga"
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
 msgstr ""
 
-#: src/IP2Country.cpp:240 src/IPFilter.cpp:508 src/ServerList.cpp:878
+#: src/IP2Country.cpp:240 src/IPFilter.cpp:516 src/ServerList.cpp:878
 #, c-format
 msgid "Failed to download %s from %s"
 msgstr "Faili %s tõmbamine aadressilt %s ebaõnnestus"
@@ -2491,36 +2491,36 @@ msgstr "Faili %s tõmbamine aadressilt %s ebaõnnestus"
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
 msgstr "Laen IP-filtrid 'ipfilter.dat' ja 'ipfilter_static.dat'."
 
-#: src/IPFilter.cpp:287
+#: src/IPFilter.cpp:295
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', unknown format encountered."
 msgstr "Ebaõnnestus ipfilter.dat faili '%s' laadimine, arusaamatu formaat sattus ette."
 
-#: src/IPFilter.cpp:317
+#: src/IPFilter.cpp:325
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "Ebaõnnestus ipfilter.dat faili '%s' laadimine, ei suuda faili avada."
 
-#: src/IPFilter.cpp:322
+#: src/IPFilter.cpp:330
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
 msgstr[0] "Laetud %u IP-piirkond failist '%s'."
 msgstr[1] "Laetud %u IP-piirkonda failist '%s'."
 
-#: src/IPFilter.cpp:328
+#: src/IPFilter.cpp:336
 #, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "ignoreeritud %u vigast rida."
 msgstr[1] "ignoreeritud %u vigast rida."
 
-#: src/IPFilter.cpp:498
+#: src/IPFilter.cpp:506
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr "Faili %s ümbernimetamine ebaõnnestus, katkestan uuendamise."
 
-#: src/IPFilter.cpp:529
+#: src/IPFilter.cpp:537
 msgid "IP filter is ready"
 msgstr "IP filter on lähtestatud"
 
@@ -4607,8 +4607,8 @@ msgid "Paranoid handling of non-matching IPs"
 msgstr "Mitteklappivate IP aadresside paranoiline käitlemine"
 
 #: src/muuli_wdr.cpp:2698
-msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
-msgstr "Viskab paketi minema kui kliendi IP erineb paketi saatja IP aadressist. Kasuta ettevaatlikult."
+msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
+msgstr ""
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"
@@ -5451,15 +5451,15 @@ msgstr "Info puudub"
 msgid "no options available"
 msgstr "valikud puuduvad"
 
-#: src/Preferences.cpp:2180
+#: src/Preferences.cpp:2182
 msgid "Invalid category found, skipping"
 msgstr "Leidsin vigase kategooria, ignoreerin"
 
-#: src/Preferences.cpp:2349
+#: src/Preferences.cpp:2351
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "TCP port ei saa olla suuerm kui 65532, sest serveri UDP soket on TCP+3"
 
-#: src/Preferences.cpp:2350
+#: src/Preferences.cpp:2352
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Kasutan vaikimisi porti (%d)"
@@ -8397,6 +8397,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
+#~ msgstr "Viskab paketi minema kui kliendi IP erineb paketi saatja IP aadressist. Kasuta ettevaatlikult."
 
 #~ msgid "Return the results of the previous search.\n"
 #~ msgstr "Tagasta eelmise otsingu tulemuse.\n"

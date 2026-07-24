@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-24 13:14+0200\n"
+"POT-Creation-Date: 2026-07-24 17:10+0200\n"
 "PO-Revision-Date: 2026-07-24 13:54+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -451,7 +451,7 @@ msgstr "Günlük kaydı silindi"
 msgid "ServerMessage: %s"
 msgstr "Sunucu İletisi: %s"
 
-#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:506
+#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:514
 #: src/ServerList.cpp:875
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
@@ -621,7 +621,7 @@ msgstr ""
 msgid "aMule dialog destroyed"
 msgstr "aMule diyaloğu imha edildi"
 
-#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:539
+#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:547
 msgid "Connecting"
 msgstr "Bağlanıyor"
 
@@ -1986,44 +1986,44 @@ msgstr "Geçersiz dosya adı."
 msgid "Unable to rename file."
 msgstr "Dosya yeniden adlandırılamıyor."
 
-#: src/ExternalConn.cpp:2993 src/ExternalConn.cpp:3021
+#: src/ExternalConn.cpp:2992 src/ExternalConn.cpp:3020
 msgid "Kad is disabled in preferences."
 msgstr "Kad ayarlarda devre dışı bırakılmış."
 
-#: src/ExternalConn.cpp:3034
+#: src/ExternalConn.cpp:3033
 msgid "Already connected to eD2k."
 msgstr "eD2k ağına zaten bağlandı."
 
-#: src/ExternalConn.cpp:3037
+#: src/ExternalConn.cpp:3036
 msgid "Connecting to eD2k..."
 msgstr "eD2k ağına bağlanıyor…"
 
-#: src/ExternalConn.cpp:3046
+#: src/ExternalConn.cpp:3045
 msgid "Already connected to Kad."
 msgstr "Kad zaten bağlı."
 
-#: src/ExternalConn.cpp:3049
+#: src/ExternalConn.cpp:3048
 msgid "Connecting to Kad..."
 msgstr "Kad ağına bağlanıyor…"
 
-#: src/ExternalConn.cpp:3056
+#: src/ExternalConn.cpp:3055
 msgid "All networks are disabled."
 msgstr "Bütün ağlar devre dışı."
 
-#: src/ExternalConn.cpp:3065
+#: src/ExternalConn.cpp:3064
 msgid "Disconnected from eD2k."
 msgstr "eD2k ağından bağlantı kesildi."
 
-#: src/ExternalConn.cpp:3070
+#: src/ExternalConn.cpp:3069
 msgid "Disconnected from Kad."
 msgstr "Kad ağından bağlantı kesildi."
 
-#: src/ExternalConn.cpp:3079
+#: src/ExternalConn.cpp:3078
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr "Dış Bağlantı: geçersiz opcode alındı: %#x"
 
-#: src/ExternalConn.cpp:3084
+#: src/ExternalConn.cpp:3083
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "Geçersiz opcode (yanlış protokol sürümü mü?)"
 
@@ -2456,7 +2456,7 @@ msgstr "Yeni %s unsurunu %s konumundan indir"
 msgid "Download of %s file failed, aborting update."
 msgstr "%s dosyasının indirilmesi başarısız oldu, güncelleme iptal ediliyor."
 
-#: src/IP2Country.cpp:180 src/IPFilter.cpp:495
+#: src/IP2Country.cpp:180 src/IPFilter.cpp:503
 #, c-format
 msgid "Failed to remove %s file, aborting update."
 msgstr "%s dosyası silinemedi. Güncelleme iptal edildi."
@@ -2466,7 +2466,7 @@ msgstr "%s dosyası silinemedi. Güncelleme iptal edildi."
 msgid "Failed to rename %s file, aborting update."
 msgstr "%s dosyası yeniden adlandırılamadı. Güncelleme iptal edildi."
 
-#: src/IP2Country.cpp:202 src/IPFilter.cpp:501
+#: src/IP2Country.cpp:202 src/IPFilter.cpp:509
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s başarıyla güncellendi."
@@ -2480,7 +2480,7 @@ msgstr "%s unsurunun güncellemesinde hata oluştu"
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
 msgstr "DB-IP indirmesi güncel ay için başarısız oldu - önceki ayın bağlantısıyla tekrar deneniyor."
 
-#: src/IP2Country.cpp:240 src/IPFilter.cpp:508 src/ServerList.cpp:878
+#: src/IP2Country.cpp:240 src/IPFilter.cpp:516 src/ServerList.cpp:878
 #, c-format
 msgid "Failed to download %s from %s"
 msgstr "%s, %s kaynağından indirilemedi."
@@ -2489,36 +2489,36 @@ msgstr "%s, %s kaynağından indirilemedi."
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
 msgstr "IP süzgeçleri 'ipfilter.dat' ve 'ipfilter_static.dat' yükleniyor."
 
-#: src/IPFilter.cpp:287
+#: src/IPFilter.cpp:295
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', unknown format encountered."
 msgstr "ipfilter.dat dosyasını '%s' yükleme başarısız. bilinmeyen format algılandı."
 
-#: src/IPFilter.cpp:317
+#: src/IPFilter.cpp:325
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "ipfilter.dat dosyasını '%s' yükleme başarısız. Dosya açılamıyor."
 
-#: src/IPFilter.cpp:322
+#: src/IPFilter.cpp:330
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
 msgstr[0] "%u adet IP-aralığı '%s' unsurundan yüklendi."
 msgstr[1] "%u adet IP-aralığı '%s' unsurundan yüklendi."
 
-#: src/IPFilter.cpp:328
+#: src/IPFilter.cpp:336
 #, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u adet bozuk satır göz ardı edildi."
 msgstr[1] "%u adet bozuk satır göz ardı edildi."
 
-#: src/IPFilter.cpp:498
+#: src/IPFilter.cpp:506
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr "Yeni %s dosyası yeniden adlandırılamadı. Güncelleme iptal edildi."
 
-#: src/IPFilter.cpp:529
+#: src/IPFilter.cpp:537
 msgid "IP filter is ready"
 msgstr "IP süzgeci hazır"
 
@@ -4577,8 +4577,8 @@ msgid "Paranoid handling of non-matching IPs"
 msgstr "Uyuşmayan IP'lere şüpheci yaklaşım."
 
 #: src/muuli_wdr.cpp:2698
-msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
-msgstr "Paketin alındığı ip ile kullanıcı ip numarası farklıysa paket reddedilir. Dikkatli kullanın."
+msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
+msgstr ""
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"
@@ -5426,15 +5426,15 @@ msgstr "Diller mevcut değil"
 msgid "no options available"
 msgstr "mevcut seçenek yok"
 
-#: src/Preferences.cpp:2180
+#: src/Preferences.cpp:2182
 msgid "Invalid category found, skipping"
 msgstr "Geçersiz sınıf bulundu, atlanıyor"
 
-#: src/Preferences.cpp:2349
+#: src/Preferences.cpp:2351
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "TCP portu numarası, UDP soketi TCP+3 olduğundan 65532' den yüksek olamaz"
 
-#: src/Preferences.cpp:2350
+#: src/Preferences.cpp:2352
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Varsayılan port kullanılacak (%d)"
@@ -8375,6 +8375,9 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
+#~ msgstr "Paketin alındığı ip ile kullanıcı ip numarası farklıysa paket reddedilir. Dikkatli kullanın."
 
 #~ msgid "Return the results of the previous search.\n"
 #~ msgstr "Önceki aramanın sonuçlarına döner.\n"

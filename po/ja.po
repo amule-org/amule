@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-24 13:14+0200\n"
+"POT-Creation-Date: 2026-07-24 17:10+0200\n"
 "PO-Revision-Date: 2026-07-24 13:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -450,7 +450,7 @@ msgstr "ログはリセットされました"
 msgid "ServerMessage: %s"
 msgstr "サーバ・メッセージ：%s"
 
-#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:506
+#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:514
 #: src/ServerList.cpp:875
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
@@ -617,7 +617,7 @@ msgstr "最新バージョンはいつもhttps://github.com/amule-org/amule/rele
 msgid "aMule dialog destroyed"
 msgstr ""
 
-#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:539
+#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:547
 msgid "Connecting"
 msgstr "接続中"
 
@@ -1988,44 +1988,44 @@ msgstr "不正なファイル名。"
 msgid "Unable to rename file."
 msgstr "ファイルを改名できません。"
 
-#: src/ExternalConn.cpp:2993 src/ExternalConn.cpp:3021
+#: src/ExternalConn.cpp:2992 src/ExternalConn.cpp:3020
 msgid "Kad is disabled in preferences."
 msgstr "Kadは個人設定に無効されています。"
 
-#: src/ExternalConn.cpp:3034
+#: src/ExternalConn.cpp:3033
 msgid "Already connected to eD2k."
 msgstr ""
 
-#: src/ExternalConn.cpp:3037
+#: src/ExternalConn.cpp:3036
 msgid "Connecting to eD2k..."
 msgstr ""
 
-#: src/ExternalConn.cpp:3046
+#: src/ExternalConn.cpp:3045
 msgid "Already connected to Kad."
 msgstr "すでにKadに接続しています。"
 
-#: src/ExternalConn.cpp:3049
+#: src/ExternalConn.cpp:3048
 msgid "Connecting to Kad..."
 msgstr "Kadに接続中です…"
 
-#: src/ExternalConn.cpp:3056
+#: src/ExternalConn.cpp:3055
 msgid "All networks are disabled."
 msgstr "全てのネットワークが無効になっています。"
 
-#: src/ExternalConn.cpp:3065
+#: src/ExternalConn.cpp:3064
 msgid "Disconnected from eD2k."
 msgstr ""
 
-#: src/ExternalConn.cpp:3070
+#: src/ExternalConn.cpp:3069
 msgid "Disconnected from Kad."
 msgstr "Kadから切断しています。"
 
-#: src/ExternalConn.cpp:3079
+#: src/ExternalConn.cpp:3078
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr ""
 
-#: src/ExternalConn.cpp:3084
+#: src/ExternalConn.cpp:3083
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "不正なOpCode（プロトコルバージョンが違いますか？）"
 
@@ -2458,7 +2458,7 @@ msgstr "サーバリストを%sからダウンロードするのに失敗しま�
 msgid "Download of %s file failed, aborting update."
 msgstr ""
 
-#: src/IP2Country.cpp:180 src/IPFilter.cpp:495
+#: src/IP2Country.cpp:180 src/IPFilter.cpp:503
 #, c-format
 msgid "Failed to remove %s file, aborting update."
 msgstr ""
@@ -2468,7 +2468,7 @@ msgstr ""
 msgid "Failed to rename %s file, aborting update."
 msgstr ""
 
-#: src/IP2Country.cpp:202 src/IPFilter.cpp:501
+#: src/IP2Country.cpp:202 src/IPFilter.cpp:509
 #, c-format
 msgid "Successfully updated %s"
 msgstr ""
@@ -2482,7 +2482,7 @@ msgstr ""
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
 msgstr ""
 
-#: src/IP2Country.cpp:240 src/IPFilter.cpp:508 src/ServerList.cpp:878
+#: src/IP2Country.cpp:240 src/IPFilter.cpp:516 src/ServerList.cpp:878
 #, fuzzy, c-format
 msgid "Failed to download %s from %s"
 msgstr "サーバリストを%sからダウンロードするのに失敗しました"
@@ -2492,34 +2492,34 @@ msgstr "サーバリストを%sからダウンロードするのに失敗しま�
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
 msgstr "IPフィルタ'ipfilter.dat'と'ipfilterstatic.dat'をロード中です。"
 
-#: src/IPFilter.cpp:287
+#: src/IPFilter.cpp:295
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', unknown format encountered."
 msgstr "'ipfilter.dat'ファイル'%s'のロードに失敗しました：不明なファイル・フォーマットに出会いました。"
 
-#: src/IPFilter.cpp:317
+#: src/IPFilter.cpp:325
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "'ipfilter.dat'ファイル'%s'のロードに失敗しました：不明なファイルを開くことはできませんでした。"
 
-#: src/IPFilter.cpp:322
+#: src/IPFilter.cpp:330
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
 msgstr[0] "%u個のIPレンジを'%s'からロードしました。"
 
-#: src/IPFilter.cpp:328
+#: src/IPFilter.cpp:336
 #, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "不正な形式の行を %u 個破棄しました。"
 
-#: src/IPFilter.cpp:498
+#: src/IPFilter.cpp:506
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr ""
 
-#: src/IPFilter.cpp:529
+#: src/IPFilter.cpp:537
 msgid "IP filter is ready"
 msgstr ""
 
@@ -4604,8 +4604,8 @@ msgid "Paranoid handling of non-matching IPs"
 msgstr "適合しないIPを被害妄想的に扱う"
 
 #: src/muuli_wdr.cpp:2698
-msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
-msgstr "クライアントIPがパケットがもともと受信されたIPと違いますとパケットを拒否します。使用するに気をつけてください。"
+msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
+msgstr ""
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"
@@ -5455,15 +5455,15 @@ msgstr "利用不可"
 msgid "no options available"
 msgstr ""
 
-#: src/Preferences.cpp:2180
+#: src/Preferences.cpp:2182
 msgid "Invalid category found, skipping"
 msgstr ""
 
-#: src/Preferences.cpp:2349
+#: src/Preferences.cpp:2351
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "サーバのUDPソケトがTCP+3であるためTCPポートを65532以上には設定できません"
 
-#: src/Preferences.cpp:2350
+#: src/Preferences.cpp:2352
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "デフォルトポートを使用します (%d)"
@@ -8400,6 +8400,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
+#~ msgstr "クライアントIPがパケットがもともと受信されたIPと違いますとパケットを拒否します。使用するに気をつけてください。"
 
 #, fuzzy
 #~ msgid "Return the results of the previous search.\n"

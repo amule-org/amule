@@ -275,6 +275,14 @@ private:
 			return 0;
 		}
 
+		// An empty file is a valid "no ranges" list (e.g. a user who cleared it,
+		// or an auto-update that has not populated it yet). Treat it as 0 ranges
+		// instead of letting the format detector below report "unknown format"
+		// on a 0-byte file (issue #580).
+		if (path.GetFileSize() == 0) {
+			return 0;
+		}
+
 #ifdef __DEBUG__
 		m_storeDescriptions = theLogger.IsEnabled(logIPFilter);
 #endif

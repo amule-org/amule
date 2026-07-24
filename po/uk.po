@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-24 13:14+0200\n"
+"POT-Creation-Date: 2026-07-24 17:10+0200\n"
 "PO-Revision-Date: 2026-07-24 13:54+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -451,7 +451,7 @@ msgstr "Часопис очищено"
 msgid "ServerMessage: %s"
 msgstr "Повідомлення сервера: %s"
 
-#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:506
+#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:514
 #: src/ServerList.cpp:875
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
@@ -618,7 +618,7 @@ msgstr "Остання версія може бути завжди знайде�
 msgid "aMule dialog destroyed"
 msgstr "Діалог aMule знищений"
 
-#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:539
+#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:547
 msgid "Connecting"
 msgstr "З'єднується"
 
@@ -2005,44 +2005,44 @@ msgstr "Недопустима назва файлу."
 msgid "Unable to rename file."
 msgstr "Неможливо змінити назву файлу."
 
-#: src/ExternalConn.cpp:2993 src/ExternalConn.cpp:3021
+#: src/ExternalConn.cpp:2992 src/ExternalConn.cpp:3020
 msgid "Kad is disabled in preferences."
 msgstr "Kad вимкнена в налаштуваннях."
 
-#: src/ExternalConn.cpp:3034
+#: src/ExternalConn.cpp:3033
 msgid "Already connected to eD2k."
 msgstr "Вже з'єднано з eD2k"
 
-#: src/ExternalConn.cpp:3037
+#: src/ExternalConn.cpp:3036
 msgid "Connecting to eD2k..."
 msgstr "З'єднується з eD2k..."
 
-#: src/ExternalConn.cpp:3046
+#: src/ExternalConn.cpp:3045
 msgid "Already connected to Kad."
 msgstr "Вже з'єднано з Kad."
 
-#: src/ExternalConn.cpp:3049
+#: src/ExternalConn.cpp:3048
 msgid "Connecting to Kad..."
 msgstr "З'єднується з Kad"
 
-#: src/ExternalConn.cpp:3056
+#: src/ExternalConn.cpp:3055
 msgid "All networks are disabled."
 msgstr "Всі мережі вимкнені."
 
-#: src/ExternalConn.cpp:3065
+#: src/ExternalConn.cpp:3064
 msgid "Disconnected from eD2k."
 msgstr "Від'єднується від eD2k."
 
-#: src/ExternalConn.cpp:3070
+#: src/ExternalConn.cpp:3069
 msgid "Disconnected from Kad."
 msgstr "Від'єднується від Kad."
 
-#: src/ExternalConn.cpp:3079
+#: src/ExternalConn.cpp:3078
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr "Зовнішнє з'єднання: отримано недопустимий opcode: %#x"
 
-#: src/ExternalConn.cpp:3084
+#: src/ExternalConn.cpp:3083
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "Недопустимий opcode (невірна версія протоколу?)"
 
@@ -2478,7 +2478,7 @@ msgstr "Звантажую новий GeoIP.dat з %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Неможливо видалити файл GeoIP.dat, оновлення зірване."
 
-#: src/IP2Country.cpp:180 src/IPFilter.cpp:495
+#: src/IP2Country.cpp:180 src/IPFilter.cpp:503
 #, fuzzy, c-format
 msgid "Failed to remove %s file, aborting update."
 msgstr "Неможливо видалити файл GeoIP.dat, оновлення зірване."
@@ -2488,7 +2488,7 @@ msgstr "Неможливо видалити файл GeoIP.dat, оновленн
 msgid "Failed to rename %s file, aborting update."
 msgstr "Неможливо змінити назву нового файлу GeoIP.dat, оновлення зірване."
 
-#: src/IP2Country.cpp:202 src/IPFilter.cpp:501
+#: src/IP2Country.cpp:202 src/IPFilter.cpp:509
 #, fuzzy, c-format
 msgid "Successfully updated %s"
 msgstr "Успішно оновлено GeoIP.dat"
@@ -2502,7 +2502,7 @@ msgstr "Помилка оновлення GeoIP.dat"
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
 msgstr ""
 
-#: src/IP2Country.cpp:240 src/IPFilter.cpp:508 src/ServerList.cpp:878
+#: src/IP2Country.cpp:240 src/IPFilter.cpp:516 src/ServerList.cpp:878
 #, fuzzy, c-format
 msgid "Failed to download %s from %s"
 msgstr "Не вдалося звантажити GeoIP.dat з %s"
@@ -2512,17 +2512,17 @@ msgstr "Не вдалося звантажити GeoIP.dat з %s"
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
 msgstr "Завантажую IP-filters 'ipfilter.dat' та 'ipfilter_static.dat'."
 
-#: src/IPFilter.cpp:287
+#: src/IPFilter.cpp:295
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', unknown format encountered."
 msgstr "Звантаження файлу ipfilter.dat '%s' зазнало невдачі, невідомий формат"
 
-#: src/IPFilter.cpp:317
+#: src/IPFilter.cpp:325
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "Звантаження файлу ipfilter.dat '%s' зазнало невдачі, неможливо відкрити файл."
 
-#: src/IPFilter.cpp:322
+#: src/IPFilter.cpp:330
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
@@ -2530,7 +2530,7 @@ msgstr[0] "Завантажено %u обсяг IP-адрес з '%s'."
 msgstr[1] "Завантажено %u обсяги IP-адрес з '%s'."
 msgstr[2] "Завантажено %u обсягів IP-адрес з '%s'."
 
-#: src/IPFilter.cpp:328
+#: src/IPFilter.cpp:336
 #, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
@@ -2538,12 +2538,12 @@ msgstr[0] "%u спотворений рядок був відкинутий."
 msgstr[1] "%u спотворені рядки були відкинуті."
 msgstr[2] "%u спотворених рядків були відкинуті."
 
-#: src/IPFilter.cpp:498
+#: src/IPFilter.cpp:506
 #, fuzzy, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr "Неможливо змінити назву нового файлу GeoIP.dat, оновлення зірване."
 
-#: src/IPFilter.cpp:529
+#: src/IPFilter.cpp:537
 msgid "IP filter is ready"
 msgstr ""
 
@@ -4642,8 +4642,8 @@ msgid "Paranoid handling of non-matching IPs"
 msgstr "Параноїдальна обробка IP-адрес, що не співпали"
 
 #: src/muuli_wdr.cpp:2698
-msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
-msgstr "Відкинути пакет якщо IP-адреса клієнта відрізняється від IP-адреси з якої прийшов пакет. Використовуйте обережно."
+msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
+msgstr ""
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"
@@ -5500,15 +5500,15 @@ msgstr "Недоступний"
 msgid "no options available"
 msgstr "немає наявних опцій"
 
-#: src/Preferences.cpp:2180
+#: src/Preferences.cpp:2182
 msgid "Invalid category found, skipping"
 msgstr "Знайдена помилкова категорія, пропущена"
 
-#: src/Preferences.cpp:2349
+#: src/Preferences.cpp:2351
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "Порт TCP не може бути більшим ніж 65532, оскільки UDP-порт сервера є TCP+3"
 
-#: src/Preferences.cpp:2350
+#: src/Preferences.cpp:2352
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Буде використовуватися порт за замовчуванням (%d)"
@@ -8493,6 +8493,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
+#~ msgstr "Відкинути пакет якщо IP-адреса клієнта відрізняється від IP-адреси з якої прийшов пакет. Використовуйте обережно."
 
 #, fuzzy
 #~ msgid "Return the results of the previous search.\n"

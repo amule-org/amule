@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-24 13:14+0200\n"
+"POT-Creation-Date: 2026-07-24 17:10+0200\n"
 "PO-Revision-Date: 2026-07-24 13:46+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -472,7 +472,7 @@ msgstr "O rexistro foi borrado"
 msgid "ServerMessage: %s"
 msgstr "Mensaxe do servidor: %s"
 
-#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:506
+#: src/amule.cpp:2234 src/IP2Country.cpp:220 src/IPFilter.cpp:514
 #: src/ServerList.cpp:875
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
@@ -638,7 +638,7 @@ msgstr "Pode obter a última versión de aMule en https://github.com/amule-org/a
 msgid "aMule dialog destroyed"
 msgstr "Destruído o cadro de diálogo de aMule"
 
-#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:539
+#: src/amuleDlg.cpp:700 src/DataToText.cpp:68 src/IPFilter.cpp:547
 msgid "Connecting"
 msgstr "Conectando"
 
@@ -2005,44 +2005,44 @@ msgstr "Nome de ficheiro inválido."
 msgid "Unable to rename file."
 msgstr "Imposible cambiarlle o nome ao ficheiro."
 
-#: src/ExternalConn.cpp:2993 src/ExternalConn.cpp:3021
+#: src/ExternalConn.cpp:2992 src/ExternalConn.cpp:3020
 msgid "Kad is disabled in preferences."
 msgstr "Kad está desactivado nas preferencias."
 
-#: src/ExternalConn.cpp:3034
+#: src/ExternalConn.cpp:3033
 msgid "Already connected to eD2k."
 msgstr "Xa está conectado ao eD2k."
 
-#: src/ExternalConn.cpp:3037
+#: src/ExternalConn.cpp:3036
 msgid "Connecting to eD2k..."
 msgstr "Conectando ao eD2k..."
 
-#: src/ExternalConn.cpp:3046
+#: src/ExternalConn.cpp:3045
 msgid "Already connected to Kad."
 msgstr "Xa está conectado a Kad."
 
-#: src/ExternalConn.cpp:3049
+#: src/ExternalConn.cpp:3048
 msgid "Connecting to Kad..."
 msgstr "Conectando a Kad..."
 
-#: src/ExternalConn.cpp:3056
+#: src/ExternalConn.cpp:3055
 msgid "All networks are disabled."
 msgstr "Tódalas redes están desactivadas."
 
-#: src/ExternalConn.cpp:3065
+#: src/ExternalConn.cpp:3064
 msgid "Disconnected from eD2k."
 msgstr "Desconectado do eD2k."
 
-#: src/ExternalConn.cpp:3070
+#: src/ExternalConn.cpp:3069
 msgid "Disconnected from Kad."
 msgstr "Desconectado de Kad."
 
-#: src/ExternalConn.cpp:3079
+#: src/ExternalConn.cpp:3078
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
 msgstr "Conexión externa: recibido código de operación inválido: %#x"
 
-#: src/ExternalConn.cpp:3084
+#: src/ExternalConn.cpp:3083
 msgid "Invalid opcode (wrong protocol version?)"
 msgstr "Opcode inválido (versión do protocolo inválida?)"
 
@@ -2475,7 +2475,7 @@ msgstr "Descargue un %s novo dende %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "A descarga de %s fallou, cancelouse a actualización."
 
-#: src/IP2Country.cpp:180 src/IPFilter.cpp:495
+#: src/IP2Country.cpp:180 src/IPFilter.cpp:503
 #, c-format
 msgid "Failed to remove %s file, aborting update."
 msgstr "Non se puido eliminar o ficheiro %s, cancelando actualización."
@@ -2485,7 +2485,7 @@ msgstr "Non se puido eliminar o ficheiro %s, cancelando actualización."
 msgid "Failed to rename %s file, aborting update."
 msgstr "Non se lle puido cambiar o nome ao ficheiro %s, cancelando a descarga."
 
-#: src/IP2Country.cpp:202 src/IPFilter.cpp:501
+#: src/IP2Country.cpp:202 src/IPFilter.cpp:509
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s actualizado con éxito"
@@ -2499,7 +2499,7 @@ msgstr "Fallou a actualización de %s"
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
 msgstr ""
 
-#: src/IP2Country.cpp:240 src/IPFilter.cpp:508 src/ServerList.cpp:878
+#: src/IP2Country.cpp:240 src/IPFilter.cpp:516 src/ServerList.cpp:878
 #, c-format
 msgid "Failed to download %s from %s"
 msgstr "Non se puido descargar %s dende %s"
@@ -2508,36 +2508,36 @@ msgstr "Non se puido descargar %s dende %s"
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
 msgstr "Cargando os filtros de IP en «ipfilter.dat» e «ipfilter_static.dat»."
 
-#: src/IPFilter.cpp:287
+#: src/IPFilter.cpp:295
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', unknown format encountered."
 msgstr "Non se puido cargar o ficheiro ipfilter.dat (%s), atopouse un formato descoñecido."
 
-#: src/IPFilter.cpp:317
+#: src/IPFilter.cpp:325
 #, c-format
 msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "Non se puido cargar o ficheiro ipfilter.dat (%s), non se puido abrir o ficheiro."
 
-#: src/IPFilter.cpp:322
+#: src/IPFilter.cpp:330
 #, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
 msgstr[0] "Cargado rango de IP %u dende «%s»."
 msgstr[1] "Cargados rangos de IP %u dende «%s»."
 
-#: src/IPFilter.cpp:328
+#: src/IPFilter.cpp:336
 #, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u liña malformada foi descartada."
 msgstr[1] "%u liñas malformadas foron descartadas."
 
-#: src/IPFilter.cpp:498
+#: src/IPFilter.cpp:506
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr "Non se lle puido cambiar o nome ao ficheiro %s, cancelando actualización."
 
-#: src/IPFilter.cpp:529
+#: src/IPFilter.cpp:537
 msgid "IP filter is ready"
 msgstr "O filtro de IP está listo"
 
@@ -4616,8 +4616,8 @@ msgid "Paranoid handling of non-matching IPs"
 msgstr "Xestión paranoica de IPs non coincidintes"
 
 #: src/muuli_wdr.cpp:2698
-msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
-msgstr "Rexeitar os paquetes se a IP do cliente é distinta á da IP de onde se recibe o paquete. Usar con coidado."
+msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
+msgstr ""
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"
@@ -5458,15 +5458,15 @@ msgstr "Ningunha lingua dispoñible"
 msgid "no options available"
 msgstr "non hai opcións disponibles"
 
-#: src/Preferences.cpp:2180
+#: src/Preferences.cpp:2182
 msgid "Invalid category found, skipping"
 msgstr "Categoría inválida atopada, saltandoa"
 
-#: src/Preferences.cpp:2349
+#: src/Preferences.cpp:2351
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
 msgstr "O porto TCP non pode ser máis alto que 65532 debido a que o socket do servidor UDP é TCP+3"
 
-#: src/Preferences.cpp:2350
+#: src/Preferences.cpp:2352
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Empregarase o porto predeterminado (%d)"
@@ -8417,6 +8417,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c:58
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
+#~ msgstr "Rexeitar os paquetes se a IP do cliente é distinta á da IP de onde se recibe o paquete. Usar con coidado."
 
 #~ msgid "Return the results of the previous search.\n"
 #~ msgstr "Devolve o resultado da busca anterior.\n"

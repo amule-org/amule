@@ -2695,7 +2695,7 @@ wxSizer *PreferencesSecurityTab( wxWindow *parent, bool call_fit, bool set_sizer
     item8->Add( item23, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxCheckBox *item24 = new wxCheckBox( parent, IDC_PARANOID, _("Paranoid handling of non-matching IPs"), wxDefaultPosition, wxDefaultSize, 0 );
     item24->SetValue( TRUE );
-    item24->SetToolTip( _("Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution.") );
+    item24->SetToolTip( _("Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems.") );
     item8->Add( item24, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxCheckBox *item25 = new wxCheckBox( parent, IDC_IPFILTERSYS, _("Use system-wide ipfilter.dat if available"), wxDefaultPosition, wxDefaultSize, 0 );
     item25->SetToolTip( _("If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file.") );
