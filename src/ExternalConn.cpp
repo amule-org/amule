@@ -2535,7 +2535,6 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	}
 	case EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE: {
-		theApp->sharedfiles->Reload();
 		uint32 idClient = request->GetTagByNameSafe(EC_TAG_CLIENT)->GetInt();
 		CUpDownClient *client = theApp->clientlist->FindClientByECID(idClient);
 		CMD4Hash idFile = request->GetTagByNameSafe(EC_TAG_PARTFILE)->GetMD4Data();
