@@ -1361,7 +1361,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_ICH, (new Cfg_Bool("/eMule/ICH", s_ICH, true)));
 	NewCfgItem(IDC_AICHTRUST, (new Cfg_Bool("/eMule/AICHTrust", s_AICHTrustEveryHash, false)));
 	NewCfgItem(IDC_CHECKDISKSPACE, (new Cfg_Bool("/eMule/CheckDiskspace", s_checkDiskspace, true)));
-	NewCfgItem(IDC_MINDISKSPACE, (MkCfg_Int("/eMule/MinFreeDiskSpace", s_uMinFreeDiskSpace, 1)));
+	NewCfgItem(IDC_MINDISKSPACE, (MkCfg_Int("/eMule/MinFreeDiskSpace", s_uMinFreeDiskSpace, 500)));
 	NewCfgItem(IDC_ADDNEWFILESPAUSED,
 		(new Cfg_Bool("/eMule/AddNewFilesPaused", s_addnewfilespaused, false)));
 	NewCfgItem(IDC_PREVIEWPRIO, (new Cfg_Bool("/eMule/PreviewPrio", s_bpreviewprio, false)));
