@@ -19,6 +19,15 @@ export function formatSpeed(bps) {
   return formatBytes(bps) + "/s";
 }
 
+// Pick ONE byte unit for a whole axis from its max value, so chart ticks can be
+// bare numbers with the unit shown once instead of repeating "KB/s" per tick.
+// Returns the divisor to scale raw values by and the unit label to display.
+export function bytesAxis(max, perSec) {
+  let i = 0, n = Number(max) || 0;
+  while (n >= 1024 && i < UNITS.length - 1) { n /= 1024; i++; }
+  return { div: Math.pow(1024, i), unit: UNITS[i] + (perSec ? "/s" : "") };
+}
+
 export function formatPercent(p) {
   p = Number(p) || 0;
   return p.toFixed(p >= 100 || p === 0 ? 0 : 1) + "%";

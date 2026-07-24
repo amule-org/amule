@@ -7,6 +7,7 @@ import { api } from "../api.js";
 import { Tabs, toast, confirmDialog } from "../components.js";
 import { t, terr } from "../i18n.js";
 import { Icon } from "../icons.js";
+import { useSplitHeight } from "./split-detail.js";
 import { ServersPanel } from "./servers.js";
 import { KadPanel, KadInfoPanel } from "./kad.js";
 import { Ed2kInfoPanel } from "./ed2k.js";
@@ -15,6 +16,10 @@ import { AmuleLogPanel, ServerInfoPanel } from "./logs.js";
 export default function Networks({ isGuest }) {
   const [top, setTop] = useState("ed2k");
   const [bottom, setBottom] = useState("amulelog");
+  // Draggable divider between the top (servers/Kad) and bottom (log/info)
+  // panes, like the desktop NetDialog's wxSplitterWindow. On phones the CSS
+  // hides the splitter and both panes flow (see .net-split in app.css).
+  const { height, containerRef, splitterProps } = useSplitHeight("net:split");
 
   const topTabs = [
     { key: "ed2k", label: t("networks_tab_ed2k") },
@@ -28,8 +33,8 @@ export default function Networks({ isGuest }) {
   ];
 
   return html`
-    <div class="net-split">
-      <section class="net-pane">
+    <div class="net-split fill-view" ref=${containerRef}>
+      <section class="net-pane pane-fill">
         <${Tabs} tabs=${topTabs} active=${top} onSelect=${setTop}
                  extra=${html`<${ConnectButton} />`} />
         <div class="net-pane-body">
@@ -39,7 +44,9 @@ export default function Networks({ isGuest }) {
         </div>
       </section>
 
-      <section class="net-pane">
+      <div class="splitter" ...${splitterProps}></div>
+
+      <section class="net-pane" style=${{ height: height + "px" }}>
         <${Tabs} tabs=${bottomTabs} active=${bottom} onSelect=${setBottom} />
         <div class="net-pane-body">
           ${bottom === "amulelog"

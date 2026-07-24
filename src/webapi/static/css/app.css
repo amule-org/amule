@@ -479,11 +479,15 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 /* --- stats --- */
 .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px; }
 /* Statistics page: fixed 2×2 grid like the desktop statsDlg —
-   Download | Upload on top, Connections | Statistics Tree below. */
-.stats-grid { grid-template-columns: 1fr 1fr; }
-.stats-tree-card { display: flex; flex-direction: column; min-height: 0; max-height: 340px; }
+   Download | Upload on top, Connections | Statistics Tree below. All four
+   cards share one row height so the charts match the stats-tree card. */
+.stats-grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 340px; }
+.stats-tree-card { display: flex; flex-direction: column; min-height: 0; }
 .stats-tree-card .stats-tree { overflow-y: auto; min-height: 0; }
-.chart-card { margin-bottom: 0; }
+/* Chart card fills its cell; the canvas host takes the space left by the title
+   and legend (charts.js sizes the canvas to the host height). */
+.chart-card { margin-bottom: 0; display: flex; flex-direction: column; }
+.chart-card .chart-host { flex: 1 1 auto; min-height: 0; }
 .chart-legend {
   display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;
   font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums;
@@ -565,7 +569,26 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .tab.active .tab-badge { background: var(--accent); color: var(--accent-contrast); }
 
 /* --- Networks split (top: ED2K/Kad, bottom: log/server info) --- */
-.net-split { display: flex; flex-direction: column; gap: 16px; }
+/* No gap on desktop: the draggable .splitter (+ its own margin) is the visual
+   divider between the two panes, like Downloads. Mobile restores a gap since
+   the splitter is hidden there (see the responsive block). */
+.net-split { display: flex; flex-direction: column; gap: 0; }
+/* Small breathing room below the splitter so it doesn't sit flush against the
+   bottom pane's tab strip. Lives on the splitter (hidden on mobile) so it adds
+   no extra gap there. */
+.net-split .splitter { margin: 2px 0 8px; }
+/* Bottom pane (log/server info) keeps the dragged pixel height; its body fills
+   so the log box grows to the pane instead of its default 30vh cap — otherwise
+   dragging the splitter would just move empty space. */
+.net-split .net-pane:last-child { flex: none; min-height: 0; }
+.net-split .net-pane:last-child .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* Column so the <pre> is stretched to the wrapper width (cross axis) and wraps,
+   instead of a flex row where it keeps its longest-line width and overflows. */
+.net-split .logbox-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.net-split .logbox { flex: 1 1 auto; max-height: none; min-height: 0; }
+/* Kad tab graph fills the top pane so it grows/shrinks with the splitter
+   (charts.js sizes the canvas to the host and redraws via a ResizeObserver). */
+.net-split .chart-bare { flex: 1 1 auto; min-height: 0; }
 /* notebook: content box hangs off the tab strip's bottom line, no outer card */
 .net-pane { display: flex; flex-direction: column; }
 .net-pane .tabs { margin-bottom: 0; }
@@ -580,18 +603,22 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
    page fills the viewport and scrolls its regions internally (app-like)
    instead of scrolling the whole page. */
 .split-view { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+/* Full-height page without a detail split: the root fills the viewport and its
+   marked region (.pane-fill) scrolls internally, reusing the .split-view flex
+   chain below. Used by Clients, Searches and Networks. */
+.fill-view { height: 100%; display: flex; flex-direction: column; min-height: 0; }
 /* The table region (net-pane on Downloads, card on Shared) fills the top pane;
    the detail (.split-bottom) is a sibling below the splitter, no longer nested
    in the table's box (it draws no box of its own — see .split-bottom below). */
-.split-view .net-pane { flex: 1 1 auto; min-height: 0; }
-.split-view .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.split-view .net-pane, .fill-view .pane-fill { flex: 1 1 auto; min-height: 0; }
+.split-view .net-pane-body, .fill-view .pane-fill .net-pane-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 /* Shared Files' top region is a plain .card (no category-tab net-pane like
    Downloads), and it's the fill region — now nested in .split-top. The
    direct-child form also covers the Categories panel card shown in Downloads'
    manage-categories mode. */
 .split-top > .card, .split-view > .card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
 /* fill the region and scroll rows internally (overrides the default 70vh cap) */
-.split-view .table-wrap.virtual { flex: 1 1 auto; min-height: 0; }
+.split-view .table-wrap.virtual, .fill-view .table-wrap.virtual { flex: 1 1 auto; min-height: 0; }
 .split-view table.data.virtual tbody tr:not(.spacer) { cursor: pointer; }
 
 .split { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
@@ -704,18 +731,27 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   .route-title { display: block; font-size: 18px; font-weight: 600; }
   .brand-logo { height: 26px; }
   .stats-grid { grid-template-columns: 1fr; }
-  /* notebook tab strips: single scrolling row instead of wrapping to 2 lines */
-  .net-pane .tabs { flex-wrap: nowrap; overflow-x: auto; }
+  /* notebook tab strips: single scrolling row instead of wrapping to 2 lines.
+     overflow-y:hidden stops the browser from computing overflow-x:auto's pair
+     to auto and showing a spurious 1px vertical scrollbar. */
+  .net-pane .tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
   .net-pane .tab { flex: 0 0 auto; }
 
   /* Downloads on phones: no viewport-fit/splitter. The table stacks and the
      page scrolls; the detail opens as a full-screen drill-down sheet over the
      list (below the top bar) so the tap clearly changes the screen and the
      info is reachable without scrolling past a tall table. */
-  .split-view { height: auto; }
-  .split-view .net-pane, .split-view .net-pane-body, .split-top > .card, .split-view > .card { flex: 0 0 auto; }
+  .split-view, .fill-view { height: auto; }
+  .split-view .net-pane, .split-view .net-pane-body, .split-top > .card, .split-view > .card,
+  .fill-view .pane-fill, .fill-view .pane-fill .net-pane-body { flex: 0 0 auto; }
   .splitter { display: none; }
-  .split-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
+  .split-view .table-wrap.virtual, .fill-view .table-wrap.virtual { flex: none; min-height: 0; max-height: 60vh; }
+  /* Networks: no splitter on phones — restore the inter-pane gap, let the
+     bottom pane flow, and give the log box back its own height cap. */
+  .net-split { gap: 16px; }
+  .net-split .net-pane:last-child { height: auto !important; flex: 0 0 auto; }
+  .net-split .logbox { flex: none; max-height: 30vh; }
+  .net-split .logbox-sm { max-height: 22vh; }
   .split-bottom {
     position: fixed; inset: var(--toolbar-h) 0 0 0; z-index: 60;
     height: auto !important; overflow: auto;

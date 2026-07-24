@@ -8,7 +8,7 @@ import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder } from "../components.js";
 import { Chart } from "../charts.js";
-import { formatBytes, formatSpeed, formatInt, formatDuration } from "../format.js";
+import { formatBytes, formatSpeed, formatInt, formatDuration, bytesAxis } from "../format.js";
 import { t, terr } from "../i18n.js";
 
 const GRAPH_POLL_MS = 2000;
@@ -16,9 +16,10 @@ const TREE_EVERY = 3; // refresh tree every N graph ticks
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
 const SMA_WINDOW = 50; // ponytail: SMA over ~5 min of samples; amulegui makes this a pref
 
+const speedAxis = (max) => bytesAxis(max, true);
 const GRAPHS = [
-  { name: "download", title: t("stats_download_speed"), color: "#3aaf5d", avgColor: "#1fb5ad", fmt: formatSpeed },
-  { name: "upload", title: t("stats_upload_speed"), color: "#3b86e0", avgColor: "#8a5cd6", fmt: formatSpeed },
+  { name: "download", title: t("stats_download_speed"), color: "#3aaf5d", avgColor: "#1fb5ad", fmt: formatSpeed, axis: speedAxis },
+  { name: "upload", title: t("stats_upload_speed"), color: "#3b86e0", avgColor: "#8a5cd6", fmt: formatSpeed, axis: speedAxis },
   { name: "connections", title: t("stats_connections"), color: "#d68a0c", avgColor: "#c94f7c", fmt: formatInt },
 ];
 

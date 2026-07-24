@@ -113,12 +113,13 @@ export default function ClientsPanel() {
   }
 
   return html`
-    <div class="view-header">
-      <h3 class="section-title">${t("app_nav_clients")}</h3>
-    </div>
-    <section class="net-pane">
-      <${Tabs} tabs=${tabs} active=${filter} onSelect=${setFilter} />
-      <div class="net-pane-body">
+    <div class="fill-view">
+      <div class="view-header">
+        <h3 class="section-title">${t("app_nav_clients")}</h3>
+      </div>
+      <section class="net-pane pane-fill">
+        <${Tabs} tabs=${tabs} active=${filter} onSelect=${setFilter} />
+        <div class="net-pane-body">
         <div class="toolbar pane-toolbar">
           <label>${t("downloads_peer_identity")}:</label>
           <select class="input input-sm" value=${ident} onChange=${(e) => setIdent(e.target.value)}>
@@ -132,8 +133,9 @@ export default function ClientsPanel() {
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.client_ecid}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                          empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />
-      </div>
-    </section>`;
+        </div>
+      </section>
+    </div>`;
 }
 
 // Compact status icons (replacing the ident/obfuscation/friend columns). Each

@@ -246,6 +246,7 @@ export default function Search({ isGuest }) {
   const rowClass = (r) => selection.has(r.hash) ? "row-selected" : "";
 
   return html`
+    <div class="fill-view">
     <form class="card search-form" onSubmit=${startSearch}>
       <div class="search-grid">
         ${field(t("search_query"), html`<input class="input" type="text" placeholder=${t("search_terms_ph")} required value=${query} onInput=${(e) => setQuery(e.target.value)} />`, "field-wide")}
@@ -274,7 +275,7 @@ export default function Search({ isGuest }) {
       ${isGuest ? html`<p class="hint">${t("search_guest_readonly")}</p>` : null}
     </form>
 
-    <section class="net-pane">
+    <section class="net-pane pane-fill">
       <${Tabs} tabs=${[{ key: "results", label: t("search_results") + " (" + results.length + ")" }]}
                active="results" onSelect=${() => {}} />
       <div class="net-pane-body">
@@ -295,7 +296,8 @@ export default function Search({ isGuest }) {
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                          empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
       </div>
-    </section>`;
+    </section>
+    </div>`;
 }
 
 function field(label, control, cls = "") {
