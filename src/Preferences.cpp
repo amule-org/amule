@@ -1490,7 +1490,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_FILTERLAN, (new Cfg_Bool("/eMule/FilterLanIPs", s_filterLanIP, true)));
 	NewCfgItem(IDC_PARANOID, (new Cfg_Bool("/eMule/ParanoidFiltering", s_paranoidfilter, true)));
 	NewCfgItem(IDC_AUTOIPFILTER, (new Cfg_Bool("/eMule/IPFilterAutoLoad", s_IPFilterAutoLoad, true)));
-	NewCfgItem(IDC_IPFILTERURL, (new Cfg_Str("/eMule/IPFilterURL", s_IPFilterURL, "")));
+	NewCfgItem(IDC_IPFILTERURL,
+		(new Cfg_Str(
+			"/eMule/IPFilterURL", s_IPFilterURL, "https://upd.emule-security.org/ipfilter.zip")));
 	NewCfgItem(ID_IPFILTERLEVEL, (MkCfg_Int("/eMule/FilterLevel", s_filterlevel, 127)));
 	NewCfgItem(IDC_IPFILTERSYS, (new Cfg_Bool("/eMule/IPFilterSystem", s_IPFilterSys, false)));
 
