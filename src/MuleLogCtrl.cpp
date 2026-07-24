@@ -26,6 +26,26 @@
 
 #include <wx/settings.h>
 
+#include <cstdlib> // std::abs
+
+namespace
+{
+// Perceived brightness (ITU-R BT.601 luma), 0 (black) .. 255 (white).
+int Luminance(const wxColour &c)
+{
+	return (c.Red() * 299 + c.Green() * 587 + c.Blue() * 114) / 1000;
+}
+
+// Whether two colours are far enough apart in brightness for text painted in
+// one over the other to be legible. The threshold is deliberately generous: a
+// false "too close" only forgoes the theme's exact foreground for a guaranteed-
+// readable black/white, which is always preferable to invisible text.
+bool Contrasts(const wxColour &a, const wxColour &b)
+{
+	return std::abs(Luminance(a) - Luminance(b)) >= 64;
+}
+} // namespace
+
 CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 	wxWindowID id,
 	const wxPoint &pos,
@@ -55,16 +75,43 @@ CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 	SetUseHorizontalScrollBar(false);
 
 	// Theme-aware colours (matches the old wxTE_RICH2, which used the system
-	// window colours -- so dark themes keep working).
-	StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-	StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-	wxFont guiFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-	StyleSetFont(wxSTC_STYLE_DEFAULT, guiFont);
-	// Propagate the default style to all styles, then make critical lines bold.
-	StyleClearAll();
-	StyleSetBold(Style_Critical, true);
+	// window colours -- so dark themes keep working). Scintilla does not follow
+	// the system appearance on its own, so re-apply on every theme change.
+	SetupStyles();
+	Bind(wxEVT_SYS_COLOUR_CHANGED, &CMuleLogCtrl::OnSysColourChanged, this);
 
 	SetReadOnly(true);
+}
+
+void CMuleLogCtrl::SetupStyles()
+{
+	wxColour fg = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
+	const wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+
+	// On macOS the window/text system colours are appearance-aware and resolved
+	// to RGB at call time; in some configurations (seen with a self-built wx 3.3
+	// on macOS -- issue #569) they come back with too little contrast, which
+	// paints the whole log invisible. Windows/GTK return static, well-contrasted
+	// values and are unaffected. When the pair is unreadable, keep the theme's
+	// background but force a legible foreground from its brightness.
+	if (!Contrasts(fg, bg)) {
+		fg = Luminance(bg) < 128 ? *wxWHITE : *wxBLACK;
+	}
+
+	StyleSetForeground(wxSTC_STYLE_DEFAULT, fg);
+	StyleSetBackground(wxSTC_STYLE_DEFAULT, bg);
+	StyleSetFont(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
+	// Propagate the default style to all styles, then make critical lines bold.
+	// This also re-themes existing text on a live appearance change: the style
+	// bytes (Style_Normal / Style_Critical) are kept, only their colours change.
+	StyleClearAll();
+	StyleSetBold(Style_Critical, true);
+}
+
+void CMuleLogCtrl::OnSysColourChanged(wxSysColourChangedEvent &event)
+{
+	SetupStyles();
+	event.Skip();
 }
 
 bool CMuleLogCtrl::AtBottom()

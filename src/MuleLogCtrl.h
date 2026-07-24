@@ -72,6 +72,19 @@ private:
 	bool AtBottom();
 	void ScrollToBottom();
 
+	// Paint the default text/background colours and font from the current system
+	// theme. Native wxTextCtrl (the pre-Scintilla log widget) tracked the theme
+	// automatically; Scintilla does not, so we set the colours by hand -- here,
+	// and again on every theme change (see OnSysColourChanged). Guards against a
+	// foreground/background that come back with too little contrast to read (on
+	// macOS the window/text system colours are appearance-aware and can resolve
+	// near-identical, painting the log invisible -- issue #569).
+	void SetupStyles();
+
+	// Re-theme on a live light/dark switch (Scintilla snapshots colours; it will
+	// not follow the appearance on its own).
+	void OnSysColourChanged(wxSysColourChangedEvent &event);
+
 	// Scintilla style ids: 0 is the default text style, 1 adds bold.
 	enum
 	{
