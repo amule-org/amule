@@ -186,13 +186,20 @@ wxUIntPtr CSearchDlg::GetVisibleSearchId()
 
 void CSearchDlg::ApplyProgressToBar(uint32 status)
 {
-	if (status == 0xffff || status == 0xfffe) {
+	const bool finished = (status == 0xffff || status == 0xfffe);
+	if (finished) {
 		// Finished (ed2k or Kad): reset the bar.
 		m_progressbar->SetValue(0);
 	} else {
 		// Running: real global percent, or the Kad cosmetic ramp.
 		UpdateProgress(status);
 	}
+	// Keep Stop in step with the visible tab's lifecycle — live while the search
+	// runs, greyed once it finishes. Both callers feed this the visible tab's
+	// status (RefreshVisibleTabProgress on monolithic, UpdateSearchProgress on
+	// the remote GUI), so Stop follows the selected tab rather than the most-
+	// recently-started search.
+	FindWindow(IDC_CANCELS)->Enable(!finished);
 }
 
 #ifndef CLIENT_GUI
@@ -563,7 +570,16 @@ void CSearchDlg::SetBrowseStatus(wxUIntPtr searchID, uint32 status)
 
 void CSearchDlg::OnBnClickedStop(wxCommandEvent &WXUNUSED(evt))
 {
-	theApp->searchlist->StopSearch();
+	// Stop only the selected tab's search. The parameterless StopSearch() acts
+	// on the scalar most-recently-started search (m_currentSearch), so with
+	// several searches open it would stop the wrong tab whenever the visible one
+	// is not the newest. Address the daemon/core by the visible tab's own id.
+	wxUIntPtr sid = GetVisibleSearchId();
+	if (sid) {
+		theApp->searchlist->StopSearchById(sid);
+	} else {
+		theApp->searchlist->StopSearch();
+	}
 	ResetControls();
 }
 

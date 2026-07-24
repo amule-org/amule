@@ -654,8 +654,10 @@ public:
 
 	// Multi-search: stop one search by ID; andClose also frees its results
 	// on the daemon (tab close). Falls back to a parameterless stop on a
-	// legacy daemon.
-	void StopSearchById(wxUIntPtr searchID, bool andClose);
+	// legacy daemon. andClose defaults to false so the shared search dialog
+	// can stop the selected tab without closing it (CSearchList's single-arg
+	// overload matches the same call).
+	void StopSearchById(wxUIntPtr searchID, bool andClose = false);
 
 	// Multi-search: remap the optimistic local tab ID to the daemon-allocated
 	// ID once the START reply echoes the correlation token.
