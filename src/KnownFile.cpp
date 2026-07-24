@@ -1313,30 +1313,25 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 	// The printable filename is used because it's destined for another user.
 	tags.push_back(new CTagString(FT_FILENAME, GetFileName().GetPrintable()));
 
-	if (pClient && pClient->GetVBTTags()) {
-		tags.push_back(new CTagVarInt(FT_FILESIZE, GetFileSize()));
+	if (!IsLargeFile()) {
+		tags.push_back(new CTagInt32(FT_FILESIZE, GetFileSize()));
 	} else {
-		if (!IsLargeFile()) {
-			tags.push_back(new CTagInt32(FT_FILESIZE, GetFileSize()));
-		} else {
-			// Large file
-			// we send 2*32 bit tags to servers, but a real 64 bit tag to other clients.
-			if (pServer) {
-				if (!pServer->SupportsLargeFilesTCP()) {
-					wxFAIL;
-					tags.push_back(new CTagInt32(FT_FILESIZE, 0));
-				} else {
-					tags.push_back(new CTagInt32(FT_FILESIZE, (uint32)GetFileSize()));
-					tags.push_back(
-						new CTagInt32(FT_FILESIZE_HI, (uint32)(GetFileSize() >> 32)));
-				}
+		// Large file
+		// we send 2*32 bit tags to servers, but a real 64 bit tag to other clients.
+		if (pServer) {
+			if (!pServer->SupportsLargeFilesTCP()) {
+				wxFAIL;
+				tags.push_back(new CTagInt32(FT_FILESIZE, 0));
 			} else {
-				if (!pClient->SupportsLargeFiles()) {
-					wxFAIL;
-					tags.push_back(new CTagInt32(FT_FILESIZE, 0));
-				} else {
-					tags.push_back(new CTagInt64(FT_FILESIZE, GetFileSize()));
-				}
+				tags.push_back(new CTagInt32(FT_FILESIZE, (uint32)GetFileSize()));
+				tags.push_back(new CTagInt32(FT_FILESIZE_HI, (uint32)(GetFileSize() >> 32)));
+			}
+		} else {
+			if (!pClient->SupportsLargeFiles()) {
+				wxFAIL;
+				tags.push_back(new CTagInt32(FT_FILESIZE, 0));
+			} else {
+				tags.push_back(new CTagInt64(FT_FILESIZE, GetFileSize()));
 			}
 		}
 	}
@@ -1349,8 +1344,7 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 			// otherwise remote clients decode it as 0. Servers themselves want the raw 0-5.
 			ratingValue *= (255 / 5);
 		}
-		tags.push_back(new CTagVarInt(
-			FT_FILERATING, ratingValue, (pClient && pClient->GetVBTTags()) ? 0 : 32));
+		tags.push_back(new CTagVarInt(FT_FILERATING, ratingValue, 32));
 	}
 
 	// NOTE: Archives and CD-Images are published+searched with file type "Pro"
@@ -1378,15 +1372,13 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 	// Media metadata (populated by MediaProbe at share-add time).
 	// Emit each tag only when nonzero / non-empty; older ed2k
 	// clients / servers happily ignore unknown tag IDs but should
-	// never be asked to parse a 0-valued FT_MEDIA_LENGTH. VBT
-	// (variable-bit) encoding for capable eMule clients and the
-	// TYPETAGINTEGER-capable servers; fixed 32-bit otherwise.
-	const bool useVBT = pClient && pClient->GetVBTTags();
+	// never be asked to parse a 0-valued FT_MEDIA_LENGTH. Fixed 32-bit
+	// encoding, as for every other client-bound tag here.
 	if (uint32 len = GetIntTagValue(FT_MEDIA_LENGTH)) {
-		tags.push_back(new CTagVarInt(FT_MEDIA_LENGTH, len, useVBT ? 0 : 32));
+		tags.push_back(new CTagVarInt(FT_MEDIA_LENGTH, len, 32));
 	}
 	if (uint32 br = GetIntTagValue(FT_MEDIA_BITRATE)) {
-		tags.push_back(new CTagVarInt(FT_MEDIA_BITRATE, br, useVBT ? 0 : 32));
+		tags.push_back(new CTagVarInt(FT_MEDIA_BITRATE, br, 32));
 	}
 	const wxString &codec = GetStrTagValue(FT_MEDIA_CODEC);
 	if (!codec.IsEmpty()) {

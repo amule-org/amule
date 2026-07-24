@@ -274,10 +274,9 @@ void CUpDownClient::Init()
 	m_lastClientSoft = (uint32)(-1);
 	m_lastClientVersion = 0;
 
-	m_MaxBlockRequests = STANDARD_BLOCKS_REQUEST; // Safe starting amount
-
 	m_last_block_start = 0;
 	m_lastaverage = 0;
+	m_minRTT = 0;
 
 	SetLastBuddyPingPongTime();
 	m_fRequestsCryptLayer = 0;
@@ -347,7 +346,6 @@ void CUpDownClient::ClearHelloProperties()
 	m_fSharedDirectories = 0;
 	m_bMultiPacket = 0;
 	m_fOsInfoSupport = 0;
-	m_fValueBasedTypeTags = 0;
 	SecIdentSupRec = 0;
 	m_byKadVersion = 0;
 	m_fRequestsCryptLayer = 0;
@@ -624,8 +622,6 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 		// Special tag for Compat. Clients Misc options.
 		case CT_EMULECOMPAT_OPTIONS:
 			//  1 Operative System Info
-			//	1 Value-based-type int tags (experimental!)
-			m_fValueBasedTypeTags = (temptag.GetInt() >> 1 * 1) & 0x01;
 			m_fOsInfoSupport = (temptag.GetInt() >> 1 * 0) & 0x01;
 			break;
 
@@ -1052,7 +1048,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	CTagString tagname(CT_NAME, thePrefs::GetUserNick());
 	tagname.WriteTagToFile(data, utf8strRaw);
 
-	CTagVarInt tagversion(CT_VERSION, EDONKEYVERSION, GetVBTTags() ? 0 : 32);
+	CTagVarInt tagversion(CT_VERSION, EDONKEYVERSION, 32);
 	tagversion.WriteTagToFile(data);
 	// eMule UDP Ports
 
@@ -1068,21 +1064,19 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 		}
 	}
 
-	CTagVarInt tagUdpPorts(CT_EMULE_UDPPORTS,
-		(kadUDPPort << 16) | ((uint32)thePrefs::GetEffectiveUDPPort()),
-		GetVBTTags() ? 0 : 32);
+	CTagVarInt tagUdpPorts(
+		CT_EMULE_UDPPORTS, (kadUDPPort << 16) | ((uint32)thePrefs::GetEffectiveUDPPort()), 32);
 	tagUdpPorts.WriteTagToFile(data);
 
 	if (theApp->clientlist->GetBuddy() && theApp->IsFirewalled()) {
-		CTagVarInt tagBuddyIP(
-			CT_EMULE_BUDDYIP, theApp->clientlist->GetBuddy()->GetIP(), GetVBTTags() ? 0 : 32);
+		CTagVarInt tagBuddyIP(CT_EMULE_BUDDYIP, theApp->clientlist->GetBuddy()->GetIP(), 32);
 		tagBuddyIP.WriteTagToFile(data);
 
 		CTagVarInt tagBuddyPort(CT_EMULE_BUDDYUDP,
 			//					( RESERVED
 			//)
 			((uint32)theApp->clientlist->GetBuddy()->GetUDPPort()),
-			GetVBTTags() ? 0 : 32);
+			32);
 		tagBuddyPort.WriteTagToFile(data);
 	}
 
@@ -1091,7 +1085,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 		(SO_AMULE << 24) | make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE)
 		// | (RESERVED			     )
 		,
-		GetVBTTags() ? 0 : 32);
+		32);
 	tagMuleVersion.WriteTagToFile(data);
 
 	// eMule Misc. Options #1
@@ -1117,7 +1111,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 			(uSourceExchangeVer << 4 * 3) | (uExtendedRequestsVer << 4 * 2) |
 			(uAcceptCommentVer << 4 * 1) | (uPeerCache << 1 * 3) | (uNoViewSharedFiles << 1 * 2) |
 			(uMultiPacket << 1 * 1) | (uSupportPreview << 1 * 0),
-		GetVBTTags() ? 0 : 32);
+		32);
 	tagMisOptions.WriteTagToFile(data);
 
 	// eMule Misc. Options #2
@@ -1150,15 +1144,12 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 			(uRequiresCryptLayer << 9) | (uRequestsCryptLayer << 8) | (uSupportsCryptLayer << 7) |
 			(uReserved << 6) | (uExtMultiPacket << 5) | (uSupportLargeFiles << 4) |
 			(uKadVersion << 0),
-		GetVBTTags() ? 0 : 32);
+		32);
 	tagMisOptions2.WriteTagToFile(data);
 
-	const uint32 nOSInfoSupport = 1;      // We support OS_INFO
-	const uint32 nValueBasedTypeTags = 0; // Experimental, disabled
+	const uint32 nOSInfoSupport = 1; // We support OS_INFO
 
-	CTagVarInt tagMisCompatOptions(CT_EMULECOMPAT_OPTIONS,
-		(nValueBasedTypeTags << 1 * 1) | (nOSInfoSupport << 1 * 0),
-		GetVBTTags() ? 0 : 32);
+	CTagVarInt tagMisCompatOptions(CT_EMULECOMPAT_OPTIONS, (nOSInfoSupport << 1 * 0), 32);
 
 	tagMisCompatOptions.WriteTagToFile(data);
 

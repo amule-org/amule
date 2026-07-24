@@ -586,48 +586,67 @@ void CUpDownClient::ProcessHashSet(const uint8_t *packet, uint32 size)
 
 void CUpDownClient::SendBlockRequests()
 {
-	uint64 current_time = ::GetTickCount64();
-	if (GetVBTTags()) {
-
-		// Ask new blocks only when all completed
-		if (!m_PendingBlocks_list.empty()) {
-			return;
-		}
-
-		if ((m_dwLastBlockReceived + SEC2MS(5)) > current_time) {
-			// We received last block in less than 5 secs? Let's request faster.
-			m_MaxBlockRequests = m_MaxBlockRequests << 1;
-			if (m_MaxBlockRequests > 0x20) {
-				m_MaxBlockRequests = 0x20;
-			}
-		} else {
-			m_MaxBlockRequests = m_MaxBlockRequests >> 1;
-			if (m_MaxBlockRequests < STANDARD_BLOCKS_REQUEST) {
-				m_MaxBlockRequests = STANDARD_BLOCKS_REQUEST;
-			}
-		}
-	}
-
-	m_dwLastBlockReceived = current_time;
+	m_dwLastBlockReceived = ::GetTickCount64();
 
 	if (!m_reqfile) {
 		return;
 	}
 
-	if (m_DownloadBlocks_list.empty()) {
-		// Barry - instead of getting 3, just get how many is needed
-		uint16 count = m_MaxBlockRequests - m_PendingBlocks_list.size();
-		std::vector<Requested_Block_Struct *> toadd;
-		if (m_reqfile->GetNextRequestedBlock(this, toadd, count)) {
-			for (int i = 0; i != count; i++) {
-				m_DownloadBlocks_list.push_back(toadd[i]);
+	// RTT/BDP-adaptive request-pipeline depth. The number of outstanding block
+	// requests needed to keep a link busy is the bandwidth-delay product:
+	// bytes_in_flight = rate * RTT. On a low-latency link (LAN) the BDP is a
+	// fraction of a 180 KB block, so we stay shallow and avoid the burst/starve
+	// oscillation a deep pipeline provokes against a fast local peer; on a
+	// high-latency link the BDP is large, so we go deep and hide the round-trip.
+	// Unlike a speed-only ladder this distinguishes a fast LAN peer from a fast
+	// WAN peer -- the thing that actually determines the depth needed. m_minRTT is
+	// the min-filtered request->first-byte round-trip (see ProcessBlockPacket).
+	//
+	// The flat cap-24 clamp is deliberate, not a placeholder. Benchmarking showed the
+	// WAN ceiling is the OS TCP socket-buffer autotune limit (~4 MB by default), which
+	// pins throughput near 40 MB/s at 100 ms RTT no matter how deep the request
+	// pipeline runs -- and cap 24 (24 * 180 KB = 4.3 MB of authorised in-flight data)
+	// already covers that. A deeper pipe buys no throughput, and 24 still sits inside
+	// eMule's own pending range (its gate is 2*blockCount = 18, with a top-up batch
+	// reaching ~27); lifting the OS buffer is host tuning, not a client concern. (The
+	// 2x overshoot factor below is still an empirical constant.)
+	const float rttMs = (m_minRTT > 0) ? (float)m_minRTT : 1.0f;
+	const float bdpBlocks = ((float)GetKBpsDown() * 1024.0f) * (rttMs / 1000.0f) / (float)EMBLOCKSIZE;
+	// 2x overshoot + margin: sizing the pipe to exactly the current BDP is
+	// self-limiting (the measured rate is itself capped by the current pipe, so it
+	// can never grow past a low equilibrium). Over-provisioning gives headroom for
+	// the rate to climb until it hits the link's real ceiling, at which point the
+	// BDP -- and thus the depth -- settles at the bandwidth-delay product.
+	size_t pendingCap = 2 * (size_t)bdpBlocks + STANDARD_BLOCKS_REQUEST;
+	if (pendingCap < STANDARD_BLOCKS_REQUEST) {
+		// The floor doubles as the slow-source guard: a trickle source -- or one with
+		// no RTT sample yet (rttMs defaults to 1) -- has a near-zero BDP and is held at
+		// the 3-block minimum, never handed a deep pipe.
+		pendingCap = STANDARD_BLOCKS_REQUEST;
+	} else if (pendingCap > 24) {
+		pendingCap = 24; // OS-buffer ceiling (see above); still within eMule's pending range
+	}
+
+	// Smooth continuous refill: top the in-flight + staged block count up to
+	// pendingCap by the exact shortfall each call, never in bursts. Bursty refill
+	// makes the leecher emit requests in clusters that overfill then starve a fast
+	// peer's send queue, leaving it idle between bursts (and tanking throughput on
+	// a low-latency link). Requests still ride the wire 3 to an OP_REQUESTPARTS
+	// packet, emitted across successive calls (see below).
+	{
+		const size_t inSystem = m_PendingBlocks_list.size() + m_DownloadBlocks_list.size();
+		if (inSystem < pendingCap) {
+			uint16 count = (uint16)(pendingCap - inSystem);
+			std::vector<Requested_Block_Struct *> toadd;
+			if (m_reqfile->GetNextRequestedBlock(this, toadd, count)) {
+				for (uint16 i = 0; i < count; i++) {
+					m_DownloadBlocks_list.push_back(toadd[i]);
+				}
 			}
 		}
 	}
 
-	// Barry - Why are unfinished blocks requested again, not just new ones?
-
-	while (m_PendingBlocks_list.size() < m_MaxBlockRequests && !m_DownloadBlocks_list.empty()) {
+	while (m_PendingBlocks_list.size() < pendingCap && !m_DownloadBlocks_list.empty()) {
 		Pending_Block_Struct *pblock = new Pending_Block_Struct;
 		pblock->block = m_DownloadBlocks_list.front();
 		pblock->zStream = NULL;
@@ -635,6 +654,7 @@ void CUpDownClient::SendBlockRequests()
 		pblock->fZStreamError = 0;
 		pblock->fRecovered = 0;
 		pblock->fQueued = 0; // Block sits in our local queue, not yet asked over the wire.
+		pblock->sentTime = 0;
 		m_PendingBlocks_list.push_back(pblock);
 		m_DownloadBlocks_list.pop_front();
 	}
@@ -682,7 +702,7 @@ void CUpDownClient::SendBlockRequests()
 					slower_client->GetFullIP());
 			wxASSERT(m_DownloadBlocks_list.empty());
 			wxASSERT(m_PendingBlocks_list.empty());
-			uint16 count = m_MaxBlockRequests;
+			uint16 count = (uint16)pendingCap;
 			std::vector<Requested_Block_Struct *> toadd;
 			if (m_reqfile->GetNextRequestedBlock(this, toadd, count)) {
 				for (int i = 0; i != count; i++) {
@@ -693,6 +713,7 @@ void CUpDownClient::SendBlockRequests()
 					pblock->fZStreamError = 0;
 					pblock->fRecovered = 0;
 					pblock->fQueued = 0;
+					pblock->sentTime = 0;
 					m_PendingBlocks_list.push_back(pblock);
 				}
 			} else {
@@ -726,32 +747,22 @@ void CUpDownClient::SendBlockRequests()
 		}
 	}
 
-	// Collect up to N pending blocks that have not yet been written to a
-	// REQUESTPARTS packet (fQueued == 0).  N is the protocol's
-	// per-packet limit:
+	// Collect up to 3 pending blocks that have not yet been written to a
+	// REQUESTPARTS packet (fQueued == 0). OP_REQUESTPARTS / OP_REQUESTPARTS_I64
+	// carry exactly 3 <start,end> pairs on the wire (see ProcessRequestPartsPacket
+	// in UploadClient.cpp, which unconditionally reads 3 pairs); asking for more
+	// in one packet corrupts the wire format and the sender ignores us. Pad with
+	// zero-pairs if we have fewer than 3 unqueued blocks.
 	//
-	//   - Legacy OP_REQUESTPARTS / OP_REQUESTPARTS_I64 carry exactly 3
-	//     <start,end> pairs on the wire (see ProcessRequestPartsPacket
-	//     in UploadClient.cpp, which unconditionally reads 3 pairs).
-	//     Asking for more than 3 in one packet corrupts the wire format
-	//     and the sender ignores us, leaving the receiver stuck "On
-	//     queue".  Pad with zero-pairs if we have fewer than 3 unqueued
-	//     blocks.
-	//
-	//   - The aMule-only ED2Kv2 OP_REQUESTPARTS variant (gated by
-	//     GetVBTTags()) carries a leading uint8 block count and can
-	//     hold up to m_MaxBlockRequests blocks per packet.
-	//
-	// To take more than 3 blocks in flight on legacy peers we therefore
-	// emit one 3-block packet per call to SendBlockRequests() and let
-	// the caller's existing re-invocation loop (after each
-	// OP_SENDINGPART, OP_ACCEPTUPLOADREQ, etc.) issue further packets
-	// until m_PendingBlocks_list is fully queued.  This is the same
-	// pattern eMule 0.70 uses (eMule0.70b srchybrid/DownloadClient.cpp
-	// ::CreateBlockRequests + ::SendBlockRequests).
+	// To take more than 3 blocks in flight we emit one 3-block packet per call to
+	// SendBlockRequests() and let the caller's existing re-invocation loop (after
+	// each OP_SENDINGPART, OP_ACCEPTUPLOADREQ, etc.) issue further packets until
+	// m_PendingBlocks_list is fully queued -- the same pattern eMule uses
+	// (eMule0.70b srchybrid/DownloadClient.cpp ::CreateBlockRequests +
+	// ::SendBlockRequests).
 	std::vector<Pending_Block_Struct *> toRequest;
 	bool bHasLongBlocks = false;
-	const size_t perPacketLimit = GetVBTTags() ? m_MaxBlockRequests : (size_t)STANDARD_BLOCKS_REQUEST;
+	const size_t perPacketLimit = STANDARD_BLOCKS_REQUEST;
 	toRequest.reserve(perPacketLimit);
 
 	for (std::list<Pending_Block_Struct *>::iterator it = m_PendingBlocks_list.begin();
@@ -791,68 +802,49 @@ void CUpDownClient::SendBlockRequests()
 
 	CPacket *packet = NULL;
 
-	if (GetVBTTags()) {
-		// ED2Kv2 packet: hash + nBlocks + per-block <start,end> tag pair.
-		const uint8 nBlocks = (uint8)toRequest.size();
-		CMemFile data(16 + 1 + nBlocks * ((2 + 4) * 2));
-		data.WriteHash(m_reqfile->GetFileHash());
-		data.WriteUInt8(nBlocks);
-		for (Pending_Block_Struct *pending : toRequest) {
+	// OP_REQUESTPARTS / OP_REQUESTPARTS_I64: always 3 blocks on the wire. Pad
+	// missing entries with zero <start,end> pairs; the upload-side parser
+	// (UploadClient.cpp ProcessRequestPartsPacket) silently skips entries with
+	// end <= start, so zero pairs are inert.
+	const size_t kWireBlocks = STANDARD_BLOCKS_REQUEST;
+	const size_t offsetSize = bHasLongBlocks ? 8 : 4;
+	CMemFile data(16 + kWireBlocks * offsetSize * 2);
+	data.WriteHash(m_reqfile->GetFileHash());
+
+	for (size_t i = 0; i < kWireBlocks; ++i) {
+		uint64 start = 0;
+		if (i < toRequest.size()) {
+			Pending_Block_Struct *pending = toRequest[i];
 			pending->fZStreamError = 0;
 			pending->fRecovered = 0;
 			pending->fQueued = 1;
-			CTagVarInt(/*Noname*/ 0, pending->block->StartOffset).WriteTagToFile(&data);
-			CTagVarInt(/*Noname*/ 0, pending->block->EndOffset).WriteTagToFile(&data);
+			pending->sentTime = ::GetTickCount64();
+			start = pending->block->StartOffset;
 		}
-		packet = new CPacket(data, OP_ED2KV2HEADER, OP_REQUESTPARTS);
-		AddDebugLogLineN(logLocalClient,
-			CFormat("Local Client ED2Kv2: OP_REQUESTPARTS(%i) to %s") % (int)nBlocks %
-				GetFullIP());
-	} else {
-		// Legacy OP_REQUESTPARTS / OP_REQUESTPARTS_I64: always 3 blocks
-		// on the wire.  Pad missing entries with zero <start,end> pairs;
-		// the upload-side parser (UploadClient.cpp ProcessRequestPartsPacket)
-		// silently skips entries with end <= start, so zero pairs are inert.
-		const size_t kWireBlocks = STANDARD_BLOCKS_REQUEST;
-		const size_t offsetSize = bHasLongBlocks ? 8 : 4;
-		CMemFile data(16 + kWireBlocks * offsetSize * 2);
-		data.WriteHash(m_reqfile->GetFileHash());
-
-		for (size_t i = 0; i < kWireBlocks; ++i) {
-			uint64 start = 0;
-			if (i < toRequest.size()) {
-				Pending_Block_Struct *pending = toRequest[i];
-				pending->fZStreamError = 0;
-				pending->fRecovered = 0;
-				pending->fQueued = 1;
-				start = pending->block->StartOffset;
-			}
-			if (bHasLongBlocks) {
-				data.WriteUInt64(start);
-			} else {
-				data.WriteUInt32((uint32)start);
-			}
+		if (bHasLongBlocks) {
+			data.WriteUInt64(start);
+		} else {
+			data.WriteUInt32((uint32)start);
 		}
-		for (size_t i = 0; i < kWireBlocks; ++i) {
-			uint64 end = 0;
-			if (i < toRequest.size()) {
-				end = toRequest[i]->block->EndOffset + 1;
-			}
-			if (bHasLongBlocks) {
-				data.WriteUInt64(end);
-			} else {
-				data.WriteUInt32((uint32)end);
-			}
-		}
-		packet = new CPacket(data,
-			(bHasLongBlocks ? OP_EMULEPROT : OP_EDONKEYPROT),
-			(bHasLongBlocks ? (uint8)OP_REQUESTPARTS_I64 : (uint8)OP_REQUESTPARTS));
-		AddDebugLogLineN(logLocalClient,
-			CFormat("Local Client: %s(%u of %u pending) to %s") %
-				(bHasLongBlocks ? "OP_REQUESTPARTS_I64" : "OP_REQUESTPARTS") %
-				(unsigned)toRequest.size() % (unsigned)m_PendingBlocks_list.size() %
-				GetFullIP());
 	}
+	for (size_t i = 0; i < kWireBlocks; ++i) {
+		uint64 end = 0;
+		if (i < toRequest.size()) {
+			end = toRequest[i]->block->EndOffset + 1;
+		}
+		if (bHasLongBlocks) {
+			data.WriteUInt64(end);
+		} else {
+			data.WriteUInt32((uint32)end);
+		}
+	}
+	packet = new CPacket(data,
+		(bHasLongBlocks ? OP_EMULEPROT : OP_EDONKEYPROT),
+		(bHasLongBlocks ? (uint8)OP_REQUESTPARTS_I64 : (uint8)OP_REQUESTPARTS));
+	AddDebugLogLineN(logLocalClient,
+		CFormat("Local Client: %s(%u of %u pending) to %s") %
+			(bHasLongBlocks ? "OP_REQUESTPARTS_I64" : "OP_REQUESTPARTS") %
+			(unsigned)toRequest.size() % (unsigned)m_PendingBlocks_list.size() % GetFullIP());
 
 	if (packet) {
 		theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
@@ -953,6 +945,17 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 				if (cur_block->block->StartOffset == nStartPos) {
 					// This block just started transferring. Set the start time.
 					m_last_block_start = ::GetTickCount64();
+					// RTT sample: the matched request->first-byte round-trip for
+					// this block. Min-filtered so pipeline queuing delay never
+					// inflates the estimate (BBR-style min-RTT floor); used to size
+					// the request pipeline to the bandwidth-delay product.
+					if (cur_block->sentTime != 0) {
+						uint64 sample = m_last_block_start - cur_block->sentTime;
+						if (m_minRTT == 0 || sample < m_minRTT) {
+							m_minRTT = sample;
+						}
+						cur_block->sentTime = 0;
+					}
 				}
 
 				if (cur_block->fZStreamError) {

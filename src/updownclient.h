@@ -274,7 +274,6 @@ public:
 	bool SafeSendPacket(CPacket *packet);
 
 	void ProcessRequestPartsPacket(const uint8_t *pachPacket, uint32 nSize, bool largeblocks);
-	void ProcessRequestPartsPacketv2(const CMemFile &data);
 
 	void SendPublicKeyPacket();
 	void SendSignaturePacket();
@@ -630,8 +629,6 @@ public:
 
 	bool GetOSInfoSupport() const { return m_fOsInfoSupport; }
 
-	bool GetVBTTags() const { return m_fValueBasedTypeTags; }
-
 	uint16 GetLastPartAsked() const { return m_lastPartAsked; }
 
 	void SetLastPartAsked(uint16 nPart) { m_lastPartAsked = nPart; }
@@ -884,7 +881,7 @@ private:
 		m_fSupportsCryptLayer : 1, m_fRequiresCryptLayer : 1, m_fSupportsSourceEx2 : 1,
 		m_fSupportsCaptcha : 1, m_fDirectUDPCallback : 1;
 
-	unsigned int m_fOsInfoSupport : 1, m_fValueBasedTypeTags : 1;
+	unsigned int m_fOsInfoSupport : 1;
 
 	/* Razor 1a - Modif by MikaelB */
 
@@ -929,8 +926,6 @@ private:
 
 	CKnownFile *m_uploadingfile;
 
-	uint8 m_MaxBlockRequests;
-
 	// needed for stats
 	uint32 m_lastClientSoft;
 	uint32 m_lastClientVersion;
@@ -939,6 +934,8 @@ private:
 	/* Calculation of last average speed */
 	uint32 m_lastaverage;
 	uint64 m_last_block_start;
+	uint64 m_minRTT; // smoothed floor (ms) of measured request->first-byte round-trips from this
+			 // source; 0 = not yet measured. Drives the BDP-adaptive request depth.
 
 	/* Save the encryption status for display when disconnected */
 	bool m_hasbeenobfuscatinglately;

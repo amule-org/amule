@@ -1979,16 +1979,6 @@ bool CClientTCPSocket::ProcessED2Kv2Packet(const uint8_t *buffer, uint32 size, u
 			break;
 		}
 
-		case OP_REQUESTPARTS: {
-			AddDebugLogLineN(logRemoteClient,
-				"Remote Client: ED2Kv2 OP_REQUESTPARTS from " + m_client->GetFullIP());
-
-			m_client->ProcessRequestPartsPacketv2(data);
-
-			theStats::AddDownOverheadFileRequest(size);
-			break;
-		}
-
 		default:
 			theStats::AddDownOverheadOther(size);
 			AddDebugLogLineN(logRemoteClient,

@@ -198,7 +198,14 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient *client)
 
 	// eMule ref: lines 199-201
 	bool bFastUpload = client->GetUploadDatarate() > BIGBUFFER_MINDATARATE;
-	const uint32 nBufferLimit = bFastUpload ? ((5 * EMBLOCKSIZE) + 1) : (EMBLOCKSIZE + 1);
+	// Send-ahead depth: how many blocks this thread primes into a fast slot's async send
+	// queue (1 otherwise). This is the upload-side in-flight depth -- the mirror of the
+	// leecher's request cap -- so it is bandwidth-delay-product limited: on a high-RTT link
+	// a shallow buffer drains before the next refill and caps throughput. eMule's 5 is a
+	// low-BDP default; 10 keeps a fast slot fed across moderate WAN RTTs. The cost is a
+	// transient ~1.8 MB of send-queue data per active fast slot, and it is self-bounded by
+	// the OS TCP send buffer (so a deeper value buys nothing once that ceiling is hit).
+	const uint32 nBufferLimit = bFastUpload ? ((10 * EMBLOCKSIZE) + 1) : (EMBLOCKSIZE + 1);
 
 	if (client->m_BlockRequests_queue.empty() ||
 		(addedPayloadQueueSession > nCurQueueSessionPayloadUp &&
