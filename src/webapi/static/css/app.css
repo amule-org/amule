@@ -274,6 +274,9 @@ b { font-weight: 600; }
 .input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--accent); outline-offset: -1px;
 }
+.input:disabled, select:disabled, textarea:disabled {
+  background: var(--surface-2); color: var(--text-dim); cursor: not-allowed;
+}
 
 /* Guest mode: hide admin-only controls. */
 body.role-guest .admin-only { display: none !important; }
@@ -517,13 +520,31 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 /* --- preferences (PrefsUnifiedDlg-style: category list + panel) --- */
 /* Preferences use the shared notebook (.net-pane / .net-pane-body); only the
    in-panel group boxes need extra styling here. */
+/* Group cards flow into masonry-style columns so short cards don't leave a gap
+   under them: up to 3 on wide desktop, 2 on medium, 1 on phones (see @media).
+   Cards keep source order down each column, so the phone view (1 column) is
+   that same sequence. */
+.prefs-groups { column-count: 3; column-gap: 14px; margin-bottom: 14px; }
 .prefs-panel fieldset {
   border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 12px; margin: 0 0 14px; min-width: 0;
+  background: var(--surface); padding: 12px 14px; margin: 0 0 14px; min-width: 0;
+  break-inside: avoid; -webkit-column-break-inside: avoid;
 }
 .prefs-panel legend { padding: 0 6px; font-size: 13px; font-weight: 600; color: var(--text-dim); }
-.prefs-panel > .form-grid { margin-bottom: 14px; }
-.prefs-actions { justify-content: flex-end; }
+.prefs-panel .field-wide { grid-column: 1 / -1; }
+/* Give checkboxes the input row height so rows keep a consistent rhythm. */
+.prefs-panel .field-inline { min-height: 35px; }
+/* Disabled checkboxes read as disabled like the text inputs: muted box, dim
+   label (native checkboxes otherwise keep their accent colour and full-colour
+   label). */
+.prefs-panel .field-inline input:disabled { opacity: 0.5; cursor: not-allowed; }
+.prefs-panel .field-inline input:disabled + label { color: var(--text-dim); cursor: not-allowed; }
+/* Sub-options: indented under their parent (two nesting levels). */
+.prefs-panel .field-sub { margin-left: 24px; }
+.prefs-panel .field-sub2 { margin-left: 48px; }
+.prefs-panel textarea { resize: vertical; font: inherit; }
+.prefs-warning { color: var(--warn); font-weight: 600; margin-bottom: 16px; }
+.prefs-actions { justify-content: center; }
 
 /* --- log/pre views --- */
 .logbox-wrap { position: relative; }
@@ -735,6 +756,10 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .rating-5 { color: var(--ok); }
 
 /* --- responsive --- */
+@media (max-width: 1100px) {
+  .prefs-groups { column-count: 2; }
+}
+
 @media (max-width: 860px) {
   /* header shrinks to: hamburger + logo + section name (tools move into the drawer) */
   .header-tools { display: none; }
@@ -746,6 +771,7 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
      to auto and showing a spurious 1px vertical scrollbar. */
   .net-pane .tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
   .net-pane .tab { flex: 0 0 auto; }
+  .prefs-groups { column-count: 1; }
 
   /* Downloads on phones: no viewport-fit/splitter. The table stacks and the
      page scrolls; the detail opens as a full-screen drill-down sheet over the
