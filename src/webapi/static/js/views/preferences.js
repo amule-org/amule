@@ -201,6 +201,11 @@ const TABS = [
       { key: "secure", type: "bool", sub: true, gatedBy: "enabled" },
       { key: "by_keyword", type: "bool", sub: true, gatedBy: "enabled" },
       { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "by_keyword"] },
+      { key: "show_in_log", type: "bool" },
+    ] },
+    { legendKey: "prefs_group_comments", fields: [
+      { key: "filter_comments", type: "bool" },
+      { key: "comment_keywords", type: "text", sub: true, gatedBy: "filter_comments" },
     ] },
   ] },
   { id: "remote_controls", labelKey: "prefs_remote_controls", cat: "remote_controls", groups: [

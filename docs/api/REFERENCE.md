@@ -1495,7 +1495,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
   },
   "message_filter": {
     "enabled": false, "all": false, "friends": false,
-    "secure": false, "by_keyword": false, "keywords": ""
+    "secure": false, "by_keyword": false, "keywords": "",
+    "show_in_log": true, "filter_comments": false, "comment_keywords": ""
   },
   "remote_controls": {
     "webserver_enabled": false, "webserver_port": 4711, "webserver_use_gzip": true,

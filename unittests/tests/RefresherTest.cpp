@@ -1369,6 +1369,16 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	sec.AddTag(CECEmptyTag(EC_TAG_SECURITY_USE_SECIDENT)); // presence == true
 	resp.AddTag(sec);
 
+	// Message-filter category: presence bools + keyword strings, incl. the
+	// show-in-log / comment-filter fields wired over EC.
+	CECEmptyTag mf(EC_TAG_PREFS_MESSAGEFILTER);
+	mf.AddTag(CECEmptyTag(EC_TAG_MSGFILTER_ENABLED));         // presence == true
+	mf.AddTag(CECEmptyTag(EC_TAG_MSGFILTER_SHOW_IN_LOG));     // presence == true
+	mf.AddTag(CECEmptyTag(EC_TAG_MSGFILTER_FILTER_COMMENTS)); // presence == true
+	mf.AddTag(CECTag(EC_TAG_MSGFILTER_KEYWORDS, wxString::FromUTF8("spam,ads")));
+	mf.AddTag(CECTag(EC_TAG_MSGFILTER_COMMENT_KEYWORDS, wxString::FromUTF8("junk,scam")));
+	resp.AddTag(mf);
+
 	CECEmptyTag cw(EC_TAG_PREFS_CORETWEAKS);
 	cw.AddTag(CECTag(EC_TAG_CORETW_MAX_CONN_PER_FIVE, static_cast<std::uint32_t>(200)));
 	cw.AddTag(CECTag(EC_TAG_CORETW_KAD_REASK_MS, static_cast<std::uint32_t>(1800000)));
@@ -1413,6 +1423,13 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_level);
 	ASSERT_TRUE(p.security.use_secident);
 	ASSERT_TRUE(!p.security.obfuscation_required); // absent -> false
+
+	ASSERT_TRUE(p.message_filter.enabled);
+	ASSERT_TRUE(p.message_filter.show_in_log);
+	ASSERT_TRUE(p.message_filter.filter_comments);
+	ASSERT_TRUE(!p.message_filter.all); // absent -> false
+	ASSERT_EQUALS(std::string("spam,ads"), p.message_filter.keywords);
+	ASSERT_EQUALS(std::string("junk,scam"), p.message_filter.comment_keywords);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_conn_per_five);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1800000), p.core_tweaks.kad_reask_ms);

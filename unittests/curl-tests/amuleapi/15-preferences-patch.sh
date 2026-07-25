@@ -271,6 +271,32 @@ _assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path persi
 _assert_json_eq '.online_signature.update_frequency' 123 'online_signature.update_frequency persisted'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface persisted'
 
+# --- 5c-bis. message_filter show-in-log + comment filter (#596). ----------
+# Newly EC-wired: previously amulegui-local / unreachable over EC.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '(.message_filter.show_in_log|type)' boolean 'message_filter.show_in_log is bool'
+_assert_json_eq '(.message_filter.filter_comments|type)' boolean 'message_filter.filter_comments is bool'
+_assert_json_eq '(.message_filter.comment_keywords|type)' string 'message_filter.comment_keywords is string'
+SAVED_SHOW_IN_LOG=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.show_in_log')
+SAVED_FILTER_COMMENTS=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.filter_comments')
+SAVED_COMMENT_KW=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.comment_keywords')
+SHOW_TOGGLE=$([ "$SAVED_SHOW_IN_LOG" = "true" ] && echo false || echo true)
+FC_TOGGLE=$([ "$SAVED_FILTER_COMMENTS" = "true" ] && echo false || echo true)
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"message_filter\":{\"show_in_log\":$SHOW_TOGGLE,\"filter_comments\":$FC_TOGGLE,\"comment_keywords\":\"spam,ads\"}}" \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH message_filter (show_in_log+filter_comments+comment_keywords) → 200"
+_assert_json_eq '.message_filter.show_in_log' "$SHOW_TOGGLE" 'message_filter.show_in_log toggled in response'
+_assert_json_eq '.message_filter.filter_comments' "$FC_TOGGLE" 'message_filter.filter_comments toggled in response'
+_assert_json_eq '.message_filter.comment_keywords' 'spam,ads' 'message_filter.comment_keywords set in response'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '.message_filter.comment_keywords' 'spam,ads' 'message_filter.comment_keywords persisted (no stale GET)'
+# Restore.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"message_filter\":{\"show_in_log\":$SAVED_SHOW_IN_LOG,\"filter_comments\":$SAVED_FILTER_COMMENTS,\"comment_keywords\":\"$SAVED_COMMENT_KW\"}}" \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH (restore message_filter fields) → 200"
+
 # --- 5d. mmap (#565): capability flag + capability-gated round-trip. ------
 # files.mmap_supported is a read-only daemon capability; files.mmap_enabled is
 # only settable when it is true. This branch adapts to whichever daemon runs

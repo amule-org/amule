@@ -169,6 +169,11 @@ _assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.co
 _assert_json_eq '.security.can_see_shares      | type' number  '/preferences.security.can_see_shares is a 3-state number (#596)'
 _assert_json_eq '.files.endgame                | type' boolean '/preferences.files.endgame is boolean (#596)'
 
+# message_filter show-in-log + comment filter, wired over EC (#596).
+_assert_json_eq '.message_filter.show_in_log      | type' boolean '/preferences.message_filter.show_in_log is boolean (#596)'
+_assert_json_eq '.message_filter.filter_comments  | type' boolean '/preferences.message_filter.filter_comments is boolean (#596)'
+_assert_json_eq '.message_filter.comment_keywords | type' string  '/preferences.message_filter.comment_keywords is string (#596)'
+
 # ip2country config category (#440). Field types are always present even
 # on a GeoIP-less daemon (supported=false, strings empty); source is one
 # of the known enum values.

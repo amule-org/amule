@@ -683,6 +683,7 @@ public:
 	static void SetMessageFilterString(const wxString &val) { s_MessageFilterString = val; }
 	static bool IsMessageFiltered(const wxString &message);
 	static bool ShowMessagesInLog() { return s_ShowMessagesInLog; }
+	static void SetShowMessagesInLog(bool val) { s_ShowMessagesInLog = val; }
 	static bool IsAdvancedSpamfilterEnabled() { return s_IsAdvancedSpamfilterEnabled; }
 	static bool IsChatCaptchaEnabled() { return IsAdvancedSpamfilterEnabled() && s_IsChatCaptchaEnabled; }
 

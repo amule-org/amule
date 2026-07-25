@@ -2278,6 +2278,11 @@ void ParseMessageFilterPrefs(const CECTag *m, PreferencesSnapshot &out)
 	if (const CECTag *t = m->GetTagByName(EC_TAG_MSGFILTER_KEYWORDS)) {
 		out.message_filter.keywords = std::string(t->GetStringData().utf8_str());
 	}
+	out.message_filter.show_in_log = m->GetTagByName(EC_TAG_MSGFILTER_SHOW_IN_LOG) != nullptr;
+	out.message_filter.filter_comments = m->GetTagByName(EC_TAG_MSGFILTER_FILTER_COMMENTS) != nullptr;
+	if (const CECTag *t = m->GetTagByName(EC_TAG_MSGFILTER_COMMENT_KEYWORDS)) {
+		out.message_filter.comment_keywords = std::string(t->GetStringData().utf8_str());
+	}
 }
 
 void ParseRemoteControlsPrefs(const CECTag *rc, PreferencesSnapshot &out)

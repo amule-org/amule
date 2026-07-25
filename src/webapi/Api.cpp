@@ -5352,6 +5352,12 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.message_filter.by_keyword);
 	w.Key("keywords");
 	w.ValueString(wxString::FromUTF8(p.message_filter.keywords.c_str()));
+	w.Key("show_in_log");
+	w.ValueBool(p.message_filter.show_in_log);
+	w.Key("filter_comments");
+	w.ValueBool(p.message_filter.filter_comments);
+	w.Key("comment_keywords");
+	w.ValueString(wxString::FromUTF8(p.message_filter.comment_keywords.c_str()));
 	w.EndObject();
 
 	w.Key("remote_controls");
@@ -6189,7 +6195,25 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				any,
 				perr) ||
 			!PrefTakeString(
-				*message_filter_obj, g, "keywords", EC_TAG_MSGFILTER_KEYWORDS, any, perr)) {
+				*message_filter_obj, g, "keywords", EC_TAG_MSGFILTER_KEYWORDS, any, perr) ||
+			!PrefTakeBool(*message_filter_obj,
+				g,
+				"show_in_log",
+				EC_TAG_MSGFILTER_SHOW_IN_LOG,
+				any,
+				perr) ||
+			!PrefTakeBool(*message_filter_obj,
+				g,
+				"filter_comments",
+				EC_TAG_MSGFILTER_FILTER_COMMENTS,
+				any,
+				perr) ||
+			!PrefTakeString(*message_filter_obj,
+				g,
+				"comment_keywords",
+				EC_TAG_MSGFILTER_COMMENT_KEYWORDS,
+				any,
+				perr)) {
 			return ErrorResponse(400, "bad_request", perr.c_str());
 		}
 		if (any) {

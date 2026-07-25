@@ -786,6 +786,9 @@ struct PreferencesSnapshot
 		bool secure = false;
 		bool by_keyword = false;
 		std::string keywords;
+		bool show_in_log = false;
+		bool filter_comments = false;
+		std::string comment_keywords;
 	} message_filter;
 
 	// [RemoteControls] EC_TAG_PREFS_REMOTECTRL. Passwords are

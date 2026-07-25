@@ -200,6 +200,14 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			msg_prefs.AddTag(CECEmptyTag(EC_TAG_MSGFILTER_BY_KEYWORD));
 		}
 		msg_prefs.AddTag(CECTag(EC_TAG_MSGFILTER_KEYWORDS, thePrefs::GetMessageFilterString()));
+		if (thePrefs::ShowMessagesInLog()) {
+			msg_prefs.AddTag(CECEmptyTag(EC_TAG_MSGFILTER_SHOW_IN_LOG));
+		}
+		if (thePrefs::FilterComments()) {
+			msg_prefs.AddTag(CECEmptyTag(EC_TAG_MSGFILTER_FILTER_COMMENTS));
+		}
+		msg_prefs.AddTag(
+			CECTag(EC_TAG_MSGFILTER_COMMENT_KEYWORDS, thePrefs::GetCommentFilterString()));
 		AddTag(msg_prefs);
 	}
 
@@ -646,6 +654,11 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetFilterByKeywords, EC_TAG_MSGFILTER_BY_KEYWORD);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_MSGFILTER_KEYWORDS)) != NULL) {
 			thePrefs::SetMessageFilterString(oneTag->GetStringData());
+		}
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetShowMessagesInLog, EC_TAG_MSGFILTER_SHOW_IN_LOG);
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetFilterComments, EC_TAG_MSGFILTER_FILTER_COMMENTS);
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_MSGFILTER_COMMENT_KEYWORDS)) != nullptr) {
+			thePrefs::SetCommentFilterString(oneTag->GetStringData());
 		}
 	}
 
