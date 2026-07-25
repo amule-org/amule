@@ -2210,7 +2210,6 @@ void ParseFilesPrefs(const CECTag *f, PreferencesSnapshot &out)
 	out.files.start_next_paused = f->GetTagByName(EC_TAG_FILES_START_NEXT_PAUSED) != nullptr;
 	out.files.resume_same_cat = f->GetTagByName(EC_TAG_FILES_RESUME_SAME_CAT) != nullptr;
 	out.files.save_sources = f->GetTagByName(EC_TAG_FILES_SAVE_SOURCES) != nullptr;
-	out.files.extract_metadata = f->GetTagByName(EC_TAG_FILES_EXTRACT_METADATA) != nullptr;
 	out.files.alloc_full_size = f->GetTagByName(EC_TAG_FILES_ALLOC_FULL_SIZE) != nullptr;
 	// mmap (#565): the daemon advertises support (tag presence) only when built
 	// with MMAP_SUPPORTED, plus the current value; both are absent on a

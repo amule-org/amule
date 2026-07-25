@@ -608,9 +608,6 @@ public:
 	static bool IsSecureIdentEnabled() { return s_SecIdent; }
 	static void SetSecureIdentEnabled(bool val) { s_SecIdent = val; }
 
-	static bool GetExtractMetaData() { return s_ExtractMetaData; }
-	static void SetExtractMetaData(bool val) { s_ExtractMetaData = val; }
-
 	static bool ShowProgBar() { return s_ProgBar; }
 	static bool ShowPercent() { return s_Percent; }
 
@@ -1089,8 +1086,6 @@ protected:
 	static bool s_Percent;
 
 	static bool s_SecIdent;
-
-	static bool s_ExtractMetaData;
 
 	static bool s_allocFullFile;
 	static bool s_mmapEnabled;

@@ -319,9 +319,6 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetSrcSeedsOn()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_SAVE_SOURCES));
 		}
-		if (thePrefs::GetExtractMetaData()) {
-			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_EXTRACT_METADATA));
-		}
 		if (thePrefs::GetAllocFullFile()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_ALLOC_FULL_SIZE));
 		}
@@ -734,7 +731,6 @@ void CEC_Prefs_Packet::Apply() const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetStartNextFile, EC_TAG_FILES_START_NEXT_PAUSED);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetStartNextFileSame, EC_TAG_FILES_RESUME_SAME_CAT);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetSrcSeedsOn, EC_TAG_FILES_SAVE_SOURCES);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetExtractMetaData, EC_TAG_FILES_EXTRACT_METADATA);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetAllocFullFile, EC_TAG_FILES_ALLOC_FULL_SIZE);
 		ApplyBoolean(
 			use_tag, thisTab, thePrefs::SetCheckDiskspaceEnabled, EC_TAG_FILES_CHECK_FREE_SPACE);

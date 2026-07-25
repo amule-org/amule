@@ -722,7 +722,6 @@ struct PreferencesSnapshot
 		bool start_next_paused = false;
 		bool resume_same_cat = false;
 		bool save_sources = false;
-		bool extract_metadata = false;
 		bool alloc_full_size = false;
 		// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
 		// capability (mirrors upnp_available): true only when the core was built

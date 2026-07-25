@@ -1473,7 +1473,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "ich_enabled": true, "aich_trust": false,
     "new_paused": false, "new_auto_dl_prio": false, "new_auto_ul_prio": false,
     "preview_prio": false, "start_next_paused": false, "resume_same_cat": false,
-    "save_sources": true, "extract_metadata": false, "alloc_full_size": false,
+    "save_sources": true, "alloc_full_size": false,
     "mmap_supported": true, "mmap_enabled": false,
     "check_free_space": true, "min_free_space_mb": 1, "create_normal": false,
     "start_next_alphabetical": false,

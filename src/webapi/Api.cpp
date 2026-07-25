@@ -5261,8 +5261,6 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.files.resume_same_cat);
 	w.Key("save_sources");
 	w.ValueBool(p.files.save_sources);
-	w.Key("extract_metadata");
-	w.ValueBool(p.files.extract_metadata);
 	w.Key("alloc_full_size");
 	w.ValueBool(p.files.alloc_full_size);
 	// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
@@ -6002,12 +6000,6 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			!PrefTakeBool(
 				*files_obj, g, "resume_same_cat", EC_TAG_FILES_RESUME_SAME_CAT, any, perr) ||
 			!PrefTakeBool(*files_obj, g, "save_sources", EC_TAG_FILES_SAVE_SOURCES, any, perr) ||
-			!PrefTakeBool(*files_obj,
-				g,
-				"extract_metadata",
-				EC_TAG_FILES_EXTRACT_METADATA,
-				any,
-				perr) ||
 			!PrefTakeBool(
 				*files_obj, g, "alloc_full_size", EC_TAG_FILES_ALLOC_FULL_SIZE, any, perr) ||
 			!PrefTakeBool(*files_obj, g, "mmap_enabled", EC_TAG_FILES_MMAP_ENABLED, any, perr) ||

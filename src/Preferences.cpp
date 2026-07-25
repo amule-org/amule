@@ -205,7 +205,6 @@ bool CPreferences::s_UseSrcSeeds;
 bool CPreferences::s_ProgBar;
 bool CPreferences::s_Percent;
 bool CPreferences::s_SecIdent;
-bool CPreferences::s_ExtractMetaData;
 bool CPreferences::s_allocFullFile;
 bool CPreferences::s_mmapEnabled;
 bool CPreferences::s_mmapSupported;

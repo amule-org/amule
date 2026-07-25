@@ -19,7 +19,7 @@ var initvals = new Object;
 	// apply new options before proceeding
 	//var_dump($HTTP_GET_VARS);
 	if ( ($HTTP_GET_VARS["Submit"] == "Apply") && ($_SESSION["guest_login"] == 0) ) {
-		$file_opts = array("check_free_space", "extract_metadata", 
+		$file_opts = array("check_free_space",
 			"ich_en","aich_trust", "preview_prio","save_sources", "resume_same_cat", "endgame",
 			"min_free_space", "new_files_paused", "alloc_full", "alloc_full_chunks",
 			"new_files_auto_dl_prio", "new_files_auto_ul_prio"
@@ -97,7 +97,7 @@ function init_data()
 	var check_param_names = new Array(
 		"autoconn_en", "reconn_en", "udp_dis", "new_files_paused",
 		"aich_trust", "alloc_full", "alloc_full_chunks",
-		"check_free_space", "extract_metadata", "ich_en",
+		"check_free_space", "ich_en",
 		"new_files_auto_dl_prio", "new_files_auto_ul_prio",
 		"endgame",
 		"use_gzip",
@@ -292,12 +292,6 @@ function init_data()
             <td> 
               <input name="new_files_paused" type="checkbox" id="new_files_paused4"></td>
             <td> Add files to download queue in pause mode</td>
-            <td></td>
-          </tr>
-          <tr> 
-            <td> 
-              <input name="extract_metadata" type="checkbox" id="extract_metadata4"></td>
-            <td> Extract metadata tags </td>
             <td></td>
           </tr>
         </table></td>
