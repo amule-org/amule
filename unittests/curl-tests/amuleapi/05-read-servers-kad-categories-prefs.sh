@@ -156,11 +156,18 @@ _assert_json_eq '.general.check_new_version    | type' boolean '/preferences.gen
 
 _assert_json_eq '.connection.tcp_port          | type' number  '/preferences.connection.tcp_port is numeric'
 _assert_json_eq '.connection.udp_port          | type' number  '/preferences.connection.udp_port is numeric'
-_assert_json_eq '.connection.udp_disabled      | type' boolean '/preferences.connection.udp_disabled is boolean'
+_assert_json_eq '.connection.extended_udp_port_enabled | type' boolean '/preferences.connection.extended_udp_port_enabled is boolean (#596)'
 _assert_json_eq '.connection.network_ed2k      | type' boolean '/preferences.connection.network_ed2k is boolean'
 _assert_json_eq '.connection.network_kad       | type' boolean '/preferences.connection.network_kad is boolean'
 _assert_json_eq '.connection.autoconnect       | type' boolean '/preferences.connection.autoconnect is boolean'
 _assert_json_eq '.connection.max_sources_per_file | type' number '/preferences.connection.max_sources_per_file is numeric'
+# Statistics graph-scale caps were dropped from /preferences (#596).
+_assert_json_eq '.connection.max_upload_cap_kbps   | type' null '/preferences.connection.max_upload_cap_kbps removed (#596)'
+_assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.connection.max_download_cap_kbps removed (#596)'
+
+# 3-state (0/1/2) not a bool (#596); endgame newly exposed (#596).
+_assert_json_eq '.security.can_see_shares      | type' number  '/preferences.security.can_see_shares is a 3-state number (#596)'
+_assert_json_eq '.files.endgame                | type' boolean '/preferences.files.endgame is boolean (#596)'
 
 # ip2country config category (#440). Field types are always present even
 # on a GeoIP-less daemon (supported=false, strings empty); source is one

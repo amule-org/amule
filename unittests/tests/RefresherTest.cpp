@@ -1333,9 +1333,10 @@ TEST(Refresher, ClientDetailFieldsDecode)
 // --- #437: extended EC preference categories decode ------------------
 //
 // Covers both boolean encodings the core serializer uses: value tags
-// (share_hidden/exclude_regex/can_see_shares -> GetInt()!=0) and bare
-// presence tags (ich_enabled/use_secident -> tag present == true), plus
-// ints, strings, and the directories.shared string array.
+// (share_hidden/exclude_regex -> GetInt()!=0) and bare presence tags
+// (ich_enabled/use_secident/endgame -> tag present == true), the 3-state
+// can_see_shares int (0/1/2, #596), plus ints, strings, and the
+// directories.shared string array.
 TEST(Refresher, PreferencesExtendedCategoriesDecode)
 {
 	CECPacket resp(EC_OP_SET_PREFERENCES);
@@ -1353,6 +1354,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 
 	CECEmptyTag files(EC_TAG_PREFS_FILES);
 	files.AddTag(CECEmptyTag(EC_TAG_FILES_ICH_ENABLED)); // presence == true
+	files.AddTag(CECEmptyTag(EC_TAG_FILES_ENDGAME));     // presence == true (#596)
 	files.AddTag(CECTag(EC_TAG_FILES_MIN_FREE_SPACE, static_cast<std::uint32_t>(512)));
 	resp.AddTag(files);
 
@@ -1362,7 +1364,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	resp.AddTag(srv);
 
 	CECEmptyTag sec(EC_TAG_PREFS_SECURITY);
-	sec.AddTag(CECTag(EC_TAG_SECURITY_CAN_SEE_SHARES, true)); // value-encoded bool
+	sec.AddTag(CECTag(EC_TAG_SECURITY_CAN_SEE_SHARES, (uint8)2)); // 3-state: 2 = nobody (#596)
 	sec.AddTag(CECTag(EC_TAG_IPFILTER_LEVEL, static_cast<std::uint32_t>(100)));
 	sec.AddTag(CECEmptyTag(EC_TAG_SECURITY_USE_SECIDENT)); // presence == true
 	resp.AddTag(sec);
@@ -1400,12 +1402,14 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 
 	ASSERT_TRUE(p.files.ich_enabled);
 	ASSERT_TRUE(!p.files.aich_trust); // absent presence tag -> false
+	ASSERT_TRUE(p.files.endgame);     // presence tag -> true (#596)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(512), p.files.min_free_space_mb);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5), p.servers.dead_server_retries);
 	ASSERT_EQUALS(std::string("http://srv"), p.servers.update_url);
 
-	ASSERT_TRUE(p.security.can_see_shares);
+	// 3-state (#596): the middle/high value round-trips, not just 0/1.
+	ASSERT_EQUALS(static_cast<std::uint32_t>(2), static_cast<std::uint32_t>(p.security.can_see_shares));
 	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_level);
 	ASSERT_TRUE(p.security.use_secident);
 	ASSERT_TRUE(!p.security.obfuscation_required); // absent -> false

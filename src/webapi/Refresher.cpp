@@ -2096,12 +2096,6 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 
 void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 {
-	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_UL_CAP)) {
-		out.max_upload_cap_kbps = static_cast<std::uint32_t>(t->GetInt());
-	}
-	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_DL_CAP)) {
-		out.max_download_cap_kbps = static_cast<std::uint32_t>(t->GetInt());
-	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_MAX_UL)) {
 		out.max_upload_kbps = static_cast<std::uint32_t>(t->GetInt());
 	}
@@ -2118,7 +2112,9 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 		out.udp_port = static_cast<std::uint16_t>(t->GetInt());
 	}
 	// The EmptyTag markers (presence = true, absence = false).
-	out.udp_disabled = conn->GetTagByName(EC_TAG_CONN_UDP_DISABLE) != nullptr;
+	// Positive sense: the daemon emits EC_TAG_CONN_UDP_DISABLE only when the
+	// extended UDP port is off, so absence = enabled.
+	out.extended_udp_port_enabled = conn->GetTagByName(EC_TAG_CONN_UDP_DISABLE) == nullptr;
 	out.autoconnect = conn->GetTagByName(EC_TAG_CONN_AUTOCONNECT) != nullptr;
 	out.reconnect = conn->GetTagByName(EC_TAG_CONN_RECONNECT) != nullptr;
 	out.network_ed2k = conn->GetTagByName(EC_TAG_NETWORK_ED2K) != nullptr;
@@ -2222,6 +2218,7 @@ void ParseFilesPrefs(const CECTag *f, PreferencesSnapshot &out)
 	}
 	out.files.create_normal = f->GetTagByName(EC_TAG_FILES_CREATE_NORMAL) != nullptr;
 	out.files.start_next_alphabetical = f->GetTagByName(EC_TAG_FILES_START_NEXT_ALPHA) != nullptr;
+	out.files.endgame = f->GetTagByName(EC_TAG_FILES_ENDGAME) != nullptr;
 	out.files.media_metadata_enabled = f->GetTagByName(EC_TAG_FILES_MEDIA_METADATA_ENABLED) != nullptr;
 	if (const CECTag *t = f->GetTagByName(EC_TAG_FILES_MEDIA_FFPROBE_PATH)) {
 		out.files.ffprobe_path = std::string(t->GetStringData().utf8_str());
@@ -2250,7 +2247,7 @@ void ParseServersPrefs(const CECTag *s, PreferencesSnapshot &out)
 void ParseSecurityPrefs(const CECTag *s, PreferencesSnapshot &out)
 {
 	if (const CECTag *t = s->GetTagByName(EC_TAG_SECURITY_CAN_SEE_SHARES))
-		out.security.can_see_shares = t->GetInt() != 0;
+		out.security.can_see_shares = static_cast<std::uint8_t>(t->GetInt());
 	out.security.ipfilter_clients = s->GetTagByName(EC_TAG_IPFILTER_CLIENTS) != nullptr;
 	out.security.ipfilter_servers = s->GetTagByName(EC_TAG_IPFILTER_SERVERS) != nullptr;
 	out.security.ipfilter_auto_update = s->GetTagByName(EC_TAG_IPFILTER_AUTO_UPDATE) != nullptr;

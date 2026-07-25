@@ -1435,12 +1435,10 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "connection": {
     "max_upload_kbps":   50,
     "max_download_kbps": 0,
-    "max_upload_cap_kbps":   0,
-    "max_download_cap_kbps": 0,
     "slot_allocation":   3,
     "tcp_port":          4662,
     "udp_port":          4672,
-    "udp_disabled":      false,
+    "extended_udp_port_enabled": true,
     "max_sources_per_file": 250,
     "max_connections":      400,
     "autoconnect": true,
@@ -1476,7 +1474,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "save_sources": true, "alloc_full_size": false,
     "mmap_supported": true, "mmap_enabled": false,
     "check_free_space": true, "min_free_space_mb": 1, "create_normal": false,
-    "start_next_alphabetical": false,
+    "start_next_alphabetical": false, "endgame": false,
     "media_metadata_enabled": false, "ffprobe_path": ""
   },
   "servers": {
@@ -1487,7 +1485,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "update_url": "http://upd.emule-security.org/server.met"
   },
   "security": {
-    "can_see_shares": false,
+    "can_see_shares": 0,
     "ipfilter_clients": true, "ipfilter_servers": true,
     "ipfilter_auto_update": false, "ipfilter_update_url": "",
     "ipfilter_level": 127, "ipfilter_filter_lan": true,
@@ -1522,6 +1520,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
 ```
 
 Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on the wire. **Passwords are never returned** — the webserver admin/guest and amuleapi passwords are write-only (see PATCH). `general.user_hash` is the node's own identity hash, not a password.
+
+`connection.extended_udp_port_enabled` is positive-sense: `true` means the extended UDP port (Kad / global search) is on. `security.can_see_shares` is a 3-state integer, not a bool: `0` everybody, `1` friends only, `2` nobody.
 
 `ip2country` is the GeoIP (IP-to-country) config category (issue #440). `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly (it is a config string the daemon already round-trips, not a masked password). `loaded_source`, `db_path`, `db_loaded`, `downloading`, and `last_result` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
 

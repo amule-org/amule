@@ -657,12 +657,13 @@ struct PreferencesSnapshot
 	// [Connection]
 	std::uint32_t max_upload_kbps = 0;
 	std::uint32_t max_download_kbps = 0;
-	std::uint32_t max_upload_cap_kbps = 0;
-	std::uint32_t max_download_cap_kbps = 0;
 	std::uint32_t slot_allocation = 0;
 	std::uint16_t tcp_port = 0;
 	std::uint16_t udp_port = 0;
-	bool udp_disabled = false;
+	// Positive sense: true = the extended UDP port (Kad / global search) is on.
+	// The EC layer carries the opposite (EC_TAG_CONN_UDP_DISABLE); the API
+	// inverts on read and write.
+	bool extended_udp_port_enabled = true;
 	std::uint32_t max_sources_per_file = 0;
 	std::uint32_t max_connections = 0;
 	bool autoconnect = false;
@@ -733,6 +734,7 @@ struct PreferencesSnapshot
 		std::uint32_t min_free_space_mb = 0;
 		bool create_normal = false;
 		bool start_next_alphabetical = false;
+		bool endgame = false;
 		// Media metadata (issue #140): probe shared files with ffprobe to
 		// advertise length/bitrate/codec. Empty path = daemon auto-detect.
 		bool media_metadata_enabled = false;
@@ -758,7 +760,9 @@ struct PreferencesSnapshot
 	// [Security] EC_TAG_PREFS_SECURITY
 	struct SecurityPrefs
 	{
-		bool can_see_shares = false;
+		// 3-state (EC_TAG_SECURITY_CAN_SEE_SHARES / s_iSeeShares):
+		// 0 = everybody, 1 = friends only, 2 = nobody.
+		std::uint8_t can_see_shares = 0;
 		bool ipfilter_clients = false;
 		bool ipfilter_servers = false;
 		bool ipfilter_auto_update = false;

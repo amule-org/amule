@@ -27,6 +27,13 @@ const PROXY_TYPES = [
   { value: 2, labelKey: "prefs_opt_proxy_http" },
   { value: 3, labelKey: "prefs_opt_proxy_socks4a" },
 ];
+
+// security.can_see_shares is a 3-state integer (0/1/2), not a bool.
+const SEE_SHARES = [
+  { value: 0, labelKey: "prefs_opt_see_shares_everybody" },
+  { value: 1, labelKey: "prefs_opt_see_shares_friends" },
+  { value: 2, labelKey: "prefs_opt_see_shares_nobody" },
+];
 const GEOIP_SOURCES = [
   { value: "dbip", labelKey: "prefs_opt_source_dbip" },
   { value: "maxmind", labelKey: "prefs_opt_source_maxmind" },
@@ -56,8 +63,8 @@ const TABS = [
       // the core derives as TCP+3. Computed, read-only, never sent.
       { key: "udp_server_port", type: "int", readonly: true,
         derived: (v, cat) => (parseInt(v[cat + ".tcp_port"], 10) || 0) + 3 },
-      { key: "udp_disabled", type: "bool", invert: true },
-      { key: "udp_port", type: "int", min: 0, max: 65535, sub: true, gatedByNot: "udp_disabled" },
+      { key: "extended_udp_port_enabled", type: "bool" },
+      { key: "udp_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: "extended_udp_port_enabled" },
       { key: "upnp_enabled", type: "bool", gatedBy: "upnp_available" },
       { key: "upnp_tcp_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: ["upnp_available", "upnp_enabled"] },
       { key: "upnp_available", type: "bool", hidden: true },
@@ -117,6 +124,7 @@ const TABS = [
       { key: "start_next_paused", type: "bool" },
       { key: "resume_same_cat", type: "bool", sub: true, gatedBy: "start_next_paused" },
       { key: "start_next_alphabetical", type: "bool", sub: true, gatedBy: "start_next_paused" },
+      { key: "endgame", type: "bool" },
       { key: "alloc_full_size", type: "bool" },
       { key: "check_free_space", type: "bool" },
       { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "check_free_space" },
@@ -137,7 +145,7 @@ const TABS = [
   { id: "security", labelKey: "prefs_security", cat: "security", groups: [
     { legendKey: "prefs_group_privacy", fields: [
       { key: "use_secident", type: "bool" },
-      { key: "can_see_shares", type: "bool" },
+      { key: "can_see_shares", type: "select", int: true, options: SEE_SHARES },
     ] },
     { legendKey: "prefs_group_obfuscation", fields: [
       { key: "obfuscation_supported", type: "bool" },
@@ -268,8 +276,8 @@ export default function Preferences({ isGuest }) {
 
   // gatedBy: disable when any listed flag is explicitly false (capability flags
   // or an "enable" parent); a missing flag (older daemon) leaves it editable.
-  // gatedByNot: disable when any listed flag is true (an inverted parent such
-  // as udp_disabled shown as an "Enable ..." checkbox).
+  // gatedByNot: disable when any listed flag is true (an inverted parent shown
+  // as an "Enable ..." checkbox).
   // gatedByEq: enable only when a sibling equals a value (e.g. show the MaxMind
   // license only when source === "maxmind"); disabled otherwise.
   const isGated = (cat, f) =>
@@ -286,9 +294,9 @@ export default function Preferences({ isGuest }) {
     const subCls = f.sub === 2 ? " field-sub2" : f.sub ? " field-sub" : "";
 
     if (f.type === "bool" || f.type === "trigger") {
-      // invert: the API stores the opposite sense (e.g. udp_disabled) but we
-      // show an "Enable ..." checkbox. State keeps the API value; only the
-      // checkbox's checked state and its toggle are flipped.
+      // invert: the API stores the opposite sense but we show an "Enable ..."
+      // checkbox. State keeps the API value; only the checkbox's checked state
+      // and its toggle are flipped.
       const checked = f.invert ? !val : !!val;
       return html`
         <div class=${"field field-inline" + subCls}>

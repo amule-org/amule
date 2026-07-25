@@ -5167,18 +5167,14 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueInt(static_cast<int64_t>(p.max_upload_kbps));
 	w.Key("max_download_kbps");
 	w.ValueInt(static_cast<int64_t>(p.max_download_kbps));
-	w.Key("max_upload_cap_kbps");
-	w.ValueInt(static_cast<int64_t>(p.max_upload_cap_kbps));
-	w.Key("max_download_cap_kbps");
-	w.ValueInt(static_cast<int64_t>(p.max_download_cap_kbps));
 	w.Key("slot_allocation");
 	w.ValueInt(static_cast<int64_t>(p.slot_allocation));
 	w.Key("tcp_port");
 	w.ValueInt(static_cast<int64_t>(p.tcp_port));
 	w.Key("udp_port");
 	w.ValueInt(static_cast<int64_t>(p.udp_port));
-	w.Key("udp_disabled");
-	w.ValueBool(p.udp_disabled);
+	w.Key("extended_udp_port_enabled");
+	w.ValueBool(p.extended_udp_port_enabled);
 	w.Key("max_sources_per_file");
 	w.ValueInt(static_cast<int64_t>(p.max_sources_per_file));
 	w.Key("max_connections");
@@ -5278,6 +5274,8 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.files.create_normal);
 	w.Key("start_next_alphabetical");
 	w.ValueBool(p.files.start_next_alphabetical);
+	w.Key("endgame");
+	w.ValueBool(p.files.endgame);
 	w.Key("media_metadata_enabled");
 	w.ValueBool(p.files.media_metadata_enabled);
 	w.Key("ffprobe_path");
@@ -5313,7 +5311,7 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.Key("security");
 	w.BeginObject();
 	w.Key("can_see_shares");
-	w.ValueBool(p.security.can_see_shares);
+	w.ValueInt(static_cast<int64_t>(p.security.can_see_shares));
 	w.Key("ipfilter_clients");
 	w.ValueBool(p.security.ipfilter_clients);
 	w.Key("ipfilter_servers");
@@ -5758,7 +5756,12 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			ok.status = 200;
 			return ok;
 		};
-		auto take_bool = [&](const char *key, ec_tagname_t name) -> CHttpServer::Response {
+		// invert=true stores the opposite of the JSON value in the EC tag, for
+		// positive-sense API fields whose EC tag is negatively named (e.g.
+		// extended_udp_port_enabled -> EC_TAG_CONN_UDP_DISABLE).
+		auto take_bool = [&](const char *key,
+					 ec_tagname_t name,
+					 bool invert = false) -> CHttpServer::Response {
 			const auto it = connection_obj->find(key);
 			if (it == connection_obj->end()) {
 				CHttpServer::Response ok;
@@ -5768,7 +5771,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			if (!it->second.is<bool>()) {
 				return ErrorResponse(400, "bad_request", "connection field must be a bool");
 			}
-			add_bool(connection, name, it->second.get<bool>());
+			add_bool(connection, name, invert ? !it->second.get<bool>() : it->second.get<bool>());
 			any_conn = true;
 			CHttpServer::Response ok;
 			ok.status = 200;
@@ -5800,12 +5803,6 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		auto r2 = take_uint("max_download_kbps", EC_TAG_CONN_MAX_DL, kbps_max);
 		if (r2.status >= 400)
 			return r2;
-		auto r3 = take_uint("max_upload_cap_kbps", EC_TAG_CONN_UL_CAP, kbps_max);
-		if (r3.status >= 400)
-			return r3;
-		auto r4 = take_uint("max_download_cap_kbps", EC_TAG_CONN_DL_CAP, kbps_max);
-		if (r4.status >= 400)
-			return r4;
 		auto r5 = take_uint("slot_allocation", EC_TAG_CONN_SLOT_ALLOCATION, 65535);
 		if (r5.status >= 400)
 			return r5;
@@ -5823,7 +5820,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			return r9;
 
 		// Bools.
-		auto rb1 = take_bool("udp_disabled", EC_TAG_CONN_UDP_DISABLE);
+		auto rb1 = take_bool("extended_udp_port_enabled", EC_TAG_CONN_UDP_DISABLE, /*invert=*/true);
 		if (rb1.status >= 400)
 			return rb1;
 		auto rb2 = take_bool("autoconnect", EC_TAG_CONN_AUTOCONNECT);
@@ -6024,6 +6021,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				EC_TAG_FILES_START_NEXT_ALPHA,
 				any,
 				perr) ||
+			!PrefTakeBool(*files_obj, g, "endgame", EC_TAG_FILES_ENDGAME, any, perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
 				"media_metadata_enabled",
@@ -6108,8 +6106,14 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	if (security_obj) {
 		CECTag g(EC_TAG_PREFS_SECURITY, static_cast<std::uint32_t>(0));
 		bool any = false;
-		if (!PrefTakeBool(
-			    *security_obj, g, "can_see_shares", EC_TAG_SECURITY_CAN_SEE_SHARES, any, perr) ||
+		// can_see_shares is a 3-state uint8 (0 everybody / 1 friends / 2 nobody).
+		if (!PrefTakeUint(*security_obj,
+			    g,
+			    "can_see_shares",
+			    EC_TAG_SECURITY_CAN_SEE_SHARES,
+			    2,
+			    any,
+			    perr) ||
 			!PrefTakeBool(
 				*security_obj, g, "ipfilter_clients", EC_TAG_IPFILTER_CLIENTS, any, perr) ||
 			!PrefTakeBool(
