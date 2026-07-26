@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-26 12:21+0200\n"
-"PO-Revision-Date: 2026-07-26 10:57+0000\n"
+"PO-Revision-Date: 2026-07-26 12:11+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -3832,7 +3832,7 @@ msgstr "Rimuovi server inattivi dopo"
 
 #: src/muuli_wdr.cpp:1513
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "I server statici non vengono mai rimossi, nemmeno quando risultano irraggiungibili."
 
 #: src/muuli_wdr.cpp:1517
 msgid "retries"
@@ -6013,18 +6013,16 @@ msgid "New"
 msgstr "Nuovo"
 
 #: src/ServerConnect.cpp:76
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Impossibile collegarsi ai server con offuscamento di protocollo. Ci riprovo senza offuscamento."
+msgstr "Impossibile collegarsi ai server statici in lista con offuscamento di protocollo. Ci riprovo senza offuscamento."
 
 #: src/ServerConnect.cpp:80
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
 msgstr "Impossibile collegarsi ai server con offuscamento di protocollo. Ci riprovo senza offuscamento."
 
 #: src/ServerConnect.cpp:89
-#, fuzzy
 msgid "Failed to connect to all static servers listed. Making another pass."
-msgstr "Impossibile connettersi a tutti i server in lista. Procedo con un altro tentativo."
+msgstr "Impossibile connettersi a tutti i server statici in lista. Procedo con un altro tentativo."
 
 #: src/ServerConnect.cpp:91
 msgid "Failed to connect to all servers listed. Making another pass."

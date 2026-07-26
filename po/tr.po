@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-26 12:21+0200\n"
-"PO-Revision-Date: 2026-07-26 11:04+0000\n"
+"PO-Revision-Date: 2026-07-26 12:18+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -3820,7 +3820,7 @@ msgstr "Ölü sunucuları"
 
 #: src/muuli_wdr.cpp:1513
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Statik sunucular hiçbir zaman kaldırılmazlar, ulaşılamaz oldukları zaman dahi."
 
 #: src/muuli_wdr.cpp:1517
 msgid "retries"
@@ -6002,18 +6002,16 @@ msgid "New"
 msgstr "Yeni"
 
 #: src/ServerConnect.cpp:76
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Listelenen gizlenmiş bağlantılı tüm sunuculara bağlanma başarısız. Gizlenmiş bağlantı olmadan geçiş yapılacak."
+msgstr "Listelenen gizlenmiş bağlantılı tüm statik sunuculara bağlanma başarısız. Gizlenmiş bağlantı olmadan geçiş yapılacak."
 
 #: src/ServerConnect.cpp:80
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
 msgstr "Listelenen gizlenmiş bağlantılı tüm sunuculara bağlanma başarısız. Gizlenmiş bağlantı olmadan geçiş yapılacak."
 
 #: src/ServerConnect.cpp:89
-#, fuzzy
 msgid "Failed to connect to all static servers listed. Making another pass."
-msgstr "Listelenen sunucuların hiç birine bağlanılamadı. Başka bir geçiş yapılıyor."
+msgstr "Listelenen statik sunucuların hiç birine bağlanılamadı. Başka bir geçiş yapılıyor."
 
 #: src/ServerConnect.cpp:91
 msgid "Failed to connect to all servers listed. Making another pass."

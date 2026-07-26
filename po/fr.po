@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-26 12:21+0200\n"
-"PO-Revision-Date: 2026-07-26 10:54+0000\n"
+"PO-Revision-Date: 2026-07-26 12:09+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -3827,7 +3827,7 @@ msgstr "Supprimer les serveurs inactifs après"
 
 #: src/muuli_wdr.cpp:1513
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Les serveurs statiques ne sont jamais enlevés, même lorsqu'ils sont injoignables."
 
 #: src/muuli_wdr.cpp:1517
 msgid "retries"
@@ -6009,18 +6009,16 @@ msgid "New"
 msgstr "Nouveau"
 
 #: src/ServerConnect.cpp:76
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Échec de la connexion aux serveurs brouillés listés. Nouvel essai sans brouillage."
+msgstr "Échec de la connexion à tous les serveurs statiques brouillés listés. Nouvel essai sans brouillage."
 
 #: src/ServerConnect.cpp:80
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
 msgstr "Échec de la connexion aux serveurs brouillés listés. Nouvel essai sans brouillage."
 
 #: src/ServerConnect.cpp:89
-#, fuzzy
 msgid "Failed to connect to all static servers listed. Making another pass."
-msgstr "Échec de la connexion aux serveurs listés. Nouvel essai."
+msgstr "Échec de la connexion à tous les serveurs statiques listés. Nouvel essai."
 
 #: src/ServerConnect.cpp:91
 msgid "Failed to connect to all servers listed. Making another pass."
