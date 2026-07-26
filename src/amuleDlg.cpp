@@ -1452,11 +1452,6 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 			theApp->amuledlg->m_activewnd == theApp->amuledlg->m_transferwnd) {
 			m_transferwnd->UpdateCatTabTitles();
 		}
-		if (thePrefs::AutoSortDownload()) {
-			m_transferwnd->downloadlistctrl->SortList();
-			m_transferwnd->clientlistctrl->SortList();
-			m_sharedfileswnd->peerslistctrl->SortList();
-		}
 		m_kademliawnd->UpdateNodeCount(CStatistics::GetKadNodes());
 
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)

@@ -235,7 +235,6 @@ bool CPreferences::s_FollowSymlinksInShares;
 wxString CPreferences::s_ExcludeSharePatterns;
 bool CPreferences::s_ExcludeSharePatternsUseRegex;
 CShareExcludeFilter CPreferences::s_ShareExcludeFilter;
-bool CPreferences::s_AutoSortDownload;
 bool CPreferences::s_NewVersionCheck;
 // Default true so the monolithic app (which never receives the capability tag
 // over EC and doesn't consult this flag) is unaffected; the remote GUI
@@ -1566,11 +1565,6 @@ void CPreferences::BuildItemList(const wxString &appdir)
 			"Thumbs.db|ehthumbs.db|desktop.ini|.directory")));
 	NewCfgItem(IDC_EXCLUDE_SHARE_REGEX,
 		(new Cfg_Bool("/eMule/ExcludeSharePatternsUseRegex", s_ExcludeSharePatternsUseRegex, false)));
-
-	/**
-	 * Auto-Sorting of downloads
-	 **/
-	NewCfgItem(IDC_AUTOSORT, (new Cfg_Bool("/eMule/AutoSortDownloads", s_AutoSortDownload, false)));
 
 #if defined(ENABLE_VERSION_CHECK) || defined(CLIENT_GUI)
 	/**

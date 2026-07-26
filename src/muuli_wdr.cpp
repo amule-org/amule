@@ -1999,10 +1999,6 @@ wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit, bool set_size
     wxStaticText *item20 = new wxStaticText( parent, -1, _("Round"), wxDefaultPosition, wxDefaultSize, 0 );
     item16->Add( item20, wxSizerFlags().CenterVertical().Right().Border(wxRIGHT, 5) );
     item13->Add( item16, wxSizerFlags(1).Expand().CenterVertical() );
-    wxCheckBox *item21 = new wxCheckBox( parent, IDC_AUTOSORT, _("Auto-sort files (high CPU)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item21->SetValue( TRUE );
-    item21->SetToolTip( _("aMule will sort the columns in your download list automatically") );
-    item13->Add( item21, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item13, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     if (set_sizer)
     {

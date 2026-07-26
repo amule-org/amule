@@ -799,9 +799,7 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 
 	m_menu->Enable(MP_MENU_EXTD, canPause);
 
-	bool autosort = thePrefs::AutoSortDownload(false);
 	PopupMenu(m_menu, evt.GetPoint());
-	thePrefs::AutoSortDownload(autosort);
 
 	delete m_menu;
 	m_menu = NULL;
@@ -826,9 +824,7 @@ void CDownloadListCtrl::ShowFileDetailDialog(long index)
 	for (int i = 0; i < nrItems; i++) {
 		files.push_back(reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(i))->GetFile());
 	}
-	bool autosort = thePrefs::AutoSortDownload(false);
 	CFileDetailDialog(this, files, index).ShowModal();
-	thePrefs::AutoSortDownload(autosort);
 }
 
 void CDownloadListCtrl::OnKeyPressed(wxKeyEvent &event)

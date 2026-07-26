@@ -740,14 +740,6 @@ public:
 	static int PreviewExcludeCount(
 		const wxString &patterns, bool useRegex, const wxArrayString &fileNames);
 
-	static bool AutoSortDownload() { return s_AutoSortDownload; }
-	static bool AutoSortDownload(bool val)
-	{
-		bool tmp = s_AutoSortDownload;
-		s_AutoSortDownload = val;
-		return tmp;
-	}
-
 	// Version check
 
 	static bool GetCheckNewVersion() { return s_NewVersionCheck; }
@@ -1129,8 +1121,6 @@ protected:
 	static wxString s_ExcludeSharePatterns;
 	static bool s_ExcludeSharePatternsUseRegex;
 	static CShareExcludeFilter s_ShareExcludeFilter;
-
-	static bool s_AutoSortDownload;
 
 	// Version check
 	static bool s_NewVersionCheck;

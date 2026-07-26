@@ -414,7 +414,6 @@ wxSizer *PreferencesaMuleTweaksTab(wxWindow *parent, bool call_fit = TRUE, bool 
 #define IDC_PERCENT 10209
 #define IDC_PROGBAR 10210
 #define IDC_3DDEPTH 10211
-#define IDC_AUTOSORT 10212
 wxSizer *PreferencesGuiTweaksTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_EXT_CONN_ACCEPT 10213
