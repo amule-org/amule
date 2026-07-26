@@ -24,6 +24,7 @@
 //
 
 #include <wx/app.h>
+#include <wx/config.h> // Needed to persist the default search type
 
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
 
@@ -49,6 +50,7 @@ static wxCommandEvent nullEvent;
 wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	EVT_BUTTON(IDC_STARTS, CSearchDlg::OnBnClickedStart)
 	EVT_TEXT_ENTER(IDC_SEARCHNAME, CSearchDlg::OnBnClickedStart)
+	EVT_CHOICE(ID_SEARCHTYPE, CSearchDlg::OnSearchTypeChanged)
 
 	EVT_BUTTON(IDC_CANCELS, CSearchDlg::OnBnClickedStop)
 	EVT_BUTTON(IDC_SEARCHMORE, CSearchDlg::OnBnClickedSearchMore)
@@ -146,7 +148,52 @@ void CSearchDlg::FixSearchTypes()
 		searchchoice->Insert(m_searchchoices[2], pos++);
 	}
 
-	searchchoice->SetSelection(0);
+	// Restore the last-used search type (persisted in OnSearchTypeChanged)
+	// instead of always defaulting to Local. The stored value is the stable
+	// canonical code (0 = Local, 1 = Global, 2 = Kad); map it back onto
+	// whichever entries are present now, falling back to the first entry when
+	// the saved type's network is disabled (amule-org/amule#608).
+	long savedType = 0;
+	wxConfigBase::Get()->Read("/eMule/DefaultSearchType", &savedType, 0);
+	int selection = 0;
+	if (thePrefs::GetNetworkED2K()) {
+		if (savedType == 1) { // Global
+			selection = 1;
+		} else if (savedType == 2 && thePrefs::GetNetworkKademlia()) { // Kad
+			selection = 2;
+		}
+		// else Local (0), or the saved network is gone -> first entry
+	}
+	// With ED2K disabled the only entry is Kad at index 0, so 0 is correct.
+	if (searchchoice->GetCount()) {
+		if (selection >= (int)searchchoice->GetCount()) {
+			selection = 0;
+		}
+		searchchoice->SetSelection(selection);
+	}
+}
+
+int CSearchDlg::GetSelectedSearchTypeCanonical()
+{
+	int selection = CastChild(ID_SEARCHTYPE, wxChoice)->GetSelection();
+	if (selection == wxNOT_FOUND) {
+		return wxNOT_FOUND;
+	}
+	// FixSearchTypes() inserts choices as Local, Global, Kad, but drops the
+	// ED2K pair when ED2K is disabled -- then the only entry (Kad) sits at 0,
+	// so shift it onto the canonical Kad code (2).
+	if (!thePrefs::GetNetworkED2K()) {
+		selection += 2;
+	}
+	return selection;
+}
+
+void CSearchDlg::OnSearchTypeChanged(wxCommandEvent &WXUNUSED(evt))
+{
+	const int canonical = GetSelectedSearchTypeCanonical();
+	if (canonical != wxNOT_FOUND) {
+		wxConfigBase::Get()->Write("/eMule/DefaultSearchType", (long)canonical);
+	}
 }
 
 CSearchListCtrl *CSearchDlg::GetSearchList(wxUIntPtr id)
@@ -564,14 +611,9 @@ void CSearchDlg::StartNewSearch()
 
 	SearchType search_type = KadSearch;
 
-	int selection = CastChild(ID_SEARCHTYPE, wxChoice)->GetSelection();
-
-	// In muuli_wdr.cpp, Search Choices are inserted in this order: Local, Global, Kad.
-	// If ED2K is disabled, the only choice in the menu is Kad,
-	// but the starting value is 0 and we need a 2 for the switch
-	if (!thePrefs::GetNetworkED2K()) {
-		selection += 2;
-	}
+	// Canonical order (0 = Local, 1 = Global, 2 = Kad), normalised for the
+	// disabled-ED2K case inside the helper.
+	int selection = GetSelectedSearchTypeCanonical();
 
 	switch (selection) {
 	case 0: // Local Search

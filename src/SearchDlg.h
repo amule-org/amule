@@ -131,9 +131,18 @@ public:
 
 	void FixSearchTypes();
 
+	// Current ID_SEARCHTYPE selection normalised to a stable code
+	// (0 = Local, 1 = Global, 2 = Kad) independent of which networks are
+	// enabled, so it can be persisted and restored across restarts.
+	// Returns wxNOT_FOUND if nothing is selected.
+	int GetSelectedSearchTypeCanonical();
+
 private:
 	// Event handlers
 	void OnFieldChanged(wxEvent &evt);
+
+	// Persists the chosen search type so it survives a restart (amule-org/amule#608).
+	void OnSearchTypeChanged(wxCommandEvent &evt);
 
 	void OnListItemSelected(wxListEvent &ev);
 	void OnBnClickedReset(wxCommandEvent &ev);
