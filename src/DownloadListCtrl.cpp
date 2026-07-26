@@ -652,8 +652,13 @@ void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 {
 	CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(evt.GetIndex()))->GetFile();
 
+	// A completed previewable media file plays on double-click, as before.
+	// Anything else (a still-downloading file, or a non-previewable one) opens
+	// the file-details modal, matching the shared-files table's double-click.
 	if ((!file->IsPartFile() || file->IsCompleted()) && file->PreviewAvailable()) {
 		PreviewFile(file);
+	} else {
+		ShowFileDetailDialog(evt.GetIndex());
 	}
 }
 
