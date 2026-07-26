@@ -120,6 +120,14 @@ public:
 	virtual void SaveSettings();
 
 	/**
+	 * Returns true if a persistence name was set via SetTableName(), i.e.
+	 * SaveSettings()/LoadSettings() will actually store/restore this list.
+	 * Lets callers persist a list's layout without tripping the unnamed-list
+	 * assertion inside SaveSettings().
+	 */
+	bool HasStoredTableName() const { return !m_name.IsEmpty(); }
+
+	/**
 	 * Loads column settings.
 	 *
 	 * Currently loads the width of all columns, hidden columns, the column
