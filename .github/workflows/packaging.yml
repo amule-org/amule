@@ -36,7 +36,7 @@ on:
           Comma-separated list of platform tracks to run.
           Default empty = run all. Useful during iteration to focus
           on the failing tracks without paying for the green ones.
-          Valid: appimage, flatpak, macos, windows.
+          Valid: appimage, flatpak, macos, windows, linux-static.
         required: false
         type: string
         default: ''
@@ -118,6 +118,49 @@ jobs:
         with:
           name: appimage-${{ matrix.arch }}
           path: dist/aMule-*-Linux-*.AppImage
+          if-no-files-found: error
+
+  # ------------------------------------------------------------------
+  # Linux — fully static amuled/amulecmd/amuleapi (musl/Alpine) on
+  # x86_64 + aarch64 native runners. Self-contained binaries with no
+  # runtime shared-library deps, for containers / minimal / musl hosts.
+  # See packaging/docker/Dockerfile.static-daemon.
+  # ------------------------------------------------------------------
+  linux-static:
+    name: Linux static (${{ matrix.arch }})
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      inputs.only == '' ||
+      contains(inputs.only, 'linux-static')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  runs-on: ubuntu-22.04 }
+          - { arch: aarch64, runs-on: ubuntu-22.04-arm }
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # git describe for the version string
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # STATIC_CACHE_SCOPE turns on buildx's gha layer cache (the ccache
+      # analogue for this track): the dep layers (Crypto++ / wxWidgets /
+      # pupnp / apk) persist across runs, so only the aMule compile re-runs
+      # on a src change. Empty on workflow_call (release.yml tag builds) so
+      # the shipped binaries always come from a cold compile.
+      - name: Build static tarball
+        env:
+          STATIC_CACHE_SCOPE: ${{ github.event_name != 'workflow_call' && format('linux-static-{0}', matrix.arch) || '' }}
+        run: packaging/linux/build.sh static
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-static-${{ matrix.arch }}
+          path: dist/aMule-*-Linux-*-static.tar.gz
           if-no-files-found: error
 
   # ------------------------------------------------------------------

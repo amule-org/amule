@@ -1,0 +1,14 @@
+# Build-context excludes for the static-daemon image (BuildKit resolves this
+# per-Dockerfile ignore file). .git is intentionally kept so aMule's CMake can
+# derive the version via `git describe`.
+build
+build-*
+out
+out-*
+_build
+dist
+CMakeCache.txt
+CMakeFiles
+**/*.o
+**/*.a
+.DS_Store

@@ -2,8 +2,10 @@
 
 This tree builds aMule into the four user-facing distribution formats:
 **AppImage**, **Flatpak**, **macOS Universal2 .dmg**, and **Windows
-portable .zip**. All four are produced from a single `git` checkout
-plus per-platform tooling (Docker / Homebrew / MSYS2).
+portable .zip**, plus a headless **fully static Linux daemon** tarball
+(amuled + amulecmd + amuleapi, no runtime shared-library deps). All are
+produced from a single `git` checkout plus per-platform tooling (Docker /
+Homebrew / MSYS2).
 
 The recipes are driven by [`.github/workflows/packaging.yml`](../.github/workflows/packaging.yml)
 on GitHub Actions, but every script also runs locally — useful for
@@ -17,8 +19,9 @@ packaging/
 ├── linux/
 │   ├── appimage/         AppImage recipe (Docker-driven)
 │   ├── flatpak/          Flatpak manifest (template + generated yaml)
-│   ├── build.sh          dispatcher — picks appimage or flatpak
-│   └── versions.env      pinned tarball URLs + SHA256s for both
+│   ├── static/           Fully static musl daemon recipe (Alpine Docker)
+│   ├── build.sh          dispatcher — picks appimage, flatpak or static
+│   └── versions.env      pinned tarball URLs + SHA256s for all three
 ├── macos/                macOS Universal2 .dmg recipe
 └── windows/              Windows portable .zip recipe (MSYS2)
 ```
@@ -30,6 +33,7 @@ build instructions and design notes:
 | -------- | --------------------------------------------------------------------- | --------------------- |
 | Linux    | [`linux/appimage/README.md`](linux/appimage/README.md)                | `.AppImage` (single file, glibc ≥ 2.35) |
 | Linux    | [`linux/flatpak/README.md`](linux/flatpak/README.md)                  | `.flatpak` (sandboxed, GNOME 49 runtime) |
+| Linux    | [`linux/static/README.md`](linux/static/README.md)                    | `.tar.gz` (static musl daemon: amuled + amulecmd + amuleapi) |
 | macOS    | [`macos/README.md`](macos/README.md)                                  | `.dmg` (Universal2, arm64 + x86_64) |
 | Windows  | [`windows/README.md`](windows/README.md)                              | `.zip` (portable, MSYS2 runtime bundled) |
 
@@ -44,6 +48,9 @@ packaging/linux/build.sh appimage
 
 # Linux Flatpak (host arch — needs flatpak-builder + GNOME runtime)
 packaging/linux/build.sh flatpak
+
+# Linux fully static musl daemon tarball (host arch — needs Docker)
+packaging/linux/build.sh static
 
 # macOS Universal2 .dmg (needs Homebrew with deps installed)
 packaging/macos/build.sh
@@ -66,6 +73,7 @@ in parallel on its native runner — no QEMU emulation. Matrix:
 | -------------- | ----------------------- | ----- |
 | AppImage x86_64 / aarch64 | `ubuntu-22.04` / `ubuntu-22.04-arm` | glibc 2.35 baseline for compat |
 | Flatpak x86_64 / aarch64  | `ubuntu-24.04` / `ubuntu-24.04-arm` | needs `appstream-compose` 1.0+ from 24.04 |
+| Linux static x86_64 / aarch64 | `ubuntu-22.04` / `ubuntu-22.04-arm` | musl/Alpine Docker build; buildx gha layer cache |
 | macOS arm64 / x86_64      | both on `macos-15`                  | x86_64 builds via Rosetta-emulated Homebrew at `/usr/local`; the legacy `macos-13` Intel runner is being retired by GitHub |
 | macOS Universal2 .dmg     | `macos-15`                          | depends on the two macOS jobs; lipo-merges + ad-hoc-codesigns the result |
 | Windows x64 / arm64       | `windows-latest`                    | MSYS2 MINGW64 / CLANGARM64 |
@@ -75,7 +83,7 @@ Triggers:
 * **Push to `master`** (or any `packaging**` branch) when packaging /
   source / cmake files change — keeps master always-shippable.
 * **Manual `workflow_dispatch`** — with an `only=appimage,flatpak,
-  macos,windows` input for iterating on a single track.
+  macos,windows,linux-static` input for iterating on a single track.
 
 Pull-request triggers are deliberately omitted to halve CI cost; if
 you want to inspect a PR's artifacts before merging, dispatch the

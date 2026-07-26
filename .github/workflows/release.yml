@@ -218,6 +218,12 @@ jobs:
           pattern: windows-*
           path: dist/
           merge-multiple: true
+      - name: Download Linux static daemon tarballs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: linux-static-*
+          path: dist/
+          merge-multiple: true
       - name: Download source bundle
         uses: actions/download-artifact@v8
         with:
@@ -254,12 +260,13 @@ jobs:
           check "macOS Universal2 .dmg"             1 'aMule-*-macOS-universal2.dmg'
           check "Windows portable .zip (x64 + arm64)" 2 'aMule-*-Windows-*.zip'
           check "Windows installer .exe (x64 + arm64)" 2 'aMule-*-Windows-Setup-*.exe'
+          check "Linux static daemon (x86_64 + aarch64)" 2 'aMule-*-Linux-*-static.tar.gz'
           check "Source bundle"                     1 'aMule-*-src.tar.gz'
           if [ "$fail" -ne 0 ]; then
             echo "::error::Artifact manifest incomplete — refusing to assemble the draft Release."
             exit 1
           fi
-          echo "All 10 expected release artifacts present."
+          echo "All 12 expected release artifacts present."
 
       - name: Create draft Release
         env:

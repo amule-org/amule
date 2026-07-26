@@ -18,6 +18,9 @@ commands:
                              arch: host (default) | x86_64 | aarch64
   flatpak [arch]             produce .flatpak bundle in dist/
                              arch: host (default) | x86_64 | aarch64
+  static [arch]              produce a fully static musl daemon tarball
+                             (amuled + amulecmd + amuleapi) in dist/
+                             arch: host (default) | x86_64 | aarch64
   validate [arch]            run amuled --version inside a fixed matrix
                              of distro Docker images to catch lib-load
                              regressions. arch: host (default) only —
@@ -219,6 +222,87 @@ build_flatpak() {
     echo "==> Done: ${bundle}"
 }
 
+build_static() {
+    # Fully static amuled/amulecmd/amuleapi (musl/Alpine). Unlike the
+    # AppImage track (toolchain image + docker run over a repo mount), this
+    # COPYs the checkout into the build and exports the binaries from a
+    # scratch stage via buildx --output. Versions come from versions.env.
+    local arch_in="${1:-host}"
+    local target_arch
+    case "${arch_in}" in
+        host)    target_arch="$(uname -m)" ;;
+        x86_64)  target_arch=x86_64 ;;
+        aarch64) target_arch=aarch64 ;;
+        *)       echo "fatal: unsupported arch '${arch_in}' (choose host|x86_64|aarch64)" >&2; exit 1 ;;
+    esac
+
+    local docker_platform arch_label
+    case "${target_arch}" in
+        x86_64)  docker_platform=linux/amd64; arch_label=x64   ;;
+        aarch64) docker_platform=linux/arm64; arch_label=arm64 ;;
+    esac
+
+    # Pre-flight: cross-arch builds need tonistiigi/binfmt registered.
+    if [ "${target_arch}" != "$(uname -m)" ]; then
+        if ! docker run --rm --platform "${docker_platform}" alpine:latest /bin/true 2>/dev/null; then
+            echo "fatal: cross-arch build requested (target=${target_arch}, host=$(uname -m)) but binfmt not registered." >&2
+            echo "       run once on this host: $0 setup-cross-arch" >&2
+            exit 1
+        fi
+    fi
+
+    local artifact_dir="${REPO_ROOT}/dist"
+    mkdir -p "${artifact_dir}"
+    local outdir
+    outdir="$(mktemp -d)"
+
+    # Optional buildx layer cache — the ccache analogue for this track.
+    # CI sets STATIC_CACHE_SCOPE for non-release runs so the dep layers
+    # (Crypto++ / wxWidgets / pupnp / apk) persist via the gha backend;
+    # unset = plain build, so release (workflow_call) builds cold-compile.
+    local -a cache_args=()
+    if [[ -n "${STATIC_CACHE_SCOPE:-}" ]]; then
+        cache_args+=(--cache-from "type=gha,scope=${STATIC_CACHE_SCOPE}")
+        cache_args+=(--cache-to "type=gha,mode=max,scope=${STATIC_CACHE_SCOPE}")
+    fi
+
+    echo "==> Building static binaries (${target_arch}, platform=${docker_platform})"
+    docker buildx build \
+        --platform "${docker_platform}" \
+        -f "${SCRIPT_DIR}/static/Dockerfile" \
+        --build-arg "ALPINE_STATIC_BASE=${ALPINE_STATIC_BASE}" \
+        --build-arg "WX_VERSION=${WX_VERSION}" \
+        --build-arg "WX_TARBALL_URL=${WX_TARBALL_URL}" \
+        --build-arg "WX_SHA256=${WX_SHA256}" \
+        --build-arg "CRYPTOPP_TAG_SUFFIX=${CRYPTOPP_TAG_SUFFIX}" \
+        --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
+        --build-arg "LIBUPNP_TARBALL_URL=${LIBUPNP_TARBALL_URL}" \
+        --build-arg "LIBUPNP_SHA256=${LIBUPNP_SHA256}" \
+        "${cache_args[@]}" \
+        --output "type=local,dest=${outdir}" \
+        "${REPO_ROOT}"
+
+    # Belt-and-suspenders: the Dockerfile already gates on this, re-check here.
+    local b
+    for b in amuled amulecmd amuleapi; do
+        file "${outdir}/${b}" | grep -q "statically linked" \
+            || { echo "fatal: ${b} is not statically linked" >&2; exit 1; }
+    done
+
+    # Filename mirrors the AppImage / Flatpak layout: one tarball per
+    # (arch, version) using the x64 / arm64 label (#764).
+    local version
+    version=$(cd "${REPO_ROOT}" && git describe --tags --always --dirty 2>/dev/null || echo "snapshot")
+    local stem="aMule-${version}-Linux-${arch_label}-static"
+    mkdir -p "${outdir}/${stem}"
+    cp "${outdir}/amuled" "${outdir}/amulecmd" "${outdir}/amuleapi" "${outdir}/${stem}/"
+    local tarball="${artifact_dir}/${stem}.tar.gz"
+    echo "==> Bundling ${tarball}"
+    tar -czf "${tarball}" -C "${outdir}" "${stem}"
+    rm -rf "${outdir}"
+    echo "==> Done: ${tarball}"
+}
+
 setup_cross_arch() {
     # tonistiigi/binfmt registers QEMU emulators in the host kernel's
     # binfmt_misc so docker can run / build images for non-native
@@ -383,6 +467,7 @@ validate_appimage() {
 case "${target}" in
     appimage)                build_appimage "${1:-}" ;;
     flatpak)                 build_flatpak "${1:-}" ;;
+    static)                  build_static "${1:-}" ;;
     render-flatpak-manifest) render_flatpak_manifest ;;
     validate)                validate_appimage "${1:-}" ;;
     all)                     build_all ;;
