@@ -59,7 +59,7 @@ public:
 	// Bracket a reconnect resync (issue #444) so the list repaints once
 	// (Freeze) and sorts once at the end rather than per updated/added row.
 	void BeginBatchUpdate();
-	void EndBatchUpdate();
+	void EndBatchUpdate(bool doSort = true);
 
 	/**
 	 * Adds the specified file to the list, updating filecount and more.
@@ -238,6 +238,10 @@ private:
 	//! When true, UpdateItem() short-circuits and the bulk caller is
 	//! responsible for issuing a single Refresh() at end-of-bulk.
 	bool m_inBulkUpdate;
+
+	//! True between BeginBatchUpdate()/EndBatchUpdate(): ShowFile() appends
+	//! the row without sorting; EndBatchUpdate() does the single SortList().
+	bool m_batchUpdate;
 
 	// The virtual-list model, sorting, live auto-sort and selection
 	// preservation all live in CMuleVirtualListCtrl now.

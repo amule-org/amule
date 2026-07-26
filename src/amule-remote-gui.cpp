@@ -1896,8 +1896,8 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 
 	// The first poll after a reconnect re-processes the whole (potentially
 	// 10k+) library in one go (update-in-place + add + prune) — that is the
-	// reconcile case, and it also batches the shared-files ctrl below (issue
-	// #444). The cold-boot m_initialUpdate path has its own batching
+	// reconcile case (issue #444), which drives the one-shot absence-prune
+	// below. The cold-boot m_initialUpdate path has its own batching
 	// (ShowFileList) and never overlaps — m_initialUpdate is false whenever
 	// reconcile is true.
 	const bool reconcile = m_reconnectReconcile;
@@ -1918,7 +1918,17 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	if (batchDownloadList) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
 	}
-	if (reconcile) {
+
+	// Same reasoning for the shared-files list: a steady-state poll can surface
+	// a burst of freshly-shared files (many downloads completing, or a shared
+	// folder added/rescanned daemon-side), and ShowFile() -> AddItemData()
+	// rebuilds the whole virtual-list row index on every insert -- O(n) each,
+	// O(n^2) on a large share. Batch every non-initial poll and sort once at the
+	// end, only if the poll actually added a file (sharedListGrew). Reconnect
+	// reconcile is one such non-initial poll, so it is covered too.
+	const bool batchSharedList = !m_initialUpdate;
+	bool sharedListGrew = false;
+	if (batchSharedList) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->BeginBatchUpdate();
 	}
 	// Set below if the reconnect reconcile reply is too empty to trust as a
@@ -2040,6 +2050,7 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 					if (!m_initialUpdate) {
 						theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFile(
 							newFile);
+						sharedListGrew = true;
 					}
 				}
 				AddItem(newFile);
@@ -2096,8 +2107,12 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate(
 			reconcile || downloadListGrew);
 	}
-	if (reconcile) {
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate();
+	if (batchSharedList) {
+		// Sort once if the poll added a shared file (or on a reconnect resync,
+		// where the whole list was reconciled); otherwise the order is
+		// unchanged and EndBatchUpdate() just Thaws without a needless re-sort.
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate(
+			reconcile || sharedListGrew);
 	}
 	// One-shot: consumed by the first post-reconnect poll above, unless the
 	// reply was too empty to trust and we left the flag armed for the next.

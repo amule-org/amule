@@ -96,6 +96,7 @@ enum SharedFilesListColumns
 CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
 : CMuleVirtualListCtrl(parent, id, pos, size, flags | wxLC_OWNERDRAW)
 , m_inBulkUpdate(false)
+, m_batchUpdate(false)
 {
 	// Setting the sorter function.
 	SetSortFunc(SortProc);
@@ -317,14 +318,22 @@ void CSharedFilesCtrl::ShowFileList()
 
 void CSharedFilesCtrl::BeginBatchUpdate()
 {
-	// ShowFile() appends without sorting, so a reconnect resync only needs
-	// the repaints coalesced (Freeze) and one final sort in EndBatchUpdate.
+	// During the batch ShowFile() appends the row (O(1)) instead of doing a
+	// sorted AddItemData() (which rebuilds the whole row index per insert --
+	// O(n), i.e. O(n^2) for a burst on a large share). Coalesce the repaints
+	// (Freeze) and defer the single sort to EndBatchUpdate().
 	Freeze();
+	m_batchUpdate = true;
 }
 
-void CSharedFilesCtrl::EndBatchUpdate()
+void CSharedFilesCtrl::EndBatchUpdate(bool doSort)
 {
-	SortList();
+	m_batchUpdate = false;
+	// A poll that only updated rows in place (no new files) leaves the sort
+	// order untouched, so skip the O(n log n) SortList entirely.
+	if (doSort) {
+		SortList();
+	}
 	Thaw();
 }
 
@@ -344,6 +353,21 @@ void CSharedFilesCtrl::ClearList()
 
 void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 {
+	if (m_batchUpdate) {
+		// Batched poll (remote GUI): append at the end (O(1)) and let
+		// EndBatchUpdate() sort once. AddItemData()'s sorted insert rebuilds
+		// the whole row index on every call (O(n)), which turns a burst of
+		// freshly-shared files into an O(n^2) freeze on a large share.
+		// Mirrors CDownloadListCtrl::ShowFile(). AppendItemDataNow() keeps the
+		// row index and item count live, so the interleaved reconcile prune
+		// and in-place UpdateItem() during the same poll stay correct.
+		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(file);
+		if (RowOfData(data) == -1) {
+			AppendItemDataNow(data);
+			ShowFilesCount();
+		}
+		return;
+	}
 	DoShowFile(file, false);
 }
 
