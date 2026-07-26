@@ -37,9 +37,13 @@
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
 #include "SearchDlg.h"        // Needed for CSearchDlg
 #include "amuleDlg.h"         // Needed for CamuleDlg
-#include "muuli_wdr.h"        // Needed for clientImages
-#include "Preferences.h"      // Needed for thePrefs
-#include "GuiEvents.h"        // Needed for CoreNotify_Search_Add_Download
+#ifndef CLIENT_GUI
+#include "TransferWnd.h"      // Needed for CTransferWnd (download-list batching)
+#include "DownloadListCtrl.h" // Needed for CDownloadListCtrl (download-list batching)
+#endif
+#include "muuli_wdr.h"   // Needed for clientImages
+#include "Preferences.h" // Needed for thePrefs
+#include "GuiEvents.h"   // Needed for CoreNotify_Search_Add_Download
 #include "MuleColour.h"
 
 wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleListCtrl)
@@ -879,6 +883,16 @@ void CSearchListCtrl::DownloadSelected(int category)
 		}
 	}
 
+#ifndef CLIENT_GUI
+	// Monolithic: Search_Add_Download runs synchronously on this thread, so
+	// each selected file's Notify_DownloadCtrlAddFile -> AddFile fires a
+	// per-item SortList() inline. Batch the whole selection into a single sort
+	// + repaint (issue #615). The remote GUI's adds arrive later via the
+	// download-queue poll, which already batches, so this is monolithic-only.
+	CDownloadListCtrl *downloadlist = theApp->amuledlg->m_transferwnd->downloadlistctrl;
+	downloadlist->BeginBatchUpdate();
+#endif
+
 	// Process all selections
 	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	while (index > -1) {
@@ -886,6 +900,10 @@ void CSearchListCtrl::DownloadSelected(int category)
 		CoreNotify_Search_Add_Download(file, category);
 		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
+
+#ifndef CLIENT_GUI
+	downloadlist->EndBatchUpdate();
+#endif
 	// Listcontrol gets updated by notification when download is started
 }
 
