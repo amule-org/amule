@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-24 17:10+0200\n"
-"PO-Revision-Date: 2026-07-24 17:57+0000\n"
+"PO-Revision-Date: 2026-07-25 19:02+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -4585,7 +4585,7 @@ msgstr "Prise en charge paranoïaque des IPs qui ne se correspondent pas"
 
 #: src/muuli_wdr.cpp:2698
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "Rejette un paquet lorsque son IP source diffère de l'IP que le client prétend avoir (vérification anti-usurpation). Désactivez seulement si cela provoque des problèmes de connexion."
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"

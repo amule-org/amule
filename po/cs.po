@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-24 17:10+0200\n"
-"PO-Revision-Date: 2026-07-24 17:53+0000\n"
+"PO-Revision-Date: 2026-07-25 19:02+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -3866,7 +3866,7 @@ msgstr "Bezpečné připojení"
 
 #: src/muuli_wdr.cpp:1545
 msgid "Autoconnect to servers in static list only"
-msgstr ""
+msgstr "Automaticky se připojit jen ke stálým serverům"
 
 #: src/muuli_wdr.cpp:1548
 msgid "Set manually added servers to High Priority"
@@ -6044,11 +6044,11 @@ msgstr "Nový"
 
 #: src/ServerConnect.cpp:72
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
-msgstr "Selhalo připojení ke všem vybraným serverům. Zkouším to znovu bez obfuskace."
+msgstr "Selhalo připojení ke všem serverům s obfuskací. Zkouším to znovu bez obfuskace."
 
 #: src/ServerConnect.cpp:78
 msgid "Failed to connect to all servers listed. Making another pass."
-msgstr "Selhalo připojení ke všem vybraným serverům. Zkouším znovu."
+msgstr "Selhalo připojení ke všem serverům na seznamu. Zkouším znovu."
 
 #: src/ServerConnect.cpp:94 src/ServerConnect.cpp:147
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6256,7 +6256,7 @@ msgstr "Uživatelé"
 
 #: src/ServerListCtrl.cpp:99
 msgid "Static"
-msgstr "Pevný"
+msgstr "Stálý"
 
 #: src/ServerListCtrl.cpp:100 src/SharedFilePeersListCtrl.cpp:34
 #: src/SourceListCtrl.cpp:33 src/Statistics.cpp:1141
@@ -6316,7 +6316,7 @@ msgstr "Označit servery jako nestálé"
 
 #: src/ServerListCtrl.cpp:475
 msgid "Remove server"
-msgstr "Vzdálený server"
+msgstr "Odstranit server"
 
 #: src/ServerListCtrl.cpp:477
 msgid "Remove servers"

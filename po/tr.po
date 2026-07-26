@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-24 17:10+0200\n"
-"PO-Revision-Date: 2026-07-24 18:12+0000\n"
+"PO-Revision-Date: 2026-07-25 19:02+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
 "Language: tr\n"
@@ -4578,7 +4578,7 @@ msgstr "Uyuşmayan IP'lere şüpheci yaklaşım."
 
 #: src/muuli_wdr.cpp:2698
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "İstemcinin sahip olduğunu iddia ettiği IP, kaynak IP'den farklı olduğunda paketi reddeder (sahtekarlık önleyici kontrol). Sadece bağlantı sorunları oluşturuyorsa devre dışı bırakın."
 
 #: src/muuli_wdr.cpp:2700
 msgid "Use system-wide ipfilter.dat if available"
