@@ -1895,15 +1895,30 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	accepted = 0;
 
 	// The first poll after a reconnect re-processes the whole (potentially
-	// 10k+) library in one go (update-in-place + add + prune). Batch both
-	// list ctrls so that stays one repaint + one sort instead of per row
-	// (issue #444). Captured now because ProcessItemUpdate/AddFile below,
-	// and the final prune, all touch the ctrls; the flag itself is cleared
-	// at the end. The cold-boot m_initialUpdate path has its own batching
-	// (ShowFileList) and never overlaps — m_initialUpdate is false here.
+	// 10k+) library in one go (update-in-place + add + prune) — that is the
+	// reconcile case, and it also batches the shared-files ctrl below (issue
+	// #444). The cold-boot m_initialUpdate path has its own batching
+	// (ShowFileList) and never overlaps — m_initialUpdate is false whenever
+	// reconcile is true.
 	const bool reconcile = m_reconnectReconcile;
-	if (reconcile) {
+
+	// Batch the download list on every steady-state poll, not just a reconnect
+	// resync: an ordinary poll can surface a whole burst of freshly-added
+	// downloads at once (e.g. a hundred search results dropped into a large
+	// queue), and CDownloadListCtrl::AddFile() re-sorts the entire list on
+	// every insert. On a 10k queue that is O(n^2 log n) and freezes the GUI for
+	// seconds (issue #615). BeginBatchUpdate() suppresses the per-item sort;
+	// the single SortList() runs once at the end, and only if we actually added
+	// a file (downloadListGrew) — a pure in-place stat poll stays sort-free.
+	// The cold-boot m_initialUpdate path has its own batching (ShowFileList),
+	// so leave it alone to avoid a redundant second sort. Captured now because
+	// ProcessItemUpdate/AddFile below and the final prune all touch the ctrl.
+	const bool batchDownloadList = !m_initialUpdate;
+	bool downloadListGrew = false;
+	if (batchDownloadList) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
+	}
+	if (reconcile) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->BeginBatchUpdate();
 	}
 	// Set below if the reconnect reconcile reply is too empty to trust as a
@@ -2016,6 +2031,7 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 					// via ShowFileList() (issue #414 — O(n^2) otherwise).
 					theApp->amuledlg->m_transferwnd->downloadlistctrl->AddFile(
 						file, /*deferView=*/m_initialUpdate);
+					downloadListGrew = true;
 					newFile = file;
 				} else {
 					newFile = new CKnownFile(tag);
@@ -2073,8 +2089,14 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 			}
 		}
 	}
+	if (batchDownloadList) {
+		// Sort once if the poll added a file (or on a reconnect resync, where
+		// the whole list was reconciled); otherwise the order is unchanged and
+		// EndBatchUpdate() just Thaws without a needless re-sort.
+		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate(
+			reconcile || downloadListGrew);
+	}
 	if (reconcile) {
-		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate();
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate();
 	}
 	// One-shot: consumed by the first post-reconnect poll above, unless the

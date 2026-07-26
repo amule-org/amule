@@ -96,12 +96,14 @@ public:
 
 	/**
 	 * Bracket a burst of AddFile()/UpdateItem() calls (a reconnect resync —
-	 * issue #444) so the list repaints once (Freeze) and sorts once, instead
-	 * of per-item. Existing rows are updated in place; new rows are appended
-	 * without a per-item sort. EndBatchUpdate() does the single SortList().
+	 * issue #444, or any poll that adds a batch of downloads — issue #615) so
+	 * the list repaints once (Freeze) and sorts once, instead of per-item.
+	 * Existing rows are updated in place; new rows are appended without a
+	 * per-item sort. EndBatchUpdate() does the single SortList(), unless
+	 * doSort is false (a pure in-place update needs no re-sort).
 	 */
 	void BeginBatchUpdate();
-	void EndBatchUpdate();
+	void EndBatchUpdate(bool doSort = true);
 
 	/**
 	 * Removes the specified file from the list.

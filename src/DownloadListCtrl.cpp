@@ -256,10 +256,14 @@ void CDownloadListCtrl::BeginBatchUpdate()
 	m_batchUpdate = true;
 }
 
-void CDownloadListCtrl::EndBatchUpdate()
+void CDownloadListCtrl::EndBatchUpdate(bool doSort)
 {
 	m_batchUpdate = false;
-	SortList();
+	// A poll that only updated rows in place (no new files) leaves the sort
+	// order untouched, so skip the O(n log n) SortList entirely (issue #615).
+	if (doSort) {
+		SortList();
+	}
 	Thaw();
 }
 
