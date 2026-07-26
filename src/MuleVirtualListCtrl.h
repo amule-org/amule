@@ -128,6 +128,15 @@ protected:
 	/** Virtual-list text callback -> GetItemColumnText(). */
 	virtual wxString OnGetItemText(long item, long column) const;
 
+	/** Virtual-list image callback. These lists own-draw their icons in
+	 *  OnDrawItem(); the small image list attached by CMuleListCtrl exists
+	 *  only for that drawing. A wxLC_VIRTUAL control still queries the per-item
+	 *  image whenever an image list is present, and the generic wxListCtrl
+	 *  asserts if OnGetItemColumnImage/OnGetItemImage is not overridden (a
+	 *  debug-build assert on click -- issue #625). Report "no image". */
+	virtual int OnGetItemColumnImage(long WXUNUSED(item), long WXUNUSED(column)) const { return -1; }
+	virtual int OnGetItemImage(long WXUNUSED(item)) const { return -1; }
+
 private:
 	// The sorted view (row i -> m_items[i]) and a data->row index kept in
 	// lockstep for O(1) update/remove (rebuilt after any insert/erase/sort).
