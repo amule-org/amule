@@ -68,15 +68,28 @@ void CServerConnect::TryAnotherConnectionrequest()
 		if (!next_server) {
 			if (connectionattemps.empty()) {
 				m_recurseTryAnotherConnectionrequest = true;
+				// In static-only mode only static servers were attempted, so say
+				// so rather than implying the whole list failed.
+				const bool staticOnly = thePrefs::AutoConnectStaticOnly();
 				if (m_bTryObfuscated && !thePrefs::IsClientCryptLayerRequired()) {
-					AddLogLineC(_("Failed to connect to all obfuscated servers listed. "
-						      "Making another pass without obfuscation."));
+					AddLogLineC(staticOnly
+							    ? _("Failed to connect to all obfuscated static "
+								"servers "
+								"listed. Making another pass without "
+								"obfuscation.")
+							    : _("Failed to connect to all obfuscated servers "
+								"listed. "
+								"Making another pass without obfuscation."));
 					// try all servers on the non-obfuscated port next
 					m_bTryObfuscated = false;
 					ConnectToAnyServer(false, true);
 				} else {
-					AddLogLineC(_("Failed to connect to all servers listed. Making "
-						      "another pass."));
+					AddLogLineC(
+						staticOnly
+							? _("Failed to connect to all static servers listed. "
+							    "Making another pass.")
+							: _("Failed to connect to all servers listed. Making "
+							    "another pass."));
 					ConnectToAnyServer(false);
 				}
 				m_recurseTryAnotherConnectionrequest = false;

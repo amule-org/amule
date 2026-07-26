@@ -1510,6 +1510,7 @@ wxSizer *PreferencesServerTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
 
     wxCheckBox *item2 = new wxCheckBox( parent, IDC_REMOVEDEAD, _("Remove dead server after"), wxDefaultPosition, wxDefaultSize, 0 );
+    item2->SetToolTip( _("Static servers are never removed, even when unreachable.") );
     item1->Add( item2, wxSizerFlags().Center().Border(wxRIGHT, 5) );
     wxSpinCtrl *item3 = new wxSpinCtrl( parent, IDC_SERVERRETRIES, "2", wxDefaultPosition, wxDefaultSize, 0, 1, 10, 2 );
     item1->Add( item3, wxSizerFlags().CenterVertical().Right() );
