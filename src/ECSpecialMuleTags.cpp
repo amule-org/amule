@@ -368,10 +368,15 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			dirtag.AddTag(CECTag(EC_TAG_STRING, theApp->glob_prefs->shareddir_list[i].GetRaw()));
 		}
 		dirPrefs.AddTag(dirtag);
-		dirPrefs.AddTag(CECTag(EC_TAG_DIRECTORIES_SHARE_HIDDEN, thePrefs::ShareHiddenFiles()));
-		dirPrefs.AddTag(CECTag(EC_TAG_DIRECTORIES_AUTO_RESCAN, thePrefs::AutoRescanSharedDirs()));
-		dirPrefs.AddTag(
-			CECTag(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, thePrefs::FollowSymlinksInShares()));
+		if (thePrefs::ShareHiddenFiles()) {
+			dirPrefs.AddTag(CECEmptyTag(EC_TAG_DIRECTORIES_SHARE_HIDDEN));
+		}
+		if (thePrefs::AutoRescanSharedDirs()) {
+			dirPrefs.AddTag(CECEmptyTag(EC_TAG_DIRECTORIES_AUTO_RESCAN));
+		}
+		if (thePrefs::FollowSymlinksInShares()) {
+			dirPrefs.AddTag(CECEmptyTag(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS));
+		}
 		dirPrefs.AddTag(
 			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS, thePrefs::GetExcludeSharePatterns()));
 		dirPrefs.AddTag(

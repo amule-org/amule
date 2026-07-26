@@ -2182,12 +2182,9 @@ void ParseDirectoriesPrefs(const CECTag *d, PreferencesSnapshot &out)
 				out.directories.shared.emplace_back(child.GetStringData().utf8_str());
 		}
 	}
-	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_SHARE_HIDDEN))
-		out.directories.share_hidden = t->GetInt() != 0;
-	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_AUTO_RESCAN))
-		out.directories.auto_rescan = t->GetInt() != 0;
-	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS))
-		out.directories.follow_symlinks = t->GetInt() != 0;
+	out.directories.share_hidden = d->GetTagByName(EC_TAG_DIRECTORIES_SHARE_HIDDEN) != nullptr;
+	out.directories.auto_rescan = d->GetTagByName(EC_TAG_DIRECTORIES_AUTO_RESCAN) != nullptr;
+	out.directories.follow_symlinks = d->GetTagByName(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS) != nullptr;
 	if (const CECTag *t = d->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS)) {
 		out.directories.exclude_patterns = std::string(t->GetStringData().utf8_str());
 	}
