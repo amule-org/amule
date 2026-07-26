@@ -1808,6 +1808,16 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		msPrevKnownMet = msCur;
 	}
 
+	// Coalesced flush of media-probe tag updates (#616): OnMediaProbeFinished
+	// bumps m_mediaTagsDirtiedMs on every probe instead of saving inline; save
+	// once here when probing has been idle for 30 s. Resets the periodic timer
+	// above so we don't rewrite known.met twice in quick succession.
+	if (m_mediaTagsDirtiedMs && msCur - m_mediaTagsDirtiedMs >= 30000) {
+		knownfiles->Save();
+		m_mediaTagsDirtiedMs = 0;
+		msPrevKnownMet = msCur;
+	}
+
 	// Recommended by lugdunummaster himself - from emule 0.30c
 	serverconnect->KeepConnectionAlive();
 
@@ -1959,11 +1969,15 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// EC exports the tag list; the remote GUI + web UI need to see
 	// the new values on next refresher tick.
 	file->MarkECChanged();
-	// Persist immediately so the tags survive a crash before the
-	// next scheduled known.met flush. CKnownFileList::Save is cheap
-	// (append-only over a memory buffer) and this only fires when a
-	// probe actually succeeded, so overhead is bounded.
-	theApp->knownfiles->Save();
+	// Coalesce the known.met save instead of rewriting the whole file per
+	// probe. CKnownFileList::Save rewrites every known file, so a per-probe
+	// save is O(files) each time -- O(N^2) when the whole library is probed at
+	// startup, which pegged a core and could re-enter Save mid-write (#616).
+	// Bump the last-change stamp on every probe; OnCoreTimer flushes a single
+	// Save once probing has been idle for 30 s, collapsing a startup burst
+	// into one write. The 30-min periodic save is the backstop if probes
+	// trickle in without ever pausing, and shutdown always flushes.
+	m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
 }
 
 void CamuleApp::OnFinishedCompletion(CCompletionEvent &evt)

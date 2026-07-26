@@ -426,6 +426,13 @@ protected:
 
 	APPState m_app_state;
 
+	// Media-probe tag writes coalesce into one known.met save: every
+	// OnMediaProbeFinished stamps this (uptime ms), and OnCoreTimer flushes a
+	// single Save() once probing has been idle for 30 s -- avoids the O(N^2)
+	// full-file rewrite when the whole library is probed at startup (#616).
+	// 0 = nothing pending.
+	uint64 m_mediaTagsDirtiedMs = 0;
+
 	// Headless GeoIP resolver, owned by the core (created in OnInit under
 	// ENABLE_IP2COUNTRY). NULL when GeoIP is disabled/unsupported.
 	CIP2Country *m_IP2Country;
