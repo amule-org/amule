@@ -219,6 +219,15 @@ void CServerWnd::UpdateED2KInfo()
 		// Give it an explicit label so the row is self-explanatory.
 		ED2KInfoList->InsertItem(3, _("Connection Type:"));
 		ED2KInfoList->SetItem(3, 1, theApp->serverconnect->IsLowID() ? _("LowID") : _("HighID"));
+
+#ifndef CLIENT_GUI
+		// Not available in amulegui: the connect timestamp lives on the
+		// core's CamuleApp and isn't carried over the EC protocol.
+		if (theApp->GetED2KConnectedSince().IsValid()) {
+			ED2KInfoList->InsertItem(4, _("Connected since:"));
+			ED2KInfoList->SetItem(4, 1, theApp->GetED2KConnectedSince().Format("%x %X"));
+		}
+#endif
 	} else {
 		// No data
 		ED2KInfoList->SetItem(0, 1, _("Not Connected"));
@@ -249,6 +258,15 @@ void CServerWnd::UpdateKadInfo()
 		KadInfoList->SetItem(
 			next_row++, 1, theApp->IsConnectedKad() ? _("Connected") : _("Disconnected"));
 		if (theApp->IsConnectedKad()) {
+#ifndef CLIENT_GUI
+			// Not available in amulegui: the connect timestamp lives on the
+			// core's CamuleApp and isn't carried over the EC protocol.
+			if (theApp->GetKadConnectedSince().IsValid()) {
+				KadInfoList->InsertItem(next_row, _("Connected since:"));
+				KadInfoList->SetItem(
+					next_row++, 1, theApp->GetKadConnectedSince().Format("%x %X"));
+			}
+#endif
 			KadInfoList->InsertItem(next_row, _("Connection State:"));
 			KadInfoList->SetItem(next_row++,
 				1,

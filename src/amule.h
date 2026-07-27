@@ -26,8 +26,9 @@
 #ifndef AMULE_H
 #define AMULE_H
 
-#include <wx/app.h>  // Needed for wxApp
-#include <wx/intl.h> // Needed for wxLocale
+#include <wx/app.h>      // Needed for wxApp
+#include <wx/datetime.h> // Needed for wxDateTime (ED2K/Kad "Connected since")
+#include <wx/intl.h>     // Needed for wxLocale
 
 #include "Types.h" // Needed for int32, uint16 and uint64
 #include <map>
@@ -410,6 +411,15 @@ public:
 
 	void ShowConnectionState(bool forceUpdate = false);
 
+	// Wall-clock timestamp of the most recent ed2k/Kad connect, set by
+	// ShowConnectionState() on the false->true transition it already
+	// detects. Invalid (wxDateTime::IsValid() == false) while
+	// disconnected. Feeds the "Connected since" row in the desktop
+	// ED2K/Kad Info panes (CServerWnd::UpdateED2KInfo/UpdateKadInfo) --
+	// not wired over EC, so amulegui doesn't show it (amule-org/amule#174).
+	const wxDateTime &GetED2KConnectedSince() const { return m_ed2kConnectedSince; }
+	const wxDateTime &GetKadConnectedSince() const { return m_kadConnectedSince; }
+
 	void StartKad();
 	void StopKad();
 
@@ -528,6 +538,11 @@ private:
 #endif
 
 	uint32 m_localip;
+
+	// Set by ShowConnectionState(); see the GetED2KConnectedSince() /
+	// GetKadConnectedSince() accessors above.
+	wxDateTime m_ed2kConnectedSince;
+	wxDateTime m_kadConnectedSince;
 };
 
 #ifndef AMULE_DAEMON

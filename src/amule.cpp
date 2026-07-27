@@ -2633,6 +2633,7 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 					theApp->serverconnect->IsLowID() ? _("with LowID") : _("with HighID");
 
 				AddLogLineC(CFormat(_("Connected to %s %s")) % connected_server % id);
+				m_ed2kConnectedSince = wxDateTime::Now();
 			} else {
 				// cppcheck-suppress duplicateBranch
 				if (theApp->serverconnect->IsConnecting()) {
@@ -2640,6 +2641,7 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 				} else {
 					AddLogLineC(_("Disconnected from eD2k"));
 				}
+				m_ed2kConnectedSince = wxDateTime();
 			}
 		}
 
@@ -2660,8 +2662,10 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 				} else {
 					AddLogLineC(_("Connected to Kad (firewalled)"));
 				}
+				m_kadConnectedSince = wxDateTime::Now();
 			} else {
 				AddLogLineC(_("Disconnected from Kad"));
+				m_kadConnectedSince = wxDateTime();
 			}
 		}
 
