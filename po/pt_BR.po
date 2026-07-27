@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-27 22:22+0200\n"
+"POT-Creation-Date: 2026-07-27 22:46+0200\n"
 "PO-Revision-Date: 2026-07-27 10:31+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -523,40 +523,40 @@ msgstr "com HighID (Id alta)"
 msgid "Connected to %s %s"
 msgstr "Conectado a %s %s"
 
-#: src/amule.cpp:2639
+#: src/amule.cpp:2640
 #, c-format
 msgid "Connecting to %s"
 msgstr "Conectando a %s"
 
-#: src/amule.cpp:2641
+#: src/amule.cpp:2642
 msgid "Disconnected from eD2k"
 msgstr "Desconectado de eD2k"
 
-#: src/amule.cpp:2649
+#: src/amule.cpp:2651
 msgid "Kad started."
 msgstr "Kad iniciado."
 
-#: src/amule.cpp:2651
+#: src/amule.cpp:2653
 msgid "Kad stopped."
 msgstr "Kad parado."
 
-#: src/amule.cpp:2659
+#: src/amule.cpp:2661
 msgid "Connected to Kad (ok)"
 msgstr "Conectado a rede Kad (ok)"
 
-#: src/amule.cpp:2661
+#: src/amule.cpp:2663
 msgid "Connected to Kad (firewalled)"
 msgstr "Conectado a rede Kad (sob firewall)"
 
-#: src/amule.cpp:2664
+#: src/amule.cpp:2667
 msgid "Disconnected from Kad"
 msgstr "Desconectado da rede Kad"
 
-#: src/amule.cpp:2695
+#: src/amule.cpp:2699
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
 msgstr "A rede Kad não pode ser usada se a porta UDP está desabilitada em preferências, não iniciará."
 
-#: src/amule.cpp:2699
+#: src/amule.cpp:2703
 msgid "Kad network disabled on preferences, not connecting."
 msgstr "A rede Kad está desabilitada em preferências, não iniciará."
 
@@ -968,7 +968,7 @@ msgstr "Link inválido ou já está na lista."
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "Incapaz criar o diretório '%s' para a categoria '%s', mantendo diretório '%s'."
 
-#: src/amule-remote-gui.cpp:2331 src/BaseClient.cpp:1830
+#: src/amule-remote-gui.cpp:2341 src/BaseClient.cpp:1830
 #: src/BaseClient.cpp:2434 src/BaseClient.cpp:2445 src/BaseClient.cpp:2718
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -1198,12 +1198,12 @@ msgid "Disabled"
 msgstr "Desabilitado"
 
 #: src/ClientDetailDialog.cpp:130 src/MuleTrayIcon.cpp:396
-#: src/ServerWnd.cpp:203 src/ServerWnd.cpp:250 src/TextClient.cpp:914
+#: src/ServerWnd.cpp:203 src/ServerWnd.cpp:258 src/TextClient.cpp:914
 msgid "Connected"
 msgstr "Conectado"
 
 #: src/ClientDetailDialog.cpp:132 src/MuleTrayIcon.cpp:386
-#: src/MuleTrayIcon.cpp:398 src/ServerWnd.cpp:250
+#: src/MuleTrayIcon.cpp:398 src/ServerWnd.cpp:258
 msgid "Disconnected"
 msgstr "Desconectado"
 
@@ -2988,7 +2988,7 @@ msgstr "Fechar"
 msgid "Cut"
 msgstr "Recortar"
 
-#: src/MuleTextCtrl.cpp:87 src/PartFileConvert.cpp:407 src/ServerWnd.cpp:422
+#: src/MuleTextCtrl.cpp:87 src/PartFileConvert.cpp:407 src/ServerWnd.cpp:437
 #: src/utils/aLinkCreator/src/alcframe.cpp:250
 msgid "Copy"
 msgstr "Copiar"
@@ -3157,7 +3157,7 @@ msgstr "Nome do Servidor: "
 msgid "ServerIP: "
 msgstr "IP do Servidor: "
 
-#: src/MuleTrayIcon.cpp:838 src/ServerWnd.cpp:224
+#: src/MuleTrayIcon.cpp:838 src/ServerWnd.cpp:232
 #: src/utils/wxCas/src/onlinesig.cpp:248
 msgid "Not Connected"
 msgstr "Não conectado"
@@ -3720,7 +3720,7 @@ msgstr "Software Cliente:"
 msgid "Client version:"
 msgstr "Versão do Cliente:"
 
-#: src/muuli_wdr.cpp:1105 src/ServerWnd.cpp:294
+#: src/muuli_wdr.cpp:1105 src/ServerWnd.cpp:309
 msgid "IP address:"
 msgstr "Endereço IP:"
 
@@ -4507,8 +4507,8 @@ msgstr "Retorna a página aos valores padrão"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Reseta as configurações na página atual para seus valores padrão."
 
-#: src/muuli_wdr.cpp:2221 src/muuli_wdr.cpp:2307 src/ServerWnd.cpp:259
-#: src/ServerWnd.cpp:267
+#: src/muuli_wdr.cpp:2221 src/muuli_wdr.cpp:2307 src/ServerWnd.cpp:274
+#: src/ServerWnd.cpp:282
 msgid "OK"
 msgstr "OK"
 
@@ -6609,94 +6609,99 @@ msgstr "ID"
 msgid "Connection Type:"
 msgstr "Tipo de Conexão:"
 
-#: src/ServerWnd.cpp:238
+#: src/ServerWnd.cpp:227 src/ServerWnd.cpp:263
+#, fuzzy
+msgid "Connected since:"
+msgstr "Conectado"
+
+#: src/ServerWnd.cpp:246
 msgid "Kademlia Status:"
 msgstr "Status Kademlia:"
 
-#: src/ServerWnd.cpp:243
+#: src/ServerWnd.cpp:251
 msgid "Running in LAN mode"
 msgstr "Rodando em modo LAN"
 
-#: src/ServerWnd.cpp:243
+#: src/ServerWnd.cpp:251
 msgid "Running"
 msgstr "Rodando"
 
-#: src/ServerWnd.cpp:246
+#: src/ServerWnd.cpp:254
 msgid "Kademlia client ID:"
 msgstr "ID do cliente Kademlia:"
 
-#: src/ServerWnd.cpp:248
+#: src/ServerWnd.cpp:256
 msgid "Status:"
 msgstr "Status:"
 
-#: src/ServerWnd.cpp:252
+#: src/ServerWnd.cpp:267
 msgid "Connection State:"
 msgstr "Estado da Conexão:"
 
-#: src/ServerWnd.cpp:256
+#: src/ServerWnd.cpp:271
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
 msgstr "Atrás de Firewall - abra a porta TCP %d em seu roteador ou firewall"
 
-#: src/ServerWnd.cpp:260
+#: src/ServerWnd.cpp:275
 msgid "UDP Connection State:"
 msgstr "Estado da Conexão UDP:"
 
-#: src/ServerWnd.cpp:264
+#: src/ServerWnd.cpp:279
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
 msgstr "Atrás de Firewall - abra a porta UDP %d em seu roteador ou firewall"
 
-#: src/ServerWnd.cpp:270
+#: src/ServerWnd.cpp:285
 msgid "Firewalled state: "
 msgstr "Estado do Firewall: "
 
-#: src/ServerWnd.cpp:275
+#: src/ServerWnd.cpp:290
 msgid "No buddy required - TCP port open"
 msgstr "Nenhum amigo requirido - porta TCP aberta"
 
-#: src/ServerWnd.cpp:277
+#: src/ServerWnd.cpp:292
 msgid "No buddy required - UDP port open"
 msgstr "Nenhum amigo requirido - porta UDP aberta"
 
-#: src/ServerWnd.cpp:279
+#: src/ServerWnd.cpp:294
 msgid "No buddy"
 msgstr "Sem amigos"
 
-#: src/ServerWnd.cpp:283
+#: src/ServerWnd.cpp:298
 msgid "Connecting to buddy"
 msgstr "Conectando ao amigo"
 
-#: src/ServerWnd.cpp:286
+#: src/ServerWnd.cpp:301
 #, c-format
 msgid "Connected to buddy at %s"
 msgstr "Conectado ao amigo em %s"
 
-#: src/ServerWnd.cpp:298
+#: src/ServerWnd.cpp:313
 msgid "Indexed sources:"
 msgstr "Fontes indexadas::"
 
-#: src/ServerWnd.cpp:300
+#: src/ServerWnd.cpp:315
 msgid "Indexed keywords:"
 msgstr "Palavras chaves indexadas:"
 
-#: src/ServerWnd.cpp:302
+#: src/ServerWnd.cpp:317
 msgid "Indexed notes:"
 msgstr "Notas indexadas:"
 
-#: src/ServerWnd.cpp:304
+#: src/ServerWnd.cpp:319
 msgid "Indexed load:"
 msgstr "Index carregado:"
 
-#: src/ServerWnd.cpp:307
+#: src/ServerWnd.cpp:322
 msgid "Average Users:"
 msgstr "Média de Usuários:"
 
-#: src/ServerWnd.cpp:310
+#: src/ServerWnd.cpp:325
 msgid "Average Files:"
 msgstr "Média de Arquivos:"
 
-#: src/ServerWnd.cpp:315 src/TextClient.cpp:925
+#: src/ServerWnd.cpp:330 src/TextClient.cpp:925
 msgid "Not running"
 msgstr "Parado"
 

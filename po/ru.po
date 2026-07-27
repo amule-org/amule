@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-27 22:22+0200\n"
+"POT-Creation-Date: 2026-07-27 22:46+0200\n"
 "PO-Revision-Date: 2026-07-27 10:33+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -521,44 +521,44 @@ msgstr "HighID"
 msgid "Connected to %s %s"
 msgstr "Соединен с %s %s"
 
-#: src/amule.cpp:2639
+#: src/amule.cpp:2640
 #, c-format
 msgid "Connecting to %s"
 msgstr "Подключение к %s"
 
-#: src/amule.cpp:2641
+#: src/amule.cpp:2642
 msgid "Disconnected from eD2k"
 msgstr "Отсоединен от eD2k"
 
 # Kad как сеть, или служба - поэтому в женском роде
 # да, согласен
-#: src/amule.cpp:2649
+#: src/amule.cpp:2651
 msgid "Kad started."
 msgstr "Kad запущена."
 
 # Kad как сеть, или служба - поэтому в женском роде
 # согласен
-#: src/amule.cpp:2651
+#: src/amule.cpp:2653
 msgid "Kad stopped."
 msgstr "Kad остановлена."
 
-#: src/amule.cpp:2659
+#: src/amule.cpp:2661
 msgid "Connected to Kad (ok)"
 msgstr "Подключен к Kad (норм.)"
 
-#: src/amule.cpp:2661
+#: src/amule.cpp:2663
 msgid "Connected to Kad (firewalled)"
 msgstr "Подключен к Kad (за брандмауэром)"
 
-#: src/amule.cpp:2664
+#: src/amule.cpp:2667
 msgid "Disconnected from Kad"
 msgstr "Отключился от Kad"
 
-#: src/amule.cpp:2695
+#: src/amule.cpp:2699
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
 msgstr "Сеть Kad не может быть использована если порт UDP выключен в настройках. Отменяю запуск."
 
-#: src/amule.cpp:2699
+#: src/amule.cpp:2703
 msgid "Kad network disabled on preferences, not connecting."
 msgstr "Сеть Kad выключена в настройках. Отменяю соединение."
 
@@ -967,7 +967,7 @@ msgstr "Ссылка неверна или уже в списке."
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "Не удается создать директорию '%s' для категории '%s', оставляем директорию '%s'."
 
-#: src/amule-remote-gui.cpp:2331 src/BaseClient.cpp:1830
+#: src/amule-remote-gui.cpp:2341 src/BaseClient.cpp:1830
 #: src/BaseClient.cpp:2434 src/BaseClient.cpp:2445 src/BaseClient.cpp:2718
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -1201,12 +1201,12 @@ msgid "Disabled"
 msgstr "Запрещено"
 
 #: src/ClientDetailDialog.cpp:130 src/MuleTrayIcon.cpp:396
-#: src/ServerWnd.cpp:203 src/ServerWnd.cpp:250 src/TextClient.cpp:914
+#: src/ServerWnd.cpp:203 src/ServerWnd.cpp:258 src/TextClient.cpp:914
 msgid "Connected"
 msgstr "Подключен"
 
 #: src/ClientDetailDialog.cpp:132 src/MuleTrayIcon.cpp:386
-#: src/MuleTrayIcon.cpp:398 src/ServerWnd.cpp:250
+#: src/MuleTrayIcon.cpp:398 src/ServerWnd.cpp:258
 msgid "Disconnected"
 msgstr "Отключен"
 
@@ -3012,7 +3012,7 @@ msgstr "Закрыть"
 msgid "Cut"
 msgstr "Вырезать"
 
-#: src/MuleTextCtrl.cpp:87 src/PartFileConvert.cpp:407 src/ServerWnd.cpp:422
+#: src/MuleTextCtrl.cpp:87 src/PartFileConvert.cpp:407 src/ServerWnd.cpp:437
 #: src/utils/aLinkCreator/src/alcframe.cpp:250
 msgid "Copy"
 msgstr "Копировать"
@@ -3188,7 +3188,7 @@ msgstr "Имя сервера: "
 msgid "ServerIP: "
 msgstr "IP-адрес сервера: "
 
-#: src/MuleTrayIcon.cpp:838 src/ServerWnd.cpp:224
+#: src/MuleTrayIcon.cpp:838 src/ServerWnd.cpp:232
 #: src/utils/wxCas/src/onlinesig.cpp:248
 msgid "Not Connected"
 msgstr "Не подключен"
@@ -3765,7 +3765,7 @@ msgstr "Клиентское ПО:"
 msgid "Client version:"
 msgstr "Версия клиентского ПО:"
 
-#: src/muuli_wdr.cpp:1105 src/ServerWnd.cpp:294
+#: src/muuli_wdr.cpp:1105 src/ServerWnd.cpp:309
 msgid "IP address:"
 msgstr "IP адрес:"
 
@@ -4567,8 +4567,8 @@ msgstr "Системный"
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2221 src/muuli_wdr.cpp:2307 src/ServerWnd.cpp:259
-#: src/ServerWnd.cpp:267
+#: src/muuli_wdr.cpp:2221 src/muuli_wdr.cpp:2307 src/ServerWnd.cpp:274
+#: src/ServerWnd.cpp:282
 msgid "OK"
 msgstr "ОК"
 
@@ -6704,95 +6704,100 @@ msgstr "ID"
 msgid "Connection Type:"
 msgstr "Состояние соединения:"
 
-#: src/ServerWnd.cpp:238
+#: src/ServerWnd.cpp:227 src/ServerWnd.cpp:263
+#, fuzzy
+msgid "Connected since:"
+msgstr "Подключен"
+
+#: src/ServerWnd.cpp:246
 msgid "Kademlia Status:"
 msgstr "Статус Kademlia:"
 
-#: src/ServerWnd.cpp:243
+#: src/ServerWnd.cpp:251
 msgid "Running in LAN mode"
 msgstr "Работает в режиме LAN"
 
-#: src/ServerWnd.cpp:243
+#: src/ServerWnd.cpp:251
 msgid "Running"
 msgstr "Выполняется"
 
-#: src/ServerWnd.cpp:246
+#: src/ServerWnd.cpp:254
 #, fuzzy
 msgid "Kademlia client ID:"
 msgstr "Статус Kademlia:"
 
-#: src/ServerWnd.cpp:248
+#: src/ServerWnd.cpp:256
 msgid "Status:"
 msgstr "Статус:"
 
-#: src/ServerWnd.cpp:252
+#: src/ServerWnd.cpp:267
 msgid "Connection State:"
 msgstr "Состояние соединения:"
 
-#: src/ServerWnd.cpp:256
+#: src/ServerWnd.cpp:271
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
 msgstr "За брандмауэром - откройте TCP порт %d на вашем роутере или брандмауэре"
 
-#: src/ServerWnd.cpp:260
+#: src/ServerWnd.cpp:275
 msgid "UDP Connection State:"
 msgstr "Состояние UDP соединения:"
 
-#: src/ServerWnd.cpp:264
+#: src/ServerWnd.cpp:279
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
 msgstr "За брандмауэром - откройте UDP порт %d на вашем роутере или брандмауэре"
 
-#: src/ServerWnd.cpp:270
+#: src/ServerWnd.cpp:285
 msgid "Firewalled state: "
 msgstr "Состояние брандмауэра:"
 
-#: src/ServerWnd.cpp:275
+#: src/ServerWnd.cpp:290
 msgid "No buddy required - TCP port open"
 msgstr "Друг не требуется - TCP порт открыт"
 
-#: src/ServerWnd.cpp:277
+#: src/ServerWnd.cpp:292
 msgid "No buddy required - UDP port open"
 msgstr "Друг не требуется - UDP порт открыт"
 
-#: src/ServerWnd.cpp:279
+#: src/ServerWnd.cpp:294
 msgid "No buddy"
 msgstr "Нет друзей"
 
-#: src/ServerWnd.cpp:283
+#: src/ServerWnd.cpp:298
 msgid "Connecting to buddy"
 msgstr "Соединяем с другом"
 
-#: src/ServerWnd.cpp:286
+#: src/ServerWnd.cpp:301
 #, c-format
 msgid "Connected to buddy at %s"
 msgstr "Соединяем с другом на %s"
 
-#: src/ServerWnd.cpp:298
+#: src/ServerWnd.cpp:313
 msgid "Indexed sources:"
 msgstr "Проиндексировано источников:"
 
-#: src/ServerWnd.cpp:300
+#: src/ServerWnd.cpp:315
 msgid "Indexed keywords:"
 msgstr "Ключевые слова проиндексированы:"
 
-#: src/ServerWnd.cpp:302
+#: src/ServerWnd.cpp:317
 msgid "Indexed notes:"
 msgstr "Проиндексировано записей:"
 
-#: src/ServerWnd.cpp:304
+#: src/ServerWnd.cpp:319
 msgid "Indexed load:"
 msgstr "Загрузки проиндексированы:"
 
-#: src/ServerWnd.cpp:307
+#: src/ServerWnd.cpp:322
 msgid "Average Users:"
 msgstr "Пользователей в среднем:"
 
-#: src/ServerWnd.cpp:310
+#: src/ServerWnd.cpp:325
 msgid "Average Files:"
 msgstr "Файлов в среднем:"
 
-#: src/ServerWnd.cpp:315 src/TextClient.cpp:925
+#: src/ServerWnd.cpp:330 src/TextClient.cpp:925
 msgid "Not running"
 msgstr "Не запущен"
 

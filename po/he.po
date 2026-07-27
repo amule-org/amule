@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-27 22:22+0200\n"
+"POT-Creation-Date: 2026-07-27 22:46+0200\n"
 "PO-Revision-Date: 2026-07-27 10:23+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -503,40 +503,40 @@ msgstr "עם מ\"ז גבוהה (HighID)"
 msgid "Connected to %s %s"
 msgstr ""
 
-#: src/amule.cpp:2639
+#: src/amule.cpp:2640
 #, c-format
 msgid "Connecting to %s"
 msgstr ""
 
-#: src/amule.cpp:2641
+#: src/amule.cpp:2642
 msgid "Disconnected from eD2k"
 msgstr ""
 
-#: src/amule.cpp:2649
+#: src/amule.cpp:2651
 msgid "Kad started."
 msgstr "קאד התחיל."
 
-#: src/amule.cpp:2651
+#: src/amule.cpp:2653
 msgid "Kad stopped."
 msgstr "קאד נעצר."
 
-#: src/amule.cpp:2659
+#: src/amule.cpp:2661
 msgid "Connected to Kad (ok)"
 msgstr "קאד מחובר (בסדר)"
 
-#: src/amule.cpp:2661
+#: src/amule.cpp:2663
 msgid "Connected to Kad (firewalled)"
 msgstr "קאד מחובר (מאחורי חומת אש)"
 
-#: src/amule.cpp:2664
+#: src/amule.cpp:2667
 msgid "Disconnected from Kad"
 msgstr "מנותק מקאד."
 
-#: src/amule.cpp:2695
+#: src/amule.cpp:2699
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
 msgstr "אי אפשר להשתמש ברשת הקאד אם מוואת UDP מבוטלת בהעדפות, לא התחיל."
 
-#: src/amule.cpp:2699
+#: src/amule.cpp:2703
 msgid "Kad network disabled on preferences, not connecting."
 msgstr "קאד מבוטל בהעדפות, לא מתחבר."
 
@@ -948,7 +948,7 @@ msgstr "קישור לא תקף או שכבר נמצא ברשימה."
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr ""
 
-#: src/amule-remote-gui.cpp:2331 src/BaseClient.cpp:1830
+#: src/amule-remote-gui.cpp:2341 src/BaseClient.cpp:1830
 #: src/BaseClient.cpp:2434 src/BaseClient.cpp:2445 src/BaseClient.cpp:2718
 #: src/ClientDetailDialog.cpp:72 src/ClientDetailDialog.cpp:73
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
@@ -1179,12 +1179,12 @@ msgid "Disabled"
 msgstr ""
 
 #: src/ClientDetailDialog.cpp:130 src/MuleTrayIcon.cpp:396
-#: src/ServerWnd.cpp:203 src/ServerWnd.cpp:250 src/TextClient.cpp:914
+#: src/ServerWnd.cpp:203 src/ServerWnd.cpp:258 src/TextClient.cpp:914
 msgid "Connected"
 msgstr "מחובר"
 
 #: src/ClientDetailDialog.cpp:132 src/MuleTrayIcon.cpp:386
-#: src/MuleTrayIcon.cpp:398 src/ServerWnd.cpp:250
+#: src/MuleTrayIcon.cpp:398 src/ServerWnd.cpp:258
 msgid "Disconnected"
 msgstr "מנותק"
 
@@ -2955,7 +2955,7 @@ msgstr "סגור"
 msgid "Cut"
 msgstr "גזור"
 
-#: src/MuleTextCtrl.cpp:87 src/PartFileConvert.cpp:407 src/ServerWnd.cpp:422
+#: src/MuleTextCtrl.cpp:87 src/PartFileConvert.cpp:407 src/ServerWnd.cpp:437
 #: src/utils/aLinkCreator/src/alcframe.cpp:250
 msgid "Copy"
 msgstr "העתק"
@@ -3130,7 +3130,7 @@ msgstr ""
 msgid "ServerIP: "
 msgstr ""
 
-#: src/MuleTrayIcon.cpp:838 src/ServerWnd.cpp:224
+#: src/MuleTrayIcon.cpp:838 src/ServerWnd.cpp:232
 #: src/utils/wxCas/src/onlinesig.cpp:248
 msgid "Not Connected"
 msgstr "מנותק"
@@ -3699,7 +3699,7 @@ msgstr "תוכנת לקוח:"
 msgid "Client version:"
 msgstr "גרסת לקוח:"
 
-#: src/muuli_wdr.cpp:1105 src/ServerWnd.cpp:294
+#: src/muuli_wdr.cpp:1105 src/ServerWnd.cpp:309
 msgid "IP address:"
 msgstr "כתובת IP:"
 
@@ -4489,8 +4489,8 @@ msgstr "ברירת מחדל של המערכת"
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp:2221 src/muuli_wdr.cpp:2307 src/ServerWnd.cpp:259
-#: src/ServerWnd.cpp:267
+#: src/muuli_wdr.cpp:2221 src/muuli_wdr.cpp:2307 src/ServerWnd.cpp:274
+#: src/ServerWnd.cpp:282
 msgid "OK"
 msgstr "בסדר"
 
@@ -6606,100 +6606,105 @@ msgstr "מ\"ז"
 msgid "Connection Type:"
 msgstr "מצב חיבור:"
 
-#: src/ServerWnd.cpp:238
+#: src/ServerWnd.cpp:227 src/ServerWnd.cpp:263
+#, fuzzy
+msgid "Connected since:"
+msgstr "מחובר"
+
+#: src/ServerWnd.cpp:246
 msgid "Kademlia Status:"
 msgstr "סטטוס קאדימליה:"
 
-#: src/ServerWnd.cpp:243
+#: src/ServerWnd.cpp:251
 #, fuzzy
 msgid "Running in LAN mode"
 msgstr "פועל על %s"
 
-#: src/ServerWnd.cpp:243
+#: src/ServerWnd.cpp:251
 msgid "Running"
 msgstr "פועל"
 
-#: src/ServerWnd.cpp:246
+#: src/ServerWnd.cpp:254
 #, fuzzy
 msgid "Kademlia client ID:"
 msgstr "סטטוס קאדימליה:"
 
-#: src/ServerWnd.cpp:248
+#: src/ServerWnd.cpp:256
 msgid "Status:"
 msgstr "סטאטוס:"
 
-#: src/ServerWnd.cpp:252
+#: src/ServerWnd.cpp:267
 msgid "Connection State:"
 msgstr "מצב חיבור:"
 
-#: src/ServerWnd.cpp:256
+#: src/ServerWnd.cpp:271
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
 msgstr ""
 
-#: src/ServerWnd.cpp:260
+#: src/ServerWnd.cpp:275
 #, fuzzy
 msgid "UDP Connection State:"
 msgstr "מצב חיבור:"
 
-#: src/ServerWnd.cpp:264
+#: src/ServerWnd.cpp:279
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
 msgstr ""
 
-#: src/ServerWnd.cpp:270
+#: src/ServerWnd.cpp:285
 msgid "Firewalled state: "
 msgstr "מצב חומת אש: "
 
-#: src/ServerWnd.cpp:275
+#: src/ServerWnd.cpp:290
 msgid "No buddy required - TCP port open"
 msgstr ""
 
-#: src/ServerWnd.cpp:277
+#: src/ServerWnd.cpp:292
 msgid "No buddy required - UDP port open"
 msgstr ""
 
-#: src/ServerWnd.cpp:279
+#: src/ServerWnd.cpp:294
 msgid "No buddy"
 msgstr "אין חבר"
 
-#: src/ServerWnd.cpp:283
+#: src/ServerWnd.cpp:298
 #, fuzzy
 msgid "Connecting to buddy"
 msgstr "מחובר לחבר"
 
-#: src/ServerWnd.cpp:286
+#: src/ServerWnd.cpp:301
 #, fuzzy, c-format
 msgid "Connected to buddy at %s"
 msgstr "מחובר לחבר"
 
-#: src/ServerWnd.cpp:298
+#: src/ServerWnd.cpp:313
 #, fuzzy
 msgid "Indexed sources:"
 msgstr "מקורות שנמצאו :"
 
-#: src/ServerWnd.cpp:300
+#: src/ServerWnd.cpp:315
 msgid "Indexed keywords:"
 msgstr ""
 
-#: src/ServerWnd.cpp:302
+#: src/ServerWnd.cpp:317
 #, fuzzy
 msgid "Indexed notes:"
 msgstr "קובץ האינדקס לא נמצא"
 
-#: src/ServerWnd.cpp:304
+#: src/ServerWnd.cpp:319
 msgid "Indexed load:"
 msgstr ""
 
-#: src/ServerWnd.cpp:307
+#: src/ServerWnd.cpp:322
 msgid "Average Users:"
 msgstr "ממוצע משתמשים:"
 
-#: src/ServerWnd.cpp:310
+#: src/ServerWnd.cpp:325
 msgid "Average Files:"
 msgstr "ממוצע קבצים:"
 
-#: src/ServerWnd.cpp:315 src/TextClient.cpp:925
+#: src/ServerWnd.cpp:330 src/TextClient.cpp:925
 msgid "Not running"
 msgstr "לא פועל"
 
