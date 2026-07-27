@@ -226,6 +226,10 @@ void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 	wxMenu menu;
 	wxMenuItem *rememberItem = menu.AppendCheckItem(wxID_ANY, _("Remember search history"));
 	rememberItem->Check(enabled);
+	// Separator: "Clear" is a one-shot action, not another state to toggle
+	// alongside the checkbox above -- keeping them visually apart avoids
+	// reading it as a second option in the same group.
+	menu.AppendSeparator();
 	wxMenuItem *clearItem = menu.Append(wxID_ANY, _("Clear search history"));
 	clearItem->Enable(CastChild(IDC_SEARCHNAME, wxComboBox)->GetCount() > 0);
 
