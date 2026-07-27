@@ -204,7 +204,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxStaticText *item4 = new wxStaticText( parent, -1, _("Name:"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item4, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxComboBox *item5 = new wxComboBox( parent, IDC_SEARCHNAME, "", wxDefaultPosition, wxSize(80,-1), 0, NULL, wxTE_PROCESS_ENTER );
+    wxComboBox *item5 = new wxComboBox( parent, IDC_SEARCHNAME, "", wxDefaultPosition, wxSize(80,-1), 0, nullptr, wxTE_PROCESS_ENTER );
     item3->Add( item5, wxSizerFlags(1).Center().Border(wxALL, 5) );
     wxFlexGridSizer *item6 = new wxFlexGridSizer( 1, 0, 0, 0 );
 
