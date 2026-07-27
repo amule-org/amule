@@ -24,9 +24,13 @@
 //
 
 #include <wx/app.h>
-#include <wx/config.h> // Needed to persist the default search type
+#include <wx/combobox.h> // Needed for the IDC_SEARCHNAME history dropdown
+#include <wx/config.h>   // Needed to persist the default search type
+#include <wx/menu.h>     // Needed for the search-history context menu
 
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
+
+#include <algorithm> // Needed for std::min
 
 #include <tags/FileTags.h>
 
@@ -125,10 +129,118 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	s_search_sizer->Show(s_extended_sizer, false);
 	s_search_sizer->Show(s_filter_sizer, false);
 
+	LoadSearchHistory();
+	CastChild(IDC_SEARCHNAME, wxComboBox)
+		->Bind(wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
+
 	Layout();
 }
 
 CSearchDlg::~CSearchDlg() {}
+
+namespace
+{
+const int MAX_SEARCH_HISTORY_ENTRIES = 20;
+}
+
+void CSearchDlg::LoadSearchHistory()
+{
+	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+	combo->Clear(); // item list, not the (empty at startup) text value
+
+	wxConfigBase *cfg = wxConfigBase::Get();
+	long count = 0;
+	cfg->Read("/eMule/SearchHistory/Count", &count, 0);
+	count = std::min<long>(count, MAX_SEARCH_HISTORY_ENTRIES);
+
+	for (long i = 0; i < count; ++i) {
+		wxString term;
+		if (cfg->Read(wxString::Format("/eMule/SearchHistory/%ld", i), &term) && !term.IsEmpty()) {
+			combo->Append(term);
+		}
+	}
+}
+
+void CSearchDlg::RecordSearchHistory(const wxString &term)
+{
+	wxConfigBase *cfg = wxConfigBase::Get();
+
+	bool enabled = true;
+	cfg->Read("/eMule/SearchHistoryEnabled", &enabled, true);
+	if (!enabled || term.IsEmpty()) {
+		return;
+	}
+
+	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+
+	// Move the new term to the front, dropping any earlier occurrence
+	// (case-insensitive) so it doesn't appear twice.
+	wxArrayString entries;
+	entries.Add(term);
+	for (unsigned int i = 0; i < combo->GetCount(); ++i) {
+		wxString existing = combo->GetString(i);
+		if (existing.CmpNoCase(term) != 0) {
+			entries.Add(existing);
+		}
+	}
+	if ((int)entries.GetCount() > MAX_SEARCH_HISTORY_ENTRIES) {
+		entries.RemoveAt(MAX_SEARCH_HISTORY_ENTRIES, entries.GetCount() - MAX_SEARCH_HISTORY_ENTRIES);
+	}
+
+	combo->Clear();
+	for (const wxString &entry : entries) {
+		combo->Append(entry);
+	}
+	// combo->Clear() above only touches the item list, but set the value
+	// back explicitly anyway so behaviour doesn't depend on that not
+	// changing across wx versions/platforms.
+	combo->SetValue(term);
+
+	cfg->Write("/eMule/SearchHistory/Count", (long)entries.GetCount());
+	for (size_t i = 0; i < entries.GetCount(); ++i) {
+		cfg->Write(wxString::Format("/eMule/SearchHistory/%zu", i), entries[i]);
+	}
+	cfg->Flush();
+}
+
+void CSearchDlg::ClearSearchHistory()
+{
+	wxConfigBase *cfg = wxConfigBase::Get();
+	long count = 0;
+	cfg->Read("/eMule/SearchHistory/Count", &count, 0);
+	for (long i = 0; i < count; ++i) {
+		cfg->DeleteEntry(wxString::Format("/eMule/SearchHistory/%ld", i));
+	}
+	cfg->Write("/eMule/SearchHistory/Count", (long)0);
+	cfg->Flush();
+
+	CastChild(IDC_SEARCHNAME, wxComboBox)->Clear();
+}
+
+void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
+{
+	wxConfigBase *cfg = wxConfigBase::Get();
+	bool enabled = true;
+	cfg->Read("/eMule/SearchHistoryEnabled", &enabled, true);
+
+	wxMenu menu;
+	wxMenuItem *rememberItem = menu.AppendCheckItem(wxID_ANY, _("Remember search history"));
+	rememberItem->Check(enabled);
+	wxMenuItem *clearItem = menu.Append(wxID_ANY, _("Clear search history"));
+	clearItem->Enable(CastChild(IDC_SEARCHNAME, wxComboBox)->GetCount() > 0);
+
+	menu.Bind(
+		wxEVT_MENU,
+		[rememberItem](wxCommandEvent &) {
+			wxConfigBase::Get()->Write("/eMule/SearchHistoryEnabled", rememberItem->IsChecked());
+			wxConfigBase::Get()->Flush();
+		},
+		rememberItem->GetId());
+
+	menu.Bind(wxEVT_MENU, [this](wxCommandEvent &) { ClearSearchHistory(); }, clearItem->GetId());
+
+	PopupMenu(&menu);
+}
 
 void CSearchDlg::FixSearchTypes()
 {
@@ -455,7 +567,7 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 	int textfields[] = { IDC_SEARCHNAME, IDC_EDITSEARCHEXTENSION };
 
 	for (int textfield : textfields) {
-		enable |= !CastChild(textfield, wxTextCtrl)->GetValue().IsEmpty();
+		enable |= !CastChild(textfield, wxTextEntry)->GetValue().IsEmpty();
 	}
 
 	// Check if either of the dropdowns have been changed
@@ -474,7 +586,7 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 	FindWindow(IDC_SEARCH_RESET)->Enable(enable);
 
 	// Enable the Server Search button if the Name field contains text
-	enable = !CastChild(IDC_SEARCHNAME, wxTextCtrl)->GetValue().IsEmpty();
+	enable = !CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue().IsEmpty();
 	FindWindow(IDC_STARTS)->Enable(enable);
 }
 
@@ -677,7 +789,7 @@ void CSearchDlg::ResetControls()
 	m_progressbar->SetValue(0);
 
 	FindWindow(IDC_CANCELS)->Disable();
-	FindWindow(IDC_STARTS)->Enable(!CastChild(IDC_SEARCHNAME, wxTextCtrl)->GetValue().IsEmpty());
+	FindWindow(IDC_STARTS)->Enable(!CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue().IsEmpty());
 }
 
 void CSearchDlg::LocalSearchEnd()
@@ -741,13 +853,15 @@ void CSearchDlg::StartNewSearch()
 
 	CSearchList::CSearchParams params;
 
-	params.searchString = CastChild(IDC_SEARCHNAME, wxTextCtrl)->GetValue();
+	params.searchString = CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue();
 	params.searchString.Trim(true);
 	params.searchString.Trim(false);
 
 	if (params.searchString.IsEmpty()) {
 		return;
 	}
+
+	RecordSearchHistory(params.searchString);
 
 	if (CastChild(IDC_EXTENDEDSEARCHCHECK, wxCheckBox)->GetValue()) {
 		params.extension = CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->GetValue();
@@ -908,7 +1022,9 @@ void CSearchDlg::UpdateHitCount(CSearchListCtrl *page)
 
 void CSearchDlg::OnBnClickedReset(wxCommandEvent &WXUNUSED(evt))
 {
-	CastChild(IDC_SEARCHNAME, wxTextCtrl)->Clear();
+	// wxTextEntry::Clear(), not wxComboBox's own Clear() -- the latter empties
+	// the dropdown's item list (the history), not the typed value.
+	CastChild(IDC_SEARCHNAME, wxTextEntry)->Clear();
 	CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->Clear();
 	CastChild(IDC_SPINSEARCHMIN, wxSpinCtrl)->SetValue(0);
 	CastChild(IDC_SEARCHMINSIZE, wxChoice)->SetSelection(2);

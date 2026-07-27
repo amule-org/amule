@@ -39,6 +39,7 @@ class CMuleNotebookEvent;
 class wxListEvent;
 class wxSpinEvent;
 class wxGauge;
+class wxContextMenuEvent;
 class CSearchFile;
 
 /**
@@ -188,6 +189,13 @@ public:
 private:
 	// Event handlers
 	void OnFieldChanged(wxEvent &evt);
+
+	// Search history: persisted (wxConfig) list of past search terms shown
+	// in the IDC_SEARCHNAME combo box's dropdown (amule-org/amule#641).
+	void LoadSearchHistory();
+	void RecordSearchHistory(const wxString &term);
+	void ClearSearchHistory();
+	void OnSearchNameContextMenu(wxContextMenuEvent &evt);
 
 	// Persists the chosen search type so it survives a restart (amule-org/amule#608).
 	void OnSearchTypeChanged(wxCommandEvent &evt);
