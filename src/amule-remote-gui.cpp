@@ -1488,7 +1488,7 @@ void CServerConnectRem::HandlePacket(const CECPacket *packet)
 		theApp->m_ed2kConnectedSince = wxDateTime();
 		if (m_CurrServer) {
 			theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(m_CurrServer, false);
-			m_CurrServer = 0;
+			m_CurrServer = nullptr;
 		}
 	}
 
