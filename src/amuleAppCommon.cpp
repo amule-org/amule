@@ -315,6 +315,14 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		"Register/unregister aMule as the default handler for URL schemes, then exit. "
 		"Values: on|off (both schemes) or ed2k:on|ed2k:off|magnet:on|magnet:off "
 		"(per-scheme). The Windows installer invokes the per-scheme form.");
+	// Same one-shot shape as the two above. Called by the Windows
+	// installer's Components-page checkbox and by the Preferences UI /
+	// first-run wizard; also the way a portable or self-built copy can
+	// register itself without an installer.
+	cmdline.AddOption("",
+		"configure-file-assoc",
+		"Register/unregister aMule as the handler for .emulecollection files, then exit. "
+		"Values: on|off.");
 #ifdef AMULE_DAEMON
 	cmdline.AddSwitch("f", "full-daemon", "Fork to background.");
 	cmdline.AddOption("p", "pid-file", "After fork, create a pid-file in the given fullname file.");
@@ -444,18 +452,39 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		}
 		bool ok = true;
 		if (doEd2k) {
-			ok &= (wantEnable ? ProtocolHandlerManager::Enable(UriScheme::Ed2k)
-					  : ProtocolHandlerManager::Disable(UriScheme::Ed2k));
+			ok &= (wantEnable ? ProtocolHandlerManager::Enable(HandlerTarget::Ed2kScheme)
+					  : ProtocolHandlerManager::Disable(HandlerTarget::Ed2kScheme));
 		}
 		if (doMagnet) {
-			ok &= (wantEnable ? ProtocolHandlerManager::Enable(UriScheme::Magnet)
-					  : ProtocolHandlerManager::Disable(UriScheme::Magnet));
+			ok &= (wantEnable ? ProtocolHandlerManager::Enable(HandlerTarget::MagnetScheme)
+					  : ProtocolHandlerManager::Disable(HandlerTarget::MagnetScheme));
 		}
 		printf("%s: %s%s\n",
 			ok ? (wantEnable ? "protocols enabled" : "protocols disabled")
 			   : (wantEnable ? "protocols enable FAILED" : "protocols disable FAILED"),
 			doEd2k ? "ed2k" : "",
 			doMagnet ? (doEd2k ? ", magnet" : "magnet") : "");
+		// Same one-shot exit semantics as --configure-autostart above.
+		return false;
+	}
+
+	wxString fileassoc_arg;
+	if (cmdline.Found("configure-file-assoc", &fileassoc_arg)) {
+		fileassoc_arg.MakeLower();
+		bool ok = false;
+		if (fileassoc_arg == wxT("on") || fileassoc_arg == wxT("yes") ||
+			fileassoc_arg == wxT("true") || fileassoc_arg == wxT("1")) {
+			ok = ProtocolHandlerManager::Enable(HandlerTarget::CollectionFile);
+			printf(ok ? "file association enabled\n" : "file association enable FAILED\n");
+		} else if (fileassoc_arg == wxT("off") || fileassoc_arg == wxT("no") ||
+			   fileassoc_arg == wxT("false") || fileassoc_arg == wxT("0")) {
+			ok = ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
+			printf(ok ? "file association disabled\n" : "file association disable FAILED\n");
+		} else {
+			fprintf(stderr,
+				"configure-file-assoc expects 'on' or 'off' (got '%s')\n",
+				(const char *)unicode2char(fileassoc_arg));
+		}
 		// Same one-shot exit semantics as --configure-autostart above.
 		return false;
 	}

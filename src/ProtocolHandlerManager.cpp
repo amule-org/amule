@@ -39,7 +39,8 @@
 
 #ifdef __WXMSW__
 #include <windows.h>
-#include <cwchar> // Needed for wcslen
+#include <shlobj.h> // Needed for SHChangeNotify
+#include <cwchar>   // Needed for wcslen
 #else
 #include <climits>      // Needed for PATH_MAX
 #include <stdlib.h>     // Needed for realpath
@@ -56,35 +57,48 @@
 // what actually makes the linker resolution work — a static-linkage
 // declaration cannot bind to a global-scope definition.
 #if defined(__WXMAC__) || defined(__WXOSX__)
-wxString MacReadHandler(UriScheme scheme);
-bool MacWrite(UriScheme scheme, const wxString &canonicalExe);
-bool MacRemove(UriScheme scheme);
+wxString MacReadHandler(HandlerTarget scheme);
+bool MacWrite(HandlerTarget scheme, const wxString &canonicalExe);
+bool MacRemove(HandlerTarget scheme);
 wxString MacOwnBundleId();
 #endif
 
 namespace
 {
-// Short lowercase scheme name — used in every backend's key path
-// (registry, mimeapps.list entry, LaunchServices scheme argument).
-const wchar_t *SchemeName(UriScheme scheme)
+// True for targets registered as a URL protocol rather than a file type.
+// The two differ in key layout on Windows and in the mimeapps.list /
+// LaunchServices call used elsewhere, so every backend branches on it.
+bool IsUriScheme(HandlerTarget target)
 {
-	switch (scheme) {
-	case UriScheme::Ed2k:
+	return target != HandlerTarget::CollectionFile;
+}
+
+// The name that identifies this target in the OS store: the scheme for a
+// URL protocol, the ProgID for the Windows file type.
+const wchar_t *SchemeName(HandlerTarget target)
+{
+	switch (target) {
+	case HandlerTarget::Ed2kScheme:
 		return L"ed2k";
-	case UriScheme::Magnet:
+	case HandlerTarget::MagnetScheme:
 		return L"magnet";
+	case HandlerTarget::CollectionFile:
+		return L"aMule.emulecollection";
 	}
 	return L"";
 }
 
-// UTF-8 flavour for POSIX backends.
-const char *SchemeNameUtf8(UriScheme scheme)
+// UTF-8 flavour for POSIX backends. For the file type this is the MIME
+// type, which is what mimeapps.list keys on.
+const char *SchemeNameUtf8(HandlerTarget target)
 {
-	switch (scheme) {
-	case UriScheme::Ed2k:
+	switch (target) {
+	case HandlerTarget::Ed2kScheme:
 		return "ed2k";
-	case UriScheme::Magnet:
+	case HandlerTarget::MagnetScheme:
 		return "magnet";
+	case HandlerTarget::CollectionFile:
+		return "application/x-emule-collection";
 	}
 	return "";
 }
@@ -97,17 +111,17 @@ const char *SchemeNameUtf8(UriScheme scheme)
 // The identifier shape differs by OS: registry command string on
 // Windows, .desktop id / Exec= path on Linux, bundle id on macOS.
 // Empty on "no handler set".
-wxString BackendReadHandler(UriScheme scheme);
+wxString BackendReadHandler(HandlerTarget scheme);
 
 // Sets aMule as the default handler for `scheme`. `canonicalExe` is
 // the resolved absolute path of the running binary. Silent overwrite —
 // the caller owns the "another app is currently the default" UX.
-bool BackendWrite(UriScheme scheme, const wxString &canonicalExe);
+bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe);
 
 // Removes aMule as the default handler for `scheme` if we're the
 // current handler. Idempotent — returns true if we weren't the
 // current handler either.
-bool BackendRemove(UriScheme scheme);
+bool BackendRemove(HandlerTarget scheme);
 
 // True iff `raw` (the return value of BackendReadHandler) refers to
 // the aMule binary/bundle at `canonicalExe`. Encapsulates the per-OS
@@ -223,7 +237,7 @@ void ProtocolHandler_QueueSchemeLink(const wxString &url)
 	ProtocolHandler_QueueLinks(links);
 }
 
-bool ProtocolHandlerManager::IsEnabled(UriScheme scheme)
+bool ProtocolHandlerManager::IsEnabled(HandlerTarget scheme)
 {
 	wxString raw = BackendReadHandler(scheme);
 	if (raw.empty()) {
@@ -232,7 +246,7 @@ bool ProtocolHandlerManager::IsEnabled(UriScheme scheme)
 	return BackendIsUs(raw);
 }
 
-bool ProtocolHandlerManager::Enable(UriScheme scheme)
+bool ProtocolHandlerManager::Enable(HandlerTarget scheme)
 {
 	wxString exe = GetCanonicalExecutablePath();
 	if (exe.empty()) {
@@ -243,12 +257,12 @@ bool ProtocolHandlerManager::Enable(UriScheme scheme)
 	return BackendWrite(scheme, exe);
 }
 
-bool ProtocolHandlerManager::Disable(UriScheme scheme)
+bool ProtocolHandlerManager::Disable(HandlerTarget scheme)
 {
 	return BackendRemove(scheme);
 }
 
-wxString ProtocolHandlerManager::GetCurrentHandler(UriScheme scheme)
+wxString ProtocolHandlerManager::GetCurrentHandler(HandlerTarget scheme)
 {
 	wxString raw = BackendReadHandler(scheme);
 	if (raw.empty() || BackendIsUs(raw)) {
@@ -264,8 +278,8 @@ void ProtocolHandlerManager::SelfHealOnStartup()
 		return;
 	}
 
-	const UriScheme schemes[] = { UriScheme::Ed2k, UriScheme::Magnet };
-	for (UriScheme scheme : schemes) {
+	const HandlerTarget schemes[] = { HandlerTarget::Ed2kScheme, HandlerTarget::MagnetScheme };
+	for (HandlerTarget scheme : schemes) {
 		wxString raw = BackendReadHandler(scheme);
 		if (raw.empty()) {
 			// No handler set — disabling is always a deliberate
@@ -310,11 +324,26 @@ namespace
 //                              \DefaultIcon\        (default) = "<amule.exe>,0"
 //                              \shell\open\command\ (default) = "\"<amule.exe>\" \"%1\""
 //
+// A file type is laid out differently — the extension key names a ProgID
+// and the ProgID carries the icon and command:
+//
+//   HKCU\Software\Classes\.emulecollection\  (default) = "aMule.emulecollection"
+//                        \…\OpenWithProgids\ aMule.emulecollection = ""
+//   HKCU\Software\Classes\aMule.emulecollection\
+//                              \                   (default) = "eMule Collection"
+//                              \DefaultIcon\        (default) = "<amule.exe>,0"
+//                              \shell\open\command\ (default) = "\"<amule.exe>\" \"%1\""
+//
 // Per-user (HKCU not HKLM) so toggling never needs elevation.
 
-static wxString SubKey(UriScheme scheme)
+// The ProgID doubles as the registry key name for the file type, which is
+// what lets SubKey() and the read path stay common with the schemes.
+static const wchar_t *const COLLECTION_PROGID = L"aMule.emulecollection";
+static const wchar_t *const COLLECTION_EXT_KEY = L"Software\\Classes\\.emulecollection";
+
+static wxString SubKey(HandlerTarget target)
 {
-	return wxString::Format(wxT("Software\\Classes\\%s"), SchemeName(scheme));
+	return wxString::Format(wxT("Software\\Classes\\%s"), SchemeName(target));
 }
 
 static bool WriteStringValue(
@@ -378,7 +407,7 @@ static wxString ExtractExeFromCommand(const wxString &command)
 	return command;
 }
 
-wxString BackendReadHandler(UriScheme scheme)
+wxString BackendReadHandler(HandlerTarget scheme)
 {
 	wxString cmd = ReadStringValue(HKEY_CURRENT_USER,
 		(SubKey(scheme) + wxT("\\shell\\open\\command")).wc_str(),
@@ -386,21 +415,10 @@ wxString BackendReadHandler(UriScheme scheme)
 	return ExtractExeFromCommand(cmd);
 }
 
-bool BackendWrite(UriScheme scheme, const wxString &canonicalExe)
+// Writes the DefaultIcon + shell\open\command pair that a scheme key and a
+// ProgID key carry identically. `base` is Software\Classes\<scheme|progid>.
+static bool WriteIconAndCommand(const wxString &base, const wxString &canonicalExe)
 {
-	wxString base = SubKey(scheme);
-
-	// URL Protocol scheme entry — the sentinel value that tells the
-	// Windows shell "this is a URL protocol, not a filetype".
-	wxString schemeDescription = wxString::Format(
-		wxT("URL:%s Protocol"), scheme == UriScheme::Ed2k ? wxT("eD2k") : wxT("Magnet"));
-	if (!WriteStringValue(HKEY_CURRENT_USER, base.wc_str(), nullptr, schemeDescription)) {
-		return false;
-	}
-	if (!WriteStringValue(HKEY_CURRENT_USER, base.wc_str(), L"URL Protocol", wxEmptyString)) {
-		return false;
-	}
-
 	// DefaultIcon: the icon Explorer / Edge show next to the "Open
 	// with aMule?" prompt. "<exe>,0" = first icon resource in the
 	// executable.
@@ -415,6 +433,54 @@ bool BackendWrite(UriScheme scheme, const wxString &canonicalExe)
 	wxString command = wxString::Format(wxT("\"%s\" \"%%1\""), canonicalExe);
 	return WriteStringValue(
 		HKEY_CURRENT_USER, (base + wxT("\\shell\\open\\command")).wc_str(), nullptr, command);
+}
+
+bool BackendWrite(HandlerTarget target, const wxString &canonicalExe)
+{
+	wxString base = SubKey(target);
+
+	if (IsUriScheme(target)) {
+		// URL Protocol scheme entry — the sentinel value that tells the
+		// Windows shell "this is a URL protocol, not a filetype".
+		wxString schemeDescription = wxString::Format(wxT("URL:%s Protocol"),
+			target == HandlerTarget::Ed2kScheme ? wxT("eD2k") : wxT("Magnet"));
+		if (!WriteStringValue(HKEY_CURRENT_USER, base.wc_str(), nullptr, schemeDescription)) {
+			return false;
+		}
+		if (!WriteStringValue(HKEY_CURRENT_USER, base.wc_str(), L"URL Protocol", wxEmptyString)) {
+			return false;
+		}
+		return WriteIconAndCommand(base, canonicalExe);
+	}
+
+	// File type: the ProgID's default value is the name Explorer shows
+	// in the "Open with" list and as the file's type column.
+	if (!WriteStringValue(HKEY_CURRENT_USER, base.wc_str(), nullptr, wxT("eMule Collection"))) {
+		return false;
+	}
+	if (!WriteIconAndCommand(base, canonicalExe)) {
+		return false;
+	}
+
+	// Advertise on the extension. OpenWithProgids only adds us to the
+	// "Open with" list; the extension's default is what actually binds,
+	// and we take it only when nothing else has claimed it so an
+	// existing association survives. Note neither makes aMule the user's
+	// *chosen* default: from Windows 8 on that lives in a hash-protected
+	// UserChoice key no application may write.
+	wxString extProgIds = wxString(COLLECTION_EXT_KEY) + wxT("\\OpenWithProgids");
+	if (!WriteStringValue(HKEY_CURRENT_USER, extProgIds.wc_str(), COLLECTION_PROGID, wxEmptyString)) {
+		return false;
+	}
+	wxString currentDefault = ReadStringValue(HKEY_CURRENT_USER, COLLECTION_EXT_KEY, nullptr);
+	if (currentDefault.empty()) {
+		WriteStringValue(HKEY_CURRENT_USER, COLLECTION_EXT_KEY, nullptr, wxString(COLLECTION_PROGID));
+	}
+
+	// Without this Explorer keeps serving the old association until the
+	// next logon.
+	SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+	return true;
 }
 
 // Recursively delete a registry key and everything under it. Registry
@@ -457,12 +523,12 @@ static LSTATUS DeleteKeyRecursive(HKEY root, const wchar_t *subKey)
 	return RegDeleteKeyW(root, subKey);
 }
 
-bool BackendRemove(UriScheme scheme)
+bool BackendRemove(HandlerTarget target)
 {
 	// Only remove if we're the current handler — protects a
 	// user's manual override or a third-party handler that happens
 	// to have written under the same key later.
-	wxString current = BackendReadHandler(scheme);
+	wxString current = BackendReadHandler(target);
 	if (current.empty()) {
 		return true; // already absent
 	}
@@ -470,7 +536,24 @@ bool BackendRemove(UriScheme scheme)
 		return true; // not ours to remove
 	}
 
-	LSTATUS rc = DeleteKeyRecursive(HKEY_CURRENT_USER, SubKey(scheme).wc_str());
+	LSTATUS rc = DeleteKeyRecursive(HKEY_CURRENT_USER, SubKey(target).wc_str());
+	if (!IsUriScheme(target)) {
+		// Also undo the extension advertisement, mirroring BackendWrite.
+		// The default is only cleared while it still names our ProgID: a
+		// user who has since pointed .emulecollection elsewhere keeps it.
+		wxString extProgIds = wxString(COLLECTION_EXT_KEY) + wxT("\\OpenWithProgids");
+		HKEY hKey;
+		if (RegOpenKeyExW(HKEY_CURRENT_USER, extProgIds.wc_str(), 0, KEY_SET_VALUE, &hKey) ==
+			ERROR_SUCCESS) {
+			RegDeleteValueW(hKey, COLLECTION_PROGID);
+			RegCloseKey(hKey);
+		}
+		if (ReadStringValue(HKEY_CURRENT_USER, COLLECTION_EXT_KEY, nullptr) ==
+			wxString(COLLECTION_PROGID)) {
+			DeleteKeyRecursive(HKEY_CURRENT_USER, COLLECTION_EXT_KEY);
+		}
+		SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+	}
 	return rc == ERROR_SUCCESS || rc == ERROR_FILE_NOT_FOUND;
 }
 
@@ -512,17 +595,17 @@ bool BackendIsUs(const wxString &raw)
 // before this anonymous namespace opens) so the linker can resolve
 // them against the .mm's global-scope definitions.
 
-wxString BackendReadHandler(UriScheme scheme)
+wxString BackendReadHandler(HandlerTarget scheme)
 {
 	return ::MacReadHandler(scheme);
 }
 
-bool BackendWrite(UriScheme scheme, const wxString &canonicalExe)
+bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe)
 {
 	return ::MacWrite(scheme, canonicalExe);
 }
 
-bool BackendRemove(UriScheme scheme)
+bool BackendRemove(HandlerTarget scheme)
 {
 	// LaunchServices has no "remove default" call — the model is
 	// "some app is always the default". Best we can do on Disable
@@ -600,9 +683,15 @@ static wxString MimeAppsPath()
 	return wxGetUserHome() + wxT("/.config/mimeapps.list");
 }
 
-static wxString SchemeKey(UriScheme scheme)
+// The mimeapps.list key. Schemes get the x-scheme-handler/ pseudo-type;
+// the collection is a real MIME type, so SchemeNameUtf8 already returns
+// the whole key for it.
+static wxString SchemeKey(HandlerTarget target)
 {
-	return wxString::Format(wxT("x-scheme-handler/%s"), SchemeNameUtf8(scheme));
+	if (!IsUriScheme(target)) {
+		return wxString::FromUTF8(SchemeNameUtf8(target));
+	}
+	return wxString::Format(wxT("x-scheme-handler/%s"), SchemeNameUtf8(target));
 }
 
 // Parse an ini-style file into (section, key, value) triples for
@@ -692,7 +781,7 @@ static bool WriteIniLines(const wxString &path, const std::vector<IniLine> &line
 	return ok;
 }
 
-wxString BackendReadHandler(UriScheme scheme)
+wxString BackendReadHandler(HandlerTarget scheme)
 {
 	std::vector<IniLine> lines = ReadIniLines(MimeAppsPath());
 	wxString needle = SchemeKey(scheme);
@@ -714,7 +803,7 @@ wxString BackendReadHandler(UriScheme scheme)
 	return wxEmptyString;
 }
 
-bool BackendWrite(UriScheme scheme, const wxString &canonicalExe)
+bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe)
 {
 	// canonicalExe is unused on Linux — the mimeapps.list entry
 	// references a .desktop file id (org.amule.aMule.desktop), not
@@ -766,7 +855,7 @@ bool BackendWrite(UriScheme scheme, const wxString &canonicalExe)
 	return WriteIniLines(path, lines);
 }
 
-bool BackendRemove(UriScheme scheme)
+bool BackendRemove(HandlerTarget scheme)
 {
 	wxString path = MimeAppsPath();
 	if (!wxFileName::FileExists(path)) {

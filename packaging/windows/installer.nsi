@@ -386,36 +386,21 @@ Section /o "Register aMule for magnet: links" SecProtoMagnet
   ExecWait '"$INSTDIR\bin\amule.exe" --configure-protocols magnet:on'
 SectionEnd
 
-; .emulecollection file association. Written directly rather than via a
-; --configure-* flag: unlike the scheme handlers there is no prefs /
-; wizard surface to keep in sync, so this is static install-time data and
-; belongs at the same layer as the uninstall guards further down.
+; .emulecollection file association. Delegates to --configure-file-assoc
+; for the same reason as the scheme sections above: the same registration
+; is reachable from the installer, the first-run wizard, the Preferences
+; panel and the CLI, so the key layout lives in one place
+; (ProtocolHandlerManager) instead of being duplicated here. It is also
+; what lets a portable copy register itself without an installer.
 ;
-; Two keys, as Windows file types require: the extension points at a
-; ProgID, and the ProgID carries the icon and open command.
-;
-; OpenWithProgids only adds aMule to the "Open with" list. We also set the
-; extension's default, but ONLY when nothing else has claimed it, so an
-; existing association survives. Note this is not the same as making aMule
-; the user's chosen default: from Windows 8 on that lives in a
-; hash-protected UserChoice key no installer can write, so if the user has
-; already picked an app for .emulecollection, Windows keeps it and aMule
-; just appears in the "Open with" list. Same HKCU-under-UAC caveat as the
-; autostart section above.
+; Default ON: a collection is only useful opened in an eD2k client, and on
+; a typical system nothing else claims the type. Note "on" adds aMule to
+; the "Open with" list and takes the extension default only when no other
+; program has claimed it - from Windows 8 on, the user's *chosen* default
+; lives in a hash-protected UserChoice key no installer may write. Same
+; HKCU-under-UAC caveat as the autostart section above.
 Section "Associate .emulecollection files" SecAssocCollection
-  WriteRegStr HKCU "Software\Classes\aMule.emulecollection" "" "eMule Collection"
-  WriteRegStr HKCU "Software\Classes\aMule.emulecollection\DefaultIcon" "" '"$INSTDIR\bin\amule.exe",0'
-  WriteRegStr HKCU "Software\Classes\aMule.emulecollection\shell\open\command" "" '"$INSTDIR\bin\amule.exe" "%1"'
-  WriteRegStr HKCU "Software\Classes\.emulecollection\OpenWithProgids" "aMule.emulecollection" ""
-
-  ReadRegStr $0 HKCU "Software\Classes\.emulecollection" ""
-  StrCmp $0 "" 0 assoc_keep_default
-  WriteRegStr HKCU "Software\Classes\.emulecollection" "" "aMule.emulecollection"
-  assoc_keep_default:
-
-  ; Tell Explorer to re-read the association tables, otherwise the new
-  ; entry doesn't appear until the next logon.
-  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
+  ExecWait '"$INSTDIR\bin\amule.exe" --configure-file-assoc on'
 SectionEnd
 
 ; Component descriptions surfaced on the Components page.
@@ -498,24 +483,12 @@ Section "Uninstall" un.SecUninstall
   DeleteRegKey HKCU "Software\Classes\magnet"
   magnet_done:
 
-  ; .emulecollection association — same guard, but three keys to undo
-  ; because a file type is spread across the ProgID and the extension.
-  ReadRegStr $0 HKCU "Software\Classes\aMule.emulecollection\shell\open\command" ""
-  StrCmp $0 "" assoc_done 0
-  Push $0
-  Push "$INSTDIR"
-  Call un.StrContains
-  Pop $1
-  StrCmp $1 "" assoc_done 0
-  DeleteRegKey HKCU "Software\Classes\aMule.emulecollection"
-  DeleteRegValue HKCU "Software\Classes\.emulecollection\OpenWithProgids" "aMule.emulecollection"
-  ; Only clear the extension default if it still names our ProgID; a
-  ; user who has since pointed .emulecollection at another app keeps it.
-  ReadRegStr $2 HKCU "Software\Classes\.emulecollection" ""
-  StrCmp $2 "aMule.emulecollection" 0 assoc_done
-  DeleteRegKey HKCU "Software\Classes\.emulecollection"
+  ; .emulecollection association - delegate to the binary, which owns
+  ; the key layout and already refuses to remove a registration that no
+  ; longer points at us. Run before the files are deleted below.
+  IfFileExists "$INSTDIR\bin\amule.exe" 0 assoc_done
+  ExecWait '"$INSTDIR\bin\amule.exe" --configure-file-assoc off'
   assoc_done:
-  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 
   ; Application files. Explicit RMDir /r on the known subtrees first
   ; for safety, then the catch-all on $INSTDIR.

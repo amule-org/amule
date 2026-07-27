@@ -249,6 +249,7 @@ wxSizer *clientDetails(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = 
 #define IDC_AUTOSTART_LOGIN 10334
 #define IDC_PROTOCOL_ED2K 10335
 #define IDC_PROTOCOL_MAGNET 10336
+#define IDC_ASSOC_COLLECTION 10337
 wxSizer *PreferencesGeneralTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_MAXDOWN 10129

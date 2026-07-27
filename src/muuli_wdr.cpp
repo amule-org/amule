@@ -1286,6 +1286,13 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     itemProtoMagnet->SetToolTip( _("aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off.") );
     item0->Add( itemProtoMagnet, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
+    // Same OS-is-source-of-truth model as the scheme toggles above; the
+    // store is the ProgID under HKCU\Software\Classes (Windows),
+    // mimeapps.list (Linux) or LaunchServices (macOS).
+    wxCheckBox *itemAssocCollection = new wxCheckBox( parent, IDC_ASSOC_COLLECTION, _("Open .emulecollection files with aMule"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemAssocCollection->SetToolTip( _("Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type.") );
+    item0->Add( itemAssocCollection, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
     wxCheckBox *item8 = new wxCheckBox( parent, IDC_STARTMIN, _("Start minimized"), wxDefaultPosition, wxDefaultSize, 0 );
     item8->SetToolTip( _("Enabling this makes aMule minimize itself upon start.") );
     item0->Add( item8, 0, wxALIGN_CENTER_VERTICAL, 0 );

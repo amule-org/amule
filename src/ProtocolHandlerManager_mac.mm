@@ -40,15 +40,24 @@
 
 namespace
 {
-NSString *NSStringFromScheme(UriScheme scheme)
+// The scheme for a URL protocol, or the imported UTI for the collection
+// file type (declared by UTImportedTypeDeclarations in the bundle plist).
+NSString *NSStringFromScheme(HandlerTarget target)
 {
-	switch (scheme) {
-	case UriScheme::Ed2k:
+	switch (target) {
+	case HandlerTarget::Ed2kScheme:
 		return @"ed2k";
-	case UriScheme::Magnet:
+	case HandlerTarget::MagnetScheme:
 		return @"magnet";
+	case HandlerTarget::CollectionFile:
+		return @"org.amule.emulecollection";
 	}
 	return @"";
+}
+
+bool IsUriScheme(HandlerTarget target)
+{
+	return target != HandlerTarget::CollectionFile;
 }
 
 wxString WxStringFromNSString(NSString *ns)
@@ -68,16 +77,18 @@ wxString MacOwnBundleId()
 	return WxStringFromNSString(bid);
 }
 
-wxString MacReadHandler(UriScheme scheme)
+wxString MacReadHandler(HandlerTarget target)
 {
-	// LSCopyDefaultHandlerForURLScheme returns nil when no handler is
-	// set. Deprecated in 10.15 but still works; the modern
-	// NSWorkspace URL-lookup pair doesn't cover the write path
-	// (LSSetDefault…) so we stick with the LS pair for symmetry.
-	CFStringRef schemeCf = (CFStringRef)NSStringFromScheme(scheme);
+	// Both LSCopy… calls return nil when no handler is set. Deprecated
+	// in 10.15 but still working; the modern NSWorkspace lookups don't
+	// cover the write path (LSSetDefault…) so we stick with the LS pairs
+	// for symmetry.
+	CFStringRef nameCf = (CFStringRef)NSStringFromScheme(target);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-	CFStringRef handler = LSCopyDefaultHandlerForURLScheme(schemeCf);
+	CFStringRef handler = IsUriScheme(target)
+				  ? LSCopyDefaultHandlerForURLScheme(nameCf)
+				  : LSCopyDefaultRoleHandlerForContentType(nameCf, kLSRolesAll);
 #pragma clang diagnostic pop
 	if (handler == nullptr) {
 		return wxEmptyString;
@@ -87,7 +98,7 @@ wxString MacReadHandler(UriScheme scheme)
 	return result;
 }
 
-bool MacWrite(UriScheme scheme, const wxString &canonicalExe)
+bool MacWrite(HandlerTarget target, const wxString &canonicalExe)
 {
 	// LaunchServices tracks bundle id, not path — the canonicalExe
 	// arg is only meaningful on the Windows/Linux backends.
@@ -102,13 +113,18 @@ bool MacWrite(UriScheme scheme, const wxString &canonicalExe)
 	if (bidCf == nullptr) {
 		return false;
 	}
-	CFStringRef schemeCf = (CFStringRef)NSStringFromScheme(scheme);
-	OSStatus rc = LSSetDefaultHandlerForURLScheme(schemeCf, bidCf);
+	CFStringRef nameCf = (CFStringRef)NSStringFromScheme(target);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	OSStatus rc = IsUriScheme(target)
+			  ? LSSetDefaultHandlerForURLScheme(nameCf, bidCf)
+			  : LSSetDefaultRoleHandlerForContentType(nameCf, kLSRolesAll, bidCf);
+#pragma clang diagnostic pop
 	CFRelease(bidCf);
 	return rc == noErr;
 }
 
-bool MacRemove(UriScheme /*scheme*/)
+bool MacRemove(HandlerTarget /*scheme*/)
 {
 	// LaunchServices has no "clear default handler" call. Disable
 	// on macOS is a UI-only signal; see ProtocolHandlerManager.cpp.

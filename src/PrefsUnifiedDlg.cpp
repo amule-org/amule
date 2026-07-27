@@ -200,6 +200,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	// currently registered, overwrite?" confirm gate before Enable.
 	EVT_CHECKBOX(IDC_PROTOCOL_ED2K, PrefsUnifiedDlg::OnProtocolEd2kToggle)
 	EVT_CHECKBOX(IDC_PROTOCOL_MAGNET, PrefsUnifiedDlg::OnProtocolMagnetToggle)
+	EVT_CHECKBOX(IDC_ASSOC_COLLECTION, PrefsUnifiedDlg::OnAssocCollectionToggle)
 
 	EVT_BUTTON(ID_PREFS_OK_TOP, PrefsUnifiedDlg::OnOk)
 	EVT_BUTTON(ID_PREFS_CANCEL_TOP, PrefsUnifiedDlg::OnCancel)
@@ -738,7 +739,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// Preferences open with the "off" state, and they can opt back in.
 	wxCheckBox *ed2kCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_ED2K));
 	if (ed2kCb) {
-		bool enabled = ProtocolHandlerManager::IsEnabled(UriScheme::Ed2k);
+		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::Ed2kScheme);
 		ed2kCb->SetValue(enabled);
 #ifdef __WXMAC__
 		ed2kCb->Show(!enabled);
@@ -746,10 +747,21 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	}
 	wxCheckBox *magnetCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_MAGNET));
 	if (magnetCb) {
-		bool enabled = ProtocolHandlerManager::IsEnabled(UriScheme::Magnet);
+		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::MagnetScheme);
 		magnetCb->SetValue(enabled);
 #ifdef __WXMAC__
 		magnetCb->Show(!enabled);
+#endif
+	}
+	wxCheckBox *assocCb = static_cast<wxCheckBox *>(FindWindow(IDC_ASSOC_COLLECTION));
+	if (assocCb) {
+		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::CollectionFile);
+		assocCb->SetValue(enabled);
+#ifdef __WXMAC__
+		// LaunchServices has no "clear default handler" call, so an
+		// already-registered box could not be unticked; hide it rather
+		// than offer a control that cannot work. Same as the schemes.
+		assocCb->Show(!enabled);
 #endif
 	}
 
@@ -1444,21 +1456,31 @@ void PrefsUnifiedDlg::OnAutostartToggle(wxCommandEvent &event)
 	}
 }
 
-void PrefsUnifiedDlg::HandleProtocolToggle(UriScheme scheme, int checkboxId, bool wanted)
+void PrefsUnifiedDlg::HandleProtocolToggle(HandlerTarget scheme, int checkboxId, bool wanted)
 {
 	// Same live-OS-state semantics as the autostart toggle above,
 	// with one extra gate: before Enable overwrites a pre-existing
 	// third-party handler, confirm with the user. Disable never
 	// touches a non-aMule handler (Manager contract).
+	// One dialog title for both kinds of registration, worded for the one
+	// being toggled.
+	const bool isFileType = (scheme == HandlerTarget::CollectionFile);
+	const wxString dialogTitle = isFileType ? _("Register file type") : _("Register URL handler");
+
 	if (wanted) {
 		wxString current = ProtocolHandlerManager::GetCurrentHandler(scheme);
 		if (!current.empty()) {
 			wxString msg;
-			if (scheme == UriScheme::Magnet) {
+			if (scheme == HandlerTarget::MagnetScheme) {
 				msg = wxString::Format(
 					_("aMule only handles eD2k-compatible magnets. If you replace the "
 					  "current magnet handler (%s), BitTorrent magnet links will stop "
 					  "working - aMule cannot download BitTorrent content. Continue?"),
+					current);
+			} else if (isFileType) {
+				msg = wxString::Format(_("Another application currently opens "
+							 ".emulecollection files (%s). Replace it with "
+							 "aMule?"),
 					current);
 			} else {
 				msg = wxString::Format(_("Another application is currently the default "
@@ -1466,8 +1488,7 @@ void PrefsUnifiedDlg::HandleProtocolToggle(UriScheme scheme, int checkboxId, boo
 							 "aMule?"),
 					current);
 			}
-			int answer = wxMessageBox(
-				msg, _("Register URL handler"), wxYES_NO | wxICON_QUESTION, this);
+			int answer = wxMessageBox(msg, dialogTitle, wxYES_NO | wxICON_QUESTION, this);
 			if (answer != wxYES) {
 				// Roll the checkbox back - user declined.
 				wxCheckBox *cb = static_cast<wxCheckBox *>(FindWindow(checkboxId));
@@ -1485,23 +1506,33 @@ void PrefsUnifiedDlg::HandleProtocolToggle(UriScheme scheme, int checkboxId, boo
 		if (cb) {
 			cb->SetValue(!wanted);
 		}
-		wxMessageBox(wanted ? _("Could not register aMule as the URL handler. The registration "
-					"store may be read-only.")
-				    : _("Could not remove the URL handler registration."),
-			_("Register URL handler"),
-			wxOK | wxICON_WARNING,
-			this);
+		wxString failure;
+		if (isFileType) {
+			failure = wanted ? _("Could not register aMule for .emulecollection files. The "
+					     "registration store may be read-only.")
+					 : _("Could not remove the file type registration.");
+		} else {
+			failure = wanted ? _("Could not register aMule as the URL handler. The registration "
+					     "store may be read-only.")
+					 : _("Could not remove the URL handler registration.");
+		}
+		wxMessageBox(failure, dialogTitle, wxOK | wxICON_WARNING, this);
 	}
 }
 
 void PrefsUnifiedDlg::OnProtocolEd2kToggle(wxCommandEvent &event)
 {
-	HandleProtocolToggle(UriScheme::Ed2k, IDC_PROTOCOL_ED2K, event.IsChecked());
+	HandleProtocolToggle(HandlerTarget::Ed2kScheme, IDC_PROTOCOL_ED2K, event.IsChecked());
 }
 
 void PrefsUnifiedDlg::OnProtocolMagnetToggle(wxCommandEvent &event)
 {
-	HandleProtocolToggle(UriScheme::Magnet, IDC_PROTOCOL_MAGNET, event.IsChecked());
+	HandleProtocolToggle(HandlerTarget::MagnetScheme, IDC_PROTOCOL_MAGNET, event.IsChecked());
+}
+
+void PrefsUnifiedDlg::OnAssocCollectionToggle(wxCommandEvent &event)
+{
+	HandleProtocolToggle(HandlerTarget::CollectionFile, IDC_ASSOC_COLLECTION, event.IsChecked());
 }
 
 void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)

@@ -215,6 +215,7 @@ private:
 	wxCheckBox *m_autostartCtrl = nullptr;
 	wxCheckBox *m_registerEd2kCtrl = nullptr;
 	wxCheckBox *m_registerMagnetCtrl = nullptr;
+	wxCheckBox *m_assocCollectionCtrl = nullptr;
 	wxTextCtrl *m_incomingCtrl = NULL;
 	wxTextCtrl *m_tempCtrl = NULL;
 };
@@ -466,13 +467,15 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 	// entirely — it would be a dead control. On Linux and Windows,
 	// Disable actually works, so the box is always created and simply
 	// reflects live state. Same rationale as the Preferences panel.
-	bool magnetEnabled = ProtocolHandlerManager::IsEnabled(UriScheme::Magnet);
+	bool magnetEnabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::MagnetScheme);
 #ifdef __WXMAC__
-	const bool showEd2kBox = !ProtocolHandlerManager::IsEnabled(UriScheme::Ed2k);
+	const bool showEd2kBox = !ProtocolHandlerManager::IsEnabled(HandlerTarget::Ed2kScheme);
 	const bool showMagnetBox = !magnetEnabled;
+	const bool showAssocBox = !ProtocolHandlerManager::IsEnabled(HandlerTarget::CollectionFile);
 #else
 	const bool showEd2kBox = true;
 	const bool showMagnetBox = true;
+	const bool showAssocBox = true;
 #endif
 
 	if (showEd2kBox) {
@@ -498,6 +501,17 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 			0,
 			wxLEFT | wxBOTTOM,
 			20);
+	}
+
+	if (showAssocBox) {
+		// String reused verbatim from the Preferences panel so translators
+		// only ever see it once.
+		m_assocCollectionCtrl =
+			new wxCheckBox(page, wxID_ANY, _("Open .emulecollection files with aMule"));
+		// Default ON: a collection is only useful opened in an eD2k
+		// client, and nothing else on a typical system claims the type.
+		m_assocCollectionCtrl->SetValue(true);
+		sizer->Add(m_assocCollectionCtrl, 0, wxBOTTOM, 4);
 	}
 
 	page->SetSizer(sizer);
@@ -687,16 +701,23 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 	}
 	if (m_registerEd2kCtrl) {
 		if (m_registerEd2kCtrl->GetValue()) {
-			ProtocolHandlerManager::Enable(UriScheme::Ed2k);
+			ProtocolHandlerManager::Enable(HandlerTarget::Ed2kScheme);
 		} else {
-			ProtocolHandlerManager::Disable(UriScheme::Ed2k);
+			ProtocolHandlerManager::Disable(HandlerTarget::Ed2kScheme);
+		}
+	}
+	if (m_assocCollectionCtrl) {
+		if (m_assocCollectionCtrl->GetValue()) {
+			ProtocolHandlerManager::Enable(HandlerTarget::CollectionFile);
+		} else {
+			ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
 		}
 	}
 	if (m_registerMagnetCtrl) {
 		if (m_registerMagnetCtrl->GetValue()) {
-			ProtocolHandlerManager::Enable(UriScheme::Magnet);
+			ProtocolHandlerManager::Enable(HandlerTarget::MagnetScheme);
 		} else {
-			ProtocolHandlerManager::Disable(UriScheme::Magnet);
+			ProtocolHandlerManager::Disable(HandlerTarget::MagnetScheme);
 		}
 	}
 
