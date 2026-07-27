@@ -767,9 +767,11 @@ static bool WriteIniLines(const wxString &path, const std::vector<IniLine> &line
 		} else {
 			out << il.raw;
 		}
-		if (i + 1 != lines.size()) {
-			out << wxT("\n");
-		}
+		// Terminate every line, including the last. mimeapps.list is a
+		// shared file - xdg-mime and the desktop environment append to
+		// it too - and an unterminated final line silently fuses with
+		// whatever the next writer adds, breaking both entries.
+		out << wxT("\n");
 	}
 
 	wxFile f;
