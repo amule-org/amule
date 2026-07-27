@@ -25,6 +25,7 @@
 #include "AppImageIntegration.h"
 
 #include "amule.h"
+#include "AppImageEnv.h" // Needed for GetSanitizedExecEnv
 #include "Logger.h"
 #include "Preferences.h"
 
@@ -235,7 +236,18 @@ static void RunHelper(const wxString &program, const wxArrayString &args)
 	}
 	argv.push_back(nullptr);
 
-	wxExecute(argv.data(), wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+	// These are system binaries, and AppRun has put the AppImage's own
+	// library directory at the front of LD_LIBRARY_PATH for our sake. A
+	// child inheriting that loads our bundled glib rather than the host's
+	// and dies before doing any work: update-mime-database exits with
+	// "undefined symbol: g_string_free_and_steal" against a host glib newer
+	// than the bundled copy. Same class of failure as #334, so reuse the
+	// helper written for it rather than stripping the paths again here.
+	wxExecuteEnv execEnv;
+	const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
+	const int flags = wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS;
+
+	wxExecute(argv.data(), flags, nullptr, sanitized ? &execEnv : nullptr);
 }
 
 // update-desktop-database, gtk-update-icon-cache and update-mime-database
