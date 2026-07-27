@@ -131,6 +131,27 @@ TEST(MuleCollection, TextCollectionSurvivesBlankLines)
 	ASSERT_EQUALS(std::string(VALID_LINK), collection[0]);
 }
 
+// Text collections are hand-made link lists, and a Windows editor writes a
+// UTF-8 BOM by default; it used to leave the first link failing its prefix
+// check, so a single-entry collection looked empty.
+TEST(MuleCollection, TextCollectionSkipsUtf8Bom)
+{
+	CMuleCollection collection;
+	std::string data = "\xEF\xBB\xBF" + std::string(VALID_LINK) + "\n";
+
+	ASSERT_TRUE(OpenString(collection, data));
+	ASSERT_EQUALS((size_t)1, collection.size());
+	ASSERT_EQUALS(std::string(VALID_LINK), collection[0]);
+}
+
+TEST(MuleCollection, BomOnlyInput)
+{
+	CMuleCollection collection;
+
+	ASSERT_FALSE(OpenString(collection, "\xEF\xBB\xBF"));
+	ASSERT_EQUALS((size_t)0, collection.size());
+}
+
 TEST(MuleCollection, TextCollectionIgnoresNonLinks)
 {
 	CMuleCollection collection;

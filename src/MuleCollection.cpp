@@ -95,6 +95,20 @@ bool CMuleCollection::OpenBuffer(const char *data, size_t len)
 		return false;
 	}
 
+	// Skip a UTF-8 byte-order mark. Text collections are hand-made lists of
+	// links, and a Windows editor saves them with a BOM by default; without
+	// this the first link fails its "starts with ed2k://|file|" check and a
+	// single-entry collection looks empty. A binary collection never starts
+	// with one, so this only ever affects the text form.
+	if (len >= 3 && static_cast<unsigned char>(data[0]) == 0xEF &&
+		static_cast<unsigned char>(data[1]) == 0xBB && static_cast<unsigned char>(data[2]) == 0xBF) {
+		data += 3;
+		len -= 3;
+		if (len == 0) {
+			return false;
+		}
+	}
+
 	const std::string buffer(data, len);
 	std::istringstream infile(buffer, std::ios::in | std::ios::binary);
 
