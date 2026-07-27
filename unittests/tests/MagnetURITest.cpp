@@ -78,6 +78,30 @@ TEST(MagnetURI, NoAichUrnMeansNoHField)
 	ASSERT_TRUE(ed2k.EndsWith("|/"));
 }
 
+TEST(MagnetURI, MalformedAichUrnIsDropped)
+{
+	// ED2KLink.cpp's parser throws on a bad master-hash, so a magnet with a
+	// junk/truncated urn:aich: must convert as if the AICH urn were absent
+	// -- not embed the garbage into "h=" and make the whole link unusable,
+	// even though its ed2k hash is perfectly valid.
+	wxString tooShort =
+		wxString("magnet:?xt=urn:ed2k:") + ED2K_HASH + "&dn=example.iso&xl=42&xt=urn:aich:TOOSHORT";
+	CMagnetED2KConverter convShort(tooShort);
+	ASSERT_TRUE(convShort.CanConvertToED2K());
+	wxString ed2kShort = convShort.GetED2KLink();
+	ASSERT_TRUE(!ed2kShort.Contains("h="));
+	ASSERT_TRUE(ed2kShort.EndsWith("|/"));
+
+	// Right length (32), but not base32 (lowercase letters plus a '!').
+	wxString notBase32 = wxString("magnet:?xt=urn:ed2k:") + ED2K_HASH +
+			     "&dn=example.iso&xl=42&xt=urn:aich:qvvwmk4s7zju!3aszlpfyu4a5woaaaaa";
+	CMagnetED2KConverter convBad(notBase32);
+	ASSERT_TRUE(convBad.CanConvertToED2K());
+	wxString ed2kBad = convBad.GetED2KLink();
+	ASSERT_TRUE(!ed2kBad.Contains("h="));
+	ASSERT_TRUE(ed2kBad.EndsWith("|/"));
+}
+
 TEST(MagnetURI, AichUrnOrderBeforeEd2kUrnStillWorks)
 {
 	// Field order in the magnet isn't guaranteed -- the converter shouldn't
