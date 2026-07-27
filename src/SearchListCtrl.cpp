@@ -395,7 +395,11 @@ void CSearchListCtrl::UpdateItemColor(long index)
 			break;
 		default: {
 			// New result -- blue-tinted gradient by source count.
-			const int shift = std::min((int)file->GetSourceCount() * 5, 255);
+			// Capped below 255: a fully saturated blue text on white
+			// (or white-ish on dark) is hard to read, so the gradient
+			// tops out at a legible mid-blue instead of collapsing
+			// every popular result to the same illegible extreme.
+			const int shift = std::min((int)file->GetSourceCount() * 5, 180);
 			colour = isDark ? wxColour(255 - shift, 255 - shift, 255) : wxColour(0, 0, shift);
 			break;
 		}
