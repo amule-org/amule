@@ -126,6 +126,7 @@ const TABS = [
       { key: "start_next_alphabetical", type: "bool", sub: true, gatedBy: "start_next_paused" },
       { key: "endgame", type: "bool" },
       { key: "alloc_full_size", type: "bool" },
+      { key: "create_normal", type: "bool" },
       { key: "check_free_space", type: "bool" },
       { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "check_free_space" },
       { key: "save_sources", type: "bool" },
@@ -244,6 +245,7 @@ const TABS = [
       { key: "mmap_supported", type: "bool", cat: "files", hidden: true },
       { key: "ul_queue", type: "int", min: 0 },
       { key: "srv_keepalive_timeout", type: "int", min: 0 },
+      { key: "verbose", type: "bool" },
     ] },
   ] },
 ];
