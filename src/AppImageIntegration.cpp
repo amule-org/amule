@@ -228,10 +228,10 @@ static void RunHelper(const wxString &program, const wxArrayString &args)
 	std::vector<const char *> argv;
 	storage.reserve(args.GetCount() + 1);
 
-	storage.push_back(program.mb_str(wxConvUTF8));
+	storage.emplace_back(program.mb_str(wxConvUTF8));
 	argv.push_back(storage.back().data());
 	for (size_t i = 0; i < args.GetCount(); ++i) {
-		storage.push_back(args[i].mb_str(wxConvUTF8));
+		storage.emplace_back(args[i].mb_str(wxConvUTF8));
 		argv.push_back(storage.back().data());
 	}
 	argv.push_back(nullptr);
