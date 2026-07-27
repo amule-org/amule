@@ -1133,7 +1133,8 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// not run.
 	const bool ecUsable = thePrefs::AcceptExternalConnections() && !thePrefs::ECPassword().IsEmpty();
 	if (ecUsable && (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
-				CfgChanged(IDC_AMULEAPI_BIND) || CfgChanged(IDC_AMULEAPI_PASSWD))) {
+				CfgChanged(IDC_AMULEAPI_BIND) || CfgChanged(IDC_AMULEAPI_PASSWD) ||
+				CfgChanged(IDC_AMULEAPI_GUEST_PASSWD))) {
 		restart_needed = true;
 		restart_needed_msg += _("- amuleapi settings changed.\n");
 	}

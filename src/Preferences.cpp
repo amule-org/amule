@@ -187,6 +187,7 @@ bool CPreferences::s_bAmuleApiEnabled;
 uint16 CPreferences::s_nAmuleApiPort;
 wxString CPreferences::s_sAmuleApiBindAddress;
 wxString CPreferences::s_sAmuleApiPassword;
+wxString CPreferences::s_sAmuleApiGuestPassword;
 wxString CPreferences::s_sAmuleApiPath;
 uint32 CPreferences::s_nWebPageRefresh;
 bool CPreferences::s_bWebLowEnabled;
@@ -1389,6 +1390,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_AMULEAPI_BIND,
 		(new Cfg_Str("/AmuleApi/BindAddress", s_sAmuleApiBindAddress, "127.0.0.1")));
 	NewCfgItem(IDC_AMULEAPI_PASSWD, (new Cfg_Str_Encrypted("/AmuleApi/Password", s_sAmuleApiPassword)));
+	NewCfgItem(IDC_AMULEAPI_GUEST_PASSWD,
+		(new Cfg_Str_Encrypted("/AmuleApi/GuestPassword", s_sAmuleApiGuestPassword)));
 	NewCfgItem(IDC_WEB_PASSWD, (new Cfg_Str_Encrypted("/WebServer/Password", s_sWebPassword)));
 	NewCfgItem(IDC_WEB_PASSWD_LOW, (new Cfg_Str_Encrypted("/WebServer/PasswordLow", s_sWebLowPassword)));
 	NewCfgItem(IDC_WEB_PORT, (MkCfg_Int("/WebServer/Port", s_nWebPort, 4711)));

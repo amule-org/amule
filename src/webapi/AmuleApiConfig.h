@@ -120,6 +120,11 @@ public:
 	// hex chars.
 	void SetAdminPasswordMd5(const std::string &md5_hex);
 
+	// In-memory override of the guest password digest (lowercase MD5 hex),
+	// used when amule pushes /AmuleApi/GuestPassword over --amule-config-file.
+	// Same file-preserving, no-op-unless-valid semantics as the admin setter.
+	void SetGuestPasswordMd5(const std::string &md5_hex);
+
 	const std::string &LastError() const { return m_lastError; }
 
 	// Test/CLI helpers — used by `amuleapi --set-admin-pass=...` and

@@ -1149,10 +1149,10 @@ bool CamuleApp::OnInit()
 		}
 #endif
 
-		// amuleapi reads its EC host/port/hashed-password AND its admin
-		// password from amule.conf via --amule-config-file, exactly like
-		// amuleweb. The HTTP bind address and port are passed explicitly. A
-		// non-loopback bind requires an admin password; both are configured
+		// amuleapi reads its EC host/port/hashed-password AND its admin and
+		// guest passwords from amule.conf via --amule-config-file, exactly
+		// like amuleweb. The HTTP bind address and port are passed explicitly.
+		// A non-loopback bind requires an admin password; all are configured
 		// in the Remote Controls preferences.
 		wxString cmd = QUOTE + amuleapiPath +
 			       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile +

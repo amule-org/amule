@@ -208,6 +208,51 @@ TEST(AmuleApiConfig, SetAdminPasswordMd5RejectsMalformed)
 	ASSERT_EQUALS(ok, cfg.AdminPasswordMd5());
 }
 
+// SetGuestPasswordMd5 mirrors the admin setter: the in-memory override amule
+// uses when it pushes /AmuleApi/GuestPassword over --amule-config-file. It must
+// win for the running process yet leave the amuleapi-passwords file untouched.
+TEST(AmuleApiConfig, SetGuestPasswordMd5OverridesInMemoryWithoutWritingFile)
+{
+	const wxString dir = MakeTmpDir("pw-guest-override");
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(dir));
+
+	// A guest password the operator saved standalone (as via --set-guest-pass).
+	const std::string file_guest = "0123456789abcdef0123456789abcdef";
+	ASSERT_TRUE(cfg.WritePasswordsFile(dir, "", file_guest));
+	ASSERT_EQUALS(file_guest, cfg.GuestPasswordMd5());
+
+	// amule pushing a different hash over the config file wins in memory...
+	const std::string pushed = "fedcba9876543210fedcba9876543210";
+	cfg.SetGuestPasswordMd5(pushed);
+	ASSERT_EQUALS(pushed, cfg.GuestPasswordMd5());
+
+	// ...but the on-disk file is unchanged: a fresh load still reads the
+	// standalone-saved guest password.
+	CAmuleApiConfig cfg2;
+	ASSERT_TRUE(cfg2.Load(dir));
+	ASSERT_EQUALS(file_guest, cfg2.GuestPasswordMd5());
+}
+
+TEST(AmuleApiConfig, SetGuestPasswordMd5RejectsMalformed)
+{
+	const wxString dir = MakeTmpDir("pw-guest-setreject");
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(dir));
+	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
+
+	cfg.SetGuestPasswordMd5("too-short"); // wrong length
+	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
+	cfg.SetGuestPasswordMd5("0123456789ABCDEF0123456789ABCDEF"); // uppercase
+	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
+	cfg.SetGuestPasswordMd5("zzzz56789abcdef0123456789abcdef0"); // non-hex
+	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
+
+	const std::string ok = "0123456789abcdef0123456789abcdef";
+	cfg.SetGuestPasswordMd5(ok);
+	ASSERT_EQUALS(ok, cfg.GuestPasswordMd5());
+}
+
 TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 {
 	const wxString dir = MakeTmpDir("pw-bad");

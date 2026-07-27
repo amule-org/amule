@@ -553,6 +553,8 @@ public:
 	static void SetAmuleApiBindAddress(const wxString &addr) { s_sAmuleApiBindAddress = addr; }
 	static const wxString &GetAmuleApiPass() { return s_sAmuleApiPassword; }
 	static void SetAmuleApiPass(const wxString &pass) { s_sAmuleApiPassword = pass; }
+	static const wxString &GetAmuleApiGuestPass() { return s_sAmuleApiGuestPassword; }
+	static void SetAmuleApiGuestPass(const wxString &pass) { s_sAmuleApiGuestPassword = pass; }
 	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
 	static void SetAmuleApiPath(const wxString &path) { s_sAmuleApiPath = path; }
 	static bool GetWebUseGzip() { return s_bWebUseGzip; }
@@ -1048,6 +1050,7 @@ protected:
 	static uint16 s_nAmuleApiPort;
 	static wxString s_sAmuleApiBindAddress;
 	static wxString s_sAmuleApiPassword;
+	static wxString s_sAmuleApiGuestPassword;
 	static wxString s_sAmuleApiPath;
 	static uint32 s_nWebPageRefresh;
 	static bool s_bWebLowEnabled;

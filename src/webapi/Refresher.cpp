@@ -2303,8 +2303,9 @@ void ParseRemoteControlsPrefs(const CECTag *rc, PreferencesSnapshot &out)
 	if (const CECTag *t = rc->GetTagByName(EC_TAG_AMULEAPI_BIND)) {
 		out.remote_controls.amuleapi_bind = std::string(t->GetStringData().utf8_str());
 	}
-	// Passwords (EC_TAG_PASSWD_HASH / EC_TAG_AMULEAPI_PASSWD) are
-	// deliberately NOT read — write-only, never surfaced on GET.
+	// Passwords (EC_TAG_PASSWD_HASH / EC_TAG_AMULEAPI_PASSWD /
+	// EC_TAG_AMULEAPI_GUEST_PASSWD) are deliberately NOT read —
+	// write-only, never surfaced on GET.
 }
 
 void ParseOnlineSigPrefs(const CECTag *o, PreferencesSnapshot &out)

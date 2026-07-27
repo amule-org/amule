@@ -474,6 +474,12 @@ void CAmuleApiConfig::SetAdminPasswordMd5(const std::string &md5_hex)
 		m_adminPasswordMd5 = md5_hex;
 }
 
+void CAmuleApiConfig::SetGuestPasswordMd5(const std::string &md5_hex)
+{
+	if (LooksLikeMd5Hex(md5_hex))
+		m_guestPasswordMd5 = md5_hex;
+}
+
 bool CAmuleApiConfig::EnforceOwnerOnly(const wxString &path)
 {
 #ifdef _WIN32

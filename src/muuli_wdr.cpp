@@ -2099,6 +2099,11 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     CMuleTextCtrl *item46 = new CMuleTextCtrl( parent, IDC_AMULEAPI_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
     item42->Add( item46, wxSizerFlags(1).Expand().CenterVertical() );
 
+    wxStaticText *item47 = new wxStaticText( parent, -1, _("Low rights password"), wxDefaultPosition, wxDefaultSize, 0 );
+    item42->Add( item47, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    CMuleTextCtrl *item48 = new CMuleTextCtrl( parent, IDC_AMULEAPI_GUEST_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
+    item42->Add( item48, wxSizerFlags(1).Expand().CenterVertical() );
+
     item36->Add( item42, wxSizerFlags().Expand().CenterVertical() );
 
     item0->Add( item36, wxSizerFlags().Expand().Border(wxALL, 0) );

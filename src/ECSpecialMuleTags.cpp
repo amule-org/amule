@@ -246,6 +246,11 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			wxCHECK2(passhash.Decode(thePrefs::GetAmuleApiPass()), /* Do nothing. */);
 			rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_PASSWD, passhash));
 		}
+		if (!thePrefs::GetAmuleApiGuestPass().IsEmpty()) {
+			CMD4Hash passhash;
+			wxCHECK2(passhash.Decode(thePrefs::GetAmuleApiGuestPass()), /* Do nothing. */);
+			rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_GUEST_PASSWD, passhash));
+		}
 		AddTag(rc_prefs);
 	}
 
@@ -681,6 +686,9 @@ void CEC_Prefs_Packet::Apply() const
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PASSWD)) != nullptr) {
 			thePrefs::SetAmuleApiPass(oneTag->GetMD4Data().Encode());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_GUEST_PASSWD)) != nullptr) {
+			thePrefs::SetAmuleApiGuestPass(oneTag->GetMD4Data().Encode());
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_PASSWD_HASH)) != NULL) {
 			thePrefs::SetWSPass(oneTag->GetMD4Data().Encode());

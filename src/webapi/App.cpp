@@ -311,6 +311,10 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		if (cfg.Read(wxT("/AmuleApi/Password"), &adminHash) && !adminHash.IsEmpty()) {
 			m_apiConfig.SetAdminPasswordMd5(std::string(adminHash.Lower().utf8_str()));
 		}
+		wxString guestHash;
+		if (cfg.Read(wxT("/AmuleApi/GuestPassword"), &guestHash) && !guestHash.IsEmpty()) {
+			m_apiConfig.SetGuestPasswordMd5(std::string(guestHash.Lower().utf8_str()));
+		}
 	}
 
 	return true;

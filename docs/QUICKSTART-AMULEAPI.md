@@ -128,20 +128,22 @@ aMule can launch amuleapi for you when it starts, the same way it can
 launch amuleweb. Everything is configured under *Preferences → Remote
 Controls* (**aMule API server parameters**): tick **Run amuleapi (REST
 API) on startup**, then set the **listening interface**, **HTTP port**,
-and **admin password**. These map to `/AmuleApi/Enabled`,
-`/AmuleApi/BindAddress`, `/AmuleApi/HttpPort` and `/AmuleApi/Password`
-(MD5-hashed) in `amule.conf`, and are also editable from a remote
-amulegui over EC. aMule then spawns:
+**admin password**, and optional **guest (low-rights) password**. These
+map to `/AmuleApi/Enabled`, `/AmuleApi/BindAddress`, `/AmuleApi/HttpPort`,
+`/AmuleApi/Password` and `/AmuleApi/GuestPassword` (both MD5-hashed) in
+`amule.conf`, and are also editable from a remote amulegui over EC. aMule
+then spawns:
 
 ```sh
 amuleapi --amule-config-file=<amule.conf> --config-dir=<amule data dir> --bind=<AmuleApi/BindAddress> --http-port=<AmuleApi/HttpPort>
 ```
 
 `--amule-config-file` points amuleapi at aMule's own `amule.conf` so it
-reads the EC host/port/(hashed) password **and** the admin password hash
-(`/AmuleApi/Password`) straight from there — exactly as amuleapi's sibling
-amuleweb reads `/WebServer/Password`. Nothing sensitive is passed on the
-command line, and the admin hash is applied in memory only: a standalone
+reads the EC host/port/(hashed) password **and** the admin and guest
+password hashes (`/AmuleApi/Password`, `/AmuleApi/GuestPassword`) straight
+from there — exactly as amuleapi's sibling amuleweb reads
+`/WebServer/Password`. Nothing sensitive is passed on the command line,
+and the hashes are applied in memory only: a standalone
 `amuleapi-passwords` file is never touched. Because the admin password is
 supplied, you can bind a non-loopback interface directly from the prefs
 panel to expose the API to other hosts. Changing any of these settings
