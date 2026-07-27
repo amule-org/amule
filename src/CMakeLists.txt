@@ -198,9 +198,15 @@ if (APPLE)
 	# so a remote-GUI-only configure (BUILD_MONOLITHIC=NO) still has them.
 	#
 	# aMule did not define the .emulecollection format, so the type is
-	# *imported* rather than exported and the document type ranks as
-	# Alternate. Nothing else on macOS claims the extension, so aMule still
-	# wins the binding; the rank only says we don't own the format.
+	# *imported* rather than exported.
+	#
+	# The document type still ranks Default, not Alternate. Alternate reads
+	# like the honest choice for a format we did not create, but it means
+	# "secondary viewer": LaunchServices then binds no default application,
+	# and while `open file.emulecollection` and Finder's Open With both
+	# resolve aMule as the only candidate, a plain double-click does
+	# nothing at all. Default is the rank for "did not create the format
+	# but is its default opener", which is exactly our case.
 	#
 	# Declaring the type is what puts aMule in Finder's "Open With" list.
 	# Making it the default is the user's call there - unlike URL schemes,
@@ -210,7 +216,7 @@ if (APPLE)
 	set (AMULE_PLIST_IMPORTED_TYPES
 		"[{\"UTTypeIdentifier\": \"org.amule.emulecollection\", \"UTTypeDescription\": \"eMule Collection\", \"UTTypeConformsTo\": [\"public.data\"], \"UTTypeTagSpecification\": {\"public.filename-extension\": [\"emulecollection\"], \"public.mime-type\": [\"application/x-emule-collection\"]}}]")
 	set (AMULE_PLIST_DOCUMENT_TYPES
-		"[{\"CFBundleTypeName\": \"eMule Collection\", \"CFBundleTypeRole\": \"Viewer\", \"LSHandlerRank\": \"Alternate\", \"CFBundleTypeExtensions\": [\"emulecollection\"], \"LSItemContentTypes\": [\"org.amule.emulecollection\"], \"CFBundleTypeIconFile\": \"amule.icns\"}]")
+		"[{\"CFBundleTypeName\": \"eMule Collection\", \"CFBundleTypeRole\": \"Viewer\", \"LSHandlerRank\": \"Default\", \"CFBundleTypeExtensions\": [\"emulecollection\"], \"LSItemContentTypes\": [\"org.amule.emulecollection\"], \"CFBundleTypeIconFile\": \"amule.icns\"}]")
 endif()
 
 if (BUILD_DAEMON)

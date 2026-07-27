@@ -12,5 +12,16 @@
   <mime-type type="application/x-emule-collection">
     <comment>eMule collection</comment>
     <glob pattern="*.emulecollection"/>
+    <!--
+      Fallback for the file-type icon. The icon we install as
+      application-x-emule-collection.png is preferred where it is visible,
+      but Flatpak refuses to export any file whose name is not prefixed
+      with the app id, and the icon naming spec requires exactly that name
+      - so inside a Flatpak the collection would otherwise draw blank.
+      generic-icon names an icon from the user's theme, which needs no
+      exporting; package-x-generic is the closest of the values the spec
+      permits, a bundle of files rather than a document.
+    -->
+    <generic-icon name="package-x-generic"/>
   </mime-type>
 </mime-info>
