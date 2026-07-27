@@ -28,6 +28,7 @@
 #include "Logger.h"
 #include "Preferences.h"
 
+#include <wx/arrstr.h>
 #include <wx/dir.h>
 #include <wx/file.h>
 #include <wx/filefn.h>
@@ -39,6 +40,8 @@
 #include <wx/string.h>
 #include <wx/textfile.h>
 #include <wx/utils.h>
+
+#include <vector> // Needed for the argv vector in RunHelper
 
 #include <cstdlib>
 #include <sys/stat.h>
@@ -210,24 +213,59 @@ bool InstallMimePackage(const wxString &appdir, const wxString &userMimePackages
 	return true;
 }
 
+// Run a helper with its arguments passed as an argv vector rather than as
+// one command string.
+//
+// The string form of wxExecute does its own tokenising and hands the quote
+// characters through to the program, so `cmd "/home/me/dir"` arrives as a
+// path that literally starts with a quote and the helper fails with
+// "directory does not exist". Quoting was there to survive spaces in $HOME;
+// argv gives us that for free and without a shell.
+static void RunHelper(const wxString &program, const wxArrayString &args)
+{
+	std::vector<wxCharBuffer> storage;
+	std::vector<const char *> argv;
+	storage.reserve(args.GetCount() + 1);
+
+	storage.push_back(program.mb_str(wxConvUTF8));
+	argv.push_back(storage.back().data());
+	for (size_t i = 0; i < args.GetCount(); ++i) {
+		storage.push_back(args[i].mb_str(wxConvUTF8));
+		argv.push_back(storage.back().data());
+	}
+	argv.push_back(nullptr);
+
+	wxExecute(argv.data(), wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+}
+
 // update-desktop-database, gtk-update-icon-cache and update-mime-database
-// exist on every desktop distro that ships a .desktop file system, but we
-// don't fail integration if they're missing — modern compositors
-// inotify-watch the dirs and pick up new files within seconds anyway.
-// wxExecute with wxEXEC_SYNC still returns instantly if the binary isn't
-// found. update-mime-database is the exception in one respect: unlike the
-// other two it has no inotify fallback, so a missing binary means the
-// collection type stays unknown until something else refreshes the cache.
+// exist on every desktop distro that ships a .desktop file system, and we
+// don't fail integration if they're missing.
+//
+// The .desktop and icon caches have a safety net - desktop environments
+// watch those directories and rebuild on their own within seconds - which
+// is exactly why the broken quoting above went unnoticed for so long. The
+// shared-mime-info database has no such watcher: if update-mime-database
+// does not run, the collection type stays unknown and a double-click opens
+// whatever handles text/plain.
 void RefreshSystemCaches(
 	const wxString &userAppsDir, const wxString &userIconsDir, const wxString &userMimeDir)
 {
-	wxExecute(wxT("update-desktop-database \"") + userAppsDir + wxT("\""),
-		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
-	wxExecute(wxT("gtk-update-icon-cache -f -t \"") + userIconsDir + wxT("/hicolor\""),
-		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+	wxArrayString args;
+
+	args.Add(userAppsDir);
+	RunHelper(wxT("update-desktop-database"), args);
+
+	args.Clear();
+	args.Add(wxT("-f"));
+	args.Add(wxT("-t"));
+	args.Add(userIconsDir + wxT("/hicolor"));
+	RunHelper(wxT("gtk-update-icon-cache"), args);
+
+	args.Clear();
 	// Takes the mime dir itself, not the packages/ subdir inside it.
-	wxExecute(wxT("update-mime-database \"") + userMimeDir + wxT("\""),
-		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+	args.Add(userMimeDir);
+	RunHelper(wxT("update-mime-database"), args);
 }
 
 bool DesktopFileAlreadyInstalled()
