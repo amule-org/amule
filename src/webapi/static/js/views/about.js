@@ -10,7 +10,7 @@ import { Icon } from "../icons.js";
 
 const LINKS = [
   { key: "about_website", href: "https://www.amule.org", text: "www.amule.org" },
-  { key: "about_source", href: "https://github.com/amule-project/amule", text: "github.com/amule-project/amule" },
+  { key: "about_source", href: "https://github.com/amule-org/amule", text: "github.com/amule-org/amule" },
   { key: "about_license", href: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html", text: "GPLv2" },
 ];
 
