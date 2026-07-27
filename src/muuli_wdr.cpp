@@ -395,6 +395,10 @@ wxSizer *transferTopPane( wxWindow *parent, bool call_fit, bool set_sizer )
     CMuleNotebook *item4 = new CMuleNotebook( parent, ID_CATEGORIES, wxDefaultPosition, wxSize(15,MULE_NOTEBOOK_TAB_HEIGHT), 0 );
     wxASSERT( item4 );
     item1->Add( item4, wxSizerFlags(1).FixedMinSize().Center() );
+    wxStaticText *itemDlFilterLabel = new wxStaticText( parent, -1, _("Filter:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item1->Add( itemDlFilterLabel, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    wxTextCtrl *itemDlFilter = new wxTextCtrl( parent, IDC_TRANSFER_FILTER, "", wxDefaultPosition, wxSize(150,-1), 0 );
+    item1->Add( itemDlFilter, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
     CDownloadListCtrl *item5 = new CDownloadListCtrl( parent, ID_DLOADLIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
     item5->SetName( "downloadList" );
@@ -3248,12 +3252,24 @@ wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxFlexGridSizer *item1 = new wxFlexGridSizer( 4, 0, 0 );
-    item1->AddGrowableCol( 1 );
+    // Header row: [Shared files] [Filter: ___] ... [Show Clients ...] ... [Reload].
+    // The left and right regions each take proportion 1, so they are equal width
+    // and the radio group in the middle (proportion 0) stays centered in the
+    // window regardless of how wide the left/right content is (the filter box
+    // widened the left region, which knocked the radios off-centre under the
+    // old growable-column layout).
+    wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
 
+    wxBoxSizer *itemShLeft = new wxBoxSizer( wxHORIZONTAL );
     wxStaticText *item2 = new wxStaticText( parent, -1, _("Shared files"), wxDefaultPosition, wxDefaultSize, 0 );
     item2->SetName( "sharedFilesLabel" );
-    item1->Add( item2, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    itemShLeft->Add( item2, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    wxStaticText *itemShFilterLabel = new wxStaticText( parent, -1, _("Filter:"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemShLeft->Add( itemShFilterLabel, wxSizerFlags().CenterVertical().Border(wxLEFT, 10) );
+    wxTextCtrl *itemShFilter = new wxTextCtrl( parent, IDC_SHARED_FILTER, "", wxDefaultPosition, wxSize(150,-1), 0 );
+    itemShLeft->Add( itemShFilter, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    item1->Add( itemShLeft, wxSizerFlags(1).CenterVertical() );
+
     // "Show Clients for" as a label + inline radio buttons. This replaces a
     // wxRadioBox whose title row wasted vertical space in the header.
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
@@ -3269,12 +3285,16 @@ wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     itemShowUploading->SetName( "showClientsUploading" );
     item3->Add( itemShowUploading, wxSizerFlags().CenterVertical() );
     item1->Add( item3, wxSizerFlags().Center().Border(wxALL, 5) );
+
+    wxBoxSizer *itemShRight = new wxBoxSizer( wxHORIZONTAL );
+    itemShRight->AddStretchSpacer( 1 );
     wxStaticText *item4 = new wxStaticText( parent, -1, _("Reload:"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->SetName( "sharedFilesLabel" );
-    item1->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    itemShRight->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxBitmapButton *item5 = new wxBitmapButton( parent, ID_BTNRELSHARED, amuleDlgImages( 18 ), wxDefaultPosition, wxSize(32,32) );
     item5->SetToolTip( _("Reload your shared files") );
-    item1->Add( item5, 0, wxALIGN_CENTER_VERTICAL, 0 );
+    itemShRight->Add( item5, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    item1->Add( itemShRight, wxSizerFlags(1).CenterVertical() );
 
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
     CSharedFilesCtrl *item6 = new CSharedFilesCtrl( parent, ID_SHFILELIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );

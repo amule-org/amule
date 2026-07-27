@@ -59,6 +59,8 @@ wxBEGIN_EVENT_TABLE(CTransferWnd, wxPanel)
 	EVT_BUTTON(ID_BTNCLRCOMPL, CTransferWnd::OnBtnClearDownloads)
 	EVT_BUTTON(ID_CLIENTTOGGLE, CTransferWnd::OnToggleClientList)
 
+	EVT_TEXT(IDC_TRANSFER_FILTER, CTransferWnd::OnFilterChanged)
+
 	EVT_MENU_RANGE(MP_CAT_SET0, MP_CAT_SET0 + 15, CTransferWnd::OnSetDefaultCat)
 	EVT_MENU(MP_CAT_ADD, CTransferWnd::OnAddCategory)
 	EVT_MENU(MP_CAT_EDIT, CTransferWnd::OnEditCategory)
@@ -390,6 +392,11 @@ void CTransferWnd::OnBtnClearDownloads(wxCommandEvent &WXUNUSED(evt))
 	downloadlistctrl->Freeze();
 	downloadlistctrl->ClearCompleted();
 	downloadlistctrl->Thaw();
+}
+
+void CTransferWnd::OnFilterChanged(wxCommandEvent &WXUNUSED(evt))
+{
+	downloadlistctrl->SetFilterText(CastChild(IDC_TRANSFER_FILTER, wxTextCtrl)->GetValue());
 }
 
 void CTransferWnd::Prepare()

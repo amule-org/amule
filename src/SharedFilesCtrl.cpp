@@ -308,12 +308,35 @@ void CSharedFilesCtrl::ShowFileList()
 	std::vector<CKnownFile *> files;
 	theApp->sharedfiles->CopyFileList(files);
 	for (CKnownFile *file : files) {
-		AppendItemData(reinterpret_cast<wxUIntPtr>(file));
+		if (PassesTextFilter(file)) {
+			AppendItemData(reinterpret_cast<wxUIntPtr>(file));
+		}
 	}
 	FinishBulkLoad();
 	ShowFilesCount();
 
 	Thaw();
+}
+
+bool CSharedFilesCtrl::PassesTextFilter(const CKnownFile *file) const
+{
+	if (m_filterText.IsEmpty()) {
+		return true;
+	}
+	// Case-insensitive substring match on the file name (m_filterText is
+	// already lower-cased by SetFilterText()).
+	return file->GetFileName().GetPrintable().Lower().Contains(m_filterText);
+}
+
+void CSharedFilesCtrl::SetFilterText(const wxString &text)
+{
+	const wxString lower = text.Lower();
+	if (lower == m_filterText) {
+		return;
+	}
+	m_filterText = lower;
+	// Rebuild the model from the master share, applying the new filter.
+	ShowFileList();
 }
 
 void CSharedFilesCtrl::BeginBatchUpdate()
@@ -353,6 +376,12 @@ void CSharedFilesCtrl::ClearList()
 
 void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 {
+	// A newly-shared file that doesn't match the active filter stays hidden;
+	// it'll appear if the filter is cleared/changed (which rebuilds the model).
+	if (!PassesTextFilter(file)) {
+		return;
+	}
+
 	if (m_batchUpdate) {
 		// Batched poll (remote GUI): append at the end (O(1)) and let
 		// EndBatchUpdate() sort once. AddItemData()'s sorted insert rebuilds

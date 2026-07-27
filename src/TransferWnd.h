@@ -142,6 +142,9 @@ private:
 	 */
 	void OnBtnClearDownloads(wxCommandEvent &evt);
 
+	/** Live text-filter box changed: push the new text to the download list. */
+	void OnFilterChanged(wxCommandEvent &evt);
+
 	/**
 	 * Event-handler for changing categories.
 	 */

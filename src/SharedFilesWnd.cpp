@@ -41,6 +41,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesWnd, wxPanel)
 	EVT_LIST_ITEM_SELECTED(ID_SHFILELIST, CSharedFilesWnd::OnItemSelectionChanged)
 	EVT_LIST_ITEM_DESELECTED(ID_SHFILELIST, CSharedFilesWnd::OnItemSelectionChanged)
 	EVT_BUTTON(ID_BTNRELSHARED, CSharedFilesWnd::OnBtnReloadShared)
+	EVT_TEXT(IDC_SHARED_FILTER, CSharedFilesWnd::OnFilterChanged)
 	EVT_BUTTON(ID_SHAREDCLIENTTOGGLE, CSharedFilesWnd::OnToggleClientList)
 	// The "show clients for" radio buttons are bound dynamically in the ctor.
 
@@ -263,6 +264,11 @@ void CSharedFilesWnd::OnBtnReloadShared(wxCommandEvent &WXUNUSED(evt))
 	// remote gui will update display when data is back
 	SelectionUpdated();
 #endif
+}
+
+void CSharedFilesWnd::OnFilterChanged(wxCommandEvent &WXUNUSED(evt))
+{
+	sharedfilesctrl->SetFilterText(CastChild(IDC_SHARED_FILTER, wxTextCtrl)->GetValue());
 }
 
 void CSharedFilesWnd::OnItemSelectionChanged(wxListEvent &evt)

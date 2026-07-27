@@ -228,8 +228,9 @@ void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 			return;
 		}
 
-		// Check if the new file is visible in the current category
-		if (file->CheckShowItemInGivenCat(m_category)) {
+		// Check if the new file is visible in the current category (and
+		// passes the active text filter).
+		if (IsVisibleInCat(file, m_category)) {
 			ShowFile(file, true);
 			if (file->IsCompleted()) {
 				CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(true);
@@ -281,7 +282,7 @@ void CDownloadListCtrl::ShowFileList()
 
 	for (const auto &entry : m_ListItems) {
 		CPartFile *file = entry.second->GetFile();
-		if (file->CheckShowItemInGivenCat(m_category)) {
+		if (IsVisibleInCat(file, m_category)) {
 			ShowFile(file, true);
 			if (file->IsCompleted()) {
 				hasCompletedDownloads = true;
@@ -327,7 +328,7 @@ void CDownloadListCtrl::UpdateItem(const void *toupdate)
 
 		CPartFile *file = item->GetFile();
 
-		bool show = file->CheckShowItemInGivenCat(m_category);
+		bool show = IsVisibleInCat(file, m_category);
 
 		if (index != -1) {
 			if (show) {
@@ -392,8 +393,8 @@ void CDownloadListCtrl::ChangeCategory(int newCategory)
 
 		CPartFile *file = it->second->GetFile();
 
-		bool curVisibility = file->CheckShowItemInGivenCat(m_category);
-		bool newVisibility = file->CheckShowItemInGivenCat(newCategory);
+		bool curVisibility = IsVisibleInCat(file, m_category);
+		bool newVisibility = IsVisibleInCat(file, newCategory);
 
 		if (newVisibility && file->IsCompleted()) {
 			hasCompletedDownloads = true;
@@ -418,6 +419,41 @@ void CDownloadListCtrl::ChangeCategory(int newCategory)
 uint8 CDownloadListCtrl::GetCategory() const
 {
 	return m_category;
+}
+
+bool CDownloadListCtrl::PassesTextFilter(const CPartFile *file) const
+{
+	if (m_filterText.IsEmpty()) {
+		return true;
+	}
+	// Case-insensitive substring match on the file name (m_filterText is
+	// already lower-cased by SetFilterText()).
+	return file->GetFileName().GetPrintable().Lower().Contains(m_filterText);
+}
+
+bool CDownloadListCtrl::IsVisibleInCat(CPartFile *file, int category) const
+{
+	return file->CheckShowItemInGivenCat(category) && PassesTextFilter(file);
+}
+
+void CDownloadListCtrl::SetFilterText(const wxString &text)
+{
+	const wxString lower = text.Lower();
+	if (lower == m_filterText) {
+		return;
+	}
+	m_filterText = lower;
+
+	// Re-evaluate visibility of every model item against the new filter,
+	// mirroring ChangeCategory(): the model in m_ListItems always holds every
+	// file, so we just add/remove rows to match. One repaint, one sort.
+	Freeze();
+	for (const auto &entry : m_ListItems) {
+		CPartFile *file = entry.second->GetFile();
+		ShowFile(file, IsVisibleInCat(file, m_category));
+	}
+	SortList();
+	Thaw();
 }
 
 /**

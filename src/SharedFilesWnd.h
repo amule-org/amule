@@ -96,6 +96,9 @@ private:
 	 */
 	void OnBtnReloadShared(wxCommandEvent &evt);
 
+	/** Live text-filter box changed: push the new text to the shared list. */
+	void OnFilterChanged(wxCommandEvent &evt);
+
 	/**
 	 * Event-handler for showing details about a shared file(s).
 	 */

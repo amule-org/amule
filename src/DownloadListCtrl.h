@@ -95,6 +95,14 @@ public:
 	void ShowFileList();
 
 	/**
+	 * Sets the live text filter. Only files whose name contains @a text
+	 * (case-insensitive) are shown, AND-ed with the current category. An
+	 * empty string clears the filter. Purely GUI-side, so it works the same
+	 * in the monolithic app and the remote GUI (amulegui).
+	 */
+	void SetFilterText(const wxString &text);
+
+	/**
 	 * Bracket a burst of AddFile()/UpdateItem() calls (a reconnect resync —
 	 * issue #444, or any poll that adds a batch of downloads — issue #615) so
 	 * the list repaints once (Freeze) and sorts once, instead of per-item.
@@ -252,6 +260,17 @@ private:
 
 	//! The currently displayed category
 	uint8 m_category;
+
+	//! Live text filter (lower-cased), empty when inactive. See SetFilterText().
+	wxString m_filterText;
+
+	//! True if @a file passes the current text filter (name substring match).
+	bool PassesTextFilter(const CPartFile *file) const;
+
+	//! Whether @a file should be displayed in @a category: the category
+	//! predicate AND-ed with the text filter. Takes a non-const file because
+	//! CPartFile::CheckShowItemInGivenCat() is not const.
+	bool IsVisibleInCat(CPartFile *file, int category) const;
 
 	//! Flag if change of item selection is pending
 	bool m_ItemSelectionChangePending;
