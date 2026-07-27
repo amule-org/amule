@@ -1568,16 +1568,6 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxStaticBox *item2 = new wxStaticBox( parent, -1, _("Intelligent Corruption Handling (I.C.H.)") );
-    wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
-
-    wxCheckBox *item3 = new wxCheckBox( parent, IDC_ICH, _("Enable"), wxDefaultPosition, wxDefaultSize, 0 );
-    item3->SetValue( TRUE );
-    item1->Add( item3, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
-    wxCheckBox *item4 = new wxCheckBox( parent, IDC_AICHTRUST, _("Advanced I.C.H. trusts every hash (not recommended)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item1->Add( item4, 0, wxALIGN_CENTER_VERTICAL, 0 );
-
-    item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     wxStaticBox *item6 = new wxStaticBox( parent, -1, _("Downloads") );
     wxStaticBoxSizer *item5 = new wxStaticBoxSizer( item6, wxVERTICAL );
 
@@ -1627,6 +1617,19 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item21 = new wxCheckBox( parent, IDC_UAP, _("Add new shared files with auto priority"), wxDefaultPosition, wxDefaultSize, 0 );
     item19->Add( item21, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
     item0->Add( item19, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
+
+    // Intelligent Corruption Handling — an advanced option, placed after the
+    // Downloads / Uploads groups (issue #594).
+    wxStaticBox *item2 = new wxStaticBox( parent, -1, _("Intelligent Corruption Handling (I.C.H.)") );
+    wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
+
+    wxCheckBox *item3 = new wxCheckBox( parent, IDC_ICH, _("Enable"), wxDefaultPosition, wxDefaultSize, 0 );
+    item3->SetValue( TRUE );
+    item1->Add( item3, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
+    wxCheckBox *item4 = new wxCheckBox( parent, IDC_AICHTRUST, _("Advanced I.C.H. trusts every hash (not recommended)"), wxDefaultPosition, wxDefaultSize, 0 );
+    item1->Add( item4, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
+    item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
 
     // Media metadata extraction (issue #140). Optional feature that
     // runs ffprobe against each shared file at share-add / known.met
@@ -2945,31 +2948,19 @@ wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxFlexGridSizer *item2 = new wxFlexGridSizer( 2, 0, 0 );
     item2->AddGrowableCol( 1 );
 
-    wxCheckBox *item3 = new wxCheckBox( parent, ID_PROXY_ENABLE_PASSWORD, _("Enable authentication"), wxDefaultPosition, wxDefaultSize, 0 );
-    item3->SetToolTip( _("Enable/disable username/password authentication") );
-    item2->Add( item3, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
-    item2->Add( 20, 20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxStaticText *item4 = new wxStaticText( parent, -1, _("Username: "), wxDefaultPosition, wxDefaultSize, 0 );
-    item2->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
-    wxTextCtrl *item5 = new wxTextCtrl( parent, ID_PROXY_USER, "", wxDefaultPosition, wxSize(80,-1), 0 );
-    item5->SetToolTip( _("The username to use to connect to the proxy") );
-    item2->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
-    wxStaticText *item6 = new wxStaticText( parent, -1, _("Password:"), wxDefaultPosition, wxDefaultSize, 0 );
-    item2->Add( item6, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
-    wxTextCtrl *item7 = new wxTextCtrl( parent, ID_PROXY_PASSWORD, "", wxDefaultPosition, wxSize(80,-1), wxTE_PASSWORD );
-    item7->SetToolTip( _("The password to use to connect to the proxy") );
-    item2->Add( item7, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
+    // Enable Proxy group first (issue #594): the proxy on/off toggle and its
+    // settings, then the authentication sub-section at the end.
     wxCheckBox *item8 = new wxCheckBox( parent, ID_PROXY_ENABLE_PROXY, _("Enable Proxy"), wxDefaultPosition, wxDefaultSize, 0 );
     item8->SetToolTip( _("Enable/disable proxy support") );
     item2->Add( item8, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
     item2->Add( 20, 20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxStaticText *item9 = new wxStaticText( parent, -1, _("Proxy type:"), wxDefaultPosition, wxDefaultSize, 0 );
     item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
-    wxString strs10[] = 
+    wxString strs10[] =
     {
-        "SOCKS5", 
-        "SOCKS4", 
-        "HTTP", 
+        "SOCKS5",
+        "SOCKS4",
+        "HTTP",
         "SOCKS4a"
     };
     wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
@@ -2984,6 +2975,20 @@ wxSizer *PreferencesProxyTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxTextCtrl *item14 = new wxTextCtrl( parent, ID_PROXY_PORT, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item14->SetToolTip( _("The proxy port") );
     item2->Add( item14, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxTOP, 5) );
+    wxCheckBox *item3 = new wxCheckBox( parent, ID_PROXY_ENABLE_PASSWORD, _("Enable authentication"), wxDefaultPosition, wxDefaultSize, 0 );
+    item3->SetToolTip( _("Enable/disable username/password authentication") );
+    item2->Add( item3, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
+    item2->Add( 20, 20, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
+    wxStaticText *item4 = new wxStaticText( parent, -1, _("Username: "), wxDefaultPosition, wxDefaultSize, 0 );
+    item2->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
+    wxTextCtrl *item5 = new wxTextCtrl( parent, ID_PROXY_USER, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    item5->SetToolTip( _("The username to use to connect to the proxy") );
+    item2->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
+    wxStaticText *item6 = new wxStaticText( parent, -1, _("Password:"), wxDefaultPosition, wxDefaultSize, 0 );
+    item2->Add( item6, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
+    wxTextCtrl *item7 = new wxTextCtrl( parent, ID_PROXY_PASSWORD, "", wxDefaultPosition, wxSize(80,-1), wxTE_PASSWORD );
+    item7->SetToolTip( _("The password to use to connect to the proxy") );
+    item2->Add( item7, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     item0->Add( item2, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     if (set_sizer)
     {
