@@ -294,9 +294,14 @@ struct ClientSnapshot
 	//    downloading FROM this peer + the filename the peer
 	//    advertised (OP_REQFILENAMEANSWER). Empty when not in
 	//    download role.
+	//  * upload_file_name: partfile this peer is downloading FROM us,
+	//    resolved locally (we know our own partfiles' names, unlike
+	//    the peer-advertised download_file_name above). Empty when
+	//    not in upload role, or when upload_file_hash didn't resolve.
 	std::string upload_file_hash;   // EC_TAG_CLIENT_UPLOAD_FILE resolved
 	std::string download_file_hash; // EC_TAG_CLIENT_REQUEST_FILE resolved
 	std::string download_file_name; // EC_TAG_CLIENT_REMOTE_FILENAME
+	std::string upload_file_name;   // resolved from upload_file_hash against m_files
 
 	// Per-session transfer stats. CLIENT_UPLOAD_SESSION = bytes
 	// uploaded TO this peer; PARTFILE_SIZE_XFER (when re-keyed on a
@@ -332,7 +337,6 @@ struct ClientSnapshot
 	std::string server_name;
 	std::uint16_t kad_port = 0;        // 0 => Kad not connected for this peer
 	std::string source_origin;         // "server" | "kad" | "source_exchange" | "passive" | "link" | ...
-	std::string upload_file_name;      // partfile this peer downloads FROM us; "" unless uploading
 	std::uint32_t available_parts = 0; // count of parts the peer has (EC_TAG_CLIENT_AVAILABLE_PARTS)
 	bool has_available_parts = false;  // false => tag absent, omit the field
 	std::string mod_version;           // EC_TAG_CLIENT_MOD_VERSION

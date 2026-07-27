@@ -195,6 +195,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
 	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
 	  << ",\"download_file_name\":\"" << EscJson(c.download_file_name) << "\""
+	  << ",\"upload_file_name\":\"" << EscJson(c.upload_file_name) << "\""
 	  << ",\"upload_file_hash\":\"" << EscJson(c.upload_file_hash) << "\""
 	  << ",\"download_file_hash\":\"" << EscJson(c.download_file_hash) << "\""
 	  << ",\"xfer\":{"
@@ -318,10 +319,11 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.software_version == b.software_version && a.os_info == b.os_info &&
 	       a.upload_state == b.upload_state && a.download_state == b.download_state &&
 	       a.ident_state == b.ident_state && a.download_file_name == b.download_file_name &&
-	       a.upload_file_hash == b.upload_file_hash && a.download_file_hash == b.download_file_hash &&
-	       a.xfer_up_session == b.xfer_up_session && a.xfer_down_session == b.xfer_down_session &&
-	       a.xfer_up_total == b.xfer_up_total && a.xfer_down_total == b.xfer_down_total &&
-	       a.upload_speed_bps == b.upload_speed_bps && a.download_speed_bps == b.download_speed_bps &&
+	       a.upload_file_name == b.upload_file_name && a.upload_file_hash == b.upload_file_hash &&
+	       a.download_file_hash == b.download_file_hash && a.xfer_up_session == b.xfer_up_session &&
+	       a.xfer_down_session == b.xfer_down_session && a.xfer_up_total == b.xfer_up_total &&
+	       a.xfer_down_total == b.xfer_down_total && a.upload_speed_bps == b.upload_speed_bps &&
+	       a.download_speed_bps == b.download_speed_bps &&
 	       a.queue_waiting_position == b.queue_waiting_position &&
 	       a.remote_queue_rank == b.remote_queue_rank && a.score == b.score &&
 	       a.obfuscation_status == b.obfuscation_status && a.friend_slot == b.friend_slot;

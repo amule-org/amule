@@ -26,6 +26,12 @@ const UL = ["all", "uploads"];
 const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
 const rankLabel = (c) => !c.remote_queue_rank ? "—" : c.remote_queue_rank >= 0xFFFF ? t("downloads_peer_queue_full") : c.remote_queue_rank;
 const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
+// The "file" column is shared by both directions: download_file_name is the
+// peer-advertised name of what we're pulling FROM them; upload_file_name is
+// the partfile they're pulling FROM us. An upload-only peer has no
+// download_file_name, so falling back to upload_file_name is what actually
+// makes the column non-blank for uploads (previously always "—" there).
+const fileNameOf = (c) => c.download_file_name || c.upload_file_name || "";
 
 // Each column carries key + sortVal so the header is clickable-to-sort (the
 // flags column has no key → stays non-sortable).
@@ -37,8 +43,8 @@ const COLS = [
   { key: "software", th: "downloads_peer_col_software", width: "140px", show: ALL, sortable: true,
     sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
   { key: "file", th: "downloads_peer_col_file", cls: "name", show: ALL, sortable: true,
-    sortVal: (c) => (c.download_file_name || "").toLowerCase(),
-    cell: (c) => html`<span title=${c.download_file_name}>${c.download_file_name || "—"}</span>` },
+    sortVal: (c) => fileNameOf(c).toLowerCase(),
+    cell: (c) => html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
 
   { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", show: DL, sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
@@ -90,7 +96,7 @@ export default function ClientsPanel() {
   else if (filter === "uploads") list = list.filter(isUp);
   if (ident === "identified") list = list.filter((c) => c.ident_state === "identified");
   else if (ident === "not_identified") list = list.filter((c) => c.ident_state !== "identified");
-  if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.client_name || "") + " " + (c.download_file_name || ""))); }
+  if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.client_name || "") + " " + fileNameOf(c))); }
 
   const tabs = [
     { key: "all", label: t("downloads_peer_all"), badge: clients.length },

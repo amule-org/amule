@@ -1196,9 +1196,7 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 		(url_path == "/" || url_path.empty()) ? std::string("index.html") : url_path.substr(1);
 
 	std::string fs_path;
-	struct stat st
-	{
-	};
+	struct stat st{};
 	std::string body;
 	bool found = webapi::ResolveWithinRoot(root, rel, fs_path) && ReadStaticFile(fs_path, body, st);
 
@@ -1919,6 +1917,8 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.ident_state.c_str()));
 	w.Key("download_file_name");
 	w.ValueString(wxString::FromUTF8(c.download_file_name.c_str()));
+	w.Key("upload_file_name");
+	w.ValueString(wxString::FromUTF8(c.upload_file_name.c_str()));
 	w.Key("upload_file_hash");
 	w.ValueString(wxString::FromUTF8(c.upload_file_hash.c_str()));
 	w.Key("download_file_hash");
@@ -1950,7 +1950,7 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueBool(c.friend_slot);
 }
 
-// List-level client object (GET /clients). Unchanged A-field set.
+// List-level client object (GET /clients).
 void WriteClientObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 {
 	w.BeginObject();
@@ -1979,8 +1979,6 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueInt(static_cast<int64_t>(c.kad_port));
 	w.Key("source_origin");
 	w.ValueString(wxString::FromUTF8(c.source_origin.c_str()));
-	w.Key("upload_file_name");
-	w.ValueString(wxString::FromUTF8(c.upload_file_name.c_str()));
 	w.Key("available_parts");
 	w.ValueInt(static_cast<int64_t>(c.available_parts));
 	w.Key("mod_version");

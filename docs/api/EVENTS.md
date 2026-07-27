@@ -355,6 +355,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "upload_file_hash":       "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
   "download_file_hash":     "",
   "download_file_name":     "",
+  "upload_file_name":       "example-distribution.iso",
   "xfer": {
     "up_session":   22000000,
     "down_session": 0,
@@ -371,7 +372,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
 }
 ```
 
-`upload_file_hash` (file we're uploading TO this peer) and `download_file_hash` (file we're downloading FROM this peer) are 32-char MD4 hex hashes — directly resolvable against [`/api/v0/downloads/{hash}`](REFERENCE.md#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction.
+`upload_file_hash` (file we're uploading TO this peer) and `download_file_hash` (file we're downloading FROM this peer) are 32-char MD4 hex hashes — directly resolvable against [`/api/v0/downloads/{hash}`](REFERENCE.md#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](REFERENCE.md#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised while we download from them; `upload_file_name` is the partfile they're downloading from us, resolved locally — see [`GET /clients`](REFERENCE.md#get-apiv0clients) for details.
 
 #### `client_removed`
 
