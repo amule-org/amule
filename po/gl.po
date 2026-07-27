@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-27 11:33+0200\n"
+"POT-Creation-Date: 2026-07-27 13:15+0200\n"
 "PO-Revision-Date: 2026-07-27 10:22+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -344,11 +344,11 @@ msgstr ""
 "aMule detectou que faltan ficheiros necesarios para arrancar a rede.\n"
 "Escolla os que queira descargar:"
 
-#: src/amule.cpp:1005
+#: src/amule.cpp:1005 src/FirstRunWizard.cpp:410
 msgid "eD2k server list (server.met)"
 msgstr "Lista de servidores eD2k (server.met)"
 
-#: src/amule.cpp:1012
+#: src/amule.cpp:1012 src/FirstRunWizard.cpp:415
 msgid "Kad bootstrap nodes (nodes.dat)"
 msgstr "Nodos de inicio de Kad (nodes.dat)"
 
@@ -1097,7 +1097,7 @@ msgid "Enter Captcha"
 msgstr "Introduza o Captcha"
 
 #: src/CatDialog.cpp:58 src/DownloadListCtrl.cpp:783 src/muuli_wdr.cpp:253
-#: src/SearchListCtrl.cpp:730 src/TransferWnd.cpp:338
+#: src/SearchListCtrl.cpp:734 src/TransferWnd.cpp:338
 msgid "Category"
 msgstr "Categoría"
 
@@ -1533,7 +1533,7 @@ msgstr "ERRO: Erro de E/S!"
 msgid "ERROR: Failed!"
 msgstr "ERRO: Non se puido realizar a acción!"
 
-#: src/DataToText.cpp:185 src/SearchListCtrl.cpp:1156
+#: src/DataToText.cpp:185 src/SearchListCtrl.cpp:1160
 msgid "Queued"
 msgstr "En cola"
 
@@ -1659,7 +1659,7 @@ msgid "Show file &details"
 msgstr "Amosar &detalles do ficheiro"
 
 #: src/DownloadListCtrl.cpp:772 src/muuli_wdr.cpp:706
-#: src/SearchListCtrl.cpp:746
+#: src/SearchListCtrl.cpp:750
 msgid "Show all comments"
 msgstr "Ver todos os comentarios"
 
@@ -2274,6 +2274,204 @@ msgstr "%.1f%% feito"
 #, c-format
 msgid "%.2f kB/s"
 msgstr "%.2f kB/s"
+
+#: src/FirstRunWizard.cpp:91
+msgid "Mobile / 4G-5G (20 / 5 Mbit)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:92
+msgid "ADSL (24 / 1 Mbit)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:93
+msgid "VDSL (50 / 10 Mbit)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:94
+msgid "Cable (200 / 20 Mbit)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:95
+msgid "Fibre 300 (300 / 100 Mbit)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:96
+msgid "Fibre Gigabit (1000 / 1000 Mbit)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:223
+msgid "aMule first-run setup"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:251
+#, fuzzy
+msgid "Welcome to aMule!"
+msgstr "Benvido!"
+
+#: src/FirstRunWizard.cpp:254
+msgid ""
+"This short setup will get you connected. You can change\n"
+"any of these settings later in Preferences."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:260
+msgid "Choose a nickname other peers will see:"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:276
+#, fuzzy
+msgid "Connection & bandwidth"
+msgstr "Conectado a colega"
+
+#: src/FirstRunWizard.cpp:279
+msgid ""
+"Pick the option that best matches your Internet connection,\n"
+"or set the upload and download limits directly below."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:285
+#, fuzzy
+msgid "Connection speed:"
+msgstr "Estado de conexión:"
+
+#: src/FirstRunWizard.cpp:290
+msgid "Other / set manually"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:297
+msgid "Upload limit (kB/s, 0 = unlimited):"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:305
+msgid "Download limit (kB/s, 0 = unlimited):"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:331
+#, fuzzy
+msgid "Networks & ports"
+msgstr "Redes"
+
+#: src/FirstRunWizard.cpp:334
+msgid "aMule can use two networks. We recommend keeping both enabled."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:344 src/TextClient.cpp:894
+msgid "eD2k"
+msgstr "eD2k"
+
+#: src/FirstRunWizard.cpp:348 src/muuli_wdr.cpp:1481
+msgid "Kademlia"
+msgstr "Kademlia"
+
+#: src/FirstRunWizard.cpp:358 src/muuli_wdr.cpp:1409
+msgid "Standard TCP Port "
+msgstr "Porto TCP normativizado "
+
+#: src/FirstRunWizard.cpp:364 src/muuli_wdr.cpp:1421
+msgid "Extended UDP port (Kad / global search) "
+msgstr "Porto UDP ampliado (Kad / busca global) "
+
+#: src/FirstRunWizard.cpp:376 src/muuli_wdr.cpp:1428
+msgid "Enable UPnP for router port forwarding"
+msgstr "Activar UPnP para configurar os portos no encamiñador"
+
+#: src/FirstRunWizard.cpp:381
+msgid ""
+"Lets aMule ask your router to forward the ports above so other\n"
+"peers can reach you (a \"HighID\"). Turn off if your router\n"
+"doesn't support UPnP or you forward ports manually."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:398
+#, fuzzy
+msgid "Bootstrap files"
+msgstr "Arranque autónomo (dende cero)"
+
+#: src/FirstRunWizard.cpp:403
+msgid ""
+"To get started, aMule needs to know about some peers.\n"
+"Select which lists to download now:"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:422
+#, fuzzy
+msgid "Your peer lists are already in place - nothing to download."
+msgstr "O ficheiro %s xa se está descargando"
+
+#: src/FirstRunWizard.cpp:433 src/muuli_wdr.cpp:1526
+msgid "Auto-update server list at startup"
+msgstr "Actualizar automáticamente a lista de servidores no arranque"
+
+#: src/FirstRunWizard.cpp:446
+msgid "Integrations (optional)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:449
+msgid ""
+"Choose how aMule integrates with your system. You can\n"
+"change any of these later in Preferences."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:459 src/muuli_wdr.cpp:1273
+msgid "Start aMule automatically when I log in"
+msgstr "Arrancar aMule automaticamente ao iniciar sesión"
+
+#: src/FirstRunWizard.cpp:479 src/muuli_wdr.cpp:1281
+msgid "Register aMule for ed2k:// links"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:487 src/muuli_wdr.cpp:1285
+msgid "Register aMule for magnet: links"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:496
+msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:512
+msgid "Folders (optional)"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:515
+msgid ""
+"The defaults are fine for most people. Change them if you\n"
+"want downloads on a different (e.g. larger) disk."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:523 src/FirstRunWizard.cpp:585 src/muuli_wdr.cpp:1688
+msgid "Destination folder for downloads"
+msgstr "Cartafol de destino para descargas"
+
+#: src/FirstRunWizard.cpp:527 src/FirstRunWizard.cpp:543 src/muuli_wdr.cpp:1335
+#: src/muuli_wdr.cpp:1352 src/muuli_wdr.cpp:1663 src/muuli_wdr.cpp:1694
+#: src/muuli_wdr.cpp:1706 src/muuli_wdr.cpp:2749
+#: src/utils/aLinkCreator/src/alcframe.cpp:135
+#: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
+msgid "Browse"
+msgstr "Navegador"
+
+#: src/FirstRunWizard.cpp:533 src/muuli_wdr.cpp:1699
+msgid "(All files in this folder are shared with other peers)"
+msgstr "(Compartiranse todos os ficheiros do cartafol co resto de parceiros)"
+
+#: src/FirstRunWizard.cpp:539 src/FirstRunWizard.cpp:598 src/muuli_wdr.cpp:1701
+msgid "Folder for temporary download files"
+msgstr "Cartafol para ficheiros de descarga temporais"
+
+#: src/FirstRunWizard.cpp:560
+#, c-format
+msgid ""
+"Based on this, aMule will allow up to %i sources per file\n"
+"and %i client connections."
+msgstr ""
+
+#: src/FirstRunWizard.cpp:738
+msgid "Show this setup wizard again the next time you start aMule?"
+msgstr ""
+
+#: src/FirstRunWizard.cpp:739
+msgid "Setup not finished"
+msgstr ""
 
 #: src/FriendList.cpp:120
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -3077,7 +3275,7 @@ msgstr "Nome:"
 msgid "Type"
 msgstr "Tipo"
 
-#: src/muuli_wdr.cpp:215 src/SearchDlg.cpp:110 src/SearchListCtrl.cpp:849
+#: src/muuli_wdr.cpp:215 src/SearchDlg.cpp:110 src/SearchListCtrl.cpp:853
 msgid "Local"
 msgstr "Local"
 
@@ -3197,7 +3395,7 @@ msgstr "Solicitar que os clientes Kad contactados estendan a busca. Cada pulsaci
 msgid "Stop"
 msgstr "Deter"
 
-#: src/muuli_wdr.cpp:348 src/muuli_wdr.cpp:1378 src/SearchListCtrl.cpp:728
+#: src/muuli_wdr.cpp:348 src/muuli_wdr.cpp:1378 src/SearchListCtrl.cpp:732
 msgid "Download"
 msgstr "Descargar"
 
@@ -3655,24 +3853,12 @@ msgstr "Comprobar se hai unha nova versión ao iniciar"
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
 msgstr "Activar isto fará que aMule comprobe se hai unha nova versión ao iniciarse"
 
-#: src/muuli_wdr.cpp:1273
-msgid "Start aMule automatically when I log in"
-msgstr "Arrancar aMule automaticamente ao iniciar sesión"
-
 #: src/muuli_wdr.cpp:1274
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Crea unha configuración de usuario para que o sistema operativo inicie aMule ao entrar. Se polo que sexa móvese o programa aMule, execúteo unha primeira vez a man para actualizar a configuración."
 
-#: src/muuli_wdr.cpp:1281
-msgid "Register aMule for ed2k:// links"
-msgstr ""
-
 #: src/muuli_wdr.cpp:1282
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr ""
-
-#: src/muuli_wdr.cpp:1285
-msgid "Register aMule for magnet: links"
 msgstr ""
 
 #: src/muuli_wdr.cpp:1286
@@ -3739,13 +3925,6 @@ msgstr "Selección de navegador"
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
 msgstr "Introduza o nome do seu navegador aquí. Deixe o campo baleiro para empregar o navegador predeterminado do sistema."
 
-#: src/muuli_wdr.cpp:1335 src/muuli_wdr.cpp:1352 src/muuli_wdr.cpp:1663
-#: src/muuli_wdr.cpp:1694 src/muuli_wdr.cpp:1706 src/muuli_wdr.cpp:2749
-#: src/utils/aLinkCreator/src/alcframe.cpp:135
-#: src/utils/wxCas/src/wxcasprefs.cpp:52 src/utils/wxCas/src/wxcasprefs.cpp:118
-msgid "Browse"
-msgstr "Navegador"
-
 #: src/muuli_wdr.cpp:1339
 msgid "Open in new tab if possible"
 msgstr "Abrir nunha nova lapela se é posible"
@@ -3774,10 +3953,6 @@ msgstr "Asignación de ocos"
 msgid "Ports"
 msgstr "Portos"
 
-#: src/muuli_wdr.cpp:1409
-msgid "Standard TCP Port "
-msgstr "Porto TCP normativizado "
-
 #: src/muuli_wdr.cpp:1413
 msgid "This is the standard eD2k port and cannot be disabled."
 msgstr "Este é o porto eD2k normativizado e non se pode desactivar."
@@ -3790,17 +3965,9 @@ msgstr "Porto UDP para peticións do servidor (TCP+3)"
 msgid "4665"
 msgstr "4665"
 
-#: src/muuli_wdr.cpp:1421
-msgid "Extended UDP port (Kad / global search) "
-msgstr "Porto UDP ampliado (Kad / busca global) "
-
 #: src/muuli_wdr.cpp:1425
 msgid "This UDP port is used for extended eD2k requests and Kad network"
 msgstr "Este porto UDP úsase para peticións eD2k ampliadas e para a rede Kad"
-
-#: src/muuli_wdr.cpp:1428
-msgid "Enable UPnP for router port forwarding"
-msgstr "Activar UPnP para configurar os portos no encamiñador"
 
 #: src/muuli_wdr.cpp:1432
 msgid "UPnP TCP Port (Optional):"
@@ -3831,10 +3998,6 @@ msgstr "Límite de fontes por ficheiro descargado:"
 msgid "Max simultaneous connections:"
 msgstr "Conexións simultáneas máximas:"
 
-#: src/muuli_wdr.cpp:1481
-msgid "Kademlia"
-msgstr "Kademlia"
-
 #: src/muuli_wdr.cpp:1484 src/muuli_wdr.cpp:3156
 msgid "ED2K"
 msgstr "ED2K"
@@ -3858,10 +4021,6 @@ msgstr ""
 #: src/muuli_wdr.cpp:1521
 msgid "retries"
 msgstr "intentos"
-
-#: src/muuli_wdr.cpp:1526
-msgid "Auto-update server list at startup"
-msgstr "Actualizar automáticamente a lista de servidores no arranque"
 
 #: src/muuli_wdr.cpp:1529
 msgid "List"
@@ -3995,10 +4154,6 @@ msgstr ""
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
 msgstr ""
 
-#: src/muuli_wdr.cpp:1688
-msgid "Destination folder for downloads"
-msgstr "Cartafol de destino para descargas"
-
 #: src/muuli_wdr.cpp:1692
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
@@ -4010,14 +4165,6 @@ msgstr ""
 #: src/muuli_wdr.cpp:1695
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
 msgstr "Escolla o cartafol onde gardar as descargas completas. Compartiranse todos os ficheiros do cartafol co resto de parceiros."
-
-#: src/muuli_wdr.cpp:1699
-msgid "(All files in this folder are shared with other peers)"
-msgstr "(Compartiranse todos os ficheiros do cartafol co resto de parceiros)"
-
-#: src/muuli_wdr.cpp:1701
-msgid "Folder for temporary download files"
-msgstr "Cartafol para ficheiros de descarga temporais"
 
 #: src/muuli_wdr.cpp:1709
 msgid "Shared folders"
@@ -5272,7 +5419,7 @@ msgstr "Reservando"
 msgid "Insufficient disk space"
 msgstr "Espazo no disco insuficiente"
 
-#: src/PartFile.cpp:4428 src/SearchListCtrl.cpp:1151
+#: src/PartFile.cpp:4428 src/SearchListCtrl.cpp:1155
 #: src/SharedFilePeersListCtrl.cpp:29 src/SourceListCtrl.cpp:29
 msgid "Downloaded"
 msgstr "Descargado"
@@ -5959,7 +6106,7 @@ msgstr "Cartafoles compartidos"
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr "Non se pode buscar se tanto eD2k coma Kademlia están desactivados."
 
-#: src/SearchDlg.cpp:426 src/SearchListCtrl.cpp:854
+#: src/SearchDlg.cpp:426 src/SearchListCtrl.cpp:858
 msgid "Search error"
 msgstr "Erro na busca"
 
@@ -5971,7 +6118,7 @@ msgstr "O tamaño mínimo debe ser máis pequeno que o máximo. Tamaño máximo 
 msgid "Search warning"
 msgstr "Aviso na busca"
 
-#: src/SearchDlg.cpp:929 src/SearchListCtrl.cpp:731
+#: src/SearchDlg.cpp:929 src/SearchListCtrl.cpp:735
 msgid "Main"
 msgstr "Principal"
 
@@ -6012,37 +6159,37 @@ msgstr "Non evaluada"
 msgid "Codec"
 msgstr ""
 
-#: src/SearchListCtrl.cpp:736
+#: src/SearchListCtrl.cpp:740
 msgid "Download in category"
 msgstr "Descargar na categoría"
 
-#: src/SearchListCtrl.cpp:741
+#: src/SearchListCtrl.cpp:745
 #, c-format
 msgid "Get %s for this file"
 msgstr "Obter %s para este ficheiro"
 
-#: src/SearchListCtrl.cpp:745
+#: src/SearchListCtrl.cpp:749
 msgid "Search related files (eD2k, local server)"
 msgstr "Procurar ficheiros relacionados (eD2k, busca local)"
 
-#: src/SearchListCtrl.cpp:752
+#: src/SearchListCtrl.cpp:756
 msgid "Mark as known file"
 msgstr "Marcar o ficheiro como coñecido"
 
-#: src/SearchListCtrl.cpp:756 src/ServerListCtrl.cpp:484
+#: src/SearchListCtrl.cpp:760 src/ServerListCtrl.cpp:484
 msgid "Copy eD2k link to clipboard"
 msgstr "Copiar a ligazón eD2k ó portapapeis"
 
-#: src/SearchListCtrl.cpp:852
+#: src/SearchListCtrl.cpp:856
 #, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
 msgstr "Está conectado ao servidor que tenta borrar. Por favor desconéctese primeiro."
 
-#: src/SearchListCtrl.cpp:1159
+#: src/SearchListCtrl.cpp:1163
 msgid "Canceled"
 msgstr "Cancelado"
 
-#: src/SearchListCtrl.cpp:1162
+#: src/SearchListCtrl.cpp:1166
 msgid "New"
 msgstr "Novo"
 
@@ -7076,10 +7223,6 @@ msgstr ""
 #, c-format
 msgid "Search started (id %u).\n"
 msgstr ""
-
-#: src/TextClient.cpp:894
-msgid "eD2k"
-msgstr "eD2k"
 
 #: src/TextClient.cpp:900
 #, c-format

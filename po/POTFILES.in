@@ -28,6 +28,7 @@ src/ExternalConn.cpp
 src/ExternalConnector.cpp
 src/FileDetailDialog.cpp
 src/FileDetailListCtrl.cpp
+src/FirstRunWizard.cpp
 src/FriendList.cpp
 src/FriendListCtrl.cpp
 src/GenericClientListCtrl.cpp
