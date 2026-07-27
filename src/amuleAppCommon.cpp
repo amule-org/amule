@@ -220,6 +220,13 @@ wxString CamuleAppCommon::CreateMagnetLink(const CAbstractFile *f)
 	uri.AddField("xt", wxString("urn:ed2khash:") + f->GetFileHash().Encode().Lower());
 	uri.AddField("xl", CFormat("%d") % f->GetFileSize());
 
+	// AICH, when we have one -- same source and condition CreateED2kLink()
+	// uses for the ed2k link's "h=" field (amule-org/amule#331).
+	const CKnownFile *kf = dynamic_cast<const CKnownFile *>(f);
+	if (kf && kf->HasProperAICHHashSet()) {
+		uri.AddField("xt", wxString("urn:aich:") + kf->GetAICHMasterHash());
+	}
+
 	return uri.GetLink();
 }
 

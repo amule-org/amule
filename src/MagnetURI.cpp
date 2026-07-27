@@ -129,23 +129,31 @@ STRING CMagnetED2KConverter::GetED2KLink() const
 			dn = _T("FileName.ext");
 		}
 		Value_List urn_list = GetField(_T("xt"));
-		// Use the first ed2k-hash found.
+		STRING aich;
+		// Use the first ed2k-hash found, and separately the first AICH
+		// urn if the magnet carries one (amule-org/amule#331) -- both
+		// loop over the same xt list since either can come in any order
+		// relative to the other.
 		for (Value_List::iterator it = urn_list.begin(); it != urn_list.end(); ++it) {
-			if (it->compare(0, 9, _T("urn:ed2k:")) == 0) {
+			if (hash.empty() && it->compare(0, 9, _T("urn:ed2k:")) == 0) {
 				hash = it->substr(9);
-				break;
-			} else if (it->compare(0, 13, _T("urn:ed2khash:")) == 0) {
+			} else if (hash.empty() && it->compare(0, 13, _T("urn:ed2khash:")) == 0) {
 				hash = it->substr(13);
-				break;
+			} else if (aich.empty() && it->compare(0, 9, _T("urn:aich:")) == 0) {
+				aich = it->substr(9);
 			}
 		}
-		return STRING(_T("ed2k://|file|"))
-			.append(dn)
-			.append(1, _C('|'))
-			.append(len)
-			.append(1, _C('|'))
-			.append(hash)
-			.append(_T("|/"));
+		STRING link = STRING(_T("ed2k://|file|"))
+				      .append(dn)
+				      .append(1, _C('|'))
+				      .append(len)
+				      .append(1, _C('|'))
+				      .append(hash)
+				      .append(1, _C('|'));
+		if (!aich.empty()) {
+			link.append(_T("h=")).append(aich).append(1, _C('|'));
+		}
+		return link.append(_T("/"));
 	} else {
 		return STRING();
 	}
