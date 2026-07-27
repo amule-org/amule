@@ -9,7 +9,7 @@ import { t, terr } from "../i18n.js";
 import { Icon } from "../icons.js";
 
 const LINKS = [
-  { key: "about_website", href: "https://www.amule.org", text: "www.amule.org" },
+  { key: "about_website", href: "https://amule-org.github.io", text: "amule-org.github.io" },
   { key: "about_source", href: "https://github.com/amule-org/amule", text: "github.com/amule-org/amule" },
   { key: "about_license", href: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html", text: "GPLv2" },
 ];
