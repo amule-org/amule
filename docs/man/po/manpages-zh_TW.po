@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule Manual zh_TW\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-17 16:56+0200\n"
+"POT-Creation-Date: 2026-07-27 15:00+0200\n"
 "PO-Revision-Date: 2026-07-27 11:49+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -85,7 +85,9 @@ msgstr "[B<-w> I<E<lt>路徑E<gt>>]"
 
 #. type: Plain text
 #: amule.1.in:18 amuled.1.in:20
-msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
+#, fuzzy
+#| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
+msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
 msgstr "[B<-t> I<E<lt>號碼E<gt>>] [I<eD2k 連結>]"
 
 #. type: SH
@@ -183,15 +185,18 @@ msgid "Prints a short usage description."
 msgstr "顯示簡短的使用說明。"
 
 #. type: TP
-#: amule.1.in:62 amuled.1.in:70 ed2k.1.in:40
-#, no-wrap
-msgid "B<[ eD2k-link ]>"
+#: amule.1.in:62 amuled.1.in:70
+#, fuzzy, no-wrap
+#| msgid "B<[ eD2k-link ]>"
+msgid "B<[ eD2k-link | collection-file ]>"
 msgstr "B<[ eD2k 連結 ]>"
 
 #. type: Plain text
-#: amule.1.in:65 amuled.1.in:73 ed2k.1.in:43
-msgid "Adds an eD2k-link to the core."
-msgstr "將 eD2k 連結加到核心。"
+#: amule.1.in:65 amuled.1.in:73
+#, fuzzy
+#| msgid "Adds an eD2k-link or a magnet-link to the core."
+msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
+msgstr "將 eD2k 連結或 magnet 加到核心。"
 
 #. type: Plain text
 #: amule.1.in:67 amulecmd.1.in:79 amuled.1.in:75 ed2k.1.in:45
@@ -218,37 +223,42 @@ msgstr "伺服器清單連結，在清單內的伺服器會被加入 aMule 的�
 msgid "a magnet link."
 msgstr "magnet 連結。"
 
+#. type: Plain text
+#: amule.1.in:82 amuled.1.in:90
+msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
+msgstr ""
+
 #. type: SH
-#: amule.1.in:77 amulecmd.1.in:238 amuleweb.1.in:140
+#: amule.1.in:82 amulecmd.1.in:238 amuleweb.1.in:140
 #, no-wrap
 msgid "NOTES"
 msgstr "附註"
 
 #. type: SS
-#: amule.1.in:78 amulecmd.1.in:239 amuleweb.1.in:141
+#: amule.1.in:83 amulecmd.1.in:239 amuleweb.1.in:141
 #, no-wrap
 msgid "Paths"
 msgstr "路徑"
 
 #. type: Plain text
-#: amule.1.in:82 amulecmd.1.in:243 amuleweb.1.in:145
+#: amule.1.in:87 amulecmd.1.in:243 amuleweb.1.in:145
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "對於有 I<E<lt>路徑E<gt>> 的選項，如果 I<路徑> 裏面沒有含目錄 (即只有單純檔名)，則會被認為是在 aMule 的設定檔所在目錄 I<~/.aMule> 下。"
 
 #. type: SH
-#: amule.1.in:82 amulecmd.1.in:271 amuled.1.in:85 amuleweb.1.in:179
+#: amule.1.in:87 amulecmd.1.in:271 amuled.1.in:90 amuleweb.1.in:179
 #: ed2k.1.in:61 ../../src/utils/cas/docs/cas.1.in:37
 #, no-wrap
 msgid "FILES"
 msgstr "檔案"
 
 #. type: Plain text
-#: amule.1.in:84 amuled.1.in:87
+#: amule.1.in:89 amuled.1.in:92
 msgid "~/.aMule/*"
 msgstr "~/.aMule/*"
 
 #. type: SH
-#: amule.1.in:84 amulecmd.1.in:287 amuled.1.in:87 amulegui.1.in:63
+#: amule.1.in:89 amulecmd.1.in:287 amuled.1.in:92 amulegui.1.in:63
 #: amuleweb.1.in:199 ed2k.1.in:63 ../../src/utils/aLinkCreator/docs/alc.1.in:11
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:26
 #: ../../src/utils/cas/docs/cas.1.in:43
@@ -258,7 +268,7 @@ msgid "REPORTING BUGS"
 msgstr "回報問題"
 
 #. type: Plain text
-#: amule.1.in:87 amulecmd.1.in:290 amuled.1.in:90 amulegui.1.in:66
+#: amule.1.in:92 amulecmd.1.in:290 amuled.1.in:95 amulegui.1.in:66
 #: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
@@ -267,7 +277,7 @@ msgid "Please report bugs either on our forum (I<https://github.com/amule-org/am
 msgstr "請到我們的論壇 (I<https://github.com/amule-org/amule/discussions>) 或錯誤追蹤網站 (I<https://github.com/amule-org/amule/issues>) 回報發現的問題。請不要用 e-mail 或在我們的群組信件中回報，也不要直接通知某個團隊成員。"
 
 #. type: SH
-#: amule.1.in:87 amulecmd.1.in:290 amuled.1.in:90 amulegui.1.in:66
+#: amule.1.in:92 amulecmd.1.in:290 amuled.1.in:95 amulegui.1.in:66
 #: amuleweb.1.in:202 ed2k.1.in:66 ../../src/utils/aLinkCreator/docs/alc.1.in:14
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:29
 #: ../../src/utils/cas/docs/cas.1.in:46
@@ -277,7 +287,7 @@ msgid "COPYRIGHT"
 msgstr "版權"
 
 #. type: Plain text
-#: amule.1.in:89 amulecmd.1.in:292 amuled.1.in:92 amulegui.1.in:68
+#: amule.1.in:94 amulecmd.1.in:292 amuled.1.in:97 amulegui.1.in:68
 #: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
@@ -286,7 +296,7 @@ msgid "aMule and all of its related utilities are distributed under the GNU Gene
 msgstr "aMule 與附加的工具程式都遵守 GNU 的 GPL 協定。"
 
 #. type: SH
-#: amule.1.in:89 amulecmd.1.in:292 amuled.1.in:92 amulegui.1.in:68
+#: amule.1.in:94 amulecmd.1.in:292 amuled.1.in:97 amulegui.1.in:68
 #: amuleweb.1.in:204 ed2k.1.in:68 ../../src/utils/aLinkCreator/docs/alc.1.in:16
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:31
 #: ../../src/utils/cas/docs/cas.1.in:48
@@ -296,7 +306,7 @@ msgid "SEE ALSO"
 msgstr "參考"
 
 #. type: SH
-#: amule.1.in:91 amulecmd.1.in:294 amuled.1.in:94 amulegui.1.in:70
+#: amule.1.in:96 amulecmd.1.in:294 amuled.1.in:99 amulegui.1.in:70
 #: amuleweb.1.in:206 ed2k.1.in:70 ../../src/utils/aLinkCreator/docs/alc.1.in:18
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:33
 #: ../../src/utils/cas/docs/cas.1.in:50
@@ -306,7 +316,7 @@ msgid "AUTHOR"
 msgstr "作者"
 
 #. type: Plain text
-#: amule.1.in:92 amulecmd.1.in:295 amuled.1.in:95 amuleweb.1.in:207
+#: amule.1.in:97 amulecmd.1.in:295 amuled.1.in:100 amuleweb.1.in:207
 #: ed2k.1.in:71 ../../src/utils/aLinkCreator/docs/alc.1.in:19
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:34
 #: ../../src/utils/cas/docs/cas.1.in:51
@@ -1212,6 +1222,17 @@ msgstr "載入所有以 I<E<lt>eD2k 連結E<gt>> 方式指定的 eMule 收藏庫
 #| msgid "Lists all link found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
 msgid "Lists all links found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
 msgstr "列出所有以 I<E<lt>eD2k 連結E<gt>> 方式指定的 eMule 收藏庫裏找到的連結"
+
+#. type: TP
+#: ed2k.1.in:40
+#, no-wrap
+msgid "B<[ eD2k-link ]>"
+msgstr "B<[ eD2k 連結 ]>"
+
+#. type: Plain text
+#: ed2k.1.in:43
+msgid "Adds an eD2k-link to the core."
+msgstr "將 eD2k 連結加到核心。"
 
 #. type: Plain text
 #: ed2k.1.in:54
