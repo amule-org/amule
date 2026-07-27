@@ -850,6 +850,17 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	void OnFatalException();
 #endif
 
+#ifdef __WXMAC__
+	// Finder "Open With" / double-click on a .emulecollection, and
+	// ed2k:// / magnet: clicks. Both queue into the ED2KLinks file rather
+	// than touching downloadqueue, which here does not exist until the EC
+	// connection is up - Startup() drains the file once that happens.
+	// Mirrors CamuleGuiApp (amule-gui.cpp); see the notes there on which
+	// handler actually receives the URL event.
+	virtual void MacOpenFiles(const wxArrayString &fileNames);
+	virtual void MacOpenURL(const wxString &url);
+#endif
+
 	void OnPollTimer(wxTimerEvent &evt);
 	void OnConnectTimeout(wxTimerEvent &evt);
 

@@ -16,7 +16,7 @@ amuled \- the all\-platform eMule p2p client \- daemonized version
 .RB_untranslated [ \-d ]
 .RB_untranslated [ \-i ]
 .RB [ \-t " " \fI<num> ]
-.RI [ eD2k-link ]
+.RI [ eD2k-link | collection-file ]
 
 .B_untranslated amuled
 .RB_untranslated [ \-v ]
@@ -68,8 +68,8 @@ Displays the current version number.
 .B_untranslated [ \-h\fR, \fB\-\-help ]\fR
 Prints a short usage description.
 .TP
-\fB[ eD2k-link ]\fR
-Adds an eD2k-link to the core.
+\fB[ eD2k-link | collection-file ]\fR
+Adds an eD2k-link, or every link in an eMule collection file, to the core.
 .PP
 The eD2k link to be added can be:
 .RS 3
@@ -82,6 +82,11 @@ a serverlist link, in which case all servers in the list will be added to the se
 .IP \(bu 2
 a magnet link.
 .RE
+.PP
+Alternatively the argument can be the path to an .emulecollection file,
+or a file:// URL naming one, in which case every link it contains is added
+to the download queue.  This is what lets a file manager open a collection
+with aMule.
 .SH FILES
 ~/.aMule/*
 .SH REPORTING BUGS

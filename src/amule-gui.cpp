@@ -22,7 +22,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "amule.h" // Interface declarations.
+#include "amule.h"                  // Interface declarations.
+#include "ProtocolHandlerManager.h" // Needed for ProtocolHandler_QueueSchemeLink
 
 #include <common/EventIDs.h>
 #include <common/ClientVersion.h>
@@ -345,6 +346,24 @@ void CamuleGuiApp::MacReopenApp()
 		amuledlg->Iconize(false);
 		amuledlg->Raise();
 	}
+}
+
+void CamuleGuiApp::MacOpenFiles(const wxArrayString &fileNames)
+{
+	// Fires for a Finder double-click, "Open With > aMule", and files
+	// dropped on the Dock icon - so most of what arrives here is not a
+	// collection at all. OpenCollectionFiles ignores those silently
+	// rather than nagging about a stray drop.
+	//
+	// wx holds the launch event until after OnInit returns (see
+	// OSXStoreOpenFiles / wxApp::CallOnInit), so thePrefs::GetConfigDir()
+	// is set by the time this runs even on a cold launch.
+	OpenCollectionFiles(fileNames);
+}
+
+void CamuleGuiApp::MacOpenURL(const wxString &url)
+{
+	ProtocolHandler_QueueSchemeLink(url);
 }
 #endif
 

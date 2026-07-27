@@ -122,8 +122,15 @@ bool MacRemove(UriScheme /*scheme*/)
 // Apple Event dispatched between applicationWillFinishLaunching and
 // applicationDidFinishLaunching — earlier than any wxApp OnInit
 // runs. We register the handler in a __attribute__((constructor)) so
-// it's already live when the AE dispatches. wxWidgets does not install
-// its own handler for this event class, so we don't clobber anything.
+// it's already live when the AE dispatches.
+//
+// wxNSAppController registers for the same event class in
+// applicationWillFinishLaunching, and -setEventHandler: replaces per
+// (class, id) rather than stacking, so exactly one of the two is live.
+// Observed behaviour is that this one wins and wxApp::MacOpenURL never
+// fires; CamuleGuiApp overrides it anyway so a load order that goes the
+// other way still delivers the URL. Only one handler ever runs, so
+// there is no risk of queueing a link twice.
 
 // C shim exposed to ProtocolHandlerManager.cpp so its diagnostics land
 // under the same [amuleurl] Console.app filter.

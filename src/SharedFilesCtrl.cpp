@@ -951,11 +951,17 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 		CKnownFile *file = FileAtRow(item);
 		wxString CollectionFile = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
 		CMuleCollection my_collection;
-		if (my_collection.Open((std::string)CollectionFile.mb_str())) {
-			// #warning This is probably not working on Unicode
+		if (my_collection.Open(CollectionFile)) {
 			wxArrayString links;
 			for (size_t e = 0; e < my_collection.size(); ++e) {
-				links.Add(wxString(my_collection[e].c_str(), wxConvUTF8));
+				// eMule stores collection strings as UTF-8. Fall back to
+				// raw bytes rather than dropping the entry, since
+				// FromUTF8 yields an empty string on invalid input.
+				wxString link = wxString::FromUTF8(my_collection[e].c_str());
+				if (link.IsEmpty()) {
+					link = wxString::From8BitData(my_collection[e].c_str());
+				}
+				links.Add(link);
 			}
 			theApp->downloadqueue->AddLinks(links);
 		}

@@ -86,6 +86,11 @@ wxString GetUserIconsDir()
 	return GetUserDataHome() + wxT("/icons");
 }
 
+wxString GetUserMimePackagesDir()
+{
+	return GetUserDataHome() + wxT("/mime/packages");
+}
+
 // Read the bundled .desktop, swap Exec= and TryExec= to point at $APPIMAGE,
 // and write the result to ~/.local/share/applications/org.amule.aMule.desktop.
 // Returns true on success.
@@ -110,14 +115,13 @@ bool InstallDesktopFile(
 	for (size_t i = 0; i < in.GetLineCount(); ++i) {
 		wxString line = in[i];
 		if (line.StartsWith(wxT("Exec="))) {
-			// Quote the AppImage path so spaces survive. %u (single URL)
+			// Quote the AppImage path so spaces survive. %U (URL list)
 			// matches the shipped org.amule.aMule.desktop; aMule accepts
-			// both ed2k:// / magnet: URLs (via scheme handler clicks) and
-			// local file paths, and the .desktop spec's URL substitutions
-			// pass file paths through unmodified. Previously %F, which
-			// silently swallowed URL clicks once scheme registration was
-			// wired up (users would see aMule launch but the URL gone).
-			line = wxT("Exec=\"") + appimagePath + wxT("\" %u");
+			// ed2k:// / magnet: URLs (via scheme handler clicks) plus
+			// .emulecollection paths and file:// URLs, and takes any
+			// number of them. Must stay in step with the shipped file:
+			// it was %F once, which silently swallowed URL clicks.
+			line = wxT("Exec=\"") + appimagePath + wxT("\" %U");
 		} else if (line.StartsWith(wxT("TryExec="))) {
 			line = wxT("TryExec=") + appimagePath;
 		}
@@ -171,16 +175,52 @@ bool InstallIcons(const wxString &appdir, const wxString &userIconsDir)
 	return anyOk;
 }
 
-// update-desktop-database and gtk-update-icon-cache exist on every desktop
-// distro that ships a .desktop file system, but we don't fail integration
-// if they're missing — modern compositors inotify-watch the dirs and pick
-// up new files within seconds anyway. wxExecute with wxEXEC_SYNC still
-// returns instantly if the binary isn't found.
-void RefreshSystemCaches(const wxString &userAppsDir, const wxString &userIconsDir)
+// Copy the bundled shared-mime-info package into
+// ~/.local/share/mime/packages so the desktop learns what a
+// .emulecollection is. Without it the file is sniffed as text/plain or
+// application/octet-stream, the MimeType= line in the installed .desktop
+// never matches, and aMule is absent from the file manager's "Open With".
+// A system package install gets this from CMake instead; an AppImage has
+// no packager, so we do it ourselves.
+bool InstallMimePackage(const wxString &appdir, const wxString &userMimePackagesDir)
+{
+	const wxString source = appdir + wxT("/usr/share/mime/packages/org.amule.aMule.xml");
+	if (!wxFileExists(source)) {
+		AddDebugLogLineC(logGeneral, wxT("AppImageIntegration: mime package missing at ") + source);
+		return false;
+	}
+
+	wxFileName destPath(userMimePackagesDir + wxT("/org.amule.aMule.xml"));
+	if (!destPath.DirExists()) {
+		destPath.Mkdir(0755, wxPATH_MKDIR_FULL);
+	}
+
+	const wxString dest = destPath.GetFullPath();
+	if (!wxCopyFile(source, dest, true)) {
+		AddDebugLogLineC(
+			logGeneral, wxT("AppImageIntegration: copy failed: ") + source + wxT(" -> ") + dest);
+		return false;
+	}
+	return true;
+}
+
+// update-desktop-database, gtk-update-icon-cache and update-mime-database
+// exist on every desktop distro that ships a .desktop file system, but we
+// don't fail integration if they're missing — modern compositors
+// inotify-watch the dirs and pick up new files within seconds anyway.
+// wxExecute with wxEXEC_SYNC still returns instantly if the binary isn't
+// found. update-mime-database is the exception in one respect: unlike the
+// other two it has no inotify fallback, so a missing binary means the
+// collection type stays unknown until something else refreshes the cache.
+void RefreshSystemCaches(
+	const wxString &userAppsDir, const wxString &userIconsDir, const wxString &userMimeDir)
 {
 	wxExecute(wxT("update-desktop-database \"") + userAppsDir + wxT("\""),
 		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
 	wxExecute(wxT("gtk-update-icon-cache -f -t \"") + userIconsDir + wxT("/hicolor\""),
+		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
+	// Takes the mime dir itself, not the packages/ subdir inside it.
+	wxExecute(wxT("update-mime-database \"") + userMimeDir + wxT("\""),
 		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
 }
 
@@ -403,7 +443,10 @@ void PromptAndInstall(wxWindow *parent)
 	}
 
 	InstallIcons(appdir, userIconsDir);
-	RefreshSystemCaches(userAppsDir, userIconsDir);
+	// Best-effort, like the icons: no mime package just means
+	// .emulecollection files aren't offered to aMule in the file manager.
+	InstallMimePackage(appdir, GetUserMimePackagesDir());
+	RefreshSystemCaches(userAppsDir, userIconsDir, GetUserDataHome() + wxT("/mime"));
 
 	AddLogLineN(wxString::Format(
 		_("AppImage integration: aMule added to your application menu (%d shell shortcuts under "

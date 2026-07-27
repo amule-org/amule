@@ -221,6 +221,24 @@ target_link_libraries (PhpArrayTest
 	muleunit
 )
 
+add_executable (CMuleCollectionTest
+	CMuleCollectionTest.cpp
+	${CMAKE_SOURCE_DIR}/src/MuleCollection.cpp
+)
+
+add_test (NAME CMuleCollectionTest
+	COMMAND CMuleCollectionTest
+)
+
+target_include_directories (CMuleCollectionTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (CMuleCollectionTest
+	muleunit
+)
+
 add_executable (TextFileTest
 	TextFileTest.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp

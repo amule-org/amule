@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  shared-mime-info package for eMule collection files.
+
+  Glob only, deliberately. A binary collection opens with a four-byte
+  little-endian version of 1 or 2, which is far too common a prefix to use
+  as magic: any <match> on it would steal detection from unrelated binary
+  files across the whole system. The text form is a list of ed2k:// URIs,
+  which is likewise indistinguishable from a plain text file of links.
+-->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-emule-collection">
+    <comment>eMule collection</comment>
+    <glob pattern="*.emulecollection"/>
+  </mime-type>
+</mime-info>

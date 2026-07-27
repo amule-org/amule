@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=aMuleGUI
-Exec=amulegui %u
+Exec=amulegui %U
 Icon=org.amule.aMule
 Terminal=false
 Type=Application
@@ -25,4 +25,4 @@ Comment[it]=Terminale remoto per aMule
 Comment[es]=Control remoto de aMule
 Comment[pt_BR]=Controle remoto do aMule
 Keywords=p2p;peer-to-peer;file-sharing;file-share;remote;amule;ed2k;edonkey;kademlia;emule;kad;
-MimeType=x-scheme-handler/ed2k;x-scheme-handler/magnet;
+MimeType=x-scheme-handler/ed2k;x-scheme-handler/magnet;application/x-emule-collection;

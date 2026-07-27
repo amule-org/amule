@@ -192,6 +192,27 @@ if (BUILD_AMULECMD)
 	)
 endif (BUILD_AMULECMD)
 
+if (APPLE)
+	# Info.plist fragments shared by the aMule and aMuleGUI bundles, which
+	# advertise the same URL schemes and document types. Set at file scope
+	# so a remote-GUI-only configure (BUILD_MONOLITHIC=NO) still has them.
+	#
+	# aMule did not define the .emulecollection format, so the type is
+	# *imported* rather than exported and the document type ranks as
+	# Alternate. Nothing else on macOS claims the extension, so aMule still
+	# wins the binding; the rank only says we don't own the format.
+	#
+	# Declaring the type is what puts aMule in Finder's "Open With" list.
+	# Making it the default is the user's call there - unlike URL schemes,
+	# which have no Finder UI and so need LSSetDefaultHandlerForURLScheme.
+	set (AMULE_PLIST_URL_TYPES
+		"[{\"CFBundleURLName\": \"eD2k URL\", \"CFBundleURLSchemes\": [\"ed2k\"]}, {\"CFBundleURLName\": \"Magnet URL\", \"CFBundleURLSchemes\": [\"magnet\"]}]")
+	set (AMULE_PLIST_IMPORTED_TYPES
+		"[{\"UTTypeIdentifier\": \"org.amule.emulecollection\", \"UTTypeDescription\": \"eMule Collection\", \"UTTypeConformsTo\": [\"public.data\"], \"UTTypeTagSpecification\": {\"public.filename-extension\": [\"emulecollection\"], \"public.mime-type\": [\"application/x-emule-collection\"]}}]")
+	set (AMULE_PLIST_DOCUMENT_TYPES
+		"[{\"CFBundleTypeName\": \"eMule Collection\", \"CFBundleTypeRole\": \"Viewer\", \"LSHandlerRank\": \"Alternate\", \"CFBundleTypeExtensions\": [\"emulecollection\"], \"LSItemContentTypes\": [\"org.amule.emulecollection\"], \"CFBundleTypeIconFile\": \"amule.icns\"}]")
+endif()
+
 if (BUILD_DAEMON)
 	add_executable (amuled
 		${CORE_SOURCES}
@@ -409,9 +430,23 @@ if (BUILD_MONOLITHIC)
 		# we support the scheme.
 		add_custom_command (TARGET amule POST_BUILD
 			COMMAND /usr/bin/plutil -replace CFBundleURLTypes
-				-json "[{\"CFBundleURLName\": \"eD2k URL\", \"CFBundleURLSchemes\": [\"ed2k\"]}, {\"CFBundleURLName\": \"Magnet URL\", \"CFBundleURLSchemes\": [\"magnet\"]}]"
+				-json "${AMULE_PLIST_URL_TYPES}"
 				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
 			COMMENT "Declaring aMule.app as ed2k:// and magnet: URL handler"
+			VERBATIM
+		)
+
+		# Declare .emulecollection as a document type aMule can open, so
+		# LaunchServices offers it in Finder's "Open With" and delivers the
+		# open-document Apple Event (wxApp::MacOpenFiles) on double-click.
+		add_custom_command (TARGET amule POST_BUILD
+			COMMAND /usr/bin/plutil -replace UTImportedTypeDeclarations
+				-json "${AMULE_PLIST_IMPORTED_TYPES}"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
+			COMMAND /usr/bin/plutil -replace CFBundleDocumentTypes
+				-json "${AMULE_PLIST_DOCUMENT_TYPES}"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
+			COMMENT "Declaring aMule.app as an .emulecollection handler"
 			VERBATIM
 		)
 
@@ -612,9 +647,22 @@ if (BUILD_REMOTEGUI)
 		# aMule.app patch above.
 		add_custom_command (TARGET amulegui POST_BUILD
 			COMMAND /usr/bin/plutil -replace CFBundleURLTypes
-				-json "[{\"CFBundleURLName\": \"eD2k URL\", \"CFBundleURLSchemes\": [\"ed2k\"]}, {\"CFBundleURLName\": \"Magnet URL\", \"CFBundleURLSchemes\": [\"magnet\"]}]"
+				-json "${AMULE_PLIST_URL_TYPES}"
 				"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Info.plist"
 			COMMENT "Declaring aMuleGUI.app as ed2k:// and magnet: URL handler"
+			VERBATIM
+		)
+
+		# And as an .emulecollection handler, for the same reason: the
+		# collection is parsed locally and its links go over EC.
+		add_custom_command (TARGET amulegui POST_BUILD
+			COMMAND /usr/bin/plutil -replace UTImportedTypeDeclarations
+				-json "${AMULE_PLIST_IMPORTED_TYPES}"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Info.plist"
+			COMMAND /usr/bin/plutil -replace CFBundleDocumentTypes
+				-json "${AMULE_PLIST_DOCUMENT_TYPES}"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Info.plist"
+			COMMENT "Declaring aMuleGUI.app as an .emulecollection handler"
 			VERBATIM
 		)
 
@@ -676,6 +724,10 @@ if (NEED_LIB_MULEAPPCOMMON)
 		GapList.cpp
 		MagnetURI.cpp
 		MemFile.cpp
+		# Lives here rather than in muleappgui because InitCommon expands
+		# .emulecollection files passed on the command line, and that path
+		# is shared by amuled - which links muleappcommon only.
+		MuleCollection.cpp
 		NetworkFunctions.cpp
 		OtherFunctions.cpp
 		Packet.cpp
@@ -849,7 +901,6 @@ if (NEED_LIB_MULEAPPGUI)
 		ColorFrameCtrl.cpp
 		EditServerListDlg.cpp
 		FileDetailListCtrl.cpp
-		MuleCollection.cpp
 		MuleColour.cpp
 		MuleGifCtrl.cpp
 		MuleListCtrl.cpp

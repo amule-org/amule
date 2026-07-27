@@ -28,7 +28,9 @@
 //
 
 #include <wx/wx.h>
-#include <wx/cmdline.h> // Needed for wxCmdLineParser
+#include <wx/cmdline.h>  // Needed for wxCmdLineParser
+#include <wx/filename.h> // Needed for wxFileName
+#include <wx/filesys.h>  // Needed for wxFileSystem::URLToFileName
 
 #include "InstanceLock.h" // Needed for InstanceLock (replaces wxSingleInstanceChecker on POSIX)
 #include <wx/textfile.h>  // Needed for wxTextFile
@@ -51,7 +53,8 @@
 #include "GuiEvents.h"              // Needed for Notify_*
 #include "KnownFile.h"
 #include "Logger.h"
-#include "MagnetURI.h" // Needed for CMagnetURI
+#include "MagnetURI.h"      // Needed for CMagnetURI
+#include "MuleCollection.h" // Needed for expanding .emulecollection arguments
 #include "Preferences.h"
 #include "ScopedPtr.h"
 #include "MuleVersion.h" // Needed for GetMuleVersion()
@@ -155,40 +158,49 @@ void CamuleAppCommon::AddLinksFromFile()
 
 	wxTextFile file(fullPath);
 	if (file.Open()) {
-		unsigned failed = 0;
+		// Group the links by category and hand each group to AddLinks() in
+		// one call. A collection expands to hundreds of lines, and the
+		// per-link AddLink() path costs one EC round trip - and potentially
+		// one error dialog - per link on the remote GUI. Order within a
+		// category is preserved; categories run in first-seen order.
+		std::vector<std::pair<uint8, wxArrayString>> batches;
+
 		for (unsigned int i = 0; i < file.GetLineCount(); i++) {
 			wxString line = file.GetLine(i).Strip(wxString::both);
 
-			if (!line.IsEmpty()) {
-				// Special case! used by a secondary running mule to raise this one.
-				if (line == "RAISE_DIALOG") {
-					Notify_ShowGUI();
-					continue;
-				}
-				unsigned long category = 0;
-				if (line.AfterLast(':').ToULong(&category) == true) {
-					line = line.BeforeLast(':');
-				} else { // If ToULong returns false the category still can have been changed!
-					 // This is fixed in wx 2.9
-					category = 0;
-				}
-				if (!theApp->downloadqueue->AddLink(line, category)) {
-					++failed;
-				}
+			if (line.IsEmpty()) {
+				continue;
 			}
+			// Special case! used by a secondary running mule to raise this one.
+			if (line == "RAISE_DIALOG") {
+				Notify_ShowGUI();
+				continue;
+			}
+			unsigned long category = 0;
+			if (line.AfterLast(':').ToULong(&category) == true) {
+				line = line.BeforeLast(':');
+			} else { // If ToULong returns false the category still can have been changed!
+				 // This is fixed in wx 2.9
+				category = 0;
+			}
+
+			const uint8 cat = static_cast<uint8>(category);
+			size_t slot = 0;
+			while (slot < batches.size() && batches[slot].first != cat) {
+				++slot;
+			}
+			if (slot == batches.size()) {
+				batches.emplace_back(cat, wxArrayString());
+			}
+			batches[slot].second.Add(line);
 		}
 
 		file.Close();
 
-		if (failed > 0) {
-			theApp->ShowAlert(
-				CFormat(wxPLURAL(
-					"Could not add %u link from ED2KLinks file (see log for details).",
-					"Could not add %u links from ED2KLinks file (see log for details).",
-					failed)) %
-					failed,
-				_("ERROR"),
-				wxOK | wxICON_ERROR);
+		// AddLinks() logs each failure and raises a single aggregated alert
+		// for the batch, so there is nothing to count or report here.
+		for (const auto &batch : batches) {
+			theApp->downloadqueue->AddLinks(batch.second, batch.first);
 		}
 	} else {
 		AddLogLineNS(_("Failed to open ED2KLinks file."));
@@ -527,10 +539,12 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// cppcheck-suppress variableScope
 	int linksActuallyPassed = 0; // number of links that pass the syntax check
 	if (linksPassed) {
-		long cat = 0;
-		if (!cmdline.Found("t", &cat)) {
-			cat = 0;
+		long catArg = 0;
+		if (!cmdline.Found("t", &catArg)) {
+			catArg = 0;
 		}
+		// wxCmdLineParser hands back a long; both consumers take an int.
+		const int cat = static_cast<int>(catArg);
 
 		wxTextFile ed2kFile(thePrefs::GetConfigDir() + "ED2KLinks");
 		if (!ed2kFile.Exists()) {
@@ -538,8 +552,28 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		}
 		if (ed2kFile.Open()) {
 			for (size_t i = 0; i < linksPassed; i++) {
+				const wxString param = cmdline.GetParam(i);
+
+				// A .emulecollection argument stands for every link
+				// inside it. This is what makes a double-click in a
+				// file manager work on Linux and Windows, where the
+				// path arrives as an ordinary argument.
+				wxArrayString expanded;
+				const CollectionExpansion expansion =
+					ExpandPassedCollection(param, expanded, cat);
+				if (expansion == kCollectionFailed) {
+					continue;
+				}
+				if (expansion == kCollectionExpanded) {
+					for (size_t e = 0; e < expanded.GetCount(); ++e) {
+						ed2kFile.AddLine(expanded[e]);
+						linksActuallyPassed++;
+					}
+					continue;
+				}
+
 				wxString link;
-				if (CheckPassedLink(cmdline.GetParam(i), link, cat)) {
+				if (CheckPassedLink(param, link, cat)) {
 					ed2kFile.AddLine(link);
 					linksActuallyPassed++;
 				}
@@ -561,10 +595,19 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		if (linksPassed) {
 			AddLogLineNS(CFormat("passed %d %s to it, finished") % linksActuallyPassed %
 				     (linksPassed == 1 ? "link" : "links"));
-			return false;
+			// Nothing was handed over, so don't pull the running
+			// instance to the front on account of a bad argument.
+			if (linksActuallyPassed == 0) {
+				return false;
+			}
 		}
 
 		// This is very tricky. The most secure way to communicate is via ED2K links file
+		//
+		// Raise the window even when we did hand links over. It matters most
+		// for a file-manager double-click on a collection: the links land in
+		// the running instance either way, but without this the user gets no
+		// visible response at all and assumes nothing happened.
 		wxTextFile ed2kFile(thePrefs::GetConfigDir() + "ED2KLinks");
 		if (!ed2kFile.Exists()) {
 			ed2kFile.Create();
@@ -668,6 +711,84 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 const wxString CamuleAppCommon::GetFullMuleVersion() const
 {
 	return GetMuleAppName() + " " + GetMuleVersion();
+}
+
+void CamuleAppCommon::OpenCollectionFiles(const wxArrayString &fileNames)
+{
+	wxArrayString links;
+
+	for (size_t i = 0; i < fileNames.GetCount(); ++i) {
+		wxArrayString expanded;
+		// Category 0: the OS gives us no way to say which one, same as
+		// a link clicked in a browser.
+		if (ExpandPassedCollection(fileNames[i], expanded, 0) == kCollectionExpanded) {
+			for (size_t e = 0; e < expanded.GetCount(); ++e) {
+				links.Add(expanded[e]);
+			}
+		}
+	}
+
+	ProtocolHandler_QueueLinks(links);
+}
+
+CamuleAppCommon::CollectionExpansion CamuleAppCommon::ExpandPassedCollection(
+	const wxString &in, wxArrayString &out, int cat)
+{
+	wxString path(in);
+
+	// File managers hand over either a plain path or a file:// URL,
+	// depending on the platform and on the .desktop Exec field in use.
+	if (path.StartsWith("file://")) {
+		const wxFileName fn = wxFileSystem::URLToFileName(path);
+		path = fn.GetFullPath();
+	}
+
+	if (path.IsEmpty() || !wxFileName(path).GetExt().IsSameAs("emulecollection", false)) {
+		return kNotACollection;
+	}
+	if (!wxFile::Exists(path)) {
+		// The extension says collection, so a missing file is a real
+		// error rather than something to retry as a link.
+		AddLogLineCS(CFormat("Collection file not found: %s") % path);
+		return kCollectionFailed;
+	}
+
+	CMuleCollection collection;
+	if (!collection.Open(path)) {
+		AddLogLineCS(CFormat("Invalid or empty collection file: %s") % path);
+		return kCollectionFailed;
+	}
+
+	unsigned skipped = 0;
+	for (size_t i = 0; i < collection.size(); ++i) {
+		// eMule stores collection strings as UTF-8. Fall back to raw
+		// bytes rather than dropping the entry, since FromUTF8 yields
+		// an empty string on invalid input.
+		wxString link = wxString::FromUTF8(collection[i].c_str());
+		if (link.IsEmpty()) {
+			link = wxString::From8BitData(collection[i].c_str());
+		}
+
+		// Route through CheckPassedLink so a collection link gets the
+		// same validation, canonicalisation and category suffix as one
+		// typed on the command line.
+		wxString checked;
+		if (CheckPassedLink(link, checked, cat)) {
+			out.Add(checked);
+		} else {
+			++skipped;
+		}
+	}
+
+	if (out.IsEmpty()) {
+		AddLogLineCS(CFormat("No usable links in collection: %s") % path);
+		return kCollectionFailed;
+	}
+	if (skipped > 0) {
+		AddLogLineCS(CFormat("Skipped %u unusable link(s) in collection: %s") % skipped % path);
+	}
+
+	return kCollectionExpanded;
 }
 
 bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat)

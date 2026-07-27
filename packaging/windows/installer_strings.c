@@ -36,6 +36,9 @@ static const char *const installer_strings[] = {
 	_("aMule (required)"),
 	_("Desktop shortcut"),
 	_("Start aMule when I log in"),
+	_("Register aMule for ed2k:// links"),
+	_("Register aMule for magnet: links"),
+	_("Associate .emulecollection files"),
 	_("Uninstall"),
 	_("Remove user data (config, ED2K servers, Kad nodes, partfiles)"),
 
@@ -43,6 +46,9 @@ static const char *const installer_strings[] = {
 	_("aMule application files (required)."),
 	_("Place an aMule shortcut on the desktop."),
 	_("Launch aMule automatically when the current user logs in (per-user setting)."),
+	_("Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."),
+	_("aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."),
+	_("Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."),
 	_("Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."),
 	_("Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."),
 

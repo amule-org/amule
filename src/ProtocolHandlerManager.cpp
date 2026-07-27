@@ -160,26 +160,36 @@ extern "C" void amule_url_log(const char *msg);
 #define AMULE_URL_LOG(fmtwx, ...) ((void)0)
 #endif
 
-void ProtocolHandler_QueueSchemeLink(const wxString &url)
+void ProtocolHandler_QueueLinks(const wxArrayString &links)
 {
-	// Called via wxTheApp->CallAfter from the mac URL AE handler.
-	// Cannot use AddLogLineNS: on amulegui cold-launch this may run
-	// before amuledlg is up and the GUI log path would deref null.
-	if (url.empty()) {
+	// Called from the mac Apple Event handlers. Cannot use AddLogLineNS:
+	// on amulegui cold-launch this may run before amuledlg is up and the
+	// GUI log path would deref null.
+	if (links.IsEmpty()) {
 		return;
 	}
-	// Browsers percent-encode ed2k:// pipes; wxURI::Unescape restores
-	// the literals CMagnetED2KConverter / the eD2k parser expect.
-	wxString decoded = wxURI::Unescape(url);
+
 	const wxString &cfgDir = thePrefs::GetConfigDir();
-	AMULE_URL_LOG(wxT("queue: '%s' -> '%s'"), url, decoded);
+	if (cfgDir.IsEmpty()) {
+		// Would resolve to a path relative to the launch working
+		// directory, which for a .app bundle is "/". Never happens on
+		// the wx event paths (they run after OnInit), but writing the
+		// links somewhere the app will never look is worse than
+		// dropping them with a log line.
+		AMULE_URL_LOG(
+			wxT("queue: config dir not set yet, dropping %d link(s)"), (int)links.GetCount());
+		return;
+	}
+	AMULE_URL_LOG(wxT("queue: %d link(s), first '%s'"), (int)links.GetCount(), links[0]);
 
 	wxTextFile ed2kFile(cfgDir + wxT("ED2KLinks"));
 	if (!ed2kFile.Exists()) {
 		ed2kFile.Create();
 	}
 	if (ed2kFile.Open()) {
-		ed2kFile.AddLine(decoded);
+		for (size_t i = 0; i < links.GetCount(); ++i) {
+			ed2kFile.AddLine(links[i]);
+		}
 		ed2kFile.AddLine(wxT("RAISE_DIALOG"));
 		ed2kFile.Write();
 		ed2kFile.Close();
@@ -187,13 +197,30 @@ void ProtocolHandler_QueueSchemeLink(const wxString &url)
 	} else {
 		AMULE_URL_LOG(wxT("failed to open ED2KLinks for write"));
 	}
-	// Do NOT call AddLinksFromFile here — this function is invoked
-	// via wxTheApp->CallAfter from the Apple Event handler which may
-	// fire before theApp->downloadqueue is fully wired at cold launch.
-	// Instead we rely on the ~1 s polling loop in both
+	// Do NOT call AddLinksFromFile here — these handlers can fire before
+	// theApp->downloadqueue is wired (amulegui only builds it once the EC
+	// connection is up). Instead we rely on the ~1 s polling loop in both
 	// CDownloadQueue::Process (monolithic + daemon) and
 	// CamuleRemoteGuiApp::UpdateStats (remote GUI) to drain the file
 	// through AddLinksFromFile → AddLink on the next tick.
+}
+
+void ProtocolHandler_QueueSchemeLink(const wxString &url)
+{
+	if (url.empty()) {
+		return;
+	}
+	// Browsers percent-encode ed2k:// pipes; wxURI::Unescape restores
+	// the literals CMagnetED2KConverter / the eD2k parser expect. Done
+	// here rather than in QueueLinks because links read out of a
+	// collection file are not percent-encoded, and decoding them would
+	// corrupt any filename that legitimately contains a '%'.
+	wxString decoded = wxURI::Unescape(url);
+	AMULE_URL_LOG(wxT("queue scheme link: '%s' -> '%s'"), url, decoded);
+
+	wxArrayString links;
+	links.Add(decoded);
+	ProtocolHandler_QueueLinks(links);
 }
 
 bool ProtocolHandlerManager::IsEnabled(UriScheme scheme)

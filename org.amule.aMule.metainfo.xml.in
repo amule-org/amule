@@ -66,6 +66,7 @@
 
   <provides>
     <binary>amule</binary>
+    <mediatype>application/x-emule-collection</mediatype>
   </provides>
 
   <content_rating type="oars-1.1"/>

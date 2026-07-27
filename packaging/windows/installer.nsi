@@ -199,6 +199,7 @@ LangString MYSTR_SEC_DESKTOP           ${LANG_ENGLISH} "Desktop shortcut"
 LangString MYSTR_SEC_AUTOSTART         ${LANG_ENGLISH} "Start aMule when I log in"
 LangString MYSTR_SEC_PROTO_ED2K        ${LANG_ENGLISH} "Register aMule for ed2k:// links"
 LangString MYSTR_SEC_PROTO_MAGNET      ${LANG_ENGLISH} "Register aMule for magnet: links"
+LangString MYSTR_SEC_ASSOC_COLLECTION  ${LANG_ENGLISH} "Associate .emulecollection files"
 LangString MYSTR_SEC_UNINSTALL         ${LANG_ENGLISH} "Uninstall"
 LangString MYSTR_SEC_REMOVE_USERDATA   ${LANG_ENGLISH} "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
 
@@ -208,6 +209,7 @@ LangString MYSTR_DESC_DESKTOP          ${LANG_ENGLISH} "Place an aMule shortcut 
 LangString MYSTR_DESC_AUTOSTART        ${LANG_ENGLISH} "Launch aMule automatically when the current user logs in (per-user setting)."
 LangString MYSTR_DESC_PROTO_ED2K       ${LANG_ENGLISH} "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 LangString MYSTR_DESC_PROTO_MAGNET     ${LANG_ENGLISH} "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
+LangString MYSTR_DESC_ASSOC_COLLECTION ${LANG_ENGLISH} "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
 LangString MYSTR_DESC_UNINSTALL        ${LANG_ENGLISH} "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
 LangString MYSTR_DESC_REMOVE_USERDATA  ${LANG_ENGLISH} "Permanently delete %APPDATA%\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
 
@@ -384,6 +386,38 @@ Section /o "Register aMule for magnet: links" SecProtoMagnet
   ExecWait '"$INSTDIR\bin\amule.exe" --configure-protocols magnet:on'
 SectionEnd
 
+; .emulecollection file association. Written directly rather than via a
+; --configure-* flag: unlike the scheme handlers there is no prefs /
+; wizard surface to keep in sync, so this is static install-time data and
+; belongs at the same layer as the uninstall guards further down.
+;
+; Two keys, as Windows file types require: the extension points at a
+; ProgID, and the ProgID carries the icon and open command.
+;
+; OpenWithProgids only adds aMule to the "Open with" list. We also set the
+; extension's default, but ONLY when nothing else has claimed it, so an
+; existing association survives. Note this is not the same as making aMule
+; the user's chosen default: from Windows 8 on that lives in a
+; hash-protected UserChoice key no installer can write, so if the user has
+; already picked an app for .emulecollection, Windows keeps it and aMule
+; just appears in the "Open with" list. Same HKCU-under-UAC caveat as the
+; autostart section above.
+Section "Associate .emulecollection files" SecAssocCollection
+  WriteRegStr HKCU "Software\Classes\aMule.emulecollection" "" "eMule Collection"
+  WriteRegStr HKCU "Software\Classes\aMule.emulecollection\DefaultIcon" "" '"$INSTDIR\bin\amule.exe",0'
+  WriteRegStr HKCU "Software\Classes\aMule.emulecollection\shell\open\command" "" '"$INSTDIR\bin\amule.exe" "%1"'
+  WriteRegStr HKCU "Software\Classes\.emulecollection\OpenWithProgids" "aMule.emulecollection" ""
+
+  ReadRegStr $0 HKCU "Software\Classes\.emulecollection" ""
+  StrCmp $0 "" 0 assoc_keep_default
+  WriteRegStr HKCU "Software\Classes\.emulecollection" "" "aMule.emulecollection"
+  assoc_keep_default:
+
+  ; Tell Explorer to re-read the association tables, otherwise the new
+  ; entry doesn't appear until the next logon.
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
+SectionEnd
+
 ; Component descriptions surfaced on the Components page.
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
   !insertmacro MUI_DESCRIPTION_TEXT ${SecCore}        "$(MYSTR_DESC_CORE)"
@@ -391,6 +425,7 @@ SectionEnd
   !insertmacro MUI_DESCRIPTION_TEXT ${SecAutostart}   "$(MYSTR_DESC_AUTOSTART)"
   !insertmacro MUI_DESCRIPTION_TEXT ${SecProtoEd2k}   "$(MYSTR_DESC_PROTO_ED2K)"
   !insertmacro MUI_DESCRIPTION_TEXT ${SecProtoMagnet} "$(MYSTR_DESC_PROTO_MAGNET)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecAssocCollection} "$(MYSTR_DESC_ASSOC_COLLECTION)"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; --------------------------------------------------------------------
@@ -462,6 +497,25 @@ Section "Uninstall" un.SecUninstall
   StrCmp $1 "" magnet_done 0
   DeleteRegKey HKCU "Software\Classes\magnet"
   magnet_done:
+
+  ; .emulecollection association — same guard, but three keys to undo
+  ; because a file type is spread across the ProgID and the extension.
+  ReadRegStr $0 HKCU "Software\Classes\aMule.emulecollection\shell\open\command" ""
+  StrCmp $0 "" assoc_done 0
+  Push $0
+  Push "$INSTDIR"
+  Call un.StrContains
+  Pop $1
+  StrCmp $1 "" assoc_done 0
+  DeleteRegKey HKCU "Software\Classes\aMule.emulecollection"
+  DeleteRegValue HKCU "Software\Classes\.emulecollection\OpenWithProgids" "aMule.emulecollection"
+  ; Only clear the extension default if it still names our ProgID; a
+  ; user who has since pointed .emulecollection at another app keeps it.
+  ReadRegStr $2 HKCU "Software\Classes\.emulecollection" ""
+  StrCmp $2 "aMule.emulecollection" 0 assoc_done
+  DeleteRegKey HKCU "Software\Classes\.emulecollection"
+  assoc_done:
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 
   ; Application files. Explicit RMDir /r on the known subtrees first
   ; for safety, then the catch-all on $INSTDIR.
@@ -547,6 +601,7 @@ Function .onInit
   SectionSetText ${SecAutostart} "$(MYSTR_SEC_AUTOSTART)"
   SectionSetText ${SecProtoEd2k}   "$(MYSTR_SEC_PROTO_ED2K)"
   SectionSetText ${SecProtoMagnet} "$(MYSTR_SEC_PROTO_MAGNET)"
+  SectionSetText ${SecAssocCollection} "$(MYSTR_SEC_ASSOC_COLLECTION)"
 FunctionEnd
 
 Function un.onInit

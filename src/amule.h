@@ -135,6 +135,43 @@ private:
 
 	bool CheckPassedLink(const wxString &in, wxString &out, int cat);
 
+	// Outcome of trying to read a command-line argument as a collection.
+	enum CollectionExpansion
+	{
+		// The argument isn't a collection path; treat it as a link.
+		kNotACollection,
+		// The argument named a collection and its links were emitted.
+		kCollectionExpanded,
+		// The argument named a collection we could not read. Already
+		// logged, and deliberately not retried as a link - doing so
+		// would emit a second, misleading "invalid eD2k link" error.
+		kCollectionFailed
+	};
+
+	/**
+	 * Expands a .emulecollection argument into its eD2k links.
+	 *
+	 * Accepts a plain path or a file:// URL; file managers pass either
+	 * depending on the platform and the .desktop Exec field used.
+	 * Each link is validated through CheckPassedLink(), so the caller
+	 * gets the same canonicalisation and category suffix as a link typed
+	 * on the command line.
+	 */
+	CollectionExpansion ExpandPassedCollection(const wxString &in, wxArrayString &out, int cat);
+
+public:
+	/**
+	 * Queues every collection among @a fileNames into the ED2KLinks file.
+	 *
+	 * This is the macOS "open document" path: the OS hands us the files
+	 * the user double-clicked (or dropped on the Dock icon), which is why
+	 * anything that isn't a collection is skipped without complaint.
+	 *
+	 * Goes through the ED2KLinks file rather than touching downloadqueue,
+	 * which on amulegui does not exist until the EC connection is up.
+	 */
+	void OpenCollectionFiles(const wxArrayString &fileNames);
+
 protected:
 	wxString FullMuleVersion;
 	wxString OSDescription;
@@ -555,6 +592,19 @@ class CamuleGuiApp : public CamuleApp, public CamuleGuiBase
 	// window hidden via the close button (HideOnClose pref) stays
 	// permanently hidden - the app appears stuck.
 	virtual void MacReopenApp();
+
+	// Finder "Open With" / double-click on a .emulecollection, and Dock
+	// drops. wx defers the launch event until after OnInit returns, so
+	// the config dir is always set by the time we run.
+	virtual void MacOpenFiles(const wxArrayString &fileNames);
+
+	// ed2k:// and magnet: clicks. A safety net, not the usual path: in
+	// practice the kAEGetURL handler in ProtocolHandlerManager_mac.mm
+	// receives these. wxNSAppController registers for the same event in
+	// applicationWillFinishLaunching, and -setEventHandler: replaces per
+	// (class, id), so which one is live is a question of load order we
+	// don't control. Whichever wins, the URL is queued exactly once.
+	virtual void MacOpenURL(const wxString &url);
 #endif
 
 public:

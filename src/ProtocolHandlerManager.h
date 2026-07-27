@@ -25,6 +25,7 @@
 #ifndef PROTOCOLHANDLERMANAGER_H
 #define PROTOCOLHANDLERMANAGER_H
 
+#include <wx/arrstr.h>
 #include <wx/string.h>
 
 // Cross-platform "aMule is the default handler for ed2k:// / magnet:
@@ -106,15 +107,21 @@ public:
 	static wxString GetCanonicalExecutablePath();
 };
 
-// Queues a scheme-clicked URL (ed2k:// or magnet:) into the ED2KLinks
-// file so CDownloadQueue::Process (or the equivalent polling loop in
-// CamuleRemoteGuiApp) picks it up on its next 1-second tick and forwards
-// to AddLink. Handles percent-decoding for URLs delivered by browsers.
-// Build-agnostic: works from monolithic amule, remote-GUI amulegui, or
-// daemon amuled — each has its own theApp with an ED2KLinks polling
-// loop that ends up calling AddLinksFromFile on the same file we write
-// to here. Safe to call before the download queue is fully wired
+// Queues already-validated eD2k links into the ED2KLinks file so
+// CDownloadQueue::Process (or the equivalent polling loop in
+// CamuleRemoteGuiApp) picks them up on its next 1-second tick and forwards
+// them to AddLink. Build-agnostic: works from monolithic amule, remote-GUI
+// amulegui, or daemon amuled — each has its own theApp with an ED2KLinks
+// polling loop that ends up calling AddLinksFromFile on the same file we
+// write to here. Safe to call before the download queue is fully wired
 // (cold-launch case): we just write, we don't try to enqueue.
+//
+// The whole batch costs one open/write, and raises the window once.
+void ProtocolHandler_QueueLinks(const wxArrayString &links);
+
+// Queues a scheme-clicked URL (ed2k:// or magnet:), percent-decoding it
+// first for URLs delivered by browsers, then handing off to
+// ProtocolHandler_QueueLinks.
 void ProtocolHandler_QueueSchemeLink(const wxString &url);
 
 #endif // PROTOCOLHANDLERMANAGER_H

@@ -38,10 +38,11 @@
 
 #include <include/common/EventIDs.h>
 
-#include "amule.h"             // Interface declarations.
-#include "CamuleArtProvider.h" // Needed for wxArtProvider::Push() in OnInit
-#include "amuleDlg.h"          // Needed for CamuleDlg
-#include "PrefsUnifiedDlg.h"   // Needed for the shared-dirs editor refresh hook
+#include "amule.h"                  // Interface declarations.
+#include "ProtocolHandlerManager.h" // Needed for ProtocolHandler_QueueSchemeLink
+#include "CamuleArtProvider.h"      // Needed for wxArtProvider::Push() in OnInit
+#include "amuleDlg.h"               // Needed for CamuleDlg
+#include "PrefsUnifiedDlg.h"        // Needed for the shared-dirs editor refresh hook
 
 #include <wx/sizer.h>    // CReconnectDialog layout (issue #444)
 #include <wx/stattext.h> // CReconnectDialog status label
@@ -256,6 +257,20 @@ void CamuleRemoteGuiApp::OnEndSession(wxCloseEvent &evt)
 	OnExit();
 	evt.Skip();
 }
+
+#ifdef __WXMAC__
+void CamuleRemoteGuiApp::MacOpenFiles(const wxArrayString &fileNames)
+{
+	// Also fires for Dock drops of arbitrary files; anything that is not
+	// a collection is ignored without complaint. Mirrors CamuleGuiApp.
+	OpenCollectionFiles(fileNames);
+}
+
+void CamuleRemoteGuiApp::MacOpenURL(const wxString &url)
+{
+	ProtocolHandler_QueueSchemeLink(url);
+}
+#endif
 
 #if wxUSE_ON_FATAL_EXCEPTION
 // Gracefully handle fatal exceptions and print backtrace if possible.
