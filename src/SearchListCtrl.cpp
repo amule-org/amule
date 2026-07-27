@@ -70,6 +70,7 @@ enum SearchListColumns
 	ID_SEARCH_COL_SIZE,
 	ID_SEARCH_COL_SOURCES,
 	ID_SEARCH_COL_TYPE,
+	ID_SEARCH_COL_RATING,
 	ID_SEARCH_COL_FILEID,
 	ID_SEARCH_COL_STATUS,
 	ID_SEARCH_COL_LENGTH,
@@ -97,6 +98,9 @@ CSearchListCtrl::CSearchListCtrl(wxWindow *parent,
 	InsertColumn(ID_SEARCH_COL_SIZE, _("Size"), wxLIST_FORMAT_LEFT, 100, "Z");
 	InsertColumn(ID_SEARCH_COL_SOURCES, _("Sources"), wxLIST_FORMAT_LEFT, 50, "u");
 	InsertColumn(ID_SEARCH_COL_TYPE, _("Type"), wxLIST_FORMAT_LEFT, 65, "Y");
+	// Rating: the smiley icon (drawn in OnDrawItem) plus its text label. Empty
+	// for unrated results; sortable by the raw 1-5 value (see SortProc).
+	InsertColumn(ID_SEARCH_COL_RATING, _("Rating"), wxLIST_FORMAT_LEFT, 120, "R");
 	InsertColumn(ID_SEARCH_COL_FILEID, _("FileID"), wxLIST_FORMAT_LEFT, 280, "I");
 	InsertColumn(ID_SEARCH_COL_STATUS, _("Status"), wxLIST_FORMAT_LEFT, 100, "S");
 	// Media tag columns: ed2k/Kad publishers (eMule, eMule AI, aMule) can
@@ -259,6 +263,12 @@ void CSearchListCtrl::AddResult(CSearchFile *toshow)
 	// File-type
 	SetItem(newid, ID_SEARCH_COL_TYPE, GetFiletypeByName(toshow->GetFileName()));
 
+	// Rating: text label next to the smiley icon (icon drawn in OnDrawItem).
+	// Left empty for unrated results.
+	if (toshow->HasRating()) {
+		SetItem(newid, ID_SEARCH_COL_RATING, GetRateString(toshow->UserRating()));
+	}
+
 	// File-hash
 	SetItem(newid, ID_SEARCH_COL_FILEID, toshow->GetFileHash().Encode());
 
@@ -327,6 +337,13 @@ void CSearchListCtrl::UpdateResult(CSearchFile *toupdate)
 		SetItem(index, ID_SEARCH_COL_SOURCES, temp);
 
 		SetItem(index, ID_SEARCH_COL_STATUS, DetermineStatusPrintable(toupdate));
+
+		// Rating can change after the row is shown (variant merge / a
+		// community rating arriving); keep the label in sync. The icon itself
+		// redraws live from HasRating()/UserRating() in OnDrawItem.
+		SetItem(index,
+			ID_SEARCH_COL_RATING,
+			toupdate->HasRating() ? GetRateString(toupdate->UserRating()) : wxString());
 
 		UpdateItemColor(index);
 
@@ -562,6 +579,21 @@ int CSearchListCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDat
 			result = CmpAny(file1->GetFileName().GetExt(), file2->GetFileName().GetExt());
 		}
 
+		break;
+	}
+
+	// Sort by rating (raw 1-5 value). Unrated results cluster at the bottom
+	// regardless of direction, mirroring the media columns' early returns.
+	case ID_SEARCH_COL_RATING: {
+		int r1 = file1->HasRating() ? file1->UserRating() : 0;
+		int r2 = file2->HasRating() ? file2->UserRating() : 0;
+		if (!r1 && !r2)
+			break;
+		if (!r1)
+			return 1;
+		if (!r2)
+			return -1;
+		result = CmpAny(r1, r2);
 		break;
 	}
 
@@ -978,23 +1010,24 @@ void CSearchListCtrl::OnDrawItem(
 						target_rec.width -= 4;
 					}
 				}
+			}
 
-				// Check if the rating icon should be drawn
-				if (file->HasRating()) {
-					int image = Client_InvalidRating_Smiley + file->UserRating() - 1;
+			// Rating column: draw the smiley for the file's 1-5 rating; the
+			// text label (set via GetRateString) is drawn by the generic cell
+			// path below, shifted past the icon. Nothing for unrated results.
+			if (i == ID_SEARCH_COL_RATING && file->HasRating()) {
+				const int image = Client_InvalidRating_Smiley + file->UserRating() - 1;
+				const int imgWidth = 16;
 
-					int imgWidth = 16;
+				theApp->amuledlg->m_imagelist.Draw(image,
+					*dc,
+					target_rec.GetX(),
+					target_rec.GetY() - 1,
+					wxIMAGELIST_DRAW_TRANSPARENT);
 
-					theApp->amuledlg->m_imagelist.Draw(image,
-						*dc,
-						target_rec.GetX(),
-						target_rec.GetY() - 1,
-						wxIMAGELIST_DRAW_TRANSPARENT);
-
-					// Move the text past the icon.
-					target_rec.x += imgWidth + 4;
-					target_rec.width -= imgWidth + 4;
-				}
+				// Move the label past the icon.
+				target_rec.x += imgWidth + 4;
+				target_rec.width -= imgWidth + 4;
 			}
 
 			wxListItem cellitem;
