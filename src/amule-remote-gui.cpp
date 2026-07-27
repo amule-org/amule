@@ -1481,9 +1481,15 @@ void CServerConnectRem::HandlePacket(const CECPacket *packet)
 			}
 		}
 		theApp->m_ConnState |= CONNECTED_ED2K;
-	} else if (m_CurrServer) {
-		theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(m_CurrServer, false);
-		m_CurrServer = 0;
+		uint32 ed2kSince = 0;
+		theApp->m_ed2kConnectedSince =
+			tag->GetED2KConnectedSince(ed2kSince) ? wxDateTime((time_t)ed2kSince) : wxDateTime();
+	} else {
+		theApp->m_ed2kConnectedSince = wxDateTime();
+		if (m_CurrServer) {
+			theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(m_CurrServer, false);
+			m_CurrServer = 0;
+		}
 	}
 
 	if (tag->IsConnectedKademlia()) {
@@ -1492,10 +1498,14 @@ void CServerConnectRem::HandlePacket(const CECPacket *packet)
 		} else {
 			theApp->m_ConnState |= CONNECTED_KAD_OK;
 		}
+		uint32 kadSince = 0;
+		theApp->m_kadConnectedSince =
+			tag->GetKadConnectedSince(kadSince) ? wxDateTime((time_t)kadSince) : wxDateTime();
 	} else {
 		if (tag->IsKadRunning()) {
 			theApp->m_ConnState |= CONNECTED_KAD_NOT;
 		}
+		theApp->m_kadConnectedSince = wxDateTime();
 	}
 
 	theApp->amuledlg->ShowConnectionState();

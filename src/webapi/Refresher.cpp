@@ -105,6 +105,16 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 				out.server_ip = std::string(server->GetIPv4Data().StringIP().utf8_str());
 				out.server_port = server->GetIPv4Data().m_port;
 			}
+			uint32 ed2kSince = 0;
+			if (conn->GetED2KConnectedSince(ed2kSince)) {
+				out.ed2k_connected_since = ed2kSince;
+			}
+		}
+		if (conn->IsConnectedKademlia()) {
+			uint32 kadSince = 0;
+			if (conn->GetKadConnectedSince(kadSince)) {
+				out.kad_connected_since = kadSince;
+			}
 		}
 	}
 

@@ -1606,6 +1606,9 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.ValueString(wxString::FromUTF8(s.ed2k_state.c_str()));
 	w.Key("low_id");
 	w.ValueBool(s.ed2k_lowid);
+	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
+	w.Key("connected_since");
+	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
 	w.Key("server_name");
 	w.ValueString(wxString::FromUTF8(s.server_name.c_str()));
 	w.Key("server_ip");
@@ -1631,6 +1634,9 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	w.ValueString(wxString::FromUTF8(s.kad_state.c_str()));
 	w.Key("firewalled");
 	w.ValueBool(s.kad_firewalled);
+	// 0 when not connected -- gate on kad.state, not on this being nonzero.
+	w.Key("connected_since");
+	w.ValueInt(static_cast<int64_t>(s.kad_connected_since));
 	// Network rollup — same numbers GET /kad serves under
 	// `network.{users,files,nodes}`. Surfaced here so /status
 	// is a one-call dashboard view (matches the RFC contract

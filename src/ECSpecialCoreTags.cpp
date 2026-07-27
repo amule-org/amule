@@ -157,6 +157,16 @@ CEC_ConnState_Tag::CEC_ConnState_Tag(EC_DETAIL_LEVEL detail_level)
 			}
 		}
 		AddTag(CECTag(EC_TAG_ED2K_ID, theApp->GetED2KID()));
+		// GetTicks() (a possibly-64-bit time_t) truncated to uint32 --
+		// fine until 2106, matching EC_TAG_ED2K_ID's own uint32 id
+		// space this tag already sits next to. Only sent while actually
+		// connected, so amulegui/amuleapi never have to distinguish
+		// "never connected" from "connected at the unix epoch"
+		// (amule-org/amule#174).
+		if (theApp->GetED2KConnectedSince().IsValid()) {
+			AddTag(CECTag(EC_TAG_ED2K_CONNECTED_SINCE,
+				(uint32)theApp->GetED2KConnectedSince().GetTicks()));
+		}
 	} else if (theApp->serverconnect->IsConnecting()) {
 		AddTag(CECTag(EC_TAG_ED2K_ID, 0xffffffff));
 	}
@@ -165,6 +175,9 @@ CEC_ConnState_Tag::CEC_ConnState_Tag(EC_DETAIL_LEVEL detail_level)
 
 	if (Kademlia::CKademlia::IsRunning()) {
 		AddTag(CECTag(EC_TAG_KAD_ID, Kademlia::CKademlia::GetKadID()));
+	}
+	if (theApp->IsConnectedKad() && theApp->GetKadConnectedSince().IsValid()) {
+		AddTag(CECTag(EC_TAG_KAD_CONNECTED_SINCE, (uint32)theApp->GetKadConnectedSince().GetTicks()));
 	}
 }
 

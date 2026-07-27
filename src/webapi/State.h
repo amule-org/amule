@@ -892,6 +892,13 @@ struct StatusSnapshot
 	// True when Kad is running but firewalled.
 	bool kad_firewalled = false;
 
+	// Unix timestamp of the most recent connect (amule-org/amule#174),
+	// from EC_TAG_CONNSTATE's optional {ED2K,KAD}_CONNECTED_SINCE
+	// sub-tags. 0 when not connected -- gate on ed2k_state/kad_state
+	// rather than trust a 0 timestamp alone.
+	std::uint64_t ed2k_connected_since = 0;
+	std::uint64_t kad_connected_since = 0;
+
 	// Bytes per second (NOT kB) so the field name matches the wire
 	// units throughout. Clients that want kB/s do the divide.
 	std::uint64_t download_bps = 0;

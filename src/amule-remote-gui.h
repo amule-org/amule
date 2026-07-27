@@ -53,6 +53,7 @@ class wxTimer;
 class wxTimerEvent;
 
 #include <wx/dialog.h>
+#include <wx/datetime.h> // Needed for wxDateTime (ED2K/Kad "Connected since")
 
 class CEConnectDlg : public wxDialog
 {
@@ -944,6 +945,14 @@ public:
 	}
 	bool IsFirewalledKad() const { return (m_ConnState & CONNECTED_KAD_FIREWALLED) != 0; }
 
+	// Same accessor names as CamuleApp (src/amule.h) so the shared GUI
+	// source files (ServerWnd.cpp) can call theApp->GetED2KConnectedSince()
+	// unconditionally instead of #ifndef CLIENT_GUI-gating the row out of
+	// amulegui (amule-org/amule#174). Populated from EC_TAG_CONNSTATE's
+	// optional sub-tags in CServerConnectRem::HandlePacket.
+	const wxDateTime &GetED2KConnectedSince() const { return m_ed2kConnectedSince; }
+	const wxDateTime &GetKadConnectedSince() const { return m_kadConnectedSince; }
+
 	bool IsKadRunning() const
 	{
 		return ((m_ConnState & CONNECTED_KAD_OK) || (m_ConnState & CONNECTED_KAD_FIREWALLED) ||
@@ -986,6 +995,10 @@ public:
 
 	uint8 m_ConnState;
 	uint32 m_clientID;
+	// Set by CServerConnectRem::HandlePacket(); see the
+	// GetED2KConnectedSince()/GetKadConnectedSince() accessors above.
+	wxDateTime m_ed2kConnectedSince;
+	wxDateTime m_kadConnectedSince;
 
 	wxLocale m_locale;
 	// This KnownFile collects all currently uploading clients for display in the upload list control

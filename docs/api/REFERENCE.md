@@ -365,6 +365,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   "ed2k": {
     "state": "connected",
     "low_id": false,
+    "connected_since": 1751000000,
     "server_name": "eMule Server",
     "server_ip": "203.0.113.5",
     "server_port": 4242
@@ -372,6 +373,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
   "kad": {
     "state": "connected",
     "firewalled": false,
+    "connected_since": 1751000000,
     "network": { "users": 5400000, "files": 1400000000, "nodes": 2400 }
   },
   "speeds": { "download_bps": 4500000, "upload_bps": 50000 },
@@ -380,6 +382,8 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/status
 ```
 
 `ec_connected` is `false` while amuleapi can't reach the underlying amuled. Most other endpoints return `503 ec_unavailable` in that state.
+
+`ed2k.connected_since` / `kad.connected_since` are unix timestamps of the most recent connect, `0` while not connected — gate on `ed2k.state` / `kad.state` rather than trust a `0` timestamp alone.
 
 **Errors:** `503 ec_unavailable` if amuleapi hasn't received its first EC snapshot yet.
 

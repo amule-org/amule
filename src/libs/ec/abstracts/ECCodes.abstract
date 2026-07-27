@@ -197,6 +197,8 @@ EC_TAG_CAN_MULTI_SEARCH                   0x0015
 EC_TAG_CAN_CHAT                           0x0016
 
 EC_TAG_CAN_SHAREDDIRS_CONFIG              0x0017
+EC_TAG_ED2K_CONNECTED_SINCE               0x0018
+EC_TAG_KAD_CONNECTED_SINCE                0x0019
 
 
 EC_TAG_CLIENT_NAME                        0x0100

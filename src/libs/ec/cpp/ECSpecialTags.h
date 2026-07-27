@@ -225,6 +225,20 @@ public:
 	bool IsKadFirewalled() const { return (GetInt() & 0x08) != 0; }
 	bool IsKadRunning() const { return (GetInt() & 0x10) != 0; }
 	bool GetKadID(CUInt128 &target) const { return AssignIfExist(EC_TAG_KAD_ID, target); }
+
+	// Unix timestamp of the most recent connect, mirroring
+	// CamuleApp::GetED2KConnectedSince()/GetKadConnectedSince()
+	// (amule-org/amule#174). Only present while connected -- absent (0)
+	// while disconnected, so callers should gate on IsConnectedED2K()/
+	// IsConnectedKademlia() rather than trust a 0 timestamp alone.
+	bool GetED2KConnectedSince(uint32 &target) const
+	{
+		return AssignIfExist(EC_TAG_ED2K_CONNECTED_SINCE, target);
+	}
+	bool GetKadConnectedSince(uint32 &target) const
+	{
+		return AssignIfExist(EC_TAG_KAD_CONNECTED_SINCE, target);
+	}
 };
 
 class CEC_SharedFile_Tag : public CECTag
