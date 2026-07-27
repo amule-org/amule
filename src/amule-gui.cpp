@@ -47,6 +47,8 @@
 #endif
 #include "PartFileConvert.h"
 #include "ThreadTasks.h"
+#include "MuleCollection.h" // Needed for CMuleCollection
+#include "DownloadQueue.h"  // Needed for CDownloadQueue::AddLinks
 #include "Logger.h"    // Needed for EVT_MULE_LOGGING
 #include "GuiEvents.h" // Needed for EVT_MULE_NOTIFY
 
@@ -344,6 +346,25 @@ void CamuleGuiApp::MacReopenApp()
 		amuledlg->Show(true);
 		amuledlg->Iconize(false);
 		amuledlg->Raise();
+	}
+}
+
+void CamuleGuiApp::MacOpenFiles(const wxArrayString &fileNames)
+{
+	for (size_t i = 0; i < fileNames.GetCount(); ++i) {
+		const wxString &fileName = fileNames[i];
+		if (!fileName.Lower().EndsWith(wxT(".emulecollection"))) {
+			continue;
+		}
+
+		CMuleCollection collection;
+		if (collection.Open((std::string)fileName.mb_str())) {
+			wxArrayString links;
+			for (size_t e = 0; e < collection.size(); ++e) {
+				links.Add(wxString(collection[e].c_str(), wxConvUTF8));
+			}
+			downloadqueue->AddLinks(links);
+		}
 	}
 }
 #endif

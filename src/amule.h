@@ -555,6 +555,15 @@ class CamuleGuiApp : public CamuleApp, public CamuleGuiBase
 	// window hidden via the close button (HideOnClose pref) stays
 	// permanently hidden - the app appears stuck.
 	virtual void MacReopenApp();
+
+	// Handles files macOS hands us via the Open Document apple-event
+	// (Finder double-click / "Open With", or a Dock drop) — currently
+	// just .emulecollection files, declared as a supported document
+	// type in the bundle's Info.plist (see src/CMakeLists.txt). Without
+	// this override wxApp's default implementation silently drops the
+	// paths, so nothing happens even once LaunchServices routes the
+	// file to us.
+	virtual void MacOpenFiles(const wxArrayString &fileNames);
 #endif
 
 public:

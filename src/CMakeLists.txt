@@ -415,6 +415,21 @@ if (BUILD_MONOLITHIC)
 			VERBATIM
 		)
 
+		# Declare aMule as a handler for .emulecollection files so
+		# Finder offers it in "Open With" and delivers the file path
+		# via the standard macOS Open Document apple-event, which
+		# CamuleGuiApp::MacOpenFiles() picks up. Without this key,
+		# LaunchServices has no record that aMule understands the
+		# extension, so double-clicking (or forcing it via "Get
+		# Info" -> Open with) does nothing.
+		add_custom_command (TARGET amule POST_BUILD
+			COMMAND /usr/bin/plutil -replace CFBundleDocumentTypes
+				-json "[{\"CFBundleTypeName\": \"eMule Collection\", \"CFBundleTypeExtensions\": [\"emulecollection\"], \"CFBundleTypeRole\": \"Editor\"}]"
+				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
+			COMMENT "Declaring aMule.app as a .emulecollection file handler"
+			VERBATIM
+		)
+
 		# Copy translation catalogs into the .app bundle so the in-tree
 		# build picks them up.  wxLocale's lookup prefix on macOS is
 		# wxStandardPaths::GetDataDir() + "/locale", which resolves to
