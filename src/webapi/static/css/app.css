@@ -303,6 +303,10 @@ table.data th, table.data td {
   white-space: nowrap;
 }
 table.data th {
+  /* position: relative is redundant with sticky today (sticky already
+     establishes a containing block for the absolutely-positioned resize
+     handle) but pins that down explicitly, so the handle stays anchored
+     even if the header ever stops being sticky. */
   position: sticky; top: 0; background: var(--surface-2);
   font-weight: 600; cursor: default; z-index: 1;
   /* Column boundary, header-only -- the body stays borderless/clean, but

@@ -127,55 +127,101 @@ export function VirtualTable({
   rowHeight = ROW_HEIGHT, maxHeight = "70vh", widths = {}, onResize,
 }) {
   const ref = useRef(null);
-  const colRefs = useRef({}); // column key -> <col> DOM node, for drag-live width updates
   const [scrollTop, setScrollTop] = useState(0);
   const [viewH, setViewH] = useState(0);
+  const [viewW, setViewW] = useState(0);
+  // Live width of the column currently being dragged, e.g. {key:"name", px:230}.
+  // This -- not a direct DOM mutation -- is the resize drag's source of truth:
+  // any prop change mid-drag (rows refreshed by the SSE stream tick every
+  // second or so) triggers a Preact re-render, and colgroup's <col> nodes get
+  // reconciled from whatever colWidth() computes. A version that instead
+  // pushed the live width straight into col.style.width bypassed Preact, so
+  // that very reconciliation stomped it back to the pre-drag width mid-drag --
+  // the longer the drag, the likelier a tick landed inside it, so the border
+  // (and the cursor tracking it) visibly snapped backwards while the pointer
+  // kept moving. Routing the value through state instead means every render,
+  // including one forced by an unrelated prop change, still reflects the drag.
+  const [dragging, setDragging] = useState(null);
 
   // A user-resized width (from `widths`, persisted by the caller) overrides
-  // the column's declared default; falls back to null for the one flexible
-  // column that has neither (it fills remaining space via CSS instead).
+  // the column's declared default; null for the one flexible column that
+  // has neither (colWidth, below, is what actually fills that in). The
+  // in-progress drag (if any) wins over both.
   const effWidth = (c) => {
+    if (dragging && c.key === dragging.key) return dragging.px + "px";
     const px = c.key && widths[c.key];
     return px ? px + "px" : c.width || null;
   };
 
-  // Drag-to-resize a column header edge. Mutates the <col> width directly on
-  // every mousemove (bypassing state/re-render for 60fps drag feel) and only
-  // commits to persisted prefs via onResize on mouseup -- so a drag that's
-  // abandoned mid-way (rare, but e.g. a stray click) never round-trips
-  // through localStorage more than once.
+  // The flexible column's width, computed here instead of left to the
+  // browser's table-layout:fixed auto-distribution. Every *other* column
+  // renders with an explicit pixel width (its own default or a user
+  // resize); split whatever's left of the measured container width across
+  // however many columns declared neither (in practice always at most
+  // one -- typically "name"), floored at FLEX_MIN. Doing this ourselves
+  // means colWidth() below can hand *every* <col> an explicit width, so
+  // the browser has nothing left to redistribute when one column resizes
+  // -- no neighbour drifts during the drag, and none needs to snap to a
+  // recomputed width on release either, both of which a version relying
+  // on the browser's own auto-column redistribution actually hit.
+  const flexKeys = columns.filter((c) => !effWidth(c));
+  const fixedTotal = columns.reduce((sum, c) => sum + (effWidth(c) ? parseInt(effWidth(c), 10) : 0), 0);
+  const flexWidth = flexKeys.length
+    ? Math.max(FLEX_MIN, Math.floor((viewW - fixedTotal) / flexKeys.length))
+    : 0;
+  const colWidth = (c) => effWidth(c) || flexWidth + "px";
+
+  // Drag-to-resize a column header edge. Pointer Events (not mouse-only)
+  // so this works on touch devices too, matching the handle's own
+  // touch-action: none in app.css. setPointerCapture routes subsequent
+  // move/up events to the handle itself regardless of where the pointer
+  // wanders, which sidesteps two problems a window-listener version had:
+  // stray listeners surviving a mid-drag unmount, and needing manual
+  // cleanup on every exit path. The live width goes through `dragging`
+  // state (see its comment above) rather than a direct DOM mutation, so
+  // it survives a re-render forced by unrelated props mid-drag. Persisted
+  // prefs are only touched via onResize on release -- and only if the
+  // width actually changed, so a click with no drag doesn't turn the
+  // flexible "name" column into a fixed-width one by mistake.
   const startResize = (e, key) => {
     if (!onResize) return;
     e.preventDefault();
     e.stopPropagation();
-    const col = colRefs.current[key];
-    if (!col) return;
+    const handle = e.currentTarget;
     const startX = e.clientX;
-    const startWidth = col.getBoundingClientRect().width;
+    const startWidth = parseInt(colWidth(columns.find((c) => c.key === key)), 10);
     let finalWidth = startWidth;
+
+    handle.setPointerCapture(e.pointerId);
+    setDragging({ key, px: startWidth });
 
     const onMove = (ev) => {
       finalWidth = Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX));
-      col.style.width = finalWidth + "px";
+      setDragging({ key, px: finalWidth });
     };
     const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      onResize(key, Math.round(finalWidth));
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      setDragging(null);
+      if (finalWidth !== startWidth) onResize(key, Math.round(finalWidth));
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
   };
 
-  // Track the scroll container's height (viewport for the window calc). A
-  // ResizeObserver catches layout changes beyond window resize (tab switches,
-  // toolbar wrap, etc.).
+  // Track the scroll container's size (viewport for the row-window calc,
+  // and now also the flex-column split above). A ResizeObserver catches
+  // layout changes beyond window resize (tab switches, toolbar wrap, etc.).
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setViewH(el.clientHeight));
+    const ro = new ResizeObserver(() => {
+      setViewH(el.clientHeight);
+      setViewW(el.clientWidth);
+    });
     ro.observe(el);
     setViewH(el.clientHeight);
+    setViewW(el.clientWidth);
     return () => ro.disconnect();
   }, []);
 
@@ -200,7 +246,7 @@ export function VirtualTable({
       ${c.label}${c.sortable ? arrow(c.key) : null}
       ${onResize && c.key ? html`
         <span class="col-resize-handle"
-              onMouseDown=${(e) => startResize(e, c.key)}
+              onPointerDown=${(e) => startResize(e, c.key)}
               onClick=${(e) => e.stopPropagation()} />` : null}
     </th>`;
 
@@ -218,26 +264,21 @@ export function VirtualTable({
     ? html`<tr class="spacer" style=${{ height: h + "px" }}><td colspan=${ncols}></td></tr>` : null;
 
   // table-layout:fixed needs explicit widths, so the table can't shrink columns
-  // to fit a phone. Floor its width at the sum of the effective column widths
-  // (a user resize, else the declared default, else FLEX_MIN for a width-less
-  // column) so narrow viewports scroll horizontally — matching the app's
-  // other tables — instead of crushing the flexible column to nothing. On
-  // wide screens width:100% (from CSS) wins and the flexible column absorbs
-  // the extra space.
-  const minWidth = columns.reduce((sum, c) => {
-    const w = effWidth(c);
-    return sum + (w ? parseInt(w, 10) : FLEX_MIN);
-  }, 0);
+  // to fit a phone. Floor its width at the sum of what colWidth() actually
+  // hands every column (own default/resize, or its FLEX_MIN-floored share
+  // of colWidth's flex split) so narrow viewports scroll horizontally —
+  // matching the app's other tables — instead of crushing the flexible
+  // column to nothing. Same source as the <colgroup> below on purpose: two
+  // independent width calculations drifting apart is exactly the class of
+  // bug this file just spent a few iterations chasing out of the resize
+  // path.
+  const minWidth = columns.reduce((sum, c) => sum + parseInt(colWidth(c), 10), 0);
 
   return html`
     <div class="table-wrap virtual" ref=${ref} style=${{ maxHeight }}
          onScroll=${(e) => setScrollTop(e.currentTarget.scrollTop)}>
       <table class="data virtual" style=${{ minWidth: minWidth + "px" }}>
-        ${columns.some((c) => effWidth(c))
-          ? html`<colgroup>${columns.map((c) => html`<col
-              ref=${c.key ? (el) => { if (el) colRefs.current[c.key] = el; } : null}
-              style=${effWidth(c) ? { width: effWidth(c) } : null} />`)}</colgroup>`
-          : null}
+        <colgroup>${columns.map((c) => html`<col style=${{ width: colWidth(c) }} />`)}</colgroup>
         <thead><tr>${columns.map(th)}</tr></thead>
         <tbody>
           ${total === 0
