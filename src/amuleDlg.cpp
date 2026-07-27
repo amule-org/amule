@@ -109,6 +109,20 @@ wxBEGIN_EVENT_TABLE(CamuleDlg, wxFrame)
 
 	EVT_TOOL(ID_BUTTONCONNECT, CamuleDlg::OnBnConnect)
 
+	// Alt+<letter> tab-switch shortcuts. On Windows/Linux these come from
+	// the wxAcceleratorEntry table built in OnInit(); on macOS they come
+	// from real NSMenuItem key equivalents (see the __WXMAC__ menu bar
+	// built in OnInit()) since a plain accelerator-table entry on wxOSX
+	// only fires its wxEVT_MENU once per click-to-refocus. Either path
+	// lands here as a wxEVT_MENU with the same button ID.
+	EVT_MENU(ID_BUTTONNETWORKS, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONSEARCH, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONDOWNLOADS, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONSHARED, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONMESSAGES, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONSTATISTICS, CamuleDlg::OnToolBarButton)
+	EVT_MENU(ID_BUTTONNEWPREFERENCES, CamuleDlg::OnPrefButton)
+
 	EVT_CLOSE(CamuleDlg::OnClose)
 	EVT_ICONIZE(CamuleDlg::OnMinimize)
 	EVT_SHOW(CamuleDlg::OnShow)
@@ -328,9 +342,51 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	}
 
 	// Set shortcut keys
+#ifdef __WXMAC__
+	// Alt+<letter> tab-switch shortcuts, exposed as real NSMenuItem key
+	// equivalents rather than wxAcceleratorEntry entries: on wxOSX
+	// (tested with wxWidgets 3.3.3 / macOS 26) an accelerator-table
+	// entry fires its wxEVT_MENU exactly once per click-to-refocus --
+	// the *first* Alt+<letter> after the window (re)gains key status
+	// switches tabs as expected, but every subsequent press is silently
+	// swallowed by Cocoa's key-equivalent dispatch until the user
+	// clicks something in the window again. Real menu key equivalents
+	// are dispatched by the OS itself and don't share that bug -- and
+	// as a bonus, VoiceOver can navigate an actual menu directly, which
+	// the (currently VoiceOver-invisible, see #180) toolbar can't offer.
 	wxAcceleratorEntry entries[] = { wxAcceleratorEntry(wxACCEL_CTRL, 'Q', wxID_EXIT) };
-
 	SetAcceleratorTable(wxAcceleratorTable(itemsof(entries), entries));
+
+	wxMenu *navigateMenu = new wxMenu();
+	navigateMenu->Append(ID_BUTTONNETWORKS, _("Networks") + "\tAlt+N");
+	navigateMenu->Append(ID_BUTTONSEARCH, _("Searches") + "\tAlt+S");
+	navigateMenu->Append(ID_BUTTONDOWNLOADS, _("Downloads") + "\tAlt+T");
+	navigateMenu->Append(ID_BUTTONSHARED, _("Shared files") + "\tAlt+F");
+	navigateMenu->Append(ID_BUTTONMESSAGES, _("Messages") + "\tAlt+M");
+	navigateMenu->Append(ID_BUTTONSTATISTICS, _("Statistics") + "\tAlt+G");
+	navigateMenu->AppendSeparator();
+	navigateMenu->Append(ID_BUTTONNEWPREFERENCES, _("Preferences") + "\tAlt+P");
+
+	wxMenuBar *menuBar = new wxMenuBar();
+	menuBar->Append(navigateMenu, _("Navigate"));
+	SetMenuBar(menuBar);
+#else
+	// Alt+<letter> mirrors the classic eMule tab shortcuts (Alt+S for
+	// Search, etc.) and gives keyboard users a way to switch tabs
+	// without the mouse. macOS gets the same shortcuts via a real menu
+	// instead -- see the __WXMAC__ branch above.
+	wxAcceleratorEntry entries[] = {
+		wxAcceleratorEntry(wxACCEL_CTRL, 'Q', wxID_EXIT),
+		wxAcceleratorEntry(wxACCEL_ALT, 'N', ID_BUTTONNETWORKS),
+		wxAcceleratorEntry(wxACCEL_ALT, 'S', ID_BUTTONSEARCH),
+		wxAcceleratorEntry(wxACCEL_ALT, 'T', ID_BUTTONDOWNLOADS),
+		wxAcceleratorEntry(wxACCEL_ALT, 'F', ID_BUTTONSHARED),
+		wxAcceleratorEntry(wxACCEL_ALT, 'M', ID_BUTTONMESSAGES),
+		wxAcceleratorEntry(wxACCEL_ALT, 'G', ID_BUTTONSTATISTICS),
+		wxAcceleratorEntry(wxACCEL_ALT, 'P', ID_BUTTONNEWPREFERENCES),
+	};
+	SetAcceleratorTable(wxAcceleratorTable(itemsof(entries), entries));
+#endif
 	ShowED2KLinksHandler(thePrefs::GetFED2KLH());
 
 	wxNotebook *logs_notebook = CastChild(ID_SRVLOG_NOTEBOOK, wxNotebook);
@@ -1723,44 +1779,44 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 		m_tblist[Toolbar_Network],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Networks Window"));
+		_("Networks Window (Alt+N)"));
 	wndToolbar->AddTool(ID_BUTTONSEARCH,
 		_("Searches"),
 		m_tblist[Toolbar_Search],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Searches Window"));
+		_("Searches Window (Alt+S)"));
 	wndToolbar->AddTool(ID_BUTTONDOWNLOADS,
 		_("Downloads"),
 		m_tblist[Toolbar_Transfers],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Downloads Window"));
+		_("Downloads Window (Alt+T)"));
 	wndToolbar->AddTool(ID_BUTTONSHARED,
 		_("Shared files"),
 		m_tblist[Toolbar_Shared],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Shared Files Window"));
+		_("Shared Files Window (Alt+F)"));
 	wndToolbar->AddTool(ID_BUTTONMESSAGES,
 		_("Messages"),
 		m_tblist[Toolbar_Messages],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Messages Window"));
+		_("Messages Window (Alt+M)"));
 	wndToolbar->AddTool(ID_BUTTONSTATISTICS,
 		_("Statistics"),
 		m_tblist[Toolbar_Stats],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Statistics Graph Window"));
+		_("Statistics Graph Window (Alt+G)"));
 	wndToolbar->AddSeparator();
 	wndToolbar->AddTool(ID_BUTTONNEWPREFERENCES,
 		_("Preferences"),
 		m_tblist[Toolbar_Prefs],
 		wxNullBitmap,
 		wxITEM_NORMAL,
-		_("Preferences Settings Window"));
+		_("Preferences Settings Window (Alt+P)"));
 #ifndef CLIENT_GUI
 	wndToolbar->AddTool(ID_BUTTONIMPORT,
 		_("Import"),
