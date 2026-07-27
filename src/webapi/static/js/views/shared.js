@@ -19,7 +19,7 @@ const PRIORITIES = ["auto", "very_low", "low", "normal", "high", "release"]
 export default function Shared({ isGuest }) {
   const shared = useStore("shared") || [];
   const [selection, setSelection] = useState(() => new Set());
-  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: [] });
   const [filterText, setFilterText] = useState("");
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
@@ -153,11 +153,12 @@ export default function Shared({ isGuest }) {
         <div class="spacer"></div>
         <div class="toolbar">
           <input class="input input-sm" type="text" placeholder=${t("shared_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
-          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>
       </div>
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(s) => s.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
+                         widths=${widths} onResize=${setWidth}
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
         <div class="totals-line">

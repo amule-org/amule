@@ -24,7 +24,7 @@ export default function Downloads({ isGuest }) {
   const downloads = useStore("downloads") || [];
   const [categories, setCategories] = useState([]);
   const [selection, setSelection] = useState(() => new Set());
-  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: [] });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -267,12 +267,13 @@ export default function Downloads({ isGuest }) {
             ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
           <input class="input input-sm" type="text" placeholder=${t("downloads_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
-          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>
       </div>
 
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(d) => d.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort} onRowClick=${onRowClick}
+                         widths=${widths} onResize=${setWidth}
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("downloads_empty")}<//>`} />
         <div class="totals-line">

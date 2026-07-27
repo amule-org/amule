@@ -256,6 +256,20 @@ b { font-weight: 600; }
 }
 .col-picker-item:hover { background: var(--surface-2); }
 .col-picker-item input { margin: 0; }
+.col-picker-sep { height: 1px; margin: 4px 2px; background: var(--border); }
+.col-picker-reset {
+  width: 100%; border: none; background: none; color: inherit; font: inherit;
+  text-align: left;
+}
+
+/* Column resize handle: a thin invisible strip pinned to the right edge of
+   a resizable <th>, widened visually only on hover/drag so it doesn't
+   compete with the sort-click target covering the rest of the header. */
+.col-resize-handle {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 6px;
+  cursor: col-resize; touch-action: none; z-index: 2;
+}
+.col-resize-handle:hover, .col-resize-handle:active { background: var(--accent); opacity: .5; }
 
 /* Language picker: globe icon + native <select>, blended into the ghost toolbar. */
 .lang-select { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
@@ -291,7 +305,12 @@ table.data th, table.data td {
 table.data th {
   position: sticky; top: 0; background: var(--surface-2);
   font-weight: 600; cursor: default; z-index: 1;
+  /* Column boundary, header-only -- the body stays borderless/clean, but
+     without this a resize handle has nothing marking where it lives, so
+     dragging feels like guesswork instead of grabbing a visible edge. */
+  border-right: 1px solid var(--border);
 }
+table.data th:last-child { border-right: none; }
 table.data th.sortable { cursor: pointer; user-select: none; }
 table.data th.sortable:hover { color: var(--accent); }
 table.data th .sort-arrow { display: inline-flex; vertical-align: middle; opacity: .8; }

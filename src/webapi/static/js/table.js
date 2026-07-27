@@ -26,6 +26,9 @@ const OVERSCAN = 8; // rows rendered above/below the viewport to hide scroll sea
 // non-virtual `.name { min-width: 220px }`. Feeds the table's computed min-width
 // so narrow screens scroll horizontally instead of collapsing the name column.
 const FLEX_MIN = 220;
+// Floor for a user-resized column -- narrower than this and a header's label
+// or sort arrow starts clipping/overlapping unreadably.
+const MIN_COL_WIDTH = 48;
 
 export function cmp(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
 
@@ -47,18 +50,20 @@ export function textMatcher(query) {
 
 const colClass = (c) => [c.num ? "num" : "", c.cls || ""].filter(Boolean).join(" ");
 
-// Per-table UI prefs (sort direction + hidden columns) persisted as one object
-// under "amule.table.<storageKey>". `defaults` = { sortKey, sortDir, hidden:[] }.
-// Stored prefs are spread over the defaults so a column added as default-hidden
-// later stays hidden only for users who never opened the picker (their stored
-// object has no entry for it → the default wins), while everyone else keeps
-// their explicit choice. Returns the current sort plus toggles the view wires
-// to VirtualTable.onSort and the ColumnPicker.
+// Per-table UI prefs (sort direction + hidden columns + resized widths)
+// persisted as one object under "amule.table.<storageKey>". `defaults` =
+// { sortKey, sortDir, hidden:[] }. Stored prefs are spread over the defaults
+// so a column added as default-hidden later stays hidden only for users who
+// never opened the picker (their stored object has no entry for it → the
+// default wins), while everyone else keeps their explicit choice. Returns
+// the current sort plus toggles the view wires to VirtualTable.onSort and
+// the ColumnPicker.
 export function useTablePrefs(storageKey, defaults) {
   const [prefs, setPrefs] = useState(() => ({
     sortKey: defaults.sortKey,
     sortDir: defaults.sortDir,
     hidden: defaults.hidden || [],
+    widths: {},
     ...loadPref("table." + storageKey, {}),
   }));
   useEffect(() => { savePref("table." + storageKey, prefs); }, [prefs]);
@@ -73,15 +78,27 @@ export function useTablePrefs(storageKey, defaults) {
       h.has(key) ? h.delete(key) : h.add(key);
       return { ...p, hidden: [...h] };
     });
+  const setWidth = (key, px) =>
+    setPrefs((p) => ({ ...p, widths: { ...p.widths, [key]: px } }));
+  // Back to the view's declared defaults -- clears sort, hidden columns AND
+  // resized widths, wiping the stored object entirely rather than merging
+  // defaults back in (so a stale key from a since-removed column doesn't
+  // linger in localStorage).
+  const resetPrefs = () =>
+    setPrefs({ sortKey: defaults.sortKey, sortDir: defaults.sortDir,
+               hidden: defaults.hidden || [], widths: {} });
 
   return { sortKey: prefs.sortKey, sortDir: prefs.sortDir,
-           hidden: new Set(prefs.hidden), toggleSort, toggleCol };
+           hidden: new Set(prefs.hidden), widths: prefs.widths || {},
+           toggleSort, toggleCol, setWidth, resetPrefs };
 }
 
-// Dropdown of checkboxes to show/hide a table's toggleable columns. Native
-// <details> so the browser owns open/close (no outside-click handler). Columns
-// without a `key`, or flagged `always`, are fixed and never listed.
-export function ColumnPicker({ columns, hidden, onToggle }) {
+// Dropdown of checkboxes to show/hide a table's toggleable columns, plus a
+// reset action. Native <details> so the browser owns open/close (no
+// outside-click handler). Columns without a `key`, or flagged `always`, are
+// fixed and never listed. `onReset` is optional -- omit it to keep the menu
+// checkbox-only (existing callers keep working unchanged).
+export function ColumnPicker({ columns, hidden, onToggle, onReset }) {
   const toggleable = columns.filter((c) => c.key && !c.always);
   return html`
     <details class="col-picker">
@@ -95,17 +112,60 @@ export function ColumnPicker({ columns, hidden, onToggle }) {
                    onChange=${() => onToggle(c.key)} />
             <span>${c.label}</span>
           </label>`)}
+        ${onReset ? html`
+          <div class="col-picker-sep"></div>
+          <button type="button" class="col-picker-item col-picker-reset" onClick=${onReset}>
+            <${Icon} name="reset" />
+            <span>${t("table_reset_columns")}</span>
+          </button>` : null}
       </div>
     </details>`;
 }
 
 export function VirtualTable({
   columns, rows, rowKey, rowClass, sortKey, sortDir, onSort, empty, onRowClick,
-  rowHeight = ROW_HEIGHT, maxHeight = "70vh",
+  rowHeight = ROW_HEIGHT, maxHeight = "70vh", widths = {}, onResize,
 }) {
   const ref = useRef(null);
+  const colRefs = useRef({}); // column key -> <col> DOM node, for drag-live width updates
   const [scrollTop, setScrollTop] = useState(0);
   const [viewH, setViewH] = useState(0);
+
+  // A user-resized width (from `widths`, persisted by the caller) overrides
+  // the column's declared default; falls back to null for the one flexible
+  // column that has neither (it fills remaining space via CSS instead).
+  const effWidth = (c) => {
+    const px = c.key && widths[c.key];
+    return px ? px + "px" : c.width || null;
+  };
+
+  // Drag-to-resize a column header edge. Mutates the <col> width directly on
+  // every mousemove (bypassing state/re-render for 60fps drag feel) and only
+  // commits to persisted prefs via onResize on mouseup -- so a drag that's
+  // abandoned mid-way (rare, but e.g. a stray click) never round-trips
+  // through localStorage more than once.
+  const startResize = (e, key) => {
+    if (!onResize) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const col = colRefs.current[key];
+    if (!col) return;
+    const startX = e.clientX;
+    const startWidth = col.getBoundingClientRect().width;
+    let finalWidth = startWidth;
+
+    const onMove = (ev) => {
+      finalWidth = Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX));
+      col.style.width = finalWidth + "px";
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      onResize(key, Math.round(finalWidth));
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   // Track the scroll container's height (viewport for the window calc). A
   // ResizeObserver catches layout changes beyond window resize (tab switches,
@@ -129,10 +189,19 @@ export function VirtualTable({
   const arrow = (key) => key === sortKey
     ? html`<span class="sort-arrow"><${Icon} name=${sortDir > 0 ? "sort-asc" : "sort-desc"} /></span>` : null;
 
+  // Resizable = has a key to persist under. That includes the flexible
+  // no-declared-width column (typically "name") -- it starts the drag from
+  // its current *rendered* width (via getBoundingClientRect in startResize,
+  // not effWidth) rather than a declared one, and a user resize turns it
+  // into an ordinary fixed-width column from then on, same as any other.
   const th = (c) => html`
     <th class=${(c.sortable ? "sortable " : "") + colClass(c)}
         onClick=${c.sortable && onSort ? () => onSort(c.key) : null}>
       ${c.label}${c.sortable ? arrow(c.key) : null}
+      ${onResize && c.key ? html`
+        <span class="col-resize-handle"
+              onMouseDown=${(e) => startResize(e, c.key)}
+              onClick=${(e) => e.stopPropagation()} />` : null}
     </th>`;
 
   // Striping is keyed off the absolute row index, not :nth-child — a spacer <tr>
@@ -149,19 +218,25 @@ export function VirtualTable({
     ? html`<tr class="spacer" style=${{ height: h + "px" }}><td colspan=${ncols}></td></tr>` : null;
 
   // table-layout:fixed needs explicit widths, so the table can't shrink columns
-  // to fit a phone. Floor its width at the sum of the declared column widths
-  // (plus FLEX_MIN for each width-less column) so narrow viewports scroll
-  // horizontally — matching the app's other tables — instead of crushing the
-  // flexible column to nothing. On wide screens width:100% (from CSS) wins and
-  // the flexible column absorbs the extra space.
-  const minWidth = columns.reduce((sum, c) => sum + (c.width ? parseInt(c.width, 10) : FLEX_MIN), 0);
+  // to fit a phone. Floor its width at the sum of the effective column widths
+  // (a user resize, else the declared default, else FLEX_MIN for a width-less
+  // column) so narrow viewports scroll horizontally — matching the app's
+  // other tables — instead of crushing the flexible column to nothing. On
+  // wide screens width:100% (from CSS) wins and the flexible column absorbs
+  // the extra space.
+  const minWidth = columns.reduce((sum, c) => {
+    const w = effWidth(c);
+    return sum + (w ? parseInt(w, 10) : FLEX_MIN);
+  }, 0);
 
   return html`
     <div class="table-wrap virtual" ref=${ref} style=${{ maxHeight }}
          onScroll=${(e) => setScrollTop(e.currentTarget.scrollTop)}>
       <table class="data virtual" style=${{ minWidth: minWidth + "px" }}>
-        ${columns.some((c) => c.width)
-          ? html`<colgroup>${columns.map((c) => html`<col style=${c.width ? { width: c.width } : null} />`)}</colgroup>`
+        ${columns.some((c) => effWidth(c))
+          ? html`<colgroup>${columns.map((c) => html`<col
+              ref=${c.key ? (el) => { if (el) colRefs.current[c.key] = el; } : null}
+              style=${effWidth(c) ? { width: effWidth(c) } : null} />`)}</colgroup>`
           : null}
         <thead><tr>${columns.map(th)}</tr></thead>
         <tbody>

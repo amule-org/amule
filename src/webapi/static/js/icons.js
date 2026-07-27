@@ -47,6 +47,7 @@ const ICONS = {
   lock: () => html`<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>`,
   star: () => html`<path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z"/>`,
   logout: () => html`<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5"/><line x1="15" y1="12" x2="3" y2="12"/>`,
+  reset: () => html`<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 21v-6h6"/>`,
 
   // --- theme ------------------------------------------------------------
   "theme-system": () => html`<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>`,

@@ -15,7 +15,7 @@ export function ServersPanel({ isGuest }) {
   const servers = useStore("servers") || [];
   const status = useStore("status");
   const ed2k = status && status.ed2k;
-  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("servers", { sortKey: "users", sortDir: -1, hidden: [] });
   const [addr, setAddr] = useState("");
   const [name, setName] = useState("");
@@ -124,10 +124,11 @@ export function ServersPanel({ isGuest }) {
                value=${url} onInput=${(e) => setUrl(e.target.value)} />
         <button class="btn btn-sm" type="submit">${t("networks_server_update_from_url")}</button>
         <div class="spacer"></div>
-        <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
+        <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
       </form>
     </div>
     <${VirtualTable} columns=${shown} rows=${list} rowKey=${(s) => s.ecid} rowClass=${rowClass}
                      sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                     widths=${widths} onResize=${setWidth}
                      empty=${html`<${Placeholder} kind="info">${t("networks_server_empty")}<//>`} />`;
 }

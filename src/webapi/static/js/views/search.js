@@ -46,7 +46,7 @@ export default function Search({ isGuest }) {
   const [filterHave, setFilterHave] = useState("all");
   const [selection, setSelection] = useState(() => new Set());
   // Sort + hidden columns persist per-table via useTablePrefs.
-  const { sortKey, sortDir, hidden, toggleSort, toggleCol } = useTablePrefs("search", {
+  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } = useTablePrefs("search", {
     sortKey: "sources", sortDir: -1, hidden: ["length", "bitrate", "codec"],
   });
   const [progress, setProgress] = useState("");
@@ -313,11 +313,12 @@ export default function Search({ isGuest }) {
             <option value="have">${t("search_have_yes")}</option>
           </select>
           <input class="input input-sm" type="text" placeholder=${t("search_filter")} value=${filter} onInput=${(e) => setFilter(e.target.value)} />
-          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>
 
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                         widths=${widths} onResize=${setWidth}
                          empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
       </div>
     </section>

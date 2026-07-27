@@ -73,7 +73,7 @@ export default function ClientsPanel() {
   const [ident, setIdent] = useState("identified");
   const [q, setQ] = useState("");
   // sortKey null → default sort (busiest first).
-  const { sortKey, sortDir, hidden, toggleSort, toggleCol } =
+  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("clients", { sortKey: null, sortDir: 1, hidden: [] });
 
   useEffect(() => {
@@ -126,10 +126,11 @@ export default function ClientsPanel() {
           </select>
           <input class="input input-sm" type="text" placeholder=${t("downloads_peer_filter")} value=${q} onInput=${(e) => setQ(e.target.value)} />
           <div class="spacer"></div>
-          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} />
+          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.client_ecid}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
+                         widths=${widths} onResize=${setWidth}
                          empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />
         </div>
       </section>

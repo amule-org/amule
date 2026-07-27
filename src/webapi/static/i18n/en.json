@@ -185,6 +185,7 @@
   "search_stop": "Stop",
   "search_title_complete_total": "complete / total",
   "table_columns": "Columns",
+  "table_reset_columns": "Reset columns",
   "search_toast_enter_search_terms": "Enter search terms",
   "search_toast_no_results_selected": "No results selected",
   "search_toast_search_started": "Search started",
