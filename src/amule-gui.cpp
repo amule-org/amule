@@ -49,8 +49,8 @@
 #include "ThreadTasks.h"
 #include "MuleCollection.h" // Needed for CMuleCollection
 #include "DownloadQueue.h"  // Needed for CDownloadQueue::AddLinks
-#include "Logger.h"    // Needed for EVT_MULE_LOGGING
-#include "GuiEvents.h" // Needed for EVT_MULE_NOTIFY
+#include "Logger.h"         // Needed for EVT_MULE_LOGGING
+#include "GuiEvents.h"      // Needed for EVT_MULE_NOTIFY
 
 #ifdef __WXMAC__
 #include <CoreFoundation/CFBundle.h>                 // Do_not_auto_remove
