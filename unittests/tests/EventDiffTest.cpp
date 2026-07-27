@@ -29,6 +29,8 @@
 #include "State.h"
 
 #include <chrono>
+#include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -200,4 +202,86 @@ TEST(EventDiff, LogAppendedSilentOnTruncation)
 		ASSERT_TRUE(ev.name != "log_appended");
 	}
 	ASSERT_EQUALS(static_cast<std::size_t>(1), prev.amule_log_count);
+}
+
+// PR #646 / issue #115: upload_file_name (the partfile a peer is downloading
+// FROM us) is part of the base client field set, so it must ride the
+// client_added SSE payload — otherwise the WebUI clients table has no way to
+// fill the File column for an upload-only peer (it shows a blank "—").
+TEST(EventDiff, ClientAddedCarriesUploadFileName)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	// Tick 1: baseline with no clients.
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// Tick 2: a peer we are uploading to appears.
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 10;
+		c.client_name = "peer-up";
+		c.upload_state = "uploading";
+		c.upload_file_name = "upload.iso";
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	int added = 0;
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "client_added") {
+			++added;
+			payload = ev.data;
+		}
+	}
+	ASSERT_EQUALS(1, added);
+	ASSERT_TRUE(payload.find("upload_file_name") != std::string::npos);
+	ASSERT_TRUE(payload.find("upload.iso") != std::string::npos);
+}
+
+// Regression guard for the EventDiff.cpp Equal() half of PR #646: Equal() must
+// compare every field ToJson emits (see the note above Equal()), so a change
+// to upload_file_name alone still fires client_updated. Before the fix the
+// field was in neither, and an upload-file change would have been dropped —
+// the SSE-backed table would keep showing the stale filename.
+TEST(EventDiff, ClientUpdatedFiresOnUploadFileNameChange)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	// Baseline: no clients.
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// A peer appears, uploading "a.iso" from us (client_added).
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 10;
+		c.client_name = "peer-up";
+		c.upload_state = "uploading";
+		c.upload_file_name = "a.iso";
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// Only upload_file_name changes -> must fire client_updated.
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		cache.at(10).upload_file_name = "b.iso";
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	int updated = 0;
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "client_updated") {
+			++updated;
+			payload = ev.data;
+		}
+	}
+	ASSERT_EQUALS(1, updated);
+	ASSERT_TRUE(payload.find("b.iso") != std::string::npos);
 }

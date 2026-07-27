@@ -342,6 +342,30 @@ else
 	_fail "clients bogus filter" "expected 400, got $RC"
 fi
 
+# --- 9a-bis. Base transfer-filename fields on the LIST object -----
+# (PR #646 / issue #115). upload_file_name (the partfile a peer is
+# downloading FROM us) and download_file_name (the name the peer
+# advertised) are both part of the base client field set, so they must
+# appear on every /clients LIST object -- not only /clients/{ecid}.
+# Regression: an upload-only peer used to render a blank File column in
+# the WebUI because upload_file_name was serialized only by the detail
+# endpoint. Guarded on a live peer so the assertion is real (non-vacuous)
+# when a peer exists, and skips cleanly when none are connected.
+FIRST_CLIENT=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" | jq -r '.clients[0] // empty')
+if [ -n "$FIRST_CLIENT" ]; then
+	if curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" | jq -e '
+		.clients | all(.[];
+			(.upload_file_name | type == "string")
+			and (.download_file_name | type == "string"))' >/dev/null 2>&1; then
+		_pass "/clients list objects carry upload_file_name + download_file_name (strings)"
+	else
+		_fail "clients base filename fields" \
+			"a /clients object is missing upload_file_name/download_file_name or it is not a string"
+	fi
+else
+	_pass "/clients base filename-field check skipped (no peers connected)"
+fi
+
 # --- 9b. /clients/{ecid} detail (issue #422). --------------------
 # A superset of the list object: every list field plus the detail-only
 # B fields. Guarded on a live peer; the negative cases run regardless.
@@ -352,6 +376,7 @@ if [ -n "$FIRST_ECID" ]; then
 	OK=$(echo "$DETAIL" | jq -r --argjson e "$FIRST_ECID" '
 		(.client_ecid == $e)
 		and has("user_hash")
+		and has("upload_file_name") and has("download_file_name")
 		and has("user_id_hybrid") and has("high_id")
 		and has("server_ip") and has("server_port") and has("server_name")
 		and has("kad_port") and has("source_origin")
