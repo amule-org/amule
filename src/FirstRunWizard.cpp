@@ -510,6 +510,12 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 	}
 
 	if (showAssocBox) {
+		// Third section break, so the page reads as autostart / link
+		// handling / file handling. 8 here plus the 4 trailing the block
+		// above adds up to the same 12 that follows autostart - and when
+		// the magnet block is hidden (macOS, already registered) the 4
+		// after the ed2k row gets us to 12 just the same.
+		sizer->AddSpacer(8);
 		// String reused verbatim from the Preferences panel so translators
 		// only ever see it once.
 		m_assocCollectionCtrl =
