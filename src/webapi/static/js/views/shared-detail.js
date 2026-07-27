@@ -90,12 +90,12 @@ export function SharedDetail({ hash }) {
           statRow("shared_detail_accepted", twin(s.accepts, "session", "total", formatInt), "shared_detail_tip_accepted"),
           statRow("shared_detail_share_ratio", (Number(s.share_ratio) || 0).toFixed(2), "shared_detail_tip_share_ratio"),
           statRow("shared_detail_complete_src", completeSources(s), "shared_detail_tip_complete_src"),
-        ])}
+        ], "shared_detail_group_sharing")}
         ${Section([
           statRow("shared_priority", prioLabel(s), "shared_detail_tip_priority"),
           statRow("downloads_detail_queued", formatInt(s.queued_count), "downloads_detail_tip_queued"),
           statRow("shared_detail_file_type", s.file_type || "—", "shared_detail_tip_file_type"),
-        ])}
+        ], "shared_detail_group_file")}
         ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
@@ -103,8 +103,8 @@ export function SharedDetail({ hash }) {
           media.length_s ? statRow("downloads_detail_media_length", formatDuration(media.length_s), "downloads_detail_tip_media_length") : null,
           media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
-        ].filter(Boolean)) : null}
-        ${IdentityLine({ file: s, copy, extra: [
+        ].filter(Boolean), "downloads_detail_group_media") : null}
+        ${IdentityLine({ file: s, copy, titleKey: "downloads_detail_group_identity", extra: [
           statRow("shared_detail_path", s.path || "—", "shared_detail_tip_path"),
           statRow("shared_detail_parts", formatInt(s.part_count), "shared_detail_tip_parts"),
         ] })}

@@ -709,8 +709,25 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   margin: 0; font-size: 15px; flex: 1 1 auto; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* The hash's copy buttons: their own row (below the hash text in the identity group). */
-.detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; margin-top: 6px; }
+/* Heading on its own line; the action row and the fields share the next one. */
+.detail-group { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 30px; }
+.detail-group > .kad-grid { flex: 0 1 auto; }
+/* Shrinkable, not flex:none — it has to narrow for its own flex-wrap to kick in,
+   or the row stays at max-content and the last button is clipped on a phone. */
+.detail-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 1 auto; }
+.detail-head .detail-actions { margin-bottom: 10px; }
+/* Label + select fused into one control. */
+.detail-head .field-inline {
+  gap: 0; height: 28px; border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.detail-head .field-inline > label,
+.detail-head .field-inline > b {
+  display: flex; align-items: center; align-self: stretch; padding: 0 8px;
+  font-size: 12px; white-space: nowrap;
+}
+.detail-head .field-inline > label { color: var(--text-dim); background: var(--surface-2); }
+.detail-head .field-inline > select { border: none; border-radius: 0; height: 100%; }
 .detail-progress .progress { height: 22px; margin-bottom: 10px; }
 .pieces-bar {
   width: 100%; height: 24px; border-radius: 3px; overflow: hidden;
@@ -731,9 +748,20 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   width: 64px; height: 10px; border-radius: 2px; border: 1px solid var(--border);
   background: linear-gradient(90deg, var(--piece-avail-lo), var(--piece-avail));
 }
-.detail-sections { display: flex; flex-direction: column; gap: 16px; }
+/* Each group is a full-width horizontal strip, stacked top to bottom. */
+.detail-sections { display: flex; flex-direction: column; gap: 18px; }
+/* Flex, not the base rule's grid: fields pack left at their natural width and
+   wrap, instead of every group stretching its cells over a fixed track count. */
+.detail-panel .kad-grid { display: flex; flex-wrap: wrap; gap: 12px 30px; }
+.detail-panel .kad-grid > div { min-width: 150px; max-width: 100%; }
+.detail-group-title {
+  flex: 0 0 100%; margin: 0; padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-dim);
+}
 /* Field values: kept bold (from .kad-stat-value) but a touch smaller than the
-   Kad stat grid to pack the (title-less) detail grid tighter. */
+   Kad stat grid to pack the detail groups tighter. */
 .detail-panel .kad-stat-value { font-size: 13px; word-break: break-word; }
 .detail-panel .mono { font-family: var(--mono); font-size: 13px; }
 /* Tabs hang off the content box's top edge (no gap), notebook-style. */

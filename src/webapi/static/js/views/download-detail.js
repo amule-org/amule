@@ -7,7 +7,7 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { ProgressBar, Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel } from "../components.js";
+import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, tn, terr } from "../i18n.js";
@@ -38,7 +38,7 @@ function mix(a, b, f) {
     Math.round(a[2] + (b[2] - a[2]) * f) + ")";
 }
 
-export function DownloadDetail({ hash }) {
+export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDelete, onClear }) {
   const downloads = useStore("downloads") || []; // live tick source (SSE ~500ms)
   const [detail, setDetail] = useState(null);
   const [gone, setGone] = useState(false);
@@ -72,12 +72,20 @@ export function DownloadDetail({ hash }) {
     .then(() => toast(t("downloads_detail_copied"), "success"))
     .catch(() => toast(t("downloads_detail_copy_failed"), "error"));
 
+  // `a4af_auto` is not part of EqualDownload (EventDiff.cpp), so toggling it emits
+  // no download_updated and the tick-driven re-fetch never sees it — bump `reload`.
+  const a4af = (action) => api.post("downloads/" + hash + "/a4af", { action })
+    .then(() => { toast(t("downloads_a4af_done"), "success"); setReload((n) => n + 1); })
+    .catch((e) => toast(terr(e), "error"));
+
   return html`
     <div class="detail-panel">
       <div class="detail-head">
         <div class="detail-titlebar">
           <h4 class="detail-name" title=${d.name}>${d.name}</h4>
         </div>
+        ${onPatch ? html`<${DetailActions} d=${d} isGuest=${isGuest} categories=${categories}
+                                           onPatch=${onPatch} onDelete=${onDelete} onClear=${onClear} />` : null}
       </div>
 
       <${Tabs} tabs=${[
@@ -108,13 +116,13 @@ export function DownloadDetail({ hash }) {
           statRow("downloads_sources", (src.transferring || 0) + " / " + (src.total || 0), "downloads_detail_tip_sources"),
           statRow("downloads_size", formatBytes(d.size), "downloads_detail_tip_size"),
           statRow("downloads_detail_transferred", formatBytes(d.size_xfer), "downloads_detail_tip_transferred"),
-        ])}
+        ], "downloads_detail_group_transfer")}
         ${Section([
           statRow("downloads_detail_active_time", formatDuration(d.download_active_time), "downloads_detail_tip_active_time"),
           statRow("downloads_detail_last_changed", fmtTs(d.last_changed), "downloads_detail_tip_last_changed"),
           statRow("downloads_detail_last_seen_complete", fmtTs(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
           statRow("downloads_detail_queued", formatInt(d.queued_count), "downloads_detail_tip_queued"),
-        ])}
+        ], "downloads_detail_group_history")}
         ${media ? Section([
           media.title ? statRow("downloads_detail_media_title", media.title, "downloads_detail_tip_media_title") : null,
           media.artist ? statRow("downloads_detail_media_artist", media.artist, "downloads_detail_tip_media_artist") : null,
@@ -122,18 +130,92 @@ export function DownloadDetail({ hash }) {
           media.length_s ? statRow("downloads_detail_media_length", formatDuration(media.length_s), "downloads_detail_tip_media_length") : null,
           media.bitrate ? statRow("downloads_detail_media_bitrate", formatInt(media.bitrate), "downloads_detail_tip_media_bitrate") : null,
           media.codec ? statRow("downloads_detail_media_codec", media.codec, "downloads_detail_tip_media_codec") : null,
-        ].filter(Boolean)) : null}
+        ].filter(Boolean), "downloads_detail_group_media") : null}
         ${Section([
           statRow("downloads_detail_available_parts", formatInt(d.available_part_count) + " / " + formatInt(d.part_count), "downloads_detail_tip_available_parts"),
           statRow("downloads_detail_saved_ich", formatInt(d.saved_by_ich) + " " + t("downloads_detail_ich_unit"), "downloads_detail_tip_saved_ich"),
           statRow("downloads_detail_lost_corruption", formatBytes(d.lost_to_corruption), "downloads_detail_tip_lost_corruption"),
           statRow("downloads_detail_gained_compression", formatBytes(d.gained_by_compression), "downloads_detail_tip_gained_compression"),
-        ])}
-        ${IdentityLine({ file: d, copy, extra: [
+        ], "downloads_detail_group_integrity")}
+        ${Section(
+          [statRow("downloads_sources", formatInt(src.a4af || 0), "downloads_detail_tip_a4af")],
+          "downloads_detail_group_a4af",
+          html`
+            <button class="btn btn-sm admin-only" type="button" title=${t("downloads_a4af_tip_swap_this")}
+                    onClick=${() => a4af("swap_this")}>
+              ${t("downloads_a4af_swap_this")}
+            </button>
+            <button class="btn btn-sm admin-only" type="button" title=${t("downloads_a4af_tip_swap_others")}
+                    onClick=${() => a4af("swap_others")}>
+              ${t("downloads_a4af_swap_others")}
+            </button>
+            <button class=${"btn btn-sm admin-only" + (d.a4af_auto ? " btn-primary" : "")} type="button"
+                    title=${t("downloads_a4af_tip_auto")}
+                    aria-pressed=${!!d.a4af_auto} onClick=${() => a4af("swap_this_auto")}>
+              ${t("downloads_a4af_auto")}
+            </button>`)}
+        ${IdentityLine({ file: d, copy, titleKey: "downloads_detail_group_identity", extra: [
           statRow("downloads_detail_path", d.path || "—", "downloads_detail_tip_path"),
           statRow("downloads_detail_met_file", d.met_file || "—", "downloads_detail_tip_met_file"),
         ] })}
       </div>`}
+      </div>
+    </div>`;
+}
+
+// Per-file action bar, pinned in the panel head above the tab strip so it stays
+// reachable from every tab (and, on phones, at the top of the full-screen sheet).
+function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
+  const inactive = d.status === "paused" || d.status === "stopped";
+  const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
+  // Completed rejects DELETE (409 completed_use_clear_completed): offer Clear.
+  const done = d.status === "completed";
+
+  const categoryName = (idx) => {
+    if (!idx) return "—"; // category 0 = no category assigned
+    const c = categories.find((c) => c.index === idx);
+    return c ? (c.name || "#" + c.index) : String(idx);
+  };
+
+  const clear = async () => {
+    if (!(await confirmDialog(t("downloads_confirm_clear_this", { name: d.name })))) return;
+    onClear(d.hash);
+  };
+
+  // admin-only per button, not on the bar: guests keep the priority/category readout.
+  return html`
+    <div class="detail-actions">
+      <button class="btn btn-sm admin-only" type="button"
+              onClick=${() => onPatch(d.hash, { status: inactive ? "resumed" : "paused" })}>
+        <${Icon} name=${inactive ? "play" : "pause"} /> ${inactive ? t("downloads_resume") : t("downloads_pause")}
+      </button>
+      ${canStop ? html`
+        <button class="btn btn-sm admin-only" type="button" onClick=${() => onPatch(d.hash, { status: "stopped" })}>
+          <${Icon} name="stop" /> ${t("downloads_stop")}
+        </button>` : null}
+      ${done ? html`
+        <button class="btn btn-sm admin-only" type="button" onClick=${clear}>
+          <${Icon} name="cancel" /> ${t("downloads_clear_this")}
+        </button>` : html`
+        <button class="btn btn-sm btn-danger admin-only" type="button" onClick=${() => onDelete(d)}>
+          <${Icon} name="cancel" /> ${t("downloads_cancel")}
+        </button>`}
+      <div class="field field-inline" title=${t("downloads_detail_tip_priority")}>
+        <label>${t("downloads_priority")}</label>
+        ${isGuest ? html`<b>${prioLabel(d)}</b>` : html`
+          <select class="input input-sm" value=${prioValue(d)}
+                  onChange=${(e) => onPatch(d.hash, { priority: e.target.value })}>
+            ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
+          </select>`}
+      </div>
+      <div class="field field-inline" title=${t("downloads_detail_tip_category")}>
+        <label>${t("downloads_category")}</label>
+        ${isGuest ? html`<b>${categoryName(d.category)}</b>` : html`
+          <select class="input input-sm" value=${d.category}
+                  onChange=${(e) => onPatch(d.hash, { category: Number(e.target.value) })}>
+            <option value=${0}>${t("downloads_category_none")}</option>
+            ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
+          </select>`}
       </div>
     </div>`;
 }

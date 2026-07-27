@@ -6,7 +6,7 @@
 import { api, bulkFailures } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog } from "../components.js";
+import { ProgressBar, Badge, Placeholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
@@ -15,8 +15,6 @@ import { CategoriesPanel } from "./categories.js";
 import { DownloadDetail } from "./download-detail.js";
 import { SplitDetail } from "./split-detail.js";
 
-const PRIORITIES = ["auto", "low", "normal", "high"]
-  .map((v) => [v, t("downloads_prio_" + v)]);
 const STATUS_FILTERS = ["all", "downloading", "waiting", "paused", "stopped", "completed"]
   .map((v) => [v, t("downloads_status_" + v)]);
 
@@ -25,7 +23,7 @@ export default function Downloads({ isGuest }) {
   const [categories, setCategories] = useState([]);
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: [] });
+    useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: ["done", "category"] });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterText, setFilterText] = useState("");
@@ -84,7 +82,6 @@ export default function Downloads({ isGuest }) {
   };
   const pause = (h) => mutate(() => api.patch("downloads/" + h, { status: "paused" }));
   const resume = (h) => mutate(() => api.patch("downloads/" + h, { status: "resumed" }));
-  const stop = (h) => mutate(() => api.patch("downloads/" + h, { status: "stopped" }));
   const setPriority = (h, p) => mutate(() => api.patch("downloads/" + h, { priority: p }));
   const setCategory = (h, c) => mutate(() => api.patch("downloads/" + h, { category: c }));
 
@@ -127,6 +124,8 @@ export default function Downloads({ isGuest }) {
     if (!(await confirmDialog(t("downloads_confirm_clear_completed")))) return;
     mutate(() => api.post("downloads/clear_completed"));
   };
+  // Same endpoint scoped to one hash, for the detail panel's Clear button.
+  const clearOne = (h) => mutate(() => api.post("downloads/clear_completed", { hash: h }));
 
   // --- derived ----------------------------------------------------------
   let list = downloads.slice();
@@ -185,18 +184,13 @@ export default function Downloads({ isGuest }) {
               <option value=${0}>${t("downloads_category_none")}</option>
               ${categories.filter((c) => c.index !== 0).map((c) => html`<option value=${c.index}>${c.name || ("#" + c.index)}</option>`)}
             </select>` },
-    { key: "actions", label: t("downloads_actions"), cls: "row-actions admin-only", width: "130px", cell: (d) => {
+    { key: "actions", label: t("downloads_actions"), cls: "row-actions admin-only", width: "90px", cell: (d) => {
         const inactive = d.status === "paused" || d.status === "stopped";
-        const canStop = d.status !== "stopped" && d.status !== "completed" && d.status !== "completing";
         return html`
           <button class="btn btn-icon btn-sm" title=${inactive ? t("downloads_resume") : t("downloads_pause")}
                   onClick=${() => inactive ? resume(d.hash) : pause(d.hash)}>
             <${Icon} name=${inactive ? "play" : "pause"} />
           </button>
-          ${canStop ? html`
-            <button class="btn btn-icon btn-sm" title=${t("downloads_stop")} onClick=${() => stop(d.hash)}>
-              <${Icon} name="stop" />
-            </button>` : null}
           <button class="btn btn-icon btn-sm btn-danger" title=${t("downloads_cancel")} onClick=${() => del(d)}>
             <${Icon} name="cancel" />
           </button>`; } },
@@ -281,7 +275,9 @@ export default function Downloads({ isGuest }) {
         </div>
       </div>
     </section>`}>
-        <${DownloadDetail} hash=${detailHash} />
+        <${DownloadDetail} hash=${detailHash} isGuest=${isGuest} categories=${categories}
+                           onPatch=${(h, patch) => mutate(() => api.patch("downloads/" + h, patch))}
+                           onDelete=${del} onClear=${clearOne} />
       <//>`}
     </div>`;
 }
@@ -294,12 +290,6 @@ function matchStatus(d, f) {
   if (f === "stopped") return d.status === "stopped";
   if (f === "completed") return d.status === "completed" || d.status === "completing";
   return true;
-}
-function prioValue(d) { return d.priority_auto ? "auto" : d.priority; }
-function prioLabel(d) {
-  const found = PRIORITIES.find(([v]) => v === d.priority);
-  const base = found ? found[1] : d.priority;
-  return d.priority_auto ? t("downloads_prio_auto") + " (" + base + ")" : base;
 }
 function statusBadge(s) {
   const cls = s === "downloading" ? "downloading" : s === "paused" ? "paused"

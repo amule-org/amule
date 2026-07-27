@@ -32,6 +32,22 @@ export function Placeholder({ kind, children }) {
   return html`<div class=${"placeholder placeholder-" + kind}>${children}</div>`;
 }
 
+// --- download priority --------------------------------------------------
+// Here rather than in downloads.js: the detail panel edits the same field, and
+// downloads.js already imports it, so importing back would be a cycle.
+
+export const PRIORITIES = ["auto", "low", "normal", "high"]
+  .map((v) => [v, t("downloads_prio_" + v)]);
+
+export function prioValue(d) { return d.priority_auto ? "auto" : d.priority; }
+
+// Read-only rendering: "Auto (High)" when the daemon is choosing.
+export function prioLabel(d) {
+  const found = PRIORITIES.find(([v]) => v === d.priority);
+  const base = found ? found[1] : d.priority;
+  return d.priority_auto ? t("downloads_prio_auto") + " (" + base + ")" : base;
+}
+
 // --- detail-panel building blocks --------------------------------------
 // Shared by the Downloads and Shared Files detail panels (see split-detail.js).
 
@@ -41,11 +57,11 @@ export const statRow = (labelKey, value, tipKey) => [t(labelKey), value, t(tipKe
 
 // A group of label/value stat cells (reuses the kad stat-grid look). Each cell
 // carries an explanatory tooltip. `rows` is a list of statRow tuples. The detail
-// panels stack several of these (separated by the .detail-sections gap) to form
-// their compact, title-less grid.
-export function Section(rows) {
+// panels stack several of these (separated by the .detail-sections gap).
+// `titleKey` adds a heading; `actions` is a button row rendered before the grid.
+export function Section(rows, titleKey, actions) {
   if (!rows.length) return null;
-  return html`
+  const grid = html`
     <div class="kad-grid">
       ${rows.map(([label, value, tip]) => html`
         <div title=${tip || null}>
@@ -53,24 +69,47 @@ export function Section(rows) {
           <div class="kad-stat-value">${value}</div>
         </div>`)}
     </div>`;
+  if (!titleKey && !actions) return grid;
+  return html`
+    <div class="detail-group">
+      ${titleKey ? html`<h5 class="detail-group-title">${t(titleKey)}</h5>` : null}
+      ${actions ? html`<div class="detail-actions">${actions}</div>` : null}
+      ${grid}
+    </div>`;
 }
 
-// The identity group shared by both detail panels: the hash (with its two copy
-// buttons stacked below it) plus extra fields (path, met_file / parts). Just a
-// normal Section, so it lays out like every other group. `extra` is a list of
-// statRow tuples.
-export function IdentityLine({ file, copy, extra }) {
-  const hash = statRow("downloads_detail_hash", html`
-    <span class="mono">${(file.hash || "").toUpperCase()}</span>
-    <div class="detail-actions">
-      <button class="btn btn-sm" type="button" onClick=${() => copy(file.ed2k_link)}>
-        <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
-      </button>
-      <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(file))}>
-        <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
-      </button>
-    </div>`, "downloads_detail_tip_hash");
-  return Section([hash, ...extra]);
+// `path` is the directory only, so the file path has to be composed; separator
+// taken from the path itself since amuled may be on Windows. Names the *file*:
+// a partfile's bytes are still under `met_file`, so this is where the download
+// will land rather than what is on disk right now.
+function fullPath(file) {
+  const dir = file.path || "";
+  return dir + (dir.includes("\\") ? "\\" : "/") + (file.name || "");
+}
+
+// Rejects "" and the "[PartFile]" sentinel /shared returns for an incomplete
+// share (REFERENCE.md); accepts a POSIX path or a Windows drive letter.
+const hasRealPath = (file) => /^([/\\]|[A-Za-z]:)/.test(file.path || "");
+
+// The identity group shared by both detail panels: the hash plus extra fields
+// (path, met_file / parts), with the copy buttons as the group's action row.
+// `extra` is a list of statRow tuples; `titleKey` is forwarded to Section().
+export function IdentityLine({ file, copy, extra, titleKey }) {
+  const hash = statRow("downloads_detail_hash",
+    html`<span class="mono">${(file.hash || "").toUpperCase()}</span>`,
+    "downloads_detail_tip_hash");
+  const actions = html`
+    <button class="btn btn-sm" type="button" onClick=${() => copy(file.ed2k_link)}>
+      <${Icon} name="copy" /> ${t("downloads_detail_copy_ed2k")}
+    </button>
+    <button class="btn btn-sm" type="button" onClick=${() => copy(magnetLink(file))}>
+      <${Icon} name="copy" /> ${t("downloads_detail_copy_magnet")}
+    </button>
+    ${hasRealPath(file) ? html`
+      <button class="btn btn-sm" type="button" onClick=${() => copy(fullPath(file))}>
+        <${Icon} name="copy" /> ${t("downloads_detail_copy_path")}
+      </button>` : null}`;
+  return Section([hash, ...extra], titleKey, actions);
 }
 
 // Flat notebook-style tab strip (aMule CMuleNotebook look). `tabs` is a list
