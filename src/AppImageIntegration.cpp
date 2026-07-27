@@ -146,11 +146,17 @@ bool InstallIcons(const wxString &appdir, const wxString &userIconsDir)
 		return false;
 	}
 
+	// Two name shapes to collect: the application icons (org.amule.aMule.*
+	// under apps/) and the icon for the collection file type, whose name
+	// is dictated by the icon naming spec (the MIME type with '/' replaced
+	// by '-') and so does not carry the app id.
 	wxArrayString found;
 	wxDir::GetAllFiles(sourceHicolor, &found, wxT("org.amule.aMule.*"), wxDIR_FILES | wxDIR_DIRS);
+	wxDir::GetAllFiles(
+		sourceHicolor, &found, wxT("application-x-emule-collection.*"), wxDIR_FILES | wxDIR_DIRS);
 	if (found.IsEmpty()) {
-		AddDebugLogLineC(logGeneral,
-			wxT("AppImageIntegration: no org.amule.aMule.* icons under ") + sourceHicolor);
+		AddDebugLogLineC(
+			logGeneral, wxT("AppImageIntegration: no aMule icons under ") + sourceHicolor);
 		return false;
 	}
 

@@ -452,6 +452,20 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 	install (FILES org.amule.aMule.xml
 		DESTINATION "${CMAKE_INSTALL_DATADIR}/mime/packages"
 	)
+
+	# Icon for the file type itself. The name is mandated by the icon
+	# naming spec - the MIME type with '/' replaced by '-' - and without
+	# it file managers fall back to the generic "unknown file" glyph even
+	# though the type is recognised. Reuses the application icon; aMule
+	# has no separate document artwork.
+	install (FILES org.amule.aMule.png
+		RENAME application-x-emule-collection.png
+		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/128x128/mimetypes"
+	)
+	install (FILES org.amule.aMule-256.png
+		RENAME application-x-emule-collection.png
+		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/mimetypes"
+	)
 endif()
 
 # The AppStream metainfo's <releases> list is generated from docs/CHANGELOG.md

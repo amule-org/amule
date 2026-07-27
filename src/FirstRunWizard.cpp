@@ -459,7 +459,9 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 	// same for magnet) all live in the OS, not in aMule.conf.
 	m_autostartCtrl = new wxCheckBox(page, wxID_ANY, _("Start aMule automatically when I log in"));
 	m_autostartCtrl->SetValue(AutostartManager::IsEnabled());
-	sizer->Add(m_autostartCtrl, 0, wxBOTTOM, 4);
+	// Wider gap than the 4 used between rows: autostart is its own thing,
+	// and the three registration toggles below read as a group.
+	sizer->Add(m_autostartCtrl, 0, wxBOTTOM, 12);
 
 	// On macOS the "un-register" path is a no-op (LaunchServices
 	// deliberately blocks programmatic reset), so once aMule already
@@ -494,13 +496,17 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 		// the current state if the user has already opted in elsewhere.
 		m_registerMagnetCtrl->SetValue(magnetEnabled);
 		sizer->Add(m_registerMagnetCtrl, 0, wxBOTTOM, 2);
+		// wxLEFT only: the 20 is the indent under the checkbox. Applying it
+		// to wxBOTTOM as well would leave a 20px gap before whatever comes
+		// next, which is five times the spacing every other row uses.
 		sizer->Add(new wxStaticText(page,
 				   wxID_ANY,
 				   _("Only eD2k-compatible magnets. Leave off if you use a BitTorrent "
 				     "client.")),
 			0,
-			wxLEFT | wxBOTTOM,
+			wxLEFT,
 			20);
+		sizer->AddSpacer(4);
 	}
 
 	if (showAssocBox) {
