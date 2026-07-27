@@ -1196,7 +1196,9 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 		(url_path == "/" || url_path.empty()) ? std::string("index.html") : url_path.substr(1);
 
 	std::string fs_path;
-	struct stat st {};
+	struct stat st
+	{
+	};
 	std::string body;
 	bool found = webapi::ResolveWithinRoot(root, rel, fs_path) && ReadStaticFile(fs_path, body, st);
 
