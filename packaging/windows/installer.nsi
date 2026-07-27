@@ -209,7 +209,7 @@ LangString MYSTR_DESC_DESKTOP          ${LANG_ENGLISH} "Place an aMule shortcut 
 LangString MYSTR_DESC_AUTOSTART        ${LANG_ENGLISH} "Launch aMule automatically when the current user logs in (per-user setting)."
 LangString MYSTR_DESC_PROTO_ED2K       ${LANG_ENGLISH} "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 LangString MYSTR_DESC_PROTO_MAGNET     ${LANG_ENGLISH} "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-LangString MYSTR_DESC_ASSOC_COLLECTION ${LANG_ENGLISH} "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
+LangString MYSTR_DESC_ASSOC_COLLECTION ${LANG_ENGLISH} "Adds aMule to the $\"Open with$\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
 LangString MYSTR_DESC_UNINSTALL        ${LANG_ENGLISH} "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
 LangString MYSTR_DESC_REMOVE_USERDATA  ${LANG_ENGLISH} "Permanently delete %APPDATA%\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
 
