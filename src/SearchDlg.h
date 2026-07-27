@@ -190,8 +190,10 @@ private:
 	// Event handlers
 	void OnFieldChanged(wxEvent &evt);
 
-	// Search history: persisted (wxConfig) list of past search terms shown
-	// in the IDC_SEARCHNAME combo box's dropdown (amule-org/amule#641).
+	// Search *query* history: past search terms (not their results -- see
+	// #641 for that separate, not-yet-implemented follow-up) persisted to
+	// a dedicated searchhistory.dat and shown in the IDC_SEARCHNAME combo
+	// box's dropdown.
 	void LoadSearchHistory();
 	void RecordSearchHistory(const wxString &term);
 	void ClearSearchHistory();

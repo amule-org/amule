@@ -24,8 +24,10 @@
 //
 
 #include <wx/app.h>
+#include <wx/clipbrd.h>  // Needed for wxTheClipboard (search-name Paste enable check)
 #include <wx/combobox.h> // Needed for the IDC_SEARCHNAME history dropdown
 #include <wx/config.h>   // Needed to persist the default search type
+#include <wx/dataobj.h>  // Needed for wxTextDataObject (clipboard content check)
 #include <wx/menu.h>     // Needed for the search-history context menu
 
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
@@ -35,6 +37,7 @@
 #include <tags/FileTags.h>
 
 #include "SearchDlg.h"      // Interface declarations.
+#include "SearchHistory.h"  // Needed for ApplySearchHistoryEntry
 #include "SearchListCtrl.h" // Needed for CSearchListCtrl
 #include "muuli_wdr.h"      // Needed for IDC_STARTS
 #include "amuleDlg.h"       // Needed for CamuleDlg
@@ -45,6 +48,7 @@
 #include "SearchList.h"   // Needed for CSearchList
 #include "updownclient.h" // Needed for EBrowseStatus (browse tab lifecycle)
 #include <common/Format.h>
+#include <common/TextFile.h> // Needed for CTextFile (searchhistory.dat)
 #include "Logger.h"
 
 #define ID_SEARCHLISTCTRL wxID_HIGHEST + 667
@@ -140,52 +144,57 @@ CSearchDlg::~CSearchDlg() {}
 
 namespace
 {
-const int MAX_SEARCH_HISTORY_ENTRIES = 20;
+// eMule's CCustomAutoComplete default (amule-org/amule#643 review).
+const int MAX_SEARCH_HISTORY_ENTRIES = 30;
+
+// Search *query* history -- the strings typed into the Name field, not the
+// results they returned (that's the separate, not-yet-implemented result
+// persistence eMule does via StoredSearches.met; see #641). Deliberately
+// not stored in amule.conf: query terms are arguably private, and putting
+// them in the main config both bloats it and makes them travel with the
+// file (config backups, the --amule-config-file push to amuleweb/amuleapi).
+// A dedicated file mirrors eMule's own AC_SearchStrings.dat.
+wxString SearchHistoryFilePath()
+{
+	return thePrefs::GetConfigDir() + "searchhistory.dat";
 }
+} // namespace
 
 void CSearchDlg::LoadSearchHistory()
 {
 	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
 	combo->Clear(); // item list, not the (empty at startup) text value
 
-	wxConfigBase *cfg = wxConfigBase::Get();
-	long count = 0;
-	cfg->Read("/eMule/SearchHistory/Count", &count, 0);
-	count = std::min<long>(count, MAX_SEARCH_HISTORY_ENTRIES);
-
-	for (long i = 0; i < count; ++i) {
-		wxString term;
-		if (cfg->Read(wxString::Format("/eMule/SearchHistory/%ld", i), &term) && !term.IsEmpty()) {
-			combo->Append(term);
-		}
+	CTextFile file;
+	wxArrayString entries;
+	if (file.Open(SearchHistoryFilePath(), CTextFile::read)) {
+		entries = file.ReadLines((EReadTextFile)(txtIgnoreEmptyLines | txtStripWhitespace));
+		file.Close();
 	}
+
+	size_t count = std::min<size_t>(entries.GetCount(), MAX_SEARCH_HISTORY_ENTRIES);
+	for (size_t i = 0; i < count; ++i) {
+		combo->Append(entries[i]);
+	}
+	// Feeds the dropdown's type-ahead suggestion (eMule's ACO_AUTOSUGGEST);
+	// re-armed here and after every RecordSearchHistory/ClearSearchHistory
+	// call so it always reflects the current entry set.
+	combo->AutoComplete(entries);
 }
 
 void CSearchDlg::RecordSearchHistory(const wxString &term)
 {
-	wxConfigBase *cfg = wxConfigBase::Get();
-
-	bool enabled = true;
-	cfg->Read("/eMule/SearchHistoryEnabled", &enabled, true);
-	if (!enabled || term.IsEmpty()) {
+	if (!CPreferences::RememberSearchHistory() || term.IsEmpty()) {
 		return;
 	}
 
 	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
 
-	// Move the new term to the front, dropping any earlier occurrence
-	// (case-insensitive) so it doesn't appear twice.
-	wxArrayString entries;
-	entries.Add(term);
+	wxArrayString current;
 	for (unsigned int i = 0; i < combo->GetCount(); ++i) {
-		wxString existing = combo->GetString(i);
-		if (existing.CmpNoCase(term) != 0) {
-			entries.Add(existing);
-		}
+		current.Add(combo->GetString(i));
 	}
-	if ((int)entries.GetCount() > MAX_SEARCH_HISTORY_ENTRIES) {
-		entries.RemoveAt(MAX_SEARCH_HISTORY_ENTRIES, entries.GetCount() - MAX_SEARCH_HISTORY_ENTRIES);
-	}
+	wxArrayString entries = ApplySearchHistoryEntry(current, term, MAX_SEARCH_HISTORY_ENTRIES);
 
 	combo->Clear();
 	for (const wxString &entry : entries) {
@@ -195,52 +204,73 @@ void CSearchDlg::RecordSearchHistory(const wxString &term)
 	// back explicitly anyway so behaviour doesn't depend on that not
 	// changing across wx versions/platforms.
 	combo->SetValue(term);
+	combo->AutoComplete(entries);
 
-	cfg->Write("/eMule/SearchHistory/Count", (long)entries.GetCount());
-	for (size_t i = 0; i < entries.GetCount(); ++i) {
-		cfg->Write(wxString::Format("/eMule/SearchHistory/%zu", i), entries[i]);
+	CTextFile file;
+	if (file.Open(SearchHistoryFilePath(), CTextFile::write)) {
+		file.WriteLines(entries);
+		file.Close();
 	}
-	cfg->Flush();
 }
 
 void CSearchDlg::ClearSearchHistory()
 {
-	wxConfigBase *cfg = wxConfigBase::Get();
-	long count = 0;
-	cfg->Read("/eMule/SearchHistory/Count", &count, 0);
-	for (long i = 0; i < count; ++i) {
-		cfg->DeleteEntry(wxString::Format("/eMule/SearchHistory/%ld", i));
+	if (wxFileExists(SearchHistoryFilePath())) {
+		wxRemoveFile(SearchHistoryFilePath());
 	}
-	cfg->Write("/eMule/SearchHistory/Count", (long)0);
-	cfg->Flush();
 
-	CastChild(IDC_SEARCHNAME, wxComboBox)->Clear();
+	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+	combo->Clear();
+	combo->AutoComplete(wxArrayString());
 }
 
 void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 {
-	wxConfigBase *cfg = wxConfigBase::Get();
-	bool enabled = true;
-	cfg->Read("/eMule/SearchHistoryEnabled", &enabled, true);
+	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+
+	// Overriding the field's context menu (to append the history action
+	// below) must not silently drop the standard edit actions -- a plain
+	// wxComboBox's only other context menu is this one, so without these
+	// items right-clicking the field would offer no way to paste/copy
+	// (amule-org/amule#643 review). Same custom-Paste-ID idiom as
+	// CMuleTextCtrl::OnRightDown: wxMenu auto-enables Cut/Copy off Wx's own
+	// selection tracking for the wxID_CUT/wxID_COPY stock IDs, but is too
+	// permissive about wxID_PASTE (enabled even with an empty clipboard),
+	// so Paste gets a custom ID and an explicit clipboard-content check.
+	enum
+	{
+		ID_SEARCHNAME_PASTE = wxID_HIGHEST + 668
+	};
 
 	wxMenu menu;
-	wxMenuItem *rememberItem = menu.AppendCheckItem(wxID_ANY, _("Remember search history"));
-	rememberItem->Check(enabled);
-	// Separator: "Clear" is a one-shot action, not another state to toggle
-	// alongside the checkbox above -- keeping them visually apart avoids
-	// reading it as a second option in the same group.
+	menu.Append(wxID_CUT);
+	menu.Append(wxID_COPY);
+	menu.Append(ID_SEARCHNAME_PASTE, _("Paste"));
+	menu.Append(wxID_SELECTALL);
+
+	bool canPaste = false;
+	if (combo->CanPaste()) {
+		if (wxTheClipboard->Open()) {
+			if (wxTheClipboard->IsSupported(wxDF_TEXT)) {
+				wxTextDataObject data;
+				wxTheClipboard->GetData(data);
+				canPaste = !data.GetText().IsEmpty();
+			}
+			wxTheClipboard->Close();
+		}
+	}
+	menu.Enable(ID_SEARCHNAME_PASTE, canPaste);
+
+	// Separator: "Clear" is a one-shot action, not another edit command --
+	// keeping it visually apart avoids reading it as one of the group above.
 	menu.AppendSeparator();
 	wxMenuItem *clearItem = menu.Append(wxID_ANY, _("Clear search history"));
-	clearItem->Enable(CastChild(IDC_SEARCHNAME, wxComboBox)->GetCount() > 0);
+	clearItem->Enable(combo->GetCount() > 0);
 
-	menu.Bind(
-		wxEVT_MENU,
-		[rememberItem](wxCommandEvent &) {
-			wxConfigBase::Get()->Write("/eMule/SearchHistoryEnabled", rememberItem->IsChecked());
-			wxConfigBase::Get()->Flush();
-		},
-		rememberItem->GetId());
-
+	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Cut(); }, wxID_CUT);
+	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Copy(); }, wxID_COPY);
+	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Paste(); }, ID_SEARCHNAME_PASTE);
+	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->SetSelection(-1, -1); }, wxID_SELECTALL);
 	menu.Bind(wxEVT_MENU, [this](wxCommandEvent &) { ClearSearchHistory(); }, clearItem->GetId());
 
 	PopupMenu(&menu);

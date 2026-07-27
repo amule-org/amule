@@ -1317,6 +1317,13 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     item13->SetToolTip( _("Enabling this will make aMule to show notifications when finished downloading.") );
     item0->Add( item13, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
+    // Query history for the Search tab's Name field (amule-org/amule#641).
+    // A client-side-only setting (no EC/core involvement), so this one
+    // checkbox works unchanged in both amule and amuleGUI.
+    wxCheckBox *itemSearchHistory = new wxCheckBox( parent, IDC_SEARCHHISTORYENABLED, _("Remember search history"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemSearchHistory->SetToolTip( _("Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned.") );
+    item0->Add( itemSearchHistory, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
     wxBoxSizer *item14 = new wxBoxSizer( wxHORIZONTAL );
 
     wxStaticText *item15 = new wxStaticText( parent, -1, _("Tooltip delay time: "), wxDefaultPosition, wxDefaultSize, 0 );

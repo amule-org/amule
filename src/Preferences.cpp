@@ -119,6 +119,7 @@ bool CPreferences::s_hideonclose;
 bool CPreferences::s_appimageIntegrationDeclined;
 bool CPreferences::s_mintotray;
 bool CPreferences::s_notify;
+bool CPreferences::s_rememberSearchHistory;
 bool CPreferences::s_trayiconenabled;
 bool CPreferences::s_addnewfilespaused;
 bool CPreferences::s_addserversfromserver;
@@ -1429,6 +1430,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_NOTIF, (new Cfg_Bool("/eMule/Notifications", s_notify, false)));
 	NewCfgItem(IDC_EXIT, (new Cfg_Bool("/eMule/ConfirmExit", s_confirmExit, true)));
 	NewCfgItem(IDC_STARTMIN, (new Cfg_Bool("/eMule/StartupMinimized", s_startMinimized, false)));
+	NewCfgItem(IDC_SEARCHHISTORYENABLED,
+		(new Cfg_Bool("/eMule/SearchHistoryEnabled", s_rememberSearchHistory, true)));
 
 	/**
 	 * GUI appearance
