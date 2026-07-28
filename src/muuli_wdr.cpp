@@ -1610,8 +1610,12 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     // /eMule/CreateSparseFiles was EC-wired and settable via the Web UI
     // (files.create_normal) but had no control here or in amuleGUI --
     // hand-editing amule.conf was the only way (amule-org/amule#653).
+    // Only does real work when the *core* runs on Windows (PlatformSpecific.cpp
+    // vs. PartFile.cpp both call CFile::Create(name, true) identically on
+    // POSIX) -- kept visible rather than gated behind __WINDOWS__, since a
+    // remote amuleGUI has no EC capability tag to know the core's platform.
     wxCheckBox *itemCreateSparse = new wxCheckBox( parent, IDC_CREATEFILESSPARSE, _("Create new files as sparse files"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemCreateSparse->SetToolTip( _("A sparse file reserves its full size on disk immediately without writing real data to it -- fast, but unsupported or slow on some filesystems, and free-space accounting stays optimistic while the download is in progress. Turn this off to grow the file only as data arrives.") );
+    itemCreateSparse->SetToolTip( _("Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect.") );
     item5->Add( itemCreateSparse, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
     wxFlexGridSizer *item14 = new wxFlexGridSizer( 3, 0, 0 );
     item14->AddGrowableCol( 0 );
