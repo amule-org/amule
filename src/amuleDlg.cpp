@@ -1754,6 +1754,25 @@ void CamuleDlg::Apply_Clients_Skin()
 	}
 }
 
+namespace
+{
+// The macOS Navigate menu (see the __WXMAC__ branch of the ctor) renders its
+// own "\tAlt+N"-style accelerator spec using the platform's native glyph
+// automatically -- Cocoa substitutes Alt for the Option/⌥ symbol when it
+// draws a real NSMenuItem key equivalent. Toolbar tooltips are plain text,
+// though, so wx never touches them; spell out the platform-correct suffix
+// by hand to match what the menu right above it already shows
+// (amule-org/amule#642 follow-up).
+wxString TabAccelSuffix(const wxString &letter)
+{
+#ifdef __WXMAC__
+	return " (⌥" + letter + ")"; // U+2325 OPTION KEY, i.e. Alt on macOS
+#else
+	return " (Alt+" + letter + ")";
+#endif
+}
+} // namespace
+
 void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 {
 	bool useSkins = Check_and_Init_Skin();
@@ -1788,44 +1807,44 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 		m_tblist[Toolbar_Network],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Networks Window") + " (Alt+N)");
+		_("Networks Window") + TabAccelSuffix("N"));
 	wndToolbar->AddTool(ID_BUTTONSEARCH,
 		_("Searches"),
 		m_tblist[Toolbar_Search],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Searches Window") + " (Alt+S)");
+		_("Searches Window") + TabAccelSuffix("S"));
 	wndToolbar->AddTool(ID_BUTTONDOWNLOADS,
 		_("Downloads"),
 		m_tblist[Toolbar_Transfers],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Downloads Window") + " (Alt+T)");
+		_("Downloads Window") + TabAccelSuffix("T"));
 	wndToolbar->AddTool(ID_BUTTONSHARED,
 		_("Shared files"),
 		m_tblist[Toolbar_Shared],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Shared Files Window") + " (Alt+F)");
+		_("Shared Files Window") + TabAccelSuffix("F"));
 	wndToolbar->AddTool(ID_BUTTONMESSAGES,
 		_("Messages"),
 		m_tblist[Toolbar_Messages],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Messages Window") + " (Alt+M)");
+		_("Messages Window") + TabAccelSuffix("M"));
 	wndToolbar->AddTool(ID_BUTTONSTATISTICS,
 		_("Statistics"),
 		m_tblist[Toolbar_Stats],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Statistics Graph Window") + " (Alt+G)");
+		_("Statistics Graph Window") + TabAccelSuffix("G"));
 	wndToolbar->AddSeparator();
 	wndToolbar->AddTool(ID_BUTTONNEWPREFERENCES,
 		_("Preferences"),
 		m_tblist[Toolbar_Prefs],
 		wxNullBitmap,
 		wxITEM_NORMAL,
-		_("Preferences Settings Window") + " (Alt+P)");
+		_("Preferences Settings Window") + TabAccelSuffix("P"));
 #ifndef CLIENT_GUI
 	wndToolbar->AddTool(ID_BUTTONIMPORT,
 		_("Import"),
