@@ -31,6 +31,7 @@
 class CMemFile;
 class CMD4Hash;
 class CSearchFile;
+class CFileDataIO;
 
 typedef std::vector<CSearchFile *> CSearchResultList;
 
@@ -81,6 +82,41 @@ public:
 
 	/** Frees all children owned by this file. */
 	virtual ~CSearchFile();
+
+	/**
+	 * Serializes this result (and its children, recursively) to `file`.
+	 *
+	 * Mirrors CKnownFile's WriteToFile/LoadTagsFromFile pattern: fixed
+	 * fields plus a generic CTag list for anything else already carried
+	 * in m_taglist. m_downloadStatus and m_searchID are NOT persisted --
+	 * the former is always recomputed at runtime (SetDownloadStatus()),
+	 * the latter is reassigned by the caller once results are reloaded
+	 * (see CSearchList::LoadSearches(), a later phase).
+	 */
+	bool WriteToFile(CFileDataIO *file) const;
+
+	/**
+	 * Reconstructs a result (and its children, recursively) written by
+	 * WriteToFile(). Returns a heap-allocated, parentless root result;
+	 * the caller takes ownership. Returns NULL on a malformed record --
+	 * callers must treat this as fatal for the whole load rather than
+	 * skip-and-continue, since a corrupt length prefix partway through
+	 * the stream leaves every subsequent record unreadable.
+	 *
+	 * `allowChildren` caps recursion at the real two-level result-tree
+	 * depth (parent + alternative-filename children, never grandchildren
+	 * -- the same invariant AddChild() enforces at runtime); leave it at
+	 * the default when reading a root record. A record with children
+	 * claiming children of their own is treated as malformed.
+	 *
+	 * Deliberately does not call SetDownloadStatus(): recomputing it needs
+	 * theApp->downloadqueue/knownfiles/canceledfiles, which may not exist
+	 * yet at the point results are loaded (searchlist is constructed
+	 * before them, see amule.cpp). Callers must walk the returned tree
+	 * (root + every child) and call SetDownloadStatus() on each node
+	 * themselves once those singletons are available.
+	 */
+	static CSearchFile *LoadFromFile(CFileDataIO *file, bool allowChildren = true);
 
 	/**
 	 * Merges the two results into one.
@@ -195,6 +231,9 @@ public:
 private:
 	//! CSearchFile is not assignable.
 	CSearchFile &operator=(const CSearchFile &other);
+
+	/** Minimal-init constructor, used only by LoadFromFile(). */
+	CSearchFile();
 
 	/**
 	 * Updates a parent file so that it shows various common traits.
