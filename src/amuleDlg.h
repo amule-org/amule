@@ -109,10 +109,7 @@ enum ClientSkinEnum
 // Add_Skin_Icon("Toolbar_...") calls in Apply_Toolbar_Skin.
 enum ToolbarSkinEnum
 {
-	Toolbar_Connect = 0,
-	Toolbar_Disconnect,
-	Toolbar_Connecting,
-	Toolbar_Network,
+	Toolbar_Network = 0,
 	Toolbar_Transfers,
 	Toolbar_Search,
 	Toolbar_Shared,
@@ -150,7 +147,7 @@ public:
 	void EndLogBatch();
 
 	void ShowUserCount(const wxString &info = "");
-	void ShowConnectionState(bool skinChanged = false);
+	void ShowConnectionState();
 	void ShowTransferRate();
 
 	bool StatisticsWindowActive() { return (m_activewnd == static_cast<wxWindow *>(m_statisticswnd)); }

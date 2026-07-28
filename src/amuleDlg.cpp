@@ -107,8 +107,6 @@ wxBEGIN_EVENT_TABLE(CamuleDlg, wxFrame)
 	EVT_TOOL(ID_BUTTONNEWPREFERENCES, CamuleDlg::OnPrefButton)
 	EVT_TOOL(ID_BUTTONIMPORT, CamuleDlg::OnImportButton)
 
-	EVT_TOOL(ID_BUTTONCONNECT, CamuleDlg::OnBnConnect)
-
 	// Alt+<letter> tab-switch shortcuts. On Windows/Linux these come from
 	// the wxAcceleratorEntry table built in OnInit(); on macOS they come
 	// from real NSMenuItem key equivalents (see the __WXMAC__ menu bar
@@ -877,7 +875,7 @@ void CamuleDlg::AddServerMessageLine(wxString &message)
 	}
 }
 
-void CamuleDlg::ShowConnectionState(bool skinChanged)
+void CamuleDlg::ShowConnectionState()
 {
 	// Wipe the Server Info text ctrl on any transition that leaves it
 	// showing messages from a server we're no longer talking to:
@@ -995,71 +993,6 @@ void CamuleDlg::ShowConnectionState(bool skinChanged)
 
 	connLabel->SetLabel(labelMsg);
 	connLabel->GetParent()->Layout();
-
-	////////////////////////////////////////////////////////////
-	// Update the connect/disconnect/cancel button.
-	//
-	enum EConnState
-	{
-		ECS_Unknown,
-		ECS_Connected,
-		ECS_Connecting,
-		ECS_Disconnected
-	};
-
-	static EConnState s_oldState = ECS_Unknown;
-	EConnState currentState = ECS_Disconnected;
-
-	if (theApp->serverconnect->IsConnecting() || (theApp->IsKadRunning() && !theApp->IsConnectedKad())) {
-		currentState = ECS_Connecting;
-	} else if (theApp->IsConnected()) {
-		currentState = ECS_Connected;
-	} else {
-		currentState = ECS_Disconnected;
-	}
-
-	if ((true == skinChanged) || (currentState != s_oldState)) {
-		wxWindowUpdateLocker freezer(m_wndToolbar);
-
-		wxToolBarToolBase *toolbarTool = m_wndToolbar->FindById(ID_BUTTONCONNECT);
-
-		int bitmapIdx = Toolbar_Connect;
-		switch (currentState) {
-		case ECS_Connecting:
-			toolbarTool->SetLabel(_("Cancel"));
-			toolbarTool->SetShortHelp(_("Stop the current connection attempts"));
-			bitmapIdx = Toolbar_Connecting;
-			break;
-
-		case ECS_Connected:
-			toolbarTool->SetLabel(_("Disconnect"));
-			toolbarTool->SetShortHelp(_("Disconnect from the currently connected networks"));
-			bitmapIdx = Toolbar_Disconnect;
-			break;
-
-		default:
-			toolbarTool->SetLabel(_("Connect"));
-			toolbarTool->SetShortHelp(_("Connect to the currently enabled networks"));
-			bitmapIdx = Toolbar_Connect;
-		}
-
-		// wxToolBarToolBase::SetNormalBitmap only updates the C++ tool
-		// data; on wxMSW the native control keeps showing the previous
-		// bitmap from its cached image list until the next full
-		// Realize(). The toolbar-level SetToolNormalBitmap() pushes the
-		// new bitmap into the native image list immediately, so the
-		// connect-state transition paints atomically with the new
-		// bitmap on the next redraw — without forcing a re-layout that
-		// would disrupt a vertical toolbar's orientation measurement.
-		// Same pattern as SetMessagesTool() just below. (#800)
-		m_wndToolbar->SetToolNormalBitmap(ID_BUTTONCONNECT, m_tblist[bitmapIdx]);
-
-		m_wndToolbar->EnableTool(ID_BUTTONCONNECT,
-			(thePrefs::GetNetworkED2K() || thePrefs::GetNetworkKademlia()) &&
-				theApp->ipfilter->IsReady());
-
-		s_oldState = currentState;
-	}
 
 	////////////////////////////////////////////////////////////
 	// Update the globe-icon in the lower-right corner.
@@ -1785,9 +1718,6 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 	m_tblist.clear();
 
 	// Add the images to the image list, in ToolbarSkinEnum order
-	Add_Skin_Icon("Toolbar_Connect", connButImg(0), useSkins);
-	Add_Skin_Icon("Toolbar_Disconnect", connButImg(1), useSkins);
-	Add_Skin_Icon("Toolbar_Connecting", connButImg(2), useSkins);
 	Add_Skin_Icon("Toolbar_Network", amuleDlgImages(20), useSkins);
 	Add_Skin_Icon("Toolbar_Transfers", amuleDlgImages(21), useSkins);
 	Add_Skin_Icon("Toolbar_Search", amuleDlgImages(22), useSkins);
@@ -1802,10 +1732,6 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 	// Build aMule toolbar
 	wndToolbar->SetMargins(0, 0);
 
-	// Placeholder. Gets updated by ShowConnectionState
-	wndToolbar->AddTool(ID_BUTTONCONNECT, "...", m_tblist[Toolbar_Connect]);
-
-	wndToolbar->AddSeparator();
 	wndToolbar->AddTool(ID_BUTTONNETWORKS,
 		_("Networks"),
 		m_tblist[Toolbar_Network],
@@ -1866,8 +1792,7 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 	// items don't get added immediately.
 	wndToolbar->Realize();
 
-	// Updates the "Connect" button, and so on.
-	ShowConnectionState(true);
+	ShowConnectionState();
 }
 
 void CamuleDlg::Create_Toolbar(bool orientation)
@@ -2112,9 +2037,6 @@ void CamuleDlg::DoNetworkRearrange()
 
 	m_wndToolbar->EnableTool(
 		ID_BUTTONNETWORKS, (thePrefs::GetNetworkED2K() || thePrefs::GetNetworkKademlia()));
-	m_wndToolbar->EnableTool(ID_BUTTONCONNECT,
-		(thePrefs::GetNetworkED2K() || thePrefs::GetNetworkKademlia()) &&
-			theApp->ipfilter->IsReady());
 
 	ShowConnectionState(); // status in the bottom right
 	m_searchwnd->FixSearchTypes();

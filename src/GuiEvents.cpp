@@ -747,10 +747,10 @@ void ChatSendCaptcha(wxString NOT_ON_DAEMON(captcha), uint64 NOT_ON_DAEMON(to_id
 #endif
 }
 
-void ShowConnState(long NOT_ON_DAEMON(forceUpdate))
+void ShowConnState(long)
 {
 #ifndef AMULE_DAEMON
-	theApp->amuledlg->ShowConnectionState(forceUpdate != 0);
+	theApp->amuledlg->ShowConnectionState();
 #endif
 }
 

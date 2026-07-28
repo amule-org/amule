@@ -554,7 +554,7 @@ void CIPFilter::OnIPFilterEvent(CIPFilterEvent &evt)
 		m_startKADWhenReady = false;
 		theApp->StartKad();
 	}
-	theApp->ShowConnectionState(true); // update connect button
+	theApp->ShowConnectionState(true); // refresh connection status
 	if (thePrefs::GetSrcSeedsOn()) {
 		theApp->downloadqueue->LoadSourceSeeds();
 	}
