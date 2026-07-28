@@ -2461,7 +2461,11 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item4 = new CMuleTextCtrl( parent, IDC_SERVERLISTURL, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
     item4->SetToolTip( _("Enter the url to a server.met file here and press the button to the left to update the list of known servers.") );
-    item1->Add( item4, wxSizerFlags(1).Expand().CenterHorizontal().Border(wxLEFT, 5) );
+    // CenterVertical, not Expand: the row's height now follows the icon-bearing
+    // connect button (taller than a one-line field on macOS), and Expand would
+    // stretch this single-line entry to that height -- rendering it two lines
+    // tall on macOS. Proportion 1 still fills the row horizontally.
+    item1->Add( item4, wxSizerFlags(1).CenterVertical().Border(wxLEFT, 5) );
     item1->AddStretchSpacer(1);
     // Placeholder label -- CServerWnd's ctor calls UpdateED2KConnectButton()
     // right after construction, which sets the real label/bitmap for the
@@ -2548,23 +2552,9 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxBoxSizer *itemTop = new wxBoxSizer( wxHORIZONTAL );
-    itemTop->AddStretchSpacer(1);
-    // Placeholder label -- CKadDlg::Init() calls UpdateConnectButton() right
-    // after construction, which sets the real label/bitmap for the current
-    // state. On its own top row, right-aligned, above the Bootstrap box --
-    // leads with the primary control, mirroring the ED2K pane's shape
-    // (#663 review).
-    wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemTop->Add( item38, wxSizerFlags().Center().Border(wxALL, 5) );
-    item0->Add( itemTop, wxSizerFlags().Expand() );
-
-    wxFlexGridSizer *item1 = new wxFlexGridSizer( 2, 0, 0 );
-    item1->AddGrowableCol( 0 );
-    item1->AddGrowableRow( 0 );
-
-    wxBoxSizer *item2 = new wxBoxSizer( wxVERTICAL );
-
+    // First row, full width: nodes-list URL refresher + the connect/disconnect
+    // toggle right-aligned -- identical shape to the ED2K pane's server-list
+    // row (see serverListDlgUp), so both network tabs lead the same way.
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
     wxBitmapButton *item4 = new wxBitmapButton( parent, ID_UPDATEKADLIST, amuleDlgImages( 30 ), wxDefaultPosition, wxDefaultSize );
@@ -2577,8 +2567,22 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->Add( item5, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item6 = new CMuleTextCtrl( parent, IDC_NODESLISTURL, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
     item6->SetToolTip( _("Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes.") );
-    item3->Add( item6, wxSizerFlags(1).Expand().CenterHorizontal().Border(wxLEFT, 5) );
-    item2->Add( item3, wxSizerFlags().Expand().CenterVertical() );
+    // CenterVertical, not Expand: keeps this single-line entry one line tall
+    // even though the icon-bearing buttons make the row taller on macOS.
+    item3->Add( item6, wxSizerFlags(1).CenterVertical().Border(wxLEFT, 5) );
+    item3->AddStretchSpacer(1);
+    // Placeholder label -- CKadDlg::Init() calls UpdateConnectButton() right
+    // after construction, which sets the real label/bitmap for the current state.
+    wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
+    item3->Add( item38, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    item0->Add( item3, wxSizerFlags().Expand().CenterVertical() );
+
+    wxFlexGridSizer *item1 = new wxFlexGridSizer( 2, 0, 0 );
+    item1->AddGrowableCol( 0 );
+    item1->AddGrowableRow( 0 );
+
+    wxBoxSizer *item2 = new wxBoxSizer( wxVERTICAL );
+
     wxStaticBox *item8 = new wxStaticBox( parent, -1, _("Nodes stats") );
     wxStaticBoxSizer *item7 = new wxStaticBoxSizer( item8, wxVERTICAL );
 
