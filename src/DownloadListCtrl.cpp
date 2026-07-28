@@ -133,6 +133,22 @@ wxEND_EVENT_TABLE()
 //! This listtype is used when gathering the selected items.
 typedef std::list<FileCtrlItem_Struct *> ItemList;
 
+// True when the platform opener can actually reach the file's on-disk path.
+// The monolithic app is the core, so the file always lives on this host. A
+// remote GUI (amulegui) drives a separate daemon: the path it holds is the
+// daemon's (EC_TAG_KNOWNFILE_PATH -> GetFilePath()), reachable from here only
+// when the GUI shares the daemon's filesystem, i.e. a loopback connection.
+// Over a remote daemon the path is meaningless locally, so Preview/Open is
+// suppressed there and the file-details modal is shown instead (#657).
+static bool CanLaunchFilesLocally()
+{
+#ifdef CLIENT_GUI
+	return theApp->m_connect && theApp->m_connect->IsConnectedToLocalHost();
+#else
+	return true;
+#endif
+}
+
 CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 	wxWindowID winid,
 	const wxPoint &pos,
@@ -691,7 +707,10 @@ void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 	// A completed previewable media file plays on double-click, as before.
 	// Anything else (a still-downloading file, or a non-previewable one) opens
 	// the file-details modal, matching the shared-files table's double-click.
-	if ((!file->IsPartFile() || file->IsCompleted()) && file->PreviewAvailable()) {
+	// Over a remote daemon the file isn't on this host, so fall back to the
+	// details modal there too (#657).
+	if ((!file->IsPartFile() || file->IsCompleted()) && file->PreviewAvailable() &&
+		CanLaunchFilesLocally()) {
 		PreviewFile(file);
 	} else {
 		ShowFileDetailDialog(evt.GetIndex());
@@ -824,7 +843,9 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 		view = _("&Open the file");
 	}
 	m_menu->SetLabel(MP_VIEW, view);
-	m_menu->Enable(MP_VIEW, file->PreviewAvailable());
+	// Only offer preview/open when the file lives on this host: always for the
+	// monolithic app, and for amulegui only on a loopback connection (#657).
+	m_menu->Enable(MP_VIEW, file->PreviewAvailable() && CanLaunchFilesLocally());
 
 	FileRatingList ratingList;
 	item->GetFile()->GetRatingAndComments(ratingList);
@@ -1517,17 +1538,21 @@ void CDownloadListCtrl::PreviewFile(CPartFile *file)
 	wxString partFile; // File name with full path
 	wxString partName; // File name only, without path
 
-	// Check if we are (pre)viewing a completed file or not
-	if (!file->IsCompleted()) {
-		// Remove the .met and see if out video player specifiation uses the magic string
-		partName = file->GetPartMetFileName().RemoveExt().GetRaw();
-		partFile = thePrefs::GetTempDir().JoinPaths(file->GetPartMetFileName().RemoveExt()).GetRaw();
-	} else {
-		// This is a complete file
-		// FIXME: This is probably not going to work if the filenames are mangled ...
-		partName = file->GetFileName().GetRaw();
-		partFile = file->GetFullName().GetRaw();
-	}
+	// The bare file name (no directory): the ".part" temp file while
+	// downloading, the real name once completed.
+	const CPath nameOnly =
+		file->IsCompleted() ? file->GetFileName() : file->GetPartMetFileName().RemoveExt();
+
+	// Build the full path from the on-disk directory joined with the name.
+	// GetFilePath() is the folder the file actually lives in -- the Temp dir
+	// while downloading, the destination once completed -- and is correct in
+	// the monolithic app as well as amulegui, where it is EC-streamed from the
+	// daemon (EC_TAG_KNOWNFILE_PATH) and, on the loopback connection this action
+	// is gated to, names a directory on this same host (#657). This replaces the
+	// old GetTempDir()/GetFullName() pair, which amulegui only knew as its own
+	// local temp pref and the bare ".part.met" basename respectively.
+	partName = nameOnly.GetRaw();
+	partFile = file->GetFilePath().JoinPaths(nameOnly).GetRaw();
 
 	// Compatibility with old behaviour
 	if (!command.Replace("$file", "%PARTFILE")) {
