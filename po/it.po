@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-27 21:41+0200\n"
+"POT-Creation-Date: 2026-07-28 07:37+0200\n"
 "PO-Revision-Date: 2026-07-27 11:40+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -151,7 +151,7 @@ msgstr "Installa"
 msgid "Not now"
 msgstr "Non ora"
 
-#: src/AppImageIntegration.cpp:422 src/amuleDlg.cpp:600
+#: src/AppImageIntegration.cpp:422 src/amuleDlg.cpp:665
 msgid "Don't ask again"
 msgstr "Non chiedere più"
 
@@ -585,29 +585,67 @@ msgstr "Impossibile creare il file Pid"
 msgid "ERROR: %s"
 msgstr "ERRORE: %s"
 
-#: src/amuleDlg.cpp:236
+#: src/amuleDlg.cpp:250
 #, c-format
 msgid "This is aMule %s based on eMule."
 msgstr "Questo è aMule %s basato su eMule."
 
-#: src/amuleDlg.cpp:237
+#: src/amuleDlg.cpp:251
 #, c-format
 msgid "Running on %s"
 msgstr "In esecuzione su %s"
 
-#: src/amuleDlg.cpp:239
+#: src/amuleDlg.cpp:253
 msgid "Visit https://github.com/amule-org/amule/releases/latest to check if a new version is available."
 msgstr "Visita https://github.com/amule-org/amule/releases/latest per controllare se è disponibile una nuova versione."
 
-#: src/amuleDlg.cpp:268
+#: src/amuleDlg.cpp:282
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "ERRORE FATALE: Creazione timer fallita"
 
-#: src/amuleDlg.cpp:592
+#: src/amuleDlg.cpp:361 src/amuleDlg.cpp:1787 src/amuleDlg.cpp:2033
+#: src/muuli_wdr.cpp:1485 src/muuli_wdr.cpp:3405
+msgid "Networks"
+msgstr "Reti"
+
+#: src/amuleDlg.cpp:362 src/amuleDlg.cpp:1793 src/muuli_wdr.cpp:3406
+msgid "Searches"
+msgstr "Ricerca"
+
+#: src/amuleDlg.cpp:363 src/amuleDlg.cpp:1799 src/DownloadListCtrl.cpp:740
+#: src/muuli_wdr.cpp:392 src/muuli_wdr.cpp:1578 src/muuli_wdr.cpp:3407
+#: src/Statistics.cpp:829
+msgid "Downloads"
+msgstr "Download"
+
+#: src/amuleDlg.cpp:364 src/amuleDlg.cpp:1805 src/muuli_wdr.cpp:3281
+msgid "Shared files"
+msgstr "File condivisi"
+
+#: src/amuleDlg.cpp:365 src/amuleDlg.cpp:1811 src/muuli_wdr.cpp:2913
+#: src/muuli_wdr.cpp:3363 src/muuli_wdr.cpp:3410
+msgid "Messages"
+msgstr "Messaggi"
+
+#: src/amuleDlg.cpp:366 src/amuleDlg.cpp:1817 src/muuli_wdr.cpp:3411
+#: src/PrefsUnifiedDlg.cpp:312 src/Statistics.cpp:779 src/Statistics.cpp:1235
+msgid "Statistics"
+msgstr "Statistiche"
+
+#: src/amuleDlg.cpp:368 src/amuleDlg.cpp:1824 src/muuli_wdr.cpp:3413
+#: src/PrefsUnifiedDlg.cpp:328 src/utils/wxCas/src/wxcasprefs.cpp:39
+msgid "Preferences"
+msgstr "Preferenze"
+
+#: src/amuleDlg.cpp:371
+msgid "Navigate"
+msgstr ""
+
+#: src/amuleDlg.cpp:657
 msgid "New version available"
 msgstr "Nuova versione disponibile"
 
-#: src/amuleDlg.cpp:596
+#: src/amuleDlg.cpp:661
 #, c-format
 msgid ""
 "A new version of aMule (%s) is available.\n"
@@ -622,39 +660,39 @@ msgstr ""
 "\n"
 "Vuoi aprire la pagina di download?"
 
-#: src/amuleDlg.cpp:678
+#: src/amuleDlg.cpp:743
 msgid "aMule dialog destroyed"
 msgstr "Finestra di aMule chiusa"
 
-#: src/amuleDlg.cpp:701 src/DataToText.cpp:68 src/IPFilter.cpp:547
+#: src/amuleDlg.cpp:766 src/DataToText.cpp:68 src/IPFilter.cpp:547
 msgid "Connecting"
 msgstr "Connessione in corso"
 
-#: src/amuleDlg.cpp:893
+#: src/amuleDlg.cpp:958
 msgid "eD2k: Connecting"
 msgstr "eD2k: Connessione in corso"
 
-#: src/amuleDlg.cpp:897
+#: src/amuleDlg.cpp:962
 msgid "eD2k: Disconnected"
 msgstr "eD2k: Disconnesso"
 
-#: src/amuleDlg.cpp:903
+#: src/amuleDlg.cpp:968
 msgid "Kad: Firewalled"
 msgstr "Kad: Firewalled"
 
-#: src/amuleDlg.cpp:907
+#: src/amuleDlg.cpp:972
 msgid "Kad: Connected"
 msgstr "Kad: Connesso"
 
-#: src/amuleDlg.cpp:912
+#: src/amuleDlg.cpp:977
 msgid "Kad: Connecting"
 msgstr "Kad: Connessione in corso"
 
-#: src/amuleDlg.cpp:916
+#: src/amuleDlg.cpp:981
 msgid "Kad: Off"
 msgstr "Kad: Spento"
 
-#: src/amuleDlg.cpp:964 src/DownloadListCtrl.cpp:505
+#: src/amuleDlg.cpp:1029 src/DownloadListCtrl.cpp:505
 #: src/DownloadListCtrl.cpp:749 src/FriendListCtrl.cpp:180
 #: src/muuli_wdr.cpp:731 src/muuli_wdr.cpp:782 src/muuli_wdr.cpp:846
 #: src/muuli_wdr.cpp:898 src/muuli_wdr.cpp:2218 src/muuli_wdr.cpp:2303
@@ -664,175 +702,142 @@ msgstr "Kad: Spento"
 msgid "Cancel"
 msgstr "Annulla"
 
-#: src/amuleDlg.cpp:965
+#: src/amuleDlg.cpp:1030
 msgid "Stop the current connection attempts"
 msgstr "Ferma i tentativi di connessione in corso"
 
-#: src/amuleDlg.cpp:970 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
+#: src/amuleDlg.cpp:1035 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:976
 #: src/muuli_wdr.cpp:2441
 msgid "Disconnect"
 msgstr "Disconnetti"
 
-#: src/amuleDlg.cpp:971
+#: src/amuleDlg.cpp:1036
 msgid "Disconnect from the currently connected networks"
 msgstr "Disconnetti dalle reti a cui sei connesso"
 
-#: src/amuleDlg.cpp:976 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
+#: src/amuleDlg.cpp:1041 src/MuleTrayIcon.cpp:478 src/MuleTrayIcon.cpp:979
 #: src/muuli_wdr.cpp:2596 src/muuli_wdr.cpp:3048 src/muuli_wdr.cpp:3403
 msgid "Connect"
 msgstr "Connetti"
 
-#: src/amuleDlg.cpp:977
+#: src/amuleDlg.cpp:1042
 msgid "Connect to the currently enabled networks"
 msgstr "Connetti alle reti attualmente abilitate"
 
-#: src/amuleDlg.cpp:1089
+#: src/amuleDlg.cpp:1154
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 
-#: src/amuleDlg.cpp:1091 src/amuleDlg.cpp:1093 src/amuleDlg.cpp:1097
-#: src/amuleDlg.cpp:1099 src/amuleDlg.cpp:1110 src/amuleDlg.cpp:1112
+#: src/amuleDlg.cpp:1156 src/amuleDlg.cpp:1158 src/amuleDlg.cpp:1162
+#: src/amuleDlg.cpp:1164 src/amuleDlg.cpp:1175 src/amuleDlg.cpp:1177
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 msgid " MB/s"
 msgstr " MB/s"
 
-#: src/amuleDlg.cpp:1091 src/amuleDlg.cpp:1093 src/amuleDlg.cpp:1097
-#: src/amuleDlg.cpp:1099 src/amuleDlg.cpp:1110 src/amuleDlg.cpp:1112
+#: src/amuleDlg.cpp:1156 src/amuleDlg.cpp:1158 src/amuleDlg.cpp:1162
+#: src/amuleDlg.cpp:1164 src/amuleDlg.cpp:1175 src/amuleDlg.cpp:1177
 #: src/MuleTrayIcon.cpp:796 src/MuleTrayIcon.cpp:799
 #: src/utils/wxCas/src/wxcasframe.cpp:1041
 msgid " kB/s"
 msgstr " kB/s"
 
-#: src/amuleDlg.cpp:1096
+#: src/amuleDlg.cpp:1161
 #, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
 msgstr "Up: %.1f%s | Down: %.1f%s"
 
-#: src/amuleDlg.cpp:1128
+#: src/amuleDlg.cpp:1193
 #, c-format
 msgid "aMule (%s | Connected)"
 msgstr "aMule (%s | Connesso)"
 
-#: src/amuleDlg.cpp:1130
+#: src/amuleDlg.cpp:1195
 #, c-format
 msgid "aMule (%s | Disconnected)"
 msgstr "aMule (%s | Disconnesso)"
 
-#: src/amuleDlg.cpp:1183
+#: src/amuleDlg.cpp:1248
 #, c-format
 msgid "Do you really want to exit %s?"
 msgstr "Vuoi veramente uscire da %s?"
 
-#: src/amuleDlg.cpp:1185
+#: src/amuleDlg.cpp:1250
 msgid "Exit confirmation"
 msgstr "Chiedi conferma prima di uscire"
 
-#: src/amuleDlg.cpp:1548
+#: src/amuleDlg.cpp:1613
 msgid "Launch Command: "
 msgstr "Comando di avvio: "
 
-#: src/amuleDlg.cpp:1567 src/muuli_wdr.cpp:1965 src/Preferences.cpp:951
+#: src/amuleDlg.cpp:1632 src/muuli_wdr.cpp:1965 src/Preferences.cpp:951
 msgid "- default -"
 msgstr "- predefinita -"
 
-#: src/amuleDlg.cpp:1595
+#: src/amuleDlg.cpp:1660
 #, c-format
 msgid "Skin directory '%s' does not exist"
 msgstr "La directory delle skin '%s' non esiste"
 
-#: src/amuleDlg.cpp:1598
+#: src/amuleDlg.cpp:1663
 #, c-format
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "ATTENZIONE: Impossibile aprire il file della skin '%s' in lettura"
 
-#: src/amuleDlg.cpp:1722 src/amuleDlg.cpp:1968 src/muuli_wdr.cpp:1485
-#: src/muuli_wdr.cpp:3405
-msgid "Networks"
-msgstr "Reti"
-
-#: src/amuleDlg.cpp:1726 src/muuli_wdr.cpp:3405
+#: src/amuleDlg.cpp:1791 src/muuli_wdr.cpp:3405
 msgid "Networks Window"
 msgstr "Finestra reti"
 
-#: src/amuleDlg.cpp:1728 src/muuli_wdr.cpp:3406
-msgid "Searches"
-msgstr "Ricerca"
-
-#: src/amuleDlg.cpp:1732 src/muuli_wdr.cpp:3406
+#: src/amuleDlg.cpp:1797 src/muuli_wdr.cpp:3406
 msgid "Searches Window"
 msgstr "Finestra ricerche"
 
-#: src/amuleDlg.cpp:1734 src/DownloadListCtrl.cpp:740 src/muuli_wdr.cpp:392
-#: src/muuli_wdr.cpp:1578 src/muuli_wdr.cpp:3407 src/Statistics.cpp:829
-msgid "Downloads"
-msgstr "Download"
-
-#: src/amuleDlg.cpp:1738 src/muuli_wdr.cpp:3407
+#: src/amuleDlg.cpp:1803 src/muuli_wdr.cpp:3407
 msgid "Downloads Window"
 msgstr "Finestra dei Download"
 
-#: src/amuleDlg.cpp:1740 src/muuli_wdr.cpp:3281
-msgid "Shared files"
-msgstr "File condivisi"
-
-#: src/amuleDlg.cpp:1744 src/muuli_wdr.cpp:3409
+#: src/amuleDlg.cpp:1809 src/muuli_wdr.cpp:3409
 msgid "Shared Files Window"
 msgstr "Finestra file condivisi"
 
-#: src/amuleDlg.cpp:1746 src/muuli_wdr.cpp:2913 src/muuli_wdr.cpp:3363
-#: src/muuli_wdr.cpp:3410
-msgid "Messages"
-msgstr "Messaggi"
-
-#: src/amuleDlg.cpp:1750 src/muuli_wdr.cpp:3410
+#: src/amuleDlg.cpp:1815 src/muuli_wdr.cpp:3410
 msgid "Messages Window"
 msgstr "Finestra messaggi"
 
-#: src/amuleDlg.cpp:1752 src/muuli_wdr.cpp:3411 src/PrefsUnifiedDlg.cpp:312
-#: src/Statistics.cpp:779 src/Statistics.cpp:1235
-msgid "Statistics"
-msgstr "Statistiche"
-
-#: src/amuleDlg.cpp:1756 src/muuli_wdr.cpp:3411
+#: src/amuleDlg.cpp:1821 src/muuli_wdr.cpp:3411
 msgid "Statistics Graph Window"
 msgstr "Finestra grafici e statistiche"
 
-#: src/amuleDlg.cpp:1759 src/muuli_wdr.cpp:3413 src/PrefsUnifiedDlg.cpp:328
-#: src/utils/wxCas/src/wxcasprefs.cpp:39
-msgid "Preferences"
-msgstr "Preferenze"
-
-#: src/amuleDlg.cpp:1763 src/muuli_wdr.cpp:3413
+#: src/amuleDlg.cpp:1828 src/muuli_wdr.cpp:3413
 msgid "Preferences Settings Window"
 msgstr "Finestra Preferenze"
 
-#: src/amuleDlg.cpp:1766 src/muuli_wdr.cpp:3414
+#: src/amuleDlg.cpp:1831 src/muuli_wdr.cpp:3414
 msgid "Import"
 msgstr "Importazione"
 
-#: src/amuleDlg.cpp:1770 src/muuli_wdr.cpp:3414
+#: src/amuleDlg.cpp:1835 src/muuli_wdr.cpp:3414
 msgid "The partfile importer tool"
 msgstr "Strumento per l'importazione dei file parziali"
 
-#: src/amuleDlg.cpp:1773 src/muuli_wdr.cpp:3415
+#: src/amuleDlg.cpp:1838 src/muuli_wdr.cpp:3415
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "Informazioni"
 
-#: src/amuleDlg.cpp:1773 src/muuli_wdr.cpp:3415
+#: src/amuleDlg.cpp:1838 src/muuli_wdr.cpp:3415
 msgid "About/Help"
 msgstr "Informazioni/Aiuto"
 
-#: src/amuleDlg.cpp:1971
+#: src/amuleDlg.cpp:2036
 msgid "eD2k network"
 msgstr "rete eD2k"
 
-#: src/amuleDlg.cpp:1974
+#: src/amuleDlg.cpp:2039
 msgid "Kad network"
 msgstr "Rete Kad"
 
-#: src/amuleDlg.cpp:1974
+#: src/amuleDlg.cpp:2039
 msgid "No network"
 msgstr "Nessuna rete"
 
