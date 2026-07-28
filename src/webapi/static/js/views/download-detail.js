@@ -10,7 +10,12 @@ import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
+import { FileClients } from "./client-table.js";
 import { t, tn, terr } from "../i18n.js";
+
+// Peers of a download: show the download-side columns, keep the upload ones
+// (and the redundant per-row file name) one click away in the column picker.
+const DL_HIDDEN = ["file", "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"];
 
 // The pieces bar mirrors the aMule GUI download bar, theme-tuned via CSS vars:
 // green (--ok) = have it, blue (--piece-avail-lo -> --piece-avail, faded by
@@ -90,12 +95,16 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
 
       <${Tabs} tabs=${[
         { key: "details", label: t("detail_tab_details") },
+        { key: "clients", label: t("detail_tab_clients") },
         { key: "filename", label: t("detail_tab_filename") },
         { key: "comments", label: t("detail_tab_comments") },
       ]} active=${tab} onSelect=${setTab} />
 
       <div class="detail-body">
-      ${tab === "comments" ? html`
+      ${tab === "clients" ? html`
+        <${FileClients} hash=${d.hash} prefsKey="download_clients" defaultHidden=${DL_HIDDEN}
+                        defaultSort="downloaded" />
+      ` : tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.comment} rating=${d.rating}
                              tick=${downloads} parts=${(d.progress && d.progress.parts) || []} />
       ` : tab === "filename" ? html`

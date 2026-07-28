@@ -239,6 +239,7 @@
   "downloads_detail_copy_failed": "No se pudo copiar el enlace",
   "downloads_detail_eta": "Tiempo restante",
   "detail_tab_details": "Detalles",
+  "detail_tab_clients": "Clientes",
   "detail_tab_comments": "Comentarios",
   "detail_tab_filename": "Nombre",
   "filename_none": "Todavía no hay nombres reportados por las fuentes.",

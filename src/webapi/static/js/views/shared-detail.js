@@ -10,9 +10,14 @@ import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
 import { formatBytes, formatInt, formatDuration, twin } from "../format.js";
+import { FileClients } from "./client-table.js";
 import { t } from "../i18n.js";
 
 const PRIORITIES = ["very_low", "low", "normal", "high", "release"];
+
+// Peers of a shared file: show the upload-side columns, keep the download ones
+// (and the redundant per-row file name) one click away in the column picker.
+const SH_HIDDEN = ["file", "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"];
 
 // Human upload-priority label, matching the shared list (auto shows the
 // derived level in parentheses).
@@ -68,12 +73,16 @@ export function SharedDetail({ hash }) {
 
       <${Tabs} tabs=${[
         { key: "details", label: t("detail_tab_details") },
+        { key: "clients", label: t("detail_tab_clients") },
         { key: "filename", label: t("detail_tab_filename") },
         { key: "comments", label: t("detail_tab_comments") },
       ]} active=${tab} onSelect=${setTab} />
 
       <div class="detail-body">
-      ${tab === "comments" ? html`
+      ${tab === "clients" ? html`
+        <${FileClients} hash=${s.hash} prefsKey="shared_clients" defaultHidden=${SH_HIDDEN}
+                        defaultSort="uploaded" />
+      ` : tab === "comments" ? html`
         <div class="detail-comments">
           <${CommentEditor} key=${s.hash} hash=${s.hash} kind="shared" comment=${s.comment} rating=${s.rating} />
         </div>

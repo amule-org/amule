@@ -2,91 +2,31 @@
 // Todos / Descargas / Subidas selector. Data comes from the live `clients`
 // store (api.get("clients") + SSE client_added/updated/removed) which already
 // carries all peers regardless of transfer direction, so filtering is purely
-// client-side. Renders every field GET /api/v0/clients exposes.
+// client-side. Columns and formatting live in client-table.js, shared with the
+// per-file Clients tab of the detail panels.
 
-import { api } from "../api.js";
-import { data } from "../events.js";
-import { html, useState, useEffect, useStore } from "../dom.js";
-import { Badge, Placeholder, Tabs } from "../components.js";
-import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatSpeed } from "../format.js";
-import { Icon } from "../icons.js";
+import { html, useState } from "../dom.js";
+import { Tabs } from "../components.js";
+import { ClientFilters, ClientTable, fileNameOf, isDown, isUp, useClients } from "./client-table.js";
+import { textMatcher } from "../table.js";
 import { t } from "../i18n.js";
 
-const ACTIVE = (s) => s && s !== "idle" && s !== "unknown";
-const isDown = (c) => (c.download_speed_bps || 0) > 0 || ACTIVE(c.download_state);
-const isUp = (c) => (c.upload_speed_bps || 0) > 0 || ACTIVE(c.upload_state);
-
-// Column set, declared once with the tabs each column shows in. The "all" tab
-// keeps the shared columns plus a condensed state/speed/total per direction;
-// each single-direction tab adds that direction's extra detail columns.
-const ALL = ["all", "downloads", "uploads"];
-const DL = ["all", "downloads"];
-const UL = ["all", "uploads"];
-const softLabel = (c) => [c.software ? t("downloads_peer_soft_" + c.software) : "", c.software === "unknown" ? "" : c.software_version].filter(Boolean).join(" ") || "—";
-const rankLabel = (c) => !c.remote_queue_rank ? "—" : c.remote_queue_rank >= 0xFFFF ? t("downloads_peer_queue_full") : c.remote_queue_rank;
-const bytesOf = (c, k) => formatBytes((c.xfer || {})[k]);
-// The "file" column is shared by both directions: download_file_name is the
-// peer-advertised name of what we're pulling FROM them; upload_file_name is
-// the partfile they're pulling FROM us. An upload-only peer has no
-// download_file_name, so falling back to upload_file_name is what actually
-// makes the column non-blank for uploads (previously always "—" there).
-const fileNameOf = (c) => c.download_file_name || c.upload_file_name || "";
-
-// Each column carries key + sortVal so the header is clickable-to-sort (the
-// flags column has no key → stays non-sortable).
-const COLS = [
-  { cls: "peer-flags", width: "60px", show: ALL, cell: (c) => peerFlags(c) },
-  { key: "name", always: true, th: "downloads_peer_col_name", width: "170px", show: ALL, sortable: true,
-    sortVal: (c) => (c.client_name || "").toLowerCase(),
-    cell: (c) => html`<span title=${c.client_name}>${c.client_name || "—"}</span>` },
-  { key: "software", th: "downloads_peer_col_software", width: "140px", show: ALL, sortable: true,
-    sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
-  { key: "file", th: "downloads_peer_col_file", cls: "name", show: ALL, sortable: true,
-    sortVal: (c) => fileNameOf(c).toLowerCase(),
-    cell: (c) => html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
-
-  { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", show: DL, sortable: true,
-    sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
-  { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", show: DL, sortable: true,
-    sortVal: (c) => c.download_speed_bps || 0, cell: (c) => formatSpeed(c.download_speed_bps) },
-  { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", show: DL, sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.down_total) || 0, cell: (c) => bytesOf(c, "down_total") },
-  { key: "dl_session", th: "downloads_peer_col_downloaded_session", num: true, width: "110px", show: ["downloads"], sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.down_session) || 0, cell: (c) => bytesOf(c, "down_session") },
-  { key: "remote_rank", th: "downloads_peer_col_remote_rank", num: true, width: "90px", show: ["downloads"], sortable: true,
-    sortVal: (c) => c.remote_queue_rank || 0, cell: (c) => rankLabel(c) },
-
-  { key: "ul_state", th: "downloads_peer_col_ul_state", width: "120px", show: UL, sortable: true,
-    sortVal: (c) => c.upload_state || "", cell: (c) => stateBadge(c.upload_state) },
-  { key: "ul_speed", th: "downloads_peer_col_ul_speed", num: true, width: "100px", show: UL, sortable: true,
-    sortVal: (c) => c.upload_speed_bps || 0, cell: (c) => formatSpeed(c.upload_speed_bps) },
-  { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", show: UL, sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.up_total) || 0, cell: (c) => bytesOf(c, "up_total") },
-  { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "110px", show: ["uploads"], sortable: true,
-    sortVal: (c) => (c.xfer && c.xfer.up_session) || 0, cell: (c) => bytesOf(c, "up_session") },
-  { key: "queue_pos", th: "downloads_peer_col_queue_pos", num: true, width: "90px", show: ["uploads"], sortable: true,
-    sortVal: (c) => c.queue_waiting_position || 0, cell: (c) => c.queue_waiting_position || "—" },
-  { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", show: ["uploads"], sortable: true,
-    sortVal: (c) => c.score || 0, cell: (c) => c.score || "—" },
-];
-
-const IDENT_FILTERS = ["all", "identified", "not_identified"].map((v) => [v, t("downloads_peer_ident_" + v)]);
+// Every tab lists the full column set in the picker; these are the ones that
+// start hidden in each, so the default view stays focused on that direction
+// while the rest is one click away.
+const TAB_HIDDEN = {
+  all: ["dl_session", "remote_rank", "ul_session", "queue_pos", "score"],
+  downloads: ["ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"],
+  uploads: ["dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"],
+};
+// Default sort per tab: most transferred first, in the tab's own direction.
+const TAB_SORT = { all: "downloaded", downloads: "downloaded", uploads: "uploaded" };
 
 export default function ClientsPanel() {
-  const clients = useStore("clients") || [];
+  const clients = useClients();
   const [filter, setFilter] = useState("all"); // direction tab: all / downloads / uploads
   const [ident, setIdent] = useState("identified");
   const [q, setQ] = useState("");
-  // sortKey null → default sort (busiest first).
-  const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs("clients", { sortKey: null, sortDir: 1, hidden: [] });
-
-  useEffect(() => {
-    data.register({ key: "clients", eventPrefix: "client", id: "client_ecid",
-      list: () => api.get("clients").then((r) => r.clients || []) });
-    data.ensure("clients");
-  }, []);
 
   const nDown = clients.filter(isDown).length;
   const nUp = clients.filter(isUp).length;
@@ -104,61 +44,19 @@ export default function ClientsPanel() {
     { key: "uploads", label: t("downloads_peer_upload"), badge: nUp },
   ];
 
-  const columns = COLS.filter((col) => col.show.includes(filter))
-    .map((col) => ({ ...col, label: col.th ? t(col.th) : "" }));
-  const shown = columns.filter((c) => !c.key || !hidden.has(c.key));
-
-  // Sort by the chosen column when set (and visible in this tab); otherwise keep
-  // the default "busiest peers first" order (combined dl+ul speed, descending).
-  if (columns.some((c) => c.key === sortKey && c.sortVal)) {
-    list = sortRows(list, columns, sortKey, sortDir);
-  } else {
-    list.sort((a, b) =>
-      ((b.download_speed_bps || 0) + (b.upload_speed_bps || 0)) -
-      ((a.download_speed_bps || 0) + (a.upload_speed_bps || 0)));
-  }
-
+  // key=${filter} remounts the table on a tab switch: useTablePrefs reads its
+  // storage key once, so each tab needs its own instance to keep its own
+  // hidden columns / sort / widths.
   return html`
     <div class="fill-view">
       <section class="net-pane pane-fill">
         <${Tabs} tabs=${tabs} active=${filter} onSelect=${setFilter} />
         <div class="net-pane-body">
-        <div class="toolbar pane-toolbar">
-          <select class="input input-sm" value=${ident} onChange=${(e) => setIdent(e.target.value)}>
-            ${IDENT_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
-          </select>
-          <input class="input input-sm" type="text" placeholder=${t("downloads_peer_filter")} value=${q} onInput=${(e) => setQ(e.target.value)} />
-          <div class="spacer"></div>
-          <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
-        </div>
-        <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.client_ecid}
-                         sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
-                         widths=${widths} onResize=${setWidth}
-                         maxHeight="none"
-                         empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />
+          <${ClientTable} key=${filter} rows=${list} prefsKey=${"clients_" + filter}
+                          defaultHidden=${TAB_HIDDEN[filter]} defaultSort=${TAB_SORT[filter]}
+                          toolbarCls="toolbar pane-toolbar"
+                          toolbar=${ClientFilters({ ident, setIdent, q, setQ })} />
         </div>
       </section>
     </div>`;
-}
-
-// Compact status icons (replacing the ident/obfuscation/friend columns). Each
-// icon carries an explanatory tooltip; only meaningful states show an icon.
-function peerFlags(c) {
-  const flags = [];
-  if (c.ident_state === "identified")
-    flags.push(["verified", t("downloads_peer_ident") + ": " + t("downloads_peer_identified")]);
-  else if (c.ident_state === "bad_guy")
-    flags.push(["warning", t("downloads_peer_ident") + ": " + t("downloads_peer_bad_guy")]);
-  if (c.obfuscation_status === "enabled")
-    flags.push(["lock", t("downloads_peer_obfuscation") + ": " + t("downloads_peer_enabled")]);
-  if (c.friend_slot)
-    flags.push(["star", t("downloads_peer_friend")]);
-  return flags.map(([name, tip]) => html`<${Icon} name=${name} size=${18} title=${tip} />`);
-}
-
-function stateBadge(s) {
-  if (!s || s === "idle") return html`<${Badge}>${t("downloads_peer_state_" + (s || "idle"))}<//>`;
-  const kind = s === "downloading" || s === "uploading" ? "downloading"
-    : s === "banned" || s === "error" ? "paused" : "waiting";
-  return html`<${Badge} kind=${kind}>${t("downloads_peer_state_" + s)}<//>`;
 }

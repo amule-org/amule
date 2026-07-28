@@ -770,6 +770,12 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
   border-radius: 0 0 var(--radius) var(--radius); padding: 12px;
 }
 
+/* --- per-file clients tab --- */
+/* Fills the detail body so the table scrolls its own rows (the .split-view
+   .table-wrap.virtual rule above gives it flex:1) instead of stretching the
+   panel and adding a second scrollbar. */
+.detail-clients { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+
 /* --- comments / ratings tab --- */
 .detail-comments { display: flex; flex-direction: column; gap: 16px; }
 .comment-editor { display: flex; flex-direction: column; gap: 8px; }

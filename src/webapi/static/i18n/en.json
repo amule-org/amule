@@ -239,6 +239,7 @@
   "downloads_detail_copy_failed": "Could not copy the link",
   "downloads_detail_eta": "Remaining",
   "detail_tab_details": "Details",
+  "detail_tab_clients": "Clients",
   "detail_tab_comments": "Comments",
   "detail_tab_filename": "Filename",
   "filename_none": "No source-reported names yet.",
