@@ -1766,7 +1766,11 @@ namespace
 wxString TabAccelSuffix(const wxString &letter)
 {
 #ifdef __WXMAC__
-	return " (⌥" + letter + ")"; // U+2325 OPTION KEY, i.e. Alt on macOS
+	// Built from the codepoint, not a raw literal, so it can't be mangled
+	// by a narrow->wide conversion through a non-UTF-8 system encoding --
+	// macOS reports GetSystemEncodingName() as Mac OS Roman, which is why
+	// #318 had to force UTF-8 under __WXOSX__ elsewhere in the tree.
+	return " (" + wxString(wxUniChar(0x2325)) + letter + ")"; // U+2325 OPTION KEY
 #else
 	return " (Alt+" + letter + ")";
 #endif

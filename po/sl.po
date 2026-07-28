@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-28 10:11+0200\n"
+"POT-Creation-Date: 2026-07-28 11:35+0200\n"
 "PO-Revision-Date: 2026-07-27 10:33+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -596,36 +596,36 @@ msgstr "Obiščite https://github.com/amule-org/amule/releases/latest da preveri
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "USODNA NAPAKA: ustvaritev časomerilnika ni uspela"
 
-#: src/amuleDlg.cpp:361 src/amuleDlg.cpp:1806 src/amuleDlg.cpp:2052
+#: src/amuleDlg.cpp:361 src/amuleDlg.cpp:1810 src/amuleDlg.cpp:2056
 #: src/muuli_wdr.cpp:1492 src/muuli_wdr.cpp:3412
 msgid "Networks"
 msgstr "Omrežja"
 
-#: src/amuleDlg.cpp:362 src/amuleDlg.cpp:1812 src/muuli_wdr.cpp:3413
+#: src/amuleDlg.cpp:362 src/amuleDlg.cpp:1816 src/muuli_wdr.cpp:3413
 msgid "Searches"
 msgstr "Iskanja"
 
-#: src/amuleDlg.cpp:363 src/amuleDlg.cpp:1818 src/DownloadListCtrl.cpp:740
+#: src/amuleDlg.cpp:363 src/amuleDlg.cpp:1822 src/DownloadListCtrl.cpp:740
 #: src/muuli_wdr.cpp:392 src/muuli_wdr.cpp:1585 src/muuli_wdr.cpp:3414
 #: src/Statistics.cpp:829
 msgid "Downloads"
 msgstr "Prejemanja"
 
-#: src/amuleDlg.cpp:364 src/amuleDlg.cpp:1824 src/muuli_wdr.cpp:3288
+#: src/amuleDlg.cpp:364 src/amuleDlg.cpp:1828 src/muuli_wdr.cpp:3288
 msgid "Shared files"
 msgstr "Deljene datoteke"
 
-#: src/amuleDlg.cpp:365 src/amuleDlg.cpp:1830 src/muuli_wdr.cpp:2920
+#: src/amuleDlg.cpp:365 src/amuleDlg.cpp:1834 src/muuli_wdr.cpp:2920
 #: src/muuli_wdr.cpp:3370 src/muuli_wdr.cpp:3417
 msgid "Messages"
 msgstr "Sporočila"
 
-#: src/amuleDlg.cpp:366 src/amuleDlg.cpp:1836 src/muuli_wdr.cpp:3418
+#: src/amuleDlg.cpp:366 src/amuleDlg.cpp:1840 src/muuli_wdr.cpp:3418
 #: src/PrefsUnifiedDlg.cpp:312 src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statistika"
 
-#: src/amuleDlg.cpp:368 src/amuleDlg.cpp:1843 src/muuli_wdr.cpp:3420
+#: src/amuleDlg.cpp:368 src/amuleDlg.cpp:1847 src/muuli_wdr.cpp:3420
 #: src/PrefsUnifiedDlg.cpp:328 src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Nastavitve"
@@ -773,60 +773,60 @@ msgstr "Mapa za preobleke »%s« ne obstaja"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "OPOZORILO: datoteke s preobleko »%s« ni moč odpreti za branje"
 
-#: src/amuleDlg.cpp:1810 src/muuli_wdr.cpp:3412
+#: src/amuleDlg.cpp:1814 src/muuli_wdr.cpp:3412
 msgid "Networks Window"
 msgstr "Okno z omrežji"
 
-#: src/amuleDlg.cpp:1816 src/muuli_wdr.cpp:3413
+#: src/amuleDlg.cpp:1820 src/muuli_wdr.cpp:3413
 msgid "Searches Window"
 msgstr "Okno z iskanji"
 
-#: src/amuleDlg.cpp:1822 src/muuli_wdr.cpp:3414
+#: src/amuleDlg.cpp:1826 src/muuli_wdr.cpp:3414
 msgid "Downloads Window"
 msgstr "Okno s prejemanji"
 
-#: src/amuleDlg.cpp:1828 src/muuli_wdr.cpp:3416
+#: src/amuleDlg.cpp:1832 src/muuli_wdr.cpp:3416
 msgid "Shared Files Window"
 msgstr "Okno z deljenimi datotekami"
 
-#: src/amuleDlg.cpp:1834 src/muuli_wdr.cpp:3417
+#: src/amuleDlg.cpp:1838 src/muuli_wdr.cpp:3417
 msgid "Messages Window"
 msgstr "Okno s sporočili"
 
-#: src/amuleDlg.cpp:1840 src/muuli_wdr.cpp:3418
+#: src/amuleDlg.cpp:1844 src/muuli_wdr.cpp:3418
 msgid "Statistics Graph Window"
 msgstr "Okno s statističnimi grafi"
 
-#: src/amuleDlg.cpp:1847 src/muuli_wdr.cpp:3420
+#: src/amuleDlg.cpp:1851 src/muuli_wdr.cpp:3420
 msgid "Preferences Settings Window"
 msgstr "Okno z nastavitvami"
 
-#: src/amuleDlg.cpp:1850 src/muuli_wdr.cpp:3421
+#: src/amuleDlg.cpp:1854 src/muuli_wdr.cpp:3421
 msgid "Import"
 msgstr "Uvoz"
 
-#: src/amuleDlg.cpp:1854 src/muuli_wdr.cpp:3421
+#: src/amuleDlg.cpp:1858 src/muuli_wdr.cpp:3421
 msgid "The partfile importer tool"
 msgstr "Orodje za uvažanje delnih datotek"
 
-#: src/amuleDlg.cpp:1857 src/muuli_wdr.cpp:3422
+#: src/amuleDlg.cpp:1861 src/muuli_wdr.cpp:3422
 #: src/utils/aLinkCreator/src/alcframe.cpp:262
 msgid "About"
 msgstr "O programu"
 
-#: src/amuleDlg.cpp:1857 src/muuli_wdr.cpp:3422
+#: src/amuleDlg.cpp:1861 src/muuli_wdr.cpp:3422
 msgid "About/Help"
 msgstr "O programu/pomoč"
 
-#: src/amuleDlg.cpp:2055
+#: src/amuleDlg.cpp:2059
 msgid "eD2k network"
 msgstr "Omrežje eD2k"
 
-#: src/amuleDlg.cpp:2058
+#: src/amuleDlg.cpp:2062
 msgid "Kad network"
 msgstr "Omrežje Kad"
 
-#: src/amuleDlg.cpp:2058
+#: src/amuleDlg.cpp:2062
 msgid "No network"
 msgstr "Brez omrežja"
 
