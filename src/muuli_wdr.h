@@ -648,6 +648,17 @@ wxBitmap connButImg(size_t index);
 
 wxBitmap amuleDlgImages(size_t index);
 
+// Shared by CServerWnd::UpdateED2KConnectButton() and
+// CKadDlg::UpdateConnectButton(): both panes' Connect/Cancel/Disconnect
+// toggle buttons need the same label/bitmap/enabled-state logic.
+enum EConnButtonState
+{
+	ConnButtonOff,
+	ConnButtonConnecting,
+	ConnButtonConnected
+};
+void SetConnectButtonState(wxButton *button, EConnButtonState state, bool enabled);
+
 #endif
 
 // End of generated file

@@ -2658,7 +2658,13 @@ item9->SetName("kadScope");
     // after construction, which sets the real label/bitmap for the current
     // state.
     wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
-    item20->Add( item38, wxSizerFlags().Expand().Border(wxALL, 5) );
+    // Not .Expand(): sizes naturally like the ED2K pane's equivalent button
+    // (item14 above) instead of stretching to the column's full width, which
+    // GTK and macOS then filled differently (centered vs. icon-left) -- see
+    // the #663 review. Trades away lining up with the full-width "Bootstrap
+    // from known clients" button above for cross-tab consistency with ED2K's
+    // button, which matters more since the two should read as the same control.
+    item20->Add( item38, wxSizerFlags().Center().Border(wxALL, 5) );
     item1->Add( item20, wxSizerFlags().Top() );
     item0->Add( item1, wxSizerFlags(1).Expand() );
     if (set_sizer)
@@ -5944,6 +5950,30 @@ wxBitmap connButImg( size_t index )
         return bitmap;
     }
     return wxNullBitmap;
+}
+
+void SetConnectButtonState(wxButton *button, EConnButtonState state, bool enabled)
+{
+	// The leading space (outside the translatable string, so no new msgid)
+	// is the portable way to put a gap between the icon and the label:
+	// wxButton::SetBitmapMargins() only does anything on wxOSX (see
+	// osx/anybutton.h) -- wxGTK inherits the base class's no-op, so using
+	// it here would fix macOS while silently doing nothing on Linux.
+	switch (state) {
+	case ConnButtonConnecting:
+		button->SetLabel(wxT(" ") + _("Cancel"));
+		button->SetBitmap(connButImg(2));
+		break;
+	case ConnButtonConnected:
+		button->SetLabel(wxT(" ") + _("Disconnect"));
+		button->SetBitmap(connButImg(1));
+		break;
+	default:
+		button->SetLabel(wxT(" ") + _("Connect"));
+		button->SetBitmap(connButImg(0));
+	}
+
+	button->Enable(enabled);
 }
 
 wxBitmap amuleDlgImages( size_t index )

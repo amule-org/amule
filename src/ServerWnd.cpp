@@ -510,43 +510,15 @@ void CServerWnd::UpdateED2KConnectButton()
 	wxButton *button = CastChild(IDC_ED2KDISCONNECT, wxButton);
 	wxCHECK_RET(button, "'IDC_ED2KDISCONNECT' widget not found");
 
-	enum State
-	{
-		Off,
-		Connecting,
-		Connected
-	};
-	State state;
+	EConnButtonState state;
 	if (theApp->IsConnectedED2K()) {
-		state = Connected;
+		state = ConnButtonConnected;
 	} else if (theApp->serverconnect->IsConnecting()) {
-		state = Connecting;
+		state = ConnButtonConnecting;
 	} else {
-		state = Off;
+		state = ConnButtonOff;
 	}
 
-	static State s_oldState = Off;
-	static bool s_first = true;
-	if (!s_first && state == s_oldState) {
-		return;
-	}
-	s_first = false;
-	s_oldState = state;
-
-	switch (state) {
-	case Connecting:
-		button->SetLabel(_("Cancel"));
-		button->SetBitmap(connButImg(2));
-		break;
-	case Connected:
-		button->SetLabel(_("Disconnect"));
-		button->SetBitmap(connButImg(1));
-		break;
-	default:
-		button->SetLabel(_("Connect"));
-		button->SetBitmap(connButImg(0));
-	}
-
-	button->Enable(thePrefs::GetNetworkED2K() && theApp->ipfilter->IsReady());
+	SetConnectButtonState(button, state, thePrefs::GetNetworkED2K() && theApp->ipfilter->IsReady());
 }
 // File_checked_for_headers

@@ -93,44 +93,16 @@ void CKadDlg::UpdateConnectButton()
 	wxButton *button = CastChild(ID_KADDISCONNECT, wxButton);
 	wxCHECK_RET(button, "'ID_KADDISCONNECT' widget not found");
 
-	enum State
-	{
-		Off,
-		Connecting,
-		Connected
-	};
-	State state;
+	EConnButtonState state;
 	if (theApp->IsConnectedKad()) {
-		state = Connected;
+		state = ConnButtonConnected;
 	} else if (theApp->IsKadRunning()) {
-		state = Connecting;
+		state = ConnButtonConnecting;
 	} else {
-		state = Off;
+		state = ConnButtonOff;
 	}
 
-	static State s_oldState = Off;
-	static bool s_first = true;
-	if (!s_first && state == s_oldState) {
-		return;
-	}
-	s_first = false;
-	s_oldState = state;
-
-	switch (state) {
-	case Connecting:
-		button->SetLabel(_("Cancel"));
-		button->SetBitmap(connButImg(2));
-		break;
-	case Connected:
-		button->SetLabel(_("Disconnect"));
-		button->SetBitmap(connButImg(1));
-		break;
-	default:
-		button->SetLabel(_("Connect"));
-		button->SetBitmap(connButImg(0));
-	}
-
-	button->Enable(thePrefs::GetNetworkKademlia());
+	SetConnectButtonState(button, state, thePrefs::GetNetworkKademlia());
 }
 
 void CKadDlg::SetUpdatePeriod(int step)
