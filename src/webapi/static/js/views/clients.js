@@ -120,9 +120,6 @@ export default function ClientsPanel() {
 
   return html`
     <div class="fill-view">
-      <div class="view-header">
-        <h3 class="section-title">${t("app_nav_clients")}</h3>
-      </div>
       <section class="net-pane pane-fill">
         <${Tabs} tabs=${tabs} active=${filter} onSelect=${setFilter} />
         <div class="net-pane-body">
@@ -137,6 +134,7 @@ export default function ClientsPanel() {
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(c) => c.client_ecid}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                          widths=${widths} onResize=${setWidth}
+                         maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("downloads_peer_empty")}<//>`} />
         </div>
       </section>

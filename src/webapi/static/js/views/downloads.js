@@ -212,29 +212,30 @@ export default function Downloads({ isGuest }) {
     })),
   ];
 
+  // View-level actions ride the right of the category tab strip (no separate
+  // title row — the nav already names the page). The manage-categories mode has
+  // no tab strip, so they get a plain toolbar row there.
+  const actions = html`
+    <button class="btn btn-sm admin-only" type="button" onClick=${clearCompleted}>
+      ${t("downloads_clear_completed")}
+    </button>
+    <button class=${"btn btn-sm admin-only" + (manageCats ? " btn-primary" : "")}
+            type="button" aria-pressed=${manageCats}
+            onClick=${() => { const next = !manageCats; setManageCats(next); if (!next) loadCategories(); }}>
+      ${t("downloads_manage_categories")}
+    </button>`;
+
   return html`
     <div class="split-view">
-    <div class="view-header">
-      <h3 class="section-title">${t("downloads_download")}</h3>
-      <div class="spacer"></div>
-      <button class="btn btn-sm admin-only" type="button" onClick=${clearCompleted}>
-        ${t("downloads_clear_completed")}
-      </button>
-      <button class=${"btn btn-sm admin-only" + (manageCats ? " btn-primary" : "")}
-              type="button" aria-pressed=${manageCats}
-              onClick=${() => { const next = !manageCats; setManageCats(next); if (!next) loadCategories(); }}>
-        ${t("downloads_manage_categories")}
-      </button>
-    </div>
-
     ${manageCats
-      ? html`<${CategoriesPanel} isGuest=${isGuest} />`
+      ? html`<div class="view-header"><div class="spacer"></div>${actions}</div>
+             <${CategoriesPanel} isGuest=${isGuest} />`
       : html`<${SplitDetail} storageKey="dl_detail_height" open=${!!detailHash}
                       onClose=${() => setDetailHash(null)}
                       top=${html`
       <section class="net-pane">
       <${Tabs} tabs=${categoryTabs} active=${filterCategory}
-               onSelect=${(k) => setFilterCategory(k)} />
+               onSelect=${(k) => setFilterCategory(k)} extra=${actions} />
       <div class="net-pane-body">
       <div class="view-header">
         <div class="toolbar admin-only">

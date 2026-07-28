@@ -319,6 +319,7 @@ export default function Search({ isGuest }) {
         <${VirtualTable} columns=${shown} rows=${list} rowKey=${(r) => r.hash} rowClass=${rowClass}
                          sortKey=${sortKey} sortDir=${sortDir} onSort=${toggleSort}
                          widths=${widths} onResize=${setWidth}
+                         maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("search_empty")}<//>`} />
       </div>
     </section>

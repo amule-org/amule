@@ -278,7 +278,7 @@ function StatusBar() {
       <span class="status-left">${badge}</span>
       <div class="status-right">
         ${groups.map((g, i) => html`
-          ${i > 0 ? html`<span class="status-sep" aria-hidden="true"></span>` : null}
+          ${i > 0 ? html`<span class="vsep" aria-hidden="true"></span>` : null}
           ${g}`)}
       </div>
     </div>`;

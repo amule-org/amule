@@ -131,12 +131,6 @@ export default function Shared({ isGuest }) {
 
   return html`
     <div class="split-view">
-    <div class="view-header">
-      <h3 class="section-title">${t("shared_title")}</h3>
-      <div class="spacer"></div>
-      <button class="btn btn-sm admin-only" onClick=${reload}>${t("shared_refresh_shares")}</button>
-    </div>
-
     <${SplitDetail} storageKey="shared_detail_height" open=${!!detailHash}
                     onClose=${() => setDetailHash(null)}
                     top=${html`
@@ -149,6 +143,8 @@ export default function Shared({ isGuest }) {
             ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
           <span class="selected-count">${t("shared_selected")} ${selectedCount}</span>
+          <span class="vsep" aria-hidden="true"></span>
+          <button class="btn btn-sm" onClick=${reload}>${t("shared_refresh_shares")}</button>
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
