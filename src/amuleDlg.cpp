@@ -568,7 +568,16 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 			}
 		}
 
-		m_wndToolbar->ToggleTool(lastbutton, lastbutton == ev.GetId());
+		// A physical click auto-toggles the clicked wxITEM_CHECK tool, so
+		// historically this only had to untoggle the *previous* one. An
+		// accelerator or menu event (Alt+<letter>, the macOS Navigate menu)
+		// doesn't click anything, so the new tab's tool never lit up that
+		// way -- leaving no toolbar button active until the next mouse
+		// click (amule-org/amule#642 review). Toggle both ends explicitly.
+		if (lastbutton != ev.GetId()) {
+			m_wndToolbar->ToggleTool(lastbutton, false);
+		}
+		m_wndToolbar->ToggleTool(ev.GetId(), true);
 		lastbutton = ev.GetId();
 	}
 }
@@ -1779,44 +1788,44 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 		m_tblist[Toolbar_Network],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Networks Window (Alt+N)"));
+		_("Networks Window") + " (Alt+N)");
 	wndToolbar->AddTool(ID_BUTTONSEARCH,
 		_("Searches"),
 		m_tblist[Toolbar_Search],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Searches Window (Alt+S)"));
+		_("Searches Window") + " (Alt+S)");
 	wndToolbar->AddTool(ID_BUTTONDOWNLOADS,
 		_("Downloads"),
 		m_tblist[Toolbar_Transfers],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Downloads Window (Alt+T)"));
+		_("Downloads Window") + " (Alt+T)");
 	wndToolbar->AddTool(ID_BUTTONSHARED,
 		_("Shared files"),
 		m_tblist[Toolbar_Shared],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Shared Files Window (Alt+F)"));
+		_("Shared Files Window") + " (Alt+F)");
 	wndToolbar->AddTool(ID_BUTTONMESSAGES,
 		_("Messages"),
 		m_tblist[Toolbar_Messages],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Messages Window (Alt+M)"));
+		_("Messages Window") + " (Alt+M)");
 	wndToolbar->AddTool(ID_BUTTONSTATISTICS,
 		_("Statistics"),
 		m_tblist[Toolbar_Stats],
 		wxNullBitmap,
 		wxITEM_CHECK,
-		_("Statistics Graph Window (Alt+G)"));
+		_("Statistics Graph Window") + " (Alt+G)");
 	wndToolbar->AddSeparator();
 	wndToolbar->AddTool(ID_BUTTONNEWPREFERENCES,
 		_("Preferences"),
 		m_tblist[Toolbar_Prefs],
 		wxNullBitmap,
 		wxITEM_NORMAL,
-		_("Preferences Settings Window (Alt+P)"));
+		_("Preferences Settings Window") + " (Alt+P)");
 #ifndef CLIENT_GUI
 	wndToolbar->AddTool(ID_BUTTONIMPORT,
 		_("Import"),
