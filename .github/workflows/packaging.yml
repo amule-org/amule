@@ -482,8 +482,8 @@ jobs:
             ${{ matrix.pkg_prefix }}-libgd
             ${{ matrix.pkg_prefix }}-libmaxminddb
             ${{ matrix.pkg_prefix }}-make
+            ${{ matrix.pkg_prefix }}-ninja
             ${{ matrix.pkg_prefix }}-pkgconf
-            ${{ matrix.pkg_prefix }}-pupnp
             ${{ matrix.pkg_prefix }}-readline
             ${{ matrix.pkg_prefix }}-toolchain
             ${{ matrix.pkg_prefix }}-wxwidgets3.2-msw
@@ -511,6 +511,24 @@ jobs:
         # aMule-snapshot-Windows-*.zip instead of
         # aMule-<tag>-Windows-*.zip.
         run: git config --global --add safe.directory '*'
+      # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
+      # the Windows portable gets the UPnP fixes released in 22.0.4 (issue
+      # #242). Installed into $MINGW_PREFIX so find_package(UPNP CONFIG) picks
+      # it up and build.sh's dependency bundling ships the 22.x DLL.
+      - name: Build libupnp (pupnp) from source
+        run: |
+          set -euo pipefail
+          . packaging/linux/versions.env
+          curl -L -o /tmp/libupnp.tar.gz "$LIBUPNP_TARBALL_URL"
+          echo "$LIBUPNP_SHA256  /tmp/libupnp.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/libupnp
+          tar -xf /tmp/libupnp.tar.gz -C /tmp/libupnp --strip-components=1
+          cmake -S /tmp/libupnp -B /tmp/libupnp/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DUPNP_BUILD_SHARED=ON -DUPNP_BUILD_STATIC=OFF \
+            -DUPNP_BUILD_SAMPLES=OFF -DUPNP_BUILD_TESTS=OFF -Dreuseaddr=ON -Dipv6=ON \
+            -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX"
+          cmake --build /tmp/libupnp/build
+          cmake --install /tmp/libupnp/build
       - name: Build portable .zip
         env:
           WINDOWS_MSYSTEM: ${{ matrix.msystem }}

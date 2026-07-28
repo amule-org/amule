@@ -100,6 +100,9 @@ build_appimage() {
         --build-arg "WX_SHA256=${WX_SHA256}" \
         --build-arg "LINUXDEPLOY_VERSION=${LINUXDEPLOY_VERSION}" \
         --build-arg "LINUXDEPLOY_GTK_SHA=${LINUXDEPLOY_GTK_SHA}" \
+        --build-arg "LIBUPNP_VERSION=${LIBUPNP_VERSION}" \
+        --build-arg "LIBUPNP_TARBALL_URL=${LIBUPNP_TARBALL_URL}" \
+        --build-arg "LIBUPNP_SHA256=${LIBUPNP_SHA256}" \
         -t "${image_tag}" \
         "${SCRIPT_DIR}/appimage"
 

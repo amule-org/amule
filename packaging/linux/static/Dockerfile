@@ -72,21 +72,25 @@ RUN wget -qO /tmp/wx.tar.bz2 "${WX_TARBALL_URL}" \
  && make -j"$(nproc)" && make install
 
 # --- libupnp / pupnp (static; no static Alpine package, build from source) ---
-# versions.env pins the GitHub source archive (autotools not pre-generated),
-# so bootstrap with autoreconf first. The autotools build installs no CMake
-# config, letting aMule's find_package(UPNP CONFIG) cleanly fall back to
-# pkg-config and pick up the static libupnp.a / libixml.a.
-# CFLAGS="-include stddef.h": pupnp 1.14.x's threadutil sources use NULL
-# without pulling in <stddef.h> transitively, which fails on musl (glibc /
-# the GNOME SDK happen to include it via other headers, so the Flatpak
-# build of the same archive is unaffected).
+# pupnp 22.x is CMake-only (upstream dropped autotools), so build with CMake:
+# static libs only (UPNP_BUILD_SHARED=OFF), no samples/tests.
+# CMAKE_INSTALL_LIBDIR=lib keeps libupnp.pc out of lib64. The install also
+# drops a UPNP CMake package config that exposes only a UPNP::Static target,
+# but aMule links UPNP::Shared -- so remove lib/cmake/{UPNP,IXML} to make
+# aMule's find_package(UPNP CONFIG) fall back to pkg-config, which synthesises
+# UPNP::Shared from the static libupnp.a / libixml.a (the same path the 1.14.x
+# autotools build relied on). 22.x no longer needs the musl "-include stddef.h"
+# workaround the 1.14.x threadutil sources did.
 RUN wget -qO /tmp/libupnp.tar.gz "${LIBUPNP_TARBALL_URL}" \
  && echo "${LIBUPNP_SHA256}  /tmp/libupnp.tar.gz" | sha256sum -c - \
  && mkdir -p /tmp/libupnp && tar -xf /tmp/libupnp.tar.gz -C /tmp/libupnp --strip-components=1 \
- && cd /tmp/libupnp && ./bootstrap \
- && ./configure --disable-shared --enable-static --disable-samples --prefix=/usr/local \
-        CFLAGS="-include stddef.h" \
- && make -j"$(nproc)" && make install
+ && cd /tmp/libupnp \
+ && cmake -B build -DCMAKE_BUILD_TYPE=Release \
+        -DUPNP_BUILD_SHARED=OFF -DUPNP_BUILD_STATIC=ON \
+        -DUPNP_BUILD_SAMPLES=OFF -DUPNP_BUILD_TESTS=OFF -Dreuseaddr=ON -Dipv6=ON \
+        -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib \
+ && cmake --build build -j"$(nproc)" && cmake --install build \
+ && rm -rf /usr/local/lib/cmake/UPNP /usr/local/lib/cmake/IXML
 
 # Force static resolution for deps that ship BOTH .so and .a. CMake's
 # find_library prefers the .so dev symlink and hands its ABSOLUTE path to the

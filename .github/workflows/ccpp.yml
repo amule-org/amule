@@ -69,7 +69,6 @@ env:
     mingw-w64-x86_64-libmaxminddb
     mingw-w64-x86_64-ninja
     mingw-w64-x86_64-pkgconf
-    mingw-w64-x86_64-pupnp
     mingw-w64-x86_64-readline
     mingw-w64-x86_64-toolchain
     mingw-w64-x86_64-wxwidgets3.2-msw
@@ -230,6 +229,24 @@ jobs:
           msystem: MINGW64
           update: true
           install: ${{ env.cmake_mingw_w64_deps }}
+      # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
+      # Windows gets the UPnP fixes released in 22.0.4 (issue #242). Installed
+      # into $MINGW_PREFIX so find_package(UPNP CONFIG) picks it up and the DLL
+      # bundles into the portable.
+      - name: build libupnp (pupnp) from source
+        run: |
+          set -euo pipefail
+          . packaging/linux/versions.env
+          curl -L -o /tmp/libupnp.tar.gz "$LIBUPNP_TARBALL_URL"
+          echo "$LIBUPNP_SHA256  /tmp/libupnp.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/libupnp
+          tar -xf /tmp/libupnp.tar.gz -C /tmp/libupnp --strip-components=1
+          cmake -S /tmp/libupnp -B /tmp/libupnp/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DUPNP_BUILD_SHARED=ON -DUPNP_BUILD_STATIC=OFF \
+            -DUPNP_BUILD_SAMPLES=OFF -DUPNP_BUILD_TESTS=OFF -Dreuseaddr=ON -Dipv6=ON \
+            -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX"
+          cmake --build /tmp/libupnp/build
+          cmake --install /tmp/libupnp/build
       - name: create build system
         run: |
           cmake \

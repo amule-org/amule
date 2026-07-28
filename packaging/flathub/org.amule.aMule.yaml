@@ -98,8 +98,8 @@ modules:
       - -DCMAKE_INSTALL_LIBDIR=lib
     sources:
       - type: archive
-        url: https://github.com/pupnp/pupnp/archive/refs/tags/release-1.14.21.tar.gz
-        sha256: d176a6028b02ab36e9d334372dd64780d9a8e577a2d8d4c1d70ef8ced15d7d19
+        url: https://github.com/pupnp/pupnp/archive/refs/tags/release-22.0.4.tar.gz
+        sha256: 7028d2a151372ff8a34341e0a269f516676c1af95b0a2ba811a2f0a2fe91ea36
 
   - name: boost
     buildsystem: simple

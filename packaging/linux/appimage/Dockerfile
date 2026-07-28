@@ -9,6 +9,9 @@ ARG WX_VERSION
 ARG WX_SHA256
 ARG LINUXDEPLOY_VERSION
 ARG LINUXDEPLOY_GTK_SHA
+ARG LIBUPNP_VERSION
+ARG LIBUPNP_TARBALL_URL
+ARG LIBUPNP_SHA256
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
@@ -40,7 +43,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         # redistribution; users drop it in ~/.aMule/.
         libmaxminddb-dev \
         libreadline-dev \
-        libupnp-dev \
+        # libupnp-dev intentionally omitted: Ubuntu 22.04 only ships the
+        # ancient 1.8.x line. The pinned 22.x is built from source below.
         # libcurl: backend for wxWebRequest, which aMule's HTTP path requires.
         libcurl4-openssl-dev \
         # GTK3 dev headers (linker target for wx) + Wayland/X11 client headers
@@ -67,6 +71,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         squashfs-tools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# libupnp / pupnp from source: Ubuntu 22.04 only packages the ancient 1.8.x
+# line, so build the pinned 22.x (shared, so linuxdeploy bundles the .so into
+# the AppImage). pupnp 22.x is CMake-only. CMAKE_INSTALL_LIBDIR=lib keeps
+# libupnp.pc / .so / the UPNP CMake config out of lib64 where pkg-config, cmake
+# and ldconfig wouldn't find them.
+RUN wget -qO /tmp/libupnp.tar.gz "${LIBUPNP_TARBALL_URL}" \
+    && echo "${LIBUPNP_SHA256}  /tmp/libupnp.tar.gz" | sha256sum -c - \
+    && mkdir -p /tmp/libupnp && tar -xf /tmp/libupnp.tar.gz -C /tmp/libupnp --strip-components=1 \
+    && cmake -S /tmp/libupnp -B /tmp/libupnp/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+        -DUPNP_BUILD_SHARED=ON -DUPNP_BUILD_STATIC=OFF \
+        -DUPNP_BUILD_SAMPLES=OFF -DUPNP_BUILD_TESTS=OFF -Dreuseaddr=ON -Dipv6=ON \
+        -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib \
+    && cmake --build /tmp/libupnp/build && cmake --install /tmp/libupnp/build \
+    && ldconfig \
+    && rm -rf /tmp/libupnp /tmp/libupnp.tar.gz
 
 # wxWidgets from source. --disable-shared so wx links statically into
 # aMule, sidestepping the wxGTK-SONAME-mismatch problem AppImage users
