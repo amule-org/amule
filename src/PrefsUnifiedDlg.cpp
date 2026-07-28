@@ -406,7 +406,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			}
 
 		const wxString label = wxGetTranslation(pages[i].m_title);
-		maxLabelWidth = std::max(maxLabelWidth, GetTextExtent(label).GetWidth());
+		maxLabelWidth = std::max(maxLabelWidth, m_PrefsIcons->GetTextExtent(label).GetWidth());
 
 		// Add each page to the page-list. Item data is this page's stable
 		// pages[] index (never reordered -- only which pages are visible
@@ -2332,6 +2332,15 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 
 void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
 {
+	// EVT_DATAVIEW_SELECTION_CHANGED, unlike the old EVT_LIST_ITEM_SELECTED,
+	// also fires when the selection is cleared, in which case GetItem() is
+	// not valid and GetItemData() on it would crash outright. Nothing here
+	// currently clears the sidebar's selection, so this is a guard against
+	// future changes rather than a fix for a live bug.
+	if (!event.GetItem().IsOk()) {
+		return;
+	}
+
 	prefs_sizer->Detach(m_CurrentPanel);
 	m_CurrentPanel->Show(false);
 
