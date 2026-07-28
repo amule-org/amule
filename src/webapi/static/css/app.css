@@ -581,21 +581,12 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 /* keep the box's line-height (and padding) when there is no log content yet */
 .logbox:empty::before { content: "\00a0"; }
 
-/* --- connection button: same look as the nav tool-btn, coloured by state --- */
-.conn-btn .icon { width: 20px; height: 20px; }
+/* --- per-network connect button: a .btn whose plug is coloured by state --- */
 .conn-btn.disconnected .icon { color: var(--bad); }  /* red — disconnected */
 .conn-btn.connecting   .icon { color: var(--warn); } /* amber — connecting */
 .conn-btn.connected    .icon { color: var(--ok); }   /* green — connected */
-/* connect button riding the right of a tab strip (Networks): compact,
-   horizontal, and lifted off the bottom border so it sits on the tab line */
+/* extra controls riding the right of a tab strip (Downloads category filters) */
 .tabs-extra { margin-left: auto; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.tabs-extra .conn-btn {
-  flex-direction: row; gap: 6px; min-width: 0; padding: 3px 11px; line-height: 1;
-  border: 1px solid var(--border); background: var(--surface);
-  color: var(--text); border-radius: var(--radius);
-}
-.tabs-extra .conn-btn .icon { width: 16px; height: 16px; }
-.tabs-extra .conn-btn:hover { background: var(--surface-2); }
 
 /* --- notebook-style tabs (CMuleNotebook look) --- */
 .tabs {
