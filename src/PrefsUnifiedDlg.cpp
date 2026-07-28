@@ -28,10 +28,13 @@
 #include <common/Constants.h>
 #include <common/Macros.h> // Needed for itemsof()
 
+#include <algorithm> // std::max (page-sidebar column width)
+
 #include <wx/artprov.h> // wxArtProvider::GetBitmapBundle for the page icons
 #include <wx/bmpbndl.h> // wxBitmapBundle for DPI-aware page icons
 #include <wx/colordlg.h>
 #include <wx/combobox.h> // network-interface drop-down (bind-to-interface)
+#include <wx/dataview.h> // the page sidebar (m_PrefsIcons)
 #include <wx/listctrl.h> // shared-folders editor (remote GUI)
 #include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
@@ -237,7 +240,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHECKBOX(IDC_SHOW_COUNTRY_FLAGS, PrefsUnifiedDlg::OnGeoIPMasterToggle)
 #endif
 	EVT_CHOICE(IDC_COLORSELECTOR, PrefsUnifiedDlg::OnColorCategorySelected)
-	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL, PrefsUnifiedDlg::OnPrefsPageChange)
+	EVT_DATAVIEW_SELECTION_CHANGED(ID_PREFSLISTCTRL, PrefsUnifiedDlg::OnPrefsPageChange)
 
 	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
 
@@ -341,7 +344,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #endif
 	preferencesDlgTop(this, false);
 
-	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxListCtrl);
+	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxDataViewListCtrl);
 	const int kPrefsIconW = 16;
 	const int kPrefsIconH = 16;
 
@@ -360,15 +363,21 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		return wxBitmapBundle::FromBitmaps(wxBitmap(img), wxBitmap(img2x));
 	};
 
-	// Add the single column used
-	m_PrefsIcons->InsertColumn(0, "", wxLIST_FORMAT_LEFT, m_PrefsIcons->GetSize().GetWidth() - 5);
+	// Single icon+text column. Width is computed below from the actual
+	// label text once every page's title is known -- wxDataViewColumn's
+	// own auto-size timing isn't reliably immediate across native
+	// (GTK/macOS) vs generic (MSW) backends, so this measures text
+	// extents directly instead of trusting the platform to have sized
+	// the column correctly before the dialog first lays out.
+	wxDataViewColumn *iconTextCol = m_PrefsIcons->AppendIconTextColumn(
+		"", wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, 0);
 
 	// Temp variables for finding the smallest height and width needed
 	int width = 0;
 	int height = 0;
 
 	// Build the page icons, in page order
-	wxVector<wxBitmapBundle> iconBundles;
+	int maxLabelWidth = 0;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Page icons ship as SVG twins through CamuleArtProvider
 		// ("amule:prefs_<name>"), rasterized by wx at whatever size and
@@ -379,41 +388,55 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 				wxART_LIST,
 				wxSize(kPrefsIconW, kPrefsIconH));
 		if (art.IsOk()) {
-			iconBundles.push_back(art);
-			continue;
-		}
-		// Art-provider miss: the IP2Country tab uses an embedded-PNG
-		// icon via wxArtProvider::GetBitmap, every other tab the
-		// hardcoded amuleSpecial raster data.
-#ifdef GEOIP_GUI
-		if (pages[i].m_function == PreferencesIP2CountryTab) {
-			iconBundles.push_back(makeIcon(wxArtProvider::GetBitmap(
-				"amule:prefs_ip2country", wxART_OTHER, wxSize(kPrefsIconW, kPrefsIconH))));
+			m_pageIcons.push_back(art);
 		} else
+#ifdef GEOIP_GUI
+			// Art-provider miss: the IP2Country tab uses an embedded-PNG
+			// icon via wxArtProvider::GetBitmap, every other tab the
+			// hardcoded amuleSpecial raster data.
+			if (pages[i].m_function == PreferencesIP2CountryTab) {
+				m_pageIcons.push_back(
+					makeIcon(wxArtProvider::GetBitmap("amule:prefs_ip2country",
+						wxART_OTHER,
+						wxSize(kPrefsIconW, kPrefsIconH))));
+			} else
 #endif
-		{
-			iconBundles.push_back(makeIcon(amuleSpecial(pages[i].m_imageidx)));
-		}
-	}
-	m_PrefsIcons->SetSmallImages(iconBundles);
+			{
+				m_pageIcons.push_back(makeIcon(amuleSpecial(pages[i].m_imageidx)));
+			}
 
-	// Add each page to the page-list
-	for (unsigned int i = 0; i < itemsof(pages); ++i) {
-		m_PrefsIcons->InsertItem(i, wxGetTranslation(pages[i].m_title), i);
+		const wxString label = wxGetTranslation(pages[i].m_title);
+		maxLabelWidth = std::max(maxLabelWidth, GetTextExtent(label).GetWidth());
+
+		// Add each page to the page-list. Item data is this page's stable
+		// pages[] index (never reordered -- only which pages are visible
+		// changes), not the row's live position, so OnPrefsPageChange can
+		// always identify the selected page correctly even after the
+		// server / IP2Country row has been hidden and re-shown.
+		wxVector<wxVariant> values;
+		values.push_back(wxVariant(wxDataViewIconText(label, m_pageIcons[i])));
+		m_PrefsIcons->AppendItem(values, (wxUIntPtr)i);
 	}
 
-	// Set list-width so that there aren't any scrollers
-	m_PrefsIcons->SetColumnWidth(0, wxLIST_AUTOSIZE);
-	m_PrefsIcons->SetMinSize(wxSize(m_PrefsIcons->GetColumnWidth(0) + 10, -1));
-	m_PrefsIcons->SetMaxSize(wxSize(m_PrefsIcons->GetColumnWidth(0) + 10, -1));
+	// Set list-width so that there aren't any scrollers. The native
+	// icon+text cell renderer (NSTableView on macOS, GtkCellRenderer on
+	// GTK) reserves more than just the icon's own pixel width for the
+	// icon-text gap and cell insets -- measured on macOS, kPrefsIconW's
+	// worth of padding alone clips the longest labels ("Connessione",
+	// "Contatti/emoticons") by a few pixels, so this is deliberately
+	// generous rather than tightly computed.
+	const int kSidebarPadding = kPrefsIconW + 48;
+	iconTextCol->SetWidth(maxLabelWidth + kSidebarPadding);
+	m_PrefsIcons->SetMinSize(wxSize(maxLabelWidth + kSidebarPadding + 10, -1));
+	m_PrefsIcons->SetMaxSize(wxSize(maxLabelWidth + kSidebarPadding + 10, -1));
 
 	// Now add the pages and calculate the minimum size
+	m_pageWidgets.assign(itemsof(pages), nullptr);
 	wxPanel *DefaultWidget = NULL;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Create a container widget and the contents of the page
 		wxPanel *Widget = new wxPanel(this, -1);
-		// Widget is stored as user data in the list control
-		m_PrefsIcons->SetItemPtrData(i, (wxUIntPtr)Widget);
+		m_pageWidgets[i] = Widget;
 		pages[i].m_function(Widget, true, true);
 		if (i == 0) {
 			DefaultWidget = Widget;
@@ -605,7 +628,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #endif
 
 	// Select the first item
-	m_PrefsIcons->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+	m_PrefsIcons->SelectRow(0);
 
 	// We now have the needed minimum height and width
 	prefs_sizer->SetMinSize(width, height);
@@ -670,11 +693,14 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 void PrefsUnifiedDlg::EnableServerTab(bool enable)
 {
 	if (enable && !m_ServerTabVisible) {
-		// turn server widget on
-		m_PrefsIcons->InsertItem(m_IndexServerTab,
-			wxGetTranslation(pages[m_IndexServerTab].m_title),
-			m_IndexServerTab);
-		m_PrefsIcons->SetItemPtrData(m_IndexServerTab, (wxUIntPtr)m_ServerWidget);
+		// turn server widget on. Item data is the page's stable pages[]
+		// index (see the constructor), not m_ServerWidget directly --
+		// OnPrefsPageChange looks the widget up from m_pageWidgets by
+		// that index, same as every other row.
+		wxVector<wxVariant> values;
+		values.push_back(wxVariant(wxDataViewIconText(
+			wxGetTranslation(pages[m_IndexServerTab].m_title), m_pageIcons[m_IndexServerTab])));
+		m_PrefsIcons->InsertItem(m_IndexServerTab, values, (wxUIntPtr)m_IndexServerTab);
 		m_ServerTabVisible = true;
 	} else if (!enable && m_ServerTabVisible) {
 		// turn server widget off
@@ -2304,13 +2330,19 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 }
 #endif // GEOIP_GUI
 
-void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent &event)
+void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
 {
 	prefs_sizer->Detach(m_CurrentPanel);
 	m_CurrentPanel->Show(false);
 
-	m_CurrentPanel = reinterpret_cast<wxPanel *>(m_PrefsIcons->GetItemData(event.GetIndex()));
-	if (pages[event.GetIndex()].m_function == PreferencesDirectoriesTab) {
+	// Item data is the page's stable pages[] index (set at insertion in
+	// the ctor / EnableServerTab), not the row's live position in the
+	// sidebar -- which shifts whenever the server / IP2Country row is
+	// hidden or re-shown, and previously made both this widget lookup and
+	// the pages[] lookup below vulnerable to picking the wrong page.
+	const unsigned int pageIdx = (unsigned int)m_PrefsIcons->GetItemData(event.GetItem());
+	m_CurrentPanel = m_pageWidgets[pageIdx];
+	if (pages[pageIdx].m_function == PreferencesDirectoriesTab) {
 #ifdef CLIENT_GUI
 		// Nothing to initialise: there is no tree here, and the roots are
 		// refreshed per editing session (PrepareSharedDirsForSession) rather

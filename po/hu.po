@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-28 13:09+0200\n"
+"POT-Creation-Date: 2026-07-28 15:26+0200\n"
 "PO-Revision-Date: 2026-07-28 11:59+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -296,7 +296,7 @@ msgid "Password set and external connections enabled."
 msgstr "Jelszó beállítva, külső kapcsolatok engedélyezve."
 
 #: src/amule.cpp:755 src/KadDlg.cpp:176 src/KadDlg.cpp:185
-#: src/PrefsUnifiedDlg.cpp:1470 src/SharedFilesCtrl.cpp:476
+#: src/PrefsUnifiedDlg.cpp:1496 src/SharedFilesCtrl.cpp:476
 msgid "WARNING"
 msgstr "FIGYELEM"
 
@@ -333,7 +333,7 @@ msgstr "A web szerver futtatását kérte induláskor, de az amuleweb program ne
 #: src/amule-remote-gui.cpp:603 src/amule-remote-gui.cpp:671
 #: src/amule-remote-gui.cpp:709 src/amule-remote-gui.cpp:1282
 #: src/amule-remote-gui.cpp:1345 src/amule-remote-gui.cpp:1372
-#: src/DownloadQueue.cpp:1481 src/PrefsUnifiedDlg.cpp:1256
+#: src/DownloadQueue.cpp:1481 src/PrefsUnifiedDlg.cpp:1282
 msgid "ERROR"
 msgstr "HIBA"
 
@@ -603,7 +603,7 @@ msgstr "Hálózatok"
 msgid "Searches"
 msgstr "Keresések"
 
-#: src/amuleDlg.cpp:363 src/amuleDlg.cpp:1822 src/DownloadListCtrl.cpp:740
+#: src/amuleDlg.cpp:363 src/amuleDlg.cpp:1822 src/DownloadListCtrl.cpp:759
 #: src/muuli_wdr.cpp:392 src/muuli_wdr.cpp:1585 src/muuli_wdr.cpp:3455
 #: src/Statistics.cpp:829
 msgid "Downloads"
@@ -619,12 +619,12 @@ msgid "Messages"
 msgstr "Üzenetek"
 
 #: src/amuleDlg.cpp:366 src/amuleDlg.cpp:1840 src/muuli_wdr.cpp:3459
-#: src/PrefsUnifiedDlg.cpp:314 src/Statistics.cpp:779 src/Statistics.cpp:1235
+#: src/PrefsUnifiedDlg.cpp:317 src/Statistics.cpp:779 src/Statistics.cpp:1235
 msgid "Statistics"
 msgstr "Statisztikák"
 
 #: src/amuleDlg.cpp:368 src/amuleDlg.cpp:1847 src/muuli_wdr.cpp:3461
-#: src/PrefsUnifiedDlg.cpp:330 src/utils/wxCas/src/wxcasprefs.cpp:39
+#: src/PrefsUnifiedDlg.cpp:333 src/utils/wxCas/src/wxcasprefs.cpp:39
 msgid "Preferences"
 msgstr "Beállítások"
 
@@ -679,8 +679,8 @@ msgstr "Kad: Kapcsolódás"
 msgid "Kad: Off"
 msgstr "Kad: Nincs kapcsolat"
 
-#: src/amuleDlg.cpp:1029 src/DownloadListCtrl.cpp:505
-#: src/DownloadListCtrl.cpp:749 src/FriendListCtrl.cpp:180
+#: src/amuleDlg.cpp:1029 src/DownloadListCtrl.cpp:521
+#: src/DownloadListCtrl.cpp:768 src/FriendListCtrl.cpp:180
 #: src/muuli_wdr.cpp:731 src/muuli_wdr.cpp:782 src/muuli_wdr.cpp:846
 #: src/muuli_wdr.cpp:898 src/muuli_wdr.cpp:2266 src/muuli_wdr.cpp:2351
 #: src/muuli_wdr.cpp:3099 src/ServerListCtrl.cpp:162 src/ServerListCtrl.cpp:585
@@ -971,8 +971,8 @@ msgstr "A '%s' könyvtár létrehozása a '%s' kategóriához nem lehetséges, a
 #: src/ClientDetailDialog.cpp:103 src/ClientDetailDialog.cpp:104
 #: src/ClientDetailDialog.cpp:123 src/DataToText.cpp:61 src/DataToText.cpp:86
 #: src/DataToText.cpp:101 src/DataToText.cpp:136 src/DataToText.cpp:165
-#: src/DownloadListCtrl.cpp:1172 src/DownloadListCtrl.cpp:1185
-#: src/DownloadListCtrl.cpp:1196 src/ExternalConn.cpp:609
+#: src/DownloadListCtrl.cpp:1193 src/DownloadListCtrl.cpp:1206
+#: src/DownloadListCtrl.cpp:1217 src/ExternalConn.cpp:609
 #: src/FileDetailDialog.cpp:203 src/FileDetailDialog.cpp:235
 #: src/FileDetailDialog.cpp:242 src/GenericClientListCtrl.cpp:1171
 #: src/GenericClientListCtrl.cpp:1182 src/GenericClientListCtrl.cpp:1192
@@ -1074,7 +1074,7 @@ msgstr "Hiba a %s fájl mentése közben: %s"
 msgid "Enter Captcha"
 msgstr "Captcha megadása"
 
-#: src/CatDialog.cpp:58 src/DownloadListCtrl.cpp:783 src/muuli_wdr.cpp:253
+#: src/CatDialog.cpp:58 src/DownloadListCtrl.cpp:802 src/muuli_wdr.cpp:253
 #: src/SearchListCtrl.cpp:734 src/TransferWnd.cpp:338
 msgid "Category"
 msgstr "Kategória"
@@ -1201,7 +1201,7 @@ msgid "Disconnected"
 msgstr "Szétkapcsolva"
 
 #: src/ClientDetailDialog.cpp:151 src/ClientDetailDialog.cpp:155
-#: src/DownloadListCtrl.cpp:1049 src/GenericClientListCtrl.cpp:980
+#: src/DownloadListCtrl.cpp:1070 src/GenericClientListCtrl.cpp:980
 #: src/GenericClientListCtrl.cpp:991 src/SharedFilesCtrl.cpp:817
 #, c-format
 msgid "%.1f kB/s"
@@ -1291,7 +1291,7 @@ msgstr "Fájl megjegyzés"
 msgid "Username"
 msgstr "Felhasználói név"
 
-#: src/CommentDialogLst.cpp:78 src/DownloadListCtrl.cpp:158
+#: src/CommentDialogLst.cpp:78 src/DownloadListCtrl.cpp:174
 #: src/FileDetailListCtrl.cpp:43 src/SearchListCtrl.cpp:97
 #: src/SharedFilesCtrl.cpp:109
 msgid "File Name"
@@ -1354,19 +1354,19 @@ msgstr "Auto [Ma]"
 msgid "Very low"
 msgstr "Nagyon alacsony"
 
-#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:743 src/muuli_wdr.cpp:2317
+#: src/DataToText.cpp:47 src/DownloadListCtrl.cpp:762 src/muuli_wdr.cpp:2317
 #: src/ServerListCtrl.cpp:263 src/ServerListCtrl.cpp:456
 #: src/SharedFilesCtrl.cpp:145
 msgid "Low"
 msgstr "Alacsony"
 
-#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:744 src/muuli_wdr.cpp:2318
+#: src/DataToText.cpp:49 src/DownloadListCtrl.cpp:763 src/muuli_wdr.cpp:2318
 #: src/ServerListCtrl.cpp:266 src/ServerListCtrl.cpp:457
 #: src/SharedFilesCtrl.cpp:146
 msgid "Normal"
 msgstr "Normál"
 
-#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:745 src/muuli_wdr.cpp:2319
+#: src/DataToText.cpp:51 src/DownloadListCtrl.cpp:764 src/muuli_wdr.cpp:2319
 #: src/ServerListCtrl.cpp:269 src/ServerListCtrl.cpp:458
 #: src/SharedFilesCtrl.cpp:147
 msgid "High"
@@ -1483,7 +1483,7 @@ msgstr "Mentett források"
 msgid "Search Result"
 msgstr "Keresés eredménye"
 
-#: src/DataToText.cpp:173 src/DownloadListCtrl.cpp:161
+#: src/DataToText.cpp:173 src/DownloadListCtrl.cpp:177
 #: src/OtherFunctions.cpp:693 src/TransferWnd.cpp:349
 msgid "Completed"
 msgstr "Befejezett"
@@ -1520,65 +1520,65 @@ msgstr "Letöltés alatt"
 msgid "Unknown or bad tempfile format."
 msgstr "Ismeretlen vagy rossz ideiglenes-fájl formátum."
 
-#: src/DownloadListCtrl.cpp:157
+#: src/DownloadListCtrl.cpp:173
 msgid "Part"
 msgstr "Rész"
 
-#: src/DownloadListCtrl.cpp:159 src/PartFileConvertDlg.cpp:98
+#: src/DownloadListCtrl.cpp:175 src/PartFileConvertDlg.cpp:98
 #: src/SearchListCtrl.cpp:98 src/SharedFilesCtrl.cpp:110
 msgid "Size"
 msgstr "Méret"
 
-#: src/DownloadListCtrl.cpp:160 src/muuli_wdr.cpp:3283
+#: src/DownloadListCtrl.cpp:176 src/muuli_wdr.cpp:3283
 msgid "Transferred"
 msgstr "Átmásolva"
 
-#: src/DownloadListCtrl.cpp:162 src/muuli_wdr.cpp:629
+#: src/DownloadListCtrl.cpp:178 src/muuli_wdr.cpp:629
 #: src/SharedFilesCtrl.cpp:122 src/SourceListCtrl.cpp:30
 msgid "Speed"
 msgstr "Sebesség"
 
-#: src/DownloadListCtrl.cpp:163
+#: src/DownloadListCtrl.cpp:179
 msgid "Progress"
 msgstr "Folyamatjelző"
 
-#: src/DownloadListCtrl.cpp:164 src/FileDetailListCtrl.cpp:44
+#: src/DownloadListCtrl.cpp:180 src/FileDetailListCtrl.cpp:44
 #: src/PartFile.cpp:4429 src/SearchListCtrl.cpp:99
 msgid "Sources"
 msgstr "Források"
 
-#: src/DownloadListCtrl.cpp:165 src/DownloadListCtrl.cpp:748
+#: src/DownloadListCtrl.cpp:181 src/DownloadListCtrl.cpp:767
 #: src/muuli_wdr.cpp:628 src/ServerListCtrl.cpp:97 src/ServerListCtrl.cpp:460
 #: src/SharedFilesCtrl.cpp:112 src/SharedFilesCtrl.cpp:152
 msgid "Priority"
 msgstr "Prioritás"
 
-#: src/DownloadListCtrl.cpp:166 src/PartFile.cpp:4432
+#: src/DownloadListCtrl.cpp:182 src/PartFile.cpp:4432
 #: src/SearchListCtrl.cpp:105
 msgid "Status"
 msgstr "Állapot"
 
-#: src/DownloadListCtrl.cpp:167
+#: src/DownloadListCtrl.cpp:183
 msgid "Time Remaining"
 msgstr "Hátralévő idő"
 
-#: src/DownloadListCtrl.cpp:168
+#: src/DownloadListCtrl.cpp:184
 msgid "Last Seen Complete"
 msgstr "Utoljára teljesnek látott"
 
-#: src/DownloadListCtrl.cpp:169
+#: src/DownloadListCtrl.cpp:185
 msgid "Last Reception"
 msgstr "Utoljára fogadott"
 
-#: src/DownloadListCtrl.cpp:501
+#: src/DownloadListCtrl.cpp:517
 msgid "Are you sure that you wish to delete the selected file?"
 msgstr "Biztos, hogy törlöd a kiválasztott fájlt?"
 
-#: src/DownloadListCtrl.cpp:503
+#: src/DownloadListCtrl.cpp:519
 msgid "Are you sure that you wish to delete the selected files?"
 msgstr "Biztos, hogy törlöd a kiválasztott fájlokat?"
 
-#: src/DownloadListCtrl.cpp:646 src/SharedFilesCtrl.cpp:264
+#: src/DownloadListCtrl.cpp:662 src/SharedFilesCtrl.cpp:264
 #, c-format
 msgid ""
 "Feedback from: %s (%s)\n"
@@ -1587,109 +1587,109 @@ msgstr ""
 "Visszajelzés %s-től (%s):\n"
 "\n"
 
-#: src/DownloadListCtrl.cpp:746 src/muuli_wdr.cpp:2320
+#: src/DownloadListCtrl.cpp:765 src/muuli_wdr.cpp:2320
 #: src/SharedFilesCtrl.cpp:150
 msgid "Auto"
 msgstr "Automatikus"
 
-#: src/DownloadListCtrl.cpp:750 src/TransferWnd.cpp:379
+#: src/DownloadListCtrl.cpp:769 src/TransferWnd.cpp:379
 msgid "&Stop"
 msgstr "&Állj"
 
-#: src/DownloadListCtrl.cpp:751 src/TransferWnd.cpp:380
+#: src/DownloadListCtrl.cpp:770 src/TransferWnd.cpp:380
 msgid "&Pause"
 msgstr "&Szüneteltet"
 
-#: src/DownloadListCtrl.cpp:752 src/TransferWnd.cpp:381
+#: src/DownloadListCtrl.cpp:771 src/TransferWnd.cpp:381
 msgid "&Resume"
 msgstr "&Folytatás"
 
-#: src/DownloadListCtrl.cpp:753
+#: src/DownloadListCtrl.cpp:772
 msgid "C&lear completed"
 msgstr "Befejezettek &eltávolítása"
 
-#: src/DownloadListCtrl.cpp:758
+#: src/DownloadListCtrl.cpp:777
 msgid "Swap every A4AF to this file now"
 msgstr "Összes A4AF cseréje ehhez a fájhoz most"
 
-#: src/DownloadListCtrl.cpp:759
+#: src/DownloadListCtrl.cpp:778
 msgid "Swap every A4AF to this file (Auto)"
 msgstr "Összes A4AF cseréje ehhez a fájhoz most (Automatikusan)"
 
-#: src/DownloadListCtrl.cpp:763
+#: src/DownloadListCtrl.cpp:782
 msgid "Swap every A4AF to any other file now"
 msgstr "Összes A4AF cseréje a többi fájhoz most"
 
-#: src/DownloadListCtrl.cpp:765
+#: src/DownloadListCtrl.cpp:784
 msgid "Extended Options"
 msgstr "Kibővített beállítások"
 
-#: src/DownloadListCtrl.cpp:770 src/DownloadListCtrl.cpp:822
+#: src/DownloadListCtrl.cpp:789 src/DownloadListCtrl.cpp:841
 #: src/muuli_wdr.cpp:1804
 msgid "Preview"
 msgstr "Előnézet"
 
-#: src/DownloadListCtrl.cpp:771 src/SharedFilesCtrl.cpp:155
+#: src/DownloadListCtrl.cpp:790 src/SharedFilesCtrl.cpp:155
 msgid "Show file &details"
 msgstr "Fájl &részleteinek megjelenítése"
 
-#: src/DownloadListCtrl.cpp:772 src/muuli_wdr.cpp:706
+#: src/DownloadListCtrl.cpp:791 src/muuli_wdr.cpp:706
 #: src/SearchListCtrl.cpp:750
 msgid "Show all comments"
 msgstr "Összes megjegyzés megjelenítése"
 
-#: src/DownloadListCtrl.cpp:776
+#: src/DownloadListCtrl.cpp:795
 msgid "Copy magnet URI to clipboard"
 msgstr "Magnet URI másolása a vágólapra"
 
-#: src/DownloadListCtrl.cpp:777 src/SharedFilesCtrl.cpp:177
+#: src/DownloadListCtrl.cpp:796 src/SharedFilesCtrl.cpp:177
 msgid "Copy eD2k &link to clipboard"
 msgstr "eD2k hivatkozás másolása a vágólapra"
 
-#: src/DownloadListCtrl.cpp:778 src/SharedFilesCtrl.cpp:186
+#: src/DownloadListCtrl.cpp:797 src/SharedFilesCtrl.cpp:186
 msgid "Copy feedback to clipboard"
 msgstr "Visszajelzés másolása a vágólapra"
 
-#: src/DownloadListCtrl.cpp:787
+#: src/DownloadListCtrl.cpp:806
 msgid "unassign"
 msgstr "hozzárendelés megszüntetése"
 
-#: src/DownloadListCtrl.cpp:793
+#: src/DownloadListCtrl.cpp:812
 msgid "Assign to category"
 msgstr "Hozzárendelés kategórához"
 
-#: src/DownloadListCtrl.cpp:824
+#: src/DownloadListCtrl.cpp:843
 msgid "&Open the file"
 msgstr "Fájl &megnyitása"
 
-#: src/DownloadListCtrl.cpp:892 src/SharedFilesCtrl.cpp:925
+#: src/DownloadListCtrl.cpp:913 src/SharedFilesCtrl.cpp:925
 msgid "Enter new name for this file:"
 msgstr "Írd be az új nevet ennek a fájlnak:"
 
-#: src/DownloadListCtrl.cpp:893 src/SharedFilesCtrl.cpp:926
+#: src/DownloadListCtrl.cpp:914 src/SharedFilesCtrl.cpp:926
 msgid "File rename"
 msgstr "Fájl átnevezés"
 
-#: src/DownloadListCtrl.cpp:1047 src/GenericClientListCtrl.cpp:978
+#: src/DownloadListCtrl.cpp:1068 src/GenericClientListCtrl.cpp:978
 #: src/GenericClientListCtrl.cpp:989 src/SharedFilesCtrl.cpp:814
 #, c-format
 msgid "%.1f MB/s"
 msgstr "%.1f MB/s"
 
-#: src/DownloadListCtrl.cpp:1183 src/DownloadListCtrl.cpp:1194
+#: src/DownloadListCtrl.cpp:1204 src/DownloadListCtrl.cpp:1215
 msgid "%y/%m/%d %H:%M:%S"
 msgstr "%y.%m.%d %H:%M:%S"
 
-#: src/DownloadListCtrl.cpp:1336
+#: src/DownloadListCtrl.cpp:1357
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Letöltések (%i)"
 
-#: src/DownloadListCtrl.cpp:1501
+#: src/DownloadListCtrl.cpp:1522
 msgid "the default Windows shell handler"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp:1507
+#: src/DownloadListCtrl.cpp:1528
 #, c-format
 msgid ""
 "To prevent this warning to show up in every preview,\n"
@@ -1698,11 +1698,11 @@ msgstr ""
 "Állítsd be a kedvenc videó-lejátszódat a beállításoknál,\n"
 " hogy ezt a figyemeztetést ne kapd minden előnézetnél (alapértelmezett az %s)."
 
-#: src/DownloadListCtrl.cpp:1510
+#: src/DownloadListCtrl.cpp:1531
 msgid "File preview"
 msgstr "Fájl előnézet"
 
-#: src/DownloadListCtrl.cpp:1565
+#: src/DownloadListCtrl.cpp:1590
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "HIBA: Külső média-lejátszó indítása sikertelen! Parancs: `%s'"
@@ -2579,8 +2579,8 @@ msgstr "Egyik sem"
 msgid "No"
 msgstr "Nem"
 
-#: src/GenericClientListCtrl.cpp:1216 src/PrefsUnifiedDlg.cpp:2907
-#: src/PrefsUnifiedDlg.cpp:2957 src/ServerListCtrl.cpp:276
+#: src/GenericClientListCtrl.cpp:1216 src/PrefsUnifiedDlg.cpp:2939
+#: src/PrefsUnifiedDlg.cpp:2989 src/ServerListCtrl.cpp:276
 msgid "Yes"
 msgstr "Igen"
 
@@ -2747,10 +2747,10 @@ msgstr "Érvénytelen port a rendszerindításhoz"
 msgid "Please fill all fields required"
 msgstr "Kérlek töltsd ki az összes kötelező mezőt"
 
-#: src/KadDlg.cpp:192 src/PartFile.cpp:1031 src/PrefsUnifiedDlg.cpp:1143
-#: src/PrefsUnifiedDlg.cpp:1213 src/PrefsUnifiedDlg.cpp:1414
-#: src/PrefsUnifiedDlg.cpp:1672 src/PrefsUnifiedDlg.cpp:1682
-#: src/PrefsUnifiedDlg.cpp:1699 src/PrefsUnifiedDlg.cpp:1747
+#: src/KadDlg.cpp:192 src/PartFile.cpp:1031 src/PrefsUnifiedDlg.cpp:1169
+#: src/PrefsUnifiedDlg.cpp:1239 src/PrefsUnifiedDlg.cpp:1440
+#: src/PrefsUnifiedDlg.cpp:1698 src/PrefsUnifiedDlg.cpp:1708
+#: src/PrefsUnifiedDlg.cpp:1725 src/PrefsUnifiedDlg.cpp:1773
 msgid "Message"
 msgstr "Üzenet"
 
@@ -3410,7 +3410,7 @@ msgstr "Fájl források:"
 msgid "N/A"
 msgstr "N/A"
 
-#: src/muuli_wdr.cpp:508 src/muuli_wdr.cpp:1065 src/PrefsUnifiedDlg.cpp:299
+#: src/muuli_wdr.cpp:508 src/muuli_wdr.cpp:1065 src/PrefsUnifiedDlg.cpp:302
 msgid "General"
 msgstr "Általános"
 
@@ -4126,7 +4126,7 @@ msgstr "Engedélyezés"
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
 msgstr "Feljett I.S.K. megbízzon minden hash-ben (nem ajánlott)"
 
-#: src/muuli_wdr.cpp:1669 src/PrefsUnifiedDlg.cpp:1999
+#: src/muuli_wdr.cpp:1669 src/PrefsUnifiedDlg.cpp:2025
 msgid "Media metadata extraction"
 msgstr ""
 
@@ -4178,7 +4178,7 @@ msgstr ""
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
 msgstr ""
 
-#: src/muuli_wdr.cpp:1753 src/PrefsUnifiedDlg.cpp:2883
+#: src/muuli_wdr.cpp:1753 src/PrefsUnifiedDlg.cpp:2915
 msgid "Recursive"
 msgstr ""
 
@@ -4480,7 +4480,7 @@ msgstr ""
 msgid "Admin password"
 msgstr "Jelszó ellenőrzése\n"
 
-#: src/muuli_wdr.cpp:2144 src/muuli_wdr.cpp:2161 src/PrefsUnifiedDlg.cpp:1112
+#: src/muuli_wdr.cpp:2144 src/muuli_wdr.cpp:2161 src/PrefsUnifiedDlg.cpp:1138
 #, fuzzy
 msgid "A password is set."
 msgstr "Jelszó ellenőrzése\n"
@@ -5642,63 +5642,63 @@ msgstr "A TCP port nem lehet magasabb 65532-nél, mert a kiszolgáló UDP port =
 msgid "Default port will be used (%d)"
 msgstr "Alapértelmezett port lesz használva (%d)"
 
-#: src/PrefsUnifiedDlg.cpp:300 src/Statistics.cpp:866
+#: src/PrefsUnifiedDlg.cpp:303 src/Statistics.cpp:866
 msgid "Connection"
 msgstr "Csatlakozás"
 
-#: src/PrefsUnifiedDlg.cpp:301 src/SearchListCtrl.cpp:117
+#: src/PrefsUnifiedDlg.cpp:304 src/SearchListCtrl.cpp:117
 msgid "Directories"
 msgstr "Mappák"
 
-#: src/PrefsUnifiedDlg.cpp:302 src/Statistics.cpp:917
+#: src/PrefsUnifiedDlg.cpp:305 src/Statistics.cpp:917
 msgid "Servers"
 msgstr "Kiszolgálók"
 
-#: src/PrefsUnifiedDlg.cpp:303 src/ServerListCtrl.cpp:96
+#: src/PrefsUnifiedDlg.cpp:306 src/ServerListCtrl.cpp:96
 msgid "Files"
 msgstr "Fájlok"
 
-#: src/PrefsUnifiedDlg.cpp:304
+#: src/PrefsUnifiedDlg.cpp:307
 msgid "Security"
 msgstr "Biztonság"
 
-#: src/PrefsUnifiedDlg.cpp:305
+#: src/PrefsUnifiedDlg.cpp:308
 msgid "Interface"
 msgstr "Felület"
 
-#: src/PrefsUnifiedDlg.cpp:312
+#: src/PrefsUnifiedDlg.cpp:315
 msgid "IP2Country"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:315
+#: src/PrefsUnifiedDlg.cpp:318
 msgid "Proxy"
 msgstr "Proxy"
 
-#: src/PrefsUnifiedDlg.cpp:316
+#: src/PrefsUnifiedDlg.cpp:319
 msgid "Filters"
 msgstr "Szűrők"
 
-#: src/PrefsUnifiedDlg.cpp:317
+#: src/PrefsUnifiedDlg.cpp:320
 msgid "Remote Controls"
 msgstr "Távoli elérés"
 
-#: src/PrefsUnifiedDlg.cpp:318
+#: src/PrefsUnifiedDlg.cpp:321
 msgid "Online Signature"
 msgstr "Online aláírás"
 
-#: src/PrefsUnifiedDlg.cpp:319
+#: src/PrefsUnifiedDlg.cpp:322
 msgid "Advanced"
 msgstr "Haladó"
 
-#: src/PrefsUnifiedDlg.cpp:320
+#: src/PrefsUnifiedDlg.cpp:323
 msgid "Events"
 msgstr "Események"
 
-#: src/PrefsUnifiedDlg.cpp:323
+#: src/PrefsUnifiedDlg.cpp:326
 msgid "Debugging"
 msgstr "Hibakeresés"
 
-#: src/PrefsUnifiedDlg.cpp:453
+#: src/PrefsUnifiedDlg.cpp:476
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"
@@ -5708,15 +5708,15 @@ msgstr ""
 "    %PARTFILE - teljes út a fájlhoz\n"
 "    %PARTNAME - csak a fájl neve"
 
-#: src/PrefsUnifiedDlg.cpp:474
+#: src/PrefsUnifiedDlg.cpp:497
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:490
+#: src/PrefsUnifiedDlg.cpp:513
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:536
+#: src/PrefsUnifiedDlg.cpp:559
 msgid ""
 "Do not change these setting unless you know\n"
 "what you are doing, otherwise you can easily\n"
@@ -5732,35 +5732,35 @@ msgstr ""
 "Ezen beállítások módosítása nélkül is remekül fog\n"
 "működni az aMule."
 
-#: src/PrefsUnifiedDlg.cpp:656
+#: src/PrefsUnifiedDlg.cpp:679
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Cfg csatolása a widget-hez (ID-je: %d, kulcsa: %s) sikertelen"
 
-#: src/PrefsUnifiedDlg.cpp:704
+#: src/PrefsUnifiedDlg.cpp:730
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Adatátvitel a Cfg-ből a Widget-be (ID-je: %d, kulcsa: %s) sikertelen."
 
-#: src/PrefsUnifiedDlg.cpp:810
+#: src/PrefsUnifiedDlg.cpp:836
 msgid "The type of proxy you are connecting to"
 msgstr "A proxy típusa amihez kapcsolódsz"
 
-#: src/PrefsUnifiedDlg.cpp:1029
+#: src/PrefsUnifiedDlg.cpp:1055
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Adatátvitel a Widget-ből a Cfg-be (ID-je: %d, kulcsa: %s) sikertelen."
 
-#: src/PrefsUnifiedDlg.cpp:1112
+#: src/PrefsUnifiedDlg.cpp:1138
 #, fuzzy
 msgid "No password set."
 msgstr "Jelszó ellenőrzése\n"
 
-#: src/PrefsUnifiedDlg.cpp:1141
+#: src/PrefsUnifiedDlg.cpp:1167
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1153
+#: src/PrefsUnifiedDlg.cpp:1179
 msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
@@ -5768,41 +5768,41 @@ msgstr ""
 "Újra kell indítani az aMule-t, hogy az alábbi változás(ok) érvénybe lépjen(ek):\n"
 "\n"
 
-#: src/PrefsUnifiedDlg.cpp:1160
+#: src/PrefsUnifiedDlg.cpp:1186
 msgid "- TCP port changed.\n"
 msgstr "- TCP port megváltozott.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1165
+#: src/PrefsUnifiedDlg.cpp:1191
 msgid "- UDP port changed.\n"
 msgstr "- UDP port megváltozott.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1170
+#: src/PrefsUnifiedDlg.cpp:1196
 #, fuzzy
 msgid "- Network interface binding changed.\n"
 msgstr "- Külső kapcsolat interfész megváltoztatva.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1175
+#: src/PrefsUnifiedDlg.cpp:1201
 msgid "- External connect port changed.\n"
 msgstr "- Külső kapcsolat port megváltoztatva.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1179
+#: src/PrefsUnifiedDlg.cpp:1205
 msgid "- External connect acceptance changed.\n"
 msgstr "- Külső kapcsolat elfogadása megváltoztatva.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1183
+#: src/PrefsUnifiedDlg.cpp:1209
 msgid "- External connect interface changed.\n"
 msgstr "- Külső kapcsolat interfész megváltoztatva.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1187
+#: src/PrefsUnifiedDlg.cpp:1213
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "- Protokoll zavarás támogatása megváltozott.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1202
+#: src/PrefsUnifiedDlg.cpp:1228
 #, fuzzy
 msgid "- amuleapi settings changed.\n"
 msgstr "- Nyelv megváltozott.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1211
+#: src/PrefsUnifiedDlg.cpp:1237
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
@@ -5810,7 +5810,7 @@ msgstr ""
 "Az automatikusan frissített kiszolgálóü lista üres.\n"
 "A 'kiszolgáló lista automatikus frissítése induláskor' letiltva."
 
-#: src/PrefsUnifiedDlg.cpp:1222
+#: src/PrefsUnifiedDlg.cpp:1248
 msgid ""
 "You have enabled external connections but have not specified a password.\n"
 "External connections cannot be enabled unless a valid password is specified."
@@ -5818,33 +5818,33 @@ msgstr ""
 "Engedélyezted a távoli elérést, de nem adtál meg jelszót.\n"
 "A távoli elérés nem használható érvényes jelszó nélkül."
 
-#: src/PrefsUnifiedDlg.cpp:1255
+#: src/PrefsUnifiedDlg.cpp:1281
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1285
+#: src/PrefsUnifiedDlg.cpp:1311
 msgid "- Language changed.\n"
 msgstr "- Nyelv megváltozott.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1290
+#: src/PrefsUnifiedDlg.cpp:1316
 msgid "- Temp folder changed.\n"
 msgstr "- Ideiglenes mappa megváltozott.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1295
+#: src/PrefsUnifiedDlg.cpp:1321
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K hálózat engedélyezve.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1328
+#: src/PrefsUnifiedDlg.cpp:1354
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1330 src/PrefsUnifiedDlg.cpp:1930
+#: src/PrefsUnifiedDlg.cpp:1356 src/PrefsUnifiedDlg.cpp:1956
 #, fuzzy
 msgid "Invalid regular expression"
 msgstr "Érvénytelen protokoll verzió."
 
-#: src/PrefsUnifiedDlg.cpp:1407
+#: src/PrefsUnifiedDlg.cpp:1433
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
@@ -5852,7 +5852,7 @@ msgstr ""
 "Az eD2k és a Kad hálózat is le van tiltva.\n"
 "Nem fogsz tudni kapcsolódni, amíg legalább az egyiket nem engedélyezed."
 
-#: src/PrefsUnifiedDlg.cpp:1412
+#: src/PrefsUnifiedDlg.cpp:1438
 msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
@@ -5860,7 +5860,7 @@ msgstr ""
 "A Kad nem fog elindulni, ha az UDP portod le van tiltva.\n"
 "Engedélyezd az UDP portot vagy tiltsd le a Kad-ot."
 
-#: src/PrefsUnifiedDlg.cpp:1468
+#: src/PrefsUnifiedDlg.cpp:1494
 msgid ""
 "\n"
 "You MUST restart aMule now.\n"
@@ -5870,69 +5870,69 @@ msgstr ""
 "Most újra KELL indítanod az aMule-t.\n"
 "Ha nem indítod újra most, ne panaszkodj, ha bármi rossz történik.\n"
 
-#: src/PrefsUnifiedDlg.cpp:1533
+#: src/PrefsUnifiedDlg.cpp:1559
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1535
+#: src/PrefsUnifiedDlg.cpp:1561
 msgid "Could not remove the autostart-at-login entry."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1536
+#: src/PrefsUnifiedDlg.cpp:1562
 #, fuzzy
 msgid "Autostart"
 msgstr "Automatikus frissítés elindítva"
 
-#: src/PrefsUnifiedDlg.cpp:1551
+#: src/PrefsUnifiedDlg.cpp:1577
 msgid "Register file type"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1551
+#: src/PrefsUnifiedDlg.cpp:1577
 msgid "Register URL handler"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1559
+#: src/PrefsUnifiedDlg.cpp:1585
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1564
+#: src/PrefsUnifiedDlg.cpp:1590
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1569
+#: src/PrefsUnifiedDlg.cpp:1595
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1594
+#: src/PrefsUnifiedDlg.cpp:1620
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1596
+#: src/PrefsUnifiedDlg.cpp:1622
 #, fuzzy
 msgid "Could not remove the file type registration."
 msgstr "A letöltött fájlok eltolása %s helyre sikertelen"
 
-#: src/PrefsUnifiedDlg.cpp:1598
+#: src/PrefsUnifiedDlg.cpp:1624
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1600
+#: src/PrefsUnifiedDlg.cpp:1626
 msgid "Could not remove the URL handler registration."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1670 src/PrefsUnifiedDlg.cpp:1697
+#: src/PrefsUnifiedDlg.cpp:1696 src/PrefsUnifiedDlg.cpp:1723
 #, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
 msgstr "Jelszó beállítva, külső kapcsolatok engedélyezve."
 
-#: src/PrefsUnifiedDlg.cpp:1680
+#: src/PrefsUnifiedDlg.cpp:1706
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:1744
+#: src/PrefsUnifiedDlg.cpp:1770
 msgid ""
 "Your Auto-update servers list is in blank.\n"
 "Please fill in at least one URL to point to a valid server.met file.\n"
@@ -5942,65 +5942,65 @@ msgstr ""
 "Kérlek adj meg legalább egy URL-t, ami érvényes server.met fájlra mutat .\n"
 "Az URL megadásához klikkelj a \"Lista\" gombra ezen checkbox mellett."
 
-#: src/PrefsUnifiedDlg.cpp:1885
+#: src/PrefsUnifiedDlg.cpp:1911
 msgid "Temporary files"
 msgstr "az Ideiglenes fájloknak"
 
-#: src/PrefsUnifiedDlg.cpp:1890
+#: src/PrefsUnifiedDlg.cpp:1916
 msgid "Incoming files"
 msgstr "Bejövő fájlok"
 
-#: src/PrefsUnifiedDlg.cpp:1895
+#: src/PrefsUnifiedDlg.cpp:1921
 msgid "Online Signatures"
 msgstr "az Online aláírásnak"
 
-#: src/PrefsUnifiedDlg.cpp:1908
+#: src/PrefsUnifiedDlg.cpp:1934
 #, c-format
 msgid "Choose a folder for %s"
 msgstr "Válassz egy mappát a %s-nek"
 
-#: src/PrefsUnifiedDlg.cpp:1932
+#: src/PrefsUnifiedDlg.cpp:1958
 #, fuzzy, c-format
 msgid "Would exclude %u of %u shared file"
 msgid_plural "Would exclude %u of %u shared files"
 msgstr[0] "%i ismert megosztott fájlt találtam"
 
-#: src/PrefsUnifiedDlg.cpp:1949
+#: src/PrefsUnifiedDlg.cpp:1975
 msgid "Browse for videoplayer"
 msgstr "Böngészés a videolejátszóhoz"
 
-#: src/PrefsUnifiedDlg.cpp:1953
+#: src/PrefsUnifiedDlg.cpp:1979
 msgid "Select browser"
 msgstr "Válaszd ki a böngésződet"
 
-#: src/PrefsUnifiedDlg.cpp:1957
+#: src/PrefsUnifiedDlg.cpp:1983
 #, fuzzy
 msgid "Select ffprobe binary"
 msgstr "Válaszd ki a böngésződet"
 
-#: src/PrefsUnifiedDlg.cpp:1963
+#: src/PrefsUnifiedDlg.cpp:1989
 #, c-format
 msgid "Executable%s"
 msgstr "Futtatható%s"
 
-#: src/PrefsUnifiedDlg.cpp:1997
+#: src/PrefsUnifiedDlg.cpp:2023
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2009
+#: src/PrefsUnifiedDlg.cpp:2035
 msgid "Reset the settings on this page to their default values?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2010
+#: src/PrefsUnifiedDlg.cpp:2036
 #, fuzzy
 msgid "Reset to defaults"
 msgstr "Alapértelmezett"
 
-#: src/PrefsUnifiedDlg.cpp:2037
+#: src/PrefsUnifiedDlg.cpp:2063
 msgid "Edit server list"
 msgstr "Kiszolgáló lista szerkesztése"
 
-#: src/PrefsUnifiedDlg.cpp:2038
+#: src/PrefsUnifiedDlg.cpp:2064
 msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
@@ -6008,149 +6008,149 @@ msgstr ""
 "URL-ek felvétele a server.met fájl letöltéséhez.\n"
 "Egy sorba csak egy URL."
 
-#: src/PrefsUnifiedDlg.cpp:2093
+#: src/PrefsUnifiedDlg.cpp:2119
 msgid "IP2Country update failed"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2238 src/PrefsUnifiedDlg.cpp:2269
+#: src/PrefsUnifiedDlg.cpp:2264 src/PrefsUnifiedDlg.cpp:2295
 msgid "Data by MaxMind GeoLite2"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2240 src/PrefsUnifiedDlg.cpp:2271
+#: src/PrefsUnifiedDlg.cpp:2266 src/PrefsUnifiedDlg.cpp:2297
 #, fuzzy
 msgid "Custom source"
 msgstr "Teljes források"
 
-#: src/PrefsUnifiedDlg.cpp:2242 src/PrefsUnifiedDlg.cpp:2273
+#: src/PrefsUnifiedDlg.cpp:2268 src/PrefsUnifiedDlg.cpp:2299
 msgid "Data by DB-IP.com"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2293
+#: src/PrefsUnifiedDlg.cpp:2319
 #, fuzzy, c-format
 msgid "Status: Loaded%s"
 msgstr "Állapot:"
 
-#: src/PrefsUnifiedDlg.cpp:2295
+#: src/PrefsUnifiedDlg.cpp:2321
 #, fuzzy, c-format
 msgid "Status: Loaded%s - %s"
 msgstr "Állapot:"
 
-#: src/PrefsUnifiedDlg.cpp:2299
+#: src/PrefsUnifiedDlg.cpp:2325
 msgid "Status: Failed to load - click 'Update now' to refresh."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2301
+#: src/PrefsUnifiedDlg.cpp:2327
 msgid "Status: Not found - click 'Update now' to download."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2359 src/PrefsUnifiedDlg.cpp:2383
+#: src/PrefsUnifiedDlg.cpp:2391 src/PrefsUnifiedDlg.cpp:2415
 #, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
 msgstr[0] "Frissítés késleltetése: %d másodperc"
 
-#: src/PrefsUnifiedDlg.cpp:2367
+#: src/PrefsUnifiedDlg.cpp:2399
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
 msgstr[0] "Grafikon átlagos ideje: %d perc"
 
-#: src/PrefsUnifiedDlg.cpp:2376
+#: src/PrefsUnifiedDlg.cpp:2408
 #, c-format
 msgid "Connections Graph Scale: %d"
 msgstr "Kapcsolatok grafikon-skálája: %d"
 
-#: src/PrefsUnifiedDlg.cpp:2391
+#: src/PrefsUnifiedDlg.cpp:2423
 #, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
 msgstr[0] "Fájl buffer méret: %d bájt"
 
-#: src/PrefsUnifiedDlg.cpp:2401
+#: src/PrefsUnifiedDlg.cpp:2433
 #, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
 msgstr[0] "Feltöltési várólista nagysága: %d kliens"
 
-#: src/PrefsUnifiedDlg.cpp:2411
+#: src/PrefsUnifiedDlg.cpp:2443
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
 msgstr[0] "Kiszolgáló kapcsolat frissítési gyakorisága: %d perc"
 
-#: src/PrefsUnifiedDlg.cpp:2416
+#: src/PrefsUnifiedDlg.cpp:2448
 msgid "Server connection refresh interval: Disabled"
 msgstr "Kiszolgáló kapcsolat frissítési gyakorisága: Tiltva"
 
-#: src/PrefsUnifiedDlg.cpp:2460
+#: src/PrefsUnifiedDlg.cpp:2492
 msgid "disabled"
 msgstr "letiltva"
 
-#: src/PrefsUnifiedDlg.cpp:2486
+#: src/PrefsUnifiedDlg.cpp:2518
 #, c-format
 msgid "Execute command on '%s' event"
 msgstr "Parancs végrehajtása a(z) '%s' eseménynél"
 
-#: src/PrefsUnifiedDlg.cpp:2493
+#: src/PrefsUnifiedDlg.cpp:2525
 msgid "Enable command execution on core"
 msgstr "Parancs futtatása a magon"
 
-#: src/PrefsUnifiedDlg.cpp:2505
+#: src/PrefsUnifiedDlg.cpp:2537
 msgid "Core command:"
 msgstr "Mag parancs:"
 
-#: src/PrefsUnifiedDlg.cpp:2521
+#: src/PrefsUnifiedDlg.cpp:2553
 msgid "Enable command execution on GUI"
 msgstr "Parancs futtatása a grafikus felületen"
 
-#: src/PrefsUnifiedDlg.cpp:2533
+#: src/PrefsUnifiedDlg.cpp:2565
 msgid "GUI command:"
 msgstr "GUI parancs:"
 
-#: src/PrefsUnifiedDlg.cpp:2549
+#: src/PrefsUnifiedDlg.cpp:2581
 msgid "The following variables will be replaced:"
 msgstr "A következő változók lesznek behelyettesítve:"
 
-#: src/PrefsUnifiedDlg.cpp:2717
+#: src/PrefsUnifiedDlg.cpp:2749
 msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2722
+#: src/PrefsUnifiedDlg.cpp:2754
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2725
+#: src/PrefsUnifiedDlg.cpp:2757
 #, fuzzy
 msgid "Confirm shared folders"
 msgstr "Megosztott mappák"
 
-#: src/PrefsUnifiedDlg.cpp:2753
+#: src/PrefsUnifiedDlg.cpp:2785
 #, fuzzy
 msgid "Reloading shared files..."
 msgstr "Megosztott fájlok frissítése"
 
-#: src/PrefsUnifiedDlg.cpp:2754
+#: src/PrefsUnifiedDlg.cpp:2786
 msgid "Scanning for subdirectories..."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2755
+#: src/PrefsUnifiedDlg.cpp:2787
 #, fuzzy
 msgid "Updating shared folders"
 msgstr "Megosztott mappák"
 
-#: src/PrefsUnifiedDlg.cpp:2782
+#: src/PrefsUnifiedDlg.cpp:2814
 #, c-format
 msgid "Scanned %u directories..."
 msgstr ""
 
-#: src/PrefsUnifiedDlg.cpp:2832
+#: src/PrefsUnifiedDlg.cpp:2864
 #, fuzzy, c-format
 msgid "Reloading shared files: %u files scanned"
 msgstr "A megosztott fájlok listájának újratöltése."
 
-#: src/PrefsUnifiedDlg.cpp:2882
+#: src/PrefsUnifiedDlg.cpp:2914
 #, fuzzy
 msgid "Shared folder"
 msgstr "Megosztott mappák"

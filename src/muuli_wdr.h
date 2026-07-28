@@ -46,6 +46,7 @@
 #include <wx/splitter.h>
 #include <wx/listctrl.h>
 #include <wx/treectrl.h>
+#include <wx/dataview.h>
 #include <wx/notebook.h>
 #include <wx/grid.h>
 #include <wx/toolbar.h>

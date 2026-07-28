@@ -2247,7 +2247,7 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->AddGrowableRow( 0 );
     prefs_sizer = item1;
 
-    wxListCtrl *item2 = new wxListCtrl( parent, ID_PREFSLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
+    wxDataViewListCtrl *item2 = new wxDataViewListCtrl( parent, ID_PREFSLISTCTRL, wxDefaultPosition, wxDefaultSize, wxDV_SINGLE|wxDV_NO_HEADER|wxSUNKEN_BORDER );
     item1->Add( item2, wxSizerFlags().Expand().Border(wxALL, 5) );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxALL, 0) );
     // Plain button row (no static-box container). A leading stretch spacer

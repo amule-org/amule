@@ -26,7 +26,10 @@
 #ifndef __PrefsUnifiedDlg_H__
 #define __PrefsUnifiedDlg_H__
 
-#include <wx/dialog.h> // Needed for wxDialog
+#include <wx/bmpbndl.h> // Needed for wxBitmapBundle (m_pageIcons)
+#include <wx/dialog.h>  // Needed for wxDialog
+
+#include <vector>
 
 #include "ProtocolHandlerManager.h" // Needed for HandlerTarget enum
 
@@ -37,7 +40,8 @@ class wxWindow;
 class wxChoice;
 class wxButton;
 class wxPanel;
-class wxListCtrl;
+class wxDataViewListCtrl;
+class wxDataViewEvent;
 
 class wxCommandEvent;
 class wxListEvent;
@@ -164,7 +168,17 @@ private:
 	//! identify the current page by widget rather than list index, which shifts
 	//! when a tab (server / IP2Country) is hidden.
 	wxPanel *m_aMuleTweaksWidget = nullptr;
-	wxListCtrl *m_PrefsIcons;
+	wxDataViewListCtrl *m_PrefsIcons;
+	//! `pages[]` index for every page widget, indexed by that same stable
+	//! position (never reordered -- only which pages are *visible* in
+	//! m_PrefsIcons changes). Each visible row's item data is one of these
+	//! indices, so OnPrefsPageChange identifies a page by that stable index
+	//! rather than by the row's live position in the sidebar, which shifts
+	//! whenever the server / IP2Country row is hidden or re-shown.
+	std::vector<wxPanel *> m_pageWidgets;
+	//! Page icons, in `pages[]` order -- kept so EnableServerTab can
+	//! re-insert the server row's icon when the tab is re-shown.
+	std::vector<wxBitmapBundle> m_pageIcons;
 	void EnableServerTab(bool enable);
 
 	void OnOk(wxCommandEvent &event);
@@ -229,7 +243,7 @@ public:
 	// same live-OS-state write model as autostart, gated by a wx
 	// confirm dialog when a non-aMule handler is currently in place.
 	void HandleProtocolToggle(HandlerTarget scheme, int checkboxId, bool wanted);
-	void OnPrefsPageChange(wxListEvent &event);
+	void OnPrefsPageChange(wxDataViewEvent &event);
 	void OnToolTipDelayChange(wxSpinEvent &event);
 	void OnScrollBarChange(wxScrollEvent &event);
 	void OnRateLimitChanged(wxSpinEvent &event);
