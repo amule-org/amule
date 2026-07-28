@@ -58,7 +58,8 @@ public:
 	 * (case-insensitive) are shown; an empty string clears the filter. Purely
 	 * GUI-side, so it works the same in the monolithic app and amulegui.
 	 */
-	void SetFilterText(const wxString &text);
+	// SetFilterText() is inherited from CMuleVirtualListCtrl; the rebuild it
+	// triggers is RebuildFilteredView() below.
 
 	/** Empties the list (virtual-mode: clears the model + row index). */
 	void ClearList();
@@ -242,11 +243,11 @@ private:
 	//! Pointer used to ensure that the menu isn't displayed twice.
 	wxMenu *m_menu;
 
-	//! Live text filter (lower-cased), empty when inactive. See SetFilterText().
-	wxString m_filterText;
-
 	//! True if @a file passes the current text filter (name substring match).
-	bool PassesTextFilter(const CKnownFile *file) const;
+	/**
+	 * @see CMuleVirtualListCtrl::RebuildFilteredView
+	 */
+	virtual void RebuildFilteredView();
 
 	//! When true, UpdateItem() short-circuits and the bulk caller is
 	//! responsible for issuing a single Refresh() at end-of-bulk.

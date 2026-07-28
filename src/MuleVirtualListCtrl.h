@@ -86,6 +86,10 @@ public:
 	 *  preserving selection + focus by item identity. */
 	virtual void SortList();
 
+	/** Set the live, case-insensitive substring filter; an empty string clears
+	 *  it. Calls RebuildFilteredView() when the text actually changes. */
+	void SetFilterText(const wxString &text);
+
 protected:
 	// --- model mutation -------------------------------------------------
 	/** Insert one item at its sorted position (current sort sequence). */
@@ -107,6 +111,30 @@ protected:
 	long RowOfData(wxUIntPtr data) const;
 	/** Repaint one item's row; if sorted by a live column, schedule a re-sort. */
 	void RefreshItemData(wxUIntPtr data);
+
+	// --- selection across row renumbering ---------------------------------
+	/** Snapshot the selection by item identity, returning the selected items
+	 *  and writing the focused one (or 0) to @a focused. In virtual mode the
+	 *  control tracks selection and focus by *row index*, so anything that
+	 *  renumbers rows -- a sort, or a ClearItemData() + re-append rebuild --
+	 *  has to save and restore them this way or the selection lands on
+	 *  whichever items happen to occupy the old row numbers. */
+	std::vector<wxUIntPtr> SaveSelection(wxUIntPtr &focused) const;
+
+	/** Re-apply a SaveSelection() snapshot. Items no longer in the model
+	 *  (filtered out, removed) are skipped. */
+	void RestoreSelection(const std::vector<wxUIntPtr> &selected, wxUIntPtr focused);
+
+	// --- text filter ------------------------------------------------------
+	/** True if @a name passes the current filter; an empty filter passes
+	 *  everything. Deliberately string-based: the filter lives here so the
+	 *  lists don't each carry a copy, but the control itself stays agnostic
+	 *  about what its rows represent. */
+	bool MatchesFilter(const wxString &name) const;
+
+	/** Rebuild the visible rows against the current filter. Overridden by the
+	 *  lists that support filtering; lists without one need nothing. */
+	virtual void RebuildFilteredView() {}
 
 	// --- subclass hooks -------------------------------------------------
 	/** Text for a cell, used by the virtual control (text-rendered lists and
@@ -142,6 +170,9 @@ private:
 	// lockstep for O(1) update/remove (rebuilt after any insert/erase/sort).
 	std::vector<wxUIntPtr> m_items;
 	std::unordered_map<wxUIntPtr, long> m_rowOf;
+
+	//! Live text filter, lower-cased; empty when inactive. See SetFilterText().
+	wxString m_filterText;
 
 	// Live auto-sort state.
 	bool m_resortPending;

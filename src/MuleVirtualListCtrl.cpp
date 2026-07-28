@@ -195,6 +195,53 @@ void CMuleVirtualListCtrl::RemoveItemData(wxUIntPtr data)
 	RefreshFromRow(pos);
 }
 
+void CMuleVirtualListCtrl::SetFilterText(const wxString &text)
+{
+	const wxString lower = text.Lower();
+	if (lower == m_filterText) {
+		return;
+	}
+	m_filterText = lower;
+	RebuildFilteredView();
+}
+
+bool CMuleVirtualListCtrl::MatchesFilter(const wxString &name) const
+{
+	if (m_filterText.IsEmpty()) {
+		return true;
+	}
+	// m_filterText is already lower-cased by SetFilterText().
+	return name.Lower().Contains(m_filterText);
+}
+
+std::vector<wxUIntPtr> CMuleVirtualListCtrl::SaveSelection(wxUIntPtr &focused) const
+{
+	std::vector<wxUIntPtr> selected;
+	for (long p = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); p != -1;
+		p = GetNextItem(p, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) {
+		selected.push_back(ItemAt(p));
+	}
+	const long focusPos = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
+	focused = (focusPos == -1) ? 0 : ItemAt(focusPos);
+	return selected;
+}
+
+void CMuleVirtualListCtrl::RestoreSelection(const std::vector<wxUIntPtr> &selected, wxUIntPtr focused)
+{
+	for (wxUIntPtr data : selected) {
+		const long row = RowOfData(data);
+		if (row != -1) {
+			SetItemState(row, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+		}
+	}
+	if (focused) {
+		const long row = RowOfData(focused);
+		if (row != -1) {
+			SetItemState(row, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
+		}
+	}
+}
+
 void CMuleVirtualListCtrl::ClearItemData()
 {
 	m_items.clear();
@@ -252,13 +299,8 @@ void CMuleVirtualListCtrl::SortList()
 	// Preserve selection + focus by item identity (in virtual mode the control
 	// tracks selection by row index, so after the sort those indices point at
 	// different items).
-	std::vector<wxUIntPtr> selected;
-	for (long p = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); p != -1;
-		p = GetNextItem(p, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) {
-		selected.push_back(ItemAt(p));
-	}
-	long focusPos = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_FOCUSED);
-	wxUIntPtr focused = focusPos == -1 ? 0 : ItemAt(focusPos);
+	wxUIntPtr focused = 0;
+	const std::vector<wxUIntPtr> selected = SaveSelection(focused);
 
 	const std::vector<wxUIntPtr> before = m_items; // snapshot for the moved-span diff
 	std::sort(m_items.begin(), m_items.end(), [this](wxUIntPtr a, wxUIntPtr b) {
@@ -286,18 +328,7 @@ void CMuleVirtualListCtrl::SortList()
 		for (long idx = first; idx <= last; ++idx) {
 			SetItemState(idx, 0, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 		}
-		for (wxUIntPtr d : selected) {
-			auto it = m_rowOf.find(d);
-			if (it != m_rowOf.end()) {
-				SetItemState(it->second, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
-			}
-		}
-		if (focused) {
-			auto it = m_rowOf.find(focused);
-			if (it != m_rowOf.end()) {
-				SetItemState(it->second, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
-			}
-		}
+		RestoreSelection(selected, focused);
 		RefreshItems(first, last);
 	}
 

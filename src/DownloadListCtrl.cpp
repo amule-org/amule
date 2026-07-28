@@ -284,33 +284,58 @@ void CDownloadListCtrl::EndBatchUpdate(bool doSort)
 	Thaw();
 }
 
-void CDownloadListCtrl::ShowFileList()
+void CDownloadListCtrl::RebuildVisibleList()
 {
-	// Batch counterpart to AddFile()'s per-item path: show every model
-	// item that belongs in the current category, then sort the list a
-	// single time. Used after a deferred bulk load (remote GUI first
-	// sync) so a large queue populates in one pass instead of paying an
-	// O(n^2) per-item sort. Freeze()/Thaw() collapses the repaints into
-	// one. Mirrors CSharedFilesCtrl::ShowFileList().
+	// Batch counterpart to AddFile()'s per-item path: drop the visible rows and
+	// re-append every model item that passes the current category + text
+	// filter, then sort once.
+	//
+	// Doing this incrementally instead -- ShowFile(file, false) per row that
+	// should disappear -- costs a full RebuildRowIndex() inside
+	// RemoveItemData() for *every* removal, i.e. O(n^2) overall. On a 10k
+	// queue that is seconds of frozen GUI per keystroke in the filter field
+	// (issue #669). Appending into a cleared model and finishing with a single
+	// FinishBulkLoad() (one SetItemCount + one index rebuild + one sort) is
+	// O(n log n) and a single repaint. Mirrors CSharedFilesCtrl::ShowFileList().
 	Freeze();
 
+	// The rebuild renumbers every row, so keep selection + focus by item
+	// identity (the incremental path kept them for free by leaving surviving
+	// rows untouched).
+	wxUIntPtr focused = 0;
+	const std::vector<wxUIntPtr> selected = SaveSelection(focused);
+
+	ClearItemData();
+
 	bool hasCompletedDownloads = false;
+	int shown = 0;
 
 	for (const auto &entry : m_ListItems) {
 		CPartFile *file = entry.second->GetFile();
-		if (IsVisibleInCat(file, m_category)) {
-			ShowFile(file, true);
-			if (file->IsCompleted()) {
-				hasCompletedDownloads = true;
-			}
+		if (!IsVisibleInCat(file, m_category)) {
+			continue;
+		}
+		AppendItemData(reinterpret_cast<wxUIntPtr>(entry.second));
+		++shown;
+		if (file->IsCompleted()) {
+			hasCompletedDownloads = true;
 		}
 	}
 
-	CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(hasCompletedDownloads);
+	FinishBulkLoad();
+	RestoreSelection(selected, focused);
 
-	SortList();
+	CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(hasCompletedDownloads);
+	SetFilesCount(shown);
 
 	Thaw();
+}
+
+void CDownloadListCtrl::ShowFileList()
+{
+	// Used after a deferred bulk load (remote GUI first sync), where the model
+	// is populated but no rows are shown yet.
+	RebuildVisibleList();
 }
 
 void CDownloadListCtrl::RemoveFile(CPartFile *file)
@@ -400,36 +425,12 @@ void CDownloadListCtrl::ShowFile(CPartFile *file, bool show)
 
 void CDownloadListCtrl::ChangeCategory(int newCategory)
 {
-	Freeze();
-
-	bool hasCompletedDownloads = false;
-
-	// remove all displayed files with a different cat and show the correct ones
-	for (ListItems::const_iterator it = m_ListItems.begin(); it != m_ListItems.end(); ++it) {
-
-		CPartFile *file = it->second->GetFile();
-
-		bool curVisibility = IsVisibleInCat(file, m_category);
-		bool newVisibility = IsVisibleInCat(file, newCategory);
-
-		if (newVisibility && file->IsCompleted()) {
-			hasCompletedDownloads = true;
-		}
-
-		// Check if the visibility of the file has changed. However, if the
-		// current category is the default (0) category, then we can't use
-		// curVisiblity to see if the visibility has changed but instead
-		// have to let ShowFile() check if the file is or isn't on the list.
-		if (curVisibility != newVisibility || !newCategory) {
-			ShowFile(file, newVisibility);
-		}
-	}
-
-	CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(hasCompletedDownloads);
-
-	Thaw();
-
+	// Same one-pass rebuild as the text filter: hiding the rows of the old
+	// category individually paid an O(n) row-index rebuild per removal, so
+	// switching category on a large queue froze the GUI just like filtering
+	// did (issue #669).
 	m_category = newCategory;
+	RebuildVisibleList();
 }
 
 uint8 CDownloadListCtrl::GetCategory() const
@@ -437,39 +438,16 @@ uint8 CDownloadListCtrl::GetCategory() const
 	return m_category;
 }
 
-bool CDownloadListCtrl::PassesTextFilter(const CPartFile *file) const
-{
-	if (m_filterText.IsEmpty()) {
-		return true;
-	}
-	// Case-insensitive substring match on the file name (m_filterText is
-	// already lower-cased by SetFilterText()).
-	return file->GetFileName().GetPrintable().Lower().Contains(m_filterText);
-}
-
 bool CDownloadListCtrl::IsVisibleInCat(CPartFile *file, int category) const
 {
-	return file->CheckShowItemInGivenCat(category) && PassesTextFilter(file);
+	return file->CheckShowItemInGivenCat(category) && MatchesFilter(file->GetFileName().GetPrintable());
 }
 
-void CDownloadListCtrl::SetFilterText(const wxString &text)
+void CDownloadListCtrl::RebuildFilteredView()
 {
-	const wxString lower = text.Lower();
-	if (lower == m_filterText) {
-		return;
-	}
-	m_filterText = lower;
-
-	// Re-evaluate visibility of every model item against the new filter,
-	// mirroring ChangeCategory(): the model in m_ListItems always holds every
-	// file, so we just add/remove rows to match. One repaint, one sort.
-	Freeze();
-	for (const auto &entry : m_ListItems) {
-		CPartFile *file = entry.second->GetFile();
-		ShowFile(file, IsVisibleInCat(file, m_category));
-	}
-	SortList();
-	Thaw();
+	// Filter hook from CMuleVirtualListCtrl: the model in m_ListItems always
+	// holds every file, so the visible set is rebuilt from it in one pass.
+	RebuildVisibleList();
 }
 
 /**
@@ -1350,7 +1328,12 @@ void CDownloadListCtrl::ClearCompleted()
 
 void CDownloadListCtrl::ShowFilesCount(int diff)
 {
-	m_filecount += diff;
+	SetFilesCount(m_filecount + diff);
+}
+
+void CDownloadListCtrl::SetFilesCount(int count)
+{
+	m_filecount = count;
 
 	wxStaticText *label = CastByName("downloadsLabel", GetParent(), wxStaticText);
 

@@ -94,13 +94,10 @@ public:
 	 */
 	void ShowFileList();
 
-	/**
-	 * Sets the live text filter. Only files whose name contains @a text
-	 * (case-insensitive) are shown, AND-ed with the current category. An
-	 * empty string clears the filter. Purely GUI-side, so it works the same
-	 * in the monolithic app and the remote GUI (amulegui).
-	 */
-	void SetFilterText(const wxString &text);
+	// The live text filter (SetFilterText) is inherited from
+	// CMuleVirtualListCtrl; here it is AND-ed with the current category, and
+	// the rebuild it triggers is RebuildFilteredView() below. Purely GUI-side,
+	// so it behaves the same in the monolithic app and the remote GUI.
 
 	/**
 	 * Bracket a burst of AddFile()/UpdateItem() calls (a reconnect resync —
@@ -174,6 +171,23 @@ private:
 	 * Updates the displayed number representing the amount of files currently shown.
 	 */
 	void ShowFilesCount(int diff);
+
+	/**
+	 * Sets the displayed file count to an absolute value.
+	 */
+	void SetFilesCount(int count);
+
+	/**
+	 * Rebuilds the visible rows from the model in a single pass, keeping the
+	 * files that pass the current category + text filter. Used whenever the
+	 * visible set changes wholesale (category switch, filter edit).
+	 */
+	void RebuildVisibleList();
+
+	/**
+	 * @see CMuleVirtualListCtrl::RebuildFilteredView
+	 */
+	virtual void RebuildFilteredView();
 
 	/**
 	 * @see CMuleListCtrl::GetTTSText
@@ -261,11 +275,7 @@ private:
 	//! The currently displayed category
 	uint8 m_category;
 
-	//! Live text filter (lower-cased), empty when inactive. See SetFilterText().
-	wxString m_filterText;
-
 	//! True if @a file passes the current text filter (name substring match).
-	bool PassesTextFilter(const CPartFile *file) const;
 
 	//! Whether @a file should be displayed in @a category: the category
 	//! predicate AND-ed with the text filter. Takes a non-const file because

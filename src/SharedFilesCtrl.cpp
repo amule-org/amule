@@ -303,39 +303,33 @@ bool CSharedFilesCtrl::IsLiveSortColumn() const
 void CSharedFilesCtrl::ShowFileList()
 {
 	Freeze();
+
+	// The rebuild renumbers every row, so keep selection + focus by item
+	// identity -- otherwise editing the filter (which comes through here)
+	// drops whatever the user had selected.
+	wxUIntPtr focused = 0;
+	const std::vector<wxUIntPtr> selected = SaveSelection(focused);
+
 	ClearItemData();
 
 	std::vector<CKnownFile *> files;
 	theApp->sharedfiles->CopyFileList(files);
 	for (CKnownFile *file : files) {
-		if (PassesTextFilter(file)) {
+		if (MatchesFilter(file->GetFileName().GetPrintable())) {
 			AppendItemData(reinterpret_cast<wxUIntPtr>(file));
 		}
 	}
 	FinishBulkLoad();
+	RestoreSelection(selected, focused);
 	ShowFilesCount();
 
 	Thaw();
 }
 
-bool CSharedFilesCtrl::PassesTextFilter(const CKnownFile *file) const
+void CSharedFilesCtrl::RebuildFilteredView()
 {
-	if (m_filterText.IsEmpty()) {
-		return true;
-	}
-	// Case-insensitive substring match on the file name (m_filterText is
-	// already lower-cased by SetFilterText()).
-	return file->GetFileName().GetPrintable().Lower().Contains(m_filterText);
-}
-
-void CSharedFilesCtrl::SetFilterText(const wxString &text)
-{
-	const wxString lower = text.Lower();
-	if (lower == m_filterText) {
-		return;
-	}
-	m_filterText = lower;
-	// Rebuild the model from the master share, applying the new filter.
+	// Filter hook from CMuleVirtualListCtrl: the master share is the model, so
+	// the visible set is rebuilt from it in one pass.
 	ShowFileList();
 }
 
@@ -378,7 +372,7 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 {
 	// A newly-shared file that doesn't match the active filter stays hidden;
 	// it'll appear if the filter is cleared/changed (which rebuilds the model).
-	if (!PassesTextFilter(file)) {
+	if (!MatchesFilter(file->GetFileName().GetPrintable())) {
 		return;
 	}
 
