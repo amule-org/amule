@@ -75,13 +75,15 @@ authenticate without a plaintext \fB\-\-password\fR on the command line.
 Overrides \fB\-\-host\fR / \fB\-\-port\fR / \fB\-\-password\fR.
 .TP
 \fB[ \-\-set\-admin\-pass\fR=\fI<plain>\fR \fB]\fR
-Hash \fI<plain>\fR with MD5 and store it as the admin password in
-\fIamuleapi\-passwords\fR (mode 0600), then exit. Does not start the
-HTTP server or connect to amuled.
+Set the admin password to \fI<plain>\fR, storing it salted and
+stretched in \fIamuleapi\-passwords\fR (mode 0600), then exit. Does
+not start the HTTP server or connect to amuled. A stored password
+cannot be read back, only replaced.
 .TP
 \fB[ \-\-set\-guest\-pass\fR=\fI<plain>\fR \fB]\fR
-Hash \fI<plain>\fR with MD5 and store it as the guest password in
-\fIamuleapi\-passwords\fR (mode 0600), then exit.
+Set the guest password to \fI<plain>\fR, storing it the same way, then
+exit. An empty \fI<plain>\fR clears the guest password, which is how
+guest access is turned off.
 .TP
 \fB[ \-\-foreground ]\fR
 Stay in the foreground (default). aMule does not ship init\-system
@@ -120,8 +122,14 @@ on first launch if absent. Deleting the file invalidates every
 previously\-issued token.
 .TP
 \fI~/.aMule/amuleapi\-passwords\fR
-INI\-style MD5\-hashed admin + guest passwords. Mode 0600. Written via
-\fB\-\-set\-admin\-pass\fR / \fB\-\-set\-guest\-pass\fR.
+Admin and guest passwords, each stored as a salted PBKDF2\-HMAC\-SHA256
+record rather than a reversible digest. Mode 0600. This is the only
+place they are stored. Written via \fB\-\-set\-admin\-pass\fR /
+\fB\-\-set\-guest\-pass\fR, by the REST endpoint
+\fBPATCH /api/v0/auth/passwords\fR, and by \fBamule\fR(1) or
+\fBamuled\fR(1) when a password is changed in the Remote Controls
+preferences. A change takes effect on the next login without
+restarting amuleapi, and invalidates tokens issued before it.
 .SH REPORTING BUGS
 Please report bugs either on our forum
 (\fIhttps://github.com/amule-org/amule/discussions\fR), or in our

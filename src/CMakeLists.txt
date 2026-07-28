@@ -820,6 +820,11 @@ if (NEED_LIB_MULEAPPCORE)
 		${PARSER}
 		${SCANNER}
 		${IP2COUNTRY}
+		# Deliberately here rather than in muleappcommon: amule and amuled
+		# own amuleapi-passwords, amulegui does not (its config dir is on
+		# another machine), and muleappcore is exactly the amule+amuled
+		# pair. Keeping it out of amulegui also keeps Crypto++ out of it.
+		AmuleApiCredentials.cpp
 		kademlia/kademlia/Entry.cpp
 		kademlia/kademlia/Indexed.cpp
 		kademlia/kademlia/SearchManager.cpp
@@ -862,6 +867,11 @@ if (NEED_LIB_MULEAPPCORE)
 	target_link_libraries (muleappcore
 		PUBLIC wxWidgets::BASE
 		PRIVATE CRYPTOPP::CRYPTOPP
+		# webcommon owns the amuleapi credential format (hashing + the
+		# amuleapi-passwords file), shared with the amuleapi binary so the
+		# two can never disagree about it. Built unconditionally, so this
+		# holds even for a -DBUILD_AMULEAPI=NO configure.
+		PRIVATE webcommon
 	)
 
 	# The GeoIP resolver (IP2Country.cpp + geoip/MaxMindDBDatabase.cpp) now

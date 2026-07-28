@@ -140,117 +140,149 @@ TEST(AmuleApiConfig, EmptyPasswordsFilePassesLoad)
 	const wxString dir = MakeTmpDir("pw-empty");
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
-	// Default state: both roles disabled until --set-*-pass writes a line.
-	ASSERT_TRUE(cfg.AdminPasswordMd5().empty());
-	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
+	// Default state: both roles disabled until a password is set.
+	ASSERT_TRUE(cfg.AdminCredential().empty());
+	ASSERT_TRUE(cfg.GuestCredential().empty());
+	ASSERT_FALSE(cfg.HasAnyCredential());
 }
 
-TEST(AmuleApiConfig, WritePasswordsFileReloadable)
+TEST(AmuleApiConfig, SetPasswordIsReloadableAndVerifies)
 {
 	const wxString dir = MakeTmpDir("pw-rt");
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
 
-	// 32 lowercase hex chars; doesn't need to be a real MD5.
+	// 32 hex chars; doesn't need to be a real MD5.
 	const std::string admin_md5 = "0123456789abcdef0123456789abcdef";
 	const std::string guest_md5 = "fedcba9876543210fedcba9876543210";
-	ASSERT_TRUE(cfg.WritePasswordsFile(dir, admin_md5, guest_md5));
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kAdminCredential, admin_md5));
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kGuestCredential, guest_md5));
 
 	CAmuleApiConfig cfg2;
 	ASSERT_TRUE(cfg2.Load(dir));
-	ASSERT_EQUALS(admin_md5, cfg2.AdminPasswordMd5());
-	ASSERT_EQUALS(guest_md5, cfg2.GuestPasswordMd5());
+	ASSERT_TRUE(cfg2.HasAnyCredential());
+	// The stored form is a salted record, not the digest that produced it.
+	ASSERT_TRUE(cfg2.AdminCredential() != admin_md5);
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin == cfg2.VerifyPassword(admin_md5));
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Guest == cfg2.VerifyPassword(guest_md5));
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::None ==
+		    cfg2.VerifyPassword("00000000000000000000000000000000"));
 }
 
-// SetAdminPasswordMd5 is the in-memory override amule uses when it pushes
-// /AmuleApi/Password over --amule-config-file. It must win for the running
-// process yet leave the amuleapi-passwords file untouched, so a standalone
-// operator's saved password survives.
-TEST(AmuleApiConfig, SetAdminPasswordMd5OverridesInMemoryWithoutWritingFile)
+// Each role is set independently. The write re-reads the file first, so
+// changing one role never reverts a change another process made to the
+// other one — that is the whole reason there is a single store.
+TEST(AmuleApiConfig, SetPasswordLeavesTheOtherRoleAlone)
 {
-	const wxString dir = MakeTmpDir("pw-override");
+	const wxString dir = MakeTmpDir("pw-independent");
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
 
-	// A password the operator saved standalone (as via --set-admin-pass).
-	const std::string file_admin = "0123456789abcdef0123456789abcdef";
-	ASSERT_TRUE(cfg.WritePasswordsFile(dir, file_admin, ""));
-	ASSERT_EQUALS(file_admin, cfg.AdminPasswordMd5());
+	const std::string admin_md5 = "0123456789abcdef0123456789abcdef";
+	const std::string guest_md5 = "fedcba9876543210fedcba9876543210";
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kAdminCredential, admin_md5));
 
-	// amule pushing a different hash over the config file wins in memory...
-	const std::string pushed = "fedcba9876543210fedcba9876543210";
-	cfg.SetAdminPasswordMd5(pushed);
-	ASSERT_EQUALS(pushed, cfg.AdminPasswordMd5());
+	// A second process (amuled applying an EC push, say) sets the guest
+	// password without ever having seen the admin one.
+	CAmuleApiConfig other;
+	ASSERT_TRUE(other.Load(dir));
+	ASSERT_TRUE(other.SetPassword(webcommon::kGuestCredential, guest_md5));
 
-	// ...but the on-disk file is unchanged: a fresh load still reads the
-	// standalone-saved password.
-	CAmuleApiConfig cfg2;
-	ASSERT_TRUE(cfg2.Load(dir));
-	ASSERT_EQUALS(file_admin, cfg2.AdminPasswordMd5());
+	CAmuleApiConfig cfg3;
+	ASSERT_TRUE(cfg3.Load(dir));
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin == cfg3.VerifyPassword(admin_md5));
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Guest == cfg3.VerifyPassword(guest_md5));
 }
 
-TEST(AmuleApiConfig, SetAdminPasswordMd5RejectsMalformed)
+// Clearing the guest credential is how guest access is turned off.
+TEST(AmuleApiConfig, EmptyDigestClearsTheRole)
+{
+	const wxString dir = MakeTmpDir("pw-clear");
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(dir));
+
+	const std::string admin_md5 = "0123456789abcdef0123456789abcdef";
+	const std::string guest_md5 = "fedcba9876543210fedcba9876543210";
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kAdminCredential, admin_md5));
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kGuestCredential, guest_md5));
+
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kGuestCredential, ""));
+	ASSERT_TRUE(cfg.GuestCredential().empty());
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::None == cfg.VerifyPassword(guest_md5));
+	// Admin is untouched, so clearing guest doesn't lock the operator out.
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin == cfg.VerifyPassword(admin_md5));
+	ASSERT_TRUE(cfg.HasAnyCredential());
+}
+
+TEST(AmuleApiConfig, SetPasswordRejectsMalformedDigest)
 {
 	const wxString dir = MakeTmpDir("pw-setreject");
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
-	ASSERT_TRUE(cfg.AdminPasswordMd5().empty());
 
-	cfg.SetAdminPasswordMd5("too-short"); // wrong length
-	ASSERT_TRUE(cfg.AdminPasswordMd5().empty());
-	cfg.SetAdminPasswordMd5("0123456789ABCDEF0123456789ABCDEF"); // uppercase
-	ASSERT_TRUE(cfg.AdminPasswordMd5().empty());
-	cfg.SetAdminPasswordMd5("zzzz56789abcdef0123456789abcdef0"); // non-hex
-	ASSERT_TRUE(cfg.AdminPasswordMd5().empty());
+	ASSERT_FALSE(cfg.SetPassword(webcommon::kAdminCredential, "too-short"));
+	ASSERT_FALSE(cfg.SetPassword(webcommon::kAdminCredential, "zzzz56789abcdef0123456789abcdef0"));
+	ASSERT_TRUE(cfg.AdminCredential().empty());
 
-	const std::string ok = "0123456789abcdef0123456789abcdef";
-	cfg.SetAdminPasswordMd5(ok);
-	ASSERT_EQUALS(ok, cfg.AdminPasswordMd5());
+	// Uppercase is accepted: the preferences dialog and the EC path have
+	// historically disagreed about digest case.
+	ASSERT_TRUE(cfg.SetPassword(webcommon::kAdminCredential, "0123456789ABCDEF0123456789ABCDEF"));
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin ==
+		    cfg.VerifyPassword("0123456789abcdef0123456789abcdef"));
 }
 
-// SetGuestPasswordMd5 mirrors the admin setter: the in-memory override amule
-// uses when it pushes /AmuleApi/GuestPassword over --amule-config-file. It must
-// win for the running process yet leave the amuleapi-passwords file untouched.
-TEST(AmuleApiConfig, SetGuestPasswordMd5OverridesInMemoryWithoutWritingFile)
+// A password set by amuled or by aMule's preferences dialog while
+// amuleapi is running has to take effect without restarting amuleapi.
+TEST(AmuleApiConfig, PasswordChangedOnDiskIsPickedUpAtNextLogin)
 {
-	const wxString dir = MakeTmpDir("pw-guest-override");
+	const wxString dir = MakeTmpDir("pw-reload");
+	CAmuleApiConfig running;
+	ASSERT_TRUE(running.Load(dir));
+
+	const std::string first = "0123456789abcdef0123456789abcdef";
+	ASSERT_TRUE(running.SetPassword(webcommon::kAdminCredential, first));
+
+	// Another process rotates the admin password.
+	const std::string second = "fedcba9876543210fedcba9876543210";
+	{
+		CAmuleApiConfig other;
+		ASSERT_TRUE(other.Load(dir));
+		ASSERT_TRUE(other.SetPassword(webcommon::kAdminCredential, second));
+	}
+
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin == running.VerifyPassword(second));
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::None == running.VerifyPassword(first));
+}
+
+// A config written before the KDF holds a bare MD5. It must still let its
+// owner in, and the record must be rewritten at the current cost so the
+// upgrade needs no operator step.
+TEST(AmuleApiConfig, LegacyBareMd5IsUpgradedOnSuccessfulLogin)
+{
+	const wxString dir = MakeTmpDir("pw-legacy");
+	const std::string legacy = "0123456789abcdef0123456789abcdef";
+	::wxMkdir(dir, 0700);
+	{
+		wxFile f(dir + "/amuleapi-passwords", wxFile::write);
+		const std::string line = "admin=" + legacy + "\n";
+		f.Write(line.data(), line.size());
+	}
+#ifndef _WIN32
+	::chmod(std::string((dir + "/amuleapi-passwords").utf8_str()).c_str(), S_IRUSR | S_IWUSR);
+#endif
+
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir));
+	ASSERT_EQUALS(legacy, cfg.AdminCredential());
 
-	// A guest password the operator saved standalone (as via --set-guest-pass).
-	const std::string file_guest = "0123456789abcdef0123456789abcdef";
-	ASSERT_TRUE(cfg.WritePasswordsFile(dir, "", file_guest));
-	ASSERT_EQUALS(file_guest, cfg.GuestPasswordMd5());
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin == cfg.VerifyPassword(legacy));
+	// Upgraded in place: no longer the bare digest, and still verifies.
+	ASSERT_TRUE(cfg.AdminCredential() != legacy);
+	ASSERT_FALSE(webcommon::IsLegacyMd5Record(cfg.AdminCredential()));
 
-	// amule pushing a different hash over the config file wins in memory...
-	const std::string pushed = "fedcba9876543210fedcba9876543210";
-	cfg.SetGuestPasswordMd5(pushed);
-	ASSERT_EQUALS(pushed, cfg.GuestPasswordMd5());
-
-	// ...but the on-disk file is unchanged: a fresh load still reads the
-	// standalone-saved guest password.
 	CAmuleApiConfig cfg2;
 	ASSERT_TRUE(cfg2.Load(dir));
-	ASSERT_EQUALS(file_guest, cfg2.GuestPasswordMd5());
-}
-
-TEST(AmuleApiConfig, SetGuestPasswordMd5RejectsMalformed)
-{
-	const wxString dir = MakeTmpDir("pw-guest-setreject");
-	CAmuleApiConfig cfg;
-	ASSERT_TRUE(cfg.Load(dir));
-	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
-
-	cfg.SetGuestPasswordMd5("too-short"); // wrong length
-	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
-	cfg.SetGuestPasswordMd5("0123456789ABCDEF0123456789ABCDEF"); // uppercase
-	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
-	cfg.SetGuestPasswordMd5("zzzz56789abcdef0123456789abcdef0"); // non-hex
-	ASSERT_TRUE(cfg.GuestPasswordMd5().empty());
-
-	const std::string ok = "0123456789abcdef0123456789abcdef";
-	cfg.SetGuestPasswordMd5(ok);
-	ASSERT_EQUALS(ok, cfg.GuestPasswordMd5());
+	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::Admin == cfg2.VerifyPassword(legacy));
 }
 
 TEST(AmuleApiConfig, MalformedPasswordLineRejected)
@@ -261,7 +293,7 @@ TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 	// we never exercise the parser failure path.
 	::wxMkdir(dir, 0700);
 	wxFile bad(dir + "/amuleapi-passwords", wxFile::write);
-	const char *bad_line = "admin=not_a_valid_md5\n";
+	const char *bad_line = "admin=not_a_valid_record\n";
 	bad.Write(bad_line, std::strlen(bad_line));
 	bad.Close();
 #ifndef _WIN32

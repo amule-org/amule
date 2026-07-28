@@ -25,10 +25,13 @@
 #ifndef WEBAPI_CONFIG_H
 #define WEBAPI_CONFIG_H
 
+#include <ctime>
 #include <string>
 #include <vector>
 
 #include <wx/string.h>
+
+#include "Credentials.h"
 
 // amuleapi's three on-disk config files (in the user's amule config
 // dir; independent of remote.conf):
@@ -36,13 +39,18 @@
 //   amuleapi.conf         INI — HTTP bind + port + EC connection
 //                         params + auth tunables
 //   amuleapi-jwt-secret   raw hex (64 chars + \n) — HMAC-SHA-256 key
-//   amuleapi-passwords    two-line text — admin=<md5> / guest=<md5>
+//   amuleapi-passwords    two-line text — admin=<record> / guest=<record>
+//
+// The credential records are owned by webcommon/Credentials.h, not by
+// this class: amuled and monolithic aMule write the same file when a
+// password is changed from amulegui or the preferences dialog, so the
+// format has exactly one implementation and the three cannot drift.
 //
 // `amuleapi-jwt-secret` is auto-generated with 32 random bytes on
 // first run. `amuleapi-passwords` may be empty (daemon refuses
 // /auth/login until at least one role is set via
-// `amuleapi --set-admin-pass=...`). `amuleapi.conf` is created
-// from defaults if missing.
+// `amuleapi --set-admin-pass=...`, from amulegui, or over REST).
+// `amuleapi.conf` is created from defaults if missing.
 //
 // POSIX: both secret files must be 0600; looser bits → daemon
 // refuses to start with an actionable error. Windows has no
@@ -107,35 +115,73 @@ public:
 	// hex file). May be reloaded from disk via Load(...).
 	const std::vector<unsigned char> &JwtSecret() const { return m_jwtSecret; }
 
-	// MD5 hex digests for the two roles. Empty when the corresponding
-	// line is absent from amuleapi-passwords — `/auth/login` returns
-	// `login_disabled` for that role.
-	const std::string &AdminPasswordMd5() const { return m_adminPasswordMd5; }
-	const std::string &GuestPasswordMd5() const { return m_guestPasswordMd5; }
+	// Stored credential records for the two roles, in whatever form
+	// amuleapi-passwords holds them (see webcommon/Credentials.h — a PHC
+	// string normally, a bare MD5 for a config predating the KDF). Empty
+	// when the role is unset: `/auth/login` returns `login_disabled`.
+	// These are NOT digests to compare an input against — for that, and
+	// for the file-freshness check that comes with it, use VerifyPassword.
+	const std::string &AdminCredential() const { return m_credentials.admin; }
+	const std::string &GuestCredential() const { return m_credentials.guest; }
 
-	// In-memory override of the admin password digest (lowercase MD5 hex),
-	// used when amule pushes /AmuleApi/Password over --amule-config-file.
-	// Does NOT touch the amuleapi-passwords file, so a standalone operator's
-	// saved password is preserved. No-op unless `md5_hex` is 32 lowercase
-	// hex chars.
-	void SetAdminPasswordMd5(const std::string &md5_hex);
+	// True when at least one role can log in. Gates both the non-loopback
+	// bind refusal and the `login_disabled` login response.
+	bool HasAnyCredential() const;
 
-	// In-memory override of the guest password digest (lowercase MD5 hex),
-	// used when amule pushes /AmuleApi/GuestPassword over --amule-config-file.
-	// Same file-preserving, no-op-unless-valid semantics as the admin setter.
-	void SetGuestPasswordMd5(const std::string &md5_hex);
+	// Which role a presented password belongs to, if any.
+	enum class MatchedRole
+	{
+		None,
+		Admin,
+		Guest
+	};
+
+	// Verifies an MD5 hex digest against both roles, admin first.
+	//
+	// Not const, for two reasons. It re-reads amuleapi-passwords first, so
+	// a password set by amuled (pushed over EC from amulegui) or by
+	// aMule's preferences dialog takes effect without restarting amuleapi
+	// — which also means HasAnyCredential() is up to date immediately
+	// after this call, and stale before it. And a record that verified but
+	// predates the current KDF parameters is rewritten at the current
+	// cost, so the upgrade needs no operator step.
+	MatchedRole VerifyPassword(const std::string &md5_hex);
+
+	// Sets or clears one role and persists it, leaving the other role as
+	// it stands on disk. `md5_hex` empty clears the role — that is how the
+	// guest role is disabled. Returns false with LastError() set on a
+	// malformed digest or a write failure.
+	bool SetPassword(webcommon::CredentialRole role, const std::string &md5_hex);
+
+	// Modification time of amuleapi-passwords, or 0 when there is no file
+	// (nothing configured, so nothing to invalidate). Used to reject
+	// sessions older than the last password change, whoever made it.
+	std::time_t CredentialsChangedAt() const;
 
 	const std::string &LastError() const { return m_lastError; }
 
-	// Test/CLI helpers — used by `amuleapi --set-admin-pass=...` and
-	// the unit test. Writes the file with mode 0600; the caller is
-	// responsible for hashing the plaintext to MD5 hex first.
-	bool WritePasswordsFile(
-		const wxString &config_dir, const std::string &admin_md5, const std::string &guest_md5);
-
 	bool WriteJwtSecretFile(const wxString &config_dir, const std::vector<unsigned char> &secret_32);
 
+	// Re-reads amuleapi-passwords, keeping the current values if the read
+	// fails so a transient error can't lock everyone out.
+	//
+	// Unconditional rather than gated on a stat: mtime is second-
+	// granularity on every platform here, and two writes inside one
+	// second produce records of identical length, so a
+	// timestamp-plus-size check would miss a rotation *permanently*, not
+	// just briefly. The file is under 4 KB and this runs once per login
+	// attempt, behind the rate limiter and in front of a PBKDF2 — the
+	// read does not show up next to either. VerifyPassword calls it first;
+	// a caller that just wrote the file calls it directly so the state it
+	// reports back is the state it stored.
+	void ReloadCredentials();
+
 private:
+	// Rewrites one role's record at the current KDF cost without moving
+	// the file's modification time — an upgrade is not a password change,
+	// and only a password change should end sessions.
+	void RehashInPlace(webcommon::CredentialRole role, const std::string &md5_hex);
+
 	bool LoadAmuleapiConf(const wxString &path);
 	bool LoadJwtSecret(const wxString &path);
 	bool LoadPasswords(const wxString &path);
@@ -151,8 +197,7 @@ private:
 	Auth m_auth;
 	Streaming m_streaming;
 	std::vector<unsigned char> m_jwtSecret;
-	std::string m_adminPasswordMd5;
-	std::string m_guestPasswordMd5;
+	webcommon::Credentials m_credentials;
 
 	std::string m_lastError;
 };

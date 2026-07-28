@@ -554,10 +554,34 @@ public:
 	static void SetAmuleApiPort(uint16 uPort) { s_nAmuleApiPort = uPort; }
 	static const wxString &GetAmuleApiBindAddress() { return s_sAmuleApiBindAddress; }
 	static void SetAmuleApiBindAddress(const wxString &addr) { s_sAmuleApiBindAddress = addr; }
+	// amuleapi's credentials are NOT stored here. They live in
+	// amuleapi-passwords, salted and stretched, which amuleapi, amuled and
+	// monolithic aMule all read and write through webcommon/Credentials.h.
+	// See AmuleApiCredentials.h.
+	//
+	// The two password fields below are pending *requests* rather than
+	// stored values: an MD5 hex digest the user just typed, waiting to be
+	// hashed into the credential file, and empty the rest of the time.
+	// Empty therefore means "leave the stored password alone", which is
+	// what lets an EC client change the port without also having to know
+	// (and resend) a password it can never read back.
 	static const wxString &GetAmuleApiPass() { return s_sAmuleApiPassword; }
 	static void SetAmuleApiPass(const wxString &pass) { s_sAmuleApiPassword = pass; }
 	static const wxString &GetAmuleApiGuestPass() { return s_sAmuleApiGuestPassword; }
 	static void SetAmuleApiGuestPass(const wxString &pass) { s_sAmuleApiGuestPassword = pass; }
+
+	// Guest access is on exactly when a guest credential is stored, so
+	// this is a mirror of the credential file rather than a preference of
+	// its own — turning it off is what clears the stored guest password.
+	static bool GetAmuleApiGuestIsEnabled() { return s_bAmuleApiGuestEnabled; }
+	static void SetAmuleApiGuestIsEnabled(bool enable) { s_bAmuleApiGuestEnabled = enable; }
+
+	// Whether an admin credential is stored. Display only — there is no
+	// setter over EC, because the digest itself can never be read back out
+	// of the credential file. On amulegui this is whatever the daemon
+	// reported; on monolithic aMule it is read from the file directly.
+	static bool GetAmuleApiAdminIsSet() { return s_bAmuleApiAdminIsSet; }
+	static void SetAmuleApiAdminIsSet(bool isSet) { s_bAmuleApiAdminIsSet = isSet; }
 	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
 	static void SetAmuleApiPath(const wxString &path) { s_sAmuleApiPath = path; }
 	static bool GetWebUseGzip() { return s_bWebUseGzip; }
@@ -1055,6 +1079,8 @@ protected:
 	static wxString s_sAmuleApiBindAddress;
 	static wxString s_sAmuleApiPassword;
 	static wxString s_sAmuleApiGuestPassword;
+	static bool s_bAmuleApiGuestEnabled;
+	static bool s_bAmuleApiAdminIsSet;
 	static wxString s_sAmuleApiPath;
 	static uint32 s_nWebPageRefresh;
 	static bool s_bWebLowEnabled;

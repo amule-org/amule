@@ -382,6 +382,7 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 		if (out.exp - iat > TOKEN_LIFETIME_SECONDS + skew) {
 			return false; // lifetime cap
 		}
+		out.iat = iat;
 	}
 
 	out.jti = jti_it->second.get<std::string>();

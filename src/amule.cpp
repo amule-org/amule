@@ -89,6 +89,7 @@
 #include "ServerConnect.h"              // Needed for CServerConnect
 #include "ServerUDPSocket.h"            // Needed for CServerUDPSocket
 #include "Statistics.h"                 // Needed for CStatistics
+#include "AmuleApiCredentials.h"        // Needed for AmuleApiCredentials::RefreshState
 #include "TerminationProcessAmuleApi.h" // Needed for CTerminationProcessAmuleApi
 #include "TerminationProcessAmuleweb.h" // Needed for CTerminationProcessAmuleweb
 #include "ThreadTasks.h"
@@ -1123,6 +1124,11 @@ bool CamuleApp::OnInit()
 		}
 	}
 
+	// Read amuleapi-passwords so the preferences know what is actually
+	// configured before the dialog can be opened, and before the bind-vs-
+	// password warning below has to reason about it.
+	AmuleApiCredentials::RefreshState();
+
 	// Run amuleapi?
 	if (thePrefs::GetAmuleApiIsEnabled()) {
 		wxString aMuleConfigFile = thePrefs::GetConfigDir() + m_configFile;
@@ -1149,11 +1155,13 @@ bool CamuleApp::OnInit()
 		}
 #endif
 
-		// amuleapi reads its EC host/port/hashed-password AND its admin and
-		// guest passwords from amule.conf via --amule-config-file, exactly
-		// like amuleweb. The HTTP bind address and port are passed explicitly.
-		// A non-loopback bind requires an admin password; all are configured
-		// in the Remote Controls preferences.
+		// --amule-config-file hands amuleapi the EC host/port/hashed-password
+		// out of amule.conf, exactly like amuleweb. Its admin and guest
+		// credentials do NOT travel this way: they live in amuleapi-passwords
+		// in the config dir below, which both processes write. The HTTP bind
+		// address and port are passed explicitly. A non-loopback bind requires
+		// an admin password, or amuleapi refuses to start; all of this is
+		// configured in the Remote Controls preferences.
 		wxString cmd = QUOTE + amuleapiPath +
 			       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile +
 			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() +

@@ -2313,9 +2313,14 @@ void ParseRemoteControlsPrefs(const CECTag *rc, PreferencesSnapshot &out)
 	if (const CECTag *t = rc->GetTagByName(EC_TAG_AMULEAPI_BIND)) {
 		out.remote_controls.amuleapi_bind = std::string(t->GetStringData().utf8_str());
 	}
-	// Passwords (EC_TAG_PASSWD_HASH / EC_TAG_AMULEAPI_PASSWD /
-	// EC_TAG_AMULEAPI_GUEST_PASSWD) are deliberately NOT read —
-	// write-only, never surfaced on GET.
+	// The web server's password (EC_TAG_PASSWD_HASH) is deliberately NOT
+	// read — write-only, never surfaced on GET.
+	//
+	// amuleapi's own credential tags are not read either, for a different
+	// reason: they are not amuled's to report. amuleapi stores them
+	// locally, stretched, and reports what is configured through GET
+	// /auth/passwords. Mirroring them here would give clients a second,
+	// staler answer to the same question.
 }
 
 void ParseOnlineSigPrefs(const CECTag *o, PreferencesSnapshot &out)

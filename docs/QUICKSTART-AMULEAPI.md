@@ -128,36 +128,50 @@ aMule can launch amuleapi for you when it starts, the same way it can
 launch amuleweb. Everything is configured under *Preferences → Remote
 Controls* (**aMule API server parameters**): tick **Run amuleapi (REST
 API) on startup**, then set the **listening interface**, **HTTP port**,
-**admin password**, and optional **guest (low-rights) password**. These
-map to `/AmuleApi/Enabled`, `/AmuleApi/BindAddress`, `/AmuleApi/HttpPort`,
-`/AmuleApi/Password` and `/AmuleApi/GuestPassword` (both MD5-hashed) in
-`amule.conf`, and are also editable from a remote amulegui over EC. aMule
-then spawns:
+**admin password**, and optionally tick **Enable guest access** and give
+it a **guest password**. The first three map to `/AmuleApi/Enabled`,
+`/AmuleApi/BindAddress` and `/AmuleApi/HttpPort` in `amule.conf`; the
+passwords do not — see below. All of it is equally editable from a remote
+amulegui over EC. aMule then spawns:
 
 ```sh
 amuleapi --amule-config-file=<amule.conf> --config-dir=<amule data dir> --bind=<AmuleApi/BindAddress> --http-port=<AmuleApi/HttpPort>
 ```
 
 `--amule-config-file` points amuleapi at aMule's own `amule.conf` so it
-reads the EC host/port/(hashed) password **and** the admin and guest
-password hashes (`/AmuleApi/Password`, `/AmuleApi/GuestPassword`) straight
-from there — exactly as amuleapi's sibling amuleweb reads
-`/WebServer/Password`. Nothing sensitive is passed on the command line,
-and the hashes are applied in memory only: a standalone
-`amuleapi-passwords` file is never touched. Because the admin password is
-supplied, you can bind a non-loopback interface directly from the prefs
-panel to expose the API to other hosts. Changing any of these settings
-prompts you to restart aMule, which relaunches amuleapi with the new
-parameters. amuleapi is stopped when aMule exits.
+reads the EC host/port/(hashed) password from there, exactly as amuleapi's
+sibling amuleweb does. Nothing sensitive is passed on the command line.
 
-When amuleapi is started **standalone** (no `--amule-config-file`), nothing
-here applies: it reads its bind/port from `amuleapi.conf` and its admin
-password from the `amuleapi-passwords` file (set via `--set-admin-pass`),
-exactly as before.
+The admin and guest passwords travel a different route. They are stored in
+`amuleapi-passwords` in the config directory, salted and stretched, and
+that file is the *only* place they live — no copy goes into `amule.conf`,
+because two copies of a password are two copies that can disagree. When
+you set one in the preferences panel, aMule writes that file directly; on
+a remote amulegui the request goes to amuled over EC and amuled writes it.
+Either way amuleapi picks the change up on the next login, with no restart.
 
-The HTTP port is configurable in the same preferences panel (or
-`/AmuleApi/HttpPort`, default `4713`). When aMule runs as `amuled`, the
-amulegui remote client can toggle the setting over EC.
+Because the stored form cannot be reversed, the password fields are
+write-only: they open empty, and leaving one empty keeps the current
+password rather than clearing it. The panel says beside the admin field
+whether a password is currently set. Unticking **Enable guest access**
+clears the stored guest password, which is exactly what turns guest access
+off.
+
+Setting an admin password is what lets you bind a non-loopback interface
+and expose the API to other hosts; amuleapi refuses to start otherwise.
+Changing the interface or the port prompts you to restart aMule, which
+relaunches amuleapi with the new parameters — password changes need no
+restart. amuleapi is stopped when aMule exits.
+
+When amuleapi is started **standalone** (no `--amule-config-file`), the
+bind address and port come from `amuleapi.conf` instead, but the
+credentials work identically: same file, set with `--set-admin-pass` /
+`--set-guest-pass` or over REST.
+
+One thing to watch if you run amuleapi on a *different* host from aMule:
+the preferences panel writes the credential file on aMule's host, while a
+remotely-run amuleapi reads the one on its own. Configure that amuleapi
+with `--set-admin-pass` or `PATCH /auth/passwords` instead.
 
 ## Verifying
 

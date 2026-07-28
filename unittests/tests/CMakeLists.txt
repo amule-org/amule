@@ -338,6 +338,22 @@ target_link_libraries (OtherFunctionsTest
 # INTERFACE_INCLUDE_DIRECTORIES, so each test target only needs to depend on
 # `muleunit` and `webcommon`.
 
+add_executable (CredentialsTest
+	CredentialsTest.cpp
+	# muleunit's MuleDebug.cpp needs CFormat for its backtrace path, which
+	# is compiled in on glibc; without these the link fails on Linux while
+	# passing on macOS.
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME CredentialsTest COMMAND CredentialsTest)
+
+target_link_libraries (CredentialsTest
+	muleunit
+	webcommon
+)
+
 add_executable (JwtTest
 	JwtTest.cpp
 )

@@ -85,6 +85,11 @@ public:
 		Role role;
 		std::time_t exp;
 		std::string jti; // for revocation-list lookup
+		// Issued-at, already mandatory in the payload. Surfaced so a
+		// caller can reject every token minted before some event —
+		// which is how changing a password ends the sessions that the
+		// old password opened.
+		std::time_t iat;
 	};
 
 	// Verifies a token's signature, header `alg`/`typ`, and payload

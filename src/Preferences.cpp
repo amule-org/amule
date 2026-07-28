@@ -189,6 +189,8 @@ uint16 CPreferences::s_nAmuleApiPort;
 wxString CPreferences::s_sAmuleApiBindAddress;
 wxString CPreferences::s_sAmuleApiPassword;
 wxString CPreferences::s_sAmuleApiGuestPassword;
+bool CPreferences::s_bAmuleApiGuestEnabled;
+bool CPreferences::s_bAmuleApiAdminIsSet;
 wxString CPreferences::s_sAmuleApiPath;
 uint32 CPreferences::s_nWebPageRefresh;
 bool CPreferences::s_bWebLowEnabled;
@@ -625,6 +627,31 @@ public:
 	virtual void LoadFromFile(wxConfigBase *cfg) { cfg->Read(GetKey(), &m_value, m_default); }
 
 	virtual void SaveToFile(wxConfigBase *cfg) { cfg->Write(GetKey(), m_value); }
+};
+
+/**
+ * Wraps any Cfg class so its value lives only in memory for this run.
+ *
+ * The wrapped preference still binds to a dialog control, still reports
+ * HasChanged(), and still travels over EC like any other — only the
+ * amule.conf round trip is dropped.
+ *
+ * This is what the amuleapi credential fields need. Those credentials have
+ * exactly one store, amuleapi-passwords, which amuleapi, amuled and
+ * monolithic aMule all read and write; a second copy in amule.conf would
+ * mean two stores that disagree the moment either side changes, with no
+ * way to tell which is newer. The dialog field is therefore a write-only
+ * request ("set the password to this"), not a mirror of what is stored.
+ *
+ * The key name is kept for readability; nothing reads or writes it.
+ */
+template <typename BASE> class Cfg_Transient : public BASE
+{
+public:
+	using BASE::BASE;
+
+	virtual void LoadFromFile(wxConfigBase *) {}
+	virtual void SaveToFile(wxConfigBase *) {}
 };
 
 #ifndef AMULE_DAEMON
@@ -1390,9 +1417,14 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_AMULEAPI_PORT, (MkCfg_Int("/AmuleApi/HttpPort", s_nAmuleApiPort, 4713)));
 	NewCfgItem(IDC_AMULEAPI_BIND,
 		(new Cfg_Str("/AmuleApi/BindAddress", s_sAmuleApiBindAddress, "127.0.0.1")));
-	NewCfgItem(IDC_AMULEAPI_PASSWD, (new Cfg_Str_Encrypted("/AmuleApi/Password", s_sAmuleApiPassword)));
+	// Transient: see Cfg_Transient. These are pending password changes on
+	// their way to amuleapi-passwords, never a copy of what is stored.
+	NewCfgItem(IDC_AMULEAPI_PASSWD,
+		(new Cfg_Transient<Cfg_Str_Encrypted>("/AmuleApi/Password", s_sAmuleApiPassword)));
+	NewCfgItem(IDC_AMULEAPI_GUEST_ENABLED,
+		(new Cfg_Transient<Cfg_Bool>("/AmuleApi/GuestEnabled", s_bAmuleApiGuestEnabled, false)));
 	NewCfgItem(IDC_AMULEAPI_GUEST_PASSWD,
-		(new Cfg_Str_Encrypted("/AmuleApi/GuestPassword", s_sAmuleApiGuestPassword)));
+		(new Cfg_Transient<Cfg_Str_Encrypted>("/AmuleApi/GuestPassword", s_sAmuleApiGuestPassword)));
 	NewCfgItem(IDC_WEB_PASSWD, (new Cfg_Str_Encrypted("/WebServer/Password", s_sWebPassword)));
 	NewCfgItem(IDC_WEB_PASSWD_LOW, (new Cfg_Str_Encrypted("/WebServer/PasswordLow", s_sWebLowPassword)));
 	NewCfgItem(IDC_WEB_PORT, (MkCfg_Int("/WebServer/Port", s_nWebPort, 4711)));
@@ -1756,6 +1788,19 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	CFGList::iterator it_b = s_MiscList.begin();
 	for (; it_b != s_MiscList.end(); ++it_b) {
 		(*it_b)->LoadFromFile(cfg);
+	}
+
+	// Drop the amuleapi credential digests an early 3.1.0 development
+	// build wrote here. They are no longer read — amuleapi-passwords is
+	// the only store — and an unsalted MD5 left behind in amule.conf is
+	// worth removing rather than leaving to rot. Nothing to migrate: the
+	// digests cannot be converted into the stretched form without the
+	// password, so the operator sets the password once more.
+	if (cfg->HasEntry("/AmuleApi/Password")) {
+		cfg->DeleteEntry("/AmuleApi/Password");
+	}
+	if (cfg->HasEntry("/AmuleApi/GuestPassword")) {
+		cfg->DeleteEntry("/AmuleApi/GuestPassword");
 	}
 
 	// Preserve old value of UDPDisable

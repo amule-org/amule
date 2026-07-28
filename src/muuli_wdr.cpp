@@ -2111,15 +2111,42 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     item44->SetToolTip( _("The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below).") );
     item42->Add( item44, wxSizerFlags(1).Expand().CenterVertical() );
 
+    // Both amuleapi password fields say the same thing: they are requests,
+    // not a view of what is stored.
+    const wxString amuleapiPasswordHint = _("Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one.");
+
     wxStaticText *item45 = new wxStaticText( parent, -1, _("Admin password"), wxDefaultPosition, wxDefaultSize, 0 );
     item42->Add( item45, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    wxBoxSizer *item46s = new wxBoxSizer( wxHORIZONTAL );
     CMuleTextCtrl *item46 = new CMuleTextCtrl( parent, IDC_AMULEAPI_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
-    item42->Add( item46, wxSizerFlags(1).Expand().CenterVertical() );
+    item46->SetToolTip( amuleapiPasswordHint );
+    item46s->Add( item46, wxSizerFlags(1).Expand().CenterVertical() );
+    // Filled in at runtime by PrefsUnifiedDlg: the stored password is
+    // hashed and can never be shown, so this says whether one exists.
+    // Constructed with the wider of the two strings it can hold, not with
+    // "": the sizer takes its minimum width from the label present at
+    // construction, so an empty one reserves nothing and GTK then clips
+    // whatever SetLabel writes.
+    wxStaticText *item46t = new wxStaticText( parent, IDC_AMULEAPI_PASSWD_STATE, _("A password is set."), wxDefaultPosition, wxDefaultSize, 0 );
+    item46s->Add( item46t, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    item42->Add( item46s, wxSizerFlags(1).Expand().CenterVertical() );
 
-    wxStaticText *item47 = new wxStaticText( parent, -1, _("Low rights password"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxCheckBox *item49 = new wxCheckBox( parent, IDC_AMULEAPI_GUEST_ENABLED, _("Enable guest access"), wxDefaultPosition, wxDefaultSize, 0 );
+    item49->SetToolTip( _("Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password.") );
+    item42->Add( item49, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    item42->Add( 20, 20, wxSizerFlags().Center().Border(wxALL, 5) );
+
+    wxStaticText *item47 = new wxStaticText( parent, -1, _("Guest password"), wxDefaultPosition, wxDefaultSize, 0 );
     item42->Add( item47, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
+    wxBoxSizer *item48s = new wxBoxSizer( wxHORIZONTAL );
     CMuleTextCtrl *item48 = new CMuleTextCtrl( parent, IDC_AMULEAPI_GUEST_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
-    item42->Add( item48, wxSizerFlags(1).Expand().CenterVertical() );
+    item48->SetToolTip( amuleapiPasswordHint );
+    item48s->Add( item48, wxSizerFlags(1).Expand().CenterVertical() );
+    // Same as the admin one: constructed with the wider of the two strings
+    // so the sizer reserves real width instead of clipping SetLabel.
+    wxStaticText *item48t = new wxStaticText( parent, IDC_AMULEAPI_GUEST_PASSWD_STATE, _("A password is set."), wxDefaultPosition, wxDefaultSize, 0 );
+    item48s->Add( item48t, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    item42->Add( item48s, wxSizerFlags(1).Expand().CenterVertical() );
 
     item36->Add( item42, wxSizerFlags().Expand().CenterVertical() );
 

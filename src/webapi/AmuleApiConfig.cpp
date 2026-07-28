@@ -101,9 +101,9 @@ std::string HexEncode(const std::vector<unsigned char> &data)
 	return out;
 }
 
-// Trim ASCII whitespace from both ends. Used on each line of the
-// passwords file before tokenising; tolerates trailing CR (Windows-
-// edited file checked out on POSIX) and stray indentation.
+// Trim ASCII whitespace from both ends. Used on the jwt-secret file's
+// single line; tolerates a trailing CR (Windows-edited file checked out
+// on POSIX) and stray indentation.
 std::string Trim(const std::string &s)
 {
 	size_t a = 0;
@@ -115,34 +115,22 @@ std::string Trim(const std::string &s)
 	return s.substr(a, b - a);
 }
 
-// 32 lowercase hex chars = the canonical MD5 digest shape. Reject
-// anything else so we never store a half-typed/half-pasted line as
-// a "password".
-bool LooksLikeMd5Hex(const std::string &s)
-{
-	if (s.size() != 32)
-		return false;
-	for (char c : s) {
-		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
-			return false;
-	}
-	return true;
-}
-
 wxString JoinPath(const wxString &dir, const wxString &leaf)
 {
 	wxFileName fn(dir, leaf);
 	return fn.GetFullPath();
 }
 
-// Crash-safe writer for the 0600 secret files (amuleapi-passwords,
-// amuleapi-jwt-secret). Writes the body to a sibling `<name>.tmp`,
-// fsyncs, then atomically rename(2)s onto the target. A partial write
-// or a crash mid-write leaves the original file intact — important
-// because amuleapi-passwords stores the only admin/guest credentials
-// the daemon has. Falls back to a non-atomic best-effort path on
-// Windows (POSIX rename(2) semantics aren't available there for
-// existing-target replacement).
+// Crash-safe writer for the 0600 secret files: amuleapi-jwt-secret and
+// the first-run amuleapi.conf. Writes the body to a sibling `<name>.tmp`,
+// fsyncs, then atomically rename(2)s onto the target, so a partial write
+// or a crash mid-write leaves the original intact. Falls back to a
+// non-atomic best-effort path on Windows (POSIX rename(2) semantics
+// aren't available there for existing-target replacement).
+//
+// amuleapi-passwords is NOT written here — it is shared with amuled and
+// monolithic aMule, so it goes through webcommon::SaveCredentialsFile,
+// which does the same dance behind the one owner of that format.
 bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 {
 #ifndef _WIN32
@@ -406,78 +394,130 @@ bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 
 bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 {
+	const std::string dir(m_configDir.utf8_str());
+
 	if (!wxFileExists(path)) {
 		// Auto-create empty so the operator sees the file exists, with
-		// the right mode bits. CLI flow:
+		// the right mode bits. First-run flow:
 		//  amuleapi --set-admin-pass=<plain>
-		// hashes + writes the admin line; the daemon then accepts logins.
-		return WritePasswordsFile(m_configDir, "", "");
+		// hashes + writes the admin record; the daemon then accepts
+		// logins. amulegui and the preferences dialog write the same
+		// file for the same effect.
+		std::string err;
+		if (!webcommon::SaveCredentialsFile(dir, m_credentials, err)) {
+			m_lastError = "cannot create amuleapi-passwords: " + err;
+			return false;
+		}
+		return true;
 	}
 
 	if (!EnforceOwnerOnly(path))
 		return false;
 
-	wxFile f(path, wxFile::read);
-	if (!f.IsOpened()) {
-		m_lastError = "cannot open amuleapi-passwords";
+	std::string err;
+	if (!webcommon::LoadCredentialsFile(dir, m_credentials, err)) {
+		m_lastError = "amuleapi-passwords: " + err;
 		return false;
-	}
-	const wxFileOffset sz = f.Length();
-	if (sz < 0 || sz > 4096) {
-		m_lastError = "amuleapi-passwords has unexpected size";
-		return false;
-	}
-	std::string buf(static_cast<size_t>(sz), '\0');
-	if (sz > 0 && f.Read(&buf[0], buf.size()) != static_cast<ssize_t>(buf.size())) {
-		m_lastError = "amuleapi-passwords read failed";
-		return false;
-	}
-
-	std::string remainder = buf;
-	while (!remainder.empty()) {
-		const size_t nl = remainder.find('\n');
-		const std::string raw = (nl == std::string::npos) ? remainder : remainder.substr(0, nl);
-		remainder = (nl == std::string::npos) ? std::string() : remainder.substr(nl + 1);
-
-		const std::string line = Trim(raw);
-		if (line.empty() || line[0] == '#')
-			continue;
-		const size_t eq = line.find('=');
-		if (eq == std::string::npos) {
-			m_lastError = "amuleapi-passwords: malformed line (no '=')";
-			return false;
-		}
-		const std::string key = Trim(line.substr(0, eq));
-		const std::string val = Trim(line.substr(eq + 1));
-		if (val.empty())
-			continue; // role explicitly disabled
-		if (!LooksLikeMd5Hex(val)) {
-			m_lastError =
-				"amuleapi-passwords: value for '" + key + "' is not 32 lowercase hex chars";
-			return false;
-		}
-		if (key == "admin")
-			m_adminPasswordMd5 = val;
-		else if (key == "guest")
-			m_guestPasswordMd5 = val;
-		else {
-			m_lastError = "amuleapi-passwords: unknown key '" + key + "'";
-			return false;
-		}
 	}
 	return true;
 }
 
-void CAmuleApiConfig::SetAdminPasswordMd5(const std::string &md5_hex)
+bool CAmuleApiConfig::HasAnyCredential() const
 {
-	if (LooksLikeMd5Hex(md5_hex))
-		m_adminPasswordMd5 = md5_hex;
+	return !m_credentials.admin.empty() || !m_credentials.guest.empty();
 }
 
-void CAmuleApiConfig::SetGuestPasswordMd5(const std::string &md5_hex)
+std::time_t CAmuleApiConfig::CredentialsChangedAt() const
 {
-	if (LooksLikeMd5Hex(md5_hex))
-		m_guestPasswordMd5 = md5_hex;
+	// Second granularity, which leaves a token minted in the same second
+	// as a password change alive. Bounded and self-correcting: the next
+	// change moves the cutoff again, and a one-second window is far
+	// inside the time it takes to notice a leak and react to it.
+	wxFileName fn(JoinPath(m_configDir, "amuleapi-passwords"));
+	if (!fn.FileExists()) {
+		return 0;
+	}
+	return fn.GetModificationTime().GetTicks();
+}
+
+void CAmuleApiConfig::ReloadCredentials()
+{
+	webcommon::Credentials fresh;
+	std::string err;
+	if (!webcommon::LoadCredentialsFile(std::string(m_configDir.utf8_str()), fresh, err)) {
+		// Keep what we have. A transient read failure, or a file another
+		// process is midway through replacing, must not lock anyone out.
+		return;
+	}
+	// A missing file loads as an empty set, and that is deliberate: an
+	// operator who deletes amuleapi-passwords to lock everyone out should
+	// not have to restart the daemon for it to take effect.
+	m_credentials = fresh;
+}
+
+CAmuleApiConfig::MatchedRole CAmuleApiConfig::VerifyPassword(const std::string &md5_hex)
+{
+	ReloadCredentials();
+
+	bool needs_rehash = false;
+	if (!m_credentials.admin.empty() &&
+		webcommon::VerifyMd5Hex(md5_hex, m_credentials.admin, &needs_rehash)) {
+		if (needs_rehash)
+			RehashInPlace(webcommon::kAdminCredential, md5_hex);
+		return MatchedRole::Admin;
+	}
+	if (!m_credentials.guest.empty() &&
+		webcommon::VerifyMd5Hex(md5_hex, m_credentials.guest, &needs_rehash)) {
+		if (needs_rehash)
+			RehashInPlace(webcommon::kGuestCredential, md5_hex);
+		return MatchedRole::Guest;
+	}
+	return MatchedRole::None;
+}
+
+void CAmuleApiConfig::RehashInPlace(webcommon::CredentialRole role, const std::string &md5_hex)
+{
+	// Re-storing the same password at the current cost is housekeeping,
+	// not a rotation, so the file's modification time must not move: that
+	// timestamp is what invalidates sessions, and nobody should be signed
+	// out because their password was quietly re-hashed on the way in.
+	wxFileName fn(JoinPath(m_configDir, "amuleapi-passwords"));
+	const bool had_file = fn.FileExists();
+	wxDateTime access, modified, created;
+	if (had_file) {
+		fn.GetTimes(&access, &modified, &created);
+	}
+
+	if (!SetPassword(role, md5_hex)) {
+		// The old record still verifies, so a failed upgrade costs
+		// nothing but the next login trying again.
+		return;
+	}
+
+	if (had_file) {
+		fn.SetTimes(&access, &modified, nullptr);
+	}
+}
+
+bool CAmuleApiConfig::SetPassword(webcommon::CredentialRole role, const std::string &md5_hex)
+{
+	std::string record;
+	if (!webcommon::MakeRecord(md5_hex, record)) {
+		m_lastError = "password digest is not 32 hex chars";
+		return false;
+	}
+
+	std::string err;
+	if (!webcommon::UpdateCredentialFile(std::string(m_configDir.utf8_str()), role, record, err)) {
+		m_lastError = "cannot write amuleapi-passwords: " + err;
+		return false;
+	}
+
+	if (role == webcommon::kAdminCredential)
+		m_credentials.admin = record;
+	else
+		m_credentials.guest = record;
+	return true;
 }
 
 bool CAmuleApiConfig::EnforceOwnerOnly(const wxString &path)
@@ -506,24 +546,6 @@ bool CAmuleApiConfig::EnforceOwnerOnly(const wxString &path)
 	}
 	return true;
 #endif
-}
-
-bool CAmuleApiConfig::WritePasswordsFile(
-	const wxString &config_dir, const std::string &admin_md5, const std::string &guest_md5)
-{
-	const wxString path = JoinPath(config_dir, "amuleapi-passwords");
-	std::string body;
-	if (!admin_md5.empty())
-		body += "admin=" + admin_md5 + "\n";
-	if (!guest_md5.empty())
-		body += "guest=" + guest_md5 + "\n";
-	if (!WriteFileAtomic0600(path, body))
-		return false;
-	if (!admin_md5.empty())
-		m_adminPasswordMd5 = admin_md5;
-	if (!guest_md5.empty())
-		m_guestPasswordMd5 = guest_md5;
-	return true;
 }
 
 bool CAmuleApiConfig::WriteJwtSecretFile(

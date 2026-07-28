@@ -22,6 +22,8 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`POST /api/v0/auth/login`](#post-apiv0authlogin) — mint a JWT, optionally return it in the body
 - [`POST /api/v0/auth/logout`](#post-apiv0authlogout) — revoke the bearer's `jti`
 - [`GET /api/v0/auth/session`](#get-apiv0authsession) — verified bearer's role and expiry
+- [`GET /api/v0/auth/passwords`](#get-apiv0authpasswords) — which roles have a password configured
+- [`PATCH /api/v0/auth/passwords`](#patch-apiv0authpasswords) — change the admin password, enable/disable guest
 
 **Downloads**
 - [`GET /api/v0/downloads`](#get-apiv0downloads) — list active queue
@@ -125,12 +127,37 @@ The JSON body of `POST /auth/login` deliberately omits the token by default — 
 
 ### Role model
 
-Two roles, both gated by separate passwords configured via the `--set-admin-pass` / `--set-guest-pass` CLI commands:
+Two roles, each gated by its own password:
 
 - `admin` — full surface, including every mutation (`POST`, `PATCH`, `DELETE`).
 - `guest` — read-only surface. Any `admin`-only endpoint returns `403 forbidden`.
 
 A role is implicitly assigned at login based on which password matched; the verified role is encoded in the JWT and surfaced on `/auth/session`.
+
+Guest access is on exactly when a guest password is configured — there is no separate switch. Clearing the guest password is how guest access is turned off.
+
+### Where the passwords live
+
+Both are stored in `${config_dir}/amuleapi-passwords` (mode 0600), each as a salted PBKDF2-HMAC-SHA256 record rather than a reversible digest. That file is the only store; nothing is kept in `amule.conf`.
+
+Four things write it, and all of them mean the same thing by it:
+
+| Entry point | Used by |
+|-------------|---------|
+| `amuleapi --set-admin-pass=` / `--set-guest-pass=` | standalone operator |
+| `PATCH /auth/passwords` | REST clients and the web frontend |
+| aMule → *Preferences → Remote Controls* | monolithic aMule |
+| the same panel in amulegui, pushed to amuled over EC | remote GUI |
+
+A change made through any of them takes effect on the next login without restarting amuleapi.
+
+Because the stored form is not reversible, a configured password can never be read back — only replaced. Every interface therefore treats its password field as write-only: leaving it empty means "keep the current password", and `GET /auth/passwords` reports only *whether* each role is configured.
+
+### Changing a password ends other sessions
+
+Any credential change invalidates every token issued before it, whichever entry point made the change. A token whose `iat` predates the credential file's modification time is rejected with `401 unauthorized` (`credentials changed; please sign in again`).
+
+This is what makes rotating a leaked password effective: without it, whoever held the old password would stay signed in for up to the full token lifetime. `PATCH /auth/passwords` issues the caller a replacement token in the same response, so the operator making the change is not signed out by their own request.
 
 ### Rate limiting
 
@@ -143,7 +170,7 @@ When the bucket fills, the next request from that IP returns `429 rate_limited` 
 
 ### JWT structure
 
-Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<base64url>"}`. The signing secret is auto-generated as 32 random bytes into `${config_dir}/amuleapi-jwt-secret` on first launch (mode 0600). Delete that file and restart to invalidate every issued token. The `jti` claim drives the server-side revocation list (`/auth/logout`).
+Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<base64url>"}`. The signing secret is auto-generated as 32 random bytes into `${config_dir}/amuleapi-jwt-secret` on first launch (mode 0600). Delete that file and restart to invalidate every issued token. The `jti` claim drives the server-side revocation list (`/auth/logout`), and the `iat` claim drives the credential-change cutoff described above.
 
 ## Response model
 
@@ -480,6 +507,77 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/auth/session
   "jti": "b3iY9oA1tUW2pK..."
 }
 ```
+
+---
+
+#### `GET /api/v0/auth/passwords`
+
+**Auth:** `ADMIN`
+
+Reports which roles have a password configured. The passwords themselves are stored irreversibly and are never returned.
+
+```sh
+curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v0/auth/passwords
+```
+
+```json
+{
+  "admin_set": true,
+  "guest_enabled": false
+}
+```
+
+`guest_enabled` is simply whether a guest password exists.
+
+---
+
+#### `PATCH /api/v0/auth/passwords`
+
+**Auth:** `ADMIN`
+
+Changes the admin password, and turns guest access on or off or changes its password.
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `current_password` | string | **Required.** The admin password as it is now. |
+| `admin_password` | string | New admin password. Omit to leave it unchanged. |
+| `guest_password` | string | New guest password. Implies `guest_enabled: true` unless that field says otherwise. Omit to leave it unchanged. |
+| `guest_enabled` | bool | `false` clears the guest password, turning guest access off. Omit to leave the current state. |
+
+Omitting a field means "leave it alone" — the same rule every other interface follows, and a necessary one, because a client cannot read a stored password back in order to resend it.
+
+`current_password` is required even though the caller already holds an admin token: a stolen token alone should not be enough to lock the real operator out. It is checked against the same per-IP limiter as `/auth/login`, so this is not a softer place to guess passwords.
+
+```sh
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d '{"current_password":"old-secret","admin_password":"new-secret"}' \
+    "http://$HOST/api/v0/auth/passwords?type=bearer"
+```
+
+```json
+{
+  "admin_set": true,
+  "guest_enabled": false,
+  "other_sessions_revoked": true,
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "role": "admin",
+  "expires_at": "2026-06-21T11:00:00Z",
+  "expires_at_unix": 1781521200,
+  "jti": "9pQ2xR7mLk4vTn..."
+}
+```
+
+The response re-issues the caller's session — same shape and same `?type=bearer` / `Accept: application/jwt` opt-in as `/auth/login`, cookie included. Every *other* session is now invalid, which is what `other_sessions_revoked` reports. Clients that ignore the new token will get `401 unauthorized` on their next request.
+
+**Errors**
+
+| Status | Code | Cause |
+|--------|------|-------|
+| `400` | `bad_request` | no changeable field given; a password field is not a string; `admin_password` empty (the admin role cannot be removed); `guest_password` sent together with `guest_enabled: false` |
+| `403` | `invalid_credentials` | `current_password` is not the admin password |
+| `403` | `forbidden` | the token is a guest token |
+| `429` | `rate_limited` | too many failed `current_password` attempts from this IP |
 
 ---
 
@@ -1551,7 +1649,9 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 { "files": { "new_paused": true }, "servers": { "dead_server_retries": 5 } }
 ```
 
-**Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls`: `webserver_password`, `webserver_guest_password`, `amuleapi_password`. Send the plaintext — amuled stores the hash. `webserver_guest_password` requires that guest access be enabled (pass `webserver_guest_enabled: true` in the same request, or leave it already enabled).
+**Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls`: `webserver_password`, `webserver_guest_password`. Send the plaintext — amuled stores the hash. `webserver_guest_password` requires that guest access be enabled (pass `webserver_guest_enabled: true` in the same request, or leave it already enabled).
+
+amuleapi's own `admin` and `guest` passwords are **not** settable here; `amuleapi_password`, `amuleapi_guest_password` and `amuleapi_guest_enabled` are rejected with `400 bad_request`. Use [`PATCH /auth/passwords`](#patch-apiv0authpasswords), which writes the credential file this daemon actually reads, requires the current password, and is rate-limited. A field here would instead travel over EC to whichever aMule this amuleapi is attached to and land in that host's config directory.
 
 **`ip2country`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_url`, `maxmind_license`, and `auto_update`. It also accepts a **write-only** `update_now` boolean that triggers an immediate database download from the (just-applied) source; it is never echoed on GET. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `downloading`, `last_result`) are ignored if sent.
 

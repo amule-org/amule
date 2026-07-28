@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 #
 # amuleapi 02-auth — auth surface. Exercises /api/v0/auth/login,
-# /auth/session, /auth/logout against a freshly-started amuleapi
-# whose admin password is `adminpass` and whose guest password is
-# unset.
+# /auth/session, /auth/logout and /auth/passwords against a
+# freshly-started amuleapi whose admin password is `adminpass`.
+#
+# The credential block changes passwords and puts them back; it must stay
+# ahead of the rate-limit block, which locks this IP out on purpose.
 #
 # Bring-up convention (matches the README in the parent dir):
 #   rm -rf /tmp/amuleapi-02-auth && mkdir -p /tmp/amuleapi-02-auth
@@ -175,7 +177,144 @@ _assert_status 400 "POST /auth/login (bad JSON) → 400"
 _assert_json_eq '.error.code' bad_request \
 	'bad-JSON 400 carries error.code=bad_request'
 
-# --- 11. Rate-limit: 5 wrong passwords (default threshold) → 429 ---
+# --- 11. Credential management: /auth/passwords. -------------------
+#
+# Runs before the rate-limit block below, which deliberately locks this
+# IP out and would take the PATCH re-auth down with it (both share the
+# login limiter).
+#
+# Ends by restoring ADMIN_PASS, because the whole suite shares one
+# amuleapi and every later script logs in with it.
+_curl -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" \
+	"$HOST/api/v0/auth/login?type=bearer"
+_assert_status 200 "re-login for the credential block → 200"
+PW_TOKEN=$(printf '%s' "$CURL_BODY" | jq -r .token)
+[ -n "$PW_TOKEN" ] && [ "$PW_TOKEN" != "null" ] \
+	|| _die "couldn't extract token for the credential block: $CURL_BODY"
+
+_curl -H "Authorization: Bearer $PW_TOKEN" "$HOST/api/v0/auth/passwords"
+_assert_status 200 "GET /auth/passwords (admin) → 200"
+_assert_json_eq '.admin_set'          true    'admin_set=true'
+# Not asserting the initial guest state: run-all.sh sets a guest password
+# during bring-up, a bare manual run does not. The transitions below are
+# what matter, and each asserts the state it just produced.
+_assert_json_eq '.guest_enabled | type' boolean 'guest_enabled is a boolean'
+
+# The stored form is irreversible, so no digest may appear in the body.
+_assert_json_eq 'has("admin_password") or has("guest_password")' false \
+	'GET /auth/passwords never echoes a password'
+
+_curl -X PATCH -H "Authorization: Bearer $PW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"current_password":"definitely-not-it","admin_password":"x"}' \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 403 "PATCH /auth/passwords with wrong current_password → 403"
+_assert_json_eq '.error.code' invalid_credentials \
+	'wrong current_password carries error.code=invalid_credentials'
+
+_curl -X PATCH -H "Authorization: Bearer $PW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"current_password\":\"$ADMIN_PASS\"}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 400 "PATCH /auth/passwords with nothing to change → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $PW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"current_password\":\"$ADMIN_PASS\",\"admin_password\":\"\"}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 400 "PATCH /auth/passwords cannot clear the admin password → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $PW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"current_password\":\"$ADMIN_PASS\",\"guest_password\":\"g\",\"guest_enabled\":false}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 400 "PATCH /auth/passwords rejects guest_password with guest_enabled:false → 400"
+
+# The revocation cutoff is the credential file's mtime, which has
+# one-second resolution: a token minted in the same second as the write
+# is not older than it. Wait one second so the assertion below is about
+# the rule rather than about which side of a second boundary we landed on.
+sleep 1
+
+_curl -X PATCH -H "Authorization: Bearer $PW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-H "Accept: application/jwt" \
+	-d "{\"current_password\":\"$ADMIN_PASS\",\"guest_password\":\"guestpass\"}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 200 "PATCH /auth/passwords enabling guest → 200"
+_assert_json_eq '.admin_set'              true 'admin_set still true after enabling guest'
+_assert_json_eq '.guest_enabled'          true 'guest_enabled=true after setting a guest password'
+_assert_json_eq '.other_sessions_revoked' true 'password change reports other sessions revoked'
+_assert_json_eq '.token | length > 100'   true 'password change re-issues the caller a token'
+NEW_TOKEN=$(printf '%s' "$CURL_BODY" | jq -r .token)
+
+# The token that made the change survives; the one that predates it does not.
+_curl -H "Authorization: Bearer $NEW_TOKEN" "$HOST/api/v0/auth/passwords"
+_assert_status 200 "re-issued token still works after the change"
+_curl -H "Authorization: Bearer $PW_TOKEN" "$HOST/api/v0/auth/passwords"
+_assert_status 401 "token issued before the change → 401"
+
+# The new guest password works, and guest may not read the credential state.
+_curl -X POST -H "Content-Type: application/json" \
+	-d '{"password":"guestpass"}' "$HOST/api/v0/auth/login?type=bearer"
+_assert_status 200 "guest can log in with the password just set → 200"
+_assert_json_eq '.role' guest 'guest login yields role=guest'
+GUEST_TOKEN=$(printf '%s' "$CURL_BODY" | jq -r .token)
+_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/auth/passwords"
+_assert_status 403 "GET /auth/passwords as guest → 403"
+_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"current_password\":\"$ADMIN_PASS\",\"admin_password\":\"nope\"}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 403 "PATCH /auth/passwords as guest → 403"
+
+# Turning guest off clears the stored guest password.
+sleep 1
+_curl -X PATCH -H "Authorization: Bearer $NEW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-H "Accept: application/jwt" \
+	-d "{\"current_password\":\"$ADMIN_PASS\",\"guest_enabled\":false}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 200 "PATCH /auth/passwords disabling guest → 200"
+_assert_json_eq '.guest_enabled' false 'guest_enabled=false after disabling'
+_assert_json_eq '.admin_set'     true  'disabling guest leaves the admin password alone'
+NEW_TOKEN=$(printf '%s' "$CURL_BODY" | jq -r .token)
+_curl -X POST -H "Content-Type: application/json" \
+	-d '{"password":"guestpass"}' "$HOST/api/v0/auth/login?type=bearer"
+_assert_status 401 "the cleared guest password no longer logs in → 401"
+
+# Rotate the admin password and rotate it straight back, so the rest of
+# the suite still authenticates with ADMIN_PASS.
+sleep 1
+_curl -X PATCH -H "Authorization: Bearer $NEW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-H "Accept: application/jwt" \
+	-d "{\"current_password\":\"$ADMIN_PASS\",\"admin_password\":\"rotated-pass\"}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 200 "PATCH /auth/passwords rotating the admin password → 200"
+NEW_TOKEN=$(printf '%s' "$CURL_BODY" | jq -r .token)
+_curl -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer"
+_assert_status 401 "the replaced admin password no longer logs in → 401"
+_curl -X POST -H "Content-Type: application/json" \
+	-d '{"password":"rotated-pass"}' "$HOST/api/v0/auth/login?type=bearer"
+_assert_status 200 "the new admin password logs in → 200"
+
+sleep 1
+_curl -X PATCH -H "Authorization: Bearer $NEW_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d "{\"current_password\":\"rotated-pass\",\"admin_password\":\"$ADMIN_PASS\"}" \
+	"$HOST/api/v0/auth/passwords"
+_assert_status 200 "PATCH /auth/passwords restoring the admin password → 200"
+_curl -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?type=bearer"
+_assert_status 200 "ADMIN_PASS restored for the rest of the suite → 200"
+
+_curl -X POST "$HOST/api/v0/auth/passwords"
+_assert_status 405 "POST /auth/passwords → 405 method_not_allowed"
+
+# --- 12. Rate-limit: 5 wrong passwords (default threshold) → 429 ---
 # Defaults from amuleapi.conf: LoginFailureWindowSeconds=60,
 # LoginFailureThreshold=5, LoginLockoutSeconds=300.
 #

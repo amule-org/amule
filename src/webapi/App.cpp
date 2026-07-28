@@ -125,14 +125,14 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddOption("",
 		"set-admin-pass",
-		_("Hash <plain> with MD5 and write it as the admin password into amuleapi-passwords (mode "
-		  "0600), then exit."),
+		_("Set the amuleapi admin password to <plain>, storing it salted and stretched in "
+		  "amuleapi-passwords (mode 0600), then exit."),
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddOption("",
 		"set-guest-pass",
-		_("Hash <plain> with MD5 and write it as the guest password into amuleapi-passwords (mode "
-		  "0600), then exit."),
+		_("Set the amuleapi guest password to <plain>, storing it salted and stretched in "
+		  "amuleapi-passwords (mode 0600), then exit. An empty <plain> turns guest access off."),
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddSwitch("", "foreground", _("Stay in the foreground; default."), wxCMD_LINE_PARAM_OPTIONAL);
@@ -301,20 +301,13 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		CECFileConfig cfg(m_cliAmuleConfigFile);
 		LoadAmuleConfig(cfg); // sets m_host / m_port / m_password
 
-		// amule pushes the amuleapi admin password (already MD5-hashed by the
-		// prefs dialog) via /AmuleApi/Password, exactly as it hands amuleweb
-		// /WebServer/Password. Apply it in memory only -- the amuleapi-passwords
-		// file is never touched, so a standalone operator's saved password is
-		// preserved. Empty/unset leaves the file-loaded value (loopback stays
-		// credential-free).
-		wxString adminHash;
-		if (cfg.Read(wxT("/AmuleApi/Password"), &adminHash) && !adminHash.IsEmpty()) {
-			m_apiConfig.SetAdminPasswordMd5(std::string(adminHash.Lower().utf8_str()));
-		}
-		wxString guestHash;
-		if (cfg.Read(wxT("/AmuleApi/GuestPassword"), &guestHash) && !guestHash.IsEmpty()) {
-			m_apiConfig.SetGuestPasswordMd5(std::string(guestHash.Lower().utf8_str()));
-		}
+		// Only the EC connection comes from amule.conf. The admin and
+		// guest credentials deliberately do NOT: there is one store for
+		// them, amuleapi-passwords, which aMule and amuled write directly
+		// when a password is changed from the preferences dialog or from
+		// amulegui over EC. An amule.conf copy would be a second store,
+		// and whichever one lost the tie-break would silently discard a
+		// password the user had just set.
 	}
 
 	return true;
@@ -323,9 +316,7 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 int CamuleapiApp::RunSetAdminPass()
 {
 	const wxString hashed = MD5Sum(m_cliSetAdminPass).GetHash();
-	if (!m_apiConfig.WritePasswordsFile(m_apiConfig.ConfigDir(),
-		    std::string(hashed.utf8_str()),
-		    m_apiConfig.GuestPasswordMd5())) {
+	if (!m_apiConfig.SetPassword(webcommon::kAdminCredential, std::string(hashed.Lower().utf8_str()))) {
 		Show(CFormat("amuleapi: --set-admin-pass failed: %s\n") %
 			wxString::FromUTF8(m_apiConfig.LastError().c_str()));
 		return 1;
@@ -336,15 +327,19 @@ int CamuleapiApp::RunSetAdminPass()
 
 int CamuleapiApp::RunSetGuestPass()
 {
-	const wxString hashed = MD5Sum(m_cliSetGuestPass).GetHash();
-	if (!m_apiConfig.WritePasswordsFile(m_apiConfig.ConfigDir(),
-		    m_apiConfig.AdminPasswordMd5(),
-		    std::string(hashed.utf8_str()))) {
+	// An empty argument clears the guest credential, which is how the
+	// guest role is disabled from the CLI.
+	std::string digest;
+	if (!m_cliSetGuestPass.IsEmpty()) {
+		digest = std::string(MD5Sum(m_cliSetGuestPass).GetHash().Lower().utf8_str());
+	}
+	if (!m_apiConfig.SetPassword(webcommon::kGuestCredential, digest)) {
 		Show(CFormat("amuleapi: --set-guest-pass failed: %s\n") %
 			wxString::FromUTF8(m_apiConfig.LastError().c_str()));
 		return 1;
 	}
-	Show(_("amuleapi: guest password updated.\n"));
+	Show(digest.empty() ? _("amuleapi: guest access disabled.\n")
+			    : _("amuleapi: guest password updated.\n"));
 	return 0;
 }
 
@@ -448,8 +443,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	// Loopback bind + empty passwords is fine; first-run flow IS
 	// "start on loopback, then run --set-admin-pass".
 	const bool non_loopback = (bind != "127.0.0.1" && bind != "::1" && bind != "localhost");
-	const bool no_pass = m_apiConfig.AdminPasswordMd5().empty() && m_apiConfig.GuestPasswordMd5().empty();
-	if (non_loopback && no_pass) {
+	if (non_loopback && !m_apiConfig.HasAnyCredential()) {
 		Show(CFormat(_("amuleapi: refusing to start with BindAddress=%s and no "
 			       "admin/guest password configured - this would expose the "
 			       "REST surface to anyone reachable on that interface. "

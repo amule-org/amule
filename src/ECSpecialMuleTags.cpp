@@ -241,15 +241,44 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			rc_prefs.AddTag(CECEmptyTag(EC_TAG_AMULEAPI_AUTORUN));
 		}
 		rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_BIND, thePrefs::GetAmuleApiBindAddress()));
+
+		// amuleapi's credentials are stored salted and stretched in
+		// amuleapi-passwords, so unlike the webserver's there is no digest
+		// to put on the wire — the daemon could not produce one if it
+		// wanted to. Both tags therefore carry a *request* when a client
+		// sends them and a *state* when the daemon does:
+		//
+		//   admin absent          leave the stored password alone
+		//   admin present, empty  a password is set (daemon -> client)
+		//   admin present + hash  set the admin password to this
+		//
+		//   guest absent          guest access off; clear the credential
+		//   guest present, empty  guest access on, password unchanged
+		//   guest present + hash  guest access on with this password
+		//
+		// Guest is the same container-plus-optional-child shape as
+		// EC_TAG_WEBSERVER_GUEST above, and for the same reason: absence
+		// has to be able to mean "off". Admin has no off state on purpose
+		// — clearing it from a stray prefs push would leave a non-loopback
+		// deployment with no way back in.
 		if (!thePrefs::GetAmuleApiPass().IsEmpty()) {
+			CECEmptyTag adminTag(EC_TAG_AMULEAPI_PASSWD);
 			CMD4Hash passhash;
 			wxCHECK2(passhash.Decode(thePrefs::GetAmuleApiPass()), /* Do nothing. */);
-			rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_PASSWD, passhash));
+			adminTag.AddTag(CECTag(EC_TAG_PASSWD_HASH, passhash));
+			rc_prefs.AddTag(adminTag);
+		} else if (thePrefs::GetAmuleApiAdminIsSet()) {
+			rc_prefs.AddTag(CECEmptyTag(EC_TAG_AMULEAPI_PASSWD));
 		}
-		if (!thePrefs::GetAmuleApiGuestPass().IsEmpty()) {
-			CMD4Hash passhash;
-			wxCHECK2(passhash.Decode(thePrefs::GetAmuleApiGuestPass()), /* Do nothing. */);
-			rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_GUEST_PASSWD, passhash));
+		if (thePrefs::GetAmuleApiGuestIsEnabled()) {
+			CECEmptyTag guestTag(EC_TAG_AMULEAPI_GUEST_PASSWD);
+			if (!thePrefs::GetAmuleApiGuestPass().IsEmpty()) {
+				CMD4Hash passhash;
+				wxCHECK2(
+					passhash.Decode(thePrefs::GetAmuleApiGuestPass()), /* Do nothing. */);
+				guestTag.AddTag(CECTag(EC_TAG_PASSWD_HASH, passhash));
+			}
+			rc_prefs.AddTag(guestTag);
 		}
 		AddTag(rc_prefs);
 	}
@@ -684,11 +713,35 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_BIND)) != nullptr) {
 			thePrefs::SetAmuleApiBindAddress(oneTag->GetStringData());
 		}
+		// See the emit side for the encoding. The pending-password prefs
+		// start empty and are cleared again by AmuleApiCredentials::
+		// ApplyPrefs, so "tag present but carrying no hash" correctly
+		// leaves the stored password untouched.
+		//
+		// The guest toggle goes through ApplyBoolean for the same reason
+		// EC_TAG_WEBSERVER_GUEST below does: this method serves two
+		// callers with opposite conventions. amulegui sends the whole
+		// group at EC_DETAIL_UPDATE, where an absent tag means "off";
+		// amuleapi's PATCH /preferences sends only the fields the client
+		// named, at EC_DETAIL_FULL, where an absent tag means "leave
+		// alone". Reading absence as "off" unconditionally would let any
+		// unrelated preference change wipe the guest credential.
+		thePrefs::SetAmuleApiPass(wxEmptyString);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PASSWD)) != nullptr) {
-			thePrefs::SetAmuleApiPass(oneTag->GetMD4Data().Encode());
+			thePrefs::SetAmuleApiAdminIsSet(true);
+			const CECTag *const adminHash = oneTag->GetTagByName(EC_TAG_PASSWD_HASH);
+			if (adminHash != nullptr) {
+				thePrefs::SetAmuleApiPass(adminHash->GetMD4Data().Encode());
+			}
 		}
+		thePrefs::SetAmuleApiGuestPass(wxEmptyString);
+		ApplyBoolean(
+			use_tag, thisTab, thePrefs::SetAmuleApiGuestIsEnabled, EC_TAG_AMULEAPI_GUEST_PASSWD);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_GUEST_PASSWD)) != nullptr) {
-			thePrefs::SetAmuleApiGuestPass(oneTag->GetMD4Data().Encode());
+			const CECTag *const guestHash = oneTag->GetTagByName(EC_TAG_PASSWD_HASH);
+			if (guestHash != nullptr) {
+				thePrefs::SetAmuleApiGuestPass(guestHash->GetMD4Data().Encode());
+			}
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_PASSWD_HASH)) != NULL) {
 			thePrefs::SetWSPass(oneTag->GetMD4Data().Encode());

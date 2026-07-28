@@ -51,6 +51,7 @@
 #include <net/if.h>
 #endif
 
+#include "AmuleApiCredentials.h"
 #include "amule.h" // Needed for theApp
 #include "amuleDlg.h"
 #include "AutostartManager.h"       // Autostart-on-login toggle backend
@@ -189,6 +190,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHECKBOX(IDC_EXT_CONN_ACCEPT, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ENABLE_WEB, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ENABLE_AMULEAPI, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_AMULEAPI_GUEST_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 
 	// Autostart-on-login: state lives in the OS (registry / plist /
 	// .desktop), not aMule.conf, so it gets its own handler that
@@ -816,6 +818,21 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_SERVERRETRIES)->Enable(thePrefs::DeadServer());
 	FindWindow(IDC_STARTNEXTFILE_SAME)->Enable(thePrefs::StartNextFile());
 	FindWindow(IDC_STARTNEXTFILE_ALPHA)->Enable(thePrefs::StartNextFile());
+	FindWindow(IDC_AMULEAPI_GUEST_PASSWD)->Enable(thePrefs::GetAmuleApiGuestIsEnabled());
+
+	// amuleapi's stored password is salted and stretched, so unlike the web
+	// server's it cannot be loaded back into the field. The field is a
+	// write-only request ("set it to this") and empty means "leave it
+	// alone", which needs saying somewhere the user actually looks --
+	// otherwise an empty box reads as "no password configured".
+	SetCredentialStateLabel(IDC_AMULEAPI_PASSWD_STATE, thePrefs::GetAmuleApiAdminIsSet());
+
+	// Guest access is on exactly when a guest password is stored, so the
+	// checkbox already implies this. Spelled out anyway: an empty field
+	// beside a ticked box reads as "nothing configured" unless you happen
+	// to know that invariant.
+	m_amuleApiGuestWasSet = thePrefs::GetAmuleApiGuestIsEnabled();
+	SetCredentialStateLabel(IDC_AMULEAPI_GUEST_PASSWD_STATE, m_amuleApiGuestWasSet);
 
 	// Gate the ffprobe path controls on the master Media metadata toggle
 	// so a disabled feature doesn't show a live-looking Detect / Browse
@@ -1081,6 +1098,11 @@ bool PrefsUnifiedDlg::CfgChanged(int ID)
 	return false;
 }
 
+void PrefsUnifiedDlg::SetCredentialStateLabel(int id, bool isSet)
+{
+	CastChild(id, wxStaticText)->SetLabel(isSet ? _("A password is set.") : _("No password set."));
+}
+
 void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 {
 	TransferFromWindow();
@@ -1098,6 +1120,25 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 	const bool sharedDirsCommitted = (shareResult == SharedDirsCommitResult::Committed);
+
+	// Guest access ticked, nothing typed, nothing stored: "keep the
+	// current password" has nothing to keep. Caught here, before anything
+	// is persisted, so the dialog stays open on the offending field --
+	// same early return the shared-dirs cancel above uses. Reporting it
+	// after the save would leave the user reading an error about a dialog
+	// that had already closed.
+	if (thePrefs::GetAmuleApiGuestIsEnabled() && thePrefs::GetAmuleApiGuestPass().IsEmpty() &&
+		!m_amuleApiGuestWasSet) {
+		wxMessageBox(_("Guest access needs a password. Type one in the guest password "
+			       "field, or untick Enable guest access."),
+			_("Message"),
+			wxOK | wxICON_INFORMATION,
+			this);
+		if (wxWindow *field = FindWindow(IDC_AMULEAPI_GUEST_PASSWD)) {
+			field->SetFocus();
+		}
+		return;
+	}
 
 	bool restart_needed = false;
 	wxString restart_needed_msg = _("aMule must be restarted to enable these changes:\n\n");
@@ -1137,16 +1178,17 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- Protocol obfuscation support changed.\n");
 	}
 
-	// amuleapi is launched once at startup with its bind/port/password, so
-	// any change to those takes effect only after aMule relaunches it. Skip
-	// the prompt when external connections won't be usable (off, or on but
-	// without a password — the guard further down then disables amuleapi
-	// anyway), so we don't tell the user to restart for a service that will
-	// not run.
+	// amuleapi is launched once at startup with its bind address and port,
+	// so a change to either takes effect only after aMule relaunches it.
+	// Passwords are deliberately not in this list: amuleapi re-reads
+	// amuleapi-passwords on every login, so a password change is live.
+	// Skip the prompt when external connections won't be usable (off, or on
+	// but without a password — the guard further down then disables
+	// amuleapi anyway), so we don't tell the user to restart for a service
+	// that will not run.
 	const bool ecUsable = thePrefs::AcceptExternalConnections() && !thePrefs::ECPassword().IsEmpty();
 	if (ecUsable && (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
-				CfgChanged(IDC_AMULEAPI_BIND) || CfgChanged(IDC_AMULEAPI_PASSWD) ||
-				CfgChanged(IDC_AMULEAPI_GUEST_PASSWD))) {
+				CfgChanged(IDC_AMULEAPI_BIND))) {
 		restart_needed = true;
 		restart_needed_msg += _("- amuleapi settings changed.\n");
 	}
@@ -1192,6 +1234,38 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
+
+	// Store any amuleapi password the user just typed. Deliberately after
+	// Save(), which is what writes amule.conf locally and what ships the
+	// request to the daemon over EC.
+#ifndef CLIENT_GUI
+	{
+		wxString credentialError;
+		if (!AmuleApiCredentials::ApplyPrefs(credentialError)) {
+			wxMessageBox(
+				CFormat(_("The amuleapi password could not be saved: %s")) % credentialError,
+				_("ERROR"),
+				wxOK | wxICON_ERROR,
+				this);
+		}
+	}
+#else
+	// A remote GUI has no credential file of its own — the daemon has
+	// already been handed the request by Save() and does the storing. Two
+	// things still have to happen here that the daemon cannot do for us:
+	//
+	// drop the pending digest, so it is not re-sent on every later save
+	// and does not sit in memory for the rest of the session; and
+	//
+	// remember that a password now exists, so reopening this dialog says
+	// so instead of "No password set" until the next preferences fetch
+	// happens to refresh the mirror.
+	if (!thePrefs::GetAmuleApiPass().IsEmpty()) {
+		thePrefs::SetAmuleApiAdminIsSet(true);
+		thePrefs::SetAmuleApiPass(wxEmptyString);
+	}
+	thePrefs::SetAmuleApiGuestPass(wxEmptyString);
+#endif
 
 	if (CfgChanged(IDC_FED2KLH) && theApp->amuledlg->GetActiveDialog() != CamuleDlg::DT_SEARCH_WND) {
 		theApp->amuledlg->ShowED2KLinksHandler(thePrefs::GetFED2KLH());
@@ -1636,6 +1710,12 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 
 	case IDC_CHECKDISKSPACE:
 		FindWindow(IDC_MINDISKSPACE)->Enable(value);
+		break;
+
+	case IDC_AMULEAPI_GUEST_ENABLED:
+		// Unchecking clears the stored guest password on OK, so a password
+		// typed into a disabled field would be silently discarded.
+		FindWindow(IDC_AMULEAPI_GUEST_PASSWD)->Enable(value);
 		break;
 
 	case IDC_ONLINESIG:

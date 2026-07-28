@@ -9,6 +9,12 @@
 
 add_library (webcommon STATIC
 	ConstantTime.cpp
+	# Credentials.cpp is also linked into the aMule core: amuled applies a
+	# password pushed from amulegui over EC, and monolithic amule applies
+	# one set in its own preferences dialog. Keeping the hashing and the
+	# amuleapi-passwords format here means the three processes cannot
+	# drift apart on it.
+	Credentials.cpp
 	Etag.cpp
 	HeaderParse.cpp
 	JsonWriter.cpp

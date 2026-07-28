@@ -263,11 +263,22 @@ public:
 	// progress dialog so the UI never freezes on large roots.
 	SharedDirsCommitResult CommitSharedDirsWithProgress();
 
+	// Fills one of the amuleapi credential-state labels. A stored password
+	// is salted and stretched and can never be shown, so this label is the
+	// only thing telling the user whether one exists.
+	void SetCredentialStateLabel(int id, bool isSet);
+
 	wxDECLARE_EVENT_TABLE();
 
 private:
 	bool m_verticalToolbar;
 	bool m_toolbarOrientationChanged;
+
+	// Whether a guest password was stored when this dialog opened.
+	// TransferFromWindow overwrites the live preference with the
+	// checkbox's value, so OnOk cannot ask the preference itself whether
+	// anything was there to keep.
+	bool m_amuleApiGuestWasSet = false;
 };
 
 #endif

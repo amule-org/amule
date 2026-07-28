@@ -45,8 +45,9 @@
 #include "PartFile.h"            // Needed for CPartFile
 #include "ServerConnect.h"       // Needed for CServerConnect
 #include "UploadQueue.h"         // Needed for CUploadQueue
-#include "amule.h"               // Needed for theApp
-#include "SearchList.h"          // Needed for GetSearchResults
+#include "AmuleApiCredentials.h"
+#include "amule.h"      // Needed for theApp
+#include "SearchList.h" // Needed for GetSearchResults
 #include "ClientList.h"
 #include "Preferences.h" // Needed for CPreferences
 #include "Logger.h"
@@ -2825,8 +2826,18 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = new CEC_Prefs_Packet(
 			request->GetTagByNameSafe(EC_TAG_SELECT_PREFS)->GetInt(), request->GetDetailLevel());
 		break;
-	case EC_OP_SET_PREFERENCES:
+	case EC_OP_SET_PREFERENCES: {
 		static_cast<const CEC_Prefs_Packet *>(request)->Apply();
+		// Apply() left any amuleapi password the client sent sitting in
+		// the preferences as a pending request; this is what turns it
+		// into a stored, stretched record in amuleapi-passwords. Logged
+		// rather than returned as an EC error: the rest of the
+		// preferences applied fine, and failing the whole call would
+		// misreport that.
+		wxString credentialError;
+		if (!AmuleApiCredentials::ApplyPrefs(credentialError)) {
+			AddLogLineC(CFormat(_("Could not save the amuleapi password: %s")) % credentialError);
+		}
 		theApp->glob_prefs->Save();
 		if (thePrefs::IsFilteringClients()) {
 			theApp->clientlist->FilterQueues();
@@ -2842,6 +2853,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		response = new CECPacket(EC_OP_NOOP);
 		break;
+	}
 
 	case EC_OP_CREATE_CATEGORY:
 		if (request->GetTagCount() == 1) {

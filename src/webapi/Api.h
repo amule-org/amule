@@ -30,6 +30,7 @@
 
 #include "Auth.h"
 #include "HttpServer.h"
+#include "Jwt.h"   // CJwt::VerifyResult, by value in AuthOutcome
 #include "State.h" // ServerInfoLog / StatsTreeNode / StatsGraphs / SearchResult
 #include "TtlCache.h"
 
@@ -39,7 +40,16 @@
 
 class CAmuleApiConfig;
 class CamuleapiApp;
-class CJwt;
+class CJsonWriter;
+
+// Result of authenticating one request: either `ok` with the verified
+// claims, or a ready-to-send rejection.
+struct AuthOutcome
+{
+	bool ok = false;
+	CHttpServer::Response rejection;
+	CJwt::VerifyResult verified;
+};
 
 namespace webapi
 {
@@ -58,7 +68,7 @@ class CState;
 class CApiDispatcher
 {
 public:
-	CApiDispatcher(const CAmuleApiConfig &config, CJwt &jwt, webapi::CState &state, CamuleapiApp &app);
+	CApiDispatcher(CAmuleApiConfig &config, CJwt &jwt, webapi::CState &state, CamuleapiApp &app);
 
 	CHttpServer::Response Dispatch(const CHttpServer::Request &req);
 
@@ -99,6 +109,18 @@ private:
 	CHttpServer::Response HandleLogin(const CHttpServer::Request &);
 	CHttpServer::Response HandleLogout(const CHttpServer::Request &);
 	CHttpServer::Response HandleSession(const CHttpServer::Request &);
+	CHttpServer::Response HandleAuthPasswords(const CHttpServer::Request &);
+	CHttpServer::Response HandleAuthPasswordsPatch(const CHttpServer::Request &);
+
+	// The one way every protected handler authenticates. Applies the
+	// bearer/cookie lookup, signature and expiry checks, the per-IP
+	// failure limiter, the revocation list, and the rule that a token
+	// older than the last credential change is dead. Handlers call this
+	// and nothing else, so none of those can be forgotten at a call site.
+	AuthOutcome Authenticate(const CHttpServer::Request &req);
+
+	void BeginSession(
+		const CHttpServer::Request &req, Role role, CHttpServer::Response &r, CJsonWriter &w);
 	CHttpServer::Response HandleStatus(const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloads(const CHttpServer::Request &);
 	// `key` accepts the lowercase 32-char hex hash OR the decimal ECID.
@@ -212,7 +234,11 @@ private:
 	CHttpServer::Response HandleStatsGraph(const CHttpServer::Request &, const std::string &graph);
 	CHttpServer::Response HandleSearchResults(const CHttpServer::Request &);
 
-	const CAmuleApiConfig &m_config;
+	// Not const: the credential endpoints write through the config, and
+	// verifying re-reads amuleapi-passwords (so a change made elsewhere
+	// takes effect without a restart) and upgrades a stale-cost record
+	// after a successful match.
+	CAmuleApiConfig &m_config;
 	CJwt &m_jwt;
 	webapi::CState &m_state;
 	CamuleapiApp &m_app;
