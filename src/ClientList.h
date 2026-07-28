@@ -188,14 +188,6 @@ public:
 	void AddTrackClient(CUpDownClient *toadd);
 
 	/**
-	 * Returns the number of tracked client.
-	 *
-	 * @param dwIP The IP-address which of the clients.
-	 * @return The number of clients tracked at the specified IP.
-	 */
-	uint16 GetClientsFromIP(uint32 dwIP);
-
-	/**
 	 * Checks if a client has changed its user-hash.
 	 *
 	 * @param dwIP The IP of the client.

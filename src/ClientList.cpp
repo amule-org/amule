@@ -497,17 +497,6 @@ void CClientList::AddTrackClient(CUpDownClient *toadd)
 	}
 }
 
-uint16 CClientList::GetClientsFromIP(uint32 dwIP)
-{
-	std::map<uint32, CDeletedClient *>::iterator it = m_trackedClientsList.find(dwIP);
-
-	if (it != m_trackedClientsList.end()) {
-		return it->second->m_ItemsList.size();
-	} else {
-		return 0;
-	}
-}
-
 void CClientList::Process()
 {
 	const uint64 cur_tick = ::GetTickCount64();

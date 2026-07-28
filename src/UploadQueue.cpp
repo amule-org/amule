@@ -484,10 +484,19 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		}
 	}
 
-	// We do not accept more than 3 clients from the same IP
+	// We do not accept more than 3 clients (currently on the upload queue) from the
+	// same IP. Only clients actually on the queue are counted (ipCount, above); we
+	// deliberately do NOT also reject based on how many clients from this IP were
+	// recently *removed* from the queue. That earlier check counted the tracked
+	// "deleted clients" list, so a client behind a shared/NAT IP that simply
+	// cancelled a few downloads got locked out of the queue for up to two hours
+	// (only cleared by a restart), even though none of those clients were still
+	// queued. Flood protection is handled separately by the aggressiveness/ban path.
 	if (ipCount > 3) {
-		return;
-	} else if (theApp->clientlist->GetClientsFromIP(client->GetIP()) >= 3) {
+		AddDebugLogLineN(logLocalClient,
+			CFormat("Rejected upload request from %s: too many clients (%d) from the same IP "
+				"already on the upload queue") %
+				client->GetFullIP() % ipCount);
 		return;
 	}
 
