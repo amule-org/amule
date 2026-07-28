@@ -102,7 +102,9 @@ void CKadDlg::UpdateConnectButton()
 		state = ConnButtonOff;
 	}
 
-	SetConnectButtonState(button, state, thePrefs::GetNetworkKademlia());
+	// _("Kad") matches the translatable tab label (muuli_wdr.cpp's
+	// NetDialog); see CServerWnd::UpdateED2KConnectButton's ED2K equivalent.
+	SetConnectButtonState(button, state, thePrefs::GetNetworkKademlia(), _("Kad"));
 }
 
 void CKadDlg::SetUpdatePeriod(int step)

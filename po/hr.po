@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: 2026-07-28 20:09+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -1388,7 +1388,8 @@ msgstr ""
 msgid "Remote Server"
 msgstr ""
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1614,11 +1615,6 @@ msgstr ""
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Downloads (%i)"
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
-msgid "Total queue size: %s"
-msgstr "Ukupna velicina dijeljenih fajlova: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -2979,7 +2975,7 @@ msgstr ""
 msgid "Download limit"
 msgstr ""
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr "Prekinuti vezu"
 
@@ -3272,9 +3268,8 @@ msgid "Start"
 msgstr "Start"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Extend"
-msgstr "Ekstenzija"
+msgid "More"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3879,7 +3874,7 @@ msgstr ""
 msgid "Max simultaneous connections:"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -4932,6 +4927,11 @@ msgstr "Aktivni uploadovi :"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
+msgid "Percent of total files"
+msgstr "Ukupni fajlovi"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
 msgid "Show Clients for"
 msgstr "Pokazi liste"
 
@@ -4971,13 +4971,24 @@ msgstr ""
 msgid "Close this chat-session."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr ""
-
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Dijeljeni fajlovi"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Cancel %s"
+msgstr "Otkaz"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Disconnect %s"
+msgstr "Prekinuti vezu"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Connect %s"
+msgstr "Uspostavi vezu"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6815,11 +6826,6 @@ msgstr "Za ispravan izvorni link, potrebna je HIGH ID"
 msgid "Shared Files (%i)"
 msgstr "Dijeljeni fajlovi (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Ukupna velicina dijeljenih fajlova: %s"
-
 #: src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Remote File Name"
@@ -7038,6 +7044,11 @@ msgstr "Zauzetost servera: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Ukupna velicina dijeljenih fajlova: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8445,10 +8456,6 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
-
-#, fuzzy
-#~ msgid "Percent of total files"
-#~ msgstr "Ukupni fajlovi"
 
 #, fuzzy
 #~ msgid "Stop the current connection attempts"

@@ -59,6 +59,7 @@
 #endif
 
 // Custom source
+#include <common/Format.h> // Needed for CFormat (SetConnectButtonState)
 #include "ServerListCtrl.h"
 #include "DownloadListCtrl.h"
 #include "SourceListCtrl.h"
@@ -2482,7 +2483,9 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     // mirrors the Kad tab's "primary control on top, manual form below" shape.
     wxButton *item14 = new wxButton( parent, IDC_ED2KDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
+    // Top border: without it this row sits flush against the tab strip
+    // (issue #402 review: "too close to the borders of the tab container").
+    item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
     CServerListCtrl *item15 = new CServerListCtrl( parent, ID_SERVERLIST, wxDefaultPosition, wxSize(200, 100), wxLC_REPORT|wxSUNKEN_BORDER );
     item0->Add( item15, wxSizerFlags(1).Expand().CenterVertical() );
     wxBoxSizer *item5 = new wxBoxSizer( wxHORIZONTAL );
@@ -2583,7 +2586,9 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // after construction, which sets the real label/bitmap for the current state.
     wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item3->Add( item38, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    item0->Add( item3, wxSizerFlags().Expand().CenterVertical() );
+    // Top border: matches serverListDlgUp's top row (issue #402 review:
+    // "too close to the borders of the tab container").
+    item0->Add( item3, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
 
     wxFlexGridSizer *item1 = new wxFlexGridSizer( 2, 0, 0 );
     item1->AddGrowableCol( 0 );
@@ -3476,9 +3481,12 @@ wxSizer *messagePageMessages( wxWindow *parent, bool call_fit, bool set_sizer )
 void muleToolbar( wxToolBar *parent )
 {
     parent->SetMargins( 0, 0 );
-    
-    parent->AddTool( ID_BUTTONCONNECT, _("Connect"), connButImg( 0 ), wxNullBitmap, wxITEM_NORMAL, _("Connect to any server and/or Kad") );
-    parent->AddSeparator();
+
+    // The global Connect/Disconnect toolbar button (formerly ID_BUTTONCONNECT)
+    // was dropped here (issue #402): each network tab now has its own live
+    // Connect/Cancel/Disconnect toggle (SetConnectButtonState, wired from
+    // CServerWnd/CKadDlg), and the combined both-networks action remains
+    // available from the tray icon (CMuleTrayIcon::DoConnectDisconnect).
     parent->AddTool( ID_BUTTONNETWORKS, _("Networks"), amuleDlgImages( 20 ), wxNullBitmap, wxITEM_CHECK, _("Networks Window") );
     parent->AddTool( ID_BUTTONSEARCH, _("Searches"), amuleDlgImages( 22 ), wxNullBitmap, wxITEM_CHECK, _("Searches Window") );
     parent->AddTool( ID_BUTTONDOWNLOADS, _("Downloads"), amuleDlgImages( 21 ), wxNullBitmap, wxITEM_CHECK, _("Downloads Window") );
@@ -5969,25 +5977,46 @@ wxBitmap connButImg( size_t index )
     return wxNullBitmap;
 }
 
-void SetConnectButtonState(wxButton *button, EConnButtonState state, bool enabled)
+namespace
+{
+// connButImg's source pixel data is 32x32 for the off/connected icons but
+// 16x16 for the connecting one -- both sizes are oversized for an inline
+// per-tab button sitting next to a one-line URL field (issue #402 review:
+// "the button and the icon are too big"). Scaled to a uniform, more modest
+// size here rather than reworking the XPM data connButImg still serves.
+wxBitmap ScaledConnButImg(size_t index)
+{
+	wxImage image = connButImg(index).ConvertToImage();
+	image.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
+	return wxBitmap(image);
+}
+} // namespace
+
+void SetConnectButtonState(
+	wxButton *button, EConnButtonState state, bool enabled, const wxString &networkName)
 {
 	// The leading space (outside the translatable string, so no new msgid)
 	// is the portable way to put a gap between the icon and the label:
 	// wxButton::SetBitmapMargins() only does anything on wxOSX (see
 	// osx/anybutton.h) -- wxGTK inherits the base class's no-op, so using
 	// it here would fix macOS while silently doing nothing on Linux.
+	//
+	// networkName ("ED2K" / "Kad") is folded into the label itself, not
+	// concatenated after translation: the button sits in the same spot on
+	// both tabs, so without it there is nothing on the button telling you
+	// which network "Disconnect" affects (issue #402 review).
 	switch (state) {
 	case ConnButtonConnecting:
-		button->SetLabel(wxT(" ") + _("Cancel"));
-		button->SetBitmap(connButImg(2));
+		button->SetLabel(wxT(" ") + wxString(CFormat(_("Cancel %s")) % networkName));
+		button->SetBitmap(ScaledConnButImg(2));
 		break;
 	case ConnButtonConnected:
-		button->SetLabel(wxT(" ") + _("Disconnect"));
-		button->SetBitmap(connButImg(1));
+		button->SetLabel(wxT(" ") + wxString(CFormat(_("Disconnect %s")) % networkName));
+		button->SetBitmap(ScaledConnButImg(1));
 		break;
 	default:
-		button->SetLabel(wxT(" ") + _("Connect"));
-		button->SetBitmap(connButImg(0));
+		button->SetLabel(wxT(" ") + wxString(CFormat(_("Connect %s")) % networkName));
+		button->SetBitmap(ScaledConnButImg(0));
 	}
 
 	button->Enable(enabled);

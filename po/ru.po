@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: 2026-07-28 20:14+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1410,7 +1410,8 @@ msgstr "Локальный сервер"
 msgid "Remote Server"
 msgstr "Удаленный сервер"
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1638,11 +1639,6 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Загрузки (%i)"
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
-msgid "Total queue size: %s"
-msgstr "Всего загружено: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -3039,7 +3035,7 @@ msgstr "Ограничение отдачи"
 msgid "Download limit"
 msgstr "Ограничение приема"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr "Отключиться"
 
@@ -3337,9 +3333,8 @@ msgid "Start"
 msgstr "Начать"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Extend"
-msgstr "Расширение"
+msgid "More"
+msgstr "Дополнительно"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3953,7 +3948,7 @@ msgstr "Максимум источников на файл:"
 msgid "Max simultaneous connections:"
 msgstr "Максимум одновременных соединений:"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -5015,6 +5010,10 @@ msgid "Active Uploads"
 msgstr "Активные загрузки"
 
 #: src/muuli_wdr.cpp
+msgid "Percent of total files"
+msgstr "Процент от всех файлов"
+
+#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Показать клиентов для"
 
@@ -5050,14 +5049,25 @@ msgstr "Отправить данное сообщение."
 msgid "Close this chat-session."
 msgstr "Закрыть данный чат."
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr "Соединиться с произвольным сервером и/или Kad"
-
 # подпись в главном окне. длинная просто не влезет.
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Файлы"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Cancel %s"
+msgstr "Отменить"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Disconnect %s"
+msgstr "Отключиться"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Connect %s"
+msgstr "Подключиться"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6911,11 +6921,6 @@ msgstr "Для создания ссылки на источник требуе�
 msgid "Shared Files (%i)"
 msgstr "Публикуемые файлы (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Общий размер публикуемых файлов: %s"
-
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Удаленное имя файла"
@@ -7134,6 +7139,11 @@ msgstr "Загруженность сервера: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Число публикуемых файлов: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Общий размер публикуемых файлов: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8600,11 +8610,8 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
-#~ msgid "Percent of total files"
-#~ msgstr "Процент от всех файлов"
-
-#~ msgid "More"
-#~ msgstr "Дополнительно"
+#~ msgid "Connect to any server and/or Kad"
+#~ msgstr "Соединиться с произвольным сервером и/или Kad"
 
 #~ msgid "Disconnect Kad"
 #~ msgstr "Отключить Kad"

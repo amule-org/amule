@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1358,7 +1358,8 @@ msgstr ""
 msgid "Remote Server"
 msgstr ""
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr ""
 
@@ -1581,11 +1582,6 @@ msgstr ""
 #: src/DownloadListCtrl.cpp
 #, c-format
 msgid "Downloads (%i)"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, c-format
-msgid "Total queue size: %s"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp
@@ -2921,7 +2917,7 @@ msgstr ""
 msgid "Download limit"
 msgstr ""
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr ""
 
@@ -3213,7 +3209,7 @@ msgid "Start"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Extend"
+msgid "More"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -3814,7 +3810,7 @@ msgstr ""
 msgid "Max simultaneous connections:"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr ""
 
@@ -4850,6 +4846,10 @@ msgid "Active Uploads"
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "Percent of total files"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr ""
 
@@ -4885,12 +4885,23 @@ msgstr ""
 msgid "Close this chat-session."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr ""
-
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, c-format
+msgid "Cancel %s"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, c-format
+msgid "Disconnect %s"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, c-format
+msgid "Connect %s"
 msgstr ""
 
 #: src/OScopeCtrl.cpp
@@ -6661,11 +6672,6 @@ msgstr ""
 msgid "Shared Files (%i)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr ""
-
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr ""
@@ -6882,6 +6888,11 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Number of Shared Files: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
 msgstr ""
 
 #: src/Statistics.cpp

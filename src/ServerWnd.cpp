@@ -519,6 +519,10 @@ void CServerWnd::UpdateED2KConnectButton()
 		state = ConnButtonOff;
 	}
 
-	SetConnectButtonState(button, state, thePrefs::GetNetworkED2K() && theApp->ipfilter->IsReady());
+	// _("ED2K") matches the translatable tab label (muuli_wdr.cpp's
+	// NetDialog), so a translation that localizes the network name stays
+	// consistent between the tab and this button.
+	SetConnectButtonState(
+		button, state, thePrefs::GetNetworkED2K() && theApp->ipfilter->IsReady(), _("ED2K"));
 }
 // File_checked_for_headers

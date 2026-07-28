@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: 2026-07-28 20:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1392,7 +1392,8 @@ msgstr "Helyi kiszolgáló"
 msgid "Remote Server"
 msgstr "Távoli kiszolgáló"
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1618,11 +1619,6 @@ msgstr "%y.%m.%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Letöltések (%i)"
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
-msgid "Total queue size: %s"
-msgstr "Összes letöltés: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -2991,7 +2987,7 @@ msgstr "Feltöltési korlát"
 msgid "Download limit"
 msgstr "Letöltési korlát"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr "Szétkapcsolás"
 
@@ -3285,9 +3281,8 @@ msgid "Start"
 msgstr "Indít"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Extend"
-msgstr "Kiterjesztés"
+msgid "More"
+msgstr "Több"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3899,7 +3894,7 @@ msgstr "Max források letöltési fájlonként:"
 msgid "Max simultaneous connections:"
 msgstr "Max egyidejű kapcsolatok:"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -4960,6 +4955,10 @@ msgid "Active Uploads"
 msgstr "Aktív feltöltések"
 
 #: src/muuli_wdr.cpp
+msgid "Percent of total files"
+msgstr "Összes fájl százalékaként"
+
+#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Kliensek megjelenítése ehhez:"
 
@@ -4995,13 +4994,24 @@ msgstr "Megadott üzenet küldése."
 msgid "Close this chat-session."
 msgstr "Csevegési folyamat bezárása."
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr "Kapcsolódás bármelyik kiszolgálóhoz és/vagy a Kad-hoz"
-
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Megosztott fájlok"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Cancel %s"
+msgstr "Mégsem"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Disconnect %s"
+msgstr "Szétkapcsolás"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Connect %s"
+msgstr "Kapcsolatfelvétel"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6805,11 +6815,6 @@ msgstr "Érvényes forráshivatkozáshoz magas azonosító (HighID) szükséges"
 msgid "Shared Files (%i)"
 msgstr "Megosztott fájlok (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Megosztott fájlok teljes mérete: %s"
-
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Távoli fájlnév"
@@ -7027,6 +7032,11 @@ msgstr "Kiszolgáló leterheltség: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Megosztott fájlok száma: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Megosztott fájlok teljes mérete: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8493,11 +8503,8 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
-#~ msgid "Percent of total files"
-#~ msgstr "Összes fájl százalékaként"
-
-#~ msgid "More"
-#~ msgstr "Több"
+#~ msgid "Connect to any server and/or Kad"
+#~ msgstr "Kapcsolódás bármelyik kiszolgálóhoz és/vagy a Kad-hoz"
 
 #~ msgid "Disconnect Kad"
 #~ msgstr "Leválasztás a Kad-ról"

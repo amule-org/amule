@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: 2026-07-28 20:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -1394,7 +1394,8 @@ msgstr "Kohalik server"
 msgid "Remote Server"
 msgstr "Kaug server"
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1621,11 +1622,6 @@ msgstr "%H:%M:%S %d/%m/%y"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Tõmbamised (%i)"
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
-msgid "Total queue size: %s"
-msgstr "Kokku AL: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -3011,7 +3007,7 @@ msgstr "Saatmise limiit"
 msgid "Download limit"
 msgstr "Tõmbamise limiit"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr "Ühendu lahti"
 
@@ -3305,9 +3301,8 @@ msgid "Start"
 msgstr "Alusta"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Extend"
-msgstr "Laiend"
+msgid "More"
+msgstr "Rohkem"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3919,7 +3914,7 @@ msgstr "Maksimaalseid allikaid tõmmatava faili kohta:"
 msgid "Max simultaneous connections:"
 msgstr "Maksimaalselt samaaegseid ühendusi:"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -4975,6 +4970,10 @@ msgid "Active Uploads"
 msgstr "Aktiivsed saatmised"
 
 #: src/muuli_wdr.cpp
+msgid "Percent of total files"
+msgstr "Protsenti kogufailidest"
+
+#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Näita Kliente"
 
@@ -5010,13 +5009,24 @@ msgstr "Saada määratud teade."
 msgid "Close this chat-session."
 msgstr "Sulge see vestlus-seanss."
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr "Ühendu suvalise serveri ja/või Kad võrguga"
-
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Jagatud failid"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Cancel %s"
+msgstr "Loobu"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Disconnect %s"
+msgstr "Ühendu lahti"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Connect %s"
+msgstr "Ühenda"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6845,11 +6855,6 @@ msgstr "Allika lingi loomiseks pead omama HighID'd."
 msgid "Shared Files (%i)"
 msgstr "Jagatud failid (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Jagatud failide suurus kokku: %s"
-
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Kaugfaili nimi"
@@ -7067,6 +7072,11 @@ msgstr "Serveri hõivatus: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Jagatud failide arv: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Jagatud failide suurus kokku: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8524,11 +8534,8 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
-#~ msgid "Percent of total files"
-#~ msgstr "Protsenti kogufailidest"
-
-#~ msgid "More"
-#~ msgstr "Rohkem"
+#~ msgid "Connect to any server and/or Kad"
+#~ msgstr "Ühendu suvalise serveri ja/või Kad võrguga"
 
 #~ msgid "Disconnect Kad"
 #~ msgstr "Lõpeta Kad ühendus"

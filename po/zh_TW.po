@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: 2026-07-28 20:18+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1394,7 +1394,8 @@ msgstr "本地伺服器"
 msgid "Remote Server"
 msgstr "遠端伺服器"
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1621,11 +1622,6 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "下載 (%i)"
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
-msgid "Total queue size: %s"
-msgstr "總下載：%s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -3002,7 +2998,7 @@ msgstr "上傳限制"
 msgid "Download limit"
 msgstr "下載限制"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr "中斷連線"
 
@@ -3296,9 +3292,8 @@ msgid "Start"
 msgstr "開始"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Extend"
-msgstr "副檔名"
+msgid "More"
+msgstr "其他"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3910,7 +3905,7 @@ msgstr "每個檔案最大來源數："
 msgid "Max simultaneous connections:"
 msgstr "最大同時連線數："
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -4965,6 +4960,10 @@ msgid "Active Uploads"
 msgstr "目前上傳數"
 
 #: src/muuli_wdr.cpp
+msgid "Percent of total files"
+msgstr "% (所有檔案中)"
+
+#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "顯示客戶端："
 
@@ -5000,13 +4999,24 @@ msgstr "傳送訊息。"
 msgid "Close this chat-session."
 msgstr "結束本次交談。"
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr "連線到任何伺服器 和/或 Kad 網路"
-
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "分享檔案"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Cancel %s"
+msgstr "取消"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Disconnect %s"
+msgstr "中斷連線"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Connect %s"
+msgstr "連線"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6815,11 +6825,6 @@ msgstr "您需要一個 HighID 才能建立有效來源連結"
 msgid "Shared Files (%i)"
 msgstr "分享檔案 (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "檔案總容量：%s"
-
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "遠端檔案名稱"
@@ -7037,6 +7042,11 @@ msgstr "伺服器使用率：%.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "檔案數：%s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "檔案總容量：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8497,11 +8507,8 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
-#~ msgid "Percent of total files"
-#~ msgstr "% (所有檔案中)"
-
-#~ msgid "More"
-#~ msgstr "其他"
+#~ msgid "Connect to any server and/or Kad"
+#~ msgstr "連線到任何伺服器 和/或 Kad 網路"
 
 #~ msgid "Disconnect Kad"
 #~ msgstr "中斷 Kad 連線"

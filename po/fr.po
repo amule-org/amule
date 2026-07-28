@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:47+0200\n"
+"POT-Creation-Date: 2026-07-29 00:53+0200\n"
 "PO-Revision-Date: 2026-07-28 20:08+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -1403,7 +1403,8 @@ msgstr "Serveur Local"
 msgid "Remote Server"
 msgstr "Serveur Distant"
 
-#: src/DataToText.cpp src/muuli_wdr.cpp src/SearchDlg.cpp src/TextClient.cpp
+#: src/DataToText.cpp src/KadDlg.cpp src/muuli_wdr.cpp src/SearchDlg.cpp
+#: src/TextClient.cpp
 msgid "Kad"
 msgstr "Kad"
 
@@ -1629,11 +1630,6 @@ msgstr "%y/%m/%d %H : %M : %S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Téléchargements (%i)"
-
-#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
-msgid "Total queue size: %s"
-msgstr "Reçu au total : %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -3007,7 +3003,7 @@ msgstr "Limite d'émission"
 msgid "Download limit"
 msgstr "Limite de téléchargement"
 
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
+#: src/MuleTrayIcon.cpp
 msgid "Disconnect"
 msgstr "Déconnecter"
 
@@ -3299,9 +3295,8 @@ msgid "Start"
 msgstr "Démarrer"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Extend"
-msgstr "Extension"
+msgid "More"
+msgstr "Plus"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -3904,7 +3899,7 @@ msgstr "Sources maximales par fichier téléchargé :"
 msgid "Max simultaneous connections:"
 msgstr "Connexions simultanées maximales :"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
 msgstr "ED2K"
 
@@ -4958,6 +4953,10 @@ msgid "Active Uploads"
 msgstr "Envois Actifs"
 
 #: src/muuli_wdr.cpp
+msgid "Percent of total files"
+msgstr "Pourcentage du total de fichiers"
+
+#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Afficher les clients pour"
 
@@ -4993,13 +4992,24 @@ msgstr "Envoie le message spécifié."
 msgid "Close this chat-session."
 msgstr "Ferme cette session de discussion."
 
-#: src/muuli_wdr.cpp
-msgid "Connect to any server and/or Kad"
-msgstr "Se connecter à n'importe quel serveur et/ou Kad"
-
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Fichiers partagés"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Cancel %s"
+msgstr "Annuler"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Disconnect %s"
+msgstr "Déconnecter"
+
+#: src/muuli_wdr.cpp
+#, fuzzy, c-format
+msgid "Connect %s"
+msgstr "Se connecter"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6804,11 +6814,6 @@ msgstr "Vous devez être en HighID pour créer un lien valide"
 msgid "Shared Files (%i)"
 msgstr "Fichiers partagés (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Taille totale des Fichiers Partagés : %s"
-
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Nom du fichier à distance"
@@ -7026,6 +7031,11 @@ msgstr "Occupation du Serveur : %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Nombre de Fichiers Partagés : %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Taille totale des Fichiers Partagés : %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8508,11 +8518,8 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
 
-#~ msgid "Percent of total files"
-#~ msgstr "Pourcentage du total de fichiers"
-
-#~ msgid "More"
-#~ msgstr "Plus"
+#~ msgid "Connect to any server and/or Kad"
+#~ msgstr "Se connecter à n'importe quel serveur et/ou Kad"
 
 #~ msgid "Disconnect Kad"
 #~ msgstr "Déconnecter Kad"

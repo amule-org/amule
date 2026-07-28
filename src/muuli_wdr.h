@@ -624,7 +624,6 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 
 // Declare toolbar functions
 
-#define ID_BUTTONCONNECT 10345
 #define ID_BUTTONNETWORKS 10346
 #define ID_BUTTONSEARCH 10347
 #define ID_BUTTONDOWNLOADS 10348
@@ -657,7 +656,8 @@ enum EConnButtonState
 	ConnButtonConnecting,
 	ConnButtonConnected
 };
-void SetConnectButtonState(wxButton *button, EConnButtonState state, bool enabled);
+void SetConnectButtonState(
+	wxButton *button, EConnButtonState state, bool enabled, const wxString &networkName);
 
 #endif
 
