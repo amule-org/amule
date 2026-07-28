@@ -595,6 +595,15 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	}
 #endif
 
+#if !defined(__WINDOWS__) && !defined(CLIENT_GUI)
+	// Monolithic non-Windows: this build is its own core and the setting is
+	// a no-op on POSIX, so hide it. Still registered, so the value keeps
+	// round-tripping through the config and EC.
+	if (wxWindow *sparse = FindWindow(IDC_CREATEFILESSPARSE)) {
+		sparse->Show(false);
+	}
+#endif
+
 	// Select the first item
 	m_PrefsIcons->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
 
