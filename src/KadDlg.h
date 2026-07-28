@@ -46,6 +46,11 @@ public:
 	void UpdateGraph(const GraphUpdateInfo &update);
 	void UpdateNodeCount(unsigned nodes);
 
+	// Drives the pane's own Connect/Cancel/Disconnect toggle (ID_KADDISCONNECT)
+	// from Kad's current state. Called from CamuleDlg::ShowConnectionState()
+	// alongside the ED2K equivalent, and once from Init() for the initial paint.
+	void UpdateConnectButton();
+
 private:
 	COScopeCtrl *m_kad_scope;
 

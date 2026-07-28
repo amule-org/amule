@@ -84,6 +84,53 @@ void CKadDlg::Init()
 
 	SetUpdatePeriod(thePrefs::GetTrafficOMeterInterval());
 	SetGraphColors();
+
+	UpdateConnectButton();
+}
+
+void CKadDlg::UpdateConnectButton()
+{
+	wxButton *button = CastChild(ID_KADDISCONNECT, wxButton);
+	wxCHECK_RET(button, "'ID_KADDISCONNECT' widget not found");
+
+	enum State
+	{
+		Off,
+		Connecting,
+		Connected
+	};
+	State state;
+	if (theApp->IsConnectedKad()) {
+		state = Connected;
+	} else if (theApp->IsKadRunning()) {
+		state = Connecting;
+	} else {
+		state = Off;
+	}
+
+	static State s_oldState = Off;
+	static bool s_first = true;
+	if (!s_first && state == s_oldState) {
+		return;
+	}
+	s_first = false;
+	s_oldState = state;
+
+	switch (state) {
+	case Connecting:
+		button->SetLabel(_("Cancel"));
+		button->SetBitmap(connButImg(2));
+		break;
+	case Connected:
+		button->SetLabel(_("Disconnect"));
+		button->SetBitmap(connButImg(1));
+		break;
+	default:
+		button->SetLabel(_("Connect"));
+		button->SetBitmap(connButImg(0));
+	}
+
+	button->Enable(thePrefs::GetNetworkKademlia());
 }
 
 void CKadDlg::SetUpdatePeriod(int step)
@@ -200,7 +247,14 @@ void CKadDlg::OnBnClickedBootstrapKnown(wxCommandEvent &WXUNUSED(evt))
 
 void CKadDlg::OnBnClickedDisconnectKad(wxCommandEvent &WXUNUSED(evt))
 {
-	theApp->StopKad();
+	// Doubles as Connect/Cancel/Disconnect depending on the button's current
+	// state (see UpdateConnectButton()) -- StopKad() also covers the
+	// "cancel while connecting" case, there's no separate abort path.
+	if (theApp->IsConnectedKad() || theApp->IsKadRunning()) {
+		theApp->StopKad();
+	} else {
+		theApp->StartKad();
+	}
 }
 
 void CKadDlg::OnBnClickedUpdateNodeList(wxCommandEvent &WXUNUSED(evt))

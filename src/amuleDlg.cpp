@@ -912,6 +912,8 @@ void CamuleDlg::ShowConnectionState()
 
 	m_serverwnd->UpdateED2KInfo();
 	m_serverwnd->UpdateKadInfo();
+	m_serverwnd->UpdateED2KConnectButton();
+	m_kademliawnd->UpdateConnectButton();
 
 	////////////////////////////////////////////////////////////
 	// Determine the status of the networks

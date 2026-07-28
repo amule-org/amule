@@ -41,6 +41,11 @@ public:
 	void UpdateED2KInfo();
 	void UpdateKadInfo();
 
+	// Drives the pane's own Connect/Cancel/Disconnect toggle
+	// (IDC_ED2KDISCONNECT) from ED2K's current state. Called from
+	// CamuleDlg::ShowConnectionState() alongside UpdateED2KInfo().
+	void UpdateED2KConnectButton();
+
 	CServerListCtrl *serverlistctrl;
 
 	// Shared column-width helper for the two info notebooks (ED2K

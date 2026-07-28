@@ -2486,7 +2486,10 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     item5->Add( item12, wxSizerFlags().Center().Border(wxLEFT, 5) );
     wxStaticLine *item13 = new wxStaticLine( parent, -1, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
     item5->Add( item13, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxButton *item14 = new wxButton( parent, IDC_ED2KDISCONNECT, _("Disconnect"), wxDefaultPosition, wxDefaultSize, 0 );
+    // Placeholder label -- CServerWnd's ctor calls UpdateED2KConnectButton()
+    // right after construction, which sets the real label/bitmap for the
+    // current state.
+    wxButton *item14 = new wxButton( parent, IDC_ED2KDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item5->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item5, wxSizerFlags().Expand().CenterVertical() );
     CServerListCtrl *item15 = new CServerListCtrl( parent, ID_SERVERLIST, wxDefaultPosition, wxSize(200, 100), wxLC_REPORT|wxSUNKEN_BORDER );
@@ -2651,7 +2654,10 @@ item9->SetName("kadScope");
     // graph column beside it takes all the freed vertical space.
     wxButton *item37 = new wxButton( parent, ID_KNOWNNODECONNECT, _("Bootstrap from known clients"), wxDefaultPosition, wxDefaultSize, 0 );
     item20->Add( item37, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
-    wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Disconnect Kad"), wxDefaultPosition, wxDefaultSize, 0 );
+    // Placeholder label -- CKadDlg::Init() calls UpdateConnectButton() right
+    // after construction, which sets the real label/bitmap for the current
+    // state.
+    wxButton *item38 = new wxButton( parent, ID_KADDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item20->Add( item38, wxSizerFlags().Expand().Border(wxALL, 5) );
     item1->Add( item20, wxSizerFlags().Top() );
     item0->Add( item1, wxSizerFlags(1).Expand() );
