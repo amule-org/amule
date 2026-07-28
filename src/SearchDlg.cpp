@@ -168,7 +168,20 @@ void CSearchDlg::LoadSearchHistory()
 	CTextFile file;
 	wxArrayString entries;
 	if (file.Open(SearchHistoryFilePath(), CTextFile::read)) {
-		entries = file.ReadLines((EReadTextFile)(txtIgnoreEmptyLines | txtStripWhitespace));
+		// txtIgnoreEmptyLines|txtStripWhitespace has no single named
+		// EReadTextFile enumerator to cast to (clang-tidy
+		// clang-analyzer-optin.core.EnumCastOutOfRange, rightly --
+		// EReadTextFile isn't declared as a flag enum), and
+		// txtReadDefault also drops '#'-led lines, which would silently
+		// eat a legitimate search term. Read unfiltered and do the
+		// trim/empty-drop by hand instead.
+		for (const wxString &line : file.ReadLines(txtReadAll)) {
+			wxString trimmed = line;
+			trimmed.Trim(true).Trim(false);
+			if (!trimmed.IsEmpty()) {
+				entries.Add(trimmed);
+			}
+		}
 		file.Close();
 	}
 
