@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-28 21:43+0200\n"
-"PO-Revision-Date: 2026-07-27 11:43+0000\n"
+"PO-Revision-Date: 2026-07-28 20:13+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -623,7 +623,7 @@ msgstr "Preferências"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "Navegar"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -1929,7 +1929,7 @@ msgstr "Não foi possível renomear o arquivo."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "Não foi possível salvar a senha da amuleapi: %s"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -2200,83 +2200,83 @@ msgstr "%.2f kB/s"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Móvel / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Cabo (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Fibra 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Fibra Gigabit (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "Configuração da primeira rodada do aMule"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Bem-vindo!"
+msgstr "Bem-vindo ao aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Esta configuração rápida vai conectar você. Você pode mudar\n"
+"qualquer uma destas configurações mais tarde nas Preferências."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Escolha um apelido que será visto por seus pares:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Conectando ao amigo"
+msgstr "Conecxão e largura de banda"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"Escolha a opção que melhor combina com sua conexão de internet,\n"
+"ou configure os limites de upload e download diretamente abaixo."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Tipo de Conexão:"
+msgstr "Velocidade da Conexão:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "Outra / configurar manualmente"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Limite de upload (kB/s, 0 = sem limite):"
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Limite de download (kB/s, 0 = sem limite):"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Redes"
+msgstr "Redes e portas"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "O aMule pode usar duas redes. Recomendamos manter ambas habilitadas."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2304,22 +2304,25 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"Permite ao aMule pedir a seu roteador que encaminhe as portas acima de modo que outros\n"
+"pares possam chegar até você (um \"HighID\"). Desligue se seu roteador\n"
+"não suporta UPnP ou se você encaminhar as portas manualmente."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Inicialização"
+msgstr "Arquivos de inicialização"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"Para começar, o aMule precisa saber sobre alguns pares.\n"
+"Selecione qual listas baixar agora:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Ops! Você já está tentando baixar o arquivo %s"
+msgstr "Sua lista de pares já está no lugar - não há nada para baixar."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2327,13 +2330,15 @@ msgstr "Lista de servidores auto-atualizáveis na iniciação"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "Integrações (opcional)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"Escolha como o aMule se integra com seu sistema. Você pode\n"
+"mudar qualquer uma destas mais tarde nas Preferências."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
@@ -2351,21 +2356,23 @@ msgstr "Registra o aMule para links \"magnet:\""
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Apenas magnets compatíveis com a rede eD2k. Deixe em branco se você usa um cliente BitTorrent."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "Abrir arquivos .emulecollection com o aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Pastas (opcional)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Os valores padrão estão bem para a maioria das pessoas. Mude-os se você\n"
+"quiser downloads em um disco diferente (maior, por exemplo)."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2390,14 +2397,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Baseado nisso, o aMule vai permitir até %i fontes por arquivo\n"
+"e %i conexões de clientes."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "Mostrar esse sábio de configuração novamente na próxima vez que você iniciar o aMule?"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "Configuração não terminada"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -3756,7 +3765,7 @@ msgstr "O aMule lida apenas com links magnet compatíveis com eD2k (contendo xt=
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Abrir uma coleção enfileira todos os links eD2k que ela contém. No Windows isto acrescenta o aMule à lista \"Abrir com\" e leva o padrão apenas quando nenhum outro program clamou o tipo de arquivo."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -3803,13 +3812,12 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Habilitar isto vai fazer com que o aMule mostre notificações quando terminar de baixar."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Lembrar essas definições"
+msgstr "Lembrar o histórico de busca"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Mentém uma lista \"dropdown\" de seus termos de busca passados no campo Nome da aba de Busca. Isto relembra das buscas que você digitou, não dos resultados que elas retornaram."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -3993,11 +4001,11 @@ msgstr "Para novos arquivos pré-alocar espaço em disco para todo o arquivo, is
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Criar arquivos novos como arquivos esparsos"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "Arquivos de parte esparsos só ocupam espaço em disco para as partes já baixadas, de modo que o espaço livre é usado gradualmente conforme o arquivo vai enchendo. Desligue para usar um arquivo ordinário - útil quando arquivos esparsos não forem suportados ou são muito lentos, ou quando ferramentas de backup/de-duplicação lidam mal com eles. Aplicável apenas quando o núcleo roda no Windows; no Linux e no macOS, arquivos de parte são esparsos de qualquer modo, e esta configuração não tem efeito."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4377,30 +4385,27 @@ msgstr "A interface do servidor HTTP do amuleapi que escuta em 127.0.0.1 (padrã
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "Digite uma senha para configurá-la ou mudá-la. Senhas guardadas não podem ser mostradas, então se você deixar em branco vai manter a atual."
 
 #: src/muuli_wdr.cpp
 msgid "Admin password"
 msgstr "Senha de administração"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Senha de administração"
+msgstr "Uma senha está configurada."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "Negar acesso restrito"
+msgstr "Habilita acesso de convidado"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "Sessões de convidado podem ler estado e listagens, mas não podem mudar nada. Desligar isto limpa a senha de convidado guardada."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Senha de visitante para servidor web"
+msgstr "Senha de convidado"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
@@ -5651,13 +5656,12 @@ msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "Falha ao transferir dado do Widget para Cfg com o ID %d e senha %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Senha de administração"
+msgstr "Nenhuma senha configurada."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "O acesso de convidado requer uma senha. Digite uma no campo de senha do convidado, ou desmarque \"Habilitar acesso de convidado\"."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -5718,7 +5722,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "A senha do amuleapi não pode ser salva: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -5780,7 +5784,7 @@ msgstr "Início automático"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "Registrar tipo de arquivo"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
@@ -5792,9 +5796,9 @@ msgid "aMule only handles eD2k-compatible magnets. If you replace the current ma
 msgstr "O aMule lida apenas com links magnet compatíveis com eD2k. Se você trocar o manipulador atual (%s), links magnet deBitTorrent irão parar de funcionar - o aMule não pode baixar conteúdo BitTorrent. Continuar?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr "Atualmente um outro aplicativo é o manipulador padrão para estes links (%s). Troco ele pelo aMule?"
+msgstr "Outro aplicativo está configurado para abrir arquivos .emulecollection (%s). Troco ele pelo aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -5802,14 +5806,12 @@ msgid "Another application is currently the default handler for these links (%s)
 msgstr "Atualmente um outro aplicativo é o manipulador padrão para estes links (%s). Troco ele pelo aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr "Não foi possível registrar o aMule como manipulador de URL. O armazenamento deve estar como \"apenas leitura\"."
+msgstr "Não foi possível registrar o aMule como manipulador de arquivos .emulecollection. O registro pode estar como \"apenas leitura\"."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "Não foi possível remover o registro de manipulação de URL."
+msgstr "Não foi possível remover o registro deste tipo de arquivo."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
@@ -6053,7 +6055,7 @@ msgstr "Pasta compartilhada"
 
 #: src/SearchDlg.cpp
 msgid "Clear search history"
-msgstr ""
+msgstr "Limpar o histórico de busca"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
@@ -6561,9 +6563,8 @@ msgid "Connection Type:"
 msgstr "Tipo de Conexão:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Conectado"
+msgstr "Conectado desde:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -8437,7 +8438,7 @@ msgstr "Iniciar o aMule quando eu logar no sistema"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "Associar arquivos .emulecollection"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
@@ -8461,7 +8462,7 @@ msgstr "Inicia o aMule automaticamente quando o usuário atual faz login no sist
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "Adiciona o aMule à lista \"Abrir com\" para arquivos .emulecollection, e o torna o padrão desde que nenhum outro programa o tenha clamado. Abrir uma coleção enfileira todos os links eD2k que ela contém."
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."

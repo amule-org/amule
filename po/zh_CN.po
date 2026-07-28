@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-28 21:43+0200\n"
-"PO-Revision-Date: 2026-07-27 11:48+0000\n"
+"PO-Revision-Date: 2026-07-28 20:17+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -2223,9 +2223,8 @@ msgid "aMule first-run setup"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "欢迎！"
+msgstr "欢迎来到 aMule！"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2238,9 +2237,8 @@ msgid "Choose a nickname other peers will see:"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "已连接至好友"
+msgstr "连接和带宽"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2249,9 +2247,8 @@ msgid ""
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "连接类型："
+msgstr "连接速度："
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
@@ -2266,9 +2263,8 @@ msgid "Download limit (kB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "网络"
+msgstr "网络和端口"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
@@ -2302,9 +2298,8 @@ msgid ""
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "启动"
+msgstr "启动文件"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2374,7 +2369,7 @@ msgstr "浏览"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr "（此文件夹中的所有文件均与其他对等方共享）"
+msgstr "（此文件夹中的所有文件均与其他 peer 共享）"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
@@ -4062,12 +4057,12 @@ msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
-"已完成下载的文件存储在此处。此文件夹中的所有文件将自动与其他对等点共享。\n"
+"已完成下载的文件存储在此处。此文件夹中的所有文件将自动与其他 peer 共享。\n"
 "如果此文件夹中还包含您不想共享的文件，请为 aMule 选择一个专用子文件夹。"
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr "选择完成下载文件的存储文件夹。该文件夹中的所有文件都将与其他对等节点共享。"
+msgstr "选择完成下载文件的存储文件夹。该文件夹中的所有文件都将与其他 peer 共享。"
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -6083,7 +6078,7 @@ msgstr "尝试Kad搜索时出现未预料的错误： "
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr "Kad 搜索：向另一个节点请求了更广泛的结果。"
+msgstr "Kad 搜索：向另一个 peer 请求了更广泛的结果。"
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
