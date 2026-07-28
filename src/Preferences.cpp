@@ -1404,6 +1404,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_DAP, (new Cfg_Bool("/eMule/DAPPref", s_bDAP, true)));
 	NewCfgItem(IDC_UAP, (new Cfg_Bool("/eMule/UAPPref", s_bUAP, true)));
 	NewCfgItem(IDC_ALLOCFULLFILE, (new Cfg_Bool("/eMule/AllocateFullFile", s_allocFullFile, false)));
+	NewCfgItem(
+		IDC_CREATEFILESSPARSE, (new Cfg_Bool("/eMule/CreateSparseFiles", s_createFilesSparse, true)));
 	NewCfgItem(IDC_MMAP_ENABLE, (new Cfg_Bool("/eMule/MMapEnabled", s_mmapEnabled, false)));
 
 	/**
@@ -1706,7 +1708,6 @@ void CPreferences::BuildItemList(const wxString &appdir)
 
 	s_MiscList.push_back(new Cfg_Bool(
 		"/ExternalConnect/TransmitOnlyUploadingClients", s_TransmitOnlyUploadingClients, false));
-	s_MiscList.push_back(new Cfg_Bool("/eMule/CreateSparseFiles", s_createFilesSparse, true));
 
 #ifndef AMULE_DAEMON
 	// Colors have been moved from global prefs to CStatisticsDlg

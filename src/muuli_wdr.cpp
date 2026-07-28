@@ -1607,6 +1607,12 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item13 = new wxCheckBox( parent, IDC_ALLOCFULLFILE, _("Preallocate disk space for new files"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetToolTip( _("For new files preallocates disk space for the whole file, thus reduces fragmentation") );
     item5->Add( item13, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
+    // /eMule/CreateSparseFiles was EC-wired and settable via the Web UI
+    // (files.create_normal) but had no control here or in amuleGUI --
+    // hand-editing amule.conf was the only way (amule-org/amule#653).
+    wxCheckBox *itemCreateSparse = new wxCheckBox( parent, IDC_CREATEFILESSPARSE, _("Create new files as sparse files"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemCreateSparse->SetToolTip( _("A sparse file reserves its full size on disk immediately without writing real data to it -- fast, but unsupported or slow on some filesystems, and free-space accounting stays optimistic while the download is in progress. Turn this off to grow the file only as data arrives.") );
+    item5->Add( itemCreateSparse, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
     wxFlexGridSizer *item14 = new wxFlexGridSizer( 3, 0, 0 );
     item14->AddGrowableCol( 0 );
 
