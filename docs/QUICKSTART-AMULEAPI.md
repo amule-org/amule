@@ -52,7 +52,7 @@ written with mode `0600`:
 | ------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `amuleapi.conf`           | INI-style runtime config (HTTP bind/port/CORS, outbound EC connection to amuled, login rate-limit knobs, SSE event-bus ring size). Full reference below. |
 | `amuleapi-jwt-secret`     | 32-byte HMAC signing key for issued tokens. Auto-generated on first launch if absent.                    |
-| `amuleapi-passwords`      | MD5-hashed admin and guest passwords. Plaintext is never persisted.                                      |
+| `amuleapi-passwords`      | Admin and guest passwords, each a salted PBKDF2-HMAC-SHA256 record. Plaintext is never persisted, and a stored password cannot be read back — only replaced. The only place these are stored; also written by aMule and amuled. |
 
 By default amuleapi also writes an `amuleapi.log` file here (a copy of
 its console output); see [Logging](#logging) to relocate or disable it.

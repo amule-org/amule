@@ -61,10 +61,6 @@ namespace webcommon
 // those lines still verify, and Verify() reports that the record wants
 // rewriting so the caller can transparently upgrade it.
 
-// PBKDF2 iteration count for new records. Sized for a credential check
-// that happens at login rather than per request.
-extern const unsigned kPbkdf2Iterations;
-
 // Hashes an MD5 hex digest into a new PHC-style record with a fresh
 // random salt. Returns an empty string if `md5_hex` is not 32 hex chars.
 std::string HashMd5Hex(const std::string &md5_hex);
@@ -78,15 +74,6 @@ bool VerifyMd5Hex(const std::string &md5_hex, const std::string &stored, bool *n
 // True when `stored` is a bare 32-char MD5 hex digest rather than a PHC
 // record. Exposed for tests and for the upgrade path.
 bool IsLegacyMd5Record(const std::string &stored);
-
-// True when `record` is something Verify could ever accept: a PHC record
-// in a form this build understands, or a legacy bare MD5. An empty string
-// is NOT valid — that is the separate "role unset" state.
-//
-// Used to reject a corrupt or hand-mistyped file at load rather than at
-// login: a record that silently never verifies is indistinguishable from
-// a wrong password, and leaves the operator with nothing to debug.
-bool IsValidRecord(const std::string &record);
 
 // The two credentials as they live in amuleapi-passwords. An empty string
 // means "not set": for `guest` that is what disables the guest role, and
@@ -102,8 +89,10 @@ struct Credentials
 // write can therefore never destroy the only credentials the daemon has.
 // Both return false and set `error` on failure. Load() treats a missing
 // file as an empty set rather than an error, which is the first-run
-// state, but fails on an unknown key or a record that could never verify
-// — see IsValidRecord for why that is loud rather than silent.
+// state, but fails on an unknown key or on a record that could never
+// verify. That is deliberately loud: a record which silently never
+// verifies is indistinguishable from a wrong password, and leaves the
+// operator with nothing to debug.
 bool LoadCredentialsFile(const std::string &config_dir, Credentials &out, std::string &error);
 bool SaveCredentialsFile(const std::string &config_dir, const Credentials &in, std::string &error);
 
@@ -162,8 +151,8 @@ bool ApplyCredentialChange(const std::string &config_dir, const CredentialChange
 // as a password.
 bool MakeRecord(const std::string &md5_hex, std::string &record);
 
-// The full path Load/Save operate on, for callers that need to name the
-// file in a diagnostic or check its permissions.
+// The full path Load/Save operate on. Exposed so the tests can assert the
+// path-joining rules without duplicating them.
 std::string CredentialsFilePath(const std::string &config_dir);
 
 } // namespace webcommon

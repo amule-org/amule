@@ -58,14 +58,16 @@
 namespace webcommon
 {
 
-const unsigned kPbkdf2Iterations = 210000;
-
 namespace
 {
 
 const char *const kPrefix = "pbkdf2-sha256$";
 const std::size_t kSaltBytes = 16;
 const std::size_t kHashBytes = 32;
+
+// Iteration count for new records. Sized for a credential check that
+// happens at login rather than per request.
+const unsigned kPbkdf2Iterations = 210000;
 
 std::string ToHex(const unsigned char *data, std::size_t len)
 {
@@ -199,25 +201,28 @@ std::string TrimAscii(const std::string &s)
 	return s.substr(b, e - b);
 }
 
-} // namespace
-
-bool IsLegacyMd5Record(const std::string &stored)
-{
-	return IsMd5Hex(stored);
-}
-
+// True when `record` is something Verify could ever accept: a PHC record
+// in a form this build understands, or a legacy bare MD5. An empty string
+// is NOT valid — that is the separate "role unset" state.
 bool IsValidRecord(const std::string &record)
 {
 	if (record.empty()) {
 		return false;
 	}
-	if (IsLegacyMd5Record(record)) {
-		return true;
+	if (IsMd5Hex(record)) {
+		return true; // legacy: the record is the unsalted digest itself
 	}
 	unsigned iterations = 0;
 	std::vector<unsigned char> salt;
 	std::string hash_hex;
 	return ParsePhc(record, iterations, salt, hash_hex);
+}
+
+} // namespace
+
+bool IsLegacyMd5Record(const std::string &stored)
+{
+	return IsMd5Hex(stored);
 }
 
 std::string HashMd5Hex(const std::string &md5_hex)
