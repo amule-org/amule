@@ -270,7 +270,7 @@ Fires whenever a download's comment/rating list changes — a Kad note arriving 
 }
 ```
 
-Downloads only (issue #434). It's kept separate from `download_updated` so the per-tick download frame stays lean — comments ride their own event and only when they actually change.
+Downloads only. It's kept separate from `download_updated` so the per-tick download frame stays lean — comments ride their own event and only when they actually change.
 
 ### `shared` channel
 
