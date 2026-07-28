@@ -95,7 +95,12 @@ echo "Updating po/manpages.pot and merging into po/manpages-*.po ..."
 # --no-translations: skip rendering of *.{lang}.1.in -- those are built
 # from CMake at build time, not from this script.
 # --force: regenerate the .pot even when po4a thinks it's up to date.
-po4a --no-translations --force "${TMP_CONFIG}"
+# --porefs file: record "#: amule.1.in" rather than "#: amule.1.in:42", the
+# po4a counterpart of update-po.sh's --add-location=file. Manpage sources
+# reflow constantly, so line-numbered references made every edit rewrite the
+# reference block of every manpage catalog; the file name is the part that
+# carries context for translators.
+po4a --no-translations --force --porefs file "${TMP_CONFIG}"
 die 31 "po4a failed"
 
 echo "Done."

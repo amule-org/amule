@@ -66,8 +66,19 @@ echo "Extracting translatable strings into po/amule.pot ..."
 # wrapping. Keeps Weblate / msgmerge / hand-regen diffs to real content
 # changes instead of reflow noise. Weblate's "application" component is
 # configured to match.
+#
+# --add-location=file: emit "#: src/amuleDlg.cpp" instead of
+# "#: src/amuleDlg.cpp:1234". A line number shifts whenever anything above a
+# string is edited, so with full locations every catalog rewrote its entire
+# reference block on every regen -- the overwhelming bulk of a catalog diff
+# was renumbering rather than content, and any two PRs in flight conflicted
+# on it. File names rarely move, so translators keep the "where is this
+# string used" context Weblate shows while the churn goes away. msgmerge
+# below needs the same flag, otherwise it re-expands locations to full
+# file:line when merging the pot into each .po.
 xgettext \
 	--no-wrap \
+	--add-location=file \
 	--keyword=_ \
 	--keyword=wxTRANSLATE \
 	--keyword=wxPLURAL:1,2 \
@@ -103,7 +114,7 @@ echo "Merging po/amule.pot into each .po file ..."
 # any .po that was previously committed in wrapped form.
 for PO_FILE in po/*.po; do
 	echo "  $PO_FILE"
-	msgmerge --no-wrap "$PO_FILE" po/amule.pot --output-file="$PO_FILE.tmp"
+	msgmerge --no-wrap --add-location=file "$PO_FILE" po/amule.pot --output-file="$PO_FILE.tmp"
 	die 31 "msgmerge failed for $PO_FILE"
 	mv "$PO_FILE.tmp" "$PO_FILE"
 	die 31 "failed to install merged $PO_FILE"
