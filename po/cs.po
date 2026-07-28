@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-28 13:09+0200\n"
-"PO-Revision-Date: 2026-07-27 11:34+0000\n"
+"PO-Revision-Date: 2026-07-28 11:52+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -55,7 +55,7 @@ msgstr "Část aMule je založena na \n"
 
 #: src/AboutDialog.cpp:86
 msgid "Kademlia: Peer-to-peer routing based on the XOR metric.\n"
-msgstr ""
+msgstr "Kademlia: Peer-to-peer směrování založené na metrice XOR.\n"
 
 #: src/AboutDialog.cpp:87
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
@@ -78,32 +78,29 @@ msgid "Issues:"
 msgstr "Problémy:"
 
 #: src/AboutDialog.cpp:112
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "Kontrola nové verze po spuštění"
+msgstr "Klikněte pro kontrolu existence nové verze."
 
 #: src/AboutDialog.cpp:113
 msgid "Check for updates"
 msgstr ""
 
 #: src/AboutDialog.cpp:162
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Připojuji se k síti Kad..."
+msgstr "Kontrola aktualizací..."
 
 #: src/AboutDialog.cpp:172
-#, fuzzy
 msgid "You are running the latest version."
-msgstr "Používáte zastaralou verzi aMule!"
+msgstr "Používáte nejnovější verzi."
 
 #: src/AboutDialog.cpp:176
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "Nedostupný"
+msgstr "Je dostupná nová verze (%s):"
 
 #: src/AboutDialog.cpp:180
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "Nelze zkontrolovat aktualizace. Zkuste to prosím později znovu."
 
 #: src/AddFriend.cpp:42
 msgid "Add a Friend"

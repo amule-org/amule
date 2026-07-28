@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-28 13:09+0200\n"
-"PO-Revision-Date: 2026-07-27 11:43+0000\n"
+"PO-Revision-Date: 2026-07-28 12:03+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -2269,83 +2269,83 @@ msgstr "%.2f kB/s"
 
 #: src/FirstRunWizard.cpp:91
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Móvel / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp:92
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp:93
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp:94
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Cabo (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp:95
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Fibra 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp:96
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Fibra Gigabit (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp:224
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "Configuração da primeira rodada do aMule"
 
 #: src/FirstRunWizard.cpp:252
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Bem-vindo!"
+msgstr "Bem-vindo ao aMule!"
 
 #: src/FirstRunWizard.cpp:255
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Esta configuração rápida vai conectar você. Você pode mudar\n"
+"qualquer uma destas configurações mais tarde nas Preferências."
 
 #: src/FirstRunWizard.cpp:261
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Escolha um apelido que será visto por seus pares:"
 
 #: src/FirstRunWizard.cpp:277
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Conectando ao amigo"
+msgstr "Conecxão e largura de banda"
 
 #: src/FirstRunWizard.cpp:280
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"Escolha a opção que melhor combina com sua conexão de internet,\n"
+"ou configure os limites de upload e download diretamente abaixo."
 
 #: src/FirstRunWizard.cpp:286
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Tipo de Conexão:"
+msgstr "Velocidade da Conexão:"
 
 #: src/FirstRunWizard.cpp:291
 msgid "Other / set manually"
-msgstr ""
+msgstr "Outra / configurar manualmente"
 
 #: src/FirstRunWizard.cpp:298
 msgid "Upload limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Limite de upload (kB/s, 0 = sem limite):"
 
 #: src/FirstRunWizard.cpp:306
 msgid "Download limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "Limite de download (kB/s, 0 = sem limite):"
 
 #: src/FirstRunWizard.cpp:332
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Redes"
+msgstr "Redes e portas"
 
 #: src/FirstRunWizard.cpp:335
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "O aMule pode usar duas redes. Recomendamos manter ambas habilitadas."
 
 #: src/FirstRunWizard.cpp:345 src/TextClient.cpp:894
 msgid "eD2k"
@@ -2373,22 +2373,25 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"Permite ao aMule pedir a seu roteador que encaminhe as portas acima de modo que outros\n"
+"pares possam chegar até você (um \"HighID\"). Desligue se seu roteador\n"
+"não suporta UPnP ou se você encaminhar as portas manualmente."
 
 #: src/FirstRunWizard.cpp:399
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Inicialização"
+msgstr "Arquivos de inicialização"
 
 #: src/FirstRunWizard.cpp:404
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"Para começar, o aMule precisa saber sobre alguns pares.\n"
+"Selecione qual listas baixar agora:"
 
 #: src/FirstRunWizard.cpp:423
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Ops! Você já está tentando baixar o arquivo %s"
+msgstr "Sua lista de pares já está no lugar - não há nada para baixar."
 
 #: src/FirstRunWizard.cpp:434 src/muuli_wdr.cpp:1540
 msgid "Auto-update server list at startup"
@@ -2396,13 +2399,15 @@ msgstr "Lista de servidores auto-atualizáveis na iniciação"
 
 #: src/FirstRunWizard.cpp:447
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "Integrações (opcional)"
 
 #: src/FirstRunWizard.cpp:450
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"Escolha como o aMule se integra com seu sistema. Você pode\n"
+"mudar qualquer uma destas mais tarde nas Preferências."
 
 #: src/FirstRunWizard.cpp:460 src/muuli_wdr.cpp:1273
 msgid "Start aMule automatically when I log in"
@@ -2420,7 +2425,7 @@ msgstr "Registra o aMule para links \"magnet:\""
 
 #: src/FirstRunWizard.cpp:504
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Apenas magnets compatíveis com a rede eD2k. Deixe em branco se você usa um cliente BitTorrent."
 
 #: src/FirstRunWizard.cpp:522 src/muuli_wdr.cpp:1292
 msgid "Open .emulecollection files with aMule"
@@ -2428,13 +2433,15 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp:538
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Pastas (opcional)"
 
 #: src/FirstRunWizard.cpp:541
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Os valores padrão estão bem para a maioria das pessoas. Mude-os se você\n"
+"quiser downloads em um disco diferente (maior, por exemplo)."
 
 #: src/FirstRunWizard.cpp:549 src/FirstRunWizard.cpp:611 src/muuli_wdr.cpp:1716
 msgid "Destination folder for downloads"
@@ -2462,14 +2469,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Baseado nisso, o aMule vai permitir até %i fontes por arquivo\n"
+"e %i conexões de clientes."
 
 #: src/FirstRunWizard.cpp:771
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "Mostrar esse sábio de configuração novamente na próxima vez que você iniciar o aMule?"
 
 #: src/FirstRunWizard.cpp:772
 msgid "Setup not finished"
-msgstr ""
+msgstr "Configuração não terminada"
 
 #: src/FriendList.cpp:120
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
