@@ -8,6 +8,16 @@ add_executable (amuleapi
 	${CMAKE_SOURCE_DIR}/src/RLE.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkFunctions.cpp
 	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	# Same embedded icon table the desktop GUI links (build-generated
+	# by src/icons/embed_icons.py, or the checked-in fallback when the
+	# host has no Python3 — see src/CMakeLists.txt for the resolution).
+	# GET /flags/{code}.png serves the flag_<cc> entries straight out
+	# of .rodata, which is what keeps the country artwork a single
+	# committed copy instead of a duplicate under static/. Plain C byte
+	# arrays, so it compiles fine under wxUSE_GUI=0; the top-level
+	# icons amuleapi never asks for are pages that simply never fault
+	# in.
+	${AMULE_ICON_DATA_C}
 	AmuleApiConfig.cpp
 	Api.cpp
 	App.cpp
@@ -37,8 +47,20 @@ target_include_directories (amuleapi
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 	PRIVATE ${SRC_DIR}
+	# icon_data.c #includes "icon_data.h" unqualified, and Api.cpp does
+	# the same to reach amule_find_icon() — same reason muleappgui puts
+	# src/icons on its include path.
+	PRIVATE ${SRC_DIR}/icons
 	PRIVATE ${Boost_INCLUDE_DIR}
 )
+
+# ${AMULE_ICON_DATA_C} is generated into the build tree when Python3 was
+# found at configure time; without it the variable already points at the
+# checked-in source copy and no ordering dependency is needed. Mirrors
+# what muleappgui does in src/CMakeLists.txt.
+if (Python3_FOUND)
+	add_dependencies (amuleapi generate_icon_data)
+endif()
 
 target_link_libraries (amuleapi
 	PRIVATE ec

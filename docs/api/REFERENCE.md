@@ -98,6 +98,9 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/search/results/{hash}/comments`](#get-apiv0searchresultshashcomments) — Kad ratings/comments for a result
 - [`POST /api/v0/search/results/{hash}/comments`](#post-apiv0searchresultshashcomments) — trigger a Kad notes lookup for a result
 
+**Assets**
+- [`GET /flags/{code}.png`](#get-flagscodepng) — country-flag artwork for a `country_code`
+
 ## Base URL and transport
 
 `amuleapi` serves HTTP on the address declared in `amuleapi.conf[Server]/Port` (default `4713`). The server is HTTP-only by design — terminate TLS in a reverse proxy (nginx, Caddy, etc.) for any non-loopback deployment. The cookie is deliberately NOT marked `Secure` so the same Set-Cookie works whether the operator runs amuleapi behind TLS or directly. See QUICKSTART for the full bind-vs-listen story.
@@ -1008,7 +1011,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 `software` and `software_version` are locale-independent, per the API's English-only contract. A peer the daemon could not identify reports `"software": "unknown"` and `"software_version": "unknown"` — a lowercase sentinel, never a daemon-localized string (the daemon's own version formatting is gettext-translated and is deliberately not surfaced here). `os_info` is the peer's *own* self-reported OS string (raw external data, not normalized by amuled) and is frequently empty, since most clients don't send it.
 
-`country_code` is the peer's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the peer IP by the daemon's GeoIP database. It is an empty string when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code.
+`country_code` is the peer's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the peer IP by the daemon's GeoIP database. It is an empty string when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code. The flag image is served by [`GET /flags/{code}.png`](#get-flagscodepng); the localized name has no endpoint because the browser already has it (`Intl.DisplayNames` with `{ type: "region" }`).
 
 **Errors:** `400 bad_request` (unknown filter token), `503 ec_unavailable`.
 
@@ -1387,7 +1390,7 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 }
 ```
 
-`country_code` is the ISO 3166-1 alpha-2 code (lowercase, e.g. `"de"`) of the server host, resolved server-side from the server IP by the daemon's GeoIP database — same semantics and empty-string fallback as the peer `country_code` on `/clients`.
+`country_code` is the ISO 3166-1 alpha-2 code (lowercase, e.g. `"de"`) of the server host, resolved server-side from the server IP by the daemon's GeoIP database — same semantics and empty-string fallback as the peer `country_code` on `/clients`, and the same artwork route, [`GET /flags/{code}.png`](#get-flagscodepng).
 
 **Errors:** `503 ec_unavailable`.
 
@@ -2044,6 +2047,35 @@ Trigger an on-demand Kad notes lookup for a search result you have not downloade
 **Response:** `202 Accepted` → `{ "status": "kad_search_started" }`.
 
 **Errors:** `400 bad_request` (malformed hash), `404 not_found` (no current search result with that hash), `400 amuled_rejected` (Kad down, or a search is already using this hash — retry shortly), `503 ec_unavailable`.
+
+---
+
+### Assets
+
+#### `GET /flags/{code}.png`
+
+**Auth:** `NONE` — public artwork, no per-installation data. `HEAD` is accepted too; any other method is `405 method_not_allowed`.
+
+The country-flag image for a `country_code`. `/clients`, `/servers` and their SSE diffs carry the ISO 3166-1 alpha-2 code (see [`GET /api/v0/clients`](#get-apiv0clients)); this is where the matching artwork comes from, so a frontend does not have to ship its own flag set.
+
+Note the path is deliberately **outside** `/api/v0/` — it is an image an `<img src>` points at, not a JSON resource, and it is versioned by the daemon build rather than by the API contract.
+
+`{code}` must be exactly two **lowercase** ASCII letters, or the literal `unknown` for the "??" placeholder the desktop GUI falls back to when a code is empty or unrecognised. The bytes are the 16×11 famfamfam PNGs compiled into the daemon binary — the same artwork the desktop draws — so the route behaves identically whether or not `[Server]/StaticRoot` is set, and never touches the file system.
+
+```sh
+curl -s http://$HOST/flags/de.png -o de.png
+curl -s http://$HOST/flags/unknown.png -o unknown.png
+```
+
+**Response:** `200 OK`, `Content-Type: image/png`, `Cache-Control: public, max-age=86400`.
+
+Responses carry an `ETag` and honour `If-None-Match` with `304 Not Modified` like every other `GET` (see [ETag and conditional GET](#etag-and-conditional-get)). The `max-age` is what keeps a peer list full of `<img>` tags from issuing one conditional request per country on every reload; the artwork can only change with a new daemon build, and a day bounds how long an upgraded daemon keeps serving the old image.
+
+The response is never `Content-Encoding: gzip` — a PNG is already entropy-coded, so the server skips compression for it.
+
+**Errors:** `404 not_found` for anything that is neither two lowercase letters nor `unknown` (uppercase, wrong length, digits, another extension), and for a well-formed code the famfamfam set has no artwork for — it covers 248 of the assignable alpha-2 codes, so a resolvable country can legitimately have no flag. Render the code as text, or fall back to `unknown.png`, in that case. `400 bad_request` for paths carrying traversal tokens, per [Path validation](#path-validation).
+
+Peers whose country could not be resolved — GeoIP disabled, unsupported by the build, or a private/unmatched address — come back with `country_code: ""`. There is no per-country image to request in that case; draw nothing, or `unknown.png` for parity with the desktop list.
 
 ---
 

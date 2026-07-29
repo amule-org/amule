@@ -186,6 +186,17 @@ private:
 	// Never requires auth — the shell is public; the API calls it
 	// makes still hit the per-handler role gates.
 	CHttpServer::Response ServeStaticFile(const CHttpServer::Request &, const std::string &url_path);
+	// Country-flag artwork for `country_code` (/clients, /servers and
+	// their SSE diffs carry the code; the flag image is what a frontend
+	// still needs to draw it). `url_path` is the full request path and
+	// must be "/flags/<cc>.png" with two lowercase ASCII letters, or
+	// "/flags/unknown.png" for the "??" placeholder; the bytes come
+	// from the embedded icon table's "flag_<cc>" entry, so nothing
+	// touches the file system. Returns 404 for any other shape and for
+	// codes the famfamfam set has no artwork for. Never requires auth
+	// — same rationale as ServeStaticFile, and the artwork is public
+	// either way.
+	CHttpServer::Response ServeCountryFlag(const CHttpServer::Request &, const std::string &url_path);
 	// Rescan shared directories — amuled re-walks the configured share
 	// roots and re-publishes whatever's there. Parameterless EC op
 	// (EC_OP_SHAREDFILES_RELOAD).

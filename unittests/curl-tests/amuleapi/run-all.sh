@@ -204,6 +204,7 @@ PHASES=(
 	29-bulk-mutations.sh
 	30-shared-verify.sh
 	31-shared-directories.sh
+	32-country-flags.sh
 )
 
 # Override list from the command line if given.

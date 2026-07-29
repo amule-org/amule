@@ -45,6 +45,7 @@
 #include <cassert>
 #include <cctype>
 #include <chrono>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -92,6 +93,30 @@ std::atomic<int> g_streaming_session_count{ 0 };
 // framing eats most of any ratio gain, and error/heartbeat payloads
 // are common in that size range.
 constexpr size_t kGzipMinBodyBytes = 256;
+
+// Media types whose payload is already entropy-coded. Running deflate
+// over a PNG / JPEG / WebP / GIF / woff2 buys a percent at best and
+// routinely grows the body, so the flag artwork and any future binary
+// asset ship as-is. Prefix match on the type token — the check runs
+// before any "; charset=" parameter would matter, and none of these
+// carry one.
+bool IsPrecompressedType(const std::string &content_type)
+{
+	static const char *const kTypes[] = { "image/png",
+		"image/jpeg",
+		"image/gif",
+		"image/webp",
+		"font/woff",
+		"font/woff2",
+		"application/zip",
+		"application/gzip" };
+	for (const char *type : kTypes) {
+		if (content_type.compare(0, std::strlen(type), type) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
 
 // Case-insensitive token search for "gzip" in an Accept-Encoding header
 // value. Real clients (curl, browsers) send "gzip, deflate, br" or
@@ -809,7 +834,9 @@ private:
 		//  * body is above kGzipMinBodyBytes (header overhead is a
 		//    significant fraction below that),
 		//  * handler didn't already set Content-Encoding (a future
-		//    pre-gzipped static asset path would use that hook).
+		//    pre-gzipped static asset path would use that hook),
+		//  * body isn't already entropy-coded (PNG flags, images and
+		//    fonts out of the static tree).
 		// deflate() fallback: on any zlib error we ship the original
 		// uncompressed body rather than 500 — better degraded than
 		// broken. Content-Length is set correctly by
@@ -820,7 +847,8 @@ private:
 		// entry correctly across clients that do / don't send the
 		// header.
 		if (m_accepts_gzip && resp.body.size() >= kGzipMinBodyBytes &&
-			resp.headers.find("Content-Encoding") == resp.headers.end()) {
+			resp.headers.find("Content-Encoding") == resp.headers.end() &&
+			!IsPrecompressedType(resp.content_type)) {
 			std::string compressed;
 			if (GzipOnce(resp.body, compressed)) {
 				resp.body = std::move(compressed);
