@@ -62,6 +62,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`POST /api/v0/servers`](#post-apiv0servers) — add server
 - [`POST /api/v0/servers/{ecid}/connect`](#post-apiv0serversecidconnect--post-apiv0serversipportconnect) — connect to specific server (ECID or `ip:port`)
 - [`DELETE /api/v0/servers/{ecid}`](#delete-apiv0serversecid--delete-apiv0serversipport) — remove server (ECID or `ip:port`)
+- [`PATCH /api/v0/servers/{ecid}`](#patch-apiv0serversecid--patch-apiv0serversipport) — set server priority / static flag (ECID or `ip:port`)
 - [`POST /api/v0/servers/update`](#post-apiv0serversupdate) — refresh from `server.met` URL
 
 **Categories**
@@ -1436,6 +1437,31 @@ Removes the server from amuled's list.
 **Response:** `200 OK` → `{ "ok": true, "ecid": 1 }`.
 
 **Errors:** `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
+
+#### `PATCH /api/v0/servers/{ecid}` / `PATCH /api/v0/servers/{ip}:{port}`
+
+**Auth:** `ADMIN`
+
+Sets an ed2k server's priority, its static flag, or both — the same operation the desktop server list offers from its context menu.
+
+**Body:** both fields are optional, and only the ones present are applied; a body with neither is a `400`.
+
+```json
+{ "priority": "high", "static": true }
+```
+
+`priority` is one of `"low"` / `"normal"` / `"high"` — the same values `GET /servers` reports. `static` marks the server as one amuled keeps across list updates.
+
+```sh
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"priority":"high","static":true}' \
+  "http://$HOST/api/v0/servers/1"
+```
+
+**Response:** `200 OK` → `{ "ok": true, "ecid": 1 }`.
+
+**Errors:** `400 bad_request` (unknown `priority`, non-bool `static`, or neither field present), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `POST /api/v0/servers/update`
 

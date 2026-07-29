@@ -5,6 +5,7 @@
 # Endpoints:
 #   POST   /api/v0/servers                   — add by {address, name?}
 #   POST   /api/v0/servers/{ecid}/connect    — connect to one server
+#   PATCH  /api/v0/servers/{ecid}            — set priority / static flag
 #   DELETE /api/v0/servers/{ecid}            — remove from the list
 #
 # All keyed by ECID on the URL — the EC ops (CONNECT/REMOVE) actually
@@ -229,6 +230,85 @@ _assert_status 400 "POST /servers/not-a-number/connect → 400"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$HOST/api/v0/servers/4294967295/connect"
 _assert_status 404 "POST /servers/{unknown ecid}/connect → 404"
+
+# --- 5b. PATCH /servers/{ecid} — priority + static (#692). ---------
+# The SRV_PR_* wire values are not monotone (NORMAL=0, HIGH=1, LOW=2),
+# so round-tripping every name through the API is what actually proves
+# the reverse mapping, not just that a 200 came back.
+for PRIO in high low normal; do
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"priority\":\"$PRIO\"}" "$HOST/api/v0/servers/$ECID"
+	_assert_status 200 "PATCH /servers/{ecid} priority=$PRIO → 200"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+	GOT=$(printf '%s' "$CURL_BODY" | jq -r --argjson e "$ECID" \
+		'.servers[] | select(.ecid == $e) | .priority')
+	if [ "$GOT" = "$PRIO" ]; then
+		_pass "priority=$PRIO round-trips through GET /servers"
+	else
+		_fail "priority round-trip" "set $PRIO, GET returned $GOT"
+	fi
+done
+
+# static flag, both directions.
+for FLAG in true false; do
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"static\":$FLAG}" "$HOST/api/v0/servers/$ECID"
+	_assert_status 200 "PATCH /servers/{ecid} static=$FLAG → 200"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+	GOT=$(printf '%s' "$CURL_BODY" | jq -r --argjson e "$ECID" \
+		'.servers[] | select(.ecid == $e) | .static')
+	if [ "$GOT" = "$FLAG" ]; then
+		_pass "static=$FLAG round-trips through GET /servers"
+	else
+		_fail "static round-trip" "set $FLAG, GET returned $GOT"
+	fi
+done
+
+# Both fields in one body.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"high","static":true}' "$HOST/api/v0/servers/$ECID"
+_assert_status 200 "PATCH /servers/{ecid} priority+static together → 200"
+_assert_json_eq '.ok' true 'PATCH response carries ok:true'
+_assert_json_eq '.ecid' "$ECID" 'PATCH response echoes the ecid'
+
+# --- 5c. PATCH error paths. ----------------------------------------
+_curl -X PATCH -H "Content-Type: application/json" \
+	-d '{"priority":"high"}' "$HOST/api/v0/servers/$ECID"
+_assert_status 401 "PATCH /servers/{ecid} (no token) → 401"
+
+if [ "$HAVE_GUEST" = "1" ]; then
+	_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"priority":"high"}' "$HOST/api/v0/servers/$ECID"
+	_assert_status 403 "PATCH /servers/{ecid} (guest) → 403"
+fi
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/servers/$ECID"
+_assert_status 400 "PATCH /servers/{ecid} empty body → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"urgent"}' "$HOST/api/v0/servers/$ECID"
+_assert_status 400 "PATCH /servers/{ecid} unknown priority → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"static":"yes"}' "$HOST/api/v0/servers/$ECID"
+_assert_status 400 "PATCH /servers/{ecid} non-bool static → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"high"}' "$HOST/api/v0/servers/not-a-number"
+_assert_status 400 "PATCH /servers/not-a-number → 400"
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"priority":"high"}' "$HOST/api/v0/servers/999999"
+_assert_status 404 "PATCH /servers/{unknown ecid} → 404 (EC no-ops silently, #692)"
 
 # --- 6. DELETE /servers/{ecid} happy path + no-stale invariant. ---
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \

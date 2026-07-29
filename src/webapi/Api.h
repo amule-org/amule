@@ -147,6 +147,7 @@ private:
 	CHttpServer::Response HandleServerAdd(const CHttpServer::Request &);
 	CHttpServer::Response HandleServerConnect(const CHttpServer::Request &, const std::string &ecid_str);
 	CHttpServer::Response HandleServerDelete(const CHttpServer::Request &, const std::string &ecid_str);
+	CHttpServer::Response HandleServerPatch(const CHttpServer::Request &, const std::string &ecid_str);
 	// Refresh the server list from a `server.met` URL — operator-
 	// curated server-list update, same EC op the desktop GUI's "Update
 	// from URL" button uses.
@@ -156,6 +157,8 @@ private:
 	// clients work without first having to GET /servers to learn the
 	// ECID for a known address.
 	CHttpServer::Response HandleServerConnectByAddress(
+		const CHttpServer::Request &, const std::string &ip_port);
+	CHttpServer::Response HandleServerPatchByAddress(
 		const CHttpServer::Request &, const std::string &ip_port);
 	CHttpServer::Response HandleServerDeleteByAddress(
 		const CHttpServer::Request &, const std::string &ip_port);

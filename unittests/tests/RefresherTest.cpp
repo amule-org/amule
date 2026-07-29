@@ -27,6 +27,7 @@
 #include <set>
 
 #include "PrefsSchema.h"
+#include "Server.h" // SRV_PR_*
 #include "Refresher.h"
 #include "State.h"
 
@@ -1628,4 +1629,41 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 	ASSERT_EQUALS(static_cast<std::size_t>(2), inverted);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
+}
+
+// --- #692: ed2k server priority maps both ways -------------------------
+//
+// The SRV_PR_* wire values are not monotone (NORMAL=0, HIGH=1, LOW=2), so a
+// name->code mapping that assumed a name's position in a list was its code --
+// which is exactly what the generic enum helper on the preferences path does
+// -- would be wrong for every value. Pin both directions and the round trip.
+TEST(Refresher, ServerPriorityMapsBothWays)
+{
+	ASSERT_EQUALS(std::string("normal"), std::string(ServerPriorityName(SRV_PR_NORMAL)));
+	ASSERT_EQUALS(std::string("high"), std::string(ServerPriorityName(SRV_PR_HIGH)));
+	ASSERT_EQUALS(std::string("low"), std::string(ServerPriorityName(SRV_PR_LOW)));
+
+	std::uint32_t code = 0xFFFFFFFFu;
+	ASSERT_TRUE(ServerPriorityCode("normal", code));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_PR_NORMAL), code);
+	ASSERT_TRUE(ServerPriorityCode("high", code));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_PR_HIGH), code);
+	ASSERT_TRUE(ServerPriorityCode("low", code));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_PR_LOW), code);
+
+	// name -> code -> name is the identity for every accepted name.
+	for (const char *name : { "low", "normal", "high" }) {
+		std::uint32_t c = 0;
+		ASSERT_TRUE(ServerPriorityCode(name, c));
+		ASSERT_EQUALS(std::string(name), std::string(ServerPriorityName(c)));
+	}
+
+	// An unknown name is rejected and leaves the out-param untouched, so a
+	// caller that ignores the return value cannot silently write a priority.
+	std::uint32_t untouched = 4242;
+	ASSERT_TRUE(!ServerPriorityCode("urgent", untouched));
+	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), untouched);
+	ASSERT_TRUE(!ServerPriorityCode("", untouched));
+	ASSERT_TRUE(!ServerPriorityCode("HIGH", untouched)); // case-sensitive by design
+	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), untouched);
 }

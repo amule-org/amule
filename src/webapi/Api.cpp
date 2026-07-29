@@ -888,11 +888,16 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			return HandleServerConnect(req, caps["ecid"]);
 		}
 		if (web_api_path::Match(server_one, path_segs, caps)) {
-			if (req.method != "DELETE") {
+			if (req.method != "DELETE" && req.method != "PATCH") {
 				return ErrorResponse(
-					405, "method_not_allowed", "only DELETE on /servers/{ecid}");
+					405, "method_not_allowed", "only DELETE / PATCH on /servers/{ecid}");
 			}
-			if (caps["ecid"].find(':') != std::string::npos) {
+			const bool by_address = caps["ecid"].find(':') != std::string::npos;
+			if (req.method == "PATCH") {
+				return by_address ? HandleServerPatchByAddress(req, caps["ecid"])
+						  : HandleServerPatch(req, caps["ecid"]);
+			}
+			if (by_address) {
 				return HandleServerDeleteByAddress(req, caps["ecid"]);
 			}
 			return HandleServerDelete(req, caps["ecid"]);
@@ -4575,6 +4580,135 @@ CHttpServer::Response CApiDispatcher::HandleServerConnectByAddress(
 	std::ostringstream os;
 	os << ecid;
 	return HandleServerConnect(req, os.str());
+}
+
+// PATCH /servers/{ecid} — priority and/or static flag (#692).
+//
+// EC_OP_SERVER_SET_STATIC_PRIO carries EC_TAG_SERVER as a plain ECID integer,
+// unlike EC_OP_SERVER_REMOVE next door which carries an EC_IPv4_t. It also
+// applies each of EC_TAG_SERVER_PRIO / EC_TAG_SERVER_STATIC only when present,
+// so a partial update is native to the wire and this handler simply forwards
+// whichever fields the body carried.
+//
+// amuled answers EC_OP_NOOP whether or not the ECID resolved, so an unknown
+// server is indistinguishable from success at the EC layer — the 404 has to
+// come from checking the snapshot here.
+CHttpServer::Response CApiDispatcher::HandleServerPatch(
+	const CHttpServer::Request &req, const std::string &ecid_str)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	std::uint32_t ecid = 0;
+	if (!ParseEcidPath(ecid_str, ecid)) {
+		return ErrorResponse(400, "bad_request", "path `{ecid}` must be a non-negative integer");
+	}
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+
+	std::uint32_t prio_code = 0;
+	bool has_prio = false;
+	if (const auto it = obj.find("priority"); it != obj.end()) {
+		if (!it->second.is<std::string>()) {
+			return ErrorResponse(400, "bad_request", "`priority` must be a string");
+		}
+		if (!webapi::ServerPriorityCode(it->second.get<std::string>(), prio_code)) {
+			return ErrorResponse(
+				400, "bad_request", "`priority` must be one of low, normal, high");
+		}
+		has_prio = true;
+	}
+
+	bool is_static = false;
+	bool has_static = false;
+	if (const auto it = obj.find("static"); it != obj.end()) {
+		if (!it->second.is<bool>()) {
+			return ErrorResponse(400, "bad_request", "`static` must be a bool");
+		}
+		is_static = it->second.get<bool>();
+		has_static = true;
+	}
+
+	if (!has_prio && !has_static) {
+		return ErrorResponse(
+			400, "bad_request", "body must include at least one of `priority`, `static`");
+	}
+
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+	webapi::ServerSnapshot srv;
+	if (!FindServerByEcid(m_state, ecid, srv)) {
+		return ErrorResponse(404, "not_found", "no server with that ECID in the current snapshot");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SERVER_SET_STATIC_PRIO));
+	ec_req->AddTag(CECTag(EC_TAG_SERVER, ecid));
+	if (has_prio) {
+		ec_req->AddTag(CECTag(EC_TAG_SERVER_PRIO, static_cast<std::uint8_t>(prio_code)));
+	}
+	if (has_static) {
+		ec_req->AddTag(CECTag(EC_TAG_SERVER_STATIC, static_cast<std::uint8_t>(is_static ? 1 : 0)));
+	}
+
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SERVER_SET_STATIC_PRIO");
+	}
+	std::string ec_err_msg;
+	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
+	}
+	delete ec_resp;
+
+	// Inline refresh so the next GET /servers and the SSE stream both show
+	// the new values, matching the sibling server mutations.
+	(void)RefresherTick(m_app, m_state);
+
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("ecid");
+	w.ValueInt(static_cast<int64_t>(ecid));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
+// Address-keyed alias for the above, mirroring the connect / delete pair.
+CHttpServer::Response CApiDispatcher::HandleServerPatchByAddress(
+	const CHttpServer::Request &req, const std::string &ip_port)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+	if (!m_state.HasFirstSnapshot()) {
+		return ErrorResponse(
+			503, "ec_unavailable", "amuleapi has not received its first EC snapshot yet");
+	}
+	const std::uint32_t ecid = ResolveServerEcidByAddress(m_state, ip_port);
+	if (ecid == 0) {
+		return ErrorResponse(404, "not_found", "no server matches that ip:port");
+	}
+	std::ostringstream os;
+	os << ecid;
+	return HandleServerPatch(req, os.str());
 }
 
 CHttpServer::Response CApiDispatcher::HandleServerDeleteByAddress(

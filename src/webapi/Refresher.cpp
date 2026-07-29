@@ -1431,15 +1431,14 @@ void ParseAmuleLogFromPacket(const CECPacket *resp, std::vector<std::string> &ou
 
 // --- /servers (rides on GET_UPDATE response) ---------------------------
 
-namespace
-{
-
+// SRV_PR_* constants live in `Server.h`. Note the values aren't monotone with
+// priority (NORMAL=0, HIGH=1, LOW=2) — using the named macros instead of
+// literal 0/1/2 saves anyone reading this from re-checking Server.h to
+// remember the order. The two directions are kept adjacent, and covered by a
+// round-trip test, because that non-monotone order is exactly the kind of
+// thing a second implementation elsewhere would get wrong.
 const char *ServerPriorityName(std::uint32_t prio_code)
 {
-	// SRV_PR_* constants live in `Server.h`. Note the values aren't
-	// monotone with priority (NORMAL=0, HIGH=1, LOW=2) — using the
-	// named macros instead of literal 0/1/2 saves anyone reading
-	// this from re-checking Server.h to remember the order.
 	switch (prio_code) {
 	case SRV_PR_NORMAL:
 		return "normal";
@@ -1451,6 +1450,23 @@ const char *ServerPriorityName(std::uint32_t prio_code)
 		return "normal";
 	}
 }
+
+bool ServerPriorityCode(const std::string &name, std::uint32_t &out_code)
+{
+	if (name == "normal") {
+		out_code = SRV_PR_NORMAL;
+	} else if (name == "high") {
+		out_code = SRV_PR_HIGH;
+	} else if (name == "low") {
+		out_code = SRV_PR_LOW;
+	} else {
+		return false;
+	}
+	return true;
+}
+
+namespace
+{
 
 // Build (or merge into) a ServerSnapshot from one per-server tag.
 // Identity-only tags (name/description/version/IPv4) are subject to

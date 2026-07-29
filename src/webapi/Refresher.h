@@ -150,6 +150,13 @@ void ApplyGetUpdateToShared(const CECPacket *resp, FileMap &cache);
 
 void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, ServerSnapshot> &cache);
 
+// ed2k server priority, both directions. The SRV_PR_* wire values are not
+// monotone (NORMAL=0, HIGH=1, LOW=2), so callers must never assume a name's
+// position in a list is its code. ServerPriorityCode returns false for an
+// unknown name, leaving out_code untouched.
+const char *ServerPriorityName(std::uint32_t prio_code);
+bool ServerPriorityCode(const std::string &name, std::uint32_t &out_code);
+
 // /stats/tree (EC_OP_GET_STATSTREE response). Recursive walk —
 // every EC_TAG_STATTREE_NODE that contains children becomes a
 // branch; leaves get `children.empty()`. The top-level `root` is
