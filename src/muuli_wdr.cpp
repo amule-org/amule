@@ -437,6 +437,14 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->Add( item5, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item3, 0, wxALIGN_CENTER, 5 );
 
+    // Combined size of the downloads currently visible (category + text
+    // filter), right-aligned in the growable header's third column. Set by
+    // CDownloadListCtrl::SetTotalSize(). No wxST_NO_AUTORESIZE: the label must
+    // grow to fit its text (it starts empty, so the flag would pin it 0-wide).
+    wxStaticText *item5b = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+    item5b->SetName( "downloadsTotalSize" );
+    item1->Add( item5b, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
+
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
     CSourceListCtrl *item6 = new CSourceListCtrl( parent, ID_CLIENTLIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
     item0->Add( item6, 1, wxGROW, 5 );
@@ -3301,8 +3309,14 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item12->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item2->Add( item10, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxStaticText *item13 = new wxStaticText( parent, -1, _("Percent of total files"), wxDefaultPosition, wxDefaultSize, 0 );
-    item2->Add( item13, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    // Combined size of the shared files currently visible (text filter),
+    // occupying the row that used to hold the misleading "Percent of total
+    // files" label (the gauges beside it show session/all-time, not a file
+    // percentage). Set by CSharedFilesCtrl::ShowFilesCount(). No
+    // wxST_NO_AUTORESIZE: the label must grow to fit its text.
+    wxStaticText *item13 = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    item13->SetName( "sharedFilesTotalSize" );
+    item2->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     wxGauge *item14 = new wxGauge( parent, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
     item14->SetName( "popbar" );
     item2->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );

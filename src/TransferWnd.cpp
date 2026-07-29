@@ -43,6 +43,7 @@
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
 #include "amule.h"            // Needed for theApp
 #include "muuli_wdr.h"        // Needed for ID_CATEGORIES
+#include "OtherFunctions.h"   // Needed for CastItoXBytes
 #include "SearchDlg.h"        // Needed for CSearchDlg->UpdateCatChoice()
 #include "MuleNotebook.h"
 #include "Preferences.h"
@@ -84,6 +85,15 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	downloadlistctrl = CastChild("downloadList", CDownloadListCtrl);
 	clientlistctrl = CastChild(ID_CLIENTLIST, CSourceListCtrl);
 	m_dlTab = CastChild(ID_CATEGORIES, CMuleNotebook);
+
+	// Render the initial "Total size: 0 bytes" so the field is visible for an
+	// empty queue. CDownloadListCtrl::SetTotalSize() can't do it yet: it reaches
+	// the label through theApp->amuledlg->m_transferwnd, which isn't assigned
+	// until this constructor returns. The widget lives under this window, so
+	// CastChild finds it directly.
+	if (wxStaticText *totalSize = CastChild("downloadsTotalSize", wxStaticText)) {
+		totalSize->SetLabel(CFormat(_("Total queue size: %s")) % CastItoXBytes(0));
+	}
 
 	// Set disabled image for clear complete button
 	const wxBitmapBundle clrDisabled =

@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:12+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -1628,6 +1628,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Pobieranie (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Razem DL: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4986,11 +4991,6 @@ msgstr "Aktywne wysyłania"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Percent of total files"
-msgstr "procent wszystkich plików"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show Clients for"
 msgstr "Pokaż klientów"
 
@@ -6884,6 +6884,11 @@ msgstr "Potrzebujesz HighID, aby stworzyć poprawny link źródłowy"
 msgid "Shared Files (%i)"
 msgstr "Udostępnione pliki (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Łączny rozmiar udostępnianych plików: %s"
+
 #: src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Remote File Name"
@@ -7102,11 +7107,6 @@ msgstr "Zajętość serwera: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Liczba udostępnianych plików: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Łączny rozmiar udostępnianych plików: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8569,6 +8569,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Percent of total files"
+#~ msgstr "procent wszystkich plików"
 
 #~ msgid "More"
 #~ msgstr "Więcej"

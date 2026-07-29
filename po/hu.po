@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1618,6 +1618,11 @@ msgstr "%y.%m.%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Letöltések (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Összes letöltés: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4955,10 +4960,6 @@ msgid "Active Uploads"
 msgstr "Aktív feltöltések"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "Összes fájl százalékaként"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Kliensek megjelenítése ehhez:"
 
@@ -6804,6 +6805,11 @@ msgstr "Érvényes forráshivatkozáshoz magas azonosító (HighID) szükséges"
 msgid "Shared Files (%i)"
 msgstr "Megosztott fájlok (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Megosztott fájlok teljes mérete: %s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Távoli fájlnév"
@@ -7021,11 +7027,6 @@ msgstr "Kiszolgáló leterheltség: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Megosztott fájlok száma: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Megosztott fájlok teljes mérete: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8491,6 +8492,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Percent of total files"
+#~ msgstr "Összes fájl százalékaként"
 
 #~ msgid "More"
 #~ msgstr "Több"

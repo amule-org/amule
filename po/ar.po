@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:02+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -1605,6 +1605,11 @@ msgstr ""
 #, c-format
 msgid "Downloads (%i)"
 msgstr "تحميل (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "مجموع حجم ملفات المشاركة : %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4902,11 +4907,6 @@ msgstr "رفع نشط :"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Percent of total files"
-msgstr "مجموع الملفات"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show Clients for"
 msgstr "منفذ العميل"
 
@@ -6769,6 +6769,11 @@ msgstr "يجب ان تكون ذا هوية مرتفعة لتتمكن من انش
 msgid "Shared Files (%i)"
 msgstr "ملفات مشاركة (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "مجموع حجم ملفات المشاركة : %s"
+
 #: src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Remote File Name"
@@ -6987,11 +6992,6 @@ msgstr "إحتلال الخادم: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "مجموع حجم ملفات المشاركة : %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8399,6 +8399,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Percent of total files"
+#~ msgstr "مجموع الملفات"
 
 #, fuzzy
 #~ msgid "Stop the current connection attempts"

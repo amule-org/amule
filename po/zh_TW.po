@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:18+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1621,6 +1621,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "下載 (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "總下載：%s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4960,10 +4965,6 @@ msgid "Active Uploads"
 msgstr "目前上傳數"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "% (所有檔案中)"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "顯示客戶端："
 
@@ -6814,6 +6815,11 @@ msgstr "您需要一個 HighID 才能建立有效來源連結"
 msgid "Shared Files (%i)"
 msgstr "分享檔案 (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "檔案總容量：%s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "遠端檔案名稱"
@@ -7031,11 +7037,6 @@ msgstr "伺服器使用率：%.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "檔案數：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "檔案總容量：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8495,6 +8496,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Percent of total files"
+#~ msgstr "% (所有檔案中)"
 
 #~ msgid "More"
 #~ msgstr "其他"

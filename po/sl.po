@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:15+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -1634,6 +1634,11 @@ msgstr "%d.%m.%y %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Prejemanja (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Skupno dol: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4999,10 +5004,6 @@ msgid "Active Uploads"
 msgstr "Dejavna pošiljanja"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "Odstotek vseh datotek"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Prikaži odjemalce za"
 
@@ -6901,6 +6902,11 @@ msgstr "Potrebujete visok ID, da ustvarite povezavo z virom"
 msgid "Shared Files (%i)"
 msgstr "Deljene datoteke (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Skupna velikost deljenih datotek: %s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Oddaljeno ime datoteke"
@@ -7118,11 +7124,6 @@ msgstr "Zasedenost strežnikov: %.2f %%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Število deljenih datotek: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Skupna velikost deljenih datotek: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8582,6 +8583,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Percent of total files"
+#~ msgstr "Odstotek vseh datotek"
 
 #~ msgid "More"
 #~ msgstr "Več"

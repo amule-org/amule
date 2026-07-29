@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:17+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1626,6 +1626,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "下载 (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "总下载: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4943,10 +4948,6 @@ msgid "Active Uploads"
 msgstr "活跃上传"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "全部文件的百分比"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "显示客户端"
 
@@ -6793,6 +6794,11 @@ msgstr "你需要高ID来产生源链接"
 msgid "Shared Files (%i)"
 msgstr "共享文件 (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "共享文件大小总和：%s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "远程文件名"
@@ -7010,11 +7016,6 @@ msgstr "服务器开销：%.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "共享文件数：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "共享文件大小总和：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8493,6 +8494,9 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "Percent of total files"
+#~ msgstr "全部文件的百分比"
 
 #~ msgid "More"
 #~ msgstr "更多"

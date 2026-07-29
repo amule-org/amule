@@ -186,6 +186,7 @@ CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 
 	m_category = 0;
 	m_filecount = 0;
+	m_shownSize = 0;
 	m_ItemSelectionChangePending = false;
 	LoadSettings();
 
@@ -309,6 +310,7 @@ void CDownloadListCtrl::RebuildVisibleList()
 
 	bool hasCompletedDownloads = false;
 	int shown = 0;
+	uint64 totalSize = 0;
 
 	for (const auto &entry : m_ListItems) {
 		CPartFile *file = entry.second->GetFile();
@@ -317,6 +319,7 @@ void CDownloadListCtrl::RebuildVisibleList()
 		}
 		AppendItemData(reinterpret_cast<wxUIntPtr>(entry.second));
 		++shown;
+		totalSize += file->GetFileSize();
 		if (file->IsCompleted()) {
 			hasCompletedDownloads = true;
 		}
@@ -327,6 +330,7 @@ void CDownloadListCtrl::RebuildVisibleList()
 
 	CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(hasCompletedDownloads);
 	SetFilesCount(shown);
+	SetTotalSize(totalSize);
 
 	Thaw();
 }
@@ -412,12 +416,14 @@ void CDownloadListCtrl::ShowFile(CPartFile *file, bool show)
 			if (RowOfData(data) == -1) {
 				AppendItemDataNow(data);
 				ShowFilesCount(1);
+				SetTotalSize(m_shownSize + file->GetFileSize());
 			}
 		} else {
 			// Remove the row if present.
 			if (RowOfData(data) != -1) {
 				RemoveItemData(data);
 				ShowFilesCount(-1);
+				SetTotalSize(m_shownSize - file->GetFileSize());
 			}
 		}
 	}
@@ -1339,6 +1345,24 @@ void CDownloadListCtrl::SetFilesCount(int count)
 
 	label->SetLabel(CFormat(_("Downloads (%i)")) % m_filecount);
 	label->GetParent()->Layout();
+}
+
+void CDownloadListCtrl::SetTotalSize(uint64 total)
+{
+	m_shownSize = total;
+
+	// This label lives in the sources pane (the bottom of the transfer
+	// splitter), a different window from the download list, so reach it via
+	// the transfer window rather than GetParent(). Guard the early calls
+	// before the transfer window is fully constructed.
+	if (!theApp->amuledlg || !theApp->amuledlg->m_transferwnd) {
+		return;
+	}
+	wxStaticText *label = CastByName("downloadsTotalSize", theApp->amuledlg->m_transferwnd, wxStaticText);
+	if (label) {
+		label->SetLabel(CFormat(_("Total queue size: %s")) % CastItoXBytes(m_shownSize));
+		label->GetParent()->Layout();
+	}
 }
 
 static const CMuleColour crHave(104, 104, 104);

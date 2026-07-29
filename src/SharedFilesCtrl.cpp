@@ -97,6 +97,7 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 : CMuleVirtualListCtrl(parent, id, pos, size, flags | wxLC_OWNERDRAW)
 , m_inBulkUpdate(false)
 , m_batchUpdate(false)
+, m_shownSize(0)
 {
 	// Setting the sorter function.
 	SetSortFunc(SortProc);
@@ -314,11 +315,14 @@ void CSharedFilesCtrl::ShowFileList()
 
 	std::vector<CKnownFile *> files;
 	theApp->sharedfiles->CopyFileList(files);
+	uint64 totalSize = 0;
 	for (CKnownFile *file : files) {
 		if (MatchesFilter(file->GetFileName().GetPrintable())) {
 			AppendItemData(reinterpret_cast<wxUIntPtr>(file));
+			totalSize += file->GetFileSize();
 		}
 	}
+	m_shownSize = totalSize;
 	FinishBulkLoad();
 	RestoreSelection(selected, focused);
 	ShowFilesCount();
@@ -360,6 +364,7 @@ void CSharedFilesCtrl::RemoveFile(CKnownFile *toRemove)
 		return;
 	}
 	RemoveItemData(reinterpret_cast<wxUIntPtr>(toRemove));
+	m_shownSize -= toRemove->GetFileSize();
 	ShowFilesCount();
 }
 
@@ -387,6 +392,7 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(file);
 		if (RowOfData(data) == -1) {
 			AppendItemDataNow(data);
+			m_shownSize += file->GetFileSize();
 			ShowFilesCount();
 		}
 		return;
@@ -404,6 +410,9 @@ void CSharedFilesCtrl::DoShowFile(CKnownFile *file, bool batch)
 	}
 
 	// AddItemData() dedupes internally.
+	if (RowOfData(reinterpret_cast<wxUIntPtr>(file)) == -1) {
+		m_shownSize += file->GetFileSize();
+	}
 	AddItemData(reinterpret_cast<wxUIntPtr>(file));
 	ShowFilesCount();
 }
@@ -660,6 +669,20 @@ void CSharedFilesCtrl::ShowFilesCount()
 	wxStaticText *label = CastByName("sharedFilesLabel", GetParent(), wxStaticText);
 
 	label->SetLabel(CFormat(_("Shared Files (%i)")) % GetItemCount());
+
+	// Combined size of the shown files. The label lives in the statistics box
+	// (the bottom pane of the shared splitter), a different window from this
+	// list, so reach it through the shared-files window rather than GetParent().
+	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd) {
+		wxStaticText *totalLabel =
+			CastByName("sharedFilesTotalSize", theApp->amuledlg->m_sharedfileswnd, wxStaticText);
+		if (totalLabel) {
+			totalLabel->SetLabel(
+				CFormat(_("Total size of Shared Files: %s")) % CastItoXBytes(m_shownSize));
+			totalLabel->GetParent()->Layout();
+		}
+	}
+
 	label->GetParent()->Layout();
 	// If file list was updated, the "selection" is involved too, if we chose to show clients for all
 	// files. So update client list here too.

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:06+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -1631,6 +1631,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Descargas (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Total DES: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4959,10 +4964,6 @@ msgid "Active Uploads"
 msgstr "Subidas activas"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "Porcentaje del total de archivos"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Mostrar los clientes para"
 
@@ -6811,6 +6812,11 @@ msgstr "Necesita Id Alta para crear un enlace fuente válido"
 msgid "Shared Files (%i)"
 msgstr "Archivos compartidos (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Tamaño total de los archivos compartidos: %s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Nombre del archivo remoto"
@@ -7028,11 +7034,6 @@ msgstr "Ocupación de servidores: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Número de archivos compartidos: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Tamaño total de los archivos compartidos: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8514,6 +8515,9 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid "Percent of total files"
+#~ msgstr "Porcentaje del total de archivos"
 
 #~ msgid "More"
 #~ msgstr "Más"

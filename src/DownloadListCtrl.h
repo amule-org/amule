@@ -178,6 +178,14 @@ private:
 	void SetFilesCount(int count);
 
 	/**
+	 * Sets the "Total size:" label to the combined size of the currently
+	 * shown files (category + text filter). Kept in step with the visible
+	 * set the same way as the file count: reset in bulk by RebuildVisibleList
+	 * and adjusted by GetFileSize() as ShowFile() adds/removes a row.
+	 */
+	void SetTotalSize(uint64 total);
+
+	/**
 	 * Rebuilds the visible rows from the model in a single pass, keeping the
 	 * files that pass the current category + text filter. Used whenever the
 	 * visible set changes wholesale (category switch, filter edit).
@@ -291,6 +299,9 @@ private:
 
 	//! The number of displayed files
 	int m_filecount;
+
+	//! Combined size of the displayed files (drives the "Total size:" label)
+	uint64 m_shownSize;
 
 	wxDECLARE_EVENT_TABLE();
 };

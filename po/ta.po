@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:19+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -1580,6 +1580,11 @@ msgstr ""
 #: src/DownloadListCtrl.cpp
 #, c-format
 msgid "Downloads (%i)"
+msgstr ""
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, c-format
+msgid "Total queue size: %s"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp
@@ -4844,10 +4849,6 @@ msgid "Active Uploads"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr ""
 
@@ -6659,6 +6660,11 @@ msgstr ""
 msgid "Shared Files (%i)"
 msgstr ""
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr ""
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr ""
@@ -6875,11 +6881,6 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Number of Shared Files: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
 msgstr ""
 
 #: src/Statistics.cpp

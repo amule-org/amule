@@ -257,6 +257,9 @@ private:
 	//! the row without sorting; EndBatchUpdate() does the single SortList().
 	bool m_batchUpdate;
 
+	//! Combined size of the displayed files (drives the "Total size:" label)
+	uint64 m_shownSize;
+
 	// The virtual-list model, sorting, live auto-sort and selection
 	// preservation all live in CMuleVirtualListCtrl now.
 

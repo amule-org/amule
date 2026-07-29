@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:07+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -1622,6 +1622,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Deskargak (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "DE guztira: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4970,10 +4975,6 @@ msgid "Active Uploads"
 msgstr "Igoera aktiboak"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "fitxategi guztien ehunekoa"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Erakutsi bezeroak:"
 
@@ -6840,6 +6841,11 @@ msgstr "ID altua behar duzu baliozko jatorri lotura bat sortzeko"
 msgid "Shared Files (%i)"
 msgstr "Partekatutako fitxategiak (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Guztira partekatutako fitxategi tamaina: %s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Urruneko fitxategiaren izena"
@@ -7057,11 +7063,6 @@ msgstr "Zerbitzari lan karga %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Partekatutako fitxategi kopurua: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Guztira partekatutako fitxategi tamaina: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8522,6 +8523,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Percent of total files"
+#~ msgstr "fitxategi guztien ehunekoa"
 
 #~ msgid "More"
 #~ msgstr "Gehiago"

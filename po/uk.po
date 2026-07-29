@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:17+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -1631,6 +1631,11 @@ msgstr "%y.%m.%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Звантаження (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Всього звантажень: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -5005,10 +5010,6 @@ msgid "Active Uploads"
 msgstr "Чинні вивантаження:"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Show Clients for"
 msgstr "Показати клієнтів"
@@ -6913,6 +6914,11 @@ msgstr "Вам потрібно мати HighID щоб створити поси
 msgid "Shared Files (%i)"
 msgstr "Спільні файли (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Загальний розмір спільних файлів: %s"
+
 #: src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Remote File Name"
@@ -7132,11 +7138,6 @@ msgstr "Навантаження на сервер: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Кількість спільних файлів: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Загальний розмір спільних файлів: %s"
 
 #: src/Statistics.cpp
 #, c-format

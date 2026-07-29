@@ -67,6 +67,15 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	peerslistctrl = CastChild(ID_SHAREDCLIENTLIST, CSharedFilePeersListCtrl);
 	wxASSERT(sharedfilesctrl);
 	wxASSERT(peerslistctrl);
+
+	// Render the initial "Total size: 0 bytes" for an empty share.
+	// CSharedFilesCtrl::ShowFilesCount() can't do it yet: it reaches the label
+	// through theApp->amuledlg->m_sharedfileswnd, which isn't assigned until
+	// this constructor returns. The widget lives under this window.
+	if (wxStaticText *totalSize = CastChild("sharedFilesTotalSize", wxStaticText)) {
+		totalSize->SetLabel(CFormat(_("Total size of Shared Files: %s")) % CastItoXBytes(0));
+	}
+
 	m_prepared = false;
 
 	m_splitter = 0;

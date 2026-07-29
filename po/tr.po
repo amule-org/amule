@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -1622,6 +1622,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "İndirmeler (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Toplam İND: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4946,10 +4951,6 @@ msgid "Active Uploads"
 msgstr "Etkin Göndermeler"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "Toplam dosyaların yüzdesi"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Kullanıcıları Göster"
 
@@ -6796,6 +6797,11 @@ msgstr "Geçerli bir kaynak bağlantısı oluşturmak için YüksekID almanız g
 msgid "Shared Files (%i)"
 msgstr "Paylaşılan Dosyalar (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Paylaşılan Dosyaların Toplam Boyutu: %s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Dosya Adı"
@@ -7013,11 +7019,6 @@ msgstr "Sunucu Bağlantısı: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Paylaşılmış Dosya Sayısı: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Paylaşılan Dosyaların Toplam Boyutu: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8499,6 +8500,9 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid "Percent of total files"
+#~ msgstr "Toplam dosyaların yüzdesi"
 
 #~ msgid "More"
 #~ msgstr "Daha Fazla"

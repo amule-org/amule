@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 10:26+0200\n"
+"POT-Creation-Date: 2026-07-29 11:47+0200\n"
 "PO-Revision-Date: 2026-07-28 20:05+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -1628,6 +1628,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "Downloads (%i)"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "Gesamt-DL: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4963,10 +4968,6 @@ msgid "Active Uploads"
 msgstr "Aktive Uploads"
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr "Prozent aller Dateien"
-
-#: src/muuli_wdr.cpp
 msgid "Show Clients for"
 msgstr "Clients anzeigen für"
 
@@ -6829,6 +6830,11 @@ msgstr "Du brauchst eine hohe ID, um einen gültigen Quellenverweis zu erstellen
 msgid "Shared Files (%i)"
 msgstr "Freigegebene Dateien (%i)"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "Gesamtgröße der freigegebenen Dateien: %s"
+
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Ferndateiname"
@@ -7046,11 +7052,6 @@ msgstr "Server-Auslastung: %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "Anzahl freigegebener Dateien: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "Gesamtgröße der freigegebenen Dateien: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8533,6 +8534,9 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
+
+#~ msgid "Percent of total files"
+#~ msgstr "Prozent aller Dateien"
 
 #~ msgid "More"
 #~ msgstr "Mehr"
