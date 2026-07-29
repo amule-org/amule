@@ -38,7 +38,7 @@ class CKadDlg : public wxPanel
 {
 public:
 	CKadDlg(wxWindow *pParent);
-	~CKadDlg(){};
+	~CKadDlg() = default;
 
 	void Init();
 	void SetUpdatePeriod(int step);
