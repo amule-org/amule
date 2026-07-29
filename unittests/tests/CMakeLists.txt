@@ -515,6 +515,7 @@ target_link_libraries (StateTest
 # no-op defence (#713-class race), and partial-update-active.
 add_executable (RefresherTest
 	RefresherTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/PrefsSchema.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/Refresher.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/State.cpp
 	# OtherFunctions.cpp ships the `CastIto*` / `CastSecondsToHM`

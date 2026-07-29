@@ -24,6 +24,9 @@
 
 #include <muleunit/test.h>
 
+#include <set>
+
+#include "PrefsSchema.h"
 #include "Refresher.h"
 #include "State.h"
 
@@ -1536,4 +1539,87 @@ TEST(Refresher, PreferencesEnumStringsCoverEveryWireValue)
 		ASSERT_TRUE(p.proxy_type.empty());
 		ASSERT_EQUALS(std::string("everybody"), p.security.shared_files_visibility);
 	}
+}
+
+// --- #655: the preferences schema table is self-consistent -------------
+//
+// GET emit, PATCH apply and the EC decode are all driven off PrefSchema(),
+// so a malformed row silently breaks all three at once. These pin the
+// invariants the three walkers rely on.
+TEST(Refresher, PrefsSchemaIsWellFormed)
+{
+	std::set<std::string> seen;
+	std::size_t emitted = 0;
+
+	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
+		const PrefField &f = PrefSchema()[i];
+		const std::string id = std::string(f.category) + "." + f.key;
+
+		// No duplicate field, or one walker would apply it twice.
+		ASSERT_TRUE(seen.insert(id).second);
+
+		// Every category must resolve to an EC group.
+		ASSERT_TRUE(PrefGroupTagFor(f.category) != 0);
+
+		// Rows that round-trip a value need a backing member; rows that
+		// never do must not have one.
+		const bool needs_member = f.access == PrefAccess::ReadWrite ||
+					  f.access == PrefAccess::ReadOnly || f.access == PrefAccess::Bespoke;
+		ASSERT_TRUE(needs_member == (f.member != nullptr));
+
+		// Enum rows carry a non-empty, nullptr-terminated name table.
+		if (f.type == PrefType::Enum) {
+			ASSERT_TRUE(f.enum_names != nullptr);
+			ASSERT_TRUE(f.enum_names[0] != nullptr);
+		} else {
+			ASSERT_TRUE(f.enum_names == nullptr);
+		}
+
+		// A capability gate must name a real bool in the same category.
+		if (f.gated_by) {
+			bool found = false;
+			for (std::size_t g = 0; g < PrefSchemaSize(); ++g) {
+				const PrefField &c = PrefSchema()[g];
+				if (std::string(c.category) == f.category &&
+					std::string(c.key) == f.gated_by) {
+					ASSERT_TRUE(c.type == PrefType::Bool);
+					found = true;
+				}
+			}
+			ASSERT_TRUE(found);
+		}
+
+		if (f.access != PrefAccess::WriteOnly && f.access != PrefAccess::Rejected)
+			++emitted;
+	}
+
+	// The documented payload is 119 fields. A row added or dropped without
+	// updating docs/api/REFERENCE.md should trip this.
+	ASSERT_EQUALS(static_cast<std::size_t>(119), emitted);
+}
+
+// Only one field may invert, and only one may read from a foreign EC group;
+// both are deliberate and documented, so a second one appearing is a mistake
+// worth catching rather than a pattern to copy.
+TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
+{
+	std::size_t inverted = 0, foreign_group = 0, bespoke = 0;
+	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
+		const PrefField &f = PrefSchema()[i];
+		if (f.invert) {
+			++inverted;
+			ASSERT_EQUALS(std::string("extended_udp_port_enabled"), std::string(f.key));
+		}
+		if (f.read_group != 0) {
+			++foreign_group;
+			ASSERT_EQUALS(std::string("upnp_available"), std::string(f.key));
+		}
+		if (f.access == PrefAccess::Bespoke) {
+			++bespoke;
+			ASSERT_EQUALS(std::string("guest_enabled"), std::string(f.key));
+		}
+	}
+	ASSERT_EQUALS(static_cast<std::size_t>(1), inverted);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
 }
