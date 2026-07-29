@@ -206,19 +206,19 @@ _assert_json_eq '(.files.min_free_space_mb|type)' number 'files.min_free_space_m
 # (user_hash is the identity hash, deliberately not matched here).
 _assert_json_eq '[paths(scalars) as $p | select($p[-1]|tostring|test("password";"i"))] | length' \
 	0 'no password key present in GET /preferences'
-SAVED_NEW_PAUSED=$(printf '%s' "$CURL_BODY" | jq -r '.files.new_paused')
+SAVED_NEW_PAUSED=$(printf '%s' "$CURL_BODY" | jq -r '.files.add_new_downloads_paused')
 SAVED_RETRIES=$(printf '%s' "$CURL_BODY" | jq -r '.servers.dead_server_retries')
 
 # Round-trip a bool (files) + int (servers) and confirm no stale GET.
 NEW_PAUSED_TOGGLE=$([ "$SAVED_NEW_PAUSED" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"new_paused\":$NEW_PAUSED_TOGGLE},\"servers\":{\"dead_server_retries\":9}}" \
+	-d "{\"files\":{\"add_new_downloads_paused\":$NEW_PAUSED_TOGGLE},\"servers\":{\"dead_server_retries\":9}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH files+servers categories → 200"
-_assert_json_eq '.files.new_paused' "$NEW_PAUSED_TOGGLE" 'files.new_paused toggled in response'
+_assert_json_eq '.files.add_new_downloads_paused' "$NEW_PAUSED_TOGGLE" 'files.add_new_downloads_paused toggled in response'
 _assert_json_eq '.servers.dead_server_retries' 9 'servers.dead_server_retries=9 in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
-_assert_json_eq '.files.new_paused' "$NEW_PAUSED_TOGGLE" 'files.new_paused persisted (no stale GET)'
+_assert_json_eq '.files.add_new_downloads_paused' "$NEW_PAUSED_TOGGLE" 'files.add_new_downloads_paused persisted (no stale GET)'
 _assert_json_eq '.servers.dead_server_retries' 9 'servers.dead_server_retries persisted'
 
 # Wrong type on a new-category field → 400.
@@ -228,7 +228,7 @@ _assert_status 400 "PATCH files.min_free_space_mb as string → 400"
 
 # Restore the #437 fields we touched.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"new_paused\":$SAVED_NEW_PAUSED},\"servers\":{\"dead_server_retries\":$SAVED_RETRIES}}" \
+	-d "{\"files\":{\"add_new_downloads_paused\":$SAVED_NEW_PAUSED},\"servers\":{\"dead_server_retries\":$SAVED_RETRIES}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore #437 fields) → 200"
 
@@ -242,15 +242,15 @@ _assert_json_eq '(.files.ffprobe_path|type)' string 'files.ffprobe_path is strin
 _assert_json_eq '(.files.start_next_alphabetical|type)' boolean 'files.start_next_alphabetical is bool'
 _assert_json_eq '(.connection.bind_address|type)' string 'connection.bind_address is string'
 _assert_json_eq '(.connection.bind_interface|type)' string 'connection.bind_interface is string'
-_assert_json_eq '(.security.paranoid_filtering|type)' boolean 'security.paranoid_filtering is bool'
+_assert_json_eq '(.security.reject_spoofed_source_ips|type)' boolean 'security.reject_spoofed_source_ips is bool'
 _assert_json_eq '(.security.use_system_ipfilter|type)' boolean 'security.use_system_ipfilter is bool'
 _assert_json_eq '(.online_signature.directory|type)' string 'online_signature.directory is string'
-_assert_json_eq '(.online_signature.update_frequency|type)' number 'online_signature.update_frequency is numeric'
+_assert_json_eq '(.online_signature.update_frequency_seconds|type)' number 'online_signature.update_frequency_seconds is numeric'
 
 SAVED_MM=$(printf '%s' "$CURL_BODY" | jq -r '.files.media_metadata_enabled')
 SAVED_FFPROBE=$(printf '%s' "$CURL_BODY" | jq -r '.files.ffprobe_path')
-SAVED_PARANOID=$(printf '%s' "$CURL_BODY" | jq -r '.security.paranoid_filtering')
-SAVED_OSFREQ=$(printf '%s' "$CURL_BODY" | jq -r '.online_signature.update_frequency')
+SAVED_PARANOID=$(printf '%s' "$CURL_BODY" | jq -r '.security.reject_spoofed_source_ips')
+SAVED_OSFREQ=$(printf '%s' "$CURL_BODY" | jq -r '.online_signature.update_frequency_seconds')
 SAVED_IFACE=$(printf '%s' "$CURL_BODY" | jq -r '.connection.bind_interface')
 
 # Round-trip a bool (files) + string (files) + bool (security) + int (onlinesig)
@@ -258,17 +258,17 @@ SAVED_IFACE=$(printf '%s' "$CURL_BODY" | jq -r '.connection.bind_interface')
 MM_TOGGLE=$([ "$SAVED_MM" = "true" ] && echo false || echo true)
 PARANOID_TOGGLE=$([ "$SAVED_PARANOID" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"media_metadata_enabled\":$MM_TOGGLE,\"ffprobe_path\":\"/usr/bin/ffprobe\"},\"security\":{\"paranoid_filtering\":$PARANOID_TOGGLE},\"online_signature\":{\"update_frequency\":123},\"connection\":{\"bind_interface\":\"tun0\"}}" \
+	-d "{\"files\":{\"media_metadata_enabled\":$MM_TOGGLE,\"ffprobe_path\":\"/usr/bin/ffprobe\"},\"security\":{\"reject_spoofed_source_ips\":$PARANOID_TOGGLE},\"online_signature\":{\"update_frequency_seconds\":123},\"connection\":{\"bind_interface\":\"tun0\"}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH media-probe + security + onlinesig + iface → 200"
 _assert_json_eq '.files.media_metadata_enabled' "$MM_TOGGLE" 'files.media_metadata_enabled toggled in response'
 _assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path set in response'
-_assert_json_eq '.security.paranoid_filtering' "$PARANOID_TOGGLE" 'security.paranoid_filtering toggled in response'
-_assert_json_eq '.online_signature.update_frequency' 123 'online_signature.update_frequency=123 in response'
+_assert_json_eq '.security.reject_spoofed_source_ips' "$PARANOID_TOGGLE" 'security.reject_spoofed_source_ips toggled in response'
+_assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds=123 in response'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface set in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path persisted (no stale GET)'
-_assert_json_eq '.online_signature.update_frequency' 123 'online_signature.update_frequency persisted'
+_assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds persisted'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface persisted'
 
 # --- 5c-bis. message_filter show-in-log + comment filter (#596). ----------
@@ -332,7 +332,7 @@ fi
 # --- Proxy: readable fields present, round-trip, write-only password. -----
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '(.connection.proxy_enabled|type)' boolean 'connection.proxy_enabled is bool'
-_assert_json_eq '(.connection.proxy_type|type)'    number  'connection.proxy_type is numeric'
+_assert_json_eq '(.connection.proxy_type|type)'    string  'connection.proxy_type is an enum string (#655)'
 _assert_json_eq '(.connection.proxy_host|type)'    string  'connection.proxy_host is string'
 _assert_json_eq '(.connection.proxy_port|type)'    number  'connection.proxy_port is numeric'
 _assert_json_eq '(.connection.proxy_auth|type)'    boolean 'connection.proxy_auth is bool'
@@ -347,11 +347,11 @@ SAVED_PXPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.proxy_port')
 
 # Round-trip the readable fields + PATCH the write-only password in one go.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"proxy_enabled":true,"proxy_type":2,"proxy_host":"proxy.example","proxy_port":8080,"proxy_auth":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
+	-d '{"connection":{"proxy_enabled":true,"proxy_type":"http","proxy_host":"proxy.example","proxy_port":8080,"proxy_auth":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH proxy (incl. write-only password) → 200"
 _assert_json_eq '.connection.proxy_enabled' true 'proxy_enabled=true in response'
-_assert_json_eq '.connection.proxy_type' 2 'proxy_type=2 (HTTP) in response'
+_assert_json_eq '.connection.proxy_type' http 'proxy_type="http" in response'
 _assert_json_eq '.connection.proxy_host' proxy.example 'proxy_host set in response'
 _assert_json_eq '.connection.proxy_port' 8080 'proxy_port=8080 in response'
 _assert_json_eq '.connection.proxy_user' alice 'proxy_user set in response'
@@ -360,16 +360,69 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
 _assert_json_eq '.connection.proxy_host' proxy.example 'proxy_host persisted (no stale GET)'
 _assert_json_eq '.connection.proxy_port' 8080 'proxy_port persisted'
 
-# proxy_type out of range (>3) → 400.
+# proxy_type outside the enum → 400, and the pre-#655 wire int is no
+# longer accepted either.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"proxy_type":9}}' "$HOST/api/v0/preferences"
-_assert_status 400 "PATCH proxy_type out of range (>3) → 400"
+	-d '{"connection":{"proxy_type":"telepathy"}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH proxy_type unknown enum value → 400"
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"connection":{"proxy_type":2}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH proxy_type as the old wire int → 400 (#655)"
 
 # Restore proxy readable fields (password left as-is — write-only).
+# proxy_type is omitted when it came back empty: that is CProxyType
+# PROXY_NONE (-1), which has no enum string and is not settable (#655).
+if [ -n "$SAVED_PXTYPE" ]; then
+	RESTORE_PXTYPE="\"proxy_type\":\"$SAVED_PXTYPE\","
+else
+	RESTORE_PXTYPE=""
+fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"connection\":{\"proxy_enabled\":$SAVED_PXEN,\"proxy_type\":$SAVED_PXTYPE,\"proxy_host\":\"$SAVED_PXHOST\",\"proxy_port\":$SAVED_PXPORT}}" \
+	-d "{\"connection\":{\"proxy_enabled\":$SAVED_PXEN,$RESTORE_PXTYPE\"proxy_host\":\"$SAVED_PXHOST\",\"proxy_port\":$SAVED_PXPORT}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore proxy fields) → 200"
+
+# --- Nested remote_controls (#655): round-trip through the sub-objects. ---
+# Both subsystems pack into one EC category, so this also proves the two
+# sub-objects can be sent together without one clobbering the other.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+SAVED_WS_PORT=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.port')
+SAVED_WS_REFRESH=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.refresh_seconds')
+SAVED_API_BIND=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.amuleapi.bind_address')
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"remote_controls":{"webserver":{"port":4711,"refresh_seconds":123},"amuleapi":{"bind_address":"127.0.0.1"}}}' \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH nested remote_controls (webserver + amuleapi) → 200"
+_assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port=4711 in response'
+_assert_json_eq '.remote_controls.webserver.refresh_seconds' 123 'webserver.refresh_seconds=123 in response'
+_assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address set in response'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port persisted (no stale GET)'
+_assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address persisted'
+
+# The flat pre-#655 keys are no longer a write path — they are simply
+# unknown fields now, so a body carrying only those changes nothing.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"remote_controls":{"webserver_port":9999}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH flat remote_controls.webserver_port → 400 (no known fields, #655)"
+
+# A sub-object that is not an object is rejected, like the categories are.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"remote_controls":{"webserver":"nope"}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH remote_controls.webserver non-object → 400"
+
+# amuleapi's own passwords stay owned by PATCH /auth/passwords, now under
+# the nested key.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"remote_controls":{"amuleapi":{"password":"nope"}}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH remote_controls.amuleapi.password → 400 (managed via /auth/passwords)"
+
+# Restore.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"remote_controls\":{\"webserver\":{\"port\":$SAVED_WS_PORT,\"refresh_seconds\":$SAVED_WS_REFRESH},\"amuleapi\":{\"bind_address\":\"$SAVED_API_BIND\"}}}" \
+	"$HOST/api/v0/preferences"
+_assert_status 200 "PATCH (restore remote_controls fields) → 200"
 
 # --- P2P-router UPnP: readable, round-trip, read-only capability. --------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
@@ -404,12 +457,12 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applica
 	-d '{"files":{"ffprobe_path":42}}' "$HOST/api/v0/preferences"
 _assert_status 400 "PATCH files.ffprobe_path as number → 400"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"security":{"paranoid_filtering":"maybe"}}' "$HOST/api/v0/preferences"
-_assert_status 400 "PATCH security.paranoid_filtering as string → 400"
+	-d '{"security":{"reject_spoofed_source_ips":"maybe"}}' "$HOST/api/v0/preferences"
+_assert_status 400 "PATCH security.reject_spoofed_source_ips as string → 400"
 
 # Restore the newly-wired fields we touched.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"media_metadata_enabled\":$SAVED_MM,\"ffprobe_path\":\"$SAVED_FFPROBE\"},\"security\":{\"paranoid_filtering\":$SAVED_PARANOID},\"online_signature\":{\"update_frequency\":$SAVED_OSFREQ},\"connection\":{\"bind_interface\":\"$SAVED_IFACE\"}}" \
+	-d "{\"files\":{\"media_metadata_enabled\":$SAVED_MM,\"ffprobe_path\":\"$SAVED_FFPROBE\"},\"security\":{\"reject_spoofed_source_ips\":$SAVED_PARANOID},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ},\"connection\":{\"bind_interface\":\"$SAVED_IFACE\"}}" \
 	"$HOST/api/v0/preferences"
 _assert_status 200 "PATCH (restore newly-wired fields) → 200"
 

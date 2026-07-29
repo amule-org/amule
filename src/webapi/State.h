@@ -650,7 +650,7 @@ struct PreferencesSnapshot
 	// [General]
 	std::string nickname;
 	std::string user_hash;
-	std::string host_name;
+	std::string local_host_name;
 	bool check_new_version = false;
 	// Capability: the connected daemon is built with ENABLE_VERSION_CHECK
 	// (emits EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE). False for OS-package
@@ -661,7 +661,7 @@ struct PreferencesSnapshot
 	// [Connection]
 	std::uint32_t max_upload_kbps = 0;
 	std::uint32_t max_download_kbps = 0;
-	std::uint32_t slot_allocation = 0;
+	std::uint32_t upload_slot_kbps = 0;
 	std::uint16_t tcp_port = 0;
 	std::uint16_t udp_port = 0;
 	// Positive sense: true = the extended UDP port (Kad / global search) is on.
@@ -682,7 +682,13 @@ struct PreferencesSnapshot
 	// Proxy the daemon routes P2P + HTTP through. proxy_password is
 	// write-only (accepted on PATCH, never surfaced here / on GET).
 	bool proxy_enabled = false;
-	std::int32_t proxy_type = -1; // 0 SOCKS5, 1 SOCKS4, 2 HTTP, 3 SOCKS4a
+	// Serialized enum "socks5" / "socks4" / "http" / "socks4a" (#655): the
+	// EC layer carries the wire ints 0..3, the API spells them out so a
+	// client needs no magic-number table. Empty for CProxyType PROXY_NONE
+	// (-1, the "no proxy configured" state the daemon always serializes),
+	// which has no enum string and cannot be set back over PATCH --
+	// proxy_enabled is the off switch.
+	std::string proxy_type;
 	std::string proxy_host;
 	std::uint16_t proxy_port = 0;
 	bool proxy_auth = false;
@@ -712,33 +718,33 @@ struct PreferencesSnapshot
 		bool auto_rescan = false;
 		bool follow_symlinks = false;
 		std::string exclude_patterns;
-		bool exclude_regex = false;
+		bool exclude_patterns_use_regex = false;
 	} directories;
 
 	// [Files] EC_TAG_PREFS_FILES
 	struct FilesPrefs
 	{
 		bool ich_enabled = false;
-		bool aich_trust = false;
-		bool new_paused = false;
-		bool new_auto_dl_prio = false;
-		bool new_auto_ul_prio = false;
-		bool preview_prio = false;
+		bool aich_trust_every_hash = false;
+		bool add_new_downloads_paused = false;
+		bool new_downloads_auto_priority = false;
+		bool new_shared_files_auto_priority = false;
+		bool prioritize_first_last_chunks = false;
 		bool start_next_paused = false;
-		bool resume_same_cat = false;
-		bool save_sources = false;
-		bool alloc_full_size = false;
+		bool start_next_same_category = false;
+		bool save_source_seeds_for_rare_files = false;
+		bool preallocate_full_file_size = false;
 		// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
 		// capability (mirrors upnp_available): true only when the core was built
 		// with mmap support. mmap_enabled is the runtime preference and is only
 		// accepted on PATCH when mmap_supported is true.
 		bool mmap_supported = false;
 		bool mmap_enabled = false;
-		bool check_free_space = false;
+		bool stop_on_low_disk_space = false;
 		std::uint32_t min_free_space_mb = 0;
 		bool create_normal = false;
 		bool start_next_alphabetical = false;
-		bool endgame = false;
+		bool endgame_enabled = false;
 		// Media metadata (issue #140): probe shared files with ffprobe to
 		// advertise length/bitrate/codec. Empty path = daemon auto-detect.
 		bool media_metadata_enabled = false;
@@ -751,33 +757,35 @@ struct PreferencesSnapshot
 		bool remove_dead = false;
 		std::uint32_t dead_server_retries = 0;
 		bool auto_update = false;
-		bool add_from_server = false;
-		bool add_from_client = false;
-		bool use_score_system = false;
+		bool update_list_from_server = false;
+		bool update_list_from_client = false;
+		bool use_priority_system = false;
 		bool smart_id_check = false;
-		bool safe_server_connect = false;
-		bool autoconn_static_only = false;
-		bool manual_high_prio = false;
+		bool safe_connect = false;
+		bool autoconnect_static_servers_only = false;
+		bool manual_servers_high_priority = false;
 		std::string update_url;
 	} servers;
 
 	// [Security] EC_TAG_PREFS_SECURITY
 	struct SecurityPrefs
 	{
-		// 3-state (EC_TAG_SECURITY_CAN_SEE_SHARES / s_iSeeShares):
-		// 0 = everybody, 1 = friends only, 2 = nobody.
-		std::uint8_t can_see_shares = 0;
+		// Serialized enum "everybody" / "friends" / "nobody" (#655). The EC
+		// layer carries the 3-state int (EC_TAG_SECURITY_CAN_SEE_SHARES /
+		// s_iSeeShares: 0 = everybody, 1 = friends only, 2 = nobody); the
+		// API spells it out, and the name says it is not a yes/no question.
+		std::string shared_files_visibility = "everybody";
 		bool ipfilter_clients = false;
 		bool ipfilter_servers = false;
 		bool ipfilter_auto_update = false;
 		std::string ipfilter_update_url;
-		std::uint32_t ipfilter_level = 0;
-		bool ipfilter_filter_lan = false;
+		std::uint32_t ipfilter_block_below_access_level = 0;
+		bool ipfilter_include_lan_ips = false;
 		bool use_secident = false;
-		bool obfuscation_supported = false;
+		bool obfuscation_enabled = false;
 		bool obfuscation_requested = false;
 		bool obfuscation_required = false;
-		bool paranoid_filtering = false;
+		bool reject_spoofed_source_ips = false;
 		bool use_system_ipfilter = false;
 	} security;
 
@@ -785,9 +793,9 @@ struct PreferencesSnapshot
 	struct MessageFilterPrefs
 	{
 		bool enabled = false;
-		bool all = false;
-		bool friends = false;
-		bool secure = false;
+		bool filter_all_messages = false;
+		bool accept_from_friends_only = false;
+		bool accept_from_known_clients_only = false;
 		bool by_keyword = false;
 		std::string keywords;
 		bool show_in_log = false;
@@ -797,17 +805,32 @@ struct PreferencesSnapshot
 
 	// [RemoteControls] EC_TAG_PREFS_REMOTECTRL. Passwords are
 	// write-only (set via PATCH, never serialized here).
+	//
+	// Two unrelated remote-control subsystems live under one EC category, so
+	// the JSON nests them (#655) instead of prefixing every field:
+	// remote_controls.webserver.{...} / remote_controls.amuleapi.{...}. Both
+	// sub-objects still pack into the single EC_TAG_PREFS_REMOTECTRL group on
+	// the write path -- the nesting is an API-shape choice, not an EC one.
 	struct RemoteControlsPrefs
 	{
-		bool webserver_enabled = false;
-		std::uint32_t webserver_port = 0;
-		bool webserver_use_gzip = false;
-		std::uint32_t webserver_refresh = 0;
-		std::string webserver_template;
-		bool webserver_guest_enabled = false;
-		bool amuleapi_enabled = false;
-		std::uint32_t amuleapi_port = 0;
-		std::string amuleapi_bind;
+		struct WebserverPrefs
+		{
+			bool enabled = false;
+			std::uint32_t port = 0;
+			bool use_gzip = false;
+			std::uint32_t refresh_seconds = 0;
+			// JSON key is "template"; the member cannot be, since `template`
+			// is a C++ keyword. Only field in the payload where the two names
+			// differ.
+			std::string template_name;
+			bool guest_enabled = false;
+		} webserver;
+		struct AmuleApiPrefs
+		{
+			bool enabled = false;
+			std::uint32_t port = 0;
+			std::string bind_address;
+		} amuleapi;
 	} remote_controls;
 
 	// [OnlineSignature] EC_TAG_PREFS_ONLINESIG
@@ -815,18 +838,18 @@ struct PreferencesSnapshot
 	{
 		bool enabled = false;
 		std::string directory;
-		std::uint32_t update_frequency = 0;
+		std::uint32_t update_frequency_seconds = 0;
 	} online_signature;
 
 	// [CoreTweaks] EC_TAG_PREFS_CORETWEAKS
 	struct CoreTweaksPrefs
 	{
-		std::uint32_t max_conn_per_five = 0;
-		bool verbose = false;
-		std::uint32_t filebuffer = 0;
-		std::uint32_t ul_queue = 0;
-		std::uint32_t srv_keepalive_timeout = 0;
-		std::uint32_t kad_max_searches = 0;
+		std::uint32_t max_new_connections_per_5s = 0;
+		bool verbose_logging = false;
+		std::uint32_t file_buffer_bytes = 0;
+		std::uint32_t max_upload_queue_clients = 0;
+		std::uint32_t server_keepalive_timeout_ms = 0;
+		std::uint32_t kad_max_source_searches = 0;
 		std::uint32_t kad_reask_ms = 0;
 		std::uint32_t source_reask_ms = 0;
 	} core_tweaks;
@@ -857,8 +880,8 @@ struct PreferencesSnapshot
 		std::string loaded_source;
 		std::string db_path;
 		bool db_loaded = false;
-		bool downloading = false;
-		std::string last_result;
+		bool download_in_progress = false;
+		std::string last_update_result;
 	} ip2country;
 };
 

@@ -1,11 +1,16 @@
 // Dictionary consistency check: every locale must have exactly the keys of
 // en.json (the source), and each translation must keep the same {placeholders}.
+// Also checks that every preferences field renders a real label, since those
+// keys are derived (prefs_field_<category>_<key>) rather than written out --
+// a renamed field with no matching dictionary entry would otherwise render
+// the raw key with no error anywhere.
 // Run: node src/webapi/tools/check-i18n.mjs
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import assert from "node:assert";
 
-const dir = join(dirname(new URL(import.meta.url).pathname), "..", "static", "i18n");
+const here = dirname(new URL(import.meta.url).pathname);
+const dir = join(here, "..", "static", "i18n");
 const load = (f) => JSON.parse(readFileSync(join(dir, f), "utf8"));
 const placeholders = (s) => (s.match(/\{[a-z_]+\}/g) || []).sort().join(",");
 
@@ -22,3 +27,40 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "
   }
   console.log(file + ": OK (" + Object.keys(dict).length + " keys)");
 }
+
+// --- Preferences field labels resolve -----------------------------------
+// The view derives each label key from the field's category and name, so a
+// rename has to land in the dictionary too. Lift the literal tables straight
+// out of the view (they are plain data) rather than duplicating them here.
+const viewSrc = readFileSync(join(here, "..", "static", "js", "views", "preferences.js"), "utf8");
+const table = (name) => {
+  const m = viewSrc.match(new RegExp("^const " + name + " = \\[[\\s\\S]*?^\\];$", "m"));
+  assert.ok(m, "preferences.js: could not lift `" + name + "`");
+  return m[0];
+};
+const { TABS } = new Function(
+  [table("PROXY_TYPES"), table("SEE_SHARES"), table("GEOIP_SOURCES"), table("TABS"),
+   "return { TABS };"].join("\n"),
+)();
+
+const missingLabels = [];
+for (const tab of TABS) {
+  if (!(tab.labelKey in en)) missingLabels.push(tab.labelKey);
+  if (tab.noteKey && !(tab.noteKey in en)) missingLabels.push(tab.noteKey);
+  for (const grp of tab.groups) {
+    if (!(grp.legendKey in en)) missingLabels.push(grp.legendKey);
+    for (const f of grp.fields) {
+      // hidden fields are capability flags loaded only to gate others; the
+      // view never renders a label for them.
+      if (f.hidden) continue;
+      const cat = f.cat || tab.cat;
+      const key = f.labelKey || "prefs_field_" + cat.replace(/\./g, "_") + "_" + f.key;
+      if (!(key in en)) missingLabels.push(key);
+      for (const o of f.options || []) {
+        if (!(o.labelKey in en)) missingLabels.push(o.labelKey);
+      }
+    }
+  }
+}
+assert.deepStrictEqual(missingLabels, [], "preferences.js: label keys absent from en.json");
+console.log("preferences.js: OK (all field/group/tab labels resolve)");

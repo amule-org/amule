@@ -165,9 +165,14 @@ _assert_json_eq '.connection.max_sources_per_file | type' number '/preferences.c
 _assert_json_eq '.connection.max_upload_cap_kbps   | type' null '/preferences.connection.max_upload_cap_kbps removed (#596)'
 _assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.connection.max_download_cap_kbps removed (#596)'
 
-# 3-state (0/1/2) not a bool (#596); endgame newly exposed (#596).
-_assert_json_eq '.security.can_see_shares      | type' number  '/preferences.security.can_see_shares is a 3-state number (#596)'
-_assert_json_eq '.files.endgame                | type' boolean '/preferences.files.endgame is boolean (#596)'
+# 3-state enum string, not a bool (#596, renamed + spelled out in #655);
+# endgame newly exposed (#596).
+_assert_json_eq '.security.shared_files_visibility | test("^(everybody|friends|nobody)$")' \
+	true '/preferences.security.shared_files_visibility is a known 3-state enum value (#655)'
+_assert_json_eq '.files.endgame_enabled        | type' boolean '/preferences.files.endgame_enabled is boolean (#596)'
+# Old names must be gone, not merely shadowed by the new ones (#655).
+_assert_json_eq '.security.can_see_shares      | type' null    '/preferences.security.can_see_shares removed (#655)'
+_assert_json_eq '.files.endgame                | type' null    '/preferences.files.endgame removed (#655)'
 
 # message_filter show-in-log + comment filter, wired over EC (#596).
 _assert_json_eq '.message_filter.show_in_log      | type' boolean '/preferences.message_filter.show_in_log is boolean (#596)'
@@ -187,8 +192,29 @@ _assert_json_eq '.ip2country.auto_update     | type' boolean '/preferences.ip2co
 _assert_json_eq '.ip2country.loaded_source   | type' string  '/preferences.ip2country.loaded_source is string'
 _assert_json_eq '.ip2country.db_path         | type' string  '/preferences.ip2country.db_path is string'
 _assert_json_eq '.ip2country.db_loaded       | type' boolean '/preferences.ip2country.db_loaded is boolean'
-_assert_json_eq '.ip2country.downloading     | type' boolean '/preferences.ip2country.downloading is boolean'
-_assert_json_eq '.ip2country.last_result     | type' string  '/preferences.ip2country.last_result is string'
+_assert_json_eq '.ip2country.download_in_progress | type' boolean '/preferences.ip2country.download_in_progress is boolean'
+_assert_json_eq '.ip2country.last_update_result  | type' string  '/preferences.ip2country.last_update_result is string'
+
+# --- Nested remote_controls (#655). ----------------------------
+# The two subsystems are sub-objects, not webserver_* / amuleapi_* prefixes.
+_assert_json_eq '.remote_controls.webserver        | type' object  '/preferences.remote_controls.webserver is an object (#655)'
+_assert_json_eq '.remote_controls.amuleapi         | type' object  '/preferences.remote_controls.amuleapi is an object (#655)'
+_assert_json_eq '.remote_controls.webserver.enabled         | type' boolean '/preferences.remote_controls.webserver.enabled is boolean'
+_assert_json_eq '.remote_controls.webserver.port            | type' number  '/preferences.remote_controls.webserver.port is numeric'
+_assert_json_eq '.remote_controls.webserver.refresh_seconds | type' number  '/preferences.remote_controls.webserver.refresh_seconds is numeric'
+_assert_json_eq '.remote_controls.webserver.template        | type' string  '/preferences.remote_controls.webserver.template is string'
+_assert_json_eq '.remote_controls.amuleapi.enabled          | type' boolean '/preferences.remote_controls.amuleapi.enabled is boolean'
+_assert_json_eq '.remote_controls.amuleapi.port             | type' number  '/preferences.remote_controls.amuleapi.port is numeric'
+_assert_json_eq '.remote_controls.amuleapi.bind_address     | type' string  '/preferences.remote_controls.amuleapi.bind_address is string'
+_assert_json_eq '.remote_controls.webserver_enabled | type' null '/preferences.remote_controls.webserver_enabled removed (#655)'
+_assert_json_eq '.remote_controls.amuleapi_bind     | type' null '/preferences.remote_controls.amuleapi_bind removed (#655)'
+# Passwords stay write-only in both sub-objects.
+_assert_json_eq '.remote_controls.webserver.password       | type' null '/preferences.remote_controls.webserver.password is not emitted'
+_assert_json_eq '.remote_controls.webserver.guest_password | type' null '/preferences.remote_controls.webserver.guest_password is not emitted'
+_assert_json_eq '.remote_controls.amuleapi.password        | type' null '/preferences.remote_controls.amuleapi.password is not emitted'
+
+# proxy_type is an enum string, not a magic number (#655).
+_assert_json_eq '.connection.proxy_type | type' string '/preferences.connection.proxy_type is a string (#655)'
 
 # --- Method gate. ----------------------------------------------
 for ep in servers kad categories preferences; do

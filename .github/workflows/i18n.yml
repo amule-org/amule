@@ -110,3 +110,21 @@ jobs:
             echo "Run scripts/update-manpages-po.sh locally and commit the result."
             exit 1
           fi
+
+  webapi-dictionaries:
+    name: amuleapi Web UI dictionaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Checks every locale carries exactly en.json's keys with matching
+      # {placeholders}, and that every preferences field resolves to a real
+      # label. The label keys are derived from the field names, so a renamed
+      # field with no dictionary entry would silently render the raw key.
+      - name: Checking Web UI dictionaries
+        run: node src/webapi/tools/check-i18n.mjs

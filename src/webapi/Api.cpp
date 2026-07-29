@@ -5344,8 +5344,8 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueString(wxString::FromUTF8(p.nickname.c_str()));
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(p.user_hash.c_str()));
-	w.Key("host_name");
-	w.ValueString(wxString::FromUTF8(p.host_name.c_str()));
+	w.Key("local_host_name");
+	w.ValueString(wxString::FromUTF8(p.local_host_name.c_str()));
 	w.Key("check_new_version");
 	w.ValueBool(p.check_new_version);
 	w.EndObject();
@@ -5356,8 +5356,8 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueInt(static_cast<int64_t>(p.max_upload_kbps));
 	w.Key("max_download_kbps");
 	w.ValueInt(static_cast<int64_t>(p.max_download_kbps));
-	w.Key("slot_allocation");
-	w.ValueInt(static_cast<int64_t>(p.slot_allocation));
+	w.Key("upload_slot_kbps");
+	w.ValueInt(static_cast<int64_t>(p.upload_slot_kbps));
 	w.Key("tcp_port");
 	w.ValueInt(static_cast<int64_t>(p.tcp_port));
 	w.Key("udp_port");
@@ -5383,8 +5383,10 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	// Proxy (proxy_password is write-only: never emitted here).
 	w.Key("proxy_enabled");
 	w.ValueBool(p.proxy_enabled);
+	// Enum string "socks5" / "socks4" / "http" / "socks4a" (#655); empty when
+	// the daemon reported no proxy type.
 	w.Key("proxy_type");
-	w.ValueInt(static_cast<int64_t>(p.proxy_type));
+	w.ValueString(wxString::FromUTF8(p.proxy_type.c_str()));
 	w.Key("proxy_host");
 	w.ValueString(wxString::FromUTF8(p.proxy_host.c_str()));
 	w.Key("proxy_port");
@@ -5422,32 +5424,32 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.directories.follow_symlinks);
 	w.Key("exclude_patterns");
 	w.ValueString(wxString::FromUTF8(p.directories.exclude_patterns.c_str()));
-	w.Key("exclude_regex");
-	w.ValueBool(p.directories.exclude_regex);
+	w.Key("exclude_patterns_use_regex");
+	w.ValueBool(p.directories.exclude_patterns_use_regex);
 	w.EndObject();
 
 	w.Key("files");
 	w.BeginObject();
 	w.Key("ich_enabled");
 	w.ValueBool(p.files.ich_enabled);
-	w.Key("aich_trust");
-	w.ValueBool(p.files.aich_trust);
-	w.Key("new_paused");
-	w.ValueBool(p.files.new_paused);
-	w.Key("new_auto_dl_prio");
-	w.ValueBool(p.files.new_auto_dl_prio);
-	w.Key("new_auto_ul_prio");
-	w.ValueBool(p.files.new_auto_ul_prio);
-	w.Key("preview_prio");
-	w.ValueBool(p.files.preview_prio);
+	w.Key("aich_trust_every_hash");
+	w.ValueBool(p.files.aich_trust_every_hash);
+	w.Key("add_new_downloads_paused");
+	w.ValueBool(p.files.add_new_downloads_paused);
+	w.Key("new_downloads_auto_priority");
+	w.ValueBool(p.files.new_downloads_auto_priority);
+	w.Key("new_shared_files_auto_priority");
+	w.ValueBool(p.files.new_shared_files_auto_priority);
+	w.Key("prioritize_first_last_chunks");
+	w.ValueBool(p.files.prioritize_first_last_chunks);
 	w.Key("start_next_paused");
 	w.ValueBool(p.files.start_next_paused);
-	w.Key("resume_same_cat");
-	w.ValueBool(p.files.resume_same_cat);
-	w.Key("save_sources");
-	w.ValueBool(p.files.save_sources);
-	w.Key("alloc_full_size");
-	w.ValueBool(p.files.alloc_full_size);
+	w.Key("start_next_same_category");
+	w.ValueBool(p.files.start_next_same_category);
+	w.Key("save_source_seeds_for_rare_files");
+	w.ValueBool(p.files.save_source_seeds_for_rare_files);
+	w.Key("preallocate_full_file_size");
+	w.ValueBool(p.files.preallocate_full_file_size);
 	// Memory-mapped file I/O (#565). mmap_supported is a read-only daemon
 	// capability (like upnp_available); mmap_enabled is settable via PATCH only
 	// when mmap_supported is true.
@@ -5455,16 +5457,16 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.files.mmap_supported);
 	w.Key("mmap_enabled");
 	w.ValueBool(p.files.mmap_enabled);
-	w.Key("check_free_space");
-	w.ValueBool(p.files.check_free_space);
+	w.Key("stop_on_low_disk_space");
+	w.ValueBool(p.files.stop_on_low_disk_space);
 	w.Key("min_free_space_mb");
 	w.ValueInt(static_cast<int64_t>(p.files.min_free_space_mb));
 	w.Key("create_normal");
 	w.ValueBool(p.files.create_normal);
 	w.Key("start_next_alphabetical");
 	w.ValueBool(p.files.start_next_alphabetical);
-	w.Key("endgame");
-	w.ValueBool(p.files.endgame);
+	w.Key("endgame_enabled");
+	w.ValueBool(p.files.endgame_enabled);
 	w.Key("media_metadata_enabled");
 	w.ValueBool(p.files.media_metadata_enabled);
 	w.Key("ffprobe_path");
@@ -5479,28 +5481,29 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueInt(static_cast<int64_t>(p.servers.dead_server_retries));
 	w.Key("auto_update");
 	w.ValueBool(p.servers.auto_update);
-	w.Key("add_from_server");
-	w.ValueBool(p.servers.add_from_server);
-	w.Key("add_from_client");
-	w.ValueBool(p.servers.add_from_client);
-	w.Key("use_score_system");
-	w.ValueBool(p.servers.use_score_system);
+	w.Key("update_list_from_server");
+	w.ValueBool(p.servers.update_list_from_server);
+	w.Key("update_list_from_client");
+	w.ValueBool(p.servers.update_list_from_client);
+	w.Key("use_priority_system");
+	w.ValueBool(p.servers.use_priority_system);
 	w.Key("smart_id_check");
 	w.ValueBool(p.servers.smart_id_check);
-	w.Key("safe_server_connect");
-	w.ValueBool(p.servers.safe_server_connect);
-	w.Key("autoconn_static_only");
-	w.ValueBool(p.servers.autoconn_static_only);
-	w.Key("manual_high_prio");
-	w.ValueBool(p.servers.manual_high_prio);
+	w.Key("safe_connect");
+	w.ValueBool(p.servers.safe_connect);
+	w.Key("autoconnect_static_servers_only");
+	w.ValueBool(p.servers.autoconnect_static_servers_only);
+	w.Key("manual_servers_high_priority");
+	w.ValueBool(p.servers.manual_servers_high_priority);
 	w.Key("update_url");
 	w.ValueString(wxString::FromUTF8(p.servers.update_url.c_str()));
 	w.EndObject();
 
 	w.Key("security");
 	w.BeginObject();
-	w.Key("can_see_shares");
-	w.ValueInt(static_cast<int64_t>(p.security.can_see_shares));
+	// Enum string "everybody" / "friends" / "nobody" (#655).
+	w.Key("shared_files_visibility");
+	w.ValueString(wxString::FromUTF8(p.security.shared_files_visibility.c_str()));
 	w.Key("ipfilter_clients");
 	w.ValueBool(p.security.ipfilter_clients);
 	w.Key("ipfilter_servers");
@@ -5509,20 +5512,20 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.security.ipfilter_auto_update);
 	w.Key("ipfilter_update_url");
 	w.ValueString(wxString::FromUTF8(p.security.ipfilter_update_url.c_str()));
-	w.Key("ipfilter_level");
-	w.ValueInt(static_cast<int64_t>(p.security.ipfilter_level));
-	w.Key("ipfilter_filter_lan");
-	w.ValueBool(p.security.ipfilter_filter_lan);
+	w.Key("ipfilter_block_below_access_level");
+	w.ValueInt(static_cast<int64_t>(p.security.ipfilter_block_below_access_level));
+	w.Key("ipfilter_include_lan_ips");
+	w.ValueBool(p.security.ipfilter_include_lan_ips);
 	w.Key("use_secident");
 	w.ValueBool(p.security.use_secident);
-	w.Key("obfuscation_supported");
-	w.ValueBool(p.security.obfuscation_supported);
+	w.Key("obfuscation_enabled");
+	w.ValueBool(p.security.obfuscation_enabled);
 	w.Key("obfuscation_requested");
 	w.ValueBool(p.security.obfuscation_requested);
 	w.Key("obfuscation_required");
 	w.ValueBool(p.security.obfuscation_required);
-	w.Key("paranoid_filtering");
-	w.ValueBool(p.security.paranoid_filtering);
+	w.Key("reject_spoofed_source_ips");
+	w.ValueBool(p.security.reject_spoofed_source_ips);
 	w.Key("use_system_ipfilter");
 	w.ValueBool(p.security.use_system_ipfilter);
 	w.EndObject();
@@ -5531,12 +5534,12 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.BeginObject();
 	w.Key("enabled");
 	w.ValueBool(p.message_filter.enabled);
-	w.Key("all");
-	w.ValueBool(p.message_filter.all);
-	w.Key("friends");
-	w.ValueBool(p.message_filter.friends);
-	w.Key("secure");
-	w.ValueBool(p.message_filter.secure);
+	w.Key("filter_all_messages");
+	w.ValueBool(p.message_filter.filter_all_messages);
+	w.Key("accept_from_friends_only");
+	w.ValueBool(p.message_filter.accept_from_friends_only);
+	w.Key("accept_from_known_clients_only");
+	w.ValueBool(p.message_filter.accept_from_known_clients_only);
 	w.Key("by_keyword");
 	w.ValueBool(p.message_filter.by_keyword);
 	w.Key("keywords");
@@ -5549,26 +5552,34 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueString(wxString::FromUTF8(p.message_filter.comment_keywords.c_str()));
 	w.EndObject();
 
+	// Two independent subsystems, nested rather than prefixed (#655).
+	// Passwords stay write-only in both.
 	w.Key("remote_controls");
 	w.BeginObject();
-	w.Key("webserver_enabled");
-	w.ValueBool(p.remote_controls.webserver_enabled);
-	w.Key("webserver_port");
-	w.ValueInt(static_cast<int64_t>(p.remote_controls.webserver_port));
-	w.Key("webserver_use_gzip");
-	w.ValueBool(p.remote_controls.webserver_use_gzip);
-	w.Key("webserver_refresh");
-	w.ValueInt(static_cast<int64_t>(p.remote_controls.webserver_refresh));
-	w.Key("webserver_template");
-	w.ValueString(wxString::FromUTF8(p.remote_controls.webserver_template.c_str()));
-	w.Key("webserver_guest_enabled");
-	w.ValueBool(p.remote_controls.webserver_guest_enabled);
-	w.Key("amuleapi_enabled");
-	w.ValueBool(p.remote_controls.amuleapi_enabled);
-	w.Key("amuleapi_port");
-	w.ValueInt(static_cast<int64_t>(p.remote_controls.amuleapi_port));
-	w.Key("amuleapi_bind");
-	w.ValueString(wxString::FromUTF8(p.remote_controls.amuleapi_bind.c_str()));
+	w.Key("webserver");
+	w.BeginObject();
+	w.Key("enabled");
+	w.ValueBool(p.remote_controls.webserver.enabled);
+	w.Key("port");
+	w.ValueInt(static_cast<int64_t>(p.remote_controls.webserver.port));
+	w.Key("use_gzip");
+	w.ValueBool(p.remote_controls.webserver.use_gzip);
+	w.Key("refresh_seconds");
+	w.ValueInt(static_cast<int64_t>(p.remote_controls.webserver.refresh_seconds));
+	w.Key("template");
+	w.ValueString(wxString::FromUTF8(p.remote_controls.webserver.template_name.c_str()));
+	w.Key("guest_enabled");
+	w.ValueBool(p.remote_controls.webserver.guest_enabled);
+	w.EndObject();
+	w.Key("amuleapi");
+	w.BeginObject();
+	w.Key("enabled");
+	w.ValueBool(p.remote_controls.amuleapi.enabled);
+	w.Key("port");
+	w.ValueInt(static_cast<int64_t>(p.remote_controls.amuleapi.port));
+	w.Key("bind_address");
+	w.ValueString(wxString::FromUTF8(p.remote_controls.amuleapi.bind_address.c_str()));
+	w.EndObject();
 	w.EndObject();
 
 	w.Key("online_signature");
@@ -5577,24 +5588,24 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueBool(p.online_signature.enabled);
 	w.Key("directory");
 	w.ValueString(wxString::FromUTF8(p.online_signature.directory.c_str()));
-	w.Key("update_frequency");
-	w.ValueInt(static_cast<int64_t>(p.online_signature.update_frequency));
+	w.Key("update_frequency_seconds");
+	w.ValueInt(static_cast<int64_t>(p.online_signature.update_frequency_seconds));
 	w.EndObject();
 
 	w.Key("core_tweaks");
 	w.BeginObject();
-	w.Key("max_conn_per_five");
-	w.ValueInt(static_cast<int64_t>(p.core_tweaks.max_conn_per_five));
-	w.Key("verbose");
-	w.ValueBool(p.core_tweaks.verbose);
-	w.Key("filebuffer");
-	w.ValueInt(static_cast<int64_t>(p.core_tweaks.filebuffer));
-	w.Key("ul_queue");
-	w.ValueInt(static_cast<int64_t>(p.core_tweaks.ul_queue));
-	w.Key("srv_keepalive_timeout");
-	w.ValueInt(static_cast<int64_t>(p.core_tweaks.srv_keepalive_timeout));
-	w.Key("kad_max_searches");
-	w.ValueInt(static_cast<int64_t>(p.core_tweaks.kad_max_searches));
+	w.Key("max_new_connections_per_5s");
+	w.ValueInt(static_cast<int64_t>(p.core_tweaks.max_new_connections_per_5s));
+	w.Key("verbose_logging");
+	w.ValueBool(p.core_tweaks.verbose_logging);
+	w.Key("file_buffer_bytes");
+	w.ValueInt(static_cast<int64_t>(p.core_tweaks.file_buffer_bytes));
+	w.Key("max_upload_queue_clients");
+	w.ValueInt(static_cast<int64_t>(p.core_tweaks.max_upload_queue_clients));
+	w.Key("server_keepalive_timeout_ms");
+	w.ValueInt(static_cast<int64_t>(p.core_tweaks.server_keepalive_timeout_ms));
+	w.Key("kad_max_source_searches");
+	w.ValueInt(static_cast<int64_t>(p.core_tweaks.kad_max_source_searches));
 	w.Key("kad_reask_ms");
 	w.ValueInt(static_cast<int64_t>(p.core_tweaks.kad_reask_ms));
 	w.Key("source_reask_ms");
@@ -5632,10 +5643,10 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 	w.ValueString(wxString::FromUTF8(p.ip2country.db_path.c_str()));
 	w.Key("db_loaded");
 	w.ValueBool(p.ip2country.db_loaded);
-	w.Key("downloading");
-	w.ValueBool(p.ip2country.downloading);
-	w.Key("last_result");
-	w.ValueString(wxString::FromUTF8(p.ip2country.last_result.c_str()));
+	w.Key("download_in_progress");
+	w.ValueBool(p.ip2country.download_in_progress);
+	w.Key("last_update_result");
+	w.ValueString(wxString::FromUTF8(p.ip2country.last_update_result.c_str()));
 	w.EndObject();
 
 	w.EndObject();
@@ -5733,6 +5744,46 @@ bool PrefTakeBool(const picojson::object &o,
 	group.AddTag(CECTag(name, static_cast<std::uint8_t>(it->second.get<bool>() ? 1 : 0)));
 	any = true;
 	return true;
+}
+
+// Enum field (#655): the API spells the value out ("socks5", "friends", ...)
+// while EC carries the bare ordinal. `names` lists the accepted strings in
+// wire order, so a name's index is exactly the value the daemon's Apply()
+// casts back to its enum. Shared by connection.proxy_type,
+// security.shared_files_visibility and ip2country.source.
+bool PrefTakeEnum(const picojson::object &o,
+	CECTag &group,
+	const char *key,
+	ec_tagname_t name,
+	std::initializer_list<const char *> names,
+	bool &any,
+	std::string &err)
+{
+	const auto it = o.find(key);
+	if (it == o.end())
+		return true;
+	if (!it->second.is<std::string>()) {
+		err = std::string(key) + " must be a string";
+		return false;
+	}
+	const std::string &v = it->second.get<std::string>();
+	std::uint8_t idx = 0;
+	for (const char *candidate : names) {
+		if (v == candidate) {
+			group.AddTag(CECTag(name, idx));
+			any = true;
+			return true;
+		}
+		++idx;
+	}
+	std::string accepted;
+	for (const char *candidate : names) {
+		if (!accepted.empty())
+			accepted += ", ";
+		accepted += candidate;
+	}
+	err = std::string(key) + " must be one of " + accepted;
+	return false;
 }
 
 bool PrefTakeString(const picojson::object &o,
@@ -5996,7 +6047,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		auto r2 = take_uint("max_download_kbps", EC_TAG_CONN_MAX_DL, kbps_max);
 		if (r2.status >= 400)
 			return r2;
-		auto r5 = take_uint("slot_allocation", EC_TAG_CONN_SLOT_ALLOCATION, 65535);
+		auto r5 = take_uint("upload_slot_kbps", EC_TAG_CONN_SLOT_ALLOCATION, 65535);
 		if (r5.status >= 400)
 			return r5;
 		auto r6 = take_uint("tcp_port", EC_TAG_CONN_TCP_PORT, 65535);
@@ -6038,14 +6089,22 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		if (rs2.status >= 400)
 			return rs2;
 
-		// Proxy. proxy_type: 0 SOCKS5 / 1 SOCKS4 / 2 HTTP / 3 SOCKS4a.
+		// Proxy. proxy_type is an enum string indexing the wire ints
+		// (0 SOCKS5 / 1 SOCKS4 / 2 HTTP / 3 SOCKS4a).
 		// proxy_password is write-only (accepted here, never echoed on GET).
 		auto rp1 = take_bool("proxy_enabled", EC_TAG_PROXY_ENABLE);
 		if (rp1.status >= 400)
 			return rp1;
-		auto rp2 = take_uint("proxy_type", EC_TAG_PROXY_TYPE, 3);
-		if (rp2.status >= 400)
-			return rp2;
+		std::string proxy_err;
+		if (!PrefTakeEnum(*connection_obj,
+			    connection,
+			    "proxy_type",
+			    EC_TAG_PROXY_TYPE,
+			    { "socks5", "socks4", "http", "socks4a" },
+			    any_conn,
+			    proxy_err)) {
+			return ErrorResponse(400, "bad_request", proxy_err.c_str());
+		}
 		auto rp3 = take_string("proxy_host", EC_TAG_PROXY_HOST);
 		if (rp3.status >= 400)
 			return rp3;
@@ -6141,7 +6200,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				perr) ||
 			!PrefTakeBool(*directories_obj,
 				g,
-				"exclude_regex",
+				"exclude_patterns_use_regex",
 				EC_TAG_DIRECTORIES_EXCLUDE_REGEX,
 				any,
 				perr)) {
@@ -6166,36 +6225,60 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		CECTag g(EC_TAG_PREFS_FILES, static_cast<std::uint32_t>(0));
 		bool any = false;
 		if (!PrefTakeBool(*files_obj, g, "ich_enabled", EC_TAG_FILES_ICH_ENABLED, any, perr) ||
-			!PrefTakeBool(*files_obj, g, "aich_trust", EC_TAG_FILES_AICH_TRUST, any, perr) ||
-			!PrefTakeBool(*files_obj, g, "new_paused", EC_TAG_FILES_NEW_PAUSED, any, perr) ||
+			!PrefTakeBool(
+				*files_obj, g, "aich_trust_every_hash", EC_TAG_FILES_AICH_TRUST, any, perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
-				"new_auto_dl_prio",
+				"add_new_downloads_paused",
+				EC_TAG_FILES_NEW_PAUSED,
+				any,
+				perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"new_downloads_auto_priority",
 				EC_TAG_FILES_NEW_AUTO_DL_PRIO,
 				any,
 				perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
-				"new_auto_ul_prio",
+				"new_shared_files_auto_priority",
 				EC_TAG_FILES_NEW_AUTO_UL_PRIO,
 				any,
 				perr) ||
-			!PrefTakeBool(*files_obj, g, "preview_prio", EC_TAG_FILES_PREVIEW_PRIO, any, perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"prioritize_first_last_chunks",
+				EC_TAG_FILES_PREVIEW_PRIO,
+				any,
+				perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
 				"start_next_paused",
 				EC_TAG_FILES_START_NEXT_PAUSED,
 				any,
 				perr) ||
-			!PrefTakeBool(
-				*files_obj, g, "resume_same_cat", EC_TAG_FILES_RESUME_SAME_CAT, any, perr) ||
-			!PrefTakeBool(*files_obj, g, "save_sources", EC_TAG_FILES_SAVE_SOURCES, any, perr) ||
-			!PrefTakeBool(
-				*files_obj, g, "alloc_full_size", EC_TAG_FILES_ALLOC_FULL_SIZE, any, perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"start_next_same_category",
+				EC_TAG_FILES_RESUME_SAME_CAT,
+				any,
+				perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"save_source_seeds_for_rare_files",
+				EC_TAG_FILES_SAVE_SOURCES,
+				any,
+				perr) ||
+			!PrefTakeBool(*files_obj,
+				g,
+				"preallocate_full_file_size",
+				EC_TAG_FILES_ALLOC_FULL_SIZE,
+				any,
+				perr) ||
 			!PrefTakeBool(*files_obj, g, "mmap_enabled", EC_TAG_FILES_MMAP_ENABLED, any, perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
-				"check_free_space",
+				"stop_on_low_disk_space",
 				EC_TAG_FILES_CHECK_FREE_SPACE,
 				any,
 				perr) ||
@@ -6214,7 +6297,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				EC_TAG_FILES_START_NEXT_ALPHA,
 				any,
 				perr) ||
-			!PrefTakeBool(*files_obj, g, "endgame", EC_TAG_FILES_ENDGAME, any, perr) ||
+			!PrefTakeBool(*files_obj, g, "endgame_enabled", EC_TAG_FILES_ENDGAME, any, perr) ||
 			!PrefTakeBool(*files_obj,
 				g,
 				"media_metadata_enabled",
@@ -6246,19 +6329,19 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				*servers_obj, g, "auto_update", EC_TAG_SERVERS_AUTO_UPDATE, any, perr) ||
 			!PrefTakeBool(*servers_obj,
 				g,
-				"add_from_server",
+				"update_list_from_server",
 				EC_TAG_SERVERS_ADD_FROM_SERVER,
 				any,
 				perr) ||
 			!PrefTakeBool(*servers_obj,
 				g,
-				"add_from_client",
+				"update_list_from_client",
 				EC_TAG_SERVERS_ADD_FROM_CLIENT,
 				any,
 				perr) ||
 			!PrefTakeBool(*servers_obj,
 				g,
-				"use_score_system",
+				"use_priority_system",
 				EC_TAG_SERVERS_USE_SCORE_SYSTEM,
 				any,
 				perr) ||
@@ -6270,19 +6353,19 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				perr) ||
 			!PrefTakeBool(*servers_obj,
 				g,
-				"safe_server_connect",
+				"safe_connect",
 				EC_TAG_SERVERS_SAFE_SERVER_CONNECT,
 				any,
 				perr) ||
 			!PrefTakeBool(*servers_obj,
 				g,
-				"autoconn_static_only",
+				"autoconnect_static_servers_only",
 				EC_TAG_SERVERS_AUTOCONN_STATIC_ONLY,
 				any,
 				perr) ||
 			!PrefTakeBool(*servers_obj,
 				g,
-				"manual_high_prio",
+				"manual_servers_high_priority",
 				EC_TAG_SERVERS_MANUAL_HIGH_PRIO,
 				any,
 				perr) ||
@@ -6299,12 +6382,13 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	if (security_obj) {
 		CECTag g(EC_TAG_PREFS_SECURITY, static_cast<std::uint32_t>(0));
 		bool any = false;
-		// can_see_shares is a 3-state uint8 (0 everybody / 1 friends / 2 nobody).
-		if (!PrefTakeUint(*security_obj,
+		// shared_files_visibility is an enum string; EC carries the 3-state
+		// int it indexes into (0 everybody / 1 friends / 2 nobody).
+		if (!PrefTakeEnum(*security_obj,
 			    g,
-			    "can_see_shares",
+			    "shared_files_visibility",
 			    EC_TAG_SECURITY_CAN_SEE_SHARES,
-			    2,
+			    { "everybody", "friends", "nobody" },
 			    any,
 			    perr) ||
 			!PrefTakeBool(
@@ -6323,11 +6407,16 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				EC_TAG_IPFILTER_UPDATE_URL,
 				any,
 				perr) ||
-			!PrefTakeUint(
-				*security_obj, g, "ipfilter_level", EC_TAG_IPFILTER_LEVEL, 255, any, perr) ||
+			!PrefTakeUint(*security_obj,
+				g,
+				"ipfilter_block_below_access_level",
+				EC_TAG_IPFILTER_LEVEL,
+				255,
+				any,
+				perr) ||
 			!PrefTakeBool(*security_obj,
 				g,
-				"ipfilter_filter_lan",
+				"ipfilter_include_lan_ips",
 				EC_TAG_IPFILTER_FILTER_LAN,
 				any,
 				perr) ||
@@ -6335,7 +6424,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				*security_obj, g, "use_secident", EC_TAG_SECURITY_USE_SECIDENT, any, perr) ||
 			!PrefTakeBool(*security_obj,
 				g,
-				"obfuscation_supported",
+				"obfuscation_enabled",
 				EC_TAG_SECURITY_OBFUSCATION_SUPPORTED,
 				any,
 				perr) ||
@@ -6353,7 +6442,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				perr) ||
 			!PrefTakeBool(*security_obj,
 				g,
-				"paranoid_filtering",
+				"reject_spoofed_source_ips",
 				EC_TAG_IPFILTER_PARANOID,
 				any,
 				perr) ||
@@ -6371,10 +6460,24 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		CECTag g(EC_TAG_PREFS_MESSAGEFILTER, static_cast<std::uint32_t>(0));
 		bool any = false;
 		if (!PrefTakeBool(*message_filter_obj, g, "enabled", EC_TAG_MSGFILTER_ENABLED, any, perr) ||
-			!PrefTakeBool(*message_filter_obj, g, "all", EC_TAG_MSGFILTER_ALL, any, perr) ||
-			!PrefTakeBool(
-				*message_filter_obj, g, "friends", EC_TAG_MSGFILTER_FRIENDS, any, perr) ||
-			!PrefTakeBool(*message_filter_obj, g, "secure", EC_TAG_MSGFILTER_SECURE, any, perr) ||
+			!PrefTakeBool(*message_filter_obj,
+				g,
+				"filter_all_messages",
+				EC_TAG_MSGFILTER_ALL,
+				any,
+				perr) ||
+			!PrefTakeBool(*message_filter_obj,
+				g,
+				"accept_from_friends_only",
+				EC_TAG_MSGFILTER_FRIENDS,
+				any,
+				perr) ||
+			!PrefTakeBool(*message_filter_obj,
+				g,
+				"accept_from_known_clients_only",
+				EC_TAG_MSGFILTER_SECURE,
+				any,
+				perr) ||
 			!PrefTakeBool(*message_filter_obj,
 				g,
 				"by_keyword",
@@ -6409,104 +6512,66 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		}
 	}
 
+	// [RemoteControls] two independent subsystems nested under one category
+	// (#655): remote_controls.webserver.{...} / .amuleapi.{...}. Both still
+	// pack into the single EC_TAG_PREFS_REMOTECTRL group — the nesting is an
+	// API shape, not an EC one.
 	if (remote_controls_obj) {
 		CECTag g(EC_TAG_PREFS_REMOTECTRL, static_cast<std::uint32_t>(0));
 		bool any = false;
-		if (!PrefTakeBool(*remote_controls_obj,
-			    g,
-			    "webserver_enabled",
-			    EC_TAG_WEBSERVER_AUTORUN,
-			    any,
-			    perr) ||
-			!PrefTakeUint(*remote_controls_obj,
-				g,
-				"webserver_port",
-				EC_TAG_WEBSERVER_PORT,
-				65535,
-				any,
-				perr) ||
-			!PrefTakeBool(*remote_controls_obj,
-				g,
-				"webserver_use_gzip",
-				EC_TAG_WEBSERVER_USEGZIP,
-				any,
-				perr) ||
-			!PrefTakeUint(*remote_controls_obj,
-				g,
-				"webserver_refresh",
-				EC_TAG_WEBSERVER_REFRESH,
-				kU32Max,
-				any,
-				perr) ||
-			!PrefTakeString(*remote_controls_obj,
-				g,
-				"webserver_template",
-				EC_TAG_WEBSERVER_TEMPLATE,
-				any,
-				perr) ||
-			!PrefTakeBool(*remote_controls_obj,
-				g,
-				"amuleapi_enabled",
-				EC_TAG_AMULEAPI_AUTORUN,
-				any,
-				perr) ||
-			!PrefTakeUint(*remote_controls_obj,
-				g,
-				"amuleapi_port",
-				EC_TAG_AMULEAPI_PORT,
-				65535,
-				any,
-				perr) ||
-			!PrefTakeString(
-				*remote_controls_obj, g, "amuleapi_bind", EC_TAG_AMULEAPI_BIND, any, perr) ||
-			!PrefTakePassword(*remote_controls_obj,
-				g,
-				"webserver_password",
-				EC_TAG_PASSWD_HASH,
-				any,
-				perr)) {
+		const picojson::object *webserver_obj = nullptr;
+		const picojson::object *amuleapi_obj = nullptr;
+		if (!PrefFindSubObject(*remote_controls_obj, "webserver", webserver_obj, perr) ||
+			!PrefFindSubObject(*remote_controls_obj, "amuleapi", amuleapi_obj, perr)) {
 			return ErrorResponse(400, "bad_request", perr.c_str());
 		}
-		// amuleapi's own admin/guest passwords are deliberately NOT
-		// settable here. They belong to amuleapi, not to amuled: PATCH
-		// /auth/passwords writes the credential file this daemon actually
-		// reads, requires the current password, and is rate-limited. A
-		// field here would instead push the change over EC to whichever
-		// aMule this amuleapi is attached to, landing it in *that* host's
-		// config dir — the right file only when the two happen to share
-		// one. Reject the field rather than silently ignoring it.
-		if (remote_controls_obj->find("amuleapi_password") != remote_controls_obj->end() ||
-			remote_controls_obj->find("amuleapi_guest_password") != remote_controls_obj->end() ||
-			remote_controls_obj->find("amuleapi_guest_enabled") != remote_controls_obj->end()) {
-			return ErrorResponse(400,
-				"bad_request",
-				"amuleapi passwords are managed through PATCH /auth/passwords, "
-				"not through /preferences");
-		}
-		// webserver_guest_enabled + webserver_guest_password share one EC
-		// tag (EC_TAG_WEBSERVER_GUEST carries the enable bool as its value
-		// and the password as a child), so pack them together to avoid two
-		// conflicting tags. When only the password is given, the enable
-		// bit falls back to the current snapshot value.
-		{
-			const auto en_it = remote_controls_obj->find("webserver_guest_enabled");
-			const auto pw_it = remote_controls_obj->find("webserver_guest_password");
-			const bool has_en = en_it != remote_controls_obj->end();
-			const bool has_pw = pw_it != remote_controls_obj->end();
+
+		if (webserver_obj) {
+			if (!PrefTakeBool(
+				    *webserver_obj, g, "enabled", EC_TAG_WEBSERVER_AUTORUN, any, perr) ||
+				!PrefTakeUint(
+					*webserver_obj, g, "port", EC_TAG_WEBSERVER_PORT, 65535, any, perr) ||
+				!PrefTakeBool(
+					*webserver_obj, g, "use_gzip", EC_TAG_WEBSERVER_USEGZIP, any, perr) ||
+				!PrefTakeUint(*webserver_obj,
+					g,
+					"refresh_seconds",
+					EC_TAG_WEBSERVER_REFRESH,
+					kU32Max,
+					any,
+					perr) ||
+				!PrefTakeString(*webserver_obj,
+					g,
+					"template",
+					EC_TAG_WEBSERVER_TEMPLATE,
+					any,
+					perr) ||
+				!PrefTakePassword(
+					*webserver_obj, g, "password", EC_TAG_PASSWD_HASH, any, perr)) {
+				return ErrorResponse(400, "bad_request", perr.c_str());
+			}
+			// guest_enabled + guest_password share one EC tag
+			// (EC_TAG_WEBSERVER_GUEST carries the enable bool as its value and
+			// the password as a child), so pack them together to avoid two
+			// conflicting tags. When only the password is given, the enable
+			// bit falls back to the current snapshot value.
+			const auto en_it = webserver_obj->find("guest_enabled");
+			const auto pw_it = webserver_obj->find("guest_password");
+			const bool has_en = en_it != webserver_obj->end();
+			const bool has_pw = pw_it != webserver_obj->end();
 			if (has_en || has_pw) {
 				if (has_en && !en_it->second.is<bool>()) {
 					return ErrorResponse(
-						400, "bad_request", "webserver_guest_enabled must be a bool");
+						400, "bad_request", "guest_enabled must be a bool");
 				}
 				if (has_pw && !pw_it->second.is<std::string>()) {
-					return ErrorResponse(400,
-						"bad_request",
-						"webserver_guest_password must be a string");
+					return ErrorResponse(
+						400, "bad_request", "guest_password must be a string");
 				}
 				const bool enabled =
 					has_en ? en_it->second.get<bool>()
 					       : m_state.Preferences()
-							 .remote_controls.webserver_guest_enabled;
+							 .remote_controls.webserver.guest_enabled;
 				CECTag guest(
 					EC_TAG_WEBSERVER_GUEST, static_cast<std::uint8_t>(enabled ? 1 : 0));
 				if (has_pw) {
@@ -6522,6 +6587,33 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				any = true;
 			}
 		}
+
+		if (amuleapi_obj) {
+			if (!PrefTakeBool(*amuleapi_obj, g, "enabled", EC_TAG_AMULEAPI_AUTORUN, any, perr) ||
+				!PrefTakeUint(
+					*amuleapi_obj, g, "port", EC_TAG_AMULEAPI_PORT, 65535, any, perr) ||
+				!PrefTakeString(
+					*amuleapi_obj, g, "bind_address", EC_TAG_AMULEAPI_BIND, any, perr)) {
+				return ErrorResponse(400, "bad_request", perr.c_str());
+			}
+			// amuleapi's own admin/guest passwords are deliberately NOT
+			// settable here. They belong to amuleapi, not to amuled: PATCH
+			// /auth/passwords writes the credential file this daemon actually
+			// reads, requires the current password, and is rate-limited. A
+			// field here would instead push the change over EC to whichever
+			// aMule this amuleapi is attached to, landing it in *that* host's
+			// config dir — the right file only when the two happen to share
+			// one. Reject the field rather than silently ignoring it.
+			if (amuleapi_obj->find("password") != amuleapi_obj->end() ||
+				amuleapi_obj->find("guest_password") != amuleapi_obj->end() ||
+				amuleapi_obj->find("guest_enabled") != amuleapi_obj->end()) {
+				return ErrorResponse(400,
+					"bad_request",
+					"amuleapi passwords are managed through PATCH /auth/passwords, "
+					"not through /preferences");
+			}
+		}
+
 		if (any) {
 			ec_req->AddTag(g);
 			any_change = true;
@@ -6540,7 +6632,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 				perr) ||
 			!PrefTakeUint(*online_signature_obj,
 				g,
-				"update_frequency",
+				"update_frequency_seconds",
 				EC_TAG_ONLINESIG_UPDATE,
 				kU32Max,
 				any,
@@ -6558,36 +6650,37 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		bool any = false;
 		if (!PrefTakeUint(*core_tweaks_obj,
 			    g,
-			    "max_conn_per_five",
+			    "max_new_connections_per_5s",
 			    EC_TAG_CORETW_MAX_CONN_PER_FIVE,
 			    kU32Max,
 			    any,
 			    perr) ||
-			!PrefTakeBool(*core_tweaks_obj, g, "verbose", EC_TAG_CORETW_VERBOSE, any, perr) ||
+			!PrefTakeBool(
+				*core_tweaks_obj, g, "verbose_logging", EC_TAG_CORETW_VERBOSE, any, perr) ||
 			!PrefTakeUint(*core_tweaks_obj,
 				g,
-				"filebuffer",
+				"file_buffer_bytes",
 				EC_TAG_CORETW_FILEBUFFER,
 				kU32Max,
 				any,
 				perr) ||
 			!PrefTakeUint(*core_tweaks_obj,
 				g,
-				"ul_queue",
+				"max_upload_queue_clients",
 				EC_TAG_CORETW_UL_QUEUE,
 				kU32Max,
 				any,
 				perr) ||
 			!PrefTakeUint(*core_tweaks_obj,
 				g,
-				"srv_keepalive_timeout",
+				"server_keepalive_timeout_ms",
 				EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT,
 				kU32Max,
 				any,
 				perr) ||
 			!PrefTakeUint(*core_tweaks_obj,
 				g,
-				"kad_max_searches",
+				"kad_max_source_searches",
 				EC_TAG_CORETW_KAD_MAX_SEARCHES,
 				kU32Max,
 				any,
@@ -6634,31 +6727,14 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	if (ip2country_obj) {
 		CECTag g(EC_TAG_PREFS_IP2COUNTRY, static_cast<std::uint32_t>(0));
 		bool any = false;
-		{
-			const auto it = ip2country_obj->find("source");
-			if (it != ip2country_obj->end()) {
-				if (!it->second.is<std::string>()) {
-					return ErrorResponse(
-						400, "bad_request", "ip2country.source must be a string");
-				}
-				const std::string &v = it->second.get<std::string>();
-				std::uint8_t src = 0;
-				if (v == "dbip") {
-					src = 0;
-				} else if (v == "maxmind") {
-					src = 1;
-				} else if (v == "custom") {
-					src = 2;
-				} else {
-					return ErrorResponse(400,
-						"bad_request",
-						"ip2country.source must be one of dbip, maxmind, custom");
-				}
-				g.AddTag(CECTag(EC_TAG_IP2COUNTRY_SOURCE, src));
-				any = true;
-			}
-		}
-		if (!PrefTakeBool(*ip2country_obj, g, "enabled", EC_TAG_IP2COUNTRY_ENABLED, any, perr) ||
+		if (!PrefTakeEnum(*ip2country_obj,
+			    g,
+			    "source",
+			    EC_TAG_IP2COUNTRY_SOURCE,
+			    { "dbip", "maxmind", "custom" },
+			    any,
+			    perr) ||
+			!PrefTakeBool(*ip2country_obj, g, "enabled", EC_TAG_IP2COUNTRY_ENABLED, any, perr) ||
 			!PrefTakeString(
 				*ip2country_obj, g, "custom_url", EC_TAG_IP2COUNTRY_CUSTOM_URL, any, perr) ||
 			!PrefTakeString(*ip2country_obj,

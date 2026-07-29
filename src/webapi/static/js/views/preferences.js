@@ -8,7 +8,9 @@
 // out of the "connection" category into its own tab (like the desktop Proxy
 // page), and Advanced pulls files.mmap_enabled in next to the core tweaks. So
 // every field's real API category is `f.cat || tab.cat`, and that is what keys
-// the form state and the PATCH body.
+// the form state and the PATCH body. A category may itself be a dotted path
+// into a nested payload object ("remote_controls.webserver"); the form state
+// stays flat and only the GET read / PATCH build walk the path.
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
@@ -22,17 +24,17 @@ import { t, terr } from "../i18n.js";
 // only sent when checked), scale (int shown/edited in value/scale units, e.g.
 // ms stored but minutes shown), cat (override the tab's API category).
 const PROXY_TYPES = [
-  { value: 0, labelKey: "prefs_opt_proxy_socks5" },
-  { value: 1, labelKey: "prefs_opt_proxy_socks4" },
-  { value: 2, labelKey: "prefs_opt_proxy_http" },
-  { value: 3, labelKey: "prefs_opt_proxy_socks4a" },
+  { value: "socks5", labelKey: "prefs_opt_proxy_socks5" },
+  { value: "socks4", labelKey: "prefs_opt_proxy_socks4" },
+  { value: "http", labelKey: "prefs_opt_proxy_http" },
+  { value: "socks4a", labelKey: "prefs_opt_proxy_socks4a" },
 ];
 
-// security.can_see_shares is a 3-state integer (0/1/2), not a bool.
+// security.shared_files_visibility is a 3-state enum string, not a bool.
 const SEE_SHARES = [
-  { value: 0, labelKey: "prefs_opt_see_shares_everybody" },
-  { value: 1, labelKey: "prefs_opt_see_shares_friends" },
-  { value: 2, labelKey: "prefs_opt_see_shares_nobody" },
+  { value: "everybody", labelKey: "prefs_opt_see_shares_everybody" },
+  { value: "friends", labelKey: "prefs_opt_see_shares_friends" },
+  { value: "nobody", labelKey: "prefs_opt_see_shares_nobody" },
 ];
 const GEOIP_SOURCES = [
   { value: "dbip", labelKey: "prefs_opt_source_dbip" },
@@ -47,7 +49,7 @@ const TABS = [
     { legendKey: "prefs_group_general", fields: [
       { key: "nickname", type: "text" },
       { key: "check_new_version", type: "bool" },
-      { key: "host_name", type: "text", readonly: true },
+      { key: "local_host_name", type: "text", readonly: true },
       { key: "user_hash", type: "text", readonly: true },
     ] },
   ] },
@@ -55,7 +57,7 @@ const TABS = [
     { legendKey: "prefs_group_bandwidth", fields: [
       { key: "max_download_kbps", type: "int", min: 0, max: 1000000 },
       { key: "max_upload_kbps", type: "int", min: 0, max: 1000000 },
-      { key: "slot_allocation", type: "int", min: 1, max: 100000 },
+      { key: "upload_slot_kbps", type: "int", min: 1, max: 100000 },
     ] },
     { legendKey: "prefs_group_ports", fields: [
       { key: "tcp_port", type: "int", min: 0, max: 65535 },
@@ -93,7 +95,7 @@ const TABS = [
       { key: "auto_rescan", type: "bool" },
       { key: "follow_symlinks", type: "bool" },
       { key: "exclude_patterns", type: "text" },
-      { key: "exclude_regex", type: "bool" },
+      { key: "exclude_patterns_use_regex", type: "bool" },
     ] },
   ] },
   { id: "servers", labelKey: "prefs_servers", cat: "servers", groups: [
@@ -101,16 +103,16 @@ const TABS = [
       { key: "remove_dead", type: "bool" },
       { key: "dead_server_retries", type: "int", min: 1, max: 10, sub: true, gatedBy: "remove_dead" },
       { key: "auto_update", type: "bool" },
-      { key: "add_from_server", type: "bool" },
-      { key: "add_from_client", type: "bool" },
+      { key: "update_list_from_server", type: "bool" },
+      { key: "update_list_from_client", type: "bool" },
       { key: "update_url", type: "text" },
     ] },
     { legendKey: "prefs_group_server_conn", fields: [
-      { key: "use_score_system", type: "bool" },
+      { key: "use_priority_system", type: "bool" },
       { key: "smart_id_check", type: "bool" },
-      { key: "safe_server_connect", type: "bool" },
-      { key: "autoconn_static_only", type: "bool" },
-      { key: "manual_high_prio", type: "bool" },
+      { key: "safe_connect", type: "bool" },
+      { key: "autoconnect_static_servers_only", type: "bool" },
+      { key: "manual_servers_high_priority", type: "bool" },
     ] },
     { legendKey: "prefs_group_kademlia", fields: [
       { key: "update_url", type: "text", cat: "kademlia" },
@@ -118,25 +120,25 @@ const TABS = [
   ] },
   { id: "files", labelKey: "prefs_files", cat: "files", groups: [
     { legendKey: "prefs_group_downloads", fields: [
-      { key: "new_paused", type: "bool" },
-      { key: "new_auto_dl_prio", type: "bool" },
-      { key: "preview_prio", type: "bool" },
+      { key: "add_new_downloads_paused", type: "bool" },
+      { key: "new_downloads_auto_priority", type: "bool" },
+      { key: "prioritize_first_last_chunks", type: "bool" },
       { key: "start_next_paused", type: "bool" },
-      { key: "resume_same_cat", type: "bool", sub: true, gatedBy: "start_next_paused" },
+      { key: "start_next_same_category", type: "bool", sub: true, gatedBy: "start_next_paused" },
       { key: "start_next_alphabetical", type: "bool", sub: true, gatedBy: "start_next_paused" },
-      { key: "endgame", type: "bool" },
-      { key: "alloc_full_size", type: "bool" },
+      { key: "endgame_enabled", type: "bool" },
+      { key: "preallocate_full_file_size", type: "bool" },
       { key: "create_normal", type: "bool" },
-      { key: "check_free_space", type: "bool" },
-      { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "check_free_space" },
-      { key: "save_sources", type: "bool" },
+      { key: "stop_on_low_disk_space", type: "bool" },
+      { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "stop_on_low_disk_space" },
+      { key: "save_source_seeds_for_rare_files", type: "bool" },
     ] },
     { legendKey: "prefs_group_uploads", fields: [
-      { key: "new_auto_ul_prio", type: "bool" },
+      { key: "new_shared_files_auto_priority", type: "bool" },
     ] },
     { legendKey: "prefs_group_ich", fields: [
       { key: "ich_enabled", type: "bool" },
-      { key: "aich_trust", type: "bool" },
+      { key: "aich_trust_every_hash", type: "bool" },
     ] },
     { legendKey: "prefs_group_media", fields: [
       { key: "media_metadata_enabled", type: "bool" },
@@ -146,21 +148,21 @@ const TABS = [
   { id: "security", labelKey: "prefs_security", cat: "security", groups: [
     { legendKey: "prefs_group_privacy", fields: [
       { key: "use_secident", type: "bool" },
-      { key: "can_see_shares", type: "select", int: true, options: SEE_SHARES },
+      { key: "shared_files_visibility", type: "select", int: true, options: SEE_SHARES },
     ] },
     { legendKey: "prefs_group_obfuscation", fields: [
-      { key: "obfuscation_supported", type: "bool" },
-      { key: "obfuscation_requested", type: "bool", sub: true, gatedBy: "obfuscation_supported" },
-      { key: "obfuscation_required", type: "bool", sub: true, gatedBy: "obfuscation_supported" },
+      { key: "obfuscation_enabled", type: "bool" },
+      { key: "obfuscation_requested", type: "bool", sub: true, gatedBy: "obfuscation_enabled" },
+      { key: "obfuscation_required", type: "bool", sub: true, gatedBy: "obfuscation_enabled" },
     ] },
     { legendKey: "prefs_group_ipfilter", fields: [
       { key: "ipfilter_clients", type: "bool" },
       { key: "ipfilter_servers", type: "bool" },
       { key: "ipfilter_update_url", type: "text" },
       { key: "ipfilter_auto_update", type: "bool" },
-      { key: "ipfilter_level", type: "int", min: 0, max: 255 },
-      { key: "ipfilter_filter_lan", type: "bool" },
-      { key: "paranoid_filtering", type: "bool" },
+      { key: "ipfilter_block_below_access_level", type: "int", min: 0, max: 255 },
+      { key: "ipfilter_include_lan_ips", type: "bool" },
+      { key: "reject_spoofed_source_ips", type: "bool" },
       { key: "use_system_ipfilter", type: "bool" },
     ] },
   ] },
@@ -176,11 +178,11 @@ const TABS = [
     ] },
     { legendKey: "prefs_group_geoip_status", fields: [
       { key: "update_now", type: "trigger", gatedBy: ["supported", "enabled"] },
-      { key: "downloading", type: "bool", readonly: true },
+      { key: "download_in_progress", type: "bool", readonly: true },
       { key: "loaded_source", type: "text", readonly: true },
       { key: "db_path", type: "text", readonly: true },
       { key: "db_loaded", type: "bool", readonly: true },
-      { key: "last_result", type: "text", readonly: true },
+      { key: "last_update_result", type: "text", readonly: true },
     ] },
   ] },
   { id: "proxy", labelKey: "prefs_proxy", cat: "connection", groups: [
@@ -197,9 +199,9 @@ const TABS = [
   { id: "message_filter", labelKey: "prefs_message_filter", cat: "message_filter", groups: [
     { legendKey: "prefs_group_messages", fields: [
       { key: "enabled", type: "bool" },
-      { key: "all", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "friends", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "secure", type: "bool", sub: true, gatedBy: "enabled" },
+      { key: "filter_all_messages", type: "bool", sub: true, gatedBy: "enabled" },
+      { key: "accept_from_friends_only", type: "bool", sub: true, gatedBy: "enabled" },
+      { key: "accept_from_known_clients_only", type: "bool", sub: true, gatedBy: "enabled" },
       { key: "by_keyword", type: "bool", sub: true, gatedBy: "enabled" },
       { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "by_keyword"] },
       { key: "show_in_log", type: "bool" },
@@ -209,49 +211,73 @@ const TABS = [
       { key: "comment_keywords", type: "text", sub: true, gatedBy: "filter_comments" },
     ] },
   ] },
+  // The two subsystems are nested categories in the payload
+  // (remote_controls.webserver / .amuleapi), so each group names its own cat.
   { id: "remote_controls", labelKey: "prefs_remote_controls", cat: "remote_controls", groups: [
     { legendKey: "prefs_group_amuleapi", fields: [
-      { key: "amuleapi_enabled", type: "bool" },
-      { key: "amuleapi_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: "amuleapi_enabled" },
-      { key: "amuleapi_bind", type: "text", sub: true, gatedBy: "amuleapi_enabled" },
-      { key: "amuleapi_password", type: "password", sub: true, gatedBy: "amuleapi_enabled" },
+      { key: "enabled", type: "bool", cat: "remote_controls.amuleapi" },
+      { key: "port", type: "int", min: 0, max: 65535, sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
+      { key: "bind_address", type: "text", sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
+      { key: "password", type: "password", sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
     ] },
     { legendKey: "prefs_group_webserver", fields: [
-      { key: "webserver_enabled", type: "bool" },
-      { key: "webserver_template", type: "text", sub: true, gatedBy: "webserver_enabled" },
-      { key: "webserver_password", type: "password", sub: true, gatedBy: "webserver_enabled" },
-      { key: "webserver_guest_enabled", type: "bool", sub: true, gatedBy: "webserver_enabled" },
-      { key: "webserver_guest_password", type: "password", sub: 2, gatedBy: ["webserver_enabled", "webserver_guest_enabled"] },
-      { key: "webserver_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: "webserver_enabled" },
-      { key: "webserver_refresh", type: "int", min: 0, sub: true, gatedBy: "webserver_enabled" },
-      { key: "webserver_use_gzip", type: "bool", sub: true, gatedBy: "webserver_enabled" },
+      { key: "enabled", type: "bool", cat: "remote_controls.webserver" },
+      { key: "template", type: "text", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "password", type: "password", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "guest_enabled", type: "bool", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "guest_password", type: "password", sub: 2, cat: "remote_controls.webserver", gatedBy: ["enabled", "guest_enabled"] },
+      { key: "port", type: "int", min: 0, max: 65535, sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "refresh_seconds", type: "int", min: 0, sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
+      { key: "use_gzip", type: "bool", sub: true, cat: "remote_controls.webserver", gatedBy: "enabled" },
     ] },
   ] },
   { id: "online_signature", labelKey: "prefs_online_signature", cat: "online_signature", groups: [
     { legendKey: "prefs_group_onlinesig", fields: [
       { key: "enabled", type: "bool" },
-      { key: "update_frequency", type: "int", min: 0, max: 600, sub: true, gatedBy: "enabled" },
+      { key: "update_frequency_seconds", type: "int", min: 0, max: 600, sub: true, gatedBy: "enabled" },
       { key: "directory", type: "text", sub: true, gatedBy: "enabled" },
     ] },
   ] },
   { id: "core_tweaks", labelKey: "prefs_core_tweaks", cat: "core_tweaks", noteKey: "prefs_core_tweaks_warning", groups: [
     { legendKey: "prefs_group_tweaks", fields: [
-      { key: "max_conn_per_five", type: "int", min: 0 },
-      { key: "kad_max_searches", type: "int", min: 0 },
+      { key: "max_new_connections_per_5s", type: "int", min: 0 },
+      { key: "kad_max_source_searches", type: "int", min: 0 },
       { key: "kad_reask_ms", type: "int", min: 0, scale: 60000 },
       { key: "source_reask_ms", type: "int", min: 0, scale: 60000 },
-      { key: "filebuffer", type: "int", min: 0 },
+      { key: "file_buffer_bytes", type: "int", min: 0 },
       { key: "mmap_enabled", type: "bool", cat: "files", gatedBy: "mmap_supported" },
       { key: "mmap_supported", type: "bool", cat: "files", hidden: true },
-      { key: "ul_queue", type: "int", min: 0 },
-      { key: "srv_keepalive_timeout", type: "int", min: 0 },
-      { key: "verbose", type: "bool" },
+      { key: "max_upload_queue_clients", type: "int", min: 0 },
+      // Stored in ms, shown in minutes like the desktop slider (0-30).
+      { key: "server_keepalive_timeout_ms", type: "int", min: 0, max: 30, scale: 60000 },
+      { key: "verbose_logging", type: "bool" },
     ] },
   ] },
 ];
 
 const catOf = (tab, f) => f.cat || tab.cat;
 const asArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
+// A category may be a dotted path into a nested payload object (e.g.
+// "remote_controls.webserver"); walk/create it on read and write.
+const catGet = (obj, cat) => cat.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
+const catPut = (obj, cat, key, val) => {
+  const o = cat.split(".").reduce((acc, k) => (acc[k] || (acc[k] = {})), obj);
+  o[key] = val;
+};
+// i18n keys stay flat: remote_controls.webserver + "port" ->
+// prefs_field_remote_controls_webserver_port.
+const labelKeyFor = (cat, key) => "prefs_field_" + cat.replace(/\./g, "_") + "_" + key;
+// Drop objects that ended up with no fields, innermost first, so an untouched
+// nested category never reaches the PATCH body as an empty {}.
+const pruneEmpty = (obj) => {
+  for (const k of Object.keys(obj)) {
+    if (obj[k] && typeof obj[k] === "object" && !Array.isArray(obj[k])) {
+      pruneEmpty(obj[k]);
+      if (!Object.keys(obj[k]).length) delete obj[k];
+    }
+  }
+  return obj;
+};
 // Clamp to the field's [min, max] before sending; floor at 0 when no min is set.
 const clamp = (n, lo, hi) => Math.min(hi == null ? Infinity : hi, Math.max(lo == null ? 0 : lo, n));
 
@@ -269,7 +295,7 @@ export default function Preferences({ isGuest }) {
         for (const grp of tab.groups)
           for (const f of grp.fields) {
             const cat = catOf(tab, f);
-            let val = (p[cat] || {})[f.key];
+            let val = (catGet(p, cat) || {})[f.key];
             if (f.type === "textarea" && Array.isArray(val)) val = val.join("\n");
             else if (f.scale && typeof val === "number") val = Math.round(val / f.scale);
             v[cat + "." + f.key] = val;
@@ -296,7 +322,7 @@ export default function Preferences({ isGuest }) {
     if (f.hidden) return null;
     const id = cat + "." + f.key;
     const val = f.derived ? f.derived(values, cat) : values[id];
-    const label = t(f.labelKey || "prefs_field_" + cat + "_" + f.key);
+    const label = t(f.labelKey || labelKeyFor(cat, f.key));
     const disabled = isGuest || f.readonly || isGated(cat, f);
     const subCls = f.sub === 2 ? " field-sub2" : f.sub ? " field-sub" : "";
 
@@ -360,7 +386,7 @@ export default function Preferences({ isGuest }) {
           } else if (f.type === "textarea") {
             out = String(val || "").split("\n").map((s) => s.trim()).filter(Boolean);
           } else if (f.type === "select") {
-            out = f.int ? (parseInt(val, 10) || 0) : (val == null ? "" : val);
+            out = val == null ? "" : val;
           } else if (f.type === "bool") {
             out = !!val;
           } else if (f.type === "int") {
@@ -369,12 +395,11 @@ export default function Preferences({ isGuest }) {
           } else {
             out = val == null ? "" : val;
           }
-          (body[cat] || (body[cat] = {}))[f.key] = out;
+          catPut(body, cat, f.key, out);
         }
       }
     }
-    for (const k of Object.keys(body)) if (!Object.keys(body[k]).length) delete body[k];
-    return body;
+    return pruneEmpty(body);
   };
 
   const save = async (e) => {

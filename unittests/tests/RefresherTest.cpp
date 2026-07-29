@@ -1333,10 +1333,10 @@ TEST(Refresher, ClientDetailFieldsDecode)
 // --- #437: extended EC preference categories decode ------------------
 //
 // Covers both boolean encodings the core serializer uses: value tags
-// (share_hidden/exclude_regex -> GetInt()!=0) and bare presence tags
-// (ich_enabled/use_secident/endgame -> tag present == true), the 3-state
-// can_see_shares int (0/1/2, #596), plus ints, strings, and the
-// directories.shared string array.
+// (share_hidden/exclude_patterns_use_regex -> GetInt()!=0) and bare presence
+// tags (ich_enabled/use_secident/endgame_enabled -> tag present == true), the
+// 3-state shared_files_visibility enum decoded from the wire int (#596, #655),
+// plus ints, strings, and the directories.shared string array.
 TEST(Refresher, PreferencesExtendedCategoriesDecode)
 {
 	CECPacket resp(EC_OP_SET_PREFERENCES);
@@ -1407,31 +1407,32 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(static_cast<size_t>(2), p.directories.shared.size());
 	ASSERT_EQUALS(std::string("/a"), p.directories.shared[0]);
 	ASSERT_TRUE(p.directories.share_hidden);
-	ASSERT_TRUE(p.directories.exclude_regex);
+	ASSERT_TRUE(p.directories.exclude_patterns_use_regex);
 	ASSERT_TRUE(!p.directories.auto_rescan); // absent -> false
 
 	ASSERT_TRUE(p.files.ich_enabled);
-	ASSERT_TRUE(!p.files.aich_trust); // absent presence tag -> false
-	ASSERT_TRUE(p.files.endgame);     // presence tag -> true (#596)
+	ASSERT_TRUE(!p.files.aich_trust_every_hash); // absent presence tag -> false
+	ASSERT_TRUE(p.files.endgame_enabled);        // presence tag -> true (#596)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(512), p.files.min_free_space_mb);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5), p.servers.dead_server_retries);
 	ASSERT_EQUALS(std::string("http://srv"), p.servers.update_url);
 
-	// 3-state (#596): the middle/high value round-trips, not just 0/1.
-	ASSERT_EQUALS(static_cast<std::uint32_t>(2), static_cast<std::uint32_t>(p.security.can_see_shares));
-	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_level);
+	// 3-state (#596): the middle/high value round-trips, not just 0/1, and
+	// decodes to its enum string rather than the wire int (#655).
+	ASSERT_EQUALS(std::string("nobody"), p.security.shared_files_visibility);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(100), p.security.ipfilter_block_below_access_level);
 	ASSERT_TRUE(p.security.use_secident);
 	ASSERT_TRUE(!p.security.obfuscation_required); // absent -> false
 
 	ASSERT_TRUE(p.message_filter.enabled);
 	ASSERT_TRUE(p.message_filter.show_in_log);
 	ASSERT_TRUE(p.message_filter.filter_comments);
-	ASSERT_TRUE(!p.message_filter.all); // absent -> false
+	ASSERT_TRUE(!p.message_filter.filter_all_messages); // absent -> false
 	ASSERT_EQUALS(std::string("spam,ads"), p.message_filter.keywords);
 	ASSERT_EQUALS(std::string("junk,scam"), p.message_filter.comment_keywords);
 
-	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_conn_per_five);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.core_tweaks.max_new_connections_per_5s);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1800000), p.core_tweaks.kad_reask_ms);
 	ASSERT_EQUALS(std::string("http://nodes"), p.kademlia.update_url);
 
@@ -1443,5 +1444,96 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_TRUE(!p.ip2country.auto_update); // absent -> false
 	ASSERT_TRUE(p.ip2country.db_loaded);
 	ASSERT_EQUALS(std::string("maxmind"), p.ip2country.loaded_source);
-	ASSERT_TRUE(!p.ip2country.downloading); // absent -> false
+	ASSERT_TRUE(!p.ip2country.download_in_progress); // absent -> false
+}
+
+// --- #655: enum strings and the nested remote_controls shape ----------
+//
+// The EC layer is unchanged by the field-naming pass: it still carries the
+// proxy type as a wire int and both remote-control subsystems in one flat
+// category. What changed is the API shape the snapshot feeds, so this pins
+// the two translations that now happen at the webapi boundary.
+TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
+{
+	CECPacket resp(EC_OP_SET_PREFERENCES);
+
+	CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+	conn.AddTag(CECTag(EC_TAG_PROXY_TYPE, (uint8)2)); // wire 2 == HTTP
+	resp.AddTag(conn);
+
+	CECEmptyTag rc(EC_TAG_PREFS_REMOTECTRL);
+	rc.AddTag(CECEmptyTag(EC_TAG_WEBSERVER_AUTORUN)); // presence == true
+	rc.AddTag(CECTag(EC_TAG_WEBSERVER_PORT, static_cast<std::uint32_t>(4711)));
+	rc.AddTag(CECTag(EC_TAG_WEBSERVER_REFRESH, static_cast<std::uint32_t>(120)));
+	rc.AddTag(CECTag(EC_TAG_WEBSERVER_TEMPLATE, wxString::FromUTF8("php-default")));
+	rc.AddTag(CECTag(EC_TAG_AMULEAPI_PORT, static_cast<std::uint32_t>(4712)));
+	rc.AddTag(CECTag(EC_TAG_AMULEAPI_BIND, wxString::FromUTF8("127.0.0.1")));
+	resp.AddTag(rc);
+
+	PreferencesSnapshot p;
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&resp, p, cats);
+
+	// Wire int -> enum string, and an unset field stays empty rather than
+	// defaulting to the first enum member.
+	ASSERT_EQUALS(std::string("http"), p.proxy_type);
+
+	// One flat EC category fans out into the two nested API sub-objects.
+	ASSERT_TRUE(p.remote_controls.webserver.enabled);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(4711), p.remote_controls.webserver.port);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(120), p.remote_controls.webserver.refresh_seconds);
+	ASSERT_EQUALS(std::string("php-default"), p.remote_controls.webserver.template_name);
+	ASSERT_TRUE(!p.remote_controls.webserver.guest_enabled); // absent -> false
+
+	ASSERT_TRUE(!p.remote_controls.amuleapi.enabled); // absent -> false
+	ASSERT_EQUALS(static_cast<std::uint32_t>(4712), p.remote_controls.amuleapi.port);
+	ASSERT_EQUALS(std::string("127.0.0.1"), p.remote_controls.amuleapi.bind_address);
+}
+
+// Every 3-state / 4-state wire value maps to its documented enum string, and
+// an out-of-range value is not invented into a valid one (#655).
+TEST(Refresher, PreferencesEnumStringsCoverEveryWireValue)
+{
+	const char *const kProxy[] = { "socks5", "socks4", "http", "socks4a" };
+	for (std::uint8_t wire = 0; wire < 4; ++wire) {
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+		conn.AddTag(CECTag(EC_TAG_PROXY_TYPE, wire));
+		resp.AddTag(conn);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+		ASSERT_EQUALS(std::string(kProxy[wire]), p.proxy_type);
+	}
+
+	const char *const kVisibility[] = { "everybody", "friends", "nobody" };
+	for (std::uint8_t wire = 0; wire < 3; ++wire) {
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag sec(EC_TAG_PREFS_SECURITY);
+		sec.AddTag(CECTag(EC_TAG_SECURITY_CAN_SEE_SHARES, wire));
+		resp.AddTag(sec);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+		ASSERT_EQUALS(std::string(kVisibility[wire]), p.security.shared_files_visibility);
+	}
+
+	// Out of range: proxy_type clears, visibility falls back to the default.
+	{
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+		conn.AddTag(CECTag(EC_TAG_PROXY_TYPE, (uint8)9));
+		resp.AddTag(conn);
+		CECEmptyTag sec(EC_TAG_PREFS_SECURITY);
+		sec.AddTag(CECTag(EC_TAG_SECURITY_CAN_SEE_SHARES, (uint8)9));
+		resp.AddTag(sec);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+		ASSERT_TRUE(p.proxy_type.empty());
+		ASSERT_EQUALS(std::string("everybody"), p.security.shared_files_visibility);
+	}
 }
