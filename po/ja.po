@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:49+0200\n"
+"POT-Creation-Date: 2026-07-29 12:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1623,6 +1623,11 @@ msgstr "%y/%m/%d %H:%M:%S"
 #, c-format
 msgid "Downloads (%i)"
 msgstr "ダウンロード数（%i）"
+
+#: src/DownloadListCtrl.cpp src/TransferWnd.cpp
+#, fuzzy, c-format
+msgid "Total queue size: %s"
+msgstr "DLの合計：%s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -4955,10 +4960,6 @@ msgid "Active Uploads"
 msgstr "アクティブなアップロード数："
 
 #: src/muuli_wdr.cpp
-msgid "Percent of total files"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Show Clients for"
 msgstr "クライアントを表示する"
@@ -6839,6 +6840,11 @@ msgstr "有効なソースリンクを作るにはHighIDが必要です"
 msgid "Shared Files (%i)"
 msgstr "共有ファイル（%i）"
 
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#, c-format
+msgid "Total size of Shared Files: %s"
+msgstr "共有ファイルの合計サイズ： %s"
+
 #: src/SourceListCtrl.cpp
 #, fuzzy
 msgid "Remote File Name"
@@ -7057,11 +7063,6 @@ msgstr "サーバ占有： %.2f%%"
 #, c-format
 msgid "Number of Shared Files: %s"
 msgstr "共有ファイル数： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Total size of Shared Files: %s"
-msgstr "共有ファイルの合計サイズ： %s"
 
 #: src/Statistics.cpp
 #, c-format

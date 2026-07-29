@@ -59,6 +59,7 @@
 #endif
 
 // Custom source
+#include <map>              // Needed for std::map (ScaledConnButImg's per-size cache)
 #include <common/Format.h> // Needed for CFormat (SetConnectButtonState)
 #include "ServerListCtrl.h"
 #include "DownloadListCtrl.h"
@@ -5962,24 +5963,27 @@ namespace
 // per-tab button sitting next to a one-line URL field (issue #402 review:
 // "the button and the icon are too big"). Scaled to a uniform, more modest
 // size here rather than reworking the XPM data connButImg still serves.
-// Cached per state: SetConnectButtonState runs on every connection-state
-// update (i.e. often), and rescaling the same three source bitmaps every
-// single call is wasted work -- index 2 is already 16x16 physical pixels,
-// so without the cache it round-trips through ConvertToImage/Rescale for
-// nothing on every "connecting" tick. DPI is resolved from whichever
-// button first triggers the fill for a given index; the ED2K and Kad
-// buttons live on the same top-level window in practice, so this doesn't
-// need to be any more dynamic than that.
+// Cached per (state, physical size): SetConnectButtonState runs on every
+// connection-state update (i.e. often), and rescaling the same three source
+// bitmaps every single call is wasted work -- index 2 is already 16x16
+// physical pixels, so without the cache it round-trips through
+// ConvertToImage/Rescale for nothing on every "connecting" tick. Keyed by
+// the FromDIP-resolved pixel size, not just the state index, so a window
+// dragged to a differently-scaled monitor (per-monitor DPI v2) gets a
+// freshly-rescaled bitmap instead of a stale one left over from wherever it
+// was first computed -- there is no wxEVT_DPI_CHANGED invalidation here,
+// the size-keyed cache sidesteps needing one.
 wxBitmap ScaledConnButImg(size_t index, const wxWindow *dpiRef)
 {
-	static wxBitmap cache[3];
-	if (!cache[index].IsOk()) {
+	static std::map<int, wxBitmap> cache[3];
+	const int size = wxWindow::FromDIP(16, dpiRef);
+	wxBitmap &bmp = cache[index][size];
+	if (!bmp.IsOk()) {
 		wxImage image = connButImg(index).ConvertToImage();
-		const int size = wxWindow::FromDIP(16, dpiRef);
 		image.Rescale(size, size, wxIMAGE_QUALITY_HIGH);
-		cache[index] = wxBitmap(image);
+		bmp = wxBitmap(image);
 	}
-	return cache[index];
+	return bmp;
 }
 } // namespace
 
@@ -6005,16 +6009,26 @@ void SetConnectButtonState(
 		button->SetBitmap(ScaledConnButImg(0, button));
 	}
 
-	// wxButton::SetBitmapMargins() is a real gap on wxMSW and wxOSX (both
-	// override DoSetBitmapMargins -- see msw/anybutton.h, osx/anybutton.h)
-	// but a silent no-op on wxGTK, which inherits the base class's empty
-	// implementation. So GTK falls back to the old trick: a leading space
+	// wxButton::SetBitmapMargins() means different things per port that
+	// implement it (msw/anybutton.h, osx/anybutton.h -- wxGTK inherits the
+	// base class's no-op): wxOSX stores it as the margin AROUND the bitmap
+	// (both sides, including button edge), so overriding it there is a real
+	// gap fix. wxMSW applies it BETWEEN bitmap and label only, layered on
+	// top of a font-derived default (src/msw/anybutton.cpp:
+	// m_margin.x = GetCharWidth(); m_margin.y = GetCharHeight() / 2) that
+	// already matches native Windows button metrics -- overriding it with a
+	// fixed (4, 0) narrows the gap AND drops the vertical margin to zero,
+	// moving the button away from the platform convention instead of toward
+	// it. So this is wxOSX-only; wxMSW keeps its own native default
+	// untouched, and wxGTK falls back to the old trick: a leading space
 	// outside the translatable string (so no new msgid), which depends on
 	// no translator trimming leading whitespace but is otherwise harmless.
-#ifdef __WXGTK__
+#ifdef __WXOSX__
+	button->SetBitmapMargins(button->FromDIP(4), 0);
+	button->SetLabel(label);
+#elif defined(__WXGTK__)
 	button->SetLabel(wxT(" ") + label);
 #else
-	button->SetBitmapMargins(button->FromDIP(4), 0);
 	button->SetLabel(label);
 #endif
 

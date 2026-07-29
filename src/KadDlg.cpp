@@ -168,12 +168,19 @@ void CKadDlg::OnBnClickedBootstrapClient(wxCommandEvent &WXUNUSED(evt))
 {
 	if (FindWindowById(ID_NODECONNECT)->IsEnabled()) {
 		// Single "x.x.x.x" field (issue #402 review, matches the eD2k tab's
-		// IDC_IPADDRESS). Octets are reversed before StringIPtoUint32
-		// because that function returns anti-host order and Kad expects
-		// host order -- same trick the old four-separate-fields version
-		// used, just built from one string instead of four controls.
-		wxArrayString octets =
-			wxSplit(dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP))->GetValue(), '.');
+		// IDC_IPADDRESS). Trim first: the field's whole point is easier
+		// copy-paste, and a paste commonly carries a leading/trailing space
+		// that would otherwise fail as "Invalid ip to bootstrap". Octets are
+		// reversed before StringIPtoUint32 because that function returns
+		// anti-host order and Kad expects host order -- same trick the old
+		// four-separate-fields version used, just built from one string
+		// instead of four controls. wxSplit's third parameter (default '\\')
+		// is an escape character, not meaningful for IPs; left at default.
+		wxArrayString octets = wxSplit(dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP))
+						       ->GetValue()
+						       .Trim(true)
+						       .Trim(false),
+			'.');
 		uint32 ip = 0;
 		if (octets.GetCount() == 4) {
 			ip = StringIPtoUint32(
