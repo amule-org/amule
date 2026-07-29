@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:14+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -4607,17 +4607,16 @@ msgstr "Ведите сюда URL к файлу nodes.dat и нажмите кн
 msgid "Nodes stats"
 msgstr "Статистика узлов"
 
+# Похоже, bootstrap в eMule перевели как инициализация
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Инициализация"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Инициализация от известных клиентов"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Новый узел"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Введите здесь IP-адрес сервера в формате: x.x.x.x"
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8597,6 +8596,15 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Инициализация"
+
+#~ msgid "New node"
+#~ msgstr "Новый узел"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Дополнительно"
 
@@ -8607,10 +8615,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Инициализация от \n"
 #~ "известных клиентов"
-
-# Похоже, bootstrap в eMule перевели как инициализация
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Инициализация от известных клиентов"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Соединиться с произвольным сервером и/или Kad"

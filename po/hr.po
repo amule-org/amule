@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:09+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -4529,16 +4529,13 @@ msgid "Nodes stats"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr ""
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Privremene datoteke"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
+msgid "Enter the IP of the node here, using the x.x.x.x format."
 msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8447,6 +8444,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
 
 #, fuzzy
 #~ msgid "Stop the current connection attempts"

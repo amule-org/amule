@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:12+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -4574,16 +4574,14 @@ msgid "Nodes stats"
 msgstr "Nodes stats"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Bootstrap"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Bootstrap van bekende clients"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Nieuwe node"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Voer hier het IP van de server in, gebuik het x.x.x.x formaat."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8529,6 +8527,15 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Bootstrap"
+
+#~ msgid "New node"
+#~ msgstr "Nieuwe node"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Meer"
 
@@ -8538,9 +8545,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Bootstrap van \n"
 #~ "bekende clients"
-
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Bootstrap van bekende clients"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Verbind met een server en/of Kad"

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:07+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -4571,16 +4571,14 @@ msgid "Nodes stats"
 msgstr "Nodo estatistikak"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Autoabioa"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Bezero ezagunetarik abiarazi"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Nodo berria"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Idatzi x.x.x.x formatua erabiliaz zerbitzariaren ip helbidea."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8523,6 +8521,15 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Autoabioa"
+
+#~ msgid "New node"
+#~ msgstr "Nodo berria"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Gehiago"
 
@@ -8532,9 +8539,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Hemendik abiarazi:\n"
 #~ "bezero ezagunak"
-
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Bezero ezagunetarik abiarazi"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Konektatu edozein zerbitzari eta/edo Kad"

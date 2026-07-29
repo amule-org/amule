@@ -2590,10 +2590,13 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // "too close to the borders of the tab container").
     item0->Add( item3, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
 
-    wxFlexGridSizer *item1 = new wxFlexGridSizer( 2, 0, 0 );
-    item1->AddGrowableCol( 0 );
-    item1->AddGrowableRow( 0 );
-
+    // Graph, full width -- mirrors serverListDlgUp's shape (top row, then a
+    // full-width primary area, then a manual-entry row below) rather than
+    // splitting the tab into two side-by-side columns (issue #402 review:
+    // "use more horizontal space for the graph"). item2 keeps the same
+    // wrapping depth around the graph box as the original two-column
+    // layout had (just added straight to item0 now, instead of via the
+    // dropped wxFlexGridSizer's first column).
     wxBoxSizer *item2 = new wxBoxSizer( wxVERTICAL );
 
     wxStaticBox *item8 = new wxStaticBox( parent, -1, _("Nodes stats") );
@@ -2636,52 +2639,28 @@ item9->SetName("kadScope");
     item10->Add( item17, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     item7->Add( item10, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
     item2->Add( item7, wxSizerFlags(1).Expand() );
-    item1->Add( item2, 0, wxGROW, 0 );
+    item0->Add( item2, wxSizerFlags(1).Expand() );
 
-    wxStaticBox *item21 = new wxStaticBox( parent, -1, _("Bootstrap") );
-    wxStaticBoxSizer *item20 = new wxStaticBoxSizer( item21, wxVERTICAL );
-
-    wxStaticBox *item23 = new wxStaticBox( parent, -1, _("New node") );
-    wxStaticBoxSizer *item22 = new wxStaticBoxSizer( item23, wxVERTICAL );
-
+    // Bootstrap-from-node row, full width below the graph -- mirrors
+    // serverListDlgUp's "Add server manually" row: a single IP field (not
+    // eD2k's ID_NODE_IP1..4 four-octet split -- issue #402 review: "have
+    // the IP address in just one field, it's easier to copy") plus a port
+    // field and the Connect button.
     wxBoxSizer *item24 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxStaticText *item25 = new wxStaticText( parent, -1, _("IP:"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
-    item24->Add( item25, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 10) );
-    CMuleTextCtrl *item26 = new CMuleTextCtrl( parent, ID_NODE_IP1, "", wxDefaultPosition, wxSize(30,-1), 0 );
-    item24->Add( item26, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
-    wxStaticText *item27 = new wxStaticText( parent, -1, ".", wxDefaultPosition, wxDefaultSize, 0 );
-    item24->Add( item27, wxSizerFlags().Center().Border(wxTOP, 5) );
-    CMuleTextCtrl *item28 = new CMuleTextCtrl( parent, ID_NODE_IP2, "", wxDefaultPosition, wxSize(30,-1), 0 );
-    item24->Add( item28, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
-    wxStaticText *item29 = new wxStaticText( parent, -1, ".", wxDefaultPosition, wxDefaultSize, 0 );
-    item24->Add( item29, wxSizerFlags().Center().Border(wxTOP, 5) );
-    CMuleTextCtrl *item30 = new CMuleTextCtrl( parent, ID_NODE_IP3, "", wxDefaultPosition, wxSize(30,-1), 0 );
-    item24->Add( item30, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
-    wxStaticText *item31 = new wxStaticText( parent, -1, ".", wxDefaultPosition, wxDefaultSize, 0 );
-    item24->Add( item31, wxSizerFlags().Center().Border(wxTOP, 5) );
-    CMuleTextCtrl *item32 = new CMuleTextCtrl( parent, ID_NODE_IP4, "", wxDefaultPosition, wxSize(30,-1), 0 );
-    item24->Add( item32, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
-    item22->Add( item24, wxSizerFlags().Expand().CenterVertical() );
-    wxFlexGridSizer *item33 = new wxFlexGridSizer( 2, 0, 0 );
-    item33->AddGrowableCol( 1 );
-
+    wxStaticText *item25 = new wxStaticText( parent, -1, _("Bootstrap from node: IP"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+    item24->Add( item25, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    CMuleTextCtrl *item26 = new CMuleTextCtrl( parent, ID_NODE_IP, "", wxDefaultPosition, wxDefaultSize, 0 );
+    item26->SetToolTip( _("Enter the IP of the node here, using the x.x.x.x format.") );
+    item24->Add( item26, wxSizerFlags(1).Center().Border(wxLEFT|wxRIGHT, 5) );
     wxStaticText *item34 = new wxStaticText( parent, -1, _("Port:"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
-    item33->Add( item34, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
+    item24->Add( item34, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item35 = new CMuleTextCtrl( parent, ID_NODE_PORT, "", wxDefaultPosition, wxSize(80,-1), 0 );
-    item33->Add( item35, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    item22->Add( item33, wxSizerFlags().Expand().CenterVertical() );
+    item24->Add( item35, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     wxButton *item36 = new wxButton( parent, ID_NODECONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item36->Enable( false );
-    item22->Add( item36, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
-    item20->Add( item22, wxSizerFlags().Expand().Border(wxALL, 5) );
-
-    // The "Bootstrap from known clients" button (formerly here, ID_KNOWNNODECONNECT)
-    // was dropped (issue #402 review): it called the same theApp->StartKad() as the
-    // Kad tab's own Connect/Cancel/Disconnect toggle, so it was a redundant second
-    // way to do the same thing rather than a distinct action.
-    item1->Add( item20, wxSizerFlags().Top() );
-    item0->Add( item1, wxSizerFlags(1).Expand() );
+    item24->Add( item36, wxSizerFlags().Center().Border(wxLEFT, 5) );
+    item0->Add( item24, wxSizerFlags().Expand().CenterVertical().Border(wxTOP|wxBOTTOM, 5) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );
@@ -5983,40 +5962,61 @@ namespace
 // per-tab button sitting next to a one-line URL field (issue #402 review:
 // "the button and the icon are too big"). Scaled to a uniform, more modest
 // size here rather than reworking the XPM data connButImg still serves.
-wxBitmap ScaledConnButImg(size_t index)
+// Cached per state: SetConnectButtonState runs on every connection-state
+// update (i.e. often), and rescaling the same three source bitmaps every
+// single call is wasted work -- index 2 is already 16x16 physical pixels,
+// so without the cache it round-trips through ConvertToImage/Rescale for
+// nothing on every "connecting" tick. DPI is resolved from whichever
+// button first triggers the fill for a given index; the ED2K and Kad
+// buttons live on the same top-level window in practice, so this doesn't
+// need to be any more dynamic than that.
+wxBitmap ScaledConnButImg(size_t index, const wxWindow *dpiRef)
 {
-	wxImage image = connButImg(index).ConvertToImage();
-	image.Rescale(16, 16, wxIMAGE_QUALITY_HIGH);
-	return wxBitmap(image);
+	static wxBitmap cache[3];
+	if (!cache[index].IsOk()) {
+		wxImage image = connButImg(index).ConvertToImage();
+		const int size = wxWindow::FromDIP(16, dpiRef);
+		image.Rescale(size, size, wxIMAGE_QUALITY_HIGH);
+		cache[index] = wxBitmap(image);
+	}
+	return cache[index];
 }
 } // namespace
 
 void SetConnectButtonState(
 	wxButton *button, EConnButtonState state, bool enabled, const wxString &networkName)
 {
-	// The leading space (outside the translatable string, so no new msgid)
-	// is the portable way to put a gap between the icon and the label:
-	// wxButton::SetBitmapMargins() only does anything on wxOSX (see
-	// osx/anybutton.h) -- wxGTK inherits the base class's no-op, so using
-	// it here would fix macOS while silently doing nothing on Linux.
-	//
 	// networkName ("ED2K" / "Kad") is folded into the label itself, not
 	// concatenated after translation: the button sits in the same spot on
 	// both tabs, so without it there is nothing on the button telling you
 	// which network "Disconnect" affects (issue #402 review).
+	wxString label;
 	switch (state) {
 	case ConnButtonConnecting:
-		button->SetLabel(wxT(" ") + wxString(CFormat(_("Cancel %s")) % networkName));
-		button->SetBitmap(ScaledConnButImg(2));
+		label = wxString(CFormat(_("Cancel %s")) % networkName);
+		button->SetBitmap(ScaledConnButImg(2, button));
 		break;
 	case ConnButtonConnected:
-		button->SetLabel(wxT(" ") + wxString(CFormat(_("Disconnect %s")) % networkName));
-		button->SetBitmap(ScaledConnButImg(1));
+		label = wxString(CFormat(_("Disconnect %s")) % networkName);
+		button->SetBitmap(ScaledConnButImg(1, button));
 		break;
 	default:
-		button->SetLabel(wxT(" ") + wxString(CFormat(_("Connect %s")) % networkName));
-		button->SetBitmap(ScaledConnButImg(0));
+		label = wxString(CFormat(_("Connect %s")) % networkName);
+		button->SetBitmap(ScaledConnButImg(0, button));
 	}
+
+	// wxButton::SetBitmapMargins() is a real gap on wxMSW and wxOSX (both
+	// override DoSetBitmapMargins -- see msw/anybutton.h, osx/anybutton.h)
+	// but a silent no-op on wxGTK, which inherits the base class's empty
+	// implementation. So GTK falls back to the old trick: a leading space
+	// outside the translatable string (so no new msgid), which depends on
+	// no translator trimming leading whitespace but is otherwise harmless.
+#ifdef __WXGTK__
+	button->SetLabel(wxT(" ") + label);
+#else
+	button->SetBitmapMargins(button->FromDIP(4), 0);
+	button->SetLabel(label);
+#endif
 
 	button->Enable(enabled);
 

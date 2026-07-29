@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:04+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -4569,16 +4569,14 @@ msgid "Nodes stats"
 msgstr "Estadístiques de nodes"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Arrancada"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Inicia des dels clients coneguts"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Nou node"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Introduïu la IP del servidor, fent servir el format x.x.x.x."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8520,6 +8518,15 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Arrancada"
+
+#~ msgid "New node"
+#~ msgstr "Nou node"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Més"
 
@@ -8529,9 +8536,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Inicia des dels \n"
 #~ "clients coneguts"
-
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Inicia des dels clients coneguts"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Connecta amb qualsevol servidor i/o Kad"

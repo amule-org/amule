@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:15+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -4599,16 +4599,16 @@ msgid "Nodes stats"
 msgstr "Statistika vozlišč"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Začetno nalaganje"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr ""
+"Naloži od znanih \n"
+"odjemalcev"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Novo vozlišče"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Sem vnesite IP strežnika v formatu x.x.x.x."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8581,17 +8581,21 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Začetno nalaganje"
+
+#~ msgid "New node"
+#~ msgstr "Novo vozlišče"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Več"
 
 #~ msgid ""
 #~ "Bootstrap from \n"
 #~ "known clients"
-#~ msgstr ""
-#~ "Naloži od znanih \n"
-#~ "odjemalcev"
-
-#~ msgid "Bootstrap from known clients"
 #~ msgstr ""
 #~ "Naloži od znanih \n"
 #~ "odjemalcev"

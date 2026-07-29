@@ -504,10 +504,7 @@ wxSizer *serverListDlgDown(wxWindow *parent, bool call_fit = TRUE, bool set_size
 #define ID_UPDATEKADLIST 10253
 #define IDC_NODESLISTURL 10254
 #define ID_KADSCOPE 10255
-#define ID_NODE_IP1 10256
-#define ID_NODE_IP2 10257
-#define ID_NODE_IP3 10258
-#define ID_NODE_IP4 10259
+#define ID_NODE_IP 10256
 #define ID_NODE_PORT 10260
 #define ID_NODECONNECT 10261
 #define ID_KADDISCONNECT 10263

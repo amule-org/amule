@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -4566,16 +4566,16 @@ msgid "Nodes stats"
 msgstr "ノードの統計"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "ブートストラップ"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr ""
+"既知のクライアントから\n"
+"ブートストラップする"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "新しいノード"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP："
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "x.x.x.xフォーマットでサーバのIPアドレスを入力してください。"
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8524,18 +8524,21 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "ブートストラップ"
+
+#~ msgid "New node"
+#~ msgstr "新しいノード"
+
+#~ msgid "IP:"
+#~ msgstr "IP："
+
 #~ msgid "More"
 #~ msgstr "もっと"
 
 #~ msgid ""
 #~ "Bootstrap from \n"
 #~ "known clients"
-#~ msgstr ""
-#~ "既知のクライアントから\n"
-#~ "ブートストラップする"
-
-#, fuzzy
-#~ msgid "Bootstrap from known clients"
 #~ msgstr ""
 #~ "既知のクライアントから\n"
 #~ "ブートストラップする"

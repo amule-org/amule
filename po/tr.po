@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -4541,16 +4541,14 @@ msgid "Nodes stats"
 msgstr "Düğüm istatistikleri"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Ön Yükleme"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Bilinen kullanıcılardan Ön Yükleme"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Yeni düğüm"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Yeni sunucun IP numarasını x.x.x.x biçiminde buraya giriniz."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8500,6 +8498,15 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
 
+#~ msgid "Bootstrap"
+#~ msgstr "Ön Yükleme"
+
+#~ msgid "New node"
+#~ msgstr "Yeni düğüm"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Daha Fazla"
 
@@ -8509,9 +8516,6 @@ msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
 #~ msgstr ""
 #~ "Bilinen kullanıcılardan\n"
 #~ "Ön Yükleme"
-
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Bilinen kullanıcılardan Ön Yükleme"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Herhangi bir sunucuya ve/veya Kad'a bağlan."

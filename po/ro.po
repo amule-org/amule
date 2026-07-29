@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:14+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -4579,16 +4579,14 @@ msgid "Nodes stats"
 msgstr "Stare noduri"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Bootstrap"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Bootstrap de la clienții cunoscuți"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Nod nou"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Introduceți aici adresa IP a serverului, utilizând formatul x.x.x.x  ."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8547,6 +8545,15 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Bootstrap"
+
+#~ msgid "New node"
+#~ msgstr "Nod nou"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Mai mult"
 
@@ -8556,9 +8563,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Bootstrap de la \n"
 #~ "clienți cunoscuți"
-
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Bootstrap de la clienții cunoscuți"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Conectare la orice server și/sau Kad"

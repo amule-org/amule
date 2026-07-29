@@ -42,10 +42,7 @@
 #endif
 
 wxBEGIN_EVENT_TABLE(CKadDlg, wxPanel)
-	EVT_TEXT(ID_NODE_IP1, CKadDlg::OnFieldsChange)
-	EVT_TEXT(ID_NODE_IP2, CKadDlg::OnFieldsChange)
-	EVT_TEXT(ID_NODE_IP3, CKadDlg::OnFieldsChange)
-	EVT_TEXT(ID_NODE_IP4, CKadDlg::OnFieldsChange)
+	EVT_TEXT(ID_NODE_IP, CKadDlg::OnFieldsChange)
 	EVT_TEXT(ID_NODE_PORT, CKadDlg::OnFieldsChange)
 
 	EVT_TEXT_ENTER(IDC_NODESLISTURL, CKadDlg::OnBnClickedUpdateNodeList)
@@ -156,7 +153,7 @@ void CKadDlg::UpdateNodeCount(unsigned nodeCount)
 void CKadDlg::OnFieldsChange(wxCommandEvent &WXUNUSED(evt))
 {
 	// These are the IDs of the search-fields
-	int textfields[] = { ID_NODE_IP1, ID_NODE_IP2, ID_NODE_IP3, ID_NODE_IP4, ID_NODE_PORT };
+	int textfields[] = { ID_NODE_IP, ID_NODE_PORT };
 
 	bool enable = true;
 	for (int textfield : textfields) {
@@ -170,12 +167,18 @@ void CKadDlg::OnFieldsChange(wxCommandEvent &WXUNUSED(evt))
 void CKadDlg::OnBnClickedBootstrapClient(wxCommandEvent &WXUNUSED(evt))
 {
 	if (FindWindowById(ID_NODECONNECT)->IsEnabled()) {
-		// Ip is reversed since StringIPtoUint32 returns anti-host and kad expects host order
-		uint32 ip = StringIPtoUint32(
-			dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP4))->GetValue() + "." +
-			dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP3))->GetValue() + "." +
-			dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP2))->GetValue() + "." +
-			dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP1))->GetValue());
+		// Single "x.x.x.x" field (issue #402 review, matches the eD2k tab's
+		// IDC_IPADDRESS). Octets are reversed before StringIPtoUint32
+		// because that function returns anti-host order and Kad expects
+		// host order -- same trick the old four-separate-fields version
+		// used, just built from one string instead of four controls.
+		wxArrayString octets =
+			wxSplit(dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP))->GetValue(), '.');
+		uint32 ip = 0;
+		if (octets.GetCount() == 4) {
+			ip = StringIPtoUint32(
+				octets[3] + "." + octets[2] + "." + octets[1] + "." + octets[0]);
+		}
 
 		if (ip == 0) {
 			wxMessageBox(

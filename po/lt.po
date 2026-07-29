@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:11+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -4601,16 +4601,16 @@ msgid "Nodes stats"
 msgstr "Mazgų statistika"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Inicializavimas"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr ""
+"Inicializuoti iš \n"
+"žinomų klientų"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Naujas mazgas"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Įrašykite serverio IP adresą naudodami a.b.c.d formą."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8611,18 +8611,21 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Inicializavimas"
+
+#~ msgid "New node"
+#~ msgstr "Naujas mazgas"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Daugiau"
 
 #~ msgid ""
 #~ "Bootstrap from \n"
 #~ "known clients"
-#~ msgstr ""
-#~ "Inicializuoti iš \n"
-#~ "žinomų klientų"
-
-#, fuzzy
-#~ msgid "Bootstrap from known clients"
 #~ msgstr ""
 #~ "Inicializuoti iš \n"
 #~ "žinomų klientų"

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:05+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -4567,16 +4567,14 @@ msgid "Nodes stats"
 msgstr "Knotenstatistik"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Bootstrap"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr "Bootstrap von bekannten Clients"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Neuer Knoten"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Hier die IP des Servers im Format x.x.x.x eingeben."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8534,6 +8532,15 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
 
+#~ msgid "Bootstrap"
+#~ msgstr "Bootstrap"
+
+#~ msgid "New node"
+#~ msgstr "Neuer Knoten"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Mehr"
 
@@ -8543,9 +8550,6 @@ msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
 #~ msgstr ""
 #~ "Bootstrap von \n"
 #~ "bekannten Clients"
-
-#~ msgid "Bootstrap from known clients"
-#~ msgstr "Bootstrap von bekannten Clients"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Mit irgendeinem Server und/oder Kad verbinden"

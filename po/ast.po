@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 11:17+0200\n"
+"POT-Creation-Date: 2026-07-29 11:49+0200\n"
 "PO-Revision-Date: 2026-07-28 20:03+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -4583,16 +4583,16 @@ msgid "Nodes stats"
 msgstr "Estadístiques nodos"
 
 #: src/muuli_wdr.cpp
-msgid "Bootstrap"
-msgstr "Coneutar"
+#, fuzzy
+msgid "Bootstrap from node: IP"
+msgstr ""
+"Coneutar dende \n"
+"veceros conocíos"
 
 #: src/muuli_wdr.cpp
-msgid "New node"
-msgstr "Nuevu nodu"
-
-#: src/muuli_wdr.cpp
-msgid "IP:"
-msgstr "IP:"
+#, fuzzy
+msgid "Enter the IP of the node here, using the x.x.x.x format."
+msgstr "Introduz la IP del sirvidor, usando'l formatu X.X.X.X."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -8575,18 +8575,21 @@ msgstr ""
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
 
+#~ msgid "Bootstrap"
+#~ msgstr "Coneutar"
+
+#~ msgid "New node"
+#~ msgstr "Nuevu nodu"
+
+#~ msgid "IP:"
+#~ msgstr "IP:"
+
 #~ msgid "More"
 #~ msgstr "Más"
 
 #~ msgid ""
 #~ "Bootstrap from \n"
 #~ "known clients"
-#~ msgstr ""
-#~ "Coneutar dende \n"
-#~ "veceros conocíos"
-
-#, fuzzy
-#~ msgid "Bootstrap from known clients"
 #~ msgstr ""
 #~ "Coneutar dende \n"
 #~ "veceros conocíos"
