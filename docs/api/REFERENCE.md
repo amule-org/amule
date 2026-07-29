@@ -79,6 +79,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`POST /api/v0/networks/connect`](#post-apiv0networksconnect) — connect ed2k / kad / both
 - [`POST /api/v0/networks/disconnect`](#post-apiv0networksdisconnect) — disconnect ed2k / kad / both
 - [`POST /api/v0/kad/bootstrap`](#post-apiv0kadbootstrap) — single-contact Kad bootstrap
+- [`POST /api/v0/kad/update`](#post-apiv0kadupdate) — refresh the Kad node list from a `nodes.dat` URL
 - [`GET /api/v0/kad`](#get-apiv0kad) — Kad-only status subtree
 
 **Logs**
@@ -1744,6 +1745,31 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 **Response:** `202 Accepted` → `{ "ok": true, "ip": <uint32>, "port": <uint16> }`. The Kad probe itself is fire-and-forget UDP; the `202` confirms amuled accepted the request, not that the contact was reachable.
 
 **Errors:** `400 bad_request` (missing/non-string-or-number `ip`, missing/non-numeric `port`, port outside `[0, 65535]`, malformed dotted-quad), `400 amuled_rejected`, `503 ec_unavailable`.
+
+#### `POST /api/v0/kad/update`
+
+**Auth:** `ADMIN`
+
+Downloads a `nodes.dat` from the supplied URL and rebuilds the Kad node list from it — the Kad counterpart of [`POST /api/v0/servers/update`](#post-apiv0serversupdate), and the same operation the desktop GUI's "Update node list from URL" button drives.
+
+**Body:**
+
+```json
+{ "nodes_url": "https://upd.emule-security.org/nodes.dat" }
+```
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"nodes_url":"https://upd.emule-security.org/nodes.dat"}' \
+  "http://$HOST/api/v0/kad/update"
+```
+
+Two side effects are worth planning for. The URL is **persisted** into the `kademlia.update_url` preference, so a subsequent `GET /preferences` reflects it — there is no need to PATCH it separately. And once the download completes, amuled **stops Kad, swaps in the new `nodes.dat`, and starts Kad again**; expect a brief Kad outage and a `kad_state` transition on the SSE stream. The desktop GUI prompts before doing this; the API does not.
+
+**Response:** `202 Accepted` → `{ "ok": true, "nodes_url": "..." }`. The download is asynchronous, so the `202` confirms amuled accepted the request, not that the node list was replaced.
+
+**Errors:** `400 bad_request` (missing/non-string/empty `nodes_url`, or a scheme other than `http://` / `https://`), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `GET /api/v0/kad`
 

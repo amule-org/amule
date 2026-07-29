@@ -928,6 +928,13 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// favour of /networks/{connect,disconnect} with `{"network":"kad"}`
 	// — the two were strict aliases and the granular-selector form on
 	// /networks/* makes the dedicated shortcut redundant.
+	if (path == "/api/v0/kad/update") {
+		if (req.method != "POST") {
+			return ErrorResponse(405, "method_not_allowed", "only POST on /kad/update");
+		}
+		return HandleKadUpdateFromUrl(req);
+	}
+
 	if (path == "/api/v0/kad/bootstrap") {
 		if (req.method != "POST") {
 			return ErrorResponse(405, "method_not_allowed", "only POST on /kad/bootstrap");
@@ -6236,6 +6243,73 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(const CHttpServer
 // `{"network":"kad"}`. The Kad bootstrap handler below is genuinely
 // distinct (single-contact bootstrap from an explicit IP+port) and
 // stays.
+
+// POST /kad/update — refresh the Kad node list from a nodes.dat URL (#693).
+//
+// Strict mirror of HandleServerUpdateFromUrl: same validation, same 202. The
+// EC handler (EC_OP_KAD_UPDATE_FROM_URL) persists the URL into preferences
+// itself via SetKadNodesUrl(), so this deliberately does NOT also patch
+// kademlia.update_url — doing both would diverge from the ed2k path and could
+// race it.
+//
+// Side effect worth knowing: once the download completes amuled stops Kad,
+// swaps nodes.dat in, and starts Kad again. The desktop GUI warns before
+// firing this; API callers get the same behaviour without the prompt.
+CHttpServer::Response CApiDispatcher::HandleKadUpdateFromUrl(const CHttpServer::Request &req)
+{
+	auto a = Authenticate(req);
+	if (!a.ok)
+		return a.rejection;
+	if (auto rej = RequireAdmin(a))
+		return *rej;
+
+	picojson::value root;
+	std::string parse_err;
+	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
+		return ErrorResponse(400, "bad_request", parse_err.c_str());
+	}
+	const auto &obj = root.get<picojson::object>();
+	const auto it = obj.find("nodes_url");
+	if (it == obj.end() || !it->second.is<std::string>()) {
+		return ErrorResponse(400, "bad_request", "required string field `nodes_url` is missing");
+	}
+	const std::string &url = it->second.get<std::string>();
+	if (url.empty()) {
+		return ErrorResponse(400, "bad_request", "`nodes_url` must not be empty");
+	}
+	// Same scheme gate as the ed2k path: amuled hands the string to
+	// libcurl, so anything that is not http(s) is rejected here rather
+	// than failing asynchronously with no way to report it back.
+	if (url.compare(0, 7, "http://") != 0 && url.compare(0, 8, "https://") != 0) {
+		return ErrorResponse(400, "bad_request", "`nodes_url` must be an http:// or https:// URL");
+	}
+
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_KAD_UPDATE_FROM_URL));
+	ec_req->AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, wxString::FromUTF8(url.c_str())));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for KAD_UPDATE_FROM_URL");
+	}
+	std::string ec_err;
+	if (IsEcFailedResponse(ec_resp, ec_err)) {
+		delete ec_resp;
+		return ErrorResponse(400, "amuled_rejected", ec_err.c_str());
+	}
+	delete ec_resp;
+
+	CHttpServer::Response r;
+	r.status = 202;
+	r.content_type = "application/json";
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key("ok");
+	w.ValueBool(true);
+	w.Key("nodes_url");
+	w.ValueString(wxString::FromUTF8(url.c_str()));
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
 
 CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Request &req)
 {
