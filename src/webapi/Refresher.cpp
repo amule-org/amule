@@ -2253,11 +2253,14 @@ void ApplyPrefFieldFromTag(const PrefField &f, const CECTag *group, PreferencesS
 		// The wire carries the index into the row's name table. An
 		// out-of-range value leaves the default rather than inventing a
 		// member the daemon never named.
-		const std::int64_t idx = t->GetInt();
-		std::size_t n = 0;
+		// GetInt() is unsigned, so keep the index unsigned too: a signed
+		// copy would narrow, and the >= 0 half of the range check would
+		// be dead anyway.
+		const std::uint64_t idx = t->GetInt();
+		std::uint64_t n = 0;
 		while (f.enum_names[n] != nullptr)
 			++n;
-		if (idx >= 0 && static_cast<std::size_t>(idx) < n)
+		if (idx < n)
 			*static_cast<std::string *>(f.member(out)) = f.enum_names[idx];
 		break;
 	}
