@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-28 21:43+0200\n"
+"POT-Creation-Date: 2026-07-29 10:26+0200\n"
 "PO-Revision-Date: 2026-07-28 20:06+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -3296,8 +3296,9 @@ msgid "Start"
 msgstr "Comenzar"
 
 #: src/muuli_wdr.cpp
-msgid "More"
-msgstr "Más"
+#, fuzzy
+msgid "Extend"
+msgstr "Extensión"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -8513,6 +8514,9 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid "More"
+#~ msgstr "Más"
 
 #~ msgid "Disconnect Kad"
 #~ msgstr "Desconectar Kad"

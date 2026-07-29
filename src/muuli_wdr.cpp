@@ -334,7 +334,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item43->Add( item44, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticLine *item45 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item43->Add( item45, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxButton *item46 = new wxButton( parent, IDC_SEARCHMORE, _("More"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxButton *item46 = new wxButton( parent, IDC_SEARCHMORE, _("Extend"), wxDefaultPosition, wxDefaultSize, 0 );
     item46->SetToolTip( _("Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed.") );
     item46->Enable( false );
     item43->Add( item46, wxSizerFlags().Center().Border(wxALL, 5) );
