@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 15:59+0200\n"
+"POT-Creation-Date: 2026-07-30 08:45+0200\n"
 "PO-Revision-Date: 2026-07-28 20:12+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -324,7 +324,7 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "Du freista å køyre vevtenar ved oppstart, men binærfila amuleweb kan ikkje køyrast. Installer pakken som inneheld vevtenaren til aMule, eller kompiler aMule med --enable-webserver og køyr make install"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "FEIL"
 
@@ -6116,6 +6116,10 @@ msgid "Clear search history"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Search warning"
+msgstr "Søkeåtvaring"
+
+#: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr ""
 
@@ -6127,10 +6131,6 @@ msgstr "Søk"
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Min storleik må vere mindre enn maks storleik. Maks storleik ignorert."
-
-#: src/SearchDlg.cpp
-msgid "Search warning"
-msgstr "Søkeåtvaring"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"

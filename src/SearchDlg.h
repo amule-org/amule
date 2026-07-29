@@ -132,6 +132,44 @@ public:
 	// local ID to the daemon-allocated one once the START reply arrives.
 	void RekeySearch(wxUIntPtr oldID, wxUIntPtr newID);
 
+	// The core rejected something this dialog optimistically opened a tab for:
+	// report the reason and undo the tab. Covers both a search start and a
+	// "View Files" browse, since in amuleGUI both are optimistic and both come
+	// back as EC_OP_FAILED carrying the same EC_TAG_SEARCH_REF (got3nks, PR
+	// #680 review).
+	//
+	// The monolithic build calls it directly from OnBnClickedStart, which has
+	// the error string in hand; amuleGUI reaches it from the EC_OP_FAILED
+	// reply, since CSearchListRem::StartNewSearch returns "" unconditionally
+	// and the rejection only arrives later over EC. Sharing the one path is
+	// what keeps a rejected start looking the same in both builds.
+	//
+	// searchID is the optimistic tab id: amuleGUI has already created that tab
+	// and needs it dropped, the monolithic build never created one and
+	// CloseSearchTab no-ops there. The search-button reset is skipped for a
+	// browse -- the user never pressed Search, so it would wrongly disable
+	// Download/Stop for whichever search tab is visible.
+	void OnStartRejected(wxUIntPtr searchID, const wxString &error);
+
+	// This search's results are gone -- close its tab, since a tab left open
+	// on a freed search can only mislead (in amuleGUI "Download" would
+	// silently do nothing, the daemon's m_results no longer having the hash;
+	// in the monolithic build the rows hold raw CSearchFile pointers that
+	// have just been deleted). One entry point for both builds, since it is
+	// one idea (got3nks, PR #680 review):
+	//   - amuleGUI: EC_TAG_SEARCH_EXPIRED, i.e. another client closed the
+	//     search or the daemon's LRU evicted it.
+	//   - monolithic: MuleNotify::Search_Removed, fired by
+	//     CSearchList::RemoveResults whenever a bucket is freed.
+	// Goes through the normal DeletePage path so OnSearchClosing does the
+	// actual cleanup in one place; m_expiringSearchID tells it to skip
+	// StopSearchById, which for both callers would address a search the core
+	// has already discarded. No-op if no tab matches id (e.g. it was never
+	// opened here), or if OnSearchClosing is already on the stack -- which
+	// is what stops the monolithic close path (OnSearchClosing ->
+	// RemoveResults -> Search_Removed -> here) from recursing.
+	void CloseSearchTab(wxUIntPtr searchID);
+
 	// "View Files" (browse): find-or-create the tab for a peer's shared-file
 	// listing, keyed by the peer's ECID so a re-browse refreshes the same tab.
 	// searchID is the result-routing ID (daemon-allocated over EC, or the local
@@ -224,6 +262,22 @@ private:
 	// bottom bar can be refreshed instantly when the visible tab changes
 	// (rather than waiting for the next poll). Empty on monolithic.
 	std::map<wxUIntPtr, uint32> m_searchProgress;
+
+	// Set by CloseSearchTab immediately before DeletePage(), which fires
+	// PAGE_CLOSING synchronously and re-enters OnSearchClosing on the same
+	// call stack. Tells that handler to skip StopSearchById for this one
+	// id -- the core has already discarded it -- while still running its
+	// other cleanup (ShowResults, m_searchProgress.erase, RemoveResults,
+	// last-tab button disabling), so that cleanup exists in exactly one
+	// place (got3nks, PR #680 review). 0 the rest of the time.
+	wxUIntPtr m_expiringSearchID;
+
+	// True while OnSearchClosing is on the stack. In the monolithic build
+	// that handler calls CSearchList::RemoveResults, which now fires
+	// MuleNotify::Search_Removed -> CloseSearchTab for the very tab being
+	// closed; without this the pair would recurse (and double-delete the
+	// page). Set/cleared by a scoped guard in OnSearchClosing.
+	bool m_inSearchClosing;
 
 	// Set the bottom progress bar from a per-search status sentinel: a finished
 	// search (0xffff/0xfffe) resets it, otherwise it shows the running percent.

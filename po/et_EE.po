@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 15:59+0200\n"
+"POT-Creation-Date: 2026-07-30 08:45+0200\n"
 "PO-Revision-Date: 2026-07-28 20:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -322,7 +322,7 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "Soovisid et web server käivitataks käivitumisel, kuid amuleweb programm pole võimeline käivituma. Palun paigalada versioon mis sisaldab aMule web serverit või kompileeri aMule kasutades võtit --enable-webserver ja seejärel make install"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "VIGA"
 
@@ -6088,6 +6088,10 @@ msgid "Clear search history"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Search warning"
+msgstr "Otsingu hoiatus"
+
+#: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr ""
 
@@ -6099,10 +6103,6 @@ msgstr "Otsingud"
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Min suurus peab olema väiksem kui max suurus. Ignoreerin Max suurust."
-
-#: src/SearchDlg.cpp
-msgid "Search warning"
-msgstr "Otsingu hoiatus"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"

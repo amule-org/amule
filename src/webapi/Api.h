@@ -212,6 +212,18 @@ private:
 	CHttpServer::Response HandleCategoryDelete(
 		const CHttpServer::Request &, const std::string &index_str);
 	// search.
+	// Cache miss on a search_id: ask the core once (EC_OP_SEARCH_LIST)
+	// whether it holds this id anyway -- a search another client, or the
+	// monolithic GUI, started. Seeds the local slot via
+	// CState::MarkSearchDiscovered and returns true when found. Shared by
+	// every endpoint that addresses a search by id, so none of them can
+	// 404 on an id GET /api/v0/search just enumerated (got3nks, PR #680
+	// review): that contradiction was fixed once for /search/results and
+	// then found again in /search/stop, which is what made it a helper
+	// rather than a second copy. Deliberately a one-off round trip on the
+	// miss, not a per-tick refresher poll -- discovery is rare, so paying
+	// only when actually asked keeps the steady-state EC cost at zero.
+	bool DiscoverSearchIfHeldByCore(std::uint32_t search_id);
 	CHttpServer::Response HandleSearchList(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStart(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStop(const CHttpServer::Request &);

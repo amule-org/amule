@@ -126,6 +126,17 @@ void KnownFileBeingDestroyed(CKnownFile *file);
 // its pointer instead of dangling. See CCommentDialogLst::DropReferencesTo.
 void SearchFileBeingDestroyed(CSearchFile *file);
 
+// Fired from CSearchList::RemoveResults, once per search whose bucket is
+// freed, so a tab still open on it closes instead of outliving the results.
+// Needed the moment closing a tab genuinely frees the search (got3nks, PR
+// #680 review): in a monolithic build the GUI and core share the same
+// CSearchFile objects, which CSearchListCtrl holds as raw pointers via
+// SetItemPtrData and in m_filteredOut, so a tab left open over a freed
+// bucket faults on the next repaint, sort, scroll or click. It also gives
+// the monolithic GUI the local counterpart of amulegui's remote-driven tab
+// close, rather than two mechanisms for one idea.
+void Search_Removed(wxUIntPtr searchID);
+
 void ServerAdd(CServer *server);
 void ServerRemove(CServer *server);
 void ServerRemoveDead();
@@ -519,6 +530,10 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 // doc-comment in this header.
 #define Notify_SearchFileBeingDestroyed(file) \
 	MuleNotify::DoNotify(&MuleNotify::SearchFileBeingDestroyed, file)
+
+// A search's result bucket was freed — see MuleNotify::Search_Removed
+// doc-comment in this header.
+#define Notify_Search_Removed(id) MuleNotify::DoNotify(&MuleNotify::Search_Removed, id)
 
 // server
 #define Notify_ServerAdd(ptr) MuleNotify::DoNotify(&MuleNotify::ServerAdd, ptr)

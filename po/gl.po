@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 15:59+0200\n"
+"POT-Creation-Date: 2026-07-30 08:45+0200\n"
 "PO-Revision-Date: 2026-07-28 20:08+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -343,7 +343,7 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "Solicitou executar o servidor web ó inicio pero non se puido executar o programa amuleweb. Instale o paquete que conteña o servidor web do aMule ou compile o aMule empregando o parámetro --enable-webserver e logo execute make install"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ERRO"
 
@@ -6095,6 +6095,10 @@ msgid "Clear search history"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Search warning"
+msgstr "Aviso na busca"
+
+#: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr "Non se pode buscar se tanto eD2k coma Kademlia están desactivados."
 
@@ -6105,10 +6109,6 @@ msgstr "Erro na busca"
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "O tamaño mínimo debe ser máis pequeno que o máximo. Tamaño máximo ignorado."
-
-#: src/SearchDlg.cpp
-msgid "Search warning"
-msgstr "Aviso na busca"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"

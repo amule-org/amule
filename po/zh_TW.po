@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 15:59+0200\n"
+"POT-Creation-Date: 2026-07-30 08:45+0200\n"
 "PO-Revision-Date: 2026-07-28 20:18+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -327,7 +327,7 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "您要求啟動時執行網站伺服器，但系統無法執行 amuleweb。請安裝含有 aMule 網站伺服器的套件，或於編譯 aMule 程式碼時加入 --enable-webserver 選項"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "錯誤"
 
@@ -6070,6 +6070,10 @@ msgid "Clear search history"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Search warning"
+msgstr "搜尋警告"
+
+#: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr ""
 
@@ -6081,10 +6085,6 @@ msgstr "搜尋"
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "最小值必須小於最大值，最大值已被忽略。"
-
-#: src/SearchDlg.cpp
-msgid "Search warning"
-msgstr "搜尋警告"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"

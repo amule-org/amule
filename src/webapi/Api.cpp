@@ -5207,33 +5207,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	const SearchIdParam sidp = ParseSearchIdParam(QueryOf(req));
 	if (sidp.provided && sidp.value != 0 && !m_state.HasSearch(sidp.value)) {
 		// Cache miss: before giving up, ask the core once whether it is
-		// holding this id anyway -- a search another client (or the
-		// monolithic GUI) started. GET /api/v0/search already lists such
-		// searches via the same EC_OP_SEARCH_LIST; without this, a search
-		// id the enumeration just reported would still 404 here (got3nks,
-		// PR #680 review). Deliberately a one-off round trip on the miss,
-		// not a per-tick refresher poll -- discovery is rare, so paying for
-		// it only when actually asked about keeps the steady-state EC cost
-		// at zero, same reasoning as amulegui's own event-driven discovery.
-		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SEARCH_LIST));
-		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
-		bool found = false;
-		if (ec_resp) {
-			for (const CECTag &entry : *ec_resp) {
-				if (static_cast<std::uint32_t>(entry.GetInt()) != sidp.value)
-					continue;
-				const CECTag *kindTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
-				m_state.MarkSearchDiscovered(sidp.value,
-					SearchKindToString(
-						kindTag ? static_cast<std::uint8_t>(kindTag->GetInt())
-							: EC_SEARCH_GLOBAL)
-						.ToStdString());
-				found = true;
-				break;
-			}
-			delete ec_resp;
-		}
-		if (!found) {
+		// holding this id anyway -- see DiscoverSearchIfHeldByCore.
+		if (!DiscoverSearchIfHeldByCore(sidp.value)) {
 			return ErrorResponse(
 				404, "not_found", "no search with that search_id (never started or expired)");
 		}
@@ -5311,6 +5286,31 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(const CHttpServer::Req
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
+}
+
+// See the declaration in Api.h for why this is shared rather than inlined
+// at each call site.
+bool CApiDispatcher::DiscoverSearchIfHeldByCore(std::uint32_t search_id)
+{
+	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SEARCH_LIST));
+	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
+	if (!ec_resp) {
+		return false;
+	}
+	bool found = false;
+	for (const CECTag &entry : *ec_resp) {
+		if (static_cast<std::uint32_t>(entry.GetInt()) != search_id)
+			continue;
+		const CECTag *kindTag = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
+		m_state.MarkSearchDiscovered(search_id,
+			SearchKindToString(
+				kindTag ? static_cast<std::uint8_t>(kindTag->GetInt()) : EC_SEARCH_GLOBAL)
+				.ToStdString());
+		found = true;
+		break;
+	}
+	delete ec_resp;
+	return found;
 }
 
 // Reachability fix (amule-org/amule#641): enumerates every search the
@@ -7854,7 +7854,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchStop(const CHttpServer::Reques
 
 	// Resolve to a concrete id: an explicit body id, else the current search.
 	// An explicit id that names no live slot is a 404 (mirrors GET results).
-	if (body_search_id != 0 && !m_state.HasSearch(body_search_id)) {
+	// On a cache miss, ask the core first: GET /api/v0/search enumerates
+	// searches this session never started, so without this you could see a
+	// search here and still get a 404 trying to stop or close it -- the same
+	// contradiction already fixed for /search/results, found again by driving
+	// two clients against one daemon (got3nks, PR #680 review).
+	if (body_search_id != 0 && !m_state.HasSearch(body_search_id) &&
+		!DiscoverSearchIfHeldByCore(body_search_id)) {
 		return ErrorResponse(
 			404, "not_found", "no search with that search_id (never started or expired)");
 	}

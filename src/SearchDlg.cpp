@@ -93,6 +93,8 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 : wxPanel(pParent, -1)
 {
 	m_last_search_time = 0;
+	m_expiringSearchID = 0;
+	m_inSearchClosing = false;
 
 	wxSizer *content = searchDlg(this, true);
 	content->Show(this, true);
@@ -501,19 +503,62 @@ void CSearchDlg::OnFilterCheckChange(wxCommandEvent &event)
 	}
 }
 
+namespace
+{
+// Sets a bool for the lifetime of the scope. Local to this file: the one
+// use is OnSearchClosing's re-entrancy guard, which is not worth a shared
+// utility header.
+class CScopedFlag
+{
+public:
+	explicit CScopedFlag(bool &flag)
+	: m_flag(flag)
+	{
+		m_flag = true;
+	}
+	~CScopedFlag() { m_flag = false; }
+	CScopedFlag(const CScopedFlag &) = delete;
+	CScopedFlag &operator=(const CScopedFlag &) = delete;
+
+private:
+	bool &m_flag;
+};
+} // namespace
+
 void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 {
 	CSearchListCtrl *ctrl = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(evt.GetSelection()));
 	wxASSERT(ctrl);
+	// Capture the ID *before* ShowResults(0), which sets m_nResultsID = 0 --
+	// so every GetSearchId() after that line returns 0, and the stop/free
+	// calls below silently addressed search 0 rather than this tab's search:
+	// no EC_OP_SEARCH_STOP was ever sent, RemoveResults(0) freed nothing, and
+	// m_searchProgress.erase(0) left the real entry behind. Predates the
+	// multi-search work -- identical on master, ordering and all -- but it is
+	// what made the daemon-side close gate look correct while the request it
+	// gates never actually arrived (got3nks, PR #680 review).
+	const wxUIntPtr searchID = ctrl->GetSearchId();
+	// RemoveResults below fires MuleNotify::Search_Removed, which routes back
+	// into CloseSearchTab for this very tab; the flag makes that a no-op
+	// instead of a recursive close (see m_inSearchClosing). Scoped so it
+	// clears on every exit path.
+	CScopedFlag closingGuard(m_inSearchClosing);
 	// Zero to avoid results added while destructing.
 	ctrl->ShowResults(0);
-	m_searchProgress.erase(ctrl->GetSearchId());
+	m_searchProgress.erase(searchID);
 #ifdef CLIENT_GUI
 	// Remote multi-search: closing a tab stops *and* frees that specific
 	// search on the daemon (leaving other tabs' searches running). On a
 	// legacy daemon this degrades to a parameterless stop of the single
 	// search — which is the same "abort on close" behaviour as before.
-	theApp->searchlist->StopSearchById(ctrl->GetSearchId(), true);
+	// Skipped when CloseSearchTab is the one driving this (DeletePage
+	// fires this handler synchronously): the daemon already discarded
+	// this id, so a stop request for it would be a wasted round trip
+	// (got3nks, PR #680 review).
+	if (searchID != m_expiringSearchID) {
+		theApp->searchlist->StopSearchById(searchID, true);
+	}
+	m_expiringSearchID = 0;
 #else
 	// Monolithic: abort the global search if it was the last tab closed;
 	// RemoveResults below stops any Kad search and frees the bucket in-process.
@@ -521,12 +566,86 @@ void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 		OnBnClickedStop(nullEvent);
 	}
 #endif
-	theApp->searchlist->RemoveResults(ctrl->GetSearchId());
+	theApp->searchlist->RemoveResults(searchID);
 
 	// Do cleanups if this was the last tab
 	if (m_notebook->GetPageCount() == 1) {
 		FindWindow(IDC_SDOWNLOAD)->Enable(false);
 		FindWindow(IDC_CLEAR_RESULTS)->Enable(false);
+	}
+}
+
+void CSearchDlg::OnStartRejected(wxUIntPtr searchID, const wxString &error)
+{
+	// A rejected browse ("View Files") reaches this same path in amuleGUI --
+	// SendBrowseRequest sends the same EC_TAG_SEARCH_REF and the daemon echoes
+	// it on its failure exits too. It needs the tab dropped and the reason
+	// shown, but NOT the search-button reset below: the user never pressed
+	// Search, so clearing Download/Stop would disable them for whatever search
+	// tab happens to be visible. Read the tab's kind before closing it.
+	const CSearchListCtrl *ctrl = GetSearchList(searchID);
+	const bool wasBrowse = ctrl && ctrl->IsBrowse();
+
+	// Drop the tab the client optimistically created for a start that never
+	// happened (no-op in the monolithic build, which creates none).
+	CloseSearchTab(searchID);
+
+	if (!error.IsEmpty()) {
+		// Deferred off the current call stack: in amuleGUI this runs inside
+		// CECSocket's reply handling, and wxMessageBox spins a nested event
+		// loop that re-enters CECSocket::OnInput and clobbers its rx state --
+		// the same hazard CAddLinkHandler documents. Harmless in the
+		// monolithic build, so both go through the one path.
+		//
+		// `error` is captured BY VALUE, not by reference: it is a const& to
+		// the caller's string and this body runs after that caller has
+		// returned. (The capture is also why there is no named local copy --
+		// performance-unnecessary-copy-initialization flags that, while the
+		// copy itself is required.)
+		const wxString title = wasBrowse ? _("ERROR") : _("Search warning");
+		wxTheApp->CallAfter([error, title]() {
+			wxMessageBox(error, title, wxOK | wxCENTRE | wxICON_INFORMATION);
+		});
+	}
+
+	if (!wasBrowse) {
+		// Back to the pre-search button state: the search never started, so
+		// "Stop" must not stay armed for it.
+		FindWindow(IDC_STARTS)->Enable();
+		FindWindow(IDC_SDOWNLOAD)->Disable();
+		FindWindow(IDC_CANCELS)->Disable();
+	}
+}
+
+void CSearchDlg::CloseSearchTab(wxUIntPtr searchID)
+{
+	if (m_inSearchClosing) {
+		// Already closing a tab: this is the monolithic close path calling
+		// back into us (OnSearchClosing -> CSearchList::RemoveResults ->
+		// MuleNotify::Search_Removed -> here) for the tab it is itself in
+		// the middle of removing. That path does the whole job already.
+		return;
+	}
+	CSearchListCtrl *ctrl = GetSearchList(searchID);
+	if (!ctrl) {
+		return; // no tab open for this id -- nothing to do
+	}
+	int nPages = (int)m_notebook->GetPageCount();
+	for (int i = 0; i < nPages; i++) {
+		if (m_notebook->GetPage(i) != ctrl) {
+			continue;
+		}
+		// DeletePage fires PAGE_CLOSING synchronously (see MuleNotebook.cpp),
+		// which re-enters OnSearchClosing on this same call stack and does
+		// all the cleanup -- ShowResults(0), m_searchProgress.erase,
+		// RemoveResults, last-tab button disabling -- itself. Setting this
+		// first tells it to skip only the StopSearchById call: the core has
+		// already discarded this id (amuleGUI got EC_TAG_SEARCH_EXPIRED for
+		// it; monolithic freed the bucket), so a stop request for it would
+		// be a wasted round trip (got3nks, PR #680 review).
+		m_expiringSearchID = searchID;
+		m_notebook->DeletePage(i);
+		break;
 	}
 }
 
@@ -1008,11 +1127,12 @@ void CSearchDlg::StartNewSearch()
 #endif
 	wxString error = theApp->searchlist->StartNewSearch(&real_id, search_type, params);
 	if (!error.IsEmpty()) {
-		// Search failed / Remote in progress
-		wxMessageBox(error, _("Search warning"), wxOK | wxCENTRE | wxICON_INFORMATION, this);
-		FindWindow(IDC_STARTS)->Enable();
-		FindWindow(IDC_SDOWNLOAD)->Disable();
-		FindWindow(IDC_CANCELS)->Disable();
+		// Search failed / Remote in progress. Shared with amuleGUI's
+		// EC_OP_FAILED path so both builds report a rejected start the same
+		// way (got3nks, PR #680 review). Note amuleGUI never reaches here:
+		// CSearchListRem::StartNewSearch returns "" unconditionally and the
+		// rejection arrives later over EC.
+		OnStartRejected(real_id, error);
 	} else {
 		CreateNewTab(((search_type == KadSearch) ? "!" : "") + params.searchString + " (0)", real_id);
 	}

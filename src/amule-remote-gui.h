@@ -640,6 +640,28 @@ public:
 	// request, so steady state (every tab already known) costs nothing.
 	bool m_needSearchListRequery;
 
+	// Optimistic local IDs of this session's own EC_OP_SEARCH_START requests
+	// sent but not yet remapped (see RemapSearch). While non-empty, the
+	// EC_OP_SEARCH_LIST discovery branch defers creating any new tab: the
+	// daemon already knows about a just-started search before this client's
+	// START reply (carrying EC_TAG_SEARCH_REF/EC_TAG_SEARCH_ID) comes back,
+	// so a list reply landing in that window would otherwise be
+	// indistinguishable from a genuinely foreign search and create a second
+	// tab for the same one, which RemapSearch then rekeys onto -- two tabs,
+	// one search (got3nks, PR #680 review). Inserted in StartNewSearch's
+	// multi-search branch, erased in RemapSearch.
+	//
+	// A set of IDs rather than a bare count so an unattributable reply can
+	// never clear it: EC_OP_FAILED reaches this same handler for a failed
+	// *browse* too (SendBrowseRequest routes EC_OP_FRIEND here, and the
+	// daemon's EC_TAG_FRIEND_SHARED branch has "Friend not found." /
+	// "Client not found." / malformed exits), and "client not found" is
+	// ordinary -- the peer gets reaped between the user seeing the row and
+	// clicking View Files. A count would have let that decrement lift the
+	// deferral a round trip early, reopening the very double-tab window
+	// this exists to close (got3nks, PR #680 review).
+	std::set<uint32> m_pendingSearchStarts;
+
 	// Most-recently-started search ID (0 = none). uint32 so it correctly
 	// holds a daemon-allocated Kad ID (top half of the range); as a signed
 	// int those wrapped negative and corrupted the STOP/remap round-trip.

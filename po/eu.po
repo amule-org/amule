@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 15:59+0200\n"
+"POT-Creation-Date: 2026-07-30 08:45+0200\n"
 "PO-Revision-Date: 2026-07-28 20:07+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -323,7 +323,7 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "Abioan web-zerbitzaria exekutatzea eskatu duzu, baina amuleweb bitarra ezin da exekutatu. Mesedez instalatu amule web zerbitzaria duen paketea edo konpilatu ezazu amule --enable-webserver erabilian eta make install egin"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ERROREA"
 
@@ -6087,6 +6087,10 @@ msgid "Clear search history"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Search warning"
+msgstr "Bilaketa oharra"
+
+#: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr ""
 
@@ -6098,10 +6102,6 @@ msgstr "Bilaketak"
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Gutxienezko tamaina gehienezkoa baino txikiagoa izan behar da. Gehienezkoa alde batetara utziko da."
-
-#: src/SearchDlg.cpp
-msgid "Search warning"
-msgstr "Bilaketa oharra"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"

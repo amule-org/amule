@@ -1647,6 +1647,22 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		// display a browse anyway).
 		const uint32 browseId = multiSearch ? AllocateBrowseSearchId() : 0;
 		const CECTag *reftag = tag->GetTagByName(EC_TAG_SEARCH_REF);
+		// A browse failure needs the correlation token for the same reason a
+		// failed search start does: amuleGUI created its optimistic browse tab
+		// (EnsureBrowseTab) before sending and has no other way to tell which
+		// browse this verdict answers, so without the echo the tab is stranded.
+		// "Client not found." is the ordinary case -- the peer gets reaped
+		// between the user seeing the row and clicking View Files (got3nks,
+		// PR #680 review).
+		auto browseFailure = [reftag](const wxString &msg) {
+			CECPacket *fail = new CECPacket(EC_OP_FAILED);
+			fail->AddTag(CECTag(EC_TAG_STRING, msg));
+			if (reftag) {
+				fail->AddTag(
+					CECTag(EC_TAG_SEARCH_REF, static_cast<uint32>(reftag->GetInt())));
+			}
+			return fail;
+		};
 		const CECTag *subtag = tag->GetTagByName(EC_TAG_FRIEND);
 		if (subtag) {
 			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
@@ -1654,8 +1670,7 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 				theApp->friendlist->RequestSharedFileList(Friend, browseId);
 				response = BuildBrowseReply(browseId, reftag);
 			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Friend not found.")));
+				response = browseFailure(wxTRANSLATE("Friend not found."));
 			}
 		} else if ((subtag = tag->GetTagByName(EC_TAG_CLIENT))) {
 			CUpDownClient *client = theApp->clientlist->FindClientByECID(subtag->GetInt());
@@ -1664,14 +1679,11 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 				client->RequestSharedFileList();
 				response = BuildBrowseReply(browseId, reftag);
 			} else {
-				response = new CECPacket(EC_OP_FAILED);
-				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Client not found.")));
+				response = browseFailure(wxTRANSLATE("Client not found."));
 			}
 		} else {
-			response = new CECPacket(EC_OP_FAILED);
-			response->AddTag(CECTag(EC_TAG_STRING,
-				wxTRANSLATE(
-					"EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT.")));
+			response = browseFailure(
+				wxTRANSLATE("EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."));
 		}
 	}
 
@@ -1738,11 +1750,13 @@ public:
 
 	bool Has(uint32 id) const { return std::find(m_lru.begin(), m_lru.end(), id) != m_lru.end(); }
 
-	// Explicit close (tab close): stop activity, free results, drop from ring.
-	void Close(uint32 id)
+	// Drop id from the ring/current without touching core search state.
+	// For a search this registry tracks, call alongside the caller's own
+	// (unconditional) CSearchList::RemoveResults, instead of Close(), when
+	// the id may or may not be one this registry knows about.
+	void Forget(uint32 id)
 	{
 		m_lru.remove(id);
-		theApp->searchlist->RemoveResults(id);
 		if (m_current == id) {
 			m_current = 0;
 		}
@@ -1879,16 +1893,22 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // which demuxes by search ID), and its container's bulk-delete-on-poll works
 // correctly across the union. Only reached for m_multiSearchActive clients.
 //
-// Enumerates CSearchList::GetKnownSearchIds() -- every search the core holds,
-// started by the monolithic GUI or by any EC client -- rather than
-// s_ecSearches.ActiveIds(), which only ever holds EC-initiated searches
-// (Register() is called from exactly one place, the EC_OP_SEARCH_START
-// handler). A monolithic-started search's results would otherwise never
-// reach amulegui even once Get_EC_Response_Search_List (below) learned to
-// enumerate it: the two have to agree on the same set, or a discovered tab
-// appears and never fills. s_ecSearches keeps governing EC-client lifecycle
-// and eviction only -- folding monolithic searches into that 20-entry LRU
-// would let unrelated EC traffic evict, and so stop, a local user's own
+// Enumerates CSearchList::GetKnownSearchIds() + GetBrowseSearchIds() -- every
+// search AND "View Files" browse tab the core holds, started by the
+// monolithic GUI or by any EC client -- rather than s_ecSearches.ActiveIds(),
+// which only ever holds EC-initiated searches (Register() is called from
+// exactly one place, the EC_OP_SEARCH_START handler). A monolithic-started
+// search's results would otherwise never reach amulegui even once
+// Get_EC_Response_Search_List (below) learned to enumerate it: the two have
+// to agree on the same set, or a discovered tab appears and never fills.
+// Browses need their own second source here (but NOT in
+// Get_EC_Response_Search_List -- see that function) since a browse tab is
+// not a CSearchList search and so is absent from m_searchStrings; without
+// it, a browse's own STRINGS reply (BuildBrowseReply) tells the client to
+// expect results on this id, but this union never sends any (got3nks, PR
+// #680 review). s_ecSearches keeps governing EC-client lifecycle and
+// eviction only -- folding monolithic searches into that 20-entry LRU would
+// let unrelated EC traffic evict, and so stop, a local user's own
 // still-running Kad search.
 static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 {
@@ -1898,7 +1918,7 @@ static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 	// container retains its items across searches (it no longer flushes on a
 	// new search), so a result is never re-created from a diffed tag — no
 	// ghosts — while re-sending unchanged results every poll stays cheap.
-	for (uint32 sid : theApp->searchlist->GetKnownSearchIds()) {
+	auto emitResultsFor = [&](uint32 sid) {
 		const CSearchResultList &list = theApp->searchlist->GetSearchResults(sid);
 		for (CSearchFile *sf : list) {
 			CValueMap &valuemap = tagmap.GetValueMap(sf->ECID());
@@ -1911,20 +1931,36 @@ static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 				}
 			}
 		}
+	};
+	for (const auto &entry : theApp->searchlist->GetKnownSearchIds()) {
+		emitResultsFor(entry.first);
+	}
+	for (const auto &entry : theApp->searchlist->GetBrowseSearchIds()) {
+		emitResultsFor(static_cast<uint32>(entry.first));
 	}
 	return response;
 }
 
-// Enumerates every search the core currently holds
-// (CSearchList::GetKnownSearchIds(), the same source the union poll above
-// now reads) so a client that never started any of them locally -- a
-// freshly (re)connected amulegui, a stateless amuleapi request, or a search
-// typed directly into the monolithic GUI -- can discover what to ask about
-// and build tabs for it. One entry per known search: EC_TAG_SEARCH_ID as the
-// entry's own value, with name/kind/state as children. Only reached for
-// m_multiSearchActive clients (see the EC_OP_SEARCH_LIST case below): a
-// legacy client has no concept of more than the single 0xffffffff sentinel
-// search, so there is nothing meaningful to enumerate for it.
+// Enumerates every *search* the core currently holds
+// (CSearchList::GetKnownSearchIds() -- deliberately narrow, unlike the union
+// poll above, which also reads GetBrowseSearchIds()) so a client that never
+// started any of them locally -- a freshly (re)connected amulegui, a
+// stateless amuleapi request, or a search typed directly into the monolithic
+// GUI -- can discover what to ask about and build tabs for it. One entry per
+// known search: EC_TAG_SEARCH_ID as the entry's own value, with name/kind/
+// state as children. Only reached for m_multiSearchActive clients (see the
+// EC_OP_SEARCH_LIST case below): a legacy client has no concept of more than
+// the single 0xffffffff sentinel search, so there is nothing meaningful to
+// enumerate for it.
+//
+// Must NOT also enumerate browse ids: a "View Files" tab already gets its own
+// tab via BuildBrowseReply's STRINGS reply (which rekeys through the same
+// RemapSearch path a search START does) the moment the user opens it, so
+// there is nothing here for a browse to be *discovered* by another client
+// for -- browsing is inherently per-request, not a standing search another
+// client could ever come to know about. Folding it in here anyway would
+// surface every open browse as a bogus search tab, with a made-up name, on
+// every connected client (got3nks, PR #680 review).
 // amuleapi's SearchKindToString/SearchLifecycleStateToString (Api.cpp) decode
 // the two wire values written below from raw numeric literals, since amuleapi
 // cannot include SearchList.h. This file can see both CSearchList's enums and
@@ -1946,9 +1982,12 @@ static CECPacket *Get_EC_Response_Search_List()
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_LIST);
 
-	for (uint32 sid : theApp->searchlist->GetKnownSearchIds()) {
+	for (const auto &known : theApp->searchlist->GetKnownSearchIds()) {
+		uint32 sid = known.first;
 		CECTag entry(EC_TAG_SEARCH_ID, sid);
-		entry.AddTag(EC_TAG_SEARCH_NAME, theApp->searchlist->GetSearchStringById(sid));
+		// known.second is the same string GetSearchStringById(sid) would
+		// look up -- already have it from this map entry, no need to re-find.
+		entry.AddTag(EC_TAG_SEARCH_NAME, known.second);
 		entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
 			static_cast<uint64_t>(
 				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
@@ -1991,13 +2030,29 @@ static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool mul
 {
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
 	if (multiSearch) {
-		// Per-ID stop. No ID => the most-recently-started search.
+		// Per-ID stop. No ID => the most-recently-started search. Gate on the
+		// core's own knowledge (CSearchList::IsKnownSearchId), not
+		// s_ecSearches: a monolithic-started search is known to the core but
+		// was never Register()'d into that EC-only registry, so gating on
+		// the registry alone silently no-ops both Stop and Close for it --
+		// the search never actually goes away and reappears as a tab on the
+		// next connect.
 		const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 		uint32 sid = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
-		if (sid != 0 && s_ecSearches.Has(sid)) {
+		if (sid != 0 && theApp->searchlist->IsKnownSearchId(sid)) {
 			if (request->GetTagByName(EC_TAG_SEARCH_CLOSE)) {
 				// Tab close: stop activity, free results, drop from the ring.
-				s_ecSearches.Close(sid);
+				// Free the core's state unconditionally -- that is what
+				// actually stops a running Kad search and erases the
+				// per-id maps (including m_searchStrings, which is what
+				// stops the search reappearing as a discovered tab). Only
+				// touch the registry's own bookkeeping (LRU/current) when
+				// it's a search the registry actually tracks -- same
+				// discipline as guarding Touch() behind Has() last round.
+				theApp->searchlist->RemoveResults(sid);
+				if (s_ecSearches.Has(sid)) {
+					s_ecSearches.Forget(sid);
+				}
 			} else {
 				// Stop button: halt activity but keep the results.
 				theApp->searchlist->StopSearchById(sid);
@@ -2016,11 +2071,15 @@ static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, 
 	// single source of truth shared with the monolithic GUI); that line is
 	// forwarded back to amuleGUI over EC, so the reply here is a plain ack.
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
-	// Per-ID. No ID => the most-recently-started search.
+	// Per-ID. No ID => the most-recently-started search. Gate on the core's
+	// own knowledge (CSearchList::IsKnownSearchId), not s_ecSearches -- see
+	// the matching comment in Get_EC_Response_Search_Stop: a monolithic-
+	// started Kad search's "More results" button would otherwise silently
+	// do nothing.
 	const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 	uint32 sid =
 		idTag ? static_cast<uint32>(idTag->GetInt()) : (multiSearch ? s_ecSearches.Current() : 0);
-	if (sid != 0 && (!multiSearch || s_ecSearches.Has(sid))) {
+	if (sid != 0 && (!multiSearch || theApp->searchlist->IsKnownSearchId(sid))) {
 		theApp->searchlist->RequestMoreResults(sid);
 	}
 	return reply;
@@ -2099,9 +2158,20 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 	reply->AddTag(CECTag(EC_TAG_STRING, response));
 	if (multiSearch && started) {
 		// Hand the daemon-allocated ID back so the client can address this
-		// search, and echo the client's correlation token (if any) so it can
-		// match this reply to the tab it created before the reply arrived.
+		// search.
 		reply->AddTag(CECTag(EC_TAG_SEARCH_ID, search_id));
+	}
+	if (multiSearch) {
+		// Echo the client's correlation token (if any) on BOTH outcomes, not
+		// just success: the client created its optimistic tab before sending
+		// and has no other way to tell which start this verdict answers. On
+		// failure it needs the token to drop that phantom tab and release the
+		// discovery deferral -- otherwise the id sits in m_pendingSearchStarts
+		// until the user happens to close exactly that tab, with an
+		// EC_OP_SEARCH_LIST round trip every tick and discovery off in the
+		// meantime. Same principle as echoing the id on EC_TAG_SEARCH_EXPIRED:
+		// a verdict the client cannot correlate is one it cannot act on
+		// (got3nks, PR #680 review).
 		const CECTag *ref = request->GetTagByName(EC_TAG_SEARCH_REF);
 		if (ref) {
 			reply->AddTag(CECTag(EC_TAG_SEARCH_REF, static_cast<uint32>(ref->GetInt())));
@@ -2808,6 +2878,20 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			// monolithic-started search's progress isn't reported as expired.
 			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
 				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
+				// Echo the id this verdict is about. amulegui reads the
+				// whole progress reply under `if (idTag)` -- it has to,
+				// since it polls several searches and the replies are not
+				// correlated any other way -- so an EXPIRED carrying no id
+				// was silently unreadable: the tab for a search the core
+				// had already freed stayed open forever, its results
+				// dropped by the next union poll, leaving a tab whose rows
+				// point at nothing (sorting/scrolling it does nothing).
+				// `want` is safe to echo even for an unknown id: it is the
+				// value the client itself just asked about (got3nks, PR
+				// #680 review).
+				if (want != 0) {
+					response->AddTag(CECTag(EC_TAG_SEARCH_ID, want));
+				}
 				break;
 			}
 			if (s_ecSearches.Has(want)) {

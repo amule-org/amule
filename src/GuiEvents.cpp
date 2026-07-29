@@ -699,6 +699,15 @@ void Browse_Status(uint64 NOT_ON_DAEMON(searchID), uint32 NOT_ON_DAEMON(status))
 // so a const-ref parameter would dangle. This mirrors every other wxString
 // notify handler here.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
+void Search_Removed(wxUIntPtr NOT_ON_DAEMON(searchID))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		theApp->amuledlg->m_searchwnd->CloseSearchTab(searchID);
+	}
+#endif
+}
+
 void Browse_Started(uint32 NOT_ON_DAEMON(ecid), wxString NOT_ON_DAEMON(name), uint64 NOT_ON_DAEMON(searchID))
 {
 #ifndef AMULE_DAEMON

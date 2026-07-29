@@ -131,13 +131,16 @@ public:
 	wxString GetSearchStringById(uint32_t searchID) const;
 
 	/**
-	 * True if this core currently knows about searchID -- same lifetime as
-	 * GetSearchStringById/GetKnownSearchIds (m_searchStrings, populated in
-	 * StartNewSearch, pruned in RemoveResults). Use this to gate per-ID EC
-	 * replies (SEARCH_PROGRESS, single-ID SEARCH_RESULTS) instead of the
-	 * EC-only s_ecSearches registry: a monolithic-started search is known
-	 * here but was never Register()'d into that registry, so gating on it
-	 * alone reports a live search as EC_TAG_SEARCH_EXPIRED.
+	 * True if this core currently routes results/progress for searchID --
+	 * either a CSearchList search (m_searchStrings, populated in
+	 * StartNewSearch, pruned in RemoveResults) or a "View Files" browse tab
+	 * (m_browseBar; browses are not CSearchList searches but share the same
+	 * per-ID result-routing and EC lifecycle -- got3nks, PR #680 review).
+	 * Use this to gate per-ID EC replies (SEARCH_PROGRESS, single-ID
+	 * SEARCH_RESULTS, Stop, Request_More) instead of the EC-only
+	 * s_ecSearches registry: a monolithic-started search (or a browse) is
+	 * known here but was never Register()'d into that registry, so gating
+	 * on it alone reports a live search as EC_TAG_SEARCH_EXPIRED.
 	 */
 	bool IsKnownSearchId(uint32_t searchID) const;
 
@@ -146,11 +149,25 @@ public:
 	 * populated in StartNewSearch and pruned in RemoveResults, so this
 	 * covers a search regardless of how it was started (monolithic GUI or
 	 * an EC client) and is not bounded by any EC-connection-specific
-	 * registry. Used by EC_OP_SEARCH_LIST / the multi-search results union
-	 * poll so a remote client discovers every search the core holds, not
-	 * only ones an EC client itself started.
+	 * registry. Used by EC_OP_SEARCH_LIST, which must stay narrow: a browse
+	 * tab is not a search and must not surface as one (got3nks, PR #680
+	 * review). Returned by reference -- called once per explicit
+	 * EC_OP_SEARCH_LIST request, but a copy is still needless. Neither
+	 * caller needs ownership.
 	 */
-	std::vector<uint32_t> GetKnownSearchIds() const;
+	const std::map<uint32_t, wxString> &GetKnownSearchIds() const { return m_searchStrings; }
+
+	/**
+	 * Every ID this core currently routes results for: CSearchList searches
+	 * plus "View Files" browse tabs (see IsKnownSearchId). Used by the
+	 * multi-search results union poll, which -- unlike EC_OP_SEARCH_LIST --
+	 * must go wide, or a browse's results never reach the tab BuildBrowseReply
+	 * (ExternalConn.cpp) already told the client to expect them in (got3nks,
+	 * PR #680 review). Returned by reference; runs every poll tick for every
+	 * connected multi-search client, so a per-call copy here is the one that
+	 * would actually show up in the arithmetic.
+	 */
+	const std::map<wxUIntPtr, uint16> &GetBrowseSearchIds() const { return m_browseBar; }
 
 	/**
 	 * Ask the Kad search identified by searchID to widen its frontier
@@ -436,6 +453,12 @@ private:
 	//! StartNewSearch; feeds the Kad cosmetic progress ramp in
 	//! GetSearchLifecyclePercent.
 	time_t m_searchStart;
+
+	//! Set by the destructor before it drains m_results, so RemoveResults
+	//! skips its MuleNotify::Search_Removed broadcast during teardown --
+	//! the GUI is being dismantled around us and there is no tab left worth
+	//! closing.
+	bool m_shuttingDown;
 
 	//! Queue of servers to ask when doing global searches.
 	//! TODO: Replace with 'cookie' system.

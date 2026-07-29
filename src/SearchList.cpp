@@ -274,6 +274,7 @@ CSearchList::CSearchList()
 , m_KadSearchFinished(true)
 , m_ed2kSearchFinished(true)
 , m_searchStart(0)
+, m_shuttingDown(false)
 {
 }
 
@@ -281,6 +282,10 @@ CSearchList::~CSearchList()
 {
 	StopSearch();
 
+	// Teardown: the GUI is being dismantled around us, so suppress the
+	// Search_Removed broadcast below -- there is no tab left worth closing
+	// and the notify would reach a half-destroyed CamuleDlg.
+	m_shuttingDown = true;
 	while (!m_results.empty()) {
 		RemoveResults(m_results.begin()->first);
 	}
@@ -290,6 +295,17 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 {
 	// A non-existent search id will just be ignored
 	Kademlia::CSearchManager::StopSearch(searchID, true);
+
+	// Tell the GUI before the CSearchFile objects below are deleted: in a
+	// monolithic build CSearchListCtrl holds them as raw pointers (via
+	// SetItemPtrData and m_filteredOut) and nothing else removes those rows,
+	// so a tab left open on this search would fault on the next repaint,
+	// sort, scroll or click. Also the local counterpart of amuleGUI's
+	// EC_TAG_SEARCH_EXPIRED-driven close, so "the search is gone" closes its
+	// tab through one path in both builds (got3nks, PR #680 review).
+	if (!m_shuttingDown) {
+		Notify_Search_Removed(searchID);
+	}
 
 	// Drop any per-search tracking for this ID (bounded growth).
 	m_finishedKadSearches.erase(static_cast<uint32_t>(searchID));
@@ -908,17 +924,7 @@ wxString CSearchList::GetSearchStringById(uint32_t searchID) const
 
 bool CSearchList::IsKnownSearchId(uint32_t searchID) const
 {
-	return m_searchStrings.count(searchID) != 0;
-}
-
-std::vector<uint32_t> CSearchList::GetKnownSearchIds() const
-{
-	std::vector<uint32_t> ids;
-	ids.reserve(m_searchStrings.size());
-	for (const auto &entry : m_searchStrings) {
-		ids.push_back(entry.first);
-	}
-	return ids;
+	return m_searchStrings.count(searchID) != 0 || m_browseBar.count(searchID) != 0;
 }
 
 SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr searchID) const

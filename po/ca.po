@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 15:59+0200\n"
+"POT-Creation-Date: 2026-07-30 08:45+0200\n"
 "PO-Revision-Date: 2026-07-28 20:04+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -322,7 +322,7 @@ msgid "You requested to run web server on startup, but the amuleweb binary canno
 msgstr "Heu demanat que s'executi el servidor web a l'inici, però no s'ha trobat el fitxer binari de l'amuleweb. Si us plau instal·leu el paquet que conté el servidor web de l'aMule, o compileu l'aMule usant la opció --enable-webserver i executeu make install"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/PrefsUnifiedDlg.cpp
+#: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ERROR"
 
@@ -6085,6 +6085,10 @@ msgid "Clear search history"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Search warning"
+msgstr "Avís de cerca"
+
+#: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
 msgstr "És impossible cercar quan l'eD2k i el Kademlia estan inhabilitats."
 
@@ -6095,10 +6099,6 @@ msgstr "Error en la cerca"
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "La mida mínima ha de ser menor que la màxima. S'ignorarà la mida màxima."
-
-#: src/SearchDlg.cpp
-msgid "Search warning"
-msgstr "Avís de cerca"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
