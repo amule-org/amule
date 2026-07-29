@@ -40,6 +40,12 @@ export function sortRows(rows, columns, sortKey, sortDir) {
   return rows.slice().sort((a, b) => sortDir * cmp(col.sortVal(a), col.sortVal(b)));
 }
 
+// Sort key for an IPv4 column: 10.x has to sort after 9.x, which a string
+// compare gets backwards. Takes "1.2.3.4" or "1.2.3.4:port"; unparseable -> 0.
+export function ipNum(ip) {
+  return String(ip || "").split(".").reduce((acc, octet) => acc * 256 + (parseInt(octet, 10) || 0), 0);
+}
+
 // Build a predicate for a free-text filter box: case-insensitive and
 // order-independent — every whitespace-separated token must appear in the
 // string. Empty query → matches everything.
@@ -240,8 +246,11 @@ export function VirtualTable({
   // its current *rendered* width (via getBoundingClientRect in startResize,
   // not effWidth) rather than a declared one, and a user resize turns it
   // into an ordinary fixed-width column from then on, same as any other.
+  // Full label on hover, since app.css ellipsizes a header too narrow for its own
+  // text. String labels only -- the select-all column's label is a checkbox VNode.
   const th = (c) => html`
     <th class=${(c.sortable ? "sortable " : "") + colClass(c)}
+        title=${typeof c.label === "string" ? c.label : null}
         onClick=${c.sortable && onSort ? () => onSort(c.key) : null}>
       ${c.label}${c.sortable ? arrow(c.key) : null}
       ${onResize && c.key ? html`

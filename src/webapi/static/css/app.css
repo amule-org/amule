@@ -314,6 +314,8 @@ table.data th {
      without this a resize handle has nothing marking where it lives, so
      dragging feels like guesswork instead of grabbing a visible edge. */
   border-right: 1px solid var(--border);
+  /* else a label wider than its column spills over the next header */
+  overflow: hidden; text-overflow: ellipsis;
 }
 table.data th:last-child { border-right: none; }
 table.data th.sortable { cursor: pointer; user-select: none; }

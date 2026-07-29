@@ -11,7 +11,7 @@ import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { Tabs, Badge, Placeholder, toast, confirmDialog } from "../components.js";
-import { VirtualTable, sortRows, useTablePrefs, ColumnPicker } from "../table.js";
+import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart } from "../charts.js";
 import { formatInt } from "../format.js";
 import { Icon } from "../icons.js";
@@ -104,7 +104,8 @@ function ServersPanel({ isGuest }) {
   const status = useStore("status");
   const ed2k = status && status.ed2k;
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs("servers", { sortKey: "users", sortDir: -1, hidden: [] });
+    useTablePrefs("servers", { sortKey: "users", sortDir: -1,
+                               hidden: ["address", "version", "ping"] });
   const [addr, setAddr] = useState("");
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
@@ -159,22 +160,26 @@ function ServersPanel({ isGuest }) {
     && ed2k.server_port === s.port;
 
   const columns = [
-    { key: "name", always: true, label: t("networks_server_name"), cls: "name", sortable: true,
+    // Server host country (#440): same cell and header as the peer table's.
+    { key: "country", label: t("networks_server_country"), width: "52px", sortable: true,
+      sortVal: (s) => s.country_code || "", cell: (s) => (s.country_code || "").toUpperCase() || "—" },
+    { key: "address", label: t("networks_server_address"), num: true, width: "180px", sortable: true,
+      sortVal: (s) => ipNum(s.address),
+      cell: (s) => s.address && s.address.includes(":") ? s.address : (s.address + ":" + s.port) },
+    { key: "name", label: t("networks_server_name"), cls: "name", sortable: true,
       sortVal: (s) => (s.name || "").toLowerCase(),
       // flex cell so a long name ellipsizes without hiding the "static" badge
       cell: (s) => html`<div class="name-cell" title=${s.name}><span class="name-text">${s.name}</span>${s.static ? html`<${Badge} title=${t("networks_server_badge_static_title")}>${t("networks_server_badge_static")}<//>` : null}</div>` },
-    { key: "description", label: t("networks_server_description"), width: "180px", sortable: true,
+    // No width, like `name`: descriptions are long, so the two split the leftover.
+    { key: "description", label: t("networks_server_description"), sortable: true,
       sortVal: (s) => (s.description || "").toLowerCase(), cell: (s) => s.description || "" },
-    { key: "version", label: t("networks_server_version"), width: "90px", sortable: true,
-      sortVal: (s) => s.version || "", cell: (s) => s.version || "" },
-    { key: "address", label: t("networks_server_address"), num: true, width: "180px", sortable: true,
-      sortVal: (s) => s.address || "",
-      cell: (s) => s.address && s.address.includes(":") ? s.address : (s.address + ":" + s.port) },
     { key: "users", label: t("networks_server_users"), num: true, width: "130px", sortable: true,
       sortVal: (s) => s.users || 0,
       cell: (s) => formatInt(s.users) + (s.max_users ? " / " + formatInt(s.max_users) : "") },
     { key: "files", label: t("networks_server_files"), num: true, width: "110px", sortable: true,
       sortVal: (s) => s.files || 0, cell: (s) => formatInt(s.files) },
+    { key: "version", label: t("networks_server_version"), width: "90px", sortable: true,
+      sortVal: (s) => s.version || "", cell: (s) => s.version || "" },
     { key: "ping", label: t("networks_server_ping"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.ping_ms || 0, cell: (s) => s.ping_ms ? s.ping_ms + " ms" : "—" },
     { key: "priority", label: t("networks_server_priority"), width: "90px", sortable: true,

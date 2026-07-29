@@ -10,12 +10,12 @@ import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
 import { Icon } from "../icons.js";
-import { FileClients } from "./client-table.js";
+import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
 import { t, tn, terr } from "../i18n.js";
 
 // Peers of a download: show the download-side columns, keep the upload ones
 // (and the redundant per-row file name) one click away in the column picker.
-const DL_HIDDEN = ["file", "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"];
+const DL_HIDDEN = [...HIDDEN_EVERYWHERE, "file", "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"];
 
 // The pieces bar mirrors the aMule GUI download bar, theme-tuned via CSS vars:
 // green (--ok) = have it, blue (--piece-avail-lo -> --piece-avail, faded by

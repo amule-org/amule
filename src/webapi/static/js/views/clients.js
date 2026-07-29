@@ -7,17 +7,16 @@
 
 import { html, useState } from "../dom.js";
 import { Tabs } from "../components.js";
-import { ClientFilters, ClientTable, fileNameOf, isDown, isUp, useClients } from "./client-table.js";
+import { ClientFilters, ClientTable, HIDDEN_EVERYWHERE, fileNameOf, isDown, isUp, useClients } from "./client-table.js";
 import { textMatcher } from "../table.js";
 import { t } from "../i18n.js";
 
-// Every tab lists the full column set in the picker; these are the ones that
-// start hidden in each, so the default view stays focused on that direction
-// while the rest is one click away.
+// Every tab lists the full column set in the picker; these are the ones each
+// starts with hidden, so its default view stays focused on that direction.
 const TAB_HIDDEN = {
-  all: ["dl_session", "remote_rank", "ul_session", "queue_pos", "score"],
-  downloads: ["ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"],
-  uploads: ["dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"],
+  all: [...HIDDEN_EVERYWHERE, "dl_session", "remote_rank", "ul_session", "queue_pos", "score"],
+  downloads: [...HIDDEN_EVERYWHERE, "ul_state", "ul_speed", "uploaded", "ul_session", "queue_pos", "score"],
+  uploads: [...HIDDEN_EVERYWHERE, "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"],
 };
 // Default sort per tab: most transferred first, in the tab's own direction.
 const TAB_SORT = { all: "downloaded", downloads: "downloaded", uploads: "uploaded" };

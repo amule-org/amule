@@ -10,14 +10,14 @@ import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
 import { formatBytes, formatInt, formatDuration, twin } from "../format.js";
-import { FileClients } from "./client-table.js";
+import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
 import { t } from "../i18n.js";
 
 const PRIORITIES = ["very_low", "low", "normal", "high", "release"];
 
 // Peers of a shared file: show the upload-side columns, keep the download ones
 // (and the redundant per-row file name) one click away in the column picker.
-const SH_HIDDEN = ["file", "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"];
+const SH_HIDDEN = [...HIDDEN_EVERYWHERE, "file", "dl_state", "dl_speed", "downloaded", "dl_session", "remote_rank"];
 
 // Human upload-priority label, matching the shared list (auto shows the
 // derived level in parentheses).

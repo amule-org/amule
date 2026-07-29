@@ -7,7 +7,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, Placeholder } from "../components.js";
-import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
+import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
 import { t } from "../i18n.js";
@@ -38,11 +38,27 @@ export const bySpeed = (a, b) =>
 // flags column has no key → stays non-sortable).
 export const COLS = [
   { cls: "peer-flags", width: "60px", cell: (c) => peerFlags(c) },
-  { key: "name", always: true, th: "downloads_peer_col_name", width: "170px", sortable: true,
+  // Identity block, each field next to the one it qualifies: where the peer is
+  // (country, address), who it claims (name, user_hash), what it runs (software, os).
+  // country_code is "" when the daemon's GeoIP is off or the IP doesn't resolve
+  // (#439) -- an empty cell like any other. Abbreviated header: a spelled-out
+  // "Country" would need ~80px for a 2-char cell.
+  { key: "country", th: "downloads_peer_col_country", width: "52px", sortable: true,
+    sortVal: (c) => c.country_code || "", cell: (c) => (c.country_code || "").toUpperCase() || "—" },
+  // Empty ip: a peer we never connected to directly (LowID).
+  { key: "address", th: "downloads_peer_col_address", num: true, width: "180px", sortable: true,
+    sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },
+  { key: "name", th: "downloads_peer_col_name", width: "170px", sortable: true,
     sortVal: (c) => (c.client_name || "").toLowerCase(),
     cell: (c) => html`<span title=${c.client_name}>${c.client_name || "—"}</span>` },
+  { key: "user_hash", th: "downloads_peer_col_user_hash", width: "150px", sortable: true,
+    sortVal: (c) => c.user_hash || "",
+    cell: (c) => html`<span title=${c.user_hash}>${c.user_hash || "—"}</span>` },
   { key: "software", th: "downloads_peer_col_software", width: "140px", sortable: true,
     sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
+  // The peer's own self-reported OS string -- frequently empty.
+  { key: "os", th: "downloads_peer_col_os", width: "110px", sortable: true,
+    sortVal: (c) => (c.os_info || "").toLowerCase(), cell: (c) => c.os_info || "—" },
   { key: "file", th: "downloads_peer_col_file", cls: "name", sortable: true,
     sortVal: (c) => fileNameOf(c).toLowerCase(),
     cell: (c) => html`<span title=${fileNameOf(c)}>${fileNameOf(c) || "—"}</span>` },
@@ -53,7 +69,7 @@ export const COLS = [
     sortVal: (c) => c.download_speed_bps || 0, cell: (c) => formatSpeed(c.download_speed_bps) },
   { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", sortable: true,
     sortVal: (c) => (c.xfer && c.xfer.down_total) || 0, cell: (c) => bytesOf(c, "down_total") },
-  { key: "dl_session", th: "downloads_peer_col_downloaded_session", num: true, width: "110px", sortable: true,
+  { key: "dl_session", th: "downloads_peer_col_downloaded_session", num: true, width: "100px", sortable: true,
     sortVal: (c) => (c.xfer && c.xfer.down_session) || 0, cell: (c) => bytesOf(c, "down_session") },
   { key: "remote_rank", th: "downloads_peer_col_remote_rank", num: true, width: "90px", sortable: true,
     sortVal: (c) => c.remote_queue_rank || 0, cell: (c) => rankLabel(c) },
@@ -64,13 +80,17 @@ export const COLS = [
     sortVal: (c) => c.upload_speed_bps || 0, cell: (c) => formatSpeed(c.upload_speed_bps) },
   { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", sortable: true,
     sortVal: (c) => (c.xfer && c.xfer.up_total) || 0, cell: (c) => bytesOf(c, "up_total") },
-  { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "110px", sortable: true,
+  { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "100px", sortable: true,
     sortVal: (c) => (c.xfer && c.xfer.up_session) || 0, cell: (c) => bytesOf(c, "up_session") },
   { key: "queue_pos", th: "downloads_peer_col_queue_pos", num: true, width: "90px", sortable: true,
     sortVal: (c) => c.queue_waiting_position || 0, cell: (c) => c.queue_waiting_position || "—" },
   { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", sortable: true,
     sortVal: (c) => c.score || 0, cell: (c) => c.score || "—" },
 ];
+
+// Raw-detail columns no consumer leads with; each adds its own defaultHidden set
+// on top of these.
+export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash"];
 
 export const IDENT_FILTERS = ["all", "identified", "not_identified"].map((v) => [v, t("downloads_peer_ident_" + v)]);
 
