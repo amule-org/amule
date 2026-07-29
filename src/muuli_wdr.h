@@ -510,7 +510,6 @@ wxSizer *serverListDlgDown(wxWindow *parent, bool call_fit = TRUE, bool set_size
 #define ID_NODE_IP4 10259
 #define ID_NODE_PORT 10260
 #define ID_NODECONNECT 10261
-#define ID_KNOWNNODECONNECT 10262
 #define ID_KADDISCONNECT 10263
 wxSizer *KadDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 

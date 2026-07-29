@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 00:53+0200\n"
+"POT-Creation-Date: 2026-07-29 07:10+0200\n"
 "PO-Revision-Date: 2026-07-28 20:16+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -2659,14 +2659,6 @@ msgid "IP filter is ready"
 msgstr "IP süzgeci hazır"
 
 #: src/KadDlg.cpp
-msgid ""
-"Bootstrap from \n"
-"known clients"
-msgstr ""
-"Bilinen kullanıcılardan\n"
-"Ön Yükleme"
-
-#: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
 msgstr "Düğümler (%u)"
@@ -4562,10 +4554,6 @@ msgstr "IP:"
 #: src/muuli_wdr.cpp
 msgid "Port:"
 msgstr "Port:"
-
-#: src/muuli_wdr.cpp
-msgid "Bootstrap from known clients"
-msgstr "Bilinen kullanıcılardan Ön Yükleme"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -8510,6 +8498,16 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid ""
+#~ "Bootstrap from \n"
+#~ "known clients"
+#~ msgstr ""
+#~ "Bilinen kullanıcılardan\n"
+#~ "Ön Yükleme"
+
+#~ msgid "Bootstrap from known clients"
+#~ msgstr "Bilinen kullanıcılardan Ön Yükleme"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Herhangi bir sunucuya ve/veya Kad'a bağlan."

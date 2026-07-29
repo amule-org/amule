@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 00:53+0200\n"
+"POT-Creation-Date: 2026-07-29 07:10+0200\n"
 "PO-Revision-Date: 2026-07-28 20:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -2661,14 +2661,6 @@ msgid "IP filter is ready"
 msgstr "IP filter on lähtestatud"
 
 #: src/KadDlg.cpp
-msgid ""
-"Bootstrap from \n"
-"known clients"
-msgstr ""
-"Tuntud klientide \n"
-"Bootstrap"
-
-#: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
 msgstr "Sõlmed (%u)"
@@ -4592,10 +4584,6 @@ msgstr "IP:"
 #: src/muuli_wdr.cpp
 msgid "Port:"
 msgstr "Port:"
-
-#: src/muuli_wdr.cpp
-msgid "Bootstrap from known clients"
-msgstr "Tuntud klientide Bootstrap"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -8533,6 +8521,16 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid ""
+#~ "Bootstrap from \n"
+#~ "known clients"
+#~ msgstr ""
+#~ "Tuntud klientide \n"
+#~ "Bootstrap"
+
+#~ msgid "Bootstrap from known clients"
+#~ msgstr "Tuntud klientide Bootstrap"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Ühendu suvalise serveri ja/või Kad võrguga"

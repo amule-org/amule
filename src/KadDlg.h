@@ -38,7 +38,7 @@ class CKadDlg : public wxPanel
 {
 public:
 	CKadDlg(wxWindow *pParent);
-	~CKadDlg() {};
+	~CKadDlg(){};
 
 	void Init();
 	void SetUpdatePeriod(int step);
@@ -56,7 +56,6 @@ private:
 
 	// Event handlers
 	void OnBnClickedBootstrapClient(wxCommandEvent &evt);
-	void OnBnClickedBootstrapKnown(wxCommandEvent &evt);
 	void OnBnClickedDisconnectKad(wxCommandEvent &evt);
 	void OnBnClickedUpdateNodeList(wxCommandEvent &evt);
 	void OnFieldsChange(wxCommandEvent &evt);

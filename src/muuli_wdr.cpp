@@ -2676,11 +2676,10 @@ item9->SetName("kadScope");
     item22->Add( item36, wxSizerFlags().Center().Border(wxTOP|wxBOTTOM, 5) );
     item20->Add( item22, wxSizerFlags().Expand().Border(wxALL, 5) );
 
-    // Bootstrap actions stacked directly under the New node box, with
-    // padding but no filler spacers -- the column is top-aligned so the
-    // graph column beside it takes all the freed vertical space.
-    wxButton *item37 = new wxButton( parent, ID_KNOWNNODECONNECT, _("Bootstrap from known clients"), wxDefaultPosition, wxDefaultSize, 0 );
-    item20->Add( item37, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
+    // The "Bootstrap from known clients" button (formerly here, ID_KNOWNNODECONNECT)
+    // was dropped (issue #402 review): it called the same theApp->StartKad() as the
+    // Kad tab's own Connect/Cancel/Disconnect toggle, so it was a redundant second
+    // way to do the same thing rather than a distinct action.
     item1->Add( item20, wxSizerFlags().Top() );
     item0->Add( item1, wxSizerFlags(1).Expand() );
     if (set_sizer)

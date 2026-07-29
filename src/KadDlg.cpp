@@ -51,7 +51,6 @@ wxBEGIN_EVENT_TABLE(CKadDlg, wxPanel)
 	EVT_TEXT_ENTER(IDC_NODESLISTURL, CKadDlg::OnBnClickedUpdateNodeList)
 
 	EVT_BUTTON(ID_NODECONNECT, CKadDlg::OnBnClickedBootstrapClient)
-	EVT_BUTTON(ID_KNOWNNODECONNECT, CKadDlg::OnBnClickedBootstrapKnown)
 	EVT_BUTTON(ID_KADDISCONNECT, CKadDlg::OnBnClickedDisconnectKad)
 	EVT_BUTTON(ID_UPDATEKADLIST, CKadDlg::OnBnClickedUpdateNodeList)
 wxEND_EVENT_TABLE()
@@ -67,20 +66,6 @@ void CKadDlg::Init()
 	m_kad_scope = CastChild("kadScope", COScopeCtrl);
 	m_kad_scope->SetRanges(0.0, thePrefs::GetStatsMax());
 	m_kad_scope->SetYUnits("Nodes");
-
-#ifndef __WINDOWS__
-	//
-	// Get label with line breaks out of muuli.wdr, because generated code fails
-	// to compile in Windows.
-	//
-	// In Windows, setting a button label with a newline fails (the newline is ignored).
-	// Creating a button with such a label works however. :-/
-	// So leave the label from the muuli (without line breaks) here,
-	// so it can still be fixed in the translation.
-	//
-	wxButton *bootstrap = CastChild(ID_KNOWNNODECONNECT, wxButton);
-	bootstrap->SetLabel(_("Bootstrap from \nknown clients"));
-#endif
 
 	SetUpdatePeriod(thePrefs::GetTrafficOMeterInterval());
 	SetGraphColors();
@@ -212,11 +197,6 @@ void CKadDlg::OnBnClickedBootstrapClient(wxCommandEvent &WXUNUSED(evt))
 		wxMessageBox(
 			_("Please fill all fields required"), _("Message"), wxOK | wxICON_INFORMATION, this);
 	}
-}
-
-void CKadDlg::OnBnClickedBootstrapKnown(wxCommandEvent &WXUNUSED(evt))
-{
-	theApp->StartKad();
 }
 
 void CKadDlg::OnBnClickedDisconnectKad(wxCommandEvent &WXUNUSED(evt))

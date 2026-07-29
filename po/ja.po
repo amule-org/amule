@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 00:53+0200\n"
+"POT-Creation-Date: 2026-07-29 07:10+0200\n"
 "PO-Revision-Date: 2026-07-28 20:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -2661,14 +2661,6 @@ msgid "IP filter is ready"
 msgstr ""
 
 #: src/KadDlg.cpp
-msgid ""
-"Bootstrap from \n"
-"known clients"
-msgstr ""
-"既知のクライアントから\n"
-"ブートストラップする"
-
-#: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
 msgstr "ノード数（%u）"
@@ -4587,13 +4579,6 @@ msgstr "IP："
 #: src/muuli_wdr.cpp
 msgid "Port:"
 msgstr "ポート："
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Bootstrap from known clients"
-msgstr ""
-"既知のクライアントから\n"
-"ブートストラップする"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -8537,6 +8522,19 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid ""
+#~ "Bootstrap from \n"
+#~ "known clients"
+#~ msgstr ""
+#~ "既知のクライアントから\n"
+#~ "ブートストラップする"
+
+#, fuzzy
+#~ msgid "Bootstrap from known clients"
+#~ msgstr ""
+#~ "既知のクライアントから\n"
+#~ "ブートストラップする"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "すべてのサーバ、もしくはKadに接続する"

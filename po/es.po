@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 00:53+0200\n"
+"POT-Creation-Date: 2026-07-29 07:10+0200\n"
 "PO-Revision-Date: 2026-07-28 20:06+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -2668,14 +2668,6 @@ msgid "IP filter is ready"
 msgstr "El filtro de IP está listo"
 
 #: src/KadDlg.cpp
-msgid ""
-"Bootstrap from \n"
-"known clients"
-msgstr ""
-"Inicializar desde \n"
-"clientes conocidos"
-
-#: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
 msgstr "Nodos (%u)"
@@ -4575,10 +4567,6 @@ msgstr "IP:"
 #: src/muuli_wdr.cpp
 msgid "Port:"
 msgstr "Puerto:"
-
-#: src/muuli_wdr.cpp
-msgid "Bootstrap from known clients"
-msgstr "Inicializar desde clientes conocidos"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -8525,6 +8513,16 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "Bootstrap from \n"
+#~ "known clients"
+#~ msgstr ""
+#~ "Inicializar desde \n"
+#~ "clientes conocidos"
+
+#~ msgid "Bootstrap from known clients"
+#~ msgstr "Inicializar desde clientes conocidos"
 
 #~ msgid "Connect to any server and/or Kad"
 #~ msgstr "Conectar a cualquier servidor y/o a Kad"
