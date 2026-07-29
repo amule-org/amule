@@ -226,6 +226,45 @@ void CState::MarkSearchStarted(std::uint32_t search_id, const std::string &kind)
 	}
 }
 
+void CState::MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind)
+{
+	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
+	if (m_searches.count(search_id)) {
+		// Already known (self-started, or discovered on an earlier
+		// cache-miss check): leave its accumulated results/progress
+		// alone. Re-seeding here would stomp whatever
+		// WriteSearchProgress/ApplySearchFull already recorded for it
+		// this session.
+		return;
+	}
+	SearchSlot &slot = m_searches[search_id];
+	slot.progress.active = true;
+	slot.progress.kind = kind;
+	slot.seq = ++m_search_seq;
+	// Deliberately NOT touching m_current_search_id: a no-id GET
+	// /search/results should keep meaning "the search THIS session
+	// started", not silently jump to whatever was last discovered.
+
+	// Same bound as MarkSearchStarted, for the same reason -- a busy core
+	// with many concurrent searches shouldn't let discovery alone grow
+	// this session's slot map without limit.
+	while (m_searches.size() > kMaxSearchSlots) {
+		auto victim = m_searches.end();
+		for (auto it = m_searches.begin(); it != m_searches.end(); ++it) {
+			if (it->first == m_current_search_id || it->second.progress.active) {
+				continue;
+			}
+			if (victim == m_searches.end() || it->second.seq < victim->second.seq) {
+				victim = it;
+			}
+		}
+		if (victim == m_searches.end()) {
+			break;
+		}
+		m_searches.erase(victim);
+	}
+}
+
 void CState::WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);

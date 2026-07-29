@@ -1878,6 +1878,18 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // routes each result to the right tab by that ID (mirrors the monolithic GUI,
 // which demuxes by search ID), and its container's bulk-delete-on-poll works
 // correctly across the union. Only reached for m_multiSearchActive clients.
+//
+// Enumerates CSearchList::GetKnownSearchIds() -- every search the core holds,
+// started by the monolithic GUI or by any EC client -- rather than
+// s_ecSearches.ActiveIds(), which only ever holds EC-initiated searches
+// (Register() is called from exactly one place, the EC_OP_SEARCH_START
+// handler). A monolithic-started search's results would otherwise never
+// reach amulegui even once Get_EC_Response_Search_List (below) learned to
+// enumerate it: the two have to agree on the same set, or a discovered tab
+// appears and never fills. s_ecSearches keeps governing EC-client lifecycle
+// and eviction only -- folding monolithic searches into that 20-entry LRU
+// would let unrelated EC traffic evict, and so stop, a local user's own
+// still-running Kad search.
 static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
@@ -1886,7 +1898,7 @@ static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 	// container retains its items across searches (it no longer flushes on a
 	// new search), so a result is never re-created from a diffed tag — no
 	// ghosts — while re-sending unchanged results every poll stays cheap.
-	for (uint32 sid : s_ecSearches.ActiveIds()) {
+	for (uint32 sid : theApp->searchlist->GetKnownSearchIds()) {
 		const CSearchResultList &list = theApp->searchlist->GetSearchResults(sid);
 		for (CSearchFile *sf : list) {
 			CValueMap &valuemap = tagmap.GetValueMap(sf->ECID());
@@ -1900,6 +1912,52 @@ static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 			}
 		}
 	}
+	return response;
+}
+
+// Enumerates every search the core currently holds
+// (CSearchList::GetKnownSearchIds(), the same source the union poll above
+// now reads) so a client that never started any of them locally -- a
+// freshly (re)connected amulegui, a stateless amuleapi request, or a search
+// typed directly into the monolithic GUI -- can discover what to ask about
+// and build tabs for it. One entry per known search: EC_TAG_SEARCH_ID as the
+// entry's own value, with name/kind/state as children. Only reached for
+// m_multiSearchActive clients (see the EC_OP_SEARCH_LIST case below): a
+// legacy client has no concept of more than the single 0xffffffff sentinel
+// search, so there is nothing meaningful to enumerate for it.
+// amuleapi's SearchKindToString/SearchLifecycleStateToString (Api.cpp) decode
+// the two wire values written below from raw numeric literals, since amuleapi
+// cannot include SearchList.h. This file can see both CSearchList's enums and
+// the EC ones, so it is the one place that can catch a reorder at compile
+// time instead of amuleapi silently mislabelling a search.
+static_assert(CSearchList::SEARCH_LIFECYCLE_IDLE == 0 && CSearchList::SEARCH_LIFECYCLE_RUNNING == 1 &&
+		      CSearchList::SEARCH_LIFECYCLE_FINISHED == 2,
+	"CSearchList::SearchLifecycleState numeric values must stay in sync with "
+	"the wire values EC_TAG_SEARCH_LIFECYCLE_STATE carries and Api.cpp's "
+	"SearchLifecycleStateToString decodes");
+static_assert(static_cast<int>(LocalSearch) == static_cast<int>(EC_SEARCH_LOCAL) &&
+		      static_cast<int>(GlobalSearch) == static_cast<int>(EC_SEARCH_GLOBAL) &&
+		      static_cast<int>(KadSearch) == static_cast<int>(EC_SEARCH_KAD),
+	"CSearchList::SearchType must stay numerically aligned with EC_SEARCH_TYPE "
+	"since EC_TAG_SEARCH_LIFECYCLE_KIND carries a SearchType value that "
+	"amuleapi's SearchKindToString (Api.cpp) decodes against EC_SEARCH_*");
+
+static CECPacket *Get_EC_Response_Search_List()
+{
+	CECPacket *response = new CECPacket(EC_OP_SEARCH_LIST);
+
+	for (uint32 sid : theApp->searchlist->GetKnownSearchIds()) {
+		CECTag entry(EC_TAG_SEARCH_ID, sid);
+		entry.AddTag(EC_TAG_SEARCH_NAME, theApp->searchlist->GetSearchStringById(sid));
+		entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
+			static_cast<uint64_t>(
+				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
+		entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
+			static_cast<uint64_t>(
+				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleStateById(sid))));
+		response->AddTag(entry);
+	}
+
 	return response;
 }
 
@@ -2686,6 +2744,13 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = Get_EC_Response_Search_Request_More(request, m_multiSearchActive);
 		break;
 
+	case EC_OP_SEARCH_LIST:
+		// Legacy (non-multi) clients have only the single sentinel search
+		// and no tab-per-id concept, so there is nothing to enumerate.
+		response = m_multiSearchActive ? Get_EC_Response_Search_List()
+					       : new CECPacket(EC_OP_SEARCH_LIST);
+		break;
+
 	case EC_OP_SEARCH_RESULTS: {
 		const bool incUpdate = (request->GetDetailLevel() == EC_DETAIL_INC_UPDATE);
 		// amulegui (multi + INC_UPDATE) polls all its searches at once: return
@@ -2701,14 +2766,26 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
-			if (want == 0 || !s_ecSearches.Has(want)) {
+			// Gate on the core's own knowledge (CSearchList::IsKnownSearchId),
+			// not s_ecSearches: that registry only ever holds EC-initiated
+			// searches (Register() runs from the EC_OP_SEARCH_START handler
+			// alone), so gating on it reports a monolithic-started search as
+			// expired even while it is still running.
+			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
 				// Evicted or never-known: tell the client it expired rather
 				// than returning a misleading empty result set.
 				response = new CECPacket(EC_OP_SEARCH_RESULTS);
 				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
 				break;
 			}
-			s_ecSearches.Touch(want);
+			// Only bump the EC-session LRU for a search that registry
+			// actually tracks -- Touch() on an id it doesn't know would
+			// silently insert it (push_front has no "was it found" guard),
+			// growing the ring past kMaxEcSearches for ids Register() never
+			// admitted through its own eviction loop.
+			if (s_ecSearches.Has(want)) {
+				s_ecSearches.Touch(want);
+			}
 			sid = want;
 		}
 		if (incUpdate) {
@@ -2726,11 +2803,16 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
-			if (want == 0 || !s_ecSearches.Has(want)) {
+			// See the matching comment in the EC_OP_SEARCH_RESULTS case above:
+			// gate on the core's own knowledge, not the EC-only registry, so a
+			// monolithic-started search's progress isn't reported as expired.
+			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
 				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
 				break;
 			}
-			s_ecSearches.Touch(want);
+			if (s_ecSearches.Has(want)) {
+				s_ecSearches.Touch(want);
+			}
 			sid = want;
 			// A browse ("View Files") ID is not a CSearchList search: report its
 			// lifecycle from the persisted browse state (browsing / finished /

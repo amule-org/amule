@@ -27,6 +27,8 @@
 #ifndef __ECCODES_H__
 #define __ECCODES_H__
 
+#include <cstdint>
+
 typedef uint8_t ec_opcode_t;
 typedef uint16_t ec_tagname_t;
 typedef uint8_t ec_tagtype_t;
@@ -133,7 +135,8 @@ enum ECOpCodes
 	EC_OP_CHAT_MESSAGES = 0x5C,
 	EC_OP_GET_SHARED_DIRS = 0x5D,
 	EC_OP_SET_SHARED_DIRS = 0x5E,
-	EC_OP_SEARCH_REQUEST_MORE = 0x5F
+	EC_OP_SEARCH_REQUEST_MORE = 0x5F,
+	EC_OP_SEARCH_LIST = 0x60
 };
 
 enum ECTagNames
@@ -807,6 +810,8 @@ wxString GetDebugNameECOpCodes(uint8 arg)
 		return "EC_OP_SET_SHARED_DIRS";
 	case EC_OP_SEARCH_REQUEST_MORE:
 		return "EC_OP_SEARCH_REQUEST_MORE";
+	case EC_OP_SEARCH_LIST:
+		return "EC_OP_SEARCH_LIST";
 	default:
 		return CFormat("unknown %d 0x%x") % arg % arg;
 	}

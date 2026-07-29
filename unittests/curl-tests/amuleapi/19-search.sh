@@ -3,6 +3,7 @@
 # amuleapi 19-search — search.
 #
 # Endpoints:
+#   GET  /api/v0/search                                    — EC_OP_SEARCH_LIST
 #   POST /api/v0/search                                   — EC_OP_SEARCH_START
 #       body: {query, type?, file_type?, extension?,
 #              min_size?, max_size?, min_avail?}
@@ -35,6 +36,14 @@ set -o pipefail
 HOST=${HOST:-localhost:4713}
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
+
+# EC connection info for the second amuleapi instance spun up in section
+# 3.2 below — must point at the SAME amuled as the primary instance at
+# $HOST. Defaults match run-all.sh's regtest daemon.
+EC_HOST=${EC_HOST:-127.0.0.1}
+EC_PORT=${EC_PORT:-4712}
+EC_PASSWORD=${EC_PASSWORD:-amule}
+AMULEAPI_BIN=${AMULEAPI_BIN:-$(cd "$(dirname "$0")/../../.." && pwd)/build-macos/src/webapi/amuleapi}
 
 # A query likely to return results on any operator's daemon connected
 # to ed2k. "ubuntu" is a safe choice — well-seeded across the network.
@@ -104,6 +113,9 @@ HAVE_GUEST=0
 sleep 4
 
 # --- 1. Auth + admin gate. -----------------------------------------
+_curl "$HOST/api/v0/search"
+_assert_status 401 "GET /search (no token) → 401"
+
 _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"query\":\"$TEST_QUERY\"}" "$HOST/api/v0/search"
 _assert_status 401 "POST /search (no token) → 401"
@@ -166,6 +178,74 @@ _assert_json_eq '.search_id | type' number 'POST /search returns a numeric searc
 FIRST_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id')
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/results"
 _assert_json_eq '.search_id' "$FIRST_SID" 'GET /search/results (no id) echoes the current search_id'
+
+# --- 3.1 GET /api/v0/search enumerates the search just started. ---
+# Reachability fix (issue #641): GET /api/v0/search reads live daemon
+# state via EC_OP_SEARCH_LIST rather than this session's own m_state
+# cache, so the search just started via POST /search must appear here
+# too -- proving the two endpoints agree on what amuled currently holds.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+_assert_status 200 "GET /search → 200"
+_assert_json_eq '.searches | type' array 'GET /search .searches is an array'
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)] | length" 1 \
+	'GET /search lists the search just started via POST /search'
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].query" "$TEST_QUERY" \
+	'GET /search entry echoes the query'
+_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)][0].kind" global \
+	'GET /search entry reports kind==global'
+_assert_json_eq "[[.searches[] | select(.search_id == $FIRST_SID)][0].state] | inside([\"running\",\"finished\"])" \
+	true 'GET /search entry state is running or finished (never idle for an active search)'
+
+if [ "$HAVE_GUEST" = "1" ]; then
+	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/search"
+	_assert_status 200 "GET /search (guest) → 200 (GUEST-readable)"
+fi
+
+# --- 3.2 Cross-session discovery: a second amuleapi instance against the
+# same amuled sees $FIRST_SID even though it never called POST /search
+# itself (got3nks, PR #680 review point 6 — no amulecmd needed, two
+# amuleapi sessions against one daemon exercise the same discovery path).
+# SECOND_HOST's HTTP server is independent, but both instances share the
+# one daemon at EC_HOST:EC_PORT, so EC_OP_SEARCH_LIST on session B finds
+# the search session A started.
+SECOND_HOST="localhost:4714"
+SECOND_CONFIG_DIR=$(mktemp -d -t amuleapi_19_search_second.XXXXXX)
+SECOND_LOG=$(mktemp -t amuleapi_19_search_second_log.XXXXXX)
+"$AMULEAPI_BIN" --config-dir="$SECOND_CONFIG_DIR" \
+	--host="$EC_HOST" --port="$EC_PORT" --password="$EC_PASSWORD" \
+	--set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
+"$AMULEAPI_BIN" --config-dir="$SECOND_CONFIG_DIR" \
+	--host="$EC_HOST" --port="$EC_PORT" --password="$EC_PASSWORD" \
+	--http-port=4714 >"$SECOND_LOG" 2>&1 &
+SECOND_PID=$!
+
+for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+	curl -s -o /dev/null --max-time 1 "http://$SECOND_HOST/api/v0/version" 2>/dev/null && break
+	sleep 0.5
+done
+sleep 4
+
+SECOND_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" "http://$SECOND_HOST/api/v0/auth/login?type=bearer" \
+	| jq -r .token)
+
+if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
+	_curl -H "Authorization: Bearer $SECOND_TOKEN" "http://$SECOND_HOST/api/v0/search"
+	_assert_status 200 "second amuleapi instance: GET /search → 200"
+	_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)] | length" 1 \
+		'second amuleapi instance (never POSTed) still lists the first instance'"'"'s search'
+
+	_curl -H "Authorization: Bearer $SECOND_TOKEN" \
+		"http://$SECOND_HOST/api/v0/search/results?search_id=$FIRST_SID"
+	_assert_status 200 'second amuleapi instance: GET /search/results?search_id=<foreign id> → 200 (not 404)'
+	_assert_json_eq '.search_id' "$FIRST_SID" 'second amuleapi instance /search/results echoes the discovered search_id'
+else
+	_fail "second amuleapi instance: admin login" "could not obtain a token; log: $(tail -c 300 "$SECOND_LOG")"
+fi
+
+kill "$SECOND_PID" >/dev/null 2>&1
+wait "$SECOND_PID" 2>/dev/null
+rm -rf "$SECOND_CONFIG_DIR" "$SECOND_LOG"
 
 # --- 3.5 Regression: progress shouldn't claim finished right after POST. -
 # amuled briefly reports raw=100 in the "queue-empty-at-start" window
@@ -298,8 +378,8 @@ else
 fi
 
 # --- 8. Method gates. ---------------------------------------------
-_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
-_assert_status 405 "GET /search → 405"
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search"
+_assert_status 405 "PATCH /search → 405"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/search/stop"
 _assert_status 405 "PATCH /search/stop → 405"

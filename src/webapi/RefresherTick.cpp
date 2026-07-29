@@ -163,6 +163,14 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// Api.cpp drive their own EC roundtrips under m_ec_mtx. Per-tick
 	// refresh would have been pure waste when nothing is listening.
 
+	// Searches this session never started itself (another EC client, or
+	// the monolithic GUI) are NOT discovered here per-tick -- that would
+	// pay an EC_OP_SEARCH_LIST roundtrip every tick forever to serve
+	// something that happens rarely. Instead, HandleSearchResults in
+	// Api.cpp does a one-off EC_OP_SEARCH_LIST check on a cache miss and
+	// seeds the slot via MarkSearchDiscovered right there; from the next
+	// tick on, the loop below picks it up like any other active search.
+
 	// /search/results — poll each ACTIVE search independently (amuleapi runs
 	// several at once). POST /search seeds a slot with active=true; the
 	// daemon's per-id EC_TAG_SEARCH_LIFECYCLE_STATE tells us when to flip it

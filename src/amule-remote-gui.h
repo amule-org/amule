@@ -630,6 +630,16 @@ class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFi
 public:
 	CSearchListRem(CRemoteConnect *);
 
+	// Reachability fix (#641): true when OnPollTimer should ask amuled
+	// what searches it currently holds (EC_OP_SEARCH_LIST) on its next
+	// poll. Starts true so a freshly (re)connected client discovers
+	// every search once up front; CreateItem sets it again whenever a
+	// result arrives for a search ID with no local tab, which is the
+	// only signal that amuled is holding a search this client doesn't
+	// know about yet. Cleared by OnPollTimer right after sending the
+	// request, so steady state (every tab already known) costs nothing.
+	bool m_needSearchListRequery;
+
 	// Most-recently-started search ID (0 = none). uint32 so it correctly
 	// holds a daemon-allocated Kad ID (top half of the range); as a signed
 	// int those wrapped negative and corrupted the STOP/remap round-trip.
@@ -669,6 +679,17 @@ public:
 	// Multi-search: remap the optimistic local tab ID to the daemon-allocated
 	// ID once the START reply echoes the correlation token.
 	void RemapSearch(uint32 localID, uint32 daemonID);
+
+	// Reachability fix (#641): a direct one-off EC_OP_SEARCH_LIST request,
+	// bypassing DoRequery's single-request-in-flight state machine on
+	// purpose. HandlePacket answers EC_OP_SEARCH_LIST in its own branch
+	// (below) and never reaches the base class's STATUS_REQ_SENT -> IDLE
+	// transition, so routing this through DoRequery wedges m_state
+	// permanently and silently drops every later
+	// DoRequery(EC_OP_SEARCH_RESULTS, ...) call -- exactly the mirror of
+	// Phase1Done's EC_OP_SEARCH_PROGRESS requests just below, which bypass
+	// the state machine the same way for the same reason.
+	void RequestSearchList();
 
 	// Monolithic CSearchList API parity over EC. IsKadSearch reports whether a
 	// given tab is a *live* Kad search — the SearchDlg "More" button gate —

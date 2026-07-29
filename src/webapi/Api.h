@@ -212,6 +212,7 @@ private:
 	CHttpServer::Response HandleCategoryDelete(
 		const CHttpServer::Request &, const std::string &index_str);
 	// search.
+	CHttpServer::Response HandleSearchList(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStart(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchStop(const CHttpServer::Request &);
 	CHttpServer::Response HandleSearchDownload(const CHttpServer::Request &, const std::string &hash);

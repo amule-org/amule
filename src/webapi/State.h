@@ -1193,6 +1193,19 @@ public:
 	// polls EC_OP_SEARCH_RESULTS / _PROGRESS for it each tick, mapping
 	// EC_TAG_SEARCH_LIFECYCLE_STATE into `complete` / `active`.
 	void MarkSearchStarted(std::uint32_t search_id, const std::string &kind);
+	// Seeds a slot for a search this session did NOT start itself -- a
+	// search another client, or the monolithic GUI, started. Called
+	// on-demand from HandleSearchResults on a cache miss, after a one-off
+	// EC_OP_SEARCH_LIST confirms the core actually holds it (deliberately
+	// NOT a per-tick refresher poll: that would pay an EC roundtrip every
+	// tick, forever, to serve something that happens rarely). Unlike
+	// MarkSearchStarted: does not touch m_current_search_id (a no-id GET
+	// /search/results should keep meaning "the search THIS session
+	// started", not silently jump to whatever was last discovered), and
+	// is idempotent -- a search already known (self-started or previously
+	// discovered) is left untouched rather than having its accumulated
+	// results/progress reset.
+	void MarkSearchDiscovered(std::uint32_t search_id, const std::string &kind);
 	// Refresher-side write path for one search's progress snapshot.
 	void WriteSearchProgress(std::uint32_t search_id, SearchProgressSnapshot s);
 	// Drop a search's slot entirely: POST /search/stop with close=true, or the

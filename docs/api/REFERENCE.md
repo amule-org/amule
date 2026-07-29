@@ -91,6 +91,7 @@ The API is versioned in the path. Breaking changes ship under `/api/v1/`; `/api/
 - [`GET /api/v0/stats/graphs/{graph}`](#get-apiv0statsgraphsgraph) — time-series points (`download`, `upload`, `connections`, `kad`)
 
 **Search**
+- [`GET /api/v0/search`](#get-apiv0search) — enumerate every search amuled currently holds, including ones this session never started
 - [`POST /api/v0/search`](#post-apiv0search) — start a search (global / local / kad), returns its `search_id`
 - [`GET /api/v0/search/results`](#get-apiv0searchresults) — one search's results + progress envelope (`?search_id=`)
 - [`POST /api/v0/search/stop`](#post-apiv0searchstop) — stop (and optionally free) a search by id
@@ -1910,6 +1911,27 @@ Each point is an object with `t` (ISO-8601 UTC), `t_unix` (unix seconds), and `v
 
 The search surface is admin-only because firing a global ed2k search has real network cost.
 
+#### `GET /api/v0/search`
+
+**Auth:** `GUEST`
+
+Lists every search amuled currently holds — including ones started by a **different** client (another amuleapi request, the monolithic GUI, an amulegui session). Each call is a direct round trip to amuled (`EC_OP_SEARCH_LIST`), independent of the Refresher-maintained `m_state` cache, so a search this process never saw a `POST /search` for still shows up here as soon as amuled is holding it. [`GET /search/results`](#get-apiv0searchresults) can then fetch that same `search_id` — on a cache miss it does its own one-off `EC_OP_SEARCH_LIST` check before returning `404`, so a search this endpoint just listed is never a dead end there.
+
+```json
+{
+  "searches": [
+    { "search_id": 42, "query": "ubuntu desktop iso", "kind": "global", "state": "finished" },
+    { "search_id": 43, "query": "debian",              "kind": "kad",    "state": "running"  }
+  ]
+}
+```
+
+`search_id` is the value to pass to [`GET /search/results`](#get-apiv0searchresults) (`?search_id=`) to read that search's hits, or to [`POST /search/stop`](#post-apiv0searchstop) to stop it. `kind` is `"local"` | `"global"` | `"kad"`, same vocabulary as `POST /search`'s `type`. `state` is `"running"` | `"finished"` | `"idle"`, same vocabulary and meaning as `GET /search/results`'s `progress.state`.
+
+amuled only tracks multiple concurrent searches for clients that advertise multi-search support; `amuleapi` does, so this always reflects the full live set. `searches` is an empty array when amuled holds no searches, never an error.
+
+**Errors:** `503 ec_unavailable`.
+
 #### `POST /api/v0/search`
 
 **Auth:** `ADMIN`
@@ -1940,11 +1962,11 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 **Auth:** `GUEST`
 
-**Query:** `?search_id=N` (optional) — which search to read. Omit it to read the **current** (most-recently-started) search. An explicit `search_id` that names no live search (never started, or evicted — see below) returns `404 not_found`, distinct from a known-but-empty search which returns an idle/empty envelope.
+**Query:** `?search_id=N` (optional) — which search to read. Omit it to read the **current** (most-recently-started, by *this session* -- see below) search. An explicit `search_id` that names no live search (never started anywhere, or evicted from amuled's ring — see below) returns `404 not_found`, distinct from a known-but-empty search which returns an idle/empty envelope.
 
 Returns one search's results buffer at the moment of the call PLUS a progress envelope so an empty `results` array isn't ambiguous between "no search running", "search in flight with no hits yet", and "search finished with zero hits". The envelope's top-level `search_id` echoes the resolved search (the one requested, or the current one) so a client polling without an id learns which search it is watching and can pin it on later calls.
 
-This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. There is no per-GET TTL cache: `POST /search` seeds the search and the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`, addressed by `search_id`) every tick for each active search, so this GET reads straight from that refresher-maintained snapshot — successive polls see the growing result set with no extra EC roundtrip.
+This endpoint does NOT busy-wait — it returns whatever amuled has in its result buffer right now. A client that wants to wait for completion should poll while `progress.state == "running"`. There is no per-GET TTL cache: the refresher polls amuled (`EC_OP_SEARCH_RESULTS` + `EC_OP_SEARCH_PROGRESS`, addressed by `search_id`) every tick for each active search, so this GET reads straight from that refresher-maintained snapshot — successive polls see the growing result set with no extra EC roundtrip. `POST /search` is one way a search becomes active; an unknown `search_id` (one this session never started) triggers a one-off `EC_OP_SEARCH_LIST` check before the `404`, and once confirmed the search is active from that request on, with the refresher polling it every tick from there — so a search another client (or the monolithic GUI) started is fetchable by `search_id` too, not just listable via [`GET /search`](#get-apiv0search). Discovery alone never changes what "the current search" (the no-`search_id` default) means, though: that stays whichever search *this* session's own `POST /search` most recently started.
 
 amuled keeps a bounded ring of recent searches (20). A search evicted from that ring (because 20 newer searches were started) is reported to amuleapi as expired: its slot is retired as `finished` and reads with its `search_id` then return `404`.
 

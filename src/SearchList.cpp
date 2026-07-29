@@ -295,6 +295,7 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	m_finishedKadSearches.erase(static_cast<uint32_t>(searchID));
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
 	m_searchKinds.erase(static_cast<uint32_t>(searchID));
+	m_searchStrings.erase(static_cast<uint32_t>(searchID));
 	m_browseBar.erase(searchID);
 	m_browseStatus.erase(searchID);
 
@@ -445,6 +446,7 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	// wrong kind. `type` is this search's real type regardless of the scalar
 	// anchor bookkeeping.
 	m_searchKinds[static_cast<uint32_t>(*searchID)] = type;
+	m_searchStrings[static_cast<uint32_t>(*searchID)] = params.searchString;
 
 	return "";
 }
@@ -896,6 +898,27 @@ bool CSearchList::IsOrWasKadSearch(uint32_t searchID) const
 	// sentinel pick 0xfffe (Kad done, clears the "!") vs 0xffff (ed2k done) for
 	// an arbitrary search, not just the current one.
 	return IsKadSearch(searchID) || m_finishedKadSearches.count(searchID) != 0;
+}
+
+wxString CSearchList::GetSearchStringById(uint32_t searchID) const
+{
+	std::map<uint32_t, wxString>::const_iterator it = m_searchStrings.find(searchID);
+	return it != m_searchStrings.end() ? it->second : wxString();
+}
+
+bool CSearchList::IsKnownSearchId(uint32_t searchID) const
+{
+	return m_searchStrings.count(searchID) != 0;
+}
+
+std::vector<uint32_t> CSearchList::GetKnownSearchIds() const
+{
+	std::vector<uint32_t> ids;
+	ids.reserve(m_searchStrings.size());
+	for (const auto &entry : m_searchStrings) {
+		ids.push_back(entry.first);
+	}
+	return ids;
 }
 
 SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr searchID) const

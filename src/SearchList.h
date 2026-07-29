@@ -124,6 +124,35 @@ public:
 	bool IsOrWasKadSearch(uint32_t searchID) const;
 
 	/**
+	 * Returns the query string this search was started with, or an empty
+	 * string if searchID is unknown. Used to label a search enumerated via
+	 * EC_OP_SEARCH_LIST for a client that never started it locally.
+	 */
+	wxString GetSearchStringById(uint32_t searchID) const;
+
+	/**
+	 * True if this core currently knows about searchID -- same lifetime as
+	 * GetSearchStringById/GetKnownSearchIds (m_searchStrings, populated in
+	 * StartNewSearch, pruned in RemoveResults). Use this to gate per-ID EC
+	 * replies (SEARCH_PROGRESS, single-ID SEARCH_RESULTS) instead of the
+	 * EC-only s_ecSearches registry: a monolithic-started search is known
+	 * here but was never Register()'d into that registry, so gating on it
+	 * alone reports a live search as EC_TAG_SEARCH_EXPIRED.
+	 */
+	bool IsKnownSearchId(uint32_t searchID) const;
+
+	/**
+	 * Every search ID this core currently knows the query string for --
+	 * populated in StartNewSearch and pruned in RemoveResults, so this
+	 * covers a search regardless of how it was started (monolithic GUI or
+	 * an EC client) and is not bounded by any EC-connection-specific
+	 * registry. Used by EC_OP_SEARCH_LIST / the multi-search results union
+	 * poll so a remote client discovers every search the core holds, not
+	 * only ones an EC client itself started.
+	 */
+	std::vector<uint32_t> GetKnownSearchIds() const;
+
+	/**
 	 * Ask the Kad search identified by searchID to widen its frontier
 	 * via KADEMLIA_FIND_VALUE_MORE.  Wired to the search dialog "More"
 	 * button.  Returns true if a reask was dispatched, false otherwise.
@@ -378,6 +407,13 @@ private:
 	//! m_searchType (which only tracks the most-recently-started search).
 	//! Pruned in RemoveResults.
 	std::map<uint32_t, SearchType> m_searchKinds;
+
+	//! This search's original query string, keyed by id (same lifetime as
+	//! m_searchKinds -- recorded in StartNewSearch, pruned in RemoveResults).
+	//! Needed to label a search enumerated via EC_OP_SEARCH_LIST for a
+	//! client that didn't start it locally and so has no tab-title string
+	//! of its own to fall back on.
+	std::map<uint32_t, wxString> m_searchStrings;
 
 	//! Bar value for "View Files" browse tabs, keyed by routing ID and set by
 	//! the browsing client (0..100 percent, or 0xffff finished/failed). Read by

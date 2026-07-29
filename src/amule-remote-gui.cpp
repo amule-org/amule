@@ -340,9 +340,34 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			// update both downloads and shared files
 			knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 		} else if (amuledlg->m_searchwnd->IsShown()) {
-			if (searchlist->m_curr_search != 0) {
-				searchlist->DoRequery(EC_OP_SEARCH_RESULTS, EC_TAG_SEARCHFILE);
+			// Reachability fix (#641): ask what searches the daemon
+			// currently holds -- independent of m_curr_search, which only
+			// ever reflects a search THIS client itself started -- so a
+			// search opened by another client, or one day restored from
+			// disk, gets a tab created here (CSearchListRem::HandlePacket).
+			// Search entries are near-static (id/name/kind barely change),
+			// so unlike the results union poll below this isn't asked every
+			// tick: once on (re)connect, and again only when a result turns
+			// up bearing a search ID with no tab yet (CreateItem sets
+			// m_needSearchListRequery) -- the daemon-side registry this
+			// reads never changes without a result also arriving for it.
+			// RequestSearchList (not DoRequery) on purpose: HandlePacket's
+			// EC_OP_SEARCH_LIST branch never reaches the base class's
+			// STATUS_REQ_SENT -> IDLE transition, so going through
+			// DoRequery would wedge this container's request state machine
+			// forever and silently drop every later EC_OP_SEARCH_RESULTS
+			// poll (got3nks, PR #680 review).
+			if (searchlist->m_needSearchListRequery) {
+				searchlist->RequestSearchList();
+				searchlist->m_needSearchListRequery = false;
 			}
+			// The union poll below already returns every active search's
+			// results regardless of m_curr_search (Get_EC_Response_Search_
+			// Results_Union iterates the daemon's own registry) -- the old
+			// m_curr_search-only gate just meant a client that never
+			// started a search of its own never asked at all, even once a
+			// tab existed for one it learned about above.
+			searchlist->DoRequery(EC_OP_SEARCH_RESULTS, EC_TAG_SEARCHFILE);
 		}
 		// Stats polling is always on, even when the Statistics dialog
 		// isn't the active tab. statgraphs->HandlePacket() also feeds
@@ -2941,6 +2966,7 @@ void CFriendListRem::RequestSharedFileList(CClientRef &client)
  */
 CSearchListRem::CSearchListRem(CRemoteConnect *conn)
 : CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>(conn, true)
+, m_needSearchListRequery(true)
 {
 	m_curr_search = 0;
 }
@@ -3073,6 +3099,12 @@ void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID)
 	m_activeSearches.insert(daemonID);
 }
 
+void CSearchListRem::RequestSearchList()
+{
+	CECPacket req(EC_OP_SEARCH_LIST);
+	m_conn->SendRequest(this, &req);
+}
+
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
 	if (packet->GetOpCode() == EC_OP_SEARCH_PROGRESS) {
@@ -3133,6 +3165,41 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 		const CECTag *refTag = packet->GetTagByName(EC_TAG_SEARCH_REF);
 		if (idTag && refTag) {
 			RemapSearch(refTag->GetInt(), idTag->GetInt());
+		}
+	} else if (packet->GetOpCode() == EC_OP_SEARCH_LIST) {
+		// Reachability fix (#641): one entry per search the daemon currently
+		// holds, so a search this client never started locally -- one
+		// already open in another amulegui session, or restored from disk
+		// once persistence lands -- gets a tab here instead of silently
+		// having its results dropped by AddResult/UpdateResult (neither
+		// looks up a tab that doesn't exist yet). Skips any ID that already
+		// has a tab (a search this client itself started) rather than
+		// recreating it.
+		if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+			for (const CECTag &entry : *packet) {
+				uint32 sid = static_cast<uint32>(entry.GetInt());
+				if (sid == 0 || theApp->amuledlg->m_searchwnd->GetSearchList(sid)) {
+					continue;
+				}
+				const CECTag *nameTag = entry.GetTagByName(EC_TAG_SEARCH_NAME);
+				// "(0)" matches CSearchDlg::CreateNewTab's own callers (e.g.
+				// SearchDlg.cpp:1017) -- no leading "!" even for a Kad search:
+				// that marker is a live indicator normal callers seed only
+				// because they know at creation time they just started a Kad
+				// search, and it is only ever cleared (KadSearchEnd), never
+				// set, by the progress path below. Making this tab first-class
+				// in m_activeSearches is what lets that live path take over
+				// from here -- the "!" appears on the next progress poll if
+				// this is in fact a running Kad search, same as any other tab.
+				theApp->amuledlg->m_searchwnd->CreateNewTab(
+					(nameTag ? nameTag->GetStringData() : wxString()) + " (0)", sid);
+				// Reachability fix (#641): without this, a discovered tab never
+				// gets polled for progress at all (Phase1Done only loops over
+				// m_activeSearches), so its hit count, progress bar and "!"
+				// marker would stay frozen forever -- exactly like a search
+				// this client started itself once RemapSearch runs.
+				m_activeSearches.insert(sid);
+			}
 		}
 	} else {
 		CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>::HandlePacket(packet);
@@ -3199,6 +3266,16 @@ CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 {
 	CSearchFile *file = new CSearchFile(tag);
 	ProcessItemUpdate(tag, file);
+
+	// Reachability fix (#641): a result bearing a search ID with no tab
+	// is exactly the symptom EC_OP_SEARCH_LIST exists to fix -- ask for
+	// the list again on the next poll so a tab gets created for it
+	// (CSearchListRem::HandlePacket's EC_OP_SEARCH_LIST branch) instead
+	// of polling that op every tick regardless of whether anything new
+	// showed up.
+	if (file->m_searchID != 0 && !theApp->amuledlg->m_searchwnd->GetSearchList(file->m_searchID)) {
+		m_needSearchListRequery = true;
+	}
 
 	theApp->amuledlg->m_searchwnd->AddResult(file);
 
