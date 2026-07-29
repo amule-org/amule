@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 12:49+0200\n"
+"POT-Creation-Date: 2026-07-29 15:59+0200\n"
 "PO-Revision-Date: 2026-07-28 20:12+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -2852,6 +2852,11 @@ msgstr "U moet een niet-leeg wachtwoord opgeven."
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Invalid password, not a MD5 hash!"
 msgstr "Ongeldig wachtwoord, geen MD5-hash!"
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, c-format
+msgid "Could not resolve %s to an IPv4 address."
+msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"

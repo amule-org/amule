@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 12:49+0200\n"
+"POT-Creation-Date: 2026-07-29 15:59+0200\n"
 "PO-Revision-Date: 2026-07-28 20:17+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -2845,6 +2845,11 @@ msgstr "您必须输入一个非空密码。"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Invalid password, not a MD5 hash!"
 msgstr "密码无效，不是一个 MD5 哈希值！"
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, c-format
+msgid "Could not resolve %s to an IPv4 address."
+msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"

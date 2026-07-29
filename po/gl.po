@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 12:49+0200\n"
+"POT-Creation-Date: 2026-07-29 15:59+0200\n"
 "PO-Revision-Date: 2026-07-28 20:08+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -2866,6 +2866,11 @@ msgstr "Debe especificar un contrasinal non baleiro."
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Invalid password, not a MD5 hash!"
 msgstr "Contrasinal inválido, sen un hash MD5!"
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, c-format
+msgid "Could not resolve %s to an IPv4 address."
+msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"

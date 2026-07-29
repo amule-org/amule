@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 12:49+0200\n"
+"POT-Creation-Date: 2026-07-29 15:59+0200\n"
 "PO-Revision-Date: 2026-07-28 20:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -2836,6 +2836,11 @@ msgstr "Egy nem üres jelszót kell megadni."
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Invalid password, not a MD5 hash!"
 msgstr "Érvénytelen jelszó, nem egy MD5 hash!"
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, c-format
+msgid "Could not resolve %s to an IPv4 address."
+msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"

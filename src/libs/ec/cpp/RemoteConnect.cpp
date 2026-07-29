@@ -203,7 +203,15 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 
 	amuleIPV4Address addr;
 
-	addr.Hostname(host);
+	// Report a resolution failure as itself. Discarding this return left
+	// the address at 0.0.0.0 and surfaced as the generic "unable to
+	// connect" further up, which says nothing about the actual cause —
+	// a typo in the host, or a name that only has AAAA records (aMule
+	// speaks IPv4 only, so there is nothing to dial there).
+	if (!addr.Hostname(host)) {
+		m_server_reply = CFormat(_("Could not resolve %s to an IPv4 address.")) % host;
+		return false;
+	}
 	addr.Service(port);
 
 	// Compute the prefer-no-ZLIB hint after host resolution: if we

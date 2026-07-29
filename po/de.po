@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-29 12:49+0200\n"
+"POT-Creation-Date: 2026-07-29 15:59+0200\n"
 "PO-Revision-Date: 2026-07-28 20:05+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -2853,6 +2853,11 @@ msgstr "Das angegebene Passwort darf nicht leer sein."
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Invalid password, not a MD5 hash!"
 msgstr "Ungültiges Passwort, keine MD5-Prüfsumme!"
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, c-format
+msgid "Could not resolve %s to an IPv4 address."
+msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"

@@ -1,5 +1,6 @@
 #include <muleunit/test.h>
 #include <NetworkFunctions.h>
+#include <amuleIPV4Address.h>
 
 #define itemsof(x) (sizeof(x) / sizeof(x[0]))
 
@@ -192,4 +193,57 @@ TEST(NetworkFunctions, IsGoodIP)
 		ASSERT_EQUALS(ipList[i].islan, IsLanIP(ip));
 		ASSERT_EQUALS(ipList[i].isgood && !ipList[i].islan, IsGoodIP(ip, true));
 	}
+}
+
+// amuleIPV4Address is v4-only by contract: the endpoint feeds uint32 IPs
+// and v4 sockets throughout aMule. Name resolution used to hand back
+// whatever the platform resolver ranked first, which on a dual-stack name
+// is routinely an AAAA record -- issue #695.
+//
+// Every case here resolves offline: numeric addresses and "localhost" (hosts
+// file) need no DNS server, so the test cannot go flaky when a public zone
+// changes its records.
+//
+// The numeric IPv6 literals are what actually pin the regression on every
+// platform. They are not dotted quads, so they fall through to the resolver,
+// and an unrestricted query answers with the v6 address -- which the old code
+// accepted. Ordering plays no part, so unlike "localhost" (which only exposes
+// the bug where ::1 sorts first, i.e. Windows) these fail on macOS and Linux
+// too if the family restriction is ever dropped again.
+//
+// Note what is NOT asserted: a specific resolved address. Which A record
+// surfaces varies by platform and between runs (round-robin, resolver
+// ordering), so pinning one would be flaky by construction. The invariant is
+// the address family.
+TEST(NetworkFunctions, HostnameResolvesToIPv4Only)
+{
+	amuleIPV4Address addr;
+
+	// A dotted quad must survive untouched (the no-resolution fast path).
+	ASSERT_TRUE(addr.Hostname(wxT("127.0.0.1")));
+	ASSERT_EQUALS(wxString(wxT("127.0.0.1")), addr.IPAddress());
+
+	// An IPv6 literal has no v4 answer, so it must be refused outright
+	// rather than stored in a v4-only endpoint.
+	amuleIPV4Address v6literal;
+	ASSERT_FALSE(v6literal.Hostname(wxT("::1")));
+	amuleIPV4Address v6global;
+	ASSERT_FALSE(v6global.Hostname(wxT("2001:4860:4860::8888")));
+
+	// A name that has both A and AAAA records must still yield IPv4.
+	amuleIPV4Address local;
+	ASSERT_TRUE(local.Hostname(wxT("localhost")));
+	unsigned int ip = 0;
+	// StringIPtoUint32 only parses a dotted quad, so this is what actually
+	// pins the family: an IPv6 result fails to parse here.
+	ASSERT_TRUE(StringIPtoUint32(local.IPAddress(), ip));
+	ASSERT_TRUE(IsLoopbackIP(ip));
+
+	// The same invariant through the helper the rest of the tree calls.
+	ASSERT_TRUE(StringHosttoUint32(wxT("localhost")) != 0);
+	ASSERT_EQUALS((unsigned int)0, StringHosttoUint32(wxT("::1")));
+
+	// An empty name is rejected rather than resolved to anything.
+	amuleIPV4Address empty;
+	ASSERT_FALSE(empty.Hostname(wxEmptyString));
 }

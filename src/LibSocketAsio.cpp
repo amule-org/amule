@@ -2093,23 +2093,42 @@ bool amuleIPV4Address::Hostname(const wxString &name)
 
 	// Try to resolve (sync). Normally not required. Unless you type in your hostname as "local IP
 	// address" or something.
+	//
+	// We only want IPv4 addresses. This has to be asked for explicitly:
+	// the resolve(host, service) overload passes a default-constructed
+	// flag set (0, so not even AI_ADDRCONFIG) and leaves the family
+	// unrestricted, so getaddrinfo answers with AAAA records too — on
+	// any host, whether or not it has IPv6 connectivity. Their order is
+	// up to the platform resolver, and IPv6 routinely comes first (on
+	// Windows, even for "localhost"), so taking the first result handed
+	// back would store an IPv6 address in what the rest of aMule treats
+	// as a v4-only endpoint: IPAddress() then fails StringIPtoUint32(),
+	// and connecting a v4 socket to it fails outright.
 	error_code ec2;
 	ip::tcp::resolver res(s_io_service);
-	// We only want to get IPV4 addresses.
-	ip::tcp::resolver::results_type endpoint_iterator = res.resolve(sname, "", ec2);
+	ip::tcp::resolver::results_type endpoint_iterator = res.resolve(ip::tcp::v4(), sname, "", ec2);
 	if (ec2) {
 		AddDebugLogLineN(
 			logAsio, CFormat("Hostname(\"%s\") resolve failed: %s") % name % ec2.message());
 		return false;
 	}
-	if (endpoint_iterator == ip::tcp::resolver::results_type()) {
-		AddDebugLogLineN(
-			logAsio, CFormat("Hostname(\"%s\") resolve failed: no address found") % name);
-		return false;
+	// Belt and braces: the AF_INET query above should only ever yield v4
+	// entries, but the endpoint is v4-only by contract, so scan for one
+	// rather than trusting begin() the way the unrestricted query did.
+	for (const auto &entry : endpoint_iterator) {
+		if (entry.endpoint().address().is_v4()) {
+			m_endpoint->address(entry.endpoint().address());
+			AddDebugLogLineN(
+				logAsio, CFormat("Hostname(\"%s\") resolved to %s") % name % IPAddress());
+			return true;
+		}
 	}
-	m_endpoint->address(endpoint_iterator.begin()->endpoint().address());
-	AddDebugLogLineN(logAsio, CFormat("Hostname(\"%s\") resolved to %s") % name % IPAddress());
-	return true;
+	// A name that only has AAAA records lands here. aMule is IPv4-only
+	// end to end (amuleIPV4Address, the uint32 IPs, the EC listener), so
+	// failing is the honest answer — the caller reports it instead of
+	// dialling an address the socket layer cannot use.
+	AddDebugLogLineN(logAsio, CFormat("Hostname(\"%s\") resolve failed: no IPv4 address found") % name);
+	return false;
 }
 
 bool amuleIPV4Address::Service(uint16 service)
