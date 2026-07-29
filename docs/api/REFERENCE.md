@@ -1578,7 +1578,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "start_next_same_category": false,
     "save_source_seeds_for_rare_files": true, "preallocate_full_file_size": false,
     "mmap_supported": true, "mmap_enabled": false,
-    "stop_on_low_disk_space": true, "min_free_space_mb": 1, "create_normal": false,
+    "stop_on_low_disk_space": true, "min_free_space_mb": 1, "create_sparse_files": true,
     "start_next_alphabetical": false, "endgame_enabled": false,
     "media_metadata_enabled": false, "ffprobe_path": ""
   },

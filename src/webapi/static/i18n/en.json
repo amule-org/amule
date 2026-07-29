@@ -673,7 +673,7 @@
   "prefs_field_files_start_next_alphabetical": "In alphabetic order",
   "prefs_field_files_endgame_enabled": "Endgame: rotate to faster sources for the final blocks",
   "prefs_field_files_preallocate_full_file_size": "Preallocate disk space for new files",
-  "prefs_field_files_create_normal": "Create new files non-sparse (allocate real disk blocks)",
+  "prefs_field_files_create_sparse_files": "Create new files as sparse files (allocate disk blocks on demand)",
   "prefs_field_files_stop_on_low_disk_space": "Stop downloads on low free disk space",
   "prefs_field_files_min_free_space_mb": "Minimum free disk space (MB)",
   "prefs_field_files_save_source_seeds_for_rare_files": "Save 10 sources on rare files (< 20 sources)",

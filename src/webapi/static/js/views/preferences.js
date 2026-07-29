@@ -128,7 +128,7 @@ const TABS = [
       { key: "start_next_alphabetical", type: "bool", sub: true, gatedBy: "start_next_paused" },
       { key: "endgame_enabled", type: "bool" },
       { key: "preallocate_full_file_size", type: "bool" },
-      { key: "create_normal", type: "bool" },
+      { key: "create_sparse_files", type: "bool" },
       { key: "stop_on_low_disk_space", type: "bool" },
       { key: "min_free_space_mb", type: "int", min: 1, max: 1000000, sub: true, gatedBy: "stop_on_low_disk_space" },
       { key: "save_source_seeds_for_rare_files", type: "bool" },

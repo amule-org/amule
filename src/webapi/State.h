@@ -742,7 +742,15 @@ struct PreferencesSnapshot
 		bool mmap_enabled = false;
 		bool stop_on_low_disk_space = false;
 		std::uint32_t min_free_space_mb = 0;
-		bool create_normal = false;
+		// Positive sense (#655): true = part files are created sparse, so
+		// blocks are allocated on demand. The core stores exactly this
+		// (s_createFilesSparse, default on); it is only the EC layer that
+		// carries the negation, as EC_TAG_FILES_CREATE_NORMAL present ==
+		// "not sparse". The schema's `invert` column undoes that on both
+		// the read and the write path. Only does real work when the core
+		// runs on Windows -- on POSIX both branches create the part file
+		// identically.
+		bool create_sparse_files = true;
 		bool start_next_alphabetical = false;
 		bool endgame_enabled = false;
 		// Media metadata (issue #140): probe shared files with ffprobe to

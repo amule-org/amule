@@ -149,7 +149,7 @@ const PrefField kSchema[] = {
 	// [files]
 	PREF_BOOL("files", "add_new_downloads_paused", EC_TAG_FILES_NEW_PAUSED, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.add_new_downloads_paused),
 	PREF_BOOL("files", "aich_trust_every_hash", EC_TAG_FILES_AICH_TRUST, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.aich_trust_every_hash),
-	PREF_BOOL("files", "create_normal", EC_TAG_FILES_CREATE_NORMAL, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.create_normal),
+	PREF_BOOL("files", "create_sparse_files", EC_TAG_FILES_CREATE_NORMAL, PrefEnc::Presence, true, PrefAccess::ReadWrite, files.create_sparse_files),
 	PREF_BOOL("files", "endgame_enabled", EC_TAG_FILES_ENDGAME, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.endgame_enabled),
 	PREF_STR("files", "ffprobe_path", EC_TAG_FILES_MEDIA_FFPROBE_PATH, PrefAccess::ReadWrite, files.ffprobe_path),
 	PREF_BOOL("files", "ich_enabled", EC_TAG_FILES_ICH_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.ich_enabled),

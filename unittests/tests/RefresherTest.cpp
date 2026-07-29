@@ -1598,9 +1598,14 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 	ASSERT_EQUALS(static_cast<std::size_t>(119), emitted);
 }
 
-// Only one field may invert, and only one may read from a foreign EC group;
-// both are deliberate and documented, so a second one appearing is a mistake
-// worth catching rather than a pattern to copy.
+// The schema's irregularities are enumerated rather than merely counted: each
+// is deliberate and documented, so a new one appearing is a mistake worth
+// catching rather than a pattern to copy.
+//
+// Exactly two fields invert, and both do so because the EC tag they ride on is
+// named for the negative case: EC_TAG_CONN_UDP_DISABLE and, since #655,
+// EC_TAG_FILES_CREATE_NORMAL. In both the API states the positive fact and the
+// schema undoes the EC negation on read and write alike.
 TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 {
 	std::size_t inverted = 0, foreign_group = 0, bespoke = 0;
@@ -1608,7 +1613,8 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 		const PrefField &f = PrefSchema()[i];
 		if (f.invert) {
 			++inverted;
-			ASSERT_EQUALS(std::string("extended_udp_port_enabled"), std::string(f.key));
+			const std::string key(f.key);
+			ASSERT_TRUE(key == "extended_udp_port_enabled" || key == "create_sparse_files");
 		}
 		if (f.read_group != 0) {
 			++foreign_group;
@@ -1619,7 +1625,7 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 			ASSERT_EQUALS(std::string("guest_enabled"), std::string(f.key));
 		}
 	}
-	ASSERT_EQUALS(static_cast<std::size_t>(1), inverted);
+	ASSERT_EQUALS(static_cast<std::size_t>(2), inverted);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
 }

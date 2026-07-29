@@ -673,7 +673,7 @@
   "prefs_field_files_start_next_alphabetical": "En orden alfabético",
   "prefs_field_files_endgame_enabled": "Modo endgame: cambiar a fuentes más rápidas para los bloques finales",
   "prefs_field_files_preallocate_full_file_size": "Reservar el espacio en disco para los archivos nuevos",
-  "prefs_field_files_create_normal": "Crear los archivos nuevos sin huecos (reservar bloques reales en disco)",
+  "prefs_field_files_create_sparse_files": "Crear los archivos nuevos como dispersos (reservar bloques en disco bajo demanda)",
   "prefs_field_files_stop_on_low_disk_space": "Parar descargas con poco espacio libre",
   "prefs_field_files_min_free_space_mb": "Espacio libre mínimo en disco (MB)",
   "prefs_field_files_save_source_seeds_for_rare_files": "Guardar 10 fuentes en archivos raros (< 20 fuentes)",
