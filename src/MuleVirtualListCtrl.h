@@ -86,6 +86,15 @@ public:
 	 *  preserving selection + focus by item identity. */
 	virtual void SortList();
 
+	/** The user-data of every selected item. Overrides the base, which reads
+	 *  the native items a virtual list does not have. */
+	virtual ItemDataList GetSelectedItems() const;
+
+	/** Empty the list. Shadows the (non-virtual) wxListCtrl method, which
+	 *  only drops native items and would leave this control's model holding
+	 *  rows -- pointers to objects the caller is most likely about to free. */
+	bool DeleteAllItems();
+
 	/** Set the live, case-insensitive substring filter; an empty string clears
 	 *  it. Calls RebuildFilteredView() when the text actually changes. */
 	void SetFilterText(const wxString &text);

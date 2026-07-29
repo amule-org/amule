@@ -169,8 +169,12 @@ public:
 	 * This function will return the user-data for each selected item in a
 	 * vector, which can then be manipulated with regards to changes made
 	 * in the current order of the listctrl items.
+	 *
+	 * Virtual: this implementation reads the native items, which a virtual
+	 * list does not have -- CMuleVirtualListCtrl overrides it to read its
+	 * own model instead.
 	 */
-	ItemDataList GetSelectedItems() const;
+	virtual ItemDataList GetSelectedItems() const;
 
 	/**
 	 * Sets the sorter function.
@@ -257,6 +261,18 @@ protected:
 	// SortList() (owning its own row storage) can hold the same re-entrancy /
 	// IsSorting() guard the base sort does.
 	bool m_isSorting;
+
+	/**
+	 * Appends the four header sort arrows to @a list, at the indices
+	 * SetSorting() addresses them by (descending, ascending, and their
+	 * alt-sort variants).
+	 *
+	 * Every CMuleListCtrl shares one small image list holding just these.
+	 * A subclass that needs per-item icons has to attach a small image list
+	 * of its own instead -- it seeds it through here so the arrows keep
+	 * working and the index contract stays in one place.
+	 */
+	static void AddSortArrows(wxImageList &list);
 
 	/**
 	 * Must be overwritten to enable alternate sorting.

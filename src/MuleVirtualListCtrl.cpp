@@ -214,6 +214,20 @@ bool CMuleVirtualListCtrl::MatchesFilter(const wxString &name) const
 	return name.Lower().Contains(m_filterText);
 }
 
+bool CMuleVirtualListCtrl::DeleteAllItems()
+{
+	ClearItemData();
+	return true;
+}
+
+CMuleVirtualListCtrl::ItemDataList CMuleVirtualListCtrl::GetSelectedItems() const
+{
+	// Same walk as SaveSelection(), which the sort path uses; the focused item
+	// is of no interest here.
+	wxUIntPtr focused = 0;
+	return SaveSelection(focused);
+}
+
 std::vector<wxUIntPtr> CMuleVirtualListCtrl::SaveSelection(wxUIntPtr &focused) const
 {
 	std::vector<wxUIntPtr> selected;

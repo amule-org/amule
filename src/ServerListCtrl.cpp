@@ -26,30 +26,34 @@
 #include "ServerListCtrl.h" // Interface declarations
 
 #include <algorithm> // Needed for std::max
+#include <vector>    // Needed for std::vector
 
 #include <common/MenuIDs.h>
 
 #include <wx/menu.h>
 #include <wx/stattext.h>
 #include <wx/msgdlg.h>
-#include <wx/settings.h>
 
 #include "amule.h"         // Needed for theApp
 #include "DownloadQueue.h" // Needed for CDownloadQueue
 #ifdef GEOIP_GUI
-#include "IP2Country.h" // Needed for IP2Country
-#include "amuleDlg.h"   // Needed for IP2Country
+#include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
+#include "CountryDisplay.h" // Needed for GetDisplayCountryCode
 #endif
 #include "ServerList.h"    // Needed for CServerList
 #include "ServerConnect.h" // Needed for CServerConnect
 #include "Server.h"        // Needed for CServer and SRV_PR_*
 #include "Logger.h"
 #include <common/Format.h> // Needed for CFormat
-#include "Preferences.h"   // Needed for thePrefs
 
-#define CMuleColour(x) (wxSystemSettings::GetColour(x))
+#include <wx/dcclient.h> // Needed for wxClientDC
 
-wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleListCtrl)
+// One fixed size for everything in the control's small image list. Set by the
+// 16x16 header sort arrows; the bundled country flags are 16x11 and get padded
+// onto a transparent cell of this size (see FlagImage).
+static const int LIST_IMAGE_SIZE = 16;
+
+wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleVirtualListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CServerListCtrl::OnItemRightClicked)
 	EVT_LIST_ITEM_ACTIVATED(-1, CServerListCtrl::OnItemActivated)
 
@@ -77,7 +81,8 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	long style,
 	const wxValidator &validator,
 	const wxString &name)
-: CMuleListCtrl(parent, winid, pos, size, style, validator, name)
+: CMuleVirtualListCtrl(parent, winid, pos, size, style, validator, name)
+, m_images(LIST_IMAGE_SIZE, LIST_IMAGE_SIZE, true, 0)
 {
 	// Setting the sorter function.
 	SetSortFunc(SortProc);
@@ -86,6 +91,17 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	SetTableName("Server");
 
 	m_connected = 0;
+
+	// Take over the small image list from the one every CMuleListCtrl shares:
+	// the country flags are added to it on demand and have no business showing
+	// up in the other lists' indices. The sort arrows have to come first, at
+	// the indices SetSorting() uses.
+	AddSortArrows(m_images);
+	SetImageList(&m_images, wxIMAGE_LIST_SMALL);
+
+	wxFont bold = GetFont();
+	bold.SetWeight(wxFONTWEIGHT_BOLD);
+	m_boldAttr.SetFont(bold);
 
 	InsertColumn(COLUMN_SERVER_NAME, _("Server Name"), wxLIST_FORMAT_LEFT, 150, "N");
 	InsertColumn(COLUMN_SERVER_ADDR, _("Address"), wxLIST_FORMAT_LEFT, 140, "A");
@@ -131,20 +147,36 @@ void CServerListCtrl::AddServer(CServer *toadd)
 
 void CServerListCtrl::RemoveServer(CServer *server)
 {
-	long result = FindItem(-1, reinterpret_cast<wxUIntPtr>(server));
-	if (result != -1) {
-		DeleteItem(result);
-		ShowServerCount();
+	const wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(server);
+	if (!HasItemData(ptr)) {
+		return;
 	}
+	if (server == m_connected) {
+		m_connected = nullptr;
+	}
+	RemoveItemData(ptr);
+	ShowServerCount();
 }
 
 void CServerListCtrl::RemoveAllServers(int state)
 {
-	int pos = GetNextItem(-1, wxLIST_NEXT_ALL, state);
-	bool connected = theApp->IsConnectedED2K() || theApp->serverconnect->IsConnecting();
+	// Collect first, delete second: the rows are a view onto the model, so
+	// removing one renumbers every row below it -- and the confirmations below
+	// run a nested event loop, during which the list can be updated underneath
+	// a row index but never underneath a server pointer.
+	std::vector<CServer *> candidates;
+	for (long pos = GetNextItem(-1, wxLIST_NEXT_ALL, state); pos != -1;
+		pos = GetNextItem(pos, wxLIST_NEXT_ALL, state)) {
+		candidates.push_back(reinterpret_cast<CServer *>(ItemAt(pos)));
+	}
 
-	while (pos != -1) {
-		CServer *server = reinterpret_cast<CServer *>(GetItemData(pos));
+	const bool connected = theApp->IsConnectedED2K() || theApp->serverconnect->IsConnecting();
+
+	for (CServer *server : candidates) {
+		// May have gone away while a message box was up.
+		if (!HasItemData(reinterpret_cast<wxUIntPtr>(server))) {
+			continue;
+		}
 
 		if (server == m_connected && connected) {
 			wxMessageBox(_("You are connected to a server you are trying to delete. Please "
@@ -152,8 +184,10 @@ void CServerListCtrl::RemoveAllServers(int state)
 				_("Info"),
 				wxOK,
 				this);
-			++pos;
-		} else if (server->IsStaticMember()) {
+			continue;
+		}
+
+		if (server->IsStaticMember()) {
 			const wxString name = (!server->GetListName() ? wxString(_("(Unknown name)"))
 								      : server->GetListName());
 
@@ -161,19 +195,19 @@ void CServerListCtrl::RemoveAllServers(int state)
 				    CFormat(_("Are you sure you want to delete the static server %s")) % name,
 				    _("Cancel"),
 				    wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT,
-				    this) == wxYES) {
-				theApp->serverlist->SetStaticServer(server, false);
-				DeleteItem(pos);
-				theApp->serverlist->RemoveServer(server);
-			} else {
-				++pos;
+				    this) != wxYES) {
+				continue;
 			}
-		} else {
-			DeleteItem(pos);
-			theApp->serverlist->RemoveServer(server);
+			theApp->serverlist->SetStaticServer(server, false);
 		}
 
-		pos = GetNextItem(pos - 1, wxLIST_NEXT_ALL, state);
+		// Drop the row before asking for the removal, not as a result of it:
+		// amulegui's CServerListRem::RemoveServer() only sends an EC command,
+		// so the row would otherwise linger until the core's next update. In
+		// the monolithic build the resulting Notify_ServerRemove() comes back
+		// here and finds the row already gone.
+		RemoveServer(server);
+		theApp->serverlist->RemoveServer(server);
 	}
 
 	ShowServerCount();
@@ -186,188 +220,231 @@ void CServerListCtrl::RefreshServer(CServer *server)
 		return;
 	}
 
-	wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(server);
-	long itemnr = FindItem(-1, ptr);
-	if (itemnr == -1) {
-		// We are not at the sure that the server isn't in the list, so we can re-add
-		itemnr = InsertItem(GetInsertPos(ptr), server->GetListName());
-		SetItemPtrData(itemnr, ptr);
-
-		wxListItem item;
-		item.SetId(itemnr);
-		item.SetBackgroundColour(CMuleColour(wxSYS_COLOUR_LISTBOX));
-		SetItem(item);
+	const wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(server);
+	if (HasItemData(ptr)) {
+		// The cells are rendered from the server on demand, so a refresh is
+		// just a repaint -- plus, when sorted by a column whose value just
+		// changed, the re-sort the base class coalesces for us.
+		RefreshItemData(ptr);
+	} else {
+		// We are not sure that the server isn't in the list, so we can re-add
+		AddItemData(ptr);
 	}
+}
 
-	wxString serverName;
-#ifdef GEOIP_GUI
-	// Prepend the ISO country code. Prefer the code the daemon resolved and
-	// sent over EC (remote GUI, #440) — authoritative even when empty; only
-	// fall back to a local lookup for monolithic amule / an old daemon. The
-	// server list is a plain text wxListCtrl, so — unlike the client list — it
-	// shows the code as text rather than a flag bitmap.
-	if (thePrefs::IsGeoIPEnabled()) {
-		wxString code;
-		bool haveCountry = false;
-		if (server->IsCountryFromCore()) {
-			code = server->GetCountryCode();
-			haveCountry = true;
+wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, long column) const
+{
+	const CServer *server = reinterpret_cast<const CServer *>(item);
+
+	switch (column) {
+	case COLUMN_SERVER_NAME:
+		// The host country is the flag icon on this column, not a text
+		// prefix -- see OnGetItemColumnImage().
+		return server->GetListName();
+
+	case COLUMN_SERVER_ADDR:
+		return server->GetAddress();
+
+	case COLUMN_SERVER_PORT:
+		if (server->GetAuxPortsList().IsEmpty()) {
+			return CFormat("%u") % server->GetPort();
 		}
-#ifndef CLIENT_GUI
-		// Monolithic amule resolves locally; amulegui takes only the EC path
-		// above (guarding the local branch out keeps amulegui link-clean).
-		else if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
-			code = theApp->GetIP2Country()->GetCountryCode(server->GetFullIP());
-			haveCountry = true;
+		return CFormat("%u (%s)") % server->GetPort() % server->GetAuxPortsList();
+
+	case COLUMN_SERVER_DESC:
+		return server->GetDescription();
+
+	case COLUMN_SERVER_PING:
+		if (!server->GetPing()) {
+			return wxEmptyString;
 		}
-#endif
-		if (haveCountry) {
-			serverName << (code.IsEmpty() ? wxString("?") : code) << " - ";
+		return CastSecondsToHM(server->GetPing() / 1000, server->GetPing() % 1000);
+
+	case COLUMN_SERVER_USERS:
+		if (!server->GetUsers()) {
+			return wxEmptyString;
 		}
-	}
-#endif // GEOIP_GUI
-	serverName << server->GetListName();
-	SetItem(itemnr, COLUMN_SERVER_NAME, serverName);
-	SetItem(itemnr, COLUMN_SERVER_ADDR, server->GetAddress());
-	if (server->GetAuxPortsList().IsEmpty()) {
-		SetItem(itemnr, COLUMN_SERVER_PORT, CFormat("%u") % server->GetPort());
-	} else {
-		SetItem(itemnr,
-			COLUMN_SERVER_PORT,
-			CFormat("%u (%s)") % server->GetPort() % server->GetAuxPortsList());
-	}
-	SetItem(itemnr, COLUMN_SERVER_DESC, server->GetDescription());
+		return CFormat("%u") % server->GetUsers();
 
-	if (server->GetPing()) {
-		SetItem(itemnr,
-			COLUMN_SERVER_PING,
-			CastSecondsToHM(server->GetPing() / 1000, server->GetPing() % 1000));
-	} else {
-		SetItem(itemnr, COLUMN_SERVER_PING, "");
-	}
+	case COLUMN_SERVER_FILES:
+		if (!server->GetFiles()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetFiles();
 
-	if (server->GetUsers()) {
-		SetItem(itemnr, COLUMN_SERVER_USERS, CFormat("%u") % server->GetUsers());
-	} else {
-		SetItem(itemnr, COLUMN_SERVER_USERS, "");
-	}
+	case COLUMN_SERVER_PRIO:
+		switch (server->GetPreferences()) {
+		case SRV_PR_LOW:
+			return _("Low");
+		case SRV_PR_NORMAL:
+			return _("Normal");
+		case SRV_PR_HIGH:
+			return _("High");
+		default:
+			return "---"; // this should never happen
+		}
 
-	if (server->GetFiles()) {
-		SetItem(itemnr, COLUMN_SERVER_FILES, CFormat("%u") % server->GetFiles());
-	} else {
-		SetItem(itemnr, COLUMN_SERVER_FILES, "");
-	}
+	case COLUMN_SERVER_FAILS:
+		return CFormat("%u") % server->GetFailedCount();
 
-	switch (server->GetPreferences()) {
-	case SRV_PR_LOW:
-		SetItem(itemnr, COLUMN_SERVER_PRIO, _("Low"));
-		break;
-	case SRV_PR_NORMAL:
-		SetItem(itemnr, COLUMN_SERVER_PRIO, _("Normal"));
-		break;
-	case SRV_PR_HIGH:
-		SetItem(itemnr, COLUMN_SERVER_PRIO, _("High"));
-		break;
-	default:
-		SetItem(itemnr, COLUMN_SERVER_PRIO, "---"); // this should never happen
-	}
+	case COLUMN_SERVER_STATIC:
+		return server->IsStaticMember() ? _("Yes") : _("No");
 
-	SetItem(itemnr, COLUMN_SERVER_FAILS, CFormat("%u") % server->GetFailedCount());
-	SetItem(itemnr, COLUMN_SERVER_STATIC, (server->IsStaticMember() ? _("Yes") : _("No")));
-	SetItem(itemnr, COLUMN_SERVER_VERSION, server->GetVersion());
+	case COLUMN_SERVER_VERSION:
+		return server->GetVersion();
 
 #if !defined(CLIENT_GUI)
-	wxString flags;
-	/* TCP */
-	if (server->GetTCPFlags() & SRV_TCPFLG_COMPRESSION) {
-		flags += "c";
-	}
-	if (server->GetTCPFlags() & SRV_TCPFLG_NEWTAGS) {
-		flags += "n";
-	}
-	if (server->GetTCPFlags() & SRV_TCPFLG_UNICODE) {
-		flags += "u";
-	}
-	if (server->GetTCPFlags() & SRV_TCPFLG_RELATEDSEARCH) {
-		flags += "r";
-	}
-	if (server->GetTCPFlags() & SRV_TCPFLG_TYPETAGINTEGER) {
-		flags += "t";
-	}
-	if (server->GetTCPFlags() & SRV_TCPFLG_LARGEFILES) {
-		flags += "l";
-	}
-	if (server->GetTCPFlags() & SRV_TCPFLG_TCPOBFUSCATION) {
-		flags += "o";
+	case COLUMN_SERVER_TCPFLAGS: {
+		wxString flags;
+		if (server->GetTCPFlags() & SRV_TCPFLG_COMPRESSION) {
+			flags += "c";
+		}
+		if (server->GetTCPFlags() & SRV_TCPFLG_NEWTAGS) {
+			flags += "n";
+		}
+		if (server->GetTCPFlags() & SRV_TCPFLG_UNICODE) {
+			flags += "u";
+		}
+		if (server->GetTCPFlags() & SRV_TCPFLG_RELATEDSEARCH) {
+			flags += "r";
+		}
+		if (server->GetTCPFlags() & SRV_TCPFLG_TYPETAGINTEGER) {
+			flags += "t";
+		}
+		if (server->GetTCPFlags() & SRV_TCPFLG_LARGEFILES) {
+			flags += "l";
+		}
+		if (server->GetTCPFlags() & SRV_TCPFLG_TCPOBFUSCATION) {
+			flags += "o";
+		}
+		return flags;
 	}
 
-	SetItem(itemnr, COLUMN_SERVER_TCPFLAGS, flags);
-
-	/* UDP */
-	flags.Clear();
-	if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES) {
-		flags += "g";
+	case COLUMN_SERVER_UDPFLAGS: {
+		wxString flags;
+		if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES) {
+			flags += "g";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETFILES) {
+			flags += "f";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_NEWTAGS) {
+			flags += "n";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_UNICODE) {
+			flags += "u";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES2) {
+			flags += "G";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_LARGEFILES) {
+			flags += "l";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_UDPOBFUSCATION) {
+			flags += "o";
+		}
+		if (server->GetUDPFlags() & SRV_UDPFLG_TCPOBFUSCATION) {
+			flags += "O";
+		}
+		return flags;
 	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETFILES) {
-		flags += "f";
-	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_NEWTAGS) {
-		flags += "n";
-	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_UNICODE) {
-		flags += "u";
-	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES2) {
-		flags += "G";
-	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_LARGEFILES) {
-		flags += "l";
-	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_UDPOBFUSCATION) {
-		flags += "o";
-	}
-	if (server->GetUDPFlags() & SRV_UDPFLG_TCPOBFUSCATION) {
-		flags += "O";
-	}
-	SetItem(itemnr, COLUMN_SERVER_UDPFLAGS, flags);
-
 #endif
 
-	// Deletions of items causes rather large amount of flicker, so to
-	// avoid this, we resort the list to ensure correct ordering.
-	if (!IsItemSorted(itemnr)) {
-		SortList();
+	default:
+		return wxEmptyString;
+	}
+}
+
+int CServerListCtrl::FlagImage(const wxString &code) const
+{
+	const auto it = m_flagImages.find(code);
+	if (it != m_flagImages.end()) {
+		return it->second;
+	}
+
+	const wxImage &flag = theApp->GetCountryFlags()->GetFlag(code);
+	if (!flag.IsOk()) {
+		m_flagImages[code] = -1;
+		return -1;
+	}
+
+	// Centre the 16x11 flag on the image list's square cell. Adding it at its
+	// own size instead would leave wxImageList to stretch it to the cell.
+	wxImage cell = flag;
+	if (!cell.HasAlpha()) {
+		// Size() only pads with transparent pixels when there is an alpha
+		// channel to be transparent in; without one it would pad with black.
+		cell.InitAlpha();
+	}
+	cell = cell.Size(wxSize(LIST_IMAGE_SIZE, LIST_IMAGE_SIZE),
+		wxPoint((LIST_IMAGE_SIZE - cell.GetWidth()) / 2, (LIST_IMAGE_SIZE - cell.GetHeight()) / 2));
+
+	const int index = m_images.Add(wxBitmap(cell));
+	m_flagImages[code] = index;
+	return index;
+}
+
+int CServerListCtrl::OnGetItemColumnImage(long item, long column) const
+{
+	if (column != COLUMN_SERVER_NAME) {
+		return -1;
+	}
+#ifdef GEOIP_GUI
+	// Host country as a flag icon, matching the peer list: no icon at all for
+	// an unresolved server, rather than the "? - " prefix this used to show.
+	const CServer *server = reinterpret_cast<const CServer *>(ItemAt(item));
+	wxString code;
+	if (GetDisplayCountryCode(
+		    server->IsCountryFromCore(), server->GetCountryCode(), server->GetFullIP(), code) &&
+		!code.IsEmpty()) {
+		return FlagImage(code);
+	}
+#else
+	wxUnusedVar(item);
+#endif // GEOIP_GUI
+	return -1;
+}
+
+wxListItemAttr *CServerListCtrl::OnGetItemAttr(long item) const
+{
+	if (m_connected && reinterpret_cast<const CServer *>(ItemAt(item)) == m_connected) {
+		return &m_boldAttr;
+	}
+	return nullptr;
+}
+
+bool CServerListCtrl::IsLiveSortColumn() const
+{
+	switch (static_cast<int>(GetSortColumn())) {
+	case COLUMN_SERVER_PING:
+	case COLUMN_SERVER_USERS:
+	case COLUMN_SERVER_FILES:
+		return true;
+	default:
+		return false;
 	}
 }
 
 void CServerListCtrl::HighlightServer(const CServer *server, bool highlight)
 {
-	// Unset the old highlighted server if we are going to set a new one
-	if (m_connected && highlight) {
-		// A recursive call to do the real work.
-		HighlightServer(m_connected, false);
+	// The bold font is handed out by OnGetItemAttr(), so all this has to do is
+	// move m_connected and repaint the rows either side of the change.
+	const CServer *previous = m_connected;
 
-		m_connected = 0;
+	if (highlight) {
+		m_connected = server;
+	} else if (m_connected == server) {
+		m_connected = nullptr;
 	}
 
-	long itemnr = FindItem(-1, reinterpret_cast<wxUIntPtr>(server));
-	if (itemnr > -1) {
-		wxListItem item;
-		item.SetId(itemnr);
-
-		if (GetItem(item)) {
-			wxFont font = GetFont();
-
-			if (highlight) {
-				font.SetWeight(wxFONTWEIGHT_BOLD);
-
-				m_connected = server;
-			}
-
-			item.SetFont(font);
-
-			SetItem(item);
-		}
+	if (previous == m_connected) {
+		return;
+	}
+	if (previous) {
+		RefreshItemData(reinterpret_cast<wxUIntPtr>(previous));
+	}
+	if (m_connected) {
+		RefreshItemData(reinterpret_cast<wxUIntPtr>(m_connected));
 	}
 }
 
@@ -388,6 +465,25 @@ void CServerListCtrl::FitColumnsToContent()
 	// the column out. The other columns hold short, bounded values.
 	const int descMaxWidth = 300;
 
+	// wxLIST_AUTOSIZE is a no-op on a virtual control -- it has no native items
+	// to measure and just hands back a default width -- so the content side is
+	// measured here against the model. wxLIST_AUTOSIZE_USEHEADER measures the
+	// header text and works either way, so that half is left to it.
+	//
+	// The two constants and the arithmetic below reproduce what the non-virtual
+	// wxLIST_AUTOSIZE did, so column widths come out where they used to: the
+	// margin is the starting floor and is added once to the finished column
+	// (NOT per cell), and a cell carrying an image counts the image plus the
+	// narrower in-row image margin. Both live in listctrl.cpp as file-statics,
+	// hence the copies.
+	const int autosizeMargin = 10; // AUTOSIZE_COL_MARGIN
+	const int imageMargin = 5;     // IMAGE_MARGIN_IN_REPORT_MODE
+
+	wxClientDC dc(this);
+	dc.SetFont(GetFont());
+
+	const long rows = ItemDataCount();
+
 	Freeze();
 	for (int col = 0; col < GetColumnCount(); ++col) {
 		// Leave hidden columns (width 0, e.g. the TCP/UDP flag columns or
@@ -396,8 +492,20 @@ void CServerListCtrl::FitColumnsToContent()
 			continue;
 		}
 
-		SetColumnWidth(col, wxLIST_AUTOSIZE);
-		const int contentWidth = GetColumnWidth(col);
+		int contentWidth = autosizeMargin;
+		for (long row = 0; row < rows; ++row) {
+			wxCoord textWidth = 0;
+			dc.GetTextExtent(GetItemColumnText(ItemAt(row), col), &textWidth, nullptr);
+			int cellWidth = textWidth;
+			if (OnGetItemColumnImage(row, col) != -1) {
+				cellWidth += LIST_IMAGE_SIZE + imageMargin;
+			}
+			if (cellWidth > contentWidth) {
+				contentWidth = cellWidth;
+			}
+		}
+		contentWidth += autosizeMargin;
+
 		SetColumnWidth(col, wxLIST_AUTOSIZE_USEHEADER);
 		const int headerWidth = GetColumnWidth(col);
 
@@ -437,7 +545,7 @@ void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
 
 	// Gather information on the selected items
 	while (index > -1) {
-		CServer *server = reinterpret_cast<CServer *>(GetItemData(index));
+		CServer *server = reinterpret_cast<CServer *>(ItemAt(index));
 
 		// The current server is selected, so we might display the reconnect option
 		if (server == m_connected) {
@@ -552,7 +660,7 @@ void CServerListCtrl::OnConnectToServer(wxCommandEvent &WXUNUSED(event))
 			theApp->serverconnect->Disconnect();
 		}
 
-		theApp->serverconnect->ConnectToServer(reinterpret_cast<CServer *>(GetItemData(item)));
+		theApp->serverconnect->ConnectToServer(reinterpret_cast<CServer *>(ItemAt(item)));
 	}
 }
 
@@ -563,7 +671,7 @@ void CServerListCtrl::OnGetED2kURL(wxCommandEvent &WXUNUSED(event))
 	wxString URL;
 
 	while (pos != -1) {
-		CServer *server = reinterpret_cast<CServer *>(GetItemData(pos));
+		CServer *server = reinterpret_cast<CServer *>(ItemAt(pos));
 
 		URL += CFormat("ed2k://|server|%s|%d|/\n") % server->GetFullIP() % server->GetPort();
 

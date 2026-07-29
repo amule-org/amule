@@ -26,7 +26,9 @@
 #ifndef SERVERLISTCTRL_H
 #define SERVERLISTCTRL_H
 
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl
+#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl (and wxListItemAttr)
+
+#include <map>
 
 #define COLUMN_SERVER_NAME 0
 #define COLUMN_SERVER_ADDR 1
@@ -51,8 +53,12 @@ class wxCommandEvent;
  * The CServerListCtrl is used to display the list of servers which the user
  * can connect to and which we request sources from. It is a permanently sorted
  * list in that it always ensure that the items are sorted in the correct order.
+ *
+ * The rows are text-rendered from the model (GetItemColumnText), not
+ * owner-drawn: the only graphic is the country flag in the Server Name column,
+ * which a virtual list can supply through OnGetItemColumnImage.
  */
-class CServerListCtrl : public CMuleListCtrl
+class CServerListCtrl : public CMuleVirtualListCtrl
 {
 public:
 	/**
@@ -139,6 +145,24 @@ protected:
 	/// Return old column order.
 	wxString GetOldColumnOrder() const;
 
+	/// Text of one cell, rendered on demand by the virtual control.
+	virtual wxString GetItemColumnText(wxUIntPtr item, long column) const;
+
+	/**
+	 * Image index for one cell: the host-country flag on the Server Name
+	 * column, none anywhere else.
+	 */
+	virtual int OnGetItemColumnImage(long item, long column) const;
+
+	/// Bold attribute for the server we are connected to, none for the rest.
+	virtual wxListItemAttr *OnGetItemAttr(long item) const;
+
+	/**
+	 * Ping, Users and Files change while the list is up, so sorting by one of
+	 * them enables the inherited live auto-sort.
+	 */
+	virtual bool IsLiveSortColumn() const;
+
 private:
 	/**
 	 * Event-handler for handling item activation (connect).
@@ -187,8 +211,33 @@ private:
 	 */
 	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
 
+	/**
+	 * Index of @a code's flag in m_images, adding the bitmap on first use.
+	 * Returns -1 for a code with no bundled flag.
+	 */
+	int FlagImage(const wxString &code) const;
+
 	//! Used to keep track of the last high-lighted item.
 	const CServer *m_connected;
+
+	/**
+	 * This control's own small image list: the header sort arrows first (the
+	 * indices CMuleListCtrl::SetSorting() uses), then one entry per country
+	 * flag actually seen. It replaces the list shared by every CMuleListCtrl
+	 * so the flags stay out of every other list in the app.
+	 *
+	 * Mutable because the flags are filled in lazily from
+	 * OnGetItemColumnImage(), which the virtual control calls to paint a row
+	 * and is therefore const. Loading all ~250 flags up front instead would
+	 * decode a PNG for every country nobody is connected to.
+	 */
+	mutable wxImageList m_images;
+
+	//! ISO code -> index into m_images.
+	mutable std::map<wxString, int> m_flagImages;
+
+	//! Returned by OnGetItemAttr() for the connected server; see HighlightServer().
+	mutable wxListItemAttr m_boldAttr;
 
 	wxDECLARE_EVENT_TABLE();
 };

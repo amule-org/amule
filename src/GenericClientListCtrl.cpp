@@ -40,8 +40,8 @@
 #include "GetTickCount.h"       // Needed for GetTickCount64
 #include "GuiEvents.h"          // Needed for CoreNotify_*
 #ifdef GEOIP_GUI
-#include "IP2Country.h"   // Needed for CIP2Country
-#include "CountryFlags.h" // Needed for CCountryFlags (flag bitmaps)
+#include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
+#include "CountryDisplay.h" // Needed for GetDisplayCountryCode
 #endif
 #include "muuli_wdr.h" // Needed for ID_DLOADLIST
 #include "PartFile.h"  // Needed for CPartFile
@@ -921,26 +921,14 @@ void CGenericClientListCtrl::DrawClientItem(wxDC *dc,
 
 		wxString userName;
 #ifdef GEOIP_GUI
-		// Country flag. Prefer the code the core resolved and sent over EC
-		// (#439): it is authoritative, so amulegui renders it regardless of its
-		// own (synced) GeoIP-enabled pref — the core only emits a code when its
-		// GeoIP is on. Monolithic amule has no EC feed and resolves locally,
-		// gated on its own IsGeoIPEnabled. The flag cache turns code -> bitmap.
+		// Country flag; GetDisplayCountryCode() holds the shared gate (see
+		// CountryDisplay.h) so this list and the server list stay in step. The
+		// flag cache then turns the code into a bitmap.
 		wxString code;
-		bool haveCountry = false;
-		if (client.GetClient()->IsCountryFromCore()) {
-			code = client.GetClient()->GetCountryCode();
-			haveCountry = true;
-		}
-#ifndef CLIENT_GUI
-		// Monolithic-only local lookup (keeps amulegui free of CIP2Country link
-		// symbols; amulegui only ever takes the EC-provided path above).
-		else if (thePrefs::IsGeoIPEnabled() && theApp->GetIP2Country() &&
-			 theApp->GetIP2Country()->IsEnabled()) {
-			code = theApp->GetIP2Country()->GetCountryCode(client.GetFullIP());
-			haveCountry = true;
-		}
-#endif
+		const bool haveCountry = GetDisplayCountryCode(client.GetClient()->IsCountryFromCore(),
+			client.GetClient()->GetCountryCode(),
+			client.GetFullIP(),
+			code);
 		// Draw the country flag only — no textual code. An unknown / unresolved
 		// peer (empty code) gets neither flag nor prefix.
 		if (haveCountry && !code.IsEmpty()) {

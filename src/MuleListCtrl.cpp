@@ -63,6 +63,16 @@ wxEND_EVENT_TABLE()
 //! Shared list of arrow-pixmaps
 static wxImageList imgList(16, 16, true, 0);
 
+void CMuleListCtrl::AddSortArrows(wxImageList &list)
+{
+	// Order is the contract SetSorting() indexes into: 0/1 are the plain
+	// descending / ascending arrows, 2/3 their alt-sort variants.
+	list.Add(wxArtProvider::GetBitmap("amule:sort_dn"));
+	list.Add(wxArtProvider::GetBitmap("amule:sort_up"));
+	list.Add(wxArtProvider::GetBitmap("amule:sort_dnx2"));
+	list.Add(wxArtProvider::GetBitmap("amule:sort_upx2"));
+}
+
 CMuleListCtrl::CMuleListCtrl(wxWindow *parent,
 	wxWindowID winid,
 	const wxPoint &pos,
@@ -78,10 +88,7 @@ CMuleListCtrl::CMuleListCtrl(wxWindow *parent,
 	m_isSorting = false;
 
 	if (imgList.GetImageCount() == 0) {
-		imgList.Add(wxArtProvider::GetBitmap("amule:sort_dn"));
-		imgList.Add(wxArtProvider::GetBitmap("amule:sort_up"));
-		imgList.Add(wxArtProvider::GetBitmap("amule:sort_dnx2"));
-		imgList.Add(wxArtProvider::GetBitmap("amule:sort_upx2"));
+		AddSortArrows(imgList);
 	}
 
 	// Default sort-order is to sort by the first column (asc).
