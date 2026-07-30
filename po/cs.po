@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-30 12:03+0200\n"
-"PO-Revision-Date: 2026-07-28 20:04+0000\n"
+"PO-Revision-Date: 2026-07-30 12:09+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -83,7 +83,7 @@ msgstr "Klikněte pro kontrolu existence nové verze."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "Zkontrolovat aktualizace"
 
 #: src/AboutDialog.cpp
 msgid "Checking for updates..."
@@ -126,37 +126,40 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
+"aMule může nainstalovat stolní spouštěče, ikony a příkazové zkratky do vašeho domovského adresáře, takže se zobrazí v nabídce aplikací jako běžně nainstalovaná aplikace.\n"
+"\n"
+"Toto lze vrátit zpět - soubory se nachází pod ~/.local/share/applications, ~/.local/share/icons a ~/.local/bin a mohou být kdykoli odstraněny.\n"
+"\n"
+"Nainstalovat nyní integraci?"
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "Add aMule to your application menu?"
-msgstr "Za názvem programu"
+msgstr "Přidat aMule do nabídky aplikací?"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "Instalovat"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "Teď ne"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "Znovu se neptat"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "Nelze nainstalovat integraci plochy: není nastavena proměnná prostředí APPDIR. To obvykle znamená, že AppImage byl spuštěn nestandardním způsobem."
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "aMule integration failed"
-msgstr "Připojení selhalo "
+msgstr "Integrace aMule selhala"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Nelze nainstalovat integraci plochy: selhalo vytvoření %s. Zkontrolujte, zda máte pro váš domovský adresář právo zapisovat."
 
 #: src/AppImageIntegration.cpp
 #, c-format
@@ -204,12 +207,12 @@ msgstr "Ukončuji hlavní aplikaci..."
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Ukončuji instanci amuleweb s PID `%d'..."
+msgstr "Ukončuji instanci amuleweb s PID '%d' ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Zabíjím instanci amuleweb s PID `%d'..."
+msgstr "Zabíjím instanci amuleweb s PID '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 msgid "Failed"

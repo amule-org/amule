@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-30 12:03+0200\n"
-"PO-Revision-Date: 2026-07-28 20:17+0000\n"
+"PO-Revision-Date: 2026-07-30 12:36+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -261,7 +261,7 @@ msgstr "将所有网络流量绑定到接口：%s"
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr "警告：未找到配置的网络接口'%s' - 流量未绑定到该接口，可能通过默认路由离开。 在设置中检查接口名。"
+msgstr "警告：未找到配置的网络接口'%s' - 流量未绑定到该接口，可能通过默认路由离开。 在首选项中检查接口名。"
 
 #: src/amule.cpp
 #, c-format
@@ -361,9 +361,9 @@ msgid ""
 msgstr ""
 "端口 %u 已被占用。\n"
 "\n"
-"这意味着你会成为 Low ID。\n"
+"这意味着你会是 Low ID。\n"
 "\n"
-"请检测网络设置以确保端口可用于输入输出。"
+"请检测网络确保端口开启可用于输入输出。"
 
 #: src/amule.cpp
 msgid "Failed to create OnlineSig File"
@@ -412,7 +412,7 @@ msgid ""
 " OnlineSignature will be DISABLED until you fix it on preferences."
 msgstr ""
 "您为在线统计文件所选择的文件夹无效！\n"
-"在您更正设置之前在线统计将被禁用。"
+"在您更正首选项之前在线统计将被禁用。"
 
 #: src/amule.cpp
 msgid "Server hostname notified"
@@ -541,11 +541,11 @@ msgstr "已断开 Kad 连接"
 
 #: src/amule.cpp
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
-msgstr "如果在设置中禁用了 UDP 端口，Kad 网络将不能使用，没有启动。"
+msgstr "如果在首选项中禁用了 UDP 端口，Kad 网络将不能使用，没有启动。"
 
 #: src/amule.cpp
 msgid "Kad network disabled on preferences, not connecting."
-msgstr "Kad 网络在设置中被禁用了，没有连接。"
+msgstr "Kad 网络在首选项中被禁用了，没有连接。"
 
 #: src/amuled.cpp
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
@@ -615,11 +615,11 @@ msgstr "统计"
 #: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
-msgstr "设置"
+msgstr "首选项"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "导航"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -1644,7 +1644,7 @@ msgid ""
 "set your preferred video player in preferences (default is %s)."
 msgstr ""
 "为了不让此提示在每次预览时都出现，\n"
-"请在设置中预设您喜欢的播放器（默认为%s）。"
+"请在首选项中预设您喜欢的播放器（默认为%s）。"
 
 #: src/DownloadListCtrl.cpp
 msgid "File preview"
@@ -1860,7 +1860,7 @@ msgstr "必须定义需删除的服务器"
 
 #: src/ExternalConn.cpp
 msgid "eD2k is disabled in preferences."
-msgstr "eD2k 在设置中已禁用。"
+msgstr "eD2k 在首选项中已禁用。"
 
 #: src/ExternalConn.cpp
 msgid "Friend not found."
@@ -1931,11 +1931,11 @@ msgstr "无法重命名文件。"
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "无法保存 amuleapi 密码：%s"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
-msgstr "Kad 在设置中被禁用。"
+msgstr "Kad 在首选项中被禁用。"
 
 #: src/ExternalConn.cpp
 msgid "Already connected to eD2k."
@@ -2202,31 +2202,31 @@ msgstr "%.2f kB/s"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "移动 / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Cable (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Fibre 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "千兆光纤 (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "aMule 首次运行设置"
 
 #: src/FirstRunWizard.cpp
 msgid "Welcome to aMule!"
@@ -2237,10 +2237,12 @@ msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"这个简略的设置流程会让 aMule 联网。之后你可以在\n"
+"首选项中更改这些设置中的任意一项。"
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "选择一个其他对等方会见到的昵称："
 
 #: src/FirstRunWizard.cpp
 msgid "Connection & bandwidth"
@@ -2251,6 +2253,8 @@ msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"挑一个最匹配你的互联网连接的选项，\n"
+"或者直接在下方设置上传和下载限制。"
 
 #: src/FirstRunWizard.cpp
 msgid "Connection speed:"
@@ -2258,15 +2262,15 @@ msgstr "连接速度："
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "其他 /手动设置"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "上传限制 （kB/s, 0 = 不限)："
 
 #: src/FirstRunWizard.cpp
 msgid "Download limit (kB/s, 0 = unlimited):"
-msgstr ""
+msgstr "下载限制（kB/s,0 = 不限）："
 
 #: src/FirstRunWizard.cpp
 msgid "Networks & ports"
@@ -2274,7 +2278,7 @@ msgstr "网络和端口"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule 可以使用两个网络。我们建议两个都开启。"
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2302,6 +2306,9 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"让 aMule 请求你的路由器转发上方的这些端口，以便其他\n"
+"对等方可以和你连上 ( \"HighID\")。如果你的\n"
+"路由器不支持 UPnP 或者你手动转发端口，请关闭该选项。"
 
 #: src/FirstRunWizard.cpp
 msgid "Bootstrap files"
@@ -2312,11 +2319,12 @@ msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"要开始，aMule 需要知道一些对等方。\n"
+"选择现在要下载哪些列表："
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "您已经尝试下载文件 %s"
+msgstr "对等方列表已就绪 -- 没有要下载的。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2324,13 +2332,15 @@ msgstr "启动时自动更新服务器列表"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "集成（可选）"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"选择 aMule 如何与你的系统集成。 你之后可以在\n"
+"首选项中更改任意一项设置。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
@@ -2348,21 +2358,23 @@ msgstr "将 aMule 注册为打开 magnet: 链接的应用"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "仅兼容 eD2k 的磁力链接。如果你使用 BitTorrent 客户端请不要开启。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "用 aMule 打开 .emulecollection 文件"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "文件夹（可选）"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"多数人使用默认值即可。如果想在不同的（比如更大的）\n"
+"磁盘上下载可以更改默认值。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2375,7 +2387,7 @@ msgstr "浏览"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr "（此文件夹中的所有文件均与其他 peer 共享）"
+msgstr "（此文件夹中的所有文件均与其他对等方共享）"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
@@ -2387,10 +2399,12 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"基于此，aMule 会允许每个文件最多 %i 个来源\n"
+"以及 %i 个客户端连接。"
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "下次启动 aMule 时再次显示这个设置向导吗？"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
@@ -3300,7 +3314,7 @@ msgstr "扩展名"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr "向已响应的 Kad 节点请求扩大搜索范围。每次点击都会查询下一个最近的节点，以获取更多联系人（KADEMLIA_FIND_VALUE_MORE），从而显示搜索初始 alpha 边界遗漏的其他文件匹配项。"
+msgstr "请求已响应的 Kad 对等方扩大搜索范围。每次单击都会查询下一个离得最近的对等方获取更多联系人（KADEMLIA_FIND_VALUE_MORE），从而显示搜索初始 alpha 边界遗漏的其他文件匹配项。"
 
 #: src/muuli_wdr.cpp
 msgid "Stop"
@@ -3756,7 +3770,7 @@ msgstr "aMule 仅支持兼容 eD2k 的磁力链接（包含 xt=urn:ed2k:）。�
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "打开链接集合会查询其所包含的每个 eD2k 链接。在 Windows 系统上，这会添加 aMule 到 “打开方式”列表并只在没有其他程序注册了该文件类型时使用默认程序。"
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -3803,13 +3817,12 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "启用此项将使 aMule 在下载完成时显示通知。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "记住这些设置"
+msgstr "记住搜索历史"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "在搜索标签页的名称字段中保留过往搜索词的下拉列表。这会让程序记住你输入过的搜索词，而非返回的搜索结果。"
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -3993,11 +4006,11 @@ msgstr "为新文件分配全部所需的磁盘空间，这样可以减少碎片
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "新建文件为稀疏文件"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "稀疏的 part 文件只占用已下载部分的磁盘空间，因此可用空间随文件填入逐渐用尽。关闭此选项使用正常的文件 —— 这在稀疏文件不受支持或速度缓慢，或者备份/去重工具对稀疏文件的处理不佳时有用。仅当 aMule 核心在 Windows 系统上运行时应用；在 Linux 和 macOS 系统上 part 文件不论怎样都是稀疏的，此设置没有效果。"
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4068,12 +4081,12 @@ msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
-"已完成下载的文件存储在此处。此文件夹中的所有文件将自动与其他 peer 共享。\n"
+"已完成下载的文件存储在此处。此文件夹中的所有文件将自动与其他 对等方 共享。\n"
 "如果此文件夹中还包含您不想共享的文件，请为 aMule 选择一个专用子文件夹。"
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr "选择完成下载文件的存储文件夹。该文件夹中的所有文件都将与其他 peer 共享。"
+msgstr "选择完成下载文件的存储文件夹。该文件夹中的所有文件都将与其他对等方共享。"
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -4377,30 +4390,27 @@ msgstr "amuleapi 接口的 HTTP 服务器监听默认地址为 127.0.0.1，该�
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "输入一个密码来设置或更改它。存储的密码无法显示，因此留空会保留当前值。"
 
 #: src/muuli_wdr.cpp
 msgid "Admin password"
 msgstr "管理密码"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "管理密码"
+msgstr "设好了密码。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "拒绝访客访问"
+msgstr "启用访客访问"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "访客会话可以读取状态和列举项，但什么也改不了。关闭此选项会清除存储的访客密码。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Web服务器的访客密码"
+msgstr "访客密码"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
@@ -4456,11 +4466,11 @@ msgstr "确定"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
-msgstr "点击这里立即使用新的设置。"
+msgstr "点击这里立即使用新的首选项。"
 
 #: src/muuli_wdr.cpp
 msgid "Reset any changes made to the preferences."
-msgstr "取消所有设置改动。"
+msgstr "取消所有首选项改动。"
 
 #: src/muuli_wdr.cpp
 msgid "Comment :"
@@ -5652,9 +5662,8 @@ msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "通过ID %d和密匙%s把数据从小插件转移到Cfg失败"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "管理密码"
+msgstr "未设置密码。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
@@ -5698,7 +5707,7 @@ msgstr "- 模糊协议支持已更改。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- amuleapi settings changed.\n"
-msgstr "- amuleapi 设置已更改。\n"
+msgstr "- amuleapi 首选项已更改。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -5719,7 +5728,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "无法保存 amuleapi 密码：%s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -5793,9 +5802,9 @@ msgid "aMule only handles eD2k-compatible magnets. If you replace the current ma
 msgstr "aMule 仅支持兼容 eD2k 的磁力链接。如果替换当前磁力链接处理程序（%s），BitTorrent 磁力链接将停止工作——aMule 无法下载 BitTorrent 内容。是否继续？"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr "目前已存在另一个应用程序作为这些链接（%s) 的默认处理程序。是否要将其换成aMule？"
+msgstr "另一个程序目前打开了 .emulecollection 文件 (%s)。 用 aMule 替换它吗？"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -5803,14 +5812,12 @@ msgid "Another application is currently the default handler for these links (%s)
 msgstr "目前已存在另一个应用程序作为这些链接（%s) 的默认处理程序。是否要将其换成aMule？"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr "无法将 aMule 注册为URL处理程序。自动启动存储可能为只读。"
+msgstr "无法将 aMule 注册为处理 .emulecollection 文件的程序 。注册存储可能为只读。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "无法移除URL处理程序的注册。"
+msgstr "无法删除文件类型注册。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
@@ -6090,11 +6097,11 @@ msgstr "尝试Kad搜索时出现未预料的错误： "
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr "Kad 搜索：向另一个 peer 请求了更广泛的结果。"
+msgstr "Kad 搜索：从又一个对等方请求了更广泛的结果。"
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr "Kad 搜索：没有剩余节点可重新请求更多结果（已达上限或尚无响应）。"
+msgstr "Kad 搜索：没有剩余对等方可重新请求更多结果（已达上限或尚无响应）。"
 
 #: src/SearchListCtrl.cpp
 msgid "FileID"
@@ -6163,7 +6170,7 @@ msgstr "无法连接列表中的所有服务器. 开始新的一轮尝试."
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
-msgstr "设置中已禁用eD2k网络，将不会连接。"
+msgstr "首选项中已禁用eD2k网络，将不会连接。"
 
 #: src/ServerConnect.cpp
 msgid "No valid servers to which to connect found in server list"
@@ -6562,9 +6569,8 @@ msgid "Connection Type:"
 msgstr "连接类型："
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "已连接"
+msgstr "连接起始自："
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -7330,7 +7336,7 @@ msgid ""
 "that server only. The IP must be a dotted decimal IPv4 address,\n"
 "or a resolvable DNS name."
 msgstr ""
-"这将连接至全部在设置中启用的网络。\n"
+"这将连接至在首选项中启用的是全部网络。\n"
 "您也可以使用此格式（IP:端口）定义一个服务器地址，并只连接至此服务器。\n"
 "此IP必须是用点分隔的十进制IPv4地址，\n"
 "或者是可以解析的DNS名称。"
@@ -7463,11 +7469,11 @@ msgstr "给出的值必须是 1/ON(启用)或 0/OFF(禁用)。\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
-msgstr "获取并显示设置值。"
+msgstr "获取并显示首选项值。"
 
 #: src/TextClient.cpp
 msgid "Get IP filtering preferences."
-msgstr "获取 IP 过滤器设置。"
+msgstr "获取 IP 过滤器首选项。"
 
 #: src/TextClient.cpp
 msgid "Get IP filtering state for both clients and servers."
@@ -8056,7 +8062,7 @@ msgstr "打印在线统计图"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Preferences setting"
-msgstr "设置"
+msgstr "首选项设置"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "About wxCas"
@@ -8330,7 +8336,7 @@ msgstr "载入/保存Web服务器设置从/至远程aMule"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule设置文件路径，不要直接使用！"
+msgstr "aMule 配置文件路径，不要直接使用！"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Disable PHP interpreter (deprecated)"
@@ -8435,7 +8441,7 @@ msgstr "登录时启动 aMule"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "关联 .emulecollection 文件"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
@@ -8459,7 +8465,7 @@ msgstr "当前用户登录时自动启动 aMule（每用户设置）。"
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "添加 aMule 到 .emulecollection 文件的“打开方式”列表，且如果没有其他程序注册过该扩展名让 aMule 成为默认程序。打开链接集会查询其包含的每个 eD2k 链接。"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
