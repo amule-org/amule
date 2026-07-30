@@ -97,6 +97,13 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// over EC (EC_OP_GET/SET_SHARED_DIRS). Always advertised; old daemons
 	// ignore the unknown tag and simply never echo it back.
 	AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
+	// Client can enumerate the daemon's searches with EC_OP_SEARCH_LIST, so it
+	// sees searches it did not start itself (restored from disk, or begun by
+	// another EC client). Always advertised; old daemons ignore the unknown tag
+	// and never echo it, which is what keeps the client from sending an opcode
+	// they would reject -- a pre-#680 daemon logs "invalid opcode received:
+	// 0x60" and trips an assert on it.
+	AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
 	// Client tells the server "we believe transit between us is fast
 	// (loopback / LAN), so skip per-packet ZLIB up to the receiver
 	// gate". The server honours this hint at WritePacket time; see
@@ -158,6 +165,7 @@ m_req_fifo_thr(20)
 , m_canChat(false)
 , m_serverChat(false)
 , m_serverSharedDirsConfig(false)
+, m_serverSearchList(false)
 {
 }
 
@@ -477,6 +485,13 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// daemons omit the echo and the client never polls for chat.
 			if (reply->GetTagByName(EC_TAG_CAN_CHAT)) {
 				m_serverChat = true;
+			}
+			// Server confirmed it serves EC_OP_SEARCH_LIST. Old daemons omit
+			// the echo and the client must not send that opcode: they have no
+			// case for it, so it lands in ProcessRequest2's unknown-opcode
+			// branch, which logs and asserts.
+			if (reply->GetTagByName(EC_TAG_CAN_SEARCH_LIST)) {
+				m_serverSearchList = true;
 			}
 			// Server confirmed it serves the shared-directory configuration
 			// ops. Old daemons omit the echo and the GUI keeps the shared

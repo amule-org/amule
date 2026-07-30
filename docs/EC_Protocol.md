@@ -194,20 +194,53 @@ EC_OP_AUTH_REQ (0x02)
     +-- EC_TAG_CAN_UTF8_NUMBERS       (0x0d) (optional, advertises capability)
     +-- EC_TAG_CAN_NOTIFY             (0x0e) (optional, advertises capability)
     +-- EC_TAG_CAN_LARGE_TAG_COUNT    (0x11) (optional, advertises capability)
+    +-- EC_TAG_CAN_PARTIAL_UPDATE     (0x12) (optional, advertises capability)
+    +-- EC_TAG_CAN_MULTI_SEARCH       (0x15) (optional, advertises capability)
+    +-- EC_TAG_CAN_CHAT               (0x16) (optional, advertises capability)
+    +-- EC_TAG_CAN_SHAREDDIRS_CONFIG  (0x17) (optional, advertises capability)
+    +-- EC_TAG_CAN_SEARCH_LIST        (0x1a) (optional, advertises capability)
 ```
 
-Each `EC_TAG_CAN_*` is an empty tag advertising support for the
-corresponding wire-format extension. The server may use the matching
-flag (`EC_FLAG_ZLIB`, `EC_FLAG_UTF8_NUMBERS`, `EC_FLAG_LARGE_TAG_COUNT`,
-…) only when both sides have advertised the capability — clients that
-omit a `CAN` tag get the historical wire format for that feature.
+Each `EC_TAG_CAN_*` is an empty tag advertising support for one
+extension. They fall into two groups, and the group decides how the
+server confirms the capability — which in turn decides what a client may
+safely do when the confirmation is absent.
 
-For symmetry, the server echoes the `CAN` tags it accepts in its
-`EC_OP_AUTH_OK` response so the client knows which extensions are
-actually negotiated for this connection. A client that only sees
-`EC_TAG_SERVER_VERSION` in the reply (no `CAN` tags) is talking to an
-older daemon and must avoid sending packets that need the corresponding
-extensions.
+**Wire-format capabilities** change how bytes are framed:
+`EC_TAG_CAN_ZLIB`, `EC_TAG_CAN_UTF8_NUMBERS`,
+`EC_TAG_CAN_LARGE_TAG_COUNT`. The server may set the matching flag
+(`EC_FLAG_ZLIB`, `EC_FLAG_UTF8_NUMBERS`, `EC_FLAG_LARGE_TAG_COUNT`) only
+when both sides advertised the capability; a client that omits the tag
+gets the historical wire format for that feature. For `ZLIB` and
+`UTF8_NUMBERS` the flag appearing on a later packet *is* the
+confirmation — the server does not echo those two tags.
+`LARGE_TAG_COUNT` is both echoed and flagged.
+
+**Feature capabilities** gate whole operations rather than the framing:
+`EC_TAG_CAN_PARTIAL_UPDATE`, `EC_TAG_CAN_MULTI_SEARCH`,
+`EC_TAG_CAN_CHAT`, `EC_TAG_CAN_SHAREDDIRS_CONFIG`,
+`EC_TAG_CAN_SEARCH_LIST`. The server echoes each of these in its
+`EC_OP_AUTH_OK` response when it supports it, so the client learns what
+is negotiated for this connection.
+
+`EC_TAG_CAN_NOTIFY` is the one exception to both patterns: the server
+records it and simply pushes notifications or does not, so there is
+neither an echo nor a flag to observe.
+
+**A missing echo means "do not send", not "send and see".** An older
+daemon has no handler for an operation it predates, so the request
+reaches the unknown-opcode path, which logs
+`External Connection: invalid opcode received: 0x...`, asserts on
+debug builds, and answers `EC_OP_FAILED`. Clients must therefore check
+the echo before sending a gated operation and fall back to the older
+behaviour when it is absent — for `EC_TAG_CAN_SEARCH_LIST`, for
+instance, listing only the searches the client started itself.
+
+Any new operation added to this protocol needs a capability tag of its
+own, advertised by the client, echoed by the server and checked before
+use. Bumping `EC_CURRENT_PROTOCOL_VERSION` is *not* the mechanism for
+this: that constant gates the handshake as a whole, so raising it
+severs every mixed-version pairing instead of degrading one feature.
 
 What gets transmitted (all numbers hexadecimal, the `0x` prefix omitted
 for readability):
@@ -256,6 +289,11 @@ The reply, hopefully:
       00 00 00 04                 Length 4
       43 56 53 00                 "CVS"
 ```
+
+This shows the minimum a server must reply with. A current daemon also
+appends one empty tag per feature capability it accepted, so the child
+count is higher and `EC_TAG_SERVER_VERSION` is followed by the echoed
+`EC_TAG_CAN_*` tags. Parse the children rather than assuming a count.
 
 ### Example 2 — Simple stats request
 

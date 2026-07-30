@@ -148,6 +148,15 @@ private:
 	// selection there could not reach the daemon.
 	bool m_serverSharedDirsConfig;
 
+	// Set when the server echoed `EC_TAG_CAN_SEARCH_LIST` in AUTH_OK,
+	// confirming it serves EC_OP_SEARCH_LIST. Old daemons don't echo it, and
+	// the client must then not send that opcode at all: it predates #680, so
+	// the request falls through to ProcessRequest2's unknown-opcode branch,
+	// which logs "invalid opcode received: 0x60" and trips a wxFAIL. Without
+	// the list the GUI simply sees only the searches it started itself, which
+	// is the pre-#680 behaviour.
+	bool m_serverSearchList;
+
 	// Client opts into chat relay (advertise `EC_TAG_CAN_CHAT`). Off by
 	// default; a client with a chat window sets it via SetCanChat(). Read
 	// when building the login packet.
@@ -187,6 +196,8 @@ public:
 	bool ServerSupportsChat() const { return m_serverChat; }
 
 	bool ServerSupportsSharedDirsConfig() const { return m_serverSharedDirsConfig; }
+
+	bool ServerSupportsSearchList() const { return m_serverSearchList; }
 
 	bool ConnectToCore(const wxString &host,
 		int port,

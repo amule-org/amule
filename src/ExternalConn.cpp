@@ -770,6 +770,14 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				// unlike the flags above this needs no per-connection state,
 				// the ops are always available once authenticated.
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
+				// Confirm we serve EC_OP_SEARCH_LIST, so a remote GUI can
+				// enumerate searches it did not start itself. Unconditional,
+				// for the same reason as the tag above: the op needs no
+				// per-connection state. A client that gets no echo (this
+				// daemon predates #680) must not send the opcode at all --
+				// there is no case for it, so it would land in
+				// ProcessRequest2's unknown-opcode branch and assert.
+				response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
 			} else {
 				wxString err;
 				if (passwd) {

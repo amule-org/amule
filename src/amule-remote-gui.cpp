@@ -3120,6 +3120,16 @@ void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID)
 
 void CSearchListRem::RequestSearchList()
 {
+	// Capability-gated: a daemon predating #680 has no case for
+	// EC_OP_SEARCH_LIST, so the request would land in ProcessRequest2's
+	// unknown-opcode branch, which logs "invalid opcode received: 0x60" and
+	// trips a wxFAIL on the daemon. Sending nothing degrades to the pre-#680
+	// behaviour -- only searches this client started itself are listed -- which
+	// is exactly what such a daemon can support anyway.
+	if (!m_conn->ServerSupportsSearchList()) {
+		return;
+	}
+
 	CECPacket req(EC_OP_SEARCH_LIST);
 	m_conn->SendRequest(this, &req);
 }

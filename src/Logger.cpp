@@ -277,9 +277,39 @@ void CLogger::DoLine(const wxString &line, bool toStdout, bool GUI_ONLY(toGUI))
 
 void CLogger::EmergencyLog(const wxString &message, bool closeLog)
 {
-	// Same UTF-8 sink as DoLine's stdout path (#40).
+	// Same UTF-8 sink as DoLine's stdout path (#40). Written verbatim: the
+	// console has no marker convention, and this is the copy most likely to
+	// survive whatever is going wrong.
 	fprintf(stderr, "%s", (const char *)message.utf8_str());
-	m_ApplogBuf += message;
+
+	// The logfile copy needs the same one-character severity marker DoLine
+	// puts on every line. A remote GUI reads this log back over EC and
+	// CamuleDlg::AddLogLineToView strips one leading character from each line
+	// unconditionally, so appending emergency output raw meant that strip ate
+	// a real character per line -- "Assertion failed" reaching the GUI as
+	// "ssertion failed", "Backtrace follows" as "acktrace follows". Marker
+	// "!" because this only ever carries critical output; matching DoLine, a
+	// multi-line message gets the marker on each line rather than only the
+	// first.
+	//
+	// Done with an explicit pass rather than wxStringTokenizer: this text is
+	// crash and assert output, where the blank lines between the banners and
+	// the backtrace are deliberate structure, and the tokenizer would eat
+	// them -- wxTOKEN_DEFAULT is strtok semantics for whitespace delimiters,
+	// which skips empty tokens. One reserve and one append also keeps the
+	// work here close to what it was, which matters on the fatal-exception
+	// path where the next instruction may never run.
+	wxString prefixed;
+	prefixed.reserve(message.length() + 16);
+	bool atLineStart = true;
+	for (const wxUniChar ch : message) {
+		if (atLineStart) {
+			prefixed += '!';
+		}
+		prefixed += ch;
+		atLineStart = (ch == '\n');
+	}
+	m_ApplogBuf += prefixed;
 	FlushApplog();
 	if (closeLog && applog) {
 		applog->Close();
