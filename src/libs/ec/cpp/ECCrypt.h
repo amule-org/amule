@@ -27,6 +27,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -104,7 +105,10 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 class Session
 {
 public:
-	Session() = default;
+	Session();
+	~Session();
+	Session(const Session &) = delete;
+	Session &operator=(const Session &) = delete;
 
 	/**
 	 * Derive the session keys.
@@ -132,15 +136,45 @@ public:
 	uint8_t GetCipher() const { return m_cipher; }
 
 	/// Seal @a len bytes into @a out (ciphertext followed by the tag).
+	/// Convenience wrapper over the streaming calls below.
 	bool Seal(const uint8_t *plain, size_t len, std::vector<uint8_t> &out);
 
 	/// Open a sealed body. Fails on a bad tag, which is the tamper signal.
 	bool Open(const uint8_t *sealed, size_t len, std::vector<uint8_t> &out);
 
+	// --- streaming, in place -------------------------------------------
+	//
+	// The EC write path builds a packet as a list of CQueuedData chunks and
+	// only then back-patches the length, so the whole packet is already in
+	// memory before anything reaches the socket. These let the chunks be
+	// sealed where they lie and the tag appended, instead of flattening the
+	// body into a second buffer -- which would double peak memory on exactly
+	// the huge responses the 256 MB receive gate exists for.
+	//
+	// Total length need not be known in advance, which matters because with
+	// ZLIB the compressed size is only known once deflate has finished.
+	//
+	// Begin/Final bracket one packet and advance that direction's counter.
+
+	bool SealBegin();
+	bool SealUpdate(uint8_t *data, size_t len);
+	/// Writes AEAD_TAG_LEN bytes to @a tagOut.
+	bool SealFinal(uint8_t *tagOut);
+
+	bool OpenBegin();
+	bool OpenUpdate(uint8_t *data, size_t len);
+	/// @a tag is AEAD_TAG_LEN bytes. False means the body was tampered with.
+	bool OpenFinal(const uint8_t *tag);
+
 	/// Bytes a sealed body adds over its plaintext.
 	static size_t Overhead() { return AEAD_TAG_LEN; }
 
 private:
+	/// Holds the in-flight cryptopp cipher objects. Opaque so that including
+	/// this header does not drag cryptopp into every consumer -- ECSocket.h
+	/// includes it, and that reaches most of the EC library.
+	struct StreamState;
+
 	std::vector<uint8_t> BuildNonce(const uint8_t *prefix, uint64_t counter) const;
 
 	bool m_active = false;
@@ -151,6 +185,7 @@ private:
 	uint8_t m_rxPrefix[4] = { 0, 0, 0, 0 };
 	uint64_t m_txCounter = 0;
 	uint64_t m_rxCounter = 0;
+	std::unique_ptr<StreamState> m_stream;
 };
 
 } // namespace ECCrypt

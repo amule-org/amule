@@ -64,108 +64,32 @@ size_t KeyLenFor(uint8_t cipher)
 }
 
 /**
- * One-shot seal/open, dispatched on the cipher.
+ * A fresh cipher object for @a cipher, or null if this build cannot do it.
  *
- * Crypto++ signals a failed tag check by returning false from
- * DecryptAndVerify, but it throws on malformed parameters, so everything is
- * wrapped: a crypto failure must surface as a protocol error on one connection,
- * never as an exception escaping into the socket layer.
+ * Both AEADs derive from AuthenticatedSymmetricCipher, so the socket layer can
+ * drive either one through the same incremental calls.
  */
-bool AeadSeal(uint8_t cipher,
-	const std::vector<uint8_t> &key,
-	const std::vector<uint8_t> &nonce,
-	const uint8_t *plain,
-	size_t len,
-	std::vector<uint8_t> &out)
+std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t cipher, bool encrypt)
 {
-	try {
-		out.assign(len + AEAD_TAG_LEN, 0);
-		switch (cipher) {
-		case Cipher_AES128_GCM: {
-			CryptoPP::GCM<CryptoPP::AES>::Encryption enc;
-			enc.SetKeyWithIV(key.data(), key.size(), nonce.data(), nonce.size());
-			enc.EncryptAndAuthenticate(out.data(),
-				out.data() + len,
-				AEAD_TAG_LEN,
-				nonce.data(),
-				static_cast<int>(nonce.size()),
-				nullptr,
-				0,
-				plain,
-				len);
-			return true;
+	switch (cipher) {
+	case Cipher_AES128_GCM:
+		if (encrypt) {
+			return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
+				new CryptoPP::GCM<CryptoPP::AES>::Encryption);
 		}
+		return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
+			new CryptoPP::GCM<CryptoPP::AES>::Decryption);
 #ifdef EC_HAVE_CHACHA20POLY1305
-		case Cipher_ChaCha20_Poly1305: {
-			CryptoPP::ChaCha20Poly1305::Encryption enc;
-			enc.SetKeyWithIV(key.data(), key.size(), nonce.data(), nonce.size());
-			enc.EncryptAndAuthenticate(out.data(),
-				out.data() + len,
-				AEAD_TAG_LEN,
-				nonce.data(),
-				static_cast<int>(nonce.size()),
-				nullptr,
-				0,
-				plain,
-				len);
-			return true;
+	case Cipher_ChaCha20_Poly1305:
+		if (encrypt) {
+			return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
+				new CryptoPP::ChaCha20Poly1305::Encryption);
 		}
+		return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
+			new CryptoPP::ChaCha20Poly1305::Decryption);
 #endif
-		default:
-			return false;
-		}
-	} catch (const CryptoPP::Exception &) {
-		return false;
-	}
-}
-
-bool AeadOpen(uint8_t cipher,
-	const std::vector<uint8_t> &key,
-	const std::vector<uint8_t> &nonce,
-	const uint8_t *sealed,
-	size_t len,
-	std::vector<uint8_t> &out)
-{
-	if (len < AEAD_TAG_LEN) {
-		return false;
-	}
-	const size_t bodyLen = len - AEAD_TAG_LEN;
-	try {
-		out.assign(bodyLen, 0);
-		switch (cipher) {
-		case Cipher_AES128_GCM: {
-			CryptoPP::GCM<CryptoPP::AES>::Decryption dec;
-			dec.SetKeyWithIV(key.data(), key.size(), nonce.data(), nonce.size());
-			return dec.DecryptAndVerify(out.data(),
-				sealed + bodyLen,
-				AEAD_TAG_LEN,
-				nonce.data(),
-				static_cast<int>(nonce.size()),
-				nullptr,
-				0,
-				sealed,
-				bodyLen);
-		}
-#ifdef EC_HAVE_CHACHA20POLY1305
-		case Cipher_ChaCha20_Poly1305: {
-			CryptoPP::ChaCha20Poly1305::Decryption dec;
-			dec.SetKeyWithIV(key.data(), key.size(), nonce.data(), nonce.size());
-			return dec.DecryptAndVerify(out.data(),
-				sealed + bodyLen,
-				AEAD_TAG_LEN,
-				nonce.data(),
-				static_cast<int>(nonce.size()),
-				nullptr,
-				0,
-				sealed,
-				bodyLen);
-		}
-#endif
-		default:
-			return false;
-		}
-	} catch (const CryptoPP::Exception &) {
-		return false;
+	default:
+		return nullptr;
 	}
 }
 
@@ -265,6 +189,20 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	return out;
 }
 
+/// The in-flight cipher objects, one per direction and per packet.
+struct Session::StreamState
+{
+	std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> sealer;
+	std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> opener;
+};
+
+Session::Session()
+: m_stream(new StreamState)
+{
+}
+
+Session::~Session() = default;
+
 bool Session::Init(uint8_t cipher,
 	const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &serverNonce,
@@ -335,31 +273,142 @@ std::vector<uint8_t> Session::BuildNonce(const uint8_t *prefix, uint64_t counter
 	return nonce;
 }
 
-bool Session::Seal(const uint8_t *plain, size_t len, std::vector<uint8_t> &out)
+bool Session::SealBegin()
 {
 	if (!m_active) {
 		return false;
 	}
-	const std::vector<uint8_t> nonce = BuildNonce(m_txPrefix, m_txCounter);
-	if (!AeadSeal(m_cipher, m_txKey, nonce, plain, len, out)) {
+	try {
+		m_stream->sealer = MakeCipher(m_cipher, true);
+		if (!m_stream->sealer) {
+			return false;
+		}
+		const std::vector<uint8_t> nonce = BuildNonce(m_txPrefix, m_txCounter);
+		m_stream->sealer->SetKeyWithIV(m_txKey.data(), m_txKey.size(), nonce.data(), nonce.size());
+		return true;
+	} catch (const CryptoPP::Exception &) {
+		m_stream->sealer.reset();
 		return false;
 	}
-	++m_txCounter;
+}
+
+bool Session::SealUpdate(uint8_t *data, size_t len)
+{
+	if (!m_stream->sealer) {
+		return false;
+	}
+	if (len == 0) {
+		return true;
+	}
+	try {
+		m_stream->sealer->ProcessString(data, len);
+		return true;
+	} catch (const CryptoPP::Exception &) {
+		m_stream->sealer.reset();
+		return false;
+	}
+}
+
+bool Session::SealFinal(uint8_t *tagOut)
+{
+	if (!m_stream->sealer) {
+		return false;
+	}
+	try {
+		m_stream->sealer->Final(tagOut);
+		m_stream->sealer.reset();
+		++m_txCounter;
+		return true;
+	} catch (const CryptoPP::Exception &) {
+		m_stream->sealer.reset();
+		return false;
+	}
+}
+
+bool Session::OpenBegin()
+{
+	if (!m_active) {
+		return false;
+	}
+	try {
+		m_stream->opener = MakeCipher(m_cipher, false);
+		if (!m_stream->opener) {
+			return false;
+		}
+		const std::vector<uint8_t> nonce = BuildNonce(m_rxPrefix, m_rxCounter);
+		m_stream->opener->SetKeyWithIV(m_rxKey.data(), m_rxKey.size(), nonce.data(), nonce.size());
+		return true;
+	} catch (const CryptoPP::Exception &) {
+		m_stream->opener.reset();
+		return false;
+	}
+}
+
+bool Session::OpenUpdate(uint8_t *data, size_t len)
+{
+	if (!m_stream->opener) {
+		return false;
+	}
+	if (len == 0) {
+		return true;
+	}
+	try {
+		m_stream->opener->ProcessString(data, len);
+		return true;
+	} catch (const CryptoPP::Exception &) {
+		m_stream->opener.reset();
+		return false;
+	}
+}
+
+bool Session::OpenFinal(const uint8_t *tag)
+{
+	if (!m_stream->opener) {
+		return false;
+	}
+	bool ok = false;
+	try {
+		ok = m_stream->opener->Verify(tag);
+	} catch (const CryptoPP::Exception &) {
+		ok = false;
+	}
+	m_stream->opener.reset();
+	if (ok) {
+		++m_rxCounter;
+	}
+	// On failure the counter deliberately does not advance: the stream is no
+	// longer trustworthy and the caller drops the connection.
+	return ok;
+}
+
+bool Session::Seal(const uint8_t *plain, size_t len, std::vector<uint8_t> &out)
+{
+	if (!SealBegin()) {
+		return false;
+	}
+	out.assign(plain, plain + len);
+	out.resize(len + AEAD_TAG_LEN, 0);
+	if (!SealUpdate(out.data(), len) || !SealFinal(out.data() + len)) {
+		out.clear();
+		return false;
+	}
 	return true;
 }
 
 bool Session::Open(const uint8_t *sealed, size_t len, std::vector<uint8_t> &out)
 {
-	if (!m_active) {
+	if (len < AEAD_TAG_LEN) {
 		return false;
 	}
-	const std::vector<uint8_t> nonce = BuildNonce(m_rxPrefix, m_rxCounter);
-	if (!AeadOpen(m_cipher, m_rxKey, nonce, sealed, len, out)) {
-		// Do NOT advance the counter: a failed open means the stream is no
-		// longer trustworthy, and the caller drops the connection.
+	const size_t bodyLen = len - AEAD_TAG_LEN;
+	if (!OpenBegin()) {
 		return false;
 	}
-	++m_rxCounter;
+	out.assign(sealed, sealed + bodyLen);
+	if (!OpenUpdate(out.data(), bodyLen) || !OpenFinal(sealed + bodyLen)) {
+		out.clear();
+		return false;
+	}
 	return true;
 }
 
