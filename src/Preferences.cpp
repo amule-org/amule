@@ -198,6 +198,7 @@ wxString CPreferences::s_WebTemplate;
 bool CPreferences::s_showCatTabInfos;
 AllCategoryFilter CPreferences::s_allcatFilter;
 bool CPreferences::s_AcceptExternalConnections;
+bool CPreferences::s_ECRequireEncryption;
 wxString CPreferences::s_ECAddr;
 wxString CPreferences::s_ECNetworkInterface;
 uint32 CPreferences::s_ECPort;
@@ -1446,6 +1447,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_EXT_CONN_ACCEPT,
 		(new Cfg_Bool(
 			"/ExternalConnect/AcceptExternalConnections", s_AcceptExternalConnections, false)));
+	NewCfgItem(IDC_EXT_CONN_REQUIRE_ENCRYPTION,
+		(new Cfg_Bool("/ExternalConnect/RequireEncryption", s_ECRequireEncryption, false)));
 	NewCfgItem(IDC_EXT_CONN_IP, (new Cfg_Str("/ExternalConnect/ECAddress", s_ECAddr, "")));
 	NewCfgItem(IDC_EC_INTERFACE,
 		(new Cfg_Str("/ExternalConnect/ECNetworkInterface", s_ECNetworkInterface, "")));

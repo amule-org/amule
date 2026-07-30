@@ -2123,6 +2123,8 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     CMuleTextCtrl *item13 = new CMuleTextCtrl( parent, IDC_EXT_CONN_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
     item11->Add( item13, wxSizerFlags(1).Center().Border(wxLEFT, 5) );
     item1->Add( item11, wxSizerFlags().Expand().CenterVertical() );
+    wxCheckBox *item13b = new wxCheckBox( parent, IDC_EXT_CONN_REQUIRE_ENCRYPTION, _("Require encrypted connections (rejects clients that cannot encrypt)"), wxDefaultPosition, wxDefaultSize, 0 );
+    item1->Add( item13b, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     item0->Add( item1, wxSizerFlags().Expand().Border(wxALL, 0) );
     wxStaticBox *item37 = new wxStaticBox( parent, -1, _("aMule API server parameters") );
     wxStaticBoxSizer *item36 = new wxStaticBoxSizer( item37, wxVERTICAL );

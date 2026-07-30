@@ -603,6 +603,18 @@ public:
 
 	// External Connections
 	static bool AcceptExternalConnections() { return s_AcceptExternalConnections; }
+
+	/**
+	 * Refuse any EC session that did not negotiate transport encryption.
+	 *
+	 * Off by default, because turning it on locks out every client built
+	 * before encryption existed. Deliberately a flat policy rather than one
+	 * keyed on the peer's address: only the client knows what it dialed, and
+	 * this side's peer-IP view misclassifies tunnels. Candidate for defaulting
+	 * on once encryption-capable clients are the norm.
+	 */
+	static bool ECRequireEncryption() { return s_ECRequireEncryption; }
+	static void SetECRequireEncryption(bool val) { s_ECRequireEncryption = val; }
 	static void EnableExternalConnections(bool val) { s_AcceptExternalConnections = val; }
 	static const wxString &GetECAddress() { return s_ECAddr; }
 	static const wxString &GetECNetworkInterface() { return s_ECNetworkInterface; }
@@ -1091,6 +1103,7 @@ protected:
 
 	// Kry - external connections
 	static bool s_AcceptExternalConnections;
+	static bool s_ECRequireEncryption;
 	static wxString s_ECAddr;
 	static wxString s_ECNetworkInterface;
 	static uint32 s_ECPort;

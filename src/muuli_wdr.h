@@ -363,6 +363,7 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define IDC_EXT_CONN_IPTEXT 10357
 #define IDC_EXT_CONN_TCPPORTTEXT 10358
 #define IDC_EXT_CONN_PASSWDTEXT 10359
+#define IDC_EXT_CONN_REQUIRE_ENCRYPTION 10494
 #define IDC_OSDIRTEXT 10360
 #define IDC_OSUPDATETEXT 10361
 wxSizer *PreferencesDirectoriesTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
@@ -566,7 +567,7 @@ wxSizer *PreferencesProxyTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_EC_PASSWD 10304
 #define ID_EC_SAVE 10305
 #define ID_EC_FORCE_ZLIB 10344
-#define ID_EC_ENCRYPTION 10355
+#define ID_EC_ENCRYPTION 10495
 wxSizer *CoreConnect(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_VERBOSEDEBUG 10306

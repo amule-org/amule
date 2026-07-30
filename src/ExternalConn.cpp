@@ -835,7 +835,21 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 
 			passh.Decode(MD5Sum(thePrefs::ECPassword().Lower() + saltHash).GetHash());
 
-			if (passwd && passwd->GetMD4Data() == passh) {
+			// Operator policy: refuse anything that did not negotiate
+			// encryption. Checked ahead of the password so the client gets
+			// the real reason rather than a misleading "wrong password",
+			// and it costs an unauthenticated peer nothing it could not
+			// discover by simply trying. Deliberately flat rather than
+			// keyed on the peer address: only the client knows what it
+			// dialed, and this side's view misclassifies tunnels.
+			if (thePrefs::ECRequireEncryption() && m_aeadCipher == ECCrypt::Cipher_None) {
+				const wxString err = wxTRANSLATE(
+					"Authentication failed: this aMule requires an encrypted External "
+					"Connection, and the client did not negotiate one.");
+				AddLogLineN(wxString(wxGetTranslation(err)) + " " + GetPeer());
+				response = new CECPacket(EC_OP_AUTH_FAIL);
+				response->AddTag(CECTag(EC_TAG_STRING, err));
+			} else if (passwd && passwd->GetMD4Data() == passh) {
 				// The password is good, so both ends hold the same secret and
 				// the keys will match. Switch on now rather than after the
 				// reply: EC_OP_AUTH_OK is then itself sealed, which proves to
