@@ -36,7 +36,7 @@ zero bytes omitted (an empty transmission flags value is sent as
 | `0`               | Compression (`EC_FLAG_ZLIB`) | When set, zlib compression is applied to the application layer's data. |
 | `1`               | Compressed numbers (`EC_FLAG_UTF8_NUMBERS`) | When set (presumably on small packets that aren't worth zlib-compressing), all numbers used in the protocol are encoded as a wide char converted to UTF-8 to avoid sending zero bytes. |
 | `2`               | Has ID                     | When set, a `uint32` follows the flags — the packet ID. The response must echo the same ID. The only requirement is that IDs be unique within one session (or at least don't repeat for a reasonably long time). |
-| `3`               | Reserved                   | Set to 0. |
+| `3`               | Encrypted (`EC_FLAG_ENCRYPTED`) | When set, the application-layer data is sealed with the negotiated AEAD: the body is ciphertext followed by a 16-byte authentication tag, and the transmission-layer length covers both. See Section 1.3. Both sides must have negotiated a cipher during authentication for the bit to appear. This bit was formerly reserved, so a peer predating the feature rejects such a packet outright rather than misparsing ciphertext as tags. |
 | `4`               | Large tag count (`EC_FLAG_LARGE_TAG_COUNT`) | When set, indicates the sender uses the sentinel-extended `TAGCOUNT` encoding (see Section 1.2). Both sides must have advertised `EC_TAG_CAN_LARGE_TAG_COUNT` in their auth packet for the bit to appear in any subsequent flags. Without it, the historical 16-bit `TAGCOUNT` is used, capping any tag at 0xFFFE children for safe interoperation with old peers. |
 | `5`               | Always 1                   | Distinguishes from older (pre-rc8) clients. |
 | `6`               | Always 0                   | Distinguishes from older (pre-rc8) clients. |
@@ -58,6 +58,8 @@ accept zlib compression and compressed numbers.
   be set to their predefined values — this can act as a sort of sanity
   check.
 * Bits marked **Reserved** must always be set to 0.
+* Bit `3` was reserved before transport encryption existed, and older peers
+  reject any packet that sets it. That is deliberate: the failure is closed.
 
 
 ### Section 1.2 — Application layer
@@ -121,6 +123,66 @@ When `EC_FLAG_LARGE_TAG_COUNT` is in effect, the sub-tag `TAGCOUNT`
 field uses the same sentinel-extended encoding as the packet-level
 `TAGCOUNT` (a `uint32` follows when the `uint16` reads `0xFFFF`).
 
+
+### Section 1.3 — Transport encryption
+
+Everything after authentication may be encrypted. It is negotiated during the
+auth exchange, applies to the application layer only — the 8-byte transmission
+header stays in clear, because the receiver needs the flags and length to know
+a sealed body is coming — and is signalled per packet by `EC_FLAG_ENCRYPTED`.
+
+**Negotiation.** The client sends `EC_TAG_CAN_AEAD`, whose data is the list of
+cipher ids it supports in its own preference order, together with 32 random
+bytes in `EC_TAG_AEAD_CLIENT_NONCE`. The server answers in `EC_OP_AUTH_SALT`
+with the chosen id in `EC_TAG_AEAD_CIPHER` and 32 random bytes of its own in
+`EC_TAG_AEAD_SERVER_NONCE`. A server that omits these tags does not support
+encryption, and the session continues in clear.
+
+| id | cipher |
+| -- | ------ |
+| `1` | AES-128-GCM (mandatory) |
+| `2` | ChaCha20-Poly1305 (optional; preferred where both sides have it) |
+
+**Keys.** Both sides derive from the MD5 of the EC password — the value both
+already hold and neither transmits. The salted challenge is unsuitable as key
+material because it goes on the wire.
+
+```
+salt = server_nonce || client_nonce
+info = "aMule EC AEAD v1" || cipher_id || <the offered cipher list, as received>
+okm  = HKDF-SHA256(md5(password), salt, info, 2*keylen + 8)
+```
+
+`okm` splits into a client-to-server key, a server-to-client key, and a 4-byte
+nonce prefix for each direction. Keys are per direction so the two packet
+counters cannot produce a colliding nonce.
+
+Including the offered list and the chosen id in `info` binds the handshake: if
+either is altered in transit the two sides derive different keys and the first
+sealed packet fails to authenticate, instead of the session silently dropping
+to a weaker cipher.
+
+**Per-packet nonce.** 12 bytes: the 4-byte derived prefix followed by a 64-bit
+big-endian counter, starting at zero and incremented once per packet in that
+direction. The counter is *not* transmitted — the stream is ordered and any
+desync is already fatal — so a sealed body costs exactly 16 bytes more than its
+plaintext.
+
+**Ordering.** Serialise, then compress if `EC_FLAG_ZLIB` is set, then seal. The
+receiver reverses it. A failed authentication tag is not recoverable and the
+connection is dropped.
+
+**When it starts.** The last plaintext packet from the client is
+`EC_OP_AUTH_PASSWD`; the server replies with `EC_OP_AUTH_OK` already sealed,
+which also proves to the client that its peer holds the same password. If
+authentication fails the server has no matching key to prove anything with, so
+`EC_OP_AUTH_FAIL` is sent in clear.
+
+**Policy.** Whether to encrypt is the client's choice: only the client knows the
+address it dialed, and a server's view of the peer address misclassifies
+tunnelled connections. Every aMule client offers encryption by default. A server
+may be configured to *require* it (`RequireEncryption`), in which case a session
+that negotiated no cipher is refused at authentication time.
 
 ## Section 2 — Data types
 
