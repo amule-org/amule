@@ -4,7 +4,7 @@
 
 import { html, render, useState } from "./dom.js";
 import { formatPercent } from "./format.js";
-import { t, terr } from "./i18n.js";
+import { t, terr, getLang } from "./i18n.js";
 import { api } from "./api.js";
 import { Icon } from "./icons.js";
 
@@ -30,6 +30,24 @@ export function Badge({ kind = "", title, children }) {
 // Empty / loading / error placeholder for view bodies.
 export function Placeholder({ kind, children }) {
   return html`<div class=${"placeholder placeholder-" + kind}>${children}</div>`;
+}
+
+// Relative, like BASE in api.js: it has to survive a reverse-proxy subpath.
+const FLAG_BASE = window.location.pathname.replace(/\/?$/, "/") + "flags/";
+const REGIONS = (() => {
+  try { return new Intl.DisplayNames([getLang()], { type: "region" }); } catch (_) { return null; }
+})();
+
+// Flag from GET /flags/{code}.png (#694) next to the code, as the desktop lists
+// draw it. Empty code (GeoIP off / unresolved IP) -> dash, no image; onError
+// hides the image for a well-formed code the flag set has no artwork for.
+export function CountryCell({ code }) {
+  const cc = (code || "").toLowerCase();
+  if (!cc) return "—";
+  const CC = cc.toUpperCase();
+  return html`<span class="country-cell" title=${(REGIONS && REGIONS.of(CC)) || CC}
+    ><img class="flag" src=${FLAG_BASE + cc + ".png"} alt="" width="16" height="11"
+          onError=${(e) => { e.target.style.visibility = "hidden"; }} />${CC}</span>`;
 }
 
 // --- download priority --------------------------------------------------

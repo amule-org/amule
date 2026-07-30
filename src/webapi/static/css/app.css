@@ -486,6 +486,8 @@ table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; te
 .row-actions .btn + .btn { margin-left: 4px; }
 .row-actions select + .btn { margin-left: 6px; }
 .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; }
+.country-cell { white-space: nowrap; }
+.flag { display: inline-block; width: 16px; height: 11px; vertical-align: middle; margin-right: 5px; }
 
 /* --- search --- */
 .search-grid {

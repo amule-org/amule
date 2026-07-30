@@ -6,7 +6,7 @@
 import { api } from "../api.js";
 import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
-import { Badge, Placeholder } from "../components.js";
+import { Badge, Placeholder, CountryCell } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { formatBytes, formatSpeed } from "../format.js";
 import { Icon } from "../icons.js";
@@ -40,11 +40,9 @@ export const COLS = [
   { cls: "peer-flags", width: "60px", cell: (c) => peerFlags(c) },
   // Identity block, each field next to the one it qualifies: where the peer is
   // (country, address), who it claims (name, user_hash), what it runs (software, os).
-  // country_code is "" when the daemon's GeoIP is off or the IP doesn't resolve
-  // (#439) -- an empty cell like any other. Abbreviated header: a spelled-out
-  // "Country" would need ~80px for a 2-char cell.
-  { key: "country", th: "downloads_peer_col_country", width: "52px", sortable: true,
-    sortVal: (c) => c.country_code || "", cell: (c) => (c.country_code || "").toUpperCase() || "—" },
+  // Abbreviated header: a spelled-out "Country" would still be wider than the cell.
+  { key: "country", th: "downloads_peer_col_country", width: "70px", sortable: true,
+    sortVal: (c) => c.country_code || "", cell: (c) => html`<${CountryCell} code=${c.country_code} />` },
   // Empty ip: a peer we never connected to directly (LowID).
   { key: "address", th: "downloads_peer_col_address", num: true, width: "180px", sortable: true,
     sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },

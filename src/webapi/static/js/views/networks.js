@@ -10,7 +10,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { Tabs, Placeholder, toast, confirmDialog } from "../components.js";
+import { Tabs, Placeholder, toast, confirmDialog, CountryCell } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart } from "../charts.js";
 import { formatInt } from "../format.js";
@@ -159,8 +159,8 @@ function ServersPanel({ isGuest }) {
 
   const columns = [
     // Server host country (#440): same cell and header as the peer table's.
-    { key: "country", label: t("networks_server_country"), width: "52px", sortable: true,
-      sortVal: (s) => s.country_code || "", cell: (s) => (s.country_code || "").toUpperCase() || "—" },
+    { key: "country", label: t("networks_server_country"), width: "70px", sortable: true,
+      sortVal: (s) => s.country_code || "", cell: (s) => html`<${CountryCell} code=${s.country_code} />` },
     { key: "address", label: t("networks_server_address"), num: true, width: "180px", sortable: true,
       sortVal: (s) => ipNum(s.address),
       cell: (s) => s.address && s.address.includes(":") ? s.address : (s.address + ":" + s.port) },
