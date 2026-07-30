@@ -67,6 +67,28 @@ CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 	for (int margin = 0; margin < 3; ++margin) {
 		SetMarginWidth(margin, 0);
 	}
+	// Zeroing the numbered margins above also removes the only inset Scintilla
+	// had, so text rendered hard against the control's frame -- most visible
+	// where the theme draws a tight, high-contrast border (issue #702). These
+	// are the text-area margins, a separate concept from the numbered margins,
+	// so they restore the padding without bringing the code-editor gutters
+	// back. Scintilla draws its own text area, so this is not theme- or
+	// platform-specific; DIP-scaled so the gap keeps its size on HiDPI.
+	// Scintilla's own default here is 1px (ViewStyle::Init), which is what
+	// made the text look flush -- so this has to be visibly larger than the
+	// default to be worth anything, not a nudge above it.
+	const int textMargin = FromDIP(5);
+	SetMarginLeft(textMargin);
+	SetMarginRight(textMargin);
+
+	// Scintilla has no vertical counterpart to the text-area margins, so the
+	// first line otherwise sits directly on the frame. extraAscent feeds
+	// lineHeight (ViewStyle::Refresh: maxAscent += extraAscent), so this is
+	// line spacing rather than a one-off top gap -- which is what we want
+	// here: the log tails to the bottom, so a fixed band at the viewport top
+	// would only show above a partially scrolled line.
+	SetExtraAscent(FromDIP(2));
+
 	// Word-wrap long lines, as the old wxTE_RICH2 pane did, so nothing is clipped
 	// off the right edge; with wrapping on there is no horizontal scrollbar to
 	// show. (Wrapping is why AtBottom() and the tail-scroll reason in display
