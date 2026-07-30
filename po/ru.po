@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 17:26+0200\n"
+"POT-Creation-Date: 2026-07-30 17:42+0200\n"
 "PO-Revision-Date: 2026-07-30 12:30+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1819,6 +1819,10 @@ msgstr "Тег версии протокола отсутствует."
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
 msgstr "Ошибка авторизации: в качестве EC-пароля указан неправильный хэш."
+
+#: src/ExternalConn.cpp
+msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -4425,6 +4429,10 @@ msgstr "Включить UPnP для порта ВС"
 #: src/muuli_wdr.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Password"
 msgstr "Пароль"
+
+#: src/muuli_wdr.cpp
+msgid "Require encrypted connections (rejects clients that cannot encrypt)"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
