@@ -142,6 +142,62 @@ wxEND_EVENT_TABLE()
 #define wxCLOSE_BOX 0
 #endif
 
+#if defined(__WXGTK__) && !defined(__APPLE__)
+#include <gio/gio.h> // GDBus, for the Flatpak background-portal request below
+
+// Inside a Flatpak sandbox, a client configured to run without a visible window
+// (hide-to-tray on close, or start minimized) maps no window, and
+// xdg-desktop-portal's background monitor then kills it unless the "background"
+// permission was granted. aMule never asked for it, so on backends that default
+// to deny (KDE) the app was killed on close (amule-org/amule#535). Requesting it
+// registers aMule as a legitimate background app, so the permission is granted
+// (or, on KDE, prompted once and remembered). Native, non-sandboxed builds are
+// not background-monitored -- hence the FLATPAK_ID gate -- and this is a no-op
+// wherever there is no Background portal (the call just fails silently).
+static void RequestFlatpakBackgroundPermission()
+{
+	if (g_getenv("FLATPAK_ID") == nullptr) {
+		return;
+	}
+
+	GError *error = nullptr;
+	GDBusConnection *conn = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+	if (conn == nullptr) {
+		if (error != nullptr) {
+			g_error_free(error);
+		}
+		return;
+	}
+
+	GVariantBuilder options;
+	g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+	g_variant_builder_add(&options,
+		"{sv}",
+		"reason",
+		g_variant_new_string("aMule keeps running in the background to continue your transfers."));
+	g_variant_builder_add(&options, "{sv}", "autostart", g_variant_new_boolean(FALSE));
+
+	// Fire-and-forget: the portal grants (or on KDE prompts once) and records the
+	// permission for next launch. We don't need the returned request handle, and
+	// must not block the GUI waiting on a possible prompt -- the shared GTK main
+	// loop flushes this async call.
+	g_dbus_connection_call(conn,
+		"org.freedesktop.portal.Desktop",
+		"/org/freedesktop/portal/desktop",
+		"org.freedesktop.portal.Background",
+		"RequestBackground",
+		g_variant_new("(sa{sv})", "", &options),
+		nullptr,
+		G_DBUS_CALL_FLAGS_NONE,
+		-1,
+		nullptr,
+		nullptr,
+		nullptr);
+
+	g_object_unref(conn);
+}
+#endif // defined(__WXGTK__) && !defined(__APPLE__)
+
 CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wxSize dlg_size)
 : wxFrame(pParent,
 	  -1,
@@ -338,6 +394,15 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	if (thePrefs::GetStartMinimized()) {
 		Iconize(true);
 	}
+
+#if defined(__WXGTK__) && !defined(__APPLE__)
+	// If we're set up to run without a visible window (hide-to-tray on close, or
+	// start minimized), ask the desktop portal for background permission so a
+	// Flatpak build isn't killed on close. No-op outside Flatpak. See the helper.
+	if (thePrefs::HideOnClose() || thePrefs::GetStartMinimized()) {
+		RequestFlatpakBackgroundPermission();
+	}
+#endif
 
 	// Set shortcut keys
 #ifdef __WXMAC__
