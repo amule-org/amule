@@ -1,4 +1,9 @@
 set (LIBS_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+# Build-tree twin of LIBS_INCLUDE_DIR. ECCodes.h / ECTagTypes.h are generated
+# from their .abstract sources into libs/ec/cpp under the build tree and exist
+# nowhere else, so anything spelling the include as <ec/cpp/ECCodes.h> needs
+# this path alongside the source-tree one. Always add the two together.
+set (LIBS_BINARY_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs")
 set (INCLUDE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set (SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set (EC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/ec/cpp")
@@ -768,6 +773,7 @@ if (NEED_LIB_MULEAPPCOMMON)
 		PUBLIC ${EC_INCLUDE_DIR}
 		PRIVATE ${INCLUDE_INCLUDE_DIR}
 		PRIVATE ${LIBS_INCLUDE_DIR}
+		PRIVATE ${LIBS_BINARY_INCLUDE_DIR}
 		PRIVATE ${ZLIB_INCLUDE_DIR}
 	)
 
@@ -864,6 +870,7 @@ if (NEED_LIB_MULEAPPCORE)
 		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 		PRIVATE ${INCLUDE_INCLUDE_DIR}
 		PRIVATE ${LIBS_INCLUDE_DIR}
+		PRIVATE ${LIBS_BINARY_INCLUDE_DIR}
 	)
 
 	if (ENABLE_UPNP)
@@ -943,6 +950,7 @@ if (NEED_LIB_MULEAPPGUI)
 		PUBLIC ${amule_BINARY_DIR}
 		PUBLIC ${INCLUDE_INCLUDE_DIR}
 		PUBLIC ${LIBS_INCLUDE_DIR}
+		PUBLIC ${LIBS_BINARY_INCLUDE_DIR}
 		# The build-generated icon_data.c #includes "icon_data.h",
 		# which lives in src/icons/ — needs to be on the include
 		# path for the C compile. PUBLIC so it propagates to the
@@ -980,6 +988,7 @@ IF (NEED_LIB_MULESOCKET)
 		PUBLIC ${amule_BINARY_DIR}
 		PUBLIC ${INCLUDE_INCLUDE_DIR}
 		PUBLIC ${LIBS_INCLUDE_DIR}
+		PUBLIC ${LIBS_BINARY_INCLUDE_DIR}
 	)
 
 	target_link_libraries (mulesocket

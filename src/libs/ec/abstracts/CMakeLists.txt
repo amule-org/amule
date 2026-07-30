@@ -1,16 +1,26 @@
 cmake_minimum_required (VERSION 3.10...3.31)
 MESSAGE (STATUS "Generating ${HEADER_FILE}")
 FILE (READ License.abstract LICENSE_TEXT)
-STRING (REGEX REPLACE "\n\n+" "" LICENSE_TEXT ${LICENSE_TEXT})
-STRING (REGEX REPLACE "\n" "\n// " LICENSE_TEXT ${LICENSE_TEXT})
+# Quote the variable in both replacements: unquoted, CMake expands it as a
+# list and every literal `;` in the licence prose is swallowed as a list
+# separator ("free software; you can" came out as "free software you can").
+STRING (REGEX REPLACE "\n\n+" "" LICENSE_TEXT "${LICENSE_TEXT}")
+STRING (REGEX REPLACE "\n" "\n// " LICENSE_TEXT "${LICENSE_TEXT}")
 
 GET_FILENAME_COMPONENT (ABSTRACT ${HEADER_FILE} NAME_WE)
 STRING (TOUPPER "${ABSTRACT}" DEFINE_NAME)
 SET (ABSTRACT "${ABSTRACT}.abstract")
 FILE (WRITE ${HEADER_FILE} "${LICENSE_TEXT}\n")
 
-FILE (STRINGS ${ABSTRACT} CONTENTS NEWLINE_CONSUME)
-STRING (REGEX REPLACE "\n" ";" CONTENTS ${CONTENTS})
+# The file is turned into a CMake list by swapping newlines for `;`, so a
+# literal semicolon in the source would split one line into several and the
+# fragments would then be parsed as entries. Escape them first; they render
+# back as plain `;` wherever a list element is used as a string. Prose in a
+# `##` documentation comment is the usual place a semicolon shows up.
+# ENCODING UTF-8 keeps non-ASCII punctuation in those comments intact.
+FILE (STRINGS ${ABSTRACT} CONTENTS NEWLINE_CONSUME ENCODING UTF-8)
+STRING (REPLACE ";" "\\;" CONTENTS "${CONTENTS}")
+STRING (REGEX REPLACE "\n" ";" CONTENTS "${CONTENTS}")
 
 FOREACH (LINE ${CONTENTS})
 	IF ("${LINE}" MATCHES "^DataType")
@@ -25,7 +35,40 @@ FOREACH (LINE ${CONTENTS})
 		STRING (TOUPPER "${FILE_NAME}" DEFINE_NAME)
 		FILE (APPEND ${HEADER_FILE} "#ifndef __${DEFINE_NAME}_H__\n")
 		FILE (APPEND ${HEADER_FILE} "#define __${DEFINE_NAME}_H__\n\n")
+		# A TypeDef section emits `typedef uint8_t ec_opcode_t;` and
+		# friends, so such a header needs <cstdint> of its own rather
+		# than relying on a consumer having included it first. Headers
+		# without one (ECTagTypes) use aMule's own uint8 from types.h
+		# and must not pull in cstdint gratuitously.
+		IF ("${CONTENTS}" MATCHES "TypeDef")
+			FILE (APPEND ${HEADER_FILE} "#include <cstdint>\n\n")
+		ENDIF ("${CONTENTS}" MATCHES "TypeDef")
 	ENDIF ("${LINE}" MATCHES "^FileContent")
+
+	# `##` is a documentation comment: emitted into the header, attached
+	# above the entry that follows it. Plain `#` stays what it always
+	# was -- an abstract-only note (section headings, commented-out
+	# *_UNUSED placeholders) that never reaches the header.
+	#
+	# Inside an enum the pending entry has to be flushed first: the main
+	# loop writes each entry one iteration late (it buffers PREVIOUS_LINE
+	# so the last one can omit its trailing comma), so emitting the
+	# comment straight away would place it above the wrong entry.
+	IF ("${LINE}" MATCHES "^##")
+		STRING (REGEX REPLACE "^## ?" "" DOC_LINE "${LINE}")
+		# Undo the list-safety escaping applied when the file was read.
+		STRING (REPLACE "\\;" ";" DOC_LINE "${DOC_LINE}")
+		IF (${IN_CODE_BLOCK})
+			IF (NOT "${PREVIOUS_LINE}" STREQUAL "")
+				FILE (APPEND ${HEADER_FILE} "\t${PREVIOUS_LINE},\n")
+				UNSET (PREVIOUS_LINE)
+			ENDIF (NOT "${PREVIOUS_LINE}" STREQUAL "")
+			FILE (APPEND ${HEADER_FILE} "\t// ${DOC_LINE}\n")
+		ELSE (${IN_CODE_BLOCK})
+			FILE (APPEND ${HEADER_FILE} "// ${DOC_LINE}\n")
+		ENDIF (${IN_CODE_BLOCK})
+		UNSET (LINE)
+	ENDIF ("${LINE}" MATCHES "^##")
 
 	IF (NOT "${LINE}" STREQUAL "" AND NOT "${LINE}" MATCHES "^#")
 		IF (${IN_BLOCK})
@@ -73,7 +116,9 @@ FOREACH (LINE ${CONTENTS})
 
 				IF (NOT ${TYP} STREQUAL "")
 					STRING (TOLOWER "${TYP}" TYP)
-					FILE (APPEND ${HEADER_FILE} "${TYP} ${NAME} {\n")
+					# Brace on its own line, matching the project's
+					# clang-format style for enum definitions.
+					FILE (APPEND ${HEADER_FILE} "${TYP} ${NAME}\n{\n")
 					UNSET (TYPE)
 					UNSET (NAME)
 					SET (IN_CODE_BLOCK TRUE)

@@ -24,6 +24,7 @@ target_include_directories (fileview
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${INCLUDE_INCLUDE_DIR}
 	PRIVATE ${LIBS_INCLUDE_DIR}
+	PRIVATE ${LIBS_BINARY_INCLUDE_DIR}
 )
 
 target_link_libraries (fileview

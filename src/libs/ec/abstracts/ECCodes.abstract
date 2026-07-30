@@ -27,6 +27,10 @@ Name ECFlags
 DataType uint32
 EC_FLAG_ZLIB		0x00000001
 EC_FLAG_UTF8_NUMBERS	0x00000002
+## Body is AEAD-sealed; see CECSocket::WritePacket. 0x08 was previously
+## inside EC_FLAG_UNKNOWN_MASK, so a peer predating this feature rejects
+## such a packet outright instead of misparsing ciphertext as tags -- the
+## failure is closed, which no other free bit would have given us.
 EC_FLAG_ENCRYPTED	0x00000008
 EC_FLAG_LARGE_TAG_COUNT	0x00000010
 EC_FLAG_UNKNOWN_MASK	0xff7f7f00
@@ -548,15 +552,39 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_STAT_NODE_VALUE                    0x1B07
 		EC_TAG_STAT_VALUE_TYPE                    0x1B08
 		EC_TAG_STATTREE_NODEID                    0x1B09
+## Active uploads / active downloads per point — parallel
+## to STATSGRAPH_DATA's connection total, lets amulegui
+## draw monolithic amule's 3-line connection scope.
 		EC_TAG_STATSGRAPH_DATA_CONN               0x1B0A
+## Session totals as of the latest point in the reply.
+## Lets amulegui compute the daemon's
+## kBytesReceived/sTimestamp session average instead of
+## integrating locally from GUI startup.
 		EC_TAG_STATSGRAPH_SESSION_DL              0x1B0B
 		EC_TAG_STATSGRAPH_SESSION_UL              0x1B0C
 		EC_TAG_STATSGRAPH_SESSION_KAD             0x1B0D
 		EC_TAG_STATSGRAPH_SESSION_TIMESPAN        0x1B0E
+## Stable, untranslated machine key for a stat-tree node. Optional
+## subtag of EC_TAG_STATTREE_NODE; legacy consumers skip it (see the
+## STATTREE_NODEID precedent). Lets API clients look a field up by a
+## fixed identifier instead of matching the English label.
 		EC_TAG_STAT_NODE_KEY                      0x1B0F
+## Raw numeric UL:DL ratio (download-per-upload, i.e. received/sent) as
+## a double, so API clients don't parse the composite ratio string.
+## Optional subtags of the ratio's EC_TAG_STATTREE_NODE; legacy
+## consumers skip them. _RATIO is the session ratio, _RATIO_TOTAL the
+## all-time ratio. Present only when computable (both sides > 0).
 		EC_TAG_STAT_NODE_RATIO                    0x1B10
 		EC_TAG_STAT_NODE_RATIO_TOTAL              0x1B11
+## Raw, untranslated machine value for a node whose label is data
+## (client version / OS string). Optional sibling of the display label;
+## legacy consumers skip it. Lets API clients read the value without
+## parsing it out of the composite label.
 		EC_TAG_STAT_NODE_RAW                      0x1B12
+## Stable, locale-independent token for a well-known sentinel *value*
+## (e.g. "never", "not_available"). Optional sub-tag of an
+## EC_TAG_STAT_NODE_VALUE; the English display string stays alongside it
+## (EC_VALUE_STRING) so GUI/legacy consumers are unaffected.
 		EC_TAG_STAT_VALUE_ENUM                    0x1B13
 
 	EC_TAG_PREFS_SECURITY                     0x1C00
