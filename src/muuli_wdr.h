@@ -635,13 +635,10 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_BUTTONNEWPREFERENCES 10352
 #define ID_BUTTONIMPORT 10353
 #define ID_ABOUT 10354
-void muleToolbar(wxToolBar *parent);
 
 // Declare bitmap functions
 
 wxBitmap clientImages(size_t index);
-
-wxBitmap moreImages(size_t index);
 
 wxBitmap amuleSpecial(size_t index);
 
