@@ -36,6 +36,7 @@
 
 #include <common/ClientVersion.h>
 #include <common/MD5Sum.h>
+#include "libs/ec/cpp/ECCrypt.h"
 
 #include "ExternalConn.h"        // Interface declarations
 #include "ECFullResponseCache.h" // Needed for s_ec*FullCache
@@ -262,6 +263,19 @@ private:
 	} m_conn_state;
 
 	uint64_t m_passwd_salt;
+
+	// Transport encryption, chosen during EC_OP_AUTH_REQ and only turned on
+	// once the password verifies. Held here until then because a client that
+	// fails authentication must never get a working key.
+	uint8_t m_aeadCipher;
+	std::vector<uint8_t> m_aeadServerNonce;
+	std::vector<uint8_t> m_aeadClientNonce;
+	std::vector<uint8_t> m_aeadTranscript;
+
+	/// Pick a cipher from the client's offer and add our half of the salt.
+	void NegotiateAEAD(const CECPacket *request, CECPacket *response);
+	/// Derive the keys and start sealing from the next packet on.
+	void ActivateAEAD();
 	CLoggerAccess m_LoggerAccess;
 	CFileEncoderMap m_FileEncoder;
 	CObjTagMap m_obj_tagmap;
@@ -350,6 +364,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 : CECMuleSocket(true)
 , m_conn_state(CONN_INIT)
 , m_passwd_salt(GetRandomUint64())
+, m_aeadCipher(ECCrypt::Cipher_None)
 , m_notification_dispatch_depth(0)
 , m_lastEcGenSeen(0)
 , m_lastEcGenSeenShared(0)
@@ -367,6 +382,86 @@ CECServerSocket::~CECServerSocket()
 {
 	wxASSERT(theApp->ECServerHandler);
 	theApp->ECServerHandler->RemoveSocket(this);
+}
+
+void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *response)
+{
+	m_aeadCipher = ECCrypt::Cipher_None;
+	m_aeadServerNonce.clear();
+	m_aeadClientNonce.clear();
+	m_aeadTranscript.clear();
+
+	const CECTag *offer = request->GetTagByName(EC_TAG_CAN_AEAD);
+	const CECTag *clientNonceTag = request->GetTagByName(EC_TAG_AEAD_CLIENT_NONCE);
+	if (offer == NULL || clientNonceTag == NULL) {
+		// A client that predates this, or one told not to offer it.
+		return;
+	}
+	if (clientNonceTag->GetTagDataLen() != ECCrypt::NONCE_TAG_LEN) {
+		AddDebugLogLineN(logEC, "AEAD: client nonce has the wrong size, ignoring the offer");
+		return;
+	}
+
+	const uint8_t *offered = (const uint8_t *)offer->GetTagData();
+	const uint16_t offeredLen = offer->GetTagDataLen();
+
+	// Our list is in preference order, so take our first mutual entry rather
+	// than the client's -- the daemon decides what it would rather run.
+	const std::vector<uint8_t> ours = ECCrypt::SupportedCiphers();
+	for (size_t i = 0; i < ours.size() && m_aeadCipher == ECCrypt::Cipher_None; ++i) {
+		for (uint16_t j = 0; j < offeredLen; ++j) {
+			if (offered[j] == ours[i]) {
+				m_aeadCipher = ours[i];
+				break;
+			}
+		}
+	}
+	if (m_aeadCipher == ECCrypt::Cipher_None) {
+		AddDebugLogLineN(logEC, "AEAD: no cipher in common with this client");
+		return;
+	}
+
+	m_aeadServerNonce = ECCrypt::RandomBytes(ECCrypt::NONCE_TAG_LEN);
+	if (m_aeadServerNonce.empty()) {
+		// Without usable randomness, stay in clear rather than derive a key
+		// from a predictable salt.
+		m_aeadCipher = ECCrypt::Cipher_None;
+		AddDebugLogLineN(logEC, "AEAD: no randomness available, staying in clear");
+		return;
+	}
+
+	const uint8_t *clientNonceData = (const uint8_t *)clientNonceTag->GetTagData();
+	m_aeadClientNonce.assign(clientNonceData, clientNonceData + clientNonceTag->GetTagDataLen());
+
+	// Transcript: the offer exactly as it reached us, plus what we chose. If
+	// either was edited in flight our derivation differs from the client's and
+	// the first sealed packet fails, instead of the session dropping to
+	// whatever the attacker preferred.
+	m_aeadTranscript.assign(offered, offered + offeredLen);
+	m_aeadTranscript.push_back(m_aeadCipher);
+
+	response->AddTag(CECTag(EC_TAG_AEAD_CIPHER, m_aeadCipher));
+	response->AddTag(
+		CECTag(EC_TAG_AEAD_SERVER_NONCE, m_aeadServerNonce.size(), m_aeadServerNonce.data()));
+}
+
+void CECServerSocket::ActivateAEAD()
+{
+	if (m_aeadCipher == ECCrypt::Cipher_None) {
+		return;
+	}
+	const wxString secret = thePrefs::ECPassword().Lower();
+	const wxCharBuffer buf = secret.utf8_str();
+	const std::vector<uint8_t> ikm(
+		(const uint8_t *)buf.data(), (const uint8_t *)buf.data() + strlen(buf.data()));
+
+	if (!SetupAEAD(m_aeadCipher, ikm, m_aeadServerNonce, m_aeadClientNonce, m_aeadTranscript, true)) {
+		AddDebugLogLineN(logEC, "AEAD: key derivation failed, staying in clear");
+		return;
+	}
+	// From the next packet on, which is EC_OP_AUTH_OK itself.
+	EnableAEADNow();
+	AddDebugLogLineN(logEC, CFormat("AEAD: %s with %s") % GetPeer() % ECCrypt::CipherName(m_aeadCipher));
 }
 
 const CECPacket *CECServerSocket::OnPacketReceived(const CECPacket *packet, uint32 trueSize)
@@ -637,6 +732,11 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				response = new CECPacket(EC_OP_AUTH_SALT);
 				response->AddTag(CECTag(EC_TAG_PASSWD_SALT, m_passwd_salt));
 				m_conn_state = CONN_SALT_SENT;
+				// Transport encryption. Pick the first cipher we can do from
+				// the client's list -- its order is its preference -- and
+				// answer with our half of the derivation salt. Keys are only
+				// derived once the password checks out, below.
+				NegotiateAEAD(request, response);
 				//
 				// So far ok, check capabilities of client
 				//
@@ -736,6 +836,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 			passh.Decode(MD5Sum(thePrefs::ECPassword().Lower() + saltHash).GetHash());
 
 			if (passwd && passwd->GetMD4Data() == passh) {
+				// The password is good, so both ends hold the same secret and
+				// the keys will match. Switch on now rather than after the
+				// reply: EC_OP_AUTH_OK is then itself sealed, which proves to
+				// the client that its peer really does know the password --
+				// something the plain challenge never established.
+				ActivateAEAD();
 				response = new CECPacket(EC_OP_AUTH_OK);
 				response->AddTag(CECTag(EC_TAG_SERVER_VERSION, VERSION));
 				// Echo the negotiated large-tag-count capability so

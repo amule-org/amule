@@ -25,6 +25,10 @@
 
 #include "RemoteConnect.h"
 
+#include "ECCrypt.h"
+#include "ECLog.h"
+#include "../../../Logger.h"
+
 #include <common/SmartPtr.h> // Needed for CSmartPtr
 #include <common/MD5Sum.h>
 #include <common/Format.h>
@@ -59,7 +63,9 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool canNotify,
 	bool preferNoZlib,
 	bool canMultiSearch,
-	bool canChat)
+	bool canChat,
+	bool canAEAD,
+	const std::vector<uint8_t> &clientNonce)
 : CECPacket(EC_OP_AUTH_REQ)
 {
 	AddTag(CECTag(EC_TAG_CLIENT_NAME, client));
@@ -125,6 +131,14 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// window; old servers ignore the unknown tag and never relay.
 	if (canChat)
 		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
+	// Transport encryption: the ciphers we can do, in preference order, plus
+	// our half of the derivation salt. A daemon that does not know these tags
+	// ignores them and the session stays in clear.
+	if (canAEAD && !clientNonce.empty()) {
+		const std::vector<uint8_t> ciphers = ECCrypt::SupportedCiphers();
+		AddTag(CECTag(EC_TAG_CAN_AEAD, ciphers.size(), ciphers.data()));
+		AddTag(CECTag(EC_TAG_AEAD_CLIENT_NONCE, clientNonce.size(), clientNonce.data()));
+	}
 }
 
 CECAuthPacket::CECAuthPacket(const wxString &pass)
@@ -157,6 +171,8 @@ m_req_fifo_thr(20)
 , m_canZLIB(false)
 , m_canUTF8numbers(false)
 , m_canNotify(false)
+, m_canAEAD(true)
+, m_aeadNegotiated(false)
 , m_preferNoZlib(false)
 , m_forceZlib(false)
 , m_serverPartialUpdate(false)
@@ -190,6 +206,10 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 	const wxString &version)
 {
 	m_connectionPassword = pass;
+	// Both ends hold md5(password) and neither sends it; the salted challenge
+	// below replaces m_connectionPassword with a value that DOES go on the
+	// wire, so capture the usable key material first.
+	m_aeadSecret = pass.Lower();
 
 	m_client = client;
 	m_version = version;
@@ -230,6 +250,20 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 	// `/EC/ForceZLIB=1` / `--force-zlib` to handle e.g. a WireGuard
 	// tunnel endpoint that resolves to an RFC1918 IP but whose
 	// underlying transit is slow Internet.
+	// One fresh nonce per connection attempt: reusing it across attempts would
+	// reuse a key, and a retry after a dropped socket is a new session.
+	m_aeadClientNonce.clear();
+	m_aeadOffered.clear();
+	if (m_canAEAD) {
+		m_aeadClientNonce = ECCrypt::RandomBytes(ECCrypt::NONCE_TAG_LEN);
+		m_aeadOffered = ECCrypt::SupportedCiphers();
+		if (m_aeadClientNonce.empty()) {
+			// No usable randomness: offer nothing rather than derive a key
+			// from a predictable salt.
+			m_aeadOffered.clear();
+		}
+	}
+
 	m_preferNoZlib = false;
 	if (m_canZLIB && !m_forceZlib) {
 		uint32 resolved_ip = 0;
@@ -249,7 +283,9 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 			m_canNotify,
 			m_preferNoZlib,
 			m_canMultiSearch,
-			m_canChat);
+			m_canChat,
+			m_canAEAD,
+			m_aeadClientNonce);
 
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
@@ -297,7 +333,9 @@ void CRemoteConnect::OnConnect()
 			m_canNotify,
 			m_preferNoZlib,
 			m_canMultiSearch,
-			m_canChat);
+			m_canChat,
+			m_canAEAD,
+			m_aeadClientNonce);
 		CECSocket::SendPacket(&login_req);
 
 		m_ec_state = EC_REQ_SENT;
@@ -350,6 +388,48 @@ void CRemoteConnect::OnLost()
 	// against it risks the kind of use-after-free #748 was about.
 	// The OS reaps file descriptors / sockets on exit anyway.
 	_exit(1);
+}
+
+void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
+{
+	m_aeadNegotiated = false;
+	if (!m_canAEAD || m_aeadClientNonce.empty()) {
+		return;
+	}
+	const CECTag *cipherTag = reply->GetTagByName(EC_TAG_AEAD_CIPHER);
+	const CECTag *serverNonceTag = reply->GetTagByName(EC_TAG_AEAD_SERVER_NONCE);
+	if (cipherTag == NULL || serverNonceTag == NULL) {
+		// An old daemon, or one with encryption switched off. Nothing to do:
+		// the session stays in clear.
+		return;
+	}
+
+	const uint8_t cipher = (uint8_t)cipherTag->GetInt();
+	if (!ECCrypt::IsCipherSupported(cipher)) {
+		AddDebugLogLineN(logEC, "AEAD: daemon chose a cipher we cannot do");
+		return;
+	}
+
+	const uint8_t *serverNonceData = (const uint8_t *)serverNonceTag->GetTagData();
+	const std::vector<uint8_t> serverNonce(
+		serverNonceData, serverNonceData + serverNonceTag->GetTagDataLen());
+
+	// Transcript: what we offered plus what was chosen. If either was edited
+	// in flight the two ends derive different keys and the first sealed
+	// packet fails, rather than the session silently using a weaker cipher.
+	std::vector<uint8_t> transcript = m_aeadOffered;
+	transcript.push_back(cipher);
+
+	const wxCharBuffer secret = m_aeadSecret.utf8_str();
+	const std::vector<uint8_t> ikm(
+		(const uint8_t *)secret.data(), (const uint8_t *)secret.data() + strlen(secret.data()));
+	if (!SetupAEAD(cipher, ikm, serverNonce, m_aeadClientNonce, transcript, false)) {
+		AddDebugLogLineN(logEC, "AEAD: key derivation failed, staying in clear");
+		return;
+	}
+	m_aeadNegotiated = true; // EC_OP_AUTH_PASSWD is the last packet that must go out in clear.
+	EnableAEADAfterNextWrite();
+	AddDebugLogLineN(logEC, CFormat("AEAD: negotiated %s") % ECCrypt::CipherName(cipher));
 }
 
 const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint32 trueSize)
@@ -431,6 +511,9 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 		if ((m_ec_state == EC_REQ_SENT) && (reply->GetOpCode() == EC_OP_AUTH_SALT)) {
 			const CECTag *passwordSalt = reply->GetTagByName(EC_TAG_PASSWD_SALT);
 			if (NULL != passwordSalt) {
+				// Set up transport encryption before the challenge below
+				// overwrites m_connectionPassword.
+				SetupAEADFromSalt(reply);
 				wxString saltHash = MD5Sum(CFormat("%lX") % passwordSalt->GetInt()).GetHash();
 				m_connectionPassword =
 					MD5Sum(m_connectionPassword.Lower() + saltHash).GetHash();

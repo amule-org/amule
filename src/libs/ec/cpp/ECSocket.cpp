@@ -1148,8 +1148,13 @@ bool CECSocket::OpenReceivedBody()
 	}
 	// Hide the tag from the parser: everything downstream expects the body to
 	// end where the plaintext ends.
+	//
+	// Deliberately no Rewind() here. Rewind() moves the *write* pointer back
+	// to the start as well, which would leave the buffer logically empty and
+	// hand the parser a zero-length body. The read pointer is already at the
+	// start at this point -- ReadHeader rewound, and filling the body only
+	// advanced the write pointer.
 	m_curr_rx_data->TruncateBy(ECCrypt::AEAD_TAG_LEN);
-	m_curr_rx_data->Rewind();
 	return true;
 }
 

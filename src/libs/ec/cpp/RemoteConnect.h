@@ -65,7 +65,9 @@ public:
 		bool canNotify = false,
 		bool preferNoZlib = false,
 		bool canMultiSearch = false,
-		bool canChat = false);
+		bool canChat = false,
+		bool canAEAD = false,
+		const std::vector<uint8_t> &clientNonce = std::vector<uint8_t>());
 };
 
 class CECAuthPacket : public CECPacket
@@ -107,6 +109,42 @@ private:
 	bool m_canZLIB;
 	bool m_canUTF8numbers;
 	bool m_canNotify;
+
+	// Offer transport encryption. On by default in every shipped client, so
+	// a daemon that speaks it gets an encrypted session without anyone opting
+	// in; the user-facing switches only exist to turn it off. A daemon that
+	// does not speak it simply never echoes a cipher and the session stays as
+	// it was.
+	bool m_canAEAD;
+
+	// Our half of the key-derivation salt, generated per connection attempt
+	// and kept so the derivation can run once the daemon's half arrives in
+	// EC_OP_AUTH_SALT.
+	std::vector<uint8_t> m_aeadClientNonce;
+
+	// The ciphers we offered, verbatim, plus the one the daemon chose. Bound
+	// into the key derivation so a modified capability exchange yields a
+	// different key on each side, and the first sealed packet fails instead
+	// of the session quietly dropping to something weaker.
+	std::vector<uint8_t> m_aeadOffered;
+
+	// md5 of the password, lower-cased -- the value both ends hold and
+	// neither transmits. Captured before the salted-challenge step below
+	// overwrites m_connectionPassword with the value that does go on the
+	// wire, which would be useless as key material.
+	wxString m_aeadSecret;
+
+	/// Set when the daemon named a cipher and the keys derived cleanly.
+	bool m_aeadNegotiated;
+
+	/**
+	 * Derive session keys from EC_OP_AUTH_SALT, and arm after the next write.
+	 *
+	 * Arming is deferred by one packet because EC_OP_AUTH_PASSWD still has to
+	 * leave in clear: the daemon cannot open it until it has run the same
+	 * derivation, which it only does once the password checks out.
+	 */
+	void SetupAEADFromSalt(const CECPacket *reply);
 
 	// Set in ConnectToCore when the dialed server address resolves to
 	// a loopback / RFC1918 LAN / RFC3927 link-local IP. Drives the
@@ -173,6 +211,21 @@ public:
 	CRemoteConnect(wxEvtHandler *evt_handler);
 
 	void SetCapabilities(bool canZLIB, bool canUTF8numbers, bool canNotify);
+
+	/**
+	 * Offer (or refuse to offer) transport encryption.
+	 *
+	 * Defaults to on; the switches that reach this are all opt-OUT. Refusing
+	 * does not fail a connection -- it just leaves the session in clear, which
+	 * is what the daemon's own policy may then reject.
+	 */
+	void SetCanAEAD(bool canAEAD) { m_canAEAD = canAEAD; }
+	bool GetCanAEAD() const { return m_canAEAD; }
+
+	/// True once keys were derived for this connection, i.e. the daemon
+	/// accepted the offer. Used to insist that EC_OP_AUTH_OK really did
+	/// arrive sealed.
+	bool IsAEADNegotiated() const { return m_aeadNegotiated; }
 
 	// Force-ZLIB override: when true, ConnectToCore skips the
 	// loopback/LAN-IP locality detection and never asks the server
