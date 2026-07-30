@@ -10,7 +10,7 @@ import { api } from "../api.js";
 import { data } from "../events.js";
 import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
-import { Tabs, Badge, Placeholder, toast, confirmDialog } from "../components.js";
+import { Tabs, Placeholder, toast, confirmDialog } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart } from "../charts.js";
 import { formatInt } from "../format.js";
@@ -23,6 +23,8 @@ const AMULE_TAIL = 500; // initial history; live lines then arrive via log_appen
 const GRAPH_POLL_MS = 2000;
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
 const KAD_GRAPH = { name: "kad", title: t("networks_kad_nodes"), color: "#8a5cd6", fmt: formatInt };
+// The three values ServerPriorityCode() accepts, in rank order (also the sort order).
+const SERVER_PRIORITIES = ["low", "normal", "high"].map((v) => [v, t("networks_server_prio_" + v)]);
 
 export default function Networks({ isGuest }) {
   const [top, setTop] = useState("ed2k");
@@ -141,6 +143,10 @@ function ServersPanel({ isGuest }) {
     try { await api.post("servers", body); setAddr(""); setName(""); toast(t("networks_server_toast_added"), "success"); data.refresh("servers"); }
     catch (err) { toast(terr(err) || t("networks_server_error"), "error"); }
   };
+  const patchServer = async (ecid, body) => {
+    try { await api.patch("servers/" + ecid, body); data.refresh("servers"); }
+    catch (e) { toast(terr(e) || t("networks_server_error"), "error"); }
+  };
 
   // The two sides format the address differently — the list ships "ip:port",
   // status.ed2k.server_ip comes from EC_IPv4_t::StringIP() as "[ip:port]" — so
@@ -160,8 +166,8 @@ function ServersPanel({ isGuest }) {
       cell: (s) => s.address && s.address.includes(":") ? s.address : (s.address + ":" + s.port) },
     { key: "name", label: t("networks_server_name"), cls: "name", sortable: true,
       sortVal: (s) => (s.name || "").toLowerCase(),
-      // flex cell so a long name ellipsizes without hiding the "static" badge
-      cell: (s) => html`<div class="name-cell" title=${s.name}><span class="name-text">${s.name}</span>${s.static ? html`<${Badge} title=${t("networks_server_badge_static_title")}>${t("networks_server_badge_static")}<//>` : null}</div>` },
+      // flex cell so a long name ellipsizes
+      cell: (s) => html`<div class="name-cell" title=${s.name}><span class="name-text">${s.name}</span></div>` },
     // No width, like `name`: descriptions are long, so the two split the leftover.
     { key: "description", label: t("networks_server_description"), sortable: true,
       sortVal: (s) => (s.description || "").toLowerCase(), cell: (s) => s.description || "" },
@@ -174,8 +180,30 @@ function ServersPanel({ isGuest }) {
       sortVal: (s) => s.version || "", cell: (s) => s.version || "" },
     { key: "ping", label: t("networks_server_ping"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.ping_ms || 0, cell: (s) => s.ping_ms ? s.ping_ms + " ms" : "—" },
-    { key: "priority", label: t("networks_server_priority"), width: "90px", sortable: true,
-      sortVal: (s) => s.priority || "", cell: (s) => s.priority || "" },
+    // Static and priority are both PATCH /servers/{ecid} fields, so both cells are
+    // selects for an admin and plain labels for a guest (as in downloads/shared).
+    { key: "static", label: t("networks_server_static"), width: "90px", sortable: true,
+      sortVal: (s) => (s.static ? 1 : 0),
+      cell: (s) => isGuest
+        ? (s.static ? t("networks_server_static_yes") : t("networks_server_static_no"))
+        : html`
+            <select class="input input-sm admin-only" value=${s.static ? "yes" : "no"}
+                    onChange=${(e) => patchServer(s.ecid, { static: e.target.value === "yes" })}>
+              <option value="yes">${t("networks_server_static_yes")}</option>
+              <option value="no">${t("networks_server_static_no")}</option>
+            </select>` },
+    { key: "priority", label: t("networks_server_priority"), width: "110px", sortable: true,
+      sortVal: (s) => SERVER_PRIORITIES.findIndex(([v]) => v === s.priority),
+      cell: (s) => {
+        const found = SERVER_PRIORITIES.find(([v]) => v === s.priority);
+        return isGuest
+          ? (found ? found[1] : s.priority || "")
+          : html`
+              <select class="input input-sm admin-only" value=${found ? s.priority : "normal"}
+                      onChange=${(e) => patchServer(s.ecid, { priority: e.target.value })}>
+                ${SERVER_PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
+              </select>`;
+      } },
     ...(isGuest ? [] : [{ key: "actions", label: t("networks_server_actions"), cls: "row-actions admin-only", width: "90px",
       cell: (s) => html`
         <button class="btn btn-icon btn-sm" title=${t("networks_server_connect")} onClick=${() => connect(s.ecid)}>

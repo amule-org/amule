@@ -352,11 +352,9 @@ table.data.virtual tbody tr.row-have,
 table.data.virtual tbody tr.row-have.stripe { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 table.data.virtual tbody tr.row-have:hover { background: color-mix(in srgb, var(--accent) 26%, var(--surface)); }
 table.data.virtual tbody tr.row-have td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-/* name cell with a trailing badge: ellipsize the name but keep the badge
-   visible — a plain clipped cell would hide the badge behind the ellipsis. */
+/* flex name cell: ellipsize the name, keep any trailing element visible. */
 table.data.virtual td .name-cell { display: flex; align-items: center; gap: 6px; }
 table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 
 /* --- progress bar (flat, accent-filled) --- */
 .progress {
