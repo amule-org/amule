@@ -43,8 +43,13 @@ enum ECFlags
 {
 	EC_FLAG_ZLIB = 0x00000001,
 	EC_FLAG_UTF8_NUMBERS = 0x00000002,
+	// Body is AEAD-sealed; see CECSocket::WritePacket. 0x08 was previously
+	// inside EC_FLAG_UNKNOWN_MASK, so a peer predating this feature rejects
+	// such a packet outright instead of misparsing ciphertext as tags -- the
+	// failure is closed, which no other free bit would have given us.
+	EC_FLAG_ENCRYPTED = 0x00000008,
 	EC_FLAG_LARGE_TAG_COUNT = 0x00000010,
-	EC_FLAG_UNKNOWN_MASK = 0xff7f7f08
+	EC_FLAG_UNKNOWN_MASK = 0xff7f7f00
 };
 
 enum ECOpCodes
@@ -168,6 +173,10 @@ enum ECTagNames
 	EC_TAG_ED2K_CONNECTED_SINCE = 0x0018,
 	EC_TAG_KAD_CONNECTED_SINCE = 0x0019,
 	EC_TAG_CAN_SEARCH_LIST = 0x001A,
+	EC_TAG_CAN_AEAD = 0x001B,
+	EC_TAG_AEAD_CIPHER = 0x001C,
+	EC_TAG_AEAD_CLIENT_NONCE = 0x001D,
+	EC_TAG_AEAD_SERVER_NONCE = 0x001E,
 	EC_TAG_CLIENT_NAME = 0x0100,
 	EC_TAG_CLIENT_VERSION = 0x0101,
 	EC_TAG_CLIENT_MOD = 0x0102,
@@ -875,6 +884,14 @@ wxString GetDebugNameECTagNames(uint16 arg)
 		return "EC_TAG_KAD_CONNECTED_SINCE";
 	case EC_TAG_CAN_SEARCH_LIST:
 		return "EC_TAG_CAN_SEARCH_LIST";
+	case EC_TAG_CAN_AEAD:
+		return "EC_TAG_CAN_AEAD";
+	case EC_TAG_AEAD_CIPHER:
+		return "EC_TAG_AEAD_CIPHER";
+	case EC_TAG_AEAD_CLIENT_NONCE:
+		return "EC_TAG_AEAD_CLIENT_NONCE";
+	case EC_TAG_AEAD_SERVER_NONCE:
+		return "EC_TAG_AEAD_SERVER_NONCE";
 	case 0x0100:
 		return "EC_TAG_CLIENT_NAME";
 	case 0x0101:

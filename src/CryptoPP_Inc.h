@@ -65,6 +65,24 @@
 #include CRYPTO_HEADER(sha.h)
 #include CRYPTO_HEADER(des.h)
 
+// Opt-in AEAD block. Kept behind a macro because this header reaches most of
+// the tree through MD5Sum.h, and gcm/chachapoly are heavy: only the EC packet
+// layer needs them. Defining CRYPTOPP_INC_NEED_AEAD before including this
+// header pulls them in under the same deprecation pragmas as everything above,
+// so there is still exactly one place that knows how to include cryptopp
+// safely.
+#ifdef CRYPTOPP_INC_NEED_AEAD
+#include CRYPTO_HEADER(aes.h)
+#include CRYPTO_HEADER(gcm.h)
+#include CRYPTO_HEADER(hmac.h)
+// ChaCha20-Poly1305 arrived in cryptopp 8.1; aMule's floor is 5.6, so the EC
+// layer negotiates it rather than requiring it.
+#if defined(CRYPTOPP_VERSION) && CRYPTOPP_VERSION >= 810
+#define CRYPTOPP_INC_HAVE_CHACHA20POLY1305 1
+#include CRYPTO_HEADER(chachapoly.h)
+#endif
+#endif
+
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
