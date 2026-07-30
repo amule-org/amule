@@ -3153,8 +3153,8 @@ void CSearchListRem::ProcessUpdate(const CECTag *reply, CECPacket *full_req, int
 			reply, full_req, req_type);
 		return;
 	}
-	for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
-		const CECTag *curTag = &*it;
+	for (const CECTag &entry : *reply) {
+		const CECTag *curTag = &entry;
 		if (curTag->GetTagName() == EC_TAG_FILE_REMOVED) {
 			// The one path that deletes now. Same tombstone the shared-file
 			// list uses; the payload is the result's ECID.

@@ -2054,9 +2054,8 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // eviction only -- folding monolithic searches into that 20-entry LRU would
 // let unrelated EC traffic evict, and so stop, a local user's own
 // still-running Kad search.
-static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap,
-	bool partial_update_active,
-	std::set<uint32> &io_lastSentResultIds)
+static CECPacket *Get_EC_Response_Search_Results_Union(
+	CObjTagMap &tagmap, bool partial_update_active, std::set<uint32> &io_lastSentResultIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
 	// Incremental: unchanged fields are diffed out via the per-connection
