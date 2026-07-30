@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-30 17:42+0200\n"
-"PO-Revision-Date: 2026-07-30 12:40+0000\n"
+"PO-Revision-Date: 2026-07-30 20:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -2202,9 +2202,8 @@ msgid ""
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Savienojumi"
+msgstr "Savienojuma ātrums:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
@@ -4929,19 +4928,19 @@ msgid "Shared Files"
 msgstr "Kopīgotās datnes"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "Atcelt"
+msgstr "Atcelt %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "Atslēgties"
+msgstr "Atslēgt %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "Pieslēgties"
+msgstr "Pieslēgt %s"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6457,9 +6456,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr ""
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "aMule "
+msgstr "aMuleGUI žurnāls"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -6504,7 +6502,7 @@ msgstr "Kademlia klienta ID:"
 
 #: src/ServerWnd.cpp
 msgid "Status:"
-msgstr ""
+msgstr "Statuss:"
 
 #: src/ServerWnd.cpp
 msgid "Connection State:"
@@ -6625,11 +6623,11 @@ msgstr "Lietotājvārds"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
-msgstr ""
+msgstr "Lejupielādes ātrums"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Speed"
-msgstr ""
+msgstr "Augšupielādes ātrums"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Available Parts"

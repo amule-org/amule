@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-30 17:42+0200\n"
-"PO-Revision-Date: 2026-07-30 12:27+0000\n"
+"PO-Revision-Date: 2026-07-30 20:16+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1633,9 +1633,9 @@ msgid "Downloads (%i)"
 msgstr "Downloads (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "DL Total: %s"
+msgstr "Tamanho total da fila: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -2875,7 +2875,7 @@ msgstr "Senha inválida, não é um hash MD5!"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
 msgid "Could not resolve %s to an IPv4 address."
-msgstr ""
+msgstr "Não foi possível resolver %s para um endereço IPV4."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"
@@ -3311,18 +3311,16 @@ msgid "Hide Known Files"
 msgstr "Ocultar arquivos conhecidos"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "Reiniciar Campos"
+msgstr "Reiniciar os Filtros"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "Iniciar"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Extensão"
+msgstr "Estender"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -4581,14 +4579,12 @@ msgid "Nodes stats"
 msgstr "Estatísticas dos Nodes"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bootstrap from node: IP"
-msgstr "Inicializando de clientes conhecidos"
+msgstr "Inicialização a partir do nó: IP"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr "Informe o IP do servidor no formato x.x.x.x nesse espaço."
+msgstr "Informe o IP do nó aqui, usando o formato x.x.x.x."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -5018,19 +5014,19 @@ msgid "Shared Files"
 msgstr "Arquivos Compartilhados"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "Cancelar"
+msgstr "Cancelar %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "Desconectar"
+msgstr "Desconectar %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "Conectar"
+msgstr "Conectar %s"
 
 #: src/OScopeCtrl.cpp
 #, c-format

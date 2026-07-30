@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-30 17:42+0200\n"
-"PO-Revision-Date: 2026-07-30 12:21+0000\n"
+"PO-Revision-Date: 2026-07-30 20:10+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -1637,9 +1637,9 @@ msgid "Downloads (%i)"
 msgstr "Download (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "DL totale: %s"
+msgstr "Dimensione totale coda: %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -2879,7 +2879,7 @@ msgstr "Password non valida, non è un hash MD5!"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
 msgid "Could not resolve %s to an IPv4 address."
-msgstr ""
+msgstr "Impossibile risolvere %s in un indirizzo IPv4."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"
@@ -3315,18 +3315,16 @@ msgid "Hide Known Files"
 msgstr "Nascondi file conosciuti"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "Azzera campi"
+msgstr "Reimposta i filtri"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "Cerca"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Estensione"
+msgstr "Estendi"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -4585,14 +4583,12 @@ msgid "Nodes stats"
 msgstr "Statistiche nodi"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bootstrap from node: IP"
-msgstr "Bootstrap dai client noti"
+msgstr "Bootstrap dal nodo: IP"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr "Inserisci qui l'IP del server, nel formato x.x.x.x."
+msgstr "Inserisci qui l'indirizzo IP del nodo, utilizzando il formato x.x.x.x."
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -5022,19 +5018,19 @@ msgid "Shared Files"
 msgstr "File condivisi"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "Annulla"
+msgstr "Annulla %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "Disconnetti"
+msgstr "Disconnetti %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "Connetti"
+msgstr "Connetti %s"
 
 #: src/OScopeCtrl.cpp
 #, c-format
