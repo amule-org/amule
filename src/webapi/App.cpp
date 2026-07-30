@@ -174,6 +174,7 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 	m_cliHasEcHost = parser.Found("host");
 	m_cliHasEcPort = parser.Found("port");
 	m_cliHasEcPassword = parser.Found("password");
+	m_cliHasEcEncryption = parser.Found("disable-ec-encryption");
 
 	return CaMuleExternalConnector::OnCmdLineParsed(parser);
 }
@@ -278,6 +279,12 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 	}
 	if (!m_cliHasEcPort) {
 		m_port = static_cast<long>(m_apiConfig.EcCfg().port);
+	}
+	if (!m_cliHasEcEncryption) {
+		// amuleapi.conf is the only config file amuleapi reads (see
+		// UsesConnectorConfigFile), so this is the sole source below the
+		// command line -- same shape as host/port/password above.
+		m_ECEncryption = m_apiConfig.EcCfg().encryption;
 	}
 	if (!m_cliHasEcPassword && !m_apiConfig.EcCfg().password.empty()) {
 		// amuleapi.conf [EC]/Password is plaintext; the base class

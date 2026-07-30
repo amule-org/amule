@@ -65,6 +65,12 @@ aMule data directory that \fBamuled\fR uses (~/.aMule/ on Linux,
 ~/Library/Application Support/aMule/ on macOS, %APPDATA%\\aMule\\ on
 Windows). Creates the dir with mode 0700 if absent.
 .TP
+.B_untranslated [ \-\-disable\-ec\-encryption ]\fR
+Do not encrypt the External Connection link to \fBamuled\fR(1).
+Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.
+Equivalent to setting \fBEncryption=0\fR in the \fB[EC]\fR section of \fIamuleapi.conf\fR.
+Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection.
+.TP
 \fB[ \-\-amule\-config\-file\fR=\fI<path>\fR \fB]\fR
 Read the EC host, port and password from an existing \fBamule\fR(1) /
 \fBamuled\fR(1) \fIamule.conf\fR, the same way \fBamuleweb\fR(1) does. This
@@ -111,7 +117,9 @@ Print a short usage description.
 .TP
 \fI~/.aMule/amuleapi.conf\fR
 INI\-style runtime config: \fB[Server]\fR (bind address, HTTP port, CORS
-allowlist), \fB[EC]\fR (outbound connection to amuled), \fB[Auth]\fR (login
+allowlist), \fB[EC]\fR (outbound connection to amuled, including
+\fBEncryption\fR which defaults to 1 and can be set to 0 to disable
+transport encryption), \fB[Auth]\fR (login
 rate\-limit knobs), \fB[Streaming]\fR (SSE event\-bus ring capacity). The
 QUICKSTART document distributed with the source has the full
 reference.

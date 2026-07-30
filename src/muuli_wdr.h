@@ -566,6 +566,7 @@ wxSizer *PreferencesProxyTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_EC_PASSWD 10304
 #define ID_EC_SAVE 10305
 #define ID_EC_FORCE_ZLIB 10344
+#define ID_EC_ENCRYPTION 10355
 wxSizer *CoreConnect(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_VERBOSEDEBUG 10306

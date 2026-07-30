@@ -254,6 +254,7 @@ CaMuleExternalConnector::CaMuleExternalConnector()
 , m_port(-1)
 , m_ZLIB(false)
 , m_forceZLIB(false)
+, m_ECEncryption(true)
 , m_canMultiSearch(false)
 , m_KeepQuiet(false)
 , m_Verbose(false)
@@ -454,6 +455,7 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		m_ECClient = new CRemoteConnect(NULL);
 		m_ECClient->SetCapabilities(m_ZLIB, true, false); // ZLIB, UTF8 numbers, notification
 		m_ECClient->SetForceZlib(m_forceZLIB);
+		m_ECClient->SetCanAEAD(m_ECEncryption);
 		m_ECClient->SetCanMultiSearch(m_canMultiSearch);
 		// Bound the blocking EC connect so a wrong or unreachable host
 		// fails fast instead of hanging on the OS TCP connect timeout
@@ -514,11 +516,13 @@ void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char 
 		_("External Connection password."),
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("f",
-		"config-file",
-		_("Read configuration from file."),
-		wxCMD_LINE_VAL_STRING,
-		wxCMD_LINE_PARAM_OPTIONAL);
+	if (UsesConnectorConfigFile()) {
+		parser.AddOption("f",
+			"config-file",
+			_("Read configuration from file."),
+			wxCMD_LINE_VAL_STRING,
+			wxCMD_LINE_PARAM_OPTIONAL);
+	}
 	parser.AddSwitch("q", "quiet", _("Do not print any output to stdout."), wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddSwitch(
 		"v", "verbose", _("Be verbose - show also debug messages."), wxCMD_LINE_PARAM_OPTIONAL);
@@ -527,16 +531,24 @@ void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char 
 		_("Sets program locale (language)."),
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddSwitch("w",
-		"write-config",
-		_("Write command line options to config file."),
-		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("",
-		"create-config-from",
-		_("Creates config file based on aMule's config file."),
-		wxCMD_LINE_VAL_STRING,
-		wxCMD_LINE_PARAM_OPTIONAL);
+	if (UsesConnectorConfigFile()) {
+		parser.AddSwitch("w",
+			"write-config",
+			_("Write command line options to config file."),
+			wxCMD_LINE_PARAM_OPTIONAL);
+		parser.AddOption("",
+			"create-config-from",
+			_("Creates config file based on aMule's config file."),
+			wxCMD_LINE_VAL_STRING,
+			wxCMD_LINE_PARAM_OPTIONAL);
+	}
 	parser.AddSwitch("", "version", _("Print program version."), wxCMD_LINE_PARAM_OPTIONAL);
+	parser.AddSwitch("",
+		"disable-ec-encryption",
+		_("Do not encrypt the External Connect session. Encryption is on by default "
+		  "whenever the remote aMule supports it; turning it off leaves everything "
+		  "after the login readable and modifiable by anyone on the path."),
+		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddSwitch("",
 		"force-zlib",
 		_("Force ZLIB compression regardless of dialed-IP locality (useful when the server is "
@@ -563,14 +575,16 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 		return false;
 	}
 
-	if (!parser.Found("config-file", &m_configFileName)) {
+	// The config *directory* is resolved either way -- subclasses without a
+	// connector config file still need somewhere to put their own.
+	if (!UsesConnectorConfigFile() || !parser.Found("config-file", &m_configFileName)) {
 		m_configFileName = "remote.conf";
 	}
 	m_configDir = GetConfigDir(m_configFileName);
 	m_configFileName = m_configDir + m_configFileName;
 
 	wxString aMuleConfigFile;
-	if (parser.Found("create-config-from", &aMuleConfigFile)) {
+	if (UsesConnectorConfigFile() && parser.Found("create-config-from", &aMuleConfigFile)) {
 		aMuleConfigFile = FinalizeFilename(aMuleConfigFile);
 		if (!::wxFileExists(aMuleConfigFile)) {
 			fprintf(stderr,
@@ -587,7 +601,9 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 		exit(0);
 	}
 
-	LoadConfigFile();
+	if (UsesConnectorConfigFile()) {
+		LoadConfigFile();
+	}
 
 	if (!parser.Found("host", &m_host)) {
 		if (m_host.IsEmpty()) {
@@ -609,11 +625,14 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 		}
 	}
 
+	if (parser.Found("disable-ec-encryption")) {
+		m_ECEncryption = false;
+	}
 	if (parser.Found("force-zlib")) {
 		m_forceZLIB = true;
 	}
 
-	if (parser.Found("write-config")) {
+	if (UsesConnectorConfigFile() && parser.Found("write-config")) {
 		m_NeedsConfigSave = true;
 	}
 
@@ -671,6 +690,8 @@ void CaMuleExternalConnector::LoadConfigFile()
 		m_configFile->ReadHash("/EC/Password", &m_password);
 		m_ZLIB = m_configFile->Read("/EC/ZLIB", 1l) != 0;
 		m_forceZLIB = m_configFile->Read("/EC/ForceZLIB", 0l) != 0;
+		// Defaults to 1: a config file predating this key gets encryption.
+		m_ECEncryption = m_configFile->Read("/EC/Encryption", 1l) != 0;
 	}
 }
 
@@ -694,6 +715,7 @@ void CaMuleExternalConnector::SaveConfigFile()
 		// field actually round-trips. (#817)
 		m_configFile->Write("/EC/ZLIB", m_ZLIB ? 1l : 0l);
 		m_configFile->Write("/EC/ForceZLIB", m_forceZLIB ? 1l : 0l);
+		m_configFile->Write("/EC/Encryption", m_ECEncryption ? 1l : 0l);
 	}
 }
 

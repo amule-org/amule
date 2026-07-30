@@ -200,6 +200,14 @@ private:
 	// Did the operator pass --host / --port / --password explicitly?
 	bool m_cliHasEcHost = false;
 	bool m_cliHasEcPort = false;
+	/// amuleapi owns amuleapi.conf and must not also read remote.conf: two
+	/// files describing the same EC connection, with load order deciding the
+	/// winner, is a trap. Turning this off drops --config-file,
+	/// --write-config and --create-config-from too, since all three only
+	/// exist to manage that file.
+	bool UsesConnectorConfigFile() const override { return false; }
+
+	bool m_cliHasEcEncryption = false;
 	bool m_cliHasEcPassword = false;
 };
 

@@ -61,6 +61,11 @@ Execute \fI<command>\fR as if it was entered at amulecmd's prompt and exit.
 \fB[ \-\-create\-config\-from\fR=\fI<path>\fR \fB]\fR
 Create config file based upon \fI<path>\fR, which must point to a valid aMule config file, and then exit.
 .TP
+.B_untranslated [ \-\-disable\-ec\-encryption ]\fR
+Do not encrypt the External Connection link.
+Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.
+Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection.
+.TP
 .B_untranslated [ \-\-force\-zlib ]\fR
 Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.
 Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression.

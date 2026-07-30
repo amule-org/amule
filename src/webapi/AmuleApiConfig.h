@@ -78,6 +78,10 @@ public:
 		std::string host = "127.0.0.1";
 		unsigned port = 4712;
 		std::string password; // matches amuled's [ExternalConnect]/Password
+		// Offer EC transport encryption. On by default for every
+		// destination; only the client knows what it dialed, so the
+		// choice lives here rather than in amuled.
+		bool encryption = true;
 	};
 
 	struct Auth

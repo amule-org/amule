@@ -147,6 +147,18 @@ public:
 	virtual void TextShell(const wxString &prompt);
 	virtual void LoadConfigFile();
 	virtual void SaveConfigFile();
+
+	/**
+	 * Whether this connector keeps its own remote.conf.
+	 *
+	 * True for amulecmd and amuleweb, which have no config file of their own.
+	 * amuleapi returns false: it owns amuleapi.conf, and reading remote.conf
+	 * as well gave two files describing the same EC connection, with the
+	 * winner decided by load order. When false the base class registers
+	 * neither --config-file, --write-config nor --create-config-from, and
+	 * loads nothing -- the subclass is the only source of configuration.
+	 */
+	virtual bool UsesConnectorConfigFile() const { return true; }
 	virtual void LoadAmuleConfig(CECFileConfig &cfg);
 	virtual void OnInitCommandSet();
 	virtual bool OnInit();
@@ -216,6 +228,13 @@ protected:
 	// check would otherwise strip ZLIB and the user loses the perf
 	// they actually want.
 	bool m_forceZLIB;
+
+	// Offer EC transport encryption. On by default: the daemon only encrypts
+	// what a client asks for, and only the client knows what address it
+	// dialed, so the decision has to live here rather than in the daemon --
+	// the same reasoning the ZLIB locality hint already follows. This is the
+	// opt-OUT, reachable as --disable-ec-encryption or /EC/Encryption=0.
+	bool m_ECEncryption;
 	// Advertise the multi-search EC capability (EC_TAG_CAN_MULTI_SEARCH) so
 	// the daemon addresses searches by ID and several can run at once. Off by
 	// default; only a connector that reads EC_TAG_SEARCH_ID back and handles
