@@ -376,6 +376,7 @@ target_include_directories (ECCryptTest
 )
 target_link_libraries (ECCryptTest
 	muleunit
+	mulecommon
 	CRYPTOPP::CRYPTOPP
 )
 
