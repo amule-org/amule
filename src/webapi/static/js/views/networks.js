@@ -108,7 +108,6 @@ function ServersPanel({ isGuest }) {
                                hidden: ["address", "version", "ping"] });
   const [addr, setAddr] = useState("");
   const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
   const [connectingEcid, setConnectingEcid] = useState(null);
 
   useEffect(() => {
@@ -140,13 +139,6 @@ function ServersPanel({ isGuest }) {
     const body = { address };
     if (name.trim()) body.name = name.trim();
     try { await api.post("servers", body); setAddr(""); setName(""); toast(t("networks_server_toast_added"), "success"); data.refresh("servers"); }
-    catch (err) { toast(terr(err) || t("networks_server_error"), "error"); }
-  };
-  const updateFromUrl = async (e) => {
-    e.preventDefault();
-    const servers_url = url.trim();
-    if (!servers_url) { toast(t("networks_server_toast_enter_url"), "warn"); return; }
-    try { await api.post("servers/update", { servers_url }); toast(t("networks_server_toast_updating"), "success"); setTimeout(() => data.refresh("servers"), 2000); }
     catch (err) { toast(terr(err) || t("networks_server_error"), "error"); }
   };
 
@@ -206,12 +198,6 @@ function ServersPanel({ isGuest }) {
         <button class="btn btn-sm" type="submit">${t("networks_server_add")}</button>
         <div class="spacer"></div>
         <${NetworkConnectButton} network="ed2k" />
-      </form>
-      <form class="toolbar admin-only" onSubmit=${updateFromUrl}>
-        <input class="input input-sm input-url" placeholder="http(s)://…/server.met"
-               value=${url} onInput=${(e) => setUrl(e.target.value)} />
-        <button class="btn btn-sm" type="submit">${t("networks_server_update_from_url")}</button>
-        <div class="spacer"></div>
         <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
       </form>
     </div>

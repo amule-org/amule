@@ -17,6 +17,7 @@
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder, toast, Tabs } from "../components.js";
+import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 
 // Field types: text (default), int, bool, select, password, textarea, trigger.
@@ -24,7 +25,9 @@ import { t, terr } from "../i18n.js";
 // only to gate others), gatedBy (disabled + skipped when values[cap] === false),
 // password (write-only, only sent when non-empty), trigger (write-only action,
 // only sent when checked), scale (int shown/edited in value/scale units, e.g.
-// ms stored but minutes shown), cat (override the tab's API category).
+// ms stored but minutes shown), cat (override the tab's API category),
+// action (text field: an icon button that POSTs the typed value to an endpoint,
+// see runAction — the endpoint persists the URL itself, so no Apply needed).
 const PROXY_TYPES = [
   { value: "socks5", labelKey: "prefs_opt_proxy_socks5" },
   { value: "socks4", labelKey: "prefs_opt_proxy_socks4" },
@@ -107,7 +110,10 @@ const TABS = [
       { key: "auto_update", type: "bool" },
       { key: "update_list_from_server", type: "bool" },
       { key: "update_list_from_client", type: "bool" },
-      { key: "update_url", type: "text" },
+      { key: "update_url", type: "text",
+        action: { path: "servers/update", body: "servers_url",
+                  titleKey: "prefs_action_servers_update",
+                  toastKey: "prefs_action_servers_update_toast" } },
     ] },
     { legendKey: "prefs_group_server_conn", fields: [
       { key: "use_priority_system", type: "bool" },
@@ -117,7 +123,10 @@ const TABS = [
       { key: "manual_servers_high_priority", type: "bool" },
     ] },
     { legendKey: "prefs_group_kademlia", fields: [
-      { key: "update_url", type: "text", cat: "kademlia" },
+      { key: "update_url", type: "text", cat: "kademlia",
+        action: { path: "kad/update", body: "nodes_url",
+                  titleKey: "prefs_action_kad_update",
+                  toastKey: "prefs_action_kad_update_toast" } },
     ] },
   ] },
   { id: "files", labelKey: "prefs_files", cat: "files", groups: [
@@ -451,15 +460,33 @@ export default function Preferences({ isGuest }) {
                     value=${val == null ? "" : val} onInput=${(e) => setVal(id, e.target.value)}></textarea>
         </div>`;
     }
+    const input = html`
+      <input class="input" id=${id} disabled=${disabled}
+             type=${f.type === "int" ? "number" : f.type === "password" ? "password" : "text"}
+             autocomplete=${f.type === "password" ? "new-password" : null}
+             min=${f.min} max=${f.max}
+             value=${val === undefined || val === null ? "" : val} onInput=${(e) => setVal(id, e.target.value)} />`;
     return html`
       <div class=${"field" + subCls}>
         <label for=${id}>${label}</label>
-        <input class="input" id=${id} disabled=${disabled}
-               type=${f.type === "int" ? "number" : f.type === "password" ? "password" : "text"}
-               autocomplete=${f.type === "password" ? "new-password" : null}
-               min=${f.min} max=${f.max}
-               value=${val === undefined || val === null ? "" : val} onInput=${(e) => setVal(id, e.target.value)} />
+        ${f.action && !disabled ? html`
+          <div class="field-action">
+            ${input}
+            <button class="btn btn-icon btn-primary" type="button" title=${t(f.action.titleKey)}
+                    onClick=${() => runAction(f.action, values[id])}>
+              <${Icon} name="downloads" />
+            </button>
+          </div>` : input}
       </div>`;
+  };
+
+  // The endpoint takes the URL directly and persists it itself, so this fires
+  // the download with whatever is typed -- no Apply first, no PATCH here.
+  const runAction = async (a, val) => {
+    const url = String(val == null ? "" : val).trim();
+    if (!url) { toast(t("prefs_action_enter_url"), "warn"); return; }
+    try { await api.post(a.path, { [a.body]: url }); toast(t(a.toastKey), "success"); }
+    catch (err) { toast(terr(err) || t("prefs_error"), "error"); }
   };
 
   const collect = () => {

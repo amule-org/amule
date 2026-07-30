@@ -211,8 +211,6 @@ b { font-weight: 600; }
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .server-toolbars { --srv-field: 190px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .server-toolbars .input-sm { width: var(--srv-field); max-width: 100%; }
-/* URL input spans the two add-server inputs combined (2 fields + the .toolbar gap). */
-.server-toolbars .input-url { width: calc(var(--srv-field) * 2 + 6px); max-width: 100%; }
 
 /* --- buttons + inputs --- */
 .btn {
@@ -531,8 +529,10 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 .legend-chip { display: inline-block; width: 16px; height: 10px; border-radius: 2px; }
 /* Borderless chart (used inside the Networks/Kad pane, which already has its
    own surface + border). Sits below the controls with some breathing room. */
-.chart-bare { padding: 0; margin-top: 18px; }
-.chart-bare h3 { margin: 0 0 10px; font-size: 14px; font-weight: 500; color: var(--text-dim); }
+.chart-bare { padding: 0; margin-top: 10px; }
+/* Compact title: the pane is short, so the plot gets the height the desktop
+   GUI spends on a group box caption. */
+.chart-bare h3 { margin: 0 0 2px; font-size: 13px; font-weight: 500; color: var(--text-dim); }
 .chart-host { width: 100%; }
 .stats-tree { font-size: 13px; }
 .stats-tree details { margin: 2px 0; padding-left: 12px; border-left: 1px solid var(--border); }
@@ -564,6 +564,9 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
 /* Seam: this panel shares a fieldset with real preferences but has its own
    button, so it must not read as fields the global Apply saves. */
 .prefs-creds { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+/* Text field with a trailing action button (update-from-URL). */
+.field-action { display: flex; align-items: center; gap: 6px; }
+.field-action .input { flex: 1; min-width: 0; }
 /* Sub-options: indented under their parent (two nesting levels). */
 .prefs-panel .field-sub { margin-left: 24px; }
 .prefs-panel .field-sub2 { margin-left: 48px; }
