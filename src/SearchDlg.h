@@ -255,6 +255,13 @@ private:
 	// control now in place. A no-op when the right type is already there.
 	wxTextEntry *RebuildSearchNameField(bool wantHistory);
 
+	// Whether the combo currently in the Name slot has had the context-menu
+	// handler attached. The handler is bound per instance, and the combo built
+	// by muuli_wdr is one this class never created, so binding cannot be left
+	// to the creation path alone -- that is what made the "Clear search
+	// history" item missing until the preference was toggled.
+	bool m_searchNameCtxBound = false;
+
 	// Clear-history button, inserted next to the search-type choice at
 	// construction. Held rather than looked up by id so show/hide stays
 	// cheap and cannot silently miss.

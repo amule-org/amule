@@ -201,6 +201,17 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 	// and its history exist at all.
 	const bool haveCombo = (dynamic_cast<wxComboBox *>(current) != nullptr);
 	if (haveCombo == wantHistory) {
+		// Right control already in place, so nothing to rebuild -- but it may
+		// still need the context menu. At construction the combo here is the
+		// one muuli_wdr built, which this class never created and therefore
+		// never bound; leaving the binding to the creation path below meant
+		// the "Clear search history" item was missing until the preference
+		// was toggled off and on, since only then was a combo created here.
+		if (wantHistory && !m_searchNameCtxBound) {
+			dynamic_cast<wxComboBox *>(current)->Bind(
+				wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
+			m_searchNameCtxBound = true;
+		}
 		return dynamic_cast<wxTextEntry *>(current);
 	}
 
@@ -227,10 +238,13 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 		// needs it re-attached -- unlike the id-keyed event-table entries
 		// (EVT_TEXT_ENTER / wxEVT_TEXT), which survive the swap by themselves.
 		combo->Bind(wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
+		m_searchNameCtxBound = true;
 		replacement = combo;
 	} else {
 		// wxTE_PROCESS_ENTER kept so Enter still starts the search through the
-		// existing EVT_TEXT_ENTER(IDC_SEARCHNAME) entry.
+		// existing EVT_TEXT_ENTER(IDC_SEARCHNAME) entry. A plain text control
+		// carries no history menu, so the binding is gone with the old combo.
+		m_searchNameCtxBound = false;
 		replacement = new wxTextCtrl(this,
 			IDC_SEARCHNAME,
 			wxEmptyString,
