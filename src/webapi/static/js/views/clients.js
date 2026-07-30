@@ -24,7 +24,7 @@ const TAB_SORT = { all: "downloaded", downloads: "downloaded", uploads: "uploade
 export default function ClientsPanel() {
   const clients = useClients();
   const [filter, setFilter] = useState("all"); // direction tab: all / downloads / uploads
-  const [ident, setIdent] = useState("identified");
+  const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
 
   const nDown = clients.filter(isDown).length;
@@ -33,8 +33,7 @@ export default function ClientsPanel() {
   let list = clients.slice();
   if (filter === "downloads") list = list.filter(isDown);
   else if (filter === "uploads") list = list.filter(isUp);
-  if (ident === "identified") list = list.filter((c) => c.ident_state === "identified");
-  else if (ident === "not_identified") list = list.filter((c) => c.ident_state !== "identified");
+  if (ident !== "all") list = list.filter((c) => c.ident_state === ident);
   if (q) { const match = textMatcher(q); list = list.filter((c) => match((c.client_name || "") + " " + fileNameOf(c))); }
 
   const tabs = [

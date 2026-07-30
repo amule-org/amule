@@ -346,12 +346,12 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "ip":                     "203.0.113.42",
   "country_code":           "de",
   "port":                   4662,
-  "software":               "eMule",
+  "software":               "emule",
   "software_version":       "0.50a",
   "os_info":                "Linux",
   "upload_state":           "uploading",
   "download_state":         "idle",
-  "ident_state":            "verified",
+  "ident_state":            "identified",
   "upload_file_hash":       "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
   "download_file_hash":     "",
   "download_file_name":     "",
@@ -367,7 +367,7 @@ Identical to the REST [`/api/v0/clients`](REFERENCE.md#get-apiv0clients) list-it
   "queue_waiting_position": 0,
   "remote_queue_rank":      0,
   "score":                  150,
-  "obfuscation_status":     "obfuscated",
+  "obfuscation_status":     "enabled",
   "friend_slot":            false
 }
 ```

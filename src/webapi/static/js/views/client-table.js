@@ -52,6 +52,8 @@ export const COLS = [
   { key: "user_hash", th: "downloads_peer_col_user_hash", width: "150px", sortable: true,
     sortVal: (c) => c.user_hash || "",
     cell: (c) => html`<span title=${c.user_hash}>${c.user_hash || "—"}</span>` },
+  { key: "ident", th: "downloads_peer_col_ident", width: "130px", sortable: true,
+    sortVal: (c) => identLabel(c.ident_state).toLowerCase(), cell: (c) => identBadge(c.ident_state) },
   { key: "software", th: "downloads_peer_col_software", width: "140px", sortable: true,
     sortVal: (c) => softLabel(c).toLowerCase(), cell: (c) => softLabel(c) },
   // The peer's own self-reported OS string -- frequently empty.
@@ -88,9 +90,12 @@ export const COLS = [
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set
 // on top of these.
-export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash"];
+export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident"];
 
-export const IDENT_FILTERS = ["all", "identified", "not_identified"].map((v) => [v, t("downloads_peer_ident_" + v)]);
+// 1:1 with ClientIdentStateName() in src/webapi/Refresher.cpp.
+export const IDENT_STATES = ["identified", "not_available", "id_needed", "id_failed", "bad_guy", "unknown"];
+export const identLabel = (s) => t("downloads_peer_ident_" + (s || "unknown"));
+export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("downloads_peer_ident_" + v)]);
 
 // Live `clients` collection (GET /clients seed + SSE client_added/updated/
 // removed). register/ensure are idempotent, so every consumer can just call
@@ -108,15 +113,21 @@ export function useClients() {
 // icon carries an explanatory tooltip; only meaningful states show an icon.
 export function peerFlags(c) {
   const flags = [];
-  if (c.ident_state === "identified")
-    flags.push(["verified", t("downloads_peer_ident") + ": " + t("downloads_peer_identified")]);
-  else if (c.ident_state === "bad_guy")
-    flags.push(["warning", t("downloads_peer_ident") + ": " + t("downloads_peer_bad_guy")]);
+  const identTip = () => t("downloads_peer_ident") + ": " + identLabel(c.ident_state);
+  // bad_guy / id_failed both mean "this peer's identity is wrong"; the other
+  // states are just an absence of SecIdent and earn no icon.
+  if (c.ident_state === "identified") flags.push(["verified", identTip()]);
+  else if (c.ident_state === "bad_guy" || c.ident_state === "id_failed") flags.push(["warning", identTip()]);
   if (c.obfuscation_status === "enabled")
     flags.push(["lock", t("downloads_peer_obfuscation") + ": " + t("downloads_peer_enabled")]);
   if (c.friend_slot)
     flags.push(["star", t("downloads_peer_friend")]);
   return flags.map(([name, tip]) => html`<${Icon} name=${name} size=${18} title=${tip} />`);
+}
+
+const IDENT_KIND = { identified: "downloading", id_failed: "stopped", bad_guy: "stopped", id_needed: "waiting" };
+export function identBadge(s) {
+  return html`<${Badge} kind=${IDENT_KIND[s] || "paused"}>${identLabel(s)}<//>`;
 }
 
 export function stateBadge(s) {
@@ -170,8 +181,7 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort }) {
   const [q, setQ] = useState("");
 
   let rows = clients.filter((c) => c.download_file_hash === hash || c.upload_file_hash === hash);
-  if (ident === "identified") rows = rows.filter((c) => c.ident_state === "identified");
-  else if (ident === "not_identified") rows = rows.filter((c) => c.ident_state !== "identified");
+  if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
   if (q) { const match = textMatcher(q); rows = rows.filter((c) => match((c.client_name || "") + " " + fileNameOf(c))); }
 
   return html`

@@ -280,7 +280,8 @@ struct ClientSnapshot
 	// into wire strings so consumers don't reach into amule's enums.
 	std::string upload_state;   // "uploading" | "queued" | "banned" | "connecting" | "idle" | ...
 	std::string download_state; // "downloading" | "onqueue" | "noneededparts" | ... | "idle"
-	std::string ident_state;    // "unknown" | "identified" | "bad_guy" | ...
+	// Complete set, see ClientIdentStateName() in Refresher.cpp:
+	std::string ident_state;    // "not_available" | "id_needed" | "identified" | "id_failed" | "bad_guy" | "unknown"
 
 	// File context — different per direction. Both correlators are
 	// 32-char lowercase MD4 hashes resolved by the refresher from
@@ -322,7 +323,8 @@ struct ClientSnapshot
 	std::uint16_t remote_queue_rank = 0;
 
 	std::uint32_t score = 0;        // EC_TAG_CLIENT_SCORE
-	std::string obfuscation_status; // "none" | "supported" | "required"
+	// Complete set, see ClientObfuscationName() in Refresher.cpp:
+	std::string obfuscation_status; // "undefined" | "enabled" | "supported" | "not_supported" | "disabled" | "unknown"
 	bool friend_slot = false;
 
 	// --- Detail-only fields (issue #422) -----------------------------

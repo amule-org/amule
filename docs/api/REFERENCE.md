@@ -985,12 +985,12 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "ip": "203.0.113.42",
       "country_code": "de",
       "port": 4662,
-      "software": "eMule",
+      "software": "emule",
       "software_version": "0.50a",
       "os_info": "Linux",
       "upload_state": "uploading",
       "download_state": "idle",
-      "ident_state": "verified",
+      "ident_state": "identified",
       "download_file_name": "",
       "upload_file_name": "example-distribution.iso",
       "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
@@ -1001,7 +1001,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "queue_waiting_position": 0,
       "remote_queue_rank": 0,
       "score": 150,
-      "obfuscation_status": "obfuscated",
+      "obfuscation_status": "enabled",
       "friend_slot": false
     }
   ]
@@ -1012,7 +1012,22 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 `upload_file_hash` / `download_file_hash` are the 32-char MD4 hex hashes of the partfile or shared file the peer is currently transferring with — directly resolvable against [`/api/v0/downloads/{hash}`](#get-apiv0downloadshash) (in-progress) or the corresponding entry in [`/api/v0/shared`](#get-apiv0shared) by `.hash`. Either field can be empty when the peer is queued / idle in that direction. `download_file_name` is the filename the peer advertised in `OP_REQFILENAMEANSWER` and is populated only while we're actively downloading from them. `upload_file_name` is the partfile the peer is downloading **from us**, resolved locally against our own partfile list — present only while we're uploading to them.
 
-`software` and `software_version` are locale-independent, per the API's English-only contract. A peer the daemon could not identify reports `"software": "unknown"` and `"software_version": "unknown"` — a lowercase sentinel, never a daemon-localized string (the daemon's own version formatting is gettext-translated and is deliberately not surfaced here). `os_info` is the peer's *own* self-reported OS string (raw external data, not normalized by amuled) and is frequently empty, since most clients don't send it.
+`software` and `software_version` are locale-independent, per the API's English-only contract. `software` is one of the tokens in the enumerated-fields table below; `software_version` is a free-form string. A peer the daemon could not identify reports `"software": "unknown"` and `"software_version": "unknown"` — a lowercase sentinel, never a daemon-localized string (the daemon's own version formatting is gettext-translated and is deliberately not surfaced here). `os_info` is the peer's *own* self-reported OS string (raw external data, not normalized by amuled) and is frequently empty, since most clients don't send it.
+
+`ident_state` is the peer's secure-identification (SecIdent) state, one of `"not_available"` (the peer does not support SecIdent, or this build has no crypto), `"id_needed"` (its public key is known but the signature exchange has not completed), `"identified"` (verified), `"id_failed"` (signature verification failed), `"bad_guy"` (verified earlier, but currently connecting from a *different* IP than the one it was verified on) or `"unknown"` (state not yet reported for a newly seen peer). `"bad_guy"` is also briefly reported for a legitimate peer that reconnected after an IP change and has not re-identified yet, so treat it as a hint rather than a verdict.
+
+**Enumerated string fields.** Every peer field below carries one of a fixed set of lowercase, locale-independent tokens — the daemon decodes amuled's internal enums server-side so consumers never need the lookup tables. The complete sets:
+
+| Field | Values |
+|---|---|
+| `upload_state` | `uploading`, `queued`, `waitcallback`, `connecting`, `pending`, `lowtolowip`, `banned`, `error`, `idle`, `unknown` |
+| `download_state` | `downloading`, `onqueue`, `connected`, `connecting`, `waitcallback`, `waitcallbackkad`, `reqhashset`, `noneededparts`, `toomanyconns`, `toomanyconnskad`, `lowtolowip`, `banned`, `error`, `idle`, `remotequeuefull`, `unknown` |
+| `ident_state` | `not_available`, `id_needed`, `identified`, `id_failed`, `bad_guy`, `unknown` |
+| `obfuscation_status` | `undefined`, `enabled`, `supported`, `not_supported`, `disabled`, `unknown` |
+| `software` | `emule`, `cdonkey`, `lxmule`, `amule`, `shareaza`, `emule_plus`, `hydranode`, `mldonkey`, `lphant`, `edonkey_hybrid`, `edonkey`, `old_emule`, `compat`, `unknown` |
+| `source_origin` (detail only) | `server`, `kad`, `source_exchange`, `passive`, `link`, `source_seeds`, `search_result`, `unknown` |
+
+Every one of them falls back to `"unknown"` for a code the daemon does not map, so a client can treat `"unknown"` as its default branch and never has to handle an absent or unexpected token. Note the two distinct sentinels on `obfuscation_status`: `"undefined"` is *the peer has not told us yet*, `"unknown"` is *the daemon received a code it does not recognise*. The authoritative mappings are the `Client*Name()` / `SourceOriginName()` functions in `src/webapi/Refresher.cpp`.
 
 `country_code` is the peer's ISO 3166-1 alpha-2 country code (lowercase, e.g. `"de"`), resolved server-side from the peer IP by the daemon's GeoIP database. It is an empty string when GeoIP is disabled or unsupported by the build, or when the IP does not resolve — render the flag and localized country name client-side from the code. The flag image is served by [`GET /flags/{code}.png`](#get-flagscodepng); the localized name has no endpoint because the browser already has it (`Intl.DisplayNames` with `{ type: "region" }`).
 
@@ -1041,12 +1056,12 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "ip": "203.0.113.42",
   "country_code": "de",
   "port": 4662,
-  "software": "eMule",
+  "software": "emule",
   "software_version": "0.50a",
   "os_info": "Linux",
   "upload_state": "uploading",
   "download_state": "idle",
-  "ident_state": "verified",
+  "ident_state": "identified",
   "download_file_name": "",
   "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
   "download_file_hash": "",
@@ -1056,7 +1071,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "queue_waiting_position": 0,
   "remote_queue_rank": 0,
   "score": 150,
-  "obfuscation_status": "obfuscated",
+  "obfuscation_status": "enabled",
   "friend_slot": false,
   "user_id_hybrid": 3232238090,
   "high_id": true,
@@ -1075,7 +1090,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `0x1000000`) and `false` for LowID. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered — `"server"` / `"kad"` / `"source_exchange"` / `"passive"` / `"link"` / `"source_seeds"` / `"search_result"`. (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file; `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
+The detail fields mirror the desktop "Client Details" modal. `user_id_hybrid` is the peer's hybrid eD2k id; `high_id` is `true` for a HighID peer (id ≥ `0x1000000`) and `false` for LowID. `server_ip` / `server_port` / `server_name` describe the eD2k server the peer connects through (`server_ip` is `""` when unknown). `kad_port` is non-zero when the peer is reachable on Kad. `source_origin` is how the peer was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv0clients)). (`upload_file_name` is part of the base field set — see [`GET /clients`](#get-apiv0clients) above.) `available_parts` is the count of parts the peer holds of the linked file; `mod_version` is the peer's client-mod string (often `""`); `view_shared_disabled` is `true` when the peer forbids browsing its shared files. `is_friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`) — **distinct** from `friend_slot`, which is a *reserved upload slot* granted to a peer and can be set for non-friends. `dl_up_modifier` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the peer's completeness of the file we are downloading **from** them (`available_parts` over that file's part count) and is **omitted** when there is no linked download or the part count is unknown.
 
 > `is_friend` and `dl_up_modifier` ride two EC tags added for this endpoint. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully — `is_friend` reads `false` and `dl_up_modifier` reads `0`.
 
