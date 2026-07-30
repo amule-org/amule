@@ -364,6 +364,21 @@ target_link_libraries (JwtTest
 	mulecommon
 )
 
+add_executable (ECCryptTest
+	ECCryptTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/ec/cpp/ECCrypt.cpp
+)
+add_test (NAME ECCryptTest COMMAND ECCryptTest)
+target_include_directories (ECCryptTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (ECCryptTest
+	muleunit
+	CRYPTOPP::CRYPTOPP
+)
+
 add_executable (JsonWriterTest
 	JsonWriterTest.cpp
 )
