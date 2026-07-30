@@ -1178,14 +1178,14 @@ const CECPacket *CECSocket::ReadPacket()
 			// error or someone trying their luck.
 			AddDebugLogLineN(logEC, "ReadPacket: encrypted packet before key setup");
 			CloseAndDispatchLost();
-			return 0;
+			return nullptr;
 		}
 		if (!OpenReceivedBody()) {
 			// A failed tag is the tamper signal, and it is not recoverable:
 			// the stream is no longer trustworthy.
 			AddDebugLogLineN(logEC, "ReadPacket: authentication failed, dropping connection");
 			CloseAndDispatchLost();
-			return 0;
+			return nullptr;
 		}
 	}
 

@@ -398,7 +398,7 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 	}
 	const CECTag *cipherTag = reply->GetTagByName(EC_TAG_AEAD_CIPHER);
 	const CECTag *serverNonceTag = reply->GetTagByName(EC_TAG_AEAD_SERVER_NONCE);
-	if (cipherTag == NULL || serverNonceTag == NULL) {
+	if (cipherTag == nullptr || serverNonceTag == nullptr) {
 		// An old daemon, or one with encryption switched off. Nothing to do:
 		// the session stays in clear.
 		return;

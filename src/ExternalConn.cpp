@@ -393,7 +393,7 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 
 	const CECTag *offer = request->GetTagByName(EC_TAG_CAN_AEAD);
 	const CECTag *clientNonceTag = request->GetTagByName(EC_TAG_AEAD_CLIENT_NONCE);
-	if (offer == NULL || clientNonceTag == NULL) {
+	if (offer == nullptr || clientNonceTag == nullptr) {
 		// A client that predates this, or one told not to offer it.
 		return;
 	}
