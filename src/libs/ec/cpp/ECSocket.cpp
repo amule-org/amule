@@ -226,6 +226,12 @@ size_t CQueuedData::ReadFromSocketAll(CECSocket *sock, size_t len)
 	return len - read_rem;
 }
 
+void CQueuedData::TruncateBy(size_t len)
+{
+	const size_t have = GetDataLength();
+	m_wr_ptr = &m_data[0] + (len >= have ? 0 : have - len);
+}
+
 size_t CQueuedData::GetLength() const
 {
 	return m_data.size();
@@ -263,6 +269,9 @@ CECSocket::CECSocket(bool use_events)
 , m_curr_tx_data(new CQueuedData(EC_SOCKET_BUFFER_SIZE))
 , m_rx_flags(0)
 , m_tx_flags(0)
+, m_crypt_ready(false)
+, m_crypt_enabled(false)
+, m_crypt_enable_after_write(false)
 ,
 // setup initial state: 4 flags + 4 length
 m_bytes_needed(EC_HEADER_SIZE)
@@ -302,6 +311,12 @@ void CECSocket::ResetProtocolState()
 	m_curr_tx_data.reset(new CQueuedData(EC_SOCKET_BUFFER_SIZE));
 	m_rx_flags = 0;
 	m_tx_flags = 0;
+	// A reused socket object must not carry key material from the dead
+	// connection: the next handshake derives fresh keys and fresh counters.
+	m_crypt.Reset();
+	m_crypt_ready = false;
+	m_crypt_enabled = false;
+	m_crypt_enable_after_write = false;
 	m_bytes_needed = EC_HEADER_SIZE;
 	m_in_header = true;
 	m_curr_packet_len = 0;
@@ -315,10 +330,64 @@ bool CECSocket::ConnectSocket(uint32_t ip, uint16_t port)
 	return !SocketError() && res;
 }
 
+bool CECSocket::SealOutputQueue(std::list<CQueuedData *>::iterator outputStart)
+{
+	if (!m_crypt.SealBegin()) {
+		return false;
+	}
+	bool first = true;
+	for (std::list<CQueuedData *>::iterator it = outputStart; it != m_output_queue.end(); ++it) {
+		unsigned char *data = (*it)->GetDataPtr();
+		size_t len = (*it)->GetDataLength();
+		if (first) {
+			// The first chunk starts with the 8-byte header, which stays in
+			// clear -- the receiver needs the flags and length to know a
+			// sealed body is coming and how much of it to read.
+			if (len < EC_HEADER_SIZE) {
+				return false;
+			}
+			data += EC_HEADER_SIZE;
+			len -= EC_HEADER_SIZE;
+			first = false;
+		}
+		if (!m_crypt.SealUpdate(data, len)) {
+			return false;
+		}
+	}
+	unsigned char tag[ECCrypt::AEAD_TAG_LEN];
+	if (!m_crypt.SealFinal(tag)) {
+		return false;
+	}
+	CQueuedData *tagChunk = new CQueuedData(ECCrypt::AEAD_TAG_LEN);
+	tagChunk->Write(tag, sizeof(tag));
+	m_output_queue.push_back(tagChunk);
+	return true;
+}
+
+bool CECSocket::SetupAEAD(uint8_t cipher,
+	const std::vector<uint8_t> &ikm,
+	const std::vector<uint8_t> &serverNonce,
+	const std::vector<uint8_t> &clientNonce,
+	const std::vector<uint8_t> &transcript,
+	bool isServer)
+{
+	m_crypt_ready = m_crypt.Init(cipher, ikm, serverNonce, clientNonce, transcript, isServer);
+	if (!m_crypt_ready) {
+		AddDebugLogLineN(logEC, "SetupAEAD: key derivation failed");
+	}
+	return m_crypt_ready;
+}
+
 void CECSocket::SendPacket(const CECPacket *packet)
 {
 	uint32 len = WritePacket(packet);
 	packet->DebugPrint(false, len);
+	// Arm after the write, never before: the packet that completes the
+	// handshake is the last one that must go out in clear.
+	if (m_crypt_enable_after_write) {
+		m_crypt_enable_after_write = false;
+		m_crypt_enabled = m_crypt_ready;
+	}
 	OnOutput();
 }
 
@@ -867,6 +936,12 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 	flags |= EC_FLAG_LARGE_TAG_COUNT;
 
 	flags &= m_my_flags;
+	// After the mask, not before: EC_FLAG_ENCRYPTED is a property of this
+	// connection's state rather than a capability the peer advertised, and
+	// m_my_flags would strip it.
+	if (m_crypt_enabled) {
+		flags |= EC_FLAG_ENCRYPTED;
+	}
 	m_tx_flags = flags;
 
 	if (flags & EC_FLAG_ZLIB) {
@@ -901,6 +976,19 @@ uint32 CECSocket::WritePacket(const CECPacket *packet)
 	} else {
 		outputStart = m_output_queue.begin();
 	}
+
+	// Seal the body where it lies, then append the tag as its own chunk. This
+	// runs after FlushBuffers (so ZLIB has already produced its bytes: the
+	// order is serialise -> deflate -> seal) and before the length is summed
+	// below, so the patched length covers ciphertext plus tag.
+	if (flags & EC_FLAG_ENCRYPTED) {
+		if (!SealOutputQueue(outputStart)) {
+			AddDebugLogLineN(logEC, "WritePacket: sealing failed");
+			CloseAndDispatchLost();
+			return 0;
+		}
+	}
+
 	// now calculate actual size of data
 	for (std::list<CQueuedData *>::iterator it = outputStart; it != m_output_queue.end(); ++it) {
 		packet_len += (uint32_t)(*it)->GetDataLength();
@@ -960,6 +1048,12 @@ void CECSocket::SendCachedBodyResponse(
 	flags |= EC_FLAG_UTF8_NUMBERS;
 	flags |= EC_FLAG_LARGE_TAG_COUNT;
 	flags &= m_my_flags;
+	// After the mask, not before: EC_FLAG_ENCRYPTED is a property of this
+	// connection's state rather than a capability the peer advertised, and
+	// m_my_flags would strip it.
+	if (m_crypt_enabled) {
+		flags |= EC_FLAG_ENCRYPTED;
+	}
 	m_tx_flags = flags;
 
 	if (flags & EC_FLAG_ZLIB) {
@@ -1040,6 +1134,25 @@ void CECSocket::SendCachedBodyResponse(
 	OnOutput();
 }
 
+bool CECSocket::OpenReceivedBody()
+{
+	const size_t total = m_curr_rx_data->GetDataLength();
+	if (total < ECCrypt::AEAD_TAG_LEN) {
+		return false;
+	}
+	const size_t bodyLen = total - ECCrypt::AEAD_TAG_LEN;
+	unsigned char *data = m_curr_rx_data->GetDataPtr();
+	if (!m_crypt.OpenBegin() || !m_crypt.OpenUpdate(data, bodyLen) ||
+		!m_crypt.OpenFinal(data + bodyLen)) {
+		return false;
+	}
+	// Hide the tag from the parser: everything downstream expects the body to
+	// end where the plaintext ends.
+	m_curr_rx_data->TruncateBy(ECCrypt::AEAD_TAG_LEN);
+	m_curr_rx_data->Rewind();
+	return true;
+}
+
 const CECPacket *CECSocket::ReadPacket()
 {
 	CECPacket *packet = 0;
@@ -1052,6 +1165,23 @@ const CECPacket *CECSocket::ReadPacket()
 		cout << "ReadPacket: packet have invalid flags " << flags << '\n';
 		CloseAndDispatchLost();
 		return 0;
+	}
+
+	if (flags & EC_FLAG_ENCRYPTED) {
+		if (!m_crypt_ready) {
+			// A sealed packet before the keys exist is either a protocol
+			// error or someone trying their luck.
+			AddDebugLogLineN(logEC, "ReadPacket: encrypted packet before key setup");
+			CloseAndDispatchLost();
+			return 0;
+		}
+		if (!OpenReceivedBody()) {
+			// A failed tag is the tamper signal, and it is not recoverable:
+			// the stream is no longer trustworthy.
+			AddDebugLogLineN(logEC, "ReadPacket: authentication failed, dropping connection");
+			CloseAndDispatchLost();
+			return 0;
+		}
 	}
 
 	if (flags & EC_FLAG_ZLIB) {

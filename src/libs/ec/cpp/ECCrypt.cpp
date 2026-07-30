@@ -262,6 +262,20 @@ bool Session::Init(uint8_t cipher,
 	return true;
 }
 
+void Session::Reset()
+{
+	m_active = false;
+	m_cipher = Cipher_None;
+	m_txKey.clear();
+	m_rxKey.clear();
+	std::memset(m_txPrefix, 0, sizeof(m_txPrefix));
+	std::memset(m_rxPrefix, 0, sizeof(m_rxPrefix));
+	m_txCounter = 0;
+	m_rxCounter = 0;
+	m_stream->sealer.reset();
+	m_stream->opener.reset();
+}
+
 std::vector<uint8_t> Session::BuildNonce(const uint8_t *prefix, uint64_t counter) const
 {
 	std::vector<uint8_t> nonce(AEAD_NONCE_LEN, 0);

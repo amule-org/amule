@@ -34,6 +34,8 @@
 #include <zlib.h>           // Needed for packet (de)compression
 #include "../../../Types.h" // Needed for uint32_t
 
+#include "ECCrypt.h"
+
 #include <wx/defs.h>  // Needed for wx/debug.h
 #include <wx/debug.h> // Needed for wxASSERT
 
@@ -99,6 +101,21 @@ private:
 	uint32_t m_curr_packet_len;
 	z_stream m_z;
 
+	// --- transport encryption -------------------------------------------
+	//
+	// Keys are derived once the handshake has both nonces and the chosen
+	// cipher. `m_crypt_ready` says the keys exist; `m_crypt_enabled` says to
+	// actually seal outgoing packets. They are separate because the packet
+	// that completes the handshake must still go out in clear: the client
+	// sends EC_OP_AUTH_PASSWD unencrypted and only then switches on, which
+	// `m_crypt_enable_after_write` expresses. Incoming packets are decided
+	// per packet by EC_FLAG_ENCRYPTED, not by these, so a plaintext
+	// EC_OP_AUTH_FAIL still parses after we have armed.
+	ECCrypt::Session m_crypt;
+	bool m_crypt_ready;
+	bool m_crypt_enabled;
+	bool m_crypt_enable_after_write;
+
 protected:
 	uint32_t m_my_flags;
 	bool m_haveNotificationSupport;
@@ -133,6 +150,41 @@ public:
 	void ResetProtocolState();
 
 	void CloseSocket() { InternalClose(); }
+
+	/**
+	 * Derive the session keys for this connection.
+	 *
+	 * Does not start sealing on its own -- see EnableAEADAfterNextWrite() and
+	 * EnableAEADNow(). Incoming packets can be opened as soon as this
+	 * succeeds, which is what lets the two ends switch over one packet apart.
+	 *
+	 * @return false if the cipher is unsupported or the nonces are malformed.
+	 */
+	/// Seal the queued body chunks in place and append the tag chunk.
+	bool SealOutputQueue(std::list<CQueuedData *>::iterator outputStart);
+
+	/// Open the received body in place and drop the verified tag.
+	bool OpenReceivedBody();
+
+	bool SetupAEAD(uint8_t cipher,
+		const std::vector<uint8_t> &ikm,
+		const std::vector<uint8_t> &serverNonce,
+		const std::vector<uint8_t> &clientNonce,
+		const std::vector<uint8_t> &transcript,
+		bool isServer);
+
+	/// Seal everything after the packet currently being sent. The client uses
+	/// this so its EC_OP_AUTH_PASSWD leaves in clear but the reply is sealed.
+	void EnableAEADAfterNextWrite() { m_crypt_enable_after_write = m_crypt_ready; }
+
+	/// Seal from the next packet on. The daemon uses this once the password
+	/// checks out, so EC_OP_AUTH_OK is itself encrypted -- which proves to the
+	/// client that the peer holds the same password.
+	void EnableAEADNow() { m_crypt_enabled = m_crypt_ready; }
+
+	bool IsAEADReady() const { return m_crypt_ready; }
+	bool IsAEADEnabled() const { return m_crypt_enabled; }
+	uint8_t GetAEADCipher() const { return m_crypt.GetCipher(); }
 
 	// Locally-initiated abort: CloseSocket + OnLost. Use from the
 	// protocol-error paths in ReadHeader / ReadPacket where we close
@@ -351,6 +403,17 @@ public:
 	void Write(const void *data, size_t len);
 	void WriteAt(const void *data, size_t len, size_t off);
 	void Read(void *data, size_t len);
+
+	/*
+	 * Start of the buffered bytes, for transforms that rewrite the payload
+	 * where it lies instead of copying it out. Used by the AEAD path in
+	 * WritePacket / ReadPacket; flattening the queue into a scratch buffer
+	 * would double peak memory on the largest packets.
+	 */
+	unsigned char *GetDataPtr() { return &m_data[0]; }
+
+	/* Drop @a len bytes from the end (the AEAD tag, once verified). */
+	void TruncateBy(size_t len);
 
 	/*
 	 * Pass pointers to zlib. From now on, no Read() calls are allowed

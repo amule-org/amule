@@ -133,6 +133,11 @@ public:
 		bool isServer);
 
 	bool IsActive() const { return m_active; }
+
+	/// Forget all key material. Used when a socket object is reused for a
+	/// fresh connection (amulegui reconnect).
+	void Reset();
+
 	uint8_t GetCipher() const { return m_cipher; }
 
 	/// Seal @a len bytes into @a out (ciphertext followed by the tag).
