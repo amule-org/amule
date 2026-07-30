@@ -184,6 +184,13 @@ wxString CClientRef::GetSecureIdentTextStatus() const
 			ret = _("Bad Guy");
 		} else if (m_client->IsIdentified()) {
 			ret = _("Verified - OK");
+		} else {
+			// Unreachable while the five predicates cover every EIdentState,
+			// but the only caller assigns this straight into the Client
+			// Details label, so an unmatched state would blank the field
+			// instead of leaving its _("N/A") placeholder. Keep the chain
+			// total, and reuse that same placeholder text.
+			ret = _("N/A");
 		}
 	} else {
 		ret = _("Not Available");

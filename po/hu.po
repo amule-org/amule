@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 17:42+0200\n"
+"POT-Creation-Date: 2026-07-31 00:41+0200\n"
 "PO-Revision-Date: 2026-07-30 20:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1156,6 +1156,10 @@ msgstr "Rossz fiú"
 #: src/ClientRef.cpp
 msgid "Verified - OK"
 msgstr "Hitelesítés - OK"
+
+#: src/ClientRef.cpp src/muuli_wdr.cpp
+msgid "N/A"
+msgstr "N/A"
 
 #: src/ClientRef.cpp
 msgid "Not Available"
@@ -3327,10 +3331,6 @@ msgstr "Befejeződött letöltések törlése"
 #: src/muuli_wdr.cpp
 msgid "File sources:"
 msgstr "Fájl források:"
-
-#: src/muuli_wdr.cpp
-msgid "N/A"
-msgstr "N/A"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"

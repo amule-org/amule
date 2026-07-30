@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 17:42+0200\n"
+"POT-Creation-Date: 2026-07-31 00:41+0200\n"
 "PO-Revision-Date: 2026-07-30 20:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -1131,6 +1131,10 @@ msgstr "Sliktais čalis"
 
 #: src/ClientRef.cpp
 msgid "Verified - OK"
+msgstr ""
+
+#: src/ClientRef.cpp src/muuli_wdr.cpp
+msgid "N/A"
 msgstr ""
 
 #: src/ClientRef.cpp
@@ -3270,10 +3274,6 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File sources:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "N/A"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp

@@ -2667,29 +2667,40 @@ void CUpDownClient::UpdateStats()
 	}
 }
 
+// All five go through GetCurrentIdentState(), which is the one place that
+// decides what a missing credits object means (IS_NOTAVAILABLE). Testing
+// `credits &&` here instead made the boolean set unable to express that
+// state: with credits still NULL -- its value from construction until the
+// peer's user hash resolves -- every predicate answered false, including
+// SUINotSupported(), while the accessor on the same object was reporting
+// exactly IS_NOTAVAILABLE.
+//
+// Only SUINotSupported() changes behaviour. For the other four the guard
+// was redundant: a NULL credits yields IS_NOTAVAILABLE, which already
+// compares unequal to the state each of them asks about.
 bool CUpDownClient::IsIdentified() const
 {
-	return (credits && credits->GetCurrentIdentState(GetIP()) == IS_IDENTIFIED);
+	return GetCurrentIdentState() == IS_IDENTIFIED;
 }
 
 bool CUpDownClient::IsBadGuy() const
 {
-	return (credits && credits->GetCurrentIdentState(GetIP()) == IS_IDBADGUY);
+	return GetCurrentIdentState() == IS_IDBADGUY;
 }
 
 bool CUpDownClient::SUIFailed() const
 {
-	return (credits && credits->GetCurrentIdentState(GetIP()) == IS_IDFAILED);
+	return GetCurrentIdentState() == IS_IDFAILED;
 }
 
 bool CUpDownClient::SUINeeded() const
 {
-	return (credits && credits->GetCurrentIdentState(GetIP()) == IS_IDNEEDED);
+	return GetCurrentIdentState() == IS_IDNEEDED;
 }
 
 bool CUpDownClient::SUINotSupported() const
 {
-	return (credits && credits->GetCurrentIdentState(GetIP()) == IS_NOTAVAILABLE);
+	return GetCurrentIdentState() == IS_NOTAVAILABLE;
 }
 
 uint64 CUpDownClient::GetDownloadedTotal() const

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 17:42+0200\n"
+"POT-Creation-Date: 2026-07-31 00:41+0200\n"
 "PO-Revision-Date: 2026-07-30 19:57+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1159,6 +1159,10 @@ msgstr "Veceru sospechosu"
 #: src/ClientRef.cpp
 msgid "Verified - OK"
 msgstr "Verificáu - OK"
+
+#: src/ClientRef.cpp src/muuli_wdr.cpp
+msgid "N/A"
+msgstr "N/A"
 
 #: src/ClientRef.cpp
 msgid "Not Available"
@@ -3357,10 +3361,6 @@ msgstr "Llimpiar descargues completaes"
 #, fuzzy
 msgid "File sources:"
 msgstr "Fontes completes"
-
-#: src/muuli_wdr.cpp
-msgid "N/A"
-msgstr "N/A"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"

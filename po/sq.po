@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 17:42+0200\n"
+"POT-Creation-Date: 2026-07-31 00:41+0200\n"
 "PO-Revision-Date: 2026-07-30 20:19+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1163,6 +1163,10 @@ msgstr "Djale i keq"
 #: src/ClientRef.cpp
 msgid "Verified - OK"
 msgstr "E verifikuar - Ne rregull"
+
+#: src/ClientRef.cpp src/muuli_wdr.cpp
+msgid "N/A"
+msgstr "N/A"
 
 #: src/ClientRef.cpp
 msgid "Not Available"
@@ -3358,10 +3362,6 @@ msgstr "Pastro shkarkimet e perfunduara"
 #, fuzzy
 msgid "File sources:"
 msgstr "Burime te gjetura :"
-
-#: src/muuli_wdr.cpp
-msgid "N/A"
-msgstr "N/A"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"

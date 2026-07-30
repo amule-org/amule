@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 17:42+0200\n"
+"POT-Creation-Date: 2026-07-31 00:41+0200\n"
 "PO-Revision-Date: 2026-07-30 20:13+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1158,6 +1158,10 @@ msgstr "Slechterik"
 #: src/ClientRef.cpp
 msgid "Verified - OK"
 msgstr "Gecontroleerd - OK"
+
+#: src/ClientRef.cpp src/muuli_wdr.cpp
+msgid "N/A"
+msgstr "N/B"
 
 #: src/ClientRef.cpp
 msgid "Not Available"
@@ -3351,10 +3355,6 @@ msgstr "Verwijdert complete downloads"
 #: src/muuli_wdr.cpp
 msgid "File sources:"
 msgstr "Bestandsbronnen:"
-
-#: src/muuli_wdr.cpp
-msgid "N/A"
-msgstr "N/B"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"
