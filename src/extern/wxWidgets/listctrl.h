@@ -20,7 +20,7 @@
 #include <wx/imaglist.h>
 
 #if wxUSE_DRAG_AND_DROP
-class WXDLLEXPORT wxDropTarget;
+class wxDropTarget;
 #endif
 
 // Fix for bug in wx's implementation, which uses longs for item*
