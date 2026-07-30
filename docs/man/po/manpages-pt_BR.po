@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule man pages\n"
-"POT-Creation-Date: 2026-07-28 21:54+0200\n"
+"POT-Creation-Date: 2026-07-30 17:31+0200\n"
 "PO-Revision-Date: 2026-07-30 12:39+0000\n"
 "Last-Translator: \n"
 "Language-Team: Marcelo Roberto Jimenez <mroberto@users.sourceforge.net>\n"
@@ -446,6 +446,11 @@ msgstr "B<[ --create-config-from>=I<E<lt>caminhoE<gt>> B<]>"
 #: amulecmd.1.in amuleweb.1.in
 msgid "Create config file based upon I<E<lt>pathE<gt>>, which must point to a valid aMule config file, and then exit."
 msgstr "Criar arquivo de configuração baseado em I<E<lt>pathE<gt>>, que precisa apontar para um arquivo válido de configuração do aMule, e então sair."
+
+#. type: Plain text
+#: amulecmd.1.in amuleweb.1.in
+msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in

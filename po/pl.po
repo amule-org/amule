@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 12:03+0200\n"
+"POT-Creation-Date: 2026-07-30 17:26+0200\n"
 "PO-Revision-Date: 2026-07-30 12:26+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -2179,6 +2179,10 @@ msgstr "Tworzy plik konfiguracyjny oparty na pliku konfiguracyjnym aMule."
 #: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Drukuj wersję programu."
+
+#: src/ExternalConnector.cpp
+msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -4939,6 +4943,11 @@ msgstr "Nazwa użytkownika"
 #: src/muuli_wdr.cpp
 msgid "Remember those settings"
 msgstr "Zapamiętaj te ustawienia"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Encrypt the connection (recommended)"
+msgstr "Zewnętrzne połączenie zamknięte."
 
 #: src/muuli_wdr.cpp
 #, fuzzy

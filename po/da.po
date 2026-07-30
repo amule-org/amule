@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 12:03+0200\n"
+"POT-Creation-Date: 2026-07-30 17:26+0200\n"
 "PO-Revision-Date: 2026-07-30 12:10+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2129,6 +2129,10 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Print program version."
+msgstr ""
+
+#: src/ExternalConnector.cpp
+msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
 msgstr ""
 
 #: src/ExternalConnector.cpp
@@ -4869,6 +4873,10 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Remember those settings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Encrypt the connection (recommended)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
