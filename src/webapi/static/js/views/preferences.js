@@ -10,7 +10,9 @@
 // every field's real API category is `f.cat || tab.cat`, and that is what keys
 // the form state and the PATCH body. A category may itself be a dotted path
 // into a nested payload object ("remote_controls.webserver"); the form state
-// stays flat and only the GET read / PATCH build walk the path.
+// stays flat and only the GET read / PATCH build walk the path. A group's
+// `after` marker appends a panel that is not preferences at all (see
+// AmuleApiCredentials).
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
@@ -214,11 +216,10 @@ const TABS = [
   // The two subsystems are nested categories in the payload
   // (remote_controls.webserver / .amuleapi), so each group names its own cat.
   { id: "remote_controls", labelKey: "prefs_remote_controls", cat: "remote_controls", groups: [
-    { legendKey: "prefs_group_amuleapi", fields: [
+    { legendKey: "prefs_group_amuleapi", after: "amuleapi_credentials", fields: [
       { key: "enabled", type: "bool", cat: "remote_controls.amuleapi" },
       { key: "port", type: "int", min: 0, max: 65535, sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
       { key: "bind_address", type: "text", sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
-      { key: "password", type: "password", sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
     ] },
     { legendKey: "prefs_group_webserver", fields: [
       { key: "enabled", type: "bool", cat: "remote_controls.webserver" },
@@ -280,6 +281,99 @@ const pruneEmpty = (obj) => {
 };
 // Clamp to the field's [min, max] before sending; floor at 0 when no min is set.
 const clamp = (n, lo, hi) => Math.min(hi == null ? Infinity : hi, Math.max(lo == null ? 0 : lo, n));
+
+// amuleapi's own credentials. Not preferences -- they live in the
+// amuleapi-passwords file, so PATCH /preferences rejects them and
+// /auth/passwords owns them. It needs the current password and re-issues the
+// session, hence its own button instead of riding the bulk Apply.
+function AmuleApiCredentials({ isGuest }) {
+  const [known, setKnown] = useState(null); // GET /auth/passwords; null until loaded
+  const [current, setCurrent] = useState("");
+  const [admin, setAdmin] = useState("");
+  const [guestOn, setGuestOn] = useState(false);
+  const [guestPw, setGuestPw] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (isGuest) return; // admin-only endpoint
+    api.get("auth/passwords")
+      .then((s) => { setKnown(s); setGuestOn(!!s.guest_enabled); })
+      // Stay hidden rather than guess: sending guest_enabled without knowing
+      // the stored state would clear a password nobody can read back.
+      .catch(() => {});
+  }, [isGuest]);
+
+  if (isGuest || !known) return null;
+
+  const wasGuestOn = !!known.guest_enabled;
+  const settingGuestPw = guestOn && guestPw !== "";
+  // Ticked guest, nothing typed, nothing stored: "keep the current" has
+  // nothing to keep.
+  const guestNeedsPw = guestOn && !wasGuestOn && guestPw === "";
+  const changed = admin !== "" || settingGuestPw || guestOn !== wasGuestOn;
+  const canSubmit = !busy && current !== "" && changed && !guestNeedsPw;
+
+  const submit = async () => {
+    // An omitted field means "leave alone": a stored password cannot be read
+    // back to resend it.
+    const body = { current_password: current };
+    if (admin !== "") body.admin_password = admin;
+    if (guestOn !== wasGuestOn) body.guest_enabled = guestOn;
+    if (settingGuestPw) body.guest_password = guestPw;
+    setBusy(true);
+    try {
+      const res = await api.patch("auth/passwords", body);
+      setKnown(res);
+      setGuestOn(!!res.guest_enabled);
+      setCurrent(""); setAdmin(""); setGuestPw("");
+      toast(t("prefs_creds_saved"), "success");
+    } catch (err) {
+      // terr has no wording for this endpoint's 403; login already owns it.
+      toast(err.code === "invalid_credentials"
+        ? t("login_err_invalid_credentials")
+        : terr(err) || t("prefs_error"), "error");
+    } finally { setBusy(false); }
+  };
+
+  // Not a <form>: it renders inside the preferences one, so Enter would
+  // otherwise fire the bulk Apply.
+  const onKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (canSubmit) submit();
+  };
+
+  return html`
+    <div class="form-grid prefs-creds admin-only" onKeyDown=${onKeyDown}>
+      <div class="field">
+        <label for="creds_current">${t("prefs_creds_current")}</label>
+        <input class="input" id="creds_current" type="password" autocomplete="current-password"
+               value=${current} onInput=${(e) => setCurrent(e.target.value)} />
+      </div>
+      <div class="field">
+        <label for="creds_admin">${t("prefs_creds_admin")}</label>
+        <input class="input" id="creds_admin" type="password" autocomplete="new-password"
+               title=${t("prefs_creds_hint")}
+               value=${admin} onInput=${(e) => setAdmin(e.target.value)} />
+      </div>
+      <div class="field field-inline">
+        <input type="checkbox" id="creds_guest_enabled" checked=${guestOn}
+               onChange=${(e) => { setGuestOn(e.target.checked); if (!e.target.checked) setGuestPw(""); }} />
+        <label for="creds_guest_enabled" title=${t("prefs_creds_guest_hint")}>${t("prefs_creds_guest_enabled")}</label>
+      </div>
+      <div class="field field-sub">
+        <label for="creds_guest">${t("prefs_creds_guest")}</label>
+        <input class="input" id="creds_guest" type="password" autocomplete="new-password"
+               disabled=${!guestOn} title=${t("prefs_creds_hint")}
+               value=${guestPw} onInput=${(e) => setGuestPw(e.target.value)} />
+        ${guestNeedsPw ? html`<p class="hint">${t("prefs_creds_guest_needs_password")}</p>` : null}
+      </div>
+      <div class="toolbar">
+        <button class="btn btn-primary" type="button" disabled=${!canSubmit}
+                onClick=${submit}>${t("prefs_creds_apply")}</button>
+      </div>
+    </div>`;
+}
 
 export default function Preferences({ isGuest }) {
   const [loaded, setLoaded] = useState(false);
@@ -426,6 +520,8 @@ export default function Preferences({ isGuest }) {
             <fieldset>
               <legend>${t(grp.legendKey)}</legend>
               <div class="form-grid">${grp.fields.map((f) => buildField(catOf(tab, f), f))}</div>
+              ${grp.after === "amuleapi_credentials"
+                ? html`<${AmuleApiCredentials} isGuest=${isGuest} />` : null}
             </fieldset>`)}
         </div>
         ${isGuest

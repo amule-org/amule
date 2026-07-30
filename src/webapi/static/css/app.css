@@ -561,6 +561,9 @@ table.data.virtual td .name-cell .badge { flex-shrink: 0; }
    label). */
 .prefs-panel .field-inline input:disabled { opacity: 0.5; cursor: not-allowed; }
 .prefs-panel .field-inline input:disabled + label { color: var(--text-dim); cursor: not-allowed; }
+/* Seam: this panel shares a fieldset with real preferences but has its own
+   button, so it must not read as fields the global Apply saves. */
+.prefs-creds { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 /* Sub-options: indented under their parent (two nesting levels). */
 .prefs-panel .field-sub { margin-left: 24px; }
 .prefs-panel .field-sub2 { margin-left: 48px; }
