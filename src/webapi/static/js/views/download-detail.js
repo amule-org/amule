@@ -8,7 +8,7 @@
 import { api } from "../api.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel, PRIORITIES, prioValue, prioLabel } from "../components.js";
-import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent } from "../format.js";
+import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
 import { t, tn, terr } from "../i18n.js";
@@ -70,7 +70,6 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
   const d = detail;
   const src = d.sources || {};
   const media = d.media;
-  const fmtTs = (s) => s ? new Date(s * 1000).toLocaleString() : "—";
   const eta = (d.remaining_time == null || d.remaining_time < 0) ? "—" : formatDuration(d.remaining_time);
 
   const copy = (text) => copyText(text)
@@ -128,8 +127,8 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
         ], "downloads_detail_group_transfer")}
         ${Section([
           statRow("downloads_detail_active_time", formatDuration(d.download_active_time), "downloads_detail_tip_active_time"),
-          statRow("downloads_detail_last_changed", fmtTs(d.last_changed), "downloads_detail_tip_last_changed"),
-          statRow("downloads_detail_last_seen_complete", fmtTs(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
+          statRow("downloads_detail_last_changed", formatTimestamp(d.last_changed), "downloads_detail_tip_last_changed"),
+          statRow("downloads_detail_last_seen_complete", formatTimestamp(d.last_seen_complete), "downloads_detail_tip_last_seen_complete"),
           statRow("downloads_detail_queued", formatInt(d.queued_count), "downloads_detail_tip_queued"),
         ], "downloads_detail_group_history")}
         ${media ? Section([

@@ -9,7 +9,7 @@
 import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm } from "../components.js";
-import { formatBytes, formatInt, formatDuration, twin } from "../format.js";
+import { formatBytes, formatInt, formatDuration, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { FileClients, HIDDEN_EVERYWHERE } from "./client-table.js";
 import { t } from "../i18n.js";
 
@@ -95,6 +95,10 @@ export function SharedDetail({ hash }) {
         ${Section([
           statRow("shared_size", formatBytes(s.size), "shared_detail_tip_size"),
           statRow("shared_detail_uploaded", twin(s.xfer, "session", "total", formatBytes), "shared_detail_tip_uploaded"),
+          statRow("shared_detail_upload_speed", formatSpeed(s.upload_speed_bps), "shared_detail_tip_upload_speed"),
+          statRow("shared_detail_uploading", formatInt(s.uploading), "shared_detail_tip_uploading"),
+          statRow("shared_detail_last_upload", formatTimestamp(s.last_upload), "shared_detail_tip_last_upload"),
+          statRow("shared_detail_shared_since", formatTimestamp(s.shared_since), "shared_detail_tip_shared_since"),
           statRow("shared_detail_requested", twin(s.requests, "session", "total", formatInt), "shared_detail_tip_requested"),
           statRow("shared_detail_accepted", twin(s.accepts, "session", "total", formatInt), "shared_detail_tip_accepted"),
           statRow("shared_detail_share_ratio", (Number(s.share_ratio) || 0).toFixed(2), "shared_detail_tip_share_ratio"),

@@ -8,7 +8,7 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Placeholder, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatInt, twin } from "../format.js";
+import { formatBytes, formatInt, formatSpeed, formatTimestamp, twin } from "../format.js";
 import { t, tn, terr } from "../i18n.js";
 import { SharedDetail } from "./shared-detail.js";
 import { SplitDetail } from "./split-detail.js";
@@ -20,7 +20,7 @@ export default function Shared({ isGuest }) {
   const shared = useStore("shared") || [];
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
-    useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: [] });
+    useTablePrefs("shared", { sortKey: "name", sortDir: 1, hidden: ["last_upload", "shared_since"] });
   const [filterText, setFilterText] = useState("");
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
 
@@ -107,6 +107,14 @@ export default function Shared({ isGuest }) {
       cell: (s) => twin(s.accepts, "session", "total", formatInt) },
     { key: "sources", label: t("shared_complete_src"), num: true, width: "90px", sortable: true,
       sortVal: (s) => s.complete_sources || 0, cell: (s) => formatInt(s.complete_sources) },
+    { key: "upspeed", label: t("shared_upload_speed"), num: true, width: "100px", sortable: true,
+      sortVal: (s) => s.upload_speed_bps || 0, cell: (s) => formatSpeed(s.upload_speed_bps) },
+    { key: "uploading", label: t("shared_uploading"), num: true, width: "90px", sortable: true,
+      sortVal: (s) => s.uploading || 0, cell: (s) => formatInt(s.uploading) },
+    { key: "last_upload", label: t("shared_last_upload"), width: "160px", sortable: true,
+      sortVal: (s) => s.last_upload || 0, cell: (s) => formatTimestamp(s.last_upload) },
+    { key: "shared_since", label: t("shared_shared_since"), width: "160px", sortable: true,
+      sortVal: (s) => s.shared_since || 0, cell: (s) => formatTimestamp(s.shared_since) },
     { key: "priority", label: t("shared_priority"), width: "160px", sortable: true,
       sortVal: (s) => s.priority || "", cell: (s) => isGuest
         ? prioLabel(s)
@@ -122,11 +130,12 @@ export default function Shared({ isGuest }) {
   const rowClass = (s) =>
     (selection.has(s.hash) ? "row-selected " : "") + (s.hash === detailHash ? "row-active" : "");
 
-  let size = 0, xs = 0, xt = 0;
+  let size = 0, xs = 0, xt = 0, up = 0;
   for (const s of list) {
     size += s.size || 0;
     xs += (s.xfer && s.xfer.session) || 0;
     xt += (s.xfer && s.xfer.total) || 0;
+    up += s.upload_speed_bps || 0;
   }
 
   return html`
@@ -158,7 +167,7 @@ export default function Shared({ isGuest }) {
                          maxHeight="none"
                          empty=${html`<${Placeholder} kind="info">${t("shared_empty")}<//>`} />
         <div class="totals-line">
-          <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>
+          <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>${" · "}<span>${t("shared_upload_speed")} ${formatSpeed(up)}</span>
         </div>
     </section>`}>
         <${SharedDetail} hash=${detailHash} />

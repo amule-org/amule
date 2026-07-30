@@ -43,6 +43,9 @@ export function twin(o, a, b, fmt) {
   return fmt((o && o[a]) || 0) + " / " + fmt((o && o[b]) || 0);
 }
 
+// Unix seconds -> locale date+time; 0 means unknown.
+export const formatTimestamp = (s) => s ? new Date(s * 1000).toLocaleString() : "—";
+
 // Seconds -> human duration, mirroring CastSecondsToHM (src/OtherFunctions.cpp).
 export function formatDuration(s) {
   s = Math.floor(Number(s) || 0);
