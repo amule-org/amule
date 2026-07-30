@@ -137,6 +137,19 @@ void SearchFileBeingDestroyed(CSearchFile *file);
 // close, rather than two mechanisms for one idea.
 void Search_Removed(wxUIntPtr searchID);
 
+// Fired from CSearchList::StartNewSearch, once per search the core begins,
+// whoever asked for it. The mirror of Search_Removed: it lets the monolithic
+// GUI show a tab for a search started by an EC client (amulegui, amulecmd,
+// amuleapi), which until now it could not see at all -- amulegui and amuleapi
+// already discover each other's searches over EC_OP_SEARCH_LIST, so this is
+// the last direction left (amule-org/amule#703).
+//
+// The tab is created unselected: it appears on its own, so it must not pull
+// the selection away from whatever the local user is doing, possibly
+// mid-typing. `kind` is the CSearchList::SearchType of the new search, used
+// only to seed the Kad "!" marker the way a locally-started tab does.
+void Search_Added(wxUIntPtr searchID, wxString name, uint32 kind);
+
 void ServerAdd(CServer *server);
 void ServerRemove(CServer *server);
 void ServerRemoveDead();
@@ -534,6 +547,10 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 // A search's result bucket was freed — see MuleNotify::Search_Removed
 // doc-comment in this header.
 #define Notify_Search_Removed(id) MuleNotify::DoNotify(&MuleNotify::Search_Removed, id)
+
+// The core started a search — see MuleNotify::Search_Added doc-comment in
+// this header.
+#define Notify_Search_Added(id, name, kind) MuleNotify::DoNotify(&MuleNotify::Search_Added, id, name, kind)
 
 // server
 #define Notify_ServerAdd(ptr) MuleNotify::DoNotify(&MuleNotify::ServerAdd, ptr)

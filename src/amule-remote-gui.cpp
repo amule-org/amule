@@ -3285,8 +3285,14 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 				// in m_activeSearches is what lets that live path take over
 				// from here -- the "!" appears on the next progress poll if
 				// this is in fact a running Kad search, same as any other tab.
+				// Unselected: this tab appears on its own, driven by another
+				// client, so it must not pull the selection away from whatever
+				// the local user is looking at -- possibly mid-typing in the
+				// search box (got3nks, amule-org/amule#703).
 				theApp->amuledlg->m_searchwnd->CreateNewTab(
-					(nameTag ? nameTag->GetStringData() : wxString()) + " (0)", sid);
+					(nameTag ? nameTag->GetStringData() : wxString()) + " (0)",
+					sid,
+					false);
 				// Reachability fix (#641): without this, a discovered tab never
 				// gets polled for progress at all (Phase1Done only loops over
 				// m_activeSearches), so its hit count, progress bar and "!"

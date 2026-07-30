@@ -95,8 +95,14 @@ public:
 	 *
 	 * @param searchString This will be the heading of the new page.
 	 * @param nSearchID The results with this searchId will be displayed.
+	 * @param select Whether to bring the new tab to the front. True for a tab
+	 *   the local user just asked for (a search they started, a peer they
+	 *   chose to browse). False for one that appears on its own -- a search
+	 *   discovered from another client -- which must not steal the selection
+	 *   from whatever the user is currently looking at, possibly mid-typing
+	 *   (got3nks, amule-org/amule#703).
 	 */
-	void CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID);
+	void CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID, bool select = true);
 
 	/**
 	 * Call this function to signify that the local search is over.
@@ -152,6 +158,13 @@ public:
 	// browse -- the user never pressed Search, so it would wrongly disable
 	// Download/Stop for whichever search tab is visible.
 	void OnStartRejected(wxUIntPtr searchID, const wxString &error);
+
+	// The core started a search (MuleNotify::Search_Added). Creates a tab for
+	// it unless this GUI already has one, or unless it is the local user's own
+	// search still inside OnBnClickedStart -- that path creates its own tab,
+	// selected, right after StartNewSearch returns, and would otherwise end up
+	// with two (amule-org/amule#703).
+	void OnSearchAdded(wxUIntPtr searchID, const wxString &name, uint32 kind);
 
 	// This search's results are gone -- close its tab, since a tab left open
 	// on a freed search can only mislead (in amuleGUI "Download" would
@@ -312,6 +325,12 @@ private:
 	// last-tab button disabling), so that cleanup exists in exactly one
 	// place (got3nks, PR #680 review). 0 the rest of the time.
 	wxUIntPtr m_expiringSearchID;
+
+	// True while OnBnClickedStart is inside StartNewSearch. That call fires
+	// MuleNotify::Search_Added before it returns, and this dialog creates the
+	// tab for its own search only afterwards -- so without this the local
+	// user's every search would get two tabs (amule-org/amule#703).
+	bool m_startingLocalSearch;
 
 	// True while OnSearchClosing is on the stack. In the monolithic build
 	// that handler calls CSearchList::RemoveResults, which now fires

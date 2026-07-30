@@ -708,6 +708,18 @@ void Search_Removed(wxUIntPtr NOT_ON_DAEMON(searchID))
 #endif
 }
 
+// MuleNotify stores the notify args by value, so `name` is by value here like
+// every other notify handler taking a string.
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
+void Search_Added(wxUIntPtr NOT_ON_DAEMON(searchID), wxString NOT_ON_DAEMON(name), uint32 NOT_ON_DAEMON(kind))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		theApp->amuledlg->m_searchwnd->OnSearchAdded(searchID, name, kind);
+	}
+#endif
+}
+
 void Browse_Started(uint32 NOT_ON_DAEMON(ecid), wxString NOT_ON_DAEMON(name), uint64 NOT_ON_DAEMON(searchID))
 {
 #ifndef AMULE_DAEMON

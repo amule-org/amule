@@ -117,6 +117,15 @@ public:
 	 */
 	void StopInFlightEd2kSearch();
 
+	/**
+	 * Allocates a fresh ed2k search ID from the single core counter shared by
+	 * the monolithic GUI and the EC daemon path. Returns IDs in the range
+	 * [1, 0x3fffffff] (never 0), provably disjoint from Kad's top-half IDs
+	 * (>= 0x80000000) and from the remote GUI's optimistic placeholder tab IDs
+	 * (0x40000000-0x7fffffff, see CSearchDlg::AllocateOptimisticId).
+	 */
+	uint32 AllocateEd2kId();
+
 	/** True if the given searchID corresponds to an active Kad search. */
 	bool IsKadSearch(uint32_t searchID) const;
 
@@ -397,6 +406,11 @@ private:
 
 	//! The ID of the current search.
 	wxUIntPtr m_currentSearch;
+
+	//! Monotonic counter for ed2k search IDs, shared by the monolithic GUI and
+	//! the EC daemon path. Its range [1, 0x3fffffff] keeps IDs provably disjoint
+	//! from Kad's top-half IDs and the remote GUI's optimistic placeholder range.
+	uint32 m_nextEd2kId = 0;
 
 	//! The current packet used for searches.
 	CPacket *m_searchPacket;

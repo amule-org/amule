@@ -96,6 +96,7 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	m_last_search_time = 0;
 	m_expiringSearchID = 0;
 	m_inSearchClosing = false;
+	m_startingLocalSearch = false;
 
 	wxSizer *content = searchDlg(this, true);
 	content->Show(this, true);
@@ -783,6 +784,28 @@ void CSearchDlg::OnStartRejected(wxUIntPtr searchID, const wxString &error)
 	}
 }
 
+void CSearchDlg::OnSearchAdded(wxUIntPtr searchID, const wxString &name, uint32 kind)
+{
+	if (m_startingLocalSearch) {
+		// The local user's own search: OnBnClickedStart creates its tab
+		// itself, selected, as soon as StartNewSearch returns.
+		return;
+	}
+
+	if (GetSearchList(searchID)) {
+		return; // already have a tab for it
+	}
+	// Labelled like any other tab -- "(0)" hit count, "!" for a Kad search --
+	// since it is the same kind of thing and needs no separate vocabulary
+	// (got3nks, amule-org/amule#703). Unselected: it appears unprompted, so it
+	// must not pull the selection away from what the user is doing.
+	//
+	// Synchronous, matching its mirror Search_Removed -> CloseSearchTab: both
+	// run from wherever the core changed the search set, including inside EC
+	// packet handling.
+	CreateNewTab(((kind == KadSearch) ? "!" : "") + name + " (0)", searchID, false);
+}
+
 void CSearchDlg::CloseSearchTab(wxUIntPtr searchID)
 {
 	if (m_inSearchClosing) {
@@ -976,11 +999,11 @@ bool CSearchDlg::CheckTabNameExists(const wxString &searchString)
 	return false;
 }
 
-void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID)
+void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID, bool select)
 {
 	CSearchListCtrl *list = new CSearchListCtrl(
 		m_notebook, ID_SEARCHLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxNO_BORDER);
-	m_notebook->AddPage(list, searchString, true, 0);
+	m_notebook->AddPage(list, searchString, select, 0);
 
 	// Ensure that new results are filtered
 	bool enable = CastChild(IDC_FILTERCHECK, wxCheckBox)->GetValue();
@@ -995,10 +1018,15 @@ void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID)
 	Layout();
 	FindWindow(IDC_CLEAR_RESULTS)->Enable(true);
 
-	// AddPage above made the new tab the selected one; defer to
-	// IsKadSearch on its searchID so a freshly-created ED2K tab leaves
-	// the button disabled.
-	FindWindow(IDC_SEARCHMORE)->Enable(theApp->searchlist->IsKadSearch((uint32_t)nSearchID));
+	// "More" tracks the *visible* tab. Only touch it when this tab actually
+	// became the visible one: an unselected tab (a discovered search) must
+	// leave the button reflecting whatever the user is still looking at.
+	if (select) {
+		// AddPage above made the new tab the selected one; defer to
+		// IsKadSearch on its searchID so a freshly-created ED2K tab leaves
+		// the button disabled.
+		FindWindow(IDC_SEARCHMORE)->Enable(theApp->searchlist->IsKadSearch((uint32_t)nSearchID));
+	}
 }
 
 uint32 CSearchDlg::s_optimisticIdCounter = 0;
@@ -1307,12 +1335,28 @@ void CSearchDlg::StartNewSearch()
 	// definition for why the range (bit 30) matters.
 	uint32 real_id = static_cast<uint32>(AllocateOptimisticId());
 #else
-	// Monolithic: the id is used directly (no remap). Stay in the bottom half of
-	// the uint32 space so it can never collide with Kad ids (>= 0x80000000).
-	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;
-	uint32 real_id = s_optimisticIdCounter;
+	// Monolithic: the id is used directly (no remap). Use the single core-search
+	// ID counter in CSearchList::AllocateEd2kId, shared with the EC daemon path
+	// (s_ecSearches), so every ed2k search -- started locally or by an EC
+	// client (amulegui, amulecmd, amuleapi) -- draws from one counter in
+	// the range [1, 0x3fffffff]. This range is provably disjoint from Kad's
+	// top-half IDs (>= 0x80000000) and from the remote GUI's optimistic
+	// placeholder tab IDs (0x40000000-0x7fffffff, see AllocateOptimisticId).
+	// Before this fix the monolithic path reused AllocateOptimisticId, whose
+	// bit-30 reservation collides with every amulegui placeholder -- the
+	// two started at the same counter value and the GUI's tab-rekey would
+	// remap results to the wrong tab
+	// (amule-org/amule#703 review by got3nks).
+	uint32 real_id = theApp->searchlist->AllocateEd2kId();
 #endif
-	wxString error = theApp->searchlist->StartNewSearch(&real_id, search_type, params);
+	wxString error;
+	{
+		// StartNewSearch fires MuleNotify::Search_Added before returning; the
+		// tab for this search is created just below, selected. Suppress the
+		// notification-driven one for the duration (see m_startingLocalSearch).
+		CScopedFlag localStartGuard(m_startingLocalSearch);
+		error = theApp->searchlist->StartNewSearch(&real_id, search_type, params);
+	}
 	if (!error.IsEmpty()) {
 		// Search failed / Remote in progress. Shared with amuleGUI's
 		// EC_OP_FAILED path so both builds report a rejected start the same

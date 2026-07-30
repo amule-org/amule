@@ -291,6 +291,14 @@ CSearchList::~CSearchList()
 	}
 }
 
+uint32 CSearchList::AllocateEd2kId()
+{
+	do {
+		m_nextEd2kId = (m_nextEd2kId + 1) & 0x3fffffff;
+	} while (m_nextEd2kId == 0);
+	return m_nextEd2kId;
+}
+
 void CSearchList::RemoveResults(wxUIntPtr searchID)
 {
 	// A non-existent search id will just be ignored
@@ -463,6 +471,17 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	// anchor bookkeeping.
 	m_searchKinds[static_cast<uint32_t>(*searchID)] = type;
 	m_searchStrings[static_cast<uint32_t>(*searchID)] = params.searchString;
+
+	// Tell the GUI a search now exists. Every producer funnels through here --
+	// the monolithic dialog and the EC_OP_SEARCH_START handler alike -- so
+	// this one call covers a search started by any client. The monolithic
+	// GUI's own searches already have a tab by this point and are filtered
+	// out on the handler side; what this adds is the tab for a search some
+	// *other* client started, the last direction of the reachability work
+	// amulegui and amuleapi already had over EC_OP_SEARCH_LIST
+	// (amule-org/amule#703).
+	Notify_Search_Added(
+		static_cast<wxUIntPtr>(*searchID), params.searchString, static_cast<uint32>(type));
 
 	return "";
 }
