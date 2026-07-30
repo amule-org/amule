@@ -60,6 +60,51 @@ wxBEGIN_EVENT_TABLE(CServerWnd, wxPanel)
 	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER, CServerWnd::OnSashPositionChanged)
 wxEND_EVENT_TABLE()
 
+// Anonymous enum so the "Copy" context-menu item has a stable ID
+// scoped to this translation unit (it never escapes to the rest of
+// the main dialog's ID space).
+namespace
+{
+enum
+{
+	kInfoListMenuCopy = wxID_HIGHEST + 1
+};
+
+// Column layout of both info lists. Column 0 is an empty spacer that exists
+// only to inset the labels: wxListCtrl has no counterpart to Scintilla's
+// SetMarginLeft, and the left cell padding comes from the platform theme, so
+// on a theme that sets none the text is drawn hard against the frame (issue
+// #702). A fixed narrow column is the one way to get that inset identically
+// on every port. Its width matches CMuleLogCtrl's text margin so the info
+// panes line up with the log panes beside them in the same notebook.
+enum
+{
+	kInfoSpacerCol = 0,
+	kInfoLabelCol = 1,
+	kInfoValueCol = 2
+};
+
+// Matches CMuleLogCtrl's FromDIP(5) text margin. Not DIP-scaled here: a
+// wxListCtrl column width is set from a plain int and this control has no
+// FromDIP of its own in scope at the call site, so the value is the same
+// physical inset the log panes use at 100% scaling.
+constexpr int kInfoSpacerWidth = 5;
+
+// Row helpers. InsertItem() writes column 0, which is now the spacer, so a
+// row is created empty and the label goes in explicitly -- keeping that in
+// one place rather than at each of the ~20 call sites.
+void InfoInsertRow(wxListCtrl *list, long row, const wxString &label)
+{
+	list->InsertItem(row, wxEmptyString);
+	list->SetItem(row, kInfoLabelCol, label);
+}
+
+void InfoSetValue(wxListCtrl *list, long row, const wxString &value)
+{
+	list->SetItem(row, kInfoValueCol, value);
+}
+} // namespace
+
 CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 : wxPanel(pParent, -1)
 {
@@ -93,16 +138,21 @@ CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 	CastChild(IDC_NODESLISTURL, wxTextCtrl)->SetValue(thePrefs::GetKadNodesUrl());
 	CastChild(IDC_SERVERLISTURL, wxTextCtrl)->SetValue(thePrefs::GetEd2kServersUrl());
 
-	// Insert two columns, currently without a header
+	// Three columns, no header: an empty spacer that insets the labels (see
+	// kInfoSpacerCol), then label and value. Columns must exist before any row
+	// is inserted -- adding one to a populated wxListCtrl does not shift the
+	// existing per-row data across ports.
 	wxListCtrl *ED2KInfoList = CastChild(ID_ED2KINFO, wxListCtrl);
 	wxASSERT(ED2KInfoList);
-	ED2KInfoList->InsertColumn(0, "");
-	ED2KInfoList->InsertColumn(1, "");
+	ED2KInfoList->InsertColumn(kInfoSpacerCol, "");
+	ED2KInfoList->InsertColumn(kInfoLabelCol, "");
+	ED2KInfoList->InsertColumn(kInfoValueCol, "");
 
 	wxListCtrl *KadInfoList = CastChild(ID_KADINFO, wxListCtrl);
 	wxASSERT(KadInfoList);
-	KadInfoList->InsertColumn(0, "");
-	KadInfoList->InsertColumn(1, "");
+	KadInfoList->InsertColumn(kInfoSpacerCol, "");
+	KadInfoList->InsertColumn(kInfoLabelCol, "");
+	KadInfoList->InsertColumn(kInfoValueCol, "");
 
 	// Wire Ctrl+C and right-click-to-copy on both info notebook
 	// list controls (#814). Bound dynamically so the same handler
@@ -200,39 +250,39 @@ void CServerWnd::UpdateED2KInfo()
 	wxListCtrl *ED2KInfoList = CastChild(ID_ED2KINFO, wxListCtrl);
 
 	ED2KInfoList->DeleteAllItems();
-	ED2KInfoList->InsertItem(0, _("eD2k Status:"));
+	InfoInsertRow(ED2KInfoList, 0, _("eD2k Status:"));
 
 	if (theApp->IsConnectedED2K()) {
-		ED2KInfoList->SetItem(0, 1, _("Connected"));
+		InfoSetValue(ED2KInfoList, 0, _("Connected"));
 
 		// Connection data
-		ED2KInfoList->InsertItem(1, _("IP:Port"));
-		ED2KInfoList->SetItem(1,
+		InfoInsertRow(ED2KInfoList, 1, _("IP:Port"));
+		InfoSetValue(ED2KInfoList,
 			1,
 			theApp->serverconnect->IsLowID()
 				? wxString(_("Server"))
 				: Uint32_16toStringIP_Port(theApp->GetED2KID(), thePrefs::GetPort()));
 
-		ED2KInfoList->InsertItem(2, _("ID"));
+		InfoInsertRow(ED2KInfoList, 2, _("ID"));
 		// No need to test the server connect, it's already true
-		ED2KInfoList->SetItem(2, 1, CFormat("%u") % theApp->GetED2KID());
+		InfoSetValue(ED2KInfoList, 2, CFormat("%u") % theApp->GetED2KID());
 
 		// Previously this row was inserted with an empty label and just
 		// "LowID"/"HighID" in column 1, leaving a value with no key.
 		// Give it an explicit label so the row is self-explanatory.
-		ED2KInfoList->InsertItem(3, _("Connection Type:"));
-		ED2KInfoList->SetItem(3, 1, theApp->serverconnect->IsLowID() ? _("LowID") : _("HighID"));
+		InfoInsertRow(ED2KInfoList, 3, _("Connection Type:"));
+		InfoSetValue(ED2KInfoList, 3, theApp->serverconnect->IsLowID() ? _("LowID") : _("HighID"));
 
 		// Carried over EC as EC_TAG_CONNSTATE's optional ED2K_CONNECTED_SINCE
 		// sub-tag (amule-org/amule#174), so this reads the same on amulegui
 		// as it does locally -- no CLIENT_GUI gate needed.
 		if (theApp->GetED2KConnectedSince().IsValid()) {
-			ED2KInfoList->InsertItem(4, _("Connected since:"));
-			ED2KInfoList->SetItem(4, 1, theApp->GetED2KConnectedSince().Format("%x %X"));
+			InfoInsertRow(ED2KInfoList, 4, _("Connected since:"));
+			InfoSetValue(ED2KInfoList, 4, theApp->GetED2KConnectedSince().Format("%x %X"));
 		}
 	} else {
 		// No data
-		ED2KInfoList->SetItem(0, 1, _("Not Connected"));
+		InfoSetValue(ED2KInfoList, 0, _("Not Connected"));
 	}
 
 	FitInfoListColumns(ED2KInfoList);
@@ -246,46 +296,48 @@ void CServerWnd::UpdateKadInfo()
 
 	KadInfoList->DeleteAllItems();
 
-	KadInfoList->InsertItem(next_row, _("Kademlia Status:"));
+	InfoInsertRow(KadInfoList, next_row, _("Kademlia Status:"));
 
 	if (theApp->IsKadRunning()) {
-		KadInfoList->SetItem(next_row++,
-			1,
+		InfoSetValue(KadInfoList,
+			next_row++,
 			(theApp->IsKadRunningInLanMode() ? _("Running in LAN mode") : _("Running")));
 
 		// Connection data
-		KadInfoList->InsertItem(next_row, _("Kademlia client ID:"));
-		KadInfoList->SetItem(next_row++, 1, theApp->GetKadID().ToHexString());
-		KadInfoList->InsertItem(next_row, _("Status:"));
-		KadInfoList->SetItem(
-			next_row++, 1, theApp->IsConnectedKad() ? _("Connected") : _("Disconnected"));
+		InfoInsertRow(KadInfoList, next_row, _("Kademlia client ID:"));
+		InfoSetValue(KadInfoList, next_row++, theApp->GetKadID().ToHexString());
+		InfoInsertRow(KadInfoList, next_row, _("Status:"));
+		InfoSetValue(KadInfoList,
+			next_row++,
+			theApp->IsConnectedKad() ? _("Connected") : _("Disconnected"));
 		if (theApp->IsConnectedKad()) {
 			// Carried over EC as EC_TAG_CONNSTATE's optional
 			// KAD_CONNECTED_SINCE sub-tag (amule-org/amule#174).
 			if (theApp->GetKadConnectedSince().IsValid()) {
-				KadInfoList->InsertItem(next_row, _("Connected since:"));
-				KadInfoList->SetItem(
-					next_row++, 1, theApp->GetKadConnectedSince().Format("%x %X"));
+				InfoInsertRow(KadInfoList, next_row, _("Connected since:"));
+				InfoSetValue(KadInfoList,
+					next_row++,
+					theApp->GetKadConnectedSince().Format("%x %X"));
 			}
-			KadInfoList->InsertItem(next_row, _("Connection State:"));
-			KadInfoList->SetItem(next_row++,
-				1,
+			InfoInsertRow(KadInfoList, next_row, _("Connection State:"));
+			InfoSetValue(KadInfoList,
+				next_row++,
 				theApp->IsFirewalledKad()
 					? wxString(CFormat(_("Firewalled - open TCP port %d in your router "
 							     "or firewall")) %
 						   thePrefs::GetPort())
 					: wxString(_("OK")));
-			KadInfoList->InsertItem(next_row, _("UDP Connection State:"));
+			InfoInsertRow(KadInfoList, next_row, _("UDP Connection State:"));
 			bool UDPFirewalled = theApp->IsFirewalledKadUDP();
-			KadInfoList->SetItem(next_row++,
-				1,
+			InfoSetValue(KadInfoList,
+				next_row++,
 				UDPFirewalled ? wxString(CFormat(_("Firewalled - open UDP port %d in your "
 								   "router or firewall")) %
 							 thePrefs::GetUDPPort())
 					      : wxString(_("OK")));
 
 			if (theApp->IsFirewalledKad() || UDPFirewalled) {
-				KadInfoList->InsertItem(next_row, _("Firewalled state: "));
+				InfoInsertRow(KadInfoList, next_row, _("Firewalled state: "));
 				wxString BuddyState;
 				switch (theApp->GetBuddyStatus()) {
 				case Disconnected:
@@ -306,31 +358,32 @@ void CServerWnd::UpdateKadInfo()
 							     theApp->GetBuddyIP(), theApp->GetBuddyPort());
 					break;
 				}
-				KadInfoList->SetItem(next_row++, 1, BuddyState);
+				InfoSetValue(KadInfoList, next_row++, BuddyState);
 			}
 
-			KadInfoList->InsertItem(next_row, _("IP address:"));
-			KadInfoList->SetItem(next_row++, 1, Uint32toStringIP(theApp->GetKadIPAddress()));
+			InfoInsertRow(KadInfoList, next_row, _("IP address:"));
+			InfoSetValue(KadInfoList, next_row++, Uint32toStringIP(theApp->GetKadIPAddress()));
 
 			// Index info
-			KadInfoList->InsertItem(next_row, _("Indexed sources:"));
-			KadInfoList->SetItem(next_row++, 1, CFormat("%d") % theApp->GetKadIndexedSources());
-			KadInfoList->InsertItem(next_row, _("Indexed keywords:"));
-			KadInfoList->SetItem(next_row++, 1, CFormat("%d") % theApp->GetKadIndexedKeywords());
-			KadInfoList->InsertItem(next_row, _("Indexed notes:"));
-			KadInfoList->SetItem(next_row++, 1, CFormat("%d") % theApp->GetKadIndexedNotes());
-			KadInfoList->InsertItem(next_row, _("Indexed load:"));
-			KadInfoList->SetItem(next_row++, 1, CFormat("%d") % theApp->GetKadIndexedLoad());
+			InfoInsertRow(KadInfoList, next_row, _("Indexed sources:"));
+			InfoSetValue(KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedSources());
+			InfoInsertRow(KadInfoList, next_row, _("Indexed keywords:"));
+			InfoSetValue(
+				KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedKeywords());
+			InfoInsertRow(KadInfoList, next_row, _("Indexed notes:"));
+			InfoSetValue(KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedNotes());
+			InfoInsertRow(KadInfoList, next_row, _("Indexed load:"));
+			InfoSetValue(KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedLoad());
 
-			KadInfoList->InsertItem(next_row, _("Average Users:"));
-			KadInfoList->SetItem(next_row, 1, CastItoIShort(theApp->GetKadUsers()));
+			InfoInsertRow(KadInfoList, next_row, _("Average Users:"));
+			InfoSetValue(KadInfoList, next_row, CastItoIShort(theApp->GetKadUsers()));
 			++next_row;
-			KadInfoList->InsertItem(next_row, _("Average Files:"));
-			KadInfoList->SetItem(next_row, 1, CastItoIShort(theApp->GetKadFiles()));
+			InfoInsertRow(KadInfoList, next_row, _("Average Files:"));
+			InfoSetValue(KadInfoList, next_row, CastItoIShort(theApp->GetKadFiles()));
 		}
 	} else {
 		// No data
-		KadInfoList->SetItem(next_row, 1, _("Not running"));
+		InfoSetValue(KadInfoList, next_row, _("Not running"));
 	}
 
 	FitInfoListColumns(KadInfoList);
@@ -356,26 +409,18 @@ void CServerWnd::FitInfoListColumns(wxListCtrl *list)
 	if (!list) {
 		return;
 	}
-	list->SetColumnWidth(0, wxLIST_AUTOSIZE);
+	// Fixed narrow spacer; wxLIST_AUTOSIZE would collapse it to zero, since
+	// every cell in it is empty.
+	list->SetColumnWidth(kInfoSpacerCol, kInfoSpacerWidth);
+	list->SetColumnWidth(kInfoLabelCol, wxLIST_AUTOSIZE);
 	const int clientWidth = list->GetClientSize().GetWidth();
-	const int col0 = list->GetColumnWidth(0);
+	const int used = list->GetColumnWidth(kInfoSpacerCol) + list->GetColumnWidth(kInfoLabelCol);
 	// Small breathing-room pad so the rightmost glyph isn't flush
 	// against the column border in GTK themes that draw cell padding
 	// asymmetrically.
 	constexpr int kPad = 8;
-	constexpr int kCol1Min = 200;
-	list->SetColumnWidth(1, std::max(clientWidth - col0 - kPad, kCol1Min));
-}
-
-// Anonymous enum so the "Copy" context-menu item has a stable ID
-// scoped to this translation unit (it never escapes to the rest of
-// the main dialog's ID space).
-namespace
-{
-enum
-{
-	kInfoListMenuCopy = wxID_HIGHEST + 1
-};
+	constexpr int kValueMin = 200;
+	list->SetColumnWidth(kInfoValueCol, std::max(clientWidth - used - kPad, kValueMin));
 }
 
 /* static */
@@ -402,8 +447,10 @@ void CServerWnd::CopyInfoListToClipboard(wxListCtrl *list)
 
 	wxString out;
 	for (long row : rows) {
-		const wxString label = list->GetItemText(row, 0);
-		const wxString value = list->GetItemText(row, 1);
+		// Columns by name: column 0 is the spacer and always empty, so
+		// copying it would prefix every line with a stray tab.
+		const wxString label = list->GetItemText(row, kInfoLabelCol);
+		const wxString value = list->GetItemText(row, kInfoValueCol);
 		out << label << '\t' << value << '\n';
 	}
 

@@ -89,6 +89,14 @@ CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 	// would only show above a partially scrolled line.
 	SetExtraAscent(FromDIP(2));
 
+	// No caret: this pane is read-only, so there is no insertion point for one
+	// to mark. Scintilla draws it regardless, at the very left of the text
+	// area -- which went unnoticed while the text also started there, but once
+	// the margins above inset the text the caret was left sitting on the frame
+	// (issue #702). Selection highlighting is independent of caret visibility,
+	// so click-drag and Ctrl+C are unaffected.
+	SetCaretStyle(wxSTC_CARETSTYLE_INVISIBLE);
+
 	// Word-wrap long lines, as the old wxTE_RICH2 pane did, so nothing is clipped
 	// off the right edge; with wrapping on there is no horizontal scrollbar to
 	// show. (Wrapping is why AtBottom() and the tail-scroll reason in display
