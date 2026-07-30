@@ -633,6 +633,21 @@ class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFi
 {
 	virtual void HandlePacket(const CECPacket *);
 
+	// Partial-update union poll: delete a result only when the daemon says
+	// so (EC_TAG_FILE_REMOVED), instead of the base class's "anything
+	// missing from this reply is gone" sweep.
+	//
+	// Absence-implies-deletion forced the daemon to re-send every result of
+	// every open search on every poll just to say "still here" -- with two
+	// finished searches and ~900 results that measured 12 KB every 3 s, of
+	// which none carried a single changed field. With removal made explicit
+	// the daemon can skip an unchanged result entirely, and an idle search
+	// costs nothing.
+	//
+	// Falls back to the base implementation against a daemon that did not
+	// echo EC_TAG_CAN_PARTIAL_UPDATE, which still relies on absence.
+	virtual void ProcessUpdate(const CECTag *reply, CECPacket *full_req, int req_type);
+
 public:
 	CSearchListRem(CRemoteConnect *);
 

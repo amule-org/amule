@@ -170,6 +170,19 @@ private:
 	// path (server emits alive-marker tags so it still works).
 	bool m_serverPartialUpdate;
 
+	// Set when the server echoed `EC_TAG_CAN_PARTIAL_SEARCH` in AUTH_OK,
+	// confirming it may skip unchanged *search results* on the multi-search
+	// union poll and signal their removal with `EC_TAG_FILE_REMOVED`.
+	//
+	// Deliberately separate from `m_serverPartialUpdate`: that one is about
+	// the shared-file / download INC_UPDATE stream and is advertised by every
+	// client built since it landed, including ones with no idea that search
+	// results could be skipped too. Reusing it here would make an older
+	// amuleGUI -- which advertises it, speaks multi-search, and still deletes
+	// any result missing from the reply -- silently drop its search results
+	// against a newer daemon.
+	bool m_serverPartialSearch;
+
 	// Client opts into the multi-search protocol (advertise
 	// `EC_TAG_CAN_MULTI_SEARCH`). Off by default; a client sets it via
 	// SetCanMultiSearch() only once it addresses searches by
@@ -243,6 +256,7 @@ public:
 	void SetCanChat(bool can) noexcept { m_canChat = can; }
 
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
+	bool ServerSupportsPartialSearch() const { return m_serverPartialSearch; }
 
 	bool ServerSupportsMultiSearch() const { return m_serverMultiSearch; }
 

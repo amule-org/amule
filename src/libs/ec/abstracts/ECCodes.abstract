@@ -211,6 +211,7 @@ EC_TAG_CAN_AEAD                           0x001B
 EC_TAG_AEAD_CIPHER                        0x001C
 EC_TAG_AEAD_CLIENT_NONCE                  0x001D
 EC_TAG_AEAD_SERVER_NONCE                  0x001E
+EC_TAG_CAN_PARTIAL_SEARCH                 0x001F
 
 
 EC_TAG_CLIENT_NAME                        0x0100

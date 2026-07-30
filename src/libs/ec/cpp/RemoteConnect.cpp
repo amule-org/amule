@@ -99,6 +99,12 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// the unknown tag and the server falls back to emitting alive-
 	// marker tags for unchanged files (still backward-compatible).
 	AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
+	// Client applies the same skip-unchanged / explicit-removal rule to the
+	// multi-search results union. Advertised separately from
+	// EC_TAG_CAN_PARTIAL_UPDATE because only a client that implements it on
+	// the *search* container may be sent skipped results; older clients omit
+	// this tag and keep getting every result on every poll.
+	AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_SEARCH));
 	// Client can read and write the daemon's shared-directory configuration
 	// over EC (EC_OP_GET/SET_SHARED_DIRS). Always advertised; old daemons
 	// ignore the unknown tag and simply never echo it back.
@@ -176,6 +182,7 @@ m_req_fifo_thr(20)
 , m_preferNoZlib(false)
 , m_forceZlib(false)
 , m_serverPartialUpdate(false)
+, m_serverPartialSearch(false)
 , m_canMultiSearch(false)
 , m_serverMultiSearch(false)
 , m_canChat(false)
@@ -556,6 +563,9 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// tags for unchanged files (#713).
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 				m_serverPartialUpdate = true;
+			}
+			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_SEARCH)) {
+				m_serverPartialSearch = true;
 			}
 			// Server confirmed multi-search: it will allocate a distinct
 			// `EC_TAG_SEARCH_ID` per search. Old daemons omit the echo and

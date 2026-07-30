@@ -3144,6 +3144,48 @@ void CSearchListRem::RequestSearchList()
 	m_conn->SendRequest(this, &req);
 }
 
+void CSearchListRem::ProcessUpdate(const CECTag *reply, CECPacket *full_req, int req_type)
+{
+	if (!m_conn->ServerSupportsPartialSearch()) {
+		// Legacy daemon: it still re-sends every live result each poll and
+		// expects absence to mean deletion.
+		CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>::ProcessUpdate(
+			reply, full_req, req_type);
+		return;
+	}
+	for (CECPacket::const_iterator it = reply->begin(); it != reply->end(); ++it) {
+		const CECTag *curTag = &*it;
+		if (curTag->GetTagName() == EC_TAG_FILE_REMOVED) {
+			// The one path that deletes now. Same tombstone the shared-file
+			// list uses; the payload is the result's ECID.
+			const uint32 ecid = static_cast<uint32>(curTag->GetInt());
+			std::map<uint32, CSearchFile *>::iterator hit = m_items_hash.find(ecid);
+			if (hit == m_items_hash.end()) {
+				continue;
+			}
+			for (iterator lit = begin(); lit != end(); ++lit) {
+				if (GetItemID(*lit) == ecid) {
+					RemoveItem(lit);
+					break;
+				}
+			}
+			continue;
+		}
+		if (curTag->GetTagName() != req_type) {
+			continue;
+		}
+		const CEC_SearchFile_Tag *tag = static_cast<const CEC_SearchFile_Tag *>(curTag);
+		if (m_items_hash.count(tag->ID())) {
+			ProcessItemUpdate(tag, m_items_hash[tag->ID()]);
+		} else {
+			// A result new to this client always arrives with its owning
+			// EC_TAG_SEARCH_ID (the daemon omits that tag only for results it
+			// has already attributed), so CreateItem can route it to a tab.
+			AddItem(CreateItem(tag));
+		}
+	}
+}
+
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
 	if (packet->GetOpCode() == EC_OP_SEARCH_PROGRESS) {

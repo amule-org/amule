@@ -310,6 +310,15 @@ private:
 	// unchanged files so old clients (which infer deletion from absence)
 	// keep working unchanged — see `Get_EC_Response_GetUpdate`.
 	bool m_partialUpdateActive;
+
+	// Client negotiated `EC_TAG_CAN_PARTIAL_SEARCH`: the multi-search results
+	// union may skip results whose exported fields are unchanged and report
+	// removals with explicit `EC_TAG_FILE_REMOVED` tombstones. Separate from
+	// `m_partialUpdateActive` on purpose -- see EC_TAG_CAN_PARTIAL_SEARCH in
+	// RemoteConnect.cpp for why reusing that flag would break an older
+	// amuleGUI, which advertises it but still deletes any result absent from
+	// the reply.
+	bool m_partialSearchActive;
 	// Client opted in to the multi-search protocol at auth time (advertised
 	// `EC_TAG_CAN_MULTI_SEARCH`). When set, the EC search handlers allocate a
 	// distinct daemon-side search ID per `EC_OP_SEARCH_START` (returned via
@@ -339,10 +348,21 @@ private:
 	std::set<uint32> m_lastSentSharedFileIds;
 	std::set<uint32> m_lastSentPartFileIds;
 	// `EC_OP_SEARCH_RESULTS` at `EC_DETAIL_UPDATE` (amuleweb's polling
-	// path). amulegui takes the `EC_DETAIL_INC_UPDATE` overload which
-	// uses the always-bulk-delete `CRemoteContainer::ProcessUpdate` and
-	// needs no tombstones, so search-results tracking is amuleweb-only.
+	// path), which addresses one search at a time.
 	std::set<uint32> m_lastSentSearchIds;
+
+	// Result ECIDs last sent on the `EC_DETAIL_INC_UPDATE` union poll
+	// (amulegui), so `Get_EC_Response_Search_Results_Union` can emit
+	// `EC_TAG_FILE_REMOVED` for results that are gone instead of relying on
+	// absence. Separate from `m_lastSentSearchIds` above: that one belongs
+	// to amuleweb's per-search `EC_DETAIL_UPDATE` path and tracks a
+	// different set on a different schedule.
+	//
+	// Only populated for clients that negotiated `EC_TAG_CAN_PARTIAL_UPDATE`.
+	// A legacy client keeps the bulk "anything missing == deleted" rule, so
+	// the union must keep re-sending every result to it and there is nothing
+	// to track.
+	std::set<uint32> m_lastSentSearchResultIds;
 
 	// Set of file ECIDs already sent to the client with full detail
 	// (EC_DETAIL_INC_UPDATE / EC_DETAIL_UPDATE payload, not the legacy
@@ -370,6 +390,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 , m_lastEcGenSeenShared(0)
 , m_lastEcGenSeenPart(0)
 , m_partialUpdateActive(false)
+, m_partialSearchActive(false)
 , m_multiSearchActive(false)
 , m_chatActive(false)
 {
@@ -782,6 +803,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// them — see `Get_EC_Response_GetUpdate`.
 					m_partialUpdateActive = true;
 				}
+				if (request->GetTagByName(EC_TAG_CAN_PARTIAL_SEARCH)) {
+					// Client applies the same rule to search results. Old
+					// clients omit this tag and the union keeps re-sending
+					// every result of every open search on every poll.
+					m_partialSearchActive = true;
+				}
 				if (request->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
 					// Client understands the multi-search protocol: EC
 					// searches are addressed by a daemon-allocated
@@ -872,6 +899,13 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// off its bulk "missing == deleted" fallback and
 					// expects explicit `EC_TAG_FILE_REMOVED` markers.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
+				}
+				if (m_partialSearchActive) {
+					// Confirm the search half too. The client must not stop
+					// deleting on absence until it knows the daemon actually
+					// skips unchanged results -- against an older daemon that
+					// never skips, absence still means the result is gone.
+					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_SEARCH));
 				}
 				if (m_chatActive) {
 					// Confirm chat relay so the client starts polling
@@ -2020,24 +2054,53 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 // eviction only -- folding monolithic searches into that 20-entry LRU would
 // let unrelated EC traffic evict, and so stop, a local user's own
 // still-running Kad search.
-static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
+static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap,
+	bool partial_update_active,
+	std::set<uint32> &io_lastSentResultIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
 	// Incremental: unchanged fields are diffed out via the per-connection
 	// valuemap (keyed by the globally-unique ECID). Safe now that amulegui's
 	// container retains its items across searches (it no longer flushes on a
 	// new search), so a result is never re-created from a diffed tag — no
-	// ghosts — while re-sending unchanged results every poll stays cheap.
+	// ghosts.
+	//
+	// Every result the client is currently believed to hold, so the
+	// partial-update path below can synthesize removals by diffing against
+	// the previous cycle instead of relying on absence.
+	std::set<uint32> current_ids;
+
+	auto emitOne = [&](CSearchFile *sf, uint32 sid) {
+		const uint32 ecid = sf->ECID();
+		current_ids.insert(ecid);
+		const bool known = io_lastSentResultIds.count(ecid) != 0;
+		CValueMap &valuemap = tagmap.GetValueMap(ecid);
+		// The owning search ID never changes for a result, so it only has to
+		// travel once per connection -- but only once removal is explicit.
+		// A legacy client deletes anything missing from the reply and would
+		// then re-create the item from a later diffed tag, which must still
+		// carry the ID to be attributable to a tab.
+		const uint32 attribute_sid = (partial_update_active && known) ? 0 : sid;
+		CEC_SearchFile_Tag tag(sf, EC_DETAIL_INC_UPDATE, &valuemap, attribute_sid);
+		if (partial_update_active && known && !tag.HasChildTags()) {
+			// Nothing about this result changed since the client's last view.
+			// Absence no longer implies deletion for this client (it deletes
+			// only on an explicit EC_TAG_FILE_REMOVED emitted below), so the
+			// whole tag can go. This is what makes an idle search cost
+			// nothing: previously every result re-sent its envelope plus its
+			// search ID on every poll, forever.
+			return;
+		}
+		response->AddTag(tag);
+	};
+
 	auto emitResultsFor = [&](uint32 sid) {
 		const CSearchResultList &list = theApp->searchlist->GetSearchResults(sid);
 		for (CSearchFile *sf : list) {
-			CValueMap &valuemap = tagmap.GetValueMap(sf->ECID());
-			response->AddTag(CEC_SearchFile_Tag(sf, EC_DETAIL_INC_UPDATE, &valuemap, sid));
+			emitOne(sf, sid);
 			if (sf->HasChildren()) {
 				for (CSearchFile *sfc : sf->GetChildren()) {
-					CValueMap &valuemap1 = tagmap.GetValueMap(sfc->ECID());
-					response->AddTag(CEC_SearchFile_Tag(
-						sfc, EC_DETAIL_INC_UPDATE, &valuemap1, sid));
+					emitOne(sfc, sid);
 				}
 			}
 		}
@@ -2047,6 +2110,27 @@ static CECPacket *Get_EC_Response_Search_Results_Union(CObjTagMap &tagmap)
 	}
 	for (const auto &entry : theApp->searchlist->GetBrowseSearchIds()) {
 		emitResultsFor(static_cast<uint32>(entry.first));
+	}
+
+	if (partial_update_active) {
+		// One EC_TAG_FILE_REMOVED per result the client was told about that
+		// the core no longer holds -- a closed or evicted search, or a
+		// results list replaced by a new search on the same ID. Reuses the
+		// knownfile tombstone rather than inventing a second one: the
+		// meaning ("this ECID is gone") and the payload (the ECID) are
+		// identical, and the search container reads it the same way.
+		for (uint32 id : io_lastSentResultIds) {
+			if (!current_ids.count(id)) {
+				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, id));
+				// Drop the diff state with the result. ECIDs are handed out
+				// monotonically so reuse is not expected, but a stale
+				// valuemap would diff away the very fields a re-created
+				// result needs, leaving the client a tag it cannot use --
+				// the same hazard `freshEcids` guards on the file path.
+				tagmap.EraseValueMap(id);
+			}
+		}
+		io_lastSentResultIds.swap(current_ids);
 	}
 	return response;
 }
@@ -2936,7 +3020,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// amulegui (multi + INC_UPDATE) polls all its searches at once: return
 		// the union, each result tagged with its search ID (see the handler).
 		if (m_multiSearchActive && incUpdate) {
-			response = Get_EC_Response_Search_Results_Union(m_obj_tagmap);
+			response = Get_EC_Response_Search_Results_Union(
+				m_obj_tagmap, m_partialSearchActive, m_lastSentSearchResultIds);
 			break;
 		}
 		// Otherwise address a specific search by EC_TAG_SEARCH_ID (no ID =>
