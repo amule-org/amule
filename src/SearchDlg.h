@@ -246,6 +246,12 @@ private:
 	void OnExtendedSearchChange(wxCommandEvent &ev);
 	void OnFilterCheckChange(wxCommandEvent &ev);
 	void OnFilteringChange(wxCommandEvent &ev);
+	void OnFilterReset(wxCommandEvent &ev);
+
+	// Reads the three filter controls and pushes the result to every open
+	// result page. Shared by OnFilteringChange and OnFilterReset so the reset
+	// path applies through exactly the same code as a manual filter change.
+	void ApplyFilter();
 
 	void OnSearchClosing(wxBookCtrlEvent &evt);
 

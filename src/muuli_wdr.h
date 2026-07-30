@@ -82,6 +82,10 @@ extern wxSizer *s_filter_sizer;
 #define ID_FILTER 10015
 #define ID_FILTER_INVERT 10016
 #define ID_FILTER_KNOWN 10017
+// Numbered outside the search block: 10014-10025 is contiguous and full, so a
+// new id here would mean renumbering every later one. 10493 is the next free
+// value file-wide.
+#define ID_FILTER_RESET 10493
 #define IDC_STARTS 10018
 #define IDC_SEARCHMORE 10019
 #define IDC_CANCELS 10020

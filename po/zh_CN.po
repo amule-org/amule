@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 08:45+0200\n"
+"POT-Creation-Date: 2026-07-30 12:03+0200\n"
 "PO-Revision-Date: 2026-07-28 20:17+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -3283,6 +3283,11 @@ msgstr "反向排序结果"
 #: src/muuli_wdr.cpp
 msgid "Hide Known Files"
 msgstr "隐藏已知文件"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Reset Filters"
+msgstr "重置表单"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"

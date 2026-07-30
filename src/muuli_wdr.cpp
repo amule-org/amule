@@ -327,8 +327,15 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item34->Add( item41, wxSizerFlags().Center().Border(wxALL, 5) );
     wxCheckBox *item42 = new wxCheckBox( parent, ID_FILTER_KNOWN, _("Hide Known Files"), wxDefaultPosition, wxDefaultSize, 0 );
     item34->Add( item42, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Clears the filter text and returns both checkboxes to their defaults
+    // (issue #698). Named in full rather than a bare "Reset" so it cannot be
+    // read as a second "Reset Fields": that button covers the search
+    // parameters, this one covers only the filter row it sits in.
+    wxStaticLine *item59 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
+    item34->Add( item59, wxSizerFlags().Center().Border(wxALL, 5) );
+    wxButton *item60 = new wxButton( parent, ID_FILTER_RESET, _("Reset Filters"), wxDefaultPosition, wxDefaultSize, 0 );
+    item34->Add( item60, wxSizerFlags().Center().Border(wxALL, 5) );
     item34->Add( 10, 10, wxSizerFlags(1).Center().Border(wxALL, 5) );
-    item1->Add( item34, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     wxBoxSizer *item43 = new wxBoxSizer( wxHORIZONTAL );
 
     wxButton *item44 = new wxButton( parent, IDC_STARTS, _("Start"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -361,6 +368,13 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item54->Enable( false );
     item43->Add( item54, wxSizerFlags().Center().Border(wxALL, 5) );
     item1->Add( item43, wxSizerFlags().Center().Border(wxALL, 5) );
+    // Filter row goes BELOW the action buttons (issue #698): filtering is not a
+    // search parameter -- it applies to results already on screen and is not
+    // touched by "Reset Fields" -- so grouping it with the search parameters
+    // above the buttons misrepresented it, and it sits closer to the results
+    // list here. Added after item43 purely for sizer order; the row itself is
+    // still built above so s_filter_sizer keeps its show/hide wiring.
+    item1->Add( item34, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxStaticBox *item56 = new wxStaticBox( parent, -1, _("Results") );
     wxStaticBoxSizer *item55 = new wxStaticBoxSizer( item56, wxVERTICAL );

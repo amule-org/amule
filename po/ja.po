@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 08:45+0200\n"
+"POT-Creation-Date: 2026-07-30 12:03+0200\n"
 "PO-Revision-Date: 2026-07-28 20:10+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -3295,6 +3295,11 @@ msgstr "結果を反転する"
 #: src/muuli_wdr.cpp
 msgid "Hide Known Files"
 msgstr "既知のファイルを隠す"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Reset Filters"
+msgstr "フィールドをリセット"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"

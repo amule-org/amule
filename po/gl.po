@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 08:45+0200\n"
+"POT-Creation-Date: 2026-07-30 12:03+0200\n"
 "PO-Revision-Date: 2026-07-28 20:08+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -3307,6 +3307,11 @@ msgstr "Inverter resultado"
 #: src/muuli_wdr.cpp
 msgid "Hide Known Files"
 msgstr "Agochar ficheiros coñecidos"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Reset Filters"
+msgstr "Borrar campos"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"

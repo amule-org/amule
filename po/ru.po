@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 08:45+0200\n"
+"POT-Creation-Date: 2026-07-30 12:03+0200\n"
 "PO-Revision-Date: 2026-07-28 20:14+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -3328,6 +3328,11 @@ msgstr "Инвертировать"
 #: src/muuli_wdr.cpp
 msgid "Hide Known Files"
 msgstr "Скрывать известные файлы"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Reset Filters"
+msgstr "Сбросить значения"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"

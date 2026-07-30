@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 08:45+0200\n"
+"POT-Creation-Date: 2026-07-30 12:03+0200\n"
 "PO-Revision-Date: 2020-03-04 14:43+0100\n"
 "Last-Translator: Dévai Tamás <devait@vnet.hu>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -3206,6 +3206,10 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Hide Known Files"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Reset Filters"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp

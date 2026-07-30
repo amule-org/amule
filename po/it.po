@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-30 08:45+0200\n"
+"POT-Creation-Date: 2026-07-30 12:03+0200\n"
 "PO-Revision-Date: 2026-07-28 20:10+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -3305,6 +3305,11 @@ msgstr "Inverti risultati"
 #: src/muuli_wdr.cpp
 msgid "Hide Known Files"
 msgstr "Nascondi file conosciuti"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Reset Filters"
+msgstr "Azzera campi"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"

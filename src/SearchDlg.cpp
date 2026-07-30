@@ -87,6 +87,7 @@ wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	EVT_CHECKBOX(ID_FILTER_INVERT, CSearchDlg::OnFilteringChange)
 	EVT_CHECKBOX(ID_FILTER_KNOWN, CSearchDlg::OnFilteringChange)
 	EVT_BUTTON(ID_FILTER, CSearchDlg::OnFilteringChange)
+	EVT_BUTTON(ID_FILTER_RESET, CSearchDlg::OnFilterReset)
 wxEND_EVENT_TABLE()
 
 CSearchDlg::CSearchDlg(wxWindow *pParent)
@@ -757,6 +758,27 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 }
 
 void CSearchDlg::OnFilteringChange(wxCommandEvent &WXUNUSED(evt))
+{
+	ApplyFilter();
+}
+
+void CSearchDlg::OnFilterReset(wxCommandEvent &WXUNUSED(evt))
+{
+	// Back to the state a fresh session starts in: empty expression, both
+	// toggles off (issue #698). "Reset Fields" covers the search parameters
+	// only, so before this there was no way to undo a filter except editing
+	// each control by hand.
+	CastChild(ID_FILTER_TEXT, wxTextCtrl)->Clear();
+	CastChild(ID_FILTER_INVERT, wxCheckBox)->SetValue(false);
+	CastChild(ID_FILTER_KNOWN, wxCheckBox)->SetValue(false);
+
+	// SetValue()/Clear() do not emit the change events the filter normally
+	// reacts to, so push the cleared state out explicitly -- otherwise the
+	// controls would read as reset while the pages stayed filtered.
+	ApplyFilter();
+}
+
+void CSearchDlg::ApplyFilter()
 {
 	wxString filter = CastChild(ID_FILTER_TEXT, wxTextCtrl)->GetValue();
 	bool invert = CastChild(ID_FILTER_INVERT, wxCheckBox)->GetValue();
