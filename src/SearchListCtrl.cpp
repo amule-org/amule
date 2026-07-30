@@ -848,7 +848,14 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 			keyword << "::" << file->GetFileHash().Encode();
 			item = GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 		} while (item > -1);
-		CastByID(IDC_SEARCHNAME, theApp->amuledlg->m_searchwnd, wxTextCtrl)->SetValue(keyword);
+		// wxTextEntry, not wxTextCtrl: the Name field became a wxComboBox in
+		// #643 (search history), and wxComboBox does not derive from
+		// wxTextCtrl -- it is wxWindowWithItems<wxControl, wxComboBoxBase>.
+		// CastByID is a dynamic_cast, so casting to wxTextCtrl yielded
+		// nullptr here and this line dereferenced it. wxTextEntry is the
+		// common base of both, so it keeps working whichever control the
+		// search-history preference has put in place.
+		CastByID(IDC_SEARCHNAME, theApp->amuledlg->m_searchwnd, wxTextEntry)->SetValue(keyword);
 		wxChoice *searchtype = CastByID(ID_SEARCHTYPE, theApp->amuledlg->m_searchwnd, wxChoice);
 		searchtype->SetSelection(searchtype->FindString(_("Local")));
 		theApp->amuledlg->m_searchwnd->StartNewSearch();

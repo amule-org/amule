@@ -40,6 +40,8 @@ class wxListEvent;
 class wxSpinEvent;
 class wxGauge;
 class wxContextMenuEvent;
+class wxButton;
+class wxTextEntry;
 class CSearchFile;
 
 /**
@@ -236,6 +238,32 @@ private:
 	void RecordSearchHistory(const wxString &term);
 	void ClearSearchHistory();
 	void OnSearchNameContextMenu(wxContextMenuEvent &evt);
+
+public:
+	// Brings the whole search-history UI in line with the "Remember search
+	// history" preference: with it off the Name field is a plain wxTextCtrl
+	// (no dropdown), the Clear button is hidden and no stored terms are
+	// loaded. searchhistory.dat is deliberately left on disk, so re-enabling
+	// the preference restores the previous history rather than starting over.
+	// Called at construction and live from PrefsUnifiedDlg::OnOk when the
+	// checkbox changes, so no restart is needed (issue #697).
+	void ApplySearchHistoryPref();
+
+private:
+	// Replaces the Name field in its sizer slot with the control type the
+	// preference calls for, carrying the typed value across. Returns the
+	// control now in place. A no-op when the right type is already there.
+	wxTextEntry *RebuildSearchNameField(bool wantHistory);
+
+	// Clear-history button, inserted next to the search-type choice at
+	// construction. Held rather than looked up by id so show/hide stays
+	// cheap and cannot silently miss.
+	wxButton *m_clearHistoryBtn = nullptr;
+	void OnBnClickedClearHistory(wxCommandEvent &evt);
+
+	// Greys the button out when there is nothing stored to clear, mirroring
+	// what the context-menu item already does with its own Enable() call.
+	void UpdateClearHistoryButton();
 
 	// Persists the chosen search type so it survives a restart (amule-org/amule#608).
 	void OnSearchTypeChanged(wxCommandEvent &evt);

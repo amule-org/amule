@@ -136,11 +136,125 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	s_search_sizer->Show(s_extended_sizer, false);
 	s_search_sizer->Show(s_filter_sizer, false);
 
-	LoadSearchHistory();
-	CastChild(IDC_SEARCHNAME, wxComboBox)
-		->Bind(wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
+	// Clear-history button, sitting between the search-type choice and the
+	// Extended Parameters checkbox. Two reasons it is built here instead of in
+	// muuli_wdr: the right-click route it backs up is unreachable on wxMSW
+	// (the native combobox's child EDIT window never forwards WM_CONTEXTMENU
+	// to wx -- ShouldForwardFromEditToCombo in src/msw/combobox.cpp forwards
+	// only key, focus and clipboard messages), and keeping the existing
+	// _("Clear search history") msgid in this file preserves its position in
+	// the catalogs, whereas adding the same string to muuli_wdr.cpp would move
+	// the pot entry (xgettext orders entries by file scan order) and trip the
+	// pot-sync gate for no benefit. Bound directly on the instance, so no new
+	// window id is needed. (issue #697)
+	if (wxWindow *typeChoice = FindWindow(ID_SEARCHTYPE)) {
+		if (wxSizer *row = typeChoice->GetContainingSizer()) {
+			size_t at = row->GetItemCount();
+			size_t index = 0;
+			for (const wxSizerItem *item : row->GetChildren()) {
+				if (item->GetWindow() == typeChoice) {
+					at = index + 1;
+					break;
+				}
+				++index;
+			}
+			m_clearHistoryBtn = new wxButton(this, wxID_ANY, _("Clear search history"));
+			row->Insert(at, m_clearHistoryBtn, wxSizerFlags().Center().Border(wxALL, 5));
+			m_clearHistoryBtn->Bind(wxEVT_BUTTON, &CSearchDlg::OnBnClickedClearHistory, this);
+		}
+	}
+
+	ApplySearchHistoryPref();
 
 	Layout();
+}
+
+void CSearchDlg::ApplySearchHistoryPref()
+{
+	const bool wantHistory = CPreferences::RememberSearchHistory();
+
+	RebuildSearchNameField(wantHistory);
+
+	if (m_clearHistoryBtn) {
+		m_clearHistoryBtn->Show(wantHistory);
+	}
+
+	// Only populate when the preference allows it. searchhistory.dat is left
+	// untouched either way, so turning the preference back on restores the
+	// previous terms instead of starting from an empty list.
+	if (wantHistory) {
+		LoadSearchHistory();
+	}
+
+	Layout();
+}
+
+wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
+{
+	wxWindow *current = FindWindow(IDC_SEARCHNAME);
+	if (current == nullptr) {
+		return nullptr;
+	}
+
+	// wxComboBox is not a wxTextCtrl (it is wxWindowWithItems<wxControl,
+	// wxComboBoxBase>), so which one is in place decides whether a dropdown
+	// and its history exist at all.
+	const bool haveCombo = (dynamic_cast<wxComboBox *>(current) != nullptr);
+	if (haveCombo == wantHistory) {
+		return dynamic_cast<wxTextEntry *>(current);
+	}
+
+	wxSizer *slot = current->GetContainingSizer();
+	if (slot == nullptr) {
+		return dynamic_cast<wxTextEntry *>(current);
+	}
+
+	// Carry the typed value across; the swap is a UI change, not a reason to
+	// lose what the user was in the middle of typing.
+	const wxString typed = dynamic_cast<wxTextEntry *>(current)->GetValue();
+
+	wxWindow *replacement = nullptr;
+	if (wantHistory) {
+		wxComboBox *combo = new wxComboBox(this,
+			IDC_SEARCHNAME,
+			wxEmptyString,
+			wxDefaultPosition,
+			wxSize(80, -1),
+			0,
+			nullptr,
+			wxTE_PROCESS_ENTER);
+		// The context menu is bound per instance, so a freshly created combo
+		// needs it re-attached -- unlike the id-keyed event-table entries
+		// (EVT_TEXT_ENTER / wxEVT_TEXT), which survive the swap by themselves.
+		combo->Bind(wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
+		replacement = combo;
+	} else {
+		// wxTE_PROCESS_ENTER kept so Enter still starts the search through the
+		// existing EVT_TEXT_ENTER(IDC_SEARCHNAME) entry.
+		replacement = new wxTextCtrl(this,
+			IDC_SEARCHNAME,
+			wxEmptyString,
+			wxDefaultPosition,
+			wxSize(80, -1),
+			wxTE_PROCESS_ENTER);
+	}
+
+	// Replace() swaps the window inside the existing sizer item, so the slot
+	// keeps its proportion and border flags; the detached window is ours to
+	// destroy.
+	slot->Replace(current, replacement);
+	current->Destroy();
+
+	wxTextEntry *entry = dynamic_cast<wxTextEntry *>(replacement);
+	if (entry != nullptr) {
+		entry->SetValue(typed);
+	}
+	return entry;
+}
+
+void CSearchDlg::OnBnClickedClearHistory(wxCommandEvent &WXUNUSED(evt))
+{
+	ClearSearchHistory();
 }
 
 CSearchDlg::~CSearchDlg() {}
@@ -165,7 +279,16 @@ wxString SearchHistoryFilePath()
 
 void CSearchDlg::LoadSearchHistory()
 {
+	// With the preference off the Name field is a plain wxTextCtrl, so there is
+	// no dropdown to fill and the cast below would be null. Guarding here (as
+	// well as at the ApplySearchHistoryPref call site) keeps every future
+	// caller safe rather than relying on each one to check first.
 	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+	if (combo == nullptr || !CPreferences::RememberSearchHistory()) {
+		UpdateClearHistoryButton();
+		return;
+	}
+
 	combo->Clear(); // item list, not the (empty at startup) text value
 
 	CTextFile file;
@@ -196,6 +319,8 @@ void CSearchDlg::LoadSearchHistory()
 	// re-armed here and after every RecordSearchHistory/ClearSearchHistory
 	// call so it always reflects the current entry set.
 	combo->AutoComplete(entries);
+
+	UpdateClearHistoryButton();
 }
 
 void CSearchDlg::RecordSearchHistory(const wxString &term)
@@ -204,7 +329,13 @@ void CSearchDlg::RecordSearchHistory(const wxString &term)
 		return;
 	}
 
+	// Null when the preference was turned off (plain wxTextCtrl in place). The
+	// check above already covers that, but this stays defensive because the
+	// two states have to agree for the cast to be safe.
 	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+	if (combo == nullptr) {
+		return;
+	}
 
 	wxArrayString current;
 	for (unsigned int i = 0; i < combo->GetCount(); ++i) {
@@ -227,6 +358,8 @@ void CSearchDlg::RecordSearchHistory(const wxString &term)
 		file.WriteLines(entries);
 		file.Close();
 	}
+
+	UpdateClearHistoryButton();
 }
 
 void CSearchDlg::ClearSearchHistory()
@@ -235,9 +368,27 @@ void CSearchDlg::ClearSearchHistory()
 		wxRemoveFile(SearchHistoryFilePath());
 	}
 
-	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
-	combo->Clear();
-	combo->AutoComplete(wxArrayString());
+	// Reached from the context menu and from the Clear button, both of which
+	// only exist alongside a combo -- but the cast is checked so a future
+	// caller cannot turn a disabled-history state into a null dereference.
+	if (wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox)) {
+		combo->Clear();
+		// Empty array is how wx disables completion (wxMSW routes it to
+		// DisableCompletion()), so the last term stops being suggested too.
+		combo->AutoComplete(wxArrayString());
+	}
+
+	UpdateClearHistoryButton();
+}
+
+void CSearchDlg::UpdateClearHistoryButton()
+{
+	if (m_clearHistoryBtn == nullptr) {
+		return;
+	}
+
+	const wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
+	m_clearHistoryBtn->Enable(combo != nullptr && combo->GetCount() > 0);
 }
 
 void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
@@ -1211,9 +1362,13 @@ void CSearchDlg::UpdateHitCount(CSearchListCtrl *page)
 
 void CSearchDlg::OnBnClickedReset(wxCommandEvent &WXUNUSED(evt))
 {
-	// wxTextEntry::Clear(), not wxComboBox's own Clear() -- the latter empties
-	// the dropdown's item list (the history), not the typed value.
-	CastChild(IDC_SEARCHNAME, wxTextEntry)->Clear();
+	// SetValue(""), not Clear(). Casting to wxTextEntry does NOT get you
+	// wxTextEntry::Clear() here: that method is virtual and wxComboBoxBase
+	// overrides it as { wxItemContainer::Clear(); wxTextEntry::Clear(); }, so
+	// the call dispatches to the override and wipes the dropdown's item list
+	// -- i.e. the whole search history -- along with the typed value. That is
+	// what issue #697 reported. SetValue() only touches the text.
+	CastChild(IDC_SEARCHNAME, wxTextEntry)->SetValue(wxEmptyString);
 	CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->Clear();
 	CastChild(IDC_SPINSEARCHMIN, wxSpinCtrl)->SetValue(0);
 	CastChild(IDC_SEARCHMINSIZE, wxChoice)->SetSelection(2);

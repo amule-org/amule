@@ -66,6 +66,7 @@
 #include "CamuleArtProvider.h" // CamuleArtProvider::MakeId for the page-icon bundles
 #include "MuleColour.h"
 #include "EditServerListDlg.h"
+#include "SearchDlg.h"      // Needed for CSearchDlg::ApplySearchHistoryPref
 #include "SharedFileList.h" // Needed for CSharedFileList
 #include "StatisticsDlg.h"  // Needed for graph parameters, colors
 #include "IPFilter.h"       // Needed for CIPFilter
@@ -1397,6 +1398,14 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	if (CfgChanged(IDC_EXTCATINFO)) {
 		theApp->amuledlg->m_transferwnd->UpdateCatTabTitles();
+	}
+
+	// Applied live rather than listed as restart-needed: the search panel swaps
+	// the Name field between a history dropdown and a plain text field, hides
+	// or shows its Clear button, and (re)loads the stored terms -- all of which
+	// it can do in place (issue #697).
+	if (CfgChanged(IDC_SEARCHHISTORYENABLED) && theApp->amuledlg->m_searchwnd != nullptr) {
+		theApp->amuledlg->m_searchwnd->ApplySearchHistoryPref();
 	}
 
 	// Changes related to the statistics-dlg
