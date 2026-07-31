@@ -4551,6 +4551,10 @@ wxBitmap clientImages( size_t index )
         wxBitmap bitmap( xpm_data );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("clientImages: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
@@ -5303,6 +5307,14 @@ wxBitmap amuleSpecial( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
+    // Only reachable in __DEBUG__ builds: PrefsUnifiedDlg.cpp's pages[]
+    // table has one entry guarded by #ifdef __DEBUG__ ("Debugging",
+    // PreferencesDebug) whose m_imageidx is 25 -- easy to miss with a
+    // release build or a naming-convention-based grep, since every other
+    // entry there is Preferences<Something>Tab. A deleted-by-mistake
+    // index here wouldn't fail any build; it falls through to
+    // wxNullBitmap, so the only symptom is a blank icon on the
+    // Preferences > Debugging page in a debug build (see PR #725 review).
     if (index == 25)
     {
         static const unsigned char data[] = 
@@ -5344,6 +5356,10 @@ wxBitmap amuleSpecial( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("amuleSpecial: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
@@ -5597,6 +5613,10 @@ wxBitmap amuleDlgImages( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("amuleDlgImages: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
