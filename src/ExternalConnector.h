@@ -159,6 +159,16 @@ public:
 	 * loads nothing -- the subclass is the only source of configuration.
 	 */
 	virtual bool UsesConnectorConfigFile() const { return true; }
+
+	/**
+	 * Filename whose presence in <cwd>/config marks a portable install.
+	 *
+	 * Defaults to this connector's own config file (remote.conf). A
+	 * subclass that keeps its settings elsewhere overrides it: probing for
+	 * a file the tool never reads or writes can only detect portability by
+	 * accident, when some other tool happens to have left one behind.
+	 */
+	virtual wxString PortableProbeFile() const { return "remote.conf"; }
 	virtual void LoadAmuleConfig(CECFileConfig &cfg);
 	virtual void OnInitCommandSet();
 	virtual bool OnInit();

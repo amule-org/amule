@@ -582,7 +582,10 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 	if (!UsesConnectorConfigFile() || !parser.Found("config-file", &m_configFileName)) {
 		m_configFileName = "remote.conf";
 	}
-	m_configDir = GetConfigDir(m_configFileName);
+	// Portable detection is "does <cwd>/config/<probe> exist", so each
+	// connector probes for the file it actually owns rather than for
+	// remote.conf regardless.
+	m_configDir = GetConfigDir(PortableProbeFile());
 	m_configFileName = m_configDir + m_configFileName;
 
 	wxString aMuleConfigFile;

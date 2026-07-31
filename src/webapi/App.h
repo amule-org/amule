@@ -207,6 +207,11 @@ private:
 	/// exist to manage that file.
 	bool UsesConnectorConfigFile() const override { return false; }
 
+	// amuleapi keeps its settings in amuleapi.conf and never reads or
+	// writes remote.conf, so amuleapi.conf is what marks a portable
+	// amuleapi. amulecmd / amuleweb keep the remote.conf default.
+	wxString PortableProbeFile() const override { return "amuleapi.conf"; }
+
 	bool m_cliHasEcEncryption = false;
 	bool m_cliHasEcPassword = false;
 };
