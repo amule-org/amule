@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:03+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -347,6 +347,11 @@ msgstr "Ha solicitado ejecutar amuleapi al inicio pero no se puede ejecutar el b
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "No se pueden asociar los puertos con la dirección especificada: %s"
 
@@ -595,7 +600,7 @@ msgstr "ERROR FATAL: no se ha podido crear el temporizador"
 msgid "Networks"
 msgstr "Redes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr "Búsquedas"
 
@@ -612,13 +617,11 @@ msgstr "Compartidos"
 msgid "Messages"
 msgstr "Mensajes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr "Estadísticas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Preferencias"
 
@@ -732,47 +735,47 @@ msgstr "El directorio de tema '%s' no existe"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "AVISO: no se puede abrir el archivo de tema '%s' para lectura"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr "Ventana de redes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr "Ventana de búsquedas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Downloads Window"
 msgstr "Ventana de descargas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Ventana de archivos compartidos"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr "Ventana de mensajes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr "Ventana de gráficos de estadísticas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr "Ventana de preferencias de configuración"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr "Importar"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr "La herramienta para importar archivos de partes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr "Acerca de"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr "Acerca de/Ayuda"
 
@@ -5013,10 +5016,6 @@ msgstr "Envía el mensaje especificado."
 msgid "Close this chat-session."
 msgstr "Cerrar esta sesión de chat."
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr "Compartidos"
-
 #: src/muuli_wdr.cpp
 #, fuzzy, c-format
 msgid "Cancel %s"
@@ -5693,6 +5692,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Tiene habilitadas las conexiones externas, pero no ha especificado ninguna contraseña.\n"
+"Las conexiones externas no pueden ser habilitadas a menos que especifique una contraseña válida."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5738,14 +5745,6 @@ msgid ""
 msgstr ""
 "Su lista autoactualizable de servidores esta vacía.\n"
 "Se desactivará 'Autoactualizar la lista de servidores al inicio'."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Tiene habilitadas las conexiones externas, pero no ha especificado ninguna contraseña.\n"
-"Las conexiones externas no pueden ser habilitadas a menos que especifique una contraseña válida."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6774,6 +6773,10 @@ msgstr "Partes obtenidas"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Ruta del directorio"
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
+msgstr "Compartidos"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -337,6 +337,11 @@ msgstr ""
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "指定したアドレスにポートをバインドできませんでした: %s"
 
@@ -587,7 +592,7 @@ msgstr ""
 msgid "Networks"
 msgstr "ネットワーク"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr "検索"
 
@@ -604,13 +609,11 @@ msgstr ""
 msgid "Messages"
 msgstr "メッセージ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr "統計"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "設定"
 
@@ -722,48 +725,48 @@ msgstr "スキンディレクトリ '%s' は存在しません"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr "ネットワークウィンドウ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr "検索ウィンドウ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 #, fuzzy
 msgid "Downloads Window"
 msgstr "ダウンロード"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "共有ファイルウィンドウ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr "メッセージウィンドウ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr "統計グラフウィインドウ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr "個人設定ウィンドウ"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr "インポート"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr "部分ファイルをインポートするためのツール"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr "情報"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr "ソフトウェア情報／ヘルプ"
 
@@ -5027,10 +5030,6 @@ msgstr "指示するメッセージを送信します。"
 msgid "Close this chat-session."
 msgstr "チャット・セションを閉じます。"
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr "共有ファイル"
-
 #: src/muuli_wdr.cpp
 #, fuzzy, c-format
 msgid "Cancel %s"
@@ -5706,6 +5705,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"外部接続を有効にしましたがパスワードを設定していません。\n"
+"有効なパスワードを設定しないと外部接続を可能できません。"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr "この変更点を有効するにはaMuleを再起動しなければなりません：\n"
@@ -5753,14 +5760,6 @@ msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"外部接続を有効にしましたがパスワードを設定していません。\n"
-"有効なパスワードを設定しないと外部接続を可能できません。"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6803,6 +6802,10 @@ msgstr "得られた部分"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "ディレクトリパス"
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
+msgstr "共有ファイル"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"

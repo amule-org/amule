@@ -214,8 +214,17 @@ static void ApplyProxyToSession(wxWebSession &session)
 #define AMULE_HTTP_CURL_BIND 1
 #endif
 
-static wxWebSession &GetAmuleWebSession()
+// Returns the session aMule HTTP should use, and reports via `isCurlBackend`
+// whether that session is libcurl-backed. This matters because the caller must
+// only treat wxWebRequest::GetNativeHandle() as a CURL* when curl is the backend
+// that actually served the request. The compile-time wxUSE_WEBREQUEST_CURL says
+// only that curl is *available*, not that it *backs the default session* — on
+// macOS the default is the native NSURLSession, whose native handle is an
+// NSURLSessionTask*. Casting that to CURL* and calling curl_easy_setopt() on it
+// corrupts the Obj-C object and crashes on startup (amule-org/amule#601).
+static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 {
+	isCurlBackend = false;
 #ifdef AMULE_HTTP_CURL_BIND
 	// Switch to the curl backend only when an interface is actually bound —
 	// curl is just the means to make HTTP bindable. Forcing it otherwise would
@@ -227,9 +236,16 @@ static wxWebSession &GetAmuleWebSession()
 		wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
 		static wxWebSession curlSession = wxWebSession::New(wxWebSessionBackendCURL);
 		if (curlSession.IsOpened()) {
+			isCurlBackend = true;
 			return curlSession;
 		}
 	}
+	// Default session. AMULE_HTTP_CURL_BIND already excludes Windows (WinHTTP),
+	// so the default backend here is curl on Linux/*nix but NSURLSession on
+	// macOS — only the former hands back a CURL* from GetNativeHandle().
+#ifndef __WXOSX__
+	isCurlBackend = true;
+#endif
 #endif
 	return wxWebSession::GetDefault();
 }
@@ -253,8 +269,9 @@ extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsockty
 // synchronous-resolver fallback doesn't raise SIGALRM in this multi-threaded
 // process, CURLOPT_CONNECTTIMEOUT_MS so the connect phase (incl. DNS) gives up
 // after 30 s instead of the full OS resolver timeout, and — when an interface
-// is configured — CURLOPT_SOCKOPTFUNCTION to bind egress to it. Only runs where
-// curl is the selected backend (Linux / macOS); a no-op on Windows (WinHTTP).
+// is configured — CURLOPT_SOCKOPTFUNCTION to bind egress to it. The caller must
+// only invoke this when curl actually backs the request (see GetAmuleWebSession);
+// on the macOS NSURLSession backend GetNativeHandle() is not a CURL*.
 static void CustomizeCurlRequest(wxWebRequest &request)
 {
 #if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
@@ -286,10 +303,11 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 // bind-to-interface preference.
 wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
 {
-	wxWebSession &session = GetAmuleWebSession();
+	bool isCurlBackend = false;
+	wxWebSession &session = GetAmuleWebSession(isCurlBackend);
 	ApplyProxyToSession(session);
 	wxWebRequest request = session.CreateRequest(handler, url);
-	if (request.IsOk()) {
+	if (request.IsOk() && isCurlBackend) {
 		CustomizeCurlRequest(request);
 	}
 	return request;

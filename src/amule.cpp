@@ -1252,8 +1252,22 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// Create the External Connections Socket.
 	// Default is 4712.
 	// Get ready to handle connections from apps like amulecmd
-	if (thePrefs::GetECAddress().IsEmpty() || !myaddr[0].Hostname(thePrefs::GetECAddress())) {
+	// An empty address means "any", which is a deliberate choice the user can
+	// make. A configured address that will not resolve is a different case and
+	// must not fall through to the same place: binding every interface because
+	// the requested one happens to be down right now would silently expose the
+	// external connection -- full control of the daemon -- to networks the user
+	// thought they had excluded. Interface IPs come and go (VPN not up yet,
+	// DHCP not settled, laptop on another network), so this is reachable in
+	// normal use. Fall back to loopback instead: EC keeps working locally and
+	// nothing is exposed by accident.
+	if (thePrefs::GetECAddress().IsEmpty()) {
 		myaddr[0].AnyAddress();
+	} else if (!myaddr[0].Hostname(thePrefs::GetECAddress())) {
+		AddLogLineC(CFormat(_("External connection: could not bind to '%s', "
+				      "listening on 127.0.0.1 only.")) %
+			    thePrefs::GetECAddress());
+		myaddr[0].Hostname("127.0.0.1");
 	}
 	myaddr[0].Service(thePrefs::ECPort());
 	ECServerHandler = new ExternalConn(myaddr[0], msg);

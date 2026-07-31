@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -318,6 +318,11 @@ msgstr ""
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr ""
 
@@ -559,7 +564,7 @@ msgstr ""
 msgid "Networks"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr ""
 
@@ -576,13 +581,11 @@ msgstr ""
 msgid "Messages"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr ""
 
@@ -691,47 +694,47 @@ msgstr ""
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Downloads Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr ""
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr ""
 
@@ -4897,10 +4900,6 @@ msgstr ""
 msgid "Close this chat-session."
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr ""
-
 #: src/muuli_wdr.cpp
 #, c-format
 msgid "Cancel %s"
@@ -5565,6 +5564,12 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5605,12 +5610,6 @@ msgstr ""
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -6620,6 +6619,10 @@ msgstr ""
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
 msgstr ""
 
 #: src/SharedFilesCtrl.cpp

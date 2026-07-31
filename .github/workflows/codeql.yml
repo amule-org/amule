@@ -89,8 +89,9 @@ jobs:
           - language: c-cpp
             # build-mode: autobuild
             build-mode: manual
-          - language: java-kotlin
-            build-mode: none # This mode only analyzes Java. Set this to 'autobuild' or 'manual' to analyze Kotlin too.
+          # java-kotlin was dropped: the tree's last Java file, the generated
+          # ECCodes.java, went with the committed EC headers, so the analysis
+          # had nothing left to scan and failed on every run.
           - language: python
             build-mode: none
           #- language: ruby

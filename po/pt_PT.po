@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:16+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -345,6 +345,11 @@ msgstr "Pediu para executar o servidor web no arranque, mas o executável não p
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "Não foi possível associar os portos ao endereço especificado: %s"
 
@@ -594,7 +599,7 @@ msgstr "ERRO FATAL: Falha ao criar Temporizador"
 msgid "Networks"
 msgstr "Redes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr "Pesquisas"
 
@@ -611,13 +616,11 @@ msgstr "Ficheiros partilhados"
 msgid "Messages"
 msgstr "Mensagens"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr "Estatísticas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Preferências"
 
@@ -728,47 +731,47 @@ msgstr "Pasta para os temas '%s' não existe"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "AVISO: Não é possível abrir ficheiro de tema '%s' para leitura"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr "Janela de Redes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr "Janela de Pesquisas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Downloads Window"
 msgstr "Janela de Downloads"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Janela de Ficheiros Partilhados"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr "Janela de Mensagens"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr "Janela de Estatísticas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr "Janela de Preferências"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr "Importar"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr "A ferramenta de importação de ficheiro de partes"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr "Acerca"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr "Acerca/Ajuda"
 
@@ -5031,10 +5034,6 @@ msgstr "Envia a mensagem especificada."
 msgid "Close this chat-session."
 msgstr "Fechar esta conversa."
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr "Ficheiros Partilhados"
-
 #: src/muuli_wdr.cpp
 #, fuzzy, c-format
 msgid "Cancel %s"
@@ -5712,6 +5711,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Activou as ligações externas mas não especificou uma palavra-passe.\n"
+"As ligações externas não podem ser activadas a menos que seja especificada uma palavra-passe válida."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5760,14 +5767,6 @@ msgid ""
 msgstr ""
 "A sua lista de actualização automática de servidores está vazia.\n"
 "A 'actualização automática no arranque' será desactivada."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Activou as ligações externas mas não especificou uma palavra-passe.\n"
-"As ligações externas não podem ser activadas a menos que seja especificada uma palavra-passe válida."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6810,6 +6809,10 @@ msgstr "Partes Obtidas"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Caminho da Pasta"
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
+msgstr "Ficheiros Partilhados"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"

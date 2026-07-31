@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:21+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -343,6 +343,11 @@ msgstr "您要求啟動時執行網站伺服器，但系統無法執行 amuleweb
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "無法選定使用此位址的通訊埠：%s"
 
@@ -592,7 +597,7 @@ msgstr "嚴重錯誤：無法建立計時器"
 msgid "Networks"
 msgstr "網路"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr "搜尋"
 
@@ -609,13 +614,11 @@ msgstr "檔案分享"
 msgid "Messages"
 msgstr "訊息"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr "統計"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "偏好設定"
 
@@ -726,47 +729,47 @@ msgstr "面板目錄 %s 不存在"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "警告：無法開啟面板檔案 %s 供讀取"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr "網路 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr "搜尋 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Downloads Window"
 msgstr "下載 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "檔案分享 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr "訊息 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr "統計 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr "偏好設定 視窗"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr "匯入"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr "暫存檔匯入工具"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr "關於"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr "關於/幫助"
 
@@ -5016,10 +5019,6 @@ msgstr "傳送訊息。"
 msgid "Close this chat-session."
 msgstr "結束本次交談。"
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr "分享檔案"
-
 #: src/muuli_wdr.cpp
 #, fuzzy, c-format
 msgid "Cancel %s"
@@ -5691,6 +5690,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"您已經設定啓用外部連線但還沒有輸入密碼，\n"
+"輸入有效密碼之後，外部連線才能開始使用。"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5739,14 +5746,6 @@ msgid ""
 msgstr ""
 "您的自動更新伺服器清單是空的。\n"
 "「啟動時自動更新伺服器清單」功能將被停用。"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"您已經設定啓用外部連線但還沒有輸入密碼，\n"
-"輸入有效密碼之後，外部連線才能開始使用。"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6778,6 +6777,10 @@ msgstr "已獲得部分"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "所在目錄"
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
+msgstr "分享檔案"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"

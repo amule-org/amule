@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:13+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -340,6 +340,11 @@ msgstr "Nurodėte paleidus programą paleisti žiniatinklio serverį, bet amulew
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "Nepavyko susieti prievadų su nurodytu adresu: %s"
 
@@ -591,7 +596,7 @@ msgstr "KRITINĖ KLAIDA: nepavyko sukurti laiko skaitliuko"
 msgid "Networks"
 msgstr "Tinklas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr "Paieška"
 
@@ -608,13 +613,11 @@ msgstr "Dalinami failai"
 msgid "Messages"
 msgstr "Žinutės"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr "Statistika"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Parinktys"
 
@@ -725,48 +728,48 @@ msgstr "Išvaizdos failų aplankas %s neegzistuoja"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "DĖMESIO: nepavyko atverti temos failo „%s“ skaitymui"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr "Tinklo langas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr "Paieškos langas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 #, fuzzy
 msgid "Downloads Window"
 msgstr "Atsiunčiama"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Dalinamų failų langas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr "Žinučių langas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr "Statistikos grafikų langas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr "Parinkčių langas"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr "Įkelti"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr "Dalinai atsiųstų failų įkėlimo įrankis"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr "Apie"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr "Apie/pagalba"
 
@@ -5062,10 +5065,6 @@ msgstr "Išsiųsti įrašytą žinutę."
 msgid "Close this chat-session."
 msgstr "Baigti pokalbį ir užverti pokalbio kortelę."
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr "Dalinami failai"
-
 #: src/muuli_wdr.cpp
 #, fuzzy, c-format
 msgid "Cancel %s"
@@ -5748,6 +5747,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Įjungėte išorinius ryšius, bet parinktyse nenurodėte slaptažodžio.\n"
+"Kol nenurodysite slaptažodžio, išoriniai ryšiai nebus įjungti."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5797,14 +5804,6 @@ msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Įjungėte išorinius ryšius, bet parinktyse nenurodėte slaptažodžio.\n"
-"Kol nenurodysite slaptažodžio, išoriniai ryšiai nebus įjungti."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6875,6 +6874,10 @@ msgstr "Gautos dalys"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Kelias"
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
+msgstr "Dalinami failai"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"

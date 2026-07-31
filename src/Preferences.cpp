@@ -1449,7 +1449,14 @@ void CPreferences::BuildItemList(const wxString &appdir)
 			"/ExternalConnect/AcceptExternalConnections", s_AcceptExternalConnections, false)));
 	NewCfgItem(IDC_EXT_CONN_REQUIRE_ENCRYPTION,
 		(new Cfg_Bool("/ExternalConnect/RequireEncryption", s_ECRequireEncryption, false)));
-	NewCfgItem(IDC_EXT_CONN_IP, (new Cfg_Str("/ExternalConnect/ECAddress", s_ECAddr, "")));
+	// Loopback by default, so a fresh install does not expose the external
+	// connection -- which grants full control of the daemon -- to the whole
+	// network before the user has thought about it. Existing configs are
+	// untouched: aMule writes every key on save, so any config it has ever
+	// written already carries an ECAddress line, and wxConfig only applies a
+	// default when the key is *absent*. An empty value keeps meaning "any
+	// address" (see amule.cpp), so upgrades keep binding exactly as before.
+	NewCfgItem(IDC_EXT_CONN_IP, (new Cfg_Str("/ExternalConnect/ECAddress", s_ECAddr, "127.0.0.1")));
 	NewCfgItem(IDC_EC_INTERFACE,
 		(new Cfg_Str("/ExternalConnect/ECNetworkInterface", s_ECNetworkInterface, "")));
 	NewCfgItem(IDC_EXT_CONN_TCP_PORT, (MkCfg_Int("/ExternalConnect/ECPort", s_ECPort, 4712)));

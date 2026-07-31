@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 00:41+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:19+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -339,6 +339,11 @@ msgstr "Zahtevali ste zagon spletnega strežnika ob zagonu programa, a programa 
 
 #: src/amule.cpp
 #, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Could not bind ports to the specified address: %s"
 msgstr "Vrat ni bilo moč povezati z navedenim naslovom: %s"
 
@@ -591,7 +596,7 @@ msgstr "USODNA NAPAKA: ustvaritev časomerilnika ni uspela"
 msgid "Networks"
 msgstr "Omrežja"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches"
 msgstr "Iskanja"
 
@@ -608,13 +613,11 @@ msgstr "Deljene datoteke"
 msgid "Messages"
 msgstr "Sporočila"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/Statistics.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Statistics"
 msgstr "Statistika"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#: src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Nastavitve"
 
@@ -724,47 +727,47 @@ msgstr "Mapa za preobleke »%s« ne obstaja"
 msgid "WARNING: Unable to open skin file '%s' for read"
 msgstr "OPOZORILO: datoteke s preobleko »%s« ni moč odpreti za branje"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Networks Window"
 msgstr "Okno z omrežji"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Searches Window"
 msgstr "Okno z iskanji"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Downloads Window"
 msgstr "Okno s prejemanji"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Shared Files Window"
 msgstr "Okno z deljenimi datotekami"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Messages Window"
 msgstr "Okno s sporočili"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
 msgstr "Okno s statističnimi grafi"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
 msgstr "Okno z nastavitvami"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "Import"
 msgstr "Uvoz"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "The partfile importer tool"
 msgstr "Orodje za uvažanje delnih datotek"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
+#: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
 msgstr "O programu"
 
-#: src/amuleDlg.cpp src/muuli_wdr.cpp
+#: src/amuleDlg.cpp
 msgid "About/Help"
 msgstr "O programu/pomoč"
 
@@ -5053,10 +5056,6 @@ msgstr "Pošlje navedeno sporočilo."
 msgid "Close this chat-session."
 msgstr "Zapri to pogovorno sejo."
 
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp src/Statistics.cpp
-msgid "Shared Files"
-msgstr "Deljene datoteke"
-
 #: src/muuli_wdr.cpp
 #, fuzzy, c-format
 msgid "Cancel %s"
@@ -5743,6 +5742,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Omogočili ste zunanje povezave, vendar niste navedli gesla.\n"
+"Zunanje povezave ne morejo biti omogočene, dokler ne navedete veljavnega gesla."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5790,14 +5797,6 @@ msgid ""
 msgstr ""
 "Seznam za samodejno posodobitev strežnikov je prazen.\n"
 "Možnost »Ob zagonu samodejno posodobi seznam strežnikov« bo onemogočena."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Omogočili ste zunanje povezave, vendar niste navedli gesla.\n"
-"Zunanje povezave ne morejo biti omogočene, dokler ne navedete veljavnega gesla."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6864,6 +6863,10 @@ msgstr "Dobljeni deli"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Pot mape"
+
+#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+msgid "Shared Files"
+msgstr "Deljene datoteke"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"
