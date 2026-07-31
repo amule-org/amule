@@ -1244,6 +1244,26 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 
+	// Same for external connections: enabled with no password is not a
+	// configuration aMule can act on. This used to report the problem and then
+	// quietly clear the checkbox on the way out, so the dialog closed with the
+	// user's intent discarded and the message already dismissed. Keep the
+	// dialog open on the password field instead, so the answer to the message
+	// is one field away. Wording unchanged so existing translations still
+	// apply.
+	if (thePrefs::AcceptExternalConnections() && thePrefs::ECPassword().IsEmpty()) {
+		wxMessageBox(_("You have enabled external connections but have not specified a "
+			       "password.\nExternal connections cannot be enabled unless a valid "
+			       "password is specified."),
+			_("Message"),
+			wxOK | wxICON_INFORMATION,
+			this);
+		if (wxWindow *field = FindWindow(IDC_EXT_CONN_PASSWD)) {
+			field->SetFocus();
+		}
+		return;
+	}
+
 	bool restart_needed = false;
 	wxString restart_needed_msg = _("aMule must be restarted to enable these changes:\n\n");
 
@@ -1286,10 +1306,10 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// so a change to either takes effect only after aMule relaunches it.
 	// Passwords are deliberately not in this list: amuleapi re-reads
 	// amuleapi-passwords on every login, so a password change is live.
-	// Skip the prompt when external connections won't be usable (off, or on
-	// but without a password — the guard further down then disables
-	// amuleapi anyway), so we don't tell the user to restart for a service
-	// that will not run.
+	// Skip the prompt when external connections won't be usable, so we don't
+	// tell the user to restart for a service that will not run. In practice
+	// that means "off": enabled-without-a-password never reaches here, having
+	// returned above with the dialog still open.
 	const bool ecUsable = thePrefs::AcceptExternalConnections() && !thePrefs::ECPassword().IsEmpty();
 	if (ecUsable && (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
 				CfgChanged(IDC_AMULEAPI_BIND))) {
@@ -1310,18 +1330,9 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 			this);
 	}
 
-	if (thePrefs::AcceptExternalConnections() && thePrefs::ECPassword().IsEmpty()) {
-		thePrefs::EnableExternalConnections(false);
-
-		wxMessageBox(_(
-			"You have enabled external connections but have not specified a password.\nExternal "
-			"connections cannot be enabled unless a valid password is specified."));
-	}
-
 #ifndef CLIENT_GUI
 	// The web server and amuleapi are EC clients of the core; without external
-	// connections (which the check above may itself have just turned off for a
-	// missing password) they can never connect. OnCheckBoxChange already warns
+	// connections they can never connect. OnCheckBoxChange already warns
 	// live and reverts the toggles, so this is a silent backstop that keeps the
 	// saved prefs consistent for a config loaded in a mismatched state.
 	//
