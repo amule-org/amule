@@ -181,7 +181,11 @@ void CMuleNotebook::OnRMButton(wxMouseEvent &event)
 		menu.Append(MP_CLOSE_ALL_TABS, wxString(_("Close all tabs")));
 		menu.Append(MP_CLOSE_OTHER_TABS, wxString(_("Close other tabs")));
 
-		PopupMenu(&menu, event.GetPosition());
+		// Pop up at the pointer. On wxGTK the right-click lands on the tab
+		// strip, which sits outside the client area PopupMenu() positions
+		// against, so event.GetPosition() offset the menu upward by the
+		// tab-strip height. The default position uses the cursor instead.
+		PopupMenu(&menu);
 	}
 }
 
