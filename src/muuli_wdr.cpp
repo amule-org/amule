@@ -5307,6 +5307,14 @@ wxBitmap amuleSpecial( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
+    // Only reachable in __DEBUG__ builds: PrefsUnifiedDlg.cpp's pages[]
+    // table has one entry guarded by #ifdef __DEBUG__ ("Debugging",
+    // PreferencesDebug) whose m_imageidx is 25 -- easy to miss with a
+    // release build or a naming-convention-based grep, since every other
+    // entry there is Preferences<Something>Tab. A deleted-by-mistake
+    // index here wouldn't fail any build; it falls through to
+    // wxNullBitmap, so the only symptom is a blank icon on the
+    // Preferences > Debugging page in a debug build (see PR #725 review).
     if (index == 25)
     {
         static const unsigned char data[] = 
