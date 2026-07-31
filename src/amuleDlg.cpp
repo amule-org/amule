@@ -1716,10 +1716,20 @@ void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon,
 			CCtypeAsciiScope asciiCtype;
 			wxBitmapBundle art = wxArtProvider::GetBitmapBundle(
 				CamuleArtProvider::MakeId(iconName.Lower()), wxART_TOOLBAR, wxSize(32, 32));
-			if (art.IsOk()) {
-				m_tblist.push_back(art);
-				return;
+			if (!art.IsOk()) {
+				// Every built-in toolbar icon ships embedded in
+				// icon_data.c, generated from the same src/icons/
+				// sources CamuleArtProvider reads -- this can only
+				// fail with a broken build, not a reachable runtime
+				// condition. Fall back to a generic stock icon rather
+				// than shipping a bespoke raster twin of each toolbar
+				// asset just for an error path that can't happen.
+				AddLogLineN("Warning: Could not load built-in icon for " + iconName);
+				art = wxArtProvider::GetBitmapBundle(
+					wxART_MISSING_IMAGE, wxART_TOOLBAR, wxSize(32, 32));
 			}
+			m_tblist.push_back(art);
+			return;
 		}
 		// The toolbar art only exists at one (32x32) size. Store it as a
 		// wxBitmapBundle with a smooth 2x upscale so DPI-aware toolbars
@@ -1784,17 +1794,21 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToolBar *wndToolbar)
 	// Clear the toolbar image list
 	m_tblist.clear();
 
-	// Add the images to the image list, in ToolbarSkinEnum order
-	Add_Skin_Icon("Toolbar_Network", amuleDlgImages(20), useSkins);
-	Add_Skin_Icon("Toolbar_Transfers", amuleDlgImages(21), useSkins);
-	Add_Skin_Icon("Toolbar_Search", amuleDlgImages(22), useSkins);
-	Add_Skin_Icon("Toolbar_Shared", amuleDlgImages(23), useSkins);
-	Add_Skin_Icon("Toolbar_Messages", amuleDlgImages(24), useSkins);
-	Add_Skin_Icon("Toolbar_Stats", amuleDlgImages(25), useSkins);
-	Add_Skin_Icon("Toolbar_Prefs", amuleDlgImages(26), useSkins);
-	Add_Skin_Icon("Toolbar_Import", amuleDlgImages(32), useSkins);
-	Add_Skin_Icon("Toolbar_About", amuleDlgImages(29), useSkins);
-	Add_Skin_Icon("Toolbar_Blink", amuleDlgImages(33), useSkins);
+	// Add the images to the image list, in ToolbarSkinEnum order.
+	// wxNullBitmap: Add_Skin_Icon only falls back to its stdIcon argument
+	// when no skin is active AND the built-in CamuleArtProvider lookup
+	// failed -- see the comment there for why that combination can't
+	// happen with a correct build, so there's no bespoke bitmap to pass.
+	Add_Skin_Icon("Toolbar_Network", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Transfers", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Search", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Shared", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Messages", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Stats", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Prefs", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Import", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_About", wxNullBitmap, useSkins);
+	Add_Skin_Icon("Toolbar_Blink", wxNullBitmap, useSkins);
 
 	// Build aMule toolbar
 	wndToolbar->SetMargins(0, 0);
