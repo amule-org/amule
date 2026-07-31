@@ -161,6 +161,21 @@ public:
 	virtual bool UsesConnectorConfigFile() const { return true; }
 
 	/**
+	 * Whether this connector offers -P / --password on the command line.
+	 *
+	 * amuleapi returns false. A password passed there lands in argv, which
+	 * any local user can read out of ps, and amuleapi has two ways to get
+	 * the credential that do not: the ephemeral token the core writes when
+	 * it spawns amuleapi, and [EC]/Password in its own amuleapi.conf.
+	 * Keeping the option registered would keep offering the one route that
+	 * leaks.
+	 *
+	 * amulecmd and amuleweb keep it. Both are commonly run by hand, and
+	 * neither owns a config file that could hold the value instead.
+	 */
+	virtual bool UsesEcPasswordOption() const { return true; }
+
+	/**
 	 * Filename whose presence in <cwd>/config marks a portable install.
 	 *
 	 * Defaults to this connector's own config file (remote.conf). A

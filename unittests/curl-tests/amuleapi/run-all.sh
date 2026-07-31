@@ -91,12 +91,19 @@ run_phase() {
 	# file as-is instead of generating a per-process secret.
 	printf '%s' "$JWT_SECRET" > /tmp/amuleapi-regtest/amuleapi-jwt-secret
 	chmod 600 /tmp/amuleapi-regtest/amuleapi-jwt-secret
+	# The first of these also writes a defaults amuleapi.conf, which the
+	# EC password is seeded into below. Neither connects to amuled -- they
+	# write the credential file and exit -- so no EC settings are needed
+	# here at all.
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--host=127.0.0.1 --port=4712 --password=amule \
 		--set-admin-pass=adminpass > /dev/null 2>&1
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--host=127.0.0.1 --port=4712 --password=amule \
 		--set-guest-pass=guestpass > /dev/null 2>&1
+	# amuleapi has no --password: it takes the EC credential from the
+	# ephemeral token the core writes when it spawns amuleapi, or from
+	# amuleapi.conf. Nothing spawns it here, so seed the config file.
+	sed -i'.bak' "s|^Password=.*|Password=amule|" /tmp/amuleapi-regtest/amuleapi.conf
+	rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
 	# 27-static-frontend exercises the static-frontend serve path. It
 	# plants symlinks + an oversized file into StaticRoot during the
 	# run, so the dir has to be writable. The bundled source tree is
@@ -118,7 +125,7 @@ run_phase() {
 		rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
 	fi
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--host=127.0.0.1 --port=4712 --password=amule \
+		--host=127.0.0.1 --port=4712 \
 		> /tmp/amuleapi.log 2>&1 &
 	# Poll /version until the daemon is ready instead of guessing the
 	# cold-start time. The first EC GET_UPDATE roundtrip can take a

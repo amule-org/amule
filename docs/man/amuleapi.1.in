@@ -7,7 +7,6 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .B_untranslated amuleapi
 .RB [ \-h " " \fI<host> ]
 .RB [ \-p " " \fI<port> ]
-.RB [ \-P " " \fI<password> ]
 .RB_untranslated [ \-\-bind " " \fI<address> ]
 .RB_untranslated [ \-\-http\-port " " \fI<num> ]
 .RB_untranslated [ \-\-config\-dir " " \fI<path> ]
@@ -44,9 +43,6 @@ EC host to connect to (default: 127.0.0.1).
 .TP
 \fB[ \-p\fR \fI<port>\fR, \fB\-\-port\fR=\fI<port>\fR \fB]\fR
 EC port on the amuled instance (default: 4712).
-.TP
-\fB[ \-P\fR \fI<password>\fR, \fB\-\-password\fR=\fI<password>\fR \fB]\fR
-EC plaintext password (matches amuled's [ExternalConnect]/Password).
 .TP
 \fB[ \-\-bind\fR=\fI<address>\fR \fB]\fR
 HTTP bind address (default: 127.0.0.1, overrides amuleapi.conf
@@ -121,7 +117,9 @@ Short\-lived login token, written by \fBamule\fR(1) / \fBamuled\fR(1) when
 they start amuleapi themselves. Created fresh each time, read once and
 deleted straight away, so an auto\-started amuleapi needs no EC password of
 its own. Started by hand, amuleapi finds no token and uses
-\fB[EC]/Password\fR from \fIamuleapi.conf\fR instead.
+\fB[EC]/Password\fR from \fIamuleapi.conf\fR instead. There is no
+\fB\-\-password\fR option: a password given on the command line is visible
+to every local user through \fBps\fR(1).
 .SH REPORTING BUGS
 Please report bugs either on our forum
 (\fIhttps://github.com/amule-org/amule/discussions\fR), or in our

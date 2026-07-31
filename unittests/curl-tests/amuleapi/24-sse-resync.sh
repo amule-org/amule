@@ -70,7 +70,7 @@ Port=4713
 [EC]
 Host=127.0.0.1
 Port=4712
-Password=
+Password=amule
 
 [Auth]
 LoginFailureWindowSeconds=60
@@ -81,7 +81,7 @@ LoginLockoutSeconds=300
 EventBusRingCapacity=4
 EOF
 "$BIN" --config-dir="$CONFIG_DIR" \
-	--host=127.0.0.1 --port=4712 --password=amule \
+	--host=127.0.0.1 --port=4712 \
 	> "$LOG" 2>&1 &
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
 	if curl -s -o /dev/null --max-time 1 "$HOST/api/v0/version" 2>/dev/null; then

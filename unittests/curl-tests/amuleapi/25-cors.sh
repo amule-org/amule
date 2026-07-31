@@ -81,7 +81,7 @@ CorsOriginAllowlist=$allowlist
 [EC]
 Host=127.0.0.1
 Port=4712
-Password=
+Password=amule
 
 [Auth]
 LoginFailureWindowSeconds=60
@@ -89,7 +89,7 @@ LoginFailureThreshold=5
 LoginLockoutSeconds=300
 EOF
 	"$BIN" --config-dir="$CONFIG_DIR" \
-		--host=127.0.0.1 --port=4712 --password=amule \
+		--host=127.0.0.1 --port=4712 \
 		> "$LOG" 2>&1 &
 	# Wait for /version to respond.
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do

@@ -513,11 +513,13 @@ void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char 
 		_("aMule's port for External Connection. (default: 4712)"),
 		wxCMD_LINE_VAL_NUMBER,
 		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("P",
-		"password",
-		_("External Connection password."),
-		wxCMD_LINE_VAL_STRING,
-		wxCMD_LINE_PARAM_OPTIONAL);
+	if (UsesEcPasswordOption()) {
+		parser.AddOption("P",
+			"password",
+			_("External Connection password."),
+			wxCMD_LINE_VAL_STRING,
+			wxCMD_LINE_PARAM_OPTIONAL);
+	}
 	if (UsesConnectorConfigFile()) {
 		parser.AddOption("f",
 			"config-file",
@@ -621,12 +623,14 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 		m_port = port;
 	}
 
-	wxString pass_plain;
-	if (parser.Found("password", &pass_plain)) {
-		if (!pass_plain.IsEmpty()) {
-			m_password.Decode(MD5Sum(pass_plain).GetHash());
-		} else {
-			m_password.Clear();
+	if (UsesEcPasswordOption()) {
+		wxString pass_plain;
+		if (parser.Found("password", &pass_plain)) {
+			if (!pass_plain.IsEmpty()) {
+				m_password.Decode(MD5Sum(pass_plain).GetHash());
+			} else {
+				m_password.Clear();
+			}
 		}
 	}
 

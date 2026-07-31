@@ -201,6 +201,11 @@ private:
 	/// --write-config and --create-config-from too, since all three only
 	/// exist to manage that file.
 	bool UsesConnectorConfigFile() const override { return false; }
+	// No -P/--password: it would put the EC secret in argv, where ps
+	// exposes it to every local user. amuleapi gets the credential from
+	// the token the core writes when it spawns us, or from [EC]/Password
+	// in amuleapi.conf.
+	bool UsesEcPasswordOption() const override { return false; }
 
 	// amuleapi keeps its settings in amuleapi.conf and never reads or
 	// writes remote.conf, so amuleapi.conf is what marks a portable
@@ -208,7 +213,6 @@ private:
 	wxString PortableProbeFile() const override { return "amuleapi.conf"; }
 
 	bool m_cliHasEcEncryption = false;
-	bool m_cliHasEcPassword = false;
 };
 
 DECLARE_APP(CamuleapiApp)

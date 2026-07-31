@@ -163,7 +163,6 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 	// second case. Same shape as the bind / http-port branches above.
 	m_cliHasEcHost = parser.Found("host");
 	m_cliHasEcPort = parser.Found("port");
-	m_cliHasEcPassword = parser.Found("password");
 	m_cliHasEcEncryption = parser.Found("disable-ec-encryption");
 
 	return CaMuleExternalConnector::OnCmdLineParsed(parser);
@@ -268,7 +267,7 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		// command line -- same shape as host/port/password above.
 		m_ECEncryption = m_apiConfig.EcCfg().encryption;
 	}
-	if (!m_cliHasEcPassword && !m_apiConfig.EcCfg().password.empty()) {
+	if (!m_apiConfig.EcCfg().password.empty()) {
 		// amuleapi.conf [EC]/Password is plaintext; the base class
 		// expects an MD5-hashed CMD4Hash (because that's what amuled
 		// stores). MD5-hash here so a one-line amuleapi.conf edit
@@ -284,8 +283,9 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 	// writing it 0600.
 	//
 	// Wins over amuleapi.conf: when the core issued a token, that is the
-	// credential it wants us to use. An explicit --password still wins,
-	// since that is an operator deliberately overriding us.
+	// credential it wants us to use. Nothing overrides it: there is no
+	// --password to override it with, so the token and amuleapi.conf are
+	// the only two sources.
 	//
 	// This is what replaced --amule-config-file. That flag handed us the
 	// hashed EC password straight out of amule.conf, and in this protocol
@@ -297,7 +297,7 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 	// Deleted on read, not after connecting. A failed connection retries
 	// from memory, so holding the file until the handshake completes would
 	// only widen the window in which the secret is at rest for nothing.
-	if (!m_cliHasEcPassword) {
+	{
 		const std::string tokenPath = webcommon::EcTokenFilePath(std::string(config_dir.utf8_str()));
 		std::string token;
 		if (webcommon::ReadAndConsumeEcToken(tokenPath, token)) {
