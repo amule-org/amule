@@ -27,13 +27,14 @@
 #include "DirectoryTreeCtrl.h" // Interface declarations
 
 #include <wx/app.h>
+#include <wx/artprov.h> // Needed for the "amule:folder"/"amule:folder_shared" art ids
 #include <wx/filename.h>
 #include <wx/imaglist.h>
+#include <wx/msgdlg.h> // Needed for wxMessageBox (was pulled in transitively via muuli_wdr.h's wx/wx.h)
 
 #include <common/StringFunctions.h>
 #include <common/FileFunctions.h>
-#include "amule.h"     // Needed for theApp
-#include "muuli_wdr.h" // Needed for amuleSpecial
+#include "amule.h" // Needed for theApp
 
 wxBEGIN_EVENT_TABLE(CDirectoryTreeCtrl, wxTreeCtrl)
 	EVT_TREE_ITEM_RIGHT_CLICK(wxID_ANY, CDirectoryTreeCtrl::OnRButtonDown)
@@ -130,8 +131,10 @@ void CDirectoryTreeCtrl::Init()
 
 	// init image(s)
 	wxImageList *images = new wxImageList(16, 16);
-	images->Add(wxBitmap(amuleSpecial(1)));
-	images->Add(wxBitmap(amuleSpecial(2)));
+	// wxImageList::Add() wants a flat wxBitmap, not a bundle -- it's a
+	// raster cache with no per-DPI resolution of its own.
+	images->Add(wxArtProvider::GetBitmap("amule:folder", wxART_OTHER, wxSize(16, 16)));
+	images->Add(wxArtProvider::GetBitmap("amule:folder_shared", wxART_OTHER, wxSize(16, 16)));
 	// Gives wxTreeCtrl ownership of the list
 	AssignImageList(images);
 

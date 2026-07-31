@@ -24,6 +24,7 @@
 //
 
 #include <wx/app.h>
+#include <wx/artprov.h>  // Needed for wxArtProvider::GetBitmap (search-tab close icon)
 #include <wx/clipbrd.h>  // Needed for wxTheClipboard (search-name Paste enable check)
 #include <wx/combobox.h> // Needed for the IDC_SEARCHNAME history dropdown
 #include <wx/config.h>   // Needed to persist the default search type
@@ -109,10 +110,14 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 #ifdef __WXMAC__
 	// #warning TODO: restore the image list if/when wxMac supports locating the image
 #else
-	// Initialise the image list
+	// Initialise the image list. Both entries were previously a bespoke
+	// "X in a box" bitmap differing only by a hover-highlight border
+	// colour; wx's own stock close icon covers both states just as well
+	// without a second custom asset.
 	wxImageList *m_ImageList = new wxImageList(16, 16);
-	m_ImageList->Add(amuleSpecial(3));
-	m_ImageList->Add(amuleSpecial(4));
+	wxBitmap closeIcon = wxArtProvider::GetBitmap(wxART_CLOSE, wxART_OTHER, wxSize(16, 16));
+	m_ImageList->Add(closeIcon);
+	m_ImageList->Add(closeIcon);
 	m_notebook->AssignImageList(m_ImageList);
 #endif
 

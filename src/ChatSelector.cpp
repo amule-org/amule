@@ -33,7 +33,6 @@
 #include "amule.h"        // Needed for theApp
 #include "ClientRef.h"    // Needed for CClientRef
 #include "OtherFunctions.h"
-#include "muuli_wdr.h" // Needed for amuleSpecial
 #include "UserEvents.h"
 #include "Constants.h" // Needed for MS_NONE
 
@@ -107,7 +106,7 @@ CChatSelector::CChatSelector(wxWindow *parent, wxWindowID id, const wxPoint &pos
 	// Chat icon -- default state
 	imagelist->Add(wxArtProvider::GetBitmap("amule:chat"));
 	// Close icon -- on mouseover
-	imagelist->Add(amuleSpecial(4));
+	imagelist->Add(wxArtProvider::GetBitmap(wxART_CLOSE, wxART_OTHER, wxSize(16, 16)));
 
 	AssignImageList(imagelist);
 }
