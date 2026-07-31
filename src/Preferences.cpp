@@ -2080,6 +2080,15 @@ void CPreferences::SavePreferences()
 
 	// Ensure that the changes are saved to disk.
 	cfg->Flush();
+
+	// On a fresh install the file did not exist when the startup pass ran, so
+	// wxFileConfig has only just created it -- with whatever the umask allows,
+	// which on Debian and Ubuntu is group-writable. Tighten it here, once it
+	// exists. Cheap to repeat: RestrictToOwner stats first and does nothing
+	// when the mode is already owner-only, which it stays, because wxFileConfig
+	// carries the mode across the replace it does on every later save.
+	RestrictToOwner(CPath(GetConfigDir() + "amule.conf"));
+	RestrictToOwner(CPath(GetConfigDir() + "amule.conf.bak"));
 }
 
 void CPreferences::SaveCats()
