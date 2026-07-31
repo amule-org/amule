@@ -42,16 +42,18 @@
 #include <wx/tooltip.h>
 #include <wx/utils.h> // wxGetUserHome
 
-// Network-interface enumeration for the "Bind to interface" drop-down.
+// Network-interface enumeration for the "Bind to interface" and "Bind to IP"
+// drop-downs.
+#include <vector>
 #ifdef __WINDOWS__
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
-#include <vector>
 #else
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include <net/if.h>
+#include <arpa/inet.h> // inet_ntop
 #endif
 
 #include "AmuleApiCredentials.h"
@@ -88,49 +90,91 @@
 
 namespace
 {
-// Enumerate this machine's usable network interfaces for the "Bind to
-// interface" drop-down. The strings returned are exactly what gets stored in
-// the preference and later resolved to an index in LibSocketAsio.cpp: POSIX
-// interface names (en0, eth0, tun0) and, on Windows, adapter friendly names
-// (Ethernet, Wi-Fi). Loopback is skipped. The control stays editable, so an
-// interface that is down right now (a VPN tunnel) can still be typed in.
-wxArrayString DetectNetworkInterfaces()
+// One network interface as the preferences dialog needs it: the name that goes
+// into the "bind to interface" preference, plus the IPv4 addresses currently
+// assigned to it for the "bind to IP" drop-down. Both come out of a single
+// enumeration because the platform APIs hand back name and address together.
+struct NetworkInterface
 {
-	wxArrayString result;
+	wxString name;
+	wxArrayString ipv4;
+};
+
+// Enumerate this machine's usable network interfaces. The names are exactly
+// what gets stored in the preference and later resolved to an index in
+// LibSocketAsio.cpp: POSIX interface names (en0, eth0, tun0) and, on Windows,
+// adapter friendly names (Ethernet, Wi-Fi). Loopback is skipped; callers that
+// want 127.0.0.1 offer it unconditionally rather than only when the loopback
+// interface happens to enumerate. Only IPv4 addresses are collected, because
+// aMule's sockets are IPv4 (see the isV6 note in LibSocketAsio.cpp). Both
+// controls stay editable, so an interface or address that is down right now --
+// a VPN tunnel, a laptop on a different network -- can still be typed in.
+std::vector<NetworkInterface> DetectNetworkInterfaces()
+{
+	std::vector<NetworkInterface> result;
+
+	// Find the entry for @a name, appending one if this is the first time we
+	// have seen it. Needed because the POSIX enumeration lists one node per
+	// address family, so a dual-stack interface appears more than once.
+	auto entryFor = [&result](const wxString &name) -> NetworkInterface & {
+		for (NetworkInterface &iface : result) {
+			if (iface.name == name) {
+				return iface;
+			}
+		}
+		result.emplace_back();
+		result.back().name = name;
+		return result.back();
+	};
+
 #ifdef __WINDOWS__
 	ULONG size = 15000;
 	std::vector<uint8_t> buf(size);
-	const ULONG flags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
-			    GAA_FLAG_SKIP_DNS_SERVER;
+	// Unicast addresses are deliberately NOT skipped here: they are what
+	// fills the "bind to IP" drop-down.
+	const ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
 	PIP_ADAPTER_ADDRESSES aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
-	ULONG ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
+	ULONG ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, aa, &size);
 	if (ret == ERROR_BUFFER_OVERFLOW) {
 		buf.resize(size);
 		aa = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(&buf[0]);
-		ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, NULL, aa, &size);
+		ret = ::GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, aa, &size);
 	}
 	if (ret == NO_ERROR) {
-		for (PIP_ADAPTER_ADDRESSES p = aa; p != NULL; p = p->Next) {
-			if (p->IfType == IF_TYPE_SOFTWARE_LOOPBACK || p->FriendlyName == NULL) {
+		for (PIP_ADAPTER_ADDRESSES p = aa; p != nullptr; p = p->Next) {
+			if (p->IfType == IF_TYPE_SOFTWARE_LOOPBACK || p->FriendlyName == nullptr) {
 				continue;
 			}
-			wxString name(p->FriendlyName);
-			if (result.Index(name) == wxNOT_FOUND) {
-				result.Add(name);
+			NetworkInterface &iface = entryFor(wxString(p->FriendlyName));
+			for (PIP_ADAPTER_UNICAST_ADDRESS ua = p->FirstUnicastAddress; ua != nullptr;
+				ua = ua->Next) {
+				const sockaddr *sa = ua->Address.lpSockaddr;
+				if (sa == nullptr || sa->sa_family != AF_INET) {
+					continue;
+				}
+				char text[INET_ADDRSTRLEN] = { 0 };
+				const sockaddr_in *sin = reinterpret_cast<const sockaddr_in *>(sa);
+				if (::inet_ntop(AF_INET, &sin->sin_addr, text, sizeof(text)) != nullptr) {
+					iface.ipv4.Add(wxString::FromUTF8(text));
+				}
 			}
 		}
 	}
 #else
-	struct ifaddrs *ifaces = NULL;
+	struct ifaddrs *ifaces = nullptr;
 	if (getifaddrs(&ifaces) == 0) {
-		for (struct ifaddrs *p = ifaces; p != NULL; p = p->ifa_next) {
-			if (p->ifa_name == NULL || (p->ifa_flags & IFF_LOOPBACK)) {
+		for (struct ifaddrs *p = ifaces; p != nullptr; p = p->ifa_next) {
+			if (p->ifa_name == nullptr || (p->ifa_flags & IFF_LOOPBACK)) {
 				continue;
 			}
-			// getifaddrs lists one node per address family, so names repeat.
-			wxString name = wxString::FromUTF8(p->ifa_name);
-			if (result.Index(name) == wxNOT_FOUND) {
-				result.Add(name);
+			NetworkInterface &iface = entryFor(wxString::FromUTF8(p->ifa_name));
+			if (p->ifa_addr == nullptr || p->ifa_addr->sa_family != AF_INET) {
+				continue;
+			}
+			char text[INET_ADDRSTRLEN] = { 0 };
+			const sockaddr_in *sin = reinterpret_cast<const sockaddr_in *>(p->ifa_addr);
+			if (::inet_ntop(AF_INET, &sin->sin_addr, text, sizeof(text)) != nullptr) {
+				iface.ipv4.Add(wxString::FromUTF8(text));
 			}
 		}
 		freeifaddrs(ifaces);
@@ -657,18 +701,42 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_buttonColor = CastChild(IDC_COLOR_BUTTON, wxButton);
 	m_choiceColor = CastChild(IDC_COLORSELECTOR, wxChoice);
 
-	// Fill the "Bind to interface" drop-down with the detected interfaces.
-	// Done before the Cfg->widget transfer below so the stored value (which
-	// may be an interface that is currently down) is preserved as typed text.
-	// In CLIENT_GUI the control is a plain wxTextCtrl (the daemon's interfaces
-	// are not this machine's), so there is nothing to enumerate.
+	// Fill the "Bind to interface" and EC "listening interface" drop-downs with
+	// what this machine actually has. Done before the Cfg->widget transfer
+	// below so the stored value (which may name an interface or address that is
+	// currently down) is preserved as typed text. In CLIENT_GUI these controls
+	// are plain wxTextCtrls (the daemon's interfaces are not this machine's),
+	// so there is nothing to enumerate.
 #ifndef CLIENT_GUI
+	// One enumeration feeds all three controls.
+	const std::vector<NetworkInterface> detectedInterfaces = DetectNetworkInterfaces();
+	wxArrayString interfaceNames;
+	for (const NetworkInterface &iface : detectedInterfaces) {
+		interfaceNames.Add(iface.name);
+	}
+
 	if (wxComboBox *ifaceBox = CastChild(IDC_INTERFACE, wxComboBox)) {
-		ifaceBox->Append(DetectNetworkInterfaces());
+		ifaceBox->Append(interfaceNames);
 	}
 	// Same for the EC-listener's own interface selector (Remote Controls tab).
 	if (wxComboBox *ecIfaceBox = CastChild(IDC_EC_INTERFACE, wxComboBox)) {
-		ecIfaceBox->Append(DetectNetworkInterfaces());
+		ecIfaceBox->Append(interfaceNames);
+	}
+	// The EC listen address. 127.0.0.1 leads because it is both the default and
+	// the safe answer, and 0.0.0.0 is spelled out so that opening the external
+	// connection to every network is a deliberate choice rather than the side
+	// effect of an empty field. This machine's own addresses follow, so binding
+	// to just the LAN does not require looking one up.
+	if (wxComboBox *ecAddrBox = CastChild(IDC_EXT_CONN_IP, wxComboBox)) {
+		ecAddrBox->Append("127.0.0.1");
+		ecAddrBox->Append("0.0.0.0");
+		for (const NetworkInterface &iface : detectedInterfaces) {
+			for (const wxString &address : iface.ipv4) {
+				if (ecAddrBox->FindString(address) == wxNOT_FOUND) {
+					ecAddrBox->Append(address);
+				}
+			}
+		}
 	}
 #endif
 
