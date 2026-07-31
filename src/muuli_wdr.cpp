@@ -37,6 +37,8 @@
 // Include private header
 #include "muuli_wdr.h"
 
+#include "amuleDlg.h" // Needed for CLIENT_SKIN_SIZE (clientImages' artIds static_assert)
+
 #include <wx/artprov.h> // Needed for the "amule:" art ids (status bar + transfer window icons)
 #include <wx/intl.h>
 #include <wx/wrapsizer.h> // Needed for the responsive statistics legends
@@ -3518,6 +3520,11 @@ wxBitmap clientImages( size_t index )
         "amule:client_goodrating", "amule:client_excellentrating",
         "amule:client_commentonly", "amule:client_encryption",
     };
+    // wxFAIL_MSG below compiles out in release builds, so it can't catch a
+    // future ClientSkinEnum member that isn't reflected here -- this can,
+    // and does so at compile time in every build.
+    static_assert(WXSIZEOF(artIds) == CLIENT_SKIN_SIZE,
+        "artIds must stay in sync with ClientSkinEnum");
     if (index < WXSIZEOF(artIds) && artIds[index] != nullptr) {
         return wxArtProvider::GetBitmap(artIds[index], wxART_OTHER, wxSize(16, 16));
     }
