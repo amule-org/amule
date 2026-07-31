@@ -53,7 +53,7 @@ namespace ECCrypt
 enum Cipher : uint8_t
 {
 	Cipher_None = 0,
-	/// Mandatory baseline: present in every Crypto++ down to the 5.6 floor.
+	/// Mandatory baseline: present in every Crypto++ we accept.
 	Cipher_AES128_GCM = 1,
 	/// Preferred where available. Roughly 2.6x faster than AES-GCM in a
 	/// Crypto++ build without hardware AES -- which is every Raspberry Pi up
@@ -84,9 +84,9 @@ std::vector<uint8_t> RandomBytes(size_t count);
 /**
  * HKDF-SHA256 (RFC 5869), extract-then-expand.
  *
- * Hand-rolled over HMAC-SHA256 rather than using Crypto++'s `hkdf.h`, which
- * only appeared in 5.6.3 while aMule's declared floor is 5.6.0. HMAC-SHA256 is
- * present in every version and already used elsewhere in the tree.
+ * Thin wrapper over Crypto++'s `hkdf.h`. Kept as a function of its own for the
+ * vector-in/vector-out shape the rest of this layer uses, and because the
+ * RFC 5869 length cap is enforced here rather than surfacing as an exception.
  */
 std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &salt,

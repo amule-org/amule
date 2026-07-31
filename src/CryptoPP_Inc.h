@@ -75,12 +75,10 @@
 #include CRYPTO_HEADER(aes.h)
 #include CRYPTO_HEADER(gcm.h)
 #include CRYPTO_HEADER(hmac.h)
-// ChaCha20-Poly1305 arrived in cryptopp 8.1; aMule's floor is 5.6, so the EC
-// layer negotiates it rather than requiring it.
-#if defined(CRYPTOPP_VERSION) && CRYPTOPP_VERSION >= 810
-#define CRYPTOPP_INC_HAVE_CHACHA20POLY1305 1
+// ChaCha20-Poly1305 arrived in cryptopp 8.1, which is aMule's floor, so it is
+// always compiled in. The EC layer still *negotiates* it, because that is about
+// what the peer can do, not what this build has.
 #include CRYPTO_HEADER(chachapoly.h)
-#endif
 #endif
 
 #if defined(__clang__)

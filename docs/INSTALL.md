@@ -10,13 +10,16 @@ following packages:
 | CMake     | 3.10            |                                   |
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
-| Crypto++  | 5.6             | classic or cryptopp-modern        |
+| Crypto++  | 8.1             | classic or cryptopp-modern        |
 | Boost     | 1.47            | headers only; only `asio` is used |
 
 The Crypto++ row accepts either the classic
 [weidai11/cryptopp](https://github.com/weidai11/cryptopp) library (minimum
-5.6) or the [cryptopp-modern](https://github.com/cryptopp-modern/cryptopp-modern)
-fork (any release). The cmake check disambiguates the two by `CRYPTOPP_VERSION`.
+8.1, for ChaCha20-Poly1305) or the
+[cryptopp-modern](https://github.com/cryptopp-modern/cryptopp-modern) fork (any
+release — it is based on 8.9.0, so every release clears the minimum). The cmake
+check disambiguates the two by `CRYPTOPP_VERSION`, which the fork encodes as a
+calendar version.
 
 For `amuleweb` you'll also need a POSIX-compliant regex library — part of
 the standard C library on most GNU systems.

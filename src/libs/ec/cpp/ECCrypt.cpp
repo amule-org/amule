@@ -27,13 +27,9 @@
 // Go through the tree's cryptopp wrapper rather than including the headers
 // directly: it carries the deprecation pragmas those headers need under this
 // project's -Werror settings, and knows the include prefix. CRYPTOPP_INC_NEED_AEAD
-// adds aes/gcm/hmac (+ chachapoly where the version allows) to its usual set.
+// adds aes/gcm/hmac/chachapoly to its usual set.
 #define CRYPTOPP_INC_NEED_AEAD
 #include "../../../CryptoPP_Inc.h"
-
-#ifdef CRYPTOPP_INC_HAVE_CHACHA20POLY1305
-#define EC_HAVE_CHACHA20POLY1305 1
-#endif
 
 #include <algorithm>
 #include <cstring>
@@ -54,10 +50,8 @@ size_t KeyLenFor(uint8_t cipher)
 	switch (cipher) {
 	case Cipher_AES128_GCM:
 		return KEY_LEN_AES128;
-#ifdef EC_HAVE_CHACHA20POLY1305
 	case Cipher_ChaCha20_Poly1305:
 		return KEY_LEN_CHACHA;
-#endif
 	default:
 		return 0;
 	}
@@ -79,7 +73,6 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 		}
 		return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
 			new CryptoPP::GCM<CryptoPP::AES>::Decryption);
-#ifdef EC_HAVE_CHACHA20POLY1305
 	case Cipher_ChaCha20_Poly1305:
 		if (encrypt) {
 			return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
@@ -87,7 +80,6 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 		}
 		return std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher>(
 			new CryptoPP::ChaCha20Poly1305::Decryption);
-#endif
 	default:
 		return nullptr;
 	}
@@ -98,10 +90,8 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 std::vector<uint8_t> SupportedCiphers()
 {
 	std::vector<uint8_t> out;
-#ifdef EC_HAVE_CHACHA20POLY1305
 	// Preferred first: the server picks the first entry the client also has.
 	out.push_back(Cipher_ChaCha20_Poly1305);
-#endif
 	out.push_back(Cipher_AES128_GCM);
 	return out;
 }
@@ -149,40 +139,19 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 		return out;
 	}
 	try {
-		// Extract: PRK = HMAC(salt, ikm). An empty salt means a block of zeros.
-		std::vector<uint8_t> effectiveSalt = salt;
-		if (effectiveSalt.empty()) {
-			effectiveSalt.assign(SHA256_LEN, 0);
-		}
-		uint8_t prk[SHA256_LEN];
-		{
-			CryptoPP::HMAC<CryptoPP::SHA256> hmac(effectiveSalt.data(), effectiveSalt.size());
-			if (!ikm.empty()) {
-				hmac.Update(ikm.data(), ikm.size());
-			}
-			hmac.Final(prk);
-		}
-
-		// Expand: T(n) = HMAC(PRK, T(n-1) || info || n)
-		out.reserve(outLen);
-		std::vector<uint8_t> prev;
-		uint8_t counter = 1;
-		while (out.size() < outLen) {
-			CryptoPP::HMAC<CryptoPP::SHA256> hmac(prk, sizeof(prk));
-			if (!prev.empty()) {
-				hmac.Update(prev.data(), prev.size());
-			}
-			if (!info.empty()) {
-				hmac.Update(info.data(), info.size());
-			}
-			hmac.Update(&counter, 1);
-			uint8_t block[SHA256_LEN];
-			hmac.Final(block);
-			prev.assign(block, block + SHA256_LEN);
-			const size_t take = std::min(outLen - out.size(), SHA256_LEN);
-			out.insert(out.end(), block, block + take);
-			++counter;
-		}
+		// The length guard above stays: DeriveKey throws on an over-long
+		// request, and callers here expect an empty vector rather than an
+		// exception.
+		out.resize(outLen);
+		CryptoPP::HKDF<CryptoPP::SHA256> hkdf;
+		hkdf.DeriveKey(out.data(),
+			out.size(),
+			ikm.data(),
+			ikm.size(),
+			salt.data(),
+			salt.size(),
+			info.data(),
+			info.size());
 	} catch (const CryptoPP::Exception &) {
 		out.clear();
 	}
