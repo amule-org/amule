@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-07-30 20:23+0000\n"
+"PO-Revision-Date: 2026-07-31 22:47+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -159,7 +159,7 @@ msgstr "B<[ -t>, B<--category>=I<E<lt>numursE<gt>> B<]>"
 #. type: Plain text
 #: amule.1.in:56 amuled.1.in:64 amulegui.1.in:57
 msgid "Set category for passed eD2k links to I<E<lt>numE<gt>>"
-msgstr ""
+msgstr "Iestata nodotajām eD2k saitēm attiecīgo kategorijas I<E<lt>numuruE<gt>>"
 
 #. type: Plain text
 #: amule.1.in:59 amulecmd.1.in:70 amuled.1.in:67 amulegui.1.in:63
@@ -248,7 +248,7 @@ msgstr "~/.aMule/*"
 #: ../../src/utils/wxCas/docs/wxcas.1.in:16
 #, no-wrap
 msgid "REPORTING BUGS"
-msgstr ""
+msgstr "KUR ZIŅOT PAR PROBLĒMĀM"
 
 #. type: Plain text
 #: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
@@ -257,7 +257,7 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in:46
 #: ../../src/utils/wxCas/docs/wxcas.1.in:19
 msgid "Please report bugs either on our forum (I<https://github.com/amule-org/amule/discussions>), or in our bugtracker (I<https://github.com/amule-org/amule/issues>).  Please do not report bugs in e-mail, neither to our mailing list nor directly to any team member."
-msgstr ""
+msgstr "Lūdzu, ziņojiet par problēmām vai nu mūsu forumā (I<https://github.com/amule-org/amule/discussions>), vai mūsu problēmu izsekotājā (I<https://github.com/amule-org/amule/issues>). Lūdzu, nekādā gadījumā neziņojiet mums problēmas pa e-pastu – ne mūsu vēstkopas diskusijā, ne arī tieši nevienam komandas dalībniekiem."
 
 #. type: SH
 #: amule.1.in:87 amulecmd.1.in:285 amuled.1.in:90 amulegui.1.in:66
@@ -464,7 +464,7 @@ msgstr "Visas komandas ir reģistrnejutīgas - var rakstīt ar lielajiem vai maz
 #. type: Plain text
 #: amulecmd.1.in:77
 msgid "Adds an eD2k-link or a magnet-link to the core."
-msgstr ""
+msgstr "Pievieno eD2k saiti vai magnētsaiti lejupielādes sarakstam."
 
 #. type: Plain text
 #: amulecmd.1.in:86
@@ -474,7 +474,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:89
 msgid "The magnet link must contain the eD2k hash and file length."
-msgstr ""
+msgstr "Magnētsaitei jāsatur eD2k kontrolsumma un datnes izmērs."
 
 #. type: Plain text
 #: amulecmd.1.in:91
@@ -629,7 +629,7 @@ msgstr "Iespējamie meklēšanas veidi:"
 #. type: Plain text
 #: amulecmd.1.in:169
 msgid "Performs a global search."
-msgstr ""
+msgstr "Veic vispārēju meklēšanu."
 
 #. type: Plain text
 #: amulecmd.1.in:171
@@ -987,7 +987,7 @@ msgstr ""
 #: amuleweb.1.in:74
 #, no-wrap
 msgid "B<[ -t> I<E<lt>nameE<gt>>, B<--template>=I<E<lt>nameE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -t> I<E<lt>nosaukumsE<gt>>, B<--template>=I<E<lt>nosaukumsE<gt>> B<]>"
 
 #. type: Plain text
 #: amuleweb.1.in:77
@@ -1040,7 +1040,7 @@ msgstr "B<[ -A> I<E<lt>paroleE<gt>>, B<--admin-pass>=I<E<lt>paroleE<gt>> B<]>"
 #. type: Plain text
 #: amuleweb.1.in:96
 msgid "Full access password for webserver."
-msgstr ""
+msgstr "Vietnes pilnas (administratora) piekļuves parole."
 
 #. type: TP
 #: amuleweb.1.in:96
@@ -1051,7 +1051,7 @@ msgstr "B<[ -G> I<E<lt>paroleE<gt>>, B<--guest-pass>=I<E<lt>paroleE<gt>> B<]>"
 #. type: Plain text
 #: amuleweb.1.in:99
 msgid "Guest password for webserver."
-msgstr ""
+msgstr "Vietnes viesa piekļuves parole."
 
 #. type: Plain text
 #: amuleweb.1.in:102
@@ -1288,7 +1288,7 @@ msgstr "cas v0.8"
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:6
 msgid "cas - c aMule statistics"
-msgstr ""
+msgstr "cas - C programmēšanas valodā veidota aMule statistikas programma"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:18

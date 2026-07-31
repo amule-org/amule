@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-31 20:09+0200\n"
-"PO-Revision-Date: 2026-07-30 20:23+0000\n"
+"PO-Revision-Date: 2026-07-31 22:47+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -743,7 +743,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp
 msgid "Import"
-msgstr ""
+msgstr "Ievietot"
 
 #: src/amuleDlg.cpp
 msgid "The partfile importer tool"
@@ -3218,15 +3218,15 @@ msgstr "Baiti"
 
 #: src/muuli_wdr.cpp
 msgid "KB"
-msgstr ""
+msgstr "KB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "MB"
-msgstr ""
+msgstr "MB"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "GB"
-msgstr ""
+msgstr "GB"
 
 #: src/muuli_wdr.cpp
 msgid "Max Size"
@@ -4353,9 +4353,8 @@ msgid "Admin password"
 msgstr "Parole"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Parole"
+msgstr "Parole ir norādīta."
 
 #: src/muuli_wdr.cpp
 msgid "Enable guest access"
@@ -4494,19 +4493,19 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "aMule Log"
-msgstr ""
+msgstr "aMule žurnāls"
 
 #: src/muuli_wdr.cpp
 msgid "Server Info"
-msgstr ""
+msgstr "Servera informācija"
 
 #: src/muuli_wdr.cpp
 msgid "ED2K Info"
-msgstr ""
+msgstr "eD2k informācija"
 
 #: src/muuli_wdr.cpp
 msgid "Kad Info"
-msgstr ""
+msgstr "Kad informācija"
 
 #: src/muuli_wdr.cpp
 msgid "Click on this button to update the nodes list from URL ..."
@@ -4618,7 +4617,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "URL:"
-msgstr ""
+msgstr "URL adrese:"
 
 #: src/muuli_wdr.cpp
 msgid "Update now"
@@ -4718,7 +4717,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr ""
+msgstr "Licences atslēga:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4732,7 +4731,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Download URL:"
-msgstr ""
+msgstr "Lejupielādes URL adrese:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4959,13 +4958,14 @@ msgstr "Pieslēgt %s"
 #: src/OScopeCtrl.cpp
 #, c-format
 msgid "Disabled [%s]"
-msgstr ""
+msgstr "Atspējots [%s]"
 
 #: src/OtherFunctions.cpp
 msgid "byte"
 msgid_plural "bytes"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "baiti"
+msgstr[1] "baits"
+msgstr[2] "baiti"
 
 #: src/OtherFunctions.cpp
 msgid "kB"
@@ -5176,7 +5176,7 @@ msgstr ""
 #: src/PartFile.cpp
 #, c-format
 msgid "Failed to open %s (%s)"
-msgstr ""
+msgstr "Neizdevās atvērt %s (%s)"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5256,7 +5256,7 @@ msgstr ""
 #: src/PartFile.cpp
 #, c-format
 msgid "Deleting file: %s"
-msgstr ""
+msgstr "Dzēš datni: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5417,7 +5417,7 @@ msgstr "Korejiešu"
 
 #: src/Preferences.cpp
 msgid "Latvian"
-msgstr ""
+msgstr "Latviešu"
 
 #: src/Preferences.cpp
 msgid "Lithuanian"
@@ -5538,7 +5538,7 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
-msgstr ""
+msgstr "Tiešsaistes paraksts"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -5550,7 +5550,7 @@ msgstr "Notikumi"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
-msgstr ""
+msgstr "Atkļūdošana"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -5597,9 +5597,8 @@ msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Parole"
+msgstr "Parole nav norādīta."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
@@ -5619,11 +5618,11 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
-msgstr ""
+msgstr "- TCP ports mainīts.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- UDP port changed.\n"
-msgstr ""
+msgstr "- UDP ports mainīts.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Network interface binding changed.\n"
@@ -5664,7 +5663,7 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
-msgstr ""
+msgstr "- Saskarnes valoda mainīta.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Temp folder changed.\n"
@@ -5769,15 +5768,15 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Temporary files"
-msgstr ""
+msgstr "Pagaidu datnes"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Incoming files"
-msgstr ""
+msgstr "Ienākošās datnes"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signatures"
-msgstr ""
+msgstr "Tiešsaistes paraksti"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -5851,12 +5850,12 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Status: Loaded%s"
-msgstr ""
+msgstr "Statuss: Ielādēts%s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Status: Loaded%s - %s"
-msgstr ""
+msgstr "Statuss: Ielādēts%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
@@ -6068,11 +6067,11 @@ msgstr "Jūs pašlaik neesiet pieslēgts serverim, kas atbalsta saistīto datņu
 
 #: src/SearchListCtrl.cpp
 msgid "Canceled"
-msgstr ""
+msgstr "Atcelts"
 
 #: src/SearchListCtrl.cpp
 msgid "New"
-msgstr ""
+msgstr "Jauns"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -6156,7 +6155,7 @@ msgstr ""
 #: src/ServerList.cpp
 #, c-format
 msgid "Loading server.met file: %s"
-msgstr ""
+msgstr "Ielādē server.met datni: %s"
 
 #: src/ServerList.cpp
 msgid "Server.met file not found!"
@@ -6334,7 +6333,7 @@ msgstr "Serveris"
 
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
-msgstr ""
+msgstr "Pieslēgties serverim"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark server as static"
@@ -6354,19 +6353,19 @@ msgstr ""
 
 #: src/ServerListCtrl.cpp
 msgid "Remove server"
-msgstr ""
+msgstr "Noņemt atlasīto serveri"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
-msgstr ""
+msgstr "Noņemt atlasītos serverus"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
-msgstr ""
+msgstr "Noņemt visus serverus"
 
 #: src/ServerListCtrl.cpp
 msgid "Copy eD2k links to clipboard"
-msgstr ""
+msgstr "Kopēt eD2k saites starpliktuvē"
 
 #: src/ServerListCtrl.cpp
 msgid "Reconnect to server"
@@ -6374,25 +6373,25 @@ msgstr ""
 
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete all servers?"
-msgstr ""
+msgstr "Vai tiešām dzēst visus serverus?"
 
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected server?"
-msgstr ""
+msgstr "Vai tiešām dzēst atlasīto serveri?"
 
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
-msgstr ""
+msgstr "Vai tiešām dzēst atlasītos serverus?"
 
 #: src/ServerSocket.cpp
 #, c-format
 msgid "ERROR: %s (%s) - %s"
-msgstr ""
+msgstr "KĻŪDA: %s (%s) - %s"
 
 #: src/ServerSocket.cpp
 #, c-format
 msgid "WARNING: %s (%s) - %s"
-msgstr ""
+msgstr "BRĪDINĀJUMS: %s (%s) - %s"
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -6424,8 +6423,9 @@ msgstr ""
 #, c-format
 msgid "Received %d new server"
 msgid_plural "Received %d new servers"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Saņemti %d jauni serveri"
+msgstr[1] "Saņemts %d jauns serveris"
+msgstr[2] "Saņemti %d jauni serveri"
 
 #: src/ServerSocket.cpp
 msgid "Saving of server-list completed."
@@ -6483,7 +6483,7 @@ msgstr ""
 
 #: src/ServerWnd.cpp
 msgid "eD2k Status:"
-msgstr ""
+msgstr "eD2k statuss:"
 
 #: src/ServerWnd.cpp
 msgid "ID"
@@ -6494,9 +6494,8 @@ msgid "Connection Type:"
 msgstr ""
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Pieslēgts"
+msgstr "Pieslēgts kopš:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -6520,21 +6519,21 @@ msgstr "Statuss:"
 
 #: src/ServerWnd.cpp
 msgid "Connection State:"
-msgstr ""
+msgstr "Savienojuma stāvoklis:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
-msgstr ""
+msgstr "Aiz ugunsmūra - atveriet %d TCP portu savā maršrutētājā vai ugunsmūrī"
 
 #: src/ServerWnd.cpp
 msgid "UDP Connection State:"
-msgstr ""
+msgstr "UDP savienojuma stāvoklis:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
-msgstr ""
+msgstr "Aiz ugunsmūra - atveriet %d UDP portu savā maršrutētājā vai ugunsmūrī"
 
 #: src/ServerWnd.cpp
 msgid "Firewalled state: "
@@ -6739,12 +6738,12 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
-msgstr ""
+msgstr "Kopīgotās datnes (%i)"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
-msgstr ""
+msgstr "Kopīgoto datņu kopējais izmērs: %s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"

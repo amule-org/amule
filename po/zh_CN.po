@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-31 20:09+0200\n"
-"PO-Revision-Date: 2026-07-30 20:21+0000\n"
+"PO-Revision-Date: 2026-07-31 22:45+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -1646,9 +1646,9 @@ msgid "Downloads (%i)"
 msgstr "下载 (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "总下载: %s"
+msgstr "总下载大小： %s"
 
 #: src/DownloadListCtrl.cpp
 msgid "the default Windows shell handler"
@@ -1829,7 +1829,7 @@ msgstr "身份验证失败: 指定为 EC 密码的 MD5 哈希值无效。"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
-msgstr ""
+msgstr "身份认证失败：此 aMule 需要加密的外部连接，但客户端未协商。"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2202,7 +2202,7 @@ msgstr "输出程序版本。"
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
-msgstr ""
+msgstr "不加密外部连接会话。只要远程 aMule 支持加密，则默认启用加密；如禁用则该路径上的任何人都可读取和修改登录后的一切内容。"
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -2893,7 +2893,7 @@ msgstr "密码无效，不是一个 MD5 哈希值！"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
 msgid "Could not resolve %s to an IPv4 address."
-msgstr ""
+msgstr "无法解析 %s 到 IPv4 地址。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"
@@ -3329,18 +3329,16 @@ msgid "Hide Known Files"
 msgstr "隐藏已知文件"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "重置表单"
+msgstr "重置筛选器"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "开始"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "扩展名"
+msgstr "扩展"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -4400,7 +4398,7 @@ msgstr "密码"
 
 #: src/muuli_wdr.cpp
 msgid "Require encrypted connections (rejects clients that cannot encrypt)"
-msgstr ""
+msgstr "要求加密的连接 （拒绝不能加密的客户端）"
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -4595,14 +4593,12 @@ msgid "Nodes stats"
 msgstr "节点状态"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bootstrap from node: IP"
-msgstr "从已知用户启动"
+msgstr "从 node: IP 启动"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr "输入新服务器的 IP 地址 (x.x.x.x格式)。"
+msgstr "在此输入节点的 IP 地址 (x.x.x.x 格式)。"
 
 #: src/muuli_wdr.cpp
 msgid "Port:"
@@ -4943,9 +4939,8 @@ msgid "Remember those settings"
 msgstr "记住这些设置"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Encrypt the connection (recommended)"
-msgstr "已关闭远程连接。"
+msgstr "加密连接（推荐）"
 
 #: src/muuli_wdr.cpp
 msgid "Force ZLIB compression"
@@ -5028,19 +5023,19 @@ msgid "Close this chat-session."
 msgstr "结束本次聊天。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "取消"
+msgstr "取消 %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "断开连接"
+msgstr "断开 %s 连接"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "连接"
+msgstr "连接 %s"
 
 #: src/OScopeCtrl.cpp
 #, c-format

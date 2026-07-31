@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-31 20:09+0200\n"
-"PO-Revision-Date: 2026-07-30 20:00+0000\n"
+"PO-Revision-Date: 2026-07-31 22:29+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -159,17 +159,17 @@ msgstr "Integrace aMule selhala"
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr "Nelze nainstalovat integraci plochy: selhalo vytvoření %s. Zkontrolujte, zda máte pro váš domovský adresář právo zapisovat."
+msgstr "Nelze nainstalovat integraci plochy: selhalo vytvoření %s. Zkontrolujte, zda máte právo zapisovat do vašeho domovského adresáře."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Nelze nainstalovat integraci plochy: selhal zápis %s. Zkontrolujte, zda máte právo zapisovat do vašeho domovského adresáře."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr ""
+msgstr "Integrace AppImage: aMule přidán do nabídky aplikací (%d zkratka shell v ~/.local/bin)."
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -179,18 +179,23 @@ msgid ""
 "\n"
 "Restart aMule now?"
 msgstr ""
+"aMule byla přidána do nabídky aplikací. Nyní ji můžete spustit z vašeho seznamu aplikací a spouštěč spustí tento stejný AppImage.\n"
+"\n"
+"Na některých stolních počítačích, aMule může být nutné restartovat pro spárování ikony doku / panelu úloh se spouštěčem. Moderní kompozitory Wayland (GNOME, KDE) toto provedou živě za chodu, ale pokud ikona zůstává generická, tak je restartování spolehlivým řešením.\n"
+"\n"
+"Restartovat aMule nyní?"
 
 #: src/AppImageIntegration.cpp
 msgid "aMule installed"
-msgstr ""
+msgstr "aMule nainstalován"
 
 #: src/AppImageIntegration.cpp
 msgid "Restart now"
-msgstr ""
+msgstr "Restartovat nyní"
 
 #: src/AppImageIntegration.cpp
 msgid "Later"
-msgstr ""
+msgstr "Později"
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -224,14 +229,14 @@ msgid "Failed"
 msgstr "Selhal"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Ukončuji instanci amuleweb s PID `%d'..."
+msgstr "Ukončování instance amuleapi s pid '%d' ... "
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "Zabíjím instanci amuleweb s PID `%d'..."
+msgstr "Rušení instance amuleapi s pid '%d' ... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -243,32 +248,32 @@ msgstr "Ukončení aMule dokončeno."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
-msgstr ""
+msgstr "Výstup paměti pro aMule ukončení:"
 
 #: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "Přiřazování P2P síťového provozu aMule k rozhraní: %s (Aktualizace HTTP používají výchozí trasu)"
 
 #: src/amule.cpp
 #, c-format
 msgid "Binding all network traffic to interface: %s"
-msgstr ""
+msgstr "Přiřazování veškerého síťového provozu k rozhraní: %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "VAROVÁNÍ: nastavené síťové rozhraní '%s' nebylo nalezeno - síťový provoz není k němu vázán a může odcházet přes výchozí trasu. Zkontrolujte název rozhraní v Nastavení."
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "VAROVÁNÍ: vázání na síťové rozhraní '%s' vyžaduje zvýšená oprávnění a nebylo použito - síťový provoz může odcházet přes výchozí trasu. Udělte danou schopnost (např. 'sudo setcap cap_net_raw+ep' binárnímu souboru aMule) nebo spusťte program s dostatečnými oprávněními."
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "VAROVÁNÍ: nepodařilo se přidružit k síťovému rozhraní '%s' - síťový provoz může odcházet přes výchozí trasu."
 
 #: src/amule.cpp
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
@@ -295,15 +300,16 @@ msgid "WARNING"
 msgstr "VAROVÁNÍ"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Network bootstrap"
-msgstr "Sítě"
+msgstr "Zavedení sítě"
 
 #: src/amule.cpp
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
+"aMule zjistil chybějící soubory pro zavedení sítě.\n"
+"Vyberte, které chcete stáhnout:"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "eD2k server list (server.met)"

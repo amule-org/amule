@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-07-31 20:09+0200\n"
-"PO-Revision-Date: 2026-07-30 20:16+0000\n"
+"PO-Revision-Date: 2026-07-31 22:39+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1833,7 +1833,7 @@ msgstr "Autenticação falhou: hash inválido especificado como senha EC."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
-msgstr ""
+msgstr "A autenticação falhou: este aMule requer uma conexão esterna criptografada, e o cliente não negociou uma."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2206,7 +2206,7 @@ msgstr "Exibir versão do programa."
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
-msgstr ""
+msgstr "Não criptografar a conexão esterna. A criptografia está ligada por padrão sempre que o aMule remoto suportá-la; desligá-la deixa tudo legível após o login e modificável por qualquer um no caminho."
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -4402,7 +4402,7 @@ msgstr "Senha"
 
 #: src/muuli_wdr.cpp
 msgid "Require encrypted connections (rejects clients that cannot encrypt)"
-msgstr ""
+msgstr "Requerer conexões criptografadas (rejeita clientes que não conseguem criptografar)"
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -4943,9 +4943,8 @@ msgid "Remember those settings"
 msgstr "Lembrar essas definições"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Encrypt the connection (recommended)"
-msgstr "Conexão externa encerrada."
+msgstr "Criptografar a conex/ao (recomendável)"
 
 #: src/muuli_wdr.cpp
 msgid "Force ZLIB compression"
