@@ -508,6 +508,18 @@ target_link_libraries (AuthTest
 	mulecommon
 )
 
+# EC password-exchange throttle: exercises the limiter at the values the
+# listener ships with. The limiter lives in mulecommon, so nothing
+# webapi-specific is needed here.
+add_executable (RateLimiterTest
+	RateLimiterTest.cpp
+)
+add_test (NAME RateLimiterTest COMMAND RateLimiterTest)
+target_link_libraries (RateLimiterTest
+	muleunit
+	mulecommon
+)
+
 # amuleapi state cache — snapshot semantics + concurrent-reader
 # correctness on the shared_timed_mutex.
 add_executable (StateTest

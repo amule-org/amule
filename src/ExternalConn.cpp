@@ -579,13 +579,18 @@ void CECServerSocket::WriteDoneAndQueueEmpty()
 //-------------------- ExternalConn --------------------
 
 ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
-// Ten failures a minute, then five minutes out. Deliberately looser than
-// amuleapi's five, because an EC client retries on its own: amulegui
-// reconnects on a dropped link, so a saved password that has gone stale burns
-// attempts with no human in the loop, and a tight threshold would lock out
-// someone who never typed anything. Ten still caps a guesser at nine attempts
-// a minute against the thousands per second possible before this.
-: m_authRateLimiter(CRateLimiter::Config{ 60u, 10u, 300u })
+// Defaults are ten failures a minute, then five minutes out -- deliberately
+// looser than amuleapi's five, because an EC client retries on its own:
+// amulegui reconnects on a dropped link, so a saved password that has gone
+// stale burns attempts with no human in the loop, and a tight threshold would
+// lock out someone who never typed anything. Ten still caps a guesser at nine
+// attempts a minute against the thousands per second possible before this.
+//
+// Read once at construction, so changing them takes a restart -- the same as
+// every other setting on this listener, which is rebuilt at startup anyway.
+: m_authRateLimiter(CRateLimiter::Config{ thePrefs::ECAuthFailureWindowSeconds(),
+	  thePrefs::ECAuthFailureThreshold(),
+	  thePrefs::ECAuthLockoutSeconds() })
 {
 	wxString msgLocal;
 	m_ECServer = NULL;

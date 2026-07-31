@@ -202,6 +202,9 @@ bool CPreferences::s_ECRequireEncryption;
 wxString CPreferences::s_ECAddr;
 wxString CPreferences::s_ECNetworkInterface;
 uint32 CPreferences::s_ECPort;
+uint32 CPreferences::s_ECAuthFailureWindowSeconds;
+uint32 CPreferences::s_ECAuthFailureThreshold;
+uint32 CPreferences::s_ECAuthLockoutSeconds;
 wxString CPreferences::s_ECPassword;
 bool CPreferences::s_TransmitOnlyUploadingClients;
 bool CPreferences::s_IPFilterClients;
@@ -1464,6 +1467,17 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Str_Encrypted("/ExternalConnect/ECPassword", s_ECPassword, "")));
 	NewCfgItem(IDC_UPNP_EC_ENABLED,
 		(new Cfg_Bool("/ExternalConnect/UPnPECEnabled", s_UPnPECEnabled, false)));
+	// Brute-force throttle for the EC password exchange. Config-only, with no
+	// dialog field: the defaults suit everyone who is not tuning for an
+	// unusual deployment, and a busy Remote Controls page is a poor place to
+	// explain a sliding window. amuleapi exposes the same three knobs for its
+	// own login, so an operator can now tune both front doors rather than only
+	// the narrower one.
+	s_MiscList.push_back(
+		MkCfg_Int("/ExternalConnect/AuthFailureWindowSeconds", s_ECAuthFailureWindowSeconds, 60));
+	s_MiscList.push_back(
+		MkCfg_Int("/ExternalConnect/AuthFailureThreshold", s_ECAuthFailureThreshold, 10));
+	s_MiscList.push_back(MkCfg_Int("/ExternalConnect/AuthLockoutSeconds", s_ECAuthLockoutSeconds, 300));
 
 	/**
 	 * GUI behavior

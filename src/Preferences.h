@@ -620,6 +620,11 @@ public:
 	static const wxString &GetECNetworkInterface() { return s_ECNetworkInterface; }
 	static void SetECNetworkInterface(const wxString &val) { s_ECNetworkInterface = val; }
 	static uint32 ECPort() { return s_ECPort; }
+	// EC password-exchange throttle. Config-only (no dialog field); see the
+	// registration in Preferences.cpp for why.
+	static uint32 ECAuthFailureWindowSeconds() { return s_ECAuthFailureWindowSeconds; }
+	static uint32 ECAuthFailureThreshold() { return s_ECAuthFailureThreshold; }
+	static uint32 ECAuthLockoutSeconds() { return s_ECAuthLockoutSeconds; }
 	static void SetECPort(uint32 val) { s_ECPort = val; }
 	static const wxString &ECPassword() { return s_ECPassword; }
 	static void SetECPass(const wxString &pass) { s_ECPassword = pass; }
@@ -1107,6 +1112,9 @@ protected:
 	static wxString s_ECAddr;
 	static wxString s_ECNetworkInterface;
 	static uint32 s_ECPort;
+	static uint32 s_ECAuthFailureWindowSeconds;
+	static uint32 s_ECAuthFailureThreshold;
+	static uint32 s_ECAuthLockoutSeconds;
 	static wxString s_ECPassword;
 	static bool s_TransmitOnlyUploadingClients;
 
