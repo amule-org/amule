@@ -3446,11 +3446,13 @@ wxSizer *messagePageMessages( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
 
-    // Explicit 16x16: this header sits next to Friends' equally-sized icon
-    // (messagePageFriends above), while the bare art id's natural size is
-    // the 32x32 toolbar rendition of the same "amule:toolbar_messages" SVG.
+    // "amule:message" is a dedicated small chat-bubble glyph, not the main
+    // toolbar's "amule:toolbar_messages" mascot illustration (#735 review:
+    // that one is a detailed gradient bust that stops reading as
+    // "messages" once shrunk from its native 32x32 down to this header's
+    // 16x16).
     wxStaticBitmap *item2 = new wxStaticBitmap( parent, -1,
-        wxArtProvider::GetBitmapBundle( "amule:toolbar_messages", wxART_OTHER, wxSize(16, 16) ),
+        wxArtProvider::GetBitmapBundle( "amule:message" ),
         wxDefaultPosition, wxDefaultSize );
     item1->Add( item2, 0, wxALIGN_CENTER, 5 );
 
