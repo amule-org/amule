@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:05+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -336,6 +336,11 @@ msgstr "web zerbitzaria abiarazirik %d pid-arekin"
 #, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Abioan web-zerbitzaria exekutatzea eskatu duzu, baina amuleweb bitarra ezin da exekutatu. Mesedez instalatu amule web zerbitzaria duen paketea edo konpilatu ezazu amule --enable-webserver erabilian eta make install egin"
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -5698,6 +5703,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Kanpo konexioak gaiturik dituzu baina ez duzu pasahitzik ezarri.\n"
+"Kanpo konexiorik ezin da onartu baliozko pasahitza ezarri arte."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5746,14 +5759,6 @@ msgid ""
 msgstr ""
 "Auto-eguneraketa zerbitzari zerrenda hutsa dago.\n"
 "'Auto-eguneratu zerbitzari zerrenda abioan' ezgaitu egingo da."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Kanpo konexioak gaiturik dituzu baina ez duzu pasahitzik ezarri.\n"
-"Kanpo konexiorik ezin da onartu baliozko pasahitza ezarri arte."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format

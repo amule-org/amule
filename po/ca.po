@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 19:59+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -335,6 +335,11 @@ msgstr "servidor web executant-se al pid %d"
 #, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Heu demanat que s'executi el servidor web a l'inici, però no s'ha trobat el fitxer binari de l'amuleweb. Si us plau instal·leu el paquet que conté el servidor web de l'aMule, o compileu l'aMule usant la opció --enable-webserver i executeu make install"
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -5697,6 +5702,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Heu habilitat les connexions externes però no heu especificat una contrasenya.\n"
+"Les connexions externes no poden ser habilitades a menys que s'hagi especificat una contrasenya externa vàlida."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5744,14 +5757,6 @@ msgid ""
 msgstr ""
 "La llista d'actualització de servidors és buida.\n"
 "L'actualització de servidors a l'inici serà desactivada."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Heu habilitat les connexions externes però no heu especificat una contrasenya.\n"
-"Les connexions externes no poden ser habilitades a menys que s'hagi especificat una contrasenya externa vàlida."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format

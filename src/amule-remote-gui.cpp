@@ -431,6 +431,14 @@ void CamuleRemoteGuiApp::OnFinishedHTTPDownload(CMuleInternalEvent &WXUNUSED(eve
 
 void CamuleRemoteGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
 {
+	// A modal dialog (comments/ratings, file details, ...) runs its own event
+	// loop, and an EC drop is dispatched from whichever loop is current — so a
+	// shutdown can start with one of those dialogs still on the stack. Unwind
+	// to the outer loop first; Quit() resumes the teardown from there.
+	if (DeferShutDownToOuterLoop([this] { Quit(); })) {
+		return;
+	}
+
 	// Stop the Core Timer
 	delete poll_timer;
 	poll_timer = NULL;
@@ -454,6 +462,24 @@ void CamuleRemoteGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
 	}
 	delete m_allUploadingKnownFile;
 	delete stattree;
+
+	m_tornDown = true;
+}
+
+void CamuleRemoteGuiApp::Quit()
+{
+	if (m_tornDown) {
+		return;
+	}
+
+	wxCloseEvent ev;
+	ShutDown(ev);
+
+	// Still unset means ShutDown() postponed itself to the outer event loop;
+	// leaving the main loop now would drop the retry it queued.
+	if (m_tornDown) {
+		ExitMainLoop();
+	}
 }
 
 bool CamuleRemoteGuiApp::OnInit()
@@ -707,9 +733,7 @@ void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
 		ResetEcConnect();
 		if (!ShowConnectionDialog()) {
 			AddLogLineNS(_("Going down"));
-			wxCloseEvent ev;
-			ShutDown(ev);
-			ExitMainLoop();
+			Quit();
 		}
 	} else {
 		// Connection lost after startup (e.g. the machine slept and the
@@ -747,9 +771,7 @@ void CamuleRemoteGuiApp::OnConnectTimeout(wxTimerEvent &)
 	// correct the host / port / etc. If they cancel, then quit.
 	ResetEcConnect();
 	if (!ShowConnectionDialog()) {
-		wxCloseEvent ev;
-		ShutDown(ev);
-		ExitMainLoop();
+		Quit();
 	}
 }
 
@@ -811,9 +833,7 @@ void CamuleRemoteGuiApp::BeginReconnect()
 	} else {
 		// User aborted the reconnect.
 		AddLogLineNS(_("Going down"));
-		wxCloseEvent ev;
-		ShutDown(ev);
-		ExitMainLoop();
+		Quit();
 	}
 }
 

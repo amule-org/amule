@@ -642,8 +642,6 @@ wxBitmap clientImages(size_t index);
 
 wxBitmap amuleSpecial(size_t index);
 
-wxBitmap connButImg(size_t index);
-
 wxBitmap amuleDlgImages(size_t index);
 
 // Shared by CServerWnd::UpdateED2KConnectButton() and

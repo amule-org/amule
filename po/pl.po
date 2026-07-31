@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:15+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -337,6 +337,11 @@ msgstr "serwer sieciowy uruchomiony na pid %d"
 #, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Zażądałeś włączenia serwera sieciowego podczas uruchomienia, ale binarki amuleweb nie mogą być uruchomione. Zainstaluj paczkę zawierającą serwer sieciowy aMule lub skompiluj aMule używając --enable-webserver i uruchom make install"
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -5721,6 +5726,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Połączenia zewnętrzne zostały włączone, ale nie zostało podane hasło.\n"
+"Połączenia zewnętrzne nie mogą być włączone dopóki nie zostanie podane poprawne hasło."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5772,14 +5785,6 @@ msgid ""
 msgstr ""
 "Twoja lista auto-aktualizacji serwerów jest pusta.\n"
 "'Autoaktualizacja listy serwerów przy starcie' zostanie wyłączona."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Połączenia zewnętrzne zostały włączone, ale nie zostało podane hasło.\n"
-"Połączenia zewnętrzne nie mogą być włączone dopóki nie zostanie podane poprawne hasło."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format

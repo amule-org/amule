@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:03+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -344,6 +344,11 @@ msgstr "amuleapi corriendo con pid %d"
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Ha solicitado ejecutar amuleapi al inicio pero no se puede ejecutar el binario amuleapi. Por favor, instale el paquete que contiene el servidor API REST de aMule, o compile aMule desde el código fuente con -DBUILD_AMULEAPI=YES e instálelo."
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -5687,6 +5692,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Tiene habilitadas las conexiones externas, pero no ha especificado ninguna contraseña.\n"
+"Las conexiones externas no pueden ser habilitadas a menos que especifique una contraseña válida."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5732,14 +5745,6 @@ msgid ""
 msgstr ""
 "Su lista autoactualizable de servidores esta vacía.\n"
 "Se desactivará 'Autoactualizar la lista de servidores al inicio'."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Tiene habilitadas las conexiones externas, pero no ha especificado ninguna contraseña.\n"
-"Las conexiones externas no pueden ser habilitadas a menos que especifique una contraseña válida."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format

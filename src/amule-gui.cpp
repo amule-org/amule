@@ -296,6 +296,19 @@ int CamuleGuiApp::OnExit()
 
 void CamuleGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
 {
+	// The tray icon's Exit runs its own menu-tracking loop and stays live
+	// while a modal dialog is open, so this can be reached with one of the
+	// list controls' dialogs still on the stack — the same hazard the remote
+	// GUI hits on an EC drop. See CamuleAppCommon::DeferShutDownToOuterLoop.
+	if (DeferShutDownToOuterLoop([this] {
+		    if (!IsOnShutDown() && amuledlg) {
+			    wxCloseEvent ev;
+			    ShutDown(ev);
+		    }
+	    })) {
+		return;
+	}
+
 	amuledlg->DlgShutDown();
 	amuledlg->Destroy();
 	CamuleApp::ShutDown();

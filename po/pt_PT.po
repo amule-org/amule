@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:16+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -342,6 +342,11 @@ msgstr "servidor web a executar no pid %d"
 #, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Pediu para executar o servidor web no arranque, mas o executável não pode ser lançado. Por favor, instale o pacote que contém o servidor web ou compile o aMule com --enable-webserver e execute make install"
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -5706,6 +5711,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Activou as ligações externas mas não especificou uma palavra-passe.\n"
+"As ligações externas não podem ser activadas a menos que seja especificada uma palavra-passe válida."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5754,14 +5767,6 @@ msgid ""
 msgstr ""
 "A sua lista de actualização automática de servidores está vazia.\n"
 "A 'actualização automática no arranque' será desactivada."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Activou as ligações externas mas não especificou uma palavra-passe.\n"
-"As ligações externas não podem ser activadas a menos que seja especificada uma palavra-passe válida."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
