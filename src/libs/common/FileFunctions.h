@@ -92,5 +92,25 @@ typedef std::pair<bool, EFileType> UnpackResult;
  */
 UnpackResult UnpackArchive(const CPath &file, const char *files[]);
 
+/**
+ * Restrict @a file to owner read/write (0600) if it is currently looser.
+ *
+ * For config files holding credentials. aMule's own configs are created with
+ * whatever the umask allows -- 0644 on macOS, and 0664 under the 0002 umask
+ * Debian and Ubuntu ship, which leaves the file group-*writable*.
+ *
+ * Called at startup rather than at creation so existing installs are fixed on
+ * the first run of a version that does this, not just new ones. Safe to repeat:
+ * it stats first and only acts when something needs tightening. wxFileConfig
+ * replaces the file on save but carries the mode across, so one call holds.
+ *
+ * No-op on Windows, which has no POSIX mode bits; there the file is protected
+ * by the profile directory's ACL, the same compromise Credentials.cpp makes.
+ *
+ * @return true only when permissions were actually tightened, so the caller can
+ *         say so once; this library sits below the logger.
+ */
+bool RestrictToOwner(const CPath &file);
+
 #endif
 // File_checked_for_headers

@@ -47,6 +47,7 @@
 #include "AutostartManager.h"       // Needed for --configure-autostart handling
 #include "ProtocolHandlerManager.h" // Needed for --configure-protocols handling
 #include "CamuleFileConfig.h"       // CamuleFileConfig + CCtypeAsciiScope (#852)
+#include <common/FileFunctions.h>   // Needed for RestrictToOwner
 #include <common/Format.h>          // Needed for CFormat
 #include "CFile.h"                  // Needed for CFile
 #include "ED2KLink.h"               // Needed for command line passing of links
@@ -734,6 +735,17 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		CCtypeAsciiScope scope;
 		wxConfig::Set(new CamuleFileConfig("", "", thePrefs::GetConfigDir() + m_configFile));
 	}
+
+	// The config holds the EC password, which is the credential itself rather
+	// than a verifier -- anything that can read this file can drive the daemon.
+	// It is created with whatever the umask allows, which on Debian and Ubuntu
+	// defaults to group-writable. Tighten it here rather than at creation so
+	// configs that already exist are covered too. The .bak is a full copy and
+	// needs the same treatment.
+	if (RestrictToOwner(CPath(thePrefs::GetConfigDir() + m_configFile))) {
+		AddLogLineN(CFormat(_("Restricted permissions on %s to owner-only.")) % m_configFile);
+	}
+	RestrictToOwner(CPath(thePrefs::GetConfigDir() + m_configFile + ".bak"));
 
 	// Make a backup of the log file
 	CPath logfileName = CPath(thePrefs::GetConfigDir() + m_logFile);

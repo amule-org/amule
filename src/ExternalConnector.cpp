@@ -23,10 +23,12 @@
 //
 
 #include "ExternalConnector.h"
-#include "config.h"            // Needed for VERSION and readline detection
-#include <common/Format.h>     // Needed for CFormat
-#include <common/LocaleInit.h> // Needed for aMuleInitLocale()
-#include <wx/tokenzr.h>        // For wxStringTokenizer
+
+#include <common/FileFunctions.h> // RestrictToOwner
+#include "config.h"               // Needed for VERSION and readline detection
+#include <common/Format.h>        // Needed for CFormat
+#include <common/LocaleInit.h>    // Needed for aMuleInitLocale()
+#include <wx/tokenzr.h>           // For wxStringTokenizer
 
 // For readline
 #ifdef HAVE_LIBREADLINE
@@ -675,6 +677,9 @@ void CaMuleExternalConnector::LoadConfigFile()
 		m_configFile = new CECFileConfig(m_configFileName);
 	}
 	if (m_configFile) {
+		// Same reasoning as the core's amule.conf: this file stores the EC
+		// password, and the stored value is what authenticates.
+		RestrictToOwner(CPath(m_configFileName));
 		m_language = m_configFile->Read("/Locale", "");
 		// Match the default across amulecmd / amuleweb / amulegui.
 		// Use the literal loopback address rather than "localhost":

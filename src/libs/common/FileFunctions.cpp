@@ -35,6 +35,10 @@
 #endif
 #include <algorithm> // Needed for std::min
 
+#ifndef __WINDOWS__
+#include <sys/stat.h> // chmod / stat for RestrictToOwner
+#endif
+
 #include "FileFunctions.h"
 #include "StringFunctions.h"
 #include "SmartPtr.h" // Needed for CSmartPtr
@@ -277,4 +281,30 @@ UnpackResult UnpackArchive(const CPath &path, const char *files[])
 		return UnpackResult(false, type);
 	}
 }
+bool RestrictToOwner(const CPath &file)
+{
+#ifdef __WINDOWS__
+	(void)file;
+	return false;
+#else
+	if (!file.FileExists()) {
+		return false;
+	}
+	const wxCharBuffer path = file.GetRaw().mb_str(wxConvFile);
+	struct stat st;
+	if (::stat(path.data(), &st) != 0) {
+		return false;
+	}
+	// Only act when something is actually loose, so the common case is a
+	// single stat and no write to the filesystem.
+	const mode_t loose = st.st_mode & (S_IRWXG | S_IRWXO);
+	if (loose == 0) {
+		return false;
+	}
+	// mulecommon sits below the logger, so report the outcome to the caller
+	// rather than logging here.
+	return ::chmod(path.data(), S_IRUSR | S_IWUSR) == 0;
+#endif
+}
+
 // File_checked_for_headers
