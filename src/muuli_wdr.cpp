@@ -1480,7 +1480,7 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     item25->Add( item26, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
     wxTextCtrl *item27 = new wxTextCtrl( parent, IDC_ADDRESS, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item27->SetToolTip( _("Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound.") );
-    item25->Add( item27, wxSizerFlags().Expand().CenterHorizontal() );
+    item25->Add( item27, wxSizerFlags().Expand() );
 
     wxStaticText *item26b = new wxStaticText( parent, IDC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, 0 );
     item25->Add( item26b, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
@@ -1496,7 +1496,7 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     wxComboBox *item27b = new wxComboBox( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0, NULL, wxCB_DROPDOWN );
 #endif
     item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges.") );
-    item25->Add( item27b, wxSizerFlags().Expand().CenterHorizontal() );
+    item25->Add( item27b, wxSizerFlags().Expand() );
     item0->Add( item25, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
     wxFlexGridSizer *item28 = new wxFlexGridSizer( 2, 0, 0 );
     item28->AddGrowableCol( 0 );
@@ -2217,7 +2217,7 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     wxStaticText *item20 = new wxStaticText( parent, -1, _("Full rights password"), wxDefaultPosition, wxDefaultSize, 0 );
     item17->Add( item20, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
     CMuleTextCtrl *item21 = new CMuleTextCtrl( parent, IDC_WEB_PASSWD, "", wxDefaultPosition, wxSize(80,-1), wxTE_PASSWORD );
-    item17->Add( item21, wxSizerFlags(1).Expand().Right() );
+    item17->Add( item21, wxSizerFlags(1).Expand() );
     wxCheckBox *item22 = new wxCheckBox( parent, IDC_ENABLE_WEB_LOW, _("Enable Low rights User"), wxDefaultPosition, wxDefaultSize, 0 );
     item22->SetValue( TRUE );
     item17->Add( item22, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
