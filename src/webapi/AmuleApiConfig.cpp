@@ -28,7 +28,6 @@
 #include <wx/fileconf.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
-#include <wx/stdpaths.h>
 #include <wx/tokenzr.h>
 #include <wx/utils.h>
 #include <wx/wfstream.h>
@@ -185,19 +184,6 @@ bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 }
 
 } // namespace
-
-wxString DefaultConfigDir()
-{
-	// Prefer the wx-standard "user data dir" — it already encapsulates
-	// the per-platform conventions amuled / amulegui use, so amuleapi
-	// drops its files alongside theirs by default. Operators with a
-	// custom amule home override the location at the CLI.
-	const wxString d = wxStandardPaths::Get().GetUserDataDir();
-	// GetUserDataDir() returns e.g. "/Users/foo/Library/Application Support/aMule"
-	// on macOS or "/home/foo/.aMule" on Linux. Both already align with
-	// where amule.conf lives.
-	return d;
-}
 
 bool CAmuleApiConfig::Load(const wxString &config_dir)
 {

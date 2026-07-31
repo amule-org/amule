@@ -185,13 +185,12 @@ bool CamuleapiApp::OnInit()
 		return false;
 	}
 
-	// Resolve the config dir. Order: explicit --config-dir > whatever
-	// the base class picked (m_configDir, populated from --config-file
-	// or the platform default) > wxStandardPaths::GetUserDataDir().
-	wxString config_dir = m_cliConfigDirOverride.IsEmpty() ? m_configDir : m_cliConfigDirOverride;
-	if (config_dir.IsEmpty()) {
-		config_dir = DefaultConfigDir();
-	}
+	// Resolve the config dir: explicit --config-dir wins, otherwise take
+	// what the base class resolved in OnCmdLineParsed via the core's
+	// GetConfigDir(). That is always set by the time we get here, so there
+	// is no third fallback -- amuleapi and amuled run the same resolver
+	// rather than each having their own idea of where config lives.
+	const wxString config_dir = m_cliConfigDirOverride.IsEmpty() ? m_configDir : m_cliConfigDirOverride;
 
 	// Tee stdout/stderr into a log file (unless --no-log-file), as early as
 	// possible so config-load errors, EC warnings and a crash backtrace are all
@@ -249,14 +248,7 @@ bool CamuleapiApp::OnInit()
 
 bool CamuleapiApp::LoadAmuleapiConfig()
 {
-	wxString config_dir = m_cliConfigDirOverride.IsEmpty() ? m_configDir : m_cliConfigDirOverride;
-	if (config_dir.IsEmpty()) {
-		config_dir = DefaultConfigDir();
-		// Persist the resolved dir back into m_configDir so the base
-		// class's later --write-config (and any subclasses) see the
-		// same path.
-		m_configDir = config_dir;
-	}
+	const wxString config_dir = m_cliConfigDirOverride.IsEmpty() ? m_configDir : m_cliConfigDirOverride;
 
 	if (!m_apiConfig.Load(config_dir)) {
 		Show(CFormat("amuleapi: failed to load config: %s\n") %

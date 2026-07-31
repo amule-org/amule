@@ -164,8 +164,6 @@ public:
 
 	const std::string &LastError() const { return m_lastError; }
 
-	bool WriteJwtSecretFile(const wxString &config_dir, const std::vector<unsigned char> &secret_32);
-
 	// Re-reads amuleapi-passwords, keeping the current values if the read
 	// fails so a transient error can't lock everyone out.
 	//
@@ -181,6 +179,10 @@ public:
 	void ReloadCredentials();
 
 private:
+	// Writes amuleapi-jwt-secret with owner-only permissions. Internal to
+	// Load()'s first-run path -- callers get the secret via JwtSecret().
+	bool WriteJwtSecretFile(const wxString &config_dir, const std::vector<unsigned char> &secret_32);
+
 	// Rewrites one role's record at the current KDF cost without moving
 	// the file's modification time — an upgrade is not a password change,
 	// and only a password change should end sessions.
@@ -205,14 +207,5 @@ private:
 
 	std::string m_lastError;
 };
-
-// Canonical config dir per platform. Mirrors amule's own
-// GetUserDataDir() but without the dependency on `amule.h` — amuleapi
-// runs standalone and can't pull in the GUI/daemon-side helpers.
-//
-// POSIX (XDG):    ${XDG_CONFIG_HOME:-$HOME/.config}/aMule
-//  macOS:          $HOME/Library/Application Support/aMule
-//  Windows:        %APPDATA%/aMule
-wxString DefaultConfigDir();
 
 #endif // WEBAPI_CONFIG_H

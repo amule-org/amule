@@ -70,12 +70,6 @@ wxString MakeTmpDir(const char *tag)
 }
 END_DECLARE;
 
-TEST(AmuleApiConfig, DefaultConfigDirIsNonEmpty)
-{
-	const wxString d = DefaultConfigDir();
-	ASSERT_TRUE(!d.IsEmpty());
-}
-
 TEST(AmuleApiConfig, FreshLoadCreatesAllThreeFiles)
 {
 	const wxString dir = MakeTmpDir("fresh");
