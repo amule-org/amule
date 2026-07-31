@@ -5,6 +5,7 @@ add_library (mulecommon STATIC
 	MD5Sum.cpp
 	MuleDebug.cpp
 	Path.cpp
+	RateLimiter.cpp
 	strerror_r.c
 	StringFunctions.cpp
 	TextFile.cpp

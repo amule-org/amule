@@ -34,6 +34,8 @@
 #include <set>
 #include <string>
 
+#include <common/RateLimiter.h>
+
 // State containers + helpers for the /auth/* surface. Live on the
 // amuleapi process side (not in libwebcommon) because they're stateful
 // and amuleweb has no use for them.
@@ -78,83 +80,11 @@ private:
 	mutable std::map<std::string, std::time_t> m_revoked;
 };
 
-// Per-IP sliding-window login rate limiter (). Tracks
-// failed `/auth/login` attempts, locks the offending IP out for
-// `lockout_seconds` once `threshold` failures land inside
-// `window_seconds`. A successful login resets the offender's bucket.
-//
-// Storage: std::unordered_map<ip_string, Bucket>. Real-world
-// amuleapi deployments serve a small population (LAN ops, single
-// operator), so the map stays under a few hundred entries even
-// under bot-scan load. No active GC; cold buckets get overwritten
-// when the offender comes back, and the daemon's process lifetime
-// bounds the worst case.
-class CRateLimiter
-{
-public:
-	struct Config
-	{
-		unsigned window_seconds = 60;
-		unsigned threshold = 5;
-		unsigned lockout_seconds = 300;
-	};
-
-	// Clock injection. Default is std::time(nullptr); tests pass a
-	// controllable lambda so AuthTest can exercise the sliding-
-	// window logic in microseconds instead of spending five+
-	// real-time seconds sleeping between failures.
-	using Clock = std::function<std::time_t()>;
-
-	explicit CRateLimiter(Config cfg, Clock clock = nullptr)
-	: m_cfg(cfg)
-	, m_clock(clock ? std::move(clock) : [] { return std::time(nullptr); })
-	{
-	}
-
-	struct Decision
-	{
-		bool locked_out = false;
-		std::time_t retry_after_seconds = 0;
-	};
-
-	// Called BEFORE the password compare. If `locked_out` is true,
-	// the caller emits 429 with `Retry-After: <retry_after_seconds>`
-	// and never touches the credential path.
-	Decision Check(const std::string &ip);
-
-	// Called AFTER a failed credential compare. Updates the bucket
-	// and possibly arms the lockout for next time.
-	void NoteFailure(const std::string &ip);
-
-	// Called AFTER a successful credential compare. Drops the
-	// bucket so the user's next login isn't accounted against the
-	// previous failure streak.
-	void NoteSuccess(const std::string &ip);
-
-	const Config &Cfg() const { return m_cfg; }
-
-private:
-	struct Bucket
-	{
-		// Sliding window of failure timestamps. The legacy `unsigned
-		// failure_count + std::time_t window_start` shape implemented
-		// a TUMBLING window (the count reset wholesale when the
-		// window expired) — an attacker could burn threshold-1
-		// failures in the last second of window N, threshold-1 more
-		// in the first second of window N+1, and never trip lockout.
-		// We now keep one timestamp per recorded failure (older than
-		// `window_seconds` evicted on each NoteFailure) so the
-		// trip happens whenever the live count crosses threshold,
-		// regardless of how the failures distribute across windows.
-		std::deque<std::time_t> failures;
-		std::time_t lockout_until = 0;
-	};
-
-	Config m_cfg;
-	Clock m_clock;
-	mutable std::mutex m_mu;
-	std::map<std::string, Bucket> m_buckets;
-};
+// The per-IP failure rate limiter now lives in mulecommon, shared with the
+// External Connection password exchange, which needs the same protection but
+// cannot link the webapi library. Re-exported here so existing
+// `webapi::CRateLimiter` uses keep resolving.
+using ::CRateLimiter;
 
 // HTTP `Authorization: Bearer <jwt>` extractor. Returns the empty
 // string if the header is absent, doesn't start with `Bearer `, or
