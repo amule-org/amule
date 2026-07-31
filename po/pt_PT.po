@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 12:21+0200\n"
+"POT-Creation-Date: 2026-07-31 17:05+0200\n"
 "PO-Revision-Date: 2026-07-30 20:16+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -208,6 +208,11 @@ msgstr "Falha ao abrir ficheiro de ligações eD2k."
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
 msgstr "AVISO: Não se pode adicionar a si próprio como fonte para um link eD2k enquanto tiver lowid."
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Restricted permissions on %s to owner-only."
+msgstr ""
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
