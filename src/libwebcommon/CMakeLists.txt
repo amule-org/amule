@@ -8,6 +8,9 @@
 # JWT / ETag / route-pattern primitives, link against this lib too.
 
 add_library (webcommon STATIC
+	# Owner-only atomic file write, shared by the credential store, the
+	# amuleapi config writer and the EC token amuled hands its child.
+	AtomicFile.cpp
 	ConstantTime.cpp
 	# Credentials.cpp is also linked into the aMule core: amuled applies a
 	# password pushed from amulegui over EC, and monolithic amule applies

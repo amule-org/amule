@@ -63,6 +63,7 @@ void RemoveTempDir(const std::string &dir)
 {
 	const wxString wxdir(dir.c_str(), wxConvUTF8);
 	wxRemoveFile(wxdir + wxT("/amuleapi-passwords"));
+	wxRemoveFile(wxdir + wxT("/amuleapi-ec-token"));
 	wxRmdir(wxdir);
 }
 } // namespace
@@ -348,6 +349,99 @@ TEST(Credentials, ChangeRejectsMalformedDigests)
 	ASSERT_TRUE(LoadCredentialsFile(dir, out, err));
 	ASSERT_TRUE(out.admin.empty());
 	ASSERT_TRUE(out.guest.empty());
+
+	RemoveTempDir(dir);
+}
+
+// --- Ephemeral EC token ------------------------------------------------
+//
+// The token is how amuled hands a spawned amuleapi a credential without
+// either process putting the password-equivalent value from amule.conf on
+// disk or on a command line. Both ends derive the filename from
+// EcTokenFilePath, so these pin the joining rules the same way the
+// amuleapi-passwords test above does -- a drift between the two binaries
+// would not fail loudly, it would just mean the child never finds the file
+// and quietly falls back to its configured password.
+
+TEST(Credentials, EcTokenFilePathJoinsLikeCredentialsPath)
+{
+	ASSERT_EQUALS(std::string("amuleapi-ec-token"), EcTokenFilePath(""));
+	ASSERT_EQUALS(std::string("/tmp/x/amuleapi-ec-token"), EcTokenFilePath("/tmp/x"));
+	ASSERT_EQUALS(std::string("/tmp/x/amuleapi-ec-token"), EcTokenFilePath("/tmp/x/"));
+	// Distinct from the credential store: one is ephemeral, the other is
+	// the persistent password file.
+	ASSERT_TRUE(EcTokenFilePath("/tmp/x") != CredentialsFilePath("/tmp/x"));
+}
+
+TEST(Credentials, GeneratedTokenHasTheMd5HexShape)
+{
+	const std::string a = GenerateEcToken();
+	// 32 lowercase hex chars: the width EC's challenge-response already
+	// consumes, which is what lets the token drop in with no wire change.
+	ASSERT_EQUALS(std::size_t(32), a.size());
+	for (const char c : a) {
+		ASSERT_TRUE((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+	}
+	// Fresh every call -- a token reused across daemon runs would defeat
+	// the point of it dying with the process.
+	ASSERT_TRUE(a != GenerateEcToken());
+}
+
+TEST(Credentials, ReadAndConsumeEcTokenReturnsItAndDeletesTheFile)
+{
+	const std::string dir = TempDir();
+	const std::string path = EcTokenFilePath(dir);
+	const std::string token = GenerateEcToken();
+
+	std::ofstream(path.c_str(), std::ios::binary) << token << "\n";
+
+	std::string got;
+	ASSERT_TRUE(ReadAndConsumeEcToken(path, got));
+	ASSERT_EQUALS(token, got);
+	// Consumed: the secret stops being at rest the moment it is in memory.
+	ASSERT_TRUE(!wxFileExists(wxString(path.c_str(), wxConvUTF8)));
+
+	// A second read finds nothing, which is the ordinary case for a
+	// manually started amuleapi.
+	std::string again;
+	ASSERT_TRUE(!ReadAndConsumeEcToken(path, again));
+
+	RemoveTempDir(dir);
+}
+
+TEST(Credentials, ReadAndConsumeEcTokenRejectsMalformedButStillDeletes)
+{
+	const std::string dir = TempDir();
+	const std::string path = EcTokenFilePath(dir);
+
+	// Truncated, non-hex and empty must all be refused rather than
+	// attempted as a credential; the file goes either way, because a file
+	// that failed to parse is still not something to leave behind.
+	const char *const bad[] = {
+		"deadbeef", "", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", "5ebe2294ecd0e0f08eab7690d2a6ee69extra"
+	};
+	for (const char *body : bad) {
+		std::ofstream(path.c_str(), std::ios::binary) << body;
+		std::string got("untouched");
+		ASSERT_TRUE(!ReadAndConsumeEcToken(path, got));
+		ASSERT_EQUALS(std::string("untouched"), got);
+		ASSERT_TRUE(!wxFileExists(wxString(path.c_str(), wxConvUTF8)));
+	}
+
+	RemoveTempDir(dir);
+}
+
+TEST(Credentials, ReadAndConsumeEcTokenIgnoresSurroundingWhitespace)
+{
+	const std::string dir = TempDir();
+	const std::string path = EcTokenFilePath(dir);
+	const std::string token = GenerateEcToken();
+
+	std::ofstream(path.c_str(), std::ios::binary) << "  " << token << "\r\n";
+
+	std::string got;
+	ASSERT_TRUE(ReadAndConsumeEcToken(path, got));
+	ASSERT_EQUALS(token, got);
 
 	RemoveTempDir(dir);
 }

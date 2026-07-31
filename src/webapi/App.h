@@ -188,11 +188,6 @@ private:
 	wxString m_cliConfigDirOverride;
 	wxString m_cliSetAdminPass;
 	wxString m_cliSetGuestPass;
-	// --amule-config-file: read the EC connection (host/port/hashed password)
-	// straight from an amule.conf, same as amuleweb. Lets amule auto-start
-	// amuleapi without a plaintext EC password.
-	wxString m_cliAmuleConfigFile;
-	bool m_cliHasAmuleConfigFile = false;
 	bool m_cliHasBindAddress = false;
 	bool m_cliHasHttpPort = false;
 	bool m_cliHasSetAdminPass = false;

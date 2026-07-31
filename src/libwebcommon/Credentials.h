@@ -155,6 +155,49 @@ bool MakeRecord(const std::string &md5_hex, std::string &record);
 // path-joining rules without duplicating them.
 std::string CredentialsFilePath(const std::string &config_dir);
 
+// The short-lived EC token amuled hands to the amuleapi it spawns.
+//
+// Defined here, and only here, because both ends have to agree on it with
+// nothing carrying the location between them: amuled writes it, and the
+// amuleapi it spawns looks for it in the same config dir it was handed. A
+// second literal in the other binary would be a silent failure waiting to
+// happen -- the child would simply find nothing and fall back to its
+// configured password, with the daemon none the wiser.
+//
+// Deliberately not passed on the command line: argv is world-readable via
+// ps, so a path there would tell every local user exactly where to look
+// during the window the file exists.
+std::string EcTokenFilePath(const std::string &config_dir);
+
+// A fresh EC token: 16 random bytes as 32 lowercase hex characters.
+//
+// The width is not arbitrary. EC's challenge-response hashes the stored
+// credential as a 32-char MD5 hex digest, so a token of exactly that shape
+// drops into the existing exchange with no protocol change -- the daemon
+// simply knows a second secret. 128 bits is also well beyond guessing for
+// something that lives for one daemon run.
+//
+// Drawn from a CSPRNG (the same one that salts credential records), not
+// from the general-purpose RNG the rest of the app uses for jitter and
+// IDs.
+std::string GenerateEcToken();
+
+// Reads the token at `path` into `out` and removes the file.
+//
+// The file is unlinked whether or not it parsed, because a file that is
+// not a valid token is still something we do not want left behind, and
+// because the caller has no better moment to do it: a retry re-uses the
+// value already in memory.
+//
+// Returns true only for exactly 32 lowercase-able hex characters, ignoring
+// surrounding whitespace. Anything else -- truncated, empty, padded with
+// junk -- is rejected rather than passed on, so a half-written or tampered
+// file cannot become the credential a connection is attempted with.
+//
+// Returns false (leaving `out` untouched) when the file does not exist,
+// which is the ordinary case for a manually started amuleapi.
+bool ReadAndConsumeEcToken(const std::string &path, std::string &out);
+
 } // namespace webcommon
 
 #endif // WEBCOMMON_CREDENTIALS_H

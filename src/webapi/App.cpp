@@ -32,7 +32,6 @@
 #include "MD4Hash.h"
 #include "config.h" // VERSION
 
-#include <ec/cpp/ECFileConfig.h>  // CECFileConfig, for --amule-config-file
 #include <ec/cpp/RemoteConnect.h> // SetEcConnectionLostHandler
 #include <wx/filename.h>          // wxFileName::FileExists
 
@@ -118,12 +117,6 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddOption("",
-		"amule-config-file",
-		_("Read the EC connection (host/port/password) from an amule.conf instead of "
-		  "--host/--port/--password. Used by amule to auto-start amuleapi."),
-		wxCMD_LINE_VAL_STRING,
-		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("",
 		"set-admin-pass",
 		_("Set the amuleapi admin password to <plain>, storing it salted and stretched in "
 		  "amuleapi-passwords (mode 0600), then exit."),
@@ -153,9 +146,6 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		m_cliHasHttpPort = true;
 	}
 	parser.Found("config-dir", &m_cliConfigDirOverride);
-	if (parser.Found("amule-config-file", &m_cliAmuleConfigFile)) {
-		m_cliHasAmuleConfigFile = true;
-	}
 	if (parser.Found("set-admin-pass", &m_cliSetAdminPass)) {
 		m_cliHasSetAdminPass = true;
 	}
@@ -295,26 +285,36 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		m_password.Decode(MD5Sum(plain).GetHash());
 	}
 
-	// --amule-config-file wins for the EC connection: read host/port and the
-	// already-hashed ECPassword straight from an amule.conf (same as
-	// amuleweb). This is how amule auto-starts amuleapi -- amule only holds
-	// the hashed EC password, so it can't pass a plaintext --password.
-	if (m_cliHasAmuleConfigFile) {
-		if (!wxFileName::FileExists(m_cliAmuleConfigFile)) {
-			Show(CFormat("amuleapi: --amule-config-file '%s' does not exist\n") %
-				m_cliAmuleConfigFile);
-			return false;
+	// Ephemeral EC token, if the aMule core that spawned us left one. Both
+	// sides derive the name from webcommon rather than passing a path,
+	// because argv is world-readable via ps: telling every local user
+	// where the secret is for as long as it exists would undo the point of
+	// writing it 0600.
+	//
+	// Wins over amuleapi.conf: when the core issued a token, that is the
+	// credential it wants us to use. An explicit --password still wins,
+	// since that is an operator deliberately overriding us.
+	//
+	// This is what replaced --amule-config-file. That flag handed us the
+	// hashed EC password straight out of amule.conf, and in this protocol
+	// the stored value IS the credential -- so a network-facing daemon was
+	// holding something equivalent to the user's password, for its whole
+	// run. The token is equivalent for connecting and worthless once the
+	// daemon it belongs to has exited.
+	//
+	// Deleted on read, not after connecting. A failed connection retries
+	// from memory, so holding the file until the handshake completes would
+	// only widen the window in which the secret is at rest for nothing.
+	if (!m_cliHasEcPassword) {
+		const std::string tokenPath = webcommon::EcTokenFilePath(std::string(config_dir.utf8_str()));
+		std::string token;
+		if (webcommon::ReadAndConsumeEcToken(tokenPath, token)) {
+			m_password.Decode(wxString::FromUTF8(token.c_str()));
+			// Worth one line: it tells an operator which credential this
+			// instance is actually using, and it is what the "no token
+			// left on disk" check looks for after startup.
+			Show("amuleapi: using the ephemeral EC token from the core.\n");
 		}
-		CECFileConfig cfg(m_cliAmuleConfigFile);
-		LoadAmuleConfig(cfg); // sets m_host / m_port / m_password
-
-		// Only the EC connection comes from amule.conf. The admin and
-		// guest credentials deliberately do NOT: there is one store for
-		// them, amuleapi-passwords, which aMule and amuled write directly
-		// when a password is changed from the preferences dialog or from
-		// amulegui over EC. An amule.conf copy would be a second store,
-		// and whichever one lost the tie-break would silently discard a
-		// password the user had just set.
 	}
 
 	return true;

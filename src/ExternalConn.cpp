@@ -264,6 +264,13 @@ private:
 
 	uint64_t m_passwd_salt;
 
+	// The credential this connection authenticated with -- the configured
+	// EC password, or the ephemeral token the core issued to the amuleapi
+	// it spawned. Per-socket precisely because two clients may be using
+	// different credentials at the same time; ActivateAEAD() keys the
+	// session from this rather than re-reading preferences.
+	wxString m_authSecret;
+
 	// Transport encryption, chosen during EC_OP_AUTH_REQ and only turned on
 	// once the password verifies. Held here until then because a client that
 	// fails authentication must never get a working key.
@@ -471,7 +478,15 @@ void CECServerSocket::ActivateAEAD()
 	if (m_aeadCipher == ECCrypt::Cipher_None) {
 		return;
 	}
-	const wxString secret = thePrefs::ECPassword().Lower();
+	// Key off whichever credential this connection actually authenticated
+	// with, NOT unconditionally off the configured password. The client
+	// derives its half from the secret it presented (RemoteConnect.cpp:
+	// m_aeadSecret = pass.Lower()), so a peer that authenticated with the
+	// ephemeral token would otherwise end up with a different key than we
+	// do -- the handshake would succeed and the first sealed packet would
+	// fail. m_authSecret is per-socket, so concurrent clients using
+	// different credentials each key their own session.
+	const wxString secret = m_authSecret.Lower();
 	const wxCharBuffer buf = secret.utf8_str();
 	const std::vector<uint8_t> ikm(
 		(const uint8_t *)buf.data(), (const uint8_t *)buf.data() + strlen(buf.data()));
@@ -894,6 +909,33 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 
 			passh.Decode(MD5Sum(thePrefs::ECPassword().Lower() + saltHash).GetHash());
 
+			// Second accepted credential: the ephemeral token the core
+			// issued to the amuleapi it spawned, so that daemon never
+			// needs the password-equivalent value out of amule.conf.
+			//
+			// Empty when no token was issued, and an empty token must
+			// never authenticate anyone -- so the emptiness is tested
+			// here rather than relying on a digest of "" failing to
+			// collide.
+			const wxString &ecToken = theApp->GetEcToken();
+			CMD4Hash tokenh;
+			const bool tokenUsable = !ecToken.IsEmpty() &&
+						 tokenh.Decode(MD5Sum(ecToken.Lower() + saltHash).GetHash());
+
+			// Compare against both without short-circuiting. The naive
+			// `if (pw) ... else if (token) ...` leaks which credential
+			// matched through timing, and -- more usefully to an attacker
+			// -- whether a token is live at all. Both branches are
+			// evaluated and the results OR'd, so acceptance is one
+			// decision.
+			//
+			// The per-comparison timing is not itself a concern: the
+			// digests are salted per connection, so anything learned about
+			// one is stale on the next, and the rate limiter above bounds
+			// attempts regardless.
+			const bool matchedPassword = passwd && passwd->GetMD4Data() == passh;
+			const bool matchedToken = passwd && tokenUsable && passwd->GetMD4Data() == tokenh;
+
 			// Operator policy: refuse anything that did not negotiate
 			// encryption. Checked ahead of the password so the client gets
 			// the real reason rather than a misleading "wrong password",
@@ -908,12 +950,19 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				AddLogLineN(wxString(wxGetTranslation(err)) + " " + GetPeer());
 				response = new CECPacket(EC_OP_AUTH_FAIL);
 				response->AddTag(CECTag(EC_TAG_STRING, err));
-			} else if (passwd && passwd->GetMD4Data() == passh) {
-				// The password is good, so both ends hold the same secret and
-				// the keys will match. Switch on now rather than after the
-				// reply: EC_OP_AUTH_OK is then itself sealed, which proves to
-				// the client that its peer really does know the password --
-				// something the plain challenge never established.
+			} else if (passwd && (matchedPassword || matchedToken)) {
+				// One of the two accepted credentials matched, so both ends
+				// hold the same secret and the keys will match. Switch on now
+				// rather than after the reply: EC_OP_AUTH_OK is then itself
+				// sealed, which proves to the client that its peer really does
+				// know the secret -- something the plain challenge never
+				// established.
+				//
+				// Remember WHICH one for ActivateAEAD: the client keys its
+				// half from the credential it presented, so keying ours from
+				// the configured password regardless would break every
+				// token-authenticated session the moment it was sealed.
+				m_authSecret = matchedPassword ? thePrefs::ECPassword() : ecToken;
 				// Clear the bucket: a legitimate user who mistyped a few
 				// times must not carry that streak into their next
 				// connection.

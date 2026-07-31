@@ -883,10 +883,17 @@ if (NEED_LIB_MULEAPPCORE)
 		PUBLIC wxWidgets::BASE
 		PRIVATE CRYPTOPP::CRYPTOPP
 		# webcommon owns the amuleapi credential format (hashing + the
-		# amuleapi-passwords file), shared with the amuleapi binary so the
-		# two can never disagree about it. Built unconditionally, so this
+		# amuleapi-passwords file) and the EC token amuled hands the
+		# amuleapi it spawns, shared with the amuleapi binary so the two
+		# can never disagree about either. Built unconditionally, so this
 		# holds even for a -DBUILD_AMULEAPI=NO configure.
-		PRIVATE webcommon
+		#
+		# PUBLIC, not PRIVATE: amule.cpp calls webcommon directly and is
+		# compiled into the amule / amuled executables rather than into
+		# this library, so those targets need the header path too. The
+		# objects already reached them transitively; only the includes
+		# did not.
+		PUBLIC webcommon
 	)
 
 	# The GeoIP resolver (IP2Country.cpp + geoip/MaxMindDBDatabase.cpp) now

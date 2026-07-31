@@ -11,7 +11,6 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .RB_untranslated [ \-\-bind " " \fI<address> ]
 .RB_untranslated [ \-\-http\-port " " \fI<num> ]
 .RB_untranslated [ \-\-config\-dir " " \fI<path> ]
-.RB_untranslated [ \-\-amule\-config\-file " " \fI<path> ]
 .RB_untranslated [ \-\-log\-file " " \fI<path> ]
 .RB_untranslated [ \-\-no\-log\-file ]
 .RB_untranslated [ \-\-foreground ]
@@ -29,12 +28,10 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .RB_untranslated [ \-\-help ]
 .SH DESCRIPTION
 .B_untranslated amuleapi
-is a standalone HTTP daemon that exposes a versioned JSON REST API and a
-long\-lived Server\-Sent Events stream backed by a single
-\fBamuled\fR(1) instance over the EC protocol. It is intended to run
-alongside \fBamuled\fR (which it connects to as an EC client) and serves
-its HTTP surface on a separate port from \fBamuleweb\fR(1) \- the two
-can run concurrently against the same daemon.
+serves a JSON REST API and a live event stream for a running
+\fBamuled\fR(1), so other programs can control aMule over HTTP. It
+connects to amuled the same way \fBamulecmd\fR(1) does, and listens on its
+own port, so it can run at the same time as \fBamuleweb\fR(1).
 .PP
 The wire contract for the REST API is documented at
 \fIdocs/api/REFERENCE.md\fR; the SSE event catalog lives at
@@ -66,19 +63,10 @@ aMule data directory that \fBamuled\fR uses (~/.aMule/ on Linux,
 Windows). Creates the dir with mode 0700 if absent.
 .TP
 .B_untranslated [ \-\-disable\-ec\-encryption ]\fR
-Do not encrypt the External Connection link to \fBamuled\fR(1).
-Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.
-Equivalent to setting \fBEncryption=0\fR in the \fB[EC]\fR section of \fIamuleapi.conf\fR.
-Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection.
-.TP
-\fB[ \-\-amule\-config\-file\fR=\fI<path>\fR \fB]\fR
-Read the EC host, port and password from an existing \fBamule\fR(1) /
-\fBamuled\fR(1) \fIamule.conf\fR, the same way \fBamuleweb\fR(1) does. This
-is how aMule auto\-starts amuleapi (see \fIRun amuleapi on startup\fR in the
-GUI, or \fI/AmuleApi/Enabled\fR in \fIamule.conf\fR): amuled only stores the
-MD5\-hashed EC password, so passing the config file lets amuleapi
-authenticate without a plaintext \fB\-\-password\fR on the command line.
-Overrides \fB\-\-host\fR / \fB\-\-port\fR / \fB\-\-password\fR.
+Do not encrypt the link to \fBamuled\fR(1). Encryption is on by default
+whenever the remote aMule supports it. Turning it off lets anyone watching
+the connection read and alter everything after the login. Same as
+\fBEncryption=0\fR in \fIamuleapi.conf\fR.
 .TP
 \fB[ \-\-set\-admin\-pass\fR=\fI<plain>\fR \fB]\fR
 Set the admin password to \fI<plain>\fR, storing it salted and
@@ -97,13 +85,10 @@ units; if you need a system service wrapper, write a downstream unit
 that wraps the foreground command.
 .TP
 \fB[ \-\-log\-file\fR=\fI<path>\fR \fB]\fR
-Append a copy of all console output (both stdout and stderr) to
-\fI<path>\fR while still printing to the console. Enabled by default at
-\fI<config\-dir>/amuleapi.log\fR, so a log is always available to attach to
-a bug report; pass this to use a different path. The file is opened in
-append mode and capped at 10 MiB: when a write would exceed the cap it is
-rotated to \fI<path>.1\fR (replacing any previous one) and a fresh file is
-started, so on\-disk usage stays bounded.
+Write a copy of the console output to \fI<path>\fR. On by default at
+\fI<config\-dir>/amuleapi.log\fR, so there is always a log to attach to a
+bug report; use this to put it somewhere else. It is capped at 10 MiB and
+rotated to \fI<path>.1\fR, so it cannot grow without bound.
 .TP
 \fB[ \-\-no\-log\-file ]\fR
 Disable the log file entirely and print to the console only.
@@ -116,28 +101,27 @@ Print a short usage description.
 .SH FILES
 .TP
 \fI~/.aMule/amuleapi.conf\fR
-INI\-style runtime config: \fB[Server]\fR (bind address, HTTP port, CORS
-allowlist), \fB[EC]\fR (outbound connection to amuled, including
-\fBEncryption\fR which defaults to 1 and can be set to 0 to disable
-transport encryption), \fB[Auth]\fR (login
-rate\-limit knobs), \fB[Streaming]\fR (SSE event\-bus ring capacity). The
-QUICKSTART document distributed with the source has the full
-reference.
+Settings file: HTTP address and port, the connection to amuled, login
+rate limits and event\-stream sizing. The QUICKSTART document shipped with
+the source has the full reference.
 .TP
 \fI~/.aMule/amuleapi\-jwt\-secret\fR
-32\-byte HMAC signing key for issued tokens. Mode 0600. Auto\-generated
-on first launch if absent. Deleting the file invalidates every
-previously\-issued token.
+Key used to sign login tokens. Created on first launch. Deleting it signs
+out everyone.
 .TP
 \fI~/.aMule/amuleapi\-passwords\fR
-Admin and guest passwords, each stored as a salted PBKDF2\-HMAC\-SHA256
-record rather than a reversible digest. Mode 0600. This is the only
-place they are stored. Written via \fB\-\-set\-admin\-pass\fR /
-\fB\-\-set\-guest\-pass\fR, by the REST endpoint
-\fBPATCH /api/v0/auth/passwords\fR, and by \fBamule\fR(1) or
-\fBamuled\fR(1) when a password is changed in the Remote Controls
-preferences. A change takes effect on the next login without
-restarting amuleapi, and invalidates tokens issued before it.
+The admin and guest passwords, stored so they cannot be read back, only
+replaced. This is the only place they are kept. Set them with
+\fB\-\-set\-admin\-pass\fR / \fB\-\-set\-guest\-pass\fR, from the REST API, or
+from the Remote Controls preferences in \fBamule\fR(1). A change applies at
+the next login and signs out anyone already logged in.
+.TP
+\fI~/.aMule/amuleapi\-ec\-token\fR
+Short\-lived login token, written by \fBamule\fR(1) / \fBamuled\fR(1) when
+they start amuleapi themselves. Created fresh each time, read once and
+deleted straight away, so an auto\-started amuleapi needs no EC password of
+its own. Started by hand, amuleapi finds no token and uses
+\fB[EC]/Password\fR from \fIamuleapi.conf\fR instead.
 .SH REPORTING BUGS
 Please report bugs either on our forum
 (\fIhttps://github.com/amule-org/amule/discussions\fR), or in our

@@ -1,177 +1,195 @@
 # amuleapi — quick start
 
 amuleapi is a standalone HTTP daemon that serves a versioned JSON REST API
-and a long-lived Server-Sent Events stream backed by amuled. It connects
-to amuled as an EC client (same protocol amuleweb and amulecmd use) and
-exposes its own HTTP surface on a separate port. amuleapi is the first
-shipping REST API for aMule — there is no prior on-the-wire surface to
-migrate from.
+and a Server-Sent Events stream backed by amuled. It connects to amuled as
+an EC client — the same protocol amuleweb and amulecmd use — and serves its
+own HTTP surface on a separate port.
 
 > aMule's older web frontend, **amuleweb**, is **deprecated** — it may be removed in aMule 3.2 or later (it is not being removed yet). amuleapi is its intended replacement.
 
-For the endpoint list see the [What ships](#what-ships) section below. Full per-endpoint contracts (methods, query params, request bodies, response shapes, error codes) live in [`docs/api/REFERENCE.md`](api/REFERENCE.md); the SSE event catalog and Last-Event-ID reconnect semantics live in [`docs/api/EVENTS.md`](api/EVENTS.md). The source of truth for routing is [`src/webapi/Api.cpp`](../src/webapi/Api.cpp).
+Per-endpoint contracts live in [`docs/api/REFERENCE.md`](api/REFERENCE.md);
+the SSE event catalog and reconnect semantics in
+[`docs/api/EVENTS.md`](api/EVENTS.md). The source of truth for routing is
+[`src/webapi/Api.cpp`](../src/webapi/Api.cpp). A map of the surface is under
+[What ships](#what-ships) below.
+
+## Let aMule start it — the recommended setup
+
+**This is the most secure way to run amuleapi, and the one to prefer unless
+you have a reason not to.** A standalone amuleapi needs a long-lived EC
+password of its own; an auto-started one never gets a durable EC credential
+at all.
+
+Configure it under *Preferences → Remote Controls* (**aMule API server
+parameters**): tick **Run amuleapi (REST API) on startup**, set the
+**listening interface**, **HTTP port** and **admin password**, and
+optionally tick **Enable guest access** with a **guest password**. All of it
+is equally editable from a remote amulegui over EC. aMule then spawns:
+
+```sh
+amuleapi --config-dir=<amule data dir> --bind=<BindAddress> --http-port=<HttpPort>
+```
+
+Note what is *not* there: no EC password, and no path to `amule.conf`.
+
+### Why it is more secure
+
+In the EC protocol the stored password value **is** the credential — the
+challenge hashes it directly, so anything holding it can authenticate. A
+network-facing daemon holding that value holds the equivalent of your EC
+password for its whole run.
+
+So aMule doesn't give it one. At startup it generates a random 128-bit
+token, writes it `0600` into the config directory, and accepts it as a
+second valid EC credential for that run only. amuleapi reads the token and
+deletes the file immediately; aMule deletes it regardless after ten
+seconds, so a child that dies before reading cannot leave a secret at rest.
+The token is never passed on the command line, because `argv` is readable
+by any local user through `ps`.
+
+The result: nothing durable to steal from the API daemon, and nothing to
+rotate if it is compromised — restarting aMule invalidates the token.
+
+The admin and guest passwords are unaffected by this and travel their own
+route; see [Passwords](#passwords).
+
+Setting an admin password is what allows binding a non-loopback interface —
+amuleapi refuses to start otherwise. Changing the interface or port prompts
+you to restart aMule; password changes need no restart. amuleapi stops when
+aMule exits.
+
+### Headless — no GUI at all
+
+A server running `amuled` alone does not need amulegui for any of this. Stop
+amuled first (it rewrites `amule.conf` on exit, so edits made while it runs
+are lost), then add to `amule.conf`:
+
+```ini
+[AmuleApi]
+Enabled=1
+BindAddress=127.0.0.1
+HttpPort=4713
+Path=amuleapi
+```
+
+`Path` is the amuleapi executable — a bare name is looked up on `PATH`, so
+leave it alone unless yours lives somewhere unusual. Note the key is
+`HttpPort`, not `Port`.
+
+Then set the admin password with amuleapi itself:
+
+```sh
+amuleapi --set-admin-pass=mySecret123
+```
+
+No path needed: amuleapi defaults to the same per-platform directory amuled
+uses — see [Files and the config directory](#files-and-the-config-directory).
+Add `--config-dir=<path>` only if you start amuled with `-c <path>`.
+
+That writes `amuleapi-passwords` and exits without starting anything. Start
+amuled and it brings amuleapi up with the token, exactly as the GUI flow
+does — the GUI only ever edited these same keys and called the same
+credential store.
+
+Passwords deliberately have no `amule.conf` key: `/AmuleApi/Password` is
+transient and is deleted from the file if it ever appears there.
 
 ## Requirements
 
-- A running `amuled` (or a monolithic `aMule` with EC enabled) that
-  amuleapi can connect to over the EC protocol.
-- The EC password from `amule.conf[ExternalConnect]/Password` (set via
-  `amuled --ec-config` if you've never run it).
+- A running `amuled` (or monolithic `aMule`) with EC enabled.
+- For a **standalone** amuleapi only: the EC password from
+  `amule.conf[ExternalConnect]/Password` (set it with `amuled --ec-config`
+  if you never have).
 
-## First-run setup
+## Files and the config directory
 
-amuleapi keeps its config in the same per-platform aMule data directory
-that `amuled` uses.
+amuleapi keeps its files in the same per-platform aMule data directory
+amuled uses, deliberately: operators reading both sets of config together
+don't have to switch directories. amuleapi never writes amuled's files, and
+amuled never writes amuleapi's.
 
-> **Cohabitation with amuled.** This is the same directory amuled
-> keeps `amule.conf` and `*.met` in — intentionally so. amuleapi's
-> own files (`amuleapi.conf`, `amuleapi-jwt-secret`,
-> `amuleapi-passwords`, and by default the `amuleapi.log` log file)
-> sit alongside amuled's without colliding, and operators reading
-> both sets of configs together don't have to context-switch
-> directories. amuleapi never *writes* amuled's files; the one point
-> of contact is read-only — launched with `--amule-config-file` (as
-> aMule's [auto-start](#auto-starting-from-amule) does), it reads
-> connection and admin-password settings out of `amule.conf`. amuled
-> never touches amuleapi's files.
+| Platform | Default config dir                     |
+| -------- | -------------------------------------- |
+| Linux    | `~/.aMule/`                            |
+| macOS    | `~/Library/Application Support/aMule/` |
+| Windows  | `%APPDATA%\aMule\`                     |
 
-The default location:
+Override with `--config-dir=/path/to/dir`.
 
-| Platform | Default config dir                                  |
-| -------- | --------------------------------------------------- |
-| Linux    | `~/.aMule/`                                         |
-| macOS    | `~/Library/Application Support/aMule/`              |
-| Windows  | `%APPDATA%\aMule\`                                  |
+Each amuleapi file is written mode `0600`:
 
-Override with `amuleapi --config-dir=/path/to/dir`.
+| File                  | Purpose                                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `amuleapi.conf`       | Runtime config: HTTP bind/port/CORS, outbound EC connection, login rate limits, SSE ring size. [Reference below](#amuleapiconf-reference). |
+| `amuleapi-jwt-secret` | 32-byte HMAC signing key for issued tokens. Generated on first launch.                                                       |
+| `amuleapi-passwords`  | Admin and guest passwords as salted PBKDF2-HMAC-SHA256 records. Never stored in plaintext and never readable back — only replaceable. Also written by aMule and amuled. |
+| `amuleapi-ec-token`   | The ephemeral EC token, when aMule started amuleapi. Exists for seconds at most; see [above](#why-it-is-more-secure).        |
 
-The directory holds three amuleapi-specific config/secret files, each
-written with mode `0600`:
+amuleapi also writes `amuleapi.log` here by default; see [Logging](#logging).
 
-| File                      | Purpose                                                                                                  |
-| ------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `amuleapi.conf`           | INI-style runtime config (HTTP bind/port/CORS, outbound EC connection to amuled, login rate-limit knobs, SSE event-bus ring size). Full reference below. |
-| `amuleapi-jwt-secret`     | 32-byte HMAC signing key for issued tokens. Auto-generated on first launch if absent.                    |
-| `amuleapi-passwords`      | Admin and guest passwords, each a salted PBKDF2-HMAC-SHA256 record. Plaintext is never persisted, and a stored password cannot be read back — only replaced. The only place these are stored; also written by aMule and amuled. |
+## Passwords
 
-By default amuleapi also writes an `amuleapi.log` file here (a copy of
-its console output); see [Logging](#logging) to relocate or disable it.
-
-Set passwords via the dedicated CLI flags. Each invocation writes the
-file and exits — the HTTP server is NOT brought up, no EC connection
-is attempted, and the exit code reflects success / failure (so
-`amuleapi --set-admin-pass=... && systemctl restart amuleapi` actually
-short-circuits if the write fails):
+Admin and guest passwords live only in `amuleapi-passwords` — no copy goes
+into `amule.conf`, because two copies can disagree. Set them from the
+preferences panel (aMule writes the file directly; a remote amulegui sends
+the change over EC and amuled writes it), or from the CLI:
 
 ```sh
 amuleapi --set-admin-pass=mySecret123
 amuleapi --set-guest-pass=readOnlyPass
 ```
 
-An empty password row means "this role is disabled" and
-`POST /api/v0/auth/login` returns `login_disabled` for that role.
+Each invocation writes the file and exits — no HTTP server, no EC
+connection — and the exit code reflects success, so
+`amuleapi --set-admin-pass=… && systemctl restart amuleapi` short-circuits
+on failure. Changes are picked up at the next login, with no restart.
 
-## Running
+An empty password means the role is disabled: `POST /api/v0/auth/login`
+returns `login_disabled` for it. Unticking **Enable guest access** clears
+the guest password, which is what turns guest access off.
+
+Because the stored form cannot be reversed, the preference fields are
+write-only: they open empty, and leaving one empty keeps the current
+password. The panel says whether an admin password is currently set.
+
+Running amuleapi on a *different* host from aMule? The preferences panel
+writes the credential file on aMule's host, while that amuleapi reads its
+own. Configure it with `--set-admin-pass` or `PATCH /auth/passwords`.
+
+## Running it standalone
 
 ```sh
-amuleapi --host=127.0.0.1 --port=4712 --password=$EC_PASSWORD
+amuleapi --host=127.0.0.1 --port=4712
 ```
 
-> **Two ports.** `--port=4712` is the EC port amuleapi USES to talk
-> to amuled (i.e. it's a client of amuled on 4712). amuleapi's OWN
-> HTTP listener is on `amuleapi.conf[Server]/Port` (default 4713)
-> — that's the port REST clients hit. The example above starts a
-> daemon that consumes 4712 (outbound to amuled) and serves 4713
-> (inbound from REST clients).
+**Two ports.** `--port=4712` is the EC port amuleapi *uses* to reach amuled.
+Its own HTTP listener is `amuleapi.conf[Server]/Port` (default `4713`) —
+that is the port REST clients hit. amuleweb can run concurrently on its own
+port; the two are independent EC clients.
 
-- `--host` / `--port` / `--password` specify the EC connection to
-  `amuled` (default port `4712`).
-- HTTP serves on `amuleapi.conf[Server]/Port` (default `4713`).
-- amuleweb can run concurrently on its own port (default `4711`); the
-  two daemons talk to amuled independently as separate EC clients.
+**Keep the EC password out of `argv`.** Omit `--password` and let amuleapi
+read it from `amuleapi.conf[EC]/Password`, a `0600` file. `--password=…` puts
+the secret in `argv`, visible to any local user via `ps` —
+`--password=$EC_PASSWORD` does not help, since the shell expands it before
+exec. There is no environment or stdin path; the config file is the
+non-`argv` option. Better still, use the [auto-start](#let-amule-start-it--the-recommended-setup)
+flow, which needs no durable EC credential at all.
 
-> **Keep the EC password out of the command line.** `--password` is
-> only an override — omit it and amuleapi reads the EC password from
-> `amuleapi.conf[EC]/Password` (a `0600` file), which is the way to
-> avoid exposing the secret in the process arguments. Passing
-> `--password=…` puts the value in `argv`, where it is visible to any
-> local user via `ps` / `/proc/<pid>/cmdline`; `--password=$EC_PASSWORD`
-> does not help, since the shell expands the value into `argv` before
-> exec. There is no environment-variable or stdin path for the EC
-> password — the config file is the non-`argv` option. (In the
-> auto-start flow, `--amule-config-file` reads the already-hashed EC
-> password from `amule.conf`, also without touching `argv`.)
-
-aMule does not ship init-system units (systemd, launchd, Windows
-service) for any of its daemons. If you want one, write a downstream
-unit that wraps the command above.
+aMule ships no init-system units (systemd, launchd, Windows service) for any
+of its daemons. Write a downstream unit wrapping the command above if you
+want one.
 
 ### Logging
 
-By default amuleapi tees a copy of everything it prints to the console
-into `amuleapi.log` in its config dir, installed as early as possible so
-config-load errors, EC warnings, and a crash backtrace are all captured.
-The output is low-volume (startup plus warnings/errors — there is no
-per-request access log), and the file is rotated at 10 MiB as a runaway
-guard.
+amuleapi tees its console output into `amuleapi.log` in the config dir,
+installed early enough to capture config-load errors, EC warnings and a
+crash backtrace. Output is low volume — startup plus warnings and errors,
+no per-request access log — and rotates at 10 MiB.
 
-- `--log-file=/path/to/amuleapi.log` — write the log somewhere other
-  than the default `<config-dir>/amuleapi.log`.
-- `--no-log-file` — don't write a log file; print to the console only.
+- `--log-file=/path/to/file` — write it elsewhere.
+- `--no-log-file` — console only.
 
-The daemon prints `amuleapi: logging to <path>` on startup so you can see
-where it landed.
-
-### Auto-starting from aMule
-
-aMule can launch amuleapi for you when it starts, the same way it can
-launch amuleweb. Everything is configured under *Preferences → Remote
-Controls* (**aMule API server parameters**): tick **Run amuleapi (REST
-API) on startup**, then set the **listening interface**, **HTTP port**,
-**admin password**, and optionally tick **Enable guest access** and give
-it a **guest password**. The first three map to `/AmuleApi/Enabled`,
-`/AmuleApi/BindAddress` and `/AmuleApi/HttpPort` in `amule.conf`; the
-passwords do not — see below. All of it is equally editable from a remote
-amulegui over EC. aMule then spawns:
-
-```sh
-amuleapi --amule-config-file=<amule.conf> --config-dir=<amule data dir> --bind=<AmuleApi/BindAddress> --http-port=<AmuleApi/HttpPort>
-```
-
-`--amule-config-file` points amuleapi at aMule's own `amule.conf` so it
-reads the EC host/port/(hashed) password from there, exactly as amuleapi's
-sibling amuleweb does. Nothing sensitive is passed on the command line.
-
-The admin and guest passwords travel a different route. They are stored in
-`amuleapi-passwords` in the config directory, salted and stretched, and
-that file is the *only* place they live — no copy goes into `amule.conf`,
-because two copies of a password are two copies that can disagree. When
-you set one in the preferences panel, aMule writes that file directly; on
-a remote amulegui the request goes to amuled over EC and amuled writes it.
-Either way amuleapi picks the change up on the next login, with no restart.
-
-Because the stored form cannot be reversed, the password fields are
-write-only: they open empty, and leaving one empty keeps the current
-password rather than clearing it. The panel says beside the admin field
-whether a password is currently set. Unticking **Enable guest access**
-clears the stored guest password, which is exactly what turns guest access
-off.
-
-Setting an admin password is what lets you bind a non-loopback interface
-and expose the API to other hosts; amuleapi refuses to start otherwise.
-Changing the interface or the port prompts you to restart aMule, which
-relaunches amuleapi with the new parameters — password changes need no
-restart. amuleapi is stopped when aMule exits.
-
-When amuleapi is started **standalone** (no `--amule-config-file`), the
-bind address and port come from `amuleapi.conf` instead, but the
-credentials work identically: same file, set with `--set-admin-pass` /
-`--set-guest-pass` or over REST.
-
-One thing to watch if you run amuleapi on a *different* host from aMule:
-the preferences panel writes the credential file on aMule's host, while a
-remotely-run amuleapi reads the one on its own. Configure that amuleapi
-with `--set-admin-pass` or `PATCH /auth/passwords` instead.
+The daemon prints `amuleapi: logging to <path>` on startup.
 
 ## Verifying
 
@@ -179,29 +197,26 @@ with `--set-admin-pass` or `PATCH /auth/passwords` instead.
 # Public — no auth.
 curl -s http://127.0.0.1:4713/api/v0/version
 
-# Login → token.
-# `?type=bearer` opts into the SDK-client response shape: the JWT
-# lands in the JSON body so a shell script can extract it. Browser
-# clients call /auth/login WITHOUT ?type=bearer and authenticate via
-# the HttpOnly session cookie set on the response — that's the
-# default to keep the token out of any XSS-readable surface.
+# Login → token. `?type=bearer` opts into the SDK-client shape, putting
+# the JWT in the body so a script can extract it. Browser clients omit it
+# and use the HttpOnly session cookie set on the response, which keeps the
+# token off any XSS-readable surface.
 TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?type=bearer" \
     -H 'Content-Type: application/json' \
     -d '{"password":"mySecret123"}' | jq -r .token)
 
-# Authenticated GETs.
-curl -s -H "Authorization: Bearer $TOKEN" \
-    http://127.0.0.1:4713/api/v0/status
+# Authenticated GET.
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/status
 
-# Live event stream — open in a separate terminal and trigger
-# mutations elsewhere to watch events flow.
-curl -s -N -H "Authorization: Bearer $TOKEN" \
-    http://127.0.0.1:4713/api/v0/events
+# Live event stream — run in a second terminal and trigger mutations
+# elsewhere to watch events flow.
+curl -s -N -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/events
 ```
 
 ## `amuleapi.conf` reference
 
-INI-style file written with mode `0600`. The defaults file is created on first launch if absent — edits roundtrip through `wxFileConfig`, so quotes and comments are preserved across daemon restarts. The full surface:
+INI-style, mode `0600`, created with defaults on first launch. Edits
+roundtrip through `wxFileConfig`, so quotes and comments survive restarts.
 
 ```ini
 [Server]
@@ -215,6 +230,7 @@ StaticRoot=
 Host=127.0.0.1
 Port=4712
 Password=
+Encryption=1
 
 [Auth]
 LoginFailureWindowSeconds=60
@@ -227,44 +243,35 @@ EventBusRingCapacity=16384
 
 ### `[Server]` — HTTP listener
 
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `BindAddress` | `127.0.0.1` | Interface the HTTP listener binds to. Non-loopback binds are rejected at startup unless at least one of admin/guest passwords is set (the "publicly listening with no password" footgun gate in `App.cpp`). Overridable with `--bind=…` on the CLI. |
-| `Port` | `4713` | TCP port for inbound REST traffic. Distinct from amuled's EC port (`[EC]/Port`, default 4712). Overridable with `--http-port=…`. |
-| `AllowCORS` | `0` | `1` enables CORS headers (`Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials: true`, `Vary: Origin`, preflight OPTIONS). Required for browser clients hosted on a different origin. See §CORS below. |
-| `CorsOriginAllowlist` | *(empty)* | Comma-separated list of origins that may set credentialed CORS requests. Empty + `AllowCORS=1` echoes the caller's `Origin` verbatim (wildcard-equivalent that remains cookie-compatible). |
-| `StaticRoot` | *(empty)* | Absolute filesystem path of a bundled web frontend. Empty (default) auto-discovers the bundled placeholder via the install-path chain (`make install` target on Linux/Windows, `aMule.app/Contents/Resources/amuleapi-static` on macOS) — same pattern amuleweb uses for templates, see [`WebInterface.cpp:146`](../src/webserver/src/WebInterface.cpp#L146). If no install is found, the daemon stays API-only and non-`/api/` paths return `404`. A non-empty `StaticRoot` overrides discovery and serves `GET`/`HEAD` requests outside `/api/` from that directory, with `index.html` SPA fallback for extension-less misses. Reads are containment-checked (symlinks pointing outside the root are rejected on POSIX; lexical `..`-rejection on Windows where symlinks require elevation), capped at 16 MiB per asset, and emit a mtime-size `ETag` so subsequent loads short-circuit to `304` via `If-None-Match`. |
+- `BindAddress` / `Port` — where amuleapi listens. A non-loopback
+  `BindAddress` requires an admin password.
+- `AllowCORS` / `CorsOriginAllowlist` — see [CORS](#cors).
+- `StaticRoot` — directory to serve a frontend bundle from. Empty keeps the
+  daemon API-only.
 
 ### `[EC]` — outbound connection to amuled
 
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `Host` | `127.0.0.1` | Hostname or IP of the running amuled daemon. amuleapi is a long-lived EC client; CLI `--host=…` overrides. |
-| `Port` | `4712` | amuled's EC listener port (matches amuled's `[ExternalConn]/ECPort`). CLI `--port=…` overrides. |
-| `Password` | *(empty)* | Plaintext EC password matching amuled's `[ExternalConn]/ECPassword`. Stored cleartext because the base class wants a hashable plaintext — the `0600` file mode matches `amuleapi-jwt-secret` and `amuleapi-passwords`. CLI `--password=…` overrides. |
+- `Host` / `Port` — where amuled's EC listener is.
+- `Password` — the EC password. Used only when no token was issued; left
+  empty in the auto-start flow.
+- `Encryption` — negotiate an encrypted EC session (default on).
 
 ### `[Auth]` — login rate limiter
 
-Drives the `/auth/login` per-IP throttle (`CRateLimiter` in `Auth.cpp`). Failures inside the sliding window count toward the threshold; tripping it locks the offending IP out for `LoginLockoutSeconds`. Successful logins reset the bucket immediately.
-
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `LoginFailureWindowSeconds` | `60` | Sliding window in seconds. Failures older than this fall off the count. |
-| `LoginFailureThreshold` | `5` | Failures within the window before the IP is locked out. |
-| `LoginLockoutSeconds` | `300` | Duration of the IP lockout once tripped. While locked, `/auth/login` returns `429 rate_limited` with a `Retry-After` header. |
+`LoginFailureThreshold` failures within `LoginFailureWindowSeconds` lock
+that address out for `LoginLockoutSeconds`.
 
 ### `[Streaming]` — SSE event bus
 
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `EventBusRingCapacity` | `16384` | Number of events the in-memory SSE bus retains for `Last-Event-ID` replay. Sized to absorb a cold-start tick on a busy node (5 K downloads + 5 K shared can publish ~10 K `*_added` events in a single tick). Worst-case memory ≈ capacity × ~1 KB JSON payload. Values below the bus's compile-time floor (16) are clamped up. Raise this on operator-heavy nodes where reconnecting clients are hitting `resync` events from natural traffic; lower it (e.g. `32`) only for the smoke-test gap-path scenario. |
+`EventBusRingCapacity` bounds the replay ring backing `Last-Event-ID`.
 
-CLI `--bind`, `--http-port`, `--host`, `--port`, `--password`, and `--config-dir` override the matching keys at runtime without rewriting the file.
+CLI `--bind`, `--http-port`, `--host`, `--port`, `--password` and
+`--config-dir` override the matching keys without rewriting the file.
 
 ## CORS
 
-By default amuleapi serves no CORS headers (same-origin only). To allow
-cross-origin browser clients, set in `amuleapi.conf`:
+amuleapi serves no CORS headers by default (same-origin only). To allow
+cross-origin browser clients:
 
 ```ini
 [Server]
@@ -272,87 +279,68 @@ AllowCORS=1
 CorsOriginAllowlist=https://your-app.example.com,https://staging.example.com
 ```
 
-Leave `CorsOriginAllowlist` empty to echo any caller's `Origin` header
-(wildcard-equivalent that stays cookie-compatible).
-
-> **CORS note.** The empty-allowlist form is *not* literally
-> `Access-Control-Allow-Origin: *`. amuleapi echoes the caller's
-> exact `Origin` value, which is the only shape browsers accept
-> together with `Access-Control-Allow-Credentials: true` (RFC 6454
-> + Fetch spec). A literal `*` would refuse cookie auth on cross-
-> origin requests — which is what every browser session relies on.
+An empty `CorsOriginAllowlist` echoes the caller's `Origin`. That is *not*
+literally `Access-Control-Allow-Origin: *` — echoing the exact origin is the
+only form browsers accept together with `Access-Control-Allow-Credentials:
+true`, and a literal `*` would break cookie auth cross-origin.
 
 ## What ships
 
-The daemon serves a versioned REST surface under `/api/v0/`. This is the
-map of what's there; the full per-endpoint contracts — methods, query
-params, request/response bodies, error codes — live in
-[`docs/api/REFERENCE.md`](api/REFERENCE.md), which stays authoritative and
-current.
+A versioned REST surface under `/api/v0/`. Full contracts — methods, query
+params, bodies, error codes — are in
+[`docs/api/REFERENCE.md`](api/REFERENCE.md).
 
-- **Auth** — `auth/login`, `auth/logout`, `auth/session` (JWT and
-  session-cookie).
+- **Auth** — `auth/login`, `auth/logout`, `auth/session` (JWT and session
+  cookie).
 - **System** — `version`, `version/check`, `status`, `preferences`.
-- **Downloads** — the transfer queue: list and per-file detail; add,
-  pause/resume, cancel, `clear_completed`; per-file comments,
-  source-reported filenames, and A4AF (alternate sources) listing and
-  swap.
-- **Shared files** — list and detail, `reload`, `verify` (re-hash local
-  data), and the shared-directory roots (`shared/directories`, with
-  GET/PUT/POST/DELETE).
-- **Clients (peers)** — the per-peer view (optional
-  `?filter=uploads|downloads|active` for the legacy "Uploads" subset),
-  per-client detail, and browsing a peer's shared files ("View Files").
-- **Servers** — the ed2k server list: add, connect, remove, and
-  `servers/update` (refresh the list from a URL).
-- **Network control** — `networks/connect` / `disconnect`,
-  `kad/bootstrap`, and the `kad` status view.
-- **Categories** — list plus create / edit / delete.
-- **Search** — `search` (start), `search/results`, `search/stop`,
-  download a result, and per-result comments/ratings.
+- **Downloads** — queue list and per-file detail; add, pause/resume, cancel,
+  `clear_completed`; per-file comments, source-reported filenames, and A4AF
+  listing and swap.
+- **Shared files** — list and detail, `reload`, `verify`, and the share
+  roots (`shared/directories`).
+- **Clients (peers)** — per-peer view (`?filter=uploads|downloads|active`),
+  per-client detail, and browsing a peer's shared files.
+- **Servers** — the ed2k server list: add, connect, remove, `servers/update`.
+- **Network control** — `networks/connect` / `disconnect`, `kad/bootstrap`,
+  `kad` status.
+- **Categories** — list, create, edit, delete.
+- **Search** — `search`, `search/results`, `search/stop`, download a result,
+  per-result comments.
 - **Logs & stats** — `logs/{amule,serverinfo}`, `stats/tree`,
   `stats/graphs/{graph}`.
 
-Conventions that apply across the surface (all detailed in REFERENCE):
+Conventions across the surface:
 
-- **List windowing.** `downloads`, `clients`, `shared`, `servers`, and
+- **List windowing.** `downloads`, `clients`, `shared`, `servers` and
   `search/results` take `limit` / `offset` / `sort` / `order` and return
-  `total` / `offset` / `limit` alongside the array. Omitting them all
-  yields the full set.
-- **Bulk mutations** report one entry per input item under a unified
-  `results` array — `200`/`202` when every item succeeded, `207
-  Multi-Status` for a mix (inspect each `results[].ok`), `503` when the
-  whole batch failed on an EC disconnect. So a client submitting N items
-  learns the fate of each rather than an aggregate counter.
-- **ETag-on-GET** conditional caching (`304 Not Modified` on
-  `If-None-Match`).
-- Every runtime tunable lives in `amuleapi.conf`; see the `amuleapi.conf`
-  reference above for sections, keys, and defaults.
+  `total` / `offset` / `limit` beside the array. Omit them all for the full
+  set.
+- **Bulk mutations** return one entry per input item under `results` —
+  `200`/`202` when all succeeded, `207 Multi-Status` for a mix, `503` when
+  the batch failed on an EC disconnect. Callers learn the fate of each item,
+  not an aggregate count.
+- **ETag on GET** with `304 Not Modified` on `If-None-Match`.
 
 ### Events
 
-`GET /api/v0/events` is a long-lived Server-Sent Events stream with
-`Last-Event-ID` replay and typed `resync` frames for cache invalidation.
-The channel catalog, frame format, snapshot-then-stream bootstrap, and
-reconnect semantics are documented in
-[`docs/api/EVENTS.md`](api/EVENTS.md).
+`GET /api/v0/events` is a long-lived SSE stream with `Last-Event-ID` replay
+and typed `resync` frames for cache invalidation. Channels, frame format and
+reconnect semantics are in [`docs/api/EVENTS.md`](api/EVENTS.md).
 
 ## Security notes
 
-- The admin role grants the holder full control of the daemon's
-  network surface — that includes `POST /api/v0/servers/update
-  {"servers_url": "..."}`, which makes amuled fetch the supplied URL
-  to refresh the server list. This is the same behaviour amuled has
-  exposed via the desktop GUI and amuleweb for years, but it widens
-  what an admin token *grants* — anyone who steals one can ask
-  amuled to perform an HTTP GET against arbitrary network-reachable
-  URLs (a classic SSRF surface) and bring the response back into
-  amuled's process. The `http://` / `https://` pre-check in the API
-  is hygienic input validation, not a security boundary; protect
-  the admin password and the JWT signing secret accordingly.
-- The default `BindAddress=127.0.0.1` is load-bearing. The HTTP
-  server spawns one OS thread per Server-Sent Events subscriber, so
-  binding amuleapi to a non-loopback interface exposes the
-  thread-per-connection model to unauthenticated peers. If you need
-  remote access, put a reverse proxy in front and keep the bind on
-  loopback.
+- **Prefer the auto-start flow.** It is the only configuration in which the
+  API daemon never holds a durable EC credential. See
+  [above](#why-it-is-more-secure).
+- **The admin role grants full control of the daemon's network surface.**
+  That includes `POST /api/v0/servers/update {"servers_url": "..."}`, which
+  makes amuled fetch the supplied URL. This is long-standing amuled
+  behaviour, but it widens what an admin token *grants*: whoever holds one
+  can have amuled issue an HTTP GET against arbitrary reachable URLs (a
+  classic SSRF surface) and pull the response into amuled's process. The
+  `http://` / `https://` pre-check is input hygiene, not a boundary. Protect
+  the admin password and the JWT secret accordingly.
+- **`BindAddress=127.0.0.1` is load-bearing.** The HTTP server spawns one OS
+  thread per SSE subscriber, so a non-loopback bind exposes the
+  thread-per-connection model to unauthenticated peers. For remote access,
+  put a reverse proxy in front and keep the bind on loopback.

@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 17:05+0200\n"
+"POT-Creation-Date: 2026-07-31 20:09+0200\n"
 "PO-Revision-Date: 2026-07-30 20:07+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -351,6 +351,11 @@ msgstr "Solicitou executar o servidor web ó inicio pero non se puido executar o
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "ERRO"
+
+#: src/amule.cpp
+#, c-format
+msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format

@@ -24,6 +24,8 @@
 
 #include "AmuleApiConfig.h"
 
+#include <AtomicFile.h>
+
 #include <wx/file.h>
 #include <wx/fileconf.h>
 #include <wx/filefn.h>
@@ -121,67 +123,14 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 	return fn.GetFullPath();
 }
 
-// Crash-safe writer for the 0600 secret files: amuleapi-jwt-secret and
-// the first-run amuleapi.conf. Writes the body to a sibling `<name>.tmp`,
-// fsyncs, then atomically rename(2)s onto the target, so a partial write
-// or a crash mid-write leaves the original intact. Falls back to a
-// non-atomic best-effort path on Windows (POSIX rename(2) semantics
-// aren't available there for existing-target replacement).
-//
-// amuleapi-passwords is NOT written here — it is shared with amuled and
-// monolithic aMule, so it goes through webcommon::SaveCredentialsFile,
-// which does the same dance behind the one owner of that format.
+// Thin wx wrapper over webcommon::WriteFileAtomic0600 so the call sites
+// here can keep passing wxString paths. The writer itself is shared with
+// the credential store and with amuled, which writes the EC token into the
+// same config dir -- one implementation, so the permission and atomicity
+// guarantees cannot drift between them.
 bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 {
-#ifndef _WIN32
-	const std::string final_p(target_path.utf8_str());
-	const std::string tmp_p = final_p + ".tmp";
-
-	const int fd = ::open(tmp_p.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-	if (fd < 0)
-		return false;
-	::fchmod(fd, S_IRUSR | S_IWUSR); // belt+braces against odd umasks
-
-	std::size_t written = 0;
-	while (written < body.size()) {
-		const ssize_t n = ::write(fd, body.data() + written, body.size() - written);
-		if (n < 0) {
-			if (errno == EINTR)
-				continue;
-			::close(fd);
-			::unlink(tmp_p.c_str());
-			return false;
-		}
-		written += static_cast<std::size_t>(n);
-	}
-	if (::fsync(fd) != 0) {
-		::close(fd);
-		::unlink(tmp_p.c_str());
-		return false;
-	}
-	if (::close(fd) != 0) {
-		::unlink(tmp_p.c_str());
-		return false;
-	}
-	if (::rename(tmp_p.c_str(), final_p.c_str()) != 0) {
-		::unlink(tmp_p.c_str());
-		return false;
-	}
-	return true;
-#else
-	// Windows: best-effort. wxFile::Write returns the bytes written;
-	// short writes are caught and reported.
-	wxFile f;
-	if (!f.Create(target_path, true))
-		return false;
-	if (body.empty()) {
-		f.Close();
-		return true;
-	}
-	const ssize_t n = f.Write(body.data(), body.size());
-	f.Close();
-	return n == static_cast<ssize_t>(body.size());
-#endif
+	return webcommon::WriteFileAtomic0600(std::string(target_path.utf8_str()), body);
 }
 
 } // namespace

@@ -120,6 +120,12 @@ class CUInt128;
 #define CORE_TIMER_PERIOD 100
 #endif
 
+// How long the amuleapi EC token file may sit on disk before the core
+// removes it whether or not the child read it. Long enough to cover a
+// slow exec on a loaded machine, short enough that a secret is not
+// left at rest for anything a person would notice.
+#define EC_TOKEN_FILE_TTL_MS 10000
+
 #define CONNECTED_ED2K (1 << 0)
 #define CONNECTED_KAD_NOT (1 << 1)
 #define CONNECTED_KAD_OK (1 << 2)
@@ -533,11 +539,38 @@ protected:
 	int webserver_pid;
 	int amuleapi_pid;
 
+	// Ephemeral EC credential for the amuleapi we spawn. Generated fresh
+	// every start, handed over through a 0600 file in the config dir that
+	// the child deletes as soon as it has read it, and accepted by the EC
+	// server alongside the configured password for the rest of this run.
+	//
+	// The point is that amuleapi never needs the value in amule.conf. That
+	// stored value IS the credential -- the challenge hashes it directly --
+	// so a compromised network-facing daemon holding it would hold something
+	// equivalent to the user's EC password. This holds a secret that dies
+	// with the process instead.
+	//
+	// Empty when we did not spawn amuleapi, in which case no token is
+	// accepted at all.
+	wxString m_ecToken;
+
+	// Uptime-ms deadline after which the token file is removed whether or
+	// not the child read it. Without it a child that dies before reading
+	// leaves a live secret at rest, and "no token on disk after startup"
+	// stops being true. Same stamp-and-sweep shape as m_mediaTagsDirtiedMs.
+	// 0 = nothing pending.
+	uint64 m_ecTokenFileExpiryMs = 0;
+
 	wxString server_msg;
 
 	CTimer *core_timer;
 
 public:
+	// The ephemeral EC credential handed to the spawned amuleapi, or empty
+	// when none was issued. Read by the EC server's authentication path,
+	// which accepts it alongside the configured password.
+	const wxString &GetEcToken() const { return m_ecToken; }
+
 #ifdef ENABLE_VERSION_CHECK
 	// Result of the last completed version check, relayed over EC to
 	// amuleapi (the /version "update" object) and read by the UIs.

@@ -90,6 +90,8 @@
 #include "ServerUDPSocket.h"            // Needed for CServerUDPSocket
 #include "Statistics.h"                 // Needed for CStatistics
 #include "AmuleApiCredentials.h"        // Needed for AmuleApiCredentials::RefreshState
+#include <AtomicFile.h>                 // webcommon::WriteFileAtomic0600 for the EC token
+#include <Credentials.h>                // webcommon::EcTokenFilePath / GenerateEcToken
 #include "TerminationProcessAmuleApi.h" // Needed for CTerminationProcessAmuleApi
 #include "TerminationProcessAmuleweb.h" // Needed for CTerminationProcessAmuleweb
 #include "ThreadTasks.h"
@@ -1131,7 +1133,6 @@ bool CamuleApp::OnInit()
 
 	// Run amuleapi?
 	if (thePrefs::GetAmuleApiIsEnabled()) {
-		wxString aMuleConfigFile = thePrefs::GetConfigDir() + m_configFile;
 		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs
 		// on Linux where that block is #ifdef'd out, so it can't see the write.
 		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
@@ -1155,15 +1156,43 @@ bool CamuleApp::OnInit()
 		}
 #endif
 
-		// --amule-config-file hands amuleapi the EC host/port/hashed-password
-		// out of amule.conf, exactly like amuleweb. Its admin and guest
-		// credentials do NOT travel this way: they live in amuleapi-passwords
-		// in the config dir below, which both processes write. The HTTP bind
-		// address and port are passed explicitly. A non-loopback bind requires
-		// an admin password, or amuleapi refuses to start; all of this is
-		// configured in the Remote Controls preferences.
+		// Hand the child an ephemeral EC credential instead of letting it
+		// read the password-equivalent value out of amule.conf. Written
+		// 0600 into the config dir the child is about to be pointed at,
+		// under the one name both sides derive from webcommon; the child
+		// deletes it the moment it has read it, and OnCoreTimer removes
+		// it regardless once the deadline below expires.
+		//
+		// The path is deliberately NOT on the command line: argv is
+		// world-readable via ps, so passing it would advertise exactly
+		// where to look for the window the file exists.
+		//
+		// A failure here is not fatal -- amuleapi still has its own
+		// configured EC password to fall back on -- but it is worth
+		// saying, because the fallback is the credential we are trying
+		// to stop using.
+		m_ecToken = wxString::FromUTF8(webcommon::GenerateEcToken().c_str());
+		const std::string tokenPath =
+			webcommon::EcTokenFilePath(std::string(thePrefs::GetConfigDir().utf8_str()));
+		if (webcommon::WriteFileAtomic0600(tokenPath, std::string(m_ecToken.utf8_str()) + "\n")) {
+			m_ecTokenFileExpiryMs = theStats::GetUptimeMillis() + EC_TOKEN_FILE_TTL_MS;
+		} else {
+			AddLogLineC(CFormat(_("Could not write the amuleapi EC token to %s; "
+					      "amuleapi will fall back to its configured password.")) %
+				    wxString::FromUTF8(tokenPath.c_str()));
+			m_ecToken.Clear();
+		}
+
+		// No --amule-config-file here, unlike amuleweb above: amuleapi
+		// takes the ephemeral token written just now instead of reading
+		// the hashed EC password out of amule.conf. It finds the token
+		// through the config dir passed below, which is also where its
+		// admin and guest credentials live (amuleapi-passwords, written
+		// by both processes). The HTTP bind address and port are passed
+		// explicitly. A non-loopback bind requires an admin password, or
+		// amuleapi refuses to start; all of this is configured in the
+		// Remote Controls preferences.
 		wxString cmd = QUOTE + amuleapiPath +
-			       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile +
 			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() +
 			       QUOTE " " QUOTE "--bind=" + thePrefs::GetAmuleApiBindAddress() + QUOTE +
 			       wxString::Format(wxT(" --http-port=%u"), thePrefs::GetAmuleApiPort());
@@ -1838,6 +1867,22 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		knownfiles->Save();
 		m_mediaTagsDirtiedMs = 0;
 		msPrevKnownMet = msCur;
+	}
+
+	// Backstop for the amuleapi EC token file. The child unlinks it as
+	// soon as it has read it, so in the normal case this finds nothing
+	// left to do -- it exists for the child that never got that far, so a
+	// live secret cannot be left at rest by a crash or a failed exec. The
+	// in-memory token stays valid either way; only the file is transient.
+	if (m_ecTokenFileExpiryMs && msCur >= m_ecTokenFileExpiryMs) {
+		m_ecTokenFileExpiryMs = 0;
+		const wxString tokenPath = wxString::FromUTF8(
+			webcommon::EcTokenFilePath(std::string(thePrefs::GetConfigDir().utf8_str())).c_str());
+		if (wxFileExists(tokenPath) && wxRemoveFile(tokenPath)) {
+			AddDebugLogLineN(logGeneral,
+				CFormat("amuleapi EC token file removed unread after %u ms: %s") %
+					EC_TOKEN_FILE_TTL_MS % tokenPath);
+		}
 	}
 
 	// Recommended by lugdunummaster himself - from emule 0.30c

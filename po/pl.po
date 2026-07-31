@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 17:05+0200\n"
+"POT-Creation-Date: 2026-07-31 20:09+0200\n"
 "PO-Revision-Date: 2026-07-30 20:15+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -332,6 +332,11 @@ msgstr "Zażądałeś włączenia serwera sieciowego podczas uruchomienia, ale b
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
 msgstr "BŁĄD"
+
+#: src/amule.cpp
+#, c-format
+msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format

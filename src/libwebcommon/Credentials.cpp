@@ -24,6 +24,7 @@
 
 #include "Credentials.h"
 
+#include "AtomicFile.h"
 #include "ConstantTime.h"
 
 // cryptopp headers pull in deprecated implicit copy ctors + throw()
@@ -294,10 +295,15 @@ bool MakeRecord(const std::string &md5_hex, std::string &record)
 	return true;
 }
 
-std::string CredentialsFilePath(const std::string &config_dir)
+namespace
+{
+
+// Join a config dir and a well-known leaf name. Shared by every file this
+// module names so the separator handling cannot drift between them.
+std::string JoinConfigDir(const std::string &config_dir, const char *leaf)
 {
 	if (config_dir.empty()) {
-		return std::string("amuleapi-passwords");
+		return std::string(leaf);
 	}
 	const char sep = config_dir[config_dir.size() - 1];
 #ifdef _WIN32
@@ -305,7 +311,55 @@ std::string CredentialsFilePath(const std::string &config_dir)
 #else
 	const bool has_sep = (sep == '/');
 #endif
-	return config_dir + (has_sep ? "" : "/") + "amuleapi-passwords";
+	return config_dir + (has_sep ? "" : "/") + leaf;
+}
+
+} // namespace
+
+std::string CredentialsFilePath(const std::string &config_dir)
+{
+	return JoinConfigDir(config_dir, "amuleapi-passwords");
+}
+
+std::string EcTokenFilePath(const std::string &config_dir)
+{
+	return JoinConfigDir(config_dir, "amuleapi-ec-token");
+}
+
+bool ReadAndConsumeEcToken(const std::string &path, std::string &out)
+{
+	std::ifstream f(path.c_str(), std::ios::binary);
+	if (!f.is_open()) {
+		return false;
+	}
+	std::ostringstream buf;
+	buf << f.rdbuf();
+	f.close();
+
+	// Unlink regardless of what we just read: a file that failed to parse
+	// is still not something to leave lying around, and the caller has no
+	// later moment at which removing it would be safer.
+	::remove(path.c_str());
+
+	const std::string token = TrimAscii(buf.str());
+	if (!IsMd5Hex(token)) {
+		// Same 32-hex-char shape as an MD5 digest -- see GenerateEcToken
+		// for why that width. Reject anything else rather than attempt a
+		// connection with a truncated or tampered value.
+		return false;
+	}
+	out = ToLower(token);
+	return true;
+}
+
+std::string GenerateEcToken()
+{
+	// 16 bytes -> 32 hex chars, the exact width EC's challenge-response
+	// already consumes as an MD5 hex digest.
+	unsigned char raw[16];
+	CryptoPP::AutoSeededRandomPool rng;
+	rng.GenerateBlock(raw, sizeof(raw));
+	return ToHex(raw, sizeof(raw));
 }
 
 bool LoadCredentialsFile(const std::string &config_dir, Credentials &out, std::string &error)
@@ -367,58 +421,14 @@ bool SaveCredentialsFile(const std::string &config_dir, const Credentials &in, s
 	     << "guest=" << in.guest << "\n";
 	const std::string text = body.str();
 
-#ifndef _WIN32
-	// Crash-safe: write a sibling temp, fsync, then rename(2) onto the
-	// target. A partial write or a crash mid-write leaves the original
-	// intact, which matters because this file holds the only credentials
-	// the daemon has.
-	const std::string tmp = path + ".tmp";
-	const int fd = ::open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-	if (fd < 0) {
-		error = "cannot create " + tmp;
-		return false;
-	}
-	::fchmod(fd, S_IRUSR | S_IWUSR); // belt+braces against odd umasks
-
-	std::size_t written = 0;
-	while (written < text.size()) {
-		const ssize_t n = ::write(fd, text.data() + written, text.size() - written);
-		if (n < 0) {
-			if (errno == EINTR) {
-				continue;
-			}
-			::close(fd);
-			::unlink(tmp.c_str());
-			error = "write failed on " + tmp;
-			return false;
-		}
-		written += static_cast<std::size_t>(n);
-	}
-	if (::fsync(fd) != 0 || ::close(fd) != 0) {
-		::unlink(tmp.c_str());
-		error = "fsync/close failed on " + tmp;
-		return false;
-	}
-	if (::rename(tmp.c_str(), path.c_str()) != 0) {
-		::unlink(tmp.c_str());
-		error = "rename failed onto " + path;
+	// Crash-safe and owner-only; see WriteFileAtomic0600. This file holds
+	// the only credentials the daemon has, so a partial write or a crash
+	// mid-write must leave the previous contents intact.
+	if (!WriteFileAtomic0600(path, text)) {
+		error = "could not write " + path;
 		return false;
 	}
 	return true;
-#else
-	// Windows has no rename(2)-over-existing semantics; best effort.
-	std::ofstream outf(path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-	if (!outf.is_open()) {
-		error = "cannot open " + path;
-		return false;
-	}
-	outf.write(text.data(), static_cast<std::streamsize>(text.size()));
-	if (!outf.good()) {
-		error = "write failed on " + path;
-		return false;
-	}
-	return true;
-#endif
 }
 
 bool UpdateCredentialFile(
