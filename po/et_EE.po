@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:09+0200\n"
 "PO-Revision-Date: 2026-07-30 20:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -335,6 +335,11 @@ msgstr "web server töötab protsessi id'ga %d"
 #, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Soovisid et web server käivitataks käivitumisel, kuid amuleweb programm pole võimeline käivituma. Palun paigalada versioon mis sisaldab aMule web serverit või kompileeri aMule kasutades võtit --enable-webserver ja seejärel make install"
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -4376,8 +4381,8 @@ msgid "IP of the listening interface:"
 msgstr "Kuulava liidese IP aadress:"
 
 #: src/muuli_wdr.cpp
-msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-msgstr "Sisesta siia välisühenduse liidese kehtiv ip aadress a.b.c.d formaadis. Tühi väli või 0.0.0.0 tähendab suvalist liidest."
+msgid "IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -5699,6 +5704,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Lülitasid sisse välised ühendused kuid ei määranud parooli.\n"
+"Väliseid ühendusi ei saa enne kehtiva parooli määramist kasutada."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5747,14 +5760,6 @@ msgid ""
 msgstr ""
 "Sinu automaane serverinimekirja värskendamise loetelu on tühi.\n"
 "Käivitamisel serverinimekirja automaatselt ei uuendata."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Lülitasid sisse välised ühendused kuid ei määranud parooli.\n"
-"Väliseid ühendusi ei saa enne kehtiva parooli määramist kasutada."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -8546,6 +8551,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
+#~ msgstr "Sisesta siia välisühenduse liidese kehtiv ip aadress a.b.c.d formaadis. Tühi väli või 0.0.0.0 tähendab suvalist liidest."
 
 #~ msgid "Percent of total files"
 #~ msgstr "Protsenti kogufailidest"

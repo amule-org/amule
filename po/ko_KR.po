@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:09+0200\n"
 "PO-Revision-Date: 2026-07-30 20:12+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -331,6 +331,11 @@ msgstr "어뮬은 실행중입니다."
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
 msgstr ""
 
 #: src/amule.cpp
@@ -4392,8 +4397,8 @@ msgid "IP of the listening interface:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-msgstr "수신대기 외부연결 인터페이스에 a.b.c.d 형식의 유효한 IP를 입력하세요. 항목이 비었거나 0.0.0.0이면 모든 인터페이스를 의미합니다."
+msgid "IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -5725,6 +5730,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"외부연결이 횔성화되어 있지만, 암호를 설정하지 않았습니다.\n"
+"외부연결은 유효한 암호가 설정되기전까지 활성화되지 않습니다."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5774,14 +5787,6 @@ msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"외부연결이 횔성화되어 있지만, 암호를 설정하지 않았습니다.\n"
-"외부연결은 유효한 암호가 설정되기전까지 활성화되지 않습니다."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -8599,6 +8604,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
+#~ msgstr "수신대기 외부연결 인터페이스에 a.b.c.d 형식의 유효한 IP를 입력하세요. 항목이 비었거나 0.0.0.0이면 모든 인터페이스를 의미합니다."
 
 #~ msgid "Bootstrap"
 #~ msgstr "초기적재"

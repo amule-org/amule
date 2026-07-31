@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 05:50+0200\n"
+"POT-Creation-Date: 2026-07-31 11:09+0200\n"
 "PO-Revision-Date: 2026-07-30 20:20+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -335,6 +335,11 @@ msgstr "amuleapi pid %d üzerinde çalışıyor"
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "amuleapi'nın başlangıçta çalışmasını istediniz, fakat amuleapi ikilisi çalıştırılamıyor. Lütfen aMule REST API sunucusunu içeren paketi yükleyin veya aMule' yi -DBUILD_AMULEAPI=YES seçeneği ile derleyin ve kurun."
+
+#: src/amule.cpp
+#, c-format
+msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -4351,8 +4356,8 @@ msgid "IP of the listening interface:"
 msgstr "Dinlenen arayüzün IP' si:"
 
 #: src/muuli_wdr.cpp
-msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-msgstr "Dinleme EC arayüzü için a.b.c.d biçiminde geçerli bir ip giriniz. Boş bırakılan alan veya 0.0.0.0 arayüz yok demektir."
+msgid "IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -5674,6 +5679,14 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
+"You have enabled external connections but have not specified a password.\n"
+"External connections cannot be enabled unless a valid password is specified."
+msgstr ""
+"Dışarıdan bağlantıları aktifleştirmiş ama bir şifre belirlememişsiniz.\n"
+"Geçerli bir şifre belirlenmedikçe dışarıdan bağlantılar devre dışı kalacaktır."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid ""
 "aMule must be restarted to enable these changes:\n"
 "\n"
 msgstr ""
@@ -5719,14 +5732,6 @@ msgid ""
 msgstr ""
 "Otomatik Sunucu güncelleme listeniz boş.\n"
 "'Sunucu listesini başlangıçta otomatikman güncelle' devre dışı bırakılacak."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid ""
-"You have enabled external connections but have not specified a password.\n"
-"External connections cannot be enabled unless a valid password is specified."
-msgstr ""
-"Dışarıdan bağlantıları aktifleştirmiş ama bir şifre belirlememişsiniz.\n"
-"Geçerli bir şifre belirlenmedikçe dışarıdan bağlantılar devre dışı kalacaktır."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -8523,6 +8528,9 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
+#~ msgstr "Dinleme EC arayüzü için a.b.c.d biçiminde geçerli bir ip giriniz. Boş bırakılan alan veya 0.0.0.0 arayüz yok demektir."
 
 #~ msgid "Percent of total files"
 #~ msgstr "Toplam dosyaların yüzdesi"
