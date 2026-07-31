@@ -30,7 +30,7 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 	const std::time_t now = m_clock();
 	auto it = m_buckets.find(ip);
 	if (it == m_buckets.end())
-		return Decision {};
+		return Decision{};
 
 	Bucket &b = it->second;
 	if (b.lockout_until > now) {
@@ -51,7 +51,7 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 	while (!b.failures.empty() && (now - b.failures.front()) > m_cfg.window_seconds) {
 		b.failures.pop_front();
 	}
-	return Decision {};
+	return Decision{};
 }
 
 void CRateLimiter::NoteFailure(const std::string &ip)

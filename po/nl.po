@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 11:50+0200\n"
+"POT-Creation-Date: 2026-07-31 12:21+0200\n"
 "PO-Revision-Date: 2026-07-30 20:13+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1804,6 +1804,11 @@ msgstr "Ongeldige protocolversie."
 #: src/ExternalConn.cpp
 msgid "Missing protocol version tag."
 msgstr "Ontbrekend label van protocolversie."
+
+#: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Too many failed connection attempts; try again in %d seconds."
+msgstr "Automatische verbinding naar server zal in %d seconde opnieuw proberen"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."

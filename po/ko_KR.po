@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 11:50+0200\n"
+"POT-Creation-Date: 2026-07-31 12:21+0200\n"
 "PO-Revision-Date: 2026-07-30 20:12+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -1810,6 +1810,11 @@ msgstr "유효하지 않은 프로토콜 버젼입니다"
 #: src/ExternalConn.cpp
 msgid "Missing protocol version tag."
 msgstr "프로토콜 버젼 태그 없음"
+
+#: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Too many failed connection attempts; try again in %d seconds."
+msgstr "%d 초후에 서버로 자동 접속을 재시도"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."

@@ -29,6 +29,8 @@
 
 #include <ec/cpp/ECSpecialTags.h>
 
+#include <common/RateLimiter.h> // for CRateLimiter (EC auth brute-force guard)
+
 #include <list>    // for std::list (chat message buffer)
 #include <utility> // for std::pair (chat message buffer)
 
@@ -120,6 +122,19 @@ public:
 	// <sender GUI_ID, "name|message"> — the same encoding the built-in GUI's
 	// CChatWnd::ProcessMessage already parses.
 	void QueueChatMessage(uint64 sender_id, const wxString &message);
+
+	// Brute-force protection for the password exchange, shared by every
+	// connection. It lives here rather than on CECServerSocket because a
+	// socket dies with its connection: per-socket buckets would reset on
+	// every reconnect, which is exactly what an attacker does between
+	// guesses. Not keyed on whether the listener is bound locally --
+	// an SSH tunnel makes a remote attacker arrive from 127.0.0.1, so
+	// "local means trusted" would exempt the very setup people adopt for
+	// safety.
+	CRateLimiter &AuthRateLimiter() { return m_authRateLimiter; }
+
+private:
+	CRateLimiter m_authRateLimiter;
 };
 
 class ECUpdateMsgSource

@@ -579,6 +579,13 @@ void CECServerSocket::WriteDoneAndQueueEmpty()
 //-------------------- ExternalConn --------------------
 
 ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
+// Ten failures a minute, then five minutes out. Deliberately looser than
+// amuleapi's five, because an EC client retries on its own: amulegui
+// reconnects on a dropped link, so a saved password that has gone stale burns
+// attempts with no human in the loop, and a tight threshold would lock out
+// someone who never typed anything. Ten still caps a guesser at nine attempts
+// a minute against the thousands per second possible before this.
+: m_authRateLimiter(CRateLimiter::Config{ 60u, 10u, 300u })
 {
 	wxString msgLocal;
 	m_ECServer = NULL;
@@ -850,7 +857,27 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 		const CECTag *passwd = request->GetTagByName(EC_TAG_PASSWD_HASH);
 		CMD4Hash passh;
 
-		if (!passh.Decode(thePrefs::ECPassword())) {
+		// Brute-force guard, ahead of every credential path. Keyed on the
+		// address alone rather than address+port, or each reconnect would
+		// look like a new client and reset the count -- which is precisely
+		// what a guesser does between attempts.
+		const std::string peerIp(wxString(GetIP()).ToStdString());
+		const CRateLimiter::Decision throttle =
+			theApp->ECServerHandler->AuthRateLimiter().Check(peerIp);
+		if (throttle.locked_out) {
+			// Say so explicitly instead of reusing "wrong password": the
+			// client is being refused for a different reason, and a user
+			// who has just fixed their password deserves to know why it
+			// still fails. It tells an attacker nothing they cannot infer
+			// from being refused anyway.
+			const wxString err = CFormat(wxGetTranslation(wxTRANSLATE(
+						     "Too many failed connection attempts; try again "
+						     "in %d seconds."))) %
+					     (int)throttle.retry_after_seconds;
+			AddLogLineN(err + " " + GetPeer());
+			response = new CECPacket(EC_OP_AUTH_FAIL);
+			response->AddTag(CECTag(EC_TAG_STRING, err));
+		} else if (!passh.Decode(thePrefs::ECPassword())) {
 			wxString err =
 				wxTRANSLATE("Authentication failed: invalid hash specified as EC password.");
 			AddLogLineN(wxString(wxGetTranslation(err)) + " " + thePrefs::ECPassword());
@@ -882,6 +909,10 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				// reply: EC_OP_AUTH_OK is then itself sealed, which proves to
 				// the client that its peer really does know the password --
 				// something the plain challenge never established.
+				// Clear the bucket: a legitimate user who mistyped a few
+				// times must not carry that streak into their next
+				// connection.
+				theApp->ECServerHandler->AuthRateLimiter().NoteSuccess(peerIp);
 				ActivateAEAD();
 				response = new CECPacket(EC_OP_AUTH_OK);
 				response->AddTag(CECTag(EC_TAG_SERVER_VERSION, VERSION));
@@ -939,6 +970,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				} else {
 					err = wxTRANSLATE("Authentication failed: missing password.");
 				}
+
+				// Both branches are a failed credential attempt: a client
+				// that omits the hash entirely is guessing just as much as
+				// one that sends a wrong hash, and letting the omission go
+				// uncounted would hand an attacker an unmetered path.
+				theApp->ECServerHandler->AuthRateLimiter().NoteFailure(peerIp);
 
 				response = new CECPacket(EC_OP_AUTH_FAIL);
 				response->AddTag(CECTag(EC_TAG_STRING, err));
