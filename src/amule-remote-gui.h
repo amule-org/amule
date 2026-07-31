@@ -883,6 +883,10 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	// all state against the fresh server snapshot in place) or the user
 	// aborts. EC connection params are captured in Startup() so a reconnect
 	// can be attempted without the (destroyed) connection dialog.
+	// Set once ShutDown() has actually run, so a shutdown postponed out of a
+	// modal dialog's event loop is resumed exactly once.
+	bool m_tornDown = false;
+
 	bool m_reconnecting = false;
 	int m_reconnectAttempt = 0;
 	int m_reconnectCountdown = 0;
@@ -962,6 +966,11 @@ public:
 	virtual int ShowAlert(wxString msg, wxString title, int flags);
 
 	void ShutDown(wxCloseEvent &evt);
+
+	// Tear down and leave the main loop. Safe to call with a modal dialog
+	// open: ShutDown() postpones itself until that dialog's event loop has
+	// been unwound, and Quit() is re-run from there.
+	void Quit();
 
 	CPreferencesRem *glob_prefs;
 

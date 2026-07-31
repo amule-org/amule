@@ -29,6 +29,7 @@
 
 #include <wx/wx.h>
 #include <wx/cmdline.h>  // Needed for wxCmdLineParser
+#include <wx/evtloop.h>  // Needed for wxEventLoopBase
 #include <wx/filename.h> // Needed for wxFileName
 #include <wx/filesys.h>  // Needed for wxFileSystem::URLToFileName
 
@@ -144,6 +145,47 @@ void CamuleAppCommon::ReleaseSingleInstance()
 	// which skips ~CamuleAppCommon and so would leave the file behind.
 	delete m_singleInstance;
 	m_singleInstance = nullptr;
+}
+
+bool CamuleAppCommon::DeferShutDownToOuterLoop(const std::function<void()> &retry)
+{
+	wxEventLoopBase *active = wxEventLoopBase::GetActive();
+	if (!active || active->IsMain()) {
+		return false;
+	}
+
+	// Exit() only asks the loop to stop, so the frames between here and the
+	// ShowModal() that started it still have to unwind before the teardown
+	// can safely run -- hence the retry rather than falling through.
+	active->Exit();
+
+	if (!m_deferredShutDown) {
+		wxTheApp->Bind(wxEVT_IDLE, &CamuleAppCommon::OnDeferredShutDownIdle, this);
+	}
+	m_deferredShutDown = retry;
+	return true;
+}
+
+void CamuleAppCommon::OnDeferredShutDownIdle(wxIdleEvent &evt)
+{
+	evt.Skip();
+
+	wxEventLoopBase *active = wxEventLoopBase::GetActive();
+	if (active && !active->IsMain()) {
+		// A further loop was entered (or this one has not unwound yet).
+		// Keep asking it to stop and look again on the next idle.
+		active->Exit();
+		evt.RequestMore();
+		return;
+	}
+
+	wxTheApp->Unbind(wxEVT_IDLE, &CamuleAppCommon::OnDeferredShutDownIdle, this);
+
+	// Clear before running: the teardown re-enters ShutDown(), which must see
+	// no outstanding retry or it would bind a second idle handler.
+	std::function<void()> retry;
+	retry.swap(m_deferredShutDown);
+	retry();
 }
 
 void CamuleAppCommon::AddLinksFromFile()
