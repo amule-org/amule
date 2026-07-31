@@ -141,6 +141,14 @@ function openSse() {
     try { store.set("search:progress", JSON.parse(ev.data)); } catch (_) {}
   });
 
+  // Comments ride their own event (EVENTS.md §comments_updated) instead of
+  // download_updated, so the per-tick download frame stays lean. The payload is
+  // byte-for-byte the GET downloads/{hash}/comments body — the detail view
+  // applies it directly rather than re-fetching.
+  es.addEventListener("comments_updated", (ev) => {
+    try { store.set("comments:updated", JSON.parse(ev.data)); } catch (_) {}
+  });
+
   es.addEventListener("resync", () => {
     if (statusActive) refreshStatus();
     for (const k of active) seed(k);

@@ -6,6 +6,7 @@
 // frames short-circuit to a 304 + the cached body).
 
 import { api } from "../api.js";
+import { store } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { ProgressBar, Placeholder, toast, confirmDialog, Section, statRow, IdentityLine, copyText, Tabs, CommentEditor, RenameForm, ratingLabel, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { formatBytes, formatSpeed, formatDuration, formatInt, formatPercent, formatTimestamp } from "../format.js";
@@ -105,7 +106,8 @@ export function DownloadDetail({ hash, isGuest, categories = [], onPatch, onDele
                         defaultSort="downloaded" />
       ` : tab === "comments" ? html`
         <${DownloadComments} hash=${d.hash} comment=${d.comment} rating=${d.rating}
-                             tick=${downloads} parts=${(d.progress && d.progress.parts) || []} />
+                             running=${!!(downloads.find((x) => x.hash === d.hash) || {}).kad_comment_search_running}
+                             parts=${(d.progress && d.progress.parts) || []} />
       ` : tab === "filename" ? html`
         <${DownloadFilenames} hash=${d.hash} name=${d.name}
                               onRenamed=${() => setReload((n) => n + 1)} />
@@ -230,9 +232,12 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
 
 // The Comments tab body: your own comment/rating editor, a "Get from Kad"
 // trigger, and the per-source comments list (GET downloads/{hash}/comments —
-// includes any retrieved Kad notes). Re-fetches on each downloads store tick so
-// Kad notes arriving mid-search surface without a bespoke polling timer.
-function DownloadComments({ hash, comment, rating, tick, parts }) {
+// includes any retrieved Kad notes). Fetched once per file, then kept current
+// by the comments_updated SSE event, whose payload is this same body: Kad notes
+// arriving mid-search and source comments both land without polling. `running`
+// comes from the downloads store (the flag is part of EqualDownload, so its
+// start -> finish edge arrives as download_updated).
+function DownloadComments({ hash, comment, rating, running, parts }) {
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -240,10 +245,12 @@ function DownloadComments({ hash, comment, rating, tick, parts }) {
     api.get("downloads/" + hash + "/comments")
       .then((d) => { if (alive) setData(d); })
       .catch(() => { if (alive) setData({ count: 0, comments: [] }); });
-    return () => { alive = false; };
-  }, [hash, tick]);
+    const off = store.subscribe("comments:updated", (p) => {
+      if (alive && p && p.hash === hash) setData(p);
+    });
+    return () => { alive = false; off(); };
+  }, [hash]);
 
-  const running = !!(data && data.kad_comment_search_running);
   const list = (data && data.comments) || [];
   // The daemon only accepts a comment/rating on a *shared* file, i.e. a
   // partfile with >= 1 complete part; otherwise PATCH returns 409 not_shared.
