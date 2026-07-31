@@ -4542,6 +4542,10 @@ wxBitmap clientImages( size_t index )
         wxBitmap bitmap( xpm_data );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("clientImages: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
@@ -5335,6 +5339,10 @@ wxBitmap amuleSpecial( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("amuleSpecial: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
@@ -5653,6 +5661,10 @@ wxBitmap connButImg( size_t index )
         wxBitmap bitmap( xpm_data );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("connButImg: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
@@ -7261,6 +7273,10 @@ wxBitmap amuleDlgImages( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
+    // this bank previously failed silently into a blank icon, which is how
+    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    wxFAIL_MSG(wxString::Format("amuleDlgImages: no icon for index %zu", index));
     return wxNullBitmap;
 }
 
