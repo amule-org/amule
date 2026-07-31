@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 11:09+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:10+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -4374,8 +4374,8 @@ msgid "IP of the listening interface:"
 msgstr "IP dell'interfaccia di ascolto:"
 
 #: src/muuli_wdr.cpp
-msgid "IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface."
-msgstr ""
+msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
+msgstr "Inserisci un IP valido nel formato a.b.c.d per l'interfaccia di ascolto EC. Lasciare il campo vuoto o inserire 0.0.0.0 significa qualsiasi interfaccia."
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -8535,9 +8535,6 @@ msgstr "Sembra che aMule sia in esecuzione. Chiudilo e riavvia il programma di d
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Rimozione dei dati utente in $APPDATA\\aMule..."
-
-#~ msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-#~ msgstr "Inserisci un IP valido nel formato a.b.c.d per l'interfaccia di ascolto EC. Lasciare il campo vuoto o inserire 0.0.0.0 significa qualsiasi interfaccia."
 
 #~ msgid "Percent of total files"
 #~ msgstr "Percentuale di file totali"

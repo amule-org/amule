@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 11:09+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -4360,8 +4360,8 @@ msgid "IP of the listening interface:"
 msgstr "Hallgató interfész IP-je:"
 
 #: src/muuli_wdr.cpp
-msgid "IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface."
-msgstr ""
+msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
+msgstr "Adjon meg itt egy érvényes IP címet a.b.c.d formában az EC hallgató interfésznek. Üres mező vagy 0.0.0.0 jelentése: bármelyik interfész."
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -8520,9 +8520,6 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
-
-#~ msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-#~ msgstr "Adjon meg itt egy érvényes IP címet a.b.c.d formában az EC hallgató interfésznek. Üres mező vagy 0.0.0.0 jelentése: bármelyik interfész."
 
 #~ msgid "Percent of total files"
 #~ msgstr "Összes fájl százalékaként"

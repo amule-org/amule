@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 11:09+0200\n"
+"POT-Creation-Date: 2026-07-31 11:50+0200\n"
 "PO-Revision-Date: 2026-07-30 20:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -4381,8 +4381,8 @@ msgid "IP of the listening interface:"
 msgstr "Kuulava liidese IP aadress:"
 
 #: src/muuli_wdr.cpp
-msgid "IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface."
-msgstr ""
+msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
+msgstr "Sisesta siia välisühenduse liidese kehtiv ip aadress a.b.c.d formaadis. Tühi väli või 0.0.0.0 tähendab suvalist liidest."
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -8551,9 +8551,6 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
-
-#~ msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-#~ msgstr "Sisesta siia välisühenduse liidese kehtiv ip aadress a.b.c.d formaadis. Tühi väli või 0.0.0.0 tähendab suvalist liidest."
 
 #~ msgid "Percent of total files"
 #~ msgstr "Protsenti kogufailidest"

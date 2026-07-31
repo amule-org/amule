@@ -2097,7 +2097,7 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     // belonging to an interface that is down right now can still be typed in.
     wxComboBox *item6 = new wxComboBox( parent, IDC_EXT_CONN_IP, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN );
 #endif
-    item6->SetToolTip( _("IP address the external connection listens on. 127.0.0.1 accepts connections from this computer only; 0.0.0.0 or an empty field accepts them on every interface.") );
+    item6->SetToolTip( _("Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface.") );
     item4->Add( item6, wxSizerFlags(1).Expand().CenterVertical().Border(wxLEFT, 5) );
 
     wxStaticText *item6b = new wxStaticText( parent, IDC_EC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
