@@ -24,6 +24,7 @@
 //
 
 #include <wx/app.h>
+#include <wx/statline.h> // Needed for wxStaticLine
 #include <wx/artprov.h>  // Needed for wxArtProvider::GetBitmap (search-tab close icon)
 #include <wx/clipbrd.h>  // Needed for wxTheClipboard (search-name Paste enable check)
 #include <wx/combobox.h> // Needed for the IDC_SEARCHNAME history dropdown
@@ -142,30 +143,40 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	s_search_sizer->Show(s_extended_sizer, false);
 	s_search_sizer->Show(s_filter_sizer, false);
 
-	// Clear-history button, sitting between the search-type choice and the
-	// Extended Parameters checkbox. Two reasons it is built here instead of in
-	// muuli_wdr: the right-click route it backs up is unreachable on wxMSW
-	// (the native combobox's child EDIT window never forwards WM_CONTEXTMENU
-	// to wx -- ShouldForwardFromEditToCombo in src/msw/combobox.cpp forwards
-	// only key, focus and clipboard messages), and keeping the existing
-	// _("Clear search history") msgid in this file preserves its position in
-	// the catalogs, whereas adding the same string to muuli_wdr.cpp would move
-	// the pot entry (xgettext orders entries by file scan order) and trip the
-	// pot-sync gate for no benefit. Bound directly on the instance, so no new
-	// window id is needed. (issue #697)
-	if (wxWindow *typeChoice = FindWindow(ID_SEARCHTYPE)) {
-		if (wxSizer *row = typeChoice->GetContainingSizer()) {
+	// Clear-history button, sitting in the action row directly after "Reset
+	// Fields" -- next to the other one-shot commands rather than among the
+	// search parameters, and beside "Clear Search Results" so the two
+	// destructive actions read as a pair.
+	//
+	// Still built here rather than in muuli_wdr because it is not a static
+	// control: it is shown or hidden with the remember-history preference
+	// (ApplySearchHistoryPref) and enabled only while the combo holds terms
+	// (UpdateClearHistoryButton), and it backs up a right-click route that is
+	// unreachable on wxMSW (the native combobox's child EDIT window never
+	// forwards WM_CONTEXTMENU to wx -- ShouldForwardFromEditToCombo in
+	// src/msw/combobox.cpp forwards only key, focus and clipboard messages).
+	// Bound directly on the instance, so no new window id is needed.
+	// (issue #697)
+	//
+	// The separator is inserted with it and tracked so the pref-driven hide
+	// takes both away; leaving a stray divider behind would open a gap in the
+	// row wherever history is switched off.
+	if (wxWindow *resetBtn = FindWindow(IDC_SEARCH_RESET)) {
+		if (wxSizer *row = resetBtn->GetContainingSizer()) {
 			size_t at = row->GetItemCount();
 			size_t index = 0;
 			for (const wxSizerItem *item : row->GetChildren()) {
-				if (item->GetWindow() == typeChoice) {
+				if (item->GetWindow() == resetBtn) {
 					at = index + 1;
 					break;
 				}
 				++index;
 			}
-			m_clearHistoryBtn = new wxButton(this, wxID_ANY, _("Clear search history"));
-			row->Insert(at, m_clearHistoryBtn, wxSizerFlags().Center().Border(wxALL, 5));
+			m_clearHistorySep = new wxStaticLine(
+				this, wxID_ANY, wxDefaultPosition, wxSize(-1, 20), wxLI_VERTICAL);
+			row->Insert(at, m_clearHistorySep, wxSizerFlags().Center().Border(wxALL, 5));
+			m_clearHistoryBtn = new wxButton(this, wxID_ANY, _("Clear Search History"));
+			row->Insert(at + 1, m_clearHistoryBtn, wxSizerFlags().Center().Border(wxALL, 5));
 			m_clearHistoryBtn->Bind(wxEVT_BUTTON, &CSearchDlg::OnBnClickedClearHistory, this);
 		}
 	}
@@ -183,6 +194,9 @@ void CSearchDlg::ApplySearchHistoryPref()
 
 	if (m_clearHistoryBtn) {
 		m_clearHistoryBtn->Show(wantHistory);
+	}
+	if (m_clearHistorySep) {
+		m_clearHistorySep->Show(wantHistory);
 	}
 
 	// Only populate when the preference allows it. searchhistory.dat is left
@@ -274,7 +288,22 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 
 void CSearchDlg::OnBnClickedClearHistory(wxCommandEvent &WXUNUSED(evt))
 {
-	ClearSearchHistory();
+	ConfirmAndClearSearchHistory();
+}
+
+// Both routes into clearing -- this button and the combo's context menu --
+// delete searchhistory.dat outright with no undo, so both ask first. The
+// prompt lives here rather than in ClearSearchHistory() so the latter stays
+// usable as a plain action if anything ever needs to clear without asking.
+void CSearchDlg::ConfirmAndClearSearchHistory()
+{
+	const int answer = wxMessageBox(_("Clear the saved search history? This cannot be undone."),
+		_("Clear Search History"),
+		wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION,
+		this);
+	if (answer == wxYES) {
+		ClearSearchHistory();
+	}
 }
 
 CSearchDlg::~CSearchDlg() {}
@@ -451,14 +480,21 @@ void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 	// Separator: "Clear" is a one-shot action, not another edit command --
 	// keeping it visually apart avoids reading it as one of the group above.
 	menu.AppendSeparator();
-	wxMenuItem *clearItem = menu.Append(wxID_ANY, _("Clear search history"));
+	wxMenuItem *clearItem = menu.Append(wxID_ANY, _("Clear Search History"));
 	clearItem->Enable(combo->GetCount() > 0);
 
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Cut(); }, wxID_CUT);
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Copy(); }, wxID_COPY);
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Paste(); }, ID_SEARCHNAME_PASTE);
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->SetSelection(-1, -1); }, wxID_SELECTALL);
-	menu.Bind(wxEVT_MENU, [this](wxCommandEvent &) { ClearSearchHistory(); }, clearItem->GetId());
+	// Deferred off the popup's own modal loop: this handler runs while
+	// PopupMenu() is still unwinding, and putting a modal dialog up before the
+	// menu has finished tearing down misbehaves on wxOSX. The button route
+	// needs no such care -- no popup is involved there.
+	menu.Bind(
+		wxEVT_MENU,
+		[this](wxCommandEvent &) { CallAfter(&CSearchDlg::ConfirmAndClearSearchHistory); },
+		clearItem->GetId());
 
 	PopupMenu(&menu);
 }

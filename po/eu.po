@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 20:09+0200\n"
+"POT-Creation-Date: 2026-08-01 10:47+0200\n"
 "PO-Revision-Date: 2026-07-31 22:32+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -3360,6 +3360,11 @@ msgid "Reset Fields"
 msgstr "Eremuak garbitu"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Clear Search Results"
+msgstr "Bilaketa emaitza"
+
+#: src/muuli_wdr.cpp
 msgid "Results"
 msgstr "Emaitzak"
 
@@ -6119,7 +6124,12 @@ msgid "Shared folder"
 msgstr "Partekatutako karpetak"
 
 #: src/SearchDlg.cpp
-msgid "Clear search history"
+#, fuzzy
+msgid "Clear Search History"
+msgstr "Ezarpen hauek gogoratu"
+
+#: src/SearchDlg.cpp
+msgid "Clear the saved search history? This cannot be undone."
 msgstr ""
 
 #: src/SearchDlg.cpp

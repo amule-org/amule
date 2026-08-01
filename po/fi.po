@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 20:09+0200\n"
+"POT-Creation-Date: 2026-08-01 10:47+0200\n"
 "PO-Revision-Date: 2026-07-31 22:33+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -3360,6 +3360,11 @@ msgid "Reset Fields"
 msgstr "Nollaa kentät"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Clear Search Results"
+msgstr "Haun tulos"
+
+#: src/muuli_wdr.cpp
 msgid "Results"
 msgstr "Tulokset"
 
@@ -6119,7 +6124,12 @@ msgid "Shared folder"
 msgstr "Jaetut kansiot"
 
 #: src/SearchDlg.cpp
-msgid "Clear search history"
+#, fuzzy
+msgid "Clear Search History"
+msgstr "Muista nämä asetukset"
+
+#: src/SearchDlg.cpp
+msgid "Clear the saved search history? This cannot be undone."
 msgstr ""
 
 #: src/SearchDlg.cpp

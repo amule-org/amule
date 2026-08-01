@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 20:09+0200\n"
+"POT-Creation-Date: 2026-08-01 10:47+0200\n"
 "PO-Revision-Date: 2026-07-31 22:39+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -3361,6 +3361,11 @@ msgid "Reset Fields"
 msgstr "Reiniciar Campos"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Clear Search Results"
+msgstr "Resultado da Busca"
+
+#: src/muuli_wdr.cpp
 msgid "Results"
 msgstr "Resultados"
 
@@ -6090,8 +6095,13 @@ msgid "Shared folder"
 msgstr "Pasta compartilhada"
 
 #: src/SearchDlg.cpp
-msgid "Clear search history"
+#, fuzzy
+msgid "Clear Search History"
 msgstr "Limpar o histórico de busca"
+
+#: src/SearchDlg.cpp
+msgid "Clear the saved search history? This cannot be undone."
+msgstr ""
 
 #: src/SearchDlg.cpp
 msgid "Search warning"

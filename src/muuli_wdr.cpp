@@ -363,7 +363,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item43->Add( item52, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticLine *item53 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item43->Add( item53, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxButton *item54 = new wxButton( parent, IDC_CLEAR_RESULTS, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxButton *item54 = new wxButton( parent, IDC_CLEAR_RESULTS, _("Clear Search Results"), wxDefaultPosition, wxDefaultSize, 0 );
     item54->Enable( false );
     item43->Add( item54, wxSizerFlags().Center().Border(wxALL, 5) );
     item1->Add( item43, wxSizerFlags().Center().Border(wxALL, 5) );

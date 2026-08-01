@@ -29,6 +29,8 @@
 #include <wx/panel.h>    // Needed for wxPanel
 #include <wx/notebook.h> // needed for wxBookCtrlEvent in wx 2.8
 
+class wxStaticLine;
+
 #include "Types.h" // Needed for uint16 and uint32
 
 #include <map> // Needed for std::map (per-tab progress cache)
@@ -250,6 +252,9 @@ private:
 	void LoadSearchHistory();
 	void RecordSearchHistory(const wxString &term);
 	void ClearSearchHistory();
+	// Asks first, then clears. Used by every user-facing route so neither the
+	// button nor the context menu can wipe the history without a prompt.
+	void ConfirmAndClearSearchHistory();
 	void OnSearchNameContextMenu(wxContextMenuEvent &evt);
 
 public:
@@ -275,10 +280,12 @@ private:
 	// history" item missing until the preference was toggled.
 	bool m_searchNameCtxBound = false;
 
-	// Clear-history button, inserted next to the search-type choice at
-	// construction. Held rather than looked up by id so show/hide stays
-	// cheap and cannot silently miss.
+	// Clear-history button, inserted into the action row after "Reset Fields"
+	// at construction, together with the divider that precedes it. Both are
+	// held rather than looked up by id so the pref-driven show/hide stays
+	// cheap and cannot silently miss one of them.
 	wxButton *m_clearHistoryBtn = nullptr;
+	wxStaticLine *m_clearHistorySep = nullptr;
 	void OnBnClickedClearHistory(wxCommandEvent &evt);
 
 	// Greys the button out when there is nothing stored to clear, mirroring

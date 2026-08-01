@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 20:09+0200\n"
+"POT-Creation-Date: 2026-08-01 10:47+0200\n"
 "PO-Revision-Date: 2026-07-31 22:43+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -3358,6 +3358,11 @@ msgid "Reset Fields"
 msgstr "Återställ fält"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Clear Search Results"
+msgstr "Sökresultat"
+
+#: src/muuli_wdr.cpp
 msgid "Results"
 msgstr "Resultat"
 
@@ -6115,7 +6120,12 @@ msgid "Shared folder"
 msgstr "Delade mappar"
 
 #: src/SearchDlg.cpp
-msgid "Clear search history"
+#, fuzzy
+msgid "Clear Search History"
+msgstr "Kom ihåg dessa inställningar"
+
+#: src/SearchDlg.cpp
+msgid "Clear the saved search history? This cannot be undone."
 msgstr ""
 
 #: src/SearchDlg.cpp

@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-07-31 20:09+0200\n"
+"POT-Creation-Date: 2026-08-01 10:47+0200\n"
 "PO-Revision-Date: 2026-07-31 22:36+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -3365,6 +3365,11 @@ msgid "Reset Fields"
 msgstr "Azzera campi"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Clear Search Results"
+msgstr "Risultato della ricerca"
+
+#: src/muuli_wdr.cpp
 msgid "Results"
 msgstr "Risultati"
 
@@ -6094,8 +6099,13 @@ msgid "Shared folder"
 msgstr "Cartella condivisa"
 
 #: src/SearchDlg.cpp
-msgid "Clear search history"
+#, fuzzy
+msgid "Clear Search History"
 msgstr "Cancella la cronologia delle ricerche"
+
+#: src/SearchDlg.cpp
+msgid "Clear the saved search history? This cannot be undone."
+msgstr ""
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
