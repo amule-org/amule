@@ -57,6 +57,7 @@
 #include <glib.h> // g_set_prgname() — wl_app_id / WM_CLASS binding
 #endif
 
+#include <common/EventIDs.h>        // Needed for ID_SPLASH_POLL_TIMER
 #include <common/Format.h>          // Needed for CFormat
 #include <tags/FileTags.h>          // Needed for FT_MEDIA_* on OnMediaProbeFinished
 #include <common/DataFileVersion.h> // Needed for MET_HEADER (server.met probe)
@@ -126,6 +127,26 @@
 #include "amuleDlg.h"
 #include "PrefsUnifiedDlg.h" // For NotifyIP2CountryUpdateFailedIfOpen (GUI popup)
 #include "FirstRunWizard.h"  // Needed for the first-run setup wizard (GUI-only)
+
+// The splash is monolithic-only: amulegui has no local shared-file scan or
+// part-file load to wait on -- its startup cost is an EC round trip -- and
+// the daemon has no GUI at all.
+#ifndef CLIENT_GUI
+#define AMULE_SHOW_SPLASH 1
+#include "SplashScreen.h"
+// The splash batches both list controls for the length of startup, so it
+// needs the panels that own them.
+#include "TransferWnd.h"      // Needed for CTransferWnd::downloadlistctrl
+#include "SharedFilesWnd.h"   // Needed for CSharedFilesWnd::sharedfilesctrl
+#include "DownloadListCtrl.h" // Needed for Begin/EndBatchUpdate
+#include "SharedFilesCtrl.h"  // Needed for Begin/EndBatchUpdate
+
+// The task type CHashingTask registers itself under. The splash counts only
+// these: the scheduler queue is shared, and the IP-filter load sits on it too,
+// so an unfiltered count would report "hashing" work that is nothing of the
+// sort -- and would keep the splash up waiting for it.
+static const wxString kSplashHashTaskType = "Hashing";
+#endif
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -886,6 +907,37 @@ bool CamuleApp::OnInit()
 	// Create main dialog, or fork to background (daemon).
 	InitGui(m_geometryEnabled, m_geometryString);
 
+#ifdef AMULE_SHOW_SPLASH
+	// Up before the heavy local I/O below, which holds the main thread long
+	// enough that the main window -- already created by InitGui -- never gets
+	// painted. Shown here rather than earlier so it does not outlive a failed
+	// GUI init.
+	CSplashScreen *splash = new CSplashScreen();
+	m_splash = splash;
+	splash->Show();
+
+	// Both list controls are batched for the whole startup: part-file loading
+	// fills the download list and the scan plus hashing fill the shared list,
+	// and each individually-sorted insert rebuilds the row index, so a burst
+	// of thousands is quadratic. The same BeginBatchUpdate the remote GUI
+	// uses for its startup EC reply (#615) turns those into appends plus one
+	// sort at the end. Held until the hash queue drains, which the splash
+	// covers -- the lists are not worth showing while they are still filling.
+	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
+		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
+		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
+	}
+	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->BeginBatchUpdate();
+	}
+	// One pump so the window is mapped and painted before the phases start;
+	// from here on SetProgress repaints without running the event loop, so a
+	// half-initialised application cannot be clicked into.
+	wxYield();
+	const wxLongLong splashPhaseStart = wxGetUTCTimeMillis();
+#endif
+
 #ifdef AMULE_DAEMON
 	// Need to refresh wxSingleInstanceChecker after the daemon fork() !
 	if (enable_daemon_fork) {
@@ -925,11 +977,124 @@ bool CamuleApp::OnInit()
 	CThreadScheduler::Start();
 
 	// These must be initialized after the gui is loaded.
+#ifdef AMULE_SHOW_SPLASH
+	// Bands per phase, sized from the timings this block logs. Measured on a
+	// 10 000-file share: network setup came to 10 ms and 400 part files to
+	// 130 ms, against 6010 ms of scanning, so the early phases get almost
+	// nothing -- an even split would leave the bar parked at a third for the
+	// whole visible wait.
+	//
+	// The shared scan has no total until it finishes, and counting first
+	// would walk the tree twice -- expensive exactly where it hurts, on
+	// network storage. known.met is last session's view of the same tree, so
+	// it is the best estimate available without paying that cost.
+	const size_t sharedEstimate = knownfiles ? knownfiles->GetKnownFileCount() : 0;
+
+	// Weight the temp band by cost rather than by item count. Measured on the
+	// same share with 400 part files: 130 ms to load them against 6010 ms to
+	// scan 10 000 files, i.e. 0.33 ms each against 0.60 ms -- a part file is
+	// actually the cheaper item. Loading one reads its .met and then only
+	// stats the .part, never the downloaded data, so the cost tracks hashset
+	// and gap-list size; those measured files were freshly added and carry
+	// the smallest of both. Two rather than one leaves room for the populated
+	// ones a real Temp directory holds. Capped well short of half the bar: the
+	// scan is the phase that usually runs long, and it must keep room to
+	// show it.
+	constexpr int kPartFileWeight = 2;
+	constexpr int kNetworkBandEnd = 2;
+	constexpr int kTempBandMaxEnd = 40;
+	constexpr int kScanBandEnd = 99;
+
+	splash->SetProgress(_("Initializing network"), 0, true);
+#endif
 	if (thePrefs::GetNetworkED2K()) {
 		serverlist->Init();
 	}
+
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong networkDoneAt = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading temp files"), kNetworkBandEnd, true);
+	// Part-file totals are exact: LoadMetFiles enumerates the directory into
+	// a vector before loading any of them, so the band end can be sized
+	// against the shared estimate on the first callback.
+	size_t partFilesLoaded = 0;
+	int tempBandEnd = kNetworkBandEnd;
+	downloadqueue->LoadMetFiles(thePrefs::GetTempDir(), [&](size_t loaded, size_t total) {
+		if (partFilesLoaded == 0) {
+			partFilesLoaded = total;
+			const size_t weighted = kPartFileWeight * total;
+			const size_t whole = weighted + sharedEstimate;
+			tempBandEnd = kNetworkBandEnd +
+				      static_cast<int>(((kScanBandEnd - kNetworkBandEnd) * weighted) / whole);
+			tempBandEnd = std::min(tempBandEnd, kTempBandMaxEnd);
+		}
+		const int percent = kNetworkBandEnd +
+				    static_cast<int>(((tempBandEnd - kNetworkBandEnd) * loaded) / total);
+		splash->SetProgress(CFormat(_("Loading temp files (%u of %u)")) % loaded % total, percent);
+	});
+	const wxLongLong tempDoneAt = wxGetUTCTimeMillis();
+
+	// With no known.met -- a first run -- there is no estimate, so the bar
+	// holds at the band start and the count in the status text carries the
+	// information instead. That is also the run where everything found needs
+	// hashing, so the held-back band is not wasted: the hashing phase below
+	// spends it.
+	const int scanBandEnd = (sharedEstimate > 0) ? kScanBandEnd : tempBandEnd;
+	splash->SetProgress(_("Loading shared files"), tempBandEnd, true);
+	sharedfiles->Reload([&](size_t scanned) {
+		int percent = tempBandEnd;
+		if (sharedEstimate > 0) {
+			// Clamped below the band end: an estimate that undershoots must
+			// not park the bar at 100% while the scan is still running.
+			const size_t capped = std::min(scanned, sharedEstimate);
+			percent = tempBandEnd +
+				  static_cast<int>(((scanBandEnd - tempBandEnd) * capped) / sharedEstimate);
+		}
+		splash->SetProgress(CFormat(_("Loading shared files (%u)")) % scanned, percent);
+		return true;
+	});
+	const wxLongLong sharedDoneAt = wxGetUTCTimeMillis();
+
+	// Normal level, not debug: these are the numbers the phase weighting
+	// above is meant to be tuned from, and a measurement that needs verbose
+	// logging turned on first is one nobody will report back.
+	AddLogLineN(CFormat("Startup phases: network %lld ms, %u part files %lld ms, shared scan "
+			    "%lld ms (estimate was %u)") %
+		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
+		    (tempDoneAt - networkDoneAt).GetValue() % (sharedDoneAt - tempDoneAt).GetValue() %
+		    sharedEstimate);
+
+	// Anything the scan found unknown is now queued for hashing, which runs
+	// on the scheduler thread and reports back to OnFinishedHashing on this
+	// one. That drain is the slowest part of a first run by a wide margin --
+	// hashing cost scales with bytes, not files -- and the per-completion
+	// work here (a stat, two map inserts and a list-row insert each) keeps
+	// the main thread busy enough that the UI is unusable until it ends. So
+	// the splash stays up for it rather than closing on a still-frozen app.
+	m_splashHashTotal = CThreadScheduler::GetPendingCount(kSplashHashTaskType);
+	m_splashHashBandStart = scanBandEnd;
+	if (m_splashHashTotal == 0) {
+		splash->SetProgress(_("Starting up"), 100, true);
+		FinishStartupSplash();
+	} else {
+		splash->SetProgress(
+			CFormat(wxPLURAL("Hashing %u new file", "Hashing %u new files", m_splashHashTotal)) %
+				m_splashHashTotal,
+			scanBandEnd,
+			true);
+		// From here the drain is asynchronous and OnInit is about to
+		// return, so the loop takes over driving the repaints.
+		splash->SetLoopRunning();
+		// Four times a second: fast enough that the count does not visibly
+		// stall, slow enough to be lost in the noise next to hashing.
+		m_splashPollTimer.SetOwner(this, ID_SPLASH_POLL_TIMER);
+		Bind(wxEVT_TIMER, &CamuleApp::OnSplashPollTimer, this, ID_SPLASH_POLL_TIMER);
+		m_splashPollTimer.Start(250);
+	}
+#else
 	downloadqueue->LoadMetFiles(thePrefs::GetTempDir());
 	sharedfiles->Reload();
+#endif
 
 	// Fire the deferred startup HTTP downloads now that the heavy local
 	// I/O is done — see the comment in OnInit() further up.
@@ -1891,6 +2056,62 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	// Disarm recursion protection
 	recurse = false;
 }
+
+#if !defined(CLIENT_GUI) && !defined(AMULE_DAEMON)
+void CamuleApp::OnSplashPollTimer(wxTimerEvent &WXUNUSED(evt))
+{
+	UpdateStartupHashProgress();
+}
+
+void CamuleApp::UpdateStartupHashProgress()
+{
+	if (m_splash == nullptr) {
+		return;
+	}
+
+	// What the scheduler reports is what remains, so the completed count is
+	// derived rather than tracked -- one fewer thing to keep in step with a
+	// queue that other subsystems also feed.
+	const size_t remaining = CThreadScheduler::GetPendingCount(kSplashHashTaskType);
+	if (remaining == 0) {
+		FinishStartupSplash();
+		return;
+	}
+
+	const size_t done = (m_splashHashTotal > remaining) ? m_splashHashTotal - remaining : 0;
+	const int percent = m_splashHashBandStart +
+			    static_cast<int>(((100 - m_splashHashBandStart) * done) / m_splashHashTotal);
+	m_splash->SetProgress(CFormat(_("Hashing new files (%u of %u)")) % done % m_splashHashTotal, percent);
+}
+
+void CamuleApp::FinishStartupSplash()
+{
+	m_splashPollTimer.Stop();
+
+	// Ends the batches opened at startup. Sorting once here is the whole
+	// point of having held them: the lists get a single ordered pass instead
+	// of one per inserted row.
+	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
+		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
+		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate();
+	}
+	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate();
+	}
+
+	// Now the window is worth looking at: the lists are filled and sorted,
+	// and the main thread is free to answer input.
+	if (theApp->amuledlg) {
+		theApp->amuledlg->ShowStartupWindow();
+	}
+
+	if (m_splash) {
+		m_splash->Finish();
+		m_splash = nullptr;
+	}
+}
+#endif
 
 void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 {

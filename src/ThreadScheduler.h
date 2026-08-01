@@ -88,6 +88,23 @@ public:
 	 */
 	static bool AddTask(CThreadTask *task, bool overwrite = false);
 
+	/**
+	 * Returns the number of tasks still to be completed: those waiting on
+	 * the queue, plus the one being executed, if any.
+	 *
+	 * For progress reporting, so a caller that has queued a batch can tell
+	 * how much of it is left without tracking completions itself. This is a
+	 * snapshot taken under the scheduler's lock; the worker may have moved
+	 * on by the time it is read, so treat it as a lower bound on the work
+	 * remaining rather than an exact figure.
+	 *
+	 * @param type Count only tasks of this type, as passed to the
+	 *             CThreadTask constructor. Empty counts every task. Callers
+	 *             reporting on a batch of their own want the filter: the
+	 *             queue is shared, and other subsystems add to it.
+	 */
+	static size_t GetPendingCount(const wxString &type = wxEmptyString);
+
 private:
 	CThreadScheduler();
 	~CThreadScheduler();

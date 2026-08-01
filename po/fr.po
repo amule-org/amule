@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:33+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -304,6 +304,42 @@ msgstr "Mot de passe renseigné et connexions externes activées."
 msgid "WARNING"
 msgstr "AVERTISSEMENT"
 
+#: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "Chargement des fichiers temporaires depuis %s."
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "Chargement des fichiers temporaires depuis %s."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "Rechargement des fichiers partagés…"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "Rechargement des fichiers partagés…"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Starting up"
+msgstr "Démarrer"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+
 # AI-GENERATED — please review.
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -435,6 +471,11 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Nom du serveur signalé"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Hashing new files (%u of %u)"
+msgstr "Enregistrement du fichier .part %u sur %u"
 
 #: src/amule.cpp
 #, c-format

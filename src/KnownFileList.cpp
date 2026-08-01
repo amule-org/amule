@@ -237,6 +237,12 @@ void CKnownFileList::Save()
 	AddDebugLogLineN(logKnownFiles, CFormat("finished saving %s") % m_filename);
 }
 
+size_t CKnownFileList::GetKnownFileCount() const
+{
+	wxMutexLocker sLock(list_mut);
+	return m_knownFileMap.size();
+}
+
 bool CKnownFileList::IsKnownFile(const CKnownFile *file) const
 {
 	// Pointer-value scan over the canonical map; safe to call with a

@@ -44,7 +44,9 @@ enum
 	ID_SERVER_RETRY_TIMER_EVENT,
 	ID_REMOTE_CONNECT_TIMEOUT_TIMER,
 	// Spacing timer between amulegui reconnect attempts (issue #444)
-	ID_REMOTE_RECONNECT_TIMER
+	ID_REMOTE_RECONNECT_TIMER,
+	// Polls the hashing queue while the startup splash is up
+	ID_SPLASH_POLL_TIMER
 };
 
 #endif // EVENTHANDLERS_H

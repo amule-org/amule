@@ -73,12 +73,19 @@ if (Python3_FOUND)
 	add_custom_command (
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/icons/icon_data.c
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/icons
+		# splash_logo reuses the desktop-entry icon at the repository root
+		# rather than committing a second copy of the same artwork under
+		# icons/. .github/workflows/icons.yml regenerates icon_data.c and
+		# diffs it against the checked-in copy, so it has to pass the exact
+		# same extra argument as this command.
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/icons/embed_icons.py
 			${CMAKE_CURRENT_SOURCE_DIR}/icons
 			${CMAKE_CURRENT_BINARY_DIR}/icons/icon_data.c
+			splash_logo=${PROJECT_SOURCE_DIR}/org.amule.aMule.png
 		DEPENDS
 			${CMAKE_CURRENT_SOURCE_DIR}/icons/embed_icons.py
 			${AMULE_ICON_FILES}
+			${PROJECT_SOURCE_DIR}/org.amule.aMule.png
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/icons
 		COMMENT "Embedding ${CMAKE_CURRENT_SOURCE_DIR}/icons -> icon_data.c"
 	)
@@ -345,6 +352,10 @@ if (BUILD_MONOLITHIC)
 		CaptchaGenerator.cpp
 		PartFileConvert.cpp
 		PartFileConvertDlg.cpp
+		# Not in GUI_SOURCES: amulegui shares that list, and the startup
+		# splash covers local work (part-file load, shared-file scan,
+		# hashing) that only the monolithic build does.
+		SplashScreen.cpp
 	)
 
 	if (WIN32)

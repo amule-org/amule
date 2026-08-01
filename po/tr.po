@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:44+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -299,6 +299,42 @@ msgid "WARNING"
 msgstr "UYARI"
 
 #: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "%s konumundan geçici dosyalar yükleniyor."
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "%s konumundan geçici dosyalar yükleniyor."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "Paylaşılan dosyalar yeniden yükleniyor…"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Starting up"
+msgstr "Başlat"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Ağ başlatması"
 
@@ -428,6 +464,11 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Sunucu makine adı uyarıldı"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Hashing new files (%u of %u)"
+msgstr "ParçaDosyası %u, %u'da kaydediliyor"
 
 #: src/amule.cpp
 #, c-format

@@ -364,7 +364,15 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 		CreateSystray();
 	}
 
-	Show(true);
+	// Deferred on the monolithic build, where the startup splash is up and
+	// the work it reports on -- part-file load, shared-file scan, hashing --
+	// runs on this thread. A window shown now would sit there taking clicks
+	// it cannot answer, and the first of those would raise it over the splash
+	// that was explaining the wait. CamuleApp closes the splash and calls
+	// this. amulegui has no such wait: its startup is an EC round trip.
+#ifdef CLIENT_GUI
+	ShowStartupWindow();
+#endif
 
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
 	// amulegui only: defer the "is a newer aMule available?" check until the
@@ -374,26 +382,6 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	// there is a single fetch that also feeds the EC version state.
 	CallAfter(&CamuleDlg::StartupVersionCheck);
 #endif
-
-	// Workaround for wxMSW: Create_Toolbar() above (and the Realize()
-	// inside Apply_Toolbar_Skin) runs before the frame is mapped at
-	// its final on-screen size. wxMSW's native toolbar control
-	// measures whether labels fit at *that* moment to pick its display
-	// mode (icon-only vs icon-with-label-below); with long-string
-	// locales (it_IT, fr_FR, ...) on amulegui (one fewer button than
-	// the monolithic GUI, so a slightly different total width) the
-	// initial measurement decides icon-only and never recovers when
-	// the frame later resizes to the saved/maximized geometry, leaving
-	// the labels clipped. Re-realize the toolbar after Show(true) so
-	// the mode is picked against the actual on-screen frame width.
-	if (m_wndToolbar) {
-		m_wndToolbar->Realize();
-	}
-
-	// Must we start minimized?
-	if (thePrefs::GetStartMinimized()) {
-		Iconize(true);
-	}
 
 #if defined(__WXGTK__) && !defined(__APPLE__)
 	// If we're set up to run without a visible window (hide-to-tray on close, or
@@ -474,6 +462,35 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 }
 
 // Madcat - Sets Fast ED2K Links Handler on/off.
+void CamuleDlg::ShowStartupWindow()
+{
+	if (IsShown()) {
+		return;
+	}
+
+	Show(true);
+
+	// Workaround for wxMSW: Create_Toolbar() (and the Realize() inside
+	// Apply_Toolbar_Skin) runs before the frame is mapped at its final
+	// on-screen size. wxMSW's native toolbar control measures whether labels
+	// fit at *that* moment to pick its display mode (icon-only vs
+	// icon-with-label-below); with long-string locales (it_IT, fr_FR, ...) on
+	// amulegui (one fewer button than the monolithic GUI, so a slightly
+	// different total width) the initial measurement decides icon-only and
+	// never recovers when the frame later resizes to the saved/maximized
+	// geometry, leaving the labels clipped. Re-realize the toolbar after
+	// Show(true) so the mode is picked against the actual on-screen frame
+	// width.
+	if (m_wndToolbar) {
+		m_wndToolbar->Realize();
+	}
+
+	// Must we start minimized?
+	if (thePrefs::GetStartMinimized()) {
+		Iconize(true);
+	}
+}
+
 void CamuleDlg::ShowED2KLinksHandler(bool show)
 {
 	// Errorchecking in case the pointer becomes invalid ...

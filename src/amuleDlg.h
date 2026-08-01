@@ -182,6 +182,18 @@ public:
 		return m_nActiveDialog == dlg && m_is_safe_state /* && !IsIconized() */;
 	}
 
+	/**
+	 * Makes the main window visible, and applies the settings that only
+	 * take effect once it is (the toolbar re-realize, start-minimized).
+	 *
+	 * Called from the constructor on amulegui. The monolithic build calls
+	 * it when the startup splash closes instead, so the window appears
+	 * ready rather than sitting unresponsive behind the splash.
+	 *
+	 * Idempotent: does nothing if the window is already shown.
+	 */
+	void ShowStartupWindow();
+
 	void ShowED2KLinksHandler(bool show);
 
 	void DlgShutDown();

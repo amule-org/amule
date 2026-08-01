@@ -31,6 +31,7 @@
 #include "GetTickCount.h"    // Needed for GetTickCount64
 
 #include <deque>
+#include <functional> // Needed for std::function (LoadProgressCb)
 
 class CSharedFileList;
 class CSearchFile;
@@ -70,7 +71,14 @@ public:
 	~CDownloadQueue();
 
 	/** Loads met-files from the specified directory. */
-	void LoadMetFiles(const CPath &path);
+	// Progress hook for the part-file load, mirroring
+	// CSharedFileList::ReloadYieldCb. Called once per part file with the
+	// index just loaded and the total, which -- unlike the shared-file
+	// scan -- is known before the loop starts, because the directory is
+	// enumerated into a vector first.
+	using LoadProgressCb = std::function<void(size_t /*loaded*/, size_t /*total*/)>;
+
+	void LoadMetFiles(const CPath &path, const LoadProgressCb &progressCb = nullptr);
 
 	/**
 	 * Main worker function.

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:42+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -298,6 +298,42 @@ msgid "WARNING"
 msgstr "KUJDES"
 
 #: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "Duke ngarkuar failin e server.met: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "Duke ngarkuar failin e server.met: %s"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "Ringarko failet e ndara"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "Ringarko failet e ndara"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Starting up"
+msgstr "Fillo"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Rrjetet"
@@ -428,6 +464,11 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "Emri i Serverit:"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Hashing new files (%u of %u)"
+msgstr "Duke ngarkuar te dhena nga nje fail i shkarkuar i vjeter (%u te %u)"
 
 #: src/amule.cpp
 #, c-format

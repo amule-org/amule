@@ -4,7 +4,7 @@ Generate a C translation unit that embeds every PNG icon under this
 directory tree (plus each icon's optional same-name SVG twin) into a
 single static lookup table.
 
-Usage:  embed_icons.py <icons_dir> <output_c_file>
+Usage:  embed_icons.py <icons_dir> <output_c_file> [<art_id>=<png_path> ...]
 
 The emitted file declares the following C-API (see icon_data.h for the
 matching public declarations):
@@ -26,6 +26,19 @@ matching public declarations):
 
 Icons in <icons_dir>/<name>.png get the art-id "<name>".
 Icons in <icons_dir>/flags/<code>.png get the art-id "flag_<code>".
+
+Trailing <art_id>=<png_path> arguments embed a PNG that lives outside
+<icons_dir> under an art-id chosen here rather than derived from its
+filename.  This exists so artwork the project already ships for another
+purpose can be reused without committing a second copy of it: the
+splash screen's logo is org.amule.aMule.png, the desktop-entry icon at
+the repository root.  Naming it explicitly also keeps the art-id
+independent of that file's name, which follows the reverse-DNS desktop
+convention and would otherwise leak into the runtime lookup.
+
+Every caller must pass the same extra arguments, since .github/
+workflows/icons.yml regenerates this file and fails on any difference
+against the checked-in copy.
 
 A <name>.svg next to <name>.png is embedded as the icon's vector twin;
 CamuleArtProvider serves it preferentially for wxBitmapBundle requests
@@ -182,8 +195,35 @@ def emit(out_path: Path, entries):
     out_path.write_text("".join(chunks), encoding="utf-8")
 
 
+def parse_extra_entries(args):
+    """
+    Turn trailing "<art_id>=<png_path>" arguments into icon entries.
+
+    Returns (entries, error-or-None).  Kept ordered as given rather than
+    sorted with the globbed icons: the output has to be byte-identical
+    across callers, so a stable, obvious order beats a clever one.
+    """
+    entries = []
+    for arg in args:
+        art_id, sep, raw_path = arg.partition("=")
+        if not sep or not art_id or not raw_path:
+            return [], f"error: expected <art_id>=<png_path>, got {arg!r}"
+
+        path = Path(raw_path).resolve()
+        if not path.is_file():
+            return [], f"error: {path} is not a file"
+        if path.suffix.lower() != ".png":
+            return [], f"error: {path} is not a .png"
+
+        # No SVG twin: these come from outside icons_dir, where the
+        # twin convention does not apply.
+        entries.append((art_id, sanitise(art_id), path, None))
+
+    return entries, None
+
+
 def main(argv):
-    if len(argv) != 3:
+    if len(argv) < 3:
         print(__doc__, file=sys.stderr)
         return 2
 
@@ -198,6 +238,14 @@ def main(argv):
     if not entries:
         print(f"error: no .png files found under {icons_dir}", file=sys.stderr)
         return 1
+
+    extra, error = parse_extra_entries(argv[3:])
+    if error:
+        print(error, file=sys.stderr)
+        return 1
+    # Appended, so the globbed set keeps the byte layout it has today and
+    # the duplicate-id guard below sees both sets.
+    entries.extend(extra)
 
     orphans = find_orphan_svgs(icons_dir, entries)
     if orphans:

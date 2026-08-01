@@ -55,6 +55,18 @@ public:
 	// pointer is still live before dereffing it.
 	bool IsKnownFile(const CKnownFile *file) const;
 
+	/**
+	 * Number of entries loaded from known.met.
+	 *
+	 * Used at startup as an estimate of how many files the shared-file
+	 * scan is about to walk, since the real total is only known once the
+	 * walk finishes and counting first would mean traversing the tree
+	 * twice. It is last session's view of the same tree, so it is close
+	 * for a stable share and merely approximate otherwise -- callers must
+	 * treat it as a hint, not a total.
+	 */
+	size_t GetKnownFileCount() const;
+
 	void PrepareIndex();
 	void ReleaseIndex();
 

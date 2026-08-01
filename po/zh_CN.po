@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:45+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -303,6 +303,42 @@ msgid "WARNING"
 msgstr "警告"
 
 #: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "从 %s 载入临时文件。"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "从 %s 载入临时文件。"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "正重新加载共享文件..."
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "正重新加载共享文件..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Starting up"
+msgstr "开始"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "网络引导"
 
@@ -432,6 +468,11 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "获取服务器名称"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Hashing new files (%u of %u)"
+msgstr "正在保存 PartFile %u 之 %u"
 
 #: src/amule.cpp
 #, c-format

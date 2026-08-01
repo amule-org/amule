@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:37+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -299,6 +299,43 @@ msgid "WARNING"
 msgstr "DĖMESIO"
 
 #: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "Įkeliamas server.met failas: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "Įkeliamas server.met failas: %s"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "Atnaujinti dalinamų failų sąrašą"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "Atnaujinti dalinamų failų sąrašą"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Starting up"
+msgstr "Pradėti"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Tinklas"
@@ -432,6 +469,11 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "Serverio pavadinimas:"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Hashing new files (%u of %u)"
+msgstr "Įkeliami duomenys iš seno atsiuntimo failo (%u iš %u)"
 
 #: src/amule.cpp
 #, c-format

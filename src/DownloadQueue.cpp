@@ -102,7 +102,7 @@ CDownloadQueue::~CDownloadQueue()
 	}
 }
 
-void CDownloadQueue::LoadMetFiles(const CPath &path)
+void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progressCb)
 {
 	AddLogLineNS(CFormat(_("Loading temp files from %s.")) % path.GetPrintable());
 
@@ -124,6 +124,9 @@ void CDownloadQueue::LoadMetFiles(const CPath &path)
 	// Load part-files
 	for (size_t i = 0; i < files.size(); i++) {
 		AddLogLineNS(CFormat(_("Loading PartFile %u of %u")) % (i + 1) % files.size());
+		if (progressCb) {
+			progressCb(i + 1, files.size());
+		}
 		fileName = files[i].GetFullName();
 		CPartFile *toadd = new CPartFile();
 		bool result = toadd->LoadPartFile(path, fileName) != 0;

@@ -29,6 +29,7 @@
 #include <wx/app.h>      // Needed for wxApp
 #include <wx/datetime.h> // Needed for wxDateTime (ED2K/Kad "Connected since")
 #include <wx/intl.h>     // Needed for wxLocale
+#include <wx/timer.h>    // Needed for wxTimer (startup splash poll)
 
 #include "Types.h"    // Needed for int32, uint16 and uint64
 #include <functional> // Needed for std::function (DeferShutDownToOuterLoop)
@@ -51,6 +52,7 @@
 
 class CAbstractFile;
 class CKnownFile;
+class CSplashScreen;
 class ExternalConn;
 class CamuleDlg;
 class CIP2Country;
@@ -500,6 +502,41 @@ protected:
 	void OnFinishedHashing(CHashingEvent &evt);
 	void OnPartFileHashResult(CPartFileHashResultEvent &evt);
 	void OnFinishedAICHHashing(CHashingEvent &evt);
+
+#if !defined(CLIENT_GUI) && !defined(AMULE_DAEMON)
+	// Monolithic only: the daemon has no window to put a splash on, and
+	// amulegui is a separate process that does not run this startup at all.
+	//
+	// Startup splash, kept alive past OnInit because the slowest part of a
+	// first run is the hashing of everything the scan found unknown, and
+	// that drains asynchronously long after OnInit has returned. Null once
+	// the queue has drained and the splash has closed.
+	CSplashScreen *m_splash = nullptr;
+	// Where the bar had reached when the hashing phase took over, i.e. the
+	// start of the band that phase fills. Small on a first run, where there
+	// is no known.met to size the scan against and hashing is most of the
+	// wait; nearly full on a later one, where it is a handful of new files.
+	int m_splashHashBandStart = 0;
+	// Queue depth when the splash took over, i.e. the denominator for the
+	// hashing phase. Zero when nothing needed hashing.
+	size_t m_splashHashTotal = 0;
+	// Drives the hashing phase of the splash. Polled rather than driven from
+	// the completion handlers: the worker clears its current task after the
+	// completion event has been posted, so a handler-driven update can see
+	// the last task still pending and then never run again, leaving the
+	// splash up for good. Polling also covers tasks that finish without
+	// reaching a handler here, such as an aborted one.
+	wxTimer m_splashPollTimer;
+
+	// Advances the splash and, once the scheduler queue has drained, closes
+	// it and ends the list batches opened for the duration.
+	void UpdateStartupHashProgress();
+	void OnSplashPollTimer(wxTimerEvent &evt);
+	// Ends the batched list updates and closes the splash. Safe to call when
+	// no splash is up.
+	void FinishStartupSplash();
+#endif // monolithic only
+
 	// #140 - CMediaProbeTask marshals results back here so we can
 	// attach FT_MEDIA_* tags on the main thread (the worker never
 	// touches CKnownFile state).

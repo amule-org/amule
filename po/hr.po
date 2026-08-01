@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:34+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -291,6 +291,43 @@ msgid "WARNING"
 msgstr "UPOZORENJE"
 
 #: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "Zahtjev dijeljenih fajlova od '%s'"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "Zahtjev dijeljenih fajlova od '%s'"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "Pronadjeno %i poznatih dijeljenih fajlova"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "Pronadjeno %i poznatih dijeljenih fajlova"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Starting up"
+msgstr "Start"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr ""
 
@@ -413,6 +450,11 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "Ime servera :"
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing new files (%u of %u)"
+msgstr ""
 
 #: src/amule.cpp
 #, c-format

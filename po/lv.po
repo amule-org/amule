@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 10:47+0200\n"
+"POT-Creation-Date: 2026-08-01 13:03+0200\n"
 "PO-Revision-Date: 2026-07-31 22:47+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -284,6 +284,42 @@ msgid "WARNING"
 msgstr "BRĪDINĀJUMS"
 
 #: src/amule.cpp
+msgid "Initializing network"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading temp files"
+msgstr "Ielādē server.met datni: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading temp files (%u of %u)"
+msgstr "Ielādē server.met datni: %s"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading shared files"
+msgstr "Ielādē server.met datni: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading shared files (%u)"
+msgstr "Ielādē server.met datni: %s"
+
+#: src/amule.cpp
+msgid "Starting up"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing %u new file"
+msgid_plural "Hashing %u new files"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr ""
 
@@ -404,6 +440,11 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Server hostname notified"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Hashing new files (%u of %u)"
 msgstr ""
 
 #: src/amule.cpp

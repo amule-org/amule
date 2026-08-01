@@ -209,6 +209,32 @@ size_t CThreadScheduler::GetTaskCount() const
 	return m_tasks.size();
 }
 
+size_t CThreadScheduler::GetPendingCount(const wxString &type)
+{
+	wxMutexLocker lock(s_lock);
+
+	if (s_scheduler == nullptr) {
+		return 0;
+	}
+
+	size_t count = 0;
+	for (const CEntryPair &entry : s_scheduler->m_tasks) {
+		if (type.IsEmpty() || entry.first->GetType() == type) {
+			++count;
+		}
+	}
+
+	// The running task has already left the queue but is not done, so count
+	// it: otherwise a batch reads as finished while its last task is still
+	// executing.
+	const CThreadTask *current = s_scheduler->m_currentTask;
+	if (current && (type.IsEmpty() || current->GetType() == type)) {
+		++count;
+	}
+
+	return count;
+}
+
 bool CThreadScheduler::DoAddTask(CThreadTask *task, bool overwrite)
 {
 	// GetTick is too lowres, so we just use a counter to ensure that
