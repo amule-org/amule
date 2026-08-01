@@ -126,6 +126,56 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/status
 Browsers should call `/auth/login` *without* `?type=bearer` — they get a
 cookie instead, which keeps the token out of reach of page scripts.
 
+## Reaching it from another machine
+
+Keep `BindAddress` on `127.0.0.1` and put a reverse proxy in front. The proxy
+holds the certificate and speaks HTTPS to the outside world; amuleapi stays on
+loopback, where nothing else can reach it.
+
+With [Caddy](https://caddyserver.com) that is the entire config file, and the
+certificate is obtained and renewed for you:
+
+```caddy
+api.example.com {
+    reverse_proxy 127.0.0.1:4713
+}
+```
+
+nginx needs a little more, and `proxy_http_version 1.1` is not optional — the
+default breaks the event stream:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name api.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/api.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:4713;
+        proxy_http_version 1.1;
+    }
+}
+```
+
+`certbot --nginx` will get you those two certificate files.
+
+Either way you need a domain name pointing at the machine, with ports 80 and
+443 reachable — that is how the certificate authority checks you own the name.
+Event streams need no extra buffering or timeout settings: amuleapi already
+sends the header that turns nginx buffering off, and its 15-second heartbeat
+keeps idle connections from being dropped.
+
+On a home network, with no domain name, an SSH tunnel does the same job with
+no certificate at all:
+
+```sh
+ssh -N -L 4713:127.0.0.1:4713 you@your-amule-box
+```
+
+The API is then at `http://127.0.0.1:4713` on your own machine.
+
 ## `amuleapi.conf`
 
 Created with sensible defaults on first run. Your edits and comments survive
@@ -196,7 +246,7 @@ left off after a dropped connection — see
 - **Keep `BindAddress` on `127.0.0.1` unless you need otherwise.** amuleapi
   starts a thread per event-stream listener, so exposing it directly to a
   network is not something to do casually. For remote access, put a reverse
-  proxy in front.
+  proxy in front — see [above](#reaching-it-from-another-machine).
 - **An admin token can do anything aMule can**, including asking amuled to
   fetch a server list from a URL you supply. Treat the admin password like
   the password to the machine.
