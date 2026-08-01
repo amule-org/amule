@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-01 11:58+0000\n"
+"PO-Revision-Date: 2026-08-01 17:57+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -215,7 +215,7 @@ msgstr "ATTENZIONE: non è possibile aggiungere te stesso come fonte di un link 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "Permessi di %s limitati al solo proprietario."
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -308,39 +308,36 @@ msgstr "ATTENZIONE"
 
 #: src/amule.cpp
 msgid "Initializing network"
-msgstr ""
+msgstr "Inizializzazione della rete"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "Caricamento dei file parziali da: %s."
+msgstr "Caricamento dei file parziali"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "Caricamento dei file parziali da: %s."
+msgstr "Caricamento dei file parziali (%u di %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "Ricarica file condivisi in corso..."
+msgstr "Caricamento dei file condivisi"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "Ricarica file condivisi in corso..."
+msgstr "Caricamento dei file condivisi (%u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Starting up"
-msgstr "Cerca"
+msgstr "Avvio in corso"
 
 #: src/amule.cpp
 #, c-format
 msgid "Hashing %u new file"
 msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Hashing di %u nuovo file"
+msgstr[1] "Hashing di %u nuovi file"
 
 # AI-GENERATED — please review.
 #: src/amule.cpp
@@ -383,7 +380,7 @@ msgstr "ERRORE"
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr ""
+msgstr "Impossibile scrivere il token EC di amuleapi in %s; amuleapi userà la password configurata."
 
 #: src/amule.cpp
 #, c-format
@@ -397,7 +394,7 @@ msgstr "Hai scelto di lanciare amuleapi all'avvio, ma il programma amuleapi non 
 #: src/amule.cpp
 #, c-format
 msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
-msgstr ""
+msgstr "Connessione esterna: impossibile mettersi in ascolto su '%s', in ascolto solo su 127.0.0.1."
 
 #: src/amule.cpp
 #, c-format
@@ -478,9 +475,9 @@ msgid "Server hostname notified"
 msgstr "Nome host del server notificato"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing new files (%u of %u)"
-msgstr "Salvataggio file parziale %u di %u"
+msgstr "Hashing dei nuovi file (%u di %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -1868,9 +1865,9 @@ msgid "Missing protocol version tag."
 msgstr "Tag versione protocollo mancante."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr "Riconnessione automatica al server tra %d secondo"
+msgstr "Troppi tentativi di connessione falliti; riprova tra %d secondi."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
@@ -1878,7 +1875,7 @@ msgstr "Autenticazione fallita: l'hash specificato come password EC non è valid
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
-msgstr ""
+msgstr "Autenticazione fallita: questo aMule richiede una connessione esterna cifrata e il client non l'ha negoziata."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2251,7 +2248,7 @@ msgstr "Mostra la versione del programma."
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
-msgstr ""
+msgstr "Non cifrare la sessione di connessione esterna. La cifratura è attiva per impostazione predefinita ogni volta che l'aMule remoto la supporta; disattivarla lascia tutto ciò che segue il login leggibile e modificabile da chiunque si trovi lungo il percorso."
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -3406,9 +3403,8 @@ msgid "Reset Fields"
 msgstr "Azzera campi"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "Risultato della ricerca"
+msgstr "Cancella Risultati Ricerca"
 
 #: src/muuli_wdr.cpp
 msgid "Results"
@@ -4452,7 +4448,7 @@ msgstr "Password"
 
 #: src/muuli_wdr.cpp
 msgid "Require encrypted connections (rejects clients that cannot encrypt)"
-msgstr ""
+msgstr "Richiedi connessioni cifrate (rifiuta i client che non supportano la cifratura)"
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -4993,9 +4989,8 @@ msgid "Remember those settings"
 msgstr "Ricorda impostazioni"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Encrypt the connection (recommended)"
-msgstr "Connessione esterna chiusa."
+msgstr "Cifra la connessione (consigliato)"
 
 #: src/muuli_wdr.cpp
 msgid "Force ZLIB compression"
@@ -6140,13 +6135,12 @@ msgid "Shared folder"
 msgstr "Cartella condivisa"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Clear Search History"
-msgstr "Cancella la cronologia delle ricerche"
+msgstr "Cancella Cronologia Ricerche"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
-msgstr ""
+msgstr "Cancellare la cronologia delle ricerche salvata? L'operazione non può essere annullata."
 
 #: src/SearchDlg.cpp
 msgid "Search warning"

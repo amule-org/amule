@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-01 12:01+0000\n"
+"PO-Revision-Date: 2026-08-01 18:00+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -27,9 +27,8 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "About aMule"
-msgstr "Показать aMule"
+msgstr "О программе aMule"
 
 #: src/AboutDialog.cpp
 msgid "aMule remote control "
@@ -49,12 +48,11 @@ msgstr ""
 "\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
 msgstr ""
-"Copyright (c) 2003-2019 команда aMule \n"
+"Copyright (c) 2003-2026 Команда aMule \n"
 "\n"
 
 #: src/AboutDialog.cpp
@@ -71,7 +69,7 @@ msgstr "Copyright (c) 2002-2011 Петр Маймунков ( petar@maymounkov.o
 
 #: src/AboutDialog.cpp
 msgid "Website:"
-msgstr "Сайт:"
+msgstr "Веб-сайт:"
 
 #: src/AboutDialog.cpp
 msgid "Forum:"
@@ -79,16 +77,15 @@ msgstr "Форум:"
 
 #: src/AboutDialog.cpp
 msgid "Documentation:"
-msgstr ""
+msgstr "Документация:"
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr ""
+msgstr "Проблемы:"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "Проверка наличия новой версии при запуске"
+msgstr "Нажмите, чтобы проверить наличие новой версии."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
@@ -220,12 +217,12 @@ msgstr "Выходим из основного приложения..."
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Завершаем процесс amuleweb с pid `%d' ... "
+msgstr "Завершение экземпляра amuleweb с pid «%d»… "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Убиваем процесс amuleweb с pid `%d' ... "
+msgstr "Убивается экземпляр amuleweb с pid «%d»… "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 msgid "Failed"
@@ -7828,9 +7825,8 @@ msgid "Show servers list."
 msgstr "Показать список серверов."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show shared files list."
-msgstr "Обновить список публикуемых файлов."
+msgstr "Показать список публикуемых файлов."
 
 #: src/TextClient.cpp
 msgid "Reset log."

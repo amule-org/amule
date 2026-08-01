@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-01 12:03+0000\n"
+"PO-Revision-Date: 2026-08-01 18:03+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -80,10 +80,8 @@ msgstr "[B<-w> I<E<lt>путьE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
-msgstr "[B<-t> I<E<lt>номерE<gt>>] [I<eD2k-ссылка>]"
+msgstr "[B<-t> I<E<lt>номерE<gt>>] [I<eD2k-ссылка>|I<файл-коллекции>]"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -131,7 +129,7 @@ msgstr "Сбрасывает конфигурацию в изначальную.
 #. type: Plain text
 #: amule.1.in
 msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
-msgstr ""
+msgstr "Включить или отключить запуск aMule при входе пользователя в систему, затем завершить работу. Хранилище, зависящее от ОС, выбирается автоматически: ключ реестра Windows Run, macOS LaunchAgent, запись автозапуска XDG I<.desktop> в Linux."
 
 #. type: TP
 #: amule.1.in amuled.1.in
@@ -147,7 +145,7 @@ msgstr "Указать I<E<lt>путьE<gt>> к исполняемому фай�
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Don't catch fatal exceptions and don't block exit on assertions.  Useful for headless / supervised setups (systemd, watchdog scripts)  where the otherwise-modal assertion dialog prevents auto-restart."
-msgstr ""
+msgstr "Не перехватывать фатальные исключения и не блокировать выход при срабатывании утверждений. Полезно для безголовых / контролируемых настроек (systemd, скрипты watchdog), где модальный диалог утверждений препятствует автоматическому перезапуску."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
@@ -179,17 +177,14 @@ msgstr "Выводит короткую помощь по использован
 
 #. type: TP
 #: amule.1.in amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ eD2k-link ]>"
+#, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr "B<[ eD2k-ссылка ]>"
+msgstr "B<[ eD2k-ссылка | файл-коллекции ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
-#, fuzzy
-#| msgid "Adds an eD2k-link or a magnet-link to the core."
 msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
-msgstr "Добавляет eD2k-ссылку или magnet-ссылку в ядро."
+msgstr "Добавляет eD2k-ссылку или все ссылки из файла коллекции eMule в ядро."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
@@ -219,7 +214,7 @@ msgstr "magnet-ссылка."
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
-msgstr ""
+msgstr "В качестве альтернативы аргументом может быть путь к файлу .emulecollection или URL-адрес file://, указывающий на него; в этом случае все содержащиеся в нём ссылки добавляются в очередь загрузки. Именно это позволяет файловому менеджеру открывать коллекцию с помощью aMule."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuleweb.1.in
@@ -282,7 +277,7 @@ msgstr "АВТОРСКИЕ ПРАВА"
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "aMule and all of its related utilities are distributed under the GNU General Public License."
-msgstr "aMule и все прилагающиеся инструменты распространаются под Открытым Лицензионным Соглашением GNU (GNU GPL)."
+msgstr "aMule и все прилагающиеся инструменты распространяются под Стандартной общественной лицензией GNU (GNU GPL)."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -451,12 +446,12 @@ msgstr "Создать файл конфигурации на основе фа�
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr ""
+msgstr "Не шифровать соединение внешнего подключения. Шифрование согласовывается автоматически, когда удалённый aMule его поддерживает, и включено по умолчанию для любого назначения, локального или удалённого. Его отключение делает всё после входа в систему читаемым и изменяемым для любого, кто может наблюдать за соединением."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
-msgstr ""
+msgstr "Принудительно использовать сжатие ZLIB для соединения внешнего подключения независимо от локальности вызванного IP-адреса. Полезно, когда серверная сторона доступна через VPN-туннель, который разрешается в локальный IP-адрес, и эвристика в противном случае пропустила бы сжатие."
 
 #. type: SH
 #: amulecmd.1.in
@@ -587,14 +582,12 @@ msgstr "Нормальный приоритет."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
-msgstr ""
+msgstr "Показывает ход выполнения текущего поиска. Может принимать I<E<lt>idE<gt>> поиска (как выводится командой B<search>); без идентификатора показывает последний начатый поиск."
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "A synonim of the B<exit> command."
 msgid "A synonym of the B<exit> command."
-msgstr "То же что и B<exit>."
+msgstr "Синоним команды B<exit>."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -619,7 +612,7 @@ msgstr "Обнуляет лог."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
-msgstr ""
+msgstr "Показывает результаты поиска. Может принимать I<E<lt>idE<gt>> поиска (как выводится командой B<search>); без идентификатора показывает последний начатый поиск. В демоне одновременно может храниться несколько поисков, каждый из которых доступен по своему идентификатору."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -628,10 +621,8 @@ msgstr "Возобновляет закачку указанную по I<E<lt>�
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Производит поиск по указанному I<E<lt>словуE<gt>>. Указание типа и слова обязательны. Пример: `search kad amule' производит поиск по kad по слову `amule'."
+msgstr "Выполняет поиск по указанному I<E<lt>ключевому словуE<gt>>. Для этого обязательно указание типа поиска и ключевого слова. Пример: `search kad amule' выполняет поиск Kad по запросу `amule'. Выводит идентификатор поиска; передайте его командам B<results> или B<progress> для обращения к этому поиску. Одновременно может выполняться несколько поисков, каждый со своим идентификатором."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -656,37 +647,37 @@ msgstr "Локальный поиск."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Optional filters can be placed before, after, or interleaved with the search keyword(s):"
-msgstr ""
+msgstr "Необязательные фильтры можно размещать до, после или вперемешку с ключевыми словами поиска:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Restrict results to the given file type."
-msgstr ""
+msgstr "Ограничить результаты указанным типом файла."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Restrict results to a specific file extension (e.g.\\ I<iso>, I<mp3>)."
-msgstr ""
+msgstr "Ограничить результаты конкретным расширением файла (например, I<iso>, I<mp3>)."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum number of sources a result must report."
-msgstr ""
+msgstr "Минимальное количество источников, которое должен иметь результат."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Smallest file size to return. Suffixes use binary multipliers (K = 1024, M = K\\(mu1024, G = M\\(mu1024); no suffix means bytes."
-msgstr ""
+msgstr "Наименьший размер файла для возврата. Суффиксы используют двоичные множители (K = 1024, M = K\\(mu1024, G = M\\(mu1024); без суффикса — байты."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
-msgstr ""
+msgstr "Наибольший размер файла для возврата. Те же суффиксы, что и для B<--min-size>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
-msgstr ""
+msgstr "Пример: `search global linux iso --type Iso --min-size 100M' возвращает результаты для \\(lqlinux iso\\(rq типа файла Iso размером не менее 100 МиБ."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -725,10 +716,8 @@ msgstr "Выводит список серверов."
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "Reload shared files list."
 msgid "Show shared files list."
-msgstr "Обновляет список публикуемых файлов."
+msgstr "Показать список публикуемых файлов."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -889,14 +878,13 @@ msgstr "Сконфигурировать EC (внешние соединения
 #. type: Plain text
 #: amuled.1.in
 msgid "Enable or disable starting amuled on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
-msgstr ""
+msgstr "Включить или отключить запуск amuled при входе пользователя в систему, затем завершить работу. Хранилище, зависящее от ОС, выбирается автоматически: ключ реестра Windows Run, macOS LaunchAgent, запись автозапуска XDG I<.desktop> в Linux."
 
 #. type: TP
 #: amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ -t> I<E<lt>nameE<gt>>, B<--template>=I<E<lt>nameE<gt>> B<]>"
+#, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
-msgstr "B<[ -t> I<E<lt>имяE<gt>>, B<--template>=I<E<lt>имяE<gt>> B<]>"
+msgstr "B<[ -t> I<E<lt>номерE<gt>>, B<--category>=I<E<lt>номерE<gt>> B<]>"
 
 #. type: TH
 #: amulegui.1.in
@@ -939,7 +927,7 @@ msgstr "Пропустить диалог соединения."
 #. type: Plain text
 #: amulegui.1.in
 msgid "Enable or disable starting amulegui on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
-msgstr ""
+msgstr "Включить или отключить запуск amulegui при входе пользователя в систему, затем завершить работу. Хранилище, зависящее от ОС, выбирается автоматически: ключ реестра Windows Run, macOS LaunchAgent, запись автозапуска XDG I<.desktop> в Linux."
 
 #. type: Plain text
 #: amulegui.1.in
@@ -996,7 +984,7 @@ msgstr "[B<--amule-config-file>=I<E<lt>путьE<gt>>]"
 #. type: Plain text
 #: amuleweb.1.in
 msgid "B<DEPRECATED:> amuleweb is deprecated and may be removed in aMule 3.2 or later.  It is not being removed yet; consider migrating to amuleapi, the REST/SSE API."
-msgstr ""
+msgstr "B<УСТАРЕЛО:> amuleweb устарел и может быть удалён в aMule 3.2 или позже. Пока он не удалён; рассмотрите возможность перехода на amuleapi — REST/SSE API."
 
 #. type: Plain text
 #: amuleweb.1.in
@@ -1032,10 +1020,9 @@ msgstr "Включить UPnP."
 
 #. type: TP
 #: amuleweb.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port> I<E<lt>portE<gt>> B<]>"
+#, no-wrap
 msgid "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port>=I<E<lt>portE<gt>> B<]>"
-msgstr "B<[ -U> I<E<lt>портE<gt>>, B<--upnp-port> I<E<lt>портE<gt>> B<]>"
+msgstr "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port>=I<E<lt>portE<gt>> B<]>"
 
 #. type: Plain text
 #: amuleweb.1.in
@@ -1190,29 +1177,24 @@ msgstr "Пысылает указанную I<E<lt>eD2k-ссылкуE<gt>> в aM
 
 #. type: TP
 #: ed2k.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ -t> I<E<lt>nameE<gt>>, B<--template>=I<E<lt>nameE<gt>> B<]>"
+#, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category> I<E<lt>numE<gt>> B<]>"
-msgstr "B<[ -t> I<E<lt>имяE<gt>>, B<--template>=I<E<lt>имяE<gt>> B<]>"
+msgstr "B<[ -t> I<E<lt>numE<gt>>, B<--category> I<E<lt>numE<gt>> B<]>"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "Set category for passed eD2k links to I<E<lt>numE<gt>>.  Unlike B<--config-dir>, the parser reads the value as the next argument and does not accept B<--category>=I<E<lt>numE<gt>> syntax."
-msgstr ""
+msgstr "Установить категорию для переданных eD2k-ссылок в I<E<lt>numE<gt>>. В отличие от B<--config-dir>, анализатор читает значение как следующий аргумент и не поддерживает синтаксис B<--category>=I<E<lt>numE<gt>>."
 
 #. type: Plain text
 #: ed2k.1.in
-#, fuzzy
-#| msgid "Loads all link found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
 msgid "Loads all links found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
-msgstr "Загружает все ссылки из emulecollection как I<E<lt>ed2k-ссылкиE<gt>>"
+msgstr "Загружает все ссылки, найденные в emulecollection, указанном как I<E<lt>ed2k-linkE<gt>>"
 
 #. type: Plain text
 #: ed2k.1.in
-#, fuzzy
-#| msgid "Lists all link found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
 msgid "Lists all links found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
-msgstr "Перечисляет все ссылки из emulecollection как I<E<lt>ed2k-ссылкиE<gt>>"
+msgstr "Выводит список всех ссылок, найденных в emulecollection, указанном как I<E<lt>ed2k-linkE<gt>>"
 
 #. type: TP
 #: ed2k.1.in
@@ -1335,12 +1317,12 @@ msgstr "B<cas> - программа для отображения содержи
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "Writes the online signature picture.  The long form B<--picture> accepts an optional I<=E<lt>PATHE<gt>> to specify the output location; the short forms B<-o> / B<-P> do not (B<-P> requires an immediately following I<E<lt>PATHE<gt>> argument, and B<-o> is a no-argument switch).  Requires GD support compiled in (I<__GD__>); this option is silently ignored otherwise."
-msgstr ""
+msgstr "Записывает изображение онлайн-подписи. Длинная форма B<--picture> принимает необязательный I<=E<lt>ПУТЬE<gt>> для указания места вывода; короткие формы B<-o> / B<-P> не принимают (B<-P> требует следующий за ним аргумент I<E<lt>ПУТЬE<gt>>, а B<-o> является ключом без аргументов). Требует поддержки GD, скомпилированной в (I<__GD__>); в противном случае этот параметр молча игнорируется."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "HTML page with stats and picture.  The long form B<--html> accepts an optional I<=E<lt>PATHE<gt>> to specify the output location; the short forms B<-p> / B<-H> do not (B<-H> requires an immediately following I<E<lt>PATHE<gt>> argument, and B<-p> is a no-argument switch)."
-msgstr ""
+msgstr "HTML-страница со статистикой и изображением. Длинная форма B<--html> принимает необязательный I<=E<lt>ПУТЬE<gt>> для указания места вывода; короткие формы B<-p> / B<-H> не принимают (B<-H> требует следующий за ним аргумент I<E<lt>ПУТЬE<gt>>, а B<-p> является ключом без аргументов)."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
@@ -1360,12 +1342,12 @@ msgstr "~/.aMule/casrc"
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "aMule-online-sign.png (or .jpg, when B<-o> / B<--picture> is used and GD is available)"
-msgstr ""
+msgstr "aMule-online-sign.png (или .jpg, если используется B<-o> / B<--picture> и доступна GD)"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "aMule-online-sign.html (when B<-p> / B<--html> is used)"
-msgstr ""
+msgstr "aMule-online-sign.html (если используется B<-p> / B<--html>)"
 
 #. type: TH
 #: ../../src/utils/wxCas/docs/wxcas.1.in

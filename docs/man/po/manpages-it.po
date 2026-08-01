@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-01 12:03+0000\n"
+"PO-Revision-Date: 2026-08-01 18:03+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -514,7 +514,7 @@ msgstr "Crea un file di configurazione basandosi sul I<E<lt>percorsoE<gt>>, che 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr ""
+msgstr "Non cifrare il collegamento di connessione esterna. La cifratura viene negoziata automaticamente ogni volta che l'aMule remoto la supporta ed è attiva per impostazione predefinita per ogni destinazione, locale o remota. Disattivarla lascia tutto ciò che segue il login leggibile, e modificabile, da chiunque sia in grado di osservare la connessione."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
