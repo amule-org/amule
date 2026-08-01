@@ -543,6 +543,24 @@ void CIPFilter::OnIPFilterEvent(CIPFilterEvent &evt)
 		theApp->serverlist->FilterServers();
 	}
 	// Now start networks we didn't start earlier
+	StartPendingNetworks();
+	theApp->ShowConnectionState(true); // refresh connection status
+	if (thePrefs::GetSrcSeedsOn()) {
+		theApp->downloadqueue->LoadSourceSeeds();
+	}
+	// Trigger filter update if configured
+	if (m_updateAfterLoading) {
+		m_updateAfterLoading = false;
+		Update(thePrefs::IPFilterURL());
+	}
+}
+
+void CIPFilter::StartPendingNetworks()
+{
+	if (!m_ready) {
+		// OnIPFilterEvent runs this again once loading finishes.
+		return;
+	}
 	if (m_connectToAnyServerWhenReady || m_startKADWhenReady) {
 		AddLogLineC(_("Connecting"));
 	}
@@ -553,15 +571,6 @@ void CIPFilter::OnIPFilterEvent(CIPFilterEvent &evt)
 	if (m_startKADWhenReady) {
 		m_startKADWhenReady = false;
 		theApp->StartKad();
-	}
-	theApp->ShowConnectionState(true); // refresh connection status
-	if (thePrefs::GetSrcSeedsOn()) {
-		theApp->downloadqueue->LoadSourceSeeds();
-	}
-	// Trigger filter update if configured
-	if (m_updateAfterLoading) {
-		m_updateAfterLoading = false;
-		Update(thePrefs::IPFilterURL());
 	}
 }
 

@@ -100,6 +100,16 @@ public:
 	void StartKADWhenReady() { m_startKADWhenReady = true; }
 	void ConnectToAnyServerWhenReady() { m_connectToAnyServerWhenReady = true; }
 
+	/**
+	 * Starts whichever networks the two flags above requested, and clears them.
+	 *
+	 * Called from the load-finished handler, and again once the flags have been
+	 * set during startup: loading runs on a worker thread, so it can finish -- and
+	 * its event be dispatched -- before the caller gets round to asking for a
+	 * network. Doing nothing when no flag is set makes the second call harmless.
+	 */
+	void StartPendingNetworks();
+
 private:
 	/** Handles the result of loading the dat-files. */
 	void OnIPFilterEvent(CIPFilterEvent &);

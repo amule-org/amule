@@ -1213,14 +1213,20 @@ bool CamuleApp::OnInit()
 
 	// Autoconnect if that option is enabled
 	if (thePrefs::DoAutoConnect()) {
-		// IP filter is still loading and will be finished on event.
-		// Tell it to autoconnect.
+		// The IP filter may still be loading, in which case its
+		// load-finished event starts the networks these flags ask for.
 		if (thePrefs::GetNetworkED2K()) {
 			ipfilter->ConnectToAnyServerWhenReady();
 		}
 		if (thePrefs::GetNetworkKademlia()) {
 			ipfilter->StartKADWhenReady();
 		}
+		// It may equally have finished already: it loads on a worker
+		// thread, and the splash pumps the event loop while the local
+		// I/O above runs, so a fast filter -- a small file, or none --
+		// is dispatched long before this point, and nothing would start
+		// the networks afterwards. No-op while it is still loading.
+		ipfilter->StartPendingNetworks();
 	}
 
 	// Enable GeoIP. The resolver is headless and core-owned so the daemon
