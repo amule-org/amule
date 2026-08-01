@@ -208,6 +208,15 @@ private:
 	// is the pre-#680 behaviour.
 	bool m_serverSearchList;
 
+	// Set when the server echoed `EC_TAG_CAN_SEARCH_PROGRESS_UNION` in
+	// AUTH_OK, confirming that an EC_OP_SEARCH_PROGRESS carrying no
+	// `EC_TAG_SEARCH_ID` reports every open search as children instead of
+	// just one. Advertised only alongside multi-search, so an id-less
+	// request from a single-search client keeps its legacy "current search"
+	// meaning. Old daemons don't echo it; the client then polls per id,
+	// which costs one round trip per open search tab.
+	bool m_serverSearchProgressUnion;
+
 	// Client opts into chat relay (advertise `EC_TAG_CAN_CHAT`). Off by
 	// default; a client with a chat window sets it via SetCanChat(). Read
 	// when building the login packet.
@@ -265,6 +274,8 @@ public:
 	bool ServerSupportsSharedDirsConfig() const { return m_serverSharedDirsConfig; }
 
 	bool ServerSupportsSearchList() const { return m_serverSearchList; }
+
+	bool ServerSupportsSearchProgressUnion() const { return m_serverSearchProgressUnion; }
 
 	bool ConnectToCore(const wxString &host,
 		int port,

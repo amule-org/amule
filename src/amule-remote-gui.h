@@ -734,6 +734,14 @@ public:
 	// the state machine the same way for the same reason.
 	void RequestSearchList();
 
+	// Decode one search's progress and apply it to that search's tab. `src` is
+	// either the whole EC_OP_SEARCH_PROGRESS reply (a per-id poll, where the
+	// progress tags sit at the top level) or one child entry of the union form
+	// (every open search in a single reply). Both shapes carry an identical tag
+	// set -- the daemon emits them from one function -- so there is exactly one
+	// decode here rather than one per shape.
+	void ApplySearchProgress(const CECTag *src);
+
 	// Monolithic CSearchList API parity over EC. IsKadSearch reports whether a
 	// given tab is a *live* Kad search — the SearchDlg "More" button gate —
 	// from m_kadActive, which HandlePacket fills from each search's per-id

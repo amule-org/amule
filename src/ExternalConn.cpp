@@ -334,6 +334,13 @@ private:
 	// single-search path runs verbatim (the `0xffffffff` sentinel bucket,
 	// wipe-on-start, parameterless stop) so old clients keep working.
 	bool m_multiSearchActive;
+	// Set when the client advertised `EC_TAG_CAN_SEARCH_PROGRESS_UNION`: an
+	// `EC_OP_SEARCH_PROGRESS` carrying no `EC_TAG_SEARCH_ID` reports every
+	// search this connection could hold a tab for, one child per search,
+	// instead of a single search's progress. Only consulted together with
+	// `m_multiSearchActive` — a single-search client's id-less request keeps
+	// meaning "the current search" (amulecmd's `search progress`).
+	bool m_searchProgressUnionActive;
 	// Set when the client advertised EC_TAG_CAN_CHAT: it wants incoming peer
 	// chat messages relayed over EC and polls EC_OP_GET_CHAT_MESSAGES. The
 	// daemon always supports this, so the flag just mirrors the client tag.
@@ -399,6 +406,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 , m_partialUpdateActive(false)
 , m_partialSearchActive(false)
 , m_multiSearchActive(false)
+, m_searchProgressUnionActive(false)
 , m_chatActive(false)
 {
 	wxASSERT(theApp->ECServerHandler);
@@ -845,6 +853,15 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// single-search sentinel path — see the search handlers.
 					m_multiSearchActive = true;
 				}
+				if (request->GetTagByName(EC_TAG_CAN_SEARCH_PROGRESS_UNION)) {
+					// Client reads an id-less EC_OP_SEARCH_PROGRESS as "every
+					// open search", each reported as a child tag, so it polls
+					// once instead of once per search. Only honoured together
+					// with multi-search: for a single-search client an id-less
+					// request still means "the current search", which is what
+					// amulecmd's `search progress` with no argument expects.
+					m_searchProgressUnionActive = true;
+				}
 				if (request->GetTagByName(EC_TAG_CAN_CHAT)) {
 					// Client (amulegui) wants incoming peer chat messages
 					// relayed over EC. The daemon always supports this, so
@@ -1002,6 +1019,16 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					// searches by `EC_TAG_SEARCH_ID` rather than the
 					// legacy single-search sentinel.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
+					if (m_searchProgressUnionActive) {
+						// Confirm the union form of EC_OP_SEARCH_PROGRESS:
+						// the client then sends one id-less request per poll
+						// instead of one per open search tab. Nested inside
+						// the multi-search echo on purpose -- the union
+						// addresses its children by search ID, which only
+						// exists in that mode.
+						response->AddTag(
+							CECEmptyTag(EC_TAG_CAN_SEARCH_PROGRESS_UNION));
+					}
 				}
 				// Confirm we serve EC_OP_GET/SET_SHARED_DIRS, so a remote
 				// GUI can present an editable shared-folders panel instead
@@ -2284,6 +2311,148 @@ static CECPacket *Get_EC_Response_Search_List()
 	return response;
 }
 
+// Emit one search's progress into `out`: the reply packet itself for a request
+// naming a single `EC_TAG_SEARCH_ID`, or one child entry per search for the
+// union form below. Both callers share this function so the two shapes cannot
+// drift -- whatever a per-id poll reports is exactly what a union child
+// reports, which is what lets a client switch between them without any
+// second decode path.
+//
+// A browse ("View Files") ID is not a CSearchList search: report its lifecycle
+// from the persisted browse state (browsing / finished / failed) + bar, keyed
+// by search ID, plus the running result count so amuleGUI's tab marker and hit
+// count update. Reading the persisted state -- rather than the browsing client,
+// which is transient and, for a browse that fails on disconnect, reaped before
+// the next poll -- means the terminal "failed" still reaches amuleGUI so its
+// tab marker flips instead of sticking at "browsing".
+// EC_TAG_SEARCH_BROWSE_STATUS is the discriminator the GUI branches on before
+// the normal progress decode.
+//
+// EC_TAG_SEARCH_STATUS MUST be added first in both branches: the GUI reads the
+// reply's (or the entry's) first tag via GetFirstTagSafe.
+static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
+{
+	if (theApp->searchlist->HasBrowseStatus(sid)) {
+		const uint8 browseStatus = theApp->searchlist->GetBrowseStatusById(sid);
+		// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives
+		// the browse tab's gauge via the same UpdateSearchProgress path as
+		// a search.
+		const uint16 bar = static_cast<uint16>(theApp->searchlist->GetSearchBarStatusById(sid));
+		out.AddTag(CECTag(EC_TAG_SEARCH_STATUS, bar));
+		out.AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS, browseStatus));
+		out.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+		out.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
+			static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
+		// Also emit the standard lifecycle tags (mapped from the browse
+		// status) so amuleapi / amuleweb consume a browse through their
+		// existing SEARCH_PROGRESS handling with no special-casing:
+		// browsing -> RUNNING, finished/failed -> FINISHED. Percent is the
+		// dir-based bar value (0..100), snapped to 100 once terminal.
+		const bool browsing = browseStatus == BROWSE_IN_PROGRESS;
+		out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
+			static_cast<uint8>(browsing ? CSearchList::SEARCH_LIFECYCLE_RUNNING
+						    : CSearchList::SEARCH_LIFECYCLE_FINISHED)));
+		out.AddTag(CECTag(
+			EC_TAG_SEARCH_LIFECYCLE_PERCENT, static_cast<uint8>(bar == 0xffff ? 100 : bar)));
+		return;
+	}
+	// Per-ID lifecycle. STATE / PERCENT / RESULT_COUNT are addressed by the
+	// search ID.
+	const CSearchList::SearchLifecycleState st = theApp->searchlist->GetSearchLifecycleStateById(sid);
+	const uint8 pct = theApp->searchlist->GetSearchLifecyclePercentById(sid);
+	// EC_TAG_SEARCH_STATUS: the overloaded sentinel the GUI decodes in
+	// Search_Update_Progress — a finished Kad search reports 0xfffe (clears the
+	// "!" marker + resets the bar), a finished ed2k search 0xffff, otherwise the
+	// running percent. Shared with the monolithic bar via GetSearchBarStatusById.
+	out.AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchBarStatusById(sid)));
+	// Echo the ID so the client can confirm which search this is for.
+	out.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(st)));
+	// Per-id kind (not the scalar): a multi-search client polls each tab by id
+	// and needs THIS search's real type, e.g. to enable the Kad-only "More"
+	// button on the right tab.
+	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
+		static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
+	out.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
+		static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
+	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, pct));
+}
+
+// Progress for every search this connection could hold a tab for, one child
+// per search, so a client with N open tabs polls once instead of N times.
+//
+// Enumerates searches *and* browse ids -- unlike Get_EC_Response_Search_List,
+// which is deliberately narrow because it drives tab *discovery* and folding
+// browses in there would invent a bogus search tab per open browse. Nothing is
+// discovered here: a client only ever looks up ids it already has tabs for, so
+// including browses is exactly right and is what lets a "View Files" tab share
+// the one poll.
+//
+// There is no EC_TAG_SEARCH_EXPIRED in the union. The per-id form needs it
+// because a reply about one id is otherwise indistinguishable from silence;
+// here the whole set is present, so a client treats any tab whose id is absent
+// as expired -- which also catches an LRU eviction the per-id form only
+// notices when it happens to poll that id.
+static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request)
+{
+	CECPacket *response = new CECPacket(EC_OP_SEARCH_PROGRESS);
+
+	// The ids the client is actually tracking, when it names them. It costs
+	// nothing to carry -- they ride in the one request either way -- and it
+	// keeps the LRU meaning exactly what it meant before: Touch marks the
+	// searches a client still has open. Touching everything the daemon holds
+	// instead would make an abandoned search as protected as a live tab, so the
+	// search evicted by an overflowing ring stops being the least-used one.
+	std::vector<uint32> wanted;
+	for (const CECTag &tag : *request) {
+		if (tag.GetTagName() == EC_TAG_SEARCH_ID) {
+			wanted.push_back(static_cast<uint32>(tag.GetInt()));
+		}
+	}
+
+	auto emitOne = [&](wxUIntPtr sid) {
+		// Same guard as the per-id path: Touch() on an id the registry does
+		// not know would silently insert it, growing the ring past
+		// kMaxEcSearches for ids Register() never admitted.
+		if (s_ecSearches.Has(static_cast<uint32>(sid))) {
+			s_ecSearches.Touch(static_cast<uint32>(sid));
+		}
+		CECTag entry(EC_TAG_SEARCH_ID, static_cast<uint32>(sid));
+		AppendSearchProgress(entry, sid);
+		response->AddTag(entry);
+	};
+
+	if (!wanted.empty()) {
+		// Answer about the ids the client named, resolving each one exactly as
+		// the per-id form does. Deliberately NOT a walk of the daemon's own
+		// maps filtered by these ids: a Kad search is addressed by an id with
+		// the high bit set (0x80000001...), which is not the key those maps are
+		// stored under, so filtering silently dropped every Kad search from the
+		// reply and the client read that absence as an expiry.
+		for (uint32 want : wanted) {
+			// The gate the per-id path uses -- the core's own knowledge, which
+			// covers browse ids too (see IsKnownSearchId). An id that fails it
+			// is left out, and its absence is how the client learns it expired.
+			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
+				continue;
+			}
+			emitOne(want);
+		}
+		return response;
+	}
+
+	// No ids named: report everything the daemon holds. Used by a stateless
+	// caller that has no tracked set to enumerate.
+	for (const auto &known : theApp->searchlist->GetKnownSearchIds()) {
+		emitOne(known.first);
+	}
+	for (const auto &browse : theApp->searchlist->GetBrowseSearchIds()) {
+		emitOne(browse.first);
+	}
+
+	return response;
+}
+
 static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *request)
 {
 	CECPacket *response = new CECPacket(EC_OP_STRINGS);
@@ -3157,6 +3326,20 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		wxUIntPtr sid = 0xffffffff;
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
+			// Union form. A client that advertised
+			// EC_TAG_CAN_SEARCH_PROGRESS_UNION always gets the union shape:
+			// naming ids narrows which searches come back, it does not opt
+			// back into the single-search reply. Gating this on `!idTag`
+			// instead would answer such a client about its FIRST id only and
+			// leave every other search out, which it reads as an expiry.
+			// Checked before `want` is resolved, since the id-less fallback
+			// below (s_ecSearches.Current()) is the legacy meaning this
+			// capability replaces.
+			if (m_searchProgressUnionActive) {
+				delete response;
+				response = Get_EC_Response_Search_Progress_Union(request);
+				break;
+			}
 			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
 			// See the matching comment in the EC_OP_SEARCH_RESULTS case above:
 			// gate on the core's own knowledge, not the EC-only registry, so a
@@ -3183,70 +3366,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				s_ecSearches.Touch(want);
 			}
 			sid = want;
-			// A browse ("View Files") ID is not a CSearchList search: report its
-			// lifecycle from the persisted browse state (browsing / finished /
-			// failed) + bar, keyed by search ID, plus the running result count so
-			// amuleGUI's tab marker and hit count update. Reading the persisted
-			// state — rather than the browsing client, which is transient and, for
-			// a browse that fails on disconnect, reaped before the next poll —
-			// means the terminal "failed" still reaches amuleGUI so its tab marker
-			// flips instead of sticking at "browsing".
-			// EC_TAG_SEARCH_BROWSE_STATUS is the discriminator the GUI branches on
-			// before the normal progress decode.
-			if (theApp->searchlist->HasBrowseStatus(sid)) {
-				const uint8 browseStatus = theApp->searchlist->GetBrowseStatusById(sid);
-				// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives
-				// the browse tab's gauge via the same UpdateSearchProgress path as
-				// a search. Kept first for consistency with the search reply
-				// (GetFirstTagSafe).
-				const uint16 bar =
-					static_cast<uint16>(theApp->searchlist->GetSearchBarStatusById(sid));
-				response->AddTag(CECTag(EC_TAG_SEARCH_STATUS, bar));
-				response->AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS, browseStatus));
-				response->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
-				response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
-					static_cast<uint32>(
-						theApp->searchlist->GetSearchResults(sid).size())));
-				// Also emit the standard lifecycle tags (mapped from the browse
-				// status) so amuleapi / amuleweb consume a browse through their
-				// existing SEARCH_PROGRESS handling with no special-casing:
-				// browsing -> RUNNING, finished/failed -> FINISHED. Percent is the
-				// dir-based bar value (0..100), snapped to 100 once terminal.
-				const bool browsing = browseStatus == BROWSE_IN_PROGRESS;
-				response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
-					static_cast<uint8>(
-						browsing ? CSearchList::SEARCH_LIFECYCLE_RUNNING
-							 : CSearchList::SEARCH_LIFECYCLE_FINISHED)));
-				response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT,
-					static_cast<uint8>(bar == 0xffff ? 100 : bar)));
-				break;
-			}
-			// Per-ID lifecycle. STATE / PERCENT / RESULT_COUNT are addressed
-			// by the search ID; KIND reflects the most-recently-started
-			// search's type (the scalar), which is exact for the common case
-			// and cosmetic for older searches.
-			CSearchList::SearchLifecycleState st =
-				theApp->searchlist->GetSearchLifecycleStateById(sid);
-			uint8 pct = theApp->searchlist->GetSearchLifecyclePercentById(sid);
-			// EC_TAG_SEARCH_STATUS: the overloaded sentinel the GUI decodes in
-			// Search_Update_Progress — a finished Kad search reports 0xfffe
-			// (clears the "!" marker + resets the bar), a finished ed2k search
-			// 0xffff, otherwise the running percent. Shared with the monolithic
-			// bar via GetSearchBarStatusById. This MUST be the first tag: the
-			// GUI reads the reply's first tag (GetFirstTagSafe).
-			response->AddTag(CECTag(
-				EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchBarStatusById(sid)));
-			// Echo the ID so the client can confirm which search this is for.
-			response->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
-			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(st)));
-			// Per-id kind (not the scalar): a multi-search client polls each tab
-			// by id and needs THIS search's real type, e.g. to enable the
-			// Kad-only "More" button on the right tab.
-			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
-				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
-			response->AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
-				static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
-			response->AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, pct));
+			AppendSearchProgress(*response, sid);
 			break;
 		}
 		// EC_TAG_SEARCH_STATUS: unchanged overloaded sentinel for pre-3.1

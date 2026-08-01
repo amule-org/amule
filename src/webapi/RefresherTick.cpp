@@ -178,7 +178,45 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	// directly with no sentinel-decode fallback. Each request addresses its
 	// search by EC_TAG_SEARCH_ID; a search evicted from the daemon's ring comes
 	// back as EC_TAG_SEARCH_EXPIRED, which we resolve to a terminal snapshot.
-	for (std::uint32_t sid : state.ActiveSearchIds()) {
+	// Progress for every active search in ONE roundtrip when the daemon
+	// advertises the union: an id-less EC_OP_SEARCH_PROGRESS answers with one
+	// child per search it holds. Matters more here than in amuleGUI because
+	// SendRecvSerialized is synchronous and process-wide mutexed, so N searches
+	// meant N serialized round trips inside a single tick. Absence from the
+	// union is the daemon saying it no longer holds that search, which is the
+	// same verdict the per-id form reports as EC_TAG_SEARCH_EXPIRED.
+	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> union_progress;
+	bool have_union = false;
+	const std::vector<std::uint32_t> active_sids = state.ActiveSearchIds();
+	// Nothing active means nothing to ask about. Without this guard the union
+	// would cost a roundtrip every tick forever on an idle daemon, where the
+	// per-id loop below simply had nothing to iterate.
+	if (app.IsServerSearchProgressUnionActive() && !active_sids.empty()) {
+		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
+		// Name the searches we track so the daemon bumps exactly those in its
+		// LRU, matching what the per-id poll did.
+		for (std::uint32_t sid : active_sids) {
+			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
+		}
+		const CECPacket *resp = app.SendRecvSerialized(req.get());
+		if (!resp)
+			return false;
+		have_union = true;
+		for (const CECTag &entry : *resp) {
+			if (entry.GetTagName() != EC_TAG_SEARCH_ID)
+				continue;
+			std::uint32_t pct = 0;
+			std::uint32_t st = 0;
+			if (const CECTag *t = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT))
+				pct = static_cast<std::uint32_t>(t->GetInt());
+			if (const CECTag *t = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE))
+				st = static_cast<std::uint32_t>(t->GetInt());
+			union_progress[static_cast<std::uint32_t>(entry.GetInt())] = { pct, st };
+		}
+		delete resp;
+	}
+
+	for (std::uint32_t sid : active_sids) {
 		std::uint32_t percent = 0;
 		std::uint32_t lifecycle_state = 0;
 		bool expired = false;
@@ -202,7 +240,16 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			}
 			delete resp;
 		}
-		if (!expired) {
+		if (!expired && have_union) {
+			// Already fetched above; absent means the daemon dropped it.
+			const auto found = union_progress.find(sid);
+			if (found == union_progress.end()) {
+				expired = true;
+			} else {
+				percent = found->second.first;
+				lifecycle_state = found->second.second;
+			}
+		} else if (!expired) {
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
 			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());

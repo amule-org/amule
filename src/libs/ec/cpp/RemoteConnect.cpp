@@ -132,6 +132,15 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// unknown tag and the client stays single-search.
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
+	// Client polls every open search's progress with ONE id-less
+	// EC_OP_SEARCH_PROGRESS instead of one request per search. Strictly an
+	// extension of multi-search, so it is only advertised alongside it: an
+	// id-less progress request from a single-search client keeps its legacy
+	// "the current search" meaning, which is what amulecmd's `search progress`
+	// with no argument relies on. Old daemons ignore the unknown tag and never
+	// echo it, and the client then falls back to polling per id.
+	if (canMultiSearch)
+		AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_PROGRESS_UNION));
 	// Client wants incoming peer chat messages relayed over EC (amulegui
 	// surfaces them read-only). Only advertised by clients with a chat
 	// window; old servers ignore the unknown tag and never relay.
@@ -189,6 +198,7 @@ m_req_fifo_thr(20)
 , m_serverChat(false)
 , m_serverSharedDirsConfig(false)
 , m_serverSearchList(false)
+, m_serverSearchProgressUnion(false)
 {
 }
 
@@ -572,6 +582,13 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// the client stays on the single-search sentinel path.
 			if (reply->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
 				m_serverMultiSearch = true;
+			}
+			// Server confirmed it answers an id-less EC_OP_SEARCH_PROGRESS
+			// with every open search's progress as children, so one request
+			// covers every tab. Old daemons omit the echo and the client
+			// keeps polling one request per search id.
+			if (reply->GetTagByName(EC_TAG_CAN_SEARCH_PROGRESS_UNION)) {
+				m_serverSearchProgressUnion = true;
 			}
 			// Server confirmed chat relay: it will buffer incoming peer
 			// messages and hand them out via EC_OP_GET_CHAT_MESSAGES. Old

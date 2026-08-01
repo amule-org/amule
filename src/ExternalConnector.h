@@ -213,6 +213,14 @@ public:
 	}
 	void SendPacket(const CECPacket *request) { m_ECClient->SendPacket(request); }
 	bool IsServerPartialUpdateActive() const { return m_ECClient->ServerSupportsPartialUpdate(); }
+	// True when an id-less EC_OP_SEARCH_PROGRESS returns every search as
+	// children, so a client polling N searches can do it in one round trip.
+	// Null-checked: the refresher can reach this between a drop and a
+	// reconnect, unlike the always-connected callers above.
+	bool IsServerSearchProgressUnionActive() const
+	{
+		return m_ECClient && m_ECClient->ServerSupportsSearchProgressUnion();
+	}
 	// Version string of the connected core, from the EC AUTH_OK handshake.
 	// Empty when not connected (m_ECClient null) or when the daemon is old
 	// enough to omit the EC_TAG_SERVER_VERSION tag.

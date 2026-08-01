@@ -281,9 +281,30 @@ confirmation — the server does not echo those two tags.
 **Feature capabilities** gate whole operations rather than the framing:
 `EC_TAG_CAN_PARTIAL_UPDATE`, `EC_TAG_CAN_MULTI_SEARCH`,
 `EC_TAG_CAN_CHAT`, `EC_TAG_CAN_SHAREDDIRS_CONFIG`,
-`EC_TAG_CAN_SEARCH_LIST`. The server echoes each of these in its
-`EC_OP_AUTH_OK` response when it supports it, so the client learns what
-is negotiated for this connection.
+`EC_TAG_CAN_SEARCH_LIST`, `EC_TAG_CAN_SEARCH_PROGRESS_UNION`. The server
+echoes each of these in its `EC_OP_AUTH_OK` response when it supports it,
+so the client learns what is negotiated for this connection.
+
+`EC_TAG_CAN_SEARCH_PROGRESS_UNION` changes the reply shape of
+`EC_OP_SEARCH_PROGRESS`, so it is advertised only alongside
+`EC_TAG_CAN_MULTI_SEARCH` — a single-search client has one search and no
+use for the union. Once negotiated, **every** `EC_OP_SEARCH_PROGRESS` from
+that connection answers in the union shape: one child entry per search,
+keyed by `EC_TAG_SEARCH_ID`, whose children are the same tags the per-id
+form puts at the top level.
+
+A client should name the searches it is tracking, one `EC_TAG_SEARCH_ID`
+per search. That narrows which searches come back and makes the daemon
+refresh exactly those in its search LRU, as a per-id poll did; naming none
+reports everything the daemon holds. Naming ids does **not** opt back into
+the single-search reply — the shape is fixed by the capability, not by the
+request. A daemon that keyed the union off "no ids named" would answer a
+client that named several about only the first, and the client would read
+every other search's absence as an expiry.
+
+The union reply carries no `EC_TAG_SEARCH_EXPIRED`: it reports the whole
+set, so an id the client asked about and did not get back is one the
+daemon no longer holds.
 
 `EC_TAG_CAN_NOTIFY` is the one exception to both patterns: the server
 records it and simply pushes notifications or does not, so there is

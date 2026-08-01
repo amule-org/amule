@@ -3206,73 +3206,104 @@ void CSearchListRem::ProcessUpdate(const CECTag *reply, CECPacket *full_req, int
 	}
 }
 
+void CSearchListRem::ApplySearchProgress(const CECTag *src)
+{
+	// Per-search progress: STATUS is the first tag; EC_TAG_SEARCH_ID is
+	// echoed so we can update this specific tab's lifecycle. An expired
+	// search (evicted on the daemon) reports done so its "!" clears.
+	const CECTag *idTag = src->GetTagByName(EC_TAG_SEARCH_ID);
+	const CECTag *browseTag = src->GetTagByName(EC_TAG_SEARCH_BROWSE_STATUS);
+	if (idTag && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+		if (browseTag) {
+			// A browse ("View Files") tab: update its lifecycle marker
+			// (browsing / finished / failed) AND drive the gauge from the
+			// bar value (EC_TAG_SEARCH_STATUS) via the same per-tab path a
+			// search uses.
+			theApp->amuledlg->m_searchwnd->SetBrowseStatus(
+				idTag->GetInt(), (uint32)browseTag->GetInt());
+			if (const CECTag *barTag = src->GetTagByName(EC_TAG_SEARCH_STATUS)) {
+				theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
+					idTag->GetInt(), (uint32)barTag->GetInt());
+			}
+		} else {
+			const bool expired = src->GetTagByName(EC_TAG_SEARCH_EXPIRED) != nullptr;
+			if (expired) {
+				// The daemon has discarded this search -- a deliberate
+				// close from another client, or LRU eviction -- so
+				// its tab here can only mislead: mapping this to the
+				// plain "finished" status (0xfffe) would make it
+				// indistinguishable from a search that ended
+				// normally, and "Download" on one of its results
+				// would silently do nothing (the daemon's m_results
+				// no longer has the hash). Close the tab locally
+				// instead -- CloseSearchTab does not send
+				// EC_OP_SEARCH_STOP, since the daemon already
+				// doesn't know this id (got3nks, PR #680 review).
+				// CSearchListRem::RemoveResults (called from there)
+				// also erases m_kadActive for this id.
+				const uint32 sid = (uint32)idTag->GetInt();
+				m_activeSearches.erase(sid);
+				if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+					theApp->amuledlg->m_searchwnd->CloseSearchTab(sid);
+				}
+			} else {
+				// Cache whether this tab is a *running* Kad search so
+				// IsKadSearch can gate the "More" button — enabled
+				// only while the search runs, disabled once it
+				// completes (the progress lifecycle is the gate; no
+				// extra status). Update before the progress call,
+				// which refreshes that button for the visible tab.
+				const CECTag *kindTag = src->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
+				const CECTag *stateTag = src->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
+				if (kindTag && stateTag) {
+					m_kadActive[(uint32)idTag->GetInt()] =
+						(kindTag->GetInt() == KadSearch) &&
+						(stateTag->GetInt() == CSearchList::SEARCH_LIFECYCLE_RUNNING);
+				}
+				theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
+					idTag->GetInt(), (uint32)src->GetFirstTagSafe()->GetInt());
+			}
+		}
+	}
+}
+
 void CSearchListRem::HandlePacket(const CECPacket *packet)
 {
 	if (packet->GetOpCode() == EC_OP_SEARCH_PROGRESS) {
 		if (m_conn->ServerSupportsMultiSearch()) {
-			// Per-search progress: STATUS is the first tag; EC_TAG_SEARCH_ID is
-			// echoed so we can update this specific tab's lifecycle. An expired
-			// search (evicted on the daemon) reports done so its "!" clears.
-			const CECTag *idTag = packet->GetTagByName(EC_TAG_SEARCH_ID);
-			const CECTag *browseTag = packet->GetTagByName(EC_TAG_SEARCH_BROWSE_STATUS);
-			if (idTag && theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
-				if (browseTag) {
-					// A browse ("View Files") tab: update its lifecycle marker
-					// (browsing / finished / failed) AND drive the gauge from the
-					// bar value (EC_TAG_SEARCH_STATUS) via the same per-tab path a
-					// search uses.
-					theApp->amuledlg->m_searchwnd->SetBrowseStatus(
-						idTag->GetInt(), (uint32)browseTag->GetInt());
-					if (const CECTag *barTag =
-							packet->GetTagByName(EC_TAG_SEARCH_STATUS)) {
-						theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
-							idTag->GetInt(), (uint32)barTag->GetInt());
+			if (m_conn->ServerSupportsSearchProgressUnion()) {
+				// Union form: one child per search the daemon holds, so a
+				// client with N open tabs costs one round trip instead of N.
+				// Every child is an EC_TAG_SEARCH_ID entry whose own value is
+				// the search id and whose children are that search's progress.
+				std::set<uint32> reported;
+				for (const CECTag &entry : *packet) {
+					if (entry.GetTagName() != EC_TAG_SEARCH_ID) {
+						continue;
 					}
-				} else {
-					const bool expired =
-						packet->GetTagByName(EC_TAG_SEARCH_EXPIRED) != nullptr;
-					if (expired) {
-						// The daemon has discarded this search -- a deliberate
-						// close from another client, or LRU eviction -- so
-						// its tab here can only mislead: mapping this to the
-						// plain "finished" status (0xfffe) would make it
-						// indistinguishable from a search that ended
-						// normally, and "Download" on one of its results
-						// would silently do nothing (the daemon's m_results
-						// no longer has the hash). Close the tab locally
-						// instead -- CloseSearchTab does not send
-						// EC_OP_SEARCH_STOP, since the daemon already
-						// doesn't know this id (got3nks, PR #680 review).
-						// CSearchListRem::RemoveResults (called from there)
-						// also erases m_kadActive for this id.
-						const uint32 sid = (uint32)idTag->GetInt();
-						m_activeSearches.erase(sid);
-						if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
-							theApp->amuledlg->m_searchwnd->CloseSearchTab(sid);
-						}
-					} else {
-						// Cache whether this tab is a *running* Kad search so
-						// IsKadSearch can gate the "More" button — enabled
-						// only while the search runs, disabled once it
-						// completes (the progress lifecycle is the gate; no
-						// extra status). Update before the progress call,
-						// which refreshes that button for the visible tab.
-						const CECTag *kindTag =
-							packet->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_KIND);
-						const CECTag *stateTag =
-							packet->GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE);
-						if (kindTag && stateTag) {
-							m_kadActive[(uint32)idTag->GetInt()] =
-								(kindTag->GetInt() == KadSearch) &&
-								(stateTag->GetInt() ==
-									CSearchList::
-										SEARCH_LIFECYCLE_RUNNING);
-						}
-						theApp->amuledlg->m_searchwnd->UpdateSearchProgress(
-							idTag->GetInt(),
-							(uint32)packet->GetFirstTagSafe()->GetInt());
+					reported.insert((uint32)entry.GetInt());
+					ApplySearchProgress(&entry);
+				}
+				// The union carries no EC_TAG_SEARCH_EXPIRED: it reports the
+				// daemon's whole set, so a tab whose id is missing from it is
+				// one the daemon no longer has -- closed from another client,
+				// or evicted by the LRU. Same verdict the per-id poll reaches
+				// via the explicit tag, and it lands on the same cycle rather
+				// than whenever that particular id next gets polled.
+				//
+				// Snapshot first: CloseSearchTab erases from m_activeSearches.
+				const std::set<uint32> tracked = m_activeSearches;
+				for (uint32 id : tracked) {
+					if (reported.count(id)) {
+						continue;
+					}
+					m_activeSearches.erase(id);
+					if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+						theApp->amuledlg->m_searchwnd->CloseSearchTab(id);
 					}
 				}
+			} else {
+				ApplySearchProgress(packet);
 			}
 		} else {
 			CoreNotify_Search_Update_Progress(packet->GetFirstTagSafe()->GetInt());
@@ -3515,7 +3546,25 @@ void CSearchListRem::ProcessItemUpdate(const CEC_SearchFile_Tag *tag, CSearchFil
 
 bool CSearchListRem::Phase1Done(const CECPacket *WXUNUSED(reply))
 {
-	if (m_conn->ServerSupportsMultiSearch()) {
+	// The empty check matters: with no open tabs the per-id path below sends
+	// nothing, and an unconditional union request would turn that into a
+	// roundtrip every cycle.
+	if (m_conn->ServerSupportsSearchProgressUnion() && !m_activeSearches.empty()) {
+		// One request covers every open tab: the daemon answers with one
+		// child per search. Costs a single round trip no matter how many are
+		// open, where the per-id path below sends one each -- and kept sending
+		// them for searches that had long finished, since a tab only leaves
+		// m_activeSearches when it is closed.
+		//
+		// The ids ride along so the daemon keeps bumping exactly the searches
+		// this client still has open in its LRU, as the per-id poll did. An id
+		// missing from the reply is one the daemon no longer holds.
+		CECPacket progress_req(EC_OP_SEARCH_PROGRESS);
+		for (uint32 id : m_activeSearches) {
+			progress_req.AddTag(CECTag(EC_TAG_SEARCH_ID, id));
+		}
+		m_conn->SendRequest(this, &progress_req);
+	} else if (m_conn->ServerSupportsMultiSearch()) {
 		// Poll progress for each open search so every tab's lifecycle ("!",
 		// progress bar) is tracked independently. Snapshot the set: an expired
 		// reply may erase from m_activeSearches while iterating.
