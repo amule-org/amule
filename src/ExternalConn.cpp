@@ -3322,24 +3322,20 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	}
 
 	case EC_OP_SEARCH_PROGRESS: {
+		// Union form, decided before anything is allocated. A client that
+		// advertised EC_TAG_CAN_SEARCH_PROGRESS_UNION always gets the union
+		// shape: naming ids narrows which searches come back, it does not opt
+		// back into the single-search reply. Gating this on "no ids named"
+		// instead would answer such a client about its FIRST id only and leave
+		// every other search out, which it reads as an expiry.
+		if (m_multiSearchActive && m_searchProgressUnionActive) {
+			response = Get_EC_Response_Search_Progress_Union(request);
+			break;
+		}
 		response = new CECPacket(EC_OP_SEARCH_PROGRESS);
 		wxUIntPtr sid = 0xffffffff;
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
-			// Union form. A client that advertised
-			// EC_TAG_CAN_SEARCH_PROGRESS_UNION always gets the union shape:
-			// naming ids narrows which searches come back, it does not opt
-			// back into the single-search reply. Gating this on `!idTag`
-			// instead would answer such a client about its FIRST id only and
-			// leave every other search out, which it reads as an expiry.
-			// Checked before `want` is resolved, since the id-less fallback
-			// below (s_ecSearches.Current()) is the legacy meaning this
-			// capability replaces.
-			if (m_searchProgressUnionActive) {
-				delete response;
-				response = Get_EC_Response_Search_Progress_Union(request);
-				break;
-			}
 			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
 			// See the matching comment in the EC_OP_SEARCH_RESULTS case above:
 			// gate on the core's own knowledge, not the EC-only registry, so a

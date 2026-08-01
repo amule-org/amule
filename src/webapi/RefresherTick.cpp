@@ -201,18 +201,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
 		if (!resp)
 			return false;
-		have_union = true;
-		for (const CECTag &entry : *resp) {
-			if (entry.GetTagName() != EC_TAG_SEARCH_ID)
-				continue;
-			std::uint32_t pct = 0;
-			std::uint32_t st = 0;
-			if (const CECTag *t = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT))
-				pct = static_cast<std::uint32_t>(t->GetInt());
-			if (const CECTag *t = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE))
-				st = static_cast<std::uint32_t>(t->GetInt());
-			union_progress[static_cast<std::uint32_t>(entry.GetInt())] = { pct, st };
-		}
+		// Only trust a reply that really is a union. Anything else -- an
+		// EC_OP_FAILED, a packet with no search children -- must fall through
+		// to the per-id polling below rather than be read as an empty union:
+		// absence is the expiry signal, so a misread would retire every
+		// tracked search in one pass. Slower, but correct.
+		have_union = ParseSearchProgressUnion(resp, union_progress);
 		delete resp;
 	}
 

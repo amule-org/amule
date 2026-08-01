@@ -1349,6 +1349,32 @@ std::string IPv4ToDotted(std::uint32_t ip_host_order)
 
 } // namespace
 
+bool ParseSearchProgressUnion(
+	const CECPacket *resp, std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> &out)
+{
+	// Opcode gate, not a child-count gate: see the header. A reply we cannot
+	// parse must NOT reach the caller as an empty union, because the caller
+	// reads absence as expiry and would retire every tracked search at once.
+	if (!resp || resp->GetOpCode() != EC_OP_SEARCH_PROGRESS) {
+		return false;
+	}
+	for (const CECTag &entry : *resp) {
+		if (entry.GetTagName() != EC_TAG_SEARCH_ID) {
+			continue;
+		}
+		std::uint32_t pct = 0;
+		std::uint32_t st = 0;
+		if (const CECTag *t = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT)) {
+			pct = static_cast<std::uint32_t>(t->GetInt());
+		}
+		if (const CECTag *t = entry.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_STATE)) {
+			st = static_cast<std::uint32_t>(t->GetInt());
+		}
+		out[static_cast<std::uint32_t>(entry.GetInt())] = { pct, st };
+	}
+	return true;
+}
+
 void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 {
 	if (!resp)

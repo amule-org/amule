@@ -1667,3 +1667,67 @@ TEST(Refresher, ServerPriorityMapsBothWays)
 	ASSERT_TRUE(!ServerPriorityCode("HIGH", untouched)); // case-sensitive by design
 	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), untouched);
 }
+
+// --- union EC_OP_SEARCH_PROGRESS -------------------------------------------
+//
+// Absence from a union reply is how amuleapi learns a search expired, so the
+// parser's return value is load-bearing: a reply it could not parse must be
+// rejected outright rather than handed back as an empty union, which the
+// caller would read as "every tracked search is gone" and retire in one pass.
+
+TEST(Refresher, SearchProgressUnionParsesEveryEntry)
+{
+	CECPacket resp(EC_OP_SEARCH_PROGRESS);
+	for (std::uint32_t sid = 1; sid <= 3; ++sid) {
+		CECTag entry(EC_TAG_SEARCH_ID, sid);
+		entry.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, static_cast<uint8>(sid * 10)));
+		entry.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(1)));
+		resp.AddTag(entry);
+	}
+
+	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> out;
+	ASSERT_TRUE(ParseSearchProgressUnion(&resp, out));
+	ASSERT_EQUALS(static_cast<size_t>(3), out.size());
+	ASSERT_EQUALS(static_cast<std::uint32_t>(20), out[2].first);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(1), out[2].second);
+}
+
+TEST(Refresher, SearchProgressUnionOmitsExpiredSearch)
+{
+	// Two tracked searches, one reported: the missing id must simply not be in
+	// the map, which is what tells the caller to retire that search.
+	CECPacket resp(EC_OP_SEARCH_PROGRESS);
+	CECTag entry(EC_TAG_SEARCH_ID, static_cast<std::uint32_t>(7));
+	entry.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, static_cast<uint8>(100)));
+	entry.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(2)));
+	resp.AddTag(entry);
+
+	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> out;
+	ASSERT_TRUE(ParseSearchProgressUnion(&resp, out));
+	ASSERT_TRUE(out.find(7) != out.end());
+	ASSERT_TRUE(out.find(8) == out.end());
+}
+
+TEST(Refresher, SearchProgressUnionAcceptsEmptyReply)
+{
+	// Right opcode, no children: the daemon legitimately holds none of the
+	// searches asked about. Accepted, so the caller retires all of them. The
+	// discriminator is the opcode, never the child count.
+	CECPacket resp(EC_OP_SEARCH_PROGRESS);
+	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> out;
+	ASSERT_TRUE(ParseSearchProgressUnion(&resp, out));
+	ASSERT_TRUE(out.empty());
+}
+
+TEST(Refresher, SearchProgressUnionRejectsFailureReply)
+{
+	// EC_OP_FAILED must NOT be read as an empty union: that would retire every
+	// tracked search at once. Rejecting it sends the caller back to per-id
+	// polling, which expires only on an explicit EC_TAG_SEARCH_EXPIRED.
+	CECPacket resp(EC_OP_FAILED);
+	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> out;
+	ASSERT_TRUE(!ParseSearchProgressUnion(&resp, out));
+	ASSERT_TRUE(out.empty());
+
+	ASSERT_TRUE(!ParseSearchProgressUnion(NULL, out));
+}

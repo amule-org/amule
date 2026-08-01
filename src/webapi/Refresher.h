@@ -93,6 +93,25 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out);
 // then `state.AppendAmuleLog(...)` to fold them into the cache.
 void ParseAmuleLogFromPacket(const CECPacket *resp, std::vector<std::string> &out_new_lines);
 
+// Union `EC_OP_SEARCH_PROGRESS` response → {search id: {percent, lifecycle
+// state}} for every search the daemon reported.
+//
+// Returns false unless the reply really is an `EC_OP_SEARCH_PROGRESS`, and the
+// caller MUST honour that: absence from a union reply is how a search is
+// learnt to have expired, so treating a reply this could not parse as an empty
+// union would retire every search the caller is tracking in one pass --
+// active=false, terminal snapshot, a final search_progress SSE frame to every
+// subscriber. The per-id form this replaces cannot do that: it expires only on
+// an explicit `EC_TAG_SEARCH_EXPIRED`, and an unexpected reply just leaves the
+// values alone. An `EC_OP_FAILED` (the daemon has ~30 paths that emit one)
+// must therefore fall back to per-id polling, not be read as "all gone".
+//
+// An *empty* union with the right opcode is NOT malformed -- it is the daemon
+// legitimately saying it holds none of the searches asked about -- so the
+// opcode, not the child count, is the discriminator.
+bool ParseSearchProgressUnion(
+	const CECPacket *resp, std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> &out);
+
 // `EC_OP_GET_PREFERENCES` response → flat prefs + bundled categories
 // (the EC packet carries categories under `EC_TAG_PREFS_CATEGORIES`).
 // One roundtrip populates both /preferences and /categories.
