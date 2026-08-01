@@ -561,9 +561,10 @@ void CIPFilter::StartPendingNetworks()
 		// OnIPFilterEvent runs this again once loading finishes.
 		return;
 	}
-	if (m_connectToAnyServerWhenReady || m_startKADWhenReady) {
-		AddLogLineC(_("Connecting"));
+	if (!m_connectToAnyServerWhenReady && !m_startKADWhenReady) {
+		return;
 	}
+	AddLogLineC(_("Connecting"));
 	if (m_connectToAnyServerWhenReady) {
 		m_connectToAnyServerWhenReady = false;
 		theApp->serverconnect->ConnectToAnyServer();
@@ -572,6 +573,9 @@ void CIPFilter::StartPendingNetworks()
 		m_startKADWhenReady = false;
 		theApp->StartKad();
 	}
+	// Called from startup as well as from the handler, where the
+	// unconditional refresh below covers only the filtering above it.
+	theApp->ShowConnectionState(true);
 }
 
 // File_checked_for_headers

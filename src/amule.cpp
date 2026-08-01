@@ -1096,6 +1096,17 @@ bool CamuleApp::OnInit()
 	sharedfiles->Reload();
 #endif
 
+	// Source seeds need two things: the part files they belong to, loaded
+	// just above, and a filter to check the seeded IPs against, which the
+	// load-finished handler waits for before running this same load. When
+	// the filter wins that race the handler runs first and iterates an
+	// empty queue, dropping every seed, so run it again here. Re-adding a
+	// source already in the queue is a no-op, so the overlap is harmless
+	// when the handler ran partway through the load.
+	if (thePrefs::GetSrcSeedsOn() && ipfilter->IsReady()) {
+		downloadqueue->LoadSourceSeeds();
+	}
+
 	// Fire the deferred startup HTTP downloads now that the heavy local
 	// I/O is done — see the comment in OnInit() further up.
 #ifdef ENABLE_VERSION_CHECK
