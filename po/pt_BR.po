@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-07-31 22:39+0000\n"
+"PO-Revision-Date: 2026-08-01 12:00+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -214,7 +214,7 @@ msgstr "CUIDADO: Você não pode adicionar você mesmo como uma fonte para uma l
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "Permissões restringidas em %s para o dono apenas."
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -378,7 +378,7 @@ msgstr "ERRO"
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr ""
+msgstr "Não foi possível escrever o token EC do amuleapi para %s; amuleapi vai retroceder para sua senha configurada."
 
 #: src/amule.cpp
 #, c-format
@@ -392,7 +392,7 @@ msgstr "Você pediu para rodar o amuleapi na início, mas o binário do amuleapi
 #: src/amule.cpp
 #, c-format
 msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
-msgstr ""
+msgstr "Conexão externa: não foi possivel conectar a '%s'; ouvindo apenas em 127.0.0.1."
 
 #: src/amule.cpp
 #, c-format
@@ -1864,9 +1864,9 @@ msgid "Missing protocol version tag."
 msgstr "Falta tag de versão do protocolo."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr "Conexão automática com o servidor irá se repetir em %d segundo"
+msgstr "Muitas tentativas de conexão falharam; tente novamente em %d segundos."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."

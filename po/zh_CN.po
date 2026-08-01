@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-07-31 22:45+0000\n"
+"PO-Revision-Date: 2026-08-01 12:03+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -211,7 +211,7 @@ msgstr "警告：在 Low ID 的情况下，你不能添加自己作为 ed2k 链�
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "已将 %s 的权限限制为仅所有者。"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -375,7 +375,7 @@ msgstr "错误"
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr ""
+msgstr "无法写入 amuleapi EC 令牌到 %s； amuleapi 将退回到其配置的密码。"
 
 #: src/amule.cpp
 #, c-format
@@ -389,7 +389,7 @@ msgstr "您要求启动时运行 amuleapi，但 amuleapi 程序无法运行， �
 #: src/amule.cpp
 #, c-format
 msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
-msgstr ""
+msgstr "外部连接：无法绑定 '%s'，仅监听 127.0.0.1。"
 
 #: src/amule.cpp
 #, c-format
@@ -1860,9 +1860,9 @@ msgid "Missing protocol version tag."
 msgstr "缺失协议版本标签。"
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Too many failed connection attempts; try again in %d seconds."
-msgstr "服务器自动连接会在 %d 秒后重新尝试"
+msgstr "失败的连接尝试过多；%d 秒后重试。"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
@@ -2479,7 +2479,7 @@ msgstr "下次启动 aMule 时再次显示这个设置向导吗？"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "设置未完成"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -5739,7 +5739,7 @@ msgstr "未设置密码。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "访客访问需要密码。请在访客密码字段中输入密码，或取消勾选启用访客访问。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -5862,7 +5862,7 @@ msgstr "自启动"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "注册文件类型"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
