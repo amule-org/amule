@@ -26,6 +26,33 @@ target_link_libraries (CTagTest
 # just stops updating in the GUI -- so the contract is pinned here rather than
 # left to a clean daemon run. Needs no app, no daemon and no database: the EC
 # tag types and their generated codes are the whole dependency.
+add_executable (ECIdDiffTest
+	ECIdDiffTest.cpp
+	# See the note on CValueMapTest below: libec.a references DoECLogLine /
+	# theLogger unconditionally in Debug, so the no-op definitions have to be
+	# linked in or only the Debug matrix entries fail.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME ECIdDiffTest
+	COMMAND ECIdDiffTest
+)
+
+target_include_directories (ECIdDiffTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (ECIdDiffTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (CValueMapTest
 	CValueMapTest.cpp
 	# LoggerConsole.cpp provides the no-op DoECLogLine + theLogger symbols that

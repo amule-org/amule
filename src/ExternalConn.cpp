@@ -26,7 +26,7 @@
 
 #include "config.h" // Needed for VERSION
 
-#include <set>       // Needed for std::set (m_lastSentFileIds)
+#include <set>       // Needed for std::set (m_lastSentSharedFileIds)
 #include <list>      // Needed for std::list (multi-search LRU ring)
 #include <algorithm> // Needed for std::find (multi-search LRU ring)
 
@@ -38,6 +38,7 @@
 #include <common/MD5Sum.h>
 #include "libs/ec/cpp/ECCrypt.h"
 
+#include "ECIdDiff.h"            // Needed for ComputeRemovedIds
 #include "ExternalConn.h"        // Interface declarations
 #include "ECFullResponseCache.h" // Needed for s_ec*FullCache
 #include "updownclient.h"        // Needed for CUpDownClient
@@ -72,11 +73,38 @@ class CKnownFile_Encoder
 	// number of sources for each part for progress bar colouring
 	RLE_Data m_enc_data;
 
+	// Reconcile epoch, stamped by CFileEncoderMap::UpdateEncoders on every
+	// encoder whose file is still listed. Encoders left carrying an older
+	// stamp have lost their file and are swept. Replaces the per-call set of
+	// live ECIDs that used to serve the same purpose -- see UpdateEncoders.
+	uint64 m_seenEpoch;
+
+	// Whether `Get_EC_Response_GetUpdate` has already sent this file to the
+	// client carrying its identifying fields. False on a freshly-built
+	// encoder, which is what makes a re-created encoder re-send full detail
+	// without the caller having to erase anything.
+	//
+	// Deliberately specific to that one response path rather than a general
+	// "the client has this file": a path that has never sent the identity
+	// must not take the unchanged-file shortcut, or the client is left with a
+	// child-less tag it turns into a ghost entry (#808). The two amuleweb
+	// handlers answer the same question from their own sets instead, because
+	// they iterate a CopyFileList snapshot rather than the encoder map and
+	// reaching the encoder would cost the lookup this exists to avoid. That
+	// is why this is one flag and not a per-path bitmask -- a second bit
+	// would have no writer.
+	bool m_sentOnUpdatePath;
+
 protected:
 	const CKnownFile *m_file;
 
 public:
-	CKnownFile_Encoder(const CKnownFile *file = 0) { m_file = file; }
+	CKnownFile_Encoder(const CKnownFile *file = nullptr)
+	: m_seenEpoch(0)
+	, m_sentOnUpdatePath(false)
+	{
+		m_file = file;
+	}
 
 	virtual ~CKnownFile_Encoder() {}
 
@@ -88,6 +116,12 @@ public:
 	virtual bool IsShared() { return true; }
 	virtual bool IsPartFile_Encoder() { return false; }
 	const CKnownFile *GetFile() { return m_file; }
+
+	uint64 GetSeenEpoch() const { return m_seenEpoch; }
+	void SetSeenEpoch(uint64 epoch) { m_seenEpoch = epoch; }
+
+	bool WasSentOnUpdatePath() const { return m_sentOnUpdatePath; }
+	void MarkSentOnUpdatePath() { m_sentOnUpdatePath = true; }
 };
 
 /*!
@@ -149,10 +183,21 @@ public:
 	~CFileEncoderMap();
 	// If freshEcids is non-null, receives the ECIDs whose encoder was
 	// (re-)created this call. Freshly-created encoders signal that the
-	// caller's per-ECID EC caches (CObjTagMap valuemap, sent-with-detail
-	// set) are stale w.r.t. the client's local view and must be dropped
-	// so INC_UPDATE emissions re-send identifying fields.
+	// caller's per-ECID EC caches (CObjTagMap valuemap, and the encoder's
+	// own sent-with-detail mask) are stale w.r.t. the client's local view
+	// and must be dropped so INC_UPDATE emissions re-send identifying fields.
 	void UpdateEncoders(IDSet *freshEcids = nullptr);
+
+private:
+	// Monotonic reconcile counter; see UpdateEncoders. Two things make a
+	// stamp comparison safe. The counter is a member of this map, and the map
+	// belongs to one CECServerSocket, so it is per-connection and encoders
+	// are never shared across clients -- there is no cross-client collision
+	// to reason about. And every UpdateEncoders call takes a fresh value
+	// before stamping anything, so no encoder can be carrying the value the
+	// current call is about to use. 64-bit on top of that, so it also cannot
+	// wrap back onto a live encoder's stamp within any plausible uptime.
+	uint64 m_epoch = 0;
 };
 
 CFileEncoderMap::~CFileEncoderMap()
@@ -167,18 +212,29 @@ CFileEncoderMap::~CFileEncoderMap()
 // or if we have new files without encoder yet.
 void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 {
-	IDSet curr_files, dead_files;
+	IDSet dead_files;
+	// Stamp every encoder whose file is still listed with this epoch; the
+	// sweep below then takes anything left behind. This used to build a set
+	// of the live ECIDs instead, which cost a red-black-tree insertion per
+	// file plus a lookup per encoder in the sweep -- on every poll, for every
+	// connected client, to find the handful of files that actually came or
+	// went. The stamp is a store through a pointer each loop already holds.
+	const uint64 epoch = ++m_epoch;
 	// Downloads
 	std::vector<CPartFile *> downloads;
 	theApp->downloadqueue->CopyFileList(downloads, true);
 	for (uint32 i = downloads.size(); i--;) {
 		uint32 id = downloads[i]->ECID();
-		curr_files.insert(id);
-		if (!count(id)) {
-			(*this)[id] = new CPartFile_Encoder(downloads[i]);
+		iterator it = find(id);
+		if (it == end()) {
+			CKnownFile_Encoder *enc = new CPartFile_Encoder(downloads[i]);
+			enc->SetSeenEpoch(epoch);
+			(*this)[id] = enc;
 			if (freshEcids) {
 				freshEcids->insert(id);
 			}
+		} else {
+			it->second->SetSeenEpoch(epoch);
 		}
 	}
 	// Shares
@@ -186,18 +242,23 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 	theApp->sharedfiles->CopyFileList(shares);
 	for (uint32 i = shares.size(); i--;) {
 		uint32 id = shares[i]->ECID();
-		// Check if it is already there.
-		// The curr_files.count(id) is enough, the IsCPartFile() is just a speedup.
-		if (shares[i]->IsCPartFile() && curr_files.count(id)) {
-			(*this)[id]->SetShared();
+		iterator it = find(id);
+		// Check if it is already there. Carrying this epoch means the
+		// downloads loop above already reached it, which is what the old
+		// `curr_files.count(id)` tested; the IsCPartFile() is just a speedup.
+		if (shares[i]->IsCPartFile() && it != end() && it->second->GetSeenEpoch() == epoch) {
+			it->second->SetShared();
 			continue;
 		}
-		curr_files.insert(id);
-		if (!count(id)) {
-			(*this)[id] = new CKnownFile_Encoder(shares[i]);
+		if (it == end()) {
+			CKnownFile_Encoder *enc = new CKnownFile_Encoder(shares[i]);
+			enc->SetSeenEpoch(epoch);
+			(*this)[id] = enc;
 			if (freshEcids) {
 				freshEcids->insert(id);
 			}
+		} else {
+			it->second->SetSeenEpoch(epoch);
 		}
 	}
 	// Check for removed files, and store them in a set for deletion.
@@ -205,7 +266,7 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 	//		iterator to_del = it++; erase(to_del) ;
 	// works or invalidates it too.)
 	for (iterator it = begin(); it != end(); ++it) {
-		if (!curr_files.count(it->first)) {
+		if (it->second->GetSeenEpoch() != epoch) {
 			dead_files.insert(it->first);
 		}
 	}
@@ -351,14 +412,27 @@ private:
 	// <sender GUI_ID, "name|message">.
 	std::list<std::pair<uint64, wxString>> m_chatQueue;
 	static const size_t MAX_CHAT_MESSAGES = 100;
-	// Set of file ECIDs sent in the previous response for each EC
-	// request path. Diffed against the current snapshot to compute the
-	// removal list emitted to partial-update-capable clients. Tracked
-	// per-path because amulegui uses `EC_OP_GET_UPDATE` (mixed shared +
-	// partfile, served by `Get_EC_Response_GetUpdate`) while amuleweb
-	// drives two separate INC_UPDATE streams via `EC_OP_GET_SHARED_FILES`
-	// and `EC_OP_GET_DLOAD_QUEUE` (each served by its own handler).
-	std::set<uint32> m_lastSentFileIds;
+	// File ECIDs sent in the previous response for each EC request path.
+	// Diffed against the current snapshot to compute the removal list emitted
+	// to partial-update-capable clients. Tracked per-path because amulegui
+	// uses `EC_OP_GET_UPDATE` (mixed shared + partfile, served by
+	// `Get_EC_Response_GetUpdate`) while amuleweb drives two separate
+	// INC_UPDATE streams via `EC_OP_GET_SHARED_FILES` and
+	// `EC_OP_GET_DLOAD_QUEUE` (each served by its own handler).
+	//
+	// `m_lastSentFileIds` is held sorted ascending in a vector rather than a
+	// std::set: `Get_EC_Response_GetUpdate` walks the encoder map, which is
+	// keyed by ECID, so the current IDs come out already in order and the
+	// diff is a linear merge over two contiguous arrays -- where the set
+	// cost a tree insertion per file to build and a tree lookup per file to
+	// diff, on every poll, whether or not anything had changed.
+	//
+	// The other two keep the set. Their handlers iterate a CopyFileList
+	// snapshot, which is neither ECID-ordered nor necessarily the whole
+	// list (`queryitems` filters it), so neither the ordering the merge
+	// needs nor the encoder-in-hand the mask below needs is available
+	// without paying for a lookup that would cancel the saving out.
+	std::vector<uint32> m_lastSentFileIds;
 	std::set<uint32> m_lastSentSharedFileIds;
 	std::set<uint32> m_lastSentPartFileIds;
 	// `EC_OP_SEARCH_RESULTS` at `EC_DETAIL_UPDATE` (amuleweb's polling
@@ -378,18 +452,25 @@ private:
 	// to track.
 	std::set<uint32> m_lastSentSearchResultIds;
 
-	// Set of file ECIDs already sent to the client with full detail
+	// Which file ECIDs have already been sent to the client with full detail
 	// (EC_DETAIL_INC_UPDATE / EC_DETAIL_UPDATE payload, not the legacy
-	// childless alive-marker or the partial-update skip-silently path).
-	// Used by `Get_EC_Response_Get{Update,SharedFiles,DownloadQueue}` to
-	// gate the `m_ecGen <= ec_threshold` shortcut: that shortcut produces
-	// a ghost entry on the client (empty CKnownFile from a child-less tag,
-	// or silent absence in partial-update mode) when the client has never
-	// received the ECID's metadata. Per-path because each handler has its
-	// own `m_lastEcGenSeen*` cadence — once the ECID is seen on one path,
-	// the client only has the data for that path's view. Same rationale
-	// as `m_lastSent*FileIds` above.
-	std::set<uint32> m_sentWithDetailIds;
+	// childless alive-marker or the partial-update skip-silently path) now
+	// lives as a flag on the encoder itself -- see
+	// CKnownFile_Encoder::WasSentOnUpdatePath. It used to be three per-path
+	// sets here, each costing a tree lookup per file on every poll to answer
+	// a question the encoder was already in a position to answer.
+	//
+	// Keeping it on the encoder also bounds it. The sets were only ever
+	// inserted into: an ECID whose file went away stayed in them for the life
+	// of the connection, so a long-lived client on a churning library grew
+	// them without limit. An encoder is destroyed with its file, and a
+	// re-created one starts at zero, which is exactly the "re-send full
+	// detail" state the freshEcids handling used to arrange by erasing.
+	//
+	// The two amuleweb paths keep their sets, for the reason given on
+	// `m_lastSentSharedFileIds` above: they iterate a snapshot rather than
+	// the encoder map, so reaching the encoder to read a mask would cost the
+	// lookup the mask exists to avoid.
 	std::set<uint32> m_sentWithDetailIdsShared;
 	std::set<uint32> m_sentWithDetailIdsPart;
 };
@@ -1383,8 +1464,7 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	CObjTagMap &tagmap,
 	uint64 &io_lastEcGenSeen,
 	bool partial_update_active,
-	std::set<uint32> &io_lastSentFileIds,
-	std::set<uint32> &io_sentWithDetailIds)
+	std::vector<uint32> &io_lastSentFileIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_SHARED_FILES);
 
@@ -1402,28 +1482,36 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	// prior encoder was either destroyed (file dropped from m_Files_map /
 	// downloadqueue) or never existed. In both cases the peer's mirrored
 	// state for that ECID is empty, so any INC_UPDATE the ctor would
-	// suppress against a cached value in `tagmap.GetValueMap(ecid)` or a
-	// membership in `io_sentWithDetailIds` produces a hash-less tag that
-	// the client rejects (`amule-remote-gui.cpp` #808 guard). Drop both
-	// caches so the file re-appears in full detail on this response.
+	// suppress against a cached value in `tagmap.GetValueMap(ecid)` produces
+	// a hash-less tag that the client rejects (`amule-remote-gui.cpp` #808
+	// guard). Drop the cache so the file re-appears in full detail on this
+	// response. The encoder's own sent-with-detail mask needs no clearing:
+	// a freshly-built encoder starts at zero by construction.
 	std::set<uint32> freshEcids;
 	encoders.UpdateEncoders(&freshEcids);
 	for (uint32 ecid : freshEcids) {
 		tagmap.EraseValueMap(ecid);
-		io_sentWithDetailIds.erase(ecid);
 	}
 
-	// Snapshot the IDs of all files currently alive on the server. Used
-	// by the partial-update path below to diff against the previous cycle
-	// and synthesize `EC_TAG_FILE_REMOVED` markers.
-	std::set<uint32> current_file_ids;
+	// The IDs of all files currently alive on the server, ascending -- the
+	// encoder map is keyed by ECID, so iterating it below appends them in
+	// order. Used by the partial-update path to diff against the previous
+	// cycle and synthesize `EC_TAG_FILE_REMOVED` markers; a legacy client
+	// infers removal from absence instead, so for one of those this is never
+	// read and is not worth building.
+	std::vector<uint32> current_file_ids;
+	if (partial_update_active) {
+		current_file_ids.reserve(encoders.size());
+	}
 
 	for (CFileEncoderMap::iterator it = encoders.begin(); it != encoders.end(); ++it) {
 		const CKnownFile *cur_file = it->second->GetFile();
 		const uint32 ecid = cur_file->ECID();
-		current_file_ids.insert(ecid);
+		if (partial_update_active) {
+			current_file_ids.push_back(ecid);
+		}
 
-		if (cur_file->GetECGen() <= ec_threshold && io_sentWithDetailIds.count(ecid)) {
+		if (cur_file->GetECGen() <= ec_threshold && it->second->WasSentOnUpdatePath()) {
 			// Nothing exported has changed since the client's last
 			// view of this file AND the client has previously
 			// received this ECID with full detail. Two paths
@@ -1466,16 +1554,17 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 			// Add information if partfile is shared
 			filetag.AddTag(EC_TAG_PARTFILE_SHARED, it->second->IsShared(), &valuemap);
 
-			CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
+			// `it->second` is this ECID's encoder already; looking it
+			// up again by key would be a second tree descent per file.
+			CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(it->second);
 			enc->Encode(&filetag);
 			response->AddTag(filetag);
 		} else {
 			CEC_SharedFile_Tag filetag(cur_file, EC_DETAIL_INC_UPDATE, &valuemap);
-			CKnownFile_Encoder *enc = encoders[ecid];
-			enc->Encode(&filetag);
+			it->second->Encode(&filetag);
 			response->AddTag(filetag);
 		}
-		io_sentWithDetailIds.insert(ecid);
+		it->second->MarkSentOnUpdatePath();
 	}
 
 	if (partial_update_active) {
@@ -1483,12 +1572,10 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 		// file that was in the previous response but is no longer
 		// alive on the server. Replaces the legacy client's bulk
 		// "anything missing == deleted" inference.
-		for (std::set<uint32>::const_iterator it = io_lastSentFileIds.begin();
-			it != io_lastSentFileIds.end();
-			++it) {
-			if (!current_file_ids.count(*it)) {
-				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *it));
-			}
+		std::vector<uint32> removed;
+		ComputeRemovedIds(io_lastSentFileIds, current_file_ids, removed);
+		for (uint32 ecid : removed) {
+			response->AddTag(CECTag(EC_TAG_FILE_REMOVED, ecid));
 		}
 		io_lastSentFileIds.swap(current_file_ids);
 	}
@@ -3046,8 +3133,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				m_obj_tagmap,
 				m_lastEcGenSeen,
 				m_partialUpdateActive,
-				m_lastSentFileIds,
-				m_sentWithDetailIds);
+				m_lastSentFileIds);
 		}
 		break;
 	case EC_OP_GET_ULOAD_QUEUE:
