@@ -37,6 +37,8 @@
 #include <wx/intl.h>
 
 #include "IP2Country.h"
+
+#include "NetworkFunctions.h" // Uint32toStringIP
 #include "geoip/MaxMindDBDatabase.h"
 
 CIP2Country::CIP2Country(const wxString &configDir)
@@ -68,6 +70,7 @@ bool CIP2Country::IsEnabled()
 
 void CIP2Country::Enable()
 {
+	// Disable() clears the cache, so no separate invalidation here.
 	Disable();
 
 	if (!CPath::FileExists(m_DataBasePath)) {
@@ -140,6 +143,7 @@ void CIP2Country::StartDownload(int monthOffset)
 
 void CIP2Country::Disable()
 {
+	InvalidateCountryCache();
 	if (m_db) {
 		m_db->Close();
 	}
@@ -265,6 +269,31 @@ wxString CIP2Country::GetCountryCode(const wxString &ip)
 	return m_db->GetCountryCode(ip);
 }
 
+const wxString &CIP2Country::GetCountryCode(uint32 ip)
+{
+	static const wxString empty;
+	if (!IsEnabled()) {
+		// Not cached: a disabled resolver has no answer to memoise, and
+		// caching the empty string here would need the enable path to
+		// invalidate anyway. Cheap enough -- IsEnabled() is two pointer reads.
+		return empty;
+	}
+	const std::unordered_map<uint32, wxString>::const_iterator it = m_countryCache.find(ip);
+	if (it != m_countryCache.end()) {
+		return it->second;
+	}
+	if (m_countryCache.size() >= kMaxCountryCacheEntries) {
+		m_countryCache.clear();
+	}
+	// Only now is the string form needed; Uint32toStringIP allocates.
+	return m_countryCache.emplace(ip, m_db->GetCountryCode(Uint32toStringIP(ip))).first->second;
+}
+
+void CIP2Country::InvalidateCountryCache()
+{
+	m_countryCache.clear();
+}
+
 void CIP2Country::NotifyUpdateFailed(const wxString &msg)
 {
 	if (m_updateFailedNotifier) {
@@ -284,6 +313,13 @@ CIP2Country::CIP2Country(const wxString &)
 CIP2Country::~CIP2Country() {}
 void CIP2Country::Enable() {}
 void CIP2Country::Disable() {}
+void CIP2Country::InvalidateCountryCache() {}
+
+const wxString &CIP2Country::GetCountryCode(uint32)
+{
+	static const wxString empty;
+	return empty;
+}
 void CIP2Country::Update(bool, bool) {}
 void CIP2Country::DownloadFinished(uint32) {}
 void CIP2Country::StartDownload(int) {}

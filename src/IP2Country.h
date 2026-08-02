@@ -45,6 +45,7 @@
 #include "Types.h" // Needed for uint8, uint16 and uint32
 
 #include <functional>
+#include <unordered_map>
 
 #include <wx/string.h>
 
@@ -68,6 +69,25 @@ public:
 	// does not resolve.
 	wxString GetCountryCode(const wxString &ip);
 
+	// Same, from the numeric IP the callers already hold, and memoised.
+	//
+	// The returned reference is valid until the next call on this object, or
+	// any Enable()/Disable(): the cache is cleared wholesale on overflow and
+	// on either of those, and clear() invalidates references. Copy it if you
+	// need it to outlive the call -- in particular do not pass two of these
+	// into one expression.
+	//
+	// #439 moved this resolution from GUI paint into the core. Paint hid the
+	// cost: it ran only for visible rows, only while the list was on screen,
+	// only with someone watching. The EC client tag now resolves EVERY peer
+	// on EVERY poll -- roughly every 3 s, headless, forever -- and a peer's
+	// country cannot change while its IP does not. Measured at ~7.5us per
+	// peer per poll on a live daemon, about 37% of the client tag build.
+	//
+	// Keyed on the numeric IP so the caller need not format a string first
+	// (Uint32toStringIP allocates); the string is only built on a miss.
+	const wxString &GetCountryCode(uint32 ip);
+
 	void Enable();
 	void Disable();
 	// Refresh the on-disk MMDB from the configured source.
@@ -89,12 +109,12 @@ public:
 	// preferences panel can show the status line ("Loaded — <path>"),
 	// without re-deriving the config-dir + filename convention.
 	const wxString &GetDatabasePath() const { return m_DataBasePath; }
-
 	// Live status for the prefs panel (local, and carried to amulegui over EC,
 	// #440 remote config). IsDownloading() is true while a refresh is in
 	// flight; GetLastResult() is a short human string describing the outcome
 	// of the last completed update (empty until the first one runs).
 	bool IsDownloading() const { return m_downloading; }
+
 	const wxString &GetLastResult() const { return m_lastResult; }
 
 	// Optional hook so a GUI front-end can surface a *manual* update
@@ -106,6 +126,24 @@ public:
 	}
 
 private:
+	// Drop every memoised resolution. Called wherever the answer could change
+	// underneath the cache: enable and disable, which between them also cover a
+	// completed database refresh (DownloadFinished routes through both).
+	// Without this a headless daemon is the worst case -- entries resolved
+	// while GeoIP was off would stay empty forever, with no repaint to force a
+	// re-read and nobody watching to notice.
+	void InvalidateCountryCache();
+
+	// Numeric IP -> ISO code. Bounded: peers churn, so an unbounded map on a
+	// long-lived daemon would grow without limit. On overflow the whole map is
+	// dropped rather than evicting cleverly -- a rebuild costs one lookup per
+	// live peer, which is what a single poll cost before this existed.
+	//
+	// Not synchronised. Like the rest of this class it is touched from the main
+	// thread only; a concurrent reader during a clear() would be a race.
+	std::unordered_map<uint32, wxString> m_countryCache;
+	static const size_t kMaxCountryCacheEntries = 8192;
+
 	CMaxMindDBDatabase *m_db;
 	wxString m_DataBaseName;
 	wxString m_DataBasePath;
