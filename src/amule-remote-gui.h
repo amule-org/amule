@@ -874,9 +874,16 @@ public:
 	uint32 GetPeakConnections() { return m_peak_connections; }
 };
 
+// Tick of the remote GUI's poll timer. The handler walks a three-step
+// round-robin, so any one step -- stats, or a page's data -- comes round every
+// three ticks, i.e. ~1.5 s. Requests are incremental updates against the
+// daemon's value maps, so a shorter tick costs a near-empty reply when nothing
+// moved rather than a proportionally larger one.
+#define EC_POLL_INTERVAL_MS 500
+
 // How long the remote GUI waits for a reply before deciding the EC connection
 // is dead. Generous on purpose: a healthy link answers in single-digit
-// milliseconds, and the poll cycle is ~3 s, so 30 s cannot be reached by a
+// milliseconds, and the poll cycle is ~1.5 s, so 30 s cannot be reached by a
 // merely busy daemon -- only by one that has stopped answering entirely.
 #define EC_REPLY_TIMEOUT_MS 30000
 

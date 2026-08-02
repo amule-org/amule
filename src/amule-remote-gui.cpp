@@ -858,7 +858,7 @@ void CamuleRemoteGuiApp::BeginReconnect()
 			knownfiles->ArmReconnectReconcile();
 		}
 		if (poll_timer) {
-			poll_timer->Start(1000);
+			poll_timer->Start(EC_POLL_INTERVAL_MS);
 		}
 		if (amuledlg) {
 			amuledlg->StartGuiTimer();
@@ -1003,7 +1003,7 @@ void CamuleRemoteGuiApp::Startup()
 	knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 
 	// Start the Poll Timer
-	poll_timer->Start(1000);
+	poll_timer->Start(EC_POLL_INTERVAL_MS);
 	amuledlg->StartGuiTimer();
 
 	// Drain any pre-connect URL queued by ProtocolHandler_QueueSchemeLink
