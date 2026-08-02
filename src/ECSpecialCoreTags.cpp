@@ -342,14 +342,14 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 : CECTag(EC_TAG_CLIENT, client->ECID())
 {
 	// General
-	AddTag(CECTag(EC_TAG_CLIENT_NAME, client->GetUserName()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_HASH, client->GetUserHash()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_USER_ID, client->GetUserIDHybrid()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SCORE, client->GetScore()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SOFTWARE, client->GetClientSoft()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SOFT_VER_STR, client->GetSoftVerStr()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_USER_IP, client->GetIP()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_USER_PORT, client->GetUserPort()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_NAME, client->GetUserName(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_HASH, client->GetUserHash(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_USER_ID, client->GetUserIDHybrid(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SCORE, client->GetScore(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SOFTWARE, client->GetClientSoft(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SOFT_VER_STR, client->GetSoftVerStr(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_USER_IP, client->GetIP(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_USER_PORT, client->GetUserPort(), valuemap);
 #ifdef ENABLE_IP2COUNTRY
 	// Peer country ISO code resolved core-side (#439). Emitted whenever GeoIP
 	// is enabled + supported — even empty for an IP that doesn't resolve — so
@@ -359,58 +359,61 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 		// Numeric-IP overload: memoised, and it skips formatting the IP into
 		// a string on the hit path. This runs for every peer on every EC
 		// poll, and a peer's country cannot change while its IP does not.
-		AddTag(CECTag(EC_TAG_CLIENT_COUNTRY,
-			       theApp->GetIP2Country()->GetCountryCode(client->GetFullIPNumeric())),
+		// It returns a const reference, which AddDiffTag takes without a copy.
+		AddDiffTag(this,
+			EC_TAG_CLIENT_COUNTRY,
+			theApp->GetIP2Country()->GetCountryCode(client->GetFullIPNumeric()),
 			valuemap);
 	}
 #endif
-	AddTag(CECTag(EC_TAG_CLIENT_FROM, (uint64)client->GetSourceFrom()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SERVER_IP, client->GetServerIP()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SERVER_PORT, client->GetServerPort()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SERVER_NAME, client->GetServerName()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_FROM, (uint64)client->GetSourceFrom(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SERVER_IP, client->GetServerIP(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SERVER_PORT, client->GetServerPort(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SERVER_NAME, client->GetServerName(), valuemap);
 
 	// Transfers to Client
-	AddTag(CECTag(EC_TAG_CLIENT_UP_SPEED, client->GetUploadDatarate()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_UP_SPEED, client->GetUploadDatarate(), valuemap);
 	if (client->GetDownloadState() == DS_DOWNLOADING || valuemap) {
-		AddTag(CECTag(EC_TAG_CLIENT_DOWN_SPEED, (double)(client->GetKBpsDown())), valuemap);
+		AddDiffTag(this, EC_TAG_CLIENT_DOWN_SPEED, (double)(client->GetKBpsDown()), valuemap);
 	}
-	AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_SESSION, client->GetSessionUp()), valuemap);
-	AddTag(CECTag(EC_TAG_PARTFILE_SIZE_XFER, client->GetTransferredDown()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_TOTAL, client->GetUploadedTotal()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_DOWNLOAD_TOTAL, client->GetDownloadedTotal()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_UPLOAD_SESSION, client->GetSessionUp(), valuemap);
+	AddDiffTag(this, EC_TAG_PARTFILE_SIZE_XFER, client->GetTransferredDown(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_UPLOAD_TOTAL, client->GetUploadedTotal(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_DOWNLOAD_TOTAL, client->GetDownloadedTotal(), valuemap);
 
-	AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_STATE, client->GetUploadState()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_DOWNLOAD_STATE, client->GetDownloadState()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_IDENT_STATE, (uint64)client->GetCurrentIdentState()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_EXT_PROTOCOL, client->ExtProtocolAvailable()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_UPLOAD_STATE, client->GetUploadState(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_DOWNLOAD_STATE, client->GetDownloadState(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_IDENT_STATE, (uint64)client->GetCurrentIdentState(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_EXT_PROTOCOL, client->ExtProtocolAvailable(), valuemap);
 	// These are not needed atm. Keep them for now, maybe columns get reintroduced in client view.
 	// AddTag(CECTag(EC_TAG_CLIENT_WAIT_TIME, client->GetWaitTime()), valuemap);
 	// AddTag(CECTag(EC_TAG_CLIENT_XFER_TIME, client->GetUpStartTimeDelay()), valuemap);
 	// AddTag(CECTag(EC_TAG_CLIENT_QUEUE_TIME, (uint64)(::GetTickCount() - client->GetWaitStartTime())),
 	// valuemap); AddTag(CECTag(EC_TAG_CLIENT_LAST_TIME, (uint64)(::GetTickCount() -
 	// client->GetLastUpRequest())), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_WAITING_POSITION, client->GetUploadQueueWaitingPosition()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_REMOTE_QUEUE_RANK,
-		       client->IsRemoteQueueFull() ? (uint16)0xffff : client->GetRemoteQueueRank()),
+	AddDiffTag(this, EC_TAG_CLIENT_WAITING_POSITION, client->GetUploadQueueWaitingPosition(), valuemap);
+	AddDiffTag(this,
+		EC_TAG_CLIENT_REMOTE_QUEUE_RANK,
+		client->IsRemoteQueueFull() ? (uint16)0xffff : client->GetRemoteQueueRank(),
 		valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_OLD_REMOTE_QUEUE_RANK, client->GetOldRemoteQueueRank()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_OBFUSCATION_STATUS, client->GetObfuscationStatus()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, client->GetKadPort()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_FRIEND_SLOT, client->GetFriendSlot()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_OLD_REMOTE_QUEUE_RANK, client->GetOldRemoteQueueRank(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_OBFUSCATION_STATUS, client->GetObfuscationStatus(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_KAD_PORT, client->GetKadPort(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_FRIEND_SLOT, client->GetFriendSlot(), valuemap);
 
 	if (detail_level == EC_DETAIL_UPDATE) {
 		return;
 	}
 	const CKnownFile *file = client->GetUploadFile();
 	if (file) {
-		AddTag(CECTag(EC_TAG_PARTFILE_NAME, file->GetFileName().GetPrintable()), valuemap);
+		AddDiffTag(this, EC_TAG_PARTFILE_NAME, file->GetFileName().GetPrintable(), valuemap);
 		AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_FILE, file->ECID()), valuemap);
 	} else {
 		AddTag(CECIntTag(EC_TAG_CLIENT_UPLOAD_FILE, 0), valuemap);
 	}
 	const CPartFile *pfile = client->GetRequestFile();
-	AddTag(CECTag(EC_TAG_CLIENT_REQUEST_FILE, pfile ? pfile->ECID() : 0), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_REMOTE_FILENAME, client->GetClientFilename()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_REQUEST_FILE, pfile ? pfile->ECID() : 0, valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_REMOTE_FILENAME, client->GetClientFilename(), valuemap);
 
 	if (detail_level != EC_DETAIL_INC_UPDATE) {
 		return;
@@ -418,13 +421,13 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	// Friend status + DL/UP modifier (issue #423). IsFriend() is the
 	// friends-list membership (distinct from the FRIEND_SLOT reserved
 	// upload slot above); GetScoreRatio() is the GUI "DL/UP modifier".
-	AddTag(CECTag(EC_TAG_CLIENT_IS_FRIEND, client->IsFriend()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, (double)client->GetScoreRatio()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_DISABLE_VIEW_SHARED, client->HasDisabledSharedFiles()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_VERSION, client->GetVersion()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, client->GetClientModString()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_OS_INFO, client->GetClientOSInfo()), valuemap);
-	AddTag(CECTag(EC_TAG_CLIENT_AVAILABLE_PARTS, client->GetAvailablePartCount()), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_IS_FRIEND, client->IsFriend(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SCORE_RATIO, (double)client->GetScoreRatio(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_DISABLE_VIEW_SHARED, client->HasDisabledSharedFiles(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_VERSION, client->GetVersion(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_MOD_VERSION, client->GetClientModString(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_OS_INFO, client->GetClientOSInfo(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_AVAILABLE_PARTS, client->GetAvailablePartCount(), valuemap);
 	if (pfile) {
 		const BitVector &partStatus = client->GetPartStatus();
 		if (partStatus.size() == pfile->GetPartCount()) {
@@ -438,7 +441,7 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 					valuemap);
 			}
 		}
-		AddTag(CECTag(EC_TAG_CLIENT_NEXT_REQUESTED_PART, client->GetNextRequestedPart()), valuemap);
+		AddDiffTag(this, EC_TAG_CLIENT_NEXT_REQUESTED_PART, client->GetNextRequestedPart(), valuemap);
 		AddTag(CECTag(EC_TAG_CLIENT_LAST_DOWNLOADING_PART, client->GetLastDownloadingPart()),
 			valuemap);
 	}

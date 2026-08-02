@@ -21,6 +21,41 @@ target_link_libraries (CTagTest
 	muleunit
 )
 
+# CValueMap is the incremental-update filter behind every EC tag that carries a
+# value map. Its failure mode is silence -- a field wrongly judged unchanged
+# just stops updating in the GUI -- so the contract is pinned here rather than
+# left to a clean daemon run. Needs no app, no daemon and no database: the EC
+# tag types and their generated codes are the whole dependency.
+add_executable (CValueMapTest
+	CValueMapTest.cpp
+	# LoggerConsole.cpp provides the no-op DoECLogLine + theLogger symbols that
+	# libec.a's Debug build references unconditionally (ECPacket / ECSocket /
+	# ECTag debug-print paths). Release preprocesses those calls to
+	# `do {} while(0)` via the ECLog.h define, so the symbols are unused there
+	# and only the Debug matrix entries fail to link. Same reason RefresherTest
+	# pulls this TU in.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME CValueMapTest
+	COMMAND CValueMapTest
+)
+
+target_include_directories (CValueMapTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (CValueMapTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (CUInt128Test
 	CUInt128Test.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
