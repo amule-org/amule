@@ -25,6 +25,9 @@
 #ifndef ECIDDIFF_H
 #define ECIDDIFF_H
 
+#include <algorithm>  // Needed for std::is_sorted
+#include <cassert>    // Needed for assert
+#include <functional> // Needed for std::less_equal
 #include <vector>
 
 #include "Types.h" // Needed for uint32
@@ -51,6 +54,26 @@
 inline void ComputeRemovedIds(
 	const std::vector<uint32> &previous, const std::vector<uint32> &current, std::vector<uint32> &removed)
 {
+	// Preconditions, not defensive coding. An input that is out of order, or
+	// that carries a duplicate, makes this quietly return the wrong set
+	// rather than fail -- and both wrong answers are invisible at runtime: a
+	// missed removal leaves a row in the client's list for the life of the
+	// connection, and a spurious one deletes a file the user still has.
+	// Checking turns that into a debug-run abort.
+	//
+	// `less_equal` makes is_sorted reject equal neighbours as well as
+	// out-of-order ones, so one pass covers both halves of the contract. It
+	// is O(n) against a merge that is already O(n), and only in debug builds.
+	//
+	// assert() rather than the wxASSERT used elsewhere in the tree, because
+	// this header is deliberately usable without an app and wxASSERT is not:
+	// wx installs its assert handler from the wxApp constructor, so with no
+	// wxApp -- which is exactly the case in the unit tests -- wxASSERT is a
+	// silent no-op and the check would not fire where it is easiest to
+	// exercise. Verified by feeding it unsorted and duplicate input.
+	assert(std::is_sorted(previous.begin(), previous.end(), std::less_equal<uint32>()));
+	assert(std::is_sorted(current.begin(), current.end(), std::less_equal<uint32>()));
+
 	removed.clear();
 	std::vector<uint32>::const_iterator cur = current.begin();
 	const std::vector<uint32>::const_iterator curEnd = current.end();

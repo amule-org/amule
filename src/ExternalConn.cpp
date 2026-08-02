@@ -1499,6 +1499,13 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	// cycle and synthesize `EC_TAG_FILE_REMOVED` markers; a legacy client
 	// infers removal from absence instead, so for one of those this is never
 	// read and is not worth building.
+	// The removal merge needs that list ascending, and it gets it for free
+	// only because the encoder map is ordered by ECID. Tie the guarantee to
+	// the type: re-basing CFileEncoderMap on an unordered container would go
+	// on compiling and silently hand the merge an unsorted list, whose wrong
+	// answer nothing at runtime would report.
+	static_assert(std::is_base_of<std::map<uint32, CKnownFile_Encoder *>, CFileEncoderMap>::value,
+		"Get_EC_Response_GetUpdate relies on CFileEncoderMap iterating in ECID order");
 	std::vector<uint32> current_file_ids;
 	if (partial_update_active) {
 		current_file_ids.reserve(encoders.size());
