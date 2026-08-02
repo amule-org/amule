@@ -136,7 +136,17 @@ wxString UnescapeHTML(const wxString &str)
 	size_t j = 0;
 	for (size_t i = 0; i < len; ++i, ++j) {
 		if (buffer[i] == '%' && (len > i + 2)) {
-			wxChar unesc = HexToDec(str.Mid(i + 1, 2));
+			// Read the two hex digits out of the same buffer we are
+			// walking. They used to be taken from str, whose index is
+			// in characters while i counts bytes: one multi-byte
+			// character anywhere earlier desynchronised the two, and
+			// every escape after it decoded from the wrong offset --
+			// silently corrupting the rest of the string, newlines and
+			// all (an accented eD2k filename lost its tail this way).
+			// From8BitData, not FromAscii: the two bytes behind a '%'
+			// need not be hex digits at all, and FromAscii asserts on
+			// anything past 0x7F. HexToDec rejects them either way.
+			wxChar unesc = HexToDec(wxString::From8BitData(buffer + i + 1, 2));
 			if (unesc) {
 				i += 2;
 				buffer[j] = (char)unesc;

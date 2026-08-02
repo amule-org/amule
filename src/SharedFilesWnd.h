@@ -100,6 +100,14 @@ private:
 	void OnFilterChanged(wxCommandEvent &evt);
 
 	/**
+	 * Event-handler for saving the listed files as an .emulecollection.
+	 *
+	 * Exports the current view: the rows the text filter lets through, in the
+	 * order they are sorted in, selection ignored.
+	 */
+	void OnBtnExportCollection(wxCommandEvent &evt);
+
+	/**
 	 * Event-handler for showing details about a shared file(s).
 	 */
 	void OnItemSelectionChanged(wxListEvent &evt);

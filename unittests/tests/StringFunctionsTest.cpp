@@ -162,3 +162,47 @@ TEST(SimpleParser, NormalTokens)
 	ASSERT_EQUALS("", tkz.remaining());
 	ASSERT_EQUALS(1u, tkz.tokenCount());
 }
+
+///////////////////////////////////////////////////////////
+// Tests for UnescapeHTML
+
+TEST(StringFunctions, UnescapeHTMLPlainAscii)
+{
+	ASSERT_EQUALS("some file name.avi", UnescapeHTML("some%20file%20name.avi"));
+	ASSERT_EQUALS("a|b", UnescapeHTML("a%7Cb"));
+	// An escape that is not two hex digits is left exactly as it stands.
+	ASSERT_EQUALS("100%25 sure", UnescapeHTML("100%2525%20sure"));
+	ASSERT_EQUALS("50% off", UnescapeHTML("50%%20off"));
+}
+
+// Regression: the escapes were located by byte offset in a UTF-8 buffer but
+// read by character offset out of the wxString, so one multi-byte character
+// desynchronised the two and every following escape decoded from the wrong
+// place -- injecting stray bytes (a newline, here) and leaving the real
+// escapes untouched. An eD2k link whose filename had an accent came out of
+// CED2KFileLink split in half.
+TEST(StringFunctions, UnescapeHTMLAfterNonAsciiCharacter)
+{
+	const wxString escaped = wxString::FromUTF8(
+		"Une%20beaut\xC3\xA9%20faite%20au%20naturel%20-%20Part%202.mkv");
+	const wxString expected = wxString::FromUTF8("Une beaut\xC3\xA9 faite au naturel - Part 2.mkv");
+
+	ASSERT_EQUALS(expected, UnescapeHTML(escaped));
+}
+
+TEST(StringFunctions, UnescapeHTMLKeepsNonAsciiWithoutEscapes)
+{
+	const wxString name = wxString::FromUTF8("caf\xC3\xA9 \xE6\x97\xA5\xE6\x9C\xAC.mkv");
+
+	ASSERT_EQUALS(name, UnescapeHTML(name));
+}
+
+// A '%' whose next two bytes are not hex digits at all -- here the start of a
+// UTF-8 sequence -- has to survive as a literal, without tripping a debug
+// assertion on the way.
+TEST(StringFunctions, UnescapeHTMLPercentBeforeNonAscii)
+{
+	const wxString name = wxString::FromUTF8("100%\xC3\xA9.mkv");
+
+	ASSERT_EQUALS(name, UnescapeHTML(name));
+}

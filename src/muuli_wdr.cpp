@@ -3398,6 +3398,9 @@ wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *itemShRight = new wxBoxSizer( wxHORIZONTAL );
     itemShRight->AddStretchSpacer( 1 );
+    wxButton *itemShExport = new wxButton( parent, ID_BTNEXPORTCOLLECTION, _("Export to emulecollection"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemShExport->SetToolTip( _("Save the shared files currently listed as an .emulecollection file") );
+    itemShRight->Add( itemShExport, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     wxStaticText *item4 = new wxStaticText( parent, -1, _("Reload:"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->SetName( "sharedFilesLabel" );
     itemShRight->Add( item4, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );

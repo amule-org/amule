@@ -25,7 +25,9 @@
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids
 #include <wx/config.h>
-#include <wx/gauge.h> // Do_not_auto_remove (win32)
+#include <wx/file.h>    // Needed for wxFile
+#include <wx/filedlg.h> // Needed for wxFileDialog
+#include <wx/gauge.h>   // Do_not_auto_remove (win32)
 #include <wx/radiobut.h>
 
 #include "SharedFilesWnd.h" // Interface declarations
@@ -34,13 +36,17 @@
 #include "muuli_wdr.h"     // Needed for ID_SHFILELIST
 #include "KnownFileList.h" // Needed for CKnownFileList
 #include "KnownFile.h"     // Needed for CKnownFile
+#include "Logger.h"        // Needed for AddLogLineC
 #include "amule.h"         // Needed for theApp
 #include "UploadQueue.h"   // Needed for theApp->uploadqueue
+
+#include <common/StringFunctions.h> // Needed for unicode2UTF8
 
 wxBEGIN_EVENT_TABLE(CSharedFilesWnd, wxPanel)
 	EVT_LIST_ITEM_SELECTED(ID_SHFILELIST, CSharedFilesWnd::OnItemSelectionChanged)
 	EVT_LIST_ITEM_DESELECTED(ID_SHFILELIST, CSharedFilesWnd::OnItemSelectionChanged)
 	EVT_BUTTON(ID_BTNRELSHARED, CSharedFilesWnd::OnBtnReloadShared)
+	EVT_BUTTON(ID_BTNEXPORTCOLLECTION, CSharedFilesWnd::OnBtnExportCollection)
 	EVT_TEXT(IDC_SHARED_FILTER, CSharedFilesWnd::OnFilterChanged)
 	EVT_BUTTON(ID_SHAREDCLIENTTOGGLE, CSharedFilesWnd::OnToggleClientList)
 	// The "show clients for" radio buttons are bound dynamically in the ctor.
@@ -278,6 +284,78 @@ void CSharedFilesWnd::OnBtnReloadShared(wxCommandEvent &WXUNUSED(evt))
 void CSharedFilesWnd::OnFilterChanged(wxCommandEvent &WXUNUSED(evt))
 {
 	sharedfilesctrl->SetFilterText(CastChild(IDC_SHARED_FILTER, wxTextCtrl)->GetValue());
+}
+
+void CSharedFilesWnd::OnBtnExportCollection(wxCommandEvent &WXUNUSED(evt))
+{
+	const wxString caption = _("Export to emulecollection");
+
+	// The virtual list holds only the rows the filter lets through, in the
+	// order they are sorted in, so walking it exports exactly what is on
+	// screen -- which is also why this ignores the selection.
+	if (sharedfilesctrl->GetItemCount() == 0) {
+		wxMessageBox(_("There are no shared files listed to export."), caption,
+			wxOK | wxICON_INFORMATION, this);
+		return;
+	}
+
+	wxString wildcard = _("eMule collections (*.emulecollection)");
+	wildcard += "|*.emulecollection|";
+	wildcard += _("All files");
+	wildcard += "|*";
+	wxFileDialog dialog(this, caption, wxEmptyString, "shared.emulecollection", wildcard,
+		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() != wxID_OK) {
+		return;
+	}
+
+	wxString path = dialog.GetPath();
+	if (path.IsEmpty()) {
+		return;
+	}
+	// wxFD_OVERWRITE_PROMPT asked about the name as typed, so only append the
+	// extension when the user picked the collection filter and left it off.
+	if (dialog.GetFilterIndex() == 0 && !path.Lower().EndsWith(".emulecollection")) {
+		path += ".emulecollection";
+	}
+
+	// A collection is a plain list of eD2k links, one per line -- the text form
+	// CMuleCollection reads and eMule accepts, and the same links the context
+	// menu copies to the clipboard. The count is re-read here because the event
+	// loop kept running under the file dialog, so a rescan may have shrunk the
+	// list since the check above.
+	wxString links;
+	unsigned written = 0;
+	const long shown = sharedfilesctrl->GetItemCount();
+	for (long row = 0; row < shown; ++row) {
+		const CKnownFile *file = sharedfilesctrl->FileAtRow(row);
+		if (file == NULL) {
+			continue;
+		}
+		links += theApp->CreateED2kLink(file) + "\n";
+		++written;
+	}
+
+	if (written == 0) {
+		wxMessageBox(_("There are no shared files listed to export."), caption,
+			wxOK | wxICON_INFORMATION, this);
+		return;
+	}
+
+	// UTF-8, which is what CMuleCollection and eMule expect a text collection
+	// to be in.
+	const wxCharBuffer utf8(unicode2UTF8(links));
+	wxFile out;
+	if (!out.Create(path, true) || out.Write(utf8.data(), utf8.length()) != utf8.length() ||
+		!out.Close()) {
+		wxMessageBox(CFormat(_("Failed to write the collection file '%s'.")) % path, caption,
+			wxOK | wxICON_ERROR, this);
+		return;
+	}
+
+	AddLogLineC(CFormat(wxPLURAL("Exported %u shared file to '%s'.",
+				 "Exported %u shared files to '%s'.", (int)written)) %
+		    written % path);
 }
 
 void CSharedFilesWnd::OnItemSelectionChanged(wxListEvent &evt)
