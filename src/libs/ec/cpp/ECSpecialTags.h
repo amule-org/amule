@@ -69,6 +69,8 @@ class CValueMap
 	std::map<ec_tagname_t, CMD4Hash> m_map_md4;
 	std::map<ec_tagname_t, CUInt128> m_map_uint128;
 	std::map<ec_tagname_t, wxString> m_map_string;
+	std::map<ec_tagname_t, double> m_map_double;
+	std::map<ec_tagname_t, bool> m_map_bool;
 	std::map<ec_tagname_t, CECTag> m_map_tag;
 
 	template <class T>
@@ -92,6 +94,8 @@ public:
 		m_map_md4 = valuemap.m_map_md4;
 		m_map_uint128 = valuemap.m_map_uint128;
 		m_map_string = valuemap.m_map_string;
+		m_map_double = valuemap.m_map_double;
+		m_map_bool = valuemap.m_map_bool;
 		m_map_tag = valuemap.m_map_tag;
 	}
 
@@ -125,6 +129,20 @@ public:
 		CreateTagT<CUInt128>(tagname, value, m_map_uint128, parent);
 	}
 
+	// bool has its own CECTag constructor, so it needs its own overload here
+	// too -- without it a bool argument is ambiguous across the integer
+	// overloads, and picking one of those by cast would change the tag's wire
+	// type and break every client that reads it.
+	void CreateTag(ec_tagname_t tagname, bool value, CECTag *parent)
+	{
+		CreateTagT<bool>(tagname, value, m_map_bool, parent);
+	}
+
+	void CreateTag(ec_tagname_t tagname, double value, CECTag *parent)
+	{
+		CreateTagT<double>(tagname, value, m_map_double, parent);
+	}
+
 	void CreateTag(ec_tagname_t tagname, wxString value, CECTag *parent)
 	{
 		CreateTagT<wxString>(tagname, value, m_map_string, parent);
@@ -144,6 +162,35 @@ public:
 
 	void ForgetTag(ec_tagname_t tagname) { m_map_tag.erase(tagname); }
 };
+
+// Add `value` under `tagname` to `parent`, letting the value map decide whether
+// it changed -- and constructing the CECTag only if it did.
+//
+// The difference from `parent->AddTag(CECTag(tagname, value), valuemap)` is
+// where the work happens. That form builds the tag first (calling the getter,
+// copying the string, allocating the tag) and only then asks the map whether it
+// was needed, discarding it if not; it also caches whole CECTag objects. This
+// form compares the raw value against a typed cache and builds nothing when it
+// is unchanged. On the client list -- rebuilt in full on every EC poll, where
+// most fields of most peers are static -- that is the difference between
+// paying for every field of every peer and paying only for what moved.
+//
+// `valuemap` may be NULL: callers that are not doing an incremental update pass
+// nothing, and then every tag is emitted unconditionally.
+//
+// A given tagname must be written through ONE of the two forms consistently.
+// They keep separate caches (typed maps here, `m_map_tag` there), so mixing
+// them for the same tag means neither sees the other's last value and a change
+// can be suppressed -- a field that silently stops updating in the GUI.
+template <typename T>
+inline void AddDiffTag(CECTag *parent, ec_tagname_t tagname, T value, CValueMap *valuemap)
+{
+	if (valuemap) {
+		valuemap->CreateTag(tagname, value, parent);
+	} else {
+		parent->AddTag(CECTag(tagname, value));
+	}
+}
 
 class CEC_Category_Tag : public CECTag
 {
