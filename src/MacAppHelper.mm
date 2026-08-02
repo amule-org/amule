@@ -13,6 +13,33 @@
 
 #include "MacAppHelper.h"
 
+extern "C" void mac_set_table_view_flush(void *windowHandle)
+{
+	if (!windowHandle) {
+		return;
+	}
+
+	// wxOSX hands back whichever view it made the peer from: the scroll
+	// view for a scrolled control, the table itself otherwise.
+	NSView *view = (NSView *)windowHandle;
+	NSTableView *table = nil;
+	if ([view isKindOfClass:[NSScrollView class]]) {
+		NSView *doc = [(NSScrollView *)view documentView];
+		if ([doc isKindOfClass:[NSTableView class]]) {
+			table = (NSTableView *)doc;
+		}
+	} else if ([view isKindOfClass:[NSTableView class]]) {
+		table = (NSTableView *)view;
+	}
+
+	if (!table) {
+		return;
+	}
+	if (@available(macOS 11.0, *)) {
+		table.style = NSTableViewStyleFullWidth;
+	}
+}
+
 extern "C" void mac_set_accessory_mode(bool accessory)
 {
 	[NSApp setActivationPolicy:

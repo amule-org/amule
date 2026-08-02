@@ -66,6 +66,10 @@
 #include <wx/filename.h> // wxFileName for status-line size lookup
 #endif
 #include "CamuleArtProvider.h" // CamuleArtProvider::MakeId for the page-icon bundles
+
+#ifdef __WXMAC__
+#include "MacAppHelper.h" // mac_set_table_view_flush
+#endif
 #include "MuleColour.h"
 #include "EditServerListDlg.h"
 #include "SearchDlg.h"      // Needed for CSearchDlg::ApplySearchHistoryPref
@@ -392,6 +396,20 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxDataViewListCtrl);
 	const int kPrefsIconW = 16;
 	const int kPrefsIconH = 16;
+	// Room for the gap after the icon and the cell's left/right padding.
+	// On macOS this is only the width the list is built with, since the
+	// measurement below replaces it -- but it has to be generous, because
+	// what that measurement reports is bounded by the room the control
+	// already has: ask from a column pinned to a tight estimate and the
+	// answer comes back tight, whatever the cells actually need. On GTK
+	// and MSW no measurement follows, so this is the width itself: enough
+	// for the cell's own padding, plus room after the longest label so it
+	// does not sit against the edge of the list.
+#ifdef __WXMAC__
+	const int kCellPadding = 48;
+#else
+	const int kCellPadding = 24;
+#endif
 
 	// The page art only exists at one (16x16) size. Wrap each icon in a
 	// wxBitmapBundle with a smooth 2x upscale so DPI-aware builds render
@@ -463,17 +481,29 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		m_PrefsIcons->AppendItem(values, (wxUIntPtr)i);
 	}
 
-	// Set list-width so that there aren't any scrollers. The native
-	// icon+text cell renderer (NSTableView on macOS, GtkCellRenderer on
-	// GTK) reserves more than just the icon's own pixel width for the
-	// icon-text gap and cell insets -- measured on macOS, kPrefsIconW's
-	// worth of padding alone clips the longest labels ("Connessione",
-	// "Contatti/emoticons") by a few pixels, so this is deliberately
-	// generous rather than tightly computed.
-	const int kSidebarPadding = kPrefsIconW + 48;
-	iconTextCol->SetWidth(maxLabelWidth + kSidebarPadding);
-	m_PrefsIcons->SetMinSize(wxSize(maxLabelWidth + kSidebarPadding + 10, -1));
-	m_PrefsIcons->SetMaxSize(wxSize(maxLabelWidth + kSidebarPadding + 10, -1));
+#ifdef __WXMAC__
+	// macOS 11 made the inset row style the default: it pads both ends of
+	// every row -- the same padding that draws a selected row as a rounded
+	// pill inside its cell rather than filling it -- and that padding comes
+	// out of the space the label is drawn in.
+	mac_set_table_view_flush(m_PrefsIcons->GetHandle());
+#endif
+
+	// Set list-width so that there aren't any scrollers. What the cell needs
+	// beyond the label text -- the icon, the gap after it and the cell's own
+	// padding -- is the renderer's business, and only one of the three ports
+	// will say what it comes to: wxOSX answers wxCOL_WIDTH_AUTOSIZE with the
+	// width its cells want, while wxGTK and the generic implementation answer
+	// with the column's current allocation, which is the width the control
+	// was handed, echoed back. So the estimate here is what MSW and GTK get,
+	// and OnShowMeasureSidebar() replaces it on macOS once the control has
+	// been laid out and can be asked.
+	m_sidebarColumn = iconTextCol;
+	SetSidebarWidth(maxLabelWidth + FromDIP(kPrefsIconW + kCellPadding));
+#ifdef __WXMAC__
+	m_sidebarTextWidth = maxLabelWidth;
+	Bind(wxEVT_SHOW, &PrefsUnifiedDlg::OnShowMeasureSidebar, this);
+#endif
 
 	// Now add the pages and calculate the minimum size
 	m_pageWidgets.assign(itemsof(pages), nullptr);
@@ -2417,6 +2447,47 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 #endif // !CLIENT_GUI
 }
 #endif // GEOIP_GUI
+
+#ifdef __WXMAC__
+void PrefsUnifiedDlg::OnShowMeasureSidebar(wxShowEvent &event)
+{
+	event.Skip();
+	if (m_sidebarMeasured || !event.IsShown() || !m_sidebarColumn) {
+		return;
+	}
+	m_sidebarMeasured = true;
+
+	// Now that the control is on screen it can measure the rows it is
+	// actually drawing, font and cell padding included. The answer is not
+	// ready when SetWidth() returns -- it is resolved while the control is
+	// laid out -- so the read-back waits for that to have happened.
+	m_sidebarColumn->SetWidth(wxCOL_WIDTH_AUTOSIZE);
+	CallAfter([this]() {
+		// Nothing is added to what comes back: the padding the estimate
+		// has to guess at is part of what was measured. A width narrower
+		// than the label text is not a measurement at all, so the estimate
+		// stands.
+		const int reported = m_sidebarColumn->GetWidth();
+		if (reported > m_sidebarTextWidth) {
+			SetSidebarWidth(reported);
+			m_PrefsIcons->InvalidateBestSize();
+			Layout();
+		}
+	});
+}
+#endif // __WXMAC__
+
+void PrefsUnifiedDlg::SetSidebarWidth(int columnWidth)
+{
+	m_sidebarColumn->SetWidth(columnWidth);
+	// The control has to be wider than its column: the table draws its cells
+	// at a small offset from its own left edge -- 6 points on macOS, and the
+	// other two are not zero either -- so sizing it to exactly the column
+	// width clips the cell against its right edge.
+	const int controlWidth = columnWidth + FromDIP(6);
+	m_PrefsIcons->SetMinSize(wxSize(controlWidth, -1));
+	m_PrefsIcons->SetMaxSize(wxSize(controlWidth, -1));
+}
 
 void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
 {

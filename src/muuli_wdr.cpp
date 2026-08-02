@@ -2283,7 +2283,9 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     prefs_sizer = item1;
 
     wxDataViewListCtrl *item2 = new wxDataViewListCtrl( parent, ID_PREFSLISTCTRL, wxDefaultPosition, wxDefaultSize, wxDV_SINGLE|wxDV_NO_HEADER|wxSUNKEN_BORDER );
-    item1->Add( item2, wxSizerFlags().Expand().Border(wxALL, 5) );
+    // Tighter than the usual 5: the list is sized to its longest label, so
+    // its border reads as slack on every row rather than as breathing room.
+    item1->Add( item2, wxSizerFlags().Expand().Border(wxALL, 2) );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxALL, 0) );
     // Plain button row (no static-box container). A leading stretch spacer
     // right-aligns the whole group; the page-scoped "Reset" button (hidden

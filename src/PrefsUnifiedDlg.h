@@ -41,7 +41,9 @@ class wxChoice;
 class wxButton;
 class wxPanel;
 class wxDataViewListCtrl;
+class wxDataViewColumn;
 class wxDataViewEvent;
+class wxShowEvent;
 
 class wxCommandEvent;
 class wxListEvent;
@@ -179,7 +181,22 @@ private:
 	//! Page icons, in `pages[]` order -- kept so EnableServerTab can
 	//! re-insert the server row's icon when the tab is re-shown.
 	std::vector<wxBitmapBundle> m_pageIcons;
+	//! The sidebar's single icon+text column, kept so its width can be
+	//! replaced with the control's own measurement on first show.
+	wxDataViewColumn *m_sidebarColumn = nullptr;
+#ifdef __WXMAC__
+	//! Widest label as the control's own font measures it. A reported width
+	//! narrower than this cannot be a measurement of icon-plus-text.
+	int m_sidebarTextWidth = 0;
+	//! The measurement is a one-off; the dialog is shown more than once.
+	bool m_sidebarMeasured = false;
+#endif
 	void EnableServerTab(bool enable);
+#ifdef __WXMAC__
+	void OnShowMeasureSidebar(wxShowEvent &event);
+#endif
+	//! Applies a column width, and the control width that fits it.
+	void SetSidebarWidth(int columnWidth);
 
 	void OnOk(wxCommandEvent &event);
 	void OnCancel(wxCommandEvent &event);
