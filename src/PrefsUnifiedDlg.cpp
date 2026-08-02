@@ -1053,6 +1053,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		IDC_EXT_CONN_TCPPORTTEXT,
 		IDC_EXT_CONN_PASSWD,
 		IDC_EXT_CONN_PASSWDTEXT,
+		IDC_EXT_CONN_REQUIRE_ENCRYPTION,
 		// ffprobe "Browse" (local file picker) and "Detect" (auto-detects on the
 		// GUI host, not the daemon) cannot target the daemon filesystem. The
 		// enable toggle + path field are EC-wired and stay visible.
