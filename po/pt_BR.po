@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-01 17:59+0000\n"
+"PO-Revision-Date: 2026-08-02 09:53+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -307,39 +307,36 @@ msgstr "CUIDADO"
 
 #: src/amule.cpp
 msgid "Initializing network"
-msgstr ""
+msgstr "Inicializando a rede"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "Carregando arquivos temp de %s."
+msgstr "Carregando arquivos temporários"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "Carregando arquivos temp de %s."
+msgstr "Carregando arquivos temporários (%u de %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "Recarregando lista de arquivos compartilhados..."
+msgstr "Carregando arquivos compartilhados"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "Recarregando lista de arquivos compartilhados..."
+msgstr "Carregando arquivos compartilhados (%u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Starting up"
-msgstr "Iniciar"
+msgstr "Iniciando"
 
 #: src/amule.cpp
 #, c-format
 msgid "Hashing %u new file"
 msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Calculando o hash de %u novo arquivo"
+msgstr[1] "Calculando os hashes de %u novos arquivos"
 
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -474,9 +471,9 @@ msgid "Server hostname notified"
 msgstr "Nome do servidor notificado"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing new files (%u of %u)"
-msgstr "Salvando PartFile %u de %u"
+msgstr "Calculando o hash de arquivos novos (%u de %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -3402,9 +3399,8 @@ msgid "Reset Fields"
 msgstr "Reiniciar Campos"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "Resultado da Busca"
+msgstr "Limpar os Resultados da Busca"
 
 #: src/muuli_wdr.cpp
 msgid "Results"
@@ -6136,13 +6132,12 @@ msgid "Shared folder"
 msgstr "Pasta compartilhada"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Clear Search History"
-msgstr "Limpar o histórico de busca"
+msgstr "Limpar o Histórico de Busca"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
-msgstr ""
+msgstr "Limpar o histórico de busca salvo? Isto não poderá ser desfeito."
 
 #: src/SearchDlg.cpp
 msgid "Search warning"

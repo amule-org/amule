@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-01 18:03+0000\n"
+"PO-Revision-Date: 2026-08-02 09:59+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -403,7 +403,7 @@ msgstr "Не печетать ничего в стандартный вывод.
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Be verbose - show also debug messages."
-msgstr "Выводить также отладочную информацию."
+msgstr "Детально — также выводить отладочную информацию."
 
 #. type: TP
 #: amulecmd.1.in amuleweb.1.in
@@ -414,7 +414,7 @@ msgstr "B<[ -l> I<E<lt>языкE<gt>>, B<--locale>=I<E<lt>языкE<gt>> B<]>"
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "Sets program locale (language).  See the B<NOTES> section for the description of the I<E<lt>langE<gt>> parameter."
-msgstr "Задать локаль (язык). См. секцию B<ЗАМЕЧАНИЯ> для дополнительной информации по параметру I<E<lt>языкE<gt>>."
+msgstr "Задаёт локаль программы (язык). См. секцию B<ЗАМЕЧАНИЯ> для подробностей по параметру I<E<lt>языкE<gt>>."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -522,7 +522,7 @@ msgstr "Отключится от amule/amuled и выйти из amulecmd."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get and display a preference value."
-msgstr "Вывести параметр настроек."
+msgstr "Получить и отобразить значение параметра."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -532,12 +532,12 @@ msgstr "Возможные значения поля I<E<lt>параметрE<gt
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get bandwidth limits."
-msgstr "Вывести ограничения канала."
+msgstr "Получить ограничения канала."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get IPFilter preferences."
-msgstr "Вывести настройки IPFilter."
+msgstr "Вывести настройки IP-фильтра."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -577,7 +577,7 @@ msgstr "Низкий приоритет."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Normal priority."
-msgstr "Нормальный приоритет."
+msgstr "Обычный приоритет."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -597,17 +597,17 @@ msgstr "Обновляет указанный объект."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reload shared files list."
-msgstr "Обновляет список публикуемых файлов."
+msgstr "Обновить список публикуемых файлов."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reload IP filter tables."
-msgstr "Обновляет таблицы IP фильтра."
+msgstr "Обновляет таблицы IP-фильтра."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reset the log."
-msgstr "Обнуляет лог."
+msgstr "Сбросить журнал."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -687,32 +687,32 @@ msgstr "Задает указанный параметр."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set bandwidth limits."
-msgstr "Задает ограничения канала."
+msgstr "Задаёт ограничения канала."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set IPFilter preferences."
-msgstr "Задает параметры IPFilter."
+msgstr "Задаёт параметры IP-фильтра."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows upload/download queue, servers list or shared files list."
-msgstr "Выводит очередь закачки/отдачи, список серверов или опубликованные файлы."
+msgstr "Выводит очередь скачивания/отдачи, список серверов или опубликованные файлы."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show download queue."
-msgstr "Выводит очередь закачки."
+msgstr "Показывает очередь скачивания."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show log."
-msgstr "Выводит лог."
+msgstr "Показать журнал."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show servers list."
-msgstr "Выводит список серверов."
+msgstr "Показать список серверов."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -722,7 +722,7 @@ msgstr "Показать список публикуемых файлов."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show upload queue."
-msgstr "Выводит список отдачи."
+msgstr "Показать очередь на отдачу."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1000,7 +1000,7 @@ msgstr "B<[ -t> I<E<lt>имяE<gt>>, B<--template>=I<E<lt>имяE<gt>> B<]>"
 #. type: Plain text
 #: amuleweb.1.in
 msgid "Loads the template named I<E<lt>nameE<gt>>. See the B<SKIN SUPPORT> section for details."
-msgstr "Устанавливает шаблон с указанным I<E<lt>именемE<gt>>. Подробности в секции B<ПОДДЕРЖКА СКИНОВ>."
+msgstr "Устанавливает шаблон с указанным I<E<lt>именемE<gt>>. Подробности в разделе B<ПОДДЕРЖКА ОБОЛОЧЕК>."
 
 #. type: TP
 #: amuleweb.1.in
@@ -1101,12 +1101,12 @@ msgstr "Путь к файлу конфигурации aMule. B<НЕ ИСПОЛ
 #: amuleweb.1.in
 #, no-wrap
 msgid "SKIN SUPPORT"
-msgstr "ПОДДЕРЖКА СКИНОВ"
+msgstr "ПОДДЕРЖКА ОБОЛОЧЕК"
 
 #. type: Plain text
 #: amuleweb.1.in
 msgid "B<amuleweb> is capable of displaying information in different skins.  These skins are called templates, and you can make amuleweb load a specific template via the B<-t> command line option.  Templates are searched in two places: first in I<~/.aMule/webserver/> and then in I</usr/share/amule/webserver/> if you installed with --prefix=/usr."
-msgstr "B<amuleweb> имеет возможность отображать информацию с разными скинами. Эти скины называются шаблонами, и вы можете переключить amuleweb на определенный шаблон использую опцию B<-t> командной строки. Шаблоны ищутся в двух местах: первое I<~/.aMule/webserver/>, затем I</usr/share/amule/webserver/>, если инсталяция была проведена с --prefix=/usr."
+msgstr "B<amuleweb> имеет возможность отображать информацию с разными оболочками. Эти оболочки называются шаблонами, и вы можете переключить amuleweb на определённый шаблон использую опцию B<-t> командной строки. Шаблоны ищутся в двух местах: первое I<~/.aMule/webserver/>, затем I</usr/share/amule/webserver/>, если инсталляция была проведена с --prefix=/usr."
 
 #. type: Plain text
 #: amuleweb.1.in
@@ -1173,7 +1173,7 @@ msgstr "I<E<lt>eD2k-ссылкаE<gt>>"
 #. type: Plain text
 #: ed2k.1.in
 msgid "Sends the given I<E<lt>eD2k-linkE<gt>> to aMule, i.e. writes it to the file ~/.aMule/ED2KLinks, which will be checked by aMule every second for links."
-msgstr "Пысылает указанную I<E<lt>eD2k-ссылкуE<gt>> в aMule, т.е. пишет ее в файл ~/.aMule/ED2KLinks, который проверяется каждую секунду."
+msgstr "Посылает указанную I<E<lt>eD2k-ссылкуE<gt>> в aMule, т. е. пишет её в файл ~/.aMule/ED2KLinks, который проверяется каждую секунду."
 
 #. type: TP
 #: ed2k.1.in

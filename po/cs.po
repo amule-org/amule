@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-01 17:53+0000\n"
+"PO-Revision-Date: 2026-08-02 09:44+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -319,22 +319,21 @@ msgid "Loading shared files"
 msgstr "Znovu načíst vaše sdílené soubory"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "Znovu načíst vaše sdílené soubory"
+msgstr "Načítání sdílených souborů (%u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Starting up"
-msgstr "Spustit"
+msgstr "Spouštění"
 
 #: src/amule.cpp
 #, c-format
 msgid "Hashing %u new file"
 msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Vytváření hashe %u nového souboru"
+msgstr[1] "Vytváření hashe %u nových souborů"
+msgstr[2] "Vytváření hashe %u nových souborů"
 
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -350,11 +349,11 @@ msgstr ""
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "eD2k server list (server.met)"
-msgstr ""
+msgstr "Seznam serverů eD2k (server.met)"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "Kad bootstrap nodes (nodes.dat)"
-msgstr ""
+msgstr "Kad zaváděcí servery (nodes.dat)"
 
 #: src/amule.cpp
 #, c-format

@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-01 18:02+0000\n"
+"PO-Revision-Date: 2026-08-02 09:58+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -304,39 +304,36 @@ msgstr "警告"
 
 #: src/amule.cpp
 msgid "Initializing network"
-msgstr ""
+msgstr "正初始化网络"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "从 %s 载入临时文件。"
+msgstr "正加载临时文件"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "从 %s 载入临时文件。"
+msgstr "正加载临时文件 （第 %u 个，共 %u 个）"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "正重新加载共享文件..."
+msgstr "正加载共享文件"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "正重新加载共享文件..."
+msgstr "正加载共享文件（%u）"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Starting up"
-msgstr "开始"
+msgstr "启动中"
 
 #: src/amule.cpp
 #, c-format
 msgid "Hashing %u new file"
 msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "正计算 %u 个新文件的哈希值"
+msgstr[1] "正计算 %u 个新文件的哈希值"
 
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -470,9 +467,9 @@ msgid "Server hostname notified"
 msgstr "获取服务器名称"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Hashing new files (%u of %u)"
-msgstr "正在保存 PartFile %u 之 %u"
+msgstr "正计算新文件哈希值（第 %u 个，共 %u 个）"
 
 #: src/amule.cpp
 #, c-format
@@ -3398,9 +3395,8 @@ msgid "Reset Fields"
 msgstr "重置表单"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "搜索结果"
+msgstr "清除搜索结果"
 
 #: src/muuli_wdr.cpp
 msgid "Results"
@@ -6132,13 +6128,12 @@ msgid "Shared folder"
 msgstr "共享的文件夹"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Clear Search History"
-msgstr "记住搜索历史"
+msgstr "清除搜索历史"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
-msgstr ""
+msgstr "清除保存的搜索历史？这无法撤销。"
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
