@@ -347,18 +347,13 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 	}
 
 	switch (request_step) {
-	case 0:
-		// We used to update the connection state here, but that's done with the stats in the next
-		// step now.
-		request_step++;
-		break;
-	case 1: {
+	case 0: {
 		CECPacket stats_req(EC_OP_STAT_REQ, EC_DETAIL_INC_UPDATE);
 		m_connect->SendRequest(&m_stats_updater, &stats_req);
 		request_step++;
 		break;
 	}
-	case 2:
+	case 1:
 		if (amuledlg->m_sharedfileswnd->IsShown() || amuledlg->m_chatwnd->IsShown() ||
 			amuledlg->m_serverwnd->IsShown()) {
 			// update downloads, shared files and servers
@@ -368,7 +363,7 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			// "Server Info" sub-panel reaches feature parity with
 			// the monolithic build. ed2k server messages are bursty
 			// (one-off on connect, the occasional ID-change notice,
-			// disconnect) so the natural ~3 s cadence of step 2 is
+			// disconnect) so the natural cadence of the page step is
 			// plenty.
 			if (amuledlg->m_serverwnd->IsShown()) {
 				CECPacket srvinfo_req(EC_OP_GET_SERVERINFO);
@@ -858,7 +853,7 @@ void CamuleRemoteGuiApp::BeginReconnect()
 			knownfiles->ArmReconnectReconcile();
 		}
 		if (poll_timer) {
-			poll_timer->Start(1000);
+			poll_timer->Start(EC_POLL_INTERVAL_MS);
 		}
 		if (amuledlg) {
 			amuledlg->StartGuiTimer();
@@ -1003,7 +998,7 @@ void CamuleRemoteGuiApp::Startup()
 	knownfiles->DoRequery(EC_OP_GET_UPDATE, EC_TAG_KNOWNFILE);
 
 	// Start the Poll Timer
-	poll_timer->Start(1000);
+	poll_timer->Start(EC_POLL_INTERVAL_MS);
 	amuledlg->StartGuiTimer();
 
 	// Drain any pre-connect URL queued by ProtocolHandler_QueueSchemeLink

@@ -639,7 +639,7 @@ class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFi
 	//
 	// Absence-implies-deletion forced the daemon to re-send every result of
 	// every open search on every poll just to say "still here" -- with two
-	// finished searches and ~900 results that measured 12 KB every 3 s, of
+	// finished searches and ~900 results that measured 12 KB per poll, of
 	// which none carried a single changed field. With removal made explicit
 	// the daemon can skip an unchanged result entirely, and an idle search
 	// costs nothing.
@@ -874,9 +874,22 @@ public:
 	uint32 GetPeakConnections() { return m_peak_connections; }
 };
 
+// Tick of the remote GUI's poll timer. The handler alternates between two
+// steps -- the stats request, then the active page's data -- so either comes
+// round every two ticks, i.e. ~1 s. Requests are incremental updates against
+// the daemon's value maps, so a shorter tick costs a near-empty reply when
+// nothing moved rather than a proportionally larger one.
+//
+// The round-robin is what keeps at most one step's worth of requests on the
+// wire per tick, and it pauses rather than skips under back-pressure: the
+// fifo-full early return happens before the switch, so the step index does not
+// advance and the cycle resumes where it stopped instead of firing everything
+// that came due while the link was stalled.
+#define EC_POLL_INTERVAL_MS 500
+
 // How long the remote GUI waits for a reply before deciding the EC connection
 // is dead. Generous on purpose: a healthy link answers in single-digit
-// milliseconds, and the poll cycle is ~3 s, so 30 s cannot be reached by a
+// milliseconds, and the poll cycle is ~1 s, so 30 s cannot be reached by a
 // merely busy daemon -- only by one that has stopped answering entirely.
 #define EC_REPLY_TIMEOUT_MS 30000
 
