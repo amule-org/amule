@@ -199,6 +199,11 @@ public:
 	uint32 GetIP() const { return m_dwUserIP; }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
+	// The numeric form of GetFullIP(), for callers that do not need the string.
+	// Named to be hard to confuse with it: the GeoIP resolver overloads on the
+	// argument type, so passing the string variant compiles and silently takes
+	// the uncached path.
+	uint32 GetFullIPNumeric() const { return m_FullUserIP; }
 	// Country ISO code accessors (#439). Unconditional (libmaxminddb-free) so the
 	// shared client-list drawing code compiles regardless of the resolver gate.
 	// Unused by monolithic amule, which resolves country locally via

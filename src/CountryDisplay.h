@@ -61,13 +61,17 @@
  *
  * @param fromCore Whether the core sent a country tag for this entry.
  * @param coreCode The code it sent (meaningful only when @a fromCore).
- * @param ip       Dotted address, for the monolithic local lookup.
+ * @param ip       Numeric address, for the monolithic local lookup. Numeric
+ *                 rather than dotted so it hits the resolver's cache -- the
+ *                 string overload is uncached and goes straight to the
+ *                 database, which on a paint path means a lookup per row per
+ *                 repaint.
  * @param code     Receives the ISO 3166-1 alpha-2 code; may come back empty
  *                 for an address that did not resolve.
  * @return false when no country is known at all -- render neither icon nor
  *         text.
  */
-inline bool GetDisplayCountryCode(bool fromCore, const wxString &coreCode, const wxString &ip, wxString &code)
+inline bool GetDisplayCountryCode(bool fromCore, const wxString &coreCode, uint32 ip, wxString &code)
 {
 	if (fromCore) {
 		code = coreCode;

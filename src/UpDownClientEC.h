@@ -93,6 +93,10 @@ public:
 	CFriend *GetFriend() const { return m_Friend; }
 	bool GetFriendSlot() const { return m_bFriendSlot; }
 	wxString GetFullIP() const { return Uint32toStringIP(m_dwUserIP); }
+	// Numeric counterpart, matching the core client. amulegui never resolves
+	// locally -- it takes the from-core branch in GetDisplayCountryCode -- but
+	// that helper is shared with monolithic aMule and takes the numeric form.
+	uint32 GetFullIPNumeric() const { return m_dwUserIP; }
 	uint16 GetKadPort() const { return m_nKadPort; }
 	float GetKBpsDown() const { return m_kBpsDown; }
 	uint32 GetIP() const { return m_dwUserIP; }

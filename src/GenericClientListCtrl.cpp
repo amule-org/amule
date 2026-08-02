@@ -927,7 +927,7 @@ void CGenericClientListCtrl::DrawClientItem(wxDC *dc,
 		wxString code;
 		const bool haveCountry = GetDisplayCountryCode(client.GetClient()->IsCountryFromCore(),
 			client.GetClient()->GetCountryCode(),
-			client.GetFullIP(),
+			client.GetClient()->GetFullIPNumeric(),
 			code);
 		// Draw the country flag only — no textual code. An unknown / unresolved
 		// peer (empty code) gets neither flag nor prefix.

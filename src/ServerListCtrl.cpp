@@ -355,6 +355,16 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, long column) const
 	}
 }
 
+// Gated with its only caller (OnGetItemColumnImage below): this reaches
+// theApp->GetCountryFlags(), which only exists under GEOIP_GUI, so compiling it
+// unconditionally broke the monolithic build at -DENABLE_IP2COUNTRY=NO.
+//
+// Only the definition is gated, not the declaration: GEOIP_GUI is #defined in
+// amule.h, which this file includes but ServerListCtrl.h does not -- so the
+// header cannot see the macro and gating it there would compile the
+// declaration out from under this definition. A member function that is
+// declared, never called and never defined is fine.
+#ifdef GEOIP_GUI
 int CServerListCtrl::FlagImage(const wxString &code) const
 {
 	const auto it = m_flagImages.find(code);
@@ -383,6 +393,7 @@ int CServerListCtrl::FlagImage(const wxString &code) const
 	m_flagImages[code] = index;
 	return index;
 }
+#endif // GEOIP_GUI
 
 int CServerListCtrl::OnGetItemColumnImage(long item, long column) const
 {
@@ -395,7 +406,7 @@ int CServerListCtrl::OnGetItemColumnImage(long item, long column) const
 	const CServer *server = reinterpret_cast<const CServer *>(ItemAt(item));
 	wxString code;
 	if (GetDisplayCountryCode(
-		    server->IsCountryFromCore(), server->GetCountryCode(), server->GetFullIP(), code) &&
+		    server->IsCountryFromCore(), server->GetCountryCode(), server->GetIP(), code) &&
 		!code.IsEmpty()) {
 		return FlagImage(code);
 	}

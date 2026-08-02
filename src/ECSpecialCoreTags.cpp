@@ -356,8 +356,11 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	// a frontend can treat tag-present as authoritative (possibly "unknown")
 	// and tag-absent as "no daemon GeoIP".
 	if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
+		// Numeric-IP overload: memoised, and it skips formatting the IP into
+		// a string on the hit path. This runs for every peer on every EC
+		// poll, and a peer's country cannot change while its IP does not.
 		AddTag(CECTag(EC_TAG_CLIENT_COUNTRY,
-			       theApp->GetIP2Country()->GetCountryCode(client->GetFullIP())),
+			       theApp->GetIP2Country()->GetCountryCode(client->GetFullIPNumeric())),
 			valuemap);
 	}
 #endif
