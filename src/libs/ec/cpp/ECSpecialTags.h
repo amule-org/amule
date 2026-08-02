@@ -74,7 +74,7 @@ class CValueMap
 	std::map<ec_tagname_t, CECTag> m_map_tag;
 
 	template <class T>
-	void CreateTagT(ec_tagname_t tagname, T value, std::map<ec_tagname_t, T> &map, CECTag *parent)
+	void CreateTagT(ec_tagname_t tagname, const T &value, std::map<ec_tagname_t, T> &map, CECTag *parent)
 	{
 		if ((map.count(tagname) == 0) || (map[tagname] != value)) {
 			parent->AddTag(CECTag(tagname, value));
@@ -119,12 +119,12 @@ public:
 		CreateTagT<uint64>(tagname, value, m_map_uint64, parent);
 	}
 
-	void CreateTag(ec_tagname_t tagname, CMD4Hash value, CECTag *parent)
+	void CreateTag(ec_tagname_t tagname, const CMD4Hash &value, CECTag *parent)
 	{
 		CreateTagT<CMD4Hash>(tagname, value, m_map_md4, parent);
 	}
 
-	void CreateTag(ec_tagname_t tagname, CUInt128 value, CECTag *parent)
+	void CreateTag(ec_tagname_t tagname, const CUInt128 &value, CECTag *parent)
 	{
 		CreateTagT<CUInt128>(tagname, value, m_map_uint128, parent);
 	}
@@ -143,7 +143,9 @@ public:
 		CreateTagT<double>(tagname, value, m_map_double, parent);
 	}
 
-	void CreateTag(ec_tagname_t tagname, wxString value, CECTag *parent)
+	// By const reference: wxString copies allocate, and the callers hand us
+	// values straight from getters that already return a reference.
+	void CreateTag(ec_tagname_t tagname, const wxString &value, CECTag *parent)
 	{
 		CreateTagT<wxString>(tagname, value, m_map_string, parent);
 	}
@@ -183,7 +185,7 @@ public:
 // them for the same tag means neither sees the other's last value and a change
 // can be suppressed -- a field that silently stops updating in the GUI.
 template <typename T>
-inline void AddDiffTag(CECTag *parent, ec_tagname_t tagname, T value, CValueMap *valuemap)
+inline void AddDiffTag(CECTag *parent, ec_tagname_t tagname, const T &value, CValueMap *valuemap)
 {
 	if (valuemap) {
 		valuemap->CreateTag(tagname, value, parent);
