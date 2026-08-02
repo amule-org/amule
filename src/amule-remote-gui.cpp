@@ -309,6 +309,39 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 	static int request_step = 0;
 	static uint32 msPrevStats = 0;
 
+	// Reply watchdog. EC has no application-level keepalive, and the daemon
+	// always answers, so requests outstanding with nothing coming back means
+	// the transport has gone quiet -- an SSH tunnel with no ServerAliveInterval,
+	// a NAT dropping an idle mapping, a proxy that stopped relaying. None of
+	// those close the socket: it stays ESTABLISHED with every queue empty and
+	// no error is ever raised, so neither OnLost nor OnError fires.
+	//
+	// Without this the failure is permanent AND silent. Once m_req_count passes
+	// m_req_fifo_thr the early-return below fires on every tick, so the client
+	// stops sending too -- and recovery would need a reply, which needs a
+	// request. The back-pressure brake becomes a deadlock the client can never
+	// leave, with a frozen UI and no message.
+	//
+	// Gated on the fifo rather than on the threshold so it trips on the real
+	// symptom (nothing answering) rather than waiting for the queue to fill.
+	if (m_connect->GetReqFifoSize() > 0 &&
+		m_connect->MillisecondsSinceLastReply() > EC_REPLY_TIMEOUT_MS) {
+		// Untranslated and debug-level on purpose: the user-facing messaging
+		// already comes from the path this drops into -- OnLost posts
+		// "Connection failure" and BeginReconnect announces the retry, both
+		// long since translated. Adding a new msgid here would have bought
+		// translators work for something nobody but a developer reads.
+		AddDebugLogLineN(logEC,
+			CFormat(wxT("EC reply watchdog: no reply for %u ms with %u requests "
+				    "pending -- treating the connection as dead")) %
+				(unsigned)m_connect->MillisecondsSinceLastReply() %
+				(unsigned)m_connect->GetReqFifoSize());
+		// Close ourselves and dispatch the loss: a self-close suppresses the
+		// asio lost-event path, so without the explicit dispatch nothing would
+		// tell the GUI. Lands in OnECConnection(false) -> BeginReconnect().
+		m_connect->CloseAndDispatchLost();
+		return;
+	}
 	if (m_connect->RequestFifoFull()) {
 		return;
 	}

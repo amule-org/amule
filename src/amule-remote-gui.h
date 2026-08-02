@@ -874,6 +874,12 @@ public:
 	uint32 GetPeakConnections() { return m_peak_connections; }
 };
 
+// How long the remote GUI waits for a reply before deciding the EC connection
+// is dead. Generous on purpose: a healthy link answers in single-digit
+// milliseconds, and the poll cycle is ~3 s, so 30 s cannot be reached by a
+// merely busy daemon -- only by one that has stopped answering entirely.
+#define EC_REPLY_TIMEOUT_MS 30000
+
 class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppCommon
 {
 	wxTimer *poll_timer;

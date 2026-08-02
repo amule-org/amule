@@ -27,6 +27,8 @@
 #define REMOTECONNECT_H
 
 #include "ECMuleSocket.h"
+
+#include <chrono>     // steady_clock for the reply watchdog
 #include "ECPacket.h" // Needed for CECPacket
 
 #include <wx/event.h>
@@ -208,6 +210,11 @@ private:
 	// is the pre-#680 behaviour.
 	bool m_serverSearchList;
 
+	// Steady-clock stamp of the last packet received from the daemon. Steady,
+	// not wall-clock: a system clock step (NTP, sleep/wake) must not be
+	// readable as a stalled connection.
+	std::chrono::steady_clock::time_point m_lastReplyAt;
+
 	// Set when the server echoed `EC_TAG_CAN_SEARCH_PROGRESS_UNION` in
 	// AUTH_OK, confirming that an EC_OP_SEARCH_PROGRESS carrying no
 	// `EC_TAG_SEARCH_ID` reports every open search as children instead of
@@ -292,6 +299,20 @@ public:
 	const wxString &GetServerVersion() const { return m_serverVersion; }
 
 	bool RequestFifoFull() { return m_req_count > m_req_fifo_thr; }
+
+	// Number of outstanding requests: pushed by SendRequest, popped when the
+	// matching reply is handled. Unlike m_req_count this never sees the
+	// handshake packets, so it is the honest in-flight count.
+	size_t GetReqFifoSize() const { return m_req_fifo.size(); }
+
+	// Milliseconds since the last packet arrived from the daemon, or since the
+	// connection was established if none has. Drives the reply watchdog: EC has
+	// no application-level keepalive, so a transport that silently stops
+	// delivering (an SSH tunnel with no ServerAliveInterval, a NAT dropping an
+	// idle mapping, a proxy) leaves the socket ESTABLISHED with every queue
+	// empty and nothing to report. Without this the only symptom is a frozen
+	// UI -- see the CloseAndDispatchLost() comment for the same class of bug.
+	uint64 MillisecondsSinceLastReply() const;
 
 	virtual void OnConnect(); // To override connection events
 	virtual void OnLost();    // To override close events

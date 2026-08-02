@@ -199,6 +199,7 @@ m_req_fifo_thr(20)
 , m_serverSharedDirsConfig(false)
 , m_serverSearchList(false)
 , m_serverSearchProgressUnion(false)
+, m_lastReplyAt(std::chrono::steady_clock::now())
 {
 }
 
@@ -334,6 +335,10 @@ void CRemoteConnect::WriteDoneAndQueueEmpty() {}
 
 void CRemoteConnect::OnConnect()
 {
+	// Start the watchdog clock here, not at construction: a wrapper reused
+	// across a reconnect would otherwise carry the previous connection's
+	// staleness into the new one and trip the timeout immediately.
+	m_lastReplyAt = std::chrono::steady_clock::now();
 	// Apply the EC-tuned TCP keepalive timings now that the underlying
 	// asio socket is fully connected on the async path (sync clients
 	// got it inside CECMuleSocket::InternalConnect already; this is
@@ -359,6 +364,13 @@ void CRemoteConnect::OnConnect()
 	} else {
 		// do nothing, calling code will take from here
 	}
+}
+
+uint64 CRemoteConnect::MillisecondsSinceLastReply() const
+{
+	return static_cast<uint64>(std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now() - m_lastReplyAt)
+					   .count());
 }
 
 void CRemoteConnect::OnLost()
@@ -452,6 +464,10 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint32 trueSize)
 {
 	CECPacket *next_packet = 0;
+	// Liveness stamp for the reply watchdog. Taken for EVERY inbound packet,
+	// including the handshake ones, so a connection that has only just come up
+	// is never mistaken for one that has gone quiet.
+	m_lastReplyAt = std::chrono::steady_clock::now();
 	m_req_count--;
 	packet->DebugPrint(true, trueSize);
 	switch (m_ec_state) {
