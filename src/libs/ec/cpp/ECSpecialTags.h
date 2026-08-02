@@ -76,10 +76,20 @@ class CValueMap
 	template <class T>
 	void CreateTagT(ec_tagname_t tagname, const T &value, std::map<ec_tagname_t, T> &map, CECTag *parent)
 	{
-		if ((map.count(tagname) == 0) || (map[tagname] != value)) {
-			parent->AddTag(CECTag(tagname, value));
-			map[tagname] = value;
+		// One probe, not two. The unchanged path is the common one -- it is the
+		// reason this function exists -- and count()+operator[] walked the tree
+		// twice for it, plus a third time to assign on a change. lower_bound
+		// doubles as the insertion hint on a miss.
+		const typename std::map<ec_tagname_t, T>::iterator it = map.lower_bound(tagname);
+		if (it != map.end() && it->first == tagname) {
+			if (it->second != value) {
+				parent->AddTag(CECTag(tagname, value));
+				it->second = value;
+			}
+			return;
 		}
+		parent->AddTag(CECTag(tagname, value));
+		map.insert(it, std::pair<const ec_tagname_t, T>(tagname, value));
 	}
 
 public:
@@ -128,6 +138,25 @@ public:
 	{
 		CreateTagT<CUInt128>(tagname, value, m_map_uint128, parent);
 	}
+
+	// String literals must not reach the bool overload. `const char*` -> bool is
+	// a standard conversion and beats the user-defined one to wxString, so
+	// without these a literal would emit a BOOL tag through the value map and a
+	// STRING tag through the plain CECTag path (which has both pointer
+	// constructors) -- the same call site producing a different wire type on an
+	// incremental update than on a full request. No current caller passes one;
+	// these exist so that none ever can.
+	void CreateTag(ec_tagname_t tagname, const char *value, CECTag *parent)
+	{
+		CreateTag(tagname, wxString(value), parent);
+	}
+
+#ifdef USE_WX_EXTENSIONS
+	void CreateTag(ec_tagname_t tagname, const wxChar *value, CECTag *parent)
+	{
+		CreateTag(tagname, wxString(value), parent);
+	}
+#endif
 
 	// bool has its own CECTag constructor, so it needs its own overload here
 	// too -- without it a bool argument is ambiguous across the integer
