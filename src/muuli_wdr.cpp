@@ -3526,7 +3526,13 @@ wxBitmap clientImages( size_t index )
     static_assert(WXSIZEOF(artIds) == CLIENT_SKIN_SIZE,
         "artIds must stay in sync with ClientSkinEnum");
     if (index < WXSIZEOF(artIds) && artIds[index] != nullptr) {
-        return wxArtProvider::GetBitmap(artIds[index], wxART_OTHER, wxSize(16, 16));
+        const wxBitmap bitmap = wxArtProvider::GetBitmap(artIds[index], wxART_OTHER, wxSize(16, 16));
+        // The fallthrough wxFAIL_MSG below only guards an out-of-range index;
+        // it doesn't see this path returning early, so a resolution failure
+        // here needs its own guard, same reasoning as #739's assert.
+        wxASSERT_MSG(bitmap.IsOk(),
+            wxString::Format("clientImages: art id %s did not resolve", artIds[index]));
+        return bitmap;
     }
 
     if (index == 12)
