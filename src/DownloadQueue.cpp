@@ -138,6 +138,7 @@ void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progr
 			{
 				wxMutexLocker lock(m_mutex);
 				m_filelist.push_back(toadd);
+				m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 			}
 			NotifyObservers(EventType(EventType::INSERTED, toadd));
 			Notify_DownloadCtrlAddFile(toadd);
@@ -369,6 +370,7 @@ void CDownloadQueue::AddDownload(CPartFile *file, bool paused, uint8 category)
 	{
 		wxMutexLocker lock(m_mutex);
 		m_filelist.push_back(file);
+		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		DoSortByPriority();
 	}
 
@@ -857,14 +859,29 @@ void CDownloadQueue::RemoveFile(CPartFile *file, bool keepAsCompleted)
 	wxMutexLocker lock(m_mutex);
 
 	EraseValue(m_filelist, file);
+	m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 
 	if (keepAsCompleted) {
 		m_completedDownloads.push_back(file);
+		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 	}
 }
 
 void CDownloadQueue::ClearCompleted(const ListOfUInts32 &ecids)
 {
+	// This used to walk and erase m_completedDownloads with m_mutex unheld,
+	// unlike every other mutator, while CopyFileList reads that same list
+	// under the lock. It mattered less when the EC file-list reconcile ran
+	// unconditionally: a reconcile that raced an erase healed on the next
+	// poll a second later. It matters now that the reconcile is skipped while
+	// the list generation is unchanged -- an erase observed as "already seen"
+	// is never reconciled at all, and the entry stays in the client's list
+	// for the life of the connection.
+	//
+	// Holding the lock across Notify_DownloadCtrlRemoveFile is safe here:
+	// m_mutex is constructed wxMUTEX_RECURSIVE, so a notify handler that
+	// re-enters the queue re-acquires it rather than deadlocking.
+	wxMutexLocker lock(m_mutex);
 	for (ListOfUInts32::const_iterator it1 = ecids.begin(); it1 != ecids.end(); ++it1) {
 		uint32 ecid = *it1;
 		for (FileList::iterator it = m_completedDownloads.begin(); it != m_completedDownloads.end();
@@ -872,6 +889,7 @@ void CDownloadQueue::ClearCompleted(const ListOfUInts32 &ecids)
 			CPartFile *file = *it;
 			if (file->ECID() == ecid) {
 				m_completedDownloads.erase(it);
+				m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 				// get a new EC ID so it is resent and cleared in remote gui
 				file->RenewECID();
 				Notify_DownloadCtrlRemoveFile(file);

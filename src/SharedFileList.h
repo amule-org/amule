@@ -26,6 +26,7 @@
 #ifndef SHAREDFILELIST_H
 #define SHAREDFILELIST_H
 
+#include <atomic> // Needed for std::atomic (m_listGeneration)
 #include <functional>
 #include <list>
 #include <map>
@@ -85,6 +86,29 @@ public:
 		wxMutexLocker lock(list_mut);
 		return m_Files_map.size();
 	}
+	/**
+	 * Changes whenever a file enters or leaves the list(s) this snapshots.
+	 *
+	 * A change token, not a count of changes: a reload clears and re-adds, so
+	 * it advances the value once per file in the library. All a caller may
+	 * conclude is "same value means nothing entered or left"; the magnitude of
+	 * a difference means nothing. Comparing sizes instead would be wrong --
+	 * an add and a remove between two polls is a net-zero size change that
+	 * still has to reconcile, and two bumps make that visible.
+	 *
+	 * Lets a caller that only needs to know "did the membership change since
+	 * I last looked" skip taking the snapshot at all. `CopyFileList` is O(n)
+	 * and the EC file-list reconcile runs it on every poll for every
+	 * connected client, almost always to discover that nothing came or went.
+	 *
+	 * Read it BEFORE calling CopyFileList, never after. Read first, and the
+	 * value can only be older than the snapshot that follows -- a change
+	 * racing in between makes the next poll redo the work, which is
+	 * harmless. Read after, and a change that landed between the copy and
+	 * the read would be recorded as already seen, and lost for good.
+	 */
+	uint64 GetListGeneration() const { return m_listGeneration.load(std::memory_order_relaxed); }
+
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 	// Fill `out` with the basenames of all currently shared files. Used by
 	// the Directories panel's exclusion-filter live preview.
@@ -229,6 +253,9 @@ private:
 	CKnownFileList *filelist;
 
 	CKnownFileMap m_Files_map;
+	// See GetListGeneration(). Bumped under list_mut wherever m_Files_map
+	// gains or loses an entry; atomic so it can be read without the lock.
+	std::atomic<uint64> m_listGeneration{ 0 };
 	// Secondary index keyed by full path so the watcher can resolve a
 	// DELETE/RENAME event to its CKnownFile* in O(1) without walking
 	// m_Files_map. Maintained alongside m_Files_map in AddFile() and
