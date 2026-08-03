@@ -175,20 +175,79 @@ public:
 	virtual bool IsPartFile_Encoder() { return true; }
 };
 
-class CFileEncoderMap : public std::map<uint32, CKnownFile_Encoder *>
+// The encoders for the files this connection has told its client about, held
+// in ECID order.
+//
+// A sorted vector rather than a std::map. The response walk touches every
+// entry on every poll and does very little per entry, so its cost was
+// dominated by chasing red-black-tree pointers around the heap rather than by
+// the work itself -- a linear scan of a contiguous array is something the
+// prefetcher can follow, a tree traversal is not. Lookup becomes a binary
+// search, which is now the rarer operation: #775 removed the per-file lookups,
+// leaving only the reconcile below and two amuleweb call sites. Structural
+// change is rarer still, so paying O(n) to merge new entries or compact away
+// dead ones is the right side of the trade.
+class CFileEncoderMap
 {
 	typedef std::set<uint32> IDSet;
 
 public:
+	typedef std::pair<uint32, CKnownFile_Encoder *> value_type;
+	typedef std::vector<value_type> Storage;
+	typedef Storage::iterator iterator;
+	typedef Storage::const_iterator const_iterator;
+
 	~CFileEncoderMap();
+
+	iterator begin() { return m_entries.begin(); }
+	iterator end() { return m_entries.end(); }
+	size_t size() const { return m_entries.size(); }
+
+	// Binary search by ECID; end() when absent.
+	iterator find(uint32 id);
+
+	// The encoder for `id`, or NULL. Unlike std::map::operator[] this does
+	// not insert a default-constructed entry on a miss -- that entry would
+	// have held a NULL encoder, which the next reconcile would then have
+	// dereferenced.
+	CKnownFile_Encoder *operator[](uint32 id);
+
 	// If freshEcids is non-null, receives the ECIDs whose encoder was
 	// (re-)created this call. Freshly-created encoders signal that the
 	// caller's per-ECID EC caches (CObjTagMap valuemap, and the encoder's
-	// own sent-with-detail mask) are stale w.r.t. the client's local view
+	// own sent-with-detail flag) are stale w.r.t. the client's local view
 	// and must be dropped so INC_UPDATE emissions re-send identifying fields.
 	void UpdateEncoders(IDSet *freshEcids = nullptr);
 
 private:
+	// Order entries, and order an entry against a bare ECID, so the same
+	// predicate serves both the sort and the binary search.
+	struct KeyLess
+	{
+		bool operator()(const value_type &a, const value_type &b) const { return a.first < b.first; }
+		bool operator()(const value_type &a, uint32 id) const { return a.first < id; }
+		bool operator()(uint32 id, const value_type &b) const { return id < b.first; }
+	};
+
+	// Entries created during a reconcile, merged in once the pass that made
+	// them is done. Appending here rather than inserting into the middle of
+	// m_entries keeps a first poll -- where every file is new -- from paying
+	// a memmove of the whole array per file.
+	Storage m_pending;
+	void FlushPending();
+
+	// Sorted ascending by ECID. The GET_UPDATE walk depends on that order:
+	// it appends each ECID it passes to the list the removal merge consumes.
+	Storage m_entries;
+
+	// Monotonic reconcile counter; see UpdateEncoders. Two things make a
+	// stamp comparison safe. The counter is a member of this map, and the map
+	// belongs to one CECServerSocket, so it is per-connection and encoders
+	// are never shared across clients -- there is no cross-client collision
+	// to reason about. And every UpdateEncoders call takes a fresh value
+	// before stamping anything, so no encoder can be carrying the value the
+	// current call is about to use. 64-bit on top of that, so it also cannot
+	// wrap back onto a live encoder's stamp within any plausible uptime.
 	// Monotonic reconcile counter; see UpdateEncoders. Two things make a
 	// stamp comparison safe. The counter is a member of this map, and the map
 	// belongs to one CECServerSocket, so it is per-connection and encoders
@@ -203,16 +262,46 @@ private:
 CFileEncoderMap::~CFileEncoderMap()
 {
 	// DeleteContents() causes infinite recursion here!
-	for (iterator it = begin(); it != end(); ++it) {
-		delete it->second;
+	for (const value_type &e : m_entries) {
+		delete e.second;
 	}
+	// Normally empty: every reconcile merges what it created before it
+	// returns. Covers a throw part-way through one.
+	for (const value_type &e : m_pending) {
+		delete e.second;
+	}
+}
+
+CFileEncoderMap::iterator CFileEncoderMap::find(uint32 id)
+{
+	const iterator it = std::lower_bound(m_entries.begin(), m_entries.end(), id, KeyLess());
+	return (it != m_entries.end() && it->first == id) ? it : m_entries.end();
+}
+
+CKnownFile_Encoder *CFileEncoderMap::operator[](uint32 id)
+{
+	const iterator it = find(id);
+	return it == m_entries.end() ? nullptr : it->second;
+}
+
+void CFileEncoderMap::FlushPending()
+{
+	if (m_pending.empty()) {
+		return;
+	}
+	// Sort what arrived, then merge the two runs. Both are already ordered,
+	// so this is linear in the total rather than a re-sort of everything.
+	std::sort(m_pending.begin(), m_pending.end(), KeyLess());
+	const Storage::difference_type split = static_cast<Storage::difference_type>(m_entries.size());
+	m_entries.insert(m_entries.end(), m_pending.begin(), m_pending.end());
+	std::inplace_merge(m_entries.begin(), m_entries.begin() + split, m_entries.end(), KeyLess());
+	m_pending.clear();
 }
 
 // Check if encoder contains files that are no longer used
 // or if we have new files without encoder yet.
 void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 {
-	IDSet dead_files;
 	// Stamp every encoder whose file is still listed with this epoch; the
 	// sweep below then takes anything left behind. This used to build a set
 	// of the live ECIDs instead, which cost a red-black-tree insertion per
@@ -229,7 +318,7 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 		if (it == end()) {
 			CKnownFile_Encoder *enc = new CPartFile_Encoder(downloads[i]);
 			enc->SetSeenEpoch(epoch);
-			(*this)[id] = enc;
+			m_pending.emplace_back(id, enc);
 			if (freshEcids) {
 				freshEcids->insert(id);
 			}
@@ -237,6 +326,12 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 			it->second->SetSeenEpoch(epoch);
 		}
 	}
+	// Merge before the shares pass, not after both. A partfile appears in
+	// both lists, and the check below asks whether this reconcile has already
+	// reached it -- which it answers with find(). Leaving the new entries
+	// unmerged would hide them from that lookup and build a second encoder
+	// for the same ECID.
+	FlushPending();
 	// Shares
 	std::vector<CKnownFile *> shares;
 	theApp->sharedfiles->CopyFileList(shares);
@@ -253,7 +348,7 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 		if (it == end()) {
 			CKnownFile_Encoder *enc = new CKnownFile_Encoder(shares[i]);
 			enc->SetSeenEpoch(epoch);
-			(*this)[id] = enc;
+			m_pending.emplace_back(id, enc);
 			if (freshEcids) {
 				freshEcids->insert(id);
 			}
@@ -261,21 +356,33 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 			it->second->SetSeenEpoch(epoch);
 		}
 	}
-	// Check for removed files, and store them in a set for deletion.
-	// (std::map documentation is unclear if a construct like
-	//		iterator to_del = it++; erase(to_del) ;
-	// works or invalidates it too.)
-	for (iterator it = begin(); it != end(); ++it) {
+	FlushPending();
+
+	// Anything still carrying an older stamp has lost its file. Delete those
+	// encoders and close the gaps in one pass, preserving order. This used to
+	// collect the dead into a set and then erase them one at a time, each
+	// erase being a fresh lookup; compacting in place is a single sweep and
+	// keeps the array contiguous for the walk that reads it next.
+	iterator out = m_entries.begin();
+	for (iterator it = m_entries.begin(); it != m_entries.end(); ++it) {
 		if (it->second->GetSeenEpoch() != epoch) {
-			dead_files.insert(it->first);
+			delete it->second;
+			continue;
 		}
+		if (out != it) {
+			*out = *it;
+		}
+		++out;
 	}
-	// then delete them
-	for (IDSet::iterator it = dead_files.begin(); it != dead_files.end(); ++it) {
-		iterator it2 = find(*it);
-		delete it2->second;
-		erase(it2);
-	}
+	m_entries.erase(out, m_entries.end());
+
+	// The GET_UPDATE walk relies on this order to feed the removal merge, and
+	// getting it wrong loses or invents removals silently. Debug-only, and
+	// `less_equal` rejects duplicate ECIDs as well as misordering -- a
+	// duplicate would mean two encoders for one file.
+	assert(std::is_sorted(m_entries.begin(),
+		m_entries.end(),
+		[](const value_type &a, const value_type &b) { return a.first <= b.first; }));
 }
 
 //-------------------- CECServerSocket --------------------
@@ -1500,12 +1607,10 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	// infers removal from absence instead, so for one of those this is never
 	// read and is not worth building.
 	// The removal merge needs that list ascending, and it gets it for free
-	// only because the encoder map is ordered by ECID. Tie the guarantee to
-	// the type: re-basing CFileEncoderMap on an unordered container would go
-	// on compiling and silently hand the merge an unsorted list, whose wrong
-	// answer nothing at runtime would report.
-	static_assert(std::is_base_of<std::map<uint32, CKnownFile_Encoder *>, CFileEncoderMap>::value,
-		"Get_EC_Response_GetUpdate relies on CFileEncoderMap iterating in ECID order");
+	// only because the encoder map is ordered by ECID. That guarantee lives on
+	// the container: CFileEncoderMap keeps its entries sorted by ECID and
+	// asserts that invariant at the end of every reconcile, so the ordering
+	// is checked where it is established rather than assumed here.
 	std::vector<uint32> current_file_ids;
 	if (partial_update_active) {
 		current_file_ids.reserve(encoders.size());
