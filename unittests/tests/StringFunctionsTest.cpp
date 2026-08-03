@@ -183,8 +183,8 @@ TEST(StringFunctions, UnescapeHTMLPlainAscii)
 // CED2KFileLink split in half.
 TEST(StringFunctions, UnescapeHTMLAfterNonAsciiCharacter)
 {
-	const wxString escaped = wxString::FromUTF8(
-		"Une%20beaut\xC3\xA9%20faite%20au%20naturel%20-%20Part%202.mkv");
+	const wxString escaped =
+		wxString::FromUTF8("Une%20beaut\xC3\xA9%20faite%20au%20naturel%20-%20Part%202.mkv");
 	const wxString expected = wxString::FromUTF8("Une beaut\xC3\xA9 faite au naturel - Part 2.mkv");
 
 	ASSERT_EQUALS(expected, UnescapeHTML(escaped));

@@ -294,8 +294,10 @@ void CSharedFilesWnd::OnBtnExportCollection(wxCommandEvent &WXUNUSED(evt))
 	// order they are sorted in, so walking it exports exactly what is on
 	// screen -- which is also why this ignores the selection.
 	if (sharedfilesctrl->GetItemCount() == 0) {
-		wxMessageBox(_("There are no shared files listed to export."), caption,
-			wxOK | wxICON_INFORMATION, this);
+		wxMessageBox(_("There are no shared files listed to export."),
+			caption,
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	}
 
@@ -303,7 +305,11 @@ void CSharedFilesWnd::OnBtnExportCollection(wxCommandEvent &WXUNUSED(evt))
 	wildcard += "|*.emulecollection|";
 	wildcard += _("All files");
 	wildcard += "|*";
-	wxFileDialog dialog(this, caption, wxEmptyString, "shared.emulecollection", wildcard,
+	wxFileDialog dialog(this,
+		caption,
+		wxEmptyString,
+		"shared.emulecollection",
+		wildcard,
 		wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	if (dialog.ShowModal() != wxID_OK) {
 		return;
@@ -337,8 +343,10 @@ void CSharedFilesWnd::OnBtnExportCollection(wxCommandEvent &WXUNUSED(evt))
 	}
 
 	if (written == 0) {
-		wxMessageBox(_("There are no shared files listed to export."), caption,
-			wxOK | wxICON_INFORMATION, this);
+		wxMessageBox(_("There are no shared files listed to export."),
+			caption,
+			wxOK | wxICON_INFORMATION,
+			this);
 		return;
 	}
 
@@ -348,13 +356,16 @@ void CSharedFilesWnd::OnBtnExportCollection(wxCommandEvent &WXUNUSED(evt))
 	wxFile out;
 	if (!out.Create(path, true) || out.Write(utf8.data(), utf8.length()) != utf8.length() ||
 		!out.Close()) {
-		wxMessageBox(CFormat(_("Failed to write the collection file '%s'.")) % path, caption,
-			wxOK | wxICON_ERROR, this);
+		wxMessageBox(CFormat(_("Failed to write the collection file '%s'.")) % path,
+			caption,
+			wxOK | wxICON_ERROR,
+			this);
 		return;
 	}
 
 	AddLogLineC(CFormat(wxPLURAL("Exported %u shared file to '%s'.",
-				 "Exported %u shared files to '%s'.", (int)written)) %
+			    "Exported %u shared files to '%s'.",
+			    (int)written)) %
 		    written % path);
 }
 
