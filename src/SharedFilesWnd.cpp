@@ -335,7 +335,7 @@ void CSharedFilesWnd::OnBtnExportCollection(wxCommandEvent &WXUNUSED(evt))
 	const long shown = sharedfilesctrl->GetItemCount();
 	for (long row = 0; row < shown; ++row) {
 		const CKnownFile *file = sharedfilesctrl->FileAtRow(row);
-		if (file == NULL) {
+		if (file == nullptr) {
 			continue;
 		}
 		links += theApp->CreateED2kLink(file) + "\n";
