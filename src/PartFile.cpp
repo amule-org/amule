@@ -3526,28 +3526,17 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 		std::fill(m_aChangedPart.begin(), m_aChangedPart.end(), false);
 	} else {
-		// Quiescent guard: defer per-part hashing until 1 s of no new
-		// blocks, so the synchronous read+MD4 doesn't fire mid-burst.
-		const uint64 kHashQuiescentMs = 1000;
-		const uint64 nowTick = GetTickCount64();
-		if (m_nLastBlockReceivedTick != 0 &&
-			(nowTick - m_nLastBlockReceivedTick) < kHashQuiescentMs) {
-			return;
-		}
-
-		// Async enqueue: hand each dirty part to CPartFileHashThread,
+		// Async enqueue: hand each dirty completed part to CPartFileHashThread,
 		// which runs HashSinglePart on its own thread and posts a
 		// CPartFileHashResultEvent back to CamuleApp's main-thread
 		// handler — OnAsyncHashComplete then runs the AICH-recovery /
-		// SafeAddKFile branches below.  Main-thread cost here is just
+		// SafeAddKFile branches below. Main-thread cost here is just
 		// queue inserts (microseconds per part), so even a 3000-part
 		// dirty list enqueues in milliseconds with zero hashing freeze.
 		//
-		// PR #454 rejected an async-hash thread because read-for-hash
-		// competed with CPartFileWriteThread's writes during active
-		// download.  The quiescent guard above (1 s no receives)
-		// guarantees writes have drained before we enqueue, so the
-		// contention case can't arise.
+		// Disk write safety: m_iWrites <= 0 at line 3510 already guarantees
+		// that CPartFileWriteThread has flushed all pending writes to disk
+		// before we enqueue a completed part for hashing.
 		uint32 enqueued = 0;
 		for (uint32 partNumber = 0; partNumber < partCount; ++partNumber) {
 			if (!m_aChangedPart[partNumber]) {
