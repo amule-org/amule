@@ -319,6 +319,15 @@ void ChatRemoveFriend(CFriend *toremove)
 	delete toremove;
 }
 
+void SharedFilesUpdateItem(CKnownFile *NOT_ON_DAEMON(file))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg->m_sharedfileswnd && theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->UpdateItem(file);
+	}
+#endif
+}
+
 #ifdef CLIENT_GUI
 
 void PartFile_Swap_A4AF(CPartFile *file)
@@ -486,15 +495,6 @@ void SharedFilesShowFileList()
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_sharedfileswnd && theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFileList();
-	}
-#endif
-}
-
-void SharedFilesUpdateItem(CKnownFile *NOT_ON_DAEMON(file))
-{
-#ifndef AMULE_DAEMON
-	if (theApp->amuledlg->m_sharedfileswnd && theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->UpdateItem(file);
 	}
 #endif
 }

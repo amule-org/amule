@@ -907,20 +907,40 @@ void CSharedFilesCtrl::DrawAvailabilityBar(CKnownFile *file, wxDC *dc, const wxR
 	s_ChunkBar.SetHeight(barRect.GetHeight());
 	s_ChunkBar.SetWidth(barRect.GetWidth());
 	s_ChunkBar.Set3dDepth(CPreferences::Get3DDepth());
-	uint64 end = 0;
-	for (unsigned int i = 0; i < list.size(); ++i) {
-		uint64 start = PARTSIZE * static_cast<uint64>(i);
-		end = PARTSIZE * static_cast<uint64>(i + 1);
-		s_ChunkBar.FillRange(start,
-			end,
-			CMuleColour(list[i] ? 0 : 255,
-				list[i] ? ((210 - (22 * (list[i] - 1)) < 0) ? 0
-									    : (210 - (22 * (list[i] - 1))))
-					: 0,
-				list[i] ? 255 : 0));
+
+	if (file->GetHashingProgress() > 0) {
+		const CMuleColour crPending(255, 208, 0);
+		const CMuleColour crFlatPending(255, 255, 100);
+		const CMuleColour crProgress(0, 224, 0);
+		const CMuleColour crFlatProgress(0, 150, 0);
+
+		uint64 left = file->GetHashingProgress() * PARTSIZE;
+		if (left < file->GetFileSize() - 1) {
+			s_ChunkBar.FillRange(
+				left + 1, file->GetFileSize() - 1, bFlat ? crFlatPending : crPending);
+		} else {
+			left = file->GetFileSize() - 1;
+		}
+		// Fill the amount already hashed with green.
+		s_ChunkBar.FillRange(0, left, bFlat ? crFlatProgress : crProgress);
+		s_ChunkBar.Draw(dc, barRect.x, barRect.y, bFlat);
+	} else {
+		uint64 end = 0;
+		for (unsigned int i = 0; i < list.size(); ++i) {
+			uint64 start = PARTSIZE * static_cast<uint64>(i);
+			end = PARTSIZE * static_cast<uint64>(i + 1);
+			s_ChunkBar.FillRange(start,
+				end,
+				CMuleColour(list[i] ? 0 : 255,
+					list[i] ? ((210 - (22 * (list[i] - 1)) < 0)
+								  ? 0
+								  : (210 - (22 * (list[i] - 1))))
+						: 0,
+					list[i] ? 255 : 0));
+		}
+		s_ChunkBar.FillRange(end + 1, file->GetFileSize() - 1, CMuleColour(255, 0, 0));
+		s_ChunkBar.Draw(dc, barRect.x, barRect.y, bFlat);
 	}
-	s_ChunkBar.FillRange(end + 1, file->GetFileSize() - 1, CMuleColour(255, 0, 0));
-	s_ChunkBar.Draw(dc, barRect.x, barRect.y, bFlat);
 
 	if (!bFlat) {
 		// Draw black border

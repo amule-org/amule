@@ -390,6 +390,11 @@ public:
 		return AssignIfExist(EC_TAG_KNOWNFILE_ON_QUEUE, target);
 	}
 
+	bool HashingProgress(uint16 &target) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, target);
+	}
+
 	// Live upload activity + share timestamps (issue #466). The daemon emits
 	// these; amulegui has no m_ClientUploadList to compute them from, so it
 	// relies on these getters to carry the values across EC.

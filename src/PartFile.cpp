@@ -4568,6 +4568,7 @@ void CPartFile::SetHashingProgress(uint16 part) const
 		const_cast<CPartFile *>(this)->MarkECChanged();
 	}
 	Notify_DownloadCtrlUpdateItem(this);
+	Notify_SharedFilesUpdateItem(const_cast<CPartFile *>(this));
 }
 
 #ifndef CLIENT_GUI

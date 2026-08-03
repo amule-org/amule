@@ -1875,6 +1875,15 @@ bool CKnownFile::HasProperAICHHashSet() const
 #endif
 }
 
+void CKnownFile::SetHashingProgress(uint16 val) const
+{
+	if (m_hashingProgress != val) {
+		m_hashingProgress = val;
+		const_cast<CKnownFile *>(this)->MarkECChanged();
+	}
+	Notify_SharedFilesUpdateItem(const_cast<CKnownFile *>(this));
+}
+
 wxString CKnownFile::GetFeedback() const
 {
 	return wxString(_("File name")) + ": " + GetFileName().GetPrintable() + "\n" + _("File size") + ": " +

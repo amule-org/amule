@@ -255,6 +255,9 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	AddTag(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_HIGH, file->m_nCompleteSourcesCountHi, valuemap);
 	AddTag(EC_TAG_KNOWNFILE_COMPLETE_SOURCES, file->m_nCompleteSourcesCount, valuemap);
 
+	if (name == EC_TAG_KNOWNFILE) {
+		AddTag(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, file->GetHashingProgress(), valuemap);
+	}
 	AddTag(EC_TAG_KNOWNFILE_ON_QUEUE, file->GetQueuedCount(), valuemap);
 
 	// Live upload activity (issue #466). Emitted before the UPDATE

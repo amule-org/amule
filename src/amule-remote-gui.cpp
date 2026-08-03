@@ -1903,6 +1903,10 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	tag->GetCompleteSourcesLow(&file->m_nCompleteSourcesCountLo);
 	tag->GetCompleteSourcesHigh(&file->m_nCompleteSourcesCountHi);
 	tag->GetCompleteSources(&file->m_nCompleteSourcesCount);
+	uint16 hashingProgress = 0;
+	if (tag->HashingProgress(hashingProgress)) {
+		file->SetHashingProgress(hashingProgress);
+	}
 
 	tag->GetOnQueue(&file->m_queuedCount);
 

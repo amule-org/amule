@@ -450,7 +450,7 @@ public:
 	void SetShowPeers(bool val) { m_showPeers = val; }
 	bool ShowPeers() const { return m_showPeers; }
 
-	virtual void SetHashingProgress(uint16) const {} // does something for CPartFile only
+	virtual void SetHashingProgress(uint16 val) const;
 	uint16 GetHashingProgress() const { return m_hashingProgress; }
 
 #ifdef CLIENT_GUI

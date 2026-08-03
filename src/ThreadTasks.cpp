@@ -576,8 +576,9 @@ void CVerifyLocalDataTask::Entry()
 	CAICHHash aichRootHash;
 	EAICHStatus aichStatus;
 	CPath fullPath;
+	CKnownFile *knownFile;
 	{
-		CKnownFile *knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
+		knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
 		if (knownFile == nullptr) {
 			AddDebugLogLineC(logVerifyLocalData,
 				CFormat("Warning, file was removed before verifying it: %s") % GetDesc());
@@ -652,6 +653,17 @@ void CVerifyLocalDataTask::Entry()
 			const uint64 offset = part * PARTSIZE; // We'll read at most PARTSIZE bytes per cycle
 			const uint64 partLength = storedFile.GetPartSize(part);
 
+			// check if the file is still there, and we are pointing to the same object
+			if (knownFile == theApp->knownfiles->FindKnownFileByID(m_fileID))
+				knownFile->SetHashingProgress(part + 1);
+			else {
+				AddDebugLogLineC(logVerifyLocalData,
+					CFormat("File removed or modified during hash check: File: %s ID: "
+						"%s") %
+						fullPath % m_fileID.Encode());
+				return;
+			}
+
 			CMD4Hash md4Hash;
 			CKnownFile calculatedCAICHOwner;
 			CAICHHashTree *aichHash = nullptr;
@@ -710,6 +722,8 @@ void CVerifyLocalDataTask::Entry()
 	} catch (const CSafeIOException &e) {
 		AddDebugLogLineC(logVerifyLocalData, "IO exception while hashing file: " + e.what());
 	}
+	if (knownFile == theApp->knownfiles->FindKnownFileByID(m_fileID))
+		knownFile->SetHashingProgress(0);
 }
 
 ////////////////////////////////////////////////////////////
