@@ -1115,6 +1115,27 @@ void CECSocket::SendCachedBodyResponse(
 	} else {
 		outputStart = m_output_queue.begin();
 	}
+
+	// Seal the body, exactly as WritePacket does and for the same reasons:
+	// after FlushBuffers so ZLIB has already produced its bytes (serialise ->
+	// deflate -> seal), and before the length is summed below so the patched
+	// length covers ciphertext plus tag.
+	//
+	// Without this the flag byte above still advertises EC_FLAG_ENCRYPTED --
+	// it is OR'd in from m_crypt_enabled after the m_my_flags mask, because
+	// it is connection state rather than a negotiated capability -- while the
+	// body goes out as plaintext. The peer then tries to verify an AEAD tag
+	// that was never written, fails, and drops the connection through the one
+	// path in ReadPacket that logs only at debug level, so the disconnect is
+	// silent at both ends.
+	if (flags & EC_FLAG_ENCRYPTED) {
+		if (!SealOutputQueue(outputStart)) {
+			AddDebugLogLineN(logEC, "SendCachedBodyResponse: sealing failed");
+			CloseAndDispatchLost();
+			return;
+		}
+	}
+
 	uint32 actual_len = 0;
 	for (std::list<CQueuedData *>::iterator it = outputStart; it != m_output_queue.end(); ++it) {
 		actual_len += (uint32_t)(*it)->GetDataLength();
