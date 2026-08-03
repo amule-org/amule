@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-02 09:59+0000\n"
+"PO-Revision-Date: 2026-08-03 11:18+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -371,7 +371,7 @@ msgstr "B<[ -p> I<E<lt>портE<gt>>, B<--port>=I<E<lt>портE<gt>> B<]>"
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "aMule's port for External Connections, as set in Preferences-E<gt>Remote Controls (default: I<4712>)"
-msgstr "Порт, который использует aMule для внешних соединений. Указывается в Настройках-E<gt>Удаленное управление (по умолчанию: I<4712>)"
+msgstr "Порт, который использует aMule для внешних соединений. Указывается в Настройках-E<gt>Удалённое управление (по умолчанию: I<4712>)"
 
 #. type: TP
 #: amulecmd.1.in amuleweb.1.in
@@ -1074,7 +1074,7 @@ msgstr "Запретить гостевой доступ (вариант по у
 #. type: Plain text
 #: amuleweb.1.in
 msgid "Load/save webserver settings from/to remote aMule.  This causes amuleweb to ignore command-line and config-file settings, and load them from aMule.  When saving preferences none will be written to the config file, but to aMule.  (Of course, this works only for those settings that can be set in aMule's Preferences-E<gt>Remote Controls.)"
-msgstr "Загрузить/сохранить настройки вебсервера из/в удаленный aMule. Это приводит к игнорированию параметров командной строки и конфигурационного файла, и загрузки их из aMule. При сохранении настроек они будут писаться не в файл конфигурации, а в aMule. (Конечно, работает только для настроек которые могут быть заданы через меню Настройки-E<gt>Удаленный контроль)"
+msgstr "Загрузить/сохранить настройки веб-сервера из/в удалённый aMule. Это приводит к игнорированию параметров командной строки и конфигурационного файла, и загрузки их из aMule. При сохранении настроек они будут писаться не в файл конфигурации, а в aMule. (Конечно, работает только для настроек которые могут быть заданы через меню Настройки-E<gt>Удалённый контроль)"
 
 #. type: Plain text
 #: amuleweb.1.in
