@@ -93,6 +93,72 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &info,
 	size_t outLen);
 
+/// Length of an X25519 public key, private key and shared secret alike.
+constexpr size_t X25519_KEY_LEN = 32;
+
+/**
+ * Generate an ephemeral X25519 key pair.
+ *
+ * Ephemeral is the whole point: the private key never leaves the process, is
+ * never written anywhere, and is discarded once the session key is derived.
+ * That is what gives forward secrecy -- a recording of the session cannot be
+ * decrypted later even by someone who learns the EC password, because the
+ * password is not what the channel key is derived from.
+ *
+ * @return false if randomness is unavailable, in which case both outputs are
+ *         cleared and the caller must stay in clear rather than continue with
+ *         a predictable key.
+ */
+bool GenerateX25519KeyPair(std::vector<uint8_t> &privOut, std::vector<uint8_t> &pubOut);
+
+/**
+ * X25519 shared secret from our private key and the peer's public key.
+ *
+ * The peer's key is validated: an all-zero shared secret (which a peer can
+ * force with a low-order point) is rejected rather than used, since it would
+ * key every such session identically.
+ *
+ * @return false on a malformed or degenerate peer key; @a sharedOut is cleared.
+ */
+bool X25519Agree(const std::vector<uint8_t> &priv,
+	const std::vector<uint8_t> &peerPub,
+	std::vector<uint8_t> &sharedOut);
+
+/**
+ * Key-confirmation tag proving knowledge of the EC credential.
+ *
+ * With the channel key derived from the ephemeral exchange alone, the password
+ * no longer defends against an active man in the middle by making the key
+ * underivable -- an attacker can complete two exchanges and relay. This is what
+ * catches that instead: the tag binds the credential to the handshake
+ * transcript, which necessarily differs on the two legs of a relay, so the
+ * check fails on at least one of them.
+ *
+ * Built from the existing HKDF rather than a separate HMAC: extract-then-expand
+ * with the credential as keying material is a MAC over the transcript, and
+ * reusing the primitive that is already here keeps the crypto surface to what
+ * is already reviewed.
+ *
+ * @param secret     the credential this connection authenticated with.
+ * @param transcript handshake bytes, including both public keys.
+ * @param label      direction tag, so the two sides' confirmations differ and
+ *                   one cannot be replayed as the other.
+ */
+std::vector<uint8_t> ConfirmTag(
+	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label);
+
+/// Length of a confirmation tag.
+constexpr size_t CONFIRM_TAG_LEN = 32;
+
+/**
+ * Constant-time equality for secrets.
+ *
+ * Used for the confirmation check: a byte-at-a-time compare that returns early
+ * leaks, through timing, how much of a guessed tag was right, which turns
+ * forging one into a per-byte search instead of a 2^256 one.
+ */
+bool ConstantTimeEquals(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b);
+
 /**
  * One direction-aware AEAD session for a single EC connection.
  *

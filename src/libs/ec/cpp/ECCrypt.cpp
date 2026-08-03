@@ -158,6 +158,84 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	return out;
 }
 
+bool GenerateX25519KeyPair(std::vector<uint8_t> &privOut, std::vector<uint8_t> &pubOut)
+{
+	privOut.clear();
+	pubOut.clear();
+	try {
+		CryptoPP::AutoSeededRandomPool rng;
+		CryptoPP::x25519 dh;
+		std::vector<uint8_t> priv(dh.PrivateKeyLength(), 0);
+		std::vector<uint8_t> pub(dh.PublicKeyLength(), 0);
+		dh.GeneratePrivateKey(rng, priv.data());
+		dh.GeneratePublicKey(rng, priv.data(), pub.data());
+		privOut.swap(priv);
+		pubOut.swap(pub);
+	} catch (const CryptoPP::Exception &) {
+		privOut.clear();
+		pubOut.clear();
+		return false;
+	}
+	return true;
+}
+
+bool X25519Agree(const std::vector<uint8_t> &priv,
+	const std::vector<uint8_t> &peerPub,
+	std::vector<uint8_t> &sharedOut)
+{
+	sharedOut.clear();
+	if (priv.size() != X25519_KEY_LEN || peerPub.size() != X25519_KEY_LEN) {
+		return false;
+	}
+	try {
+		CryptoPP::x25519 dh;
+		std::vector<uint8_t> shared(dh.AgreedValueLength(), 0);
+		// validateOtherPublicKey: reject the low-order points that force a
+		// known shared secret regardless of our private key.
+		if (!dh.Agree(shared.data(), priv.data(), peerPub.data(), true)) {
+			return false;
+		}
+		// Belt and braces on top of that validation: an all-zero secret would
+		// key every such session identically, so refuse it outright rather
+		// than trust one library's definition of a degenerate point.
+		uint8_t acc = 0;
+		for (const uint8_t b : shared) {
+			acc = (uint8_t)(acc | b);
+		}
+		if (acc == 0) {
+			return false;
+		}
+		sharedOut.swap(shared);
+	} catch (const CryptoPP::Exception &) {
+		sharedOut.clear();
+		return false;
+	}
+	return true;
+}
+
+std::vector<uint8_t> ConfirmTag(
+	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label)
+{
+	const size_t labelLen = label ? strlen(label) : 0;
+	const std::vector<uint8_t> info((const uint8_t *)label, (const uint8_t *)label + labelLen);
+	// Credential as keying material, transcript as salt: extract-then-expand
+	// over the transcript is a MAC of it under the credential, which is all a
+	// confirmation needs and avoids introducing a second primitive.
+	return HkdfSha256(secret, transcript, info, CONFIRM_TAG_LEN);
+}
+
+bool ConstantTimeEquals(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b)
+{
+	if (a.size() != b.size() || a.empty()) {
+		return false;
+	}
+	uint8_t diff = 0;
+	for (size_t i = 0; i < a.size(); ++i) {
+		diff = (uint8_t)(diff | (a[i] ^ b[i]));
+	}
+	return diff == 0;
+}
+
 /// The in-flight cipher objects, one per direction and per packet.
 struct Session::StreamState
 {
