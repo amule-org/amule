@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-03 11:18+0000\n"
+"PO-Revision-Date: 2026-08-03 15:17+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -106,7 +106,7 @@ msgstr "Доступна новая версия (%s):"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr "Не удалось проверить наличие обновлений. Повторите попытку позже."
+msgstr "Не удалось проверить обновления. Попробуйте позже."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -413,9 +413,9 @@ msgid ""
 msgstr ""
 "Порт %u недоступен!\n"
 "\n"
-"Это означает что вам будет выдан LowID.\n"
+"Это означает, что вам будет выдан LowID.\n"
 "\n"
-"Проверьте вашу сетевую конфигурацию, убедитесь что необходимый порт открыт."
+"Проверьте сеть: порт должен быть открыт для входящего и исходящего трафика."
 
 #: src/amule.cpp
 msgid "Failed to create OnlineSig File"
@@ -464,7 +464,7 @@ msgid ""
 " OnlineSignature will be DISABLED until you fix it on preferences."
 msgstr ""
 "Указан неверный каталог для файлов онлайн-подписей!\n"
-"Online-подписи будут отключены пока вы не исправите это в настройках."
+"Онлайн-подписи будут отключены, пока вы не исправите это в настройках."
 
 #: src/amule.cpp
 msgid "Server hostname notified"
@@ -543,12 +543,12 @@ msgstr "Ошибка при загрузке файла контроля вер�
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
 msgid "Users: %s | Files: %s"
-msgstr "Участников: %s | Файлов: %s"
+msgstr "Участники: %s | Файлы: %s"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
-msgstr "Участников: E: %s K: %s | Файлов: E: %s K: %s"
+msgstr "Участники: E: %s K: %s | Файлы: E: %s K: %s"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 msgid "No networks selected"
@@ -565,7 +565,7 @@ msgstr "HighID"
 #: src/amule.cpp
 #, c-format
 msgid "Connected to %s %s"
-msgstr "Соединен с %s %s"
+msgstr "Соединено с %s %s"
 
 #: src/amule.cpp
 #, c-format
@@ -594,7 +594,7 @@ msgstr "Подключено к Kad (в порядке)"
 
 #: src/amule.cpp
 msgid "Connected to Kad (firewalled)"
-msgstr "Подключено к Kad (за фаерволом)"
+msgstr "Подключено к Kad (за экраном)"
 
 #: src/amule.cpp
 msgid "Disconnected from Kad"
@@ -602,7 +602,7 @@ msgstr "Отключено от Kad"
 
 #: src/amule.cpp
 msgid "Kad network cannot be used if UDP port is disabled on preferences, not starting."
-msgstr "Сеть Kad не может быть использована если порт UDP выключен в настройках. Отменяю запуск."
+msgstr "Сеть Kad нельзя использовать, если порт UDP отключён в настройках. Отмена запуска."
 
 #: src/amule.cpp
 msgid "Kad network disabled on preferences, not connecting."
@@ -717,7 +717,7 @@ msgstr "eD2k: не соединено"
 
 #: src/amuleDlg.cpp
 msgid "Kad: Firewalled"
-msgstr "Kad: за фаерволом"
+msgstr "Kad: за экраном"
 
 #: src/amuleDlg.cpp
 msgid "Kad: Connected"
@@ -734,7 +734,7 @@ msgstr "Kad: отключено"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Отдача: %.1f%s (%.1f) | Приём: %.1f%s (%.1f)"
+msgstr "От: %.1f%s (%.1f) | Ск: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MB/s"
@@ -747,7 +747,7 @@ msgstr " КБ/с"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Отдача: %.1f%s | Приём: %.1f%s"
+msgstr "От: %.1f%s | Ск: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -757,7 +757,7 @@ msgstr "aMule (%s | Подключено)"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "aMule (%s | Disconnected)"
-msgstr "aMule (%s | Отключен)"
+msgstr "aMule (%s | Отключён)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1121,7 +1121,7 @@ msgstr "*** Соединение с клиентом ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Failed to Connect to client / Connection lost ***"
-msgstr "*** Не удалость соединиться с клиентом / Соединение разорвано ***"
+msgstr "*** Не удалось соединиться с клиентом / Соединение разорвано ***"
 
 #: src/ChatSelector.cpp
 msgid "*** You have passed the captcha check and the user has received your message. ***"
@@ -1208,7 +1208,7 @@ msgstr "Подключено"
 
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 msgid "Disconnected"
-msgstr "Отключен"
+msgstr "Отключён"
 
 #: src/ClientDetailDialog.cpp src/DownloadListCtrl.cpp
 #: src/GenericClientListCtrl.cpp src/SharedFilesCtrl.cpp
@@ -1896,7 +1896,7 @@ msgstr "Ошибка идентификации: пароль не задан."
 
 #: src/ExternalConn.cpp
 msgid "Invalid request, please authenticate first."
-msgstr "Неверный запрос, сначала пройдите идентификацию."
+msgstr "Неверный запрос, сначала пройдите авторизацию."
 
 #: src/ExternalConn.cpp
 msgid "Access granted."
@@ -2045,7 +2045,7 @@ msgstr "Отсоединен от сети eD2k."
 
 #: src/ExternalConn.cpp
 msgid "Disconnected from Kad."
-msgstr "Отключен от Kad."
+msgstr "Отключён от Kad."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2222,7 +2222,7 @@ msgstr "Узел, на котором работает aMule (по умолча�
 
 #: src/ExternalConnector.cpp
 msgid "aMule's port for External Connection. (default: 4712)"
-msgstr "Порт aMule для внешних подключений (по умолчанию: 4712)"
+msgstr "Порт aMule для внешних соединений (по умолчанию: 4712)"
 
 #: src/ExternalConnector.cpp
 msgid "External Connection password."
@@ -2380,7 +2380,7 @@ msgstr "Стандартный порт TCP "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Extended UDP port (Kad / global search) "
-msgstr "Дополнительный порт UDP (Kad / Глобальный поиск) "
+msgstr "Расширенный порт UDP (Kad / глобальный поиск) "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Enable UPnP for router port forwarding"
@@ -3054,7 +3054,7 @@ msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
 msgid "Connected (firewalled)"
-msgstr "Подключено (за фаерволом)"
+msgstr "Подключено (за экраном)"
 
 #: src/MuleTrayIcon.cpp
 msgid "Server: "
@@ -3066,7 +3066,7 @@ msgstr "IP сервера: "
 
 #: src/MuleTrayIcon.cpp src/TextClient.cpp
 msgid "Not connected"
-msgstr "Отсоединен"
+msgstr "Не соединено"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3085,11 +3085,11 @@ msgstr "TCP порт: Не готово"
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "UDP port: %d"
-msgstr "UDP порт: %d"
+msgstr "Порт UDP: %d"
 
 #: src/MuleTrayIcon.cpp
 msgid "UDP port: Not ready"
-msgstr "UDP порт: Не готово"
+msgstr "Порт UDP: не готов"
 
 #: src/MuleTrayIcon.cpp
 msgid "Client Information"
@@ -3260,7 +3260,7 @@ msgstr "Пользователи, подключённые к текущему �
 
 #: src/muuli_wdr.cpp
 msgid "Up: 0.0 | Down: 0.0"
-msgstr "Отдача: 0,0 | Приём: 0,0"
+msgstr "От: 0,0 | Ск: 0,0"
 
 # Тултип. Лучше оставить как можно более коротким (не все системы автоматом
 # делают их многострочными ;-))
@@ -3272,7 +3272,7 @@ msgstr "Текущая средняя скорость отдачи и скач�
 # делают их многострочными ;-))
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
-msgstr "Отображает статус подключения и активные передачи. Красные стрелки означают, что вы в данный момент не подключены, жёлтые стрелки — что у вас LowID (вы за фаерволом), а зелёные стрелки — что у вас HighID (оптимальный тип подключения)."
+msgstr "Отображает статус подключения и активные передачи. Красные стрелки означают, что вы в данный момент не подключены, жёлтые стрелки — что у вас LowID (вы за межсетевым экраном), а зелёные стрелки — что у вас HighID (оптимальный тип подключения)."
 
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
@@ -3508,7 +3508,7 @@ msgstr "Умная обработка повреждений (ICH)"
 
 #: src/muuli_wdr.cpp
 msgid "Lost to corruption :"
-msgstr "Потери из-за повреждений :"
+msgstr "Потери из-за повреждений:"
 
 #: src/muuli_wdr.cpp
 msgid "Gained by compression :"
@@ -3516,7 +3516,7 @@ msgstr "Выигрыш сжатия:"
 
 #: src/muuli_wdr.cpp
 msgid "Packages saved by I.C.H. :"
-msgstr "Экономия пакетов I.C.H. :"
+msgstr "Экономия пакетов от ICH:"
 
 #: src/muuli_wdr.cpp
 msgid "Sharing"
@@ -4014,11 +4014,11 @@ msgstr "ED2K"
 
 #: src/muuli_wdr.cpp
 msgid "Autoconnect on startup"
-msgstr "Соединяться автоматически после запуска"
+msgstr "Автоподключение при запуске"
 
 #: src/muuli_wdr.cpp
 msgid "Reconnect on loss"
-msgstr "Восстановить соединение в случае разрыва"
+msgstr "Переподключать при обрыве связи"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -4058,7 +4058,7 @@ msgstr "Безопасное подключение"
 
 #: src/muuli_wdr.cpp
 msgid "Autoconnect to servers in static list only"
-msgstr "Автоподключение только к статическим серверам"
+msgstr "Автоподключение только к постоянным серверам"
 
 #: src/muuli_wdr.cpp
 msgid "Set manually added servers to High Priority"
@@ -4066,11 +4066,11 @@ msgstr "Высокий приоритет серверов, добавленны
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download in pause mode"
-msgstr "Добавлять файлы на загрузку в режиме паузы"
+msgstr "Добавлять файлы для скачивания в режиме паузы"
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download with auto priority"
-msgstr "Добавлять файлы в загрузку с авто приоритетом"
+msgstr "Добавлять файлы для скачивания с автоматическим приоритетом"
 
 #: src/muuli_wdr.cpp
 msgid "Try to download first and last chunks first"
@@ -4078,7 +4078,7 @@ msgstr "Пытаться сначала загрузить первую и по�
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr "Режим завершения: переключаться на быстрые источники для последних блоков"
+msgstr "Режим завершения: переключать на быстрые источники для последних блоков"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
@@ -4211,7 +4211,7 @@ msgstr "Удалить"
 
 #: src/muuli_wdr.cpp
 msgid "(Right click on folder icon for recursive share)"
-msgstr "(Щёлкните правой кнопкой значок каталога для рекурсивной публикации)"
+msgstr "(ПКМ по значку каталога для рекурсивной публикации)"
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -4255,7 +4255,7 @@ msgstr "Интервал обновления: 5 с"
 
 #: src/muuli_wdr.cpp
 msgid "Time for average graph: 100 mins"
-msgstr "Время для среднестатического графика: 100 минут"
+msgstr "Время для усреднения графика: 100 минут"
 
 #: src/muuli_wdr.cpp
 msgid "Connections Graph Scale: 100 "
@@ -4351,11 +4351,11 @@ msgstr "Одновременные запросы источников Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
-msgstr "Интервал повторного поиска источников Kad (мин.)"
+msgstr "Период повторного поиска источников Kad (мин.)"
 
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
-msgstr "Интервал повторного запроса источников (мин.)"
+msgstr "Период повторного запроса источников (мин.)"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -4363,7 +4363,7 @@ msgstr "Размер буфера: 240000 байт"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr "Использовать MMAP: доступ к файлам через отображение в память (ниже потребление памяти)"
+msgstr "Использовать MMAP: доступ к файлам с отображением в память (ниже потребление памяти)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
@@ -4420,7 +4420,7 @@ msgstr "Вертикальное расположение панели инст�
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr "Динамическая сортировка столбцов (автоперестановка строк при изменении значений)"
+msgstr "Динамическая сортировка столбцов (упорядочивание строк при смене значений)"
 
 # This is the heading for the preference options regarding the files in the
 # transfer list.
@@ -4466,7 +4466,7 @@ msgstr "Порт TCP:"
 
 #: src/muuli_wdr.cpp
 msgid "Enable UPnP port forwarding on the EC port"
-msgstr "Включить UPnP-проброс для порта внешних подключений"
+msgstr "Включить UPnP-проброс для порта внешних соединений"
 
 #: src/muuli_wdr.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Password"
@@ -4474,7 +4474,7 @@ msgstr "Пароль"
 
 #: src/muuli_wdr.cpp
 msgid "Require encrypted connections (rejects clients that cannot encrypt)"
-msgstr "Требовать шифрованные соединения (отклоняет клиенты, не умеющие шифровать)"
+msgstr "Требовать шифрованные соединения (отклоняет клиенты без шифрования)"
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -4486,7 +4486,7 @@ msgstr "Запускать amuleapi (REST API) при старте"
 
 #: src/muuli_wdr.cpp
 msgid "HTTP port:"
-msgstr "HTTP-порт:"
+msgstr "Порт HTTP:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
@@ -4756,7 +4756,7 @@ msgstr "Включает фильтрацию IP серверов в соотв�
 
 #: src/muuli_wdr.cpp
 msgid "Reload List"
-msgstr "Обновить список"
+msgstr "Перезагрузить список"
 
 #: src/muuli_wdr.cpp
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
@@ -4808,7 +4808,7 @@ msgstr "Включает запись файла OS, который может �
 
 #: src/muuli_wdr.cpp
 msgid "Update Frequency (Secs):"
-msgstr "Частота обновления (в секундах):"
+msgstr "Период обновления (в секундах):"
 
 #: src/muuli_wdr.cpp
 msgid "Change the frequency (in seconds) of Online Signature updates."
@@ -4978,7 +4978,7 @@ msgstr "Порт прокси-сервера"
 
 #: src/muuli_wdr.cpp
 msgid "Enable authentication"
-msgstr "Включить идентификацию"
+msgstr "Включить авторизацию"
 
 #: src/muuli_wdr.cpp
 msgid "Enable/disable username/password authentication"
@@ -5253,7 +5253,7 @@ msgstr "Получаем информацию по источникам"
 
 #: src/PartFileConvert.cpp
 msgid "Adding download and saving new partfile"
-msgstr "Добавляю загрузку и сохраняю новый частично закачанный файл"
+msgstr "Добавляется скачивание и сохраняется новый частичный файл"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Import partfiles"
@@ -5656,7 +5656,7 @@ msgstr "Обнаружена неверная категория, пропуск
 
 #: src/Preferences.cpp
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
-msgstr "TCP порт не может быть выше 65532, так как UDP сокет - TCP+3"
+msgstr "TCP-порт не может быть выше 65532, так как UDP-сокет сервера = TCP+3"
 
 #: src/Preferences.cpp
 #, c-format
@@ -5677,7 +5677,7 @@ msgstr "Серверы"
 
 #: src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Files"
-msgstr "Файлов"
+msgstr "Файлы"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -5802,7 +5802,7 @@ msgstr "- изменен порт TCP.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- UDP port changed.\n"
-msgstr "- изменен порт UDP.\n"
+msgstr "- изменён порт UDP.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Network interface binding changed.\n"
@@ -5810,7 +5810,7 @@ msgstr "— Изменена привязка к сетевому интерфе
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect port changed.\n"
-msgstr "- Порт для внешних соединений изменен.\n"
+msgstr "- Порт для внешних соединений изменён.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect acceptance changed.\n"
@@ -5843,7 +5843,7 @@ msgstr "Не удалось сохранить пароль amuleapi: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
-msgstr "- Изменен язык.\n"
+msgstr "- Язык сменился.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Temp folder changed.\n"
@@ -5874,8 +5874,8 @@ msgid ""
 "Kad will not start if your UDP port is disabled.\n"
 "Enable UDP port or disable Kad."
 msgstr ""
-"Kad не будет запущена, если UDP-порт выключен.\n"
-"Включите UDP-порт или выключите Kad."
+"Kad не будет запущена, если UDP-порт отключён.\n"
+"Включите UDP-порт или отключите Kad."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -5885,7 +5885,7 @@ msgid ""
 msgstr ""
 "\n"
 "Вам НЕОБХОДИМО перезапустить aMule немедленно.\n"
-"Иначе не жалуйтесь, если произойдет какая-нибудь неприятность.\n"
+"Иначе не жалуйтесь, если произойдёт какая-нибудь неприятность.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
@@ -6068,9 +6068,9 @@ msgstr[2] "Задержка обновления: %d секунд"
 #, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
-msgstr[0] "Отрезок времени, охватывающийся графиком: %d м"
-msgstr[1] "Отрезок времени, охватывающийся графиком: %d минут"
-msgstr[2] "Отрезок времени, охватывающийся графиком: %d минут"
+msgstr[0] "Время для усреднения графика: %d минута"
+msgstr[1] "Время для усреднения графика: %d минуты"
+msgstr[2] "Время для усреднения графика: %d минут"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6097,9 +6097,9 @@ msgstr[2] "Размер очереди отдачи: %d клиентов"
 #, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
-msgstr[0] "Частота связи с сервером: %d м"
-msgstr[1] "Интервал обновления соединения с сервером: %d минут"
-msgstr[2] "Интервал обновления соединения с сервером: %d минут"
+msgstr[0] "Период обновления соединения с сервером: %d минуту"
+msgstr[1] "Период обновления соединения с сервером: %d минуты"
+msgstr[2] "Период обновления соединения с сервером: %d минут"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Server connection refresh interval: Disabled"
@@ -6285,11 +6285,11 @@ msgstr "Не удалось соединиться ни с одним замас
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all static servers listed. Making another pass."
-msgstr "Не удалось подключиться ко всем перечисленным статическим серверам. Повторная попытка."
+msgstr "Не удалось подключиться ко всем перечисленным постоянным серверам. Повторная попытка."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all servers listed. Making another pass."
-msgstr "Не удалось соединиться ни с одним указанным сервером. Еще один заход."
+msgstr "Не удалось подключиться ни к одному серверу из списка. Повторная попытка."
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6492,7 +6492,7 @@ msgstr "Пинг"
 
 #: src/ServerListCtrl.cpp
 msgid "Users"
-msgstr "Участников"
+msgstr "Участники"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
@@ -6563,7 +6563,7 @@ msgstr "Удалить выбранные серверы"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
-msgstr "Удалить все сервера"
+msgstr "Удалить все серверы"
 
 #: src/ServerListCtrl.cpp
 msgid "Copy eD2k links to clipboard"
@@ -6611,7 +6611,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: вы получили LowID!"
 
 #: src/ServerSocket.cpp
 msgid "\tMost likely this is because you're behind a firewall or router."
-msgstr "\tСкорее всего, вы за фаерволом или маршрутизатором."
+msgstr "\tСкорее всего, вы за межсетевым экраном или маршрутизатором."
 
 #: src/ServerSocket.cpp
 msgid "\tFor more information, please refer to https://amule-org.github.io/docs"
@@ -6726,20 +6726,20 @@ msgstr "Состояние соединения:"
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
-msgstr "За фаерволом — откройте порт TCP %d на вашем роутере или брандмауэре"
+msgstr "За экраном — откройте порт TCP %d в вашем роутере или межсетевом экране"
 
 #: src/ServerWnd.cpp
 msgid "UDP Connection State:"
-msgstr "Состояние UDP соединения:"
+msgstr "Состояние соединения UDP:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
-msgstr "За фаерволом — откройте порт UDP %d на вашем роутере или брандмауэре"
+msgstr "За экраном — откройте порт UDP %d в вашем роутере или межсетевом экране"
 
 #: src/ServerWnd.cpp
 msgid "Firewalled state: "
-msgstr "Состояние за фаерволом: "
+msgstr "Состояние межсетевого экрана: "
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
@@ -6747,7 +6747,7 @@ msgstr "Друг не требуется - TCP порт открыт"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
-msgstr "Друг не требуется - UDP порт открыт"
+msgstr "Друг не требуется — порт UDP открыт"
 
 #: src/ServerWnd.cpp
 msgid "No buddy"
@@ -6885,7 +6885,7 @@ msgstr "Каталог"
 # подпись в главном окне. длинная просто не влезет.
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
-msgstr "Файлы"
+msgstr "Общие файлы"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add Comment/Rating"
@@ -7193,7 +7193,7 @@ msgstr "Активные соединения (1:%u)"
 
 #: src/StatTree.cpp
 msgid "Not available"
-msgstr "Недоступен"
+msgstr "Недоступно"
 
 #: src/StatTree.cpp
 msgid "Never"
@@ -7334,7 +7334,7 @@ msgstr "Идёт подключение"
 
 #: src/TextClient.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid "firewalled"
-msgstr "за фаерволом"
+msgstr "за экраном"
 
 #: src/TextClient.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid "ok"
@@ -8341,7 +8341,7 @@ msgstr "Принято за сеанс: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Download: "
-msgstr "Приём: "
+msgstr "Скачивание: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " kB/s, Upload: "
