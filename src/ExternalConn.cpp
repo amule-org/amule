@@ -1579,11 +1579,17 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 
 		CEC_SharedFile_Tag filetag(cur_file, detail_level);
 		CKnownFile_Encoder *enc = encoders[ecid];
-		// UpdateEncoders ran at the top of this handler against the same
-		// snapshot, so every file here has an encoder. NULL would be a crash
-		// on the next line either way; assert so it reads as the contract it
-		// is rather than an unchecked dereference.
-		wxASSERT(enc);
+		if (!enc) {
+			// UpdateEncoders reads the list generations unlocked, so a file
+			// added on a worker thread (PartFileConvert's import, a completing
+			// partfile) between that read and this handler's own snapshot can
+			// be present here with no encoder built for it yet. Skip it this
+			// cycle -- it stays in current_file_ids, so it is not reported as
+			// removed -- and the next poll's reconcile sees the bumped
+			// generation and builds it. Dereferencing NULL here would crash
+			// the daemon.
+			continue;
+		}
 		if (detail_level != EC_DETAIL_UPDATE) {
 			enc->ResetEncoder();
 		}
@@ -1867,8 +1873,10 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request,
 		CEC_PartFile_Tag filetag(cur_file, detail_level);
 
 		CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
-		// See the matching note in Get_EC_Response_GetSharedFiles.
-		wxASSERT(enc);
+		if (!enc) {
+			// See the matching note in Get_EC_Response_GetSharedFiles.
+			continue;
+		}
 		if (detail_level != EC_DETAIL_UPDATE) {
 			enc->ResetEncoder();
 		}
