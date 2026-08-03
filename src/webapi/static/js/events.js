@@ -50,6 +50,28 @@ export const data = {
   refresh(key) { return active.has(key) ? seed(key) : Promise.resolve(); },
 
   isLive() { return es !== null && es.readyState === EventSource.OPEN; },
+
+  // Full teardown: no SSE, no poll timer, no pending publish, nothing
+  // seeded. Called when the session dies (an amuleapi restart invalidates
+  // the cookie) and on logout. Everything here is module-level and survives
+  // the shell unmounting, so without this the poll loop keeps firing one
+  // request per active resource every 4 s against a session the server has
+  // already rejected — which is exactly what earns the IP a ban. Leaves the
+  // registry intact: views re-register once per module load, and ensure()
+  // re-seeds them after the next login.
+  stop() {
+    if (es) { es.close(); es = null; }
+    stopPolling();
+    for (const timer of publishTimers.values()) clearTimeout(timer);
+    publishTimers.clear();
+    seedBuffers.clear();
+    collections.clear();
+    listenersAttached.clear();
+    active.clear();
+    statusActive = false;
+    sseFails = 0;
+    store.set("live", false);
+  },
 };
 
 async function seed(key) {
@@ -62,6 +84,9 @@ async function seed(key) {
   seedBuffers.set(key, buf);
   try {
     const arr = (await spec.list()) || [];
+    // stop() may have landed while the snapshot was in flight; don't
+    // resurrect a collection the teardown just dropped.
+    if (!active.has(key)) return;
     const m = new Map();
     for (const it of arr) m.set(String(it[spec.id]), it);
     // Drain buffered deltas over the fresh snapshot, in arrival order.
@@ -96,8 +121,10 @@ function publishThrottled(key) {
 }
 
 async function refreshStatus() {
-  try { store.set("status", await api.get("status")); }
-  catch (e) { /* keep last known status */ }
+  try {
+    const s = await api.get("status");
+    if (statusActive) store.set("status", s);
+  } catch (e) { /* keep last known status */ }
 }
 
 // --- SSE ---------------------------------------------------------------
@@ -116,6 +143,13 @@ function openSse() {
     // failures so a single blip doesn't thrash.
     sseFails++;
     store.set("live", false);
+    // ...except when the browser gave up for good. A response it refuses to
+    // stream — a 401 once amuleapi has been restarted, a wrong content type —
+    // fails the connection permanently (readyState CLOSED, no retry), so
+    // waiting out a retry budget that will never be spent would leave the UI
+    // frozen on stale data. Fall back now; polling's first request is what
+    // surfaces the dead session.
+    if (es && es.readyState === EventSource.CLOSED) sseFails = SSE_FAIL_THRESHOLD;
     if (sseFails >= SSE_FAIL_THRESHOLD) startPolling();
   });
 
@@ -184,9 +218,20 @@ function applyDelta(spec, op, ev) {
 function startPolling() {
   if (pollTimer) return;
   store.set("polling", true);
-  const tick = () => {
-    if (statusActive) refreshStatus();
-    for (const k of active) seed(k);
+  let ticking = false;
+  const tick = async () => {
+    if (ticking) return; // a slow link shouldn't stack ticks on top of each other
+    ticking = true;
+    try {
+      // Status goes first and is awaited: it is the cheapest probe we have,
+      // so a dead session latches the api gate (and tears this loop down)
+      // before the same tick's resource fetches go out — one rejected
+      // request per restart instead of one per active resource.
+      if (statusActive) await refreshStatus();
+      for (const k of active) seed(k);
+    } finally {
+      ticking = false;
+    }
   };
   tick();
   pollTimer = setInterval(tick, POLL_INTERVAL_MS);

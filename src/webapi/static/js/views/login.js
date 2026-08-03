@@ -15,7 +15,7 @@ const LOGIN_ERROR_KEYS = {
   login_disabled: "login_err_login_disabled",
 };
 
-export function Login({ onSuccess }) {
+export function Login({ onSuccess, notice }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,6 +43,7 @@ export function Login({ onSuccess }) {
       <form class="login-form" onSubmit=${submit}>
         <img class="login-logo" src="img/logo.png" alt="aMule" />
         <h1 class="login-title">${t("login_title")}</h1>
+        ${notice && !error ? html`<p class="login-notice" role="status">${notice}</p>` : null}
         <label class="sr-only" for="login-password">${t("login_password")}</label>
         <input ref=${input} type="password" id="login-password" class="input"
                autocomplete="current-password" required placeholder=${t("login_password")}

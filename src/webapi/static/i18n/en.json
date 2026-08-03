@@ -77,6 +77,7 @@
   "login_err_invalid_credentials": "Incorrect password.",
   "login_err_rate_limited": "Too many failed attempts. Please try again later.",
   "login_err_login_disabled": "Login unavailable: no password is configured on the server.",
+  "login_session_expired": "Your session ended — the server may have restarted. Please sign in again.",
   "login_title": "aMule Web — Sign in",
   "login_password": "Password",
   "login_sign_in": "Sign in",

@@ -1,6 +1,8 @@
 // REST client for the amuleapi /api/v0 surface.
 //
 // - Always sends the session cookie (credentials: "include").
+// - Latches "session dead" on the first 401 and fails every later call
+//   locally (see below) — the server bans an IP that keeps knocking.
 // - Parses the {error:{code,message}} envelope into ApiError.
 // - Caches ETags per GET target and revalidates with If-None-Match so a
 //   304 short-circuits re-downloading/parsing an unchanged body.
@@ -28,11 +30,38 @@ export function bulkFailures(res) {
 // path -> { etag, data }
 const etagCache = new Map();
 
-// Optional hook invoked on any 401 so the shell can bounce to login.
+// Optional hook invoked when the session dies, so the shell can tear the
+// live-data layer down and bounce to login. Called at most once per session
+// with the reason ("unauthorized" | "rate_limited").
 let onUnauthorized = null;
 export function setUnauthorizedHandler(fn) { onUnauthorized = fn; }
 
-async function request(method, path, { body, useEtag = false } = {}) {
+// Session gate.
+//
+// amuleapi counts every 401 against the calling IP and locks the IP out for
+// five minutes once it sees 30 within 60 s. Restarting amuleapi invalidates
+// the session cookie, so without a latch the live-data layer walks straight
+// into that ban: its fallback poll loop fires GET status plus one GET per
+// active resource every 4 s, and the SSE stream reconnects on its own — every
+// one of those a fresh 401.
+//
+// So the first rejection latches the client as logged out and every later
+// call fails locally, with no fetch at all, until a successful login clears
+// it. Only the auth endpoints bypass the gate (`noGate`), so signing back in
+// still works.
+let sessionDead = false;
+
+function markSessionDead(reason) {
+  if (sessionDead) return;
+  sessionDead = true;
+  if (onUnauthorized) onUnauthorized(reason);
+}
+
+async function request(method, path, { body, useEtag = false, noGate = false } = {}) {
+  if (sessionDead && !noGate) {
+    throw new ApiError(401, "unauthorized", "session ended");
+  }
+
   const url = BASE + "/" + path.replace(/^\//, "");
   const headers = {};
   let cacheKey = null;
@@ -60,8 +89,6 @@ async function request(method, path, { body, useEtag = false } = {}) {
     return etagCache.get(cacheKey).data;
   }
 
-  if (resp.status === 401 && onUnauthorized) onUnauthorized();
-
   // No-body success (e.g. 204).
   if (resp.status === 204) return {};
 
@@ -73,6 +100,13 @@ async function request(method, path, { body, useEtag = false } = {}) {
 
   if (!resp.ok) {
     const err = payload && payload.error ? payload.error : {};
+    // 401 (cookie gone / expired / revoked) and the auth limiter's own 429
+    // are terminal for this session. Match 429 on the code, not the status:
+    // other endpoints answer 429 for their own throttles (the daemon's
+    // update check, say) and those must not log the user out.
+    if (!noGate && (resp.status === 401 || (resp.status === 429 && err.code === "rate_limited"))) {
+      markSessionDead(resp.status === 429 ? "rate_limited" : "unauthorized");
+    }
     throw new ApiError(resp.status, err.code, err.message);
   }
 
@@ -90,8 +124,16 @@ export const api = {
   patch: (path, body) => request("PATCH", path, { body }),
   del: (path, body) => request("DELETE", path, { body }),
 
-  // auth
-  login: (password) => request("POST", "auth/login", { body: { password } }),
+  // auth. login/session bypass the gate (they are how a dead session comes
+  // back); a winning login re-arms the client. logout stays gated on purpose:
+  // once the session is dead the server would only answer it with another
+  // 401, and the caller treats a failure as "logged out" anyway.
+  login: async (password) => {
+    const res = await request("POST", "auth/login", { body: { password }, noGate: true });
+    sessionDead = false;
+    etagCache.clear(); // fresh backend, possibly a fresh dataset
+    return res;
+  },
   logout: () => request("POST", "auth/logout"),
-  session: () => request("GET", "auth/session"),
+  session: () => request("GET", "auth/session", { noGate: true }),
 };

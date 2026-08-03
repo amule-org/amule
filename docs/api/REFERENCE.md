@@ -174,6 +174,8 @@ Two per-IP failure counters, both with sliding-window semantics:
 
 When the bucket fills, the next request from that IP returns `429 rate_limited` with a `Retry-After: <seconds>` header. The bucket clears on success or when the lockout expires.
 
+A polling client must treat its first `401` as terminal for that session and stop sending until it has re-authenticated. Restarting amuleapi invalidates every issued token, so a client that keeps a poll loop and an SSE reconnect running against the old cookie spends the generic limiter's whole budget within seconds and locks its own IP out for five minutes. Retrying a `401` never succeeds — only `POST /auth/login` clears it.
+
 ### JWT structure
 
 Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<base64url>"}`. The signing secret is auto-generated as 32 random bytes into `${config_dir}/amuleapi-jwt-secret` on first launch (mode 0600). Delete that file and restart to invalidate every issued token. The `jti` claim drives the server-side revocation list (`/auth/logout`), and the `iat` claim drives the credential-change cutoff described above.
