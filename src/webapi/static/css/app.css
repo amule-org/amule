@@ -416,6 +416,9 @@ table.data.virtual td .name-cell .name-text { min-width: 0; overflow: hidden; te
 .login-logo { height: 52px; margin: 0 auto; }
 .login-title { font-size: 16px; margin: 0; color: var(--text-dim); font-weight: 500; }
 .login-error { color: var(--bad); min-height: 1em; margin: 0; font-size: 13px; }
+/* Why we bounced back to login (expired session, lockout) — a statement of
+   fact, not a failed action, so it reads warn rather than bad. */
+.login-notice { color: var(--warn); margin: 0; font-size: 13px; }
 
 /* --- version mismatch banner --- */
 .version-banner {

@@ -45,18 +45,32 @@ function App() {
   // "checking" while we probe the session; "out" when logged out; otherwise
   // the role string ("admin" | "guest").
   const [auth, setAuth] = useState("checking");
+  // Why we landed back on the login screen, when it wasn't the user's doing.
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let alive = true;
-    setUnauthorizedHandler(() => { if (alive) setAuth("out"); });
+    setUnauthorizedHandler((reason) => {
+      // The session is gone — an amuleapi restart invalidates the cookie.
+      // Stop the live-data layer before anything else: its poll timer and SSE
+      // stream are module-level and outlive the shell unmounting below, and
+      // each retry is another failed-auth strike the server counts towards
+      // banning this IP.
+      data.stop();
+      if (!alive) return;
+      setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
+      setAuth("out");
+    });
     api.session()
       .then((s) => { if (alive) setAuth(s.role || "guest"); })
       .catch(() => { if (alive) setAuth("out"); });
     return () => { alive = false; setUnauthorizedHandler(null); };
   }, []);
 
+  const onLoggedIn = (role) => { setNotice(""); setAuth(role); };
+
   if (auth === "checking") return html`<${Placeholder} kind="loading">${t("app_loading")}<//>`;
-  if (auth === "out") return html`<${Login} onSuccess=${(role) => setAuth(role)} />`;
+  if (auth === "out") return html`<${Login} notice=${notice} onSuccess=${onLoggedIn} />`;
   return html`<${Shell} role=${auth} onLogout=${() => setAuth("out")} />`;
 }
 
@@ -167,6 +181,7 @@ function Toolbar({ route, onLogout }) {
 
   const doLogout = async () => {
     try { await api.logout(); } catch (_) {}
+    data.stop(); // the SSE stream and poll timer outlive this component
     location.hash = "";
     onLogout();
   };
