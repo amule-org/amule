@@ -1204,7 +1204,20 @@ const CECPacket *CECSocket::ReadPacket()
 		if (!OpenReceivedBody()) {
 			// A failed tag is the tamper signal, and it is not recoverable:
 			// the stream is no longer trustworthy.
+			//
+			// Reported unconditionally, on stderr. This is one of four ways
+			// ReadPacket can drop a connection and was the only silent one,
+			// which is backwards: the other three are protocol or zlib
+			// errors, while this one fires on tampering or on a peer that
+			// flags a packet as sealed without sealing it. A connection that
+			// dies leaving nothing in the log at either end is close to
+			// undiagnosable. One line per dropped connection, not per
+			// packet: the drop happens immediately below.
 			AddDebugLogLineN(logEC, "ReadPacket: authentication failed, dropping connection");
+			fprintf(stderr,
+				"amule: EC packet failed authentication (flagged encrypted but the tag "
+				"did not verify) - dropping the connection.\n");
+			fflush(stderr);
 			CloseAndDispatchLost();
 			return nullptr;
 		}
