@@ -34,12 +34,18 @@
 /**
  * Authenticated encryption for the External Connect packet layer.
  *
- * Both endpoints already share the EC password, so the session key is derived
- * from it rather than from a key exchange: an attacker who does not know the
- * password cannot derive the key and therefore cannot forge a tag, which is
- * what makes this resistant to an active man in the middle without needing any
- * certificate handling. The trade-off is no forward secrecy -- a password
- * compromise later would decrypt a recording made earlier.
+ * The session key comes from an ephemeral X25519 exchange, so a recording of a
+ * session cannot be decrypted later even by someone who by then holds the EC
+ * password: the keys that opened it existed only for its duration and were
+ * never written anywhere.
+ *
+ * That alone would leave an active man in the middle free to run one exchange
+ * with each side and relay between them, since a raw exchange authenticates
+ * nobody. The shared EC password is what closes that, through the confirmation
+ * tags below rather than through the key: each side proves it knows the
+ * password over the exact handshake it saw, and a relay's two handshakes
+ * necessarily differ, so at least one check fails. No certificate handling is
+ * needed for any of it.
  *
  * Nothing here is new dependency surface: the `ec` library already links
  * Crypto++ (`NEED_LIB_EC` implies `NEED_LIB_CRYPTO`), which is also where
@@ -125,6 +131,24 @@ bool X25519Agree(const std::vector<uint8_t> &priv,
 	std::vector<uint8_t> &sharedOut);
 
 /**
+ * The handshake transcript both sides bind into their derivations.
+ *
+ * One definition rather than one per side: the two ends must agree byte for
+ * byte or every session fails, and two copies of the same concatenation in
+ * two files is exactly the thing that drifts when a field is added later.
+ *
+ * The cipher list is length-prefixed so that no two different handshakes can
+ * flatten to the same bytes -- with a bare concatenation the boundary between
+ * a variable-length list and what follows it is only implied.
+ */
+std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
+	uint8_t chosenCipher,
+	const std::vector<uint8_t> &clientNonce,
+	const std::vector<uint8_t> &serverNonce,
+	const std::vector<uint8_t> &clientPub,
+	const std::vector<uint8_t> &serverPub);
+
+/**
  * Key-confirmation tag proving knowledge of the EC credential.
  *
  * With the channel key derived from the ephemeral exchange alone, the password
@@ -180,7 +204,9 @@ public:
 	 * Derive the session keys.
 	 *
 	 * @param cipher       negotiated cipher id.
-	 * @param ikm          the shared secret (the stored EC password hash).
+	 * @param ikm          the X25519 shared secret. Deliberately not the
+	 *                     credential: keying from something that outlives the
+	 *                     session is exactly what costs forward secrecy.
 	 * @param serverNonce  NONCE_TAG_LEN bytes from the daemon.
 	 * @param clientNonce  NONCE_TAG_LEN bytes from the client.
 	 * @param transcript   handshake bytes bound into the derivation, so a

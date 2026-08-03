@@ -37,6 +37,7 @@
 
 #include <wx/intl.h>
 #include <common/StringFunctions.h> // unicode2char for stderr message
+#include <algorithm>                // std::fill, wiping the ephemeral private key
 #ifdef __WINDOWS__
 #include <process.h> // _exit
 #else
@@ -65,7 +66,8 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool canMultiSearch,
 	bool canChat,
 	bool canAEAD,
-	const std::vector<uint8_t> &clientNonce)
+	const std::vector<uint8_t> &clientNonce,
+	const std::vector<uint8_t> &clientPubKey)
 : CECPacket(EC_OP_AUTH_REQ)
 {
 	AddTag(CECTag(EC_TAG_CLIENT_NAME, client));
@@ -146,22 +148,34 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// window; old servers ignore the unknown tag and never relay.
 	if (canChat)
 		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT));
-	// Transport encryption: the ciphers we can do, in preference order, plus
-	// our half of the derivation salt. A daemon that does not know these tags
-	// ignores them and the session stays in clear.
-	if (canAEAD && !clientNonce.empty()) {
+	// Transport encryption: the ciphers we can do, in preference order, our
+	// half of the derivation salt, and our ephemeral public key. A daemon that
+	// does not know these tags ignores them and the session stays in clear.
+	//
+	// The public key is not optional and has no capability tag of its own:
+	// encryption has never shipped, so anything that offers EC_TAG_CAN_AEAD is
+	// new enough to do X25519, and offering the cipher list without a key is
+	// treated by the daemon as malformed rather than as an older client.
+	if (canAEAD && !clientNonce.empty() && !clientPubKey.empty()) {
 		const std::vector<uint8_t> ciphers = ECCrypt::SupportedCiphers();
 		AddTag(CECTag(EC_TAG_CAN_AEAD, ciphers.size(), ciphers.data()));
 		AddTag(CECTag(EC_TAG_AEAD_CLIENT_NONCE, clientNonce.size(), clientNonce.data()));
+		AddTag(CECTag(EC_TAG_AEAD_CLIENT_PUBKEY, clientPubKey.size(), clientPubKey.data()));
 	}
 }
 
-CECAuthPacket::CECAuthPacket(const wxString &pass)
+CECAuthPacket::CECAuthPacket(const wxString &pass, const std::vector<uint8_t> &clientConfirm)
 : CECPacket(EC_OP_AUTH_PASSWD)
 {
 	CMD4Hash passhash;
 	wxCHECK2(passhash.Decode(pass), /* Do nothing. */);
 	AddTag(CECTag(EC_TAG_PASSWD_HASH, passhash));
+	// Proof that we hold the credential over this exact handshake. The salted
+	// challenge above proves the same thing, but says nothing about the key
+	// exchange it travelled beside; this binds the two together.
+	if (!clientConfirm.empty()) {
+		AddTag(CECTag(EC_TAG_AEAD_CLIENT_CONFIRM, clientConfirm.size(), clientConfirm.data()));
+	}
 }
 
 /*!
@@ -272,13 +286,28 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 	// reuse a key, and a retry after a dropped socket is a new session.
 	m_aeadClientNonce.clear();
 	m_aeadOffered.clear();
+	m_aeadEphPriv.clear();
+	m_aeadEphPub.clear();
+	m_aeadClientConfirm.clear();
+	m_aeadExpectedServerConfirm.clear();
 	if (m_canAEAD) {
 		m_aeadClientNonce = ECCrypt::RandomBytes(ECCrypt::NONCE_TAG_LEN);
 		m_aeadOffered = ECCrypt::SupportedCiphers();
-		if (m_aeadClientNonce.empty()) {
+		// One fresh key pair per attempt for the same reason as the nonce, and
+		// more sharply: reusing it across attempts is what forward secrecy is
+		// about, since a key that outlives the session is one that can be
+		// stolen after it.
+		if (!ECCrypt::GenerateX25519KeyPair(m_aeadEphPriv, m_aeadEphPub)) {
+			m_aeadEphPriv.clear();
+			m_aeadEphPub.clear();
+		}
+		if (m_aeadClientNonce.empty() || m_aeadEphPub.empty()) {
 			// No usable randomness: offer nothing rather than derive a key
-			// from a predictable salt.
+			// from a predictable salt or a predictable private key.
 			m_aeadOffered.clear();
+			m_aeadClientNonce.clear();
+			m_aeadEphPriv.clear();
+			m_aeadEphPub.clear();
 		}
 	}
 
@@ -303,14 +332,15 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 			m_canMultiSearch,
 			m_canChat,
 			m_canAEAD,
-			m_aeadClientNonce);
+			m_aeadClientNonce,
+			m_aeadEphPub);
 
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
 
 		ProcessAuthPacket(getSalt.get());
 
-		CECAuthPacket passwdPacket(m_connectionPassword);
+		CECAuthPacket passwdPacket(m_connectionPassword, m_aeadClientConfirm);
 
 		CSmartPtr<const CECPacket> reply(SendRecvPacket(&passwdPacket));
 		m_ec_state = EC_PASSWD_SENT;
@@ -357,7 +387,8 @@ void CRemoteConnect::OnConnect()
 			m_canMultiSearch,
 			m_canChat,
 			m_canAEAD,
-			m_aeadClientNonce);
+			m_aeadClientNonce,
+			m_aeadEphPub);
 		CECSocket::SendPacket(&login_req);
 
 		m_ec_state = EC_REQ_SENT;
@@ -422,14 +453,25 @@ void CRemoteConnect::OnLost()
 void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 {
 	m_aeadNegotiated = false;
-	if (!m_canAEAD || m_aeadClientNonce.empty()) {
+	m_aeadClientConfirm.clear();
+	m_aeadExpectedServerConfirm.clear();
+	if (!m_canAEAD || m_aeadClientNonce.empty() || m_aeadEphPriv.empty()) {
 		return;
 	}
 	const CECTag *cipherTag = reply->GetTagByName(EC_TAG_AEAD_CIPHER);
 	const CECTag *serverNonceTag = reply->GetTagByName(EC_TAG_AEAD_SERVER_NONCE);
+	const CECTag *serverPubTag = reply->GetTagByName(EC_TAG_AEAD_SERVER_PUBKEY);
 	if (cipherTag == nullptr || serverNonceTag == nullptr) {
 		// An old daemon, or one with encryption switched off. Nothing to do:
 		// the session stays in clear.
+		return;
+	}
+	if (serverPubTag == nullptr) {
+		// A daemon that named a cipher but sent no key. Nothing here can be
+		// derived without forward secrecy, and quietly falling back to the
+		// password-keyed derivation is precisely the downgrade this exists to
+		// prevent, so refuse.
+		AddDebugLogLineN(logEC, "AEAD: daemon sent no public key, staying in clear");
 		return;
 	}
 
@@ -442,23 +484,67 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 	const uint8_t *serverNonceData = (const uint8_t *)serverNonceTag->GetTagData();
 	const std::vector<uint8_t> serverNonce(
 		serverNonceData, serverNonceData + serverNonceTag->GetTagDataLen());
+	const uint8_t *serverPubData = (const uint8_t *)serverPubTag->GetTagData();
+	const std::vector<uint8_t> serverPub(serverPubData, serverPubData + serverPubTag->GetTagDataLen());
 
-	// Transcript: what we offered plus what was chosen. If either was edited
-	// in flight the two ends derive different keys and the first sealed
+	// The channel key comes from here and from nothing else. Deriving it from
+	// the password instead is what cost forward secrecy: the password outlives
+	// the session, this does not.
+	std::vector<uint8_t> shared;
+	const bool agreed = ECCrypt::X25519Agree(m_aeadEphPriv, serverPub, shared);
+	// Wipe the private half the moment it has done its one job, whether or not
+	// that job succeeded. Holding it any longer is the only thing that could
+	// reopen a recorded session later.
+	std::fill(m_aeadEphPriv.begin(), m_aeadEphPriv.end(), (uint8_t)0);
+	m_aeadEphPriv.clear();
+	if (!agreed) {
+		AddDebugLogLineN(logEC, "AEAD: bad daemon public key, staying in clear");
+		return;
+	}
+
+	// Transcript: everything both sides exchanged, so a byte edited anywhere in
+	// the handshake yields a different key on each end and the first sealed
 	// packet fails, rather than the session silently using a weaker cipher.
-	std::vector<uint8_t> transcript = m_aeadOffered;
-	transcript.push_back(cipher);
+	const std::vector<uint8_t> transcript = ECCrypt::BuildTranscript(
+		m_aeadOffered, cipher, m_aeadClientNonce, serverNonce, m_aeadEphPub, serverPub);
 
-	const wxCharBuffer secret = m_aeadSecret.utf8_str();
-	const std::vector<uint8_t> ikm(
-		(const uint8_t *)secret.data(), (const uint8_t *)secret.data() + strlen(secret.data()));
-	if (!SetupAEAD(cipher, ikm, serverNonce, m_aeadClientNonce, transcript, false)) {
+	if (!SetupAEAD(cipher, shared, serverNonce, m_aeadClientNonce, transcript, false)) {
 		AddDebugLogLineN(logEC, "AEAD: key derivation failed, staying in clear");
 		return;
 	}
+
+	// The password no longer keys the channel, so it can no longer be what
+	// stops a man in the middle -- an attacker can run an exchange with each of
+	// us and relay. These are what stop it instead: the transcripts on the two
+	// legs differ, so the tags do too.
+	const wxCharBuffer secret = m_aeadSecret.utf8_str();
+	const std::vector<uint8_t> credential(
+		(const uint8_t *)secret.data(), (const uint8_t *)secret.data() + strlen(secret.data()));
+	m_aeadClientConfirm = ECCrypt::ConfirmTag(credential, transcript, "ec-confirm-client");
+	m_aeadExpectedServerConfirm = ECCrypt::ConfirmTag(credential, transcript, "ec-confirm-server");
+
 	m_aeadNegotiated = true; // EC_OP_AUTH_PASSWD is the last packet that must go out in clear.
 	EnableAEADAfterNextWrite();
-	AddDebugLogLineN(logEC, CFormat("AEAD: negotiated %s") % ECCrypt::CipherName(cipher));
+	AddDebugLogLineN(logEC, CFormat("AEAD: negotiated %s with X25519") % ECCrypt::CipherName(cipher));
+}
+
+bool CRemoteConnect::VerifyServerConfirm(const CECPacket *reply) const
+{
+	if (m_aeadExpectedServerConfirm.empty()) {
+		return false;
+	}
+	const CECTag *tag = reply->GetTagByName(EC_TAG_AEAD_SERVER_CONFIRM);
+	if (tag == nullptr) {
+		AddDebugLogLineN(logEC, "AEAD: daemon sent no key confirmation");
+		return false;
+	}
+	const uint8_t *data = (const uint8_t *)tag->GetTagData();
+	const std::vector<uint8_t> got(data, data + tag->GetTagDataLen());
+	if (!ECCrypt::ConstantTimeEquals(got, m_aeadExpectedServerConfirm)) {
+		AddDebugLogLineN(logEC, "AEAD: daemon key confirmation does not match");
+		return false;
+	}
+	return true;
 }
 
 const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint32 trueSize)
@@ -473,7 +559,7 @@ const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint3
 	switch (m_ec_state) {
 	case EC_REQ_SENT:
 		if (ProcessAuthPacket(packet)) {
-			CECAuthPacket passwdPacket(m_connectionPassword);
+			CECAuthPacket passwdPacket(m_connectionPassword, m_aeadClientConfirm);
 			CECSocket::SendPacket(&passwdPacket);
 			m_ec_state = EC_PASSWD_SENT;
 		}
@@ -559,6 +645,19 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 				CloseSocket();
 			}
 		} else if ((m_ec_state == EC_PASSWD_SENT) && (reply->GetOpCode() == EC_OP_AUTH_OK)) {
+			// The daemon must prove it holds the credential too, over this
+			// exact handshake. Until this passes we know only that we are
+			// talking to something that completed a key exchange -- which a
+			// relay can also do, twice. Checked before anything in the reply is
+			// believed, and fatal rather than a downgrade: a session that
+			// reaches here without a valid tag is one being relayed.
+			if (m_aeadNegotiated && !VerifyServerConfirm(reply)) {
+				m_server_reply = _("External Connection: the daemon failed to prove it "
+						   "knows the password. Connection closed.");
+				m_ec_state = EC_FAIL;
+				CloseSocket();
+				return false;
+			}
 			m_ec_state = EC_OK;
 			result = true;
 			if (reply->GetTagByName(EC_TAG_SERVER_VERSION)) {

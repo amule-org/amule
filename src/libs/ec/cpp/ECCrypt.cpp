@@ -213,6 +213,31 @@ bool X25519Agree(const std::vector<uint8_t> &priv,
 	return true;
 }
 
+std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
+	uint8_t chosenCipher,
+	const std::vector<uint8_t> &clientNonce,
+	const std::vector<uint8_t> &serverNonce,
+	const std::vector<uint8_t> &clientPub,
+	const std::vector<uint8_t> &serverPub)
+{
+	std::vector<uint8_t> out;
+	out.reserve(2 + offeredCiphers.size() + clientNonce.size() + serverNonce.size() + clientPub.size() +
+		    serverPub.size());
+	// Truncation here would be a silent mismatch rather than a failure, so cap
+	// the list instead: no build offers anything close to 255 ciphers. The
+	// count and the bytes must come from one value, or a list longer than the
+	// cap would announce one length and carry another.
+	const size_t cipherCount = std::min<size_t>(offeredCiphers.size(), 255);
+	out.push_back((uint8_t)cipherCount);
+	out.insert(out.end(), offeredCiphers.begin(), offeredCiphers.begin() + (std::ptrdiff_t)cipherCount);
+	out.push_back(chosenCipher);
+	out.insert(out.end(), clientNonce.begin(), clientNonce.end());
+	out.insert(out.end(), serverNonce.begin(), serverNonce.end());
+	out.insert(out.end(), clientPub.begin(), clientPub.end());
+	out.insert(out.end(), serverPub.begin(), serverPub.end());
+	return out;
+}
+
 std::vector<uint8_t> ConfirmTag(
 	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label)
 {
