@@ -25,9 +25,9 @@
 #ifndef ECIDDIFF_H
 #define ECIDDIFF_H
 
-#include <algorithm>  // Needed for std::is_sorted
+#include <algorithm>  // Needed for std::adjacent_find
 #include <cassert>    // Needed for assert
-#include <functional> // Needed for std::less_equal
+#include <functional> // Needed for std::greater_equal
 #include <vector>
 
 #include "Types.h" // Needed for uint32
@@ -39,7 +39,7 @@
  * Both inputs must be sorted ascending and duplicate-free, which lets this be
  * a single linear pass over two contiguous arrays instead of a lookup per
  * file. `Get_EC_Response_GetUpdate` gets that ordering for free: it walks the
- * encoder map, which is a std::map keyed by ECID.
+ * encoder map, which is kept sorted by ECID.
  *
  * Deliberately pure, and deliberately not taking a CECPacket. The failure
  * mode of getting this wrong is silent in both directions -- a missed removal
@@ -61,9 +61,17 @@ inline void ComputeRemovedIds(
 	// connection, and a spurious one deletes a file the user still has.
 	// Checking turns that into a debug-run abort.
 	//
-	// `less_equal` makes is_sorted reject equal neighbours as well as
-	// out-of-order ones, so one pass covers both halves of the contract. It
-	// is O(n) against a merge that is already O(n), and only in debug builds.
+	// One pass covers both halves of the contract: adjacent_find looks for the
+	// first neighbouring pair that is not strictly increasing, which catches an
+	// equal pair as well as an out-of-order one. O(n) against a merge that is
+	// already O(n), and only in debug builds.
+	//
+	// adjacent_find rather than is_sorted with a `<=` comparator, which is what
+	// this was. is_sorted requires its comparator to be a strict weak ordering
+	// and `<=` is not irreflexive, so a hardened standard library is entitled
+	// to -- and libstdc++ under _GLIBCXX_DEBUG does -- abort on the predicate
+	// itself. That would fire on the debug build these checks exist to serve.
+	// adjacent_find takes a plain binary predicate with no ordering contract.
 	//
 	// assert() rather than the wxASSERT used elsewhere in the tree, because
 	// this header is deliberately usable without an app and wxASSERT is not:
@@ -71,8 +79,10 @@ inline void ComputeRemovedIds(
 	// wxApp -- which is exactly the case in the unit tests -- wxASSERT is a
 	// silent no-op and the check would not fire where it is easiest to
 	// exercise. Verified by feeding it unsorted and duplicate input.
-	assert(std::is_sorted(previous.begin(), previous.end(), std::less_equal<uint32>()));
-	assert(std::is_sorted(current.begin(), current.end(), std::less_equal<uint32>()));
+	assert(std::adjacent_find(previous.begin(), previous.end(), std::greater_equal<uint32>()) ==
+		previous.end());
+	assert(std::adjacent_find(current.begin(), current.end(), std::greater_equal<uint32>()) ==
+		current.end());
 
 	removed.clear();
 	std::vector<uint32>::const_iterator cur = current.begin();

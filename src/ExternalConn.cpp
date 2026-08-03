@@ -248,14 +248,6 @@ private:
 	// before stamping anything, so no encoder can be carrying the value the
 	// current call is about to use. 64-bit on top of that, so it also cannot
 	// wrap back onto a live encoder's stamp within any plausible uptime.
-	// Monotonic reconcile counter; see UpdateEncoders. Two things make a
-	// stamp comparison safe. The counter is a member of this map, and the map
-	// belongs to one CECServerSocket, so it is per-connection and encoders
-	// are never shared across clients -- there is no cross-client collision
-	// to reason about. And every UpdateEncoders call takes a fresh value
-	// before stamping anything, so no encoder can be carrying the value the
-	// current call is about to use. 64-bit on top of that, so it also cannot
-	// wrap back onto a live encoder's stamp within any plausible uptime.
 	uint64 m_epoch = 0;
 };
 
@@ -378,11 +370,19 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 
 	// The GET_UPDATE walk relies on this order to feed the removal merge, and
 	// getting it wrong loses or invents removals silently. Debug-only, and
-	// `less_equal` rejects duplicate ECIDs as well as misordering -- a
-	// duplicate would mean two encoders for one file.
-	assert(std::is_sorted(m_entries.begin(),
-		m_entries.end(),
-		[](const value_type &a, const value_type &b) { return a.first <= b.first; }));
+	// rejects duplicate ECIDs as well as misordering -- a duplicate would mean
+	// two encoders for one file.
+	//
+	// adjacent_find rather than is_sorted: is_sorted requires its comparator to
+	// be a strict weak ordering, and the `<=` needed to reject equal neighbours
+	// is not irreflexive. Hardened standard libraries check exactly that and
+	// abort -- which would land on the debug build this change is verified
+	// against. adjacent_find takes a plain binary predicate with no such
+	// contract.
+	assert(std::adjacent_find(
+		       m_entries.begin(), m_entries.end(), [](const value_type &a, const value_type &b) {
+			       return a.first >= b.first;
+		       }) == m_entries.end());
 }
 
 //-------------------- CECServerSocket --------------------
@@ -1541,6 +1541,11 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 
 		CEC_SharedFile_Tag filetag(cur_file, detail_level);
 		CKnownFile_Encoder *enc = encoders[ecid];
+		// UpdateEncoders ran at the top of this handler against the same
+		// snapshot, so every file here has an encoder. NULL would be a crash
+		// on the next line either way; assert so it reads as the contract it
+		// is rather than an unchecked dereference.
+		wxASSERT(enc);
 		if (detail_level != EC_DETAIL_UPDATE) {
 			enc->ResetEncoder();
 		}
@@ -1824,6 +1829,8 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request,
 		CEC_PartFile_Tag filetag(cur_file, detail_level);
 
 		CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
+		// See the matching note in Get_EC_Response_GetSharedFiles.
+		wxASSERT(enc);
 		if (detail_level != EC_DETAIL_UPDATE) {
 			enc->ResetEncoder();
 		}
