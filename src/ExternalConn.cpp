@@ -240,6 +240,16 @@ private:
 	// it appends each ECID it passes to the list the removal merge consumes.
 	Storage m_entries;
 
+	// The list generations this map was last reconciled against. When both
+	// still match, the lists have not gained or lost a file and the reconcile
+	// is a no-op -- see the early return in UpdateEncoders. `m_haveListGen`
+	// distinguishes "never reconciled" from "reconciled when both counters
+	// happened to be zero", which is the state at startup and would otherwise
+	// skip the very first pass and leave the map permanently empty.
+	uint64 m_lastSharedGen = 0;
+	uint64 m_lastDownloadGen = 0;
+	bool m_haveListGen = false;
+
 	// Monotonic reconcile counter; see UpdateEncoders. Two things make a
 	// stamp comparison safe. The counter is a member of this map, and the map
 	// belongs to one CECServerSocket, so it is per-connection and encoders
@@ -294,6 +304,26 @@ void CFileEncoderMap::FlushPending()
 // or if we have new files without encoder yet.
 void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 {
+	// Nothing has entered or left either list since the last reconcile, so
+	// the encoder map already mirrors them and the whole pass below -- two
+	// O(n) CopyFileList snapshots, a lookup and a stamp per file, and a sweep
+	// -- would end exactly where it started. On a library that is not
+	// churning, which is the normal case, that is every poll for every
+	// connected client.
+	//
+	// Read the counters BEFORE the snapshots, never after. Read first and the
+	// values can only be older than what CopyFileList goes on to see: a file
+	// arriving in between leaves us recording a stale generation, so the next
+	// poll reconciles again and picks it up one cycle late. Read after, and a
+	// change that landed between the copy and the read would be recorded as
+	// already seen and never reconciled at all -- a file that silently never
+	// appears, or never disappears, for the life of the connection.
+	const uint64 sharedGen = theApp->sharedfiles->GetListGeneration();
+	const uint64 downloadGen = theApp->downloadqueue->GetListGeneration();
+	if (m_haveListGen && sharedGen == m_lastSharedGen && downloadGen == m_lastDownloadGen) {
+		return;
+	}
+
 	// Stamp every encoder whose file is still listed with this epoch; the
 	// sweep below then takes anything left behind. This used to build a set
 	// of the live ECIDs instead, which cost a red-black-tree insertion per
@@ -367,6 +397,14 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 		++out;
 	}
 	m_entries.erase(out, m_entries.end());
+
+	// Record what this pass reconciled against, so the next one can tell
+	// whether anything moved. Set here rather than next to the read above so
+	// an exception part-way through leaves the map looking un-reconciled and
+	// the next poll redoes it.
+	m_lastSharedGen = sharedGen;
+	m_lastDownloadGen = downloadGen;
+	m_haveListGen = true;
 
 	// The GET_UPDATE walk relies on this order to feed the removal merge, and
 	// getting it wrong loses or invents removals silently. Debug-only, and

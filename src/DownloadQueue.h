@@ -30,6 +30,7 @@
 #include "ObservableQueue.h" // Needed for CObservableQueue
 #include "GetTickCount.h"    // Needed for GetTickCount64
 
+#include <atomic> // Needed for std::atomic (m_listGeneration)
 #include <deque>
 #include <functional> // Needed for std::function (LoadProgressCb)
 
@@ -252,6 +253,29 @@ public:
 	/**
 	 * Makes a copy of the file list.
 	 */
+	/**
+	 * Changes whenever a file enters or leaves the list(s) this snapshots.
+	 *
+	 * A change token, not a count of changes: a reload clears and re-adds, so
+	 * it advances the value once per file in the library. All a caller may
+	 * conclude is "same value means nothing entered or left"; the magnitude of
+	 * a difference means nothing. Comparing sizes instead would be wrong --
+	 * an add and a remove between two polls is a net-zero size change that
+	 * still has to reconcile, and two bumps make that visible.
+	 *
+	 * Lets a caller that only needs to know "did the membership change since
+	 * I last looked" skip taking the snapshot at all. `CopyFileList` is O(n)
+	 * and the EC file-list reconcile runs it on every poll for every
+	 * connected client, almost always to discover that nothing came or went.
+	 *
+	 * Read it BEFORE calling CopyFileList, never after. Read first, and the
+	 * value can only be older than the snapshot that follows -- a change
+	 * racing in between makes the next poll redo the work, which is
+	 * harmless. Read after, and a change that landed between the copy and
+	 * the read would be recorded as already seen, and lost for good.
+	 */
+	uint64 GetListGeneration() const { return m_listGeneration.load(std::memory_order_relaxed); }
+
 	void CopyFileList(std::vector<CPartFile *> &out_list, bool includeCompleted = false) const;
 
 	/**
@@ -398,6 +422,11 @@ private:
 
 	typedef std::deque<CPartFile *> FileQueue;
 	FileQueue m_filelist;
+	// See GetListGeneration(). Bumped under m_mutex wherever m_filelist OR
+	// m_completedDownloads gains or loses an entry -- CopyFileList draws
+	// from both when includeCompleted is set, which is how the EC reconcile
+	// calls it, so tracking only m_filelist would miss completions.
+	std::atomic<uint64> m_listGeneration{ 0 };
 
 	typedef std::list<CPartFile *> FileList;
 	FileList m_localServerReqQueue;

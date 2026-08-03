@@ -396,6 +396,7 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	{
 		wxMutexLocker lock(list_mut);
 		m_Files_map.clear();
+		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 	}
 
 	// All part files are automatically shared.
@@ -651,6 +652,7 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 
 	CKnownFileMap::value_type entry(pFile->GetFileHash(), pFile);
 	if (m_Files_map.insert(entry).second) {
+		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		/* Keywords to publish on Kad */
 		m_keywords->AddKeywords(pFile);
 		theStats::AddSharedFile(pFile->GetFileSize());
@@ -847,6 +849,7 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 	Notify_SharedFilesRemoveFile(toremove);
 	wxMutexLocker lock(list_mut);
 	if (m_Files_map.erase(toremove->GetFileHash()) > 0) {
+		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		theStats::RemoveSharedFile(toremove->GetFileSize());
 	}
 	// Same path key we wrote into the index in AddFile(). erase() is a
