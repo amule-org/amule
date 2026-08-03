@@ -273,7 +273,12 @@ void CSplashScreen::Finish()
 	// reports on, which matters when tuning the phase weighting but is noise
 	// in a user's log. The phase timings themselves are logged normally,
 	// since those are what a "startup is slow" report needs.
-	AddDebugLogLineN(logStandard,
+	//
+	// logGeneral, not logStandard: the latter is the -1 sentinel meaning "not
+	// a debug category" that AddLogLineN passes, so a debug line asking
+	// whether it is enabled sends it through CLogger::IsEnabled, whose index
+	// check rejects anything below zero and hits wxFAIL.
+	AddDebugLogLineN(logGeneral,
 		CFormat("Splash: %u repaints costing %lld ms, %lld ms taken from startup, "
 			"over %lld ms on screen") %
 			m_paintCount % m_paintMicros.GetValue() % m_updateMicros.GetValue() %
