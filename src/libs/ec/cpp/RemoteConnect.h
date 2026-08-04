@@ -621,6 +621,19 @@ public:
 private:
 	virtual const CECPacket *OnPacketReceived(const CECPacket *packet, uint32 trueSize);
 	bool ProcessAuthPacket(const CECPacket *reply);
+
+	/**
+	 * Hand the outcome of a login attempt to the GUI, carrying whatever
+	 * m_server_reply currently explains.
+	 *
+	 * Every path that ends a login attempt must call this. Plain CloseSocket()
+	 * does not dispatch OnLost (see the note on CloseAndDispatchLost in
+	 * ECSocket.h) precisely because ProcessAuthPacket is expected to notify for
+	 * itself, so a path that closes and returns without calling this leaves
+	 * amulegui waiting on its connect-timeout watchdog instead of showing the
+	 * reason.
+	 */
+	void NotifyConnectionResult(bool connected);
 };
 
 wxDECLARE_EVENT(wxEVT_EC_CONNECTION, wxEvent);

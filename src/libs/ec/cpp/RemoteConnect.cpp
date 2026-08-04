@@ -651,6 +651,14 @@ void CRemoteConnect::DiscardRequestQueue()
 	m_req_count = 0;
 }
 
+void CRemoteConnect::NotifyConnectionResult(bool connected)
+{
+	if (m_notifier) {
+		wxECSocketEvent event(wxEVT_EC_CONNECTION, connected, m_server_reply);
+		m_notifier->AddPendingEvent(event);
+	}
+}
+
 bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 {
 	bool result = false;
@@ -686,6 +694,7 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 							    "settings.");
 					m_ec_state = EC_FAIL;
 					CloseSocket();
+					NotifyConnectionResult(false);
 					return false;
 				}
 				wxString saltHash = MD5Sum(CFormat("%lX") % passwordSalt->GetInt()).GetHash();
@@ -711,6 +720,7 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 						   "knows the password. Connection closed.");
 				m_ec_state = EC_FAIL;
 				CloseSocket();
+				NotifyConnectionResult(false);
 				return false;
 			}
 			m_ec_state = EC_OK;
@@ -791,10 +801,7 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			CloseSocket();
 		}
 	}
-	if (m_notifier) {
-		wxECSocketEvent event(wxEVT_EC_CONNECTION, result, m_server_reply);
-		m_notifier->AddPendingEvent(event);
-	}
+	NotifyConnectionResult(result);
 	return result;
 }
 
