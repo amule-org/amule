@@ -37,6 +37,13 @@ jobs:
       - name: Installing tools
         run: sudo apt-get install -y gettext
 
+      # Before regenerating: the regeneration itself cannot catch a source
+      # file missing from POTFILES.in, because it scans that same list. The
+      # catalogs come out perfectly in sync with what was scanned, while the
+      # unscanned file's strings are absent from every language (#786).
+      - name: POTFILES.in lists every file marking strings
+        run: ./scripts/check-potfiles.sh
+
       - name: Regenerate pot + merge into po
         run: ./scripts/update-po.sh
 

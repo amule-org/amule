@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:24+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -33,7 +33,7 @@ msgstr "Kontrolli remote i aMule "
 msgid "Snapshot:"
 msgstr "Snapshot:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1520,6 +1520,18 @@ msgstr "Jam duke e shkarkuar"
 msgid "Unknown or bad tempfile format."
 msgstr "Formati i failit temp i panjohur ose i gabuar."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr ""
@@ -2603,6 +2615,11 @@ msgstr "Jo"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Po"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "Deshtoi ne hapjen %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6808,6 +6825,15 @@ msgstr "Mesatarja e faileve:"
 msgid "Not running"
 msgstr "Nuk eshte aktive"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6967,7 +6993,7 @@ msgstr "Ju keni nevoje per nje ID te larte per te krijuar nje sourcelink te vlef
 msgid "Shared Files (%i)"
 msgstr "Faile te ndara (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Totali i madhesise se faileve te ndara: %s"
@@ -7885,6 +7911,11 @@ msgstr "Zhvendos kategorine"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Kerkohet Hashset-i per failin e panjohur: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Zgjidh se kush ka kerkuar te shikoje listene faileve qe ju keni ndare."
 
 #: src/UploadQueue.cpp
 #, c-format

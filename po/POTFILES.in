@@ -22,6 +22,7 @@ src/CommentDialogLst.cpp
 src/CorruptionBlackBox.cpp
 src/CountryFlags.cpp
 src/DataToText.cpp
+src/DirectoryTreeCtrl.cpp
 src/DownloadListCtrl.cpp
 src/DownloadQueue.cpp
 src/ExternalConn.cpp
@@ -32,6 +33,7 @@ src/FirstRunWizard.cpp
 src/FriendList.cpp
 src/FriendListCtrl.cpp
 src/GenericClientListCtrl.cpp
+src/geoip/MaxMindDBDatabase.cpp
 src/HTTPDownload.cpp
 src/IP2Country.cpp
 src/IPFilter.cpp
@@ -66,10 +68,13 @@ src/ServerList.cpp
 src/ServerListCtrl.cpp
 src/ServerSocket.cpp
 src/ServerWnd.cpp
+src/SharedDirWatcher.cpp
 src/SharedFileList.cpp
 src/SharedFilePeersListCtrl.cpp
 src/SharedFilesCtrl.cpp
+src/SharedFilesWnd.cpp
 src/SourceListCtrl.cpp
+src/SplashScreen.cpp
 src/Statistics.cpp
 src/StatisticsDlg.cpp
 src/StatTree.cpp
@@ -79,6 +84,7 @@ src/TextClient.h
 src/ThreadTasks.cpp
 src/TransferWnd.cpp
 src/UploadClient.cpp
+src/UploadDiskIOThread.cpp
 src/UploadQueue.cpp
 src/UserEvents.cpp
 src/UserEvents.h

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:16+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -33,7 +33,7 @@ msgstr "Τηλεχειρισμός aMule"
 msgid "Snapshot:"
 msgstr "Στιγμιότυπο"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1525,6 +1525,18 @@ msgstr "Ήδη κατεβαίνει"
 msgid "Unknown or bad tempfile format."
 msgstr "Άγνωστος ή κακός τύπος προσωρινού αρχείου."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Μέρος"
@@ -2612,6 +2624,11 @@ msgstr "Όχι"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Ναι"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "Αποτυχία ανοίγματος %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6827,6 +6844,15 @@ msgstr "Μέσα αρχεία:"
 msgid "Not running"
 msgstr "Δεν τρέχει"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6986,7 +7012,7 @@ msgstr "Χρειάζεται Υψηλή Προτεραιότητα για τη �
 msgid "Shared Files (%i)"
 msgstr "Κοινόχρηστα αρχεία (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Συνολικό μέγεθος κοινόχρηστων αρχείων: %s"
@@ -7918,6 +7944,11 @@ msgstr "Διαγραφή κατηγορίας"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Σύνολο κατακερματισμού για άγνωστο αρχείο: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Επιλέξτε ποίος μπορεί να ζητήσει να δει τη λίστα με τα κοινόχρηστα αρχεία σας."
 
 #: src/UploadQueue.cpp
 #, c-format

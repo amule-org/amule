@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -33,7 +33,7 @@ msgstr "aMuleリモート制御"
 msgid "Snapshot:"
 msgstr "スナップショット："
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1515,6 +1515,18 @@ msgstr "すでにダウンロード中です"
 msgid "Unknown or bad tempfile format."
 msgstr "不明な、または不利なtempfileフォーマット。"
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr ""
@@ -2595,6 +2607,11 @@ msgstr "いいえ"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "はい"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "%s（%s）を開くことはできませんでした"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6779,6 +6796,15 @@ msgstr "平均のファイル数："
 msgid "Not running"
 msgstr "動作していません"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6935,7 +6961,7 @@ msgstr "有効なソースリンクを作るにはHighIDが必要です"
 msgid "Shared Files (%i)"
 msgstr "共有ファイル（%i）"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "共有ファイルの合計サイズ： %s"
@@ -7855,6 +7881,11 @@ msgstr "カテゴリを削除します"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "不明なファイルのハッシュセットが要求されました： %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "あなたの共有ファイル・リストを要求できるユーザを選択してください。"
 
 #: src/UploadQueue.cpp
 #, c-format

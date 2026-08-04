@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:20+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -34,7 +34,7 @@ msgstr "aMule nuotolinio valdymo pultelis "
 msgid "Snapshot:"
 msgstr "Ekrano kopija:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1530,6 +1530,18 @@ msgstr "Jau siunčiama"
 msgid "Unknown or bad tempfile format."
 msgstr "Nežinomas arba klaidingas laikino failo formatas."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr ""
@@ -2620,6 +2632,11 @@ msgstr "Ne"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Taip"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "Nepavyko atverti %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6847,6 +6864,15 @@ msgstr "Failų vidurkis:"
 msgid "Not running"
 msgstr "Nepaleista"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -7009,7 +7035,7 @@ msgstr "Norėdami sukurti šaltinio nuorodą, privalote turėti aukštą ID"
 msgid "Shared Files (%i)"
 msgstr "Dalinami failai (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Bendras dalinamų failų dydis: %s"
@@ -7936,6 +7962,11 @@ msgstr "Pašalinti kategoriją"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Gautas prašymas nežinomo failo maišos f-jai: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Nurodykite kas gali pamatyti dalinamų failų sąrašą."
 
 #: src/UploadQueue.cpp
 #, c-format

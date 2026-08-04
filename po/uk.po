@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:26+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -33,7 +33,7 @@ msgstr "Віддалене керування aMule"
 msgid "Snapshot:"
 msgstr "Знімок:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1526,6 +1526,18 @@ msgstr "Вже звантажений"
 msgid "Unknown or bad tempfile format."
 msgstr "Невідомий або неправильний формат тимчасового файлу"
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Частина"
@@ -2615,6 +2627,11 @@ msgstr "Ні"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Так"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "Не вдалося відкрити %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6846,6 +6863,15 @@ msgstr "Всередньому файлів:"
 msgid "Not running"
 msgstr "Не запущений"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -7008,7 +7034,7 @@ msgstr "Вам потрібно мати HighID щоб створити поси
 msgid "Shared Files (%i)"
 msgstr "Спільні файли (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Загальний розмір спільних файлів: %s"
@@ -7940,6 +7966,11 @@ msgstr "Видалити категорію"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Запитано набір хешів для невідомого файлу: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Оберіть тих, хто може запитати перелік ваших спільних файлів."
 
 #: src/UploadQueue.cpp
 #, c-format

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:21+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -39,7 +39,7 @@ msgstr "Controle Remoto do aMule "
 msgid "Snapshot:"
 msgstr "Snapshot:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1521,6 +1521,18 @@ msgstr "Já baixando"
 msgid "Unknown or bad tempfile format."
 msgstr "Arquivo temp desconhecido ou danificado."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Parte"
@@ -2607,6 +2619,11 @@ msgstr "Não"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Sim"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "Falha ao abrir %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6739,6 +6756,15 @@ msgstr "Média de Arquivos:"
 msgid "Not running"
 msgstr "Parado"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6890,7 +6916,7 @@ msgstr "Você precisa ter HighID para criar uma fonte ED2K válida"
 msgid "Shared Files (%i)"
 msgstr "Arquivos Compartilhados (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Tamanho total de compartilhados: %s"
@@ -7817,6 +7843,11 @@ msgstr "Remover categoria"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Hashset solicitado para arquivo desconhecido: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Selecione quem pode pedir a sua lista de compartilhamentos."
 
 #: src/UploadQueue.cpp
 #, c-format
