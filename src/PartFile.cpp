@@ -2455,6 +2455,12 @@ void CPartFile::RemoveAllSources(bool bTryToSwap)
 void CPartFile::Delete()
 {
 	AddLogLineN(CFormat(_("Deleting file: %s")) % GetFileName());
+
+	// This function ends in `delete this`, so the object is already on its
+	// way out: set the same gate ~CPartFile uses, so FlushBuffer cannot
+	// enqueue further hash jobs (or re-share the file) while we tear it
+	// down below.
+	m_inDestructor = true;
 	// Notify every subscriber that holds a raw CKnownFile* / CPartFile*
 	// to this object — list ctrls, comment dialogs, file-detail dialog,
 	// AICH static request list, write/hash threads, and on amulegui
@@ -2485,6 +2491,29 @@ void CPartFile::Delete()
 	AddDebugLogLineN(logPartFile, "\tAdded to canceled file list");
 	theApp->searchlist->UpdateSearchFileByHash(
 		GetFileHash()); // Update file in the search dialog if it's still open
+
+	// Wait for any in-flight HashJob targeting this file before closing the
+	// handle and unlinking the .part below. CPartFileHashThread reads
+	// m_hpartfile inside HashSinglePart; pulling the file out from under it
+	// crashes the worker.
+	//
+	// ~CPartFile performs the same wait, but it only runs from the
+	// `delete this` at the end of this function -- after the close and the
+	// unlink, which is far too late to help. The enqueue gate was set at the
+	// top, so the count only falls from here.
+	//
+	// Reaching this with jobs in flight needs a part to complete during an
+	// active download, which the quiescent guard used to make almost
+	// impossible; without it that is the normal case, so deleting a running
+	// download hits this every time.
+	if (m_pendingHashes > 0) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("Delete() waiting for %d pending hash job(s) of '%s'") %
+				(int)m_pendingHashes % GetFileName());
+		while (m_pendingHashes > 0) {
+			wxMilliSleep(10);
+		}
+	}
 
 	if (m_hpartfile.IsOpened()) {
 		m_hpartfile.Close();
