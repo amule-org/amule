@@ -516,3 +516,17 @@ TEST(ECCrypt, RandomBytesAreTheRightSizeAndNotConstant)
 	ASSERT_TRUE(!allZero);
 	ASSERT_TRUE(RandomBytes(0).empty());
 }
+
+// --- SecureWipe ------------------------------------------------------------
+
+TEST(ECCrypt, SecureWipeEmptiesTheBuffer)
+{
+	std::vector<uint8_t> v = Fill(32, 0x5a);
+	SecureWipe(v);
+	ASSERT_TRUE(v.empty());
+	// A null or empty buffer is a no-op, not a crash.
+	std::vector<uint8_t> emptyVec;
+	SecureWipe(emptyVec);
+	ASSERT_TRUE(emptyVec.empty());
+	SecureWipe(nullptr, 0);
+}

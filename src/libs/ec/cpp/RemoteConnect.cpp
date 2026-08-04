@@ -481,6 +481,17 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 		return;
 	}
 
+	// Validate the received lengths here, at the point of receipt, the way the
+	// daemon validates the client's. X25519Agree and Session::Init would reject
+	// a wrong length downstream too, but checking locally keeps the "every field
+	// the transcript concatenates is fixed-length" invariant obvious rather than
+	// resting on a distant guard.
+	if (serverNonceTag->GetTagDataLen() != ECCrypt::NONCE_TAG_LEN ||
+		serverPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
+		AddDebugLogLineN(logEC, "AEAD: daemon nonce or public key has a bad length");
+		return;
+	}
+
 	const uint8_t *serverNonceData = (const uint8_t *)serverNonceTag->GetTagData();
 	const std::vector<uint8_t> serverNonce(
 		serverNonceData, serverNonceData + serverNonceTag->GetTagDataLen());
@@ -495,8 +506,7 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 	// Wipe the private half the moment it has done its one job, whether or not
 	// that job succeeded. Holding it any longer is the only thing that could
 	// reopen a recorded session later.
-	std::fill(m_aeadEphPriv.begin(), m_aeadEphPriv.end(), (uint8_t)0);
-	m_aeadEphPriv.clear();
+	ECCrypt::SecureWipe(m_aeadEphPriv);
 	if (!agreed) {
 		AddDebugLogLineN(logEC, "AEAD: bad daemon public key, staying in clear");
 		return;
@@ -518,10 +528,11 @@ void CRemoteConnect::SetupAEADFromSalt(const CECPacket *reply)
 	// us and relay. These are what stop it instead: the transcripts on the two
 	// legs differ, so the tags do too.
 	const wxCharBuffer secret = m_aeadSecret.utf8_str();
-	const std::vector<uint8_t> credential(
+	std::vector<uint8_t> credential(
 		(const uint8_t *)secret.data(), (const uint8_t *)secret.data() + strlen(secret.data()));
 	m_aeadClientConfirm = ECCrypt::ConfirmTag(credential, transcript, "ec-confirm-client");
 	m_aeadExpectedServerConfirm = ECCrypt::ConfirmTag(credential, transcript, "ec-confirm-server");
+	ECCrypt::SecureWipe(credential);
 
 	m_aeadNegotiated = true; // EC_OP_AUTH_PASSWD is the last packet that must go out in clear.
 	EnableAEADAfterNextWrite();
@@ -536,6 +547,12 @@ bool CRemoteConnect::VerifyServerConfirm(const CECPacket *reply) const
 	const CECTag *tag = reply->GetTagByName(EC_TAG_AEAD_SERVER_CONFIRM);
 	if (tag == nullptr) {
 		AddDebugLogLineN(logEC, "AEAD: daemon sent no key confirmation");
+		return false;
+	}
+	if (!tag->IsCustom()) {
+		// GetTagData() asserts on a non-custom tag; a peer must not be able to
+		// trip that in a debug build by mistyping the confirm tag.
+		AddDebugLogLineN(logEC, "AEAD: daemon key confirmation has the wrong tag type");
 		return false;
 	}
 	const uint8_t *data = (const uint8_t *)tag->GetTagData();
@@ -568,6 +585,14 @@ const CECPacket *CRemoteConnect::OnPacketReceived(const CECPacket *packet, uint3
 		ProcessAuthPacket(packet);
 		break;
 	case EC_OK:
+		if (IsCryptReady() && !WasLastPacketEncrypted()) {
+			// Established encrypted session: every response must arrive
+			// sealed. A cleartext packet here is an injection attempt; drop
+			// the connection rather than hand a forged reply to a handler.
+			AddDebugLogLineN(logEC, "EC: cleartext packet on an encrypted session, dropping");
+			CloseSocket();
+			break;
+		}
 		if (!m_req_fifo.empty()) {
 			CECPacketHandlerBase *handler = m_req_fifo.front();
 			m_req_fifo.pop_front();
@@ -633,6 +658,29 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 				// Set up transport encryption before the challenge below
 				// overwrites m_connectionPassword.
 				SetupAEADFromSalt(reply);
+				if (m_canAEAD && !m_aeadNegotiated) {
+					// Encryption is required unless the user opted out.
+					// m_canAEAD is that opt-out: with it off we never offer,
+					// so this branch cannot be reached and a clear session is
+					// only ever the user's explicit choice. The core did not
+					// negotiate encryption, and we cannot tell an older aMule
+					// without encryption support from an on-path attacker who
+					// stripped the offer, so we refuse rather than send the
+					// credential and every later command in clear.
+					m_server_reply =
+						m_aeadOffered.empty()
+							? _("Could not set up connection encryption. "
+							    "Connection closed.")
+							: _("The core did not negotiate an encrypted "
+							    "connection. It may be an older aMule without "
+							    "encryption support, or the connection may have "
+							    "been tampered with. To connect without "
+							    "encryption, turn it off in the connection "
+							    "settings.");
+					m_ec_state = EC_FAIL;
+					CloseSocket();
+					return false;
+				}
 				wxString saltHash = MD5Sum(CFormat("%lX") % passwordSalt->GetInt()).GetHash();
 				m_connectionPassword =
 					MD5Sum(m_connectionPassword.Lower() + saltHash).GetHash();

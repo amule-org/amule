@@ -272,6 +272,7 @@ CECSocket::CECSocket(bool use_events)
 , m_crypt_ready(false)
 , m_crypt_enabled(false)
 , m_crypt_enable_after_write(false)
+, m_last_rx_encrypted(false)
 ,
 // setup initial state: 4 flags + 4 length
 m_bytes_needed(EC_HEADER_SIZE)
@@ -317,6 +318,7 @@ void CECSocket::ResetProtocolState()
 	m_crypt_ready = false;
 	m_crypt_enabled = false;
 	m_crypt_enable_after_write = false;
+	m_last_rx_encrypted = false;
 	m_bytes_needed = EC_HEADER_SIZE;
 	m_in_header = true;
 	m_curr_packet_len = 0;
@@ -1240,6 +1242,10 @@ const CECPacket *CECSocket::ReadPacket()
 			return 0;
 		}
 	}
+
+	// Record how this packet arrived so the app dispatch can reject a
+	// cleartext packet injected into a session that negotiated encryption.
+	m_last_rx_encrypted = (flags & EC_FLAG_ENCRYPTED) != 0;
 
 	m_curr_rx_data->ToZlib(m_z);
 	packet = new CECPacket();

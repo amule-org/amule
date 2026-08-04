@@ -180,6 +180,9 @@ public:
 	double GetDoubleData() const;
 	std::string GetStringDataSTL() const;
 	bool IsString() const { return m_dataType == EC_TAGTYPE_STRING; }
+	/// A raw-bytes tag, i.e. one GetTagData() may be called on. Lets a caller
+	/// reject a mistyped tag before GetTagData()'s assert would fire.
+	bool IsCustom() const { return m_dataType == EC_TAGTYPE_CUSTOM; }
 
 #ifdef USE_WX_EXTENSIONS
 	wxString GetStringData() const;

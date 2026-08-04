@@ -127,6 +127,21 @@ std::vector<uint8_t> RandomBytes(size_t count)
 	return out;
 }
 
+void SecureWipe(uint8_t *p, size_t n)
+{
+	if (p != nullptr && n != 0) {
+		// Volatile-based, so the optimiser cannot drop it as a dead store the
+		// way it can a plain std::fill / memset on a buffer about to be freed.
+		CryptoPP::SecureWipeBuffer(p, n);
+	}
+}
+
+void SecureWipe(std::vector<uint8_t> &v)
+{
+	SecureWipe(v.data(), v.size());
+	v.clear();
+}
+
 std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &salt,
 	const std::vector<uint8_t> &info,
@@ -273,7 +288,15 @@ Session::Session()
 {
 }
 
-Session::~Session() = default;
+Session::~Session()
+{
+	// A defaulted destructor would free the key vectors without overwriting
+	// them; wipe the live key material first.
+	SecureWipe(m_txKey);
+	SecureWipe(m_rxKey);
+	SecureWipe(m_txPrefix, sizeof(m_txPrefix));
+	SecureWipe(m_rxPrefix, sizeof(m_rxPrefix));
+}
 
 bool Session::Init(uint8_t cipher,
 	const std::vector<uint8_t> &ikm,
@@ -303,7 +326,7 @@ bool Session::Init(uint8_t cipher,
 	info.insert(info.end(), transcript.begin(), transcript.end());
 
 	const size_t need = keyLen * 2 + 8; // two keys + two 4-byte nonce prefixes
-	const std::vector<uint8_t> okm = HkdfSha256(ikm, salt, info, need);
+	std::vector<uint8_t> okm = HkdfSha256(ikm, salt, info, need);
 	if (okm.size() != need) {
 		return false;
 	}
@@ -327,6 +350,10 @@ bool Session::Init(uint8_t cipher,
 		std::memcpy(m_rxPrefix, s2cPrefix, sizeof(m_rxPrefix));
 	}
 
+	// The directional keys and prefixes are copied out above; the buffer that
+	// briefly held both, plus the caller's ikm copy, is no longer needed.
+	SecureWipe(okm);
+
 	m_cipher = cipher;
 	m_txCounter = 0;
 	m_rxCounter = 0;
@@ -338,10 +365,10 @@ void Session::Reset()
 {
 	m_active = false;
 	m_cipher = Cipher_None;
-	m_txKey.clear();
-	m_rxKey.clear();
-	std::memset(m_txPrefix, 0, sizeof(m_txPrefix));
-	std::memset(m_rxPrefix, 0, sizeof(m_rxPrefix));
+	SecureWipe(m_txKey);
+	SecureWipe(m_rxKey);
+	SecureWipe(m_txPrefix, sizeof(m_txPrefix));
+	SecureWipe(m_rxPrefix, sizeof(m_rxPrefix));
 	m_txCounter = 0;
 	m_rxCounter = 0;
 	m_stream->sealer.reset();

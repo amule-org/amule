@@ -481,6 +481,11 @@ private:
 	// once the password verifies. Held here until then because a client that
 	// fails authentication must never get a working key.
 	uint8_t m_aeadCipher;
+	// Set when the client offered encryption (CAN_AEAD + a nonce) but sent no
+	// usable public key. Such a peer is provably new enough to send one, so the
+	// offer is malformed and the login is refused rather than degraded to clear
+	// even on a permissive daemon.
+	bool m_aeadOfferMalformed;
 	std::vector<uint8_t> m_aeadServerNonce;
 	std::vector<uint8_t> m_aeadClientNonce;
 	std::vector<uint8_t> m_aeadTranscript;
@@ -642,6 +647,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 , m_conn_state(CONN_INIT)
 , m_passwd_salt(GetRandomUint64())
 , m_aeadCipher(ECCrypt::Cipher_None)
+, m_aeadOfferMalformed(false)
 , m_notification_dispatch_depth(0)
 , m_lastEcGenSeen(0)
 , m_lastEcGenSeenShared(0)
@@ -666,6 +672,7 @@ CECServerSocket::~CECServerSocket()
 void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *response)
 {
 	m_aeadCipher = ECCrypt::Cipher_None;
+	m_aeadOfferMalformed = false;
 	m_aeadServerNonce.clear();
 	m_aeadClientNonce.clear();
 	m_aeadTranscript.clear();
@@ -684,10 +691,12 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	}
 	if (clientPubTag == nullptr || clientPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
 		// Not an older client -- encryption has never shipped, so anything that
-		// offers it at all is new enough to send a key. Refusing rather than
-		// falling back to a password-derived key is the point: the fallback
-		// would be a downgrade any middlebox could force by stripping one tag.
-		AddDebugLogLineN(logEC, "AEAD: offer without a usable public key, staying in clear");
+		// offers it at all is new enough to send a key. A keyless offer is
+		// therefore malformed (or a middlebox that stripped the key), and the
+		// login is refused in the auth decision rather than degraded to clear,
+		// even on a permissive daemon.
+		m_aeadOfferMalformed = true;
+		AddDebugLogLineN(logEC, "AEAD: offer without a usable public key, refusing the login");
 		return;
 	}
 
@@ -737,7 +746,7 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	const bool agreed = ECCrypt::X25519Agree(ephPriv, clientPub, m_aeadShared);
 	// Done with the private half; wipe it here rather than letting it live in
 	// this socket for the rest of the handshake.
-	std::fill(ephPriv.begin(), ephPriv.end(), (uint8_t)0);
+	ECCrypt::SecureWipe(ephPriv);
 	if (!agreed) {
 		m_aeadCipher = ECCrypt::Cipher_None;
 		m_aeadServerNonce.clear();
@@ -784,6 +793,12 @@ bool CECServerSocket::VerifyClientConfirm(const CECPacket *request, const wxStri
 		AddDebugLogLineN(logEC, "AEAD: client sent no key confirmation");
 		return false;
 	}
+	if (!tag->IsCustom()) {
+		// GetTagData() asserts on a non-custom tag; a peer must not be able to
+		// trip that in a debug build by mistyping the confirm tag.
+		AddDebugLogLineN(logEC, "AEAD: client key confirmation has the wrong tag type");
+		return false;
+	}
 	const uint8_t *data = (const uint8_t *)tag->GetTagData();
 	const std::vector<uint8_t> got(data, data + tag->GetTagDataLen());
 	const std::vector<uint8_t> want =
@@ -817,13 +832,13 @@ void CECServerSocket::ActivateAEAD()
 		    m_aeadClientNonce,
 		    m_aeadTranscript,
 		    true)) {
+		ECCrypt::SecureWipe(m_aeadShared);
 		AddDebugLogLineN(logEC, "AEAD: key derivation failed, staying in clear");
 		return;
 	}
 	// The shared secret has done its job; nothing later needs it, and keeping
 	// it would put back exactly the long-lived value this change removes.
-	std::fill(m_aeadShared.begin(), m_aeadShared.end(), (uint8_t)0);
-	m_aeadShared.clear();
+	ECCrypt::SecureWipe(m_aeadShared);
 	// From the next packet on, which is EC_OP_AUTH_OK itself.
 	EnableAEADNow();
 	AddDebugLogLineN(logEC,
@@ -848,6 +863,19 @@ const CECPacket *CECServerSocket::OnPacketReceived(const CECPacket *packet, uint
 		// 2) verify password
 		reply = Authenticate(packet);
 	} else {
+		if (IsCryptReady() && !WasLastPacketEncrypted()) {
+			// The session negotiated encryption, so every packet past the
+			// handshake must arrive sealed. A cleartext packet here is an
+			// injection attempt: our sealed replies stay confidential, but
+			// executing an unauthenticated cleartext command with this
+			// session's authority is not something to allow. Drop the
+			// connection rather than process it. The one legitimate clear
+			// packet, a terminal AUTH_FAIL, only ever arrives before
+			// CONN_ESTABLISHED.
+			AddDebugLogLineN(logEC, "EC: cleartext packet on an encrypted session, dropping");
+			CloseSocket();
+			return nullptr;
+		}
 		reply = ProcessRequest2(packet);
 	}
 	return reply;
@@ -1296,7 +1324,20 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 			// discover by simply trying. Deliberately flat rather than
 			// keyed on the peer address: only the client knows what it
 			// dialed, and this side's view misclassifies tunnels.
-			if (thePrefs::ECRequireEncryption() && m_aeadCipher == ECCrypt::Cipher_None) {
+			if (m_aeadOfferMalformed) {
+				// The client offered encryption but sent no usable public key.
+				// Encryption has never shipped, so a peer that offers it at all
+				// is new enough to send a key: a keyless offer is malformed, or
+				// an on-path attacker stripping the key, not an older client.
+				// Refuse rather than let it degrade to clear even on a
+				// permissive daemon.
+				const wxString err = wxTRANSLATE(
+					"Authentication failed: the client offered an encrypted External "
+					"Connection but sent no usable key.");
+				AddLogLineN(wxString(wxGetTranslation(err)) + " " + GetPeer());
+				response = new CECPacket(EC_OP_AUTH_FAIL);
+				response->AddTag(CECTag(EC_TAG_STRING, err));
+			} else if (thePrefs::ECRequireEncryption() && m_aeadCipher == ECCrypt::Cipher_None) {
 				const wxString err = wxTRANSLATE(
 					"Authentication failed: this aMule requires an encrypted External "
 					"Connection, and the client did not negotiate one.");
@@ -1308,6 +1349,7 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				// continued in clear: a client that negotiated encryption and
 				// cannot confirm it is either being relayed or is not the
 				// client it claims to be, and neither deserves a session.
+				ECCrypt::SecureWipe(m_aeadShared);
 				const wxString err = wxTRANSLATE(
 					"Authentication failed: the client could not confirm the encrypted "
 					"session.");

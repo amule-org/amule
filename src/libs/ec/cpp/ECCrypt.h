@@ -64,8 +64,8 @@ enum Cipher : uint8_t
 	/// Preferred where available. Roughly 2.6x faster than AES-GCM in a
 	/// Crypto++ build without hardware AES -- which is every Raspberry Pi up
 	/// to and including the 4, whose Cortex-A53/A72 have no ARMv8 crypto
-	/// extensions. Needs Crypto++ 8.1, so it is compiled in conditionally
-	/// and negotiated rather than assumed.
+	/// extensions. Needs Crypto++ 8.1, which is aMule's minimum, so it is
+	/// always compiled in and simply negotiated rather than assumed.
 	Cipher_ChaCha20_Poly1305 = 2
 };
 
@@ -86,6 +86,13 @@ const char *CipherName(uint8_t cipher);
 
 /// @a count cryptographically random bytes. Empty on failure.
 std::vector<uint8_t> RandomBytes(size_t count);
+
+/// Overwrite the bytes with a wipe the optimiser may not elide (unlike
+/// std::fill / memset on a buffer about to be freed), then clear the vector.
+/// For private keys and the shared secret, so a later memory disclosure
+/// cannot recover them.
+void SecureWipe(std::vector<uint8_t> &v);
+void SecureWipe(uint8_t *p, size_t n);
 
 /**
  * HKDF-SHA256 (RFC 5869), extract-then-expand.
