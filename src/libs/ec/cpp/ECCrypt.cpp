@@ -87,11 +87,11 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 
 } // namespace
 
-std::vector<uint8_t> SupportedCiphers()
+std::vector<uint8_t> SupportedCiphers(bool preferAES)
 {
 	std::vector<uint8_t> out;
 	// Preferred cipher first, but the final choice is made by the server
-	if (HasHardwareAES()) {
+	if (preferAES) {
 		out.push_back(Cipher_AES128_GCM);
 		out.push_back(Cipher_ChaCha20_Poly1305);
 	} else {

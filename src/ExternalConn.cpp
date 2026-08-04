@@ -26,6 +26,8 @@
 
 #include "config.h" // Needed for VERSION
 
+#include "CryptoPP_Inc.h" // Needed for HasHardwareAES
+
 #include <set>       // Needed for std::set (m_lastSentSharedFileIds)
 #include <list>      // Needed for std::list (multi-search LRU ring)
 #include <algorithm> // Needed for std::find (multi-search LRU ring)
@@ -703,14 +705,16 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	const uint8_t *offered = (const uint8_t *)offer->GetTagData();
 	const uint16_t offeredLen = offer->GetTagDataLen();
 
-	// the client prefers Cipher_ChaCha20_Poly1305, probably because it doesn't support
-	// hardware AES, let's make our client happy
+	// The client prefers Cipher_ChaCha20_Poly1305, probably because it doesn't support
+	// hardware AES, let's make our client happy.
+	// If a third cipher is ever added, please update all the logic below and SupportedCiphers()
+	// to make sure you send and select the intended ciphers
 	if (offeredLen && offered[0] == ECCrypt::Cipher_ChaCha20_Poly1305 &&
 		ECCrypt::IsCipherSupported(ECCrypt::Cipher_ChaCha20_Poly1305))
 		m_aeadCipher = ECCrypt::Cipher_ChaCha20_Poly1305;
 	else {
-		// Our list is in preference order, so take our first mutual entry rather
-		// than the client's -- the daemon decides what it would rather run.
+		// if the client didn't ask for ChaCha20, we will check our own list
+		// in preference order, so take our first mutual entry.
 		const std::vector<uint8_t> ours = ECCrypt::SupportedCiphers();
 		for (size_t i = 0; i < ours.size() && m_aeadCipher == ECCrypt::Cipher_None; ++i) {
 			for (uint16_t j = 0; j < offeredLen; ++j) {

@@ -74,9 +74,10 @@ const size_t NONCE_TAG_LEN = 32;
 /// AEAD tag appended to every sealed body.
 const size_t AEAD_TAG_LEN = 16;
 
+bool HasHardwareAES(); // defined in CryptoPP_Inc.h
 /// Ciphers this build can actually do, strongest/fastest first. The server
 /// picks the first entry the client also offered.
-std::vector<uint8_t> SupportedCiphers();
+std::vector<uint8_t> SupportedCiphers(bool preferAES = HasHardwareAES());
 
 /// Whether this build can do @a cipher at all.
 bool IsCipherSupported(uint8_t cipher);

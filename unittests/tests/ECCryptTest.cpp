@@ -32,9 +32,7 @@
 
 #include <muleunit/test.h>
 
-#define CRYPTOPP_INC_NEED_AEAD
-#include <../src/CryptoPP_Inc.h> //needed for HasHardwareAES
-
+#include "CryptoPP_Inc.h" //needed for HasHardwareAES
 #include "ECCrypt.h"
 
 #include <cstdlib>
@@ -147,14 +145,28 @@ TEST(ECCrypt, AesGcmIsAlwaysAvailable)
 
 TEST(ECCrypt, PreferredCipherComesFirst)
 {
-	// As a general rule, from fastest to slowest:
-	// AES (with hardware support) > ChaCha20 > AES (without hardware support)
-	// The preferred cipher is the fastest, and it shall come first
-	const std::vector<uint8_t> ciphers = SupportedCiphers();
-	if (IsCipherSupported(Cipher_ChaCha20_Poly1305) && !HasHardwareAES()) {
+	// Case 1: preferAES = false
+	// ChaCha20 shall come first if supported, AES otherwise
+	const std::vector<uint8_t> ciphers = SupportedCiphers(false);
+	if (IsCipherSupported(Cipher_ChaCha20_Poly1305)) {
 		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers[0]);
 	} else {
 		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers[0]);
+	}
+
+	// Case 2: preferAES = true
+	// AES shall always come first, as supporting it is mandatory
+	const std::vector<uint8_t> ciphers2 = SupportedCiphers(true);
+	ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers2[0]);
+
+	// Case 3: preferAES = HasHardwareAES()
+	// ChaCha20 shall come first if supported and no hardware support for AES
+	// Otherwise, AES shall come first
+	const std::vector<uint8_t> ciphers3 = SupportedCiphers();
+	if (IsCipherSupported(Cipher_ChaCha20_Poly1305) && !HasHardwareAES()) {
+		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers3[0]);
+	} else {
+		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers3[0]);
 	}
 }
 

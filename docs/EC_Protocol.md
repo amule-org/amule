@@ -149,6 +149,8 @@ the offer is refused rather than answered with a weaker derivation.
 | `1` | AES-128-GCM (mandatory) | when both sides have hardware support for AES |
 | `2` | ChaCha20-Poly1305 (optional) | when both sides have ChaCha20 and at least one lacks hardware support for AES |
 
+Please note Crypto++ (as of version 8.9.0), detects hardware AES on x86 and
+Linux ARM only, so macOS and Windows stays on ChaCha20 despite the hardware.
 
 **Keys.** Both sides derive from the X25519 shared secret, and from nothing
 else. In particular *not* from the password: a key derived from something that
