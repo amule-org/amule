@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 15:11+0200\n"
+"POT-Creation-Date: 2026-08-04 15:33+0200\n"
 "PO-Revision-Date: 2026-08-04 09:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1874,7 +1874,15 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr ""
 
 #: src/ExternalConn.cpp
+msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Authentication failed: the client could not confirm the encrypted session."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -2953,8 +2961,21 @@ msgid "EC connection failed. Empty reply."
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "Could not set up connection encryption. Connection closed."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
 #, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
+msgstr "ExternalConn: サーバーからの応答が不正です。接続を閉じました。"
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, fuzzy
+msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
 msgstr "ExternalConn: サーバーからの応答が不正です。接続を閉じました。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
