@@ -338,7 +338,14 @@ bool CRemoteConnect::ConnectToCore(const wxString &host,
 		CSmartPtr<const CECPacket> getSalt(SendRecvPacket(&login_req));
 		m_ec_state = EC_REQ_SENT;
 
-		ProcessAuthPacket(getSalt.get());
+		// Honour the AUTH_SALT verdict before sending the credential. The
+		// require-encryption refusal (we offered AEAD but the core did not
+		// negotiate it) must stop here rather than send AUTH_PASSWD in clear;
+		// ProcessAuthPacket has already set m_server_reply and closed the
+		// socket. The async path does the same check in OnPacketReceived.
+		if (!ProcessAuthPacket(getSalt.get())) {
+			return false;
+		}
 
 		CECAuthPacket passwdPacket(m_connectionPassword, m_aeadClientConfirm);
 
