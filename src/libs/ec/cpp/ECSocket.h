@@ -160,6 +160,14 @@ public:
 	// reconnected session's first bytes and the login handshake fails.
 	void ResetProtocolState();
 
+	/**
+	 * Drop the capability bits agreed with the previous peer, keeping the ones
+	 * this end chose locally. Only for a caller reusing this object against a
+	 * possibly different peer; see the definition for why it is separate from
+	 * ResetProtocolState.
+	 */
+	void ClearPeerNegotiatedFlags();
+
 	void CloseSocket() { InternalClose(); }
 
 	/**
