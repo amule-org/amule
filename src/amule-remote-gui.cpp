@@ -882,14 +882,16 @@ void CamuleRemoteGuiApp::AttemptReconnect()
 	// the EC packet-reassembly state (a stale mid-packet read left over from
 	// the drop would otherwise misparse the new session's first bytes and the
 	// login would fail) and a fresh asio socket on the SAME CRemoteConnect
-	// object (keeps every remote container's m_conn pointer valid). Capability
-	// flags persist on the object -- SetCapabilities is not called again here,
-	// and what this end can do has not changed -- so ConnectToCore re-runs the
-	// login handshake as on first connect. The one flag that is cleared is the
-	// one agreed with the *peer* rather than chosen locally; see
-	// CECSocket::ResetProtocolState.
+	// object (keeps every remote container's m_conn pointer valid). Locally
+	// chosen capability flags persist deliberately -- SetCapabilities is not
+	// called again here, and what this end can do has not changed -- so
+	// ConnectToCore re-runs the login handshake as on first connect. Flags
+	// agreed with the previous daemon are a different matter: the next one may
+	// not support them, so they are dropped here rather than inside
+	// ResetProtocolState, which other CECSocket users share.
 	m_connect->DiscardRequestQueue();
 	m_connect->ResetProtocolState();
+	m_connect->ClearPeerNegotiatedFlags();
 	m_connect->ResetForReconnect();
 
 	// Per-attempt watchdog so an attempt that hangs (host unreachable, SYN
