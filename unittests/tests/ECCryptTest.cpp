@@ -32,6 +32,9 @@
 
 #include <muleunit/test.h>
 
+#define CRYPTOPP_INC_NEED_AEAD
+#include <../src/CryptoPP_Inc.h> //needed for HasHardwareAES
+
 #include "ECCrypt.h"
 
 #include <cstdlib>
@@ -144,11 +147,11 @@ TEST(ECCrypt, AesGcmIsAlwaysAvailable)
 
 TEST(ECCrypt, PreferredCipherComesFirst)
 {
-	// The daemon picks the first mutually supported entry, so ordering is the
-	// preference. Where ChaCha exists it must outrank AES: without hardware
-	// AES it is substantially faster, which is the Raspberry Pi case.
+	// As a general rule, from fastest to slowest:
+	// AES (with hardware support) > ChaCha20 > AES (without hardware support)
+	// The preferred cipher is the fastest, and it shall come first
 	const std::vector<uint8_t> ciphers = SupportedCiphers();
-	if (IsCipherSupported(Cipher_ChaCha20_Poly1305)) {
+	if (IsCipherSupported(Cipher_ChaCha20_Poly1305) && !HasHardwareAES()) {
 		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers[0]);
 	} else {
 		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers[0]);
