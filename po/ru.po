@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 12:39+0200\n"
+"POT-Creation-Date: 2026-08-04 13:14+0200\n"
 "PO-Revision-Date: 2026-08-04 09:23+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -3053,6 +3053,15 @@ msgstr "Очистить"
 msgid "Select All"
 msgstr "Выделить все"
 
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
+msgid "kB/s"
+msgstr "КБ/с"
+
+#: src/MuleTrayIcon.cpp
+msgid "Unlimited"
+msgstr "Неограниченно"
+
 #: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr "eD2k: "
@@ -3139,15 +3148,6 @@ msgstr "Свернуть aMule"
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
 msgstr "Выход"
-
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "КБ/с"
-
-#: src/MuleTrayIcon.cpp
-msgid "Unlimited"
-msgstr "Неограниченно"
 
 #: src/MuleTrayIcon.cpp
 msgid "aMule Tray Menu"

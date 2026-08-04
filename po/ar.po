@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 12:39+0200\n"
+"POT-Creation-Date: 2026-08-04 13:14+0200\n"
 "PO-Revision-Date: 2026-08-04 09:14+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -2976,6 +2976,15 @@ msgstr "واضح"
 msgid "Select All"
 msgstr ""
 
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
+msgid "kB/s"
+msgstr ""
+
+#: src/MuleTrayIcon.cpp
+msgid "Unlimited"
+msgstr "بلا حدود"
+
 #: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr ""
@@ -3066,15 +3075,6 @@ msgstr ""
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
 msgstr "خروج"
-
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr ""
-
-#: src/MuleTrayIcon.cpp
-msgid "Unlimited"
-msgstr "بلا حدود"
 
 #: src/MuleTrayIcon.cpp
 msgid "aMule Tray Menu"
