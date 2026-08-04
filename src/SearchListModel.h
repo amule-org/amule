@@ -106,6 +106,12 @@ public:
 	bool GetAttr(const wxDataViewItem &item, unsigned int col, wxDataViewItemAttr &attr) const wxOVERRIDE;
 	wxDataViewItem GetParent(const wxDataViewItem &item) const wxOVERRIDE;
 	bool IsContainer(const wxDataViewItem &item) const wxOVERRIDE;
+	//! A grouped result is a row in its own right, not a section header: the
+	//! parent carries the same name/size/sources/rating as any other result
+	//! and its children are alternative sources for the same file. Without
+	//! this, wxDataViewModel::HasValue() draws only column 0 for a container
+	//! -- the group shows its filename and nothing else until expanded.
+	bool HasContainerColumns(const wxDataViewItem &item) const wxOVERRIDE;
 	unsigned int GetChildren(const wxDataViewItem &item, wxDataViewItemArray &children) const wxOVERRIDE;
 	int Compare(const wxDataViewItem &item1,
 		const wxDataViewItem &item2,

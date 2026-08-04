@@ -54,6 +54,14 @@ void CSearchListModel::NotifyFileAdded(CSearchFile *file)
 
 void CSearchListModel::NotifyFileRemoved(CSearchFile *file)
 {
+	// Mirror NotifyFileAdded's gate: a file the control was never told about
+	// (filtered out at add time) must not be deleted from it either -- that
+	// gate is exactly ShouldShow(), the same test GetChildren() itself uses
+	// to decide what's visible (root items via ShouldShow(); children via
+	// PassesFilter(), which ShouldShow() reduces to for a childless file).
+	if (!m_owner->ShouldShow(file)) {
+		return;
+	}
 	CSearchFile *parent = file->GetParent();
 	ItemDeleted(parent ? ToItem(parent) : wxDataViewItem(), ToItem(file));
 }
@@ -226,6 +234,11 @@ bool CSearchListModel::IsContainer(const wxDataViewItem &item) const
 		return true; // invisible root
 	}
 	return ToFile(item)->HasChildren();
+}
+
+bool CSearchListModel::HasContainerColumns(const wxDataViewItem &WXUNUSED(item)) const
+{
+	return true;
 }
 
 unsigned int CSearchListModel::GetChildren(const wxDataViewItem &item, wxDataViewItemArray &children) const
