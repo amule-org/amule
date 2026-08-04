@@ -25,6 +25,8 @@
 
 #include "SearchListCtrl.h" // Interface declarations
 
+#include <algorithm> // Needed for std::find, std::min
+
 #include <common/MenuIDs.h>
 #include <common/Format.h> // Needed for CFormat
 #include <tags/FileTags.h> // Needed for FT_MEDIA_LENGTH / _BITRATE / _CODEC
@@ -34,6 +36,7 @@
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "KnownFileList.h"    // Needed for CKnownFileList
 #include "SearchList.h"       // Needed for CSearchFile
+#include "SearchListModel.h"  // Needed for CSearchListModel
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
 #include "SearchDlg.h"        // Needed for CSearchDlg
 #include "amuleDlg.h"         // Needed for CamuleDlg
@@ -41,15 +44,17 @@
 #include "TransferWnd.h"      // Needed for CTransferWnd (download-list batching)
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl (download-list batching)
 #endif
-#include "muuli_wdr.h"   // Needed for clientImages
-#include "Preferences.h" // Needed for thePrefs
-#include "GuiEvents.h"   // Needed for CoreNotify_Search_Add_Download
-#include "MuleColour.h"
+#include "muuli_wdr.h"      // Needed for IDC_* / ID_* control ids
+#include "OtherFunctions.h" // Needed for CmpAny, CastItoXBytes, GetFiletypeByName, ...
+#include "Preferences.h"    // Needed for thePrefs
+#include "GuiEvents.h"      // Needed for CoreNotify_Search_Add_Download
 
-wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleListCtrl)
-	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSearchListCtrl::OnRightClick)
-	EVT_LIST_COL_CLICK(-1, CSearchListCtrl::OnColumnLClick)
-	EVT_LIST_COL_END_DRAG(-1, CSearchListCtrl::OnColumnResize)
+wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSearchListCtrl::OnRightClick)
+	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CSearchListCtrl::OnColumnHeaderClick)
+	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CSearchListCtrl::OnItemActivated)
+	EVT_DATAVIEW_SELECTION_CHANGED(wxID_ANY, CSearchListCtrl::OnSelectionChanged)
+	EVT_IDLE(CSearchListCtrl::OnIdle)
 
 	EVT_MENU(MP_GETED2KLINK, CSearchListCtrl::OnPopupGetUrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
@@ -58,446 +63,211 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleListCtrl)
 	EVT_MENU(MP_MARK_AS_KNOWN, CSearchListCtrl::OnMarkAsKnown)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
-
-	EVT_LIST_ITEM_ACTIVATED(-1, CSearchListCtrl::OnItemActivated)
 wxEND_EVENT_TABLE()
 
 std::list<CSearchListCtrl *> CSearchListCtrl::s_lists;
 
-enum SearchListColumns
+// MLOrder-compatible bit values, reused from CMuleListCtrl so the persisted
+// "TableOrderingSearch" config entries stay wire-compatible (see
+// ListColumnStore.cpp, which already hardcodes these same values).
+namespace
 {
-	ID_SEARCH_COL_NAME = 0,
-	ID_SEARCH_COL_SIZE,
-	ID_SEARCH_COL_SOURCES,
-	ID_SEARCH_COL_TYPE,
-	ID_SEARCH_COL_RATING,
-	ID_SEARCH_COL_FILEID,
-	ID_SEARCH_COL_STATUS,
-	ID_SEARCH_COL_LENGTH,
-	ID_SEARCH_COL_BITRATE,
-	ID_SEARCH_COL_CODEC,
-	ID_SEARCH_COL_DIRECTORY
-};
+const unsigned SORT_DES = 0x1000;
+const unsigned SORT_ALT = 0x2000;
+const unsigned SORTING_MASK = 0x3000;
+} // namespace
 
-CSearchListCtrl::CSearchListCtrl(wxWindow *parent,
-	wxWindowID winid,
-	const wxPoint &pos,
-	const wxSize &size,
-	long style,
-	const wxValidator &validator,
-	const wxString &name)
-: CMuleListCtrl(parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name)
+CSearchListCtrl::CSearchListCtrl(
+	wxWindow *parent, wxWindowID winid, const wxPoint &pos, const wxSize &size, const wxString &name)
+: wxDataViewCtrl(parent, winid, pos, size, wxDV_ROW_LINES, wxDefaultValidator, name)
+, m_nResultsID(0)
+, m_browseEcid(0)
+, m_browseStatus(0)
+, m_widthAdapter(this)
 , m_filterKnown(false)
 , m_invert(false)
 , m_filterEnabled(false)
 {
-	// Setting the sorter function.
-	SetSortFunc(SortProc);
+	// Without this, idle events aren't guaranteed to reach this specific
+	// window (wx's default idle-processing mode only visits windows opted
+	// in this way), so OnIdle's column-resize detection -- the only way
+	// this control learns about a user drag-resize, since there is no
+	// portable wxDataViewCtrl "column resized" event -- would silently
+	// never fire.
+	SetExtraStyle(GetExtraStyle() | wxWS_EX_PROCESS_IDLE);
 
-	InsertColumn(ID_SEARCH_COL_NAME, _("File Name"), wxLIST_FORMAT_LEFT, 500, "N");
-	InsertColumn(ID_SEARCH_COL_SIZE, _("Size"), wxLIST_FORMAT_LEFT, 100, "Z");
-	InsertColumn(ID_SEARCH_COL_SOURCES, _("Sources"), wxLIST_FORMAT_LEFT, 50, "u");
-	InsertColumn(ID_SEARCH_COL_TYPE, _("Type"), wxLIST_FORMAT_LEFT, 65, "Y");
-	// Rating: the smiley icon (drawn in OnDrawItem) plus its text label. Empty
-	// for unrated results; sortable by the raw 1-5 value (see SortProc).
-	InsertColumn(ID_SEARCH_COL_RATING, _("Rating"), wxLIST_FORMAT_LEFT, 120, "R");
-	InsertColumn(ID_SEARCH_COL_FILEID, _("FileID"), wxLIST_FORMAT_LEFT, 280, "I");
-	InsertColumn(ID_SEARCH_COL_STATUS, _("Status"), wxLIST_FORMAT_LEFT, 100, "S");
+	m_model = new CSearchListModel(this);
+	AssociateModel(m_model);
+	m_model->DecRef(); // the control now holds the only reference
+
+	AppendTextColumn(_("File Name"),
+		CSearchListModel::COL_NAME,
+		wxDATAVIEW_CELL_INERT,
+		500,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("Size"),
+		CSearchListModel::COL_SIZE,
+		wxDATAVIEW_CELL_INERT,
+		100,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("Sources"),
+		CSearchListModel::COL_SOURCES,
+		wxDATAVIEW_CELL_INERT,
+		50,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("Type"),
+		CSearchListModel::COL_TYPE,
+		wxDATAVIEW_CELL_INERT,
+		65,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	// Rating: smiley icon + text label in one cell.
+	AppendIconTextColumn(_("Rating"),
+		CSearchListModel::COL_RATING,
+		wxDATAVIEW_CELL_INERT,
+		120,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("FileID"),
+		CSearchListModel::COL_FILEID,
+		wxDATAVIEW_CELL_INERT,
+		280,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("Status"),
+		CSearchListModel::COL_STATUS,
+		wxDATAVIEW_CELL_INERT,
+		100,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
 	// Media tag columns: ed2k/Kad publishers (eMule, eMule AI, aMule) can
 	// advertise per-file media metadata in FT_MEDIA_LENGTH / _BITRATE /
-	// _CODEC. Display them as columns when present; cells stay empty for
-	// non-media results or for files whose owner didn't populate the tags.
-	InsertColumn(ID_SEARCH_COL_LENGTH, _("Length"), wxLIST_FORMAT_LEFT, 80, "L");
-	InsertColumn(ID_SEARCH_COL_BITRATE, _("Bitrate"), wxLIST_FORMAT_LEFT, 80, "B");
-	InsertColumn(ID_SEARCH_COL_CODEC, _("Codec"), wxLIST_FORMAT_LEFT, 80, "C");
+	// _CODEC. Cells stay empty for non-media results.
+	AppendTextColumn(_("Length"),
+		CSearchListModel::COL_LENGTH,
+		wxDATAVIEW_CELL_INERT,
+		80,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("Bitrate"),
+		CSearchListModel::COL_BITRATE,
+		wxDATAVIEW_CELL_INERT,
+		80,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+	AppendTextColumn(_("Codec"),
+		CSearchListModel::COL_CODEC,
+		wxDATAVIEW_CELL_INERT,
+		80,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
 	// Directories is almost always empty (only populated when the result
 	// came from a "view shared files" request, rare in practice), so put
 	// it at the end with the other usually-empty columns.
-	InsertColumn(ID_SEARCH_COL_DIRECTORY,
-		_("Directories"),
-		wxLIST_FORMAT_LEFT,
+	AppendTextColumn(
+		_("Directories"), // I would have preferred "Directory" but this is already translated
+		CSearchListModel::COL_DIRECTORY,
+		wxDATAVIEW_CELL_INERT,
 		280,
-		"D"); // I would have preferred "Directory" but this is already translated
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
 
-	m_nResultsID = 0;
-	m_browseEcid = 0;
-	m_browseStatus = 0;
+	m_columnStore.RegisterColumn(CSearchListModel::COL_NAME, 500, "N");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_SIZE, 100, "Z");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_SOURCES, 50, "u");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_TYPE, 65, "Y");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_RATING, 120, "R");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_FILEID, 280, "I");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_STATUS, 100, "S");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_LENGTH, 80, "L");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_BITRATE, 80, "B");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_CODEC, 80, "C");
+	m_columnStore.RegisterColumn(CSearchListModel::COL_DIRECTORY, 280, "D");
+
+	// Default sort is by name, ascending.
+	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
+	GetColumn(CSearchListModel::COL_NAME)->SetSortOrder(true);
 
 	// Only load settings for first list, otherwise sync with current lists
 	if (s_lists.empty()) {
-		// Set the name to enable loading of settings
-		SetTableName("Search");
-
-		LoadSettings();
-
-		// Unset the name to avoid the settings getting saved every time a list is closed
-		SetTableName("");
+		m_columnStore.SetTableName("Search");
+		LoadColumnSettings();
+		m_columnStore.SetTableName("");
 	} else {
-		// Sync this list with one of the others
 		SyncLists(s_lists.front(), this);
 	}
 
-	// Add the list so that it will be synced with the other lists
-	s_lists.push_back(this);
-}
+	for (int i = 0; i < GetColumnCount(); ++i) {
+		m_lastKnownWidths.push_back(GetColumn(i)->GetWidth());
+	}
 
-wxString CSearchListCtrl::GetOldColumnOrder() const
-{
-	return "N,Z,u,Y,I,S";
+	s_lists.push_back(this);
 }
 
 CSearchListCtrl::~CSearchListCtrl()
 {
-	std::list<CSearchListCtrl *>::iterator it = std::find(s_lists.begin(), s_lists.end(), this);
+	// Push this list's current widths/sort state onward before it's gone,
+	// so whichever tab happens to be closed *last* -- the one that
+	// actually gets to SaveColumnSettings() below -- reflects the most
+	// recently touched state, regardless of which tab the user last
+	// resized/re-sorted. Doesn't depend on the idle-driven live sync
+	// (CSearchListCtrl::OnIdle) ever having fired: that only keeps
+	// multiple simultaneously-open tabs visually in sync as a UX nicety,
+	// it's not what persistence correctness relies on here.
+	SyncOtherLists(this);
 
-	if (it != s_lists.end())
-		s_lists.erase(it);
+	s_lists.remove(this);
 
 	// We only save the settings if the last list was closed
 	if (s_lists.empty()) {
-		// In order to get the settings saved, we need to set the name
-		SetTableName("Search");
+		m_columnStore.SetTableName("Search");
+		SaveColumnSettings();
 	}
 }
 
-void CSearchListCtrl::AddResult(CSearchFile *toshow)
+void CSearchListCtrl::LoadColumnSettings()
 {
-	wxCHECK_RET(toshow->GetSearchID() == m_nResultsID, "Wrong search-id for result-list");
-
-	const wxUIntPtr toshowdata = reinterpret_cast<wxUIntPtr>(toshow);
-	CSearchFile *parent = toshow->GetParent();
-
-	// Check if the result should be shown
-	if (FindItem(-1, toshowdata) != -1) {
+	if (!m_columnStore.HasTableName()) {
 		return;
-	} else if (parent && !parent->ShowChildren()) {
+	}
+
+	CListColumnStore::CSortingList decoded;
+	m_columnStore.LoadSettings(m_widthAdapter, "N,Z,u,Y,I,S", decoded);
+
+	m_sort_orders.clear();
+	for (const CListColumnStore::CColPair &pair : decoded) {
+		m_sort_orders.emplace_back(pair.first, pair.second);
+	}
+	if (m_sort_orders.empty()) {
+		m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
+	}
+
+	const CColPair &primary = m_sort_orders.front();
+	GetColumn(primary.first)->SetSortOrder(!(primary.second & SORT_DES));
+	GetModel()->Resort();
+}
+
+void CSearchListCtrl::SaveColumnSettings()
+{
+	if (!m_columnStore.HasTableName()) {
 		return;
-	} else if (!IsFiltered(toshow)) {
-		if (toshow->HasChildren() && toshow->ShowChildren()) {
-			// Only filter the parent if none of the children are shown.
-			bool foundChild = false;
-			const CSearchResultList &children = toshow->GetChildren();
-			for (size_t i = 0; i < children.size(); ++i) {
-				if (IsFiltered(children.at(i))) {
-					foundChild = true;
-					break;
-				}
-			}
-
-			if (!foundChild) {
-				// No children left, and the parent is filtered.
-				m_filteredOut.push_back(toshow);
-				return;
-			}
-		} else {
-			m_filteredOut.push_back(toshow);
-			return;
-		}
 	}
-
-	// Insert the item before the item found by the search
-	long insertPos;
-	if (parent) {
-		insertPos = FindItem(-1, (wxUIntPtr)parent);
-		if (insertPos == -1) {
-			wxFAIL;
-			insertPos = GetItemCount();
-		} else {
-			insertPos++;
-		}
-	} else {
-		insertPos = GetInsertPos(toshowdata);
-	}
-	long newid = InsertItem(insertPos, toshow->GetFileName().GetPrintable());
-
-	// Sanity checks to ensure that results/children are properly positioned.
-#ifdef __WXDEBUG__
-	{
-		if (newid > 0) {
-			CSearchFile *before = reinterpret_cast<CSearchFile *>(GetItemData(newid - 1));
-			wxASSERT(before);
-			if (parent) {
-				wxASSERT((before->GetParent() == parent) || (before == parent));
-			} else {
-				wxASSERT(before->GetParent() != toshow);
-			}
-		}
-
-		if ((int)newid < GetItemCount() - 1) {
-			CSearchFile *after = reinterpret_cast<CSearchFile *>(GetItemData(newid + 1));
-			wxASSERT(after);
-			if (parent) {
-				wxASSERT((after->GetParent() == parent) || (!after->GetParent()));
-			} else {
-				wxASSERT((after->GetParent() == toshow) || (!after->GetParent()));
-			}
-		}
-	}
-#endif
-
-	SetItemPtrData(newid, toshowdata);
-
-	// Filesize
-	SetItem(newid, ID_SEARCH_COL_SIZE, CastItoXBytes(toshow->GetFileSize()));
-
-	// Source count
-	wxString temp = CFormat("%d") % toshow->GetSourceCount();
-	if (toshow->GetCompleteSourceCount()) {
-		temp += CFormat(" (%d)") % toshow->GetCompleteSourceCount();
-	}
-	if (toshow->GetClientsCount()) {
-		temp += CFormat(" [%d]") % toshow->GetClientsCount();
-	}
-#if defined(__DEBUG__) && !defined(CLIENT_GUI)
-	if (toshow->GetKadPublishInfo() == 0) {
-		temp += " | -";
-	} else {
-		temp += CFormat(" | N:%u, P:%u, T:%0.2f") %
-			((toshow->GetKadPublishInfo() & 0xFF000000) >> 24) %
-			((toshow->GetKadPublishInfo() & 0x00FF0000) >> 16) %
-			((toshow->GetKadPublishInfo() & 0x0000FFFF) / 100.0);
-	}
-#endif
-	SetItem(newid, ID_SEARCH_COL_SOURCES, temp);
-
-	// File-type
-	SetItem(newid, ID_SEARCH_COL_TYPE, GetFiletypeByName(toshow->GetFileName()));
-
-	// Rating: text label next to the smiley icon (icon drawn in OnDrawItem).
-	// Left empty for unrated results.
-	if (toshow->HasRating()) {
-		SetItem(newid, ID_SEARCH_COL_RATING, GetRateString(toshow->UserRating()));
-	}
-
-	// File-hash
-	SetItem(newid, ID_SEARCH_COL_FILEID, toshow->GetFileHash().Encode());
-
-	// File status
-	SetItem(newid, ID_SEARCH_COL_STATUS, DetermineStatusPrintable(toshow));
-
-	// Directory where file is located (has a value when search file comes from a "view shared files"
-	// request)
-	SetItem(newid, ID_SEARCH_COL_DIRECTORY, toshow->GetDirectory());
-
-	// Media tags (only set when the publishing client populated them):
-	if (uint32 lenSec = toshow->GetIntTagValue(FT_MEDIA_LENGTH)) {
-		SetItem(newid, ID_SEARCH_COL_LENGTH, CastSecondsToHM(lenSec));
-	}
-	if (uint32 bitrate = toshow->GetIntTagValue(FT_MEDIA_BITRATE)) {
-		SetItem(newid, ID_SEARCH_COL_BITRATE, CFormat(wxT("%u kbps")) % bitrate);
-	}
-	const wxString &codec = toshow->GetStrTagValue(FT_MEDIA_CODEC);
-	if (!codec.IsEmpty()) {
-		SetItem(newid, ID_SEARCH_COL_CODEC, FormatMediaCodec(codec));
-	}
-
-	// Set the color of the item
-	UpdateItemColor(newid);
+	m_columnStore.SaveSettings(m_widthAdapter, m_sort_orders);
 }
 
-void CSearchListCtrl::RemoveResult(CSearchFile *toremove)
+bool CSearchListCtrl::PassesFilter(const CSearchFile *file) const
 {
-	ShowChildren(toremove, false);
-
-	long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(toremove));
-	if (index != -1) {
-		DeleteItem(index);
-	} else {
-		ResultList::iterator it = std::find(m_filteredOut.begin(), m_filteredOut.end(), toremove);
-		if (it != m_filteredOut.end()) {
-			m_filteredOut.erase(it);
-		}
-	}
+	return IsFiltered(file);
 }
 
-void CSearchListCtrl::UpdateResult(CSearchFile *toupdate)
+bool CSearchListCtrl::IsFiltered(const CSearchFile *file) const
 {
-	long index = FindItem(-1, reinterpret_cast<wxUIntPtr>(toupdate));
-	if (index != -1) {
-		// Update the filename, which may be changed in case of multiple variants.
-		SetItem(index, ID_SEARCH_COL_NAME, toupdate->GetFileName().GetPrintable());
-
-		wxString temp = CFormat("%d") % toupdate->GetSourceCount();
-		if (toupdate->GetCompleteSourceCount()) {
-			temp += CFormat(" (%d)") % toupdate->GetCompleteSourceCount();
-		}
-		if (toupdate->GetClientsCount()) {
-			temp += CFormat(" [%d]") % toupdate->GetClientsCount();
-		}
-#if defined(__DEBUG__) && !defined(CLIENT_GUI)
-		if (toupdate->GetKadPublishInfo() == 0) {
-			temp += " | -";
-		} else {
-			temp += CFormat(" | N:%u, P:%u, T:%0.2f") %
-				((toupdate->GetKadPublishInfo() & 0xFF000000) >> 24) %
-				((toupdate->GetKadPublishInfo() & 0x00FF0000) >> 16) %
-				((toupdate->GetKadPublishInfo() & 0x0000FFFF) / 100.0);
-		}
-#endif
-		SetItem(index, ID_SEARCH_COL_SOURCES, temp);
-
-		SetItem(index, ID_SEARCH_COL_STATUS, DetermineStatusPrintable(toupdate));
-
-		// Rating can change after the row is shown (variant merge / a
-		// community rating arriving); keep the label in sync. The icon itself
-		// redraws live from HasRating()/UserRating() in OnDrawItem.
-		SetItem(index,
-			ID_SEARCH_COL_RATING,
-			toupdate->HasRating() ? GetRateString(toupdate->UserRating()) : wxString());
-
-		UpdateItemColor(index);
-
-		// Deletions of items causes rather large amount of flicker, so to
-		// avoid this, we resort the list to ensure correct ordering.
-		if (!IsItemSorted(index)) {
-			SortList();
-		}
-	}
-}
-
-void CSearchListCtrl::UpdateItemColor(long index)
-{
-	wxListItem item;
-	item.SetId(index);
-	item.SetColumn(ID_SEARCH_COL_SIZE);
-	item.SetMask(wxLIST_MASK_STATE | wxLIST_MASK_TEXT | wxLIST_MASK_IMAGE | wxLIST_MASK_DATA |
-		     wxLIST_MASK_WIDTH | wxLIST_MASK_FORMAT);
-
-	if (GetItem(item)) {
-		CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(index));
-
-		// Theme-aware state palette. The previous logic started from
-		// wxSYS_COLOUR_WINDOWTEXT and overlaid per-channel tints
-		// (`green = 255`, `red = 255` etc.). On light themes the base
-		// is black so the tints produce green / red / magenta; on dark
-		// themes the base is white-ish, so setting a channel that is
-		// already 255 is a no-op and every state collapses to the same
-		// colour -- the cue was invisible. Two hand-tuned palettes
-		// instead, chosen at draw time via the list's own background
-		// (see IsListBackgroundDark in MuleListCtrl.h for why we can't
-		// key off wxSystemSettings::GetAppearance().IsDark() alone).
-		const bool isDark = IsListBackgroundDark(this);
-		wxColour colour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
-
-		switch (file->GetDownloadStatus()) {
-		case CSearchFile::DOWNLOADED:
-			// Already downloaded -- green.
-			colour = isDark ? wxColour(80, 220, 80) : wxColour(0, 160, 0);
-			break;
-		case CSearchFile::QUEUED:
-		case CSearchFile::QUEUEDCANCELED:
-			// Currently downloading (or was, then cancelled) -- red.
-			colour = isDark ? wxColour(255, 100, 100) : wxColour(220, 0, 0);
-			break;
-		case CSearchFile::CANCELED:
-			// Cancelled -- magenta.
-			colour = isDark ? wxColour(255, 120, 200) : wxColour(180, 0, 180);
-			break;
-		default: {
-			// New result -- blue-tinted gradient by source count.
-			// Capped below 255: a fully saturated blue text on white
-			// (or white-ish on dark) is hard to read, so the gradient
-			// tops out at a legible mid-blue instead of collapsing
-			// every popular result to the same illegible extreme.
-			const int shift = std::min((int)file->GetSourceCount() * 5, 180);
-			colour = isDark ? wxColour(255 - shift, 255 - shift, 255) : wxColour(0, 0, shift);
-			break;
-		}
-		}
-
-		// don't forget to set the item data back...
-		wxListItem newitem;
-		newitem.SetId(index);
-		newitem.SetTextColour(colour);
-		SetItem(newitem);
-	}
-}
-
-void CSearchListCtrl::ShowResults(wxUIntPtr ResultsID)
-{
-	DeleteAllItems();
-	m_nResultsID = ResultsID;
-	if (ResultsID) {
-		const CSearchResultList &list = theApp->searchlist->GetSearchResults(ResultsID);
-		for (unsigned int i = 0; i < list.size(); ++i) {
-			AddResult(list[i]);
-		}
-	}
-}
-
-wxUIntPtr CSearchListCtrl::GetSearchId()
-{
-	return m_nResultsID;
-}
-
-void CSearchListCtrl::SetFilter(const wxString &regExp, bool invert, bool filterKnown)
-{
-	if (regExp.IsEmpty()) {
-		// Show everything
-		m_filterText = ".*";
-	} else {
-		m_filterText = regExp;
-	}
-
-	m_filter.Compile(m_filterText, wxRE_DEFAULT | wxRE_ICASE);
-	m_filterKnown = filterKnown;
-	m_invert = invert;
-
-	if (m_filterEnabled) {
-		// Swap the list of filtered results so we can freely add new items to the list
-		ResultList curFiltered;
-		std::swap(curFiltered, m_filteredOut);
-
-		// Filter items already on the list
-		for (int i = 0; i < GetItemCount();) {
-			CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(i));
-
-			if (IsFiltered(file)) {
-				++i;
-			} else {
-				m_filteredOut.push_back(file);
-				DeleteItem(i);
-			}
-		}
-
-		// Check the previously filtered items.
-		ResultList::iterator it = curFiltered.begin();
-		for (; it != curFiltered.end(); ++it) {
-			if (IsFiltered(*it)) {
-				AddResult(*it);
-			} else {
-				m_filteredOut.push_back(*it);
-			}
-		}
-	}
-}
-
-void CSearchListCtrl::EnableFiltering(bool enabled)
-{
-	if (enabled != m_filterEnabled) {
-		m_filterEnabled = enabled;
-
-		if (enabled) {
-			SetFilter(m_filterText, m_invert, m_filterKnown);
-		} else {
-			ResultList::iterator it = m_filteredOut.begin();
-			for (; it != m_filteredOut.end(); ++it) {
-				AddResult(*it);
-			}
-
-			m_filteredOut.clear();
-		}
-	}
-}
-
-size_t CSearchListCtrl::GetHiddenItemCount() const
-{
-	return m_filteredOut.size();
-}
-
-bool CSearchListCtrl::IsFiltered(const CSearchFile *file)
-{
-	// By default, everything is displayed
+	// By default, everything is displayed. (Name kept from the original
+	// wxListCtrl-era code -- despite the name, true means "passes the
+	// filter, should be shown".)
 	bool result = true;
 
 	if (m_filterEnabled && m_filter.IsValid()) {
@@ -511,223 +281,373 @@ bool CSearchListCtrl::IsFiltered(const CSearchFile *file)
 	return result;
 }
 
-int CSearchListCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData)
+bool CSearchListCtrl::ShouldShow(const CSearchFile *file) const
 {
-	CSearchFile *file1 = reinterpret_cast<CSearchFile *>(item1);
-	CSearchFile *file2 = reinterpret_cast<CSearchFile *>(item2);
-
-	// Modifies the result, 1 for ascending, -1 for descending
-	int modifier = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
-	bool alternate = (sortData & CMuleListCtrl::SORT_ALT) != 0;
-
-	// Decide if which should files we should sort by.
-	wxUIntPtr parent1 = reinterpret_cast<wxUIntPtr>(file1->GetParent());
-	wxUIntPtr parent2 = reinterpret_cast<wxUIntPtr>(file2->GetParent());
-	wxUIntPtr filePtr1 = reinterpret_cast<wxUIntPtr>(file1);
-	wxUIntPtr filePtr2 = reinterpret_cast<wxUIntPtr>(file2);
-	if (parent1 && parent2) {
-		if (parent1 != parent2) {
-			return SortProc(parent1, parent2, sortData);
-		}
-	} else if (parent1) {
-		if (parent1 == filePtr2) {
-			return 1;
-		} else {
-			return SortProc(parent1, filePtr2, sortData);
-		}
-	} else if (parent2) {
-		if (parent2 == filePtr1) {
-			return -1;
-		} else {
-			return SortProc(filePtr1, parent2, sortData);
+	if (IsFiltered(file)) {
+		return true;
+	}
+	// A parent that doesn't itself pass the filter is still shown as a
+	// container if at least one child does -- regardless of whether it's
+	// currently expanded. (This is a deliberate, flagged behaviour change
+	// from the old hand-drawn-tree version, which only kept such a parent
+	// visible while its children were already expanded-shown; with a real
+	// tree control there's no reason to couple filtering to transient
+	// expand state, and always surfacing the container is more discoverable.)
+	const CSearchResultList &children = file->GetChildren();
+	for (const CSearchFile *child : children) {
+		if (IsFiltered(child)) {
+			return true;
 		}
 	}
+	return false;
+}
 
-	int result = 0;
-	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
-	// Sort by filename
-	case ID_SEARCH_COL_NAME:
-		result = CmpAny(file1->GetFileName(), file2->GetFileName());
-		break;
+void CSearchListCtrl::AddResult(CSearchFile *toshow)
+{
+	wxCHECK_RET(toshow->GetSearchID() == m_nResultsID, "Wrong search-id for result-list");
+	m_model->NotifyFileAdded(toshow);
+}
 
-	// Sort file-size
-	case ID_SEARCH_COL_SIZE:
-		result = CmpAny(file1->GetFileSize(), file2->GetFileSize());
-		break;
+void CSearchListCtrl::RemoveResult(CSearchFile *toremove)
+{
+	m_model->NotifyFileRemoved(toremove);
+}
 
-	// Sort by sources
-	case ID_SEARCH_COL_SOURCES: {
-		int cmp = CmpAny(file1->GetSourceCount(), file2->GetSourceCount());
-		int cmp2 = CmpAny(file1->GetCompleteSourceCount(), file2->GetCompleteSourceCount());
+void CSearchListCtrl::UpdateResult(CSearchFile *toupdate)
+{
+	m_model->NotifyFileUpdated(toupdate);
+}
 
-		if (alternate) {
-			// Swap criteria
-			int temp = cmp2;
-			cmp2 = cmp;
-			cmp = temp;
+void CSearchListCtrl::ShowResults(wxUIntPtr ResultsID)
+{
+	m_nResultsID = ResultsID;
+	m_model->NotifyFilterChanged(); // full reset: new search-id, entirely different result set
+}
+
+void CSearchListCtrl::SetFilter(const wxString &regExp, bool invert, bool filterKnown)
+{
+	m_filterText = regExp.IsEmpty() ? wxString(".*") : regExp;
+	m_filter.Compile(m_filterText, wxRE_DEFAULT | wxRE_ICASE);
+	m_filterKnown = filterKnown;
+	m_invert = invert;
+
+	if (m_filterEnabled) {
+		m_model->NotifyFilterChanged();
+	}
+}
+
+void CSearchListCtrl::EnableFiltering(bool enabled)
+{
+	if (enabled != m_filterEnabled) {
+		m_filterEnabled = enabled;
+		m_model->NotifyFilterChanged();
+	}
+}
+
+size_t CSearchListCtrl::GetHiddenItemCount() const
+{
+	if (!m_nResultsID) {
+		return 0;
+	}
+	size_t hidden = 0;
+	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+	for (CSearchFile *file : results) {
+		if (!file->GetParent() && !ShouldShow(file)) {
+			++hidden;
 		}
+		// Children are only ever "hidden" for filtering purposes via their
+		// own IsFiltered() test -- a filtered-in child under a filtered-out
+		// parent still counts as visible (the parent surfaces as a
+		// container for it), so it is not counted as hidden here either.
+		if (file->GetParent() && !IsFiltered(file)) {
+			++hidden;
+		}
+	}
+	return hidden;
+}
 
+size_t CSearchListCtrl::GetItemCount() const
+{
+	if (!m_nResultsID) {
+		return 0;
+	}
+	size_t shown = 0;
+	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+	for (CSearchFile *file : results) {
+		if (!file->GetParent() && ShouldShow(file)) {
+			++shown;
+			if (file->HasChildren() && IsExpanded(CSearchListModel::ToItem(file))) {
+				const CSearchResultList &children = file->GetChildren();
+				for (const CSearchFile *child : children) {
+					if (IsFiltered(child)) {
+						++shown;
+					}
+				}
+			}
+		}
+	}
+	return shown;
+}
+
+int CSearchListCtrl::GetSelectedItemCount() const
+{
+	wxDataViewItemArray selections;
+	return static_cast<int>(const_cast<CSearchListCtrl *>(this)->GetSelections(selections));
+}
+
+int CSearchListCtrl::CompareByColumn(
+	const CSearchFile *f1, const CSearchFile *f2, unsigned column, bool alt, int modifier) const
+{
+	switch (column) {
+	case CSearchListModel::COL_NAME:
+		return modifier * CmpAny(f1->GetFileName(), f2->GetFileName());
+
+	case CSearchListModel::COL_SIZE:
+		return modifier * CmpAny(f1->GetFileSize(), f2->GetFileSize());
+
+	case CSearchListModel::COL_SOURCES: {
+		int cmp = CmpAny(f1->GetSourceCount(), f2->GetSourceCount());
+		int cmp2 = CmpAny(f1->GetCompleteSourceCount(), f2->GetCompleteSourceCount());
+		if (alt) {
+			std::swap(cmp, cmp2);
+		}
 		if (cmp == 0) {
 			cmp = cmp2;
 		}
-
-		result = cmp;
-		break;
+		return modifier * cmp;
 	}
 
-	// Sort by file-types
-	case ID_SEARCH_COL_TYPE: {
-		result = GetFiletypeByName(file1->GetFileName()).Cmp(GetFiletypeByName(file2->GetFileName()));
+	case CSearchListModel::COL_TYPE: {
+		int result = GetFiletypeByName(f1->GetFileName()).Cmp(GetFiletypeByName(f2->GetFileName()));
 		if (result == 0) {
-			// Same file-type, sort by extension
-			result = CmpAny(file1->GetFileName().GetExt(), file2->GetFileName().GetExt());
+			result = CmpAny(f1->GetFileName().GetExt(), f2->GetFileName().GetExt());
 		}
-
-		break;
+		return modifier * result;
 	}
 
-	// Sort by rating (raw 1-5 value). Unrated results cluster at the bottom
-	// regardless of direction, mirroring the media columns' early returns.
-	case ID_SEARCH_COL_RATING: {
-		int r1 = file1->HasRating() ? file1->UserRating() : 0;
-		int r2 = file2->HasRating() ? file2->UserRating() : 0;
-		if (!r1 && !r2)
-			break;
-		if (!r1)
-			return 1;
-		if (!r2)
-			return -1;
-		result = CmpAny(r1, r2);
-		break;
-	}
-
-	// Sort by file-hash
-	case ID_SEARCH_COL_FILEID:
-		result = CmpAny(file2->GetFileHash(), file1->GetFileHash());
-		break;
-
-	// Sort by file status
-	case ID_SEARCH_COL_STATUS:
-		result = CmpAny(DetermineStatusPrintable(file2), DetermineStatusPrintable(file1));
-		break;
-
-	// Sort by directory
-	case ID_SEARCH_COL_DIRECTORY:
-		result = CmpAny(file1->GetDirectory(), file2->GetDirectory());
-		if (result == 0) { // if equal sort by name
-			result = CmpAny(file1->GetFileName(), file2->GetFileName());
+	case CSearchListModel::COL_RATING: {
+		int r1 = f1->HasRating() ? f1->UserRating() : 0;
+		int r2 = f2->HasRating() ? f2->UserRating() : 0;
+		if (!r1 && !r2) {
+			return 0;
 		}
-		break;
-
-	// Sort by media length / bitrate / codec. Files whose owner
-	// didn't populate the tag always cluster at the bottom of the
-	// list, regardless of ascending/descending direction — early
-	// returns bypass the `modifier *` flip at the end of the
-	// function so the undefined-at-bottom rule is direction-
-	// independent.
-	case ID_SEARCH_COL_LENGTH: {
-		uint32 v1 = file1->GetIntTagValue(FT_MEDIA_LENGTH);
-		uint32 v2 = file2->GetIntTagValue(FT_MEDIA_LENGTH);
-		if (!v1 && !v2)
-			break;
-		if (!v1)
-			return 1;
-		if (!v2)
+		if (!r1) {
+			return 1; // unrated always sorts last, direction-independent
+		}
+		if (!r2) {
 			return -1;
-		result = CmpAny(v1, v2);
-		break;
+		}
+		return modifier * CmpAny(r1, r2);
 	}
 
-	case ID_SEARCH_COL_BITRATE: {
-		uint32 v1 = file1->GetIntTagValue(FT_MEDIA_BITRATE);
-		uint32 v2 = file2->GetIntTagValue(FT_MEDIA_BITRATE);
-		if (!v1 && !v2)
-			break;
-		if (!v1)
+	case CSearchListModel::COL_FILEID:
+		return modifier * CmpAny(f2->GetFileHash(), f1->GetFileHash());
+
+	case CSearchListModel::COL_STATUS:
+		return modifier * CmpAny(DetermineStatusPrintable(const_cast<CSearchFile *>(f2)),
+					  DetermineStatusPrintable(const_cast<CSearchFile *>(f1)));
+
+	case CSearchListModel::COL_DIRECTORY: {
+		int result = CmpAny(f1->GetDirectory(), f2->GetDirectory());
+		if (result == 0) {
+			result = CmpAny(f1->GetFileName(), f2->GetFileName());
+		}
+		return modifier * result;
+	}
+
+	case CSearchListModel::COL_LENGTH: {
+		uint32 v1 = f1->GetIntTagValue(FT_MEDIA_LENGTH);
+		uint32 v2 = f2->GetIntTagValue(FT_MEDIA_LENGTH);
+		if (!v1 && !v2) {
+			return 0;
+		}
+		if (!v1) {
 			return 1;
-		if (!v2)
+		}
+		if (!v2) {
 			return -1;
-		result = CmpAny(v1, v2);
-		break;
+		}
+		return modifier * CmpAny(v1, v2);
 	}
 
-	case ID_SEARCH_COL_CODEC: {
-		const wxString c1 = FormatMediaCodec(file1->GetStrTagValue(FT_MEDIA_CODEC));
-		const wxString c2 = FormatMediaCodec(file2->GetStrTagValue(FT_MEDIA_CODEC));
-		if (c1.IsEmpty() && c2.IsEmpty())
-			break;
-		if (c1.IsEmpty())
+	case CSearchListModel::COL_BITRATE: {
+		uint32 v1 = f1->GetIntTagValue(FT_MEDIA_BITRATE);
+		uint32 v2 = f2->GetIntTagValue(FT_MEDIA_BITRATE);
+		if (!v1 && !v2) {
+			return 0;
+		}
+		if (!v1) {
 			return 1;
-		if (c2.IsEmpty())
+		}
+		if (!v2) {
 			return -1;
-		result = CmpAny(c1, c2);
-		break;
+		}
+		return modifier * CmpAny(v1, v2);
+	}
+
+	case CSearchListModel::COL_CODEC: {
+		const wxString c1 = FormatMediaCodec(f1->GetStrTagValue(FT_MEDIA_CODEC));
+		const wxString c2 = FormatMediaCodec(f2->GetStrTagValue(FT_MEDIA_CODEC));
+		if (c1.IsEmpty() && c2.IsEmpty()) {
+			return 0;
+		}
+		if (c1.IsEmpty()) {
+			return 1;
+		}
+		if (c2.IsEmpty()) {
+			return -1;
+		}
+		return modifier * CmpAny(c1, c2);
 	}
 	}
 
-	return modifier * result;
+	return 0;
 }
 
-void CSearchListCtrl::SetSorting(unsigned column, unsigned order)
+int CSearchListCtrl::CompareFiles(const CSearchFile *f1, const CSearchFile *f2) const
 {
-	Freeze();
-	// First collapse all parent items
-	// Backward order means our index won't be influenced by items getting collapsed.
-	for (int i = GetItemCount(); i--;) {
-		CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(i));
-		if (file->ShowChildren()) {
-			ShowChildren(file, false);
+	for (const CColPair &entry : m_sort_orders) {
+		const unsigned column = entry.first;
+		const unsigned order = entry.second;
+		const int modifier = (order & SORT_DES) ? -1 : 1;
+		const bool alt = (order & SORT_ALT) != 0;
+
+		int result = CompareByColumn(f1, f2, column, alt, modifier);
+		if (result != 0) {
+			return result;
+		}
+	}
+	return 0;
+}
+
+bool CSearchListCtrl::AltSortAllowed(unsigned column) const
+{
+	return column == CSearchListModel::COL_SOURCES;
+}
+
+void CSearchListCtrl::ApplySorting(unsigned column, unsigned order)
+{
+	CSortingList::iterator it = m_sort_orders.begin();
+	for (; it != m_sort_orders.end(); ++it) {
+		if (it->first == column) {
+			m_sort_orders.erase(it);
+			break;
+		}
+	}
+	m_sort_orders.emplace_front(column, order);
+
+	// Unmark the previous sort column (only one wxDataViewColumn can be the
+	// active sort key at a time; SetSortOrder() below moves the mark).
+	for (int i = 0; i < GetColumnCount(); ++i) {
+		if ((unsigned)i != column && GetColumn(i)->IsSortKey()) {
+			GetColumn(i)->UnsetAsSortKey();
+		}
+	}
+	GetColumn(column)->SetSortOrder(!(order & SORT_DES));
+	GetModel()->Resort();
+
+	SyncOtherLists(this);
+}
+
+void CSearchListCtrl::OnColumnHeaderClick(wxDataViewEvent &event)
+{
+	wxDataViewColumn *col = event.GetDataViewColumn();
+	if (!col) {
+		event.Skip();
+		return;
+	}
+	const unsigned column = static_cast<unsigned>(col->GetModelColumn());
+
+	// Mirrors CMuleListCtrl::OnColumnLClick's cycle: same column clicked
+	// again flips ascending<->descending, and once descending, a further
+	// click on an alt-eligible column flips to ascending with the alt
+	// criterion toggled instead of clearing the sort.
+	unsigned sort_order = 0;
+	if (!m_sort_orders.empty() && m_sort_orders.front().first == column) {
+		sort_order = m_sort_orders.front().second;
+		if (sort_order & SORT_DES) {
+			if (AltSortAllowed(column)) {
+				sort_order = (~sort_order) & SORT_ALT;
+			} else {
+				sort_order = 0;
+			}
+		} else {
+			sort_order = SORT_DES | (sort_order & SORT_ALT);
+		}
+	} else {
+		for (CSortingList::const_iterator it = m_sort_orders.begin(); it != m_sort_orders.end();
+			++it) {
+			if (it->first == column) {
+				sort_order = it->second;
+				break;
+			}
 		}
 	}
 
-	// Then do the sorting
-	CMuleListCtrl::SetSorting(column, order);
-	Thaw();
+	ApplySorting(column, sort_order);
 }
 
 void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 {
 	wxCHECK_RET(src && dst, "NULL argument in SyncLists");
 
-	// Column widths
-	for (int i = 0; i < src->GetColumnCount(); i++) {
-		// We do this check since just setting the width causes a redraw
-		if (dst->GetColumnWidth(i) != src->GetColumnWidth(i)) {
-			dst->SetColumnWidth(i, src->GetColumnWidth(i));
+	for (int i = 0; i < src->GetColumnCount(); ++i) {
+		if (dst->GetColumn(i)->GetWidth() != src->GetColumn(i)->GetWidth()) {
+			dst->GetColumn(i)->SetWidth(src->GetColumn(i)->GetWidth());
 		}
 	}
 
-	// Sync sorting
-	unsigned column = src->GetSortColumn();
-	unsigned order = src->GetSortOrder();
-	if (column != dst->GetSortColumn() || order != dst->GetSortOrder()) {
-		dst->SetSorting(column, order);
+	if (dst->m_sort_orders.empty() || src->m_sort_orders.empty() ||
+		dst->m_sort_orders.front() != src->m_sort_orders.front()) {
+		dst->m_sort_orders = src->m_sort_orders;
+		if (!dst->m_sort_orders.empty()) {
+			const CColPair &primary = dst->m_sort_orders.front();
+			for (int i = 0; i < dst->GetColumnCount(); ++i) {
+				if ((unsigned)i != primary.first && dst->GetColumn(i)->IsSortKey()) {
+					dst->GetColumn(i)->UnsetAsSortKey();
+				}
+			}
+			dst->GetColumn(primary.first)->SetSortOrder(!(primary.second & SORT_DES));
+			dst->GetModel()->Resort();
+		}
 	}
 }
 
 void CSearchListCtrl::SyncOtherLists(CSearchListCtrl *src)
 {
-	std::list<CSearchListCtrl *>::iterator it;
-
-	for (it = s_lists.begin(); it != s_lists.end(); ++it) {
-		if ((*it) != src) {
-			SyncLists(src, *it);
+	for (CSearchListCtrl *list : s_lists) {
+		if (list != src) {
+			SyncLists(src, list);
 		}
 	}
 }
 
-void CSearchListCtrl::OnRightClick(wxListEvent &event)
+void CSearchListCtrl::OnIdle(wxIdleEvent &event)
 {
-	CheckSelection(event);
+	event.Skip();
 
+	// No portable wxDataViewCtrl "column resized" event exists to hook
+	// directly (unlike wxListCtrl's EVT_LIST_COL_END_DRAG), so a drag-resize
+	// is detected here by simply comparing against the last-seen widths.
+	bool changed = false;
+	for (int i = 0; i < GetColumnCount() && i < (int)m_lastKnownWidths.size(); ++i) {
+		const int width = GetColumn(i)->GetWidth();
+		if (width != m_lastKnownWidths[i]) {
+			m_lastKnownWidths[i] = width;
+			changed = true;
+		}
+	}
+	if (changed) {
+		SyncOtherLists(this);
+	}
+}
+
+void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
+{
 	if (GetSelectedItemCount()) {
-		// Create the popup-menu. No title — wxMenu's title parameter
-		// is the label rendered when the menu is attached to a parent
-		// menubar; for a context popup it's either invisible (wxOSX,
-		// classic wxGTK) or rendered as a non-clickable header (KDE
-		// Plasma 6 with Qt-themed GTK / Wayland, issue #767). The
-		// generic "File" label provides no information either way,
-		// so drop it.
+		// No title -- see the identical rationale in the pre-port version
+		// (wxMenu's title parameter renders inconsistently or not at all
+		// as a context-popup header across platforms, issue #767).
 		wxMenu menu;
 		menu.Append(MP_RESUME, _("Download"));
 
@@ -749,55 +669,52 @@ void CSearchListCtrl::OnRightClick(wxListEvent &event)
 		menu.Append(MP_SEARCHRELATED, _("Search related files (eD2k, local server)"));
 		menu.Append(MP_GETCOMMENTS, _("Show all comments"));
 		menu.AppendSeparator();
-
-// #warning Uncomment this here to test the MP_MARK_AS_KNOWN feature. Beware! You are on your own here, this
-// might break "known.met"
-#if 0
-		menu.Append(MP_MARK_AS_KNOWN, _("Mark as known file"));
-		menu.AppendSeparator();
-#endif
-
 		menu.Append(MP_GETED2KLINK, _("Copy eD2k link to clipboard"));
 
-		// These should only be enabled for single-selections
-		bool enable = (GetSelectedItemCount() == 1);
+		const bool enable = (GetSelectedItemCount() == 1);
 		menu.Enable(MP_GETED2KLINK, enable);
 		menu.Enable(MP_GETCOMMENTS, enable);
 		menu.Enable(MP_MENU_CATS, (theApp->glob_prefs->GetCatCount() > 1));
 
-		PopupMenu(&menu, event.GetPoint());
+		PopupMenu(&menu);
 	} else {
 		event.Skip();
 	}
 }
 
-void CSearchListCtrl::OnColumnLClick(wxListEvent &event)
+void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
-	// Let the real event handler do its work first
-	CMuleListCtrl::OnColumnLClick(event);
-
-	SyncOtherLists(this);
+	CSearchFile *file = CSearchListModel::ToFile(event.GetItem());
+	if (!file) {
+		return;
+	}
+	if (file->HasChildren()) {
+		if (IsExpanded(event.GetItem())) {
+			Collapse(event.GetItem());
+		} else {
+			Expand(event.GetItem());
+		}
+	} else {
+		DownloadSelected();
+	}
 }
 
-void CSearchListCtrl::OnColumnResize(wxListEvent &WXUNUSED(event))
+void CSearchListCtrl::OnSelectionChanged(wxDataViewEvent &WXUNUSED(event))
 {
-	SyncOtherLists(this);
+	// Bubbles up like the old EVT_LIST_ITEM_SELECTED so
+	// CSearchDlg::OnListItemSelected can enable the Download button; bound
+	// separately on CSearchDlg for wxEVT_DATAVIEW_SELECTION_CHANGED.
 }
 
 void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 {
 	wxString URIs;
-
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(index));
-
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	for (const wxDataViewItem &item : selections) {
+		CSearchFile *file = CSearchListModel::ToFile(item);
 		URIs += theApp->CreateED2kLink(file) + "\n";
-
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
-
 	if (!URIs.IsEmpty()) {
 		theApp->CopyTextToClipboard(URIs.RemoveLast());
 	}
@@ -805,12 +722,12 @@ void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (index == -1) {
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	if (selections.empty()) {
 		return;
 	}
-
-	CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(index));
+	CSearchFile *file = CSearchListModel::ToFile(selections[0]);
 	if (file) {
 		// Same dialog the download list uses; its "Get from Kad" button drives
 		// the on-demand community ratings/comments lookup for this result.
@@ -821,19 +738,20 @@ void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 {
-	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (item == -1) {
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	if (selections.empty()) {
 		return;
 	}
-
-	CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(item));
+	CSearchFile *file = CSearchListModel::ToFile(selections[0]);
 	theApp->amuledlg->LaunchUrl(thePrefs::GetStatsServerURL() + file->GetFileHash().Encode());
 }
 
 void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 {
-	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (item == -1) {
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	if (selections.empty()) {
 		return;
 	}
 
@@ -843,18 +761,10 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 		theApp->searchlist->StopSearch(true);
 		theApp->amuledlg->m_searchwnd->ResetControls();
 		wxString keyword("related");
-		do {
-			CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(item));
+		for (const wxDataViewItem &item : selections) {
+			CSearchFile *file = CSearchListModel::ToFile(item);
 			keyword << "::" << file->GetFileHash().Encode();
-			item = GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-		} while (item > -1);
-		// wxTextEntry, not wxTextCtrl: the Name field became a wxComboBox in
-		// #643 (search history), and wxComboBox does not derive from
-		// wxTextCtrl -- it is wxWindowWithItems<wxControl, wxComboBoxBase>.
-		// CastByID is a dynamic_cast, so casting to wxTextCtrl yielded
-		// nullptr here and this line dereferenced it. wxTextEntry is the
-		// common base of both, so it keeps working whichever control the
-		// search-history preference has put in place.
+		}
 		CastByID(IDC_SEARCHNAME, theApp->amuledlg->m_searchwnd, wxTextEntry)->SetValue(keyword);
 		wxChoice *searchtype = CastByID(ID_SEARCHTYPE, theApp->amuledlg->m_searchwnd, wxChoice);
 		searchtype->SetSelection(searchtype->FindString(_("Local")));
@@ -864,19 +774,18 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 			       "search function"),
 			_("Search error"),
 			wxOK | wxCENTRE | wxICON_ERROR);
-		return;
 	}
 }
 
 void CSearchListCtrl::OnMarkAsKnown(wxCommandEvent &WXUNUSED(event))
 {
 #ifndef CLIENT_GUI
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	while (index > -1) {
-		CSearchFile *searchFile = reinterpret_cast<CSearchFile *>(GetItemData(index));
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	for (const wxDataViewItem &item : selections) {
+		CSearchFile *searchFile = CSearchListModel::ToFile(item);
 		CKnownFile *knownFile(new CKnownFile(*searchFile));
 		theApp->knownfiles->SafeAddKFile(knownFile);
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 #endif
 }
@@ -884,43 +793,18 @@ void CSearchListCtrl::OnMarkAsKnown(wxCommandEvent &WXUNUSED(event))
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)
 {
 	if (event.GetId() == MP_RESUME) {
-		// Via the "Download" menu-item, use category specified in drop-down menu
 		DownloadSelected();
 	} else {
-		// Via an "Download in category" item
 		DownloadSelected(event.GetId() - MP_ASSIGNCAT);
-	}
-}
-
-void CSearchListCtrl::OnItemActivated(wxListEvent &event)
-{
-	CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(event.GetIndex()));
-	if (file->HasChildren()) {
-		ShowChildren(file, !file->ShowChildren());
-	} else {
-		DownloadSelected();
-	}
-}
-
-bool CSearchListCtrl::AltSortAllowed(unsigned column) const
-{
-	switch (column) {
-	case ID_SEARCH_COL_SOURCES:
-		return true;
-	default:
-		return false;
 	}
 }
 
 void CSearchListCtrl::DownloadSelected(int category)
 {
-	FindWindowById(IDC_SDOWNLOAD)->Enable(FALSE);
+	FindWindowById(IDC_SDOWNLOAD)->Enable(false);
 
-	// Either the "Download" menu-item, the download-button, double-click or enter
 	if (category == -1) {
-		// Defaults to main category
 		category = 0;
-
 		if (CastByID(IDC_EXTENDEDSEARCHCHECK, NULL, wxCheckBox)->GetValue()) {
 			category = CastByID(ID_AUTOCATASSIGN, NULL, wxChoice)->GetSelection();
 		}
@@ -929,247 +813,37 @@ void CSearchListCtrl::DownloadSelected(int category)
 #ifndef CLIENT_GUI
 	// Monolithic: Search_Add_Download runs synchronously on this thread, so
 	// each selected file's Notify_DownloadCtrlAddFile -> AddFile fires a
-	// per-item SortList() inline. Batch the whole selection into a single sort
+	// per-item resort inline. Batch the whole selection into a single sort
 	// + repaint (issue #615). The remote GUI's adds arrive later via the
 	// download-queue poll, which already batches, so this is monolithic-only.
 	CDownloadListCtrl *downloadlist = theApp->amuledlg->m_transferwnd->downloadlistctrl;
 	downloadlist->BeginBatchUpdate();
 #endif
 
-	// Process all selections
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	while (index > -1) {
-		CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(index));
+	wxDataViewItemArray selections;
+	GetSelections(selections);
+	for (const wxDataViewItem &item : selections) {
+		CSearchFile *file = CSearchListModel::ToFile(item);
 		CoreNotify_Search_Add_Download(file, category);
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 
 #ifndef CLIENT_GUI
 	downloadlist->EndBatchUpdate();
 #endif
-	// Listcontrol gets updated by notification when download is started
-}
-
-static const wxBrush &GetBrush(wxSystemColour index)
-{
-	return CMuleColour(index).GetBrush();
-}
-
-void CSearchListCtrl::OnDrawItem(
-	int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted)
-{
-	CSearchFile *file = reinterpret_cast<CSearchFile *>(GetItemData(item));
-
-	// Define text-color and background
-	if (highlighted) {
-		if (GetFocus()) {
-			dc->SetBackground(GetBrush(wxSYS_COLOUR_HIGHLIGHT));
-			dc->SetTextForeground(CMuleColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
-		} else {
-			dc->SetBackground(*(wxTheBrushList->FindOrCreateBrush(
-				CMuleColour::GetUnfocusedHighlight(), wxBRUSHSTYLE_SOLID)));
-			dc->SetTextForeground(CMuleColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
-		}
-	} else {
-		dc->SetBackground(GetBrush(wxSYS_COLOUR_LISTBOX));
-		dc->SetTextForeground(CMuleColour(wxSYS_COLOUR_WINDOWTEXT));
-	}
-
-	// Define the border of the drawn area
-	if (highlighted) {
-		dc->SetPen(*(wxThePenList->FindOrCreatePen(
-			CMuleColour(dc->GetBackground().GetColour()).Blend(65), 1, wxPENSTYLE_SOLID)));
-	} else {
-		dc->SetPen(*wxTRANSPARENT_PEN);
-		dc->SetTextForeground(GetItemTextColour(item));
-	}
-
-	// Clear the background, not done automatically since the drawing is buffered.
-	dc->SetBrush(dc->GetBackground());
-	dc->DrawRectangle(rectHL.x, rectHL.y, rectHL.width, rectHL.height);
-
-	// Various constant values we use
-	const int iTextOffset = (rect.GetHeight() - dc->GetCharHeight()) / 2;
-	const int iOffset = 4;
-	const int treeOffset = 11;
-	const int treeCenter = 6;
-	bool tree_show = false;
-
-	wxRect cur_rec(iOffset, rect.y, 0, rect.height);
-	for (int i = 0; i < GetColumnCount(); i++) {
-		wxListItem listitem;
-		GetColumn(i, listitem);
-
-		if (listitem.GetWidth() > 0) {
-			cur_rec.width = listitem.GetWidth() - 2 * iOffset;
-
-			// Make a copy of the current rectangle so we can apply specific tweaks
-			wxRect target_rec = cur_rec;
-
-			// will ensure that text is about in the middle ;)
-			target_rec.y += iTextOffset;
-
-			if (i == 0) {
-				if (file->HasChildren() || file->GetParent()) {
-					tree_show = (listitem.GetWidth() > 0);
-					target_rec.x += treeOffset;
-					target_rec.width -= treeOffset;
-
-					// Children are indented a bit
-					if (file->GetParent()) {
-						target_rec.x += 4;
-						target_rec.width -= 4;
-					}
-				}
-			}
-
-			// Rating column: draw the smiley for the file's 1-5 rating; the
-			// text label (set via GetRateString) is drawn by the generic cell
-			// path below, shifted past the icon. Nothing for unrated results.
-			if (i == ID_SEARCH_COL_RATING && file->HasRating()) {
-				const int image = Client_InvalidRating_Smiley + file->UserRating() - 1;
-				const int imgWidth = 16;
-
-				theApp->amuledlg->m_imagelist.Draw(image,
-					*dc,
-					target_rec.GetX(),
-					target_rec.GetY() - 1,
-					wxIMAGELIST_DRAW_TRANSPARENT);
-
-				// Move the label past the icon.
-				target_rec.x += imgWidth + 4;
-				target_rec.width -= imgWidth + 4;
-			}
-
-			wxListItem cellitem;
-			cellitem.SetColumn(i);
-			cellitem.SetId(item);
-
-			// Force clipper (clip 2 px more than the rectangle from the right side)
-			wxDCClipper clipper(
-				*dc, target_rec.x, target_rec.y, target_rec.width - 2, target_rec.height);
-
-			if (GetItem(cellitem)) {
-				dc->DrawText(cellitem.GetText(), target_rec.GetX(), target_rec.GetY());
-			} else {
-				dc->DrawText("GetItem failed!", target_rec.GetX(), target_rec.GetY());
-			}
-
-			// Increment to the next column
-			cur_rec.x += listitem.GetWidth();
-		}
-	}
-
-	// Draw tree last so it draws over selected and focus (looks better)
-	if (tree_show) {
-		// Gather some information
-		const bool notLast = (item + 1 < GetItemCount());
-		const bool notFirst = (item != 0);
-		const bool hasNext =
-			notLast && reinterpret_cast<CSearchFile *>(GetItemData(item + 1))->GetParent();
-		const int middle = cur_rec.y + (cur_rec.height + 1) / 2;
-
-		// Set up a new pen for drawing the tree
-		dc->SetPen(*(wxThePenList->FindOrCreatePen(dc->GetTextForeground(), 1, wxPENSTYLE_SOLID)));
-
-		if (file->GetParent()) {
-			// Draw the line to the filename
-			dc->DrawLine(treeCenter, middle, treeOffset + 4, middle);
-
-			// Draw the line to the child node
-			if (hasNext) {
-				dc->DrawLine(treeCenter, middle, treeCenter, cur_rec.y + cur_rec.height + 1);
-			}
-
-			// Draw the line back up to parent node
-			if (notFirst) {
-				dc->DrawLine(treeCenter, middle, treeCenter, cur_rec.y - 1);
-			}
-		} else if (file->HasChildren()) {
-			if (file->ShowChildren()) {
-				// Draw empty circle
-				dc->SetBrush(*wxTRANSPARENT_BRUSH);
-			} else {
-				dc->SetBrush(*(wxTheBrushList->FindOrCreateBrush(GetItemTextColour(item))));
-			}
-
-			dc->DrawCircle(treeCenter, middle, 3);
-
-			// Draw the line to the child node if there are any children
-			if (hasNext && file->ShowChildren()) {
-				dc->DrawLine(
-					treeCenter, middle + 3, treeCenter, cur_rec.y + cur_rec.height + 1);
-			}
-		}
-	}
-
-	// Sanity checks to ensure that results/children are properly positioned.
-#ifdef __WXDEBUG__
-	{
-		CSearchFile *parent = file->GetParent();
-
-		if (item > 0) {
-			CSearchFile *before = reinterpret_cast<CSearchFile *>(GetItemData(item - 1));
-			wxASSERT(before);
-			if (parent) {
-				wxASSERT((before->GetParent() == parent) || (before == parent));
-			} else {
-				wxASSERT(before->GetParent() != file);
-			}
-		}
-
-		if (item < GetItemCount() - 1) {
-			CSearchFile *after = reinterpret_cast<CSearchFile *>(GetItemData(item + 1));
-			wxASSERT(after);
-			if (parent) {
-				wxASSERT((after->GetParent() == parent) || (!after->GetParent()));
-			} else {
-				wxASSERT((after->GetParent() == file) || (!after->GetParent()));
-			}
-		}
-	}
-#endif
-}
-
-void CSearchListCtrl::ShowChildren(CSearchFile *file, bool show)
-{
-	Freeze();
-
-	file->SetShowChildren(show);
-
-	const CSearchResultList &results = file->GetChildren();
-	for (size_t i = 0; i < results.size(); ++i) {
-		if (show) {
-			AddResult(results[i]);
-		} else {
-			RemoveResult(results[i]);
-		}
-	}
-
-	Thaw();
-}
-
-wxString CSearchListCtrl::GetTTSText(unsigned item) const
-{
-	return GetItemText(item);
+	// List gets updated by notification when download is started
 }
 
 wxString CSearchListCtrl::DetermineStatusPrintable(CSearchFile *toshow)
 {
 	switch (toshow->GetDownloadStatus()) {
 	case CSearchFile::DOWNLOADED:
-		// File has already been downloaded.
 		return _("Downloaded");
 	case CSearchFile::QUEUED:
-		// File is downloading.
 	case CSearchFile::QUEUEDCANCELED:
-		// File is downloading and has been canceled before.
 		return _("Queued");
 	case CSearchFile::CANCELED:
-		// File has been canceled.
 		return _("Canceled");
 	default:
-		// File is new.
 		return _("New");
 	}
 }

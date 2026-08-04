@@ -26,8 +26,9 @@
 #ifndef SEARCHDLG_H
 #define SEARCHDLG_H
 
-#include <wx/panel.h>    // Needed for wxPanel
+#include <wx/dataview.h> // Needed for wxDataViewEvent
 #include <wx/notebook.h> // needed for wxBookCtrlEvent in wx 2.8
+#include <wx/panel.h>    // Needed for wxPanel
 
 class wxStaticLine;
 
@@ -295,7 +296,7 @@ private:
 	// Persists the chosen search type so it survives a restart (amule-org/amule#608).
 	void OnSearchTypeChanged(wxCommandEvent &evt);
 
-	void OnListItemSelected(wxListEvent &ev);
+	void OnListItemSelected(wxDataViewEvent &ev);
 	void OnBnClickedReset(wxCommandEvent &ev);
 	void OnBnClickedClear(wxCommandEvent &ev);
 	void OnExtendedSearchChange(wxCommandEvent &ev);

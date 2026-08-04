@@ -89,6 +89,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		SearchDlg.cpp
 			SearchHistory.cpp
 		SearchListCtrl.cpp
+		SearchListModel.cpp
 		ServerListCtrl.cpp
 		ServerWnd.cpp
 		SharedDirsApplyTask.cpp

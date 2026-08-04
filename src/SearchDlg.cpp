@@ -66,7 +66,7 @@ wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	EVT_BUTTON(IDC_CANCELS, CSearchDlg::OnBnClickedStop)
 	EVT_BUTTON(IDC_SEARCHMORE, CSearchDlg::OnBnClickedSearchMore)
 
-	EVT_LIST_ITEM_SELECTED(ID_SEARCHLISTCTRL, CSearchDlg::OnListItemSelected)
+	EVT_DATAVIEW_SELECTION_CHANGED(ID_SEARCHLISTCTRL, CSearchDlg::OnListItemSelected)
 
 	EVT_BUTTON(IDC_SDOWNLOAD, CSearchDlg::OnBnClickedDownload)
 	EVT_BUTTON(IDC_SEARCH_RESET, CSearchDlg::OnBnClickedReset)
@@ -682,7 +682,7 @@ void CSearchDlg::UpdateResult(CSearchFile *toupdate)
 	}
 }
 
-void CSearchDlg::OnListItemSelected(wxListEvent &event)
+void CSearchDlg::OnListItemSelected(wxDataViewEvent &event)
 {
 	FindWindow(IDC_SDOWNLOAD)->Enable(true);
 
@@ -1042,8 +1042,7 @@ bool CSearchDlg::CheckTabNameExists(const wxString &searchString)
 
 void CSearchDlg::CreateNewTab(const wxString &searchString, wxUIntPtr nSearchID, bool select)
 {
-	CSearchListCtrl *list = new CSearchListCtrl(
-		m_notebook, ID_SEARCHLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxNO_BORDER);
+	CSearchListCtrl *list = new CSearchListCtrl(m_notebook, ID_SEARCHLISTCTRL);
 	m_notebook->AddPage(list, searchString, select, 0);
 
 	// Ensure that new results are filtered

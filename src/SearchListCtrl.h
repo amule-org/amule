@@ -26,41 +26,52 @@
 #ifndef SEARCHLISTCTRL_H
 #define SEARCHLISTCTRL_H
 
-#include <wx/colour.h> // Needed for wxColour
-#include <wx/regex.h>  // Needed for wxRegExp
+#include <wx/colour.h>   // Needed for wxColour
+#include <wx/dataview.h> // Needed for wxDataViewCtrl
+#include <wx/regex.h>    // Needed for wxRegExp
 
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl
+#include "ListColumnStore.h" // Needed for CListColumnStore, IColumnWidthProvider
+#include "Types.h"           // Needed for uint32
+
+#include <list>
+#include <utility>
+#include <vector>
 
 class CSearchList;
 class CSearchFile;
+class CSearchListModel;
 
 /**
  * This class is used to display search results.
  *
- * Results on added to the list will be colored according to
- * the number of sources and other parameters (see UpdateColor).
+ * Results added to the list are colored according to the number of sources
+ * and other parameters (see CSearchListModel::GetAttr).
  *
  * To display results, first use the ShowResults function, which will display
  * all current results with the specified id and afterwards you can use the
  * AddResult function to add new results or the UpdateResult function to update
  * already present results. Please note that it is not possible to add results
  * with the AddResult function before calling ShowResults.
+ *
+ * Backed by a wxDataViewCtrl (native tree control) rather than a wxListCtrl,
+ * for screen-reader accessibility (#180). Parent/child grouping (same file
+ * from multiple sources/variants) is exposed via CSearchListModel's native
+ * tree interface -- CSearchFile::GetParent()/GetChildren() drives it
+ * directly, and expand/collapse state is owned by the control itself
+ * (IsExpanded()), unlike the old hand-drawn tree which faked it with
+ * CSearchFile::ShowChildren()/SetShowChildren() plus manual row insertion.
  */
-class CSearchListCtrl : public CMuleListCtrl
+class CSearchListCtrl : public wxDataViewCtrl
 {
 public:
 	/**
 	 * Constructor.
-	 *
-	 * @see CMuleListCtrl::CMuleListCtrl for documentation of parameters.
 	 */
 	CSearchListCtrl(wxWindow *parent,
 		wxWindowID winid = -1,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &size = wxDefaultSize,
-		long style = wxLC_ICON,
-		const wxValidator &validator = wxDefaultValidator,
-		const wxString &name = "mulelistctrl");
+		const wxString &name = "searchlistctrl");
 
 	/**
 	 * Destructor.
@@ -70,12 +81,10 @@ public:
 	/**
 	 * Adds the specified file to the list.
 	 *
-	 * @param The new result to be shown.
+	 * @param toshow The new result to be shown.
 	 *
 	 * Please note that no duplicates checking is done, so the pointer should
-	 * point to a new file in order to avoid problems. Also note that the result
-	 * will be inserted sorted according to current sort-type, so there is no
-	 * need to resort the list after adding new items.
+	 * point to a new file in order to avoid problems.
 	 */
 	void AddResult(CSearchFile *toshow);
 
@@ -87,36 +96,21 @@ public:
 	/**
 	 * Updates the specified source.
 	 *
-	 * @param The search result to be updated.
+	 * @param toupdate The search result to be updated.
 	 */
 	void UpdateResult(CSearchFile *toupdate);
 
 	/**
 	 * Clears the list and inserts all results with the specified Id instead.
 	 *
-	 * @param nResult The ID of the results or Zero to simply reset the list.
+	 * @param ResultsId The ID of the results or Zero to simply reset the list.
 	 */
 	void ShowResults(wxUIntPtr ResultsId);
 
 	/**
-	 * Updates the colors of item at the specified index.
-	 *
-	 * @param index The zero-based index of the item.
-	 *
-	 * This function sets the color of the item based on the following:
-	 *  - Downloading files are marked in red.
-	 *  - Known (shared/completed) files are marked in green.
-	 *  - New files are marked in blue depending on the number of sources.
-	 *  - Canceled files are marked in magenta.
-	 */
-	void UpdateItemColor(long index);
-
-	/**
 	 * Returns the current Search Id.
-	 *
-	 * @return The Search Id of the displayed results (set through ShowResults()).
 	 */
-	wxUIntPtr GetSearchId();
+	wxUIntPtr GetSearchId() const { return m_nResultsID; }
 
 	/**
 	 * Re-key this control's search ID. Used by the multi-search remote GUI to
@@ -166,7 +160,19 @@ public:
 	size_t GetHiddenItemCount() const;
 
 	/**
-	 * Attempts to download all selected items, updating color-scheme as needed.
+	 * Returns the number of results currently shown (root results plus
+	 * children of expanded parents) -- equivalent to the old
+	 * wxListCtrl::GetItemCount() this tab used to report in its title.
+	 */
+	size_t GetItemCount() const;
+
+	/**
+	 * Returns the number of currently selected rows.
+	 */
+	int GetSelectedItemCount() const;
+
+	/**
+	 * Attempts to download all selected items.
 	 *
 	 * @param category The target category, or -1 to use the drop-down selection.
 	 */
@@ -174,60 +180,88 @@ public:
 
 	static wxString DetermineStatusPrintable(CSearchFile *toshow);
 
+	/**
+	 * True if `file` currently passes this list's own filter test (own
+	 * filename/known-status match -- does NOT consider children). Used by
+	 * CSearchListModel to decide whether a row (or, for a parent, at least
+	 * one of its children) should be exposed in the tree.
+	 */
+	bool PassesFilter(const CSearchFile *file) const;
+
+	/**
+	 * True if `file` should be exposed as a tree row: it passes the filter
+	 * itself, or (for a parent) at least one of its children does -- in
+	 * which case the parent is still shown as a container, regardless of
+	 * whether it's currently expanded (expand state is a pure display
+	 * concern now, owned by the control, so it no longer gates filtering
+	 * the way CSearchFile::ShowChildren() used to).
+	 */
+	bool ShouldShow(const CSearchFile *file) const;
+
+	/**
+	 * Full multi-column comparison of two results, walking this list's sort
+	 * chain (primary column first, falling back to secondary/tertiary
+	 * columns set by earlier clicks) exactly as CMuleListCtrl's generic
+	 * chain-walking used to. Used by CSearchListModel::Compare().
+	 */
+	int CompareFiles(const CSearchFile *f1, const CSearchFile *f2) const;
+
 protected:
-	/// Return old column order.
-	wxString GetOldColumnOrder() const;
+	/**
+	 * Adapts this control to IColumnWidthProvider for CListColumnStore.
+	 * A separate object rather than multiple inheritance (as
+	 * CMuleListCtrl does): wxDataViewCtrl::GetColumnCount() is itself
+	 * virtual and returns unsigned int, which isn't override-compatible
+	 * with IColumnWidthProvider::GetColumnCount()'s int return -- unlike
+	 * wxGenericListCtrl's (non-virtual) GetColumnCount(), there's no
+	 * name-hiding trick available here.
+	 */
+	class ColumnWidthAdapter : public IColumnWidthProvider
+	{
+	public:
+		explicit ColumnWidthAdapter(wxDataViewCtrl *ctrl)
+		: m_ctrl(ctrl)
+		{
+		}
+		int GetColumnCount() const override { return static_cast<int>(m_ctrl->GetColumnCount()); }
+		int GetColumnWidth(int col) const override { return m_ctrl->GetColumn(col)->GetWidth(); }
+		bool SetColumnWidth(int col, int width) override
+		{
+			m_ctrl->GetColumn(col)->SetWidth(width);
+			return true;
+		}
+
+	private:
+		wxDataViewCtrl *m_ctrl;
+	};
+	ColumnWidthAdapter m_widthAdapter;
+
+	typedef std::pair<unsigned, unsigned> CColPair;
+	typedef std::list<CColPair> CSortingList;
+
+	//! Sort chain: front() is the primary sort column/order, the rest are
+	//! secondary/tertiary tie-breakers from earlier column clicks. Order
+	//! values reuse CMuleListCtrl::SORT_DES / SORT_ALT bit values so the
+	//! persisted config stays wire-compatible (see ListColumnStore.cpp).
+	CSortingList m_sort_orders;
+
+	//! Single-column comparison (no chain, no direction), mirroring the old
+	//! CSearchListCtrl::SortProc switch minus the parent-recursion hack
+	//! (wxDataViewModel::Compare() is only ever asked to order true
+	//! siblings, so grouping is handled by the tree structure itself).
+	int CompareByColumn(
+		const CSearchFile *f1, const CSearchFile *f2, unsigned column, bool alt, int modifier) const;
+
+	//! True if alternate sort criteria (secondary tie-break swap) are
+	//! offered for this column on repeated clicks.
+	bool AltSortAllowed(unsigned column) const;
 
 	/**
-	 * Set the sort column
-	 *
-	 * @param column The column with which the list should be sorted.
-	 * @param order The order in which to sort the column.
-	 *
-	 * Note that attempting to sort a column in an unsupported order
-	 * is an illegal operation.
+	 * Returns true if the filename is filtered (i.e. passes the filter and
+	 * should be shown) -- see PassesFilter(), the public wrapper used by
+	 * the model.
 	 */
-	void SetSorting(unsigned column, unsigned order);
-
-protected:
-	typedef std::list<CSearchFile *> ResultList;
-
-	//! List used to store results that are hidden due to matching the filter.
-	ResultList m_filteredOut;
-
-	//! The current filter reg-exp.
-	wxRegEx m_filter;
-
-	//! The text from which the filter is compiled.
-	wxString m_filterText;
-
-	//! Controls if shared/queued results should be shown.
-	bool m_filterKnown;
-
-	//! Controls if the result of filter-hits should be inverted
-	bool m_invert;
-
-	//! Specifies if filtering should be used
-	bool m_filterEnabled;
-
-	/**
-	 * Returns true if the filename is filtered.
-	 */
-	bool IsFiltered(const CSearchFile *file);
-
-	/**
-	 * Sorter function used by wxListCtrl::SortItems function.
-	 *
-	 * @see CMuleListCtrl::SetSortFunc
-	 * @see wxListCtrl::SortItems
-	 */
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-
-	/** @see CMuleListCtrl::AltSortAllowed */
-	virtual bool AltSortAllowed(unsigned column) const;
-
-	/** @see CMuleListCtrl::GetTTSText */
-	virtual wxString GetTTSText(unsigned item) const;
+	bool IsFiltered(const CSearchFile *file) const;
 
 	/**
 	 * Helper function which syncs two lists.
@@ -248,11 +282,6 @@ protected:
 
 	/**
 	 * Helper function which syncs all other lists against the specified one.
-	 *
-	 * @param src The list which all other lists should be synced against.
-	 *
-	 * This function just calls SyncLists() on all lists in s_lists, using
-	 * the src argument as the src argument of the SyncLists function.
 	 */
 	static void SyncOtherLists(CSearchListCtrl *src);
 
@@ -268,68 +297,47 @@ protected:
 	wxString m_browseName;
 	uint32 m_browseStatus;
 
-	//! Custom drawing, needed to display children of search-results.
-	void OnDrawItem(int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
+	//! Column persistence (widths, sort order) -- CSearchListCtrl no longer
+	//! inherits CMuleListCtrl (deliberately self-contained, see #180
+	//! discussion), so it owns this directly instead of getting it for free.
+	CListColumnStore m_columnStore;
+	void LoadColumnSettings();
+	void SaveColumnSettings();
+	//! Applies `order` to `column`, moving it to the front of the sort
+	//! chain (mirrors CMuleListCtrl::SetSorting's chain bookkeeping), sets
+	//! the native column header sort indicator, and re-sorts.
+	void ApplySorting(unsigned column, unsigned order);
 
-	/**
-	 * Removes or adds child-entries for the given file.
-	 */
-	void ShowChildren(CSearchFile *file, bool show);
+	//! The current filter reg-exp.
+	wxRegEx m_filter;
+	//! The text from which the filter is compiled.
+	wxString m_filterText;
+	//! Controls if shared/queued results should be shown.
+	bool m_filterKnown;
+	//! Controls if the result of filter-hits should be inverted.
+	bool m_invert;
+	//! Specifies if filtering should be used.
+	bool m_filterEnabled;
 
-	/**
-	 * Event handler for right mouse clicks.
-	 */
-	void OnRightClick(wxListEvent &event);
+	//! Last-seen column widths, used to detect a user drag-resize (there is
+	//! no portable wxDataViewCtrl "column resized" event to hook directly)
+	//! so it can be propagated to the other open search tabs, same as the
+	//! old EVT_LIST_COL_END_DRAG-driven sync.
+	std::vector<int> m_lastKnownWidths;
+	void OnIdle(wxIdleEvent &event);
 
-	/**
-	 * Event handler for double-clicks or enter.
-	 */
-	void OnItemActivated(wxListEvent &event);
+	CSearchListModel *m_model;
 
-	/**
-	 * Event handler for left-clicks on the column headers.
-	 *
-	 * This eventhandler takes care of sync'ing all the other lists with this one.
-	 */
-	void OnColumnLClick(wxListEvent &event);
+	void OnColumnHeaderClick(wxDataViewEvent &event);
+	void OnRightClick(wxDataViewEvent &event);
+	void OnItemActivated(wxDataViewEvent &event);
+	void OnSelectionChanged(wxDataViewEvent &event);
 
-	/**
-	 * Event handler for resizing of the columns.
-	 *
-	 * This eventhandler takes care of sync'ing all the other lists with this one.
-	 */
-	void OnColumnResize(wxListEvent &event);
-
-	/**
-	 * Event handler for get-url menu items.
-	 */
 	void OnPopupGetUrl(wxCommandEvent &event);
-
-	/**
-	 * Event handler for Razorback 2 stats menu items.
-	 */
 	void OnRazorStatsCheck(wxCommandEvent &event);
-
-	/**
-	 * Event handler for related search.
-	 */
 	void OnRelatedSearch(wxCommandEvent &event);
-
-	/**
-	 * Event handler for the "Show all comments" context-menu item: opens the
-	 * comments/ratings dialog for the selected result, from which the user can
-	 * fetch community notes from Kad.
-	 */
 	void OnGetComments(wxCommandEvent &event);
-
-	/**
-	 * Event handler for "mark as known".
-	 */
 	void OnMarkAsKnown(wxCommandEvent &event);
-
-	/**
-	 * Event handler for download-file(s) menu item.
-	 */
 	void OnPopupDownload(wxCommandEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
