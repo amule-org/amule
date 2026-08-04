@@ -1534,8 +1534,22 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	 **/
 	NewCfgItem(IDC_SLIDER, (MkCfg_Int("/eMule/StatGraphsInterval", s_trafficOMeterInterval, 3)));
 	NewCfgItem(IDC_SLIDER2, (MkCfg_Int("/eMule/statsInterval", s_statsInterval, 30)));
-	NewCfgItem(IDC_DOWNLOAD_CAP, (MkCfg_Int("/eMule/DownloadCapacity", s_maxGraphDownloadRate, 300)));
-	NewCfgItem(IDC_UPLOAD_CAP, (MkCfg_Int("/eMule/UploadCapacity", s_maxGraphUploadRate, 100)));
+	// Line capacity, in kB/s. Not a limit -- it is what the connection can
+	// do, and both the traffic graph's scale and the tray's limit presets are
+	// derived from it. The old 300/100 described a fast line when they were
+	// chosen and now describe almost nobody, which left the tray offering a
+	// top preset of 300 kB/s on a gigabit connection.
+	//
+	// 100/20 Mbit, converted at 1024. Asymmetric because consumer lines
+	// mostly are, and because upload is the side people actually throttle.
+	// A user whose line differs sets this on the Statistics page, or answers
+	// the first-run wizard, which computes it from the speeds they enter.
+	//
+	// Only new configurations see this. aMule writes every key on save, so an
+	// existing amule.conf already carries the old value and wxConfig applies
+	// a default only when the key is absent.
+	NewCfgItem(IDC_DOWNLOAD_CAP, (MkCfg_Int("/eMule/DownloadCapacity", s_maxGraphDownloadRate, 12500)));
+	NewCfgItem(IDC_UPLOAD_CAP, (MkCfg_Int("/eMule/UploadCapacity", s_maxGraphUploadRate, 2500)));
 	NewCfgItem(IDC_SLIDER3, (MkCfg_Int("/eMule/StatsAverageMinutes", s_statsAverageMinutes, 5)));
 	NewCfgItem(IDC_SLIDER4, (MkCfg_Int("/eMule/VariousStatisticsMaxValue", s_statsMax, 100)));
 	NewCfgItem(IDC_CLIENTVERSIONS, (MkCfg_Int("/Statistics/MaxClientVersions", s_maxClientVersions, 0)));

@@ -189,7 +189,14 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 // fifths of it span throttled to full speed in both directions.
 namespace
 {
-const int TRAY_SPEED_PRESETS = 5;
+// Divisors applied to the line capacity, descending. Not fifths: an even
+// ladder can only ever cover one order of magnitude, so on a fast line every
+// entry lands high and there is no way to throttle hard from the tray, while
+// on a slow one they bunch together near the top. Spacing them out covers
+// full speed down to a heavy throttle from the same capacity, which is what
+// makes one setting work for a 4 Mbit line and a 200 Mbit one alike.
+const unsigned int TRAY_SPEED_DIVISORS[] = { 1, 2, 4, 10, 50 };
+const int TRAY_SPEED_PRESETS = (int)(sizeof(TRAY_SPEED_DIVISORS) / sizeof(TRAY_SPEED_DIVISORS[0]));
 
 // What to assume when the user has set their capacity to "unlimited": there is
 // nothing to take fractions of otherwise.
@@ -198,15 +205,18 @@ const uint32 TRAY_FALLBACK_CAPACITY = 100;
 /// Fills @a speeds with the presets in descending order, highest first.
 void GetTraySpeedPresets(uint32 capacity, unsigned int (&speeds)[TRAY_SPEED_PRESETS])
 {
-	// A capacity of "unlimited" gives nothing to take fractions of, and one
-	// below the preset count would collapse the ladder to zeros.
 	if (capacity == UNLIMITED) {
 		capacity = TRAY_FALLBACK_CAPACITY;
-	} else if (capacity < TRAY_SPEED_PRESETS * 2) {
-		capacity = TRAY_SPEED_PRESETS * 2;
+	}
+	// Keep the smallest entry at 1 kB/s or more: a preset of 0 would read as
+	// a limit and act as "unlimited", which is the opposite of what picking
+	// the bottom of the list means.
+	const uint32 smallest = TRAY_SPEED_DIVISORS[TRAY_SPEED_PRESETS - 1];
+	if (capacity < smallest) {
+		capacity = smallest;
 	}
 	for (int i = 0; i < TRAY_SPEED_PRESETS; i++) {
-		speeds[i] = (unsigned int)((double)capacity / TRAY_SPEED_PRESETS) * (TRAY_SPEED_PRESETS - i);
+		speeds[i] = (unsigned int)(capacity / TRAY_SPEED_DIVISORS[i]);
 	}
 }
 
@@ -304,8 +314,8 @@ GtkWidget *make_speed_submenu(uint32 max_speed, TrayAction action, gpointer user
 	GetTraySpeedPresets(max_speed, speeds);
 	for (int i = 0; i < TRAY_SPEED_PRESETS; i++) {
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
-			make_action_item(TraySpeedLabel(speeds[i]).utf8_str(), action, (long)speeds[i],
-				user_data));
+			make_action_item(
+				TraySpeedLabel(speeds[i]).utf8_str(), action, (long)speeds[i], user_data));
 	}
 	gtk_widget_show_all(submenu);
 	return submenu;
