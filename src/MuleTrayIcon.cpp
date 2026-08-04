@@ -174,6 +174,49 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 #endif
 }
 
+// The limit presets both tray backends offer, and their labels.
+//
+// One ladder, one set of strings. The appindicator backend builds GtkWidgets
+// and the wx backend builds a wxMenu, but what goes in them is identical, and
+// it used to be written out twice -- which is how the GTK side ended up
+// showing "Unlimited" and "kB/s" untranslated while the wx side translated
+// both.
+//
+// The presets are fractions of the configured line capacity rather than of the
+// current limit. Scaling from the limit would mean the menu could only ever
+// lower it: with a 50 kB/s cap in force, every entry would be at or below 50
+// and there would be no way back up. Capacity is what the line can do, so
+// fifths of it span throttled to full speed in both directions.
+namespace
+{
+const int TRAY_SPEED_PRESETS = 5;
+
+// What to assume when the user has set their capacity to "unlimited": there is
+// nothing to take fractions of otherwise.
+const uint32 TRAY_FALLBACK_CAPACITY = 100;
+
+/// Fills @a speeds with the presets in descending order, highest first.
+void GetTraySpeedPresets(uint32 capacity, unsigned int (&speeds)[TRAY_SPEED_PRESETS])
+{
+	// A capacity of "unlimited" gives nothing to take fractions of, and one
+	// below the preset count would collapse the ladder to zeros.
+	if (capacity == UNLIMITED) {
+		capacity = TRAY_FALLBACK_CAPACITY;
+	} else if (capacity < TRAY_SPEED_PRESETS * 2) {
+		capacity = TRAY_SPEED_PRESETS * 2;
+	}
+	for (int i = 0; i < TRAY_SPEED_PRESETS; i++) {
+		speeds[i] = (unsigned int)((double)capacity / TRAY_SPEED_PRESETS) * (TRAY_SPEED_PRESETS - i);
+	}
+}
+
+/// The menu label for one preset, e.g. "2500 kB/s".
+wxString TraySpeedLabel(unsigned int kBytesPerSec)
+{
+	return CFormat("%u %s") % kBytesPerSec % _("kB/s");
+}
+} // namespace
+
 // =====================================================================
 // Backend selection — see MuleTrayIcon.h for rationale.
 // =====================================================================
@@ -255,13 +298,14 @@ GtkWidget *make_action_item(const char *label, TrayAction action, long arg, gpoi
 GtkWidget *make_speed_submenu(uint32 max_speed, TrayAction action, gpointer user_data)
 {
 	GtkWidget *submenu = gtk_menu_new();
-	gtk_menu_shell_append(GTK_MENU_SHELL(submenu), make_action_item("Unlimited", action, -1, user_data));
-	for (int i = 0; i < 5; i++) {
-		unsigned int spd = (unsigned int)((double)max_speed / 5) * (5 - i);
-		char label[64];
-		g_snprintf(label, sizeof(label), "%u kB/s", spd);
-		gtk_menu_shell_append(
-			GTK_MENU_SHELL(submenu), make_action_item(label, action, (long)spd, user_data));
+	gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
+		make_action_item(wxString(_("Unlimited")).utf8_str(), action, -1, user_data));
+	unsigned int speeds[TRAY_SPEED_PRESETS];
+	GetTraySpeedPresets(max_speed, speeds);
+	for (int i = 0; i < TRAY_SPEED_PRESETS; i++) {
+		gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
+			make_action_item(TraySpeedLabel(speeds[i]).utf8_str(), action, (long)speeds[i],
+				user_data));
 	}
 	gtk_widget_show_all(submenu);
 	return submenu;
@@ -445,11 +489,6 @@ void CMuleTrayIcon::RebuildMenu()
 	// Upload limit submenu
 	{
 		uint32 max_ul = thePrefs::GetMaxGraphUploadRate();
-		if (max_ul == UNLIMITED)
-			max_ul = 100;
-		else if (max_ul < 10)
-			max_ul = 10;
-
 		GtkWidget *sub = make_speed_submenu(max_ul, TRAY_ACTION_SET_UPLOAD_LIMIT, this);
 		GtkWidget *item = gtk_menu_item_new_with_label(_("Upload limit").utf8_str());
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
@@ -459,11 +498,6 @@ void CMuleTrayIcon::RebuildMenu()
 	// Download limit submenu
 	{
 		uint32 max_dl = thePrefs::GetMaxGraphDownloadRate();
-		if (max_dl == UNLIMITED)
-			max_dl = 100;
-		else if (max_dl < 10)
-			max_dl = 10;
-
 		GtkWidget *sub = make_speed_submenu(max_dl, TRAY_ACTION_SET_DOWNLOAD_LIMIT, this);
 		GtkWidget *item = gtk_menu_item_new_with_label(_("Download limit").utf8_str());
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
@@ -932,18 +966,10 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 	{
 		UploadSpeedMenu->Append(UPLOAD_ITEM1, _("Unlimited"));
 
-		uint32 max_ul_speed = thePrefs::GetMaxGraphUploadRate();
-
-		if (max_ul_speed == UNLIMITED) {
-			max_ul_speed = 100;
-		} else if (max_ul_speed < 10) {
-			max_ul_speed = 10;
-		}
-
-		for (int i = 0; i < 5; i++) {
-			unsigned int tempspeed = (unsigned int)((double)max_ul_speed / 5) * (5 - i);
-			wxString temp = CFormat("%u %s") % tempspeed % _("kB/s");
-			UploadSpeedMenu->Append((int)UPLOAD_ITEM1 + i + 1, temp);
+		unsigned int speeds[TRAY_SPEED_PRESETS];
+		GetTraySpeedPresets(thePrefs::GetMaxGraphUploadRate(), speeds);
+		for (int i = 0; i < TRAY_SPEED_PRESETS; i++) {
+			UploadSpeedMenu->Append((int)UPLOAD_ITEM1 + i + 1, TraySpeedLabel(speeds[i]));
 		}
 	}
 	traymenu->Append(0, UploadSpeedMenu->GetTitle(), UploadSpeedMenu);
@@ -952,18 +978,10 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 	{
 		DownloadSpeedMenu->Append(DOWNLOAD_ITEM1, _("Unlimited"));
 
-		uint32 max_dl_speed = thePrefs::GetMaxGraphDownloadRate();
-
-		if (max_dl_speed == UNLIMITED) {
-			max_dl_speed = 100;
-		} else if (max_dl_speed < 10) {
-			max_dl_speed = 10;
-		}
-
-		for (int i = 0; i < 5; i++) {
-			unsigned int tempspeed = (unsigned int)((double)max_dl_speed / 5) * (5 - i);
-			wxString temp = CFormat("%d %s") % tempspeed % _("kB/s");
-			DownloadSpeedMenu->Append((int)DOWNLOAD_ITEM1 + i + 1, temp);
+		unsigned int speeds[TRAY_SPEED_PRESETS];
+		GetTraySpeedPresets(thePrefs::GetMaxGraphDownloadRate(), speeds);
+		for (int i = 0; i < TRAY_SPEED_PRESETS; i++) {
+			DownloadSpeedMenu->Append((int)DOWNLOAD_ITEM1 + i + 1, TraySpeedLabel(speeds[i]));
 		}
 	}
 
