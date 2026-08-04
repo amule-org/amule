@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 12:39+0200\n"
+"POT-Creation-Date: 2026-08-04 13:14+0200\n"
 "PO-Revision-Date: 2026-08-04 09:27+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -3029,6 +3029,15 @@ msgstr "清除"
 msgid "Select All"
 msgstr "全选"
 
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
+msgid "kB/s"
+msgstr "KB/s"
+
+#: src/MuleTrayIcon.cpp
+msgid "Unlimited"
+msgstr "无限制"
+
 #: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr "eD2k： "
@@ -3115,15 +3124,6 @@ msgstr "隐藏 aMule"
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
 msgstr "退出"
-
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "KB/s"
-
-#: src/MuleTrayIcon.cpp
-msgid "Unlimited"
-msgstr "无限制"
 
 #: src/MuleTrayIcon.cpp
 msgid "aMule Tray Menu"

@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 12:39+0200\n"
+"POT-Creation-Date: 2026-08-04 13:14+0200\n"
 "PO-Revision-Date: 2026-08-04 09:19+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -3037,6 +3037,15 @@ msgstr "Pulisci"
 msgid "Select All"
 msgstr "Seleziona tutto"
 
+#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
+#: src/StatisticsDlg.cpp
+msgid "kB/s"
+msgstr "kB/s"
+
+#: src/MuleTrayIcon.cpp
+msgid "Unlimited"
+msgstr "Illimitato"
+
 #: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr "eD2k: "
@@ -3123,15 +3132,6 @@ msgstr "Nascondi aMule"
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
 msgstr "Esci"
-
-#: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
-#: src/StatisticsDlg.cpp
-msgid "kB/s"
-msgstr "kB/s"
-
-#: src/MuleTrayIcon.cpp
-msgid "Unlimited"
-msgstr "Illimitato"
 
 #: src/MuleTrayIcon.cpp
 msgid "aMule Tray Menu"
