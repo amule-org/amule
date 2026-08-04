@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-03 15:17+0000\n"
+"PO-Revision-Date: 2026-08-04 09:23+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -209,7 +209,7 @@ msgstr "Не удалось открыть файл ED2KLinks."
 
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
-msgstr "ПРЕДУПРЕЖДЕНИЕ: Вы не можете добавить себя в качестве источника для eD2k ссылки если у вас lowid."
+msgstr "ПРЕДУПРЕЖДЕНИЕ: Вы не можете добавить себя в качестве источника для ссылки eD2k, если у вас Низкий ИД."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -274,7 +274,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: настроенный сетевой ин
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr "ПРЕДУПРЕЖДЕНИЕ: привязка к сетевому интерфейсу «%s» требует повышенных привилегий и НЕ была применена — трафик может проходить через маршрут по умолчанию. Предоставьте соответствующую возможность (например, «sudo setcap cap_net_raw+ep» для исполняемого файла aMule) или запустите с достаточными привилегиями."
+msgstr "ПРЕДУПРЕЖДЕНИЕ: привязка к сетевому интерфейсу «%s» требует повышенных привилегий и НЕ была применена — трафик может проходить через маршрут по умолчанию. Предоставьте соответствующую возможность (напр., «sudo setcap cap_net_raw+ep» для исполняемого файла aMule) или запустите с достаточными привилегиями."
 
 #: src/amule.cpp
 #, c-format
@@ -400,7 +400,7 @@ msgstr "Невозможно связать порты с указанными �
 #: src/amule.cpp
 #, c-format
 msgid "Port %u is not available. You will be LOWID\n"
-msgstr "Порт %u не доступен. У вас будет LowID\n"
+msgstr "Порт %u не доступен. У вас будет Низкий ИД\n"
 
 #: src/amule.cpp
 #, c-format
@@ -413,7 +413,7 @@ msgid ""
 msgstr ""
 "Порт %u недоступен!\n"
 "\n"
-"Это означает, что вам будет выдан LowID.\n"
+"Это означает, что вам будет выдан Низкий ИД.\n"
 "\n"
 "Проверьте сеть: порт должен быть открыт для входящего и исходящего трафика."
 
@@ -556,11 +556,11 @@ msgstr "Нет выделенной сети"
 
 #: src/amule.cpp src/TextClient.cpp
 msgid "with LowID"
-msgstr "LowID"
+msgstr "с Низким ИД"
 
 #: src/amule.cpp src/TextClient.cpp
 msgid "with HighID"
-msgstr "HighID"
+msgstr "с Высоким ИД"
 
 #: src/amule.cpp
 #, c-format
@@ -993,7 +993,7 @@ msgstr "Не удалось получить список доступных ф�
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
-msgstr "Ищем друга для lowid-соединения"
+msgstr "Ищем друга для соединения с Низким ИД"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -1178,12 +1178,12 @@ msgstr "Сведения о клиенте"
 #: src/ClientDetailDialog.cpp src/ServerWnd.cpp
 #: src/utils/wxCas/src/onlinesig.cpp
 msgid "LowID"
-msgstr "LowID"
+msgstr "Низкий ИД"
 
 #: src/ClientDetailDialog.cpp src/ServerWnd.cpp
 #: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
-msgstr "HighID"
+msgstr "Высокий ИД"
 
 #: src/ClientDetailDialog.cpp
 msgid "Enabled"
@@ -1423,7 +1423,7 @@ msgstr "Нет нужных частей"
 
 #: src/DataToText.cpp
 msgid "Cannot connect LowID to LowID"
-msgstr "LowID не могут подключаться друг к другу"
+msgstr "Низкие ИД не могут подключаться друг к другу"
 
 #: src/DataToText.cpp
 msgid "Too many connections"
@@ -1669,7 +1669,7 @@ msgstr "отменить категорию"
 
 #: src/DownloadListCtrl.cpp
 msgid "Assign to category"
-msgstr "Присвоить категорию"
+msgstr "Назначить категорию"
 
 #: src/DownloadListCtrl.cpp
 msgid "&Open the file"
@@ -2384,7 +2384,7 @@ msgstr "Расширенный порт UDP (Kad / глобальный поис
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Enable UPnP for router port forwarding"
-msgstr "Включить UPnP для проброса портов на маршрутизаторе"
+msgstr "Включить UPnP для проброса портов в маршрутизаторе"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2393,7 +2393,7 @@ msgid ""
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
 "Позволяет aMule запросить у роутера проброс указанных портов, чтобы\n"
-"другие пиры могли до вас достучаться («HighID»). Отключите, если\n"
+"другие пиры могли до вас достучаться («Высокий ИД»). Отключите, если\n"
 "роутер не поддерживает UPnP или вы настраиваете порты вручную."
 
 #: src/FirstRunWizard.cpp
@@ -2460,7 +2460,7 @@ msgid ""
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
 "Значения по умолчанию подходят большинству пользователей. Измените их,\n"
-"если хотите сохранять загрузки на другом (например, более вместительном) диске."
+"если хотите сохранять скачивания на другом (напр., более вместительном) диске."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2676,7 +2676,7 @@ msgstr "Существующий файл GeoLite2-Country.mmdb перенесё
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr "Страна по IP: в качестве источника GeoIP выбран MaxMind, но лицензионный ключ не настроен. Откройте «Настройки» → «Страна по IP», вставьте бесплатный лицензионный ключ MaxMind и нажмите «Обновить сейчас»."
+msgstr "Страна по IP: в качестве источника GeoIP выбран MaxMind, но лицензионный ключ не настроен. Откройте «Настройки» → «Страна по IP», вставьте бесплатный ключ лицензии MaxMind и нажмите «Обновить сейчас»."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
@@ -2744,7 +2744,7 @@ msgstr "Не удалось загрузить ipfilter.dat файл '%s', не 
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
 msgstr[0] "Загружен %u IP-диапазон из «%s»."
-msgstr[1] "Загружено %u IP-диапазона из «%s»."
+msgstr[1] "Загружены %u IP-диапазона из «%s»."
 msgstr[2] "Загружено %u IP-диапазонов из «%s»."
 
 #: src/IPFilter.cpp
@@ -3042,11 +3042,11 @@ msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp
 msgid "Connected (LowID)"
-msgstr "Подключено (LowID)"
+msgstr "Подключён (Низкий ИД)"
 
 #: src/MuleTrayIcon.cpp
 msgid "Connected (HighID)"
-msgstr "Подключено (HighID)"
+msgstr "Подключён (Высокий ИД)"
 
 #: src/MuleTrayIcon.cpp
 msgid "Kad: "
@@ -3105,7 +3105,7 @@ msgstr "Ограничение скачивания"
 
 #: src/MuleTrayIcon.cpp
 msgid "Disconnect"
-msgstr "Отключиться"
+msgstr "Отключить"
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
 msgid "Connect"
@@ -3121,7 +3121,7 @@ msgstr "Свернуть aMule"
 
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
-msgstr "Выйти"
+msgstr "Выход"
 
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp src/OtherFunctions.cpp
 #: src/StatisticsDlg.cpp
@@ -3272,7 +3272,7 @@ msgstr "Текущая средняя скорость отдачи и скач�
 # делают их многострочными ;-))
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
-msgstr "Отображает статус подключения и активные передачи. Красные стрелки означают, что вы в данный момент не подключены, жёлтые стрелки — что у вас LowID (вы за межсетевым экраном), а зелёные стрелки — что у вас HighID (оптимальный тип подключения)."
+msgstr "Отображает статус подключения и активные передачи. Красные стрелки означают, что вы в данный момент не подключены, жёлтые стрелки — что у вас Низкий ИД (LowID, вы за межсетевым экраном), а зелёные стрелки — что у вас Высокий ИД (HighID, оптимальный тип подключения)."
 
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
@@ -3440,11 +3440,11 @@ msgstr "Источников:"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"
-msgstr "Общие"
+msgstr "Основные"
 
 #: src/muuli_wdr.cpp
 msgid "Full Name :"
-msgstr "Полное имя :"
+msgstr "Полное имя:"
 
 #: src/muuli_wdr.cpp
 msgid "met-File :"
@@ -3607,7 +3607,7 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
-"Например, для фильма вы можете указать его длительность, сюжет, язык…\n"
+"Напр., для фильма вы можете указать его длительность, сюжет, язык…\n"
 "Если это — фальшивка, вы можете сообщить об этом остальным пользователям aMule."
 
 #: src/muuli_wdr.cpp
@@ -3934,7 +3934,7 @@ msgstr "Выбор браузера"
 
 #: src/muuli_wdr.cpp
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
-msgstr "Введите имя предпочитаемого браузера. Оставьте поле пустым чтобы использовать системный браузер по умолчанию."
+msgstr "Введите имя предпочитаемого браузера. Оставьте поле пустым, чтобы использовать системный браузер по умолчанию."
 
 #: src/muuli_wdr.cpp
 msgid "Open in new tab if possible"
@@ -3990,7 +3990,7 @@ msgstr "Привязать локальный адрес к IP (пусто — �
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
-msgstr "Только для продвинутых пользователей: если у вас несколько сетевых интерфейсов введите адрес того, которым будет пользоваться aMule."
+msgstr "Только для опытных пользователей: если у вас несколько сетевых интерфейсов, введите адрес того, которым будет пользоваться aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Bind to network interface (empty for any):"
@@ -3998,7 +3998,7 @@ msgstr "Привязать к сетевому интерфейсу (пусто 
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
-msgstr "Только для опытных пользователей: привязывает весь трафик aMule к одному сетевому интерфейсу, выбранному из списка или введённому вручную по имени (например, tun0, eth0, en0) или индексу. В отличие от привязки к IP-адресу, это предотвращает утечку трафика через маршрут по умолчанию — полезно при использовании VPN. Не требует повышенных привилегий."
+msgstr "Только для опытных пользователей: привязывает весь трафик aMule к одному сетевому интерфейсу, выбранному из списка или введённому вручную по имени (напр., tun0, eth0, en0) или индексу. В отличие от привязки к IP-адресу, это не даёт трафику уходить через маршрут по умолчанию — полезно при использовании VPN. Не требует повышенных привилегий."
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
@@ -4050,7 +4050,7 @@ msgstr "Использовать систему приоритетов"
 
 #: src/muuli_wdr.cpp
 msgid "Use smart LowID check on connect"
-msgstr "Проверка на LowID при подключении к серверу"
+msgstr "Умная проверка на Низкий ИД при подключении"
 
 #: src/muuli_wdr.cpp
 msgid "Safe connect"
@@ -4106,11 +4106,11 @@ msgstr "Создавать новые файлы как разреженные"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr "Разреженные (sparse) part-файлы занимают место на диске только под уже скачанные части, поэтому свободное место расходуется постепенно по мере заполнения файла. Отключите эту опцию, чтобы использовать обычный файл — это полезно, если разреженные файлы не поддерживаются или работают медленно, либо если инструменты резервного копирования/дедупликации плохо их обрабатывают. Применяется только когда ядро (core) запущено на Windows; в Linux и macOS part-файлы всё равно разреженные, и этот параметр не влияет."
+msgstr "Разреженные part-файлы занимают место на диске только для уже скачанных частей, так что свободное место расходуется постепенно по мере заполнения файла. Отключите эту опцию, чтобы использовать обычный файл — полезно, если разреженные файлы не поддерживаются или работают медленно, либо если средства резервного копирования / дедупликации плохо с ними работают. Действует только когда ядро запущено в Windows; в Linux и macOS part-файлы и так разреженные, и этот параметр не влияет."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
-msgstr "Останавливать скачивания, когда свободное место на диске достигнет "
+msgstr "Остановить скачивание, если cвободно менее "
 
 #: src/muuli_wdr.cpp
 msgid "Select this if you want aMule to check your disk space"
@@ -4195,7 +4195,7 @@ msgstr "(Папки, опубликованные ядром. Введите п�
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr "Абсолютный путь к папке на машине ядра, например /home/user/shared"
+msgstr "Абсолютный путь к папке на машине ядра, напр. /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
@@ -4219,7 +4219,7 @@ msgstr "Публиковать скрытые файлы"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr "Автоматически пересканировать общие папки на предмет изменений"
+msgstr "Автоматически проверять изменения в общах"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
@@ -4231,7 +4231,7 @@ msgstr "Исключать файлы по шаблону:"
 
 #: src/muuli_wdr.cpp
 msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr "Шаблоны с подстановочными знаками, разделённые «|», например .DS_Store|Thumbs.db|*.tmp. Файлы с совпадающим именем не публикуются. Регистр не учитывается."
+msgstr "Шаблоны с подстановочными знаками, разделённые «|», напр. .DS_Store|Thumbs.db|*.tmp. Файлы с совпадающим именем не публикуются. Регистр не учитывается."
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
@@ -4363,7 +4363,7 @@ msgstr "Размер буфера: 240000 байт"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr "Использовать MMAP: доступ к файлам с отображением в память (ниже потребление памяти)"
+msgstr "Применять MMAP: доступ к файлам с отображением в память (экономия памяти)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
@@ -4458,7 +4458,7 @@ msgstr "IP прослушиваемого интерфейса:"
 
 #: src/muuli_wdr.cpp
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-msgstr "Введите действительный IP-адрес в формате A.B.C.D для прослушиваемого интерфейса EC. Пустое поле или 0.0.0.0 означают любой интерфейс."
+msgstr "Введите верный IP формате A.B.C.D для прослушиваемого интерфейса внешних соединений. Пустое поле или 0.0.0.0 — любой интерфейс."
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
@@ -4570,7 +4570,7 @@ msgstr "ОК"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
-msgstr "Кликните тут, чтобы сохранить внесенные вами изменения."
+msgstr "Нажмите здесь, чтобы применить изменения, сделанные в настройках."
 
 #: src/muuli_wdr.cpp
 msgid "Reset any changes made to the preferences."
@@ -4598,7 +4598,7 @@ msgstr "Выбрать цвет для этой категории:"
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
-msgstr "Кликните тут для очистки журнала."
+msgstr "Нажмите эту кнопку для очистки журнала."
 
 #: src/muuli_wdr.cpp
 msgid "Click on this button to update the servers list from URL ..."
@@ -4804,7 +4804,7 @@ msgstr "Включить онлайн-подпись"
 
 #: src/muuli_wdr.cpp
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
-msgstr "Включает запись файла OS, который может использоваться другими приложениями для создания подписей."
+msgstr "Включает запись файла онлайн-подписи, который может использоваться другими приложениями для создания подписей."
 
 #: src/muuli_wdr.cpp
 msgid "Update Frequency (Secs):"
@@ -4820,7 +4820,7 @@ msgstr "Сохранять файл онлайн-подписи в: "
 
 #: src/muuli_wdr.cpp
 msgid "Click here to select the directory containing the the Online Signature files."
-msgstr "Кликните здесь, чтобы выбрать каталок для файлов Online-подписи."
+msgstr "Нажмите здесь, чтобы выбрать каталог, содержащий файлы онлайн-подписей."
 
 #: src/muuli_wdr.cpp
 msgid "Show country flags for clients"
@@ -4852,7 +4852,7 @@ msgstr "Свой URL-адрес"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr "Выберите поставщика базы данных GeoIP в формате MMDB. По умолчанию используется DB-IP — учётная запись не требуется. Для MaxMind требуется бесплатная учётная запись и лицензионный ключ. Используйте пользовательский URL, чтобы указать на любой другой источник MMDB (например, локальное зеркало)."
+msgstr "Выберите поставщика базы данных GeoIP в формате MMDB. По умолчанию используется DB-IP — учётная запись не требуется. Для MaxMind требуется бесплатная учётная запись и лицензионный ключ. Используйте пользовательский URL-адрес, чтобы указать на любой другой источник MMDB (напр., локальное зеркало)."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4868,7 +4868,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr "Лицензионный ключ:"
+msgstr "Ключ лицензии:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4879,12 +4879,12 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
-"Зарегистрируйте бесплатную учётную запись MaxMind, затем создайте лицензионный ключ:\n"
+"Создайте бесплатную учётную запись и ключ лицензии в MaxMind:\n"
 "https://www.maxmind.com/en/geolite2/signup\n"
 "\n"
-"Этот продукт включает данные GeoLite2, созданные MaxMind - https://www.maxmind.com\n"
-"Лицензия: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
-"Требует указания авторства и регистрации учётной записи; обновляйте не реже раза в 30 дней."
+"Включает данные GeoLite2 от MaxMind — https://www.maxmind.com\n"
+"Лицензия: MaxMind GeoLite2 EULA — https://www.maxmind.com/en/geolite2/eula\n"
+"Требует указания авторства и регистрации; обновляйте не реже раза в 30 дней."
 
 #: src/muuli_wdr.cpp
 msgid "Download URL:"
@@ -4896,9 +4896,9 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
-"Должен указывать на файл .mmdb либо на .gz / .tar.gz, содержащий такой файл.\n"
-"URL-адрес может включать учётные данные (https://user:pass@host/…).\n"
-"Условия лицензии и указания авторства определяются источником по этому URL-адресу — ответственность лежит на вас."
+"Должен указывать на файл .mmdb либо на .gz / .tar.gz, содержащий такой.\n"
+"Адрес может включать учётные данные (https://user:pass@host/…).\n"
+"Лицензия и условия указаны по адресу источника — ответственность на вас."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
@@ -6607,7 +6607,7 @@ msgstr "Новый идентификатор клиента — %u"
 
 #: src/ServerSocket.cpp
 msgid "WARNING: You have received Low-ID!"
-msgstr "ПРЕДУПРЕЖДЕНИЕ: вы получили LowID!"
+msgstr "ПРЕДУПРЕЖДЕНИЕ: вы получили Низкий ИД!"
 
 #: src/ServerSocket.cpp
 msgid "\tMost likely this is because you're behind a firewall or router."
@@ -6942,7 +6942,7 @@ msgstr "Проверка локальных данных для part-файла 
 
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
-msgstr "Для создания ссылки на источник требуется HighID"
+msgstr "Вам нужен Высокий ИД для создания рабочей ссылки на источник"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8316,7 +8316,7 @@ msgstr " Kad: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "off"
-msgstr "отключен"
+msgstr "отключён"
 
 #  stands for $User is on $server
 #: src/utils/wxCas/src/wxcasframe.cpp
