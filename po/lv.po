@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-01 13:03+0200\n"
-"PO-Revision-Date: 2026-08-03 15:22+0000\n"
+"PO-Revision-Date: 2026-08-04 09:29+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -293,9 +293,9 @@ msgid "Loading temp files"
 msgstr "Ielādē server.met datni: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "Ielādē server.met datni: %s"
+msgstr "Ielādē pagaidu datnes (%u no %u)"
 
 #: src/amule.cpp
 #, fuzzy
@@ -303,9 +303,9 @@ msgid "Loading shared files"
 msgstr "Ielādē server.met datni: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "Ielādē server.met datni: %s"
+msgstr "Ielādē kopīgotās datnes (%u)"
 
 #: src/amule.cpp
 msgid "Starting up"
