@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 17:26+0200\n"
 "PO-Revision-Date: 2026-08-04 09:15+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -6263,10 +6263,6 @@ msgstr "Přidat volitelné URL pro tento soubor"
 msgid "Search related files (eD2k, local server)"
 msgstr "Vyhledat související soubory (eD2k, lokální server)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Označit jako známý soubor"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Zkopírovat eD2k odkaz do schránky"
@@ -8640,6 +8636,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Označit jako známý soubor"
 
 #~ msgid "Bootstrap"
 #~ msgstr "Bootstrap"

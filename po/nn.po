@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 17:26+0200\n"
 "PO-Revision-Date: 2026-08-04 09:21+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -6290,10 +6290,6 @@ msgstr "Legg til valfrie URL`ar for denne fila"
 msgid "Search related files (eD2k, local server)"
 msgstr "Søk beslekta filer (eD2k, lokal tenar)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Merk som kjend fil"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Kopier eD2k lenkje til skrivebordet"
@@ -8709,6 +8705,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Merk som kjend fil"
 
 #~ msgid "Bootstrap"
 #~ msgstr "Eigenoppstart"

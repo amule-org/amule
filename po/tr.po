@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 17:26+0200\n"
 "PO-Revision-Date: 2026-08-04 09:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -6225,10 +6225,6 @@ msgstr "Bu dosya için %s iste"
 msgid "Search related files (eD2k, local server)"
 msgstr "İlgili dosyaları ara (eD2k, yerel sunucu)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Bilinen dosya olarak işaretle"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "eD2k bağlantısını panoya kopyala"
@@ -8625,6 +8621,9 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid "Mark as known file"
+#~ msgstr "Bilinen dosya olarak işaretle"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Toplam dosyaların yüzdesi"

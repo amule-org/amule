@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 17:26+0200\n"
 "PO-Revision-Date: 2026-08-04 09:19+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -6228,10 +6228,6 @@ msgstr "Ottieni %s per questo file"
 msgid "Search related files (eD2k, local server)"
 msgstr "Cerca file correlati (eD2k, server locale)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Segna come file conosciuto"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Copia il collegamento eD2k negli appunti"
@@ -8626,6 +8622,9 @@ msgstr "Sembra che aMule sia in esecuzione. Chiudilo e riavvia il programma di d
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Rimozione dei dati utente in $APPDATA\\aMule..."
+
+#~ msgid "Mark as known file"
+#~ msgstr "Segna come file conosciuto"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Percentuale di file totali"

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 17:26+0200\n"
 "PO-Revision-Date: 2026-08-04 09:27+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -6244,10 +6244,6 @@ msgstr "取得這個檔案的 %s"
 msgid "Search related files (eD2k, local server)"
 msgstr "搜尋相關檔案 (eD2k，本地伺服器)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "標記為已知檔案"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "複製 eD2k 連結到剪貼簿"
@@ -8622,6 +8618,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "標記為已知檔案"
 
 #~ msgid "Percent of total files"
 #~ msgstr "% (所有檔案中)"

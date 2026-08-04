@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 17:26+0200\n"
 "PO-Revision-Date: 2026-08-04 09:20+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -6263,10 +6263,6 @@ msgstr "Verkrijg %s voor dit bestand"
 msgid "Search related files (eD2k, local server)"
 msgstr "Zoek gelijkwaardige bestanden (eD2k, lokale server)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Markeer als bekend bestand"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Kopieer eD2k-link naar klembord"
@@ -8654,6 +8650,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Markeer als bekend bestand"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Procent van alle bestanden"
