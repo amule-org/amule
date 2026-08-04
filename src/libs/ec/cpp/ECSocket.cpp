@@ -261,6 +261,12 @@ size_t CQueuedData::GetUnreadDataLength() const
 // CECSocket API - User interface functions
 //
 
+// The per-packet flags this end may send before anything is negotiated: only
+// the version-sanity bit, which every packet carries and ReadPacket checks for.
+// Capability bits are OR'd in as the handshake agrees them, and the
+// `flags &= m_my_flags` in WritePacket strips any the peer never confirmed.
+static const uint32_t EC_MY_FLAGS_INITIAL = 0x20;
+
 CECSocket::CECSocket(bool use_events)
 : m_use_events(use_events)
 , m_in_ptr(EC_SOCKET_BUFFER_SIZE)
@@ -277,7 +283,7 @@ CECSocket::CECSocket(bool use_events)
 m_bytes_needed(EC_HEADER_SIZE)
 , m_in_header(true)
 , m_curr_packet_len(0)
-, m_my_flags(0x20)
+, m_my_flags(EC_MY_FLAGS_INITIAL)
 , m_haveNotificationSupport(false)
 , m_isLocalPeer(false)
 {
@@ -320,6 +326,20 @@ void CECSocket::ResetProtocolState()
 	m_bytes_needed = EC_HEADER_SIZE;
 	m_in_header = true;
 	m_curr_packet_len = 0;
+	// m_my_flags holds two different things: what this end is willing to do,
+	// and what the last peer agreed to. Only the second is stale here.
+	//
+	// EC_FLAG_ZLIB and EC_FLAG_UTF8_NUMBERS come from local preferences via
+	// SetCapabilities, which the reconnect path does not call again -- so
+	// they have to survive, and they are still true regardless of which peer
+	// answers next. EC_FLAG_LARGE_TAG_COUNT is the odd one out: it is set
+	// only when the daemon echoes EC_TAG_CAN_LARGE_TAG_COUNT in AUTH_OK, and
+	// the word is otherwise only ever OR'd into. Left set, a client that
+	// negotiated it with one daemon keeps sending the extended tag-count
+	// format after reconnecting to one that never advertised it, which does
+	// not fail cleanly: the receiver reads a differently-sized count field
+	// and misparses everything after it.
+	m_my_flags &= ~(uint32_t)EC_FLAG_LARGE_TAG_COUNT;
 	// Re-negotiated by the reconnected session's auth handshake.
 	m_haveNotificationSupport = false;
 }

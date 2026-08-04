@@ -883,8 +883,11 @@ void CamuleRemoteGuiApp::AttemptReconnect()
 	// the drop would otherwise misparse the new session's first bytes and the
 	// login would fail) and a fresh asio socket on the SAME CRemoteConnect
 	// object (keeps every remote container's m_conn pointer valid). Capability
-	// flags persist on the object, so ConnectToCore re-runs the login handshake
-	// as on first connect.
+	// flags persist on the object -- SetCapabilities is not called again here,
+	// and what this end can do has not changed -- so ConnectToCore re-runs the
+	// login handshake as on first connect. The one flag that is cleared is the
+	// one agreed with the *peer* rather than chosen locally; see
+	// CECSocket::ResetProtocolState.
 	m_connect->DiscardRequestQueue();
 	m_connect->ResetProtocolState();
 	m_connect->ResetForReconnect();
