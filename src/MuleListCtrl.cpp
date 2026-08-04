@@ -99,7 +99,7 @@ CMuleListCtrl::CMuleListCtrl(wxWindow *parent,
 
 CMuleListCtrl::~CMuleListCtrl()
 {
-	if (!m_name.IsEmpty()) {
+	if (m_columnStore.HasTableName()) {
 		SaveSettings();
 	}
 }
@@ -108,31 +108,7 @@ long CMuleListCtrl::InsertColumn(
 	long col, const wxString &heading, int format, int width, const wxString &name)
 {
 	if (!name.IsEmpty()) {
-#ifdef __DEBUG__
-		// Check for valid names
-		wxASSERT_MSG(name.Find(':') == wxNOT_FOUND,
-			"Column name \"" + name + "\" contains invalid characters!");
-		wxASSERT_MSG(name.Find(',') == wxNOT_FOUND,
-			"Column name \"" + name + "\" contains invalid characters!");
-
-		// Check for uniqueness of names.
-		for (ColNameList::const_iterator it = m_column_names.begin(); it != m_column_names.end();
-			++it) {
-			if (name == it->name) {
-				wxFAIL_MSG("Column name \"" + name + "\" is not unique!");
-			}
-		}
-#endif
-		// Insert name at position col.
-		ColNameList::iterator it = m_column_names.begin();
-		while (it != m_column_names.end() && it->index < col) {
-			++it;
-		}
-		m_column_names.insert(it, ColNameEntry(col, width, name));
-		while (it != m_column_names.end()) {
-			++it;
-			++(it->index);
-		}
+		m_columnStore.RegisterColumn(static_cast<int>(col), width, name);
 	}
 
 	return MuleExtern::wxGenericListCtrl::InsertColumn(col, heading, format, width);
@@ -140,141 +116,27 @@ long CMuleListCtrl::InsertColumn(
 
 void CMuleListCtrl::SaveSettings()
 {
-	wxCHECK_RET(!m_name.IsEmpty(), "Cannot save settings for unnamed list");
+	wxCHECK_RET(m_columnStore.HasTableName(), "Cannot save settings for unnamed list");
 
-	wxConfigBase *cfg = wxConfigBase::Get();
-
-	// Save sorting, column and order
-	wxString sortOrder;
-	for (CSortingList::iterator it = m_sort_orders.begin(); it != m_sort_orders.end();) {
-		wxString columnName = GetColumnName(it->first);
-		if (!columnName.IsEmpty()) {
-			sortOrder += columnName;
-			sortOrder += ":";
-			sortOrder += it->second & SORT_DES ? "1" : "0";
-			sortOrder += ":";
-			sortOrder += it->second & SORT_ALT ? "1" : "0";
-			if (++it != m_sort_orders.end()) {
-				sortOrder += ",";
-			}
-		} else {
-			++it;
-		}
-	}
-
-	cfg->Write("/eMule/TableOrdering" + m_name, sortOrder);
-
-	// Save column widths. ATM this is also used to signify hidden columns.
-	wxString buffer;
-	for (int i = 0; i < GetColumnCount(); ++i) {
-		wxString columnName = GetColumnName(i);
-		if (!columnName.IsEmpty()) {
-			if (!buffer.IsEmpty()) {
-				buffer << ",";
-			}
-			int currentwidth = GetColumnWidth(i);
-			int savedsize = (m_column_sizes.size() && (i < (int)m_column_sizes.size()))
-						? m_column_sizes[i]
-						: 0;
-			buffer << columnName << ":" << ((currentwidth > 0) ? currentwidth : (-1 * savedsize));
-		}
-	}
-
-	cfg->Write("/eMule/TableWidths" + m_name, buffer);
-}
-
-void CMuleListCtrl::ParseOldConfigEntries(const wxString &sortOrders, const wxString &columnWidths)
-{
-	// Set sort order (including sort column)
-	wxStringTokenizer tokens(sortOrders, ",");
-	while (tokens.HasMoreTokens()) {
-		wxString token = tokens.GetNextToken();
-
-		long column = 0;
-		unsigned long order = 0;
-
-		if (token.BeforeFirst(' ').Strip(wxString::both).ToLong(&column)) {
-			if (token.AfterFirst(' ').Strip(wxString::both).ToULong(&order)) {
-				column = GetNewColumnIndex(column);
-				// Sanity checking, to avoid asserting if column count changes.
-				if (column >= 0 && column < GetColumnCount()) {
-					// Sanity checking, to avoid asserting if data-format changes.
-					if ((order & ~SORTING_MASK) == 0) {
-						// SetSorting will take care of duplicate entries
-						SetSorting(column, order);
-					}
-				}
-			}
-		}
-	}
-
-	// Set column widths
-	int counter = 0;
-	wxStringTokenizer tokenizer(columnWidths, ",");
-	while (tokenizer.HasMoreTokens()) {
-		long idx = GetNewColumnIndex(counter++);
-		long width = StrToLong(tokenizer.GetNextToken());
-		if (idx >= 0) {
-			SetColumnWidth(idx, width);
-		}
-	}
+	m_columnStore.SaveSettings(*this, m_sort_orders);
 }
 
 void CMuleListCtrl::LoadSettings()
 {
-	wxCHECK_RET(!m_name.IsEmpty(), "Cannot load settings for unnamed list");
-
-	wxConfigBase *cfg = wxConfigBase::Get();
-
-	// Load sort order (including sort-column)
-	m_sort_orders.clear();
-	wxString sortOrders = cfg->Read("/eMule/TableOrdering" + m_name, "");
-	wxString columnWidths = cfg->Read("/eMule/TableWidths" + m_name, "");
+	wxCHECK_RET(m_columnStore.HasTableName(), "Cannot load settings for unnamed list");
 
 	// Prevent sorting from occurring when calling SetSorting
 	MuleListCtrlCompare sortFunc = m_sort_func;
 	m_sort_func = NULL;
 
-	if (columnWidths.Find(':') == wxNOT_FOUND) {
-		// Old-style config entries...
-		ParseOldConfigEntries(sortOrders, columnWidths);
-	} else {
-		// Sort orders
-		wxStringTokenizer tokens(sortOrders, ",");
-		// Sort orders are stored in order primary, secondary, ...
-		// We want to apply them with SetSorting(), so we have to apply them in reverse order,
-		// so that the primary order is applied last and wins.
-		// Read them with tokenizer and store them in a list in reverse order.
-		CStringList tokenList;
-		while (tokens.HasMoreTokens()) {
-			tokenList.push_front(tokens.GetNextToken());
-		}
-		for (CStringList::iterator it = tokenList.begin(); it != tokenList.end(); ++it) {
-			const wxString &token = *it;
-			wxString name = token.BeforeFirst(':');
-			long order = StrToLong(token.AfterFirst(':').BeforeLast(':'));
-			long alt = StrToLong(token.AfterLast(':'));
-			int col = GetColumnIndex(name);
-			if (col >= 0) {
-				SetSorting(col, (order ? SORT_DES : 0) | (alt ? SORT_ALT : 0));
-			}
-		}
+	CListColumnStore::CSortingList decodedSortOrders;
+	m_columnStore.LoadSettings(*this, GetOldColumnOrder(), decodedSortOrders);
 
-		// Column widths
-		wxStringTokenizer tkz(columnWidths, ",");
-		while (tkz.HasMoreTokens()) {
-			wxString token = tkz.GetNextToken();
-			wxString name = token.BeforeFirst(':');
-			long width = StrToLong(token.AfterFirst(':'));
-			int col = GetColumnIndex(name);
-			if (col >= 0) {
-				if (col >= (int)m_column_sizes.size()) {
-					m_column_sizes.resize(col + 1, 0);
-				}
-				m_column_sizes[col] = abs(width);
-				SetColumnWidth(col, (width > 0) ? width : 0);
-			}
-		}
+	m_sort_orders.clear();
+	for (CListColumnStore::CSortingList::const_iterator it = decodedSortOrders.begin();
+		it != decodedSortOrders.end();
+		++it) {
+		SetSorting(it->first, it->second);
 	}
 
 	// Must have at least one sort-order specified
@@ -285,50 +147,6 @@ void CMuleListCtrl::LoadSettings()
 	// Re-enable sorting and resort the contents (if any).
 	m_sort_func = sortFunc;
 	SortList();
-}
-
-const wxString &CMuleListCtrl::GetColumnName(int index) const
-{
-	for (ColNameList::const_iterator it = m_column_names.begin(); it != m_column_names.end(); ++it) {
-		if (it->index == index) {
-			return it->name;
-		}
-	}
-	return EmptyString;
-}
-
-int CMuleListCtrl::GetColumnDefaultWidth(int index) const
-{
-	for (ColNameList::const_iterator it = m_column_names.begin(); it != m_column_names.end(); ++it) {
-		if (it->index == index) {
-			return it->defaultWidth;
-		}
-	}
-	return wxLIST_AUTOSIZE;
-}
-
-int CMuleListCtrl::GetColumnIndex(const wxString &name) const
-{
-	for (ColNameList::const_iterator it = m_column_names.begin(); it != m_column_names.end(); ++it) {
-		if (it->name == name) {
-			return it->index;
-		}
-	}
-	return -1;
-}
-
-int CMuleListCtrl::GetNewColumnIndex(int oldindex) const
-{
-	wxStringTokenizer oldcolumns(GetOldColumnOrder(), ",", wxTOKEN_RET_EMPTY_ALL);
-
-	while (oldcolumns.HasMoreTokens()) {
-		wxString name = oldcolumns.GetNextToken();
-		if (oldindex == 0) {
-			return GetColumnIndex(name);
-		}
-		--oldindex;
-	}
-	return -1;
 }
 
 long CMuleListCtrl::GetInsertPos(wxUIntPtr data)
@@ -493,15 +311,11 @@ void CMuleListCtrl::OnMenuSelected(wxCommandEvent &evt)
 {
 	unsigned int col = evt.GetId() - MP_LISTCOL_1;
 
-	if (col >= m_column_sizes.size()) {
-		m_column_sizes.resize(col + 1, 0);
-	}
-
 	if (GetColumnWidth(col) > COL_SIZE_MIN) {
-		m_column_sizes[col] = GetColumnWidth(col);
+		m_columnStore.SetCachedWidth(static_cast<int>(col), GetColumnWidth(static_cast<int>(col)));
 		SetColumnWidth(col, 0);
 	} else {
-		int oldsize = m_column_sizes[col];
+		int oldsize = m_columnStore.GetCachedWidth(static_cast<int>(col));
 		SetColumnWidth(col, (oldsize > 0) ? oldsize : GetColumnDefaultWidth(col));
 	}
 }
