@@ -127,6 +127,21 @@ std::vector<uint8_t> RandomBytes(size_t count)
 	return out;
 }
 
+void SecureWipe(uint8_t *p, size_t n)
+{
+	if (p != nullptr && n != 0) {
+		// Volatile-based, so the optimiser cannot drop it as a dead store the
+		// way it can a plain std::fill / memset on a buffer about to be freed.
+		CryptoPP::SecureWipeBuffer(p, n);
+	}
+}
+
+void SecureWipe(std::vector<uint8_t> &v)
+{
+	SecureWipe(v.data(), v.size());
+	v.clear();
+}
+
 std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &salt,
 	const std::vector<uint8_t> &info,
@@ -158,6 +173,109 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	return out;
 }
 
+bool GenerateX25519KeyPair(std::vector<uint8_t> &privOut, std::vector<uint8_t> &pubOut)
+{
+	privOut.clear();
+	pubOut.clear();
+	try {
+		CryptoPP::AutoSeededRandomPool rng;
+		CryptoPP::x25519 dh;
+		std::vector<uint8_t> priv(dh.PrivateKeyLength(), 0);
+		std::vector<uint8_t> pub(dh.PublicKeyLength(), 0);
+		dh.GeneratePrivateKey(rng, priv.data());
+		dh.GeneratePublicKey(rng, priv.data(), pub.data());
+		privOut.swap(priv);
+		pubOut.swap(pub);
+	} catch (const CryptoPP::Exception &) {
+		privOut.clear();
+		pubOut.clear();
+		return false;
+	}
+	return true;
+}
+
+bool X25519Agree(const std::vector<uint8_t> &priv,
+	const std::vector<uint8_t> &peerPub,
+	std::vector<uint8_t> &sharedOut)
+{
+	sharedOut.clear();
+	if (priv.size() != X25519_KEY_LEN || peerPub.size() != X25519_KEY_LEN) {
+		return false;
+	}
+	try {
+		CryptoPP::x25519 dh;
+		std::vector<uint8_t> shared(dh.AgreedValueLength(), 0);
+		// validateOtherPublicKey: reject the low-order points that force a
+		// known shared secret regardless of our private key.
+		if (!dh.Agree(shared.data(), priv.data(), peerPub.data(), true)) {
+			return false;
+		}
+		// Belt and braces on top of that validation: an all-zero secret would
+		// key every such session identically, so refuse it outright rather
+		// than trust one library's definition of a degenerate point.
+		uint8_t acc = 0;
+		for (const uint8_t b : shared) {
+			acc = (uint8_t)(acc | b);
+		}
+		if (acc == 0) {
+			return false;
+		}
+		sharedOut.swap(shared);
+	} catch (const CryptoPP::Exception &) {
+		sharedOut.clear();
+		return false;
+	}
+	return true;
+}
+
+std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
+	uint8_t chosenCipher,
+	const std::vector<uint8_t> &clientNonce,
+	const std::vector<uint8_t> &serverNonce,
+	const std::vector<uint8_t> &clientPub,
+	const std::vector<uint8_t> &serverPub)
+{
+	std::vector<uint8_t> out;
+	out.reserve(2 + offeredCiphers.size() + clientNonce.size() + serverNonce.size() + clientPub.size() +
+		    serverPub.size());
+	// Truncation here would be a silent mismatch rather than a failure, so cap
+	// the list instead: no build offers anything close to 255 ciphers. The
+	// count and the bytes must come from one value, or a list longer than the
+	// cap would announce one length and carry another.
+	const size_t cipherCount = std::min<size_t>(offeredCiphers.size(), 255);
+	out.push_back((uint8_t)cipherCount);
+	out.insert(out.end(), offeredCiphers.begin(), offeredCiphers.begin() + (std::ptrdiff_t)cipherCount);
+	out.push_back(chosenCipher);
+	out.insert(out.end(), clientNonce.begin(), clientNonce.end());
+	out.insert(out.end(), serverNonce.begin(), serverNonce.end());
+	out.insert(out.end(), clientPub.begin(), clientPub.end());
+	out.insert(out.end(), serverPub.begin(), serverPub.end());
+	return out;
+}
+
+std::vector<uint8_t> ConfirmTag(
+	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label)
+{
+	const size_t labelLen = label ? strlen(label) : 0;
+	const std::vector<uint8_t> info((const uint8_t *)label, (const uint8_t *)label + labelLen);
+	// Credential as keying material, transcript as salt: extract-then-expand
+	// over the transcript is a MAC of it under the credential, which is all a
+	// confirmation needs and avoids introducing a second primitive.
+	return HkdfSha256(secret, transcript, info, CONFIRM_TAG_LEN);
+}
+
+bool ConstantTimeEquals(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b)
+{
+	if (a.size() != b.size() || a.empty()) {
+		return false;
+	}
+	uint8_t diff = 0;
+	for (size_t i = 0; i < a.size(); ++i) {
+		diff = (uint8_t)(diff | (a[i] ^ b[i]));
+	}
+	return diff == 0;
+}
+
 /// The in-flight cipher objects, one per direction and per packet.
 struct Session::StreamState
 {
@@ -170,7 +288,15 @@ Session::Session()
 {
 }
 
-Session::~Session() = default;
+Session::~Session()
+{
+	// A defaulted destructor would free the key vectors without overwriting
+	// them; wipe the live key material first.
+	SecureWipe(m_txKey);
+	SecureWipe(m_rxKey);
+	SecureWipe(m_txPrefix, sizeof(m_txPrefix));
+	SecureWipe(m_rxPrefix, sizeof(m_rxPrefix));
+}
 
 bool Session::Init(uint8_t cipher,
 	const std::vector<uint8_t> &ikm,
@@ -200,7 +326,7 @@ bool Session::Init(uint8_t cipher,
 	info.insert(info.end(), transcript.begin(), transcript.end());
 
 	const size_t need = keyLen * 2 + 8; // two keys + two 4-byte nonce prefixes
-	const std::vector<uint8_t> okm = HkdfSha256(ikm, salt, info, need);
+	std::vector<uint8_t> okm = HkdfSha256(ikm, salt, info, need);
 	if (okm.size() != need) {
 		return false;
 	}
@@ -224,6 +350,10 @@ bool Session::Init(uint8_t cipher,
 		std::memcpy(m_rxPrefix, s2cPrefix, sizeof(m_rxPrefix));
 	}
 
+	// The directional keys and prefixes are copied out above; the buffer that
+	// briefly held both, plus the caller's ikm copy, is no longer needed.
+	SecureWipe(okm);
+
 	m_cipher = cipher;
 	m_txCounter = 0;
 	m_rxCounter = 0;
@@ -235,10 +365,10 @@ void Session::Reset()
 {
 	m_active = false;
 	m_cipher = Cipher_None;
-	m_txKey.clear();
-	m_rxKey.clear();
-	std::memset(m_txPrefix, 0, sizeof(m_txPrefix));
-	std::memset(m_rxPrefix, 0, sizeof(m_rxPrefix));
+	SecureWipe(m_txKey);
+	SecureWipe(m_rxKey);
+	SecureWipe(m_txPrefix, sizeof(m_txPrefix));
+	SecureWipe(m_rxPrefix, sizeof(m_rxPrefix));
 	m_txCounter = 0;
 	m_rxCounter = 0;
 	m_stream->sealer.reset();

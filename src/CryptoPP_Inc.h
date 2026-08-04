@@ -79,6 +79,7 @@
 // always compiled in. The EC layer still *negotiates* it, because that is about
 // what the peer can do, not what this build has.
 #include CRYPTO_HEADER(chachapoly.h)
+#include CRYPTO_HEADER(xed25519.h)
 #endif
 
 #if defined(__clang__)

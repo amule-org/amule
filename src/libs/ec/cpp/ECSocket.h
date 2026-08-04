@@ -116,7 +116,18 @@ private:
 	bool m_crypt_enabled;
 	bool m_crypt_enable_after_write;
 
+	// Whether the packet ReadPacket last returned arrived sealed. The app
+	// dispatch uses it to reject a cleartext packet injected into a session
+	// that negotiated encryption; see CECServerSocket::OnPacketReceived.
+	bool m_last_rx_encrypted;
+
 protected:
+	// Encryption state for the app dispatch's post-handshake checks:
+	// IsCryptReady() is true once keys exist, i.e. the session negotiated
+	// AEAD; WasLastPacketEncrypted() reports how the last packet arrived.
+	bool IsCryptReady() const { return m_crypt_ready; }
+	bool WasLastPacketEncrypted() const { return m_last_rx_encrypted; }
+
 	uint32_t m_my_flags;
 	bool m_haveNotificationSupport;
 
