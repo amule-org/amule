@@ -25,7 +25,11 @@
 
 #include "SharedFilesCtrl.h" // Interface declarations
 
+#include <wx/file.h>    // Needed for wxFile
+#include <wx/filedlg.h> // Needed for wxFileDialog
+
 #include <common/MenuIDs.h>
+#include <common/StringFunctions.h> // Needed for unicode2UTF8
 
 #include "muuli_wdr.h"        // Needed for ID_SHFILELIST
 #include "SharedFilesWnd.h"   // Needed for CSharedFilesWnd
@@ -61,6 +65,7 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualListCtrl)
 
 	EVT_MENU(MP_CMT, CSharedFilesCtrl::OnEditComment)
 	EVT_MENU(MP_ADDCOLLECTION, CSharedFilesCtrl::OnAddCollection)
+	EVT_MENU(MP_EXPORTCOLLECTION, CSharedFilesCtrl::OnExportCollection)
 	EVT_MENU(MP_GETMAGNETLINK, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_GETED2KLINK, CSharedFilesCtrl::OnCreateURI)
 	EVT_MENU(MP_GETSOURCEED2KLINK, CSharedFilesCtrl::OnCreateURI)
@@ -185,6 +190,8 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(MP_GETAICHED2KLINK, _("Copy eD2k link to clipboard (&AICH info)"));
 		m_menu->Append(MP_GETAICHED2KLINKSRC, _("Copy eD2k link to clipboard (&AICH info + Source)"));
 		m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
+		m_menu->AppendSeparator();
+		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
@@ -468,10 +475,47 @@ void CSharedFilesCtrl::OnSetPriorityAuto(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
+wxString CSharedFilesCtrl::LinkForFile(const CKnownFile *file, int menuId) const
+{
+	switch (menuId) {
+	case MP_GETMAGNETLINK:
+		return theApp->CreateMagnetLink(file);
+	case MP_GETSOURCEED2KLINK:
+		return theApp->CreateED2kLink(file, true);
+	case MP_GETCRYPTSOURCEDED2KLINK:
+		return theApp->CreateED2kLink(file, true, false, true);
+	case MP_GETHOSTNAMESOURCEED2KLINK:
+		return theApp->CreateED2kLink(file, true, true);
+	case MP_GETHOSTNAMECRYPTSOURCEED2KLINK:
+		return theApp->CreateED2kLink(file, true, true, true);
+	case MP_GETAICHED2KLINK:
+		return theApp->CreateED2kLink(file, false, false, false, true);
+	case MP_GETAICHED2KLINKSRC:
+		return theApp->CreateED2kLink(file, true, false, false, true);
+	default:
+		// MP_GETED2KLINK, and what the collection export asks for.
+		return theApp->CreateED2kLink(file);
+	}
+}
+
+wxString CSharedFilesCtrl::SelectedLinks(int menuId) const
+{
+	wxString links;
+
+	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	while (index != -1) {
+		const CKnownFile *file = FileAtRow(index);
+		if (file != nullptr) {
+			links += LinkForFile(file, menuId) + "\n";
+		}
+		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	}
+
+	return links;
+}
+
 void CSharedFilesCtrl::OnCreateURI(wxCommandEvent &event)
 {
-	wxString URIs;
-
 	if (event.GetId() == MP_GETSOURCEED2KLINK || event.GetId() == MP_GETCRYPTSOURCEDED2KLINK) {
 		if (!((theApp->IsConnectedED2K() && !theApp->serverconnect->IsLowID()) ||
 			    (theApp->IsConnectedKad() && !theApp->IsFirewalledKad()))) {
@@ -483,44 +527,87 @@ void CSharedFilesCtrl::OnCreateURI(wxCommandEvent &event)
 		}
 	}
 
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CKnownFile *file = FileAtRow(index);
-
-		switch (event.GetId()) {
-		case MP_GETMAGNETLINK:
-			URIs += theApp->CreateMagnetLink(file) + "\n";
-			break;
-		case MP_GETED2KLINK:
-			URIs += theApp->CreateED2kLink(file) + "\n";
-			break;
-		case MP_GETSOURCEED2KLINK:
-			URIs += theApp->CreateED2kLink(file, true) + "\n";
-			break;
-		case MP_GETCRYPTSOURCEDED2KLINK:
-			URIs += theApp->CreateED2kLink(file, true, false, true) + "\n";
-			break;
-		case MP_GETHOSTNAMESOURCEED2KLINK:
-			URIs += theApp->CreateED2kLink(file, true, true) + "\n";
-			break;
-		case MP_GETHOSTNAMECRYPTSOURCEED2KLINK:
-			URIs += theApp->CreateED2kLink(file, true, true, true) + "\n";
-			break;
-		case MP_GETAICHED2KLINK:
-			URIs += theApp->CreateED2kLink(file, false, false, false, true) + "\n";
-			break;
-		case MP_GETAICHED2KLINKSRC:
-			URIs += theApp->CreateED2kLink(file, true, false, false, true) + "\n";
-			break;
-		}
-
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	}
-
+	wxString URIs = SelectedLinks(event.GetId());
 	if (!URIs.IsEmpty()) {
 		theApp->CopyTextToClipboard(URIs.RemoveLast());
 	}
+}
+
+void CSharedFilesCtrl::OnExportCollection(wxCommandEvent &WXUNUSED(evt))
+{
+	const wxString caption = _("Export to emulecollection");
+
+	// Same links the "Copy eD2k link to clipboard" item produces, for the
+	// same selection: a text collection is a plain list of them, which is
+	// what CMuleCollection and eMule both read back.
+	const wxString links = SelectedLinks(MP_GETED2KLINK);
+	if (links.IsEmpty()) {
+		wxMessageBox(_("No files are selected to export."), caption, wxOK | wxICON_INFORMATION, this);
+		return;
+	}
+
+	// Timestamped so repeated exports sit side by side instead of one
+	// silently replacing the last. Sortable order, no characters that would
+	// need escaping on any of the filesystems we support.
+	const wxString defaultName =
+		CFormat("amule-shared-%s.emulecollection") % wxDateTime::Now().Format("%Y%m%d-%H%M%S");
+
+	wxString wildcard = _("eMule collections (*.emulecollection)");
+	wildcard += "|*.emulecollection|";
+	wildcard += _("All files");
+	wildcard += "|*";
+	wxFileDialog dialog(
+		this, caption, wxEmptyString, defaultName, wildcard, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() != wxID_OK) {
+		return;
+	}
+
+	wxString path = dialog.GetPath();
+	if (path.IsEmpty()) {
+		return;
+	}
+	// Append the extension when the user picked the collection filter and left
+	// it off. wxFD_OVERWRITE_PROMPT judged the name as typed, so ask again
+	// here: without this, saving as "backup" over an existing
+	// "backup.emulecollection" would overwrite it without a word.
+	if (dialog.GetFilterIndex() == 0 && !path.Lower().EndsWith(".emulecollection")) {
+		path += ".emulecollection";
+		if (wxFileExists(path) &&
+			wxMessageBox(CFormat(_("'%s' already exists. Overwrite it?")) % path,
+				caption,
+				wxYES_NO | wxICON_QUESTION,
+				this) != wxYES) {
+			return;
+		}
+	}
+
+	// UTF-8 and no byte-order mark: aMule skips a BOM when reading a text
+	// collection, but eMule reads one through CStdioFile in text mode, where
+	// the mark would land in the first line and cost that entry.
+	const wxCharBuffer utf8(unicode2UTF8(links));
+	wxFile out;
+	if (!out.Create(path, true) || out.Write(utf8.data(), utf8.length()) != utf8.length() ||
+		!out.Close()) {
+		// A failure part-way through leaves a truncated collection behind;
+		// drop it rather than let it look like a good export.
+		out.Close();
+		wxRemoveFile(path);
+		wxMessageBox(CFormat(_("Failed to write the collection file '%s'.")) % path,
+			caption,
+			wxOK | wxICON_ERROR,
+			this);
+		return;
+	}
+
+	// One string for the log line and the confirmation both, so the export
+	// costs translators one plural form rather than two near-identical ones.
+	const unsigned written = static_cast<unsigned>(links.Freq('\n'));
+	const wxString message = CFormat(wxPLURAL("Exported %u shared file to '%s'.",
+					 "Exported %u shared files to '%s'.",
+					 static_cast<int>(written))) %
+				 written % path;
+	AddLogLineC(message);
+	wxMessageBox(message, caption, wxOK | wxICON_INFORMATION, this);
 }
 
 void CSharedFilesCtrl::OnEditComment(wxCommandEvent &WXUNUSED(event))
