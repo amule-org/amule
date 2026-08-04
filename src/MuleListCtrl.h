@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <list>
+#include "ListColumnStore.h" // Needed for CListColumnStore, IColumnWidthProvider
 #include "Types.h"
 
 // Palette selector for custom-drawn text in list controls. Reads the
@@ -64,7 +65,7 @@ static inline bool IsListBackgroundDark(const wxWindow *w)
  *  - Loading and saving of column properties.
  *  - Selection of items by typing an initial part of the text (TTS).
  */
-class CMuleListCtrl : public MuleExtern::wxGenericListCtrl
+class CMuleListCtrl : public MuleExtern::wxGenericListCtrl, public IColumnWidthProvider
 {
 public:
 	/**
@@ -125,7 +126,7 @@ public:
 	 * Lets callers persist a list's layout without tripping the unnamed-list
 	 * assertion inside SaveSettings().
 	 */
-	bool HasStoredTableName() const { return !m_name.IsEmpty(); }
+	bool HasStoredTableName() const { return m_columnStore.HasTableName(); }
 
 	/**
 	 * Loads column settings.
@@ -236,7 +237,7 @@ public:
 	 */
 	void ClearAll()
 	{
-		m_column_names.clear();
+		m_columnStore.ClearColumns();
 		MuleExtern::wxGenericListCtrl::ClearAll();
 	}
 
@@ -255,6 +256,21 @@ public:
 	 * Indicates if we're in the process of sorting.
 	 */
 	bool IsSorting() const { return m_isSorting; }
+
+	// IColumnWidthProvider -- explicit forwarding overrides rather than
+	// relying on wxGenericListCtrl's identically-signatured methods to
+	// satisfy the interface implicitly: with two unrelated base classes,
+	// the compiler won't link one base's definition to the other's pure
+	// virtual on its own.
+	int GetColumnCount() const override { return MuleExtern::wxGenericListCtrl::GetColumnCount(); }
+	int GetColumnWidth(int col) const override
+	{
+		return MuleExtern::wxGenericListCtrl::GetColumnWidth(col);
+	}
+	bool SetColumnWidth(int col, int width) override
+	{
+		return MuleExtern::wxGenericListCtrl::SetColumnWidth(col, width);
+	}
 
 protected:
 	// True while sorting. Protected so a virtual-mode subclass that overrides
@@ -306,7 +322,7 @@ protected:
 	 * make use of the LoadSettings/SaveSettings functions. CMuleListCtrl
 	 * uses the name specified in this command to create unique keynames.
 	 */
-	void SetTableName(const wxString &name) { m_name = name; }
+	void SetTableName(const wxString &name) { m_columnStore.SetTableName(name); }
 
 	/**
 	 * Return old column order.
@@ -405,7 +421,7 @@ protected:
 	 *
 	 * @return The column index, or -1 in case the name was invalid.
 	 */
-	int GetColumnIndex(const wxString &name) const;
+	int GetColumnIndex(const wxString &name) const { return m_columnStore.GetColumnIndex(name); }
 
 	/**
 	 * Compares two items using the current (multi-column) sort sequence,
@@ -430,8 +446,10 @@ private:
 	 */
 	void SetColumnImage(unsigned col, int image);
 
-	//! The name of the table. Used to load/save settings.
-	wxString m_name;
+	//! Owns column persistence (names, width cache, wxConfig
+	//! serialization) independently of this being a wxListCtrl -- see
+	//! ListColumnStore.h.
+	CListColumnStore m_columnStore;
 
 	//! The sorter function needed by wxListCtrl.
 	MuleListCtrlCompare m_sort_func;
@@ -476,16 +494,6 @@ private:
 	CSortingList m_sort_orders;
 
 	/**
-	 * Get the column name by index.
-	 *
-	 * @param[in] column Index of the column whose name we're looking for.
-	 *
-	 * @return The column name or an empty string if index is invalid
-	 * (out of range), or the column name hasn't been set.
-	 */
-	const wxString &GetColumnName(int column) const;
-
-	/**
 	 * Get the column default width by index.
 	 *
 	 * @param[in] column Index of the column whose name we're looking for.
@@ -493,52 +501,7 @@ private:
 	 * @return The column default width or wx default width if index is invalid
 	 * (out of range), or the column name hasn't been set.
 	 */
-	int GetColumnDefaultWidth(int column) const;
-
-	/**
-	 * Find out the new index of the column by the old index.
-	 *
-	 * @param[in] oldindex Old column index which we want to turn into a
-	 * new index.
-	 *
-	 * @return The new index of the column, or -1 if an error occurred.
-	 */
-	int GetNewColumnIndex(int oldindex) const;
-
-	/**
-	 * Parses old config entries.
-	 *
-	 * @param[in] sortOrders	Old sort orders line.
-	 * @param[in] columnWidths	Old column widths line.
-	 */
-	void ParseOldConfigEntries(const wxString &sortOrders, const wxString &columnWidths);
-
-	/// This class contains a column index, its default width and its name.
-	class ColNameEntry
-	{
-	public:
-		int index;
-		int defaultWidth;
-		wxString name;
-		ColNameEntry(int _index, int _defaultWidth, const wxString &_name)
-		: index(_index)
-		, defaultWidth(_defaultWidth)
-		, name(_name)
-		{
-		}
-	};
-
-	/// This list contains the columns' names.
-	typedef std::list<ColNameEntry> ColNameList;
-
-	/// Container for column names, sorted by column index.
-	ColNameList m_column_names;
-
-	/// This vector contains a cache of the columns' sizes.
-	typedef std::vector<int> ColSizeVector;
-
-	/// Container for column sizes cache.
-	ColSizeVector m_column_sizes;
+	int GetColumnDefaultWidth(int column) const { return m_columnStore.GetColumnDefaultWidth(column); }
 
 	wxDECLARE_EVENT_TABLE();
 };
