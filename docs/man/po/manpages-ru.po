@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-04 09:28+0000\n"
+"PO-Revision-Date: 2026-08-04 15:48+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -697,7 +697,7 @@ msgstr "Задаёт параметры IP-фильтра."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows upload/download queue, servers list or shared files list."
-msgstr "Выводит очередь скачивания/отдачи, список серверов или опубликованные файлы."
+msgstr "Выводит очередь отдачи/скачивания, список серверов или опубликованных файлов."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -747,7 +747,7 @@ msgstr "Пример: `statistics 5' покажет только 5 наибол�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show connection status, current up/download speeds, etc."
-msgstr "Вывести статус соединения, скорости, итд."
+msgstr "Показывает состояние подключения, текущую скорость скачивания и т.д."
 
 #. type: SS
 #: amulecmd.1.in amuleweb.1.in
