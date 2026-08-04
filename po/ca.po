@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:15+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -37,7 +37,7 @@ msgstr "Control remot de l'aMule "
 msgid "Snapshot:"
 msgstr "Versió:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1514,6 +1514,18 @@ msgstr "Ja s'està baixant"
 msgid "Unknown or bad tempfile format."
 msgstr "Format de fitxer temporal desconegut o defectuós."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Part"
@@ -2594,6 +2606,11 @@ msgstr "No"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Sí"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "No s'ha pogut obrir %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6778,6 +6795,15 @@ msgstr "Mitjana de fitxers:"
 msgid "Not running"
 msgstr "Aturat"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6929,7 +6955,7 @@ msgstr "Necessiteu ID Alta per crear un enllaç font vàlid"
 msgid "Shared Files (%i)"
 msgstr "Fitxers compartits (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Mida total dels fitxers compartits: %s"
@@ -7842,6 +7868,11 @@ msgstr "Elimina la categoria"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "S'ha demanat un conjunt de resums d'un fitxer desconegut: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Selecciona qui pot veure la llista de fitxers compartits."
 
 #: src/UploadQueue.cpp
 #, c-format

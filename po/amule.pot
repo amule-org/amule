@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,7 +30,7 @@ msgstr ""
 msgid "Snapshot:"
 msgstr ""
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1475,6 +1475,18 @@ msgstr ""
 msgid "Unknown or bad tempfile format."
 msgstr ""
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr ""
@@ -2512,6 +2524,11 @@ msgstr ""
 
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
+msgstr ""
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr ""
 
 #: src/HTTPDownload.cpp
@@ -6597,6 +6614,15 @@ msgstr ""
 msgid "Not running"
 msgstr ""
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6748,7 +6774,7 @@ msgstr ""
 msgid "Shared Files (%i)"
 msgstr ""
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr ""
@@ -7616,6 +7642,11 @@ msgstr ""
 #: src/UploadClient.cpp
 #, c-format
 msgid "Hashset requested for unknown file: %s"
+msgstr ""
+
+#: src/UploadDiskIOThread.cpp
+#, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
 msgstr ""
 
 #: src/UploadQueue.cpp

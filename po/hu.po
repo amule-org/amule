@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:19+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -32,7 +32,7 @@ msgstr "aMule távoli vezérlő "
 msgid "Snapshot:"
 msgstr "Pillanatkép:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1511,6 +1511,18 @@ msgstr "Letöltés alatt"
 msgid "Unknown or bad tempfile format."
 msgstr "Ismeretlen vagy rossz ideiglenes-fájl formátum."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Rész"
@@ -2586,6 +2598,11 @@ msgstr "Nem"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Igen"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "A(z) %s (%s) megnyitása sikertelen"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6750,6 +6767,15 @@ msgstr "Átlagos fájlszám:"
 msgid "Not running"
 msgstr "nem fut"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6898,7 +6924,7 @@ msgstr "Érvényes forráshivatkozáshoz magas azonosító (HighID) szükséges"
 msgid "Shared Files (%i)"
 msgstr "Megosztott fájlok (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Megosztott fájlok teljes mérete: %s"
@@ -7813,6 +7839,11 @@ msgstr "Kategória törlése"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Hash-készlet kérés az ismeretlen %s fájlhoz"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Válaszd ki, hogy kik kérdezhetik le megosztott fájlaid listáját."
 
 #: src/UploadQueue.cpp
 #, c-format

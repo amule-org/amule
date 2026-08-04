@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:17+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -35,7 +35,7 @@ msgstr "aMule urruneko kontrola "
 msgid "Snapshot:"
 msgstr "Argazkia:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1516,6 +1516,18 @@ msgstr "Dagoeneko deskargatzen"
 msgid "Unknown or bad tempfile format."
 msgstr "Aldiroko fitxategia formatu ezezagun edo okerrekoa."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Zatia"
@@ -2596,6 +2608,11 @@ msgstr "Ez"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Bai"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "Huts egin du irekitzerakoan: %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6783,6 +6800,15 @@ msgstr "Bataz besteko fitxategiak:"
 msgid "Not running"
 msgstr "Geldirik"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6935,7 +6961,7 @@ msgstr "ID altua behar duzu baliozko jatorri lotura bat sortzeko"
 msgid "Shared Files (%i)"
 msgstr "Partekatutako fitxategiak (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Guztira partekatutako fitxategi tamaina: %s"
@@ -7845,6 +7871,11 @@ msgstr "Ezabatu kategoria"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Egiaztapena eskaturik fitxategi ezezagunarentzat: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Hautatu zure partekatutako fitxategiak nork ikus ditzakeen."
 
 #: src/UploadQueue.cpp
 #, c-format

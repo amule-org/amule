@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:20+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -35,7 +35,7 @@ msgstr "어뮬 원격제어"
 msgid "Snapshot:"
 msgstr "스냅삿"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1523,6 +1523,18 @@ msgstr "이미 내려받는중"
 msgid "Unknown or bad tempfile format."
 msgstr "알수없거나 나쁜 임시 파일 형식입니다."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr ""
@@ -2611,6 +2623,11 @@ msgstr "아니오"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "예"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "%s(%s)을 열지 못했습니다."
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6825,6 +6842,15 @@ msgstr "평균 파일:"
 msgid "Not running"
 msgstr "동작되지 않음"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6984,7 +7010,7 @@ msgstr "유효한 자료 링크를 만들기 위해서 높은아이디가 필요
 msgid "Shared Files (%i)"
 msgstr "공유된 파일(%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "공유파일의 전체 크기: %s"
@@ -7904,6 +7930,11 @@ msgstr "분류 삭제"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "알수 없는 파일의 해시설정이 요청되었습니다: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "공유 파일 목록 보기를 요청할 수 있는 사람을 선택하세요."
 
 #: src/UploadQueue.cpp
 #, c-format

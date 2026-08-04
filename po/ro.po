@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-01 13:03+0200\n"
+"POT-Creation-Date: 2026-08-04 12:39+0200\n"
 "PO-Revision-Date: 2026-08-04 09:22+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -33,7 +33,7 @@ msgstr "control distant aMule"
 msgid "Snapshot:"
 msgstr "Variantă versiune:"
 
-#: src/AboutDialog.cpp
+#: src/AboutDialog.cpp src/SplashScreen.cpp
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
@@ -1520,6 +1520,18 @@ msgstr "Deja se descarcă"
 msgid "Unknown or bad tempfile format."
 msgstr "Format fișier temporar necunoscut sau greșit."
 
+#: src/DirectoryTreeCtrl.cpp
+msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot unshare inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Cannot modify inside a recursive share"
+msgstr ""
+
 #: src/DownloadListCtrl.cpp
 msgid "Part"
 msgstr "Parte"
@@ -2600,6 +2612,11 @@ msgstr "Nu"
 #: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
 msgid "Yes"
 msgstr "Da"
+
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to open MaxMindDB database '%s': %s"
+msgstr "A eșuat deschiderea %s (%s)"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -6803,6 +6820,15 @@ msgstr "Medie fișiere:"
 msgid "Not running"
 msgstr "Nu rulează"
 
+#: src/SharedDirWatcher.cpp
+#, c-format
+msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
+msgstr ""
+
+#: src/SharedDirWatcher.cpp
+msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
+msgstr ""
+
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
@@ -6957,7 +6983,7 @@ msgstr "Vă trebuie un HighID pentru a se crea o legătură sursă validă"
 msgid "Shared Files (%i)"
 msgstr "Fișiere partajate (%i)"
 
-#: src/SharedFilesCtrl.cpp src/Statistics.cpp
+#: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
 msgstr "Dimensiunea totală a fișierelor partajate: %s"
@@ -7870,6 +7896,11 @@ msgstr "Elimină categoria"
 #, c-format
 msgid "Hashset requested for unknown file: %s"
 msgstr "Indexare solicitată pentru fișierul necunoscut: %s"
+
+#: src/UploadDiskIOThread.cpp
+#, fuzzy, c-format
+msgid "Failed to open file (%s), removing from list of shared files."
+msgstr "Selectați cine poate solicita să vizualizeze o listă a fișierelor partajate."
 
 #: src/UploadQueue.cpp
 #, c-format
