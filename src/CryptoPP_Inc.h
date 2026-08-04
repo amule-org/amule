@@ -80,7 +80,21 @@
 // what the peer can do, not what this build has.
 #include CRYPTO_HEADER(chachapoly.h)
 #include CRYPTO_HEADER(xed25519.h)
+
+// check hardware support for AES
+// if both the client and the daemon have it, prefer AES over ChaCha20
+#include CRYPTO_HEADER(cpu.h)
+#if defined(CRYPTOPP_AESNI_AVAILABLE)
+#define HasHardwareAES() CryptoPP::HasAESNI()
+#elif defined(CRYPTOPP_ARM_AES_AVAILABLE)
+#define HasHardwareAES() CryptoPP::HasAES()
+#elif defined(CRYPTOPP_POWER8_AES_AVAILABLE)
+#define HasHardwareAES() CryptoPP::HasAES()
+#else
+#define HasHardwareAES() (false)
 #endif
+
+#endif /* CRYPTOPP_INC_NEED_AEAD */
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

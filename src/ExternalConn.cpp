@@ -703,20 +703,27 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	const uint8_t *offered = (const uint8_t *)offer->GetTagData();
 	const uint16_t offeredLen = offer->GetTagDataLen();
 
-	// Our list is in preference order, so take our first mutual entry rather
-	// than the client's -- the daemon decides what it would rather run.
-	const std::vector<uint8_t> ours = ECCrypt::SupportedCiphers();
-	for (size_t i = 0; i < ours.size() && m_aeadCipher == ECCrypt::Cipher_None; ++i) {
-		for (uint16_t j = 0; j < offeredLen; ++j) {
-			if (offered[j] == ours[i]) {
-				m_aeadCipher = ours[i];
-				break;
+	// the client prefers Cipher_ChaCha20_Poly1305, probably because it doesn't support
+	// hardware AES, let's make our client happy
+	if (offeredLen && offered[0] == ECCrypt::Cipher_ChaCha20_Poly1305 &&
+		ECCrypt::IsCipherSupported(ECCrypt::Cipher_ChaCha20_Poly1305))
+		m_aeadCipher = ECCrypt::Cipher_ChaCha20_Poly1305;
+	else {
+		// Our list is in preference order, so take our first mutual entry rather
+		// than the client's -- the daemon decides what it would rather run.
+		const std::vector<uint8_t> ours = ECCrypt::SupportedCiphers();
+		for (size_t i = 0; i < ours.size() && m_aeadCipher == ECCrypt::Cipher_None; ++i) {
+			for (uint16_t j = 0; j < offeredLen; ++j) {
+				if (offered[j] == ours[i]) {
+					m_aeadCipher = ours[i];
+					break;
+				}
 			}
 		}
-	}
-	if (m_aeadCipher == ECCrypt::Cipher_None) {
-		AddDebugLogLineN(logEC, "AEAD: no cipher in common with this client");
-		return;
+		if (m_aeadCipher == ECCrypt::Cipher_None) {
+			AddDebugLogLineN(logEC, "AEAD: no cipher in common with this client");
+			return;
+		}
 	}
 
 	m_aeadServerNonce = ECCrypt::RandomBytes(ECCrypt::NONCE_TAG_LEN);

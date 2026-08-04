@@ -90,9 +90,14 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 std::vector<uint8_t> SupportedCiphers()
 {
 	std::vector<uint8_t> out;
-	// Preferred first: the server picks the first entry the client also has.
-	out.push_back(Cipher_ChaCha20_Poly1305);
-	out.push_back(Cipher_AES128_GCM);
+	// Preferred cipher first, but the final choice is made by the server
+	if (HasHardwareAES()) {
+		out.push_back(Cipher_AES128_GCM);
+		out.push_back(Cipher_ChaCha20_Poly1305);
+	} else {
+		out.push_back(Cipher_ChaCha20_Poly1305);
+		out.push_back(Cipher_AES128_GCM);
+	}
 	return out;
 }
 

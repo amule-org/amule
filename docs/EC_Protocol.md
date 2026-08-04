@@ -144,10 +144,11 @@ The public key is not optional. A peer that offers `EC_TAG_CAN_AEAD` without one
 is malformed, not old — encryption and the key exchange shipped together — and
 the offer is refused rather than answered with a weaker derivation.
 
-| id | cipher |
-| -- | ------ |
-| `1` | AES-128-GCM (mandatory) |
-| `2` | ChaCha20-Poly1305 (optional; preferred where both sides have it) |
+| id | cipher | preferred |
+| -- | ------ | -- |
+| `1` | AES-128-GCM (mandatory) | when both sides have hardware support for AES |
+| `2` | ChaCha20-Poly1305 (optional) | when both sides have ChaCha20 and at least one lacks hardware support for AES |
+
 
 **Keys.** Both sides derive from the X25519 shared secret, and from nothing
 else. In particular *not* from the password: a key derived from something that
