@@ -608,11 +608,9 @@ wxSizer *sharedfilesBottomDlg(wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define ID_SHOW_CLIENTS_MODE 10325
 #define ID_BTNRELSHARED 10326
 #define ID_SHFILELIST 10327
-// Live text-filter box and collection-export button in the shared-files
-// header. Picked above the existing wxDesigner-generated range so a future
-// regeneration doesn't reuse the IDs.
+// Live text-filter box in the shared-files header. Picked above the existing
+// wxDesigner-generated range so a future regeneration doesn't reuse the ID.
 #define IDC_SHARED_FILTER 10486
-#define ID_BTNEXPORTCOLLECTION 10496
 wxSizer *sharedfilesTopDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_FRIENDLIST 10328

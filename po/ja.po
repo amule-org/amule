@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 15:11+0200\n"
 "PO-Revision-Date: 2026-08-04 09:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -5071,7 +5071,7 @@ msgstr "アクティブなアップロード数："
 msgid "Show Clients for"
 msgstr "クライアントを表示する"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 #, fuzzy
 msgid "All files"
 msgstr "共有ファイルを隠す"
@@ -6948,6 +6948,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "ED2kリンクをクリップボードにコピーする（&AICH インフォ）"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr ""
@@ -6955,6 +6959,35 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "有効なソースリンクを作るにはHighIDが必要です"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy
+msgid "Export to emulecollection"
+msgstr "完了中にエラー"
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr "ユーザ '%s' から共有ファイルを取得することができませんでした"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] "共有ファイルを再ロードする"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

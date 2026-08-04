@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 15:11+0200\n"
 "PO-Revision-Date: 2026-08-04 09:17+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -5073,7 +5073,7 @@ msgstr "Aktiiviset lähetykset"
 msgid "Show Clients for"
 msgstr "Näytä asiakkaat"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "All files"
 msgstr "Kaikki tiedostot"
 
@@ -6948,6 +6948,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopioi eD2k-linkki leikepöydälle (&AICH-tiedot)"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr ""
@@ -6955,6 +6959,36 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Tarvitset HighID:een luodaksesi voimassa olevan lähdelinkin"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy
+msgid "Export to emulecollection"
+msgstr "Virhe viimeistellessä"
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr "Jaettujen tiedostojen listaus käyttäjältä '%s' ei onnistunut"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] "Uudelleenlataa jaetut tiedostot"
+msgstr[1] "Uudelleenlataa jaetut tiedostot"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

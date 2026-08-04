@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 13:14+0200\n"
+"POT-Creation-Date: 2026-08-04 15:11+0200\n"
 "PO-Revision-Date: 2026-08-04 09:14+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -5003,7 +5003,7 @@ msgstr "رفع نشط :"
 msgid "Show Clients for"
 msgstr "منفذ العميل"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 #, fuzzy
 msgid "All files"
 msgstr "ملفات مشاركة"
@@ -6873,6 +6873,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "نسخ رابط ED2k للحافظة"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr ""
@@ -6880,6 +6884,35 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "يجب ان تكون ذا هوية مرتفعة لتتمكن من انشاء رابط مصدر"
+
+#: src/SharedFilesCtrl.cpp
+msgid "Export to emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
