@@ -26,9 +26,9 @@
 #ifndef SEARCHLISTCTRL_H
 #define SEARCHLISTCTRL_H
 
-#include <wx/colour.h>   // Needed for wxColour
-#include <wx/dataview.h> // Needed for wxDataViewCtrl
-#include <wx/regex.h>    // Needed for wxRegExp
+#include <wx/colour.h>        // Needed for wxColour
+#include "MuleDataViewCtrl.h" // Needed for CMuleDataViewCtrl
+#include <wx/regex.h>         // Needed for wxRegExp
 
 #include "ListColumnStore.h" // Needed for CListColumnStore, IColumnWidthProvider
 #include "Types.h"           // Needed for uint32
@@ -61,7 +61,7 @@ class CSearchListModel;
  * (IsExpanded()), unlike the old hand-drawn tree which faked it with
  * CSearchFile::ShowChildren()/SetShowChildren() plus manual row insertion.
  */
-class CSearchListCtrl : public wxDataViewCtrl
+class CSearchListCtrl : public CMuleDataViewCtrl
 {
 public:
 	/**
@@ -202,78 +202,26 @@ public:
 	int CompareFiles(const CSearchFile *f1, const CSearchFile *f2) const;
 
 protected:
-	/**
-	 * Adapts this control to IColumnWidthProvider for CListColumnStore.
-	 * A separate object rather than multiple inheritance (as
-	 * CMuleListCtrl does): wxDataViewCtrl::GetColumnCount() is itself
-	 * virtual and returns unsigned int, which isn't override-compatible
-	 * with IColumnWidthProvider::GetColumnCount()'s int return -- unlike
-	 * wxGenericListCtrl's (non-virtual) GetColumnCount(), there's no
-	 * name-hiding trick available here.
-	 */
-	class ColumnWidthAdapter : public IColumnWidthProvider
-	{
-	public:
-		explicit ColumnWidthAdapter(CSearchListCtrl *ctrl)
-		: m_ctrl(ctrl)
-		{
-		}
-		int GetColumnCount() const override { return static_cast<int>(m_ctrl->RealColumnCount()); }
-		// A hidden column reads as zero-width so CListColumnStore persists
-		// the hidden state through the width it already saves, with no
-		// second mechanism.
-		int GetColumnWidth(int col) const override
-		{
-			if (m_ctrl->IsColumnHidden(col)) {
-				return 0;
-			}
-			const int width = m_ctrl->GetColumn(col)->GetWidth();
-			if (width > 0) {
-				return width;
-			}
-			// A visible column should never report zero -- the spacer
-			// appended on macOS exists so the trailing-column sizing lands
-			// there instead. This is the backstop if it ever does anyway:
-			// CListColumnStore reads a width <= 0 as hidden and persists it
-			// negative, so a stray zero would hide a real column on the
-			// next launch, then do the same to whichever column became last
-			// -- one lost per restart, which is what this used to do.
-			const int cached = m_ctrl->m_columnStore.GetCachedWidth(col);
-			return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
-		}
-		bool SetColumnWidth(int col, int width) override
-		{
-			m_ctrl->SetColumnHidden(col, width <= COL_SIZE_MIN, width);
-			return true;
-		}
-
-	private:
-		CSearchListCtrl *m_ctrl;
-	};
-	ColumnWidthAdapter m_widthAdapter;
-
-	//! Per-column hidden state, indexed like the control's columns.
-	std::vector<bool> m_columnHidden;
-
-	typedef std::pair<unsigned, unsigned> CColPair;
-	typedef std::list<CColPair> CSortingList;
-
-	//! Sort chain: front() is the primary sort column/order, the rest are
-	//! secondary/tertiary tie-breakers from earlier column clicks. Order
-	//! values reuse CMuleListCtrl::SORT_DES / SORT_ALT bit values so the
-	//! persisted config stays wire-compatible (see ListColumnStore.cpp).
-	CSortingList m_sort_orders;
-
 	//! Single-column comparison (no chain, no direction), mirroring the old
 	//! CSearchListCtrl::SortProc switch minus the parent-recursion hack
 	//! (wxDataViewModel::Compare() is only ever asked to order true
 	//! siblings, so grouping is handled by the tree structure itself).
-	int CompareByColumn(
+	int CompareFilesByColumn(
 		const CSearchFile *f1, const CSearchFile *f2, unsigned column, bool alt, int modifier) const;
 
-	//! True if alternate sort criteria (secondary tie-break swap) are
-	//! offered for this column on repeated clicks.
-	bool AltSortAllowed(unsigned column) const;
+	// --- CMuleDataViewCtrl hooks ---
+	int CompareByColumn(const wxDataViewItem &item1,
+		const wxDataViewItem &item2,
+		unsigned column,
+		bool alt,
+		int modifier) const override;
+	bool AltSortAllowed(unsigned column) const override;
+	void GetDisplayOrder(wxDataViewItemArray &ordered) const override;
+	wxString GetRowLabel(const wxDataViewItem &item) const override;
+	wxString GetOldColumnOrder() const override;
+	void OnIdleHook() override;
+	void OnColumnWidthsChanged() override;
+	void OnSortingChanged() override;
 
 	/**
 	 * Returns true if the filename is filtered (i.e. passes the filter and
@@ -316,17 +264,6 @@ protected:
 	wxString m_browseName;
 	uint32 m_browseStatus;
 
-	//! Column persistence (widths, sort order) -- CSearchListCtrl no longer
-	//! inherits CMuleListCtrl (deliberately self-contained, see #180
-	//! discussion), so it owns this directly instead of getting it for free.
-	CListColumnStore m_columnStore;
-	void LoadColumnSettings();
-	void SaveColumnSettings();
-	//! Applies `order` to `column`, moving it to the front of the sort
-	//! chain (mirrors CMuleListCtrl::SetSorting's chain bookkeeping), sets
-	//! the native column header sort indicator, and re-sorts.
-	void ApplySorting(unsigned column, unsigned order);
-
 	//! The current filter reg-exp.
 	wxRegEx m_filter;
 	//! The text from which the filter is compiled.
@@ -342,12 +279,10 @@ protected:
 	//! no portable wxDataViewCtrl "column resized" event to hook directly)
 	//! so it can be propagated to the other open search tabs, same as the
 	//! old EVT_LIST_COL_END_DRAG-driven sync.
-	std::vector<int> m_lastKnownWidths;
 	void OnIdle(wxIdleEvent &event);
 
 	CSearchListModel *m_model;
 
-	void OnColumnHeaderClick(wxDataViewEvent &event);
 	void OnRightClick(wxDataViewEvent &event);
 	void OnItemActivated(wxDataViewEvent &event);
 	void OnSelectionChanged(wxDataViewEvent &event);
@@ -364,82 +299,19 @@ protected:
 	 * records it in m_columnHidden; the persisted form stays a width of
 	 * zero, which CListColumnStore already understands.
 	 */
-	void OnColumnHeaderRightClick(wxDataViewEvent &event);
-	void OnColumnMenuSelected(wxCommandEvent &evt);
 
 	//! Keeps the group expander on the leftmost visible column.
-	void UpdateExpanderColumn();
 
 	/**
 	 * Columns the user owns, excluding the macOS spacer, which must stay
 	 * out of the header menu, the persisted widths and the cross-tab sync.
 	 */
-	unsigned RealColumnCount() const;
 
 public:
-	/**
-	 * Whether a column is hidden, tracked here rather than derived from the
-	 * control.
-	 *
-	 * A hidden wxDataViewColumn keeps reporting its old width, so width
-	 * alone can't answer the question, and the width is what
-	 * CListColumnStore persists (as a negative entry carrying the size to
-	 * restore). Keeping the state here means the header menu, the
-	 * expander's leftmost-visible search, the persisted width and the
-	 * cross-tab sync all read one answer that this class controls, instead
-	 * of each re-deriving it.
-	 */
-	bool IsColumnHidden(int col) const;
-	//! Hide or show a column; width is the one to restore when showing.
-	void SetColumnHidden(int col, bool hidden, int width);
 
 private:
-	/**
-	 * Type-to-select, reimplemented for wxDataViewCtrl.
-	 *
-	 * CMuleListCtrl::OnChar() gave every list this behaviour: typing jumps
-	 * the selection to the first row whose name starts with what was typed,
-	 * accumulating keystrokes until a short pause resets it. None of the
-	 * wxDataViewCtrl backends provide it -- GTK pops up its own interactive
-	 * search box instead, macOS and MSW do nothing -- so it is implemented
-	 * here to keep the three ports behaving alike.
-	 */
-	void OnChar(wxKeyEvent &evt);
-
-	/**
-	 * Navigation keys. Only shifted page-up/down and home/end on macOS are
-	 * handled (see PageExtendSelection); everything else goes to the
-	 * backend.
-	 */
-	void OnKeyDown(wxKeyEvent &evt);
-
 	//! Top-level rows in the order they are displayed under the current sort.
 	void BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const;
-
-#ifdef __WXOSX__
-	/**
-	 * Extends the selection by a page, or to the start/end of the list.
-	 * GTK and MSW get this from their backends; NSOutlineView moves the
-	 * view without touching the selection, so it is done by hand to keep
-	 * the three ports consistent.
-	 */
-	enum class PageMotion
-	{
-		PageUp,
-		PageDown,
-		Home,
-		End
-	};
-	void PageExtendSelection(PageMotion motion);
-#endif
-
-	//! Keystrokes accumulated so far, lowercased; reset after kTypeAheadResetMs.
-	wxString m_ttsText;
-	//! GetTickCount64() of the last accepted keystroke.
-	uint64 m_ttsTime = 0;
-	//! Result the last match landed on, so repeats cycle to the next one.
-	//! Compared by pointer against the live tree, never dereferenced blindly.
-	CSearchFile *m_ttsItem = nullptr;
 
 	wxDECLARE_EVENT_TABLE();
 };
