@@ -219,10 +219,25 @@ protected:
 		{
 		}
 		int GetColumnCount() const override { return static_cast<int>(m_ctrl->GetColumnCount()); }
-		int GetColumnWidth(int col) const override { return m_ctrl->GetColumn(col)->GetWidth(); }
+		// A hidden column reads as zero-width so CListColumnStore persists
+		// the hidden state through the width it already saves, with no
+		// second mechanism. wxDataViewCtrl won't shrink a column to nothing
+		// -- a header stub survives -- so hiding has to go through
+		// SetHidden() rather than SetWidth(0).
+		int GetColumnWidth(int col) const override
+		{
+			const wxDataViewColumn *column = m_ctrl->GetColumn(col);
+			return column->IsHidden() ? 0 : column->GetWidth();
+		}
 		bool SetColumnWidth(int col, int width) override
 		{
-			m_ctrl->GetColumn(col)->SetWidth(width);
+			wxDataViewColumn *column = m_ctrl->GetColumn(col);
+			if (width <= COL_SIZE_MIN) {
+				column->SetHidden(true);
+			} else {
+				column->SetHidden(false);
+				column->SetWidth(width);
+			}
 			return true;
 		}
 
@@ -356,8 +371,9 @@ protected:
 	void OnChar(wxKeyEvent &evt);
 
 	/**
-	 * Navigation keys. Only shift+page-up/down on macOS is handled (see
-	 * PageExtendSelection); everything else goes to the backend.
+	 * Navigation keys. Only shifted page-up/down and home/end on macOS are
+	 * handled (see PageExtendSelection); everything else goes to the
+	 * backend.
 	 */
 	void OnKeyDown(wxKeyEvent &evt);
 
@@ -366,11 +382,19 @@ protected:
 
 #ifdef __WXOSX__
 	/**
-	 * Extends the selection by one page. GTK and MSW get this from their
-	 * backends; NSOutlineView pages the view without moving the selection,
-	 * so it is done by hand to keep the three ports consistent.
+	 * Extends the selection by a page, or to the start/end of the list.
+	 * GTK and MSW get this from their backends; NSOutlineView moves the
+	 * view without touching the selection, so it is done by hand to keep
+	 * the three ports consistent.
 	 */
-	void PageExtendSelection(bool down);
+	enum class PageMotion
+	{
+		PageUp,
+		PageDown,
+		Home,
+		End
+	};
+	void PageExtendSelection(PageMotion motion);
 #endif
 
 	//! Keystrokes accumulated so far, lowercased; reset after kTypeAheadResetMs.

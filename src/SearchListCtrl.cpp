@@ -744,7 +744,7 @@ void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 	for (unsigned i = 0; i < columns; ++i) {
 		const wxDataViewColumn *col = GetColumn(i);
 		menu.AppendCheckItem(static_cast<int>(i) + MP_LISTCOL_1, col->GetTitle());
-		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, col->GetWidth() > COL_SIZE_MIN);
+		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, !col->IsHidden());
 	}
 
 	PopupMenu(&menu);
@@ -759,13 +759,24 @@ void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
 	}
 
 	wxDataViewColumn *column = GetColumn(static_cast<unsigned>(col));
-	if (column->GetWidth() > COL_SIZE_MIN) {
+	if (!column->IsHidden()) {
 		// Remember the width so re-showing restores what the user had,
 		// exactly as CMuleListCtrl::OnMenuSelected did.
 		m_columnStore.SetCachedWidth(col, column->GetWidth());
-		column->SetWidth(COL_SIZE_MIN);
+		column->SetHidden(true);
+		// The expander lives on one specific column; hiding that one would
+		// take the group triangles with it and leave children unreachable.
+		if (GetExpanderColumn() == column) {
+			for (unsigned i = 0; i < GetColumnCount(); ++i) {
+				if (!GetColumn(i)->IsHidden()) {
+					SetExpanderColumn(GetColumn(i));
+					break;
+				}
+			}
+		}
 	} else {
 		const int cached = m_columnStore.GetCachedWidth(col);
+		column->SetHidden(false);
 		column->SetWidth(cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
 	}
 	SaveColumnSettings();
@@ -894,7 +905,7 @@ void CSearchListCtrl::BuildDisplayOrder(std::vector<CSearchFile *> &ordered) con
 }
 
 #ifdef __WXOSX__
-void CSearchListCtrl::PageExtendSelection(bool down)
+void CSearchListCtrl::PageExtendSelection(PageMotion motion)
 {
 	std::vector<CSearchFile *> ordered;
 	BuildDisplayOrder(ordered);
@@ -905,23 +916,38 @@ void CSearchListCtrl::PageExtendSelection(bool down)
 	const wxDataViewItem currentItem = GetCurrentItem();
 	CSearchFile *currentFile = currentItem.IsOk() ? CSearchListModel::ToFile(currentItem) : nullptr;
 	const auto found = std::find(ordered.begin(), ordered.end(), currentFile);
+	const bool forward = (motion == PageMotion::PageDown) || (motion == PageMotion::End);
 	const int current = (found == ordered.end())
-				    ? (down ? -1 : static_cast<int>(ordered.size()))
+				    ? (forward ? -1 : static_cast<int>(ordered.size()))
 				    : static_cast<int>(std::distance(ordered.begin(), found));
 
-	// A page is however many rows fit, less one so the row at the edge
-	// stays visible -- the same overlap the other ports scroll by.
-	int rowHeight = 0;
-	if (currentItem.IsOk()) {
-		rowHeight = GetItemRect(currentItem).height;
-	}
-	if (rowHeight <= 0) {
-		rowHeight = GetItemRect(CSearchListModel::ToItem(ordered.front())).height;
-	}
-	const int rows = (rowHeight > 0) ? std::max(1, (GetClientSize().y / rowHeight) - 1) : 1;
-
 	const int last = static_cast<int>(ordered.size()) - 1;
-	const int target = std::min(last, std::max(0, current + (down ? rows : -rows)));
+
+	int target = 0;
+	switch (motion) {
+	case PageMotion::Home:
+		target = 0;
+		break;
+	case PageMotion::End:
+		target = last;
+		break;
+	default: {
+		// GetCountPerPage() is implemented by the native macOS backend;
+		// GetItemRect() is not a substitute, since it returns an empty rect
+		// for rows that aren't currently on screen and the resulting height
+		// of zero collapses a page to a single row.
+		int rows = GetCountPerPage();
+		if (rows <= 0) {
+			rows = 10;
+		} else {
+			// Leave one row of overlap, as the other ports scroll.
+			rows = std::max(1, rows - 1);
+		}
+		const int delta = (motion == PageMotion::PageDown) ? rows : -rows;
+		target = std::min(last, std::max(0, current + delta));
+		break;
+	}
+	}
 
 	// Grow the existing selection to cover everything between where the
 	// cursor was and where it lands, so repeated presses keep extending.
@@ -946,15 +972,28 @@ void CSearchListCtrl::PageExtendSelection(bool down)
 void CSearchListCtrl::OnKeyDown(wxKeyEvent &evt)
 {
 #ifdef __WXOSX__
-	// NSOutlineView pages the view without touching the selection, so
-	// shift+page-up/down -- which extends the selection on GTK and MSW --
-	// does nothing at all here. Plain page-up/down is deliberately left to
-	// the platform, which scrolls without moving the selection by
-	// convention; only the shifted form is handled.
-	const int key = evt.GetKeyCode();
-	if (evt.ShiftDown() && (key == WXK_PAGEUP || key == WXK_PAGEDOWN)) {
-		PageExtendSelection(key == WXK_PAGEDOWN);
-		return;
+	// NSOutlineView moves the view without touching the selection, so the
+	// shifted navigation keys -- which extend the selection on GTK and MSW
+	// -- do nothing at all here. The unshifted forms are deliberately left
+	// to the platform, which scrolls without moving the selection by
+	// convention.
+	if (evt.ShiftDown()) {
+		switch (evt.GetKeyCode()) {
+		case WXK_PAGEUP:
+			PageExtendSelection(PageMotion::PageUp);
+			return;
+		case WXK_PAGEDOWN:
+			PageExtendSelection(PageMotion::PageDown);
+			return;
+		case WXK_HOME:
+			PageExtendSelection(PageMotion::Home);
+			return;
+		case WXK_END:
+			PageExtendSelection(PageMotion::End);
+			return;
+		default:
+			break;
+		}
 	}
 #endif
 	evt.Skip();
