@@ -224,7 +224,24 @@ protected:
 		// second mechanism.
 		int GetColumnWidth(int col) const override
 		{
-			return m_ctrl->IsColumnHidden(col) ? 0 : m_ctrl->GetColumn(col)->GetWidth();
+			if (m_ctrl->IsColumnHidden(col)) {
+				return 0;
+			}
+			const int width = m_ctrl->GetColumn(col)->GetWidth();
+			if (width > 0) {
+				return width;
+			}
+			// macOS sizes the trailing column to whatever space is left
+			// over, so once the columns are wider than the control it
+			// reports zero -- while still being a perfectly visible column
+			// the user can scroll to. CListColumnStore treats any width
+			// <= 0 as hidden and persists it as a negative entry, so
+			// letting that through marks the last column hidden on every
+			// shutdown, and the next launch does the same to whichever
+			// column then ends up last: one lost per restart. Fall back to
+			// what the column is known to be worth instead.
+			const int cached = m_ctrl->m_columnStore.GetCachedWidth(col);
+			return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
 		}
 		bool SetColumnWidth(int col, int width) override
 		{
