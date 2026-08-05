@@ -48,11 +48,6 @@ void CSearchListModel::NotifyFileAdded(CSearchFile *)
 	MarkDirty();
 }
 
-void CSearchListModel::NotifyFileRemoved(CSearchFile *)
-{
-	MarkDirty();
-}
-
 void CSearchListModel::NotifyFileUpdated(CSearchFile *)
 {
 	MarkDirty();

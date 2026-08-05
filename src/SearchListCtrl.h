@@ -89,11 +89,6 @@ public:
 	void AddResult(CSearchFile *toshow);
 
 	/**
-	 * Removes the specified file from the list.
-	 */
-	void RemoveResult(CSearchFile *toshow);
-
-	/**
 	 * Updates the specified source.
 	 *
 	 * @param toupdate The search result to be updated.

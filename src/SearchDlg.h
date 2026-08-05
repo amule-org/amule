@@ -35,6 +35,7 @@ class wxStaticLine;
 #include "Types.h" // Needed for uint16 and uint32
 
 #include <map> // Needed for std::map (per-tab progress cache)
+#include <set> // Needed for std::set (pending hit-count recomputes)
 
 class CMuleNotebook;
 class CSearchListCtrl;
@@ -369,6 +370,22 @@ private:
 	CMuleNotebook *m_notebook;
 
 	wxArrayString m_searchchoices;
+
+	/**
+	 * Tabs whose hit-count label needs recomputing, flushed once per idle.
+	 *
+	 * UpdateHitCount() walks the whole result list twice (GetItemCount() and
+	 * GetHiddenItemCount(), each looping every result's children), so calling
+	 * it per arriving result is quadratic over a search. Results arrive in
+	 * bursts, and only the final label of a burst is ever seen, so the work is
+	 * coalesced here the same way the tree rebuild is in
+	 * CSearchListCtrl::OnIdle. Entries are only ever compared against the
+	 * notebook's live pages in OnIdle(), never dereferenced, so a tab closing
+	 * before the flush is harmless.
+	 */
+	std::set<CSearchListCtrl *> m_pendingHitCount;
+
+	void OnIdle(wxIdleEvent &evt);
 
 	wxDECLARE_EVENT_TABLE();
 };

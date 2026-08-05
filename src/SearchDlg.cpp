@@ -90,11 +90,18 @@ wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	EVT_CHECKBOX(ID_FILTER_KNOWN, CSearchDlg::OnFilteringChange)
 	EVT_BUTTON(ID_FILTER, CSearchDlg::OnFilteringChange)
 	EVT_BUTTON(ID_FILTER_RESET, CSearchDlg::OnFilterReset)
+
+	EVT_IDLE(CSearchDlg::OnIdle)
 wxEND_EVENT_TABLE()
 
 CSearchDlg::CSearchDlg(wxWindow *pParent)
 : wxPanel(pParent, -1)
 {
+	// amuleDlg sets wxIdleEvent::SetMode(wxIDLE_PROCESS_SPECIFIED), so only
+	// windows carrying this style are sent idle events at all -- without it
+	// OnIdle() never runs and the coalesced hit-count flush never happens.
+	SetExtraStyle(GetExtraStyle() | wxWS_EX_PROCESS_IDLE);
+
 	m_last_search_time = 0;
 	m_expiringSearchID = 0;
 	m_inSearchClosing = false;
@@ -665,8 +672,9 @@ void CSearchDlg::AddResult(CSearchFile *toadd)
 	if (outputwnd) {
 		outputwnd->AddResult(toadd);
 
-		// Update the result count
-		UpdateHitCount(outputwnd);
+		// Update the result count -- coalesced to one recompute per idle,
+		// see m_pendingHitCount.
+		m_pendingHitCount.insert(outputwnd);
 	}
 }
 
@@ -677,9 +685,30 @@ void CSearchDlg::UpdateResult(CSearchFile *toupdate)
 	if (outputwnd) {
 		outputwnd->UpdateResult(toupdate);
 
-		// Update the result count
-		UpdateHitCount(outputwnd);
+		// Update the result count -- coalesced to one recompute per idle,
+		// see m_pendingHitCount.
+		m_pendingHitCount.insert(outputwnd);
 	}
+}
+
+void CSearchDlg::OnIdle(wxIdleEvent &evt)
+{
+	evt.Skip();
+
+	if (m_pendingHitCount.empty()) {
+		return;
+	}
+
+	// Drive off the notebook's live pages rather than the pending set: a tab
+	// closed since the mark is simply never matched, so a stale pointer is
+	// only ever compared, never followed.
+	for (size_t i = 0; i < m_notebook->GetPageCount(); ++i) {
+		CSearchListCtrl *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(i));
+		if (page && m_pendingHitCount.count(page)) {
+			UpdateHitCount(page);
+		}
+	}
+	m_pendingHitCount.clear();
 }
 
 void CSearchDlg::OnListItemSelected(wxDataViewEvent &event)

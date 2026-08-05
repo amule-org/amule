@@ -310,11 +310,6 @@ void CSearchListCtrl::AddResult(CSearchFile *toshow)
 	m_model->NotifyFileAdded(toshow);
 }
 
-void CSearchListCtrl::RemoveResult(CSearchFile *toremove)
-{
-	m_model->NotifyFileRemoved(toremove);
-}
-
 void CSearchListCtrl::UpdateResult(CSearchFile *toupdate)
 {
 	m_model->NotifyFileUpdated(toupdate);

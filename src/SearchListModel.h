@@ -62,8 +62,6 @@ public:
 	//! Notify the control that a new result is now visible (already added
 	//! to CSearchList's own storage by the caller).
 	void NotifyFileAdded(CSearchFile *file);
-	//! Notify the control that a result should no longer be shown.
-	void NotifyFileRemoved(CSearchFile *file);
 	//! Notify the control that a result's displayed values changed.
 	void NotifyFileUpdated(CSearchFile *file);
 	//! Notify the control that filtering criteria changed and the whole
