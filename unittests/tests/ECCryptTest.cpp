@@ -144,14 +144,28 @@ TEST(ECCrypt, AesGcmIsAlwaysAvailable)
 
 TEST(ECCrypt, PreferredCipherComesFirst)
 {
-	// The daemon picks the first mutually supported entry, so ordering is the
-	// preference. Where ChaCha exists it must outrank AES: without hardware
-	// AES it is substantially faster, which is the Raspberry Pi case.
-	const std::vector<uint8_t> ciphers = SupportedCiphers();
+	// Case 1: preferAES = false
+	// ChaCha20 shall come first if supported, AES otherwise
+	const std::vector<uint8_t> ciphers = SupportedCiphers(false);
 	if (IsCipherSupported(Cipher_ChaCha20_Poly1305)) {
 		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers[0]);
 	} else {
 		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers[0]);
+	}
+
+	// Case 2: preferAES = true
+	// AES shall always come first, as supporting it is mandatory
+	const std::vector<uint8_t> ciphers2 = SupportedCiphers(true);
+	ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers2[0]);
+
+	// Case 3: preferAES = HasHardwareAES()
+	// ChaCha20 shall come first if supported and no hardware support for AES
+	// Otherwise, AES shall come first
+	const std::vector<uint8_t> ciphers3 = SupportedCiphers();
+	if (IsCipherSupported(Cipher_ChaCha20_Poly1305) && !HasHardwareAES()) {
+		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers3[0]);
+	} else {
+		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers3[0]);
 	}
 }
 
