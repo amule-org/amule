@@ -53,9 +53,9 @@
 // onto a transparent cell of this size (see FlagImage).
 static const int LIST_IMAGE_SIZE = 16;
 
-wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleVirtualListCtrl)
-	EVT_LIST_ITEM_RIGHT_CLICK(-1, CServerListCtrl::OnItemRightClicked)
-	EVT_LIST_ITEM_ACTIVATED(-1, CServerListCtrl::OnItemActivated)
+wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleVirtualDataViewCtrl)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CServerListCtrl::OnItemRightClicked)
+	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CServerListCtrl::OnItemActivated)
 
 	EVT_MENU(MP_PRIOLOW, CServerListCtrl::OnPriorityChange)
 	EVT_MENU(MP_PRIONORMAL, CServerListCtrl::OnPriorityChange)
@@ -71,7 +71,6 @@ wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleVirtualListCtrl)
 
 	EVT_MENU(MP_GETED2KLINK, CServerListCtrl::OnGetED2kURL)
 
-	EVT_CHAR(CServerListCtrl::OnKeyPressed)
 wxEND_EVENT_TABLE()
 
 CServerListCtrl::CServerListCtrl(wxWindow *parent,
@@ -79,54 +78,72 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	const wxPoint &pos,
 	const wxSize &size,
 	long style,
-	const wxValidator &validator,
 	const wxString &name)
-: CMuleVirtualListCtrl(parent, winid, pos, size, style, validator, name)
-, m_images(LIST_IMAGE_SIZE, LIST_IMAGE_SIZE, true, 0)
+: CMuleVirtualDataViewCtrl(parent, winid, pos, size, style, name)
 {
-	// Setting the sorter function.
-	SetSortFunc(SortProc);
-
-	// Set the table-name (for loading and saving preferences).
-	SetTableName("Server");
-
 	m_connected = 0;
 
-	// Take over the small image list from the one every CMuleListCtrl shares:
-	// the country flags are added to it on demand and have no business showing
-	// up in the other lists' indices. The sort arrows have to come first, at
-	// the indices SetSorting() uses.
-	AddSortArrows(m_images);
-	SetImageList(&m_images, wxIMAGE_LIST_SMALL);
-
-	wxFont bold = GetFont();
-	bold.SetWeight(wxFONTWEIGHT_BOLD);
-	m_boldAttr.SetFont(bold);
-
-	InsertColumn(COLUMN_SERVER_NAME, _("Server Name"), wxLIST_FORMAT_LEFT, 150, "N");
-	InsertColumn(COLUMN_SERVER_ADDR, _("Address"), wxLIST_FORMAT_LEFT, 140, "A");
-	InsertColumn(COLUMN_SERVER_PORT, _("Port"), wxLIST_FORMAT_LEFT, 25, "P");
-	InsertColumn(COLUMN_SERVER_DESC, _("Description"), wxLIST_FORMAT_LEFT, 150, "D");
-	InsertColumn(COLUMN_SERVER_PING, _("Ping"), wxLIST_FORMAT_LEFT, 25, "p");
-	InsertColumn(COLUMN_SERVER_USERS, _("Users"), wxLIST_FORMAT_LEFT, 40, "U");
-	InsertColumn(COLUMN_SERVER_FILES, _("Files"), wxLIST_FORMAT_LEFT, 45, "F");
-	InsertColumn(COLUMN_SERVER_PRIO, _("Priority"), wxLIST_FORMAT_LEFT, 60, "r");
-	InsertColumn(COLUMN_SERVER_FAILS, _("Failed"), wxLIST_FORMAT_LEFT, 40, "f");
-	InsertColumn(COLUMN_SERVER_STATIC, _("Static"), wxLIST_FORMAT_LEFT, 40, "S");
-	InsertColumn(COLUMN_SERVER_VERSION, _("Version"), wxLIST_FORMAT_LEFT, 80, "V");
+	// The name column carries the country flag, so it is icon+text; the rest
+	// are plain text. Sortable throughout, or wx draws no header caret.
+	const int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
+	AppendIconTextColumn(
+		_("Server Name"), COLUMN_SERVER_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Address"), COLUMN_SERVER_ADDR, wxDATAVIEW_CELL_INERT, 140, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Port"), COLUMN_SERVER_PORT, wxDATAVIEW_CELL_INERT, 25, wxALIGN_LEFT, flags);
+	AppendTextColumn(
+		_("Description"), COLUMN_SERVER_DESC, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Ping"), COLUMN_SERVER_PING, wxDATAVIEW_CELL_INERT, 25, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Users"), COLUMN_SERVER_USERS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Files"), COLUMN_SERVER_FILES, wxDATAVIEW_CELL_INERT, 45, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Priority"), COLUMN_SERVER_PRIO, wxDATAVIEW_CELL_INERT, 60, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Failed"), COLUMN_SERVER_FAILS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Static"), COLUMN_SERVER_STATIC, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
+	AppendTextColumn(_("Version"), COLUMN_SERVER_VERSION, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 
 #if !defined(CLIENT_GUI)
-	InsertColumn(COLUMN_SERVER_TCPFLAGS, _("TCP Flags"), wxLIST_FORMAT_LEFT, 80, "t");
-	InsertColumn(COLUMN_SERVER_UDPFLAGS, _("UDP Flags"), wxLIST_FORMAT_LEFT, 80, "u");
-#if !defined(__DEBUG__)
-	// InsertColumn created the columns with their default 80 width, which is required to unhide
-	// them on the context menu. Now, for Release builds, we will hide them by default
-	SetColumnWidth(GetColumnIndex("t"), 0);
-	SetColumnWidth(GetColumnIndex("u"), 0);
-#endif
+	AppendTextColumn(
+		_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
+	AppendTextColumn(
+		_("UDP Flags"), COLUMN_SERVER_UDPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 #endif
 
-	LoadSettings();
+	// Absorbs the macOS trailing-column sizing; the model answers any column
+	// past the real ones with an empty value.
+	AppendSpacerColumn(COLUMN_SERVER_SPACER);
+	AssociateVirtualModel();
+
+	m_columnStore.RegisterColumn(COLUMN_SERVER_NAME, 150, "N");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_ADDR, 140, "A");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_PORT, 25, "P");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_DESC, 150, "D");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_PING, 25, "p");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_USERS, 40, "U");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_FILES, 45, "F");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_PRIO, 60, "r");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_FAILS, 40, "f");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_STATIC, 40, "S");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_VERSION, 80, "V");
+#if !defined(CLIENT_GUI)
+	m_columnStore.RegisterColumn(COLUMN_SERVER_TCPFLAGS, 80, "t");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_UDPFLAGS, 80, "u");
+#endif
+
+	// Default sort is by name, ascending; LoadColumnSettings() replaces it
+	// when the config has something saved.
+	ApplySorting(COLUMN_SERVER_NAME, 0);
+
+#if !defined(CLIENT_GUI) && !defined(__DEBUG__)
+	// Wire-flag columns are diagnostics: listed in the header menu so they
+	// can be switched on, hidden by default. Set before the settings are
+	// loaded, so anything the user saved wins -- the same ordering the old
+	// InsertColumn()/SetColumnWidth(0)/LoadSettings() sequence had.
+	SetColumnHidden(COLUMN_SERVER_TCPFLAGS, true, 0);
+	SetColumnHidden(COLUMN_SERVER_UDPFLAGS, true, 0);
+#endif
+
+	m_columnStore.SetTableName("Server");
+	LoadColumnSettings();
+	InitColumnState();
 }
 
 wxString CServerListCtrl::GetOldColumnOrder() const
@@ -158,16 +175,21 @@ void CServerListCtrl::RemoveServer(CServer *server)
 	ShowServerCount();
 }
 
-void CServerListCtrl::RemoveAllServers(int state)
+void CServerListCtrl::RemoveAllServers(bool selectedOnly)
 {
 	// Collect first, delete second: the rows are a view onto the model, so
 	// removing one renumbers every row below it -- and the confirmations below
 	// run a nested event loop, during which the list can be updated underneath
 	// a row index but never underneath a server pointer.
 	std::vector<CServer *> candidates;
-	for (long pos = GetNextItem(-1, wxLIST_NEXT_ALL, state); pos != -1;
-		pos = GetNextItem(pos, wxLIST_NEXT_ALL, state)) {
-		candidates.push_back(reinterpret_cast<CServer *>(ItemAt(pos)));
+	if (selectedOnly) {
+		for (wxUIntPtr data : GetSelectedItemData()) {
+			candidates.push_back(reinterpret_cast<CServer *>(data));
+		}
+	} else {
+		for (long row = 0; row < ItemDataCount(); ++row) {
+			candidates.push_back(reinterpret_cast<CServer *>(ItemAt(row)));
+		}
 	}
 
 	const bool connected = theApp->IsConnectedED2K() || theApp->serverconnect->IsConnecting();
@@ -232,7 +254,7 @@ void CServerListCtrl::RefreshServer(CServer *server)
 	}
 }
 
-wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, long column) const
+wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
 {
 	const CServer *server = reinterpret_cast<const CServer *>(item);
 
@@ -365,68 +387,67 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, long column) const
 // declaration out from under this definition. A member function that is
 // declared, never called and never defined is fine.
 #ifdef GEOIP_GUI
-int CServerListCtrl::FlagImage(const wxString &code) const
+const wxIcon &CServerListCtrl::FlagIcon(const wxString &code) const
 {
-	const auto it = m_flagImages.find(code);
-	if (it != m_flagImages.end()) {
+	static const wxIcon nullIcon;
+
+	const auto it = m_flagIcons.find(code);
+	if (it != m_flagIcons.end()) {
 		return it->second;
 	}
 
 	const wxImage &flag = theApp->GetCountryFlags()->GetFlag(code);
 	if (!flag.IsOk()) {
-		m_flagImages[code] = -1;
-		return -1;
+		// Cached as an invalid icon so an unknown code isn't looked up again.
+		return m_flagIcons.emplace(code, wxIcon()).first->second;
 	}
 
-	// Centre the 16x11 flag on the image list's square cell. Adding it at its
-	// own size instead would leave wxImageList to stretch it to the cell.
-	wxImage cell = flag;
-	if (!cell.HasAlpha()) {
-		// Size() only pads with transparent pixels when there is an alpha
-		// channel to be transparent in; without one it would pad with black.
-		cell.InitAlpha();
-	}
-	cell = cell.Size(wxSize(LIST_IMAGE_SIZE, LIST_IMAGE_SIZE),
-		wxPoint((LIST_IMAGE_SIZE - cell.GetWidth()) / 2, (LIST_IMAGE_SIZE - cell.GetHeight()) / 2));
-
-	const int index = m_images.Add(wxBitmap(cell));
-	m_flagImages[code] = index;
-	return index;
+	wxIcon icon;
+	icon.CopyFromBitmap(wxBitmap(flag));
+	return m_flagIcons.emplace(code, icon).first->second;
 }
 #endif // GEOIP_GUI
 
-int CServerListCtrl::OnGetItemColumnImage(long item, long column) const
+bool CServerListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
 {
 	if (column != COLUMN_SERVER_NAME) {
-		return -1;
+		return false;
 	}
 #ifdef GEOIP_GUI
 	// Host country as a flag icon, matching the peer list: no icon at all for
 	// an unresolved server, rather than the "? - " prefix this used to show.
-	const CServer *server = reinterpret_cast<const CServer *>(ItemAt(item));
+	const CServer *server = reinterpret_cast<const CServer *>(item);
 	wxString code;
 	if (GetDisplayCountryCode(
 		    server->IsCountryFromCore(), server->GetCountryCode(), server->GetIP(), code) &&
 		!code.IsEmpty()) {
-		return FlagImage(code);
+		const wxIcon &flag = FlagIcon(code);
+		if (flag.IsOk()) {
+			icon = flag;
+			return true;
+		}
 	}
 #else
 	wxUnusedVar(item);
 #endif // GEOIP_GUI
-	return -1;
+	return false;
 }
 
-wxListItemAttr *CServerListCtrl::OnGetItemAttr(long item) const
+bool CServerListCtrl::GetItemAttr(wxUIntPtr item, unsigned WXUNUSED(column), wxDataViewItemAttr &attr) const
 {
-	if (m_connected && reinterpret_cast<const CServer *>(ItemAt(item)) == m_connected) {
-		return &m_boldAttr;
+	if (m_connected && reinterpret_cast<const CServer *>(item) == m_connected) {
+		attr.SetBold(true);
+		return true;
 	}
-	return nullptr;
+	return false;
 }
 
 bool CServerListCtrl::IsLiveSortColumn() const
 {
-	switch (static_cast<int>(GetSortColumn())) {
+	if (m_sort_orders.empty()) {
+		return false;
+	}
+	switch (static_cast<int>(m_sort_orders.front().first)) {
 	case COLUMN_SERVER_PING:
 	case COLUMN_SERVER_USERS:
 	case COLUMN_SERVER_FILES:
@@ -464,7 +485,7 @@ void CServerListCtrl::ShowServerCount()
 	wxStaticText *label = CastByName("serverListLabel", GetParent(), wxStaticText);
 
 	if (label) {
-		label->SetLabel(CFormat(_("Servers (%i)")) % GetItemCount());
+		label->SetLabel(CFormat(_("Servers (%i)")) % ItemDataCount());
 		label->GetParent()->Layout();
 	}
 }
@@ -476,19 +497,14 @@ void CServerListCtrl::FitColumnsToContent()
 	// the column out. The other columns hold short, bounded values.
 	const int descMaxWidth = 300;
 
-	// wxLIST_AUTOSIZE is a no-op on a virtual control -- it has no native items
-	// to measure and just hands back a default width -- so the content side is
-	// measured here against the model. wxLIST_AUTOSIZE_USEHEADER measures the
-	// header text and works either way, so that half is left to it.
-	//
-	// The two constants and the arithmetic below reproduce what the non-virtual
-	// wxLIST_AUTOSIZE did, so column widths come out where they used to: the
-	// margin is the starting floor and is added once to the finished column
-	// (NOT per cell), and a cell carrying an image counts the image plus the
-	// narrower in-row image margin. Both live in listctrl.cpp as file-statics,
-	// hence the copies.
-	const int autosizeMargin = 10; // AUTOSIZE_COL_MARGIN
-	const int imageMargin = 5;     // IMAGE_MARGIN_IN_REPORT_MODE
+	// Content is measured against the model rather than asked of the control:
+	// wxDataViewCtrl has no portable "size this column to its contents", and
+	// on a list that renders cells on demand there is nothing native to
+	// measure anyway. The margins reproduce what the old wxLIST_AUTOSIZE
+	// produced, so columns land where users are used to seeing them.
+	const int autosizeMargin = 10;
+	const int imageMargin = 5;
+	const int flagWidth = 16;
 
 	wxClientDC dc(this);
 	dc.SetFont(GetFont());
@@ -496,20 +512,22 @@ void CServerListCtrl::FitColumnsToContent()
 	const long rows = ItemDataCount();
 
 	Freeze();
-	for (int col = 0; col < GetColumnCount(); ++col) {
-		// Leave hidden columns (width 0, e.g. the TCP/UDP flag columns or
-		// ones the user hid via the header menu) hidden.
-		if (GetColumnWidth(col) == 0) {
+	for (unsigned col = 0; col < RealColumnCount(); ++col) {
+		// Leave hidden columns (the TCP/UDP flag columns, or ones the user
+		// hid from the header menu) hidden.
+		if (IsColumnHidden(static_cast<int>(col))) {
 			continue;
 		}
 
 		int contentWidth = autosizeMargin;
 		for (long row = 0; row < rows; ++row) {
+			const wxUIntPtr data = ItemAt(row);
 			wxCoord textWidth = 0;
-			dc.GetTextExtent(GetItemColumnText(ItemAt(row), col), &textWidth, nullptr);
+			dc.GetTextExtent(GetItemColumnText(data, col), &textWidth, nullptr);
 			int cellWidth = textWidth;
-			if (OnGetItemColumnImage(row, col) != -1) {
-				cellWidth += LIST_IMAGE_SIZE + imageMargin;
+			wxIcon icon;
+			if (GetItemIcon(data, col, icon)) {
+				cellWidth += flagWidth + imageMargin;
 			}
 			if (cellWidth > contentWidth) {
 				contentWidth = cellWidth;
@@ -517,46 +535,50 @@ void CServerListCtrl::FitColumnsToContent()
 		}
 		contentWidth += autosizeMargin;
 
-		SetColumnWidth(col, wxLIST_AUTOSIZE_USEHEADER);
-		const int headerWidth = GetColumnWidth(col);
+		wxCoord headerWidth = 0;
+		dc.GetTextExtent(GetColumn(col)->GetTitle(), &headerWidth, nullptr);
+		headerWidth += 2 * autosizeMargin;
 
-		int width = std::max(contentWidth, headerWidth);
+		int width = std::max(contentWidth, static_cast<int>(headerWidth));
 		if (col == COLUMN_SERVER_DESC && width > descMaxWidth) {
 			width = descMaxWidth;
 		}
-		SetColumnWidth(col, width);
+		GetColumn(col)->SetWidth(width);
 	}
 	Thaw();
 }
 
-void CServerListCtrl::OnItemActivated(wxListEvent &event)
+void CServerListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
-	// Unselect all items but the activated one
-	long item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	while (item > -1) {
-		SetItemState(item, 0, wxLIST_STATE_SELECTED);
-
-		item = GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	// Connect to the activated row alone, whatever else was selected.
+	if (event.GetItem().IsOk()) {
+		UnselectAll();
+		Select(event.GetItem());
 	}
-
-	SetItemState(event.GetIndex(), wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
 
 	wxCommandEvent nulEvt;
 	OnConnectToServer(nulEvt);
 }
 
-void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
+void CServerListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 {
-	// Check if clicked item is selected. If not, unselect all and select it.
-	long index = CheckSelection(event);
+	// Right-clicking a row outside the selection acts on that row alone.
+	if (event.GetItem().IsOk()) {
+		wxDataViewItemArray selection;
+		GetSelections(selection);
+		if (selection.Index(event.GetItem()) == wxNOT_FOUND) {
+			UnselectAll();
+			Select(event.GetItem());
+		}
+	}
 
 	bool enable_reconnect = false;
 	bool enable_static_on = false;
 	bool enable_static_off = false;
 
 	// Gather information on the selected items
-	while (index > -1) {
-		CServer *server = reinterpret_cast<CServer *>(ItemAt(index));
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CServer *server = reinterpret_cast<CServer *>(data);
 
 		// The current server is selected, so we might display the reconnect option
 		if (server == m_connected) {
@@ -566,8 +588,6 @@ void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
 		// We want to know which options should be enabled, either one or both
 		enable_static_on |= !server->IsStaticMember();
 		enable_static_off |= server->IsStaticMember();
-
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 
 	wxMenu *serverMenu = new wxMenu(_("Server"));
@@ -580,7 +600,7 @@ void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
 
 	serverMenu->AppendSeparator();
 
-	if (GetSelectedItemCount() == 1) {
+	if (static_cast<int>(GetSelectedItemsCount()) == 1) {
 		serverMenu->Append(MP_ADDTOSTATIC, _("Mark server as static"));
 		serverMenu->Append(MP_REMOVEFROMSTATIC, _("Mark server as non-static"));
 	} else {
@@ -590,7 +610,7 @@ void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
 
 	serverMenu->AppendSeparator();
 
-	if (GetSelectedItemCount() == 1) {
+	if (static_cast<int>(GetSelectedItemsCount()) == 1) {
 		serverMenu->Append(MP_REMOVE, _("Remove server"));
 	} else {
 		serverMenu->Append(MP_REMOVE, _("Remove servers"));
@@ -599,7 +619,7 @@ void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
 
 	serverMenu->AppendSeparator();
 
-	if (GetSelectedItemCount() == 1) {
+	if (static_cast<int>(GetSelectedItemsCount()) == 1) {
 		serverMenu->Append(MP_GETED2KLINK, _("Copy eD2k link to clipboard"));
 	} else {
 		serverMenu->Append(MP_GETED2KLINK, _("Copy eD2k links to clipboard"));
@@ -608,14 +628,14 @@ void CServerListCtrl::OnItemRightClicked(wxListEvent &event)
 	serverMenu->Enable(MP_REMOVEFROMSTATIC, enable_static_off);
 	serverMenu->Enable(MP_ADDTOSTATIC, enable_static_on);
 
-	if (GetSelectedItemCount() == 1) {
+	if (static_cast<int>(GetSelectedItemsCount()) == 1) {
 		if (enable_reconnect)
 			serverMenu->SetLabel(MP_CONNECTTO, _("Reconnect to server"));
 	} else {
 		serverMenu->Enable(MP_CONNECTTO, false);
 	}
 
-	PopupMenu(serverMenu, event.GetPoint());
+	PopupMenu(serverMenu);
 	delete serverMenu;
 }
 
@@ -638,10 +658,10 @@ void CServerListCtrl::OnPriorityChange(wxCommandEvent &event)
 		return;
 	}
 
-	ItemDataList items = GetSelectedItems();
+	const std::vector<wxUIntPtr> items = GetSelectedItemData();
 
-	for (unsigned int i = 0; i < items.size(); ++i) {
-		CServer *server = reinterpret_cast<CServer *>(items[i]);
+	for (wxUIntPtr data : items) {
+		CServer *server = reinterpret_cast<CServer *>(data);
 		theApp->serverlist->SetServerPrio(server, priority);
 	}
 }
@@ -650,10 +670,10 @@ void CServerListCtrl::OnStaticChange(wxCommandEvent &event)
 {
 	bool isStatic = (event.GetId() == MP_ADDTOSTATIC);
 
-	ItemDataList items = GetSelectedItems();
+	const std::vector<wxUIntPtr> items = GetSelectedItemData();
 
-	for (unsigned int i = 0; i < items.size(); ++i) {
-		CServer *server = reinterpret_cast<CServer *>(items[i]);
+	for (wxUIntPtr data : items) {
+		CServer *server = reinterpret_cast<CServer *>(data);
 
 		// Only update items that have the wrong setting
 		if (server->IsStaticMember() != isStatic) {
@@ -664,29 +684,25 @@ void CServerListCtrl::OnStaticChange(wxCommandEvent &event)
 
 void CServerListCtrl::OnConnectToServer(wxCommandEvent &WXUNUSED(event))
 {
-	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 
-	if (item > -1) {
+	if (!selected.empty()) {
 		if (theApp->IsConnectedED2K()) {
 			theApp->serverconnect->Disconnect();
 		}
 
-		theApp->serverconnect->ConnectToServer(reinterpret_cast<CServer *>(ItemAt(item)));
+		theApp->serverconnect->ConnectToServer(reinterpret_cast<CServer *>(selected.front()));
 	}
 }
 
 void CServerListCtrl::OnGetED2kURL(wxCommandEvent &WXUNUSED(event))
 {
-	int pos = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
 	wxString URL;
 
-	while (pos != -1) {
-		CServer *server = reinterpret_cast<CServer *>(ItemAt(pos));
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CServer *server = reinterpret_cast<CServer *>(data);
 
 		URL += CFormat("ed2k://|server|%s|%d|/\n") % server->GetFullIP() % server->GetPort();
-
-		pos = GetNextItem(pos, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 
 	URL.RemoveLast();
@@ -697,7 +713,7 @@ void CServerListCtrl::OnGetED2kURL(wxCommandEvent &WXUNUSED(event))
 void CServerListCtrl::OnRemoveServers(wxCommandEvent &event)
 {
 	if (event.GetId() == MP_REMOVEALL) {
-		if (GetItemCount()) {
+		if (ItemDataCount()) {
 			wxString question = _("Are you sure that you wish to delete all servers?");
 
 			if (wxMessageBox(
@@ -709,13 +725,13 @@ void CServerListCtrl::OnRemoveServers(wxCommandEvent &event)
 					theApp->serverconnect->Disconnect();
 				}
 
-				RemoveAllServers(wxLIST_STATE_DONTCARE);
+				RemoveAllServers(false);
 			}
 		}
 	} else if (event.GetId() == MP_REMOVE) {
-		if (GetSelectedItemCount()) {
+		if (static_cast<int>(GetSelectedItemsCount())) {
 			wxString question;
-			if (GetSelectedItemCount() == 1) {
+			if (static_cast<int>(GetSelectedItemsCount()) == 1) {
 				question = _("Are you sure that you wish to delete the selected server?");
 			} else {
 				question = _("Are you sure that you wish to delete the selected servers?");
@@ -724,32 +740,34 @@ void CServerListCtrl::OnRemoveServers(wxCommandEvent &event)
 			if (wxMessageBox(
 				    question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) ==
 				wxYES) {
-				RemoveAllServers(wxLIST_STATE_SELECTED);
+				RemoveAllServers(true);
 			}
 		}
 	}
 }
 
-void CServerListCtrl::OnKeyPressed(wxKeyEvent &event)
+bool CServerListCtrl::OnListKey(wxKeyEvent &event)
 {
-	// Check if delete was pressed
+	// Delete removes the selected servers; everything else belongs to the
+	// control's own navigation.
 	if ((event.GetKeyCode() == WXK_DELETE) || (event.GetKeyCode() == WXK_NUMPAD_DELETE)) {
 		wxCommandEvent evt;
 		evt.SetId(MP_REMOVE);
 		OnRemoveServers(evt);
-	} else {
-		event.Skip();
+		return true;
 	}
+	return false;
 }
 
-int CServerListCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData)
+int CServerListCtrl::CompareItemData(
+	wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool WXUNUSED(alt), int modifier) const
 {
-	CServer *server1 = reinterpret_cast<CServer *>(item1);
-	CServer *server2 = reinterpret_cast<CServer *>(item2);
+	const CServer *server1 = reinterpret_cast<const CServer *>(data1);
+	const CServer *server2 = reinterpret_cast<const CServer *>(data2);
 
-	int mode = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
+	const int mode = modifier;
 
-	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
+	switch (column) {
 	// Sort by server-name
 	case COLUMN_SERVER_NAME:
 		return mode * server1->GetListName().CmpNoCase(server2->GetListName());
