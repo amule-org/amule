@@ -214,37 +214,31 @@ protected:
 	class ColumnWidthAdapter : public IColumnWidthProvider
 	{
 	public:
-		explicit ColumnWidthAdapter(wxDataViewCtrl *ctrl)
+		explicit ColumnWidthAdapter(CSearchListCtrl *ctrl)
 		: m_ctrl(ctrl)
 		{
 		}
 		int GetColumnCount() const override { return static_cast<int>(m_ctrl->GetColumnCount()); }
 		// A hidden column reads as zero-width so CListColumnStore persists
 		// the hidden state through the width it already saves, with no
-		// second mechanism. wxDataViewCtrl won't shrink a column to nothing
-		// -- a header stub survives -- so hiding has to go through
-		// SetHidden() rather than SetWidth(0).
+		// second mechanism.
 		int GetColumnWidth(int col) const override
 		{
-			const wxDataViewColumn *column = m_ctrl->GetColumn(col);
-			return column->IsHidden() ? 0 : column->GetWidth();
+			return m_ctrl->IsColumnHidden(col) ? 0 : m_ctrl->GetColumn(col)->GetWidth();
 		}
 		bool SetColumnWidth(int col, int width) override
 		{
-			wxDataViewColumn *column = m_ctrl->GetColumn(col);
-			if (width <= COL_SIZE_MIN) {
-				column->SetHidden(true);
-			} else {
-				column->SetHidden(false);
-				column->SetWidth(width);
-			}
+			m_ctrl->SetColumnHidden(col, width <= COL_SIZE_MIN, width);
 			return true;
 		}
 
 	private:
-		wxDataViewCtrl *m_ctrl;
+		CSearchListCtrl *m_ctrl;
 	};
 	ColumnWidthAdapter m_widthAdapter;
+
+	//! Per-column hidden state, indexed like the control's columns.
+	std::vector<bool> m_columnHidden;
 
 	typedef std::pair<unsigned, unsigned> CColPair;
 	typedef std::list<CColPair> CSortingList;
@@ -361,6 +355,22 @@ protected:
 	//! Keeps the group expander on the leftmost visible column.
 	void UpdateExpanderColumn();
 
+public:
+	/**
+	 * Whether a column is hidden, tracked here rather than read back from
+	 * wxDataViewColumn::IsHidden().
+	 *
+	 * The macOS backend overrides both SetHidden() and IsHidden(), but they
+	 * disagree: the column does disappear, while IsHidden() keeps reporting
+	 * it as shown. Reading it back would leave the header menu ticking
+	 * columns that aren't there and unable to bring them back, so this
+	 * class owns the answer and only ever writes to the control.
+	 */
+	bool IsColumnHidden(int col) const;
+	//! Hide or show a column; width is the one to restore when showing.
+	void SetColumnHidden(int col, bool hidden, int width);
+
+private:
 	/**
 	 * Type-to-select, reimplemented for wxDataViewCtrl.
 	 *

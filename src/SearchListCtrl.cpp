@@ -195,6 +195,10 @@ CSearchListCtrl::CSearchListCtrl(
 	m_columnStore.RegisterColumn(CSearchListModel::COL_CODEC, 80, "C");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_DIRECTORY, 280, "D");
 
+	// Sized before LoadColumnSettings(), which restores hidden columns through
+	// the width adapter and therefore writes into this.
+	m_columnHidden.assign(GetColumnCount(), false);
+
 	// Default sort is by name, ascending.
 	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
 	GetColumn(CSearchListModel::COL_NAME)->SetSortOrder(true);
@@ -601,18 +605,14 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 	wxCHECK_RET(src && dst, "NULL argument in SyncLists");
 
 	for (int i = 0; i < src->GetColumnCount(); ++i) {
-		wxDataViewColumn *from = src->GetColumn(i);
-		wxDataViewColumn *to = dst->GetColumn(i);
-		// Hidden state has to travel with the width: a hidden column reports
-		// a width of zero, so copying width alone would leave the other tabs
-		// with a zero-width column that still counts as visible -- invisible
-		// in the list, but ticked in the header menu and impossible to
-		// restore from there.
-		if (to->IsHidden() != from->IsHidden()) {
-			to->SetHidden(from->IsHidden());
+		// Hidden state has to travel with the width: copying width alone
+		// would leave the other tabs showing a column this one has hidden.
+		const bool hidden = src->IsColumnHidden(i);
+		if (dst->IsColumnHidden(i) != hidden) {
+			dst->SetColumnHidden(i, hidden, src->GetColumn(i)->GetWidth());
 		}
-		if (!from->IsHidden() && to->GetWidth() != from->GetWidth()) {
-			to->SetWidth(from->GetWidth());
+		if (!hidden && dst->GetColumn(i)->GetWidth() != src->GetColumn(i)->GetWidth()) {
+			dst->GetColumn(i)->SetWidth(src->GetColumn(i)->GetWidth());
 		}
 	}
 	dst->UpdateExpanderColumn();
@@ -759,11 +759,33 @@ void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 	for (unsigned i = 0; i < columns; ++i) {
 		const wxDataViewColumn *col = GetColumn(i);
 		menu.AppendCheckItem(static_cast<int>(i) + MP_LISTCOL_1, col->GetTitle());
-		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, !col->IsHidden());
+		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, !IsColumnHidden(static_cast<int>(i)));
 	}
 
 	PopupMenu(&menu);
 	event.Skip();
+}
+
+bool CSearchListCtrl::IsColumnHidden(int col) const
+{
+	return (col >= 0) && (static_cast<size_t>(col) < m_columnHidden.size()) && m_columnHidden[col];
+}
+
+void CSearchListCtrl::SetColumnHidden(int col, bool hidden, int width)
+{
+	if (col < 0 || static_cast<unsigned>(col) >= GetColumnCount()) {
+		return;
+	}
+	if (static_cast<size_t>(col) >= m_columnHidden.size()) {
+		m_columnHidden.resize(GetColumnCount(), false);
+	}
+
+	m_columnHidden[col] = hidden;
+	wxDataViewColumn *column = GetColumn(static_cast<unsigned>(col));
+	column->SetHidden(hidden);
+	if (!hidden && width > COL_SIZE_MIN) {
+		column->SetWidth(width);
+	}
 }
 
 void CSearchListCtrl::UpdateExpanderColumn()
@@ -773,8 +795,8 @@ void CSearchListCtrl::UpdateExpanderColumn()
 	// leave children unreachable, and re-showing a column to its left has
 	// to take them back rather than stranding them mid-row.
 	for (unsigned i = 0; i < GetColumnCount(); ++i) {
-		wxDataViewColumn *column = GetColumn(i);
-		if (!column->IsHidden()) {
+		if (!IsColumnHidden(static_cast<int>(i))) {
+			wxDataViewColumn *column = GetColumn(i);
 			if (GetExpanderColumn() != column) {
 				SetExpanderColumn(column);
 			}
@@ -790,16 +812,14 @@ void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
 		return;
 	}
 
-	wxDataViewColumn *column = GetColumn(static_cast<unsigned>(col));
-	if (!column->IsHidden()) {
+	if (!IsColumnHidden(col)) {
 		// Remember the width so re-showing restores what the user had,
 		// exactly as CMuleListCtrl::OnMenuSelected did.
-		m_columnStore.SetCachedWidth(col, column->GetWidth());
-		column->SetHidden(true);
+		m_columnStore.SetCachedWidth(col, GetColumn(static_cast<unsigned>(col))->GetWidth());
+		SetColumnHidden(col, true, 0);
 	} else {
 		const int cached = m_columnStore.GetCachedWidth(col);
-		column->SetHidden(false);
-		column->SetWidth(cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
+		SetColumnHidden(col, false, cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
 	}
 	UpdateExpanderColumn();
 	SyncOtherLists(this);
