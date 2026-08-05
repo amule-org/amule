@@ -26,53 +26,40 @@
 #ifndef SERVERLISTCTRL_H
 #define SERVERLISTCTRL_H
 
-#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl (and wxListItemAttr)
+#include <wx/dataview.h> // Needed for wxDataViewCtrl
 
+#include "ListColumnStore.h" // Needed for CListColumnStore, IColumnWidthProvider
+#include "Types.h"           // Needed for uint64
+
+#include <list>
 #include <map>
-
-#define COLUMN_SERVER_NAME 0
-#define COLUMN_SERVER_ADDR 1
-#define COLUMN_SERVER_PORT 2
-#define COLUMN_SERVER_DESC 3
-#define COLUMN_SERVER_PING 4
-#define COLUMN_SERVER_USERS 5
-#define COLUMN_SERVER_FILES 6
-#define COLUMN_SERVER_PRIO 7
-#define COLUMN_SERVER_FAILS 8
-#define COLUMN_SERVER_STATIC 9
-#define COLUMN_SERVER_VERSION 10
-#define COLUMN_SERVER_TCPFLAGS 11
-#define COLUMN_SERVER_UDPFLAGS 12
+#include <utility>
 
 class CServer;
-class CServerList;
-class wxListEvent;
-class wxCommandEvent;
+class CServerListModel;
 
 /**
  * The CServerListCtrl is used to display the list of servers which the user
- * can connect to and which we request sources from. It is a permanently sorted
- * list in that it always ensure that the items are sorted in the correct order.
+ * can connect to and which we request sources from. It is a permanently
+ * sorted list in that it always ensures that the items are sorted in the
+ * correct order.
  *
- * The rows are text-rendered from the model (GetItemColumnText), not
- * owner-drawn: the only graphic is the country flag in the Server Name column,
- * which a virtual list can supply through OnGetItemColumnImage.
+ * Backed by a wxDataViewCtrl (native control) rather than a wxListCtrl, for
+ * screen-reader accessibility (#180/#801). The list is flat -- every server
+ * is a top-level row, no grouping -- so CServerListModel is a plain
+ * pointer-keyed table rather than a tree, unlike CSearchListModel.
  */
-class CServerListCtrl : public CMuleVirtualListCtrl
+class CServerListCtrl : public wxDataViewCtrl
 {
 public:
 	/**
 	 * Constructor.
-	 *
-	 * @see CMuleListCtrl::CMuleListCtrl
 	 */
 	CServerListCtrl(wxWindow *parent,
 		wxWindowID winid = -1,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &size = wxDefaultSize,
-		long style = wxLC_ICON,
-		const wxValidator &validator = wxDefaultValidator,
-		const wxString &name = "mulelistctrl");
+		const wxString &name = "serverlistctrl");
 
 	/**
 	 * Destructor.
@@ -82,7 +69,7 @@ public:
 	/**
 	 * Adds a server to the list.
 	 *
-	 * @param A pointer to the new server.
+	 * @param toadd A pointer to the new server.
 	 *
 	 * Internally this function calls RefreshServer and ShowServerCount, with
 	 * the result that it is legal to add servers already in the list, though
@@ -96,23 +83,30 @@ public:
 	void RemoveServer(CServer *server);
 
 	/**
-	 * Removes all servers with the specified state.
+	 * Removes all servers, or only the currently selected ones.
 	 *
-	 * @param state All items with this state will be removed, default being all.
+	 * @param selectedOnly If true, only the selected servers are removed.
 	 */
-	void RemoveAllServers(int state = wxLIST_STATE_DONTCARE);
+	void RemoveAllServers(bool selectedOnly = false);
+
+	/**
+	 * Removes every row without the confirmation/static-server checks
+	 * RemoveAllServers() does -- used when the core's own list is reset out
+	 * from under this control (e.g. a full server.met reload).
+	 */
+	void DeleteAllItems();
 
 	/**
 	 * Updates the displayed information on a server.
 	 *
 	 * @param server The server to be updated.
 	 *
-	 * This function will not only update the displayed information, it will also
-	 * reposition the item should it be nescecarry to enforce the current sorting.
-	 * Also note that this function does not require that the server actually is
-	 * on the list already, since AddServer makes use of it, but this should
-	 * generally be avoided, since it will result in the server-count getting
-	 * skewed until the next AddServer call.
+	 * This function will not only update the displayed information, it will
+	 * also reposition the item should it be necessary to enforce the current
+	 * sorting. Also note that this function does not require that the server
+	 * actually is on the list already, since AddServer makes use of it, but
+	 * this should generally be avoided, since it will result in the
+	 * server-count getting skewed until the next AddServer call.
 	 */
 	void RefreshServer(CServer *server);
 
@@ -128,6 +122,9 @@ public:
 	 */
 	void HighlightServer(const CServer *server, bool highlight);
 
+	//! True if `server` is the one currently highlighted via HighlightServer().
+	bool IsConnected(const CServer *server) const { return server && server == m_connected; }
+
 	/**
 	 * This function updates the server-count in the server-wnd.
 	 */
@@ -141,106 +138,110 @@ public:
 	 */
 	void FitColumnsToContent();
 
+	/**
+	 * Full comparison of two servers according to this list's current sort
+	 * column/direction. Used by CServerListModel::Compare().
+	 */
+	int CompareServers(const CServer *s1, const CServer *s2) const;
+
+	/**
+	 * Index of `code`'s flag, loading the bitmap on first use. Returns an
+	 * invalid wxIcon for a code with no bundled flag.
+	 */
+	wxIcon FlagIcon(const wxString &code) const;
+
 protected:
 	/// Return old column order.
 	wxString GetOldColumnOrder() const;
 
-	/// Text of one cell, rendered on demand by the virtual control.
-	virtual wxString GetItemColumnText(wxUIntPtr item, long column) const;
-
 	/**
-	 * Image index for one cell: the host-country flag on the Server Name
-	 * column, none anywhere else.
+	 * Adapts this control to IColumnWidthProvider for CListColumnStore. See
+	 * CSearchListCtrl::ColumnWidthAdapter for why this is a separate object
+	 * rather than multiple inheritance.
 	 */
-	virtual int OnGetItemColumnImage(long item, long column) const;
+	class ColumnWidthAdapter : public IColumnWidthProvider
+	{
+	public:
+		explicit ColumnWidthAdapter(wxDataViewCtrl *ctrl)
+		: m_ctrl(ctrl)
+		{
+		}
+		int GetColumnCount() const override { return static_cast<int>(m_ctrl->GetColumnCount()); }
+		int GetColumnWidth(int col) const override { return m_ctrl->GetColumn(col)->GetWidth(); }
+		bool SetColumnWidth(int col, int width) override
+		{
+			m_ctrl->GetColumn(col)->SetWidth(width);
+			return true;
+		}
 
-	/// Bold attribute for the server we are connected to, none for the rest.
-	virtual wxListItemAttr *OnGetItemAttr(long item) const;
+	private:
+		wxDataViewCtrl *m_ctrl;
+	};
+	ColumnWidthAdapter m_widthAdapter;
 
-	/**
-	 * Ping, Users and Files change while the list is up, so sorting by one of
-	 * them enables the inherited live auto-sort.
-	 */
-	virtual bool IsLiveSortColumn() const;
+	typedef std::pair<unsigned, unsigned> CColPair;
+	typedef std::list<CColPair> CSortingList;
 
-private:
-	/**
-	 * Event-handler for handling item activation (connect).
-	 */
-	void OnItemActivated(wxListEvent &event);
+	//! Sort chain: front() is the primary sort column/order. Order values
+	//! reuse CMuleListCtrl::SORT_DES's bit value so the persisted config
+	//! stays wire-compatible (see ListColumnStore.cpp).
+	CSortingList m_sort_orders;
 
-	/**
-	 * Event-handler for displaying the popup-menu.
-	 */
-	void OnItemRightClicked(wxListEvent &event);
+	//! Single-column comparison, ported from the old CServerListCtrl::SortProc.
+	//! No column offers an alternate tie-break criterion here (unlike
+	//! Search's Sources column) -- the old SortProc never consulted a
+	//! SORT_ALT bit for any Servers column, so there is no `alt`/AltSortAllowed
+	//! parameter to thread through.
+	int CompareByColumn(const CServer *s1, const CServer *s2, unsigned column, int modifier) const;
 
-	/**
-	 * Event-handler for priority changes.
-	 */
+	CListColumnStore m_columnStore;
+	void LoadColumnSettings();
+	void SaveColumnSettings();
+	//! Applies `order` to `column`, moving it to the front of the sort
+	//! chain, sets the native column header sort indicator, and re-sorts.
+	void ApplySorting(unsigned column, unsigned order);
+
+	CServerListModel *m_model;
+
+	void OnIdle(wxIdleEvent &event);
+	void OnColumnHeaderClick(wxDataViewEvent &event);
+	void OnRightClick(wxDataViewEvent &event);
+	void OnItemActivated(wxDataViewEvent &event);
+
 	void OnPriorityChange(wxCommandEvent &event);
-
-	/**
-	 * Event-handler for static changes.
-	 */
 	void OnStaticChange(wxCommandEvent &event);
-
-	/**
-	 * Event-handler for server connections.
-	 */
 	void OnConnectToServer(wxCommandEvent &event);
-
-	/**
-	 * Event-handler for copying server-urls to the clipboard.
-	 */
 	void OnGetED2kURL(wxCommandEvent &event);
-
-	/**
-	 * Event-handler for server removal.
-	 */
 	void OnRemoveServers(wxCommandEvent &event);
 
 	/**
-	 * Event-handler for deleting servers when the delete-key is pressed.
+	 * Type-to-select plus Delete-to-remove, reimplemented for
+	 * wxDataViewCtrl -- see CSearchListCtrl::OnChar for the full rationale
+	 * (none of the backends provide type-ahead-jump the way CMuleListCtrl's
+	 * did). The Delete-key handling that used to be CServerListCtrl's own
+	 * separate EVT_CHAR handler (OnKeyPressed) is folded in here rather than
+	 * kept as a second binding.
 	 */
-	void OnKeyPressed(wxKeyEvent &event);
+	void OnChar(wxKeyEvent &evt);
 
-	/**
-	 * Sorter function.
-	 *
-	 * @see wxListCtrl::SortItems
-	 */
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-
-	/**
-	 * Index of @a code's flag in m_images, adding the bitmap on first use.
-	 * Returns -1 for a code with no bundled flag.
-	 */
-	int FlagImage(const wxString &code) const;
+	//! Keystrokes accumulated so far, lowercased; reset after kTypeAheadResetMs.
+	wxString m_ttsText;
+	//! GetTickCount64() of the last accepted keystroke.
+	uint64 m_ttsTime = 0;
+	//! Result the last match landed on, so repeats cycle to the next one.
+	CServer *m_ttsItem = nullptr;
 
 	//! Used to keep track of the last high-lighted item.
 	const CServer *m_connected;
 
-	/**
-	 * This control's own small image list: the header sort arrows first (the
-	 * indices CMuleListCtrl::SetSorting() uses), then one entry per country
-	 * flag actually seen. It replaces the list shared by every CMuleListCtrl
-	 * so the flags stay out of every other list in the app.
-	 *
-	 * Mutable because the flags are filled in lazily from
-	 * OnGetItemColumnImage(), which the virtual control calls to paint a row
-	 * and is therefore const. Loading all ~250 flags up front instead would
-	 * decode a PNG for every country nobody is connected to.
-	 */
-	mutable wxImageList m_images;
-
-	//! ISO code -> index into m_images.
-	mutable std::map<wxString, int> m_flagImages;
-
-	//! Returned by OnGetItemAttr() for the connected server; see HighlightServer().
-	mutable wxListItemAttr m_boldAttr;
+	//! ISO code -> flag icon, filled in lazily from GetValue()'s COL_NAME
+	//! case in CServerListModel (which is otherwise const, hence mutable).
+	//! Loading all ~250 flags up front instead would decode a PNG for every
+	//! country nobody is connected to.
+	mutable std::map<wxString, wxIcon> m_flagIcons;
 
 	wxDECLARE_EVENT_TABLE();
 };
 
-#endif
+#endif // SERVERLISTCTRL_H
 // File_checked_for_headers

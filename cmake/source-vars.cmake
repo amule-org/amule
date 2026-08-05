@@ -91,6 +91,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		SearchListCtrl.cpp
 		SearchListModel.cpp
 		ServerListCtrl.cpp
+		ServerListModel.cpp
 		ServerWnd.cpp
 		SharedDirsApplyTask.cpp
 		SharedFilePeersListCtrl.cpp

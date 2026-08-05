@@ -2516,7 +2516,7 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     // Top border: without it this row sits flush against the tab strip
     // (issue #402 review: "too close to the borders of the tab container").
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
-    CServerListCtrl *item15 = new CServerListCtrl( parent, ID_SERVERLIST, wxDefaultPosition, wxSize(200, 100), wxLC_REPORT|wxSUNKEN_BORDER );
+    CServerListCtrl *item15 = new CServerListCtrl( parent, ID_SERVERLIST, wxDefaultPosition, wxSize(200, 100) );
     item0->Add( item15, wxSizerFlags(1).Expand().CenterVertical() );
     wxBoxSizer *item5 = new wxBoxSizer( wxHORIZONTAL );
 
