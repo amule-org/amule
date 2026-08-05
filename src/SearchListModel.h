@@ -70,6 +70,16 @@ public:
 	//! tree should be re-evaluated (some rows may appear/disappear).
 	void NotifyFilterChanged();
 
+	//! Results arrive in bursts, and mixing incremental Item* notifications
+	//! with the full Cleared() that a group formation requires leaves the
+	//! control's tree inconsistent on GTK/MSW (got3nks, PR #796 review, after
+	//! ItemChanged() and delete+re-add both failed to make those backends
+	//! re-derive container-ness). Every arrival now just marks the model
+	//! dirty; the control flushes one reset per idle (CSearchListCtrl::OnIdle).
+	void MarkDirty() { m_pendingReset = true; }
+	bool FlushPending();
+	bool HasPending() const { return m_pendingReset; }
+
 	static CSearchFile *ToFile(const wxDataViewItem &item)
 	{
 		return static_cast<CSearchFile *>(item.GetID());
@@ -120,6 +130,7 @@ public:
 
 private:
 	CSearchListCtrl *m_owner;
+	bool m_pendingReset = false;
 };
 
 #endif // SEARCHLISTMODEL_H

@@ -816,7 +816,14 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 				CFormat("Received duplicate results for '%s' : %s") % item->GetFileName() %
 					item->GetFileHash().Encode());
 			// Add the child, possibly updating the parents filename.
+			const size_t childrenBefore = item->GetChildren().size();
 			item->AddChild(toadd);
+			// AddChild() MERGES a duplicate filename into an existing child
+			// and deletes the file it was handed, on two of its four paths
+			// -- notifying with `toadd` afterwards would then read freed
+			// memory (got3nks, PR #796 review). Infer survival from whether
+			// the child count actually grew.
+			const bool survived = item->GetChildren().size() > childrenBefore;
 			// Structural change (leaf-or-nothing -> container, or a new row
 			// under an existing container) needs its own notification --
 			// Search_Update_Sources only signals that the parent's values
@@ -826,7 +833,9 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 			// becomes reachable there. Native NSOutlineView survives the
 			// omission by re-querying IsContainer() on every draw, which
 			// masked this on macOS.
-			Notify_Search_Add_Result(toadd);
+			if (survived) {
+				Notify_Search_Add_Result(toadd);
+			}
 			Notify_Search_Update_Sources(item);
 			return true;
 		}

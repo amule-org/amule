@@ -43,42 +43,36 @@ CSearchListModel::CSearchListModel(CSearchListCtrl *owner)
 {
 }
 
-void CSearchListModel::NotifyFileAdded(CSearchFile *file)
+void CSearchListModel::NotifyFileAdded(CSearchFile *)
 {
-	if (!m_owner->ShouldShow(file)) {
-		return;
-	}
-	CSearchFile *parent = file->GetParent();
-	ItemAdded(parent ? ToItem(parent) : wxDataViewItem(), ToItem(file));
+	MarkDirty();
 }
 
-void CSearchListModel::NotifyFileRemoved(CSearchFile *file)
+void CSearchListModel::NotifyFileRemoved(CSearchFile *)
 {
-	// Mirror NotifyFileAdded's gate: a file the control was never told about
-	// (filtered out at add time) must not be deleted from it either -- that
-	// gate is exactly ShouldShow(), the same test GetChildren() itself uses
-	// to decide what's visible (root items via ShouldShow(); children via
-	// PassesFilter(), which ShouldShow() reduces to for a childless file).
-	if (!m_owner->ShouldShow(file)) {
-		return;
-	}
-	CSearchFile *parent = file->GetParent();
-	ItemDeleted(parent ? ToItem(parent) : wxDataViewItem(), ToItem(file));
+	MarkDirty();
 }
 
-void CSearchListModel::NotifyFileUpdated(CSearchFile *file)
+void CSearchListModel::NotifyFileUpdated(CSearchFile *)
 {
-	ItemChanged(ToItem(file));
+	MarkDirty();
 }
 
 void CSearchListModel::NotifyFilterChanged()
 {
-	// The set of visible root items (and which parents count as containers)
-	// may have changed arbitrarily; a full reset is the only thing that's
-	// guaranteed correct here, at the cost of resetting expand state -- the
-	// same cost EnableFiltering()/SetFilter() already paid via
-	// DeleteAllItems()-equivalent behaviour before this port.
+	// User action: reset now rather than waiting for idle.
+	m_pendingReset = false;
 	Cleared();
+}
+
+bool CSearchListModel::FlushPending()
+{
+	if (!m_pendingReset) {
+		return false;
+	}
+	m_pendingReset = false;
+	Cleared();
+	return true;
 }
 
 unsigned int CSearchListModel::GetColumnCount() const
@@ -233,7 +227,18 @@ bool CSearchListModel::IsContainer(const wxDataViewItem &item) const
 	if (!item.IsOk()) {
 		return true; // invisible root
 	}
-	return ToFile(item)->HasChildren();
+	// Must agree with GetChildren(), which only yields children that pass
+	// the filter: answering "has children" here for a group whose variants
+	// are all filtered out draws an expander that opens onto nothing
+	// (got3nks, PR #796 review).
+	const CSearchFile *file = ToFile(item);
+	const CSearchResultList &kids = file->GetChildren();
+	for (const CSearchFile *kid : kids) {
+		if (m_owner->PassesFilter(kid)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool CSearchListModel::HasContainerColumns(const wxDataViewItem &WXUNUSED(item)) const

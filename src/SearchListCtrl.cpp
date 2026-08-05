@@ -105,44 +105,44 @@ CSearchListCtrl::CSearchListCtrl(
 		wxDATAVIEW_CELL_INERT,
 		500,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("Size"),
 		CSearchListModel::COL_SIZE,
 		wxDATAVIEW_CELL_INERT,
 		100,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("Sources"),
 		CSearchListModel::COL_SOURCES,
 		wxDATAVIEW_CELL_INERT,
 		50,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("Type"),
 		CSearchListModel::COL_TYPE,
 		wxDATAVIEW_CELL_INERT,
 		65,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Rating: smiley icon + text label in one cell.
 	AppendIconTextColumn(_("Rating"),
 		CSearchListModel::COL_RATING,
 		wxDATAVIEW_CELL_INERT,
 		120,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("FileID"),
 		CSearchListModel::COL_FILEID,
 		wxDATAVIEW_CELL_INERT,
 		280,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("Status"),
 		CSearchListModel::COL_STATUS,
 		wxDATAVIEW_CELL_INERT,
 		100,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Media tag columns: ed2k/Kad publishers (eMule, eMule AI, aMule) can
 	// advertise per-file media metadata in FT_MEDIA_LENGTH / _BITRATE /
 	// _CODEC. Cells stay empty for non-media results.
@@ -151,19 +151,19 @@ CSearchListCtrl::CSearchListCtrl(
 		wxDATAVIEW_CELL_INERT,
 		80,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("Bitrate"),
 		CSearchListModel::COL_BITRATE,
 		wxDATAVIEW_CELL_INERT,
 		80,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	AppendTextColumn(_("Codec"),
 		CSearchListModel::COL_CODEC,
 		wxDATAVIEW_CELL_INERT,
 		80,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Directories is almost always empty (only populated when the result
 	// came from a "view shared files" request, rare in practice), so put
 	// it at the end with the other usually-empty columns.
@@ -173,7 +173,7 @@ CSearchListCtrl::CSearchListCtrl(
 		wxDATAVIEW_CELL_INERT,
 		280,
 		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
 	m_columnStore.RegisterColumn(CSearchListModel::COL_NAME, 500, "N");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_SIZE, 100, "Z");
@@ -237,17 +237,19 @@ void CSearchListCtrl::LoadColumnSettings()
 	CListColumnStore::CSortingList decoded;
 	m_columnStore.LoadSettings(m_widthAdapter, "N,Z,u,Y,I,S", decoded);
 
+	// LoadSettings() returns the orders primary-LAST: CMuleListCtrl applied
+	// them by calling SetSorting() on each in turn, and each call pushes to
+	// the front, so the last one processed ends up primary. ApplySorting()
+	// has the same push-to-front semantics, so replaying them in order
+	// reproduces that -- taking front() as the primary instead (as this
+	// used to) picks the least significant entry (got3nks, PR #796 review).
 	m_sort_orders.clear();
 	for (const CListColumnStore::CColPair &pair : decoded) {
-		m_sort_orders.emplace_back(pair.first, pair.second);
+		ApplySorting(pair.first, pair.second);
 	}
 	if (m_sort_orders.empty()) {
-		m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
+		ApplySorting(CSearchListModel::COL_NAME, 0);
 	}
-
-	const CColPair &primary = m_sort_orders.front();
-	GetColumn(primary.first)->SetSortOrder(!(primary.second & SORT_DES));
-	GetModel()->Resort();
 }
 
 void CSearchListCtrl::SaveColumnSettings()
@@ -626,6 +628,51 @@ void CSearchListCtrl::OnIdle(wxIdleEvent &event)
 {
 	event.Skip();
 
+	// One coalesced rebuild per idle for everything that arrived since the
+	// last one (got3nks, PR #796 review): mixing incremental Item*
+	// notifications with the full model reset a group formation needs left
+	// wxGTK's tree inconsistent, and neither ItemChanged() nor a
+	// delete-and-re-add worked around it -- only wxDataViewModel::Cleared()
+	// reliably makes the control re-derive container-ness. Cleared() throws
+	// away the control's own view state, so selection and expansion are
+	// captured and re-applied around it -- otherwise a result landing
+	// mid-search would deselect whatever the user had picked. Items are
+	// CSearchFile*, still valid across the rebuild; ones that went away are
+	// dropped by re-checking membership against the live tree afterwards.
+	if (m_model->HasPending()) {
+		wxDataViewItemArray selected;
+		GetSelections(selected);
+		wxDataViewItemArray expanded;
+		{
+			wxDataViewItemArray roots;
+			m_model->GetChildren(wxDataViewItem(), roots);
+			for (size_t i = 0; i < roots.GetCount(); ++i) {
+				if (IsExpanded(roots[i])) {
+					expanded.Add(roots[i]);
+				}
+			}
+		}
+
+		m_model->FlushPending();
+
+		wxDataViewItemArray live;
+		m_model->GetChildren(wxDataViewItem(), live);
+		for (size_t i = 0; i < expanded.GetCount(); ++i) {
+			if (live.Index(expanded[i]) != wxNOT_FOUND) {
+				Expand(expanded[i]);
+			}
+		}
+		wxDataViewItemArray restore;
+		for (size_t i = 0; i < selected.GetCount(); ++i) {
+			if (live.Index(selected[i]) != wxNOT_FOUND) {
+				restore.Add(selected[i]);
+			}
+		}
+		if (!restore.IsEmpty()) {
+			SetSelections(restore);
+		}
+	}
+
 	// No portable wxDataViewCtrl "column resized" event exists to hook
 	// directly (unlike wxListCtrl's EVT_LIST_COL_END_DRAG), so a drag-resize
 	// is detected here by simply comparing against the last-seen widths.
@@ -654,7 +701,8 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		wxMenu *cats = new wxMenu(_("Category"));
 		cats->Append(MP_ASSIGNCAT, _("Main"));
 		for (unsigned i = 1; i < theApp->glob_prefs->GetCatCount(); i++) {
-			cats->Append(MP_ASSIGNCAT + i, theApp->glob_prefs->GetCategory(i)->title);
+			cats->Append(MP_ASSIGNCAT + static_cast<int>(i),
+				theApp->glob_prefs->GetCategory(i)->title);
 		}
 
 		menu.Append(MP_MENU_CATS, _("Download in category"), cats);
