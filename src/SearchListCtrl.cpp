@@ -622,9 +622,10 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 	for (unsigned i = 0; i < src->RealColumnCount(); ++i) {
 		// Hidden state has to travel with the width: copying width alone
 		// would leave the other tabs showing a column this one has hidden.
-		const bool hidden = src->IsColumnHidden(i);
-		if (dst->IsColumnHidden(i) != hidden) {
-			dst->SetColumnHidden(i, hidden, src->GetColumn(i)->GetWidth());
+		const int col = static_cast<int>(i);
+		const bool hidden = src->IsColumnHidden(col);
+		if (dst->IsColumnHidden(col) != hidden) {
+			dst->SetColumnHidden(col, hidden, src->GetColumn(i)->GetWidth());
 		}
 		if (!hidden && dst->GetColumn(i)->GetWidth() != src->GetColumn(i)->GetWidth()) {
 			dst->GetColumn(i)->SetWidth(src->GetColumn(i)->GetWidth());
