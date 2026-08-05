@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:37+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1349,17 +1349,17 @@ msgid "Very low"
 msgstr "Nagyon alacsony"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Alacsony"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normál"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Magas"
 
@@ -2599,11 +2599,12 @@ msgstr "Feltöltés alatt"
 msgid "None"
 msgstr "Egyik sem"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Nem"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Igen"
 
@@ -6522,37 +6523,33 @@ msgstr "Biztos, hogy törlöd az állandó %s kiszolgálót"
 msgid "Servers (%i)"
 msgstr "Kiszolgálók száma (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Kiszolgáló"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Kapcsolódás a kiszolgálóhoz"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Kiszolgáló megjelölése állandóként"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Kiszolgáló megjelölése nem állandóként"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Kiszolgálók megjelölése állandóként"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Kiszolgáló megjelölése állandóként"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Kiszolgálók megjelölése nem állandóként"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Kiszolgáló eltávolítása"
+msgid "Mark server as non-static"
+msgstr "Kiszolgáló megjelölése nem állandóként"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Kiszolgálók eltávolítása"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Kiszolgáló eltávolítása"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6577,6 +6574,10 @@ msgstr "Biztos, hogy törlöd a kiválasztott kiszolgálót?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Biztos, hogy törlöd a kiválasztott kiszolgálókat?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Kiszolgáló"
 
 #: src/ServerSocket.cpp
 #, c-format

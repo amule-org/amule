@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:39+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -1361,17 +1361,17 @@ msgid "Very low"
 msgstr "매우 낮음"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "낮음"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "보통"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "높음"
 
@@ -2624,11 +2624,12 @@ msgstr "올려주기"
 msgid "None"
 msgstr "아무도"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "아니오"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "예"
 
@@ -6582,27 +6583,18 @@ msgstr "정적 서버 %s를 삭제하시겠습니까?"
 msgid "Servers (%i)"
 msgstr "서버 (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "서버"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "서버에 연결함"
 
 #: src/ServerListCtrl.cpp
 #, fuzzy
-msgid "Mark server as static"
+msgid "Mark servers as static"
 msgstr "정적인 서버를 만듦"
 
 #: src/ServerListCtrl.cpp
 #, fuzzy
-msgid "Mark server as non-static"
-msgstr "비정적인 서버를 만듦"
-
-#: src/ServerListCtrl.cpp
-#, fuzzy
-msgid "Mark servers as static"
+msgid "Mark server as static"
 msgstr "정적인 서버를 만듦"
 
 #: src/ServerListCtrl.cpp
@@ -6612,12 +6604,17 @@ msgstr "비정적인 서버를 만듦"
 
 #: src/ServerListCtrl.cpp
 #, fuzzy
-msgid "Remove server"
-msgstr "서버를 삭제"
+msgid "Mark server as non-static"
+msgstr "비정적인 서버를 만듦"
 
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Remove servers"
+msgstr "서버를 삭제"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Remove server"
 msgstr "서버를 삭제"
 
 #: src/ServerListCtrl.cpp
@@ -6645,6 +6642,10 @@ msgstr "선택된 서버를 삭제하시겠습니까?"
 #, fuzzy
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "선택된 서버를 삭제하시겠습니까?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "서버"
 
 #: src/ServerSocket.cpp
 #, c-format

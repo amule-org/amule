@@ -66,6 +66,7 @@ src/ServerConnect.cpp
 src/Server.cpp
 src/ServerList.cpp
 src/ServerListCtrl.cpp
+src/ServerListModel.cpp
 src/ServerSocket.cpp
 src/ServerWnd.cpp
 src/SharedDirWatcher.cpp

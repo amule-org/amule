@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:38+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1352,17 +1352,17 @@ msgid "Very low"
 msgstr "非常に低い"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "低い"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "普通"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "高い"
 
@@ -2608,11 +2608,12 @@ msgstr "アップロード"
 msgid "None"
 msgstr "誰も許可しない"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "いいえ"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "はい"
 
@@ -6545,24 +6546,16 @@ msgstr "スタティックサーバ %s を本当に削除しますか？"
 msgid "Servers (%i)"
 msgstr "サーバ （%i）"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "サーバ"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "サーバへ接続する"
 
 #: src/ServerListCtrl.cpp
-msgid "Mark server as static"
+msgid "Mark servers as static"
 msgstr "サーバをスタティックとしてマークする"
 
 #: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "サーバを非スタティックとしてマークする"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark servers as static"
+msgid "Mark server as static"
 msgstr "サーバをスタティックとしてマークする"
 
 #: src/ServerListCtrl.cpp
@@ -6570,11 +6563,15 @@ msgid "Mark servers as non-static"
 msgstr "サーバを非スタティックとしてマークする"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "サーバを削除する"
+msgid "Mark server as non-static"
+msgstr "サーバを非スタティックとしてマークする"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
+msgstr "サーバを削除する"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
 msgstr "サーバを削除する"
 
 #: src/ServerListCtrl.cpp
@@ -6600,6 +6597,10 @@ msgstr "全ての選択されたサーバを本当に削除しますか？"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "全ての選択されたサーバを本当に削除しますか？"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "サーバ"
 
 #: src/ServerSocket.cpp
 #, c-format

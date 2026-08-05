@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:39+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -1367,17 +1367,17 @@ msgid "Very low"
 msgstr "Labai žemas"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Žemas"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normalus"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Aukštas"
 
@@ -2633,11 +2633,12 @@ msgstr "Išsiuntimas"
 msgid "None"
 msgstr "Niekas"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Ne"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Taip"
 
@@ -6611,37 +6612,33 @@ msgstr "Ar tikrai norite pašalinti šį statišką serverį %s"
 msgid "Servers (%i)"
 msgstr "Serveriai (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Serveris"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Prisijungti prie serverio"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Pažymėti, kad serveris statiškas"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Pažymėti, kad serveris nestatiškas"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Pažymėti, kad serveriai statiški"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Pažymėti, kad serveris statiškas"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Pažymėti, kad serveriai nestatiški"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Pašalinti serverį"
+msgid "Mark server as non-static"
+msgstr "Pažymėti, kad serveris nestatiškas"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Pašalinti serverius"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Pašalinti serverį"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6666,6 +6663,10 @@ msgstr "Ar tikrai norite pašalinti pažymėtą serverį?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Ar tikrai norite pašalinti pažymėtus serverius?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Serveris"
 
 #: src/ServerSocket.cpp
 #, c-format

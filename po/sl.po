@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:44+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -1367,17 +1367,17 @@ msgid "Very low"
 msgstr "Zelo nizka"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Nizka"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Običajna"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Visoka"
 
@@ -2628,11 +2628,12 @@ msgstr "Pošiljanje"
 msgid "None"
 msgstr "Brez"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Ne"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Da"
 
@@ -6609,37 +6610,33 @@ msgstr "Ali res želite izbrisati statičen strežnik %s?"
 msgid "Servers (%i)"
 msgstr "Strežniki (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Strežnik"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Poveži se na strežnik"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Označi strežnik kot statičen"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Označi strežnik kot ne-statičen"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Označi strežnike kot statične"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Označi strežnik kot statičen"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Označi strežnike kot ne-statične"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Odstrani strežnik"
+msgid "Mark server as non-static"
+msgstr "Označi strežnik kot ne-statičen"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Odstrani strežnike"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Odstrani strežnik"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6664,6 +6661,10 @@ msgstr "Ali res želite izbrisati izbrani strežnik?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Ali res želite izbrisati izbrane strežnike?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Strežnik"
 
 #: src/ServerSocket.cpp
 #, c-format

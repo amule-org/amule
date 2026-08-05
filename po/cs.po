@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:30+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -1356,17 +1356,17 @@ msgid "Very low"
 msgstr "Velmi nízká"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Nízká"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normální"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Vysoká"
 
@@ -2597,11 +2597,12 @@ msgstr "Odesílám"
 msgid "None"
 msgstr "Nic"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Ne"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Ano"
 
@@ -6558,37 +6559,33 @@ msgstr "Opravdu si přejete smazat stálý server %s?"
 msgid "Servers (%i)"
 msgstr "Servery (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Server"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Připojit k serveru"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Označit server jako stálý"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Označit server jako nestálý"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Označit servery jako stálé"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Označit server jako stálý"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Označit servery jako nestálé"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Odstranit server"
+msgid "Mark server as non-static"
+msgstr "Označit server jako nestálý"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Vzdálené servery"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Odstranit server"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6615,6 +6612,10 @@ msgstr "Opravdu si přejete smazat vybrané servery?"
 #, fuzzy
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Opravdu si přejete smazat vybrané servery?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Server"
 
 #: src/ServerSocket.cpp
 #, c-format

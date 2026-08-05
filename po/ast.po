@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:29+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1354,17 +1354,17 @@ msgid "Very low"
 msgstr "Mui baxa"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Baxa"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Alta"
 
@@ -2616,11 +2616,12 @@ msgstr "Xuba"
 msgid "None"
 msgstr "Dengún"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Non"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Sí"
 
@@ -6579,37 +6580,33 @@ msgstr "De xuru quies desaniciar el sirvidor fixu %s"
 msgid "Servers (%i)"
 msgstr "Sirvidores (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Sirvidor"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Coneutar al sirvidor"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Conseñar como sirvidor fixu"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Conseñar como sirvidor non-fixu"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Conseñar sirvidores como fixos"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Conseñar como sirvidor fixu"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Conseñar sirvidores como non-fixos"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Desaniciar sirvidor"
+msgid "Mark server as non-static"
+msgstr "Conseñar como sirvidor non-fixu"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Desaniciar sirvidores"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Desaniciar sirvidor"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6634,6 +6631,10 @@ msgstr "¿De xuru quies desaniciar el sirvidor seleicionáu?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "¿De xuru quies desaniciar los sirvidores seleicionaos?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Sirvidor"
 
 #: src/ServerSocket.cpp
 #, c-format

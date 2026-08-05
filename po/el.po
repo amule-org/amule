@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:32+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -1362,17 +1362,17 @@ msgid "Very low"
 msgstr "Πολύ χαμηλή"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Χαμηλή"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Κανονική"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Υψηλή"
 
@@ -2625,11 +2625,12 @@ msgstr "Ανέβασμα"
 msgid "None"
 msgstr "Κανείς"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Όχι"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Ναι"
 
@@ -6592,37 +6593,33 @@ msgstr "Είστε σίγουρος/η ότι θέλετε να διαγράψε
 msgid "Servers (%i)"
 msgstr "Διακομιστές (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Διακομιστής"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Σύνδεση σε διακομιστή"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Σημαδέψτε τον διακομιστή σαν στατικό"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Σημαδέψτε τον διακομιστή σαν μη στατικό"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Σημαδέψτε τους διακομιστές σαν στατικούς"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Σημαδέψτε τον διακομιστή σαν στατικό"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Σημαδέψτε τους διακομιστές σαν μη στατικούς"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Αφαίρεση διακομιστή"
+msgid "Mark server as non-static"
+msgstr "Σημαδέψτε τον διακομιστή σαν μη στατικό"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Αφαίρεση διακομιστών"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Αφαίρεση διακομιστή"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6647,6 +6644,10 @@ msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετ�
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε τους επιλεγμένους διακομιστές;"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Διακομιστής"
 
 #: src/ServerSocket.cpp
 #, c-format

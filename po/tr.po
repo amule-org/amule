@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:45+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -1354,17 +1354,17 @@ msgid "Very low"
 msgstr "Çok düşük"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Düşük"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Yüksek"
 
@@ -2606,11 +2606,12 @@ msgstr "Gönderiliyor"
 msgid "None"
 msgstr "Yok"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Hayır"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Evet"
 
@@ -6513,37 +6514,33 @@ msgstr "Statik sunucu %s'i silmek istediğinizden emin misiniz"
 msgid "Servers (%i)"
 msgstr "Sunucular (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Sunucu"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Sunucuya bağlan"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Sunucuyu statik olarak işaretle"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Sunucuyu statik olmayan olarak işaretle"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Sunucuları statik olarak işaretle"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Sunucuyu statik olarak işaretle"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Sunucuları statik olmayan olarak işaretle"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Sunucuyu kaldır"
+msgid "Mark server as non-static"
+msgstr "Sunucuyu statik olmayan olarak işaretle"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Sunucuları kaldır"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Sunucuyu kaldır"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6568,6 +6565,10 @@ msgstr "Seçili sunucuyu silmek istediğinizden emin misiniz?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Seçili sunucuları silmek istediğinizden emin misiniz?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Sunucu"
 
 #: src/ServerSocket.cpp
 #, c-format

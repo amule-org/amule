@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:40+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1360,17 +1360,17 @@ msgid "Very low"
 msgstr "Svært låg"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Låg"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Vanleg"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Høg"
 
@@ -2622,11 +2622,12 @@ msgstr "Opplasting"
 msgid "None"
 msgstr "Ingen"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Nei"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Ja"
 
@@ -6583,37 +6584,33 @@ msgstr "Er du sikker på at du vil slette den statiske tenaren %s"
 msgid "Servers (%i)"
 msgstr "Tenarar (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Tenar"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Kople til tenar"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Merk tenar som statisk"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Merk tenar som ustatisk"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Merk tenarar som statiske"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Merk tenar som statisk"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Merk tenarar som ustatiske"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Ta bort tenar"
+msgid "Mark server as non-static"
+msgstr "Merk tenar som ustatisk"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Ta bort tenarar"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Ta bort tenar"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6638,6 +6635,10 @@ msgstr "Er du viss på at du vil slette den valde tenaren."
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Er du viss på at du vil slette dei valde tenarane?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Tenar"
 
 #: src/ServerSocket.cpp
 #, c-format

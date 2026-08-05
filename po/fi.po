@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:34+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -1353,17 +1353,17 @@ msgid "Very low"
 msgstr "Erittäin matala"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Matala"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normaali"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Korkea"
 
@@ -2609,11 +2609,12 @@ msgstr "Lähettää"
 msgid "None"
 msgstr "Ei yhtään"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Ei"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Kyllä"
 
@@ -6553,37 +6554,33 @@ msgstr "Oletko varma että haluat poistaa pysyvän palvelimen %s"
 msgid "Servers (%i)"
 msgstr "Palvelimet (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Palvelin"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Yhdistä palvelimelle"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Merkitse palvelin pysyväksi"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Poista palvelimen pysyvyysmerkintä"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Merkitse palvelimet pysyviksi"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Merkitse palvelin pysyväksi"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Poista palvelimien pysyvyysmerkintä"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Poista palvelin"
+msgid "Mark server as non-static"
+msgstr "Poista palvelimen pysyvyysmerkintä"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Poista palvelimet"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Poista palvelin"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6608,6 +6605,10 @@ msgstr "Oletko varma että haluat poistaa valitun palvelimen?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Oletko varma että haluat poistaa valitut palvelimet?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Palvelin"
 
 #: src/ServerSocket.cpp
 #, c-format

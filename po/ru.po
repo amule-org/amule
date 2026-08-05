@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:43+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1369,17 +1369,17 @@ msgid "Very low"
 msgstr "Очень низкий"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Низкий"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Обычный"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Высокий"
 
@@ -2635,11 +2635,12 @@ msgstr "Отдаётся"
 msgid "None"
 msgstr "Нет"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Нет"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Да"
 
@@ -6564,24 +6565,16 @@ msgstr "Уверены, что хотите удалить постоянный 
 msgid "Servers (%i)"
 msgstr "Серверы (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Сервер"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Подключиться к серверу"
 
 #: src/ServerListCtrl.cpp
-msgid "Mark server as static"
+msgid "Mark servers as static"
 msgstr "Внести в список постоянных серверов"
 
 #: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Удалить из списка статических серверов"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark servers as static"
+msgid "Mark server as static"
 msgstr "Внести в список постоянных серверов"
 
 #: src/ServerListCtrl.cpp
@@ -6589,12 +6582,16 @@ msgid "Mark servers as non-static"
 msgstr "Удалить из списка статических серверов"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Удалить выбранный сервер"
+msgid "Mark server as non-static"
+msgstr "Удалить из списка статических серверов"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Удалить выбранные серверы"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Удалить выбранный сервер"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6619,6 +6616,10 @@ msgstr "Удалить выбранный сервер?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Удалить выбранные серверы?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Сервер"
 
 #: src/ServerSocket.cpp
 #, c-format

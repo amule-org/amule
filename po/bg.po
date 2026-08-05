@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:29+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Bulgarian <dict@linux.zonebg.com>\n"
@@ -1332,17 +1332,17 @@ msgid "Very low"
 msgstr ""
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Ниско"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Нормален"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Високо"
 
@@ -2556,11 +2556,12 @@ msgstr "Качване"
 msgid "None"
 msgstr "никой"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Не"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Да"
 
@@ -6439,20 +6440,8 @@ msgstr ""
 msgid "Servers (%i)"
 msgstr "Сървъри (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Сървър"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
-msgstr ""
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr ""
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
@@ -6460,16 +6449,24 @@ msgid "Mark servers as static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr ""
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Премахване на сървър"
+msgid "Mark server as non-static"
+msgstr ""
 
 #: src/ServerListCtrl.cpp
 #, fuzzy
 msgid "Remove servers"
+msgstr "Премахване на сървър"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
 msgstr "Премахване на сървър"
 
 #: src/ServerListCtrl.cpp
@@ -6497,6 +6494,10 @@ msgstr "Сигурни ли сте,че желаете да откажете с�
 #, fuzzy
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Сигурни ли сте,че желаете да откажете свалянето и изтриете тези файлове ?\n"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Сървър"
 
 #: src/ServerSocket.cpp
 #, c-format

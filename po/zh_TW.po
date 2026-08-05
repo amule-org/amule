@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:47+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1351,17 +1351,17 @@ msgid "Very low"
 msgstr "極低"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "低"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "普通"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "高"
 
@@ -2605,11 +2605,12 @@ msgstr "正在上傳"
 msgid "None"
 msgstr "無"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "否"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "是"
 
@@ -6532,24 +6533,16 @@ msgstr "您確定要刪除靜態伺服器 %s"
 msgid "Servers (%i)"
 msgstr "伺服器 (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "伺服器"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "連線到伺服器"
 
 #: src/ServerListCtrl.cpp
-msgid "Mark server as static"
+msgid "Mark servers as static"
 msgstr "標記爲靜態伺服器"
 
 #: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "標記爲非靜態伺服器"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark servers as static"
+msgid "Mark server as static"
 msgstr "標記爲靜態伺服器"
 
 #: src/ServerListCtrl.cpp
@@ -6557,11 +6550,15 @@ msgid "Mark servers as non-static"
 msgstr "標記爲非靜態伺服器"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "移除伺服器"
+msgid "Mark server as non-static"
+msgstr "標記爲非靜態伺服器"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
+msgstr "移除伺服器"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
 msgstr "移除伺服器"
 
 #: src/ServerListCtrl.cpp
@@ -6587,6 +6584,10 @@ msgstr "您確定要刪除選取的伺服器嗎？"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "您確定要刪除選取的伺服器嗎？"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "伺服器"
 
 #: src/ServerSocket.cpp
 #, c-format

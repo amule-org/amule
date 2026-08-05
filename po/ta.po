@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:49+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -1312,17 +1312,17 @@ msgid "Very low"
 msgstr ""
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr ""
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr ""
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr ""
 
@@ -2525,11 +2525,12 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr ""
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr ""
 
@@ -6369,20 +6370,8 @@ msgstr ""
 msgid "Servers (%i)"
 msgstr ""
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr ""
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
-msgstr ""
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr ""
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
@@ -6390,15 +6379,23 @@ msgid "Mark servers as static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr ""
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
+msgid "Mark server as non-static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
+msgstr ""
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
@@ -6423,6 +6420,10 @@ msgstr ""
 
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
+msgstr ""
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
 msgstr ""
 
 #: src/ServerSocket.cpp

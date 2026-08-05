@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:36+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -1373,17 +1373,17 @@ msgid "Very low"
 msgstr "Moi baixa"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Baixa"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Alta"
 
@@ -2625,11 +2625,12 @@ msgstr "Enviando"
 msgid "None"
 msgstr "Ningún"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Non"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Si"
 
@@ -6559,37 +6560,33 @@ msgstr "Seguro de que quere borrar o servidor estático %s?"
 msgid "Servers (%i)"
 msgstr "Servidores (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Servidor"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Conectarse ao servidor"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Marcar servidor como estático"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Marcar servidor como non estático"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Marcar servidores como estáticos"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Marcar servidor como estático"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Marcar servidores como non estáticos"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Borrar servidor"
+msgid "Mark server as non-static"
+msgstr "Marcar servidor como non estático"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Borrar servidores"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Borrar servidor"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6614,6 +6611,10 @@ msgstr "Está seguro de que quere borrar o servidor seleccionado?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Está seguro de que quere borrar os servidores seleccionados?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Servidor"
 
 #: src/ServerSocket.cpp
 #, c-format

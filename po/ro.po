@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:43+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -1357,17 +1357,17 @@ msgid "Very low"
 msgstr "Foarte joasă"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Joasă"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normal"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "Înaltă"
 
@@ -2613,11 +2613,12 @@ msgstr "Se încarcă"
 msgid "None"
 msgstr "Niciunul"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Nu"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Da"
 
@@ -6572,37 +6573,33 @@ msgstr "Sigur doriți să ștergeți serverul static %s"
 msgid "Servers (%i)"
 msgstr "Servere (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Server"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Conectare la server"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Marcați serverul ca static"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Marcați serverul ca ne-static"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Marcați serverele ca statice"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Marcați serverul ca static"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Marcați serverele ca ne-statice"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Elimină server"
+msgid "Mark server as non-static"
+msgstr "Marcați serverul ca ne-static"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Elimină servere"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Elimină server"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6627,6 +6624,10 @@ msgstr "Sigur doriți să ștergeți serverul selectat?"
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Sigur doriți să ștergeți serverele selectate?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Server"
 
 #: src/ServerSocket.cpp
 #, c-format

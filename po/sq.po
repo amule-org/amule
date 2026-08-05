@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-05 18:19+0200\n"
 "PO-Revision-Date: 2026-08-04 15:44+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -1357,17 +1357,17 @@ msgid "Very low"
 msgstr "Shume ngadale"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Low"
 msgstr "Ngadale"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "Normal"
 msgstr "Normale"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/muuli_wdr.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/ServerListCtrl.cpp src/ServerListModel.cpp src/SharedFilesCtrl.cpp
 msgid "High"
 msgstr "E larte"
 
@@ -2616,11 +2616,12 @@ msgstr "Ngarkim"
 msgid "None"
 msgstr "Asnjeri"
 
-#: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/ServerListModel.cpp
 msgid "No"
 msgstr "Jo"
 
-#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp src/ServerListCtrl.cpp
+#: src/GenericClientListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/ServerListModel.cpp
 msgid "Yes"
 msgstr "Po"
 
@@ -6573,37 +6574,33 @@ msgstr "Jeni te sigurte qe doni te fshini kete server te qendrueshem %s"
 msgid "Servers (%i)"
 msgstr "Serverat (%i)"
 
-#: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
-msgid "Server"
-msgstr "Serveri"
-
 #: src/ServerListCtrl.cpp
 msgid "Connect to server"
 msgstr "Lidhu ne Server"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as static"
-msgstr "Shenoje Serverin si te qendrueshem"
-
-#: src/ServerListCtrl.cpp
-msgid "Mark server as non-static"
-msgstr "Shenoje Serverin si te Jo-Qendrueshem"
 
 #: src/ServerListCtrl.cpp
 msgid "Mark servers as static"
 msgstr "Shenoji Serverat si te qendrueshem"
 
 #: src/ServerListCtrl.cpp
+msgid "Mark server as static"
+msgstr "Shenoje Serverin si te qendrueshem"
+
+#: src/ServerListCtrl.cpp
 msgid "Mark servers as non-static"
 msgstr "Shenoji Serverat si te Jo-Qendrueshem"
 
 #: src/ServerListCtrl.cpp
-msgid "Remove server"
-msgstr "Hiq Server"
+msgid "Mark server as non-static"
+msgstr "Shenoje Serverin si te Jo-Qendrueshem"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove servers"
 msgstr "Hiq Serverat"
+
+#: src/ServerListCtrl.cpp
+msgid "Remove server"
+msgstr "Hiq Server"
 
 #: src/ServerListCtrl.cpp
 msgid "Remove all servers"
@@ -6628,6 +6625,10 @@ msgstr "Jeni te sigurte qe deshironi te fshini te gjithe serverin e perzgjedhur?
 #: src/ServerListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected servers?"
 msgstr "Jeni te sigurte qe deshironi te fshini serverat e zgjedhur?"
+
+#: src/ServerSocket.cpp src/ServerWnd.cpp
+msgid "Server"
+msgstr "Serveri"
 
 #: src/ServerSocket.cpp
 #, c-format
