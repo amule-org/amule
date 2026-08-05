@@ -235,21 +235,25 @@ std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
 	const std::vector<uint8_t> &clientPub,
 	const std::vector<uint8_t> &serverPub)
 {
-	std::vector<uint8_t> out;
-	out.reserve(2 + offeredCiphers.size() + clientNonce.size() + serverNonce.size() + clientPub.size() +
-		    serverPub.size());
 	// Truncation here would be a silent mismatch rather than a failure, so cap
 	// the list instead: no build offers anything close to 255 ciphers. The
 	// count and the bytes must come from one value, or a list longer than the
 	// cap would announce one length and carry another.
 	const size_t cipherCount = std::min<size_t>(offeredCiphers.size(), 255);
-	out.push_back((uint8_t)cipherCount);
-	out.insert(out.end(), offeredCiphers.begin(), offeredCiphers.begin() + (std::ptrdiff_t)cipherCount);
-	out.push_back(chosenCipher);
-	out.insert(out.end(), clientNonce.begin(), clientNonce.end());
-	out.insert(out.end(), serverNonce.begin(), serverNonce.end());
-	out.insert(out.end(), clientPub.begin(), clientPub.end());
-	out.insert(out.end(), serverPub.begin(), serverPub.end());
+	// Sized in one shot and filled by copy rather than reserve()+push_back()/insert():
+	// the latter pattern trips a GCC -O3 -Wfree-nonheap-object false positive
+	// (GCC inlines the vector's growth-guard cleanup and loses track of the
+	// pointer's provenance) even though capacity is never exceeded.
+	std::vector<uint8_t> out(2 + cipherCount + clientNonce.size() + serverNonce.size() +
+				 clientPub.size() + serverPub.size());
+	auto it = out.begin();
+	*it++ = (uint8_t)cipherCount;
+	it = std::copy_n(offeredCiphers.begin(), cipherCount, it);
+	*it++ = chosenCipher;
+	it = std::copy(clientNonce.begin(), clientNonce.end(), it);
+	it = std::copy(serverNonce.begin(), serverNonce.end(), it);
+	it = std::copy(clientPub.begin(), clientPub.end(), it);
+	std::copy(serverPub.begin(), serverPub.end(), it);
 	return out;
 }
 
