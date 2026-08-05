@@ -357,14 +357,16 @@ protected:
 
 public:
 	/**
-	 * Whether a column is hidden, tracked here rather than read back from
-	 * wxDataViewColumn::IsHidden().
+	 * Whether a column is hidden, tracked here rather than derived from the
+	 * control.
 	 *
-	 * The macOS backend overrides both SetHidden() and IsHidden(), but they
-	 * disagree: the column does disappear, while IsHidden() keeps reporting
-	 * it as shown. Reading it back would leave the header menu ticking
-	 * columns that aren't there and unable to bring them back, so this
-	 * class owns the answer and only ever writes to the control.
+	 * A hidden wxDataViewColumn keeps reporting its old width, so width
+	 * alone can't answer the question, and the width is what
+	 * CListColumnStore persists (as a negative entry carrying the size to
+	 * restore). Keeping the state here means the header menu, the
+	 * expander's leftmost-visible search, the persisted width and the
+	 * cross-tab sync all read one answer that this class controls, instead
+	 * of each re-deriving it.
 	 */
 	bool IsColumnHidden(int col) const;
 	//! Hide or show a column; width is the one to restore when showing.
