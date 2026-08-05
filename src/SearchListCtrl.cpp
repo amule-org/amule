@@ -850,8 +850,18 @@ void CSearchListCtrl::OnChar(wxKeyEvent &evt)
 		return;
 	}
 
-	// Shortcuts stay with the backend, which implements select-all natively.
 	if (evt.AltDown() || evt.ControlDown() || evt.MetaDown()) {
+		// Cmd/Ctrl+A: only wxGTK's backend selects all by itself, so do it
+		// here for all three rather than leaving macOS and MSW without it
+		// (CMuleListCtrl::OnChar implemented it explicitly for the same
+		// reason). A control-modified 'a' arrives as SOH on most ports,
+		// but not universally, so accept the letter too.
+		const int plain = wxTolower(evt.GetKeyCode());
+		if (evt.CmdDown() && (evt.GetKeyCode() == 0x01 || plain == 'a')) {
+			SelectAll();
+			return;
+		}
+		// Every other shortcut belongs to the backend.
 		evt.Skip();
 		return;
 	}
