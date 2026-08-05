@@ -358,6 +358,9 @@ protected:
 	void OnColumnHeaderRightClick(wxDataViewEvent &event);
 	void OnColumnMenuSelected(wxCommandEvent &evt);
 
+	//! Keeps the group expander on the leftmost visible column.
+	void UpdateExpanderColumn();
+
 	/**
 	 * Type-to-select, reimplemented for wxDataViewCtrl.
 	 *

@@ -245,6 +245,10 @@ void CSearchListCtrl::LoadColumnSettings()
 	CListColumnStore::CSortingList decoded;
 	m_columnStore.LoadSettings(m_widthAdapter, "N,Z,u,Y,I,S", decoded);
 
+	// Restored widths can leave the default expander column hidden, which
+	// would strand the group triangles on a column nobody can see.
+	UpdateExpanderColumn();
+
 	// LoadSettings() returns the orders primary-LAST: CMuleListCtrl applied
 	// them by calling SetSorting() on each in turn, and each call pushes to
 	// the front, so the last one processed ends up primary. ApplySorting()
@@ -751,6 +755,23 @@ void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 	event.Skip();
 }
 
+void CSearchListCtrl::UpdateExpanderColumn()
+{
+	// The expander belongs on the leftmost visible column: hiding the column
+	// that currently owns it would take the group triangles with it and
+	// leave children unreachable, and re-showing a column to its left has
+	// to take them back rather than stranding them mid-row.
+	for (unsigned i = 0; i < GetColumnCount(); ++i) {
+		wxDataViewColumn *column = GetColumn(i);
+		if (!column->IsHidden()) {
+			if (GetExpanderColumn() != column) {
+				SetExpanderColumn(column);
+			}
+			return;
+		}
+	}
+}
+
 void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
 {
 	const int col = evt.GetId() - MP_LISTCOL_1;
@@ -764,21 +785,12 @@ void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
 		// exactly as CMuleListCtrl::OnMenuSelected did.
 		m_columnStore.SetCachedWidth(col, column->GetWidth());
 		column->SetHidden(true);
-		// The expander lives on one specific column; hiding that one would
-		// take the group triangles with it and leave children unreachable.
-		if (GetExpanderColumn() == column) {
-			for (unsigned i = 0; i < GetColumnCount(); ++i) {
-				if (!GetColumn(i)->IsHidden()) {
-					SetExpanderColumn(GetColumn(i));
-					break;
-				}
-			}
-		}
 	} else {
 		const int cached = m_columnStore.GetCachedWidth(col);
 		column->SetHidden(false);
 		column->SetWidth(cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
 	}
+	UpdateExpanderColumn();
 	SaveColumnSettings();
 }
 
