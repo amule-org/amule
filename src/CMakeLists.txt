@@ -953,6 +953,8 @@ if (NEED_LIB_MULEAPPGUI)
 		ListColumnStore.cpp
 		MuleColour.cpp
 		MuleGifCtrl.cpp
+		MuleDataViewCtrl.cpp
+		MuleVirtualDataViewCtrl.cpp
 		MuleListCtrl.cpp
 		MuleVirtualListCtrl.cpp
 		MuleNotebook.cpp

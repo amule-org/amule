@@ -50,15 +50,10 @@
 #include "Preferences.h"    // Needed for thePrefs
 #include "GuiEvents.h"      // Needed for CoreNotify_Search_Add_Download
 
-wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
+wxBEGIN_EVENT_TABLE(CSearchListCtrl, CMuleDataViewCtrl)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSearchListCtrl::OnRightClick)
-	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CSearchListCtrl::OnColumnHeaderClick)
-	EVT_DATAVIEW_COLUMN_HEADER_RIGHT_CLICK(wxID_ANY, CSearchListCtrl::OnColumnHeaderRightClick)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CSearchListCtrl::OnItemActivated)
 	EVT_DATAVIEW_SELECTION_CHANGED(wxID_ANY, CSearchListCtrl::OnSelectionChanged)
-	EVT_IDLE(CSearchListCtrl::OnIdle)
-	EVT_CHAR(CSearchListCtrl::OnChar)
-	EVT_KEY_DOWN(CSearchListCtrl::OnKeyDown)
 
 	EVT_MENU(MP_GETED2KLINK, CSearchListCtrl::OnPopupGetUrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
@@ -66,7 +61,6 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
 	EVT_MENU(MP_GETCOMMENTS, CSearchListCtrl::OnGetComments)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
-	EVT_MENU_RANGE(MP_LISTCOL_1, MP_LISTCOL_15, CSearchListCtrl::OnColumnMenuSelected)
 wxEND_EVENT_TABLE()
 
 std::list<CSearchListCtrl *> CSearchListCtrl::s_lists;
@@ -83,15 +77,10 @@ const unsigned SORTING_MASK = 0x3000;
 
 CSearchListCtrl::CSearchListCtrl(
 	wxWindow *parent, wxWindowID winid, const wxPoint &pos, const wxSize &size, const wxString &name)
-// wxDataViewCtrl defaults to single selection, while the wxListCtrl this
-// replaces was multi-select unless given wxLC_SINGLE_SEL -- without
-// wxDV_MULTIPLE every GetSelections() caller below (download, copy links,
-// category assign, ...) can only ever act on one result.
-: wxDataViewCtrl(parent, winid, pos, size, wxDV_ROW_LINES | wxDV_MULTIPLE, wxDefaultValidator, name)
+: CMuleDataViewCtrl(parent, winid, pos, size, 0, name)
 , m_nResultsID(0)
 , m_browseEcid(0)
 , m_browseStatus(0)
-, m_widthAdapter(this)
 , m_filterKnown(false)
 , m_invert(false)
 , m_filterEnabled(false)
@@ -183,20 +172,9 @@ CSearchListCtrl::CSearchListCtrl(
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
-#ifdef __WXOSX__
-	// Not registered with the column store and not offered in the header
-	// menu: it exists only to absorb the trailing-column sizing described
-	// on CSearchListModel::COL_SPACER.
-	// Resizable is load-bearing: macOS hands the leftover space to the last
-	// *resizable* column, so a fixed spacer cannot shrink and the collapse
-	// falls through to the last real column instead.
-	AppendTextColumn(wxEmptyString,
-		CSearchListModel::COL_SPACER,
-		wxDATAVIEW_CELL_INERT,
-		1,
-		wxALIGN_LEFT,
-		wxDATAVIEW_COL_RESIZABLE);
-#endif
+	// Absorbs the macOS trailing-column sizing; the model answers COL_SPACER
+	// with an empty string.
+	AppendSpacerColumn(CSearchListModel::COL_SPACER);
 
 	m_columnStore.RegisterColumn(CSearchListModel::COL_NAME, 500, "N");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_SIZE, 100, "Z");
@@ -209,10 +187,6 @@ CSearchListCtrl::CSearchListCtrl(
 	m_columnStore.RegisterColumn(CSearchListModel::COL_BITRATE, 80, "B");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_CODEC, 80, "C");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_DIRECTORY, 280, "D");
-
-	// Sized before LoadColumnSettings(), which restores hidden columns through
-	// the width adapter and therefore writes into this.
-	m_columnHidden.assign(RealColumnCount(), false);
 
 	// Default sort is by name, ascending.
 	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
@@ -227,9 +201,7 @@ CSearchListCtrl::CSearchListCtrl(
 		SyncLists(s_lists.front(), this);
 	}
 
-	for (unsigned i = 0; i < RealColumnCount(); ++i) {
-		m_lastKnownWidths.push_back(GetColumn(i)->GetWidth());
-	}
+	InitColumnState();
 
 	s_lists.push_back(this);
 }
@@ -253,42 +225,6 @@ CSearchListCtrl::~CSearchListCtrl()
 		m_columnStore.SetTableName("Search");
 		SaveColumnSettings();
 	}
-}
-
-void CSearchListCtrl::LoadColumnSettings()
-{
-	if (!m_columnStore.HasTableName()) {
-		return;
-	}
-
-	CListColumnStore::CSortingList decoded;
-	m_columnStore.LoadSettings(m_widthAdapter, "N,Z,u,Y,I,S", decoded);
-
-	// Restored widths can leave the default expander column hidden, which
-	// would strand the group triangles on a column nobody can see.
-	UpdateExpanderColumn();
-
-	// LoadSettings() returns the orders primary-LAST: CMuleListCtrl applied
-	// them by calling SetSorting() on each in turn, and each call pushes to
-	// the front, so the last one processed ends up primary. ApplySorting()
-	// has the same push-to-front semantics, so replaying them in order
-	// reproduces that -- taking front() as the primary instead (as this
-	// used to) picks the least significant entry (got3nks, PR #796 review).
-	m_sort_orders.clear();
-	for (const CListColumnStore::CColPair &pair : decoded) {
-		ApplySorting(pair.first, pair.second);
-	}
-	if (m_sort_orders.empty()) {
-		ApplySorting(CSearchListModel::COL_NAME, 0);
-	}
-}
-
-void CSearchListCtrl::SaveColumnSettings()
-{
-	if (!m_columnStore.HasTableName()) {
-		return;
-	}
-	m_columnStore.SaveSettings(m_widthAdapter, m_sort_orders);
 }
 
 bool CSearchListCtrl::PassesFilter(const CSearchFile *file) const
@@ -423,7 +359,7 @@ int CSearchListCtrl::GetSelectedItemCount() const
 	return static_cast<int>(const_cast<CSearchListCtrl *>(this)->GetSelections(selections));
 }
 
-int CSearchListCtrl::CompareByColumn(
+int CSearchListCtrl::CompareFilesByColumn(
 	const CSearchFile *f1, const CSearchFile *f2, unsigned column, bool alt, int modifier) const
 {
 	switch (column) {
@@ -534,85 +470,12 @@ int CSearchListCtrl::CompareByColumn(
 
 int CSearchListCtrl::CompareFiles(const CSearchFile *f1, const CSearchFile *f2) const
 {
-	for (const CColPair &entry : m_sort_orders) {
-		const unsigned column = entry.first;
-		const unsigned order = entry.second;
-		const int modifier = (order & SORT_DES) ? -1 : 1;
-		const bool alt = (order & SORT_ALT) != 0;
-
-		int result = CompareByColumn(f1, f2, column, alt, modifier);
-		if (result != 0) {
-			return result;
-		}
-	}
-	return 0;
+	return CompareItems(CSearchListModel::ToItem(f1), CSearchListModel::ToItem(f2));
 }
 
 bool CSearchListCtrl::AltSortAllowed(unsigned column) const
 {
 	return column == CSearchListModel::COL_SOURCES;
-}
-
-void CSearchListCtrl::ApplySorting(unsigned column, unsigned order)
-{
-	CSortingList::iterator it = m_sort_orders.begin();
-	for (; it != m_sort_orders.end(); ++it) {
-		if (it->first == column) {
-			m_sort_orders.erase(it);
-			break;
-		}
-	}
-	m_sort_orders.emplace_front(column, order);
-
-	// Unmark the previous sort column (only one wxDataViewColumn can be the
-	// active sort key at a time; SetSortOrder() below moves the mark).
-	for (unsigned i = 0; i < RealColumnCount(); ++i) {
-		if (i != column && GetColumn(i)->IsSortKey()) {
-			GetColumn(i)->UnsetAsSortKey();
-		}
-	}
-	GetColumn(column)->SetSortOrder(!(order & SORT_DES));
-	GetModel()->Resort();
-
-	SyncOtherLists(this);
-}
-
-void CSearchListCtrl::OnColumnHeaderClick(wxDataViewEvent &event)
-{
-	wxDataViewColumn *col = event.GetDataViewColumn();
-	if (!col) {
-		event.Skip();
-		return;
-	}
-	const unsigned column = static_cast<unsigned>(col->GetModelColumn());
-
-	// Mirrors CMuleListCtrl::OnColumnLClick's cycle: same column clicked
-	// again flips ascending<->descending, and once descending, a further
-	// click on an alt-eligible column flips to ascending with the alt
-	// criterion toggled instead of clearing the sort.
-	unsigned sort_order = 0;
-	if (!m_sort_orders.empty() && m_sort_orders.front().first == column) {
-		sort_order = m_sort_orders.front().second;
-		if (sort_order & SORT_DES) {
-			if (AltSortAllowed(column)) {
-				sort_order = (~sort_order) & SORT_ALT;
-			} else {
-				sort_order = 0;
-			}
-		} else {
-			sort_order = SORT_DES | (sort_order & SORT_ALT);
-		}
-	} else {
-		for (CSortingList::const_iterator it = m_sort_orders.begin(); it != m_sort_orders.end();
-			++it) {
-			if (it->first == column) {
-				sort_order = it->second;
-				break;
-			}
-		}
-	}
-
-	ApplySorting(column, sort_order);
 }
 
 void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
@@ -658,10 +521,40 @@ void CSearchListCtrl::SyncOtherLists(CSearchListCtrl *src)
 	}
 }
 
-void CSearchListCtrl::OnIdle(wxIdleEvent &event)
+int CSearchListCtrl::CompareByColumn(const wxDataViewItem &item1,
+	const wxDataViewItem &item2,
+	unsigned column,
+	bool alt,
+	int modifier) const
 {
-	event.Skip();
+	return CompareFilesByColumn(
+		CSearchListModel::ToFile(item1), CSearchListModel::ToFile(item2), column, alt, modifier);
+}
 
+void CSearchListCtrl::GetDisplayOrder(wxDataViewItemArray &ordered) const
+{
+	std::vector<CSearchFile *> files;
+	BuildDisplayOrder(files);
+
+	ordered.Clear();
+	ordered.Alloc(files.size());
+	for (CSearchFile *file : files) {
+		ordered.Add(CSearchListModel::ToItem(file));
+	}
+}
+
+wxString CSearchListCtrl::GetRowLabel(const wxDataViewItem &item) const
+{
+	return CSearchListModel::ToFile(item)->GetFileName().GetPrintable();
+}
+
+wxString CSearchListCtrl::GetOldColumnOrder() const
+{
+	return "N,Z,u,Y,I,S";
+}
+
+void CSearchListCtrl::OnIdleHook()
+{
 	// One coalesced rebuild per idle for everything that arrived since the
 	// last one (got3nks, PR #796 review): mixing incremental Item*
 	// notifications with the full model reset a group formation needs left
@@ -706,21 +599,19 @@ void CSearchListCtrl::OnIdle(wxIdleEvent &event)
 			SetSelections(restore);
 		}
 	}
+}
 
-	// No portable wxDataViewCtrl "column resized" event exists to hook
-	// directly (unlike wxListCtrl's EVT_LIST_COL_END_DRAG), so a drag-resize
-	// is detected here by simply comparing against the last-seen widths.
-	bool changed = false;
-	for (int i = 0; i < (int)RealColumnCount() && i < (int)m_lastKnownWidths.size(); ++i) {
-		const int width = GetColumn(i)->GetWidth();
-		if (width != m_lastKnownWidths[i]) {
-			m_lastKnownWidths[i] = width;
-			changed = true;
-		}
+void CSearchListCtrl::OnColumnWidthsChanged()
+{
+	SyncOtherLists(this);
+}
+
+void CSearchListCtrl::OnSortingChanged()
+{
+	if (GetModel()) {
+		GetModel()->Resort();
 	}
-	if (changed) {
-		SyncOtherLists(this);
-	}
+	SyncOtherLists(this);
 }
 
 void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
@@ -762,92 +653,6 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 	} else {
 		event.Skip();
 	}
-}
-
-void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
-{
-	// Show/hide menu, as CMuleListCtrl::OnColumnRClick offered on every
-	// other list.
-	wxMenu menu;
-	const unsigned columns = std::min<unsigned>(RealColumnCount(), MP_LISTCOL_15 - MP_LISTCOL_1 + 1);
-	for (unsigned i = 0; i < columns; ++i) {
-		const wxDataViewColumn *col = GetColumn(i);
-		menu.AppendCheckItem(static_cast<int>(i) + MP_LISTCOL_1, col->GetTitle());
-		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, !IsColumnHidden(static_cast<int>(i)));
-	}
-
-	PopupMenu(&menu);
-	event.Skip();
-}
-
-unsigned CSearchListCtrl::RealColumnCount() const
-{
-	const unsigned columns = GetColumnCount();
-#ifdef __WXOSX__
-	return (columns > 0) ? columns - 1 : 0;
-#else
-	return columns;
-#endif
-}
-
-bool CSearchListCtrl::IsColumnHidden(int col) const
-{
-	return (col >= 0) && (static_cast<size_t>(col) < m_columnHidden.size()) && m_columnHidden[col];
-}
-
-void CSearchListCtrl::SetColumnHidden(int col, bool hidden, int width)
-{
-	if (col < 0 || static_cast<unsigned>(col) >= RealColumnCount()) {
-		return;
-	}
-	if (static_cast<size_t>(col) >= m_columnHidden.size()) {
-		m_columnHidden.resize(RealColumnCount(), false);
-	}
-
-	m_columnHidden[col] = hidden;
-	wxDataViewColumn *column = GetColumn(static_cast<unsigned>(col));
-	column->SetHidden(hidden);
-	if (!hidden && width > COL_SIZE_MIN) {
-		column->SetWidth(width);
-	}
-}
-
-void CSearchListCtrl::UpdateExpanderColumn()
-{
-	// The expander belongs on the leftmost visible column: hiding the column
-	// that currently owns it would take the group triangles with it and
-	// leave children unreachable, and re-showing a column to its left has
-	// to take them back rather than stranding them mid-row.
-	for (unsigned i = 0; i < RealColumnCount(); ++i) {
-		if (!IsColumnHidden(static_cast<int>(i))) {
-			wxDataViewColumn *column = GetColumn(i);
-			if (GetExpanderColumn() != column) {
-				SetExpanderColumn(column);
-			}
-			return;
-		}
-	}
-}
-
-void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
-{
-	const int col = evt.GetId() - MP_LISTCOL_1;
-	if (col < 0 || static_cast<unsigned>(col) >= RealColumnCount()) {
-		return;
-	}
-
-	if (!IsColumnHidden(col)) {
-		// Remember the width so re-showing restores what the user had,
-		// exactly as CMuleListCtrl::OnMenuSelected did.
-		m_columnStore.SetCachedWidth(col, GetColumn(static_cast<unsigned>(col))->GetWidth());
-		SetColumnHidden(col, true, 0);
-	} else {
-		const int cached = m_columnStore.GetCachedWidth(col);
-		SetColumnHidden(col, false, cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
-	}
-	UpdateExpanderColumn();
-	SyncOtherLists(this);
-	SaveColumnSettings();
 }
 
 void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
@@ -945,12 +750,6 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-namespace
-{
-//! How long a pause resets the accumulated type-ahead string, in ms.
-const uint64 kTypeAheadResetMs = 1500;
-} // namespace
-
 void CSearchListCtrl::BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const
 {
 	// The model yields top-level rows in arrival order, so they are put
@@ -997,183 +796,6 @@ void CSearchListCtrl::BuildDisplayOrder(std::vector<CSearchFile *> &ordered) con
 		std::sort(children.begin(), children.end(), byDisplayOrder);
 		ordered.insert(ordered.end(), children.begin(), children.end());
 	}
-}
-
-#ifdef __WXOSX__
-void CSearchListCtrl::PageExtendSelection(PageMotion motion)
-{
-	std::vector<CSearchFile *> ordered;
-	BuildDisplayOrder(ordered);
-	if (ordered.empty()) {
-		return;
-	}
-
-	const wxDataViewItem currentItem = GetCurrentItem();
-	CSearchFile *currentFile = currentItem.IsOk() ? CSearchListModel::ToFile(currentItem) : nullptr;
-	const auto found = std::find(ordered.begin(), ordered.end(), currentFile);
-	const bool forward = (motion == PageMotion::PageDown) || (motion == PageMotion::End);
-	const int current = (found == ordered.end())
-				    ? (forward ? -1 : static_cast<int>(ordered.size()))
-				    : static_cast<int>(std::distance(ordered.begin(), found));
-
-	const int last = static_cast<int>(ordered.size()) - 1;
-
-	int target = 0;
-	switch (motion) {
-	case PageMotion::Home:
-		target = 0;
-		break;
-	case PageMotion::End:
-		target = last;
-		break;
-	default: {
-		// GetCountPerPage() is implemented by the native macOS backend;
-		// GetItemRect() is not a substitute, since it returns an empty rect
-		// for rows that aren't currently on screen and the resulting height
-		// of zero collapses a page to a single row.
-		int rows = GetCountPerPage();
-		if (rows <= 0) {
-			rows = 10;
-		} else {
-			// Leave one row of overlap, as the other ports scroll.
-			rows = std::max(1, rows - 1);
-		}
-		const int delta = (motion == PageMotion::PageDown) ? rows : -rows;
-		target = std::min(last, std::max(0, current + delta));
-		break;
-	}
-	}
-
-	// Grow the existing selection to cover everything between where the
-	// cursor was and where it lands, so repeated presses keep extending.
-	wxDataViewItemArray selection;
-	GetSelections(selection);
-	const int from = std::min(current < 0 ? target : current, target);
-	const int to = std::max(current > last ? target : current, target);
-	for (int i = std::max(0, from); i <= std::min(last, to); ++i) {
-		const wxDataViewItem item = CSearchListModel::ToItem(ordered[i]);
-		if (selection.Index(item) == wxNOT_FOUND) {
-			selection.Add(item);
-		}
-	}
-
-	const wxDataViewItem targetItem = CSearchListModel::ToItem(ordered[target]);
-	SetSelections(selection);
-	SetCurrentItem(targetItem);
-	EnsureVisible(targetItem);
-}
-#endif // __WXOSX__
-
-void CSearchListCtrl::OnKeyDown(wxKeyEvent &evt)
-{
-#ifdef __WXOSX__
-	// NSOutlineView moves the view without touching the selection, so the
-	// shifted navigation keys -- which extend the selection on GTK and MSW
-	// -- do nothing at all here. The unshifted forms are deliberately left
-	// to the platform, which scrolls without moving the selection by
-	// convention.
-	if (evt.ShiftDown()) {
-		switch (evt.GetKeyCode()) {
-		case WXK_PAGEUP:
-			PageExtendSelection(PageMotion::PageUp);
-			return;
-		case WXK_PAGEDOWN:
-			PageExtendSelection(PageMotion::PageDown);
-			return;
-		case WXK_HOME:
-			PageExtendSelection(PageMotion::Home);
-			return;
-		case WXK_END:
-			PageExtendSelection(PageMotion::End);
-			return;
-		default:
-			break;
-		}
-	}
-#endif
-	evt.Skip();
-}
-
-void CSearchListCtrl::OnChar(wxKeyEvent &evt)
-{
-	int key = evt.GetKeyCode();
-	if (key == 0) {
-		// GetKeyCode() returns 0 for characters it can't map; the unicode
-		// key is the fallback (see CMuleListCtrl::OnChar for the history).
-		// GetUnicodeKey() returns wxChar -- a signed char in wx's UTF-8
-		// build but wchar_t in the wide build, so an unsigned-char cast
-		// would truncate the wide case and the widening is left as-is.
-		// NOLINTNEXTLINE(bugprone-signed-char-misuse)
-		key = evt.GetUnicodeKey();
-	} else if (key >= WXK_START) {
-		// Arrows, page up/down, home/end: the backend's own cursor handling
-		// owns these, and on macOS page keys deliberately scroll without
-		// moving the selection (platform convention).
-		evt.Skip();
-		return;
-	}
-
-	if (evt.AltDown() || evt.ControlDown() || evt.MetaDown()) {
-		// Cmd/Ctrl+A: only wxGTK's backend selects all by itself, so do it
-		// here for all three rather than leaving macOS and MSW without it
-		// (CMuleListCtrl::OnChar implemented it explicitly for the same
-		// reason). A control-modified 'a' arrives as SOH on most ports,
-		// but not universally, so accept the letter too.
-		const int plain = wxTolower(evt.GetKeyCode());
-		if (evt.CmdDown() && (evt.GetKeyCode() == 0x01 || plain == 'a')) {
-			SelectAll();
-			return;
-		}
-		// Every other shortcut belongs to the backend.
-		evt.Skip();
-		return;
-	}
-
-	const uint64 now = GetTickCount64();
-	if (m_ttsTime + kTypeAheadResetMs < now) {
-		m_ttsText.Clear();
-	}
-	m_ttsTime = now;
-	m_ttsText.Append(wxTolower(static_cast<wxChar>(key)));
-
-	// Match against the top-level rows in displayed order. The model yields
-	// them in arrival order, so they are sorted through the list's own
-	// comparator -- the same one CSearchListModel::Compare() uses -- rather
-	// than a second ordering that could disagree with what is on screen.
-	// (GetItemByRow()/GetRowByItem() would be the direct route but exist
-	// only in wx's generic implementation, not on GTK or macOS.)
-	std::vector<CSearchFile *> ordered;
-	BuildDisplayOrder(ordered);
-	if (ordered.empty()) {
-		return;
-	}
-
-	// A fresh single keystroke starts one past the current match so that
-	// tapping the same letter cycles; further keystrokes refine in place.
-	size_t start = 0;
-	const auto current = std::find(ordered.begin(), ordered.end(), m_ttsItem);
-	if (current != ordered.end()) {
-		start = static_cast<size_t>(std::distance(ordered.begin(), current));
-		if (m_ttsText.length() == 1) {
-			++start;
-		}
-	}
-
-	const size_t count = ordered.size();
-	for (size_t i = 0; i < count; ++i) {
-		CSearchFile *file = ordered[(start + i) % count];
-		if (file->GetFileName().GetPrintable().Lower().StartsWith(m_ttsText)) {
-			const wxDataViewItem item = CSearchListModel::ToItem(file);
-			m_ttsItem = file;
-			UnselectAll();
-			Select(item);
-			SetCurrentItem(item);
-			EnsureVisible(item);
-			return;
-		}
-	}
-	// No match: the accumulated text is kept (so a typo can be corrected by
-	// continuing to type) but the selection stays where it is.
 }
 
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)

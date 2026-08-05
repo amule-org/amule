@@ -26,7 +26,7 @@
 #ifndef SERVERLISTCTRL_H
 #define SERVERLISTCTRL_H
 
-#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl (and wxListItemAttr)
+#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
 
 #include <map>
 
@@ -43,6 +43,9 @@
 #define COLUMN_SERVER_VERSION 10
 #define COLUMN_SERVER_TCPFLAGS 11
 #define COLUMN_SERVER_UDPFLAGS 12
+//! Always empty. Absorbs the macOS trailing-column sizing; see
+//! CMuleDataViewCtrl::AppendSpacerColumn().
+#define COLUMN_SERVER_SPACER 13
 
 class CServer;
 class CServerList;
@@ -56,9 +59,9 @@ class wxCommandEvent;
  *
  * The rows are text-rendered from the model (GetItemColumnText), not
  * owner-drawn: the only graphic is the country flag in the Server Name column,
- * which a virtual list can supply through OnGetItemColumnImage.
+ * supplied through GetItemIcon().
  */
-class CServerListCtrl : public CMuleVirtualListCtrl
+class CServerListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
 	/**
@@ -67,12 +70,11 @@ public:
 	 * @see CMuleListCtrl::CMuleListCtrl
 	 */
 	CServerListCtrl(wxWindow *parent,
-		wxWindowID winid = -1,
+		wxWindowID winid = wxID_ANY,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &size = wxDefaultSize,
-		long style = wxLC_ICON,
-		const wxValidator &validator = wxDefaultValidator,
-		const wxString &name = "mulelistctrl");
+		long style = 0,
+		const wxString &name = "serverlistctrl");
 
 	/**
 	 * Destructor.
@@ -96,11 +98,11 @@ public:
 	void RemoveServer(CServer *server);
 
 	/**
-	 * Removes all servers with the specified state.
+	 * Removes servers from the list and from the core.
 	 *
-	 * @param state All items with this state will be removed, default being all.
+	 * @param selectedOnly Only the selected rows, rather than every server.
 	 */
-	void RemoveAllServers(int state = wxLIST_STATE_DONTCARE);
+	void RemoveAllServers(bool selectedOnly = false);
 
 	/**
 	 * Updates the displayed information on a server.
@@ -143,36 +145,37 @@ public:
 
 protected:
 	/// Return old column order.
-	wxString GetOldColumnOrder() const;
+	wxString GetOldColumnOrder() const override;
 
-	/// Text of one cell, rendered on demand by the virtual control.
-	virtual wxString GetItemColumnText(wxUIntPtr item, long column) const;
+	/// Text of one cell, pulled on demand for the cells being drawn.
+	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 
-	/**
-	 * Image index for one cell: the host-country flag on the Server Name
-	 * column, none anywhere else.
-	 */
-	virtual int OnGetItemColumnImage(long item, long column) const;
+	/// Host-country flag on the Server Name column, nothing elsewhere.
+	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
 
-	/// Bold attribute for the server we are connected to, none for the rest.
-	virtual wxListItemAttr *OnGetItemAttr(long item) const;
+	/// Bold for the server we are connected to, default for the rest.
+	bool GetItemAttr(wxUIntPtr item, unsigned column, wxDataViewItemAttr &attr) const override;
 
 	/**
 	 * Ping, Users and Files change while the list is up, so sorting by one of
 	 * them enables the inherited live auto-sort.
 	 */
-	virtual bool IsLiveSortColumn() const;
+	bool IsLiveSortColumn() const override;
+
+	/// Single-column comparison for the base's sort chain.
+	int CompareItemData(
+		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 
 private:
 	/**
 	 * Event-handler for handling item activation (connect).
 	 */
-	void OnItemActivated(wxListEvent &event);
+	void OnItemActivated(wxDataViewEvent &event);
 
 	/**
 	 * Event-handler for displaying the popup-menu.
 	 */
-	void OnItemRightClicked(wxListEvent &event);
+	void OnItemRightClicked(wxDataViewEvent &event);
 
 	/**
 	 * Event-handler for priority changes.
@@ -200,44 +203,28 @@ private:
 	void OnRemoveServers(wxCommandEvent &event);
 
 	/**
-	 * Event-handler for deleting servers when the delete-key is pressed.
+	 * Delete key removes the selected servers; see CMuleDataViewCtrl::OnListKey.
 	 */
-	void OnKeyPressed(wxKeyEvent &event);
+	bool OnListKey(wxKeyEvent &event) override;
 
 	/**
-	 * Sorter function.
-	 *
-	 * @see wxListCtrl::SortItems
+	 * @a code's flag, decoded on first use. An unknown code yields an
+	 * invalid icon, which draws as no icon at all.
 	 */
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-
-	/**
-	 * Index of @a code's flag in m_images, adding the bitmap on first use.
-	 * Returns -1 for a code with no bundled flag.
-	 */
-	int FlagImage(const wxString &code) const;
+	const wxIcon &FlagIcon(const wxString &code) const;
 
 	//! Used to keep track of the last high-lighted item.
 	const CServer *m_connected;
 
 	/**
-	 * This control's own small image list: the header sort arrows first (the
-	 * indices CMuleListCtrl::SetSorting() uses), then one entry per country
-	 * flag actually seen. It replaces the list shared by every CMuleListCtrl
-	 * so the flags stay out of every other list in the app.
+	 * ISO code -> flag icon, filled in lazily.
 	 *
-	 * Mutable because the flags are filled in lazily from
-	 * OnGetItemColumnImage(), which the virtual control calls to paint a row
-	 * and is therefore const. Loading all ~250 flags up front instead would
-	 * decode a PNG for every country nobody is connected to.
+	 * Mutable because the flags are decoded from GetItemIcon(), which the
+	 * control calls to paint a row and is therefore const. Loading all ~250
+	 * up front instead would decode a PNG for every country nobody is
+	 * connected to.
 	 */
-	mutable wxImageList m_images;
-
-	//! ISO code -> index into m_images.
-	mutable std::map<wxString, int> m_flagImages;
-
-	//! Returned by OnGetItemAttr() for the connected server; see HighlightServer().
-	mutable wxListItemAttr m_boldAttr;
+	mutable std::map<wxString, wxIcon> m_flagIcons;
 
 	wxDECLARE_EVENT_TABLE();
 };

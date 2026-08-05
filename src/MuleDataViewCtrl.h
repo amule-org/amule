@@ -1,0 +1,253 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program derived from the xMule, lMule or eMule project,
+// or contributed by third-party developers are copyrighted by their
+// respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
+//
+
+#ifndef MULEDATAVIEWCTRL_H
+#define MULEDATAVIEWCTRL_H
+
+#include <wx/dataview.h>
+
+#include "ListColumnStore.h" // Needed for CListColumnStore, IColumnWidthProvider, COL_SIZE_MIN
+#include "Types.h"           // Needed for uint64
+
+#include <list>
+#include <utility>
+#include <vector>
+
+/**
+ * Shared behaviour for aMule's wxDataViewCtrl-backed lists.
+ *
+ * This is the wxDataViewCtrl counterpart of CMuleListCtrl: the chrome every
+ * list needs and no list should implement twice -- column widths and their
+ * persistence, the show/hide menu, the multi-column sort chain, type-ahead
+ * selection, and the per-platform compensation the ports have had to grow.
+ *
+ * It owns no data. A subclass supplies its rows through GetDisplayOrder(),
+ * their label through GetRowLabel(), and how two of them compare on a given
+ * column through CompareByColumn(); everything else here is written in terms
+ * of those three.
+ *
+ * Lists with a flat, row-addressed model should derive from
+ * CMuleVirtualDataViewCtrl instead, which adds the item-identity bookkeeping
+ * on top of this.
+ */
+class CMuleDataViewCtrl : public wxDataViewCtrl
+{
+public:
+	CMuleDataViewCtrl(wxWindow *parent,
+		wxWindowID winid = wxID_ANY,
+		const wxPoint &pos = wxDefaultPosition,
+		const wxSize &size = wxDefaultSize,
+		long style = 0,
+		const wxString &name = "muledataviewctrl");
+
+	~CMuleDataViewCtrl() override;
+
+	//! Sort-order bits, matching CMuleListCtrl so the persisted config stays
+	//! wire-compatible across both list families.
+	enum
+	{
+		SORT_DES = 0x1,
+		SORT_ALT = 0x2,
+		SORTING_MASK = 0x3
+	};
+
+	/**
+	 * Whether a column is hidden.
+	 *
+	 * Tracked here rather than derived from the control: a hidden
+	 * wxDataViewColumn keeps reporting its previous width, so width alone
+	 * cannot answer the question, and the width is what CListColumnStore
+	 * persists (as a negative entry carrying the size to restore).
+	 */
+	bool IsColumnHidden(int col) const;
+	//! Hide or show a column; width is the one to restore when showing.
+	void SetColumnHidden(int col, bool hidden, int width);
+
+	/**
+	 * Columns the user owns, excluding the macOS spacer (see the
+	 * constructor), which must stay out of the header menu, the persisted
+	 * widths and any cross-list synchronisation.
+	 */
+	unsigned RealColumnCount() const;
+
+protected:
+	typedef std::pair<unsigned, unsigned> CColPair;
+	typedef std::list<CColPair> CSortingList;
+
+	// --- what a subclass must provide -------------------------------------
+
+	/**
+	 * The rows as displayed, addressed by position.
+	 *
+	 * Built once per operation (a keystroke, a page key) rather than probed
+	 * per row: a list that derives its order has to walk its data to answer
+	 * at all, so per-row access would repeat that walk for every row.
+	 * Implementations must include the children of expanded containers where
+	 * they have them, since the callers measure against what is on screen.
+	 */
+	virtual void GetDisplayOrder(wxDataViewItemArray &ordered) const = 0;
+
+	//! Text a row is matched against when the user types to select.
+	virtual wxString GetRowLabel(const wxDataViewItem &item) const = 0;
+
+	/**
+	 * Single-column comparison, without the chain or the direction: the
+	 * caller applies `modifier` (-1 when descending) to the result.
+	 */
+	virtual int CompareByColumn(const wxDataViewItem &item1,
+		const wxDataViewItem &item2,
+		unsigned column,
+		bool alt,
+		int modifier) const = 0;
+
+	//! Whether a column offers a secondary "alt" sort criterion.
+	virtual bool AltSortAllowed(unsigned WXUNUSED(column)) const { return false; }
+
+	//! Column-name string for migrating pre-CListColumnStore config entries.
+	virtual wxString GetOldColumnOrder() const { return wxEmptyString; }
+
+	/**
+	 * First refusal on every key, before type-ahead or the backend sees it.
+	 * Return true to swallow it; the default claims nothing.
+	 */
+	virtual bool OnListKey(wxKeyEvent &WXUNUSED(evt)) { return false; }
+
+	//! Called once per idle after the base has done its own housekeeping.
+	virtual void OnIdleHook() {}
+
+	//! Called after a column is shown or hidden from the header menu.
+	virtual void OnColumnVisibilityChanged() {}
+
+	//! Called from idle when a drag-resize changed one or more widths.
+	virtual void OnColumnWidthsChanged() {}
+
+	//! Called after the sort chain changes; the list re-orders its rows here.
+	virtual void OnSortingChanged() {}
+
+	// --- services for subclasses ------------------------------------------
+
+	//! Full chain comparison: primary column first, then the tie-breakers.
+	int CompareItems(const wxDataViewItem &item1, const wxDataViewItem &item2) const;
+
+	//! Pushes a column to the front of the sort chain and applies the caret.
+	void ApplySorting(unsigned column, unsigned order);
+
+	void LoadColumnSettings();
+	void SaveColumnSettings();
+
+	//! Keeps the expander on the leftmost visible column.
+	void UpdateExpanderColumn();
+
+	/**
+	 * Appends the trailing spacer column on macOS.
+	 *
+	 * Must be called by the subclass after its own columns are appended and
+	 * before LoadColumnSettings(): macOS sizes the last *resizable* column
+	 * to the leftover space, collapsing it to nothing once the columns are
+	 * wider than the control, so a spacer takes that role instead of a
+	 * column the user cares about. `modelColumn` is an always-empty column
+	 * the subclass' model must answer for.
+	 */
+	void AppendSpacerColumn(unsigned modelColumn);
+
+	/**
+	 * Sizes the per-column state and snapshots the current widths. Call
+	 * after the columns exist and after LoadColumnSettings(): it preserves
+	 * any hidden flags already restored through the width adapter.
+	 */
+	void InitColumnState();
+
+	/**
+	 * Adapts this control to IColumnWidthProvider for CListColumnStore.
+	 * A separate object rather than multiple inheritance: wxDataViewCtrl's
+	 * own GetColumnCount() is virtual and returns unsigned, which isn't
+	 * override-compatible with the interface's int.
+	 */
+	class ColumnWidthAdapter : public IColumnWidthProvider
+	{
+	public:
+		explicit ColumnWidthAdapter(CMuleDataViewCtrl *ctrl)
+		: m_ctrl(ctrl)
+		{
+		}
+		int GetColumnCount() const override { return static_cast<int>(m_ctrl->RealColumnCount()); }
+		//! A hidden column reads as zero-width, which is how
+		//! CListColumnStore already persists hidden state.
+		int GetColumnWidth(int col) const override;
+		bool SetColumnWidth(int col, int width) override
+		{
+			m_ctrl->SetColumnHidden(col, width <= COL_SIZE_MIN, width);
+			return true;
+		}
+
+	private:
+		CMuleDataViewCtrl *m_ctrl;
+	};
+
+	CListColumnStore m_columnStore;
+	ColumnWidthAdapter m_widthAdapter;
+	CSortingList m_sort_orders;
+
+	void OnColumnHeaderClick(wxDataViewEvent &event);
+	void OnColumnHeaderRightClick(wxDataViewEvent &event);
+	void OnColumnMenuSelected(wxCommandEvent &evt);
+	void OnIdle(wxIdleEvent &event);
+	void OnChar(wxKeyEvent &evt);
+	void OnKeyDown(wxKeyEvent &evt);
+
+private:
+	//! Per-column hidden state, indexed like the control's columns.
+	std::vector<bool> m_columnHidden;
+
+	//! Last-seen widths, for detecting a drag-resize (no portable event).
+	std::vector<int> m_lastKnownWidths;
+
+	//! True once AppendSpacerColumn() has run (macOS only).
+	bool m_hasSpacer = false;
+
+	// Type-ahead state.
+	wxString m_ttsText;
+	uint64 m_ttsTime = 0;
+	void *m_ttsItem = nullptr;
+
+#ifdef __WXOSX__
+	enum class PageMotion
+	{
+		PageUp,
+		PageDown,
+		Home,
+		End
+	};
+	/**
+	 * Extends the selection by a page, or to the start/end of the list.
+	 * GTK and MSW get this from their backends; NSOutlineView moves the
+	 * view without touching the selection.
+	 */
+	void PageExtendSelection(PageMotion motion);
+#endif
+
+	wxDECLARE_EVENT_TABLE();
+};
+
+#endif // MULEDATAVIEWCTRL_H
