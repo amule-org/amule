@@ -103,6 +103,12 @@ public:
 		COL_BITRATE,
 		COL_CODEC,
 		COL_DIRECTORY,
+		//! Always empty. macOS sizes the trailing column to the leftover
+		//! space, collapsing it to nothing once the columns are wider than
+		//! the control; a spacer at the end takes that role so no real
+		//! column is ever the one that disappears. Only appended there --
+		//! GTK and MSW lay the columns out without it.
+		COL_SPACER,
 		COL_COUNT
 	};
 

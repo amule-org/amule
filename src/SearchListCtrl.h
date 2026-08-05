@@ -218,7 +218,7 @@ protected:
 		: m_ctrl(ctrl)
 		{
 		}
-		int GetColumnCount() const override { return static_cast<int>(m_ctrl->GetColumnCount()); }
+		int GetColumnCount() const override { return static_cast<int>(m_ctrl->RealColumnCount()); }
 		// A hidden column reads as zero-width so CListColumnStore persists
 		// the hidden state through the width it already saves, with no
 		// second mechanism.
@@ -231,15 +231,13 @@ protected:
 			if (width > 0) {
 				return width;
 			}
-			// macOS sizes the trailing column to whatever space is left
-			// over, so once the columns are wider than the control it
-			// reports zero -- while still being a perfectly visible column
-			// the user can scroll to. CListColumnStore treats any width
-			// <= 0 as hidden and persists it as a negative entry, so
-			// letting that through marks the last column hidden on every
-			// shutdown, and the next launch does the same to whichever
-			// column then ends up last: one lost per restart. Fall back to
-			// what the column is known to be worth instead.
+			// A visible column should never report zero -- the spacer
+			// appended on macOS exists so the trailing-column sizing lands
+			// there instead. This is the backstop if it ever does anyway:
+			// CListColumnStore reads a width <= 0 as hidden and persists it
+			// negative, so a stray zero would hide a real column on the
+			// next launch, then do the same to whichever column became last
+			// -- one lost per restart, which is what this used to do.
 			const int cached = m_ctrl->m_columnStore.GetCachedWidth(col);
 			return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
 		}
@@ -362,15 +360,21 @@ protected:
 
 	/**
 	 * Header right-click: the column show/hide menu every other list gets
-	 * from CMuleListCtrl::OnColumnRClick(). Hiding is a zero-width column
-	 * rather than wxDataViewColumn::SetHidden(), so the state round-trips
-	 * through CListColumnStore's existing width persistence.
+	 * from CMuleListCtrl::OnColumnRClick(). Hiding calls SetHidden() and
+	 * records it in m_columnHidden; the persisted form stays a width of
+	 * zero, which CListColumnStore already understands.
 	 */
 	void OnColumnHeaderRightClick(wxDataViewEvent &event);
 	void OnColumnMenuSelected(wxCommandEvent &evt);
 
 	//! Keeps the group expander on the leftmost visible column.
 	void UpdateExpanderColumn();
+
+	/**
+	 * Columns the user owns, excluding the macOS spacer, which must stay
+	 * out of the header menu, the persisted widths and the cross-tab sync.
+	 */
+	unsigned RealColumnCount() const;
 
 public:
 	/**

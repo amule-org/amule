@@ -183,6 +183,21 @@ CSearchListCtrl::CSearchListCtrl(
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
+#ifdef __WXOSX__
+	// Not registered with the column store and not offered in the header
+	// menu: it exists only to absorb the trailing-column sizing described
+	// on CSearchListModel::COL_SPACER.
+	// Resizable is load-bearing: macOS hands the leftover space to the last
+	// *resizable* column, so a fixed spacer cannot shrink and the collapse
+	// falls through to the last real column instead.
+	AppendTextColumn(wxEmptyString,
+		CSearchListModel::COL_SPACER,
+		wxDATAVIEW_CELL_INERT,
+		1,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE);
+#endif
+
 	m_columnStore.RegisterColumn(CSearchListModel::COL_NAME, 500, "N");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_SIZE, 100, "Z");
 	m_columnStore.RegisterColumn(CSearchListModel::COL_SOURCES, 50, "u");
@@ -197,7 +212,7 @@ CSearchListCtrl::CSearchListCtrl(
 
 	// Sized before LoadColumnSettings(), which restores hidden columns through
 	// the width adapter and therefore writes into this.
-	m_columnHidden.assign(GetColumnCount(), false);
+	m_columnHidden.assign(RealColumnCount(), false);
 
 	// Default sort is by name, ascending.
 	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
@@ -212,7 +227,7 @@ CSearchListCtrl::CSearchListCtrl(
 		SyncLists(s_lists.front(), this);
 	}
 
-	for (int i = 0; i < GetColumnCount(); ++i) {
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
 		m_lastKnownWidths.push_back(GetColumn(i)->GetWidth());
 	}
 
@@ -551,8 +566,8 @@ void CSearchListCtrl::ApplySorting(unsigned column, unsigned order)
 
 	// Unmark the previous sort column (only one wxDataViewColumn can be the
 	// active sort key at a time; SetSortOrder() below moves the mark).
-	for (int i = 0; i < GetColumnCount(); ++i) {
-		if ((unsigned)i != column && GetColumn(i)->IsSortKey()) {
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
+		if (i != column && GetColumn(i)->IsSortKey()) {
 			GetColumn(i)->UnsetAsSortKey();
 		}
 	}
@@ -604,7 +619,7 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 {
 	wxCHECK_RET(src && dst, "NULL argument in SyncLists");
 
-	for (int i = 0; i < src->GetColumnCount(); ++i) {
+	for (unsigned i = 0; i < src->RealColumnCount(); ++i) {
 		// Hidden state has to travel with the width: copying width alone
 		// would leave the other tabs showing a column this one has hidden.
 		const bool hidden = src->IsColumnHidden(i);
@@ -622,8 +637,8 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 		dst->m_sort_orders = src->m_sort_orders;
 		if (!dst->m_sort_orders.empty()) {
 			const CColPair &primary = dst->m_sort_orders.front();
-			for (int i = 0; i < dst->GetColumnCount(); ++i) {
-				if ((unsigned)i != primary.first && dst->GetColumn(i)->IsSortKey()) {
+			for (unsigned i = 0; i < dst->RealColumnCount(); ++i) {
+				if (i != primary.first && dst->GetColumn(i)->IsSortKey()) {
 					dst->GetColumn(i)->UnsetAsSortKey();
 				}
 			}
@@ -695,7 +710,7 @@ void CSearchListCtrl::OnIdle(wxIdleEvent &event)
 	// directly (unlike wxListCtrl's EVT_LIST_COL_END_DRAG), so a drag-resize
 	// is detected here by simply comparing against the last-seen widths.
 	bool changed = false;
-	for (int i = 0; i < GetColumnCount() && i < (int)m_lastKnownWidths.size(); ++i) {
+	for (int i = 0; i < (int)RealColumnCount() && i < (int)m_lastKnownWidths.size(); ++i) {
 		const int width = GetColumn(i)->GetWidth();
 		if (width != m_lastKnownWidths[i]) {
 			m_lastKnownWidths[i] = width;
@@ -751,11 +766,9 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 {
 	// Show/hide menu, as CMuleListCtrl::OnColumnRClick offered on every
-	// other list. A column is "shown" when it is wider than COL_SIZE_MIN,
-	// which is also how the state reaches the config: hiding writes a
-	// zero-ish width that CListColumnStore persists like any other.
+	// other list.
 	wxMenu menu;
-	const unsigned columns = std::min<unsigned>(GetColumnCount(), MP_LISTCOL_15 - MP_LISTCOL_1 + 1);
+	const unsigned columns = std::min<unsigned>(RealColumnCount(), MP_LISTCOL_15 - MP_LISTCOL_1 + 1);
 	for (unsigned i = 0; i < columns; ++i) {
 		const wxDataViewColumn *col = GetColumn(i);
 		menu.AppendCheckItem(static_cast<int>(i) + MP_LISTCOL_1, col->GetTitle());
@@ -766,6 +779,16 @@ void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 	event.Skip();
 }
 
+unsigned CSearchListCtrl::RealColumnCount() const
+{
+	const unsigned columns = GetColumnCount();
+#ifdef __WXOSX__
+	return (columns > 0) ? columns - 1 : 0;
+#else
+	return columns;
+#endif
+}
+
 bool CSearchListCtrl::IsColumnHidden(int col) const
 {
 	return (col >= 0) && (static_cast<size_t>(col) < m_columnHidden.size()) && m_columnHidden[col];
@@ -773,11 +796,11 @@ bool CSearchListCtrl::IsColumnHidden(int col) const
 
 void CSearchListCtrl::SetColumnHidden(int col, bool hidden, int width)
 {
-	if (col < 0 || static_cast<unsigned>(col) >= GetColumnCount()) {
+	if (col < 0 || static_cast<unsigned>(col) >= RealColumnCount()) {
 		return;
 	}
 	if (static_cast<size_t>(col) >= m_columnHidden.size()) {
-		m_columnHidden.resize(GetColumnCount(), false);
+		m_columnHidden.resize(RealColumnCount(), false);
 	}
 
 	m_columnHidden[col] = hidden;
@@ -794,7 +817,7 @@ void CSearchListCtrl::UpdateExpanderColumn()
 	// that currently owns it would take the group triangles with it and
 	// leave children unreachable, and re-showing a column to its left has
 	// to take them back rather than stranding them mid-row.
-	for (unsigned i = 0; i < GetColumnCount(); ++i) {
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
 		if (!IsColumnHidden(static_cast<int>(i))) {
 			wxDataViewColumn *column = GetColumn(i);
 			if (GetExpanderColumn() != column) {
@@ -808,7 +831,7 @@ void CSearchListCtrl::UpdateExpanderColumn()
 void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
 {
 	const int col = evt.GetId() - MP_LISTCOL_1;
-	if (col < 0 || static_cast<unsigned>(col) >= GetColumnCount()) {
+	if (col < 0 || static_cast<unsigned>(col) >= RealColumnCount()) {
 		return;
 	}
 
@@ -935,17 +958,44 @@ void CSearchListCtrl::BuildDisplayOrder(std::vector<CSearchFile *> &ordered) con
 	// current sort. GetItemByRow()/GetRowByItem() would be the direct
 	// route but exist only in wx's generic implementation, not on GTK or
 	// macOS.
+	const auto byDisplayOrder = [this](const CSearchFile *f1, const CSearchFile *f2) {
+		return CompareFiles(f1, f2) < 0;
+	};
+
 	wxDataViewItemArray roots;
 	m_model->GetChildren(wxDataViewItem(), roots);
 
-	ordered.clear();
-	ordered.reserve(roots.GetCount());
+	std::vector<CSearchFile *> parents;
+	parents.reserve(roots.GetCount());
 	for (size_t i = 0; i < roots.GetCount(); ++i) {
-		ordered.push_back(CSearchListModel::ToFile(roots[i]));
+		parents.push_back(CSearchListModel::ToFile(roots[i]));
 	}
-	std::sort(ordered.begin(), ordered.end(), [this](const CSearchFile *f1, const CSearchFile *f2) {
-		return CompareFiles(f1, f2) < 0;
-	});
+	std::sort(parents.begin(), parents.end(), byDisplayOrder);
+
+	// An expanded group's children occupy rows of their own, so they belong
+	// here too: callers count rows against what is on screen (a page is
+	// GetCountPerPage() rows, children included) and select ranges of them.
+	// Leaving them out made a page overshoot and skipped every child inside
+	// the range.
+	ordered.clear();
+	ordered.reserve(parents.size());
+	for (CSearchFile *parent : parents) {
+		ordered.push_back(parent);
+
+		const wxDataViewItem item = CSearchListModel::ToItem(parent);
+		if (!IsExpanded(item)) {
+			continue;
+		}
+		wxDataViewItemArray kids;
+		m_model->GetChildren(item, kids);
+		std::vector<CSearchFile *> children;
+		children.reserve(kids.GetCount());
+		for (size_t i = 0; i < kids.GetCount(); ++i) {
+			children.push_back(CSearchListModel::ToFile(kids[i]));
+		}
+		std::sort(children.begin(), children.end(), byDisplayOrder);
+		ordered.insert(ordered.end(), children.begin(), children.end());
+	}
 }
 
 #ifdef __WXOSX__
