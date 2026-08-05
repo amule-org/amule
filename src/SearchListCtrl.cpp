@@ -601,10 +601,21 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 	wxCHECK_RET(src && dst, "NULL argument in SyncLists");
 
 	for (int i = 0; i < src->GetColumnCount(); ++i) {
-		if (dst->GetColumn(i)->GetWidth() != src->GetColumn(i)->GetWidth()) {
-			dst->GetColumn(i)->SetWidth(src->GetColumn(i)->GetWidth());
+		wxDataViewColumn *from = src->GetColumn(i);
+		wxDataViewColumn *to = dst->GetColumn(i);
+		// Hidden state has to travel with the width: a hidden column reports
+		// a width of zero, so copying width alone would leave the other tabs
+		// with a zero-width column that still counts as visible -- invisible
+		// in the list, but ticked in the header menu and impossible to
+		// restore from there.
+		if (to->IsHidden() != from->IsHidden()) {
+			to->SetHidden(from->IsHidden());
+		}
+		if (!from->IsHidden() && to->GetWidth() != from->GetWidth()) {
+			to->SetWidth(from->GetWidth());
 		}
 	}
+	dst->UpdateExpanderColumn();
 
 	if (dst->m_sort_orders.empty() || src->m_sort_orders.empty() ||
 		dst->m_sort_orders.front() != src->m_sort_orders.front()) {
@@ -791,6 +802,7 @@ void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
 		column->SetWidth(cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
 	}
 	UpdateExpanderColumn();
+	SyncOtherLists(this);
 	SaveColumnSettings();
 }
 
