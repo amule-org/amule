@@ -214,22 +214,46 @@ protected:
 	class ColumnWidthAdapter : public IColumnWidthProvider
 	{
 	public:
-		explicit ColumnWidthAdapter(wxDataViewCtrl *ctrl)
+		explicit ColumnWidthAdapter(CSearchListCtrl *ctrl)
 		: m_ctrl(ctrl)
 		{
 		}
-		int GetColumnCount() const override { return static_cast<int>(m_ctrl->GetColumnCount()); }
-		int GetColumnWidth(int col) const override { return m_ctrl->GetColumn(col)->GetWidth(); }
+		int GetColumnCount() const override { return static_cast<int>(m_ctrl->RealColumnCount()); }
+		// A hidden column reads as zero-width so CListColumnStore persists
+		// the hidden state through the width it already saves, with no
+		// second mechanism.
+		int GetColumnWidth(int col) const override
+		{
+			if (m_ctrl->IsColumnHidden(col)) {
+				return 0;
+			}
+			const int width = m_ctrl->GetColumn(col)->GetWidth();
+			if (width > 0) {
+				return width;
+			}
+			// A visible column should never report zero -- the spacer
+			// appended on macOS exists so the trailing-column sizing lands
+			// there instead. This is the backstop if it ever does anyway:
+			// CListColumnStore reads a width <= 0 as hidden and persists it
+			// negative, so a stray zero would hide a real column on the
+			// next launch, then do the same to whichever column became last
+			// -- one lost per restart, which is what this used to do.
+			const int cached = m_ctrl->m_columnStore.GetCachedWidth(col);
+			return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
+		}
 		bool SetColumnWidth(int col, int width) override
 		{
-			m_ctrl->GetColumn(col)->SetWidth(width);
+			m_ctrl->SetColumnHidden(col, width <= COL_SIZE_MIN, width);
 			return true;
 		}
 
 	private:
-		wxDataViewCtrl *m_ctrl;
+		CSearchListCtrl *m_ctrl;
 	};
 	ColumnWidthAdapter m_widthAdapter;
+
+	//! Per-column hidden state, indexed like the control's columns.
+	std::vector<bool> m_columnHidden;
 
 	typedef std::pair<unsigned, unsigned> CColPair;
 	typedef std::list<CColPair> CSortingList;
@@ -335,6 +359,42 @@ protected:
 	void OnPopupDownload(wxCommandEvent &event);
 
 	/**
+	 * Header right-click: the column show/hide menu every other list gets
+	 * from CMuleListCtrl::OnColumnRClick(). Hiding calls SetHidden() and
+	 * records it in m_columnHidden; the persisted form stays a width of
+	 * zero, which CListColumnStore already understands.
+	 */
+	void OnColumnHeaderRightClick(wxDataViewEvent &event);
+	void OnColumnMenuSelected(wxCommandEvent &evt);
+
+	//! Keeps the group expander on the leftmost visible column.
+	void UpdateExpanderColumn();
+
+	/**
+	 * Columns the user owns, excluding the macOS spacer, which must stay
+	 * out of the header menu, the persisted widths and the cross-tab sync.
+	 */
+	unsigned RealColumnCount() const;
+
+public:
+	/**
+	 * Whether a column is hidden, tracked here rather than derived from the
+	 * control.
+	 *
+	 * A hidden wxDataViewColumn keeps reporting its old width, so width
+	 * alone can't answer the question, and the width is what
+	 * CListColumnStore persists (as a negative entry carrying the size to
+	 * restore). Keeping the state here means the header menu, the
+	 * expander's leftmost-visible search, the persisted width and the
+	 * cross-tab sync all read one answer that this class controls, instead
+	 * of each re-deriving it.
+	 */
+	bool IsColumnHidden(int col) const;
+	//! Hide or show a column; width is the one to restore when showing.
+	void SetColumnHidden(int col, bool hidden, int width);
+
+private:
+	/**
 	 * Type-to-select, reimplemented for wxDataViewCtrl.
 	 *
 	 * CMuleListCtrl::OnChar() gave every list this behaviour: typing jumps
@@ -345,6 +405,33 @@ protected:
 	 * here to keep the three ports behaving alike.
 	 */
 	void OnChar(wxKeyEvent &evt);
+
+	/**
+	 * Navigation keys. Only shifted page-up/down and home/end on macOS are
+	 * handled (see PageExtendSelection); everything else goes to the
+	 * backend.
+	 */
+	void OnKeyDown(wxKeyEvent &evt);
+
+	//! Top-level rows in the order they are displayed under the current sort.
+	void BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const;
+
+#ifdef __WXOSX__
+	/**
+	 * Extends the selection by a page, or to the start/end of the list.
+	 * GTK and MSW get this from their backends; NSOutlineView moves the
+	 * view without touching the selection, so it is done by hand to keep
+	 * the three ports consistent.
+	 */
+	enum class PageMotion
+	{
+		PageUp,
+		PageDown,
+		Home,
+		End
+	};
+	void PageExtendSelection(PageMotion motion);
+#endif
 
 	//! Keystrokes accumulated so far, lowercased; reset after kTypeAheadResetMs.
 	wxString m_ttsText;
