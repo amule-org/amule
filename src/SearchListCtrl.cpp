@@ -34,7 +34,6 @@
 #include "amule.h"            // Needed for theApp
 #include "Server.h"           // Needed for CServer
 #include "ServerConnect.h"    // Needed for CServerConnect
-#include "KnownFileList.h"    // Needed for CKnownFileList
 #include "SearchList.h"       // Needed for CSearchFile
 #include "SearchListModel.h"  // Needed for CSearchListModel
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
@@ -60,7 +59,6 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
 	EVT_MENU(MP_SEARCHRELATED, CSearchListCtrl::OnRelatedSearch)
 	EVT_MENU(MP_GETCOMMENTS, CSearchListCtrl::OnGetComments)
-	EVT_MENU(MP_MARK_AS_KNOWN, CSearchListCtrl::OnMarkAsKnown)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
 wxEND_EVENT_TABLE()
@@ -822,19 +820,6 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 			_("Search error"),
 			wxOK | wxCENTRE | wxICON_ERROR);
 	}
-}
-
-void CSearchListCtrl::OnMarkAsKnown(wxCommandEvent &WXUNUSED(event))
-{
-#ifndef CLIENT_GUI
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	for (const wxDataViewItem &item : selections) {
-		CSearchFile *searchFile = CSearchListModel::ToFile(item);
-		CKnownFile *knownFile(new CKnownFile(*searchFile));
-		theApp->knownfiles->SafeAddKFile(knownFile);
-	}
-#endif
 }
 
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)

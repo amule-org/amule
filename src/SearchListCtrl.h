@@ -332,7 +332,6 @@ protected:
 	void OnRazorStatsCheck(wxCommandEvent &event);
 	void OnRelatedSearch(wxCommandEvent &event);
 	void OnGetComments(wxCommandEvent &event);
-	void OnMarkAsKnown(wxCommandEvent &event);
 	void OnPopupDownload(wxCommandEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
