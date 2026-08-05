@@ -1261,7 +1261,7 @@ CDynProgressImage::CDynProgressImage(int width, int height, wxString &tmpl, Down
 
 wxString CDynProgressImage::GetHTML()
 {
-	static const wxString progresscolor[12] = { "transparent.gif",
+	static const wxString progresscolor[12] = { wxS("transparent.gif"),
 		wxS("black.gif"),
 		wxS("yellow.gif"),
 		wxS("red.gif"),
@@ -1272,7 +1272,7 @@ wxString CDynProgressImage::GetHTML()
 		wxS("blue5.gif"),
 		wxS("blue6.gif"),
 		wxS("green.gif"),
-		wxS("greenpercent.gif")	};
+		wxS("greenpercent.gif") };
 
 	CreateSpan();
 
