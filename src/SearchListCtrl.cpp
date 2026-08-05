@@ -79,7 +79,11 @@ const unsigned SORTING_MASK = 0x3000;
 
 CSearchListCtrl::CSearchListCtrl(
 	wxWindow *parent, wxWindowID winid, const wxPoint &pos, const wxSize &size, const wxString &name)
-: wxDataViewCtrl(parent, winid, pos, size, wxDV_ROW_LINES, wxDefaultValidator, name)
+// wxDataViewCtrl defaults to single selection, while the wxListCtrl this
+// replaces was multi-select unless given wxLC_SINGLE_SEL -- without
+// wxDV_MULTIPLE every GetSelections() caller below (download, copy links,
+// category assign, ...) can only ever act on one result.
+: wxDataViewCtrl(parent, winid, pos, size, wxDV_ROW_LINES | wxDV_MULTIPLE, wxDefaultValidator, name)
 , m_nResultsID(0)
 , m_browseEcid(0)
 , m_browseStatus(0)
