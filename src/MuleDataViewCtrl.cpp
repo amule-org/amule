@@ -210,9 +210,24 @@ void CMuleDataViewCtrl::LoadColumnSettings()
 	// them by calling SetSorting() on each in turn, and each call pushes to
 	// the front, so the last one processed ends up primary. ApplySorting()
 	// has the same semantics, so replaying them in order reproduces it.
-	m_sort_orders.clear();
-	for (const CListColumnStore::CColPair &pair : decoded) {
-		ApplySorting(pair.first, pair.second);
+	// Only replace what the list installed for itself when the config actually
+	// has something stored. A profile with no saved TableOrdering for this list
+	// decodes to an empty list, and clearing unconditionally would throw away
+	// the default the list set before calling here -- CServerListCtrl sorts by
+	// name in exactly that way.
+	if (!decoded.empty()) {
+		m_sort_orders.clear();
+		for (const CListColumnStore::CColPair &pair : decoded) {
+			ApplySorting(pair.first, pair.second);
+		}
+	}
+
+	// A list that installs no default of its own (CSearchListCtrl) still has to
+	// end up with a sort chain: with none, CompareItems() answers 0 for every
+	// pair and nothing is ordered. CMuleListCtrl::LoadSettings() has always
+	// guaranteed at least one entry; keep that guarantee here.
+	if (m_sort_orders.empty()) {
+		ApplySorting(0, 0);
 	}
 }
 

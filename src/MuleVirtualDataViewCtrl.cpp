@@ -195,6 +195,14 @@ int CMuleVirtualDataViewCtrl::CompareItemsFull(wxUIntPtr data1, wxUIntPtr data2)
 
 long CMuleVirtualDataViewCtrl::InsertPos(wxUIntPtr data) const
 {
+	// With no sort chain every comparison is equal, and lower_bound would
+	// answer begin() -- putting every arrival at the front, so the list fills
+	// in reverse. CMuleListCtrl::GetInsertPos() appends when it has no sorter;
+	// match it, so an unsorted list is at least in arrival order.
+	if (m_sort_orders.empty()) {
+		return static_cast<long>(m_items.size());
+	}
+
 	const auto at =
 		std::lower_bound(m_items.begin(), m_items.end(), data, [this](wxUIntPtr lhs, wxUIntPtr rhs) {
 			return CompareItemsFull(lhs, rhs) < 0;
