@@ -25,7 +25,8 @@
 
 #include "SearchListCtrl.h" // Interface declarations
 
-#include <algorithm> // Needed for std::find, std::min
+#include <algorithm> // Needed for std::find, std::min, std::sort
+#include <vector>    // Needed for std::vector
 
 #include <common/MenuIDs.h>
 #include <common/Format.h> // Needed for CFormat
@@ -36,6 +37,7 @@
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "SearchList.h"       // Needed for CSearchFile
 #include "SearchListModel.h"  // Needed for CSearchListModel
+#include "GetTickCount.h"     // Needed for GetTickCount64()
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst (Kad comments/ratings)
 #include "SearchDlg.h"        // Needed for CSearchDlg
 #include "amuleDlg.h"         // Needed for CamuleDlg
@@ -54,6 +56,7 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CSearchListCtrl::OnItemActivated)
 	EVT_DATAVIEW_SELECTION_CHANGED(wxID_ANY, CSearchListCtrl::OnSelectionChanged)
 	EVT_IDLE(CSearchListCtrl::OnIdle)
+	EVT_CHAR(CSearchListCtrl::OnChar)
 
 	EVT_MENU(MP_GETED2KLINK, CSearchListCtrl::OnPopupGetUrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
@@ -820,6 +823,93 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 			_("Search error"),
 			wxOK | wxCENTRE | wxICON_ERROR);
 	}
+}
+
+namespace
+{
+//! How long a pause resets the accumulated type-ahead string, in ms.
+const uint64 kTypeAheadResetMs = 1500;
+} // namespace
+
+void CSearchListCtrl::OnChar(wxKeyEvent &evt)
+{
+	int key = evt.GetKeyCode();
+	if (key == 0) {
+		// GetKeyCode() returns 0 for characters it can't map; the unicode
+		// key is the fallback (see CMuleListCtrl::OnChar for the history).
+		// GetUnicodeKey() returns wxChar -- a signed char in wx's UTF-8
+		// build but wchar_t in the wide build, so an unsigned-char cast
+		// would truncate the wide case and the widening is left as-is.
+		// NOLINTNEXTLINE(bugprone-signed-char-misuse)
+		key = evt.GetUnicodeKey();
+	} else if (key >= WXK_START) {
+		// Arrows, page up/down, home/end: the backend's own cursor handling
+		// owns these, and on macOS page keys deliberately scroll without
+		// moving the selection (platform convention).
+		evt.Skip();
+		return;
+	}
+
+	// Shortcuts stay with the backend, which implements select-all natively.
+	if (evt.AltDown() || evt.ControlDown() || evt.MetaDown()) {
+		evt.Skip();
+		return;
+	}
+
+	const uint64 now = GetTickCount64();
+	if (m_ttsTime + kTypeAheadResetMs < now) {
+		m_ttsText.Clear();
+	}
+	m_ttsTime = now;
+	m_ttsText.Append(wxTolower(static_cast<wxChar>(key)));
+
+	// Match against the top-level rows in displayed order. The model yields
+	// them in arrival order, so they are sorted through the list's own
+	// comparator -- the same one CSearchListModel::Compare() uses -- rather
+	// than a second ordering that could disagree with what is on screen.
+	// (GetItemByRow()/GetRowByItem() would be the direct route but exist
+	// only in wx's generic implementation, not on GTK or macOS.)
+	wxDataViewItemArray roots;
+	m_model->GetChildren(wxDataViewItem(), roots);
+	if (roots.IsEmpty()) {
+		return;
+	}
+
+	std::vector<CSearchFile *> ordered;
+	ordered.reserve(roots.GetCount());
+	for (size_t i = 0; i < roots.GetCount(); ++i) {
+		ordered.push_back(CSearchListModel::ToFile(roots[i]));
+	}
+	std::sort(ordered.begin(), ordered.end(), [this](const CSearchFile *f1, const CSearchFile *f2) {
+		return CompareFiles(f1, f2) < 0;
+	});
+
+	// A fresh single keystroke starts one past the current match so that
+	// tapping the same letter cycles; further keystrokes refine in place.
+	size_t start = 0;
+	const auto current = std::find(ordered.begin(), ordered.end(), m_ttsItem);
+	if (current != ordered.end()) {
+		start = static_cast<size_t>(std::distance(ordered.begin(), current));
+		if (m_ttsText.length() == 1) {
+			++start;
+		}
+	}
+
+	const size_t count = ordered.size();
+	for (size_t i = 0; i < count; ++i) {
+		CSearchFile *file = ordered[(start + i) % count];
+		if (file->GetFileName().GetPrintable().Lower().StartsWith(m_ttsText)) {
+			const wxDataViewItem item = CSearchListModel::ToItem(file);
+			m_ttsItem = file;
+			UnselectAll();
+			Select(item);
+			SetCurrentItem(item);
+			EnsureVisible(item);
+			return;
+		}
+	}
+	// No match: the accumulated text is kept (so a typo can be corrected by
+	// continuing to type) but the selection stays where it is.
 }
 
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)

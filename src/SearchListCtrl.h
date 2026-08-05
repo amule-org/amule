@@ -334,6 +334,26 @@ protected:
 	void OnGetComments(wxCommandEvent &event);
 	void OnPopupDownload(wxCommandEvent &event);
 
+	/**
+	 * Type-to-select, reimplemented for wxDataViewCtrl.
+	 *
+	 * CMuleListCtrl::OnChar() gave every list this behaviour: typing jumps
+	 * the selection to the first row whose name starts with what was typed,
+	 * accumulating keystrokes until a short pause resets it. None of the
+	 * wxDataViewCtrl backends provide it -- GTK pops up its own interactive
+	 * search box instead, macOS and MSW do nothing -- so it is implemented
+	 * here to keep the three ports behaving alike.
+	 */
+	void OnChar(wxKeyEvent &evt);
+
+	//! Keystrokes accumulated so far, lowercased; reset after kTypeAheadResetMs.
+	wxString m_ttsText;
+	//! GetTickCount64() of the last accepted keystroke.
+	uint64 m_ttsTime = 0;
+	//! Result the last match landed on, so repeats cycle to the next one.
+	//! Compared by pointer against the live tree, never dereferenced blindly.
+	CSearchFile *m_ttsItem = nullptr;
+
 	wxDECLARE_EVENT_TABLE();
 };
 
