@@ -335,6 +335,15 @@ protected:
 	void OnPopupDownload(wxCommandEvent &event);
 
 	/**
+	 * Header right-click: the column show/hide menu every other list gets
+	 * from CMuleListCtrl::OnColumnRClick(). Hiding is a zero-width column
+	 * rather than wxDataViewColumn::SetHidden(), so the state round-trips
+	 * through CListColumnStore's existing width persistence.
+	 */
+	void OnColumnHeaderRightClick(wxDataViewEvent &event);
+	void OnColumnMenuSelected(wxCommandEvent &evt);
+
+	/**
 	 * Type-to-select, reimplemented for wxDataViewCtrl.
 	 *
 	 * CMuleListCtrl::OnChar() gave every list this behaviour: typing jumps
@@ -345,6 +354,24 @@ protected:
 	 * here to keep the three ports behaving alike.
 	 */
 	void OnChar(wxKeyEvent &evt);
+
+	/**
+	 * Navigation keys. Only shift+page-up/down on macOS is handled (see
+	 * PageExtendSelection); everything else goes to the backend.
+	 */
+	void OnKeyDown(wxKeyEvent &evt);
+
+	//! Top-level rows in the order they are displayed under the current sort.
+	void BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const;
+
+#ifdef __WXOSX__
+	/**
+	 * Extends the selection by one page. GTK and MSW get this from their
+	 * backends; NSOutlineView pages the view without moving the selection,
+	 * so it is done by hand to keep the three ports consistent.
+	 */
+	void PageExtendSelection(bool down);
+#endif
 
 	//! Keystrokes accumulated so far, lowercased; reset after kTypeAheadResetMs.
 	wxString m_ttsText;

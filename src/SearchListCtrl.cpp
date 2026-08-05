@@ -53,10 +53,12 @@
 wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSearchListCtrl::OnRightClick)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CSearchListCtrl::OnColumnHeaderClick)
+	EVT_DATAVIEW_COLUMN_HEADER_RIGHT_CLICK(wxID_ANY, CSearchListCtrl::OnColumnHeaderRightClick)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CSearchListCtrl::OnItemActivated)
 	EVT_DATAVIEW_SELECTION_CHANGED(wxID_ANY, CSearchListCtrl::OnSelectionChanged)
 	EVT_IDLE(CSearchListCtrl::OnIdle)
 	EVT_CHAR(CSearchListCtrl::OnChar)
+	EVT_KEY_DOWN(CSearchListCtrl::OnKeyDown)
 
 	EVT_MENU(MP_GETED2KLINK, CSearchListCtrl::OnPopupGetUrl)
 	EVT_MENU(MP_RAZORSTATS, CSearchListCtrl::OnRazorStatsCheck)
@@ -64,6 +66,7 @@ wxBEGIN_EVENT_TABLE(CSearchListCtrl, wxDataViewCtrl)
 	EVT_MENU(MP_GETCOMMENTS, CSearchListCtrl::OnGetComments)
 	EVT_MENU(MP_RESUME, CSearchListCtrl::OnPopupDownload)
 	EVT_MENU_RANGE(MP_ASSIGNCAT, MP_ASSIGNCAT + 99, CSearchListCtrl::OnPopupDownload)
+	EVT_MENU_RANGE(MP_LISTCOL_1, MP_LISTCOL_15, CSearchListCtrl::OnColumnMenuSelected)
 wxEND_EVENT_TABLE()
 
 std::list<CSearchListCtrl *> CSearchListCtrl::s_lists;
@@ -730,6 +733,44 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 	}
 }
 
+void CSearchListCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
+{
+	// Show/hide menu, as CMuleListCtrl::OnColumnRClick offered on every
+	// other list. A column is "shown" when it is wider than COL_SIZE_MIN,
+	// which is also how the state reaches the config: hiding writes a
+	// zero-ish width that CListColumnStore persists like any other.
+	wxMenu menu;
+	const unsigned columns = std::min<unsigned>(GetColumnCount(), MP_LISTCOL_15 - MP_LISTCOL_1 + 1);
+	for (unsigned i = 0; i < columns; ++i) {
+		const wxDataViewColumn *col = GetColumn(i);
+		menu.AppendCheckItem(static_cast<int>(i) + MP_LISTCOL_1, col->GetTitle());
+		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, col->GetWidth() > COL_SIZE_MIN);
+	}
+
+	PopupMenu(&menu);
+	event.Skip();
+}
+
+void CSearchListCtrl::OnColumnMenuSelected(wxCommandEvent &evt)
+{
+	const int col = evt.GetId() - MP_LISTCOL_1;
+	if (col < 0 || static_cast<unsigned>(col) >= GetColumnCount()) {
+		return;
+	}
+
+	wxDataViewColumn *column = GetColumn(static_cast<unsigned>(col));
+	if (column->GetWidth() > COL_SIZE_MIN) {
+		// Remember the width so re-showing restores what the user had,
+		// exactly as CMuleListCtrl::OnMenuSelected did.
+		m_columnStore.SetCachedWidth(col, column->GetWidth());
+		column->SetWidth(COL_SIZE_MIN);
+	} else {
+		const int cached = m_columnStore.GetCachedWidth(col);
+		column->SetWidth(cached > 0 ? cached : m_columnStore.GetColumnDefaultWidth(col));
+	}
+	SaveColumnSettings();
+}
+
 void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	CSearchFile *file = CSearchListModel::ToFile(event.GetItem());
@@ -831,6 +872,94 @@ namespace
 const uint64 kTypeAheadResetMs = 1500;
 } // namespace
 
+void CSearchListCtrl::BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const
+{
+	// The model yields top-level rows in arrival order, so they are put
+	// through this list's own comparator -- the one CSearchListModel::
+	// Compare() uses -- to match what is actually on screen under the
+	// current sort. GetItemByRow()/GetRowByItem() would be the direct
+	// route but exist only in wx's generic implementation, not on GTK or
+	// macOS.
+	wxDataViewItemArray roots;
+	m_model->GetChildren(wxDataViewItem(), roots);
+
+	ordered.clear();
+	ordered.reserve(roots.GetCount());
+	for (size_t i = 0; i < roots.GetCount(); ++i) {
+		ordered.push_back(CSearchListModel::ToFile(roots[i]));
+	}
+	std::sort(ordered.begin(), ordered.end(), [this](const CSearchFile *f1, const CSearchFile *f2) {
+		return CompareFiles(f1, f2) < 0;
+	});
+}
+
+#ifdef __WXOSX__
+void CSearchListCtrl::PageExtendSelection(bool down)
+{
+	std::vector<CSearchFile *> ordered;
+	BuildDisplayOrder(ordered);
+	if (ordered.empty()) {
+		return;
+	}
+
+	const wxDataViewItem currentItem = GetCurrentItem();
+	CSearchFile *currentFile = currentItem.IsOk() ? CSearchListModel::ToFile(currentItem) : nullptr;
+	const auto found = std::find(ordered.begin(), ordered.end(), currentFile);
+	const int current = (found == ordered.end())
+				    ? (down ? -1 : static_cast<int>(ordered.size()))
+				    : static_cast<int>(std::distance(ordered.begin(), found));
+
+	// A page is however many rows fit, less one so the row at the edge
+	// stays visible -- the same overlap the other ports scroll by.
+	int rowHeight = 0;
+	if (currentItem.IsOk()) {
+		rowHeight = GetItemRect(currentItem).height;
+	}
+	if (rowHeight <= 0) {
+		rowHeight = GetItemRect(CSearchListModel::ToItem(ordered.front())).height;
+	}
+	const int rows = (rowHeight > 0) ? std::max(1, (GetClientSize().y / rowHeight) - 1) : 1;
+
+	const int last = static_cast<int>(ordered.size()) - 1;
+	const int target = std::min(last, std::max(0, current + (down ? rows : -rows)));
+
+	// Grow the existing selection to cover everything between where the
+	// cursor was and where it lands, so repeated presses keep extending.
+	wxDataViewItemArray selection;
+	GetSelections(selection);
+	const int from = std::min(current < 0 ? target : current, target);
+	const int to = std::max(current > last ? target : current, target);
+	for (int i = std::max(0, from); i <= std::min(last, to); ++i) {
+		const wxDataViewItem item = CSearchListModel::ToItem(ordered[i]);
+		if (selection.Index(item) == wxNOT_FOUND) {
+			selection.Add(item);
+		}
+	}
+
+	const wxDataViewItem targetItem = CSearchListModel::ToItem(ordered[target]);
+	SetSelections(selection);
+	SetCurrentItem(targetItem);
+	EnsureVisible(targetItem);
+}
+#endif // __WXOSX__
+
+void CSearchListCtrl::OnKeyDown(wxKeyEvent &evt)
+{
+#ifdef __WXOSX__
+	// NSOutlineView pages the view without touching the selection, so
+	// shift+page-up/down -- which extends the selection on GTK and MSW --
+	// does nothing at all here. Plain page-up/down is deliberately left to
+	// the platform, which scrolls without moving the selection by
+	// convention; only the shifted form is handled.
+	const int key = evt.GetKeyCode();
+	if (evt.ShiftDown() && (key == WXK_PAGEUP || key == WXK_PAGEDOWN)) {
+		PageExtendSelection(key == WXK_PAGEDOWN);
+		return;
+	}
+#endif
+	evt.Skip();
+}
+
 void CSearchListCtrl::OnChar(wxKeyEvent &evt)
 {
 	int key = evt.GetKeyCode();
@@ -879,20 +1008,11 @@ void CSearchListCtrl::OnChar(wxKeyEvent &evt)
 	// than a second ordering that could disagree with what is on screen.
 	// (GetItemByRow()/GetRowByItem() would be the direct route but exist
 	// only in wx's generic implementation, not on GTK or macOS.)
-	wxDataViewItemArray roots;
-	m_model->GetChildren(wxDataViewItem(), roots);
-	if (roots.IsEmpty()) {
+	std::vector<CSearchFile *> ordered;
+	BuildDisplayOrder(ordered);
+	if (ordered.empty()) {
 		return;
 	}
-
-	std::vector<CSearchFile *> ordered;
-	ordered.reserve(roots.GetCount());
-	for (size_t i = 0; i < roots.GetCount(); ++i) {
-		ordered.push_back(CSearchListModel::ToFile(roots[i]));
-	}
-	std::sort(ordered.begin(), ordered.end(), [this](const CSearchFile *f1, const CSearchFile *f2) {
-		return CompareFiles(f1, f2) < 0;
-	});
 
 	// A fresh single keystroke starts one past the current match so that
 	// tapping the same letter cycles; further keystrokes refine in place.

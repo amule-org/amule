@@ -32,6 +32,22 @@
 #include <vector>
 
 /**
+ * Width at or below which a column counts as hidden.
+ *
+ * wxGTK reserves a few pixels for the header grip and won't shrink a column
+ * below that, so "hidden" can't mean literally zero there.  Shared by every
+ * list that offers the header's show/hide menu, so the threshold and the
+ * width written to the config stay in agreement.
+ */
+#ifdef __WXGTK__
+constexpr int COL_SIZE_MIN = 10;
+#elif defined(__WINDOWS__) || defined(__WXMAC__) || defined(__WXCOCOA__)
+constexpr int COL_SIZE_MIN = 0;
+#else
+#error Need to define COL_SIZE_MIN for your OS
+#endif
+
+/**
  * The subset of a list widget's column API that column persistence needs.
  * CMuleListCtrl already implements this exact signature set by inheriting
  * wxGenericListCtrl, so it satisfies this interface for free (see its

@@ -39,15 +39,6 @@
 
 #include <wx/artprov.h> // Needed for wxArtProvider::GetBitmap
 
-// Global constants
-#ifdef __WXGTK__
-const int COL_SIZE_MIN = 10;
-#elif defined(__WINDOWS__) || defined(__WXMAC__) || defined(__WXCOCOA__)
-const int COL_SIZE_MIN = 0;
-#else
-#error Need to define COL_SIZE_MIN for your OS
-#endif
-
 wxBEGIN_EVENT_TABLE(CMuleListCtrl, MuleExtern::wxGenericListCtrl)
 	EVT_LIST_COL_CLICK(-1, CMuleListCtrl::OnColumnLClick)
 	EVT_LIST_COL_RIGHT_CLICK(-1, CMuleListCtrl::OnColumnRClick)
