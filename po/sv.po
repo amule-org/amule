@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 15:33+0200\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
 "PO-Revision-Date: 2026-08-04 15:45+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -6279,10 +6279,6 @@ msgstr "Hämta %s för den här filen:"
 msgid "Search related files (eD2k, local server)"
 msgstr "Sök relaterade filer (eD2k, lokal server)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Markera som känd fil"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Kopiera eD2k-länken till urklipp"
@@ -8700,6 +8696,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Markera som känd fil"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Procent av den totala filer"

@@ -305,10 +305,11 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	Kademlia::CSearchManager::StopSearch(searchID, true);
 
 	// Tell the GUI before the CSearchFile objects below are deleted: in a
-	// monolithic build CSearchListCtrl holds them as raw pointers (via
-	// SetItemPtrData and m_filteredOut) and nothing else removes those rows,
-	// so a tab left open on this search would fault on the next repaint,
-	// sort, scroll or click. Also the local counterpart of amuleGUI's
+	// monolithic build CSearchListCtrl's model holds them as raw pointers
+	// (each row's wxDataViewItem ID is the CSearchFile*) and nothing else
+	// removes those rows, so a tab left open on this search would fault on
+	// the next repaint, sort, scroll or click. Also the local counterpart
+	// of amuleGUI's
 	// EC_TAG_SEARCH_EXPIRED-driven close, so "the search is gone" closes its
 	// tab through one path in both builds (got3nks, PR #680 review).
 	if (!m_shuttingDown) {
@@ -815,7 +816,26 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 				CFormat("Received duplicate results for '%s' : %s") % item->GetFileName() %
 					item->GetFileHash().Encode());
 			// Add the child, possibly updating the parents filename.
+			const size_t childrenBefore = item->GetChildren().size();
 			item->AddChild(toadd);
+			// AddChild() MERGES a duplicate filename into an existing child
+			// and deletes the file it was handed, on two of its four paths
+			// -- notifying with `toadd` afterwards would then read freed
+			// memory (got3nks, PR #796 review). Infer survival from whether
+			// the child count actually grew.
+			const bool survived = item->GetChildren().size() > childrenBefore;
+			// Structural change (leaf-or-nothing -> container, or a new row
+			// under an existing container) needs its own notification --
+			// Search_Update_Sources only signals that the parent's values
+			// changed, via wxDataViewModel::ItemChanged(), which some
+			// wxDataViewCtrl backends (GTK, MSW) don't treat as reason to
+			// re-check IsContainer()/re-fetch children, so the child never
+			// becomes reachable there. Native NSOutlineView survives the
+			// omission by re-querying IsContainer() on every draw, which
+			// masked this on macOS.
+			if (survived) {
+				Notify_Search_Add_Result(toadd);
+			}
 			Notify_Search_Update_Sources(item);
 			return true;
 		}

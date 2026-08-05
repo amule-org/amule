@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 15:33+0200\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
 "PO-Revision-Date: 2026-08-04 15:32+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -6320,10 +6320,6 @@ msgstr "Προσθήκη προαιρετικών URL για αυτό το αρ�
 msgid "Search related files (eD2k, local server)"
 msgstr "Αναζήτηση παρόμοιων αρχείων (στο eD2k, τοπικός διακομιστής)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Σημείωση αρχείου ως γνωστού"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο"
@@ -8776,6 +8772,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Σημείωση αρχείου ως γνωστού"
 
 #~ msgid "Bootstrap"
 #~ msgstr "Εκκινητήρας"

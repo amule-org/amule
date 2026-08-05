@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 15:33+0200\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
 "PO-Revision-Date: 2026-08-04 15:43+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -6299,10 +6299,6 @@ msgstr "Obține %s pentru acest fișier"
 msgid "Search related files (eD2k, local server)"
 msgstr "Caută fișiere asociate (eD2k, server local)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Marchează ca fișier cunoscut"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Copiază link-ul eD2k în memoria temporară"
@@ -8729,6 +8725,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Marchează ca fișier cunoscut"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Procentul din totalul fișierelor"

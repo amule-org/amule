@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 15:33+0200\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
 "PO-Revision-Date: 2026-08-04 15:30+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -6279,10 +6279,6 @@ msgstr "Obté %s per aquest fitxer"
 msgid "Search related files (eD2k, local server)"
 msgstr "Cerca fitxers relacionats (eD2k, servidor local)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Marca com a fitxer conegut"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Copia l'enllaç eD2k al porta-retalls"
@@ -8700,6 +8696,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Marca com a fitxer conegut"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Percentatge del total de fitxers"

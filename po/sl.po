@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 15:33+0200\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
 "PO-Revision-Date: 2026-08-04 15:44+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -6333,10 +6333,6 @@ msgstr "Dobi %s za to datoteko"
 msgid "Search related files (eD2k, local server)"
 msgstr "Poišči sorodne datoteke (eD2k, krajevni strežnik)"
 
-#: src/SearchListCtrl.cpp
-msgid "Mark as known file"
-msgstr "Označi kot znano datoteko"
-
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
 msgstr "Skopiraj povezavo eD2k na odložišče"
@@ -8767,6 +8763,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Mark as known file"
+#~ msgstr "Označi kot znano datoteko"
 
 #~ msgid "Percent of total files"
 #~ msgstr "Odstotek vseh datotek"
