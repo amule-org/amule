@@ -69,13 +69,17 @@ public:
 		bool canMultiSearch = false,
 		bool canChat = false,
 		bool canAEAD = false,
-		const std::vector<uint8_t> &clientNonce = std::vector<uint8_t>());
+		const std::vector<uint8_t> &clientNonce = std::vector<uint8_t>(),
+		const std::vector<uint8_t> &clientPubKey = std::vector<uint8_t>());
 };
 
 class CECAuthPacket : public CECPacket
 {
 public:
-	CECAuthPacket(const wxString &pass);
+	/// @a clientConfirm proves knowledge of the credential over the handshake
+	/// transcript; empty when no encryption was negotiated.
+	CECAuthPacket(
+		const wxString &pass, const std::vector<uint8_t> &clientConfirm = std::vector<uint8_t>());
 };
 
 // #warning Kry TODO - move to abstract layer.
@@ -130,11 +134,31 @@ private:
 	// of the session quietly dropping to something weaker.
 	std::vector<uint8_t> m_aeadOffered;
 
+	// Our ephemeral X25519 pair for this connection attempt. The private half
+	// is wiped as soon as the shared secret is derived: it is what an attacker
+	// who recorded the session would need, and it exists for the length of one
+	// handshake precisely so there is nothing left to compel or steal
+	// afterwards.
+	std::vector<uint8_t> m_aeadEphPriv;
+	std::vector<uint8_t> m_aeadEphPub;
+
 	// md5 of the password, lower-cased -- the value both ends hold and
 	// neither transmits. Captured before the salted-challenge step below
 	// overwrites m_connectionPassword with the value that does go on the
-	// wire, which would be useless as key material.
+	// wire, which would be useless here.
+	//
+	// No longer key material: the channel key comes from the ephemeral
+	// exchange alone, or a password learned later would decrypt a recording
+	// made earlier. This is what the confirmation tags are keyed on instead.
 	wxString m_aeadSecret;
+
+	// Our confirmation, sent with EC_OP_AUTH_PASSWD, and the daemon's, which
+	// must come back in EC_OP_AUTH_OK. With the key no longer derived from the
+	// password, these are what a relay cannot produce: it necessarily runs a
+	// different exchange on each leg, so the transcripts differ and at least
+	// one check fails.
+	std::vector<uint8_t> m_aeadClientConfirm;
+	std::vector<uint8_t> m_aeadExpectedServerConfirm;
 
 	/// Set when the daemon named a cipher and the keys derived cleanly.
 	bool m_aeadNegotiated;
@@ -147,6 +171,15 @@ private:
 	 * derivation, which it only does once the password checks out.
 	 */
 	void SetupAEADFromSalt(const CECPacket *reply);
+
+	/**
+	 * Check the daemon's key-confirmation tag in EC_OP_AUTH_OK.
+	 *
+	 * Only meaningful once encryption was negotiated; a false return means the
+	 * peer completed a key exchange but cannot prove it knows the credential,
+	 * which is what a relay looks like. The caller drops the connection.
+	 */
+	bool VerifyServerConfirm(const CECPacket *reply) const;
 
 	// Set in ConnectToCore when the dialed server address resolves to
 	// a loopback / RFC1918 LAN / RFC3927 link-local IP. Drives the
@@ -588,6 +621,19 @@ public:
 private:
 	virtual const CECPacket *OnPacketReceived(const CECPacket *packet, uint32 trueSize);
 	bool ProcessAuthPacket(const CECPacket *reply);
+
+	/**
+	 * Hand the outcome of a login attempt to the GUI, carrying whatever
+	 * m_server_reply currently explains.
+	 *
+	 * Every path that ends a login attempt must call this. Plain CloseSocket()
+	 * does not dispatch OnLost (see the note on CloseAndDispatchLost in
+	 * ECSocket.h) precisely because ProcessAuthPacket is expected to notify for
+	 * itself, so a path that closes and returns without calling this leaves
+	 * amulegui waiting on its connect-timeout watchdog instead of showing the
+	 * reason.
+	 */
+	void NotifyConnectionResult(bool connected);
 };
 
 wxDECLARE_EVENT(wxEVT_EC_CONNECTION, wxEvent);

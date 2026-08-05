@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 17:26+0200\n"
-"PO-Revision-Date: 2026-08-04 09:19+0000\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"PO-Revision-Date: 2026-08-04 15:37+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
 "Language: hr\n"
@@ -1870,7 +1870,15 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr ""
 
 #: src/ExternalConn.cpp
+msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Authentication failed: the client could not confirm the encrypted session."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -2927,7 +2935,19 @@ msgid "EC connection failed. Empty reply."
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "Could not set up connection encryption. Connection closed."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
@@ -5031,7 +5051,7 @@ msgstr "Aktivni uploadovi :"
 msgid "Show Clients for"
 msgstr "Pokazi liste"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 #, fuzzy
 msgid "All files"
 msgstr "Dijeljeni fajlovi"
@@ -6918,6 +6938,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopiraj ed2k &linkove u klipbord (&Source)"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr ""
@@ -6925,6 +6949,36 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Za ispravan izvorni link, potrebna je HIGH ID"
+
+#: src/SharedFilesCtrl.cpp
+msgid "Export to emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] "Korisnik %s (%u) dijeli direktorije %s"
+msgstr[1] "Korisnik %s (%u) dijeli direktorije %s"
+msgstr[2] "Korisnik %s (%u) dijeli direktorije %s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

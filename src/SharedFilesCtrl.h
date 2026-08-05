@@ -203,6 +203,27 @@ private:
 	void OnCreateURI(wxCommandEvent &event);
 
 	/**
+	 * Event-handler for the "Export selected files" menu item: writes the
+	 * selected files' eD2k links to an .emulecollection text collection.
+	 */
+	void OnExportCollection(wxCommandEvent &WXUNUSED(evt));
+
+	/**
+	 * The link for one file, in the flavour the given menu id asks for.
+	 * Anything other than the ids the URI menu items use yields the plain
+	 * eD2k link.
+	 */
+	wxString LinkForFile(const CKnownFile *file, int menuId) const;
+
+	/**
+	 * Every selected row's link, one per line, with a trailing newline.
+	 *
+	 * One walk of the selection serves the clipboard items and the collection
+	 * export alike; @a menuId picks the flavour, as in LinkForFile().
+	 */
+	wxString SelectedLinks(int menuId) const;
+
+	/**
 	 * Event-handler for the Edit Comment menu item.
 	 */
 	void OnEditComment(wxCommandEvent &event);

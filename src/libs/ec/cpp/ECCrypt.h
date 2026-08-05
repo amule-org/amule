@@ -34,12 +34,18 @@
 /**
  * Authenticated encryption for the External Connect packet layer.
  *
- * Both endpoints already share the EC password, so the session key is derived
- * from it rather than from a key exchange: an attacker who does not know the
- * password cannot derive the key and therefore cannot forge a tag, which is
- * what makes this resistant to an active man in the middle without needing any
- * certificate handling. The trade-off is no forward secrecy -- a password
- * compromise later would decrypt a recording made earlier.
+ * The session key comes from an ephemeral X25519 exchange, so a recording of a
+ * session cannot be decrypted later even by someone who by then holds the EC
+ * password: the keys that opened it existed only for its duration and were
+ * never written anywhere.
+ *
+ * That alone would leave an active man in the middle free to run one exchange
+ * with each side and relay between them, since a raw exchange authenticates
+ * nobody. The shared EC password is what closes that, through the confirmation
+ * tags below rather than through the key: each side proves it knows the
+ * password over the exact handshake it saw, and a relay's two handshakes
+ * necessarily differ, so at least one check fails. No certificate handling is
+ * needed for any of it.
  *
  * Nothing here is new dependency surface: the `ec` library already links
  * Crypto++ (`NEED_LIB_EC` implies `NEED_LIB_CRYPTO`), which is also where
@@ -58,8 +64,8 @@ enum Cipher : uint8_t
 	/// Preferred where available. Roughly 2.6x faster than AES-GCM in a
 	/// Crypto++ build without hardware AES -- which is every Raspberry Pi up
 	/// to and including the 4, whose Cortex-A53/A72 have no ARMv8 crypto
-	/// extensions. Needs Crypto++ 8.1, so it is compiled in conditionally
-	/// and negotiated rather than assumed.
+	/// extensions. Needs Crypto++ 8.1, which is aMule's minimum, so it is
+	/// always compiled in and simply negotiated rather than assumed.
 	Cipher_ChaCha20_Poly1305 = 2
 };
 
@@ -68,9 +74,22 @@ const size_t NONCE_TAG_LEN = 32;
 /// AEAD tag appended to every sealed body.
 const size_t AEAD_TAG_LEN = 16;
 
+/// Whether this CPU runs AES in hardware *and* cryptopp will dispatch to it.
+/// Both halves matter: where cryptopp's detection comes up empty it also falls
+/// back to table-based AES, so asking the CPU directly would have us prefer a
+/// cipher the library then runs in software.
+bool HasHardwareAES();
+
 /// Ciphers this build can actually do, strongest/fastest first. The server
-/// picks the first entry the client also offered.
+/// picks the first entry the client also offered. AES leads when it is
+/// hardware-backed, ChaCha20 otherwise -- see HasHardwareAES().
 std::vector<uint8_t> SupportedCiphers();
+
+/// SupportedCiphers() with the hardware question answered explicitly, so both
+/// orderings are testable on any machine. Kept as an overload rather than a
+/// defaulted argument: a default would make every caller's translation unit
+/// need HasHardwareAES()'s definition, and cryptopp stays out of this header.
+std::vector<uint8_t> SupportedCiphers(bool preferAES);
 
 /// Whether this build can do @a cipher at all.
 bool IsCipherSupported(uint8_t cipher);
@@ -80,6 +99,13 @@ const char *CipherName(uint8_t cipher);
 
 /// @a count cryptographically random bytes. Empty on failure.
 std::vector<uint8_t> RandomBytes(size_t count);
+
+/// Overwrite the bytes with a wipe the optimiser may not elide (unlike
+/// std::fill / memset on a buffer about to be freed), then clear the vector.
+/// For private keys and the shared secret, so a later memory disclosure
+/// cannot recover them.
+void SecureWipe(std::vector<uint8_t> &v);
+void SecureWipe(uint8_t *p, size_t n);
 
 /**
  * HKDF-SHA256 (RFC 5869), extract-then-expand.
@@ -92,6 +118,90 @@ std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &salt,
 	const std::vector<uint8_t> &info,
 	size_t outLen);
+
+/// Length of an X25519 public key, private key and shared secret alike.
+constexpr size_t X25519_KEY_LEN = 32;
+
+/**
+ * Generate an ephemeral X25519 key pair.
+ *
+ * Ephemeral is the whole point: the private key never leaves the process, is
+ * never written anywhere, and is discarded once the session key is derived.
+ * That is what gives forward secrecy -- a recording of the session cannot be
+ * decrypted later even by someone who learns the EC password, because the
+ * password is not what the channel key is derived from.
+ *
+ * @return false if randomness is unavailable, in which case both outputs are
+ *         cleared and the caller must stay in clear rather than continue with
+ *         a predictable key.
+ */
+bool GenerateX25519KeyPair(std::vector<uint8_t> &privOut, std::vector<uint8_t> &pubOut);
+
+/**
+ * X25519 shared secret from our private key and the peer's public key.
+ *
+ * The peer's key is validated: an all-zero shared secret (which a peer can
+ * force with a low-order point) is rejected rather than used, since it would
+ * key every such session identically.
+ *
+ * @return false on a malformed or degenerate peer key; @a sharedOut is cleared.
+ */
+bool X25519Agree(const std::vector<uint8_t> &priv,
+	const std::vector<uint8_t> &peerPub,
+	std::vector<uint8_t> &sharedOut);
+
+/**
+ * The handshake transcript both sides bind into their derivations.
+ *
+ * One definition rather than one per side: the two ends must agree byte for
+ * byte or every session fails, and two copies of the same concatenation in
+ * two files is exactly the thing that drifts when a field is added later.
+ *
+ * The cipher list is length-prefixed so that no two different handshakes can
+ * flatten to the same bytes -- with a bare concatenation the boundary between
+ * a variable-length list and what follows it is only implied.
+ */
+std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
+	uint8_t chosenCipher,
+	const std::vector<uint8_t> &clientNonce,
+	const std::vector<uint8_t> &serverNonce,
+	const std::vector<uint8_t> &clientPub,
+	const std::vector<uint8_t> &serverPub);
+
+/**
+ * Key-confirmation tag proving knowledge of the EC credential.
+ *
+ * With the channel key derived from the ephemeral exchange alone, the password
+ * no longer defends against an active man in the middle by making the key
+ * underivable -- an attacker can complete two exchanges and relay. This is what
+ * catches that instead: the tag binds the credential to the handshake
+ * transcript, which necessarily differs on the two legs of a relay, so the
+ * check fails on at least one of them.
+ *
+ * Built from the existing HKDF rather than a separate HMAC: extract-then-expand
+ * with the credential as keying material is a MAC over the transcript, and
+ * reusing the primitive that is already here keeps the crypto surface to what
+ * is already reviewed.
+ *
+ * @param secret     the credential this connection authenticated with.
+ * @param transcript handshake bytes, including both public keys.
+ * @param label      direction tag, so the two sides' confirmations differ and
+ *                   one cannot be replayed as the other.
+ */
+std::vector<uint8_t> ConfirmTag(
+	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label);
+
+/// Length of a confirmation tag.
+constexpr size_t CONFIRM_TAG_LEN = 32;
+
+/**
+ * Constant-time equality for secrets.
+ *
+ * Used for the confirmation check: a byte-at-a-time compare that returns early
+ * leaks, through timing, how much of a guessed tag was right, which turns
+ * forging one into a per-byte search instead of a 2^256 one.
+ */
+bool ConstantTimeEquals(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b);
 
 /**
  * One direction-aware AEAD session for a single EC connection.
@@ -114,7 +224,9 @@ public:
 	 * Derive the session keys.
 	 *
 	 * @param cipher       negotiated cipher id.
-	 * @param ikm          the shared secret (the stored EC password hash).
+	 * @param ikm          the X25519 shared secret. Deliberately not the
+	 *                     credential: keying from something that outlives the
+	 *                     session is exactly what costs forward secrecy.
 	 * @param serverNonce  NONCE_TAG_LEN bytes from the daemon.
 	 * @param clientNonce  NONCE_TAG_LEN bytes from the client.
 	 * @param transcript   handshake bytes bound into the derivation, so a

@@ -272,6 +272,7 @@ CECSocket::CECSocket(bool use_events)
 , m_crypt_ready(false)
 , m_crypt_enabled(false)
 , m_crypt_enable_after_write(false)
+, m_last_rx_encrypted(false)
 ,
 // setup initial state: 4 flags + 4 length
 m_bytes_needed(EC_HEADER_SIZE)
@@ -290,6 +291,29 @@ CECSocket::~CECSocket()
 		m_output_queue.pop_front();
 		delete data;
 	}
+}
+
+// Deliberately not part of ResetProtocolState. m_my_flags mixes two kinds of
+// state: capabilities this end simply has, and capabilities agreed with the
+// peer. Only a caller that knows it is facing a *different* peer may drop the
+// second kind, and only that caller knows it -- CECMemSocket, for one, sets
+// EC_FLAG_LARGE_TAG_COUNT in its constructor as a local property of the wire
+// format it caches, and clearing it there would corrupt the cache.
+//
+// Today the sole caller is amulegui's reconnect path, which reuses one
+// CRemoteConnect across sessions.
+void CECSocket::ClearPeerNegotiatedFlags()
+{
+	// EC_FLAG_LARGE_TAG_COUNT is the only bit here whose value comes from the
+	// peer: it is set when the daemon echoes EC_TAG_CAN_LARGE_TAG_COUNT in
+	// AUTH_OK. Left set across a reconnect, a client that negotiated it with
+	// one daemon keeps sending the extended tag-count format to one that never
+	// advertised it, and that does not fail cleanly -- the receiver reads a
+	// differently-sized count field and misparses everything after it.
+	//
+	// EC_FLAG_ZLIB and EC_FLAG_UTF8_NUMBERS are chosen locally, through
+	// SetCapabilities, which the reconnect path does not call again. They stay.
+	m_my_flags &= ~(uint32_t)EC_FLAG_LARGE_TAG_COUNT;
 }
 
 void CECSocket::ResetProtocolState()
@@ -317,6 +341,7 @@ void CECSocket::ResetProtocolState()
 	m_crypt_ready = false;
 	m_crypt_enabled = false;
 	m_crypt_enable_after_write = false;
+	m_last_rx_encrypted = false;
 	m_bytes_needed = EC_HEADER_SIZE;
 	m_in_header = true;
 	m_curr_packet_len = 0;
@@ -1240,6 +1265,10 @@ const CECPacket *CECSocket::ReadPacket()
 			return 0;
 		}
 	}
+
+	// Record how this packet arrived so the app dispatch can reject a
+	// cleartext packet injected into a session that negotiated encryption.
+	m_last_rx_encrypted = (flags & EC_FLAG_ENCRYPTED) != 0;
 
 	m_curr_rx_data->ToZlib(m_z);
 	packet = new CECPacket();

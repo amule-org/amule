@@ -15,8 +15,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 17:26+0200\n"
-"PO-Revision-Date: 2026-08-04 09:21+0000\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"PO-Revision-Date: 2026-08-04 15:41+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1882,8 +1882,17 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr "Autenticação falhou: hash inválido especificado como senha EC."
 
 #: src/ExternalConn.cpp
+#, fuzzy
+msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
+msgstr "A autenticação falhou: este aMule requer uma conexão esterna criptografada, e o cliente não negociou uma."
+
+#: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
 msgstr "A autenticação falhou: este aMule requer uma conexão esterna criptografada, e o cliente não negociou uma."
+
+#: src/ExternalConn.cpp
+msgid "Authentication failed: the client could not confirm the encrypted session."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2967,7 +2976,20 @@ msgid "EC connection failed. Empty reply."
 msgstr "Conexão EC falhou. Resposta vazia."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "Could not set up connection encryption. Connection closed."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
+msgstr "Conexão Externa: Má resposta, handshake falhou. Conexão fechada."
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, fuzzy
+msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
 msgstr "Conexão Externa: Má resposta, handshake falhou. Conexão fechada."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
@@ -5053,7 +5075,7 @@ msgstr "Uploads Ativos"
 msgid "Show Clients for"
 msgstr "Exibir Clientes para"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "All files"
 msgstr "Todos os arquivos"
 
@@ -6899,6 +6921,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Copiar &link eD2k para área de transferência (&Info AICH + Fonte)"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr "Verificar Dados Locais em PartFile não é atualmente suportado: %s"
@@ -6906,6 +6932,36 @@ msgstr "Verificar Dados Locais em PartFile não é atualmente suportado: %s"
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Você precisa ter HighID para criar uma fonte ED2K válida"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy
+msgid "Export to emulecollection"
+msgstr "Erro ao concluir"
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr "Falha ao receber lista de compartilhamentos do usuário '%s'"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] "Atualizar lista de compartilhados"
+msgstr[1] "Atualizar lista de compartilhados"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

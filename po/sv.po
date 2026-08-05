@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 17:26+0200\n"
-"PO-Revision-Date: 2026-08-04 09:25+0000\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"PO-Revision-Date: 2026-08-04 15:45+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "Language: sv\n"
@@ -1875,7 +1875,15 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr "Autentisering misslyckades: fel hash specificerad som EC-lösenord"
 
 #: src/ExternalConn.cpp
+msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Authentication failed: the client could not confirm the encrypted session."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -2956,7 +2964,20 @@ msgid "EC connection failed. Empty reply."
 msgstr "EC-anslutningen misslyckades. Tomt svar."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "Could not set up connection encryption. Connection closed."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
+msgstr "Extern Anslutning: Fel svar, handskakning misslyckades. Anslutning stängd."
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, fuzzy
+msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
 msgstr "Extern Anslutning: Fel svar, handskakning misslyckades. Anslutning stängd."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
@@ -5070,7 +5091,7 @@ msgstr "Aktiva uppladdningar"
 msgid "Show Clients for"
 msgstr "Visa klienter för"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "All files"
 msgstr "Alla filer"
 
@@ -6938,6 +6959,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Kopiera eD2k-länk till urklipp (&AICH info + källa)"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr ""
@@ -6945,6 +6970,36 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Du behöver en HighID att skapa en giltig sourcelink"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy
+msgid "Export to emulecollection"
+msgstr "Fel vid slutföring"
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr "Misslyckades med att hämta filer från användaren '%s'"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] "Återladda dina delade filer"
+msgstr[1] "Återladda dina delade filer"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

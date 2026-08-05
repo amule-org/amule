@@ -14,8 +14,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-04 17:26+0200\n"
-"PO-Revision-Date: 2026-08-04 09:23+0000\n"
+"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"PO-Revision-Date: 2026-08-04 15:43+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -565,7 +565,7 @@ msgstr "с Высоким ИД"
 #: src/amule.cpp
 #, c-format
 msgid "Connected to %s %s"
-msgstr "Соединено с %s %s"
+msgstr "Подключён к %s %s"
 
 #: src/amule.cpp
 #, c-format
@@ -590,11 +590,11 @@ msgstr "Kad остановлена."
 
 #: src/amule.cpp
 msgid "Connected to Kad (ok)"
-msgstr "Подключено к Kad (в порядке)"
+msgstr "Подключён к Kad (в порядке)"
 
 #: src/amule.cpp
 msgid "Connected to Kad (firewalled)"
-msgstr "Подключено к Kad (за экраном)"
+msgstr "Подключён к Kad (за экраном)"
 
 #: src/amule.cpp
 msgid "Disconnected from Kad"
@@ -713,7 +713,7 @@ msgstr "eD2k: Соединение"
 
 #: src/amuleDlg.cpp
 msgid "eD2k: Disconnected"
-msgstr "eD2k: не соединено"
+msgstr "eD2k: отключён"
 
 #: src/amuleDlg.cpp
 msgid "Kad: Firewalled"
@@ -721,7 +721,7 @@ msgstr "Kad: за экраном"
 
 #: src/amuleDlg.cpp
 msgid "Kad: Connected"
-msgstr "Kad: подключено"
+msgstr "Kad: подключён"
 
 #: src/amuleDlg.cpp
 msgid "Kad: Connecting"
@@ -734,7 +734,7 @@ msgstr "Kad: отключено"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "От: %.1f%s (%.1f) | Ск: %.1f%s (%.1f)"
+msgstr "ОТД: %.1f%s (%.1f) | СКЧ: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MB/s"
@@ -747,12 +747,12 @@ msgstr " КБ/с"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "От: %.1f%s | Ск: %.1f%s"
+msgstr "ОТД: %.1f%s | СКЧ: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
 msgid "aMule (%s | Connected)"
-msgstr "aMule (%s | Подключено)"
+msgstr "aMule (%s | подключён)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1104,7 +1104,7 @@ msgstr "Вы должны указать путь для категории!"
 
 #: src/CatDialog.cpp
 msgid "Failed to create incoming dir for category. Please specify a valid path!"
-msgstr "Не удалось создать каталог для загружаемых файлов категории. Укажите верный путь!"
+msgstr "Не удалось создать каталог для скачиваемых файлов категории. Укажите верный путь!"
 
 #: src/ChatSelector.cpp
 #, c-format
@@ -1204,7 +1204,7 @@ msgstr "Запрещено"
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
 msgid "Connected"
-msgstr "Подключено"
+msgstr "Подключён"
 
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 msgid "Disconnected"
@@ -1298,7 +1298,7 @@ msgstr "Пользователь %s (%u) отказал в доступе к с�
 
 #: src/CommentDialog.cpp src/CommentDialogLst.cpp
 msgid "File Comments"
-msgstr "Комментарии к файлам"
+msgstr "Комментарии файла"
 
 #: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
 msgid "Username"
@@ -1480,7 +1480,7 @@ msgstr "Обмен источниками"
 
 #: src/DataToText.cpp
 msgid "Passive"
-msgstr "Пассивный"
+msgstr "Пассивно"
 
 #: src/DataToText.cpp
 msgid "Link"
@@ -1637,15 +1637,15 @@ msgstr "Очистить &завершённые"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to this file now"
-msgstr "Использовать все A4AF источники для этого файла"
+msgstr "Выдать все источники A4AF этому файлу сейчас"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to this file (Auto)"
-msgstr "Использовать все A4AF источники для этого файла (авто)"
+msgstr "Выдать все источники A4AF этому файлу (автоматически)"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to any other file now"
-msgstr "Отдать все A4AF источники этого файла другим файлам"
+msgstr "Отдать все источники A4AF другим файлам сейчас"
 
 #: src/DownloadListCtrl.cpp
 msgid "Extended Options"
@@ -1665,11 +1665,11 @@ msgstr "Показать все комментарии"
 
 #: src/DownloadListCtrl.cpp
 msgid "Copy magnet URI to clipboard"
-msgstr "Копировать магнит-ссылку в буфер обмена"
+msgstr "Копировать магнит-ссылку в буфер"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy eD2k &link to clipboard"
-msgstr "Копировать &ссылку eD2k в буфер обмена"
+msgstr "Копировать &ссылку eD2k в буфер"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
@@ -1895,8 +1895,17 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr "Ошибка авторизации: в качестве EC-пароля указан неправильный хэш."
 
 #: src/ExternalConn.cpp
+#, fuzzy
+msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
+msgstr "Ошибка аутентификации: этот aMule требует зашифрованного внешнего подключения, а клиент не согласовал его."
+
+#: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
 msgstr "Ошибка аутентификации: этот aMule требует зашифрованного внешнего подключения, а клиент не согласовал его."
+
+#: src/ExternalConn.cpp
+msgid "Authentication failed: the client could not confirm the encrypted session."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2041,7 +2050,7 @@ msgstr "Подсоединение к сети eD2k..."
 
 #: src/ExternalConn.cpp
 msgid "Already connected to Kad."
-msgstr "Уже подключено к Kad."
+msgstr "Уже подключён к Kad."
 
 #: src/ExternalConn.cpp
 msgid "Connecting to Kad..."
@@ -2476,7 +2485,7 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
-msgstr "Папка для загружаемых файлов"
+msgstr "Папка для скачиваемых файлов"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
@@ -2850,9 +2859,9 @@ msgstr[2] "Доступно только %d контактов Kad, файл nod
 #, c-format
 msgid "Wrote %d Kad contact"
 msgid_plural "Wrote %d Kad contacts"
-msgstr[0] "Записан %d Kad контакт"
-msgstr[1] "Записано %d Kad контакта"
-msgstr[2] "Записано %d Kad контактов"
+msgstr[0] "Записан %d контакт Kad"
+msgstr[1] "Записаны %d контакта Kad"
+msgstr[2] "Записано %d контактов Kad"
 
 #: src/KnownFile.cpp
 msgid "Kad user"
@@ -2987,7 +2996,20 @@ msgid "EC connection failed. Empty reply."
 msgstr "EC соединение не удалось. Пустой ответ."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "Could not set up connection encryption. Connection closed."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
+msgstr ""
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
+msgstr "Внешнее соединение: Некорректный ответ, авторизация неудачна. Соединение закрыто."
+
+#: src/libs/ec/cpp/RemoteConnect.cpp
+#, fuzzy
+msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
 msgstr "Внешнее соединение: Некорректный ответ, авторизация неудачна. Соединение закрыто."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
@@ -3017,7 +3039,7 @@ msgstr "ListenSocket: В порядке."
 
 #: src/ListenSocket.cpp
 msgid "ERROR: Could not listen to TCP port."
-msgstr "ОШИБКА: невозможно открыть TCP порт."
+msgstr "ОШИБКА: не удалось прослушать порт TCP."
 
 #: src/Logger.cpp
 msgid "ERROR: "
@@ -3080,7 +3102,7 @@ msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
 msgid "Connected (firewalled)"
-msgstr "Подключено (за экраном)"
+msgstr "Подключён (за экраном)"
 
 #: src/MuleTrayIcon.cpp
 msgid "Server: "
@@ -3092,7 +3114,7 @@ msgstr "IP сервера: "
 
 #: src/MuleTrayIcon.cpp src/TextClient.cpp
 msgid "Not connected"
-msgstr "Не соединено"
+msgstr "Не подключён"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3102,11 +3124,11 @@ msgstr "IP: %s"
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "TCP port: %d"
-msgstr "TCP порт: %d"
+msgstr "Порт TCP: %d"
 
 #: src/MuleTrayIcon.cpp
 msgid "TCP port: Not ready"
-msgstr "TCP порт: Не готово"
+msgstr "Порт TCP: не готов"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3208,7 +3230,7 @@ msgstr "IP-адрес сервера: "
 
 #: src/MuleTrayIcon.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "Not Connected"
-msgstr "Не подключено"
+msgstr "Не подключён"
 
 #: src/MuleTrayIcon.cpp
 msgid "Online Signature: Enabled"
@@ -3277,7 +3299,7 @@ msgstr "Пользователи, подключённые к текущему �
 
 #: src/muuli_wdr.cpp
 msgid "Up: 0.0 | Down: 0.0"
-msgstr "От: 0,0 | Ск: 0,0"
+msgstr "ОТД: 0,0 | СКЧ: 0,0"
 
 # Тултип. Лучше оставить как можно более коротким (не все системы автоматом
 # делают их многострочными ;-))
@@ -3293,11 +3315,11 @@ msgstr "Отображает статус подключения и активн
 
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
-msgstr "Не подключено…"
+msgstr "Не подключён…"
 
 #: src/muuli_wdr.cpp
 msgid "Currently connected server."
-msgstr "Сейчас подключено к серверу."
+msgstr "Сейчас подключён к серверу."
 
 #: src/muuli_wdr.cpp
 msgid "Search"
@@ -3617,7 +3639,7 @@ msgstr "ОК"
 
 #: src/muuli_wdr.cpp
 msgid "Comment/Rate file (Text will be visible to all users)"
-msgstr "Комментарий/Оценка файла (Текст будет доступен всем пользователям)"
+msgstr "Комментарий/оценка файла (текст доступен всем участникам)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -3637,7 +3659,7 @@ msgstr "Без оценки"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "Invalid / Corrupt / Fake"
-msgstr "Ошибочный / повреждённый / подделка"
+msgstr "Неверен / повреждён / подделка"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp
 msgid "Poor"
@@ -3659,7 +3681,7 @@ msgstr "Великолепный"
 
 #: src/muuli_wdr.cpp
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr "Выберите оценку файлу, или сообщите пользователям, что это - утка..."
+msgstr "Оцените файл или расскажите пользователям, что файл неверен…"
 
 #: src/muuli_wdr.cpp
 msgid "Get from Kad"
@@ -3683,11 +3705,11 @@ msgstr "Обязательная информация"
 
 #: src/muuli_wdr.cpp
 msgid "IP Address :"
-msgstr "IP адрес :"
+msgstr "Адрес IP:"
 
 #: src/muuli_wdr.cpp
 msgid "Port :"
-msgstr "Порт :"
+msgstr "Порт:"
 
 #: src/muuli_wdr.cpp
 msgid "Additional Information"
@@ -3695,11 +3717,11 @@ msgstr "Дополнительная информация"
 
 #: src/muuli_wdr.cpp
 msgid "Username :"
-msgstr "Имя пользователя :"
+msgstr "Имя пользователя:"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash :"
-msgstr "Хеш пользователя :"
+msgstr "Хеш пользователя:"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Add"
@@ -3739,7 +3761,7 @@ msgstr "Активные соединения (1:1)"
 
 #: src/muuli_wdr.cpp
 msgid "Active uploads"
-msgstr "Активные передачи"
+msgstr "Активные отдачи"
 
 #: src/muuli_wdr.cpp
 msgid "Statistics Tree"
@@ -3763,11 +3785,11 @@ msgstr "Версия клиента:"
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "IP address:"
-msgstr "IP адрес:"
+msgstr "Адрес IP:"
 
 #: src/muuli_wdr.cpp
 msgid "User ID:"
-msgstr "ID пользователя:"
+msgstr "ИД пользователя:"
 
 #: src/muuli_wdr.cpp
 msgid "Server IP:"
@@ -3787,7 +3809,7 @@ msgstr "Kad:"
 
 #: src/muuli_wdr.cpp
 msgid "Transfers to client"
-msgstr "Передача"
+msgstr "Передачи клиенту"
 
 #: src/muuli_wdr.cpp
 msgid "Current request:"
@@ -3819,7 +3841,7 @@ msgstr "Скачано (всего):"
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
-msgstr "Счет"
+msgstr "Счёт"
 
 #: src/muuli_wdr.cpp
 msgid "DL/UP modifier:"
@@ -3835,7 +3857,7 @@ msgstr "Позиция в очереди:"
 
 #: src/muuli_wdr.cpp
 msgid "Queue score:"
-msgstr "Счет на передачу:"
+msgstr "Счёт очереди:"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
@@ -3983,7 +4005,7 @@ msgstr "Порты"
 
 #: src/muuli_wdr.cpp
 msgid "This is the standard eD2k port and cannot be disabled."
-msgstr "Это стандартный порт eD2k, он не может быть отключен."
+msgstr "Это стандартный порт eD2k, его нельзя отключить."
 
 #: src/muuli_wdr.cpp
 msgid "UDP port for server requests (TCP+3):"
@@ -4236,7 +4258,7 @@ msgstr "Публиковать скрытые файлы"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr "Автоматически проверять изменения в общах"
+msgstr "Автоматически проверять изменения в общих папках"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
@@ -4268,7 +4290,7 @@ msgstr "Графики"
 
 #: src/muuli_wdr.cpp
 msgid "Update delay : 5 secs"
-msgstr "Интервал обновления: 5 с"
+msgstr "Задержка обновления: 5 секунд"
 
 #: src/muuli_wdr.cpp
 msgid "Time for average graph: 100 mins"
@@ -4880,8 +4902,8 @@ msgid ""
 msgstr ""
 "Настройка не требуется.\n"
 "\n"
-"Данные IP-to-Country предоставлены DB-IP.com - https://db-ip.com\n"
-"Лицензия: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
+"Данные IP-to-Country предоставлены DB-IP.com — https://db-ip.com\n"
+"Лицензия: Creative Commons BY 4.0 — https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
@@ -4987,7 +5009,7 @@ msgstr "Имя прокси-сервера"
 
 #: src/muuli_wdr.cpp
 msgid "Proxy port:"
-msgstr "Порт:"
+msgstr "Порт прокси:"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
@@ -5085,7 +5107,7 @@ msgstr "Активные отдачи"
 msgid "Show Clients for"
 msgstr "Показать клиентов для"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "All files"
 msgstr "Всех файлов"
 
@@ -5375,7 +5397,7 @@ msgstr "Ошибка ввода-вывода при сохранении фай�
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr "Записано 0/неизвестно байт в «%s» — существующий .part.met сохранён."
+msgstr "Записано 0 / неизвестное число байт в «%s» — существующий .part.met сохранён."
 
 #: src/PartFile.cpp
 #, c-format
@@ -5673,7 +5695,7 @@ msgstr "Обнаружена неверная категория, пропуск
 
 #: src/Preferences.cpp
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
-msgstr "TCP-порт не может быть выше 65532, так как UDP-сокет сервера = TCP+3"
+msgstr "Порт TCP не может быть выше 65532, так как UDP-сокет сервера = TCP+3"
 
 #: src/Preferences.cpp
 #, c-format
@@ -5815,7 +5837,7 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
-msgstr "- изменен порт TCP.\n"
+msgstr "— изменён порт TCP.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- UDP port changed.\n"
@@ -6274,7 +6296,7 @@ msgstr "Искать связанные файлы (eD2k, локально)"
 
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
-msgstr "Копировать ссылку eD2k в буфер обмена"
+msgstr "Копировать ссылку eD2k в буфер"
 
 #: src/SearchListCtrl.cpp
 msgid "You are not currently connected to a server supporting the Related Files search function"
@@ -6315,7 +6337,7 @@ msgstr "В списке серверов не найдено ни одного �
 #: src/ServerConnect.cpp
 #, c-format
 msgid "Connected to %s (%s:%i)"
-msgstr "Подключено к %s (%s:%i)"
+msgstr "Подключён к %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6540,7 +6562,7 @@ msgstr "Уверены, что хотите удалить постоянный 
 #: src/ServerListCtrl.cpp
 #, c-format
 msgid "Servers (%i)"
-msgstr "Серверов (%i)"
+msgstr "Серверы (%i)"
 
 #: src/ServerListCtrl.cpp src/ServerSocket.cpp src/ServerWnd.cpp
 msgid "Server"
@@ -6710,7 +6732,7 @@ msgstr "Тип подключения:"
 
 #: src/ServerWnd.cpp
 msgid "Connected since:"
-msgstr "Подключено с:"
+msgstr "Подключён с:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -6756,7 +6778,7 @@ msgstr "Состояние межсетевого экрана: "
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
-msgstr "Друг не требуется - TCP порт открыт"
+msgstr "Друг не требуется — порт TCP открыт"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
@@ -6894,7 +6916,7 @@ msgstr "Локальное имя файла"
 # подпись в главном окне. длинная просто не влезет.
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Shares File List"
-msgstr "Список общих файлов"
+msgstr "Общ. файлы"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Obtained Parts"
@@ -6931,7 +6953,7 @@ msgstr "Добавить файлы коллекции в список для з
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy magnet &URI to clipboard"
-msgstr "Копировать ма&гнит-ссылку в буфер обмена"
+msgstr "Копировать ма&гнит-ссылку в буфер"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (&Source)"
@@ -6958,6 +6980,10 @@ msgid "Copy eD2k link to clipboard (&AICH info + Source)"
 msgstr "Копировать ссылку eD2k в буфер (све&дения AICH + источник)"
 
 #: src/SharedFilesCtrl.cpp
+msgid "Export selected files to an emulecollection"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
 msgstr "Проверка локальных данных для part-файла в настоящее время не поддерживается: %s"
@@ -6965,6 +6991,37 @@ msgstr "Проверка локальных данных для part-файла 
 #: src/SharedFilesCtrl.cpp
 msgid "You need a HighID to create a valid sourcelink"
 msgstr "Вам нужен Высокий ИД для создания рабочей ссылки на источник"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy
+msgid "Export to emulecollection"
+msgstr "Ошибка при завершении"
+
+#: src/SharedFilesCtrl.cpp
+msgid "No files are selected to export."
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+msgid "eMule collections (*.emulecollection)"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "'%s' already exists. Overwrite it?"
+msgstr ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Failed to write the collection file '%s'."
+msgstr "Не удалось получить список доступных файлов от '%s'"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Exported %u shared file to '%s'."
+msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] "Обновить список публикуемых файлов"
+msgstr[1] "Обновить список публикуемых файлов"
+msgstr[2] "Обновить список публикуемых файлов"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7109,7 +7166,7 @@ msgstr "Достигнуто макс. число соединений: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Average Connections (estimate): %g"
-msgstr "Соединений в среднем (прибл.): %g"
+msgstr "Соединений в среднем (примерно): %g"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7143,7 +7200,7 @@ msgstr "Всего: %i Известно: %i"
 #: src/Statistics.cpp
 #, c-format
 msgid "Working Servers: %i"
-msgstr "Работающих серверов: %i"
+msgstr "Рабочие серверы: %i"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7333,7 +7390,7 @@ msgstr "Текущий уровень IP-фильтра: %d.\n"
 #: src/TextClient.cpp
 #, c-format
 msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
-msgstr "Ограничения канала: ОТ: %u КБ/с, ПР: %u КБ/с.\n"
+msgstr "Ограничения канала: ОТД: %u КБ/с, СКЧ: %u КБ/с.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -7418,7 +7475,7 @@ msgstr "Состояние поиска: %u %% \n"
 
 #: src/TextClient.cpp
 msgid "Search progress not available"
-msgstr "Состояние поиска неизвестно"
+msgstr "Прогресс поиска недоступен"
 
 #: src/TextClient.cpp
 #, c-format
@@ -7431,7 +7488,7 @@ msgstr "Показать краткую информацию о статусе."
 
 #: src/TextClient.cpp
 msgid "Show connection status, current up/download speeds, etc.\n"
-msgstr "Показать состояние соединения, такущие скорости отдачи/закачки, и т.д.\n"
+msgstr "Показать состояние соединения, такущие скорости отдачи/скачивания, и т.д.\n"
 
 #: src/TextClient.cpp
 msgid "Show full statistics tree."
@@ -7791,7 +7848,7 @@ msgstr "Показать очереди/списки."
 
 #: src/TextClient.cpp
 msgid "Show upload/download queue, server list or shared files list.\n"
-msgstr "Показать очереди на закачку/отдачу, список серверов или публикуемых файлов.\n"
+msgstr "Показать очереди на отдачу/скачивание, список серверов или публикуемых файлов.\n"
 
 #: src/TextClient.cpp
 msgid "Show upload queue."
@@ -8013,7 +8070,7 @@ msgstr "Создать ссылку с хешами частей"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Help to spread new and rare files faster, at the cost of an increased link size"
-msgstr "Помогите распространить новые и редкие файлы быстрее, за счет увеличения размера ссылки"
+msgstr "Помогите распространить новые и редкие файлы быстрее, за счёт увеличения размера ссылки"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "MD4 File Hash"
@@ -8033,7 +8090,7 @@ msgstr "Сохранить"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy to clipboard"
-msgstr "Скопировать в буфер обмена"
+msgstr "Копировать в буфер обмена"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open"
@@ -8098,14 +8155,14 @@ msgid ""
 "\n"
 "Distributed under GPL"
 msgstr ""
-"aLinkCreator, программа для создания eD2k ссылок для aMule\n"
+"aLinkCreator, программа для создания ссылок eD2k для aMule\n"
 "\n"
 "(c) 2004 ThePolish <thepolish@vipmail.ru>\n"
 "\n"
-"Иконки взяты из http://www.everaldo.com и http://www.icomania.com\n"
+"Значки из http://www.everaldo.com и http://www.icomania.com\n"
 "и http://jimmac.musichall.cz/ikony.php3\n"
 "\n"
-"Лицензия - GPL"
+"Распространяется по лицензии GPL"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Hashing..."
@@ -8323,7 +8380,7 @@ msgstr " остановлен!"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " is not connected !"
-msgstr " не подключено!"
+msgstr " не подключён!"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " is connecting..."
@@ -8376,7 +8433,7 @@ msgstr " КБ/с, отдача: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "Sharing: "
-msgstr "Передача другим: "
+msgstr "Публикуется: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " file(s), Clients on queue: "

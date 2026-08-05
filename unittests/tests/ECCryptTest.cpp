@@ -144,14 +144,28 @@ TEST(ECCrypt, AesGcmIsAlwaysAvailable)
 
 TEST(ECCrypt, PreferredCipherComesFirst)
 {
-	// The daemon picks the first mutually supported entry, so ordering is the
-	// preference. Where ChaCha exists it must outrank AES: without hardware
-	// AES it is substantially faster, which is the Raspberry Pi case.
-	const std::vector<uint8_t> ciphers = SupportedCiphers();
+	// Case 1: preferAES = false
+	// ChaCha20 shall come first if supported, AES otherwise
+	const std::vector<uint8_t> ciphers = SupportedCiphers(false);
 	if (IsCipherSupported(Cipher_ChaCha20_Poly1305)) {
 		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers[0]);
 	} else {
 		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers[0]);
+	}
+
+	// Case 2: preferAES = true
+	// AES shall always come first, as supporting it is mandatory
+	const std::vector<uint8_t> ciphers2 = SupportedCiphers(true);
+	ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers2[0]);
+
+	// Case 3: preferAES = HasHardwareAES()
+	// ChaCha20 shall come first if supported and no hardware support for AES
+	// Otherwise, AES shall come first
+	const std::vector<uint8_t> ciphers3 = SupportedCiphers();
+	if (IsCipherSupported(Cipher_ChaCha20_Poly1305) && !HasHardwareAES()) {
+		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers3[0]);
+	} else {
+		ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers3[0]);
 	}
 }
 
@@ -515,4 +529,115 @@ TEST(ECCrypt, RandomBytesAreTheRightSizeAndNotConstant)
 	}
 	ASSERT_TRUE(!allZero);
 	ASSERT_TRUE(RandomBytes(0).empty());
+}
+
+// --- SecureWipe ------------------------------------------------------------
+
+TEST(ECCrypt, SecureWipeEmptiesTheBuffer)
+{
+	std::vector<uint8_t> v = Fill(32, 0x5a);
+	SecureWipe(v);
+	ASSERT_TRUE(v.empty());
+	// A null or empty buffer is a no-op, not a crash.
+	std::vector<uint8_t> emptyVec;
+	SecureWipe(emptyVec);
+	ASSERT_TRUE(emptyVec.empty());
+	SecureWipe(nullptr, 0);
+}
+
+// BuildTranscript defines a wire format: the client and the server each build
+// this byte string independently and feed it to the AEAD as associated data, so
+// the two must agree byte for byte or authentication fails with no useful
+// diagnostic. Nothing else in this file covered it, which meant a refactor of
+// the function could pass the whole suite while changing the format (#800).
+//
+// Golden vector rather than a property: the point is to pin the exact layout --
+// count, capped cipher list, chosen cipher, then the four blobs in order.
+TEST(ECCrypt, BuildTranscriptMatchesGoldenVector)
+{
+	const std::vector<uint8_t> offered = { 0x01, 0x02, 0x03 };
+	const std::vector<uint8_t> clientNonce = { 0xA0, 0xA1, 0xA2, 0xA3 };
+	const std::vector<uint8_t> serverNonce = { 0xB0, 0xB1, 0xB2, 0xB3 };
+	const std::vector<uint8_t> clientPub = { 0xC0, 0xC1, 0xC2 };
+	const std::vector<uint8_t> serverPub = { 0xD0, 0xD1, 0xD2 };
+
+	const std::vector<uint8_t> expected = { 0x03,
+		0x01,
+		0x02,
+		0x03,
+		0x02,
+		0xA0,
+		0xA1,
+		0xA2,
+		0xA3,
+		0xB0,
+		0xB1,
+		0xB2,
+		0xB3,
+		0xC0,
+		0xC1,
+		0xC2,
+		0xD0,
+		0xD1,
+		0xD2 };
+
+	const std::vector<uint8_t> actual =
+		BuildTranscript(offered, 0x02, clientNonce, serverNonce, clientPub, serverPub);
+
+	ASSERT_EQUALS(expected.size(), actual.size());
+	ASSERT_TRUE(expected == actual);
+}
+
+// The count byte and the bytes that follow it must come from one value, or a
+// list longer than the cap announces one length and carries another.
+TEST(ECCrypt, BuildTranscriptCapsCipherListAt255)
+{
+	std::vector<uint8_t> offered(300);
+	for (size_t i = 0; i < offered.size(); ++i) {
+		offered[i] = (uint8_t)(i & 0xFF);
+	}
+
+	const std::vector<uint8_t> empty;
+	const std::vector<uint8_t> out = BuildTranscript(offered, 0x07, empty, empty, empty, empty);
+
+	// 1 count + 255 capped ciphers + 1 chosen cipher.
+	ASSERT_EQUALS((size_t)257, out.size());
+	ASSERT_EQUALS((uint8_t)255, out[0]);
+	// The carried bytes are the first 255 of the list, not a truncation of
+	// some other window.
+	ASSERT_EQUALS((uint8_t)0x00, out[1]);
+	ASSERT_EQUALS((uint8_t)0xFE, out[255]);
+	// Chosen cipher lands immediately after the capped list.
+	ASSERT_EQUALS((uint8_t)0x07, out[256]);
+}
+
+// Every field has to reach the output; one silently dropped would still
+// authenticate happily between two peers running the same build, and only fail
+// against a peer that included it.
+TEST(ECCrypt, BuildTranscriptIsSensitiveToEveryInput)
+{
+	const std::vector<uint8_t> offered = Fill(3, 1), cn = Fill(4, 2), sn = Fill(4, 3), cp = Fill(3, 4),
+				   sp = Fill(3, 5);
+	const std::vector<uint8_t> base = BuildTranscript(offered, 0x02, cn, sn, cp, sp);
+
+	ASSERT_TRUE(BuildTranscript(Fill(3, 9), 0x02, cn, sn, cp, sp) != base);
+	ASSERT_TRUE(BuildTranscript(offered, 0x09, cn, sn, cp, sp) != base);
+	ASSERT_TRUE(BuildTranscript(offered, 0x02, Fill(4, 9), sn, cp, sp) != base);
+	ASSERT_TRUE(BuildTranscript(offered, 0x02, cn, Fill(4, 9), cp, sp) != base);
+	ASSERT_TRUE(BuildTranscript(offered, 0x02, cn, sn, Fill(3, 9), sp) != base);
+	ASSERT_TRUE(BuildTranscript(offered, 0x02, cn, sn, cp, Fill(3, 9)) != base);
+	// Swapping the two nonces must change it -- the field order is part of
+	// the format, not an implementation detail.
+	ASSERT_TRUE(BuildTranscript(offered, 0x02, sn, cn, cp, sp) != base);
+}
+
+// Degenerate but legal: no ciphers offered and no key material yet.
+TEST(ECCrypt, BuildTranscriptHandlesEmptyInputs)
+{
+	const std::vector<uint8_t> empty;
+	const std::vector<uint8_t> out = BuildTranscript(empty, 0x00, empty, empty, empty, empty);
+
+	ASSERT_EQUALS((size_t)2, out.size());
+	ASSERT_EQUALS((uint8_t)0, out[0]);
+	ASSERT_EQUALS((uint8_t)0, out[1]);
 }

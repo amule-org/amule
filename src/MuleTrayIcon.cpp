@@ -160,7 +160,11 @@ void CMuleTrayIcon::DoExit()
 
 void CMuleTrayIcon::DoSetUploadLimit(long kBytesPerSec)
 {
-	thePrefs::SetMaxUpload(kBytesPerSec < 0 ? UNLIMITED : (uint16)kBytesPerSec);
+	// uint32, not uint16: the preference, its setter and its getter are all
+	// uint32, and a 16-bit cast here silently wrapped anything above 65535
+	// kB/s. A preset of 125000 applied as 59464 -- under half the figure on
+	// the menu item the user clicked, with nothing logged either side.
+	thePrefs::SetMaxUpload(kBytesPerSec < 0 ? UNLIMITED : (uint32)kBytesPerSec);
 #ifdef CLIENT_GUI
 	theApp->glob_prefs->SendToRemote();
 #endif
@@ -168,7 +172,8 @@ void CMuleTrayIcon::DoSetUploadLimit(long kBytesPerSec)
 
 void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 {
-	thePrefs::SetMaxDownload(kBytesPerSec < 0 ? UNLIMITED : (uint16)kBytesPerSec);
+	// See the note in DoSetUploadLimit.
+	thePrefs::SetMaxDownload(kBytesPerSec < 0 ? UNLIMITED : (uint32)kBytesPerSec);
 #ifdef CLIENT_GUI
 	theApp->glob_prefs->SendToRemote();
 #endif

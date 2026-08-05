@@ -133,24 +133,43 @@ a sealed body is coming — and is signalled per packet by `EC_FLAG_ENCRYPTED`.
 
 **Negotiation.** The client sends `EC_TAG_CAN_AEAD`, whose data is the list of
 cipher ids it supports in its own preference order, together with 32 random
-bytes in `EC_TAG_AEAD_CLIENT_NONCE`. The server answers in `EC_OP_AUTH_SALT`
-with the chosen id in `EC_TAG_AEAD_CIPHER` and 32 random bytes of its own in
-`EC_TAG_AEAD_SERVER_NONCE`. A server that omits these tags does not support
+bytes in `EC_TAG_AEAD_CLIENT_NONCE` and a 32-byte ephemeral X25519 public key in
+`EC_TAG_AEAD_CLIENT_PUBKEY`. The server answers in `EC_OP_AUTH_SALT` with the
+chosen id in `EC_TAG_AEAD_CIPHER`, 32 random bytes of its own in
+`EC_TAG_AEAD_SERVER_NONCE`, and its own ephemeral public key in
+`EC_TAG_AEAD_SERVER_PUBKEY`. A server that omits these tags does not support
 encryption, and the session continues in clear.
 
-| id | cipher |
-| -- | ------ |
-| `1` | AES-128-GCM (mandatory) |
-| `2` | ChaCha20-Poly1305 (optional; preferred where both sides have it) |
+The public key is not optional. A peer that offers `EC_TAG_CAN_AEAD` without one
+is malformed, not old — encryption and the key exchange shipped together — and
+the offer is refused rather than answered with a weaker derivation.
 
-**Keys.** Both sides derive from the MD5 of the EC password — the value both
-already hold and neither transmits. The salted challenge is unsuitable as key
-material because it goes on the wire.
+| id | cipher | preferred |
+| -- | ------ | -- |
+| `1` | AES-128-GCM (mandatory) | when both sides have hardware support for AES |
+| `2` | ChaCha20-Poly1305 (optional) | when both sides have ChaCha20 and at least one lacks hardware support for AES |
+
+Note that Crypto++ (as of 8.9.0) only detects hardware AES on x86 and on Linux
+ARM. On macOS and Windows ARM builds the check comes up empty even where the
+CPU has the instructions, so those peers offer ChaCha20 first and the channel
+settles on it. That is the right outcome while it lasts: the same flag decides
+whether Crypto++ itself uses the AES instructions, so a peer that preferred AES
+there would get the table-based implementation, which is slower than ChaCha20
+and not constant-time.
+
+**Keys.** Both sides derive from the X25519 shared secret, and from nothing
+else. In particular *not* from the password: a key derived from something that
+outlives the session means a password learned later decrypts a recording made
+earlier. The ephemeral private keys are discarded as soon as the secret exists,
+so once a session ends there is nothing left that could reopen it.
 
 ```
+transcript = len(offered) || offered || cipher_id
+             || client_nonce || server_nonce
+             || client_pubkey || server_pubkey
 salt = server_nonce || client_nonce
 info = "aMule EC AEAD v1" || cipher_id || <the offered cipher list, as received>
-okm  = HKDF-SHA256(md5(password), salt, info, 2*keylen + 8)
+okm  = HKDF-SHA256(X25519(client_pubkey, server_pubkey), salt, info, 2*keylen + 8)
 ```
 
 `okm` splits into a client-to-server key, a server-to-client key, and a 4-byte
@@ -161,6 +180,28 @@ Including the offered list and the chosen id in `info` binds the handshake: if
 either is altered in transit the two sides derive different keys and the first
 sealed packet fails to authenticate, instead of the session silently dropping
 to a weaker cipher.
+
+**Key confirmation.** An anonymous key exchange authenticates nobody: an
+attacker can complete one exchange with each side and relay between them. Since
+the password no longer keys the channel, it is what closes that instead, as an
+explicit proof over the transcript.
+
+```
+client_confirm = HKDF-SHA256(md5(password), transcript, "ec-confirm-client", 32)
+server_confirm = HKDF-SHA256(md5(password), transcript, "ec-confirm-server", 32)
+```
+
+The client sends `EC_TAG_AEAD_CLIENT_CONFIRM` with `EC_OP_AUTH_PASSWD`; the
+server checks it — in constant time — before authenticating, and returns
+`EC_TAG_AEAD_SERVER_CONFIRM` in the sealed `EC_OP_AUTH_OK`, which the client
+checks in turn. A relay runs a different exchange on each leg, so the two
+transcripts differ and at least one check fails.
+
+A missing, malformed or mismatched tag fails authentication on either side.
+There is no fallback to a password-derived key or to clear: a downgrade an
+attacker could force by dropping one tag would be little better than no defence.
+The transcript covers both public keys, so substituting one is caught here even
+though the exchange itself would succeed.
 
 **Per-packet nonce.** 12 bytes: the 4-byte derived prefix followed by a 64-bit
 big-endian counter, starting at zero and incremented once per packet in that
@@ -174,9 +215,8 @@ connection is dropped.
 
 **When it starts.** The last plaintext packet from the client is
 `EC_OP_AUTH_PASSWD`; the server replies with `EC_OP_AUTH_OK` already sealed,
-which also proves to the client that its peer holds the same password. If
-authentication fails the server has no matching key to prove anything with, so
-`EC_OP_AUTH_FAIL` is sent in clear.
+carrying its confirmation tag. If authentication fails no session key is
+installed, so `EC_OP_AUTH_FAIL` is sent in clear.
 
 **Policy.** Whether to encrypt is the client's choice: only the client knows the
 address it dialed, and a server's view of the peer address misclassifies

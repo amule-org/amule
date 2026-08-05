@@ -2455,6 +2455,12 @@ void CPartFile::RemoveAllSources(bool bTryToSwap)
 void CPartFile::Delete()
 {
 	AddLogLineN(CFormat(_("Deleting file: %s")) % GetFileName());
+
+	// This function ends in `delete this`, so the object is already on its
+	// way out: set the same gate ~CPartFile uses, so FlushBuffer cannot
+	// enqueue further hash jobs (or re-share the file) while we tear it
+	// down below.
+	m_inDestructor = true;
 	// Notify every subscriber that holds a raw CKnownFile* / CPartFile*
 	// to this object — list ctrls, comment dialogs, file-detail dialog,
 	// AICH static request list, write/hash threads, and on amulegui
@@ -2485,6 +2491,29 @@ void CPartFile::Delete()
 	AddDebugLogLineN(logPartFile, "\tAdded to canceled file list");
 	theApp->searchlist->UpdateSearchFileByHash(
 		GetFileHash()); // Update file in the search dialog if it's still open
+
+	// Wait for any in-flight HashJob targeting this file before closing the
+	// handle and unlinking the .part below. CPartFileHashThread reads
+	// m_hpartfile inside HashSinglePart; pulling the file out from under it
+	// crashes the worker.
+	//
+	// ~CPartFile performs the same wait, but it only runs from the
+	// `delete this` at the end of this function -- after the close and the
+	// unlink, which is far too late to help. The enqueue gate was set at the
+	// top, so the count only falls from here.
+	//
+	// Reaching this with jobs in flight needs a part to complete during an
+	// active download, which the quiescent guard used to make almost
+	// impossible; without it that is the normal case, so deleting a running
+	// download hits this every time.
+	if (m_pendingHashes > 0) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("Delete() waiting for %d pending hash job(s) of '%s'") %
+				(int)m_pendingHashes % GetFileName());
+		while (m_pendingHashes > 0) {
+			wxMilliSleep(10);
+		}
+	}
 
 	if (m_hpartfile.IsOpened()) {
 		m_hpartfile.Close();
@@ -3526,28 +3555,17 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 		}
 		std::fill(m_aChangedPart.begin(), m_aChangedPart.end(), false);
 	} else {
-		// Quiescent guard: defer per-part hashing until 1 s of no new
-		// blocks, so the synchronous read+MD4 doesn't fire mid-burst.
-		const uint64 kHashQuiescentMs = 1000;
-		const uint64 nowTick = GetTickCount64();
-		if (m_nLastBlockReceivedTick != 0 &&
-			(nowTick - m_nLastBlockReceivedTick) < kHashQuiescentMs) {
-			return;
-		}
-
-		// Async enqueue: hand each dirty part to CPartFileHashThread,
+		// Async enqueue: hand each dirty completed part to CPartFileHashThread,
 		// which runs HashSinglePart on its own thread and posts a
 		// CPartFileHashResultEvent back to CamuleApp's main-thread
 		// handler — OnAsyncHashComplete then runs the AICH-recovery /
-		// SafeAddKFile branches below.  Main-thread cost here is just
+		// SafeAddKFile branches below. Main-thread cost here is just
 		// queue inserts (microseconds per part), so even a 3000-part
 		// dirty list enqueues in milliseconds with zero hashing freeze.
 		//
-		// PR #454 rejected an async-hash thread because read-for-hash
-		// competed with CPartFileWriteThread's writes during active
-		// download.  The quiescent guard above (1 s no receives)
-		// guarantees writes have drained before we enqueue, so the
-		// contention case can't arise.
+		// Disk write safety: m_iWrites <= 0 at line 3510 already guarantees
+		// that CPartFileWriteThread has flushed all pending writes to disk
+		// before we enqueue a completed part for hashing.
 		uint32 enqueued = 0;
 		for (uint32 partNumber = 0; partNumber < partCount; ++partNumber) {
 			if (!m_aChangedPart[partNumber]) {
