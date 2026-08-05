@@ -80,37 +80,11 @@
 // what the peer can do, not what this build has.
 #include CRYPTO_HEADER(chachapoly.h)
 #include CRYPTO_HEADER(xed25519.h)
-
-#endif /* CRYPTOPP_INC_NEED_AEAD */
-
-// check hardware support for AES
-// if both the client and the daemon have it, prefer AES over ChaCha20
+// Runtime CPU feature probes, for picking the cipher the hardware is fastest
+// at. In the AEAD block for the same reason as the rest: only the EC layer
+// asks, and this header reaches most of the tree through MD5Sum.h.
 #include CRYPTO_HEADER(cpu.h)
-namespace ECCrypt
-{
-#if defined(CRYPTOPP_AESNI_AVAILABLE)
-inline bool HasHardwareAES()
-{
-	return CryptoPP::HasAESNI();
-}
-#elif defined(CRYPTOPP_ARM_AES_AVAILABLE)
-inline bool HasHardwareAES()
-{
-	return CryptoPP::HasAES();
-}
-#elif defined(CRYPTOPP_POWER8_AES_AVAILABLE)
-inline bool HasHardwareAES()
-{
-	return CryptoPP::HasAES();
-}
-#else
-inline bool HasHardwareAES()
-{
-	return false;
-}
 #endif
-} // namespace ECCrypt
-using ECCrypt::HasHardwareAES;
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

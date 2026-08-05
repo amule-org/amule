@@ -87,6 +87,25 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 
 } // namespace
 
+bool HasHardwareAES()
+{
+	// The availability macros say whether this build has the code path at all;
+	// the Has* calls say whether the running CPU has the instructions. Both
+	// have to hold, and cryptopp dispatches on the same answer we read here.
+#if defined(CRYPTOPP_AESNI_AVAILABLE)
+	return CryptoPP::HasAESNI();
+#elif defined(CRYPTOPP_ARM_AES_AVAILABLE) || defined(CRYPTOPP_POWER8_AES_AVAILABLE)
+	return CryptoPP::HasAES();
+#else
+	return false;
+#endif
+}
+
+std::vector<uint8_t> SupportedCiphers()
+{
+	return SupportedCiphers(HasHardwareAES());
+}
+
 std::vector<uint8_t> SupportedCiphers(bool preferAES)
 {
 	std::vector<uint8_t> out;

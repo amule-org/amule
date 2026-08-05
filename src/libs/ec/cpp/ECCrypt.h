@@ -74,10 +74,22 @@ const size_t NONCE_TAG_LEN = 32;
 /// AEAD tag appended to every sealed body.
 const size_t AEAD_TAG_LEN = 16;
 
-bool HasHardwareAES(); // defined in CryptoPP_Inc.h
+/// Whether this CPU runs AES in hardware *and* cryptopp will dispatch to it.
+/// Both halves matter: where cryptopp's detection comes up empty it also falls
+/// back to table-based AES, so asking the CPU directly would have us prefer a
+/// cipher the library then runs in software.
+bool HasHardwareAES();
+
 /// Ciphers this build can actually do, strongest/fastest first. The server
-/// picks the first entry the client also offered.
-std::vector<uint8_t> SupportedCiphers(bool preferAES = HasHardwareAES());
+/// picks the first entry the client also offered. AES leads when it is
+/// hardware-backed, ChaCha20 otherwise -- see HasHardwareAES().
+std::vector<uint8_t> SupportedCiphers();
+
+/// SupportedCiphers() with the hardware question answered explicitly, so both
+/// orderings are testable on any machine. Kept as an overload rather than a
+/// defaulted argument: a default would make every caller's translation unit
+/// need HasHardwareAES()'s definition, and cryptopp stays out of this header.
+std::vector<uint8_t> SupportedCiphers(bool preferAES);
 
 /// Whether this build can do @a cipher at all.
 bool IsCipherSupported(uint8_t cipher);

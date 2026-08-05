@@ -26,8 +26,6 @@
 
 #include "config.h" // Needed for VERSION
 
-#include "CryptoPP_Inc.h" // Needed for HasHardwareAES
-
 #include <set>       // Needed for std::set (m_lastSentSharedFileIds)
 #include <list>      // Needed for std::list (multi-search LRU ring)
 #include <algorithm> // Needed for std::find (multi-search LRU ring)

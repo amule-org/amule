@@ -32,7 +32,6 @@
 
 #include <muleunit/test.h>
 
-#include "CryptoPP_Inc.h" //needed for HasHardwareAES
 #include "ECCrypt.h"
 
 #include <cstdlib>
