@@ -1261,18 +1261,18 @@ CDynProgressImage::CDynProgressImage(int width, int height, wxString &tmpl, Down
 
 wxString CDynProgressImage::GetHTML()
 {
-	static wxChar *progresscolor[12] = { "transparent.gif",
-		"black.gif",
-		"yellow.gif",
-		"red.gif",
-		"blue1.gif",
-		"blue2.gif",
-		"blue3.gif",
-		"blue4.gif",
-		"blue5.gif",
-		"blue6.gif",
-		"green.gif",
-		"greenpercent.gif" };
+	static const wxString progresscolor[12] = { wxS("transparent.gif"),
+		wxS("black.gif"),
+		wxS("yellow.gif"),
+		wxS("red.gif"),
+		wxS("blue1.gif"),
+		wxS("blue2.gif"),
+		wxS("blue3.gif"),
+		wxS("blue4.gif"),
+		wxS("blue5.gif"),
+		wxS("blue6.gif"),
+		wxS("green.gif"),
+		wxS("greenpercent.gif") };
 
 	CreateSpan();
 
