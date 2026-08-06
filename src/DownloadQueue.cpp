@@ -386,7 +386,7 @@ void CDownloadQueue::AddDownload(CPartFile *file, bool paused, uint8 category)
 	AddLogLineC(CFormat(_("Downloading %s")) % file->GetFileName());
 }
 
-bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requestedName) const
+bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requestedName)
 {
 	if (CKnownFile *file = theApp->sharedfiles->GetFileByID(fileid)) {
 		if (file->IsPartFile()) {
@@ -417,6 +417,20 @@ bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requ
 
 		return true;
 	} else if ((file = GetFileByID(fileid))) {
+		// GetFileByID() also returns finished downloads still lingering in
+		// m_completedDownloads (kept so a remote GUI can act on them). Such an
+		// entry is not an active download, so if its file was deleted from disk
+		// it must not keep blocking a re-download. The shared-file branch above
+		// already allows that, but a prior shares rescan removes the file from
+		// the shared list and leaves only this entry, which had no such check.
+		CPartFile *part = static_cast<CPartFile *>(file);
+		if (part->IsCompleted()) {
+			CPath fullpath = part->GetFilePath().JoinPaths(part->GetFileName());
+			if (!fullpath.FileExists()) {
+				ClearCompleted(ListOfUInts32(1, part->ECID()));
+				return false;
+			}
+		}
 		AddLogLineC(
 			CFormat(_("You are already trying to download the file %s")) % file->GetFileName());
 		return true;
