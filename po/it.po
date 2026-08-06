@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-05 14:00+0200\n"
-"PO-Revision-Date: 2026-08-04 15:38+0000\n"
+"PO-Revision-Date: 2026-08-06 07:38+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -1527,15 +1527,15 @@ msgstr "Formato del file temp sconosciuto o errato."
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
-msgstr ""
+msgstr "Questa cartella fa parte di una condivisione ricorsiva. Per rimuoverla, annulla la condivisione o modifica la radice della condivisione ricorsiva che la contiene."
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot unshare inside a recursive share"
-msgstr ""
+msgstr "Impossibile annullare la condivisione all'interno di una condivisione ricorsiva"
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot modify inside a recursive share"
-msgstr ""
+msgstr "Impossibile modificare all'interno di una condivisione ricorsiva"
 
 #: src/DownloadListCtrl.cpp
 msgid "Part"
@@ -1886,9 +1886,8 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr "Autenticazione fallita: l'hash specificato come password EC non è valido."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
-msgstr "Autenticazione fallita: questo aMule richiede una connessione esterna cifrata e il client non l'ha negoziata."
+msgstr "Autenticazione fallita: il client ha offerto una connessione esterna cifrata ma non ha inviato una chiave utilizzabile."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
@@ -1896,7 +1895,7 @@ msgstr "Autenticazione fallita: questo aMule richiede una connessione esterna ci
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client could not confirm the encrypted session."
-msgstr ""
+msgstr "Autenticazione fallita: il client non è riuscito a confermare la sessione cifrata."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2634,9 +2633,9 @@ msgid "Yes"
 msgstr "Sì"
 
 #: src/geoip/MaxMindDBDatabase.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open MaxMindDB database '%s': %s"
-msgstr "Impossibile aprire %s (%s)"
+msgstr "Impossibile aprire il database MaxMindDB '%s': %s"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -2981,20 +2980,19 @@ msgstr "Connessione EC fallita. Risposta vuota."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Could not set up connection encryption. Connection closed."
-msgstr ""
+msgstr "Impossibile configurare la cifratura della connessione. Connessione terminata."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
-msgstr ""
+msgstr "Il core non ha negoziato una connessione cifrata. Potrebbe essere una versione di aMule più vecchia, priva del supporto alla cifratura, oppure la connessione potrebbe essere stata manomessa. Per connetterti senza cifratura, disattivala nelle impostazioni di connessione."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "Connessione esterna: risposta errata dal server. Connessione terminata."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
-msgstr "Connessione esterna: risposta errata dal server. Connessione terminata."
+msgstr "Connessione esterna: il demone non è riuscito a dimostrare di conoscere la password. Connessione terminata."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Succeeded! Connection established to aMule "
@@ -6780,11 +6778,11 @@ msgstr "Non attivo"
 #: src/SharedDirWatcher.cpp
 #, c-format
 msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
-msgstr ""
+msgstr "Monitoraggio cartelle condivise: overflow o errore del backend (%s); si ricorre a una ricarica completa"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
-msgstr ""
+msgstr "Monitoraggio cartelle condivise: eventi persi dal backend, ricarica completa dei file condivisi per risincronizzare"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -6925,7 +6923,7 @@ msgstr "Copia il collegamento eD2k negli appunti (&AICH info + Fonte)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
-msgstr ""
+msgstr "Esporta i file selezionati in una emulecollection"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -6937,34 +6935,33 @@ msgid "You need a HighID to create a valid sourcelink"
 msgstr "Hai bisogno di un ID alto per creare un sourcelink valido"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Export to emulecollection"
-msgstr "Errore nel completamento"
+msgstr "Esporta in emulecollection"
 
 #: src/SharedFilesCtrl.cpp
 msgid "No files are selected to export."
-msgstr ""
+msgstr "Nessun file selezionato da esportare."
 
 #: src/SharedFilesCtrl.cpp
 msgid "eMule collections (*.emulecollection)"
-msgstr ""
+msgstr "Collezioni eMule (*.emulecollection)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "'%s' already exists. Overwrite it?"
-msgstr ""
+msgstr "'%s' esiste già. Sovrascriverlo?"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to write the collection file '%s'."
-msgstr "Impossibile ricevere i file condivisi dall'utente '%s'"
+msgstr "Impossibile scrivere il file di collezione '%s'."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
-msgstr[0] "Ricarica file condivisi"
-msgstr[1] "Ricarica file condivisi"
+msgstr[0] "Esportato %u file condiviso in '%s'"
+msgstr[1] "Esportati %u file condivisi in '%s'."
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7899,9 +7896,9 @@ msgid "Hashset requested for unknown file: %s"
 msgstr "Hashset richiesto per il file sconosciuto: %s"
 
 #: src/UploadDiskIOThread.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open file (%s), removing from list of shared files."
-msgstr "Seleziona chi può richiedere di vedere la lista dei tuoi file condivisi."
+msgstr "Impossibile aprire il file (%s), rimosso dalla lista dei file condivisi."
 
 #: src/UploadQueue.cpp
 #, c-format

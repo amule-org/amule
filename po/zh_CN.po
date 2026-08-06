@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-05 14:00+0200\n"
-"PO-Revision-Date: 2026-08-04 15:47+0000\n"
+"PO-Revision-Date: 2026-08-06 07:46+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -1519,15 +1519,15 @@ msgstr "未知或错误的临时文件格式。"
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "This directory is part of a recursive share. To remove it, un-share or modify the recursive share root above it."
-msgstr ""
+msgstr "此目录是递归共享的一部分。要删除它，取消共享或修改其上方的递归共享根目录。"
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot unshare inside a recursive share"
-msgstr ""
+msgstr "无法在递归共享中取消共享"
 
 #: src/DirectoryTreeCtrl.cpp
 msgid "Cannot modify inside a recursive share"
-msgstr ""
+msgstr "无法在递归共享中修改"
 
 #: src/DownloadListCtrl.cpp
 msgid "Part"
@@ -1878,9 +1878,8 @@ msgid "Authentication failed: invalid hash specified as EC password."
 msgstr "身份验证失败: 指定为 EC 密码的 MD5 哈希值无效。"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
-msgstr "身份认证失败：此 aMule 需要加密的外部连接，但客户端未协商。"
+msgstr "身份认证失败：客户端提供了加密的外部连接，但未发送可用密钥。"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
@@ -1888,7 +1887,7 @@ msgstr "身份认证失败：此 aMule 需要加密的外部连接，但客户�
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client could not confirm the encrypted session."
-msgstr ""
+msgstr "身份认证失败：客户端无法确认加密会话。"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: wrong password."
@@ -2626,9 +2625,9 @@ msgid "Yes"
 msgstr "是"
 
 #: src/geoip/MaxMindDBDatabase.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open MaxMindDB database '%s': %s"
-msgstr "无法读取 %s（%s）"
+msgstr "打开 MaxMindDB 数据库 '%s' 失败： %s"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -2973,20 +2972,19 @@ msgstr "远程连接失败，回复为空。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Could not set up connection encryption. Connection closed."
-msgstr ""
+msgstr "无法设置连接加密。连接关闭。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "The core did not negotiate an encrypted connection. It may be an older aMule without encryption support, or the connection may have been tampered with. To connect without encryption, turn it off in the connection settings."
-msgstr ""
+msgstr "核心未协商加密连接。它可能是没有加密支持的较老的 aMule，或者该连接可能已遭篡改。要进行不加密连接，在连接设置中关闭它。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
 msgstr "远程连接：错误回应，握手失败。连接已经关闭。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
-msgstr "远程连接：错误回应，握手失败。连接已经关闭。"
+msgstr "外部连接：守护进程未能证明它知道密码。连接关闭。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Succeeded! Connection established to aMule "
@@ -6773,11 +6771,11 @@ msgstr "没有运行"
 #: src/SharedDirWatcher.cpp
 #, c-format
 msgid "Shared-dir watcher: backend overflow/error (%s); falling back to full reload"
-msgstr ""
+msgstr "共享目录监测：后端溢出/错误 (%s); 回退到完整加载"
 
 #: src/SharedDirWatcher.cpp
 msgid "Shared-dir watcher: events dropped by backend, forcing a full shared-files reload to resync"
-msgstr ""
+msgstr "共享目录监测：事件被后端丢弃，强制完整的共享文件重加载以重新同步"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -6918,7 +6916,7 @@ msgstr "复制 eD2k 链接到剪贴板 (含 &AICH 信息、源)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
-msgstr ""
+msgstr "导出所选文件到 emulecollection"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -6930,34 +6928,33 @@ msgid "You need a HighID to create a valid sourcelink"
 msgstr "你需要高ID来产生源链接"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Export to emulecollection"
-msgstr "最后阶段出错"
+msgstr "导出到 emulecollection"
 
 #: src/SharedFilesCtrl.cpp
 msgid "No files are selected to export."
-msgstr ""
+msgstr "未选中要导出的文件。"
 
 #: src/SharedFilesCtrl.cpp
 msgid "eMule collections (*.emulecollection)"
-msgstr ""
+msgstr "eMule 集合 (*.emulecollection)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "'%s' already exists. Overwrite it?"
-msgstr ""
+msgstr "'%s' 已存在。要覆盖它吗?"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to write the collection file '%s'."
-msgstr "无法获取用户 %s 的共享文件"
+msgstr "写入链接集文件 '%s' 失败。"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
-msgstr[0] "刷新共享文件"
-msgstr[1] "刷新共享文件"
+msgstr[0] "导出了 %u 个共享文件到 '%s'。"
+msgstr[1] "导出了 %u 个共享文件到 '%s'。"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7890,9 +7887,9 @@ msgid "Hashset requested for unknown file: %s"
 msgstr "请求未知文件校检码：%s"
 
 #: src/UploadDiskIOThread.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open file (%s), removing from list of shared files."
-msgstr "选择可以浏览共享文件列表的用户。"
+msgstr "打开文件 (%s) 失败，从共享文件列表中删除。"
 
 #: src/UploadQueue.cpp
 #, c-format
