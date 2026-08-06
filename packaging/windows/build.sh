@@ -1,7 +1,7 @@
 #!/bin/bash
 # Windows portable .zip recipe for aMule.
 #
-# Runs INSIDE MSYS2 on the Windows host (CLANGARM64 or MINGW64 env).
+# Runs INSIDE MSYS2 on the Windows host (CLANGARM64, CLANG64 or MINGW64).
 # Can also be driven remotely over SSH from another machine, e.g.:
 #   ssh <windows-host> 'cd <repo> && packaging/windows/build.sh'
 
@@ -44,6 +44,7 @@ set -a; source "${VERSIONS_ENV}"; set +a
 # across all platforms in dist/.
 case "${WINDOWS_MSYSTEM}" in
     CLANGARM64) ARCH=arm64 ;;
+    CLANG64)    ARCH=x64 ;;
     MINGW64)    ARCH=x64 ;;
     *) echo "fatal: unsupported WINDOWS_MSYSTEM=${WINDOWS_MSYSTEM}" >&2; exit 1 ;;
 esac
@@ -70,7 +71,7 @@ build() {
     require_tool zip   "zip"
 
     # Verify we're in the right MSYS2 env. The MSYSTEM env var should
-    # match versions.env; if a user runs from MINGW64 with versions.env
+    # match versions.env; if a user runs from CLANG64 with versions.env
     # set to CLANGARM64 (or vice versa), the build will silently produce
     # the wrong arch.
     if [[ "${MSYSTEM:-}" != "${WINDOWS_MSYSTEM}" ]]; then
