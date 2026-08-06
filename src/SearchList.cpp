@@ -286,8 +286,8 @@ CSearchList::~CSearchList()
 	// Search_Removed broadcast below -- there is no tab left worth closing
 	// and the notify would reach a half-destroyed CamuleDlg.
 	m_shuttingDown = true;
-	while (!m_results.empty()) {
-		RemoveResults(m_results.begin()->first);
+	while (!AllResults().empty()) {
+		RemoveResults(AllResults().begin()->first);
 	}
 }
 
@@ -554,8 +554,7 @@ std::size_t CSearchList::GetCurrentSearchResultCount() const
 	if (m_currentSearch == wxUIntPtr(-1)) {
 		return 0;
 	}
-	ResultMap::const_iterator it = m_results.find(m_currentSearch);
-	return (it == m_results.end()) ? 0 : it->second.size();
+	return GetSearchResults(m_currentSearch).size();
 }
 
 uint8 CSearchList::GetSearchLifecyclePercent() const
@@ -852,13 +851,10 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 
 void CSearchList::AddFileToDownloadByHash(const CMD4Hash &hash, uint8 cat)
 {
-	ResultMap::iterator it = m_results.begin();
-	for (; it != m_results.end(); ++it) {
-		CSearchResultList &list = it->second;
-
-		for (unsigned int i = 0; i < list.size(); ++i) {
-			if (list[i]->GetFileHash() == hash) {
-				CoreNotify_Search_Add_Download(list[i], cat);
+	for (const auto &entry : AllResults()) {
+		for (CSearchFile *sf : entry.second) {
+			if (sf->GetFileHash() == hash) {
+				CoreNotify_Search_Add_Download(sf, cat);
 
 				return;
 			}
@@ -868,7 +864,7 @@ void CSearchList::AddFileToDownloadByHash(const CMD4Hash &hash, uint8 cat)
 
 CSearchFile *CSearchList::GetSearchFileByID(const CMD4Hash &hash) const
 {
-	for (const auto &entry : m_results) {
+	for (const auto &entry : AllResults()) {
 		for (CSearchFile *sf : entry.second) {
 			if (sf->GetFileHash() == hash) {
 				return sf;
@@ -891,7 +887,7 @@ void CSearchList::GetAllSearchFilesByID(const CMD4Hash &hash, std::vector<CSearc
 	// search keeps its own CSearchFile with its own note list. On-demand Kad
 	// notes and the running flag must reach all of them, or only the first tab
 	// would show the comments.
-	for (const auto &entry : m_results) {
+	for (const auto &entry : AllResults()) {
 		for (CSearchFile *sf : entry.second) {
 			if (sf->GetFileHash() == hash) {
 				out.push_back(sf);
@@ -910,7 +906,7 @@ void CSearchList::AddFileToDownloadByEcid(uint32 ecid, uint8 cat)
 	// Match against parents and their same-hash/different-name children
 	// (issue #431 grouping); downloading the specific CSearchFile lands
 	// the partfile under that result's own filename.
-	for (auto &entry : m_results) {
+	for (const auto &entry : AllResults()) {
 		for (CSearchFile *sf : entry.second) {
 			if (sf->ECID() == ecid) {
 				CoreNotify_Search_Add_Download(sf, cat);
@@ -1034,8 +1030,7 @@ CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIn
 		return GetSearchLifecycleState();
 	}
 	// Otherwise: results retained => finished; nothing => idle/unknown.
-	return (m_results.find(searchID) != m_results.end()) ? SEARCH_LIFECYCLE_FINISHED
-							     : SEARCH_LIFECYCLE_IDLE;
+	return HasSearchResults(searchID) ? SEARCH_LIFECYCLE_FINISHED : SEARCH_LIFECYCLE_IDLE;
 }
 
 uint8 CSearchList::GetSearchLifecyclePercentById(wxUIntPtr searchID) const
@@ -1508,8 +1503,8 @@ void CSearchList::KademliaSearchKeyword(uint32_t searchID,
 
 void CSearchList::UpdateSearchFileByHash(const CMD4Hash &hash)
 {
-	for (ResultMap::iterator it = m_results.begin(); it != m_results.end(); ++it) {
-		CSearchResultList &results = it->second;
+	for (const auto &entry : AllResults()) {
+		const CSearchResultList &results = entry.second;
 		for (size_t i = 0; i < results.size(); ++i) {
 			CSearchFile *item = results.at(i);
 

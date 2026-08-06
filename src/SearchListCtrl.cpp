@@ -315,15 +315,12 @@ size_t CSearchListCtrl::GetHiddenItemCount() const
 	}
 	size_t hidden = 0;
 	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+	// Only top-level results are indexed (see CSearchResultIndex), so this
+	// counts exactly the results the list would show but for the filter. A
+	// grouped child is never "hidden" in its own right: it is reached through
+	// its parent, which surfaces as a container for it.
 	for (CSearchFile *file : results) {
-		if (!file->GetParent() && !ShouldShow(file)) {
-			++hidden;
-		}
-		// Children are only ever "hidden" for filtering purposes via their
-		// own IsFiltered() test -- a filtered-in child under a filtered-out
-		// parent still counts as visible (the parent surfaces as a
-		// container for it), so it is not counted as hidden here either.
-		if (file->GetParent() && !IsFiltered(file)) {
+		if (!ShouldShow(file)) {
 			++hidden;
 		}
 	}
