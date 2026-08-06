@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 17:30+0200\n"
+"POT-Creation-Date: 2026-08-06 18:31+0200\n"
 "PO-Revision-Date: 2026-08-06 11:13+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1651,7 +1651,7 @@ msgstr "Отдать все источники A4AF другим файлам с
 msgid "Extended Options"
 msgstr "Дополнительные настройки"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Preview"
 msgstr "Предпросмотр"
 

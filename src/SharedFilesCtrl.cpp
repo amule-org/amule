@@ -146,6 +146,7 @@ CSharedFilesCtrl::~CSharedFilesCtrl() {}
 void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 {
 	long item_hit = CheckSelection(event);
+	m_menuRow = item_hit;
 
 	if ((m_menu == NULL) && (item_hit != -1)) {
 		m_menu = new wxMenu(_("Shared Files"));
@@ -203,7 +204,16 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		// list carries the daemon's directory in amulegui, which resolves here
 		// only on a shared filesystem, and a locally shared file can have been
 		// moved or deleted since it was hashed.
-		m_menu->Enable(MP_VIEW, FileLaunch::CanOpen(file));
+		// CSharedFileList shares PS_READY part files, so an entry here can be an
+		// in-progress download. Gate it exactly as the Downloads list does:
+		// a finished file of any type can be opened, an unfinished one only when
+		// enough of the media is on disk to play.
+		// IsPartFile() establishes the dynamic type, as in FileLaunch::ResolvePath.
+		const bool previewable =
+			file->IsPartFile() ? static_cast<CPartFile *>(file)->PreviewAvailable() : true;
+		m_menu->SetLabel(
+			MP_VIEW, file->IsPartFile() ? wxString(_("Preview")) : wxString(_("&Open the file")));
+		m_menu->Enable(MP_VIEW, previewable && FileLaunch::CanOpen(file));
 		m_menu->Enable(MP_SHOWINFOLDER, FileLaunch::CanReveal(file));
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
@@ -1108,17 +1118,15 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 // files at once is not a thing either desktop handler does gracefully.
 void CSharedFilesCtrl::OnOpenFile(wxCommandEvent &WXUNUSED(event))
 {
-	const long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (index != -1) {
-		FileLaunch::Open(FileAtRow(index), this);
+	if (m_menuRow != -1) {
+		FileLaunch::Open(FileAtRow(m_menuRow), this);
 	}
 }
 
 void CSharedFilesCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 {
-	const long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (index != -1) {
-		FileLaunch::Reveal(FileAtRow(index), this);
+	if (m_menuRow != -1) {
+		FileLaunch::Reveal(FileAtRow(m_menuRow), this);
 	}
 }
 

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 17:30+0200\n"
+"POT-Creation-Date: 2026-08-06 18:31+0200\n"
 "PO-Revision-Date: 2026-08-06 11:10+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1642,7 +1642,7 @@ msgstr "Byt alle A4AF til anna fil no"
 msgid "Extended Options"
 msgstr "Utvida innstillingar"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Preview"
 msgstr "Førehandssyning"
 

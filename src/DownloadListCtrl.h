@@ -243,6 +243,15 @@ private:
 	void OnPreviewFile(wxCommandEvent &event);
 	void OnShowInFolder(wxCommandEvent &event);
 
+	/**
+	 * The row the context menu was built for.
+	 *
+	 * The menu's enabled state is decided from this row, so the handlers act on
+	 * it rather than on the selection -- with several rows selected the two
+	 * disagree, and the item would enable against one file and act on another.
+	 */
+	long m_menuRow = -1;
+
 	// Misc event-handlers
 	void OnItemActivated(wxListEvent &event);
 	void OnMouseRightClick(wxListEvent &event);

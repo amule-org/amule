@@ -26,8 +26,9 @@
 
 #include <vector> // Needed for std::vector
 
-#include <wx/msgdlg.h> // Needed for wxMessageBox
-#include <wx/utils.h>  // Needed for wxExecute, wxLaunchDefaultApplication
+#include <wx/cmdline.h> // Needed for wxCmdLineParser::ConvertStringToArgs
+#include <wx/msgdlg.h>  // Needed for wxMessageBox
+#include <wx/utils.h>   // Needed for wxExecute, wxLaunchDefaultApplication
 
 #include <common/Format.h> // Needed for CFormat
 
@@ -72,41 +73,79 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 	CTerminationProcess *process = new CTerminationProcess(description);
 	wxExecuteEnv execEnv;
 	const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
-	const long ret = wxExecute(argv.data(), wxEXEC_ASYNC, process, sanitized ? &execEnv : nullptr);
+	long ret = 0;
+	try {
+		ret = wxExecute(argv.data(), wxEXEC_ASYNC, process, sanitized ? &execEnv : nullptr);
+	} catch (...) {
+		// wxExecute throws, rather than returning an error, when the environment
+		// it has to hand the child is unusable -- a working directory that no
+		// longer exists, for one. Uncaught it unwinds out of the menu handler and
+		// wx terminates the application: a *clean* exit, so no signal, no
+		// backtrace and no crash report, which makes it near-undiagnosable. A
+		// failed launch is not worth losing the session over.
+		delete process;
+		return false;
+	}
 	if (ret <= 0) {
 		delete process;
 		return false;
 	}
+	// True means the child was spawned, not that it did anything useful: an
+	// async wxExecute returns the pid as soon as the fork succeeds, so a failed
+	// exec (no xdg-open installed, say) is not reported here. macOS and Windows
+	// do surface a failure, because neither goes through this path for the
+	// desktop opener.
 	return true;
 }
 
-// Hand the path to the user's configured player. The command is a template
-// from preferences, so unlike our own launches it stays a string and keeps the
-// historic %PARTFILE / %PARTNAME / $file placeholders and quoting.
+// Hand the path to the user's configured player.
+//
+// The template is split into arguments ONCE, with wxCmdLineParser, and the
+// placeholders are then substituted inside the resulting arguments -- so the
+// path and the bare name each cross as a single argv entry no matter what they
+// contain. The old code appended the path to a command string and let wxExecute
+// re-split it, which meant a remote-supplied filename could inject arguments:
+// `x\' --script=/tmp/evil.lua \'.avi` becomes a separate --script argument, and
+// players like mpv and vlc execute scripts given that way. Escaping the quotes
+// was the previous defence and was itself bypassable with a backslash; not
+// building a string in the first place removes the class.
 void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNUSED(parent))
 {
-	wxString command = player;
+	const wxString target = path.GetRaw();
 	const wxString name = path.GetFullName().GetRaw();
-	if (!command.Replace("$file", "%PARTFILE")) {
-		if ((command.Find("%PARTFILE") == wxNOT_FOUND) &&
-			(command.Find("%PARTNAME") == wxNOT_FOUND)) {
-#ifdef __WINDOWS__
-			command << " \"" << path.GetRaw() << "\"";
-#else
-			command << " '" << path.GetRaw() << "'";
-#endif
-		}
-	}
-	command.Replace("%PARTFILE", path.GetRaw());
-	command.Replace("%PARTNAME", name);
 
-	CTerminationProcess *process = new CTerminationProcess(command);
-	wxExecuteEnv execEnv;
-	const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
-	if (wxExecute(command, wxEXEC_ASYNC, process, sanitized ? &execEnv : nullptr) <= 0) {
-		delete process;
-		AddLogLineC(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) %
-			    command);
+	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player);
+	if (parts.IsEmpty()) {
+		AddLogLineC(
+			CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player);
+		return;
+	}
+
+	std::vector<wxString> argv;
+	argv.reserve(parts.GetCount() + 1);
+	bool substituted = false;
+	for (const wxString &part : parts) {
+		wxString arg = part;
+		// $file is the historic spelling of %PARTFILE.
+		if (arg.Replace("$file", target) > 0) {
+			substituted = true;
+		}
+		if (arg.Replace("%PARTFILE", target) > 0) {
+			substituted = true;
+		}
+		if (arg.Replace("%PARTNAME", name) > 0) {
+			substituted = true;
+		}
+		argv.push_back(arg);
+	}
+	// No placeholder anywhere: the player takes the file as its last argument.
+	if (!substituted) {
+		argv.push_back(target);
+	}
+
+	if (!RunDetached(player, argv)) {
+		AddLogLineC(
+			CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player);
 	}
 }
 
@@ -118,7 +157,12 @@ bool OpenWithDesktop(const CPath &path)
 	// No AppImage on these platforms, so there is no environment to sanitize
 	// and the portable call is both simpler and better behaved than spawning
 	// a shell (it uses ShellExecute / LaunchServices directly).
-	return wxLaunchDefaultApplication(target);
+	try {
+		return wxLaunchDefaultApplication(target);
+	} catch (...) {
+		// See RunDetached: an escaping exception would end the session.
+		return false;
+	}
 #else
 	// Linux/BSD: xdg-open, via wxExecute so the AppImage-safe environment can
 	// be passed. Inside Flatpak this is the portal shim, which forwards to the
@@ -188,7 +232,7 @@ void Open(CKnownFile *file, wxWindow *parent)
 	const bool incomplete = file->IsPartFile();
 	const FileType type = GetFiletype(file->GetFileName());
 	const bool media = (type == ftVideo || type == ftAudio);
-	const wxString player = thePrefs::GetVideoPlayer();
+	const wxString &player = thePrefs::GetVideoPlayer();
 
 	// An unfinished download is "NNNN.part" on disk. No desktop registers a
 	// handler for that extension, so the platform opener cannot do anything
@@ -229,7 +273,14 @@ void Open(CKnownFile *file, wxWindow *parent)
 void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 {
 	CPath path;
-	if (!CanReveal(file) || !ResolvePath(file, path)) {
+	if (!ResolvePath(file, path)) {
+		return;
+	}
+	if (!CanReveal(file)) {
+		// Gone between the menu being built and this click, or never eligible.
+		// Open's equivalent path logs, so this one does too.
+		AddLogLineC(
+			CFormat(_("ERROR: Failed to show '%s' in the file manager.")) % path.GetPrintable());
 		return;
 	}
 
@@ -246,10 +297,20 @@ void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 	// stays a quoted string rather than an argument vector.
 	const wxString command = "explorer /select,\"" + path.GetRaw() + "\"";
 	CTerminationProcess *process = new CTerminationProcess(command);
-	if (wxExecute(command, wxEXEC_ASYNC, process) <= 0) {
+	try {
+		// Explorer's own exit status is meaningless (non-zero even on success),
+		// so it is ignored -- but a failure to spawn it at all is reportable.
+		if (wxExecute(command, wxEXEC_ASYNC, process) <= 0) {
+			delete process;
+			ok = false;
+		} else {
+			ok = true;
+		}
+	} catch (...) {
+		// see RunDetached
 		delete process;
+		ok = false;
 	}
-	ok = true;
 #else
 	// No portable way to select the file; opening the containing folder is the
 	// part every desktop agrees on. Selecting it would mean the FileManager1

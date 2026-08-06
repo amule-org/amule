@@ -42,8 +42,7 @@
 #include "muuli_wdr.h" // Needed for ID_DLOADLIST
 #include "PartFile.h"  // Needed for CPartFile
 #include "Preferences.h"
-#include "SharedFileList.h"     // Needed for CSharedFileList
-#include "TerminationProcess.h" // Needed for CTerminationProcess
+#include "SharedFileList.h" // Needed for CSharedFileList
 #include "TransferWnd.h"
 #include "SourceListCtrl.h"
 
@@ -662,19 +661,19 @@ void CDownloadListCtrl::OnViewFileComments(wxCommandEvent &WXUNUSED(event))
 
 void CDownloadListCtrl::OnPreviewFile(wxCommandEvent &WXUNUSED(event))
 {
-	ItemList files = ::GetSelectedItems(this);
-
-	if (files.size() == 1) {
-		FileLaunch::Open(files.front()->GetFile(), this);
+	// The clicked row, matching how the menu's enabled state was decided. With
+	// several rows selected, taking the selection would act on a different file
+	// than the one the entry was enabled for.
+	if (m_menuRow != -1) {
+		FileLaunch::Open(reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(m_menuRow))->GetFile(), this);
 	}
 }
 
 void CDownloadListCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 {
-	ItemList files = ::GetSelectedItems(this);
-
-	if (files.size() == 1) {
-		FileLaunch::Reveal(files.front()->GetFile(), this);
+	if (m_menuRow != -1) {
+		FileLaunch::Reveal(
+			reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(m_menuRow))->GetFile(), this);
 	}
 }
 
@@ -682,15 +681,12 @@ void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 {
 	CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(evt.GetIndex()))->GetFile();
 
-	// A completed previewable media file plays on double-click, as before.
-	// Anything else (a still-downloading file, or a non-previewable one) opens
-	// the file-details modal, matching the shared-files table's double-click.
-	// Over a remote daemon the file isn't on this host, so fall back to the
-	// details modal there too (#657).
-	// A finished file of any type can be opened; an unfinished one only when
-	// enough of the media is on disk to play (PreviewAvailable).
-	const bool openable = file->IsPartFile() ? file->PreviewAvailable() : true;
-	if (openable && FileLaunch::CanOpen(file)) {
+	// Double-click stays media-only, as it always was: it is an easy gesture to
+	// trigger by accident, and handing a completed .exe or .desktop to the
+	// platform opener on a stray double-click is not a thing to do silently.
+	// The menu's Open is the broad one. Anything else opens the file-details
+	// modal, matching the shared-files table.
+	if (file->PreviewAvailable() && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
 	} else {
 		ShowFileDetailDialog(evt.GetIndex());
@@ -728,6 +724,7 @@ void CDownloadListCtrl::DoItemSelectionChanged()
 void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 {
 	long index = CheckSelection(evt);
+	m_menuRow = index;
 	if (index < 0) {
 		return;
 	}
@@ -1504,11 +1501,5 @@ void CDownloadListCtrl::DrawFileStatusBar(
 		dc->DrawLine(rect.x, rect.y + 1, rect.x + width, rect.y + 1);
 	}
 }
-
-#ifdef __WINDOWS__
-#define QUOTE "\""
-#else
-#define QUOTE "\'"
-#endif
 
 // File_checked_for_headers

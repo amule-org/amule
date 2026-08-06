@@ -190,6 +190,18 @@ private:
 	void OnShowInFolder(wxCommandEvent &event);
 
 	/**
+	 * The row the context menu was built for.
+	 *
+	 * The menu's enabled state is decided from this row, so the handlers have
+	 * to act on it too. Taking the first *selected* row instead diverges as
+	 * soon as more than one is selected: CheckSelection only re-selects when
+	 * the clicked row was not already part of the selection, so right-clicking
+	 * the higher of two selected rows would enable against one file and act on
+	 * another.
+	 */
+	long m_menuRow = -1;
+
+	/**
 	 * Event-handler for the Set Priority menu items.
 	 */
 	void OnSetPriority(wxCommandEvent &event);
