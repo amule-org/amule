@@ -186,6 +186,8 @@ private:
 	 * Event-handler for right-clicks on the list-items.
 	 */
 	void OnGetFeedback(wxCommandEvent &event);
+	void OnOpenFile(wxCommandEvent &event);
+	void OnShowInFolder(wxCommandEvent &event);
 
 	/**
 	 * Event-handler for the Set Priority menu items.

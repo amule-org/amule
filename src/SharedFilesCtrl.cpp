@@ -37,6 +37,7 @@
 #include "CommentDialog.h"    // Needed for CCommentDialog
 #include "FileDetailDialog.h" // Needed for CFileDetailDialog
 #include "PartFile.h"         // Needed for CPartFile
+#include "FileLaunch.h"       // Needed for FileLaunch::Open / Reveal
 #include "SharedFileList.h"   // Needed for CKnownFileMap
 #include "amule.h"            // Needed for theApp
 #include "ServerConnect.h"    // Needed for CServerConnect
@@ -51,6 +52,8 @@
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
+	EVT_MENU(MP_VIEW, CSharedFilesCtrl::OnOpenFile)
+	EVT_MENU(MP_SHOWINFOLDER, CSharedFilesCtrl::OnShowInFolder)
 	EVT_LIST_ITEM_ACTIVATED(-1, CSharedFilesCtrl::OnItemActivated)
 
 	EVT_MENU(MP_METINFO, CSharedFilesCtrl::OnViewFileDetails)
@@ -158,6 +161,9 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(0, _("Priority"), prioMenu);
 		m_menu->AppendSeparator();
 
+		m_menu->Append(MP_VIEW, _("&Open the file"));
+		m_menu->Append(MP_SHOWINFOLDER, _("Show in file manager"));
+		m_menu->AppendSeparator();
 		m_menu->Append(MP_METINFO, _("Show file &details"));
 		m_menu->AppendSeparator();
 
@@ -193,6 +199,12 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->AppendSeparator();
 		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
+		// Offered only when the file is reachable from this host: the shared
+		// list carries the daemon's directory in amulegui, which resolves here
+		// only on a shared filesystem, and a locally shared file can have been
+		// moved or deleted since it was hashed.
+		m_menu->Enable(MP_VIEW, FileLaunch::CanOpen(file));
+		m_menu->Enable(MP_SHOWINFOLDER, FileLaunch::CanReveal(file));
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETHOSTNAMESOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
@@ -1089,6 +1101,24 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 			}
 			theApp->downloadqueue->AddLinks(links);
 		}
+	}
+}
+
+// Both act on one file: the menu is opened over a row, and opening several
+// files at once is not a thing either desktop handler does gracefully.
+void CSharedFilesCtrl::OnOpenFile(wxCommandEvent &WXUNUSED(event))
+{
+	const long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (index != -1) {
+		FileLaunch::Open(FileAtRow(index), this);
+	}
+}
+
+void CSharedFilesCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
+{
+	const long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (index != -1) {
+		FileLaunch::Reveal(FileAtRow(index), this);
 	}
 }
 

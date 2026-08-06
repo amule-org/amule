@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 13:42+0200\n"
+"POT-Creation-Date: 2026-08-06 17:30+0200\n"
 "PO-Revision-Date: 2026-08-06 11:09+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1640,6 +1640,10 @@ msgid "Preview"
 msgstr "Voorbeeld"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+msgid "Show in file manager"
+msgstr ""
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
 msgstr "Bekijk bestand &details"
 
@@ -1667,7 +1671,7 @@ msgstr "verwijder toewijzing"
 msgid "Assign to category"
 msgstr "Toewijzen aan catgorie"
 
-#: src/DownloadListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "&Open het bestand"
 
@@ -1698,28 +1702,6 @@ msgstr "Downloads (%i)"
 #, fuzzy, c-format
 msgid "Total queue size: %s"
 msgstr "Totaal gedownload: %s"
-
-#: src/DownloadListCtrl.cpp
-msgid "the default Windows shell handler"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid ""
-"To prevent this warning to show up in every preview,\n"
-"set your preferred video player in preferences (default is %s)."
-msgstr ""
-"Om deze waarschuwing te voorkomen bij elk voorbeeld\n"
-"dient u uw video afspeelprogramma in te stellen bij voorkeuren (standaard is %s)."
-
-#: src/DownloadListCtrl.cpp
-msgid "File preview"
-msgstr "Voorbeeld"
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "FOUT: Opstarten externe mediaspeler mislukt! Commando: '%s'"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2290,6 +2272,34 @@ msgstr "%.1f%% voltooid"
 #, c-format
 msgid "%.2f kB/s"
 msgstr "%.2f kB/s"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgstr "FOUT: Opstarten externe mediaspeler mislukt! Commando: '%s'"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "Cannot open '%s': the file is not present on this computer."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "File preview"
+msgstr "Voorbeeld"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to open '%s' with the default application."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "FOUT: Kon deelbestand '%s' niet openen"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -8706,6 +8716,14 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, c-format
+#~ msgid ""
+#~ "To prevent this warning to show up in every preview,\n"
+#~ "set your preferred video player in preferences (default is %s)."
+#~ msgstr ""
+#~ "Om deze waarschuwing te voorkomen bij elk voorbeeld\n"
+#~ "dient u uw video afspeelprogramma in te stellen bij voorkeuren (standaard is %s)."
 
 #~ msgid "Filter Results"
 #~ msgstr "Filter resultaat"

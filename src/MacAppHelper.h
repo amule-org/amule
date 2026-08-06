@@ -35,6 +35,14 @@ void mac_set_accessory_mode(bool accessory);
 // if the handle is not backed by a table view, or below macOS 11.
 void mac_set_table_view_flush(void *windowHandle);
 
+// Reveals `path` in Finder, selected in its containing folder.
+//
+// Goes through NSWorkspace rather than spawning `open -R`: LaunchServices does
+// the work out of process, so there is no subprocess to inherit anything from
+// aMule, and the file ends up selected rather than merely having its folder
+// opened. Returns false when the path is gone.
+bool mac_reveal_in_finder(const char *path);
+
 #ifdef __cplusplus
 }
 #endif

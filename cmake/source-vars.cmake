@@ -76,6 +76,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		DirectoryTreeCtrl.cpp
 		DownloadListCtrl.cpp
 		FileDetailDialog.cpp
+		FileLaunch.cpp
 		FriendListCtrl.cpp
 		GenericClientListCtrl.cpp
 		KadDlg.cpp

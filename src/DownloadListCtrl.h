@@ -241,6 +241,7 @@ private:
 	void OnViewFileInfo(wxCommandEvent &event);
 	void OnViewFileComments(wxCommandEvent &event);
 	void OnPreviewFile(wxCommandEvent &event);
+	void OnShowInFolder(wxCommandEvent &event);
 
 	// Misc event-handlers
 	void OnItemActivated(wxListEvent &event);
@@ -248,13 +249,6 @@ private:
 	void OnMouseMiddleClick(wxListEvent &event);
 	void OnKeyPressed(wxKeyEvent &event);
 	void OnItemSelectionChanged(wxListEvent &event);
-
-	/**
-	 * Executes the user-selected preview command on the specified file.
-	 *
-	 * @file The file to be previewed.
-	 */
-	void PreviewFile(CPartFile *file);
 
 	/**
 	 * Show file detail dialog for item at index

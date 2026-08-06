@@ -31,7 +31,7 @@
 #include <common/Format.h>    // Needed for CFormat
 #include "amule.h"            // Needed for theApp
 #include "amuleDlg.h"         // Needed for CamuleDlg
-#include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
+#include "FileLaunch.h"       // Needed for FileLaunch::Open / Reveal
 #include "BarShader.h"        // Needed for CBarShader
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst
 #include "DataToText.h"       // Needed for PriorityToStr
@@ -124,6 +124,7 @@ wxBEGIN_EVENT_TABLE(CDownloadListCtrl, CMuleVirtualListCtrl)
 
 	EVT_MENU(MP_METINFO, CDownloadListCtrl::OnViewFileInfo)
 	EVT_MENU(MP_VIEW, CDownloadListCtrl::OnPreviewFile)
+	EVT_MENU(MP_SHOWINFOLDER, CDownloadListCtrl::OnShowInFolder)
 	EVT_MENU(MP_VIEWFILECOMMENTS, CDownloadListCtrl::OnViewFileComments)
 
 	EVT_MENU(MP_WS, CDownloadListCtrl::OnGetFeedback)
@@ -132,22 +133,6 @@ wxEND_EVENT_TABLE()
 
 //! This listtype is used when gathering the selected items.
 typedef std::list<FileCtrlItem_Struct *> ItemList;
-
-// True when the platform opener can actually reach the file's on-disk path.
-// The monolithic app is the core, so the file always lives on this host. A
-// remote GUI (amulegui) drives a separate daemon: the path it holds is the
-// daemon's (EC_TAG_KNOWNFILE_PATH -> GetFilePath()), reachable from here only
-// when the GUI shares the daemon's filesystem, i.e. a loopback connection.
-// Over a remote daemon the path is meaningless locally, so Preview/Open is
-// suppressed there and the file-details modal is shown instead (#657).
-static bool CanLaunchFilesLocally()
-{
-#ifdef CLIENT_GUI
-	return theApp->m_connect && theApp->m_connect->IsConnectedToLocalHost();
-#else
-	return true;
-#endif
-}
 
 CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 	wxWindowID winid,
@@ -680,7 +665,16 @@ void CDownloadListCtrl::OnPreviewFile(wxCommandEvent &WXUNUSED(event))
 	ItemList files = ::GetSelectedItems(this);
 
 	if (files.size() == 1) {
-		PreviewFile(files.front()->GetFile());
+		FileLaunch::Open(files.front()->GetFile(), this);
+	}
+}
+
+void CDownloadListCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
+{
+	ItemList files = ::GetSelectedItems(this);
+
+	if (files.size() == 1) {
+		FileLaunch::Reveal(files.front()->GetFile(), this);
 	}
 }
 
@@ -693,9 +687,11 @@ void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 	// the file-details modal, matching the shared-files table's double-click.
 	// Over a remote daemon the file isn't on this host, so fall back to the
 	// details modal there too (#657).
-	if ((!file->IsPartFile() || file->IsCompleted()) && file->PreviewAvailable() &&
-		CanLaunchFilesLocally()) {
-		PreviewFile(file);
+	// A finished file of any type can be opened; an unfinished one only when
+	// enough of the media is on disk to play (PreviewAvailable).
+	const bool openable = file->IsPartFile() ? file->PreviewAvailable() : true;
+	if (openable && FileLaunch::CanOpen(file)) {
+		FileLaunch::Open(file, this);
 	} else {
 		ShowFileDetailDialog(evt.GetIndex());
 	}
@@ -771,6 +767,7 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 	//-----------------------------------------------------
 
 	m_menu->Append(MP_VIEW, _("Preview"));
+	m_menu->Append(MP_SHOWINFOLDER, _("Show in file manager"));
 	m_menu->Append(MP_METINFO, _("Show file &details"));
 	m_menu->Append(MP_VIEWFILECOMMENTS, _("Show all comments"));
 	//-----------------------------------------------------
@@ -820,16 +817,24 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 	m_menu->Enable(MP_RESUME, fileResumable);
 	m_menu->Enable(MP_CLEARCOMPLETED, CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->IsEnabled());
 
+	// IsPartFile() is `status != PS_COMPLETE`, so these two cases are
+	// exhaustive -- but spell the fallback out rather than leaving the label
+	// empty if a third status is ever added.
 	wxString view;
-	if (file->IsPartFile() && !file->IsCompleted()) {
+	if (file->IsPartFile()) {
 		view = CFormat("%s [%s]") % _("Preview") % file->GetPartMetFileName().RemoveExt();
-	} else if (file->IsCompleted()) {
+	} else {
 		view = _("&Open the file");
 	}
 	m_menu->SetLabel(MP_VIEW, view);
-	// Only offer preview/open when the file lives on this host: always for the
-	// monolithic app, and for amulegui only on a loopback connection (#657).
-	m_menu->Enable(MP_VIEW, file->PreviewAvailable() && CanLaunchFilesLocally());
+	// Offered when the file is actually reachable from this host, which covers
+	// the monolithic app, amulegui sharing the daemon's filesystem, and the
+	// case a build-variant check could never see: a local file since moved or
+	// deleted. PreviewAvailable() still gates the unfinished case, where it
+	// answers "is enough of the media on disk to play".
+	const bool previewable = file->IsPartFile() ? file->PreviewAvailable() : true;
+	m_menu->Enable(MP_VIEW, previewable && FileLaunch::CanOpen(file));
+	m_menu->Enable(MP_SHOWINFOLDER, FileLaunch::CanReveal(file));
 
 	FileRatingList ratingList;
 	item->GetFile()->GetRatingAndComments(ratingList);
@@ -1506,96 +1511,4 @@ void CDownloadListCtrl::DrawFileStatusBar(
 #define QUOTE "\'"
 #endif
 
-void CDownloadListCtrl::PreviewFile(CPartFile *file)
-{
-	wxString command;
-	if (thePrefs::GetVideoPlayer().IsEmpty()) {
-		// Fall back to the platform's default file-association opener
-		// (xdg-open on Linux/BSD, open on macOS, default shell handler
-		// on Windows). The legacy `xterm -e mplayer` fallback assumed
-		// mplayer was installed; the OS-native helpers below are
-		// present out of the box on every supported platform and pick
-		// up the user's registered application for the file type. A
-		// custom player from Preferences -> Misc -> Video player still
-		// takes precedence.
-		// Command names (open / xdg-open) intentionally stay untranslated
-		// -- they're literal tool names the user would type on a shell.
-		// The Windows phrasing IS translatable since it's English prose.
-		wxString defaultPreview;
-#if defined(__WXMAC__) || defined(__APPLE__)
-		defaultPreview = "open";
-		command = "open " QUOTE "$file" QUOTE;
-#elif defined(__WXMSW__) || defined(_WIN32)
-		defaultPreview = _("the default Windows shell handler");
-		command = "cmd /c start \"\" " QUOTE "$file" QUOTE;
-#else
-		defaultPreview = "xdg-open";
-		command = "xdg-open " QUOTE "$file" QUOTE;
-#endif
-		wxMessageBox(CFormat(_("To prevent this warning to show up in every preview,\nset your "
-				       "preferred video player in preferences (default is %s).")) %
-				     defaultPreview,
-			_("File preview"),
-			wxOK,
-			this);
-	} else {
-		command = thePrefs::GetVideoPlayer();
-	}
-
-	wxString partFile; // File name with full path
-	wxString partName; // File name only, without path
-
-	// The bare file name (no directory): the ".part" temp file while
-	// downloading, the real name once completed.
-	const CPath nameOnly =
-		file->IsCompleted() ? file->GetFileName() : file->GetPartMetFileName().RemoveExt();
-
-	// Build the full path from the on-disk directory joined with the name.
-	// GetFilePath() is the folder the file actually lives in -- the Temp dir
-	// while downloading, the destination once completed -- and is correct in
-	// the monolithic app as well as amulegui, where it is EC-streamed from the
-	// daemon (EC_TAG_KNOWNFILE_PATH) and, on the loopback connection this action
-	// is gated to, names a directory on this same host (#657). This replaces the
-	// old GetTempDir()/GetFullName() pair, which amulegui only knew as its own
-	// local temp pref and the bare ".part.met" basename respectively.
-	partName = nameOnly.GetRaw();
-	partFile = file->GetFilePath().JoinPaths(nameOnly).GetRaw();
-
-	// Compatibility with old behaviour
-	if (!command.Replace("$file", "%PARTFILE")) {
-		if ((command.Find("%PARTFILE") == wxNOT_FOUND) &&
-			(command.Find("%PARTNAME") == wxNOT_FOUND)) {
-			// No magic string, so we just append the filename to the player command
-			// Need to use quotes in case filename contains spaces
-			command << " " << QUOTE << "%PARTFILE" << QUOTE;
-		}
-	}
-
-#ifndef __WINDOWS__
-	// We have to escape quote characters in the file name, otherwise arbitrary
-	// options could be passed to the player.
-	partFile.Replace(QUOTE, "\\" QUOTE);
-	partName.Replace(QUOTE, "\\" QUOTE);
-#endif
-
-	command.Replace("%PARTFILE", partFile);
-	command.Replace("%PARTNAME", partName);
-
-	// We can't use wxShell here, it blocks the app.
-	// Inside an AppImage, hand the player a sanitized environment: the bundle's
-	// library/module dirs are stripped from the child's search paths so a host
-	// player (e.g. Celluloid) loads system libraries, not the older bundled
-	// ones -- otherwise it dies on an undefined symbol (#334). A no-op copy
-	// outside an AppImage, where we launch with the inherited environment.
-	CTerminationProcess *p = new CTerminationProcess(command);
-	wxExecuteEnv execEnv;
-	const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
-	long ret = wxExecute(command, wxEXEC_ASYNC, p, sanitized ? &execEnv : nullptr);
-	bool ok = ret > 0;
-	if (!ok) {
-		delete p;
-		AddLogLineC(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) %
-			    command);
-	}
-}
 // File_checked_for_headers
