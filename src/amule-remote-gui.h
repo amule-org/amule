@@ -956,6 +956,11 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 #endif
 
 #ifdef __WXMAC__
+	// Restore the main window when the user clicks the Dock icon while no
+	// window is visible. Mirrors CamuleGuiApp; both hand off to
+	// CamuleDlg::RestoreMainWindow().
+	virtual void MacReopenApp();
+
 	// Finder "Open With" / double-click on a .emulecollection, and
 	// ed2k:// / magnet: clicks. Both queue into the ED2KLinks file rather
 	// than touching downloadqueue, which here does not exist until the EC

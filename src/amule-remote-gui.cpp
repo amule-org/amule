@@ -264,6 +264,18 @@ void CamuleRemoteGuiApp::OnEndSession(wxCloseEvent &evt)
 }
 
 #ifdef __WXMAC__
+void CamuleRemoteGuiApp::MacReopenApp()
+{
+	// Dock-icon click (and re-launch from Finder / Launchpad) while no
+	// window is visible. wxApp's default handler only de-iconizes; a frame
+	// hidden with Show(false) -- the close-button HideOnClose path and the
+	// minimize-to-tray path both end there -- is not a candidate, so
+	// without this amulegui simply never came back. Mirrors CamuleGuiApp.
+	if (amuledlg) {
+		amuledlg->RestoreMainWindow();
+	}
+}
+
 void CamuleRemoteGuiApp::MacOpenFiles(const wxArrayString &fileNames)
 {
 	// Also fires for Dock drops of arbitrary files; anything that is not
@@ -1055,6 +1067,15 @@ void CamuleRemoteGuiApp::Startup()
 	ipfilter = new CIPFilterRem(m_connect);
 
 	m_allUploadingKnownFile = new CKnownFile;
+
+	// Must run before InitGui() below: the CamuleDlg constructor reads
+	// UseTrayIcon() to decide whether to create the tray icon at all, so a
+	// guard applied after it would leave the icon built for a backend that
+	// cannot show it. Nothing here waits on the EC connection -- these are
+	// amulegui's own local preferences, not packed by CEC_Prefs_Packet and
+	// with no category in the EC_PREFS_* mask -- so OnInit() would have
+	// worked equally well; this sits next to the call it has to precede.
+	SanitiseTrayPreferences();
 
 	// Create main dialog
 	InitGui(m_geometryEnabled, m_geometryString);
