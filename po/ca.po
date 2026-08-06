@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 12:03+0200\n"
+"POT-Creation-Date: 2026-08-06 13:42+0200\n"
 "PO-Revision-Date: 2026-08-06 11:01+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -6539,6 +6539,11 @@ msgstr "(Nom desconegut)"
 #, c-format
 msgid "Are you sure you want to delete the static server %s"
 msgstr "Esteu segur que voleu esborrar el servidor estàtic %s"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "ms"
+msgstr "mins"
 
 #: src/ServerListCtrl.cpp
 #, c-format

@@ -285,9 +285,11 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		// our own REST API, which publishes it as "ping_ms". It used to go
 		// through CastSecondsToHM(), a general duration helper whose
 		// sub-minute branch prints "0.203 secs" (issue #823).
-		// "ms" is an SI unit symbol, identical in every language, so unlike
-		// the secs/mins/hours abbreviations elsewhere it is not translated.
-		return CFormat("%u ms") % server->GetPing();
+		// The unit is translated: it is not written "ms" everywhere -- ru and
+		// uk use "мс", and it is localised in zh and ja too -- and the number
+		// is kept out of the catalog entry the way CastSecondsToHM() keeps it
+		// out of _("secs") and _("mins").
+		return CFormat("%u %s") % server->GetPing() % _("ms");
 
 	case COLUMN_SERVER_USERS:
 		if (!server->GetUsers()) {

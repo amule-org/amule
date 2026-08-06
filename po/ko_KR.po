@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 12:03+0200\n"
+"POT-Creation-Date: 2026-08-06 13:42+0200\n"
 "PO-Revision-Date: 2026-08-06 11:08+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -6572,6 +6572,11 @@ msgstr "(알수없는 이름)"
 #, c-format
 msgid "Are you sure you want to delete the static server %s"
 msgstr "정적 서버 %s를 삭제하시겠습니까?"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "ms"
+msgstr "분"
 
 #: src/ServerListCtrl.cpp
 #, c-format
