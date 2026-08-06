@@ -109,19 +109,23 @@ TEST(SearchHistory, ResultIsCappedAtMaxEntries)
 	// term2..term4 fell off the tail -- oldest entries drop first.
 }
 
-TEST(SearchHistory, CapIsExactlyThirtyByProjectConvention)
+TEST(SearchHistory, CapIsTheSharedConstantTheGuiPassesIn)
 {
-	// Locks in eMule's CCustomAutoComplete default (amule-org/amule#643
-	// review) as the constant CSearchDlg actually passes in, not just
-	// that ApplySearchHistoryEntry can cap at an arbitrary N.
+	// Asserts the cap the Search tab actually applies, not just that
+	// ApplySearchHistoryEntry can cap at an arbitrary N -- MAX_SEARCH_HISTORY_
+	// ENTRIES is the same symbol CSearchDlg passes, so this cannot drift from
+	// the GUI the way a hardcoded copy of the number could.
+	const size_t cap = MAX_SEARCH_HISTORY_ENTRIES;
 	wxArrayString existing;
-	for (int i = 0; i < 30; ++i) {
-		existing.Add(wxString::Format("term%d", i));
+	for (size_t i = 0; i < cap; ++i) {
+		existing.Add(wxString::Format("term%d", (int)i));
 	}
 
-	wxArrayString result = ApplySearchHistoryEntry(existing, "newest", 30);
+	wxArrayString result = ApplySearchHistoryEntry(existing, "newest", cap);
 
-	ASSERT_EQUALS((size_t)30, result.GetCount());
+	ASSERT_EQUALS(cap, result.GetCount());
 	ASSERT_EQUALS(wxString("newest"), result[0]);
-	ASSERT_EQUALS(wxString("term28"), result[29]);
+	// The oldest entry falls off the tail: the last survivor is the
+	// second-oldest of what was there before.
+	ASSERT_EQUALS(wxString::Format("term%d", (int)cap - 2), result[cap - 1]);
 }
