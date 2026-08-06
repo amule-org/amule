@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:37+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -3363,10 +3363,6 @@ msgstr "Dostupnost"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "Filtar:"
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"

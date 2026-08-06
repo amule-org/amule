@@ -34,7 +34,9 @@ class wxStaticLine;
 
 #include "Types.h" // Needed for uint16 and uint32
 
-#include <map> // Needed for std::map (per-tab progress cache)
+#include <map>        // Needed for std::map (per-tab progress cache)
+#include <wx/timer.h> // Needed for wxTimer (debounced live filtering)
+
 #include <set> // Needed for std::set (pending hit-count recomputes)
 
 class CMuleNotebook;
@@ -386,6 +388,21 @@ private:
 	std::set<CSearchListCtrl *> m_pendingHitCount;
 
 	void OnIdle(wxIdleEvent &evt);
+
+	/**
+	 * Live filtering, debounced.
+	 *
+	 * ApplyFilter() re-filters every open search tab, and each one re-runs
+	 * the regex over its results and resets its model, so applying on every
+	 * keystroke would do that work per character and across all tabs. The
+	 * text box therefore only restarts a short timer; the filter is applied
+	 * once the typing pauses. Enter and the Filter button still apply
+	 * immediately.
+	 */
+	void OnFilterTextChanged(wxCommandEvent &evt);
+	void OnFilterDebounceTimer(wxTimerEvent &evt);
+
+	wxTimer m_filterTimer;
 
 	wxDECLARE_EVENT_TABLE();
 };

@@ -79,7 +79,6 @@ extern wxSizer *s_extended_sizer;
 #define IDC_SPINSEARCHAVAILABILITY 10013
 extern wxSizer *s_filter_sizer;
 #define ID_FILTER_TEXT 10014
-#define ID_FILTER 10015
 #define ID_FILTER_INVERT 10016
 #define ID_FILTER_KNOWN 10017
 // Numbered outside the search block: 10014-10025 is contiguous and full, so a

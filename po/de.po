@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:32+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -3391,10 +3391,6 @@ msgstr "Verfügbarkeit"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "Filter:"
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr "Filterergebnisse"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -8710,6 +8706,9 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
+
+#~ msgid "Filter Results"
+#~ msgstr "Filterergebnisse"
 
 #~ msgid "Mark as known file"
 #~ msgstr "Als bekannte Datei kennzeichnen"

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:43+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -3418,10 +3418,6 @@ msgstr "Доступность"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "Фильтр:"
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr "Фильтровать результаты"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -8737,6 +8733,9 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#~ msgid "Filter Results"
+#~ msgstr "Фильтровать результаты"
 
 #~ msgid "Mark as known file"
 #~ msgstr "Отметить как известный"
