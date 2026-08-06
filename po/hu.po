@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-06 11:07+0200\n"
 "PO-Revision-Date: 2026-08-06 07:37+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -3040,6 +3040,14 @@ msgid "Unlimited"
 msgstr "Korlátlan"
 
 #: src/MuleTrayIcon.cpp
+msgid "Show aMule"
+msgstr "aMule megjelenítése"
+
+#: src/MuleTrayIcon.cpp
+msgid "Hide aMule"
+msgstr "aMule elrejtése"
+
+#: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr "eD2k: "
 
@@ -3113,14 +3121,6 @@ msgstr "Szétkapcsolás"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
 msgid "Connect"
 msgstr "Kapcsolatfelvétel"
-
-#: src/MuleTrayIcon.cpp
-msgid "Show aMule"
-msgstr "aMule megjelenítése"
-
-#: src/MuleTrayIcon.cpp
-msgid "Hide aMule"
-msgstr "aMule elrejtése"
 
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-06 11:07+0200\n"
 "PO-Revision-Date: 2026-08-06 07:34+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -3059,6 +3059,14 @@ msgid "Unlimited"
 msgstr "Ilimitado"
 
 #: src/MuleTrayIcon.cpp
+msgid "Show aMule"
+msgstr "Mostrar aMule"
+
+#: src/MuleTrayIcon.cpp
+msgid "Hide aMule"
+msgstr "Ocultar aMule"
+
+#: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr "eD2k: "
 
@@ -3132,14 +3140,6 @@ msgstr "Desconectar"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
 msgid "Connect"
 msgstr "Conectar"
-
-#: src/MuleTrayIcon.cpp
-msgid "Show aMule"
-msgstr "Mostrar aMule"
-
-#: src/MuleTrayIcon.cpp
-msgid "Hide aMule"
-msgstr "Ocultar aMule"
 
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
