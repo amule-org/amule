@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-06 12:03+0200\n"
-"PO-Revision-Date: 2026-08-06 07:43+0000\n"
+"PO-Revision-Date: 2026-08-06 11:13+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -701,7 +701,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
-msgstr "диалоговое окно aMule уничтожено"
+msgstr "Диалог aMule уничтожен"
 
 #: src/amuleDlg.cpp src/DataToText.cpp src/IPFilter.cpp src/ServerWnd.cpp
 msgid "Connecting"
@@ -762,7 +762,7 @@ msgstr "aMule (%s | Отключён)"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "Do you really want to exit %s?"
-msgstr "Вы действительно хотите выйти из %s?"
+msgstr "Уверены, что хотите выйти из %s?"
 
 #: src/amuleDlg.cpp
 msgid "Exit confirmation"
@@ -804,15 +804,15 @@ msgstr "Окно публикуемых файлов"
 
 #: src/amuleDlg.cpp
 msgid "Messages Window"
-msgstr "Сообщения"
+msgstr "Окно сообщений"
 
 #: src/amuleDlg.cpp
 msgid "Statistics Graph Window"
-msgstr "Статистика"
+msgstr "Окно графиков статистики"
 
 #: src/amuleDlg.cpp
 msgid "Preferences Settings Window"
-msgstr "Окно настроек клиента"
+msgstr "Окно настроек"
 
 #: src/amuleDlg.cpp
 msgid "Import"
@@ -3277,7 +3277,7 @@ msgstr "Нажмите сюда чтобы добавить eD2k ссылку и
 
 #: src/muuli_wdr.cpp
 msgid "Events are displayed here. For a complete list of events, refer to the log in the Servers-tab."
-msgstr "Тут отображаются события. Для полного списка событий, обратитесь к журналу в окне \"Сети\"."
+msgstr "События отображаются здесь. Для полного списка событий обратитесь к журналу во вкладке «Сети»."
 
 #: src/muuli_wdr.cpp
 msgid "Loading ..."
@@ -3573,7 +3573,7 @@ msgstr "Рейтинг раздачи"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Complete Sources"
-msgstr "Полных источников"
+msgstr "Полные источники"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Shared since"
@@ -3727,15 +3727,15 @@ msgstr "Скорость скачивания"
 
 #: src/muuli_wdr.cpp
 msgid "Current"
-msgstr "Текущее"
+msgstr "Текущая"
 
 #: src/muuli_wdr.cpp
 msgid "Running average"
-msgstr "Среднее за все время"
+msgstr "Средняя за всё время"
 
 #: src/muuli_wdr.cpp
 msgid "Session average"
-msgstr "Среднее за сеанс"
+msgstr "Средняя за сеанс"
 
 #: src/muuli_wdr.cpp
 msgid "Upload-Speed"
@@ -3891,11 +3891,11 @@ msgstr "Регистрирует запись автозапуска для те
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr "Делает aMule обработчиком по умолчанию для ссылок ed2k://, чтобы при нажатии на такую ссылку в браузере или файловом менеджере она открывалась здесь."
+msgstr "Делает aMule обработчиком по умолчанию для ссылок ed2k://, чтобы при нажатии на них в браузере или файловом менеджере, они открывались здесь."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-msgstr "aMule обрабатывает только магнит-ссылки, совместимые с eD2k (содержащие xt=urn:ed2k:). Магнит-ссылки БитТоррент НЕ поддерживаются, и переход по ним завершится молча неудачей. Если вы используете клиент БитТоррент (Transmission, qBittorrent и т. д.), оставьте эту опцию отключённой."
+msgstr "aMule обрабатывает только магнит-ссылки eD2k (вида xt=urn:ed2k:). Магнит-ссылки БитТоррента НЕ поддерживаются, и переход по ним завершится неудачей без уведомления. Если вы пользуетесь клиентом БитТоррент (Transmission, qBittorrent и т. д.), оставьте эту опцию отклюеённой."
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
@@ -4745,7 +4745,7 @@ msgstr "Включает маскировку протокола при соед
 
 #: src/muuli_wdr.cpp
 msgid "Accept only obfuscated connections"
-msgstr "Принимать только завуалированные соединения"
+msgstr "Принимать только замаскированные соединения"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
@@ -6831,7 +6831,7 @@ msgstr "Наблюдатель общих папок: бэкенд потеря�
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
-msgstr "Добавляется файл %s к опубликованным"
+msgstr "Добавляется файл %s к публикуемым"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -6975,7 +6975,7 @@ msgstr "Копировать ссылку eD2k в буфер (све&дения 
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
-msgstr "Экспортировать выбранные файлы в коллекцию emulecollection"
+msgstr "Экспорт выбранных файлов в коллекцию emulecollection"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
