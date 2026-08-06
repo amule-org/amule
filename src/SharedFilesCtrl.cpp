@@ -146,7 +146,7 @@ CSharedFilesCtrl::~CSharedFilesCtrl() {}
 void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 {
 	long item_hit = CheckSelection(event);
-	m_menuRow = item_hit;
+	m_menuItem = (item_hit != -1) ? ItemAt(item_hit) : 0;
 
 	if ((m_menu == NULL) && (item_hit != -1)) {
 		m_menu = new wxMenu(_("Shared Files"));
@@ -1119,17 +1119,17 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 void CSharedFilesCtrl::OnOpenFile(wxCommandEvent &WXUNUSED(event))
 {
 	// Bound re-checked: PopupMenu runs a nested event loop, so the shared-dir
-	// watcher can shrink the list while the menu is open, and FileAtRow() only
-	// wxASSERTs its range -- which compiles out in Release.
-	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
-		FileLaunch::Open(FileAtRow(m_menuRow), this);
+	// watcher can mutate the list while the menu is open. Pinning the identity
+	// means a row removed above this one cannot redirect the click.
+	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
+		FileLaunch::Open(reinterpret_cast<CKnownFile *>(m_menuItem), this);
 	}
 }
 
 void CSharedFilesCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 {
-	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
-		FileLaunch::Reveal(FileAtRow(m_menuRow), this);
+	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
+		FileLaunch::Reveal(reinterpret_cast<CKnownFile *>(m_menuItem), this);
 	}
 }
 

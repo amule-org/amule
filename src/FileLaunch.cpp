@@ -139,15 +139,15 @@ void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNU
 		wxString arg;
 		arg.reserve(part.length());
 		for (size_t i = 0; i < part.length();) {
-			if (part.Mid(i, 9) == "%PARTFILE") {
+			if (part.compare(i, 9, "%PARTFILE") == 0) {
 				arg += target;
 				i += 9;
 				substituted = true;
-			} else if (part.Mid(i, 9) == "%PARTNAME") {
+			} else if (part.compare(i, 9, "%PARTNAME") == 0) {
 				arg += name;
 				i += 9;
 				substituted = true;
-			} else if (part.Mid(i, 5) == "$file") {
+			} else if (part.compare(i, 5, "$file") == 0) {
 				// The historic spelling of %PARTFILE.
 				arg += target;
 				i += 5;

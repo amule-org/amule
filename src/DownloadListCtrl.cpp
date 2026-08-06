@@ -667,18 +667,17 @@ void CDownloadListCtrl::OnPreviewFile(wxCommandEvent &WXUNUSED(event))
 	//
 	// The bound is re-checked because PopupMenu runs a nested event loop: a
 	// completed download can be cleared out from under the open menu, and
-	// ItemAt() only wxASSERTs its range -- which compiles out in the Release
-	// builds CI ships.
-	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
-		FileLaunch::Open(reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(m_menuRow))->GetFile(), this);
+	// HasItemData() pins the item's identity, so a row removed above this
+	// one cannot silently redirect the click to its neighbour.
+	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
+		FileLaunch::Open(reinterpret_cast<FileCtrlItem_Struct *>(m_menuItem)->GetFile(), this);
 	}
 }
 
 void CDownloadListCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 {
-	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
-		FileLaunch::Reveal(
-			reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(m_menuRow))->GetFile(), this);
+	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
+		FileLaunch::Reveal(reinterpret_cast<FileCtrlItem_Struct *>(m_menuItem)->GetFile(), this);
 	}
 }
 
@@ -733,7 +732,7 @@ void CDownloadListCtrl::DoItemSelectionChanged()
 void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 {
 	long index = CheckSelection(evt);
-	m_menuRow = index;
+	m_menuItem = (index != -1) ? ItemAt(index) : 0;
 	if (index < 0) {
 		return;
 	}

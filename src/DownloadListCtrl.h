@@ -244,13 +244,16 @@ private:
 	void OnShowInFolder(wxCommandEvent &event);
 
 	/**
-	 * The row the context menu was built for.
+	 * The item the context menu was built for, by identity rather than row.
 	 *
-	 * The menu's enabled state is decided from this row, so the handlers act on
-	 * it rather than on the selection -- with several rows selected the two
-	 * disagree, and the item would enable against one file and act on another.
+	 * The menu's enabled state is decided from this item, so the handlers act
+	 * on it. A row index would not survive the menu being open: PopupMenu runs
+	 * a nested event loop, so timers and EC updates keep mutating the list, and
+	 * removing a row *above* this one shifts every index below it -- the click
+	 * would then act on the neighbouring file. HasItemData() re-checks that the
+	 * item is still present before it is used.
 	 */
-	long m_menuRow = -1;
+	wxUIntPtr m_menuItem = 0;
 
 	// Misc event-handlers
 	void OnItemActivated(wxListEvent &event);
