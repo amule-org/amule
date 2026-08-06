@@ -372,7 +372,12 @@ unset (_amule_wxgtk_idx)
 # headers are present we build a SNI backend into MuleTrayIcon; on
 # platforms where the library is missing (Windows, macOS, builds
 # without the dep) we fall back to wxTaskBarIcon.
-if (BUILD_MONOLITHIC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+#
+# Both GUI binaries compile MuleTrayIcon (it is in GUI_SOURCES), so the
+# probe covers either of them being built — gating it on the monolithic
+# build alone left a remote-GUI-only build with the invisible legacy
+# backend and no way to know.
+if ((BUILD_MONOLITHIC OR BUILD_REMOTEGUI) AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	find_package (PkgConfig QUIET)
 	if (PkgConfig_FOUND)
 		# `0.1` is the API version (never bumped, every release uses it),
@@ -594,7 +599,7 @@ if (NEED_ZLIB)
 	message ("			zlib				${ZLIB_VERSION_STRING}")
 endif()
 
-if (BUILD_MONOLITHIC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if ((BUILD_MONOLITHIC OR BUILD_REMOTEGUI) AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	if (WITH_LIBAYATANA_APPINDICATOR)
 		message ("			tray-icon backend		StatusNotifierItem (libayatana-appindicator ${AYATANA_APPINDICATOR_VERSION})")
 	else()

@@ -207,6 +207,35 @@ public:
 	void CreateSystray();
 	void RemoveSystray();
 
+	/**
+	 * Brings the main window back from every state that hides it.
+	 *
+	 * The one restore path, shared by the tray icon (click, menu), the
+	 * duplicate-launch RAISE_DIALOG signal and the macOS Dock-reopen
+	 * handler of both applications. Written once because the hidden
+	 * states compose: the window can be hidden (Show(false) via
+	 * HideOnClose or minimize-to-tray), iconized to the Dock/taskbar,
+	 * merely behind another application's window, or -- on macOS -- any
+	 * of those with the Dock icon dropped as well.
+	 */
+	void RestoreMainWindow();
+
+	/**
+	 * Hides the main window, leaving the tray icon as the way back.
+	 *
+	 * The counterpart of RestoreMainWindow(), and the reason both are
+	 * here: on macOS the hide has a second half (dropping NSApp to
+	 * accessory so no Dock icon is left behind) that every hide path has
+	 * to perform and every show path has to undo.
+	 *
+	 * Named for the tray where its counterpart is not, because every
+	 * caller of this one really is a tray path -- the tray menu, and
+	 * minimize-to-tray, which only runs when the icon exists. The
+	 * close-button HideOnClose path deliberately does not come here; see
+	 * OnClose().
+	 */
+	void HideToTray();
+
 	void StartGuiTimer() { gui_timer->Start(100); }
 	void StopGuiTimer() { gui_timer->Stop(); }
 

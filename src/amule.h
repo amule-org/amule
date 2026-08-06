@@ -299,6 +299,20 @@ public:
 	static bool IsWaylandSession();
 #endif
 
+	/**
+	 * Forces the tray-dependent preferences off where the tray can't
+	 * deliver what they promise.
+	 *
+	 * Both settings hide the main window and leave the tray icon as the
+	 * only way back, so each one has to be switched off wherever that
+	 * icon won't be there: no SNI backend on Linux (the legacy
+	 * GtkStatusIcon is invisible on modern desktops), a Wayland session
+	 * (no iconify notification to hide on), or simply the tray icon
+	 * turned off. Called by every GUI app before it builds its window --
+	 * amuled inherits it harmlessly, having no window to hide.
+	 */
+	static void SanitiseTrayPreferences();
+
 	// Set when a quit was requested out-of-band of the main-window
 	// close button (Cmd+Q, Dock right-click → Quit, tray-icon Exit).
 	// CamuleDlg::OnClose checks this so HideOnClose only hides the

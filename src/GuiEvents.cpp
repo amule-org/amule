@@ -49,10 +49,6 @@
 #include "Friend.h"
 #include "Logger.h"
 
-#ifdef __WXMAC__
-#include "MacAppHelper.h" // mac_set_accessory_mode
-#endif
-
 #ifndef AMULE_DAEMON
 #include "ChatWnd.h"
 #include "amuleDlg.h"
@@ -214,23 +210,13 @@ void ServersURLChanged(wxString NOT_ON_DAEMON(url))
 void ShowGUI()
 {
 #ifndef AMULE_DAEMON
-	// Triggered from a duplicate-launch RAISE_DIALOG signal (the
-	// running instance picks it up via ED2KLinks polling) and
-	// from MacReopenApp when the user clicks the Dock icon. Cover
-	// every hidden state the main window can be in:
-	//   * Show(false) via the close-button HideOnClose path
-	//   * Iconize(true) via the minimize-to-tray path
-	//   * just behind another app's window
-#ifdef __WXMAC__
-	// If we're still in accessory mode (window was hidden via the
-	// tray), restore the regular Dock icon before the window
-	// comes back, otherwise activate-ignoring-other-apps lands on
-	// a Dock-less app and the focus shift is invisible.
-	mac_set_accessory_mode(false);
-#endif
-	theApp->amuledlg->Show(true);
-	theApp->amuledlg->Iconize(false);
-	theApp->amuledlg->Raise();
+	// Triggered by a duplicate-launch RAISE_DIALOG signal, which the
+	// running instance picks up via ED2KLinks polling. The signal can
+	// arrive before the main window exists -- the second launch only has
+	// to beat the first one to the point where it builds its GUI.
+	if (theApp->amuledlg) {
+		theApp->amuledlg->RestoreMainWindow();
+	}
 #endif
 }
 

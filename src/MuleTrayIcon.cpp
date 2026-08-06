@@ -42,10 +42,6 @@
 #include <common/Format.h>    // Needed for CFormat
 #include <common/MenuIDs.h>   // Needed to access menu item constants
 
-#ifdef __WXMAC__
-#include "MacAppHelper.h" // mac_set_accessory_mode
-#endif
-
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 // gtk_window_present is the xdg-activation-aware way to request
 // focus on Wayland — wxFrame::Raise() alone doesn't reach the
@@ -76,30 +72,9 @@ void CMuleTrayIcon::DoShowHide()
 	// the menu offers "Show aMule" and clicking restores the frame.
 	const bool visible = theApp->amuledlg->IsVisibleToUser();
 	if (visible) {
-#ifdef __WXMAC__
-		// Drop the Dock icon while the window is hidden; the tray
-		// icon (NSStatusItem) is the only recovery surface in this
-		// state. Restored when the user un-hides via the tray click
-		// or menu.
-		mac_set_accessory_mode(true);
-#endif
-		theApp->amuledlg->Show(false);
+		theApp->amuledlg->HideToTray();
 	} else {
-#ifdef __WXMAC__
-		mac_set_accessory_mode(false);
-#endif
-		// Clear the iconized bit on every platform — the window
-		// might be hidden (Show(false) via HideOnClose / minimize-to-
-		// tray) or just iconized to the OS dock/taskbar; in either
-		// case the user wants a normal restored frame. Without this
-		// Show(true) on a still-iconized window would leave it as a
-		// taskbar entry / Dock thumbnail without un-minimizing.
-		// Iconize(false) is idempotent on a non-iconized window —
-		// don't gate on IsIconized() because wxGTK can report a
-		// stale value during the tray-restore transition.
-		theApp->amuledlg->Iconize(false);
-		theApp->amuledlg->Show(true);
-		theApp->amuledlg->Raise();
+		theApp->amuledlg->RestoreMainWindow();
 	}
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 	// Refresh so the menu label flips to "Hide aMule" / "Show aMule"
@@ -111,12 +86,7 @@ void CMuleTrayIcon::DoShowHide()
 
 void CMuleTrayIcon::DoShow()
 {
-#ifdef __WXMAC__
-	mac_set_accessory_mode(false);
-#endif
-	theApp->amuledlg->Iconize(false);
-	theApp->amuledlg->Show(true);
-	theApp->amuledlg->Raise();
+	theApp->amuledlg->RestoreMainWindow();
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 	// Ask the compositor to bring our window forward. The timestamp
 	// matters on Wayland: GNOME Shell's focus-stealing-prevention
@@ -137,10 +107,7 @@ void CMuleTrayIcon::DoShow()
 
 void CMuleTrayIcon::DoHide()
 {
-#ifdef __WXMAC__
-	mac_set_accessory_mode(true);
-#endif
-	theApp->amuledlg->Show(false);
+	theApp->amuledlg->HideToTray();
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 	RebuildMenu();
 #endif

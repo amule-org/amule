@@ -588,6 +588,41 @@ void CamuleDlg::RemoveSystray()
 	m_wndTaskbarNotifier = NULL;
 }
 
+void CamuleDlg::RestoreMainWindow()
+{
+#ifdef __WXMAC__
+	// Restore the regular Dock icon before the window comes back. It has
+	// to happen first: activating a Dock-less (accessory) application
+	// gives no visible focus change, so the window would return behind
+	// whatever the user is looking at.
+	mac_set_accessory_mode(false);
+#endif
+	// Clear the iconized bit on every platform — the window might be
+	// hidden (Show(false) via HideOnClose / minimize-to-tray) or just
+	// iconized to the OS Dock/taskbar; in either case the user wants a
+	// normal restored frame. Without this, Show(true) on a still-iconized
+	// window would leave it as a taskbar entry / Dock thumbnail without
+	// un-minimizing. Iconize(false) is idempotent on a non-iconized
+	// window — don't gate on IsIconized(), because wxGTK can report a
+	// stale value during the tray-restore transition.
+	Iconize(false);
+	Show(true);
+	Raise();
+}
+
+void CamuleDlg::HideToTray()
+{
+#ifdef __WXMAC__
+	// Drop NSApp's activation policy to Accessory before hiding — that
+	// removes the Dock icon (and any in-flight miniaturize-to-Dock
+	// target), so hiding doesn't leave a Dock thumbnail behind. The tray
+	// icon stays as the only recovery surface; RestoreMainWindow() restores
+	// both the Dock icon and the window.
+	mac_set_accessory_mode(true);
+#endif
+	Show(false);
+}
+
 void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 {
 	static int lastbutton = ID_BUTTONDOWNLOADS;
@@ -1246,11 +1281,12 @@ void CamuleDlg::DlgShutDown()
 
 void CamuleDlg::OnClose(wxCloseEvent &evt)
 {
-	// The tray icon is the only recovery surface for a window hidden
-	// via the close button on every platform: Linux/Windows use the
-	// NSStatusItem-equivalent to bring the window back, and on macOS
-	// the matching path drops the Dock icon (accessory mode) while
-	// hidden, so the Dock is no longer a fallback either.
+	// Gated on the tray icon because on Linux and Windows it is the only
+	// way back once the frame is hidden. Deliberately a plain Show(false)
+	// rather than HideToTray(): on macOS the Dock icon stays, which is
+	// what the close button is supposed to leave behind there, and the
+	// Dock-reopen handler (CamuleGuiApp / CamuleRemoteGuiApp
+	// ::MacReopenApp) brings the window back from it.
 	bool hideOnClose = thePrefs::HideOnClose() && thePrefs::UseTrayIcon();
 	// Quit menus (Cmd+Q, Dock right-click → Quit, tray-icon Exit) all
 	// either pass force=true to Close() (CanVeto()==false) or set the
@@ -1514,20 +1550,9 @@ void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 		} else {
 			if (m_wndTaskbarNotifier && thePrefs::DoMinToTray()) {
 				if (evt.IsIconized()) {
-#ifdef __WXMAC__
-					// Drop NSApp's activation policy to Accessory
-					// before hiding — that removes the Dock icon
-					// (and any in-flight miniaturize-to-Dock target),
-					// so the yellow button doesn't leave a Dock
-					// thumbnail. Tray icon stays as the only
-					// recovery surface; Show(true) from the tray's
-					// DoShowHide restores both the Dock icon and the
-					// window.
-					mac_set_accessory_mode(true);
-#endif
-					Show(false);
+					HideToTray();
 				} else {
-					Show(true);
+					RestoreMainWindow();
 				}
 			} else {
 				evt.Skip();
