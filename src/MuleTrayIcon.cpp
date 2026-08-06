@@ -74,7 +74,7 @@ void CMuleTrayIcon::DoShowHide()
 	// the window vanish entirely (no Dock thumbnail / no taskbar
 	// entry) — destructive UX. Treat iconized as "not visible" so
 	// the menu offers "Show aMule" and clicking restores the frame.
-	const bool visible = theApp->amuledlg->IsShown() && !theApp->amuledlg->IsTrayLogicallyIconized();
+	const bool visible = theApp->amuledlg->IsVisibleToUser();
 	if (visible) {
 #ifdef __WXMAC__
 		// Drop the Dock icon while the window is hidden; the tray

@@ -732,10 +732,15 @@ void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
 	if (evt.GetResult() == true) {
 		if (m_reconnecting) {
 			// Reconnected: close the modal reconnect dialog. Execution
-			// resumes right after ShowModal() in BeginReconnect(), which
-			// re-arms the reconcile prune and restarts polling.
+			// resumes right after ShowModal() in ShowReconnectDialog(),
+			// which re-arms the reconcile prune and restarts polling.
 			if (m_reconnectDlg) {
 				m_reconnectDlg->EndModal(wxID_OK);
+			} else {
+				// Reconnected behind a minimised window, so there is no
+				// modal loop to unwind and nothing to close -- finish
+				// here instead (issue #806).
+				FinishReconnect(wxID_OK);
 			}
 		} else {
 			// Connected - go to next init step
@@ -826,22 +831,66 @@ void CamuleRemoteGuiApp::BeginReconnect()
 		m_reconnectTimer = new wxTimer(this, ID_REMOTE_RECONNECT_TIMER);
 	}
 
-	m_reconnectDlg = new CReconnectDialog(amuledlg, CFormat(wxT("%s:%d")) % m_ecHost % m_ecPort);
-
-	// Kick off the first attempt, then run the dialog modally: the retry
-	// timer and OnECConnection pump inside ShowModal(). A success calls
-	// EndModal(wxID_OK); the Abort button ends it with wxID_CANCEL.
+	// Kick off the first attempt before deciding about the dialog, so the
+	// common case -- a blip that reconnects on the first try -- can be over
+	// with before anything is drawn.
 	AttemptReconnect();
-	int result = m_reconnectDlg->ShowModal();
 
+	// The dialog earns its intrusion by explaining a frozen window. With the
+	// window minimised or hidden to tray there is nothing on screen to
+	// explain, and a modal appearing over whatever the user is actually doing
+	// is worse than silence (issue #806). Retry quietly instead; the log still
+	// carries every attempt, and OnMainWindowRestored() puts the dialog up if
+	// the user comes back while this is still going.
+	//
+	// "Visible" has to mean both halves: minimized to Dock/taskbar keeps
+	// IsShown() true with nothing on screen, and hidden to tray leaves the
+	// iconized bit clear while the frame is gone. CamuleDlg tracks the
+	// iconized half from wxIconizeEvent rather than wxFrame::IsIconized(),
+	// which lies on wxGTK mid-transition. Compositors that never report
+	// iconize at all (Wayland xdg-shell has no such notification) keep the
+	// old behaviour for the minimize case.
+	if (amuledlg && !amuledlg->IsVisibleToUser()) {
+		return;
+	}
+
+	ShowReconnectDialog();
+}
+
+void CamuleRemoteGuiApp::ShowReconnectDialog()
+{
+	if (!m_reconnecting || m_reconnectDlg) {
+		return;
+	}
+
+	m_reconnectDlg = new CReconnectDialog(amuledlg, CFormat(wxT("%s:%d")) % m_ecHost % m_ecPort);
+	// The retry loop has been running without us, so open on what it is
+	// actually doing rather than on "attempt 1": mid-countdown after a failed
+	// attempt, or in the middle of one.
+	if (m_reconnectCountdown > 0) {
+		m_reconnectDlg->SetCountdown(m_reconnectCountdown);
+	} else {
+		m_reconnectDlg->SetAttempt(m_reconnectAttempt);
+	}
+
+	// Run it modally: the retry timer and OnECConnection pump inside
+	// ShowModal(). A success calls EndModal(wxID_OK); the Abort button ends it
+	// with wxID_CANCEL.
+	const int result = m_reconnectDlg->ShowModal();
+	m_reconnectDlg->Destroy();
+	m_reconnectDlg = nullptr;
+	FinishReconnect(result);
+}
+
+void CamuleRemoteGuiApp::FinishReconnect(int result)
+{
 	m_reconnecting = false;
+	m_reconnectCountdown = 0;
 	if (m_reconnectTimer) {
 		m_reconnectTimer->Stop();
 	}
 	delete connect_timeout_timer;
 	connect_timeout_timer = nullptr;
-	m_reconnectDlg->Destroy();
-	m_reconnectDlg = nullptr;
 
 	if (result == wxID_OK) {
 		AddLogLineCS(_("Reconnected to the remote core."));
@@ -863,6 +912,18 @@ void CamuleRemoteGuiApp::BeginReconnect()
 		AddLogLineNS(_("Going down"));
 		Quit();
 	}
+}
+
+void CamuleRemoteGuiApp::OnMainWindowRestored()
+{
+	if (!m_reconnecting || m_reconnectDlg) {
+		return;
+	}
+	// Not straight from here: this runs inside the iconize event handler, and
+	// ShowReconnectDialog() ends in either a nested modal loop or Quit(). Let
+	// the handler return first (#738 is what tearing the main window down from
+	// a nested loop costs).
+	CallAfter(&CamuleRemoteGuiApp::ShowReconnectDialog);
 }
 
 void CamuleRemoteGuiApp::AttemptReconnect()

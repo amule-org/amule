@@ -1449,6 +1449,12 @@ void CamuleDlg::OnShow(wxShowEvent &evt)
 	// a previous minimize-to-tray cycle.
 	if (evt.IsShown()) {
 		m_iconized_logical = false;
+#ifdef CLIENT_GUI
+		// Restored from the tray (tray click/menu, or an un-hide after
+		// HideOnClose), which never fires wxIconizeEvent -- see OnMinimize
+		// for the other half of issue #806.
+		theApp->OnMainWindowRestored();
+#endif
 	}
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 	// SNI tray menus are static between rebuilds, so the
@@ -1473,6 +1479,17 @@ void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 	// iconized (tray menu label, DoShowHide branch decision) read
 	// IsTrayLogicallyIconized() instead.
 	m_iconized_logical = evt.IsIconized();
+
+#ifdef CLIENT_GUI
+	// Coming back from the taskbar/Dock with a reconnect running quietly
+	// behind the window: now that there is a frozen window to explain, put the
+	// dialog up (issue #806). OnShow covers the same for the tray paths, which
+	// hide the frame without ever iconizing it. theApp is the remote-GUI app
+	// here -- this file is compiled per target, not shared via muleappgui.
+	if (IsVisibleToUser()) {
+		theApp->OnMainWindowRestored();
+	}
+#endif
 
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 	// SNI tray menu is built once and held; iconize doesn't fire
