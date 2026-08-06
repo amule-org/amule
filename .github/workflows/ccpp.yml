@@ -31,12 +31,20 @@ env:
   CCACHE_MAXSIZE: 500M
 
   # The minus sign removes the trailing new line in the last line
+  #
+  # libayatana-appindicator3-dev is not needed to build aMule, but its
+  # presence is what flips WITH_LIBAYATANA_APPINDICATOR on (CMakeLists.txt
+  # probes for it with pkg_check_modules). Without it the SNI tray backend
+  # in MuleTrayIcon.cpp is #ifdef'd out and never compiled here -- only
+  # packaging.yml built it, and that runs after merge, so a break in that
+  # half landed on master before anything noticed.
   cmake_ubuntu_deps: |-
     binutils-dev \
     build-essential \
     ccache \
     cmake \
     gettext \
+    libayatana-appindicator3-dev \
     libboost-all-dev \
     libcrypto++-dev \
     libgd-dev \

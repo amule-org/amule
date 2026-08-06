@@ -52,12 +52,15 @@ env:
 
   # Kept in sync with .github/workflows/ccpp.yml so compile_commands.json
   # matches the real Ubuntu build.
+  # libayatana-appindicator3-dev: without it the SNI tray backend in
+  # MuleTrayIcon.cpp is #ifdef'd out, so neither tidy tier ever sees it.
   cmake_ubuntu_deps: |-
     binutils-dev \
     build-essential \
     ccache \
     cmake \
     gettext \
+    libayatana-appindicator3-dev \
     libboost-all-dev \
     libcrypto++-dev \
     libgd-dev \

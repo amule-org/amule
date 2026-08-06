@@ -24,11 +24,14 @@ on:
 
 env:
   # The minus sign removes the trailing new line in the last line
+  # libayatana-appindicator3-dev: without it the SNI tray backend in
+  # MuleTrayIcon.cpp is #ifdef'd out and is never analysed.
   cmake_ubuntu_deps: |-
     binutils-dev \
     build-essential \
     cmake \
     gettext \
+    libayatana-appindicator3-dev \
     libboost-all-dev \
     libcrypto++-dev \
     libgd-dev \
