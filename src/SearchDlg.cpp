@@ -317,9 +317,6 @@ CSearchDlg::~CSearchDlg() {}
 
 namespace
 {
-// eMule's CCustomAutoComplete default (amule-org/amule#643 review).
-const int MAX_SEARCH_HISTORY_ENTRIES = 30;
-
 // Search *query* history -- the strings typed into the Name field, not the
 // results they returned (that's the separate, not-yet-implemented result
 // persistence eMule does via StoredSearches.met; see #641). Deliberately
