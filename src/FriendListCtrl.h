@@ -57,6 +57,11 @@ protected:
 	int CompareItemData(
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
 
+	/// The name is the only column, and it can change after insertion (a
+	/// friend arrives before its name does), so a refresh may need to move
+	/// the row under a name sort.
+	bool IsLiveSortColumn() const override { return true; }
+
 	/**
 	 * Delete removes the selected friends; see CMuleDataViewCtrl::OnListKey.
 	 */

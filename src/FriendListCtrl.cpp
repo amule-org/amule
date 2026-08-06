@@ -144,14 +144,22 @@ int CFriendListCtrl::CompareItemData(
 
 void CFriendListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
-	CFriend *cur_friend = reinterpret_cast<CFriend *>(event.GetItem().GetID());
+	// Open a session with the activated row alone, whatever else was selected.
+	// event.GetItem()'s ID is the row-addressed model's row index, not the
+	// item data -- see the "item identity is not row identity" note in
+	// MuleVirtualDataViewCtrl.h -- so the friend has to be resolved through
+	// the selection rather than cast directly from the item.
+	if (event.GetItem().IsOk()) {
+		UnselectAll();
+		Select(event.GetItem());
+	}
 
-	/* ignore this one, it is not activated anymore :) */
-	if (cur_friend == nullptr) {
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (selected.empty()) {
 		return;
 	}
 
-	theApp->amuledlg->m_chatwnd->StartSession(cur_friend);
+	theApp->amuledlg->m_chatwnd->StartSession(reinterpret_cast<CFriend *>(selected.front()));
 }
 
 void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
@@ -210,7 +218,7 @@ void CFriendListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 void CFriendListCtrl::OnRemoveFriend(wxCommandEvent &WXUNUSED(event))
 {
 	wxString question;
-	if (static_cast<int>(GetSelectedItemsCount()) == 1) {
+	if (GetSelectedItemsCount() == 1) {
 		question = _("Are you sure that you wish to delete the selected friend?");
 	} else {
 		question = _("Are you sure that you wish to delete the selected friends?");
