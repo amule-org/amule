@@ -26,13 +26,14 @@
 #ifndef SEARCHLIST_H
 #define SEARCHLIST_H
 
-#include "Timer.h"           // Needed for CTimer
-#include "ObservableQueue.h" // Needed for CQueueObserver
-#include "SearchFile.h"      // Needed for CSearchFile
-#include <common/SmartPtr.h> // Needed for CSmartPtr
-#include <set>               // Needed for std::set (per-search Kad completion)
-#include <map>               // Needed for std::map (per-search start times)
-#include <vector>            // Needed for std::vector (same-hash result fan-out)
+#include "Timer.h"             // Needed for CTimer
+#include "ObservableQueue.h"   // Needed for CQueueObserver
+#include "SearchFile.h"        // Needed for CSearchFile
+#include "SearchResultIndex.h" // Needed for CSearchResultIndex
+#include <common/SmartPtr.h>   // Needed for CSmartPtr
+#include <set>                 // Needed for std::set (per-search Kad completion)
+#include <map>                 // Needed for std::map (per-search start times)
+#include <vector>              // Needed for std::vector (same-hash result fan-out)
 
 class CMemFile;
 class CMD4Hash;
@@ -54,7 +55,7 @@ enum SearchType
 
 typedef std::vector<CSearchFile *> CSearchResultList;
 
-class CSearchList : public wxEvtHandler
+class CSearchList : public wxEvtHandler, public CSearchResultIndex
 {
 public:
 	//! Structure used to pass search-parameters.
@@ -256,12 +257,8 @@ public:
 	/** This function is called once the local (ed2k) search has ended. */
 	void LocalSearchEnd();
 
-	/**
-	 * Returns the list of results for the specified search.
-	 *
-	 * If the search is not valid, an empty list is returned.
-	 */
-	const CSearchResultList &GetSearchResults(wxUIntPtr searchID) const;
+	// GetSearchResults() is inherited from CSearchResultIndex, which holds the
+	// per-search result index this class fills through IndexResult().
 
 	/** Removes all results for the specified search. */
 	void RemoveResults(wxUIntPtr searchID);
@@ -478,11 +475,8 @@ private:
 	//! TODO: Replace with 'cookie' system.
 	CQueueObserver<CServer *> m_serverQueue;
 
-	//! Shorthand for the map of results (key is a SearchID).
-	typedef std::map<wxUIntPtr, CSearchResultList> ResultMap;
-
-	//! Map of all search-results added.
-	ResultMap m_results;
+	// The map of search-results (ResultMap / m_results) lives in
+	// CSearchResultIndex, shared with the remote search list.
 
 	//! Contains the results type desired in the current search.
 	//! If not empty, results of different types are filtered.

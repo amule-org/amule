@@ -3592,6 +3592,11 @@ CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 		m_needSearchListRequery = true;
 	}
 
+	// Make the result visible to the GUI: the search model builds its rows
+	// from GetSearchResults(), so a result that is not indexed here shows up
+	// nowhere, however correctly it arrived over EC.
+	IndexResult(file);
+
 	theApp->amuledlg->m_searchwnd->AddResult(file);
 
 	return file;
@@ -3599,6 +3604,9 @@ CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 
 void CSearchListRem::DeleteItem(CSearchFile *file)
 {
+	// De-index before freeing, so a later GetSearchResults() never hands out
+	// this freed pointer.
+	UnindexResult(file);
 	delete file;
 }
 
@@ -3682,27 +3690,11 @@ bool CSearchListRem::Phase1Done(const CECPacket *WXUNUSED(reply))
 
 void CSearchListRem::RemoveResults(wxUIntPtr nSearchID)
 {
-	ResultMap::iterator it = m_results.find(nSearchID);
-	if (it != m_results.end()) {
-		CSearchResultList &list = it->second;
-		for (unsigned int i = 0; i < list.size(); ++i) {
-			delete list[i];
-		}
-		m_results.erase(it);
-	}
+	// The index only borrows: the CRemoteContainer owns these results and
+	// frees them through DeleteItem(), so dropping the index is all that is
+	// needed here -- deleting would double-free.
+	DropResultIndex(nSearchID);
 	m_kadActive.erase((uint32)nSearchID);
-}
-
-const CSearchResultList &CSearchListRem::GetSearchResults(wxUIntPtr nSearchID)
-{
-	ResultMap::const_iterator it = m_results.find(nSearchID);
-	if (it != m_results.end()) {
-		return it->second;
-	}
-
-	// TODO: Should we assert in this case?
-	static CSearchResultList list;
-	return list;
 }
 
 void CStatsUpdaterRem::HandlePacket(const CECPacket *packet)

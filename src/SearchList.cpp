@@ -324,16 +324,13 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	m_browseBar.erase(searchID);
 	m_browseStatus.erase(searchID);
 
-	ResultMap::iterator it = m_results.find(searchID);
-	if (it != m_results.end()) {
-		CSearchResultList &list = it->second;
-
-		for (size_t i = 0; i < list.size(); ++i) {
-			delete list.at(i);
-		}
-
-		m_results.erase(it);
+	// This list owns its results, so free them before dropping the index
+	// (which, being shared with the remote search list, never deletes).
+	const CSearchResultList &list = GetSearchResults(searchID);
+	for (CSearchFile *file : list) {
+		delete file;
 	}
+	DropResultIndex(searchID);
 }
 
 wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchParams &params)
@@ -804,8 +801,10 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 		}
 	}
 
-	// Get, or implicitly create, the map of results for this search
-	CSearchResultList &results = m_results[toadd->GetSearchID()];
+	// Scan the results already indexed for this search (empty if it is the
+	// first one) for a duplicate; the new result is indexed further down,
+	// through IndexResult().
+	const CSearchResultList &results = GetSearchResults(toadd->GetSearchID());
 
 	for (size_t i = 0; i < results.size(); ++i) {
 		CSearchFile *item = results.at(i);
@@ -845,22 +844,10 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool clientResponse)
 		CFormat("Added new result '%s' : %s") % toadd->GetFileName() % toadd->GetFileHash().Encode());
 
 	// New unique result, simply add and display.
-	results.push_back(toadd);
+	IndexResult(toadd);
 	Notify_Search_Add_Result(toadd);
 
 	return true;
-}
-
-const CSearchResultList &CSearchList::GetSearchResults(wxUIntPtr searchID) const
-{
-	ResultMap::const_iterator it = m_results.find(searchID);
-	if (it != m_results.end()) {
-		return it->second;
-	}
-
-	// TODO: Should we assert in this case?
-	static CSearchResultList list;
-	return list;
 }
 
 void CSearchList::AddFileToDownloadByHash(const CMD4Hash &hash, uint8 cat)
