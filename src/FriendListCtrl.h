@@ -26,13 +26,18 @@
 #ifndef FRIENDLISTCTRL_H
 #define FRIENDLISTCTRL_H
 
-#include "MuleListCtrl.h"
+#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
 #include "MD4Hash.h"
+
+#define COLUMN_FRIEND_NAME 0
+//! Always empty. Absorbs the macOS trailing-column sizing; see
+//! CMuleDataViewCtrl::AppendSpacerColumn().
+#define COLUMN_FRIEND_SPACER 1
 
 class wxString;
 class CFriend;
 
-class CFriendListCtrl : public CMuleListCtrl
+class CFriendListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
 	CFriendListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags);
@@ -42,12 +47,27 @@ public:
 	void RemoveFriend(CFriend *todel);
 
 protected:
+	/// Text of the one real column, pulled on demand for the rows being drawn.
+	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
+
+	/// Blue for a linked friend, default text colour for the rest.
+	bool GetItemAttr(wxUIntPtr item, unsigned column, wxDataViewItemAttr &attr) const override;
+
+	/// Case-insensitive name comparison for the base's sort chain.
+	int CompareItemData(
+		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+
+	/**
+	 * Delete removes the selected friends; see CMuleDataViewCtrl::OnListKey.
+	 */
+	bool OnListKey(wxKeyEvent &event) override;
+
 	wxDECLARE_EVENT_TABLE();
 
-	void OnRightClick(wxMouseEvent &event);
+	void OnItemRightClicked(wxDataViewEvent &event);
 
 private:
-	void OnItemActivated(wxListEvent &event);
+	void OnItemActivated(wxDataViewEvent &event);
 
 	// Menu Items
 	void OnShowDetails(wxCommandEvent &event);
@@ -56,7 +76,6 @@ private:
 	void OnSetFriendslot(wxCommandEvent &event);
 	void OnAddFriend(wxCommandEvent &event);
 	void OnViewFiles(wxCommandEvent &event);
-	void OnKeyPressed(wxKeyEvent &event);
 };
 
 #endif
