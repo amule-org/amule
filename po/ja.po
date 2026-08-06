@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-06 11:07+0200\n"
 "PO-Revision-Date: 2026-08-06 07:38+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -3052,6 +3052,14 @@ msgid "Unlimited"
 msgstr "無制限"
 
 #: src/MuleTrayIcon.cpp
+msgid "Show aMule"
+msgstr "aMuleを表示する"
+
+#: src/MuleTrayIcon.cpp
+msgid "Hide aMule"
+msgstr "aMuleを隠す"
+
+#: src/MuleTrayIcon.cpp
 msgid "eD2k: "
 msgstr ""
 
@@ -3131,14 +3139,6 @@ msgstr "切断する"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
 msgid "Connect"
 msgstr "接続する"
-
-#: src/MuleTrayIcon.cpp
-msgid "Show aMule"
-msgstr "aMuleを表示する"
-
-#: src/MuleTrayIcon.cpp
-msgid "Hide aMule"
-msgstr "aMuleを隠す"
 
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"

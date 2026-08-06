@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-05 14:00+0200\n"
+"POT-Creation-Date: 2026-08-06 11:07+0200\n"
 "PO-Revision-Date: 2026-08-06 07:35+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -3055,6 +3055,14 @@ msgid "Unlimited"
 msgstr "Mugarik gabea"
 
 #: src/MuleTrayIcon.cpp
+msgid "Show aMule"
+msgstr "aMule erakutsi"
+
+#: src/MuleTrayIcon.cpp
+msgid "Hide aMule"
+msgstr "aMule ezkutatu"
+
+#: src/MuleTrayIcon.cpp
 #, fuzzy
 msgid "eD2k: "
 msgstr "eD2k"
@@ -3135,14 +3143,6 @@ msgstr "Deskonektatu"
 #: src/MuleTrayIcon.cpp src/muuli_wdr.cpp
 msgid "Connect"
 msgstr "Konektatu"
-
-#: src/MuleTrayIcon.cpp
-msgid "Show aMule"
-msgstr "aMule erakutsi"
-
-#: src/MuleTrayIcon.cpp
-msgid "Hide aMule"
-msgstr "aMule ezkutatu"
 
 #: src/MuleTrayIcon.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Exit"
