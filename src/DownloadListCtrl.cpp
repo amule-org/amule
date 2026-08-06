@@ -664,14 +664,19 @@ void CDownloadListCtrl::OnPreviewFile(wxCommandEvent &WXUNUSED(event))
 	// The clicked row, matching how the menu's enabled state was decided. With
 	// several rows selected, taking the selection would act on a different file
 	// than the one the entry was enabled for.
-	if (m_menuRow != -1) {
+	//
+	// The bound is re-checked because PopupMenu runs a nested event loop: a
+	// completed download can be cleared out from under the open menu, and
+	// ItemAt() only wxASSERTs its range -- which compiles out in the Release
+	// builds CI ships.
+	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
 		FileLaunch::Open(reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(m_menuRow))->GetFile(), this);
 	}
 }
 
 void CDownloadListCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 {
-	if (m_menuRow != -1) {
+	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
 		FileLaunch::Reveal(
 			reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(m_menuRow))->GetFile(), this);
 	}
@@ -681,11 +686,15 @@ void CDownloadListCtrl::OnItemActivated(wxListEvent &evt)
 {
 	CPartFile *file = reinterpret_cast<FileCtrlItem_Struct *>(ItemAt(evt.GetIndex()))->GetFile();
 
-	// Double-click stays media-only, as it always was: it is an easy gesture to
-	// trigger by accident, and handing a completed .exe or .desktop to the
-	// platform opener on a stray double-click is not a thing to do silently.
-	// The menu's Open is the broad one. Anything else opens the file-details
-	// modal, matching the shared-files table.
+	// Double-click is media-only: it is an easy gesture to trigger by accident,
+	// and handing a completed .exe or .desktop to the platform opener that way
+	// is not a thing to do silently. The menu's Open is the broad one.
+	//
+	// It does now cover an in-progress download once enough of the media is on
+	// disk to play -- PreviewAvailable()'s own test -- where the previous
+	// condition also required completion. That is the classic eMule gesture,
+	// and it matches what the menu's Preview entry offers for the same row.
+	// Anything else opens the file-details modal, as the shared-files table does.
 	if (file->PreviewAvailable() && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
 	} else {

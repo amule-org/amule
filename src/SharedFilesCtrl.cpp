@@ -1118,14 +1118,17 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 // files at once is not a thing either desktop handler does gracefully.
 void CSharedFilesCtrl::OnOpenFile(wxCommandEvent &WXUNUSED(event))
 {
-	if (m_menuRow != -1) {
+	// Bound re-checked: PopupMenu runs a nested event loop, so the shared-dir
+	// watcher can shrink the list while the menu is open, and FileAtRow() only
+	// wxASSERTs its range -- which compiles out in Release.
+	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
 		FileLaunch::Open(FileAtRow(m_menuRow), this);
 	}
 }
 
 void CSharedFilesCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
 {
-	if (m_menuRow != -1) {
+	if (m_menuRow >= 0 && m_menuRow < GetItemCount()) {
 		FileLaunch::Reveal(FileAtRow(m_menuRow), this);
 	}
 }

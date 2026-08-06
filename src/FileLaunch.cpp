@@ -114,7 +114,16 @@ void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNU
 	const wxString target = path.GetRaw();
 	const wxString name = path.GetFullName().GetRaw();
 
-	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player);
+	// ConvertStringToArgs defaults to DOS rules, which is wrong everywhere but
+	// Windows: it leaves single quotes literal and does not honour backslash
+	// escapes, so an existing `mpv -fs '%PARTFILE'` or a path with an escaped
+	// space silently stops working. Windows genuinely needs DOS, since UNIX
+	// rules would eat the backslashes in C:\Program Files\...
+#ifdef __WINDOWS__
+	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player, wxCMD_LINE_SPLIT_DOS);
+#else
+	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player, wxCMD_LINE_SPLIT_UNIX);
+#endif
 	if (parts.IsEmpty()) {
 		AddLogLineC(
 			CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player);
@@ -125,16 +134,28 @@ void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNU
 	argv.reserve(parts.GetCount() + 1);
 	bool substituted = false;
 	for (const wxString &part : parts) {
-		wxString arg = part;
-		// $file is the historic spelling of %PARTFILE.
-		if (arg.Replace("$file", target) > 0) {
-			substituted = true;
-		}
-		if (arg.Replace("%PARTFILE", target) > 0) {
-			substituted = true;
-		}
-		if (arg.Replace("%PARTNAME", name) > 0) {
-			substituted = true;
+		// One pass: a value that happens to contain a placeholder (a file named
+		// "x%PARTNAME.avi") must not have it expanded again by a later rule.
+		wxString arg;
+		arg.reserve(part.length());
+		for (size_t i = 0; i < part.length();) {
+			if (part.Mid(i, 9) == "%PARTFILE") {
+				arg += target;
+				i += 9;
+				substituted = true;
+			} else if (part.Mid(i, 9) == "%PARTNAME") {
+				arg += name;
+				i += 9;
+				substituted = true;
+			} else if (part.Mid(i, 5) == "$file") {
+				// The historic spelling of %PARTFILE.
+				arg += target;
+				i += 5;
+				substituted = true;
+			} else {
+				arg += part[i];
+				++i;
+			}
 		}
 		argv.push_back(arg);
 	}
