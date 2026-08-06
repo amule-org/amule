@@ -389,6 +389,23 @@ bool CamuleGuiApp::OnInit()
 	// of the pointer; wx tears the providers down at app exit.
 	wxArtProvider::Push(new CamuleArtProvider());
 
+#if wxCHECK_VERSION(3, 3, 0)
+	// Follow the desktop's light/dark setting. Every other platform does
+	// this by itself; MSW is the one that has to be asked, which is why
+	// aMule looks native in dark mode on GTK and macOS but not on Windows.
+	//
+	// Must happen before any window exists -- wx answers CannotChange once
+	// one does, and the startup splash is created inside CamuleApp::OnInit()
+	// below, so anywhere later would silently do nothing.
+	//
+	// Not gated on __WXMSW__: Appearance::System is the right request
+	// everywhere and is a no-op where the platform already follows suit.
+	const AppearanceResult appearance = SetAppearance(Appearance::System);
+	if (appearance == AppearanceResult::Failure) {
+		AddDebugLogLineN(logStandard, "Could not follow the system light/dark appearance");
+	}
+#endif
+
 	if (!CamuleApp::OnInit()) {
 		return false;
 	}
