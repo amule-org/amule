@@ -213,8 +213,12 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 			file->IsPartFile() ? static_cast<CPartFile *>(file)->PreviewAvailable() : true;
 		m_menu->SetLabel(
 			MP_VIEW, file->IsPartFile() ? wxString(_("Preview")) : wxString(_("&Open the file")));
-		m_menu->Enable(MP_VIEW, previewable && FileLaunch::CanOpen(file));
-		m_menu->Enable(MP_SHOWINFOLDER, FileLaunch::CanReveal(file));
+		// One filesystem check for both entries; see FileLaunch::GetAvailability.
+		bool canOpen = false;
+		bool canReveal = false;
+		FileLaunch::GetAvailability(file, canOpen, canReveal);
+		m_menu->Enable(MP_VIEW, previewable && canOpen);
+		m_menu->Enable(MP_SHOWINFOLDER, canReveal);
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETHOSTNAMESOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());

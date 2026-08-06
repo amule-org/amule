@@ -63,6 +63,15 @@ bool ResolvePath(const CKnownFile *file, CPath &out);
 bool CanOpen(const CKnownFile *file);
 
 /**
+ * Both menu answers from a single filesystem check.
+ *
+ * CanReveal() is CanOpen() plus one in-memory test, so asking for them
+ * separately stats the file twice. Building a context menu needs both, and the
+ * check has no upper bound on a network mount, so it is worth doing once.
+ */
+void GetAvailability(const CKnownFile *file, bool &canOpen, bool &canReveal);
+
+/**
  * True when the file's folder can be shown.
  *
  * Stricter than CanOpen: an incomplete download is a ".part" in the temp

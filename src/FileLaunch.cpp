@@ -232,6 +232,14 @@ bool CanOpen(const CKnownFile *file)
 	return ResolvePath(file, path) && path.FileExists();
 }
 
+void GetAvailability(const CKnownFile *file, bool &canOpen, bool &canReveal)
+{
+	CPath path;
+	canOpen = ResolvePath(file, path) && path.FileExists();
+	// Revealing a ".part" in the temp directory is not what the entry means.
+	canReveal = canOpen && !file->IsPartFile();
+}
+
 bool CanReveal(const CKnownFile *file)
 {
 	// A ".part" in the temp directory is not what "show in file manager" means.

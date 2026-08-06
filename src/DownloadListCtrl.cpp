@@ -838,8 +838,12 @@ void CDownloadListCtrl::OnMouseRightClick(wxListEvent &evt)
 	// deleted. PreviewAvailable() still gates the unfinished case, where it
 	// answers "is enough of the media on disk to play".
 	const bool previewable = file->IsPartFile() ? file->PreviewAvailable() : true;
-	m_menu->Enable(MP_VIEW, previewable && FileLaunch::CanOpen(file));
-	m_menu->Enable(MP_SHOWINFOLDER, FileLaunch::CanReveal(file));
+	// One filesystem check for both entries; see FileLaunch::GetAvailability.
+	bool canOpen = false;
+	bool canReveal = false;
+	FileLaunch::GetAvailability(file, canOpen, canReveal);
+	m_menu->Enable(MP_VIEW, previewable && canOpen);
+	m_menu->Enable(MP_SHOWINFOLDER, canReveal);
 
 	FileRatingList ratingList;
 	item->GetFile()->GetRatingAndComments(ratingList);
