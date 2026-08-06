@@ -105,11 +105,36 @@ long CMuleListCtrl::InsertColumn(
 	return MuleExtern::wxGenericListCtrl::InsertColumn(col, heading, format, width);
 }
 
+namespace
+{
+// CMuleListCtrl's MLOrder bits and CListColumnStore's SortFlag bits mean the
+// same two things with different values, so every crossing converts. Passing
+// one where the other is expected compiles cleanly and silently loses both
+// flags, which is exactly how descending sort stopped persisting once a second
+// list base started sharing the store.
+unsigned ToStoreFlags(unsigned mlOrder)
+{
+	return (mlOrder & CMuleListCtrl::SORT_DES ? CListColumnStore::SORT_DESCENDING : 0) |
+	       (mlOrder & CMuleListCtrl::SORT_ALT ? CListColumnStore::SORT_ALTERNATE : 0);
+}
+
+unsigned FromStoreFlags(unsigned storeFlags)
+{
+	return (storeFlags & CListColumnStore::SORT_DESCENDING ? CMuleListCtrl::SORT_DES : 0) |
+	       (storeFlags & CListColumnStore::SORT_ALTERNATE ? CMuleListCtrl::SORT_ALT : 0);
+}
+} // namespace
+
 void CMuleListCtrl::SaveSettings()
 {
 	wxCHECK_RET(m_columnStore.HasTableName(), "Cannot save settings for unnamed list");
 
-	m_columnStore.SaveSettings(*this, m_sort_orders);
+	CListColumnStore::CSortingList stored;
+	for (const CColPair &pair : m_sort_orders) {
+		stored.emplace_back(pair.first, ToStoreFlags(pair.second));
+	}
+
+	m_columnStore.SaveSettings(*this, stored);
 }
 
 void CMuleListCtrl::LoadSettings()
@@ -127,7 +152,7 @@ void CMuleListCtrl::LoadSettings()
 	for (CListColumnStore::CSortingList::const_iterator it = decodedSortOrders.begin();
 		it != decodedSortOrders.end();
 		++it) {
-		SetSorting(it->first, it->second);
+		SetSorting(it->first, FromStoreFlags(it->second));
 	}
 
 	// Must have at least one sort-order specified

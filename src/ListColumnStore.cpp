@@ -31,11 +31,17 @@
 
 #include "Types.h" // Needed for EmptyString
 
-// SORT_DES/SORT_ALT/SORTING_MASK are CMuleListCtrl::MLOrder flags, not a
-// concept this store defines itself -- it just needs the same bit values
-// CMuleListCtrl encodes/decodes with, so referencing them here (rather than
-// duplicating the magic numbers) keeps there being exactly one definition.
-#include "MuleListCtrl.h"
+namespace
+{
+// The config format that predates this store wrote CMuleListCtrl::MLOrder
+// values verbatim, so reading one back means translating those bits rather
+// than assuming they match what this store writes today. Spelled out here
+// instead of including MuleListCtrl.h: the store serves both list bases and
+// must not adopt either one's vocabulary (see CListColumnStore::SortFlag).
+const unsigned long kLegacySortDescending = 0x1000;
+const unsigned long kLegacySortAlternate = 0x2000;
+const unsigned long kLegacySortMask = kLegacySortDescending | kLegacySortAlternate;
+} // namespace
 
 void CListColumnStore::RegisterColumn(int index, int defaultWidth, const wxString &name)
 {
@@ -134,9 +140,9 @@ void CListColumnStore::SaveSettings(const IColumnWidthProvider &widget, const CS
 		if (!columnName.IsEmpty()) {
 			sortOrder += columnName;
 			sortOrder += ":";
-			sortOrder += it->second & CMuleListCtrl::SORT_DES ? "1" : "0";
+			sortOrder += it->second & SORT_DESCENDING ? "1" : "0";
 			sortOrder += ":";
-			sortOrder += it->second & CMuleListCtrl::SORT_ALT ? "1" : "0";
+			sortOrder += it->second & SORT_ALTERNATE ? "1" : "0";
 			if (++it != sortOrders.end()) {
 				sortOrder += ",";
 			}
@@ -184,8 +190,12 @@ void CListColumnStore::ParseOldConfigEntries(const wxString &sortOrders,
 				// Sanity checking, to avoid asserting if column count changes.
 				if (column >= 0 && column < widget.GetColumnCount()) {
 					// Sanity checking, to avoid asserting if data-format changes.
-					if ((order & ~CMuleListCtrl::SORTING_MASK) == 0) {
-						outSortOrders.emplace_back(column, order);
+					if ((order & ~kLegacySortMask) == 0) {
+						outSortOrders.emplace_back(column,
+							(order & kLegacySortDescending ? SORT_DESCENDING
+										       : 0) |
+								(order & kLegacySortAlternate ? SORT_ALTERNATE
+											      : 0));
 					}
 				}
 			}
@@ -236,8 +246,8 @@ void CListColumnStore::LoadSettings(
 		long alt = StrToLong(token.AfterLast(':'));
 		int col = GetColumnIndex(name);
 		if (col >= 0) {
-			outSortOrders.emplace_back(col,
-				(order ? CMuleListCtrl::SORT_DES : 0) | (alt ? CMuleListCtrl::SORT_ALT : 0));
+			outSortOrders.emplace_back(
+				col, (order ? SORT_DESCENDING : 0) | (alt ? SORT_ALTERNATE : 0));
 		}
 	}
 

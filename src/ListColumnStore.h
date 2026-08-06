@@ -84,7 +84,31 @@ public:
 class CListColumnStore
 {
 public:
-	//! A column index paired with its CMuleListCtrl::MLOrder flags.
+	/**
+	 * The sort flags this store reads and writes.
+	 *
+	 * Deliberately its own, not borrowed from either list base: the two use
+	 * different bit values for the same idea (CMuleListCtrl 0x1000/0x2000,
+	 * CMuleDataViewCtrl 0x1/0x2), so a store that spoke one of them silently
+	 * dropped descending and alternate sorting for every list built on the
+	 * other -- saving them as "not set" and restoring them as ascending. The
+	 * store owns the serialised format; each base converts to and from it at
+	 * the call, which is the only place the two vocabularies meet.
+	 *
+	 * These values are not interchangeable with either base's flags even
+	 * where the numbers happen to line up. Convert; never pass through.
+	 */
+	enum SortFlag
+	{
+		//! Sort this column in descending order.
+		SORT_DESCENDING = 0x1,
+		//! Sort this column by its alternate criterion.
+		SORT_ALTERNATE = 0x2,
+		//! Every bit this store defines; anything else is malformed.
+		SORT_FLAG_MASK = SORT_DESCENDING | SORT_ALTERNATE
+	};
+
+	//! A column index paired with this store's SortFlag bits.
 	typedef std::pair<unsigned, unsigned> CColPair;
 	typedef std::list<CColPair> CSortingList;
 
