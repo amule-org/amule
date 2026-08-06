@@ -629,7 +629,8 @@ public:
 	bool IsReady() const { return true; }
 };
 
-class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>
+class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>,
+		       public CSearchResultIndex
 {
 	virtual void HandlePacket(const CECPacket *);
 
@@ -697,12 +698,12 @@ public:
 	// the search runs and greys out once it completes — the progress lifecycle
 	// is the gate, no extra status needed. Pruned on tab close / removal.
 	std::map<uint32, bool> m_kadActive;
-	typedef std::map<wxUIntPtr, CSearchResultList> ResultMap;
-	ResultMap m_results;
 
-	const CSearchResultList &GetSearchResults(wxUIntPtr nSearchID);
+	// The result index (ResultMap / m_results) and GetSearchResults() live in
+	// CSearchResultIndex, shared with the monolithic search list. Results here
+	// are owned by the CRemoteContainer, so the index only borrows pointers.
+
 	void RemoveResults(wxUIntPtr nSearchID);
-	const CSearchResultList &GetSearchResults(wxUIntPtr nSearchID) const;
 	//
 	// Actions
 	//
