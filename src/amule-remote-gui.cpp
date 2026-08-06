@@ -3592,9 +3592,24 @@ CSearchFile *CSearchListRem::CreateItem(const CEC_SearchFile_Tag *tag)
 		m_needSearchListRequery = true;
 	}
 
+	// A result whose tag names a parent this client has not built yet cannot be
+	// grouped: the constructor's lookup came back empty, so it stays parentless
+	// and is indexed as a top-level row that nothing ever re-parents. The
+	// daemon emits a parent before its children, so this should not happen --
+	// log it rather than assert, since the trigger would be the wire order
+	// rather than a bug on this side, and losing the result would be worse than
+	// showing it ungrouped.
+	if (tag->ParentID() != 0 && file->GetParent() == nullptr) {
+		AddDebugLogLineN(logSearch,
+			CFormat("Search result %u names parent %u, which has not arrived; "
+				"showing it as a top-level result") %
+				file->ECID() % tag->ParentID());
+	}
+
 	// Make the result visible to the GUI: the search model builds its rows
 	// from GetSearchResults(), so a result that is not indexed here shows up
-	// nowhere, however correctly it arrived over EC.
+	// nowhere, however correctly it arrived over EC. Grouped children are
+	// dropped by IndexResult() itself, which is where that rule lives.
 	IndexResult(file);
 
 	theApp->amuledlg->m_searchwnd->AddResult(file);
