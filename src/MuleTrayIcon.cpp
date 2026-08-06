@@ -427,6 +427,35 @@ void CMuleTrayIcon::RebuildMenu()
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
+	// Show / Hide. On a Wayland session we can't reliably detect that
+	// the window has been iconized by the OS minimize button (xdg-shell
+	// doesn't deliver the event), so a single toggle entry would mis-
+	// label itself in that state. Show two deterministic entries
+	// instead — click Show to bring the window back, click Hide to
+	// hide it. On X11 / macOS / Windows the toggle is reliable, so
+	// the single label-aware entry stays.
+	if (CamuleAppCommon::IsWaylandSession()) {
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+			make_action_item((const char *)wxString(_("Show aMule")).utf8_str(),
+				TRAY_ACTION_SHOW,
+				0,
+				this));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+			make_action_item((const char *)wxString(_("Hide aMule")).utf8_str(),
+				TRAY_ACTION_HIDE,
+				0,
+				this));
+	} else {
+		// Treat iconized as not visible — see DoShowHide for rationale.
+		const bool visible = theApp->amuledlg && theApp->amuledlg->IsShown() &&
+				     !theApp->amuledlg->IsTrayLogicallyIconized();
+		const wxString label = visible ? wxString(_("Hide aMule")) : wxString(_("Show aMule"));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
+			make_action_item((const char *)label.utf8_str(), TRAY_ACTION_SHOW_HIDE, 0, this));
+	}
+
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+
 	// ---- Client information submenu ------------------------------
 	// Snapshot at the moment of the last connection-state change.
 	// Skips truly-live fields (uptime, totals, queued clients) so the
@@ -528,33 +557,6 @@ void CMuleTrayIcon::RebuildMenu()
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
 			make_action_item(
 				(const char *)label.utf8_str(), TRAY_ACTION_CONNECT_DISCONNECT, 0, this));
-	}
-
-	// Show / Hide. On a Wayland session we can't reliably detect that
-	// the window has been iconized by the OS minimize button (xdg-shell
-	// doesn't deliver the event), so a single toggle entry would mis-
-	// label itself in that state. Show two deterministic entries
-	// instead — click Show to bring the window back, click Hide to
-	// hide it. On X11 / macOS / Windows the toggle is reliable, so
-	// the single label-aware entry stays.
-	if (CamuleAppCommon::IsWaylandSession()) {
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char *)wxString(_("Show aMule")).utf8_str(),
-				TRAY_ACTION_SHOW,
-				0,
-				this));
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char *)wxString(_("Hide aMule")).utf8_str(),
-				TRAY_ACTION_HIDE,
-				0,
-				this));
-	} else {
-		// Treat iconized as not visible — see DoShowHide for rationale.
-		const bool visible = theApp->amuledlg && theApp->amuledlg->IsShown() &&
-				     !theApp->amuledlg->IsTrayLogicallyIconized();
-		const wxString label = visible ? wxString(_("Hide aMule")) : wxString(_("Show aMule"));
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
-			make_action_item((const char *)label.utf8_str(), TRAY_ACTION_SHOW_HIDE, 0, this));
 	}
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
@@ -821,6 +823,17 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 	wxString label = MOD_VERSION_LONG;
 	traymenu->Append(TRAY_MENU_INFO, label);
 	traymenu->AppendSeparator();
+
+	// Treat iconized as not visible — see DoShowHide for rationale.
+	if (theApp->amuledlg->IsShown() && !theApp->amuledlg->IsTrayLogicallyIconized()) {
+		traymenu->Append(TRAY_MENU_HIDE, _("Hide aMule"));
+	} else {
+		traymenu->Append(TRAY_MENU_SHOW, _("Show aMule"));
+	}
+
+	// Separator
+	traymenu->AppendSeparator();
+
 	label = wxString(_("Speed limits:")) + " ";
 
 	// Check for upload limits
@@ -1010,16 +1023,6 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 	} else {
 		// Connect item
 		traymenu->Append(TRAY_MENU_CONNECT, _("Connect"));
-	}
-
-	// Separator
-	traymenu->AppendSeparator();
-
-	// Treat iconized as not visible — see DoShowHide for rationale.
-	if (theApp->amuledlg->IsShown() && !theApp->amuledlg->IsTrayLogicallyIconized()) {
-		traymenu->Append(TRAY_MENU_HIDE, _("Hide aMule"));
-	} else {
-		traymenu->Append(TRAY_MENU_SHOW, _("Show aMule"));
 	}
 
 	// Separator
