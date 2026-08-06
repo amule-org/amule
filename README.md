@@ -64,7 +64,7 @@ generally adopted into aMule shortly after.
 
 ## Installation
 
-aMule ships pre-built binaries for every major desktop. Building from
+aMule ships pre-built binaries for every major desktop system. Building from
 source is also supported.
 
 ### Pre-built binaries (recommended)
@@ -72,7 +72,9 @@ source is also supported.
 Download the latest release for your platform from the
 [Releases page]. Quick start:
 
-* **Linux** — AppImage (any distro) or Flatpak: download, `chmod +x`, run.
+* **Linux**
+  * Flatpak: `flatpak install ./appname.flatpak`
+  * AppImage: `chmod +x` and run
 * **macOS** — Universal2 `.dmg`: download, drag to `/Applications`.
 * **Windows** — choose either the **NSIS installer** `.exe` (Start-menu shortcuts, uninstaller, x64 / ARM64) or the **portable `.zip`** (no install, unzip and run).
 
