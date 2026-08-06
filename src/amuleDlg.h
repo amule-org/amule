@@ -316,6 +316,14 @@ public:
 	// action stay in sync with reality.
 	bool IsTrayLogicallyIconized() const { return m_iconized_logical; }
 
+	/// Whether the user can actually see the window. Both halves are needed
+	/// and neither is enough: minimized to Dock/taskbar keeps IsShown() true
+	/// while nothing is on screen, and hidden to tray (tray menu, minimize-to-
+	/// tray, HideOnClose) leaves the iconized bit clear while the frame is
+	/// gone. Used by the tray menu to label Show/Hide, and by amulegui to
+	/// decide whether a modal is worth putting up (issue #806).
+	bool IsVisibleToUser() const { return IsShown() && !m_iconized_logical; }
+
 private:
 	bool m_iconized_logical = false;
 	wxFileName m_skinFileName;

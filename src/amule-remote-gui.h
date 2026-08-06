@@ -926,6 +926,14 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	void AttemptReconnect();
 	void ScheduleNextReconnect();
 	void OnReconnectTimer(wxTimerEvent &evt);
+	/// Put the modal reconnect dialog up, reflecting whatever the retry loop
+	/// is doing right now, and act on how it ends.
+	void ShowReconnectDialog();
+	/// Tear the reconnect down and act on its outcome: wxID_OK resumes
+	/// polling, anything else is the user aborting. Runs whether or not a
+	/// dialog was ever shown -- reconnecting behind a minimised window
+	/// finishes without one.
+	void FinishReconnect(int result);
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 
@@ -971,6 +979,12 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 
 public:
 	void Startup();
+
+	/// The main window came back from the taskbar/tray. If a reconnect has
+	/// been running quietly behind it, this is the moment to show the dialog
+	/// -- the user can see the frozen window now, so they should be told why
+	/// it is frozen and be given the Abort button. No-op otherwise.
+	void OnMainWindowRestored();
 
 	bool ShowConnectionDialog();
 
