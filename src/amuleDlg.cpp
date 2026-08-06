@@ -1188,7 +1188,10 @@ void CamuleDlg::ShowTransferRate()
 
 	// Show upload/download speed in title
 	if (thePrefs::GetShowRatesOnTitle()) {
-		wxString UpDownSpeed = CFormat("Up: %.1f%s | Down: %.1f%s") % (showMBpsUp ? MBpsUp : kBpsUp) %
+		// Same msgid as the speed label above, so this reuses that translation
+		// rather than asking translators for the string twice.
+		wxString UpDownSpeed = CFormat(_("Up: %.1f%s | Down: %.1f%s")) %
+				       (showMBpsUp ? MBpsUp : kBpsUp) %
 				       (showMBpsUp ? _(" MB/s") : ((kBpsUp > 0) ? _(" kB/s") : "")) %
 				       (showMBpsDown ? MBpsDown : kBpsDown) %
 				       (showMBpsDown ? _(" MB/s") : ((kBpsDown > 0) ? _(" kB/s") : ""));
