@@ -440,7 +440,13 @@ jobs:
           if-no-files-found: error
 
   # ------------------------------------------------------------------
-  # Windows — portable .zip for x64 (MINGW64) and ARM64 (CLANGARM64).
+  # Windows — portable .zip for x64 (CLANG64) and ARM64 (CLANGARM64).
+  #
+  # Both arches are clang + UCRT so there is one Windows toolchain to reason
+  # about, and a Windows-specific bug reproduces the same on either. x64 moved
+  # off MINGW64 because wxWidgets 3.3 is not packaged for that environment --
+  # MSYS2 ships it only for clang-x86_64, clang-aarch64 and ucrt-x86_64 -- and
+  # 3.3 is what makes the app follow the system light/dark appearance.
   # ------------------------------------------------------------------
   windows-zip:
     name: Windows portable .zip (${{ matrix.arch }})
@@ -453,9 +459,9 @@ jobs:
       matrix:
         include:
           - arch: x64
-            msystem: MINGW64
+            msystem: CLANG64
             runs-on: windows-2025
-            pkg_prefix: mingw-w64-x86_64
+            pkg_prefix: mingw-w64-clang-x86_64
           - arch: arm64
             msystem: CLANGARM64
             runs-on: windows-11-arm
@@ -486,7 +492,7 @@ jobs:
             ${{ matrix.pkg_prefix }}-pkgconf
             ${{ matrix.pkg_prefix }}-readline
             ${{ matrix.pkg_prefix }}-toolchain
-            ${{ matrix.pkg_prefix }}-wxwidgets3.2-msw
+            ${{ matrix.pkg_prefix }}-wxwidgets3.3-msw
             ${{ matrix.pkg_prefix }}-zlib
             git
             zip
@@ -566,7 +572,11 @@ jobs:
           if-no-files-found: error
 
   # ------------------------------------------------------------------
-  # Windows — NSIS installer .exe for x64 (MINGW64) and ARM64 (CLANGARM64).
+  # Windows — NSIS installer .exe for x64 and ARM64.
+  #
+  # msystem here is only the shell the job runs in: the step installs bare
+  # git/unzip/python and wraps an already-built payload, so it needs no
+  # compiler and does not have to match the environment windows-zip built in.
   # Consumes the portable tree built by windows-zip rather than building
   # it a second time. Coupling is correct here: with no payload there's
   # nothing to wrap, so a windows-zip failure should skip the installer.

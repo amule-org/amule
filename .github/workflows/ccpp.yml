@@ -59,20 +59,24 @@ env:
     pkg-config \
     wxwidgets
 
+  # CLANG64, not MINGW64: wxWidgets 3.3 is not packaged for the latter, and
+  # 3.3 is what the system light/dark appearance support needs. This also
+  # matches the CLANGARM64 leg the release packaging uses, so CI and the
+  # shipped Windows builds share one toolchain.
   cmake_mingw_w64_deps: |
-    mingw-w64-x86_64-boost
-    mingw-w64-x86_64-ccache
-    mingw-w64-x86_64-cmake
-    mingw-w64-x86_64-crypto++
-    mingw-w64-x86_64-gettext
-    mingw-w64-x86_64-libgd
-    mingw-w64-x86_64-libmaxminddb
-    mingw-w64-x86_64-ninja
-    mingw-w64-x86_64-pkgconf
-    mingw-w64-x86_64-readline
-    mingw-w64-x86_64-toolchain
-    mingw-w64-x86_64-wxwidgets3.2-msw
-    mingw-w64-x86_64-zlib
+    mingw-w64-clang-x86_64-boost
+    mingw-w64-clang-x86_64-ccache
+    mingw-w64-clang-x86_64-cmake
+    mingw-w64-clang-x86_64-crypto++
+    mingw-w64-clang-x86_64-gettext
+    mingw-w64-clang-x86_64-libgd
+    mingw-w64-clang-x86_64-libmaxminddb
+    mingw-w64-clang-x86_64-ninja
+    mingw-w64-clang-x86_64-pkgconf
+    mingw-w64-clang-x86_64-readline
+    mingw-w64-clang-x86_64-toolchain
+    mingw-w64-clang-x86_64-wxwidgets3.3-msw
+    mingw-w64-clang-x86_64-zlib
 
   cmake_common_config_flags: |-
     -B build \
@@ -226,7 +230,7 @@ jobs:
       - name: set up MSYS2 mingw-w64
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: CLANG64
           update: true
           install: ${{ env.cmake_mingw_w64_deps }}
       # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
