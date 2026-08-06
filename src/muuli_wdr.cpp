@@ -314,12 +314,8 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item34->Add( 10, 10, wxSizerFlags(1).Center().Border(wxALL, 5) );
     wxStaticText *item35 = new wxStaticText( parent, -1, _("Filter:"), wxDefaultPosition, wxDefaultSize, 0 );
     item34->Add( item35, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxTextCtrl *item36 = new wxTextCtrl( parent, ID_FILTER_TEXT, "", wxDefaultPosition, wxSize(80,-1), wxTE_PROCESS_ENTER );
+    wxTextCtrl *item36 = new wxTextCtrl( parent, ID_FILTER_TEXT, "", wxDefaultPosition, wxSize(220,-1), wxTE_PROCESS_ENTER );
     item34->Add( item36, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxStaticLine *item37 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
-    item34->Add( item37, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxButton *item38 = new wxButton( parent, ID_FILTER, _("Filter Results"), wxDefaultPosition, wxDefaultSize, 0 );
-    item34->Add( item38, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticLine *item39 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item34->Add( item39, wxSizerFlags().Center().Border(wxALL, 5) );
     wxCheckBox *item40 = new wxCheckBox( parent, ID_FILTER_INVERT, _("Invert Result"), wxDefaultPosition, wxDefaultSize, 0 );

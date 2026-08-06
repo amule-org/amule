@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:33+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -3414,10 +3414,6 @@ msgstr "Διαθεσιμότητα"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "Φίλτρο:"
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr "Αποτελέσματα φιλτραρίσματος"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -8772,6 +8768,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Filter Results"
+#~ msgstr "Αποτελέσματα φιλτραρίσματος"
 
 #~ msgid "Mark as known file"
 #~ msgstr "Σημείωση αρχείου ως γνωστού"

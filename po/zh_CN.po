@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:46+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -3390,10 +3390,6 @@ msgstr "可用来源数"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "过滤："
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr "过滤结果"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -8666,6 +8662,9 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "Filter Results"
+#~ msgstr "过滤结果"
 
 #~ msgid "Mark as known file"
 #~ msgstr "标记为已知文件"

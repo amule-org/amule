@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:42+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -3404,10 +3404,6 @@ msgstr "Disponibilitate"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "Filtru:"
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr "Rezultate filtru"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -8725,6 +8721,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Filter Results"
+#~ msgstr "Rezultate filtru"
 
 #~ msgid "Mark as known file"
 #~ msgstr "Marchează ca fișier cunoscut"

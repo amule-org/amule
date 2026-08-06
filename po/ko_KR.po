@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 11:07+0200\n"
+"POT-Creation-Date: 2026-08-06 12:03+0200\n"
 "PO-Revision-Date: 2026-08-06 07:38+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -3412,10 +3412,6 @@ msgstr "유효성"
 #: src/muuli_wdr.cpp
 msgid "Filter:"
 msgstr "필터:"
-
-#: src/muuli_wdr.cpp
-msgid "Filter Results"
-msgstr "필터링 결과"
 
 #: src/muuli_wdr.cpp
 msgid "Invert Result"
@@ -8751,6 +8747,9 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid "Filter Results"
+#~ msgstr "필터링 결과"
 
 #~ msgid "Bootstrap"
 #~ msgstr "초기적재"

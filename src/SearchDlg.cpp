@@ -58,6 +58,13 @@
 // just to keep compiler happy
 static wxCommandEvent nullEvent;
 
+namespace
+{
+//! How long typing has to pause before the filter is applied, in ms.
+const int kFilterDebounceMs = 250;
+const int ID_FILTER_DEBOUNCE_TIMER = wxID_HIGHEST + 1301;
+} // namespace
+
 wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	EVT_BUTTON(IDC_STARTS, CSearchDlg::OnBnClickedStart)
 	EVT_TEXT_ENTER(IDC_SEARCHNAME, CSearchDlg::OnBnClickedStart)
@@ -85,10 +92,11 @@ wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	EVT_CUSTOM(wxEVT_CHOICE, wxID_ANY, CSearchDlg::OnFieldChanged)
 
 	// Event handlers for the filter fields getting changed.
+	EVT_TEXT(ID_FILTER_TEXT, CSearchDlg::OnFilterTextChanged)
+	EVT_TIMER(ID_FILTER_DEBOUNCE_TIMER, CSearchDlg::OnFilterDebounceTimer)
 	EVT_TEXT_ENTER(ID_FILTER_TEXT, CSearchDlg::OnFilteringChange)
 	EVT_CHECKBOX(ID_FILTER_INVERT, CSearchDlg::OnFilteringChange)
 	EVT_CHECKBOX(ID_FILTER_KNOWN, CSearchDlg::OnFilteringChange)
-	EVT_BUTTON(ID_FILTER, CSearchDlg::OnFilteringChange)
 	EVT_BUTTON(ID_FILTER_RESET, CSearchDlg::OnFilterReset)
 
 	EVT_IDLE(CSearchDlg::OnIdle)
@@ -101,6 +109,8 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	// windows carrying this style are sent idle events at all -- without it
 	// OnIdle() never runs and the coalesced hit-count flush never happens.
 	SetExtraStyle(GetExtraStyle() | wxWS_EX_PROCESS_IDLE);
+
+	m_filterTimer.SetOwner(this, ID_FILTER_DEBOUNCE_TIMER);
 
 	m_last_search_time = 0;
 	m_expiringSearchID = 0;
@@ -1017,6 +1027,18 @@ void CSearchDlg::OnFilteringChange(wxCommandEvent &WXUNUSED(evt))
 	ApplyFilter();
 }
 
+void CSearchDlg::OnFilterTextChanged(wxCommandEvent &evt)
+{
+	evt.Skip();
+	// Restarted on every keystroke, so only the pause at the end fires it.
+	m_filterTimer.Start(kFilterDebounceMs, wxTIMER_ONE_SHOT);
+}
+
+void CSearchDlg::OnFilterDebounceTimer(wxTimerEvent &WXUNUSED(evt))
+{
+	ApplyFilter();
+}
+
 void CSearchDlg::OnFilterReset(wxCommandEvent &WXUNUSED(evt))
 {
 	// Back to the state a fresh session starts in: empty expression, both
@@ -1035,6 +1057,10 @@ void CSearchDlg::OnFilterReset(wxCommandEvent &WXUNUSED(evt))
 
 void CSearchDlg::ApplyFilter()
 {
+	// Whether we got here from the timer, Enter, the button or a reset, any
+	// pending debounced run is now redundant.
+	m_filterTimer.Stop();
+
 	wxString filter = CastChild(ID_FILTER_TEXT, wxTextCtrl)->GetValue();
 	bool invert = CastChild(ID_FILTER_INVERT, wxCheckBox)->GetValue();
 	bool known = CastChild(ID_FILTER_KNOWN, wxCheckBox)->GetValue();
