@@ -112,7 +112,7 @@ public:
 	 *                      filename) it is appended to the log line so the
 	 *                      message can be correlated with the download command.
 	 */
-	bool IsFileExisting(const CMD4Hash &fileid, const wxString &requestedName = wxEmptyString) const;
+	bool IsFileExisting(const CMD4Hash &fileid, const wxString &requestedName = wxEmptyString);
 
 	/**
 	 * Returns true if the specified file is on the download-queue.
