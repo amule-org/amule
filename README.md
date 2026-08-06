@@ -142,8 +142,6 @@ second** (Mbps). To convert, multiply Mbps by **125**.
 > downstream and 2 500 kB/s upstream. Set the limits to about
 > 10 000 down / 2 000 up to stay below the line cap.
 
-You may also want to change the per-slot bandwith limit, to speed up individual up- or downloads.
-
 ## Reporting Bugs
 
 If you find a bug or miss a feature, please open an issue on
