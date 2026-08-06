@@ -280,7 +280,14 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		if (!server->GetPing()) {
 			return wxEmptyString;
 		}
-		return CastSecondsToHM(server->GetPing() / 1000, server->GetPing() % 1000);
+		// GetPing() is already milliseconds (a GetTickCount64() delta), and
+		// milliseconds is how latency is written everywhere else -- including
+		// our own REST API, which publishes it as "ping_ms". It used to go
+		// through CastSecondsToHM(), a general duration helper whose
+		// sub-minute branch prints "0.203 secs" (issue #823).
+		// "ms" is an SI unit symbol, identical in every language, so unlike
+		// the secs/mins/hours abbreviations elsewhere it is not translated.
+		return CFormat("%u ms") % server->GetPing();
 
 	case COLUMN_SERVER_USERS:
 		if (!server->GetUsers()) {
