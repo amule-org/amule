@@ -1806,8 +1806,17 @@ void CServerListRem::ProcessItemUpdate(const CEC_Server_Tag *tag, CServer *serve
 	tag->GetMaxUsers(&server->maxusers);
 	tag->GetSoftFiles(&server->softfiles);
 	tag->GetHardFiles(&server->hardfiles);
-	server->SetTCPFlags(tag->GetTCPFlags());
-	server->SetUDPFlags(tag->GetUDPFlags());
+	// Read through the pointer, as the fields above do. The valuemap builder
+	// omits a tag whose value has not changed since the last update, and the
+	// return form yields 0 for an absent tag -- so assigning it would wipe the
+	// value on every update that did not resend it. AssignIfExist() leaves the
+	// current value alone instead.
+	uint32 tcpFlags = server->GetTCPFlags();
+	uint32 udpFlags = server->GetUDPFlags();
+	tag->GetTCPFlags(&tcpFlags);
+	tag->GetUDPFlags(&udpFlags);
+	server->SetTCPFlags(tcpFlags);
+	server->SetUDPFlags(udpFlags);
 
 	tag->GetFiles(&server->files);
 	tag->GetUsers(&server->users);

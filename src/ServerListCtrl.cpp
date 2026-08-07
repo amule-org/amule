@@ -360,7 +360,8 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 	case COLUMN_SERVER_VERSION:
 		return server->GetVersion();
 
-#if !defined(CLIENT_GUI)
+	// Rendered in both binaries: the flags are streamed over EC, so the remote
+	// GUI has the same data behind these columns.
 	case COLUMN_SERVER_TCPFLAGS: {
 		wxString flags;
 		if (server->GetTCPFlags() & SRV_TCPFLG_COMPRESSION) {
@@ -415,7 +416,6 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		}
 		return flags;
 	}
-#endif
 
 	default:
 		return wxEmptyString;
