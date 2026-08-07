@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:13+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -2587,6 +2587,10 @@ msgstr "Dergo nje mesash perdoruesit"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Mesazhi qe do te dergohet:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Kliente"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7206,10 +7210,6 @@ msgstr "Mesatarja e lidhjeve (vleresim): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "Kulmi i lidhjeve (vleresim): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Kliente"
 
 #: src/Statistics.cpp
 #, fuzzy, c-format

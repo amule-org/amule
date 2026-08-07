@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2498,6 +2498,10 @@ msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
+msgstr ""
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -6981,10 +6985,6 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Peak Connections (estimate): %i"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Clients"
 msgstr ""
 
 #: src/Statistics.cpp
