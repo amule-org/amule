@@ -50,9 +50,17 @@ bool CMuleBarRenderer::GetValue(wxVariant &value) const
 
 wxSize CMuleBarRenderer::GetSize() const
 {
-	// A minimum only: the column's actual on-screen width comes from
-	// AppendBarColumn()'s caller and, after that, CListColumnStore.
-	return wxSize(40, GetTextExtent("Xg").GetHeight());
+	// The generic backend passes the real cell rect to Render() and treats this
+	// only as a best-width hint, but the native macOS backend takes GetSize()
+	// as the cell size itself (wxCustomRendererObject::cellSize), so a constant
+	// here paints a fixed-width bar inside an arbitrarily wide column. Report
+	// the owning column's current width to keep both backends in step; the
+	// literal is the fallback for before the renderer is attached.
+	int width = 40;
+	if (const wxDataViewColumn *column = GetOwner()) {
+		width = std::max(width, column->GetWidth());
+	}
+	return wxSize(width, GetTextExtent("Xg").GetHeight());
 }
 
 bool CMuleBarRenderer::Render(wxRect cell, wxDC *dc, int WXUNUSED(state))
