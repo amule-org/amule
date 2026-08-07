@@ -26,23 +26,51 @@
 #ifndef FILEDETAILLISTCTRL_H
 #define FILEDETAILLISTCTRL_H
 
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl
+#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
 
-class CFileDetailListCtrl : public CMuleListCtrl
+#define COLUMN_FILEDETAIL_NAME 0
+#define COLUMN_FILEDETAIL_SOURCES 1
+//! Always empty. Absorbs the macOS trailing-column sizing; see
+//! CMuleDataViewCtrl::AppendSpacerColumn().
+#define COLUMN_FILEDETAIL_SPACER 2
+
+class SourcenameItem;
+
+class CFileDetailListCtrl : public CMuleVirtualDataViewCtrl
 {
-
 public:
 	CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoint &pos, wxSize siz, int flags);
 
-private:
-	struct SourcenameItem
-	{
-		wxString name;
-		long count;
-	};
+	void AddSource(SourcenameItem *item);
+	void RefreshSource(SourcenameItem *item);
+	void RemoveSource(SourcenameItem *item);
+	void ClearSources() { ClearItemData(); }
 
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-	void OnSelect(wxListEvent &event);
+protected:
+	/// Text of a cell, pulled on demand for the rows being drawn.
+	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
+
+	/// Name compare on column 0, source-count compare on column 1.
+	int CompareItemData(
+		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+
+	/**
+	 * The Sources column's value (a live source count) changes on every
+	 * 5-second refresh timer tick while the dialog is open, so a
+	 * sources-sorted list needs the coalesced live re-sort.
+	 */
+	bool IsLiveSortColumn() const override;
+
+private:
+	/**
+	 * The base always constructs with wxDV_MULTIPLE (CMuleDataViewCtrl has
+	 * no single-selection mode), but this list is meant to only ever have
+	 * one row selected -- the "take over filename" actions assume it.
+	 * Collapses the selection down to the just-clicked row whenever more
+	 * than one ends up selected, the wxDataViewCtrl equivalent of the old
+	 * list's own OnSelect() enforcement.
+	 */
+	void OnSelectionChanged(wxDataViewEvent &event);
 
 	wxDECLARE_EVENT_TABLE();
 };

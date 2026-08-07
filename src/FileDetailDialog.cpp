@@ -8,10 +8,6 @@
 // or contributed by third-party developers are copyrighted by their
 // respective authors.
 //
-// Any parts of this program derived from the xMule, lMule or eMule project,
-// or contributed by third-party developers are copyrighted by their
-// respective authors.
-//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -35,8 +31,7 @@
 #include "amule.h"              // Needed for theApp
 #include "SharedFileList.h"     // Needed for CSharedFileList
 #include "OtherFunctions.h"
-#include "DataToText.h" // Needed for PriorityToStr
-#include "MuleColour.h"
+#include "DataToText.h"    // Needed for PriorityToStr
 #include <tags/FileTags.h> // Needed for FT_MEDIA_* metadata tag names
 
 #include <set>
@@ -48,7 +43,7 @@ wxBEGIN_EVENT_TABLE(CFileDetailDialog, wxDialog)
 	EVT_BUTTON(ID_CLOSEWNDFD, CFileDetailDialog::OnClosewnd)
 	EVT_BUTTON(IDC_BUTTONSTRIP, CFileDetailDialog::OnBnClickedButtonStrip)
 	EVT_BUTTON(IDC_TAKEOVER, CFileDetailDialog::OnBnClickedTakeOver)
-	EVT_LIST_ITEM_ACTIVATED(IDC_LISTCTRLFILENAMES, CFileDetailDialog::OnListClickedTakeOver)
+	EVT_DATAVIEW_ITEM_ACTIVATED(IDC_LISTCTRLFILENAMES, CFileDetailDialog::OnListClickedTakeOver)
 	EVT_BUTTON(IDC_CMTBT, CFileDetailDialog::OnBnClickedShowComment)
 	EVT_TEXT(IDC_FILENAME, CFileDetailDialog::OnTextFileNameChange)
 	EVT_BUTTON(IDC_APPLY_AND_CLOSE, CFileDetailDialog::OnBnClickedOk)
@@ -97,6 +92,18 @@ CFileDetailDialog::~CFileDetailDialog()
 {
 	OpenInstances().erase(this);
 	m_timer.Stop();
+	// Drop the rows before freeing what they point at. The list control is a
+	// child window and so outlives this body, and the base states the rule
+	// plainly: it has to be told before the caller frees the item data.
+	// Nothing can currently paint or sort in between -- both call sites are
+	// stack temporaries, so destruction is synchronous -- but that is a
+	// property of wx's teardown rather than something this code should rest on.
+	if (CFileDetailListCtrl *list = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl)) {
+		list->ClearSources();
+	}
+	for (const auto &entry : m_sourcenames) {
+		delete entry.second;
+	}
 }
 
 void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
@@ -300,10 +307,7 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 
 void CFileDetailDialog::FillSourcenameList()
 {
-	CFileDetailListCtrl *pmyListCtrl;
-	int itempos;
-	int inserted = 0;
-	pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
+	CFileDetailListCtrl *pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
 
 	// The source-name list is a download-only view (how sources name the file).
 	// A plain shared file has none, so clear any rows a prior file left behind
@@ -311,39 +315,35 @@ void CFileDetailDialog::FillSourcenameList()
 	// source accessors below.
 	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
 	if (!part) {
-		for (int i = 0; i < pmyListCtrl->GetItemCount(); ++i) {
-			delete reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(i));
+		// Rows first, then the objects they point at -- same rule as the
+		// destructor and as the prune loop below.
+		pmyListCtrl->ClearSources();
+		for (const auto &entry : m_sourcenames) {
+			delete entry.second;
 		}
-		pmyListCtrl->DeleteAllItems();
+		m_sourcenames.clear();
 		return;
 	}
 
 	// reset
-	for (int i = 0; i < pmyListCtrl->GetItemCount(); i++) {
-		SourcenameItem *item = reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(i));
-		item->count = 0;
+	for (const auto &entry : m_sourcenames) {
+		entry.second->count = 0;
 	}
+	bool inserted = false;
 
 	// update
 #ifdef CLIENT_GUI
 	const SourcenameItemMap &sources = part->GetSourcenameItemMap();
 	for (SourcenameItemMap::const_iterator it = sources.begin(); it != sources.end(); ++it) {
 		const SourcenameItem &cur_src = it->second;
-		itempos = pmyListCtrl->FindItem(-1, cur_src.name);
-		if (itempos == -1) {
-			int itemid = pmyListCtrl->InsertItem(0, cur_src.name);
+		auto found = m_sourcenames.find(cur_src.name);
+		if (found == m_sourcenames.end()) {
 			SourcenameItem *item = new SourcenameItem(cur_src.name, cur_src.count);
-			pmyListCtrl->SetItemPtrData(0, reinterpret_cast<wxUIntPtr>(item));
-			// background.. argh -- PA: was in old version - do we still need this?
-			wxListItem tmpitem;
-			tmpitem.m_itemId = itemid;
-			tmpitem.SetBackgroundColour(CMuleColour(wxSYS_COLOUR_LISTBOX));
-			pmyListCtrl->SetItem(tmpitem);
-			inserted++;
+			m_sourcenames[cur_src.name] = item;
+			pmyListCtrl->AddSource(item);
+			inserted = true;
 		} else {
-			SourcenameItem *item =
-				reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(itempos));
-			item->count = cur_src.count;
+			found->second->count = cur_src.count;
 		}
 	}
 #else  // CLIENT_GUI
@@ -355,37 +355,41 @@ void CFileDetailDialog::FillSourcenameList()
 			continue;
 		}
 
-		itempos = pmyListCtrl->FindItem(-1, cur_src.GetClientFilename());
-		if (itempos == -1) {
-			int itemid = pmyListCtrl->InsertItem(0, cur_src.GetClientFilename());
+		auto found = m_sourcenames.find(cur_src.GetClientFilename());
+		if (found == m_sourcenames.end()) {
 			SourcenameItem *item = new SourcenameItem(cur_src.GetClientFilename(), 1);
-			pmyListCtrl->SetItemPtrData(0, reinterpret_cast<wxUIntPtr>(item));
-			// background.. argh -- PA: was in old version - do we still need this?
-			wxListItem tmpitem;
-			tmpitem.m_itemId = itemid;
-			tmpitem.SetBackgroundColour(CMuleColour(wxSYS_COLOUR_LISTBOX));
-			pmyListCtrl->SetItem(tmpitem);
-			inserted++;
+			m_sourcenames[cur_src.GetClientFilename()] = item;
+			pmyListCtrl->AddSource(item);
+			inserted = true;
 		} else {
-			SourcenameItem *item =
-				reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(itempos));
-			item->count++;
+			found->second->count++;
 		}
 	}
 #endif // CLIENT_GUI
 
-	// remove 0'er and update counts
-	for (int i = 0; i < pmyListCtrl->GetItemCount(); ++i) {
-		SourcenameItem *item = reinterpret_cast<SourcenameItem *>(pmyListCtrl->GetItemData(i));
-		if (item->count == 0) {
-			delete item;
-			pmyListCtrl->DeleteItem(i);
-			i--; // PA: one step back is enough, no need to go back to 0
+	// Drop entries no longer reported by any source, refresh the rest.
+	for (auto it2 = m_sourcenames.begin(); it2 != m_sourcenames.end();) {
+		if (it2->second->count == 0) {
+			pmyListCtrl->RemoveSource(it2->second);
+			delete it2->second;
+			it2 = m_sourcenames.erase(it2);
 		} else {
-			pmyListCtrl->SetItem(i, 1, CFormat("%i") % item->count);
+			pmyListCtrl->RefreshSource(it2->second);
+			++it2;
 		}
 	}
 
+	// Counts are zeroed above and then rewritten in place, so while this runs
+	// the list is not ordered by the column it is sorted on -- and AddSource()
+	// places a new row with a binary search, which needs that ordering to
+	// hold. So an insertion leaves rows in arbitrary positions and has to be
+	// repaired here, exactly as the pre-port code did.
+	//
+	// Only on insertion, though. A count that merely changed is what the
+	// live-sort preference governs: RefreshSource() re-sorts when it is on,
+	// and when it is off the row is meant to stay where it is rather than move
+	// under the user. Sorting unconditionally would quietly override that
+	// setting for this list.
 	if (inserted) {
 		pmyListCtrl->SortList();
 	}
@@ -624,18 +628,15 @@ void CFileDetailDialog::OnBnClickedButtonStrip(wxCommandEvent &WXUNUSED(evt))
 
 void CFileDetailDialog::OnBnClickedTakeOver(wxCommandEvent &WXUNUSED(evt))
 {
-	CFileDetailListCtrl *pmyListCtrl;
-	pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
-	if (pmyListCtrl->GetSelectedItemCount() > 0) {
-		// get first selected item (there is only one)
-		long pos = pmyListCtrl->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-		if (pos != -1) { // shouldn't happen, we checked if something is selected
-			setValueForFilenameTextEdit(pmyListCtrl->GetItemText(pos));
-		}
+	CFileDetailListCtrl *pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
+	// The list only ever allows one selected row (CFileDetailListCtrl::OnSelectionChanged).
+	const std::vector<wxUIntPtr> selected = pmyListCtrl->GetSelectedItemData();
+	if (!selected.empty()) {
+		setValueForFilenameTextEdit(reinterpret_cast<SourcenameItem *>(selected.front())->name);
 	}
 }
 
-void CFileDetailDialog::OnListClickedTakeOver(wxListEvent &WXUNUSED(evt))
+void CFileDetailDialog::OnListClickedTakeOver(wxDataViewEvent &WXUNUSED(evt))
 {
 	wxCommandEvent ev;
 	OnBnClickedTakeOver(ev);
