@@ -97,77 +97,76 @@ CSearchListCtrl::CSearchListCtrl(
 	AssociateModel(m_model);
 	m_model->DecRef(); // the control now holds the only reference
 
-	AppendTextColumn(_("File Name"),
+	AddTextColumn(_("File Name"),
 		CSearchListModel::COL_NAME,
-		wxDATAVIEW_CELL_INERT,
+		"N",
 		500,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("Size"),
+	AddTextColumn(_("Size"),
 		CSearchListModel::COL_SIZE,
-		wxDATAVIEW_CELL_INERT,
+		"Z",
 		100,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("Sources"),
+	AddTextColumn(_("Sources"),
 		CSearchListModel::COL_SOURCES,
-		wxDATAVIEW_CELL_INERT,
+		"u",
 		50,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("Type"),
+	AddTextColumn(_("Type"),
 		CSearchListModel::COL_TYPE,
-		wxDATAVIEW_CELL_INERT,
+		"Y",
 		65,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Rating: smiley icon + text label in one cell.
-	AppendIconTextColumn(_("Rating"),
+	AddIconTextColumn(_("Rating"),
 		CSearchListModel::COL_RATING,
-		wxDATAVIEW_CELL_INERT,
+		"R",
 		120,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("FileID"),
+	AddTextColumn(_("FileID"),
 		CSearchListModel::COL_FILEID,
-		wxDATAVIEW_CELL_INERT,
+		"I",
 		280,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("Status"),
+	AddTextColumn(_("Status"),
 		CSearchListModel::COL_STATUS,
-		wxDATAVIEW_CELL_INERT,
+		"S",
 		100,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Media tag columns: ed2k/Kad publishers (eMule, eMule AI, aMule) can
 	// advertise per-file media metadata in FT_MEDIA_LENGTH / _BITRATE /
 	// _CODEC. Cells stay empty for non-media results.
-	AppendTextColumn(_("Length"),
+	AddTextColumn(_("Length"),
 		CSearchListModel::COL_LENGTH,
-		wxDATAVIEW_CELL_INERT,
+		"L",
 		80,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("Bitrate"),
+	AddTextColumn(_("Bitrate"),
 		CSearchListModel::COL_BITRATE,
-		wxDATAVIEW_CELL_INERT,
+		"B",
 		80,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
-	AppendTextColumn(_("Codec"),
+	AddTextColumn(_("Codec"),
 		CSearchListModel::COL_CODEC,
-		wxDATAVIEW_CELL_INERT,
+		"C",
 		80,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Directories is almost always empty (only populated when the result
 	// came from a "view shared files" request, rare in practice), so put
 	// it at the end with the other usually-empty columns.
-	AppendTextColumn(
-		_("Directories"), // I would have preferred "Directory" but this is already translated
+	AddTextColumn(_("Directories"), // I would have preferred "Directory" but this is already translated
 		CSearchListModel::COL_DIRECTORY,
-		wxDATAVIEW_CELL_INERT,
+		"D",
 		280,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
@@ -175,18 +174,6 @@ CSearchListCtrl::CSearchListCtrl(
 	// Absorbs the macOS trailing-column sizing; the model answers COL_SPACER
 	// with an empty string.
 	AppendSpacerColumn(CSearchListModel::COL_SPACER);
-
-	m_columnStore.RegisterColumn(CSearchListModel::COL_NAME, 500, "N");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_SIZE, 100, "Z");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_SOURCES, 50, "u");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_TYPE, 65, "Y");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_RATING, 120, "R");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_FILEID, 280, "I");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_STATUS, 100, "S");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_LENGTH, 80, "L");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_BITRATE, 80, "B");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_CODEC, 80, "C");
-	m_columnStore.RegisterColumn(CSearchListModel::COL_DIRECTORY, 280, "D");
 
 	// Default sort is by name, ascending.
 	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);

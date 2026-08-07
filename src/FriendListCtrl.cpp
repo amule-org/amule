@@ -56,9 +56,9 @@ wxEND_EVENT_TABLE()
 CFriendListCtrl::CFriendListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags)
 : CMuleVirtualDataViewCtrl(parent, id, pos, siz, flags)
 {
-	AppendTextColumn(_("Username"),
+	AddTextColumn(_("Username"),
 		COLUMN_FRIEND_NAME,
-		wxDATAVIEW_CELL_INERT,
+		"N",
 		siz.GetWidth() - 4,
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
@@ -70,7 +70,6 @@ CFriendListCtrl::CFriendListCtrl(wxWindow *parent, int id, const wxPoint &pos, w
 
 	// One-letter name so CListColumnStore has something to write under
 	// /eMule/TableWidthsFriend.
-	m_columnStore.RegisterColumn(COLUMN_FRIEND_NAME, siz.GetWidth() - 4, "N");
 
 	ApplySorting(COLUMN_FRIEND_NAME, 0);
 

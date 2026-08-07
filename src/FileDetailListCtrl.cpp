@@ -38,24 +38,23 @@ CFileDetailListCtrl::CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoin
 : CMuleVirtualDataViewCtrl(parent, id, pos, siz, flags)
 {
 	const int columnFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AppendTextColumn(_("File Name"),
-		COLUMN_FILEDETAIL_NAME,
-		wxDATAVIEW_CELL_INERT,
-		370,
-		wxALIGN_LEFT,
-		columnFlags);
-	AppendTextColumn(_("Sources"),
-		COLUMN_FILEDETAIL_SOURCES,
-		wxDATAVIEW_CELL_INERT,
-		70,
-		wxALIGN_LEFT,
-		columnFlags);
+	AddTextColumn(_("File Name"), COLUMN_FILEDETAIL_NAME, "N", 370, wxALIGN_LEFT, columnFlags);
+	AddTextColumn(_("Sources"), COLUMN_FILEDETAIL_SOURCES, "S", 70, wxALIGN_LEFT, columnFlags);
 
 	AppendSpacerColumn(COLUMN_FILEDETAIL_SPACER);
 	AssociateVirtualModel();
 
 	// Initial sorting: Sources descending, matching the pre-port default.
+	// LoadColumnSettings() replaces it once the config has something saved.
 	ApplySorting(COLUMN_FILEDETAIL_SOURCES, SORT_DES);
+
+	// This list gains persistence here: it is the one dataview list that never
+	// had it, so a user who widened "File Name" lost it the moment the dialog
+	// closed, and the sort reset to Sources-descending on every open. There is
+	// no GetOldColumnOrder() override because there is no pre-dataview config
+	// to migrate -- nothing was ever written under this name.
+	m_columnStore.SetTableName("FileDetail");
+	LoadColumnSettings();
 
 	InitColumnState();
 }

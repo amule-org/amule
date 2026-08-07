@@ -99,62 +99,28 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	// column reserves the icon slot on every row, indenting names that have no
 	// icon of their own.
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AppendTextColumn(
-		_("File Name"), COLUMN_SHARED_NAME, wxDATAVIEW_CELL_INERT, 400, wxALIGN_LEFT, colFlags);
-	AppendIconTextColumn(
-		_("Rating"), COLUMN_SHARED_RATING, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(_("Size"), COLUMN_SHARED_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(_("Type"), COLUMN_SHARED_TYPE, wxDATAVIEW_CELL_INERT, 90, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(
-		_("Priority"), COLUMN_SHARED_PRIO, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(_("Requests"), COLUMN_SHARED_REQ, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(_("Accepted Requests"),
-		COLUMN_SHARED_AREQ,
-		wxDATAVIEW_CELL_INERT,
-		80,
-		wxALIGN_LEFT,
-		colFlags);
-	AppendTextColumn(
-		_("Transferred Data"), COLUMN_SHARED_TRA, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(
-		_("Share Ratio"), COLUMN_SHARED_RTIO, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, colFlags);
-	AppendBarColumn(_("Obtained Parts"), COLUMN_SHARED_PART, 120, colFlags);
-	AppendTextColumn(_("Complete Sources"),
-		COLUMN_SHARED_CMPL,
-		wxDATAVIEW_CELL_INERT,
-		120,
-		wxALIGN_LEFT,
-		colFlags);
+	AddTextColumn(_("File Name"), COLUMN_SHARED_NAME, "N", 400, wxALIGN_LEFT, colFlags);
+	AddIconTextColumn(_("Rating"), COLUMN_SHARED_RATING, "G", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Size"), COLUMN_SHARED_SIZE, "Z", 100, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Type"), COLUMN_SHARED_TYPE, "Y", 90, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Priority"), COLUMN_SHARED_PRIO, "p", 70, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Requests"), COLUMN_SHARED_REQ, "Q", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Accepted Requests"), COLUMN_SHARED_AREQ, "A", 80, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Transferred Data"), COLUMN_SHARED_TRA, "T", 120, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Share Ratio"), COLUMN_SHARED_RTIO, "R", 80, wxALIGN_LEFT, colFlags);
+	AddBarColumn(_("Obtained Parts"), COLUMN_SHARED_PART, "P", 120, colFlags);
+	AddTextColumn(_("Complete Sources"), COLUMN_SHARED_CMPL, "C", 120, wxALIGN_LEFT, colFlags);
 	// FileID (== file hash) was dropped — the hash is on the details modal. The
 	// three new columns reuse existing translations ("Speed", "Shared since",
 	// "Last upload"); Directory Path stays but moves to the end.
-	AppendTextColumn(_("Speed"), COLUMN_SHARED_SPEED, wxDATAVIEW_CELL_INERT, 90, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(
-		_("Shared since"), COLUMN_SHARED_SINCE, wxDATAVIEW_CELL_INERT, 130, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(
-		_("Last upload"), COLUMN_SHARED_LASTUP, wxDATAVIEW_CELL_INERT, 130, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(
-		_("Directory Path"), COLUMN_SHARED_PATH, wxDATAVIEW_CELL_INERT, 430, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Speed"), COLUMN_SHARED_SPEED, "U", 90, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Shared since"), COLUMN_SHARED_SINCE, "H", 130, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Last upload"), COLUMN_SHARED_LASTUP, "L", 130, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Directory Path"), COLUMN_SHARED_PATH, "D", 430, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_SHARED_SPACER);
 
 	AssociateVirtualModel();
-
-	m_columnStore.RegisterColumn(COLUMN_SHARED_NAME, 400, "N");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_RATING, 80, "G");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_SIZE, 100, "Z");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_TYPE, 90, "Y");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_PRIO, 70, "p");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_REQ, 80, "Q");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_AREQ, 80, "A");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_TRA, 120, "T");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_RTIO, 80, "R");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_PART, 120, "P");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_CMPL, 120, "C");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_SPEED, 90, "U");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_SINCE, 130, "H");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_LASTUP, 130, "L");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_PATH, 430, "D");
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it
 	// when the config has something saved.
