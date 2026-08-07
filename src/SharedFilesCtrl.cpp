@@ -485,7 +485,7 @@ void CSharedFilesCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillS
 		spans.push_back({ end + 1, file->GetFileSize() - 1, CMuleColour(255, 0, 0) });
 	}
 
-	out = CBarFillSpec(file->GetFileSize(), std::move(spans));
+	out = CBarFillSpec(item, file->GetFileSize(), std::move(spans));
 }
 
 bool CSharedFilesCtrl::AltSortAllowed(unsigned column) const

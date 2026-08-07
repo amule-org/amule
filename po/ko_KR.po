@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 17:11+0200\n"
+"POT-Creation-Date: 2026-08-07 21:37+0200\n"
 "PO-Revision-Date: 2026-08-07 10:16+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -1308,7 +1308,7 @@ msgstr "사용자이름"
 msgid "File Name"
 msgstr "파일 이름"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
 msgid "Rating"
 msgstr "등급"
 
@@ -1588,32 +1588,15 @@ msgstr "최종 완료"
 msgid "Last Reception"
 msgstr "최종 받음"
 
-#: src/DownloadListCtrl.cpp
-#, fuzzy
-msgid "Are you sure that you wish to delete the selected file?"
-msgstr "선택된파일을 지우시겠습니까?"
-
-#: src/DownloadListCtrl.cpp
-#, fuzzy
-msgid "Are you sure that you wish to delete the selected files?"
-msgstr "선택된파일을 지우시겠습니까?"
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Auto"
+msgstr "자동"
 
 #: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 #: src/ServerListCtrl.cpp src/TransferWnd.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "취소"
-
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, c-format
-msgid ""
-"Feedback from: %s (%s)\n"
-"\n"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-msgid "Auto"
-msgstr "자동"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 msgid "&Stop"
@@ -1686,6 +1669,23 @@ msgstr "분류로 할당"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "파일 열기(&O)"
+
+#: src/DownloadListCtrl.cpp
+#, fuzzy
+msgid "Are you sure that you wish to delete the selected file?"
+msgstr "선택된파일을 지우시겠습니까?"
+
+#: src/DownloadListCtrl.cpp
+#, fuzzy
+msgid "Are you sure that you wish to delete the selected files?"
+msgstr "선택된파일을 지우시겠습니까?"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid ""
+"Feedback from: %s (%s)\n"
+"\n"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 17:11+0200\n"
+"POT-Creation-Date: 2026-08-07 21:37+0200\n"
 "PO-Revision-Date: 2026-08-07 10:19+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -1302,7 +1302,7 @@ msgstr "Utilizator"
 msgid "File Name"
 msgstr "Denumire fișier"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
 msgid "Rating"
 msgstr "Evaluare"
 
@@ -1585,32 +1585,15 @@ msgstr "Văzut complet ultima dată"
 msgid "Last Reception"
 msgstr "Ultima recepție"
 
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected file?"
-msgstr "Sigur doriți să ștergeți fișierul selectat?"
-
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected files?"
-msgstr "Sigur doriți să ștergeți fișierele selectate?"
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Auto"
+msgstr "Automat"
 
 #: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 #: src/ServerListCtrl.cpp src/TransferWnd.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Anulare"
-
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, c-format
-msgid ""
-"Feedback from: %s (%s)\n"
-"\n"
-msgstr ""
-"Feedback de la: %s (%s)\n"
-"\n"
-
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-msgid "Auto"
-msgstr "Automat"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 msgid "&Stop"
@@ -1683,6 +1666,23 @@ msgstr "Atribuit la categoria"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "&Deshide fișierul"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected file?"
+msgstr "Sigur doriți să ștergeți fișierul selectat?"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected files?"
+msgstr "Sigur doriți să ștergeți fișierele selectate?"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid ""
+"Feedback from: %s (%s)\n"
+"\n"
+msgstr ""
+"Feedback de la: %s (%s)\n"
+"\n"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"

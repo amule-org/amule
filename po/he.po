@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 17:11+0200\n"
+"POT-Creation-Date: 2026-08-07 21:37+0200\n"
 "PO-Revision-Date: 2026-08-07 10:14+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -1290,7 +1290,7 @@ msgstr "שם משתמש"
 msgid "File Name"
 msgstr "שם קובץ"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
 msgid "Rating"
 msgstr "דרוג"
 
@@ -1571,30 +1571,15 @@ msgstr "פעם אחרונה שנראה שלם"
 msgid "Last Reception"
 msgstr "פעם אחרונה שנתקבל"
 
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected file?"
-msgstr "האם אתה בטוח שברצונך למחוק את הקובץ שנבחר?"
-
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected files?"
-msgstr "האם אתה בטוח שברצונל ךמחוק את הקבצים שנבחרו?"
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Auto"
+msgstr "אוטמטי"
 
 #: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 #: src/ServerListCtrl.cpp src/TransferWnd.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "ביטול"
-
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, c-format
-msgid ""
-"Feedback from: %s (%s)\n"
-"\n"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-msgid "Auto"
-msgstr "אוטמטי"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 msgid "&Stop"
@@ -1667,6 +1652,21 @@ msgstr "ייחס לקטיגוריה"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "&תפתח את הקובץ"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected file?"
+msgstr "האם אתה בטוח שברצונך למחוק את הקובץ שנבחר?"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected files?"
+msgstr "האם אתה בטוח שברצונל ךמחוק את הקבצים שנבחרו?"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid ""
+"Feedback from: %s (%s)\n"
+"\n"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"

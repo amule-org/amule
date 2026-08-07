@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 17:11+0200\n"
+"POT-Creation-Date: 2026-08-07 21:37+0200\n"
 "PO-Revision-Date: 2026-08-07 10:22+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -1304,7 +1304,7 @@ msgstr "Ім'я користувача"
 msgid "File Name"
 msgstr "Назва файлу"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
 msgid "Rating"
 msgstr "Рейтинг"
 
@@ -1591,32 +1591,15 @@ msgstr "Востаннє повний"
 msgid "Last Reception"
 msgstr "Останнє отримання"
 
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected file?"
-msgstr "Ви впевнені, що хочете видалити вибраний файл?"
-
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected files?"
-msgstr "Ви впевнені, що хочете видалити вибрані файли?"
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Auto"
+msgstr "Автоматично"
 
 #: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 #: src/ServerListCtrl.cpp src/TransferWnd.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Скасувати"
-
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, c-format
-msgid ""
-"Feedback from: %s (%s)\n"
-"\n"
-msgstr ""
-"Відгук від: %s (%s)\n"
-"\n"
-
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-msgid "Auto"
-msgstr "Автоматично"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 msgid "&Stop"
@@ -1689,6 +1672,23 @@ msgstr "Призначити категорію"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "Відкрити файл"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected file?"
+msgstr "Ви впевнені, що хочете видалити вибраний файл?"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected files?"
+msgstr "Ви впевнені, що хочете видалити вибрані файли?"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid ""
+"Feedback from: %s (%s)\n"
+"\n"
+msgstr ""
+"Відгук від: %s (%s)\n"
+"\n"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"

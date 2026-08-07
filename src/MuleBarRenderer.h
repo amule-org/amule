@@ -65,12 +65,23 @@ class CBarFillSpec : public wxObject
 {
 public:
 	CBarFillSpec() = default;
-	CBarFillSpec(uint64 fileSize, std::vector<CBarFillSpan> spans)
-	: m_fileSize(fileSize)
+	CBarFillSpec(wxUIntPtr identity, uint64 fileSize, std::vector<CBarFillSpan> spans)
+	: m_identity(identity)
+	, m_fileSize(fileSize)
 	, m_spans(std::move(spans))
 	{
 	}
 
+	/**
+	 * The row's own item-data pointer, carried through only so a renderer
+	 * subclass can cast it back to its domain type for extra per-list
+	 * drawing (e.g. CDownloadBarRenderer -> CPartFile*). Safe to dereference
+	 * only synchronously inside Render(): GetValueByRow() is the sole
+	 * producer of a CBarFillSpec and only runs for rows currently in the
+	 * model, so liveness holds for that call -- this is not a cache key and
+	 * must never be stored past one Render() call.
+	 */
+	wxUIntPtr GetIdentity() const { return m_identity; }
 	uint64 GetFileSize() const { return m_fileSize; }
 	const std::vector<CBarFillSpan> &GetSpans() const { return m_spans; }
 
@@ -80,6 +91,7 @@ public:
 	}
 
 private:
+	wxUIntPtr m_identity = 0;
 	uint64 m_fileSize = 0;
 	std::vector<CBarFillSpan> m_spans;
 
@@ -124,6 +136,30 @@ public:
 
 	bool Render(wxRect cell, wxDC *dc, int state) override;
 	wxSize GetSize() const override;
+
+protected:
+	//! For a subclass that draws more than the chunk bar (e.g.
+	//! CDownloadBarRenderer's completed-strip and percent text) and needs
+	//! back the data SetValue() already unpacked.
+	const CBarFillSpec &GetSpec() const { return m_spec; }
+
+	/**
+	 * The rect CBarShader is actually drawn into for a given cell -- inset by
+	 * one pixel a side in round (non-flat) mode, to leave room for the black
+	 * border. A subclass overlay (e.g. a completed-progress strip) must draw
+	 * into this same rect, not the raw cell, or it will not line up with the
+	 * bar underneath it.
+	 */
+	static wxRect InsetForBar(wxRect cell, bool bFlat)
+	{
+		if (!bFlat) {
+			cell.x++;
+			cell.y++;
+			cell.width -= 2;
+			cell.height -= 2;
+		}
+		return cell;
+	}
 
 private:
 	CBarFillSpec m_spec;

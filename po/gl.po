@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 17:11+0200\n"
+"POT-Creation-Date: 2026-08-07 21:37+0200\n"
 "PO-Revision-Date: 2026-08-07 10:13+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -1319,7 +1319,7 @@ msgstr "Nome de usuario"
 msgid "File Name"
 msgstr "Nome do ficheiro"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
 msgid "Rating"
 msgstr "Valoración"
 
@@ -1600,32 +1600,15 @@ msgstr "Última vez que se vira completo"
 msgid "Last Reception"
 msgstr "Última recepción"
 
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected file?"
-msgstr "Seguro que quere borrar o ficheiro seleccionado?"
-
-#: src/DownloadListCtrl.cpp
-msgid "Are you sure that you wish to delete the selected files?"
-msgstr "Seguro que quere borrar os ficheiros seleccionados?"
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Auto"
+msgstr "Automático"
 
 #: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 #: src/ServerListCtrl.cpp src/TransferWnd.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Cancelar"
-
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, c-format
-msgid ""
-"Feedback from: %s (%s)\n"
-"\n"
-msgstr ""
-"Comentarios de : %s (%s)\n"
-"\n"
-
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-msgid "Auto"
-msgstr "Automático"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 msgid "&Stop"
@@ -1698,6 +1681,23 @@ msgstr "Asignar á categoría"
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "Abrir o ficheir&o"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected file?"
+msgstr "Seguro que quere borrar o ficheiro seleccionado?"
+
+#: src/DownloadListCtrl.cpp
+msgid "Are you sure that you wish to delete the selected files?"
+msgstr "Seguro que quere borrar os ficheiros seleccionados?"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid ""
+"Feedback from: %s (%s)\n"
+"\n"
+msgstr ""
+"Comentarios de : %s (%s)\n"
+"\n"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"

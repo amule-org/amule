@@ -100,10 +100,11 @@ void CMuleDataViewCtrl::AppendSpacerColumn(unsigned modelColumn)
 #endif
 }
 
-void CMuleDataViewCtrl::AppendBarColumn(const wxString &title, unsigned modelColumn, int width, int flags)
+void CMuleDataViewCtrl::AppendBarColumn(
+	const wxString &title, unsigned modelColumn, int width, int flags, CMuleBarRenderer *renderer)
 {
-	wxDataViewColumn *column =
-		new wxDataViewColumn(title, new CMuleBarRenderer(), modelColumn, width, wxALIGN_LEFT, flags);
+	wxDataViewColumn *column = new wxDataViewColumn(
+		title, renderer ? renderer : new CMuleBarRenderer(), modelColumn, width, wxALIGN_LEFT, flags);
 	AppendColumn(column);
 }
 
@@ -136,10 +137,14 @@ void CMuleDataViewCtrl::AddIconTextColumn(const wxString &label,
 	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
 }
 
-void CMuleDataViewCtrl::AddBarColumn(
-	const wxString &label, unsigned modelColumn, const wxString &key, int width, int flags)
+void CMuleDataViewCtrl::AddBarColumn(const wxString &label,
+	unsigned modelColumn,
+	const wxString &key,
+	int width,
+	int flags,
+	CMuleBarRenderer *renderer)
 {
-	AppendBarColumn(label, modelColumn, width, flags);
+	AppendBarColumn(label, modelColumn, width, flags, renderer);
 	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
 }
 
