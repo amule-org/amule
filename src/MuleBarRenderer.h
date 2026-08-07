@@ -26,6 +26,8 @@
 #define MULEBARRENDERER_H
 
 #include <wx/dataview.h>
+#include <wx/variant.h> // Needed for wxDECLARE_VARIANT_OBJECT -- not reliably pulled in
+                         // transitively by <wx/dataview.h> across wx versions/ports
 
 #include "BarShader.h"  // Needed for CBarShader
 #include "MuleColour.h" // Needed for CMuleColour
