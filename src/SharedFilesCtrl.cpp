@@ -90,7 +90,7 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 , m_batchUpdate(false)
 , m_shownSize(0)
 {
-	m_menu = NULL;
+	m_menu = nullptr;
 
 	// The name column carries the rating/comment smiley, so it is icon+text;
 	// Obtained Parts is the availability bar; the rest are plain text.
@@ -186,7 +186,7 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	// watcher can mutate the list while the menu is open.
 	m_menuItem = selected.front();
 
-	if (m_menu == NULL) {
+	if (m_menu == nullptr) {
 		m_menu = new wxMenu(_("Shared Files"));
 		wxMenu *prioMenu = new wxMenu();
 		prioMenu->AppendCheckItem(MP_PRIOVERYLOW, _("Very low"));
@@ -276,7 +276,7 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 
 		delete m_menu;
 
-		m_menu = NULL;
+		m_menu = nullptr;
 	}
 }
 
@@ -391,8 +391,8 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		       CastItoXBytes(file->statistic.GetAllTimeTransferred()) + ")";
 
 	case COLUMN_SHARED_RTIO:
-		return CFormat("%.2f") %
-		       ((double)file->statistic.GetAllTimeTransferred() / file->GetFileSize());
+		return CFormat("%.2f") % (static_cast<double>(file->statistic.GetAllTimeTransferred()) /
+						 static_cast<double>(file->GetFileSize()));
 
 	case COLUMN_SHARED_CMPL:
 		if (file->m_nCompleteSourcesCountLo == 0) {
@@ -911,8 +911,10 @@ int CSharedFilesCtrl::CompareItemData(
 
 	// Sort by Share Ratio. Ascending.
 	case COLUMN_SHARED_RTIO:
-		return mod * CmpAny((double)file1->statistic.GetAllTimeTransferred() / file1->GetFileSize(),
-				     (double)file2->statistic.GetAllTimeTransferred() / file2->GetFileSize());
+		return mod * CmpAny(static_cast<double>(file1->statistic.GetAllTimeTransferred()) /
+					     static_cast<double>(file1->GetFileSize()),
+				     static_cast<double>(file2->statistic.GetAllTimeTransferred()) /
+					     static_cast<double>(file2->GetFileSize()));
 
 	// Complete sources asc
 	case COLUMN_SHARED_CMPL:

@@ -27,7 +27,7 @@
 
 #include <wx/dataview.h>
 #include <wx/variant.h> // Needed for wxDECLARE_VARIANT_OBJECT -- not reliably pulled in
-                         // transitively by <wx/dataview.h> across wx versions/ports
+			// transitively by <wx/dataview.h> across wx versions/ports
 
 #include "BarShader.h"  // Needed for CBarShader
 #include "MuleColour.h" // Needed for CMuleColour
@@ -79,14 +79,24 @@ public:
 		return m_fileSize == other.m_fileSize && m_spans == other.m_spans;
 	}
 
-	wxDECLARE_VARIANT_OBJECT(CBarFillSpec);
-
 private:
 	uint64 m_fileSize = 0;
 	std::vector<CBarFillSpan> m_spans;
 
 	wxDECLARE_DYNAMIC_CLASS(CBarFillSpec);
 };
+
+// Declared at namespace scope with the non-"wx"-prefixed macro, not the
+// in-class wxDECLARE_VARIANT_OBJECT() used for e.g. wxDataViewIconText:
+// wxWidgets 3.2 (the CI's Linux package) only has
+// DECLARE_VARIANT_OBJECT/IMPLEMENT_VARIANT_OBJECT, whose expansion is a pair
+// of free-function declarations, not friend declarations -- placing them
+// inside the class body compiles as ill-formed member operators on 3.2.
+// Neither operator touches CBarFillSpec's private members, so free
+// functions need no special access and this works on every wx version.
+// Confirmed by a build failure against 3.2 that a green build against
+// Homebrew's wx 3.3.3 locally didn't catch.
+DECLARE_VARIANT_OBJECT(CBarFillSpec)
 
 /**
  * Renders a CBarShader chunk bar in a wxDataViewCtrl cell.

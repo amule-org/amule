@@ -27,7 +27,9 @@
 #include "Preferences.h" // Needed for thePrefs::UseFlatBar(), CPreferences::Get3DDepth()
 
 wxIMPLEMENT_DYNAMIC_CLASS(CBarFillSpec, wxObject);
-wxIMPLEMENT_VARIANT_OBJECT(CBarFillSpec);
+// Non-"wx"-prefixed spelling -- see the comment on the DECLARE_VARIANT_OBJECT
+// use in MuleBarRenderer.h.
+IMPLEMENT_VARIANT_OBJECT(CBarFillSpec)
 
 CMuleBarRenderer::CMuleBarRenderer()
 : wxDataViewCustomRenderer("CBarFillSpec", wxDATAVIEW_CELL_INERT, wxALIGN_LEFT)
