@@ -28,13 +28,15 @@
 
 #include <wx/dialog.h>
 #include <wx/event.h>
-#include <wx/listctrl.h>
 #include <wx/timer.h>
 
+#include <map>
 #include <vector>
 
 class CPartFile;
 class CKnownFile;
+class SourcenameItem;
+class wxDataViewEvent;
 
 // CFileDetailDialog dialog
 
@@ -70,6 +72,12 @@ private:
 	wxTimer m_timer;
 	bool m_filenameChanged;
 
+	//! Source-name rows for the currently displayed partfile, keyed by name
+	//! so FillSourcenameList() can find-or-create by identity across ticks
+	//! instead of searching the list widget. Owns the SourcenameItem objects
+	//! handed to CFileDetailListCtrl as item data.
+	std::map<wxString, SourcenameItem *> m_sourcenames;
+
 	void OnClosewnd(wxCommandEvent &evt);
 	void FillSourcenameList();
 	void setEnableForApplyButton();
@@ -79,7 +87,7 @@ private:
 	void OnBnClickedButtonStrip(wxCommandEvent &evt);
 	void OnBnClickedShowComment(wxCommandEvent &evt);
 	void OnBnClickedTakeOver(wxCommandEvent &evt);
-	void OnListClickedTakeOver(wxListEvent &evt);
+	void OnListClickedTakeOver(wxDataViewEvent &evt);
 	void OnTextFileNameChange(wxCommandEvent &evt);
 	void OnBnClickedOk(wxCommandEvent &evt);
 	void OnBnClickedApply(wxCommandEvent &evt);
