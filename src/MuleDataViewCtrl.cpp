@@ -111,9 +111,10 @@ void CMuleDataViewCtrl::AddTextColumn(const wxString &label,
 	const wxString &key,
 	int width,
 	wxAlignment align,
-	int flags)
+	int flags,
+	wxDataViewCellMode mode)
 {
-	AppendTextColumn(label, modelColumn, wxDATAVIEW_CELL_INERT, width, align, flags);
+	AppendTextColumn(label, modelColumn, mode, width, align, flags);
 	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
 }
 
@@ -122,9 +123,10 @@ void CMuleDataViewCtrl::AddIconTextColumn(const wxString &label,
 	const wxString &key,
 	int width,
 	wxAlignment align,
-	int flags)
+	int flags,
+	wxDataViewCellMode mode)
 {
-	AppendIconTextColumn(label, modelColumn, wxDATAVIEW_CELL_INERT, width, align, flags);
+	AppendIconTextColumn(label, modelColumn, mode, width, align, flags);
 	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
 }
 

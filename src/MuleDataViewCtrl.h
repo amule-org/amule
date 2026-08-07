@@ -220,6 +220,13 @@ protected:
 	 * format, so changing one resets that column's saved width and forgets its
 	 * sort.
 	 *
+	 * @a mode is last, rather than in wx's position ahead of the width, because
+	 * width has no default and a parameter before it could not have one either
+	 * -- every caller would have to spell out INERT. Every column is inert
+	 * today; the parameter exists so that an editable one later does not have
+	 * to drop back to Append* plus a hand-written RegisterColumn(), which is
+	 * the duplication this exists to remove.
+	 *
 	 * Named Add* rather than overloading wx's Append*: an overload with a
 	 * different signature would still bind to the wx method wherever a call
 	 * was missed, compiling cleanly and persisting nothing. A distinct name
@@ -231,7 +238,8 @@ protected:
 		const wxString &key,
 		int width,
 		wxAlignment align = wxALIGN_LEFT,
-		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE,
+		wxDataViewCellMode mode = wxDATAVIEW_CELL_INERT);
 
 	/// AddTextColumn() for a column whose cells carry an icon beside the text.
 	void AddIconTextColumn(const wxString &label,
@@ -239,7 +247,8 @@ protected:
 		const wxString &key,
 		int width,
 		wxAlignment align = wxALIGN_LEFT,
-		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE,
+		wxDataViewCellMode mode = wxDATAVIEW_CELL_INERT);
 
 	/// AddTextColumn() for a CMuleBarRenderer column; see AppendBarColumn().
 	void AddBarColumn(const wxString &label,
