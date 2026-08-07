@@ -106,7 +106,14 @@ int CFileDetailListCtrl::CompareItemData(
 
 bool CFileDetailListCtrl::IsLiveSortColumn() const
 {
-	return true;
+	// Only the source count moves on its own; a row's name is the key it was
+	// created under and never changes. Answering "yes" for the name column
+	// would schedule a re-sort on every refresh tick that could not reorder
+	// anything. Same shape as CServerListCtrl.
+	if (m_sort_orders.empty()) {
+		return false;
+	}
+	return static_cast<int>(m_sort_orders.front().first) == COLUMN_FILEDETAIL_SOURCES;
 }
 
 void CFileDetailListCtrl::OnSelectionChanged(wxDataViewEvent &event)
