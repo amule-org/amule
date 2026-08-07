@@ -103,7 +103,7 @@ private:
 		if (showStrip && barRect.GetWidth() > 0) {
 			const int width = static_cast<int>((static_cast<double>(barRect.GetWidth()) /
 								   static_cast<double>(file->GetFileSize())) *
-							   file->GetCompletedSize());
+							   static_cast<double>(file->GetCompletedSize()));
 			if (bFlat) {
 				dc->SetPen(*wxTRANSPARENT_PEN);
 				dc->SetBrush(crFlatProgress.GetBrush());
@@ -121,9 +121,9 @@ private:
 			return;
 		}
 		const uint16 hashingProgress = file->GetHashingProgress();
-		double percent = hashingProgress == 0
-					 ? file->GetPercentCompleted()
-					 : 100.0 * hashingProgress * PARTSIZE / file->GetFileSize();
+		double percent = hashingProgress == 0 ? file->GetPercentCompleted()
+						      : 100.0 * hashingProgress * PARTSIZE /
+								static_cast<double>(file->GetFileSize());
 		if (file->IsCompleted()) {
 			percent = 100.0;
 		} else if (percent > 99.9) {
@@ -234,7 +234,7 @@ wxString CDownloadListCtrl::GetRowLabel(const wxDataViewItem &item) const
 	return GetItemColumnText(data, COLUMN_DL_NAME);
 }
 
-CDownloadListCtrl::~CDownloadListCtrl() {}
+CDownloadListCtrl::~CDownloadListCtrl() = default;
 
 void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 {
@@ -478,7 +478,8 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 			if (i == 0) {
 				cats->Append(MP_ASSIGNCAT, _("unassign"));
 			} else {
-				cats->Append(MP_ASSIGNCAT + i, theApp->glob_prefs->GetCategory(i)->title);
+				cats->Append(MP_ASSIGNCAT + static_cast<int>(i),
+					theApp->glob_prefs->GetCategory(i)->title);
 			}
 		}
 	}
