@@ -96,6 +96,15 @@ CFileDetailDialog::~CFileDetailDialog()
 {
 	OpenInstances().erase(this);
 	m_timer.Stop();
+	// Drop the rows before freeing what they point at. The list control is a
+	// child window and so outlives this body, and the base states the rule
+	// plainly: it has to be told before the caller frees the item data.
+	// Nothing can currently paint or sort in between -- both call sites are
+	// stack temporaries, so destruction is synchronous -- but that is a
+	// property of wx's teardown rather than something this code should rest on.
+	if (CFileDetailListCtrl *list = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl)) {
+		list->ClearSources();
+	}
 	for (const auto &entry : m_sourcenames) {
 		delete entry.second;
 	}
@@ -310,11 +319,13 @@ void CFileDetailDialog::FillSourcenameList()
 	// source accessors below.
 	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
 	if (!part) {
+		// Rows first, then the objects they point at -- same rule as the
+		// destructor and as the prune loop below.
+		pmyListCtrl->ClearSources();
 		for (const auto &entry : m_sourcenames) {
 			delete entry.second;
 		}
 		m_sourcenames.clear();
-		pmyListCtrl->ClearSources();
 		return;
 	}
 
@@ -322,6 +333,7 @@ void CFileDetailDialog::FillSourcenameList()
 	for (const auto &entry : m_sourcenames) {
 		entry.second->count = 0;
 	}
+	bool inserted = false;
 
 	// update
 #ifdef CLIENT_GUI
@@ -333,6 +345,7 @@ void CFileDetailDialog::FillSourcenameList()
 			SourcenameItem *item = new SourcenameItem(cur_src.name, cur_src.count);
 			m_sourcenames[cur_src.name] = item;
 			pmyListCtrl->AddSource(item);
+			inserted = true;
 		} else {
 			found->second->count = cur_src.count;
 		}
@@ -351,6 +364,7 @@ void CFileDetailDialog::FillSourcenameList()
 			SourcenameItem *item = new SourcenameItem(cur_src.GetClientFilename(), 1);
 			m_sourcenames[cur_src.GetClientFilename()] = item;
 			pmyListCtrl->AddSource(item);
+			inserted = true;
 		} else {
 			found->second->count++;
 		}
@@ -367,6 +381,21 @@ void CFileDetailDialog::FillSourcenameList()
 			pmyListCtrl->RefreshSource(it2->second);
 			++it2;
 		}
+	}
+
+	// Counts are zeroed above and then rewritten in place, so while this runs
+	// the list is not ordered by the column it is sorted on -- and AddSource()
+	// places a new row with a binary search, which needs that ordering to
+	// hold. So an insertion leaves rows in arbitrary positions and has to be
+	// repaired here, exactly as the pre-port code did.
+	//
+	// Only on insertion, though. A count that merely changed is what the
+	// live-sort preference governs: RefreshSource() re-sorts when it is on,
+	// and when it is off the row is meant to stay where it is rather than move
+	// under the user. Sorting unconditionally would quietly override that
+	// setting for this list.
+	if (inserted) {
+		pmyListCtrl->SortList();
 	}
 	// no need to call Layout() here, it's called in UpdateData()
 }
