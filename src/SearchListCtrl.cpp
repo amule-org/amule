@@ -243,7 +243,12 @@ bool CSearchListCtrl::IsFiltered(const CSearchFile *file) const
 		result = m_filter.Matches(file->GetFileName().GetPrintable());
 		result = ((result && !m_invert) || (!result && m_invert));
 		if (result && m_filterKnown) {
-			result = file->GetDownloadStatus() == CSearchFile::NEW;
+			// Still a live status test, so results that were already known
+			// stay hidden -- but never for the ones the user just queued
+			// from this list, which would otherwise disappear under the
+			// click that queued them (see m_userQueued).
+			const bool queuedHere = m_userQueued.count(file->GetFileHash()) != 0;
+			result = queuedHere || file->GetDownloadStatus() == CSearchFile::NEW;
 		}
 	}
 
@@ -285,6 +290,8 @@ void CSearchListCtrl::UpdateResult(CSearchFile *toupdate)
 void CSearchListCtrl::ShowResults(wxUIntPtr ResultsID)
 {
 	m_nResultsID = ResultsID;
+	// Different result set entirely; nothing kept for the old one applies.
+	m_userQueued.clear();
 	m_model->NotifyFilterChanged(); // full reset: new search-id, entirely different result set
 }
 
@@ -294,6 +301,10 @@ void CSearchListCtrl::SetFilter(const wxString &regExp, bool invert, bool filter
 	m_filter.Compile(m_filterText, wxRE_DEFAULT | wxRE_ICASE);
 	m_filterKnown = filterKnown;
 	m_invert = invert;
+	// Re-applying the filter is the point at which the user asked to see the
+	// list filtered afresh, so the rows held over from earlier downloads
+	// collapse away here rather than lingering for the rest of the session.
+	m_userQueued.clear();
 
 	if (m_filterEnabled) {
 		m_model->NotifyFilterChanged();
@@ -832,6 +843,11 @@ void CSearchListCtrl::DownloadSelected(int category)
 	GetSelections(selections);
 	for (const wxDataViewItem &item : selections) {
 		CSearchFile *file = CSearchListModel::ToFile(item);
+		// Exempt from "Hide Known Files" before queueing, so the row
+		// survives the status change this is about to cause. Results are
+		// only grouped when their hashes match (CSearchList::AddResult), so
+		// the one insert covers a group's variants along with its parent.
+		m_userQueued.insert(file->GetFileHash());
 		CoreNotify_Search_Add_Download(file, category);
 	}
 
