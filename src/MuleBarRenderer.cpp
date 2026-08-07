@@ -60,7 +60,13 @@ wxSize CMuleBarRenderer::GetSize() const
 	if (const wxDataViewColumn *column = GetOwner()) {
 		width = std::max(width, column->GetWidth());
 	}
-	return wxSize(width, GetTextExtent("Xg").GetHeight());
+	// Height is deliberately wxDefaultCoord: wxDataViewCustomRendererBase::
+	// WXCallRender() only applies its vertical alignment -- which shrinks the
+	// rect it hands Render() down to GetSize().y -- when the height is >= 0.
+	// Reporting a concrete height there means a row taller than that (the
+	// generic backend pads rows past the text extent) draws the bar at the top
+	// with a gap under it. Opting out leaves the bar the full cell.
+	return wxSize(width, wxDefaultCoord);
 }
 
 bool CMuleBarRenderer::Render(wxRect cell, wxDC *dc, int WXUNUSED(state))
