@@ -1689,6 +1689,21 @@ CServerListRem::CServerListRem(CRemoteConnect *conn)
 {
 }
 
+void CServerListRem::ProcessUpdate(const CECTag *reply, CECPacket *full_req, int req_type)
+{
+	CRemoteContainer<CServer, uint32, CEC_Server_Tag>::ProcessUpdate(reply, full_req, req_type);
+
+	// Size the columns once the first list has actually arrived -- see
+	// m_columnsFitted. Empty is not "arrived": fitting against no rows would
+	// measure only the headers and then never run again.
+	if (!m_columnsFitted && !m_items.empty() && theApp->amuledlg != nullptr &&
+		theApp->amuledlg->m_serverwnd != nullptr &&
+		theApp->amuledlg->m_serverwnd->serverlistctrl != nullptr) {
+		m_columnsFitted = true;
+		theApp->amuledlg->m_serverwnd->serverlistctrl->FitColumnsToContent();
+	}
+}
+
 void CServerListRem::HandlePacket(const CECPacket *)
 {
 	// There is no packet for the server list, it is part of the general update packet
@@ -1789,6 +1804,8 @@ void CServerListRem::ProcessItemUpdate(const CEC_Server_Tag *tag, CServer *serve
 	}
 #endif
 	tag->GetMaxUsers(&server->maxusers);
+	tag->GetSoftFiles(&server->softfiles);
+	tag->GetHardFiles(&server->hardfiles);
 
 	tag->GetFiles(&server->files);
 	tag->GetUsers(&server->users);

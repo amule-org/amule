@@ -95,6 +95,16 @@ CEC_Server_Tag::CEC_Server_Tag(const CServer *server, EC_DETAIL_LEVEL detail_lev
 		if ((tmpInt = server->GetFiles()) != 0) {
 			AddTag(CECTag(EC_TAG_SERVER_FILES, tmpInt));
 		}
+		// Per-user publishing limits (issue #840). Sent from both server-tag
+		// builders: this detail-level one carries the initial list, the valuemap
+		// one below carries updates, and a tag added to only one of them leaves
+		// the remote GUI's column permanently blank.
+		if ((tmpInt = server->GetSoftFiles()) != 0) {
+			AddTag(CECTag(EC_TAG_SERVER_FILES_SOFT, tmpInt));
+		}
+		if ((tmpInt = server->GetHardFiles()) != 0) {
+			AddTag(CECTag(EC_TAG_SERVER_FILES_HARD, tmpInt));
+		}
 	/* fall through */
 	case EC_DETAIL_CMD:
 		if (!(tmpStr = server->GetListName()).IsEmpty()) {
@@ -127,6 +137,10 @@ CEC_Server_Tag::CEC_Server_Tag(const CServer *server, CValueMap *valuemap)
 	AddTag(EC_TAG_SERVER_USERS, server->GetUsers(), valuemap);
 	AddTag(EC_TAG_SERVER_USERS_MAX, server->GetMaxUsers(), valuemap);
 	AddTag(EC_TAG_SERVER_FILES, server->GetFiles(), valuemap);
+	// Per-user publishing limits the server advertises (issue #840). Zero here
+	// means it has not told us yet, and the GUI renders that as blank.
+	AddTag(EC_TAG_SERVER_FILES_SOFT, server->GetSoftFiles(), valuemap);
+	AddTag(EC_TAG_SERVER_FILES_HARD, server->GetHardFiles(), valuemap);
 #ifdef ENABLE_IP2COUNTRY
 	// Server host country ISO code for the remote GUI (#440).
 	if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {

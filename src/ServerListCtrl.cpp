@@ -94,17 +94,33 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 		_("Description"), COLUMN_SERVER_DESC, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Ping"), COLUMN_SERVER_PING, wxDATAVIEW_CELL_INERT, 25, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Users"), COLUMN_SERVER_USERS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
+	// Beside Users, since the pair is read together: how many are on now, and
+	// how many the server will take.
+	AppendTextColumn(
+		_("Max Users"), COLUMN_SERVER_MAXUSERS, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Files"), COLUMN_SERVER_FILES, wxDATAVIEW_CELL_INERT, 45, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Priority"), COLUMN_SERVER_PRIO, wxDATAVIEW_CELL_INERT, 60, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Failed"), COLUMN_SERVER_FAILS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Static"), COLUMN_SERVER_STATIC, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Version"), COLUMN_SERVER_VERSION, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 
+	// Outside the CLIENT_GUI gate: the wire-flag columns above are diagnostics
+	// the remote GUI has no data for, but these two are streamed over EC like
+	// Users and Files, so amulegui needs them appended as well or they never
+	// appear -- not even in the header's show/hide menu.
+	AppendTextColumn(
+		_("Soft Files"), COLUMN_SERVER_SOFTFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
+	AppendTextColumn(
+		_("Hard Files"), COLUMN_SERVER_HARDFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
+
 #if !defined(CLIENT_GUI)
 	AppendTextColumn(
 		_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 	AppendTextColumn(
 		_("UDP Flags"), COLUMN_SERVER_UDPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
+	// Per-user publishing limits the server advertises: how many of a user's
+	// shared files it will index. Both arrive with the periodic UDP status
+	// reply, the same one that fills Users and Files.
 #endif
 
 	// Absorbs the macOS trailing-column sizing; the model answers any column
@@ -127,6 +143,13 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	m_columnStore.RegisterColumn(COLUMN_SERVER_TCPFLAGS, 80, "t");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_UDPFLAGS, 80, "u");
 #endif
+	// Outside the CLIENT_GUI gate above: the wire-flag columns it guards are
+	// diagnostics the remote GUI has no data for, but these three are streamed
+	// over EC like Users and Files, so amulegui must register them too or the
+	// columns never appear there.
+	m_columnStore.RegisterColumn(COLUMN_SERVER_SOFTFILES, 85, "s");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_HARDFILES, 85, "h");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_MAXUSERS, 85, "m");
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it
 	// when the config has something saved.
@@ -296,6 +319,28 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 			return wxEmptyString;
 		}
 		return CFormat("%u") % server->GetUsers();
+
+	// Zero means "the server never told us", not "the limit is zero" -- these
+	// only arrive once a UDP status reply has come back, so a freshly added or
+	// UDP-silent server has nothing to show. Rendering that as 0 would read as
+	// a real limit of zero, so it stays blank, as Users and Files do.
+	case COLUMN_SERVER_SOFTFILES:
+		if (!server->GetSoftFiles()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetSoftFiles();
+
+	case COLUMN_SERVER_HARDFILES:
+		if (!server->GetHardFiles()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetHardFiles();
+
+	case COLUMN_SERVER_MAXUSERS:
+		if (!server->GetMaxUsers()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetMaxUsers();
 
 	case COLUMN_SERVER_FILES:
 		if (!server->GetFiles()) {
@@ -808,6 +853,12 @@ int CServerListCtrl::CompareItemData(
 	// Sort by user-count
 	case COLUMN_SERVER_USERS:
 		return mode * CmpAny(server1->GetUsers(), server2->GetUsers());
+	case COLUMN_SERVER_SOFTFILES:
+		return mode * CmpAny(server1->GetSoftFiles(), server2->GetSoftFiles());
+	case COLUMN_SERVER_HARDFILES:
+		return mode * CmpAny(server1->GetHardFiles(), server2->GetHardFiles());
+	case COLUMN_SERVER_MAXUSERS:
+		return mode * CmpAny(server1->GetMaxUsers(), server2->GetMaxUsers());
 	// Sort by file-count
 	case COLUMN_SERVER_FILES:
 		return mode * CmpAny(server1->GetFiles(), server2->GetFiles());

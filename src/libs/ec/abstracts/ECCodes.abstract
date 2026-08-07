@@ -333,6 +333,8 @@ EC_TAG_SERVER                             0x0500
 	EC_TAG_SERVER_IP                          0x050C
 	EC_TAG_SERVER_PORT                        0x050D
 	EC_TAG_SERVER_COUNTRY                     0x050E
+	EC_TAG_SERVER_FILES_SOFT                  0x050F
+	EC_TAG_SERVER_FILES_HARD                  0x0510
 
 EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_SOFTWARE                    0x0601

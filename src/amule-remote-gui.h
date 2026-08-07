@@ -445,10 +445,27 @@ class CServerListRem : public CRemoteContainer<CServer, uint32, CEC_Server_Tag>
 {
 	uint32 m_TotalUser, m_TotalFile;
 
+	/**
+	 * The server list has been sized to its contents once.
+	 *
+	 * The core fits its columns when a bulk (re)load finishes, via
+	 * Notify_ServerThaw() from CServerList -- a path the remote GUI never
+	 * takes, since its list arrives over EC instead. Without this the columns
+	 * kept their compiled-in defaults forever in amulegui, and the narrow ones
+	 * (Port and Ping default to 25px) could not fit their own headers.
+	 *
+	 * One-shot on purpose: refitting on every update would undo a width the
+	 * user had dragged, and nothing distinguishes "still default" from "chosen".
+	 */
+	bool m_columnsFitted = false;
+
 	virtual void HandlePacket(const CECPacket *packet);
 
 public:
 	CServerListRem(CRemoteConnect *);
+	// Public because the base declares it so, and the update loop calls it
+	// through a CServerListRem reference. See m_columnsFitted.
+	virtual void ProcessUpdate(const CECTag *reply, CECPacket *full_req, int req_type);
 	void GetUserFileStatus(uint32 &total_user, uint32 &total_file)
 	{
 		total_user = m_TotalUser;

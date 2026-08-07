@@ -284,6 +284,14 @@ public:
 	{
 		return AssignIfExist(EC_TAG_SERVER_USERS_MAX, target);
 	}
+	uint32 GetSoftFiles(uint32 *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_SERVER_FILES_SOFT, target);
+	}
+	uint32 GetHardFiles(uint32 *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_SERVER_FILES_HARD, target);
+	}
 
 	uint32 ID() const { return GetInt(); }
 };
