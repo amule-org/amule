@@ -170,7 +170,7 @@ void CListColumnStore::SaveSettings(const IColumnWidthProvider &widget, const CS
 	cfg->Write("/eMule/TableWidths" + m_name, buffer);
 }
 
-void CListColumnStore::ParseOldConfigEntries(const wxString &sortOrders,
+bool CListColumnStore::ParseOldConfigEntries(const wxString &sortOrders,
 	const wxString &columnWidths,
 	IColumnWidthProvider &widget,
 	const wxString &oldColumnOrder,
@@ -203,6 +203,7 @@ void CListColumnStore::ParseOldConfigEntries(const wxString &sortOrders,
 	}
 
 	// Set column widths
+	bool restoredWidth = false;
 	int counter = 0;
 	wxStringTokenizer tokenizer(columnWidths, ",");
 	while (tokenizer.HasMoreTokens()) {
@@ -210,16 +211,20 @@ void CListColumnStore::ParseOldConfigEntries(const wxString &sortOrders,
 		long width = StrToLong(tokenizer.GetNextToken());
 		if (idx >= 0) {
 			widget.SetColumnWidth(static_cast<int>(idx), static_cast<int>(width));
+			restoredWidth = true;
 		}
 	}
+
+	return restoredWidth;
 }
 
-void CListColumnStore::LoadSettings(
+bool CListColumnStore::LoadSettings(
 	IColumnWidthProvider &widget, const wxString &oldColumnOrder, CSortingList &outSortOrders)
 {
 	outSortOrders.clear();
+	bool restoredWidth = false;
 	if (!HasTableName()) {
-		return;
+		return false;
 	}
 	wxConfigBase *cfg = wxConfigBase::Get();
 
@@ -228,8 +233,7 @@ void CListColumnStore::LoadSettings(
 
 	if (columnWidths.Find(':') == wxNOT_FOUND) {
 		// Old-style config entries...
-		ParseOldConfigEntries(sortOrders, columnWidths, widget, oldColumnOrder, outSortOrders);
-		return;
+		return ParseOldConfigEntries(sortOrders, columnWidths, widget, oldColumnOrder, outSortOrders);
 	}
 
 	// Sort orders are stored in order primary, secondary, ...
@@ -264,6 +268,9 @@ void CListColumnStore::LoadSettings(
 			}
 			m_column_sizes[col] = static_cast<int>(abs(width));
 			widget.SetColumnWidth(col, static_cast<int>((width > 0) ? width : 0));
+			restoredWidth = true;
 		}
 	}
+
+	return restoredWidth;
 }

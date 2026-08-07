@@ -546,6 +546,15 @@ void CServerListCtrl::ShowServerCount()
 
 void CServerListCtrl::FitColumnsToContent()
 {
+	// Only size a profile that has no widths of its own. Both callers -- the
+	// core's bulk-load notification and the remote GUI's first populated update
+	// -- run after LoadColumnSettings() has restored whatever was saved, so
+	// fitting unconditionally would overwrite a width the user had dragged.
+	// Harmless while drags were never persisted; not any more.
+	if (HasPersistedColumnWidths()) {
+		return;
+	}
+
 	// Upper bound for the Description column: descriptions can be very
 	// long (full forum URLs etc.), so cap it rather than let one row blow
 	// the column out. The other columns hold short, bounded values.

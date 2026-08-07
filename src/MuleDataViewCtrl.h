@@ -167,6 +167,17 @@ protected:
 	void LoadColumnSettings();
 	void SaveColumnSettings();
 
+	/**
+	 * True when LoadColumnSettings() restored at least one stored width, i.e.
+	 * this profile has a layout the user has already influenced.
+	 *
+	 * An auto-fit must not run in that case: it would overwrite a width that
+	 * was deliberately dragged. That mattered little while drag-resizes were
+	 * never saved, but they are now, so a fit-on-load would discard the choice
+	 * one launch later.
+	 */
+	bool HasPersistedColumnWidths() const { return m_hasPersistedWidths; }
+
 	//! Keeps the expander on the leftmost visible column.
 	void UpdateExpanderColumn();
 
@@ -219,6 +230,7 @@ protected:
 	CListColumnStore m_columnStore;
 	ColumnWidthAdapter m_widthAdapter;
 	CSortingList m_sort_orders;
+	bool m_hasPersistedWidths = false;
 
 	void OnColumnHeaderClick(wxDataViewEvent &event);
 	void OnColumnHeaderRightClick(wxDataViewEvent &event);

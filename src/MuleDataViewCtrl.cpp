@@ -109,6 +109,19 @@ unsigned CMuleDataViewCtrl::RealColumnCount() const
 
 void CMuleDataViewCtrl::InitColumnState()
 {
+	// Every appended column must sit at the view position matching its model
+	// id. Several things here index by one and are read as the other:
+	// FitColumnsToContent() walks a single index as both, m_columnHidden and
+	// the header menu are keyed by view position, and RegisterColumn() by model
+	// id. They agree only because the two orders have always coincided, so
+	// inserting a column mid-list -- which is what surfaced this -- silently
+	// sizes and hides the wrong ones. Assert rather than document it: the
+	// failure is invisible at runtime and looks like a rendering bug.
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
+		wxASSERT_MSG(GetColumn(i)->GetModelColumn() == i,
+			"column ids must be declared in the order the columns are appended");
+	}
+
 	m_columnHidden.resize(RealColumnCount(), false);
 	m_lastKnownWidths.clear();
 	for (unsigned i = 0; i < RealColumnCount(); ++i) {
@@ -220,7 +233,7 @@ void CMuleDataViewCtrl::LoadColumnSettings()
 	}
 
 	CListColumnStore::CSortingList decoded;
-	m_columnStore.LoadSettings(m_widthAdapter, GetOldColumnOrder(), decoded);
+	m_hasPersistedWidths = m_columnStore.LoadSettings(m_widthAdapter, GetOldColumnOrder(), decoded);
 
 	// Restored widths can leave the default expander column hidden.
 	UpdateExpanderColumn();
