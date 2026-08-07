@@ -105,6 +105,13 @@ private:
 								   static_cast<double>(file->GetFileSize())) *
 							   static_cast<double>(file->GetCompletedSize()));
 			if (bFlat) {
+				// Deliberately no outline: master drew this strip into a fresh
+				// wxMemoryDC, whose default black pen gave it one, but that was
+				// incidental -- nothing set the pen on purpose, so it would
+				// have carried over whatever the list's own DC last used had
+				// this been drawn there instead. Transparent is the
+				// intentional, deterministic choice; wxBLACK_PEN would
+				// reproduce the old look if that turns out to be preferred.
 				dc->SetPen(*wxTRANSPARENT_PEN);
 				dc->SetBrush(crFlatProgress.GetBrush());
 				dc->DrawRectangle(barRect.x, barRect.y, width, 3);
@@ -335,7 +342,9 @@ void CDownloadListCtrl::RemoveFile(CPartFile *file)
 {
 	wxASSERT(file);
 
-	// Ensure that any list-entry is removed.
+	// Order matters: ShowFile() early-returns once `file` is no longer in
+	// m_files, so the erase has to come after it -- swapped, the row would
+	// stay in the model holding a pointer the caller is about to free.
 	ShowFile(file, false);
 	m_files.erase(file);
 }
@@ -733,13 +742,18 @@ void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	UnselectAll();
-	Select(event.GetItem());
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-	if (selected.empty()) {
+	// Read the row straight off the event, the way GetRowLabel() does --
+	// touching the selection here (as an earlier version of this did) would
+	// discard whatever multi-selection the user already had, and firing
+	// EVT_DATAVIEW_SELECTION_CHANGED as a side effect of a double-click would
+	// rebuild the sources panel for no reason.
+	const wxDataViewListModel *model = static_cast<const wxDataViewListModel *>(GetModel());
+	const long row = static_cast<long>(model->GetRow(event.GetItem()));
+	const wxUIntPtr data = ItemAt(row);
+	if (!data) {
 		return;
 	}
-	CPartFile *file = reinterpret_cast<CPartFile *>(selected.front());
+	CPartFile *file = reinterpret_cast<CPartFile *>(data);
 
 	// Double-click is media-only: it is an easy gesture to trigger by
 	// accident, and handing a completed .exe or .desktop to the platform
@@ -755,7 +769,7 @@ void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)
 	if (file->PreviewAvailable() && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
 	} else {
-		ShowFileDetailDialog(RowOfData(selected.front()));
+		ShowFileDetailDialog(row);
 	}
 }
 
