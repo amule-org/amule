@@ -53,21 +53,35 @@ void CListColumnStore::RegisterColumn(int index, int defaultWidth, const wxStrin
 		name.Find(',') == wxNOT_FOUND, "Column name \"" + name + "\" contains invalid characters!");
 
 	// Check for uniqueness of names.
-	for (ColNameList::const_iterator uit = m_column_names.begin(); uit != m_column_names.end(); ++uit) {
-		if (name == uit->name) {
+	for (const ColNameEntry &entry : m_column_names) {
+		if (name == entry.name) {
 			wxFAIL_MSG("Column name \"" + name + "\" is not unique!");
 		}
 	}
+
+	// ... and of indices. Every lookup here (GetColumnName, GetColumnDefaultWidth,
+	// GetColumnIndex) matches on index and returns the first entry that does, so a
+	// second registration of the same index is not an alternative -- it is dead
+	// weight that shadows nothing and reports nothing.
+	for (const ColNameEntry &entry : m_column_names) {
+		if (index == entry.index) {
+			wxFAIL_MSG(wxString::Format(
+				"Column index %d is already registered as \"%s\"!", index, entry.name));
+		}
+	}
 #endif
+	// Kept sorted by index. Entries are NOT renumbered around an insert: index is
+	// the caller's own column id -- a stable #define for the wxDataViewCtrl lists,
+	// the wxListCtrl column position for the legacy ones -- and every lookup above
+	// matches the value the caller passes back in. Shifting stored indices would
+	// break that correspondence, and since a key maps to a column through it, the
+	// on-disk TableWidths*/TableOrdering* entries would start addressing the wrong
+	// columns.
 	ColNameList::iterator it = m_column_names.begin();
 	while (it != m_column_names.end() && it->index < index) {
 		++it;
 	}
 	m_column_names.insert(it, ColNameEntry(index, defaultWidth, name));
-	while (it != m_column_names.end()) {
-		++it;
-		++(it->index);
-	}
 }
 
 const wxString &CListColumnStore::GetColumnName(int index) const
