@@ -94,18 +94,31 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 		_("Description"), COLUMN_SERVER_DESC, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Ping"), COLUMN_SERVER_PING, wxDATAVIEW_CELL_INERT, 25, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Users"), COLUMN_SERVER_USERS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
+	// Beside Users, since the pair is read together: how many are on now, and
+	// how many the server will take.
+	AppendTextColumn(
+		_("Max Users"), COLUMN_SERVER_MAXUSERS, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Files"), COLUMN_SERVER_FILES, wxDATAVIEW_CELL_INERT, 45, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Priority"), COLUMN_SERVER_PRIO, wxDATAVIEW_CELL_INERT, 60, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Failed"), COLUMN_SERVER_FAILS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Static"), COLUMN_SERVER_STATIC, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Version"), COLUMN_SERVER_VERSION, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 
-#if !defined(CLIENT_GUI)
+	AppendTextColumn(
+		_("Soft Files"), COLUMN_SERVER_SOFTFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
+	AppendTextColumn(
+		_("Hard Files"), COLUMN_SERVER_HARDFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
+
+	// Same columns in both binaries: diagnostics, hidden by default in release
+	// builds (below), and the flags are streamed over EC so the remote GUI has
+	// the data behind them.
 	AppendTextColumn(
 		_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 	AppendTextColumn(
 		_("UDP Flags"), COLUMN_SERVER_UDPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
-#endif
+	// Per-user publishing limits the server advertises: how many of a user's
+	// shared files it will index. Both arrive with the periodic UDP status
+	// reply, the same one that fills Users and Files.
 
 	// Absorbs the macOS trailing-column sizing; the model answers any column
 	// past the real ones with an empty value.
@@ -123,16 +136,17 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	m_columnStore.RegisterColumn(COLUMN_SERVER_FAILS, 40, "f");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_STATIC, 40, "S");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_VERSION, 80, "V");
-#if !defined(CLIENT_GUI)
 	m_columnStore.RegisterColumn(COLUMN_SERVER_TCPFLAGS, 80, "t");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_UDPFLAGS, 80, "u");
-#endif
+	m_columnStore.RegisterColumn(COLUMN_SERVER_SOFTFILES, 85, "s");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_HARDFILES, 85, "h");
+	m_columnStore.RegisterColumn(COLUMN_SERVER_MAXUSERS, 85, "m");
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it
 	// when the config has something saved.
 	ApplySorting(COLUMN_SERVER_NAME, 0);
 
-#if !defined(CLIENT_GUI) && !defined(__DEBUG__)
+#ifndef __DEBUG__
 	// Wire-flag columns are diagnostics: listed in the header menu so they
 	// can be switched on, hidden by default. Set before the settings are
 	// loaded, so anything the user saved wins -- the same ordering the old
@@ -297,6 +311,28 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		}
 		return CFormat("%u") % server->GetUsers();
 
+	// Zero means "the server never told us", not "the limit is zero" -- these
+	// only arrive once a UDP status reply has come back, so a freshly added or
+	// UDP-silent server has nothing to show. Rendering that as 0 would read as
+	// a real limit of zero, so it stays blank, as Users and Files do.
+	case COLUMN_SERVER_SOFTFILES:
+		if (!server->GetSoftFiles()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetSoftFiles();
+
+	case COLUMN_SERVER_HARDFILES:
+		if (!server->GetHardFiles()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetHardFiles();
+
+	case COLUMN_SERVER_MAXUSERS:
+		if (!server->GetMaxUsers()) {
+			return wxEmptyString;
+		}
+		return CFormat("%u") % server->GetMaxUsers();
+
 	case COLUMN_SERVER_FILES:
 		if (!server->GetFiles()) {
 			return wxEmptyString;
@@ -324,7 +360,8 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 	case COLUMN_SERVER_VERSION:
 		return server->GetVersion();
 
-#if !defined(CLIENT_GUI)
+	// Rendered in both binaries: the flags are streamed over EC, so the remote
+	// GUI has the same data behind these columns.
 	case COLUMN_SERVER_TCPFLAGS: {
 		wxString flags;
 		if (server->GetTCPFlags() & SRV_TCPFLG_COMPRESSION) {
@@ -379,7 +416,6 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 		}
 		return flags;
 	}
-#endif
 
 	default:
 		return wxEmptyString;
@@ -501,6 +537,15 @@ void CServerListCtrl::ShowServerCount()
 
 void CServerListCtrl::FitColumnsToContent()
 {
+	// Only size a profile that has no widths of its own. Both callers -- the
+	// core's bulk-load notification and the remote GUI's first populated update
+	// -- run after LoadColumnSettings() has restored whatever was saved, so
+	// fitting unconditionally would overwrite a width the user had dragged.
+	// Harmless while drags were never persisted; not any more.
+	if (HasPersistedColumnWidths()) {
+		return;
+	}
+
 	// Upper bound for the Description column: descriptions can be very
 	// long (full forum URLs etc.), so cap it rather than let one row blow
 	// the column out. The other columns hold short, bounded values.
@@ -808,6 +853,12 @@ int CServerListCtrl::CompareItemData(
 	// Sort by user-count
 	case COLUMN_SERVER_USERS:
 		return mode * CmpAny(server1->GetUsers(), server2->GetUsers());
+	case COLUMN_SERVER_SOFTFILES:
+		return mode * CmpAny(server1->GetSoftFiles(), server2->GetSoftFiles());
+	case COLUMN_SERVER_HARDFILES:
+		return mode * CmpAny(server1->GetHardFiles(), server2->GetHardFiles());
+	case COLUMN_SERVER_MAXUSERS:
+		return mode * CmpAny(server1->GetMaxUsers(), server2->GetMaxUsers());
 	// Sort by file-count
 	case COLUMN_SERVER_FILES:
 		return mode * CmpAny(server1->GetFiles(), server2->GetFiles());

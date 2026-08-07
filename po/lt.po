@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 14:23+0200\n"
 "PO-Revision-Date: 2026-08-07 10:16+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -6592,6 +6592,11 @@ msgid "Users"
 msgstr "Naudotojų skaičius"
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Naudotojų skaičius"
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Statiškas"
 
@@ -6599,6 +6604,16 @@ msgstr "Statiškas"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Versija"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Failai"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "Dalinami failai"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"

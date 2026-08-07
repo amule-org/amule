@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 14:23+0200\n"
 "PO-Revision-Date: 2026-08-07 10:17+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -6566,6 +6566,11 @@ msgid "Users"
 msgstr "Brukarar"
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Brukarar"
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Statisk"
 
@@ -6573,6 +6578,16 @@ msgstr "Statisk"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Utgåve"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Filer"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "Delte filer"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"

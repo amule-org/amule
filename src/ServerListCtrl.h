@@ -36,16 +36,29 @@
 #define COLUMN_SERVER_DESC 3
 #define COLUMN_SERVER_PING 4
 #define COLUMN_SERVER_USERS 5
-#define COLUMN_SERVER_FILES 6
-#define COLUMN_SERVER_PRIO 7
-#define COLUMN_SERVER_FAILS 8
-#define COLUMN_SERVER_STATIC 9
-#define COLUMN_SERVER_VERSION 10
-#define COLUMN_SERVER_TCPFLAGS 11
-#define COLUMN_SERVER_UDPFLAGS 12
+#define COLUMN_SERVER_MAXUSERS 6
+#define COLUMN_SERVER_FILES 7
+#define COLUMN_SERVER_PRIO 8
+#define COLUMN_SERVER_FAILS 9
+#define COLUMN_SERVER_STATIC 10
+#define COLUMN_SERVER_VERSION 11
+// These come before the wire-flag columns on purpose: the flag columns are not
+// appended at all in the remote GUI (see the CLIENT_GUI gate in
+// ServerListCtrl.cpp), and the model treats any id at or above
+// RealColumnCount() -- the count of *appended* columns -- as out of range and
+// renders it blank.
+//
+// The ids must also stay in the same order the columns are appended in.
+// FitColumnsToContent() walks one index and uses it as both a model column and
+// a view position, so a mismatch sizes each column against another one's
+// content -- which reads as columns collapsing to nothing.
+#define COLUMN_SERVER_SOFTFILES 12
+#define COLUMN_SERVER_HARDFILES 13
+#define COLUMN_SERVER_TCPFLAGS 14
+#define COLUMN_SERVER_UDPFLAGS 15
 //! Always empty. Absorbs the macOS trailing-column sizing; see
 //! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_SERVER_SPACER 13
+#define COLUMN_SERVER_SPACER 16
 
 class CServer;
 class CServerList;

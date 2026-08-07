@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 14:23+0200\n"
 "PO-Revision-Date: 2026-08-07 10:12+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -6534,6 +6534,11 @@ msgid "Users"
 msgstr "Käyttäjiä"
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Käyttäjiä"
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Kiinteä"
 
@@ -6541,6 +6546,16 @@ msgstr "Kiinteä"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Versio"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Tiedostot"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "Jaetut tiedostot"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"

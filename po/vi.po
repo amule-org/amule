@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 14:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -6351,12 +6351,24 @@ msgid "Users"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
+msgid "Max Users"
+msgstr ""
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr ""
 
 #: src/ServerListCtrl.cpp src/SharedFilePeersListCtrl.cpp
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
+msgstr ""
+
+#: src/ServerListCtrl.cpp
+msgid "Soft Files"
+msgstr ""
+
+#: src/ServerListCtrl.cpp
+msgid "Hard Files"
 msgstr ""
 
 #: src/ServerListCtrl.cpp

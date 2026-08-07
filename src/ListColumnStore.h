@@ -166,12 +166,18 @@ public:
 	 * CMuleListCtrl::GetOldColumnOrder() provides; empty to skip that
 	 * migration path.
 	 */
-	void LoadSettings(
+	/**
+	 * @return true when at least one stored column width was applied, i.e. this
+	 *         profile has a saved layout. Callers use it to decide whether an
+	 *         auto-fit would be helping a fresh profile or destroying a width
+	 *         the user chose.
+	 */
+	bool LoadSettings(
 		IColumnWidthProvider &widget, const wxString &oldColumnOrder, CSortingList &outSortOrders);
 
 private:
 	int GetNewColumnIndex(int oldindex, const wxString &oldColumnOrder) const;
-	void ParseOldConfigEntries(const wxString &sortOrders,
+	bool ParseOldConfigEntries(const wxString &sortOrders,
 		const wxString &columnWidths,
 		IColumnWidthProvider &widget,
 		const wxString &oldColumnOrder,

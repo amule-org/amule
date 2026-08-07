@@ -600,6 +600,9 @@ void CSearchListCtrl::OnIdleHook()
 
 void CSearchListCtrl::OnColumnWidthsChanged()
 {
+	// The base persists the new widths; this list additionally mirrors them to
+	// the other open search tabs.
+	CMuleDataViewCtrl::OnColumnWidthsChanged();
 	SyncOtherLists(this);
 }
 

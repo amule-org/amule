@@ -140,7 +140,18 @@ protected:
 	virtual void OnColumnVisibilityChanged() {}
 
 	//! Called from idle when a drag-resize changed one or more widths.
-	virtual void OnColumnWidthsChanged() {}
+	/**
+	 * A drag-resize has been detected (see OnIdle -- wxDataViewCtrl has no
+	 * portable end-of-drag event, so widths are polled).
+	 *
+	 * The default persists them. wxListCtrl had EVT_LIST_COL_END_DRAG to hook,
+	 * and when these lists moved to wxDataViewCtrl the poll replaced it but was
+	 * never wired to the store, so a resized column was only ever saved if the
+	 * user happened to sort or toggle a column afterwards -- SaveColumnSettings'
+	 * only other callers. An override must call the base, or resizing stops
+	 * being remembered for that list.
+	 */
+	virtual void OnColumnWidthsChanged() { SaveColumnSettings(); }
 
 	//! Called after the sort chain changes; the list re-orders its rows here.
 	virtual void OnSortingChanged() {}
@@ -155,6 +166,17 @@ protected:
 
 	void LoadColumnSettings();
 	void SaveColumnSettings();
+
+	/**
+	 * True when LoadColumnSettings() restored at least one stored width, i.e.
+	 * this profile has a layout the user has already influenced.
+	 *
+	 * An auto-fit must not run in that case: it would overwrite a width that
+	 * was deliberately dragged. That mattered little while drag-resizes were
+	 * never saved, but they are now, so a fit-on-load would discard the choice
+	 * one launch later.
+	 */
+	bool HasPersistedColumnWidths() const { return m_hasPersistedWidths; }
 
 	//! Keeps the expander on the leftmost visible column.
 	void UpdateExpanderColumn();
@@ -208,6 +230,7 @@ protected:
 	CListColumnStore m_columnStore;
 	ColumnWidthAdapter m_widthAdapter;
 	CSortingList m_sort_orders;
+	bool m_hasPersistedWidths = false;
 
 	void OnColumnHeaderClick(wxDataViewEvent &event);
 	void OnColumnHeaderRightClick(wxDataViewEvent &event);

@@ -42,7 +42,7 @@ const uint64 kTypeAheadResetMs = 1500;
 wxBEGIN_EVENT_TABLE(CMuleDataViewCtrl, wxDataViewCtrl)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CMuleDataViewCtrl::OnColumnHeaderClick)
 	EVT_DATAVIEW_COLUMN_HEADER_RIGHT_CLICK(wxID_ANY, CMuleDataViewCtrl::OnColumnHeaderRightClick)
-	EVT_MENU_RANGE(MP_LISTCOL_1, MP_LISTCOL_15, CMuleDataViewCtrl::OnColumnMenuSelected)
+	EVT_MENU_RANGE(MP_LISTCOL_1, MP_LISTCOL_20, CMuleDataViewCtrl::OnColumnMenuSelected)
 	EVT_IDLE(CMuleDataViewCtrl::OnIdle)
 	EVT_CHAR(CMuleDataViewCtrl::OnChar)
 	EVT_KEY_DOWN(CMuleDataViewCtrl::OnKeyDown)
@@ -109,6 +109,19 @@ unsigned CMuleDataViewCtrl::RealColumnCount() const
 
 void CMuleDataViewCtrl::InitColumnState()
 {
+	// Every appended column must sit at the view position matching its model
+	// id. Several things here index by one and are read as the other:
+	// FitColumnsToContent() walks a single index as both, m_columnHidden and
+	// the header menu are keyed by view position, and RegisterColumn() by model
+	// id. They agree only because the two orders have always coincided, so
+	// inserting a column mid-list -- which is what surfaced this -- silently
+	// sizes and hides the wrong ones. Assert rather than document it: the
+	// failure is invisible at runtime and looks like a rendering bug.
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
+		wxASSERT_MSG(GetColumn(i)->GetModelColumn() == i,
+			"column ids must be declared in the order the columns are appended");
+	}
+
 	m_columnHidden.resize(RealColumnCount(), false);
 	m_lastKnownWidths.clear();
 	for (unsigned i = 0; i < RealColumnCount(); ++i) {
@@ -220,7 +233,7 @@ void CMuleDataViewCtrl::LoadColumnSettings()
 	}
 
 	CListColumnStore::CSortingList decoded;
-	m_columnStore.LoadSettings(m_widthAdapter, GetOldColumnOrder(), decoded);
+	m_hasPersistedWidths = m_columnStore.LoadSettings(m_widthAdapter, GetOldColumnOrder(), decoded);
 
 	// Restored widths can leave the default expander column hidden.
 	UpdateExpanderColumn();
@@ -308,7 +321,12 @@ void CMuleDataViewCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 	// Show/hide menu, as CMuleListCtrl::OnColumnRClick offered on every
 	// list built on the old base.
 	wxMenu menu;
-	const unsigned columns = std::min<unsigned>(RealColumnCount(), MP_LISTCOL_15 - MP_LISTCOL_1 + 1);
+	// Truncating here hides a column from the menu with no other symptom, so
+	// say so rather than let it pass: the range is meant to cover every list.
+	const unsigned menuSlots = MP_LISTCOL_20 - MP_LISTCOL_1 + 1;
+	wxASSERT_MSG(RealColumnCount() <= menuSlots,
+		"more columns than MP_LISTCOL_* slots -- the extra ones cannot be shown or hidden");
+	const unsigned columns = std::min<unsigned>(RealColumnCount(), menuSlots);
 	for (unsigned i = 0; i < columns; ++i) {
 		menu.AppendCheckItem(static_cast<int>(i) + MP_LISTCOL_1, GetColumn(i)->GetTitle());
 		menu.Check(static_cast<int>(i) + MP_LISTCOL_1, !IsColumnHidden(static_cast<int>(i)));
