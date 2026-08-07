@@ -27,20 +27,55 @@
 
 #include <map>    // Needed for std::multimap
 #include <vector> // Needed for std::vector
-#include <wx/brush.h>
 
-#include "Types.h"               // Needed for uint8
-#include "Constants.h"           // Needed for DownloadItemType
-#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl
-#include "amuleDlg.h"            // Needed for CamuleDlg::DialogType
+#include "Types.h"                   // Needed for uint8
+#include "Constants.h"               // Needed for DownloadItemType
+#include "ClientRef.h"               // Needed for CClientRef (stored by value below)
+#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
+#include "amuleDlg.h"                // Needed for CamuleDlg::DialogType
 
 class CPartFile;
-class CClientRef;
-class wxBitmap;
-class wxRect;
-class wxDC;
+class CMuleBarRenderer;
+class wxMenu;
 
-struct ClientCtrlItem_Struct;
+/**
+ * One row: a client together with the file it is a source/peer of and
+ * whether it is a current or A4AF source. Not just a cache-avoidance
+ * wrapper like the pre-port CDownloadListCtrl's FileCtrlItem_Struct was --
+ * genuinely necessary here, since one client (ECID) can be a source/peer of
+ * more than one file at once, so identity has to be the (client, owner,
+ * type) tuple, not the CClientRef alone. Public (not file-local to
+ * GenericClientListCtrl.cpp) because CSourceBarRenderer, in the leaf's own
+ * .cpp, needs to read it back from a CBarFillSpec identity.
+ */
+struct ClientCtrlItem_Struct
+{
+	ClientCtrlItem_Struct()
+	: m_owner(nullptr)
+	, m_type(UNAVAILABLE_SOURCE)
+	{
+	}
+
+	SourceItemType GetType() const { return m_type; }
+
+	CKnownFile *GetOwner() const { return m_owner; }
+
+	CClientRef &GetSource() { return m_sourceValue; }
+
+	void SetContents(CKnownFile *owner, const CClientRef &source, SourceItemType type)
+	{
+		m_owner = owner;
+		m_sourceValue = source;
+		m_type = type;
+	}
+
+	void SetType(SourceItemType type) { m_type = type; }
+
+private:
+	CKnownFile *m_owner;
+	CClientRef m_sourceValue;
+	SourceItemType m_type;
+};
 
 enum GenericColumnEnum
 {
@@ -82,15 +117,20 @@ typedef std::vector<CKnownFile *> CKnownFileVector;
 
 /**
  * This class is responsible for representing clients in a generic way.
+ *
+ * Rows are addressed by ClientCtrlItem_Struct* identity -- unlike every other
+ * ported list, that wrapper survives the port: a client (ECID) can be a
+ * source/peer of more than one file at once, so each row needs the client
+ * together with its owner file and A4AF/available type, not just the
+ * CClientRef alone. See ClientCtrlItem_Struct in the .cpp.
  */
-
-class CGenericClientListCtrl : public CMuleVirtualListCtrl
+class CGenericClientListCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
 	/**
 	 * Constructor.
 	 *
-	 * @see CMuleListCtrl::CMuleListCtrl for documentation of parameters.
+	 * @see CMuleVirtualDataViewCtrl::CMuleVirtualDataViewCtrl for documentation of parameters.
 	 */
 	CGenericClientListCtrl(const wxString &tablename,
 		wxWindow *parent,
@@ -98,7 +138,6 @@ public:
 		const wxPoint &pos,
 		const wxSize &size,
 		long style,
-		const wxValidator &validator,
 		const wxString &name);
 
 	/**
@@ -174,7 +213,36 @@ public:
 protected:
 	// The columns with their attributes; MUST be defined by the derived class.
 	GenericColumnInfo m_columndata;
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
+
+	/// Text of one cell, pulled on demand for the cells being drawn.
+	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
+
+	/// Per-row/per-column display attributes: the queue-rank-diff and
+	/// filename-mismatch colour cues DrawClientItem used to set on the wxDC.
+	bool GetItemAttr(wxUIntPtr item, unsigned column, wxDataViewItemAttr &attr) const override;
+
+	/// Fill data for the Name column's composite icon+text renderer (see
+	/// CClientNameRenderer) and for a leaf's own bar column.
+	void GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const override;
+
+	/// Single-column comparison for the base's sort chain, after the
+	/// type-precedence pre-check (A4AF sources always last).
+	int CompareItemData(
+		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+
+	/** Live auto-sort: re-order when sorted by a column whose value changes
+	 *  during transfer (speed, progress, up/downloaded, availability, queue
+	 *  rank). Static columns (name, version, filename, ...) don't auto-resort. */
+	bool IsLiveSortColumn() const override;
+
+	/** Pause live auto-sort while the context menu is open. */
+	bool IsMenuOpen() const override { return m_menu != nullptr; }
+
+	//! Renderer for a leaf's own bar column (ColumnUserProgress for Sources,
+	//! ColumnUserAvailable for Peers). Sources overrides this to opt into the
+	//! A4AF-badge-drawing subclass; Peers' plain 2-state bar needs no
+	//! subclass, so the default (nullptr) is a plain CMuleBarRenderer.
+	virtual CMuleBarRenderer *CreateProgressBarRenderer() const { return nullptr; }
 
 private:
 	/**
@@ -191,58 +259,16 @@ private:
 	void ShowSourcesCount(int diff);
 
 	/**
-	 * Overloaded function needed for custom drawing of items.
-	 */
-	virtual void OnDrawItem(
-		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
-
-	/**
-	 * Draws a client item.
-	 */
-	void DrawClientItem(wxDC *dc,
-		int nColumn,
-		const wxRect &rect,
-		ClientCtrlItem_Struct *item,
-		int iTextOffset,
-		int iBitmapOffset,
-		int iBitmapXSize) const;
-
-	/**
-	 * Draws the download status (chunk) bar for a client.
-	 */
-	void DrawSourceStatusBar(const CClientRef &source, wxDC *dc, const wxRect &rect, bool bFlat) const;
-
-	/**
-	 * Draaws the file parts bar for a client.
-	 */
-	void DrawStatusBar(const CClientRef &client, wxDC *dc, const wxRect &rect1) const;
-
-	/**
-	 * @see CMuleListCtrl::GetTTSText
-	 * Just a dummy
-	 */
-	virtual wxString GetTTSText(unsigned) const { return ""; }
-
-	/** Live auto-sort: re-order when sorted by a column whose value changes
-	 *  during transfer (speed, progress, up/downloaded, availability, queue
-	 *  rank). Static columns (name, version, filename, ...) don't auto-resort. */
-	virtual bool IsLiveSortColumn() const;
-
-	/** Pause live auto-sort while the context menu is open. */
-	virtual bool IsMenuOpen() const { return m_menu != nullptr; }
-
-	/**
 	 * Set "show sources" or "show peers" flag in Known File
 	 */
 	virtual void SetShowSources(CKnownFile *, bool) const = 0;
 
 	/**
 	 * Translate the CID to a unique string for saving column sizes
-	 * @see CMuleListCtrl::InsertColumn
 	 */
 	wxString TranslateCIDToName(GenericColumnEnum cid);
 
-	static int Compare(const CClientRef &client1, const CClientRef &client2, long lParamColumnSort);
+	int CompareByCid(GenericColumnEnum cid, const CClientRef &client1, const CClientRef &client2) const;
 
 	// Event-handlers for clients.
 	void OnSwapSource(wxCommandEvent &event);
@@ -253,10 +279,24 @@ private:
 	void OnViewClientInfo(wxCommandEvent &event);
 
 	// Misc event-handlers
-	void OnItemActivated(wxListEvent &event);
-	void OnMouseRightClick(wxListEvent &event);
-	void OnMouseMiddleClick(wxListEvent &event);
-	void OnKeyPressed(wxKeyEvent &event);
+	void OnItemActivated(wxDataViewEvent &event);
+	void OnItemRightClicked(wxDataViewEvent &event);
+	/**
+	 * Shows the client detail dialog for the row under the pointer.
+	 * wxDataViewCtrl has no dedicated middle-click item event, unlike
+	 * wxListCtrl's EVT_LIST_ITEM_MIDDLE_CLICK, so this is a raw mouse event
+	 * resolved through HitTest() -- see CDownloadListCtrl::OnItemActivated
+	 * for why an event's item is resolved rather than read off the
+	 * selection.
+	 */
+	void OnMouseMiddleClick(wxMouseEvent &event);
+
+	/**
+	 * The item the context menu was built for, by identity rather than row —
+	 * see the identical field on CDownloadListCtrl for why (PopupMenu runs a
+	 * nested event loop, so a row index would not survive it).
+	 */
+	wxUIntPtr m_menuItem = 0;
 
 	//! The type of list used to store items on the listctrl. We use the unique ECID as key.
 	typedef std::multimap<uint32, ClientCtrlItem_Struct *> ListItems;
@@ -271,10 +311,6 @@ private:
 
 	//! Pointer to the current menu object, used to avoid multiple menus.
 	wxMenu *m_menu;
-	//! Cached brush object.
-	wxBrush m_highlightBrush;
-	//! Cached brush object.
-	wxBrush m_highlightUnfocusBrush;
 
 	//! The number of displayed sources
 	int m_clientcount;

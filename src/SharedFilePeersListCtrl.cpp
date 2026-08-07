@@ -24,8 +24,9 @@
 #include "SharedFilePeersListCtrl.h"
 #include "KnownFile.h" // Do_not_auto_remove
 
-static CGenericClientListCtrlColumn s_sources_column_info[] = {
-	{ ColumnUserName, wxTRANSLATE("User Name"), 260 },
+namespace
+{
+CGenericClientListCtrlColumn s_sources_column_info[] = { { ColumnUserName, wxTRANSLATE("User Name"), 260 },
 	{ ColumnUserDownloaded, wxTRANSLATE("Downloaded"), 65 },
 	{ ColumnUserSpeedDown, wxTRANSLATE("Download Speed"), 65 },
 	{ ColumnUserUploaded, wxTRANSLATE("Uploaded"), 65 },
@@ -36,24 +37,17 @@ static CGenericClientListCtrlColumn s_sources_column_info[] = {
 	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 70 },
 	{ ColumnUserOrigin, wxTRANSLATE("Origin"), 110 },
 	{ ColumnUserFileNameUpload, wxTRANSLATE("Local File Name"), 200 },
-	{ ColumnUserSharedFiles, wxTRANSLATE("Shares File List"), 100 }
-};
-
-wxBEGIN_EVENT_TABLE(CSharedFilePeersListCtrl, CGenericClientListCtrl)
-wxEND_EVENT_TABLE()
+	{ ColumnUserSharedFiles, wxTRANSLATE("Shares File List"), 100 } };
+} // namespace
 
 CSharedFilePeersListCtrl::CSharedFilePeersListCtrl(wxWindow *parent,
 	wxWindowID winid,
 	const wxPoint &pos,
 	const wxSize &size,
 	long style,
-	const wxValidator &validator,
 	const wxString &name)
-: CGenericClientListCtrl("Peers", parent, winid, pos, size, style | wxLC_OWNERDRAW, validator, name)
+: CGenericClientListCtrl("Peers", parent, winid, pos, size, style, name)
 {
-	// Setting the sorter function.
-	SetSortFunc(SourceSortProc);
-
 	m_columndata.n_columns = sizeof(s_sources_column_info) / sizeof(CGenericClientListCtrlColumn);
 	m_columndata.columns = s_sources_column_info;
 
@@ -61,14 +55,6 @@ CSharedFilePeersListCtrl::CSharedFilePeersListCtrl(wxWindow *parent,
 }
 
 CSharedFilePeersListCtrl::~CSharedFilePeersListCtrl() {}
-
-int CSharedFilePeersListCtrl::SourceSortProc(wxUIntPtr param1, wxUIntPtr param2, wxIntPtr sortData)
-{
-	return CGenericClientListCtrl::SortProc(param1,
-		param2,
-		s_sources_column_info[sortData & CMuleListCtrl::COLUMN_MASK].cid |
-			(sortData & CMuleListCtrl::SORT_DES));
-}
 
 void CSharedFilePeersListCtrl::SetShowSources(CKnownFile *f, bool b) const
 {

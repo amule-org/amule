@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -2600,10 +2600,6 @@ msgstr "メッセージを送る"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "このファイルへ交換する"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7062,6 +7058,10 @@ msgstr "共有ファイルの合計サイズ： %s"
 #, fuzzy
 msgid "Remote File Name"
 msgstr "ファイル名"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

@@ -62,6 +62,7 @@
 
 // Custom source
 #include <common/Format.h> // Needed for CFormat (SetConnectButtonState)
+#include "MuleListCtrl.h" // Needed for CMuleListCtrl (commentLstDlg)
 #include "ServerListCtrl.h"
 #include "DownloadListCtrl.h"
 #include "SourceListCtrl.h"
@@ -473,7 +474,7 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item5a, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
 
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
-    CSourceListCtrl *item6 = new CSourceListCtrl( parent, ID_CLIENTLIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
+    CSourceListCtrl *item6 = new CSourceListCtrl( parent, ID_CLIENTLIST, wxDefaultPosition, wxDefaultSize, 0 );
     item0->Add( item6, wxSizerFlags(1).Expand() );
 
     if (set_sizer)
@@ -3377,7 +3378,7 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item0->Add( item2, wxSizerFlags().Expand().CenterVertical() );
     wxStaticLine *item17 = new wxStaticLine( parent, ID_LINE, wxDefaultPosition, wxSize(20,-1), wxLI_HORIZONTAL );
     item0->Add( item17, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    CSharedFilePeersListCtrl *item18 = new CSharedFilePeersListCtrl( parent, ID_SHAREDCLIENTLIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
+    CSharedFilePeersListCtrl *item18 = new CSharedFilePeersListCtrl( parent, ID_SHAREDCLIENTLIST, wxDefaultPosition, wxDefaultSize, 0 );
     item18->SetName( "sharedFilesSrcCt" );
     item0->Add( item18, wxSizerFlags(1).Expand().CenterVertical() );
     if (set_sizer)

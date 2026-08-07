@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:25+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2537,10 +2537,6 @@ msgstr "Sūtīt ziņojumu"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -6915,6 +6911,10 @@ msgstr "Kopīgoto datņu kopējais izmērs: %s"
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr ""
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

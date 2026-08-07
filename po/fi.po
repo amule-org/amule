@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:12+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2602,10 +2602,6 @@ msgstr "Lähetä viesti"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Vaihda tähän tiedostoon"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7060,6 +7056,10 @@ msgstr "Jaettujen tiedostojen yhteenlaskettu koko: %s"
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Tiedoston nimi etäpäässä"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

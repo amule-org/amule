@@ -231,10 +231,8 @@ wxString CDownloadListCtrl::GetRowLabel(const wxDataViewItem &item) const
 {
 	// Column 0 is the part number here, not the name -- unlike every other
 	// ported list, so the base's "column 0 is the label" default would make
-	// type-to-select match part numbers. GetModel() is always the
-	// wxDataViewIndexListModel AssociateVirtualModel() installed.
-	const wxDataViewListModel *model = static_cast<const wxDataViewListModel *>(GetModel());
-	const wxUIntPtr data = ItemAt(static_cast<long>(model->GetRow(item)));
+	// type-to-select match part numbers.
+	const wxUIntPtr data = ItemAt(GetModelRow(item));
 	if (!data) {
 		return wxEmptyString;
 	}
@@ -747,8 +745,7 @@ void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)
 	// discard whatever multi-selection the user already had, and firing
 	// EVT_DATAVIEW_SELECTION_CHANGED as a side effect of a double-click would
 	// rebuild the sources panel for no reason.
-	const wxDataViewListModel *model = static_cast<const wxDataViewListModel *>(GetModel());
-	const long row = static_cast<long>(model->GetRow(event.GetItem()));
+	const long row = GetModelRow(event.GetItem());
 	const wxUIntPtr data = ItemAt(row);
 	if (!data) {
 		return;

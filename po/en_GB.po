@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2020-03-04 14:43+0100\n"
 "Last-Translator: Dévai Tamás <devait@vnet.hu>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2520,10 +2520,6 @@ msgstr ""
 
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
-msgstr ""
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
@@ -6868,6 +6864,10 @@ msgstr ""
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
+msgstr ""
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
 msgstr ""
 
 #: src/Statistics.cpp

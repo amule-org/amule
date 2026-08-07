@@ -105,6 +105,20 @@ public:
 	wxUIntPtr ItemAt(long row) const;
 	long ItemDataCount() const { return static_cast<long>(m_items.size()); }
 
+	/**
+	 * Resolves a wxDataViewItem from an event (e.g. an activation or
+	 * context-menu event) back to its row, through the
+	 * wxDataViewIndexListModel AssociateVirtualModel() installed.
+	 *
+	 * A wxDataViewItem's ID *is* the row number for this model, but that
+	 * detail is model-internal; going through GetRow() rather than casting
+	 * the ID directly is what stays correct if that ever changes.
+	 */
+	long GetModelRow(const wxDataViewItem &item) const
+	{
+		return static_cast<long>(static_cast<const wxDataViewListModel *>(GetModel())->GetRow(item));
+	}
+
 	//! Cheap "is anything selected" test, avoiding a full selection copy.
 	bool HasSelection() const
 	{

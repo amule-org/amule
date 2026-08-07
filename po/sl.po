@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -2621,10 +2621,6 @@ msgstr "Pošlji sporočilo"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Prenesi k tej datoteki"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "PZDD"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7125,6 +7121,10 @@ msgstr "Skupna velikost deljenih datotek: %s"
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Oddaljeno ime datoteke"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "PZDD"
 
 #: src/Statistics.cpp
 #, c-format
