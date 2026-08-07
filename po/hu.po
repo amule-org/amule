@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 13:51+0200\n"
 "PO-Revision-Date: 2026-08-07 10:15+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -6503,6 +6503,11 @@ msgid "Users"
 msgstr "Felhasználók"
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Felhasználók"
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Állandó"
 
@@ -6510,6 +6515,16 @@ msgstr "Állandó"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Verzió"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Fájlok"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "Megosztott fájlok"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"

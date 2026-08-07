@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 13:51+0200\n"
 "PO-Revision-Date: 2026-08-07 10:21+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -6556,6 +6556,11 @@ msgid "Users"
 msgstr "Perdoruesit"
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Perdoruesit"
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "E qendrueshme"
 
@@ -6563,6 +6568,16 @@ msgstr "E qendrueshme"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Versioni"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Failet"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "File te ndara"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"

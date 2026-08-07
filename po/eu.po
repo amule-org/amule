@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 13:51+0200\n"
 "PO-Revision-Date: 2026-08-07 10:12+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -6534,6 +6534,11 @@ msgid "Users"
 msgstr "Erabi."
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Erabi."
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Estatikoa"
 
@@ -6541,6 +6546,16 @@ msgstr "Estatikoa"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Bertsioa"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Fitxategiak"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "Partekatutako fitxategiak"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"

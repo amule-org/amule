@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:26+0200\n"
+"POT-Creation-Date: 2026-08-07 13:51+0200\n"
 "PO-Revision-Date: 2026-08-07 10:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -6494,6 +6494,11 @@ msgid "Users"
 msgstr "Kullanıcılar"
 
 #: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Max Users"
+msgstr "Kullanıcılar"
+
+#: src/ServerListCtrl.cpp
 msgid "Static"
 msgstr "Statik Sunucu"
 
@@ -6501,6 +6506,16 @@ msgstr "Statik Sunucu"
 #: src/SourceListCtrl.cpp src/Statistics.cpp
 msgid "Version"
 msgstr "Sürüm"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Soft Files"
+msgstr "Dosyalar"
+
+#: src/ServerListCtrl.cpp
+#, fuzzy
+msgid "Hard Files"
+msgstr "Paylaşılan Dosyalar"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
