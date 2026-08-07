@@ -715,7 +715,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBox *item66 = new wxStaticBox( parent, -1, _("File Names") );
     wxStaticBoxSizer *item65 = new wxStaticBoxSizer( item66, wxVERTICAL );
 
-    CFileDetailListCtrl *item67 = new CFileDetailListCtrl( parent, IDC_LISTCTRLFILENAMES, wxDefaultPosition, wxSize(-1,130), wxLC_REPORT|wxSUNKEN_BORDER );
+    CFileDetailListCtrl *item67 = new CFileDetailListCtrl( parent, IDC_LISTCTRLFILENAMES, wxDefaultPosition, wxSize(-1,130), 0 );
     wxASSERT( item67 );
     item65->Add( item67, wxSizerFlags(1).Expand().FixedMinSize() );
     wxBoxSizer *item68 = new wxBoxSizer( wxHORIZONTAL );
@@ -2512,7 +2512,7 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     // Top border: without it this row sits flush against the tab strip
     // (issue #402 review: "too close to the borders of the tab container").
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
-    CServerListCtrl *item15 = new CServerListCtrl( parent, ID_SERVERLIST, wxDefaultPosition, wxSize(200, 100), wxLC_REPORT|wxSUNKEN_BORDER );
+    CServerListCtrl *item15 = new CServerListCtrl( parent, ID_SERVERLIST, wxDefaultPosition, wxSize(200, 100), 0 );
     item0->Add( item15, wxSizerFlags(1).Expand().CenterVertical() );
     wxBoxSizer *item5 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -3403,7 +3403,7 @@ wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( itemShRight, wxSizerFlags(1).CenterVertical() );
 
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
-    CSharedFilesCtrl *item6 = new CSharedFilesCtrl( parent, ID_SHFILELIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
+    CSharedFilesCtrl *item6 = new CSharedFilesCtrl( parent, ID_SHFILELIST, wxDefaultPosition, wxDefaultSize, 0 );
     item6->SetName( "sharedFilesCt" );
     item0->Add( item6, wxSizerFlags(1).Expand().CenterVertical() );
     if (set_sizer)
@@ -3428,7 +3428,7 @@ wxSizer *messagePageFriends( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticText *item3 = new wxStaticText( parent, -1, _("Friends"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxTOP|wxBOTTOM, 5) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
-    CFriendListCtrl *item4 = new CFriendListCtrl( parent, ID_FRIENDLIST, wxDefaultPosition, wxSize(160,150), wxLC_REPORT|wxSUNKEN_BORDER );
+    CFriendListCtrl *item4 = new CFriendListCtrl( parent, ID_FRIENDLIST, wxDefaultPosition, wxSize(160,150), 0 );
     item0->Add( item4, wxSizerFlags(1).Expand().FixedMinSize().CenterVertical().Border(wxRIGHT|wxBOTTOM, 5) );
     if (set_sizer)
     {
