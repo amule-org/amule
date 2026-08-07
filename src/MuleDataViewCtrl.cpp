@@ -31,8 +31,9 @@
 
 #include <common/MenuIDs.h> // Needed for MP_LISTCOL_1 .. MP_LISTCOL_15
 
-#include "GetTickCount.h"    // Needed for GetTickCount64()
-#include "MuleBarRenderer.h" // Needed for CMuleBarRenderer
+#include "GetTickCount.h"         // Needed for GetTickCount64()
+#include "MuleBarRenderer.h"      // Needed for CMuleBarRenderer
+#include "MuleIconTextRenderer.h" // Needed for CMuleIconTextRenderer
 
 namespace
 {
@@ -126,7 +127,12 @@ void CMuleDataViewCtrl::AddIconTextColumn(const wxString &label,
 	int flags,
 	wxDataViewCellMode mode)
 {
-	AppendIconTextColumn(label, modelColumn, mode, width, align, flags);
+	// CMuleIconTextRenderer rather than wx's, which reserves the icon slot on
+	// every row whether or not that row has an icon -- see the class comment.
+	CMuleIconTextRenderer *renderer = new CMuleIconTextRenderer();
+	renderer->SetMode(mode);
+	renderer->SetAlignment(align);
+	AppendColumn(new wxDataViewColumn(label, renderer, modelColumn, width, align, flags));
 	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
 }
 
