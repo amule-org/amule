@@ -105,6 +105,15 @@ CEC_Server_Tag::CEC_Server_Tag(const CServer *server, EC_DETAIL_LEVEL detail_lev
 		if ((tmpInt = server->GetHardFiles()) != 0) {
 			AddTag(CECTag(EC_TAG_SERVER_FILES_HARD, tmpInt));
 		}
+		// Wire capability flags. Diagnostics, and hidden by default in release
+		// builds, but the remote GUI offers the same columns as the monolithic
+		// app so it needs the same data behind them.
+		if ((tmpInt = server->GetTCPFlags()) != 0) {
+			AddTag(CECTag(EC_TAG_SERVER_TCP_FLAGS, tmpInt));
+		}
+		if ((tmpInt = server->GetUDPFlags()) != 0) {
+			AddTag(CECTag(EC_TAG_SERVER_UDP_FLAGS, tmpInt));
+		}
 	/* fall through */
 	case EC_DETAIL_CMD:
 		if (!(tmpStr = server->GetListName()).IsEmpty()) {
@@ -141,6 +150,8 @@ CEC_Server_Tag::CEC_Server_Tag(const CServer *server, CValueMap *valuemap)
 	// means it has not told us yet, and the GUI renders that as blank.
 	AddTag(EC_TAG_SERVER_FILES_SOFT, server->GetSoftFiles(), valuemap);
 	AddTag(EC_TAG_SERVER_FILES_HARD, server->GetHardFiles(), valuemap);
+	AddTag(EC_TAG_SERVER_TCP_FLAGS, server->GetTCPFlags(), valuemap);
+	AddTag(EC_TAG_SERVER_UDP_FLAGS, server->GetUDPFlags(), valuemap);
 #ifdef ENABLE_IP2COUNTRY
 	// Server host country ISO code for the remote GUI (#440).
 	if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {

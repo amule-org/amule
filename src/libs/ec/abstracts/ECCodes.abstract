@@ -335,6 +335,8 @@ EC_TAG_SERVER                             0x0500
 	EC_TAG_SERVER_COUNTRY                     0x050E
 	EC_TAG_SERVER_FILES_SOFT                  0x050F
 	EC_TAG_SERVER_FILES_HARD                  0x0510
+	EC_TAG_SERVER_TCP_FLAGS                   0x0511
+	EC_TAG_SERVER_UDP_FLAGS                   0x0512
 
 EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_SOFTWARE                    0x0601

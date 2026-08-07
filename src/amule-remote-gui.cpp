@@ -1806,6 +1806,8 @@ void CServerListRem::ProcessItemUpdate(const CEC_Server_Tag *tag, CServer *serve
 	tag->GetMaxUsers(&server->maxusers);
 	tag->GetSoftFiles(&server->softfiles);
 	tag->GetHardFiles(&server->hardfiles);
+	server->SetTCPFlags(tag->GetTCPFlags());
+	server->SetUDPFlags(tag->GetUDPFlags());
 
 	tag->GetFiles(&server->files);
 	tag->GetUsers(&server->users);

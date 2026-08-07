@@ -104,16 +104,14 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	AppendTextColumn(_("Static"), COLUMN_SERVER_STATIC, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
 	AppendTextColumn(_("Version"), COLUMN_SERVER_VERSION, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 
-	// Outside the CLIENT_GUI gate: the wire-flag columns above are diagnostics
-	// the remote GUI has no data for, but these two are streamed over EC like
-	// Users and Files, so amulegui needs them appended as well or they never
-	// appear -- not even in the header's show/hide menu.
 	AppendTextColumn(
 		_("Soft Files"), COLUMN_SERVER_SOFTFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
 	AppendTextColumn(
 		_("Hard Files"), COLUMN_SERVER_HARDFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
 
-#if !defined(CLIENT_GUI)
+	// Same columns in both binaries: diagnostics, hidden by default in release
+	// builds (below), and the flags are streamed over EC so the remote GUI has
+	// the data behind them.
 	AppendTextColumn(
 		_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
 	AppendTextColumn(
@@ -121,7 +119,6 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	// Per-user publishing limits the server advertises: how many of a user's
 	// shared files it will index. Both arrive with the periodic UDP status
 	// reply, the same one that fills Users and Files.
-#endif
 
 	// Absorbs the macOS trailing-column sizing; the model answers any column
 	// past the real ones with an empty value.
@@ -139,14 +136,8 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	m_columnStore.RegisterColumn(COLUMN_SERVER_FAILS, 40, "f");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_STATIC, 40, "S");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_VERSION, 80, "V");
-#if !defined(CLIENT_GUI)
 	m_columnStore.RegisterColumn(COLUMN_SERVER_TCPFLAGS, 80, "t");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_UDPFLAGS, 80, "u");
-#endif
-	// Outside the CLIENT_GUI gate above: the wire-flag columns it guards are
-	// diagnostics the remote GUI has no data for, but these three are streamed
-	// over EC like Users and Files, so amulegui must register them too or the
-	// columns never appear there.
 	m_columnStore.RegisterColumn(COLUMN_SERVER_SOFTFILES, 85, "s");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_HARDFILES, 85, "h");
 	m_columnStore.RegisterColumn(COLUMN_SERVER_MAXUSERS, 85, "m");
@@ -155,7 +146,7 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	// when the config has something saved.
 	ApplySorting(COLUMN_SERVER_NAME, 0);
 
-#if !defined(CLIENT_GUI) && !defined(__DEBUG__)
+#ifndef __DEBUG__
 	// Wire-flag columns are diagnostics: listed in the header menu so they
 	// can be switched on, hidden by default. Set before the settings are
 	// loaded, so anything the user saved wins -- the same ordering the old

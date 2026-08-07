@@ -292,6 +292,14 @@ public:
 	{
 		return AssignIfExist(EC_TAG_SERVER_FILES_HARD, target);
 	}
+	uint32 GetTCPFlags(uint32 *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_SERVER_TCP_FLAGS, target);
+	}
+	uint32 GetUDPFlags(uint32 *target = nullptr) const
+	{
+		return AssignIfExist(EC_TAG_SERVER_UDP_FLAGS, target);
+	}
 
 	uint32 ID() const { return GetInt(); }
 };
