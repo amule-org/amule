@@ -115,7 +115,6 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 
 	// Absorbs the macOS trailing-column sizing; the model answers any column
 	// past the real ones with an empty value.
-	AppendSpacerColumn(COLUMN_SERVER_SPACER);
 	AssociateVirtualModel();
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it

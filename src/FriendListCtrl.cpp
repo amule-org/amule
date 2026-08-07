@@ -65,7 +65,6 @@ CFriendListCtrl::CFriendListCtrl(wxWindow *parent, int id, const wxPoint &pos, w
 
 	// Absorbs the macOS trailing-column sizing; the model answers any column
 	// past the real one with an empty value.
-	AppendSpacerColumn(COLUMN_FRIEND_SPACER);
 	AssociateVirtualModel();
 
 	// One-letter name so CListColumnStore has something to write under

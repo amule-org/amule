@@ -30,9 +30,6 @@
 #include "MD4Hash.h"
 
 #define COLUMN_FRIEND_NAME 0
-//! Always empty. Absorbs the macOS trailing-column sizing; see
-//! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_FRIEND_SPACER 1
 
 class wxString;
 class CFriend;

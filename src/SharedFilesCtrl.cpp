@@ -117,8 +117,6 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AddTextColumn(_("Last upload"), COLUMN_SHARED_LASTUP, "L", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Directory Path"), COLUMN_SHARED_PATH, "D", 430, wxALIGN_LEFT, colFlags);
 
-	AppendSpacerColumn(COLUMN_SHARED_SPACER);
-
 	AssociateVirtualModel();
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it

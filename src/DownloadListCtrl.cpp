@@ -210,7 +210,6 @@ CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 	AddTextColumn(_("Last Seen Complete"), COLUMN_DL_LASTSEENCOMPLETE, "c", 220, wxALIGN_LEFT, flags);
 	AddTextColumn(_("Last Reception"), COLUMN_DL_LASTRECEPTION, "R", 220, wxALIGN_LEFT, flags);
 
-	AppendSpacerColumn(COLUMN_DL_SPACER);
 	AssociateVirtualModel();
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it

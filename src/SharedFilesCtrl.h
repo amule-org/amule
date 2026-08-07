@@ -42,9 +42,6 @@
 #define COLUMN_SHARED_SINCE 11
 #define COLUMN_SHARED_LASTUP 12
 #define COLUMN_SHARED_PATH 13
-//! Always empty. Absorbs the macOS trailing-column sizing; see
-//! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_SHARED_SPACER 14
 
 class CSharedFileList;
 class CKnownFile;

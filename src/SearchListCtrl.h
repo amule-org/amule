@@ -325,8 +325,8 @@ protected:
 	//! Keeps the group expander on the leftmost visible column.
 
 	/**
-	 * Columns the user owns, excluding the macOS spacer, which must stay
-	 * out of the header menu, the persisted widths and the cross-tab sync.
+	 * Columns the user owns -- the header menu, the persisted widths and
+	 * the cross-tab sync are all keyed by this.
 	 */
 
 public:

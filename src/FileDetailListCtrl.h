@@ -30,9 +30,6 @@
 
 #define COLUMN_FILEDETAIL_NAME 0
 #define COLUMN_FILEDETAIL_SOURCES 1
-//! Always empty. Absorbs the macOS trailing-column sizing; see
-//! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_FILEDETAIL_SPACER 2
 
 class SourcenameItem;
 

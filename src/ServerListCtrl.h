@@ -56,9 +56,6 @@
 #define COLUMN_SERVER_HARDFILES 13
 #define COLUMN_SERVER_TCPFLAGS 14
 #define COLUMN_SERVER_UDPFLAGS 15
-//! Always empty. Absorbs the macOS trailing-column sizing; see
-//! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_SERVER_SPACER 16
 
 class CServer;
 class CServerList;

@@ -41,7 +41,6 @@ CFileDetailListCtrl::CFileDetailListCtrl(wxWindow *&parent, int id, const wxPoin
 	AddTextColumn(_("File Name"), COLUMN_FILEDETAIL_NAME, "N", 370, wxALIGN_LEFT, columnFlags);
 	AddTextColumn(_("Sources"), COLUMN_FILEDETAIL_SOURCES, "S", 70, wxALIGN_LEFT, columnFlags);
 
-	AppendSpacerColumn(COLUMN_FILEDETAIL_SPACER);
 	AssociateVirtualModel();
 
 	// Initial sorting: Sources descending, matching the pre-port default.

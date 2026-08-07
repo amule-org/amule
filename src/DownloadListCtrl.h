@@ -43,9 +43,6 @@
 #define COLUMN_DL_TIMEREMAINING 10
 #define COLUMN_DL_LASTSEENCOMPLETE 11
 #define COLUMN_DL_LASTRECEPTION 12
-//! Always empty. Absorbs the macOS trailing-column sizing; see
-//! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_DL_SPACER 13
 
 class CPartFile;
 class wxMenu;

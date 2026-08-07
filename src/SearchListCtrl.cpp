@@ -171,10 +171,6 @@ CSearchListCtrl::CSearchListCtrl(
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
-	// Absorbs the macOS trailing-column sizing; the model answers COL_SPACER
-	// with an empty string.
-	AppendSpacerColumn(CSearchListModel::COL_SPACER);
-
 	// Default sort is by name, ascending.
 	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
 	GetColumn(CSearchListModel::COL_NAME)->SetSortOrder(true);

@@ -86,11 +86,8 @@ public:
 	//! Hide or show a column; width is the one to restore when showing.
 	void SetColumnHidden(int col, bool hidden, int width);
 
-	/**
-	 * Columns the user owns, excluding the macOS spacer (see the
-	 * constructor), which must stay out of the header menu, the persisted
-	 * widths and any cross-list synchronisation.
-	 */
+	//! Number of columns; the header menu, persisted widths and any
+	//! cross-list synchronisation are all keyed by this.
 	unsigned RealColumnCount() const;
 
 protected:
@@ -182,18 +179,6 @@ protected:
 
 	//! Keeps the expander on the leftmost visible column.
 	void UpdateExpanderColumn();
-
-	/**
-	 * Appends the trailing spacer column on macOS.
-	 *
-	 * Must be called by the subclass after its own columns are appended and
-	 * before LoadColumnSettings(): macOS sizes the last *resizable* column
-	 * to the leftover space, collapsing it to nothing once the columns are
-	 * wider than the control, so a spacer takes that role instead of a
-	 * column the user cares about. `modelColumn` is an always-empty column
-	 * the subclass' model must answer for.
-	 */
-	void AppendSpacerColumn(unsigned modelColumn);
 
 	/**
 	 * Appends a column rendered by a CMuleBarRenderer (a CBarShader chunk
@@ -318,9 +303,6 @@ private:
 
 	//! Last-seen widths, for detecting a drag-resize (no portable event).
 	std::vector<int> m_lastKnownWidths;
-
-	//! True once AppendSpacerColumn() has run (macOS only).
-	bool m_hasSpacer = false;
 
 	// Type-ahead state.
 	wxString m_ttsText;

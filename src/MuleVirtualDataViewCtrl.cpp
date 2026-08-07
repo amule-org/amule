@@ -74,8 +74,7 @@ public:
 		const bool iconText = (type == "wxDataViewIconText");
 		const bool barFill = (type == "CBarFillSpec");
 		if (row >= m_owner->m_items.size() || col >= m_owner->RealColumnCount()) {
-			// Out of range, or the trailing spacer column, which is always
-			// empty by construction.
+			// Out of range.
 			if (iconText) {
 				variant << wxDataViewIconText(wxEmptyString, wxIcon());
 			} else if (barFill) {

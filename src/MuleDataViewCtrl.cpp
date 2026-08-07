@@ -76,28 +76,13 @@ int CMuleDataViewCtrl::ColumnWidthAdapter::GetColumnWidth(int col) const
 	if (width > 0) {
 		return width;
 	}
-	// A visible column should never report zero -- the spacer appended on
-	// macOS exists so the trailing-column sizing lands there instead. This
-	// is the backstop if it ever does anyway: CListColumnStore reads a width
-	// <= 0 as hidden and persists it negative, so a stray zero would hide a
-	// real column on the next launch, then do the same to whichever column
-	// became last, losing one per restart.
+	// A visible column should never report zero, but this is the backstop if
+	// one ever does: CListColumnStore reads a width <= 0 as hidden and
+	// persists it negative, so a stray zero would hide a real column on the
+	// next launch, then do the same to whichever column became last, losing
+	// one per restart.
 	const int cached = m_ctrl->m_columnStore.GetCachedWidth(col);
 	return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
-}
-
-void CMuleDataViewCtrl::AppendSpacerColumn(unsigned modelColumn)
-{
-#ifdef __WXOSX__
-	// Resizable is load-bearing: macOS hands the leftover space to the last
-	// *resizable* column, so a fixed spacer cannot shrink and the collapse
-	// falls through to the last real column instead.
-	AppendTextColumn(
-		wxEmptyString, modelColumn, wxDATAVIEW_CELL_INERT, 1, wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
-	m_hasSpacer = true;
-#else
-	(void)modelColumn;
-#endif
 }
 
 void CMuleDataViewCtrl::AppendBarColumn(
@@ -150,11 +135,7 @@ void CMuleDataViewCtrl::AddBarColumn(const wxString &label,
 
 unsigned CMuleDataViewCtrl::RealColumnCount() const
 {
-	const unsigned columns = GetColumnCount();
-	if (m_hasSpacer && columns > 0) {
-		return columns - 1;
-	}
-	return columns;
+	return GetColumnCount();
 }
 
 void CMuleDataViewCtrl::InitColumnState()
