@@ -952,6 +952,7 @@ if (NEED_LIB_MULEAPPGUI)
 		FileDetailListCtrl.cpp
 		ListColumnStore.cpp
 		MuleBarRenderer.cpp
+		MuleIconTextRenderer.cpp
 		MuleColour.cpp
 		MuleGifCtrl.cpp
 		MuleDataViewCtrl.cpp

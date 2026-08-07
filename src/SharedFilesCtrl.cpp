@@ -46,7 +46,6 @@
 #include "Preferences.h"      // Needed for thePrefs
 #include "MuleBarRenderer.h"  // Needed for CBarFillSpec, CBarFillSpan
 #include "DataToText.h"       // Needed for PriorityToStr
-#include "OtherFunctions.h"   // Needed for GetRateString
 #include "Statistics.h"       // Needed for theStats (incoming free space)
 #include "GuiEvents.h"        // Needed for CoreNotify_*
 #include "MuleCollection.h"   // Needed for CMuleCollection
@@ -94,14 +93,13 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 {
 	m_menu = nullptr;
 
-	// Rating is the smiley plus its label and sorts by rating value; Obtained
-	// Parts is the availability bar; the rest are plain text. File Name is
-	// deliberately plain text, not icon+text: an icon renderer in the first
-	// column reserves the icon slot on every row, indenting names that have no
-	// icon of their own.
+	// File Name carries the rating/comment smiley through CMuleIconTextRenderer,
+	// which reserves the icon slot only on the rows that have one -- wx's own
+	// icon+text renderer indents every row without a smiley, which is why this
+	// briefly lived in a column of its own. Obtained Parts is the availability
+	// bar; the rest are plain text.
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AddTextColumn(_("File Name"), COLUMN_SHARED_NAME, "N", 400, wxALIGN_LEFT, colFlags);
-	AddIconTextColumn(_("Rating"), COLUMN_SHARED_RATING, "G", 80, wxALIGN_LEFT, colFlags);
+	AddIconTextColumn(_("File Name"), COLUMN_SHARED_NAME, "N", 400, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Size"), COLUMN_SHARED_SIZE, "Z", 100, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Type"), COLUMN_SHARED_TYPE, "Y", 90, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Priority"), COLUMN_SHARED_PRIO, "p", 70, wxALIGN_LEFT, colFlags);
@@ -341,12 +339,6 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	case COLUMN_SHARED_NAME:
 		return file->GetFileName().GetPrintable();
 
-	case COLUMN_SHARED_RATING:
-		// The smiley comes from GetItemIcon(); the label names it. Unrated
-		// files stay blank rather than repeating "Not rated" down the column --
-		// a comment with no rating still shows its icon.
-		return file->GetFileRating() ? GetRateString(file->GetFileRating()) : wxString();
-
 	case COLUMN_SHARED_SIZE:
 		return CastItoXBytes(file->GetFileSize());
 
@@ -424,7 +416,7 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 
 bool CSharedFilesCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
 {
-	if (column != COLUMN_SHARED_RATING) {
+	if (column != COLUMN_SHARED_NAME) {
 		return false;
 	}
 	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
@@ -840,20 +832,6 @@ int CSharedFilesCtrl::CompareItemData(
 	// Sort by filename.
 	case COLUMN_SHARED_NAME:
 		return mod * CmpAny(file1->GetFileName(), file2->GetFileName());
-
-	// Sort by rating. The cell text is blank for unrated files, so sorting on
-	// it would lump them together; rank explicitly instead -- rated files order
-	// by rating, a comment with no rating ranks just below the lowest rating,
-	// and files with neither come last.
-	case COLUMN_SHARED_RATING: {
-		const int rank1 = file1->GetFileRating()             ? file1->GetFileRating()
-				  : file1->GetFileComment().Length() ? 0
-								     : -1;
-		const int rank2 = file2->GetFileRating()             ? file2->GetFileRating()
-				  : file2->GetFileComment().Length() ? 0
-								     : -1;
-		return mod * CmpAny(rank1, rank2);
-	}
 
 	// Sort by filesize.
 	case COLUMN_SHARED_SIZE:
