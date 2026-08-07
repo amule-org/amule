@@ -51,7 +51,7 @@ class wxMenu;
 struct ClientCtrlItem_Struct
 {
 	ClientCtrlItem_Struct()
-	: m_owner(NULL)
+	: m_owner(nullptr)
 	, m_type(UNAVAILABLE_SOURCE)
 	{
 	}

@@ -248,8 +248,8 @@ CGenericClientListCtrl::CGenericClientListCtrl(const wxString &tablename,
 	long style,
 	const wxString &name)
 : CMuleVirtualDataViewCtrl(parent, winid, pos, size, style, name)
-, m_columndata(0, NULL)
-, m_menu(NULL)
+, m_columndata(0, nullptr)
+, m_menu(nullptr)
 , m_clientcount(0)
 , m_showing(false)
 {
@@ -469,7 +469,7 @@ void CGenericClientListCtrl::RemoveSource(uint32 source, const CKnownFile *owner
 	for (ListItems::iterator it = rangeIt.first; it != rangeIt.second; /* no ++, it happens later */) {
 		ListItems::iterator tmp = it++;
 
-		if (owner == NULL || owner == tmp->second->GetOwner()) {
+		if (owner == nullptr || owner == tmp->second->GetOwner()) {
 
 			RawRemoveSource(tmp);
 
@@ -623,7 +623,7 @@ void CGenericClientListCtrl::RemoveKnownFile(CKnownFile *file)
 	// We must never dereference it; we only need its value as a key
 	// to drop from m_knownfiles and m_ListItems. See
 	// MuleNotify::KnownFileBeingDestroyed in GuiEvents.cpp.
-	if (file == NULL) {
+	if (file == nullptr) {
 		return;
 	}
 
@@ -834,7 +834,7 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	PopupMenu(m_menu);
 
 	delete m_menu;
-	m_menu = NULL;
+	m_menu = nullptr;
 }
 
 wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned column) const
