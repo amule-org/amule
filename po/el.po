@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:03+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -2594,6 +2594,10 @@ msgstr "Αποστολή μηνύματος στον χρήστη"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Μήνυμα προς αποστολή:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Πελάτες"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7223,10 +7227,6 @@ msgstr "Μέσες συνδέσεις (εκτίμηση): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "Κορυφαίες συνδέσεις (εκτίμηση): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Πελάτες"
 
 #: src/Statistics.cpp
 #, fuzzy, c-format

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:09+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -2602,6 +2602,10 @@ msgstr "Siųsti žinutę naudotojui"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Siųsti žinutę:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Naudotojai"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7247,10 +7251,6 @@ msgstr "Vidutinis ryšių skaičius (apytikriai): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "Daugiausia ryšių (apytikriai): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Naudotojai"
 
 #: src/Statistics.cpp
 #, fuzzy, c-format

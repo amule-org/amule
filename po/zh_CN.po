@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:16+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -2588,6 +2588,10 @@ msgstr "发送消息给用户"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "发送消息："
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "用户"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7120,10 +7124,6 @@ msgstr "平均连接数 (估计): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "最高连接（估计值）： %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "用户"
 
 #: src/Statistics.cpp
 #, c-format

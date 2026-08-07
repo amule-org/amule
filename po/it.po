@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:08+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -2596,6 +2596,10 @@ msgstr "Invia messaggio all'utente"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Messaggio da inviare:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Client"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7127,10 +7131,6 @@ msgstr "Connessioni medie (stima): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "Picco connessioni (stima): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Client"
 
 #: src/Statistics.cpp
 #, c-format

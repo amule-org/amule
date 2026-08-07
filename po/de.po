@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:02+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -2584,6 +2584,10 @@ msgstr "Sende Nachricht an Benutzer"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Zu sendende Nachricht:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Clients"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7160,10 +7164,6 @@ msgstr "Durchschnittliche Verbindungen (geschätzt): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "Höchste Verbindungsanzahl (geschätzt): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Clients"
 
 #: src/Statistics.cpp
 #, c-format

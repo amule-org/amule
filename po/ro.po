@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:12+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -2585,6 +2585,10 @@ msgstr "Trimite mesaj utilizatorului"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Mesaj de trimis:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Clienți"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7194,10 +7198,6 @@ msgstr "Medie conexiuni (estimativ): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "Vârf conexiuni (estimare): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Clienți"
 
 #: src/Statistics.cpp
 #, c-format

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:01+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -2571,6 +2571,10 @@ msgstr "Poslat zprávu uživateli"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "Zpráva k odeslání:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "Klienti"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7190,10 +7194,6 @@ msgstr "Průměrný počet připojení (odhad): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr ""
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "Klienti"
 
 #: src/Statistics.cpp
 #, c-format

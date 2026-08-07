@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 11:05+0200\n"
+"POT-Creation-Date: 2026-08-07 11:26+0200\n"
 "PO-Revision-Date: 2026-08-06 11:08+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -2595,6 +2595,10 @@ msgstr "사용자에게 메시지를 보내기"
 #: src/GenericClientListCtrl.cpp
 msgid "Message to send:"
 msgstr "보낼 메시지:"
+
+#: src/GenericClientListCtrl.cpp src/Statistics.cpp
+msgid "Clients"
+msgstr "클라이언트"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Remove from friends"
@@ -7222,10 +7226,6 @@ msgstr "평균 연결 (평가): %g"
 #, c-format
 msgid "Peak Connections (estimate): %i"
 msgstr "최대 연결 (평가): %i"
-
-#: src/Statistics.cpp
-msgid "Clients"
-msgstr "클라이언트"
 
 #: src/Statistics.cpp
 #, fuzzy, c-format

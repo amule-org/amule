@@ -650,7 +650,7 @@ void CGenericClientListCtrl::OnMouseRightClick(wxListEvent &evt)
 	ClientCtrlItem_Struct *item = reinterpret_cast<ClientCtrlItem_Struct *>(ItemAt(index));
 	CClientRef &client = item->GetSource();
 
-	m_menu = new wxMenu("Clients");
+	m_menu = new wxMenu(_("Clients"));
 	m_menu->Append(MP_DETAIL, _("Show &Details"));
 	m_menu->Append(MP_ADDFRIEND, client.IsFriend() ? _("Remove from friends") : _("Add to Friends"));
 
