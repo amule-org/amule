@@ -31,9 +31,11 @@
 #include <wx/regex.h>         // Needed for wxRegExp
 
 #include "ListColumnStore.h" // Needed for CListColumnStore, IColumnWidthProvider
+#include "MD4Hash.h"         // Needed for CMD4Hash (known-files filter set)
 #include "Types.h"           // Needed for uint32
 
 #include <list>
+#include <set> // Needed for std::set (known-files filter set)
 #include <utility>
 #include <vector>
 
@@ -274,6 +276,26 @@ protected:
 	bool m_invert;
 	//! Specifies if filtering should be used.
 	bool m_filterEnabled;
+
+	/**
+	 * Results the user queued from this list, exempted from "Hide Known
+	 * Files" until the filter is applied again.
+	 *
+	 * Queueing a result makes it known, and every result update resets the
+	 * whole model (see CSearchListModel::MarkDirty), so a plain status test
+	 * re-runs immediately and the row vanishes from under the click that
+	 * queued it -- before the colour confirming the download was added is
+	 * ever visible, and leaving nothing on screen to say which results were
+	 * taken (#756). Keeping them listed here holds those rows in place, in
+	 * their queued colour, until SetFilter() or ShowResults() clears the set.
+	 *
+	 * Deliberately keyed on the user's action rather than on when a result
+	 * became known: in amulegui every result is constructed NEW and learns
+	 * its real status from a later poll (CSearchListRem::ProcessItemUpdate),
+	 * so "was it known when it arrived" is not a question the remote GUI can
+	 * answer, and hiding already-known results has to stay a live test there.
+	 */
+	std::set<CMD4Hash> m_userQueued;
 
 	//! Last-seen column widths, used to detect a user drag-resize (there is
 	//! no portable wxDataViewCtrl "column resized" event to hook directly)
