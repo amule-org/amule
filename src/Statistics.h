@@ -31,7 +31,8 @@
 #include "StatTree.h"     // Needed for CStatTreeItem* classes
 #include "GetTickCount.h" // Needed for GetTickCount64 in CPreciseRateCounter ctor
 
-#include <deque> // Needed for std::deque
+#include <atomic> // Needed for std::atomic (free-space figures)
+#include <deque>  // Needed for std::deque
 
 typedef struct UpdateInfo
 {
@@ -65,9 +66,6 @@ typedef struct HistoryRecord
  * a size.
  */
 const sint64 FREE_SPACE_UNKNOWN = -1;
-
-//! How stale a cached free-space figure may get before it is re-sampled.
-const uint64 FREE_SPACE_SAMPLE_MS = 10000;
 
 // CPreciseRateCounter is the only history-bookkeeping primitive that
 // CLIENT_GUI needs (for the runAvg trend on remote stats graphs), so
@@ -446,22 +444,31 @@ public:
 
 	/**
 	 * Free space on the filesystem holding the part files, in bytes, or
-	 * FREE_SPACE_UNKNOWN if it could not be determined.
+	 * FREE_SPACE_UNKNOWN until CFreeSpaceThread has published a figure --
+	 * which is also what an unreachable mount leaves here.
 	 *
-	 * Sampled at most once every FREE_SPACE_SAMPLE_MS, not on every call:
-	 * the underlying statvfs()/GetDiskFreeSpaceEx() is a blocking call on
-	 * the directory, and on a network mount (NAS, and the temp directory
-	 * commonly is one) a slow or stale server blocks it for as long as the
-	 * mount's timeout. The callers are a per-second GUI refresh and every
-	 * EC stats poll from every connected client, so an uncached read would
-	 * multiply that exposure by the poll rate.
+	 * A plain atomic read that never touches the filesystem. The probe
+	 * itself blocks, sometimes for as long as a dead NFS mount takes to
+	 * give up, so it lives on its own thread; both callers here (the GUI
+	 * timer and the EC stats reply) are on latency-critical loops.
 	 */
-	static sint64 GetTempFreeSpace();
+	static sint64 GetTempFreeSpace() { return s_tempFreeSpace.load(std::memory_order_relaxed); }
 
 	//! Free space where finished downloads land. See GetTempFreeSpace();
 	//! this is the default category's incoming directory, the one the
 	//! Shared Files panel reports.
-	static sint64 GetIncomingFreeSpace();
+	static sint64 GetIncomingFreeSpace() { return s_incomingFreeSpace.load(std::memory_order_relaxed); }
+
+	//! Called by CFreeSpaceThread with a fresh sample. Nothing else writes
+	//! these, and no reader needs a matching pair.
+	static void PublishTempFreeSpace(sint64 bytes)
+	{
+		s_tempFreeSpace.store(bytes, std::memory_order_relaxed);
+	}
+	static void PublishIncomingFreeSpace(sint64 bytes)
+	{
+		s_incomingFreeSpace.store(bytes, std::memory_order_relaxed);
+	}
 
 	// Other
 	static void CalculateRates();
@@ -622,12 +629,11 @@ private:
 	static uint64_t s_totalSent;
 	static uint64_t s_totalReceived;
 
-	// Cached free space, and when each was last sampled (uptime ms, 0 =
-	// never). See GetTempFreeSpace() for why these are cached at all.
-	static sint64 s_tempFreeSpace;
-	static sint64 s_incomingFreeSpace;
-	static uint64 s_tempFreeSpaceTime;
-	static uint64 s_incomingFreeSpaceTime;
+	// Written by CFreeSpaceThread, read by the main and EC threads. Atomic
+	// for that reason alone: they are the only cross-thread state in this
+	// class, everything else here belongs to the main thread.
+	static std::atomic<sint64> s_tempFreeSpace;
+	static std::atomic<sint64> s_incomingFreeSpace;
 
 	static bool s_statsNeedSave;
 };

@@ -544,6 +544,11 @@ void CamuleDlg::SetActiveDialog(DialogType type, wxWindow *dlg)
 		// set up splitter now that window sizes are defined
 		m_sharedfileswnd->Prepare();
 	}
+
+	// The panel that just appeared is only refreshed on the timer, so
+	// without this it would show its previous figure -- from whenever it
+	// was last on screen, which can be a long time -- until the next tick.
+	UpdateFreeSpaceLabels();
 }
 
 void CamuleDlg::ShowSearchWindow()
@@ -587,6 +592,25 @@ void CamuleDlg::RemoveSystray()
 {
 	delete m_wndTaskbarNotifier;
 	m_wndTaskbarNotifier = NULL;
+}
+
+void CamuleDlg::UpdateFreeSpaceLabels()
+{
+	// Only the panel actually on screen: nobody can read a label on a panel
+	// that is behind another one or in a window hidden to the tray, and the
+	// Downloads refresh walks the whole queue to decide whether to warn.
+	// The figures themselves are free to read -- a CFreeSpaceThread sample
+	// published into an atomic -- so this skips pointless work, not a
+	// blocking call.
+	if (!IsVisibleToUser()) {
+		return;
+	}
+	if (IsDialogVisible(DT_TRANSFER_WND) && m_transferwnd && m_transferwnd->downloadlistctrl) {
+		m_transferwnd->downloadlistctrl->UpdateFreeSpace();
+	}
+	if (IsDialogVisible(DT_SHARED_WND) && m_sharedfileswnd && m_sharedfileswnd->sharedfilesctrl) {
+		m_sharedfileswnd->sharedfilesctrl->UpdateFreeSpace();
+	}
 }
 
 void CamuleDlg::SetFreeSpaceLabel(wxStaticText *label, sint64 freeSpace, bool warn, const wxString &separator)
@@ -1679,22 +1703,8 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 #endif
 
 		// Free space moves on its own as the part files grow, so it is
-		// refreshed on the clock rather than when a list changes -- but only
-		// for the panel actually on screen. Nobody can read a label on a
-		// panel that is behind another one or in a window hidden to the
-		// tray, and the Downloads refresh walks the whole queue to decide
-		// whether to warn. Switching panels picks the figure up on the next
-		// tick.
-		if (IsVisibleToUser()) {
-			if (IsDialogVisible(DT_TRANSFER_WND) && m_transferwnd &&
-				m_transferwnd->downloadlistctrl) {
-				m_transferwnd->downloadlistctrl->UpdateFreeSpace();
-			}
-			if (IsDialogVisible(DT_SHARED_WND) && m_sharedfileswnd &&
-				m_sharedfileswnd->sharedfilesctrl) {
-				m_sharedfileswnd->sharedfilesctrl->UpdateFreeSpace();
-			}
-		}
+		// refreshed on the clock rather than when a list changes.
+		UpdateFreeSpaceLabels();
 	}
 }
 

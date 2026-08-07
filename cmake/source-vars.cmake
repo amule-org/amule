@@ -46,6 +46,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		PartFileWriteThread.cpp
 		PartFileHashThread.cpp
 		MediaProbeThread.cpp
+		FreeSpaceThread.cpp
 		ThreadTasks.cpp
 	)
 endif()

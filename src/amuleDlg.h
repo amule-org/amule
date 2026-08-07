@@ -221,6 +221,15 @@ public:
 	 * @param separator Prefix for a label that continues a line, empty for
 	 *                  one that starts its own.
 	 */
+	/**
+	 * Refreshes the free-space label of whichever panel is on screen.
+	 *
+	 * Driven by the GUI timer, and again when a panel becomes active so it
+	 * doesn't show the figure it had when it was last visible until the
+	 * next tick.
+	 */
+	void UpdateFreeSpaceLabels();
+
 	static void SetFreeSpaceLabel(
 		wxStaticText *label, sint64 freeSpace, bool warn, const wxString &separator = wxEmptyString);
 
