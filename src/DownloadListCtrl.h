@@ -241,6 +241,19 @@ private:
 	void OnViewFileInfo(wxCommandEvent &event);
 	void OnViewFileComments(wxCommandEvent &event);
 	void OnPreviewFile(wxCommandEvent &event);
+	void OnShowInFolder(wxCommandEvent &event);
+
+	/**
+	 * The item the context menu was built for, by identity rather than row.
+	 *
+	 * The menu's enabled state is decided from this item, so the handlers act
+	 * on it. A row index would not survive the menu being open: PopupMenu runs
+	 * a nested event loop, so timers and EC updates keep mutating the list, and
+	 * removing a row *above* this one shifts every index below it -- the click
+	 * would then act on the neighbouring file. HasItemData() re-checks that the
+	 * item is still present before it is used.
+	 */
+	wxUIntPtr m_menuItem = 0;
 
 	// Misc event-handlers
 	void OnItemActivated(wxListEvent &event);
@@ -248,13 +261,6 @@ private:
 	void OnMouseMiddleClick(wxListEvent &event);
 	void OnKeyPressed(wxKeyEvent &event);
 	void OnItemSelectionChanged(wxListEvent &event);
-
-	/**
-	 * Executes the user-selected preview command on the specified file.
-	 *
-	 * @file The file to be previewed.
-	 */
-	void PreviewFile(CPartFile *file);
 
 	/**
 	 * Show file detail dialog for item at index

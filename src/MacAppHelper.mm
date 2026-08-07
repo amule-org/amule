@@ -55,3 +55,20 @@ extern "C" void mac_set_accessory_mode(bool accessory)
 		[NSApp activateIgnoringOtherApps:YES];
 	}
 }
+
+bool mac_reveal_in_finder(const char *path)
+{
+	if (path == nullptr) {
+		return false;
+	}
+	@autoreleasepool {
+		NSString *file = [NSString stringWithUTF8String:path];
+		if (file == nil) {
+			return false;
+		}
+		// selectFile: with an empty root opens the enclosing folder and selects
+		// the file in it, which is the behaviour "Show in Finder" implies.
+		return [[NSWorkspace sharedWorkspace] selectFile:file
+							inFileViewerRootedAtPath:@""] ? true : false;
+	}
+}

@@ -37,6 +37,7 @@
 #include "CommentDialog.h"    // Needed for CCommentDialog
 #include "FileDetailDialog.h" // Needed for CFileDetailDialog
 #include "PartFile.h"         // Needed for CPartFile
+#include "FileLaunch.h"       // Needed for FileLaunch::Open / Reveal
 #include "SharedFileList.h"   // Needed for CKnownFileMap
 #include "amule.h"            // Needed for theApp
 #include "ServerConnect.h"    // Needed for CServerConnect
@@ -51,6 +52,8 @@
 
 wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualListCtrl)
 	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
+	EVT_MENU(MP_VIEW, CSharedFilesCtrl::OnOpenFile)
+	EVT_MENU(MP_SHOWINFOLDER, CSharedFilesCtrl::OnShowInFolder)
 	EVT_LIST_ITEM_ACTIVATED(-1, CSharedFilesCtrl::OnItemActivated)
 
 	EVT_MENU(MP_METINFO, CSharedFilesCtrl::OnViewFileDetails)
@@ -143,6 +146,7 @@ CSharedFilesCtrl::~CSharedFilesCtrl() {}
 void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 {
 	long item_hit = CheckSelection(event);
+	m_menuItem = (item_hit != -1) ? ItemAt(item_hit) : 0;
 
 	if ((m_menu == NULL) && (item_hit != -1)) {
 		m_menu = new wxMenu(_("Shared Files"));
@@ -158,6 +162,9 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(0, _("Priority"), prioMenu);
 		m_menu->AppendSeparator();
 
+		m_menu->Append(MP_VIEW, _("&Open the file"));
+		m_menu->Append(MP_SHOWINFOLDER, _("Show in file manager"));
+		m_menu->AppendSeparator();
 		m_menu->Append(MP_METINFO, _("Show file &details"));
 		m_menu->AppendSeparator();
 
@@ -193,6 +200,25 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->AppendSeparator();
 		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
+		// Offered only when the file is reachable from this host: the shared
+		// list carries the daemon's directory in amulegui, which resolves here
+		// only on a shared filesystem, and a locally shared file can have been
+		// moved or deleted since it was hashed.
+		// CSharedFileList shares PS_READY part files, so an entry here can be an
+		// in-progress download. Gate it exactly as the Downloads list does:
+		// a finished file of any type can be opened, an unfinished one only when
+		// enough of the media is on disk to play.
+		// IsPartFile() establishes the dynamic type, as in FileLaunch::ResolvePath.
+		const bool previewable =
+			file->IsPartFile() ? static_cast<CPartFile *>(file)->PreviewAvailable() : true;
+		m_menu->SetLabel(
+			MP_VIEW, file->IsPartFile() ? wxString(_("Preview")) : wxString(_("&Open the file")));
+		// One filesystem check for both entries; see FileLaunch::GetAvailability.
+		bool canOpen = false;
+		bool canReveal = false;
+		FileLaunch::GetAvailability(file, canOpen, canReveal);
+		m_menu->Enable(MP_VIEW, previewable && canOpen);
+		m_menu->Enable(MP_SHOWINFOLDER, canReveal);
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETHOSTNAMESOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
@@ -1089,6 +1115,25 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 			}
 			theApp->downloadqueue->AddLinks(links);
 		}
+	}
+}
+
+// Both act on one file: the menu is opened over a row, and opening several
+// files at once is not a thing either desktop handler does gracefully.
+void CSharedFilesCtrl::OnOpenFile(wxCommandEvent &WXUNUSED(event))
+{
+	// Bound re-checked: PopupMenu runs a nested event loop, so the shared-dir
+	// watcher can mutate the list while the menu is open. Pinning the identity
+	// means a row removed above this one cannot redirect the click.
+	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
+		FileLaunch::Open(reinterpret_cast<CKnownFile *>(m_menuItem), this);
+	}
+}
+
+void CSharedFilesCtrl::OnShowInFolder(wxCommandEvent &WXUNUSED(event))
+{
+	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
+		FileLaunch::Reveal(reinterpret_cast<CKnownFile *>(m_menuItem), this);
 	}
 }
 

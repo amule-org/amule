@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 13:42+0200\n"
+"POT-Creation-Date: 2026-08-07 01:22+0200\n"
 "PO-Revision-Date: 2026-08-06 11:02+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -1641,9 +1641,13 @@ msgstr "[A4AF] Weise alle Quellen einer anderen Datei zu"
 msgid "Extended Options"
 msgstr "Erweiterte Optionen"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Preview"
 msgstr "Vorschau"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+msgid "Show in file manager"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -1673,7 +1677,7 @@ msgstr "Zuweisung rückgängig machen"
 msgid "Assign to category"
 msgstr "Einer Kategorie hinzufügen"
 
-#: src/DownloadListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "&Oeffne diese Datei"
 
@@ -1704,28 +1708,6 @@ msgstr "Downloads (%i)"
 #, fuzzy, c-format
 msgid "Total queue size: %s"
 msgstr "Gesamt-DL: %s"
-
-#: src/DownloadListCtrl.cpp
-msgid "the default Windows shell handler"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid ""
-"To prevent this warning to show up in every preview,\n"
-"set your preferred video player in preferences (default is %s)."
-msgstr ""
-"Bitte trage deinen bevorzugten Videoplayer in den Einstellungen ein.\n"
-"Bis dahin wird aMule versuchen, %s zu starten, und bei jeder Vorschau wird diese Warnung angezeigt werden."
-
-#: src/DownloadListCtrl.cpp
-msgid "File preview"
-msgstr "Dateivorschau"
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "FEHLER: Konnte externen Mediaplayer nicht starten!Befehl: `%s'"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2292,6 +2274,34 @@ msgstr "%.1f%% erledigt"
 #, c-format
 msgid "%.2f kB/s"
 msgstr "%.2f kB/s"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgstr "FEHLER: Konnte externen Mediaplayer nicht starten!Befehl: `%s'"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "Cannot open '%s': the file is not present on this computer."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "File preview"
+msgstr "Dateivorschau"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to open '%s' with the default application."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "FEHLER: Öffnen von Partfile '%s' fehlgeschlagen"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -8711,6 +8721,14 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid ""
+#~ "To prevent this warning to show up in every preview,\n"
+#~ "set your preferred video player in preferences (default is %s)."
+#~ msgstr ""
+#~ "Bitte trage deinen bevorzugten Videoplayer in den Einstellungen ein.\n"
+#~ "Bis dahin wird aMule versuchen, %s zu starten, und bei jeder Vorschau wird diese Warnung angezeigt werden."
 
 #~ msgid "Filter Results"
 #~ msgstr "Filterergebnisse"

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 13:42+0200\n"
+"POT-Creation-Date: 2026-08-07 01:22+0200\n"
 "PO-Revision-Date: 2026-08-06 11:16+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1636,9 +1636,13 @@ msgstr "立即转移所有已要求其它文件 (A4AF) 到其它文件"
 msgid "Extended Options"
 msgstr "扩展选项"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Preview"
 msgstr "预览"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+msgid "Show in file manager"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -1668,7 +1672,7 @@ msgstr "清除分类"
 msgid "Assign to category"
 msgstr "指定到分类"
 
-#: src/DownloadListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "打开文件 (&O)"
 
@@ -1699,28 +1703,6 @@ msgstr "下载 (%i)"
 #, c-format
 msgid "Total queue size: %s"
 msgstr "总下载大小： %s"
-
-#: src/DownloadListCtrl.cpp
-msgid "the default Windows shell handler"
-msgstr "默认的 Windows 外壳处理器"
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid ""
-"To prevent this warning to show up in every preview,\n"
-"set your preferred video player in preferences (default is %s)."
-msgstr ""
-"为了不让此提示在每次预览时都出现，\n"
-"请在首选项中预设您喜欢的播放器（默认为%s）。"
-
-#: src/DownloadListCtrl.cpp
-msgid "File preview"
-msgstr "文件预览"
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "错误: 无法运行外部媒体播放器！ 命令: `%s'"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2287,6 +2269,34 @@ msgstr "%.1f%% 已完成"
 #, c-format
 msgid "%.2f kB/s"
 msgstr "%.2f kB/s"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgstr "错误: 无法运行外部媒体播放器！ 命令: `%s'"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "Cannot open '%s': the file is not present on this computer."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "File preview"
+msgstr "文件预览"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to open '%s' with the default application."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "错误：打开part文件'%s'失败"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -8667,6 +8677,17 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "the default Windows shell handler"
+#~ msgstr "默认的 Windows 外壳处理器"
+
+#, c-format
+#~ msgid ""
+#~ "To prevent this warning to show up in every preview,\n"
+#~ "set your preferred video player in preferences (default is %s)."
+#~ msgstr ""
+#~ "为了不让此提示在每次预览时都出现，\n"
+#~ "请在首选项中预设您喜欢的播放器（默认为%s）。"
 
 #~ msgid "Filter Results"
 #~ msgstr "过滤结果"

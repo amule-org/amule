@@ -186,6 +186,20 @@ private:
 	 * Event-handler for right-clicks on the list-items.
 	 */
 	void OnGetFeedback(wxCommandEvent &event);
+	void OnOpenFile(wxCommandEvent &event);
+	void OnShowInFolder(wxCommandEvent &event);
+
+	/**
+	 * The item the context menu was built for, by identity rather than row.
+	 *
+	 * The menu's enabled state is decided from this item, so the handlers act
+	 * on it. A row index would not survive the menu being open: PopupMenu runs
+	 * a nested event loop, so timers and EC updates keep mutating the list, and
+	 * removing a row *above* this one shifts every index below it -- the click
+	 * would then act on the neighbouring file. HasItemData() re-checks that the
+	 * item is still present before it is used.
+	 */
+	wxUIntPtr m_menuItem = 0;
 
 	/**
 	 * Event-handler for the Set Priority menu items.

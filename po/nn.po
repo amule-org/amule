@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-06 13:42+0200\n"
+"POT-Creation-Date: 2026-08-07 01:22+0200\n"
 "PO-Revision-Date: 2026-08-06 11:10+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1642,9 +1642,13 @@ msgstr "Byt alle A4AF til anna fil no"
 msgid "Extended Options"
 msgstr "Utvida innstillingar"
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Preview"
 msgstr "Førehandssyning"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+msgid "Show in file manager"
+msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -1674,7 +1678,7 @@ msgstr "ortildele"
 msgid "Assign to category"
 msgstr "Vel kategori"
 
-#: src/DownloadListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
 msgstr "&Opne fila"
 
@@ -1705,26 +1709,6 @@ msgstr "Nedlastingar (%i)"
 #, fuzzy, c-format
 msgid "Total queue size: %s"
 msgstr "Totalt NL: %s"
-
-#: src/DownloadListCtrl.cpp
-msgid "the default Windows shell handler"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid ""
-"To prevent this warning to show up in every preview,\n"
-"set your preferred video player in preferences (default is %s)."
-msgstr "Vel ein videospelar i innstillingar for å hindre at denne åtvaringa kjem opp ved kvar førehandssyning (%s er standard)"
-
-#: src/DownloadListCtrl.cpp
-msgid "File preview"
-msgstr "Førehandssyning"
-
-#: src/DownloadListCtrl.cpp
-#, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "FEIL: Greidde ikkje å starte ekstern mediespelar! Kommando: '%s'"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2298,6 +2282,34 @@ msgstr "%.2f%%·ferdig"
 #, c-format
 msgid "%.2f kB/s"
 msgstr "%.2f·kB/s"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgstr "FEIL: Greidde ikkje å starte ekstern mediespelar! Kommando: '%s'"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "Cannot open '%s': the file is not present on this computer."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
+msgstr ""
+
+#: src/FileLaunch.cpp
+msgid "File preview"
+msgstr "Førehandssyning"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to open '%s' with the default application."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "Feil: Greidde ikkje opne delfila '%s'"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -8761,6 +8773,12 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, c-format
+#~ msgid ""
+#~ "To prevent this warning to show up in every preview,\n"
+#~ "set your preferred video player in preferences (default is %s)."
+#~ msgstr "Vel ein videospelar i innstillingar for å hindre at denne åtvaringa kjem opp ved kvar førehandssyning (%s er standard)"
 
 #~ msgid "Filter Results"
 #~ msgstr "Filtrér resultat"
