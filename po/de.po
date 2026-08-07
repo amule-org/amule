@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 01:22+0200\n"
+"POT-Creation-Date: 2026-08-07 11:05+0200\n"
 "PO-Revision-Date: 2026-08-06 11:02+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -2276,9 +2276,18 @@ msgid "%.2f kB/s"
 msgstr "%.2f kB/s"
 
 #: src/FileLaunch.cpp
+msgid "File preview"
+msgstr "Dateivorschau"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: `%s'"
 msgstr "FEHLER: Konnte externen Mediaplayer nicht starten!Befehl: `%s'"
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "The configured video player was not found: %s"
+msgstr ""
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -2288,10 +2297,6 @@ msgstr ""
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
 msgstr ""
-
-#: src/FileLaunch.cpp
-msgid "File preview"
-msgstr "Dateivorschau"
 
 #: src/FileLaunch.cpp
 #, c-format

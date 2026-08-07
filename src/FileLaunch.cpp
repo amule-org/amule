@@ -26,9 +26,10 @@
 
 #include <vector> // Needed for std::vector
 
-#include <wx/cmdline.h> // Needed for wxCmdLineParser::ConvertStringToArgs
-#include <wx/msgdlg.h>  // Needed for wxMessageBox
-#include <wx/utils.h>   // Needed for wxExecute, wxLaunchDefaultApplication
+#include <wx/cmdline.h>  // Needed for wxCmdLineParser::ConvertStringToArgs
+#include <wx/filename.h> // Needed for wxFileName::IsFileExecutable
+#include <wx/msgdlg.h>   // Needed for wxMessageBox
+#include <wx/utils.h>    // Needed for wxExecute, wxLaunchDefaultApplication
 
 #include <common/Format.h> // Needed for CFormat
 
@@ -98,6 +99,16 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 	return true;
 }
 
+// Log a launch failure, and put it in front of the user when the caller has no
+// second option to fall through to.
+void Fail(const wxString &message, wxWindow *parent, bool reportModally)
+{
+	AddLogLineC(message);
+	if (reportModally && parent != nullptr) {
+		wxMessageBox(message, _("File preview"), wxOK | wxICON_EXCLAMATION, parent);
+	}
+}
+
 // Hand the path to the user's configured player.
 //
 // The template is split into arguments ONCE, with wxCmdLineParser, and the
@@ -109,7 +120,10 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 // players like mpv and vlc execute scripts given that way. Escaping the quotes
 // was the previous defence and was itself bypassable with a backslash; not
 // building a string in the first place removes the class.
-void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNUSED(parent))
+// `reportModally` is for the caller that has nothing to fall back to: a failure
+// it only logs is, from the user's side, the same silent nothing this is meant
+// to remove. The caller that can fall back leaves it false and stays quiet.
+bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *parent, bool reportModally)
 {
 	const wxString target = path.GetRaw();
 	const wxString name = path.GetFullName().GetRaw();
@@ -125,9 +139,34 @@ void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNU
 	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player, wxCMD_LINE_SPLIT_UNIX);
 #endif
 	if (parts.IsEmpty()) {
-		AddLogLineC(
-			CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player);
-		return;
+		Fail(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player,
+			parent,
+			reportModally);
+		return false;
+	}
+
+	// An absolute program path that is not a runnable file is worth catching
+	// here. IsFileExecutable covers both halves: a path that is absent, and one
+	// that exists without the exec bit -- a data file, or a wrapper script that
+	// was never chmod +x -- which would otherwise fail the same way.
+	// wxExecute cannot report it: the async form returns the pid as soon as the
+	// fork succeeds and execvp then fails in the child, so the caller sees
+	// success while the user sees only wx's "execvp ... failed with error 2".
+	// That is the normal state of affairs inside a Flatpak, where a host player
+	// such as /usr/bin/vlc is simply not on the sandbox's filesystem.
+	//
+	// A bare command name is left alone: resolving it would mean reimplementing
+	// the PATH search that the exec does anyway.
+	//
+	// Windows paths never match this test, and do not need to: there wxExecute
+	// goes through CreateProcess, which fails synchronously, so the launch
+	// returns 0 and the error path below already reports it. Only the POSIX
+	// fork/exec pair can succeed at the fork and fail out of sight in the child.
+	if (parts[0].StartsWith("/") && !wxFileName::IsFileExecutable(parts[0])) {
+		Fail(CFormat(_("The configured video player was not found: %s")) % parts[0],
+			parent,
+			reportModally);
+		return false;
 	}
 
 	std::vector<wxString> argv;
@@ -165,9 +204,12 @@ void LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *WXUNU
 	}
 
 	if (!RunDetached(player, argv)) {
-		AddLogLineC(
-			CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player);
+		Fail(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player,
+			parent,
+			reportModally);
+		return false;
 	}
+	return true;
 }
 
 // The platform's "open this with whatever handles it" action.
@@ -281,15 +323,18 @@ void Open(CKnownFile *file, wxWindow *parent)
 			}
 			return;
 		}
-		LaunchWithPlayer(player, path, parent);
+		// Nothing to fall back to for a .part, so this one has to be seen.
+		LaunchWithPlayer(player, path, parent, true);
 		return;
 	}
 
 	// Completed: the configured player is for watching media, so it is used for
 	// media and deliberately not for anything else -- which is what used to send
 	// an archive to the video player.
-	if (media && !player.IsEmpty()) {
-		LaunchWithPlayer(player, path, parent);
+	// A player that could not be launched should not cost the user the action:
+	// for a finished file the desktop handler is a reasonable second choice, and
+	// inside a Flatpak that is the portal, which reaches the host's application.
+	if (media && !player.IsEmpty() && LaunchWithPlayer(player, path, parent, false)) {
 		return;
 	}
 
