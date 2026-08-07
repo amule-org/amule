@@ -121,16 +121,19 @@ endif()
 # git state changes, so `cmake --build` alone is enough to pick up new
 # commits in the banner.
 #
-# We need three files, not just .git/HEAD:
-#   * .git/HEAD — touched on `git checkout <branch>` (symref retarget),
+# We need three files, not just HEAD:
+#   * HEAD — touched on `git checkout <branch>` (symref retarget),
 #     `git checkout --detach`, and explicit `git update-ref HEAD ...`.
-#   * the branch-ref file (.git/refs/heads/<branch>) that HEAD points at —
+#   * the branch-ref file (refs/heads/<branch>) that HEAD points at —
 #     touched on `git commit`, `git reset --hard`, `git pull --ff-only`,
 #     and any other op that moves the branch tip.  Tracking only HEAD
 #     misses these because HEAD is a symref text file, not the SHA itself.
-#   * .git/packed-refs — touched by `git gc` / `git pack-refs`, which can
+#   * packed-refs — touched by `git gc` / `git pack-refs`, which can
 #     consolidate the branch ref file out of existence.  After a pack,
 #     the SHA lives only in packed-refs.
+#
+# Where those three live is a question for git, not an assumption about
+# the directory layout — see the resolution step further down.
 #
 if (NOT DEFINED CACHE{GITDATE})
 	find_package (Git)
@@ -220,34 +223,99 @@ if (NOT DEFINED CACHE{GITDATE})
 			endif()
 		endif()
 	endif()
-	set_property (DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-		"${CMAKE_SOURCE_DIR}/.git/HEAD")
-	# Also depend on .git_archival.txt so that if it's swapped in
+	# Depend on .git_archival.txt so that if it's swapped in
 	# (e.g. someone re-extracts an archive, or hand-edits the file),
 	# cmake re-runs and re-parses on the next build.
 	if (EXISTS "${CMAKE_SOURCE_DIR}/.git_archival.txt")
 		set_property (DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
 			"${CMAKE_SOURCE_DIR}/.git_archival.txt")
 	endif()
-	# Resolve HEAD's symref target so we can also depend on the branch
-	# ref file directly.  This catches commits/resets that move the
-	# branch tip without retargeting HEAD.
-	if (EXISTS "${CMAKE_SOURCE_DIR}/.git/HEAD")
-		file (READ "${CMAKE_SOURCE_DIR}/.git/HEAD" _amule_head_contents LIMIT 200)
+	#
+	# `${CMAKE_SOURCE_DIR}/.git` is a directory only in a plain clone.  In
+	# a linked worktree (`git worktree add`) — and in a submodule — it is
+	# a *file* holding a `gitdir:` pointer, so every path built by
+	# appending to it resolves to nothing.  The EXISTS guards below then
+	# quietly skip every dependency and the auto-refresh this whole block
+	# exists for stops happening: the revision string stays frozen at
+	# whatever the first configure saw, with no diagnostic.  Ask git for
+	# the real locations instead of assuming the layout:
+	#
+	#   * --git-dir         the per-worktree directory.  Owns HEAD.
+	#   * --git-common-dir  the shared directory.  Owns refs/heads/* and
+	#                       packed-refs, which linked worktrees do not
+	#                       get private copies of.
+	#
+	# The two are the same path in a plain clone and diverge in a
+	# worktree, which is exactly why both are needed — tracking only one
+	# would miss either the branch retarget or the branch tip moving.
+	# Resolution is scoped to the `.git`-at-source-root case on purpose:
+	# rev-parse walks up to any enclosing repository, so running it
+	# unconditionally would make a tarball unpacked inside some unrelated
+	# checkout describe that checkout instead of falling through to the
+	# .git_archival.txt path above.
+	#
+	if (GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+		execute_process (
+			COMMAND ${GIT_EXECUTABLE} rev-parse --git-dir
+			OUTPUT_VARIABLE _amule_git_dir
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			ERROR_QUIET
+			RESULT_VARIABLE _amule_git_dir_result
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+		if (NOT _amule_git_dir_result EQUAL 0)
+			set (_amule_git_dir "")
+		endif()
+		execute_process (
+			COMMAND ${GIT_EXECUTABLE} rev-parse --git-common-dir
+			OUTPUT_VARIABLE _amule_git_common_dir
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			ERROR_QUIET
+			RESULT_VARIABLE _amule_git_common_dir_result
+			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+		if (NOT _amule_git_common_dir_result EQUAL 0)
+			set (_amule_git_common_dir "")
+		endif()
+		# Both are printed relative to the working directory in a plain
+		# clone (literally ".git") and absolute in a worktree, so
+		# normalise before building paths from them.
+		if (_amule_git_dir)
+			get_filename_component (_amule_git_dir "${_amule_git_dir}"
+				ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+		endif()
+		# --git-common-dir arrived in git 2.5; on anything older the
+		# option is parsed as a revision and fails.  Fall back to the
+		# per-worktree directory, which is the correct answer for every
+		# layout that old a git can produce.
+		if (_amule_git_common_dir AND NOT _amule_git_common_dir STREQUAL "--git-common-dir")
+			get_filename_component (_amule_git_common_dir "${_amule_git_common_dir}"
+				ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+		else()
+			set (_amule_git_common_dir "${_amule_git_dir}")
+		endif()
+	endif()
+	if (_amule_git_dir AND EXISTS "${_amule_git_dir}/HEAD")
+		set_property (DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+			"${_amule_git_dir}/HEAD")
+		# Resolve HEAD's symref target so we can also depend on the
+		# branch ref file directly.  This catches commits/resets that
+		# move the branch tip without retargeting HEAD.  A detached HEAD
+		# holds the SHA inline instead, and so is already covered by the
+		# dependency on HEAD itself.
+		file (READ "${_amule_git_dir}/HEAD" _amule_head_contents LIMIT 200)
 		string (STRIP "${_amule_head_contents}" _amule_head_contents)
 		if (_amule_head_contents MATCHES "^ref: (.+)$")
 			set (_amule_head_ref "${CMAKE_MATCH_1}")
-			if (EXISTS "${CMAKE_SOURCE_DIR}/.git/${_amule_head_ref}")
+			if (EXISTS "${_amule_git_common_dir}/${_amule_head_ref}")
 				set_property (DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-					"${CMAKE_SOURCE_DIR}/.git/${_amule_head_ref}")
+					"${_amule_git_common_dir}/${_amule_head_ref}")
 			endif()
 		endif()
 	endif()
 	# Also depend on packed-refs in case the branch ref is packed
 	# (loose ref file may not exist after `git gc`).
-	if (EXISTS "${CMAKE_SOURCE_DIR}/.git/packed-refs")
+	if (_amule_git_common_dir AND EXISTS "${_amule_git_common_dir}/packed-refs")
 		set_property (DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-			"${CMAKE_SOURCE_DIR}/.git/packed-refs")
+			"${_amule_git_common_dir}/packed-refs")
 	endif()
 endif()
 
