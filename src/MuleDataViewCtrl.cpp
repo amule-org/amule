@@ -172,6 +172,15 @@ void CMuleDataViewCtrl::InitColumnState()
 			"column ids must be declared in the order the columns are appended");
 	}
 
+#ifdef __WXOSX__
+	// Forgetting the spacer costs the last column: macOS gives the leftover
+	// width to the last *resizable* one, which collapses it to nothing as soon
+	// as the columns outgrow the control. Nothing about that is visible until
+	// somebody narrows the list far enough, which is how the clients list
+	// shipped without one -- so fail loudly here instead.
+	wxASSERT_MSG(m_hasSpacer, "every list must AppendSpacerColumn() before InitColumnState()");
+#endif
+
 	m_columnHidden.resize(RealColumnCount(), false);
 	m_lastKnownWidths.clear();
 	for (unsigned i = 0; i < RealColumnCount(); ++i) {
