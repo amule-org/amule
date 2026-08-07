@@ -194,6 +194,25 @@ void CMuleDataViewCtrl::ApplySorting(unsigned column, unsigned order)
 	OnSortingChanged();
 }
 
+namespace
+{
+// This control's sort bits and CListColumnStore's are different values for the
+// same two ideas, so every crossing converts -- see the note in MuleListCtrl.cpp
+// for what passing them through unconverted costs. The numbers currently
+// coincide; that is incidental and must not be relied on.
+unsigned ToStoreFlags(unsigned order)
+{
+	return (order & CMuleDataViewCtrl::SORT_DES ? CListColumnStore::SORT_DESCENDING : 0) |
+	       (order & CMuleDataViewCtrl::SORT_ALT ? CListColumnStore::SORT_ALTERNATE : 0);
+}
+
+unsigned FromStoreFlags(unsigned storeFlags)
+{
+	return (storeFlags & CListColumnStore::SORT_DESCENDING ? CMuleDataViewCtrl::SORT_DES : 0) |
+	       (storeFlags & CListColumnStore::SORT_ALTERNATE ? CMuleDataViewCtrl::SORT_ALT : 0);
+}
+} // namespace
+
 void CMuleDataViewCtrl::LoadColumnSettings()
 {
 	if (!m_columnStore.HasTableName()) {
@@ -218,7 +237,7 @@ void CMuleDataViewCtrl::LoadColumnSettings()
 	if (!decoded.empty()) {
 		m_sort_orders.clear();
 		for (const CListColumnStore::CColPair &pair : decoded) {
-			ApplySorting(pair.first, pair.second);
+			ApplySorting(pair.first, FromStoreFlags(pair.second));
 		}
 	}
 
@@ -236,7 +255,12 @@ void CMuleDataViewCtrl::SaveColumnSettings()
 	if (!m_columnStore.HasTableName()) {
 		return;
 	}
-	m_columnStore.SaveSettings(m_widthAdapter, m_sort_orders);
+	CListColumnStore::CSortingList stored;
+	for (const CColPair &pair : m_sort_orders) {
+		stored.emplace_back(pair.first, ToStoreFlags(pair.second));
+	}
+
+	m_columnStore.SaveSettings(m_widthAdapter, stored);
 }
 
 void CMuleDataViewCtrl::OnColumnHeaderClick(wxDataViewEvent &event)
