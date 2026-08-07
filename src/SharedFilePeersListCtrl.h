@@ -39,11 +39,10 @@ public:
 	 * @see CGenericClientListCtrl::CGenericClientListCtrl for documentation of parameters.
 	 */
 	CSharedFilePeersListCtrl(wxWindow *parent,
-		wxWindowID winid = -1,
+		wxWindowID winid = wxID_ANY,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &size = wxDefaultSize,
-		long style = wxLC_ICON,
-		const wxValidator &validator = wxDefaultValidator,
+		long style = 0,
 		const wxString &name = "peerslistctrl");
 
 	/**
@@ -52,15 +51,12 @@ public:
 	virtual ~CSharedFilePeersListCtrl();
 
 private:
-	virtual CamuleDlg::DialogType GetParentDialog() { return CamuleDlg::DT_SHARED_WND; }
+	CamuleDlg::DialogType GetParentDialog() override { return CamuleDlg::DT_SHARED_WND; }
 
-	virtual void SetShowSources(CKnownFile *f, bool b) const;
+	void SetShowSources(CKnownFile *f, bool b) const override;
 
-	static int wxCALLBACK SourceSortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-
-	bool IsShowingDownloadSources() const { return false; }
-
-	wxDECLARE_EVENT_TABLE();
+	bool IsShowingDownloadSources() const override { return false; }
 };
 
 #endif
+// File_checked_for_headers

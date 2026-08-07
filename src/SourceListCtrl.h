@@ -29,7 +29,6 @@
 
 /**
  * This class is responsible for representing the sources for a file.
-
  */
 class CSourceListCtrl : public CGenericClientListCtrl
 {
@@ -40,11 +39,10 @@ public:
 	 * @see CGenericClientListCtrl::CGenericClientListCtrl for documentation of parameters.
 	 */
 	CSourceListCtrl(wxWindow *parent,
-		wxWindowID winid = -1,
+		wxWindowID winid = wxID_ANY,
 		const wxPoint &pos = wxDefaultPosition,
 		const wxSize &size = wxDefaultSize,
-		long style = wxLC_ICON,
-		const wxValidator &validator = wxDefaultValidator,
+		long style = 0,
 		const wxString &name = "sourcelistctrl");
 
 	/**
@@ -53,15 +51,13 @@ public:
 	virtual ~CSourceListCtrl();
 
 private:
-	virtual CamuleDlg::DialogType GetParentDialog() { return CamuleDlg::DT_TRANSFER_WND; }
+	CamuleDlg::DialogType GetParentDialog() override { return CamuleDlg::DT_TRANSFER_WND; }
 
-	virtual void SetShowSources(CKnownFile *f, bool b) const;
+	void SetShowSources(CKnownFile *f, bool b) const override;
 
-	static int wxCALLBACK SourceSortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
+	CMuleBarRenderer *CreateProgressBarRenderer() const override;
 
-	bool IsShowingDownloadSources() const { return true; }
-
-	wxDECLARE_EVENT_TABLE();
+	bool IsShowingDownloadSources() const override { return true; }
 };
 
 #endif
