@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-06 11:17+0000\n"
+"PO-Revision-Date: 2026-08-07 10:24+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -57,7 +57,7 @@ msgstr "ИМЯ"
 #. type: Plain text
 #: amule.1.in
 msgid "amule - the all-platform eMule p2p client"
-msgstr "amule - мультиплатформенный p2p клиент eMule"
+msgstr "amule — многоплатформенный P2P-клиент eMule"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
@@ -194,7 +194,7 @@ msgstr "Добавляемая eD2k-ссылка может быть:"
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
 msgid "a file link (ed2k://|file|...), it will be added to the download queue;"
-msgstr "файловая ссылка (ed2k://|file|...), она будет добавлена в очередь закачки;"
+msgstr "файловая ссылка (ed2k://|file|...), она будет добавлена в очередь скачивания;"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
@@ -482,7 +482,7 @@ msgstr "Magnet-ссылка должна содержать eD2k-хэш и ра�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Cancels the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
-msgstr "Отменяет закачку указанную по I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>. Чтобы определить значения, воспользуйтесь командой B<show>."
+msgstr "Отменяет скачивание, указанное в I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>. Чтобы определить значения, воспользуйтесь командой B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -507,12 +507,12 @@ msgstr "Отсоединяет от всех сетей, или только о�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Start downloading a file."
-msgstr "Начать закачку файла."
+msgstr "Начать скачивание файла."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Должен быть указан I<E<lt>номерE<gt>> файла в последнем поиске.  Пример: `download 12' поставит на закачку файл, который был под номером 12 в последнем поиске."
+msgstr "Должен быть указан I<E<lt>номерE<gt>> файла в последнем поиске.  Пример: `download 12' начнёт скачивание файла, который был под номером 12 в последнем поиске."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -547,12 +547,12 @@ msgstr "Вывести короткую справку. Если вызвана 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Pauses the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
-msgstr "Ставит на паузу закачку указанную по I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>. Чтобы определить значения, воспользуйтесь командой B<show>."
+msgstr "Ставит на паузу скачивание, указанное в I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>. Чтобы определить значения, воспользуйтесь командой B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set priority of a download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>."
-msgstr "Указывает приоритет закачки указанной по I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>."
+msgstr "Указывает приоритет скачивания, указанного в I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -617,7 +617,7 @@ msgstr "Показывает результаты поиска. Может пр�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Resumes the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
-msgstr "Возобновляет закачку указанную по I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>. Чтобы определить значения, воспользуйтесь командой B<show>."
+msgstr "Возобновляет скачивание, указанное в I<E<lt>хэшуE<gt>> или I<E<lt>номеруE<gt>>. Чтобы определить значения, воспользуйтесь командой B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -842,7 +842,7 @@ msgstr "Демон aMule"
 #. type: Plain text
 #: amuled.1.in
 msgid "amuled - the all-platform eMule p2p client - daemonized version"
-msgstr "amuled - мультиплатформенный p2p клиент eMule - демонизированная версия"
+msgstr "amuled — многоплатформенный P2P-клиент eMule — демонизированная версия"
 
 #. type: Plain text
 #: amuled.1.in ../../src/utils/cas/docs/cas.1.in
