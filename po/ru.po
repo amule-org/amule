@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-07 11:26+0200\n"
-"PO-Revision-Date: 2026-08-06 11:13+0000\n"
+"PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -44,7 +44,7 @@ msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
 msgstr ""
-"Многоплатформенный p2p-клиент основанный на eMule \n"
+"Многоплатформенный P2P-клиент на базе eMule \n"
 "\n"
 
 #: src/AboutDialog.cpp
@@ -65,7 +65,7 @@ msgstr "Kademlia: пиринговый роутинг на основе XOR-ме
 
 #: src/AboutDialog.cpp
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
-msgstr " Авторское право (c) 2002-2011 Петар Маймунков( petar@maymounkov.org )\n"
+msgstr " Авторское право (c) 2002-2011 Петар Маймунков (petar@maymounkov.org)\n"
 
 #: src/AboutDialog.cpp
 msgid "Website:"
@@ -824,7 +824,7 @@ msgstr "Инструмент импортирования частично за�
 
 #: src/amuleDlg.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About"
-msgstr "О программе"
+msgstr "Справка"
 
 #: src/amuleDlg.cpp
 msgid "About/Help"
@@ -1056,7 +1056,7 @@ msgstr "Новое сообщение от '%s' (IP:%s)"
 #: src/BaseClient.cpp
 #, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
-msgstr "Пользователь %s (%u) запросил список публикуемых файлов из несуществующего каталога %s -> Проигнорировано"
+msgstr "Пользователь %s (%u) запросил список публикуемых файлов из несуществующего каталога «%s» -> Проигнорировано"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
@@ -1259,12 +1259,12 @@ msgstr "Пользователь %s (%u) запросил список публ�
 #: src/ClientTCPSocket.cpp
 #, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> accepted"
-msgstr "Пользователь %s (%u) запросил список публикуемых файлов из каталога '%s' -> Принято"
+msgstr "Пользователь %s (%u) запросил список публикуемых файлов из каталога «%s» -> Принято"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr "Пользователь %s (%u) запросил список публикуемых файлов из каталога '%s' -> Отказано"
+msgstr "Пользователь %s (%u) запросил список публикуемых файлов из каталога «%s» -> Отказано"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1423,7 +1423,7 @@ msgstr "Нет нужных частей"
 
 #: src/DataToText.cpp
 msgid "Cannot connect LowID to LowID"
-msgstr "Низкие ИД не могут подключаться друг к другу"
+msgstr "Низкие ИД не могут соединяться"
 
 #: src/DataToText.cpp
 msgid "Too many connections"
@@ -1509,7 +1509,7 @@ msgstr "ОШИБКА: недостаточно места на диске"
 
 #: src/DataToText.cpp
 msgid "ERROR: Partmet not found"
-msgstr "ОШИБКА: Не найден файл part.met"
+msgstr "ОШИБКА: частичный met-файл не найден"
 
 #: src/DataToText.cpp
 msgid "ERROR: IO error!"
@@ -2533,11 +2533,11 @@ msgstr "Настройка не завершена"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
-msgstr "Не удалось открыть список друзей 'emfriends.met' для чтения!"
+msgstr "Не удалось открыть файл списка друзей «emfriends.met» для чтения!"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
-msgstr "Не удалось открыть список друзей 'emfriends.met' для записи!"
+msgstr "Не удалось открыть файл списка друзей «emfriends.met» для записи!"
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
@@ -2771,7 +2771,7 @@ msgstr "Не удалось загрузить %s с %s"
 
 #: src/IPFilter.cpp
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
-msgstr "Загружаю IP-фильтры 'ipfilter.dat' и 'ipfilter_static.dat'."
+msgstr "Загружаются IP-фильтры «ipfilter.dat» и «ipfilter_static.dat»."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -2795,9 +2795,9 @@ msgstr[2] "Загружено %u IP-диапазонов из «%s»."
 #, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
-msgstr[0] "%u испорченная строка была пропущена."
-msgstr[1] "%u испорченных строки было пропущено."
-msgstr[2] "%u испорченных строк было пропущено."
+msgstr[0] "%u испорченная строка пропущена."
+msgstr[1] "%u испорченных строки пропущено."
+msgstr[2] "%u испорченных строк пропущено."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -2815,15 +2815,15 @@ msgstr "Узлы (%u)"
 
 #: src/KadDlg.cpp
 msgid "Invalid ip to bootstrap"
-msgstr "Неверный IP для инициализации"
+msgstr "Неверный IP-адрес для начальной загрузки"
 
 #: src/KadDlg.cpp
 msgid "Invalid port to bootstrap"
-msgstr "Неверный порт для инициализации"
+msgstr "Неверный порт для начальной загрузки"
 
 #: src/KadDlg.cpp
 msgid "Please fill all fields required"
-msgstr "Пожалуйста, заполните все необходимые поля"
+msgstr "Заполните все обязательные поля"
 
 #: src/KadDlg.cpp src/PartFile.cpp src/PrefsUnifiedDlg.cpp
 msgid "Message"
@@ -2835,7 +2835,7 @@ msgstr "Уверены, что хотите скачать новый файл n
 
 #: src/KadDlg.cpp
 msgid "Doing so will remove your current nodes and restart Kademlia connection."
-msgstr "Это удалит используемые в данный момент узлы и перезапустит Kademlia."
+msgstr "Это удалит ваши текущие узлы и перезапустит Kademlia."
 
 #: src/KadDlg.cpp
 msgid "Continue?"
@@ -2863,14 +2863,14 @@ msgstr[2] "Считано %u контактов Kad"
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
-msgstr "Не найдено контактов. Произведите инициализацию, или загрузите файл nodes.dat."
+msgstr "Контакты не найдены. Выполните начальную загрузку или скачайте файл nodes.dat."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
 msgid "Only %d Kad contact available, nodes.dat not written"
 msgid_plural "Only %d Kad contacts available, nodes.dat not written"
 msgstr[0] "Доступен только %d контакт Kad, файл nodes.dat не записан"
-msgstr[1] "Доступно только %d контакта Kad, файл nodes.dat не записан"
+msgstr[1] "Доступны только %d контакта Kad, файл nodes.dat не записан"
 msgstr[2] "Доступно только %d контактов Kad, файл nodes.dat не записан"
 
 #: src/kademlia/routing/RoutingZone.cpp
@@ -3500,7 +3500,7 @@ msgstr "Полное имя:"
 
 #: src/muuli_wdr.cpp
 msgid "met-File :"
-msgstr "Файл met:"
+msgstr "Met-файл:"
 
 #: src/muuli_wdr.cpp
 msgid "Hash :"
@@ -3706,7 +3706,7 @@ msgstr "Обновить"
 
 #: src/muuli_wdr.cpp
 msgid "Downloading, please wait ..."
-msgstr "Идёт скачивание, подождите…"
+msgstr "Скачивается, подождите…"
 
 #: src/muuli_wdr.cpp
 msgid "Unknown size"
@@ -3902,7 +3902,7 @@ msgstr "Периодически проверять наличие новой в
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr "Включение этой опции заставит aMule проверять наличие новой версии при запуске и раз в день во время работы"
+msgstr "При включённом флажке aMule проверяет наличие новой версии при запуске и раз в день во время работы"
 
 #: src/muuli_wdr.cpp
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
@@ -3962,7 +3962,7 @@ msgstr "Показывать уведомления о завершении ск
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr "Включение этой опции заставит aMule показывать уведомления по завершении скачивания."
+msgstr "При включённом флажке aMule показывает уведомления по завершении скачивания."
 
 #: src/muuli_wdr.cpp
 msgid "Remember search history"
@@ -4106,7 +4106,7 @@ msgstr "Умная проверка на Низкий ИД при подключ
 
 #: src/muuli_wdr.cpp
 msgid "Safe connect"
-msgstr "Безопасное подключение"
+msgstr "Осторожное подключение к серверам"
 
 #: src/muuli_wdr.cpp
 msgid "Autoconnect to servers in static list only"
@@ -4134,7 +4134,7 @@ msgstr "Режим завершения: переключать на быстр�
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
-msgstr "Возобновлять следующий файл на паузе при завершении загрузки"
+msgstr "Возобновлять следующий файл из паузы по завершении текущего"
 
 #: src/muuli_wdr.cpp
 msgid "From the same category"
@@ -4162,7 +4162,7 @@ msgstr "Разреженные part-файлы занимают место на 
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
-msgstr "Остановить скачивание, если cвободно менее "
+msgstr "Остановить скачивания, если на диске cвободно менее "
 
 #: src/muuli_wdr.cpp
 msgid "Select this if you want aMule to check your disk space"
@@ -4195,7 +4195,7 @@ msgstr "Разрешить"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
-msgstr "Расширенное ICH доверяет каждому хешу (не рекомендуется)"
+msgstr "Расширенная ICH доверяет каждому хешу (не рекомендуется)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
@@ -4387,7 +4387,7 @@ msgstr "Дерево"
 
 #: src/muuli_wdr.cpp
 msgid "Number of Client Versions shown (0=unlimited)"
-msgstr "Число отображаемых версий клиентов (0=неограничено)"
+msgstr "Число отображаемых версий клиентов (0 — без ограничения)"
 
 #: src/muuli_wdr.cpp
 msgid "!!! WARNING !!!"
@@ -4662,7 +4662,7 @@ msgstr "Список серверов"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
-msgstr "Введите URL-адрес к файлу «server.met» и нажмите кнопку слева для обновления списка известных серверов."
+msgstr "Введите адрес к файлу server.met и нажмите кнопку слева для обновления списка известных серверов."
 
 #: src/muuli_wdr.cpp
 msgid "Add server manually: Name"
@@ -4816,7 +4816,7 @@ msgstr "Перезагрузить список IP-адресов для фил�
 
 #: src/muuli_wdr.cpp
 msgid "URL:"
-msgstr "URL-адрес:"
+msgstr "Адрес:"
 
 #: src/muuli_wdr.cpp
 msgid "Update now"
@@ -5106,7 +5106,7 @@ msgstr "Удалить выбранное"
 
 #: src/muuli_wdr.cpp
 msgid "Event Types"
-msgstr "Типы Событий"
+msgstr "Типы событий"
 
 #: src/muuli_wdr.cpp
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
@@ -5291,7 +5291,7 @@ msgstr "Создаю целевой файл"
 #: src/PartFileConvert.cpp
 #, c-format
 msgid "Loading data from old download file (%u of %u)"
-msgstr "Загружаю данные из старого файла загрузки (%u из %u)"
+msgstr "Загружаются данные из старого файла скачивания (%u из %u)"
 
 #: src/PartFileConvert.cpp
 #, c-format
@@ -5345,7 +5345,7 @@ msgstr "ОШИБКА: невозможно создать part-файл"
 #: src/PartFile.cpp
 #, c-format
 msgid "Trying to load backup of met-file from %s"
-msgstr "Попытка загрузки резервной копии файла «.met» из %s"
+msgstr "Попытка загрузки резервной копии met-файла из %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5355,7 +5355,7 @@ msgstr "ОШИБКА: не удалось открыть файл part.met: %s =
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: part.met file is 0 size: %s ==> %s"
-msgstr "ОШИБКА: файл part.met пуст: %s ==> %s"
+msgstr "ОШИБКА: файл part.met нулевого размера: %s ==> %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5415,7 +5415,7 @@ msgstr "Записано 0 / неизвестное число байт в «%s�
 #: src/PartFile.cpp
 #, c-format
 msgid "Failed to save part.met.seeds file for %s"
-msgstr "Не удалось сохранить файл 'part.met.seeds' для %s"
+msgstr "Не удалось сохранить файл part.met.seeds для %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5439,9 +5439,9 @@ msgstr "Ошибка при чтении источников частично �
 #, c-format
 msgid "Found corrupted part (%d) in %d part file %s - FileResultHash |%s| FileHash |%s|"
 msgid_plural "Found corrupted part (%d) in %d parts file %s - FileResultHash |%s| FileHash |%s|"
-msgstr[0] "Найдена испорченная часть (%d) в %d части файла %s - FileResultHash |%s| FileHash |%s|"
-msgstr[1] "Найдена испорченная часть (%d) в %d частях файла %s - FileResultHash |%s| FileHash |%s|"
-msgstr[2] "Найдена испорченная часть (%d) в %d частях файла %s - FileResultHash |%s| FileHash |%s|"
+msgstr[0] "Найдена повреждённая часть (%d) в %d части файла %s — Результат хеша файла |%s| Хеш файла |%s|"
+msgstr[1] "Найдена повреждённая часть (%d) в %d частях файла %s — Результат хеша файла |%s| Хеш файла |%s|"
+msgstr[2] "Найдена повреждённая часть (%d) в %d частях файла %s — Результат хеша файла |%s| Хеш файла |%s|"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6004,9 +6004,9 @@ msgid ""
 "Please fill in at least one URL to point to a valid server.met file.\n"
 "Click on the button \"List\" by this checkbox to enter an URL."
 msgstr ""
-"Ваш список авто обновления серверов пуст.\n"
-"Пожалуйста, внесите в список хотя бы один URL, указывающий на корректный 'server.met'.\n"
-"Щелкните на кнопке \"Список\" чтобы ввести URL."
+"Ваш список автообновления серверов пуст.\n"
+"Пожалуйста, внесите в список хотя бы один адрес, указывающий на верный server.met.\n"
+"Щёлкните на кнопке «Список», чтобы ввести адрес."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Temporary files"
@@ -6071,7 +6071,7 @@ msgid ""
 "Add here URL's to download server.met files.\n"
 "Only one url on each line."
 msgstr ""
-"Добавьте адреса для скачивания файлов «server.met».\n"
+"Добавьте адреса для скачивания файлов server.met.\n"
 "По одному на строку."
 
 #: src/PrefsUnifiedDlg.cpp
@@ -6405,16 +6405,16 @@ msgstr "Получен устаревший результат DNS-запрос�
 #: src/ServerList.cpp
 #, c-format
 msgid "Loading server.met file: %s"
-msgstr "Загружается файл «server.met»: %s"
+msgstr "Загружается файл server.met: %s"
 
 #: src/ServerList.cpp
 msgid "Server.met file not found!"
-msgstr "Файл 'server.met' не найден!"
+msgstr "Файл server.met не найден!"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Failed to load server.met file '%s', unknown format encountered."
-msgstr "Не удалось загрузить файл server.met '%s', потому что он имеет неправильный формат."
+msgstr "Не удалось загрузить файл server.met «%s», неизвестный формат."
 
 #: src/ServerList.cpp
 msgid "Failed to open server.met!"
@@ -6423,7 +6423,7 @@ msgstr "Не удалось открыть файл 'server.met'!"
 #: src/ServerList.cpp
 #, c-format
 msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
-msgstr "Файл server.met поврежден. Неверная метка версии: 0x%x, размер %i"
+msgstr "Файл server.met повреждён. Неверная метка версии: 0x%x, размер %i"
 
 #: src/ServerList.cpp
 #, c-format
@@ -6437,9 +6437,9 @@ msgstr[2] "В файле 'server.met' найдено %i серверов"
 #, c-format
 msgid "%d server added"
 msgid_plural "%d servers added"
-msgstr[0] "%d сервер добавлен"
-msgstr[1] "%d сервера добавлено"
-msgstr[2] "%d серверов добавлено"
+msgstr[0] "Добавлен %d сервер"
+msgstr[1] "Добавлены %d сервера"
+msgstr[2] "Добавлено %d серверов"
 
 #: src/ServerList.cpp
 msgid "Error: the file 'server.met' is corrupted: "
@@ -6457,17 +6457,17 @@ msgstr "Сервер не был добавлен: [%s:%d] не указывае
 #: src/ServerList.cpp
 #, c-format
 msgid "Server not added: The IP of [%s:%d] is filtered or invalid."
-msgstr "Сервер не был указан: IP адрес [%s:%d] был отфильтрован или неверен."
+msgstr "Сервер не был указан: IP-адрес [%s:%d] отфильтрован или неверен."
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server not added: Server with matching IP:Port [%s:%d] found in list."
-msgstr "Сервер не был добавлен: сервер с совпадающим IP:порт [%s:%d] был найден в списке."
+msgstr "Сервер не был добавлен: сервер с такими IP:порт [%s:%d] уже есть в списке."
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
-msgstr "Сервер добавлен: сервер [%s:%d] использует имя '%s'."
+msgstr "Сервер добавлен: сервер [%s:%d] использует имя «%s»."
 
 #: src/ServerList.cpp
 msgid "You are connected to the server you are trying to delete. please disconnect first."
@@ -6507,7 +6507,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: неверный URL для авто-об�
 
 #: src/ServerList.cpp
 msgid "No valid server.met auto-download url on addresses.dat"
-msgstr "Отсутствует допустимый 'server.met' файл по адресу для автоматического обновления серверов"
+msgstr "В addresses.dat нет верного адреса для автообновления server.met"
 
 #: src/ServerList.cpp
 #, c-format
@@ -6516,7 +6516,7 @@ msgstr "Не удалось получить список серверов из 
 
 #: src/ServerList.cpp
 msgid "Local server is filtered by the IPFilters, reconnecting to a different server!"
-msgstr "Локальный сервер отфильтрован через IPFilters. Подключаюсь к другому серверу!"
+msgstr "Локальный сервер отфильтрован IP-фильтром, переподключение к другому серверу!"
 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
@@ -6573,9 +6573,8 @@ msgid "Are you sure you want to delete the static server %s"
 msgstr "Уверены, что хотите удалить постоянный сервер %s"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "ms"
-msgstr "м"
+msgstr "мс"
 
 #: src/ServerListCtrl.cpp
 #, c-format
@@ -6821,7 +6820,7 @@ msgstr "Проиндексировано источников:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed keywords:"
-msgstr "Ключевые слова проиндексированы:"
+msgstr "Индексированные ключевые слова:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed notes:"
@@ -6829,7 +6828,7 @@ msgstr "Проиндексировано записей:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed load:"
-msgstr "Загрузки проиндексированы:"
+msgstr "Нагрузка индекса:"
 
 #: src/ServerWnd.cpp
 msgid "Average Users:"
@@ -6967,7 +6966,7 @@ msgstr "Проверить локальные данные"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Add files in collection to transfer list"
-msgstr "Добавить файлы коллекции в список для закачки"
+msgstr "Добавить файлы из коллекции в список передач"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy magnet &URI to clipboard"
@@ -7048,7 +7047,7 @@ msgstr "Общие файлы (%i)"
 #: src/SharedFilesCtrl.cpp src/SharedFilesWnd.cpp src/Statistics.cpp
 #, c-format
 msgid "Total size of Shared Files: %s"
-msgstr "Общий размер опубликованных файлов: %s"
+msgstr "Общий размер публикуемых файлов: %s"
 
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
@@ -7439,7 +7438,7 @@ msgid ""
 "Download:\t%s"
 msgstr ""
 "\n"
-"Закачка:\t%s"
+"Скачивание:\t%s"
 
 #: src/TextClient.cpp
 #, c-format
@@ -7614,7 +7613,7 @@ msgid ""
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
 "Добавляемая eD2k ссылка может являться:\n"
-"*) ссылкой на файл (ed2k://|file|...), тогда данный файл будет добавлен в очередь на закачку\n"
+"*) ссылкой на файл (ed2k://|file|...), тогда данный файл будет добавлен в очередь скачивания\n"
 "*) ссылкой на сервер (ed2k://|server|...), тогда данный сервер будет добавлен в список серверов\n"
 "*) ссылкой на список серверов, тогда все серверы из него будут\n"
 "   добавлены в список\n"
@@ -7821,11 +7820,11 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Pause download."
-msgstr "Приостановить закачку."
+msgstr "Приостановить скачивание."
 
 #: src/TextClient.cpp
 msgid "Resume download."
-msgstr "Продолжить закачку."
+msgstr "Возобновить скачивание."
 
 #: src/TextClient.cpp
 msgid "Cancel download."
