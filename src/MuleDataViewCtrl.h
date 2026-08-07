@@ -34,6 +34,8 @@
 #include <utility>
 #include <vector>
 
+class CMuleBarRenderer;
+
 /**
  * Shared behaviour for aMule's wxDataViewCtrl-backed lists.
  *
@@ -198,11 +200,17 @@ protected:
 	 * bar), for lists that used to paint one with direct wxDC calls in an
 	 * owner-drawn OnDrawItem(). The subclass supplies the per-row fill data
 	 * through CMuleVirtualDataViewCtrl::GetItemBarFill().
+	 *
+	 * @a renderer lets a subclass draw more than the plain chunk bar (e.g.
+	 * CDownloadListCtrl's CDownloadBarRenderer, which adds a completed-progress
+	 * overlay and percent text) by passing its own CMuleBarRenderer subclass;
+	 * null constructs a plain one, today's behaviour.
 	 */
 	void AppendBarColumn(const wxString &title,
 		unsigned modelColumn,
 		int width,
-		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE,
+		CMuleBarRenderer *renderer = nullptr);
 
 	/**
 	 * Append a column and register it for persistence, in one call.
@@ -255,7 +263,8 @@ protected:
 		unsigned modelColumn,
 		const wxString &key,
 		int width,
-		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE,
+		CMuleBarRenderer *renderer = nullptr);
 
 	/**
 	 * Sizes the per-column state and snapshots the current widths. Call

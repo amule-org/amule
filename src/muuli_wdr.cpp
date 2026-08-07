@@ -413,7 +413,7 @@ wxSizer *transferTopPane( wxWindow *parent, bool call_fit, bool set_sizer )
     wxTextCtrl *itemDlFilter = new wxTextCtrl( parent, IDC_TRANSFER_FILTER, "", wxDefaultPosition, wxSize(150,-1), 0 );
     item1->Add( itemDlFilter, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
-    CDownloadListCtrl *item5 = new CDownloadListCtrl( parent, ID_DLOADLIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
+    CDownloadListCtrl *item5 = new CDownloadListCtrl( parent, ID_DLOADLIST, wxDefaultPosition, wxDefaultSize, 0 );
     item5->SetName( "downloadList" );
     item0->Add( item5, wxSizerFlags(1).Expand().CenterVertical() );
     if (set_sizer)

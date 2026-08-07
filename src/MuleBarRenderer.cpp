@@ -77,15 +77,9 @@ bool CMuleBarRenderer::Render(wxRect cell, wxDC *dc, int WXUNUSED(state))
 
 	const bool bFlat = thePrefs::UseFlatBar();
 
-	wxRect barRect = cell;
-	if (!bFlat) {
-		// Round bar has a black border; the bar itself is inset by one pixel
-		// on each side -- matches every pre-port CBarShader caller.
-		barRect.x++;
-		barRect.y++;
-		barRect.width -= 2;
-		barRect.height -= 2;
-	}
+	// Round bar has a black border; the bar itself is inset by one pixel on
+	// each side -- matches every pre-port CBarShader caller.
+	const wxRect barRect = InsetForBar(cell, bFlat);
 	if (barRect.GetWidth() <= 0 || barRect.GetHeight() <= 0) {
 		return true;
 	}
