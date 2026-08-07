@@ -69,6 +69,7 @@
 #include "ServerConnect.h"           // Needed for CServerConnect
 #include "ServerWnd.h"               // Needed for CServerWnd
 #include "SharedFilesWnd.h"          // Needed for CSharedFilesWnd
+#include "SharedFilesCtrl.h"         // Needed for CSharedFilesCtrl::UpdateFreeSpace
 #include "SharedFilePeersListCtrl.h" // Needed for CSharedFilePeersListCtrl
 #include "Statistics.h"              // Needed for theStats
 #include "StatisticsDlg.h"           // Needed for CStatisticsDlg
@@ -586,6 +587,41 @@ void CamuleDlg::RemoveSystray()
 {
 	delete m_wndTaskbarNotifier;
 	m_wndTaskbarNotifier = NULL;
+}
+
+void CamuleDlg::SetFreeSpaceLabel(wxStaticText *label, sint64 freeSpace, bool warn, const wxString &separator)
+{
+	if (!label) {
+		return;
+	}
+
+	// Nothing to say rather than something wrong: the figure is missing
+	// when the directory could not be queried at all -- it doesn't exist,
+	// or its mount (commonly a NAS for the temp or incoming directory) is
+	// unreachable. Printing "0 bytes" there would read as a full disk.
+	if (freeSpace == FREE_SPACE_UNKNOWN) {
+		if (!label->GetLabel().IsEmpty()) {
+			label->SetLabel(wxEmptyString);
+			label->GetParent()->Layout();
+		}
+		return;
+	}
+
+	// The separator is layout, not language: it stays out of the catalog so
+	// translators are given the figure alone.
+	const wxString text = separator + wxString(CFormat(_("Free space: %s")) % CastItoXBytes(freeSpace));
+	const wxColour colour = warn ? *wxRED : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
+
+	// Both guarded: SetLabel() on an unchanged string still triggers a
+	// repaint, and this runs once a second for the life of the session.
+	if (label->GetForegroundColour() != colour) {
+		label->SetForegroundColour(colour);
+		label->Refresh();
+	}
+	if (label->GetLabel() != text) {
+		label->SetLabel(text);
+		label->GetParent()->Layout();
+	}
 }
 
 void CamuleDlg::RestoreMainWindow()
@@ -1641,6 +1677,24 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 			m_searchwnd->RefreshVisibleTabProgress();
 		}
 #endif
+
+		// Free space moves on its own as the part files grow, so it is
+		// refreshed on the clock rather than when a list changes -- but only
+		// for the panel actually on screen. Nobody can read a label on a
+		// panel that is behind another one or in a window hidden to the
+		// tray, and the Downloads refresh walks the whole queue to decide
+		// whether to warn. Switching panels picks the figure up on the next
+		// tick.
+		if (IsVisibleToUser()) {
+			if (IsDialogVisible(DT_TRANSFER_WND) && m_transferwnd &&
+				m_transferwnd->downloadlistctrl) {
+				m_transferwnd->downloadlistctrl->UpdateFreeSpace();
+			}
+			if (IsDialogVisible(DT_SHARED_WND) && m_sharedfileswnd &&
+				m_sharedfileswnd->sharedfilesctrl) {
+				m_sharedfileswnd->sharedfilesctrl->UpdateFreeSpace();
+			}
+		}
 	}
 }
 

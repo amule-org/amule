@@ -47,6 +47,7 @@
 #include "MuleBarRenderer.h"  // Needed for CBarFillSpec, CBarFillSpan
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "OtherFunctions.h"   // Needed for GetRateString
+#include "Statistics.h"       // Needed for theStats (incoming free space)
 #include "GuiEvents.h"        // Needed for CoreNotify_*
 #include "MuleCollection.h"   // Needed for CMuleCollection
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
@@ -1005,6 +1006,19 @@ void CSharedFilesCtrl::EndBulkUpdate()
 	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd) {
 		theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
 	}
+}
+
+void CSharedFilesCtrl::UpdateFreeSpace()
+{
+	if (!theApp->amuledlg || !theApp->amuledlg->m_sharedfileswnd) {
+		return;
+	}
+	// Resolved once; see the note on CDownloadListCtrl's copy.
+	if (!m_freeSpaceLabel) {
+		m_freeSpaceLabel =
+			CastByName("sharedFilesFreeSpace", theApp->amuledlg->m_sharedfileswnd, wxStaticText);
+	}
+	CamuleDlg::SetFreeSpaceLabel(m_freeSpaceLabel, theStats::GetIncomingFreeSpace(), false);
 }
 
 void CSharedFilesCtrl::ShowFilesCount()

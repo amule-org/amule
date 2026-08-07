@@ -45,6 +45,7 @@
 class wxTimerEvent;
 class wxTextCtrl;
 class wxNotebook;
+class wxStaticText;
 class CVersionCheck;
 
 class CIP2Country;
@@ -206,6 +207,22 @@ public:
 
 	void CreateSystray();
 	void RemoveSystray();
+
+	/**
+	 * Renders a free-space figure into one of the panel labels.
+	 *
+	 * Shared by the Downloads and Shared Files panels so both read the same
+	 * and neither has to re-decide what an unavailable figure looks like:
+	 * FREE_SPACE_UNKNOWN empties the label rather than printing a size, so
+	 * an unreachable mount shows nothing instead of "0 bytes free".
+	 *
+	 * @param warn Draw it in red -- the caller's judgement, since only the
+	 *             Downloads panel has something to compare against.
+	 * @param separator Prefix for a label that continues a line, empty for
+	 *                  one that starts its own.
+	 */
+	static void SetFreeSpaceLabel(
+		wxStaticText *label, sint64 freeSpace, bool warn, const wxString &separator = wxEmptyString);
 
 	/**
 	 * Brings the main window back from every state that hides it.

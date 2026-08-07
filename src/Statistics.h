@@ -56,6 +56,19 @@ typedef struct HistoryRecord
 	uint64 kadNodesTotal;
 } HR;
 
+/**
+ * Returned by the free-space getters when the figure isn't available.
+ *
+ * A distinct value rather than 0: an unreachable mount and a genuinely
+ * full disk are different states, and the second one is exactly what the
+ * Downloads panel warns about. Callers must not render or compare this as
+ * a size.
+ */
+const sint64 FREE_SPACE_UNKNOWN = -1;
+
+//! How stale a cached free-space figure may get before it is re-sampled.
+const uint64 FREE_SPACE_SAMPLE_MS = 10000;
+
 // CPreciseRateCounter is the only history-bookkeeping primitive that
 // CLIENT_GUI needs (for the runAvg trend on remote stats graphs), so
 // it lives outside the #ifndef CLIENT_GUI gate even though the
@@ -431,6 +444,25 @@ public:
 	static void RemoveKadNode() { --s_kadNodesCur; }
 	static uint16_t GetKadNodes() { return s_kadNodesCur; }
 
+	/**
+	 * Free space on the filesystem holding the part files, in bytes, or
+	 * FREE_SPACE_UNKNOWN if it could not be determined.
+	 *
+	 * Sampled at most once every FREE_SPACE_SAMPLE_MS, not on every call:
+	 * the underlying statvfs()/GetDiskFreeSpaceEx() is a blocking call on
+	 * the directory, and on a network mount (NAS, and the temp directory
+	 * commonly is one) a slow or stale server blocks it for as long as the
+	 * mount's timeout. The callers are a per-second GUI refresh and every
+	 * EC stats poll from every connected client, so an uncached read would
+	 * multiply that exposure by the poll rate.
+	 */
+	static sint64 GetTempFreeSpace();
+
+	//! Free space where finished downloads land. See GetTempFreeSpace();
+	//! this is the default category's incoming directory, the one the
+	//! Shared Files panel reports.
+	static sint64 GetIncomingFreeSpace();
+
 	// Other
 	static void CalculateRates();
 
@@ -590,6 +622,13 @@ private:
 	static uint64_t s_totalSent;
 	static uint64_t s_totalReceived;
 
+	// Cached free space, and when each was last sampled (uptime ms, 0 =
+	// never). See GetTempFreeSpace() for why these are cached at all.
+	static sint64 s_tempFreeSpace;
+	static sint64 s_incomingFreeSpace;
+	static uint64 s_tempFreeSpaceTime;
+	static uint64 s_incomingFreeSpaceTime;
+
 	static bool s_statsNeedSave;
 };
 
@@ -624,6 +663,8 @@ enum StatDataIndex
 	sdTotalSentBytes,
 	sdTotalReceivedBytes,
 	sdSharedFileCount,
+	sdTempFreeSpace,
+	sdIncomingFreeSpace,
 
 	sdTotalItems
 };
@@ -687,6 +728,15 @@ public:
 	static uint32 GetBannedCount() { return s_statData[sdBannedClients]; }
 
 	static uint32 GetSharedFileCount() { return s_statData[sdSharedFileCount]; }
+
+	// Free space on the daemon's filesystems, as it reported them. The
+	// figures are necessarily the core's view: the machine running the GUI
+	// may not have those directories at all, and where it does have them
+	// mounted it can see a different size, quota or share. Stored as the
+	// unsigned slot the array is made of; FREE_SPACE_UNKNOWN survives the
+	// round trip because it is the all-ones pattern either way.
+	static sint64 GetTempFreeSpace() { return (sint64)s_statData[sdTempFreeSpace]; }
+	static sint64 GetIncomingFreeSpace() { return (sint64)s_statData[sdIncomingFreeSpace]; }
 
 	static uint32 GetED2KUsers() { return s_statData[sdED2KUsers]; }
 	static uint32 GetKadUsers() { return s_statData[sdKadUsers]; }

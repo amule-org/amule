@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 14:23+0200\n"
+"POT-Creation-Date: 2026-08-07 17:11+0200\n"
 "PO-Revision-Date: 2026-08-07 10:11+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -681,6 +681,11 @@ msgid "Navigate"
 msgstr ""
 
 #: src/amuleDlg.cpp
+#, fuzzy, c-format
+msgid "Free space: %s"
+msgstr "Mensaje del servidor: %s"
+
+#: src/amuleDlg.cpp
 msgid "New version available"
 msgstr "Nueva versión disponible"
 
@@ -1305,7 +1310,7 @@ msgstr "Nombre de usuario"
 msgid "File Name"
 msgstr "Nombre del archivo"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Rating"
 msgstr "Valoración"
 

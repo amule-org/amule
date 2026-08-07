@@ -224,7 +224,51 @@ uint16_t CStatistics::s_kadNodesCur;
 uint64_t CStatistics::s_totalSent;
 uint64_t CStatistics::s_totalReceived;
 
+// Free space, sampled on demand and cached (see GetTempFreeSpace()).
+sint64 CStatistics::s_tempFreeSpace = FREE_SPACE_UNKNOWN;
+sint64 CStatistics::s_incomingFreeSpace = FREE_SPACE_UNKNOWN;
+uint64 CStatistics::s_tempFreeSpaceTime = 0;
+uint64 CStatistics::s_incomingFreeSpaceTime = 0;
+
 bool CStatistics::s_statsNeedSave;
+
+namespace
+{
+/**
+ * Re-samples @a cached from @a path if it has gone stale, and returns it.
+ *
+ * @a lastSampled is the uptime in ms at the last sample, 0 for never.
+ */
+sint64 SampleFreeSpace(const CPath &path, sint64 &cached, uint64 &lastSampled)
+{
+	const uint64 now = GetTickCount64();
+	if (lastSampled != 0 && now - lastSampled < FREE_SPACE_SAMPLE_MS) {
+		return cached;
+	}
+	lastSampled = now;
+
+	// wxInvalidOffset here means the path could not be queried at all --
+	// it doesn't exist, or its mount is unreachable. Kept distinct from a
+	// real zero so the caller can say "unknown" instead of "disk full".
+	const sint64 free = CPath::GetFreeSpaceAt(path);
+	cached = (free == wxInvalidOffset) ? FREE_SPACE_UNKNOWN : free;
+	return cached;
+}
+} // namespace
+
+sint64 CStatistics::GetTempFreeSpace()
+{
+	return SampleFreeSpace(thePrefs::GetTempDir(), s_tempFreeSpace, s_tempFreeSpaceTime);
+}
+
+sint64 CStatistics::GetIncomingFreeSpace()
+{
+	// The default category's incoming directory. Categories can each have
+	// their own, on different filesystems, so there is no single figure
+	// that covers all of them -- the Shared Files panel this feeds has no
+	// category selector, so it reports the default.
+	return SampleFreeSpace(thePrefs::GetIncomingDir(), s_incomingFreeSpace, s_incomingFreeSpaceTime);
+}
 
 CStatistics::CStatistics()
 : m_graphRunningAvgDown(thePrefs::GetStatsAverageMinutes() * 60 * 1000, true)
@@ -1282,6 +1326,14 @@ void CStatistics::UpdateStats(const CECPacket *stats)
 	s_statData[sdTotalReceivedBytes] =
 		stats->GetTagByNameSafe(EC_TAG_STATS_TOTAL_RECEIVED_BYTES)->GetInt();
 	s_statData[sdSharedFileCount] = stats->GetTagByNameSafe(EC_TAG_STATS_SHARED_FILE_COUNT)->GetInt();
+
+	// Absence has to mean "unknown", not zero: a daemon older than these
+	// tags sends neither, and GetTagByNameSafe() would answer 0 for both --
+	// which the Downloads panel would read as a full disk and paint red.
+	const CECTag *tempFree = stats->GetTagByName(EC_TAG_STATS_TEMP_FREE_SPACE);
+	s_statData[sdTempFreeSpace] = tempFree ? tempFree->GetInt() : (uint64)FREE_SPACE_UNKNOWN;
+	const CECTag *incomingFree = stats->GetTagByName(EC_TAG_STATS_INCOMING_FREE_SPACE);
+	s_statData[sdIncomingFreeSpace] = incomingFree ? incomingFree->GetInt() : (uint64)FREE_SPACE_UNKNOWN;
 
 	const CECTag *LoggerTag = stats->GetTagByName(EC_TAG_STATS_LOGGER_MESSAGE);
 	if (LoggerTag) {

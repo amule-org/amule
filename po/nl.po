@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 14:23+0200\n"
+"POT-Creation-Date: 2026-08-07 17:11+0200\n"
 "PO-Revision-Date: 2026-08-07 10:17+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -675,6 +675,11 @@ msgid "Navigate"
 msgstr ""
 
 #: src/amuleDlg.cpp
+#, fuzzy, c-format
+msgid "Free space: %s"
+msgstr "Server-bericht: %s"
+
+#: src/amuleDlg.cpp
 #, fuzzy
 msgid "New version available"
 msgstr "Niet beschikbaar"
@@ -1294,7 +1299,7 @@ msgstr "Gebruikersnaam"
 msgid "File Name"
 msgstr "Bestandsnaam"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Rating"
 msgstr "Waardering"
 
