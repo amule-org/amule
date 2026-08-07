@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 17:11+0200\n"
+"POT-Creation-Date: 2026-08-07 21:37+0200\n"
 "PO-Revision-Date: 2026-08-07 10:08+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Bulgarian <dict@linux.zonebg.com>\n"
@@ -1278,7 +1278,7 @@ msgstr "Потребителско име"
 msgid "File Name"
 msgstr "Име на файл"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
 msgid "Rating"
 msgstr "Оценка"
 
@@ -1559,32 +1559,15 @@ msgstr ""
 msgid "Last Reception"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp
-#, fuzzy
-msgid "Are you sure that you wish to delete the selected file?"
-msgstr "Сигурни ли сте,че желаете да откажете свалянето и изтриете тези файлове ?\n"
-
-#: src/DownloadListCtrl.cpp
-#, fuzzy
-msgid "Are you sure that you wish to delete the selected files?"
-msgstr "Сигурни ли сте,че желаете да откажете свалянето и изтриете тези файлове ?\n"
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Auto"
+msgstr "Автоматично"
 
 #: src/DownloadListCtrl.cpp src/FriendListCtrl.cpp src/muuli_wdr.cpp
 #: src/ServerListCtrl.cpp src/TransferWnd.cpp
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Cancel"
 msgstr "Отказ"
-
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, c-format
-msgid ""
-"Feedback from: %s (%s)\n"
-"\n"
-msgstr ""
-
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-msgid "Auto"
-msgstr "Автоматично"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 msgid "&Stop"
@@ -1656,6 +1639,23 @@ msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "&Open the file"
+msgstr ""
+
+#: src/DownloadListCtrl.cpp
+#, fuzzy
+msgid "Are you sure that you wish to delete the selected file?"
+msgstr "Сигурни ли сте,че желаете да откажете свалянето и изтриете тези файлове ?\n"
+
+#: src/DownloadListCtrl.cpp
+#, fuzzy
+msgid "Are you sure that you wish to delete the selected files?"
+msgstr "Сигурни ли сте,че желаете да откажете свалянето и изтриете тези файлове ?\n"
+
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#, c-format
+msgid ""
+"Feedback from: %s (%s)\n"
+"\n"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
