@@ -194,6 +194,17 @@ protected:
 	void AppendSpacerColumn(unsigned modelColumn);
 
 	/**
+	 * Appends a column rendered by a CMuleBarRenderer (a CBarShader chunk
+	 * bar), for lists that used to paint one with direct wxDC calls in an
+	 * owner-drawn OnDrawItem(). The subclass supplies the per-row fill data
+	 * through CMuleVirtualDataViewCtrl::GetItemBarFill().
+	 */
+	void AppendBarColumn(const wxString &title,
+		unsigned modelColumn,
+		int width,
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+
+	/**
 	 * Sizes the per-column state and snapshots the current widths. Call
 	 * after the columns exist and after LoadColumnSettings(): it preserves
 	 * any hidden flags already restored through the width adapter.

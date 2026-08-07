@@ -26,7 +26,26 @@
 #ifndef SHAREDFILESCTRL_H
 #define SHAREDFILESCTRL_H
 
-#include "MuleVirtualListCtrl.h" // Needed for CMuleVirtualListCtrl
+#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
+
+#define COLUMN_SHARED_NAME 0
+#define COLUMN_SHARED_RATING 1
+#define COLUMN_SHARED_SIZE 2
+#define COLUMN_SHARED_TYPE 3
+#define COLUMN_SHARED_PRIO 4
+#define COLUMN_SHARED_REQ 5
+#define COLUMN_SHARED_AREQ 6
+#define COLUMN_SHARED_TRA 7
+#define COLUMN_SHARED_RTIO 8
+#define COLUMN_SHARED_PART 9
+#define COLUMN_SHARED_CMPL 10
+#define COLUMN_SHARED_SPEED 11
+#define COLUMN_SHARED_SINCE 12
+#define COLUMN_SHARED_LASTUP 13
+#define COLUMN_SHARED_PATH 14
+//! Always empty. Absorbs the macOS trailing-column sizing; see
+//! CMuleDataViewCtrl::AppendSpacerColumn().
+#define COLUMN_SHARED_SPACER 15
 
 class CSharedFileList;
 class CKnownFile;
@@ -35,7 +54,7 @@ class wxMenu;
 /**
  * This class represents the widget used to list shared files.
  */
-class CSharedFilesCtrl : public CMuleVirtualListCtrl
+class CSharedFilesCtrl : public CMuleVirtualDataViewCtrl
 {
 public:
 	/**
@@ -58,8 +77,8 @@ public:
 	 * (case-insensitive) are shown; an empty string clears the filter. Purely
 	 * GUI-side, so it works the same in the monolithic app and amulegui.
 	 */
-	// SetFilterText() is inherited from CMuleVirtualListCtrl; the rebuild it
-	// triggers is RebuildFilteredView() below.
+	// SetFilterText() is inherited from CMuleVirtualDataViewCtrl; the rebuild
+	// it triggers is RebuildFilteredView() below.
 
 	/** Empties the list (virtual-mode: clears the model + row index). */
 	void ClearList();
@@ -113,7 +132,40 @@ public:
 
 protected:
 	/// Return old column order.
-	wxString GetOldColumnOrder() const;
+	wxString GetOldColumnOrder() const override;
+
+	/// Text of one cell, pulled on demand for the cells being drawn.
+	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
+
+	/// Rating/comment smiley on the Rating column, nothing elsewhere.
+	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
+
+	/// Availability-bar spans for the Obtained Parts column.
+	void GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const override;
+
+	/** Whether the current primary sort column changes value during
+	 *  operation (drives the base's live auto-sort). */
+	bool IsLiveSortColumn() const override;
+
+	/** Pause live auto-sort while the context menu is open. */
+	bool IsMenuOpen() const override { return m_menu != nullptr; }
+
+	/// Single-column comparison for the base's sort chain.
+	int CompareItemData(
+		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+
+	/**
+	 * Function that specifies which columns have alternate sorting.
+	 *
+	 * @see CMuleListCtrl::AltSortAllowed
+	 */
+	bool AltSortAllowed(unsigned column) const override;
+
+	//! True if @a file passes the current text filter (name substring match).
+	/**
+	 * @see CMuleVirtualDataViewCtrl::RebuildFilteredView
+	 */
+	void RebuildFilteredView() override;
 
 private:
 	/**
@@ -126,65 +178,10 @@ private:
 	void DoShowFile(CKnownFile *file, bool batch);
 
 	/**
-	 * Draws the graph of file-part availability.
-	 *
-	 * @param file The file to make a graph over.
-	 * @param dc The wcDC to draw on.
-	 * @param rect The drawing area.
-	 *
-	 * This function draws a barspan showing the availability of the parts of
-	 * a file, for both Part-files and Known-files. Availability for Part-files
-	 * is determined using the currently known sources, while availability for
-	 * Known-files is determined using the sources requesting that file.
-	 */
-	void DrawAvailabilityBar(CKnownFile *file, wxDC *dc, const wxRect &rect) const;
-
-	/**
-	 * Overloaded function needed to do custom drawing of the items.
-	 */
-	virtual void OnDrawItem(
-		int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted);
-
-	/**
-	 * @see CMuleListCtrl::GetTTSText
-	 */
-	virtual wxString GetTTSText(unsigned item) const;
-
-	/**
-	 * The list is owner-drawn (OnDrawItem paints every cell from the file), so
-	 * this only feeds the generic control's keyboard type-ahead: the file name.
-	 */
-	virtual wxString GetItemColumnText(wxUIntPtr item, long column) const;
-
-	/** Whether the current primary sort column changes value during operation
-	 *  (drives the base's live auto-sort). */
-	virtual bool IsLiveSortColumn() const;
-
-	/** Pause live auto-sort while the context menu is open. */
-	virtual bool IsMenuOpen() const { return m_menu != nullptr; }
-
-	/**
-	 * Sorter-function.
-	 *
-	 * @see wxListCtrl::SortItems
-	 */
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
-
-	/**
-	 * Function that specifies which columns have alternate sorting.
-	 *
-	 * @see CMuleListCtrl::AltSortAllowed
-	 */
-	virtual bool AltSortAllowed(unsigned column) const;
-
-	/**
 	 * Event-handler for right-clicks on the list-items.
 	 */
-	void OnRightClick(wxListEvent &event);
+	void OnItemRightClicked(wxDataViewEvent &event);
 
-	/**
-	 * Event-handler for right-clicks on the list-items.
-	 */
 	void OnGetFeedback(wxCommandEvent &event);
 	void OnOpenFile(wxCommandEvent &event);
 	void OnShowInFolder(wxCommandEvent &event);
@@ -250,7 +247,7 @@ private:
 	/**
 	 * Checks for renaming via F2.
 	 */
-	void OnKeyPressed(wxKeyEvent &event);
+	bool OnListKey(wxKeyEvent &event) override;
 
 	/**
 	 * Adds links in a collection to transfers
@@ -270,19 +267,13 @@ private:
 	 * Double-click / Enter on a row also opens the file-details dialog, for
 	 * parity with the downloads list.
 	 */
-	void OnItemActivated(wxListEvent &event);
+	void OnItemActivated(wxDataViewEvent &event);
 
 	/** Shared helper: open CFileDetailDialog anchored on the clicked row. */
 	void ShowFileDetailDialog(long focused);
 
 	//! Pointer used to ensure that the menu isn't displayed twice.
 	wxMenu *m_menu;
-
-	//! True if @a file passes the current text filter (name substring match).
-	/**
-	 * @see CMuleVirtualListCtrl::RebuildFilteredView
-	 */
-	virtual void RebuildFilteredView();
 
 	//! When true, UpdateItem() short-circuits and the bulk caller is
 	//! responsible for issuing a single Refresh() at end-of-bulk.
@@ -296,7 +287,7 @@ private:
 	uint64 m_shownSize;
 
 	// The virtual-list model, sorting, live auto-sort and selection
-	// preservation all live in CMuleVirtualListCtrl now.
+	// preservation all live in CMuleVirtualDataViewCtrl now.
 
 	wxDECLARE_EVENT_TABLE();
 };

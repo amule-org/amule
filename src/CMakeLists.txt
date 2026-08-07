@@ -951,6 +951,7 @@ if (NEED_LIB_MULEAPPGUI)
 		EditServerListDlg.cpp
 		FileDetailListCtrl.cpp
 		ListColumnStore.cpp
+		MuleBarRenderer.cpp
 		MuleColour.cpp
 		MuleGifCtrl.cpp
 		MuleDataViewCtrl.cpp

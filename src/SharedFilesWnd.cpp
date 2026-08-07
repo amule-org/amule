@@ -149,10 +149,6 @@ CSharedFilesWnd::~CSharedFilesWnd()
 // part and only depends on the selection in ClientShowSelected mode.
 void CSharedFilesWnd::UpdateSelectionStats()
 {
-	if (sharedfilesctrl->IsSorting()) {
-		return;
-	}
-
 	// Bars fill with this session's share of the file's all-time activity
 	// (session / all-time -- the same two numbers as each label). Both come
 	// from the per-file EC counters, so it is reliable in the remote GUI --
@@ -171,10 +167,8 @@ void CSharedFilesWnd::UpdateSelectionStats()
 	uint64 all_transferred = 0;
 	int selectedCount = 0;
 
-	long index = -1;
-	while ((index = sharedfilesctrl->GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != -1) {
-		// Virtual-list control: rows map to files via the model, not per-item data.
-		CKnownFile *file = sharedfilesctrl->FileAtRow(index);
+	for (wxUIntPtr data : sharedfilesctrl->GetSelectedItemData()) {
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
 		wxASSERT(file);
 		session_requests += file->statistic.GetRequests();
 		session_accepted += file->statistic.GetAccepts();
@@ -232,20 +226,20 @@ void CSharedFilesWnd::UpdateSelectionStats()
 
 void CSharedFilesWnd::SelectionUpdated()
 {
-	if (sharedfilesctrl->IsSorting()) {
-		return;
-	}
-
 	UpdateSelectionStats();
 
 	// The client list follows the client-show mode.
 	CKnownFileVector fileVector;
 	if (m_clientShow != ClientShowUploading) {
-		long index = -1;
-		int filter =
-			(m_clientShow == ClientShowSelected) ? wxLIST_STATE_SELECTED : wxLIST_STATE_DONTCARE;
-		while ((index = sharedfilesctrl->GetNextItem(index, wxLIST_NEXT_ALL, filter)) != -1) {
-			fileVector.push_back(sharedfilesctrl->FileAtRow(index));
+		if (m_clientShow == ClientShowSelected) {
+			for (wxUIntPtr data : sharedfilesctrl->GetSelectedItemData()) {
+				fileVector.push_back(reinterpret_cast<CKnownFile *>(data));
+			}
+		} else {
+			const long count = sharedfilesctrl->ItemDataCount();
+			for (long index = 0; index < count; ++index) {
+				fileVector.push_back(sharedfilesctrl->FileAtRow(index));
+			}
 		}
 		// ShowSources() requires the file vector sorted (see CGenericClientListCtrl).
 		std::sort(fileVector.begin(), fileVector.end());
