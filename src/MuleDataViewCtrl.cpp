@@ -31,7 +31,8 @@
 
 #include <common/MenuIDs.h> // Needed for MP_LISTCOL_1 .. MP_LISTCOL_15
 
-#include "GetTickCount.h" // Needed for GetTickCount64()
+#include "GetTickCount.h"    // Needed for GetTickCount64()
+#include "MuleBarRenderer.h" // Needed for CMuleBarRenderer
 
 namespace
 {
@@ -96,6 +97,13 @@ void CMuleDataViewCtrl::AppendSpacerColumn(unsigned modelColumn)
 #else
 	(void)modelColumn;
 #endif
+}
+
+void CMuleDataViewCtrl::AppendBarColumn(const wxString &title, unsigned modelColumn, int width, int flags)
+{
+	wxDataViewColumn *column =
+		new wxDataViewColumn(title, new CMuleBarRenderer(), modelColumn, width, wxALIGN_LEFT, flags);
+	AppendColumn(column);
 }
 
 unsigned CMuleDataViewCtrl::RealColumnCount() const

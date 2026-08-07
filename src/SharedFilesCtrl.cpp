@@ -25,6 +25,8 @@
 
 #include "SharedFilesCtrl.h" // Interface declarations
 
+#include <algorithm> // Needed for std::find
+
 #include <wx/file.h>    // Needed for wxFile
 #include <wx/filedlg.h> // Needed for wxFileDialog
 
@@ -42,7 +44,7 @@
 #include "amule.h"            // Needed for theApp
 #include "ServerConnect.h"    // Needed for CServerConnect
 #include "Preferences.h"      // Needed for thePrefs
-#include "BarShader.h"        // Needed for CBarShader
+#include "MuleBarRenderer.h"  // Needed for CBarFillSpec, CBarFillSpan
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "GuiEvents.h"        // Needed for CoreNotify_*
 #include "MuleCollection.h"   // Needed for CMuleCollection
@@ -50,11 +52,11 @@
 #include "TransferWnd.h"      // Needed for CTransferWnd
 #include "Logger.h"           // Needed for AddLogLine
 
-wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualListCtrl)
-	EVT_LIST_ITEM_RIGHT_CLICK(-1, CSharedFilesCtrl::OnRightClick)
+wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualDataViewCtrl)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CSharedFilesCtrl::OnItemRightClicked)
 	EVT_MENU(MP_VIEW, CSharedFilesCtrl::OnOpenFile)
 	EVT_MENU(MP_SHOWINFOLDER, CSharedFilesCtrl::OnShowInFolder)
-	EVT_LIST_ITEM_ACTIVATED(-1, CSharedFilesCtrl::OnItemActivated)
+	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CSharedFilesCtrl::OnItemActivated)
 
 	EVT_MENU(MP_METINFO, CSharedFilesCtrl::OnViewFileDetails)
 
@@ -80,60 +82,80 @@ wxBEGIN_EVENT_TABLE(CSharedFilesCtrl, CMuleVirtualListCtrl)
 	EVT_MENU(MP_RENAME, CSharedFilesCtrl::OnRename)
 	EVT_MENU(MP_WS, CSharedFilesCtrl::OnGetFeedback)
 	EVT_MENU(MP_VERIFY, CSharedFilesCtrl::OnVerifyLocalData)
-	EVT_CHAR(CSharedFilesCtrl::OnKeyPressed)
 wxEND_EVENT_TABLE()
 
-enum SharedFilesListColumns
-{
-	ID_SHARED_COL_NAME = 0,
-	ID_SHARED_COL_SIZE,
-	ID_SHARED_COL_TYPE,
-	ID_SHARED_COL_PRIO,
-	ID_SHARED_COL_REQ,
-	ID_SHARED_COL_AREQ,
-	ID_SHARED_COL_TRA,
-	ID_SHARED_COL_RTIO,
-	ID_SHARED_COL_PART,
-	ID_SHARED_COL_CMPL,
-	ID_SHARED_COL_SPEED,
-	ID_SHARED_COL_SINCE,
-	ID_SHARED_COL_LASTUP,
-	ID_SHARED_COL_PATH
-};
-
 CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
-: CMuleVirtualListCtrl(parent, id, pos, size, flags | wxLC_OWNERDRAW)
+: CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
 , m_inBulkUpdate(false)
 , m_batchUpdate(false)
 , m_shownSize(0)
 {
-	// Setting the sorter function.
-	SetSortFunc(SortProc);
-
-	// Set the table-name (for loading and saving preferences).
-	SetTableName("Shared");
-
 	m_menu = NULL;
 
-	InsertColumn(ID_SHARED_COL_NAME, _("File Name"), wxLIST_FORMAT_LEFT, 250, "N");
-	InsertColumn(ID_SHARED_COL_SIZE, _("Size"), wxLIST_FORMAT_LEFT, 100, "Z");
-	InsertColumn(ID_SHARED_COL_TYPE, _("Type"), wxLIST_FORMAT_LEFT, 50, "Y");
-	InsertColumn(ID_SHARED_COL_PRIO, _("Priority"), wxLIST_FORMAT_LEFT, 70, "p");
-	InsertColumn(ID_SHARED_COL_REQ, _("Requests"), wxLIST_FORMAT_LEFT, 100, "Q");
-	InsertColumn(ID_SHARED_COL_AREQ, _("Accepted Requests"), wxLIST_FORMAT_LEFT, 100, "A");
-	InsertColumn(ID_SHARED_COL_TRA, _("Transferred Data"), wxLIST_FORMAT_LEFT, 120, "T");
-	InsertColumn(ID_SHARED_COL_RTIO, _("Share Ratio"), wxLIST_FORMAT_LEFT, 100, "R");
-	InsertColumn(ID_SHARED_COL_PART, _("Obtained Parts"), wxLIST_FORMAT_LEFT, 120, "P");
-	InsertColumn(ID_SHARED_COL_CMPL, _("Complete Sources"), wxLIST_FORMAT_LEFT, 120, "C");
+	// The name column carries the rating/comment smiley, so it is icon+text;
+	// Obtained Parts is the availability bar; the rest are plain text.
+	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
+	AppendIconTextColumn(
+		_("File Name"), COLUMN_SHARED_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(_("Size"), COLUMN_SHARED_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(_("Type"), COLUMN_SHARED_TYPE, wxDATAVIEW_CELL_INERT, 50, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(
+		_("Priority"), COLUMN_SHARED_PRIO, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(
+		_("Requests"), COLUMN_SHARED_REQ, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(_("Accepted Requests"),
+		COLUMN_SHARED_AREQ,
+		wxDATAVIEW_CELL_INERT,
+		100,
+		wxALIGN_LEFT,
+		colFlags);
+	AppendTextColumn(
+		_("Transferred Data"), COLUMN_SHARED_TRA, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(
+		_("Share Ratio"), COLUMN_SHARED_RTIO, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
+	AppendBarColumn(_("Obtained Parts"), COLUMN_SHARED_PART, 120, colFlags);
+	AppendTextColumn(_("Complete Sources"),
+		COLUMN_SHARED_CMPL,
+		wxDATAVIEW_CELL_INERT,
+		120,
+		wxALIGN_LEFT,
+		colFlags);
 	// FileID (== file hash) was dropped — the hash is on the details modal. The
 	// three new columns reuse existing translations ("Speed", "Shared since",
 	// "Last upload"); Directory Path stays but moves to the end.
-	InsertColumn(ID_SHARED_COL_SPEED, _("Speed"), wxLIST_FORMAT_LEFT, 90, "U");
-	InsertColumn(ID_SHARED_COL_SINCE, _("Shared since"), wxLIST_FORMAT_LEFT, 130, "H");
-	InsertColumn(ID_SHARED_COL_LASTUP, _("Last upload"), wxLIST_FORMAT_LEFT, 130, "L");
-	InsertColumn(ID_SHARED_COL_PATH, _("Directory Path"), wxLIST_FORMAT_LEFT, 220, "D");
+	AppendTextColumn(_("Speed"), COLUMN_SHARED_SPEED, wxDATAVIEW_CELL_INERT, 90, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(
+		_("Shared since"), COLUMN_SHARED_SINCE, wxDATAVIEW_CELL_INERT, 130, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(
+		_("Last upload"), COLUMN_SHARED_LASTUP, wxDATAVIEW_CELL_INERT, 130, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(
+		_("Directory Path"), COLUMN_SHARED_PATH, wxDATAVIEW_CELL_INERT, 220, wxALIGN_LEFT, colFlags);
 
-	LoadSettings();
+	AppendSpacerColumn(COLUMN_SHARED_SPACER);
+	AssociateVirtualModel();
+
+	m_columnStore.RegisterColumn(COLUMN_SHARED_NAME, 250, "N");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_SIZE, 100, "Z");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_TYPE, 50, "Y");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_PRIO, 70, "p");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_REQ, 100, "Q");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_AREQ, 100, "A");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_TRA, 120, "T");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_RTIO, 100, "R");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_PART, 120, "P");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_CMPL, 120, "C");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_SPEED, 90, "U");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_SINCE, 130, "H");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_LASTUP, 130, "L");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_PATH, 220, "D");
+
+	// Default sort is by name, ascending; LoadColumnSettings() replaces it
+	// when the config has something saved.
+	ApplySorting(COLUMN_SHARED_NAME, 0);
+
+	m_columnStore.SetTableName("Shared");
+	LoadColumnSettings();
+	InitColumnState();
 }
 
 wxString CSharedFilesCtrl::GetOldColumnOrder() const
@@ -143,12 +165,28 @@ wxString CSharedFilesCtrl::GetOldColumnOrder() const
 
 CSharedFilesCtrl::~CSharedFilesCtrl() {}
 
-void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
+void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 {
-	long item_hit = CheckSelection(event);
-	m_menuItem = (item_hit != -1) ? ItemAt(item_hit) : 0;
+	// Right-clicking a row outside the selection acts on that row alone.
+	if (event.GetItem().IsOk()) {
+		wxDataViewItemArray selection;
+		GetSelections(selection);
+		if (selection.Index(event.GetItem()) == wxNOT_FOUND) {
+			UnselectAll();
+			Select(event.GetItem());
+		}
+	}
 
-	if ((m_menu == NULL) && (item_hit != -1)) {
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (selected.empty()) {
+		return;
+	}
+	// Bound re-checked by the handlers that use it (OnOpenFile,
+	// OnShowInFolder): PopupMenu runs a nested event loop, so the shared-dir
+	// watcher can mutate the list while the menu is open.
+	m_menuItem = selected.front();
+
+	if (m_menu == NULL) {
 		m_menu = new wxMenu(_("Shared Files"));
 		wxMenu *prioMenu = new wxMenu();
 		prioMenu->AppendCheckItem(MP_PRIOVERYLOW, _("Very low"));
@@ -168,7 +206,7 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		m_menu->Append(MP_METINFO, _("Show file &details"));
 		m_menu->AppendSeparator();
 
-		CKnownFile *file = FileAtRow(item_hit);
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(m_menuItem);
 		if (file->GetFileComment().IsEmpty() && !file->GetFileRating()) {
 			m_menu->Append(MP_CMT, _("Add Comment/Rating"));
 		} else {
@@ -234,7 +272,7 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 		prioMenu->Check(MP_POWERSHARE, priority == PR_POWERSHARE);
 		prioMenu->Check(MP_PRIOAUTO, priority == PR_AUTO);
 
-		PopupMenu(m_menu, event.GetPoint());
+		PopupMenu(m_menu);
 
 		delete m_menu;
 
@@ -244,17 +282,17 @@ void CSharedFilesCtrl::OnRightClick(wxListEvent &event)
 
 void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 {
-	if (focused == -1) {
+	if (focused < 0) {
 		return;
 	}
 	// Pass every listed file so the dialog's Next/Prev can walk the shared
 	// list, anchored on the clicked row. Reuses the same CFileDetailDialog as
 	// the downloads list; per-file state decides which sections it shows.
 	std::vector<CKnownFile *> files;
-	int nrItems = GetItemCount();
+	const long nrItems = ItemDataCount();
 	files.reserve(nrItems);
 	int index = 0;
-	for (int i = 0; i < nrItems; i++) {
+	for (long i = 0; i < nrItems; i++) {
 		if (i == focused) {
 			index = static_cast<int>(files.size());
 		}
@@ -265,43 +303,55 @@ void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 
 void CSharedFilesCtrl::OnViewFileDetails(wxCommandEvent &WXUNUSED(event))
 {
-	ShowFileDetailDialog(GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (!selected.empty()) {
+		ShowFileDetailDialog(RowOfData(selected.front()));
+	}
 }
 
-void CSharedFilesCtrl::OnItemActivated(wxListEvent &event)
+void CSharedFilesCtrl::OnItemActivated(wxDataViewEvent &event)
 {
-	ShowFileDetailDialog(event.GetIndex());
+	// Open details on the activated row alone, whatever else was selected.
+	// event.GetItem()'s ID is the row-addressed model's row index, not the
+	// item data -- see the "item identity is not row identity" note in
+	// MuleVirtualDataViewCtrl.h -- so the row is resolved through the
+	// selection rather than cast directly from the item.
+	if (!event.GetItem().IsOk()) {
+		return;
+	}
+	UnselectAll();
+	Select(event.GetItem());
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (!selected.empty()) {
+		ShowFileDetailDialog(RowOfData(selected.front()));
+	}
 }
 
 void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CKnownFile *file = FileAtRow(index);
-		if (file->IsPartFile())
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
+		if (file->IsPartFile()) {
 			AddLogLineN(
 				CFormat(_("Verify Local Data on PartFile is currently not supported: %s")) %
 				file->GetFileName());
-		else
+		} else {
 			theApp->sharedfiles->VerifyLocalData(file);
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+		}
 	}
 }
 
 void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))
 {
 	wxString feed;
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	while (index != -1) {
+	for (wxUIntPtr data : GetSelectedItemData()) {
 		if (feed.IsEmpty()) {
 			feed = CFormat(_("Feedback from: %s (%s)\n\n")) % thePrefs::GetUserNick() %
 			       theApp->GetFullMuleVersion();
 		} else {
 			feed += "\n";
 		}
-		feed += FileAtRow(index)->GetFeedback();
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+		feed += reinterpret_cast<CKnownFile *>(data)->GetFeedback();
 	}
 
 	if (!feed.IsEmpty()) {
@@ -309,25 +359,193 @@ void CSharedFilesCtrl::OnGetFeedback(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, long WXUNUSED(column)) const
+wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
 {
-	// Owner-drawn: only used for keyboard type-ahead, so the file name is enough.
 	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
-	return file ? file->GetFileName().GetPrintable() : wxString();
+
+	switch (column) {
+	case COLUMN_SHARED_NAME:
+		// The rating/comment smiley is the icon on this column, not part of
+		// the text -- see GetItemIcon().
+		return file->GetFileName().GetPrintable();
+
+	case COLUMN_SHARED_SIZE:
+		return CastItoXBytes(file->GetFileSize());
+
+	case COLUMN_SHARED_TYPE:
+		return GetFiletypeByName(file->GetFileName());
+
+	case COLUMN_SHARED_PRIO:
+		return PriorityToStr(file->GetUpPriority(), file->IsAutoUpPriority());
+
+	case COLUMN_SHARED_REQ:
+		return CFormat("%u (%u)") % file->statistic.GetRequests() %
+		       file->statistic.GetAllTimeRequests();
+
+	case COLUMN_SHARED_AREQ:
+		return CFormat("%u (%u)") % file->statistic.GetAccepts() %
+		       file->statistic.GetAllTimeAccepts();
+
+	case COLUMN_SHARED_TRA:
+		return CastItoXBytes(file->statistic.GetTransferred()) + " (" +
+		       CastItoXBytes(file->statistic.GetAllTimeTransferred()) + ")";
+
+	case COLUMN_SHARED_RTIO:
+		return CFormat("%.2f") %
+		       ((double)file->statistic.GetAllTimeTransferred() / file->GetFileSize());
+
+	case COLUMN_SHARED_CMPL:
+		if (file->m_nCompleteSourcesCountLo == 0) {
+			if (file->m_nCompleteSourcesCountHi) {
+				return CFormat("< %u") % file->m_nCompleteSourcesCountHi;
+			}
+			return "0";
+		} else if (file->m_nCompleteSourcesCountLo == file->m_nCompleteSourcesCountHi) {
+			return CFormat("%u") % file->m_nCompleteSourcesCountLo;
+		} else {
+			return CFormat("%u - %u") % file->m_nCompleteSourcesCountLo %
+			       file->m_nCompleteSourcesCountHi;
+		}
+
+	case COLUMN_SHARED_SPEED:
+		// Live upload speed, adaptive kB/s / MB/s and blank below
+		// 1 kB/s — same formatting as the peers (client) list. Sorting
+		// uses the raw byte/s value (see CompareItemData), not this string.
+		if (file->GetUploadDatarate() >= 1024) {
+			if (file->GetUploadDatarate() >= 1048576) {
+				return CFormat(_("%.1f MB/s")) % (file->GetUploadDatarate() / 1048576.0);
+			}
+			return CFormat(_("%.1f kB/s")) % (file->GetUploadDatarate() / 1024.0);
+		}
+		return wxEmptyString;
+
+	case COLUMN_SHARED_SINCE:
+		if (file->GetDateShared()) {
+			wxDateTime ds(file->GetDateShared());
+			return ds.FormatISODate() + " " + ds.FormatISOTime();
+		}
+		return wxEmptyString;
+
+	case COLUMN_SHARED_LASTUP:
+		if (file->GetLastUpload()) {
+			wxDateTime lu(file->GetLastUpload());
+			return lu.FormatISODate() + " " + lu.FormatISOTime();
+		}
+		return wxEmptyString;
+
+	case COLUMN_SHARED_PATH:
+		// Status-agnostic: the Temp dir for a partfile, the
+		// destination once completed (EC_TAG_KNOWNFILE_PATH in
+		// the remote GUI).
+		return file->GetFilePath().GetPrintable();
+
+	default:
+		return wxEmptyString;
+	}
+}
+
+bool CSharedFilesCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
+{
+	if (column != COLUMN_SHARED_NAME) {
+		return false;
+	}
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
+	if (!file->GetFileRating() && file->GetFileComment().Length() == 0) {
+		return false;
+	}
+
+	int image = Client_CommentOnly_Smiley;
+	if (file->GetFileRating()) {
+		image = Client_InvalidRating_Smiley + file->GetFileRating() - 1;
+	}
+	wxASSERT(image >= Client_InvalidRating_Smiley);
+	wxASSERT(image <= Client_CommentOnly_Smiley);
+
+	icon = theApp->amuledlg->m_imagelist.GetIcon(image);
+	return true;
+}
+
+void CSharedFilesCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const
+{
+	if (column != COLUMN_SHARED_PART) {
+		return;
+	}
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
+	if (!file->GetPartCount()) {
+		return;
+	}
+
+	std::vector<CBarFillSpan> spans;
+	const bool bFlat = thePrefs::UseFlatBar();
+
+	if (file->GetHashingProgress() > 0) {
+		const CMuleColour crPending(255, 208, 0);
+		const CMuleColour crFlatPending(255, 255, 100);
+		const CMuleColour crProgress(0, 224, 0);
+		const CMuleColour crFlatProgress(0, 150, 0);
+
+		uint64 left = file->GetHashingProgress() * PARTSIZE;
+		if (left < file->GetFileSize() - 1) {
+			spans.push_back(
+				{ left + 1, file->GetFileSize() - 1, bFlat ? crFlatPending : crPending });
+		} else {
+			left = file->GetFileSize() - 1;
+		}
+		// The amount already hashed, in green.
+		spans.push_back({ 0, left, bFlat ? crFlatProgress : crProgress });
+	} else {
+		// Reference to the availability list
+		const ArrayOfUInts16 &list = file->IsPartFile()
+						     ? static_cast<CPartFile *>(file)->m_SrcpartFrequency
+						     : file->m_AvailPartFrequency;
+
+		uint64 end = 0;
+		for (unsigned int i = 0; i < list.size(); ++i) {
+			const uint64 start = PARTSIZE * static_cast<uint64>(i);
+			end = PARTSIZE * static_cast<uint64>(i + 1);
+			spans.push_back({ start,
+				end,
+				CMuleColour(list[i] ? 0 : 255,
+					list[i] ? ((210 - (22 * (list[i] - 1)) < 0)
+								  ? 0
+								  : (210 - (22 * (list[i] - 1))))
+						: 0,
+					list[i] ? 255 : 0) });
+		}
+		spans.push_back({ end + 1, file->GetFileSize() - 1, CMuleColour(255, 0, 0) });
+	}
+
+	out = CBarFillSpec(file->GetFileSize(), std::move(spans));
+}
+
+bool CSharedFilesCtrl::AltSortAllowed(unsigned column) const
+{
+	switch (column) {
+	case COLUMN_SHARED_REQ:
+	case COLUMN_SHARED_AREQ:
+	case COLUMN_SHARED_TRA:
+		return true;
+
+	default:
+		return false;
+	}
 }
 
 bool CSharedFilesCtrl::IsLiveSortColumn() const
 {
 	// Columns whose values change while sharing/uploading. Static columns
 	// (name, size, type, priority, shared-since, path) never auto-resort.
-	switch (GetSortColumn()) {
-	case ID_SHARED_COL_REQ:
-	case ID_SHARED_COL_AREQ:
-	case ID_SHARED_COL_TRA:
-	case ID_SHARED_COL_RTIO:
-	case ID_SHARED_COL_CMPL:
-	case ID_SHARED_COL_SPEED:
-	case ID_SHARED_COL_LASTUP:
+	if (m_sort_orders.empty()) {
+		return false;
+	}
+	switch (static_cast<int>(m_sort_orders.front().first)) {
+	case COLUMN_SHARED_REQ:
+	case COLUMN_SHARED_AREQ:
+	case COLUMN_SHARED_TRA:
+	case COLUMN_SHARED_RTIO:
+	case COLUMN_SHARED_CMPL:
+	case COLUMN_SHARED_SPEED:
+	case COLUMN_SHARED_LASTUP:
 		return true;
 	default:
 		return false;
@@ -341,8 +559,7 @@ void CSharedFilesCtrl::ShowFileList()
 	// The rebuild renumbers every row, so keep selection + focus by item
 	// identity -- otherwise editing the filter (which comes through here)
 	// drops whatever the user had selected.
-	wxUIntPtr focused = 0;
-	const std::vector<wxUIntPtr> selected = SaveSelection(focused);
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 
 	ClearItemData();
 
@@ -357,7 +574,7 @@ void CSharedFilesCtrl::ShowFileList()
 	}
 	m_shownSize = totalSize;
 	FinishBulkLoad();
-	RestoreSelection(selected, focused);
+	SetSelectedItemData(selected);
 	ShowFilesCount();
 
 	Thaw();
@@ -365,8 +582,8 @@ void CSharedFilesCtrl::ShowFileList()
 
 void CSharedFilesCtrl::RebuildFilteredView()
 {
-	// Filter hook from CMuleVirtualListCtrl: the master share is the model, so
-	// the visible set is rebuilt from it in one pass.
+	// Filter hook from CMuleVirtualDataViewCtrl: the master share is the
+	// model, so the visible set is rebuilt from it in one pass.
 	ShowFileList();
 }
 
@@ -475,29 +692,19 @@ void CSharedFilesCtrl::OnSetPriority(wxCommandEvent &event)
 		break;
 	}
 
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CKnownFile *file = FileAtRow(index);
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
 		CoreNotify_KnownFile_Up_Prio_Set(file, priority);
-
-		RefreshItem(index);
-
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+		RefreshItemData(data);
 	}
 }
 
 void CSharedFilesCtrl::OnSetPriorityAuto(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CKnownFile *file = FileAtRow(index);
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
 		CoreNotify_KnownFile_Up_Prio_Auto(file);
-
-		RefreshItem(index);
-
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+		RefreshItemData(data);
 	}
 }
 
@@ -528,13 +735,11 @@ wxString CSharedFilesCtrl::SelectedLinks(int menuId) const
 {
 	wxString links;
 
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	while (index != -1) {
-		const CKnownFile *file = FileAtRow(index);
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		const CKnownFile *file = reinterpret_cast<const CKnownFile *>(data);
 		if (file != nullptr) {
 			links += LinkForFile(file, menuId) + "\n";
 		}
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 
 	return links;
@@ -638,41 +843,37 @@ void CSharedFilesCtrl::OnExportCollection(wxCommandEvent &WXUNUSED(evt))
 
 void CSharedFilesCtrl::OnEditComment(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	if (index != -1) {
-		CKnownFile *file = FileAtRow(index);
-
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (!selected.empty()) {
+		CKnownFile *file = reinterpret_cast<CKnownFile *>(selected.front());
 		CCommentDialog dialog(this, file);
-
 		dialog.ShowModal();
 	}
 }
 
-int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData)
+int CSharedFilesCtrl::CompareItemData(
+	wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const
 {
-	CKnownFile *file1 = reinterpret_cast<CKnownFile *>(item1);
-	CKnownFile *file2 = reinterpret_cast<CKnownFile *>(item2);
+	const CKnownFile *file1 = reinterpret_cast<const CKnownFile *>(data1);
+	const CKnownFile *file2 = reinterpret_cast<const CKnownFile *>(data2);
+	const int mod = modifier;
 
-	int mod = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
-	bool altSorting = (sortData & CMuleListCtrl::SORT_ALT) > 0;
-
-	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
+	switch (column) {
 	// Sort by filename.
-	case ID_SHARED_COL_NAME:
+	case COLUMN_SHARED_NAME:
 		return mod * CmpAny(file1->GetFileName(), file2->GetFileName());
 
 	// Sort by filesize.
-	case ID_SHARED_COL_SIZE:
+	case COLUMN_SHARED_SIZE:
 		return mod * CmpAny(file1->GetFileSize(), file2->GetFileSize());
 
 	// Sort by filetype.
-	case ID_SHARED_COL_TYPE:
+	case COLUMN_SHARED_TYPE:
 		return mod * GetFiletypeByName(file1->GetFileName())
 				     .CmpNoCase(GetFiletypeByName(file2->GetFileName()));
 
 	// Sort by priority.
-	case ID_SHARED_COL_PRIO: {
+	case COLUMN_SHARED_PRIO: {
 		int8 prioA = file1->GetUpPriority();
 		int8 prioB = file2->GetUpPriority();
 
@@ -681,8 +882,8 @@ int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDa
 	}
 
 	// Sort by Requests this session.
-	case ID_SHARED_COL_REQ:
-		if (altSorting) {
+	case COLUMN_SHARED_REQ:
+		if (alt) {
 			return mod * CmpAny(file1->statistic.GetAllTimeRequests(),
 					     file2->statistic.GetAllTimeRequests());
 		} else {
@@ -690,8 +891,8 @@ int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDa
 		}
 
 	// Sort by accepted requests. Ascending.
-	case ID_SHARED_COL_AREQ:
-		if (altSorting) {
+	case COLUMN_SHARED_AREQ:
+		if (alt) {
 			return mod * CmpAny(file1->statistic.GetAllTimeAccepts(),
 					     file2->statistic.GetAllTimeAccepts());
 		} else {
@@ -699,8 +900,8 @@ int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDa
 		}
 
 	// Sort by transferred. Ascending.
-	case ID_SHARED_COL_TRA:
-		if (altSorting) {
+	case COLUMN_SHARED_TRA:
+		if (alt) {
 			return mod * CmpAny(file1->statistic.GetAllTimeTransferred(),
 					     file2->statistic.GetAllTimeTransferred());
 		} else {
@@ -709,28 +910,28 @@ int CSharedFilesCtrl::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortDa
 		}
 
 	// Sort by Share Ratio. Ascending.
-	case ID_SHARED_COL_RTIO:
+	case COLUMN_SHARED_RTIO:
 		return mod * CmpAny((double)file1->statistic.GetAllTimeTransferred() / file1->GetFileSize(),
 				     (double)file2->statistic.GetAllTimeTransferred() / file2->GetFileSize());
 
 	// Complete sources asc
-	case ID_SHARED_COL_CMPL:
+	case COLUMN_SHARED_CMPL:
 		return mod * CmpAny(file1->m_nCompleteSourcesCount, file2->m_nCompleteSourcesCount);
 
 	// Live upload speed asc
-	case ID_SHARED_COL_SPEED:
+	case COLUMN_SHARED_SPEED:
 		return mod * CmpAny(file1->GetUploadDatarate(), file2->GetUploadDatarate());
 
 	// Shared-since date asc
-	case ID_SHARED_COL_SINCE:
+	case COLUMN_SHARED_SINCE:
 		return mod * CmpAny(file1->GetDateShared(), file2->GetDateShared());
 
 	// Last-upload date asc
-	case ID_SHARED_COL_LASTUP:
+	case COLUMN_SHARED_LASTUP:
 		return mod * CmpAny(file1->GetLastUpload(), file2->GetLastUpload());
 
 	// Directory path asc (status-agnostic: the Temp dir for a partfile)
-	case ID_SHARED_COL_PATH:
+	case COLUMN_SHARED_PATH:
 		return mod * CmpAny(file1->GetFilePath(), file2->GetFilePath());
 
 	default:
@@ -743,20 +944,22 @@ void CSharedFilesCtrl::UpdateItem(CKnownFile *toupdate)
 	if (m_inBulkUpdate) {
 		// Caller (e.g. CSharedFileList::ClearED2KPublishInfo) will
 		// issue a single Refresh() in EndBulkUpdate(). Skipping the
-		// per-row FindItem here is what turns ClearED2KPublishInfo
+		// per-row refresh here is what turns ClearED2KPublishInfo
 		// from O(N²) into O(N) for users with thousands of shared
 		// files. See #302.
 		return;
 	}
-	const long row = RowOfData(reinterpret_cast<wxUIntPtr>(toupdate));
-	if (row != -1) {
-		// Base repaints the row and, if sorted by a live column, schedules the
-		// throttled+idle-gated re-sort.
-		RefreshItemData(reinterpret_cast<wxUIntPtr>(toupdate));
+	const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(toupdate);
+	if (!HasItemData(data)) {
+		return;
+	}
+	// Repaints the row and, if sorted by a live column, schedules the
+	// throttled+idle-gated re-sort.
+	RefreshItemData(data);
 
-		if (GetItemState(row, wxLIST_STATE_SELECTED)) {
-			theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
-		}
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (std::find(selected.begin(), selected.end(), data) != selected.end()) {
+		theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
 	}
 }
 
@@ -781,7 +984,7 @@ void CSharedFilesCtrl::ShowFilesCount()
 {
 	wxStaticText *label = CastByName("sharedFilesLabel", GetParent(), wxStaticText);
 
-	label->SetLabel(CFormat(_("Shared Files (%i)")) % GetItemCount());
+	label->SetLabel(CFormat(_("Shared Files (%i)")) % ItemDataCount());
 
 	// Combined size of the shown files. The label lives in the statistics box
 	// (the bottom pane of the shared splitter), a different window from this
@@ -802,319 +1005,55 @@ void CSharedFilesCtrl::ShowFilesCount()
 	theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
 }
 
-void CSharedFilesCtrl::OnDrawItem(
-	int item, wxDC *dc, const wxRect &rect, const wxRect &rectHL, bool highlighted)
-{
-	CKnownFile *file = FileAtRow(item);
-	wxASSERT(file);
-
-	if (highlighted) {
-		CMuleColour newcol = GetFocus() ? CMuleColour(wxSYS_COLOUR_HIGHLIGHT)
-						: CMuleColour(CMuleColour::GetUnfocusedHighlight());
-		dc->SetBackground(newcol /*.Blend(125)*/.GetBrush());
-		dc->SetTextForeground(CMuleColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
-		// The second blending goes over the first one.
-		dc->SetPen(newcol.Blend(65).GetPen());
-	} else {
-		dc->SetBackground(CMuleColour(wxSYS_COLOUR_LISTBOX).GetBrush());
-		dc->SetTextForeground(CMuleColour(wxSYS_COLOUR_WINDOWTEXT));
-		dc->SetPen(*wxTRANSPARENT_PEN);
-	}
-
-	dc->SetBrush(dc->GetBackground());
-	dc->DrawRectangle(rectHL);
-	dc->SetPen(*wxTRANSPARENT_PEN);
-
-	// Offset based on the height of the fonts
-	const int textVOffset = (rect.GetHeight() - dc->GetCharHeight()) / 2;
-	// Empty space to each side of a column
-	const int SPARE_PIXELS_HORZ = 4;
-
-	// The leftmost position of the current column
-	int columnLeft = 0;
-
-	for (int i = 0; i < GetColumnCount(); ++i) {
-		const int columnWidth = GetColumnWidth(i);
-
-		if (columnWidth > 2 * SPARE_PIXELS_HORZ) {
-			wxRect columnRect(columnLeft + SPARE_PIXELS_HORZ,
-				rect.y,
-				columnWidth - 2 * SPARE_PIXELS_HORZ,
-				rect.height);
-
-			wxDCClipper clipper(*dc, columnRect);
-
-			wxString textBuffer;
-			switch (i) {
-			case ID_SHARED_COL_NAME:
-				textBuffer = file->GetFileName().GetPrintable();
-
-				if (file->GetFileRating() || file->GetFileComment().Length()) {
-					int image = Client_CommentOnly_Smiley;
-					if (file->GetFileRating()) {
-						image = Client_InvalidRating_Smiley + file->GetFileRating() -
-							1;
-					}
-
-					wxASSERT(image >= Client_InvalidRating_Smiley);
-					wxASSERT(image <= Client_CommentOnly_Smiley);
-
-					int imgWidth = 16;
-
-					theApp->amuledlg->m_imagelist.Draw(image,
-						*dc,
-						columnRect.x,
-						columnRect.y + 1,
-						wxIMAGELIST_DRAW_TRANSPARENT);
-
-					// Move the text to the right
-					columnRect.x += (imgWidth + 4);
-				}
-
-				break;
-
-			case ID_SHARED_COL_SIZE:
-				textBuffer = CastItoXBytes(file->GetFileSize());
-				break;
-
-			case ID_SHARED_COL_TYPE:
-				textBuffer = GetFiletypeByName(file->GetFileName());
-				break;
-
-			case ID_SHARED_COL_PRIO:
-				textBuffer = PriorityToStr(file->GetUpPriority(), file->IsAutoUpPriority());
-				break;
-
-			case ID_SHARED_COL_REQ:
-				textBuffer = CFormat("%u (%u)") % file->statistic.GetRequests() %
-					     file->statistic.GetAllTimeRequests();
-				break;
-
-			case ID_SHARED_COL_AREQ:
-				textBuffer = CFormat("%u (%u)") % file->statistic.GetAccepts() %
-					     file->statistic.GetAllTimeAccepts();
-				break;
-
-			case ID_SHARED_COL_TRA:
-				textBuffer = CastItoXBytes(file->statistic.GetTransferred()) + " (" +
-					     CastItoXBytes(file->statistic.GetAllTimeTransferred()) + ")";
-				break;
-
-			case ID_SHARED_COL_RTIO:
-				textBuffer =
-					CFormat("%.2f") % ((double)file->statistic.GetAllTimeTransferred() /
-								  file->GetFileSize());
-				break;
-
-			case ID_SHARED_COL_PART:
-				if (file->GetPartCount()) {
-					wxRect barRect(columnRect.x,
-						columnRect.y + 1,
-						columnRect.width,
-						columnRect.height - 2);
-
-					DrawAvailabilityBar(file, dc, barRect);
-				}
-				break;
-
-			case ID_SHARED_COL_CMPL:
-				if (file->m_nCompleteSourcesCountLo == 0) {
-					if (file->m_nCompleteSourcesCountHi) {
-						textBuffer =
-							CFormat("< %u") % file->m_nCompleteSourcesCountHi;
-					} else {
-						textBuffer = "0";
-					}
-				} else if (file->m_nCompleteSourcesCountLo ==
-					   file->m_nCompleteSourcesCountHi) {
-					textBuffer = CFormat("%u") % file->m_nCompleteSourcesCountLo;
-				} else {
-					textBuffer = CFormat("%u - %u") % file->m_nCompleteSourcesCountLo %
-						     file->m_nCompleteSourcesCountHi;
-				}
-
-				break;
-
-			case ID_SHARED_COL_SPEED:
-				// Live upload speed, adaptive kB/s / MB/s and blank below
-				// 1 kB/s — same formatting as the peers (client) list. Sorting
-				// uses the raw byte/s value (see SortProc), not this string.
-				if (file->GetUploadDatarate() >= 1024) {
-					if (file->GetUploadDatarate() >= 1048576) {
-						textBuffer = CFormat(_("%.1f MB/s")) %
-							     (file->GetUploadDatarate() / 1048576.0);
-					} else {
-						textBuffer = CFormat(_("%.1f kB/s")) %
-							     (file->GetUploadDatarate() / 1024.0);
-					}
-				}
-				break;
-
-			case ID_SHARED_COL_SINCE:
-				if (file->GetDateShared()) {
-					wxDateTime ds(file->GetDateShared());
-					textBuffer = ds.FormatISODate() + " " + ds.FormatISOTime();
-				}
-				break;
-
-			case ID_SHARED_COL_LASTUP:
-				if (file->GetLastUpload()) {
-					wxDateTime lu(file->GetLastUpload());
-					textBuffer = lu.FormatISODate() + " " + lu.FormatISOTime();
-				}
-				break;
-
-			case ID_SHARED_COL_PATH:
-				// Status-agnostic: the Temp dir for a partfile, the
-				// destination once completed (EC_TAG_KNOWNFILE_PATH in
-				// the remote GUI).
-				textBuffer = file->GetFilePath().GetPrintable();
-			}
-
-			if (!textBuffer.IsEmpty()) {
-				dc->DrawText(textBuffer, columnRect.x, columnRect.y + textVOffset);
-			}
-		}
-
-		// Move to the next column
-		columnLeft += columnWidth;
-	}
-}
-
-wxString CSharedFilesCtrl::GetTTSText(unsigned item) const
-{
-	return FileAtRow(item)->GetFileName().GetPrintable();
-}
-
-bool CSharedFilesCtrl::AltSortAllowed(unsigned column) const
-{
-	switch (column) {
-	case ID_SHARED_COL_REQ:
-	case ID_SHARED_COL_AREQ:
-	case ID_SHARED_COL_TRA:
-		return true;
-
-	default:
-		return false;
-	}
-}
-
-void CSharedFilesCtrl::DrawAvailabilityBar(CKnownFile *file, wxDC *dc, const wxRect &rect) const
-{
-	// Reference to the availability list
-	const ArrayOfUInts16 &list = file->IsPartFile() ? static_cast<CPartFile *>(file)->m_SrcpartFrequency
-							: file->m_AvailPartFrequency;
-	wxPen old_pen = dc->GetPen();
-	wxBrush old_brush = dc->GetBrush();
-	bool bFlat = thePrefs::UseFlatBar();
-
-	wxRect barRect = rect;
-	if (!bFlat) { // round bar has a black border, the bar itself is 1 pixel less on each border
-		barRect.x++;
-		barRect.y++;
-		barRect.height -= 2;
-		barRect.width -= 2;
-	}
-	static CBarShader s_ChunkBar;
-	s_ChunkBar.SetFileSize(file->GetFileSize());
-	s_ChunkBar.SetHeight(barRect.GetHeight());
-	s_ChunkBar.SetWidth(barRect.GetWidth());
-	s_ChunkBar.Set3dDepth(CPreferences::Get3DDepth());
-
-	if (file->GetHashingProgress() > 0) {
-		const CMuleColour crPending(255, 208, 0);
-		const CMuleColour crFlatPending(255, 255, 100);
-		const CMuleColour crProgress(0, 224, 0);
-		const CMuleColour crFlatProgress(0, 150, 0);
-
-		uint64 left = file->GetHashingProgress() * PARTSIZE;
-		if (left < file->GetFileSize() - 1) {
-			s_ChunkBar.FillRange(
-				left + 1, file->GetFileSize() - 1, bFlat ? crFlatPending : crPending);
-		} else {
-			left = file->GetFileSize() - 1;
-		}
-		// Fill the amount already hashed with green.
-		s_ChunkBar.FillRange(0, left, bFlat ? crFlatProgress : crProgress);
-		s_ChunkBar.Draw(dc, barRect.x, barRect.y, bFlat);
-	} else {
-		uint64 end = 0;
-		for (unsigned int i = 0; i < list.size(); ++i) {
-			uint64 start = PARTSIZE * static_cast<uint64>(i);
-			end = PARTSIZE * static_cast<uint64>(i + 1);
-			s_ChunkBar.FillRange(start,
-				end,
-				CMuleColour(list[i] ? 0 : 255,
-					list[i] ? ((210 - (22 * (list[i] - 1)) < 0)
-								  ? 0
-								  : (210 - (22 * (list[i] - 1))))
-						: 0,
-					list[i] ? 255 : 0));
-		}
-		s_ChunkBar.FillRange(end + 1, file->GetFileSize() - 1, CMuleColour(255, 0, 0));
-		s_ChunkBar.Draw(dc, barRect.x, barRect.y, bFlat);
-	}
-
-	if (!bFlat) {
-		// Draw black border
-		dc->SetPen(*wxBLACK_PEN);
-		dc->SetBrush(*wxTRANSPARENT_BRUSH);
-		dc->DrawRectangle(rect);
-	}
-
-	dc->SetPen(old_pen);
-	dc->SetBrush(old_brush);
-}
-
 void CSharedFilesCtrl::OnRename(wxCommandEvent &WXUNUSED(event))
 {
-	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (item != -1) {
-		CKnownFile *file = FileAtRow(item);
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (selected.empty()) {
+		return;
+	}
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(selected.front());
 
-		wxString strNewName = ::wxGetTextFromUser(_("Enter new name for this file:"),
-			_("File rename"),
-			file->GetFileName().GetPrintable());
+	wxString strNewName = ::wxGetTextFromUser(
+		_("Enter new name for this file:"), _("File rename"), file->GetFileName().GetPrintable());
 
-		CPath newName = CPath(strNewName);
-		if (newName.IsOk() && (newName != file->GetFileName())) {
-			theApp->sharedfiles->RenameFile(file, newName);
-		}
+	CPath newName = CPath(strNewName);
+	if (newName.IsOk() && (newName != file->GetFileName())) {
+		theApp->sharedfiles->RenameFile(file, newName);
 	}
 }
 
-void CSharedFilesCtrl::OnKeyPressed(wxKeyEvent &event)
+bool CSharedFilesCtrl::OnListKey(wxKeyEvent &event)
 {
 	if (event.GetKeyCode() == WXK_F2) {
 		wxCommandEvent evt;
 		OnRename(evt);
-
-		return;
+		return true;
 	}
-	event.Skip();
+	return false;
 }
 
 void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 {
-	int item = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (item != -1) {
-		CKnownFile *file = FileAtRow(item);
-		wxString CollectionFile = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
-		CMuleCollection my_collection;
-		if (my_collection.Open(CollectionFile)) {
-			wxArrayString links;
-			for (size_t e = 0; e < my_collection.size(); ++e) {
-				// eMule stores collection strings as UTF-8. Fall back to
-				// raw bytes rather than dropping the entry, since
-				// FromUTF8 yields an empty string on invalid input.
-				wxString link = wxString::FromUTF8(my_collection[e].c_str());
-				if (link.IsEmpty()) {
-					link = wxString::From8BitData(my_collection[e].c_str());
-				}
-				links.Add(link);
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (selected.empty()) {
+		return;
+	}
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(selected.front());
+	wxString CollectionFile = file->GetFilePath().JoinPaths(file->GetFileName()).GetRaw();
+	CMuleCollection my_collection;
+	if (my_collection.Open(CollectionFile)) {
+		wxArrayString links;
+		for (size_t e = 0; e < my_collection.size(); ++e) {
+			// eMule stores collection strings as UTF-8. Fall back to
+			// raw bytes rather than dropping the entry, since
+			// FromUTF8 yields an empty string on invalid input.
+			wxString link = wxString::FromUTF8(my_collection[e].c_str());
+			if (link.IsEmpty()) {
+				link = wxString::From8BitData(my_collection[e].c_str());
 			}
-			theApp->downloadqueue->AddLinks(links);
+			links.Add(link);
 		}
+		theApp->downloadqueue->AddLinks(links);
 	}
 }
 

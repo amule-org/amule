@@ -25,6 +25,7 @@
 #ifndef MULEVIRTUALDATAVIEWCTRL_H
 #define MULEVIRTUALDATAVIEWCTRL_H
 
+#include "MuleBarRenderer.h"  // Needed for CBarFillSpec
 #include "MuleDataViewCtrl.h" // Needed for CMuleDataViewCtrl
 
 #include <wx/timer.h> // Needed for wxTimer (deferred live re-sort)
@@ -147,6 +148,17 @@ protected:
 		wxUIntPtr WXUNUSED(data), unsigned WXUNUSED(column), wxDataViewItemAttr &WXUNUSED(attr)) const
 	{
 		return false;
+	}
+
+	/**
+	 * Fill data for a cell in a column appended with
+	 * CMuleDataViewCtrl::AppendBarColumn(). Default leaves `out` empty,
+	 * which CMuleBarRenderer draws as an empty bar -- fine for any column
+	 * that never asks for one.
+	 */
+	virtual void GetItemBarFill(
+		wxUIntPtr WXUNUSED(data), unsigned WXUNUSED(column), CBarFillSpec &WXUNUSED(out)) const
+	{
 	}
 
 	//! Single-column comparison of two items; the caller applies `modifier`.

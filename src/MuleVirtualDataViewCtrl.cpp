@@ -70,12 +70,16 @@ public:
 
 	void GetValueByRow(wxVariant &variant, unsigned row, unsigned col) const override
 	{
-		const bool iconText = (GetColumnType(col) == "wxDataViewIconText");
+		const wxString type = GetColumnType(col);
+		const bool iconText = (type == "wxDataViewIconText");
+		const bool barFill = (type == "CBarFillSpec");
 		if (row >= m_owner->m_items.size() || col >= m_owner->RealColumnCount()) {
 			// Out of range, or the trailing spacer column, which is always
 			// empty by construction.
 			if (iconText) {
 				variant << wxDataViewIconText(wxEmptyString, wxIcon());
+			} else if (barFill) {
+				variant << CBarFillSpec();
 			} else {
 				variant = wxString();
 			}
@@ -83,6 +87,13 @@ public:
 		}
 
 		const wxUIntPtr data = m_owner->m_items[row];
+		if (barFill) {
+			CBarFillSpec spec;
+			m_owner->GetItemBarFill(data, col, spec);
+			variant << spec;
+			return;
+		}
+
 		const wxString text = m_owner->GetItemColumnText(data, col);
 		if (!iconText) {
 			variant = text;
