@@ -31,7 +31,8 @@
 #include "StatTree.h"     // Needed for CStatTreeItem* classes
 #include "GetTickCount.h" // Needed for GetTickCount64 in CPreciseRateCounter ctor
 
-#include <deque> // Needed for std::deque
+#include <atomic> // Needed for std::atomic (free-space figures)
+#include <deque>  // Needed for std::deque
 
 typedef struct UpdateInfo
 {
@@ -55,6 +56,16 @@ typedef struct HistoryRecord
 	uint16 kadNodesCur;
 	uint64 kadNodesTotal;
 } HR;
+
+/**
+ * Returned by the free-space getters when the figure isn't available.
+ *
+ * A distinct value rather than 0: an unreachable mount and a genuinely
+ * full disk are different states, and the second one is exactly what the
+ * Downloads panel warns about. Callers must not render or compare this as
+ * a size.
+ */
+const sint64 FREE_SPACE_UNKNOWN = -1;
 
 // CPreciseRateCounter is the only history-bookkeeping primitive that
 // CLIENT_GUI needs (for the runAvg trend on remote stats graphs), so
@@ -431,6 +442,34 @@ public:
 	static void RemoveKadNode() { --s_kadNodesCur; }
 	static uint16_t GetKadNodes() { return s_kadNodesCur; }
 
+	/**
+	 * Free space on the filesystem holding the part files, in bytes, or
+	 * FREE_SPACE_UNKNOWN until CFreeSpaceThread has published a figure --
+	 * which is also what an unreachable mount leaves here.
+	 *
+	 * A plain atomic read that never touches the filesystem. The probe
+	 * itself blocks, sometimes for as long as a dead NFS mount takes to
+	 * give up, so it lives on its own thread; both callers here (the GUI
+	 * timer and the EC stats reply) are on latency-critical loops.
+	 */
+	static sint64 GetTempFreeSpace() { return s_tempFreeSpace.load(std::memory_order_relaxed); }
+
+	//! Free space where finished downloads land. See GetTempFreeSpace();
+	//! this is the default category's incoming directory, the one the
+	//! Shared Files panel reports.
+	static sint64 GetIncomingFreeSpace() { return s_incomingFreeSpace.load(std::memory_order_relaxed); }
+
+	//! Called by CFreeSpaceThread with a fresh sample. Nothing else writes
+	//! these, and no reader needs a matching pair.
+	static void PublishTempFreeSpace(sint64 bytes)
+	{
+		s_tempFreeSpace.store(bytes, std::memory_order_relaxed);
+	}
+	static void PublishIncomingFreeSpace(sint64 bytes)
+	{
+		s_incomingFreeSpace.store(bytes, std::memory_order_relaxed);
+	}
+
 	// Other
 	static void CalculateRates();
 
@@ -590,6 +629,12 @@ private:
 	static uint64_t s_totalSent;
 	static uint64_t s_totalReceived;
 
+	// Written by CFreeSpaceThread, read by the main and EC threads. Atomic
+	// for that reason alone: they are the only cross-thread state in this
+	// class, everything else here belongs to the main thread.
+	static std::atomic<sint64> s_tempFreeSpace;
+	static std::atomic<sint64> s_incomingFreeSpace;
+
 	static bool s_statsNeedSave;
 };
 
@@ -624,6 +669,8 @@ enum StatDataIndex
 	sdTotalSentBytes,
 	sdTotalReceivedBytes,
 	sdSharedFileCount,
+	sdTempFreeSpace,
+	sdIncomingFreeSpace,
 
 	sdTotalItems
 };
@@ -687,6 +734,15 @@ public:
 	static uint32 GetBannedCount() { return s_statData[sdBannedClients]; }
 
 	static uint32 GetSharedFileCount() { return s_statData[sdSharedFileCount]; }
+
+	// Free space on the daemon's filesystems, as it reported them. The
+	// figures are necessarily the core's view: the machine running the GUI
+	// may not have those directories at all, and where it does have them
+	// mounted it can see a different size, quota or share. Stored as the
+	// unsigned slot the array is made of; FREE_SPACE_UNKNOWN survives the
+	// round trip because it is the all-ones pattern either way.
+	static sint64 GetTempFreeSpace() { return (sint64)s_statData[sdTempFreeSpace]; }
+	static sint64 GetIncomingFreeSpace() { return (sint64)s_statData[sdIncomingFreeSpace]; }
 
 	static uint32 GetED2KUsers() { return s_statData[sdED2KUsers]; }
 	static uint32 GetKadUsers() { return s_statData[sdKadUsers]; }

@@ -37,6 +37,7 @@ class CPartFile;
 class wxBitmap;
 class wxRect;
 class wxDC;
+class wxStaticText;
 
 struct FileCtrlItem_Struct;
 
@@ -161,6 +162,22 @@ public:
 	 * Perform client update when item selection has changed.
 	 */
 	void DoItemSelectionChanged();
+
+	/**
+	 * Refreshes the "Free space:" label from the core's figure for the
+	 * filesystem holding the part files, red once it no longer covers what
+	 * is left to download.
+	 *
+	 * The warning is measured against the whole queue, not the category on
+	 * screen: there is one temp directory for every category (a category
+	 * chooses where a file lands when it finishes, not where it downloads),
+	 * so every queued file competes for the same space and a per-category
+	 * comparison would only warn once it was already too late.
+	 *
+	 * Driven by the GUI timer rather than by list changes -- the figure
+	 * moves on its own as the files grow.
+	 */
+	void UpdateFreeSpace();
 
 protected:
 	/// Return old column order.
@@ -308,6 +325,10 @@ private:
 
 	//! Combined size of the displayed files (drives the "Total size:" label)
 	uint64 m_shownSize;
+
+	//! The "Free space:" label, resolved by name on first use. Lives in the
+	//! sources pane, so it cannot be reached through GetParent().
+	wxStaticText *m_freeSpaceLabel = nullptr;
 
 	wxDECLARE_EVENT_TABLE();
 };

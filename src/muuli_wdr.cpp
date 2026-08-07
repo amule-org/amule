@@ -451,12 +451,26 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
 
     // Combined size of the downloads currently visible (category + text
-    // filter), right-aligned in the growable header's third column. Set by
-    // CDownloadListCtrl::SetTotalSize(). No wxST_NO_AUTORESIZE: the label must
-    // grow to fit its text (it starts empty, so the flag would pin it 0-wide).
+    // filter), followed by the free space on the filesystem holding the part
+    // files. Both right-aligned in the growable header's third column, and
+    // both in one box sizer so the header keeps its three columns. Set by
+    // CDownloadListCtrl::SetTotalSize() and ::UpdateFreeSpace(). No
+    // wxST_NO_AUTORESIZE: the labels must grow to fit their text (they start
+    // empty, so the flag would pin them 0-wide).
+    wxBoxSizer *item5a = new wxBoxSizer( wxHORIZONTAL );
+
     wxStaticText *item5b = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
     item5b->SetName( "downloadsTotalSize" );
-    item1->Add( item5b, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
+    item5a->Add( item5b, wxSizerFlags().CenterVertical() );
+
+    // Separate label rather than more text in the one above: it turns red on
+    // its own when the free space no longer covers what is left to download,
+    // and a wxStaticText colours all or nothing.
+    wxStaticText *item5c = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+    item5c->SetName( "downloadsFreeSpace" );
+    item5a->Add( item5c, wxSizerFlags().CenterVertical() );
+
+    item1->Add( item5a, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
 
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical() );
     CSourceListCtrl *item6 = new CSourceListCtrl( parent, ID_CLIENTLIST, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSUNKEN_BORDER );
@@ -3286,14 +3300,30 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBox *item1 = new wxStaticBox( parent, -1, _("Statistics and queued clients for selected file(s) : Session / All time") );
     wxStaticBoxSizer *item0 = new wxStaticBoxSizer( item1, wxVERTICAL );
 
-    wxFlexGridSizer *item2 = new wxFlexGridSizer( 4, 0, 0 );
-    item2->AddGrowableCol( 1 );
+    // Five columns and two rows: the collapse/expand button, the size
+    // figures, and the three statistics groups. Row one carries the counters,
+    // row two the gauges, and the size column takes one figure per row so
+    // each lines up with the statistics beside it. Only the statistics
+    // columns grow, so the button keeps a narrow column of its own and the
+    // size column is exactly as wide as its text.
+    wxFlexGridSizer *item2 = new wxFlexGridSizer( 5, 0, 0 );
     item2->AddGrowableCol( 2 );
     item2->AddGrowableCol( 3 );
+    item2->AddGrowableCol( 4 );
     s_sharedfilespeerHeader = item2;
 
     wxBitmapButton *item3 = new wxBitmapButton( parent, ID_SHAREDCLIENTTOGGLE, wxArtProvider::GetBitmapBundle( "amule:arrows_down" ), wxDefaultPosition, wxDefaultSize );
     item2->Add( item3, wxSizerFlags().CenterVertical() );
+
+    // Combined size of the shared files currently visible (text filter). Set
+    // by CSharedFilesCtrl::ShowFilesCount(). No wxST_NO_AUTORESIZE: the label
+    // must grow to fit its text. Its column's second row holds the free-space
+    // figure, so each size gets a full line of its own and both line up with
+    // the statistics beside them -- the counters share this row, the gauges
+    // share the next.
+    wxStaticText *item13 = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    item13->SetName( "sharedFilesTotalSize" );
+    item2->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
 
     wxFlexGridSizer *item4 = new wxFlexGridSizer( 3, 0, 0 );
     item4->AddGrowableCol( 1 );
@@ -3321,14 +3351,20 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item12->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item2->Add( item10, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Combined size of the shared files currently visible (text filter),
-    // occupying the row that used to hold the misleading "Percent of total
-    // files" label (the gauges beside it show session/all-time, not a file
-    // percentage). Set by CSharedFilesCtrl::ShowFilesCount(). No
-    // wxST_NO_AUTORESIZE: the label must grow to fit its text.
-    wxStaticText *item13 = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-    item13->SetName( "sharedFilesTotalSize" );
-    item2->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
+    // Second row: nothing under the button, the free-space figure under the
+    // total size, then the gauges under the statistics they belong to. A
+    // wxFlexGridSizer fills row by row, so the empty button cell has to be
+    // added explicitly rather than left out.
+    item2->AddSpacer( 0 );
+
+    // Free space where finished downloads land (the default category's
+    // incoming directory). Informational only -- no threshold here, unlike
+    // the Downloads panel, which is where running out actually stops work.
+    // Set by CSharedFilesCtrl::UpdateFreeSpace().
+    wxStaticText *item13b = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    item13b->SetName( "sharedFilesFreeSpace" );
+    item2->Add( item13b, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
+
     wxGauge *item14 = new wxGauge( parent, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
     item14->SetName( "popbar" );
     item2->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );

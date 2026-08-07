@@ -100,6 +100,7 @@
 #include "PartFileWriteThread.h" // Needed for CPartFileWriteThread
 #include "PartFileHashThread.h"  // Needed for CPartFileHashThread
 #include "MediaProbeThread.h"    // Needed for CMediaProbeThread
+#include "FreeSpaceThread.h"     // Needed for CFreeSpaceThread
 #include "UploadBandwidthThrottler.h"
 #include "UploadDiskIOThread.h"
 #include "UserEvents.h"
@@ -248,6 +249,7 @@ CamuleApp::CamuleApp()
 	core_timer = NULL;
 	partFileHashThread = NULL;
 	mediaProbeThread = nullptr;
+	freeSpaceThread = nullptr;
 
 	m_localip = 0;
 	m_dwPublicIP = 0;
@@ -433,6 +435,16 @@ int CamuleApp::OnExit()
 		mediaProbeThread->EndThread();
 		delete mediaProbeThread;
 		mediaProbeThread = nullptr;
+	}
+
+	// Same for the free-space worker, and for the same reason it exists:
+	// stopping it here means nothing later in this teardown can be held up
+	// by a probe waiting on an unresponsive mount. It reads no preferences
+	// of its own, so it is safe to join before thePrefs goes away.
+	if (freeSpaceThread) {
+		freeSpaceThread->EndThread();
+		delete freeSpaceThread;
+		freeSpaceThread = nullptr;
 	}
 
 	// Stop hash thread first so any in-flight HashSinglePart finishes
@@ -941,6 +953,12 @@ bool CamuleApp::OnInit()
 	// #280: dedicated worker for ffprobe metadata, isolated from the shared
 	// CThreadScheduler so a slow/hung probe can never stall completions.
 	mediaProbeThread = new CMediaProbeThread();
+	// #757: dedicated worker for the free-space probe, isolated for the same
+	// reason -- statvfs() blocks on the directory, and temp or incoming is
+	// commonly a network mount. Given its paths straight away so the panels
+	// have a figure without waiting for the first core tick.
+	freeSpaceThread = new CFreeSpaceThread();
+	freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir());
 
 	m_AsioService = new CAsioService;
 
@@ -1950,6 +1968,14 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 
 	if (msCur - msPrev1 > 1000) { // approximately every second
 		msPrev1 = msCur;
+
+		// Keep the free-space worker's directories current. The paths can
+		// change under the preferences dialog, and the worker must not read
+		// thePrefs itself -- no worker in the tree does, and a wxString read
+		// concurrently with an assignment is a race whatever the value.
+		if (freeSpaceThread) {
+			freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir());
+		}
 		clientcredits->Process();
 		clientlist->Process();
 

@@ -1544,6 +1544,14 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 		response->AddTag(
 			CECTag(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, theStats::GetTotalReceivedBytes()));
 		response->AddTag(CECTag(EC_TAG_STATS_SHARED_FILE_COUNT, theStats::GetSharedFileCount()));
+		// Disk space for the Downloads and Shared Files panels. Only the
+		// core can answer: the GUI may be on another machine entirely, and
+		// even where it mounts the same share it can see a different size
+		// or quota. Both getters are cache-backed, so a stats poll never
+		// costs a filesystem round trip (Statistics.h).
+		response->AddTag(CECTag(EC_TAG_STATS_TEMP_FREE_SPACE, (uint64)theStats::GetTempFreeSpace()));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_INCOMING_FREE_SPACE, (uint64)theStats::GetIncomingFreeSpace()));
 #ifdef ENABLE_VERSION_CHECK
 		// Version-check result, relayed for amuleapi's /version "update"
 		// object. Present only once a check has completed. OUTDATED is an

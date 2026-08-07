@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 14:23+0200\n"
+"POT-Creation-Date: 2026-08-07 17:11+0200\n"
 "PO-Revision-Date: 2026-08-07 10:16+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -678,6 +678,11 @@ msgid "Navigate"
 msgstr ""
 
 #: src/amuleDlg.cpp
+#, fuzzy, c-format
+msgid "Free space: %s"
+msgstr "Serverio pranešimas: %s"
+
+#: src/amuleDlg.cpp
 #, fuzzy
 msgid "New version available"
 msgstr "Nėra"
@@ -1308,7 +1313,7 @@ msgstr "Vardas"
 msgid "File Name"
 msgstr "Failo pavadinimas"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Rating"
 msgstr "Reitingas"
 

@@ -224,6 +224,10 @@ uint16_t CStatistics::s_kadNodesCur;
 uint64_t CStatistics::s_totalSent;
 uint64_t CStatistics::s_totalReceived;
 
+// Published by CFreeSpaceThread; unknown until its first sample lands.
+std::atomic<sint64> CStatistics::s_tempFreeSpace{ FREE_SPACE_UNKNOWN };
+std::atomic<sint64> CStatistics::s_incomingFreeSpace{ FREE_SPACE_UNKNOWN };
+
 bool CStatistics::s_statsNeedSave;
 
 CStatistics::CStatistics()
@@ -1282,6 +1286,14 @@ void CStatistics::UpdateStats(const CECPacket *stats)
 	s_statData[sdTotalReceivedBytes] =
 		stats->GetTagByNameSafe(EC_TAG_STATS_TOTAL_RECEIVED_BYTES)->GetInt();
 	s_statData[sdSharedFileCount] = stats->GetTagByNameSafe(EC_TAG_STATS_SHARED_FILE_COUNT)->GetInt();
+
+	// Absence has to mean "unknown", not zero: a daemon older than these
+	// tags sends neither, and GetTagByNameSafe() would answer 0 for both --
+	// which the Downloads panel would read as a full disk and paint red.
+	const CECTag *tempFree = stats->GetTagByName(EC_TAG_STATS_TEMP_FREE_SPACE);
+	s_statData[sdTempFreeSpace] = tempFree ? tempFree->GetInt() : (uint64)FREE_SPACE_UNKNOWN;
+	const CECTag *incomingFree = stats->GetTagByName(EC_TAG_STATS_INCOMING_FREE_SPACE);
+	s_statData[sdIncomingFreeSpace] = incomingFree ? incomingFree->GetInt() : (uint64)FREE_SPACE_UNKNOWN;
 
 	const CECTag *LoggerTag = stats->GetTagByName(EC_TAG_STATS_LOGGER_MESSAGE);
 	if (LoggerTag) {

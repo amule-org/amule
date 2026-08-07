@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 14:23+0200\n"
+"POT-Creation-Date: 2026-08-07 17:11+0200\n"
 "PO-Revision-Date: 2026-08-07 10:25+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -649,6 +649,11 @@ msgid "Navigate"
 msgstr ""
 
 #: src/amuleDlg.cpp
+#, fuzzy, c-format
+msgid "Free space: %s"
+msgstr "Servera ziņojums: %s"
+
+#: src/amuleDlg.cpp
 msgid "New version available"
 msgstr "Pieejama jauna versija"
 
@@ -1268,7 +1273,7 @@ msgstr "Lietotājvārds"
 msgid "File Name"
 msgstr "Datnes nosaukums"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Rating"
 msgstr "Vērtējums"
 

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 14:23+0200\n"
+"POT-Creation-Date: 2026-08-07 17:11+0200\n"
 "PO-Revision-Date: 2026-08-07 10:23+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -673,6 +673,11 @@ msgid "Navigate"
 msgstr "导航"
 
 #: src/amuleDlg.cpp
+#, fuzzy, c-format
+msgid "Free space: %s"
+msgstr "服务器消息：%s"
+
+#: src/amuleDlg.cpp
 msgid "New version available"
 msgstr "有新版"
 
@@ -1297,7 +1302,7 @@ msgstr "用户名"
 msgid "File Name"
 msgstr "文件名"
 
-#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp
+#: src/CommentDialogLst.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Rating"
 msgstr "评价"
 

@@ -43,6 +43,7 @@
 #include "PartFile.h"  // Needed for CPartFile
 #include "Preferences.h"
 #include "SharedFileList.h" // Needed for CSharedFileList
+#include "Statistics.h"     // Needed for theStats (free space), FREE_SPACE_UNKNOWN
 #include "TransferWnd.h"
 #include "SourceListCtrl.h"
 
@@ -1377,6 +1378,53 @@ void CDownloadListCtrl::SetTotalSize(uint64 total)
 		label->SetLabel(CFormat(_("Total queue size: %s")) % CastItoXBytes(m_shownSize));
 		label->GetParent()->Layout();
 	}
+}
+
+void CDownloadListCtrl::UpdateFreeSpace()
+{
+	if (!theApp->amuledlg || !theApp->amuledlg->m_transferwnd) {
+		return;
+	}
+	// Resolved once: this runs on the GUI timer, and the label outlives
+	// every call -- it belongs to the transfer window, which is built with
+	// the main dialog and torn down with it.
+	if (!m_freeSpaceLabel) {
+		m_freeSpaceLabel =
+			CastByName("downloadsFreeSpace", theApp->amuledlg->m_transferwnd, wxStaticText);
+		if (!m_freeSpaceLabel) {
+			return;
+		}
+	}
+
+	const sint64 freeSpace = theStats::GetTempFreeSpace();
+
+	// What the queue still has to write, over every category. Completed
+	// files are already out of temp, and the bytes a part file holds are
+	// already off the free-space figure, so what is left to download is
+	// exactly what the filesystem still has to find room for. Paused and
+	// stopped files count too: they are space the queue will need as soon
+	// as they resume.
+	//
+	// Skipped when there is no figure to compare against: without one there
+	// is nothing to warn about, and this walks the whole queue.
+	uint64 remaining = 0;
+	if (freeSpace != FREE_SPACE_UNKNOWN) {
+		for (const auto &entry : m_ListItems) {
+			const CPartFile *file = entry.second->GetFile();
+			if (file->IsCompleted()) {
+				continue;
+			}
+			const uint64 size = file->GetFileSize();
+			const uint64 done = file->GetCompletedSize();
+			if (done < size) {
+				remaining += size - done;
+			}
+		}
+	}
+
+	const bool warn = (freeSpace != FREE_SPACE_UNKNOWN) && ((uint64)freeSpace < remaining);
+	// Continues the "Total queue size:" label to its left.
+	CamuleDlg::SetFreeSpaceLabel(m_freeSpaceLabel, freeSpace, warn, " | ");
 }
 
 static const CMuleColour crHave(104, 104, 104);

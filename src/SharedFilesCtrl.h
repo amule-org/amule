@@ -50,6 +50,7 @@
 class CSharedFileList;
 class CKnownFile;
 class wxMenu;
+class wxStaticText;
 
 /**
  * This class represents the widget used to list shared files.
@@ -126,6 +127,17 @@ public:
 	 * Updates the number of shared files displayed above the list.
 	 */
 	void ShowFilesCount();
+
+	/**
+	 * Refreshes the "Free space:" label from the core's figure for the
+	 * filesystem finished downloads land on.
+	 *
+	 * Informational only, with no threshold: nothing here stops when the
+	 * disk fills, and this panel has no category selector to scope a
+	 * comparison to -- so it reports the default category's incoming
+	 * directory. Driven by the GUI timer, like the Downloads panel's.
+	 */
+	void UpdateFreeSpace();
 
 	/** Map a (virtual) row index to its file, or NULL if out of range. */
 	CKnownFile *FileAtRow(long row) const { return reinterpret_cast<CKnownFile *>(ItemAt(row)); }
@@ -285,6 +297,10 @@ private:
 
 	//! Combined size of the displayed files (drives the "Total size:" label)
 	uint64 m_shownSize;
+
+	//! The "Free space:" label, resolved by name on first use. Lives in the
+	//! statistics box, so it cannot be reached through GetParent().
+	wxStaticText *m_freeSpaceLabel = nullptr;
 
 	// The virtual-list model, sorting, live auto-sort and selection
 	// preservation all live in CMuleVirtualDataViewCtrl now.
