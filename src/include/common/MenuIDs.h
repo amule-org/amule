@@ -125,8 +125,17 @@ enum
 	MP_LISTCOL_13,
 	MP_LISTCOL_14,
 	MP_LISTCOL_15,
+	// The header show/hide menu offers one entry per column, so this range has
+	// to be at least as long as the longest list. The server list reached 16
+	// columns and the 16th was silently dropped from the menu; the spares are
+	// headroom so the next column added does not repeat that.
+	MP_LISTCOL_16,
+	MP_LISTCOL_17,
+	MP_LISTCOL_18,
+	MP_LISTCOL_19,
+	MP_LISTCOL_20,
 
-	MP_ASSIGNCAT = MP_LISTCOL_15 + 1, // reserve some for categories (about 100)
+	MP_ASSIGNCAT = MP_LISTCOL_20 + 1, // reserve some for categories (about 100)
 	MP_CAT_SET0 = MP_ASSIGNCAT + 100, // reserve some for change all-cats (about 50)
 	MP_SWITCHCTRL_0 = MP_CAT_SET0 + 50,
 	MP_SWITCHCTRL_9 = MP_SWITCHCTRL_0 + 9,
