@@ -46,6 +46,7 @@
 #include "Preferences.h"      // Needed for thePrefs
 #include "MuleBarRenderer.h"  // Needed for CBarFillSpec, CBarFillSpan
 #include "DataToText.h"       // Needed for PriorityToStr
+#include "OtherFunctions.h"   // Needed for GetRateString
 #include "GuiEvents.h"        // Needed for CoreNotify_*
 #include "MuleCollection.h"   // Needed for CMuleCollection
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
@@ -92,27 +93,31 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 {
 	m_menu = nullptr;
 
-	// The name column carries the rating/comment smiley, so it is icon+text;
-	// Obtained Parts is the availability bar; the rest are plain text.
+	// Rating is the smiley plus its label and sorts by rating value; Obtained
+	// Parts is the availability bar; the rest are plain text. File Name is
+	// deliberately plain text, not icon+text: an icon renderer in the first
+	// column reserves the icon slot on every row, indenting names that have no
+	// icon of their own.
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
+	AppendTextColumn(
+		_("File Name"), COLUMN_SHARED_NAME, wxDATAVIEW_CELL_INERT, 400, wxALIGN_LEFT, colFlags);
 	AppendIconTextColumn(
-		_("File Name"), COLUMN_SHARED_NAME, wxDATAVIEW_CELL_INERT, 250, wxALIGN_LEFT, colFlags);
+		_("Rating"), COLUMN_SHARED_RATING, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, colFlags);
 	AppendTextColumn(_("Size"), COLUMN_SHARED_SIZE, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(_("Type"), COLUMN_SHARED_TYPE, wxDATAVIEW_CELL_INERT, 50, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(_("Type"), COLUMN_SHARED_TYPE, wxDATAVIEW_CELL_INERT, 90, wxALIGN_LEFT, colFlags);
 	AppendTextColumn(
 		_("Priority"), COLUMN_SHARED_PRIO, wxDATAVIEW_CELL_INERT, 70, wxALIGN_LEFT, colFlags);
-	AppendTextColumn(
-		_("Requests"), COLUMN_SHARED_REQ, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
+	AppendTextColumn(_("Requests"), COLUMN_SHARED_REQ, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, colFlags);
 	AppendTextColumn(_("Accepted Requests"),
 		COLUMN_SHARED_AREQ,
 		wxDATAVIEW_CELL_INERT,
-		100,
+		80,
 		wxALIGN_LEFT,
 		colFlags);
 	AppendTextColumn(
 		_("Transferred Data"), COLUMN_SHARED_TRA, wxDATAVIEW_CELL_INERT, 120, wxALIGN_LEFT, colFlags);
 	AppendTextColumn(
-		_("Share Ratio"), COLUMN_SHARED_RTIO, wxDATAVIEW_CELL_INERT, 100, wxALIGN_LEFT, colFlags);
+		_("Share Ratio"), COLUMN_SHARED_RTIO, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, colFlags);
 	AppendBarColumn(_("Obtained Parts"), COLUMN_SHARED_PART, 120, colFlags);
 	AppendTextColumn(_("Complete Sources"),
 		COLUMN_SHARED_CMPL,
@@ -129,25 +134,27 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AppendTextColumn(
 		_("Last upload"), COLUMN_SHARED_LASTUP, wxDATAVIEW_CELL_INERT, 130, wxALIGN_LEFT, colFlags);
 	AppendTextColumn(
-		_("Directory Path"), COLUMN_SHARED_PATH, wxDATAVIEW_CELL_INERT, 220, wxALIGN_LEFT, colFlags);
+		_("Directory Path"), COLUMN_SHARED_PATH, wxDATAVIEW_CELL_INERT, 430, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_SHARED_SPACER);
+
 	AssociateVirtualModel();
 
-	m_columnStore.RegisterColumn(COLUMN_SHARED_NAME, 250, "N");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_NAME, 400, "N");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_RATING, 80, "G");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_SIZE, 100, "Z");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_TYPE, 50, "Y");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_TYPE, 90, "Y");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_PRIO, 70, "p");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_REQ, 100, "Q");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_AREQ, 100, "A");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_REQ, 80, "Q");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_AREQ, 80, "A");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_TRA, 120, "T");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_RTIO, 100, "R");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_RTIO, 80, "R");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_PART, 120, "P");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_CMPL, 120, "C");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_SPEED, 90, "U");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_SINCE, 130, "H");
 	m_columnStore.RegisterColumn(COLUMN_SHARED_LASTUP, 130, "L");
-	m_columnStore.RegisterColumn(COLUMN_SHARED_PATH, 220, "D");
+	m_columnStore.RegisterColumn(COLUMN_SHARED_PATH, 430, "D");
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it
 	// when the config has something saved.
@@ -365,9 +372,13 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 
 	switch (column) {
 	case COLUMN_SHARED_NAME:
-		// The rating/comment smiley is the icon on this column, not part of
-		// the text -- see GetItemIcon().
 		return file->GetFileName().GetPrintable();
+
+	case COLUMN_SHARED_RATING:
+		// The smiley comes from GetItemIcon(); the label names it. Unrated
+		// files stay blank rather than repeating "Not rated" down the column --
+		// a comment with no rating still shows its icon.
+		return file->GetFileRating() ? GetRateString(file->GetFileRating()) : wxString();
 
 	case COLUMN_SHARED_SIZE:
 		return CastItoXBytes(file->GetFileSize());
@@ -446,7 +457,7 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 
 bool CSharedFilesCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
 {
-	if (column != COLUMN_SHARED_NAME) {
+	if (column != COLUMN_SHARED_RATING) {
 		return false;
 	}
 	CKnownFile *file = reinterpret_cast<CKnownFile *>(item);
@@ -862,6 +873,20 @@ int CSharedFilesCtrl::CompareItemData(
 	// Sort by filename.
 	case COLUMN_SHARED_NAME:
 		return mod * CmpAny(file1->GetFileName(), file2->GetFileName());
+
+	// Sort by rating. The cell text is blank for unrated files, so sorting on
+	// it would lump them together; rank explicitly instead -- rated files order
+	// by rating, a comment with no rating ranks just below the lowest rating,
+	// and files with neither come last.
+	case COLUMN_SHARED_RATING: {
+		const int rank1 = file1->GetFileRating()             ? file1->GetFileRating()
+				  : file1->GetFileComment().Length() ? 0
+								     : -1;
+		const int rank2 = file2->GetFileRating()             ? file2->GetFileRating()
+				  : file2->GetFileComment().Length() ? 0
+								     : -1;
+		return mod * CmpAny(rank1, rank2);
+	}
 
 	// Sort by filesize.
 	case COLUMN_SHARED_SIZE:

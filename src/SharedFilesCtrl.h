@@ -29,22 +29,23 @@
 #include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
 
 #define COLUMN_SHARED_NAME 0
-#define COLUMN_SHARED_SIZE 1
-#define COLUMN_SHARED_TYPE 2
-#define COLUMN_SHARED_PRIO 3
-#define COLUMN_SHARED_REQ 4
-#define COLUMN_SHARED_AREQ 5
-#define COLUMN_SHARED_TRA 6
-#define COLUMN_SHARED_RTIO 7
-#define COLUMN_SHARED_PART 8
-#define COLUMN_SHARED_CMPL 9
-#define COLUMN_SHARED_SPEED 10
-#define COLUMN_SHARED_SINCE 11
-#define COLUMN_SHARED_LASTUP 12
-#define COLUMN_SHARED_PATH 13
+#define COLUMN_SHARED_RATING 1
+#define COLUMN_SHARED_SIZE 2
+#define COLUMN_SHARED_TYPE 3
+#define COLUMN_SHARED_PRIO 4
+#define COLUMN_SHARED_REQ 5
+#define COLUMN_SHARED_AREQ 6
+#define COLUMN_SHARED_TRA 7
+#define COLUMN_SHARED_RTIO 8
+#define COLUMN_SHARED_PART 9
+#define COLUMN_SHARED_CMPL 10
+#define COLUMN_SHARED_SPEED 11
+#define COLUMN_SHARED_SINCE 12
+#define COLUMN_SHARED_LASTUP 13
+#define COLUMN_SHARED_PATH 14
 //! Always empty. Absorbs the macOS trailing-column sizing; see
 //! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_SHARED_SPACER 14
+#define COLUMN_SHARED_SPACER 15
 
 class CSharedFileList;
 class CKnownFile;
@@ -136,7 +137,7 @@ protected:
 	/// Text of one cell, pulled on demand for the cells being drawn.
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 
-	/// Rating/comment smiley on the Name column, nothing elsewhere.
+	/// Rating/comment smiley on the Rating column, nothing elsewhere.
 	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
 
 	/// Availability-bar spans for the Obtained Parts column.
