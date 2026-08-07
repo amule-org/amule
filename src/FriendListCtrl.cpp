@@ -41,9 +41,9 @@
 #include "SafeFile.h"
 #include "FriendList.h" // Needed for the friends list
 
-wxBEGIN_EVENT_TABLE(CFriendListCtrl, CMuleListCtrl)
-	EVT_RIGHT_DOWN(CFriendListCtrl::OnRightClick)
-	EVT_LIST_ITEM_ACTIVATED(ID_FRIENDLIST, CFriendListCtrl::OnItemActivated)
+wxBEGIN_EVENT_TABLE(CFriendListCtrl, CMuleVirtualDataViewCtrl)
+	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CFriendListCtrl::OnItemRightClicked)
+	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CFriendListCtrl::OnItemActivated)
 
 	EVT_MENU(MP_MESSAGE, CFriendListCtrl::OnSendMessage)
 	EVT_MENU(MP_REMOVEFRIEND, CFriendListCtrl::OnRemoveFriend)
@@ -51,20 +51,32 @@ wxBEGIN_EVENT_TABLE(CFriendListCtrl, CMuleListCtrl)
 	EVT_MENU(MP_DETAIL, CFriendListCtrl::OnShowDetails)
 	EVT_MENU(MP_SHOWLIST, CFriendListCtrl::OnViewFiles)
 	EVT_MENU(MP_FRIENDSLOT, CFriendListCtrl::OnSetFriendslot)
-
-	EVT_CHAR(CFriendListCtrl::OnKeyPressed)
 wxEND_EVENT_TABLE()
 
 CFriendListCtrl::CFriendListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize siz, int flags)
-: CMuleListCtrl(parent, id, pos, siz, flags)
+: CMuleVirtualDataViewCtrl(parent, id, pos, siz, flags)
 {
-	// Column gets a one-letter name so CMuleListCtrl::SaveSettings has
-	// something to write under /eMule/TableWidthsFriend. Without it the
-	// base-class persistence path short-circuits at "if (!m_name.IsEmpty())"
-	// -- the dtor would never have a column to record.
-	InsertColumn(0, _("Username"), wxLIST_FORMAT_LEFT, siz.GetWidth() - 4, "N");
-	SetTableName("Friend");
-	LoadSettings();
+	AppendTextColumn(_("Username"),
+		COLUMN_FRIEND_NAME,
+		wxDATAVIEW_CELL_INERT,
+		siz.GetWidth() - 4,
+		wxALIGN_LEFT,
+		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+
+	// Absorbs the macOS trailing-column sizing; the model answers any column
+	// past the real one with an empty value.
+	AppendSpacerColumn(COLUMN_FRIEND_SPACER);
+	AssociateVirtualModel();
+
+	// One-letter name so CListColumnStore has something to write under
+	// /eMule/TableWidthsFriend.
+	m_columnStore.RegisterColumn(COLUMN_FRIEND_NAME, siz.GetWidth() - 4, "N");
+
+	ApplySorting(COLUMN_FRIEND_NAME, 0);
+
+	m_columnStore.SetTableName("Friend");
+	LoadColumnSettings();
+	InitColumnState();
 }
 
 CFriendListCtrl::~CFriendListCtrl() {}
@@ -75,12 +87,10 @@ void CFriendListCtrl::RemoveFriend(CFriend *toremove)
 		return;
 	}
 
-	sint32 itemnr = FindItem(-1, reinterpret_cast<wxUIntPtr>(toremove));
-
-	if (itemnr == -1)
-		return;
-
-	DeleteItem(itemnr);
+	const wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(toremove);
+	if (HasItemData(ptr)) {
+		RemoveItemData(ptr);
+	}
 }
 
 void CFriendListCtrl::UpdateFriend(CFriend *toupdate)
@@ -89,53 +99,94 @@ void CFriendListCtrl::UpdateFriend(CFriend *toupdate)
 		return;
 	}
 
-	sint32 itemnr = FindItem(-1, reinterpret_cast<wxUIntPtr>(toupdate));
-	if (itemnr == -1) {
-		itemnr = InsertItem(GetItemCount(), "");
-		SetItemPtrData(itemnr, reinterpret_cast<wxUIntPtr>(toupdate));
+	const wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(toupdate);
+	if (HasItemData(ptr)) {
+		// The cell is rendered from the friend on demand, so a refresh is
+		// just a repaint (plus a re-sort if the name changed under a
+		// name-sorted list).
+		RefreshItemData(ptr);
+	} else {
+		AddItemData(ptr);
 	}
-
-	SetItem(itemnr, 0, toupdate->GetName());
-	// Linked friends stay visually distinguished in blue; unlinked
-	// ones must follow the system text color so they don't render
-	// invisible on dark themes (#640).
-	SetItemTextColour(itemnr,
-		toupdate->GetLinkedClient().IsLinked()
-			? *wxBLUE
-			: wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
 }
 
-void CFriendListCtrl::OnItemActivated(wxListEvent &WXUNUSED(event))
+wxString CFriendListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const
 {
-	int cursel = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (column != COLUMN_FRIEND_NAME) {
+		return wxEmptyString;
+	}
+	return reinterpret_cast<const CFriend *>(item)->GetName();
+}
 
-	CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(cursel));
+bool CFriendListCtrl::GetItemAttr(wxUIntPtr item, unsigned WXUNUSED(column), wxDataViewItemAttr &attr) const
+{
+	// Linked friends stay visually distinguished in blue; unlinked ones fall
+	// back to the default (system) text colour so they don't render
+	// invisible on dark themes (#640).
+	const CFriend *cur_friend = reinterpret_cast<const CFriend *>(item);
+	if (cur_friend->GetLinkedClient().IsLinked()) {
+		attr.SetColour(*wxBLUE);
+		return true;
+	}
+	return false;
+}
 
-	/* ignore this one, it is not activated anymore :) */
-	if (cur_friend == NULL) {
+int CFriendListCtrl::CompareItemData(
+	wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool WXUNUSED(alt), int modifier) const
+{
+	if (column != COLUMN_FRIEND_NAME) {
+		return 0;
+	}
+	const CFriend *f1 = reinterpret_cast<const CFriend *>(data1);
+	const CFriend *f2 = reinterpret_cast<const CFriend *>(data2);
+	return modifier * f1->GetName().CmpNoCase(f2->GetName());
+}
+
+void CFriendListCtrl::OnItemActivated(wxDataViewEvent &event)
+{
+	// Open a session with the activated row alone, whatever else was selected.
+	// event.GetItem()'s ID is the row-addressed model's row index, not the
+	// item data -- see the "item identity is not row identity" note in
+	// MuleVirtualDataViewCtrl.h -- so the friend has to be resolved through
+	// the selection rather than cast directly from the item.
+	if (event.GetItem().IsOk()) {
+		UnselectAll();
+		Select(event.GetItem());
+	}
+
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (selected.empty()) {
 		return;
 	}
 
-	theApp->amuledlg->m_chatwnd->StartSession(cur_friend);
+	theApp->amuledlg->m_chatwnd->StartSession(reinterpret_cast<CFriend *>(selected.front()));
 }
 
-void CFriendListCtrl::OnRightClick(wxMouseEvent &event)
+void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 {
-	int cursel = CheckSelection(event);
+	// Right-clicking a row outside the selection acts on that row alone.
+	if (event.GetItem().IsOk()) {
+		wxDataViewItemArray selection;
+		GetSelections(selection);
+		if (selection.Index(event.GetItem()) == wxNOT_FOUND) {
+			UnselectAll();
+			Select(event.GetItem());
+		}
+	}
 
-	CFriend *cur_friend = NULL;
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	CFriend *cur_friend = selected.empty() ? nullptr : reinterpret_cast<CFriend *>(selected.front());
 
 	wxMenu *menu = new wxMenu(_("Friends"));
 
-	if (cursel != -1) {
-		cur_friend = reinterpret_cast<CFriend *>(GetItemData(cursel));
+	if (cur_friend) {
 		menu->Append(MP_DETAIL, _("Show &Details"));
 		menu->Enable(MP_DETAIL, cur_friend->GetLinkedClient().IsLinked());
 	}
 
 	menu->Append(MP_ADDFRIEND, _("Add a friend"));
 
-	if (cursel != (-1)) {
+	if (cur_friend) {
 		menu->Append(MP_REMOVEFRIEND, _("Remove Friend"));
 		menu->Append(MP_MESSAGE, _("Send &Message"));
 		menu->Append(MP_SHOWLIST, _("View Files"));
@@ -148,30 +199,26 @@ void CFriendListCtrl::OnRightClick(wxMouseEvent &event)
 		}
 	}
 
-	PopupMenu(menu, event.GetPosition());
+	PopupMenu(menu);
 	delete menu;
 }
 
 void CFriendListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(index));
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CFriend *cur_friend = reinterpret_cast<CFriend *>(data);
 		theApp->amuledlg->m_chatwnd->StartSession(cur_friend);
 // #warning CORE/GUI!
 #ifndef CLIENT_GUI
 		theApp->friendlist->StartChatSession(cur_friend);
 #endif
-
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 }
 
 void CFriendListCtrl::OnRemoveFriend(wxCommandEvent &WXUNUSED(event))
 {
 	wxString question;
-	if (GetSelectedItemCount() == 1) {
+	if (GetSelectedItemsCount() == 1) {
 		question = _("Are you sure that you wish to delete the selected friend?");
 	} else {
 		question = _("Are you sure that you wish to delete the selected friends?");
@@ -182,19 +229,15 @@ void CFriendListCtrl::OnRemoveFriend(wxCommandEvent &WXUNUSED(event))
 		// RemoveFriend() is asynchronous (it only sends an EC request; the row is
 		// dropped later, when the daemon pushes the updated friend list), so the
 		// removed friend stays selected in the list when RemoveFriend() returns.
-		// Re-querying the first selected item from -1 in the loop would then keep
-		// finding the same friend and resend the request forever, pegging the CPU
-		// (the tight loop never yields to process the daemon's update). Snapshot
-		// the selection up front so removal is correct whether it is synchronous
-		// (monolithic) or asynchronous (remote GUI).
-		std::vector<CFriend *> selected;
-		for (long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); index != -1;
-			index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) {
-			selected.push_back(reinterpret_cast<CFriend *>(GetItemData(index)));
-		}
+		// Re-querying the selection in the loop would then keep finding the same
+		// friend and resend the request forever, pegging the CPU (the tight loop
+		// never yields to process the daemon's update). Snapshot the selection up
+		// front so removal is correct whether it is synchronous (monolithic) or
+		// asynchronous (remote GUI).
+		const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 
-		for (CFriend *cur_friend : selected) {
-			theApp->friendlist->RemoveFriend(cur_friend);
+		for (wxUIntPtr data : selected) {
+			theApp->friendlist->RemoveFriend(reinterpret_cast<CFriend *>(data));
 		}
 	}
 }
@@ -206,23 +249,18 @@ void CFriendListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 
 void CFriendListCtrl::OnShowDetails(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(index));
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CFriend *cur_friend = reinterpret_cast<CFriend *>(data);
 		if (cur_friend->GetLinkedClient().IsLinked()) {
 			CClientDetailDialog(this, cur_friend->GetLinkedClient()).ShowModal();
 		}
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 }
 
 void CFriendListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-
-	while (index != -1) {
-		CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(index));
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		CFriend *cur_friend = reinterpret_cast<CFriend *>(data);
 		// If this friend's listing is already open in the Search panel, switch
 		// to that tab instead of re-requesting -- a second request would
 		// duplicate the results in the existing tab. The browse tab is keyed by
@@ -233,18 +271,19 @@ void CFriendListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 			    theApp->amuledlg->m_searchwnd->ActivateBrowseTabIfOpen(ecid))) {
 			theApp->friendlist->RequestSharedFileList(cur_friend);
 		}
-		index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 	}
 }
 
 void CFriendListCtrl::OnSetFriendslot(wxCommandEvent &event)
 {
-	// Get item
-	long index = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	CFriend *cur_friend = reinterpret_cast<CFriend *>(GetItemData(index));
-	theApp->friendlist->SetFriendSlot(cur_friend, event.IsChecked());
-	index = GetNextItem(index, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	if (index != -1) {
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	if (selected.empty()) {
+		return;
+	}
+
+	theApp->friendlist->SetFriendSlot(reinterpret_cast<CFriend *>(selected.front()), event.IsChecked());
+
+	if (selected.size() > 1) {
 		wxMessageBox(_("You are not allowed to set more than one friendslot.\n Only one slot was "
 			       "assigned."),
 			_("Multiple selection"),
@@ -253,17 +292,18 @@ void CFriendListCtrl::OnSetFriendslot(wxCommandEvent &event)
 	}
 }
 
-void CFriendListCtrl::OnKeyPressed(wxKeyEvent &event)
+bool CFriendListCtrl::OnListKey(wxKeyEvent &event)
 {
-	// Check if delete was pressed
+	// Delete removes the selected friends; everything else belongs to the
+	// control's own navigation.
 	if ((event.GetKeyCode() == WXK_DELETE) || (event.GetKeyCode() == WXK_NUMPAD_DELETE)) {
-		if (GetItemCount()) {
+		if (ItemDataCount()) {
 			wxCommandEvent evt;
 			evt.SetId(MP_REMOVEFRIEND);
 			OnRemoveFriend(evt);
 		}
-	} else {
-		event.Skip();
+		return true;
 	}
+	return false;
 }
 // File_checked_for_headers
