@@ -106,6 +106,37 @@ void CMuleDataViewCtrl::AppendBarColumn(const wxString &title, unsigned modelCol
 	AppendColumn(column);
 }
 
+void CMuleDataViewCtrl::AddTextColumn(const wxString &label,
+	unsigned modelColumn,
+	const wxString &key,
+	int width,
+	wxAlignment align,
+	int flags,
+	wxDataViewCellMode mode)
+{
+	AppendTextColumn(label, modelColumn, mode, width, align, flags);
+	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
+}
+
+void CMuleDataViewCtrl::AddIconTextColumn(const wxString &label,
+	unsigned modelColumn,
+	const wxString &key,
+	int width,
+	wxAlignment align,
+	int flags,
+	wxDataViewCellMode mode)
+{
+	AppendIconTextColumn(label, modelColumn, mode, width, align, flags);
+	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
+}
+
+void CMuleDataViewCtrl::AddBarColumn(
+	const wxString &label, unsigned modelColumn, const wxString &key, int width, int flags)
+{
+	AppendBarColumn(label, modelColumn, width, flags);
+	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
+}
+
 unsigned CMuleDataViewCtrl::RealColumnCount() const
 {
 	const unsigned columns = GetColumnCount();

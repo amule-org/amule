@@ -86,36 +86,29 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	// The name column carries the country flag, so it is icon+text; the rest
 	// are plain text. Sortable throughout, or wx draws no header caret.
 	const int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AppendIconTextColumn(
-		_("Server Name"), COLUMN_SERVER_NAME, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Address"), COLUMN_SERVER_ADDR, wxDATAVIEW_CELL_INERT, 140, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Port"), COLUMN_SERVER_PORT, wxDATAVIEW_CELL_INERT, 25, wxALIGN_LEFT, flags);
-	AppendTextColumn(
-		_("Description"), COLUMN_SERVER_DESC, wxDATAVIEW_CELL_INERT, 150, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Ping"), COLUMN_SERVER_PING, wxDATAVIEW_CELL_INERT, 25, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Users"), COLUMN_SERVER_USERS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
+	AddIconTextColumn(_("Server Name"), COLUMN_SERVER_NAME, "N", 150, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Address"), COLUMN_SERVER_ADDR, "A", 140, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Port"), COLUMN_SERVER_PORT, "P", 25, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Description"), COLUMN_SERVER_DESC, "D", 150, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Ping"), COLUMN_SERVER_PING, "p", 25, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Users"), COLUMN_SERVER_USERS, "U", 40, wxALIGN_LEFT, flags);
 	// Beside Users, since the pair is read together: how many are on now, and
 	// how many the server will take.
-	AppendTextColumn(
-		_("Max Users"), COLUMN_SERVER_MAXUSERS, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Files"), COLUMN_SERVER_FILES, wxDATAVIEW_CELL_INERT, 45, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Priority"), COLUMN_SERVER_PRIO, wxDATAVIEW_CELL_INERT, 60, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Failed"), COLUMN_SERVER_FAILS, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Static"), COLUMN_SERVER_STATIC, wxDATAVIEW_CELL_INERT, 40, wxALIGN_LEFT, flags);
-	AppendTextColumn(_("Version"), COLUMN_SERVER_VERSION, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Max Users"), COLUMN_SERVER_MAXUSERS, "m", 85, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Files"), COLUMN_SERVER_FILES, "F", 45, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Priority"), COLUMN_SERVER_PRIO, "r", 60, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Failed"), COLUMN_SERVER_FAILS, "f", 40, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Static"), COLUMN_SERVER_STATIC, "S", 40, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Version"), COLUMN_SERVER_VERSION, "V", 80, wxALIGN_LEFT, flags);
 
-	AppendTextColumn(
-		_("Soft Files"), COLUMN_SERVER_SOFTFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
-	AppendTextColumn(
-		_("Hard Files"), COLUMN_SERVER_HARDFILES, wxDATAVIEW_CELL_INERT, 85, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Soft Files"), COLUMN_SERVER_SOFTFILES, "s", 85, wxALIGN_LEFT, flags);
+	AddTextColumn(_("Hard Files"), COLUMN_SERVER_HARDFILES, "h", 85, wxALIGN_LEFT, flags);
 
 	// Same columns in both binaries: diagnostics, hidden by default in release
 	// builds (below), and the flags are streamed over EC so the remote GUI has
 	// the data behind them.
-	AppendTextColumn(
-		_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
-	AppendTextColumn(
-		_("UDP Flags"), COLUMN_SERVER_UDPFLAGS, wxDATAVIEW_CELL_INERT, 80, wxALIGN_LEFT, flags);
+	AddTextColumn(_("TCP Flags"), COLUMN_SERVER_TCPFLAGS, "t", 80, wxALIGN_LEFT, flags);
+	AddTextColumn(_("UDP Flags"), COLUMN_SERVER_UDPFLAGS, "u", 80, wxALIGN_LEFT, flags);
 	// Per-user publishing limits the server advertises: how many of a user's
 	// shared files it will index. Both arrive with the periodic UDP status
 	// reply, the same one that fills Users and Files.
@@ -124,23 +117,6 @@ CServerListCtrl::CServerListCtrl(wxWindow *parent,
 	// past the real ones with an empty value.
 	AppendSpacerColumn(COLUMN_SERVER_SPACER);
 	AssociateVirtualModel();
-
-	m_columnStore.RegisterColumn(COLUMN_SERVER_NAME, 150, "N");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_ADDR, 140, "A");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_PORT, 25, "P");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_DESC, 150, "D");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_PING, 25, "p");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_USERS, 40, "U");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_FILES, 45, "F");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_PRIO, 60, "r");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_FAILS, 40, "f");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_STATIC, 40, "S");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_VERSION, 80, "V");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_TCPFLAGS, 80, "t");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_UDPFLAGS, 80, "u");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_SOFTFILES, 85, "s");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_HARDFILES, 85, "h");
-	m_columnStore.RegisterColumn(COLUMN_SERVER_MAXUSERS, 85, "m");
 
 	// Default sort is by name, ascending; LoadColumnSettings() replaces it
 	// when the config has something saved.

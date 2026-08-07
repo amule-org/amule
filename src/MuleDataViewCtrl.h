@@ -205,6 +205,59 @@ protected:
 		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 
 	/**
+	 * Append a column and register it for persistence, in one call.
+	 *
+	 * A column's width has to reach two places that never meet: wx, which
+	 * uses it as the initial on-screen width, and CListColumnStore, which
+	 * keeps it as the default to restore a column to when it is un-hidden
+	 * with no width cached for it. Passing it separately to AppendTextColumn()
+	 * and RegisterColumn() meant writing the same number twice with nothing
+	 * keeping the two honest -- the legacy CMuleListCtrl::InsertColumn() took
+	 * both in one call and could not drift.
+	 *
+	 * @a key is the persistence key: a single letter, written to
+	 * TableWidths<list> / TableOrdering<list> in the config. It is the on-disk
+	 * format, so changing one resets that column's saved width and forgets its
+	 * sort.
+	 *
+	 * @a mode is last, rather than in wx's position ahead of the width, because
+	 * width has no default and a parameter before it could not have one either
+	 * -- every caller would have to spell out INERT. Every column is inert
+	 * today; the parameter exists so that an editable one later does not have
+	 * to drop back to Append* plus a hand-written RegisterColumn(), which is
+	 * the duplication this exists to remove.
+	 *
+	 * Named Add* rather than overloading wx's Append*: an overload with a
+	 * different signature would still bind to the wx method wherever a call
+	 * was missed, compiling cleanly and persisting nothing. A distinct name
+	 * makes "still calls Append*" a signal that grep can check, which is what
+	 * the migration is validated with.
+	 */
+	void AddTextColumn(const wxString &label,
+		unsigned modelColumn,
+		const wxString &key,
+		int width,
+		wxAlignment align = wxALIGN_LEFT,
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE,
+		wxDataViewCellMode mode = wxDATAVIEW_CELL_INERT);
+
+	/// AddTextColumn() for a column whose cells carry an icon beside the text.
+	void AddIconTextColumn(const wxString &label,
+		unsigned modelColumn,
+		const wxString &key,
+		int width,
+		wxAlignment align = wxALIGN_LEFT,
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE,
+		wxDataViewCellMode mode = wxDATAVIEW_CELL_INERT);
+
+	/// AddTextColumn() for a CMuleBarRenderer column; see AppendBarColumn().
+	void AddBarColumn(const wxString &label,
+		unsigned modelColumn,
+		const wxString &key,
+		int width,
+		int flags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
+
+	/**
 	 * Sizes the per-column state and snapshots the current widths. Call
 	 * after the columns exist and after LoadColumnSettings(): it preserves
 	 * any hidden flags already restored through the width adapter.
