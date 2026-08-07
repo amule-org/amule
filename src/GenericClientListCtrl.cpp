@@ -375,6 +375,12 @@ void CGenericClientListCtrl::InitColumnData()
 		}
 	}
 
+	// Absorbs the macOS trailing-column sizing, which would otherwise fall on
+	// the last real column and collapse it once the columns are wider than the
+	// control. n_columns is the id to use: the model answers every column past
+	// its own table with an empty value already.
+	AppendSpacerColumn(m_columndata.n_columns);
+
 	AssociateVirtualModel();
 	ApplySorting(0, 0);
 
