@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:16+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -2616,10 +2616,6 @@ msgstr "메시지 보내기"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "파일을 교환"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7111,6 +7107,10 @@ msgstr "공유파일의 전체 크기: %s"
 #, fuzzy
 msgid "Remote File Name"
 msgstr "파일 이름"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

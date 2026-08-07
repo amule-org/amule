@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -2627,10 +2627,6 @@ msgstr "Отправить сообщение"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Переключить на этот файл"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7073,6 +7069,10 @@ msgstr "Общий размер публикуемых файлов: %s"
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Удалённое имя файла"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

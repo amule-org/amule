@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:11+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -2608,10 +2608,6 @@ msgstr "Enviar un mensaje"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Intercambiar a este archivo"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7031,6 +7027,10 @@ msgstr "Tamaño total de los archivos compartidos: %s"
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Nombre del archivo remoto"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

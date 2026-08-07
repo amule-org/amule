@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:10+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -2615,10 +2615,6 @@ msgstr "Αποστολή μηνύματος"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Εναλλαγή σε αυτό το αρχείο"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy, c-format
@@ -7112,6 +7108,10 @@ msgstr "Συνολικό μέγεθος κοινόχρηστων αρχείων:
 #, fuzzy
 msgid "Remote File Name"
 msgstr "Όνομα αρχείου"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format

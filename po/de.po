@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 21:37+0200\n"
+"POT-Creation-Date: 2026-08-07 23:15+0200\n"
 "PO-Revision-Date: 2026-08-07 10:10+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -2605,10 +2605,6 @@ msgstr "Sende Nachricht"
 #: src/GenericClientListCtrl.cpp
 msgid "Swap to this file"
 msgstr "Zu dieser Datei verschieben"
-
-#: src/GenericClientListCtrl.cpp
-msgid "A4AF"
-msgstr "A4AF"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7049,6 +7045,10 @@ msgstr "Gesamtgröße der freigegebenen Dateien: %s"
 #: src/SourceListCtrl.cpp
 msgid "Remote File Name"
 msgstr "Ferndateiname"
+
+#: src/SourceListCtrl.cpp
+msgid "A4AF"
+msgstr "A4AF"
 
 #: src/Statistics.cpp
 #, c-format
