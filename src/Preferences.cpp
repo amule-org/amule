@@ -2185,8 +2185,13 @@ void CPreferences::LoadPathMappings()
 		cfg->SetPath(CFormat("/PathMapping#%li") % i);
 
 		PathMapping mapping;
-		mapping.remotePrefix = cfg->Read("Remote", "");
-		mapping.localPrefix = CPath::FromUniv(cfg->Read("Local", ""));
+		// Stripped here too, not just at entry (OnPathMappingAdd): an
+		// existing config saved before this fix, or one hand-edited, can
+		// still carry a trailing separator, and CPath's constructor does
+		// not strip one -- see ApplyPathMapping()'s substitution.
+		mapping.remotePrefix = StripSeparators(cfg->Read("Remote", ""), wxString::trailing);
+		mapping.localPrefix = CPath(StripSeparators(
+			CPath::FromUniv(cfg->Read("Local", "")).GetRaw(), wxString::trailing));
 
 		if (mapping.remotePrefix.IsEmpty() || !mapping.localPrefix.IsOk()) {
 			AddLogLineN(_("Invalid path mapping found, skipping"));
@@ -2201,9 +2206,20 @@ wxString CPreferences::ApplyPathMapping(const wxString &remotePath) const
 {
 #ifdef CLIENT_GUI
 	for (const PathMapping &mapping : m_pathMappings) {
-		if (!mapping.remotePrefix.IsEmpty() && remotePath.StartsWith(mapping.remotePrefix)) {
-			return mapping.localPrefix.GetRaw() + remotePath.Mid(mapping.remotePrefix.length());
+		if (mapping.remotePrefix.IsEmpty() || !remotePath.StartsWith(mapping.remotePrefix)) {
+			continue;
 		}
+		const size_t prefixLen = mapping.remotePrefix.length();
+		if (remotePath.length() > prefixLen) {
+			// A bare StartsWith() also matches "/mnt/data-old/f" against a
+			// "/mnt/data" mapping. The daemon's OS is not known here, so
+			// accept either separator convention rather than assuming one.
+			const wxChar next = remotePath[prefixLen];
+			if (next != wxT('/') && next != wxT('\\')) {
+				continue;
+			}
+		}
+		return mapping.localPrefix.GetRaw() + remotePath.Mid(prefixLen);
 	}
 #endif
 	return remotePath;

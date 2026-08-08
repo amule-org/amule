@@ -503,6 +503,7 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define IDC_PATHMAP_BROWSE 10499
 #define IDC_PATHMAP_ADD 10500
 #define IDC_PATHMAP_REMOVE 10501
+#define IDC_PATHMAP_HINT 10502
 wxSizer *aMuleGuiLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_UPDATELIST 10244

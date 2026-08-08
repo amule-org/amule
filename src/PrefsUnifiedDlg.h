@@ -140,6 +140,13 @@ protected:
 	void OnSharedDirAdd(wxCommandEvent &evt);
 	void OnSharedDirRemove(wxCommandEvent &evt);
 
+	//! The path-mapping rows' actual local prefixes, indexed by the row's
+	//! item data -- same rationale as m_sharedDirRowPaths (SetListRowPath()
+	//! in the .cpp): a list cell holds display text, not a round-trippable
+	//! CPath. Rebuilt by PopulatePathMappingList(), appended to by
+	//! OnPathMappingAdd(), read back by HarvestPathMappingList().
+	std::vector<CPath> m_pathMappingRowPaths;
+
 	//! Fill the path-mapping list widget from glob_prefs' mappings (#843).
 	//! Purely local -- unlike PopulateSharedDirsList, there is no EC reply
 	//! to wait for, so this is the whole refresh.
@@ -152,6 +159,13 @@ protected:
 	//! sense (it's the daemon's path, nothing here to browse to), but the
 	//! local side is a real folder on this machine.
 	void OnPathMappingBrowse(wxCommandEvent &evt);
+	//! Re-flows the explanatory paragraph above the path-mapping list to
+	//! the control's own (DPI-scaled) width whenever that width actually
+	//! changes -- muuli_wdr.cpp deliberately does not Wrap() it, since a
+	//! one-shot Wrap() at construction bakes fixed line breaks that
+	//! Expand() then stretches without reflowing (the empty right margin
+	//! that motivated this).
+	void OnPathMappingHintResize(wxSizeEvent &evt);
 
 public:
 	//! Repaint the editor when a GET_SHARED_DIRS reply lands while the

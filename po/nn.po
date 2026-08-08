@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: 2026-08-07 10:17+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -4289,6 +4289,32 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote prefix:"
+msgstr "Fjern tenar"
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Local prefix:"
+msgstr "Lokal tenar"
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr "Grafar"
 
@@ -5705,6 +5731,10 @@ msgid "no options available"
 msgstr ""
 
 #: src/Preferences.cpp
+msgid "Invalid path mapping found, skipping"
+msgstr ""
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr ""
 
@@ -5724,6 +5754,10 @@ msgstr "Kopling"
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Katalogar"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -6236,6 +6270,29 @@ msgstr "Lastar inn att lista over delte filer."
 #, fuzzy
 msgid "Shared folder"
 msgstr "Delte filer"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Remote prefix"
+msgstr "Fjern tenar"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Local prefix"
+msgstr "Lokal tenar"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose the local folder"
+msgstr "Vel ei mappe for %s"
 
 #: src/SearchDlg.cpp
 #, fuzzy

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: 2026-08-07 10:09+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -4267,6 +4267,32 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote prefix:"
+msgstr "Vzdálený server"
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Local prefix:"
+msgstr "Lokální server"
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr "Grafy"
 
@@ -5680,6 +5706,11 @@ msgid "no options available"
 msgstr "není dostupné žádné nastavení"
 
 #: src/Preferences.cpp
+#, fuzzy
+msgid "Invalid path mapping found, skipping"
+msgstr "Nalezena neplatná kategorie, přeskakuji"
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr "Nalezena neplatná kategorie, přeskakuji"
 
@@ -5699,6 +5730,10 @@ msgstr "Připojení"
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Adresáře"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -6208,6 +6243,29 @@ msgstr "Znovu načte seznam sdílených souborů."
 #, fuzzy
 msgid "Shared folder"
 msgstr "Sdílené adresáře"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Remote prefix"
+msgstr "Vzdálený server"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Local prefix"
+msgstr "Lokální server"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose the local folder"
+msgstr "Zvolte adresář pro %s"
 
 #: src/SearchDlg.cpp
 #, fuzzy

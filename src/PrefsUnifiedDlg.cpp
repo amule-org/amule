@@ -3291,13 +3291,40 @@ void PrefsUnifiedDlg::PopulatePathMappingList()
 		list->InsertColumn(1, _("Local prefix"), wxLIST_FORMAT_LEFT, 220);
 	}
 	list->DeleteAllItems();
+	m_pathMappingRowPaths.clear();
 
 	long row = 0;
 	for (const CPreferences::PathMapping &mapping : theApp->glob_prefs->GetPathMappings()) {
 		list->InsertItem(row, mapping.remotePrefix);
-		list->SetItem(row, 1, mapping.localPrefix.GetPrintable());
+		SetListRowPath(list, row, 1, mapping.localPrefix, m_pathMappingRowPaths);
 		++row;
 	}
+
+	// Bound here (idempotently -- Unbind first) rather than once at dialog
+	// construction: this page's controls, this one included, do not exist
+	// until PreferencesPathMappingTab() builds them, and Populate is the
+	// first point afterwards that this code runs. Size events do not
+	// propagate to a parent's event table the way command events do, so
+	// this has to bind directly on the control rather than add a row to
+	// the wxDECLARE_EVENT_TABLE() above.
+	if (wxStaticText *hint = CastChild(IDC_PATHMAP_HINT, wxStaticText)) {
+		hint->Unbind(wxEVT_SIZE, &PrefsUnifiedDlg::OnPathMappingHintResize, this);
+		hint->Bind(wxEVT_SIZE, &PrefsUnifiedDlg::OnPathMappingHintResize, this);
+		if (hint->GetClientSize().GetWidth() > 0) {
+			hint->Wrap(hint->GetClientSize().GetWidth());
+		}
+	}
+}
+
+void PrefsUnifiedDlg::OnPathMappingHintResize(wxSizeEvent &evt)
+{
+	if (wxStaticText *hint = CastChild(IDC_PATHMAP_HINT, wxStaticText)) {
+		const int width = evt.GetSize().GetWidth();
+		if (width > 0) {
+			hint->Wrap(width);
+		}
+	}
+	evt.Skip();
 }
 
 void PrefsUnifiedDlg::HarvestPathMappingList()
@@ -3309,15 +3336,10 @@ void PrefsUnifiedDlg::HarvestPathMappingList()
 	CPreferences::PathMappingList mappings;
 	for (long row = 0; row < list->GetItemCount(); ++row) {
 		CPreferences::PathMapping mapping;
+		// The daemon's path, in the daemon's own OS convention -- never a
+		// CPath (see Preferences.h), so the cell text already round-trips.
 		mapping.remotePrefix = list->GetItemText(row);
-
-		wxListItem field;
-		field.SetId(row);
-		field.SetColumn(1);
-		field.SetMask(wxLIST_MASK_TEXT);
-		list->GetItem(field);
-		mapping.localPrefix = CPath(field.GetText());
-
+		mapping.localPrefix = GetListRowPath(list, row, m_pathMappingRowPaths);
 		mappings.push_back(mapping);
 	}
 	theApp->glob_prefs->SetPathMappings(mappings);
@@ -3331,18 +3353,27 @@ void PrefsUnifiedDlg::OnPathMappingAdd(wxCommandEvent &WXUNUSED(evt))
 	if (remoteCtrl == nullptr || localCtrl == nullptr || list == nullptr) {
 		return;
 	}
-	const wxString remote = remoteCtrl->GetValue().Strip(wxString::both);
-	const wxString local = localCtrl->GetValue().Strip(wxString::both);
+	// Stripped here, at entry, rather than only where ApplyPathMapping()
+	// substitutes: a trailing separator on the remote prefix silently
+	// corrupts every path it maps (StartsWith() still matches, but the
+	// join then runs the two halves together with nothing between them).
+	const wxString remote =
+		StripSeparators(remoteCtrl->GetValue().Strip(wxString::both), wxString::trailing);
+	const wxString local =
+		StripSeparators(localCtrl->GetValue().Strip(wxString::both), wxString::trailing);
 	if (remote.IsEmpty() || local.IsEmpty()) {
+		wxMessageBox(
+			_("Both the remote and local prefix must be filled in."), _("Path Mappings"), wxOK);
 		return;
 	}
 	for (long row = 0; row < list->GetItemCount(); ++row) {
 		if (list->GetItemText(row) == remote) {
-			return; // already mapped
+			wxMessageBox(_("This remote prefix is already mapped."), _("Path Mappings"), wxOK);
+			return;
 		}
 	}
 	const long row = list->InsertItem(list->GetItemCount(), remote);
-	list->SetItem(row, 1, local);
+	SetListRowPath(list, row, 1, CPath(local), m_pathMappingRowPaths);
 	remoteCtrl->Clear();
 	localCtrl->Clear();
 }
