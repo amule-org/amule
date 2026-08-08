@@ -140,6 +140,19 @@ protected:
 	void OnSharedDirAdd(wxCommandEvent &evt);
 	void OnSharedDirRemove(wxCommandEvent &evt);
 
+	//! Fill the path-mapping list widget from glob_prefs' mappings (#843).
+	//! Purely local -- unlike PopulateSharedDirsList, there is no EC reply
+	//! to wait for, so this is the whole refresh.
+	void PopulatePathMappingList();
+	//! Copy the list widget's rows back into glob_prefs' mappings.
+	void HarvestPathMappingList();
+	void OnPathMappingAdd(wxCommandEvent &evt);
+	void OnPathMappingRemove(wxCommandEvent &evt);
+	//! wxDirDialog for the local-prefix field: typing a remote prefix makes
+	//! sense (it's the daemon's path, nothing here to browse to), but the
+	//! local side is a real folder on this machine.
+	void OnPathMappingBrowse(wxCommandEvent &evt);
+
 public:
 	//! Repaint the editor when a GET_SHARED_DIRS reply lands while the
 	//! dialog is open. A no-op when it isn't, so the reply handler never

@@ -37,7 +37,10 @@
 #include "MacAppHelper.h" // Needed for mac_reveal_in_finder
 #endif
 
-#include "AppImageEnv.h"        // Needed for GetSanitizedExecEnv
+#include "AppImageEnv.h" // Needed for GetSanitizedExecEnv
+#ifdef CLIENT_GUI
+#include "amule.h" // Needed for theApp->glob_prefs (ApplyPathMapping)
+#endif
 #include "KnownFile.h"          // Needed for CKnownFile
 #include "Logger.h"             // Needed for AddLogLineC
 #include "OtherFunctions.h"     // Needed for GetFiletype
@@ -245,11 +248,27 @@ bool ResolvePath(const CKnownFile *file, CPath &out)
 		return false;
 	}
 
-	const CPath &directory = file->GetFilePath();
-	if (!directory.IsOk()) {
+	const CPath &rawDirectory = file->GetFilePath();
+	if (!rawDirectory.IsOk()) {
 		// amulegui before the daemon has streamed EC_TAG_KNOWNFILE_PATH.
 		return false;
 	}
+
+#ifdef CLIENT_GUI
+	// Rewrite a remote daemon's path into this machine's, per the user's
+	// configured mappings (issue #843) -- e.g. the daemon's
+	// /downloads/incoming reachable here as D:\Downloads\aMule\incoming via
+	// a Samba mount. String substitution on the raw daemon path, done
+	// before it becomes part of a CPath: ApplyPathMapping() never assumes
+	// the remote side uses this host's separator convention. A no-op
+	// (returns the input unchanged) whenever no configured mapping's prefix
+	// matches, including the common case of an empty mapping list -- so
+	// this is a genuine copy only for a build that can actually change it.
+	const CPath directory = CPath(theApp->glob_prefs->ApplyPathMapping(rawDirectory.GetRaw()));
+#else
+	// The monolithic app is its own core: never remapped, so no copy.
+	const CPath &directory = rawDirectory;
+#endif
 
 	// IsPartFile() is `status != PS_COMPLETE` on CPartFile and a constant false
 	// on CKnownFile, so a true answer also establishes the dynamic type -- the

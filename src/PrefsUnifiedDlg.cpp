@@ -35,6 +35,7 @@
 #include <wx/colordlg.h>
 #include <wx/combobox.h> // network-interface drop-down (bind-to-interface)
 #include <wx/dataview.h> // the page sidebar (m_PrefsIcons)
+#include <wx/dirdlg.h>   // Browse button on the path-mapping editor (remote GUI)
 #include <wx/listctrl.h> // shared-folders editor (remote GUI)
 #include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
@@ -268,6 +269,9 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 #ifdef CLIENT_GUI
 	EVT_BUTTON(IDC_SHAREDDIR_ADD, PrefsUnifiedDlg::OnSharedDirAdd)
 	EVT_BUTTON(IDC_SHAREDDIR_REMOVE, PrefsUnifiedDlg::OnSharedDirRemove)
+	EVT_BUTTON(IDC_PATHMAP_ADD, PrefsUnifiedDlg::OnPathMappingAdd)
+	EVT_BUTTON(IDC_PATHMAP_REMOVE, PrefsUnifiedDlg::OnPathMappingRemove)
+	EVT_BUTTON(IDC_PATHMAP_BROWSE, PrefsUnifiedDlg::OnPathMappingBrowse)
 #endif
 	EVT_BUTTON(IDC_SELBROWSER, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEBROWSE, PrefsUnifiedDlg::OnButtonBrowseApplication)
@@ -351,6 +355,12 @@ struct PrefsPage
 PrefsPage pages[] = { { wxTRANSLATE("General"), PreferencesGeneralTab, 13, "prefs_general" },
 	{ wxTRANSLATE("Connection"), PreferencesConnectionTab, 14, "prefs_connection" },
 	{ wxTRANSLATE("Directories"), PreferencesDirectoriesTab, 17, "prefs_directories" },
+#ifdef CLIENT_GUI
+	// Remote-only (issue #843): mapping a daemon's path space onto this
+	// machine's has no meaning for the monolithic app, which is its own
+	// daemon. Placed right after Directories, the other page about paths.
+	{ wxTRANSLATE("Path Mappings"), PreferencesPathMappingTab, 17, "prefs_directories" },
+#endif
 	{ wxTRANSLATE("Servers"), PreferencesServerTab, 15, "prefs_servers" },
 	{ wxTRANSLATE("Files"), PreferencesFilesTab, 16, "prefs_files" },
 	{ wxTRANSLATE("Security"), PreferencesSecurityTab, 22, "prefs_security" },
@@ -855,6 +865,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	m_sharedDirsLoaded = false;
 	PopulateSharedDirsList();
 	static_cast<CPreferencesRem *>(theApp->glob_prefs)->LoadSharedDirsRemote();
+
+	// Path mappings (#843): purely local, so there is no remote copy to
+	// fetch -- unlike shared dirs, this is the whole refresh.
+	PopulatePathMappingList();
 #else
 	m_ShareSelector->SetSharedDirectories(&theApp->glob_prefs->shareddir_explicit_list);
 	m_ShareSelector->SetRecursiveSharedDirectories(&theApp->glob_prefs->shareddir_recursive_list);
@@ -1381,6 +1395,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		thePrefs::SetWSIsEnabled(false);
 		thePrefs::SetAmuleApiIsEnabled(false);
 	}
+#endif
+
+#ifdef CLIENT_GUI
+	// Path mappings (#843): harvest before Save(), same as the shared-dirs
+	// commit above, so this ends up persisted alongside the rest.
+	HarvestPathMappingList();
 #endif
 
 	// save the preferences on ok
@@ -3257,6 +3277,97 @@ void PrefsUnifiedDlg::OnSharedDirRemove(wxCommandEvent &WXUNUSED(evt))
 	if (sel != -1) {
 		list->DeleteItem(sel);
 		m_sharedDirsDirty = true;
+	}
+}
+
+void PrefsUnifiedDlg::PopulatePathMappingList()
+{
+	wxListCtrl *list = CastChild(IDC_PATHMAP_LIST, wxListCtrl);
+	if (list == nullptr) {
+		return;
+	}
+	if (list->GetColumnCount() == 0) {
+		list->InsertColumn(0, _("Remote prefix"), wxLIST_FORMAT_LEFT, 220);
+		list->InsertColumn(1, _("Local prefix"), wxLIST_FORMAT_LEFT, 220);
+	}
+	list->DeleteAllItems();
+
+	long row = 0;
+	for (const CPreferences::PathMapping &mapping : theApp->glob_prefs->GetPathMappings()) {
+		list->InsertItem(row, mapping.remotePrefix);
+		list->SetItem(row, 1, mapping.localPrefix.GetPrintable());
+		++row;
+	}
+}
+
+void PrefsUnifiedDlg::HarvestPathMappingList()
+{
+	wxListCtrl *list = CastChild(IDC_PATHMAP_LIST, wxListCtrl);
+	if (list == nullptr) {
+		return;
+	}
+	CPreferences::PathMappingList mappings;
+	for (long row = 0; row < list->GetItemCount(); ++row) {
+		CPreferences::PathMapping mapping;
+		mapping.remotePrefix = list->GetItemText(row);
+
+		wxListItem field;
+		field.SetId(row);
+		field.SetColumn(1);
+		field.SetMask(wxLIST_MASK_TEXT);
+		list->GetItem(field);
+		mapping.localPrefix = CPath(field.GetText());
+
+		mappings.push_back(mapping);
+	}
+	theApp->glob_prefs->SetPathMappings(mappings);
+}
+
+void PrefsUnifiedDlg::OnPathMappingAdd(wxCommandEvent &WXUNUSED(evt))
+{
+	wxTextCtrl *remoteCtrl = CastChild(IDC_PATHMAP_REMOTE, wxTextCtrl);
+	wxTextCtrl *localCtrl = CastChild(IDC_PATHMAP_LOCAL, wxTextCtrl);
+	wxListCtrl *list = CastChild(IDC_PATHMAP_LIST, wxListCtrl);
+	if (remoteCtrl == nullptr || localCtrl == nullptr || list == nullptr) {
+		return;
+	}
+	const wxString remote = remoteCtrl->GetValue().Strip(wxString::both);
+	const wxString local = localCtrl->GetValue().Strip(wxString::both);
+	if (remote.IsEmpty() || local.IsEmpty()) {
+		return;
+	}
+	for (long row = 0; row < list->GetItemCount(); ++row) {
+		if (list->GetItemText(row) == remote) {
+			return; // already mapped
+		}
+	}
+	const long row = list->InsertItem(list->GetItemCount(), remote);
+	list->SetItem(row, 1, local);
+	remoteCtrl->Clear();
+	localCtrl->Clear();
+}
+
+void PrefsUnifiedDlg::OnPathMappingRemove(wxCommandEvent &WXUNUSED(evt))
+{
+	wxListCtrl *list = CastChild(IDC_PATHMAP_LIST, wxListCtrl);
+	if (list == nullptr) {
+		return;
+	}
+	const long sel = list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	if (sel != -1) {
+		list->DeleteItem(sel);
+	}
+}
+
+void PrefsUnifiedDlg::OnPathMappingBrowse(wxCommandEvent &WXUNUSED(evt))
+{
+	wxTextCtrl *localCtrl = CastChild(IDC_PATHMAP_LOCAL, wxTextCtrl);
+	if (localCtrl == nullptr) {
+		return;
+	}
+	wxDirDialog dlg(this, _("Choose the local folder"), localCtrl->GetValue());
+	if (dlg.ShowModal() == wxID_OK) {
+		localCtrl->SetValue(dlg.GetPath());
 	}
 }
 

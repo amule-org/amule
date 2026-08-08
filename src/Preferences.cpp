@@ -1258,6 +1258,12 @@ CPreferences::CPreferences()
 	if (slistfile.Open(s_configDir + "addresses.dat", CTextFile::read)) {
 		addresses_list = slistfile.ReadLines();
 	}
+#else
+	// GUI-local only (see LoadPathMappings' declaration): loaded here,
+	// alongside the core's equivalent local-config reads above, rather than
+	// through LoadRemote()'s EC round-trip -- there is no EC round-trip for
+	// this, by design.
+	LoadPathMappings();
 #endif
 }
 
@@ -2026,6 +2032,13 @@ void CPreferences::Save()
 
 	SaveSharedFolders();
 
+	// GUI-local only, see SavePathMappings' declaration -- a no-op body on a
+	// non-CLIENT_GUI build, called here for the same reason SaveSharedFolders
+	// is: PrefsUnifiedDlg::OnOk() harvests the dialog's edits into
+	// glob_prefs before calling Save(), so a successful commit lands here
+	// alongside the rest.
+	SavePathMappings();
+
 	// Apply a possibly-changed MMapEnabled immediately (local prefs dialog or
 	// a remote EC set that routes through Save()); safe to flip with active
 	// transfers -- see CFileArea::SetMMapEnabled. Core/daemon only; the remote
@@ -2138,6 +2151,62 @@ void CPreferences::SaveCats()
 
 		cfg->Flush();
 	}
+}
+
+void CPreferences::SavePathMappings()
+{
+#ifdef CLIENT_GUI
+	wxConfigBase *cfg = wxConfigBase::Get();
+
+	cfg->Write("/PathMappings/Count", (long)m_pathMappings.size());
+
+	for (size_t i = 0; i < m_pathMappings.size(); ++i) {
+		cfg->SetPath(CFormat("/PathMapping#%zu") % (i + 1));
+		cfg->Write("Remote", m_pathMappings[i].remotePrefix);
+		cfg->Write("Local", CPath::ToUniv(m_pathMappings[i].localPrefix));
+	}
+	// Remove any rows left over from a longer list on a previous save.
+	size_t stale = m_pathMappings.size() + 1;
+	while (cfg->DeleteGroup(CFormat("/PathMapping#%zu") % stale++)) {
+	}
+
+	cfg->Flush();
+#endif
+}
+
+void CPreferences::LoadPathMappings()
+{
+#ifdef CLIENT_GUI
+	wxConfigBase *cfg = wxConfigBase::Get();
+
+	m_pathMappings.clear();
+	const long count = cfg->Read("/PathMappings/Count", 0l);
+	for (long i = 1; i <= count; ++i) {
+		cfg->SetPath(CFormat("/PathMapping#%li") % i);
+
+		PathMapping mapping;
+		mapping.remotePrefix = cfg->Read("Remote", "");
+		mapping.localPrefix = CPath::FromUniv(cfg->Read("Local", ""));
+
+		if (mapping.remotePrefix.IsEmpty() || !mapping.localPrefix.IsOk()) {
+			AddLogLineN(_("Invalid path mapping found, skipping"));
+			continue;
+		}
+		m_pathMappings.push_back(mapping);
+	}
+#endif
+}
+
+wxString CPreferences::ApplyPathMapping(const wxString &remotePath) const
+{
+#ifdef CLIENT_GUI
+	for (const PathMapping &mapping : m_pathMappings) {
+		if (!mapping.remotePrefix.IsEmpty() && remotePath.StartsWith(mapping.remotePrefix)) {
+			return mapping.localPrefix.GetRaw() + remotePath.Mid(mapping.remotePrefix.length());
+		}
+	}
+#endif
+	return remotePath;
 }
 
 void CPreferences::LoadPreferences()
