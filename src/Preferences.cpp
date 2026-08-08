@@ -29,6 +29,7 @@
 #include <protocol/ed2k/Constants.h>
 #include <common/Constants.h>
 #include <common/DataFileVersion.h>
+#include <common/Path.h> // Needed for StripSeparators (path-mapping prefixes)
 
 #include <wx/config.h>
 #include <wx/dir.h>
@@ -1258,6 +1259,12 @@ CPreferences::CPreferences()
 	if (slistfile.Open(s_configDir + "addresses.dat", CTextFile::read)) {
 		addresses_list = slistfile.ReadLines();
 	}
+#else
+	// GUI-local only (see LoadPathMappings' declaration): loaded here,
+	// alongside the core's equivalent local-config reads above, rather than
+	// through LoadRemote()'s EC round-trip -- there is no EC round-trip for
+	// this, by design.
+	LoadPathMappings();
 #endif
 }
 
@@ -2026,6 +2033,13 @@ void CPreferences::Save()
 
 	SaveSharedFolders();
 
+	// GUI-local only, see SavePathMappings' declaration -- a no-op body on a
+	// non-CLIENT_GUI build, called here for the same reason SaveSharedFolders
+	// is: PrefsUnifiedDlg::OnOk() harvests the dialog's edits into
+	// glob_prefs before calling Save(), so a successful commit lands here
+	// alongside the rest.
+	SavePathMappings();
+
 	// Apply a possibly-changed MMapEnabled immediately (local prefs dialog or
 	// a remote EC set that routes through Save()); safe to flip with active
 	// transfers -- see CFileArea::SetMMapEnabled. Core/daemon only; the remote
@@ -2138,6 +2152,103 @@ void CPreferences::SaveCats()
 
 		cfg->Flush();
 	}
+}
+
+void CPreferences::SavePathMappings()
+{
+#ifdef CLIENT_GUI
+	wxConfigBase *cfg = wxConfigBase::Get();
+
+	cfg->Write("/PathMappings/Count", (long)m_pathMappings.size());
+
+	for (size_t i = 0; i < m_pathMappings.size(); ++i) {
+		cfg->SetPath(CFormat("/PathMapping#%zu") % (i + 1));
+		cfg->Write("Remote", m_pathMappings[i].remotePrefix);
+		cfg->Write("Local", CPath::ToUniv(m_pathMappings[i].localPrefix));
+	}
+	// Remove any rows left over from a longer list on a previous save.
+	size_t stale = m_pathMappings.size() + 1;
+	while (cfg->DeleteGroup(CFormat("/PathMapping#%zu") % stale++)) {
+	}
+
+	cfg->Flush();
+#endif
+}
+
+void CPreferences::LoadPathMappings()
+{
+#ifdef CLIENT_GUI
+	wxConfigBase *cfg = wxConfigBase::Get();
+
+	m_pathMappings.clear();
+	const long count = cfg->Read("/PathMappings/Count", 0l);
+	for (long i = 1; i <= count; ++i) {
+		cfg->SetPath(CFormat("/PathMapping#%li") % i);
+
+		PathMapping mapping;
+		// Stripped here too, not just at entry (OnPathMappingAdd): an
+		// existing config saved before this fix, or one hand-edited, can
+		// still carry a trailing separator, and CPath's constructor does
+		// not strip one -- see ApplyPathMapping()'s substitution.
+		mapping.remotePrefix = TrimRemotePrefix(cfg->Read("Remote", ""));
+		mapping.localPrefix = CPath(StripSeparators(
+			CPath::FromUniv(cfg->Read("Local", "")).GetRaw(), wxString::trailing));
+
+		if (mapping.remotePrefix.IsEmpty() || !mapping.localPrefix.IsOk()) {
+			AddLogLineN(_("Invalid path mapping found, skipping"));
+			continue;
+		}
+		m_pathMappings.push_back(mapping);
+	}
+#endif
+}
+
+wxString CPreferences::TrimRemotePrefix(const wxString &prefix)
+{
+	wxString trimmed = prefix;
+	while (!trimmed.IsEmpty()) {
+		const wxChar last = trimmed.Last();
+		if (last != wxT('/') && last != wxT('\\')) {
+			break;
+		}
+		trimmed.RemoveLast();
+	}
+	return trimmed;
+}
+
+wxString CPreferences::ApplyPathMapping(const wxString &remotePath) const
+{
+#ifdef CLIENT_GUI
+	for (const PathMapping &mapping : m_pathMappings) {
+		if (mapping.remotePrefix.IsEmpty() || !remotePath.StartsWith(mapping.remotePrefix)) {
+			continue;
+		}
+		const size_t prefixLen = mapping.remotePrefix.length();
+		if (remotePath.length() > prefixLen) {
+			// A bare StartsWith() also matches "/mnt/data-old/f" against a
+			// "/mnt/data" mapping. The daemon's OS is not known here, so
+			// accept either separator convention rather than assuming one.
+			const wxChar next = remotePath[prefixLen];
+			if (next != wxT('/') && next != wxT('\\')) {
+				continue;
+			}
+		}
+		wxString mapped = mapping.localPrefix.GetRaw() + remotePath.Mid(prefixLen);
+#ifdef __WINDOWS__
+		// The remainder is the daemon's, in the daemon's convention, so a
+		// POSIX daemon contributes '/' to a path that is about to be handed
+		// to Win32. Most of Win32 accepts that, but not all of it -- the
+		// "explorer /select," this feature exists to make work is the awkward
+		// one -- so normalise. Safe in this direction only: '/' cannot appear
+		// in a Windows filename, whereas '\\' is a perfectly ordinary
+		// character in a POSIX one, so the mirror rewrite would corrupt
+		// names rather than fix separators.
+		mapped.Replace("/", "\\");
+#endif
+		return mapped;
+	}
+#endif
+	return remotePath;
 }
 
 void CPreferences::LoadPreferences()

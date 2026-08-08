@@ -1854,6 +1854,67 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     return item0;
 }
 
+#ifdef CLIENT_GUI
+wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_sizer )
+{
+    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
+
+    wxStaticText *itemHint = new wxStaticText( parent, IDC_PATHMAP_HINT, _("When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."), wxDefaultPosition, wxDefaultSize, 0 );
+    // An unwrapped wxStaticText reports its whole single line as its best
+    // width, and the sizer turns that into the page's minimum width -- the
+    // dialog comes up as wide as this sentence. So it is wrapped here to
+    // bound that minimum, DPI-scaled rather than a raw pixel count.
+    // PrefsUnifiedDlg then re-flows it to the control's real width and keeps
+    // it current across resizes; it restores this text before each wrap,
+    // since Wrap() can only add line breaks, never remove them.
+    itemHint->Wrap( parent->FromDIP(380) );
+    item0->Add( itemHint, wxSizerFlags().Expand().Border(wxBOTTOM, 6) );
+
+    wxStaticBox *itemBox = new wxStaticBox( parent, -1, _("Path mappings") );
+    wxStaticBoxSizer *itemBoxSizer = new wxStaticBoxSizer( itemBox, wxVERTICAL );
+
+    wxListCtrl *itemList = new wxListCtrl( parent, IDC_PATHMAP_LIST, wxDefaultPosition, wxSize(100,100), wxLC_REPORT|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
+    itemBoxSizer->Add( itemList, wxSizerFlags(1).Expand().CenterVertical() );
+
+    wxBoxSizer *itemRemoteRow = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *itemRemoteLabel = new wxStaticText( parent, -1, _("Remote prefix:"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemRemoteRow->Add( itemRemoteLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
+    CMuleTextCtrl *itemRemote = new CMuleTextCtrl( parent, IDC_PATHMAP_REMOTE, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    itemRemote->SetToolTip(_("A path prefix as the core reports it, e.g. /home/user/downloads/incoming"));
+    itemRemoteRow->Add( itemRemote, wxSizerFlags(1).Expand().CenterVertical() );
+    itemBoxSizer->Add( itemRemoteRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+
+    wxBoxSizer *itemLocalRow = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticText *itemLocalLabel = new wxStaticText( parent, -1, _("Local prefix:"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemLocalRow->Add( itemLocalLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
+    CMuleTextCtrl *itemLocal = new CMuleTextCtrl( parent, IDC_PATHMAP_LOCAL, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    itemLocal->SetToolTip(_("Where that same folder is reachable from this computer, e.g. a mounted network share"));
+    itemLocalRow->Add( itemLocal, wxSizerFlags(1).Expand().CenterVertical() );
+    wxButton *itemBrowse = new wxButton( parent, IDC_PATHMAP_BROWSE, _("Browse"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemLocalRow->Add( itemBrowse, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    itemBoxSizer->Add( itemLocalRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+
+    wxBoxSizer *itemButtonRow = new wxBoxSizer( wxHORIZONTAL );
+    itemButtonRow->AddStretchSpacer( 1 );
+    wxButton *itemAdd = new wxButton( parent, IDC_PATHMAP_ADD, _("Add"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemButtonRow->Add( itemAdd, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    wxButton *itemRemove = new wxButton( parent, IDC_PATHMAP_REMOVE, _("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemButtonRow->Add( itemRemove, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    itemBoxSizer->Add( itemButtonRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+
+    item0->Add( itemBoxSizer, wxSizerFlags(1).Expand().CenterVertical() );
+
+    if (set_sizer)
+    {
+        parent->SetSizer( item0 );
+        if (call_fit)
+            item0->SetSizeHints( parent );
+    }
+
+    return item0;
+}
+#endif
+
 wxSizer *PreferencesStatisticsTab( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );

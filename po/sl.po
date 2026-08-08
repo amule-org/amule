@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:12+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -1044,7 +1044,7 @@ msgstr "Novo sporočilo od »%s« (IP: %s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Uporabnik %s (%u) je zahteval seznam deljenih datotek za mapo »%s« → prezrto"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "OPOZORILO: %s ni moč odpreti."
@@ -1053,7 +1053,7 @@ msgstr "OPOZORILO: %s ni moč odpreti."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "OPOZORILO: Seznam preklicanih datotek je pokvarjen, vsebuje neveljavno glavo."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Vhodno/izhodna napaka med branjem datoteke %s: %s"
@@ -4300,6 +4300,32 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote prefix:"
+msgstr "Oddaljni strežnik"
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Local prefix:"
+msgstr "Krajevni strežnik"
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr "Grafi"
 
@@ -5713,6 +5739,11 @@ msgid "no options available"
 msgstr "na voljo ni nobene možnosti"
 
 #: src/Preferences.cpp
+#, fuzzy
+msgid "Invalid path mapping found, skipping"
+msgstr "Najdena neveljavna kategorija, preskočena"
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr "Najdena neveljavna kategorija, preskočena"
 
@@ -5732,6 +5763,10 @@ msgstr "Povezava"
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Mape"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -6256,6 +6291,29 @@ msgstr "Ponovno naloži seznam deljenih datotek."
 msgid "Shared folder"
 msgstr "Deljene mape"
 
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Remote prefix"
+msgstr "Oddaljni strežnik"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Local prefix"
+msgstr "Krajevni strežnik"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose the local folder"
+msgstr "Izberite mapo za %s"
+
 #: src/SearchDlg.cpp
 #, fuzzy
 msgid "Clear Search History"
@@ -6284,31 +6342,6 @@ msgstr "Min. velikost mora biti manjša kot maks. velikost. Maks. velikost ni up
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Glavna"
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "OPOZORILO: seznam znanih datotek je pokvarjen, vsebuje neveljavno glavo."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Neveljaven vnos na seznamu znanih datotek, datoteka je morda pokvarjena: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Neveljaven vnos na seznamu znanih datotek, datoteka je morda pokvarjena: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

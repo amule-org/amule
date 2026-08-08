@@ -140,6 +140,45 @@ protected:
 	void OnSharedDirAdd(wxCommandEvent &evt);
 	void OnSharedDirRemove(wxCommandEvent &evt);
 
+	//! The path-mapping rows' actual local prefixes, indexed by the row's
+	//! item data -- same rationale as m_sharedDirRowPaths (SetListRowPath()
+	//! in the .cpp): a list cell holds display text, not a round-trippable
+	//! CPath. Rebuilt by PopulatePathMappingList(), appended to by
+	//! OnPathMappingAdd(), read back by HarvestPathMappingList().
+	std::vector<CPath> m_pathMappingRowPaths;
+
+	//! Fill the path-mapping list widget from glob_prefs' mappings (#843).
+	//! Purely local -- unlike PopulateSharedDirsList, there is no EC reply
+	//! to wait for, so this is the whole refresh.
+	void PopulatePathMappingList();
+	//! Copy the list widget's rows back into glob_prefs' mappings.
+	void HarvestPathMappingList();
+	void OnPathMappingAdd(wxCommandEvent &evt);
+	void OnPathMappingRemove(wxCommandEvent &evt);
+	//! wxDirDialog for the local-prefix field: typing a remote prefix makes
+	//! sense (it's the daemon's path, nothing here to browse to), but the
+	//! local side is a real folder on this machine.
+	void OnPathMappingBrowse(wxCommandEvent &evt);
+	//! Re-flows the explanatory paragraph above the path-mapping list when
+	//! the page is resized. Bound on the *page*, not on the paragraph:
+	//! wxStaticText::SetLabel() resizes the control to fit its label, so a
+	//! handler on the paragraph that rewrites the paragraph feeds itself
+	//! (it did -- stack exhaustion inside SetLabel). The page's width is
+	//! set by the dialog and is unmoved by anything the label does, so
+	//! driving the wrap from there cannot loop.
+	void OnPathMappingPageResize(wxSizeEvent &evt);
+	//! Wraps that paragraph to the page's current client width.
+	void WrapPathMappingHint();
+
+	//! The paragraph with no line breaks in it. wxStaticText::Wrap() only
+	//! ever inserts breaks -- it reads the current label and treats any
+	//! newline already there as hard -- so re-flowing to a *wider* page has
+	//! to start from unwrapped text rather than from what is on screen.
+	wxString m_pathMappingHintText;
+	//! Width last wrapped to, so a resize that leaves the width alone (a
+	//! height-only change, say) does no work.
+	int m_pathMappingHintWrapWidth;
+
 public:
 	//! Repaint the editor when a GET_SHARED_DIRS reply lands while the
 	//! dialog is open. A no-op when it isn't, so the reply handler never

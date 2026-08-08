@@ -366,6 +366,9 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define IDC_OSDIRTEXT 10360
 #define IDC_OSUPDATETEXT 10361
 wxSizer *PreferencesDirectoriesTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
+#ifdef CLIENT_GUI
+wxSizer *PreferencesPathMappingTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
+#endif
 
 // IP2Country (GeoIP) preferences tab. 10400+ leaves a clear gap above
 // the existing toolbar / button IDs that crowd the 10350-10354 range
@@ -490,6 +493,17 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define IDC_SHAREDDIR_REMOVE 10482
 // Interface (GUI Tweaks) tab: toggle live column auto-sorting of the lists.
 #define IDC_LIVELISTSORT 10483
+// Remote-GUI path-mapping editor (CLIENT_GUI only, issue #843): a
+// user-configured remote->local path-prefix table, so Open/Show-in-folder
+// work against a daemon on a different machine whose filesystem this one can
+// otherwise reach (a Samba/NFS mount, say). See CPreferences::PathMapping.
+#define IDC_PATHMAP_LIST 10496
+#define IDC_PATHMAP_REMOTE 10497
+#define IDC_PATHMAP_LOCAL 10498
+#define IDC_PATHMAP_BROWSE 10499
+#define IDC_PATHMAP_ADD 10500
+#define IDC_PATHMAP_REMOVE 10501
+#define IDC_PATHMAP_HINT 10502
 wxSizer *aMuleGuiLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define ID_UPDATELIST 10244

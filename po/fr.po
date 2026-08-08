@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:12+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: 2026-08-07 10:13+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -1047,7 +1047,7 @@ msgstr "Nouveau message de '%s' (IP : %s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "L'utilisateur %s (%u) a demandé votre liste de fichier partagés pour le répertoire inexistant '%s' -> ignoré"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "AVERTISSEMENT : %s n'a pas pu être ouvert."
@@ -1056,7 +1056,7 @@ msgstr "AVERTISSEMENT : %s n'a pas pu être ouvert."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "AVERTISSEMENT : Annulation de la liste des fichiers corrompus, elle contient des entêtes invalides."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Erreur d'E/S lors de la lecture du fichier %s : %s"
@@ -4258,6 +4258,32 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr "Afficher combien de fichiers partagés le motif actuel exclurait."
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote prefix:"
+msgstr "Serveur Distant"
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Local prefix:"
+msgstr "Serveur Local"
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr "Graphiques"
 
@@ -5657,6 +5683,11 @@ msgid "no options available"
 msgstr "pas d'option disponible"
 
 #: src/Preferences.cpp
+#, fuzzy
+msgid "Invalid path mapping found, skipping"
+msgstr "Catégorie invalide trouvée, on passe"
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr "Catégorie invalide trouvée, on passe"
 
@@ -5676,6 +5707,10 @@ msgstr "Connexion"
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Répertoires"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -6179,6 +6214,29 @@ msgstr "Rechargement des fichiers partagés : %u fichiers analysés"
 msgid "Shared folder"
 msgstr "Dossier partagé"
 
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Remote prefix"
+msgstr "Serveur Distant"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Local prefix"
+msgstr "Serveur Local"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose the local folder"
+msgstr "Choisir un dossier pour %s"
+
 #: src/SearchDlg.cpp
 #, fuzzy
 msgid "Clear Search History"
@@ -6207,31 +6265,6 @@ msgstr "La taille minimum doit être inférieur à la taille maximum. Taille max
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Principal"
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "AVERTISSEMENT : La liste de fichiers connus est corrompue, elle contient des entêtes invalides."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Entrée invalide dans la liste des fichiers connus, le fichier est peut être corrompu : "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Entrée invalide dans la liste des fichiers connus, le fichier est peut être corrompu : "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
