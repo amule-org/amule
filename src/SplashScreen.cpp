@@ -115,7 +115,6 @@ CSplashScreen::CSplashScreen()
 , m_percent(0)
 , m_shownAt(0)
 , m_lastPaint(0)
-, m_pumpsLoop(true)
 , m_paintCount(0)
 , m_paintMicros(0)
 , m_updateMicros(0)
@@ -233,16 +232,6 @@ void CSplashScreen::SetProgress(const wxString &status, int percent, bool immedi
 
 	Refresh(false);
 
-	if (!m_pumpsLoop) {
-		// The loop is running on its own and will pick the invalidation up
-		// on the next frame. Yielding from here would nest a second loop
-		// inside a handler dispatched by the first, and the work it ran
-		// would be charged to the splash rather than to what is actually
-		// doing it.
-		m_updateMicros += (wxGetUTCTimeMillis() - now);
-		return;
-	}
-
 	// The event loop has to run for the invalidation to reach the screen:
 	// under GTK3, Update() cannot force a synchronous repaint the way it
 	// does elsewhere -- drawing is driven by the frame clock, which only
@@ -258,11 +247,6 @@ void CSplashScreen::SetProgress(const wxString &status, int percent, bool immedi
 	wxSafeYield(this, true);
 
 	m_updateMicros += (wxGetUTCTimeMillis() - now);
-}
-
-void CSplashScreen::SetLoopRunning()
-{
-	m_pumpsLoop = false;
 }
 
 void CSplashScreen::Finish()

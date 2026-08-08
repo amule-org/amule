@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -327,12 +327,6 @@ msgid "Starting up"
 msgstr "開始"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "ネットワーク"
@@ -463,11 +457,6 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "サーバ名："
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "古いダウンロード・ファイル（%uから%u）からデータをロード中です"
 
 #: src/amule.cpp
 #, c-format
@@ -1052,7 +1041,7 @@ msgstr "%s（IP：%s）から新しいメッセージが届きました"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "ユーザ %s（%u）はあなたのディレクトリ %s の共有ファイル・リストを要求しました -> 拒否しました"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, fuzzy, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "警告：known.metを開くことはできません。"
@@ -1062,7 +1051,7 @@ msgstr "警告：known.metを開くことはできません。"
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "警告：Knownfileリストは破損され、不正なヘッダーが含まれています。"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, fuzzy, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "known.metファイル%sを読む時にIOエラーが発生しました"
@@ -6245,29 +6234,6 @@ msgid "Main"
 msgstr "メイン"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "警告：Knownfileリストは破損され、不正なヘッダーが含まれています。"
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr ""
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr ""
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr ""
 
@@ -7066,6 +7032,12 @@ msgstr "ユーザ '%s' から共有ファイルを取得することができま
 msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "共有ファイルを再ロードする"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "共有ファイル（%i）"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8761,6 +8733,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "古いダウンロード・ファイル（%uから%u）からデータをロード中です"
 
 #~ msgid "Filter Results"
 #~ msgstr "フィルタの結果"

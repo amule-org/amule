@@ -526,31 +526,28 @@ protected:
 	// Startup splash, kept alive past OnInit because the slowest part of a
 	// first run is the hashing of everything the scan found unknown, and
 	// that drains asynchronously long after OnInit has returned. Null once
-	// the queue has drained and the splash has closed.
+	// the window is up and the splash has closed -- which is now the end of
+	// the scan, not the end of hashing (#853).
 	CSplashScreen *m_splash = nullptr;
-	// Where the bar had reached when the hashing phase took over, i.e. the
-	// start of the band that phase fills. Small on a first run, where there
-	// is no known.met to size the scan against and hashing is most of the
-	// wait; nearly full on a later one, where it is a handful of new files.
-	int m_splashHashBandStart = 0;
-	// Queue depth when the splash took over, i.e. the denominator for the
-	// hashing phase. Zero when nothing needed hashing.
-	size_t m_splashHashTotal = 0;
-	// Drives the hashing phase of the splash. Polled rather than driven from
-	// the completion handlers: the worker clears its current task after the
-	// completion event has been posted, so a handler-driven update can see
-	// the last task still pending and then never run again, leaving the
-	// splash up for good. Polling also covers tasks that finish without
+	// Drives the hashing drain: refreshes the count on the shared-files label
+	// and sorts the rows that arrived since the last tick. Polled rather than
+	// driven from the completion handlers: the worker clears its current task
+	// after the completion event has been posted, so a handler-driven update
+	// can see the last task still pending and then never run again, leaving
+	// the batch open for good. Polling also covers tasks that finish without
 	// reaching a handler here, such as an aborted one.
 	wxTimer m_splashPollTimer;
 
-	// Advances the splash and, once the scheduler queue has drained, closes
-	// it and ends the list batches opened for the duration.
+	// One tick of the drain: label, sort, and finish when the queue empties.
 	void UpdateStartupHashProgress();
 	void OnSplashPollTimer(wxTimerEvent &evt);
-	// Ends the batched list updates and closes the splash. Safe to call when
-	// no splash is up.
-	void FinishStartupSplash();
+	// Ends the download list's batch, sorts and thaws the shared list, shows
+	// the main window and closes the splash. Called when the scan finishes,
+	// with hashing still running behind it.
+	void ShowMainWindowAfterScan();
+	// Ends the shared list's batch with its final sort and stops the poll
+	// timer. Safe to call when nothing needed hashing.
+	void FinishStartupHashing();
 #endif // monolithic only
 
 	// #140 - CMediaProbeTask marshals results back here so we can

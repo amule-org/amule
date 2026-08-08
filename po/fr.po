@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:13+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -333,13 +333,6 @@ msgstr "Rechargement des fichiers partagés…"
 msgid "Starting up"
 msgstr "Démarrer"
 
-#: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
 # AI-GENERATED — please review.
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -471,11 +464,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Nom du serveur signalé"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Enregistrement du fichier .part %u sur %u"
 
 #: src/amule.cpp
 #, c-format
@@ -1059,7 +1047,7 @@ msgstr "Nouveau message de '%s' (IP : %s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "L'utilisateur %s (%u) a demandé votre liste de fichier partagés pour le répertoire inexistant '%s' -> ignoré"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "AVERTISSEMENT : %s n'a pas pu être ouvert."
@@ -1068,7 +1056,7 @@ msgstr "AVERTISSEMENT : %s n'a pas pu être ouvert."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "AVERTISSEMENT : Annulation de la liste des fichiers corrompus, elle contient des entêtes invalides."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Erreur d'E/S lors de la lecture du fichier %s : %s"
@@ -6221,31 +6209,6 @@ msgid "Main"
 msgstr "Principal"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "AVERTISSEMENT : La liste de fichiers connus est corrompue, elle contient des entêtes invalides."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Entrée invalide dans la liste des fichiers connus, le fichier est peut être corrompu : "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Entrée invalide dans la liste des fichiers connus, le fichier est peut être corrompu : "
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "La recherche eD2k ne peut être établie si eD2k n'est pas connecté"
 
@@ -7030,6 +6993,13 @@ msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "Recharge vos fichiers partagés"
 msgstr[1] "Recharge vos fichiers partagés"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Fichiers partagés (%i)"
+msgstr[1] "Fichiers partagés (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8744,6 +8714,10 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Enregistrement du fichier .part %u sur %u"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "le gestionnaire par défaut de shell Windows"

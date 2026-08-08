@@ -57,11 +57,6 @@ public:
 	// carry a running count, so their text changes every single time.
 	void SetProgress(const wxString &status, int percent, bool immediate = false);
 
-	// Tell the splash the main event loop is running again, so updates stop
-	// pumping it themselves. Startup reaches this point when the blocking
-	// phases are done and only the asynchronous hashing drain is left.
-	void SetLoopRunning();
-
 	// Close, honouring the minimum on-screen time. A fast startup would
 	// otherwise flash the splash for a few frames, which reads as a glitch
 	// rather than as the application starting.
@@ -98,9 +93,6 @@ private:
 	wxLongLong m_shownAt;
 	// Wall-clock of the last repaint, for the rate limit.
 	wxLongLong m_lastPaint;
-	// Whether an update has to pump the event loop to reach the screen.
-	bool m_pumpsLoop;
-
 	// Cost accounting, reported once at Finish() so what the splash takes
 	// from the work it is reporting on is measurable rather than assumed.
 	// Two figures because they answer different questions: how much was

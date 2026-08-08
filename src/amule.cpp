@@ -332,9 +332,10 @@ int CamuleApp::OnExit()
 	// the event loop drains that queue naturally before OnExit runs;
 	// on the macOS Dock right-click → Quit path CamuleGuiApp::OnEndSession
 	// reaches OnExit directly, so without an explicit drain here the
-	// CamuleDlg destructor chain (and CMuleListCtrl::SaveSettings inside
-	// it) never runs against a live wxConfig, and column widths /
-	// sort orders silently fail to persist.
+	// CamuleDlg destructor chain never runs against a live wxConfig, and
+	// whatever it still persists from there is silently lost. (Column
+	// widths and sort orders no longer rely on it: CMuleDataViewCtrl
+	// writes those eagerly on every resize, sort and show/hide.)
 	DeletePendingObjects();
 
 	// From wxWidgets docs, wxConfigBase:
@@ -1015,7 +1016,7 @@ bool CamuleApp::OnInit()
 	constexpr int kPartFileWeight = 2;
 	constexpr int kNetworkBandEnd = 2;
 	constexpr int kTempBandMaxEnd = 40;
-	constexpr int kScanBandEnd = 99;
+	constexpr int kScanBandEnd = 100;
 
 	splash->SetProgress(_("Initializing network"), 0, true);
 #endif
@@ -1076,32 +1077,29 @@ bool CamuleApp::OnInit()
 		    (tempDoneAt - networkDoneAt).GetValue() % (sharedDoneAt - tempDoneAt).GetValue() %
 		    sharedEstimate);
 
-	// Anything the scan found unknown is now queued for hashing, which runs
-	// on the scheduler thread and reports back to OnFinishedHashing on this
-	// one. That drain is the slowest part of a first run by a wide margin --
-	// hashing cost scales with bytes, not files -- and the per-completion
-	// work here (a stat, two map inserts and a list-row insert each) keeps
-	// the main thread busy enough that the UI is unusable until it ends. So
-	// the splash stays up for it rather than closing on a still-frozen app.
-	m_splashHashTotal = CThreadScheduler::GetPendingCount(kSplashHashTaskType);
-	m_splashHashBandStart = scanBandEnd;
-	if (m_splashHashTotal == 0) {
-		splash->SetProgress(_("Starting up"), 100, true);
-		FinishStartupSplash();
+	// The scan has everything it is going to have: the files it recognised are
+	// listed, and the ones it did not are now queued for hashing. That drain is
+	// the slowest part of a first run by a wide margin -- hashing cost scales
+	// with bytes, not files -- and it used to hold the splash up with it, so a
+	// large share of new files left the application unreachable for as long as
+	// it took (issue #853). The window goes up here instead, and the drain
+	// finishes behind it.
+	splash->SetProgress(_("Starting up"), 100, true);
+	ShowMainWindowAfterScan();
+
+	const size_t pendingHashes = CThreadScheduler::GetPendingCount(kSplashHashTaskType);
+	if (pendingHashes == 0) {
+		FinishStartupHashing();
 	} else {
-		splash->SetProgress(
-			CFormat(wxPLURAL("Hashing %u new file", "Hashing %u new files", m_splashHashTotal)) %
-				m_splashHashTotal,
-			scanBandEnd,
-			true);
-		// From here the drain is asynchronous and OnInit is about to
-		// return, so the loop takes over driving the repaints.
-		splash->SetLoopRunning();
-		// Four times a second: fast enough that the count does not visibly
-		// stall, slow enough to be lost in the noise next to hashing.
+		// Each completion appends its row (the batch is still open, so that
+		// stays O(1)) and the tick below sorts them into place, keeping the
+		// list ordered without paying a row-index rebuild per file.
+		UpdateStartupHashProgress();
 		m_splashPollTimer.SetOwner(this, ID_SPLASH_POLL_TIMER);
 		Bind(wxEVT_TIMER, &CamuleApp::OnSplashPollTimer, this, ID_SPLASH_POLL_TIMER);
-		m_splashPollTimer.Start(250);
+		// Once a second: this is the sort cadence now, not a counter
+		// animation, and GetPendingCount() takes the scheduler's lock.
+		m_splashPollTimer.Start(1000);
 	}
 #else
 	downloadqueue->LoadMetFiles(thePrefs::GetTempDir());
@@ -2102,43 +2100,52 @@ void CamuleApp::OnSplashPollTimer(wxTimerEvent &WXUNUSED(evt))
 
 void CamuleApp::UpdateStartupHashProgress()
 {
-	if (m_splash == nullptr) {
-		return;
-	}
-
 	// What the scheduler reports is what remains, so the completed count is
 	// derived rather than tracked -- one fewer thing to keep in step with a
 	// queue that other subsystems also feed.
 	const size_t remaining = CThreadScheduler::GetPendingCount(kSplashHashTaskType);
-	if (remaining == 0) {
-		FinishStartupSplash();
-		return;
+
+	CSharedFilesCtrl *sharedList = (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd)
+					       ? theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl
+					       : nullptr;
+	if (sharedList) {
+		// The count moves every tick; the order only moves when a hash
+		// finished and appended a row. Hashing cost tracks bytes, so a
+		// large file is minutes of nothing followed by one append --
+		// sorting per tick regardless would rebuild the row index and
+		// reset the model once a second for no reordering at all.
+		sharedList->SetHashingCount(remaining);
+		sharedList->SortIfRowsAppended();
 	}
 
-	const size_t done = (m_splashHashTotal > remaining) ? m_splashHashTotal - remaining : 0;
-	const int percent = m_splashHashBandStart +
-			    static_cast<int>(((100 - m_splashHashBandStart) * done) / m_splashHashTotal);
-	m_splash->SetProgress(CFormat(_("Hashing new files (%u of %u)")) % done % m_splashHashTotal, percent);
+	if (remaining == 0) {
+		FinishStartupHashing();
+	}
 }
 
-void CamuleApp::FinishStartupSplash()
+void CamuleApp::ShowMainWindowAfterScan()
 {
-	m_splashPollTimer.Stop();
-
-	// Ends the batches opened at startup. Sorting once here is the whole
-	// point of having held them: the lists get a single ordered pass instead
-	// of one per inserted row.
+	// The download list holds every part file there is going to be, so its
+	// batch is simply over: one sort, one thaw.
 	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
 		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->EndBatchUpdate();
 	}
+
+	// The shared list is not finished -- hashing still has files to hand it --
+	// so its batch stays open and only the freeze ends. Sorting what the scan
+	// found means the list is ordered from the moment it is visible, and the
+	// rows that arrive later are appended and sorted by the poll tick.
 	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->EndBatchUpdate();
+		// Sort-if-dirty rather than an unconditional sort: the scan's files
+		// arrived as appends and set the flag, and the first drain tick runs
+		// moments from here -- sorting outright would leave the flag set and
+		// have that tick repeat the largest sort of the whole startup.
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->SortIfRowsAppended();
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ThawForDisplay();
 	}
 
-	// Now the window is worth looking at: the lists are filled and sorted,
-	// and the main thread is free to answer input.
 	if (theApp->amuledlg) {
 		theApp->amuledlg->ShowStartupWindow();
 	}
@@ -2146,6 +2153,26 @@ void CamuleApp::FinishStartupSplash()
 	if (m_splash) {
 		m_splash->Finish();
 		m_splash = nullptr;
+	}
+}
+
+void CamuleApp::FinishStartupHashing()
+{
+	m_splashPollTimer.Stop();
+
+	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
+		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
+		CSharedFilesCtrl *sharedList = theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl;
+		sharedList->SetHashingCount(0);
+		// Ends the batch opened before the scan, without its sort: whatever
+		// was appended has just been sorted, either by the tick that brought
+		// the count to zero or, when nothing needed hashing, at the end of
+		// the scan. Nothing can append in between -- both run synchronously
+		// in one handler, and a completion still queued when the count
+		// reached zero arrives after the batch is closed, so it takes the
+		// sorted-insert path and places itself. The thaw inside is skipped
+		// too: ShowMainWindowAfterScan() already ended the freeze.
+		sharedList->EndBatchUpdate(false);
 	}
 }
 #endif

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -328,13 +328,6 @@ msgid "Starting up"
 msgstr "Başlat"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Ağ başlatması"
 
@@ -464,11 +457,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Sunucu makine adı uyarıldı"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "ParçaDosyası %u, %u'da kaydediliyor"
 
 #: src/amule.cpp
 #, c-format
@@ -1052,7 +1040,7 @@ msgstr "'%s' kullanıcısından yeni ileti geldi (IP: %s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Kullanıcı %s (%u), var olmayan '%s' dizini için paylaşılmış dosya listenizi istedi. -> Görmezden gelindi."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "UYARI: %s açılamıyor."
@@ -1061,7 +1049,7 @@ msgstr "UYARI: %s açılamıyor."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "UYARI: İptal edilen dosya listesi bozuk. Geçersiz başlık içeriyor."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "%s dosyası okumada IO hatası: %s"
@@ -6214,31 +6202,6 @@ msgid "Main"
 msgstr "Ana"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "UYARI: Bilinen dosya listesi bozuk. Geçersiz başlık içeriyor."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Bilinen dosyalar listesinde geçersiz girdi bulundu. Dosya bozuk olabilir: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Bilinen dosyalar listesinde geçersiz girdi bulundu. Dosya bozuk olabilir: "
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "eD2k ağına bağlanılmamışsa eD2k araması yapılamaz"
 
@@ -7023,6 +6986,13 @@ msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "Paylaşılan dosyalarınızı yeniden yükleyin"
 msgstr[1] "Paylaşılan dosyalarınızı yeniden yükleyin"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Paylaşılan Dosyalar (%i)"
+msgstr[1] "Paylaşılan Dosyalar (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8737,6 +8707,10 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "ParçaDosyası %u, %u'da kaydediliyor"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "varsayılan Windows kabuk işleyicisi"

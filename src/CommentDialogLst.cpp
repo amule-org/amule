@@ -27,9 +27,9 @@
 #include "muuli_wdr.h"        // Needed for commentLstDlg
 #include "PartFile.h"         // Needed for CAbstractFile / CPartFile
 #include <common/Format.h>    // Needed for CFormat
-#include "MuleListCtrl.h"     // Needed for CMuleListCtrl
 #include "Preferences.h"
-#include "amule.h" // Needed for theApp
+#include "amule.h"    // Needed for theApp
+#include "amuleDlg.h" // Needed for CamuleDlg::m_imagelist and the Client_*_Smiley ids
 
 #include <set>
 
@@ -41,6 +41,7 @@ wxBEGIN_EVENT_TABLE(CCommentDialogLst, wxDialog)
 	EVT_BUTTON(IDCREF, CCommentDialogLst::OnBnClickedRefresh)
 	EVT_BUTTON(IDC_CMSEARCHKAD, CCommentDialogLst::OnBnClickedSearchKad)
 	EVT_TIMER(ID_KADREFRESH_TIMER, CCommentDialogLst::OnKadRefreshTimer)
+	EVT_LIST_COL_CLICK(IDC_LST, CCommentDialogLst::OnColumnClick)
 wxEND_EVENT_TABLE()
 
 namespace
@@ -67,18 +68,24 @@ CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CAbstractFile *file)
 	  wxDefaultSize,
 	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 , m_file(file)
+, m_sortColumn(-1)
+, m_sortDescending(false)
 , m_kadRefreshTimer(this, ID_KADREFRESH_TIMER)
 , m_kadRefreshTicks(0)
 {
 	wxSizer *content = commentLstDlg(this, true);
 	content->Show(this, true);
 
-	m_list = CastChild(IDC_LST, CMuleListCtrl);
+	m_list = CastChild(IDC_LST, wxListCtrl);
+
+	// Borrowed, not owned: SetImageList() leaves the app's shared list alone,
+	// where AssignImageList() would delete it when this modal closes.
+	m_list->SetImageList(&theApp->amuledlg->m_imagelist, wxIMAGE_LIST_SMALL);
+
 	m_list->InsertColumn(0, _("Username"), wxLIST_FORMAT_LEFT, 130);
 	m_list->InsertColumn(1, _("File Name"), wxLIST_FORMAT_LEFT, 130);
 	m_list->InsertColumn(2, _("Rating"), wxLIST_FORMAT_LEFT, 80);
 	m_list->InsertColumn(3, _("Comment"), wxLIST_FORMAT_LEFT, 340);
-	m_list->SetSortFunc(SortProc);
 
 	UpdateList();
 	OpenInstances().insert(this);
@@ -177,6 +184,21 @@ void CCommentDialogLst::OnKadRefreshTimer(wxTimerEvent &WXUNUSED(evt))
 	FindWindow(IDC_CMSTATUS)->GetParent()->Layout();
 }
 
+namespace
+{
+//! Smiley for a rating as SFileRating carries it: -1 for absent, otherwise
+//! 0..5 the way GetRateString() reads it. Anything without a real rating gets
+//! no image rather than a "not rated" glyph, so the column stays quiet.
+int RatingImage(sint16 rating)
+{
+	if (rating <= 0) {
+		return -1;
+	}
+	const int image = Client_InvalidRating_Smiley + rating - 1;
+	return (image <= Client_ExcellentRating_Smiley) ? image : -1;
+}
+} // namespace
+
 void CCommentDialogLst::UpdateList()
 {
 	int count = 0;
@@ -188,8 +210,15 @@ void CCommentDialogLst::UpdateList()
 		if (!thePrefs::IsCommentFiltered(it->Comment)) {
 			m_list->InsertItem(count, it->UserName);
 			m_list->SetItem(count, 1, it->FileName);
-			m_list->SetItem(
-				count, 2, (it->Rating != -1) ? GetRateString(it->Rating) : wxString("on"));
+			// Ratings reach here as 0..5: the wire value is a uint8 that
+			// CUpDownClient clamps to 0 when it exceeds 5, and 0 is a
+			// comment with no rating. The old -1 branch, which drew a
+			// stray untranslated "on", could not be reached.
+			m_list->SetItem(count, 2, GetRateString(it->Rating));
+			const int ratingImage = RatingImage(it->Rating);
+			if (ratingImage >= 0) {
+				m_list->SetItemColumnImage(count, 2, ratingImage);
+			}
 			m_list->SetItem(count, 3, it->Comment);
 			m_list->SetItemPtrData(count, reinterpret_cast<wxUIntPtr>(new SFileRating(*it)));
 			++count;
@@ -219,14 +248,40 @@ void CCommentDialogLst::ClearList()
 	m_list->DeleteAllItems();
 }
 
-int CCommentDialogLst::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData)
+void CCommentDialogLst::OnColumnClick(wxListEvent &evt)
+{
+	const int col = evt.GetColumn();
+	if (col < 0) {
+		// Clicked past the last column header.
+		return;
+	}
+
+	if (m_sortColumn == col) {
+		m_sortDescending = !m_sortDescending;
+	} else {
+		m_sortColumn = col;
+		m_sortDescending = false;
+	}
+
+	// Column packed into the magnitude (1-based, so column 0 doesn't
+	// collide with a sign), direction into the sign.
+	m_list->SortItems(SortProc, m_sortDescending ? -(col + 1) : (col + 1));
+
+	// Plain wxListCtrl tracks no sort state of its own, so the header glyph has
+	// to be driven explicitly. All three ports draw it: macOS and GTK through
+	// the generic implementation wx/listctrl.h routes them to, Windows through
+	// wxMSW's own override.
+	m_list->ShowSortIndicator(col, !m_sortDescending);
+}
+
+int CCommentDialogLst::SortProc(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData)
 {
 	SFileRating *file1 = reinterpret_cast<SFileRating *>(item1);
 	SFileRating *file2 = reinterpret_cast<SFileRating *>(item2);
 
-	int mod = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
+	const int mod = (sortData < 0) ? -1 : 1;
 
-	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
+	switch (mod * sortData - 1) {
 	case 0:
 		return mod * file1->UserName.Cmp(file2->UserName);
 	case 1:

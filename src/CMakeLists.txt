@@ -945,7 +945,6 @@ endif()
 if (NEED_LIB_MULEAPPGUI)
 	add_library (muleappgui STATIC
 		CountryFlags.cpp
-		extern/wxWidgets/listctrl.cpp
 		BarShader.cpp
 		ColorFrameCtrl.cpp
 		EditServerListDlg.cpp
@@ -957,8 +956,6 @@ if (NEED_LIB_MULEAPPGUI)
 		MuleGifCtrl.cpp
 		MuleDataViewCtrl.cpp
 		MuleVirtualDataViewCtrl.cpp
-		MuleListCtrl.cpp
-		MuleVirtualListCtrl.cpp
 		MuleNotebook.cpp
 		MuleTextCtrl.cpp
 		MuleLogCtrl.cpp

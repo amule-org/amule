@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:23+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -329,13 +329,6 @@ msgid "Starting up"
 msgstr "启动中"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "正计算 %u 个新文件的哈希值"
-msgstr[1] "正计算 %u 个新文件的哈希值"
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "网络引导"
 
@@ -465,11 +458,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "获取服务器名称"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "正计算新文件哈希值（第 %u 个，共 %u 个）"
 
 #: src/amule.cpp
 #, c-format
@@ -1053,7 +1041,7 @@ msgstr "新消息来自于 %s（IP：%s）"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "用户 %s（%u）请求目录 %s 的共享文件列表 -> 已忽略"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "警告：%s 文件无法打开。"
@@ -1062,7 +1050,7 @@ msgstr "警告：%s 文件无法打开。"
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "警告：已取消文件列表损坏，包含有非法头部。"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "读取 %s 文件时发生 IO 错误：%s"
@@ -6209,31 +6197,6 @@ msgid "Main"
 msgstr "主要"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "警告: 已知文件列表已经损坏，包含有非法头部。"
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "已知文件列表包含非法条目，文件可能损坏："
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "已知文件列表包含非法条目，文件可能损坏："
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "eD2k未连接时eD2k搜索无法进行"
 
@@ -7016,6 +6979,13 @@ msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "导出了 %u 个共享文件到 '%s'。"
 msgstr[1] "导出了 %u 个共享文件到 '%s'。"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "共享文件 (%i)"
+msgstr[1] "共享文件 (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8727,6 +8697,16 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "正计算 %u 个新文件的哈希值"
+#~ msgstr[1] "正计算 %u 个新文件的哈希值"
+
+#, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "正计算新文件哈希值（第 %u 个，共 %u 个）"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "默认的 Windows 外壳处理器"

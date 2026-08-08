@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -306,13 +306,6 @@ msgid "Starting up"
 msgstr ""
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr ""
 
@@ -432,11 +425,6 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Server hostname notified"
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
 msgstr ""
 
 #: src/amule.cpp
@@ -1010,7 +998,7 @@ msgstr ""
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr ""
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr ""
@@ -1019,7 +1007,7 @@ msgstr ""
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr ""
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr ""
@@ -6072,28 +6060,6 @@ msgid "Main"
 msgstr ""
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr ""
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr ""
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr ""
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr ""
 
@@ -6870,6 +6836,13 @@ msgstr ""
 #, c-format
 msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/SharedFilesCtrl.cpp
+#, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
 msgstr[0] ""
 msgstr[1] ""
 

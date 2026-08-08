@@ -390,6 +390,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #ifdef CLIENT_GUI
 	s_openPrefsDlg = this;
 	m_sharedDirsDirty = false;
+	m_sharedDirsLoaded = false;
 #endif
 	preferencesDlgTop(this, false);
 
@@ -846,8 +847,12 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// user-selected.
 #ifdef CLIENT_GUI
 	// Remote GUI: no tree to seed. Show whatever roots we already hold and ask
-	// the core for a fresh copy — the reply repaints us via
-	// RefreshSharedDirsIfOpen, so an edit is never made against a stale list.
+	// the core for a fresh copy; the reply repaints us via
+	// RefreshSharedDirsIfOpen. Until it lands the editor's controls stay
+	// disabled, because an edit made before it arrives is an edit against a
+	// list we have not seen -- see m_sharedDirsLoaded. Cleared here rather
+	// than at close: the dialog is created once and reused for every open.
+	m_sharedDirsLoaded = false;
 	PopulateSharedDirsList();
 	static_cast<CPreferencesRem *>(theApp->glob_prefs)->LoadSharedDirsRemote();
 #else
@@ -2851,6 +2856,18 @@ bool IsSensitiveSharePath(const CPath &path)
 PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithProgress()
 {
 #ifdef CLIENT_GUI
+	// Nothing to send unless the user actually edited the list -- the same
+	// condition the monolithic branch below gets from HasChanged, and not
+	// merely an optimisation. PopulateSharedDirsList() fills the editor from
+	// glob_prefs, which is still empty in the window between connecting and
+	// the first GET_SHARED_DIRS reply landing. Confirming the dialog inside
+	// that window would harvest an empty editor and instruct the daemon to
+	// share nothing, since SendSharedDirsToRemote() declines only for a
+	// daemon that cannot do this at all.
+	if (!m_sharedDirsDirty) {
+		return SharedDirsCommitResult::NothingToCommit;
+	}
+
 	// The core owns the shared-folder files; we just hand it the roots. No
 	// local progress dialog or rescan here — the rescan happens daemon-side,
 	// and any path it refuses comes back as a rejection we surface then.
@@ -3066,12 +3083,62 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 
 void PrefsUnifiedDlg::RefreshSharedDirsIfOpen()
 {
+	if (s_openPrefsDlg == nullptr) {
+		return;
+	}
+	// The daemon's list is here, so the editor may be edited from now on. Set
+	// before the repaint below, which reads it to enable the controls.
+	s_openPrefsDlg->m_sharedDirsLoaded = true;
 	// Never repaint over uncommitted edits: the reply may land after the user
-	// has already started adding rows.
-	if (s_openPrefsDlg != nullptr && !s_openPrefsDlg->m_sharedDirsDirty) {
+	// has already started adding rows. That can no longer happen before the
+	// first reply -- the controls were disabled until this point -- so what
+	// this protects is an edit made after one reply against a later one.
+	if (!s_openPrefsDlg->m_sharedDirsDirty) {
 		s_openPrefsDlg->PopulateSharedDirsList();
 	}
 }
+
+namespace
+{
+
+/**
+ * Puts `path` in a list row: `col` shows it, and the row remembers which
+ * entry of `store` it actually is.
+ *
+ * The indirection is the point. A list cell holds display text, and CPath's
+ * display form is not the path: GetPrintable() renders the name for a human,
+ * which on macOS means the NFD-normalised form wxConvFileName produces, while
+ * the filesystem form keeps whatever composition it was given. So "/Mötorhead"
+ * comes back out of a cell decomposed -- same characters, different bytes --
+ * and a decomposed path does not resolve on a byte-exact filesystem, which is
+ * what a Linux daemon has and what an SMB/NFS mount generally presents.
+ * Rebuilding a CPath from cell text is therefore not a round trip, and no
+ * caller here should do it.
+ *
+ * The index is stored one-based so that wxListCtrl's default item data of 0
+ * reads as "no path recorded" instead of silently aliasing the first entry.
+ */
+void SetListRowPath(wxListCtrl *list, long row, int col, const CPath &path, std::vector<CPath> &store)
+{
+	store.push_back(path);
+	list->SetItem(row, col, path.GetPrintable());
+	list->SetItemData(row, static_cast<long>(store.size()));
+}
+
+/** The path SetListRowPath() recorded for `row`. */
+CPath GetListRowPath(wxListCtrl *list, long row, const std::vector<CPath> &store)
+{
+	const size_t stored = static_cast<size_t>(list->GetItemData(row));
+	if (stored == 0 || stored > store.size()) {
+		// Every row is created through SetListRowPath(), so this is a bug in
+		// the caller rather than a state a user can reach.
+		wxFAIL_MSG("List row has no recorded path");
+		return CPath();
+	}
+	return store[stored - 1];
+}
+
+} // namespace
 
 void PrefsUnifiedDlg::PopulateSharedDirsList()
 {
@@ -3084,27 +3151,35 @@ void PrefsUnifiedDlg::PopulateSharedDirsList()
 		list->InsertColumn(1, _("Recursive"), wxLIST_FORMAT_LEFT, 90);
 	}
 	list->DeleteAllItems();
+	m_sharedDirRowPaths.clear();
 
 	const bool supported =
 		theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsSharedDirsConfig();
 	// An older core can neither report nor accept these, so leave the editor
 	// inert rather than implying an edit here would reach it.
-	FindWindow(IDC_SHAREDDIR_PATH)->Enable(supported);
-	FindWindow(IDC_SHAREDDIR_RECURSIVE)->Enable(supported);
-	FindWindow(IDC_SHAREDDIR_ADD)->Enable(supported);
-	FindWindow(IDC_SHAREDDIR_REMOVE)->Enable(supported);
+	// Editable only once the daemon's own list is on screen: editing before
+	// then sets m_sharedDirsDirty, which makes the arriving reply be discarded
+	// to protect the edit, and OK would then replace the daemon's shares with
+	// a list assembled without them.
+	const bool editable = supported && m_sharedDirsLoaded;
+	FindWindow(IDC_SHAREDDIR_PATH)->Enable(editable);
+	FindWindow(IDC_SHAREDDIR_RECURSIVE)->Enable(editable);
+	FindWindow(IDC_SHAREDDIR_ADD)->Enable(editable);
+	FindWindow(IDC_SHAREDDIR_REMOVE)->Enable(editable);
 	if (!supported) {
 		return;
 	}
 
 	long row = 0;
 	for (const CPath &dir : theApp->glob_prefs->shareddir_explicit_list) {
-		list->InsertItem(row, dir.GetPrintable());
+		list->InsertItem(row, wxEmptyString);
+		SetListRowPath(list, row, 0, dir, m_sharedDirRowPaths);
 		list->SetItem(row, 1, wxEmptyString);
 		++row;
 	}
 	for (const CPath &dir : theApp->glob_prefs->shareddir_recursive_list) {
-		list->InsertItem(row, dir.GetPrintable());
+		list->InsertItem(row, wxEmptyString);
+		SetListRowPath(list, row, 0, dir, m_sharedDirRowPaths);
 		list->SetItem(row, 1, _("Yes"));
 		++row;
 	}
@@ -3119,7 +3194,14 @@ void PrefsUnifiedDlg::HarvestSharedDirsList()
 	CPreferences::PathList explicitDirs;
 	CPreferences::PathList recursiveDirs;
 	for (long row = 0; row < list->GetItemCount(); ++row) {
-		const CPath path(list->GetItemText(row));
+		// The recorded path, not the cell text -- see SetListRowPath().
+		const CPath path = GetListRowPath(list, row, m_sharedDirRowPaths);
+		if (!path.IsOk()) {
+			// GetListRowPath() asserts on this, but the assert is debug-only
+			// and an empty root would go to the daemon as an empty
+			// EC_TAG_SHAREDDIR. Drop the row instead.
+			continue;
+		}
 		wxListItem field;
 		field.SetId(row);
 		field.SetColumn(1);
@@ -3148,13 +3230,18 @@ void PrefsUnifiedDlg::OnSharedDirAdd(wxCommandEvent &WXUNUSED(evt))
 	}
 	// The path names a folder on the *core's* machine, so it can't be checked
 	// here; the core validates on apply and reports anything it refuses.
+	const CPath newPath(path);
+	// Compared as paths rather than as cell text: the cells show the display
+	// form, which does not always match what was typed (see SetListRowPath),
+	// so a text compare can miss a duplicate.
 	for (long row = 0; row < list->GetItemCount(); ++row) {
-		if (list->GetItemText(row) == path) {
+		if (GetListRowPath(list, row, m_sharedDirRowPaths) == newPath) {
 			return; // already listed
 		}
 	}
 	const bool recursive = CastChild(IDC_SHAREDDIR_RECURSIVE, wxCheckBox)->GetValue();
-	const long row = list->InsertItem(list->GetItemCount(), path);
+	const long row = list->InsertItem(list->GetItemCount(), wxEmptyString);
+	SetListRowPath(list, row, 0, newPath, m_sharedDirRowPaths);
 	list->SetItem(row, 1, recursive ? _("Yes") : wxString(wxEmptyString));
 	pathCtrl->Clear();
 	m_sharedDirsDirty = true;

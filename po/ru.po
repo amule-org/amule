@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -332,14 +332,6 @@ msgid "Starting up"
 msgstr "Запуск"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "Вычисление хеша для %u нового файла"
-msgstr[1] "Вычисление хеша для %u новых файлов"
-msgstr[2] "Вычисление хеша для %u новых файлов"
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Начальная загрузка сети"
 
@@ -469,11 +461,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Имя сервера подтверждено"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Вычисление хеша для новых файлов (%u из %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -1063,7 +1050,7 @@ msgstr "Новое сообщение от '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Пользователь %s (%u) запросил список публикуемых файлов из несуществующего каталога «%s» -> Проигнорировано"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "ПРЕДУПРЕЖДЕНИЕ: файл %s не может быть открыт."
@@ -1072,7 +1059,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: файл %s не может быть от�
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "ПРЕДУПРЕЖДЕНИЕ: Список отменённых файлов повреждён, содержит неверный заголовок."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Ошибка ввода/вывода при чтении файла %s: %s"
@@ -6260,31 +6247,6 @@ msgid "Main"
 msgstr "Общая"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "ПРЕДУПРЕЖДЕНИЕ: Список известных файлов повреждён, содержит неверный заголовок."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "Поиск по eD2k невозможен, если сеть eD2k не подключена"
 
@@ -7080,6 +7042,14 @@ msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "Экспортирован %u общий файл в «%s»."
 msgstr[1] "Экспортированы %u общих файла в «%s»."
 msgstr[2] "Экспортировано %u общих файлов в «%s»."
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Общие файлы (%i)"
+msgstr[1] "Общие файлы (%i)"
+msgstr[2] "Общие файлы (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8798,6 +8768,17 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "Вычисление хеша для %u нового файла"
+#~ msgstr[1] "Вычисление хеша для %u новых файлов"
+#~ msgstr[2] "Вычисление хеша для %u новых файлов"
+
+#, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Вычисление хеша для новых файлов (%u из %u)"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "стандартный обработчик Windows"

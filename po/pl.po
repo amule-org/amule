@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:18+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -328,14 +328,6 @@ msgid "Starting up"
 msgstr "Start"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Sieci"
@@ -467,11 +459,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Zawiadomiono nazwę hostu serwera"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Zapisywanie pliku części %u z %u"
 
 #: src/amule.cpp
 #, c-format
@@ -1054,7 +1041,7 @@ msgstr "Nowa wiadomość od '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Użytkownik %s (%u) zażądał twojej listy plików udostępnionych w katalogu %s -> Odmówiono"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "UWAGA: %s nie może być otwarty."
@@ -1063,7 +1050,7 @@ msgstr "UWAGA: %s nie może być otwarty."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "OSTRZEŻENIE: Anulowana lista plików uszkodzona, zawiera nieprawidłowy nagłówek."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Błąd IO podczas odczytu pliku %s: %s"
@@ -6282,31 +6269,6 @@ msgid "Main"
 msgstr "Główne"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "OSTRZEŻENIE: Znana lista plików uszkodzona, zawiera nieprawidłowy nagłówek."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Nieprawidłowy wpis w znanej liście plików, plik może być uszkodzony: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Nieprawidłowy wpis w znanej liście plików, plik może być uszkodzony: "
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "Nie można wykonać wyszukiwania eD2K, jeśli eD2K nie jest połączony"
 
@@ -7112,6 +7074,14 @@ msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "Przeładuj twoje udostępnione pliki"
 msgstr[1] "Przeładuj twoje udostępnione pliki"
 msgstr[2] "Przeładuj twoje udostępnione pliki"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Udostępnione pliki (%i)"
+msgstr[1] "Udostępnione pliki (%i)"
+msgstr[2] "Udostępnione pliki (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8808,6 +8778,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Zapisywanie pliku części %u z %u"
 
 #, c-format
 #~ msgid ""

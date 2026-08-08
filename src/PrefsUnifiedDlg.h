@@ -29,6 +29,8 @@
 #include <wx/bmpbndl.h> // Needed for wxBitmapBundle (m_pageIcons)
 #include <wx/dialog.h>  // Needed for wxDialog
 
+#include <common/Path.h> // Needed for CPath (value members of m_sharedDirRowPaths)
+
 #include <vector>
 
 #include "ProtocolHandlerManager.h" // Needed for HandlerTarget enum
@@ -114,6 +116,22 @@ protected:
 	//! Guards the editor against being repainted out from under uncommitted
 	//! edits, either by a session refresh or by a late GET_SHARED_DIRS reply.
 	bool m_sharedDirsDirty;
+
+	//! Whether this session's GET_SHARED_DIRS reply has arrived, i.e. whether
+	//! the editor is showing the daemon's list rather than whatever glob_prefs
+	//! happened to hold at open time. The edit controls stay disabled until it
+	//! is true: an edit made before the reply lands sets m_sharedDirsDirty,
+	//! which then makes RefreshSharedDirsIfOpen() discard that very reply to
+	//! protect the edit -- so OK would commit a list built without ever having
+	//! seen the daemon's, replacing its shares with the one row just added.
+	bool m_sharedDirsLoaded;
+
+	//! The shared-folder rows' actual paths, indexed by the row's item data.
+	//! A list cell holds display text, and CPath's display form is not the
+	//! path -- see SetListRowPath() in the .cpp for why one cannot be rebuilt
+	//! from the other. Rebuilt by PopulateSharedDirsList(), appended to by
+	//! OnSharedDirAdd(), read back by HarvestSharedDirsList().
+	std::vector<CPath> m_sharedDirRowPaths;
 
 	//! Fill the shared-folders list widget from glob_prefs' roots.
 	void PopulateSharedDirsList();

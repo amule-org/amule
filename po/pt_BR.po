@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:18+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -332,13 +332,6 @@ msgid "Starting up"
 msgstr "Iniciando"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "Calculando o hash de %u novo arquivo"
-msgstr[1] "Calculando os hashes de %u novos arquivos"
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Inicialização da Rede"
 
@@ -469,11 +462,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Nome do servidor notificado"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Calculando o hash de arquivos novos (%u de %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -1057,7 +1045,7 @@ msgstr "Nova mensagem de '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Usuário %s (%u) solicitou sua lista de compartilhados para pasta não existente '%s' -> Negado"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "CUIDADO: %s não pode ser aberto."
@@ -1066,7 +1054,7 @@ msgstr "CUIDADO: %s não pode ser aberto."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "CUIDADO: Cancela lista de arquivos corrompida, contém cabeçalho inválido."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Erro de I/O ao ler arquivo %s: %s"
@@ -6213,31 +6201,6 @@ msgid "Main"
 msgstr "Principal"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "ATENÇÃO: Arquivo de lista known corrompido, contém cabeçalho inválido."
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "Procura eD2k não pode ser concluída se o eD2k não está conectado"
 
@@ -7019,6 +6982,13 @@ msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "Exportado %u arquivo compartilhado para '%s'."
 msgstr[1] "Exportados %u arquivos compartilhados para '%s'."
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Arquivos Compartilhados (%i)"
+msgstr[1] "Arquivos Compartilhados (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8733,6 +8703,16 @@ msgstr "O aMule parece estar rodando. Por favor, feche-o e rode o desinstalador 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Removendo os dados do usuário em $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "Calculando o hash de %u novo arquivo"
+#~ msgstr[1] "Calculando os hashes de %u novos arquivos"
+
+#, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Calculando o hash de arquivos novos (%u de %u)"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "O manipulador de shell default do Windows"

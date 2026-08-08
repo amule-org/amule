@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 09:35+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:16+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -325,13 +325,6 @@ msgid "Starting up"
 msgstr "시작"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "통신망"
@@ -462,11 +455,6 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "서버 이름:"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "오래된 내려받은 파일로부터 데이터를 읽어들임 (%u (%u의))"
 
 #: src/amule.cpp
 #, c-format
@@ -1058,7 +1046,7 @@ msgstr "'%s'로부터 새로운 메시지 (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "사용자 %s(%u)가 폴더 %s의 공유파일 목록을 요청합니다. -> 거부됨"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, fuzzy, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "경고: known.met을 열 수 없습니다."
@@ -1068,7 +1056,7 @@ msgstr "경고: known.met을 열 수 없습니다."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "경고: 알려진파일 목록이 손상됨, 유효하지 않는 머리말을 포함하고 있습니다."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp
 #, fuzzy, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "known.met 파일을 읽는동안 입출력 오류: %s"
@@ -6279,29 +6267,6 @@ msgid "Main"
 msgstr "주"
 
 #: src/SearchList.cpp
-#, c-format
-msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
-
-#: src/SearchList.cpp
-#, c-format
-msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "경고: 알려진파일 목록이 손상됨, 유효하지 않는 머리말을 포함하고 있습니다."
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr ""
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt: "
-msgstr ""
-
-#: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
 msgstr ""
 
@@ -7115,6 +7080,13 @@ msgid "Exported %u shared file to '%s'."
 msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "공유된 파일을 다시 읽어들임"
 msgstr[1] "공유된 파일을 다시 읽어들임"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "공유된 파일(%i)"
+msgstr[1] "공유된 파일(%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -8812,6 +8784,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "오래된 내려받은 파일로부터 데이터를 읽어들임 (%u (%u의))"
 
 #~ msgid "Filter Results"
 #~ msgstr "필터링 결과"

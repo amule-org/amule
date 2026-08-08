@@ -60,7 +60,7 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @see CMuleListCtrl::CMuleListCtrl
+	 * @see CMuleVirtualDataViewCtrl::CMuleVirtualDataViewCtrl
 	 */
 	CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
 
@@ -87,6 +87,36 @@ public:
 	// (Freeze) and sorts once at the end rather than per updated/added row.
 	void BeginBatchUpdate();
 	void EndBatchUpdate(bool doSort = true);
+
+	/**
+	 * Ends the repaint freeze without ending the batch.
+	 *
+	 * Startup keeps appending long after the window is worth showing: the
+	 * shared-file scan finishes in seconds, but the files it queued for
+	 * hashing arrive over the following minutes, and each has to stay an
+	 * O(1) append rather than a sorted insert (#853). Thawing separately
+	 * lets those rows be seen as they land while the batch runs on.
+	 */
+	void ThawForDisplay();
+
+	/**
+	 * Number of files still queued for hashing, shown next to the count.
+	 *
+	 * Zero clears it. Only startup sets this, and only until its hash queue
+	 * drains.
+	 */
+	void SetHashingCount(size_t remaining);
+
+	/**
+	 * Sorts only if rows have been appended since the last call.
+	 *
+	 * Startup polls on a timer, but rows arrive on hash completions, and
+	 * hashing cost tracks bytes -- one large file is a single append after
+	 * minutes of nothing. Sorting per tick regardless would be a full
+	 * std::sort plus a row-index rebuild and a model reset, once a second,
+	 * for no reordering (#853).
+	 */
+	void SortIfRowsAppended();
 
 	/**
 	 * Adds the specified file to the list, updating filecount and more.
@@ -168,7 +198,7 @@ protected:
 	/**
 	 * Function that specifies which columns have alternate sorting.
 	 *
-	 * @see CMuleListCtrl::AltSortAllowed
+	 * @see CMuleDataViewCtrl::AltSortAllowed
 	 */
 	bool AltSortAllowed(unsigned column) const override;
 
@@ -293,6 +323,19 @@ private:
 	//! True between BeginBatchUpdate()/EndBatchUpdate(): ShowFile() appends
 	//! the row without sorting; EndBatchUpdate() does the single SortList().
 	bool m_batchUpdate;
+
+	//! Whether the batch's Freeze() is still outstanding. Tracked separately
+	//! from m_batchUpdate because ThawForDisplay() ends one without the
+	//! other, and wx counts Freeze/Thaw -- an unbalanced Thaw() asserts.
+	bool m_batchFrozen;
+
+	//! Files still queued for hashing, appended to the count label while
+	//! non-zero. See SetHashingCount().
+	size_t m_hashingRemaining;
+
+	//! Rows appended since the last SortIfRowsAppended(). The batch appends
+	//! without sorting, so this is what makes a later sort worth running.
+	bool m_batchRowsAppended;
 
 	//! Combined size of the displayed files (drives the "Total size:" label)
 	uint64 m_shownSize;

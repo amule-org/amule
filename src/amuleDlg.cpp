@@ -57,7 +57,6 @@
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "KadDlg.h"           // Needed for CKadDlg
 #include "Logger.h"
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl (synchronous column-save)
 #include "MuleTextCtrl.h" // Needed for CMuleTextCtrl (fast-links placeholder)
 #include "MuleLogCtrl.h"  // Needed for CMuleLogCtrl (the log/server-info panes)
 #include "MuleTrayIcon.h"
@@ -1462,25 +1461,6 @@ bool CamuleDlg::LoadGUIPrefs(bool override_pos, bool override_size)
 	return true;
 }
 
-// Persist every named CMuleListCtrl's column layout synchronously by walking
-// the widget tree. Each ~CMuleListCtrl already does this, but the main window
-// is torn down via the lazy wxPendingDelete of amuledlg->Destroy(); on the
-// tray-Exit / HideOnClose path the app can leave the loop before that pending
-// delete runs, so the column widths never reach disk (amule-org/amule#608).
-// Calling it here, from SaveGUIPrefs() (which runs and Flush()es on every
-// close path), makes the save deterministic regardless of teardown order.
-static void SaveListControlSettings(wxWindow *parent)
-{
-	for (wxWindow *child : parent->GetChildren()) {
-		if (CMuleListCtrl *list = dynamic_cast<CMuleListCtrl *>(child)) {
-			if (list->HasStoredTableName()) {
-				list->SaveSettings();
-			}
-		}
-		SaveListControlSettings(child);
-	}
-}
-
 bool CamuleDlg::SaveGUIPrefs()
 {
 	/* Razor 1a - Modif by MikaelB
@@ -1524,10 +1504,6 @@ bool CamuleDlg::SaveGUIPrefs()
 
 	// Saving sash position of splitter in server window
 	config->Write(section + "SRV_SPLITTER_POS", (long)m_srv_split_pos);
-
-	// Persist list column layouts here (synchronously, before the Flush)
-	// rather than relying solely on the lazy ~CMuleListCtrl (amule-org/amule#608).
-	SaveListControlSettings(this);
 
 	config->Flush(true);
 
