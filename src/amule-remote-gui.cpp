@@ -214,14 +214,14 @@ int CamuleRemoteGuiApp::OnExit()
 
 	wxSocketBase::Shutdown(); // needed because we also called Initialize() manually
 
-	// Mirror CamuleApp::OnExit (#141): CMuleListCtrl::SaveSettings runs from
-	// the frame's lazily-scheduled destructor, so drain the pending-delete
-	// queue (where CamuleDlg::OnClose -> ShutDown parked amuledlg->Destroy())
-	// and then tear down wxConfig to flush it. Otherwise the red-X + confirm
-	// path reaches here with the destroy still queued and the column widths /
-	// sort orders it would have written are lost (CMD+Q happens to drain
+	// Mirror CamuleApp::OnExit (#141): drain the pending-delete queue (where
+	// CamuleDlg::OnClose -> ShutDown parked amuledlg->Destroy()) so the frame's
+	// lazily-scheduled destructor runs, then tear down wxConfig to flush it.
+	// Otherwise the red-X + confirm path reaches here with the destroy still
+	// queued and anything that chain persists is lost (CMD+Q happens to drain
 	// naturally). The _Exit(0) below skips wx's own cleanup that normally does
-	// both, so we do it by hand here.
+	// both, so we do it by hand here. Column widths and sort orders no longer
+	// depend on this: CMuleDataViewCtrl writes those eagerly.
 	DeletePendingObjects();
 	delete wxConfigBase::Set(nullptr);
 

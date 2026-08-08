@@ -70,7 +70,7 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @see CMuleListCtrl::CMuleListCtrl for documentation of parameters.
+	 * @see CMuleVirtualDataViewCtrl::CMuleVirtualDataViewCtrl for documentation of parameters.
 	 */
 	CDownloadListCtrl(wxWindow *parent,
 		wxWindowID winid = wxID_ANY,
