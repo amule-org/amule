@@ -47,6 +47,8 @@
 #include "PrefsUnifiedDlg.h" // Needed for NotifyIP2CountryUpdateFailedIfOpen
 #endif
 #include "PartFileConvert.h"
+#include "SearchDlg.h"  // Needed for CSearchDlg, CSearchListCtrl
+#include "SearchList.h" // Needed for CSearchList
 #include "ThreadTasks.h"
 #include "Logger.h"    // Needed for EVT_MULE_LOGGING
 #include "GuiEvents.h" // Needed for EVT_MULE_NOTIFY
@@ -220,6 +222,38 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 	} else {
 		amuledlg = new CamuleDlg(NULL, m_FrameTitle);
 	}
+
+#ifndef CLIENT_GUI
+	// Create a tab for every search restored from StoredSearches.met
+	// (CSearchList::LoadSearches(), issue #641 Phase 3). Reuses the same
+	// unselected-tab path CSearchDlg::OnSearchAdded already provides for a
+	// search discovered via EC_OP_SEARCH_LIST/another client (PR #680) --
+	// a restored search is the same kind of thing, just discovered locally
+	// instead of over EC. Nothing has started a search yet at this point in
+	// startup, so every entry here is by construction a restored one.
+	//
+	// Monolithic (CSearchList) only: this file is also compiled into the
+	// amuleGUI (CLIENT_GUI) target sharing CamuleGuiBase::InitGui, where
+	// theApp->searchlist is CSearchListRem -- restored searches reach that
+	// build over EC_OP_SEARCH_LIST instead, once RegisterRestoredSearch()
+	// (amule.cpp) has made them visible to the registry it polls.
+	for (const auto &kv : theApp->searchlist->GetKnownSearchIds()) {
+		Notify_Search_Added(static_cast<wxUIntPtr>(kv.first),
+			kv.second,
+			static_cast<uint32>(theApp->searchlist->GetSearchLifecycleKindById(kv.first)));
+		// OnSearchAdded labels the tab " (0)", right for a freshly
+		// discovered foreign search but wrong here: the restored results
+		// are already indexed (LoadSearches() ran before this loop), so
+		// the tab's list is already populated -- only the label needs
+		// correcting to match.
+		if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+			if (CSearchListCtrl *page = theApp->amuledlg->m_searchwnd->GetSearchList(
+				    static_cast<wxUIntPtr>(kv.first))) {
+				theApp->amuledlg->m_searchwnd->UpdateHitCount(page);
+			}
+		}
+	}
+#endif
 
 	return 0;
 }

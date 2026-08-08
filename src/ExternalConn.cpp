@@ -2482,6 +2482,11 @@ private:
 CEcSearchRegistry s_ecSearches;
 } // namespace
 
+void RegisterRestoredSearch(uint32 searchID)
+{
+	s_ecSearches.Register(searchID);
+}
+
 static uint32 AllocateBrowseSearchId()
 {
 	uint32 id = theApp->searchlist->AllocateEd2kId();

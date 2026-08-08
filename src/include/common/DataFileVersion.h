@@ -54,4 +54,9 @@ enum CanceledFileListVersions
 	CANCELEDFILE_VERSION = 0x21
 };
 
+enum StoredSearchesFileVersions
+{
+	STOREDSEARCHES_VERSION = 0x01
+};
+
 #endif // DATAFILEVERSION_H

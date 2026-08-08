@@ -105,6 +105,19 @@ public:
 	// the currently-selected tab being a Kad search (vs ED2K).
 	static bool IsKadSearch(uint32_t searchID);
 
+	// Advances m_nextID past a restored Kad search's persisted id (issue
+	// #641 Phase 3), so the next Kad search started this session can't be
+	// handed the same id -- m_nextID restarts at SEARCH_ID_KAD_MASK every
+	// launch, so without this a restored search and the first new Kad
+	// search after a restart collide deterministically. No-op if id is
+	// already at or below the current counter.
+	static void ReserveSearchId(uint32_t id)
+	{
+		if (id > m_nextID) {
+			m_nextID = id;
+		}
+	}
+
 	static const wxChar *GetInvalidKeywordChars() { return L" ()[]{}<>,._-!?:;\\/\""; }
 
 	static void CancelNodeFWCheckUDPSearch();

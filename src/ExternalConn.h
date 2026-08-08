@@ -39,6 +39,18 @@
 #include "DownloadQueue.h"
 #include "PartFile.h" // for SourcenameItemMap
 
+/**
+ * Registers a search restored from StoredSearches.met (CSearchList::
+ * LoadSearches(), issue #641 Phase 3) with the EC multi-search registry, so
+ * EC_OP_SEARCH_LIST/the INC_UPDATE union poll surface it to a freshly
+ * connecting amuleGUI/amuleapi client exactly as they would a live search.
+ * The registry (s_ecSearches) is file-local to ExternalConn.cpp, hence this
+ * thin exported wrapper around its existing Register(id) -- which already
+ * takes an existing ID rather than allocating one, so no new registry logic
+ * is needed here.
+ */
+void RegisterRestoredSearch(uint32 searchID);
+
 template <class T, ec_tagname_t OP> class CTagSet : public std::set<T>
 {
 	void InSet(const CECTag *tag, uint32)

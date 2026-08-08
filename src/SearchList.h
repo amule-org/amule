@@ -127,6 +127,22 @@ public:
 	 */
 	uint32 AllocateEd2kId();
 
+	/**
+	 * Advances m_nextEd2kId past a restored ed2k search's persisted id
+	 * (issue #641 Phase 3), so the next AllocateEd2kId() call this session
+	 * can't reissue it -- m_nextEd2kId restarts at 0 every launch, so
+	 * without this a restored search and the first new one after a
+	 * restart collide deterministically. No-op if id is already at or
+	 * below the current counter.
+	 */
+	void ReserveEd2kId(uint32_t id)
+	{
+		const uint32_t masked = id & 0x3fffffff;
+		if (masked > m_nextEd2kId) {
+			m_nextEd2kId = masked;
+		}
+	}
+
 	/** True if the given searchID corresponds to an active Kad search. */
 	bool IsKadSearch(uint32_t searchID) const;
 
@@ -263,6 +279,38 @@ public:
 	/** Removes all results for the specified search. */
 	void RemoveResults(wxUIntPtr searchID);
 
+	/**
+	 * Persists every currently-held search (query string, kind, start time,
+	 * and its full result tree) to StoredSearches.met, so results survive a
+	 * restart (issue #641 Phase 3). Called from OnExit() before this object
+	 * is destroyed -- the destructor drains everything via RemoveResults(),
+	 * so this must run first. "View Files" browse tabs are not searches (see
+	 * GetKnownSearchIds()) and are never persisted. Bounded at
+	 * MAX_STORED_SEARCHES / MAX_STORED_RESULTS_PER_SEARCH; anything beyond
+	 * that is dropped with a log line rather than silently.
+	 */
+	void StoreSearches() const;
+
+	/**
+	 * Reloads whatever StoreSearches() last wrote, reconstructing each
+	 * search's query string/kind/start time and its full result tree
+	 * (SetDownloadStatus() is re-run on every restored result). A restored
+	 * Kad search is recorded as already finished, since the original
+	 * in-flight Kad search object cannot survive a restart. Must run after
+	 * theApp->downloadqueue/knownfiles/canceledfiles exist (see amule.cpp).
+	 *
+	 * A malformed file (bad header, or a search/result count exceeding the
+	 * write-time caps) is treated as fatal for the whole load, matching
+	 * CSearchFile::LoadFromFile()'s own fail-closed contract one level up --
+	 * a corrupt file yields zero restored searches rather than a partial,
+	 * unpredictable set.
+	 *
+	 * @return The IDs of every search actually restored, in file order, so
+	 *         callers can register them with clients that discover searches
+	 *         out-of-band (see RegisterRestoredSearch() in ExternalConn.h).
+	 */
+	std::vector<uint32_t> LoadSearches();
+
 	/** Finds the search-result (by hash) and downloads it in the given category. */
 	void AddFileToDownloadByHash(const CMD4Hash &hash, uint8 category = 0);
 
@@ -360,6 +408,25 @@ public:
 	void SetKadSearchFinished(uint32_t searchID);
 
 private:
+	//! On-disk name of the search-results persistence file, in the config dir.
+	static const wxChar *const s_storedSearchesFilename;
+
+	//! Ceiling on how many searches StoreSearches() writes / LoadSearches()
+	//! accepts. Matches kMaxEcSearches (ExternalConn.cpp) for consistency,
+	//! though m_searchStrings itself isn't EC-bounded -- a purely local,
+	//! monolithic-only set of open tabs could exceed it. The oldest (by
+	//! m_searchStartTimes) are dropped first, with a log line; never silent.
+	static const std::size_t MAX_STORED_SEARCHES = 20;
+
+	//! Ceiling on how many results StoreSearches() writes / LoadSearches()
+	//! accepts per search. No existing loader (known.met, server.met) bounds
+	//! its record count, so this is a fresh, deliberately generous number --
+	//! not one mirrored from elsewhere. Unlike known.met (describes local
+	//! files), a search result describes an arbitrary remote peer's claims,
+	//! so the read side must fail closed on a record claiming more than this
+	//! rather than attempt an unbounded allocation.
+	static const std::size_t MAX_STORED_RESULTS_PER_SEARCH = 5000;
+
 	/** Event-handler for global searches. */
 	void OnGlobalSearchTimer(CTimerEvent &evt);
 

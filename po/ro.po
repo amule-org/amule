@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 13:16+0200\n"
+"POT-Creation-Date: 2026-08-08 15:17+0200\n"
 "PO-Revision-Date: 2026-08-07 10:19+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -1038,7 +1038,7 @@ msgstr "Mesaj nou de la '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Utilizatorul %s (%u) a solicitat lista fișierelor partajate pentru un director inexistent '%s' -> se ignoră"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "ATENȚIE: %s nu poate fi deschis."
@@ -1047,7 +1047,7 @@ msgstr "ATENȚIE: %s nu poate fi deschis."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "ATENȚIE: S-a anulat lista de fișiere coruptă, conține antet nevalid."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Eroare IO în timpul citirii fișierului %s : %s"
@@ -6308,6 +6308,31 @@ msgstr "Dimensiunea mică trebuie să fie mai mică decât dimensiunea mare. Dim
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Principal"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "ATENȚIE: Lista de fișiere cunoscute este coruptă, conține antet nevalid."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Intrare nevalidă în lista de fișiere cunoscute, fișierul poate fi corupt:"
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Intrare nevalidă în lista de fișiere cunoscute, fișierul poate fi corupt:"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

@@ -25,10 +25,14 @@
 
 #include "SearchList.h" // Interface declarations.
 
+#include <algorithm> // Needed for std::sort (StoreSearches)
+#include <utility>   // Needed for std::move (LoadSearches)
+
 #include <protocol/Protocols.h>
 #include <protocol/kad/Constants.h>
 #include <tags/ClientTags.h>
 #include <tags/FileTags.h>
+#include <common/DataFileVersion.h> // Needed for STOREDSEARCHES_VERSION
 
 #include "updownclient.h"    // Needed for CUpDownClient
 #include "MemFile.h"         // Needed for CMemFile
@@ -39,9 +43,11 @@
 #include "Statistics.h"      // Needed for theStats
 #include "ObservableQueue.h" // Needed for CQueueObserver
 #include <common/Format.h>
-#include "Logger.h"    // Needed for AddLogLineM/...
-#include "Packet.h"    // Needed for CPacket
-#include "GuiEvents.h" // Needed for Notify_*
+#include "CFile.h"       // Needed for CFile (StoredSearches.met)
+#include "Preferences.h" // Needed for thePrefs::GetConfigDir
+#include "Logger.h"      // Needed for AddLogLineM/...
+#include "Packet.h"      // Needed for CPacket
+#include "GuiEvents.h"   // Needed for Notify_*
 
 #ifndef AMULE_DAEMON
 #include "amuleDlg.h"  // Needed for CamuleDlg
@@ -331,6 +337,230 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 		delete file;
 	}
 	DropResultIndex(searchID);
+}
+
+const wxChar *const CSearchList::s_storedSearchesFilename = wxT("StoredSearches.met");
+
+void CSearchList::StoreSearches() const
+{
+	// Same contract as the search-terms dropdown this setting already
+	// governs (SearchDlg.cpp): off means "don't remember", and a search's
+	// full result set is a stronger form of that than the query string
+	// alone. LoadSearches() is the one that removes a file left over from
+	// when this was still on.
+	if (!thePrefs::RememberSearchHistory()) {
+		return;
+	}
+
+	CFile file(thePrefs::GetConfigDir() + s_storedSearchesFilename, CFile::write_safe);
+	if (!file.IsOpened()) {
+		return;
+	}
+
+	// Oldest-first by start time, so if we have to drop any for the cap
+	// below, we drop the oldest rather than an arbitrary map-ordered subset.
+	std::vector<uint32_t> ids;
+	ids.reserve(m_searchStrings.size());
+	for (const auto &kv : m_searchStrings) {
+		ids.push_back(kv.first);
+	}
+	std::sort(ids.begin(), ids.end(), [this](uint32_t a, uint32_t b) {
+		return m_searchStartTimes.at(a) < m_searchStartTimes.at(b);
+	});
+
+	if (ids.size() > MAX_STORED_SEARCHES) {
+		AddLogLineC(CFormat(_("Only saving the %u most recent of %u open searches to %s.")) %
+			    MAX_STORED_SEARCHES % ids.size() % s_storedSearchesFilename);
+		ids.erase(ids.begin(), ids.end() - MAX_STORED_SEARCHES);
+	}
+
+	file.WriteUInt8(STOREDSEARCHES_VERSION);
+	file.WriteUInt32(static_cast<uint32>(ids.size()));
+
+	for (uint32_t id : ids) {
+		const CSearchResultList &results = GetSearchResults(id);
+		std::size_t resultCount = results.size();
+		if (resultCount > MAX_STORED_RESULTS_PER_SEARCH) {
+			AddLogLineC(CFormat(_("Only saving the first %u of %u results for search \"%s\".")) %
+				    MAX_STORED_RESULTS_PER_SEARCH % resultCount % m_searchStrings.at(id));
+			resultCount = MAX_STORED_RESULTS_PER_SEARCH;
+		}
+
+		file.WriteUInt32(id);
+		// m_searchStrings/m_searchKinds/m_searchStartTimes are written and
+		// erased together (StartNewSearch/RemoveResults), so ids is drawn
+		// from m_searchStrings, and matches this instance and the sort
+		// comparator above, this can't miss -- .at() throughout says so.
+		file.WriteString(m_searchStrings.at(id), utf8strRaw);
+		file.WriteUInt8(static_cast<uint8>(m_searchKinds.at(id)));
+		file.WriteUInt64(static_cast<uint64>(m_searchStartTimes.at(id)));
+		file.WriteUInt32(static_cast<uint32>(resultCount));
+
+		for (std::size_t i = 0; i < resultCount; ++i) {
+			results[i]->WriteToFile(&file);
+		}
+	}
+
+	// write_safe writes to a .new sibling; only Close() performs the rename
+	// onto the real filename (CFile.h). Without this call the .new file is
+	// left orphaned and StoredSearches.met itself is never updated.
+	file.Close();
+}
+
+namespace
+{
+//! One search record as read from disk, before it's committed into the live
+//! maps. Kept separate so a malformed record partway through the file can
+//! discard everything read so far instead of leaving CSearchList half-loaded.
+struct LoadedSearch
+{
+	uint32_t id;
+	wxString queryString;
+	SearchType kind;
+	time_t startTime;
+	std::vector<CSearchFile *> results;
+};
+
+void FreeLoaded(std::vector<LoadedSearch> &loaded)
+{
+	for (LoadedSearch &entry : loaded) {
+		for (CSearchFile *f : entry.results) {
+			delete f;
+		}
+	}
+	loaded.clear();
+}
+} // namespace
+
+std::vector<uint32_t> CSearchList::LoadSearches()
+{
+	std::vector<uint32_t> restored;
+
+	CPath fullpath = CPath(thePrefs::GetConfigDir() + s_storedSearchesFilename);
+	if (!thePrefs::RememberSearchHistory()) {
+		// Remove whatever an earlier session with the setting on left
+		// behind, so turning it off actually clears what's on disk rather
+		// than just stopping new writes.
+		if (fullpath.FileExists()) {
+			CPath::RemoveFile(fullpath);
+		}
+		return restored;
+	}
+	if (!fullpath.FileExists()) {
+		return restored;
+	}
+
+	CFile file;
+	if (!file.Open(fullpath)) {
+		AddLogLineC(CFormat(_("WARNING: %s cannot be opened.")) % s_storedSearchesFilename);
+		return restored;
+	}
+
+	std::vector<LoadedSearch> loaded;
+
+	try {
+		uint8 version = file.ReadUInt8();
+		if (version != STOREDSEARCHES_VERSION) {
+			AddLogLineC(_("WARNING: Stored search list corrupted, contains invalid header."));
+			return restored;
+		}
+
+		uint32 searchCount = file.ReadUInt32();
+		if (searchCount > MAX_STORED_SEARCHES * 2) {
+			// StoreSearches() never writes more than MAX_STORED_SEARCHES; a
+			// count more than double that is not a file we ever wrote, and
+			// trusting it would drive an equally suspect per-search loop
+			// below. Fail closed rather than partially populate.
+			AddLogLineC(_("WARNING: Stored search list corrupted, contains invalid header."));
+			return restored;
+		}
+		loaded.reserve(searchCount);
+
+		for (uint32 i = 0; i < searchCount; ++i) {
+			LoadedSearch entry;
+			entry.id = file.ReadUInt32();
+			entry.queryString = file.ReadString(true);
+			entry.kind = static_cast<SearchType>(file.ReadUInt8());
+			entry.startTime = static_cast<time_t>(file.ReadUInt64());
+
+			uint32 resultCount = file.ReadUInt32();
+			if (resultCount > MAX_STORED_RESULTS_PER_SEARCH * 2) {
+				AddLogLineC(
+					_("WARNING: Stored search list corrupted, contains invalid header."));
+				FreeLoaded(loaded);
+				return std::vector<uint32_t>();
+			}
+
+			entry.results.reserve(resultCount);
+			for (uint32 r = 0; r < resultCount; ++r) {
+				CSearchFile *result = CSearchFile::LoadFromFile(&file);
+				if (!result) {
+					AddLogLineC(_(
+						"Invalid entry in stored search list, file may be corrupt"));
+					for (CSearchFile *f : entry.results) {
+						delete f;
+					}
+					FreeLoaded(loaded);
+					return std::vector<uint32_t>();
+				}
+				entry.results.push_back(result);
+			}
+
+			loaded.push_back(std::move(entry));
+		}
+	} catch (const CInvalidPacket &e) {
+		AddLogLineC(_("Invalid entry in stored search list, file may be corrupt: ") + e.what());
+		FreeLoaded(loaded);
+		return restored;
+	} catch (const CSafeIOException &e) {
+		AddLogLineC(CFormat(_("IO error while reading %s file: %s")) % s_storedSearchesFilename %
+			    e.what());
+		FreeLoaded(loaded);
+		return restored;
+	}
+
+	// Everything parsed cleanly -- commit it all to the live maps/index.
+	// theApp->downloadqueue/knownfiles/canceledfiles must already exist here
+	// (see amule.cpp's call site) for SetDownloadStatus() to be meaningful.
+	restored.reserve(loaded.size());
+	for (LoadedSearch &entry : loaded) {
+		m_searchStrings[entry.id] = entry.queryString;
+		m_searchKinds[entry.id] = entry.kind;
+		m_searchStartTimes[entry.id] = entry.startTime;
+
+		// Reserve the id so the first new search of the same kind this
+		// session can't be handed it -- both counters restart every launch,
+		// so without this a restored search collides with the next one
+		// started. Partitioned on the id's own high bit rather than the
+		// persisted `kind` byte: bit 31 is intrinsic to which counter owns
+		// the value, while `kind` is a separate field from the same record
+		// that could disagree with it if the file were corrupt.
+		if (entry.id & 0x80000000) {
+			Kademlia::CSearchManager::ReserveSearchId(entry.id);
+		} else {
+			ReserveEd2kId(entry.id);
+		}
+
+		if (entry.kind == KadSearch) {
+			// The original in-flight Kad search can't survive a restart --
+			// come back already finished, hits-only, "More results" disabled.
+			m_finishedKadSearches.insert(entry.id);
+		}
+
+		for (CSearchFile *root : entry.results) {
+			root->m_searchID = entry.id;
+			root->SetDownloadStatus();
+			for (CSearchFile *child : root->GetChildren()) {
+				child->m_searchID = entry.id;
+				child->SetDownloadStatus();
+			}
+			IndexResult(root);
+		}
+
+		restored.push_back(entry.id);
+	}
+
+	return restored;
 }
 
 wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchParams &params)
