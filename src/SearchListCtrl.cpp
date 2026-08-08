@@ -573,6 +573,15 @@ void CSearchListCtrl::OnIdleHook()
 		// every burst.
 		m_model->FlushPending();
 	} else if (m_model->HasPending()) {
+		// The row the user is looking at, so the rebuild below can be put
+		// back where they left it. Cleared() drops the view to the top, and
+		// on a running search that is every idle -- measured on GTK with wx
+		// 3.3.3, EnsureVisible() afterwards lands it back on the same row
+		// exactly, because the items here are CSearchFile pointers and stay
+		// nameable across the rebuild (the virtual lists cannot do this:
+		// their items are row numbers, which mean nothing afterwards).
+		const wxDataViewItem topBefore = GetTopItem();
+
 		wxDataViewItemArray selected;
 		GetSelections(selected);
 		wxDataViewItemArray expanded;
@@ -603,6 +612,13 @@ void CSearchListCtrl::OnIdleHook()
 		}
 		if (!restore.IsEmpty()) {
 			SetSelections(restore);
+		}
+
+		// After the selection, which does not move the view on any backend,
+		// so this has the last word on where the list sits. Checked against
+		// the live tree first, like everything else restored here.
+		if (topBefore.IsOk() && live.Index(topBefore) != wxNOT_FOUND) {
+			EnsureVisible(topBefore);
 		}
 	}
 }
