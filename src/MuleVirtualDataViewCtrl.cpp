@@ -398,6 +398,17 @@ void CMuleVirtualDataViewCtrl::SortItems()
 void CMuleVirtualDataViewCtrl::SortList()
 {
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+
+	// The cursor is addressed by row, like the selection, and unlike the
+	// selection nothing else puts it back. Reset() used to invalidate it
+	// along with the rest of the view; a repaint leaves it pointing at
+	// whatever item has since moved into that row -- so the next arrow key
+	// steps from the wrong place, a shifted page key extends from the wrong
+	// anchor, and the focus ring can come to rest on an unselected row.
+	const wxDataViewItem currentItem = GetCurrentItem();
+	const wxUIntPtr currentData =
+		currentItem.IsOk() ? ItemAt(static_cast<long>(m_virtualModel->GetRow(currentItem))) : 0;
+
 	SortItems();
 
 	// Repaint, rather than Reset(). A sort reorders rows; it does not replace
@@ -413,6 +424,13 @@ void CMuleVirtualDataViewCtrl::SortList()
 	// The control's selection is a set of rows, and the rows now mean
 	// different items, so it is re-applied from the item data either way.
 	SetSelectedItemData(selected);
+
+	if (currentData != 0) {
+		const long row = RowOfData(currentData);
+		if (row >= 0) {
+			SetCurrentItem(m_virtualModel->GetItem(static_cast<unsigned>(row)));
+		}
+	}
 }
 
 void CMuleVirtualDataViewCtrl::GetDisplayOrder(wxDataViewItemArray &ordered) const

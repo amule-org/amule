@@ -555,12 +555,16 @@ void CSearchListCtrl::OnIdleHook()
 	// notifications with the full model reset a group formation needs left
 	// wxGTK's tree inconsistent, and neither ItemChanged() nor a
 	// delete-and-re-add worked around it -- only wxDataViewModel::Cleared()
-	// reliably makes the control re-derive container-ness. Cleared() throws
-	// away the control's own view state, so selection and expansion are
-	// captured and re-applied around it -- otherwise a result landing
-	// mid-search would deselect whatever the user had picked. Items are
-	// CSearchFile*, still valid across the rebuild; ones that went away are
-	// dropped by re-checking membership against the live tree afterwards.
+	// reliably makes the control re-derive container-ness.
+	//
+	// That is now the fallback rather than the rule: arrivals are reported
+	// incrementally where the backends tolerate it, and only what still
+	// needs a rebuild takes the branch below. Cleared() throws away the
+	// control's own view state, so selection and expansion are captured and
+	// re-applied around it -- otherwise a result landing mid-search would
+	// deselect whatever the user had picked. Items are CSearchFile*, still
+	// valid across the rebuild; ones that went away are dropped by
+	// re-checking membership against the live tree afterwards.
 	if (m_model->HasPending() && !m_model->HasPendingReset()) {
 		// Incremental batch: the control keeps its scroll position, its
 		// selection and its expanded rows, so there is nothing to preserve

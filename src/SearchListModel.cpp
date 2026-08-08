@@ -40,9 +40,29 @@
 #include "SearchList.h"     // Needed for CSearchList, CSearchResultList
 #include "SearchListCtrl.h"
 
+std::set<CSearchListModel *> CSearchListModel::s_models;
+
 CSearchListModel::CSearchListModel(CSearchListCtrl *owner)
 : m_owner(owner)
 {
+	s_models.insert(this);
+}
+
+CSearchListModel::~CSearchListModel()
+{
+	s_models.erase(this);
+}
+
+void CSearchListModel::DropReferencesTo(CSearchFile *file)
+{
+	for (CSearchListModel *model : s_models) {
+		model->m_pendingAdded.erase(
+			std::remove(model->m_pendingAdded.begin(), model->m_pendingAdded.end(), file),
+			model->m_pendingAdded.end());
+		model->m_pendingChanged.erase(
+			std::remove(model->m_pendingChanged.begin(), model->m_pendingChanged.end(), file),
+			model->m_pendingChanged.end());
+	}
 }
 
 void CSearchListModel::NotifyFileAdded(CSearchFile *file)
@@ -120,47 +140,34 @@ bool CSearchListModel::FlushPending()
 		return false;
 	}
 
-	// Results can be freed between the notification and this flush -- a
-	// search being dropped takes its whole list with it -- so nothing is
-	// handed to wx without checking it is still in the live set. The same
-	// re-check the control does for its saved selection, for the same reason.
-	std::unordered_set<const CSearchFile *> live;
-	if (m_owner->GetSearchId()) {
-		const CSearchResultList &results =
-			theApp->searchlist->GetSearchResults(m_owner->GetSearchId());
-		live.insert(results.begin(), results.end());
-	}
+	// Nothing here can be dangling: DropReferencesTo() removes a result the
+	// moment it is destroyed. Duplicates can be, and are: SetDownloadStatus()
+	// notifies every child of the parent it updated, so one arrival into a
+	// 50-variant group queues 51 entries and a busy idle window multiplies
+	// that. The control is handed each row once.
+	std::unordered_set<const CSearchFile *> seen;
 
 	// Additions are reported per parent, since wx takes one parent for a
 	// whole batch: top-level results under the root, grouped ones under the
-	// result they joined. A child is not in the indexed list -- IndexResult()
-	// keeps only top-level results -- so it is vouched for by its parent
-	// being live and still owning it.
+	// result they joined.
 	wxDataViewItemArray addedRoots;
 	std::unordered_map<CSearchFile *, wxDataViewItemArray> addedChildren;
 	for (CSearchFile *file : m_pendingAdded) {
+		if (!seen.insert(file).second) {
+			continue;
+		}
 		CSearchFile *parent = const_cast<CSearchFile *>(file->GetParent());
 		if (parent == nullptr) {
-			if (live.count(file) != 0) {
-				addedRoots.Add(ToItem(file));
-			}
-			continue;
-		}
-		if (live.count(parent) == 0) {
-			continue;
-		}
-		const CSearchResultList &kids = parent->GetChildren();
-		if (std::find(kids.begin(), kids.end(), file) != kids.end()) {
+			addedRoots.Add(ToItem(file));
+		} else {
 			addedChildren[parent].Add(ToItem(file));
 		}
 	}
 
+	seen.clear();
 	wxDataViewItemArray changed;
 	for (CSearchFile *file : m_pendingChanged) {
-		CSearchFile *parent = const_cast<CSearchFile *>(file->GetParent());
-		const bool stillThere =
-			(parent == nullptr) ? (live.count(file) != 0) : (live.count(parent) != 0);
-		if (stillThere) {
+		if (seen.insert(file).second) {
 			changed.Add(ToItem(file));
 		}
 	}

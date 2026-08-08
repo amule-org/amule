@@ -54,6 +54,7 @@
 #include "amuleDlg.h"
 #include "ServerWnd.h"
 #include "SearchDlg.h"
+#include "SearchListModel.h" // Needed for CSearchListModel::DropReferencesTo
 #include "TransferWnd.h"
 #include "SharedFilesWnd.h"
 #include "ServerListCtrl.h"
@@ -1036,6 +1037,11 @@ void SearchFileBeingDestroyed(CSearchFile *file)
 	// freed (a new search or result-list rebuild deletes CSearchFile objects
 	// while a modal Kad-notes lookup may still be open on one).
 	CCommentDialogLst::DropReferencesTo(file);
+	// The search models hold arriving results between the notification and
+	// the idle that flushes them, and nothing unlinks a child from its
+	// parent's list -- so this is the only signal that one of those pointers
+	// has stopped being one.
+	CSearchListModel::DropReferencesTo(file);
 #else
 	(void)file;
 #endif

@@ -27,6 +27,7 @@
 
 #include <wx/dataview.h>
 
+#include <set>    // Needed for std::set (the live-model registry)
 #include <vector> // Needed for std::vector (the pending-arrival batches)
 
 class CSearchFile;
@@ -60,6 +61,7 @@ class CSearchListModel : public wxDataViewModel
 {
 public:
 	explicit CSearchListModel(CSearchListCtrl *owner);
+	~CSearchListModel() override;
 
 	//! Notify the control that a new result is now visible (already added
 	//! to CSearchList's own storage by the caller).
@@ -96,6 +98,18 @@ public:
 	//! tree anyway, and for a new result set, whose pending entries point
 	//! into storage that is no longer ours.
 	void DropPending();
+
+	/**
+	 * Forgets @a file, which is about to be freed.
+	 *
+	 * Called for every CSearchFile destruction (MuleNotify::
+	 * SearchFileBeingDestroyed), which is the only liveness signal there is:
+	 * nothing unlinks a child from its parent's m_children, so a pointer
+	 * being listed there says nothing about whether it is still allocated.
+	 * Every live model is asked, since a result belongs to exactly one of
+	 * them and none of them knows which.
+	 */
+	static void DropReferencesTo(CSearchFile *file);
 
 	static CSearchFile *ToFile(const wxDataViewItem &item)
 	{
@@ -157,12 +171,15 @@ private:
 	//! Set when only a full rebuild will do; see MarkDirty().
 	bool m_pendingReset = false;
 
-	//! Arrivals waiting to be reported incrementally: new top-level rows,
-	//! and rows whose values changed. Held as pointers, so every flush
-	//! re-checks them against live storage before handing them to wx -- a
-	//! result can be freed between the notification and the next idle.
+	//! Arrivals waiting to be reported incrementally: new rows, and rows
+	//! whose values changed. Held as pointers between the notification and
+	//! the next idle, and kept honest by DropReferencesTo().
 	std::vector<CSearchFile *> m_pendingAdded;
 	std::vector<CSearchFile *> m_pendingChanged;
+
+	//! Every model that currently exists, for DropReferencesTo(). One per
+	//! search tab, so a handful at most.
+	static std::set<CSearchListModel *> s_models;
 };
 
 #endif // SEARCHLISTMODEL_H
