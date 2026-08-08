@@ -390,6 +390,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #ifdef CLIENT_GUI
 	s_openPrefsDlg = this;
 	m_sharedDirsDirty = false;
+	m_sharedDirsLoaded = false;
 #endif
 	preferencesDlgTop(this, false);
 
@@ -846,8 +847,12 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// user-selected.
 #ifdef CLIENT_GUI
 	// Remote GUI: no tree to seed. Show whatever roots we already hold and ask
-	// the core for a fresh copy — the reply repaints us via
-	// RefreshSharedDirsIfOpen, so an edit is never made against a stale list.
+	// the core for a fresh copy; the reply repaints us via
+	// RefreshSharedDirsIfOpen. Until it lands the editor's controls stay
+	// disabled, because an edit made before it arrives is an edit against a
+	// list we have not seen -- see m_sharedDirsLoaded. Cleared here rather
+	// than at close: the dialog is created once and reused for every open.
+	m_sharedDirsLoaded = false;
 	PopulateSharedDirsList();
 	static_cast<CPreferencesRem *>(theApp->glob_prefs)->LoadSharedDirsRemote();
 #else
@@ -3078,9 +3083,17 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 
 void PrefsUnifiedDlg::RefreshSharedDirsIfOpen()
 {
+	if (s_openPrefsDlg == nullptr) {
+		return;
+	}
+	// The daemon's list is here, so the editor may be edited from now on. Set
+	// before the repaint below, which reads it to enable the controls.
+	s_openPrefsDlg->m_sharedDirsLoaded = true;
 	// Never repaint over uncommitted edits: the reply may land after the user
-	// has already started adding rows.
-	if (s_openPrefsDlg != nullptr && !s_openPrefsDlg->m_sharedDirsDirty) {
+	// has already started adding rows. That can no longer happen before the
+	// first reply -- the controls were disabled until this point -- so what
+	// this protects is an edit made after one reply against a later one.
+	if (!s_openPrefsDlg->m_sharedDirsDirty) {
 		s_openPrefsDlg->PopulateSharedDirsList();
 	}
 }
@@ -3144,10 +3157,15 @@ void PrefsUnifiedDlg::PopulateSharedDirsList()
 		theApp->m_connect != nullptr && theApp->m_connect->ServerSupportsSharedDirsConfig();
 	// An older core can neither report nor accept these, so leave the editor
 	// inert rather than implying an edit here would reach it.
-	FindWindow(IDC_SHAREDDIR_PATH)->Enable(supported);
-	FindWindow(IDC_SHAREDDIR_RECURSIVE)->Enable(supported);
-	FindWindow(IDC_SHAREDDIR_ADD)->Enable(supported);
-	FindWindow(IDC_SHAREDDIR_REMOVE)->Enable(supported);
+	// Editable only once the daemon's own list is on screen: editing before
+	// then sets m_sharedDirsDirty, which makes the arriving reply be discarded
+	// to protect the edit, and OK would then replace the daemon's shares with
+	// a list assembled without them.
+	const bool editable = supported && m_sharedDirsLoaded;
+	FindWindow(IDC_SHAREDDIR_PATH)->Enable(editable);
+	FindWindow(IDC_SHAREDDIR_RECURSIVE)->Enable(editable);
+	FindWindow(IDC_SHAREDDIR_ADD)->Enable(editable);
+	FindWindow(IDC_SHAREDDIR_REMOVE)->Enable(editable);
 	if (!supported) {
 		return;
 	}
