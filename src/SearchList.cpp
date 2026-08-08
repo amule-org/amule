@@ -509,7 +509,7 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 			loaded.push_back(std::move(entry));
 		}
 	} catch (const CInvalidPacket &e) {
-		AddLogLineC(_("Invalid entry in stored search list, file may be corrupt: ") + e.what());
+		AddLogLineC(_("Invalid entry in stored search list, file may be corrupt") + ": " + e.what());
 		FreeLoaded(loaded);
 		return restored;
 	} catch (const CSafeIOException &e) {

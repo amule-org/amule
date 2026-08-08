@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:17+0200\n"
+"POT-Creation-Date: 2026-08-08 18:46+0200\n"
 "PO-Revision-Date: 2026-08-08 15:51+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -4289,22 +4289,22 @@ msgstr "Показать, сколько общих файлов исключи�
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Path mappings"
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Remote prefix:"
+msgid "Remote prefix"
 msgstr "Удалённый сервер"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Local prefix:"
+msgid "Local prefix"
 msgstr "Локальный сервер"
 
 #: src/muuli_wdr.cpp
@@ -5742,10 +5742,6 @@ msgstr "Соединение"
 msgid "Directories"
 msgstr "Каталоги"
 
-#: src/PrefsUnifiedDlg.cpp
-msgid "Path Mappings"
-msgstr ""
-
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Серверы"
@@ -6253,16 +6249,6 @@ msgid "Shared folder"
 msgstr "Общая папка"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Remote prefix"
-msgstr "Удалённый сервер"
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Local prefix"
-msgstr "Локальный сервер"
-
-#: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
 msgstr ""
 
@@ -6322,11 +6308,6 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: Список известных файло
 #: src/SearchList.cpp
 #, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
 msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
 
 #: src/SearchList.cpp
@@ -8851,6 +8832,18 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#, fuzzy
+#~ msgid "Remote prefix:"
+#~ msgstr "Удалённый сервер"
+
+#, fuzzy
+#~ msgid "Local prefix:"
+#~ msgstr "Локальный сервер"
+
+#, fuzzy
+#~ msgid "Invalid entry in stored search list, file may be corrupt: "
+#~ msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
 
 #, c-format
 #~ msgid "Hashing %u new file"

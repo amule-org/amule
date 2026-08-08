@@ -1870,14 +1870,14 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
     itemHint->Wrap( parent->FromDIP(380) );
     item0->Add( itemHint, wxSizerFlags().Expand().Border(wxBOTTOM, 6) );
 
-    wxStaticBox *itemBox = new wxStaticBox( parent, -1, _("Path mappings") );
+    wxStaticBox *itemBox = new wxStaticBox( parent, -1, _("Path Mappings") );
     wxStaticBoxSizer *itemBoxSizer = new wxStaticBoxSizer( itemBox, wxVERTICAL );
 
     wxListCtrl *itemList = new wxListCtrl( parent, IDC_PATHMAP_LIST, wxDefaultPosition, wxSize(100,100), wxLC_REPORT|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
     itemBoxSizer->Add( itemList, wxSizerFlags(1).Expand().CenterVertical() );
 
     wxBoxSizer *itemRemoteRow = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *itemRemoteLabel = new wxStaticText( parent, -1, _("Remote prefix:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *itemRemoteLabel = new wxStaticText( parent, -1, _("Remote prefix") + ":", wxDefaultPosition, wxDefaultSize, 0 );
     itemRemoteRow->Add( itemRemoteLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
     CMuleTextCtrl *itemRemote = new CMuleTextCtrl( parent, IDC_PATHMAP_REMOTE, "", wxDefaultPosition, wxSize(80,-1), 0 );
     itemRemote->SetToolTip(_("A path prefix as the core reports it, e.g. /home/user/downloads/incoming"));
@@ -1885,7 +1885,7 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
     itemBoxSizer->Add( itemRemoteRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 
     wxBoxSizer *itemLocalRow = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *itemLocalLabel = new wxStaticText( parent, -1, _("Local prefix:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *itemLocalLabel = new wxStaticText( parent, -1, _("Local prefix") + ":", wxDefaultPosition, wxDefaultSize, 0 );
     itemLocalRow->Add( itemLocalLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
     CMuleTextCtrl *itemLocal = new CMuleTextCtrl( parent, IDC_PATHMAP_LOCAL, "", wxDefaultPosition, wxSize(80,-1), 0 );
     itemLocal->SetToolTip(_("Where that same folder is reachable from this computer, e.g. a mounted network share"));

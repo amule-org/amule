@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:17+0200\n"
+"POT-Creation-Date: 2026-08-08 18:46+0200\n"
 "PO-Revision-Date: 2026-08-08 15:49+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -4263,22 +4263,22 @@ msgstr "Mostra quantos arquivos compartilhados o padrão atual excluiria."
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Path mappings"
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Remote prefix:"
+msgid "Remote prefix"
 msgstr "Servidor Remoto"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Local prefix:"
+msgid "Local prefix"
 msgstr "Servidor Local"
 
 #: src/muuli_wdr.cpp
@@ -5704,10 +5704,6 @@ msgstr "Conexão"
 msgid "Directories"
 msgstr "Diretórios"
 
-#: src/PrefsUnifiedDlg.cpp
-msgid "Path Mappings"
-msgstr ""
-
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servidores"
@@ -6208,16 +6204,6 @@ msgid "Shared folder"
 msgstr "Pasta compartilhada"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Remote prefix"
-msgstr "Servidor Remoto"
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Local prefix"
-msgstr "Servidor Local"
-
-#: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
 msgstr ""
 
@@ -6276,11 +6262,6 @@ msgstr "ATENÇÃO: Arquivo de lista known corrompido, contém cabeçalho inváli
 #: src/SearchList.cpp
 #, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
 msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
 
 #: src/SearchList.cpp
@@ -8786,6 +8767,18 @@ msgstr "O aMule parece estar rodando. Por favor, feche-o e rode o desinstalador 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Removendo os dados do usuário em $APPDATA\\aMule..."
+
+#, fuzzy
+#~ msgid "Remote prefix:"
+#~ msgstr "Servidor Remoto"
+
+#, fuzzy
+#~ msgid "Local prefix:"
+#~ msgstr "Servidor Local"
+
+#, fuzzy
+#~ msgid "Invalid entry in stored search list, file may be corrupt: "
+#~ msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
 
 #, c-format
 #~ msgid "Hashing %u new file"
