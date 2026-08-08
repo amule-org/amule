@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:12+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -327,13 +327,6 @@ msgid "Starting up"
 msgstr "Käynnistä haku"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Verkot"
@@ -465,11 +458,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Palvelimen verkkonimi ilmoitettu"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Tallennetaan osatiedostoa %u / %u"
 
 #: src/amule.cpp
 #, c-format
@@ -7044,6 +7032,13 @@ msgstr[0] "Uudelleenlataa jaetut tiedostot"
 msgstr[1] "Uudelleenlataa jaetut tiedostot"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Jaetut tiedostot (%i)"
+msgstr[1] "Jaetut tiedostot (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Jaetut tiedostot (%i)"
@@ -8735,6 +8730,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Tallennetaan osatiedostoa %u / %u"
 
 #, c-format
 #~ msgid ""

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:25+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -312,14 +312,6 @@ msgid "Starting up"
 msgstr ""
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr ""
 
@@ -440,11 +432,6 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Server hostname notified"
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
 msgstr ""
 
 #: src/amule.cpp
@@ -6897,6 +6884,14 @@ msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Kopīgotās datnes (%i)"
+msgstr[1] "Kopīgotās datnes (%i)"
+msgstr[2] "Kopīgotās datnes (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

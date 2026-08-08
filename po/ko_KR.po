@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:16+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -325,13 +325,6 @@ msgid "Starting up"
 msgstr "시작"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "통신망"
@@ -462,11 +455,6 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "서버 이름:"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "오래된 내려받은 파일로부터 데이터를 읽어들임 (%u (%u의))"
 
 #: src/amule.cpp
 #, c-format
@@ -7094,6 +7082,13 @@ msgstr[0] "공유된 파일을 다시 읽어들임"
 msgstr[1] "공유된 파일을 다시 읽어들임"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "공유된 파일(%i)"
+msgstr[1] "공유된 파일(%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "공유된 파일(%i)"
@@ -8789,6 +8784,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "오래된 내려받은 파일로부터 데이터를 읽어들임 (%u (%u의))"
 
 #~ msgid "Filter Results"
 #~ msgstr "필터링 결과"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:19+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -325,14 +325,6 @@ msgid "Starting up"
 msgstr "Începe"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Rețele"
@@ -464,11 +456,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "S-a notificat numele serverului"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Se salvează fișierul parțial %u of %u"
 
 #: src/amule.cpp
 #, c-format
@@ -7067,6 +7054,14 @@ msgstr[1] "Reîncărcați fișierele partajate"
 msgstr[2] "Reîncărcați fișierele partajate"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Fișiere partajate (%i)"
+msgstr[1] "Fișiere partajate (%i)"
+msgstr[2] "Fișiere partajate (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Fișiere partajate (%i)"
@@ -8761,6 +8756,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Se salvează fișierul parțial %u of %u"
 
 #, c-format
 #~ msgid ""

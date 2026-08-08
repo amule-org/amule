@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:09+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -328,14 +328,6 @@ msgid "Starting up"
 msgstr "Spouštění"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "Vytváření hashe %u nového souboru"
-msgstr[1] "Vytváření hashe %u nových souborů"
-msgstr[2] "Vytváření hashe %u nových souborů"
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Zavedení sítě"
 
@@ -462,11 +454,6 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Server hostname notified"
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
 msgstr ""
 
 #: src/amule.cpp
@@ -7062,6 +7049,14 @@ msgstr[1] "Znovu načíst vaše sdílené soubory"
 msgstr[2] "Znovu načíst vaše sdílené soubory"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Sdílené soubory (%i)"
+msgstr[1] "Sdílené soubory (%i)"
+msgstr[2] "Sdílené soubory (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Sdílené soubory (%i)"
@@ -8730,6 +8725,13 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "Vytváření hashe %u nového souboru"
+#~ msgstr[1] "Vytváření hashe %u nových souborů"
+#~ msgstr[2] "Vytváření hashe %u nových souborů"
 
 #~ msgid "Filter Results"
 #~ msgstr "Filtrování výsledků"

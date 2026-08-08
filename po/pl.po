@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:18+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -328,14 +328,6 @@ msgid "Starting up"
 msgstr "Start"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Sieci"
@@ -467,11 +459,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Zawiadomiono nazwę hostu serwera"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Zapisywanie pliku części %u z %u"
 
 #: src/amule.cpp
 #, c-format
@@ -7089,6 +7076,14 @@ msgstr[1] "Przeładuj twoje udostępnione pliki"
 msgstr[2] "Przeładuj twoje udostępnione pliki"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Udostępnione pliki (%i)"
+msgstr[1] "Udostępnione pliki (%i)"
+msgstr[2] "Udostępnione pliki (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Udostępnione pliki (%i)"
@@ -8783,6 +8778,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Zapisywanie pliku części %u z %u"
 
 #, c-format
 #~ msgid ""

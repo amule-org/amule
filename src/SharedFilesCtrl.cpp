@@ -89,6 +89,9 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 : CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
 , m_inBulkUpdate(false)
 , m_batchUpdate(false)
+, m_batchFrozen(false)
+, m_hashingRemaining(0)
+, m_batchRowsAppended(false)
 , m_shownSize(0)
 {
 	m_menu = nullptr;
@@ -565,6 +568,35 @@ void CSharedFilesCtrl::BeginBatchUpdate()
 	// (Freeze) and defer the single sort to EndBatchUpdate().
 	Freeze();
 	m_batchUpdate = true;
+	m_batchFrozen = true;
+}
+
+void CSharedFilesCtrl::ThawForDisplay()
+{
+	// Only the freeze ends here; the batch runs on, so rows keep arriving as
+	// O(1) appends. Whoever wants them ordered calls SortList().
+	if (m_batchFrozen) {
+		m_batchFrozen = false;
+		Thaw();
+	}
+}
+
+void CSharedFilesCtrl::SortIfRowsAppended()
+{
+	if (!m_batchRowsAppended) {
+		return;
+	}
+	m_batchRowsAppended = false;
+	SortList();
+}
+
+void CSharedFilesCtrl::SetHashingCount(size_t remaining)
+{
+	if (m_hashingRemaining == remaining) {
+		return;
+	}
+	m_hashingRemaining = remaining;
+	ShowFilesCount();
 }
 
 void CSharedFilesCtrl::EndBatchUpdate(bool doSort)
@@ -575,7 +607,13 @@ void CSharedFilesCtrl::EndBatchUpdate(bool doSort)
 	if (doSort) {
 		SortList();
 	}
-	Thaw();
+	m_batchRowsAppended = false;
+	// Skipped when ThawForDisplay() already ended the freeze: wx counts
+	// Freeze/Thaw and an unbalanced Thaw() asserts.
+	if (m_batchFrozen) {
+		m_batchFrozen = false;
+		Thaw();
+	}
 }
 
 void CSharedFilesCtrl::RemoveFile(CKnownFile *toRemove)
@@ -612,6 +650,7 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(file);
 		if (RowOfData(data) == -1) {
 			AppendItemDataNow(data);
+			m_batchRowsAppended = true;
 			m_shownSize += file->GetFileSize();
 			ShowFilesCount();
 		}
@@ -969,7 +1008,17 @@ void CSharedFilesCtrl::ShowFilesCount()
 {
 	wxStaticText *label = CastByName("sharedFilesLabel", GetParent(), wxStaticText);
 
-	label->SetLabel(CFormat(_("Shared Files (%i)")) % ItemDataCount());
+	if (m_hashingRemaining > 0) {
+		// Startup is still hashing files the scan found; they join the list
+		// as each one finishes. Said here rather than in a dialog: it is
+		// progress, not something to acknowledge (#853).
+		label->SetLabel(CFormat(wxPLURAL("Shared Files (%i, hashing %u more)",
+					"Shared Files (%i, hashing %u more)",
+					m_hashingRemaining)) %
+				ItemDataCount() % m_hashingRemaining);
+	} else {
+		label->SetLabel(CFormat(_("Shared Files (%i)")) % ItemDataCount());
+	}
 
 	// Combined size of the shown files. The label lives in the statistics box
 	// (the bottom pane of the shared splitter), a different window from this

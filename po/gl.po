@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:13+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -347,13 +347,6 @@ msgid "Starting up"
 msgstr "Comezar"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Arranque da rede"
 
@@ -485,11 +478,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Nome do servidor avisado"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Gardando parte %u de %u do ficheiro"
 
 #: src/amule.cpp
 #, c-format
@@ -7048,6 +7036,13 @@ msgstr[0] "Recargar os seus ficheiros compartidos"
 msgstr[1] "Recargar os seus ficheiros compartidos"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Ficheiros compartidos (%i)"
+msgstr[1] "Ficheiros compartidos (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Ficheiros compartidos (%i)"
@@ -8756,6 +8751,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Gardando parte %u de %u do ficheiro"
 
 #, c-format
 #~ msgid ""

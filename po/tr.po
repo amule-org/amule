@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -328,13 +328,6 @@ msgid "Starting up"
 msgstr "Başlat"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Ağ başlatması"
 
@@ -464,11 +457,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Sunucu makine adı uyarıldı"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "ParçaDosyası %u, %u'da kaydediliyor"
 
 #: src/amule.cpp
 #, c-format
@@ -7000,6 +6988,13 @@ msgstr[0] "Paylaşılan dosyalarınızı yeniden yükleyin"
 msgstr[1] "Paylaşılan dosyalarınızı yeniden yükleyin"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Paylaşılan Dosyalar (%i)"
+msgstr[1] "Paylaşılan Dosyalar (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Paylaşılan Dosyalar (%i)"
@@ -8712,6 +8707,10 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "ParçaDosyası %u, %u'da kaydediliyor"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "varsayılan Windows kabuk işleyicisi"

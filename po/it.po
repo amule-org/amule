@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:15+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -332,13 +332,6 @@ msgstr "Caricamento dei file condivisi (%u)"
 msgid "Starting up"
 msgstr "Avvio in corso"
 
-#: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "Hashing di %u nuovo file"
-msgstr[1] "Hashing di %u nuovi file"
-
 # AI-GENERATED — please review.
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -473,11 +466,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Nome host del server notificato"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Hashing dei nuovi file (%u di %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -7000,6 +6988,13 @@ msgstr[0] "Esportato %u file condiviso in '%s'"
 msgstr[1] "Esportati %u file condivisi in '%s'."
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "File condivisi (%i)"
+msgstr[1] "File condivisi (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "File condivisi (%i)"
@@ -8711,6 +8706,16 @@ msgstr "Sembra che aMule sia in esecuzione. Chiudilo e riavvia il programma di d
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Rimozione dei dati utente in $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "Hashing di %u nuovo file"
+#~ msgstr[1] "Hashing di %u nuovi file"
+
+#, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Hashing dei nuovi file (%u di %u)"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "il gestore di shell predefinito di Windows"
