@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-07-30 17:31+0200\n"
-"PO-Revision-Date: 2026-08-07 10:24+0000\n"
+"PO-Revision-Date: 2026-08-08 15:56+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -532,7 +532,7 @@ msgstr "Возможные значения поля I<E<lt>параметрE<gt
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get bandwidth limits."
-msgstr "Получить ограничения канала."
+msgstr "Получить ограничения скорости передачи."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -687,7 +687,7 @@ msgstr "Задает указанный параметр."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set bandwidth limits."
-msgstr "Задаёт ограничения канала."
+msgstr "Задаёт ограничения скорости передачи."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1032,7 +1032,7 @@ msgstr "Порт UPnP."
 #. type: Plain text
 #: amuleweb.1.in
 msgid "Enables using gzip compression in HTTP traffic to save bandwidth."
-msgstr "Включает использование gzip-сжатия HTTP данных для уменьшения трафика."
+msgstr "Включает использование gzip-сжатия HTTP-данных для уменьшения трафика."
 
 #. type: Plain text
 #: amuleweb.1.in

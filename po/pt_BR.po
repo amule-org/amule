@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-08 15:17+0200\n"
-"PO-Revision-Date: 2026-08-07 10:18+0000\n"
+"PO-Revision-Date: 2026-08-08 15:49+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -1622,7 +1622,7 @@ msgstr "Pré-visualizar"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "Mostrar no gerenciador de arquivos"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -2279,26 +2279,26 @@ msgstr "ERRO: Falha ao executar o player de mídia externo! Comando: `%s'"
 #: src/FileLaunch.cpp
 #, c-format
 msgid "The configured video player was not found: %s"
-msgstr ""
+msgstr "O tocador de vídeo configurado não foi encontrado: %s"
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
-msgstr ""
+msgstr "Não foi possível abrir '%s': o arquivo não está presente neste computador."
 
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
-msgstr ""
+msgstr "Visualizar antecipadamente um download incompleto necessita de um tocador de vídeo: o arquivo parcialmente baixado não tem um tipo que o sistema consiga abrir sozinho. Um tipo pode ser configurado em Preferências -> Geral."
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
+msgstr "ERRO: Falha ao abrir '%s' com o aplicativo padrão."
 
 #: src/FileLaunch.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERRO: Falha ao abrir partfile '%s'"
+msgstr "ERRO: Falha ao mostrar '%s' no gerenciador de arquivos."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"

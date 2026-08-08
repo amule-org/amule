@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-08 15:17+0200\n"
-"PO-Revision-Date: 2026-08-07 10:20+0000\n"
+"PO-Revision-Date: 2026-08-08 15:51+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -1632,7 +1632,7 @@ msgstr "Предпросмотр"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "Показать в файловом менеджере"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -2292,26 +2292,26 @@ msgstr "ОШИБКА: невозможно запустить проигрыва
 #: src/FileLaunch.cpp
 #, c-format
 msgid "The configured video player was not found: %s"
-msgstr ""
+msgstr "Настроенный проигрыватель видео не найден: %s"
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
-msgstr ""
+msgstr "Невозможно открыть «%s»: файл отсутствует на этом компьютере."
 
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
-msgstr ""
+msgstr "Для предпросмотра незавершённого скачивания нужен проигрыватель видео: частично скачанный файл не имеет типа, который система может открыть сама. Его можно настроить в Настройки → Основные."
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
+msgstr "ОШИБКА: не удалось открыть «%s» стандартным приложением."
 
 #: src/FileLaunch.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ОШИБКА: не удалось открыть частично закаченный '%s'"
+msgstr "ОШИБКА: не удалось показать «%s» в файловом менеджере."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -2359,7 +2359,7 @@ msgstr "Выберите ник, который увидят другие уча
 
 #: src/FirstRunWizard.cpp
 msgid "Connection & bandwidth"
-msgstr "Соединение и пропускная способность"
+msgstr "Соединение и скорость передачи"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -3990,7 +3990,7 @@ msgstr "Проигрыватель видео"
 
 #: src/muuli_wdr.cpp
 msgid "Bandwidth limits"
-msgstr "Ограничения канала"
+msgstr "Ограничения скорости передачи"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4425,7 +4425,7 @@ msgstr "Период повторного запроса источников (�
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
-msgstr "Размер буфера: 240000 байт"
+msgstr "Размер буфера файла: 240000 байт"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
@@ -5189,8 +5189,8 @@ msgstr "Отключено [%s]"
 #: src/OtherFunctions.cpp
 msgid "byte"
 msgid_plural "bytes"
-msgstr[0] "Б"
-msgstr[1] "байт"
+msgstr[0] "байт"
+msgstr[1] "байта"
 msgstr[2] "байт"
 
 #: src/OtherFunctions.cpp
@@ -7501,7 +7501,7 @@ msgstr "Текущий уровень IP-фильтра: %d.\n"
 #: src/TextClient.cpp
 #, c-format
 msgid "Bandwidth limits: Up: %u kB/s, Down: %u kB/s.\n"
-msgstr "Ограничения канала: Отд: %u КБ/с, Скач: %u КБ/с.\n"
+msgstr "Ограничения скорости передачи: Отд: %u КБ/с, Скач: %u КБ/с.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -7773,7 +7773,7 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Set bandwidth limits."
-msgstr "Задаёт ограничения канала."
+msgstr "Задаёт ограничения скорости передачи."
 
 #: src/TextClient.cpp
 msgid "The value given to these commands has to be in kilobytes/sec.\n"
@@ -7825,7 +7825,7 @@ msgstr "Получить уровень IP фильтрации."
 
 #: src/TextClient.cpp
 msgid "Get bandwidth limits."
-msgstr "Получить ограничения канала."
+msgstr "Получить ограничения скорости передачи."
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."

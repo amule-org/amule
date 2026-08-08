@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-08 15:17+0200\n"
-"PO-Revision-Date: 2026-08-07 10:15+0000\n"
+"PO-Revision-Date: 2026-08-08 16:05+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -669,9 +669,9 @@ msgid "Navigate"
 msgstr "Naviga"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "Messaggio del server: %s"
+msgstr "Spazio libero: %s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -1626,7 +1626,7 @@ msgstr "Anteprima"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "Mostra nel file manager"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -2283,26 +2283,26 @@ msgstr "ERRORE: Impossibile eseguire il lettore multimediale esterno! Comando: `
 #: src/FileLaunch.cpp
 #, c-format
 msgid "The configured video player was not found: %s"
-msgstr ""
+msgstr "Il lettore video configurato non è stato trovato: %s"
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
-msgstr ""
+msgstr "Impossibile aprire '%s': il file non è presente su questo computer."
 
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
-msgstr ""
+msgstr "Per visualizzare in anteprima un download non completato è necessario un lettore video: il file parzialmente scaricato non ha un formato che il sistema possa aprire automaticamente. È possibile impostarne uno in Preferenze -> Generali."
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
+msgstr "ERRORE: Impossibile aprire '%s' con l'applicazione predefinita."
 
 #: src/FileLaunch.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERRORE: Apertura del file Part fallita '%s'"
+msgstr "ERRORE: impossibile visualizzare '%s' nel file manager."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -6613,9 +6613,8 @@ msgid "Are you sure you want to delete the static server %s"
 msgstr "Sei sicuro di voler eliminare il server statico %s"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "ms"
-msgstr "min"
+msgstr "ms"
 
 #: src/ServerListCtrl.cpp
 #, c-format

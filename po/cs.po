@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-08 15:17+0200\n"
-"PO-Revision-Date: 2026-08-07 10:09+0000\n"
+"PO-Revision-Date: 2026-08-08 15:40+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -181,7 +181,7 @@ msgid ""
 msgstr ""
 "aMule byla přidána do nabídky aplikací. Nyní ji můžete spustit z vašeho seznamu aplikací a spouštěč spustí tento stejný AppImage.\n"
 "\n"
-"Na některých stolních počítačích, aMule může být nutné restartovat pro spárování ikony doku / panelu úloh se spouštěčem. Moderní kompozitory Wayland (GNOME, KDE) toto provedou živě za chodu, ale pokud ikona zůstává generická, tak je restartování spolehlivým řešením.\n"
+"Na některých stolních počítačích, aMule může být nutné restartovat pro přidružení ikony doku / panelu úloh se spouštěčem. Moderní kompozitory Wayland (GNOME, KDE) toto provedou živě za chodu, ale pokud ikona zůstává generická, tak je restartování spolehlivým řešením.\n"
 "\n"
 "Restartovat aMule nyní?"
 
@@ -208,7 +208,7 @@ msgstr "VAROVÁNÍ: Nemůžete přidat sebe jako zdroj pro eD2k odkaz, když má
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "Oprávnění pro %s byla omezena pouze na vlastníka."
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -253,12 +253,12 @@ msgstr "Výstup paměti pro aMule ukončení:"
 #: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "Přiřazování P2P síťového provozu aMule k rozhraní: %s (Aktualizace HTTP používají výchozí trasu)"
+msgstr "Přidružování P2P síťového provozu aMule k rozhraní: %s (Aktualizace HTTP používají výchozí trasu)"
 
 #: src/amule.cpp
 #, c-format
 msgid "Binding all network traffic to interface: %s"
-msgstr "Přiřazování veškerého síťového provozu k rozhraní: %s"
+msgstr "Přidružení veškerého síťového provozu k rozhraní: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -268,7 +268,7 @@ msgstr "VAROVÁNÍ: nastavené síťové rozhraní '%s' nebylo nalezeno - síťo
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr "VAROVÁNÍ: vázání na síťové rozhraní '%s' vyžaduje zvýšená oprávnění a nebylo použito - síťový provoz může odcházet přes výchozí trasu. Udělte danou schopnost (např. 'sudo setcap cap_net_raw+ep' binárnímu souboru aMule) nebo spusťte program s dostatečnými oprávněními."
+msgstr "VAROVÁNÍ: přidružení k síťovému rozhraní '%s' vyžaduje zvýšená oprávnění a nebylo použito - síťový provoz může odcházet přes výchozí trasu. Udělte danou schopnost (např. 'sudo setcap cap_net_raw+ep' binárnímu souboru aMule) nebo spusťte program s dostatečnými oprávněními."
 
 #: src/amule.cpp
 #, c-format
@@ -301,22 +301,20 @@ msgstr "VAROVÁNÍ"
 
 #: src/amule.cpp
 msgid "Initializing network"
-msgstr ""
+msgstr "Zavádění sítě"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "Načítám dočasné soubory z %s"
+msgstr "Načítání dočasných souborů"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "Načítám dočasné soubory z %s"
+msgstr "Načítání dočasných souborů (%u z %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "Znovu načíst vaše sdílené soubory"
+msgstr "Načítání sdílených souborů"
 
 #: src/amule.cpp
 #, c-format
@@ -354,7 +352,7 @@ msgstr "webserver běží s PID %d"
 
 #: src/amule.cpp
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr ""
+msgstr "Požádali jste o spuštění webového serveru po startu, avšak binární soubor amuleweb nelze spustit. Nainstalujte balíček obsahující webový server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_WEBSERVER=YES a pak jej nainstalujte."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -364,26 +362,26 @@ msgstr "CHYBA"
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr ""
+msgstr "Nebylo možné zapsat token amuleapi EC do %s; amuleapi se tedy vrátí k použití nastaveného hesla."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "amuleapi running on pid %d"
-msgstr "webserver běží s PID %d"
+msgstr "amuleapi běží na pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr ""
+msgstr "Požádali jste o spuštění amuleapi po startu, avšak binární soubor amuleapi nelze spustit. Nainstalujte balíček obsahující REST API server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_AMULEAPI=YES a pak jej nainstalujte."
 
 #: src/amule.cpp
 #, c-format
 msgid "External connection: could not bind to '%s', listening on 127.0.0.1 only."
-msgstr ""
+msgstr "Externí spojení: není možné přidružit k '%s', naslouchání pouze na 127.0.0.1."
 
 #: src/amule.cpp
 #, c-format
 msgid "Could not bind ports to the specified address: %s"
-msgstr ""
+msgstr "Nebylo možné přidružit porty k zadané adrese: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -4010,7 +4008,7 @@ msgstr "UPnP TCP port (volitelné):"
 
 #: src/muuli_wdr.cpp
 msgid "Bind local address to IP (empty for any):"
-msgstr ""
+msgstr "Přidružit místní adresu k IP (prázdné pro jakoukoli):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
@@ -4018,11 +4016,11 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Bind to network interface (empty for any):"
-msgstr ""
+msgstr "Přidružit k síťovému rozhraní (prázdné pro všechna):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
-msgstr ""
+msgstr "Jen pro pokročilé uživatele: přiřazení veškerého síťového provozu aMule k jednomu síťovému rozhraní, vybranému ze seznamu nebo zadanému podle jména (např. tun0, eth0, en0) nebo indexu. Na rozdíl od přidružení k IP toto brání únikům síťového provozu výchozí trasou - užitečné při používání VPN. Nevyžaduje žádná zvýšená oprávnění."
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
@@ -5865,9 +5863,8 @@ msgid "- UDP port changed.\n"
 msgstr "- UDP port změněn.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "Externí připojení uzavřeno."
+msgstr "- Bylo změněno přidružení k síťovému rozhraní.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
