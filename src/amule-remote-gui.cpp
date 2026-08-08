@@ -1030,7 +1030,23 @@ void CamuleRemoteGuiApp::OnECInitDone(wxEvent &)
 
 void CamuleRemoteGuiApp::OnNotifyEvent(CMuleGUIEvent &evt)
 {
-	evt.Notify();
+	// Same guard CamuleApp::OnNotifyEvent has, and for the same reason: this
+	// is the queued half of MuleNotify. HandleNotification() runs a
+	// notification inline when it is already on the main thread, and refuses
+	// to when there is no window to update; off the main thread it queues a
+	// CMuleGUIEvent instead, and that one lands here -- possibly long after,
+	// and possibly after the window is gone. amulegui destroys its dialog
+	// whenever the EC link drops (ShutDown() nulls amuledlg), a remote core
+	// restart being the everyday way that happens, and the pending-event
+	// queue is not drained first. The handlers behind Notify() read
+	// theApp->amuledlg->m_transferwnd and friends without checking, so a
+	// notification arriving in that window dereferenced null: reported as
+	// EXC_BAD_ACCESS at 0x3c0, which is exactly CamuleDlg::m_transferwnd's
+	// offset. A notification with no window to update has nothing to do, so
+	// it is dropped rather than delivered.
+	if (amuledlg) {
+		evt.Notify();
+	}
 }
 
 void CamuleRemoteGuiApp::Startup()
