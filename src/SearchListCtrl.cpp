@@ -177,7 +177,7 @@ CSearchListCtrl::CSearchListCtrl(
 
 	// Default sort is by name, ascending.
 	m_sort_orders.emplace_back(CSearchListModel::COL_NAME, 0);
-	GetColumn(CSearchListModel::COL_NAME)->SetSortOrder(true);
+	ShowSortCaret(CSearchListModel::COL_NAME, 0);
 
 	// Only load settings for first list, otherwise sync with current lists
 	if (s_lists.empty()) {
@@ -496,12 +496,7 @@ void CSearchListCtrl::SyncLists(CSearchListCtrl *src, CSearchListCtrl *dst)
 		dst->m_sort_orders = src->m_sort_orders;
 		if (!dst->m_sort_orders.empty()) {
 			const CColPair &primary = dst->m_sort_orders.front();
-			for (unsigned i = 0; i < dst->RealColumnCount(); ++i) {
-				if (i != primary.first && dst->GetColumn(i)->IsSortKey()) {
-					dst->GetColumn(i)->UnsetAsSortKey();
-				}
-			}
-			dst->GetColumn(primary.first)->SetSortOrder(!(primary.second & SORT_DES));
+			dst->ShowSortCaret(primary.first, primary.second);
 			dst->GetModel()->Resort();
 		}
 	}

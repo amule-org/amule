@@ -685,6 +685,15 @@ public:
 	bool CopyTextToClipboard(wxString strText);
 	void ResetTitle();
 
+	/**
+	 * Asks the platform to follow the desktop's light/dark setting.
+	 *
+	 * Must be called from OnInit() before the first window is created: wx
+	 * answers CannotChange once one exists, so anywhere later silently does
+	 * nothing.
+	 */
+	static void FollowSystemAppearance();
+
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 	virtual int ShowAlert(wxString msg, wxString title, int flags);
 
