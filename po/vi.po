@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -4163,6 +4163,30 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Remote prefix:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Local prefix:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr ""
 
@@ -5541,6 +5565,10 @@ msgid "no options available"
 msgstr ""
 
 #: src/Preferences.cpp
+msgid "Invalid path mapping found, skipping"
+msgstr ""
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr ""
 
@@ -5559,6 +5587,10 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
@@ -6029,6 +6061,26 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Remote prefix"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Local prefix"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Choose the local folder"
 msgstr ""
 
 #: src/SearchDlg.cpp

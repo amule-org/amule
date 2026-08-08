@@ -488,6 +488,49 @@ public:
 
 	wxArrayString addresses_list;
 
+	// A user-configured remote->local path-prefix substitution, for amuleGUI
+	// (CLIENT_GUI) against a daemon on a different machine whose filesystem is
+	// otherwise reachable (a Samba/NFS mount, say). remotePrefix is an opaque
+	// string in the daemon's own OS path syntax -- never wrapped in CPath,
+	// which has no notion of a second machine's separator convention.
+	// localPrefix is a real path on this machine, so it *is* a CPath.
+	struct PathMapping
+	{
+		wxString remotePrefix;
+		CPath localPrefix;
+	};
+	typedef std::vector<PathMapping> PathMappingList;
+
+	const PathMappingList &GetPathMappings() const { return m_pathMappings; }
+	void SetPathMappings(const PathMappingList &mappings) { m_pathMappings = mappings; }
+
+	/**
+	 * Rewrites `remotePath` (as reported by the daemon, e.g. via
+	 * EC_TAG_KNOWNFILE_PATH) through the first configured mapping whose
+	 * remotePrefix is a prefix of it -- list order decides, not prefix
+	 * length. Returns `remotePath` unchanged when no mapping matches
+	 * (including when the list is empty, the default), or when this is a
+	 * non-CLIENT_GUI build (the monolithic app's own paths never need
+	 * remapping). Pure string substitution: the daemon-side comparison
+	 * never goes through CPath, which would silently apply this host's
+	 * separator conventions to a path that isn't this host's.
+	 */
+	wxString ApplyPathMapping(const wxString &remotePath) const;
+
+	/**
+	 * Trims trailing separators from a daemon-supplied path prefix, in either
+	 * OS convention.
+	 *
+	 * Not StripSeparators(), which uses *this* host's separator set: on a
+	 * POSIX build that set has no '\\', so a Windows daemon's "D:\\dl\\" would
+	 * keep its trailing separator and ApplyPathMapping() would run the two
+	 * halves together with nothing between them -- the same corruption the
+	 * trailing-separator trim exists to prevent, surviving in the mirror
+	 * direction. The daemon's OS is not knowable here, which is also why the
+	 * prefix boundary test accepts either character.
+	 */
+	static wxString TrimRemotePrefix(const wxString &prefix);
+
 	static bool AutoConnectStaticOnly() { return s_autoconnectstaticonly; }
 	static void SetAutoConnectStaticOnly(bool val) { s_autoconnectstaticonly = val; }
 	static bool GetUPnPEnabled() { return s_UPnPEnabled; }
@@ -957,6 +1000,19 @@ protected:
 private:
 	void LoadPreferences();
 	void SavePreferences();
+
+	// GUI-local only: never read from or written to over EC, unlike
+	// LoadCats()/SaveCats() (daemon-owned, EC-refreshed) or
+	// LoadSharedDirsRemote()/SendSharedDirsToRemote() (daemon round-trip).
+	// Group-per-row shape mirrors SaveCats()'s /Cat#i pattern, but these
+	// read/write wxConfigBase::Get() directly rather than going through
+	// LoadAllItems()/SaveAllItems()'s Cfg_Base walk, which is what
+	// CEC_Prefs_Packet draws from -- kept separate is what keeps path
+	// mappings out of any EC exchange.
+	void LoadPathMappings();
+	void SavePathMappings();
+
+	PathMappingList m_pathMappings;
 
 protected:
 	static wxString s_configDir;

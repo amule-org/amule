@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: 2026-08-07 10:18+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -4285,6 +4285,32 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote prefix:"
+msgstr "Serwer zdalny"
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Local prefix:"
+msgstr "Serwer lokalny"
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr "Wykresy"
 
@@ -5699,6 +5725,11 @@ msgid "no options available"
 msgstr "nie ma dostępnych opcji"
 
 #: src/Preferences.cpp
+#, fuzzy
+msgid "Invalid path mapping found, skipping"
+msgstr "Znaleziono nieprawidłową kategorie, pomijam"
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr "Znaleziono nieprawidłową kategorie, pomijam"
 
@@ -5718,6 +5749,10 @@ msgstr "Połączenie"
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Katalogi"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -6237,6 +6272,29 @@ msgstr "Przeładowuje listę udostępnionych plików."
 #, fuzzy
 msgid "Shared folder"
 msgstr "Udostępnione foldery"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Remote prefix"
+msgstr "Serwer zdalny"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Local prefix"
+msgstr "Serwer lokalny"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose the local folder"
+msgstr "Wybierz folder na %s"
 
 #: src/SearchDlg.cpp
 #, fuzzy

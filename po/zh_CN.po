@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 13:16+0200\n"
 "PO-Revision-Date: 2026-08-07 10:23+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -4256,6 +4256,32 @@ msgid "Show how many shared files the current pattern would exclude."
 msgstr "显示当前模式会排除多少共享文件。"
 
 #: src/muuli_wdr.cpp
+msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Path mappings"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote prefix:"
+msgstr "远程服务器"
+
+#: src/muuli_wdr.cpp
+msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Local prefix:"
+msgstr "本地服务器"
+
+#: src/muuli_wdr.cpp
+msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Graphs"
 msgstr "图表"
 
@@ -5649,6 +5675,11 @@ msgid "no options available"
 msgstr "选项不可用"
 
 #: src/Preferences.cpp
+#, fuzzy
+msgid "Invalid path mapping found, skipping"
+msgstr "发现无效的分类，跳过"
+
+#: src/Preferences.cpp
 msgid "Invalid category found, skipping"
 msgstr "发现无效的分类，跳过"
 
@@ -5668,6 +5699,10 @@ msgstr "连接"
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "目录"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -6167,6 +6202,29 @@ msgstr "正重新加载共享文件：扫描了 %u 个文件"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Shared folder"
 msgstr "共享的文件夹"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Remote prefix"
+msgstr "远程服务器"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Local prefix"
+msgstr "本地服务器"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Both the remote and local prefix must be filled in."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "This remote prefix is already mapped."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose the local folder"
+msgstr "为%s选择文件夹"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
