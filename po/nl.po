@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 09:35+0200\n"
 "PO-Revision-Date: 2026-08-07 10:17+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -1050,7 +1050,7 @@ msgstr "Nieuw bericht van '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Gebruiker %s (%u) vroeg uw gedeelde-bestandenlijst van niet-bestaande map '%s' op -> Genegeerd"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "WAARSCHUWING: %s kan niet geopend worden."
@@ -1059,7 +1059,7 @@ msgstr "WAARSCHUWING: %s kan niet geopend worden."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "WAARSCHUWING: Geannuleerde-bestandenlijst beschadigd, bevat ongeldige header."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "IO-fout bij het lezen van bestand %s: %s"
@@ -6249,6 +6249,31 @@ msgstr "Min grootte moet kleiner zijn dan max grootte. Max grootte wordt genegee
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Standaard"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "WAARSCHUWING: Bekende-bestandenlijst beschadigd, bevat ongeldige header."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Ongeldige vermelding in bekende-bestandenlijst, bestand kan beschadigd zijn: "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Ongeldige vermelding in bekende-bestandenlijst, bestand kan beschadigd zijn: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

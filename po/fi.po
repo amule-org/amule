@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 09:35+0200\n"
 "PO-Revision-Date: 2026-08-07 10:12+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -1050,7 +1050,7 @@ msgstr "Viesti käyttäjältä '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Käyttäjä %s (%u) kysyi listaa jaetuista tiedostoista olemattomassa kansiossa '%s' -> Jätettiin huomioimatta"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "VAROITUS: Tiedostoa %s ei voida avata."
@@ -1059,7 +1059,7 @@ msgstr "VAROITUS: Tiedostoa %s ei voida avata."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "VAROITUS: Peruutettujen latausten lista on turmeltunut, sisältää epäkelvon otsakkeen."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "IO-virhe luettaessa tiedostoa %s: %s"
@@ -6247,6 +6247,31 @@ msgstr "Vähimmäiskoon pitää olla pienempi kuin enimmäiskoon. Enimmäiskokoa
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Kaikki"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "VAROITUS: Tunnettujen tiedostojen lista on turmeltunut, sisältää epäkelvon otsakkeen."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Epäkelpo merkintä tunnettujen tiedostojen lista -tiedostossa, tiedosto saattaa olla turmeltunut: "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Epäkelpo merkintä tunnettujen tiedostojen lista -tiedostossa, tiedosto saattaa olla turmeltunut: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

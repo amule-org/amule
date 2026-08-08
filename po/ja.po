@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 09:35+0200\n"
 "PO-Revision-Date: 2026-08-07 10:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -1052,7 +1052,7 @@ msgstr "%s（IP：%s）から新しいメッセージが届きました"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "ユーザ %s（%u）はあなたのディレクトリ %s の共有ファイル・リストを要求しました -> 拒否しました"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, fuzzy, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "警告：known.metを開くことはできません。"
@@ -1062,7 +1062,7 @@ msgstr "警告：known.metを開くことはできません。"
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "警告：Knownfileリストは破損され、不正なヘッダーが含まれています。"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, fuzzy, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "known.metファイル%sを読む時にIOエラーが発生しました"
@@ -6243,6 +6243,29 @@ msgstr "最小サイズは最大サイズより小さくなければなりませ
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "メイン"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "警告：Knownfileリストは破損され、不正なヘッダーが含まれています。"
+
+#: src/SearchList.cpp
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr ""
+
+#: src/SearchList.cpp
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr ""
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
