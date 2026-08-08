@@ -242,7 +242,51 @@ int CMuleDataViewCtrl::CompareItems(const wxDataViewItem &item1, const wxDataVie
 	return 0;
 }
 
-void CMuleDataViewCtrl::ApplySorting(unsigned column, unsigned order)
+void CMuleDataViewCtrl::ShowSortCaret(unsigned column, unsigned order, SortTrigger trigger)
+{
+	if (column >= RealColumnCount()) {
+		return;
+	}
+
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
+		if (i != column && GetColumn(i)->IsSortKey()) {
+			GetColumn(i)->UnsetAsSortKey();
+		}
+	}
+
+	bool ascending = !(order & SORT_DES);
+
+#ifdef __WXGTK__
+	// Two GTK quirks stack up here, and they only cancel each other out on
+	// the click path -- which is why the caret used to come back up the wrong
+	// way round after a restart, then correct itself the moment a header was
+	// clicked.
+	//
+	// The first is the glyph: with gtk-alternative-sort-arrows off (the
+	// default) GTK draws GTK_SORT_ASCENDING as "pan-down-symbolic", so an A-Z
+	// sort gets a *down* arrow, the opposite of macOS and MSW.
+	//
+	// The second is that GTK sorts on its own. wx makes every sortable column
+	// call gtk_tree_view_column_set_sort_column_id(), which leaves GTK's own
+	// handler connected: on the button *release*, after this control has
+	// already handled the button press and set the caret, GTK flips the order
+	// it finds and writes it back. Two inversions, so a clicked header ends
+	// up looking right.
+	//
+	// Nothing restores a saved sort, so hand wx the flipped value there and
+	// both paths agree. Only the arrow is affected -- rows are ordered from
+	// m_sort_orders, and the model deliberately ignores wx's ascending flag.
+	if (trigger == SortTrigger::Programmatic) {
+		ascending = !ascending;
+	}
+#else
+	wxUnusedVar(trigger);
+#endif
+
+	GetColumn(column)->SetSortOrder(ascending);
+}
+
+void CMuleDataViewCtrl::ApplySorting(unsigned column, unsigned order, SortTrigger trigger)
 {
 	// Push to the front: the most recently clicked column is primary, the
 	// rest stay as tie-breakers, matching CMuleListCtrl::SetSorting().
@@ -254,14 +298,7 @@ void CMuleDataViewCtrl::ApplySorting(unsigned column, unsigned order)
 	}
 	m_sort_orders.emplace_front(column, order);
 
-	if (column < RealColumnCount()) {
-		for (unsigned i = 0; i < RealColumnCount(); ++i) {
-			if (i != column && GetColumn(i)->IsSortKey()) {
-				GetColumn(i)->UnsetAsSortKey();
-			}
-		}
-		GetColumn(column)->SetSortOrder(!(order & SORT_DES));
-	}
+	ShowSortCaret(column, order, trigger);
 
 	OnSortingChanged();
 }
@@ -371,7 +408,7 @@ void CMuleDataViewCtrl::OnColumnHeaderClick(wxDataViewEvent &event)
 		}
 	}
 
-	ApplySorting(column, sort_order);
+	ApplySorting(column, sort_order, SortTrigger::HeaderClick);
 	SaveColumnSettings();
 }
 

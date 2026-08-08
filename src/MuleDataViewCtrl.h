@@ -75,6 +75,18 @@ public:
 	};
 
 	/**
+	 * What asked for a sort, which decides how the header caret is drawn.
+	 *
+	 * Only wxGTK cares, and only because it takes a second run at the caret
+	 * on its own after a header click -- see ShowSortCaret().
+	 */
+	enum class SortTrigger
+	{
+		Programmatic, //!< aMule chose the order: startup, defaults, list sync
+		HeaderClick   //!< the user clicked the header
+	};
+
+	/**
 	 * Whether a column is hidden.
 	 *
 	 * Tracked here rather than derived from the control: a hidden
@@ -164,7 +176,16 @@ protected:
 	int CompareItems(const wxDataViewItem &item1, const wxDataViewItem &item2) const;
 
 	//! Pushes a column to the front of the sort chain and applies the caret.
-	void ApplySorting(unsigned column, unsigned order);
+	void ApplySorting(unsigned column, unsigned order, SortTrigger trigger = SortTrigger::Programmatic);
+
+	/**
+	 * Draws the header caret for `order` on `column` and clears it elsewhere.
+	 *
+	 * Split out of ApplySorting() for the lists that keep the sort chain in
+	 * step by hand (CSearchListCtrl mirrors one list's order onto the others)
+	 * and must not re-enter the chain bookkeeping.
+	 */
+	void ShowSortCaret(unsigned column, unsigned order, SortTrigger trigger = SortTrigger::Programmatic);
 
 	void LoadColumnSettings();
 	void SaveColumnSettings();
