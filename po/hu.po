@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:17+0200\n"
+"POT-Creation-Date: 2026-08-08 18:46+0200\n"
 "PO-Revision-Date: 2026-08-08 15:45+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -4256,22 +4256,22 @@ msgstr ""
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Path mappings"
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Remote prefix:"
+msgid "Remote prefix"
 msgstr "Távoli kiszolgáló"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Local prefix:"
+msgid "Local prefix"
 msgstr "Helyi kiszolgáló"
 
 #: src/muuli_wdr.cpp
@@ -5707,10 +5707,6 @@ msgstr "Csatlakozás"
 msgid "Directories"
 msgstr "Mappák"
 
-#: src/PrefsUnifiedDlg.cpp
-msgid "Path Mappings"
-msgstr ""
-
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Kiszolgálók"
@@ -6217,16 +6213,6 @@ msgid "Shared folder"
 msgstr "Megosztott mappák"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Remote prefix"
-msgstr "Távoli kiszolgáló"
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Local prefix"
-msgstr "Helyi kiszolgáló"
-
-#: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
 msgstr ""
 
@@ -6286,11 +6272,6 @@ msgstr "FIGYELEM: Az ismert fájlok listája sérült, érvénytelen fejlécet t
 #: src/SearchList.cpp
 #, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Érvénytelen bejegyzés az ismert fájlok listájában, hiba lehet a fájlban: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
 msgstr "Érvénytelen bejegyzés az ismert fájlok listájában, hiba lehet a fájlban: "
 
 #: src/SearchList.cpp
@@ -8780,6 +8761,18 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Remote prefix:"
+#~ msgstr "Távoli kiszolgáló"
+
+#, fuzzy
+#~ msgid "Local prefix:"
+#~ msgstr "Helyi kiszolgáló"
+
+#, fuzzy
+#~ msgid "Invalid entry in stored search list, file may be corrupt: "
+#~ msgstr "Érvénytelen bejegyzés az ismert fájlok listájában, hiba lehet a fájlban: "
 
 #, fuzzy, c-format
 #~ msgid "Hashing new files (%u of %u)"

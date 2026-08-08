@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:17+0200\n"
+"POT-Creation-Date: 2026-08-08 18:46+0200\n"
 "PO-Revision-Date: 2026-08-08 15:54+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -4304,22 +4304,22 @@ msgstr ""
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Path mappings"
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Remote prefix:"
+msgid "Remote prefix"
 msgstr "Віддалений сервер"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Local prefix:"
+msgid "Local prefix"
 msgstr "Місцевий сервер"
 
 #: src/muuli_wdr.cpp
@@ -5773,10 +5773,6 @@ msgstr "З'єднання"
 msgid "Directories"
 msgstr "Теки"
 
-#: src/PrefsUnifiedDlg.cpp
-msgid "Path Mappings"
-msgstr ""
-
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Сервери"
@@ -6297,16 +6293,6 @@ msgid "Shared folder"
 msgstr "Спільні теки"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Remote prefix"
-msgstr "Віддалений сервер"
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Local prefix"
-msgstr "Місцевий сервер"
-
-#: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
 msgstr ""
 
@@ -6366,10 +6352,6 @@ msgstr "ЗАСТЕРЕЖЕННЯ: Перелік відомих файлів з�
 
 #: src/SearchList.cpp
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr ""
-
-#: src/SearchList.cpp
-msgid "Invalid entry in stored search list, file may be corrupt: "
 msgstr ""
 
 #: src/SearchList.cpp
@@ -8907,6 +8889,14 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Remote prefix:"
+#~ msgstr "Віддалений сервер"
+
+#, fuzzy
+#~ msgid "Local prefix:"
+#~ msgstr "Місцевий сервер"
 
 #, fuzzy, c-format
 #~ msgid "Hashing new files (%u of %u)"

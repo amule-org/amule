@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 15:17+0200\n"
+"POT-Creation-Date: 2026-08-08 18:46+0200\n"
 "PO-Revision-Date: 2026-08-08 15:43+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -4275,22 +4275,22 @@ msgstr ""
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
 msgstr ""
 
-#: src/muuli_wdr.cpp
-msgid "Path mappings"
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+msgid "Path Mappings"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Remote prefix:"
+msgid "Remote prefix"
 msgstr "Urruneko zerbitzaria"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
-msgid "Local prefix:"
+msgid "Local prefix"
 msgstr "Zerbitzari lokala"
 
 #: src/muuli_wdr.cpp
@@ -5725,10 +5725,6 @@ msgstr "Konexioa"
 msgid "Directories"
 msgstr "Direktorioak"
 
-#: src/PrefsUnifiedDlg.cpp
-msgid "Path Mappings"
-msgstr ""
-
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Zerbitzariak"
@@ -6242,16 +6238,6 @@ msgid "Shared folder"
 msgstr "Partekatutako karpetak"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Remote prefix"
-msgstr "Urruneko zerbitzaria"
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Local prefix"
-msgstr "Zerbitzari lokala"
-
-#: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
 msgstr ""
 
@@ -6312,11 +6298,6 @@ msgstr "Abisua: Fitxategi ezagun zerrenda hondaturik dago, buru baliogabeak ditu
 #: src/SearchList.cpp
 #, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Okerreko sarrera fitxategi ezagunen zerrendako fitxategian, hondaturik egon liteke: "
-
-#: src/SearchList.cpp
-#, fuzzy
-msgid "Invalid entry in stored search list, file may be corrupt: "
 msgstr "Okerreko sarrera fitxategi ezagunen zerrendako fitxategian, hondaturik egon liteke: "
 
 #: src/SearchList.cpp
@@ -8813,6 +8794,18 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Remote prefix:"
+#~ msgstr "Urruneko zerbitzaria"
+
+#, fuzzy
+#~ msgid "Local prefix:"
+#~ msgstr "Zerbitzari lokala"
+
+#, fuzzy
+#~ msgid "Invalid entry in stored search list, file may be corrupt: "
+#~ msgstr "Okerreko sarrera fitxategi ezagunen zerrendako fitxategian, hondaturik egon liteke: "
 
 #, fuzzy, c-format
 #~ msgid "Hashing new files (%u of %u)"
