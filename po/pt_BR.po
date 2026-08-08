@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:18+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -332,13 +332,6 @@ msgid "Starting up"
 msgstr "Iniciando"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "Calculando o hash de %u novo arquivo"
-msgstr[1] "Calculando os hashes de %u novos arquivos"
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "Inicialização da Rede"
 
@@ -469,11 +462,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "Nome do servidor notificado"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Calculando o hash de arquivos novos (%u de %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -6996,6 +6984,13 @@ msgstr[0] "Exportado %u arquivo compartilhado para '%s'."
 msgstr[1] "Exportados %u arquivos compartilhados para '%s'."
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Arquivos Compartilhados (%i)"
+msgstr[1] "Arquivos Compartilhados (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Arquivos Compartilhados (%i)"
@@ -8708,6 +8703,16 @@ msgstr "O aMule parece estar rodando. Por favor, feche-o e rode o desinstalador 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Removendo os dados do usuário em $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "Calculando o hash de %u novo arquivo"
+#~ msgstr[1] "Calculando os hashes de %u novos arquivos"
+
+#, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Calculando o hash de arquivos novos (%u de %u)"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "O manipulador de shell default do Windows"

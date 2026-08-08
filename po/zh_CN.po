@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:23+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -329,13 +329,6 @@ msgid "Starting up"
 msgstr "启动中"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] "正计算 %u 个新文件的哈希值"
-msgstr[1] "正计算 %u 个新文件的哈希值"
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr "网络引导"
 
@@ -465,11 +458,6 @@ msgstr ""
 #: src/amule.cpp
 msgid "Server hostname notified"
 msgstr "获取服务器名称"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "正计算新文件哈希值（第 %u 个，共 %u 个）"
 
 #: src/amule.cpp
 #, c-format
@@ -6993,6 +6981,13 @@ msgstr[0] "导出了 %u 个共享文件到 '%s'。"
 msgstr[1] "导出了 %u 个共享文件到 '%s'。"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "共享文件 (%i)"
+msgstr[1] "共享文件 (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "共享文件 (%i)"
@@ -8702,6 +8697,16 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#, c-format
+#~ msgid "Hashing %u new file"
+#~ msgid_plural "Hashing %u new files"
+#~ msgstr[0] "正计算 %u 个新文件的哈希值"
+#~ msgstr[1] "正计算 %u 个新文件的哈希值"
+
+#, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "正计算新文件哈希值（第 %u 个，共 %u 个）"
 
 #~ msgid "the default Windows shell handler"
 #~ msgstr "默认的 Windows 外壳处理器"

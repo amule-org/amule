@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:21+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -327,13 +327,6 @@ msgid "Starting up"
 msgstr "Fillo"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/amule.cpp
 #, fuzzy
 msgid "Network bootstrap"
 msgstr "Rrjetet"
@@ -464,11 +457,6 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "Emri i Serverit:"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr "Duke ngarkuar te dhena nga nje fail i shkarkuar i vjeter (%u te %u)"
 
 #: src/amule.cpp
 #, c-format
@@ -7078,6 +7066,13 @@ msgstr[0] "Ringarko failet e ndara"
 msgstr[1] "Ringarko failet e ndara"
 
 #: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Faile te ndara (%i)"
+msgstr[1] "Faile te ndara (%i)"
+
+#: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Shared Files (%i)"
 msgstr "Faile te ndara (%i)"
@@ -8769,6 +8764,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Hashing new files (%u of %u)"
+#~ msgstr "Duke ngarkuar te dhena nga nje fail i shkarkuar i vjeter (%u te %u)"
 
 #~ msgid "Filter Results"
 #~ msgstr "Rezultatet e filterit"

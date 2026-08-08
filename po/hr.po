@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-07 23:15+0200\n"
+"POT-Creation-Date: 2026-08-08 10:40+0200\n"
 "PO-Revision-Date: 2026-08-07 10:14+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -320,14 +320,6 @@ msgid "Starting up"
 msgstr "Start"
 
 #: src/amule.cpp
-#, c-format
-msgid "Hashing %u new file"
-msgid_plural "Hashing %u new files"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: src/amule.cpp
 msgid "Network bootstrap"
 msgstr ""
 
@@ -450,11 +442,6 @@ msgstr ""
 #, fuzzy
 msgid "Server hostname notified"
 msgstr "Ime servera :"
-
-#: src/amule.cpp
-#, c-format
-msgid "Hashing new files (%u of %u)"
-msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -7017,6 +7004,14 @@ msgid_plural "Exported %u shared files to '%s'."
 msgstr[0] "Korisnik %s (%u) dijeli direktorije %s"
 msgstr[1] "Korisnik %s (%u) dijeli direktorije %s"
 msgstr[2] "Korisnik %s (%u) dijeli direktorije %s"
+
+#: src/SharedFilesCtrl.cpp
+#, fuzzy, c-format
+msgid "Shared Files (%i, hashing %u more)"
+msgid_plural "Shared Files (%i, hashing %u more)"
+msgstr[0] "Dijeljeni fajlovi (%i)"
+msgstr[1] "Dijeljeni fajlovi (%i)"
+msgstr[2] "Dijeljeni fajlovi (%i)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
