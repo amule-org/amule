@@ -62,7 +62,6 @@
 
 // Custom source
 #include <common/Format.h> // Needed for CFormat (SetConnectButtonState)
-#include "MuleListCtrl.h" // Needed for CMuleListCtrl (commentLstDlg)
 #include "ServerListCtrl.h"
 #include "DownloadListCtrl.h"
 #include "SourceListCtrl.h"
@@ -832,7 +831,7 @@ wxSizer *commentLstDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    CMuleListCtrl *item1 = new CMuleListCtrl( parent, IDC_LST, wxDefaultPosition, wxSize(600,270), wxLC_REPORT|wxSUNKEN_BORDER );
+    wxListCtrl *item1 = new wxListCtrl( parent, IDC_LST, wxDefaultPosition, wxSize(600,270), wxLC_REPORT|wxSUNKEN_BORDER );
     item0->Add( item1, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
     wxFlexGridSizer *item2 = new wxFlexGridSizer( 1, 0, 0, 0 );
     item2->AddGrowableCol( 3 );

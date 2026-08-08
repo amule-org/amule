@@ -27,14 +27,31 @@
 
 #include <wx/colour.h>
 #include <wx/settings.h>
-#include <wx/pen.h>   // needed for wxPenStyle enum values
-#include <wx/brush.h> // needed for wxBrushStyle enum values
-#include <wx/font.h>  // needed for wxFontStyle enum values
+#include <wx/pen.h>    // needed for wxPenStyle enum values
+#include <wx/brush.h>  // needed for wxBrushStyle enum values
+#include <wx/font.h>   // needed for wxFontStyle enum values
+#include <wx/window.h> // Needed for wxWindow::GetBackgroundColour (IsListBackgroundDark)
 #include "Types.h"
 #include <cmath> // Needed for std::lround
 
 class wxPen;
 class wxBrush;
+
+// Palette selector for custom-drawn text in list controls. Reads the
+// control's actual background instead of
+// wxSystemSettings::GetAppearance().IsDark(), because native Win32
+// wxListCtrl (SysListView32) keeps its white background even when the
+// OS reports dark mode via AppsUseLightTheme=0. Foreground colours
+// chosen from IsDark() then render as light text on a still-white
+// list (see issue #274, Windows 11 dark-mode search-tab bug). GTK and
+// macOS do propagate dark backgrounds to lists, so on those platforms
+// this luminance test degrades to the same answer as IsDark() and
+// behaviour is unchanged.
+static inline bool IsListBackgroundDark(const wxWindow *w)
+{
+	const wxColour bg = w->GetBackgroundColour();
+	return (bg.Red() * 299 + bg.Green() * 587 + bg.Blue() * 114) / 1000 < 128;
+}
 
 class CMuleColour
 {

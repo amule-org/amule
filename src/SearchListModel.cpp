@@ -31,7 +31,7 @@
 
 #include "amule.h"          // Needed for theApp
 #include "amuleDlg.h"       // Needed for CamuleDlg, Client_*_Smiley
-#include "MuleListCtrl.h"   // Needed for IsListBackgroundDark
+#include "MuleColour.h"     // Needed for IsListBackgroundDark
 #include "OtherFunctions.h" // Needed for CastItoXBytes, GetFiletypeByName, GetRateString, FormatMediaCodec
 #include "SearchDlg.h"      // Needed for CSearchListCtrl
 #include "SearchFile.h"     // Needed for CSearchFile
@@ -180,7 +180,7 @@ bool CSearchListModel::GetAttr(
 	CSearchFile *file = ToFile(item);
 
 	// Same theme-aware state palette as the old
-	// CSearchListCtrl::UpdateItemColor -- see MuleListCtrl.h's
+	// CSearchListCtrl::UpdateItemColor -- see MuleColour.h's
 	// IsListBackgroundDark() for why the widget's own background is used
 	// rather than wxSystemSettings::GetAppearance().IsDark() alone.
 	const bool isDark = IsListBackgroundDark(m_owner);
