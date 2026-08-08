@@ -3381,8 +3381,9 @@ void PrefsUnifiedDlg::OnPathMappingAdd(wxCommandEvent &WXUNUSED(evt))
 	// substitutes: a trailing separator on the remote prefix silently
 	// corrupts every path it maps (StartsWith() still matches, but the
 	// join then runs the two halves together with nothing between them).
-	const wxString remote =
-		StripSeparators(remoteCtrl->GetValue().Strip(wxString::both), wxString::trailing);
+	// TrimRemotePrefix() rather than StripSeparators() for the remote side:
+	// the prefix is the daemon's, and its convention is not this host's.
+	const wxString remote = CPreferences::TrimRemotePrefix(remoteCtrl->GetValue().Strip(wxString::both));
 	const wxString local =
 		StripSeparators(localCtrl->GetValue().Strip(wxString::both), wxString::trailing);
 	if (remote.IsEmpty() || local.IsEmpty()) {

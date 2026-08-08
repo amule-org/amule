@@ -2190,7 +2190,7 @@ void CPreferences::LoadPathMappings()
 		// existing config saved before this fix, or one hand-edited, can
 		// still carry a trailing separator, and CPath's constructor does
 		// not strip one -- see ApplyPathMapping()'s substitution.
-		mapping.remotePrefix = StripSeparators(cfg->Read("Remote", ""), wxString::trailing);
+		mapping.remotePrefix = TrimRemotePrefix(cfg->Read("Remote", ""));
 		mapping.localPrefix = CPath(StripSeparators(
 			CPath::FromUniv(cfg->Read("Local", "")).GetRaw(), wxString::trailing));
 
@@ -2201,6 +2201,19 @@ void CPreferences::LoadPathMappings()
 		m_pathMappings.push_back(mapping);
 	}
 #endif
+}
+
+wxString CPreferences::TrimRemotePrefix(const wxString &prefix)
+{
+	wxString trimmed = prefix;
+	while (!trimmed.IsEmpty()) {
+		const wxChar last = trimmed.Last();
+		if (last != wxT('/') && last != wxT('\\')) {
+			break;
+		}
+		trimmed.RemoveLast();
+	}
+	return trimmed;
 }
 
 wxString CPreferences::ApplyPathMapping(const wxString &remotePath) const
@@ -2220,7 +2233,19 @@ wxString CPreferences::ApplyPathMapping(const wxString &remotePath) const
 				continue;
 			}
 		}
-		return mapping.localPrefix.GetRaw() + remotePath.Mid(prefixLen);
+		wxString mapped = mapping.localPrefix.GetRaw() + remotePath.Mid(prefixLen);
+#ifdef __WINDOWS__
+		// The remainder is the daemon's, in the daemon's convention, so a
+		// POSIX daemon contributes '/' to a path that is about to be handed
+		// to Win32. Most of Win32 accepts that, but not all of it -- the
+		// "explorer /select," this feature exists to make work is the awkward
+		// one -- so normalise. Safe in this direction only: '/' cannot appear
+		// in a Windows filename, whereas '\\' is a perfectly ordinary
+		// character in a POSIX one, so the mirror rewrite would corrupt
+		// names rather than fix separators.
+		mapped.Replace("/", "\\");
+#endif
+		return mapped;
 	}
 #endif
 	return remotePath;

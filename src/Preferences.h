@@ -517,6 +517,20 @@ public:
 	 */
 	wxString ApplyPathMapping(const wxString &remotePath) const;
 
+	/**
+	 * Trims trailing separators from a daemon-supplied path prefix, in either
+	 * OS convention.
+	 *
+	 * Not StripSeparators(), which uses *this* host's separator set: on a
+	 * POSIX build that set has no '\\', so a Windows daemon's "D:\\dl\\" would
+	 * keep its trailing separator and ApplyPathMapping() would run the two
+	 * halves together with nothing between them -- the same corruption the
+	 * trailing-separator trim exists to prevent, surviving in the mirror
+	 * direction. The daemon's OS is not knowable here, which is also why the
+	 * prefix boundary test accepts either character.
+	 */
+	static wxString TrimRemotePrefix(const wxString &prefix);
+
 	static bool AutoConnectStaticOnly() { return s_autoconnectstaticonly; }
 	static void SetAutoConnectStaticOnly(bool val) { s_autoconnectstaticonly = val; }
 	static bool GetUPnPEnabled() { return s_UPnPEnabled; }
