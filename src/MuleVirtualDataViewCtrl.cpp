@@ -425,12 +425,26 @@ void CMuleVirtualDataViewCtrl::SortList()
 	// different items, so it is re-applied from the item data either way.
 	SetSelectedItemData(selected);
 
+	// Only while the row it lands on is already on screen. Measured on GTK
+	// with wx 3.3.3: SetCurrentItem() to a visible row leaves the viewport
+	// alone, but to one off screen it clamps the view onto the cursor -- and
+	// with no row ever clicked the cursor sits at row 0, so restoring it
+	// after a sort dragged the list back to the top, which is the very thing
+	// this function exists to stop. A cursor the user cannot see is one they
+	// are not about to arrow from; a cursor they can see is the one that has
+	// to be right.
 	if (currentData != 0) {
 		const long row = RowOfData(currentData);
-		if (row >= 0) {
-			SetCurrentItem(m_virtualModel->GetItem(static_cast<unsigned>(row)));
+		const wxDataViewItem top = GetTopItem();
+		const int perPage = GetCountPerPage();
+		if (row >= 0 && top.IsOk() && perPage > 0) {
+			const long topRow = static_cast<long>(m_virtualModel->GetRow(top));
+			if (row >= topRow && row < topRow + perPage) {
+				SetCurrentItem(m_virtualModel->GetItem(static_cast<unsigned>(row)));
+			}
 		}
 	}
+
 }
 
 void CMuleVirtualDataViewCtrl::GetDisplayOrder(wxDataViewItemArray &ordered) const

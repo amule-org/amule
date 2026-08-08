@@ -24,9 +24,9 @@
 
 #include "SearchListModel.h"
 
-#include <algorithm>     // Needed for std::min, std::find
+#include <algorithm>     // Needed for std::min, std::remove
 #include <unordered_map> // Needed for std::unordered_map (additions per parent)
-#include <unordered_set> // Needed for std::unordered_set (live-result check)
+#include <unordered_set> // Needed for std::unordered_set (duplicate suppression)
 
 #include <common/Format.h> // Needed for CFormat
 #include <tags/FileTags.h> // Needed for FT_MEDIA_LENGTH / _BITRATE / _CODEC
