@@ -343,6 +343,15 @@ const wxChar *const CSearchList::s_storedSearchesFilename = wxT("StoredSearches.
 
 void CSearchList::StoreSearches() const
 {
+	// Same contract as the search-terms dropdown this setting already
+	// governs (SearchDlg.cpp): off means "don't remember", and a search's
+	// full result set is a stronger form of that than the query string
+	// alone. LoadSearches() is the one that removes a file left over from
+	// when this was still on.
+	if (!thePrefs::RememberSearchHistory()) {
+		return;
+	}
+
 	CFile file(thePrefs::GetConfigDir() + s_storedSearchesFilename, CFile::write_safe);
 	if (!file.IsOpened()) {
 		return;
@@ -378,11 +387,13 @@ void CSearchList::StoreSearches() const
 		}
 
 		file.WriteUInt32(id);
+		// m_searchStrings/m_searchKinds/m_searchStartTimes are written and
+		// erased together (StartNewSearch/RemoveResults), so ids is drawn
+		// from m_searchStrings, and matches this instance and the sort
+		// comparator above, this can't miss -- .at() throughout says so.
 		file.WriteString(m_searchStrings.at(id), utf8strRaw);
-		file.WriteUInt8(
-			static_cast<uint8>(m_searchKinds.count(id) ? m_searchKinds.at(id) : LocalSearch));
-		file.WriteUInt64(static_cast<uint64>(
-			m_searchStartTimes.count(id) ? m_searchStartTimes.at(id) : time(nullptr)));
+		file.WriteUInt8(static_cast<uint8>(m_searchKinds.at(id)));
+		file.WriteUInt64(static_cast<uint64>(m_searchStartTimes.at(id)));
 		file.WriteUInt32(static_cast<uint32>(resultCount));
 
 		for (std::size_t i = 0; i < resultCount; ++i) {
@@ -426,6 +437,15 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 	std::vector<uint32_t> restored;
 
 	CPath fullpath = CPath(thePrefs::GetConfigDir() + s_storedSearchesFilename);
+	if (!thePrefs::RememberSearchHistory()) {
+		// Remove whatever an earlier session with the setting on left
+		// behind, so turning it off actually clears what's on disk rather
+		// than just stopping new writes.
+		if (fullpath.FileExists()) {
+			CPath::RemoveFile(fullpath);
+		}
+		return restored;
+	}
 	if (!fullpath.FileExists()) {
 		return restored;
 	}
@@ -507,6 +527,20 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 		m_searchStrings[entry.id] = entry.queryString;
 		m_searchKinds[entry.id] = entry.kind;
 		m_searchStartTimes[entry.id] = entry.startTime;
+
+		// Reserve the id so the first new search of the same kind this
+		// session can't be handed it -- both counters restart every launch,
+		// so without this a restored search collides with the next one
+		// started. Partitioned on the id's own high bit rather than the
+		// persisted `kind` byte: bit 31 is intrinsic to which counter owns
+		// the value, while `kind` is a separate field from the same record
+		// that could disagree with it if the file were corrupt.
+		if (entry.id & 0x80000000) {
+			Kademlia::CSearchManager::ReserveSearchId(entry.id);
+		} else {
+			ReserveEd2kId(entry.id);
+		}
+
 		if (entry.kind == KadSearch) {
 			// The original in-flight Kad search can't survive a restart --
 			// come back already finished, hits-only, "More results" disabled.

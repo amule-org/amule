@@ -127,6 +127,22 @@ public:
 	 */
 	uint32 AllocateEd2kId();
 
+	/**
+	 * Advances m_nextEd2kId past a restored ed2k search's persisted id
+	 * (issue #641 Phase 3), so the next AllocateEd2kId() call this session
+	 * can't reissue it -- m_nextEd2kId restarts at 0 every launch, so
+	 * without this a restored search and the first new one after a
+	 * restart collide deterministically. No-op if id is already at or
+	 * below the current counter.
+	 */
+	void ReserveEd2kId(uint32_t id)
+	{
+		const uint32_t masked = id & 0x3fffffff;
+		if (masked > m_nextEd2kId) {
+			m_nextEd2kId = masked;
+		}
+	}
+
 	/** True if the given searchID corresponds to an active Kad search. */
 	bool IsKadSearch(uint32_t searchID) const;
 

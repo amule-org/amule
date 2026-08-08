@@ -47,6 +47,7 @@
 #include "PrefsUnifiedDlg.h" // Needed for NotifyIP2CountryUpdateFailedIfOpen
 #endif
 #include "PartFileConvert.h"
+#include "SearchDlg.h"  // Needed for CSearchDlg, CSearchListCtrl
 #include "SearchList.h" // Needed for CSearchList
 #include "ThreadTasks.h"
 #include "Logger.h"    // Needed for EVT_MULE_LOGGING
@@ -240,6 +241,17 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 		Notify_Search_Added(static_cast<wxUIntPtr>(kv.first),
 			kv.second,
 			static_cast<uint32>(theApp->searchlist->GetSearchLifecycleKindById(kv.first)));
+		// OnSearchAdded labels the tab " (0)", right for a freshly
+		// discovered foreign search but wrong here: the restored results
+		// are already indexed (LoadSearches() ran before this loop), so
+		// the tab's list is already populated -- only the label needs
+		// correcting to match.
+		if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+			if (CSearchListCtrl *page = theApp->amuledlg->m_searchwnd->GetSearchList(
+				    static_cast<wxUIntPtr>(kv.first))) {
+				theApp->amuledlg->m_searchwnd->UpdateHitCount(page);
+			}
+		}
 	}
 #endif
 
