@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 13:16+0200\n"
+"POT-Creation-Date: 2026-08-08 15:17+0200\n"
 "PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -1044,7 +1044,7 @@ msgstr "Novo sporočilo od »%s« (IP: %s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Uporabnik %s (%u) je zahteval seznam deljenih datotek za mapo »%s« → prezrto"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "OPOZORILO: %s ni moč odpreti."
@@ -1053,7 +1053,7 @@ msgstr "OPOZORILO: %s ni moč odpreti."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "OPOZORILO: Seznam preklicanih datotek je pokvarjen, vsebuje neveljavno glavo."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Vhodno/izhodna napaka med branjem datoteke %s: %s"
@@ -6342,6 +6342,31 @@ msgstr "Min. velikost mora biti manjša kot maks. velikost. Maks. velikost ni up
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Glavna"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "OPOZORILO: seznam znanih datotek je pokvarjen, vsebuje neveljavno glavo."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Neveljaven vnos na seznamu znanih datotek, datoteka je morda pokvarjena: "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Neveljaven vnos na seznamu znanih datotek, datoteka je morda pokvarjena: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

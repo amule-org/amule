@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 13:16+0200\n"
+"POT-Creation-Date: 2026-08-08 15:17+0200\n"
 "PO-Revision-Date: 2026-08-07 10:20+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -1050,7 +1050,7 @@ msgstr "Новое сообщение от '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Пользователь %s (%u) запросил список публикуемых файлов из несуществующего каталога «%s» -> Проигнорировано"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "ПРЕДУПРЕЖДЕНИЕ: файл %s не может быть открыт."
@@ -1059,7 +1059,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: файл %s не может быть от�
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "ПРЕДУПРЕЖДЕНИЕ: Список отменённых файлов повреждён, содержит неверный заголовок."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Ошибка ввода/вывода при чтении файла %s: %s"
@@ -6303,6 +6303,31 @@ msgstr "Мин. размер должен быть меньше макс. раз
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Общая"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "ПРЕДУПРЕЖДЕНИЕ: Список известных файлов повреждён, содержит неверный заголовок."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 13:16+0200\n"
+"POT-Creation-Date: 2026-08-08 15:17+0200\n"
 "PO-Revision-Date: 2026-08-07 10:09+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -1037,7 +1037,7 @@ msgstr "Nová zpráva od '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Uživatel %s (%u) si vyžádal váš seznam sdílených souborů v adresáři %s -> zakázáno"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "VAROVÁNÍ: %s nelze otevřít."
@@ -1046,7 +1046,7 @@ msgstr "VAROVÁNÍ: %s nelze otevřít."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "VAROVÁNÍ: Soubor je porušen, obsahuje neplatnou hlavičku."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, fuzzy, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "I/O chyba při čtení souboru known.met: %s"
@@ -6296,6 +6296,29 @@ msgstr "Min. velikost musí být menší než max. velikost. Ignoruji max. velik
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Hlavní"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "VAROVÁNÍ: Soubor je porušen, obsahuje neplatnou hlavičku."
+
+#: src/SearchList.cpp
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr ""
+
+#: src/SearchList.cpp
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr ""
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
