@@ -274,6 +274,11 @@ private:
 
 	friend class CPartFile;
 	friend class CSearchListRem;
+	// Needs to assign m_searchID directly after LoadFromFile() reconstructs a
+	// result tree from StoredSearches.met, same as CSearchListRem already does
+	// for EC-streamed results -- LoadFromFile() deliberately never sets it
+	// itself (see its header comment).
+	friend class CSearchList;
 };
 
 #endif // SEARCHLIST_H

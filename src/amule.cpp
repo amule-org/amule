@@ -384,6 +384,13 @@ int CamuleApp::OnExit()
 	delete serverlist;
 	serverlist = NULL;
 
+	// Persist search results for the next startup (issue #641 Phase 3),
+	// while downloadqueue/knownfiles/canceledfiles (needed to recompute
+	// download status on the next load) and searchlist itself are all still
+	// alive -- this must run before the delete below.
+	if (searchlist) {
+		searchlist->StoreSearches();
+	}
 	delete searchlist;
 	searchlist = NULL;
 
@@ -866,6 +873,18 @@ bool CamuleApp::OnInit()
 	// bugfix - do this before creating the uploadqueue
 	downloadqueue = new CDownloadQueue();
 	uploadqueue = new CUploadQueue();
+
+	// Restore search results saved on a previous clean shutdown (issue #641
+	// Phase 3, StoredSearches.met). Must run only once downloadqueue/
+	// knownfiles/canceledfiles all exist, since LoadSearches() recomputes
+	// each restored result's download status against them. Registering each
+	// restored search with the EC multi-search registry makes it reachable
+	// via EC_OP_SEARCH_LIST for any client (amuleGUI/amuleapi) that connects
+	// later; monolithic tab creation for these is wired separately in
+	// amule-gui.cpp, since the search dialog doesn't exist yet here.
+	for (uint32_t restoredId : searchlist->LoadSearches()) {
+		RegisterRestoredSearch(restoredId);
+	}
 	// partFileWriteThread / partFileHashThread are constructed AFTER
 	// InitGui() further down — both spawn a wxThread in their ctor,
 	// and the amuled `-f` fork only carries the calling thread to the
