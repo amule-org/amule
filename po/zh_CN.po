@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 15:12+0200\n"
 "PO-Revision-Date: 2026-08-07 10:23+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1041,7 +1041,7 @@ msgstr "新消息来自于 %s（IP：%s）"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "用户 %s（%u）请求目录 %s 的共享文件列表 -> 已忽略"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "警告：%s 文件无法打开。"
@@ -1050,7 +1050,7 @@ msgstr "警告：%s 文件无法打开。"
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "警告：已取消文件列表损坏，包含有非法头部。"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "读取 %s 文件时发生 IO 错误：%s"
@@ -6195,6 +6195,31 @@ msgstr "最小值必须小于最大值，最大值已被忽略。"
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "主要"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "警告: 已知文件列表已经损坏，包含有非法头部。"
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "已知文件列表包含非法条目，文件可能损坏："
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "已知文件列表包含非法条目，文件可能损坏："
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

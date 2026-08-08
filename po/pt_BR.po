@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 15:12+0200\n"
 "PO-Revision-Date: 2026-08-07 10:18+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -1045,7 +1045,7 @@ msgstr "Nova mensagem de '%s' (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "Usuário %s (%u) solicitou sua lista de compartilhados para pasta não existente '%s' -> Negado"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "CUIDADO: %s não pode ser aberto."
@@ -1054,7 +1054,7 @@ msgstr "CUIDADO: %s não pode ser aberto."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "CUIDADO: Cancela lista de arquivos corrompida, contém cabeçalho inválido."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "Erro de I/O ao ler arquivo %s: %s"
@@ -6199,6 +6199,31 @@ msgstr "Tamanho min deve ser menor que tamanho max. Tamanho max ignorado."
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Principal"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "ATENÇÃO: Arquivo de lista known corrompido, contém cabeçalho inválido."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Entrada inválida na lista de arquivo known, arquivo pode estar corrompido: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

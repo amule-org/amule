@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 15:12+0200\n"
 "PO-Revision-Date: 2026-08-07 10:23+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1040,7 +1040,7 @@ msgstr "來自 %s (IP:%s) 的新訊息"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "使用者 %s (%u) 要求不存在的目錄 %s 的分享檔案清單 -> 已忽略"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "警告：無法開啟 %s 。"
@@ -1049,7 +1049,7 @@ msgstr "警告：無法開啟 %s 。"
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "警告：已取消檔案清單損壞，內有無效標頭。"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "讀取 %s 時發生 IO 錯誤：%s"
@@ -6218,6 +6218,31 @@ msgstr "最小值必須小於最大值，最大值已被忽略。"
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "主要"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "警告：已知檔案清單損壞，內有無效標頭。"
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "已知檔案清單內有無效的項目，檔案可能有損壞： "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "已知檔案清單內有無效的項目，檔案可能有損壞： "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"

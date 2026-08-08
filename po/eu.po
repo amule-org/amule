@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 10:40+0200\n"
+"POT-Creation-Date: 2026-08-08 15:12+0200\n"
 "PO-Revision-Date: 2026-08-07 10:12+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -1038,7 +1038,7 @@ msgstr "'%s'-ren mezu berria (IP:%s)"
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
 msgstr "%s (%u) erabiltzaileak ez dagoen %s direktorioaren partekatutako fitxategi zerrenda eskatu du -> Ukatua"
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "WARNING: %s cannot be opened."
 msgstr "Oharra: %s ezin da ireki."
@@ -1047,7 +1047,7 @@ msgstr "Oharra: %s ezin da ireki."
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "Abisua: Utzitako fitxategi zerrenda hondaturik dago, buru baliogabeak ditu."
 
-#: src/CanceledFileList.cpp src/KnownFileList.cpp
+#: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
 msgid "IO error while reading %s file: %s"
 msgstr "SI errorea %s fitxategia irakurtzean: %s"
@@ -6235,6 +6235,31 @@ msgstr "Gutxienezko tamaina gehienezkoa baino txikiagoa izan behar da. Gehienezk
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Nagusia"
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the %u most recent of %u open searches to %s."
+msgstr ""
+
+#: src/SearchList.cpp
+#, c-format
+msgid "Only saving the first %u of %u results for search \"%s\"."
+msgstr ""
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "WARNING: Stored search list corrupted, contains invalid header."
+msgstr "Abisua: Fitxategi ezagun zerrenda hondaturik dago, buru baliogabeak ditu."
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt"
+msgstr "Okerreko sarrera fitxategi ezagunen zerrendako fitxategian, hondaturik egon liteke: "
+
+#: src/SearchList.cpp
+#, fuzzy
+msgid "Invalid entry in stored search list, file may be corrupt: "
+msgstr "Okerreko sarrera fitxategi ezagunen zerrendako fitxategian, hondaturik egon liteke: "
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
