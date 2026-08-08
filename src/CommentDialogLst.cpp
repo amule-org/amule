@@ -210,8 +210,11 @@ void CCommentDialogLst::UpdateList()
 		if (!thePrefs::IsCommentFiltered(it->Comment)) {
 			m_list->InsertItem(count, it->UserName);
 			m_list->SetItem(count, 1, it->FileName);
-			m_list->SetItem(
-				count, 2, (it->Rating != -1) ? GetRateString(it->Rating) : wxString("on"));
+			// Ratings reach here as 0..5: the wire value is a uint8 that
+			// CUpDownClient clamps to 0 when it exceeds 5, and 0 is a
+			// comment with no rating. The old -1 branch, which drew a
+			// stray untranslated "on", could not be reached.
+			m_list->SetItem(count, 2, GetRateString(it->Rating));
 			const int ratingImage = RatingImage(it->Rating);
 			if (ratingImage >= 0) {
 				m_list->SetItemColumnImage(count, 2, ratingImage);
