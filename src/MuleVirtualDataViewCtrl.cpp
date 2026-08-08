@@ -444,7 +444,6 @@ void CMuleVirtualDataViewCtrl::SortList()
 			}
 		}
 	}
-
 }
 
 void CMuleVirtualDataViewCtrl::GetDisplayOrder(wxDataViewItemArray &ordered) const
