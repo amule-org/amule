@@ -159,13 +159,25 @@ protected:
 	//! sense (it's the daemon's path, nothing here to browse to), but the
 	//! local side is a real folder on this machine.
 	void OnPathMappingBrowse(wxCommandEvent &evt);
-	//! Re-flows the explanatory paragraph above the path-mapping list to
-	//! the control's own (DPI-scaled) width whenever that width actually
-	//! changes -- muuli_wdr.cpp deliberately does not Wrap() it, since a
-	//! one-shot Wrap() at construction bakes fixed line breaks that
-	//! Expand() then stretches without reflowing (the empty right margin
-	//! that motivated this).
-	void OnPathMappingHintResize(wxSizeEvent &evt);
+	//! Re-flows the explanatory paragraph above the path-mapping list when
+	//! the page is resized. Bound on the *page*, not on the paragraph:
+	//! wxStaticText::SetLabel() resizes the control to fit its label, so a
+	//! handler on the paragraph that rewrites the paragraph feeds itself
+	//! (it did -- stack exhaustion inside SetLabel). The page's width is
+	//! set by the dialog and is unmoved by anything the label does, so
+	//! driving the wrap from there cannot loop.
+	void OnPathMappingPageResize(wxSizeEvent &evt);
+	//! Wraps that paragraph to the page's current client width.
+	void WrapPathMappingHint();
+
+	//! The paragraph with no line breaks in it. wxStaticText::Wrap() only
+	//! ever inserts breaks -- it reads the current label and treats any
+	//! newline already there as hard -- so re-flowing to a *wider* page has
+	//! to start from unwrapped text rather than from what is on screen.
+	wxString m_pathMappingHintText;
+	//! Width last wrapped to, so a resize that leaves the width alone (a
+	//! height-only change, say) does no work.
+	int m_pathMappingHintWrapWidth;
 
 public:
 	//! Repaint the editor when a GET_SHARED_DIRS reply lands while the

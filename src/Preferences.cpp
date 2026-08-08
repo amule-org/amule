@@ -29,6 +29,7 @@
 #include <protocol/ed2k/Constants.h>
 #include <common/Constants.h>
 #include <common/DataFileVersion.h>
+#include <common/Path.h> // Needed for StripSeparators (path-mapping prefixes)
 
 #include <wx/config.h>
 #include <wx/dir.h>

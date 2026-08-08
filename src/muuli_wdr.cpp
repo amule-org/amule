@@ -1859,12 +1859,15 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    // Not Wrap()'d here: that would bake fixed line breaks at construction
-    // time, leaving the sizer's Expand() stretch the control while the text
-    // itself keeps its original width. PrefsUnifiedDlg re-wraps this from
-    // the panel's real, DPI-scaled client width and keeps it current across
-    // resizes (the dialog has wxRESIZE_BORDER).
     wxStaticText *itemHint = new wxStaticText( parent, IDC_PATHMAP_HINT, _("When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."), wxDefaultPosition, wxDefaultSize, 0 );
+    // An unwrapped wxStaticText reports its whole single line as its best
+    // width, and the sizer turns that into the page's minimum width -- the
+    // dialog comes up as wide as this sentence. So it is wrapped here to
+    // bound that minimum, DPI-scaled rather than a raw pixel count.
+    // PrefsUnifiedDlg then re-flows it to the control's real width and keeps
+    // it current across resizes; it restores this text before each wrap,
+    // since Wrap() can only add line breaks, never remove them.
+    itemHint->Wrap( parent->FromDIP(380) );
     item0->Add( itemHint, wxSizerFlags().Expand().Border(wxBOTTOM, 6) );
 
     wxStaticBox *itemBox = new wxStaticBox( parent, -1, _("Path mappings") );
