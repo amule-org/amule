@@ -2851,6 +2851,18 @@ bool IsSensitiveSharePath(const CPath &path)
 PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithProgress()
 {
 #ifdef CLIENT_GUI
+	// Nothing to send unless the user actually edited the list -- the same
+	// condition the monolithic branch below gets from HasChanged, and not
+	// merely an optimisation. PopulateSharedDirsList() fills the editor from
+	// glob_prefs, which is still empty in the window between connecting and
+	// the first GET_SHARED_DIRS reply landing. Confirming the dialog inside
+	// that window would harvest an empty editor and instruct the daemon to
+	// share nothing, since SendSharedDirsToRemote() declines only for a
+	// daemon that cannot do this at all.
+	if (!m_sharedDirsDirty) {
+		return SharedDirsCommitResult::NothingToCommit;
+	}
+
 	// The core owns the shared-folder files; we just hand it the roots. No
 	// local progress dialog or rescan here — the rescan happens daemon-side,
 	// and any path it refuses comes back as a rejection we surface then.
@@ -3166,6 +3178,12 @@ void PrefsUnifiedDlg::HarvestSharedDirsList()
 	for (long row = 0; row < list->GetItemCount(); ++row) {
 		// The recorded path, not the cell text -- see SetListRowPath().
 		const CPath path = GetListRowPath(list, row, m_sharedDirRowPaths);
+		if (!path.IsOk()) {
+			// GetListRowPath() asserts on this, but the assert is debug-only
+			// and an empty root would go to the daemon as an empty
+			// EC_TAG_SHAREDDIR. Drop the row instead.
+			continue;
+		}
 		wxListItem field;
 		field.SetId(row);
 		field.SetColumn(1);
