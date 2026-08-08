@@ -80,7 +80,7 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @see CMuleListCtrl::CMuleListCtrl
+	 * @see CMuleVirtualDataViewCtrl::CMuleVirtualDataViewCtrl
 	 */
 	CServerListCtrl(wxWindow *parent,
 		wxWindowID winid = wxID_ANY,

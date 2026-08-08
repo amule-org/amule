@@ -27,7 +27,6 @@
 #include "muuli_wdr.h"        // Needed for commentLstDlg
 #include "PartFile.h"         // Needed for CAbstractFile / CPartFile
 #include <common/Format.h>    // Needed for CFormat
-#include "MuleListCtrl.h"     // Needed for CMuleListCtrl
 #include "Preferences.h"
 #include "amule.h" // Needed for theApp
 
@@ -41,6 +40,7 @@ wxBEGIN_EVENT_TABLE(CCommentDialogLst, wxDialog)
 	EVT_BUTTON(IDCREF, CCommentDialogLst::OnBnClickedRefresh)
 	EVT_BUTTON(IDC_CMSEARCHKAD, CCommentDialogLst::OnBnClickedSearchKad)
 	EVT_TIMER(ID_KADREFRESH_TIMER, CCommentDialogLst::OnKadRefreshTimer)
+	EVT_LIST_COL_CLICK(IDC_LST, CCommentDialogLst::OnColumnClick)
 wxEND_EVENT_TABLE()
 
 namespace
@@ -67,18 +67,19 @@ CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CAbstractFile *file)
 	  wxDefaultSize,
 	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 , m_file(file)
+, m_sortColumn(-1)
+, m_sortDescending(false)
 , m_kadRefreshTimer(this, ID_KADREFRESH_TIMER)
 , m_kadRefreshTicks(0)
 {
 	wxSizer *content = commentLstDlg(this, true);
 	content->Show(this, true);
 
-	m_list = CastChild(IDC_LST, CMuleListCtrl);
+	m_list = CastChild(IDC_LST, wxListCtrl);
 	m_list->InsertColumn(0, _("Username"), wxLIST_FORMAT_LEFT, 130);
 	m_list->InsertColumn(1, _("File Name"), wxLIST_FORMAT_LEFT, 130);
 	m_list->InsertColumn(2, _("Rating"), wxLIST_FORMAT_LEFT, 80);
 	m_list->InsertColumn(3, _("Comment"), wxLIST_FORMAT_LEFT, 340);
-	m_list->SetSortFunc(SortProc);
 
 	UpdateList();
 	OpenInstances().insert(this);
@@ -219,14 +220,34 @@ void CCommentDialogLst::ClearList()
 	m_list->DeleteAllItems();
 }
 
-int CCommentDialogLst::SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData)
+void CCommentDialogLst::OnColumnClick(wxListEvent &evt)
+{
+	const int col = evt.GetColumn();
+	if (col < 0) {
+		// Clicked past the last column header.
+		return;
+	}
+
+	if (m_sortColumn == col) {
+		m_sortDescending = !m_sortDescending;
+	} else {
+		m_sortColumn = col;
+		m_sortDescending = false;
+	}
+
+	// Column packed into the magnitude (1-based, so column 0 doesn't
+	// collide with a sign), direction into the sign.
+	m_list->SortItems(SortProc, m_sortDescending ? -(col + 1) : (col + 1));
+}
+
+int CCommentDialogLst::SortProc(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData)
 {
 	SFileRating *file1 = reinterpret_cast<SFileRating *>(item1);
 	SFileRating *file2 = reinterpret_cast<SFileRating *>(item2);
 
-	int mod = (sortData & CMuleListCtrl::SORT_DES) ? -1 : 1;
+	const int mod = (sortData < 0) ? -1 : 1;
 
-	switch (sortData & CMuleListCtrl::COLUMN_MASK) {
+	switch (mod * sortData - 1) {
 	case 0:
 		return mod * file1->UserName.Cmp(file2->UserName);
 	case 1:

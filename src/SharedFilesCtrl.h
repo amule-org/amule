@@ -60,7 +60,7 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @see CMuleListCtrl::CMuleListCtrl
+	 * @see CMuleVirtualDataViewCtrl::CMuleVirtualDataViewCtrl
 	 */
 	CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
 
@@ -168,7 +168,7 @@ protected:
 	/**
 	 * Function that specifies which columns have alternate sorting.
 	 *
-	 * @see CMuleListCtrl::AltSortAllowed
+	 * @see CMuleDataViewCtrl::AltSortAllowed
 	 */
 	bool AltSortAllowed(unsigned column) const override;
 

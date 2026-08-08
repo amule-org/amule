@@ -26,11 +26,12 @@
 #ifndef COMMENTDIALOGLST_H
 #define COMMENTDIALOGLST_H
 
-#include <wx/dialog.h> // Needed for wxDialog	// Do_not_auto_remove
+#include <wx/dialog.h>   // Needed for wxDialog	// Do_not_auto_remove
+#include <wx/listctrl.h> // Needed for wxListEvent
 #include <wx/sizer.h>
 #include <wx/timer.h> // Needed for wxTimer
 
-class CMuleListCtrl;
+class wxListCtrl;
 class wxCommandEvent;
 class CAbstractFile;
 
@@ -46,9 +47,12 @@ public:
 	~CCommentDialogLst();
 
 	/**
-	 * Sorter function for the CMuleListCtrl used to contain the lists.
+	 * Sorter function for the wxListCtrl used to contain the lists. sortData
+	 * packs the 0-based column in its magnitude and the direction in its
+	 * sign (see OnColumnClick) -- plain wxListCtrl has no built-in notion
+	 * of "current sort column/direction" the way CMuleListCtrl did.
 	 */
-	static int wxCALLBACK SortProc(wxUIntPtr item1, wxUIntPtr item2, wxIntPtr sortData);
+	static int wxCALLBACK SortProc(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
 
 	/**
 	 * Drop every reference to `file` from any open instance of this dialog
@@ -68,6 +72,12 @@ private:
 	//! once the daemon reports the search finished.
 	void OnKadRefreshTimer(wxTimerEvent &evt);
 
+	//! Click-to-sort on a column header: toggles direction on the same
+	//! column, otherwise switches to that column ascending. Reimplements,
+	//! for this one dialog, the sort-toggle behaviour CMuleListCtrl used
+	//! to provide for free.
+	void OnColumnClick(wxListEvent &evt);
+
 	/**
 	 * Updates the contents of the comments/ratings list.
 	 */
@@ -82,7 +92,12 @@ private:
 	CAbstractFile *m_file;
 
 	//! The list containing comments/ratings.
-	CMuleListCtrl *m_list;
+	wxListCtrl *m_list;
+
+	//! Current sort column/direction, since plain wxListCtrl doesn't track
+	//! this itself. -1 means unsorted (initial state).
+	int m_sortColumn;
+	bool m_sortDescending;
 
 	//! Drives auto-refresh while a Kad notes lookup is in flight.
 	wxTimer m_kadRefreshTimer;

@@ -332,9 +332,10 @@ int CamuleApp::OnExit()
 	// the event loop drains that queue naturally before OnExit runs;
 	// on the macOS Dock right-click → Quit path CamuleGuiApp::OnEndSession
 	// reaches OnExit directly, so without an explicit drain here the
-	// CamuleDlg destructor chain (and CMuleListCtrl::SaveSettings inside
-	// it) never runs against a live wxConfig, and column widths /
-	// sort orders silently fail to persist.
+	// CamuleDlg destructor chain never runs against a live wxConfig, and
+	// whatever it still persists from there is silently lost. (Column
+	// widths and sort orders no longer rely on it: CMuleDataViewCtrl
+	// writes those eagerly on every resize, sort and show/hide.)
 	DeletePendingObjects();
 
 	// From wxWidgets docs, wxConfigBase:

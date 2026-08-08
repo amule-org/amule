@@ -43,7 +43,7 @@
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
 #endif
 #include "MuleBarRenderer.h" // Needed for CBarFillSpec, CBarFillSpan, CMuleBarRenderer
-#include "MuleListCtrl.h"    // Needed for IsListBackgroundDark
+#include "MuleColour.h"      // Needed for IsListBackgroundDark
 #include "muuli_wdr.h"       // Needed for ID_CLIENTCOUNT
 #include "PartFile.h"        // Needed for CPartFile
 #include "Preferences.h"
