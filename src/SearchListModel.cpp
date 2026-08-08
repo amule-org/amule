@@ -40,6 +40,54 @@
 #include "SearchList.h"     // Needed for CSearchList, CSearchResultList
 #include "SearchListCtrl.h"
 
+namespace
+{
+/**
+ * Whether arrivals may be reported to the control one at a time.
+ *
+ * Only on macOS, and only with no filter in force.
+ *
+ * The filter half is about correctness: m_filterKnown makes a row's
+ * visibility a live function of its download status, so a value change can
+ * require a row to appear or disappear, which only re-evaluating the tree
+ * catches.
+ *
+ * The platform half is about wx. Its GTK backend keeps its own mirror of the
+ * model's tree, and feeding this model's arrivals into it a notification at
+ * a time corrupts GtkTreeView's red-black tree outright --
+ *
+ *   gtkrbtree.c:471:_gtk_rbtree_insert_after:
+ *     assertion failed: (_gtk_rbtree_is_nil (tree->root))
+ *
+ * -- which aborts the application. That was first seen for ItemAdded() under
+ * a newly formed group; confining the incremental path to top-level
+ * additions and value changes did not avoid it, as the same abort came back
+ * from the root batch. PR #796 had already found that neither ItemChanged()
+ * nor a delete-and-re-add made GTK or MSW re-derive container-ness, and
+ * settled on Cleared() for that reason; two aborts from two different
+ * notifications say the constraint is broader than container-ness, so this
+ * stops trying to find the subset GTK tolerates.
+ *
+ * Native NSOutlineView keeps no such structure -- it re-queries the model as
+ * it draws, which is what masked the original #796 defect -- so it takes the
+ * incremental path happily, and that is where the scroll position was being
+ * lost on every burst of results.
+ *
+ * MSW is grouped with GTK deliberately: its generic implementation has tree
+ * bookkeeping of its own, it was never the platform this was tested on, and
+ * keeping today's behaviour there costs nothing but a repaint.
+ */
+bool IncrementalNotificationsUsable(const CSearchListCtrl *owner)
+{
+#ifdef __WXOSX__
+	return !owner->HasActiveFilter();
+#else
+	(void)owner;
+	return false;
+#endif
+}
+} // namespace
+
 std::set<CSearchListModel *> CSearchListModel::s_models;
 
 CSearchListModel::CSearchListModel(CSearchListCtrl *owner)
@@ -67,45 +115,16 @@ void CSearchListModel::DropReferencesTo(CSearchFile *file)
 
 void CSearchListModel::NotifyFileAdded(CSearchFile *file)
 {
-	// A filter makes every row's visibility a live function of its values,
-	// which only a re-evaluation of the whole tree tracks.
-	if (file == nullptr || m_owner->HasActiveFilter()) {
+	if (file == nullptr || !IncrementalNotificationsUsable(m_owner)) {
 		MarkDirty();
 		return;
 	}
-
-#ifndef __WXOSX__
-	// A grouped result -- one that joined an existing one -- is reported by
-	// rebuilding, not incrementally, everywhere except macOS.
-	//
-	// PR #796 already found that GTK and MSW would not re-derive
-	// container-ness from ItemChanged() or a delete-and-re-add. ItemAdded()
-	// under the new parent, which is the notification that actually means
-	// "this row now has a child", does worse than fail on GTK: it aborts the
-	// application inside GtkTreeView's own red-black tree --
-	//
-	//   gtkrbtree.c:471:_gtk_rbtree_insert_after:
-	//     assertion failed: (_gtk_rbtree_is_nil (tree->root))
-	//
-	// -- because the row is inserted into a child tree GTK never built for a
-	// parent it still considers a leaf. Native NSOutlineView has no such
-	// structure to corrupt and re-queries IsContainer() as it draws, which
-	// is why it takes the incremental path happily.
-	//
-	// Only grouping is affected. A plain new result and a value change stay
-	// incremental on every platform, and those are the bulk of what arrives.
-	if (file->GetParent() != nullptr) {
-		MarkDirty();
-		return;
-	}
-#endif
-
 	m_pendingAdded.push_back(file);
 }
 
 void CSearchListModel::NotifyFileUpdated(CSearchFile *file)
 {
-	if (file == nullptr || m_owner->HasActiveFilter()) {
+	if (file == nullptr || !IncrementalNotificationsUsable(m_owner)) {
 		MarkDirty();
 		return;
 	}
