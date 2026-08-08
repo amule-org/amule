@@ -396,3 +396,30 @@ TEST(CPath, TruncatePath)
 	ASSERT_EQUALS("t[...]", testPath.TruncatePath(6, true));
 	ASSERT_EQUALS("", testPath.TruncatePath(5, true));
 }
+
+TEST(CPath, UnivRoundTrip)
+{
+	// ToUniv()/FromUniv() stores the filesystem bytes verbatim and is the one
+	// representation guaranteed to reproduce the path. The display form is
+	// not: on macOS wxConvFileName normalises to NFD, so GetPrintable() hands
+	// back a different byte sequence for the same characters, and a CPath
+	// rebuilt from it is a different path to any filesystem that compares
+	// bytes -- a Linux daemon's, or an SMB/NFS mount. Anything carrying a
+	// path through another medium (a config file, a list control's cells)
+	// therefore has to move this pair around rather than what it displayed.
+	const wxString inputs[] = {
+		"/tmp/plain",
+		// Precomposed U+00F6, which is what NFD decomposes.
+		wxString::FromUTF8("/tmp/M\xC3\xB6t"),
+		// CJK has no decomposition, so normalisation leaves it alone.
+		wxString::FromUTF8("/tmp/\xE9\x9F\xB3\xE6\xA5\xBD"),
+		// Not valid UTF-8: the mangled-name case the raw/printable split
+		// exists for in the first place.
+		wxString::From8BitData("/tmp/M\xF6t"),
+	};
+
+	for (const wxString &input : inputs) {
+		const CPath path(input);
+		ASSERT_EQUALS(path.GetRaw(), CPath::FromUniv(CPath::ToUniv(path)).GetRaw());
+	}
+}
