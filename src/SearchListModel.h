@@ -27,6 +27,8 @@
 
 #include <wx/dataview.h>
 
+#include <vector> // Needed for std::vector (the pending-arrival batches)
+
 class CSearchFile;
 class CSearchListCtrl;
 
@@ -68,15 +70,32 @@ public:
 	//! tree should be re-evaluated (some rows may appear/disappear).
 	void NotifyFilterChanged();
 
-	//! Results arrive in bursts, and mixing incremental Item* notifications
-	//! with the full Cleared() that a group formation requires leaves the
-	//! control's tree inconsistent on GTK/MSW (got3nks, PR #796 review, after
-	//! ItemChanged() and delete+re-add both failed to make those backends
-	//! re-derive container-ness). Every arrival now just marks the model
-	//! dirty; the control flushes one reset per idle (CSearchListCtrl::OnIdle).
+	//! Forces the next flush to be a full Cleared(). Group formation needs
+	//! one: making an existing result a container leaves the control's tree
+	//! inconsistent on GTK/MSW under any incremental notification (got3nks,
+	//! PR #796 review, after ItemChanged() and delete+re-add both failed to
+	//! make those backends re-derive container-ness).
 	void MarkDirty() { m_pendingReset = true; }
+
+	//! Applies whatever the arrivals since the last flush added up to, one
+	//! batch per idle (CSearchListCtrl::OnIdle). Returns true if it was a
+	//! Cleared(), which costs the control its view state.
 	bool FlushPending();
-	bool HasPending() const { return m_pendingReset; }
+
+	//! Whether anything is waiting, of either kind.
+	bool HasPending() const
+	{
+		return m_pendingReset || !m_pendingAdded.empty() || !m_pendingChanged.empty();
+	}
+
+	//! Whether the next flush will be a Cleared(), so the caller knows to
+	//! save and restore selection and expansion around it.
+	bool HasPendingReset() const { return m_pendingReset; }
+
+	//! Drops everything queued. For the paths that are about to rebuild the
+	//! tree anyway, and for a new result set, whose pending entries point
+	//! into storage that is no longer ours.
+	void DropPending();
 
 	static CSearchFile *ToFile(const wxDataViewItem &item)
 	{
@@ -134,7 +153,16 @@ public:
 
 private:
 	CSearchListCtrl *m_owner;
+
+	//! Set when only a full rebuild will do; see MarkDirty().
 	bool m_pendingReset = false;
+
+	//! Arrivals waiting to be reported incrementally: new top-level rows,
+	//! and rows whose values changed. Held as pointers, so every flush
+	//! re-checks them against live storage before handing them to wx -- a
+	//! result can be freed between the notification and the next idle.
+	std::vector<CSearchFile *> m_pendingAdded;
+	std::vector<CSearchFile *> m_pendingChanged;
 };
 
 #endif // SEARCHLISTMODEL_H

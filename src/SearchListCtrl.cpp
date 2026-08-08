@@ -561,7 +561,14 @@ void CSearchListCtrl::OnIdleHook()
 	// mid-search would deselect whatever the user had picked. Items are
 	// CSearchFile*, still valid across the rebuild; ones that went away are
 	// dropped by re-checking membership against the live tree afterwards.
-	if (m_model->HasPending()) {
+	if (m_model->HasPending() && !m_model->HasPendingReset()) {
+		// Incremental batch: the control keeps its scroll position, its
+		// selection and its expanded rows, so there is nothing to preserve
+		// around it. This is the path a search takes while results stream
+		// in, which is why the list no longer jumps back to the top on
+		// every burst.
+		m_model->FlushPending();
+	} else if (m_model->HasPending()) {
 		wxDataViewItemArray selected;
 		GetSelections(selected);
 		wxDataViewItemArray expanded;

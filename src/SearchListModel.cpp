@@ -24,7 +24,9 @@
 
 #include "SearchListModel.h"
 
-#include <algorithm> // Needed for std::min
+#include <algorithm>     // Needed for std::min, std::find
+#include <unordered_map> // Needed for std::unordered_map (additions per parent)
+#include <unordered_set> // Needed for std::unordered_set (live-result check)
 
 #include <common/Format.h> // Needed for CFormat
 #include <tags/FileTags.h> // Needed for FT_MEDIA_LENGTH / _BITRATE / _CODEC
@@ -43,31 +45,140 @@ CSearchListModel::CSearchListModel(CSearchListCtrl *owner)
 {
 }
 
-void CSearchListModel::NotifyFileAdded(CSearchFile *)
+void CSearchListModel::NotifyFileAdded(CSearchFile *file)
 {
-	MarkDirty();
+	// A filter makes every row's visibility a live function of its values,
+	// which only a re-evaluation of the whole tree tracks.
+	if (file == nullptr || m_owner->HasActiveFilter()) {
+		MarkDirty();
+		return;
+	}
+
+#ifndef __WXOSX__
+	// A grouped result -- one that joined an existing one -- is reported by
+	// rebuilding, not incrementally, everywhere except macOS.
+	//
+	// PR #796 already found that GTK and MSW would not re-derive
+	// container-ness from ItemChanged() or a delete-and-re-add. ItemAdded()
+	// under the new parent, which is the notification that actually means
+	// "this row now has a child", does worse than fail on GTK: it aborts the
+	// application inside GtkTreeView's own red-black tree --
+	//
+	//   gtkrbtree.c:471:_gtk_rbtree_insert_after:
+	//     assertion failed: (_gtk_rbtree_is_nil (tree->root))
+	//
+	// -- because the row is inserted into a child tree GTK never built for a
+	// parent it still considers a leaf. Native NSOutlineView has no such
+	// structure to corrupt and re-queries IsContainer() as it draws, which
+	// is why it takes the incremental path happily.
+	//
+	// Only grouping is affected. A plain new result and a value change stay
+	// incremental on every platform, and those are the bulk of what arrives.
+	if (file->GetParent() != nullptr) {
+		MarkDirty();
+		return;
+	}
+#endif
+
+	m_pendingAdded.push_back(file);
 }
 
-void CSearchListModel::NotifyFileUpdated(CSearchFile *)
+void CSearchListModel::NotifyFileUpdated(CSearchFile *file)
 {
-	MarkDirty();
+	if (file == nullptr || m_owner->HasActiveFilter()) {
+		MarkDirty();
+		return;
+	}
+	m_pendingChanged.push_back(file);
 }
 
 void CSearchListModel::NotifyFilterChanged()
 {
 	// User action: reset now rather than waiting for idle.
+	DropPending();
 	m_pendingReset = false;
 	Cleared();
 }
 
+void CSearchListModel::DropPending()
+{
+	m_pendingAdded.clear();
+	m_pendingChanged.clear();
+}
+
 bool CSearchListModel::FlushPending()
 {
-	if (!m_pendingReset) {
+	if (m_pendingReset) {
+		// Supersedes anything queued: Cleared() re-reads the whole tree.
+		DropPending();
+		m_pendingReset = false;
+		Cleared();
+		return true;
+	}
+
+	if (m_pendingAdded.empty() && m_pendingChanged.empty()) {
 		return false;
 	}
-	m_pendingReset = false;
-	Cleared();
-	return true;
+
+	// Results can be freed between the notification and this flush -- a
+	// search being dropped takes its whole list with it -- so nothing is
+	// handed to wx without checking it is still in the live set. The same
+	// re-check the control does for its saved selection, for the same reason.
+	std::unordered_set<const CSearchFile *> live;
+	if (m_owner->GetSearchId()) {
+		const CSearchResultList &results =
+			theApp->searchlist->GetSearchResults(m_owner->GetSearchId());
+		live.insert(results.begin(), results.end());
+	}
+
+	// Additions are reported per parent, since wx takes one parent for a
+	// whole batch: top-level results under the root, grouped ones under the
+	// result they joined. A child is not in the indexed list -- IndexResult()
+	// keeps only top-level results -- so it is vouched for by its parent
+	// being live and still owning it.
+	wxDataViewItemArray addedRoots;
+	std::unordered_map<CSearchFile *, wxDataViewItemArray> addedChildren;
+	for (CSearchFile *file : m_pendingAdded) {
+		CSearchFile *parent = const_cast<CSearchFile *>(file->GetParent());
+		if (parent == nullptr) {
+			if (live.count(file) != 0) {
+				addedRoots.Add(ToItem(file));
+			}
+			continue;
+		}
+		if (live.count(parent) == 0) {
+			continue;
+		}
+		const CSearchResultList &kids = parent->GetChildren();
+		if (std::find(kids.begin(), kids.end(), file) != kids.end()) {
+			addedChildren[parent].Add(ToItem(file));
+		}
+	}
+
+	wxDataViewItemArray changed;
+	for (CSearchFile *file : m_pendingChanged) {
+		CSearchFile *parent = const_cast<CSearchFile *>(file->GetParent());
+		const bool stillThere =
+			(parent == nullptr) ? (live.count(file) != 0) : (live.count(parent) != 0);
+		if (stillThere) {
+			changed.Add(ToItem(file));
+		}
+	}
+	DropPending();
+
+	// Incremental, so the control keeps its scroll position, its selection
+	// and its expanded rows -- which Cleared() destroys, and which used to
+	// go on every burst of arriving results.
+	if (!addedRoots.IsEmpty()) {
+		ItemsAdded(wxDataViewItem(), addedRoots);
+	}
+	for (const auto &entry : addedChildren) {
+		ItemsAdded(ToItem(entry.first), entry.second);
+	}
+	if (!changed.IsEmpty()) {
+		ItemsChanged(changed);
+	}
+	return false;
 }
 
 unsigned int CSearchListModel::GetColumnCount() const
