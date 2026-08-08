@@ -330,7 +330,16 @@ void CMuleVirtualDataViewCtrl::RemoveItemDataBatch(const std::vector<wxUIntPtr> 
 
 void CMuleVirtualDataViewCtrl::FinishBulkLoad()
 {
-	SortList();
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+	SortItems();
+
+	// Reset() here, unlike SortList(): AppendItemData() adds rows without
+	// telling the control -- that is what makes a bulk load cheap -- so this
+	// is the only notification that the rows exist at all. A repaint would
+	// draw a list the control still believes is the length it was before.
+	m_virtualModel->Reset(static_cast<unsigned>(m_items.size()));
+
+	SetSelectedItemData(selected);
 }
 
 void CMuleVirtualDataViewCtrl::RemoveItemData(wxUIntPtr data)
@@ -378,21 +387,63 @@ void CMuleVirtualDataViewCtrl::ClearItemData()
 	m_virtualModel->Reset(0);
 }
 
-void CMuleVirtualDataViewCtrl::SortList()
+void CMuleVirtualDataViewCtrl::SortItems()
 {
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-
 	std::sort(m_items.begin(), m_items.end(), [this](wxUIntPtr lhs, wxUIntPtr rhs) {
 		return CompareItemsFull(lhs, rhs) < 0;
 	});
 	RebuildRowIndex();
-	// Reset() rather than a per-row notification: with nothing materialised
-	// per row this only re-reads what is on screen.
-	m_virtualModel->Reset(static_cast<unsigned>(m_items.size()));
+}
 
-	// Reset() drops the selection on wxGTK (it survives on macOS), so it is
-	// re-applied from the item data either way.
+void CMuleVirtualDataViewCtrl::SortList()
+{
+	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
+
+	// The cursor is addressed by row, like the selection, and unlike the
+	// selection nothing else puts it back. Reset() used to invalidate it
+	// along with the rest of the view; a repaint leaves it pointing at
+	// whatever item has since moved into that row -- so the next arrow key
+	// steps from the wrong place, a shifted page key extends from the wrong
+	// anchor, and the focus ring can come to rest on an unselected row.
+	const wxDataViewItem currentItem = GetCurrentItem();
+	const wxUIntPtr currentData =
+		currentItem.IsOk() ? ItemAt(static_cast<long>(m_virtualModel->GetRow(currentItem))) : 0;
+
+	SortItems();
+
+	// Repaint, rather than Reset(). A sort reorders rows; it does not replace
+	// them, and the count is the same on both sides of the std::sort above.
+	// Reset() says the model was replaced, which makes every backend rebuild
+	// its view from scratch -- and a rebuilt view starts at the top, so an
+	// auto-sort while the user was reading further down threw them back to
+	// row 0, horizontally as well. Nothing needs telling: rows are addressed
+	// by index and their values are pulled per cell as they are drawn, so the
+	// cells simply render the new order.
+	Refresh();
+
+	// The control's selection is a set of rows, and the rows now mean
+	// different items, so it is re-applied from the item data either way.
 	SetSelectedItemData(selected);
+
+	// Only while the row it lands on is already on screen. Measured on GTK
+	// with wx 3.3.3: SetCurrentItem() to a visible row leaves the viewport
+	// alone, but to one off screen it clamps the view onto the cursor -- and
+	// with no row ever clicked the cursor sits at row 0, so restoring it
+	// after a sort dragged the list back to the top, which is the very thing
+	// this function exists to stop. A cursor the user cannot see is one they
+	// are not about to arrow from; a cursor they can see is the one that has
+	// to be right.
+	if (currentData != 0) {
+		const long row = RowOfData(currentData);
+		const wxDataViewItem top = GetTopItem();
+		const int perPage = GetCountPerPage();
+		if (row >= 0 && top.IsOk() && perPage > 0) {
+			const long topRow = static_cast<long>(m_virtualModel->GetRow(top));
+			if (row >= topRow && row < topRow + perPage) {
+				SetCurrentItem(m_virtualModel->GetItem(static_cast<unsigned>(row)));
+			}
+		}
+	}
 }
 
 void CMuleVirtualDataViewCtrl::GetDisplayOrder(wxDataViewItemArray &ordered) const

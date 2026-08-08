@@ -521,24 +521,31 @@ void CMuleDataViewCtrl::OnChar(wxKeyEvent &evt)
 void CMuleDataViewCtrl::OnKeyDown(wxKeyEvent &evt)
 {
 #ifdef __WXOSX__
-	// NSOutlineView moves the view without touching the selection, so the
-	// shifted navigation keys -- which extend the selection on GTK and MSW
-	// -- do nothing at all here. The unshifted forms are deliberately left
-	// to the platform, which scrolls without moving the selection by
-	// convention.
-	if (evt.ShiftDown()) {
+	// NSOutlineView scrolls the view for these keys without touching either
+	// the selection or the cursor, so on this platform they are ours to
+	// implement -- shifted, where GTK and MSW extend the selection and the
+	// native control does nothing at all, and unshifted too.
+	//
+	// Unshifted was left to the platform at first, on the grounds that
+	// scroll-without-select is the macOS convention. It reads as broken
+	// here: the cursor stays where it was, so the next arrow key jumps the
+	// view straight back to it, and the page key looks like it did nothing.
+	// Moving the cursor with the view is what the other two ports do, and it
+	// is what makes the following arrow key continue from what is on screen.
+	{
+		const bool extend = evt.ShiftDown();
 		switch (evt.GetKeyCode()) {
 		case WXK_PAGEUP:
-			PageExtendSelection(PageMotion::PageUp);
+			MoveByPage(PageMotion::PageUp, extend);
 			return;
 		case WXK_PAGEDOWN:
-			PageExtendSelection(PageMotion::PageDown);
+			MoveByPage(PageMotion::PageDown, extend);
 			return;
 		case WXK_HOME:
-			PageExtendSelection(PageMotion::Home);
+			MoveByPage(PageMotion::Home, extend);
 			return;
 		case WXK_END:
-			PageExtendSelection(PageMotion::End);
+			MoveByPage(PageMotion::End, extend);
 			return;
 		default:
 			break;
@@ -549,7 +556,7 @@ void CMuleDataViewCtrl::OnKeyDown(wxKeyEvent &evt)
 }
 
 #ifdef __WXOSX__
-void CMuleDataViewCtrl::PageExtendSelection(PageMotion motion)
+void CMuleDataViewCtrl::MoveByPage(PageMotion motion, bool extend)
 {
 	wxDataViewItemArray ordered;
 	GetDisplayOrder(ordered);
@@ -596,20 +603,30 @@ void CMuleDataViewCtrl::PageExtendSelection(PageMotion motion)
 	}
 	}
 
-	// Grow the existing selection to cover everything between where the
-	// cursor was and where it lands, so repeated presses keep extending.
+	const wxDataViewItem targetItem = ordered[target];
+
 	wxDataViewItemArray selection;
-	GetSelections(selection);
-	const int from = std::min(current < 0 ? target : current, target);
-	const int to = std::max(current > last ? target : current, target);
-	for (int i = std::max(0, from); i <= std::min(last, to); ++i) {
-		if (selection.Index(ordered[i]) == wxNOT_FOUND) {
-			selection.Add(ordered[i]);
+	if (extend) {
+		// Grow the existing selection to cover everything between where the
+		// cursor was and where it lands, so repeated presses keep extending.
+		GetSelections(selection);
+		const int from = std::min(current < 0 ? target : current, target);
+		const int to = std::max(current > last ? target : current, target);
+		for (int i = std::max(0, from); i <= std::min(last, to); ++i) {
+			if (selection.Index(ordered[i]) == wxNOT_FOUND) {
+				selection.Add(ordered[i]);
+			}
 		}
+	} else {
+		// Unshifted: the row landed on becomes the selection, as an arrow
+		// key would leave it.
+		selection.Add(targetItem);
 	}
 
-	const wxDataViewItem targetItem = ordered[target];
 	SetSelections(selection);
+	// The cursor, not just the selection: it is what the arrow keys move
+	// from next, and leaving it behind is what made an unshifted page key
+	// look like it had done nothing as soon as one was pressed.
 	SetCurrentItem(targetItem);
 	EnsureVisible(targetItem);
 }

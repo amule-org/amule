@@ -336,11 +336,17 @@ private:
 		End
 	};
 	/**
-	 * Extends the selection by a page, or to the start/end of the list.
-	 * GTK and MSW get this from their backends; NSOutlineView moves the
-	 * view without touching the selection.
+	 * Moves the cursor by a page, or to the start/end of the list, and
+	 * brings it into view.
+	 *
+	 * GTK and MSW get this from their backends; NSOutlineView scrolls
+	 * without moving cursor or selection, which leaves the next arrow key
+	 * jumping back to wherever the cursor was left.
+	 *
+	 * @param extend Grow the selection to the row landed on, as Shift does
+	 *               on the other ports, rather than replacing it.
 	 */
-	void PageExtendSelection(PageMotion motion);
+	void MoveByPage(PageMotion motion, bool extend);
 #endif
 
 	wxDECLARE_EVENT_TABLE();

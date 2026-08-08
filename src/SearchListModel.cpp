@@ -24,7 +24,9 @@
 
 #include "SearchListModel.h"
 
-#include <algorithm> // Needed for std::min
+#include <algorithm>     // Needed for std::min, std::remove
+#include <unordered_map> // Needed for std::unordered_map (additions per parent)
+#include <unordered_set> // Needed for std::unordered_set (duplicate suppression)
 
 #include <common/Format.h> // Needed for CFormat
 #include <tags/FileTags.h> // Needed for FT_MEDIA_LENGTH / _BITRATE / _CODEC
@@ -38,36 +40,171 @@
 #include "SearchList.h"     // Needed for CSearchList, CSearchResultList
 #include "SearchListCtrl.h"
 
+namespace
+{
+/**
+ * Whether arrivals may be reported to the control one at a time.
+ *
+ * Only on macOS, and only with no filter in force.
+ *
+ * The filter half is about correctness: m_filterKnown makes a row's
+ * visibility a live function of its download status, so a value change can
+ * require a row to appear or disappear, which only re-evaluating the tree
+ * catches.
+ *
+ * The platform half is about wx. Its GTK backend keeps its own mirror of the
+ * model's tree, and feeding this model's arrivals into it a notification at
+ * a time corrupts GtkTreeView's red-black tree outright --
+ *
+ *   gtkrbtree.c:471:_gtk_rbtree_insert_after:
+ *     assertion failed: (_gtk_rbtree_is_nil (tree->root))
+ *
+ * -- which aborts the application. That was first seen for ItemAdded() under
+ * a newly formed group; confining the incremental path to top-level
+ * additions and value changes did not avoid it, as the same abort came back
+ * from the root batch. PR #796 had already found that neither ItemChanged()
+ * nor a delete-and-re-add made GTK or MSW re-derive container-ness, and
+ * settled on Cleared() for that reason; two aborts from two different
+ * notifications say the constraint is broader than container-ness, so this
+ * stops trying to find the subset GTK tolerates.
+ *
+ * Native NSOutlineView keeps no such structure -- it re-queries the model as
+ * it draws, which is what masked the original #796 defect -- so it takes the
+ * incremental path happily, and that is where the scroll position was being
+ * lost on every burst of results.
+ *
+ * MSW is grouped with GTK deliberately: its generic implementation has tree
+ * bookkeeping of its own, it was never the platform this was tested on, and
+ * keeping today's behaviour there costs nothing but a repaint.
+ */
+bool IncrementalNotificationsUsable(const CSearchListCtrl *owner)
+{
+#ifdef __WXOSX__
+	return !owner->HasActiveFilter();
+#else
+	(void)owner;
+	return false;
+#endif
+}
+} // namespace
+
+std::set<CSearchListModel *> CSearchListModel::s_models;
+
 CSearchListModel::CSearchListModel(CSearchListCtrl *owner)
 : m_owner(owner)
 {
+	s_models.insert(this);
 }
 
-void CSearchListModel::NotifyFileAdded(CSearchFile *)
+CSearchListModel::~CSearchListModel()
 {
-	MarkDirty();
+	s_models.erase(this);
 }
 
-void CSearchListModel::NotifyFileUpdated(CSearchFile *)
+void CSearchListModel::DropReferencesTo(CSearchFile *file)
 {
-	MarkDirty();
+	for (CSearchListModel *model : s_models) {
+		model->m_pendingAdded.erase(
+			std::remove(model->m_pendingAdded.begin(), model->m_pendingAdded.end(), file),
+			model->m_pendingAdded.end());
+		model->m_pendingChanged.erase(
+			std::remove(model->m_pendingChanged.begin(), model->m_pendingChanged.end(), file),
+			model->m_pendingChanged.end());
+	}
+}
+
+void CSearchListModel::NotifyFileAdded(CSearchFile *file)
+{
+	if (file == nullptr || !IncrementalNotificationsUsable(m_owner)) {
+		MarkDirty();
+		return;
+	}
+	m_pendingAdded.push_back(file);
+}
+
+void CSearchListModel::NotifyFileUpdated(CSearchFile *file)
+{
+	if (file == nullptr || !IncrementalNotificationsUsable(m_owner)) {
+		MarkDirty();
+		return;
+	}
+	m_pendingChanged.push_back(file);
 }
 
 void CSearchListModel::NotifyFilterChanged()
 {
 	// User action: reset now rather than waiting for idle.
+	DropPending();
 	m_pendingReset = false;
 	Cleared();
 }
 
+void CSearchListModel::DropPending()
+{
+	m_pendingAdded.clear();
+	m_pendingChanged.clear();
+}
+
 bool CSearchListModel::FlushPending()
 {
-	if (!m_pendingReset) {
+	if (m_pendingReset) {
+		// Supersedes anything queued: Cleared() re-reads the whole tree.
+		DropPending();
+		m_pendingReset = false;
+		Cleared();
+		return true;
+	}
+
+	if (m_pendingAdded.empty() && m_pendingChanged.empty()) {
 		return false;
 	}
-	m_pendingReset = false;
-	Cleared();
-	return true;
+
+	// Nothing here can be dangling: DropReferencesTo() removes a result the
+	// moment it is destroyed. Duplicates can be, and are: SetDownloadStatus()
+	// notifies every child of the parent it updated, so one arrival into a
+	// 50-variant group queues 51 entries and a busy idle window multiplies
+	// that. The control is handed each row once.
+	std::unordered_set<const CSearchFile *> seen;
+
+	// Additions are reported per parent, since wx takes one parent for a
+	// whole batch: top-level results under the root, grouped ones under the
+	// result they joined.
+	wxDataViewItemArray addedRoots;
+	std::unordered_map<CSearchFile *, wxDataViewItemArray> addedChildren;
+	for (CSearchFile *file : m_pendingAdded) {
+		if (!seen.insert(file).second) {
+			continue;
+		}
+		CSearchFile *parent = const_cast<CSearchFile *>(file->GetParent());
+		if (parent == nullptr) {
+			addedRoots.Add(ToItem(file));
+		} else {
+			addedChildren[parent].Add(ToItem(file));
+		}
+	}
+
+	seen.clear();
+	wxDataViewItemArray changed;
+	for (CSearchFile *file : m_pendingChanged) {
+		if (seen.insert(file).second) {
+			changed.Add(ToItem(file));
+		}
+	}
+	DropPending();
+
+	// Incremental, so the control keeps its scroll position, its selection
+	// and its expanded rows -- which Cleared() destroys, and which used to
+	// go on every burst of arriving results.
+	if (!addedRoots.IsEmpty()) {
+		ItemsAdded(wxDataViewItem(), addedRoots);
+	}
+	for (const auto &entry : addedChildren) {
+		ItemsAdded(ToItem(entry.first), entry.second);
+	}
+	if (!changed.IsEmpty()) {
+		ItemsChanged(changed);
+	}
+	return false;
 }
 
 unsigned int CSearchListModel::GetColumnCount() const

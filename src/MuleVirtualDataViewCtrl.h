@@ -217,6 +217,10 @@ private:
 	int CompareItemsFull(wxUIntPtr data1, wxUIntPtr data2) const;
 	//! Where `data` belongs under the current sort.
 	long InsertPos(wxUIntPtr data) const;
+	//! Orders m_items and refreshes the row index, telling the control
+	//! nothing -- the caller decides what notification its situation needs.
+	void SortItems();
+
 	//! m_rowOf is a cache of m_items; every structural change rebuilds it.
 	void RebuildRowIndex();
 

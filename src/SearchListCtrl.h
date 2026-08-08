@@ -186,6 +186,19 @@ public:
 	bool PassesFilter(const CSearchFile *file) const;
 
 	/**
+	 * Whether a filter is in force, i.e. whether a row's visibility is a
+	 * live function of its values rather than a constant.
+	 *
+	 * CSearchListModel asks before deciding how to report a change. With no
+	 * filter every result is shown, so an arriving one is purely an addition
+	 * and an updated one keeps its row; with a filter, an update can make a
+	 * row have to appear or disappear (m_filterKnown drops a result the
+	 * moment its download status stops being NEW), which only a full
+	 * re-evaluation of the tree catches.
+	 */
+	bool HasActiveFilter() const { return m_filterEnabled && m_filter.IsValid(); }
+
+	/**
 	 * True if `file` should be exposed as a tree row: it passes the filter
 	 * itself, or (for a parent) at least one of its children does -- in
 	 * which case the parent is still shown as a container, regardless of

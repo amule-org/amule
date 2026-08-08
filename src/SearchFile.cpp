@@ -414,6 +414,13 @@ void CSearchFile::AddChild(CSearchFile *file)
 				logSearch, CFormat("Created initial child for result '%s'") % GetFileName());
 			m_children.push_back(new CSearchFile(*this));
 			m_children.back()->m_parent = this;
+			// Announced like any other new row. Without this the group is
+			// formed with two children while only the incoming one is ever
+			// notified, so a view that builds its rows from notifications --
+			// rather than re-reading the model as it draws, which is what
+			// hides this on macOS -- shows a two-variant group holding one
+			// row, and the one missing is the result received first.
+			Notify_Search_Add_Result(m_children.back());
 		}
 	}
 
