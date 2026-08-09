@@ -2393,7 +2393,12 @@ void CamuleApp::OnNotifyEvent(CMuleGUIEvent &evt)
 #ifdef AMULE_DAEMON
 	evt.Notify();
 #else
-	if (theApp->amuledlg) {
+	// IsAlways() covers the socket-layer notifications, which have to run
+	// whether or not there is a window -- see CMuleGUIEvent::IsAlways(). The
+	// monolithic app builds its dialog before networking starts, so this is
+	// far less exposed than amulegui, but the window is gone again during
+	// shutdown while sockets are still closing.
+	if (evt.IsAlways() || theApp->amuledlg) {
 		evt.Notify();
 	}
 #endif

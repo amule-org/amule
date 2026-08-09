@@ -1030,21 +1030,24 @@ void CamuleRemoteGuiApp::OnECInitDone(wxEvent &)
 
 void CamuleRemoteGuiApp::OnNotifyEvent(CMuleGUIEvent &evt)
 {
-	// Same guard CamuleApp::OnNotifyEvent has, and for the same reason: this
-	// is the queued half of MuleNotify. HandleNotification() runs a
-	// notification inline when it is already on the main thread, and refuses
-	// to when there is no window to update; off the main thread it queues a
-	// CMuleGUIEvent instead, and that one lands here -- possibly long after,
-	// and possibly after the window is gone. amulegui destroys its dialog
-	// whenever the EC link drops (ShutDown() nulls amuledlg), a remote core
+	// Two kinds of notification arrive here and they need opposite treatment.
+	//
+	// DoNotify() drives what the GUI displays. Its handlers read
+	// theApp->amuledlg->m_transferwnd and friends without checking the dialog
+	// itself, so one delivered after the window is gone dereferences null
+	// (EXC_BAD_ACCESS at 0x3c0 -- m_transferwnd's offset in CamuleDlg).
+	// amulegui destroys its dialog whenever the EC link drops, a remote core
 	// restart being the everyday way that happens, and the pending-event
-	// queue is not drained first. The handlers behind Notify() read
-	// theApp->amuledlg->m_transferwnd and friends without checking, so a
-	// notification arriving in that window dereferenced null: reported as
-	// EXC_BAD_ACCESS at 0x3c0, which is exactly CamuleDlg::m_transferwnd's
-	// offset. A notification with no window to update has nothing to do, so
-	// it is dropped rather than delivered.
-	if (amuledlg) {
+	// queue is not drained first. HandleNotification() already declines to
+	// run one of these inline when there is no window; this is the same test
+	// for the queued half.
+	//
+	// DoNotifyAlways() is how the socket layer reaches the main thread
+	// (CoreNotify_LibSocketConnect and friends, posted from asio callbacks).
+	// Those must run whatever the GUI is doing -- amulegui has no main window
+	// until an EC connection has been made, so dropping them means the
+	// connection never completes and every attempt ends at the 15 s watchdog.
+	if (evt.IsAlways() || amuledlg) {
 		evt.Notify();
 	}
 }
@@ -1211,7 +1214,15 @@ void CServerInfoHandlerRem::HandlePacket(const CECPacket *packet)
 		// amuled was restarted, or someone else issued a clear, so the
 		// remote cumulative buffer is shorter or unrelated. Wipe the
 		// local view and start fresh from the current snapshot.
-		theApp->amuledlg->ResetLog(ID_SERVERINFO);
+		// Guarded like every other view call reached from an EC reply: a
+		// reply can land while amulegui has no dialog -- it is destroyed
+		// whenever the link drops and rebuilt by Startup() after the next
+		// connect, and replies already in flight are not drained. The
+		// bookkeeping around these calls still has to run, so only the call
+		// into the view is skipped.
+		if (theApp->amuledlg) {
+			theApp->amuledlg->ResetLog(ID_SERVERINFO);
+		}
 		delta = fullLog;
 	}
 	m_seenSoFar = fullLog;
@@ -1555,8 +1566,10 @@ void CCatHandler::HandlePacket(const CECPacket *packet)
 						 "directory '%s'.")) %
 				       cs->path.GetPrintable() % cs->title % pathTag->GetStringData();
 			cs->path = CPath(pathTag->GetStringData());
-			theApp->amuledlg->m_transferwnd->UpdateCategory(cat);
-			theApp->amuledlg->m_transferwnd->downloadlistctrl->Refresh();
+			if (theApp->amuledlg) {
+				theApp->amuledlg->m_transferwnd->UpdateCategory(cat);
+				theApp->amuledlg->m_transferwnd->downloadlistctrl->Refresh();
+			}
 			// Same re-entrancy hazard as CAddLinkHandler above: keep the
 			// modal off the OnPacketReceived stack so a nested wx event
 			// loop doesn't corrupt CECSocket rx state.
@@ -1667,7 +1680,10 @@ void CServerConnectRem::HandlePacket(const CECPacket *packet)
 		if (srvtag) {
 			server = theApp->serverlist->GetByID(srvtag->GetInt());
 			if (server != m_CurrServer) {
-				theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(server, true);
+				if (theApp->amuledlg) {
+					theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(
+						server, true);
+				}
 				m_CurrServer = server;
 			}
 		}
@@ -1678,7 +1694,10 @@ void CServerConnectRem::HandlePacket(const CECPacket *packet)
 	} else {
 		theApp->m_ed2kConnectedSince = wxDateTime();
 		if (m_CurrServer) {
-			theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(m_CurrServer, false);
+			if (theApp->amuledlg) {
+				theApp->amuledlg->m_serverwnd->serverlistctrl->HighlightServer(
+					m_CurrServer, false);
+			}
 			m_CurrServer = nullptr;
 		}
 	}
@@ -1699,7 +1718,9 @@ void CServerConnectRem::HandlePacket(const CECPacket *packet)
 		theApp->m_kadConnectedSince = wxDateTime();
 	}
 
-	theApp->amuledlg->ShowConnectionState();
+	if (theApp->amuledlg) {
+		theApp->amuledlg->ShowConnectionState();
+	}
 }
 
 /*
@@ -1801,7 +1822,9 @@ CServer *CServerListRem::CreateItem(const CEC_Server_Tag *tag)
 void CServerListRem::DeleteItem(CServer *in_srv)
 {
 	CScopedPtr<CServer> srv(in_srv);
-	theApp->amuledlg->m_serverwnd->serverlistctrl->RemoveServer(srv.get());
+	if (theApp->amuledlg) {
+		theApp->amuledlg->m_serverwnd->serverlistctrl->RemoveServer(srv.get());
+	}
 }
 
 uint32 CServerListRem::GetItemID(CServer *server)
@@ -1848,7 +1871,9 @@ void CServerListRem::ProcessItemUpdate(const CEC_Server_Tag *tag, CServer *serve
 	tag->GetPing(&server->ping);
 	tag->GetFailed(&server->failedcount);
 
-	theApp->amuledlg->m_serverwnd->serverlistctrl->RefreshServer(server);
+	if (theApp->amuledlg) {
+		theApp->amuledlg->m_serverwnd->serverlistctrl->RefreshServer(server);
+	}
 }
 
 CServer::CServer(const CEC_Server_Tag *tag)
@@ -1960,11 +1985,16 @@ void CKnownFilesRem::DeleteItem(CKnownFile *file)
 	Notify_KnownFileBeingDestroyed(file);
 
 	if (theApp->sharedfiles->count(id)) {
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->RemoveFile(file);
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->RemoveFile(file);
+		}
 		theApp->sharedfiles->erase(id);
 	}
 	if (theApp->downloadqueue->count(id)) {
-		theApp->amuledlg->m_transferwnd->downloadlistctrl->RemoveFile(static_cast<CPartFile *>(file));
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_transferwnd->downloadlistctrl->RemoveFile(
+				static_cast<CPartFile *>(file));
+		}
 		theApp->downloadqueue->erase(id);
 	}
 	delete file;
@@ -2093,7 +2123,7 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	transferred += file->statistic.transferred;
 	accepted += file->statistic.transferred;
 
-	if (!m_initialUpdate) {
+	if (!m_initialUpdate && theApp->amuledlg) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->UpdateItem(file);
 	}
 
@@ -2161,7 +2191,10 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	// The cold-boot m_initialUpdate path has its own batching (ShowFileList),
 	// so leave it alone to avoid a redundant second sort. Captured now because
 	// ProcessItemUpdate/AddFile below and the final prune all touch the ctrl.
-	const bool batchDownloadList = !m_initialUpdate;
+	// The dialog is part of the condition: these Begin/End pairs and the
+	// per-item calls between them are view work, and an EC reply can arrive
+	// with no dialog at all (destroyed on link loss, rebuilt by Startup()).
+	const bool batchDownloadList = !m_initialUpdate && theApp->amuledlg != nullptr;
 	bool downloadListGrew = false;
 	if (batchDownloadList) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->BeginBatchUpdate();
@@ -2174,7 +2207,7 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	// O(n^2) on a large share. Batch every non-initial poll and sort once at the
 	// end, only if the poll actually added a file (sharedListGrew). Reconnect
 	// reconcile is one such non-initial poll, so it is covered too.
-	const bool batchSharedList = !m_initialUpdate;
+	const bool batchSharedList = !m_initialUpdate && theApp->amuledlg != nullptr;
 	bool sharedListGrew = false;
 	if (batchSharedList) {
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->BeginBatchUpdate();
@@ -2287,8 +2320,10 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 					// On the initial full sync, defer the per-item show +
 					// sort; the whole list is shown and sorted once below
 					// via ShowFileList() (issue #414 — O(n^2) otherwise).
-					theApp->amuledlg->m_transferwnd->downloadlistctrl->AddFile(
-						file, /*deferView=*/m_initialUpdate);
+					if (theApp->amuledlg) {
+						theApp->amuledlg->m_transferwnd->downloadlistctrl->AddFile(
+							file, /*deferView=*/m_initialUpdate);
+					}
 					downloadListGrew = true;
 					newFile = file;
 				} else {
@@ -2296,8 +2331,10 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 					ProcessItemUpdate(tag, newFile);
 					(*theApp->sharedfiles)[id] = newFile;
 					if (!m_initialUpdate) {
-						theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFile(
-							newFile);
+						if (theApp->amuledlg) {
+							theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl
+								->ShowFile(newFile);
+						}
 						sharedListGrew = true;
 					}
 				}
@@ -2307,8 +2344,10 @@ void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
 	}
 
 	if (m_initialUpdate) {
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFileList();
-		theApp->amuledlg->m_transferwnd->downloadlistctrl->ShowFileList();
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFileList();
+			theApp->amuledlg->m_transferwnd->downloadlistctrl->ShowFileList();
+		}
 		m_initialUpdate = false;
 	} else if (partial_update && !m_reconnectReconcile) {
 		// Normal partial-update poll: apply explicit removals from
@@ -2942,13 +2981,17 @@ void CKnownFilesRem::ProcessItemUpdatePartfile(const CEC_PartFile_Tag *tag, CPar
 		}
 	}
 
-	theApp->amuledlg->m_transferwnd->downloadlistctrl->UpdateItem(file);
+	if (theApp->amuledlg) {
+		theApp->amuledlg->m_transferwnd->downloadlistctrl->UpdateItem(file);
+	}
 
 	// If file is shared check if it is already listed in shared files.
 	// If not, add it and show it.
 	if (file->IsShared() && !theApp->sharedfiles->count(file->ECID())) {
 		(*theApp->sharedfiles)[file->ECID()] = file;
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFile(file);
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->ShowFile(file);
+		}
 	}
 }
 
@@ -3785,7 +3828,9 @@ void CSearchListRem::RemoveResults(wxUIntPtr nSearchID)
 void CStatsUpdaterRem::HandlePacket(const CECPacket *packet)
 {
 	theStats::UpdateStats(packet);
-	theApp->amuledlg->ShowTransferRate();
+	if (theApp->amuledlg) {
+		theApp->amuledlg->ShowTransferRate();
+	}
 	theApp->ShowUserCount(); // maybe there should be a check if a usercount changed ?
 	// handle the connstate tag which is included in the stats packet
 	theApp->serverconnect->HandlePacket(packet);
@@ -3898,8 +3943,10 @@ void CStatTreeRem::HandlePacket(const CECPacket *p)
 {
 	const CECTag *treeRoot = p->GetTagByName(EC_TAG_STATTREE_NODE);
 	if (treeRoot) {
-		theApp->amuledlg->m_statisticswnd->RebuildStatTreeRemote(treeRoot);
-		theApp->amuledlg->m_statisticswnd->ShowStatistics();
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_statisticswnd->RebuildStatTreeRemote(treeRoot);
+			theApp->amuledlg->m_statisticswnd->ShowStatistics();
+		}
 	}
 }
 
@@ -4044,8 +4091,10 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		if (conn > m_peakConnections) {
 			m_peakConnections = conn;
 		}
-		theApp->amuledlg->m_statisticswnd->UpdateStatGraphs(m_peakConnections, update);
-		theApp->amuledlg->m_kademliawnd->UpdateGraph(update);
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_statisticswnd->UpdateStatGraphs(m_peakConnections, update);
+			theApp->amuledlg->m_kademliawnd->UpdateGraph(update);
+		}
 
 		// Mirror the decoded point into the client-side history ring
 		// so COScopeCtrl::PlotHistory (now shared with monolithic) can
