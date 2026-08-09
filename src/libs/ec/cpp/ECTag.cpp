@@ -33,6 +33,9 @@
 #include "ECSpecialTags.h" // Needed for CValueMap
 #include "ECID.h"          // Needed for CECID
 
+#include <iomanip> // Needed for std::setprecision
+#include <limits>  // Needed for std::numeric_limits
+
 /**********************************************************
  *							  *
  *	CECTag class					  *
@@ -263,7 +266,12 @@ CECTag::CECTag(ec_tagname_t name, double data)
 : m_tagName(name)
 {
 	std::ostringstream double_str;
-	double_str << data;
+	// Default stream precision is 6 significant digits, which switches to
+	// scientific notation past 1e6 and quantises the value: a statsgraph
+	// timestamp (seconds of uptime) lands on a 10-second grid once the
+	// daemon has been up ~11.6 days, and 100 seconds past ~115 days.
+	// max_digits10 is the shortest precision that round-trips exactly.
+	double_str << std::setprecision(std::numeric_limits<double>::max_digits10) << data;
 	std::string double_string = double_str.str();
 	const char *double_chr = double_string.c_str();
 	m_dataLen = (ec_taglen_t)strlen(double_chr) + 1;
