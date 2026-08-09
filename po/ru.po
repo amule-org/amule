@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-08 18:46+0200\n"
-"PO-Revision-Date: 2026-08-08 15:51+0000\n"
+"PO-Revision-Date: 2026-08-09 14:45+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -668,9 +668,9 @@ msgid "Navigate"
 msgstr "Навигация"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "Сообщение сервера: %s"
+msgstr "Места свободно: %s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -3040,7 +3040,7 @@ msgstr "Поток Asio %d запущен"
 
 #: src/ListenSocket.cpp
 msgid "ListenSocket: Ok."
-msgstr "ListenSocket: В порядке."
+msgstr "Сокет прослушивания: в порядке."
 
 #: src/ListenSocket.cpp
 msgid "ERROR: Could not listen to TCP port."
@@ -4287,29 +4287,27 @@ msgstr "Показать, сколько общих файлов исключи�
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
-msgstr ""
+msgstr "Если файлы подключённого ядра находятся на другой машине, укажите соответствие между путём, который сообщает ядро, и тем, где эта файловая система доступна с этого компьютера (напр., сетевой ресурс), чтобы команды «Открыть» и «Показать в папке» работали."
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Path Mappings"
-msgstr ""
+msgstr "Сопоставление путей"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Remote prefix"
-msgstr "Удалённый сервер"
+msgstr "Удалённый префикс"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
-msgstr ""
+msgstr "Префикс пути, который сообщает ядро, напр. /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Local prefix"
-msgstr "Локальный сервер"
+msgstr "Локальный префикс"
 
 #: src/muuli_wdr.cpp
 msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
-msgstr ""
+msgstr "Где эта же папка доступна с этого компьютера, напр. смонтированный сетевой ресурс"
 
 #: src/muuli_wdr.cpp
 msgid "Graphs"
@@ -4708,7 +4706,7 @@ msgstr "Журнал aMule"
 
 #: src/muuli_wdr.cpp
 msgid "Server Info"
-msgstr "Сообщение сервера"
+msgstr "Сведения сервера"
 
 #: src/muuli_wdr.cpp
 msgid "ED2K Info"
@@ -5717,9 +5715,8 @@ msgid "no options available"
 msgstr "нет доступных опций"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Invalid path mapping found, skipping"
-msgstr "Обнаружена неверная категория, пропускается"
+msgstr "Найдено неверное сопоставление путей, пропускается"
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
@@ -6250,16 +6247,15 @@ msgstr "Общая папка"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
-msgstr ""
+msgstr "Необходимо заполнить оба поля: удалённый и локальный префиксы."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
-msgstr ""
+msgstr "Этот удалённый префикс уже сопоставлен."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose the local folder"
-msgstr "Выберите каталог для %s"
+msgstr "Выберите локальную папку"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -6293,22 +6289,20 @@ msgstr "Общая"
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
+msgstr "Сохраняются только %u последних из %u открытых поисков в %s."
 
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
+msgstr "Сохраняются только первые %u из %u результатов для поиска «%s»."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "ПРЕДУПРЕЖДЕНИЕ: Список известных файлов повреждён, содержит неверный заголовок."
+msgstr "ПРЕДУПРЕЖДЕНИЕ: сохранённый список поиска повреждён, содержит неверный заголовок."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Неверный элемент списка известных файлов, файл возможно повреждён: "
+msgstr "Неверная запись в сохранённом списке поиска, файл возможно повреждён"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6416,7 +6410,7 @@ msgstr "Критическая ошибка при попытке подключ
 #: src/ServerConnect.cpp
 #, c-format
 msgid "Lost connection to %s (%s:%i)"
-msgstr "Утеряно соединение с %s (%s:%i)"
+msgstr "Потеряно соединение с %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6595,9 +6589,8 @@ msgid "Users"
 msgstr "Участники"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Max Users"
-msgstr "Участники"
+msgstr "Макс. пользователей"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
@@ -6609,15 +6602,13 @@ msgid "Version"
 msgstr "Версия"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Soft Files"
-msgstr "Файлы"
+msgstr "Ожидаемые файлы"
 
 # подпись в главном окне. длинная просто не влезет.
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Hard Files"
-msgstr "Общие файлы"
+msgstr "Фактические файлы"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
@@ -7108,12 +7099,12 @@ msgstr[1] "Экспортированы %u общих файла в «%s»."
 msgstr[2] "Экспортировано %u общих файлов в «%s»."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
-msgstr[0] "Общие файлы (%i)"
-msgstr[1] "Общие файлы (%i)"
-msgstr[2] "Общие файлы (%i)"
+msgstr[0] "Общие файлы (%i, вычисляется хеш для %u)"
+msgstr[1] "Общие файлы (%i, вычисляется хеш для %u)"
+msgstr[2] "Общие файлы (%i, вычисляется хеш для %u)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
