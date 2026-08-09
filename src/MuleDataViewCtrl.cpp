@@ -567,6 +567,25 @@ void CMuleDataViewCtrl::OnChar(wxKeyEvent &evt)
 void CMuleDataViewCtrl::OnKeyDown(wxKeyEvent &evt)
 {
 #ifdef __WXOSX__
+	// wx's Cocoa backend only ever raises wxEVT_DATAVIEW_ITEM_CONTEXT_MENU in
+	// response to a physical right-click: there is no keyboard-triggered path
+	// and no AXShowMenu implementation for any control on this port, not
+	// specific to wxDataViewCtrl (wxWidgets/wxWidgets#13010, open since 2011).
+	// VoiceOver's context-menu gesture (VO+Shift+M) performs AXShowMenu, so it
+	// never reaches wx here at all -- reported for aMule in
+	// amule-org/amule#180. Shift+F10 raises the same event ourselves,
+	// sidestepping the missing AXShowMenu entirely. Ctrl+Return was tried
+	// first (a menu-key alternative some VoiceOver users prefer to
+	// function-row keys) and rejected: NSOutlineView's own keyDown: treats
+	// bare Return as "activate the row" before this handler ever sees it --
+	// confirmed by it opening a shared file's associated app instead of a
+	// menu, Control held or not -- so it can never fire here on this port.
+	if (evt.ShiftDown() && evt.GetKeyCode() == WXK_F10) {
+		wxDataViewEvent menuEvent(wxEVT_DATAVIEW_ITEM_CONTEXT_MENU, this, GetCurrentItem());
+		ProcessWindowEvent(menuEvent);
+		return;
+	}
+
 	// NSOutlineView scrolls the view for these keys without touching either
 	// the selection or the cursor, so on this platform they are ours to
 	// implement -- shifted, where GTK and MSW extend the selection and the
