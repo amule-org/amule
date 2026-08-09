@@ -233,6 +233,10 @@ private:
 	void ScheduleResort();
 	void MaybeResortNow();
 	void OnResortTimer(wxTimerEvent &evt);
+	//! Swallows left/right in a flat list, which has no expand/collapse for
+	//! them to do and misrepaints when the native control handles them.
+	void OnArrowKey(wxKeyEvent &evt);
+
 	bool IsInteracting() const;
 
 	VirtualModel *m_virtualModel;
