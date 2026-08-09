@@ -42,6 +42,11 @@ public:
 		kInvalid
 	} LinkType;
 
+	/**
+	 * Parses a link, accepting percent-encoded '|' delimiters.
+	 *
+	 * Throws a wxString describing the problem if the link is not one.
+	 */
 	static CED2KLink *CreateLinkFromUrl(const wxString &link);
 
 	LinkType GetKind() const;
@@ -53,6 +58,9 @@ protected:
 	CED2KLink(LinkType type);
 
 private:
+	//! Parses a link exactly as given; CreateLinkFromUrl() drives the retry.
+	static CED2KLink *ParseLink(const wxString &link);
+
 	LinkType m_type;
 };
 

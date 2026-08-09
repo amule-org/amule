@@ -171,6 +171,14 @@ wxString UnescapeHTML(const wxString &str)
 	return result;
 }
 
+wxString RestoreEncodedPipes(const wxString &link)
+{
+	wxString restored(link);
+	restored.Replace("%7C", "|");
+	restored.Replace("%7c", "|");
+	return restored;
+}
+
 wxString validateURI(const wxString &url)
 {
 	wxURI uri(url);
