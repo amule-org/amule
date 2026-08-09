@@ -99,7 +99,7 @@ bool CMuleBarRenderer::Render(wxRect cell, wxDC *dc, int WXUNUSED(state))
 	if (!bFlat) {
 		wxDCPenChanger pen(*dc, *wxBLACK_PEN);
 		wxDCBrushChanger brush(*dc, *wxTRANSPARENT_BRUSH);
-		dc->DrawRectangle(cell);
+		dc->DrawRectangle(BorderRectForBar(cell));
 	}
 	return true;
 }

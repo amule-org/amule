@@ -150,14 +150,38 @@ protected:
 	 * into this same rect, not the raw cell, or it will not line up with the
 	 * bar underneath it.
 	 */
+	/**
+	 * The area a bar may paint in, one pixel clear of the row above and below.
+	 *
+	 * Pre-port every caller inset the rect it handed the bar by a pixel top and
+	 * bottom before drawing (CSharedFilesCtrl::OnDrawItem and its equivalents),
+	 * and the 3D border went on that inset rect, not on the cell. Only the
+	 * inner `!bFlat` step survived the port into this class; while GetSize()
+	 * reported the text height the clamp in WXCallRender() happened to supply
+	 * the missing gap, so nothing showed until the bar started filling its cell
+	 * (issue #880). Without it, flat bars in adjacent rows touch and read as one
+	 * block, and 3D borders double up into a single thick line.
+	 */
 	static wxRect InsetForBar(wxRect cell, bool bFlat)
 	{
+		cell.y++;
+		cell.height -= 2;
 		if (!bFlat) {
+			// Round bar has a black border; the bar sits a pixel inside it.
 			cell.x++;
 			cell.y++;
 			cell.width -= 2;
 			cell.height -= 2;
 		}
+		return cell;
+	}
+
+	//! The rect the 3D border is stroked on: the cell less the separating
+	//! pixel, so the border does not sit where the gap belongs.
+	static wxRect BorderRectForBar(wxRect cell)
+	{
+		cell.y++;
+		cell.height -= 2;
 		return cell;
 	}
 
