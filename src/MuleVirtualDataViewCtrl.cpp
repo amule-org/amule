@@ -524,6 +524,22 @@ void CMuleVirtualDataViewCtrl::MaybeResortNow()
 		m_resortPending = false;
 		return;
 	}
+	// Nobody is looking at this list, so sorting it now buys nothing. The
+	// remote GUI keeps every list fed from the same poll whether or not its
+	// panel is on screen, so without this a single reply re-sorts the
+	// downloads, shared-files, sources and peers lists in full, once or twice
+	// a second, of which at most one is visible. Measured on a 1228-row
+	// shared list: 156 sorts in a 150-poll session, 143 of them while hidden.
+	//
+	// The work is deferred rather than dropped -- m_resortPending stays set,
+	// so the next update after the panel comes back sorts it. The poll that
+	// marks rows dirty runs continuously while connected, so that is within a
+	// poll interval of becoming visible, and a list only has a sort pending
+	// at all because something changed in it.
+	if (!IsShownOnScreen()) {
+		return;
+	}
+
 	// Hold off while interacting; the retry timer polls (only during
 	// interaction) until idle.
 	if (IsInteracting()) {
