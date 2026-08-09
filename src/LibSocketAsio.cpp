@@ -456,7 +456,7 @@ public:
 		m_ErrorCode = 0;
 		m_readBuffer = NULL;
 		m_readBufferSize = 0;
-		m_readPending = false;
+		m_readPending.store(false, std::memory_order_relaxed);
 		m_readBufferContent = 0;
 		m_eventPending = false;
 		m_port = 0;
@@ -640,8 +640,10 @@ public:
 			return 0;
 		}
 
-		if (m_readPending                      // Background read hasn't completed.
-			|| m_readBufferContent == 0) { // shouldn't be if it's not pending
+		// Acquire, pairing with the release in HandleRead: seeing false here
+		// means the buffer state published alongside it is visible too.
+		if (m_readPending.load(std::memory_order_acquire) // Background read hasn't completed.
+			|| m_readBufferContent == 0) {            // shouldn't be if it's not pending
 
 			m_blocksRead = true;
 			AddDebugLogLineF(logAsio, CFormat("Read1 %s %d - Block") % m_IP % bytesToRead);
@@ -958,7 +960,24 @@ private:
 		m_readBufferPtr = m_readBuffer;
 		m_readBufferContent = (uint32)bytes_transferred;
 
-		m_readPending = false;
+		// Release, and after the buffer writes above on purpose. A reader that
+		// acquire-loads this as false is then guaranteed to see the content
+		// and pointer that were written before it.
+		//
+		// Plain stores let the two become visible out of order. The main
+		// thread would see the new content with the pending flag still set,
+		// take the "a background read is still running" branch in Read(),
+		// and return without serving data that was already sitting in the
+		// buffer -- and without arming anything. Since that branch is reached
+		// from an event that has already been consumed, nothing looks again:
+		// the socket stays open with its bytes unread and answers nothing
+		// until the peer gives up. Caught in the act on arm64, where the
+		// reordering is permitted and does happen:
+		//
+		//   handleRead(10)[c=10 p=0]   <- strand: content set, pending cleared
+		//   block(8)     [c=10 p=1]    <- main: new content, stale flag
+		//
+		m_readPending.store(false, std::memory_order_release);
 		m_blocksRead = false;
 		PostReadEvent(2);
 	}
@@ -969,7 +988,7 @@ private:
 
 	void StartBackgroundRead()
 	{
-		m_readPending = true;
+		m_readPending.store(true, std::memory_order_relaxed);
 		m_readBufferContent = 0;
 		auto self = shared_from_this();
 		dispatch(m_strand, [self]() { self->DispatchBackgroundRead(); });
@@ -1180,7 +1199,10 @@ private:
 	char *m_readBuffer;
 	uint32 m_readBufferSize;
 	char *m_readBufferPtr;
-	bool m_readPending;
+	// atomic: cleared on the ASIO thread (HandleRead) and read on the main
+	// thread (Read), and it is the flag that orders the whole read handoff --
+	// see HandleRead for why plain stores were not enough.
+	std::atomic<bool> m_readPending;
 	uint32 m_readBufferContent;
 	bool m_eventPending;
 	std::atomic<char *>
