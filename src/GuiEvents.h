@@ -395,9 +395,10 @@ class CMuleGUIEvent : public wxEvent
 {
 public:
 	/** Takes ownership a notifier functor. */
-	CMuleGUIEvent(CMuleNotiferBase *ntf)
+	CMuleGUIEvent(CMuleNotiferBase *ntf, bool always = false)
 	: wxEvent(-1, MULE_EVT_NOTIFY)
 	, m_functor(ntf)
+	, m_always(always)
 	{
 		wxASSERT(m_functor);
 	}
@@ -408,14 +409,32 @@ public:
 	/** Executes the notification. */
 	void Notify() const { m_functor->Notify(); }
 
+	/**
+	 * True for a notification queued by HandleNotificationAlways(), i.e. one
+	 * that has to run whether or not there is a window.
+	 *
+	 * The two kinds share this event and its handler, so the handler has to
+	 * be able to tell them apart. DoNotify() drives things the GUI displays,
+	 * and HandleNotification() already declines to run one when there is no
+	 * main window to display it on. DoNotifyAlways() drives the socket layer
+	 * -- CoreNotify_LibSocketConnect and friends are how an asio callback
+	 * reaches the main thread -- and amulegui has no main window until an EC
+	 * connection has been made, so dropping those means the connection can
+	 * never complete.
+	 */
+	bool IsAlways() const { return m_always; }
+
 	/** @see wxEvent::Clone */
-	virtual wxEvent *Clone() const { return new CMuleGUIEvent(m_functor->Clone()); }
+	virtual wxEvent *Clone() const { return new CMuleGUIEvent(m_functor->Clone(), m_always); }
 
 private:
 	/** Not copyable. */
 	CMuleGUIEvent(const CMuleGUIEvent &);
 	/** Not assignable. */
 	CMuleGUIEvent &operator=(const CMuleGUIEvent &);
+
+	//! Whether this one runs regardless of the GUI's state; see IsAlways().
+	bool m_always;
 
 	//! The actual functor object,
 	CMuleNotiferBase *m_functor;

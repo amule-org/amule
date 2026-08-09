@@ -101,7 +101,10 @@ void HandleNotification(const CMuleNotiferBase &ntf)
 
 void HandleNotificationAlways(const CMuleNotiferBase &ntf)
 {
-	CMuleGUIEvent evt(ntf.Clone());
+	// Tagged so the handler runs it even with no main window: this is the
+	// path the socket layer uses, and amulegui has no window until the EC
+	// connection it is carrying has been made.
+	CMuleGUIEvent evt(ntf.Clone(), true);
 	wxQueueEvent(wxTheApp, (evt).Clone());
 }
 
@@ -188,7 +191,14 @@ void DownloadCtrlUpdateItem(const void *item)
 void DownloadCtrlDoItemSelectionChanged()
 {
 #ifndef AMULE_DAEMON
-	if (theApp->amuledlg->m_transferwnd && theApp->amuledlg->m_transferwnd->downloadlistctrl) {
+	// Checks the dialog itself, unlike its siblings: this one is queued
+	// through DoNotifyAlways(), so CMuleGUIEvent::IsAlways() is set and the
+	// handler runs even with no main window -- the exemption that lets the
+	// socket layer through during connect. Everything else on that path is a
+	// socket notification that never touches the GUI; these two are the
+	// exceptions, so they carry the test themselves.
+	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
+		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->DoItemSelectionChanged();
 	}
 #endif
@@ -535,7 +545,14 @@ void DownloadCtrlRemoveFile(CPartFile *file)
 void DownloadCtrlSort()
 {
 #ifndef AMULE_DAEMON
-	if (theApp->amuledlg->m_transferwnd && theApp->amuledlg->m_transferwnd->downloadlistctrl) {
+	// Checks the dialog itself, unlike its siblings: this one is queued
+	// through DoNotifyAlways(), so CMuleGUIEvent::IsAlways() is set and the
+	// handler runs even with no main window -- the exemption that lets the
+	// socket layer through during connect. Everything else on that path is a
+	// socket notification that never touches the GUI; these two are the
+	// exceptions, so they carry the test themselves.
+	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
+		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->SortList();
 	}
 #endif
