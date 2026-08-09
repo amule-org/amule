@@ -132,7 +132,16 @@ void CMuleDataViewCtrl::AddIconTextColumn(const wxString &label,
 	// every row whether or not that row has an icon -- see the class comment.
 	CMuleIconTextRenderer *renderer = new CMuleIconTextRenderer();
 	renderer->SetMode(mode);
-	renderer->SetAlignment(align);
+	// Supply the vertical half of the alignment when the caller has not.
+	// wx's own text renderer resolves a missing vertical component to its
+	// default, which is centred, but a custom renderer gets exactly what it
+	// is given -- so a plain wxALIGN_LEFT top-aligns the text while the icon
+	// drawn beside it is centred, and the name columns sit visibly higher
+	// than every other column in the same row (#867). wxALIGN_TOP is 0 and
+	// so indistinguishable from "unspecified" (wx says as much in defs.h),
+	// which is why this tests for the two bits that do carry intent.
+	const bool hasVertical = (align & (wxALIGN_BOTTOM | wxALIGN_CENTRE_VERTICAL)) != 0;
+	renderer->SetAlignment(hasVertical ? align : (align | wxALIGN_CENTRE_VERTICAL));
 	AppendColumn(new wxDataViewColumn(label, renderer, modelColumn, width, align, flags));
 	m_columnStore.RegisterColumn(static_cast<int>(modelColumn), width, key);
 }
