@@ -206,3 +206,30 @@ TEST(StringFunctions, UnescapeHTMLPercentBeforeNonAscii)
 
 	ASSERT_EQUALS(name, UnescapeHTML(name));
 }
+
+// Issue #873: Chromium refuses to open an ed2k:// URL holding literal '|', so
+// links are published and copied with the delimiters percent-encoded, and
+// CED2KLink::CreateLinkFromUrl retries through this helper.
+TEST(StringFunctions, RestoreEncodedPipesHandlesBothCases)
+{
+	ASSERT_EQUALS(wxString("ed2k://|file|a.iso|1|H|/"),
+		RestoreEncodedPipes("ed2k://%7Cfile%7Ca.iso%7C1%7CH%7C/"));
+	ASSERT_EQUALS(wxString("ed2k://|file|a.iso|1|H|/"),
+		RestoreEncodedPipes("ed2k://%7cfile%7ca.iso%7c1%7cH%7c/"));
+}
+
+// A link that a mail client only half-encoded still has to come out whole.
+TEST(StringFunctions, RestoreEncodedPipesHandlesMixedSpellings)
+{
+	ASSERT_EQUALS(wxString("a|b|c"), RestoreEncodedPipes("a%7Cb|c"));
+}
+
+// Only the delimiters are its business: every other escape belongs to the
+// filename, which UnescapeHTML decodes later, and decoding it here would
+// double-decode a name containing a literal '%'.
+TEST(StringFunctions, RestoreEncodedPipesLeavesOtherEscapesAlone)
+{
+	ASSERT_EQUALS(wxString("a|b%20c%2F"), RestoreEncodedPipes("a%7Cb%20c%2F"));
+	ASSERT_EQUALS(wxString("nothing to do"), RestoreEncodedPipes("nothing to do"));
+	ASSERT_EQUALS(wxEmptyString, RestoreEncodedPipes(wxEmptyString));
+}

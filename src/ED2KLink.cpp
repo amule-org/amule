@@ -33,9 +33,10 @@
 
 #include <protocol/ed2k/Constants.h>
 
-#include "MemFile.h"          // Needed for CMemFile
-#include "NetworkFunctions.h" // Needed for Uint32toStringIP
-#include <common/Format.h>    // Needed for CFormat
+#include "MemFile.h"                // Needed for CMemFile
+#include "NetworkFunctions.h"       // Needed for Uint32toStringIP
+#include <common/Format.h>          // Needed for CFormat
+#include <common/StringFunctions.h> // Needed for UnescapeHTML, RestoreEncodedPipes
 
 CED2KLink::CED2KLink(LinkType type)
 : m_type(type)
@@ -50,6 +51,27 @@ CED2KLink::LinkType CED2KLink::GetKind() const
 }
 
 CED2KLink *CED2KLink::CreateLinkFromUrl(const wxString &link)
+{
+	try {
+		return ParseLink(link);
+	} catch (const wxString &) {
+		// Chromium blocks an ed2k:// URL that carries literal '|', so links
+		// are published, copied and pasted with the delimiters percent-
+		// encoded. Retry rather than decode up front: a link that parses as
+		// given is never touched, so a filename holding a real "%7C" -- which
+		// is how a '|' in a name is spelled -- cannot be split into extra
+		// fields by this. Every caller reaches the parser, so handling it
+		// here is what keeps the command line, the paste box, the browser
+		// handler and the EC clients agreeing.
+		const wxString restored = RestoreEncodedPipes(link);
+		if (restored == link) {
+			throw;
+		}
+		return ParseLink(restored);
+	}
+}
+
+CED2KLink *CED2KLink::ParseLink(const wxString &link)
 {
 	wxRegEx re_type("ed2k://\\|(file|server|serverlist)\\|.*/", wxRE_ICASE | wxRE_DEFAULT);
 	{

@@ -259,6 +259,20 @@ wxChar HexToDec(const wxString &hex);
 wxString UnescapeHTML(const wxString &str);
 
 /**
+ * Restores the '|' delimiters of an eD2k link that were percent-encoded.
+ *
+ * Chromium refuses to hand over an ed2k:// URL containing literal '|' at all
+ * (it navigates to about:blank#blocked), so sites publish the encoded spelling
+ * instead, and that is what ends up on the clipboard. Only the delimiters are
+ * touched: a filename keeps whatever escapes it arrived with, and
+ * CED2KFileLink runs UnescapeHTML() over it once the link tokenizes.
+ *
+ * @param link The link as the user supplied it.
+ * @return The same link with %7C / %7c restored to '|'.
+ */
+wxString RestoreEncodedPipes(const wxString &link);
+
+/**
  * Ensures that the url pass is valid by escaping various chars.
  */
 wxString validateURI(const wxString &url);

@@ -38,7 +38,8 @@
 
 #include <wx/tokenzr.h>
 
-#include <common/Format.h> // Needed for CFormat
+#include <common/Format.h>          // Needed for CFormat
+#include <common/StringFunctions.h> // Needed for RestoreEncodedPipes
 #include "OtherFunctions.h"
 #include "Constants.h"   // Needed for Priority Levels
 #include "DataToText.h"  // Needed for PriorityToStr
@@ -581,10 +582,9 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 			if (args.Find("|h=") > -1 && args.Find("|/|h=") == -1) {
 				args.Replace("|h=", "|/|h=");
 			}
-			// repair links where | is replaced with %7C (Firefox)
-			if (args.StartsWith("ed2k://%7C")) {
-				args.Replace("%7C", "|");
-			}
+			// The daemon restores these itself, but amulecmd is routinely
+			// pointed at an older one over EC, so repair before sending.
+			args = RestoreEncodedPipes(args);
 		}
 		request = new CECPacket(EC_OP_ADD_LINK);
 		request->AddTag(CECTag(EC_TAG_STRING, args));

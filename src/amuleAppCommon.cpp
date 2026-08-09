@@ -922,11 +922,9 @@ CamuleAppCommon::CollectionExpansion CamuleAppCommon::ExpandPassedCollection(
 
 bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat)
 {
+	// Percent-encoded '|' delimiters are restored by CreateLinkFromUrl()
+	// below, which every other entry point reaches too.
 	wxString link(in);
-
-	// restore ASCII-encoded pipes
-	link.Replace("%7C", "|");
-	link.Replace("%7c", "|");
 
 	if (link.compare(0, 7, "magnet:") == 0) {
 		link = CMagnetED2KConverter(link);
