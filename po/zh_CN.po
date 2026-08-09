@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 18:46+0200\n"
+"POT-Creation-Date: 2026-08-09 21:47+0200\n"
 "PO-Revision-Date: 2026-08-09 14:48+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -212,6 +212,38 @@ msgstr "警告：在 Low ID 的情况下，你不能添加自己作为 ed2k 链�
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
 msgstr "已将 %s 的权限限制为仅所有者。"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Collection file not found: %s"
+msgstr "索引文件未找到: "
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid or empty collection file: %s"
+msgstr "写入链接集文件 '%s' 失败。"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "No usable links in collection: %s"
+msgstr "在目录中没有找到可以共享的文件：%s"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Skipped %u unusable link in collection: %s"
+msgid_plural "Skipped %u unusable links in collection: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amuleAppCommon.cpp src/DownloadQueue.cpp
+#, c-format
+msgid "Cannot convert magnet link to eD2k: %s"
+msgstr "无法转换 magnet 链接为 eD2k：%s"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid eD2k link \"%s\" - ERROR: %s"
+msgstr "非法 eD2k 链接！错误: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -626,6 +658,10 @@ msgstr "访问 https://github.com/amule-org/amule/releases/latest 来检查 是�
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "致命错误：创建计时器失败"
+
+#: src/amuleDlg.cpp
+msgid "Error! Unable to load Preferences"
+msgstr ""
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -1767,11 +1803,6 @@ msgstr "您已下载了文件 '%s'"
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "您已经尝试下载文件 %s"
-
-#: src/DownloadQueue.cpp
-#, c-format
-msgid "Cannot convert magnet link to eD2k: %s"
-msgstr "无法转换 magnet 链接为 eD2k：%s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -3012,6 +3043,11 @@ msgstr "远程连接：握手失败。"
 
 #: src/LibSocketAsio.cpp
 #, c-format
+msgid "Error creating UDP socket %s %d : %s"
+msgstr ""
+
+#: src/LibSocketAsio.cpp
+#, c-format
 msgid "Asio thread %d started"
 msgstr "Asio 线程 %d 已启动"
 
@@ -3246,6 +3282,16 @@ msgstr "总下载: %s"
 #, c-format
 msgid "Total UL: %s"
 msgstr "总上传: %s"
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "Created %s at port %u"
+msgstr ""
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
@@ -6280,6 +6326,11 @@ msgstr "Kad 搜索：从又一个对等方请求了更广泛的结果。"
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr "Kad 搜索：没有剩余对等方可重新请求更多结果（已达上限或尚无响应）。"
 
+#: src/SearchList.cpp
+#, fuzzy, c-format
+msgid "Error %u: %s\n"
+msgstr "更新 %s 出错"
+
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "文件 ID"
@@ -6480,6 +6531,11 @@ msgstr "无法打开“%s”"
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
 msgstr "无法保存 server.met！"
+
+#: src/ServerList.cpp
+#, fuzzy, c-format
+msgid "IO failure while writing 'server.met': %s"
+msgstr "读取“server.met”时发生 IO 错误: "
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

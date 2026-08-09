@@ -1386,7 +1386,7 @@ CSearchList::CMemFilePtr CSearchList::CreateSearchData(
 
 	if (_astrParserErrors.GetCount() > 0) {
 		for (unsigned int i = 0; i < _astrParserErrors.GetCount(); ++i) {
-			AddLogLineNS(CFormat("Error %u: %s\n") % i % _astrParserErrors[i]);
+			AddLogLineNS(CFormat(_("Error %u: %s\n")) % i % _astrParserErrors[i]);
 		}
 
 		return CMemFilePtr(nullptr);

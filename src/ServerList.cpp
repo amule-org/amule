@@ -818,7 +818,7 @@ bool CServerList::SaveServerMet()
 		servermet.Close();
 
 	} catch (const CIOFailureException &e) {
-		AddLogLineC("IO failure while writing 'server.met': " + e.what());
+		AddLogLineC(CFormat(_("IO failure while writing 'server.met': %s")) % e.what());
 		return false;
 	}
 

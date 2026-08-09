@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 18:46+0200\n"
+"POT-Creation-Date: 2026-08-09 21:47+0200\n"
 "PO-Revision-Date: 2026-08-09 14:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -206,6 +206,38 @@ msgstr "HOIATUS: Sa ei saa ennast eD2k lingi jaoks allikana lisada ajal kui omad
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Collection file not found: %s"
+msgstr "Indeksfaili ei leidnud: "
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid or empty collection file: %s"
+msgstr "Ei suuda tõmmata kasutaja '%s' jagatud faili"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "No usable links in collection: %s"
+msgstr "Kataloogis '%s' pole jagatavaid faile"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Skipped %u unusable link in collection: %s"
+msgid_plural "Skipped %u unusable links in collection: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amuleAppCommon.cpp src/DownloadQueue.cpp
+#, c-format
+msgid "Cannot convert magnet link to eD2k: %s"
+msgstr "Ei suuda muuta magnet linki eD2k lingiks: %s"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid eD2k link \"%s\" - ERROR: %s"
+msgstr "Vigane eD2k link! VIGA: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -626,6 +658,10 @@ msgstr "Külasta https://github.com/amule-org/amule/releases/latest ja vaata ehk
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "Fataalne VIGA: Ei suutnud luua stopperit."
+
+#: src/amuleDlg.cpp
+msgid "Error! Unable to load Preferences"
+msgstr ""
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -1765,11 +1801,6 @@ msgstr "Fail '%s' on juba olemas"
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Sa juba proovid '%s' faili tõmmata"
-
-#: src/DownloadQueue.cpp
-#, c-format
-msgid "Cannot convert magnet link to eD2k: %s"
-msgstr "Ei suuda muuta magnet linki eD2k lingiks: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -3006,6 +3037,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Väline Ühendus: Kätlemine ebaõnnestus."
 
 #: src/LibSocketAsio.cpp
+#, c-format
+msgid "Error creating UDP socket %s %d : %s"
+msgstr ""
+
+#: src/LibSocketAsio.cpp
 #, fuzzy, c-format
 msgid "Asio thread %d started"
 msgstr "Automaatne värskendamine on käivitatud"
@@ -3248,6 +3284,16 @@ msgstr "Kokku AL: %s"
 #, c-format
 msgid "Total UL: %s"
 msgstr "Kokku ÜL: %s"
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "Created %s at port %u"
+msgstr ""
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6322,6 +6368,11 @@ msgstr ""
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr ""
 
+#: src/SearchList.cpp
+#, fuzzy, c-format
+msgid "Error %u: %s\n"
+msgstr "GeoIP.dat uuendamise viga"
+
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "FailiID"
@@ -6527,6 +6578,11 @@ msgstr "Ei suuda avada '%s'"
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
 msgstr "Ei saanud salvestada server.met faili!"
+
+#: src/ServerList.cpp
+#, fuzzy, c-format
+msgid "IO failure while writing 'server.met': %s"
+msgstr "IO viga %s faili lugemisel: %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

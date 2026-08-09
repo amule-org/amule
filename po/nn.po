@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 18:46+0200\n"
+"POT-Creation-Date: 2026-08-09 21:47+0200\n"
 "PO-Revision-Date: 2026-08-09 14:42+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -204,6 +204,38 @@ msgstr "ÅTVARING: Du kan ikkje leggje deg sjølv til som kjelde for ei eD2k len
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Collection file not found: %s"
+msgstr "Registerfil ikkje funne: "
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid or empty collection file: %s"
+msgstr "Greidde ikkje å hente delte filer frå brukar '%s'"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "No usable links in collection: %s"
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Skipped %u unusable link in collection: %s"
+msgid_plural "Skipped %u unusable links in collection: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amuleAppCommon.cpp src/DownloadQueue.cpp
+#, c-format
+msgid "Cannot convert magnet link to eD2k: %s"
+msgstr "Kan ikkje konvertere magnetlenkje til eD2k: %s"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid eD2k link \"%s\" - ERROR: %s"
+msgstr "Ugangbar eD2k lenkje! FEIL: %s"
 
 #: src/amule.cpp
 #, fuzzy
@@ -629,6 +661,10 @@ msgstr "Vitje https://github.com/amule-org/amule/releases/latest for å sjekke o
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "FATAL FEIL: Greidde ikkje å lage tidtakar"
+
+#: src/amuleDlg.cpp
+msgid "Error! Unable to load Preferences"
+msgstr ""
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -1773,11 +1809,6 @@ msgstr "Du har allereie fila: '%s'"
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Du freistar allereie nedlasting av fila %s"
-
-#: src/DownloadQueue.cpp
-#, c-format
-msgid "Cannot convert magnet link to eD2k: %s"
-msgstr "Kan ikkje konvertere magnetlenkje til eD2k: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -3025,6 +3056,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Ekstern kopling: Tilgang nekta"
 
 #: src/LibSocketAsio.cpp
+#, c-format
+msgid "Error creating UDP socket %s %d : %s"
+msgstr ""
+
+#: src/LibSocketAsio.cpp
 #, fuzzy, c-format
 msgid "Asio thread %d started"
 msgstr "Autooppfrisking starta"
@@ -3267,6 +3303,16 @@ msgstr "Totalt NL: %s"
 #, c-format
 msgid "Total UL: %s"
 msgstr "Totalt OL: %s"
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "Created %s at port %u"
+msgstr ""
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6349,6 +6395,11 @@ msgstr ""
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr ""
 
+#: src/SearchList.cpp
+#, c-format
+msgid "Error %u: %s\n"
+msgstr ""
+
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "FilID"
@@ -6555,6 +6606,11 @@ msgstr "Greidde ikkje å opne '%s'"
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
 msgstr "Greidde ikkje å lagre server.met!"
+
+#: src/ServerList.cpp
+#, fuzzy, c-format
+msgid "IO failure while writing 'server.met': %s"
+msgstr "IO feil underlesing av known.met fila: %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

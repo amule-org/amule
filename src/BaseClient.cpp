@@ -2483,7 +2483,7 @@ bool CUpDownClient::SendPacket(CPacket *packet, bool delpacket, bool controlpack
 		m_socket->SendPacket(packet, delpacket, controlpacket);
 		return true;
 	} else {
-		AddLogLineN("CAUGHT DEAD SOCKET IN SENDPACKET()");
+		AddLogLineN(LOG_DIAGNOSTIC("CAUGHT DEAD SOCKET IN SENDPACKET()"));
 		return false;
 	}
 }
@@ -2502,8 +2502,9 @@ float CUpDownClient::TickDownloadAndMeasure()
 		// freshly refilled budget.
 		m_socket->WakeIfPaused();
 	} else {
-		AddLogLineNS(
-			CFormat("CAUGHT DEAD SOCKET IN TICKDOWNLOADANDMEASURE() WITH SPEED %f") % kBpsClient);
+		AddLogLineNS(CFormat(LOG_DIAGNOSTIC(
+				     "CAUGHT DEAD SOCKET IN TICKDOWNLOADANDMEASURE() WITH SPEED %f")) %
+			     kBpsClient);
 	}
 
 	return kBpsClient;
@@ -2862,9 +2863,10 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 							CPacket *packet = new CPacket(
 								fileAnswer, OP_EMULEPROT, OP_CHATCAPTCHAREQ);
 							theStats::AddUpOverheadOther(packet->GetPacketSize());
-							AddLogLineN(CFormat("sent Captcha %s (%d)") %
-								    m_strCaptchaChallenge %
-								    packet->GetPacketSize());
+							AddDebugLogLineN(logClient,
+								CFormat("sent Captcha %s (%d)") %
+									m_strCaptchaChallenge %
+									packet->GetPacketSize());
 							SafeSendPacket(packet);
 						} else {
 							wxFAIL;

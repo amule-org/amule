@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 18:46+0200\n"
+"POT-Creation-Date: 2026-08-09 21:47+0200\n"
 "PO-Revision-Date: 2026-08-09 14:49+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -211,6 +211,37 @@ msgstr "警告：LowID 時不可以將自己加入 eD2k 連結來源。"
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Collection file not found: %s"
+msgstr "找不到索引檔："
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid or empty collection file: %s"
+msgstr "無法從使用者 %s 取得分享檔案清單"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "No usable links in collection: %s"
+msgstr "目錄中找不到可分享的檔案：%s"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Skipped %u unusable link in collection: %s"
+msgid_plural "Skipped %u unusable links in collection: %s"
+msgstr[0] ""
+
+#: src/amuleAppCommon.cpp src/DownloadQueue.cpp
+#, c-format
+msgid "Cannot convert magnet link to eD2k: %s"
+msgstr "無法將 magnet 連結轉換為 eD2k: %s"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid eD2k link \"%s\" - ERROR: %s"
+msgstr "無效的 eD2k 連結！錯誤：%s "
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -631,6 +662,10 @@ msgstr "請到 https://github.com/amule-org/amule/releases/latest 下載最新�
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "嚴重錯誤：無法建立計時器"
+
+#: src/amuleDlg.cpp
+msgid "Error! Unable to load Preferences"
+msgstr ""
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -1764,11 +1799,6 @@ msgstr "您已經有檔案 %s"
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "您已經在下載檔案 %s 了"
-
-#: src/DownloadQueue.cpp
-#, c-format
-msgid "Cannot convert magnet link to eD2k: %s"
-msgstr "無法將 magnet 連結轉換為 eD2k: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2999,6 +3029,11 @@ msgid "External Connection: Handshake failed."
 msgstr "外部連線：訊號交換失敗"
 
 #: src/LibSocketAsio.cpp
+#, c-format
+msgid "Error creating UDP socket %s %d : %s"
+msgstr ""
+
+#: src/LibSocketAsio.cpp
 #, fuzzy, c-format
 msgid "Asio thread %d started"
 msgstr "已開始 HTTP 下載執行緒"
@@ -3241,6 +3276,16 @@ msgstr "總下載：%s"
 #, c-format
 msgid "Total UL: %s"
 msgstr "總上傳：%s"
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "Created %s at port %u"
+msgstr ""
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6304,6 +6349,11 @@ msgstr ""
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr ""
 
+#: src/SearchList.cpp
+#, fuzzy, c-format
+msgid "Error %u: %s\n"
+msgstr "GeoIP.dat 更新錯誤"
+
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "檔案 ID"
@@ -6505,6 +6555,11 @@ msgstr "無法開啟 %s"
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
 msgstr "無法儲存 server.met ！"
+
+#: src/ServerList.cpp
+#, fuzzy, c-format
+msgid "IO failure while writing 'server.met': %s"
+msgstr "讀取 server.met 時發生 IO 錯誤："
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

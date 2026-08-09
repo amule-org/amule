@@ -1892,8 +1892,8 @@ private:
 					m_address.Service());
 			StartBackgroundRead();
 		} catch (const system_error &err) {
-			AddLogLineC(CFormat("Error creating UDP socket %s %d : %s") % m_address.IPAddress() %
-				    m_address.Service() % err.code().message());
+			AddLogLineC(CFormat(_("Error creating UDP socket %s %d : %s")) %
+				    m_address.IPAddress() % m_address.Service() % err.code().message());
 			m_socket = NULL;
 			m_OK = false;
 		}
