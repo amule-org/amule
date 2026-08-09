@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-08 18:46+0200\n"
-"PO-Revision-Date: 2026-08-08 16:05+0000\n"
+"PO-Revision-Date: 2026-08-09 14:37+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -4265,29 +4265,27 @@ msgstr "Mostra quanti file condivisi verrebbero esclusi dal pattern attuale."
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
-msgstr ""
+msgstr "Quando i file del core connesso si trovano su un'altra macchina, associa un prefisso di percorso riportato dal core alla posizione in cui quel filesystem è raggiungibile da qui (ad esempio una condivisione di rete), in modo che \"Apri\" e \"Mostra nel file manager\" funzionino."
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Path Mappings"
-msgstr ""
+msgstr "Mappatura dei percorsi"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Remote prefix"
-msgstr "Server remoto"
+msgstr "Prefisso remoto"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
-msgstr ""
+msgstr "Un prefisso di percorso così come lo riporta il core, ad es. /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Local prefix"
-msgstr "Server locale"
+msgstr "Prefisso locale"
 
 #: src/muuli_wdr.cpp
 msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
-msgstr ""
+msgstr "Dove quella stessa cartella è raggiungibile da questo computer, ad es. una condivisione di rete montata"
 
 #: src/muuli_wdr.cpp
 msgid "Graphs"
@@ -5683,9 +5681,8 @@ msgid "no options available"
 msgstr "nessuna opzione disponibile"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Invalid path mapping found, skipping"
-msgstr "Trovata categoria non valida, ignorata"
+msgstr "Trovata mappatura di percorso non valida, ignorata"
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
@@ -6208,16 +6205,15 @@ msgstr "Cartella condivisa"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
-msgstr ""
+msgstr "È necessario compilare sia il prefisso remoto sia quello locale."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
-msgstr ""
+msgstr "Questo prefisso remoto è già mappato."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose the local folder"
-msgstr "Scegli una directory per i %s"
+msgstr "Scegli la cartella locale"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -6250,22 +6246,20 @@ msgstr "Principale"
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
+msgstr "Verranno salvate solo le %u ricerche aperte più recenti su %u in %s."
 
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
+msgstr "Verranno salvati solo i primi %u risultati su %u per la ricerca \"%s\"."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "ATTENZIONE: la lista dei file conosciuti potrebbe essere danneggiata, contiene un'intestazione non valida."
+msgstr "ATTENZIONE: la lista delle ricerche salvate è danneggiata, contiene un'intestazione non valida."
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "Voce non valida nella lista dei file conosciuti, il file potrebbe essere corrotto: "
+msgstr "Voce non valida nella lista delle ricerche salvate, il file potrebbe essere corrotto"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6549,9 +6543,8 @@ msgid "Users"
 msgstr "Utenti"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Max Users"
-msgstr "Utenti"
+msgstr "Utenti Max"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
@@ -6563,14 +6556,12 @@ msgid "Version"
 msgstr "Versione"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Soft Files"
-msgstr "File"
+msgstr "File Soft"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Hard Files"
-msgstr "File condivisi"
+msgstr "File Hard"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
@@ -7051,11 +7042,11 @@ msgstr[0] "Esportato %u file condiviso in '%s'"
 msgstr[1] "Esportati %u file condivisi in '%s'."
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
-msgstr[0] "File condivisi (%i)"
-msgstr[1] "File condivisi (%i)"
+msgstr[0] "File condivisi (%i, hashing di %u altro file in corso)"
+msgstr[1] "File condivisi (%i, hashing di altri %u file in corso)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
