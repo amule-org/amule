@@ -1071,8 +1071,8 @@ bool CamuleApp::OnInit()
 	// Normal level, not debug: these are the numbers the phase weighting
 	// above is meant to be tuned from, and a measurement that needs verbose
 	// logging turned on first is one nobody will report back.
-	AddLogLineN(CFormat("Startup phases: network %lld ms, %u part files %lld ms, shared scan "
-			    "%lld ms (estimate was %u)") %
+	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: network %lld ms, %u part files %lld ms, shared "
+					   "scan ") "%lld ms (estimate was %u)") %
 		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
 		    (tempDoneAt - networkDoneAt).GetValue() % (sharedDoneAt - tempDoneAt).GetValue() %
 		    sharedEstimate);

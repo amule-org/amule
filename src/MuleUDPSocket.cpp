@@ -73,7 +73,10 @@ void CMuleUDPSocket::CreateSocket()
 		AddDebugLogLineC(logMuleUDP, "Failed to create valid " + m_name);
 		DestroySocket();
 	} else {
-		AddLogLineN(wxString("Created ") << m_name << " at port " << m_addr.Service());
+		// One template rather than concatenation: translators need to be able to
+		// reorder the name and the port. m_name is a construction-time identifier
+		// ("Server UDP-Socket"), left untranslated on purpose.
+		AddLogLineN(CFormat(_("Created %s at port %u")) % m_name % m_addr.Service());
 	}
 }
 
@@ -153,10 +156,11 @@ void CMuleUDPSocket::OnReceive(int errorCode)
 		AddDebugLogLineN(logMuleUDP, m_name + ": Invalid Packet received");
 	} else if (!ip) {
 		// wxFAIL;
-		AddLogLineNS("Unknown ip receiving a UDP packet! Ignoring: '" + addr.IPAddress() + "'");
+		AddDebugLogLineN(logMuleUDP,
+			"Unknown ip receiving a UDP packet! Ignoring: '" + addr.IPAddress() + "'");
 	} else if (!port) {
 		// wxFAIL;
-		AddLogLineNS("Unknown port receiving a UDP packet! Ignoring");
+		AddDebugLogLineN(logMuleUDP, "Unknown port receiving a UDP packet! Ignoring");
 	} else if (theApp->clientlist->IsBannedClient(ip)) {
 		AddDebugLogLineN(logMuleUDP, m_name + ": Dropped packet from banned IP " + addr.IPAddress());
 	} else {
@@ -318,9 +322,9 @@ bool CMuleUDPSocket::SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint1
 	} else if (uint32 error = m_socket->LastError()) {
 		// An error which we can't handle happened, so we drop
 		// the packet rather than risk entering an infinite loop.
-		AddLogLineN(("WARNING! " + m_name + ": Packet to ")
-			    << Uint32_16toStringIP_Port(ip, port) << " discarded due to error (" << error
-			    << ") while sending.");
+		AddLogLineN(
+			CFormat(_("WARNING! %s: Packet to %s discarded due to error (%s) while sending.")) %
+			m_name % Uint32_16toStringIP_Port(ip, port) % error);
 		sent = true;
 	} else {
 		AddDebugLogLineN(logMuleUDP,

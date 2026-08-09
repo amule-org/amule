@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 18:46+0200\n"
+"POT-Creation-Date: 2026-08-09 21:47+0200\n"
 "PO-Revision-Date: 2026-08-09 14:28+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -227,6 +227,38 @@ msgstr "AVISO: Non podes engadirte a ti mesmo como unha fonte para un enlace eD2
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Collection file not found: %s"
+msgstr "Ficheiro do rexistro non atopado: "
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid or empty collection file: %s"
+msgstr "Non se puideron recuperar os ficheiros compartidos do usuario «%s»"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "No usable links in collection: %s"
+msgstr "Non se atoparon ficheiros que se puideran compartir: %s"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Skipped %u unusable link in collection: %s"
+msgid_plural "Skipped %u unusable links in collection: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amuleAppCommon.cpp src/DownloadQueue.cpp
+#, c-format
+msgid "Cannot convert magnet link to eD2k: %s"
+msgstr "Non se puido converter a ligazón magnet a eD2k: %s"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid eD2k link \"%s\" - ERROR: %s"
+msgstr "Ligazón eD2k inválida! ERRO: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -646,6 +678,10 @@ msgstr "Visite https://github.com/amule-org/amule/releases/latest para obter act
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "ERRO GRAVE: Non se puido crear o temporizador"
+
+#: src/amuleDlg.cpp
+msgid "Error! Unable to load Preferences"
+msgstr ""
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -1785,11 +1821,6 @@ msgstr "O ficheiro «%s» xa está descargado"
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "O ficheiro %s xa se está descargando"
-
-#: src/DownloadQueue.cpp
-#, c-format
-msgid "Cannot convert magnet link to eD2k: %s"
-msgstr "Non se puido converter a ligazón magnet a eD2k: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -3024,6 +3055,11 @@ msgstr "Conexión externa: Fallou o saúdo."
 
 #: src/LibSocketAsio.cpp
 #, c-format
+msgid "Error creating UDP socket %s %d : %s"
+msgstr ""
+
+#: src/LibSocketAsio.cpp
+#, c-format
 msgid "Asio thread %d started"
 msgstr "Fío de E/S asíncrono %d iniciado"
 
@@ -3258,6 +3294,16 @@ msgstr "Total DE: %s"
 #, c-format
 msgid "Total UL: %s"
 msgstr "Total EV: %s"
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "Created %s at port %u"
+msgstr ""
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6327,6 +6373,11 @@ msgstr "Busca de Kad: solicitóuselle ampliar a busca a un parceiro."
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr "Busca de Kad: non quedan parceiros sen preguntar por máis resultados (acadouse o límite, ou inda non hai respostas)."
 
+#: src/SearchList.cpp
+#, fuzzy, c-format
+msgid "Error %u: %s\n"
+msgstr "Fallou a actualización de %s"
+
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "IDFicheiro"
@@ -6531,6 +6582,11 @@ msgstr "Non se puido abrir «%s»"
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
 msgstr "Non se puido gardar o ficheiro server.met!"
+
+#: src/ServerList.cpp
+#, fuzzy, c-format
+msgid "IO failure while writing 'server.met': %s"
+msgstr "Ocorreu un erro de E/S ao ler o ficheiro «server.met»: "
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

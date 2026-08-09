@@ -397,6 +397,25 @@ public:
 };
 
 /**
+ * Marks a log string that is deliberately not wrapped in _().
+ *
+ * Both expand to the string unchanged, so neither reaches xgettext and neither
+ * costs anything at runtime; they exist so the reason is greppable and an
+ * untranslated literal is not mistaken for an oversight (issue #866).
+ *
+ * LOG_DIAGNOSTIC: an internal fault or trace whose value is being readable in
+ * a bug report someone pastes in. Translating it would make those reports
+ * harder to search, so it stays English on purpose.
+ *
+ * LOG_PRELOCALE: emitted before Localize_mule() has run, so no catalog is
+ * loaded and gettext would return the original text anyway. Wrapping one of
+ * these in _() would ship a string to translators that can never be shown
+ * translated. See the ordering note in CamuleApp::OnInit().
+ */
+#define LOG_DIAGNOSTIC(str) str
+#define LOG_PRELOCALE(str) str
+
+/**
  * These macros should be used when logging. The
  * AddLogLineM macro will simply call one of the
  * two CLogger::AddLogLine functions depending on

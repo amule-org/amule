@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-08 18:46+0200\n"
+"POT-Creation-Date: 2026-08-09 21:47+0200\n"
 "PO-Revision-Date: 2026-08-09 14:23+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -206,6 +206,38 @@ msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Δεν μπορείτε να προσθέσ�
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Collection file not found: %s"
+msgstr "Το αρχείο δεικτών δεν βρέθηκε (ψάχνω ψάχνω και τίποτα δεν βρίσκω)"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid or empty collection file: %s"
+msgstr "Αποτυχία λήψης των κοινόχρηστων αρχείων του χρήστη '%s'"
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "No usable links in collection: %s"
+msgstr ""
+
+#: src/amuleAppCommon.cpp
+#, c-format
+msgid "Skipped %u unusable link in collection: %s"
+msgid_plural "Skipped %u unusable links in collection: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/amuleAppCommon.cpp src/DownloadQueue.cpp
+#, c-format
+msgid "Cannot convert magnet link to eD2k: %s"
+msgstr "Δεν γίνεται η μετατροπή του μαγνητικού συνδέσμου σε σύνδεσμο eD2k: %s"
+
+#: src/amuleAppCommon.cpp
+#, fuzzy, c-format
+msgid "Invalid eD2k link \"%s\" - ERROR: %s"
+msgstr "Άκυρος σύνδεσμος eD2k! ΣΦΑΛΜΑ: %s"
 
 #: src/amule.cpp
 #, fuzzy
@@ -631,6 +663,10 @@ msgstr "Επισκεφτείτε το https://github.com/amule-org/amule/release
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
 msgstr "ΜΟΙΡΑΙΟ ΣΦΑΛΜΑ: Αποτυχία δημιουργίας Χρονομέτρου"
+
+#: src/amuleDlg.cpp
+msgid "Error! Unable to load Preferences"
+msgstr ""
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -1775,11 +1811,6 @@ msgstr "Το αρχείο '%s' υπάρχει ήδη"
 #, c-format
 msgid "You are already trying to download the file %s"
 msgstr "Ήδη προσπαθείτε να κατεβάσετε το αρχείο %s"
-
-#: src/DownloadQueue.cpp
-#, c-format
-msgid "Cannot convert magnet link to eD2k: %s"
-msgstr "Δεν γίνεται η μετατροπή του μαγνητικού συνδέσμου σε σύνδεσμο eD2k: %s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -3026,6 +3057,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Εξωτερική σύνδεση: Η πρόσβαση απορρίφθηκε"
 
 #: src/LibSocketAsio.cpp
+#, c-format
+msgid "Error creating UDP socket %s %d : %s"
+msgstr ""
+
+#: src/LibSocketAsio.cpp
 #, fuzzy, c-format
 msgid "Asio thread %d started"
 msgstr "Η αυτόματη ανανέωση ξεκίνησε"
@@ -3268,6 +3304,16 @@ msgstr "Συνολικό Κατέβασμα: %s"
 #, c-format
 msgid "Total UL: %s"
 msgstr "Συνολικό Ανέβασμα: %s"
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "Created %s at port %u"
+msgstr ""
+
+#: src/MuleUDPSocket.cpp
+#, c-format
+msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -6356,6 +6402,11 @@ msgstr ""
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
 msgstr ""
 
+#: src/SearchList.cpp
+#, c-format
+msgid "Error %u: %s\n"
+msgstr ""
+
 #: src/SearchListCtrl.cpp
 msgid "FileID"
 msgstr "Τιμή ταυτότητας αρχείου"
@@ -6562,6 +6613,11 @@ msgstr "Αποτυχημένη προσπάθεια να ανοίξει '%s'"
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
 msgstr "Αποτυχία σβησίματος του server.met!"
+
+#: src/ServerList.cpp
+#, fuzzy, c-format
+msgid "IO failure while writing 'server.met': %s"
+msgstr "Σφάλμα εισόδου εξόδου κατά την ανάγνωση του αρχείου known.met: %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

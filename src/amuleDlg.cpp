@@ -346,7 +346,7 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	bool override_size = ((dlg_size.x != DEFAULT_SIZE_X) || (dlg_size.y != DEFAULT_SIZE_Y));
 	if (!LoadGUIPrefs(override_where, override_size)) {
 		// Prefs not loaded for some reason, exit
-		AddLogLineC("Error! Unable to load Preferences");
+		AddLogLineC(_("Error! Unable to load Preferences"));
 		return;
 	}
 
@@ -737,7 +737,8 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 
 			// This shouldn't happen, but just in case
 			default:
-				AddLogLineC("Unknown button triggered CamuleApp::OnToolBarButton().");
+				AddDebugLogLineC(logStandard,
+					"Unknown button triggered CamuleApp::OnToolBarButton().");
 				break;
 			}
 		}
@@ -1790,11 +1791,11 @@ void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon,
 		if (it != cat.end()) {
 			zip.OpenEntry(*it->second);
 			if (!new_image.LoadFile(zip, wxBITMAP_TYPE_PNG)) {
-				AddLogLineN("Warning: Error loading icon for " + iconName);
+				AddLogLineN(LOG_DIAGNOSTIC("Warning: Error loading icon for ") + iconName);
 				useSkins = false;
 			}
 		} else {
-			AddLogLineN("Warning: Can't load icon for " + iconName);
+			AddLogLineN(LOG_DIAGNOSTIC("Warning: Can't load icon for ") + iconName);
 			useSkins = false;
 		}
 	}
@@ -1826,7 +1827,8 @@ void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon,
 				// condition. Fall back to a generic stock icon rather
 				// than shipping a bespoke raster twin of each toolbar
 				// asset just for an error path that can't happen.
-				AddLogLineN("Warning: Could not load built-in icon for " + iconName);
+				AddLogLineN(LOG_DIAGNOSTIC("Warning: Could not load built-in icon for ") +
+					    iconName);
 				art = wxArtProvider::GetBitmapBundle(
 					wxART_MISSING_IMAGE, wxART_TOOLBAR, wxSize(32, 32));
 			}

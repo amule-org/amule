@@ -196,7 +196,7 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
 	case CTRL_CLOSE_EVENT:
 	case CTRL_BREAK_EVENT:
 		// handle these
-		AddLogLineNS("Received break event, exit main loop");
+		AddDebugLogLineN(logStandard, "Received break event, exit main loop");
 		theApp->ExitMainLoop();
 		return TRUE;
 		break;

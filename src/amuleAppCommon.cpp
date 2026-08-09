@@ -620,16 +620,16 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 
 	if (theLogger.IsEnabledStdoutLog()) {
 		if (enable_daemon_fork) {
-			AddLogLineNS(
-				"Daemon will fork to background - log to stdout disabled"); // localization
-											    // not active yet
+			AddLogLineNS(LOG_PRELOCALE(
+				"Daemon will fork to background - log to stdout disabled")); // localization
+											     // not active yet
 			theLogger.SetEnabledStdoutLog(false);
 		} else {
-			AddLogLineNS("Logging to stdout enabled");
+			AddLogLineNS(LOG_PRELOCALE("Logging to stdout enabled"));
 		}
 	}
 
-	AddLogLineNS("Initialising " + FullMuleVersion);
+	AddLogLineNS(LOG_PRELOCALE("Initialising ") + FullMuleVersion);
 
 	// Ensure that "~/.aMule/" is accessible.
 	CPath outDir;
@@ -642,8 +642,8 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		wxRemoveFile(thePrefs::GetConfigDir() + m_configFile + ".backup");
 		wxRenameFile(thePrefs::GetConfigDir() + m_configFile,
 			thePrefs::GetConfigDir() + m_configFile + ".backup");
-		AddLogLineNS(CFormat("Your settings have been reset to default values.\nThe old config file "
-				     "has been saved as %s.backup\n") %
+		AddLogLineNS(CFormat(LOG_PRELOCALE("Your settings have been reset to default values.\nThe "
+						   "old config file ") "has been saved as %s.backup\n") %
 			     m_configFile);
 	}
 
@@ -692,21 +692,23 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			}
 			ed2kFile.Write();
 		} else {
-			AddLogLineCS("Failed to open 'ED2KLinks', cannot add links.");
+			AddLogLineCS(LOG_PRELOCALE("Failed to open 'ED2KLinks', cannot add links."));
 		}
 	}
 
-	AddLogLineNS("Checking if there is an instance already running...");
+	AddLogLineNS(LOG_PRELOCALE("Checking if there is an instance already running..."));
 
 	m_singleInstance = new InstanceLock();
 	wxString lockfile = IsRemoteGui() ? "muleLockRGUI" : "muleLock";
 	InstanceLock::Result lockResult = m_singleInstance->Acquire(lockfile, thePrefs::GetConfigDir());
 	if (lockResult == InstanceLock::LOCK_HELD) {
-		AddLogLineCS(CFormat("There is an instance of %s already running") % m_appName);
-		AddLogLineNS(CFormat("(lock file: %s%s)") % thePrefs::GetConfigDir() % lockfile);
+		AddLogLineCS(
+			CFormat(LOG_PRELOCALE("There is an instance of %s already running")) % m_appName);
+		AddLogLineNS(
+			CFormat(LOG_PRELOCALE("(lock file: %s%s)")) % thePrefs::GetConfigDir() % lockfile);
 		if (linksPassed) {
-			AddLogLineNS(CFormat("passed %d %s to it, finished") % linksActuallyPassed %
-				     (linksPassed == 1 ? "link" : "links"));
+			AddLogLineNS(CFormat(LOG_PRELOCALE("passed %d %s to it, finished")) %
+				     linksActuallyPassed % (linksPassed == 1 ? "link" : "links"));
 			// Nothing was handed over, so don't pull the running
 			// instance to the front on account of a bad argument.
 			if (linksActuallyPassed == 0) {
@@ -729,18 +731,19 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			ed2kFile.AddLine("RAISE_DIALOG");
 			ed2kFile.Write();
 
-			AddLogLineNS("Raising current running instance.");
+			AddLogLineNS(LOG_PRELOCALE("Raising current running instance."));
 		} else {
-			AddLogLineCS("Failed to open 'ED2KFile', cannot signal running instance.");
+			AddLogLineCS(
+				LOG_PRELOCALE("Failed to open 'ED2KFile', cannot signal running instance."));
 		}
 
 		return false;
 	} else if (lockResult == InstanceLock::LOCK_ERROR) {
-		AddLogLineCS(CFormat("Could not access lock file (%s%s); continuing without single-instance "
-				     "protection.") %
+		AddLogLineCS(CFormat(LOG_PRELOCALE("Could not access lock file (%s%s); continuing without "
+						   "single-instance ") "protection.") %
 			     thePrefs::GetConfigDir() % lockfile);
 	} else {
-		AddLogLineNS("No other instances are running.");
+		AddLogLineNS(LOG_PRELOCALE("No other instances are running."));
 	}
 
 #ifndef __WINDOWS__
@@ -804,7 +807,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	wxString amulewebPath;
 	if (cmdline.Found("use-amuleweb", &amulewebPath)) {
 		thePrefs::SetWSPath(amulewebPath);
-		AddLogLineNS(CFormat("Using amuleweb in '%s'.") % amulewebPath);
+		AddLogLineNS(CFormat(LOG_PRELOCALE("Using amuleweb in '%s'.")) % amulewebPath);
 	}
 #endif
 
@@ -872,13 +875,13 @@ CamuleAppCommon::CollectionExpansion CamuleAppCommon::ExpandPassedCollection(
 	if (!wxFile::Exists(path)) {
 		// The extension says collection, so a missing file is a real
 		// error rather than something to retry as a link.
-		AddLogLineCS(CFormat("Collection file not found: %s") % path);
+		AddLogLineCS(CFormat(_("Collection file not found: %s")) % path);
 		return kCollectionFailed;
 	}
 
 	CMuleCollection collection;
 	if (!collection.Open(path)) {
-		AddLogLineCS(CFormat("Invalid or empty collection file: %s") % path);
+		AddLogLineCS(CFormat(_("Invalid or empty collection file: %s")) % path);
 		return kCollectionFailed;
 	}
 
@@ -904,11 +907,14 @@ CamuleAppCommon::CollectionExpansion CamuleAppCommon::ExpandPassedCollection(
 	}
 
 	if (out.IsEmpty()) {
-		AddLogLineCS(CFormat("No usable links in collection: %s") % path);
+		AddLogLineCS(CFormat(_("No usable links in collection: %s")) % path);
 		return kCollectionFailed;
 	}
 	if (skipped > 0) {
-		AddLogLineCS(CFormat("Skipped %u unusable link(s) in collection: %s") % skipped % path);
+		AddLogLineCS(CFormat(wxPLURAL("Skipped %u unusable link in collection: %s",
+				     "Skipped %u unusable links in collection: %s",
+				     skipped)) %
+			     skipped % path);
 	}
 
 	return kCollectionExpanded;
@@ -925,7 +931,7 @@ bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat
 	if (link.compare(0, 7, "magnet:") == 0) {
 		link = CMagnetED2KConverter(link);
 		if (link.empty()) {
-			AddLogLineCS(CFormat("Cannot convert magnet link to eD2k: %s") % in);
+			AddLogLineCS(CFormat(_("Cannot convert magnet link to eD2k: %s")) % in);
 			return false;
 		}
 	}
@@ -938,7 +944,7 @@ bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat
 		}
 		return true;
 	} catch (const wxString &err) {
-		AddLogLineCS(CFormat("Invalid eD2k link \"%s\" - ERROR: %s") % link % err);
+		AddLogLineCS(CFormat(_("Invalid eD2k link \"%s\" - ERROR: %s")) % link % err);
 	}
 	return false;
 }
