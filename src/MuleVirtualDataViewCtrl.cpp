@@ -39,6 +39,7 @@ const int kResortTimerId = wxID_HIGHEST + 1201;
 
 wxBEGIN_EVENT_TABLE(CMuleVirtualDataViewCtrl, CMuleDataViewCtrl)
 	EVT_TIMER(kResortTimerId, CMuleVirtualDataViewCtrl::OnResortTimer)
+	EVT_KEY_DOWN(CMuleVirtualDataViewCtrl::OnArrowKey)
 wxEND_EVENT_TABLE()
 
 /**
@@ -548,4 +549,34 @@ bool CMuleVirtualDataViewCtrl::IsInteracting() const
 		return true;
 	}
 	return wxGetMouseState().LeftIsDown();
+}
+
+void CMuleVirtualDataViewCtrl::OnArrowKey(wxKeyEvent &evt)
+{
+	const int key = evt.GetKeyCode();
+	if (key != WXK_LEFT && key != WXK_RIGHT) {
+		// Skip() so the base class still gets PageUp/PageDown/Home/End.
+		evt.Skip();
+		return;
+	}
+
+	// Swallowed. Left and right belong to the tree control: they expand and
+	// collapse, and a flat list has nothing to expand. Handed to the native
+	// control they do something worse than nothing here -- on macOS the name
+	// column repaints without each row's value being re-supplied, so every
+	// row draws the last row's text until something forces a full repaint.
+	//
+	// Scrolling sideways would be the useful alternative and is not
+	// available: the only portable lever is EnsureVisible(item, column),
+	// which needs to know which columns are off screen, and GetItemRect()
+	// reports a column's position in the full layout rather than in the
+	// viewport -- the same coordinates before and after a scroll. So the
+	// target cannot be worked out, and a first attempt behaved accordingly:
+	// right moved once and then stopped, left never fired at all because the
+	// x it compares against never goes negative. Doing it properly means
+	// reading the native scroll position per platform, which belongs in its
+	// own change rather than in a repaint fix.
+	//
+	// Deliberately not on CMuleDataViewCtrl: the search list is a real tree
+	// where these keys expand and collapse result variants.
 }
