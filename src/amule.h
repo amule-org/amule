@@ -199,6 +199,31 @@ protected:
 	wxString m_PidFile;
 
 	bool InitCommon(int argc, wxChar **argv);
+
+	/**
+	 * Logs an assertion, with a backtrace, and applies --disable-fatal.
+	 *
+	 * Every app wants this identically -- the log copy is often the only
+	 * record that survives, since the wxWidgets dialog dies with the
+	 * process if nobody presses Continue -- but only the app itself knows
+	 * which wxWidgets base to hand the assert on to afterwards, so the
+	 * decision is returned rather than acted on here.
+	 *
+	 * @param dialogUsable whether wxWidgets can still put its assert dialog
+	 *        on screen: false off the main thread, and false for an app
+	 *        that is not running yet or is already tearing down.
+	 * @return true when the caller should call its base OnAssertFailure().
+	 *         Does not return at all when --disable-fatal is set, or when
+	 *         the dialog is unusable: both abort so a supervisor sees a
+	 *         non-zero exit and a debugger catches the assert in place.
+	 */
+	bool ReportAssertFailure(const wxChar *file,
+		int line,
+		const wxChar *func,
+		const wxChar *cond,
+		const wxChar *msg,
+		bool dialogUsable);
+
 	void RefreshSingleInstanceChecker();
 	// Drop the single-instance lock (and unlink its file). OnExit() calls
 	// std::_Exit() to dodge the wxWebSession teardown crash, which bypasses

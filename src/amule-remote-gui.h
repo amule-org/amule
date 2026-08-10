@@ -972,6 +972,19 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	void OnFatalException();
 #endif
 
+	// Likewise for assertions, which until now amulegui alone dropped: the
+	// wxWidgets dialog was the only record, so anything that aborted before
+	// it could be read left nothing behind, and remotelogfile showed a clean
+	// session. Compiled unconditionally for the reason CamuleApp's copy is:
+	// distro wx packages keep wxDEBUG_LEVEL=1, so release builds assert too.
+	//
+	// No `override` keyword, deliberately: nothing else in this class carries
+	// one, and -Werror=inconsistent-missing-override then demands it on all
+	// eight of the others. Worth a sweep of its own rather than dragging one
+	// into this change.
+	void OnAssertFailure(
+		const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg);
+
 #ifdef __WXMAC__
 	// Restore the main window when the user clicks the Dock icon while no
 	// window is visible. Mirrors CamuleGuiApp; both hand off to

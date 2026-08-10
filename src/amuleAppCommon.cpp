@@ -27,6 +27,8 @@
 // but preprocessor-dependent (using theApp, thePrefs), so it is compiled separately for each app.
 //
 
+#include <signal.h> // Needed for raise(), SIGABRT
+
 #include <wx/wx.h>
 #include <wx/cmdline.h>  // Needed for wxCmdLineParser
 #include <wx/evtloop.h>  // Needed for wxEventLoopBase
@@ -55,8 +57,9 @@
 #include "GuiEvents.h"              // Needed for Notify_*
 #include "KnownFile.h"
 #include "Logger.h"
-#include "MagnetURI.h"      // Needed for CMagnetURI
-#include "MuleCollection.h" // Needed for expanding .emulecollection arguments
+#include "MagnetURI.h"        // Needed for CMagnetURI
+#include "MuleCollection.h"   // Needed for expanding .emulecollection arguments
+#include <common/MuleDebug.h> // Needed for get_backtrace
 #include "Preferences.h"
 #include "ScopedPtr.h"
 #include "MuleVersion.h" // Needed for GetMuleVersion()
@@ -64,6 +67,45 @@
 #ifndef CLIENT_GUI
 #include "DownloadQueue.h"
 #endif
+
+bool CamuleAppCommon::ReportAssertFailure(const wxChar *file,
+	int line,
+	const wxChar *func,
+	const wxChar *cond,
+	const wxChar *msg,
+	bool dialogUsable)
+{
+	wxString errmsg =
+		CFormat("Assertion failed: %s:%s:%d: Assertion '%s' failed. %s\nBacktrace follows:\n%s\n") %
+		file % func % line % cond % (msg ? wxString(msg) : wxString()) %
+		get_backtrace(2); // Skip the function-calls directly related to the assert call.
+	theLogger.EmergencyLog(errmsg, false);
+
+	// --disable-fatal: skip the wxApp dialog and abort directly so a
+	// supervisor (systemd, watchdog script) sees a non-zero exit and
+	// can restart aMule. The errmsg above is already on stderr and in
+	// the log; nothing useful would be lost by skipping the dialog.
+	if (m_disableFatal) {
+		raise(SIGABRT);
+		return false; // unreachable
+	}
+
+	if (!dialogUsable) {
+#ifdef _MSC_VER
+		wxString s = CFormat("%s in %s") % cond % func;
+		if (msg) {
+			s << " : " << msg;
+		}
+		_wassert(s.wc_str(), file, line);
+#else
+		// Abort, allows gdb to catch the assertion
+		raise(SIGABRT);
+#endif
+		return false; // unreachable
+	}
+
+	return true;
+}
 
 CamuleAppCommon::CamuleAppCommon()
 {
