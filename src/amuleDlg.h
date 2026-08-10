@@ -230,8 +230,18 @@ public:
 	 */
 	void UpdateFreeSpaceLabels();
 
+	/**
+	 * Writes a free-space figure into @a label, red when @a warn.
+	 *
+	 * @a separatorLabel is the "|" joining this figure to the field before
+	 * it, in a label of its own because a wxStaticText colours all or
+	 * nothing -- kept here rather than at the call sites so it is set and
+	 * cleared with the figure it belongs to, and never left trailing the
+	 * field before it when there is nothing to show. Panels that show the
+	 * figure on its own pass nothing.
+	 */
 	static void SetFreeSpaceLabel(
-		wxStaticText *label, sint64 freeSpace, bool warn, const wxString &separator = wxEmptyString);
+		wxStaticText *label, sint64 freeSpace, bool warn, wxStaticText *separatorLabel = nullptr);
 
 	/**
 	 * Brings the main window back from every state that hides it.

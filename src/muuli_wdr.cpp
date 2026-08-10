@@ -463,12 +463,29 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item5b->SetName( "downloadsTotalSize" );
     item5a->Add( item5b, wxSizerFlags().CenterVertical() );
 
+    // The "|" joining the two figures, in a label of its own for the same
+    // reason the figure has one: a wxStaticText colours all or nothing, so a
+    // separator sharing the label below would turn red along with the figure
+    // whenever the warning fires. Shown and hidden by SetFreeSpaceLabel()
+    // together with that figure, never recoloured.
+    //
+    // The gaps around it are sizer border, not spaces in the text: a static
+    // text is sized to its text extent, which ignores trailing whitespace, so
+    // a " | " label loses the space on one side and -- right-aligned inside a
+    // box sized for three glyphs -- doubles it on the other.
+    wxStaticText *item5c = new wxStaticText( parent, -1, wxEmptyString );
+    item5c->SetName( "downloadsFreeSpaceSep" );
+    // Starts hidden: the labels either side start empty, and a shown separator
+    // would reserve its border before there is anything to separate.
+    item5c->Show( false );
+    item5a->Add( item5c, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 4) );
+
     // Separate label rather than more text in the one above: it turns red on
     // its own when the free space no longer covers what is left to download,
     // and a wxStaticText colours all or nothing.
-    wxStaticText *item5c = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
-    item5c->SetName( "downloadsFreeSpace" );
-    item5a->Add( item5c, wxSizerFlags().CenterVertical() );
+    wxStaticText *item5d = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+    item5d->SetName( "downloadsFreeSpace" );
+    item5a->Add( item5d, wxSizerFlags().CenterVertical() );
 
     item1->Add( item5a, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
 
