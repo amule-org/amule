@@ -623,6 +623,11 @@ class CKnownFilesRem : public CRemoteContainer<CKnownFile, uint32, CEC_SharedFil
 	// a single prune-by-absence against that snapshot, then clears this.
 	bool m_reconnectReconcile = false;
 
+	// One-shot for the part-status length mismatch warning: the check sits
+	// in a per-file loop that covers the whole library on every poll, and
+	// the condition it reports is library-wide when it happens at all.
+	bool m_loggedPartStatusMismatch = false;
+
 public:
 	CKnownFilesRem(CRemoteConnect *conn);
 

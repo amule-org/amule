@@ -2090,18 +2090,26 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 		const int arrived = file->m_partStatus.Size();
 		const int parts = file->GetPartCount();
 		const int copied = std::min(arrived, parts);
-		if (arrived != parts) {
+		if (arrived != parts && !m_loggedPartStatusMismatch) {
 			// Says the tag and the object disagree about which file this
 			// is. The reconnect path is supposed to make that impossible
 			// by discarding everything keyed by ECID when the daemon
 			// changes underneath us, so this firing means that went
-			// wrong -- worth a line, because clamping the copy leaves no
-			// other trace and the rest of this update is applying the
-			// same mismatched tag to the same object.
-			AddDebugLogLineN(logEC,
-				CFormat(wxT("EC: part-status length %d does not match part count %d for "
-					    "file ID %u (%s)")) %
-					arrived % parts % file->ECID() % file->GetFileName().GetPrintable());
+			// wrong. Critical rather than debug: clamping the copy leaves
+			// no other trace, the rest of this update goes on applying the
+			// same mismatched tag to the same object, and what the user
+			// ends up looking at is a row describing the wrong file --
+			// which they can act on, and would otherwise have no reason to
+			// suspect.
+			//
+			// Once per session, not once per file: if the ECID space has
+			// gone bad it has gone bad for everything, and this sits in a
+			// loop that runs over the whole library on every poll.
+			m_loggedPartStatusMismatch = true;
+			AddLogLineC(CFormat(_("The remote core sent inconsistent data for \"%s\" "
+					      "(part status %d, expected %d). The file list may be "
+					      "showing the wrong information; reconnect to clear it.")) %
+				    file->GetFileName().GetPrintable() % arrived % parts);
 		}
 		for (int i = 0; i < copied; ++i) {
 			file->m_AvailPartFrequency[i] = data[i];
@@ -2249,6 +2257,8 @@ void CKnownFilesRem::ResetForNewDaemonSession()
 	// Nothing left to reconcile against, so the one-shot absence-prune has
 	// no work and must not fire on a list it would find empty anyway.
 	m_reconnectReconcile = false;
+	// New session, new chance to complain if the ECIDs go bad again.
+	m_loggedPartStatusMismatch = false;
 }
 
 void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)
