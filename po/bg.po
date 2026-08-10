@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:23+0200\n"
 "PO-Revision-Date: 2026-08-09 14:19+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Bulgarian <dict@linux.zonebg.com>\n"
@@ -6333,6 +6333,13 @@ msgid "Failed to connect to all servers listed. Making another pass."
 msgstr "Грешка при свързване към всички сървъри в списъка - започвам отначало."
 
 #: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "На всеки %d секунди ще бъде правен автоматичен опит за свързване"
+msgstr[1] "На всеки %d секунди ще бъде правен автоматичен опит за свързване"
+
+#: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
 msgstr ""
 
@@ -6368,13 +6375,6 @@ msgstr "%s (%s:%i) изглежда не отговаря"
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr ""
-
-#: src/ServerConnect.cpp
-#, fuzzy, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "На всеки %d секунди ще бъде правен автоматичен опит за свързване"
-msgstr[1] "На всеки %d секунди ще бъде правен автоматичен опит за свързване"
 
 #: src/ServerConnect.cpp
 #, c-format

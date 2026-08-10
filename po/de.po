@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:23+0200\n"
 "PO-Revision-Date: 2026-08-09 14:23+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -6443,6 +6443,13 @@ msgid "Failed to connect to all servers listed. Making another pass."
 msgstr "Fehler beim Verbinden zu allen Servern in der Liste. Ein neuer Durchgang wird gestartet."
 
 #: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Automatische Verbindungsherstellung zum Server wird in %d Sekunde wiederholt"
+msgstr[1] "Automatische Verbindungsherstellung zum Server wird in %d Sekunden wiederholt"
+
+#: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
 msgstr "eD2k-Netzwerk ist in den Einstellungen deaktiviert - verbinde nicht."
 
@@ -6478,13 +6485,6 @@ msgstr "%s (%s:%i) scheint tot zu sein."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) scheint voll zu sein."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Automatische Verbindungsherstellung zum Server wird in %d Sekunde wiederholt"
-msgstr[1] "Automatische Verbindungsherstellung zum Server wird in %d Sekunden wiederholt"
 
 #: src/ServerConnect.cpp
 #, c-format

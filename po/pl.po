@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:23+0200\n"
 "PO-Revision-Date: 2026-08-09 14:43+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -6484,6 +6484,14 @@ msgid "Failed to connect to all servers listed. Making another pass."
 msgstr "Nie udało się połączyć do serwerów z listy. Kolejne podejście."
 
 #: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Automatyczne łączenie do serwera nastąpi za %d sekundę"
+msgstr[1] "Automatyczne łączenie do serwera nastąpi za %d sekundy"
+msgstr[2] "Automatyczne łączenie do serwera nastąpi za %d sekund"
+
+#: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
 msgstr "Sieć eD2K wyłączona w preferencjach, nie łączę."
 
@@ -6519,14 +6527,6 @@ msgstr "%s (%s:%i) wygląda na wyłączony."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) wygląda na pełny."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Automatyczne łączenie do serwera nastąpi za %d sekundę"
-msgstr[1] "Automatyczne łączenie do serwera nastąpi za %d sekundy"
-msgstr[2] "Automatyczne łączenie do serwera nastąpi za %d sekund"
 
 #: src/ServerConnect.cpp
 #, c-format

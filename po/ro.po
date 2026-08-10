@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:23+0200\n"
 "PO-Revision-Date: 2026-08-09 14:44+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -6467,6 +6467,14 @@ msgid "Failed to connect to all servers listed. Making another pass."
 msgstr "A eșuat conectarea la toate serverele listate. Se execută un alt pas."
 
 #: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Se va reîncerca conectarea automată la server în %d secundă"
+msgstr[1] "Se va reîncerca conectarea automată la server în %d secunde"
+msgstr[2] "Se va reîncerca conectarea automată la server în %d de secunde"
+
+#: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
 msgstr "Rețeaua eD2k este dezactivată în preferințe, nu se conectează."
 
@@ -6502,14 +6510,6 @@ msgstr "%s (%s:%i) par să fie moarte."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) par să fie pline."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Se va reîncerca conectarea automată la server în %d secundă"
-msgstr[1] "Se va reîncerca conectarea automată la server în %d secunde"
-msgstr[2] "Se va reîncerca conectarea automată la server în %d de secunde"
 
 #: src/ServerConnect.cpp
 #, c-format

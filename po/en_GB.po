@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:23+0200\n"
 "PO-Revision-Date: 2020-03-04 14:43+0100\n"
 "Last-Translator: Dévai Tamás <devait@vnet.hu>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -6264,6 +6264,13 @@ msgid "Failed to connect to all servers listed. Making another pass."
 msgstr ""
 
 #: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
 msgstr ""
 
@@ -6299,13 +6306,6 @@ msgstr ""
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr ""
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] ""
-msgstr[1] ""
 
 #: src/ServerConnect.cpp
 #, c-format
