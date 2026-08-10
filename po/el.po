@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-09 21:47+0200\n"
+"POT-Creation-Date: 2026-08-10 19:30+0200\n"
 "PO-Revision-Date: 2026-08-09 14:23+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -965,6 +965,10 @@ msgid "Reconnected to the remote core."
 msgstr "Σύνδεση στο δίκτυο."
 
 #: src/amule-remote-gui.cpp
+msgid "The remote core was restarted; reloading."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr ""
@@ -1003,6 +1007,11 @@ msgstr "Άκυρος σύνδεσμο ή ήδη στην λίστα."
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+#, c-format
+msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
 msgstr ""
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp

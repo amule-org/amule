@@ -197,6 +197,14 @@ private:
 	// Set via SetForceZlib() from the caller's config/CLI plumbing.
 	bool m_forceZlib;
 
+	// The daemon process this connection is talking to (EC_TAG_SESSION_ID
+	// from AUTH_OK), or 0 against a daemon too old to send it. ECIDs are
+	// only meaningful within one such session -- CECID hands them out from
+	// a counter that restarts with the process -- so a reconnect that comes
+	// back with a different value (or with 0, where we cannot tell) has to
+	// discard everything keyed by ECID rather than reconcile against it.
+	uint64 m_serverSessionId;
+
 	// Set when the server echoed `EC_TAG_CAN_PARTIAL_UPDATE` in AUTH_OK,
 	// confirming it speaks the partial-update INC_UPDATE protocol: skip
 	// the bulk "anything missing == deleted" loop and instead delete only
@@ -305,6 +313,8 @@ public:
 	void SetCanChat(bool can) noexcept { m_canChat = can; }
 
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
+	//! See m_serverSessionId. 0 means the daemon didn't tell us.
+	uint64 GetServerSessionId() const { return m_serverSessionId; }
 	bool ServerSupportsPartialSearch() const { return m_serverPartialSearch; }
 
 	bool ServerSupportsMultiSearch() const { return m_serverMultiSearch; }

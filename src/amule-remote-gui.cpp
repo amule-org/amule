@@ -22,6 +22,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <algorithm> // Needed for std::min
+
 #include <wx/ipc.h>
 #include <wx/cmdline.h>  // Needed for wxCmdLineParser
 #include <wx/config.h>   // Do_not_auto_remove (win32)
@@ -911,11 +913,43 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 
 	if (result == wxID_OK) {
 		AddLogLineCS(_("Reconnected to the remote core."));
-		// The next full poll reconciles every list against the fresh server
-		// snapshot in place (update / add / prune) — no wipe, so scroll and
-		// selection survive. Arm the one-shot prune for the file lists and
-		// resume polling.
-		if (knownfiles) {
+
+		// Everything we hold is keyed by ECID, and an ECID only means
+		// something within one daemon process: CECID hands them out from a
+		// counter that restarts with the process, so a restarted daemon
+		// reissues the same numbers in whatever order it loads files this
+		// time. Reconciling in place across that pairs our objects with
+		// whatever now happens to share their number.
+		//
+		// EC_TAG_SESSION_ID says which process we're talking to. Same value
+		// means the socket dropped but the daemon lived (a sleeping laptop,
+		// a dead tunnel), so the in-place reconcile below is right and keeps
+		// scroll and selection. Anything else -- a different value, or none
+		// at all because the daemon predates the tag -- means we cannot
+		// trust a single ID we hold, and starting over is the only correct
+		// answer even though it costs the user their scroll position.
+		const uint64 sessionId = m_connect ? m_connect->GetServerSessionId() : 0;
+		const bool sameSession = sessionId != 0 && sessionId == m_ecSessionId;
+		m_ecSessionId = sessionId;
+
+		if (!sameSession) {
+			AddLogLineNS(_("The remote core was restarted; reloading."));
+			if (knownfiles) {
+				knownfiles->ResetForNewDaemonSession();
+			}
+			if (clientlist) {
+				clientlist->ResetForNewSession();
+			}
+			if (serverlist) {
+				serverlist->ResetForNewSession();
+			}
+			if (friendlist) {
+				friendlist->ResetForNewSession();
+			}
+		} else if (knownfiles) {
+			// Same daemon: the next full poll reconciles every list against
+			// the fresh snapshot in place (update / add / prune) — no wipe,
+			// so scroll and selection survive.
 			knownfiles->ArmReconnectReconcile();
 		}
 		if (poll_timer) {
@@ -1067,6 +1101,17 @@ void CamuleRemoteGuiApp::Startup()
 	m_ecHost = dialog->Host();
 	m_ecPort = dialog->Port();
 	m_ecPass = dialog->PassHash();
+	// Baseline for the reconnect comparison: which daemon process this
+	// first connection reached. Stays 0 against a daemon that doesn't send
+	// EC_TAG_SESSION_ID, which makes every later reconnect take the
+	// start-over path.
+	//
+	// Not null-guarded, deliberately: Startup() only runs on a successful
+	// connect and the lines below dereference m_connect unconditionally, so
+	// a guard here would protect nothing while claiming the pointer is
+	// optional -- which is also how the static analyser reads it, and it
+	// then reports the dereference below as reachable with null.
+	m_ecSessionId = m_connect->GetServerSessionId();
 
 	dialog->Destroy();
 	dialog = NULL;
@@ -2034,8 +2079,49 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 	if (parttag) {
 		const uint8 *data =
 			file->m_partStatus.Decode((uint8 *)parttag->GetTagData(), parttag->GetTagDataLen());
-		for (int i = 0; i < file->GetPartCount(); ++i) {
+		// The two bounds come from different places and are not guaranteed to
+		// agree: the buffer is as long as the decoder made it from what the
+		// wire carried, while GetPartCount() is this object's own, derived
+		// from the size it currently believes the file to be. They match for
+		// as long as an ECID keeps meaning the same file -- which a daemon
+		// restart ends, because CECID hands IDs out from a counter that starts
+		// again with the process while amulegui deliberately keeps its objects
+		// across a reconnect. An ID that comes back naming a different file
+		// then pairs a short buffer with a long part count, and this loop
+		// reads off the end of the heap allocation.
+		//
+		// Copy what actually arrived and clear the rest, rather than trusting
+		// either bound alone: leaving the tail would show the previous file's
+		// availability under the new one's name.
+		const int arrived = file->m_partStatus.Size();
+		const int parts = file->GetPartCount();
+		const int copied = std::min(arrived, parts);
+		if (arrived != parts && !m_loggedPartStatusMismatch) {
+			// Says the tag and the object disagree about which file this
+			// is. The reconnect path is supposed to make that impossible
+			// by discarding everything keyed by ECID when the daemon
+			// changes underneath us, so this firing means that went
+			// wrong. Critical rather than debug: clamping the copy leaves
+			// no other trace, the rest of this update goes on applying the
+			// same mismatched tag to the same object, and what the user
+			// ends up looking at is a row describing the wrong file --
+			// which they can act on, and would otherwise have no reason to
+			// suspect.
+			//
+			// Once per session, not once per file: if the ECID space has
+			// gone bad it has gone bad for everything, and this sits in a
+			// loop that runs over the whole library on every poll.
+			m_loggedPartStatusMismatch = true;
+			AddLogLineC(CFormat(_("The remote core sent inconsistent data for \"%s\" "
+					      "(part status %d, expected %d). The file list may be "
+					      "showing the wrong information; reconnect to clear it.")) %
+				    file->GetFileName().GetPrintable() % arrived % parts);
+		}
+		for (int i = 0; i < copied; ++i) {
 			file->m_AvailPartFrequency[i] = data[i];
+		}
+		for (int i = copied; i < parts; ++i) {
+			file->m_AvailPartFrequency[i] = 0;
 		}
 	}
 	wxString fileName;
@@ -2164,6 +2250,21 @@ void CKnownFilesRem::ArmReconnectReconcile()
 			static_cast<CPartFile *>(file)->m_PartFileEncoderData.ResetDecoder();
 		}
 	}
+}
+
+void CKnownFilesRem::ResetForNewDaemonSession()
+{
+	CRemoteContainer<CKnownFile, uint32, CEC_SharedFile_Tag>::ResetForNewSession();
+
+	// Back to the state a cold boot starts in: the next reply is a full
+	// library snapshot and gets the batched ShowFileList() treatment, not
+	// the per-item show-and-sort that a steady-state poll uses.
+	m_initialUpdate = true;
+	// Nothing left to reconcile against, so the one-shot absence-prune has
+	// no work and must not fire on a list it would find empty anyway.
+	m_reconnectReconcile = false;
+	// New session, new chance to complain if the ECIDs go bad again.
+	m_loggedPartStatusMismatch = false;
 }
 
 void CKnownFilesRem::ProcessUpdate(const CECTag *reply, CECPacket *, int)

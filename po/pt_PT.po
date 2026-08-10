@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-09 21:47+0200\n"
+"POT-Creation-Date: 2026-08-10 19:30+0200\n"
 "PO-Revision-Date: 2026-08-09 14:44+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -962,6 +962,10 @@ msgid "Reconnected to the remote core."
 msgstr "Religar à rede."
 
 #: src/amule-remote-gui.cpp
+msgid "The remote core was restarted; reloading."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
 #, fuzzy, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
 msgstr "A ligação falhou. Não é possível ligar a %s:%d\n"
@@ -1001,6 +1005,11 @@ msgstr "Ligação inválida ou já na lista."
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "Não é possível criar o directório '%s' para a categoria '%s', a manter directório '%s'."
+
+#: src/amule-remote-gui.cpp
+#, c-format
+msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
+msgstr ""
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
