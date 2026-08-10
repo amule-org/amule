@@ -99,15 +99,41 @@ void CServerSocket::OnConnect(int nErrorCode)
 		SetConnectionState(CS_WAITFORLOGIN);
 		break;
 
-	case boost::system::errc::address_in_use:
-	case boost::system::errc::address_not_available:
-	case boost::system::errc::bad_address:
+	// Only what the server itself answered counts against it, because
+	// CS_SERVERDEAD is what raises its failed count -- and a server whose
+	// count passes the "remove dead servers" threshold is deleted from the
+	// list for good. It refused the connection, or it accepted the SYN and
+	// then said nothing: either is evidence about that server.
 	case boost::system::errc::connection_refused:
-	case boost::system::errc::host_unreachable:
-	case boost::system::errc::invalid_argument:
 	case boost::system::errc::timed_out:
 		m_bIsDeleting = true;
 		SetConnectionState(CS_SERVERDEAD);
+		serverconnect->DestroySocket(this);
+		return;
+
+	// Not the server's doing, so it keeps its failed count -- but the sweep
+	// carries on to the next candidate, which is what separates these from
+	// the CS_FATALERROR default below. "No route to this host" is what every
+	// server in the list answers within seconds once the link is down, and
+	// the whole list used to accrue failures that way and then be deleted the
+	// moment connectivity returned, since RemoveDeadServers() only runs after
+	// a connection succeeds. The rest are local socket faults (address in use
+	// or not available, a bad address, an invalid argument) that were never
+	// about the server either.
+	//
+	// Deliberately not CS_FATALERROR: that one calls StopConnectionTry() and
+	// waits CS_RETRYCONNECTTIME before trying anything else, which is right
+	// when the whole network is gone (errc::network_unreachable and friends
+	// still land there, via default) but wrong for one unreachable host --
+	// a single stale entry would otherwise stall the sweep for 30 seconds
+	// instead of aMule moving on to the next server.
+	case boost::system::errc::address_in_use:
+	case boost::system::errc::address_not_available:
+	case boost::system::errc::bad_address:
+	case boost::system::errc::host_unreachable:
+	case boost::system::errc::invalid_argument:
+		m_bIsDeleting = true;
+		SetConnectionState(CS_ERROR);
 		serverconnect->DestroySocket(this);
 		return;
 
