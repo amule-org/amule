@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 19:30+0200\n"
+"POT-Creation-Date: 2026-08-10 21:41+0200\n"
 "PO-Revision-Date: 2026-08-09 14:22+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -5880,6 +5880,10 @@ msgstr "Ydre Forbindelses Parametre"
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "Ydre Forbindelses Parametre"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "- Proxy settings changed (needed for HTTP transfers).\n"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- amuleapi settings changed.\n"

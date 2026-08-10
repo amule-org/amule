@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 19:30+0200\n"
+"POT-Creation-Date: 2026-08-10 21:41+0200\n"
 "PO-Revision-Date: 2026-08-09 14:29+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -5902,6 +5902,10 @@ msgstr "חיבור חיצוני נסגר."
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "חיבור חיצוני נסגר."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "- Proxy settings changed (needed for HTTP transfers).\n"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 19:30+0200\n"
+"POT-Creation-Date: 2026-08-10 21:41+0200\n"
 "PO-Revision-Date: 2026-08-09 14:44+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -5945,6 +5945,10 @@ msgstr "- Interfața conexiunii externe s-a schimbat.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "- Suportul protocolului disimulare s-a schimbat.\n"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "- Proxy settings changed (needed for HTTP transfers).\n"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
