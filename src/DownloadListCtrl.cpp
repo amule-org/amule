@@ -546,7 +546,7 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 
 	m_menu->Enable(MP_MENU_EXTD, canPause);
 
-	PopupMenu(m_menu);
+	PopupMenu(m_menu, event.GetPosition());
 
 	delete m_menu;
 	m_menu = nullptr;

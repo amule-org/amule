@@ -247,7 +247,7 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		prioMenu->Check(MP_POWERSHARE, priority == PR_POWERSHARE);
 		prioMenu->Check(MP_PRIOAUTO, priority == PR_AUTO);
 
-		PopupMenu(m_menu);
+		PopupMenu(m_menu, event.GetPosition());
 
 		delete m_menu;
 

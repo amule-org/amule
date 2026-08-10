@@ -837,7 +837,7 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 
 	m_menu->Enable(MP_SHOWLIST, !client.HasDisabledSharedFiles());
 
-	PopupMenu(m_menu);
+	PopupMenu(m_menu, event.GetPosition());
 
 	delete m_menu;
 	m_menu = nullptr;
