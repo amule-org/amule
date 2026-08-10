@@ -1105,7 +1105,13 @@ void CamuleRemoteGuiApp::Startup()
 	// first connection reached. Stays 0 against a daemon that doesn't send
 	// EC_TAG_SESSION_ID, which makes every later reconnect take the
 	// start-over path.
-	m_ecSessionId = m_connect ? m_connect->GetServerSessionId() : 0;
+	//
+	// Not null-guarded, deliberately: Startup() only runs on a successful
+	// connect and the lines below dereference m_connect unconditionally, so
+	// a guard here would protect nothing while claiming the pointer is
+	// optional -- which is also how the static analyser reads it, and it
+	// then reports the dereference below as reachable with null.
+	m_ecSessionId = m_connect->GetServerSessionId();
 
 	dialog->Destroy();
 	dialog = NULL;
