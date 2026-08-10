@@ -38,7 +38,7 @@
  *
  * The wxDataViewCtrl counterpart of CMuleVirtualListCtrl, and virtual in the
  * same sense: the control materialises nothing per row. Rows are addressed by
- * index through a wxDataViewIndexListModel, and cell text is pulled from the
+ * index through a wxDataViewVirtualListModel, and cell text is pulled from the
  * subclass on demand for the cells actually drawn.
  *
  * Two consequences are worth knowing before deriving from this.
@@ -130,7 +130,7 @@ public:
 	/**
 	 * Resolves a wxDataViewItem from an event (e.g. an activation or
 	 * context-menu event) back to its row, through the
-	 * wxDataViewIndexListModel AssociateVirtualModel() installed.
+	 * wxDataViewVirtualListModel AssociateVirtualModel() installed.
 	 *
 	 * A wxDataViewItem's ID *is* the row number for this model, but that
 	 * detail is model-internal; going through GetRow() rather than casting
