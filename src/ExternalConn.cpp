@@ -642,6 +642,17 @@ private:
 	std::set<uint32> m_sentWithDetailIdsPart;
 };
 
+namespace
+{
+//! Identifies this daemon process to EC clients (EC_TAG_SESSION_ID). Random
+//! rather than a counter or a pid so it cannot repeat across a restart.
+uint64 GetEcSessionId()
+{
+	static const uint64 s_sessionId = GetRandomUint64();
+	return s_sessionId;
+}
+} // namespace
+
 CECServerSocket::CECServerSocket(ECNotifier *notifier)
 : CECMuleSocket(true)
 , m_conn_state(CONN_INIT)
@@ -1404,6 +1415,19 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				if (m_my_flags & EC_FLAG_LARGE_TAG_COUNT) {
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_LARGE_TAG_COUNT));
 				}
+				// Identifies this daemon *process*. ECIDs come from a
+				// counter that restarts with the process (CECID), so
+				// after a daemon restart the same numbers are handed
+				// out again, in whatever order files load this time --
+				// and a client that kept its objects across the
+				// reconnect would pair them up by number and quietly
+				// describe one file with another's data. A client that
+				// sees a different value here knows its ECIDs mean
+				// nothing any more and starts over. Old clients ignore
+				// the tag; new clients that don't see it (old daemon)
+				// fall back to starting over on every reconnect, which
+				// is correct if wasteful.
+				response->AddTag(CECTag(EC_TAG_SESSION_ID, GetEcSessionId()));
 				if (m_partialUpdateActive) {
 					// Confirm partial-update mode so the client switches
 					// off its bulk "missing == deleted" fallback and

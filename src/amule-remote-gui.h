@@ -248,6 +248,28 @@ public:
 		m_item_count = 0;
 	}
 
+	/**
+	 * Drops every item, one at a time through the normal removal path.
+	 *
+	 * Not Flush(): that empties the indices and leaks the objects, and
+	 * anything else still holding a raw pointer to one of them never hears
+	 * about it. RemoveItem() -> DeleteItem() is the path that tears a live
+	 * item down properly -- the destroy broadcast that makes clients and
+	 * list controls drop their references, removal from the views, then the
+	 * delete -- so this pays that per item rather than inventing a second,
+	 * quieter teardown.
+	 *
+	 * For use when everything keyed by ECID has stopped meaning anything,
+	 * which is what a reconnect to a restarted daemon amounts to.
+	 */
+	void ResetForNewSession()
+	{
+		for (iterator it = begin(); it != end();) {
+			iterator it2 = it++;
+			RemoveItem(it2);
+		}
+	}
+
 	//
 	// Flush & reload
 	//
@@ -610,6 +632,14 @@ public:
 	// and reset every reused file's differential decoders (see the .cpp).
 	void ArmReconnectReconcile();
 
+	/**
+	 * Throw away every file and start again from the next poll, for a
+	 * reconnect where the ECIDs we hold have stopped meaning anything.
+	 * Re-arms the cold-boot path so the repopulate goes through
+	 * ShowFileList()'s batching rather than one sort per inserted row.
+	 */
+	void ResetForNewDaemonSession();
+
 	uint16 requested;
 	uint32 transferred;
 	uint16 accepted;
@@ -940,6 +970,11 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	wxString m_ecHost;
 	int m_ecPort = 0;
 	wxString m_ecPass;
+	// EC_TAG_SESSION_ID of the daemon process we last connected to, so a
+	// reconnect can tell "the socket dropped" from "the daemon restarted".
+	// 0 until the first successful connect, and against a daemon too old to
+	// send it -- either way the reconnect path treats it as "can't tell".
+	uint64 m_ecSessionId = 0;
 	void BeginReconnect();
 	void AttemptReconnect();
 	void ScheduleNextReconnect();

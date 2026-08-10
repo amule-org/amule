@@ -204,6 +204,7 @@ m_req_fifo_thr(20)
 , m_aeadNegotiated(false)
 , m_preferNoZlib(false)
 , m_forceZlib(false)
+, m_serverSessionId(0)
 , m_serverPartialUpdate(false)
 , m_serverPartialSearch(false)
 , m_canMultiSearch(false)
@@ -753,6 +754,12 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// tags for unchanged files (#713).
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 				m_serverPartialUpdate = true;
+			}
+			// Which daemon process we're talking to. Stays 0 against a
+			// daemon that doesn't send it, which the reconnect path
+			// reads as "can't tell" and handles the safe way.
+			if (const CECTag *sessionTag = reply->GetTagByName(EC_TAG_SESSION_ID)) {
+				m_serverSessionId = sessionTag->GetInt();
 			}
 			if (reply->GetTagByName(EC_TAG_CAN_PARTIAL_SEARCH)) {
 				m_serverPartialSearch = true;
