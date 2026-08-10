@@ -1353,6 +1353,20 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed_msg += _("- Protocol obfuscation support changed.\n");
 	}
 
+	// HTTP side-channels (version check, GeoIP, server.met, nodes.dat) go
+	// through a wxWebSession that is handed its proxy once, when it is created:
+	// wx's WinHTTP backend refuses a proxy change after the session has made
+	// its first request. See CreateAmuleWebRequest(). P2P proxying is not
+	// affected -- that runs through CProxySocket and picks the new settings up
+	// immediately -- which is why the message names HTTP specifically rather
+	// than claiming the whole setting is inert until restart.
+	if (CfgChanged(ID_PROXY_ENABLE_PROXY) || CfgChanged(ID_PROXY_TYPE) || CfgChanged(ID_PROXY_NAME) ||
+		CfgChanged(ID_PROXY_PORT) || CfgChanged(ID_PROXY_ENABLE_PASSWORD) ||
+		CfgChanged(ID_PROXY_USER) || CfgChanged(ID_PROXY_PASSWORD)) {
+		restart_needed = true;
+		restart_needed_msg += _("- Proxy settings changed (needed for HTTP transfers).\n");
+	}
+
 	// amuleapi is launched once at startup with its bind address and port,
 	// so a change to either takes effect only after aMule relaunches it.
 	// Passwords are deliberately not in this list: amuleapi re-reads

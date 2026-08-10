@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 19:30+0200\n"
+"POT-Creation-Date: 2026-08-10 21:41+0200\n"
 "PO-Revision-Date: 2026-08-09 14:23+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -5970,6 +5970,10 @@ msgstr "Η εξωτερική σύνδεση έκλεισε."
 #, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
 msgstr "Συσκότιση πρωτοκόλλου"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "- Proxy settings changed (needed for HTTP transfers).\n"
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy

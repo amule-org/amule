@@ -234,7 +234,15 @@ static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 	// already curl.
 	if (!thePrefs::GetNetworkInterface().IsEmpty() &&
 		wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL)) {
-		static wxWebSession curlSession = wxWebSession::New(wxWebSessionBackendCURL);
+		// Proxy applied here, at construction, and never again -- see the note
+		// on the default session below. Function-local statics are initialised
+		// once and thread-safely, which matters because HTTP requests are
+		// created from CHTTPDownloadThread as well as the main thread.
+		static wxWebSession curlSession = [] {
+			wxWebSession session = wxWebSession::New(wxWebSessionBackendCURL);
+			ApplyProxyToSession(session);
+			return session;
+		}();
 		if (curlSession.IsOpened()) {
 			isCurlBackend = true;
 			return curlSession;
@@ -247,6 +255,26 @@ static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 	isCurlBackend = true;
 #endif
 #endif
+	// Once per session, not once per request. WinHTTP builds its session handle
+	// on the first request, and wx asserts if SetProxy() is called after that:
+	//
+	//   webrequest_winhttp.cpp:SetProxy: assert '!m_handle' failed.
+	//   Proxy must be set before the first request is made
+	//
+	// aMule makes several HTTP requests in a session (version check, geoip,
+	// server.met), so applying the proxy on each one meant every request after
+	// the first asserted -- a modal dialog during startup, with the download it
+	// interrupted left hanging behind it.
+	//
+	// The cost is that a proxy preference change now takes effect on the next
+	// run rather than the next request. That is what the WinHTTP backend allows
+	// in any case, and applying it per request never worked there anyway.
+	static const bool defaultSessionProxyApplied = [] {
+		ApplyProxyToSession(wxWebSession::GetDefault());
+		return true;
+	}();
+	(void)defaultSessionProxyApplied;
+
 	return wxWebSession::GetDefault();
 }
 
@@ -304,8 +332,9 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
 {
 	bool isCurlBackend = false;
+	// The proxy is applied when the session is first handed out, not here:
+	// setting it per request asserts on WinHTTP once a request has been made.
 	wxWebSession &session = GetAmuleWebSession(isCurlBackend);
-	ApplyProxyToSession(session);
 	wxWebRequest request = session.CreateRequest(handler, url);
 	if (request.IsOk() && isCurlBackend) {
 		CustomizeCurlRequest(request);
