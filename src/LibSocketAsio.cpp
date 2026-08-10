@@ -458,7 +458,7 @@ public:
 		m_readBufferSize = 0;
 		m_readPending.store(false, std::memory_order_relaxed);
 		m_readBufferContent = 0;
-		m_eventPending = false;
+		m_eventPending.store(false, std::memory_order_relaxed);
 		m_port = 0;
 		m_sendBuffer.store(nullptr, std::memory_order_relaxed);
 		m_connected = false;
@@ -780,7 +780,12 @@ public:
 		}
 	}
 
-	void EventProcessed() { m_eventPending = false; }
+	// Acquiring, not a plain store: it has to pick up the value the posting
+	// side wrote, so everything published before that post -- the filled
+	// buffer and the cleared m_readPending -- is visible to the Read() this
+	// notification is about to drive. A plain store leaves the reader free to
+	// see a stale read state and block on data that is already here.
+	void EventProcessed() { m_eventPending.exchange(false, std::memory_order_acquire); }
 
 	void SetWrapSocket(CLibSocket *socket)
 	{
@@ -996,13 +1001,32 @@ private:
 
 	void PostReadEvent(int DEBUG_ONLY(from))
 	{
-		if (!m_eventPending) {
+		// One atomic step, so exactly one caller can win the right to notify:
+		// a plain test-then-set lets the ASIO thread and the main thread both
+		// see it clear and post twice, or -- the damaging direction -- lets
+		// this thread see it set and skip while the main thread is about to
+		// clear it, leaving data buffered with nothing left to announce it.
+		//
+		// The exchange writes unconditionally, so even the skipping path
+		// releases everything written before it (the buffer, and the cleared
+		// m_readPending). EventProcessed acquires that same value, which is
+		// what stops the reader from then acting on a stale read state.
+		// Checked before the latch is taken, not after: with no wrapper there
+		// is nothing to deliver a notification, and EventProcessed only runs
+		// off a delivered one. Taking the latch here would leave it set for
+		// the life of the socket and make every later post skip -- the same
+		// wedge, reached from the other side. HandleRead reaches this state
+		// deliberately: it logs "wrapper gone" and carries on to post.
+		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
+		if (!wrapper) {
+			AddDebugLogLineF(
+				logAsio, CFormat("Post read event %d %s - no wrapper") % from % m_IP);
+			return;
+		}
+
+		if (!m_eventPending.exchange(true, std::memory_order_acq_rel)) {
 			AddDebugLogLineF(logAsio, CFormat("Post read event %d %s") % from % m_IP);
-			m_eventPending = true;
-			CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
-			if (wrapper) {
-				CoreNotify_LibSocketReceive(wrapper, m_ErrorCode);
-			}
+			CoreNotify_LibSocketReceive(wrapper, m_ErrorCode);
 		}
 	}
 
@@ -1204,7 +1228,9 @@ private:
 	// see HandleRead for why plain stores were not enough.
 	std::atomic<bool> m_readPending;
 	uint32 m_readBufferContent;
-	bool m_eventPending;
+	// atomic: posted from the ASIO thread and cleared on the main thread, and
+	// it is the latch that decides whether a completed read gets announced
+	std::atomic<bool> m_eventPending;
 	std::atomic<char *>
 		m_sendBuffer; // atomic: shared between throttler thread (Write) and ASIO thread (HandleSend)
 	std::atomic<bool> m_blocksWrite; // atomic: shared between throttler thread (BlocksWrite) and ASIO
