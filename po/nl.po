@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:23+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:41+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -6444,11 +6444,12 @@ msgstr "Kon niet verbinden met een geobfusceerde server. Nogmaals proberen zonde
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "Kon niet verbinden met een server in de lijst. Nogmaals proberen."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Kon niet verbinden met een server in de lijst. Nogmaals proberen."
 
 #: src/ServerConnect.cpp

@@ -111,15 +111,24 @@ void CServerSocket::OnConnect(int nErrorCode)
 		serverconnect->DestroySocket(this);
 		return;
 
-	// Not the server's doing, so it keeps its failed count -- but the sweep
-	// carries on to the next candidate, which is what separates these from
-	// the CS_FATALERROR default below. "No route to this host" is what every
-	// server in the list answers within seconds once the link is down, and
-	// the whole list used to accrue failures that way and then be deleted the
-	// moment connectivity returned, since RemoveDeadServers() only runs after
-	// a connection succeeds. The rest are local socket faults (address in use
-	// or not available, a bad address, an invalid argument) that were never
-	// about the server either.
+	// Not counted against the server, but the sweep still carries on to the
+	// next candidate -- which is what separates these from the CS_FATALERROR
+	// default below.
+	//
+	// host_unreachable is the one that matters and the one that is ambiguous:
+	// a router can report it by ICMP for a remote host that genuinely no
+	// longer routes, so it is not purely a fault at our end. It is classified
+	// here anyway because of how it fails when it is ours: with the link down
+	// every server in the list answers that way within milliseconds, so the
+	// whole list used to accrue failures and then be deleted the moment
+	// connectivity returned -- RemoveDeadServers() only runs after a
+	// connection succeeds. A server that has genuinely stopped routing still
+	// gets counted, through the timeouts and the UDP pings that reach it by
+	// other paths; the cost of the wrong call the other way is the list.
+	//
+	// The rest are unambiguous local socket faults -- an address in use or not
+	// available, a bad address, an invalid argument -- and were never about
+	// the server at all.
 	//
 	// Deliberately not CS_FATALERROR: that one calls StopConnectionTry() and
 	// waits CS_RETRYCONNECTTIME before trying anything else, which is right
@@ -751,6 +760,11 @@ void CServerSocket::OnHostnameResolved(uint32 ip)
 
 	m_IsSolving = false;
 	if (ip) {
+		// DNS answered, so a *different* server failing to resolve during this
+		// sweep is about that server rather than about our link -- see
+		// CServerConnect::HostnameResolvedThisSweep().
+		serverconnect->NoteHostnameResolved();
+
 		if (theApp->ipfilter->IsFiltered(ip, true)) {
 			AddLogLineC(CFormat(_("Server IP %s (%s) is filtered.  Not connecting.")) %
 				    Uint32toStringIP(ip) % cur_server->GetAddress());
@@ -785,7 +799,25 @@ void CServerSocket::OnHostnameResolved(uint32 ip)
 	} else {
 		AddLogLineC(CFormat(_("Could not solve dns for server %s: Unable to connect!")) %
 			    cur_server->GetAddress());
-		OnConnect(boost::system::errc::host_unreachable);
+
+		// Decided here rather than by handing OnConnect() a synthesised
+		// host_unreachable, which is what this used to do: a name that does not
+		// resolve is not a socket error, and the two want opposite answers.
+		//
+		// An unresolvable hostname is the commonest way an eD2k server actually
+		// dies, so this is the main thing "remove dead servers" prunes on, and
+		// it has to keep working. But with the link down nothing resolves, and
+		// counting that against every server in turn is what emptied the list
+		// (issue #887). Blame it only once DNS has answered for something else
+		// this sweep -- then the failure is about this server, not about us.
+		//
+		// The first server in a sweep therefore cannot be blamed, since nothing
+		// has resolved yet; a genuinely dead entry is caught on a later sweep
+		// instead. Erring that way costs a delay, while erring the other way
+		// costs the server list.
+		m_bIsDeleting = true;
+		SetConnectionState(serverconnect->HostnameResolvedThisSweep() ? CS_SERVERDEAD : CS_ERROR);
+		serverconnect->DestroySocket(this);
 	}
 }
 uint32 CServerSocket::GetServerIP() const

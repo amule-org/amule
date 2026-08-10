@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:23+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:17+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -6467,11 +6467,12 @@ msgstr "Fallu al coneutar a tolos sirvidores ofuscaos llistaos. Tentándolo de n
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "Fallu al coneutar a tolos sirvidores."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Fallu al coneutar a tolos sirvidores."
 
 #: src/ServerConnect.cpp

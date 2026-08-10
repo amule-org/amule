@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:23+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:47+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -6439,11 +6439,12 @@ msgstr "Det gick inte att ansluta till några fördunkliade servrar i listan. G�
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "Misslyckades med att ansluta till alla listade servrar. Gör ett nytt försök."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Misslyckades med att ansluta till alla listade servrar. Gör ett nytt försök."
 
 #: src/ServerConnect.cpp

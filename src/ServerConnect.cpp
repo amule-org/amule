@@ -87,12 +87,12 @@ void CServerConnect::TryAnotherConnectionrequest()
 					ConnectToAnyServer(false, true);
 					m_recurseTryAnotherConnectionrequest = false;
 				} else {
-					AddLogLineC(
-						staticOnly
-							? _("Failed to connect to all static servers listed. "
-							    "Making another pass.")
-							: _("Failed to connect to all servers listed. Making "
-							    "another pass."));
+					// No "making another pass" here any more: the next one is
+					// the timer's, below.
+					AddLogLineC(staticOnly
+							    ? _("Failed to connect to all static servers "
+								"listed.")
+							    : _("Failed to connect to all servers listed."));
 					// Wait before starting over instead of restarting the sweep
 					// here. Every server having failed says nothing about when
 					// one will answer, and with the link down they all fail the
@@ -104,7 +104,7 @@ void CServerConnect::TryAnotherConnectionrequest()
 					// before. StopConnectionTry() first: it stops the timer, so
 					// arming it earlier would be undone.
 					StopConnectionTry();
-					if (thePrefs::Reconnect() && !m_idRetryTimer.IsRunning()) {
+					if (thePrefs::Reconnect()) {
 						AddLogLineN(
 							CFormat(wxPLURAL(
 								"Automatic connection to server will retry "
@@ -141,6 +141,9 @@ void CServerConnect::ConnectToAnyServer(bool prioSort, bool bNoCrypt)
 	connecting = true;
 	singleconnecting = false;
 	m_bTryObfuscated = thePrefs::IsServerCryptLayerTCPRequested() && !bNoCrypt;
+	// Each sweep judges DNS on its own evidence: whether the link was up
+	// during the last one says nothing about now.
+	m_hostnameResolvedThisSweep = false;
 
 	// Barry - Only auto-connect to static server option
 	if (thePrefs::AutoConnectStaticOnly()) {
@@ -538,6 +541,7 @@ CServerConnect::CServerConnect(CServerList *in_serverlist, amuleIPV4Address &add
 	singleconnecting = false;
 	m_recurseTryAnotherConnectionrequest = false;
 	m_bTryObfuscated = thePrefs::IsServerCryptLayerTCPRequested();
+	m_hostnameResolvedThisSweep = false;
 
 	// initialize socket for udp packets
 	if (thePrefs::GetNetworkED2K()) {

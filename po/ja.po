@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:23+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:38+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -6437,11 +6437,12 @@ msgstr "難読化されたすべてのサーバへの接続に失敗しました
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "リストされたすべてのサーバへの接続に失敗しました。もう一度試行します。"
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "リストされたすべてのサーバへの接続に失敗しました。もう一度試行します。"
 
 #: src/ServerConnect.cpp

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:23+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:45+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -6443,11 +6443,13 @@ msgid "Failed to connect to all obfuscated servers listed. Making another pass w
 msgstr "Не удалось соединиться ни с одним замаскированным сервером в списке. Повторная попытка, но без маскировки."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all static servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all static servers listed."
 msgstr "Не удалось подключиться ко всем перечисленным постоянным серверам. Повторная попытка."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Не удалось подключиться ни к одному серверу из списка. Повторная попытка."
 
 #: src/ServerConnect.cpp

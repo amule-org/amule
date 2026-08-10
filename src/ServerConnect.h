@@ -107,6 +107,21 @@ public:
 	bool AwaitingTestFromIP(uint32 ip);
 	bool IsConnectedObfuscated() const;
 
+	//! Records that a server's hostname resolved during the current sweep.
+	void NoteHostnameResolved() { m_hostnameResolvedThisSweep = true; }
+
+	/**
+	 * Whether DNS has answered for anything since this sweep began.
+	 *
+	 * A server whose hostname does not resolve is the commonest way an eD2k
+	 * server dies, and pruning it is the point of "remove dead servers" -- but
+	 * with the link down nothing resolves, and blaming the whole list for that
+	 * is what emptied it (issue #887). One server failing to resolve while
+	 * others answered is the case that says something about that server, and
+	 * this is what separates the two.
+	 */
+	bool HostnameResolvedThisSweep() const { return m_hostnameResolvedThisSweep; }
+
 	/**
 	 * Called when a socket has been DNS resolved.
 	 *
@@ -125,6 +140,8 @@ private:
 	int8 max_simcons;
 	bool m_bTryObfuscated;
 	bool m_recurseTryAnotherConnectionrequest;
+	//! See HostnameResolvedThisSweep(); reset as each sweep starts.
+	bool m_hostnameResolvedThisSweep;
 	CServerSocket *connectedsocket;
 	CServerList *used_list;
 	CServerUDPSocket *serverudpsocket;
