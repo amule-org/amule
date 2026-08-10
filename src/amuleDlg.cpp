@@ -589,8 +589,32 @@ void CamuleDlg::CreateSystray()
 
 void CamuleDlg::RemoveSystray()
 {
-	delete m_wndTaskbarNotifier;
+	// Deleted on the next idle rather than here. "Exit" on the tray menu is
+	// handled by the tray icon itself (see MuleTrayIcon.cpp's event table),
+	// and wxTaskBarIcon::PopupMenu() pushes the icon as its own window's
+	// event handler for the duration of the menu's nested event loop, popping
+	// it again only after the menu returns (msw/taskbar.cpp). Shutting down
+	// from that item therefore reaches here with the icon still pushed and
+	// its window procedure on the stack, so deleting it now destroys the
+	// window while the handler is attached -- which asserts in
+	// ~wxWindowBase(), and is undefined behaviour whether or not assertions
+	// are compiled in.
+	//
+	// ScheduleForDestruction() would be the obvious tool but takes a
+	// wxObject*, and under WITH_LIBAYATANA_APPINDICATOR CMuleTrayIcon has no
+	// base class at all. CallAfter() on the dialog works in both builds.
+	//
+	// Clearing the member first keeps this idempotent, and the recreate path
+	// (unticking then reticking the tray-icon preference) is unaffected: each
+	// click is a separate event, so the pending deletion has run by the time
+	// CreateSystray() looks. On the shutdown path the queued call may never
+	// run at all if the main loop stops first -- the process is exiting, and
+	// the icon goes with it.
+	CMuleTrayIcon *icon = m_wndTaskbarNotifier;
 	m_wndTaskbarNotifier = NULL;
+	if (icon) {
+		CallAfter([icon] { delete icon; });
+	}
 }
 
 void CamuleDlg::UpdateFreeSpaceLabels()
