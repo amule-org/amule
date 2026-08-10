@@ -2090,6 +2090,19 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 		const int arrived = file->m_partStatus.Size();
 		const int parts = file->GetPartCount();
 		const int copied = std::min(arrived, parts);
+		if (arrived != parts) {
+			// Says the tag and the object disagree about which file this
+			// is. The reconnect path is supposed to make that impossible
+			// by discarding everything keyed by ECID when the daemon
+			// changes underneath us, so this firing means that went
+			// wrong -- worth a line, because clamping the copy leaves no
+			// other trace and the rest of this update is applying the
+			// same mismatched tag to the same object.
+			AddDebugLogLineN(logEC,
+				CFormat(wxT("EC: part-status length %d does not match part count %d for "
+					    "file ID %u (%s)")) %
+					arrived % parts % file->ECID() % file->GetFileName().GetPrintable());
+		}
 		for (int i = 0; i < copied; ++i) {
 			file->m_AvailPartFrequency[i] = data[i];
 		}
