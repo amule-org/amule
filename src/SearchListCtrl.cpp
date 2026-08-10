@@ -669,7 +669,7 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		menu.Enable(MP_GETCOMMENTS, enable);
 		menu.Enable(MP_MENU_CATS, (theApp->glob_prefs->GetCatCount() > 1));
 
-		PopupMenu(&menu);
+		PopupMenu(&menu, event.GetPosition());
 	} else {
 		event.Skip();
 	}

@@ -665,7 +665,7 @@ void CServerListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		serverMenu->Enable(MP_CONNECTTO, false);
 	}
 
-	PopupMenu(serverMenu);
+	PopupMenu(serverMenu, event.GetPosition());
 	delete serverMenu;
 }
 

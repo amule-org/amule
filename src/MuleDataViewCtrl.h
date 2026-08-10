@@ -332,6 +332,13 @@ protected:
 	void OnIdle(wxIdleEvent &event);
 	void OnChar(wxKeyEvent &evt);
 	void OnKeyDown(wxKeyEvent &evt);
+	void OnContextMenuKey(wxContextMenuEvent &evt);
+
+	//! Synthesises wxEVT_DATAVIEW_ITEM_CONTEXT_MENU for the current item,
+	//! positioned at its row rather than the mouse -- shared by every
+	//! keyboard-triggered path (OnContextMenuKey, and OSX's Shift+F10 in
+	//! OnKeyDown).
+	void RaiseItemContextMenu();
 
 private:
 	//! Per-column hidden state, indexed like the control's columns.

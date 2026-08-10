@@ -48,6 +48,7 @@ wxBEGIN_EVENT_TABLE(CMuleDataViewCtrl, wxDataViewCtrl)
 	EVT_IDLE(CMuleDataViewCtrl::OnIdle)
 	EVT_CHAR(CMuleDataViewCtrl::OnChar)
 	EVT_KEY_DOWN(CMuleDataViewCtrl::OnKeyDown)
+	EVT_CONTEXT_MENU(CMuleDataViewCtrl::OnContextMenuKey)
 wxEND_EVENT_TABLE()
 
 CMuleDataViewCtrl::CMuleDataViewCtrl(wxWindow *parent,
@@ -564,9 +565,66 @@ void CMuleDataViewCtrl::OnChar(wxKeyEvent &evt)
 	// continuing to type) but the selection stays where it is.
 }
 
+void CMuleDataViewCtrl::OnContextMenuKey(wxContextMenuEvent &evt)
+{
+	if (evt.GetPosition() != wxDefaultPosition) {
+		// A real right-click, which every port turns into
+		// wxEVT_DATAVIEW_ITEM_CONTEXT_MENU by itself; this handler exists only
+		// for the keyboard-origin case (Shift+F10 / the Applications key on
+		// MSW and GTK, both measured to fire this separate, dataview-agnostic
+		// event instead -- see the review on amule-org/amule#877).
+		//
+		// Skipping is load-bearing on macOS, where it is not merely tidy: that
+		// port raises the dataview event *from* this one, in
+		// wxDataViewCtrl::OnContextMenu() (osx/dataview_osx.cpp). Our handler
+		// runs first, being the derived class, so swallowing a mouse-origin
+		// event here would leave right-click with no context menu at all.
+		evt.Skip();
+		return;
+	}
+
+	RaiseItemContextMenu();
+}
+
+void CMuleDataViewCtrl::RaiseItemContextMenu()
+{
+	const wxDataViewItem item = GetCurrentItem();
+	if (item.IsOk()) {
+		// GetItemRect() answers an empty rect for a row that is not on screen
+		// (the same limitation MoveByPage() documents above), and the menu
+		// would then open in the control's top-left corner rather than at the
+		// row it acts on -- reachable by clicking a row and scrolling away
+		// before pressing the key. Bringing it into view first also shows the
+		// user what the menu is about to apply to; it does not scroll when the
+		// row is already visible.
+		EnsureVisible(item);
+	}
+
+	wxDataViewEvent menuEvent(wxEVT_DATAVIEW_ITEM_CONTEXT_MENU, this, item);
+	const wxRect rect = item.IsOk() ? GetItemRect(item) : wxRect(GetClientSize());
+	menuEvent.SetPosition(rect.GetLeft(), rect.GetBottom());
+	ProcessWindowEvent(menuEvent);
+}
+
 void CMuleDataViewCtrl::OnKeyDown(wxKeyEvent &evt)
 {
 #ifdef __WXOSX__
+	// wx's Cocoa backend has no keyboard-triggered path to
+	// wxEVT_DATAVIEW_ITEM_CONTEXT_MENU. It does handle wxEVT_CONTEXT_MENU --
+	// that is how a right-click becomes a dataview event there, see
+	// OnContextMenuKey -- but nothing on this port ever raises that event
+	// from a keystroke, and there is no AXShowMenu implementation for any
+	// control on it
+	// (wxWidgets/wxWidgets#13010, open since 2011). VoiceOver's context-menu
+	// gesture (VO+Shift+M) performs AXShowMenu, so it never reaches wx here
+	// either (amule-org/amule#180). Ctrl+Return was tried as an alternative
+	// and rejected: NSOutlineView's keyDown: treats bare Return as "activate
+	// the row" before this handler ever sees it, Control held or not.
+	if (evt.ShiftDown() && evt.GetKeyCode() == WXK_F10) {
+		RaiseItemContextMenu();
+		return;
+	}
+
 	// NSOutlineView scrolls the view for these keys without touching either
 	// the selection or the cursor, so on this platform they are ours to
 	// implement -- shifted, where GTK and MSW extend the selection and the

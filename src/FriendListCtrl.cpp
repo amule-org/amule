@@ -198,7 +198,7 @@ void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		}
 	}
 
-	PopupMenu(menu);
+	PopupMenu(menu, event.GetPosition());
 	delete menu;
 }
 
