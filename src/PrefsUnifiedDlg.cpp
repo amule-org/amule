@@ -359,7 +359,7 @@ PrefsPage pages[] = { { wxTRANSLATE("General"), PreferencesGeneralTab, 13, "pref
 	// Remote-only (issue #843): mapping a daemon's path space onto this
 	// machine's has no meaning for the monolithic app, which is its own
 	// daemon. Placed right after Directories, the other page about paths.
-	{ wxTRANSLATE("Path Mappings"), PreferencesPathMappingTab, 17, "prefs_directories" },
+	{ wxTRANSLATE("Path Mappings"), PreferencesPathMappingTab, 17, "prefs_pathmapping" },
 #endif
 	{ wxTRANSLATE("Servers"), PreferencesServerTab, 15, "prefs_servers" },
 	{ wxTRANSLATE("Files"), PreferencesFilesTab, 16, "prefs_files" },

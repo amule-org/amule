@@ -286,19 +286,29 @@ void CSharedFilesCtrl::OnViewFileDetails(wxCommandEvent &WXUNUSED(event))
 
 void CSharedFilesCtrl::OnItemActivated(wxDataViewEvent &event)
 {
-	// Open details on the activated row alone, whatever else was selected.
-	// event.GetItem()'s ID is the row-addressed model's row index, not the
-	// item data -- see the "item identity is not row identity" note in
-	// MuleVirtualDataViewCtrl.h -- so the row is resolved through the
-	// selection rather than cast directly from the item.
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	UnselectAll();
-	Select(event.GetItem());
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-	if (!selected.empty()) {
-		ShowFileDetailDialog(RowOfData(selected.front()));
+	// Read the row straight off the event, as CDownloadListCtrl::
+	// OnItemActivated does -- touching the selection here would discard
+	// whatever multi-selection the user already had for no reason.
+	const long row = GetModelRow(event.GetItem());
+	CKnownFile *file = FileAtRow(row);
+	if (!file) {
+		return;
+	}
+
+	// A finished file of any type can be opened, an unfinished one
+	// (CSharedFileList also carries PS_READY part files) only once enough of
+	// the media is on disk to play. Same rule as CDownloadListCtrl::
+	// OnItemActivated, which lists these very files while they are still
+	// downloading -- see the note there. Anything else opens the file-details
+	// modal, which is what every double-click in this list did before.
+	const bool launchable = !file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable();
+	if (launchable && FileLaunch::CanOpen(file)) {
+		FileLaunch::Open(file, this);
+	} else {
+		ShowFileDetailDialog(row);
 	}
 }
 

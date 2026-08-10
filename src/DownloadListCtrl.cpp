@@ -752,18 +752,15 @@ void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)
 	}
 	CPartFile *file = reinterpret_cast<CPartFile *>(data);
 
-	// Double-click is media-only: it is an easy gesture to trigger by
-	// accident, and handing a completed .exe or .desktop to the platform
-	// opener that way is not a thing to do silently. The menu's Open is the
-	// broad one.
-	//
-	// It does now cover an in-progress download once enough of the media is
-	// on disk to play -- PreviewAvailable()'s own test -- where the previous
-	// condition also required completion. That is the classic eMule gesture,
-	// and it matches what the menu's Preview entry offers for the same row.
-	// Anything else opens the file-details modal, as the shared-files table
-	// does.
-	if (file->PreviewAvailable() && FileLaunch::CanOpen(file)) {
+	// One rule for both file tables: a completed file opens whatever type it
+	// is, an unfinished one only once enough of the media is on disk to play
+	// -- PreviewAvailable()'s own test, the classic eMule gesture, and what
+	// the menu's Preview entry offers for the same row. IsPartFile() is
+	// exactly "not complete" (PartFile.h), so finishing a download no longer
+	// narrows what a double-click does to it; from that moment the same file
+	// is also in Shared Files, where CSharedFilesCtrl::OnItemActivated opens
+	// it whatever its type. Anything else opens the file-details modal.
+	if ((!file->IsPartFile() || file->PreviewAvailable()) && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
 	} else {
 		ShowFileDetailDialog(row);

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <defs>
+    <linearGradient id="pmBack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7fc4e8"/>
+      <stop offset="1" stop-color="#2f86bb"/>
+    </linearGradient>
+    <linearGradient id="pmFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9ecfb"/>
+      <stop offset="1" stop-color="#79bfe6"/>
+    </linearGradient>
+    <linearGradient id="pmBadge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe38a"/>
+      <stop offset="1" stop-color="#e8a721"/>
+    </linearGradient>
+  </defs>
+  <!-- Folder, same construction as prefs_directories.svg but in a network-blue
+       palette so the two pages read as distinct at a glance. -->
+  <path d="M1 4.3 a1 1 0 0 1 1 -1 h2.6 a0.6 0.6 0 0 1 0.44 0.19 l1 1.06 H12.4 a1 1 0 0 1 1 1 v4.5 a1 1 0 0 1 -1 1 H2 a1 1 0 0 1 -1 -1 Z"
+        fill="url(#pmBack)" stroke="#1f6690" stroke-width="0.5"/>
+  <path d="M1.6 6.5 H12.8 v3.5 a0.85 0.85 0 0 1 -0.85 0.85 H2.45 a0.85 0.85 0 0 1 -0.85 -0.85 Z"
+        fill="url(#pmFront)" stroke="#3a94c4" stroke-width="0.5"/>
+  <!-- Remote-to-local badge, in the warm tone the mapping list's own icon-less
+       rows don't otherwise borrow from. The glyph is a plain double-headed
+       arrow rather than the usual pair of curved sync arrows: this ships at
+       16x16, where the badge is barely 7px across and anything with two
+       separate arcs inside it renders as a featureless disc. One straight
+       shaft with a head at each end is the most detail that survives, and
+       white on amber holds up where a dark-on-amber outline greys out. -->
+  <circle cx="11.4" cy="11.1" r="3.4" fill="url(#pmBadge)" stroke="#8a5606" stroke-width="0.6"/>
+  <path d="M9.4 11.1 H13.4"
+        fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M10.7 9.9 L9.4 11.1 L10.7 12.3 M12.1 9.9 L13.4 11.1 L12.1 12.3"
+        fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
