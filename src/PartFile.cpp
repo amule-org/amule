@@ -1503,10 +1503,57 @@ uint32 CPartFile::Process(uint8 m_icounter)
 	// Partfiles have ~20 EC-exported fields that change frequently and
 	// independently (status, speed, transfer counters, source counts, gap
 	// list, hashed-part count, …). Per-field hooks have diminishing
-	// returns when the file is actively transferring anyway, so use a
-	// coarse mark here — Process() runs once per second per partfile and
-	// the file genuinely has new state every tick during active download.
-	MarkECChanged();
+	// returns when the file is actively transferring anyway, so the mark
+	// here stays coarse — but it is not unconditional. "Process() ran"
+	// is not the same as "this file has new state": a queued download with
+	// no sources ticks once a second and every exported value comes back
+	// identical, and marking it anyway made Get_EC_Response_GetUpdate's
+	// change test pass for every non-paused download, every poll. With
+	// 11,000 of them that is the whole download list re-encoded and
+	// re-sent once a second, and the same again on the client applying it
+	// (issue #867).
+	//
+	// Everything else in CEC_PartFile_Tag is event-driven and marks itself
+	// where it changes (SetStatus, SetCategory, SetDownPriority, the gap
+	// and corruption paths, SetHashingProgress, …). This covers what only
+	// Process() can move.
+	//
+	// GetDlActiveTime() is deliberately absent. It is wall-clock derived --
+	// m_nDlActiveTime plus the time since m_tActivated, and every
+	// PS_READY/PS_EMPTY file is activated the moment the client connects --
+	// so it advances every second whether or not the download is doing
+	// anything, and including it here would answer "changed" always and
+	// leave this test doing nothing. The cost is that an idle download's
+	// active time reaches a remote GUI only when something real about the
+	// file changes; it is read in one place, the File Details dialog, and a
+	// file that is actually transferring changes something every tick
+	// anyway.
+	const std::array<uint64, 12> ecTickState = { GetStatus(),
+		GetSourceCount(),
+		GetNotCurrentSourcesCount(),
+		GetTransferingSrcCount(),
+		GetSrcA4AFCount(),
+		GetTransferred(),
+		GetCompletedSize(),
+		// Quantised exactly as the tag sends it, so a speed wobble too
+		// small to change the wire value doesn't count as a change.
+		(uint64)(GetKBpsDown() * 1024),
+		GetAvailablePartCount(),
+		m_nCompleteSourcesCount,
+		// The last two are already implied by the ones above -- a block
+		// arriving moves GetTransferred(), and availability reaching
+		// complete moves GetAvailablePartCount() on the same pass. They
+		// are listed anyway because that is a coupling, not a guarantee:
+		// neither stamp marks EC-dirty of its own accord
+		// (UpdateAvailablePartCount only calls MarkMetDirty), so relying
+		// on the neighbour would leave the field to go stale the day
+		// either one moves.
+		(uint64)lastseencomplete,
+		(uint64)GetLastChangeDatetime() };
+	if (ecTickState != m_ecTickState) {
+		m_ecTickState = ecTickState;
+		MarkECChanged();
+	}
 
 	uint16 old_trans;
 	uint64 dwCurTick = ::GetTickCount64();
