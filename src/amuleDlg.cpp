@@ -612,7 +612,25 @@ void CamuleDlg::UpdateFreeSpaceLabels()
 	}
 }
 
-void CamuleDlg::SetFreeSpaceLabel(wxStaticText *label, sint64 freeSpace, bool warn, const wxString &separator)
+namespace
+{
+/**
+ * SetLabel() repaints even when the text is unchanged, and this runs once a
+ * second for the life of the session. Answers whether the layout has to be
+ * redone, so a caller touching two labels relayouts once.
+ */
+bool SetLabelIfChanged(wxStaticText *label, const wxString &text)
+{
+	if (!label || label->GetLabel() == text) {
+		return false;
+	}
+	label->SetLabel(text);
+	return true;
+}
+} // namespace
+
+void CamuleDlg::SetFreeSpaceLabel(
+	wxStaticText *label, sint64 freeSpace, bool warn, wxStaticText *separatorLabel)
 {
 	if (!label) {
 		return;
@@ -623,26 +641,42 @@ void CamuleDlg::SetFreeSpaceLabel(wxStaticText *label, sint64 freeSpace, bool wa
 	// or its mount (commonly a NAS for the temp or incoming directory) is
 	// unreachable. Printing "0 bytes" there would read as a full disk.
 	if (freeSpace == FREE_SPACE_UNKNOWN) {
-		if (!label->GetLabel().IsEmpty()) {
-			label->SetLabel(wxEmptyString);
+		// The separator exists only to join this figure to the field
+		// before it, so it goes when the figure does -- otherwise the
+		// queue size is left trailing a bare "|". Hidden rather than
+		// emptied: its padding is sizer border, which an empty label
+		// would still reserve.
+		bool relayout = SetLabelIfChanged(label, wxEmptyString);
+		if (separatorLabel && separatorLabel->IsShown()) {
+			separatorLabel->Show(false);
+			relayout = true;
+		}
+		if (relayout) {
 			label->GetParent()->Layout();
 		}
 		return;
 	}
 
-	// The separator is layout, not language: it stays out of the catalog so
-	// translators are given the figure alone.
-	const wxString text = separator + wxString(CFormat(_("Free space: %s")) % CastItoXBytes(freeSpace));
 	const wxColour colour = warn ? *wxRED : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
-
-	// Both guarded: SetLabel() on an unchanged string still triggers a
-	// repaint, and this runs once a second for the life of the session.
 	if (label->GetForegroundColour() != colour) {
 		label->SetForegroundColour(colour);
 		label->Refresh();
 	}
-	if (label->GetLabel() != text) {
-		label->SetLabel(text);
+
+	// The separator sits in its own label and is never recoloured: a
+	// wxStaticText colours all or nothing, so a separator sharing this label
+	// turned red along with the figure whenever the warning fired. It is
+	// layout, not language, so it stays out of the catalog either way and
+	// translators are given the figure alone -- and the gaps around it are
+	// sizer border, so the bar carries no whitespace of its own.
+	bool relayout = SetLabelIfChanged(separatorLabel, "|");
+	if (separatorLabel && !separatorLabel->IsShown()) {
+		separatorLabel->Show(true);
+		relayout = true;
+	}
+	relayout =
+		SetLabelIfChanged(label, CFormat(_("Free space: %s")) % CastItoXBytes(freeSpace)) || relayout;
+	if (relayout) {
 		label->GetParent()->Layout();
 	}
 }

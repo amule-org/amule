@@ -335,6 +335,7 @@ private:
 	//! The "Free space:" label, resolved by name on first use. Lives in the
 	//! sources pane, so it cannot be reached through GetParent().
 	wxStaticText *m_freeSpaceLabel = nullptr;
+	wxStaticText *m_freeSpaceSepLabel = nullptr;
 
 	wxDECLARE_EVENT_TABLE();
 };

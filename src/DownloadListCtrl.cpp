@@ -1171,6 +1171,10 @@ void CDownloadListCtrl::UpdateFreeSpace()
 		if (!m_freeSpaceLabel) {
 			return;
 		}
+		// Its own label so the "|" is not recoloured with the figure;
+		// resolved alongside it and equally long-lived.
+		m_freeSpaceSepLabel =
+			CastByName("downloadsFreeSpaceSep", theApp->amuledlg->m_transferwnd, wxStaticText);
 	}
 
 	const sint64 freeSpace = theStats::GetTempFreeSpace();
@@ -1200,7 +1204,7 @@ void CDownloadListCtrl::UpdateFreeSpace()
 
 	const bool warn = (freeSpace != FREE_SPACE_UNKNOWN) && (static_cast<uint64>(freeSpace) < remaining);
 	// Continues the "Total queue size:" label to its left.
-	CamuleDlg::SetFreeSpaceLabel(m_freeSpaceLabel, freeSpace, warn, " | ");
+	CamuleDlg::SetFreeSpaceLabel(m_freeSpaceLabel, freeSpace, warn, m_freeSpaceSepLabel);
 }
 
 // File_checked_for_headers
