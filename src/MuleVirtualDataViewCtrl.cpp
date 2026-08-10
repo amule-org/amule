@@ -49,7 +49,21 @@ wxEND_EVENT_TABLE()
  * question by indexing into the owner's m_items. Nothing here is virtual for
  * subclasses to touch -- they see the wxUIntPtr-based hooks instead.
  */
-class CMuleVirtualDataViewCtrl::VirtualModel : public wxDataViewIndexListModel
+// wxDataViewVirtualListModel, not wxDataViewIndexListModel: despite the name,
+// only the former is virtual in the generic backend (MSW). An index-list model
+// gets a real wxDataViewTreeNode per row hanging off a root branch, and each
+// branch caches the sort order it was last sorted under. Marking our columns
+// sortable to get the header caret sets the window's sort order without wx
+// ever sorting anything -- the list owns its own order -- so the branch cache
+// and the window disagree, and the next RowChanged() trips
+// "m_branchData->sortOrder == window->GetSortOrder()" in PutChildInSortOrder()
+// (datavgen.cpp, present in 3.2 and 3.3 alike). A virtual list model has no
+// tree nodes at all, so the code that asserts is never reached.
+//
+// On macOS this is a no-op: wx typedefs wxDataViewVirtualListModel to
+// wxDataViewIndexListModel there ("better than nothing", dataview.h), which is
+// also why the assert has only ever been seen on Windows.
+class CMuleVirtualDataViewCtrl::VirtualModel : public wxDataViewVirtualListModel
 {
 public:
 	explicit VirtualModel(CMuleVirtualDataViewCtrl *owner)
