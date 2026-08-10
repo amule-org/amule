@@ -1850,34 +1850,12 @@ void CamuleApp::SetOSFiles(const wxString &new_path)
 void CamuleApp::OnAssertFailure(
 	const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg)
 {
-	wxString errmsg =
-		CFormat("Assertion failed: %s:%s:%d: Assertion '%s' failed. %s\nBacktrace follows:\n%s\n") %
-		file % func % line % cond % (msg ? wxString(msg) : wxString()) %
-		get_backtrace(2); // Skip the function-calls directly related to the assert call.
-	theLogger.EmergencyLog(errmsg, false);
-
-	// --disable-fatal: skip the wxApp dialog and abort directly so a
-	// supervisor (systemd, watchdog script) sees a non-zero exit and
-	// can restart aMule. The errmsg above is already on stderr and in
-	// the log; nothing useful would be lost by skipping the dialog.
-	if (m_disableFatal) {
-		raise(SIGABRT);
-		return; // unreachable
-	}
-
-	if (wxThread::IsMain() && IsRunning()) {
+	// The log copy, the backtrace and --disable-fatal are the same for every
+	// app and live in CamuleAppCommon; only the base to fall through to is
+	// ours. IsRunning() gates the dialog because wxWidgets cannot show one
+	// before the app is up or once it is tearing down.
+	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain() && IsRunning())) {
 		AMULE_APP_BASE::OnAssertFailure(file, line, func, cond, msg);
-	} else {
-#ifdef _MSC_VER
-		wxString s = CFormat("%s in %s") % cond % func;
-		if (msg) {
-			s << " : " << msg;
-		}
-		_wassert(s.wc_str(), file, line);
-#else
-		// Abort, allows gdb to catch the assertion
-		raise(SIGABRT);
-#endif
 	}
 }
 

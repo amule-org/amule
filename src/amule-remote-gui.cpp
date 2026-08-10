@@ -318,6 +318,17 @@ void CamuleRemoteGuiApp::OnFatalException()
 }
 #endif
 
+void CamuleRemoteGuiApp::OnAssertFailure(
+	const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg)
+{
+	// Unlike CamuleApp there is no app-state gate here: the remote GUI has
+	// no equivalent of IsRunning(), and its window is either up or the
+	// assert came from a thread that cannot show a dialog anyway.
+	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain())) {
+		wxApp::OnAssertFailure(file, line, func, cond, msg);
+	}
+}
+
 void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 {
 	static int request_step = 0;
