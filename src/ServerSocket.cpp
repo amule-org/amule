@@ -122,9 +122,10 @@ void CServerSocket::OnConnect(int nErrorCode)
 	// every server in the list answers that way within milliseconds, so the
 	// whole list used to accrue failures and then be deleted the moment
 	// connectivity returned -- RemoveDeadServers() only runs after a
-	// connection succeeds. A server that has genuinely stopped routing still
-	// gets counted, through the timeouts and the UDP pings that reach it by
-	// other paths; the cost of the wrong call the other way is the list.
+	// connection succeeds. A server that has genuinely stopped routing is
+	// still counted by the UDP status pings, which run while connected to
+	// some other server and have their own AddFailedCount(); it is no longer
+	// counted here, and the cost of the wrong call the other way is the list.
 	//
 	// The rest are unambiguous local socket faults -- an address in use or not
 	// available, a bad address, an invalid argument -- and were never about
@@ -758,12 +759,20 @@ void CServerSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpack
 void CServerSocket::OnHostnameResolved(uint32 ip)
 {
 
+	// ConnectToServer() calls straight in here with the address it already had
+	// whenever no lookup was needed, which is most of server.met -- and that
+	// path succeeds just as well with the link down. Only a resolver that
+	// actually answered is evidence about DNS, so record what got us here
+	// before the flag is cleared.
+	const bool didLookup = m_IsSolving;
 	m_IsSolving = false;
 	if (ip) {
-		// DNS answered, so a *different* server failing to resolve during this
-		// sweep is about that server rather than about our link -- see
-		// CServerConnect::HostnameResolvedThisSweep().
-		serverconnect->NoteHostnameResolved();
+		if (didLookup) {
+			// DNS answered, so a *different* server failing to resolve during
+			// this sweep is about that server rather than about our link --
+			// see CServerConnect::HostnameResolvedThisSweep().
+			serverconnect->NoteHostnameResolved();
+		}
 
 		if (theApp->ipfilter->IsFiltered(ip, true)) {
 			AddLogLineC(CFormat(_("Server IP %s (%s) is filtered.  Not connecting.")) %

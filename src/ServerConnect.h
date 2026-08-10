@@ -111,7 +111,7 @@ public:
 	void NoteHostnameResolved() { m_hostnameResolvedThisSweep = true; }
 
 	/**
-	 * Whether DNS has answered for anything since this sweep began.
+	 * Whether a resolver has answered since the current sweep began.
 	 *
 	 * A server whose hostname does not resolve is the commonest way an eD2k
 	 * server dies, and pruning it is the point of "remove dead servers" -- but
@@ -119,6 +119,11 @@ public:
 	 * is what emptied it (issue #887). One server failing to resolve while
 	 * others answered is the case that says something about that server, and
 	 * this is what separates the two.
+	 *
+	 * Only a lookup that actually ran counts: most of server.met carries an
+	 * address already, and going straight to connect proves nothing about the
+	 * resolver. Cleared by StopConnectionTry(), which every sweep ends at, so
+	 * a connect made outside one is never judged on an earlier sweep's link.
 	 */
 	bool HostnameResolvedThisSweep() const { return m_hostnameResolvedThisSweep; }
 

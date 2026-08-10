@@ -141,9 +141,6 @@ void CServerConnect::ConnectToAnyServer(bool prioSort, bool bNoCrypt)
 	connecting = true;
 	singleconnecting = false;
 	m_bTryObfuscated = thePrefs::IsServerCryptLayerTCPRequested() && !bNoCrypt;
-	// Each sweep judges DNS on its own evidence: whether the link was up
-	// during the last one says nothing about now.
-	m_hostnameResolvedThisSweep = false;
 
 	// Barry - Only auto-connect to static server option
 	if (thePrefs::AutoConnectStaticOnly()) {
@@ -206,6 +203,11 @@ void CServerConnect::StopConnectionTry()
 	connectionattemps.clear();
 	connecting = false;
 	singleconnecting = false;
+	// Every sweep ends here, so this is where the DNS evidence expires. Outside
+	// a sweep there is nothing to have proved the resolver works, and a manual
+	// connect judged on a sweep that ran while the link was up would blame a
+	// name that cannot resolve now -- three of those delete the server.
+	m_hostnameResolvedThisSweep = false;
 
 	if (m_idRetryTimer.IsRunning()) {
 		m_idRetryTimer.Stop();
