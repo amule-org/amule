@@ -298,18 +298,14 @@ void CSharedFilesCtrl::OnItemActivated(wxDataViewEvent &event)
 		return;
 	}
 
-	// Same gate as the context menu's "Open"/"Preview" entry (MP_VIEW,
-	// above): a finished file of any type can be opened, an unfinished one
-	// (CSharedFileList also carries PS_READY part files) only once enough
-	// of the media is on disk to play. Mirrors CDownloadListCtrl::
-	// OnItemActivated's reasoning -- a double-click is an easy gesture to
-	// trigger by accident, so it stays media-only rather than handing a
-	// just-finished .exe to the platform opener silently. Anything else
-	// opens the file-details modal, same as before this fix and same as
-	// the downloads list falls back to.
-	const bool previewable =
-		file->IsPartFile() ? static_cast<CPartFile *>(file)->PreviewAvailable() : true;
-	if (previewable && FileLaunch::CanOpen(file)) {
+	// A finished file of any type can be opened, an unfinished one
+	// (CSharedFileList also carries PS_READY part files) only once enough of
+	// the media is on disk to play. Same rule as CDownloadListCtrl::
+	// OnItemActivated, which lists these very files while they are still
+	// downloading -- see the note there. Anything else opens the file-details
+	// modal, which is what every double-click in this list did before.
+	const bool launchable = !file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable();
+	if (launchable && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
 	} else {
 		ShowFileDetailDialog(row);
