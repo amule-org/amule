@@ -29,6 +29,7 @@
 #include "KnownFile.h"     // Needed for CKnownFile
 #include "FileAutoClose.h" // Needed for CFileAutoClose
 #include "FileArea.h"      // Needed for CFileArea (PartFileBufferedData)
+#include <array>           // Needed for std::array (m_ecTickState)
 #include <atomic>          // Needed for std::atomic (m_iWrites)
 #include <mutex>           // Needed for std::mutex (m_hpartfileMutex)
 
@@ -516,6 +517,17 @@ private:
 	//   * FlushBuffer Phase 2's PB_READY synchronous fallback around
 	//     item->area.FlushAt(...)
 	std::mutex m_hpartfileMutex;
+
+	/**
+	 * The EC-exported values Process() can move in a single tick, as of the
+	 * last tick that moved any of them. Lets the per-tick mark tell a file
+	 * that actually did something from one that merely got a second older --
+	 * see the comment on the comparison in Process().
+	 *
+	 * Ordered to match the capture there; the values only exist to be
+	 * compared, so a plain array avoids naming ten fields twice.
+	 */
+	std::array<uint64, 12> m_ecTickState{};
 
 	uint8 m_category;
 	uint32 m_nDlActiveTime;
