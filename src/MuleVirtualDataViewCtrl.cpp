@@ -173,6 +173,28 @@ long CMuleVirtualDataViewCtrl::RowOfData(wxUIntPtr data) const
 	return (it == m_rowOf.end()) ? -1 : it->second;
 }
 
+bool CMuleVirtualDataViewCtrl::GetVisibleRowRange(long &firstRow, long &lastRow) const
+{
+	const wxDataViewItem top = GetTopItem();
+	const int perPage = GetCountPerPage();
+	if (!top.IsOk() || perPage <= 0) {
+		return false;
+	}
+
+	firstRow = static_cast<long>(m_virtualModel->GetRow(top));
+	lastRow = firstRow + perPage - 1;
+	return true;
+}
+
+bool CMuleVirtualDataViewCtrl::IsItemDataSelected(wxUIntPtr data) const
+{
+	const long row = RowOfData(data);
+	if (row < 0) {
+		return false;
+	}
+	return IsSelected(m_virtualModel->GetItem(static_cast<unsigned>(row)));
+}
+
 wxUIntPtr CMuleVirtualDataViewCtrl::ItemAt(long row) const
 {
 	if (row < 0 || static_cast<size_t>(row) >= m_items.size()) {
@@ -369,7 +391,39 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 	if (row < 0) {
 		return;
 	}
-	m_virtualModel->RowChanged(static_cast<unsigned>(row));
+
+	// Only rows the user can actually see are worth telling the control
+	// about. Values are pulled per cell as they are drawn, so a row that is
+	// off screen -- or in a list on a panel that isn't showing -- renders
+	// current data the moment it is scrolled or switched into view, with no
+	// notification needed. wxDataViewCtrl reaches the same conclusion, but
+	// only at the very end of wxDataViewMainWindow::DoItemChanged(): before
+	// it intersects the row against the client rect it invalidates every
+	// column's cached best width (a clear + resize of a per-column vector)
+	// and constructs and dispatches a wxEVT_DATAVIEW_ITEM_VALUE_CHANGED,
+	// which no aMule handler is listening for. Measured on a reporter's
+	// 11,000-row download list, that unconditional prologue cost ~20us per
+	// row and ~300ms of every one-second poll -- and it was charged for the
+	// list on all four panels he wasn't looking at as well as the one he
+	// was (issue #867).
+	//
+	// The pre-wxDataViewCtrl lists did not have this problem because the
+	// vendored generic wxListCtrl ordered it the other way round:
+	// wxListMainWindow::RefreshLine() tested the visible range first and
+	// returned, so an off-screen row cost two integer comparisons. This
+	// restores that ordering.
+	//
+	// Skipping the notification for a row that really is visible would
+	// leave a stale cell on screen, so both unknowns resolve towards
+	// refreshing: a backend that cannot report its viewport, and the
+	// partially visible row below the last fully visible one.
+	long firstRow = 0;
+	long lastRow = 0;
+	const bool offScreen = !IsShownOnScreen() || (GetVisibleRowRange(firstRow, lastRow) &&
+							     (row < firstRow || row > lastRow + 1));
+	if (!offScreen) {
+		m_virtualModel->RowChanged(static_cast<unsigned>(row));
+	}
 
 	// The value that just changed may be the one the list is sorted by, in
 	// which case the row has to move. Scheduled rather than done here: an
@@ -436,13 +490,10 @@ void CMuleVirtualDataViewCtrl::SortList()
 	// to be right.
 	if (currentData != 0) {
 		const long row = RowOfData(currentData);
-		const wxDataViewItem top = GetTopItem();
-		const int perPage = GetCountPerPage();
-		if (row >= 0 && top.IsOk() && perPage > 0) {
-			const long topRow = static_cast<long>(m_virtualModel->GetRow(top));
-			if (row >= topRow && row < topRow + perPage) {
-				SetCurrentItem(m_virtualModel->GetItem(static_cast<unsigned>(row)));
-			}
+		long firstRow = 0;
+		long lastRow = 0;
+		if (row >= 0 && GetVisibleRowRange(firstRow, lastRow) && row >= firstRow && row <= lastRow) {
+			SetCurrentItem(m_virtualModel->GetItem(static_cast<unsigned>(row)));
 		}
 	}
 }

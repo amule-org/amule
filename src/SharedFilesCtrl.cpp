@@ -25,8 +25,6 @@
 
 #include "SharedFilesCtrl.h" // Interface declarations
 
-#include <algorithm> // Needed for std::find
-
 #include <wx/file.h>    // Needed for wxFile
 #include <wx/filedlg.h> // Needed for wxFileDialog
 
@@ -978,8 +976,7 @@ void CSharedFilesCtrl::UpdateItem(CKnownFile *toupdate)
 	// throttled+idle-gated re-sort.
 	RefreshItemData(data);
 
-	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
-	if (std::find(selected.begin(), selected.end(), data) != selected.end()) {
+	if (IsItemDataSelected(data)) {
 		theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
 	}
 }

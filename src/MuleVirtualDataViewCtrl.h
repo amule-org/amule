@@ -102,6 +102,28 @@ public:
 
 	bool HasItemData(wxUIntPtr data) const { return m_rowOf.count(data) != 0; }
 	long RowOfData(wxUIntPtr data) const;
+	/**
+	 * The rows the control currently has on screen, as the inclusive range
+	 * [firstRow, lastRow]. lastRow is the last *fully* visible row, so a
+	 * caller that must not miss a drawn pixel has to allow for one more
+	 * below it.
+	 *
+	 * Returns false when the backend cannot report its viewport -- the
+	 * wxDataViewCtrl base answers GetTopItem()/GetCountPerPage() with
+	 * "don't know" and only the ports override them. The range is then
+	 * meaningless and the caller has to fall back to whatever is safe for
+	 * it. Which way that falls is not symmetric: treating a visible row as
+	 * off screen leaves a stale cell in front of the user, whereas treating
+	 * an off-screen row as visible only costs the work it saved.
+	 */
+	bool GetVisibleRowRange(long &firstRow, long &lastRow) const;
+	/**
+	 * Whether this item is part of the selection. Answers the one question
+	 * without materialising the whole selection the way
+	 * GetSelectedItemData() has to -- worth the separate entry point on the
+	 * per-item update paths, which ask it once per changed row.
+	 */
+	bool IsItemDataSelected(wxUIntPtr data) const;
 	wxUIntPtr ItemAt(long row) const;
 	long ItemDataCount() const { return static_cast<long>(m_items.size()); }
 
