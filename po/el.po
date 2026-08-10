@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:23+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -6479,12 +6479,20 @@ msgstr "Αποτυχία σύνδεσης σε όλους τους συσκοτ�
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "Αποτυχία σύνδεσης σε όλους τους διακομιστές της λίστας. Θα γίνει άλλο ένα πέρασμα."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Αποτυχία σύνδεσης σε όλους τους διακομιστές της λίστας. Θα γίνει άλλο ένα πέρασμα."
+
+#: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Αυτόματη σύνδεση στον διακομιστή θα επιχειρηθεί ξανά σε %d δευτερόλεπτο"
+msgstr[1] "Αυτόματη σύνδεση στον διακομιστή θα επιχειρηθεί ξανά σε %d δευτερόλεπτα"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6522,13 +6530,6 @@ msgstr "%s (%s:%i) φαίνεται να είναι νεκρό"
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) φαίνεται να είναι γεμάτο."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Αυτόματη σύνδεση στον διακομιστή θα επιχειρηθεί ξανά σε %d δευτερόλεπτο"
-msgstr[1] "Αυτόματη σύνδεση στον διακομιστή θα επιχειρηθεί ξανά σε %d δευτερόλεπτα"
 
 #: src/ServerConnect.cpp
 #, c-format

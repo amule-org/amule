@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:22+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -6365,12 +6365,21 @@ msgid "Failed to connect to all obfuscated servers listed. Making another pass w
 msgstr ""
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all static servers listed. Making another pass."
-msgstr ""
+#, fuzzy
+msgid "Failed to connect to all static servers listed."
+msgstr "Fejl ved hentning af node listen"
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
-msgstr ""
+#, fuzzy
+msgid "Failed to connect to all servers listed."
+msgstr "Fejl ved hentning af node listen"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Automatisk forbindelse til server vil prøve igen om %d sekunder"
+msgstr[1] "Automatisk forbindelse til server vil prøve igen om %d sekunder"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6408,13 +6417,6 @@ msgstr "%s (%s:%i) ser ud til at være død"
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr ""
-
-#: src/ServerConnect.cpp
-#, fuzzy, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Automatisk forbindelse til server vil prøve igen om %d sekunder"
-msgstr[1] "Automatisk forbindelse til server vil prøve igen om %d sekunder"
 
 #: src/ServerConnect.cpp
 #, c-format

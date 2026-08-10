@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -6444,12 +6444,20 @@ msgstr "Kõigi näidatud hämatud serveritega ühenduse loomine ebaõnnestus. L�
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "Serveritega ühenduse loomine ebaõnnestus. Lähen uuele katsele."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Serveritega ühenduse loomine ebaõnnestus. Lähen uuele katsele."
+
+#: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Proovin %d sekundi pärast serveriga uuesti automaatselt ühenduda."
+msgstr[1] "Proovin %d sekundi pärast uuesti serveriga automaatselt ühenduda."
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6487,13 +6495,6 @@ msgstr "%s (%s:%i) on vist surnud."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) on vist täis."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Proovin %d sekundi pärast serveriga uuesti automaatselt ühenduda."
-msgstr[1] "Proovin %d sekundi pärast uuesti serveriga automaatselt ühenduda."
 
 #: src/ServerConnect.cpp
 #, c-format

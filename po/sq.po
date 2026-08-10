@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:46+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -6462,12 +6462,20 @@ msgstr "E pamundur te lidhet tek lista e serverave me protokollin e turbullimit.
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "E pamundur te lidhem tek serverat qe jane ne liste. Po provoj perseri."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "E pamundur te lidhem tek serverat qe jane ne liste. Po provoj perseri."
+
+#: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Rilidhje automatike tek serveri do te behet ne %d sekonde"
+msgstr[1] "Rilidhje automatike tek serveri do te behet ne %d sekonda"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6505,13 +6513,6 @@ msgstr "%s (%s:%i) duket sikur nuk ka shenja jete."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) duket sikur eshte plote."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Rilidhje automatike tek serveri do te behet ne %d sekonde"
-msgstr[1] "Rilidhje automatike tek serveri do te behet ne %d sekonda"
 
 #: src/ServerConnect.cpp
 #, c-format

@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:20+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -6439,12 +6439,20 @@ msgstr "No s'ha pogut connectar amb els servidors ofuscats de la llista. Intenta
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "No s'ha pogut connectar amb cap servidor de la llista. Intentant-ho de nou."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "No s'ha pogut connectar amb cap servidor de la llista. Intentant-ho de nou."
+
+#: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Es reintentarà la connexió al servidor en %d segon"
+msgstr[1] "Es reintentarà la connexió al servidor en %d segons"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6482,13 +6490,6 @@ msgstr "%s (%s:%i) sembla estar aturat."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "%s (%s:%i) sembla estar ple."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Es reintentarà la connexió al servidor en %d segon"
-msgstr[1] "Es reintentarà la connexió al servidor en %d segons"
 
 #: src/ServerConnect.cpp
 #, c-format

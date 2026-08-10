@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 21:41+0200\n"
+"POT-Creation-Date: 2026-08-10 23:55+0200\n"
 "PO-Revision-Date: 2026-08-09 14:37+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -6415,12 +6415,19 @@ msgstr "Az összes felsorolt zavart kiszolgálóval sikertelen a kapcsolatfelvé
 
 #: src/ServerConnect.cpp
 #, fuzzy
-msgid "Failed to connect to all static servers listed. Making another pass."
+msgid "Failed to connect to all static servers listed."
 msgstr "Az összes felsorolt kiszolgálóval történő kapcsolatfelvétel sikertelen. Újra próbálkozom."
 
 #: src/ServerConnect.cpp
-msgid "Failed to connect to all servers listed. Making another pass."
+#, fuzzy
+msgid "Failed to connect to all servers listed."
 msgstr "Az összes felsorolt kiszolgálóval történő kapcsolatfelvétel sikertelen. Újra próbálkozom."
+
+#: src/ServerConnect.cpp
+#, c-format
+msgid "Automatic connection to server will retry in %d second"
+msgid_plural "Automatic connection to server will retry in %d seconds"
+msgstr[0] "Automatikus kapcsolódás a kiszolgálóhoz %d másodperc múlva"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
@@ -6458,12 +6465,6 @@ msgstr "A %s (%s:%i) halottnak tűnik."
 #, c-format
 msgid "%s (%s:%i) appears to be full."
 msgstr "A %s (%s:%i) úgy látszik megtelt."
-
-#: src/ServerConnect.cpp
-#, c-format
-msgid "Automatic connection to server will retry in %d second"
-msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "Automatikus kapcsolódás a kiszolgálóhoz %d másodperc múlva"
 
 #: src/ServerConnect.cpp
 #, c-format

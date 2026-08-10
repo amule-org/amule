@@ -67,7 +67,6 @@ void CServerConnect::TryAnotherConnectionrequest()
 
 		if (!next_server) {
 			if (connectionattemps.empty()) {
-				m_recurseTryAnotherConnectionrequest = true;
 				// In static-only mode only static servers were attempted, so say
 				// so rather than implying the whole list failed.
 				const bool staticOnly = thePrefs::AutoConnectStaticOnly();
@@ -80,19 +79,43 @@ void CServerConnect::TryAnotherConnectionrequest()
 							    : _("Failed to connect to all obfuscated servers "
 								"listed. "
 								"Making another pass without obfuscation."));
-					// try all servers on the non-obfuscated port next
+					// try all servers on the non-obfuscated port next. Bounded:
+					// one extra pass with different parameters, after which the
+					// wrap-around below takes over.
+					m_recurseTryAnotherConnectionrequest = true;
 					m_bTryObfuscated = false;
 					ConnectToAnyServer(false, true);
+					m_recurseTryAnotherConnectionrequest = false;
 				} else {
-					AddLogLineC(
-						staticOnly
-							? _("Failed to connect to all static servers listed. "
-							    "Making another pass.")
-							: _("Failed to connect to all servers listed. Making "
-							    "another pass."));
-					ConnectToAnyServer(false);
+					// No "making another pass" here any more: the next one is
+					// the timer's, below.
+					AddLogLineC(staticOnly
+							    ? _("Failed to connect to all static servers "
+								"listed.")
+							    : _("Failed to connect to all servers listed."));
+					// Wait before starting over instead of restarting the sweep
+					// here. Every server having failed says nothing about when
+					// one will answer, and with the link down they all fail the
+					// moment they are tried -- so the immediate restart this
+					// replaces meant a full pass per second, for as long as the
+					// outage lasted. The same timer the CS_FATALERROR path uses,
+					// so a caller that switched auto-reconnect off now gets what
+					// it asked for here too; it never consulted the setting
+					// before. StopConnectionTry() first: it stops the timer, so
+					// arming it earlier would be undone.
+					StopConnectionTry();
+					if (thePrefs::Reconnect()) {
+						AddLogLineN(
+							CFormat(wxPLURAL(
+								"Automatic connection to server will retry "
+								"in %d second",
+								"Automatic connection to server will retry "
+								"in %d seconds",
+								CS_RETRYCONNECTTIME)) %
+							CS_RETRYCONNECTTIME);
+						m_idRetryTimer.Start(1000 * CS_RETRYCONNECTTIME);
+					}
 				}
-				m_recurseTryAnotherConnectionrequest = false;
 			}
 			return;
 		}
@@ -180,6 +203,11 @@ void CServerConnect::StopConnectionTry()
 	connectionattemps.clear();
 	connecting = false;
 	singleconnecting = false;
+	// Every sweep ends here, so this is where the DNS evidence expires. Outside
+	// a sweep there is nothing to have proved the resolver works, and a manual
+	// connect judged on a sweep that ran while the link was up would blame a
+	// name that cannot resolve now -- three of those delete the server.
+	m_hostnameResolvedThisSweep = false;
 
 	if (m_idRetryTimer.IsRunning()) {
 		m_idRetryTimer.Stop();
@@ -515,6 +543,7 @@ CServerConnect::CServerConnect(CServerList *in_serverlist, amuleIPV4Address &add
 	singleconnecting = false;
 	m_recurseTryAnotherConnectionrequest = false;
 	m_bTryObfuscated = thePrefs::IsServerCryptLayerTCPRequested();
+	m_hostnameResolvedThisSweep = false;
 
 	// initialize socket for udp packets
 	if (thePrefs::GetNetworkED2K()) {
