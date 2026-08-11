@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:20+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -2808,6 +2808,18 @@ msgstr "Fallada al canviar de nom el nou fitxer %s, actualització interrompuda.
 msgid "IP filter is ready"
 msgstr "El filtre d'IP està llest"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Actual"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Mitjana total"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Mitjana de la sessió"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3771,18 +3783,6 @@ msgid "Download-Speed"
 msgstr "Velocitat de baixada"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Actual"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Mitjana total"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Mitjana de la sessió"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Velocitat de pujada"
 
@@ -3790,7 +3790,7 @@ msgstr "Velocitat de pujada"
 msgid "Connections"
 msgstr "Connexions"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Baixades actives"
 
@@ -3798,7 +3798,7 @@ msgstr "Baixades actives"
 msgid "Active connections (1:1)"
 msgstr "Connexions actives (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Pujades actives"
 
@@ -4411,7 +4411,7 @@ msgstr "Mitjana de pujada total"
 msgid "Upload session average"
 msgstr "Mitjana de pujada de la sessió"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Connexions actives"
 

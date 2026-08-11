@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:37+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -2825,6 +2825,18 @@ msgstr "Impossibile rinominare il nuovo file %s, interruzione aggiornamento."
 msgid "IP filter is ready"
 msgstr "Filtro IP pronto"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Corrente"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Media attuale"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Media sessione"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3767,18 +3779,6 @@ msgid "Download-Speed"
 msgstr "Velocità download"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Corrente"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Media attuale"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Media sessione"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Velocità upload"
 
@@ -3786,7 +3786,7 @@ msgstr "Velocità upload"
 msgid "Connections"
 msgstr "Connessioni"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Download attivi"
 
@@ -3794,7 +3794,7 @@ msgstr "Download attivi"
 msgid "Active connections (1:1)"
 msgstr "Connessioni attive (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Upload attivi"
 
@@ -4402,7 +4402,7 @@ msgstr "Media upload in corso"
 msgid "Upload session average"
 msgstr "Media sessione di upload"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Connessioni attive"
 

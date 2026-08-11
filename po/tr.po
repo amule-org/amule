@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -2807,6 +2807,18 @@ msgstr "Yeni %s dosyası yeniden adlandırılamadı. Güncelleme iptal edildi."
 msgid "IP filter is ready"
 msgstr "IP süzgeci hazır"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Şimdiki"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Çalışma ortalaması"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Oturum ortalaması"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3753,18 +3765,6 @@ msgid "Download-Speed"
 msgstr "İndirme Hızı"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Şimdiki"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Çalışma ortalaması"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Oturum ortalaması"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Gönderim Hızı"
 
@@ -3772,7 +3772,7 @@ msgstr "Gönderim Hızı"
 msgid "Connections"
 msgstr "Bağlantılar"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktif İndirmeler"
 
@@ -3780,7 +3780,7 @@ msgstr "Aktif İndirmeler"
 msgid "Active connections (1:1)"
 msgstr "Aktif Bağlantılar (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktif Göndermeler"
 
@@ -4391,7 +4391,7 @@ msgstr "Gönderme çalışma Ortalaması"
 msgid "Upload session average"
 msgstr "Gönderme oturum ortalaması"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktif bağlantılar"
 

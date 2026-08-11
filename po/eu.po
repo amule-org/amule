@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:26+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -2810,6 +2810,18 @@ msgstr "Huts %s fitxategi berria berrizendatzean, eguneraketa baztertzen."
 msgid "IP filter is ready"
 msgstr "IP iragazkia presta dago"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Unekoa"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Funtzionamendu bataz bestekoa"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "saio batez bestekoa"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3773,18 +3785,6 @@ msgid "Download-Speed"
 msgstr "Deskarga abiadura"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Unekoa"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Funtzionamendu bataz bestekoa"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "saio batez bestekoa"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Igoera abiadura"
 
@@ -3792,7 +3792,7 @@ msgstr "Igoera abiadura"
 msgid "Connections"
 msgstr "Konexioak"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Deskarga aktiboak"
 
@@ -3800,7 +3800,7 @@ msgstr "Deskarga aktiboak"
 msgid "Active connections (1:1)"
 msgstr "konexio aktiboak (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Igoera aktiboak"
 
@@ -4413,7 +4413,7 @@ msgstr "Martxan igoerak bataz bestean"
 msgid "Upload session average"
 msgstr "Saioaren bataz besteko igoerak"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Konexio aktiboak"
 

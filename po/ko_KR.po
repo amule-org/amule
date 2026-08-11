@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:39+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -2828,6 +2828,18 @@ msgstr ""
 msgid "IP filter is ready"
 msgstr ""
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "현재"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "동작중 평균"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "세션 평균"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3791,18 +3803,6 @@ msgid "Download-Speed"
 msgstr "내려받기 속도"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "현재"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "동작중 평균"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "세션 평균"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "올려주기 속도"
 
@@ -3810,7 +3810,7 @@ msgstr "올려주기 속도"
 msgid "Connections"
 msgstr "연결"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "활성화된 내려받기"
 
@@ -3818,7 +3818,7 @@ msgstr "활성화된 내려받기"
 msgid "Active connections (1:1)"
 msgstr "활성화된 연결 (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "활성화된 올려주기"
 
@@ -4430,7 +4430,7 @@ msgstr "올려주기 운용 평균"
 msgid "Upload session average"
 msgstr "올려주기 세션 평균"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "활성화된 연결"
 

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:17+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -2818,6 +2818,18 @@ msgstr "Fallu al renomar el nuevu ficheru GeoIP.dat, albortando actualización."
 msgid "IP filter is ready"
 msgstr ""
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Actual"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Media d'execución"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Media de la sesión"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3782,18 +3794,6 @@ msgid "Download-Speed"
 msgstr "Velocidá de descarga"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Actual"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Media d'execución"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Media de la sesión"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Velocidá de xuba"
 
@@ -3801,7 +3801,7 @@ msgstr "Velocidá de xuba"
 msgid "Connections"
 msgstr "Conexones"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Descargues actives"
 
@@ -3809,7 +3809,7 @@ msgstr "Descargues actives"
 msgid "Active connections (1:1)"
 msgstr "Conexones actives (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Xubes actives"
 
@@ -4423,7 +4423,7 @@ msgstr "Promediu Xuba/tiempu"
 msgid "Upload session average"
 msgstr "Promediu xuba/sesión"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Conexones actives"
 

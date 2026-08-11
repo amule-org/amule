@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:43+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -2821,6 +2821,18 @@ msgstr "Nie można załadować danych kraju dla '%s'."
 msgid "IP filter is ready"
 msgstr "Filtr IP jest gotowy"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Aktualna"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Bieżąca średnia"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Średnia sesji"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3787,18 +3799,6 @@ msgid "Download-Speed"
 msgstr "Prędkość pobierania"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Aktualna"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Bieżąca średnia"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Średnia sesji"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Prędkość wysyłania"
 
@@ -3806,7 +3806,7 @@ msgstr "Prędkość wysyłania"
 msgid "Connections"
 msgstr "Połączenie"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktywne pobierania"
 
@@ -3814,7 +3814,7 @@ msgstr "Aktywne pobierania"
 msgid "Active connections (1:1)"
 msgstr "Aktywnych połączeń (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktywne wysyłania"
 
@@ -4427,7 +4427,7 @@ msgstr "Bieżąca średnia wysyłania"
 msgid "Upload session average"
 msgstr "Średnia wysyłania sesji"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktywnych połączeń"
 

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:25+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -2809,6 +2809,18 @@ msgstr "Faili %s ümbernimetamine ebaõnnestus, katkestan uuendamise."
 msgid "IP filter is ready"
 msgstr "IP filter on lähtestatud"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Hetkel"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Hetke keskmine"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Seansi keskmine"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3772,18 +3784,6 @@ msgid "Download-Speed"
 msgstr "Tõmbamise kiirus"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Hetkel"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Hetke keskmine"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Seansi keskmine"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Saatmise kiirus"
 
@@ -3791,7 +3791,7 @@ msgstr "Saatmise kiirus"
 msgid "Connections"
 msgstr "Ühendused"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktiivsed tõmbamised"
 
@@ -3799,7 +3799,7 @@ msgstr "Aktiivsed tõmbamised"
 msgid "Active connections (1:1)"
 msgstr "Aktiivseid ühendusi (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktiivsed saatmised"
 
@@ -4412,7 +4412,7 @@ msgstr "Hetke saatmise keskmine"
 msgid "Upload session average"
 msgstr "Seansi keskmine saatmine"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktiivseid ühendusi"
 

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:26+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2810,6 +2810,18 @@ msgstr "Uuden tiedoston %s uudelleennimeäminen epäonnistui, keskeytän päivit
 msgid "IP filter is ready"
 msgstr "IP-suodatin on valmiina"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Nykyinen"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Yhtäjaksoinen keskiarvo"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Session keskiarvo"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3773,18 +3785,6 @@ msgid "Download-Speed"
 msgstr "Latausnopeus"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Nykyinen"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Yhtäjaksoinen keskiarvo"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Session keskiarvo"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Lähetysnopeus"
 
@@ -3792,7 +3792,7 @@ msgstr "Lähetysnopeus"
 msgid "Connections"
 msgstr "Yhteydet"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktiiviset lataukset"
 
@@ -3800,7 +3800,7 @@ msgstr "Aktiiviset lataukset"
 msgid "Active connections (1:1)"
 msgstr "Aktiiviset yhteydet (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktiiviset lähetykset"
 
@@ -4413,7 +4413,7 @@ msgstr "Lähetyksen yhtäjaksoinen keskiarvo"
 msgid "Upload session average"
 msgstr "Lähetyksen keskiarvo sessiossa"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktiiviset yhteydet"
 

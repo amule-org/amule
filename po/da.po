@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:22+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -2770,6 +2770,18 @@ msgstr ""
 msgid "IP filter is ready"
 msgstr ""
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Nuværende"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Nuværende Gennemsnit"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Sessions Gennemsnit"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3730,18 +3742,6 @@ msgid "Download-Speed"
 msgstr "Download-Hastighed"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Nuværende"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Nuværende Gennemsnit"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Sessions Gennemsnit"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Upload-Hastighed"
 
@@ -3749,7 +3749,7 @@ msgstr "Upload-Hastighed"
 msgid "Connections"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktive Downloads"
 
@@ -3757,7 +3757,7 @@ msgstr "Aktive Downloads"
 msgid "Active connections (1:1)"
 msgstr "Aktive Forbindelser (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktive Uploads"
 
@@ -4365,7 +4365,7 @@ msgstr ""
 msgid "Upload session average"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktive Forbindelser"
 
