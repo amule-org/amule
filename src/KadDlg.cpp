@@ -101,43 +101,37 @@ void CKadDlg::SetUpdatePeriod(int step)
 
 void CKadDlg::SetGraphColors()
 {
-	static const char aTrend[] = { 2, 1, 0 };
-	static const int aRes[] = { IDC_C0, IDC_C0_3, IDC_C0_2 };
+	// Same shape as the download graph on the statistics panel -- three
+	// trends, the same three legend swatches -- driven by the Kad graph's
+	// own preference colours.
+	static const CStatisticsDlg::GraphColorSlot aSlot[] = { { 12, 2, IDC_C0, wxTRANSLATE("Current") },
+		{ 13, 1, IDC_C0_3, wxTRANSLATE("Running average") },
+		{ 14, 0, IDC_C0_2, wxTRANSLATE("Session average") } };
 
-	m_kad_scope->SetBackgroundColor(CStatisticsDlg::getColors(0));
-	m_kad_scope->SetGridColor(CStatisticsDlg::getColors(1));
-
-	for (size_t i = 0; i < 3; ++i) {
-		m_kad_scope->SetPlotColor(CStatisticsDlg::getColors(12 + i), aTrend[i]);
-
-		CColorFrameCtrl *ctrl = CastChild(aRes[i], CColorFrameCtrl);
-		ctrl->SetBackgroundBrushColour(CMuleColour(CStatisticsDlg::getColors(12 + i)));
-		ctrl->SetFrameBrushColour(*wxBLACK);
+	CStatisticsDlg::ApplyGraphFrameColors(m_kad_scope);
+	for (const CStatisticsDlg::GraphColorSlot &slot : aSlot) {
+		CStatisticsDlg::ApplyGraphSlot(this, m_kad_scope, slot);
 	}
 }
 
 void CKadDlg::UpdateGraph(const GraphUpdateInfo &update)
 {
-	std::vector<float *> v(3);
-	v[0] = const_cast<float *>(&update.kadnodes[0]);
-	v[1] = const_cast<float *>(&update.kadnodes[1]);
-	v[2] = const_cast<float *>(&update.kadnodes[2]);
-	const std::vector<float *> &apfKad(v);
-	unsigned nodeCount = static_cast<unsigned>(update.kadnodes[2]);
-
+	// A hidden panel needs no update: the graph redraws from the statistics
+	// history and catches up by itself the next time it is painted.
 	if (!IsShownOnScreen()) {
-		m_kad_scope->DelayPoints();
-	} else {
-		// Check the current node-count to see if we should increase the graph height
-		if (m_kad_scope->GetUpperLimit() < update.kadnodes[2]) {
-			// Grow the limit by 50 sized increments. The integer ceiling-to-50 is
-			// intentional; a whole number is what we want for the axis range.
-			// NOLINTNEXTLINE(bugprone-integer-division)
-			m_kad_scope->SetRanges(0.0, ((nodeCount + 49) / 50) * 50);
-		}
-
-		m_kad_scope->AppendPoints(update.timestamp, apfKad);
+		return;
 	}
+
+	// Check the current node-count to see if we should increase the graph height
+	if (m_kad_scope->GetUpperLimit() < update.kadnodes[2]) {
+		const unsigned nodeCount = static_cast<unsigned>(update.kadnodes[2]);
+		// Grow the limit by 50 sized increments. The integer ceiling-to-50 is
+		// intentional; a whole number is what we want for the axis range.
+		// NOLINTNEXTLINE(bugprone-integer-division)
+		m_kad_scope->SetRanges(0.0, (float)(((nodeCount + 49) / 50) * 50));
+	}
+
+	m_kad_scope->AppendPoints(update.timestamp);
 }
 
 void CKadDlg::UpdateNodeCount(unsigned nodeCount)

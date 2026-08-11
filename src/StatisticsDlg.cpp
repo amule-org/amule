@@ -116,80 +116,63 @@ wxColour CStatisticsDlg::acrStat[cntStatColors] = { wxColour(0, 0, 64),
 	wxColour(0, 210, 0),
 	wxColour(0, 128, 0) };
 
+void CStatisticsDlg::ApplyGraphFrameColors(COScopeCtrl *scope)
+{
+	scope->SetBackgroundColor(getColors(kGraphBackgroundColor));
+	scope->SetGridColor(getColors(kGraphGridColor));
+}
+
+void CStatisticsDlg::ApplyGraphSlot(wxWindow *panel, COScopeCtrl *scope, const GraphColorSlot &slot)
+{
+	const wxColour &cr = getColors(slot.colorIndex);
+	scope->SetPlotColor(cr, slot.iTrend);
+	scope->SetTrendLabel(wxGetTranslation(slot.label), slot.iTrend);
+
+	CColorFrameCtrl *swatch = dynamic_cast<CColorFrameCtrl *>(panel->FindWindow(slot.swatchId));
+	if (swatch == nullptr) {
+		throw wxString(
+			CFormat("CStatisticsDlg::ApplyGraphSlot: control missing (%d)\n") % slot.swatchId);
+	}
+	swatch->SetBackgroundBrushColour(cr);
+	swatch->SetFrameBrushColour(*wxBLACK);
+}
+
 void CStatisticsDlg::ApplyStatsColor(int index)
 {
-	static char aTrend[] = { 0, 0, 2, 1, 0, 2, 1, 0, 1, 2, 0 };
-	static int aRes[] = {
-		0, 0, IDC_C0, IDC_C0_3, IDC_C0_2, IDC_C1, IDC_C1_3, IDC_C1_2, IDC_S0, IDC_S3, IDC_S1
-	};
-	// clang-format off
-	static COScopeCtrl** apscope[] = { NULL, NULL, &pscopeDL,&pscopeDL,&pscopeDL, &pscopeUL,&pscopeUL,&pscopeUL, &pscopeConn,&pscopeConn,&pscopeConn };
-	// clang-format on
+	// Colours 2..10 drive one trend each of the three graphs on this panel,
+	// three per graph. Colour 11 is the systray speed bar and 12..14 belong
+	// to the Kad graph; both are applied by their own owners.
+	static const GraphColorSlot aSlot[] = { { 2, 2, IDC_C0, wxTRANSLATE("Current") },
+		{ 3, 1, IDC_C0_3, wxTRANSLATE("Running average") },
+		{ 4, 0, IDC_C0_2, wxTRANSLATE("Session average") },
+		{ 5, 2, IDC_C1, wxTRANSLATE("Current") },
+		{ 6, 1, IDC_C1_3, wxTRANSLATE("Running average") },
+		{ 7, 0, IDC_C1_2, wxTRANSLATE("Session average") },
+		{ 8, 1, IDC_S0, wxTRANSLATE("Active connections") },
+		{ 9, 2, IDC_S3, wxTRANSLATE("Active downloads") },
+		{ 10, 0, IDC_S1, wxTRANSLATE("Active uploads") } };
 
-	const wxColour &cr = acrStat[index];
-
-	int iRes = aRes[index];
-	int iTrend = (unsigned char)aTrend[index];
-	COScopeCtrl **ppscope = apscope[index];
-	CColorFrameCtrl *ctrl;
-	switch (index) {
-	case 0:
-		pscopeDL->SetBackgroundColor(cr);
-		pscopeUL->SetBackgroundColor(cr);
-		pscopeConn->SetBackgroundColor(cr);
-		break;
-	case 1:
-		pscopeDL->SetGridColor(cr);
-		pscopeUL->SetGridColor(cr);
-		pscopeConn->SetGridColor(cr);
-		break;
-	case 2:
-	case 3:
-	case 4:
-	case 5:
-	case 6:
-	case 7:
-	case 8:
-	case 9:
-	case 10:
-		(*ppscope)->SetPlotColor(cr, iTrend);
-		if ((ctrl = CastChild(iRes, CColorFrameCtrl)) == NULL) {
-			throw wxString(
-				CFormat("CStatisticsDlg::ApplyStatsColor: control missing (%d)\n") % iRes);
-		}
-		ctrl->SetBackgroundBrushColour(cr);
-		ctrl->SetFrameBrushColour(*wxBLACK);
-		break;
-	default:
-		break; // ignore unknown index, like SysTray speedbar color
+	if (index == kGraphBackgroundColor || index == kGraphGridColor) {
+		ApplyGraphFrameColors(pscopeDL);
+		ApplyGraphFrameColors(pscopeUL);
+		ApplyGraphFrameColors(pscopeConn);
+		return;
 	}
+
+	if (index < 2 || index > 10) {
+		return; // not one of this panel's graph colours
+	}
+
+	COScopeCtrl *scope = (index <= 4) ? pscopeDL : ((index <= 7) ? pscopeUL : pscopeConn);
+	ApplyGraphSlot(this, scope, aSlot[index - 2]);
 }
 
 void CStatisticsDlg::UpdateStatGraphs(const uint32 peakconnections, const GraphUpdateInfo &update)
 {
 
-	std::vector<float *> v1(3);
-	v1[0] = const_cast<float *>(&update.downloads[0]);
-	v1[1] = const_cast<float *>(&update.downloads[1]);
-	v1[2] = const_cast<float *>(&update.downloads[2]);
-	const std::vector<float *> &apfDown(v1);
-	std::vector<float *> v2(3);
-	v2[0] = const_cast<float *>(&update.uploads[0]);
-	v2[1] = const_cast<float *>(&update.uploads[1]);
-	v2[2] = const_cast<float *>(&update.uploads[2]);
-	const std::vector<float *> &apfUp(v2);
-	std::vector<float *> v3(3);
-	v3[0] = const_cast<float *>(&update.connections[0]);
-	v3[1] = const_cast<float *>(&update.connections[1]);
-	v3[2] = const_cast<float *>(&update.connections[2]);
-	const std::vector<float *> &apfConn(v3);
-
-	if (!IsShownOnScreen()) {
-		pscopeDL->DelayPoints();
-		pscopeUL->DelayPoints();
-		pscopeConn->DelayPoints();
-	}
-
+	// The sample itself reaches the graphs through the statistics history,
+	// which already holds it by the time we get here; update only carries
+	// what this panel needs for its own labels and ranges.
 	static unsigned nScalePrev = 1;
 	unsigned nScale = (unsigned)std::ceil((float)peakconnections / pscopeConn->GetUpperLimit());
 	if (nScale != nScalePrev) {
@@ -206,9 +189,9 @@ void CStatisticsDlg::UpdateStatGraphs(const uint32 peakconnections, const GraphU
 		return;
 	}
 
-	pscopeDL->AppendPoints(update.timestamp, apfDown);
-	pscopeUL->AppendPoints(update.timestamp, apfUp);
-	pscopeConn->AppendPoints(update.timestamp, apfConn);
+	pscopeDL->AppendPoints(update.timestamp);
+	pscopeUL->AppendPoints(update.timestamp);
+	pscopeConn->AppendPoints(update.timestamp);
 }
 
 void CStatisticsDlg::SetUpdatePeriod(int step)

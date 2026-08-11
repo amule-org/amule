@@ -26,31 +26,36 @@
 #ifndef OSCOPECTRL_H
 #define OSCOPECTRL_H
 
-#ifndef NULL
-#define NULL 0
-#endif
-
 #include <vector>
 #include <wx/control.h> // Needed for wxControl
-#include <wx/timer.h>   // Needed for wxTimer
-#include <wx/pen.h>
-#include <wx/bitmap.h>
 #include <wx/colour.h>
 
 #include "Constants.h" // Needed for StatsGraphType
 
-class wxMemoryDC;
+class wxDC;
+// Only ever held as a pointer here, so this stays valid in a wxWidgets
+// built without wxUSE_GRAPHICS_CONTEXT, where the class does not exist.
+class wxGraphicsContext;
 
 /////////////////////////////////////////////////////////////////////////////
 // COScopeCtrl window
+//
+// A scrolling line graph for the Statistics and Networks->Kad panels. All
+// four graphs in the GUI are instances of this control, so anything changed
+// here applies to every one of them.
+//
+// The control keeps no copy of the plotted samples: every paint asks
+// CStatistics::GetHistory for as many points as the plot area is wide and
+// redraws the whole curve. That is what lets the curves be drawn through a
+// wxGraphicsContext (anti-aliased, resolution independent) -- the previous
+// incremental design scrolled a cached bitmap sideways and appended one
+// segment per sample, which cannot carry anti-aliased content without
+// smearing it, and pinned the graph to the logical, non-HiDPI resolution.
 
 class COScopeCtrl : public wxControl
 {
-	friend class CStatisticsDlg;
-
 public:
-	COScopeCtrl(int NTrends, int nDecimals, StatsGraphType type, wxWindow *parent = NULL);
-	~COScopeCtrl();
+	COScopeCtrl(int NTrends, int nDecimals, StatsGraphType type, wxWindow *parent = nullptr);
 
 	void SetRange(float dLower, float dUpper, unsigned iTrend = 0);
 	void SetRanges(float dLower, float dUpper);
@@ -58,68 +63,79 @@ public:
 	void SetBackgroundColor(const wxColour &color);
 	void SetGridColor(const wxColour &color);
 	void SetPlotColor(const wxColour &color, unsigned iTrend = 0);
-	float GetUpperLimit() { return pdsTrends[0].fUpperLimit; }
-	void Reset(double sNewPeriod);
+	// Name shown for this trend in the hover tooltip, i.e. the same text
+	// the legend beside the graph carries.
+	void SetTrendLabel(const wxString &label, unsigned iTrend = 0);
+	float GetUpperLimit() const { return m_trends[0].fUpperLimit; }
+
+	// Freeze the graph at the last sample (statistics update delay set to 0).
 	void Stop();
-	void RecreateGraph(bool bRefresh = true);
-	void RecreateGrid();
-	void AppendPoints(double sTimestamp, const std::vector<float *> &apf);
-	void DelayPoints() { nDelayedPoints++; }
+	// Resume, and adopt a new seconds-per-sample period.
+	void Reset(double sNewPeriod);
+	// A new sample has been recorded: it is already in the history, so this
+	// only has to ask for a repaint.
+	void AppendPoints(double sTimestamp);
+	// Repaint after something that changes the shape of the curve without
+	// adding a sample, e.g. a new running-average window.
+	void InvalidateGraph() { Refresh(false); }
 
 	StatsGraphType graph_type;
 
-public:
-	unsigned nTrends;
-	unsigned nXGrids;
-	unsigned nYGrids;
-	unsigned nShiftPixels; // amount to shift with each new point
-	unsigned nYDecimals;
+private:
+	struct PlotData_t
+	{
+		wxColour crPlot;
+		wxString strLabel;
+		float fLowerLimit;
+		float fUpperLimit;
+	};
 
-	wxString strXUnits;
-	wxString strYUnits, strYMin, strYMax;
+	void OnPaint(wxPaintEvent &evt);
+	void OnSize(wxSizeEvent &evt);
+	void OnMouseMove(wxMouseEvent &evt);
+	void OnMouseLeave(wxMouseEvent &evt);
+
+	// Splits the client area into the plot rectangle and the label gutters,
+	// measuring the axis labels rather than assuming a character width.
+	wxRect ComputePlotRect(wxDC &dc) const;
+	void DrawGrid(wxDC &dc, const wxRect &rectPlot);
+	// gc is created by the caller, which is where the concrete paint DC
+	// type is still known; it is null if this wxWidgets has no graphics
+	// context, and the curves then fall back to plain wxDC polylines.
+	void DrawCurves(wxDC &dc, wxGraphicsContext *gc, const wxRect &rectPlot);
+	// Crosshair, per-trend markers and the value readout at the hovered
+	// sample. samples is what DrawCurves has just plotted.
+	void DrawHover(wxGraphicsContext *gc,
+		const wxRect &rectPlot,
+		const std::vector<std::vector<float>> &samples,
+		unsigned cntFilled);
+	// Formats the y axis labels; empty strings fall back to the trend range.
+	wxString GetYMaxLabel() const;
+	wxString GetYMinLabel() const;
+	wxString GetXUnitsLabel(const wxRect &rectPlot) const;
+	// y for one sample, clamped into the plot area with room for the pen.
+	double GetPlotY(float value, const PlotData_t &trend, const wxRect &rectPlot) const;
+	// Whether this graph shades the area under its instantaneous trend.
+	bool IsShaded() const;
+
+	std::vector<PlotData_t> m_trends;
+	unsigned m_nYGrids;
+	unsigned m_nShiftPixels; // horizontal distance between two samples
+	unsigned m_nYDecimals;
+
+	wxString m_strYUnits, m_strYMin, m_strYMax;
 	wxColour m_bgColour;
 	wxColour m_gridColour;
 
-	typedef struct PlotDataStruct
-	{
-		wxColour crPlot; // data plot color
-		wxPen penPlot;
-		unsigned yPrev;
-		float fPrev;
-		float fLowerLimit; // lower bounds
-		float fUpperLimit; // upper bounds
-		float fVertScale;
-	} PlotData_t;
+	bool m_bStopped;
+	double m_sLastTimestamp;
+	double m_sLastPeriod;
 
-protected:
+	// Cursor position while it is over the control, wxDefaultPosition
+	// otherwise. Drives the hover readout.
+	wxPoint m_ptHover;
+
 	wxDECLARE_EVENT_TABLE();
-	PlotData_t *pdsTrends;
-
-	wxRect m_rectClient;
-	wxRect m_rectPlot;
-	wxBrush brushBack;
-	wxBitmap m_bmapGrid;
-	wxBitmap m_bmapPlot;
-
-	void InvalidateGraph() { InvalidateCtrl(true, false); }
-	void InvalidateGrid() { InvalidateCtrl(false, true); }
-
-private:
-	bool bRecreateGrid, bRecreateGraph, bRecreateAll, bStopped;
-	int nDelayedPoints;
-	double sLastTimestamp;
-	double sLastPeriod;
-	wxTimer timerRedraw;
-	bool m_onPaint;
-
-	void OnTimer(wxTimerEvent &evt);
-	void OnPaint(wxPaintEvent &evt);
-	void OnSize(wxSizeEvent &evt);
-	void ShiftGraph(unsigned cntPoints);
-	void PlotHistory(unsigned cntPoints, bool bShiftGraph, bool bRefresh);
-	void DrawPoints(const std::vector<float *> &apf, unsigned cntPoints);
-	unsigned GetPlotY(float fPlot, PlotData_t *ppds);
-	void InvalidateCtrl(bool bInvalidateGraph = true, bool bInvalidateGrid = true);
 };
 
 #endif // OSCOPECTRL_H

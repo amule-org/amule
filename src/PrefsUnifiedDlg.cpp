@@ -1189,9 +1189,10 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 			CStatisticsDlg::acrStat[i] = thePrefs::s_colors[i];
 			theApp->amuledlg->m_statisticswnd->ApplyStatsColor(i);
 		}
-
-		theApp->amuledlg->m_kademliawnd->SetGraphColors();
 	}
+	// The Kad graph re-reads all of its colours in one go, so it only needs
+	// telling once, after the loop above has updated acrStat.
+	theApp->amuledlg->m_kademliawnd->SetGraphColors();
 
 #ifdef __DEBUG__
 	// Get debugging toggles
