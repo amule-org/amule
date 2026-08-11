@@ -508,6 +508,23 @@ public:
 
 	void SetAverageMinutes(uint8 minutes) { average_minutes = minutes; }
 
+	// Records held per resolution range. The list is nHistRanges of these,
+	// each range at twice the spacing of the one before, so this sets both
+	// how far back the graphs can reach and how much of that reach is at
+	// fine resolution: at a 3 s update delay the two finest ranges are the
+	// ones a graph can plot from, giving 3 x this many seconds of history.
+	//
+	// Was (1280 / 2) - 80 = 560, once derived from a GUI width. That put
+	// the finest usable reach at 28 minutes, which a remote GUI could
+	// exhaust in a window barely wider than half a screen. At 64 bytes a
+	// record the whole list costs 7 x this x 64 bytes -- 787 KB here,
+	// against 245 KB at the old value.
+	//
+	// Public because it is reported to remote GUIs over EC: a client that
+	// asked for more points than a range holds would be answered with the
+	// same record repeated, and would have no way to tell.
+	static int GetPointsPerRange() { return 1800; }
+
 private:
 	std::list<HR> listHR;
 	typedef std::list<HR>::iterator listPOS;
@@ -521,11 +538,6 @@ private:
 		double sStep,
 		const std::vector<float *> &ppf,
 		StatsGraphType which_graph);
-
-	int GetPointsPerRange()
-	{
-		return (1280 / 2) - 80; // This used to be a calc. based on GUI width
-	}
 
 	/* Graphs-related vars */
 

@@ -896,6 +896,12 @@ class CStatGraphRem : public CECPacketHandlerBase
 	// the value the request used means a preference change mid-flight
 	// cannot mislabel the reply already in the air.
 	double m_sScale;
+	// Points this daemon says it can answer with per resolution range,
+	// from EC_TAG_STATSGRAPH_DEPTH. Starts at what daemons predating that
+	// tag were built with, since their silence is indistinguishable from
+	// having that much -- asking for more would get records repeated, and
+	// with no timestamps on the wire they would be drawn as real samples.
+	uint16 m_nDaemonDepth;
 
 public:
 	// Peak connection count seen so far. CLIENT_GUI doesn't get the
@@ -908,6 +914,7 @@ public:
 	: m_conn(conn)
 	, m_lastTimestamp(0.0)
 	, m_sScale(1.0)
+	, m_nDaemonDepth(560)
 	, m_peakConnections(0)
 	{
 	}

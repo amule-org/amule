@@ -4065,8 +4065,15 @@ void CStatTreeRem::HandlePacket(const CECPacket *p)
 namespace
 {
 // See the comment in DoRequery: the daemon's newest history range holds
-// this many records at 1 s spacing.
-const uint16 kMaxHistoryPoints = 560;
+// this many records at its finest spacing, so this is how much it can
+// serve before the answers stop lining up with the scale we asked for.
+// Tracks CStatistics::GetPointsPerRange() and has to be raised with it.
+//
+// Against an older daemon, whose ranges are shallower, a request this
+// deep runs off the end of the resolution it was asked for and the far
+// left of the first backfill is drawn time-compressed. It corrects
+// itself as live points replace the backfilled ones.
+const uint16 kMaxHistoryPoints = 1800;
 
 } // namespace
 
@@ -4115,7 +4122,7 @@ void CStatGraphRem::DoRequery()
 	// not 1 s apart while HandlePacket reconstructs their timestamps
 	// assuming they are, which stretches the left of the plot rather
 	// than showing more of the past.
-	request.AddTag(CECTag(EC_TAG_STATSGRAPH_WIDTH, (uint16)kMaxHistoryPoints));
+	request.AddTag(CECTag(EC_TAG_STATSGRAPH_WIDTH, std::min(kMaxHistoryPoints, m_nDaemonDepth)));
 	m_conn->SendRequest(this, &request);
 }
 
@@ -4132,6 +4139,24 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		return;
 	}
 	m_lastTimestamp = tsTag->GetDoubleData();
+
+	// How many points this daemon can answer with before it starts
+	// repeating a record. Absent from daemons predating the tag, which is
+	// exactly the case the conservative default covers. Learning that it
+	// can serve more than we asked for is worth a one-off refetch: the
+	// ring only accepts points newer than what it holds, so the deeper
+	// history would never arrive otherwise.
+	const CECTag *depthTag = p->GetTagByName(EC_TAG_STATSGRAPH_DEPTH);
+	if (depthTag) {
+		const uint16 nDepth = std::max<uint16>((uint16)depthTag->GetInt(), 1);
+		if (nDepth > m_nDaemonDepth) {
+			m_nDaemonDepth = nDepth;
+			theApp->m_statistics->ClearHistory();
+			m_lastTimestamp = 0.0;
+			return;
+		}
+		m_nDaemonDepth = nDepth;
+	}
 
 	// EC_TAG_STATSGRAPH_DATA carries N x (dl_Bps, ul_Bps, conn, kadCur)
 	// uint32 4-tuples in network byte order. Points are m_sScale seconds

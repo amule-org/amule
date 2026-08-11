@@ -3312,6 +3312,12 @@ static CECPacket *GetStatsGraphs(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_UL, sessionUl));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_KAD, sessionKad));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_TIMESPAN, sessionTimespan));
+			// How deep we can actually answer at the requested scale, so
+			// the client can cap its next request instead of guessing.
+			// Over-asking gets a record repeated rather than an error,
+			// and without timestamps on the wire the client cannot see it.
+			response->AddTag(
+				CECTag(EC_TAG_STATSGRAPH_DEPTH, (uint16)CStatistics::GetPointsPerRange()));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, dTimestamp));
 		} else {
 			response = new CECPacket(EC_OP_FAILED);

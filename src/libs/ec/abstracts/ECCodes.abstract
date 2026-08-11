@@ -600,6 +600,13 @@ EC_TAG_SELECT_PREFS                       0x1000
 ## EC_TAG_STAT_NODE_VALUE; the English display string stays alongside it
 ## (EC_VALUE_STRING) so GUI/legacy consumers are unaffected.
 		EC_TAG_STAT_VALUE_ENUM                    0x1B13
+## Records the daemon holds per resolution range, i.e. how many points
+## it can answer with before it starts repeating a record because the
+## requested spacing is finer than the one it stored. Timestamps are not
+## on the wire, so a client that over-asks cannot tell the repeats apart
+## and would draw them as distinct samples on a wrong time axis. Absent
+## from daemons predating this tag; assume the 560 they were built with.
+		EC_TAG_STATSGRAPH_DEPTH                   0x1B14
 
 	EC_TAG_PREFS_SECURITY                     0x1C00
 		EC_TAG_SECURITY_CAN_SEE_SHARES            0x1C01
