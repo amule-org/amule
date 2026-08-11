@@ -4196,37 +4196,65 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 	//
 	// ComputeAverages derives the session-average trend as
 	// kBytesReceived / sTimestamp, so it needs the cumulative figure as
-	// it stood at each point, but the daemon only sends the latest one.
-	// Storing that latest figure against every point (which is what this
-	// used to do) is close enough over the handful of points a steady
-	// poll returns, and turns the trend into a flat line at today's
-	// value over the several hundred a backfill returns.
+	// it stood at each point, while the daemon sends only the newest.
+	// The rest are reconstructed from the per-point rates this same reply
+	// carries -- a rectangle-rule integral, so it carries a few percent
+	// of error against a spiky signal.
 	//
-	// So walk it backwards instead: the newest point takes the daemon's
-	// own figure, and each earlier point subtracts the per-point rate
-	// that this same reply already carries. Only the session-average
-	// trend depends on this -- the current-rate trend is the daemon's
-	// per-point value verbatim, and the running average is rebuilt from
-	// those same per-point values.
+	// Which direction to integrate matters, because that error is divided
+	// by the point's timestamp. Going backwards from the newest puts it
+	// at the oldest point, and when a reply reaches back near the start of
+	// the daemon's session that divisor is a few seconds: a 3% error on
+	// several GB then reads as tens of MB/s where the truth is nearly
+	// zero, and past the session start the divisor goes negative and the
+	// trend flips sign entirely.
+	//
+	// So pick the end that is known exactly. If the reply spans the whole
+	// session the oldest point's total is zero by definition, and
+	// integrating forward from there leaves the error at the newest
+	// point, where it is divided by the full session length. Otherwise
+	// every timestamp in the window is large and backwards from the
+	// daemon's own newest figure is both exact where it starts and
+	// harmless where it ends.
 	std::vector<double> aKBytesDl(numPoints, 0.0);
 	std::vector<double> aKBytesUl(numPoints, 0.0);
 	std::vector<double> aKadTotal(numPoints, 0.0);
+	// Within one sample of zero means the oldest point IS the session's
+	// first sample -- the daemon answers with what it has, so a reply that
+	// reaches the start stops there rather than running past it. Testing
+	// for a timestamp at or below zero would almost never fire.
+	const double oldestTs = m_lastTimestamp - (double)(numPoints - 1) * m_sScale;
+	const bool spansSessionStart = oldestTs <= m_sScale;
 	{
-		double kDl = (double)sessionDlB;
-		double kUl = (double)sessionUlB;
-		double kKad = (double)sessionKadN;
-		for (size_t j = numPoints; j-- > 0;) {
-			aKBytesDl[j] = std::max(kDl, 0.0);
-			aKBytesUl[j] = std::max(kUl, 0.0);
-			aKadTotal[j] = std::max(kKad, 0.0);
+		auto rateAt = [&](size_t j, size_t offset) {
+			uint32 v;
+			memcpy(&v, raw + j * 16 + offset, 4);
+			return (double)ENDIAN_NTOHL(v);
+		};
 
-			uint32 dl, ul, kad;
-			memcpy(&dl, raw + j * 16 + 0, 4);
-			memcpy(&ul, raw + j * 16 + 4, 4);
-			memcpy(&kad, raw + j * 16 + 12, 4);
-			kDl -= (ENDIAN_NTOHL(dl) / 1024.0) * m_sScale;
-			kUl -= (ENDIAN_NTOHL(ul) / 1024.0) * m_sScale;
-			kKad -= (double)ENDIAN_NTOHL(kad) * m_sScale;
+		if (spansSessionStart) {
+			double kDl = 0.0, kUl = 0.0, kKad = 0.0;
+			for (size_t j = 0; j < numPoints; ++j) {
+				kDl += (rateAt(j, 0) / 1024.0) * m_sScale;
+				kUl += (rateAt(j, 4) / 1024.0) * m_sScale;
+				kKad += rateAt(j, 12) * m_sScale;
+				aKBytesDl[j] = kDl;
+				aKBytesUl[j] = kUl;
+				aKadTotal[j] = kKad;
+			}
+		} else {
+			double kDl = (double)sessionDlB;
+			double kUl = (double)sessionUlB;
+			double kKad = (double)sessionKadN;
+			for (size_t j = numPoints; j-- > 0;) {
+				aKBytesDl[j] = std::max(kDl, 0.0);
+				aKBytesUl[j] = std::max(kUl, 0.0);
+				aKadTotal[j] = std::max(kKad, 0.0);
+
+				kDl -= (rateAt(j, 0) / 1024.0) * m_sScale;
+				kUl -= (rateAt(j, 4) / 1024.0) * m_sScale;
+				kKad -= rateAt(j, 12) * m_sScale;
+			}
 		}
 	}
 
@@ -4300,6 +4328,18 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		// stepping back from m_lastTimestamp at 1 s spacing (matches
 		// the scale we request in DoRequery).
 		const double pointTs = m_lastTimestamp - (double)(numPoints - 1 - i) * m_sScale;
+
+		// A reply can reach back past the moment the daemon's session
+		// began -- its history list is preallocated, so it answers with
+		// as many points as were asked for even when fewer exist. Those
+		// points reconstruct to a timestamp at or before zero, and
+		// ComputeAverages divides by it: at zero the session average is
+		// undefined and below it the whole trend changes sign. Drop them
+		// rather than store a value that cannot be drawn honestly.
+		if (pointTs <= 0.0) {
+			continue;
+		}
+
 		HR hr = { /* kBytesSent     */ aKBytesUl[i],
 			/* kBytesReceived */ aKBytesDl[i],
 			/* kBpsUpCur      */ ul_kbps,
