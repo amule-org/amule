@@ -4074,8 +4074,9 @@ void CStatGraphRem::DoRequery()
 {
 	CECPacket request(EC_OP_GET_STATSGRAPHS, EC_DETAIL_FULL);
 	// Send back the most recent timestamp we've seen; daemon-side
-	// CStatistics::GetHistoryForWeb uses it as the lower bound so the
+	// CStatistics::GetHistoryForGui uses it as the lower bound so the
 	// response only carries points the GUI hasn't drawn yet.
+	// (GetHistoryForWeb is amuleweb's near-identical twin, not this path.)
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, m_lastTimestamp));
 	// Seconds between points. This has to be the same step the graphs are
 	// going to plot at -- COScopeCtrl gets it from the "Update delay"
