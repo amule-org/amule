@@ -716,7 +716,13 @@ public:
 	// RecordHistory() does the equivalent push from local counters).
 	// Appends one HR record to listHR and caps the ring at
 	// kHistoryCap so memory stays bounded across long sessions.
-	void AddHistoryRecord(const HR &hr);
+	// minSpacing is the seconds-per-point the graphs are drawing at, and
+	// records closer together than that are dropped: keeping finer data
+	// than is ever plotted just spends the ring on points no axis asks for.
+	void AddHistoryRecord(const HR &hr, double minSpacing);
+	// Drops everything. Used when the sample spacing changes, which
+	// invalidates the resolution the stored points were kept at.
+	void ClearHistory() { listHR.clear(); }
 	// Records, not seconds: they are spaced at whatever scale CStatGraphRem
 	// asked the daemon for, which is the "Update delay" preference. So this
 	// is ~30 min at a 1 s delay and proportionally longer above that.

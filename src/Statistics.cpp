@@ -1258,23 +1258,26 @@ CStatistics::~CStatistics()
 	delete s_statTree;
 }
 
-void CStatistics::AddHistoryRecord(const HR &hr)
+void CStatistics::AddHistoryRecord(const HR &hr, double minSpacing)
 {
-	// Drop anything not newer than what the ring already ends with.
+	// Keep only what the graphs will actually plot: one record every
+	// minSpacing seconds, that being the seconds-per-point they draw at.
 	//
+	// Two things otherwise fill the ring with points no axis asks for.
 	// GetHistoryForGui appends a record before testing whether it is one
-	// the caller already has, so every poll comes back carrying at least
-	// the newest record again, and a poll that finds one new second of
-	// data returns that second plus one older point as well. Drawing is
-	// indifferent -- GetHistory skips same-timestamp records -- but
-	// kHistoryCap counts records rather than distinct samples, so each
-	// duplicate evicts a real one and the graphs reach about half as far
-	// back as the cap suggests.
+	// the caller already has, so every poll returns at least the newest
+	// record again; and the daemon's newest record advances one second per
+	// poll whatever spacing was requested, so a graph drawing at 3 s was
+	// storing three records for every point it could show. Drawing never
+	// noticed -- GetHistory just skips what it does not need -- but
+	// kHistoryCap bounds the ring in records, so both effects cost real
+	// history: measured against a live daemon the graphs opened with 28
+	// minutes behind them and decayed toward 15.
 	//
 	// Safe against a daemon restart resetting its uptime clock: Startup()
 	// builds a new CStatistics (and a new CStatGraphRem) per connection,
 	// so timestamps only ever move forward within one ring's lifetime.
-	if (!listHR.empty() && hr.sTimestamp <= listHR.back().sTimestamp) {
+	if (!listHR.empty() && hr.sTimestamp < listHR.back().sTimestamp + minSpacing) {
 		return;
 	}
 

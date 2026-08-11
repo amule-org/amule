@@ -4088,7 +4088,17 @@ void CStatGraphRem::DoRequery()
 	// however far back the user had asked to see. Monolithic amule has no
 	// equivalent step because it reads the same history directly.
 	const uint16 nScale = std::max<uint16>(thePrefs::GetTrafficOMeterInterval(), 1);
-	m_sScale = (double)nScale;
+	if ((double)nScale != m_sScale) {
+		// The ring keeps one record per requested interval, so what is in
+		// it is only meaningful at the scale it was fetched at: replotting
+		// 8 s records on a 3 s axis would place them at the wrong times.
+		// Drop it and let it refill at the new resolution. Deliberately
+		// without resetting m_lastTimestamp -- asking for a fresh backfill
+		// here would race the reply still in the air from the previous
+		// scale, whose points would then be timestamped with this one.
+		theApp->m_statistics->ClearHistory();
+		m_sScale = (double)nScale;
+	}
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_SCALE, nScale));
 	// Upper bound on points per reply. In the steady state the daemon
 	// only sends what is newer than the timestamp above, i.e. one point
@@ -4275,7 +4285,7 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 			/* cntConnections */ (uint16)conn,
 			/* kadNodesCur    */ (uint16)kad,
 			/* kadNodesTotal  */ (uint64)aKadTotal[i] };
-		theApp->m_statistics->AddHistoryRecord(hr);
+		theApp->m_statistics->AddHistoryRecord(hr, m_sScale);
 
 		if (theApp->amuledlg) {
 			theApp->amuledlg->m_statisticswnd->UpdateStatGraphs(m_peakConnections, update);
