@@ -278,6 +278,10 @@ void CDownloadListCtrl::BeginBatchUpdate()
 	// once. Used when reconciling the whole list against a fresh server
 	// snapshot after a reconnect (issue #444).
 	Freeze();
+	// Same reason as CSharedFilesCtrl::BeginBatchUpdate(): rows land unsorted
+	// and EndBatchUpdate() sorts once, while a live sort key makes macOS
+	// re-compare the whole list on every inserted row. See SuspendHeaderSort().
+	SuspendHeaderSort();
 	m_batchUpdate = true;
 }
 
@@ -289,6 +293,7 @@ void CDownloadListCtrl::EndBatchUpdate(bool doSort)
 	if (doSort) {
 		SortList();
 	}
+	RestoreHeaderSort();
 	Thaw();
 }
 

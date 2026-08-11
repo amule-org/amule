@@ -187,6 +187,25 @@ protected:
 	 */
 	void ShowSortCaret(unsigned column, unsigned order, SortTrigger trigger = SortTrigger::Programmatic);
 
+	/**
+	 * Drops the header's sort key for the duration of a bulk append, and puts
+	 * it back afterwards.
+	 *
+	 * The caret is drawn by marking a column as the control's sort key, which
+	 * the native backends read as an instruction to keep the view ordered
+	 * themselves -- and macOS acts on it per insertion: every RowInserted()
+	 * has NSOutlineView re-query the data source and re-run our Compare(), so
+	 * appending N rows costs O(N^2) even though each append is O(1) on our
+	 * side. Suspending the key for the burst leaves the rows in arrival order
+	 * (which the caller sorts once at the end anyway) and the comparisons
+	 * never happen.
+	 *
+	 * Balanced calls; nesting is not supported, and restoring re-draws the
+	 * caret from m_sort_orders, so a sort change during the burst is honoured.
+	 */
+	void SuspendHeaderSort();
+	void RestoreHeaderSort();
+
 	void LoadColumnSettings();
 	void SaveColumnSettings();
 
@@ -324,6 +343,8 @@ protected:
 	CListColumnStore m_columnStore;
 	ColumnWidthAdapter m_widthAdapter;
 	CSortingList m_sort_orders;
+	//! Set between SuspendHeaderSort() and RestoreHeaderSort().
+	bool m_headerSortSuspended = false;
 	bool m_hasPersistedWidths = false;
 
 	void OnColumnHeaderClick(wxDataViewEvent &event);

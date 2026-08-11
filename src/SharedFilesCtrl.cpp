@@ -575,6 +575,10 @@ void CSharedFilesCtrl::BeginBatchUpdate()
 	// O(n), i.e. O(n^2) for a burst on a large share). Coalesce the repaints
 	// (Freeze) and defer the single sort to EndBatchUpdate().
 	Freeze();
+	// The rows arrive unsorted and EndBatchUpdate() sorts them once, so the
+	// header's sort key buys nothing here -- and on macOS it costs a re-query
+	// and a full comparison pass per inserted row. See SuspendHeaderSort().
+	SuspendHeaderSort();
 	m_batchUpdate = true;
 	m_batchFrozen = true;
 }
@@ -616,6 +620,7 @@ void CSharedFilesCtrl::EndBatchUpdate(bool doSort)
 		SortList();
 	}
 	m_batchRowsAppended = false;
+	RestoreHeaderSort();
 	// Skipped when ThawForDisplay() already ended the freeze: wx counts
 	// Freeze/Thaw and an unbalanced Thaw() asserts.
 	if (m_batchFrozen) {
