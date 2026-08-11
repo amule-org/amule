@@ -723,10 +723,15 @@ public:
 	// Drops everything. Used when the sample spacing changes, which
 	// invalidates the resolution the stored points were kept at.
 	void ClearHistory() { listHR.clear(); }
-	// Records, not seconds: they are spaced at whatever scale CStatGraphRem
-	// asked the daemon for, which is the "Update delay" preference. So this
-	// is ~30 min at a 1 s delay and proportionally longer above that.
-	static const size_t kHistoryCap = 1800;
+	// Records, not seconds. One is kept per plotted point, so the useful
+	// way to read this is as a plot width: a graph draws one point per
+	// pixel, and cannot show more than this many however wide its window
+	// is. The span that covers depends on the "Update delay" preference
+	// the points were fetched at -- 3 h at a 1 s delay, a day at 8 s --
+	// but the pixel bound is the same either way, which is what matters
+	// because the Kad graph spans the whole window. At 64 bytes a record
+	// the whole ring is about 225 KB.
+	static const size_t kHistoryCap = 3600;
 
 	static uint64 GetUptimeMillis();
 	static uint64 GetUptimeSeconds();
