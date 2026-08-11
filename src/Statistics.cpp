@@ -636,7 +636,21 @@ unsigned CStatistics::GetHistoryForGui(unsigned cntPoints,
 		// instead of forcing amulegui to integrate locally from connect
 		// time (which would diverge whenever the GUI attaches to a
 		// long-running daemon).
-		HR *latest = pphr[cntFilled - 1];
+		// pphr was filled walking rbegin() -> rend(), so [0] is the newest
+		// record and [cntFilled - 1] the oldest -- the reverse of the
+		// graphData loop above, which deliberately reads it backwards to
+		// emit points oldest-first. Taking [cntFilled - 1] here reported
+		// the session total as it stood at the START of the reply, which
+		// the client then treats as the total at the END and integrates
+		// backwards from: subtracting the whole span's transfer from a
+		// figure already that stale drives it negative at once, and every
+		// point but the newest reads as a session average of zero.
+		//
+		// Harmless while replies carried a point or two, since the two
+		// ends were seconds apart. A backfill makes them the width of the
+		// graph. [0] is also always a real record -- the NULL sentinel
+		// this loop can append lands at the oldest end.
+		HR *latest = pphr[0];
 		if (latest) {
 			sessionDlKBytes = (uint64)latest->kBytesReceived;
 			sessionUlKBytes = (uint64)latest->kBytesSent;
