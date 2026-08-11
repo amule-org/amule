@@ -25,7 +25,6 @@
 #ifndef AMULE_REMOTE_GUI_H
 #define AMULE_REMOTE_GUI_H
 
-#include <deque>                  // std::deque for CStatGraphRem rolling-average windows
 #include <functional>             // std::function for the CSharedFilesRem
 				  // Reload(yieldCb) shim — matches the daemon-side
 				  // signature added in PrefsUnifiedDlg's commit path.
@@ -891,17 +890,12 @@ class CStatGraphRem : public CECPacketHandlerBase
 	// Last timestamp the daemon reported; sent back on the next request
 	// so the response only carries points the GUI hasn't seen yet.
 	double m_lastTimestamp;
-
-	// Per-metric sliding window of recent samples — feeds the
-	// "Running average" line on each COScopeCtrl. Mirrors monolithic
-	// amule's CPreciseRateCounter with count_average=true: simple
-	// mean of the last N one-second samples, where N is
-	// GetStatsAverageMinutes()*60. Session average is pulled from
-	// EC_TAG_STATSGRAPH_SESSION_* (set by the daemon) so no local
-	// integral is needed.
-	std::deque<float> m_winDl;
-	std::deque<float> m_winUp;
-	std::deque<float> m_winKad;
+	// Seconds between points, as asked for by the request this reply
+	// answers. Timestamps are not on the wire, so HandlePacket steps back
+	// from m_lastTimestamp at this spacing to place the points; keeping
+	// the value the request used means a preference change mid-flight
+	// cannot mislabel the reply already in the air.
+	double m_sScale;
 
 public:
 	// Peak connection count seen so far. CLIENT_GUI doesn't get the
@@ -913,6 +907,7 @@ public:
 	CStatGraphRem(CRemoteConnect *conn)
 	: m_conn(conn)
 	, m_lastTimestamp(0.0)
+	, m_sScale(1.0)
 	, m_peakConnections(0)
 	{
 	}

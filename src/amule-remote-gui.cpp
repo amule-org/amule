@@ -4062,6 +4062,14 @@ void CStatTreeRem::HandlePacket(const CECPacket *p)
 	}
 }
 
+namespace
+{
+// See the comment in DoRequery: the daemon's newest history range holds
+// this many records at 1 s spacing.
+const uint16 kMaxHistoryPoints = 560;
+
+} // namespace
+
 void CStatGraphRem::DoRequery()
 {
 	CECPacket request(EC_OP_GET_STATSGRAPHS, EC_DETAIL_FULL);
@@ -4069,14 +4077,34 @@ void CStatGraphRem::DoRequery()
 	// CStatistics::GetHistoryForWeb uses it as the lower bound so the
 	// response only carries points the GUI hasn't drawn yet.
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, m_lastTimestamp));
-	// 1 s between points — matches monolithic amule's
-	// CamuleDlg::OnCoreTimer graph cadence, and lines up with the
-	// 1 s history-record granularity the daemon itself stores.
-	request.AddTag(CECTag(EC_TAG_STATSGRAPH_SCALE, (uint16)1));
-	// Generous upper bound: 32 points = ~32 s of backlog per poll,
-	// so a brief stall / reconnect catches up in one round-trip
-	// instead of needing dozens.
-	request.AddTag(CECTag(EC_TAG_STATSGRAPH_WIDTH, (uint16)32));
+	// Seconds between points. This has to be the same step the graphs are
+	// going to plot at -- COScopeCtrl gets it from the "Update delay"
+	// preference via CStatisticsDlg::SetUpdatePeriod, and asks
+	// CStatistics::GetHistory for points that far apart. Requesting a
+	// fixed 1 s here (which is what this used to do) meant amulegui
+	// honoured the preference when drawing and ignored it when fetching,
+	// so the graphs only ever had the daemon's 1-second range behind them
+	// however far back the user had asked to see. Monolithic amule has no
+	// equivalent step because it reads the same history directly.
+	const uint16 nScale = std::max<uint16>(thePrefs::GetTrafficOMeterInterval(), 1);
+	m_sScale = (double)nScale;
+	request.AddTag(CECTag(EC_TAG_STATSGRAPH_SCALE, nScale));
+	// Upper bound on points per reply. In the steady state the daemon
+	// only sends what is newer than the timestamp above, i.e. one point
+	// per poll, so this bites in exactly two cases: the first poll after
+	// connecting, where m_lastTimestamp is still 0 and the daemon serves
+	// its whole history, and catching up after a stall or a reconnect.
+	// Both then arrive in a single round-trip and the graphs open with
+	// history behind them instead of filling in over the next minutes.
+	//
+	// The value is the depth of the daemon's 1-second history range:
+	// CStatistics allocates GetPointsPerRange() records per range and
+	// keeps only the newest range at 1 s spacing (the ones behind it go
+	// to 2 s, 4 s, ...). Asking for more would return records that are
+	// not 1 s apart while HandlePacket reconstructs their timestamps
+	// assuming they are, which stretches the left of the plot rather
+	// than showing more of the past.
+	request.AddTag(CECTag(EC_TAG_STATSGRAPH_WIDTH, (uint16)kMaxHistoryPoints));
 	m_conn->SendRequest(this, &request);
 }
 
@@ -4129,14 +4157,43 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 	const float sessionUl = sessionTs > 0.0 ? (float)(sessionUlB / sessionTs) : 0.0f;
 	const float sessionKad = sessionTs > 0.0 ? (float)(sessionKadN / sessionTs) : 0.0f;
 
-	// Running-average window: mirror CPreciseRateCounter's
-	// count_average=true behaviour with a deque of per-second samples
-	// sized to GetStatsAverageMinutes() minutes (the same preference
-	// monolithic amule's CStatistics::OnStatsChange uses). The
-	// daemon-side counter's per-tick state isn't on the wire, so this
-	// is recomputed locally from the per-point rates we already unpack.
-	const size_t winCap = (size_t)thePrefs::GetStatsAverageMinutes() * 60;
-	const size_t cap = winCap ? winCap : 1;
+	// Cumulative session counters for each point in the reply.
+	//
+	// ComputeAverages derives the session-average trend as
+	// kBytesReceived / sTimestamp, so it needs the cumulative figure as
+	// it stood at each point, but the daemon only sends the latest one.
+	// Storing that latest figure against every point (which is what this
+	// used to do) is close enough over the handful of points a steady
+	// poll returns, and turns the trend into a flat line at today's
+	// value over the several hundred a backfill returns.
+	//
+	// So walk it backwards instead: the newest point takes the daemon's
+	// own figure, and each earlier point subtracts the per-point rate
+	// that this same reply already carries. Only the session-average
+	// trend depends on this -- the current-rate trend is the daemon's
+	// per-point value verbatim, and the running average is rebuilt from
+	// those same per-point values.
+	std::vector<double> aKBytesDl(numPoints, 0.0);
+	std::vector<double> aKBytesUl(numPoints, 0.0);
+	std::vector<double> aKadTotal(numPoints, 0.0);
+	{
+		double kDl = (double)sessionDlB;
+		double kUl = (double)sessionUlB;
+		double kKad = (double)sessionKadN;
+		for (size_t j = numPoints; j-- > 0;) {
+			aKBytesDl[j] = std::max(kDl, 0.0);
+			aKBytesUl[j] = std::max(kUl, 0.0);
+			aKadTotal[j] = std::max(kKad, 0.0);
+
+			uint32 dl, ul, kad;
+			memcpy(&dl, raw + j * 16 + 0, 4);
+			memcpy(&ul, raw + j * 16 + 4, 4);
+			memcpy(&kad, raw + j * 16 + 12, 4);
+			kDl -= (ENDIAN_NTOHL(dl) / 1024.0) * m_sScale;
+			kUl -= (ENDIAN_NTOHL(ul) / 1024.0) * m_sScale;
+			kKad -= (double)ENDIAN_NTOHL(kad) * m_sScale;
+		}
+	}
 
 	for (size_t i = 0; i < numPoints; i++) {
 		uint32 dl, ul, conn, kad;
@@ -4161,40 +4218,27 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		const float ul_kbps = ul / 1024.0f;
 		const float kad_cnt = (float)kad;
 
-		m_winDl.push_back(dl_kbps);
-		m_winUp.push_back(ul_kbps);
-		m_winKad.push_back(kad_cnt);
-		while (m_winDl.size() > cap)
-			m_winDl.pop_front();
-		while (m_winUp.size() > cap)
-			m_winUp.pop_front();
-		while (m_winKad.size() > cap)
-			m_winKad.pop_front();
-
-		double sumDl = 0.0, sumUp = 0.0, sumKad = 0.0;
-		for (float v : m_winDl)
-			sumDl += v;
-		for (float v : m_winUp)
-			sumUp += v;
-		for (float v : m_winKad)
-			sumKad += v;
-		const float runDl = m_winDl.empty() ? 0.0f : (float)(sumDl / m_winDl.size());
-		const float runUp = m_winUp.empty() ? 0.0f : (float)(sumUp / m_winUp.size());
-		const float runKad = m_winKad.empty() ? 0.0f : (float)(sumKad / m_winKad.size());
-
 		GraphUpdateInfo update;
 		update.timestamp = m_lastTimestamp;
 		// Slot layout matches CStatistics::GetPointsForUpdate:
 		//   downloads/uploads/kadnodes — [0] session avg, [1] running avg, [2] current.
 		//   connections — [0] cntUploads, [1] cntConnections, [2] cntDownloads.
+		// Only timestamp and kadnodes[2] are read now that the graphs draw
+		// from the history rather than from the point handed to them; the
+		// rest is filled to keep the struct's contract with the monolithic
+		// producer. In particular the running-average slots are left at
+		// their per-point value: the trend the graphs actually plot is
+		// rebuilt by CStatistics::ComputeAverages, which sizes its window
+		// from the sample step and so stays right whatever scale we asked
+		// the daemon for.
 		update.downloads[0] = sessionDl;
-		update.downloads[1] = runDl;
+		update.downloads[1] = dl_kbps;
 		update.downloads[2] = dl_kbps;
 		update.uploads[0] = sessionUl;
-		update.uploads[1] = runUp;
+		update.uploads[1] = ul_kbps;
 		update.uploads[2] = ul_kbps;
 		update.kadnodes[0] = sessionKad;
-		update.kadnodes[1] = runKad;
+		update.kadnodes[1] = kad_cnt;
 		update.kadnodes[2] = kad_cnt;
 		update.connections[0] = (float)cntUp;
 		update.connections[1] = (float)conn;
@@ -4203,27 +4247,26 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 		if (conn > m_peakConnections) {
 			m_peakConnections = conn;
 		}
-		if (theApp->amuledlg) {
-			theApp->amuledlg->m_statisticswnd->UpdateStatGraphs(m_peakConnections, update);
-			theApp->amuledlg->m_kademliawnd->UpdateGraph(update);
-		}
 
 		// Mirror the decoded point into the client-side history ring
-		// so COScopeCtrl::PlotHistory (now shared with monolithic) can
-		// replay across tab switches and auto-rescale wipes without
-		// another daemon round-trip. Field mapping mirrors
-		// CStatistics::GetPointsForUpdate so the same GetHistory +
-		// ComputeAverages code paths read it back correctly:
+		// so COScopeCtrl (which draws straight from the history, and is
+		// shared with monolithic) can replay across tab switches and
+		// auto-rescale wipes without another daemon round-trip. This has
+		// to happen before the graphs are told about the sample, which is
+		// also the order the monolithic build sees: there,
+		// CStatistics::GetPointsForUpdate reads the record back out of
+		// the history to build update. Field mapping mirrors
+		// GetPointsForUpdate so the same GetHistory + ComputeAverages
+		// code paths read it back correctly:
 		//   kBytes{Received,Sent} / kadNodesTotal are stored as
 		//   (session rate * timestamp) so ComputeAverages's
 		//   "kValueRun / sTimestamp" recovers the session-avg trend.
 		// Per-point timestamps are reconstructed from the batch by
 		// stepping back from m_lastTimestamp at 1 s spacing (matches
 		// the scale we request in DoRequery).
-		const double sStep = 1.0;
-		const double pointTs = m_lastTimestamp - (double)(numPoints - 1 - i) * sStep;
-		HR hr = { /* kBytesSent     */ (double)sessionUl * pointTs,
-			/* kBytesReceived */ (double)sessionDl * pointTs,
+		const double pointTs = m_lastTimestamp - (double)(numPoints - 1 - i) * m_sScale;
+		HR hr = { /* kBytesSent     */ aKBytesUl[i],
+			/* kBytesReceived */ aKBytesDl[i],
 			/* kBpsUpCur      */ ul_kbps,
 			/* kBpsDownCur    */ dl_kbps,
 			/* sTimestamp     */ pointTs,
@@ -4231,8 +4274,13 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 			/* cntUploads     */ (uint16)cntUp,
 			/* cntConnections */ (uint16)conn,
 			/* kadNodesCur    */ (uint16)kad,
-			/* kadNodesTotal  */ (uint64)((double)sessionKad * pointTs) };
+			/* kadNodesTotal  */ (uint64)aKadTotal[i] };
 		theApp->m_statistics->AddHistoryRecord(hr);
+
+		if (theApp->amuledlg) {
+			theApp->amuledlg->m_statisticswnd->UpdateStatGraphs(m_peakConnections, update);
+			theApp->amuledlg->m_kademliawnd->UpdateGraph(update);
+		}
 	}
 }
 
