@@ -1095,6 +1095,12 @@ bool CamuleApp::OnInit()
 		// stays O(1)) and the tick below sorts them into place, keeping the
 		// list ordered without paying a row-index rebuild per file.
 		UpdateStartupHashProgress();
+		if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
+			// Rows from the drain are announced to the model once per tick
+			// rather than once per file; see SetStartupDrainMode().
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->SetStartupDrainMode(true);
+		}
 		m_splashPollTimer.SetOwner(this, ID_SPLASH_POLL_TIMER);
 		Bind(wxEVT_TIMER, &CamuleApp::OnSplashPollTimer, this, ID_SPLASH_POLL_TIMER);
 		// Once a second: this is the sort cadence now, not a counter
@@ -2141,6 +2147,9 @@ void CamuleApp::FinishStartupHashing()
 	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd &&
 		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
 		CSharedFilesCtrl *sharedList = theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl;
+		// Off first: it flushes whatever the last tick did not see, so the
+		// batch below closes with the model already knowing every row.
+		sharedList->SetStartupDrainMode(false);
 		sharedList->SetHashingCount(0);
 		// Ends the batch opened before the scan, without its sort: whatever
 		// was appended has just been sorted, either by the tick that brought

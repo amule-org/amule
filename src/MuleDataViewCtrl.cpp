@@ -296,6 +296,31 @@ void CMuleDataViewCtrl::ShowSortCaret(unsigned column, unsigned order, SortTrigg
 	GetColumn(column)->SetSortOrder(ascending);
 }
 
+void CMuleDataViewCtrl::SuspendHeaderSort()
+{
+	if (m_headerSortSuspended) {
+		return;
+	}
+	m_headerSortSuspended = true;
+	for (unsigned i = 0; i < RealColumnCount(); ++i) {
+		if (GetColumn(i)->IsSortKey()) {
+			GetColumn(i)->UnsetAsSortKey();
+		}
+	}
+}
+
+void CMuleDataViewCtrl::RestoreHeaderSort()
+{
+	if (!m_headerSortSuspended) {
+		return;
+	}
+	m_headerSortSuspended = false;
+	if (!m_sort_orders.empty()) {
+		const CColPair &primary = m_sort_orders.front();
+		ShowSortCaret(primary.first, primary.second);
+	}
+}
+
 void CMuleDataViewCtrl::ApplySorting(unsigned column, unsigned order, SortTrigger trigger)
 {
 	// Push to the front: the most recently clicked column is primary, the

@@ -85,6 +85,26 @@ public:
 
 	// Bracket a reconnect resync (issue #444) so the list repaints once
 	// (Freeze) and sorts once at the end rather than per updated/added row.
+	/**
+	 * While the startup hash drain runs, hold back the per-row model
+	 * notification and the files-count label.
+	 *
+	 * Each finished hash arrives as its own queued event, and
+	 * ProcessPendingEvents() runs the whole queue in one pass -- so with
+	 * thousands of them the main thread never returns to the run loop and the
+	 * window, already created by then, cannot paint. Per row the two costs are
+	 * wx's Cocoa Add(), which issues a full NSOutlineView reloadData, and
+	 * ShowFilesCount(), which searches the window hierarchy by name. Deferred,
+	 * both happen once per drain tick instead of once per file.
+	 *
+	 * Only for that drain: the tick flushes with FinishBulkLoad(), whose
+	 * Reset() rebuilds the view and drops the scroll position. That is
+	 * unobjectionable while the list is being populated for the first time and
+	 * would not be during amulegui's steady-state poll, which shares the same
+	 * batch machinery.
+	 */
+	void SetStartupDrainMode(bool on);
+
 	void BeginBatchUpdate();
 	void EndBatchUpdate(bool doSort = true);
 
@@ -336,6 +356,7 @@ private:
 	//! Rows appended since the last SortIfRowsAppended(). The batch appends
 	//! without sorting, so this is what makes a later sort worth running.
 	bool m_batchRowsAppended;
+	bool m_startupDrain = false;
 
 	//! Combined size of the displayed files (drives the "Total size:" label)
 	uint64 m_shownSize;
