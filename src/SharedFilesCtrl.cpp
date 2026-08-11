@@ -599,7 +599,28 @@ void CSharedFilesCtrl::SortIfRowsAppended()
 		return;
 	}
 	m_batchRowsAppended = false;
-	SortList();
+	if (m_startupDrain) {
+		// The rows were appended without notifying the model, so this is the
+		// first it hears of them: FinishBulkLoad() sorts and issues the single
+		// Reset() that makes them exist for the control.
+		FinishBulkLoad();
+		ShowFilesCount();
+	} else {
+		SortList();
+	}
+}
+
+void CSharedFilesCtrl::SetStartupDrainMode(bool on)
+{
+	if (m_startupDrain == on) {
+		return;
+	}
+	m_startupDrain = on;
+	if (!on) {
+		// Anything appended since the last tick is still invisible to the
+		// model; flush before the caller ends the batch.
+		SortIfRowsAppended();
+	}
 }
 
 void CSharedFilesCtrl::SetHashingCount(size_t remaining)
@@ -662,10 +683,18 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 		// and in-place UpdateItem() during the same poll stay correct.
 		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(file);
 		if (RowOfData(data) == -1) {
-			AppendItemDataNow(data);
+			if (m_startupDrain) {
+				// Silent append: the drain tick tells the model once, and
+				// refreshes the label, for everything since the last one.
+				AppendItemData(data);
+			} else {
+				AppendItemDataNow(data);
+			}
 			m_batchRowsAppended = true;
 			m_shownSize += file->GetFileSize();
-			ShowFilesCount();
+			if (!m_startupDrain) {
+				ShowFilesCount();
+			}
 		}
 		return;
 	}
