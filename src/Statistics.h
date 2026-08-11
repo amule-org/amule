@@ -717,7 +717,10 @@ public:
 	// Appends one HR record to listHR and caps the ring at
 	// kHistoryCap so memory stays bounded across long sessions.
 	void AddHistoryRecord(const HR &hr);
-	static const size_t kHistoryCap = 1800; // ~30 min @ 1 Hz
+	// Records, not seconds: they are spaced at whatever scale CStatGraphRem
+	// asked the daemon for, which is the "Update delay" preference. So this
+	// is ~30 min at a 1 s delay and proportionally longer above that.
+	static const size_t kHistoryCap = 1800;
 
 	static uint64 GetUptimeMillis();
 	static uint64 GetUptimeSeconds();

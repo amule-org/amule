@@ -4123,9 +4123,8 @@ void CStatGraphRem::HandlePacket(const CECPacket *p)
 	m_lastTimestamp = tsTag->GetDoubleData();
 
 	// EC_TAG_STATSGRAPH_DATA carries N x (dl_Bps, ul_Bps, conn, kadCur)
-	// uint32 4-tuples in network byte order. Points are sStep seconds
-	// apart (we request 1 s in DoRequery, matching monolithic amule's
-	// CamuleDlg::OnCoreTimer graph cadence).
+	// uint32 4-tuples in network byte order. Points are m_sScale seconds
+	// apart, that being the scale DoRequery asked this reply for.
 	const uint8_t *raw = (const uint8_t *)dataTag->GetTagData();
 	size_t dataLen = dataTag->GetTagDataLen();
 	size_t numPoints = dataLen / (4 * sizeof(uint32));
