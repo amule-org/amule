@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-08-09 14:50+0000\n"
+"PO-Revision-Date: 2026-08-11 21:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -499,7 +499,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:102
 msgid "Disconnect from all networks you are connected to, or just disconnect from the specified network."
-msgstr ""
+msgstr "Atvieno no visiem tīkliem, kam esiet pieslēgušies, vai tikai no norādītā tīkla."
 
 #. type: Plain text
 #: amulecmd.1.in:104
@@ -514,7 +514,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:110
 msgid "Disconnect from amule/amuled and quit amulecmd."
-msgstr ""
+msgstr "Atvieno no amule/amuled un aizver amulecmd."
 
 #. type: Plain text
 #: amulecmd.1.in:112
@@ -609,7 +609,7 @@ msgstr "Notīrīt žurnālu."
 #. type: Plain text
 #: amulecmd.1.in:158
 msgid "Shows you the results of the last search."
-msgstr ""
+msgstr "Parāda pēdējos meklēšanas rezultātus."
 
 #. type: Plain text
 #: amulecmd.1.in:160
@@ -881,7 +881,7 @@ msgstr ""
 #: amuled.1.in:61
 #, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -t> I<E<lt>numursE<gt>>, B<--category>=I<E<lt>numursE<gt>> B<]>"
 
 #. type: TH
 #: amulegui.1.in:1
@@ -1251,7 +1251,7 @@ msgstr "aMule eD2k saišu kalkulators"
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:6
 msgid "alcc - text based eD2k links calculator for aMule"
-msgstr ""
+msgstr "alcc - teksta aMule eD2k saišu kalkulators"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in:11
@@ -1313,7 +1313,7 @@ msgstr ""
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:37
 msgid "B<cas> was written by Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
-msgstr ""
+msgstr "B<cas> izveidoja Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in:39

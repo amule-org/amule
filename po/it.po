@@ -20,7 +20,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-09 14:37+0000\n"
+"PO-Revision-Date: 2026-08-11 20:51+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
 "Language: it\n"
@@ -218,26 +218,26 @@ msgid "Restricted permissions on %s to owner-only."
 msgstr "Permessi di %s limitati al solo proprietario."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Collection file not found: %s"
-msgstr "File indice non trovato: "
+msgstr "File di collezione non trovato: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid or empty collection file: %s"
-msgstr "Impossibile scrivere il file di collezione '%s'."
+msgstr "File di collezione non valido o vuoto: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "No usable links in collection: %s"
-msgstr "Nessun file condivisibile trovato nella cartella: %s"
+msgstr "Nessun collegamento utilizzabile nella collezione: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Skipped %u unusable link in collection: %s"
 msgid_plural "Skipped %u unusable links in collection: %s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Ignorato %u collegamento inutilizzabile nella collezione: %s"
+msgstr[1] "Ignorati %u collegamenti inutilizzabili nella collezione: %s"
 
 #: src/amuleAppCommon.cpp src/DownloadQueue.cpp
 #, c-format
@@ -245,9 +245,9 @@ msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "Non posso convertire il magnet link in eD2k: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "Collegamento eD2k non valido! ERRORE: %s"
+msgstr "Collegamento eD2k \"%s\" non valido - ERRORE: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -669,7 +669,7 @@ msgstr "ERRORE FATALE: Creazione timer fallita"
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr ""
+msgstr "Errore! Impossibile caricare le Preferenze"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -970,7 +970,7 @@ msgstr "Riconnesso al core remoto."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
-msgstr ""
+msgstr "Il core remoto è stato riavviato; ricaricamento in corso."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1014,7 +1014,7 @@ msgstr "Impossibile creare la directory '%s' per la categoria '%s', verrà mante
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The remote core sent inconsistent data for \"%s\" (part status %d, expected %d). The file list may be showing the wrong information; reconnect to clear it."
-msgstr ""
+msgstr "Il core remoto ha inviato dati incoerenti per \"%s\" (stato della parte %d, atteso %d). La lista dei file potrebbe mostrare informazioni errate; riconnettiti per azzerarla."
 
 #: src/amule-remote-gui.cpp src/BaseClient.cpp src/ClientDetailDialog.cpp
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/ExternalConn.cpp
@@ -3073,7 +3073,7 @@ msgstr "Connessione esterna: errore di negoziazione."
 #: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
-msgstr ""
+msgstr "Errore durante la creazione del socket UDP %s %d : %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3315,12 +3315,12 @@ msgstr "UL totale: %s"
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "Created %s at port %u"
-msgstr ""
+msgstr "Creato %s sulla porta %u"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
-msgstr ""
+msgstr "ATTENZIONE! %s: Pacchetto verso %s scartato a causa di un errore (%s) durante l'invio."
 
 #: src/muuli_wdr.cpp
 msgid "Paste eD2k or magnet links here"
@@ -5914,7 +5914,7 @@ msgstr "- Modificato il supporto all'offuscamento del protocollo.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
-msgstr ""
+msgstr "- Impostazioni proxy modificate (necessarie per i trasferimenti HTTP).\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- amuleapi settings changed.\n"
@@ -6341,9 +6341,9 @@ msgid "Kad search: no peer left to reask for more results (cap reached or no res
 msgstr "Ricerca Kad: nessun peer rimasto a cui richiedere altri risultati (limite raggiunto o nessuna risposta ancora ricevuta)."
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error %u: %s\n"
-msgstr "Errore durante l'aggiornamento di %s"
+msgstr "Errore %u: %s\n"
 
 #: src/SearchListCtrl.cpp
 msgid "FileID"
@@ -6399,14 +6399,12 @@ msgid "Failed to connect to all obfuscated servers listed. Making another pass w
 msgstr "Impossibile collegarsi ai server con offuscamento di protocollo. Ci riprovo senza offuscamento."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all static servers listed."
-msgstr "Impossibile connettersi a tutti i server statici in lista. Procedo con un altro tentativo."
+msgstr "Impossibile connettersi a tutti i server statici in lista."
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all servers listed."
-msgstr "Impossibile connettersi a tutti i server in lista. Procedo con un altro tentativo."
+msgstr "Impossibile connettersi a tutti i server in lista."
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6549,9 +6547,9 @@ msgid "Failed to save server.met!"
 msgstr "Impossibile salvare il file server.met!"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO failure while writing 'server.met': %s"
-msgstr "Errore I/O durante la lettura del file 'server.met': "
+msgstr "Errore I/O durante la scrittura del file 'server.met': %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"

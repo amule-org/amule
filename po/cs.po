@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-09 14:20+0000\n"
+"PO-Revision-Date: 2026-08-11 21:18+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -446,7 +446,7 @@ msgstr "Selhalo vytvoření aMule OnlineSig souboru"
 
 #: src/amule.cpp
 msgid "The selected locale seems not to be installed on your box. (Note: I'll try to set it anyway)"
-msgstr ""
+msgstr "Zdá se, že vybrané locale není nainstalováno na vašem počítači. (Poznámka: Přesto se jej pokusím nastavit)"
 
 #: src/amule.cpp
 #, c-format
@@ -482,10 +482,12 @@ msgid ""
 "The folder for Online Signature files you specified is INVALID!\n"
 " OnlineSignature will be DISABLED until you fix it on preferences."
 msgstr ""
+"Složka pro soubory online podpisů, kterou jste zadali, je NEPLATNÁ!\n"
+"OnlinePodpis bude VYPNUT, dokud neprovedete opravu v nastaveních."
 
 #: src/amule.cpp
 msgid "Server hostname notified"
-msgstr ""
+msgstr "Jméno hostitele serveru oznámeno"
 
 #: src/amule.cpp
 #, c-format
@@ -512,7 +514,7 @@ msgstr "Zpráva od serveru: %s"
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
-msgstr ""
+msgstr "Bylo vynecháno stažení %s, protože požadovaný soubor není novější."
 
 #: src/amule.cpp
 msgid "Failed to download the nodes list."
@@ -617,17 +619,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Síť Kad je zakázána v nastavení, nepřipojuji se."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "CHYBA: démon aMule nelze použít, když jsou zakázaná externí připojení. Pro jejich povolení použijte buď normální aMule, nebo klíči \"AcceptExternalConnections\" v souboru ~/.aMule/amule.conf nastavte hodnotu 1"
+msgstr "CHYBA: aMule daemon nelze použít, když jsou zakázaná externí připojení. Pro jejich povolení použijte buď normální aMule, spusťte aMule s přepínačem --ec-config, nebo nastavte klíč \"AcceptExternalConnections\" v souboru ~/.aMule/amule.conf na hodnotu 1"
 
 #: src/amuled.cpp
 msgid "ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at https://amule-org.github.io/docs"
-msgstr ""
+msgstr "CHYBA: Je požadováno platné heslo pro použití externích připojení a aMule daemon nelze použít bez externích připojení. Chcete-li spustit aMule daemon, musíte nastavit pole \"ECPassword\" v souboru ~/.aMule/amule.conf na příslušnou hodnotu. Pro nastavení hesla spusťte amuled s přepínačem --ec-config. Více informací najdete na https://amule-org.github.io/docs"
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
-msgstr ""
+msgstr "amuled: OnInit - spouštění časovače"
 
 #: src/amuled.cpp
 msgid "Cannot Create Pid File"
@@ -691,27 +692,31 @@ msgstr "Nastavení"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "Navigovat"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "Zpráva od serveru: %s"
+msgstr "Volný prostor: %s"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "New version available"
-msgstr "Nedostupný"
+msgstr "Nová verze je dostupná"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "A new version of aMule (%s) is available.\n"
 "\n"
 "You are running %s.\n"
 "\n"
 "Would you like to open the download page?"
-msgstr "Poslední verze jsou vždy k nalezení na https://github.com/amule-org/amule/releases/latest "
+msgstr ""
+"K dispozici je nová verze aMule (%s).\n"
+"\n"
+"Nyní používáte %s.\n"
+"\n"
+"Chcete otevřít stránku stahování?"
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
@@ -746,23 +751,22 @@ msgid "Kad: Off"
 msgstr "Kad: vypnut"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Od: %.1f(%.1f) | St: %.1f(%.1f)"
+msgstr "Odesílání: %.1f%s (%.1f) | Stahování: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
-#, fuzzy
 msgid " MB/s"
-msgstr "MB/s"
+msgstr " MB/s"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid " kB/s"
 msgstr " kB/s"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Od: %.1f | St: %.1f"
+msgstr "Odesílání: %.1f%s | Stahování: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -878,19 +882,18 @@ msgid "Connection lost"
 msgstr "Připojení ztraceno."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Abort and exit"
-msgstr "Ptát se na ukončení programu"
+msgstr "Přerušit a ukončit"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "Opětovné připojování... (pokus %d)"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "Další pokus za %d s..."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -900,6 +903,10 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"Připojení k %s ztraceno.\n"
+"%s\n"
+"\n"
+"Rozhraní je pozastaveno až do obnovení spojení."
 
 #: src/amule-remote-gui.cpp
 msgid "Fatal Error: Failed to create Poll Timer"
@@ -915,25 +922,24 @@ msgstr "Připojuji..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
-msgstr ""
+msgstr "Spojení selhalo. Prosím zkontrolujte hostitele, port a heslo."
 
 #: src/amule-remote-gui.cpp
 msgid "Remote GUI EC event handler"
-msgstr ""
+msgstr "Ovladač událostí vzdáleného grafického uživatelského rozhraní EC"
 
 #: src/amule-remote-gui.cpp src/ExternalConnector.cpp
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
-msgstr ""
+msgstr "Spojení selhalo. Nelze se připojit k %s:%d\n"
 
 #: src/amule-remote-gui.cpp
 msgid "Going down"
 msgstr "Ukončuji"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "Pokusu o připojení k %s (%s:%i) vypršel čas."
+msgstr "Pokus o opětovné připojení vypršel; probíhá opakování."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -941,15 +947,16 @@ msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
 "Please check the host, port and that aMule is running with External Connections enabled."
 msgstr ""
+"Navazování připojení vypršel čas. Nelze dosáhnout %s:%d v přiděleném čase.\n"
+"Prosím zkontrolujte hostitele, port a že aMule běží s povolenými externími připojeními."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "Připojení ke vzdálenému jádru bylo ztraceno. Probíhá pokus o opětovné připojení..."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "Připojit se k síti."
+msgstr "Znovu připojeno ke vzdálenému jádru."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
@@ -958,11 +965,11 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr ""
+msgstr "Pokus %d o opětovné připojení: připojování k %s:%d"
 
 #: src/amule-remote-gui.cpp
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "Opětovné připojení nemohlo začít; opakování pokusu nastane brzy."
 
 #: src/amule-remote-gui.cpp
 msgid "Ready"
@@ -973,19 +980,17 @@ msgid "All"
 msgstr "Vše"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not readable"
-msgstr "Nedostupný"
+msgstr "nečitelné"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not found"
-msgstr "Soubor nenalezen."
+msgstr "nenalezeno"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "Jádro odmítlo tyto sdílené složky:%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
@@ -994,7 +999,7 @@ msgstr "Neplatný odkaz, nebo je již v seznamu."
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
-msgstr ""
+msgstr "Nejde vytvořit adresář '%s' pro kategorii '%s', zachovávám adresář '%s'."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1047,20 +1052,20 @@ msgid "Requested: %s\n"
 msgstr "Vyžádáno: %s\n"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filestats for this session: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for this session: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] "Statistika souboru pro toto sezení: Přijat %d z %d požadavku, %s přeneseno\n"
-msgstr[1] "Statistika souboru pro toto sezení: Přijato %d z %d požadavků, %s přeneseno\n"
-msgstr[2] ""
+msgstr[0] "Statistika souborů pro toto sezení: Přijat %d z %d požadavku, %s přeneseno\n"
+msgstr[1] "Statistika souborů pro toto sezení: Přijato %d z %d požadavků, %s přeneseno\n"
+msgstr[2] "Statistika souborů pro toto sezení: Přijato %d z %d požadavků, %s přeneseno\n"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filestats for all sessions: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for all sessions: Accepted %d of %d requests, %s transferred\n"
 msgstr[0] "Statistika souboru pro všechna sezení: Přijat %d z %d požadavku, %s přeneseno\n"
-msgstr[1] "Statistika souboru pro všechna sezení: Přijato %d z %d požadavků, %s přeneseno\n"
-msgstr[2] ""
+msgstr[1] "Statistika souborů pro všechna sezení: Přijato %d z %d požadavků, %s přeneseno\n"
+msgstr[2] "Statistika souborů pro všechna sezení: Přijato %d z %d požadavků, %s přeneseno\n"
 
 #: src/BaseClient.cpp
 msgid "Requested unknown file"
@@ -1077,9 +1082,9 @@ msgid "New message from '%s' (IP:%s)"
 msgstr "Nová zpráva od '%s' (IP:%s)"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
-msgstr "Uživatel %s (%u) si vyžádal váš seznam sdílených souborů v adresáři %s -> zakázáno"
+msgstr "Uživatel %s (%u) požádal o seznam sdílených souborů v neexistujícím adresáři '%s' -> ignorováno"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
 #, c-format
@@ -1091,14 +1096,14 @@ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 msgstr "VAROVÁNÍ: Soubor je porušen, obsahuje neplatnou hlavičku."
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while reading %s file: %s"
-msgstr "I/O chyba při čtení souboru known.met: %s"
+msgstr "Chyba I/O při čtení souboru %s: %s"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error while saving %s file: %s"
-msgstr "Došlo k chybě při ukládání souboru known.met: %s"
+msgstr "Chyba při ukládání souboru %s: %s"
 
 #: src/CaptchaDialog.cpp
 msgid "Enter Captcha"
@@ -1132,7 +1137,7 @@ msgstr "Nemohu vytvořit příchozí adresář pro kategorii. Zadejte prosím pl
 #: src/ChatSelector.cpp
 #, c-format
 msgid "Chat-Session Started: %s (%s:%u) - %s %s"
-msgstr ""
+msgstr "Zahájena relace chatu: %s (%s:%u) - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
@@ -1148,11 +1153,11 @@ msgstr "*** Připojování ke klientovi selhalo / připojení ztraceno ***"
 
 #: src/ChatSelector.cpp
 msgid "*** You have passed the captcha check and the user has received your message. ***"
-msgstr ""
+msgstr "*** Úspěšně jste prošli kontrolou captcha a uživatel obdržel vaši zprávu. ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Your response to the captcha was wrong and your message has been ignored. You can request a new captcha by sending a new message. ***"
-msgstr ""
+msgstr "*** Vaše odpověď na captchu byla nesprávná a vaše zpráva byla ignorována. Novou captchu si můžete vyžádat odesláním nové zprávy. ***"
 
 #: src/ChatWnd.cpp
 msgid "Chat"
@@ -1178,17 +1183,17 @@ msgstr "Přidat do přátel"
 #, c-format
 msgid "Creditfile loaded, %u client is known"
 msgid_plural "Creditfile loaded, %u clients are known"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Soubor s kredity byl načten, je znám %u klient"
+msgstr[1] "Soubor s kredity byl načten, jsou známi %u klienti"
+msgstr[2] "Soubor s kredity byl načten, je známo %u klientů"
 
 #: src/ClientCreditsList.cpp
 #, c-format
 msgid " - Credits expired for %u client!"
 msgid_plural " - Credits expired for %u clients!"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] " - Kredit vypršel pro %u klienta!"
+msgstr[1] " - Kredit vypršel pro %u klienty!"
+msgstr[2] " - Kredit vypršel pro %u klientů!"
 
 #: src/ClientCreditsList.cpp
 msgid "No 'cryptkey.dat' file found, creating."
@@ -1280,14 +1285,14 @@ msgid "User %s (%u) requested your shareddirectories-list -> Denied"
 msgstr "Uživatel %s (%u) si vyžádal váš seznam sdílených adresářů -> odmítnuto"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> accepted"
-msgstr "Uživatel %s (%u) si vyžádal váš seznam sdílených souborů v adresáři %s -> přijato"
+msgstr "Uživatel %s (%u) požádal o váš seznam sdílených souborů v adresáři '%s' -> přijato"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr "Uživatel %s (%u) si vyžádal váš seznam sdílených souborů v adresáři %s -> zakázáno"
+msgstr "Uživatel %s (%u) požádal o váš seznam sdílených souborů v adresáři '%s' -> odmítnuto"
 
 #: src/ClientTCPSocket.cpp
 #, fuzzy, c-format
