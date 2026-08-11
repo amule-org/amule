@@ -168,7 +168,15 @@ protected:
 	std::deque<uint32> m_byte_history;
 	std::deque<uint64> m_tick_history;
 	uint32_t m_timespan;
-	uint32_t m_total;
+	// Sum of every sample currently inside the window. Wide because the
+	// sum is not a byte count: with count_average the samples are rates,
+	// and the graphs' running average holds a 5 minute window of them --
+	// 100 samples at the default 3 s spacing, which passes 2^32 once the
+	// mean rate reaches about 41 MB/s. Past that it wrapped, the
+	// subtraction below drove it further under, and the trend collapsed
+	// to nothing and climbed back over a full window. The individual
+	// samples in m_byte_history are fine at 32 bits; only their sum is not.
+	uint64_t m_total;
 	double m_rate;
 	double m_max_rate;
 	uint32_t m_tmp_sum;
