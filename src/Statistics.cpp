@@ -432,6 +432,14 @@ unsigned CStatistics::GetHistory(        // Assemble arrays of sample points for
 		return (0);
 	}
 
+	// CLIENT_GUI builds start with an empty list -- unlike the monolithic
+	// constructor, which pre-allocates every record up front -- and the
+	// rbegin() below is dereferenced before the rend() test, so a paint
+	// arriving before the first graph reply would read an invalid iterator.
+	if (listHR.empty()) {
+		return (0);
+	}
+
 	float *pf1 = ppf[0];
 	float *pf2 = ppf[1];
 	float *pf3 = ppf[2];
@@ -1252,6 +1260,24 @@ CStatistics::~CStatistics()
 
 void CStatistics::AddHistoryRecord(const HR &hr)
 {
+	// Drop anything not newer than what the ring already ends with.
+	//
+	// GetHistoryForGui appends a record before testing whether it is one
+	// the caller already has, so every poll comes back carrying at least
+	// the newest record again, and a poll that finds one new second of
+	// data returns that second plus one older point as well. Drawing is
+	// indifferent -- GetHistory skips same-timestamp records -- but
+	// kHistoryCap counts records rather than distinct samples, so each
+	// duplicate evicts a real one and the graphs reach about half as far
+	// back as the cap suggests.
+	//
+	// Safe against a daemon restart resetting its uptime clock: Startup()
+	// builds a new CStatistics (and a new CStatGraphRem) per connection,
+	// so timestamps only ever move forward within one ring's lifetime.
+	if (!listHR.empty() && hr.sTimestamp <= listHR.back().sTimestamp) {
+		return;
+	}
+
 	listHR.push_back(hr);
 	while (listHR.size() > kHistoryCap) {
 		listHR.pop_front();
