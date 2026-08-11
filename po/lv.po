@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:50+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -2745,6 +2745,18 @@ msgstr ""
 msgid "IP filter is ready"
 msgstr ""
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Pašreizējais"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Visu laiku vidējais"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Sesijas vidējais"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3691,18 +3703,6 @@ msgid "Download-Speed"
 msgstr "Lejupielādes ātrums"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Pašreizējais"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Visu laiku vidējais"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Sesijas vidējais"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Augšupielādes ātrums"
 
@@ -3710,7 +3710,7 @@ msgstr "Augšupielādes ātrums"
 msgid "Connections"
 msgstr "Savienojumi"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktīvas lejupielādes"
 
@@ -3718,7 +3718,7 @@ msgstr "Aktīvas lejupielādes"
 msgid "Active connections (1:1)"
 msgstr "Aktīvi savienojumi (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktīvas augšupielādes"
 
@@ -4326,7 +4326,7 @@ msgstr ""
 msgid "Upload session average"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktīvi savienojumi"
 

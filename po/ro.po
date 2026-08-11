@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:44+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -2816,6 +2816,18 @@ msgstr "A eșuat redenumirea fișierului nou %s , se abandonează actualizarea."
 msgid "IP filter is ready"
 msgstr "Filtrul IP este gata"
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Curentul"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Medie rulare"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Medie sesiune"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3782,18 +3794,6 @@ msgid "Download-Speed"
 msgstr "Viteză-descărcare"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Curentul"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Medie rulare"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Medie sesiune"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Viteză-încărcare"
 
@@ -3801,7 +3801,7 @@ msgstr "Viteză-încărcare"
 msgid "Connections"
 msgstr "Conexiuni"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Descărcări active"
 
@@ -3809,7 +3809,7 @@ msgstr "Descărcări active"
 msgid "Active connections (1:1)"
 msgstr "Conexiuni active (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Încărcări active"
 
@@ -4422,7 +4422,7 @@ msgstr "Medie rulare încărcare"
 msgid "Upload session average"
 msgstr "Medie încărcare pe sesiune"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Conexiuni active"
 

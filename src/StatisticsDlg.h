@@ -67,6 +67,32 @@ public:
 	void ApplyStatsColor(int index);
 	void RebuildStatTreeRemote(const CECTag *);
 	static const wxColour &getColors(unsigned num);
+
+	// Colour indexes shared by every graph in the GUI.
+	enum
+	{
+		kGraphBackgroundColor = 0,
+		kGraphGridColor = 1
+	};
+
+	// One trend's colour wiring: which preference colour drives it and
+	// which legend swatch shows the same colour beside the graph. CKadDlg
+	// describes its graph with these too, so both panels colour their
+	// graphs through the code below rather than each rolling its own.
+	struct GraphColorSlot
+	{
+		unsigned colorIndex; // index into getColors()
+		unsigned iTrend;     // trend within the graph
+		int swatchId;        // CColorFrameCtrl showing the same colour
+		// wxTRANSLATE'd copy of the legend text beside the swatch; the
+		// graph shows it in its hover readout.
+		const char *label;
+	};
+
+	// Background and grid are the same two colours for every graph.
+	static void ApplyGraphFrameColors(COScopeCtrl *scope);
+	// panel is the window holding slot.swatchId.
+	static void ApplyGraphSlot(wxWindow *panel, COScopeCtrl *scope, const GraphColorSlot &slot);
 	COScopeCtrl *GetDLScope() { return pscopeDL; };
 	COScopeCtrl *GetConnScope() { return pscopeConn; };
 

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:40+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -2837,6 +2837,18 @@ msgstr ""
 msgid "IP filter is ready"
 msgstr ""
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Dabartinė sparta"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr "Dabartinis vidurkis"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr "Seanso vidurkis"
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3804,18 +3816,6 @@ msgid "Download-Speed"
 msgstr "Atsiuntimo sparta"
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Dabartinė sparta"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr "Dabartinis vidurkis"
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr "Seanso vidurkis"
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr "Išsiuntimo sparta"
 
@@ -3823,7 +3823,7 @@ msgstr "Išsiuntimo sparta"
 msgid "Connections"
 msgstr "Ryšiai"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr "Aktyvūs atsiuntimai"
 
@@ -3831,7 +3831,7 @@ msgstr "Aktyvūs atsiuntimai"
 msgid "Active connections (1:1)"
 msgstr "Aktyvūs ryšiai (1:1)"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr "Aktyvūs išsiuntimai"
 
@@ -4443,7 +4443,7 @@ msgstr "Dabartinis išsiuntimo vidurkis"
 msgid "Upload session average"
 msgstr "Seanso išsiuntimo vidurkis"
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr "Aktyvūs ryšiai"
 

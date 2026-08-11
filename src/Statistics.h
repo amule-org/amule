@@ -508,6 +508,23 @@ public:
 
 	void SetAverageMinutes(uint8 minutes) { average_minutes = minutes; }
 
+	// Records held per resolution range. The list is nHistRanges of these,
+	// each range at twice the spacing of the one before, so this sets both
+	// how far back the graphs can reach and how much of that reach is at
+	// fine resolution: at a 3 s update delay the two finest ranges are the
+	// ones a graph can plot from, giving 3 x this many seconds of history.
+	//
+	// Was (1280 / 2) - 80 = 560, once derived from a GUI width. That put
+	// the finest usable reach at 28 minutes, which a remote GUI could
+	// exhaust in a window barely wider than half a screen. At 64 bytes a
+	// record the whole list costs 7 x this x 64 bytes -- 787 KB here,
+	// against 245 KB at the old value.
+	//
+	// Public because it is reported to remote GUIs over EC: a client that
+	// asked for more points than a range holds would be answered with the
+	// same record repeated, and would have no way to tell.
+	static int GetPointsPerRange() { return 1800; }
+
 private:
 	std::list<HR> listHR;
 	typedef std::list<HR>::iterator listPOS;
@@ -521,11 +538,6 @@ private:
 		double sStep,
 		const std::vector<float *> &ppf,
 		StatsGraphType which_graph);
-
-	int GetPointsPerRange()
-	{
-		return (1280 / 2) - 80; // This used to be a calc. based on GUI width
-	}
 
 	/* Graphs-related vars */
 
@@ -716,8 +728,22 @@ public:
 	// RecordHistory() does the equivalent push from local counters).
 	// Appends one HR record to listHR and caps the ring at
 	// kHistoryCap so memory stays bounded across long sessions.
-	void AddHistoryRecord(const HR &hr);
-	static const size_t kHistoryCap = 1800; // ~30 min @ 1 Hz
+	// minSpacing is the seconds-per-point the graphs are drawing at, and
+	// records closer together than that are dropped: keeping finer data
+	// than is ever plotted just spends the ring on points no axis asks for.
+	void AddHistoryRecord(const HR &hr, double minSpacing);
+	// Drops everything. Used when the sample spacing changes, which
+	// invalidates the resolution the stored points were kept at.
+	void ClearHistory() { listHR.clear(); }
+	// Records, not seconds. One is kept per plotted point, so the useful
+	// way to read this is as a plot width: a graph draws one point per
+	// pixel, and cannot show more than this many however wide its window
+	// is. The span that covers depends on the "Update delay" preference
+	// the points were fetched at -- 3 h at a 1 s delay, a day at 8 s --
+	// but the pixel bound is the same either way, which is what matters
+	// because the Kad graph spans the whole window. At 64 bytes a record
+	// the whole ring is about 225 KB.
+	static const size_t kHistoryCap = 3600;
 
 	static uint64 GetUptimeMillis();
 	static uint64 GetUptimeSeconds();

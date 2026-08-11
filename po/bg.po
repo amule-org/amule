@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-08-10 23:55+0200\n"
+"POT-Creation-Date: 2026-08-11 12:27+0200\n"
 "PO-Revision-Date: 2026-08-09 14:19+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Bulgarian <dict@linux.zonebg.com>\n"
@@ -2759,6 +2759,18 @@ msgstr ""
 msgid "IP filter is ready"
 msgstr ""
 
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Current"
+msgstr "Текущ"
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Running average"
+msgstr ""
+
+#: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
+msgid "Session average"
+msgstr ""
+
 #: src/KadDlg.cpp
 #, c-format
 msgid "Nodes (%u)"
@@ -3709,18 +3721,6 @@ msgid "Download-Speed"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current"
-msgstr "Текущ"
-
-#: src/muuli_wdr.cpp
-msgid "Running average"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Session average"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Upload-Speed"
 msgstr ""
 
@@ -3728,7 +3728,7 @@ msgstr ""
 msgid "Connections"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active downloads"
 msgstr ""
 
@@ -3736,7 +3736,7 @@ msgstr ""
 msgid "Active connections (1:1)"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active uploads"
 msgstr ""
 
@@ -4345,7 +4345,7 @@ msgstr ""
 msgid "Upload session average"
 msgstr ""
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
 msgstr ""
 
