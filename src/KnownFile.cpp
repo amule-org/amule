@@ -1269,7 +1269,18 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 
 	wxCHECK_RET(!(pClient && pServer), "pClient and pServer cannot both be non-null");
 
-	SetPublishedED2K(true);
+	// Only a publish to the server means "published". The flag exists solely
+	// so CSharedFileList::SendListToServer() can tell which files it still
+	// owes the server, and it is cleared when a server connection is made
+	// (CServerConnect). Setting it while answering a peer's browse request --
+	// which this same function serves, with pClient instead of pServer -- told
+	// the publisher those files were already offered, so they silently stopped
+	// being published until the next server (re)connect. It also woke the
+	// shared-files view once per file, for a browse that changes nothing the
+	// user can see (issue #898).
+	if (pServer) {
+		SetPublishedED2K(true);
+	}
 	files->WriteHash(GetFileHash());
 
 	uint32 nClientID = 0;
