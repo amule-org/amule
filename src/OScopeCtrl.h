@@ -117,6 +117,8 @@ private:
 	double GetPlotY(float value, const PlotData_t &trend, const wxRect &rectPlot) const;
 	// Whether this graph shades the area under its instantaneous trend.
 	bool IsShaded() const;
+	// One sample as the hover readout shows it, scaled and given its unit.
+	wxString FormatValue(float value) const;
 
 	std::vector<PlotData_t> m_trends;
 	unsigned m_nYGrids;

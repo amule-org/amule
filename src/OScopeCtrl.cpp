@@ -413,6 +413,27 @@ void COScopeCtrl::DrawCurves(wxDC &dc, wxGraphicsContext *gc, const wxRect &rect
 	dc.DestroyClippingRegion();
 }
 
+wxString COScopeCtrl::FormatValue(float value) const
+{
+	// The rate graphs hand their readout to CastItoSpeed so it picks the
+	// unit, the way every other speed in the GUI is shown -- a hover on a
+	// fast download reads "2.13 MB/s" rather than "2179.4 kB/s". It wants
+	// bytes per second; the graphs plot kB/s.
+	//
+	// Keyed on the graph rather than on m_strYUnits because those units
+	// are _("kB/s"), i.e. translated: comparing against the literal would
+	// quietly stop matching in every locale but English.
+	if (graph_type == GRAPH_DOWN || graph_type == GRAPH_UP) {
+		return CastItoSpeed((uint32)(value * 1024.0f));
+	}
+
+	wxString formatted = wxString::Format("%.*f", (int)m_nYDecimals, value);
+	if (!m_strYUnits.IsEmpty()) {
+		formatted << " " << m_strYUnits;
+	}
+	return formatted;
+}
+
 bool COScopeCtrl::IsShaded() const
 {
 	if (kShadedTrend >= m_trends.size()) {
@@ -526,11 +547,7 @@ void COScopeCtrl::DrawHover(wxGraphicsContext *gc,
 	std::vector<wxString> aLabel, aValue;
 	for (unsigned iTrend = 0; iTrend < m_trends.size(); ++iTrend) {
 		aLabel.push_back(m_trends[iTrend].strLabel);
-		wxString strValue = wxString::Format("%.*f", (int)m_nYDecimals, samples[iTrend][iSample]);
-		if (!m_strYUnits.IsEmpty()) {
-			strValue << " " << m_strYUnits;
-		}
-		aValue.push_back(strValue);
+		aValue.push_back(FormatValue(samples[iTrend][iSample]));
 	}
 
 	const wxFont font = GetFont();
