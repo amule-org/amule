@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-09 14:50+0000\n"
+"PO-Revision-Date: 2026-08-11 21:01+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -223,9 +223,9 @@ msgid "Cannot convert magnet link to eD2k: %s"
 msgstr ""
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "Nederīga eD2k saite! KĻŪDA: %s"
+msgstr "Nederīga eD2k saite \"%s\" - KĻŪDA: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -246,9 +246,9 @@ msgid "Failed"
 msgstr "Neizdevās"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Pārtrauc amuleweb procesu ar pid '%d' ... "
+msgstr "Pārtrauc amuleapi procesu ar pid '%d' … "
 
 #: src/amule.cpp
 #, c-format
@@ -321,9 +321,8 @@ msgid "Initializing network"
 msgstr ""
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "Ielādē server.met datni: %s"
+msgstr "Ielādē pagaidu datnes"
 
 #: src/amule.cpp
 #, c-format
@@ -331,9 +330,8 @@ msgid "Loading temp files (%u of %u)"
 msgstr "Ielādē pagaidu datnes (%u no %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "Ielādē server.met datni: %s"
+msgstr "Ielādē kopīgotās datnes"
 
 #: src/amule.cpp
 #, c-format
@@ -342,7 +340,7 @@ msgstr "Ielādē kopīgotās datnes (%u)"
 
 #: src/amule.cpp
 msgid "Starting up"
-msgstr ""
+msgstr "Palaiž"
 
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -535,12 +533,12 @@ msgstr "Neizdevās lejupielādēt versijas pārbaudes datni"
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
 msgid "Users: %s | Files: %s"
-msgstr "Lietotāji: %s | Datnes: %s"
+msgstr "Dalībnieki: %s | Datnes: %s"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
-msgstr "Lietotāji: E: %s K: %s | Datnes: E: %s K: %s"
+msgstr "Dalībnieki: E: %s K: %s | Datnes: E: %s K: %s"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 msgid "No networks selected"
@@ -637,7 +635,7 @@ msgstr ""
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
-msgstr ""
+msgstr "Kļūda! Nevar ielādēt iestatījumus"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Networks"
@@ -673,9 +671,9 @@ msgid "Navigate"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "Servera ziņojums: %s"
+msgstr "Brīva vieta: %s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -866,7 +864,7 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "Pieslēdzas pa jaunu… (%d. mēģinājums)"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -990,7 +988,7 @@ msgstr "Nezināms"
 #: src/BaseClient.cpp
 #, c-format
 msgid "Failed to retrieve shared files from user '%s'"
-msgstr "Neizdevās iegūt lietotāja '%s' kopīgoto datņu sarakstu"
+msgstr "Neizdevās iegūt dalībnieka '%s' kopīgoto datņu sarakstu"
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
@@ -1299,7 +1297,7 @@ msgstr "Datnes komentāri"
 
 #: src/CommentDialogLst.cpp src/FriendListCtrl.cpp
 msgid "Username"
-msgstr "Lietotājvārds"
+msgstr "Dalībniekvārds"
 
 #: src/CommentDialogLst.cpp src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp
 #: src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
@@ -1635,7 +1633,7 @@ msgstr "Priekšskatījums"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "Rādīt datņu pārvaldniekā"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
@@ -1941,7 +1939,7 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
-msgstr ""
+msgstr "EC_TAG_FRIEND_SHARED nepieciešams EC_TAG_FRIEND vai EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2283,27 +2281,27 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Mobilie sakari / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL pieslēgums (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL pieslēgums (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Vītā pāra kabeļa pieslēgums (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Optiskās šķiedras 300 pieslēgums (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Optiskās šķiedras gigabitu pieslēgums (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
@@ -2311,7 +2309,7 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Welcome to aMule!"
-msgstr ""
+msgstr "Laipni lūdzam aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2321,7 +2319,7 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Norādiet savu iesauku, kā citi tīkla dalībnieki atpazīs jūs:"
 
 #: src/FirstRunWizard.cpp
 #, fuzzy
@@ -2351,9 +2349,8 @@ msgid "Download limit (kB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Tīkli"
+msgstr "Tīkli un porti"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
@@ -2500,7 +2497,7 @@ msgstr ""
 
 #: src/FriendListCtrl.cpp
 msgid "Add a friend"
-msgstr ""
+msgstr "Pievienot draugu sarakstam"
 
 #: src/FriendListCtrl.cpp
 msgid "Remove Friend"
@@ -2520,11 +2517,11 @@ msgstr "Izveidot drauga izdalīto spraugu"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friend?"
-msgstr ""
+msgstr "Vai tiešām vēlaties dzēst atlasīto draugu?"
 
 #: src/FriendListCtrl.cpp
 msgid "Are you sure that you wish to delete the selected friends?"
-msgstr ""
+msgstr "Vai tiešām vēlaties dzēst atlasītos draugus?"
 
 #: src/FriendListCtrl.cpp
 msgid ""
@@ -2601,9 +2598,9 @@ msgid "Yes"
 msgstr "Jā"
 
 #: src/geoip/MaxMindDBDatabase.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to open MaxMindDB database '%s': %s"
-msgstr "Neizdevās atvērt %s (%s)"
+msgstr "Neizdevās atvērt MaxMindDB datubāzi '%s': %s"
 
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
@@ -3265,11 +3262,11 @@ msgstr "Ielādē…"
 
 #: src/muuli_wdr.cpp
 msgid "Number of users on the server you are connected to ..."
-msgstr "Lietotāju skaits serverī, kam esiet pieslēdzies …"
+msgstr "Dalībnieku skaits serverī, kam esiet pieslēdzies …"
 
 #: src/muuli_wdr.cpp
 msgid "Users: 0"
-msgstr "Lietotāji: 0"
+msgstr "Dalībnieki: 0"
 
 #: src/muuli_wdr.cpp
 msgid "Users connected to the current server and an estimate of the total number of users."
@@ -3435,7 +3432,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Clear Search Results"
-msgstr ""
+msgstr "Notīrīt meklēšanas rezultātus"
 
 #: src/muuli_wdr.cpp
 msgid "Results"
@@ -3559,9 +3556,8 @@ msgid "Shared since"
 msgstr "Kopīgotās datnes"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Last upload"
-msgstr "Vidējais augšupielādes ātrums:"
+msgstr "Pēdējoreiz augšupielādēta"
 
 #: src/muuli_wdr.cpp
 msgid "Media Info"
@@ -3613,7 +3609,7 @@ msgstr "Labi"
 
 #: src/muuli_wdr.cpp
 msgid "Comment/Rate file (Text will be visible to all users)"
-msgstr "Komentārs/Datnes vērtējums (teksts būs redzams visiem lietotājiem)"
+msgstr "Komentārs/Datnes vērtējums (teksts būs redzams visiem dalībniekiem)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -3651,12 +3647,11 @@ msgstr "Izcila"
 
 #: src/muuli_wdr.cpp
 msgid "Choose the file rating or advice users if the file is invalid ..."
-msgstr "Novērtēt datni vai dot citiem lietotājiem mājienu, ka datnes nosaukums ir maldinošs un tā saturs neatbilst nosaukumam …"
+msgstr "Novērtēt datni vai dot citiem dalībniekiem mājienu, ka datnes nosaukums ir maldinošs un tā saturs neatbilst nosaukumam …"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Get from Kad"
-msgstr "Atslēgts no Kad"
+msgstr "Iegūt no Kad tīkla"
 
 #: src/muuli_wdr.cpp
 msgid "Refresh"
@@ -3688,7 +3683,7 @@ msgstr "Papildinformācija"
 
 #: src/muuli_wdr.cpp
 msgid "Username :"
-msgstr "Lietotājvārds :"
+msgstr "Dalībniekvārds :"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash :"
@@ -3728,7 +3723,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Username:"
-msgstr "Lietotājvārds:"
+msgstr "Dalībniekvārds:"
 
 #: src/muuli_wdr.cpp
 msgid "Userhash:"
@@ -3748,7 +3743,7 @@ msgstr "IP adrese:"
 
 #: src/muuli_wdr.cpp
 msgid "User ID:"
-msgstr "Lietotāja ID:"
+msgstr "Dalībnieka ID:"
 
 #: src/muuli_wdr.cpp
 msgid "Server IP:"
@@ -3828,7 +3823,7 @@ msgstr "https://amule-org.github.io - vairāku operētājsistēmu Mule"
 
 #: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
-msgstr "Vārds, kas tiks rādīts lietotājiem, kad pieslēdzas jums."
+msgstr "Vārds, kas tiks rādīts dalībniekiem, kad pieslēdzas jums."
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
@@ -4503,9 +4498,8 @@ msgid "Run amuleapi (REST API) on startup"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "TCP ports:"
+msgstr "HTTP ports:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
@@ -4516,9 +4510,8 @@ msgid "Type a password to set or change it. Stored passwords cannot be shown, so
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "Parole"
+msgstr "Administratora parole"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "A password is set."
@@ -4533,9 +4526,8 @@ msgid "Guest sessions may read status and listings but cannot change anything. T
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Parole"
+msgstr "Viesa parole"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
@@ -5026,7 +5018,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Encrypt the connection (recommended)"
-msgstr ""
+msgstr "Šifrēt savienojumu (ieteicams)"
 
 #: src/muuli_wdr.cpp
 msgid "Force ZLIB compression"
@@ -6170,7 +6162,7 @@ msgstr ""
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
-msgstr ""
+msgstr "Notīrīt meklēšanas vēsturi"
 
 #: src/SearchDlg.cpp
 msgid "Clear the saved search history? This cannot be undone."
@@ -6237,7 +6229,7 @@ msgstr ""
 #: src/SearchList.cpp
 #, c-format
 msgid "Error %u: %s\n"
-msgstr ""
+msgstr "Kļūda %u: %s\n"
 
 #: src/SearchListCtrl.cpp
 msgid "FileID"
@@ -6506,12 +6498,11 @@ msgstr "Ping atbildes laiks"
 
 #: src/ServerListCtrl.cpp
 msgid "Users"
-msgstr "Lietotāji"
+msgstr "Dalībnieki"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Max Users"
-msgstr "Lietotāji"
+msgstr "Maks. dalībnieku skaits"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
@@ -6554,9 +6545,8 @@ msgid "Are you sure you want to delete the static server %s"
 msgstr ""
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "ms"
-msgstr "minūtes"
+msgstr "ms"
 
 #: src/ServerListCtrl.cpp
 #, c-format
@@ -6877,7 +6867,7 @@ msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
-msgstr "Lietotājvārds"
+msgstr "Dalībniekvārds"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Download Speed"
@@ -7015,12 +7005,12 @@ msgstr[1] ""
 msgstr[2] ""
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
-msgstr[0] "Kopīgotās datnes (%i)"
-msgstr[1] "Kopīgotās datnes (%i)"
-msgstr[2] "Kopīgotās datnes (%i)"
+msgstr[0] "Kopīgotās datnes (%i, skaitļo %u kontrolsummu)"
+msgstr[1] "Kopīgotās datnes (%i, skaitļo %u kontrolsummu)"
+msgstr[2] "Kopīgotās datnes (%i, skaitļo %u kontrolsummu)"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format

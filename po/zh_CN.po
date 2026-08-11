@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-08-11 12:27+0200\n"
-"PO-Revision-Date: 2026-08-09 14:48+0000\n"
+"PO-Revision-Date: 2026-08-11 21:18+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -697,9 +697,9 @@ msgid "Navigate"
 msgstr "导航"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Free space: %s"
-msgstr "服务器消息：%s"
+msgstr "剩余空间：%s"
 
 #: src/amuleDlg.cpp
 msgid "New version available"
@@ -1663,11 +1663,11 @@ msgstr "预览"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show in file manager"
-msgstr ""
+msgstr "在文件管理器显示"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Show file &details"
-msgstr "显示文件信息 (&D)"
+msgstr "显示文件详情 (&D)"
 
 #: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Show all comments"
@@ -1683,11 +1683,11 @@ msgstr "复制 eD2k 链接到剪贴板 (&L)"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
-msgstr "复制统计信息到剪贴板"
+msgstr "复制反馈信息到剪贴板"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
-msgstr "清除分类"
+msgstr "取消分类"
 
 #: src/DownloadListCtrl.cpp
 msgid "Assign to category"
@@ -2315,12 +2315,12 @@ msgstr "错误: 无法运行外部媒体播放器！ 命令: `%s'"
 #: src/FileLaunch.cpp
 #, c-format
 msgid "The configured video player was not found: %s"
-msgstr ""
+msgstr "未找到配置好的视频播放器：%s"
 
 #: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
-msgstr ""
+msgstr "无法打开'%s'： 该文件不存在于此计算机上。"
 
 #: src/FileLaunch.cpp
 msgid "Previewing an unfinished download needs a video player: the partly-downloaded file has no type the system can open on its own. One can be set in Preferences -> General."
@@ -2329,12 +2329,12 @@ msgstr "预览未完成的下载需要视频播放器：部分下载的文件没
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
+msgstr "错误：未能使用默认应用打开'%s'。"
 
 #: src/FileLaunch.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "错误：打开part文件'%s'失败"
+msgstr "错误：未能在文件管理器中显示 “%s”。"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -4312,29 +4312,27 @@ msgstr "显示当前模式会排除多少共享文件。"
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
-msgstr ""
+msgstr "当已连接核心的文件位于别的机器上时，将其报告的路径前缀映射到从此处可以访问到那个文件系统的地方（比如一个网络共享），这样“打开”和“显示在文件夹中”正常工作。"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Path Mappings"
-msgstr ""
+msgstr "路径映射"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Remote prefix"
-msgstr "远程服务器"
+msgstr "远程前缀"
 
 #: src/muuli_wdr.cpp
 msgid "A path prefix as the core reports it, e.g. /home/user/downloads/incoming"
-msgstr ""
+msgstr "核心报告的路径前缀，如 /home/user/downloads/incoming"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Local prefix"
-msgstr "本地服务器"
+msgstr "本地前缀"
 
 #: src/muuli_wdr.cpp
 msgid "Where that same folder is reachable from this computer, e.g. a mounted network share"
-msgstr ""
+msgstr "可以从这台电脑访问到同一个文件夹的地方，如已挂载的网络共享"
 
 #: src/muuli_wdr.cpp
 msgid "Graphs"
@@ -5730,9 +5728,8 @@ msgid "no options available"
 msgstr "选项不可用"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Invalid path mapping found, skipping"
-msgstr "发现无效的分类，跳过"
+msgstr "发现无效的路径映射，跳过"
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
@@ -6264,7 +6261,7 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
-msgstr ""
+msgstr "已映射这个远程前缀。"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -6302,22 +6299,20 @@ msgstr "主要"
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
+msgstr "仅保存最近的 %u 个打开的搜索 （共 %u 个）到 %s。"
 
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
+msgstr "仅保存搜索 “%3$s” 获得的前 %1$u 个结果，共 %2$u 个结果。"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "WARNING: Stored search list corrupted, contains invalid header."
-msgstr "警告: 已知文件列表已经损坏，包含有非法头部。"
+msgstr "警告: 存储的搜索列表已损坏，含无效头部。"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "Invalid entry in stored search list, file may be corrupt"
-msgstr "已知文件列表包含非法条目，文件可能损坏："
+msgstr "存储的搜索列表包含无效条目，文件可能损坏："
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6613,9 +6608,8 @@ msgid "Users"
 msgstr "用户数"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Max Users"
-msgstr "用户数"
+msgstr "最大用户数"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
@@ -6627,14 +6621,12 @@ msgid "Version"
 msgstr "版本"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Soft Files"
-msgstr "文件"
+msgstr "文件排序"
 
 #: src/ServerListCtrl.cpp
-#, fuzzy
 msgid "Hard Files"
-msgstr "共享文件"
+msgstr "硬文件"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
@@ -7115,11 +7107,11 @@ msgstr[0] "导出了 %u 个共享文件到 '%s'。"
 msgstr[1] "导出了 %u 个共享文件到 '%s'。"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared Files (%i, hashing %u more)"
 msgid_plural "Shared Files (%i, hashing %u more)"
-msgstr[0] "共享文件 (%i)"
-msgstr[1] "共享文件 (%i)"
+msgstr[0] "共享的文件 (%i，正在计算另外 %u 个文件的哈希值）"
+msgstr[1] "共享的文件 (%i，正在计算另外 %u 个文件的哈希值）"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
