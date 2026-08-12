@@ -28,6 +28,7 @@
 #include <wx/panel.h>
 
 class CClientsListCtrl;
+class CClientHistoryListCtrl;
 
 /**
  * The Clients page: every peer we are currently talking to, once each.
@@ -43,6 +44,7 @@ public:
 	~CClientsWnd();
 
 	CClientsListCtrl *clientslistctrl;
+	CClientHistoryListCtrl *historylistctrl;
 
 	/**
 	 * Re-read every listed peer's values.
@@ -55,6 +57,19 @@ public:
 	 * page is the active one.
 	 */
 	void UpdateAll();
+
+	/**
+	 * Fill the history from the credit store, once.
+	 *
+	 * Deferred until the page is first shown rather than done at startup: it
+	 * is a snapshot of tens of thousands of records that only changes when a
+	 * peer arrives or leaves, and a user who never opens this page should
+	 * never pay for it.
+	 */
+	void LoadHistoryOnce();
+
+private:
+	bool m_historyRequested;
 };
 
 #endif // CLIENTSWND_H

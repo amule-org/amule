@@ -654,6 +654,7 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 // block runs to 10502 and the next value used anywhere is 16384.
 #define ID_BUTTONCLIENTS 10503
 #define ID_CLIENTSLIST 10504
+#define ID_CLIENTHISTORYLIST 10505
 
 // Declare bitmap functions
 

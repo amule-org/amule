@@ -1,0 +1,109 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program derived from the xMule, lMule or eMule project,
+// or contributed by third-party developers are copyrighted by their
+// respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
+//
+
+#ifndef CLIENTHISTORYLISTCTRL_H
+#define CLIENTHISTORYLISTCTRL_H
+
+#include <vector>
+
+#include "MD4Hash.h"
+#include "MuleVirtualDataViewCtrl.h"
+
+#define COLUMN_HISTORY_NAME 0
+#define COLUMN_HISTORY_SOFTWARE 1
+#define COLUMN_HISTORY_VERSION 2
+#define COLUMN_HISTORY_ADDRESS 3
+#define COLUMN_HISTORY_ORIGIN 4
+#define COLUMN_HISTORY_FIRST_SEEN 5
+#define COLUMN_HISTORY_LAST_SEEN 6
+#define COLUMN_HISTORY_SESSIONS 7
+#define COLUMN_HISTORY_TOTAL_UP 8
+#define COLUMN_HISTORY_TOTAL_DOWN 9
+#define COLUMN_HISTORY_RATIO 10
+//! Always empty. Absorbs the macOS trailing-column sizing.
+#define COLUMN_HISTORY_SPACER 11
+
+/**
+ * One row of the clients history.
+ *
+ * Deliberately a plain value rather than a pointer into the credit store: the
+ * monolithic build fills these from CClientCreditsList and amulegui from an
+ * EC reply, and a value type is the only thing both can produce. It also means
+ * the list holds nothing that can be freed underneath it -- the history is a
+ * snapshot of something that only changes when a peer connects or leaves.
+ *
+ * Every field except the hash and the totals is optional. A record written
+ * before aMule kept per-peer metadata has no name, address or software, and a
+ * daemon too old to send it leaves them empty too; the list renders the gaps
+ * as blanks rather than pretending to know.
+ */
+struct ClientHistoryRow
+{
+	CMD4Hash hash;
+	wxString name;
+	wxString version;
+	uint64 uploaded = 0;
+	uint64 downloaded = 0;
+	uint32 lastSeen = 0;
+	uint32 firstSeen = 0;
+	uint32 sessions = 0;
+	uint32 ip = 0;
+	uint16 port = 0;
+	uint8 clientSoft = 0;
+	uint8 sourceFrom = 0;
+	bool hasMeta = false;
+};
+
+/**
+ * Every peer we have ever exchanged data with.
+ *
+ * Rows are addressed by index into m_rows rather than by pointer, so sorting
+ * the control never invalidates them.
+ */
+class CClientHistoryListCtrl : public CMuleVirtualDataViewCtrl
+{
+public:
+	CClientHistoryListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
+	~CClientHistoryListCtrl();
+
+	//! Replace everything on show with a fresh snapshot.
+	void SetRows(std::vector<ClientHistoryRow> &&rows);
+	//! True once a snapshot has been supplied, so the page can tell "empty
+	//! history" from "not asked yet".
+	bool IsLoaded() const { return m_loaded; }
+
+protected:
+	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
+	int CompareItemData(
+		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+
+private:
+	const ClientHistoryRow *RowFor(wxUIntPtr item) const;
+
+	std::vector<ClientHistoryRow> m_rows;
+	bool m_loaded;
+};
+
+#endif // CLIENTHISTORYLISTCTRL_H
+// File_checked_for_headers
