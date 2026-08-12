@@ -838,6 +838,16 @@ void CSharedFileList::RefreshPathIndex(CKnownFile *file)
 	}
 	m_pathIndex[key] = file;
 	if (rekeyed) {
+		// The file moved without entering or leaving m_Files_map, so nothing
+		// else bumps the generation for it: AddFile()'s insert no-ops on a
+		// hash that is already shared. Anything caching a view of where files
+		// live has to be told, or it keeps serving the old location -- the
+		// directory grouping in GetSharedFilesByDirectory() would leave a
+		// completed download filed under Temp until some unrelated add or
+		// remove happened to invalidate it (issue #898). The pairwise walk it
+		// replaced re-read GetFilePath() every time and so never had to be
+		// told at all.
+		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		AddDebugLogLineN(
 			logKnownFiles, CFormat("Path index re-keyed to '%s' (file moved/completed)") % key);
 	}
@@ -1076,7 +1086,18 @@ bool CSharedFileList::Reload(ReloadYieldCb yieldCb)
 	}
 
 	/* Public identifiers must be erased as they might be invalid now */
-	m_PublicSharedDirNames.clear();
+	{
+		// Under list_mut: IsShared() builds m_sharedDirKeys through a const
+		// method and takes the lock to do it, so this side has to take it too
+		// or the lock buys nothing -- a reader would still be filling the set
+		// while this clears it. The public-name map and its index are cleared
+		// in the same scope so the pair cannot be seen half-emptied.
+		wxMutexLocker lock(list_mut);
+		m_PublicSharedDirNames.clear();
+		m_publicNameByDirKey.clear();
+		m_sharedDirKeys.clear();
+		m_sharedDirKeysBuilt = false;
+	}
 
 	bool aborted = false;
 	FindSharedFiles(yieldCb, aborted);
@@ -1169,13 +1190,25 @@ void CSharedFileList::GetSharedFilesByDirectory(const wxString &directory, CKnow
 {
 	wxMutexLocker lock(list_mut);
 
-	const CPath dir = CPath(directory);
-	for (CKnownFileMap::iterator pos = m_Files_map.begin(); pos != m_Files_map.end(); ++pos) {
-		CKnownFile *cur_file = pos->second;
-
-		if (dir.IsSameDir(cur_file->GetFilePath())) {
-			list.push_back(cur_file);
+	// Answered from the grouping rather than by walking every shared file:
+	// a browsing peer asks one directory at a time, and the walk made that
+	// O(directories x files) IsSameDir() calls, each normalising both paths.
+	// See m_dirGroups (issue #898).
+	const uint64 generation = m_listGeneration.load(std::memory_order_relaxed);
+	if (!m_dirGroupsBuilt || m_dirGroupsAt != generation) {
+		m_dirGroups.clear();
+		for (const auto &entry : m_Files_map) {
+			CKnownFile *cur_file = entry.second;
+			m_dirGroups[cur_file->GetFilePath().GetDirKey()].push_back(cur_file);
 		}
+		m_dirGroupsAt = generation;
+		m_dirGroupsBuilt = true;
+	}
+
+	const std::map<wxString, CKnownFilePtrList>::const_iterator group =
+		m_dirGroups.find(CPath(directory).GetDirKey());
+	if (group != m_dirGroups.end()) {
+		list.insert(list.end(), group->second.begin(), group->second.end());
 	}
 }
 
@@ -1603,12 +1636,23 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 		wxFAIL;
 		return "";
 	}
-	// check if the public name for the directory is cached in our Map
-	StringPathMap::const_iterator it;
-	for (it = m_PublicSharedDirNames.begin(); it != m_PublicSharedDirNames.end(); ++it) {
-		if (it->second.IsSameDir(dir)) {
+	// check if the public name for the directory is cached in our Map.
+	// Keyed rather than walked: this runs once per shared directory while
+	// answering a browse, and comparing every entry with IsSameDir() made it
+	// O(directories^2) (issue #898).
+	//
+	// Under list_mut, like the write further down and like IsShared(): a
+	// mutex only excludes participants who take it, so a reader outside it
+	// would make the locking on the other side worth nothing. Held for the
+	// lookup alone -- not across the IsShared() calls above and below, which
+	// take the same non-recursive mutex themselves.
+	{
+		wxMutexLocker lock(list_mut);
+		const std::map<wxString, wxString>::const_iterator cached =
+			m_publicNameByDirKey.find(dir.GetDirKey());
+		if (cached != m_publicNameByDirKey.end()) {
 			// public name for directory was determined earlier
-			return it->first;
+			return cached->second;
 		}
 	}
 
@@ -1641,7 +1685,13 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 		wxASSERT(strDirectoryTmp.Length() == 2);
 		strPublicName = strDirectoryTmp;
 	}
-	// we have the name, make sure it is unique by appending an index if necessary
+	// we have the name, make sure it is unique by appending an index if
+	// necessary. Under list_mut for the same reason as the lookup above, and
+	// covering both maps together so the pair is never left half-written --
+	// which is what the clear in Reload() is holding the lock against. Safe
+	// to take here: every IsShared() call, which takes the same mutex, is
+	// behind us.
+	wxMutexLocker lock(list_mut);
 	if (m_PublicSharedDirNames.find(strPublicName) != m_PublicSharedDirNames.end()) {
 		wxString strUniquePublicName;
 		for (iPos = 2;; ++iPos) {
@@ -1652,6 +1702,7 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 				AddDebugLogLineN(logClient,
 					CFormat("Using public name '%s' for directory '%s'") %
 						strUniquePublicName % dir.GetPrintable());
+				m_publicNameByDirKey[dir.GetDirKey()] = strUniquePublicName;
 				m_PublicSharedDirNames.insert(
 					std::pair<wxString, CPath>(strUniquePublicName, dir));
 				return strUniquePublicName;
@@ -1671,6 +1722,7 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 		AddDebugLogLineN(logClient,
 			CFormat("Using public name '%s' for directory '%s'") % strPublicName %
 				dir.GetPrintable());
+		m_publicNameByDirKey[dir.GetDirKey()] = strPublicName;
 		m_PublicSharedDirNames.insert(std::pair<wxString, CPath>(strPublicName, dir));
 		return strPublicName;
 	}
@@ -1679,19 +1731,35 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 bool CSharedFileList::IsShared(const CPath &path) const
 {
 	if (path.IsDir(CPath::exists)) {
-		// check if it's a shared folder
-		const unsigned folderCount = theApp->glob_prefs->shareddir_list.size();
-		for (unsigned i = 0; i < folderCount; ++i) {
-			if (path.IsSameDir(theApp->glob_prefs->shareddir_list[i])) {
-				return true;
+		// Under list_mut like every other cache on this class. The lazily
+		// built set below is written through a const method, so without it a
+		// caller on another thread would be writing a std::set while Reload()
+		// cleared it. Today both callers sit in GetPublicSharedDirName() on
+		// the main thread and Reload() runs there too, but nothing states
+		// that, and this class carries a mutex precisely because the
+		// assumption is not general. Neither call site holds the lock, so
+		// there is nothing to deadlock against.
+		wxMutexLocker lock(list_mut);
+
+		// Both lists below were walked with IsSameDir(), which normalises
+		// both paths, and GetPublicSharedDirName() calls this once per shared
+		// directory while answering a browse -- O(directories^2), and the
+		// other half of the 53 s freeze in issue #898. Keyed instead, built
+		// once and dropped in Reload() where the set can change.
+		if (!m_sharedDirKeysBuilt) {
+			const unsigned folderCount = theApp->glob_prefs->shareddir_list.size();
+			for (unsigned i = 0; i < folderCount; ++i) {
+				m_sharedDirKeys.insert(theApp->glob_prefs->shareddir_list[i].GetDirKey());
 			}
+			// category 0 is incoming
+			for (unsigned i = 0; i < theApp->glob_prefs->GetCatCount(); ++i) {
+				m_sharedDirKeys.insert(theApp->glob_prefs->GetCategory(i)->path.GetDirKey());
+			}
+			m_sharedDirKeysBuilt = true;
 		}
 
-		// check if it's one of the categories folders (category 0 = incoming)
-		for (unsigned i = 0; i < theApp->glob_prefs->GetCatCount(); ++i) {
-			if (path.IsSameDir(theApp->glob_prefs->GetCategory(i)->path)) {
-				return true;
-			}
+		if (m_sharedDirKeys.count(path.GetDirKey()) != 0) {
+			return true;
 		}
 	}
 

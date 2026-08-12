@@ -297,6 +297,76 @@ TEST(CPath, IsSameDir)
 	ASSERT_FALSE(Norm("/root").IsSameDir(Norm("/home")));
 }
 
+TEST(CPath, GetDirKeyMatchesIsSameDir)
+{
+	// CSharedFileList groups directories by GetDirKey() instead of comparing
+	// every pair with IsSameDir() (issue #898). That is only valid while the
+	// two agree, so assert the equivalence directly rather than the key's
+	// contents, which are platform-dependent by design.
+	const wxString paths[] = {
+		"/root",
+		"/root/",
+		"/root//",
+		"/home",
+		"/home/",
+		"/home/amule",
+		"/home/amule/",
+		"/home/./amule",
+		"/home/amule/../amule",
+		"/home/other/../amule",
+		// Case variants: the same directory on Windows, different ones
+		// elsewhere. Asserting the equivalence rather than the key's value
+		// means this covers both without a platform #ifdef -- and it is the
+		// case where a hand-rolled key would diverge from IsSameDir(),
+		// because the folding lives inside wxPATH_NORM_CASE.
+		"/Home/AMule",
+		"/HOME/AMULE/",
+		"/ROOT",
+	};
+	const size_t count = sizeof(paths) / sizeof(paths[0]);
+
+	for (size_t i = 0; i < count; ++i) {
+		for (size_t j = 0; j < count; ++j) {
+			const CPath a = Norm(paths[i]);
+			const CPath b = Norm(paths[j]);
+			ASSERT_EQUALS(a.IsSameDir(b), a.GetDirKey() == b.GetDirKey());
+		}
+	}
+}
+
+TEST(CPath, GetDirKeyGroupsEqualDirs)
+{
+	// The property the grouping actually relies on: paths the old pairwise
+	// walk would have put together produce one key, and different
+	// directories produce different ones.
+	ASSERT_EQUALS(Norm("/root").GetDirKey(), Norm("/root/").GetDirKey());
+	ASSERT_EQUALS(Norm("/home/amule").GetDirKey(), Norm("/home/amule/").GetDirKey());
+	ASSERT_EQUALS(Norm("/home/amule").GetDirKey(), Norm("/home/./amule").GetDirKey());
+	ASSERT_EQUALS(Norm("/home/amule").GetDirKey(), Norm("/home/other/../amule").GetDirKey());
+
+	ASSERT_TRUE(Norm("/root").GetDirKey() != Norm("/home").GetDirKey());
+	ASSERT_TRUE(Norm("/home/amule").GetDirKey() != Norm("/home/amulf").GetDirKey());
+}
+
+TEST(CPath, IsSameAsUnchangedByKeyExtraction)
+{
+	// NormalizedKey() was lifted out of IsSameAs() (issue #898). Both of the
+	// branches it kept are asserted here so the extraction cannot quietly
+	// change either: bare filenames still compare through PATHCMP, and
+	// anything with a separator still normalises both sides.
+	ASSERT_TRUE(CPath("foobar.tgz") == CPath("foobar.tgz"));
+	ASSERT_TRUE(CPath("foobar.tgz") != CPath("barfoo.tar"));
+
+	ASSERT_TRUE(Norm("/home/amule/x.dat") == Norm("/home/amule/x.dat"));
+	ASSERT_TRUE(Norm("/home/amule/x.dat") == Norm("/home/./amule/x.dat"));
+	ASSERT_TRUE(Norm("/home/amule/x.dat") == Norm("/home/other/../amule/x.dat"));
+	ASSERT_TRUE(Norm("/home/amule/x.dat") != Norm("/home/amule/y.dat"));
+
+	// A bare name against a path: the fast path does not apply, and both
+	// sides go through normalisation, as before the extraction.
+	ASSERT_TRUE(CPath("x.dat") != Norm("/home/amule/x.dat"));
+}
+
 TEST(CPath, GetPath_FullName)
 {
 	{
