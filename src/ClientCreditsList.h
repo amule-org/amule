@@ -29,6 +29,7 @@
 #include "MD4Hash.h" // Needed for CMD4Hash
 
 #include <map>
+#include <vector>
 
 class CClientCredits;
 class CFile;
@@ -53,6 +54,23 @@ public:
 		uint8 byChaIPKind);
 
 	CClientCredits *GetCredit(const CMD4Hash &key);
+
+	/**
+	 * Every peer we have ever exchanged data with, for the clients history.
+	 *
+	 * A snapshot rather than access to the map: the caller wants to sort and
+	 * display it, and handing out iterators into the live store would make
+	 * every future change to how credits are held a change to its callers as
+	 * well. Copying is affordable because this is read once when the page is
+	 * opened, not per refresh -- on a five-month-old node the store holds
+	 * around forty thousand records, and nothing about them changes between
+	 * one poll and the next.
+	 */
+	void GetAllCredits(std::vector<CClientCredits *> &result) const;
+
+	//! How many records the store holds, without materialising them.
+	size_t GetCreditCount() const { return m_mapClients.size(); }
+
 	void Process();
 	uint8 GetPubKeyLen() const { return m_nMyPublicKeyLen; }
 	const uint8_t *GetPublicKey() const { return m_abyMyPublicKey; }

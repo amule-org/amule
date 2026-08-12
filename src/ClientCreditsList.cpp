@@ -379,6 +379,15 @@ void CClientCreditsList::SaveMetaTrailer(CFile &file)
 	}
 }
 
+void CClientCreditsList::GetAllCredits(std::vector<CClientCredits *> &result) const
+{
+	result.clear();
+	result.reserve(m_mapClients.size());
+	for (const auto &entry : m_mapClients) {
+		result.push_back(entry.second);
+	}
+}
+
 CClientCredits *CClientCreditsList::GetCredit(const CMD4Hash &key)
 {
 	CClientCredits *result;

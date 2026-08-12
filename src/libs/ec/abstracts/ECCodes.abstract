@@ -172,6 +172,8 @@ EC_OP_SEARCH_REQUEST_MORE           0x5F
 
 EC_OP_SEARCH_LIST                   0x60
 
+EC_OP_GET_CLIENT_HISTORY                  0x61
+EC_OP_CLIENT_HISTORY                      0x62
 [/Section]
 
 [Section Content]
@@ -389,6 +391,13 @@ EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_SCORE_RATIO                 0x062D
 	EC_TAG_CLIENT_COUNTRY                     0x062E
 
+	// Credit-store fields, for the clients history. The rest of a history row
+	// reuses the live-client tags above -- a peer's name, address, software
+	// and origin mean the same thing whether it is connected now or was last
+	// seen in March.
+	EC_TAG_CLIENT_LAST_SEEN                   0x062F
+	EC_TAG_CLIENT_FIRST_SEEN                  0x0630
+	EC_TAG_CLIENT_SESSIONS                    0x0631
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
 	EC_TAG_SEARCH_NAME                        0x0702

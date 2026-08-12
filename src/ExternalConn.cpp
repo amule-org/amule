@@ -51,7 +51,9 @@
 #include "amule.h"      // Needed for theApp
 #include "SearchList.h" // Needed for GetSearchResults
 #include "ClientList.h"
-#include "Preferences.h" // Needed for CPreferences
+#include "ClientCreditsList.h" // Needed for CClientCreditsList
+#include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
+#include "Preferences.h"       // Needed for CPreferences
 #include "Logger.h"
 #include "GuiEvents.h"     // Needed for Notify_* macros
 #include "Statistics.h"    // Needed for theStats
@@ -1830,6 +1832,60 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 	return response;
 }
 
+/**
+ * The credit store, one tag per peer we have ever exchanged data with.
+ *
+ * Sent whole rather than incrementally: it changes only when a peer connects
+ * or disconnects, the client asks for it once when the page is opened, and
+ * every other EC bulk request works the same way. Metadata fields are emitted
+ * only when the store actually has them -- a record written before aMule kept
+ * that information carries a hash, totals and a last-seen date and nothing
+ * else, and the client renders the gaps as blanks.
+ */
+static CECPacket *Get_EC_Response_ClientHistory()
+{
+	CECPacket *response = new CECPacket(EC_OP_CLIENT_HISTORY);
+	if (!theApp->clientcredits) {
+		return response;
+	}
+
+	std::vector<CClientCredits *> credits;
+	theApp->clientcredits->GetAllCredits(credits);
+	for (const CClientCredits *cur : credits) {
+		const CreditStruct *data = cur->GetDataStruct();
+		CECTag entry(EC_TAG_CLIENT, data->key);
+		entry.AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_TOTAL, cur->GetUploadedTotal()));
+		entry.AddTag(CECTag(EC_TAG_CLIENT_DOWNLOAD_TOTAL, cur->GetDownloadedTotal()));
+		entry.AddTag(CECTag(EC_TAG_CLIENT_LAST_SEEN, data->nLastSeen));
+
+		if (cur->HasMeta()) {
+			const ClientMetaStruct &meta = cur->GetMeta();
+			entry.AddTag(CECTag(EC_TAG_CLIENT_FIRST_SEEN, meta.firstSeen));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_SESSIONS, meta.sessions));
+			if (!meta.name.IsEmpty()) {
+				entry.AddTag(CECTag(EC_TAG_CLIENT_NAME, meta.name));
+			}
+			entry.AddTag(CECTag(EC_TAG_CLIENT_USER_IP, meta.lastIP));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_USER_PORT, meta.lastPort));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, meta.kadPort));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFTWARE, meta.clientSoft));
+			// The generic major.minor.update form, not the per-software
+			// rendering ReGetClientSoft() produces. That one branches on
+			// the client type and is built from locals inside the
+			// handshake, so reproducing it here would mean either
+			// duplicating it or refactoring the handshake -- and the
+			// difference only shows on the few clients with a bespoke
+			// format (lPhant, eMule+), in a history row.
+			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFT_VER_STR,
+				CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
+					((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100)));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_FROM, meta.sourceFrom));
+		}
+		response->AddTag(entry);
+	}
+	return response;
+}
+
 static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	CObjTagMap &tagmap,
 	uint64 &io_lastEcGenSeen,
@@ -3514,6 +3570,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				m_sentWithDetailIdsPart);
 		}
 		break;
+	case EC_OP_GET_CLIENT_HISTORY:
+		response = Get_EC_Response_ClientHistory();
+		break;
+
 	//
 	// This will evolve into an update-all for inc tags
 	//
