@@ -74,6 +74,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		ClientDetailDialog.cpp
 		ClientHistoryListCtrl.cpp
 		ClientNameCell.cpp
+		ClientRowListCtrl.cpp
 		ClientContextActions.cpp
 		ClientsListCtrl.cpp
 		ClientsWnd.cpp

@@ -26,18 +26,16 @@
 
 #include <map>
 
-#include <common/Format.h>  // Needed for CFormat
-#include <common/MenuIDs.h> // Needed for MP_DETAIL etc.
+#include <common/Format.h> // Needed for CFormat
 
-#include "amule.h"                // Needed for theApp
-#include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
-#include "ClientDetailDialog.h"   // Needed for CClientDetailDialog
-#include "ClientList.h"           // Needed for CClientList::FindClientByECID
-#include "ClientRef.h"            // Needed for CClientRef
-#include "DataToText.h"           // Needed for GetSoftName, OriginToText
-#include "MuleBarRenderer.h"      // Needed for CBarFillSpec, CMuleBarRenderer
-#include "OtherFunctions.h"       // Needed for CastItoXBytes, CastItoSpeed
-#include "muuli_wdr.h"            // Needed for ID_CLIENTSLIST
+#include "amule.h"              // Needed for theApp
+#include "ClientDetailDialog.h" // Needed for CClientDetailDialog
+#include "ClientList.h"         // Needed for CClientList::FindClientByECID
+#include "ClientRef.h"          // Needed for CClientRef
+#include "DataToText.h"         // Needed for GetSoftName, OriginToText
+#include "MuleBarRenderer.h"    // Needed for CBarFillSpec, CMuleBarRenderer
+#include "OtherFunctions.h"     // Needed for CastItoXBytes, CastItoSpeed
+#include "muuli_wdr.h"          // Needed for ID_CLIENTSLIST
 
 namespace
 {
@@ -65,20 +63,9 @@ public:
 };
 } // namespace
 
-wxBEGIN_EVENT_TABLE(CClientsListCtrl, CMuleVirtualDataViewCtrl)
-	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CClientsListCtrl::OnItemActivated)
-	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CClientsListCtrl::OnItemRightClicked)
-
-	EVT_MENU(MP_SHOWLIST, CClientsListCtrl::OnViewFiles)
-	EVT_MENU(MP_ADDFRIEND, CClientsListCtrl::OnAddFriend)
-	EVT_MENU(MP_FRIENDSLOT, CClientsListCtrl::OnSetFriendslot)
-	EVT_MENU(MP_SENDMESSAGE, CClientsListCtrl::OnSendMessage)
-	EVT_MENU(MP_DETAIL, CClientsListCtrl::OnViewClientInfo)
-wxEND_EVENT_TABLE()
-
 CClientsListCtrl::CClientsListCtrl(
 	wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags, const wxString &tableName)
-: CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
+: CClientRowListCtrl(parent, id, pos, size, flags)
 {
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
 	// Owns its drawing so the badge icons match the per-file client lists;
@@ -228,23 +215,17 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	}
 }
 
-void CClientsListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const
+const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
 {
-	if (column != COLUMN_CLIENTS_NAME) {
-		return;
-	}
-	const Row *row = RowFor(data);
-	if (row == nullptr) {
-		return;
-	}
-	// The renderer needs the snapshot, not spans. Safe to hand out an address
-	// into m_rows: the vector is only ever replaced wholesale by SetClients(),
-	// which runs on the main thread between paints.
-	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(&row->nameCell), 0, {});
+	const Row *row = RowFor(item);
+	return row != nullptr ? &row->nameCell : nullptr;
 }
 
 std::vector<CClientRef> CClientsListCtrl::SelectedClients() const
 {
+	// By ECID: within one daemon process that names exactly this peer. A row is
+	// only ever as current as the last sweep, so a miss means the peer has gone
+	// and there is nothing left to act on.
 	std::vector<CClientRef> clients;
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		const Row *row = RowFor(data);
@@ -252,91 +233,20 @@ std::vector<CClientRef> CClientsListCtrl::SelectedClients() const
 			continue;
 		}
 #ifdef CLIENT_GUI
+		// The container already holds a reference; copying it links another.
 		CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
-		CUpDownClient *client = ref != nullptr ? ref->GetClient() : nullptr;
+		if (ref != nullptr && ref->GetClient() != nullptr) {
+			clients.push_back(*ref);
+		}
 #else
 		CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
-#endif
 		if (client != nullptr) {
-			clients.push_back(CCLIENTREF(client, wxT("CClientsListCtrl::SelectedClients")));
+			CClientRef ref = CCLIENTREF(client, wxT("CClientsListCtrl::SelectedClients"));
+			clients.push_back(std::move(ref));
 		}
+#endif
 	}
 	return clients;
-}
-
-void CClientsListCtrl::OnItemRightClicked(wxDataViewEvent &event)
-{
-	if (event.GetItem().IsOk()) {
-		wxDataViewItemArray selection;
-		GetSelections(selection);
-		if (selection.Index(event.GetItem()) == wxNOT_FOUND) {
-			UnselectAll();
-			Select(event.GetItem());
-		}
-	}
-
-	const std::vector<CClientRef> clients = SelectedClients();
-	if (clients.empty()) {
-		return;
-	}
-
-	// No swap-to-file: that acts on an A4AF source of one particular download,
-	// which is a per-file notion this list does not have.
-	wxMenu *menu = BuildClientContextMenu(clients.front(), false);
-	PopupMenu(menu, event.GetPosition());
-	delete menu;
-}
-
-void CClientsListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
-{
-	ClientActionViewFiles(SelectedClients());
-}
-
-void CClientsListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
-{
-	ClientActionToggleFriend(SelectedClients());
-}
-
-void CClientsListCtrl::OnSetFriendslot(wxCommandEvent &evt)
-{
-	ClientActionSetFriendSlot(this, SelectedClients(), evt.IsChecked());
-}
-
-void CClientsListCtrl::OnSendMessage(wxCommandEvent &WXUNUSED(event))
-{
-	ClientActionSendMessage(SelectedClients());
-}
-
-void CClientsListCtrl::OnViewClientInfo(wxCommandEvent &WXUNUSED(event))
-{
-	ClientActionShowDetails(this, SelectedClients());
-}
-
-void CClientsListCtrl::OnItemActivated(wxDataViewEvent &event)
-{
-	if (!event.GetItem().IsOk()) {
-		return;
-	}
-	const Row *row = RowFor(ItemAt(GetModelRow(event.GetItem())));
-	if (row == nullptr || row->ecid == 0) {
-		return;
-	}
-
-	// Resolve now rather than holding the peer: a row is a snapshot, and the
-	// peer it describes may have gone since the last sweep. A miss simply
-	// means there is nothing to show.
-#ifdef CLIENT_GUI
-	CClientRef *ref = theApp->clientlist->GetByID(row->ecid);
-	CUpDownClient *client = ref != nullptr ? ref->GetClient() : nullptr;
-#else
-	CUpDownClient *client = theApp->clientlist->FindClientByECID(row->ecid);
-#endif
-	if (client == nullptr) {
-		return;
-	}
-	// The CClientRef is what keeps the peer alive for as long as the modal
-	// dialog is up.
-	CClientDetailDialog(this, CCLIENTREF(client, wxT("CClientsListCtrl::OnItemActivated"))).ShowModal();
 }
 
 bool CClientsListCtrl::IsLiveSortColumn() const

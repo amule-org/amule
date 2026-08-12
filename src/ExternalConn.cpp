@@ -1886,6 +1886,7 @@ static CECPacket *Get_EC_Response_ClientHistory()
 				CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
 					((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100)));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_FROM, meta.sourceFrom));
+			entry.AddTag(CECTag(EC_TAG_CLIENT_OBFUSCATION_STATUS, meta.obfuscation));
 		}
 		response->AddTag(entry);
 	}

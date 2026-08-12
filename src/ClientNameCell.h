@@ -55,6 +55,16 @@ struct ClientNameCell
 	uint8 obfuscation = 0;   //!< OBST_*
 	//! An A4AF source is drawn grey whatever its download state says.
 	bool a4af = false;
+	/**
+	 * Draw the download-state badge.
+	 *
+	 * False for a row describing a peer we are not talking to -- the history
+	 * list -- where there is no live state and a badge could only invent one.
+	 */
+	bool showState = true;
+	//! False when the software is simply not recorded, so it draws as unknown
+	//! rather than as whatever SO_* value zero happens to mean (eMule).
+	bool knownSoftware = true;
 	bool remoteQueueFull = false;
 	bool isFriend = false;
 	bool identified = false;

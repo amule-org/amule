@@ -39,7 +39,10 @@
 
 #include <common/Format.h> // Needed for CFormat
 
-#include "amule.h"    // Needed for theApp
+#include "amule.h" // Needed for theApp
+#ifdef GEOIP_GUI
+#include "CountryDisplay.h" // Needed for GetDisplayCountryCode
+#endif
 #include "PartFile.h" // Needed for CPartFile (CKnownFile::GetFileName)
 // CUpDownClient. MUST match the build's client class: the reduced EC client for
 // amulegui, the full one for monolithic. The two have different layouts, so the
@@ -137,6 +140,32 @@ CClientsWnd::CClientsWnd(wxWindow *parent)
 	sizer->Fit(this);
 }
 
+namespace
+{
+//! The Name cell for a history row. One helper because the monolithic and EC
+//! paths build the same rows from different sources and must agree on this.
+void FillHistoryNameCell(ClientHistoryRow &row)
+{
+	row.nameCell.name = row.name.IsEmpty() ? row.hash.Encode() : row.name;
+	// No live peer behind this row, so no state badge and no friend/credit
+	// marks -- those describe a conversation in progress.
+	row.nameCell.showState = false;
+	row.nameCell.knownSoftware = row.hasMeta;
+	row.nameCell.clientSoft = row.clientSoft;
+	row.nameCell.obfuscation = row.obfuscation;
+#ifdef GEOIP_GUI
+	// From the last address we saw the peer at. Only resolves where a local
+	// GeoIP database is available, which is the monolithic build -- amulegui
+	// gets its flags from the core per live client and has nothing to look an
+	// offline peer up in, so the column simply has no flag there.
+	wxString code;
+	if (GetDisplayCountryCode(false, wxEmptyString, row.ip, code)) {
+		row.nameCell.countryCode = code;
+	}
+#endif
+}
+} // namespace
+
 void CClientsWnd::LoadHistory()
 {
 #ifndef CLIENT_GUI
@@ -167,6 +196,7 @@ void CClientsWnd::LoadHistory()
 			row.port = meta.lastPort;
 			row.clientSoft = meta.clientSoft;
 			row.sourceFrom = meta.sourceFrom;
+			row.obfuscation = meta.obfuscation;
 			row.version = CFormat(wxT("v%u.%u.%u")) % (meta.version / 100000) %
 				      ((meta.version % 100000) / 1000) % ((meta.version % 1000) / 100);
 		}
@@ -174,6 +204,7 @@ void CClientsWnd::LoadHistory()
 		// nothing outside one daemon process, whereas this is the same
 		// identity the credit store itself is keyed on.
 		row.online = !theApp->clientlist->GetClientsByHash(row.hash).empty();
+		FillHistoryNameCell(row);
 		rows.push_back(row);
 	}
 	historylistctrl->SetRows(std::move(rows));
@@ -255,7 +286,11 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_FROM)) {
 			row.sourceFrom = t->GetInt();
 		}
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_OBFUSCATION_STATUS)) {
+			row.obfuscation = t->GetInt();
+		}
 		row.online = onlineHashes.count(row.hash) != 0;
+		FillHistoryNameCell(row);
 		rows.push_back(row);
 	}
 	if (m_owner->historylistctrl != nullptr) {

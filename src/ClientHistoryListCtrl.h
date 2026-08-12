@@ -27,8 +27,8 @@
 
 #include <vector>
 
+#include "ClientRowListCtrl.h" // Needed for CClientRowListCtrl
 #include "MD4Hash.h"
-#include "MuleVirtualDataViewCtrl.h"
 
 #define COLUMN_HISTORY_NAME 0
 #define COLUMN_HISTORY_SOFTWARE 1
@@ -72,6 +72,7 @@ struct ClientHistoryRow
 	uint16 port = 0;
 	uint8 clientSoft = 0;
 	uint8 sourceFrom = 0;
+	uint8 obfuscation = 0;
 	bool hasMeta = false;
 	/**
 	 * This peer is connected right now.
@@ -83,6 +84,10 @@ struct ClientHistoryRow
 	 * the same peer.
 	 */
 	bool online = false;
+	//! Everything the Name cell draws, built from the stored metadata. No
+	//! download-state badge: this row describes a peer we may not be talking
+	//! to, and there is no live state to report.
+	ClientNameCell nameCell;
 };
 
 /**
@@ -91,7 +96,7 @@ struct ClientHistoryRow
  * Rows are addressed by index into m_rows rather than by pointer, so sorting
  * the control never invalidates them.
  */
-class CClientHistoryListCtrl : public CMuleVirtualDataViewCtrl
+class CClientHistoryListCtrl : public CClientRowListCtrl
 {
 public:
 	CClientHistoryListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
@@ -107,6 +112,9 @@ protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 	int CompareItemData(
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
+	const ClientNameCell *NameCellFor(wxUIntPtr item) const override;
+	unsigned NameColumn() const override { return COLUMN_HISTORY_NAME; }
+	std::vector<CClientRef> SelectedClients() const override;
 
 private:
 	const ClientHistoryRow *RowFor(wxUIntPtr item) const;

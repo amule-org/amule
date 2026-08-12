@@ -27,9 +27,7 @@
 
 #include <vector>
 
-#include "ClientNameCell.h" // Needed for ClientNameCell
-#include "ClientRef.h"      // Needed for CClientRef
-#include "MuleVirtualDataViewCtrl.h"
+#include "ClientRowListCtrl.h" // Needed for CClientRowListCtrl
 
 #define COLUMN_CLIENTS_NAME 0
 #define COLUMN_CLIENTS_SOFTWARE 1
@@ -65,7 +63,7 @@
  * keeps of the peer itself is its ECID, which is a name to look it up by on
  * demand rather than a claim that it still exists.
  */
-class CClientsListCtrl : public CMuleVirtualDataViewCtrl
+class CClientsListCtrl : public CClientRowListCtrl
 {
 public:
 	/**
@@ -131,7 +129,9 @@ protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 	int CompareItemData(
 		wxUIntPtr data1, wxUIntPtr data2, unsigned column, bool alt, int modifier) const override;
-	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
+	const ClientNameCell *NameCellFor(wxUIntPtr item) const override;
+	unsigned NameColumn() const override { return COLUMN_CLIENTS_NAME; }
+	std::vector<CClientRef> SelectedClients() const override;
 
 	/**
 	 * Speeds and transfer totals move on every poll, so a row sorted by one
@@ -143,27 +143,7 @@ protected:
 	 */
 	bool IsLiveSortColumn() const override;
 
-	wxDECLARE_EVENT_TABLE();
-
 private:
-	//! Double-click or Enter: the client details, same as the per-file lists.
-	void OnItemActivated(wxDataViewEvent &event);
-	void OnItemRightClicked(wxDataViewEvent &event);
-	void OnViewFiles(wxCommandEvent &event);
-	void OnAddFriend(wxCommandEvent &event);
-	void OnSetFriendslot(wxCommandEvent &event);
-	void OnSendMessage(wxCommandEvent &event);
-	void OnViewClientInfo(wxCommandEvent &event);
-
-	/**
-	 * The peers behind the current selection.
-	 *
-	 * Resolved by ECID at the moment the action runs, not held: a row is a
-	 * snapshot, and a peer it names may have gone since the last sweep. Rows
-	 * with nothing to resolve to are simply dropped from the result.
-	 */
-	std::vector<CClientRef> SelectedClients() const;
-
 	const Row *RowFor(wxUIntPtr item) const;
 
 	std::vector<Row> m_rows;

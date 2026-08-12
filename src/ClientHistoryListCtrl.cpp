@@ -28,16 +28,42 @@
 
 #include <common/Format.h> // Needed for CFormat
 
-#include "DataToText.h"     // Needed for GetSoftName, OriginToText
-#include "OtherFunctions.h" // Needed for CastItoXBytes, Uint32toStringIP
+#include "amule.h"           // Needed for theApp
+#include "ClientList.h"      // Needed for CClientList::GetClientsByHash
+#include "DataToText.h"      // Needed for GetSoftName, OriginToText
+#include "MuleBarRenderer.h" // Needed for CMuleBarRenderer
+#include "OtherFunctions.h"  // Needed for CastItoXBytes, Uint32toStringIP
+#ifdef CLIENT_GUI
+#include "UpDownClientEC.h"
+#else
+#include "updownclient.h"
+#endif
+
+namespace
+{
+//! Same renderer the active list uses; see CClientRowListCtrl::GetItemBarFill.
+class CHistoryNameRenderer : public CMuleBarRenderer
+{
+public:
+	bool Render(wxRect cell, wxDC *dc, int WXUNUSED(state)) override
+	{
+		const ClientNameCell *data =
+			reinterpret_cast<const ClientNameCell *>(GetSpec().GetIdentity());
+		if (data != nullptr) {
+			DrawClientNameCell(*data, cell, dc);
+		}
+		return true;
+	}
+};
+} // namespace
 
 CClientHistoryListCtrl::CClientHistoryListCtrl(
 	wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
-: CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
+: CClientRowListCtrl(parent, id, pos, size, flags)
 , m_loaded(false)
 {
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AddTextColumn(_("Name"), COLUMN_HISTORY_NAME, "N", 200, wxALIGN_LEFT, colFlags);
+	AddBarColumn(_("Name"), COLUMN_HISTORY_NAME, "N", 200, colFlags, new CHistoryNameRenderer());
 	AddTextColumn(_("Software"), COLUMN_HISTORY_SOFTWARE, "S", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Version"), COLUMN_HISTORY_VERSION, "V", 90, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("IP Address"), COLUMN_HISTORY_ADDRESS, "I", 140, wxALIGN_LEFT, colFlags);
@@ -86,6 +112,43 @@ void CClientHistoryListCtrl::SetRows(std::vector<ClientHistoryRow> &&rows)
 		AppendItemData(static_cast<wxUIntPtr>(i + 1));
 	}
 	FinishBulkLoad();
+}
+
+const ClientNameCell *CClientHistoryListCtrl::NameCellFor(wxUIntPtr item) const
+{
+	const ClientHistoryRow *row = RowFor(item);
+	return row != nullptr ? &row->nameCell : nullptr;
+}
+
+std::vector<CClientRef> CClientHistoryListCtrl::SelectedClients() const
+{
+	// By user hash, not ECID: a history row outlives the daemon process whose
+	// ECIDs would have named the peer, and the hash is the identity the credit
+	// store itself is keyed on. A peer that is not connected resolves to
+	// nothing, which is the honest answer -- there is nobody to act on.
+	std::vector<CClientRef> clients;
+	for (wxUIntPtr data : GetSelectedItemData()) {
+		const ClientHistoryRow *row = RowFor(data);
+		if (row == nullptr || row->hash.IsEmpty()) {
+			continue;
+		}
+#ifdef CLIENT_GUI
+		if (theApp->clientlist == nullptr) {
+			continue;
+		}
+		for (const auto &entry : *theApp->clientlist) {
+			CUpDownClient *client = entry->GetClient();
+			if (client != nullptr && client->GetUserHash() == row->hash) {
+				clients.push_back(*entry);
+			}
+		}
+#else
+		for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(row->hash)) {
+			clients.push_back(ref);
+		}
+#endif
+	}
+	return clients;
 }
 
 wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) const

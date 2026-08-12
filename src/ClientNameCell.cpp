@@ -98,36 +98,40 @@ void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc
 
 	wxPoint point(rect.GetX(), rect.GetY());
 
-	uint8 image = Client_Grey_Smiley;
-	if (!cell.a4af) {
-		switch (cell.downloadState) {
-		case DS_CONNECTING:
-		case DS_CONNECTED:
-		case DS_WAITCALLBACK:
-		case DS_TOOMANYCONNS:
-			image = Client_Red_Smiley;
-			break;
-		case DS_ONQUEUE:
-			image = cell.remoteQueueFull ? Client_Grey_Smiley : Client_Yellow_Smiley;
-			break;
-		case DS_DOWNLOADING:
-		case DS_REQHASHSET:
-			image = Client_Green_Smiley;
-			break;
-		case DS_NONEEDEDPARTS:
-		case DS_LOWTOLOWIP:
-			image = Client_Grey_Smiley; // Redundant
-			break;
-		default: // DS_NONE i.e.
-			image = Client_White_Smiley;
-		}
-	} // else: default (Client_Grey_Smiley)
+	if (cell.showState) {
+		uint8 image = Client_Grey_Smiley;
+		if (!cell.a4af) {
+			switch (cell.downloadState) {
+			case DS_CONNECTING:
+			case DS_CONNECTED:
+			case DS_WAITCALLBACK:
+			case DS_TOOMANYCONNS:
+				image = Client_Red_Smiley;
+				break;
+			case DS_ONQUEUE:
+				image = cell.remoteQueueFull ? Client_Grey_Smiley : Client_Yellow_Smiley;
+				break;
+			case DS_DOWNLOADING:
+			case DS_REQHASHSET:
+				image = Client_Green_Smiley;
+				break;
+			case DS_NONEEDEDPARTS:
+			case DS_LOWTOLOWIP:
+				image = Client_Grey_Smiley; // Redundant
+				break;
+			default: // DS_NONE i.e.
+				image = Client_White_Smiley;
+			}
+		} // else: default (Client_Grey_Smiley)
 
-	imageList.Draw(image, *dc, point.x, point.y + imageYOffset, wxIMAGELIST_DRAW_TRANSPARENT);
-	point.x += imageXSize;
+		imageList.Draw(image, *dc, point.x, point.y + imageYOffset, wxIMAGELIST_DRAW_TRANSPARENT);
+		point.x += imageXSize;
+	}
 
 	uint8 clientImage = Client_Unknown;
-	if (cell.isFriend) {
+	if (!cell.knownSoftware) {
+		// Leave it unknown.
+	} else if (cell.isFriend) {
 		clientImage = Client_Friend_Smiley;
 	} else {
 		switch (cell.clientSoft) {
