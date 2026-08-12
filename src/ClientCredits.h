@@ -48,6 +48,51 @@ public:
 	uint8_t abySecureIdent[MAXPUBKEYSIZE];
 };
 
+/**
+ * What we remember about a peer beyond its credits, for the clients history.
+ *
+ * Deliberately separate from CreditStruct: that one mirrors the fixed 119-byte
+ * on-disk record that aMule has always written and that eMule also reads, and
+ * it must stay exactly as it is. This travels in a trailer appended after those
+ * records, which older readers never look at (they consume `count` records and
+ * stop), so adding fields here cannot cost anyone their credit history.
+ *
+ * Every field is a last-known value, captured while the peer was connected.
+ * Nothing here is authoritative -- a peer can change name, address or client
+ * between sessions -- so it is for describing who someone was, not for
+ * identifying them. The hash remains the identity.
+ */
+class ClientMetaStruct
+{
+public:
+	wxString name;    //!< last nickname seen, capped on write
+	uint32 firstSeen; //!< first time we ever saw this peer
+	uint32 sessions;  //!< how many times we have seen it since
+	uint32 lastIP;    //!< last known address, also feeds GeoIP at display time
+	uint16 lastPort;
+	uint16 kadPort;
+	uint32 version;    //!< numeric client version, rendered as a string
+	uint8 clientSoft;  //!< eMule / aMule / MLDonkey / ...
+	uint8 sourceFrom;  //!< server, kad, passive, incoming
+	uint8 obfuscation; //!< obfuscation support/status
+
+	ClientMetaStruct()
+	: firstSeen(0)
+	, sessions(0)
+	, lastIP(0)
+	, lastPort(0)
+	, kadPort(0)
+	, version(0)
+	, clientSoft(0)
+	, sourceFrom(0)
+	, obfuscation(0)
+	{
+	}
+
+	//! Nothing worth persisting until we have actually met the peer once.
+	bool IsPopulated() const { return firstSeen != 0; }
+};
+
 enum EIdentState
 {
 	IS_NOTAVAILABLE,
@@ -87,7 +132,29 @@ public:
 	EIdentState GetIdentState() const { return m_identState; }
 	void SetIdentState(EIdentState state) { m_identState = state; }
 
+	const ClientMetaStruct &GetMeta() const { return m_meta; }
+	bool HasMeta() const { return m_meta.IsPopulated(); }
+	//! Load-time restore from the clients.met trailer.
+	void SetMeta(const ClientMetaStruct &meta) { m_meta = meta; }
+	/**
+	 * Record what a connected peer looks like right now.
+	 *
+	 * `countSession` is the caller's answer to "is this a new sighting?" --
+	 * the handshake can be processed more than once for one connection, and
+	 * a session count that grows per packet would say nothing.
+	 */
+	void UpdateMeta(const wxString &name,
+		uint32 ip,
+		uint16 port,
+		uint16 kadPort,
+		uint32 version,
+		uint8 clientSoft,
+		uint8 sourceFrom,
+		uint8 obfuscation,
+		bool countSession);
+
 private:
+	ClientMetaStruct m_meta;
 	EIdentState m_identState;
 	void InitalizeIdent();
 	CreditStruct *m_pCredits;
